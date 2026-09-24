@@ -23,7 +23,7 @@
  */
 import type { StringKey } from '../i18n/strings'
 import type { Command, CommandBody, Restored } from './commands'
-import { causesOf, decisionsOf, observationsOf, transitionsOf } from './normalised'
+import { causesOf, decisionsOf, experimentsOf, observationsOf, solutionsOf, transitionsOf } from './normalised'
 import type { Model } from './normalised'
 import { RELATION_LABEL } from './relations'
 import type { RelationType } from './types'
@@ -229,6 +229,18 @@ export function summarise(commands: readonly Command[], before: Model): StepSumm
       return { key: 'activity.causeChanged', name: causesOf(before)[lead.id]?.title }
     case 'cause.remove':
       return { key: 'activity.causeRemoved', name: causesOf(before)[lead.id]?.title }
+    case 'solution.add':
+      return { key: 'activity.solutionAdded', name: lead.solution.title }
+    case 'solution.update':
+      return { key: 'activity.solutionChanged', name: solutionsOf(before)[lead.id]?.title }
+    case 'solution.remove':
+      return { key: 'activity.solutionRemoved', name: solutionsOf(before)[lead.id]?.title }
+    case 'experiment.add':
+      return { key: 'activity.experimentAdded', name: lead.experiment.title }
+    case 'experiment.update':
+      return { key: 'activity.experimentChanged', name: experimentsOf(before)[lead.id]?.title }
+    case 'experiment.remove':
+      return { key: 'activity.experimentRemoved', name: experimentsOf(before)[lead.id]?.title }
 
     case 'project.settings':
       return { key: 'activity.projectSettings' }

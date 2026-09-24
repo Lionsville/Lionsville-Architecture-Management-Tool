@@ -542,6 +542,8 @@ describe('isFormatPath', () => {
     expect(isFormatPath('transitions/0001-replace-it.md')).toBe(true)
     expect(isFormatPath('observations/0001-batch-overruns.md')).toBe(true)
     expect(isFormatPath('observations/causes/0001-window-too-small.md')).toBe(true)
+    expect(isFormatPath('observations/solutions/0001-own-the-data.md')).toBe(true)
+    expect(isFormatPath('observations/experiments/0001-trial.md')).toBe(true)
     expect(isFormatPath('observations/notes/0001-x.md')).toBe(false)
     expect(isFormatPath('images/cutover.png')).toBe(true)
     expect(isFormatPath('logos/own.svg')).toBe(true)

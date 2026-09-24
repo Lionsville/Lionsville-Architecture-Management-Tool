@@ -233,6 +233,31 @@ describe('FileSystemScopeStore — the folder is somebody else’s too', () => {
     expect(root.paths().some((path) => path.includes('observations/causes/'))).toBe(false)
   })
 
+  /** The same walk, two more folders (ADR-0026): a solution and an experiment come back. */
+  it('reads the solutions and the experiments back from their folders under observations/', async () => {
+    const { root, store } = setup()
+    const scope = sampleScope()
+    scope.model.solutions = [{
+      id: 'so-1', number: 1, title: 'Widen the window', state: 'testing', benefit: 'medium', cost: 'small',
+      addresses: [{ id: 'ca-1', strength: 'strong' }], validatedWith: ['Operations'],
+      attempts: [{ when: '2023', what: 'Faster disks', why: 'Volumes grew faster' }], whyNow: 'Volumes are known now',
+      body: 'One idea.', history: [{ date: '2026-09-20', kind: 'proposed' }, { date: '2026-09-21', kind: 'moved', to: 'shaped' }],
+    }]
+    scope.model.experiments = [{
+      id: 'ex-1', number: 1, title: 'One week at night', tests: ['so-1'], hypothesis: 'Done by 06:00',
+      outcome: 'running', from: '2026-09-22', body: 'Set up.',
+    }]
+    await store.save(scope)
+
+    const paths = root.paths().map((path) => path.replace('acme-logistics/landscape/', ''))
+    expect(paths).toContain('observations/solutions/0001-widen-the-window.md')
+    expect(paths).toContain('observations/experiments/0001-one-week-at-night.md')
+
+    const back = await store.load(scope.path)
+    expect(back?.model.solutions).toEqual(scope.model.solutions)
+    expect(back?.model.experiments).toEqual(scope.model.experiments)
+  })
+
   it('answers an unreadable folder with an empty list rather than an exception', async () => {
     // Permission withdrawn, drive unplugged, folder deleted under us.
     const gone = {

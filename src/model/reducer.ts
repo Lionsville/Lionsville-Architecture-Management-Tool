@@ -41,9 +41,11 @@ import type {
 } from './commands'
 import type { Adr } from './adr'
 import type { Transition } from './transition'
-import type { Cause, Observation } from './observation'
+import type { Cause, Experiment, Observation, Solution } from './observation'
 import type { RelationId, Diagram, DiagramId, GroupId, Model, ModelOrder } from './normalised'
-import { boxesOf, causesOf, decisionsOf, groupsOf, observationsOf, routesOf, transitionsOf } from './normalised'
+import {
+  boxesOf, causesOf, decisionsOf, experimentsOf, groupsOf, observationsOf, routesOf, solutionsOf, transitionsOf,
+} from './normalised'
 import { datesInOrder } from './lifecycle'
 import { mayBeHosted } from './hosting'
 import { technologyEndsRefusal } from './relations'
@@ -206,6 +208,26 @@ function withCauses(model: Model, rows: Rows<Cause>): Model {
     return out
   }
   return { ...model, causes: rows.by, order }
+}
+
+function withSolutions(model: Model, rows: Rows<Solution>): Model {
+  const order = withOrder(model, 'solutions', rows.order)
+  if (rows.order.length === 0) {
+    const out = { ...model, order }
+    delete out.solutions
+    return out
+  }
+  return { ...model, solutions: rows.by, order }
+}
+
+function withExperiments(model: Model, rows: Rows<Experiment>): Model {
+  const order = withOrder(model, 'experiments', rows.order)
+  if (rows.order.length === 0) {
+    const out = { ...model, order }
+    delete out.experiments
+    return out
+  }
+  return { ...model, experiments: rows.by, order }
 }
 
 function setDiagram(model: Model, id: DiagramId, diagram: Diagram): Model {
@@ -800,6 +822,53 @@ export function apply(model: Model, command: Command): ApplyResult {
       const at = model.order.causes.indexOf(command.id)
       const rows = drop(causesOf(model), model.order.causes, command.id)
       return ok(withCauses(model, rows), { type: 'cause.add', cause: held, at })
+    }
+
+    // --- solutions and experiments (ADR-0026) -------------------------------
+    case 'solution.add': {
+      const { solution, at } = command
+      if (solution.id in solutionsOf(model)) return taken
+      const rows = put(solutionsOf(model), model.order.solutions, solution.id, solution, at)
+      return ok(withSolutions(model, rows), { type: 'solution.remove', id: solution.id })
+    }
+
+    case 'solution.update': {
+      const held = solutionsOf(model)[command.id]
+      if (!held) return gone
+      const { row, inverse } = patched(held, command.patch)
+      const rows = put(solutionsOf(model), model.order.solutions, command.id, row)
+      return ok(withSolutions(model, rows), { type: 'solution.update', id: command.id, patch: inverse })
+    }
+
+    case 'solution.remove': {
+      const held = solutionsOf(model)[command.id]
+      if (!held) return gone
+      const at = model.order.solutions.indexOf(command.id)
+      const rows = drop(solutionsOf(model), model.order.solutions, command.id)
+      return ok(withSolutions(model, rows), { type: 'solution.add', solution: held, at })
+    }
+
+    case 'experiment.add': {
+      const { experiment, at } = command
+      if (experiment.id in experimentsOf(model)) return taken
+      const rows = put(experimentsOf(model), model.order.experiments, experiment.id, experiment, at)
+      return ok(withExperiments(model, rows), { type: 'experiment.remove', id: experiment.id })
+    }
+
+    case 'experiment.update': {
+      const held = experimentsOf(model)[command.id]
+      if (!held) return gone
+      const { row, inverse } = patched(held, command.patch)
+      const rows = put(experimentsOf(model), model.order.experiments, command.id, row)
+      return ok(withExperiments(model, rows), { type: 'experiment.update', id: command.id, patch: inverse })
+    }
+
+    case 'experiment.remove': {
+      const held = experimentsOf(model)[command.id]
+      if (!held) return gone
+      const at = model.order.experiments.indexOf(command.id)
+      const rows = drop(experimentsOf(model), model.order.experiments, command.id)
+      return ok(withExperiments(model, rows), { type: 'experiment.add', experiment: held, at })
     }
 
     case 'project.settings': {

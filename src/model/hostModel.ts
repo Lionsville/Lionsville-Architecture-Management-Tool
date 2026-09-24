@@ -13,7 +13,7 @@
  */
 import type { DesignDiagram, DesignModel, UploadedLogo } from '.'
 import type { Adr } from './adr'
-import type { Cause, Observation } from './observation'
+import type { Cause, Experiment, Observation, Solution } from './observation'
 import type { Transition } from './transition'
 
 /**
@@ -51,6 +51,10 @@ export interface HostExtras {
   observations?: Observation[]
   /** What the team says lies behind the observations, linked to them and to each other (ADR-0021). */
   causes?: Cause[]
+  /** What the team does about the causes, and how far each has got (ADR-0026). */
+  solutions?: Solution[]
+  /** What was tried to find out whether a solution works (ADR-0026). */
+  experiments?: Experiment[]
   /** Per element key: which fields the source document carried explicitly. */
   explicitFields?: Record<string, { lifecycle?: boolean; isManaged?: boolean; iconType?: boolean }>
 }

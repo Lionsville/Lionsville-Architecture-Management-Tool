@@ -30,14 +30,14 @@
 import type { HostModel } from './hostModel'
 import type { Adr } from './adr'
 import type { Transition } from './transition'
-import type { Cause, Observation } from './observation'
+import type { Cause, Experiment, Observation, Solution } from './observation'
 import type { DesignDiagram, DesignElement, Relation, RelationType } from './types'
 
 export type ChangeKind = 'added' | 'removed' | 'changed'
 
 /** What a change happened to. Ordered as the list is read, most meaningful first. */
 export type ChangeSubject =
-  | 'element' | 'relation' | 'diagram' | 'decision' | 'transition' | 'observation' | 'cause'
+  | 'element' | 'relation' | 'diagram' | 'decision' | 'transition' | 'observation' | 'cause' | 'solution' | 'experiment'
   | 'membership' | 'geometry'
 
 export type ModelChange = {
@@ -256,9 +256,23 @@ export function diffModels(before: HostModel, after: HostModel): ModelChange[] {
   for (const id of ids(wasCauses, nowCauses)) {
     changes.push(...compare<Cause>('cause', id, wasCauses.get(id), nowCauses.get(id), (held) => held.title))
   }
+  // Then what is being done about it (ADR-0026).
+  const wasSolutions = byId(before.solutions ?? [])
+  const nowSolutions = byId(after.solutions ?? [])
+  for (const id of ids(wasSolutions, nowSolutions)) {
+    changes.push(...compare<Solution>(
+      'solution', id, wasSolutions.get(id), nowSolutions.get(id), (held) => held.title))
+  }
+  const wasExperiments = byId(before.experiments ?? [])
+  const nowExperiments = byId(after.experiments ?? [])
+  for (const id of ids(wasExperiments, nowExperiments)) {
+    changes.push(...compare<Experiment>(
+      'experiment', id, wasExperiments.get(id), nowExperiments.get(id), (held) => held.title))
+  }
 
   const order: ChangeSubject[] = [
-    'element', 'relation', 'diagram', 'decision', 'transition', 'observation', 'cause', 'membership', 'geometry',
+    'element', 'relation', 'diagram', 'decision', 'transition', 'observation', 'cause', 'solution', 'experiment',
+    'membership', 'geometry',
   ]
   return changes.sort((a, b) => order.indexOf(a.what) - order.indexOf(b.what))
 }

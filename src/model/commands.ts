@@ -32,11 +32,11 @@
 import type { StringKey } from '../i18n/strings'
 import type { Adr } from './adr'
 import type { Transition } from './transition'
-import type { Cause, Observation } from './observation'
+import type { Cause, Experiment, Observation, Solution } from './observation'
 import type {
-  AdrId, CauseId, RelationId, Diagram, DiagramId, GroupId, Model, ObservationId, TransitionId,
+  AdrId, CauseId, RelationId, Diagram, DiagramId, ExperimentId, GroupId, Model, ObservationId, SolutionId, TransitionId,
 } from './normalised'
-import { causesOf, decisionsOf, observationsOf } from './normalised'
+import { causesOf, decisionsOf, experimentsOf, observationsOf, solutionsOf } from './normalised'
 import type {
   DesignElement, DiagramGroup, DiagramMember, DiagramSettings, DomainGroupRect,
   EdgeRoute, ElementId, Geometry, NodeGeometry, PlacedNode, Relation,
@@ -164,6 +164,13 @@ export type CommandBody =
   | { type: 'cause.add'; cause: Cause; at?: number }
   | { type: 'cause.update'; id: CauseId; patch: Partial<Cause> }
   | { type: 'cause.remove'; id: CauseId }
+  // --- solutions and experiments (ADR-0026) --------------------------------
+  | { type: 'solution.add'; solution: Solution; at?: number }
+  | { type: 'solution.update'; id: SolutionId; patch: Partial<Solution> }
+  | { type: 'solution.remove'; id: SolutionId }
+  | { type: 'experiment.add'; experiment: Experiment; at?: number }
+  | { type: 'experiment.update'; id: ExperimentId; patch: Partial<Experiment> }
+  | { type: 'experiment.remove'; id: ExperimentId }
 
   // --- the project itself --------------------------------------------------
   | { type: 'project.settings'; patch: ProjectPatch }
@@ -419,6 +426,42 @@ export function causesToCommands(model: Model, next: readonly Cause[]): Command[
     if (!before) commands.push({ type: 'cause.add', cause: one })
     else if (JSON.stringify(before) !== JSON.stringify(one)) {
       commands.push({ type: 'cause.update', id: one.id, patch: replacement(before, one) })
+    }
+  }
+  return commands
+}
+
+/** The solutions, likewise (ADR-0026). */
+export function solutionsToCommands(model: Model, next: readonly Solution[]): Command[] {
+  const held = solutionsOf(model)
+  const wanted = new Set(next.map((one) => one.id))
+  const commands: Command[] = []
+  for (const id of model.order.solutions) {
+    if (!wanted.has(id)) commands.push({ type: 'solution.remove', id })
+  }
+  for (const one of next) {
+    const before = held[one.id]
+    if (!before) commands.push({ type: 'solution.add', solution: one })
+    else if (JSON.stringify(before) !== JSON.stringify(one)) {
+      commands.push({ type: 'solution.update', id: one.id, patch: replacement(before, one) })
+    }
+  }
+  return commands
+}
+
+/** The experiments, likewise (ADR-0026). */
+export function experimentsToCommands(model: Model, next: readonly Experiment[]): Command[] {
+  const held = experimentsOf(model)
+  const wanted = new Set(next.map((one) => one.id))
+  const commands: Command[] = []
+  for (const id of model.order.experiments) {
+    if (!wanted.has(id)) commands.push({ type: 'experiment.remove', id })
+  }
+  for (const one of next) {
+    const before = held[one.id]
+    if (!before) commands.push({ type: 'experiment.add', experiment: one })
+    else if (JSON.stringify(before) !== JSON.stringify(one)) {
+      commands.push({ type: 'experiment.update', id: one.id, patch: replacement(before, one) })
     }
   }
   return commands

@@ -30,7 +30,8 @@ import { isAdrLocked } from './adr'
 import type { BoardPatch, Command, DiagramPatch, ProjectPatch, Restored } from './commands'
 import type { Diagram, Model } from './normalised'
 import {
-  boxesOf, causesOf, decisionsOf, fromDiagram, groupList, groupsOf, observationsOf, routesOf, toDiagram,
+  boxesOf, causesOf, decisionsOf, experimentsOf, fromDiagram, groupList, groupsOf, observationsOf, routesOf,
+  solutionsOf, toDiagram,
 } from './normalised'
 import { memberOf, nodeGeometryOf, placedNodes } from './placement'
 import { edgeRoutesOf, splitRoutes } from './routes'
@@ -207,6 +208,37 @@ function restoreProject(then: Model, now: Model, asOf: string): RestoreResult {
   }
   for (const id of now.order.causes) {
     if (!thenCauses[id]) commands.push({ type: 'cause.remove', id })
+  }
+
+  // Solutions and experiments likewise (ADR-0026): a solution's decision
+  // record locks itself, and the solution only names it.
+  const thenSolutions = solutionsOf(then)
+  const nowSolutions = solutionsOf(now)
+  for (const id of then.order.solutions) {
+    const target = thenSolutions[id]
+    const current = nowSolutions[id]
+    if (!current) commands.push({ type: 'solution.add', solution: target })
+    else {
+      const patch = differing(current, target)
+      if (Object.keys(patch).length) commands.push({ type: 'solution.update', id, patch })
+    }
+  }
+  for (const id of now.order.solutions) {
+    if (!thenSolutions[id]) commands.push({ type: 'solution.remove', id })
+  }
+  const thenExperiments = experimentsOf(then)
+  const nowExperiments = experimentsOf(now)
+  for (const id of then.order.experiments) {
+    const target = thenExperiments[id]
+    const current = nowExperiments[id]
+    if (!current) commands.push({ type: 'experiment.add', experiment: target })
+    else {
+      const patch = differing(current, target)
+      if (Object.keys(patch).length) commands.push({ type: 'experiment.update', id, patch })
+    }
+  }
+  for (const id of now.order.experiments) {
+    if (!thenExperiments[id]) commands.push({ type: 'experiment.remove', id })
   }
 
   const restored: Restored = { what: 'project', name: then.name, asOf }

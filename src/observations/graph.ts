@@ -110,13 +110,17 @@ export function analysisGraph(analysis: Analysis, shared: readonly SharedObserva
 /**
  * One sweep left to right. The first lane keeps record order; every later
  * lane orders its nodes by the mean row of what they explain, so a cause sits
- * beside its observations and a root beside its causes.
+ * beside its observations and a root beside its causes. An edge runs from
+ * the node on the left to the node on the right, so the solutions picture
+ * (`solutionGraph.ts`) lays its lanes out with the same sweep.
  */
-function assignRows(nodes: GraphNode[], edges: readonly GraphEdge[], lanes: number): void {
+export function assignRows(
+  nodes: { key: string; lane: number; row: number }[], edges: readonly { from: string; to: string }[], lanes: number,
+): void {
   const rowOf = new Map<string, number>()
   for (let lane = 0; lane < lanes; lane += 1) {
     const inLane = nodes.filter((node) => node.lane === lane)
-    const centre = (node: GraphNode): number | undefined => {
+    const centre = (node: { key: string }): number | undefined => {
       const explained = edges.filter((edge) => edge.to === node.key).map((edge) => rowOf.get(edge.from))
       const known = explained.filter((row): row is number => row !== undefined)
       return known.length ? known.reduce((sum, row) => sum + row, 0) / known.length : undefined
@@ -145,7 +149,7 @@ export type Placed = { key: string; x: number; y: number }
  * than hanging from the top.
  */
 export function placeGraph(
-  graph: AnalysisGraph, size: { laneWidth: number; rowHeight: number; top?: number; left?: number },
+  graph: { nodes: readonly { key: string; lane: number; row: number }[]; lanes: number }, size: { laneWidth: number; rowHeight: number; top?: number; left?: number },
 ): Placed[] {
   const rowsIn = (lane: number) => graph.nodes.filter((node) => node.lane === lane).length
   const tallest = Math.max(1, ...Array.from({ length: graph.lanes }, (_, lane) => rowsIn(lane)))

@@ -19,6 +19,8 @@
  * transitions/NNNN-<slug>.md        a plan, its window and what it touches
  * observations/NNNN-<slug>.md       what was seen, and its dated history
  * observations/causes/NNNN-<slug>.md  what lies behind it, and what it explains
+ * observations/solutions/NNNN-<slug>.md    what is done about it, and how far it got
+ * observations/experiments/NNNN-<slug>.md  what was tried to find out whether it works
  * images/<file>.png | .jpg | .svg   pictures the documents show
  * logos/<key>.svg | .png            uploaded marks, as images
  * <child>/                          a scope under this one: the same files again
@@ -65,7 +67,7 @@ import type {
 import { imageMediaType, isImageFile } from '../model/documentImage'
 import type { HostModel } from '../model/hostModel'
 import type { Transition } from '../model/transition'
-import type { Cause, Observation } from '../model/observation'
+import type { Cause, Experiment, Observation, Solution } from '../model/observation'
 import { WORKING_FILE_TYPE } from '../model/hostModel'
 import { SCOPE_FILE, SCOPE_FORMAT_VERSION } from '../platform/scopeHeader'
 import { slug } from '../model/keys'
@@ -74,8 +76,9 @@ import {
   TRANSITIONS_FOLDER, transitionFileText, transitionFromFile, transitionPath,
 } from './transitionFile'
 import {
-  CAUSES_SUBFOLDER, causeFileText, causeFromFile, causePath, OBSERVATIONS_FOLDER, observationFileText,
-  observationFromFile, observationPath,
+  CAUSES_SUBFOLDER, causeFileText, causeFromFile, causePath, EXPERIMENTS_SUBFOLDER, experimentFileText,
+  experimentFromFile, experimentPath, OBSERVATION_SUBFOLDERS, OBSERVATIONS_FOLDER, observationFileText,
+  observationFromFile, observationPath, SOLUTIONS_SUBFOLDER, solutionFileText, solutionFromFile, solutionPath,
 } from './observationFile'
 import {
   dataUrl, markdownBody, markdownFile, parseJson, readDataUrl, stableJson, textFromBytes,
@@ -142,11 +145,15 @@ export const SCOPE_FOLDERS: readonly string[] = [
  * same shape of change: a build that reads 6 and no more would open a 7 and
  * write it back without the observations, so the number turns and the older
  * build refuses instead.
+ *
+ * **8 is 7, with `solutions/` and `experiments/` under `observations/`**
+ * (ADR-0026). A build that reads 7 walks into `causes/` and no further, so it
+ * would open an 8 and write it back without them: the number turns again.
  */
 export { SCOPE_FORMAT_VERSION }
 
 /** The versions of a scope's own folder this build reads without folding. */
-const READABLE_SCOPE_VERSIONS: readonly number[] = [5, 6, 7]
+const READABLE_SCOPE_VERSIONS: readonly number[] = [5, 6, 7, 8]
 
 /**
  * The second half of a view's pair of files: where it ended up.
@@ -336,6 +343,14 @@ export function scopeFiles(scope: ScopeSnapshot): FolderFile[] {
     files.push({ path: causePath(cause), text: causeFileText(cause) })
   }
 
+  for (const solution of model.solutions ?? []) {
+    files.push({ path: solutionPath(solution), text: solutionFileText(solution) })
+  }
+
+  for (const experiment of model.experiments ?? []) {
+    files.push({ path: experimentPath(experiment), text: experimentFileText(experiment) })
+  }
+
   files.push(...imageFiles(scope.imageLibrary ?? []))
 
   files.push({ path: SCOPE_FILE, text: stableJson(header(scope, files)) })
@@ -479,7 +494,7 @@ export function isFormatPath(path: string): boolean {
   if (folder === TRANSITIONS_FOLDER) return rest.length === 1 && /^\d{1,6}-.*\.md$/.test(name)
   if (folder === OBSERVATIONS_FOLDER) {
     if (rest.length === 1) return /^\d{1,6}-.*\.md$/.test(name)
-    return rest.length === 2 && rest[0] === CAUSES_SUBFOLDER && /^\d{1,6}-.*\.md$/.test(name)
+    return rest.length === 2 && OBSERVATION_SUBFOLDERS.includes(rest[0]) && /^\d{1,6}-.*\.md$/.test(name)
   }
   return false
 }
@@ -766,17 +781,33 @@ export function readObservations(files: readonly FolderFile[]): Observation[] {
   return found.sort((a, b) => a.number - b.number)
 }
 
-export function readCauses(files: readonly FolderFile[]): Cause[] {
-  const prefix = `${OBSERVATIONS_FOLDER}/${CAUSES_SUBFOLDER}/`
-  const found: Cause[] = []
+/** The records in one folder under `observations/`, in number order. */
+function readUnder<T extends { number: number }>(
+  files: readonly FolderFile[], subfolder: string, read: (text: string, path: string) => T | undefined,
+): T[] {
+  const prefix = `${OBSERVATIONS_FOLDER}/${subfolder}/`
+  const found: T[] = []
   for (const file of files) {
     if (!file.path.startsWith(prefix) || !file.path.endsWith('.md')) continue
     if (file.path.slice(prefix.length).includes('/')) continue
     if (!('text' in file)) continue
-    const cause = causeFromFile(file.text, file.path)
-    if (cause) found.push(cause)
+    const one = read(file.text, file.path)
+    if (one) found.push(one)
   }
   return found.sort((a, b) => a.number - b.number)
+}
+
+export function readCauses(files: readonly FolderFile[]): Cause[] {
+  return readUnder(files, CAUSES_SUBFOLDER, causeFromFile)
+}
+
+/** The solutions and the experiments, each one folder under the observations (ADR-0026). */
+export function readSolutions(files: readonly FolderFile[]): Solution[] {
+  return readUnder(files, SOLUTIONS_SUBFOLDER, solutionFromFile)
+}
+
+export function readExperiments(files: readonly FolderFile[]): Experiment[] {
+  return readUnder(files, EXPERIMENTS_SUBFOLDER, experimentFromFile)
 }
 
 function readLogos(folder: Folder, held: ScopeFile): UploadedLogo[] {
@@ -866,6 +897,8 @@ export function scopeFromFolder(
   const transitions = readTransitions(files)
   const observations = readObservations(files)
   const causes = readCauses(files)
+  const solutions = readSolutions(files)
+  const experiments = readExperiments(files)
   const { elements, explicitFields } = readElements(folder)
   const model: HostModel = {
     name: typeof held.name === 'string' && held.name ? held.name : scopePathLabel(path),
@@ -880,6 +913,8 @@ export function scopeFromFolder(
     ...(transitions.length ? { transitions } : {}),
     ...(observations.length ? { observations } : {}),
     ...(causes.length ? { causes } : {}),
+    ...(solutions.length ? { solutions } : {}),
+    ...(experiments.length ? { experiments } : {}),
     ...(explicitFields ? { explicitFields } : {}),
     elements,
     relations: readRelations(folder),

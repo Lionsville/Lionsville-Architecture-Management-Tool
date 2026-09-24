@@ -26,17 +26,21 @@ export type {
  */
 export type {
   Model, Diagram, ModelOrder, DiagramOrder, RelationId, DiagramId, GroupId, AdrId, TransitionId,
-  ObservationId, CauseId,
+  ObservationId, CauseId, SolutionId, ExperimentId,
 } from './normalised'
 export {
-  fromArrays, toArrays, toDiagram, fromDiagram, decisionsOf, routesOf, transitionsOf, observationsOf, causesOf,
-  elementList, relationList, diagramList, decisionList, transitionList, observationList, causeList, memberList, routeList,
+  fromArrays, toArrays, toDiagram, fromDiagram, decisionsOf, routesOf, transitionsOf, observationsOf, causesOf, solutionsOf, experimentsOf,
+  elementList, relationList, diagramList, decisionList, transitionList, observationList, causeList, solutionList, experimentList, memberList, routeList,
 } from './normalised'
 
 /** What was seen, and what lies behind it (ADR-0021). */
-export { CAUSE_STATES, CAUSE_STRENGTHS, OBSERVATION_EVENT_KINDS, OBSERVATION_IMPACTS } from './observation'
+export {
+  CAUSE_STATES, CAUSE_STRENGTHS, EXPERIMENT_OUTCOMES, OBSERVATION_EVENT_KINDS, OBSERVATION_IMPACTS, SOLUTION_EVENT_KINDS,
+  SOLUTION_SIZES, SOLUTION_STATES,
+} from './observation'
 export type {
-  Cause, CauseLink, CauseState, CauseStrength, Observation, ObservationEvent, ObservationEventKind, ObservationImpact,
+  Cause, CauseLink, CauseState, CauseStrength, EarlierAttempt, Experiment, ExperimentOutcome, Observation,
+  Solution, SolutionEvent, SolutionEventKind, SolutionLink, SolutionSize, SolutionState, ObservationEvent, ObservationEventKind, ObservationImpact,
 } from './observation'
 
 /** What a relation is, and the one type a canvas draws (ADR-0012 §5). */
@@ -141,6 +145,7 @@ export type {
 export type { Command, CommandBody, CommandMeta, ProjectPatch, DiagramPatch, Restored } from './commands'
 export {
   transaction, reverse, isNothing, NOTHING, replacement, duplicateDiagram, decisionsToCommands, observationsToCommands, causesToCommands,
+  solutionsToCommands, experimentsToCommands,
   fieldEdit,
 } from './commands'
 export type { ApplyResult, CommandRefusal } from './reducer'

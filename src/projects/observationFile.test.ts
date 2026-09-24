@@ -2,9 +2,10 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { describe, expect, it } from 'vitest'
-import type { Cause, Observation } from '../model/observation'
+import type { Cause, Experiment, Observation, Solution } from '../model/observation'
 import {
-  causeFileText, causeFromFile, causePath, observationFileText, observationFromFile, observationPath,
+  causeFileText, causeFromFile, causePath, experimentFileText, experimentFromFile, experimentPath,
+  observationFileText, observationFromFile, observationPath, solutionFileText, solutionFromFile, solutionPath,
 } from './observationFile'
 
 const observation: Observation = {
@@ -84,5 +85,61 @@ describe('a cause as a file', () => {
     expect(causeFromFile(text, 'observations/causes/0004-why.md')).toEqual({
       id: 'ca-4', number: 4, title: 'Why', state: 'assumed', body: 'Body.', explains: [{ id: 'ob-1', strength: 'normal' }],
     })
+  })
+})
+
+const solution: Solution = {
+  id: 'so-a', number: 4, title: 'One estimate service for every channel', state: 'testing', benefit: 'large', cost: 'medium',
+  addresses: [{ id: 'ca-x', strength: 'strong' }, { id: 'ca-y', strength: 'weak' }],
+  validatedWith: ['Customer service lead', 'Data platform: the team'],
+  attempts: [{ when: '2024', what: 'A nightly sync', why: 'It lagged by a day: nobody trusted it' }, { what: 'A spreadsheet', why: 'Stale' }],
+  whyNow: 'The tracking feed is live now', waived: 'Nothing to trial: an appointment', decision: 'adr-1', plan: 'tr-2',
+  body: '## The idea\n\nOne service.\n',
+  history: [
+    { date: '2026-07-01', kind: 'proposed' },
+    { date: '2026-07-15', kind: 'moved', to: 'shaped' },
+    { date: '2026-07-16', kind: 'waived', note: 'Nothing to trial' },
+    { date: '2026-07-17', kind: 'linked', to: 'decision', id: 'adr-1' },
+  ],
+}
+
+const experiment: Experiment = {
+  id: 'ex-a', number: 2, title: 'Two weeks at desk 3', tests: ['so-a', 'so-b'], hypothesis: 'Calls about the estimate halve',
+  measure: 'Calls tagged "estimate" per week', where: 'Call centre, desk 3', by: 'Customer service lead',
+  from: '2026-08-04', to: '2026-08-18', outcome: 'confirmed', result: 'From 41 to 12 a week.',
+  body: '## How it is set up\n\nOne desk.\n',
+}
+
+describe('a solution as a file', () => {
+  it('is filed under observations/solutions/', () => {
+    expect(solutionPath(solution)).toBe('observations/solutions/0004-one-estimate-service-for-every-channel.md')
+    expect(solutionFileText(solution)).toContain('# SO-0004 — One estimate service for every channel')
+  })
+  it('round-trips unchanged, lists and history and all', () => {
+    expect(solutionFromFile(solutionFileText(solution), solutionPath(solution))).toEqual(solution)
+  })
+  it('round-trips a bare idea without inventing fields', () => {
+    const bare: Solution = {
+      id: 'so-b', number: 1, title: 'Own the data', state: 'idea', addresses: [], validatedWith: [], attempts: [],
+      noneKnown: true, body: '', history: [{ date: '2026-09-24', kind: 'proposed' }],
+    }
+    expect(solutionFromFile(solutionFileText(bare), solutionPath(bare))).toEqual(bare)
+  })
+  it('defaults a mistyped state and drops an unknown event rather than refusing', () => {
+    const text = solutionFileText(solution).replace('state: testing', 'state: nonsense').replace('kind: proposed', 'kind: nonsense')
+    const back = solutionFromFile(text, solutionPath(solution))!
+    expect(back.state).toBe('idea')
+    expect(back.history).toHaveLength(3)
+  })
+})
+
+describe('an experiment as a file', () => {
+  it('is filed under observations/experiments/ and round-trips unchanged', () => {
+    expect(experimentPath(experiment)).toBe('observations/experiments/0002-two-weeks-at-desk-3.md')
+    expect(experimentFromFile(experimentFileText(experiment), experimentPath(experiment))).toEqual(experiment)
+  })
+  it('reads a hand-written one: number from the name, planned by default', () => {
+    const back = experimentFromFile('# EX-0007 — Trial\n\nNotes.\n', 'observations/experiments/0007-trial.md')
+    expect(back).toMatchObject({ number: 7, title: 'Trial', outcome: 'planned', tests: [], hypothesis: '' })
   })
 })
