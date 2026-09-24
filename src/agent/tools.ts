@@ -481,6 +481,52 @@ const SPECS = [
     inputSchema: { type: 'object', properties: { id: ID('cause') }, required: ['id'], additionalProperties: false },
   },
   {
+    name: 'solutions.list',
+    tier: 'read',
+    description:
+      'What this scope is doing about its causes (ADR-0026): each solution with its label, title, state and phase '
+      + '(idea, shaped, testing, proven, adopted, implemented — implemented is read off its plan being done — or '
+      + 'dropped), benefit and cost, the causes it addresses and whether each is a root, who it was checked with, '
+      + 'earlier attempts, its experiments, its decision record and plan, what the next gate still needs '
+      + '(next.open), the questions its record asks (worksAround: it treats no root cause; addsOnly: its plan '
+      + 'retires nothing; adoptedUnplanned), and, once implemented, any observation seen again since. Dropped '
+      + 'ones only with includeDropped.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        phase: { type: 'string', description: 'Only solutions in this phase.', enum: ['idea', 'shaped', 'testing', 'proven', 'adopted', 'implemented', 'dropped'] },
+        causeId: { type: 'string', description: 'Only solutions that address this cause (id or CA- label).' },
+        includeDropped: { type: 'boolean', description: 'Also list dropped solutions: the alternatives that were considered.' },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'solution.read',
+    tier: 'read',
+    description: 'One solution in full: everything solutions.list says, the alternatives on the same causes, its dated history, and its body as markdown.',
+    inputSchema: { type: 'object', properties: { id: ID('solution') }, required: ['id'], additionalProperties: false },
+  },
+  {
+    name: 'experiments.list',
+    tier: 'read',
+    description: 'The experiments run to find out whether a solution works (ADR-0026): hypothesis, measure, where, by whom, the window, the outcome and the result, and the solutions each tests.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        outcome: { type: 'string', description: 'Only experiments with this outcome.', enum: ['planned', 'running', 'confirmed', 'refuted', 'inconclusive'] },
+        solutionId: { type: 'string', description: 'Only experiments that test this solution (id or SO- label).' },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'experiment.read',
+    tier: 'read',
+    description: 'One experiment in full, with its body as markdown.',
+    inputSchema: { type: 'object', properties: { id: ID('experiment') }, required: ['id'], additionalProperties: false },
+  },
+  {
     name: 'plans.list',
     tier: 'read',
     description:
@@ -1076,6 +1122,246 @@ const SPECS = [
     tier: 'write',
     description: 'Throw a cause away, and every link from it and to it. Its number is never reused.',
     inputSchema: { type: 'object', properties: { id: ID('cause') }, required: ['id'], additionalProperties: false },
+  },
+  {
+    name: 'solution.propose',
+    tier: 'write',
+    description:
+      'Propose a solution for one or more causes of this scope (ADR-0026): a new idea, numbered after the last one '
+      + 'here, linked to what it addresses in the same step. Proposing is cheap on purpose; the vetting is the gates '
+      + 'after it. Name root causes where you can: a solution that only addresses a cause with a cause of its own is '
+      + 'asked, once proven, whether it works around the problem.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: 'What would take the cause away, as one sentence.' },
+        addresses: {
+          type: 'array',
+          description: 'The causes it addresses.',
+          items: {
+            type: 'object',
+            description: 'One cause.',
+            properties: {
+              id: { type: 'string', description: 'The cause, by id or CA- label.' },
+              strength: { type: 'string', description: 'How directly. Default: strong on a root cause, normal otherwise.', enum: ['strong', 'normal', 'weak'] },
+            },
+            required: ['id'],
+            additionalProperties: false,
+          },
+        },
+        body: { type: 'string', description: 'The idea, costs and benefits, why this scope, alternatives and risks, as markdown. Leave out for the template.' },
+      },
+      required: ['title'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'solution.update',
+    tier: 'write',
+    description:
+      'Answer what a solution\'s gates ask, or correct it: title, body, benefit and cost, who it was checked with '
+      + '(the whole list), earlier attempts (the whole list), noneKnown when nothing like it was tried, and why it '
+      + 'works now when something was. Fill these from what people said. Never with filler to get past a gate.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: ID('solution'),
+        title: { type: 'string', description: 'A new title.' },
+        body: { type: 'string', description: 'The body as markdown.' },
+        benefit: { type: 'string', description: 'What it is expected to bring. Drawn as its width.', enum: ['small', 'medium', 'large'] },
+        cost: { type: 'string', description: 'Roughly what it costs.', enum: ['small', 'medium', 'large'] },
+        validatedWith: { type: 'array', description: 'Who it was checked with: names, roles or teams. Replaces the list.', items: { type: 'string' } },
+        attempts: {
+          type: 'array',
+          description: 'Earlier attempts at something like it. Replaces the list.',
+          items: {
+            type: 'object',
+            description: 'One earlier attempt.',
+            properties: {
+              when: { type: 'string', description: 'When, as people say it: a year, a quarter.' },
+              what: { type: 'string', description: 'What was tried.' },
+              why: { type: 'string', description: 'Why it did not stick.' },
+            },
+            required: ['what', 'why'],
+            additionalProperties: false,
+          },
+        },
+        noneKnown: { type: 'boolean', description: 'true: nothing like it was tried before, as far as anyone knows.' },
+        whyNow: { type: 'string', description: 'Why it works now, when an earlier attempt did not.' },
+      },
+      required: ['id'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'solution.address',
+    tier: 'write',
+    description: 'A solution addresses a cause of this scope; addressing one it already addresses changes the strength.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: ID('solution'),
+        cause: { type: 'string', description: 'The cause, by id or CA- label.' },
+        strength: { type: 'string', description: 'How directly. Default: strong on a root cause, normal otherwise.', enum: ['strong', 'normal', 'weak'] },
+      },
+      required: ['id', 'cause'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'solution.unaddress',
+    tier: 'write',
+    description: 'A solution no longer addresses a cause.',
+    inputSchema: {
+      type: 'object',
+      properties: { id: ID('solution'), cause: { type: 'string', description: 'The cause, by id or CA- label.' } },
+      required: ['id', 'cause'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'solution.move',
+    tier: 'write',
+    description:
+      'Move a solution one step: forward (idea → shaped → testing → proven → adopted) when its gate is clear, or '
+      + 'back one step at any time — except out of adopted while its decision record stands accepted. A refused move '
+      + 'names what the gate still needs; answer those with solution.update, experiment.plan, experiment.conclude, '
+      + 'solution.waive or solution.decide, not by moving again.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: ID('solution'),
+        to: { type: 'string', description: 'The state one step forward or back.', enum: ['idea', 'shaped', 'testing', 'proven', 'adopted'] },
+      },
+      required: ['id', 'to'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'solution.waive',
+    tier: 'write',
+    description:
+      'Say that no experiment is needed, and why: it stands in for a confirmed one at the testing gate. The reason '
+      + 'must be one a person gave. An empty reason takes a waiver back.',
+    inputSchema: {
+      type: 'object',
+      properties: { id: ID('solution'), reason: { type: 'string', description: 'Why no experiment is needed.' } },
+      required: ['id', 'reason'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'solution.drop',
+    tier: 'write',
+    description:
+      'Stop a solution, with the reason. It stays as the record of an alternative that was considered. An adopted '
+      + 'solution cannot be dropped: supersede its decision record first, then move it back.',
+    inputSchema: {
+      type: 'object',
+      properties: { id: ID('solution'), note: { type: 'string', description: 'Why, so the next person does not try it blind.' } },
+      required: ['id', 'note'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'solution.restore',
+    tier: 'write',
+    description: 'Bring a dropped solution back to the state it was dropped from.',
+    inputSchema: { type: 'object', properties: { id: ID('solution') }, required: ['id'], additionalProperties: false },
+  },
+  {
+    name: 'solution.decide',
+    tier: 'write',
+    description:
+      'Propose the decision record for a solution, as one step: a new record on the Decisions page, its context '
+      + 'written from what the solution addresses and what else was considered, and the link. It is then taken '
+      + 'through its status and signers on the Decisions page (decision.transition); adopted needs it accepted.',
+    inputSchema: {
+      type: 'object',
+      properties: { id: ID('solution'), body: { type: 'string', description: 'The whole MADR body, when you have it. Leave out for the pre-filled one.' } },
+      required: ['id'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'solution.plan',
+    tier: 'write',
+    description:
+      'Start the plan that builds an adopted solution, as one step: a draft plan resting on its decision record, '
+      + 'and the link. What it introduces and retires is then written with plan.update. When that plan is done the '
+      + 'solution reads as implemented.',
+    inputSchema: { type: 'object', properties: { id: ID('solution') }, required: ['id'], additionalProperties: false },
+  },
+  {
+    name: 'solution.remove',
+    tier: 'write',
+    description: 'Throw a solution away, and take it out of every experiment that tested it. Its number is never reused. Dropping is usually the better answer.',
+    inputSchema: { type: 'object', properties: { id: ID('solution') }, required: ['id'], additionalProperties: false },
+  },
+  {
+    name: 'experiment.plan',
+    tier: 'write',
+    description: 'Plan an experiment for one or more solutions (ADR-0026): what it should show (the hypothesis), how that is counted, where, by whom and when. It starts planned.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tests: { type: 'array', description: 'The solutions it tests, by id or SO- label.', items: { type: 'string' } },
+        title: { type: 'string', description: 'The experiment, as one line.' },
+        hypothesis: { type: 'string', description: 'What should happen if the solution is right.' },
+        measure: { type: 'string', description: 'What is counted to decide it.' },
+        where: { type: 'string', description: 'Where it runs.' },
+        by: { type: 'string', description: 'Who runs it.' },
+        from: { type: 'string', description: 'yyyy-mm-dd. Default: today.' },
+        to: { type: 'string', description: 'yyyy-mm-dd.' },
+        body: { type: 'string', description: 'How it is set up, as markdown.' },
+      },
+      required: ['tests', 'title', 'hypothesis'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'experiment.update',
+    tier: 'write',
+    description: 'Correct an experiment: its title, hypothesis, measure, where, by whom, window, result, body, or what it tests. Blank optional text is removed; a blank hypothesis is refused.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: ID('experiment'),
+        title: { type: 'string', description: 'A new title.' },
+        hypothesis: { type: 'string', description: 'What should happen if the solution is right.' },
+        measure: { type: 'string', description: 'What is counted.' },
+        where: { type: 'string', description: 'Where it runs.' },
+        by: { type: 'string', description: 'Who runs it.' },
+        from: { type: 'string', description: 'yyyy-mm-dd.' },
+        to: { type: 'string', description: 'yyyy-mm-dd.' },
+        result: { type: 'string', description: 'What happened.' },
+        body: { type: 'string', description: 'The body as markdown.' },
+        tests: { type: 'array', description: 'The solutions it tests. Replaces the list.', items: { type: 'string' } },
+      },
+      required: ['id'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'experiment.conclude',
+    tier: 'write',
+    description: 'Say how an experiment went: running, confirmed, refuted or inconclusive, with the result. A refuted one stays; it is the evidence the next person asks for.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: ID('experiment'),
+        outcome: { type: 'string', description: 'How it went.', enum: ['planned', 'running', 'confirmed', 'refuted', 'inconclusive'] },
+        result: { type: 'string', description: 'What happened, in numbers where there are numbers.' },
+      },
+      required: ['id', 'outcome'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'experiment.remove',
+    tier: 'write',
+    description: 'Throw an experiment away. Its number is never reused. Concluding it is usually the better answer.',
+    inputSchema: { type: 'object', properties: { id: ID('experiment') }, required: ['id'], additionalProperties: false },
   },
   {
     name: 'plan.replace',

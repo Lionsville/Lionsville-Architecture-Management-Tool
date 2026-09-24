@@ -18,7 +18,9 @@
  */
 import type { Adr, AdrSigner, AdrVerdict } from '../model/adr'
 import type { Command } from '../model/commands'
-import { causesToCommands, observationsToCommands, placeOn, transaction } from '../model/commands'
+import {
+  causesToCommands, experimentsToCommands, observationsToCommands, placeOn, solutionsToCommands, transaction,
+} from '../model/commands'
 import { claimKey } from '../model/keys'
 import type { IdPolicy, MakeId } from '../model/keys'
 import type { Diagram, Model } from '../model/normalised'
@@ -46,8 +48,19 @@ import {
   findTransition, nextTransitionNumber, transitionLabel, transitionsFrom as planTransitionsFrom,
 } from '../model/transition'
 import type { Transition, TransitionElement, TransitionMilestone, TransitionRole, TransitionStatus } from '../model/transition'
-import { boxesOf, causeList, decisionsOf, fromArrays, groupList, observationList, placedOn, transitionList } from '../model/normalised'
-import type { CauseLink, CauseState, CauseStrength, ObservationImpact } from '../model/observation'
+import {
+  boxesOf, causeList, decisionList, decisionsOf, experimentList, fromArrays, groupList, observationList, placedOn,
+  solutionList, transitionList,
+} from '../model/normalised'
+import type {
+  CauseLink, CauseState, CauseStrength, EarlierAttempt, ExperimentOutcome, ObservationImpact, SolutionSize, SolutionState,
+} from '../model/observation'
+import {
+  addressCause, concludeExperiment, decisionContext, defaultStrength, dropSolution, forgetCause, formatExperimentNumber,
+  formatSolutionNumber, linkRecord, moveSolution, newExperiment, newSolution, nextExperimentNumber, nextSolutionNumber,
+  removeExperiment, removeSolution, restoreSolution, unaddressCause, updateExperiment, updateSolution, waiveExperiment,
+} from '../observations/solution'
+import type { ExperimentPatch, SolutionPatch, SolutionWork } from '../observations/solution'
 import {
   absorbShared, formatCauseNumber, formatObservationNumber, linkCause, mergeObservations, newCause, newObservation,
   nextCauseNumber, nextObservationNumber, removeCause, removeObservation, seenAgain, setArchived, setShared, unlinkCause,
@@ -65,7 +78,10 @@ import { formatAdrNumber, isAdrDeletable, isAdrLocked, newAdr, nextAdrNumber, tr
 import { alignNodes, distributeNodes } from '../layout/alignDistribute'
 import type { AlignAxis, DistributeAxis, NodeBounds } from '../layout/alignDistribute'
 import type { Translate } from '../i18n/strings'
-import { causeLine, findCause, findObservation, observationLine, planEntry } from './answer'
+import {
+  causeLine, experimentLine, findCause, findExperiment, findObservation, findSolution, observationLine, planEntry,
+  solutionFacts, solutionLine,
+} from './answer'
 import type { ReadView } from './answer'
 import type { AgentAnswer, ToolName } from './tools'
 import { checkArguments, json, refused, toolSpec } from './tools'
@@ -368,6 +384,22 @@ export function commandFor(tool: ToolName, rawArgs: unknown, view: WriteView): P
     case 'cause.unlink':
     case 'cause.remove':
       return observationCommand(tool, args, view)
+    case 'solution.propose':
+    case 'solution.update':
+    case 'solution.address':
+    case 'solution.unaddress':
+    case 'solution.move':
+    case 'solution.waive':
+    case 'solution.drop':
+    case 'solution.restore':
+    case 'solution.decide':
+    case 'solution.plan':
+    case 'solution.remove':
+    case 'experiment.plan':
+    case 'experiment.update':
+    case 'experiment.conclude':
+    case 'experiment.remove':
+      return solutionCommand(tool, args, view)
     case 'decision.transition': return transitionDecision(args, view)
     case 'decision.update': return updateDecision(args, view)
     case 'decision.remove': {
@@ -1362,10 +1394,213 @@ function observationCommand(tool: ToolName, args: Args, view: WriteView): Prepar
     case 'cause.remove': {
       const held = causeOf(args.id)
       if (!held) return refused('agent.unknownId', `cause ${String(args.id)}`)
-      return finish(removeCause(before, held.id), { id: held.id, label: formatCauseNumber(held.number), title: held.title, removed: true })
+      // Nothing may go on addressing a cause that is gone (ADR-0026): the
+      // solutions lose the link in the same step.
+      const after = removeCause(before, held.id)
+      const commands = [
+        ...causesToCommands(model, after.causes), ...solutionsToCommands(model, forgetCause(solutionList(model), held.id)),
+      ]
+      return {
+        command: transaction(commands, { origin: 'agent' }),
+        answer: json({ id: held.id, label: formatCauseNumber(held.number), title: held.title, removed: true }),
+      }
     }
     default:
       return refused('agent.badArguments', `${tool} is not an observation tool`)
+  }
+}
+
+/**
+ * Solutions and experiments (ADR-0026), the way the page does them: every
+ * verb a rule over the lists, the change their difference, one transaction.
+ * A move the gate refuses is answered with what the gate still needs, so the
+ * agent can say what is missing rather than guess.
+ */
+function solutionCommand(tool: ToolName, args: Args, view: WriteView): Prepared | AgentAnswer {
+  const { model } = view
+  const before: SolutionWork = { solutions: solutionList(model), experiments: experimentList(model) }
+  const causes = causeList(model)
+  const solutionOf = (idOrLabel: unknown) => findSolution(before.solutions, String(idOrLabel))
+  const experimentOf = (idOrLabel: unknown) => findExperiment(before.experiments, String(idOrLabel))
+  /** The change as one transaction, and the answer read off the lists as they will be. */
+  const finish = (after: SolutionWork, answer: (facts: ReturnType<typeof solutionFacts>) => unknown, extra: Command[] = []): Prepared | AgentAnswer => {
+    const commands = [...extra, ...solutionsToCommands(model, after.solutions), ...experimentsToCommands(model, after.experiments)]
+    if (commands.length === 0) return refused('agent.badArguments', 'nothing changed')
+    const next = fromArrays({ ...toArrays(model), solutions: after.solutions, experiments: after.experiments })
+    return { command: transaction(commands, { origin: 'agent' }), answer: json(answer(solutionFacts({ ...view, model: next }))) }
+  }
+  const solutionAnswer = (id: string) => (facts: ReturnType<typeof solutionFacts>) => solutionLine(facts.solutions.find((one) => one.id === id)!, facts)
+  const experimentAnswer = (after: SolutionWork, id: string) => () => experimentLine(after.experiments.find((one) => one.id === id)!, after.solutions)
+  const held = tool.startsWith('solution.') && tool !== 'solution.propose' ? solutionOf(args.id) : undefined
+  if (tool.startsWith('solution.') && tool !== 'solution.propose' && !held) return refused('agent.unknownId', `solution ${String(args.id)}`)
+  const solution = held!
+  const day = view.today()
+  const withSolutions = (solutions: typeof before.solutions): SolutionWork => ({ ...before, solutions })
+
+  switch (tool) {
+    case 'solution.propose': {
+      const title = (args.title as string).trim()
+      if (!title) return refused('agent.badArguments', '"title" must not be blank')
+      const addresses = []
+      for (const row of (args.addresses as { id: string; strength?: CauseStrength }[] | undefined) ?? []) {
+        const cause = findCause(causes, row.id)
+        if (!cause) return refused('agent.unknownId', `cause ${row.id}`)
+        addresses.push({ id: cause.id, strength: row.strength ?? defaultStrength(cause.id, causes) })
+      }
+      const fresh = newSolution({
+        id: view.makeId('so'), number: nextSolutionNumber(before.solutions), title, date: day, t: view.translate, addresses,
+        ...(typeof args.body === 'string' ? { body: args.body } : {}),
+      })
+      return finish(withSolutions([...before.solutions, fresh]), solutionAnswer(fresh.id))
+    }
+    case 'solution.update': {
+      const patch: SolutionPatch = {}
+      if (typeof args.title === 'string') {
+        if (!args.title.trim()) return refused('agent.badArguments', '"title" must not be blank')
+        patch.title = args.title
+      }
+      if (typeof args.body === 'string') patch.body = args.body
+      if (typeof args.benefit === 'string') patch.benefit = args.benefit as SolutionSize
+      if (typeof args.cost === 'string') patch.cost = args.cost as SolutionSize
+      if (Array.isArray(args.validatedWith)) patch.validatedWith = args.validatedWith as string[]
+      if (Array.isArray(args.attempts)) patch.attempts = args.attempts as EarlierAttempt[]
+      if (typeof args.noneKnown === 'boolean') patch.noneKnown = args.noneKnown
+      if (typeof args.whyNow === 'string') patch.whyNow = args.whyNow
+      return finish(withSolutions(updateSolution(before.solutions, solution.id, patch)), solutionAnswer(solution.id))
+    }
+    case 'solution.address': {
+      const cause = findCause(causes, String(args.cause))
+      if (!cause) return refused('agent.unknownId', `cause ${String(args.cause)}`)
+      const strength = (args.strength as CauseStrength | undefined) ?? defaultStrength(cause.id, causes)
+      return finish(withSolutions(addressCause(before.solutions, solution.id, { id: cause.id, strength })), solutionAnswer(solution.id))
+    }
+    case 'solution.unaddress': {
+      const cause = findCause(causes, String(args.cause))
+      const id = cause?.id ?? String(args.cause)
+      if (!solution.addresses.some((address) => address.id === id)) return refused('agent.badArguments', `${solution.id} does not address ${id}`)
+      return finish(withSolutions(unaddressCause(before.solutions, solution.id, id)), solutionAnswer(solution.id))
+    }
+    case 'solution.move': {
+      const facts = solutionFacts(view)
+      const result = moveSolution(before.solutions, solution.id, args.to as SolutionState, day, facts.context)
+      if (!result.ok) {
+        const why = result.refusal === 'gate'
+          ? `the gate to ${String(args.to)} still needs: ${result.open.join(', ')}`
+          : result.refusal === 'decided'
+            ? `${solution.id} is adopted and its decision record is accepted; supersede the record before moving it back`
+            : `${solution.id} is ${solution.state}; it moves one step at a time, and not while dropped`
+        return refused('agent.badArguments', why)
+      }
+      return finish(withSolutions(result.solutions), solutionAnswer(solution.id))
+    }
+    case 'solution.waive': {
+      const reason = String(args.reason)
+      if (!reason.trim() && !solution.waived) return refused('agent.badArguments', '"reason" must not be blank: a waiver is a reason a person gave')
+      return finish(withSolutions(waiveExperiment(before.solutions, solution.id, reason, day)), solutionAnswer(solution.id))
+    }
+    case 'solution.drop': {
+      if (solution.state === 'adopted') return refused('agent.badArguments', `${solution.id} is adopted: supersede its decision record, move it back, then drop it`)
+      if (solution.state === 'dropped') return refused('agent.badArguments', `${solution.id} is dropped already`)
+      if (!String(args.note).trim()) return refused('agent.badArguments', '"note" must not be blank')
+      return finish(withSolutions(dropSolution(before.solutions, solution.id, String(args.note), day)), solutionAnswer(solution.id))
+    }
+    case 'solution.restore': {
+      if (solution.state !== 'dropped') return refused('agent.badArguments', `${solution.id} is not dropped`)
+      return finish(withSolutions(restoreSolution(before.solutions, solution.id, day)), solutionAnswer(solution.id))
+    }
+    case 'solution.decide': {
+      if (solution.decision) return refused('agent.badArguments', `${solution.id} already rests on ${solution.decision}`)
+      const adr = newAdr({ id: view.makeId('adr'), number: nextAdrNumber(decisionList(model)), title: solution.title, date: day, t: view.translate })
+      if (typeof args.body === 'string' && args.body.trim()) adr.body = args.body
+      else {
+        const opening = adr.body.indexOf('\n\n') + 2
+        adr.body = `${adr.body.slice(0, opening)}${decisionContext(solution, causes, before.solutions, view.translate)}\n${adr.body.slice(opening)}`
+      }
+      const after = withSolutions(linkRecord(before.solutions, solution.id, 'decision', adr.id, day))
+      return finish(after, (facts) => ({
+        ...solutionLine(facts.solutions.find((one) => one.id === solution.id)!, facts),
+        proposed: { id: adr.id, label: formatAdrNumber(adr.number), status: adr.status },
+      }), [{ type: 'decision.add', decision: adr }])
+    }
+    case 'solution.plan': {
+      if (solution.state !== 'adopted') return refused('agent.badArguments', `${solution.id} is ${solution.state}: a plan builds an adopted solution`)
+      if (solution.plan) return refused('agent.badArguments', `${solution.id} is built by ${solution.plan} already`)
+      const plan: Transition = {
+        id: view.makeId('tr'), number: nextTransitionNumber(transitionList(model)), title: solution.title, status: 'draft',
+        elements: [], decisions: solution.decision ? [solution.decision] : [], milestones: [], body: planBody(),
+      }
+      const after = withSolutions(linkRecord(before.solutions, solution.id, 'plan', plan.id, day))
+      return finish(after, (facts) => ({
+        ...solutionLine(facts.solutions.find((one) => one.id === solution.id)!, facts),
+        started: { id: plan.id, label: transitionLabel(plan), status: plan.status },
+      }), [{ type: 'transition.add', transition: plan }])
+    }
+    case 'solution.remove': {
+      return finish(removeSolution(before, solution.id), () => ({
+        id: solution.id, label: formatSolutionNumber(solution.number), title: solution.title, removed: true,
+      }))
+    }
+    case 'experiment.plan': {
+      const title = String(args.title).trim()
+      const hypothesis = String(args.hypothesis).trim()
+      if (!title) return refused('agent.badArguments', '"title" must not be blank')
+      if (!hypothesis) return refused('agent.badArguments', '"hypothesis" must not be blank')
+      const tests: string[] = []
+      for (const idOrLabel of args.tests as string[]) {
+        const tested = solutionOf(idOrLabel)
+        if (!tested) return refused('agent.unknownId', `solution ${idOrLabel}`)
+        tests.push(tested.id)
+      }
+      if (tests.length === 0) return refused('agent.badArguments', '"tests" must name a solution')
+      for (const key of ['from', 'to'] as const) {
+        if (typeof args[key] === 'string' && !isDay(args[key] as string)) return refused('agent.badArguments', `${key} ${String(args[key])} is not yyyy-mm-dd`)
+      }
+      const text = (key: string) => (typeof args[key] === 'string' ? { [key]: args[key] as string } : {})
+      const fresh = newExperiment({
+        id: view.makeId('ex'), number: nextExperimentNumber(before.experiments), title, tests, hypothesis, t: view.translate,
+        from: typeof args.from === 'string' ? args.from : day,
+        ...text('measure'), ...text('where'), ...text('by'), ...text('to'), ...text('body'),
+      })
+      const after = { ...before, experiments: [...before.experiments, fresh] }
+      return finish(after, experimentAnswer(after, fresh.id))
+    }
+    case 'experiment.update':
+    case 'experiment.conclude':
+    case 'experiment.remove': {
+      const experiment = experimentOf(args.id)
+      if (!experiment) return refused('agent.unknownId', `experiment ${String(args.id)}`)
+      if (tool === 'experiment.remove') {
+        return finish({ ...before, experiments: removeExperiment(before.experiments, experiment.id) }, () => ({
+          id: experiment.id, label: formatExperimentNumber(experiment.number), title: experiment.title, removed: true,
+        }))
+      }
+      if (tool === 'experiment.conclude') {
+        const after = { ...before, experiments: concludeExperiment(before.experiments, experiment.id, args.outcome as ExperimentOutcome, args.result as string | undefined) }
+        return finish(after, experimentAnswer(after, experiment.id))
+      }
+      const patch: ExperimentPatch = {}
+      for (const key of ['title', 'hypothesis', 'measure', 'where', 'by', 'from', 'to', 'result', 'body'] as const) {
+        if (typeof args[key] === 'string') patch[key] = args[key] as string
+      }
+      if (patch.title !== undefined && !patch.title.trim()) return refused('agent.badArguments', '"title" must not be blank')
+      if (patch.hypothesis !== undefined && !patch.hypothesis.trim()) return refused('agent.badArguments', '"hypothesis" must not be blank')
+      for (const key of ['from', 'to'] as const) {
+        if (patch[key] && !isDay(patch[key]!)) return refused('agent.badArguments', `${key} ${patch[key]} is not yyyy-mm-dd`)
+      }
+      if (Array.isArray(args.tests)) {
+        const tests: string[] = []
+        for (const idOrLabel of args.tests as string[]) {
+          const tested = solutionOf(idOrLabel)
+          if (!tested) return refused('agent.unknownId', `solution ${idOrLabel}`)
+          tests.push(tested.id)
+        }
+        patch.tests = tests
+      }
+      const after = { ...before, experiments: updateExperiment(before.experiments, experiment.id, patch) }
+      return finish(after, experimentAnswer(after, experiment.id))
+    }
+    default:
+      return refused('agent.badArguments', `${tool} is not a solution tool`)
   }
 }
 

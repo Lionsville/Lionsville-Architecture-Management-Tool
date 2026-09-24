@@ -41,7 +41,13 @@ import type { AgentAnswer, ToolName } from './tools'
 import { checkArguments, json, refused, text, toolSpec } from './tools'
 import { identityOf } from './tree'
 import type { TreeView } from './tree'
-import { causeList, observationList, observationsOf } from '../model/normalised'
+import { causeList, experimentList, observationList, observationsOf, solutionList } from '../model/normalised'
+import type { Experiment, Solution } from '../model/observation'
+import {
+  alternatives, experimentsFor, formatExperimentNumber, formatSolutionNumber, isLive, openItems, seenSinceImplemented,
+  solutionGate, solutionPhase, solutionQuestions,
+} from '../observations/solution'
+import type { SolutionContext, SolutionPlan } from '../observations/solution'
 import type { Cause, Observation } from '../model/observation'
 import {
   absorbedBy, explainedBy, formatCauseNumber, formatObservationNumber, isMerged, isRootCause,
@@ -52,7 +58,8 @@ export type ReadTool = Extract<ToolName,
   'project.current' | 'elements.list' | 'element.describe' | 'connections.list' | 'diagrams.list'
   | 'decisions.list' | 'decision.read' | 'plans.list' | 'plan.read' | 'roadmap.check' | 'search' | 'project.export'
   | 'platform.report' | 'service.report'
-  | 'observations.list' | 'observation.read' | 'causes.list' | 'cause.read'>
+  | 'observations.list' | 'observation.read' | 'causes.list' | 'cause.read'
+  | 'solutions.list' | 'solution.read' | 'experiments.list' | 'experiment.read'>
 
 /**
  * What the read tier needs to know. The session offers both shapes of the
@@ -252,6 +259,56 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
       const cause = findCause(causes, args.id as string)
       if (!cause) return refused('agent.unknownId', `cause ${String(args.id)}`)
       return json({ ...causeLine(cause, causes, model), body: cause.body })
+    }
+
+    case 'solutions.list': {
+      const phase = args.phase as string | undefined
+      const causeId = args.causeId as string | undefined
+      const cause = causeId === undefined ? undefined : findCause(causeList(model), causeId)
+      if (causeId !== undefined && !cause) return refused('agent.unknownId', `cause ${causeId}`)
+      const facts = solutionFacts(view)
+      return json({
+        solutions: solutionList(model)
+          .filter((one) => args.includeDropped === true || isLive(one) || phase === 'dropped')
+          .filter((one) => phase === undefined || solutionPhase(one, facts.context.plans) === phase)
+          .filter((one) => !cause || one.addresses.some((address) => address.id === cause.id))
+          .map((one) => solutionLine(one, facts)),
+      })
+    }
+
+    case 'solution.read': {
+      const facts = solutionFacts(view)
+      const solution = findSolution(facts.solutions, args.id as string)
+      if (!solution) return refused('agent.unknownId', `solution ${String(args.id)}`)
+      return json({
+        ...solutionLine(solution, facts),
+        alternatives: alternatives(solution, facts.solutions).map((one) => ({
+          id: one.id, label: formatSolutionNumber(one.number), title: one.title, phase: solutionPhase(one, facts.context.plans),
+          ...(one.dropNote ? { dropNote: one.dropNote } : {}),
+        })),
+        body: solution.body,
+        history: solution.history,
+      })
+    }
+
+    case 'experiments.list': {
+      const facts = solutionFacts(view)
+      const solutionId = args.solutionId as string | undefined
+      const solution = solutionId === undefined ? undefined : findSolution(facts.solutions, solutionId)
+      if (solutionId !== undefined && !solution) return refused('agent.unknownId', `solution ${solutionId}`)
+      return json({
+        experiments: experimentList(model)
+          .filter((one) => args.outcome === undefined || one.outcome === args.outcome)
+          .filter((one) => !solution || one.tests.includes(solution.id))
+          .map((one) => experimentLine(one, facts.solutions)),
+      })
+    }
+
+    case 'experiment.read': {
+      const facts = solutionFacts(view)
+      const experiment = findExperiment(experimentList(model), args.id as string)
+      if (!experiment) return refused('agent.unknownId', `experiment ${String(args.id)}`)
+      return json({ ...experimentLine(experiment, facts.solutions), body: experiment.body })
     }
 
     case 'plans.list': {
@@ -549,6 +606,112 @@ export function findObservation(list: readonly Observation[], idOrLabel: string)
   if (held) return held
   const number = /^(?:ob-?)?(\d+)$/i.exec(idOrLabel.trim())
   return number ? list.find((one) => one.number === Number(number[1])) : undefined
+}
+
+export function findSolution(list: readonly Solution[], idOrLabel: string): Solution | undefined {
+  const held = list.find((one) => one.id === idOrLabel)
+  if (held) return held
+  const number = /^(?:so-?)?(\d+)$/i.exec(idOrLabel.trim())
+  return number ? list.find((one) => one.number === Number(number[1])) : undefined
+}
+
+export function findExperiment(list: readonly Experiment[], idOrLabel: string): Experiment | undefined {
+  const held = list.find((one) => one.id === idOrLabel)
+  if (held) return held
+  const number = /^(?:ex-?)?(\d+)$/i.exec(idOrLabel.trim())
+  return number ? list.find((one) => one.number === Number(number[1])) : undefined
+}
+
+/** What every solution answer reads from the scope, gathered once (ADR-0026). */
+export type SolutionFacts = {
+  model: Model
+  solutions: Solution[]
+  context: SolutionContext
+  shared: ReturnType<NonNullable<TreeView['observationsBelow']>>
+}
+
+export function solutionFacts(view: Pick<ReadView, 'model' | 'tree' | 'scopePath'>): SolutionFacts {
+  const { model } = view
+  const plans: SolutionPlan[] = transitionList(model).map((one) => ({
+    id: one.id, status: one.status, ...(one.to ? { to: one.to } : {}), elements: one.elements,
+  }))
+  return {
+    model,
+    solutions: solutionList(model),
+    context: {
+      causes: causeList(model),
+      experiments: experimentList(model),
+      decisions: Object.values(decisionsOf(model)).map((one) => ({ id: one.id, status: one.status })),
+      plans,
+    },
+    shared: view.tree?.observationsBelow?.(view.scopePath) ?? [],
+  }
+}
+
+/**
+ * One solution as a list answers it (ADR-0026): its phase, what it addresses,
+ * what the next gate still needs, the questions its record asks, and — once
+ * implemented — any sighting since.
+ */
+export function solutionLine(solution: Solution, facts: SolutionFacts) {
+  const { model, context } = facts
+  const causes = context.causes
+  const gate = solutionGate(solution, context)
+  const decision = solution.decision ? decisionsOf(model)[solution.decision] : undefined
+  const plan = solution.plan ? transitionList(model).find((one) => one.id === solution.plan) : undefined
+  const analysis = { observations: observationList(model), causes: [...causes] }
+  const seenAgain = seenSinceImplemented(solution, analysis, facts.shared, context.plans)
+  return {
+    id: solution.id,
+    label: formatSolutionNumber(solution.number),
+    title: solution.title,
+    state: solution.state,
+    phase: solutionPhase(solution, context.plans),
+    ...(solution.benefit ? { benefit: solution.benefit } : {}),
+    ...(solution.cost ? { cost: solution.cost } : {}),
+    addresses: solution.addresses.map((address) => {
+      const cause = causes.find((one) => one.id === address.id)
+      return {
+        id: address.id, strength: address.strength,
+        ...(cause ? { label: formatCauseNumber(cause.number), title: cause.title, root: isRootCause(cause, causes) } : {}),
+      }
+    }),
+    validatedWith: solution.validatedWith,
+    attempts: solution.attempts,
+    ...(solution.noneKnown ? { noneKnown: true } : {}),
+    ...(solution.whyNow ? { whyNow: solution.whyNow } : {}),
+    ...(solution.waived ? { waived: solution.waived } : {}),
+    ...(solution.state === 'dropped' ? { droppedFrom: solution.droppedFrom, dropNote: solution.dropNote } : {}),
+    experiments: experimentsFor(context.experiments, solution.id).map((one) => ({
+      id: one.id, label: formatExperimentNumber(one.number), title: one.title, outcome: one.outcome,
+    })),
+    ...(solution.decision ? { decision: { id: solution.decision, ...(decision ? { label: formatAdrNumber(decision.number), status: decision.status } : {}) } } : {}),
+    ...(solution.plan ? { plan: { id: solution.plan, ...(plan ? { label: transitionLabel(plan), status: plan.status } : {}) } } : {}),
+    ...(gate ? { next: { to: gate.to, open: openItems(gate) } } : {}),
+    questions: solutionQuestions(solution, context),
+    ...(seenAgain.length ? { seenSinceImplemented: seenAgain } : {}),
+  }
+}
+
+/** One experiment as a list answers it. */
+export function experimentLine(experiment: Experiment, solutions: readonly Solution[]) {
+  return {
+    id: experiment.id,
+    label: formatExperimentNumber(experiment.number),
+    title: experiment.title,
+    outcome: experiment.outcome,
+    hypothesis: experiment.hypothesis,
+    ...(experiment.measure ? { measure: experiment.measure } : {}),
+    ...(experiment.where ? { where: experiment.where } : {}),
+    ...(experiment.by ? { by: experiment.by } : {}),
+    ...(experiment.from ? { from: experiment.from } : {}),
+    ...(experiment.to ? { to: experiment.to } : {}),
+    ...(experiment.result ? { result: experiment.result } : {}),
+    tests: experiment.tests.map((id) => {
+      const solution = solutions.find((one) => one.id === id)
+      return { id, ...(solution ? { label: formatSolutionNumber(solution.number), title: solution.title } : {}) }
+    }),
+  }
 }
 
 export function findCause(list: readonly Cause[], idOrLabel: string): Cause | undefined {
