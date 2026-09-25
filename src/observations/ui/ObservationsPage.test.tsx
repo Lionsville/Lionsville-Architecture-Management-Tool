@@ -267,3 +267,55 @@ describe('ObservationsPage', () => {
     expect(screen.queryByTestId('observation-seen-again')).toBeNull()
   })
 })
+
+describe('the analysis picture’s right-click, and editing across the whole width', () => {
+  const rightClick = (element: Element) => fireEvent.contextMenu(element, { clientX: 40, clientY: 60 })
+
+  it('offers a cause’s own actions, and Edit opens it with the picture stepped aside', () => {
+    mount()
+    fireEvent.click(screen.getByTestId('observation-tab-analysis'))
+    rightClick(screen.getByTestId('analysis-picture').querySelector('[data-key="c1"]')!)
+    const menu = screen.getByTestId('picture-menu')
+    expect(within(menu).getAllByRole('menuitem').map((item) => item.textContent)).toEqual([
+      'Edit', 'Mark verified', 'Link to a deeper cause…', 'Propose a solution…', 'Delete',
+    ])
+    fireEvent.click(screen.getByTestId('picture-menu-edit'))
+    expect(screen.getByTestId('observation-body').dataset.editing).toBe('true')
+    expect(screen.queryByTestId('analysis-picture')).toBeNull()
+    expect(screen.getByTestId('cause-reader')).toBeTruthy()
+    fireEvent.click(within(screen.getByTestId('cause-reader')).getByRole('button', { name: 'Read' }))
+    expect(screen.getByTestId('observation-body').dataset.editing).toBeUndefined()
+    expect(screen.getByTestId('analysis-picture')).toBeTruthy()
+  })
+
+  it('keeps what was typed when the edit is left', () => {
+    const { onChange } = mount()
+    fireEvent.click(screen.getByTestId('observation-tab-analysis'))
+    rightClick(screen.getByTestId('analysis-picture').querySelector('[data-key="c1"]')!)
+    fireEvent.click(screen.getByTestId('picture-menu-edit'))
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Window sized for 2019 volumes' } })
+    fireEvent.click(screen.getByTestId('observation-tab-register'))
+    expect(lastChange(onChange).causes[0].title).toBe('Window sized for 2019 volumes')
+    expect(screen.getByTestId('observation-body').dataset.editing).toBeUndefined()
+  })
+
+  it('makes a link stronger or weaker, or takes it away, from the line', () => {
+    const { onChange } = mount()
+    fireEvent.click(screen.getByTestId('observation-tab-analysis'))
+    rightClick(screen.getAllByTestId('analysis-link-hit')[0])
+    expect(screen.getByTestId('picture-menu-strength-strong').textContent).toContain('✓')
+    fireEvent.click(screen.getByTestId('picture-menu-strength-weak'))
+    expect(lastChange(onChange).causes[0].explains).toEqual([{ id: 'o1', strength: 'weak' }])
+    rightClick(screen.getAllByTestId('analysis-link-hit')[0])
+    fireEvent.click(screen.getByTestId('picture-menu-unlink'))
+    expect(lastChange(onChange).causes[0].explains).toEqual([])
+  })
+
+  it('offers nothing where the scope is read-only', () => {
+    mount({ readOnly: true })
+    fireEvent.click(screen.getByTestId('observation-tab-analysis'))
+    rightClick(screen.getByTestId('analysis-picture').querySelector('[data-key="c1"]')!)
+    expect(screen.queryByTestId('picture-menu')).toBeNull()
+  })
+})
+

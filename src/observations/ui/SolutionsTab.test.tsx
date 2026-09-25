@@ -185,3 +185,42 @@ describe('the Solutions tab', () => {
     expect(next.solutions[0].addresses).toEqual([])
   })
 })
+
+describe('the solutions picture’s right-click', () => {
+  const rightClick = (element: Element) => fireEvent.contextMenu(element, { clientX: 40, clientY: 60 })
+  const items = () => within(screen.getByTestId('picture-menu')).getAllByRole('menuitem')
+
+  it('offers a solution’s own actions, with the move enabled once its gate is clear', () => {
+    const { onChange } = mount({ ...base, solutions: [solution({ state: 'shaped' })], experiments: [experiment({ outcome: 'confirmed' })] })
+    fireEvent.click(screen.getByTestId('observation-tab-solutions'))
+    rightClick(screen.getByTestId('solution-picture').querySelector('[data-key="so:s1"]')!)
+    expect(items().map((item) => item.textContent)).toEqual([
+      'Edit', 'Address a cause…', 'Plan an experiment…', 'Move to testing', 'Back to idea', 'Drop…', 'Delete',
+    ])
+    fireEvent.click(screen.getByTestId('picture-menu-move'))
+    expect(lastChange(onChange).solutions[0].state).toBe('testing')
+  })
+
+  it('concludes an experiment from the picture', () => {
+    const { onChange } = mount({ ...base, solutions: [solution({ state: 'testing' })], experiments: [experiment({})] })
+    fireEvent.click(screen.getByTestId('observation-tab-solutions'))
+    rightClick(screen.getByTestId('solution-picture').querySelector('[data-key="ex:e1"]')!)
+    expect(screen.getByTestId('picture-menu-outcome-running').textContent).toContain('✓')
+    fireEvent.click(screen.getByTestId('picture-menu-outcome-confirmed'))
+    expect(lastChange(onChange).experiments[0].outcome).toBe('confirmed')
+  })
+
+  it('changes how strongly a solution addresses a cause from its line, and the direction it was opens it', () => {
+    const { onChange } = mount({ ...base, solutions: [solution({ state: 'proven' })], experiments: [experiment({ outcome: 'confirmed' })] })
+    fireEvent.click(screen.getByTestId('observation-tab-solutions'))
+    const line = [...screen.getAllByTestId('solution-link-hit')].find((hit) => hit.getAttribute('data-kind') === 'addresses')!
+    rightClick(line)
+    fireEvent.click(screen.getByTestId('picture-menu-strength-normal'))
+    expect(lastChange(onChange).solutions[0].addresses).toEqual([{ id: 'c2', strength: 'normal' }])
+    rightClick(screen.getByTestId('solution-picture').querySelector('[data-key="so:s1#direction"]')!)
+    fireEvent.click(screen.getByTestId('picture-menu-edit'))
+    expect(screen.queryByTestId('solution-picture')).toBeNull()
+    expect(screen.getByTestId('solution-reader')).toBeTruthy()
+  })
+})
+

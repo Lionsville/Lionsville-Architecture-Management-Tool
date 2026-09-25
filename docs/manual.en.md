@@ -664,6 +664,12 @@ plan clear anything up, or only add? A solution that is not pursued is
 it is listed on every other solution for the same causes. Both records are
 markdown files, under `observations/solutions/` and `observations/experiments/`.
 
+**Right-click** anything in the analysis or the solutions picture for what can
+be done with it — the same actions its reader offers, Edit among them — and a
+line for how strong the link is, or to unlink it. **Edit** gives the record
+the whole width: the text on the left, what it will look like on the right,
+and the picture back when you switch to Read.
+
 ## Time, and the day a board shows
 
 Every application can carry **lifecycle dates** beside its lifecycle: the day it

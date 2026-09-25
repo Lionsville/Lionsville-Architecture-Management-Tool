@@ -11,9 +11,10 @@
  * a solid one once verified, and a root cause is drawn with the heavier
  * outline. A line is thick, ordinary or dotted for a strong, normal or weak
  * link. Clicking anything selects it, which is how the team walks the picture
- * while analysing.
+ * while analysing; a right-click on a node or a line asks the page what can be
+ * done with it (`PictureMenu`).
  */
-import { useMemo, type ReactNode } from 'react'
+import { useMemo, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import { useTheme } from '@mui/material/styles'
@@ -23,6 +24,7 @@ import type { GraphNode } from '../graph'
 import { formatCauseNumber, formatObservationNumber } from '../observation'
 import type { Analysis, CauseStrength, ObservationImpact, SharedObservation } from '../observation'
 import { STATE_LABEL } from '../observationScope'
+import type { PictureMenuHandler } from './PictureMenu'
 
 export const LANE_WIDTH = 260
 export const ROW_HEIGHT = 84
@@ -39,10 +41,15 @@ export type AnalysisPictureProps = {
   shared: readonly SharedObservation[]
   selectedKey?: string
   onSelect: (key: string) => void
+  /** A right-click on a node or a line; absent, the browser's own menu. */
+  onMenu?: PictureMenuHandler
   s: Translate
 }
 
-export function AnalysisPicture({ analysis, shared, selectedKey, onSelect, s }: AnalysisPictureProps) {
+/** The invisible band along a line that takes the right-click, so a thin line is not a one-pixel target. */
+export const LINE_HIT_WIDTH = 12
+
+export function AnalysisPicture({ analysis, shared, selectedKey, onSelect, onMenu, s }: AnalysisPictureProps) {
   const theme = useTheme()
   const graph = useMemo(() => analysisGraph(analysis, shared), [analysis, shared])
   const placed = useMemo(() => placeGraph(graph, { laneWidth: LANE_WIDTH, rowHeight: ROW_HEIGHT, top: 36, left: 0 }), [graph])
@@ -107,18 +114,40 @@ export function AnalysisPicture({ analysis, shared, selectedKey, onSelect, s }: 
           const mid = (startX + endX) / 2
           const stroke = STROKE[edge.strength]
           const dim = selectedKey !== undefined && edge.from !== selectedKey && edge.to !== selectedKey
+          const d = `M${startX},${from.y} C${mid},${from.y} ${mid},${to.y} ${endX},${to.y}`
+          const explained = fromNode
+          const cause = nodeOf(edge.to)
           return (
-            <path
-              key={`${edge.from}->${edge.to}`}
-              d={`M${startX},${from.y} C${mid},${from.y} ${mid},${to.y} ${endX},${to.y}`}
-              fill="none"
-              stroke={line}
-              strokeWidth={stroke.width}
-              strokeDasharray={stroke.dash}
-              strokeOpacity={dim ? 0.2 : 0.75}
-              data-testid="analysis-link"
-              data-strength={edge.strength}
-            />
+            <g key={`${edge.from}->${edge.to}`}>
+              <path
+                d={d}
+                fill="none"
+                stroke={line}
+                strokeWidth={stroke.width}
+                strokeDasharray={stroke.dash}
+                strokeOpacity={dim ? 0.2 : 0.75}
+                data-testid="analysis-link"
+                data-strength={edge.strength}
+              />
+              {onMenu && explained && cause && (
+                <path
+                  d={d}
+                  fill="none"
+                  stroke="transparent"
+                  strokeWidth={LINE_HIT_WIDTH}
+                  pointerEvents="stroke"
+                  data-testid="analysis-link-hit"
+                  onContextMenu={(event) => {
+                    event.preventDefault()
+                    onMenu({
+                      kind: 'explains', causeId: cause.id, id: explained.id,
+                      ...(explained.kind === 'observation' && explained.scope !== undefined ? { scope: explained.scope } : {}),
+                      strength: edge.strength,
+                    }, { x: event.clientX, y: event.clientY })
+                  }}
+                />
+              )}
+            </g>
           )
         })}
 
@@ -130,6 +159,10 @@ export function AnalysisPicture({ analysis, shared, selectedKey, onSelect, s }: 
           const common = {
             cursor: 'pointer' as const,
             onClick: () => onSelect(node.key),
+            onContextMenu: onMenu ? (event: ReactMouseEvent) => {
+              event.preventDefault()
+              onMenu({ kind: 'node', key: node.key }, { x: event.clientX, y: event.clientY })
+            } : undefined,
             'data-testid': node.kind === 'observation' ? 'analysis-observation' : 'analysis-cause',
           }
           if (node.kind === 'observation') {
@@ -148,6 +181,7 @@ type MarkProps<N> = {
   y: number
   selected: boolean
   onClick: () => void
+  onContextMenu?: (event: ReactMouseEvent) => void
   cursor: 'pointer'
   'data-testid': string
   dim?: boolean

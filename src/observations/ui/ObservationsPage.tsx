@@ -68,23 +68,25 @@ import type {
   Analysis, Cause, CauseLink, CausePatch, Observation, ObservationPatch, SharedObservation,
 } from '../observation'
 import { nodeKey } from '../graph'
-import { IMPACT_COLOR, IMPACT_LABEL, STATE_COLOR, STATE_LABEL } from '../observationScope'
+import { IMPACT_COLOR, IMPACT_LABEL, STATE_COLOR, STATE_LABEL, STRENGTH_LABEL } from '../observationScope'
 import { AnalysisPicture, PictureLegend } from './AnalysisPicture'
 import { ArchiveDialog, LinkDialog, MergeDialog, NewCauseDialog, NewObservationDialog } from './ObservationDialogs'
-import { CauseReader, ObservationReader } from './Readers'
+import { PictureMenu } from './PictureMenu'
+import type { MenuAction, PictureTarget } from './PictureMenu'
+import { CauseReader, ObservationReader, ReaderModeContext } from './Readers'
 import {
   addressCause, alternatives, concludeExperiment, defaultStrength, dropSolution, experimentsFor, forgetCause,
   formatExperimentNumber, formatSolutionNumber, implementedOn, isLive, moveSolution, newExperiment, newSolution,
   nextExperimentNumber, nextSolutionNumber, planExperiment, removeExperiment, removeSolution, restoreSolution,
-  rootsWithoutSolution, seenSinceImplemented, solutionGate, solutionPhase, solutionQuestions, unaddressCause, underneath,
-  updateExperiment, updateSolution, waiveExperiment,
+  openItems, previousState, rootsWithoutSolution, seenSinceImplemented, solutionGate, solutionPhase, solutionQuestions, unaddressCause, underneath,
+  updateExperiment, updateSolution, waiveExperiment, EXPERIMENT_OUTCOMES,
 } from '../solution'
 import type {
   Experiment, ExperimentOutcome, ExperimentPatch, Solution, SolutionContext, SolutionPatch, SolutionPhase,
   SolutionPlan, SolutionState, SolutionWork,
 } from '../solution'
 import { causesForProposal, experimentKey, solutionGraph, solutionKey } from '../solutionGraph'
-import { PHASE_COLOR, PHASE_LABEL, QUESTION_LABEL } from '../observationScope'
+import { OUTCOME_LABEL, PHASE_COLOR, PHASE_LABEL, QUESTION_LABEL } from '../observationScope'
 import { SolutionLegend, SolutionPicture } from './SolutionPicture'
 import { ExperimentReader, SolutionReader } from './SolutionReaders'
 import { AddressDialog, DropDialog, NewExperimentDialog, NewSolutionDialog } from './SolutionDialogs'
@@ -198,6 +200,14 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const [planning, setPlanning] = useState<Solution | undefined>(undefined)
   const [dropping, setDropping] = useState<Solution | undefined>(undefined)
   const [selectedKey, setSelectedKey] = useState<string | undefined>(undefined)
+  /**
+   * The record being edited, by key. Edit mode is the selection's, so choosing
+   * anything else reads it; while it holds, the picture steps aside and the
+   * editor and its preview take the whole width.
+   */
+  const [editingKey, setEditingKey] = useState<string | undefined>(undefined)
+  /** A right-click on a picture: what it landed on, and where. */
+  const [menu, setMenu] = useState<{ target: PictureTarget; at: { x: number; y: number } } | undefined>(undefined)
   const [query, setQuery] = useState('')
   const [showMerged, setShowMerged] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
@@ -242,19 +252,25 @@ export function ObservationsPage(props: ObservationsPageProps) {
     return plan ? `${label4('TR', plan.number)} ${plan.title}` : id
   }, [shared, observations, causes, solutions, experiments, model.decisions, model.transitions, scopeLabel])
 
-  const selected = useMemo(() => {
-    if (!selectedKey) return undefined
-    const solution = solutions.find((one) => solutionKey(one.id) === selectedKey)
+  /** What a key names: the reader it opens and the menu it gets are both read off this. */
+  const resolve = useCallback((key: string) => {
+    const solution = solutions.find((one) => solutionKey(one.id) === key)
     if (solution) return { kind: 'solution' as const, solution }
-    const experiment = experiments.find((one) => experimentKey(one.id) === selectedKey)
+    const experiment = experiments.find((one) => experimentKey(one.id) === key)
     if (experiment) return { kind: 'experiment' as const, experiment }
-    const cause = causes.find((one) => one.id === selectedKey)
+    const cause = causes.find((one) => one.id === key)
     if (cause) return { kind: 'cause' as const, cause }
-    const own = observations.find((one) => one.id === selectedKey)
+    const own = observations.find((one) => one.id === key)
     if (own) return { kind: 'observation' as const, observation: own }
-    const below = shared.find((one) => nodeKey(one.observation.id, one.scope) === selectedKey)
+    const below = shared.find((one) => nodeKey(one.observation.id, one.scope) === key)
     return below ? { kind: 'shared' as const, ...below } : undefined
-  }, [selectedKey, causes, observations, shared, solutions, experiments])
+  }, [causes, observations, shared, solutions, experiments])
+  const selected = useMemo(() => (selectedKey ? resolve(selectedKey) : undefined), [selectedKey, resolve])
+  const editing = selected !== undefined && editingKey !== undefined && editingKey === selectedKey
+  const readerMode = useMemo(() => ({
+    mode: editing ? 'edit' as const : 'read' as const,
+    setMode: (next: 'read' | 'edit') => setEditingKey(next === 'edit' ? selectedKey : undefined),
+  }), [editing, selectedKey])
 
   // Each opening starts on the newest standing observation — unless asked for
   // one, which the id honours. Read through a ref so a record changing while
@@ -538,6 +554,125 @@ export function ObservationsPage(props: ObservationsPageProps) {
     ['observation.phaseRoots', causes.filter((one) => isRootCause(one, causes)).length],
   ] as const
 
+  // --- the right-click ------------------------------------------------------------------
+
+  /** A right-click selects what it landed on, the way a click does, and offers what can be done with it. */
+  const openMenu = (target: PictureTarget, at: { x: number; y: number }) => {
+    if (target.kind === 'node') setSelectedKey(target.key)
+    setMenu({ target, at })
+  }
+  const editRecord = (key: string) => { setSelectedKey(key); setEditingKey(key) }
+  const strengths = (current: CauseLink['strength'], choose: (strength: CauseLink['strength']) => void): MenuAction[] => (
+    (['strong', 'normal', 'weak'] as const).map((strength) => ({
+      key: `strength-${strength}`, label: s(STRENGTH_LABEL[strength]), checked: strength === current,
+      onClick: () => { if (strength !== current) choose(strength) },
+    }))
+  )
+  /**
+   * What the menu offers: the reader's own actions for a record, in its own
+   * words, and for a line the one thing a line is — how strong the link is,
+   * or no link at all. Read-only offers nothing, so the menu does not open.
+   */
+  const menuActions = (target: PictureTarget): MenuAction[] => {
+    if (readOnly) return []
+    if (target.kind === 'explains') {
+      const link = { id: target.id, ...(target.scope !== undefined ? { scope: target.scope } : {}) }
+      return [
+        ...strengths(target.strength, (strength) => commit({ ...analysis, causes: linkCause(causes, target.causeId, { ...link, strength }) })),
+        { key: 'unlink', label: s('observation.unlink'), divider: true, danger: true, onClick: () => unlink(target.causeId, link) },
+      ]
+    }
+    if (target.kind === 'addresses') {
+      return [
+        ...strengths(target.strength, (strength) => commit({ solutions: addressCause(solutions, target.solutionId, { id: target.causeId, strength }) })),
+        {
+          key: 'unlink', label: s('observation.unlink'), divider: true, danger: true,
+          onClick: () => commit({ solutions: unaddressCause(solutions, target.solutionId, target.causeId) }),
+        },
+      ]
+    }
+    const key = target.key
+    const held = resolve(key)
+    if (!held) return []
+    const edit: MenuAction = { key: 'edit', label: s('observation.edit'), onClick: () => editRecord(key) }
+    const remove = (kind: 'observation' | 'cause' | 'solution' | 'experiment', id: string): MenuAction => ({
+      key: 'delete', label: s('observation.delete'), divider: true, danger: true,
+      onClick: () => setDeleting({ kind, id, label: nameOf(id) }),
+    })
+    switch (held.kind) {
+      case 'observation': {
+        const one = held.observation
+        if (isArchived(one)) return [{ key: 'restore', label: s('observation.restore'), onClick: () => restore(one.id) }]
+        if (mergedLabel(one)) return []
+        return [
+          edit,
+          { key: 'seen', label: s('observation.seenAgain'), onClick: () => seen(one.id) },
+          { key: 'link', label: s('observation.link'), onClick: () => setLinking({ key, label: nameOf(one.id), link: { id: one.id } }) },
+          { key: 'merge', label: s('observation.merge'), onClick: () => setMerging({ observation: one }) },
+          ...(canShare ? [{ key: 'share', label: one.shared ? s('observation.unshare') : s('observation.share'), onClick: () => share(one.id, !one.shared) }] : []),
+          { key: 'archive', label: s('observation.archive'), onClick: () => setArchiving(one) },
+          remove('observation', one.id),
+        ]
+      }
+      case 'shared': {
+        const { observation: one, scope } = held
+        return [
+          { key: 'link', label: s('observation.link'), onClick: () => setLinking({ key, label: nameOf(one.id, scope), link: { id: one.id, scope } }) },
+          { key: 'merge', label: s('observation.merge'), onClick: () => setMerging({ observation: one, scope }) },
+          ...(props.onOpenScope
+            ? [{ key: 'open-scope', label: s('observation.openScope', { scope: scopeLabel(scope) }), divider: true, onClick: () => { onClose(); props.onOpenScope?.(scope) } }]
+            : []),
+        ]
+      }
+      case 'cause': {
+        const one = held.cause
+        return [
+          edit,
+          {
+            key: 'verify', label: one.state === 'assumed' ? s('observation.verify') : s('observation.unverify'),
+            onClick: () => patchCause(one.id, { state: one.state === 'assumed' ? 'verified' : 'assumed' }),
+          },
+          { key: 'link-deeper', label: s('observation.linkDeeper'), onClick: () => setLinking({ key: one.id, label: nameOf(one.id), link: { id: one.id } }) },
+          { key: 'propose', label: s('solution.proposeForCause'), onClick: () => setProposing({ causeId: one.id }) },
+          remove('cause', one.id),
+        ]
+      }
+      case 'solution': {
+        const one = held.solution
+        if (one.state === 'dropped') return [{ key: 'restore', label: s('solution.restore'), onClick: () => commit({ solutions: restoreSolution(solutions, one.id, today()) }) }]
+        const gate = solutionGate(one, context)
+        const decision = model.decisions?.find((record) => record.id === one.decision)
+        const back = !(one.state === 'adopted' && decision?.status === 'accepted') ? previousState(one.state) : undefined
+        const waitsOnDecision = gate?.items.some((item) => item.item === 'decisionAccepted' && !item.ok) && !one.decision && props.onDecide
+        return [
+          edit,
+          { key: 'address', label: s('solution.addressCause'), onClick: () => setAddressing(one) },
+          { key: 'plan-experiment', label: s('solution.planExperiment'), onClick: () => setPlanning(one) },
+          ...(gate ? [{
+            key: 'move', label: s('solution.moveOn', { state: s(PHASE_LABEL[gate.to]).toLowerCase() }), divider: true,
+            disabled: openItems(gate).length > 0, onClick: () => move(one.id, gate.to),
+          }] : []),
+          ...(back ? [{ key: 'back', label: s('solution.moveBack', { state: s(PHASE_LABEL[back]).toLowerCase() }), divider: !gate, onClick: () => move(one.id, back) }] : []),
+          ...(waitsOnDecision ? [{ key: 'decide', label: s('solution.proposeDecision'), onClick: () => props.onDecide?.(one.id) }] : []),
+          ...(one.state === 'adopted' && !one.plan && props.onStartPlan ? [{ key: 'start-plan', label: s('solution.startPlan'), onClick: () => props.onStartPlan?.(one.id) }] : []),
+          ...(one.state !== 'adopted' ? [{ key: 'drop', label: s('solution.drop'), divider: true, onClick: () => setDropping(one) }] : []),
+          remove('solution', one.id),
+        ]
+      }
+      case 'experiment': {
+        const one = held.experiment
+        return [
+          edit,
+          ...EXPERIMENT_OUTCOMES.map((outcome, index) => ({
+            key: `outcome-${outcome}`, label: s(OUTCOME_LABEL[outcome]), checked: outcome === one.outcome, divider: index === 0,
+            onClick: () => { if (outcome !== one.outcome) conclude(one.id, outcome) },
+          })),
+          remove('experiment', one.id),
+        ]
+      }
+    }
+  }
+
   const picture = (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0 }}>
       <Box data-testid="analysis-phases" sx={{ display: 'flex', gap: 3, px: 2, py: 1, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flexWrap: 'wrap' }}>
@@ -548,7 +683,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
           </Typography>
         ))}
       </Box>
-      <AnalysisPicture analysis={analysis} shared={sharedShown} selectedKey={selectedKey} onSelect={setSelectedKey} s={s} />
+      <AnalysisPicture analysis={analysis} shared={sharedShown} selectedKey={selectedKey} onSelect={setSelectedKey} onMenu={openMenu} s={s} />
       <PictureLegend s={s} />
     </Box>
   )
@@ -594,7 +729,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
           label={<Typography sx={{ fontSize: 12 }}>{s('solution.showDropped')}</Typography>}
         />
       </Box>
-      <SolutionPicture graph={graph} selectedKey={selectedKey} onSelect={setSelectedKey} flags={flags} s={s} />
+      <SolutionPicture graph={graph} selectedKey={selectedKey} onSelect={setSelectedKey} flags={flags} onMenu={openMenu} s={s} />
       <SolutionLegend s={s} />
     </Box>
   )
@@ -783,7 +918,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
             {groupName} &nbsp;/&nbsp; {model.name} &nbsp;/&nbsp;
             <Box component="span" sx={{ color: 'text.primary', fontWeight: 600 }}>{s('observation.title')}</Box>
           </Typography>
-          <ToggleButtonGroup exclusive size="small" value={tab} onChange={(_e, value: Tab | null) => { if (value) setTab(value) }} sx={{ ml: 2 }}>
+          <ToggleButtonGroup exclusive size="small" value={tab} onChange={(_e, value: Tab | null) => { if (value) { setTab(value); setEditingKey(undefined) } }} sx={{ ml: 2 }}>
             <ToggleButton value="register" data-testid="observation-tab-register">{s('observation.tabRegister')}</ToggleButton>
             <ToggleButton value="analysis" data-testid="observation-tab-analysis">{s('observation.tabAnalysis')}</ToggleButton>
             <ToggleButton value="solutions" data-testid="observation-tab-solutions">{s('solution.tab')}</ToggleButton>
@@ -799,23 +934,34 @@ export function ObservationsPage(props: ObservationsPageProps) {
           )}
         </Box>
 
-        <Box sx={{ display: 'grid', gridTemplateColumns: `minmax(0, 1fr) auto ${readerWidth[tab]}px`, flex: 1, minHeight: 0 }}>
-          {tab === 'register' ? register : tab === 'analysis' ? picture : solutionsView}
-          <SeamResizer
-            orientation="vertical"
-            region="after"
-            value={readerWidth[tab]}
-            min={READER[tab].min}
-            max={READER[tab].max}
-            defaultValue={READER[tab].default}
-            onChange={(next) => setReaderWidth((held) => ({ ...held, [tab]: next }))}
-            label={s('observation.resizeReader')}
-          />
+        {/* Editing gives the record the whole width — the editor on the left, its
+            preview on the right — and reading puts the picture back beside it. */}
+        <Box
+          data-testid="observation-body"
+          data-editing={editing ? 'true' : undefined}
+          sx={{ display: 'grid', gridTemplateColumns: editing ? 'minmax(0, 1fr)' : `minmax(0, 1fr) auto ${readerWidth[tab]}px`, flex: 1, minHeight: 0 }}
+        >
+          {!editing && (tab === 'register' ? register : tab === 'analysis' ? picture : solutionsView)}
+          {!editing && (
+            <SeamResizer
+              orientation="vertical"
+              region="after"
+              value={readerWidth[tab]}
+              min={READER[tab].min}
+              max={READER[tab].max}
+              defaultValue={READER[tab].default}
+              onChange={(next) => setReaderWidth((held) => ({ ...held, [tab]: next }))}
+              label={s('observation.resizeReader')}
+            />
+          )}
           <Box sx={{ minHeight: 0, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-            <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>{reader}</Box>
-            {tab === 'analysis' && toAnalyse}
+            <ReaderModeContext.Provider value={readerMode}>
+              <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>{reader}</Box>
+            </ReaderModeContext.Provider>
+            {tab === 'analysis' && !editing && toAnalyse}
           </Box>
         </Box>
+        <PictureMenu at={menu?.at} actions={menu ? menuActions(menu.target) : []} onClose={() => setMenu(undefined)} />
 
         <NewObservationDialog open={creating} canShare={canShare} onCancel={() => setCreating(false)} onCreate={create} s={s} />
         <NewCauseDialog open={creatingCause} onCancel={() => setCreatingCause(false)} onCreate={addCause} s={s} />

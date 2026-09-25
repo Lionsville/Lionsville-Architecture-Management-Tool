@@ -224,3 +224,26 @@ still one record; the picture now shows where it has been.
 So the picture reads left to right as the solution was worked: cause,
 direction, test, what was built. The legend says what a solid line and a faded
 box are, in the four languages.
+
+## Amended — the pictures answer a right-click, and an edit takes the width
+
+*25 September 2026.* Two things the first run through both pictures asked for,
+and one it could not do at all.
+
+* **A right-click on a node** offers what its reader offers, in the reader's
+  words, Edit among them; the page builds the list (`PictureMenu`), so the
+  menu and the reader cannot drift apart. The pictures only say what was
+  pressed and where. Read-only offers nothing and the menu does not open.
+* **A right-click on a line** a person drew — a cause explaining something,
+  a solution addressing a cause — offers its strength and *Unlink*. A link's
+  strength could be chosen when it was made and never changed after; the
+  model's `linkCause` and `addressCause` already replaced a strength on a
+  link that exists, so this is the page and nothing below it. Lines the
+  records imply (tests, proves, became) have nothing to offer and are left
+  alone.
+* **Edit takes the whole width.** Whether the reader is being edited is the
+  page's to hold now (`ReaderModeContext`), keyed to the selection, so the
+  picture and the register step aside for the editor and its preview and come
+  back on Read. Leaving an edit commits it whoever ended it — the toggle, a tab,
+  the record becoming one that may not be changed — which was the toggle's job
+  alone before.

@@ -686,6 +686,12 @@ oerwoegen alternatyf: se stiet by elke oare oplossing foar deselde
 oarsaken. Beide records binne markdownbestannen, ûnder
 `observations/solutions/` en `observations/experiments/`.
 
+**Rjochtsklik** op wat yn de analyze of de tekening fan de oplossingen foar
+wat jo dermei kinne — deselde aksjes as yn de lêzer, Bewurkje dêrûnder — en op
+in line foar hoe sterk it ferbân is, of om it los te meitsjen. **Bewurkje**
+jout it record de hiele breedte: de tekst lofts, hoe't it der útsjen sil
+rjochts, en de tekening werom sa gau't jo nei Lêze gean.
+
 ## Tiid, en de dei dy't in boerd toant
 
 Elke applikaasje kin **libbenssyklusdatums** drage njonken har libbenssyklus:

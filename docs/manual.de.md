@@ -746,6 +746,12 @@ stehen: sie erscheint bei jeder anderen Lösung für dieselben Ursachen. Beide
 Einträge sind Markdown-Dateien, unter `observations/solutions/` und
 `observations/experiments/`.
 
+Ein **Rechtsklick** auf etwas in der Analyse oder im Bild der Lösungen zeigt,
+was man damit tun kann — dieselben Aktionen wie im Leser, Bearbeiten darunter
+— und auf einer Linie, wie stark die Verbindung ist, oder sie zu lösen.
+**Bearbeiten** gibt dem Datensatz die ganze Breite: der Text links, wie er
+aussehen wird rechts, und das Bild kommt zurück, sobald man zu Lesen wechselt.
+
 ## Zeit, und der Tag, den ein Board zeigt
 
 Jede Anwendung kann neben ihrem Lebenszyklus **Lebenszyklusdaten** tragen: den

@@ -14,9 +14,11 @@
  * accent colour with the link's weight; a line from a direction to an
  * experiment is dashed; a confirmed experiment leads on into the structural
  * solution with a solid one. Selecting a node lights what it reaches in both
- * directions, so the team can follow one chain through the picture.
+ * directions, so the team can follow one chain through the picture; a
+ * right-click on a node, or on a line a person drew, asks the page what can be
+ * done with it (`PictureMenu`).
  */
-import { useMemo, type ReactNode } from 'react'
+import { useMemo, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import { useTheme } from '@mui/material/styles'
@@ -27,7 +29,8 @@ import type { SolutionPhase, SolutionSize } from '../solution'
 import { solutionKey } from '../solutionGraph'
 import type { SolutionGraph, SolutionGraphEdge, SolutionGraphNode, SolutionLane } from '../solutionGraph'
 import { OUTCOME_LABEL, PHASE_LABEL } from '../observationScope'
-import { BOX, CauseMark, Flag, LANE_WIDTH, ObservationMark, RADIUS, ROW_HEIGHT, STROKE, shorten } from './AnalysisPicture'
+import { BOX, CauseMark, Flag, LANE_WIDTH, LINE_HIT_WIDTH, ObservationMark, RADIUS, ROW_HEIGHT, STROKE, shorten } from './AnalysisPicture'
+import type { PictureMenuHandler, PictureTarget } from './PictureMenu'
 
 const WIDTH: Record<SolutionSize | 'unset', number> = { unset: 160, small: 160, medium: 184, large: 212 }
 const HEIGHT = 46
@@ -54,6 +57,8 @@ export type SolutionPictureProps = {
   onSelect: (key: string) => void
   /** The reason a node carries the attention mark, by key; absent is no mark. */
   flags: ReadonlyMap<string, { text: string; strong?: boolean }>
+  /** A right-click on a node or a line; absent, the browser's own menu. */
+  onMenu?: PictureMenuHandler
   s: Translate
 }
 
@@ -77,7 +82,7 @@ function reach(graph: SolutionGraph, from: string): Set<string> {
   return found
 }
 
-export function SolutionPicture({ graph, selectedKey, onSelect, flags, s }: SolutionPictureProps) {
+export function SolutionPicture({ graph, selectedKey, onSelect, flags, onMenu, s }: SolutionPictureProps) {
   const theme = useTheme()
   const placed = useMemo(() => placeGraph(graph, { laneWidth: LANE_WIDTH, rowHeight: ROW_HEIGHT, top: 36, left: 0 }), [graph])
   const at = useMemo(() => new Map(placed.map((one) => [one.key, one])), [placed])
@@ -131,6 +136,26 @@ export function SolutionPicture({ graph, selectedKey, onSelect, flags, s }: Solu
     return BOX.width / 2
   }
   const nodeOf = new Map(graph.nodes.map((node) => [node.key, node]))
+  const menuOn = (key: string) => (onMenu ? (event: ReactMouseEvent) => {
+    event.preventDefault()
+    onMenu({ kind: 'node', key }, { x: event.clientX, y: event.clientY })
+  } : undefined)
+  /** The link a line draws, where it is one a person made; the rest are read off the records. */
+  const lineTarget = (edge: SolutionGraph['edges'][number]): PictureTarget | undefined => {
+    const left = nodeOf.get(edge.from)
+    const right = nodeOf.get(edge.to)
+    if (!left || !right) return undefined
+    if (edge.kind === 'explains' && right.kind === 'cause' && (left.kind === 'observation' || left.kind === 'cause')) {
+      return {
+        kind: 'explains', causeId: right.id, id: left.id,
+        ...(left.kind === 'observation' && left.scope !== undefined ? { scope: left.scope } : {}), strength: edge.strength,
+      }
+    }
+    if (edge.kind === 'addresses' && left.kind === 'cause' && (right.kind === 'solution' || right.kind === 'trail')) {
+      return { kind: 'addresses', solutionId: right.id, causeId: left.id, strength: edge.strength }
+    }
+    return undefined
+  }
 
   return (
     <Box sx={{ overflow: 'auto', flex: 1, minHeight: 0, bgcolor: 'background.default' }}>
@@ -166,18 +191,28 @@ export function SolutionPicture({ graph, selectedKey, onSelect, flags, s }: Solu
           const stroke = LINE[edge.kind] ?? STROKE[edge.strength]
           const colour = edge.kind === 'addresses' ? theme.palette.primary.main : theme.palette.text.secondary
           const dim = lit !== undefined && !(lit.has(edge.from) && lit.has(edge.to))
+          const d = `M${startX},${from.y} C${mid},${from.y} ${mid},${to.y} ${endX},${to.y}`
+          const target = onMenu ? lineTarget(edge) : undefined
           return (
-            <path
-              key={`${edge.from}->${edge.to}`}
-              d={`M${startX},${from.y} C${mid},${from.y} ${mid},${to.y} ${endX},${to.y}`}
-              fill="none"
-              stroke={colour}
-              strokeWidth={stroke.width}
-              strokeDasharray={stroke.dash}
-              strokeOpacity={dim ? 0.15 : 0.8}
-              data-testid="solution-link"
-              data-kind={edge.kind}
-            />
+            <g key={`${edge.from}->${edge.to}`}>
+              <path
+                d={d}
+                fill="none"
+                stroke={colour}
+                strokeWidth={stroke.width}
+                strokeDasharray={stroke.dash}
+                strokeOpacity={dim ? 0.15 : 0.8}
+                data-testid="solution-link"
+                data-kind={edge.kind}
+              />
+              {target && (
+                <path
+                  d={d} fill="none" stroke="transparent" strokeWidth={LINE_HIT_WIDTH} pointerEvents="stroke"
+                  data-testid="solution-link-hit" data-kind={edge.kind}
+                  onContextMenu={(event) => { event.preventDefault(); onMenu!(target, { x: event.clientX, y: event.clientY }) }}
+                />
+              )}
+            </g>
           )
         })}
 
@@ -187,7 +222,10 @@ export function SolutionPicture({ graph, selectedKey, onSelect, flags, s }: Solu
           const selected = node.key === selectedKey
           const dim = lit !== undefined && !lit.has(node.key)
           const flag = flags.get(node.key)
-          const common = { cursor: 'pointer' as const, onClick: () => onSelect(node.key), 'data-testid': `solution-picture-${node.kind}`, dim }
+          const common = {
+            cursor: 'pointer' as const, onClick: () => onSelect(node.key), onContextMenu: menuOn(node.key),
+            'data-testid': `solution-picture-${node.kind}`, dim,
+          }
           if (node.kind === 'observation') {
             return <ObservationMark key={node.key} node={node} x={spot.x} y={spot.y} selected={selected} fill={tint(node.observation.seen)} {...common} />
           }
@@ -200,7 +238,7 @@ export function SolutionPicture({ graph, selectedKey, onSelect, flags, s }: Solu
             const w = WIDTH[solution.benefit ?? 'unset']
             const chosen = solutionKey(node.id) === selectedKey
             return (
-              <g key={node.key} transform={`translate(${spot.x},${spot.y})`} onClick={() => onSelect(solutionKey(node.id))} cursor="pointer" data-testid="solution-picture-trail" data-key={node.key}>
+              <g key={node.key} transform={`translate(${spot.x},${spot.y})`} onClick={() => onSelect(solutionKey(node.id))} onContextMenu={menuOn(solutionKey(node.id))} cursor="pointer" data-testid="solution-picture-trail" data-key={node.key}>
                 <rect x={-w / 2} y={-HEIGHT / 2} width={w} height={HEIGHT} rx={10} fill={theme.palette.background.paper} />
                 <g opacity={dim ? 0.25 : 0.6}>
                   <title>{`${formatSolutionNumber(solution.number)} ${solution.title} — ${s('solution.trail')}`}</title>
@@ -219,7 +257,7 @@ export function SolutionPicture({ graph, selectedKey, onSelect, flags, s }: Solu
           if (node.kind === 'experiment') {
             const { experiment } = node
             return (
-              <g key={node.key} transform={`translate(${spot.x},${spot.y})`} onClick={common.onClick} cursor="pointer" data-testid={common['data-testid']} data-key={node.key}>
+              <g key={node.key} transform={`translate(${spot.x},${spot.y})`} onClick={common.onClick} onContextMenu={common.onContextMenu} cursor="pointer" data-testid={common['data-testid']} data-key={node.key}>
                 <rect x={-BOX.width / 2} y={-HEIGHT / 2} width={BOX.width} height={HEIGHT} rx={3} fill={theme.palette.background.paper} />
                 <g opacity={dim ? 0.35 : 1}>
                   <title>{`${formatExperimentNumber(experiment.number)} ${experiment.title}`}</title>
@@ -237,7 +275,7 @@ export function SolutionPicture({ graph, selectedKey, onSelect, flags, s }: Solu
           const w = WIDTH[solution.benefit ?? 'unset']
           const done = phase === 'implemented'
           return (
-            <g key={node.key} transform={`translate(${spot.x},${spot.y})`} onClick={common.onClick} cursor="pointer" data-testid={common['data-testid']} data-key={node.key} data-phase={phase}>
+            <g key={node.key} transform={`translate(${spot.x},${spot.y})`} onClick={common.onClick} onContextMenu={common.onContextMenu} cursor="pointer" data-testid={common['data-testid']} data-key={node.key} data-phase={phase}>
               <rect x={-w / 2} y={-HEIGHT / 2} width={w} height={HEIGHT} rx={10} fill={theme.palette.background.paper} />
               <g opacity={dim ? 0.35 : phase === 'dropped' ? 0.55 : 1}>
                 <title>{`${formatSolutionNumber(solution.number)} ${solution.title}`}</title>

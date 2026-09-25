@@ -705,6 +705,12 @@ blijft staan als overwogen alternatief: ze staat bij elke andere oplossing
 voor dezelfde oorzaken. Beide records zijn markdownbestanden, onder
 `observations/solutions/` en `observations/experiments/`.
 
+**Rechtsklik** op iets in de analyse of de tekening van de oplossingen voor
+wat je ermee kunt — dezelfde acties als in de lezer, Bewerken daaronder — en
+op een lijn voor hoe sterk het verband is, of om het los te maken.
+**Bewerken** geeft het record de hele breedte: de tekst links, hoe het eruit
+komt te zien rechts, en de tekening terug zodra je naar Lezen gaat.
+
 ## Tijd, en de dag die een bord toont
 
 Elke applicatie kan **levenscyclusdatums** dragen naast haar levenscyclus: de dag

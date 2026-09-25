@@ -16,7 +16,7 @@
  * been quiet for a moment, when the mode switches back to read, and when the
  * pane closes or moves to another record.
  */
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
@@ -48,11 +48,22 @@ export type Mode = 'read' | 'edit'
 /** A name for whatever a link or an event points at, resolved by the page. */
 export type NameOf = (id: string, scope?: string) => string
 
-/** The draft-and-commit cycle both readers share. */
+/**
+ * Whether the reader on show is being edited, held by the page rather than
+ * the reader, so the page can give an edit the whole width — the picture
+ * steps aside — and a right-click can open a record straight into it. A
+ * reader with no page around it keeps the mode itself.
+ */
+export const ReaderModeContext = createContext<{ mode: Mode; setMode: (mode: Mode) => void } | undefined>(undefined)
+
+/** The draft-and-commit cycle every reader shares. */
 export function useDraft<T extends { title: string; body: string }>(
   stored: T, onUpdate: (patch: Partial<T>) => void, canEdit: boolean,
 ) {
-  const [mode, setMode] = useState<Mode>('read')
+  const held = useContext(ReaderModeContext)
+  const [own, setOwn] = useState<Mode>('read')
+  const mode = held?.mode ?? own
+  const setMode = held?.setMode ?? setOwn
   const [draft, setDraft] = useState<T>(stored)
   const latest = useRef({ draft, stored, onUpdate })
   latest.current = { draft, stored, onUpdate }
@@ -70,12 +81,18 @@ export function useDraft<T extends { title: string; body: string }>(
     return () => clearTimeout(timer)
   }, [draft, mode, commit])
   useEffect(() => commit, [commit])
+  // Leaving the edit commits it, whoever ended it: the toggle, the page, or
+  // the record becoming one this reader may no longer change.
+  const wasEditing = useRef(mode === 'edit')
+  useEffect(() => {
+    if (wasEditing.current && mode === 'read') commit()
+    wasEditing.current = mode === 'edit'
+  }, [mode, commit])
   useEffect(() => { if (mode === 'read') setDraft(stored) }, [stored, mode])
-  useEffect(() => { if (!canEdit && mode === 'edit') { commit(); setMode('read') } }, [canEdit, mode, commit])
+  useEffect(() => { if (!canEdit && mode === 'edit') setMode('read') }, [canEdit, mode, setMode])
 
   const switchMode = (next: Mode | null) => {
     if (!next || next === mode) return
-    if (next === 'read') commit()
     setMode(next)
   }
   return { mode, draft, setDraft, commit, switchMode }
