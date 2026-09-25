@@ -719,11 +719,12 @@ mit ihrer Eingabe daneben, und die Schaltfläche bleibt gesperrt, bis die
 Liste leer ist. **Zurück zu…** setzt ihn jederzeit einen Schritt zurück.
 
 Von ausgearbeitet zu **im Test** braucht es ein **Experiment** (`EX-0002`):
-eine Hypothese, wie gemessen wird, wo, von wem und wann. Sobald eines
-**bestätigt** ist, darf die Lösung zu **bewährt**. Manches lässt sich nicht
-erproben; *Überspringen* verlangt dann einen Grund, und der Grund bleibt
-erhalten. Ein widerlegtes Experiment bleibt, als der Beleg, nach dem die
-Nächsten fragen.
+eine Hypothese, wie gemessen wird, wo, von wem und wann. Ein Experiment aus
+der Lösung heraus zu planen setzt sie im selben Schritt auf im Test, und ein
+schon bestätigtes zählt ebenso. Sobald eines **bestätigt** ist, darf die
+Lösung zu **bewährt**. Manches lässt sich nicht erproben; *Überspringen*
+verlangt dann einen Grund, und der Grund bleibt erhalten. Ein widerlegtes
+Experiment bleibt, als der Beleg, nach dem die Nächsten fragen.
 
 Über eine bewährte Lösung wird auf der Seite **Entscheidungen** entschieden.
 **Die Entscheidung vorschlagen** schreibt einen neuen Eintrag, dessen Kontext

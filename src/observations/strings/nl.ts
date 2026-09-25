@@ -197,7 +197,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'solution.gateValidatedWith': 'Getoetst bij iemand die ermee moet leven',
   'solution.gateTriedBefore': 'Is dit eerder geprobeerd?',
   'solution.gateWhyNow': 'Waarom het nu werkt, als het toen niet werkte',
-  'solution.gateExperimentPlanned': 'Er is een experiment gepland of bezig',
+  'solution.gateExperimentPlanned': 'Een experiment test het: gepland, bezig of bevestigd',
   'solution.gateExperimentConfirmed': 'Een experiment bevestigde het, of het is met reden overgeslagen',
   'solution.gateDecisionAccepted': 'Een besluit, aangenomen',
   'solution.validatedWith': 'Getoetst bij',

@@ -640,10 +640,12 @@ each line with its control beside it, and the button stays disabled until
 the list is clear. **Back to…** moves it one step back at any time.
 
 From shaped to **testing** it needs an **experiment** (`EX-0002`): a
-hypothesis, how it is measured, where, by whom and when. Once one is
-**confirmed**, the solution may move to **proven**. Some things cannot be
-trialled; *Waive* takes a reason instead, and the reason is kept. A refuted
-experiment stays, as the evidence the next person asks for.
+hypothesis, how it is measured, where, by whom and when. Planning one from the
+solution moves it to testing in the same step, and one that is already
+confirmed counts too. Once one is **confirmed**, the solution may move to
+**proven**. Some things cannot be trialled; *Waive* takes a reason instead,
+and the reason is kept. A refuted experiment stays, as the evidence the next
+person asks for.
 
 A proven solution is decided on the **Decisions** page. **Propose the
 decision record** writes a new record whose context names what the solution

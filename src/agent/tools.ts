@@ -1301,7 +1301,7 @@ const SPECS = [
   {
     name: 'experiment.plan',
     tier: 'write',
-    description: 'Plan an experiment for one or more solutions (ADR-0026): what it should show (the hypothesis), how that is counted, where, by whom and when. It starts planned.',
+    description: 'Plan an experiment for one or more solutions (ADR-0026): what it should show (the hypothesis), how that is counted, where, by whom and when. It starts planned, and every shaped solution it tests moves on to testing in the same step.',
     inputSchema: {
       type: 'object',
       properties: {

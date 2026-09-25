@@ -58,7 +58,7 @@ import type {
 import {
   addressCause, concludeExperiment, decisionContext, defaultStrength, dropSolution, forgetCause, formatExperimentNumber,
   formatSolutionNumber, linkRecord, moveSolution, newExperiment, newSolution, nextExperimentNumber, nextSolutionNumber,
-  removeExperiment, removeSolution, restoreSolution, unaddressCause, updateExperiment, updateSolution, waiveExperiment,
+  planExperiment, removeExperiment, removeSolution, restoreSolution, unaddressCause, updateExperiment, updateSolution, waiveExperiment,
 } from '../observations/solution'
 import type { ExperimentPatch, SolutionPatch, SolutionWork } from '../observations/solution'
 import {
@@ -1561,7 +1561,7 @@ function solutionCommand(tool: ToolName, args: Args, view: WriteView): Prepared 
         from: typeof args.from === 'string' ? args.from : day,
         ...text('measure'), ...text('where'), ...text('by'), ...text('to'), ...text('body'),
       })
-      const after = { ...before, experiments: [...before.experiments, fresh] }
+      const after = { ...before, ...planExperiment(before, fresh, day) }
       return finish(after, experimentAnswer(after, fresh.id))
     }
     case 'experiment.update':

@@ -305,7 +305,7 @@ export function solutionGate(solution: Solution, context: Pick<SolutionContext, 
         { item: 'whyNow', ok: solution.attempts.length === 0 || Boolean(solution.whyNow?.trim()) },
       ],
     }
-    case 'shaped': return { to: 'testing', items: [{ item: 'experimentPlanned', ok: has('planned', 'running') }] }
+    case 'shaped': return { to: 'testing', items: [{ item: 'experimentPlanned', ok: has('planned', 'running', 'confirmed') }] }
     case 'testing': return {
       to: 'proven',
       items: [{ item: 'experimentConfirmed', ok: has('confirmed') || Boolean(solution.waived?.trim()) }],
@@ -359,6 +359,24 @@ export function moveSolution(
     if (decision?.status === 'accepted') return { ok: false, refusal: 'decided', open: [] }
   }
   return { ok: true, solutions: replace(list, id, (one) => withEvent({ ...one, state: to }, { date, kind: 'moved', to })) }
+}
+
+/**
+ * A new experiment, and every shaped solution it tests moved on to testing in
+ * the same step: planning the test is starting to test, and the move is still
+ * a dated event in the solution's history. A solution anywhere else stays
+ * where it is — an idea has its own gate first, and one already testing or
+ * further along has nothing to gain.
+ */
+export function planExperiment(work: SolutionWork, experiment: Experiment, date: string): SolutionWork {
+  const experiments = [...work.experiments, experiment]
+  let solutions = [...work.solutions]
+  for (const id of experiment.tests) {
+    if (solutions.find((one) => one.id === id)?.state !== 'shaped') continue
+    const moved = moveSolution(solutions, id, 'testing', date, { experiments, decisions: [] })
+    if (moved.ok) solutions = moved.solutions
+  }
+  return { solutions, experiments }
 }
 
 /**

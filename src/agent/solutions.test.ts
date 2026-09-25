@@ -94,8 +94,8 @@ describe('solution tools', () => {
     model = write(model, 'solution.update', { id: 'SO-0001', benefit: 'medium', cost: 'medium', validatedWith: ['Customer service'], attempts: [{ when: '2024', what: 'A nightly sync', why: 'It lagged' }], whyNow: 'The feed is live' }).model
     model = write(model, 'solution.move', { id: 'SO-0001', to: 'shaped' }).model
     const planned = write(model, 'experiment.plan', { tests: ['SO-0001'], title: 'Two weeks at one desk', hypothesis: 'Calls halve', measure: 'Calls per week' })
-    expect(planned.answer).toMatchObject({ label: 'EX-0001', outcome: 'planned', from: '2026-09-20', tests: [{ label: 'SO-0001' }] })
-    model = write(planned.model, 'solution.move', { id: 'SO-0001', to: 'testing' }).model
+    expect(planned.answer).toMatchObject({ label: 'EX-0001', outcome: 'planned', from: '2026-09-20', tests: [{ label: 'SO-0001', state: 'testing' }] })
+    model = planned.model
     model = write(model, 'experiment.conclude', { id: 'EX-0001', outcome: 'confirmed', result: '41 to 12 a week' }).model
     model = write(model, 'solution.move', { id: 'SO-0001', to: 'proven' }).model
     expect(refusal(model, 'solution.move', { id: 'SO-0001', to: 'adopted' })).toContain('decisionAccepted')
@@ -140,7 +140,6 @@ describe('solution tools', () => {
     model = write(model, 'solution.update', { id: 'SO-0001', benefit: 'small', cost: 'small', validatedWith: ['Ops'], noneKnown: true }).model
     model = write(model, 'solution.move', { id: 'SO-0001', to: 'shaped' }).model
     model = write(model, 'experiment.plan', { tests: ['SO-0001'], title: 'Trial', hypothesis: 'Fewer calls' }).model
-    model = write(model, 'solution.move', { id: 'SO-0001', to: 'testing' }).model
     model = write(model, 'experiment.conclude', { id: 'EX-0001', outcome: 'confirmed' }).model
     const proven = write(model, 'solution.move', { id: 'SO-0001', to: 'proven' })
     expect(proven.answer.questions).toEqual(['worksAround'])

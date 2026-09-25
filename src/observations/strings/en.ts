@@ -214,7 +214,7 @@ export const EN = {
   'solution.gateValidatedWith': 'Checked with somebody who would live with it',
   'solution.gateTriedBefore': 'Was this tried before?',
   'solution.gateWhyNow': 'Why it works now, when it did not then',
-  'solution.gateExperimentPlanned': 'An experiment is planned or running',
+  'solution.gateExperimentPlanned': 'An experiment tests it: planned, running or confirmed',
   'solution.gateExperimentConfirmed': 'An experiment confirmed it, or it was waived with a reason',
   'solution.gateDecisionAccepted': 'A decision record, accepted',
   'solution.validatedWith': 'Checked with',

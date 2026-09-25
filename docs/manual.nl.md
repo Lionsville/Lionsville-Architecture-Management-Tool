@@ -677,11 +677,13 @@ uitgeschakeld tot de lijst leeg is. **Terug naar…** zet het op elk moment éé
 stap terug.
 
 Van uitgewerkt naar **wordt getest** is een **experiment** (`EX-0002`) nodig:
-een hypothese, hoe het gemeten wordt, waar, door wie en wanneer. Zodra er een
+een hypothese, hoe het gemeten wordt, waar, door wie en wanneer. Een
+experiment plannen vanuit de oplossing zet die in dezelfde stap op wordt
+getest, en een experiment dat al bevestigd is telt ook. Zodra er een
 **bevestigd** is, mag de oplossing naar **bewezen**. Sommige dingen zijn niet
 uit te proberen; *Overslaan* vraagt dan een reden, en die reden blijft
-bewaard. Een weerlegd experiment blijft staan, als het bewijs waar de
-volgende om vraagt.
+bewaard. Een weerlegd experiment blijft staan, als het bewijs waar de volgende
+om vraagt.
 
 Over een bewezen oplossing wordt besloten op de pagina **Besluiten**. **Het
 besluit voorstellen** schrijft een nieuw besluit waarvan de context noemt wat

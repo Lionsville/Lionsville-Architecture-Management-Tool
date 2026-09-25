@@ -659,11 +659,12 @@ elke rigel mei syn ynfier dernjonken, en de knop bliuwt útskeakele oant de
 list leech is. **Werom nei…** set it op elk momint ien stap werom.
 
 Fan útwurke nei **wurdt test** is in **eksperimint** (`EX-0002`) nedich: in
-hypoteze, hoe't it metten wurdt, wêr, troch wa en wannear. Sadree't der ien
-**befestige** is, mei de oplossing nei **bewiisd**. Guon dingen binne net út
-te probearjen; *Oerslaan* freget dan in reden, en dy reden bliuwt bewarre.
-In wjerlein eksperimint bliuwt stean, as it bewiis dêr't de folgjende om
-freget.
+hypoteze, hoe't it metten wurdt, wêr, troch wa en wannear. In eksperimint
+planne út de oplossing wei set dy yn deselde stap op wurdt test, en ien dy't
+al befestige is telt ek. Sadree't der ien **befestige** is, mei de oplossing
+nei **bewiisd**. Guon dingen binne net út te probearjen; *Oerslaan* freget dan
+in reden, en dy reden bliuwt bewarre. In wjerlein eksperimint bliuwt stean, as
+it bewiis dêr't de folgjende om freget.
 
 Oer in bewiisde oplossing wurdt besletten op de side **Besluten**. **It
 beslút foarstelle** skriuwt in nij beslút dêr't de kontekst fan neamt wat de

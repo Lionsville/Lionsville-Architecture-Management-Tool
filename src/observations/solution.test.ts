@@ -7,7 +7,7 @@ import type { Analysis, Cause, Observation } from './observation'
 import {
   addressCause, alternatives, concludeExperiment, decisionContext, defaultStrength, dropSolution, experimentsFor,
   forgetCause, formatExperimentNumber, formatSolutionNumber, implementedOn, linkRecord, moveSolution, newExperiment,
-  newSolution, nextExperimentNumber, nextSolutionNumber, openItems, removeSolution, restoreSolution,
+  newSolution, nextExperimentNumber, nextSolutionNumber, openItems, planExperiment, removeSolution, restoreSolution,
   rootsWithoutSolution, seenSinceImplemented, solutionGate, solutionPhase, solutionQuestions, unaddressCause,
   underneath, updateExperiment, updateSolution, waiveExperiment,
 } from './solution'
@@ -141,13 +141,27 @@ describe('moving', () => {
     expect(moveSolution([vetted], 'nope', 'shaped', day, context())).toMatchObject({ ok: false, refusal: 'missing' })
     expect(moveSolution([{ ...vetted, state: 'dropped' }], 's1', 'shaped', day, context())).toMatchObject({ refusal: 'notAdjacent' })
   })
-  it('needs a planned or running experiment to start testing', () => {
+  it('needs an experiment that is planned, running or confirmed to start testing', () => {
     const shaped = { ...vetted, state: 'shaped' as const }
     expect(moveSolution([shaped], 's1', 'testing', day, context())).toMatchObject({ ok: false, open: ['experimentPlanned'] })
     const running = context({ experiments: [experiment({ outcome: 'running' })] })
     expect(moveSolution([shaped], 's1', 'testing', day, running).ok).toBe(true)
+    const confirmed = context({ experiments: [experiment({ outcome: 'confirmed' })] })
+    expect(moveSolution([shaped], 's1', 'testing', day, confirmed).ok).toBe(true)
     const refuted = context({ experiments: [experiment({ outcome: 'refuted' })] })
     expect(moveSolution([shaped], 's1', 'testing', day, refuted).ok).toBe(false)
+  })
+  it('moves every shaped solution an experiment tests on to testing when it is planned, and no other', () => {
+    const shaped = { ...vetted, state: 'shaped' as const }
+    const idea = solution({ id: 's2', number: 2 })
+    const proven = { ...vetted, id: 's3', number: 3, state: 'proven' as const }
+    const trial = experiment({ tests: ['s1', 's2', 's3'] })
+    const work = planExperiment({ solutions: [shaped, idea, proven], experiments: [] }, trial, day)
+    expect(work.experiments).toEqual([trial])
+    expect(work.solutions.map((one) => one.state)).toEqual(['testing', 'idea', 'proven'])
+    expect(work.solutions[0].history.at(-1)).toEqual({ date: day, kind: 'moved', to: 'testing' })
+    expect(work.solutions[1]).toBe(idea)
+    expect(work.solutions[2]).toBe(proven)
   })
   it('needs a confirmed experiment, or a waiver, to be proven', () => {
     const testing = { ...vetted, state: 'testing' as const }

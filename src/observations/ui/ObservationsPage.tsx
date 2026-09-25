@@ -75,8 +75,8 @@ import { CauseReader, ObservationReader } from './Readers'
 import {
   addressCause, alternatives, concludeExperiment, defaultStrength, dropSolution, experimentsFor, forgetCause,
   formatExperimentNumber, formatSolutionNumber, implementedOn, isLive, moveSolution, newExperiment, newSolution,
-  nextExperimentNumber, nextSolutionNumber, removeExperiment, removeSolution, restoreSolution, rootsWithoutSolution,
-  seenSinceImplemented, solutionGate, solutionPhase, solutionQuestions, unaddressCause, underneath,
+  nextExperimentNumber, nextSolutionNumber, planExperiment, removeExperiment, removeSolution, restoreSolution,
+  rootsWithoutSolution, seenSinceImplemented, solutionGate, solutionPhase, solutionQuestions, unaddressCause, underneath,
   updateExperiment, updateSolution, waiveExperiment,
 } from '../solution'
 import type {
@@ -367,11 +367,11 @@ export function ObservationsPage(props: ObservationsPageProps) {
     const result = moveSolution(solutions, id, to, today(), context)
     if (result.ok) commit({ solutions: result.solutions })
   }
-  const planExperiment = (solution: Solution, fields: { title: string; hypothesis: string; measure: string }) => {
+  const addExperiment = (solution: Solution, fields: { title: string; hypothesis: string; measure: string }) => {
     const fresh = newExperiment({
       id: makeId('ex'), number: nextExperimentNumber(experiments), tests: [solution.id], t: s, from: today(), ...fields,
     })
-    commit({ experiments: [...experiments, fresh] })
+    commit(planExperiment({ solutions, experiments }, fresh, today()))
     setPlanning(undefined)
     setSelectedKey(experimentKey(fresh.id))
   }
@@ -866,7 +866,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
         <NewExperimentDialog
           subject={planning ? { label: nameOf(planning.id) } : undefined}
           onCancel={() => setPlanning(undefined)}
-          onCreate={(fields) => { if (planning) planExperiment(planning, fields) }}
+          onCreate={(fields) => { if (planning) addExperiment(planning, fields) }}
           s={s}
         />
         <DropDialog

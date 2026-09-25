@@ -6,7 +6,7 @@
  * The Solutions tab as a user meets it (ADR-0026): a solution proposed from
  * a root cause lands linked, the gate lists what is missing and the move
  * stays disabled until it is answered, an experiment is planned from the
- * reader, a decision is asked of the host, and an implemented solution asks
+ * reader and takes a shaped solution on to testing, a decision is asked of the host, and an implemented solution asks
  * whether it worked. Writes are handlers: the page proposes the lists, the
  * caller keeps them.
  */
@@ -110,7 +110,7 @@ describe('the Solutions tab', () => {
     expect(lastChange(onChange).solutions[0].noneKnown).toBe(true)
   })
 
-  it('plans an experiment for a shaped solution, testing it', () => {
+  it('plans an experiment for a shaped solution, and moves the solution on to testing with it', () => {
     const shaped = solution({ state: 'shaped' })
     const { onChange } = mount({ ...base, solutions: [shaped] }, { initialId: 'so:s1' })
     fireEvent.click(within(screen.getByTestId('solution-gate')).getByText('Plan an experiment…'))
@@ -118,6 +118,14 @@ describe('the Solutions tab', () => {
     fireEvent.change(screen.getByTestId('new-experiment-hypothesis'), { target: { value: 'Calls halve' } })
     fireEvent.click(screen.getByTestId('new-experiment-create'))
     expect(lastChange(onChange).experiments[0]).toMatchObject({ tests: ['s1'], hypothesis: 'Calls halve', outcome: 'planned', from: '2026-09-24' })
+    expect(lastChange(onChange).solutions[0]).toMatchObject({ state: 'testing', history: [expect.anything(), { date: '2026-09-24', kind: 'moved', to: 'testing' }] })
+  })
+
+  it('lets a shaped solution whose experiment is already confirmed move on', () => {
+    const shaped = solution({ state: 'shaped' })
+    mount({ ...base, solutions: [shaped], experiments: [experiment({ outcome: 'confirmed' })] }, { initialId: 'so:s1' })
+    expect(screen.getByTestId('solution-gate-experimentPlanned').dataset.ok).toBe('true')
+    expect((screen.getByTestId('solution-move') as HTMLButtonElement).disabled).toBe(false)
   })
 
   it('asks the host for the decision record when that is what the gate waits on', () => {

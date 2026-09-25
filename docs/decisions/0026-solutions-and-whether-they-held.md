@@ -169,3 +169,31 @@ a waiver is a reason a person gave.
   or the history page, which ADR-0021 also left open for observations. There
   is no scoring beyond benefit and cost: the money is the plan's business
   case.
+
+## Amended — planning the test is starting to test
+
+*25 September 2026.* The first person through the tab planned an experiment on
+a shaped solution, confirmed it, and found the solution stuck in shaped: the
+gate to testing read *planned or running*, the only experiment was confirmed,
+and the gate's own *Plan an experiment…* sat beside it as if nothing tested the
+solution at all. The link was there; the rule and the missing click hid it.
+Two changes, and §2 above is otherwise as it was.
+
+* **The gate to testing counts a confirmed experiment.** It reads *planned,
+  running or confirmed*: an experiment that already came out right is
+  certainly one that tests the solution. Refuted and inconclusive still do not
+  count. The gate item keeps its id, `experimentPlanned`, which the agent's
+  answers name.
+* **Planning an experiment moves every shaped solution it tests on to
+  testing, in the same step.** `planExperiment` in `observations/solution.ts`
+  adds the experiment and, for each solution it tests that stands at shaped,
+  makes the move through `moveSolution` — so it is the same dated `moved`
+  event in the history, behind the same gate, and nothing is skipped. An idea
+  stays an idea, because its own gate comes first; a solution already testing
+  or further along stays where it is. The page's *Plan an experiment…* and the
+  agent's `experiment.plan` both call it, and the agent's answer now gives
+  each tested solution's `state`, so it sees the move it made.
+
+Proven is still a click. Confirming an experiment opens the gate to proven and
+does not pass it: proven is the team's claim, and the next thing it asks for is
+a decision record.

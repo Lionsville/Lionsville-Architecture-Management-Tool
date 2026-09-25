@@ -197,7 +197,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'solution.gateValidatedWith': 'Hifke by ien dy\'t der mei libje moat',
   'solution.gateTriedBefore': 'Is dit earder besocht?',
   'solution.gateWhyNow': 'Wêrom it no wurket, as it doe net wurke',
-  'solution.gateExperimentPlanned': 'Der is in eksperimint pland of dwaande',
+  'solution.gateExperimentPlanned': 'In eksperimint test it: pland, dwaande of befestige',
   'solution.gateExperimentConfirmed': 'In eksperimint befestige it, of it is mei reden oerslein',
   'solution.gateDecisionAccepted': 'In beslút, oannommen',
   'solution.validatedWith': 'Hifke by',
