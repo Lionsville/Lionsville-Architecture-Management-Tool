@@ -12,8 +12,8 @@
  * left edge. A structural solution keeps a faded box in the directions lane
  * for the direction it was. A line from a cause to a solution is drawn in the
  * accent colour with the link's weight; a line from a direction to an
- * experiment is dashed; a confirmed experiment leads on into the structural
- * solution with a solid one. Selecting a node lights what it reaches in both
+ * experiment is dashed while it tests and solid once it has confirmed, and a
+ * confirmed experiment leads on into the structural solution with a solid one. Selecting a node lights what it reaches in both
  * directions, so the team can follow one chain through the picture; a
  * right-click on a node, or on a line a person drew, asks the page what can be
  * done with it (`PictureMenu`).
@@ -48,9 +48,6 @@ const LINE: Record<'tests' | 'proves', Record<CauseStrength, Stroke>> = {
   proves: { strong: { width: 3.4 }, normal: { width: 1.8 }, weak: { width: 1.4, dash: '3 4' } },
 }
 const BECAME: Stroke = { width: 1.4, dash: '1 3' }
-const strokeOf = (edge: SolutionGraphEdge): Stroke => (
-  edge.kind === 'tests' || edge.kind === 'proves' ? LINE[edge.kind][edge.strength] : edge.kind === 'became' ? BECAME : STROKE[edge.strength]
-)
 
 const LANE_TITLE: Record<SolutionLane, Parameters<Translate>[0]> = {
   observations: 'observation.laneObservations',
@@ -146,6 +143,18 @@ export function SolutionPicture({ graph, selectedKey, onSelect, flags, onMenu, s
     return BOX.width / 2
   }
   const nodeOf = new Map(graph.nodes.map((node) => [node.key, node]))
+  // A line into an experiment is dashed while it tests and solid once it has
+  // confirmed — so a confirmed experiment's chain reads solid all the way
+  // through, as the legend says, and a refuted one stays dashed.
+  const confirmedInto = (edge: SolutionGraphEdge) => {
+    const into = nodeOf.get(edge.to)
+    return edge.kind === 'tests' && into?.kind === 'experiment' && into.experiment.outcome === 'confirmed'
+  }
+  const strokeOf = (edge: SolutionGraphEdge): Stroke => (
+    confirmedInto(edge) ? LINE.proves[edge.strength]
+      : edge.kind === 'tests' || edge.kind === 'proves' ? LINE[edge.kind][edge.strength]
+        : edge.kind === 'became' ? BECAME : STROKE[edge.strength]
+  )
   const menuOn = (key: string) => (onMenu ? (event: ReactMouseEvent) => {
     event.preventDefault()
     onMenu({ kind: 'node', key }, { x: event.clientX, y: event.clientY })

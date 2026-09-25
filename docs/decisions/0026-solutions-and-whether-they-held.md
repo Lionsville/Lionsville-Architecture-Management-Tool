@@ -271,7 +271,10 @@ the agent's side.
   row in the front matter, where it is said at all. The dashed line into the
   experiment and the solid one out of a confirmed one are drawn with it, and
   both answer a right-click with the strengths and *Unlink*, which takes the
-  solution out of what the experiment tests and keeps the experiment.
+  solution out of what the experiment tests and keeps the experiment. The line
+  into an experiment is dashed while it tests and solid once it has confirmed,
+  so a confirmed experiment's chain reads solid all the way through, as the
+  legend says; a refuted one stays dashed.
   `experiment.plan` and `experiment.update` take `strength`, and an
   experiment's answer gives it per tested solution.
 * **The observation template asks for facts.** Its third heading was *First

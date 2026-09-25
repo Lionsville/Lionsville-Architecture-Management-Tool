@@ -172,6 +172,9 @@ describe('the Solutions tab', () => {
     expect(picture.querySelector('[data-key="so:s1"]')?.getAttribute('data-phase')).toBe('proven')
     const kinds = [...picture.querySelectorAll('[data-testid="solution-link"]')].map((line) => line.getAttribute('data-kind')).sort()
     expect(kinds).toEqual(['addresses', 'proves', 'tests'])
+    // Confirmed, so the line into it is as solid as the one out of it.
+    const into = picture.querySelector('[data-testid="solution-link"][data-kind="tests"]')!
+    expect(into.getAttribute('stroke-dasharray')).toBeNull()
     fireEvent.click(picture.querySelector('[data-key="so:s1#direction"]')!)
     expect(screen.getByTestId('solution-phase').textContent).toBe('Proven')
   })
