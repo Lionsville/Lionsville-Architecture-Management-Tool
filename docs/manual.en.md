@@ -624,11 +624,13 @@ was built made the sightings stop. The picture has the causes on the left —
 the root causes, and any other cause a solution addresses — then the
 **directions** (ideas being shaped or tested), the **experiments**, and the
 **structural** solutions (proven, adopted, implemented). A solution moves
-right as it matures; its width is the benefit it promises and its fill how
-far it has got. **Whole chain** puts the observations and the whole analysis
-back on the left, so one picture runs from what was seen to what was built.
-A mark (!) says where to look: a root cause nobody is working on, or a
-solution with a question.
+right as it matures; its width is the benefit it promises and its fill how far
+it has got. Once it is structural it keeps a faded box in the directions lane
+for the direction it was, so the line runs from the cause through that box and
+the experiment that confirmed it into the solution. **Whole chain** puts the
+observations and the whole analysis back on the left, so one picture runs from
+what was seen to what was built. A mark (!) says where to look: a root cause
+nobody is working on, or a solution with a question.
 
 **Propose a solution…** on a cause, or **New solution** on the bar, writes a
 numbered record (`SO-0003`) with a title and the cause it is for, and nothing

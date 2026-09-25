@@ -158,6 +158,9 @@ export const DE: Record<keyof typeof EN, string> = {
   'solution.legendFill': 'Füllung: wie weit sie ist',
   'solution.legendAddresses': 'Linie: behebt eine Ursache',
   'solution.legendTests': 'Gestrichelt: testet',
+  'solution.legendProves': 'Durchgezogen: hat es bestätigt',
+  'solution.legendTrail': 'Verblasst: die Richtung, die es war',
+  'solution.trail': 'als Richtung',
   'solution.flagNoSolution': 'Eine Grundursache, an der noch niemand arbeitet',
   'solution.flag': 'Braucht Aufmerksamkeit',
   // --- phases, sizes, outcomes

@@ -158,6 +158,9 @@ export const NL: Record<keyof typeof EN, string> = {
   'solution.legendFill': 'Vulling: hoe ver het is',
   'solution.legendAddresses': 'Lijn: pakt een oorzaak aan',
   'solution.legendTests': 'Gestreept: test',
+  'solution.legendProves': 'Doorgetrokken: bevestigde het',
+  'solution.legendTrail': 'Vervaagd: de richting die het was',
+  'solution.trail': 'als richting',
   'solution.flagNoSolution': 'Een grondoorzaak waar nog niemand aan werkt',
   'solution.flag': 'Vraagt aandacht',
   // --- phases, sizes, outcomes

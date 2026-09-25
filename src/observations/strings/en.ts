@@ -175,6 +175,9 @@ export const EN = {
   'solution.legendFill': 'Fill: how far it has got',
   'solution.legendAddresses': 'Line: addresses a cause',
   'solution.legendTests': 'Dashed: tests',
+  'solution.legendProves': 'Solid: confirmed it',
+  'solution.legendTrail': 'Faded: the direction it was',
+  'solution.trail': 'as a direction',
   'solution.flagNoSolution': 'A root cause nobody is working on yet',
   'solution.flag': 'Needs attention',
   // --- phases, sizes, outcomes

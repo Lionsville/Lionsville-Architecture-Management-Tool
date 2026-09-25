@@ -12,6 +12,14 @@
  * sweep as the analysis (`graph.ts`): deterministic, so the picture lands in
  * the same place every time the page opens.
  *
+ * A structural solution keeps the direction it was: a faded box in the
+ * directions lane that the cause's line runs into and the experiments run out
+ * of, and the experiments that confirmed it lead on into the structural box.
+ * So the picture reads left to right as the solution was worked — cause,
+ * direction, the test, what was built — instead of a line from the cause
+ * jumping over the experiment. A structural solution nothing confirmed (it
+ * was waived) is reached from its direction directly.
+ *
  * With the whole chain asked for, the causes lane becomes the analysis's own
  * lanes — observations, then causes by depth — and the solution lanes go on
  * to the right of them: one picture from what was seen to what was built.
@@ -37,6 +45,15 @@ export type SolutionGraphNode =
     row: number
   }
   | {
+    /** A structural solution as the direction it was; selecting it selects the solution. */
+    kind: 'trail'
+    key: string
+    id: string
+    solution: Solution
+    lane: number
+    row: number
+  }
+  | {
     kind: 'experiment'
     key: string
     id: string
@@ -50,8 +67,14 @@ export type SolutionGraphEdge = {
   from: string
   /** The node on the right. */
   to: string
-  /** `explains` from the analysis, `addresses` from a cause to a solution, `tests` between a solution and an experiment. */
-  kind: 'explains' | 'addresses' | 'tests'
+  /**
+   * `explains` from the analysis, `addresses` from a cause to a solution (or
+   * to the direction a structural one was), `tests` from a direction to an
+   * experiment, `proves` from a confirmed experiment into the structural
+   * solution, `became` from a direction to its structural self with no
+   * confirmed experiment between.
+   */
+  kind: 'explains' | 'addresses' | 'tests' | 'proves' | 'became'
   strength: CauseStrength
 }
 
@@ -82,6 +105,8 @@ export function isDirection(solution: Solution): boolean {
 /** The keys for a node, one namespace per kind, so an id can never collide across lists. */
 export const solutionKey = (id: string): string => `so:${id}`
 export const experimentKey = (id: string): string => `ex:${id}`
+/** The direction a structural solution was. */
+export const trailKey = (id: string): string => `so:${id}#direction`
 
 export function solutionGraph(
   analysis: Analysis, work: SolutionWork, plans: readonly SolutionPlan[], options: SolutionGraphOptions = {},
@@ -120,19 +145,24 @@ export function solutionGraph(
   const structural = first + 2
   laneKinds.push('directions', 'experiments', 'structural')
 
+  // Where a solution's lines start: the solution itself while it is a
+  // direction, the direction it was once it is structural.
+  const leftOf = (solution: Solution) => (isDirection(solution) ? solutionKey(solution.id) : trailKey(solution.id))
   for (const solution of drawn) {
     const direction = isDirection(solution)
     nodes.push({
       kind: 'solution', key: solutionKey(solution.id), id: solution.id, solution,
       phase: solutionPhase(solution, plans), lane: direction ? directions : structural, row: 0,
     })
+    if (!direction) nodes.push({ kind: 'trail', key: trailKey(solution.id), id: solution.id, solution, lane: directions, row: 0 })
     for (const address of solution.addresses) {
       if (!known.has(address.id)) continue
-      edges.push({ from: address.id, to: solutionKey(solution.id), kind: 'addresses', strength: address.strength })
+      edges.push({ from: address.id, to: leftOf(solution), kind: 'addresses', strength: address.strength })
     }
   }
 
   const byId = new Map(drawn.map((one) => [one.id, one]))
+  const proven = new Set<string>()
   for (const experiment of work.experiments) {
     const tested = experiment.tests.filter((id) => drawnIds.has(id))
     if (tested.length === 0) continue
@@ -140,10 +170,15 @@ export function solutionGraph(
     nodes.push({ kind: 'experiment', key, id: experiment.id, experiment, lane: experimentsLane, row: 0 })
     for (const id of tested) {
       const solution = byId.get(id)!
-      edges.push(isDirection(solution)
-        ? { from: solutionKey(id), to: key, kind: 'tests', strength: 'normal' }
-        : { from: key, to: solutionKey(id), kind: 'tests', strength: 'normal' })
+      edges.push({ from: leftOf(solution), to: key, kind: 'tests', strength: 'normal' })
+      if (isDirection(solution) || experiment.outcome !== 'confirmed') continue
+      edges.push({ from: key, to: solutionKey(id), kind: 'proves', strength: 'normal' })
+      proven.add(id)
     }
+  }
+  for (const solution of drawn) {
+    if (isDirection(solution) || proven.has(solution.id)) continue
+    edges.push({ from: trailKey(solution.id), to: solutionKey(solution.id), kind: 'became', strength: 'normal' })
   }
 
   // One sweep over every lane. With the whole chain, the analysis's lanes come

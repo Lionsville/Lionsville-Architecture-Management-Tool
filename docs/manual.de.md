@@ -698,15 +698,18 @@ Sie sie mit einer tieferen, und sie ist keine mehr.
 Der dritte Reiter, **Lösungen**, beginnt, wo die Analyse endet: was das Team
 gegen eine Ursache unternimmt, wie sich eine Idee eine Entscheidung verdient,
 und ob das Gebaute die Beobachtungen aufhören ließ. Das Bild zeigt links die
-Ursachen — die Grundursachen und jede andere Ursache, die eine Lösung
-angeht —, dann die **Richtungen** (Ideen, die ausgearbeitet oder getestet
-werden), die **Experimente** und die **strukturellen** Lösungen (bewährt,
-beschlossen, umgesetzt). Eine Lösung rückt nach rechts, während sie reift;
-ihre Breite ist der Nutzen, den sie verspricht, ihre Füllung, wie weit sie
-ist. **Ganze Kette** stellt die Beobachtungen und die ganze Analyse wieder
-links dazu, sodass ein Bild vom Gesehenen bis zum Gebauten reicht. Eine
-Markierung (!) sagt, wohin man schauen sollte: eine Grundursache, an der
-niemand arbeitet, oder eine Lösung mit einer Frage.
+Ursachen — die Grundursachen und jede andere Ursache, die eine Lösung angeht
+—, dann die **Richtungen** (Ideen, die ausgearbeitet oder getestet werden),
+die **Experimente** und die **strukturellen** Lösungen (bewährt, beschlossen,
+umgesetzt). Eine Lösung rückt nach rechts, während sie reift; ihre Breite ist
+der Nutzen, den sie verspricht, ihre Füllung, wie weit sie ist. Ist sie
+strukturell, behält sie ein verblasstes Feld in der Bahn der Richtungen für
+die Richtung, die sie war, sodass die Linie von der Ursache über dieses Feld
+und das Experiment, das sie bestätigt hat, in die Lösung läuft. **Ganze
+Kette** stellt die Beobachtungen und die ganze Analyse wieder links dazu,
+sodass ein Bild vom Gesehenen bis zum Gebauten reicht. Eine Markierung (!)
+sagt, wohin man schauen sollte: eine Grundursache, an der niemand arbeitet,
+oder eine Lösung mit einer Frage.
 
 **Eine Lösung vorschlagen…** an einer Ursache oder **Neue Lösung** in der
 Leiste schreibt einen nummerierten Eintrag (`SO-0003`) mit einem Titel und der

@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Analysis, Cause, Observation } from './observation'
 import type { Experiment, Solution, SolutionWork } from './solution'
-import { experimentKey, isDirection, solutionGraph, solutionKey } from './solutionGraph'
+import { experimentKey, isDirection, solutionGraph, solutionKey, trailKey } from './solutionGraph'
 
 const observation = (id: string): Observation => ({
   id, number: 1, title: id, date: '2026-06-01', impact: 'minor', seen: 1, body: '', history: [],
@@ -16,8 +16,8 @@ const solution = (id: string, state: Solution['state'], addresses: string[], ove
   id, number: 1, title: id, state, addresses: addresses.map((one) => ({ id: one, strength: 'strong' })),
   validatedWith: [], attempts: [], body: '', history: [], ...over,
 })
-const experiment = (id: string, tests: string[]): Experiment => ({
-  id, number: 1, title: id, tests, hypothesis: 'h', outcome: 'running', body: '',
+const experiment = (id: string, tests: string[], outcome: Experiment['outcome'] = 'running'): Experiment => ({
+  id, number: 1, title: id, tests, hypothesis: 'h', outcome, body: '',
 })
 
 // o1 ← c1 ← r1 (root), o2 ← r2 (root), c3 explains nothing yet.
@@ -60,7 +60,36 @@ describe('solutionGraph', () => {
     const graph = solutionGraph(analysis, work, [], { showDropped: true })
     for (const edge of graph.edges) expect(laneOf(graph, edge.from)!).toBeLessThan(laneOf(graph, edge.to)!)
     expect(graph.edges).toContainEqual({ from: solutionKey('s1'), to: experimentKey('e1'), kind: 'tests', strength: 'normal' })
-    expect(graph.edges).toContainEqual({ from: experimentKey('e2'), to: solutionKey('s2'), kind: 'tests', strength: 'normal' })
+    expect(graph.edges).toContainEqual({ from: trailKey('s2'), to: experimentKey('e2'), kind: 'tests', strength: 'normal' })
+  })
+  it('keeps the direction a structural solution was, and runs its chain through it', () => {
+    const proven: SolutionWork = {
+      solutions: [solution('s1', 'proven', ['r1'])],
+      experiments: [experiment('e1', ['s1'], 'refuted'), experiment('e2', ['s1'], 'confirmed')],
+    }
+    const graph = solutionGraph(analysis, proven, [])
+    expect(laneOf(graph, trailKey('s1'))).toBe(1)
+    expect(laneOf(graph, solutionKey('s1'))).toBe(3)
+    expect(graph.edges.filter((edge) => edge.to === solutionKey('s1'))).toEqual([
+      { from: experimentKey('e2'), to: solutionKey('s1'), kind: 'proves', strength: 'normal' },
+    ])
+    expect(graph.edges).toContainEqual({ from: 'r1', to: trailKey('s1'), kind: 'addresses', strength: 'strong' })
+    expect(graph.edges).toContainEqual({ from: trailKey('s1'), to: experimentKey('e1'), kind: 'tests', strength: 'normal' })
+    expect(graph.edges).toContainEqual({ from: trailKey('s1'), to: experimentKey('e2'), kind: 'tests', strength: 'normal' })
+    const trail = graph.nodes.find((node) => node.key === trailKey('s1'))
+    const structural = graph.nodes.find((node) => node.key === solutionKey('s1'))
+    expect(trail?.row).toBe(structural?.row)
+  })
+  it('reaches a structural solution nothing confirmed from its direction directly', () => {
+    const waived: SolutionWork = { solutions: [solution('s1', 'proven', ['r1'], { waived: 'Not trialled' })], experiments: [] }
+    const graph = solutionGraph(analysis, waived, [])
+    expect(graph.edges).toContainEqual({ from: trailKey('s1'), to: solutionKey('s1'), kind: 'became', strength: 'normal' })
+    expect(graph.edges.some((edge) => edge.from === 'r1' && edge.to === solutionKey('s1'))).toBe(false)
+  })
+  it('draws no direction twice for a solution that is still one', () => {
+    const graph = solutionGraph(analysis, work, [])
+    expect(laneOf(graph, trailKey('s1'))).toBeUndefined()
+    expect(graph.nodes.filter((node) => node.kind === 'trail').map((node) => node.id)).toEqual(['s2'])
   })
   it('puts the whole analysis on the left when asked for the whole chain', () => {
     const graph = solutionGraph(analysis, work, [], { wholeChain: true })

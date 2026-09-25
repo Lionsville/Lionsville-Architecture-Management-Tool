@@ -9,10 +9,12 @@
  * Plain SVG over `solutionGraph` and `placeGraph`, like the analysis. A
  * solution is a rounded box whose width is the benefit it promises and whose
  * fill is how far it has got; an experiment is a box with its outcome on the
- * left edge. A line from a cause to a solution is drawn in the accent colour
- * with the link's weight; a line between a solution and an experiment is
- * dashed. Selecting a node lights what it reaches in both directions, so the
- * team can follow one chain through the picture.
+ * left edge. A structural solution keeps a faded box in the directions lane
+ * for the direction it was. A line from a cause to a solution is drawn in the
+ * accent colour with the link's weight; a line from a direction to an
+ * experiment is dashed; a confirmed experiment leads on into the structural
+ * solution with a solid one. Selecting a node lights what it reaches in both
+ * directions, so the team can follow one chain through the picture.
  */
 import { useMemo, type ReactNode } from 'react'
 import Box from '@mui/material/Box'
@@ -22,12 +24,20 @@ import type { Translate } from '../../i18n'
 import { placeGraph } from '../graph'
 import { formatExperimentNumber, formatSolutionNumber } from '../solution'
 import type { SolutionPhase, SolutionSize } from '../solution'
-import type { SolutionGraph, SolutionGraphNode, SolutionLane } from '../solutionGraph'
+import { solutionKey } from '../solutionGraph'
+import type { SolutionGraph, SolutionGraphEdge, SolutionGraphNode, SolutionLane } from '../solutionGraph'
 import { OUTCOME_LABEL, PHASE_LABEL } from '../observationScope'
 import { BOX, CauseMark, Flag, LANE_WIDTH, ObservationMark, RADIUS, ROW_HEIGHT, STROKE, shorten } from './AnalysisPicture'
 
 const WIDTH: Record<SolutionSize | 'unset', number> = { unset: 160, small: 160, medium: 184, large: 212 }
 const HEIGHT = 46
+
+/** How each kind of line between the solution lanes is drawn; `addresses` and `explains` take the link's weight. */
+const LINE: Partial<Record<SolutionGraphEdge['kind'], { width: number; dash?: string }>> = {
+  tests: { width: 1.4, dash: '5 4' },
+  proves: { width: 1.8 },
+  became: { width: 1.4, dash: '1 3' },
+}
 
 const LANE_TITLE: Record<SolutionLane, Parameters<Translate>[0]> = {
   observations: 'observation.laneObservations',
@@ -71,7 +81,15 @@ export function SolutionPicture({ graph, selectedKey, onSelect, flags, s }: Solu
   const theme = useTheme()
   const placed = useMemo(() => placeGraph(graph, { laneWidth: LANE_WIDTH, rowHeight: ROW_HEIGHT, top: 36, left: 0 }), [graph])
   const at = useMemo(() => new Map(placed.map((one) => [one.key, one])), [placed])
-  const lit = useMemo(() => (selectedKey && graph.nodes.some((node) => node.key === selectedKey) ? reach(graph, selectedKey) : undefined), [graph, selectedKey])
+  // A structural solution is lit from its direction too, so an experiment
+  // that tested it without confirming it is part of its chain.
+  const lit = useMemo(() => {
+    if (!selectedKey || !graph.nodes.some((node) => node.key === selectedKey)) return undefined
+    const found = reach(graph, selectedKey)
+    const trail = graph.nodes.find((node) => node.kind === 'trail' && solutionKey(node.id) === selectedKey)
+    if (trail) for (const key of reach(graph, trail.key)) found.add(key)
+    return found
+  }, [graph, selectedKey])
   const tallest = Math.max(1, ...Array.from({ length: graph.lanes }, (_, lane) => graph.nodes.filter((node) => node.lane === lane).length))
   const width = graph.lanes * LANE_WIDTH
   const height = 36 + tallest * ROW_HEIGHT + 16
@@ -109,7 +127,7 @@ export function SolutionPicture({ graph, selectedKey, onSelect, flags, s }: Solu
   const halfWidth = (node: SolutionGraphNode | undefined): number => {
     if (!node) return BOX.width / 2
     if (node.kind === 'observation') return RADIUS[node.observation.impact]
-    if (node.kind === 'solution') return WIDTH[node.solution.benefit ?? 'unset'] / 2
+    if (node.kind === 'solution' || node.kind === 'trail') return WIDTH[node.solution.benefit ?? 'unset'] / 2
     return BOX.width / 2
   }
   const nodeOf = new Map(graph.nodes.map((node) => [node.key, node]))
@@ -145,7 +163,7 @@ export function SolutionPicture({ graph, selectedKey, onSelect, flags, s }: Solu
           const startX = from.x + halfWidth(nodeOf.get(edge.from))
           const endX = to.x - halfWidth(nodeOf.get(edge.to))
           const mid = (startX + endX) / 2
-          const stroke = edge.kind === 'tests' ? { width: 1.4, dash: '5 4' } : STROKE[edge.strength]
+          const stroke = LINE[edge.kind] ?? STROKE[edge.strength]
           const colour = edge.kind === 'addresses' ? theme.palette.primary.main : theme.palette.text.secondary
           const dim = lit !== undefined && !(lit.has(edge.from) && lit.has(edge.to))
           return (
@@ -177,6 +195,27 @@ export function SolutionPicture({ graph, selectedKey, onSelect, flags, s }: Solu
             return <CauseMark key={node.key} node={node} x={spot.x} y={spot.y} selected={selected} s={s} flag={flag?.text} {...common} />
           }
           const stroke = selected ? theme.palette.secondary.main : theme.palette.text.primary
+          if (node.kind === 'trail') {
+            const { solution } = node
+            const w = WIDTH[solution.benefit ?? 'unset']
+            const chosen = solutionKey(node.id) === selectedKey
+            return (
+              <g key={node.key} transform={`translate(${spot.x},${spot.y})`} onClick={() => onSelect(solutionKey(node.id))} cursor="pointer" data-testid="solution-picture-trail" data-key={node.key}>
+                <rect x={-w / 2} y={-HEIGHT / 2} width={w} height={HEIGHT} rx={10} fill={theme.palette.background.paper} />
+                <g opacity={dim ? 0.25 : 0.6}>
+                  <title>{`${formatSolutionNumber(solution.number)} ${solution.title} — ${s('solution.trail')}`}</title>
+                  <rect
+                    x={-w / 2} y={-HEIGHT / 2} width={w} height={HEIGHT} rx={10} fill="none"
+                    stroke={chosen ? theme.palette.secondary.main : theme.palette.text.secondary} strokeWidth={chosen ? 2 : 1.2} strokeDasharray="3 3"
+                  />
+                  <text textAnchor="middle" dy="-0.2em" fontSize={11} fill={theme.palette.text.secondary}>{shorten(solution.title, Math.round(w / 6.4))}</text>
+                  <text textAnchor="middle" dy="1.05em" fontSize={10} fill={theme.palette.text.secondary}>
+                    {formatSolutionNumber(solution.number)} · {s('solution.trail')}
+                  </text>
+                </g>
+              </g>
+            )
+          }
           if (node.kind === 'experiment') {
             const { experiment } = node
             return (
@@ -239,6 +278,8 @@ export function SolutionLegend({ s }: { s: Translate }) {
       {row(<><rect x={1} y={3} width={9} height={8} rx={3} fill={paper} stroke={theme.palette.text.primary} strokeDasharray="2 2" /><rect x={12} y={3} width={9} height={8} rx={3} fill={`color-mix(in srgb, ${theme.palette.warning.main} 22%, ${paper})`} stroke={theme.palette.text.primary} /><rect x={23} y={3} width={10} height={8} rx={3} fill={theme.palette.success.main} stroke={theme.palette.text.primary} /></>, s('solution.legendFill'))}
       {row(<line x1={2} y1={7} x2={32} y2={7} stroke={theme.palette.primary.main} strokeWidth={2.5} />, s('solution.legendAddresses'))}
       {row(<line x1={2} y1={7} x2={32} y2={7} stroke={theme.palette.text.secondary} strokeWidth={1.4} strokeDasharray="5 4" />, s('solution.legendTests'))}
+      {row(<line x1={2} y1={7} x2={32} y2={7} stroke={theme.palette.text.secondary} strokeWidth={1.8} />, s('solution.legendProves'))}
+      {row(<rect x={1} y={2} width={32} height={10} rx={4} fill="none" stroke={theme.palette.text.secondary} strokeOpacity={0.6} strokeDasharray="3 3" />, s('solution.legendTrail'))}
       {row(<><circle cx={10} cy={7} r={6} fill={theme.palette.warning.main} /><text x={10} y={7} dy="0.35em" textAnchor="middle" fontSize={9} fontWeight={700} fill={paper}>!</text></>, s('solution.flag'))}
     </Box>
   )

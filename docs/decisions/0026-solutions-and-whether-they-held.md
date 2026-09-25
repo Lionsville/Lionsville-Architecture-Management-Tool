@@ -197,3 +197,30 @@ Two changes, and §2 above is otherwise as it was.
 Proven is still a click. Confirming an experiment opens the gate to proven and
 does not pass it: proven is the team's claim, and the next thing it asks for is
 a decision record.
+
+## Amended — a structural solution keeps the direction it was
+
+*25 September 2026.* The same first run took the solution to proven and found
+the picture read backwards. §6 put a solution in one lane, read off its state,
+so a proven one left the directions lane empty; the line from its cause ran
+across the experiment to reach it, and the experiment's own line ran from the
+experiment into the solution beside it. The one record that matures (§2) is
+still one record; the picture now shows where it has been.
+
+* **A trail.** A structural solution — proven, adopted, implemented, or
+  dropped from one of those — is drawn twice: in the structural lane as it is,
+  and in the directions lane as a faded box, the direction it was
+  (`trail` in `solutionGraph.ts`, keyed `so:<id>#direction`). Selecting either
+  selects the solution, and selecting it lights the whole chain through both.
+* **The lines run through it.** A cause's `addresses` line ends at the
+  direction; every experiment is tested from the direction; an experiment that
+  **confirmed** it leads on into the structural box with a solid line
+  (`proves`), and one that was refuted or came out inconclusive stops at the
+  experiments lane, where it is the evidence §2 keeps it for. A solution that
+  reached proven with nothing confirmed — it was waived — is reached from its
+  direction directly (`became`, dotted), so no structural box stands on its
+  own.
+
+So the picture reads left to right as the solution was worked: cause,
+direction, test, what was built. The legend says what a solid line and a faded
+box are, in the four languages.

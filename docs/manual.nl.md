@@ -655,16 +655,19 @@ een diepere en ze is er geen meer.
 
 Het derde tabblad, **Oplossingen**, begint waar de analyse ophoudt: wat het
 team aan een oorzaak doet, hoe een idee zich een besluit verdient, en of wat
-er gebouwd is de waarnemingen heeft laten ophouden. De tekening heeft links
-de oorzaken — de grondoorzaken, en elke andere oorzaak die een oplossing
-aanpakt — dan de **richtingen** (ideeën die worden uitgewerkt of getest), de
+er gebouwd is de waarnemingen heeft laten ophouden. De tekening heeft links de
+oorzaken — de grondoorzaken, en elke andere oorzaak die een oplossing aanpakt
+— dan de **richtingen** (ideeën die worden uitgewerkt of getest), de
 **experimenten**, en de **structurele** oplossingen (bewezen, aangenomen,
 ingevoerd). Een oplossing schuift naar rechts naarmate ze rijper wordt; haar
-breedte is de baat die ze belooft en haar vulling hoe ver ze is. **Hele
-keten** zet de waarnemingen en de hele analyse er links weer bij, zodat één
-tekening loopt van wat gezien is tot wat gebouwd is. Een markering (!) zegt
-waar je moet kijken: een grondoorzaak waar niemand aan werkt, of een
-oplossing met een vraag.
+breedte is de baat die ze belooft en haar vulling hoe ver ze is. Is ze
+structureel, dan houdt ze een vervaagd vak in de baan van de richtingen voor
+de richting die ze was, zodat de lijn loopt van de oorzaak via dat vak en het
+experiment dat haar bevestigde naar de oplossing. **Hele keten** zet de
+waarnemingen en de hele analyse er links weer bij, zodat één tekening loopt
+van wat gezien is tot wat gebouwd is. Een markering (!) zegt waar je moet
+kijken: een grondoorzaak waar niemand aan werkt, of een oplossing met een
+vraag.
 
 **Een oplossing voorstellen…** bij een oorzaak, of **Nieuwe oplossing** in de
 balk, schrijft een genummerd record (`SO-0003`) met een titel en de oorzaak

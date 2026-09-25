@@ -158,6 +158,9 @@ export const FY: Record<keyof typeof EN, string> = {
   'solution.legendFill': 'Folling: hoe fier it is',
   'solution.legendAddresses': 'Line: pakt in oarsaak oan',
   'solution.legendTests': 'Stippele: test',
+  'solution.legendProves': 'Trochlutsen: befestige it',
+  'solution.legendTrail': 'Ferbleke: de rjochting dy’t it wie',
+  'solution.trail': 'as rjochting',
   'solution.flagNoSolution': 'In grûnoarsaak dêr\'t noch nimmen oan wurket',
   'solution.flag': 'Freget omtinken',
   // --- phases, sizes, outcomes

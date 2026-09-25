@@ -165,6 +165,17 @@ describe('the Solutions tab', () => {
     expect(screen.getByTestId('solution-coverage').textContent).toBe('0 of 1 root causes have a live solution')
   })
 
+  it('draws a proven solution after the direction it was and the experiment that confirmed it, and opens it from either box', () => {
+    mount({ ...base, solutions: [solution({ state: 'proven' })], experiments: [experiment({ outcome: 'confirmed' })] })
+    fireEvent.click(screen.getByTestId('observation-tab-solutions'))
+    const picture = screen.getByTestId('solution-picture')
+    expect(picture.querySelector('[data-key="so:s1"]')?.getAttribute('data-phase')).toBe('proven')
+    const kinds = [...picture.querySelectorAll('[data-testid="solution-link"]')].map((line) => line.getAttribute('data-kind')).sort()
+    expect(kinds).toEqual(['addresses', 'proves', 'tests'])
+    fireEvent.click(picture.querySelector('[data-key="so:s1#direction"]')!)
+    expect(screen.getByTestId('solution-phase').textContent).toBe('Proven')
+  })
+
   it('removing a cause takes it out of every solution that addressed it', () => {
     const { onChange } = mount({ ...base, solutions: [solution({})] }, { initialId: 'c2' })
     fireEvent.click(within(screen.getByTestId('cause-reader')).getByText('Delete'))

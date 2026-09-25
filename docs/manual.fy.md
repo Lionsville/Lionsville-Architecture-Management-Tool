@@ -644,10 +644,13 @@ oarsaken — de grûnoarsaken, en elke oare oarsaak dy't in oplossing oanpakt �
 dan de **rjochtingen** (ideeën dy't útwurke of test wurde), de
 **eksperiminten**, en de **strukturele** oplossingen (bewiisd, oannommen,
 ynfierd). In oplossing skoot nei rjochts as se riper wurdt; har breedte is de
-baat dy't se tasizzet en har folling hoe fier se is. **Hiele keten** set de
-waarnimmings en de hiele analyze der links wer by, sadat ien tekening rint
-fan wat sjoen is oant wat boud is. In markearring (!) seit wêr't jo sjen
-moatte: in grûnoarsaak dêr't nimmen oan wurket, of in oplossing mei in fraach.
+baat dy't se tasizzet en har folling hoe fier se is. Is se struktureel, dan
+hâldt se in ferbleke fak yn de baan fan de rjochtingen foar de rjochting dy't
+se wie, sadat de line rint fan de oarsaak troch dat fak en it eksperimint dat
+har befestige nei de oplossing. **Hiele keten** set de waarnimmings en de
+hiele analyze der links wer by, sadat ien tekening rint fan wat sjoen is oant
+wat boud is. In markearring (!) seit wêr't jo sjen moatte: in grûnoarsaak
+dêr't nimmen oan wurket, of in oplossing mei in fraach.
 
 **In oplossing foarstelle…** by in oarsaak, of **Nije oplossing** yn de
 balke, skriuwt in nûmere record (`SO-0003`) mei in titel en de oarsaak dêr't
