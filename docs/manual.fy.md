@@ -652,14 +652,16 @@ hiele analyze der links wer by, sadat ien tekening rint fan wat sjoen is oant
 wat boud is. In markearring (!) seit wêr't jo sjen moatte: in grûnoarsaak
 dêr't nimmen oan wurket, of in oplossing mei in fraach.
 
-**In oplossing foarstelle…** by in oarsaak, of **Nije oplossing** yn de
-balke, skriuwt in nûmere record (`SO-0003`) mei in titel en de oarsaak dêr't
-it foar is, en fierder neat. Foardat it as **útwurke** telt, hat it nedich
-wat it team dochs al freegje soe: de ferwachte baat en growwe kosten, by wa't
-it hifke is, en oft soks earder besocht is — en sa ja, wêrom't it no wol
-wurkje soe. De lêzer set wat noch iepen stiet ûnder *Om troch te gean nei…*,
-elke rigel mei syn ynfier dernjonken, en de knop bliuwt útskeakele oant de
-list leech is. **Werom nei…** set it op elk momint ien stap werom.
+**In oplossing foarstelle…** by in oarsaak, of **Nije oplossing** yn de balke,
+skriuwt in nûmere record (`SO-0003`) mei in titel en de oarsaak dêr't it foar
+is, en fierder neat. Dy oarsaak is in grûnoarsaak: ien dy't troch wat djippers
+ferklearre wurdt is dêr in symptoom fan, dus de lêzer wiist dan dêrhinne yn
+plak fan in oplossing oan te bieden. Foardat it as **útwurke** telt, hat it
+nedich wat it team dochs al freegje soe: de ferwachte baat en growwe kosten,
+by wa't it hifke is, en oft soks earder besocht is — en sa ja, wêrom't it no
+wol wurkje soe. De lêzer set wat noch iepen stiet ûnder *Om troch te gean
+nei…*, elke rigel mei syn ynfier dernjonken, en de knop bliuwt útskeakele oant
+de list leech is. **Werom nei…** set it op elk momint ien stap werom.
 
 Fan útwurke nei **wurdt test** is in **eksperimint** (`EX-0002`) nedich: in
 hypoteze, hoe't it metten wurdt, wêr, troch wa en wannear. In eksperimint
@@ -688,9 +690,10 @@ oarsaken. Beide records binne markdownbestannen, ûnder
 
 **Rjochtsklik** op wat yn de analyze of de tekening fan de oplossingen foar
 wat jo dermei kinne — deselde aksjes as yn de lêzer, Bewurkje dêrûnder — en op
-in line foar hoe sterk it ferbân is, of om it los te meitsjen. **Bewurkje**
-jout it record de hiele breedte: de tekst lofts, hoe't it der útsjen sil
-rjochts, en de tekening werom sa gau't jo nei Lêze gean.
+in line — de ferbannen fan de analyze, de oarsaken fan in oplossing, de linen
+nei en út in eksperimint — foar hoe sterk it ferbân is, of om it los te
+meitsjen. **Bewurkje** jout it record de hiele breedte: de tekst lofts, hoe't
+it der útsjen sil rjochts, en de tekening werom sa gau't jo nei Lêze gean.
 
 ## Tiid, en de dei dy't in boerd toant
 

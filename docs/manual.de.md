@@ -713,13 +713,16 @@ oder eine Lösung mit einer Frage.
 
 **Eine Lösung vorschlagen…** an einer Ursache oder **Neue Lösung** in der
 Leiste schreibt einen nummerierten Eintrag (`SO-0003`) mit einem Titel und der
-Ursache, für die er ist, und sonst nichts. Bevor er als **ausgearbeitet**
-gilt, braucht er, was das Team ohnehin fragen würde: den erwarteten Nutzen
-und grobe Kosten, mit wem er geprüft wurde und ob etwas Ähnliches schon
-einmal versucht wurde — und wenn ja, warum es jetzt funktionieren würde. Der
-Leser führt unter *Um weiterzugehen zu…* auf, was noch offen ist, jede Zeile
-mit ihrer Eingabe daneben, und die Schaltfläche bleibt gesperrt, bis die
-Liste leer ist. **Zurück zu…** setzt ihn jederzeit einen Schritt zurück.
+Ursache, für die er ist, und sonst nichts. Diese Ursache ist eine
+Grundursache: eine, die etwas Tieferes erklärt, ist ein Symptom davon, deshalb
+verweist der Leser dann dorthin, statt eine Lösung anzubieten. Bevor er als
+**ausgearbeitet** gilt, braucht er, was das Team ohnehin fragen würde: den
+erwarteten Nutzen und grobe Kosten, mit wem er geprüft wurde und ob etwas
+Ähnliches schon einmal versucht wurde — und wenn ja, warum es jetzt
+funktionieren würde. Der Leser führt unter *Um weiterzugehen zu…* auf, was
+noch offen ist, jede Zeile mit ihrer Eingabe daneben, und die Schaltfläche
+bleibt gesperrt, bis die Liste leer ist. **Zurück zu…** setzt ihn jederzeit
+einen Schritt zurück.
 
 Von ausgearbeitet zu **im Test** braucht es ein **Experiment** (`EX-0002`):
 eine Hypothese, wie gemessen wird, wo, von wem und wann. Ein Experiment aus
@@ -748,9 +751,11 @@ Einträge sind Markdown-Dateien, unter `observations/solutions/` und
 
 Ein **Rechtsklick** auf etwas in der Analyse oder im Bild der Lösungen zeigt,
 was man damit tun kann — dieselben Aktionen wie im Leser, Bearbeiten darunter
-— und auf einer Linie, wie stark die Verbindung ist, oder sie zu lösen.
-**Bearbeiten** gibt dem Datensatz die ganze Breite: der Text links, wie er
-aussehen wird rechts, und das Bild kommt zurück, sobald man zu Lesen wechselt.
+— und auf einer Linie — die Verbindungen der Analyse, die Ursachen einer
+Lösung, die Linien in ein Experiment und aus ihm heraus —, wie stark die
+Verbindung ist, oder sie zu lösen. **Bearbeiten** gibt dem Datensatz die ganze
+Breite: der Text links, wie er aussehen wird rechts, und das Bild kommt
+zurück, sobald man zu Lesen wechselt.
 
 ## Zeit, und der Tag, den ein Board zeigt
 

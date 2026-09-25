@@ -247,3 +247,42 @@ and one it could not do at all.
   back on Read. Leaving an edit commits it whoever ended it — the toggle, a tab,
   the record becoming one that may not be changed — which was the toggle's job
   alone before.
+
+## Amended — root causes only, the experiment's lines, and the method for an agent
+
+*25 September 2026.* Three more from the same run, and one the owner asked of
+the agent's side.
+
+* **A solution addresses root causes only.** §1 let a solution address any
+  cause of its scope and asked `worksAround` afterwards; the first person to
+  use it found *Address a cause…* offering the symptoms beside the roots, which
+  invites the fix the method exists to prevent. `causesForProposal` is the
+  root causes and nothing else; a non-root cause's reader offers no *Propose a
+  solution* and says where to go instead; `solution.propose` and
+  `solution.address` refuse one, naming the deeper cause that explains it. A
+  link that exists is kept when its cause later gains a deeper one — changing
+  its strength is still allowed — and `worksAround` is the question that then
+  asks about it. The shipped example's first solution addressed a root and the
+  symptom under it, and now addresses the root.
+* **The lines around an experiment have a strength**, as a cause's links do:
+  how firmly the experiment bears on each solution it tests. `Experiment`
+  gains `strength`, by solution id and only where it is not normal, so a file
+  written before reads the same and writes the same — `strength:` on the test
+  row in the front matter, where it is said at all. The dashed line into the
+  experiment and the solid one out of a confirmed one are drawn with it, and
+  both answer a right-click with the strengths and *Unlink*, which takes the
+  solution out of what the experiment tests and keeps the experiment.
+  `experiment.plan` and `experiment.update` take `strength`, and an
+  experiment's answer gives it per tested solution.
+* **The observation template asks for facts.** Its third heading was *First
+  thoughts*, which invites the reading of a sighting into the sighting; it is
+  *Who or what it affected* now. A reading of it is a cause.
+* **The agent is told the method, not only the calls.** `agent/method.ts` is
+  one paragraph — an observation is a fact in neutral words; the analysis is
+  causes, asked why until a root; a solution addresses a root, has
+  alternatives, is proven by an experiment whose hypothesis could fail, is
+  decided by people and built by a plan; split what a person says in one
+  breath and say where each part went; never answer a gate, verify a cause,
+  conclude an experiment or accept a decision on the agent's own judgement —
+  appended to the paragraph every host hands over on connect. The tool
+  descriptions say the same where each call is made.

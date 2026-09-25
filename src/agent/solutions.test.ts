@@ -135,21 +135,44 @@ describe('solution tools', () => {
     expect(read(model, 'solution.read', { id: 'SO-0001' }).state).toBe('idea')
   })
 
-  it('asks whether a proven solution for a cause with a cause of its own works around it', () => {
-    let model = write(fromArrays(host), 'solution.propose', { title: 'Sync the two estimates', addresses: [{ id: 'ca-1' }] }).model
+  it('addresses root causes only, and names the deeper one when asked for a symptom', () => {
+    const model = fromArrays(host)
+    expect(refusal(model, 'solution.propose', { title: 'Sync the two estimates', addresses: [{ id: 'ca-1' }] }))
+      .toContain('CA-0001 is not a root cause: CA-0002 explains it')
+    const proposed = write(model, 'solution.propose', { title: 'Own the data', addresses: [{ id: 'ca-2' }] }).model
+    expect(refusal(proposed, 'solution.address', { id: 'SO-0001', cause: 'ca-1' })).toContain('CA-0002 explains it')
+  })
+
+  it('asks whether a proven solution works around its cause once that cause gains a deeper one', () => {
+    let model = write(fromArrays(host), 'solution.propose', { title: 'Own the data', addresses: [{ id: 'ca-2' }] }).model
     model = write(model, 'solution.update', { id: 'SO-0001', benefit: 'small', cost: 'small', validatedWith: ['Ops'], noneKnown: true }).model
     model = write(model, 'solution.move', { id: 'SO-0001', to: 'shaped' }).model
     model = write(model, 'experiment.plan', { tests: ['SO-0001'], title: 'Trial', hypothesis: 'Fewer calls' }).model
     model = write(model, 'experiment.conclude', { id: 'EX-0001', outcome: 'confirmed' }).model
-    const proven = write(model, 'solution.move', { id: 'SO-0001', to: 'proven' })
-    expect(proven.answer.questions).toEqual(['worksAround'])
-    expect(proven.answer.addresses).toEqual([expect.objectContaining({ id: 'ca-1', strength: 'normal', root: false })])
+    model = write(model, 'solution.move', { id: 'SO-0001', to: 'proven' }).model
+    expect(read(model, 'solution.read', { id: 'SO-0001' }).questions).toEqual([])
+    model = write(model, 'cause.add', { title: 'Nobody was asked to own it', explains: [{ id: 'ca-2' }] }).model
+    const asked = read(model, 'solution.read', { id: 'SO-0001' })
+    expect(asked.questions).toEqual(['worksAround'])
+    expect(asked.addresses).toEqual([expect.objectContaining({ id: 'ca-2', root: false })])
+    const restrengthened = write(model, 'solution.address', { id: 'SO-0001', cause: 'ca-2', strength: 'weak' })
+    expect(restrengthened.answer.addresses).toEqual([expect.objectContaining({ id: 'ca-2', strength: 'weak' })])
   })
 
   it('removing a cause takes it out of every solution, as one step', () => {
     const model = write(fromArrays(host), 'solution.propose', { title: 'Own the data', addresses: [{ id: 'ca-2' }] }).model
     const removed = write(model, 'cause.remove', { id: 'ca-2' }).model
     expect(removed.solutions!['so-new-1'].addresses).toEqual([])
+  })
+
+  it('says how firmly an experiment bears on each solution it tests, and only on those', () => {
+    let model = write(fromArrays(host), 'solution.propose', { title: 'A', addresses: [{ id: 'ca-2' }] }).model
+    model = write(model, 'solution.propose', { title: 'B', addresses: [{ id: 'ca-2' }] }).model
+    const planned = write(model, 'experiment.plan', { tests: ['SO-0001'], title: 'Trial', hypothesis: 'It works', strength: { 'SO-0001': 'strong' } })
+    expect(planned.answer).toMatchObject({ tests: [{ label: 'SO-0001', strength: 'strong' }] })
+    expect(refusal(planned.model, 'experiment.update', { id: 'EX-0001', strength: { 'SO-0002': 'weak' } })).toContain('does not test SO-0002')
+    const widened = write(planned.model, 'experiment.update', { id: 'EX-0001', tests: ['SO-0001', 'SO-0002'], strength: { 'SO-0002': 'weak' } })
+    expect(widened.answer).toMatchObject({ tests: [{ label: 'SO-0001', strength: 'strong' }, { label: 'SO-0002', strength: 'weak' }] })
   })
 
   it('removes a solution from the experiments that tested it', () => {

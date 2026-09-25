@@ -138,6 +138,13 @@ describe('an experiment as a file', () => {
     expect(experimentPath(experiment)).toBe('observations/experiments/0002-two-weeks-at-desk-3.md')
     expect(experimentFromFile(experimentFileText(experiment), experimentPath(experiment))).toEqual(experiment)
   })
+  it('writes a test link\'s strength only where it is not normal, and reads it back', () => {
+    const firm: Experiment = { ...experiment, strength: { 'so-b': 'weak' } }
+    const text = experimentFileText(firm)
+    expect(text).toContain('  - id: so-a\n  - id: so-b\n    strength: weak\n')
+    expect(experimentFromFile(text, experimentPath(firm))).toEqual(firm)
+    expect(experimentFileText(experiment)).not.toContain('strength')
+  })
   it('reads a hand-written one: number from the name, planned by default', () => {
     const back = experimentFromFile('# EX-0007 — Trial\n\nNotes.\n', 'observations/experiments/0007-trial.md')
     expect(back).toMatchObject({ number: 7, title: 'Trial', outcome: 'planned', tests: [], hypothesis: '' })

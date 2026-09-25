@@ -426,9 +426,15 @@ export function restoreSolution(list: readonly Solution[], id: string, date: str
 export function removeSolution(work: SolutionWork, id: string): SolutionWork {
   return {
     solutions: work.solutions.filter((one) => one.id !== id),
-    experiments: work.experiments.map((one) => (
-      one.tests.includes(id) ? { ...one, tests: one.tests.filter((test) => test !== id) } : one
-    )),
+    experiments: work.experiments.map((one) => {
+      if (!one.tests.includes(id)) return one
+      const tests = one.tests.filter((test) => test !== id)
+      const next: Experiment = { ...one, tests }
+      const kept = pruneStrength(one.strength, tests)
+      if (kept) next.strength = kept
+      else delete next.strength
+      return next
+    }),
   }
 }
 
@@ -446,12 +452,50 @@ export function updateExperiment(list: readonly Experiment[], id: string, patch:
     const next: Experiment = { ...one, ...patch }
     if (patch.title !== undefined) next.title = patch.title.trim()
     if (patch.hypothesis !== undefined) next.hypothesis = patch.hypothesis.trim()
-    if (patch.tests !== undefined) next.tests = [...new Set(patch.tests)]
+    if (patch.tests !== undefined) {
+      next.tests = [...new Set(patch.tests)]
+      const kept = pruneStrength(next.strength, next.tests)
+      if (kept) next.strength = kept
+      else delete next.strength
+    }
     for (const key of ['measure', 'where', 'by', 'from', 'to', 'result'] as const) {
       if (patch[key] !== undefined && !patch[key]!.trim()) delete next[key]
     }
     return next
   })
+}
+
+/** The strengths still meant: only for what it still tests, and nothing when none is left. */
+function pruneStrength(strength: Experiment['strength'], tests: readonly string[]): Experiment['strength'] {
+  if (!strength) return undefined
+  const kept = Object.fromEntries(Object.entries(strength).filter(([id]) => tests.includes(id)))
+  return Object.keys(kept).length ? kept : undefined
+}
+
+/** How firmly an experiment bears on one solution it tests; `normal` where nothing was said. */
+export function testStrength(experiment: Experiment, solutionId: string): CauseStrength {
+  return experiment.strength?.[solutionId] ?? 'normal'
+}
+
+/**
+ * How firmly an experiment bears on a solution it tests, changed — the line
+ * between them on the picture, as a cause's link to what it explains has one.
+ * `normal` is not written, so the file says nothing it did not say before.
+ */
+export function setTestStrength(list: readonly Experiment[], id: string, solutionId: string, strength: CauseStrength): Experiment[] {
+  return list.map((one) => {
+    if (one.id !== id || !one.tests.includes(solutionId)) return one
+    const rest = Object.fromEntries(Object.entries(one.strength ?? {}).filter(([key]) => key !== solutionId))
+    const map = strength === 'normal' ? rest : { ...rest, [solutionId]: strength }
+    const next: Experiment = { ...one, strength: map }
+    if (!Object.keys(map).length) delete next.strength
+    return next
+  })
+}
+
+/** An experiment stops testing a solution. It stays, as the record of what was tried. */
+export function untestSolution(list: readonly Experiment[], id: string, solutionId: string): Experiment[] {
+  return updateExperiment(list, id, { tests: (list.find((one) => one.id === id)?.tests ?? []).filter((test) => test !== solutionId) })
 }
 
 /** Say how it went. The result, when given, replaces what was written before. */

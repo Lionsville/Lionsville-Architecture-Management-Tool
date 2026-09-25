@@ -239,6 +239,11 @@ export type Experiment = {
   title: string
   /** The solutions of this scope it tests. Usually one. */
   tests: string[]
+  /**
+   * How firmly it bears on each solution it tests, by solution id, where that
+   * is not `normal` — so a file written before this existed reads the same.
+   */
+  strength?: Record<string, CauseStrength>
   /** What should happen if the solution is right. Never blank. */
   hypothesis: string
   /** What is counted to decide it. */

@@ -31,6 +31,7 @@ import type { AgentAnswer, AgentRequest, ToolContent, ToolSpec } from './tools'
 import { REFUSAL_SENTENCE, RESOURCE_LIST, RESOURCE_READ, TOOLS, refused } from './tools'
 import { randomUUID } from 'node:crypto'
 import type { AgentClient } from '../platform/agentServer'
+import { OBSERVATIONS_METHOD } from './method'
 
 /**
  * The newest version this server speaks, and the ones it will answer a client
@@ -93,7 +94,8 @@ export const INSTRUCTIONS =
   + 'The person is watching and may click while you work. Your first call that moves the app or changes '
   + 'the model puts a banner on their screen naming you; session.start lets you say why, and session.end '
   + 'takes the banner down when you are done. If they press Stop, your next call is refused with '
-  + 'agent.stopped: tell them where you got to and wait to be asked before you continue.'
+  + 'agent.stopped: tell them where you got to and wait to be asked before you continue. '
+  + OBSERVATIONS_METHOD
 
 /**
  * What a host says about itself, and how much of the vocabulary it has.

@@ -6,7 +6,7 @@ Layer-7 application landscape and the C4 container diagrams under it. **There is
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **4537 tests** and one of every config. The
+One codebase, in modules, with **4544 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -55,7 +55,7 @@ the two categories above.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 4537 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 4544 tests. Run it
 after every change.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
@@ -771,7 +771,7 @@ identifiers is still a list of a customer's identifiers.
 | A plan for changing the landscape | a **transition**, `TR-0001` on screen; flagged `initiative`, it is drawn on the roadmap of every scope above it (ADR-0012 §7) |
 | Plans on disk | `transitions/NNNN-<slug>.md`, flat, numbers per project |
 | What was seen, and why (ADR-0021) | an **observation**, `OB-0001` on screen, `seen` times, `by` whom (free text), local unless `shared` — then read by every scope above; `archived` when fixed or no longer relevant — kept, out of the analysis, restored the same way; a **cause**, `CA-0001`, `assumed` → `verified`, `explains` observations and shallower causes with a `strength`; a **root cause** is derived: explains something, explained by nothing. Merging is an `absorbed` event on the survivor and a `merged` one on the other; a shared one absorbed above is written on the survivor only |
-| What is done about a cause (ADR-0026) | a **solution**, `SO-0001`, `addresses` causes of its scope with a `strength`; `idea` → `shaped` → `testing` → `proven` → `adopted`, one step at a time, each forward step behind a gate read off its fields (`solutionGate`), `waived` with a reason the one way past the testing gate; `dropped` with a note and kept as a considered alternative; **implemented** is derived from its plan being `done`. An **experiment**, `EX-0001`, `tests` solutions with a `hypothesis` and ends `confirmed` · `refuted` · `inconclusive`. The questions a record asks without stopping it: `worksAround` · `addsOnly` · `adoptedUnplanned`; the finding: seen again since it was implemented |
+| What is done about a cause (ADR-0026) | a **solution**, `SO-0001`, `addresses` root causes of its scope with a `strength` — a non-root cause is refused; `idea` → `shaped` → `testing` → `proven` → `adopted`, one step at a time, each forward step behind a gate read off its fields (`solutionGate`), `waived` with a reason the one way past the testing gate; `dropped` with a note and kept as a considered alternative; **implemented** is derived from its plan being `done`. An **experiment**, `EX-0001`, `tests` solutions — each with a `strength` where it is not normal — with a `hypothesis` and ends `confirmed` · `refuted` · `inconclusive`. The questions a record asks without stopping it: `worksAround` · `addsOnly` · `adoptedUnplanned`; the finding: seen again since it was implemented |
 | Observations on disk | `observations/NNNN-<slug>.md` and `observations/causes/NNNN-<slug>.md`, flat, numbers per scope; `observations/solutions/NNNN-<slug>.md` and `observations/experiments/NNNN-<slug>.md` beside the causes |
 | Agent tools, observations (ADR-0021) | `observations.list` `observation.read` `causes.list` `cause.read` `observation.record` `observation.update` `observation.seen` `observation.archive` `observation.merge` `observation.remove` `cause.add` `cause.update` `cause.link` `cause.unlink` `cause.remove` |
 | Agent tools, solutions (ADR-0026) | `solutions.list` `solution.read` `experiments.list` `experiment.read` `solution.propose` `solution.update` `solution.address` `solution.unaddress` `solution.move` `solution.waive` `solution.drop` `solution.restore` `solution.decide` `solution.plan` `solution.remove` `experiment.plan` `experiment.update` `experiment.conclude` `experiment.remove` |

@@ -210,6 +210,30 @@ describe('the solutions picture’s right-click', () => {
     expect(lastChange(onChange).experiments[0].outcome).toBe('confirmed')
   })
 
+  it('proposes solutions on root causes only, from the menu and from the reader', () => {
+    mount({ ...base }, { initialId: 'c1' })
+    expect(screen.queryByTestId('cause-propose')).toBeNull()
+    expect(screen.getByTestId('cause-propose-at-root').textContent).toContain('root cause')
+    fireEvent.click(screen.getByTestId('observation-tab-analysis'))
+    rightClick(screen.getByTestId('analysis-picture').querySelector('[data-key="c1"]')!)
+    expect(screen.queryByTestId('picture-menu-propose')).toBeNull()
+    fireEvent.keyDown(screen.getByTestId('picture-menu'), { key: 'Escape' })
+    rightClick(screen.getByTestId('analysis-picture').querySelector('[data-key="c2"]')!)
+    expect(screen.getByTestId('picture-menu-propose')).toBeTruthy()
+  })
+
+  it('changes how firmly an experiment bears on a solution from either of its lines, and unlinks it', () => {
+    const { onChange } = mount({ ...base, solutions: [solution({ state: 'proven' })], experiments: [experiment({ outcome: 'confirmed' })] })
+    fireEvent.click(screen.getByTestId('observation-tab-solutions'))
+    const line = (kind: string) => [...screen.getAllByTestId('solution-link-hit')].find((hit) => hit.getAttribute('data-kind') === kind)!
+    rightClick(line('tests'))
+    fireEvent.click(screen.getByTestId('picture-menu-strength-strong'))
+    expect(lastChange(onChange).experiments[0].strength).toEqual({ s1: 'strong' })
+    rightClick(line('proves'))
+    fireEvent.click(screen.getByTestId('picture-menu-unlink'))
+    expect(lastChange(onChange).experiments[0].tests).toEqual([])
+  })
+
   it('changes how strongly a solution addresses a cause from its line, and the direction it was opens it', () => {
     const { onChange } = mount({ ...base, solutions: [solution({ state: 'proven' })], experiments: [experiment({ outcome: 'confirmed' })] })
     fireEvent.click(screen.getByTestId('observation-tab-solutions'))

@@ -270,7 +270,7 @@ export function experimentFileText(experiment: Experiment): string {
     from: experiment.from,
     to: experiment.to,
     result: experiment.result,
-    tests: experiment.tests.filter(Boolean).map((id) => ({ id })),
+    tests: experiment.tests.filter(Boolean).map((id) => ({ id, ...(experiment.strength?.[id] ? { strength: experiment.strength[id] } : {}) })),
   })
   const heading = `# EX-${numberPrefix(experiment.number)} — ${experiment.title}`
   return `${fields}\n${heading}\n\n${experiment.body}\n`
@@ -345,11 +345,19 @@ export function experimentFromFile(fileText: string, path: string): Experiment |
     measure: string('measure'), where: string('where'), by: string('by'),
     from: string('from'), to: string('to'), result: string('result'),
   }
+  const rows = frontMatterRows(fields, 'tests')
+  // A strength is written only where it is not normal, and read the same way.
+  const strength = Object.fromEntries(rows.flatMap((row) => {
+    const id = text(row, 'id')
+    const said = oneOf<CauseStrength>(['strong', 'weak'], text(row, 'strength'))
+    return id && said ? [[id, said]] : []
+  }))
   return {
     id: string('id') ?? `ex-${number}`,
     number,
     title,
-    tests: frontMatterRows(fields, 'tests').flatMap((row) => text(row, 'id') ?? []),
+    tests: rows.flatMap((row) => text(row, 'id') ?? []),
+    ...(Object.keys(strength).length ? { strength } : {}),
     hypothesis: string('hypothesis') ?? '',
     ...Object.fromEntries(Object.entries(optional).filter(([, value]) => value !== undefined)),
     outcome: oneOf<ExperimentOutcome>(EXPERIMENT_OUTCOMES, string('outcome')) ?? 'planned',

@@ -28,7 +28,7 @@ import { analysisGraph, assignRows } from './graph'
 import type { GraphNode } from './graph'
 import { isRootCause } from './observation'
 import type { Analysis, Cause, CauseStrength, SharedObservation } from './observation'
-import { isLive, solutionPhase } from './solution'
+import { isLive, solutionPhase, testStrength } from './solution'
 import type { Experiment, Solution, SolutionPhase, SolutionPlan, SolutionState, SolutionWork } from './solution'
 
 export type SolutionLane = 'observations' | 'causes' | 'roots' | 'directions' | 'experiments' | 'structural'
@@ -170,9 +170,10 @@ export function solutionGraph(
     nodes.push({ kind: 'experiment', key, id: experiment.id, experiment, lane: experimentsLane, row: 0 })
     for (const id of tested) {
       const solution = byId.get(id)!
-      edges.push({ from: leftOf(solution), to: key, kind: 'tests', strength: 'normal' })
+      const strength = testStrength(experiment, id)
+      edges.push({ from: leftOf(solution), to: key, kind: 'tests', strength })
       if (isDirection(solution) || experiment.outcome !== 'confirmed') continue
-      edges.push({ from: key, to: solutionKey(id), kind: 'proves', strength: 'normal' })
+      edges.push({ from: key, to: solutionKey(id), kind: 'proves', strength })
       proven.add(id)
     }
   }
@@ -188,8 +189,19 @@ export function solutionGraph(
   return { nodes, edges, lanes, laneKinds }
 }
 
-/** The causes a solution could be written for: every cause, roots first. */
+/**
+ * The causes a solution may be written for: the root causes, and only those.
+ * A cause something deeper explains is a symptom of that deeper one, and a
+ * solution aimed at it treats the symptom — the analysis is not done until it
+ * reaches a root, and that is where a solution goes. A solution whose cause
+ * later gains a deeper one keeps its link; `worksAround` is the question that
+ * then asks about it.
+ */
 export function causesForProposal(causes: readonly Cause[]): Cause[] {
-  const roots = causes.filter((one) => isRootCause(one, causes))
-  return [...roots, ...causes.filter((one) => !roots.includes(one))]
+  return causes.filter((one) => isRootCause(one, causes))
+}
+
+/** The causes that explain this one: where a solution for it belongs instead. */
+export function deeperCauses(causes: readonly Cause[], causeId: string): Cause[] {
+  return causes.filter((one) => one.explains.some((link) => link.id === causeId && link.scope === undefined))
 }

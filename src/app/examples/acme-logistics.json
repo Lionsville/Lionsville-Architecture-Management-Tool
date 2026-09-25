@@ -2526,8 +2526,6 @@
     "addresses:",
     "  - id: ca-no-price-owner",
     "    strength: strong",
-    "  - id: ca-two-raters",
-    "    strength: normal",
     "validatedWith:",
     "  - name: Revenue systems",
     "  - name: Billing",

@@ -938,18 +938,22 @@ const SPECS = [
     tier: 'write',
     description:
       'Write down something that was seen (ADR-0021), numbered after the last observation in this scope, seen once, '
-      + 'local unless shared is true. Local is the default: only a shared observation is read by the scopes above, '
+      + 'local unless shared is true. An observation is a fact: what was seen, where, when, by whom and the evidence, '
+      + 'in neutral words — no explanation, no opinion, no blame and no fix. Why it happens is a cause (cause.add); '
+      + 'what to do about it is a solution (solution.propose). When a person\'s account mixes them, record the facts '
+      + 'here, put the rest where it belongs and say so. Seen again is observation.seen, not a new record; check '
+      + 'observations.list first. Local is the default: only a shared observation is read by the scopes above, '
       + 'which may link it to a cause of their own or merge it into one of their own. Leave the body out for the template.',
     inputSchema: {
       type: 'object',
       properties: {
-        title: { type: 'string', description: 'What was seen, as one sentence.' },
-        body: { type: 'string', description: 'What was seen, the evidence and first thoughts, as markdown.' },
+        title: { type: 'string', description: 'What was seen, as one neutral sentence: no cause and no fix in it.' },
+        body: { type: 'string', description: 'What was seen, the evidence, and who or what it affected, as markdown. Facts only: the reading of them is a cause.' },
         where: { type: 'string', description: 'Where it was seen: a system, a desk, a job. Prose, not an id.' },
         by: { type: 'string', description: 'Who saw it, or who wrote it down. Free text: a name, initials, a team.' },
         date: { type: 'string', description: 'The day it was seen, yyyy-mm-dd. Default: today.' },
-        impact: { type: 'string', description: 'How much it matters. Default: minor.', enum: ['minor', 'major', 'critical'] },
-        shared: { type: 'boolean', description: 'Offer it to the scopes above. Default: false.' },
+        impact: { type: 'string', description: 'How much it matters to whoever it affected — not how sure anyone is. Default: minor.', enum: ['minor', 'major', 'critical'] },
+        shared: { type: 'boolean', description: 'Offer it to the scopes above, when it matters beyond this one. Default: false.' },
       },
       required: ['title'],
       additionalProperties: false,
@@ -959,7 +963,8 @@ const SPECS = [
     name: 'observation.update',
     tier: 'write',
     description:
-      'Correct an observation: its title, body, where, who, date or impact — or share it upward and take that back, '
+      'Correct an observation — keeping it a fact, with any reading of it moved to a cause: its title, body, where, '
+      + 'who, date or impact — or share it upward and take that back, '
       + 'which is written into its history with the day. The count moves only through observation.seen and '
       + 'observation.merge; closing it is observation.archive.',
     inputSchema: {
@@ -997,6 +1002,7 @@ const SPECS = [
     tier: 'write',
     description:
       'Close an observation that was fixed, addressed or is no longer relevant — or, with restore, bring one back. '
+      + 'Archive what has stopped being seen, not what nobody has explained yet: an unexplained observation wants a cause. '
       + 'The record stays where it is, as history, with the day and the note; archived, it is out of the analysis: '
       + 'not drawn, not queued, not a merge target. Nothing is deleted.',
     inputSchema: {
@@ -1040,14 +1046,17 @@ const SPECS = [
     tier: 'write',
     description:
       'Say what lies behind one or more observations, or behind other causes (ADR-0021): a new cause, assumed until '
-      + 'verified, numbered after the last one here. Name what it explains and the links are made in the same step; '
-      + 'an observation a scope below shared is named with its scope. Leave the body out for the template.',
+      + 'verified, numbered after the last one here. This is where the analysis goes — the team\'s explanation, '
+      + 'one statement per cause, with no remedy in it (a remedy is a solution). Then ask why again: a deeper cause '
+      + 'explains this one (explains: this cause\'s id), until you reach a root cause, one nothing explains, which '
+      + 'is where solutions go. Name what it explains and the links are made in the same step; an observation a '
+      + 'scope below shared is named with its scope. Leave the body out for the template.',
     inputSchema: {
       type: 'object',
       properties: {
         title: { type: 'string', description: 'The cause, as one sentence.' },
         body: { type: 'string', description: 'Why the team thinks so and how to verify it, as markdown.' },
-        state: { type: 'string', description: 'Default: assumed.', enum: ['assumed', 'verified'] },
+        state: { type: 'string', description: 'Default: assumed. Verified only when a person says it was checked.', enum: ['assumed', 'verified'] },
         explains: {
           type: 'array',
           description: 'What this cause explains: observations of this scope, observations shared from below (with scope), or shallower causes of this scope.',
@@ -1071,7 +1080,7 @@ const SPECS = [
   {
     name: 'cause.update',
     tier: 'write',
-    description: 'Correct a cause: its title, its body, or its state — verified once the team has checked it, back to assumed when it has not.',
+    description: 'Correct a cause: its title, its body, or its state — verified once a person says the team has checked it against evidence, never on your own reasoning; back to assumed when it has not.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -1089,7 +1098,8 @@ const SPECS = [
     tier: 'write',
     description:
       'A cause explains something: an observation of this scope, one a scope below shared (with its scope), or a '
-      + 'shallower cause of this scope. Linking to what it already explains changes the strength. A loop between causes is refused.',
+      + 'shallower cause of this scope. Linking to what it already explains changes the strength: how firmly the team '
+      + 'believes this cause explains it. A loop between causes is refused.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -1128,16 +1138,18 @@ const SPECS = [
     tier: 'write',
     description:
       'Propose a solution for one or more causes of this scope (ADR-0026): a new idea, numbered after the last one '
-      + 'here, linked to what it addresses in the same step. Proposing is cheap on purpose; the vetting is the gates '
-      + 'after it. Name root causes where you can: a solution that only addresses a cause with a cause of its own is '
-      + 'asked, once proven, whether it works around the problem.',
+      + 'here, linked to what it addresses in the same step. A solution addresses root causes only: a cause a deeper '
+      + 'cause explains is refused, naming the deeper one — keep asking why until the analysis reaches a root. '
+      + 'Proposing is cheap on purpose; the vetting is the gates after it. Propose the alternatives too, and drop '
+      + 'the ones not pursued with the reason rather than removing them: they are what was considered. A cause that '
+      + 'later gains a deeper one keeps its solutions, which are then asked whether they work around the problem.',
     inputSchema: {
       type: 'object',
       properties: {
         title: { type: 'string', description: 'What would take the cause away, as one sentence.' },
         addresses: {
           type: 'array',
-          description: 'The causes it addresses.',
+          description: 'The root causes it addresses.',
           items: {
             type: 'object',
             description: 'One cause.',
@@ -1161,7 +1173,8 @@ const SPECS = [
     description:
       'Answer what a solution\'s gates ask, or correct it: title, body, benefit and cost, who it was checked with '
       + '(the whole list), earlier attempts (the whole list), noneKnown when nothing like it was tried, and why it '
-      + 'works now when something was. Fill these from what people said. Never with filler to get past a gate.',
+      + 'works now when something was. Fill these from what people said — ask who it was checked with and whether it '
+      + 'was tried before rather than assuming. Never with filler to get past a gate.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -1275,7 +1288,8 @@ const SPECS = [
     description:
       'Propose the decision record for a solution, as one step: a new record on the Decisions page, its context '
       + 'written from what the solution addresses and what else was considered, and the link. It is then taken '
-      + 'through its status and signers on the Decisions page (decision.transition); adopted needs it accepted.',
+      + 'through its status and signers on the Decisions page (decision.transition); adopted needs it accepted. '
+      + 'Accepting is the signers\' decision: move the record to accepted only when a person says it was.',
     inputSchema: {
       type: 'object',
       properties: { id: ID('solution'), body: { type: 'string', description: 'The whole MADR body, when you have it. Leave out for the pre-filled one.' } },
@@ -1289,7 +1303,8 @@ const SPECS = [
     description:
       'Start the plan that builds an adopted solution, as one step: a draft plan resting on its decision record, '
       + 'and the link. What it introduces and retires is then written with plan.update. When that plan is done the '
-      + 'solution reads as implemented.',
+      + 'solution reads as implemented, and the observations under it should stop being seen: one seen again after '
+      + 'that is flagged against the solution.',
     inputSchema: { type: 'object', properties: { id: ID('solution') }, required: ['id'], additionalProperties: false },
   },
   {
@@ -1301,7 +1316,7 @@ const SPECS = [
   {
     name: 'experiment.plan',
     tier: 'write',
-    description: 'Plan an experiment for one or more solutions (ADR-0026): what it should show (the hypothesis), how that is counted, where, by whom and when. It starts planned, and every shaped solution it tests moves on to testing in the same step.',
+    description: 'Plan an experiment for one or more solutions (ADR-0026): how the team finds out whether a solution works before it is built. A hypothesis that could turn out wrong, what is counted to decide it, where, by whom and when — small and bounded. It starts planned, and every shaped solution it tests moves on to testing in the same step.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -1314,6 +1329,11 @@ const SPECS = [
         from: { type: 'string', description: 'yyyy-mm-dd. Default: today.' },
         to: { type: 'string', description: 'yyyy-mm-dd.' },
         body: { type: 'string', description: 'How it is set up, as markdown.' },
+        strength: {
+          type: 'object',
+          description: 'How firmly it bears on a solution it tests, by solution id or SO- label: strong, normal or weak. Normal where unsaid. The line between them on the picture.',
+          additionalProperties: { type: 'string', enum: ['strong', 'normal', 'weak'] },
+        },
       },
       required: ['tests', 'title', 'hypothesis'],
       additionalProperties: false,
@@ -1322,7 +1342,7 @@ const SPECS = [
   {
     name: 'experiment.update',
     tier: 'write',
-    description: 'Correct an experiment: its title, hypothesis, measure, where, by whom, window, result, body, or what it tests. Blank optional text is removed; a blank hypothesis is refused.',
+    description: 'Correct an experiment: its title, hypothesis, measure, where, by whom, window, result, body, what it tests, or how firmly it bears on each of those. Blank optional text is removed; a blank hypothesis is refused.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -1337,6 +1357,11 @@ const SPECS = [
         result: { type: 'string', description: 'What happened.' },
         body: { type: 'string', description: 'The body as markdown.' },
         tests: { type: 'array', description: 'The solutions it tests. Replaces the list.', items: { type: 'string' } },
+        strength: {
+          type: 'object',
+          description: 'How firmly it bears on a solution it tests, by solution id or SO- label: strong, normal or weak. Normal where unsaid. The line between them on the picture.',
+          additionalProperties: { type: 'string', enum: ['strong', 'normal', 'weak'] },
+        },
       },
       required: ['id'],
       additionalProperties: false,
@@ -1345,7 +1370,7 @@ const SPECS = [
   {
     name: 'experiment.conclude',
     tier: 'write',
-    description: 'Say how an experiment went: running, confirmed, refuted or inconclusive, with the result. A refuted one stays; it is the evidence the next person asks for.',
+    description: 'Say how an experiment went: running, confirmed, refuted or inconclusive, with the result — counted, where there are numbers. The outcome is what the team observed, so conclude only when told it. A refuted one stays; it is the evidence the next person asks for.',
     inputSchema: {
       type: 'object',
       properties: {

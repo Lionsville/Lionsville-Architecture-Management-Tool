@@ -77,9 +77,9 @@ import { CauseReader, ObservationReader, ReaderModeContext } from './Readers'
 import {
   addressCause, alternatives, concludeExperiment, defaultStrength, dropSolution, experimentsFor, forgetCause,
   formatExperimentNumber, formatSolutionNumber, implementedOn, isLive, moveSolution, newExperiment, newSolution,
-  nextExperimentNumber, nextSolutionNumber, planExperiment, removeExperiment, removeSolution, restoreSolution,
+  nextExperimentNumber, nextSolutionNumber, planExperiment, removeExperiment, removeSolution, restoreSolution, setTestStrength,
   openItems, previousState, rootsWithoutSolution, seenSinceImplemented, solutionGate, solutionPhase, solutionQuestions, unaddressCause, underneath,
-  updateExperiment, updateSolution, waiveExperiment, EXPERIMENT_OUTCOMES,
+  untestSolution, updateExperiment, updateSolution, waiveExperiment, EXPERIMENT_OUTCOMES,
 } from '../solution'
 import type {
   Experiment, ExperimentOutcome, ExperimentPatch, Solution, SolutionContext, SolutionPatch, SolutionPhase,
@@ -591,6 +591,15 @@ export function ObservationsPage(props: ObservationsPageProps) {
         },
       ]
     }
+    if (target.kind === 'tests') {
+      return [
+        ...strengths(target.strength, (strength) => commit({ experiments: setTestStrength(experiments, target.experimentId, target.solutionId, strength) })),
+        {
+          key: 'unlink', label: s('observation.unlink'), divider: true, danger: true,
+          onClick: () => commit({ experiments: untestSolution(experiments, target.experimentId, target.solutionId) }),
+        },
+      ]
+    }
     const key = target.key
     const held = resolve(key)
     if (!held) return []
@@ -633,7 +642,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
             onClick: () => patchCause(one.id, { state: one.state === 'assumed' ? 'verified' : 'assumed' }),
           },
           { key: 'link-deeper', label: s('observation.linkDeeper'), onClick: () => setLinking({ key: one.id, label: nameOf(one.id), link: { id: one.id } }) },
-          { key: 'propose', label: s('solution.proposeForCause'), onClick: () => setProposing({ causeId: one.id }) },
+          ...(isRootCause(one, causes) ? [{ key: 'propose', label: s('solution.proposeForCause'), onClick: () => setProposing({ causeId: one.id }) }] : []),
           remove('cause', one.id),
         ]
       }
@@ -857,7 +866,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
       solutions={solutionsFor(selected.cause.id).map((one) => ({
         key: solutionKey(one.id), label: nameOf(one.id), note: s(PHASE_LABEL[phaseOf(one)]).toLowerCase(),
       }))}
-      {...(readOnly ? {} : { onPropose: () => setProposing({ causeId: selected.cause.id }) })}
+      {...(readOnly || !isRootCause(selected.cause, causes) ? {} : { onPropose: () => setProposing({ causeId: selected.cause.id }) })}
       onAddImage={props.onAddImage}
       images={props.images}
     />

@@ -671,13 +671,15 @@ vraag.
 
 **Een oplossing voorstellen…** bij een oorzaak, of **Nieuwe oplossing** in de
 balk, schrijft een genummerd record (`SO-0003`) met een titel en de oorzaak
-waarvoor het is, en verder niets. Voordat het als **uitgewerkt** telt, heeft
-het nodig wat het team toch al zou vragen: de verwachte baat en grove
-kosten, bij wie het getoetst is, en of iets dergelijks eerder geprobeerd is —
-en zo ja, waarom het nu wel zou werken. De lezer zet wat nog open staat onder
-*Om door te gaan naar…*, elke regel met zijn invoer ernaast, en de knop blijft
-uitgeschakeld tot de lijst leeg is. **Terug naar…** zet het op elk moment één
-stap terug.
+waarvoor het is, en verder niets. Die oorzaak is een grondoorzaak: een oorzaak
+die door iets diepers verklaard wordt is een symptoom daarvan, dus de lezer
+wijst dan naar die diepere in plaats van een oplossing aan te bieden. Voordat
+het als **uitgewerkt** telt, heeft het nodig wat het team toch al zou vragen:
+de verwachte baat en grove kosten, bij wie het getoetst is, en of iets
+dergelijks eerder geprobeerd is — en zo ja, waarom het nu wel zou werken. De
+lezer zet wat nog open staat onder *Om door te gaan naar…*, elke regel met
+zijn invoer ernaast, en de knop blijft uitgeschakeld tot de lijst leeg is.
+**Terug naar…** zet het op elk moment één stap terug.
 
 Van uitgewerkt naar **wordt getest** is een **experiment** (`EX-0002`) nodig:
 een hypothese, hoe het gemeten wordt, waar, door wie en wanneer. Een
@@ -707,9 +709,11 @@ voor dezelfde oorzaken. Beide records zijn markdownbestanden, onder
 
 **Rechtsklik** op iets in de analyse of de tekening van de oplossingen voor
 wat je ermee kunt — dezelfde acties als in de lezer, Bewerken daaronder — en
-op een lijn voor hoe sterk het verband is, of om het los te maken.
-**Bewerken** geeft het record de hele breedte: de tekst links, hoe het eruit
-komt te zien rechts, en de tekening terug zodra je naar Lezen gaat.
+op een lijn — de verbanden van de analyse, de oorzaken van een oplossing, de
+lijnen naar en vanuit een experiment — voor hoe sterk het verband is, of om
+het los te maken. **Bewerken** geeft het record de hele breedte: de tekst
+links, hoe het eruit komt te zien rechts, en de tekening terug zodra je naar
+Lezen gaat.
 
 ## Tijd, en de dag die een bord toont
 

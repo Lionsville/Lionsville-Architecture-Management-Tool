@@ -26,6 +26,8 @@ export type PictureTarget =
   | { kind: 'explains'; causeId: string; id: string; scope?: string; strength: CauseStrength }
   /** A line from a cause to the solution that addresses it. */
   | { kind: 'addresses'; solutionId: string; causeId: string; strength: CauseStrength }
+  /** A line between a solution and an experiment that tests it: into the experiment, or on from a confirmed one. */
+  | { kind: 'tests'; experimentId: string; solutionId: string; strength: CauseStrength }
 
 export type PictureMenuHandler = (target: PictureTarget, at: { x: number; y: number }) => void
 

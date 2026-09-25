@@ -58,11 +58,11 @@ import type {
 import {
   addressCause, concludeExperiment, decisionContext, defaultStrength, dropSolution, forgetCause, formatExperimentNumber,
   formatSolutionNumber, linkRecord, moveSolution, newExperiment, newSolution, nextExperimentNumber, nextSolutionNumber,
-  planExperiment, removeExperiment, removeSolution, restoreSolution, unaddressCause, updateExperiment, updateSolution, waiveExperiment,
+  planExperiment, removeExperiment, removeSolution, restoreSolution, setTestStrength, unaddressCause, updateExperiment, updateSolution, waiveExperiment,
 } from '../observations/solution'
-import type { ExperimentPatch, SolutionPatch, SolutionWork } from '../observations/solution'
+import type { Experiment, ExperimentPatch, SolutionPatch, SolutionWork } from '../observations/solution'
 import {
-  absorbShared, formatCauseNumber, formatObservationNumber, linkCause, mergeObservations, newCause, newObservation,
+  absorbShared, formatCauseNumber, formatObservationNumber, isRootCause, linkCause, mergeObservations, newCause, newObservation,
   nextCauseNumber, nextObservationNumber, removeCause, removeObservation, seenAgain, setArchived, setShared, unlinkCause,
   updateCause, updateObservation,
 } from '../observations/observation'
@@ -1436,6 +1436,29 @@ function solutionCommand(tool: ToolName, args: Args, view: WriteView): Prepared 
   const solution = held!
   const day = view.today()
   const withSolutions = (solutions: typeof before.solutions): SolutionWork => ({ ...before, solutions })
+  // A solution addresses a root cause (ADR-0026, amended): one a deeper cause
+  // explains is a symptom of that one, and the refusal names where to go instead.
+  const notRoot = (cause: (typeof causes)[number]) => {
+    if (isRootCause(cause, causes)) return undefined
+    const deeper = causes.filter((one) => one.explains.some((link) => link.id === cause.id && link.scope === undefined))
+    const label = formatCauseNumber(cause.number)
+    return refused('agent.badArguments', deeper.length
+      ? `${label} is not a root cause: ${deeper.map((one) => formatCauseNumber(one.number)).join(', ')} explains it. A solution addresses a root cause — address that one, or keep asking why until you reach one.`
+      : `${label} is not a root cause: it explains nothing yet. Link it to what it explains first (cause.link).`)
+  }
+
+  // How firmly an experiment bears on each solution it tests, from `strength`:
+  // keyed by id or label, and only for a solution it does test.
+  const withStrengths = (list: Experiment[], id: string, tests: readonly string[]): { list: Experiment[] } | { refusal: AgentAnswer } => {
+    let next = list
+    for (const [idOrLabel, strength] of Object.entries((args.strength as Record<string, CauseStrength> | undefined) ?? {})) {
+      const tested = solutionOf(idOrLabel)
+      if (!tested) return { refusal: refused('agent.unknownId', `solution ${idOrLabel}`) }
+      if (!tests.includes(tested.id)) return { refusal: refused('agent.badArguments', `the experiment does not test ${formatSolutionNumber(tested.number)}; add it to tests first`) }
+      next = setTestStrength(next, id, tested.id, strength)
+    }
+    return { list: next }
+  }
 
   switch (tool) {
     case 'solution.propose': {
@@ -1445,6 +1468,8 @@ function solutionCommand(tool: ToolName, args: Args, view: WriteView): Prepared 
       for (const row of (args.addresses as { id: string; strength?: CauseStrength }[] | undefined) ?? []) {
         const cause = findCause(causes, row.id)
         if (!cause) return refused('agent.unknownId', `cause ${row.id}`)
+        const refusal = notRoot(cause)
+        if (refusal) return refusal
         addresses.push({ id: cause.id, strength: row.strength ?? defaultStrength(cause.id, causes) })
       }
       const fresh = newSolution({
@@ -1471,6 +1496,9 @@ function solutionCommand(tool: ToolName, args: Args, view: WriteView): Prepared 
     case 'solution.address': {
       const cause = findCause(causes, String(args.cause))
       if (!cause) return refused('agent.unknownId', `cause ${String(args.cause)}`)
+      // A link that is already there may change its strength, root or not.
+      const refusal = solution.addresses.some((address) => address.id === cause.id) ? undefined : notRoot(cause)
+      if (refusal) return refusal
       const strength = (args.strength as CauseStrength | undefined) ?? defaultStrength(cause.id, causes)
       return finish(withSolutions(addressCause(before.solutions, solution.id, { id: cause.id, strength })), solutionAnswer(solution.id))
     }
@@ -1561,7 +1589,9 @@ function solutionCommand(tool: ToolName, args: Args, view: WriteView): Prepared 
         from: typeof args.from === 'string' ? args.from : day,
         ...text('measure'), ...text('where'), ...text('by'), ...text('to'), ...text('body'),
       })
-      const after = { ...before, ...planExperiment(before, fresh, day) }
+      const strengthened = withStrengths([fresh], fresh.id, fresh.tests)
+      if ('refusal' in strengthened) return strengthened.refusal
+      const after = { ...before, ...planExperiment(before, strengthened.list[0], day) }
       return finish(after, experimentAnswer(after, fresh.id))
     }
     case 'experiment.update':
@@ -1596,7 +1626,10 @@ function solutionCommand(tool: ToolName, args: Args, view: WriteView): Prepared 
         }
         patch.tests = tests
       }
-      const after = { ...before, experiments: updateExperiment(before.experiments, experiment.id, patch) }
+      const updated = updateExperiment(before.experiments, experiment.id, patch)
+      const strengthened = withStrengths(updated, experiment.id, updated.find((one) => one.id === experiment.id)!.tests)
+      if ('refusal' in strengthened) return strengthened.refusal
+      const after = { ...before, experiments: strengthened.list }
       return finish(after, experimentAnswer(after, experiment.id))
     }
     default:

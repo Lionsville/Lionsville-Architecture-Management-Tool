@@ -130,7 +130,7 @@ export const EN = {
   // --- the template ----------------------------------------------------------------------
   'observation.tplSaw': 'What we saw',
   'observation.tplEvidence': 'Evidence',
-  'observation.tplThoughts': 'First thoughts',
+  'observation.tplAffected': 'Who or what it affected',
   'observation.tplWhy': 'Why we think so',
   'observation.tplVerify': 'How to verify',
 
@@ -273,6 +273,7 @@ export const EN = {
   'solution.deleteExperimentBody': 'The record goes. Its number is never reused.',
   'solution.forCause': 'Solutions for it',
   'solution.proposeForCause': 'Propose a solution…',
+  'solution.proposeAtRoot': 'Solutions address a root cause: propose one on what explains this',
   // --- one experiment
   'solution.experimentSource': 'Experiment source',
   'solution.tests': 'Tests',

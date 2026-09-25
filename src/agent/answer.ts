@@ -709,7 +709,10 @@ export function experimentLine(experiment: Experiment, solutions: readonly Solut
     ...(experiment.result ? { result: experiment.result } : {}),
     tests: experiment.tests.map((id) => {
       const solution = solutions.find((one) => one.id === id)
-      return { id, ...(solution ? { label: formatSolutionNumber(solution.number), title: solution.title, state: solution.state } : {}) }
+      return {
+        id, strength: experiment.strength?.[id] ?? 'normal',
+        ...(solution ? { label: formatSolutionNumber(solution.number), title: solution.title, state: solution.state } : {}),
+      }
     }),
   }
 }

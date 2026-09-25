@@ -634,12 +634,14 @@ nobody is working on, or a solution with a question.
 
 **Propose a solution…** on a cause, or **New solution** on the bar, writes a
 numbered record (`SO-0003`) with a title and the cause it is for, and nothing
-else. Before it counts as **shaped** it needs what the team would ask anyway:
-the benefit it is expected to bring and a rough cost, who it was checked
-with, and whether something like it was tried before — and if so, why it
-would work now. The reader lists what is still open under *To move on to…*,
-each line with its control beside it, and the button stays disabled until
-the list is clear. **Back to…** moves it one step back at any time.
+else. The cause is a root cause: one that something deeper explains is a
+symptom of that deeper one, so its reader points there instead of offering a
+solution. Before it counts as **shaped** it needs what the team would ask
+anyway: the benefit it is expected to bring and a rough cost, who it was
+checked with, and whether something like it was tried before — and if so, why
+it would work now. The reader lists what is still open under *To move on to…*,
+each line with its control beside it, and the button stays disabled until the
+list is clear. **Back to…** moves it one step back at any time.
 
 From shaped to **testing** it needs an **experiment** (`EX-0002`): a
 hypothesis, how it is measured, where, by whom and when. Planning one from the
@@ -666,9 +668,10 @@ markdown files, under `observations/solutions/` and `observations/experiments/`.
 
 **Right-click** anything in the analysis or the solutions picture for what can
 be done with it — the same actions its reader offers, Edit among them — and a
-line for how strong the link is, or to unlink it. **Edit** gives the record
-the whole width: the text on the left, what it will look like on the right,
-and the picture back when you switch to Read.
+line — the analysis's links, a solution's causes, the lines into and out of an
+experiment — for how strong the link is, or to unlink it. **Edit** gives the
+record the whole width: the text on the left, what it will look like on the
+right, and the picture back when you switch to Read.
 
 ## Time, and the day a board shows
 

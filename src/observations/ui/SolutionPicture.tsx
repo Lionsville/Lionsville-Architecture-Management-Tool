@@ -26,6 +26,7 @@ import type { Translate } from '../../i18n'
 import { placeGraph } from '../graph'
 import { formatExperimentNumber, formatSolutionNumber } from '../solution'
 import type { SolutionPhase, SolutionSize } from '../solution'
+import type { CauseStrength } from '../observation'
 import { solutionKey } from '../solutionGraph'
 import type { SolutionGraph, SolutionGraphEdge, SolutionGraphNode, SolutionLane } from '../solutionGraph'
 import { OUTCOME_LABEL, PHASE_LABEL } from '../observationScope'
@@ -35,12 +36,21 @@ import type { PictureMenuHandler, PictureTarget } from './PictureMenu'
 const WIDTH: Record<SolutionSize | 'unset', number> = { unset: 160, small: 160, medium: 184, large: 212 }
 const HEIGHT = 46
 
-/** How each kind of line between the solution lanes is drawn; `addresses` and `explains` take the link's weight. */
-const LINE: Partial<Record<SolutionGraphEdge['kind'], { width: number; dash?: string }>> = {
-  tests: { width: 1.4, dash: '5 4' },
-  proves: { width: 1.8 },
-  became: { width: 1.4, dash: '1 3' },
+type Stroke = { width: number; dash?: string }
+/**
+ * How the lines around an experiment are drawn, by how firmly it bears on the
+ * solution: dashed into the experiment, solid on out of a confirmed one, and
+ * heavier or lighter with the link. `addresses` and `explains` take the
+ * analysis's own weights, and `became` has none to take.
+ */
+const LINE: Record<'tests' | 'proves', Record<CauseStrength, Stroke>> = {
+  tests: { strong: { width: 2.6, dash: '6 4' }, normal: { width: 1.4, dash: '5 4' }, weak: { width: 1.1, dash: '2 4' } },
+  proves: { strong: { width: 3.4 }, normal: { width: 1.8 }, weak: { width: 1.4, dash: '3 4' } },
 }
+const BECAME: Stroke = { width: 1.4, dash: '1 3' }
+const strokeOf = (edge: SolutionGraphEdge): Stroke => (
+  edge.kind === 'tests' || edge.kind === 'proves' ? LINE[edge.kind][edge.strength] : edge.kind === 'became' ? BECAME : STROKE[edge.strength]
+)
 
 const LANE_TITLE: Record<SolutionLane, Parameters<Translate>[0]> = {
   observations: 'observation.laneObservations',
@@ -154,6 +164,12 @@ export function SolutionPicture({ graph, selectedKey, onSelect, flags, onMenu, s
     if (edge.kind === 'addresses' && left.kind === 'cause' && (right.kind === 'solution' || right.kind === 'trail')) {
       return { kind: 'addresses', solutionId: right.id, causeId: left.id, strength: edge.strength }
     }
+    if (edge.kind === 'tests' && right.kind === 'experiment' && (left.kind === 'solution' || left.kind === 'trail')) {
+      return { kind: 'tests', experimentId: right.id, solutionId: left.id, strength: edge.strength }
+    }
+    if (edge.kind === 'proves' && left.kind === 'experiment' && right.kind === 'solution') {
+      return { kind: 'tests', experimentId: left.id, solutionId: right.id, strength: edge.strength }
+    }
     return undefined
   }
 
@@ -188,7 +204,7 @@ export function SolutionPicture({ graph, selectedKey, onSelect, flags, onMenu, s
           const startX = from.x + halfWidth(nodeOf.get(edge.from))
           const endX = to.x - halfWidth(nodeOf.get(edge.to))
           const mid = (startX + endX) / 2
-          const stroke = LINE[edge.kind] ?? STROKE[edge.strength]
+          const stroke = strokeOf(edge)
           const colour = edge.kind === 'addresses' ? theme.palette.primary.main : theme.palette.text.secondary
           const dim = lit !== undefined && !(lit.has(edge.from) && lit.has(edge.to))
           const d = `M${startX},${from.y} C${mid},${from.y} ${mid},${to.y} ${endX},${to.y}`

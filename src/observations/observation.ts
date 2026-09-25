@@ -108,7 +108,7 @@ export function sortCauses(list: readonly Cause[]): Cause[] {
 
 /** What a new observation's body starts as: the three questions a sighting answers. */
 export function observationTemplate(t: Translate): string {
-  return `## ${t('observation.tplSaw')}\n\n\n## ${t('observation.tplEvidence')}\n\n\n## ${t('observation.tplThoughts')}\n\n`
+  return `## ${t('observation.tplSaw')}\n\n\n## ${t('observation.tplEvidence')}\n\n\n## ${t('observation.tplAffected')}\n\n`
 }
 
 /** What a new cause's body starts as: why the team thinks so, and what verifying it takes. */

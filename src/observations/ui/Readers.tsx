@@ -436,7 +436,9 @@ export function CauseReader(props: CauseReaderProps) {
                     {props.solutions.length > 0 && <LinkList onOpen={props.onOpen} links={props.solutions} />}
                     {props.onPropose
                       ? <Button size="small" onClick={props.onPropose} data-testid="cause-propose" sx={{ px: 0 }}>{s('solution.proposeForCause')}</Button>
-                      : props.solutions.length === 0 && <Box component="span" sx={{ color: 'text.secondary' }}>{s('solution.none')}</Box>}
+                      : !root && !readOnly
+                        ? <Box component="span" sx={{ color: 'text.secondary' }} data-testid="cause-propose-at-root">{s('solution.proposeAtRoot')}</Box>
+                        : props.solutions.length === 0 && <Box component="span" sx={{ color: 'text.secondary' }}>{s('solution.none')}</Box>}
                   </Value>
                 </>
               )}

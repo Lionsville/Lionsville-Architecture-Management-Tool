@@ -80,6 +80,14 @@ describe('solutionGraph', () => {
     const structural = graph.nodes.find((node) => node.key === solutionKey('s1'))
     expect(trail?.row).toBe(structural?.row)
   })
+  it('draws the lines around an experiment with how firmly it bears on the solution', () => {
+    const firm: SolutionWork = {
+      solutions: [solution('s1', 'proven', ['r1'])],
+      experiments: [{ ...experiment('e1', ['s1'], 'confirmed'), strength: { s1: 'strong' } }],
+    }
+    const graph = solutionGraph(analysis, firm, [])
+    expect(graph.edges.filter((edge) => edge.kind === 'tests' || edge.kind === 'proves').map((edge) => edge.strength)).toEqual(['strong', 'strong'])
+  })
   it('reaches a structural solution nothing confirmed from its direction directly', () => {
     const waived: SolutionWork = { solutions: [solution('s1', 'proven', ['r1'], { waived: 'Not trialled' })], experiments: [] }
     const graph = solutionGraph(analysis, waived, [])

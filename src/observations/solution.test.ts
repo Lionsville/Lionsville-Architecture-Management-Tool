@@ -7,9 +7,9 @@ import type { Analysis, Cause, Observation } from './observation'
 import {
   addressCause, alternatives, concludeExperiment, decisionContext, defaultStrength, dropSolution, experimentsFor,
   forgetCause, formatExperimentNumber, formatSolutionNumber, implementedOn, linkRecord, moveSolution, newExperiment,
-  newSolution, nextExperimentNumber, nextSolutionNumber, openItems, planExperiment, removeSolution, restoreSolution,
+  newSolution, nextExperimentNumber, nextSolutionNumber, openItems, planExperiment, removeSolution, restoreSolution, setTestStrength,
   rootsWithoutSolution, seenSinceImplemented, solutionGate, solutionPhase, solutionQuestions, unaddressCause,
-  underneath, updateExperiment, updateSolution, waiveExperiment,
+  testStrength, underneath, untestSolution, updateExperiment, updateSolution, waiveExperiment,
 } from './solution'
 import type { Experiment, Solution, SolutionContext, SolutionPlan } from './solution'
 
@@ -162,6 +162,20 @@ describe('moving', () => {
     expect(work.solutions[0].history.at(-1)).toEqual({ date: day, kind: 'moved', to: 'testing' })
     expect(work.solutions[1]).toBe(idea)
     expect(work.solutions[2]).toBe(proven)
+  })
+  it('keeps how firmly an experiment bears on each solution, and forgets it with the link', () => {
+    const trial = experiment({ tests: ['s1', 's2'] })
+    const firm = setTestStrength([trial], 'e1', 's2', 'strong')
+    expect(firm[0].strength).toEqual({ s2: 'strong' })
+    expect(testStrength(firm[0], 's1')).toBe('normal')
+    expect(setTestStrength(firm, 'e1', 's2', 'normal')[0]).not.toHaveProperty('strength')
+    expect(setTestStrength(firm, 'e1', 's9', 'weak')).toEqual(firm)
+    const untested = untestSolution(firm, 'e1', 's2')
+    expect(untested[0].tests).toEqual(['s1'])
+    expect(untested[0]).not.toHaveProperty('strength')
+    const gone = removeSolution({ solutions: [], experiments: firm }, 's2')
+    expect(gone.experiments[0]).toMatchObject({ tests: ['s1'] })
+    expect(gone.experiments[0]).not.toHaveProperty('strength')
   })
   it('needs a confirmed experiment, or a waiver, to be proven', () => {
     const testing = { ...vetted, state: 'testing' as const }

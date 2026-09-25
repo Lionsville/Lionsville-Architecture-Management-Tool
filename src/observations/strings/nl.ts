@@ -115,7 +115,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'observation.rootNote': 'Achter deze oorzaak is nog niets gevonden. Koppel hem aan een diepere en hij is geen grondoorzaak meer.',
   'observation.tplSaw': 'Wat we zagen',
   'observation.tplEvidence': 'Bewijs',
-  'observation.tplThoughts': 'Eerste gedachten',
+  'observation.tplAffected': 'Wie of wat het raakte',
   'observation.tplWhy': 'Waarom we dat denken',
   'observation.tplVerify': 'Hoe te verifiëren',
   'observation.laneObservations': 'Waarnemingen',
@@ -256,6 +256,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'solution.deleteExperimentBody': 'Het record verdwijnt. Het nummer wordt nooit hergebruikt.',
   'solution.forCause': 'Oplossingen hiervoor',
   'solution.proposeForCause': 'Een oplossing voorstellen…',
+  'solution.proposeAtRoot': 'Oplossingen pakken een grondoorzaak aan: stel er een voor op wat dit verklaart',
   // --- one experiment
   'solution.experimentSource': 'Bron van het experiment',
   'solution.tests': 'Test',
