@@ -18,6 +18,7 @@ import { basename, join } from 'node:path'
 import {
   fingerprint, listDirectory, makeDirectory, readFile, removeEntry, writeFile,
 } from '../../../electron/main/fileStore'
+import { describeDirectoryHandle } from '../../ports/DirectoryHandle.contract'
 import { describeScopeStore, sampleScope } from '../../ports/ScopeStore.contract'
 import { SCOPE_FORMAT_VERSION } from '../../projects/folderFormat'
 import { flattenScopes } from '../../projects/scope'
@@ -69,6 +70,11 @@ function storeOver(folder: string): FileSystemScopeStore {
 }
 
 describeScopeStore('desktop folder over IPC', () => storeOver(freshFolder()))
+
+describeDirectoryHandle('desktop folder over IPC', () => {
+  const folder = freshFolder()
+  return new IpcDirectoryHandle(channelOver(folder), folder, basename(folder))
+})
 
 describe('IpcDirectoryHandle', () => {
   it('writes the scope as files somebody can open in a file manager', async () => {

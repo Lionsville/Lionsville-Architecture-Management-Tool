@@ -661,6 +661,9 @@ component, not a test.
 
 The same holds for `PreferencesStore`, `DocumentGateway` and `CommandChannel`,
 whose contract is `ports/CommandChannel.contract.ts`.
+A store over a folder of your own starts one level down: the handle passes
+`describeDirectoryHandle` (`ports/DirectoryHandle.contract.ts`) — two writes to
+one writable both land, among others — and then the store's suite runs over it.
 
 ## Conventions
 
