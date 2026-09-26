@@ -56,7 +56,9 @@ npm run check
 ```
 
 A few seconds: typecheck and lint of everything, plus all 4544 tests. Run it
-after every change.
+after every change. The tests run with coverage on, and `build/coverage.ts`
+prints one line per module of the import matrix and fails below that module's
+floor — the level it was measured at, written down so it can only go up.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
 batching up and discovering three problems at once.

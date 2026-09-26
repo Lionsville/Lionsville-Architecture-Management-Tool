@@ -6,7 +6,8 @@
  * The gate, as one command with one verdict.
  *
  *   npm run verify   everything that has to be true before a push: the
- *                    typechecks, the tests, the lint, the perf budgets, the
+ *                    typechecks, the tests and their coverage per module,
+ *                    the lint, the perf budgets, the
  *                    web build, the desktop build and the desktop smoke run
  *   npm run smoke    the last two on their own
  *
@@ -31,7 +32,8 @@ import { spawnSync } from 'node:child_process'
 /** `run` is the npm script; `after` names a step this one is pointless without. */
 const ALL = [
   { name: 'typecheck', run: 'typecheck' },
-  { name: 'test', run: 'test' },
+  { name: 'test', run: 'test:coverage' },
+  { name: 'coverage', run: 'coverage', after: 'test' },
   { name: 'lint', run: 'lint' },
   { name: 'perf', run: 'test:perf' },
   { name: 'build web', run: 'build' },

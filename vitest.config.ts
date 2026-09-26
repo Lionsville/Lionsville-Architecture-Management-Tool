@@ -42,5 +42,20 @@ export default defineConfig({
     // prop, an error a boundary drew over — rather than passing with the
     // sentence in its scrollback (`src/app/testing/reactComplaints.ts`).
     setupFiles: ['src/app/testing/reactComplaints.ts'],
+    // What the tests reach, per module. On when the run says `--coverage`,
+    // which `check` does; `test:watch` stays fast. `build/coverage.ts` reads
+    // the summary written here, prints one line per module of the import
+    // matrix and fails `check` below a floor. Test code is not measured: the
+    // suites, the contracts every filling runs, and the harnesses under a
+    // `testing/` folder, which are there to be called by a test.
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.{ts,tsx}', 'electron/**/*.ts'],
+      exclude: [
+        '**/*.test.{ts,tsx}', '**/*.perf.test.{ts,tsx}', '**/*.contract.ts', '**/*.d.ts', '**/testing/**',
+      ],
+      reporter: [['json-summary', { file: 'coverage-summary.json' }]],
+      reportsDirectory: 'tmp/coverage',
+    },
   },
 })
