@@ -339,7 +339,9 @@ type Engine = { elk: ElkEngine; stop(): void };
 /**
  * The engine for this pass. A worker where the host gave us one, and the
  * self-contained bundle otherwise — the two have the same API, which is the
- * whole reason elkjs ships both.
+ * whole reason elkjs ships both. The bundle is what node runs (the tests, the
+ * perf budgets); a Vite build answers that import with the worker it ships
+ * anyway (`build/oneElk.ts`), so the engine is in the app once.
  */
 async function engine_(): Promise<Engine> {
   if (workerFactory) {

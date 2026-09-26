@@ -68,6 +68,10 @@ npm run check:all
 ```
 
 Adds a production build. Run it once before you hand work back, not during.
+The build has a budget (`build/bundleBudget.ts`): a ceiling per file and one
+for the whole, and ELK's engine in one file only — it ships as the worker, and
+`build/oneElk.ts` answers the self-contained bundle's import with it. Over the
+budget the build fails; raising it is a commit that says why.
 
 ```bash
 npm run verify

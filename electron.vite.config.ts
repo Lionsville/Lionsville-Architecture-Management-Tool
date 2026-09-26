@@ -2,7 +2,7 @@
  * The desktop build: main, preload, renderer, one config.
  *
  * The renderer half is `vite.config.ts` — same `worker.format`, same wasm
- * plugin. It is repeated rather than imported because electron-vite loads this
+ * plugin, the same one ELK and the same budget. It is repeated rather than imported because electron-vite loads this
  * file per target and the web config carries `server`/`preview` settings that
  * mean nothing here; the wasm publish is the one shared part that could drift
  * silently, so that is the one that is factored out.
@@ -11,6 +11,8 @@ import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
 import react from '@vitejs/plugin-react'
 import { resolve } from 'node:path'
 import { libavoidWasm } from './build/libavoidWasm'
+import { oneElk } from './build/oneElk'
+import { bundleBudget, DESKTOP_BUDGET } from './build/bundleBudget'
 
 const root = __dirname
 
@@ -72,9 +74,10 @@ export default defineConfig({
   },
   renderer: {
     root,
-    plugins: [react(), libavoidWasm(root)],
+    plugins: [react(), libavoidWasm(root), oneElk(root), bundleBudget(DESKTOP_BUDGET)],
     worker: { format: 'es' },
     build: {
+      chunkSizeWarningLimit: DESKTOP_BUDGET.file / 1000,
       outDir: 'out/renderer',
       rollupOptions: { input: resolve(root, 'index.html') },
     },
