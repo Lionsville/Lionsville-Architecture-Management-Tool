@@ -33,15 +33,25 @@ export type ScopeTarget = ScopeSource & {
   save(scope: ScopeSnapshot): Promise<void>
 }
 
-/** What happened, for the trail. Counts, never names — a log is not a document. */
+/**
+ * What happened. The trail gets counts and never names — a log is not a
+ * document — so `unread` is for the caller to say, and its length for the log.
+ */
 export type MigrationTally = {
   scopes: number
   /** Already in the folder, and therefore left exactly as they were. */
   kept: number
   failed: number
+  /**
+   * The paths the source's listing named as unreadable (ADR-0028, amended):
+   * nothing at or under each was copied, because the listing could not say
+   * what is there. Said rather than left out, so a copy that looks complete
+   * is one that is.
+   */
+  unread: readonly ScopePath[]
 }
 
-export const NOTHING_MIGRATED: MigrationTally = { scopes: 0, kept: 0, failed: 0 }
+export const NOTHING_MIGRATED: MigrationTally = { scopes: 0, kept: 0, failed: 0, unread: [] }
 
 /**
  * The projects in browser storage, copied into the folder.
@@ -61,7 +71,9 @@ export const NOTHING_MIGRATED: MigrationTally = { scopes: 0, kept: 0, failed: 0 
  * worst kind of data loss: silent, and triggered by choosing a folder.
  *
  * **A failure is one project, not the run.** A landscape that will not read is
- * skipped and counted; the other eleven still arrive.
+ * skipped and counted; the other eleven still arrive. One the listing itself
+ * could not read is not in the tree it answers, so it is named in `unread`
+ * rather than skipped in silence.
  */
 export async function copyScopesInto(
   from: ScopeSource, into: ScopeTarget,
@@ -69,9 +81,11 @@ export async function copyScopesInto(
   const tally = { ...NOTHING_MIGRATED }
   let summaries: readonly ScopeSummary[]
   try {
+    const listing = await from.list()
+    tally.unread = [...listing.unreadable ?? []]
     // Parents before children, which `flattenScopes` already answers in: a
     // child saved first would sit under a folder that is not a scope yet.
-    summaries = flattenScopes(await from.list())
+    summaries = flattenScopes(listing)
   } catch {
     return tally
   }

@@ -576,10 +576,12 @@ async function adoptInto(folder: Shell, root: string, label: string): Promise<Ad
   if (!tally) return 'nothing to record'
   // Counts, never names: this line goes to a log file the user is invited to
   // hand over.
+  // A scope the old storage could not read is left behind, and the line says
+  // so at the level a person looking for lost work reads.
   shell.diagnostics.report({
-    level: 'info',
+    level: tally.unread.length > 0 ? 'warn' : 'info',
     where: 'migration',
-    message: `copied ${tally.scopes} scopes, kept ${tally.kept}, failed ${tally.failed}`,
+    message: `copied ${tally.scopes} scopes, kept ${tally.kept}, failed ${tally.failed}, unread ${tally.unread.length}`,
   })
   // A run that wrote nothing because the folder already held it all has rescued
   // the work as surely as one that wrote every file.

@@ -69,6 +69,28 @@ describe('copyScopesInto', () => {
     expect(flattenScopes(await into.list())).toHaveLength(2)
   })
 
+  it('names the scopes the old storage could not list, and copies the rest', async () => {
+    // A listing leaves out what it could not read (ADR-0028, amended). The
+    // copy cannot bring those across, and a tally that did not say so would
+    // read as everything having arrived.
+    const from = new InMemoryScopeStore([named('acme', 'one', 'One'), named('acme', 'two', 'Two')])
+    const partial = {
+      list: async () => ({ ...await from.list(), unreadable: ['acme/three', 'retail'] }),
+      load: (path: ScopePath) => from.load(path),
+    }
+    const into = new InMemoryScopeStore()
+
+    const tally = await copyScopesInto(partial, into)
+
+    expect(tally).toMatchObject({ scopes: 2, failed: 0, unread: ['acme/three', 'retail'] })
+    expect(flattenScopes(await into.list()).slice(1).map((held) => held.name)).toEqual(['One', 'Two'])
+  })
+
+  it('names nothing when the old storage read every scope', async () => {
+    const from = new InMemoryScopeStore([sampleScope()])
+    expect((await copyScopesInto(from, new InMemoryScopeStore())).unread).toEqual([])
+  })
+
   it('does nothing at all when the old storage will not even list', async () => {
     const into = new InMemoryScopeStore()
     const tally = await copyScopesInto({
@@ -127,7 +149,7 @@ describe('migrateInto', () => {
 
     const tally = await migrateInto(from, into)
 
-    expect(tally).toEqual({ scopes: 2, kept: 0, failed: 0 })
+    expect(tally).toEqual({ scopes: 2, kept: 0, failed: 0, unread: [] })
     expect(written).toEqual(['acme', 'acme/rail'])
     expect(migrated(tally)).toBe(true)
   })
