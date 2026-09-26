@@ -130,6 +130,14 @@ describe('WebStorageScopeStore', () => {
     await store.remove('acme')
     expect(await listed(store)).toEqual([])
   })
+
+  /** The root is never removed, so there is nothing for an expectation to guard. */
+  it('answers a removal of the root as the other stores do, whatever it expects', async () => {
+    const store = new WebStorageScopeStore(fakeStorage())
+    await store.save(scopeAt(''))
+    await store.save(scopeAt('', 'Renamed'))
+    await expect(store.remove('', 'a revision nobody holds')).resolves.toBeUndefined()
+  })
 })
 
 /**

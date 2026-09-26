@@ -318,7 +318,7 @@ export class WebStorageScopeStore implements ScopeStore {
   remove(path: ScopePath, expects?: string): Promise<void> {
     // A tab is one thread, so the check and the removal below are one act; and
     // a scope that is gone already is nothing to lose (`ScopeStore.remove`).
-    if (expects !== undefined && isSafeScopePath(path)) {
+    if (expects !== undefined && isSafeScopePath(path) && path !== ROOT_SCOPE) {
       const now = this.currentRevision(path)
       if (now !== undefined && now !== expects) return Promise.reject(scopeMoved(path))
     }
