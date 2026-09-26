@@ -721,6 +721,30 @@ describe('an agent on a source that only reads', () => {
 })
 
 /**
+ * A scope whose `model.json` is there and did not parse. It used to open as an
+ * empty landscape, and the next save made that permanent — so it opens to be
+ * looked at, says why in a sentence, and refuses a write from anybody.
+ */
+describe('a scope whose model did not read', () => {
+  const scope = {
+    path: 'acme/landscape',
+    model: { name: 'Landscape', elements: [], relations: [], diagrams: [laidOut({ id: 'd1', kind: 'layer7' as const, name: 'L7', placements: [] })] },
+    activeDiagramId: 'd1',
+    logoLibrary: [],
+    unreadable: ['model.json'],
+  }
+
+  it('opens read-only with a sentence, and refuses an agent\'s write', async () => {
+    const wire = listeningGateway()
+    renderApp({ initialProject: scope, agent: wire.gateway })
+    await waitFor(() => expect(wire.bound()).toBe(true))
+    expect(screen.getByTestId('unreadable-notice').textContent).toContain('model.json')
+    const refused = await wire.ask('element.add', { kind: 'application', name: 'Ledger' })
+    expect(refused.ok === false && refused.refusal).toBe('agent.readOnly')
+  })
+})
+
+/**
  * The lines a provider puts in the app's own menu.
  *
  * A provider with actions of its own — somewhere to sign in, pages of its own,

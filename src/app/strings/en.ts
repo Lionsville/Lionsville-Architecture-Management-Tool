@@ -37,6 +37,13 @@ export const EN = {
    * is no merge, only which version survives.
    */
   'shell.diskChanged': 'This project changed on disk. Nothing here is unsaved.',
+  /**
+   * A scope whose `model.json` is there and did not parse
+   * (`ScopeSnapshot.unreadable`, ADR-0028). What was read is shown and nothing
+   * may be changed, because a save would write an empty model over the one
+   * that did not read.
+   */
+  'shell.unreadableScope': '{files} in this scope could not be read, so it is open to be looked at and not changed: saving would write an empty model over it. Mend the file, or take it back from the history, and open the scope again.',
   'shell.diskConflict': 'This project changed on disk, and there are unsaved changes here.',
   'shell.takeTheirs': 'Take theirs',
   'shell.keepMine': 'Keep mine',

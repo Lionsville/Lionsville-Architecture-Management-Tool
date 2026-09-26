@@ -14,4 +14,5 @@ import type { EN } from './en'
 export const NL: Record<keyof typeof EN, string> = {
   'shell.badScopePath': 'Dat onderdeel heeft geen bruikbaar adres ({path}) en kan dus niet bewaard worden.',
   'shell.folderUnavailable': 'Die map is niet beschikbaar. Kies hem opnieuw, of koppel de schijf weer aan.',
+  'shell.unreadableNotSaved': 'Deze scope is niet opgeslagen: zijn model.json kon niet worden gelezen, en opslaan zou er een leeg model overheen hebben geschreven. Herstel het bestand, of haal het terug uit de geschiedenis, en open de scope opnieuw.',
 }

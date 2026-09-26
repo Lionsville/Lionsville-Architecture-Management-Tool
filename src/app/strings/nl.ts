@@ -23,6 +23,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.changedOnDisk': 'Gewijzigd op schijf',
   'shell.conflict': 'Hier én op schijf gewijzigd',
   'shell.diskChanged': 'Dit project is op schijf gewijzigd. Hier staat niets open.',
+  'shell.unreadableScope': '{files} in deze scope kon niet worden gelezen, dus hij staat open om te bekijken en niet om te wijzigen: opslaan zou er een leeg model overheen schrijven. Herstel het bestand, of haal het terug uit de geschiedenis, en open de scope opnieuw.',
   'shell.diskConflict': 'Dit project is op schijf gewijzigd, en hier staan wijzigingen open.',
   'shell.takeTheirs': 'Die van schijf',
   'shell.keepMine': 'Die van mij',

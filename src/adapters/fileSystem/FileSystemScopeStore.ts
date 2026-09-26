@@ -42,7 +42,8 @@
  * tested without a filesystem at all.
  */
 import {
-  DECISIONS_FOLDER, DOCS_FOLDER, folderFormatVersion, isFormatPath, MODEL_FILE, modelListsFrom, SCOPE_FILE,
+  DECISIONS_FOLDER, DOCS_FOLDER, folderFormatVersion, isFormatPath, MODEL_FILE, modelListsFrom, modelUnreadable,
+  SCOPE_FILE,
   TRANSITIONS_FOLDER, OBSERVATIONS_FOLDER,
   SCOPE_FOLDERS, SCOPE_FORMAT_VERSION, scopeFiles, scopeSummaryFrom,
 } from '../../projects/folderFormat'
@@ -243,28 +244,33 @@ export class FileSystemScopeStore implements ScopeStore {
    * above can show the initiatives below it without a load per domain
    * (ADR-0012 §7).
    *
-   * A scope whose model will not read is left out rather than answered with an
-   * empty one. An empty model is a claim — "this scope defines nothing" — and
-   * a half-written file is not evidence for it; leaving the scope out says
-   * "unknown", which is what a drift check should do nothing about.
+   * A scope whose model will not read — the file there and not JSON — is left
+   * out rather than answered with an empty one. An empty model is a claim —
+   * "this scope defines nothing" — and a half-written file is not evidence for
+   * it; leaving the scope out says "unknown", which is what a drift check
+   * should do nothing about.
+   *
+   * A walk that fails is a rejection, not an empty tree, for the same reason
+   * one level up: an empty answer says the tree defines nothing, and a move
+   * reading it would carry none of the refs that point into what it moves.
+   * Whoever asked keeps what it read last (`useIndex`), or says the gesture
+   * could not be planned.
    */
   async models(): Promise<ScopeModel[]> {
     const found: ScopeModel[] = []
-    try {
-      await this.walk(this.root, [], async ({ folder, path }) => {
-        const handle = await folder.getFileHandle(MODEL_FILE).catch(() => undefined)
-        if (!handle) return
-        const text = await (await handle.getFile().catch(() => undefined))?.text().catch(() => undefined)
-        if (text === undefined) return
-        found.push({ path, model: {
-          ...modelListsFrom(text),
-          transitions: await this.transitionsIn(folder),
-          observations: await this.observationsIn(folder),
-        } })
-      })
-    } catch {
-      return []
-    }
+    await this.walk(this.root, [], async ({ folder, path }) => {
+      const handle = await folder.getFileHandle(MODEL_FILE).catch(() => undefined)
+      if (!handle) return
+      const text = await (await handle.getFile().catch(() => undefined))?.text().catch(() => undefined)
+      if (text === undefined) return
+      const lists = modelListsFrom(text)
+      if (!lists) return
+      found.push({ path, model: {
+        ...lists,
+        transitions: await this.transitionsIn(folder),
+        observations: await this.observationsIn(folder),
+      } })
+    })
     return found
   }
 
@@ -280,8 +286,9 @@ export class FileSystemScopeStore implements ScopeStore {
     try {
       const handle = await folder.getFileHandle(MODEL_FILE).catch(() => undefined)
       const text = await (await handle?.getFile().catch(() => undefined))?.text().catch(() => undefined)
-      if (text === undefined) return undefined
-      for (const element of modelListsFrom(text).elements) {
+      const lists = modelListsFrom(text)
+      if (text === undefined || !lists) return undefined
+      for (const element of lists.elements) {
         if (element.description !== undefined) found[element.id] = element.description
       }
       const docs = await folder.getDirectoryHandle(DOCS_FOLDER).catch(() => undefined)
@@ -411,6 +418,14 @@ export class FileSystemScopeStore implements ScopeStore {
     }
     const folder = await this.scopeFolder(scope.path, true)
     if (!folder) throw new ShellError('shell.folderUnavailable')
+    // A model on disk that does not parse was opened as an empty one, and
+    // writing what that snapshot holds would make it one for good — and
+    // remove every description filed beside it, whose elements it no longer
+    // names. Read here, from the disk, rather than off the snapshot, because
+    // a snapshot is rebuilt by whoever saves and need not carry the mark.
+    if (scope.unreadable?.length || await this.unreadableModel(folder)) {
+      throw new ShellError('shell.unreadableNotSaved')
+    }
 
     const files = scopeFiles(scope)
     // Written before anything is removed: an interrupted save then leaves a
@@ -425,6 +440,13 @@ export class FileSystemScopeStore implements ScopeStore {
       // and a scope filed inside this one is never among these at all.
       await entry.parent.removeEntry(entry.name).catch(() => undefined)
     }
+  }
+
+  /** Is there a `model.json` in this folder that does not parse? A file that cannot be read at all is not one. */
+  private async unreadableModel(folder: DirectoryHandleLike): Promise<boolean> {
+    const handle = await folder.getFileHandle(MODEL_FILE).catch(() => undefined)
+    const text = await (await handle?.getFile().catch(() => undefined))?.text().catch(() => undefined)
+    return modelUnreadable(text)
   }
 
   async remove(path: ScopePath): Promise<void> {

@@ -470,8 +470,11 @@ export async function treeModels(source: IndexSource): Promise<ScopeModel[]> {
   if (source.models) return source.models()
   const paths = flattenScopes(await source.list()).map((scope) => scope.path)
   const loaded = await Promise.all(paths.map((path) => source.load(path)))
+  // A scope a file of which did not read holds an empty model in its place,
+  // which is not the same as defining nothing: left out, like one that did
+  // not load.
   return loaded
-    .filter((scope): scope is ScopeSnapshot => scope !== undefined)
+    .filter((scope): scope is ScopeSnapshot => scope !== undefined && !scope.unreadable?.length)
     .map((scope) => ({ path: scope.path, model: scope.model }))
 }
 

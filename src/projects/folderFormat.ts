@@ -614,17 +614,17 @@ export function scopeSummaryFrom(
  * exactly the difference between reading a tree to index it and reading a scope
  * to open it.
  *
- * Text that is not a model is an empty pair rather than a refusal. A folder
- * with a `scope.json` and no `model.json` is an ordinary domain, and a
- * half-written file is somebody else's save in progress.
+ * No file is an empty pair: a folder with a `scope.json` and no `model.json` is
+ * an ordinary domain. A file that is there and is not a model is `undefined`,
+ * and never an empty pair — an empty pair is the claim "this scope defines
+ * nothing", and a file that did not parse is not evidence for it. Whoever reads
+ * the tree leaves such a scope out, which says *unknown*.
  */
 export function modelListsFrom(
   text: string | undefined,
-): { elements: DesignElement[]; relations: Relation[] } {
-  const parsed = text === undefined ? undefined : parseJson(text)
-  const held = parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-    ? parsed as Record<string, unknown>
-    : undefined
+): { elements: DesignElement[]; relations: Relation[] } | undefined {
+  if (modelUnreadable(text)) return undefined
+  const held = text === undefined ? undefined : parseJson(text) as Record<string, unknown>
   return {
     elements: listOf(held?.elements)
       .filter((row) => typeof row.id === 'string')
@@ -632,6 +632,24 @@ export function modelListsFrom(
     relations: listOf(held?.relations)
       .filter((row) => typeof row.id === 'string') as unknown as Relation[],
   }
+}
+
+/**
+ * Is this a `model.json` that is there and is not a model — half a write, a
+ * merge conflict's markers, a hand edit that lost a brace?
+ *
+ * The one question a reader of a scope has to ask before it reads one as
+ * empty. Opened as empty, the next save writes an empty model over it and
+ * removes every description filed beside it, because a description whose
+ * element is not in the model is a file the format no longer writes. So a
+ * scope that answers yes opens to be read and not to be written
+ * (`ScopeSnapshot.unreadable`), the way a folder in a format this build does
+ * not know does not open at all.
+ */
+export function modelUnreadable(text: string | undefined): boolean {
+  if (text === undefined) return false
+  const parsed = parseJson(text)
+  return !parsed || typeof parsed !== 'object' || Array.isArray(parsed)
 }
 
 /**
@@ -935,5 +953,8 @@ export function scopeFromFolder(
       ? held.activeDiagramId : undefined),
     logoLibrary: readLogos(folder, held),
     ...(images.length ? { imageLibrary: images } : {}),
+    // Read as far as it reads, so it can be looked at; said, so nothing
+    // writes the empty model it would otherwise be saved as.
+    ...(modelUnreadable(textAt(folder, MODEL_FILE)) ? { unreadable: [MODEL_FILE] } : {}),
   }
 }

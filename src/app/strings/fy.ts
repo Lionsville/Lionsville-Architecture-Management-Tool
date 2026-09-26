@@ -23,6 +23,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'shell.changedOnDisk': 'Wizige op skiif',
   'shell.conflict': 'Hjir én op skiif wizige',
   'shell.diskChanged': 'Dit projekt is op skiif wizige. Hjir stiet neat iepen.',
+  'shell.unreadableScope': '{files} yn dizze scope koe net lêzen wurde, dus hy stiet iepen om te besjen en net om te wizigjen: bewarje soe der in leech model oerhinne skriuwe. Meitsje it bestân wer goed, of helje it werom út de skiednis, en iepenje de scope opnij.',
   'shell.diskConflict': 'Dit projekt is op skiif wizige, en hjir steane wizigings iepen.',
   'shell.takeTheirs': 'Dy fan skiif',
   'shell.keepMine': 'Dy fan my',

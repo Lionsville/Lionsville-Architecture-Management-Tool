@@ -258,6 +258,51 @@ describe('FileSystemScopeStore — the folder is somebody else’s too', () => {
     expect(back?.model.experiments).toEqual(scope.model.experiments)
   })
 
+  /**
+   * A `model.json` somebody's merge left markers in, or a sync client wrote
+   * half of. Read as empty, the next save wrote an empty model over it and
+   * removed every description beside it — the scope's documents, gone
+   * because a brace was.
+   */
+  it('opens a scope whose model.json does not parse to be read, and deletes nothing on the next save', async () => {
+    const { root, store } = setup()
+    const scope = sampleScope()
+    scope.model.elements = scope.model.elements.map((one) => ({ ...one, description: `All about ${one.name}.` }))
+    await store.save(scope)
+    const folder = await (await root.getDirectoryHandle('acme-logistics'))
+      .getDirectoryHandle('landscape') as FakeDirectory
+    const broken = '{\n  "elements": [\n<<<<<<< HEAD\n'
+    folder.writeRaw('model.json', broken)
+    const before = root.paths()
+
+    const opened = await store.load(scope.path)
+    expect(opened?.unreadable).toEqual(['model.json'])
+
+    // The snapshot as opened, and one rebuilt without the mark: both refused.
+    await expect(store.save(opened!)).rejects.toMatchObject({ key: 'shell.unreadableNotSaved' })
+    await expect(store.save({ ...opened!, unreadable: undefined })).rejects.toMatchObject({ key: 'shell.unreadableNotSaved' })
+
+    expect(root.paths()).toEqual(before)
+    expect(root.paths()).toContain('acme-logistics/landscape/docs/crews.md')
+    expect(await (await (await folder.getFileHandle('model.json')).getFile()).text()).toBe(broken)
+    // The index does not count it as a scope that defines nothing.
+    expect((await store.models()).map((held) => held.path)).not.toContain(scope.path)
+    expect(await store.descriptions(scope.path)).toBeUndefined()
+  })
+
+  it('rejects a walk of the tree that fails, rather than answering that the tree defines nothing', async () => {
+    const gone = {
+      kind: 'directory' as const,
+      name: 'gone',
+      getDirectoryHandle: () => Promise.reject(new Error('NotAllowedError')),
+      getFileHandle: () => Promise.reject(new Error('NotAllowedError')),
+      removeEntry: () => Promise.reject(new Error('NotAllowedError')),
+      // eslint-disable-next-line require-yield
+      values: async function* () { throw new Error('NotAllowedError') },
+    }
+    await expect(new FileSystemScopeStore(gone).models()).rejects.toThrow('NotAllowedError')
+  })
+
   it('answers an unreadable folder with an empty list rather than an exception', async () => {
     // Permission withdrawn, drive unplugged, folder deleted under us.
     const gone = {

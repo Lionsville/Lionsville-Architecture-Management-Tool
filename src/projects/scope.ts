@@ -83,6 +83,18 @@ export type ScopeSnapshot = {
   imageLibrary?: DocumentImage[]
   /** ISO timestamp of the last save. Absent until a store has written it once. */
   updatedAt?: string
+  /**
+   * The files of this scope that are there and could not be read — today only
+   * ever `model.json` (`folderFormat.modelUnreadable`). Absent when every file
+   * read.
+   *
+   * A scope with any is opened to be looked at and **not written**: what was
+   * read of it is shown, and a save is refused, because a save writes what
+   * the snapshot holds and the snapshot holds nothing of a model that did not
+   * parse. Mending the file by hand, or taking it back from the history, and
+   * opening the scope again is the way back.
+   */
+  unreadable?: readonly string[]
 }
 
 /**

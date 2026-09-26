@@ -460,9 +460,25 @@ describe('projectFromFolder', () => {
     expect(back.model.elements.some((e) => 'platformCategory' in e)).toBe(false)
     // And the index's reader, which reads the model file on its own, agrees.
     const text = scopeFiles(held).find((file) => file.path === MODEL_FILE)!
-    const listed = modelListsFrom('text' in text ? text.text : '')
+    const listed = modelListsFrom('text' in text ? text.text : '')!
     expect(listed.elements.find((e) => e.id === 'kafka')?.platformArchetype).toBe('service')
     expect(listed.elements.some((e) => 'platformCategory' in e)).toBe(false)
+  })
+
+  it('marks a scope whose model.json is there and does not parse, rather than reading it as empty', () => {
+    const files = scopeFiles(project()).map((file) => (file.path === MODEL_FILE
+      ? { path: MODEL_FILE, text: '{"elements": [ {"id": "crews", <<<<<<< HEAD' }
+      : file))
+    const back = scopeFromFolder(files, REF)
+    // Opened, so it can be looked at; said, so nothing writes the empty model.
+    expect(back?.unreadable).toEqual([MODEL_FILE])
+    expect(back?.model.elements).toEqual([])
+    // The index's reader does not answer it with an empty pair either.
+    expect(modelListsFrom('{"elements": [')).toBeUndefined()
+    expect(modelListsFrom('[]')).toBeUndefined()
+    // No file at all is an ordinary domain, and a whole file is read as ever.
+    expect(modelListsFrom(undefined)).toEqual({ elements: [], relations: [] })
+    expect(scopeFromFolder(scopeFiles(project()), REF)?.unreadable).toBeUndefined()
   })
 
   it('reads a folder with no views, because that is a domain', () => {

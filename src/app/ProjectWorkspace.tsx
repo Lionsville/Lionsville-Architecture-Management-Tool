@@ -14,6 +14,7 @@
  * mounted in a test with two plain objects and a two-diagram model.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import { EditorRefused, SolutionDesignEditor, shownAsOf, useShownDays } from '../editor'
 import type { ReactNode } from 'react'
@@ -313,7 +314,7 @@ function localToday(): string {
 }
 
 export function ProjectWorkspace({
-  project, projects, index, watch, readOnly = false, sourceStatus, onSourceWork, onScopeSession,
+  project, projects, index, watch, readOnly: sourceReadOnly = false, sourceStatus, onSourceWork, onScopeSession,
   commands, hostMenu = false, overflow, onUnsavedWork, history: projectHistory,
   onSnapshotTaken, onAgentSession, agentBar, documents, askPassword, landing, chooseFolder, notify, onStorageResult, s, language, editorPreferences, onEditorPreferencesChange,
   onGoHome, crumbs, onOpenScope, scopes, models, workingSet, onAdoptScopes,
@@ -322,6 +323,14 @@ export function ProjectWorkspace({
   groupName, groupClient,
   diagnostics, hostControls, today = localToday, initialPage, windowChrome,
 }: ProjectWorkspaceProps) {
+  /**
+   * Whether anything here may be written: not where the source says so, and
+   * not in a scope a file of which did not read (`ScopeSnapshot.unreadable`) —
+   * a save there would write an empty model over the one that did not parse.
+   * One flag, so every affordance and the agent's refusal follow it.
+   */
+  const unreadable = project.unreadable ?? []
+  const readOnly = sourceReadOnly || unreadable.length > 0
   /**
    * Every ancestor's records as one list — what the search and the agent read.
    *
@@ -1536,6 +1545,16 @@ export function ProjectWorkspace({
         windowChrome={windowChrome}
       />
       </Box>
+      {unreadable.length > 0 && (
+        <Alert
+          severity="warning"
+          square
+          sx={{ py: 0.25, fontSize: 13, borderRadius: 0 }}
+          data-testid="unreadable-notice"
+        >
+          {s('shell.unreadableScope', { files: unreadable.join(', ') })}
+        </Alert>
+      )}
       <DiskChangeNotice
         status={document.state.status}
         onTakeTheirs={document.takeTheirs}
