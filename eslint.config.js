@@ -370,6 +370,103 @@ const TRANSLATION_SLICES = [
   },
 ]
 
+/**
+ * THE SIZE OF A UNIT.
+ *
+ * A function's cyclomatic complexity at most 25, and at most 150 lines of
+ * code, not counting blank lines and comments. Step 49 took the five units
+ * that held the product's decision logic from 155, 150, 128, 127 and 115 down
+ * to single figures by dispatching on a table and extracting the pieces; this
+ * is what keeps that from growing back, and keeps the next one from starting.
+ * Tests are held to the complexity and not to the length: a `describe` is one
+ * function as long as its cases.
+ *
+ * **The units already over either line are listed, each at its own measure**
+ * — the file's largest, the day this was written — so nothing listed can grow
+ * and nothing new can arrive over the line. It is a ratchet, not an amnesty:
+ * `build/unitSize.test.ts` fails when a listed file measures less than its
+ * entry, so a unit made smaller takes its number down with it, and one that
+ * no longer needs an entry loses it. Adding a file here, or raising a number,
+ * is a decision said in the commit that does it.
+ */
+export const MOST_COMPLEX = 25
+export const LONGEST_FUNCTION = 150
+
+/** The units over the line on 26 September 2026: each file's largest, by rule. */
+export const GROWN = {
+  'electron/main/smoke.ts': { lines: 572 },
+  'src/agent/answer.ts': { complexity: 101, lines: 352 },
+  'src/agent/handle.ts': { complexity: 39 },
+  'src/agent/screen.ts': { complexity: 27 },
+  'src/agent/shell.ts': { complexity: 42 },
+  'src/agent/tools.ts': { complexity: 34 },
+  'src/app/history/HistoryPage.tsx': { lines: 218 },
+  'src/app/history/useProjectHistory.ts': { lines: 164 },
+  'src/app/organisation/OrganisationCards.tsx': { complexity: 38, lines: 180 },
+  'src/app/organisation/OrganisationScreen.tsx': { complexity: 51, lines: 350 },
+  'src/app/organisation/ScopeSettingsDialog.tsx': { lines: 160 },
+  'src/app/organisation/organisationPages.ts': { complexity: 30 },
+  'src/app/organisation/useOrganisation.ts': { lines: 321 },
+  'src/app/useModelSession.ts': { lines: 336 },
+  'src/business/ui/FunctionInspector.tsx': { lines: 153 },
+  'src/business/ui/SheetPage.tsx': { complexity: 68, lines: 359 },
+  'src/decisions/ui/AdrPage.tsx': { lines: 348 },
+  'src/decisions/ui/AdrReader.tsx': { complexity: 26, lines: 195 },
+  'src/documentation/bpmn.ts': { complexity: 31 },
+  'src/documentation/ui/BpmnBlock.tsx': { complexity: 41 },
+  'src/documentation/ui/DocumentSource.tsx': { lines: 198 },
+  'src/documentation/ui/DocumentationPage.tsx': { complexity: 36, lines: 279 },
+  'src/editor/ConnectionInspector.tsx': { complexity: 55, lines: 416 },
+  'src/editor/EditorToolbar.tsx': { complexity: 57, lines: 431 },
+  'src/editor/canvas/DiagramCanvas.tsx': { complexity: 29, lines: 1005 },
+  'src/editor/canvas/DomainGroupLayer.tsx': { lines: 202 },
+  'src/editor/canvas/ElementPalette.tsx': { lines: 479 },
+  'src/editor/canvas/Layer7Canvas.tsx': { lines: 187 },
+  'src/editor/canvas/ZoneLayer.tsx': { lines: 222 },
+  'src/editor/edges/FloatingEdge.tsx': { complexity: 61, lines: 520 },
+  'src/editor/graph.ts': { complexity: 38 },
+  'src/editor/use-canvas-shortcuts.ts': { complexity: 37 },
+  'src/editor/useEditorState.ts': { lines: 753 },
+  'src/layout/tidy.ts': { complexity: 26, lines: 176 },
+  'src/model/activity.ts': { complexity: 76 },
+  'src/model/checks.ts': { complexity: 41 },
+  'src/model/platformReport.ts': { complexity: 28 },
+  'src/model/relations.ts': { complexity: 26 },
+  'src/model/restore.ts': { complexity: 45 },
+  'src/model/technologyLandscape.ts': { complexity: 41 },
+  'src/observations/ui/ObservationsPage.tsx': { complexity: 43, lines: 819 },
+  'src/observations/ui/Readers.tsx': { complexity: 41, lines: 153 },
+  'src/observations/ui/SolutionPicture.tsx': { complexity: 26, lines: 224 },
+  'src/observations/ui/SolutionReaders.tsx': { complexity: 56, lines: 281 },
+  'src/projects/documentSession.ts': { complexity: 34 },
+  'src/projects/folderFormat.ts': { complexity: 35 },
+  'src/projects/scopeIndex.ts': { complexity: 44 },
+  'src/roadmap/ui/PlanPage.tsx': { lines: 233 },
+  'src/roadmap/ui/RoadmapPage.tsx': { lines: 397 },
+  'src/technology/ui/TechnologyLandscapePage.tsx': { complexity: 63, lines: 359 },
+}
+
+const functionLines = (max) => ['error', { max, skipBlankLines: true, skipComments: true }]
+
+const UNIT_SIZE = [
+  {
+    files: ['src/**/*.{ts,tsx}', 'electron/**/*.ts'],
+    rules: { complexity: ['error', MOST_COMPLEX] },
+  },
+  {
+    files: ['src/**/*.{ts,tsx}', 'electron/**/*.ts'],
+    ignores: ['**/*.test.{ts,tsx}', '**/*.contract.ts', '**/testing/**'],
+    rules: { 'max-lines-per-function': functionLines(LONGEST_FUNCTION) },
+  },
+  ...Object.entries(GROWN).map(([file, grown]) => ({
+    files: [file],
+    rules: {
+      ...(grown.complexity ? { complexity: ['error', grown.complexity] } : {}),
+      ...(grown.lines ? { 'max-lines-per-function': functionLines(grown.lines) } : {}),
+    },
+  })),
+]
+
 export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
@@ -462,5 +559,6 @@ export default tseslint.config(
   },
   ...IMPORT_MATRIX,
   ...TRANSLATION_SLICES,
+  ...UNIT_SIZE,
 
 )

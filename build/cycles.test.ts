@@ -14,7 +14,9 @@ import { cycles, importGraph, moduleGraph, moduleOf, runtimeImports } from './cy
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 
-describe('the import graph', () => {
+// Every file of the program parsed, twice: seconds on a machine running the
+// rest of the suite beside it.
+describe('the import graph', { timeout: 60_000 }, () => {
   const files = importGraph(root, ['src', 'electron'])
 
   it('has no loop between files', () => {

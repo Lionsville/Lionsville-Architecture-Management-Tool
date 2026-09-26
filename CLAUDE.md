@@ -756,6 +756,13 @@ one writable both land, among others — and then the store's suite runs over it
   undefined)`, which answers a locked file as a missing one. Never toast a success you did not wait
   for. Log messages and keys, never model content — the desktop writes the
   trail to a file the user is invited to hand over.
+- **A unit stays small enough to read.** A function's complexity is at most 25
+  and its length at most 150 lines (`MOST_COMPLEX`, `LONGEST_FUNCTION` in
+  `eslint.config.js`); the files already over either are listed in `GROWN` at
+  their own measure, and `build/unitSize.test.ts` holds each entry to exactly
+  what the file measures, so a unit made smaller takes its number down and none
+  can grow back. A switch that keeps growing is a table of handlers, the way
+  `model/commands/` and `agent/write/` are.
 - **A page's wiring is a hook, not a stretch of the workspace.** What a page
   may do, which of its screens is up, and where a person lands on leaving it
   live in one `use*` hook with a test of its own (`useProjectHistory`,
