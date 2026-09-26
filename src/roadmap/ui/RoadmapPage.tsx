@@ -313,7 +313,7 @@ export function RoadmapPage(props: RoadmapPageProps) {
                   >
                     {track.spans.map((span_, index) => (
                       <Tooltip key={index} title={`${t(`lifecycle.${span_.phase}` as StringKey)} · ${span_.from}`}>
-                        <Box
+                        <Box role="img"
                           data-phase={span_.phase}
                           sx={{
                             position: 'absolute', top: 0, bottom: 0,
@@ -370,7 +370,7 @@ export function RoadmapPage(props: RoadmapPageProps) {
                         </Box>
                         <Box data-testid={`relation-${relation.id}`} sx={{ position: 'relative', height: 18, bgcolor: 'action.hover', borderRadius: 1 }}>
                           <Tooltip title={`${sourceName} → ${targetName} · ${opens} – ${isDay(relation.validUntil) ? relation.validUntil : '…'}`}>
-                            <Box
+                            <Box role="img"
                               data-testid="relation-window"
                               data-relation-type={relation.type}
                               sx={{
@@ -431,7 +431,7 @@ export function RoadmapPage(props: RoadmapPageProps) {
                     )}
                     {shadow && (
                       <Tooltip title={`${t('roadmap.shadowRun')} · ${shadow.from} – ${shadow.to}`}>
-                        <Box
+                        <Box role="img"
                           data-testid="shadow-run"
                           sx={{
                             position: 'absolute', top: 3, bottom: 3,
@@ -445,7 +445,7 @@ export function RoadmapPage(props: RoadmapPageProps) {
                     )}
                     {plan.milestones.filter((m) => isDay(m.date) && m.date >= roadmap.from && m.date <= roadmap.to).map((milestone, index) => (
                       <Tooltip key={index} title={`${milestone.name} · ${milestone.date}`}>
-                        <Box
+                        <Box role="img"
                           data-testid="milestone"
                           sx={{
                             position: 'absolute', top: 4, left: at(milestone.date), width: 8, height: 10,
@@ -528,12 +528,12 @@ export function RoadmapPage(props: RoadmapPageProps) {
 
       </Box>
 
-      <Dialog open={newTitle !== null} onClose={() => setNewTitle(null)} maxWidth="xs" fullWidth>
+      <Dialog open={newTitle !== null} onClose={() => setNewTitle(null)} maxWidth="xs" fullWidth aria-labelledby="lv-new-plan-title">
         <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <Typography sx={{ fontWeight: 600 }}>{t('roadmap.newPlanTitle')}</Typography>
+          <Typography id="lv-new-plan-title" sx={{ fontWeight: 600 }}>{t('roadmap.newPlanTitle')}</Typography>
           <TextField
             size="small"
-            autoFocus
+            autoFocus slotProps={{ htmlInput: { 'aria-labelledby': 'lv-new-plan-title' } }}
             value={newTitle ?? ''}
             onChange={(e) => setNewTitle(e.target.value)}
             onKeyDown={(e) => {
@@ -566,7 +566,7 @@ export function RoadmapPage(props: RoadmapPageProps) {
 function Marker({ left, colour, label }: { left: string; colour: string; label: string }) {
   return (
     <Tooltip title={label}>
-      <Box sx={{ position: 'absolute', top: -2, bottom: -2, left, width: '2px', ml: '-1px', bgcolor: colour, opacity: 0.7 }} />
+      <Box role="img" sx={{ position: 'absolute', top: -2, bottom: -2, left, width: '2px', ml: '-1px', bgcolor: colour, opacity: 0.7 }} />
     </Tooltip>
   )
 }
@@ -621,7 +621,7 @@ function InitiativeRow({ initiative, at, from, to, today, onOpen, t, colour }: {
         )}
         {plan.milestones.filter((m) => isDay(m.date) && m.date >= from && m.date <= to).map((milestone, index) => (
           <Tooltip key={index} title={`${milestone.name} · ${milestone.date}`}>
-            <Box
+            <Box role="img"
               data-testid="milestone"
               sx={{
                 position: 'absolute', top: 4, left: at(milestone.date), width: 8, height: 10,

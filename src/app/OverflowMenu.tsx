@@ -105,7 +105,7 @@ export function OverflowMenu({
             : <Divider key={`separator-${at}`} />
         ))}
         <Divider />
-        <ListSubheader sx={{ lineHeight: '28px', fontSize: 11 }}>{s('menu.theme')}</ListSubheader>
+        <ListSubheader role="presentation" sx={{ lineHeight: '28px', fontSize: 11 }}>{s('menu.theme')}</ListSubheader>
         {THEME_ITEMS.map(({ mode, label }) => (
           <MenuItem
             key={mode}
@@ -123,7 +123,7 @@ export function OverflowMenu({
         </MenuItem>
         {/* Help, under its own heading: the same two the desktop's Help menu carries. */}
         {help.length > 0 && <Divider />}
-        {help.length > 0 && <ListSubheader sx={{ lineHeight: '28px', fontSize: 11 }}>{s('menu.help')}</ListSubheader>}
+        {help.length > 0 && <ListSubheader role="presentation" sx={{ lineHeight: '28px', fontSize: 11 }}>{s('menu.help')}</ListSubheader>}
         {help.map((entry) => (entry.kind === 'item' ? (
           <MenuItem key={entry.label} onClick={choose(entry.command)}>
             <ListItemText primary={s(entry.label)} slotProps={{ primary: { sx: { fontSize: 13 } } }} />

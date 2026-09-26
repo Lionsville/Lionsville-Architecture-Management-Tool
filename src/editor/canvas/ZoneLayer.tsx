@@ -236,7 +236,7 @@ export function ZoneLayer({
             </div>
             {!readOnly && (
               <div
-                className="nodrag nopan"
+                className="nodrag nopan" role="separator" aria-orientation={zone === 'actors' || zone === 'management' ? 'horizontal' : 'vertical'}
                 aria-label={t('zone.resizeBand', { name: zoneLabel(zone, t).toLowerCase() })}
                 onPointerDown={beginResize(zone)}
                 style={{
@@ -258,7 +258,7 @@ export function ZoneLayer({
         canvasHandles(board).map((handle) => (
           <div
             key={handle.key}
-            className="nodrag nopan"
+            className="nodrag nopan" role="separator"
             aria-label={t('zone.resizeCanvas', { name: handle.key })}
             onPointerDown={beginCanvasResize(handle.key)}
             style={{

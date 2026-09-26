@@ -30,6 +30,7 @@ export function LifecycleBadge({ lifecycle, show }: { lifecycle: Lifecycle; show
   return (
     <Tooltip title={t('node.lifecycleAria', { name: word })}>
     <Box
+      role="img"
       aria-label={t('node.lifecycleAria', { name: word })}
       sx={{
         position: 'absolute',

@@ -332,16 +332,16 @@ export function AdrPage(props: AdrPageProps) {
         <Box sx={{ display: 'grid', gridTemplateColumns: '240px 320px minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
           {/* the tree */}
           <Box component="nav" data-testid="adr-tree" sx={{ borderRight: 1, borderColor: 'divider', bgcolor: 'background.paper', overflow: 'auto' }}>
-            <List dense disablePadding>
+            <List component="div" dense disablePadding>
               {/* This scope first: its own records, then one node per subject
                   a record here is about (ADR-0012 §7). */}
-              <ListSubheader disableSticky sx={{ lineHeight: '32px', bgcolor: 'transparent' }}>{s('adr.scopeLandscape')}</ListSubheader>
+              <ListSubheader component="div" disableSticky sx={{ lineHeight: '32px', bgcolor: 'transparent' }}>{s('adr.scopeLandscape')}</ListSubheader>
               {node('landscape', model.name, s('adr.scopeLandscapeNote'))}
-              <ListSubheader disableSticky sx={{ lineHeight: '32px', bgcolor: 'transparent' }}>{s('adr.scopeApplications')}</ListSubheader>
+              <ListSubheader component="div" disableSticky sx={{ lineHeight: '32px', bgcolor: 'transparent' }}>{s('adr.scopeApplications')}</ListSubheader>
               {subjects.map((one) => node(subjectScope(one.id), one.name, one.category, 1))}
               {orphanIds.length > 0 && (
                 <>
-                  <ListSubheader disableSticky sx={{ lineHeight: '32px', bgcolor: 'transparent' }}>{s('adr.scopeRemoved')}</ListSubheader>
+                  <ListSubheader component="div" disableSticky sx={{ lineHeight: '32px', bgcolor: 'transparent' }}>{s('adr.scopeRemoved')}</ListSubheader>
                   {orphanIds.map((id) => node(subjectScope(id), id, undefined, 1))}
                 </>
               )}
@@ -351,7 +351,7 @@ export function AdrPage(props: AdrPageProps) {
                   nothing. */}
               {ancestors.filter((one) => one.decisions.length > 0).map((one) => (
                 <Box key={one.path}>
-                  <ListSubheader disableSticky sx={{ lineHeight: '32px', bgcolor: 'transparent' }}>
+                  <ListSubheader component="div" disableSticky sx={{ lineHeight: '32px', bgcolor: 'transparent' }}>
                     {s('adr.scopeFrom', { scope: one.name || one.path || s('adr.scopeGroup') })}
                   </ListSubheader>
                   {node(
@@ -376,7 +376,7 @@ export function AdrPage(props: AdrPageProps) {
                 slotProps={{ htmlInput: { 'aria-label': s('adr.searchField'), autoComplete: 'off' } }}
               />
             </Box>
-            <List dense disablePadding sx={{ overflow: 'auto', flex: 1 }}>
+            <List component="div" dense disablePadding sx={{ overflow: 'auto', flex: 1 }}>
               {shown.map(({ adr, scope: where }) => (
                 <ListItemButton
                   key={adr.id}

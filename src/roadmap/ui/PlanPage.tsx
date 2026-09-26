@@ -326,7 +326,7 @@ function Facts({ plan, model, decisions, readOnly, actions, initiativeToggle }: 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <TextField
                 select size="small" value={one.role} disabled={readOnly} sx={{ width: 130 }}
-                slotProps={{ htmlInput: { 'aria-label': t('plan.role') } }}
+                slotProps={namedSelect(t('plan.role'))}
                 onChange={(e) => setElements(plan.elements.map((row, at) => (
                   at === index ? { ...row, role: e.target.value as TransitionRole } : row
                 )))}
@@ -362,7 +362,7 @@ function Facts({ plan, model, decisions, readOnly, actions, initiativeToggle }: 
           </TextField>
           <TextField
             select size="small" value={adding.role} sx={{ width: 130 }}
-            slotProps={{ htmlInput: { 'aria-label': t('plan.role') } }}
+            slotProps={namedSelect(t('plan.role'))}
             onChange={(e) => setAdding((a) => ({ ...a, role: e.target.value as TransitionRole }))}
           >
             {ROLES.map((role) => <MenuItem key={role} value={role}>{t(`plan.${role}` as StringKey)}</MenuItem>)}
@@ -621,7 +621,7 @@ function Interfaces({ plan, model, today, readOnly, actions, height }: {
                 {targets.length > 1 ? (
                   <TextField
                     select size="small" variant="standard" value={targetFor(port)} disabled={readOnly}
-                    slotProps={{ htmlInput: { 'aria-label': `${rowName(port)}: ${t('plan.movesTo')}` } }}
+                    slotProps={namedSelect(`${rowName(port)}: ${t('plan.movesTo')}`)}
                     onChange={(e) => {
                       setChoice((c) => ({ ...c, [port.from.id]: e.target.value }))
                       if (port.on) actions.port(plan.id, port.from.id, e.target.value, port.on)
@@ -708,4 +708,15 @@ function Body({ plan, model, editing, renderMarkdown, onAddImage, images, onChan
       )}
     </Box>
   )
+}
+
+/**
+ * A select with no visible label, named twice: the field, and the list it
+ * opens — which MUI names from the label, so without one it opens nameless.
+ */
+function namedSelect(name: string) {
+  return {
+    htmlInput: { 'aria-label': name },
+    select: { MenuProps: { slotProps: { list: { 'aria-label': name } } } },
+  }
 }

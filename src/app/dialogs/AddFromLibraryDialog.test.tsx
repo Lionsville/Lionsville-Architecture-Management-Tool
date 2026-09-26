@@ -4,6 +4,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen } from '@testing-library/react'
+import { axeFindings } from '../testing/axe'
 import { AddFromLibraryDialog } from './AddFromLibraryDialog'
 import { renderShell } from '../testing/renderShell'
 import { translator } from '../../i18n'
@@ -26,6 +27,13 @@ function mount(choice: Parameters<typeof AddFromLibraryDialog>[0]['choice'], ove
   renderShell(<AddFromLibraryDialog {...props} />)
   return props
 }
+
+describe('AddFromLibraryDialog, as axe reads it', () => {
+  it('finds nothing in the picker', async () => {
+    mount({ kind: 'picking', rows })
+    expect(await axeFindings()).toEqual([])
+  })
+})
 
 describe('AddFromLibraryDialog', () => {
   it('lists the rows with where each is answered for, filters them, and answers with the one pressed', () => {

@@ -54,3 +54,18 @@ export function isShortcutIgnoredTarget(target: EventTarget | null): boolean {
   const element = typeof node?.closest === 'function' ? node : node?.parentElement;
   return !!element?.closest?.(IGNORED_SELECTOR);
 }
+
+/**
+ * The marker a control puts on itself to say "my menu, not the canvas's": a
+ * diagram tab, whose Shift+F10 and Menu key open the tab's own menu. Narrower
+ * than {@link SHORTCUTS_IGNORE_ATTR} on purpose — every other chord, ⌘Z and
+ * Escape among them, still reaches the canvas from a focused tab.
+ */
+export const OWN_MENU_ATTR = 'data-own-menu';
+
+/** True when the event happened inside a control that opens a menu of its own. */
+export function ownsContextMenu(target: EventTarget | null): boolean {
+  const node = target as (Node & { closest?: (selector: string) => Element | null }) | null;
+  const element = typeof node?.closest === 'function' ? node : node?.parentElement;
+  return !!element?.closest?.(`[${OWN_MENU_ATTR}]`);
+}

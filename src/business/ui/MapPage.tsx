@@ -308,7 +308,7 @@ function Heading({ column, onOpen, openable, t }: {
         height: HEADING_HEIGHT, verticalAlign: 'bottom', width: CELL, minWidth: CELL, maxWidth: CELL,
       }}
     >
-      <Tooltip title={label}>
+      <Tooltip describeChild title={label}>
         <Box
           component={openable ? 'button' : 'span'}
           type={openable ? 'button' : undefined}

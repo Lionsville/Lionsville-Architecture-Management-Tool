@@ -31,6 +31,7 @@ import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
 import type { TidyOptions } from '../layout/tidy';
 import { ContextMenu } from './canvas/ContextMenu';
+import { OWN_MENU_ATTR } from './isEditableTarget';
 import { menuItemsFor, type MenuItem as MenuItemModel } from './canvas/menuItems';
 import { detectPlatform } from './keymap';
 import { TidySettingsPanel } from './TidySettingsPanel';
@@ -341,7 +342,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
               <Tab
                 key={diagram.id}
                 value={diagram.id}
-                onContextMenu={(event) => openTabMenu(event, diagram.id)}
+                {...tabMenuDoors(diagram.id, openTabMenu, hasTabMenu ? openTabMenuBelow : undefined)}
                 label={
                   <TabLabel
                     diagram={diagram}
@@ -484,9 +485,9 @@ export function EditorToolbar(props: EditorToolbarProps) {
               size="small"
               aria-label={t('toolbar.routeOnly')}
               onClick={props.onRouteEdges}
-              disabled={props.busy !== undefined}
+              disabled={props.busy !== undefined} aria-busy={props.busy === 'route'}
             >
-              {props.busy === 'route' ? <CircularProgress size={16} /> : <RouteIcon />}
+              {props.busy === 'route' ? <CircularProgress size={16} aria-hidden /> : <RouteIcon />}
             </IconButton>
           </span>
         </Tooltip>
@@ -563,9 +564,9 @@ export function EditorToolbar(props: EditorToolbarProps) {
             size="small"
             aria-label={t('toolbar.exportPng')}
             onClick={props.onExport}
-            disabled={props.exportBusy === true}
+            disabled={props.exportBusy === true} aria-busy={props.exportBusy === true}
           >
-            {props.exportBusy ? <CircularProgress size={16} /> : <ExportIcon />}
+            {props.exportBusy ? <CircularProgress size={16} aria-hidden /> : <ExportIcon />}
           </IconButton>
         </span>
       </Tooltip>
@@ -750,9 +751,9 @@ function TidySplitButton({
               size="small"
               aria-label={cancelling ? t('toolbar.cancelTidy') : t('toolbar.tidy')}
               onClick={cancelling ? onCancelTidy : onTidy}
-              disabled={busy !== undefined && !cancelling}
+              disabled={busy !== undefined && !cancelling} aria-busy={busy === 'tidy'}
             >
-              {busy === 'tidy' ? <CircularProgress size={16} /> : <TidyIcon />}
+              {busy === 'tidy' ? <CircularProgress size={16} aria-hidden /> : <TidyIcon />}
             </IconButton>
           </span>
         </Tooltip>
@@ -793,6 +794,45 @@ function TidySplitButton({
 }
 
 /**
+ * A tab's own keys, for what its two pointer controls do: ↓ opens the
+ * container diagrams under it (the caret's list, where it has one), and
+ * Shift+F10 or the Menu key opens the tab's menu under it, the menu a
+ * right-click opens. ← and → stay MUI's, moving between the tabs.
+ */
+function tabMenuDoors(
+  diagramId: string,
+  openAtPointer: (event: React.MouseEvent, diagramId: string) => void,
+  openMenuBelow: ((element: HTMLElement, diagramId: string) => void) | undefined,
+) {
+  return {
+    onContextMenu: (event: React.MouseEvent) => openAtPointer(event, diagramId),
+    onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => tabKeyDown(event, diagramId, openMenuBelow),
+    // Shift+F10 is the tab's own where it has a menu, not the canvas's.
+    ...(openMenuBelow ? { [OWN_MENU_ATTR]: true } : {}),
+  };
+}
+
+/** ↓ and the menu keys on a tab (see {@link tabMenuDoors}). */
+function tabKeyDown(
+  event: React.KeyboardEvent<HTMLElement>,
+  diagramId: string,
+  openMenuBelow: ((element: HTMLElement, diagramId: string) => void) | undefined,
+): void {
+  const tab = event.currentTarget;
+  if (event.key === 'ArrowDown') {
+    const caret = tab.querySelector<HTMLElement>('[data-tab-action="containers"]');
+    if (!caret) return;
+    event.preventDefault();
+    caret.click();
+    return;
+  }
+  const menuKey = event.key === 'ContextMenu' || (event.key === 'F10' && event.shiftKey);
+  if (!menuKey || !openMenuBelow) return;
+  event.preventDefault();
+  openMenuBelow(tab, diagramId);
+}
+
+/**
  * A Layer 7 tab's label: the name and, when applications placed on this
  * landscape have container diagrams, a small chevron that lists them. Container
  * diagrams used to be reachable only by double-clicking their application; now
@@ -800,8 +840,12 @@ function TidySplitButton({
  * over once one is open.
  */
 /**
- * The two controls a tab carries beside its name. Spans with button semantics,
- * not IconButtons: a Tab is already a <button>, and buttons do not nest.
+ * The two controls a tab carries beside its name, for the pointer. Spans, not
+ * IconButtons, and out of the accessibility tree: a Tab is already a <button>,
+ * and a control inside a button is one a screen reader cannot reach and a
+ * keyboard should not have to stop at. The keyboard reaches both from the tab
+ * itself ({@link tabMenuDoors}): ↓ opens the container diagrams, Shift+F10 or the
+ * Menu key the tab's menu, whose *Settings…* is the other.
  */
 const TAB_ACTION_SX = {
   display: 'inline-flex',
@@ -857,15 +901,10 @@ function TabLabel({
           <Tooltip title={t('toolbar.containerDiagrams')}>
             <Box
               component="span"
-              role="button"
-              tabIndex={0}
+              aria-hidden
+              data-tab-action="containers"
               aria-label={t('toolbar.containerDiagramsOf', { name: diagram.name })}
-              aria-haspopup="menu"
-              aria-expanded={Boolean(anchor)}
               onClick={open}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' || event.key === ' ' || event.key === 'ArrowDown') open(event);
-              }}
               sx={TAB_ACTION_SX}
             >
               <CaretIcon />
@@ -913,13 +952,9 @@ function TabLabel({
         <Tooltip title={t('toolbar.diagramSettings')}>
           <Box
             component="span"
-            role="button"
-            tabIndex={0}
+            aria-hidden
             aria-label={t('toolbar.diagramSettingsOf', { name: diagram.name })}
             onClick={openSettings}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' || event.key === ' ') openSettings(event);
-            }}
             sx={TAB_ACTION_SX}
           >
             <RadarIcon />
@@ -1184,7 +1219,7 @@ function ColourByControl(props: {
           {/* The reverse question (ADR-0020): who stands on this one thing. */}
           {props.candidates.length > 0 && (
             <>
-              <ListSubheader disableSticky sx={{ lineHeight: '28px', fontSize: 11 }}>{t('overlay.one')}</ListSubheader>
+              <ListSubheader component="div" disableSticky sx={{ lineHeight: '28px', fontSize: 11 }}>{t('overlay.one')}</ListSubheader>
               <MenuList dense disablePadding aria-label={t('overlay.one')} sx={{ maxHeight: 240, overflow: 'auto' }}>
                 {props.candidates.map((candidate) => (
                   <MenuItem

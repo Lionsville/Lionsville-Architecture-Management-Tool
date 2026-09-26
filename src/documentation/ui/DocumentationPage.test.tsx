@@ -12,6 +12,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { laidOut } from '../../model/testFixtures';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { axeFindings } from '../../app/testing/axe';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { DocumentationPage, type DocumentationPageProps } from './DocumentationPage';
 import type { DocumentationActions } from './DocumentationPage';
@@ -113,6 +114,13 @@ function imageFile(name = 'Screenshot.png'): File {
 function transfer(files: File[], text = '') {
   return { files, items: [], types: files.length ? ['Files'] : [], getData: () => text };
 }
+
+describe('DocumentationPage — as axe reads it', () => {
+  it('finds nothing on the page', async () => {
+    setup();
+    expect(await axeFindings()).toEqual([]);
+  });
+});
 
 describe('DocumentationPage — the plans that name the element (ADR-0010)', () => {
   const plan = (id: string, title: string, elementId: string) => ({

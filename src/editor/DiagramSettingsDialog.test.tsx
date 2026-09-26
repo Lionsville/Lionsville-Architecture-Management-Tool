@@ -5,6 +5,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { laidOut } from '../model/testFixtures';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { axeFindings } from '../app/testing/axe';
 import { DiagramSettingsDialog } from './DiagramSettingsDialog';
 import { DEFAULT_ASPECT_CONFIG } from '../model/aspects';
 import type { DesignDiagram, DiagramSettings } from '../model/types';
@@ -33,6 +34,13 @@ const save = () => fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 
 /** The label field of the nth column row, found by its current value. */
 const labelField = (value: string) => screen.getByDisplayValue(value);
+
+describe('DiagramSettingsDialog — as axe reads it', () => {
+  it('finds nothing: every column field is named, the first row\'s label or not', async () => {
+    open();
+    expect(await axeFindings()).toEqual([]);
+  });
+});
 
 describe('DiagramSettingsDialog — what it opens with', () => {
   it('opens on the standard five, with a derived placeholder where no code is curated', () => {

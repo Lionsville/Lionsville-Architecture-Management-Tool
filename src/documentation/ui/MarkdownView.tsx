@@ -39,6 +39,7 @@ import type { Theme } from '@mui/material/styles'
 import Markdown, { defaultUrlTransform } from 'react-markdown'
 import type { Components, ExtraProps } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { useStrings } from '../../i18n/LanguageContext'
 import { blockFor } from './blocks'
 import type { BlockContext } from './blocks'
 import type { MermaidRenderer } from './MermaidBlock'
@@ -150,12 +151,13 @@ function Picture({ url, alt }: { url: string; alt: string }) {
 
 type HeadingProps = ComponentProps<'h1'>
 
-function heading(size: string, weight = 600) {
+function heading(level: number, size: string, weight = 600) {
   return function Heading({ children }: HeadingProps) {
     return (
       <Typography
         component="div"
         role="heading"
+        aria-level={level}
         // Room above only after a sibling, which is "not the first child"
         // without `:first-child` (Emotion warns about it, for server
         // rendering). Not `first-of-type` either: headings are divs and
@@ -169,6 +171,23 @@ function heading(size: string, weight = 600) {
   }
 }
 
+/**
+ * A GFM task item's box. Named, because a checkbox with no name is announced
+ * as nothing but its state; the item's own text follows it in the list.
+ */
+function TaskBox({ checked }: { checked: boolean }) {
+  const { t } = useStrings()
+  return (
+    <Checkbox
+      checked={checked}
+      disabled
+      size="small"
+      slotProps={{ input: { 'aria-label': t('doc.task') } }}
+      sx={{ p: 0, mr: 0.75, verticalAlign: 'text-bottom' }}
+    />
+  )
+}
+
 const CODE_FONT = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace'
 
 function components(
@@ -177,12 +196,12 @@ function components(
   resolveImage: ((src: string) => string | undefined) | undefined,
 ): Components {
   return {
-    h1: heading('1.6em'),
-    h2: heading('1.35em'),
-    h3: heading('1.15em'),
-    h4: heading('1em'),
-    h5: heading('0.95em'),
-    h6: heading('0.9em', 500),
+    h1: heading(1, '1.6em'),
+    h2: heading(2, '1.35em'),
+    h3: heading(3, '1.15em'),
+    h4: heading(4, '1em'),
+    h5: heading(5, '0.95em'),
+    h6: heading(6, '0.9em', 500),
     p: ({ children, node }) => (
       <Typography
         component="p"
@@ -228,9 +247,7 @@ function components(
     ol: ({ children }) => <Box component="ol" sx={{ my: '0.5em', pl: '1.5em' }}>{children}</Box>,
     li: ({ children }) => <Box component="li" sx={{ my: '0.15em' }}>{children}</Box>,
     // GFM task items arrive as disabled checkboxes; the document is not a form.
-    input: ({ checked }) => (
-      <Checkbox checked={Boolean(checked)} disabled size="small" sx={{ p: 0, mr: 0.75, verticalAlign: 'text-bottom' }} />
-    ),
+    input: ({ checked }) => <TaskBox checked={Boolean(checked)} />,
     blockquote: ({ children }) => (
       <Box component="blockquote" sx={{ my: '0.7em', mx: 0, pl: '1em', borderLeft: 3, borderColor: 'divider', color: 'text.secondary' }}>
         {children}

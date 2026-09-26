@@ -232,7 +232,7 @@ export function HistoryPage(props: HistoryPageProps) {
               {s(subject ? 'history.noneFor' : 'history.none')}
             </Typography>
           ) : (
-            <List dense disablePadding data-testid="history-list">
+            <List component="div" dense disablePadding data-testid="history-list">
               {entries.map((entry) => (
                 <ListItemButton
                   key={entry.id}

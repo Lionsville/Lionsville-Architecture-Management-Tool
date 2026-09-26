@@ -174,7 +174,7 @@ export function ExportDialog(props: ExportDialogProps) {
               </Typography>
             )}
             {props.previewBusy && props.preview && (
-              <CircularProgress size={20} sx={{ position: 'absolute', top: 8, right: 8 }} />
+              <CircularProgress size={20} aria-label={t('export.previewBusy')} sx={{ position: 'absolute', top: 8, right: 8 }} />
             )}
           </Box>
         </Stack>
@@ -185,7 +185,7 @@ export function ExportDialog(props: ExportDialogProps) {
           variant="contained"
           onClick={props.onExport}
           disabled={props.exporting}
-          startIcon={props.exporting ? <CircularProgress size={14} color="inherit" /> : undefined}
+          startIcon={props.exporting ? <CircularProgress size={14} color="inherit" aria-hidden /> : undefined}
         >
           {large ? t('export.largeConfirm') : t('export.confirm')}
         </Button>

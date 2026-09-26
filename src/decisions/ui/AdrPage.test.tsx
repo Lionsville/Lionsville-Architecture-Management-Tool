@@ -11,6 +11,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, within } from '@testing-library/react'
+import { axeFindings } from '../../app/testing/axe'
 import { translator } from '../../i18n'
 import type { Adr } from '../adr'
 import type { HostModel } from '../../model/hostModel'
@@ -69,6 +70,16 @@ function mount(over: Partial<AdrPageProps> = {}) {
   )
   return { ...utils, onProject, onOpenScope }
 }
+
+describe('AdrPage, as axe reads it', () => {
+  it('finds nothing on the tree, the list and the record, nor read-only', async () => {
+    mount()
+    expect(await axeFindings()).toEqual([])
+    cleanup()
+    mount({ readOnly: true })
+    expect(await axeFindings()).toEqual([])
+  })
+})
 
 describe('AdrPage', () => {
   it('shows this scope, each subject and the scope above, and opens on this scope', () => {

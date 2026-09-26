@@ -62,6 +62,7 @@ export const ExternalSystemNode = memo(function ExternalSystemNode({
         {note?.warning && (
           <Box
             component="span"
+            role="img"
             data-testid="stand-in-warning"
             title={note.warning}
             aria-label={note.warning}

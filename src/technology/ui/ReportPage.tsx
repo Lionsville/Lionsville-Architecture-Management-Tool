@@ -364,7 +364,7 @@ function Name({ end, openable, onOpen, config, t }: {
   const within = end.application ? `${label} · ${end.application.name}` : label
   const where = end.place ? `${within} · ${t('technology.on', { name: end.place.name })}` : within
   return (
-    <Tooltip title={end.where ? `${where} · ${end.where}` : where}>
+    <Tooltip describeChild title={end.where ? `${where} · ${end.where}` : where}>
       <Box
         component={openable ? 'button' : 'span'}
         type={openable ? 'button' : undefined}

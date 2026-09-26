@@ -13,6 +13,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, within } from '@testing-library/react'
+import { axeFindings } from '../../app/testing/axe'
 import { ServiceReportPage } from './ReportPage'
 import type { ServiceReportPageProps } from './ReportPage'
 import { renderShell } from '../../app/testing/renderShell'
@@ -58,6 +59,13 @@ function open(over: Partial<ServiceReportPageProps> = {}) {
   )
   return { ...result, onOpenDocumentation }
 }
+
+describe('the report, as axe reads it', () => {
+  it('finds nothing', async () => {
+    open()
+    expect(await axeFindings()).toEqual([])
+  })
+})
 
 describe('the report', () => {
   it('names the service, whether it is shared, and counts who leans on it', () => {

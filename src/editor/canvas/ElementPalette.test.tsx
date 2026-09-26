@@ -11,6 +11,7 @@ import type { UploadedLogo } from '../../model/types';
 import type { CanvasKind } from '../../model/placement';
 import { RAIL_PACK } from '../../app/iconPacks/rail';
 import { registerLogoPack } from '../../model/logoRegistry';
+import { axeFindings } from '../../app/testing/axe';
 // The rail pack ships with this build (`app/composition.ts` registers it), so
 // this suite asks its questions of the same set of marks the user sees.
 registerLogoPack(RAIL_PACK);
@@ -228,6 +229,18 @@ describe('ElementPalette — the domain group row', () => {
     expect(screen.getByLabelText('Domain group name').getAttribute('placeholder')).toBe(
       'New group',
     );
+  });
+});
+
+describe('ElementPalette — as axe reads it', () => {
+  it('finds nothing in the panel, with a row open on its tray, or folded to the rail', async () => {
+    renderPalette({ onAddDomainGroup: vi.fn() });
+    expect(await axeFindings()).toEqual([]);
+    fireEvent.click(row('Application'));
+    expect(await axeFindings()).toEqual([]);
+    cleanup();
+    render(<Harness initial />);
+    expect(await axeFindings()).toEqual([]);
   });
 });
 

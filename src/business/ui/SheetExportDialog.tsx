@@ -88,7 +88,7 @@ export function SheetExportDialog({ initial, onExport, onClose }: SheetExportDia
         <Button size="small" onClick={onClose} disabled={busy}>{t('common.cancel')}</Button>
         <Button
           size="small" variant="contained" disabled={busy}
-          startIcon={busy ? <CircularProgress size={14} color="inherit" /> : undefined}
+          startIcon={busy ? <CircularProgress size={14} color="inherit" aria-hidden /> : undefined}
           onClick={() => { void save() }}
         >
           {busy ? t('sheet.exportBusy') : t('sheet.exportSave')}

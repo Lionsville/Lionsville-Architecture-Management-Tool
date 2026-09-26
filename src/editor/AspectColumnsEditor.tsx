@@ -89,6 +89,9 @@ export function AspectColumnsEditor({
             <TextField
               size="small"
               label={index === 0 ? t('diagramSettings.columnLabel') : undefined}
+              // Only the first row shows its label; every row is named, so a
+              // screen reader on the fifth still says which field it is in.
+              slotProps={{ htmlInput: { 'aria-label': t('diagramSettings.columnLabel') } }}
               value={column.label}
               sx={{ flex: 1 }}
               onChange={(e) => editColumn(index, { label: e.target.value })}
@@ -107,7 +110,7 @@ export function AspectColumnsEditor({
               value={column.code ?? ''}
               sx={{ width: 96 }}
               slotProps={{
-                htmlInput: { maxLength: ASPECT_CODE_MAX },
+                htmlInput: { maxLength: ASPECT_CODE_MAX, 'aria-label': t('diagramSettings.columnCode') },
                 // Kept shrunk so the derived code shows as the placeholder on
                 // the first row too. Otherwise the labelled row alone looks
                 // blank while every row under it shows what its badge will say.

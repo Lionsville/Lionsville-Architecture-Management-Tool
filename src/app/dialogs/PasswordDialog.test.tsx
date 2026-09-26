@@ -4,6 +4,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen } from '@testing-library/react'
+import { axeFindings } from '../testing/axe'
 import { translator } from '../../i18n'
 import { renderShell } from '../testing/renderShell'
 import { PasswordDialog } from './PasswordDialog'
@@ -11,6 +12,13 @@ import { PasswordDialog } from './PasswordDialog'
 afterEach(() => cleanup())
 
 const s = translator('en')
+
+describe('PasswordDialog, as axe reads it', () => {
+  it.each(['set', 'enter'] as const)('finds nothing asking to %s one', async (mode) => {
+    renderShell(<PasswordDialog open mode={mode} onCancel={() => {}} onConfirm={() => {}} s={s} />)
+    expect(await axeFindings()).toEqual([])
+  })
+})
 
 describe('PasswordDialog', () => {
   it('asks twice when setting one, and offers Save only when the two agree', () => {

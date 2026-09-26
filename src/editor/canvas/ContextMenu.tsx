@@ -334,8 +334,11 @@ function SubMenuItem({
           traps focus. This one renders inside the item (`disablePortal`) so the
           parent's focus trap already contains it, and positions itself `fixed`
           so the parent Paper's overflow cannot clip it. Keyboard events stop at
-          its edge; the parent list would otherwise walk the same arrow keys. */}
+          its edge; the parent list would otherwise walk the same arrow keys.
+          Presentation rather than MUI's default `tooltip`: it stands inside the
+          parent menu, which may own menu items and nothing else. */}
       <Popper
+        role="presentation"
         open={isOpen}
         anchorEl={anchorRef.current}
         placement="right-start"

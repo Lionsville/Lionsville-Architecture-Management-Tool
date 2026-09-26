@@ -4,6 +4,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { axeFindings } from '../../app/testing/axe';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { ExportDialog, type ExportOptions } from './ExportDialog';
 import { LARGE_EXPORT_MEGAPIXELS } from './exportPng';
@@ -33,6 +34,16 @@ function open(over: Partial<Parameters<typeof ExportDialog>[0]> = {}) {
   );
   return { onChange, onExport, onClose };
 }
+
+describe('ExportDialog — as axe reads it', () => {
+  it('finds nothing, drawing a preview or exporting', async () => {
+    open();
+    expect(await axeFindings()).toEqual([]);
+    cleanup();
+    open({ preview: 'data:image/png;base64,AA', previewBusy: true, exporting: true });
+    expect(await axeFindings()).toEqual([]);
+  });
+});
 
 describe('ExportDialog', () => {
   it('hands every choice back whole, so the caller never merges', () => {

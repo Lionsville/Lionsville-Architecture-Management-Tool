@@ -63,17 +63,26 @@ function UsesPicker({ uses, picker }: { uses: Uses; picker: Picker }) {
       onChange={(_e, value) => picker.setPending(value.map((option) => option.id))}
       onClose={picker.commit}
       renderValue={() => null}
+      // A group the listbox can name, and options that hold nothing a
+      // keyboard could land on: the box is a picture of `aria-selected`, which
+      // the option already says.
       renderGroup={(params) => (
-        <li key={params.key}>
-          <ListSubheader component="div" sx={{ lineHeight: '28px' }}>
+        <li key={params.key} role="group" aria-labelledby={`${params.key}-uses-group`}>
+          <ListSubheader id={`${params.key}-uses-group`} component="div" sx={{ lineHeight: '28px' }}>
             {params.group === 'here' ? t('field.usesHere') : t('field.hostedOnElsewhere')}
           </ListSubheader>
-          <ul style={{ padding: 0 }}>{params.children}</ul>
+          <ul role="presentation" style={{ padding: 0 }}>{params.children}</ul>
         </li>
       )}
       renderOption={(optionProps, option, { selected }) => (
         <li {...optionProps} key={option.id} data-testid={`uses-option-${option.id}`}>
-          <Checkbox size="small" checked={selected} sx={{ p: 0.25, mr: 0.5 }} />
+          <Checkbox
+            size="small"
+            checked={selected}
+            aria-hidden
+            slotProps={{ input: { disabled: true, tabIndex: -1 } }}
+            sx={{ p: 0.25, mr: 0.5 }}
+          />
           {option.name}
           {(option.where !== undefined || option.platform) && (
             <Typography component="span" sx={{ fontSize: 11, color: 'text.secondary', ml: 1 }}>

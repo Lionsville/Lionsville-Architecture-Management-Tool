@@ -70,7 +70,7 @@ function HostedOnSelect({ field, technology, platforms, elsewhere }: {
         {platforms.map((platform) => (
           <MenuItem key={platform.id} value={platform.id}>{platform.name}</MenuItem>
         ))}
-        {elsewhere.length > 0 && <ListSubheader>{t('field.hostedOnElsewhere')}</ListSubheader>}
+        {elsewhere.length > 0 && <ListSubheader role="presentation">{t('field.hostedOnElsewhere')}</ListSubheader>}
         {elsewhere.map((platform) => (
           <MenuItem key={platform.id} value={platform.id} data-testid={`hosted-on-elsewhere-${platform.id}`}>
             {platform.name}

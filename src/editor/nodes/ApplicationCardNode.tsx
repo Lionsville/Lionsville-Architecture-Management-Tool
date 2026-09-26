@@ -101,14 +101,14 @@ export const ApplicationCardNode = memo(function ApplicationCardNode({
         </Typography>
         {data.hasContainerDiagram && (
           <Tooltip title={t('node.hasContainer')}>
-            <Box sx={{ color: tokens.card.subtitle, display: 'flex' }}>
+            <Box role="img" sx={{ color: tokens.card.subtitle, display: 'flex' }}>
               <DrillGlyph />
             </Box>
           </Tooltip>
         )}
         {hasDocumentation(shownDescription(data)) && (
           <Tooltip title={t('node.hasDocumentation')}>
-            <Box sx={{ color: tokens.card.subtitle, display: 'flex' }} data-testid="doc-glyph">
+            <Box role="img" sx={{ color: tokens.card.subtitle, display: 'flex' }} data-testid="doc-glyph">
               <DocGlyph />
             </Box>
           </Tooltip>

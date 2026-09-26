@@ -33,7 +33,7 @@ export function ChooseBoardDialog({ choice, onChoose, onCancel, s }: {
         <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 1 }}>
           {s('shell.chooseBoardHint', { name: choice?.name ?? '' })}
         </Typography>
-        <List dense disablePadding>
+        <List component="div" dense disablePadding>
           {choice?.boards.map((board) => (
             <ListItemButton key={board.id} onClick={() => onChoose(board.id)} data-testid={`choose-board-${board.id}`}>
               <ListItemText

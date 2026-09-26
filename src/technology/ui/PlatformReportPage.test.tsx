@@ -14,6 +14,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, within } from '@testing-library/react'
+import { axeFindings } from '../../app/testing/axe'
 import { PlatformReportPage } from './ReportPage'
 import type { PlatformReportPageProps } from './ReportPage'
 import { renderShell } from '../../app/testing/renderShell'
@@ -59,6 +60,13 @@ function open(over: Partial<PlatformReportPageProps> = {}) {
   )
   return { ...result, onOpenDocumentation }
 }
+
+describe('the report, as axe reads it', () => {
+  it('finds nothing', async () => {
+    open()
+    expect(await axeFindings()).toEqual([])
+  })
+})
 
 describe('the report', () => {
   it('names the platform and what it is, and counts what the rows say', () => {

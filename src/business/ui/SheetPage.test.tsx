@@ -20,6 +20,7 @@ import { cleanup, fireEvent, screen, within } from '@testing-library/react'
 import { SheetPage } from './SheetPage'
 import type { SheetActions } from './FunctionInspector'
 import { renderShell } from '../../app/testing/renderShell'
+import { axeFindings } from '../../app/testing/axe'
 import { actor, capability, shippingScope } from '../testFixtures'
 import type { DesignDiagram, DesignModel, Relation } from '../../model'
 
@@ -83,6 +84,21 @@ function open(over: {
   )
   return { ...result, actions: acts }
 }
+
+describe('the sheet, as axe reads it', () => {
+  it('finds nothing on the page, nor with the finder open on a word nothing matches', async () => {
+    open()
+    expect(await axeFindings()).toEqual([])
+    fireEvent.click(screen.getByRole('button', { name: 'Find on the page' }))
+    fireEvent.change(screen.getByLabelText('Find on the page', { selector: 'input' }), { target: { value: 'zzz' } })
+    expect(await axeFindings()).toEqual([])
+  })
+
+  it('finds nothing read-only', async () => {
+    open({ readOnly: true })
+    expect(await axeFindings()).toEqual([])
+  })
+})
 
 describe('the stakeholder rail', () => {
   it('names the parties, and marks the ones from outside', () => {

@@ -4,6 +4,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { axeFindings } from '../app/testing/axe';
 import { ConfirmDeleteDialog } from './ConfirmDeleteDialog';
 import type { DeletionSummary } from '../model/deletion';
 
@@ -16,6 +17,13 @@ const summary = (over: Partial<DeletionSummary> = {}): DeletionSummary => ({
   cascadingConnections: 0,
   standIns: 0,
   ...over,
+});
+
+describe('ConfirmDeleteDialog — as axe reads it', () => {
+  it('finds nothing', async () => {
+    render(<ConfirmDeleteDialog summary={summary({ connections: 1 })} subject="Sends orders" onConfirm={vi.fn()} onClose={vi.fn()} />);
+    expect(await axeFindings()).toEqual([]);
+  });
 });
 
 describe('ConfirmDeleteDialog — what it calls the thing', () => {

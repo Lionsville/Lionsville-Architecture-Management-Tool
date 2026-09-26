@@ -12,6 +12,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { axeFindings } from '../../app/testing/axe'
 import { translator } from '../../i18n'
 import type { HostModel } from '../../model/hostModel'
 import type { Cause, Observation } from '../observation'
@@ -70,6 +71,14 @@ function mount(over: Partial<ObservationsPageProps> = {}) {
 }
 
 const lastChange = (onChange: ReturnType<typeof vi.fn>) => onChange.mock.calls.at(-1)![0] as { observations: Observation[]; causes: Cause[] }
+
+describe('ObservationsPage, as axe reads it', () => {
+  it.each(['register', 'analysis', 'solutions'])('finds nothing on the %s tab', async (tab) => {
+    mount({ model: { ...model, causes: [cause({ explains: [{ id: 'o1', strength: 'strong' }] })] } })
+    fireEvent.click(screen.getByTestId(`observation-tab-${tab}`))
+    expect(await axeFindings()).toEqual([])
+  })
+})
 
 describe('ObservationsPage', () => {
   it('lists this scope’s own, then the shared ones from below under their scope, then the causes', () => {

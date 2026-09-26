@@ -36,6 +36,7 @@ export function AspectBadgeRow({
         return (
           <Tooltip key={entry.key} title={tooltip}>
             <Box
+              role="img"
               sx={{
                 flex: 1,
                 textAlign: 'center',

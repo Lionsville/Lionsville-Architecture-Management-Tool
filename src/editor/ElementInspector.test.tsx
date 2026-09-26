@@ -12,6 +12,7 @@ import type { ElementInspectorProps } from './ElementInspector';
 import type { EditorActions } from './useEditorState';
 import type { DesignDiagram, DesignElement, DesignModel, ElementKind } from '../model/types';
 import type { LeverageLine } from '../model/leverage';
+import { axeFindings } from '../app/testing/axe';
 
 /**
  * U7a tabbed inspector: General / Appearance / Data. These tests assert (a)
@@ -723,6 +724,19 @@ describe('ElementInspector — what an application leverages', () => {
   });
 });
 
+describe('ElementInspector — as axe reads it', () => {
+  it.each(['General', 'Appearance', 'Data'] as const)('finds nothing on the %s tab', async (name) => {
+    renderInspector(element(), { others: [element({ id: 'k8s', kind: 'platform', name: 'Cluster' })] });
+    openTab(name);
+    expect(await axeFindings()).toEqual([]);
+  });
+
+  it('finds nothing read-only either', async () => {
+    renderInspector(element(), { readOnly: true });
+    expect(await axeFindings()).toEqual([]);
+  });
+});
+
 /**
  * What an application uses, written (ADR-0020): the rows as pills, and one
  * picker over this scope's offerings and service platforms, then the rest of
@@ -762,6 +776,13 @@ describe('ElementInspector — what an application uses (ADR-0020)', () => {
     expect(listbox.textContent).toContain('This scope');
     expect(listbox.textContent).toContain('Elsewhere in the organisation');
     expect(screen.getByTestId('uses-option-managed-db').textContent).toContain('platforms');
+  });
+
+  it('gives axe nothing to find in the picker: groups a listbox can name, options with nothing inside to tab to', async () => {
+    renderInspector(element(), { others: held(), technology: technology() });
+    openPicker();
+    expect(within(screen.getByRole('listbox')).getAllByRole('group')).toHaveLength(2);
+    expect(await axeFindings()).toEqual([]);
   });
 
   it('filters by name as you type', () => {

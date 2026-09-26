@@ -58,7 +58,7 @@ export function BpmnBlock({ code }: BpmnBlockProps) {
         data-testid="bpmn-block" data-wide="" data-state="drawn"
         sx={{ my: '0.7em', overflowX: 'auto', '& svg': { maxWidth: '100%', height: 'auto', display: 'block' } }}
       >
-        <Drawing drawing={read.drawing} theme={theme} markers={ids} />
+        <Drawing drawing={read.drawing} theme={theme} markers={ids} label={t('doc.bpmnDiagram')} />
       </Box>
     )
   }
@@ -90,7 +90,7 @@ type Paint = {
   openArrow: string
 }
 
-function Drawing({ drawing, theme, markers }: { drawing: BpmnDrawing; theme: Theme; markers: string }) {
+function Drawing({ drawing, theme, markers, label }: { drawing: BpmnDrawing; theme: Theme; markers: string; label: string }) {
   const { bounds } = drawing
   const paint: Paint = {
     stroke: theme.palette.text.primary,
@@ -113,6 +113,7 @@ function Drawing({ drawing, theme, markers }: { drawing: BpmnDrawing; theme: The
       fontFamily="inherit"
       fontSize={FONT}
       role="img"
+      aria-label={label}
     >
       <defs>
         <marker id={paint.arrow} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">

@@ -4,6 +4,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen } from '@testing-library/react'
+import { axeFindings } from '../testing/axe'
 import { translator } from '../../i18n'
 import { renderShell } from '../testing/renderShell'
 import { OpenIntoDialog } from './OpenIntoDialog'
@@ -11,6 +12,16 @@ import { OpenIntoDialog } from './OpenIntoDialog'
 afterEach(() => cleanup())
 
 const s = translator('en')
+
+describe('OpenIntoDialog, as axe reads it', () => {
+  it('finds nothing', async () => {
+    renderShell(<OpenIntoDialog
+      open file="theirs.lvarch" here="Acme Logistics" canChooseFolder
+      onCancel={() => {}} onHere={() => {}} onFolder={() => {}} s={s}
+    />)
+    expect(await axeFindings()).toEqual([])
+  })
+})
 
 describe('OpenIntoDialog', () => {
   it('names the file, warns what replacing writes over, and offers both ways', () => {

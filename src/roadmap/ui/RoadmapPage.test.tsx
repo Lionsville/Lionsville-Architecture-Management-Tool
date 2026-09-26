@@ -13,6 +13,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, within } from '@testing-library/react'
+import { axeFindings } from '../../app/testing/axe'
 import { RoadmapPage } from './RoadmapPage'
 import type { RoadmapActions, RoadmapPageProps } from './RoadmapPage'
 import { renderShell } from '../../app/testing/renderShell'
@@ -90,6 +91,16 @@ const rgb = (hex: string) => {
   const n = parseInt(hex.slice(1), 16)
   return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`
 }
+
+describe('the roadmap, as axe reads it', () => {
+  it('finds nothing on the board, nor in the dialog a new plan is named in', async () => {
+    setup()
+    expect(await axeFindings()).toEqual([])
+    fireEvent.click(screen.getByRole('button', { name: 'New plan' }))
+    expect(screen.getByRole('textbox', { name: 'What is the plan called?' })).toBeDefined()
+    expect(await axeFindings()).toEqual([])
+  })
+})
 
 describe('the axis', () => {
   it('gives a row to what has a date and to nothing else', () => {

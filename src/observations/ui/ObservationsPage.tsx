@@ -506,8 +506,8 @@ export function ObservationsPage(props: ObservationsPageProps) {
           ))}
         </TableBody>
       </Table>
-      <List dense disablePadding data-testid="cause-list">
-        <ListSubheader disableSticky sx={{ lineHeight: '32px', bgcolor: 'background.default' }}>{s('observation.causes')}</ListSubheader>
+      <List component="div" dense disablePadding data-testid="cause-list">
+        <ListSubheader component="div" disableSticky sx={{ lineHeight: '32px', bgcolor: 'background.default' }}>{s('observation.causes')}</ListSubheader>
         {causeRows.map((cause) => (
           <ListItemButton key={cause.id} selected={cause.id === selectedKey} onClick={() => setSelectedKey(cause.id)} sx={{ py: 0.5 }}>
             <ListItemText
@@ -519,8 +519,8 @@ export function ObservationsPage(props: ObservationsPageProps) {
           </ListItemButton>
         ))}
       </List>
-      <List dense disablePadding data-testid="solution-list">
-        <ListSubheader disableSticky sx={{ lineHeight: '32px', bgcolor: 'background.default' }}>{s('solution.solutions')}</ListSubheader>
+      <List component="div" dense disablePadding data-testid="solution-list">
+        <ListSubheader component="div" disableSticky sx={{ lineHeight: '32px', bgcolor: 'background.default' }}>{s('solution.solutions')}</ListSubheader>
         {solutionRows.map((one) => {
           const phase = phaseOf(one)
           return (
@@ -531,8 +531,8 @@ export function ObservationsPage(props: ObservationsPageProps) {
           )
         })}
       </List>
-      <List dense disablePadding data-testid="experiment-list">
-        <ListSubheader disableSticky sx={{ lineHeight: '32px', bgcolor: 'background.default' }}>{s('solution.experiments')}</ListSubheader>
+      <List component="div" dense disablePadding data-testid="experiment-list">
+        <ListSubheader component="div" disableSticky sx={{ lineHeight: '32px', bgcolor: 'background.default' }}>{s('solution.experiments')}</ListSubheader>
         {experimentRows.map((one) => (
           <ListItemButton key={one.id} selected={experimentKey(one.id) === selectedKey} onClick={() => setSelectedKey(experimentKey(one.id))} sx={{ py: 0.5 }}>
             <ListItemText primary={`${formatExperimentNumber(one.number)} ${one.title}`} secondary={one.tests.map((id) => nameOf(id)).join(', ')} slotProps={{ primary: { sx: { fontSize: 13 } }, secondary: { sx: { fontSize: 11 } } }} />
@@ -745,8 +745,8 @@ export function ObservationsPage(props: ObservationsPageProps) {
 
   const toAnalyse = (queue.length + sharedQueue.length) > 0 && (
     <Box data-testid="analysis-queue" sx={{ borderTop: 1, borderColor: 'divider', bgcolor: 'background.paper', maxHeight: '40%', overflow: 'auto' }}>
-      <ListSubheader disableSticky sx={{ lineHeight: '32px', bgcolor: 'transparent' }}>{s('observation.toAnalyse')}</ListSubheader>
-      <List dense disablePadding>
+      <ListSubheader component="div" disableSticky sx={{ lineHeight: '32px', bgcolor: 'transparent' }}>{s('observation.toAnalyse')}</ListSubheader>
+      <List component="div" dense disablePadding>
         {queue.map((one) => (
           <ListItemButton key={one.id} selected={one.id === selectedKey} onClick={() => setSelectedKey(one.id)} sx={{ py: 0.25 }}>
             <ListItemText primary={`${formatObservationNumber(one.number)} ${one.title}`} slotProps={{ primary: { noWrap: true, sx: { fontSize: 12 } } }} />

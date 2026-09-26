@@ -14,6 +14,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, within } from '@testing-library/react'
+import { axeFindings } from '../../app/testing/axe'
 import { PlanPage } from './PlanPage'
 import type { PlanActions, PlanPageProps } from './PlanPage'
 import { renderShell } from '../../app/testing/renderShell'
@@ -83,6 +84,13 @@ function setup(over: Partial<PlanPageProps> = {}) {
   )
   return { ...view, actions }
 }
+
+describe('a plan, as axe reads it', () => {
+  it('finds nothing', async () => {
+    setup()
+    expect(await axeFindings()).toEqual([])
+  })
+})
 
 describe('the facts', () => {
   it('shows the plan and writes every field through one action', () => {

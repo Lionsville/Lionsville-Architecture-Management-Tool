@@ -15,7 +15,7 @@ import type {
   ElementId,
   Point,
 } from '../model/types';
-import { isEditableTarget, isShortcutIgnoredTarget } from './isEditableTarget';
+import { isEditableTarget, isShortcutIgnoredTarget, ownsContextMenu } from './isEditableTarget';
 import { CANVAS_SHORTCUTS, detectPlatform, matchEvent } from './keymap';
 import {
   EMPTY_SELECTION,
@@ -76,6 +76,17 @@ export interface CanvasShortcutHandlers {
   hostOwnsUndo?: boolean;
   /** Enter: the documentation page for the selected element. */
   onOpenDocumentation?(elementId: ElementId): void;
+}
+
+/** The two chords a control with a menu of its own keeps (`ownsContextMenu`). */
+const CONTEXT_MENU = new Set(['context-menu', 'context-menu-key']);
+
+/**
+ * Whether the focused control keeps this chord, although it takes the rest:
+ * a tab keeps Shift+F10 for its own menu.
+ */
+function keepsItsChord(id: string, target: EventTarget | null): boolean {
+  return CONTEXT_MENU.has(id) && ownsContextMenu(target);
 }
 
 /** Browser-owned chords we always suppress, even when the action is inert. */
@@ -243,6 +254,7 @@ export function useCanvasShortcuts(
         // inspector, so the editor must still deselect) and force-save.
         if (editable && def.id !== 'deselect' && !forceSave) return;
         if (h.hostOwnsUndo && HOST_MAY_OWN.has(def.id)) return;
+        if (keepsItsChord(def.id, event.target)) return;
         if (ALWAYS_PREVENT.has(def.id)) event.preventDefault();
         if (def.when && !def.when(ctx)) return;
         event.preventDefault();
@@ -288,6 +300,7 @@ export function useCanvasShortcuts(
         // when Escape arrives from an input.
         if (editable && def.id !== 'deselect') return;
         if (h.hostOwnsUndo && HOST_MAY_OWN.has(def.id)) return;
+        if (keepsItsChord(def.id, event.target)) return;
         if (ALWAYS_PREVENT.has(def.id)) event.preventDefault();
         if (def.when && !def.when(ctx)) return;
         event.preventDefault();

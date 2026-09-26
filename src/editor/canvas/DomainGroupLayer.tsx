@@ -286,7 +286,7 @@ export function DomainGroupLayer(props: DomainGroupLayerProps) {
               )}
               {!props.readOnly && (
                 <div
-                  className="nodrag nopan"
+                  className="nodrag nopan" role="separator"
                   aria-label={t('canvas.resizeGroup', { name: label })}
                   onPointerDown={beginGesture(group, 'resize')}
                   style={{

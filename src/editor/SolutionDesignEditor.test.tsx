@@ -1219,13 +1219,27 @@ describe('SolutionDesignEditor — diagram tab menu', () => {
     fireEvent.contextMenu(screen.getByRole('tab', { name: /Layer 7 — EU/ }));
     expect(screen.queryByRole('menu', { name: 'Diagram menu' })).toBeNull();
   });
+
+  it('opens the tab menu from the keyboard: Shift+F10 or the Menu key on the focused tab', () => {
+    renderEditor({ model: twoLandscapes(), onDeleteDiagram: vi.fn(), onRenameDiagram: vi.fn() });
+    const tab = screen.getByRole('tab', { name: /Layer 7 — EU/ });
+    fireEvent.keyDown(tab, { key: 'F10', shiftKey: true });
+    expect(screen.getByRole('menu', { name: 'Diagram menu' })).toBeDefined();
+    // The tab's menu, and not the canvas's as well: the chord is the tab's.
+    expect(screen.getAllByRole('menu')).toHaveLength(1);
+    cleanup();
+
+    renderEditor({ model: twoLandscapes(), onDeleteDiagram: vi.fn(), onRenameDiagram: vi.fn() });
+    fireEvent.keyDown(screen.getByRole('tab', { name: /Layer 7 — EU/ }), { key: 'ContextMenu' });
+    expect(screen.getByRole('menu', { name: 'Diagram menu' })).toBeDefined();
+  });
 });
 
 describe('SolutionDesignEditor — container diagrams under their landscape tab', () => {
   it('shows a chevron on a landscape whose applications have container diagrams, listing and switching to them', () => {
     const { props } = renderEditor({ model: modelWithPlacement('d1') });
 
-    const chevron = screen.getByRole('button', { name: 'Container diagrams of Layer 7 — EU' });
+    const chevron = screen.getByLabelText('Container diagrams of Layer 7 — EU');
     fireEvent.click(chevron);
     const menu = screen.getByRole('menu', { name: 'Container diagrams of Layer 7 — EU' });
     expect(within(menu).getByText('Webshop')).toBeDefined();
@@ -1239,11 +1253,25 @@ describe('SolutionDesignEditor — container diagrams under their landscape tab'
 
   it('shows no chevron when no placed application has a container diagram', () => {
     renderEditor(); // a1 exists with container d2, but is not placed on d1
-    expect(screen.queryByRole('button', { name: /Container diagrams of/ })).toBeNull();
+    expect(screen.queryByLabelText(/Container diagrams of/)).toBeNull();
   });
 
   it('keeps the chevron in read-only mode — it is navigation', () => {
     renderEditor({ model: modelWithPlacement('d1'), readOnly: true });
-    expect(screen.getByRole('button', { name: 'Container diagrams of Layer 7 — EU' })).toBeDefined();
+    expect(screen.getByLabelText('Container diagrams of Layer 7 — EU')).toBeDefined();
   });
+
+  it('opens them from the keyboard: ↓ on the focused tab, with nothing inside the tab to tab to', () => {
+    const { props } = renderEditor({ model: modelWithPlacement('d1') });
+    const tab = screen.getByRole('tab', { name: /Layer 7 — EU/ });
+    // A control inside a tab is a button inside a button: out of the tree.
+    expect(within(tab).queryByRole('button')).toBeNull();
+
+    tab.focus();
+    fireEvent.keyDown(tab, { key: 'ArrowDown' });
+    const menu = screen.getByRole('menu', { name: 'Container diagrams of Layer 7 — EU' });
+    fireEvent.click(within(menu).getByText('Webshop'));
+    expect(props.onActiveDiagramChange).toHaveBeenCalledWith('d2');
+  });
+
 });

@@ -78,7 +78,9 @@ describe('EditorToolbar — export busy', () => {
   it('disables itself and spins while exporting', () => {
     const props = renderToolbar({ exportBusy: true });
     expect(exportButton().disabled).toBe(true);
-    expect(screen.getByRole('progressbar')).toBeDefined();
+    // The spinner is a picture of the button's state, which the button says.
+    expect(exportButton().getAttribute('aria-busy')).toBe('true');
+    expect(exportButton().querySelector('.MuiCircularProgress-root')).not.toBeNull();
     fireEvent.click(exportButton());
     expect(props.onExport).not.toHaveBeenCalled();
   });

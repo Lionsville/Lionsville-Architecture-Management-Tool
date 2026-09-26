@@ -71,7 +71,7 @@ export function AddFromLibraryDialog({
       <Dialog open onClose={onCancel} maxWidth="xs" fullWidth aria-label={s('library.placeTitle', { name: choice.name })}>
         <DialogTitle>{s('library.placeTitle', { name: choice.name })}</DialogTitle>
         <DialogContent sx={{ pt: 0 }}>
-          <List dense disablePadding>
+          <List component="div" dense disablePadding>
             <ListItemButton onClick={() => onPlace('domain')} data-testid="library-place-domain">
               <ListItemText
                 primary={s('library.placeDomain')}
@@ -126,7 +126,7 @@ export function AddFromLibraryDialog({
         {rows.length > 0 && shown.length === 0 && (
           <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{s('library.noMatches', { query })}</Typography>
         )}
-        <List dense disablePadding sx={{ maxHeight: 360, overflowY: 'auto' }}>
+        <List component="div" dense disablePadding sx={{ maxHeight: 360, overflowY: 'auto' }}>
           {shown.map((row) => (
             <ListItemButton key={row.id} onClick={() => onPick(row.id)} data-testid={`library-row-${row.id}`}>
               <ListItemText

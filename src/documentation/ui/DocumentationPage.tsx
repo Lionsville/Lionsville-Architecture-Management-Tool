@@ -352,10 +352,10 @@ export function DocumentationPage(props: DocumentationPageProps) {
       <Box sx={{ display: 'grid', gridTemplateColumns: `220px minmax(0, 1fr) ${props.fieldsWidth ? 'auto' : ''} ${props.fieldsWidth?.value ?? FIELDS_COLUMN.default}px`, flex: 1, minHeight: 0 }}>
         {/* left: the diagram's elements */}
         <Box component="nav" data-testid="doc-nav" sx={{ borderRight: 1, borderColor: 'divider', bgcolor: 'background.paper', overflow: 'auto' }}>
-          <List dense disablePadding>
+          <List component="div" dense disablePadding>
             {groups.map((group) => (
               <Box key={group.kind}>
-                <ListSubheader disableSticky sx={{ lineHeight: '32px', bgcolor: 'transparent' }}>
+                <ListSubheader component="div" disableSticky sx={{ lineHeight: '32px', bgcolor: 'transparent' }}>
                   {kindLabel(group.kind, t)}
                 </ListSubheader>
                 {group.elements.map((item) => (

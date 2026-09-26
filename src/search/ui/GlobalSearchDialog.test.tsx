@@ -8,6 +8,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen } from '@testing-library/react'
+import { axeFindings } from '../../app/testing/axe'
 import { translator } from '../../i18n'
 import type { HostModel } from '../../model/hostModel'
 import type { Adr } from '../../decisions/adr'
@@ -32,6 +33,17 @@ const model: HostModel = {
 const ancestorDecisions: Adr[] = [
   { id: 'adr-g', number: 1, title: 'One message broker for the group', status: 'proposed', date: '2026-09-01', body: 'Kafka, not RabbitMQ.', signers: [] },
 ]
+
+describe('GlobalSearchDialog, as axe reads it', () => {
+  it('finds nothing with hits in groups, nor with none', async () => {
+    renderShell(<GlobalSearchDialog open model={model} ancestorDecisions={ancestorDecisions} onClose={() => {}} onChoose={() => {}} s={translator('en')} />)
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'kafka' } })
+    expect(screen.getAllByRole('group').length).toBeGreaterThan(1)
+    expect(await axeFindings()).toEqual([])
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'zzz' } })
+    expect(await axeFindings()).toEqual([])
+  })
+})
 
 describe('GlobalSearchDialog', () => {
   it('groups hits by kind and says where a decision lives', () => {

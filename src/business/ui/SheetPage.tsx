@@ -781,12 +781,15 @@ function Finder({ query, hits, onQuery, onPick, t }: {
           sx={{ fontSize: 13 }}
         />
       </Box>
+      {/* What the list says about itself sits beside it: a listbox holds
+          options and nothing else, or a screen reader counts the sentence as
+          one. */}
+      {shown.length === 0 && (
+        <Typography sx={{ px: 1.5, pt: 1.5, pb: 1, fontSize: 12, color: 'text.secondary' }}>
+          {t('sheet.findNone')}
+        </Typography>
+      )}
       <Box role="listbox" aria-label={t('sheet.find')} sx={{ py: 0.5, maxHeight: 360, overflow: 'auto' }}>
-        {shown.length === 0 && (
-          <Typography sx={{ px: 1.5, py: 1, fontSize: 12, color: 'text.secondary' }}>
-            {t('sheet.findNone')}
-          </Typography>
-        )}
         {shown.map((hit) => (
           <Box
             key={hit.element.id}
@@ -811,12 +814,12 @@ function Finder({ query, hits, onQuery, onPick, t }: {
             </Typography>
           </Box>
         ))}
-        {hits.length > shown.length && (
-          <Typography sx={{ px: 1.5, py: 0.75, fontSize: 10.5, color: 'text.secondary' }}>
-            {t('sheet.findMore', { count: hits.length - shown.length })}
-          </Typography>
-        )}
       </Box>
+      {hits.length > shown.length && (
+        <Typography sx={{ px: 1.5, pb: 1.25, fontSize: 10.5, color: 'text.secondary' }}>
+          {t('sheet.findMore', { count: hits.length - shown.length })}
+        </Typography>
+      )}
     </Box>
   )
 }
@@ -1037,6 +1040,7 @@ function LaneRow({ lane, phases, first, onSelect, author, t }: {
           {cell.passThrough && (
             <Box
               data-testid={`sheet-passthrough-${lane.actorId ?? 'common'}-${cell.phaseId}`}
+              role="img"
               aria-label={t('sheet.passThrough')}
               sx={{ borderTop: '1px dashed', borderColor: 'divider', mx: 1 }}
             />

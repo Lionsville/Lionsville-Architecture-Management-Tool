@@ -4,6 +4,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen } from '@testing-library/react'
+import { axeFindings } from '../testing/axe'
 import { translator } from '../../i18n'
 import { ScopeSettingsDialog } from './ScopeSettingsDialog'
 import type { ScopeSummary } from '../../projects/scope'
@@ -29,6 +30,13 @@ function open(target: Partial<ScopeSummary> = {}) {
 }
 
 const save = () => fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+describe('ScopeSettingsDialog, as axe reads it', () => {
+  it('finds nothing', async () => {
+    open({ name: 'Acme Logistics', links: [{ label: 'Wiki', url: 'https://example.test/wiki' }] })
+    expect(await axeFindings()).toEqual([])
+  })
+})
 
 describe('ScopeSettingsDialog', () => {
   it('opens on what the scope already says about itself', () => {

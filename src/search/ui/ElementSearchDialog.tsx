@@ -193,12 +193,13 @@ export function ElementSearchDialog(props: ElementSearchDialogProps) {
             </Typography>
           </ListItemButton>
         ))}
-        {hits.length === 0 && (
-          <Typography sx={{ fontSize: 12, color: 'text.secondary', px: 2, py: 1 }}>
-            {trimmed === '' ? t('search.empty') : t('search.noMatches', { query: trimmed })}
-          </Typography>
-        )}
       </Box>
+      {/* Beside the listbox, not in it: a listbox holds options and nothing else. */}
+      {hits.length === 0 && (
+        <Typography sx={{ fontSize: 12, color: 'text.secondary', px: 2, pb: 1.5 }}>
+          {trimmed === '' ? t('search.empty') : t('search.noMatches', { query: trimmed })}
+        </Typography>
+      )}
       <Typography sx={{ fontSize: 11, color: 'text.secondary', px: 2, pb: 1.5 }}>
         {t('search.hint')}
       </Typography>

@@ -138,41 +138,56 @@ export function GlobalSearchDialog({ open, model, ancestorDecisions, onClose, on
         aria-label={s('gsearch.results')}
         sx={{ maxHeight: 420, overflowY: 'auto', pb: 0.5 }}
       >
-        {hits.map((hit, index) => {
-          const firstOfKind = index === 0 || hits[index - 1].kind !== hit.kind
-          return (
-            <Box key={`${hit.kind}-${index}`}>
-              {firstOfKind && (
-                <ListSubheader disableSticky sx={{ lineHeight: '28px', bgcolor: 'transparent', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.05em' }}>
-                  {s(KIND_LABEL[hit.kind])}
-                </ListSubheader>
-              )}
-              <ListItemButton
-                id={optionId(index)}
-                role="option"
-                aria-selected={index === active}
-                selected={index === active}
-                dense
-                onMouseMove={() => setActiveIndex(index)}
-                onClick={() => choose(hit)}
-                sx={{ display: 'block', px: 2, py: 0.75 }}
-              >
-                <HitRow hit={hit} s={s} />
-              </ListItemButton>
-            </Box>
-          )
-        })}
-        {hits.length === 0 && (
-          <Typography sx={{ fontSize: 12, color: 'text.secondary', px: 2, py: 1 }}>
-            {trimmed === '' ? s('gsearch.empty') : s('gsearch.noMatches', { query: trimmed })}
-          </Typography>
-        )}
+        {/* One group per kind, named by its heading, so a screen reader says
+            which kind a row is as it reaches the first of them. */}
+        {runsOfKind(hits).map(({ kind, from, run }) => (
+          <Box key={`${kind}-${from}`} role="group" aria-labelledby={`lv-gsearch-kind-${from}`}>
+            <ListSubheader id={`lv-gsearch-kind-${from}`} component="div" role="presentation" disableSticky sx={{ lineHeight: '28px', bgcolor: 'transparent', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.05em' }}>
+              {s(KIND_LABEL[kind])}
+            </ListSubheader>
+            {run.map((hit, offset) => {
+              const index = from + offset
+              return (
+                <ListItemButton
+                  key={`${hit.kind}-${index}`}
+                  id={optionId(index)}
+                  role="option"
+                  aria-selected={index === active}
+                  selected={index === active}
+                  dense
+                  onMouseMove={() => setActiveIndex(index)}
+                  onClick={() => choose(hit)}
+                  sx={{ display: 'block', px: 2, py: 0.75 }}
+                >
+                  <HitRow hit={hit} s={s} />
+                </ListItemButton>
+              )
+            })}
+          </Box>
+        ))}
       </Box>
+      {/* Beside the listbox, not in it: a listbox holds options and nothing else. */}
+      {hits.length === 0 && (
+        <Typography sx={{ fontSize: 12, color: 'text.secondary', px: 2, pb: 1.5 }}>
+          {trimmed === '' ? s('gsearch.empty') : s('gsearch.noMatches', { query: trimmed })}
+        </Typography>
+      )}
       <Typography sx={{ fontSize: 11, color: 'text.secondary', px: 2, pb: 1.5 }}>
         {s('gsearch.hint')}
       </Typography>
     </Dialog>
   )
+}
+
+/** The hits in runs of one kind, in the order they came, with where each run starts. */
+function runsOfKind(hits: readonly SearchHit[]): { kind: SearchHit['kind']; from: number; run: SearchHit[] }[] {
+  const runs: { kind: SearchHit['kind']; from: number; run: SearchHit[] }[] = []
+  hits.forEach((hit, index) => {
+    const last = runs[runs.length - 1]
+    if (last && last.kind === hit.kind) last.run.push(hit)
+    else runs.push({ kind: hit.kind, from: index, run: [hit] })
+  })
+  return runs
 }
 
 function HitRow({ hit, s }: { hit: SearchHit; s: Translate }) {
