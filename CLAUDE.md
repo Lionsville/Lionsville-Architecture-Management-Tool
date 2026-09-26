@@ -423,6 +423,11 @@ src/app/          The shell around the editor.
                                       of a step, because a step that coalesces
                                       is answered for one fold at a time
                     App · ProjectWorkspace · ShellToolbar · SaveMenu · ToastBar
+                    workspaceProps · workspaceParts   what the workspace is
+                                      handed, one object per concern, and what
+                                      its hooks hand the panels that draw it
+                                      (Workspace*): the shape `editor/editorParts`
+                                      gives the editor body
                     organisation/     the first screen: the root scope's home.
                                       OrganisationScreen · OrganisationCards ·
                                       ScopeTree · useOrganisation · the four
