@@ -284,24 +284,30 @@ export function partClosure(root: string, part: Part): {
   return { modules, read, direct, all: dependencyClosure(direct, read) }
 }
 
-/** The notices for a product built from these parts, one section per package. */
+/**
+ * The notices for a product built from these parts, one section per package
+ * and version: two installs can hold two versions of one package, and each
+ * ships with its own copyright lines.
+ */
 export function noticesOver(root: string, parts: readonly Part[]): PackageNotice[] {
-  const byName = new Map<string, PackageNotice>()
+  const byVersion = new Map<string, PackageNotice>()
   for (const part of parts) {
     const { modules, read, all } = partClosure(root, part)
     for (const name of all) {
-      if (byName.has(name)) continue
       const manifest = read(name) as Manifest
-      byName.set(name, {
+      const version = manifest.version ?? ''
+      if (byVersion.has(`${name}@${version}`)) continue
+      byVersion.set(`${name}@${version}`, {
         name,
-        version: manifest.version ?? '',
+        version,
         license: licenseOf(manifest),
         text: licenseTextIn(join(modules, name)),
         homepage: homepageOf(manifest),
       })
     }
   }
-  return [...byName.values()].sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
+  const order = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0)
+  return [...byVersion.values()].sort((a, b) => order(a.name, b.name) || order(a.version, b.version))
 }
 
 /** The notices for one checkout whose shipped source is under `sourceRoots`. */

@@ -1,4 +1,6 @@
-import { readFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
@@ -8,6 +10,7 @@ import {
   licenseFromText,
   licenseOf,
   noticesFor,
+  noticesOver,
   packagesImportedBy,
   renderNotices,
   shipsCode,
@@ -136,6 +139,28 @@ describe('the notices document', () => {
     const rendered = renderNotices([{ name: 'odd', version: '1', text: 'Do what you like.' }], PRODUCT)
     expect(rendered).toContain('Licence: not declared; see the text below')
     expect(licenseFromText('Apache License\n                           Version 2.0, January 2004')).toBe('Apache-2.0')
+  })
+})
+
+describe('a product built from two installs', () => {
+  it('notices each version of a package the two hold, once', () => {
+    const root = mkdtempSync(join(tmpdir(), 'lv-notices-'))
+    try {
+      const install = (dir: string, deps: Record<string, string>, packages: Record<string, string>) => {
+        mkdirSync(join(root, dir), { recursive: true })
+        writeFileSync(join(root, dir, 'package.json'), JSON.stringify({ dependencies: deps }))
+        for (const [name, version] of Object.entries(packages)) {
+          mkdirSync(join(root, dir, 'node_modules', name), { recursive: true })
+          writeFileSync(join(root, dir, 'node_modules', name, 'package.json'), JSON.stringify({ version, license: 'MIT' }))
+        }
+      }
+      install('a', { cookie: '*', shared: '*' }, { cookie: '0.7.2', shared: '1.0.0' })
+      install('b', { cookie: '*', shared: '*' }, { cookie: '2.0.1', shared: '1.0.0' })
+      const found = noticesOver(root, [{ install: 'a', production: true }, { install: 'b', production: true }])
+      expect(found.map((one) => `${one.name}@${one.version}`)).toEqual(['cookie@0.7.2', 'cookie@2.0.1', 'shared@1.0.0'])
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
   })
 })
 
