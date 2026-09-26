@@ -35,12 +35,13 @@ function renderToolbar(props: {
   onCreateLayer7Diagram?: () => void;
   onActiveDiagramChange?: (diagramId: string) => void;
   readOnly?: boolean;
+  activeDiagram?: DesignDiagram;
 }) {
   render(
     <ThemeProvider theme={createTheme()}>
       <EditorToolbar
         model={model}
-        activeDiagram={board}
+        activeDiagram={props.activeDiagram ?? board}
         readOnly={props.readOnly ?? false}
         onActiveDiagramChange={props.onActiveDiagramChange ?? vi.fn()}
         onCreateLayer7Diagram={props.onCreateLayer7Diagram ?? vi.fn()}
@@ -82,6 +83,11 @@ describe('a sheet’s tab', () => {
     renderToolbar({});
     expect(screen.queryByRole('tab', { name: /Business architecture/ })).toBeNull();
     expect(screen.getByRole('tab', { name: /Landscape/ })).toBeTruthy();
+  });
+
+  it('leaves every tab unselected when the sheet is active but has no tab of its own', () => {
+    renderToolbar({ activeDiagram: sheet });
+    expect(screen.getAllByRole('tab').map((tab) => tab.getAttribute('aria-selected'))).toEqual(['false', 'false']);
   });
 
   it('asks the host to open it, and leaves the canvas where it was', () => {

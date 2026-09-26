@@ -323,7 +323,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
       ) : (
         <>
           <Tabs
-            value={props.activeDiagram.id}
+            value={selectedTab(tabs, props.activeDiagram.id)}
             onChange={(_e, value: string) => {
               // A laid-out view is a tab like any other since ADR-0016: the
               // host draws it in place of the canvas. The host's openers stay
@@ -662,6 +662,15 @@ export function EditorToolbar(props: EditorToolbarProps) {
  *
  * Visible in read-only too: which language you read a board in is not a mutation.
  */
+/**
+ * The tab to show selected. A laid-out view is active without a tab where the
+ * host draws it but offers no opener for its kind; then no tab is the answer,
+ * not an id MUI cannot find among the tabs.
+ */
+function selectedTab(tabs: readonly DesignDiagram[], active: string): string | false {
+  return tabs.some((d) => d.id === active) ? active : false;
+}
+
 function LanguageToggle({
   language,
   onChange,

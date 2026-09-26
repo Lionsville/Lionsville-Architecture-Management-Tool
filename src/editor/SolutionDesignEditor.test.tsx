@@ -6,13 +6,14 @@ import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { diagramWithRoutes, edgeRoutesOf } from '../model/routes';
 import { placedNodes } from '../model/placement';
 import { laidOut } from '../model/testFixtures';
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, createEvent, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach } from 'vitest';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { HostedEditor } from './testing/editorHost';
 import type { EditorHostState, HostedEditorProps } from './testing/editorHost';
 import { GRID_SIZE } from './canvas/DiagramCanvas';
 import { PALETTE_DRAG_MIME } from './canvas/ElementPalette';
+import { DEFAULT_GROUP_SIZE } from './canvas/domainGroupPlacement';
 import { slug } from '../model/keys';
 import type { DesignModel } from '../model/types';
 import { installReactFlowMocks } from './reactFlowTestSetup';
@@ -1035,9 +1036,7 @@ describe('SolutionDesignEditor — domain groups from the palette', () => {
     const view = renderEditor();
     const pane = view.container.querySelector('.react-flow') as HTMLElement;
 
-    fireEvent.drop(pane, {
-      clientX: 320,
-      clientY: 240,
+    const drop = createEvent.drop(pane, {
       dataTransfer: {
         types: [PALETTE_DRAG_MIME],
         getData: (type: string) =>
@@ -1046,10 +1045,21 @@ describe('SolutionDesignEditor — domain groups from the palette', () => {
             : '',
       },
     });
+    // jsdom has no DragEvent, so the plain Event it falls back to drops
+    // `clientX` from the init; the point is set on the event itself, or the
+    // drop would arrive with no point at all.
+    Object.defineProperties(drop, { clientX: { value: 800 }, clientY: { value: 600 } });
+    fireEvent(pane, drop);
 
     expect(view.landed().groups).toEqual([{ id: 'commerce', name: 'Commerce', color: '#2f6fdb' }]);
     const [group] = view.landed().geometry?.groups ?? [];
-    expect(group).toMatchObject({ id: 'commerce' });
+    // Centred on the point (the test's flow is unpanned and unzoomed), not
+    // at the corner a drop without a point falls back to.
+    expect(group).toMatchObject({
+      id: 'commerce',
+      x: 800 - DEFAULT_GROUP_SIZE.width / 2,
+      y: 600 - DEFAULT_GROUP_SIZE.height / 2,
+    });
     // And no element was created by the same gesture — a group is not an element.
     expect(view.landed().elements.map((e) => e.id)).toEqual(['a1']);
   });

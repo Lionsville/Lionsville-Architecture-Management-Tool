@@ -12,10 +12,17 @@
  * that caused the complaint, in `afterEach`, with the sentence, and still lets
  * the console say it.
  *
- * Only React's own sentences, and only the kinds below: a library's advice (an
- * Emotion selector, a MUI prop) is not a broken tree, and a test that means to
- * provoke an error spies on the console and silences it, which replaces this
- * wrapper for that test.
+ * Only the kinds below. React's own sentences, and since the suite was cleared
+ * of them, the advice of the two libraries the tree is drawn with: MUI's (a
+ * Tabs value no tab has, a Select value no option has) and Emotion's (a
+ * selector server rendering would break). Those were let through once, as
+ * advice rather than a broken tree, and most turned out to be faults all the
+ * same — a tab strip pointing at nothing, a field showing a blank where the
+ * address was, a box placed at NaN. The suite now says none of them, so a new
+ * one is a regression rather than noise. MUI says some of it through
+ * `console.warn`, so both are wrapped.
+ * A test that means to provoke one spies on the console and silences it,
+ * which replaces this wrapper for that test.
  */
 import { afterEach, beforeEach } from 'vitest'
 
@@ -34,6 +41,13 @@ const COMPLAINTS: RegExp[] = [
   // An error a boundary caught: the screen showed a fallback and the test
   // went on reading what was left of it.
   /The above error occurred in the <[^>]+> component/,
+  // A style React would not write: a NaN or an unparsable length.
+  /is an invalid value for the `[^`]*` css style property/,
+  // MUI's warnings, every one of them: each names a prop that does not fit.
+  /^MUI: /,
+  // Emotion's unsafe selector: `:first-child` and `:nth-child` count a style
+  // tag server rendering puts beside the element.
+  /The pseudo class "[^"]*" is potentially unsafe when doing server-side rendering/,
 ]
 
 /** The sentence React logged, with its `%s` filled in the way the console would. */
@@ -45,20 +59,22 @@ export function consoleText(args: readonly unknown[]): string {
   return [filled, ...rest.slice(at).map((one) => (one instanceof Error ? one.message : String(one)))].join(' ')
 }
 
-/** Whether a line on the console is React saying the tree is wrong. */
+/** Whether a line on the console is React, or a library drawing through it, saying the tree is wrong. */
 export function isReactComplaint(text: string): boolean {
   return COMPLAINTS.some((one) => one.test(text))
 }
 
 const heard: string[] = []
-const original = console.error
 
 // Once per file, before the file's own code runs, so a test that spies on the
 // console — in a hook of any kind — wraps this rather than being replaced by it.
-console.error = (...args: unknown[]) => {
-  const text = consoleText(args)
-  if (isReactComplaint(text)) heard.push(text)
-  original(...args)
+for (const level of ['error', 'warn'] as const) {
+  const original = console[level]
+  console[level] = (...args: unknown[]) => {
+    const text = consoleText(args)
+    if (isReactComplaint(text)) heard.push(text)
+    original(...args)
+  }
 }
 
 beforeEach(() => {

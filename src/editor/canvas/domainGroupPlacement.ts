@@ -98,7 +98,9 @@ function boxFor(
 ): { x: number; y: number; width: number; height: number } {
   const width = Math.max(Math.min(DEFAULT_GROUP_SIZE.width, landscape.width), MIN_GROUP_SIZE);
   const height = Math.max(Math.min(DEFAULT_GROUP_SIZE.height, landscape.height), MIN_GROUP_SIZE);
-  if (!center) {
+  // A point that is not a number is no point: a drop event that carried no
+  // coordinates would otherwise clamp NaN into a box nobody can see or grab.
+  if (!center || !Number.isFinite(center.x) || !Number.isFinite(center.y)) {
     // Unchanged cascade: every fifth group starts over, which is what the
     // palette has always done and keeps a run of adds readable.
     const offset = (groupCount % 5) * 36;

@@ -156,10 +156,12 @@ function heading(size: string, weight = 600) {
       <Typography
         component="div"
         role="heading"
-        // `first-child`, not `first-of-type`: headings are divs and paragraphs
-        // are not, so the first heading after a paragraph is still the first
-        // div, and would lose the room it needs above it.
-        sx={{ fontSize: size, fontWeight: weight, lineHeight: 1.3, mt: '1.8em', mb: '0.5em', '&:first-child': { mt: 0 } }}
+        // Room above only after a sibling, which is "not the first child"
+        // without `:first-child` (Emotion warns about it, for server
+        // rendering). Not `first-of-type` either: headings are divs and
+        // paragraphs are not, so the first heading after a paragraph is still
+        // the first div, and would lose the room it needs above it.
+        sx={{ fontSize: size, fontWeight: weight, lineHeight: 1.3, mt: 0, mb: '0.5em', '* + &': { mt: '1.8em' } }}
       >
         {children}
       </Typography>
@@ -185,7 +187,8 @@ function components(
       <Typography
         component="p"
         {...(isPictureParagraph(node) ? WIDE : {})}
-        sx={{ fontSize: 'inherit', lineHeight: 1.6, my: '0.7em', '&:first-child': { mt: 0 }, '&:last-child': { mb: 0 } }}
+        // As a heading's: room above only after a sibling.
+        sx={{ fontSize: 'inherit', lineHeight: 1.6, mt: 0, mb: '0.7em', '* + &': { mt: '0.7em' }, '&:last-child': { mb: 0 } }}
       >
         {children}
       </Typography>

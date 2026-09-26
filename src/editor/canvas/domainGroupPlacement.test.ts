@@ -97,6 +97,12 @@ describe('newDomainGroup', () => {
     expect(far.y + far.height).toBe(landscape.y + landscape.height);
   });
 
+  it('cascades as though there were no drop point when the point is not a number', () => {
+    const cascade = newDomainGroup().box;
+    expect(newDomainGroup({ center: { x: Number.NaN, y: Number.NaN } }).box).toEqual(cascade);
+    expect(newDomainGroup({ center: { x: 300, y: Number.POSITIVE_INFINITY } }).box).toEqual(cascade);
+  });
+
   it('carries the seed name and colour, and omits an absent colour entirely', () => {
     const { group } = newDomainGroup({ name: 'Commerce', color: '#2f6fdb' });
     expect(group).toEqual({ id: 'commerce', name: 'Commerce', color: '#2f6fdb' });

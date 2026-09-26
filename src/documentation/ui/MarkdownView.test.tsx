@@ -44,6 +44,17 @@ describe('MarkdownView', () => {
     expect((boxes[1] as HTMLInputElement).checked).toBe(false)
   })
 
+  it('leaves no room above the first block and keeps it above the rest', () => {
+    renderShell(<MarkdownView markdown={['Intro.', '', '## Next', '', 'More.'].join('\n')} />)
+    const top = (element: HTMLElement) => getComputedStyle(element).marginTop
+    expect(top(screen.getByText('Intro.'))).toBe('0px')
+    expect(top(screen.getByRole('heading', { name: 'Next' }))).toBe('1.8em')
+    expect(top(screen.getByText('More.'))).toBe('0.7em')
+    cleanup()
+    renderShell(<MarkdownView markdown={['## First', '', 'Text.'].join('\n')} />)
+    expect(top(screen.getByRole('heading', { name: 'First' }))).toBe('0px')
+  })
+
   it('shows HTML as text instead of rendering it', () => {
     const { container } = renderShell(<MarkdownView markdown={'before <script>alert(1)</script> <b>bold</b> after'} />)
     expect(container.querySelector('script')).toBeNull()

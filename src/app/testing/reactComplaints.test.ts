@@ -26,11 +26,22 @@ describe('what counts as React complaining', () => {
     ]) expect(isReactComplaint(said), said).toBe(true)
   })
 
-  it("leaves a library's advice and the app's own lines alone", () => {
+  // Flipped: these were let through as a library's advice until the suite was
+  // cleared of them, and a new one is now a regression.
+  it("holds MUI's and Emotion's warnings and an invalid style to account", () => {
     for (const said of [
-      'The pseudo class ":first-child" is potentially unsafe when doing server-side rendering.',
-      'MUI: The `value` provided to the Tabs component is invalid.',
+      'The pseudo class ":first-child" is potentially unsafe when doing server-side rendering. Try changing it to ":first-of-type".',
+      'The pseudo class ":nth-child" is potentially unsafe when doing server-side rendering. Try changing it to ":nth-of-type".',
+      'MUI: The `value` provided to the Tabs component is invalid.\nNone of the Tabs\' children match with "tl".',
+      'MUI: You have provided an out-of-range value `acme` for the select component.\nThe available values are ``.',
+      '`NaN` is an invalid value for the `left` css style property.',
+    ]) expect(isReactComplaint(said), said).toBe(true)
+  })
+
+  it("leaves the app's own lines alone, and MUI mentioned anywhere but first", () => {
+    for (const said of [
       '[lvarch] ERROR save: the folder is gone',
+      '[lvarch] ERROR render: MUI: said something',
     ]) expect(isReactComplaint(said), said).toBe(false)
   })
 })
