@@ -49,6 +49,9 @@ import type { DesktopDirectory } from '../../src/adapters/desktop/channel'
 
 export type SmokeResult = { name: string; ok: boolean; detail: string }
 
+/** What the relay check logs at error level on purpose, so the last check can tell it apart. */
+const RELAY_MARKER = 'smoke relay'
+
 /** Give the renderer a fixed budget per step; a hang is a failure, not a wait. */
 const STEP_TIMEOUT_MS = 20_000
 
@@ -152,9 +155,69 @@ type ToolClient = {
 
 type ToolAnswer = { isError?: boolean; content: { type: string; text?: string; data?: string; mimeType?: string }[] }
 
+/**
+ * What the renderer may say at error level without the run failing — each entry
+ * proved harmless, never merely familiar. Anything else a `console.error`, an
+ * uncaught exception or a React error logs is a failure: a window can pass every
+ * check below with an error drawn at the bottom of it.
+ */
+const HARMLESS: RegExp[] = [
+  // Chromium's report that a ResizeObserver callback resized something observed,
+  // so its notification waits for the next frame. The spec raises it as an
+  // `error` event and delivers the notification anyway; the board and MUI's
+  // sized inputs settle that way while a scope opens.
+  /ResizeObserver loop completed with undelivered notifications\./,
+]
+
+/**
+ * Listen to the renderer the way DevTools does, from the moment it is called.
+ *
+ * `Runtime.enable` and `Log.enable` replay what the page logged before anybody
+ * was listening, so an error the first render threw and a boundary then drew
+ * over is heard although it is long gone from the screen. Nothing in the page
+ * changes: this is the protocol, attached from main.
+ */
+async function listenTo(window: BrowserWindow): Promise<() => string[]> {
+  const heard: string[] = []
+  const devtools = window.webContents.debugger
+  devtools.attach('1.3')
+  devtools.on('message', (_event, method: string, params: Record<string, unknown>) => {
+    const complaint = complaintIn(method, params)
+    if (complaint && !HARMLESS.some((one) => one.test(complaint))) heard.push(complaint)
+  })
+  await devtools.sendCommand('Runtime.enable')
+  await devtools.sendCommand('Log.enable')
+  return () => [...heard]
+}
+
+type RemoteValue = { type?: string; value?: unknown; description?: string }
+
+/** One DevTools event as a line, when it is an error the renderer logged or threw. */
+function complaintIn(method: string, params: Record<string, unknown>): string | undefined {
+  if (method === 'Runtime.consoleAPICalled') {
+    const { type, args } = params as { type: string; args?: RemoteValue[] }
+    if (type !== 'error' && type !== 'assert') return undefined
+    const text = (args ?? [])
+      .map((one) => one.type === 'string' ? String(one.value) : one.description ?? String(one.value))
+      .join(' ')
+    return `console.${type}: ${text}`
+  }
+  if (method === 'Runtime.exceptionThrown') {
+    const { exceptionDetails } = params as { exceptionDetails: { text: string; exception?: RemoteValue } }
+    return `uncaught: ${exceptionDetails.exception?.description ?? exceptionDetails.text}`
+  }
+  if (method === 'Log.entryAdded') {
+    const { entry } = params as { entry: { level: string; source: string; text: string; url?: string } }
+    if (entry.level !== 'error') return undefined
+    return `${entry.source}: ${entry.text}${entry.url ? ` (${entry.url})` : ''}`
+  }
+  return undefined
+}
+
 export async function runSmoke(window: BrowserWindow): Promise<void> {
   const results: SmokeResult[] = []
   process.stdout.write('\n--- smoke ---\n')
+  const complaints = await listenTo(window)
 
   const { mkdtemp, readdir, readFile, stat } = await import('node:fs/promises')
   const { tmpdir } = await import('node:os')
@@ -873,7 +936,7 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
   // — so the line goes in from the renderer and comes back off the disk.
   results.push(await checkHere("the renderer's diagnostics reach the log file", async () => {
     const path = logFilePath()
-    const marker = `smoke relay ${Date.now()}`
+    const marker = `${RELAY_MARKER} ${Date.now()}`
     await page(`console.error(${JSON.stringify(`[lvarch] ${marker}`)})`)
     const deadline = Date.now() + 5_000
     for (;;) {
@@ -904,6 +967,15 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
     const closed = await fetch(endpoint).then(() => false, () => true)
     if (!closed) throw new Error('the port is still open with the feature off')
     return `port ${port} kept across the relaunch, closed again`
+  }))
+
+  // Asked last, over the whole run. The relay check above logs one error of its
+  // own on purpose, and it is the only one this run expects.
+  section('what the renderer said')
+  results.push(await checkHere('the renderer logged no error, threw nothing, and React did not complain', async () => {
+    const errors = complaints().filter((line) => !line.includes(RELAY_MARKER))
+    if (errors.length) throw new Error(`${errors.length} logged:\n${errors.map((line) => `          ${line}`).join('\n')}`)
+    return 'nothing at error level, from the first render on'
   }))
 
   const failed = results.filter((r) => !r.ok)
