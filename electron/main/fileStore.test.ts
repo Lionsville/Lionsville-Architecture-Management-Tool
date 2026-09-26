@@ -12,7 +12,7 @@
  * half of the new one.
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises'
+import { chmod, mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
@@ -87,6 +87,23 @@ describe('what the channel does with a folder', () => {
     await expect(readInside(root, 'nowhere.json')).resolves.toBeUndefined()
     await expect(listDirectory(root, 'nowhere')).resolves.toBeUndefined()
     await expect(fingerprint(root, 'nowhere.json')).resolves.toBeUndefined()
+  })
+
+  /**
+   * A file that is there and will not read was answered as one that is not
+   * there, and a save removed it as no longer wanted (ADR-0028, amended). It
+   * is a refusal now, by its code, with no path in it.
+   */
+  // A mode of 0 refuses a read only where modes are kept and nobody is root.
+  it.skipIf(process.platform === 'win32' || process.getuid?.() === 0)('refuses to read a file that is there and will not read, rather than calling it gone', async () => {
+    await writeInside(root, 'acme/docs/crews.md', bytes('All about Crews.'))
+    await chmod(join(root, 'acme/docs/crews.md'), 0o000)
+    try {
+      await expect(readInside(root, 'acme/docs/crews.md')).rejects.toThrow(/^NotReadableError: E[A-Z]+$/)
+    } finally {
+      await chmod(join(root, 'acme/docs/crews.md'), 0o644)
+    }
+    await expect(readInside(root, 'acme/docs')).resolves.toBeUndefined()
   })
 
   it('refuses to write outside, however the path is spelled', async () => {

@@ -132,9 +132,27 @@ export async function readFile(root: string, path: string): Promise<DesktopFileC
       bytes: new Uint8Array(bytes), mtimeMs: held.mtimeMs, size: held.size,
       sha256: createHash('sha256').update(bytes).digest('hex'),
     }
-  } catch {
-    return undefined
+  } catch (cause) {
+    // Not there, or a folder where a file was asked for, is an ordinary
+    // answer. Anything else is a file that is there and will not read — no
+    // permission, held by another process — and answered as absent it was
+    // one a save removed as no longer wanted (ADR-0028, amended). Said by its
+    // code alone: the message carries a path off the user's disk.
+    if (isAbsence(cause)) return undefined
+    // eslint-disable-next-line preserve-caught-error -- the cause names the path, which is the user's and stays here
+    throw new Error(`NotReadableError: ${codeOf(cause)}`)
   }
+}
+
+const ABSENT = new Set(['ENOENT', 'ENOTDIR', 'EISDIR'])
+
+function codeOf(cause: unknown): string {
+  const code = (cause as { code?: unknown } | undefined)?.code
+  return typeof code === 'string' ? code : 'unknown'
+}
+
+function isAbsence(cause: unknown): boolean {
+  return ABSENT.has(codeOf(cause))
 }
 
 /**
