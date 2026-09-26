@@ -14,79 +14,49 @@
  * but the hooks below it do not, and each asks for its own slice. Nothing here
  * knows whether a project lives in browser storage, on disk or on a server.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef } from 'react'
 import type { ComponentType } from 'react'
-import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import CssBaseline from '@mui/material/CssBaseline'
 import { ThemeProvider } from '@mui/material/styles'
-import { LanguageProvider, translator } from '../i18n'
-import type { StringKey } from '../i18n'
-import type { Command, ElementId, StepSummary } from '../model'
+import type { Command, ElementId } from '../model'
 import { apply, fromArrays, toArrays } from '../model'
-import type { HostModel } from '../model/hostModel'
-import type { AncestorRecords } from '../decisions/adrScope'
 import type { Diagnostic, DiagnosticEntry } from '../platform/diagnostics'
 import { reasonOf } from '../platform/errors'
-import {
-  bareScope, flattenScopes, isProjectOrder, moveScope, namesUnder, renameScope, setScopeDefaults,
-} from '../projects/scope'
-import type {
-  ProjectOrder, ScopeKind, ScopeModel, ScopeSnapshot, ScopeSummary,
-} from '../projects/scope'
-import { findingsByScope, identityFindings } from '../projects/checks'
+import { flattenScopes, moveScope, namesUnder, renameScope, setScopeDefaults } from '../projects/scope'
+import type { ScopeKind, ScopeModel, ScopeSnapshot, ScopeSummary } from '../projects/scope'
 import { applyRefPatch } from '../projects/readdress'
 import { treeModels, treeScopes } from '../projects/scopeIndex'
-import { organisationLabel, scopeClient } from '../projects/scopeLabel'
 import type { RecordLink } from '../projects/links'
 import { isScopeMoved, SCOPE_MOVED } from '../projects/revision'
-import {
-  ancestorScopes, parentScope, ROOT_SCOPE, scopePathFor, scopePathLabel,
-} from '../projects/scopePath'
+import { parentScope, ROOT_SCOPE, scopePathFor, scopePathLabel } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
-import { crumbsFor } from './ShellToolbar'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
-import { manualUrl } from '../platform/manual'
-import type { UpdateSettings, UpdateSettingsPatch } from '../platform/updateSettings'
-import type { LocalSettings, LocalSettingsPatch } from '../projects/folderSettings'
-import { AGENT_OFF } from '../platform/agentServer'
-import type { AgentServerStatus } from '../platform/agentServer'
-import { ConnectAgentDialog } from './dialogs/ConnectAgentDialog'
-import { PreferencesDialog } from './dialogs/PreferencesDialog'
-import { SyncNotice } from './SyncNotice'
 import { useSync } from './useSync'
-import { BROWSER_STORAGE, sourceIsReadOnly, sourceProviderKind } from '../platform/workingSource'
-import type { SourceChip, SourceMenuEntry, SourceOffer, SourceWayIn } from '../platform/sourceProvider'
+import { BROWSER_STORAGE } from '../platform/workingSource'
+import type { SourceMenuEntry } from '../platform/sourceProvider'
 import { ErrorBoundary } from './ErrorBoundary'
-import { HistoryPage } from './history/HistoryPage'
-import { SnapshotDialog } from './history/SnapshotDialog'
-import { useProjectHistory } from './history/useProjectHistory'
 import { carryRefs } from './carryRefs'
-import { ChooseFolder } from './organisation/ChooseFolder'
-import { OrganisationScreen } from './organisation/OrganisationScreen'
-import { registerRows } from './organisation/register'
-import { technologyRows } from '../projects/technologyRegister'
 import { useOrganisation } from './organisation/useOrganisation'
-import { ProjectWorkspace } from './ProjectWorkspace'
 import type { ScopeSession } from './useModelSession'
 import type { ProjectSettings } from './ProjectSettingsDialog'
 import { ToastBar } from './ToastBar'
-import { useAgentShell } from './useAgentShell'
-import type { WorkspaceAgentView } from './useAgentShell'
-import { AgentDrivingBanner } from './AgentDrivingBanner'
-import type { Destination, Screen } from '../agent/screen'
-import type { TreeView } from '../agent/tree'
-import { useGlobalErrors } from './useGlobalErrors'
-import { useHomeFiles } from './useHomeFiles'
-import { useFilePicker } from './useFilePicker'
-import { useHostCommands } from './useHostCommands'
+import type { Destination } from '../agent/screen'
 import { usePasswordPrompt } from './usePasswordPrompt'
 import { useOpenIntoPrompt } from './useOpenIntoPrompt'
-import { useIndex } from './useIndex'
-import { useShellPreferences } from './useShellPreferences'
-import { useStorageNotice } from './useStorageNotice'
-import type { StorageNotice } from './useStorageNotice'
-import { useToasts } from './useToasts'
+import { useAgentServer } from './useAgentServer'
+import { AppDialogs, AppNotices, AppScreen, HomeHistoryDialogs } from './AppPanels'
+import type { AppFolder, AppHost, AppProps } from './appProps'
+import { useHomeParts } from './useHomeParts'
+import { useMachineSettings } from './useMachineSettings'
+import { useProviderParts } from './useProviderParts'
+import { useScopeAncestry } from './useScopeAncestry'
+import { useShellAgent } from './useShellAgent'
+import { useHostFacts, useShellCommands, useWindowTitle } from './useShellCommands'
+import { useShellNavigation } from './useShellNavigation'
+import { useOpeningFailures, useProjectOrder, useShellServices } from './useShellServices'
+import { useTreeFindings, useTreeIndex } from './useTreeFindings'
+import type { ShellParts } from './shellParts'
 
 /**
  * What `App` does to a store.
@@ -341,40 +311,7 @@ export type ScopeSettingsPatch = {
   parent?: ScopePath
 }
 
-import type { AppProps } from './appProps'
-
 export type { AppBoot, AppFolder, AppHost, AppProps, AppProvider } from './appProps'
-
-/** The organisation screen has no command log: the history drafts its default message. */
-const NO_STEPS = (): readonly { summary: StepSummary }[] => []
-/** …and nothing waiting to be written: the screen writes straight through. */
-const SAVED = (): Promise<void> => Promise.resolve()
-/**
- * The page a scope opens on for an agent's destination (ADR-0019): the same
- * three words, so the two vocabularies cannot drift. A home page is the
- * shell's own business and never reaches here.
- */
-export function initialPageFor(to: Destination): InitialPage | undefined {
-  switch (to.page) {
-    case 'board': return to.id !== undefined ? { page: 'board', id: to.id } : undefined
-    case 'sheet': return { page: 'sheet', ...(to.id !== undefined ? { id: to.id } : {}) }
-    case 'map': return { page: 'map', ...(to.id !== undefined ? { id: to.id } : {}) }
-    case 'technology': return { page: 'technology', ...(to.id !== undefined ? { id: to.id } : {}) }
-    case 'decisions': return { page: 'decisions', ...(to.id !== undefined ? { id: to.id } : {}) }
-    case 'observations': return { page: 'observations', ...(to.id !== undefined ? { id: to.id } : {}) }
-    case 'roadmap': return { page: 'roadmap' }
-    case 'plan': return to.id !== undefined ? { page: 'plan', id: to.id } : { page: 'roadmap' }
-    case 'element': return to.id !== undefined ? { page: 'element', id: to.id } : undefined
-    case 'document': return to.id !== undefined ? { page: 'document', id: to.id } : { page: 'documentation' }
-    case 'documentation': return { page: 'documentation' }
-    case 'platform': return to.id !== undefined ? { page: 'platform', id: to.id } : undefined
-    case 'service': return to.id !== undefined ? { page: 'service', id: to.id } : undefined
-    default: return undefined
-  }
-}
-
-/** What the history page compares against before the home's document has been read. */
-const EMPTY_MODEL: HostModel = { name: '', elements: [], relations: [], diagrams: [] }
 
 /** A group nobody filled in: every field in it is optional. */
 const NOTHING = {} as const
@@ -385,137 +322,50 @@ function localToday(): string {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
 }
 
-export function App({
-  scopes: projects, preferences, documents, diagnostics, hostControls, boot,
-  source = BROWSER_STORAGE, provider = NOTHING, folder = NOTHING, host = NOTHING, agent,
-  examples, makeId, today = localToday,
-}: AppProps) {
-  const { initialProject, initialPreferences, browserLanguages, initialSync, folderFailure, sourceFailure } = boot
-  const {
-    status: sourceStatus, onWork: onSourceWork, description: sourceDescription, chip: sourceChip,
-    storageFailure, menu: menus = [], onScopeSession, publishesSteps = false, chrome: chromes = [],
-    agentPanel: AgentPanel, waysIn,
-  } = provider
-  const {
-    needed: needsFolder = false, onChoose: onChooseWorkingDirectory, onOpen: onOpenWorkingDirectory,
-    onChooseForWorkingFile: onChooseFolderForWorkingFile, recent: recentFolders, watch: watchProject,
-    history, settings: folderSettings,
-  } = folder
-  const {
-    commands, hostMenu = false, onUnsavedWork, onThemeMode, onScopeOpen, windowChrome = NO_WINDOW_CHROME,
-    onTitle, updateSettings,
-  } = host
-  const toasts = useToasts()
-  // Read once per render rather than per card: a finding re-derived because a
-  // millisecond passed is a model walked again for nothing.
-  const todayDay = useMemo(() => today(), [today])
+export function App(props: AppProps) {
+  const parts = useShellParts(props)
+  const { prefs, s, toasts } = parts.services
+  return (
+    /* The theme lives here and not at module level: it hangs off state (light /
+       dark / system) and must be able to change with it. CssBaseline sits inside
+       it, because that is what paints the page background. */
+    <ThemeProvider theme={prefs.theme}>
+      <CssBaseline />
+      <Box sx={{ height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column' }}>
+        {/* Inside the theme, so the fallback is painted in the user's colours,
+            and around the two screens rather than around everything: a crash
+            must not take the toast bar with it. */}
+        <ErrorBoundary where="app" diagnostics={props.diagnostics} controls={props.hostControls} s={s}>
+          <AppScreen parts={parts} />
+        </ErrorBoundary>
+        {!parts.nav.project && <HomeHistoryDialogs parts={parts} />}
+        <AppNotices parts={parts} />
+        <AppDialogs parts={parts} />
+        <ToastBar
+          toast={toasts.toast}
+          open={toasts.open}
+          onClose={toasts.close}
+          onExited={toasts.exited}
+        />
+      </Box>
+    </ThemeProvider>
+  )
+}
 
-  /**
-   * Preferences and the storage notice need each other: writing a preference can
-   * fail, and saying so needs the language, which is a preference. One late-bound
-   * hop breaks the knot — the notice is looked up when it fires, not when the
-   * writer is built.
-   */
-  const noticeRef = useRef<StorageNotice>(() => {})
-  const reportStorage = useCallback<StorageNotice>(
-    (ok, cause) => noticeRef.current(ok, cause), [])
-
-  const prefs = useShellPreferences({
-    store: preferences,
-    initial: initialPreferences,
-    onWriteFailed: reportStorage,
-    browserLanguages,
-  })
-  const s = useMemo(() => translator(prefs.language), [prefs.language])
-  noticeRef.current = useStorageNotice(toasts.notify, s, storageFailure)
-
-  // The half a boundary cannot see: a throw in a listener, a timer or a promise.
-  useGlobalErrors({ diagnostics, notify: toasts.notify, s })
-
-  /**
-   * What happens when one of the promises below rejects.
-   *
-   * Two things, in this order: the trail takes the cause, and — when there is
-   * something worth saying — the user takes a sentence. Most of these calls used
-   * to have neither, so a store that refused mid-session left the screen looking
-   * exactly as it does when everything is fine.
-   *
-   * The key is optional because not every failure is worth interrupting for: a
-   * group record that would not load costs a description, and saying so would
-   * be noise in front of a list of projects that is perfectly readable.
-   */
-  const failed = useCallback((where: string, cause: unknown, key?: StringKey) => {
-    diagnostics.report({ level: 'error', where, message: key ?? 'rejected', cause })
-    if (key) toasts.notify(s(key), 'error')
-  }, [diagnostics, toasts, s])
-
-  // Kept in a ref so an effect can report without depending on `failed`'s
-  // identity — see the group record effect below for the reason.
-  const failedRef = useRef(failed)
-  failedRef.current = failed
-
-  // Likewise a ref, and for a plainer reason: the callbacks that re-read the
-  // tree are declared above the hook that owns it, and a hook cannot move
-  // above the `enter` it is given.
-  const refreshTree = useRef<() => void>(() => {})
-
-  const [project, setProject] = useState<ScopeSnapshot | undefined>(initialProject)
-
-  /**
-   * The watcher, bound to the project that is open.
-   *
-   * Bound here because this is where "which project" is known, and memoised on
-   * the ref because the workspace subscribes to whatever it is handed: a fresh
-   * function every render would be a fresh subscription every render.
-   */
-  const openPath = project?.path
-  const watchOpenProject = useMemo(() => {
-    if (!watchProject || openPath === undefined) return undefined
-    return (onChanged: () => void) => watchProject(openPath, onChanged)
-  }, [watchProject, openPath])
-
-  /**
-   * Bumped when the open project has to be read again from disk with nothing
-   * carried over — after *take theirs* on the whole folder. Part of the
-   * workspace's key, so the session and its undo stack start again from what
-   * is now on disk, the way they do when a different project is opened.
-   */
-  const [reloadKey, setReloadKey] = useState(0)
-  const reloadOpenProject = useCallback(() => {
-    if (!project) return
-    void projects.load(project.path).then(
-      (found) => {
-        if (!found) { setProject(undefined); refreshTree.current(); return }
-        setProject(found)
-        setReloadKey((k) => k + 1)
-      },
-      (cause: unknown) => failedRef.current('reloadOpenProject', cause, 'picker.loadFailed'),
-    )
-  }, [project, projects])
-
-  const sync = useSync({
-    history, folderSettings, initial: initialSync, onTheirs: reloadOpenProject,
-    notify: toasts.notify, s, diagnostics,
-  })
-
-  /**
-   * The organisation's index (ADR-0012 §2), held here rather than in the
-   * workspace because both screens read it: the id policy and `mayEdit` below
-   * a canvas, and the finding line on every row of the tree above one. It
-   * outlives a scope switch, which is right — it is about the folder and not
-   * about what is open in it.
-   *
-   * Watched over the WHOLE tree (`ROOT_SCOPE`), not the open scope: a sibling
-   * domain renaming its ERP is exactly the change the drift check exists to
-   * notice, and a watcher bound to the open scope would never hear of it.
-   * Watching the root is one subscription on the same watcher the workspace
-   * uses — main watches a root once, whoever asks.
-   */
-  const watchTree = useMemo(() => {
-    if (!watchProject) return undefined
-    return (onChanged: () => void) => watchProject(ROOT_SCOPE, onChanged, true)
-  }, [watchProject])
-  const tree = useIndex({ scopes: projects, watch: watchTree, onFailure: failed })
+/**
+ * Every piece of the shell's state, one hook per concern, composed in the
+ * order they read each other: the services and where the shell is first, the
+ * tree and the host's doors next, the organisation screen and what the open
+ * scope is handed after, and the agent and the providers last. The writes
+ * that read a scope, change it and put it back whole are this function's own
+ * and stay here, where the store is.
+ */
+function useShellParts(props: AppProps): ShellParts {
+  const { agent, diagnostics } = props
+  const base = useShellBase(props)
+  const { projects, source, folder, host, services, nav, sync, tree, agentServer, commands, organisation, refreshTree } = base
+  const { toasts, s, reportStorage, failed, failedRef } = services
+  const { project, enter } = nav
 
   /**
    * An address this app has just moved a project away from.
@@ -538,247 +388,6 @@ export function App({
     load: (path: ScopePath) => projects.load(path),
     ...(projects.descriptions ? { descriptions: (path: ScopePath) => projects.descriptions!(path) } : {}),
   }), [projects])
-
-  /**
-   * The menu bar's commands and the overflow's, on one bus. The ones about
-   * where the projects are kept and about this person's preferences are taken
-   * here; everything about the open project falls through to the workspace,
-   * which subscribes to the same stream.
-   */
-  const bus = useHostCommands(commands)
-  const [prefsOpen, setPrefsOpen] = useState(false)
-  const [agentOpen, setAgentOpen] = useState(false)
-  /**
-   * The folder's history, from the organisation screen (`homeHistory`, below).
-   * Through a ref so the subscription does not chase the hook's identity: the
-   * commands are only ever answered here while no scope is open, and the
-   * workspace answers them itself while one is.
-   */
-  const homeHistoryRef = useRef<{ openDialog: () => void; openPage: () => void } | undefined>(undefined)
-  /**
-   * The working file from a home (ADR-0023), through the same ref pattern:
-   * answered here only while no scope is open, and by the workspace while one
-   * is. The desktop's `openDocument` — a double click on a `.lvarch` — lands
-   * here too when the app is on a home, where it used to fall on the floor.
-   */
-  const homeFilesRef = useRef<{
-    exportWorkingFile: () => void; open: () => void; openDocument: (name: string, bytes: Uint8Array) => void
-  } | undefined>(undefined)
-  useEffect(() => bus.on((command) => {
-    if (command.type === 'chooseFolder') onChooseWorkingDirectory?.()
-    if (command.type === 'openFolder') onOpenWorkingDirectory?.(command.root)
-    if (command.type === 'theme') prefs.chooseTheme(command.mode)
-    if (command.type === 'preferences') setPrefsOpen(true)
-    if (command.type === 'connectAgent') setAgentOpen(true)
-    if (command.type === 'snapshot') homeHistoryRef.current?.openDialog()
-    if (command.type === 'history') homeHistoryRef.current?.openPage()
-    if (command.type === 'export') homeFilesRef.current?.exportWorkingFile()
-    if (command.type === 'open') homeFilesRef.current?.open()
-    if (command.type === 'openDocument') homeFilesRef.current?.openDocument(command.name, command.bytes)
-    // In the app's language, which is why it is answered here and not by the
-    // menu bar: main does not know which one is on.
-    if (command.type === 'manual') hostControls.openExternal(manualUrl(prefs.language))
-  }), [bus, onChooseWorkingDirectory, onOpenWorkingDirectory, prefs, hostControls])
-  /**
-   * The third fact main is told (ADR-0005, amended): whether a scope is open,
-   * so the File and Edit items about one are enabled only while it is. Said
-   * on every change and once at the start, the way the theme is.
-   */
-  useEffect(() => { onScopeOpen?.(project !== undefined) }, [onScopeOpen, project])
-
-  /**
-   * The server's three facts (ADR-0007), asked once and then told. Held here
-   * rather than in the workspace because the glyph outlives a project switch
-   * and the dialog is reachable from the picker too.
-   */
-  const [agentStatus, setAgentStatus] = useState<AgentServerStatus>(AGENT_OFF)
-  useEffect(() => {
-    if (!agent) return
-    let live = true
-    void agent.status().then(
-      (held) => { if (live) setAgentStatus(held) },
-      (cause: unknown) => failedRef.current('agent.status', cause),
-    )
-    const off = agent.onStatus((held) => { if (live) setAgentStatus(held) })
-    return () => { live = false; off() }
-  }, [agent])
-
-  const agentChangeFailed = useCallback((where: string, cause: unknown) => {
-    failedRef.current(where, cause)
-    toasts.notify(s('agent.changeFailed', { message: reasonOf(cause) }), 'error')
-  }, [toasts, s])
-  const changeAgentEnabled = useCallback((enabled: boolean) => {
-    if (!agent) return
-    void agent.configure({ enabled }).then(setAgentStatus, (cause: unknown) => agentChangeFailed('agent.configure', cause))
-  }, [agent, agentChangeFailed])
-  const newAgentToken = useCallback(() => {
-    if (!agent) return
-    void agent.newToken().then(setAgentStatus, (cause: unknown) => agentChangeFailed('agent.newToken', cause))
-  }, [agent, agentChangeFailed])
-  const agentBar = useMemo(() => ({ status: agentStatus, onOpen: () => setAgentOpen(true) }), [agentStatus])
-
-  /**
-   * The two scopes the dialog reads from somewhere other than the blob.
-   *
-   * Read when the dialog opens, not at boot: the update settings are a round
-   * trip to main and the machine file is a read from the folder, and neither
-   * is needed until somebody is looking. The machine section also asks the
-   * history whether it is available at all — a folder in a browser tab has
-   * one seam and not the other, and offering sync there would be offering
-   * something that cannot happen.
-   */
-  const [updates, setUpdates] = useState<UpdateSettings | undefined>(undefined)
-  const [local, setLocal] = useState<LocalSettings | undefined>(undefined)
-  useEffect(() => {
-    if (!prefsOpen) return
-    let live = true
-    if (updateSettings) {
-      void updateSettings.read().then(
-        (held) => { if (live) setUpdates(held) },
-        (cause: unknown) => failedRef.current('updateSettings', cause),
-      )
-    }
-    if (folderSettings && history) {
-      void history.available().then(async (can) => {
-        if (!can) return
-        const held = await folderSettings.readLocal()
-        if (live) setLocal(held)
-      }, (cause: unknown) => failedRef.current('folderSettings', cause))
-    }
-    return () => { live = false }
-  }, [prefsOpen, updateSettings, folderSettings, history])
-
-  // Keyed on the failure alone: the toast helpers are fresh each render, and a
-  // notice that re-fires on its own consequences never stops.
-  const sayFolderFailed = useRef((cause: unknown) => {
-    toasts.notify(s('shell.folderNotOpened', { message: reasonOf(cause) }), 'error')
-  })
-  sayFolderFailed.current = (cause: unknown) => {
-    toasts.notify(s('shell.folderNotOpened', { message: reasonOf(cause) }), 'error')
-  }
-  useEffect(() => {
-    if (folderFailure !== undefined) sayFolderFailed.current(folderFailure)
-  }, [folderFailure])
-
-  // The same shape for a source that is not a folder, and the same reasoning:
-  // keyed on the failure alone, because the toast helpers are fresh each render.
-  const saySourceFailed = useRef((cause: unknown) => {
-    toasts.notify(s('shell.sourceNotOpened', { message: reasonOf(cause) }), 'error')
-  })
-  saySourceFailed.current = (cause: unknown) => {
-    toasts.notify(s('shell.sourceNotOpened', { message: reasonOf(cause) }), 'error')
-  }
-  useEffect(() => {
-    if (sourceFailure !== undefined) saySourceFailed.current(sourceFailure)
-  }, [sourceFailure])
-
-  const settingFailed = useCallback((where: string, cause: unknown) => {
-    failedRef.current(where, cause)
-    toasts.notify(s('prefs.writeFailed', { message: reasonOf(cause) }), 'error')
-  }, [toasts, s])
-
-  const changeUpdates = useCallback((patch: UpdateSettingsPatch) => {
-    if (!updateSettings) return
-    // Optimistic, and put back from what the host says is now in force.
-    setUpdates((held) => held && { ...held, ...patch })
-    void updateSettings.write(patch).then(setUpdates, (cause: unknown) => {
-      settingFailed('updateSettings.write', cause)
-      void updateSettings.read().then(setUpdates, () => undefined)
-    })
-  }, [updateSettings, settingFailed])
-
-  const changeLocal = useCallback((patch: LocalSettingsPatch) => {
-    if (!folderSettings) return
-    setLocal((held) => held && { git: { ...held.git, ...patch.git } })
-    void folderSettings.writeLocal(patch).then(
-      () => folderSettings.readLocal().then(setLocal),
-      (cause: unknown) => {
-        settingFailed('folderSettings.write', cause)
-        void folderSettings.readLocal().then(setLocal, () => undefined)
-      },
-    )
-  }, [folderSettings, settingFailed])
-
-  // The second fact the host is told, after unsaved work: which theme is on.
-  useEffect(() => { onThemeMode?.(prefs.themeMode) }, [onThemeMode, prefs.themeMode])
-
-  const [order, setOrder] = useState<ProjectOrder>(() => {
-    const stored = (prefs.preferences as Record<string, unknown> | undefined)?.projectOrder
-    return isProjectOrder(stored) ? stored : 'name'
-  })
-  const chooseOrder = useCallback((next: ProjectOrder) => {
-    setOrder(next)
-    prefs.writePreference({ projectOrder: next })
-  }, [prefs])
-
-  /**
-   * Opening is what makes a scope "last opened", so both happen here — and, when
-   * it was opened for one of the organisation's own pages, which page that was.
-   *
-   * Held beside the project rather than inside the workspace so that switching
-   * scopes clears it: a page asked for on the root is not a page asked for on
-   * the landscape opened next.
-   */
-  const [initialPage, setInitialPage] = useState<InitialPage | undefined>(undefined)
-  const enter = useCallback((next: ScopeSnapshot, page?: InitialPage) => {
-    // Opened for one board: the session starts on it, the way a tab click
-    // would leave it — no step on the stack, and nothing dirty for it.
-    const asked = page !== undefined && 'id' in page && page.id !== undefined
-      && (page.page === 'board' || page.page === 'sheet' || page.page === 'map' || page.page === 'technology')
-      ? page.id : undefined
-    setProject(asked !== undefined ? { ...next, activeDiagramId: asked } : next)
-    setInitialPage(page)
-    prefs.writePreference({ lastScope: next.path })
-  }, [prefs])
-
-  /**
-   * Whose home is up while nothing is open: the root's, or a scope's beneath
-   * it (`OrganisationScreen`). A crumb on the bar and a row's name set it;
-   * closing a page over a canvas that draws nothing lands on the open scope's
-   * own. Session state and not a preference: `lastScope` says where the work
-   * was, and a home is a place you pass through on the way to it.
-   */
-  const [home, setHome] = useState<ScopePath>(ROOT_SCOPE)
-
-  /**
-   * The organisation screen's wiring (`useOrganisation`).
-   *
-   * Called whatever is on screen, because the tree it holds is what the open
-   * workspace's settings dialog offers as a parent to file under — and because
-   * a hook cannot be called conditionally. It reads the root's own document
-   * only while its screen is up, which is the one read on this path that costs
-   * anything.
-   */
-  const organisation = useOrganisation({
-    scopes: projects,
-    active: project === undefined,
-    at: home,
-    onEnter: enter,
-    onTreeChanged: tree.refresh,
-    notify: toasts.notify,
-    onFailure: failed,
-    onStorageResult: reportStorage,
-    s,
-  })
-  refreshTree.current = organisation.refresh
-
-  /**
-   * Snapshots and the history, while the organisation screen is up.
-   *
-   * A snapshot is of the FOLDER (ADR-0003), so it means the same thing from
-   * here as from inside a landscape: the menu offers it on both, and an item
-   * that was offered has to work. What differs is what stands behind the
-   * page: the home scope's own document — the organisation's business layer,
-   * or a domain's records — which the screen has already read for its cards,
-   * and which is written straight through, so there is nothing to save first.
-   * A restore is one write of that document, the way the settings dialog
-   * writes it. Inert while a scope is open: the workspace has its own, and
-   * the seam is withheld from this one so the two never both answer.
-   */
-  const homeDocument = useCallback(
-    () => organisation.root ?? bareScope(home, organisation.tree.name),
-    [organisation.root, organisation.tree.name, home],
-  )
   const restoreIntoHome = useCallback((command: Command) => {
     const held = organisation.root
     if (!held) return
@@ -800,103 +409,6 @@ export function App({
       },
     )
   }, [organisation, projects, tree, toasts, s])
-  const homeHistory = useProjectHistory({
-    history: project ? undefined : history,
-    index: tree.index,
-    project: homeDocument,
-    steps: NO_STEPS,
-    save: SAVED,
-    indexed: () => fromArrays(homeDocument().model),
-    dispatch: restoreIntoHome,
-    notify: toasts.notify,
-    s,
-    onTaken: sync.afterSnapshot,
-  })
-  homeHistoryRef.current = project ? undefined : homeHistory
-  const homeModel: HostModel = organisation.root?.model ?? EMPTY_MODEL
-  const scopeLabel = useCallback(
-    (path: ScopePath) => (path === ROOT_SCOPE ? organisation.tree.name : scopePathLabel(path)),
-    [organisation.tree.name],
-  )
-
-  /**
-   * Open another scope by its path — what *Open …* beside a field another
-   * scope answers for does (ADR-0012 §10).
-   *
-   * Here rather than in the workspace because opening a scope is the shell's
-   * act: reading it, making it the one that is open, and remembering it. A
-   * path that names nothing is a refreshed tree and nothing else — somebody
-   * removed the scope between the index being read and the button being
-   * pressed, and there is nothing useful to say about that beyond showing what
-   * is there now.
-   */
-  const openScopeAt = useCallback((path: ScopePath, page?: InitialPage) => {
-    void projects.load(path).then(
-      (found) => {
-        if (found) enter(found, page)
-        else refreshTree.current()
-      },
-      (cause: unknown) => failedRef.current('openScopeAt', cause, 'picker.loadFailed'),
-    )
-  }, [projects, enter])
-
-  /**
-   * What the organisation contradicts about itself, by scope (ADR-0012 §9).
-   *
-   * One fold over the index for the whole tree, memoised on it — a row that
-   * asked for its own would be a fold per row, and there is one row per scope.
-   * Only the findings the index alone can answer are in here; the ones that
-   * need a scope's own records belong to the scope that is open.
-   */
-  const identity = useMemo(() => identityFindings(tree.index), [tree.index])
-  /** Every plan flagged as an initiative anywhere below the root (ADR-0012 §7), for the roadmap card. */
-  const initiatives = useMemo(() => tree.index.initiativesBelow(home).length, [tree.index, home])
-  /** Every observation shared from anywhere below this home (ADR-0021), for the observations card. */
-  const sharedObservations = useMemo(
-    () => tree.index.observationsBelow(home).filter(({ observation }) => !observation.archived).length,
-    [tree.index, home],
-  )
-  const treeFindings = useMemo(() => findingsByScope(identity), [identity])
-  /**
-   * The tree, for the agent while nothing is open (ADR-0019): the same index
-   * the workspace hands it, minus the open document's own findings, which
-   * there is no document for. Through a ref, so the shell object the handler
-   * keeps reaches the current listing and index.
-   */
-  const treeRef = useRef({ tree: organisation.tree, index: tree.index, identity })
-  treeRef.current = { tree: organisation.tree, index: tree.index, identity }
-  const shellTree = useMemo<TreeView>(() => ({
-    scopes: () => flattenScopes(treeRef.current.tree).map((held) => ({
-      path: held.path, name: held.name, ...(held.kind ? { kind: held.kind } : {}), views: held.diagrams,
-    })),
-    lookup: (id) => treeRef.current.index.lookup(id),
-    register: () => treeRef.current.index.register(),
-    technology: () => technologyRows(treeRef.current.index, treeRef.current.identity),
-    initiativesBelow: (path) => treeRef.current.index.initiativesBelow(path),
-    observationsBelow: (path) => treeRef.current.index.observationsBelow(path),
-    rowsTo: (id, types) => treeRef.current.index.rowsTo(id, types).map((row) => row.relation),
-    findings: () => treeRef.current.identity,
-    read: async (path) => {
-      const held = await projects.load(path)
-      if (!held) return undefined
-      const above = await Promise.all(ancestorScopes(path).map((one) => projects.load(one)))
-      return {
-        model: held.model,
-        activeDiagramId: held.activeDiagramId,
-        ancestorDecisions: above.flatMap((one) => one?.model.decisions ?? []),
-      }
-    },
-  }), [projects])
-
-  /**
-   * The register, derived over the same index and in the same one pass
-   * (ADR-0012 §2). The card on the organisation screen and the page behind it
-   * read this; nothing commits it, and nothing loads for it.
-   */
-  const register = useMemo(() => registerRows(tree.index, identity), [tree.index, identity])
-  /** The technology register (ADR-0014 §2.6), the same fold over the same index. */
-  const technology = useMemo(() => technologyRows(tree.index, identity), [tree.index, identity])
-
   /**
    * The tree's records, read when a gesture asks (ADR-0012 §10), and the two
    * things to do again once one has landed: the listing this screen shows, and
@@ -926,52 +438,19 @@ export function App({
    * the two file flows is asking: the workspace's, with a scope open, or the
    * home's below, with nothing open.
    */
-  const password = usePasswordPrompt(s)
-  const openInto = useOpenIntoPrompt(s)
-  const homeFiles = useHomeFiles({
-    documents,
+  const prompts = { password: usePasswordPrompt(s), openInto: useOpenIntoPrompt(s) }
+  const home = useHomeParts({
+    organisation, home: nav.home, setHome: nav.setHome, scopeOpen: project !== undefined, history: folder.history,
+    index: tree.index, restore: restoreIntoHome, onSnapshotTaken: sync.afterSnapshot, documents: props.documents,
     workingSet: readWorkingSet,
-    into: homeDocument,
     adopt: async (held) => {
       await adoptScopes(held)
       treeChanged()
     },
-    askPassword: password.askPassword,
-    landing: openInto.prompts,
-    chooseFolder: onChooseFolderForWorkingFile,
-    beforeReplace: homeHistory.safeguard,
-    notify: toasts.notify,
-    s,
+    ...prompts, chooseFolder: folder.onChooseForWorkingFile,
+    doors: { history: commands.homeHistory, files: commands.homeFiles }, notify: toasts.notify, s,
   })
-  const homePicker = useFilePicker({
-    accept: '.lvarch,.json,application/json,application/zip,application/octet-stream',
-    onPick: homeFiles.openFile,
-    testId: 'home-document-input',
-  })
-  homeFilesRef.current = project ? undefined : {
-    exportWorkingFile: homeFiles.exportWorkingFile,
-    open: homePicker.open,
-    openDocument: homeFiles.openDocument,
-  }
-
-  const goHome = useCallback((to: ScopePath) => {
-    setHome(to)
-    setProject(undefined)
-    setInitialPage(undefined)
-    // Deliberately keeps `lastScope`: closing a scope is not the same as saying
-    // you never want to see it again, and a refresh should still land you back
-    // in your work.
-    organisation.refresh()
-  }, [organisation])
-
-  /**
-   * A home the listing no longer has — the scope was removed, from its own
-   * page or by somebody else's hand — falls back to the root's rather than
-   * showing a heading over nothing.
-   */
-  const homeListed = home === ROOT_SCOPE
-    || flattenScopes(organisation.tree).some((scope) => scope.path === home)
-  useEffect(() => { if (!homeListed) setHome(ROOT_SCOPE) }, [homeListed])
+  const findings = useTreeFindings({ index: tree.index, tree: organisation.tree, home: nav.home, projects })
 
   /**
    * Change a scope's name, where it is filed, or both.
@@ -1067,544 +546,88 @@ export function App({
     })
   }, [projects, enter, toasts, failed, reportStorage, s])
 
-  /**
-   * The scopes above the open one, for the decisions and the client they carry.
-   *
-   * Read when a scope is entered and after every write, not on every render.
-   * ADR-0012 §7 reads a decision up the tree as well as at the scope, so the
-   * page beside the landscape still shows the domain's records — which is where
-   * a group's used to live, filed one level up and under another name.
-   *
-   * Loaded rather than listed, because a listing carries names and not
-   * decisions. There are at most a handful of ancestors, and a domain's model
-   * is small; the root's is the one that is not, and reading it once on opening
-   * a scope is the price of the records being reachable at all.
-   */
-  const [ancestors, setAncestors] = useState<readonly ScopeSnapshot[]>([])
-  const openPathForAncestors = project?.path
-  // How a failure is reported is not an input to reading a scope. `failed` is
-  // read through the ref so it cannot re-trigger the read: a dependency that
-  // changes identity on render is not a needless read but an endless one.
-  const readAncestors = useCallback(async (of: ScopePath): Promise<ScopeSnapshot[]> => {
-    const held = await Promise.all(ancestorScopes(of).map((path) => projects.load(path)))
-    return held.filter((scope): scope is ScopeSnapshot => !!scope)
-  }, [projects])
-  useEffect(() => {
-    if (openPathForAncestors === undefined) return
-    let live = true
-    void readAncestors(openPathForAncestors).then(
-      (held) => { if (live) setAncestors(held) },
-      (cause: unknown) => {
-        if (live) setAncestors([])
-        // No message: what an ancestor says is decoration here, and a decisions
-        // page that is empty is visible on its own. The trail still gets it.
-        failedRef.current('ancestors', cause)
-      },
-    )
-    return () => { live = false }
-  }, [openPathForAncestors, readAncestors])
-
-  /**
-   * The records of every scope above this one, nearest first (ADR-0012 §7).
-   *
-   * One list, read up the tree: the decisions page shows this scope's own and
-   * a *From …* section per ancestor that has any. Read-only there — a record
-   * is edited where it lives, which is the same rule `mayEdit` applies to an
-   * element — so nothing here writes them back any more.
-   */
-  const ancestorDecisions = useMemo<readonly AncestorRecords[]>(
-    () => ancestors.map((scope) => ({
-      path: scope.path,
-      name: scope.model.name,
-      decisions: scope.model.decisions ?? [],
-    })),
-    [ancestors],
-  )
-
-  /**
-   * The name and the client, walked up the tree over what has been read.
-   *
-   * The summaries the ancestors were loaded as, plus the open scope's own — so
-   * a scope that says nothing yields to the one above it, and a title block is
-   * never blank (`projects/scopeLabel.ts`).
-   */
-  const chain = useMemo<ScopeSummary[]>(() => {
-    if (!project) return []
-    return [project, ...ancestors].map((scope) => ({
-      path: scope.path,
-      name: scope.model.name,
-      ...(scope.client !== undefined ? { client: scope.client } : {}),
-      diagrams: scope.model.diagrams.length,
-      children: [],
-    }))
-  }, [project, ancestors])
-  const groupName = project ? organisationLabel(project.path, chain) : ''
-  const groupClient = project ? scopeClient(project.path, chain) : undefined
-  /** Every scope above the open one, root first, named from the listing. */
-  const crumbs = useMemo(
-    () => (project ? crumbsFor(project.path, flattenScopes(organisation.tree), s) : []),
-    [project, organisation.tree, s],
-  )
-
-  /**
-   * What the window is called, which is the two names the bar already shows.
-   *
-   * With nothing open it is the organisation on its own — or the product on its
-   * own, before there is one — because the picker is not a scope and pretending
-   * it is would name a window after nothing.
-   */
-  const homeName = useMemo(
-    () => flattenScopes(organisation.tree).find((scope) => scope.path === home)?.name,
-    [organisation.tree, home],
-  )
-  /**
-   * The agent at the shell (ADR-0019): where the app is, moving it, and the
-   * driving session with its Stop. Which of the organisation screen's two
-   * pages is up is the one fact about that screen the shell has to hold,
-   * because an agent may ask for either and may ask where it stands.
-   */
-  const [orgPage, setOrgPage] = useState<'register' | 'technologyRegister' | undefined>(undefined)
-  const [orgPageRequest, setOrgPageRequest] = useState<{ page: 'register' | 'technologyRegister'; nonce: number } | undefined>(undefined)
-  const agentSessionRef = useRef<WorkspaceAgentView | undefined>(undefined)
-  const screenNow = useCallback((): Screen => {
-    const held = agentSessionRef.current
-    if (project && held) {
-      const model = held.current()
-      const active = model.diagrams.find((diagram) => diagram.id === held.activeDiagramId())
-      const page = held.page()
-      return {
-        open: { path: project.path, name: model.name, ...(active ? { view: { id: active.id, name: active.name, kind: active.kind } } : {}) },
-        ...(page ? { page } : {}),
-      }
-    }
-    if (project) return { open: { path: project.path, name: project.model.name } }
-    return {
-      home: { path: home, name: home === ROOT_SCOPE ? organisation.tree.name : (homeName ?? scopePathLabel(home)) },
-      ...(orgPage ? { page: { page: orgPage } } : {}),
-    }
-  }, [project, home, homeName, organisation.tree.name, orgPage])
-  const openFor = useCallback((to: Destination & { scope: string }) => {
-    if (to.page === 'home' || to.page === 'register' || to.page === 'technologyRegister') {
-      const page = to.page
-      goHome(to.scope)
-      setOrgPageRequest((prev) => (page === 'home' ? undefined : { page, nonce: (prev?.nonce ?? 0) + 1 }))
-      return
-    }
-    const held = agentSessionRef.current
-    if (project && project.path === to.scope && held) {
-      held.show(to)
-      return
-    }
-    openScopeAt(to.scope, initialPageFor(to))
-  }, [goHome, project, openScopeAt])
-  /**
-   * The same move, for a source provider's own chrome and its own menu lines
-   * ({@link SourceOpen}).
-   *
-   * `openFor` wants a scope because the agent has already resolved one by the
-   * time it calls, and a provider has not: a notice that says *open the board*
-   * is usually about the scope the person is looking at. So the one word that
-   * can be left out is filled in here the way `app.open` fills it in — the scope
-   * that is open, and with nothing open the home that is up — and everything
-   * after that is the one path the agent takes.
-   */
-  const openSomewhere = useCallback<SourceOpen>((to) => {
-    openFor({ ...to, scope: to.scope ?? project?.path ?? home })
-  }, [openFor, project, home])
-  const agentStopped = useCallback((client: string | undefined) => {
-    toasts.notify(s('agent.stoppedToast', { name: client ?? s('agent.someone') }), 'info')
-  }, [toasts, s])
-  const agentShell = useAgentShell({
-    gateway: agent,
-    status: agentStatus,
-    tree: shellTree,
-    screen: screenNow,
-    open: openFor,
-    onStopped: agentStopped,
+  const ancestry = useScopeAncestry({ project, projects, tree: organisation.tree, failedRef, s })
+  const shellAgent = useShellAgent({
+    gateway: agent, status: agentServer.status, tree: findings.shellTree, project, home: nav.home,
+    homeName: home.name, organisationName: organisation.tree.name, goHome: nav.goHome,
+    openScopeAt: nav.openScopeAt, notify: toasts.notify, s,
   })
-  const registerAgent = agentShell.register
-  const registerAgentSession = useCallback((view: WorkspaceAgentView | undefined) => {
-    agentSessionRef.current = view
-    registerAgent(view)
-  }, [registerAgent])
+  useWindowTitle({
+    onTitle: host.onTitle, project, groupName: ancestry.groupName, organisationName: organisation.tree.name,
+    home: nav.home, homeName: home.name,
+  })
+  const provider = useProviderParts({
+    provider: props.provider ?? NOTHING, source, diagnostics, openSomewhere: shellAgent.openSomewhere,
+  })
+  const { machine, order, todayDay } = base
+  return {
+    props, source, folder, host, hostMenu: host.hostMenu ?? false, windowChrome: host.windowChrome ?? NO_WINDOW_CHROME,
+    services, nav, sync, tree, organisation, findings, home, ancestry, agentServer, agent: shellAgent, machine,
+    commands, provider, order, prompts, todayDay,
+    writes: { store: workspaceStore, readTreeModels, readWorkingSet, adoptScopes, treeChanged, applyProjectSettings },
+  }
+}
 
-  useEffect(() => {
-    if (project) onTitle?.(groupName, project.model.name)
-    else if (home === ROOT_SCOPE) onTitle?.(organisation.tree.name)
-    else onTitle?.(organisation.tree.name, homeName)
-  }, [onTitle, project, groupName, organisation.tree.name, home, homeName])
-
-
-  /**
-   * The scope that is open, as whoever answers for the source sees it — held
-   * here only so the provider's own chrome can be handed it.
-   *
-   * The session is made inside the workspace and handed out through
-   * `onScopeSession`, which is a subscription and not a render: a strip that has
-   * to say something about the open scope cannot reach it any other way. Taken
-   * back the moment the workspace lets go, which is every scope switch, so
-   * nothing here can name a session whose model has been unmounted.
-   *
-   * Left undefined where neither the provider nor its chrome asked, so the
-   * workspace is handed nothing at all and behaves as it always has.
-   */
-  const [openScope, setOpenScope] = useState<ScopeSession>()
-  const holdScopeSession = useCallback((session: ScopeSession) => {
-    setOpenScope(session)
-    const stop = onScopeSession?.(session)
-    return () => { setOpenScope(undefined); stop?.() }
-  }, [onScopeSession])
-  // Held for whoever will be handed it, and for nobody else: a subscription per
-  // scope ever opened is a leak with a slow fuse, and a build that registered
-  // none of these asks the workspace for nothing.
-  const takeScopeSession = chromes.length > 0 || menus.length > 0 || onScopeSession || AgentPanel
-    ? holdScopeSession
-    : undefined
-  /**
-   * Which registration answers for the source that is open, so that one chrome
-   * is handed the session and the others are not. A built-in source is its own
-   * provider's kind, and a registered one names it.
-   */
-  const openProvider = sourceProviderKind(source)
-
-  /**
-   * What the chip on a home says, as the provider says it now.
-   *
-   * State rather than a read at the draw, because the answer moves without
-   * anything on this screen moving: a handshake finishes, somebody signs out,
-   * and the name on the chip was decided when the source was opened. The
-   * provider says *ask me again* through the one signal it already has, and
-   * both this and the word on the bar are re-read from it.
-   */
-  const [chip, setChip] = useState<SourceChip | undefined>(() => sourceChip?.())
-  useEffect(() => {
-    if (!sourceChip) { setChip(undefined); return }
-    setChip(sourceChip())
-    return onSourceWork?.(() => setChip(sourceChip()))
-  }, [sourceChip, onSourceWork])
+/** The services, where the shell is, the tree, the host's doors and the organisation screen. */
+function useShellBase(props: AppProps) {
+  const { scopes: projects, diagnostics, hostControls, boot, agent, today = localToday } = props
+  const source = props.source ?? BROWSER_STORAGE
+  const folder: AppFolder = props.folder ?? NOTHING
+  const host: AppHost = props.host ?? NOTHING
+  const services = useShellServices({
+    preferences: props.preferences, initialPreferences: boot.initialPreferences, browserLanguages: boot.browserLanguages,
+    storageFailure: props.provider?.storageFailure, diagnostics,
+  })
+  const { toasts, prefs, s, reportStorage, failed, failedRef } = services
+  // Read once per render rather than per card: a finding re-derived because a
+  // millisecond passed is a model walked again for nothing.
+  const todayDay = useMemo(() => today(), [today])
+  const refreshTree = useRef<() => void>(() => {})
+  const nav = useShellNavigation({
+    initialProject: boot.initialProject, projects, watchProject: folder.watch, prefs, failedRef, refreshTree,
+  })
+  const { project, enter } = nav
+  const sync = useSync({
+    history: folder.history, folderSettings: folder.settings, initial: boot.initialSync,
+    onTheirs: nav.reloadOpenProject, notify: toasts.notify, s, diagnostics,
+  })
+  const tree = useTreeIndex(projects, folder.watch, failed)
+  const agentServer = useAgentServer({ agent, failedRef, notify: toasts.notify, s })
+  const machine = useMachineSettings({
+    updateSettings: host.updateSettings, folderSettings: folder.settings, history: folder.history,
+    failedRef, notify: toasts.notify, s,
+  })
+  const commands = useShellCommands({
+    commands: host.commands, onChooseFolder: folder.onChoose, onOpenFolder: folder.onOpen, prefs,
+    openPreferences: machine.setOpen, openAgent: agentServer.openDialog, hostControls,
+  })
+  useOpeningFailures({ folderFailure: boot.folderFailure, sourceFailure: boot.sourceFailure, notify: toasts.notify, s })
+  useHostFacts({ project, onScopeOpen: host.onScopeOpen, themeMode: prefs.themeMode, onThemeMode: host.onThemeMode })
+  const order = useProjectOrder(prefs)
 
   /**
-   * Which ways in are worth drawing here, and what each says — the answer every
-   * provider that offers one gives about the source that is open now.
+   * The organisation screen's wiring (`useOrganisation`).
    *
-   * A standing button per registration is right on a screen asking where work
-   * should live for the first time, and wrong for the provider that already
-   * answers for the open source: *connect to…* then offers a person where they
-   * already are. Only the provider can tell those apart, so it is asked, and
-   * asked HERE rather than at the boot because the answer moves while the window
-   * is open — a `useMemo` over the same *ask me again* the chip is re-read on,
-   * and afresh per source, because a source that changes is a fresh mount.
-   *
-   * A provider's own code runs while a screen draws, so one that throws costs
-   * its own button the label it asked for and nothing else: the button stands as
-   * it was registered, and the trail takes the cause.
+   * Called whatever is on screen, because the tree it holds is what the open
+   * workspace's settings dialog offers as a parent to file under — and because
+   * a hook cannot be called conditionally. It reads the root's own document
+   * only while its screen is up, which is the one read on this path that costs
+   * anything.
    */
-  const [askedWaysIn, setAskedWaysIn] = useState(0)
-  useEffect(() => onSourceWork?.(() => setAskedWaysIn((n) => n + 1)), [onSourceWork])
-  const offered = useMemo(() => {
-    if (!waysIn) return undefined
-    const drawn: SourceWayIn[] = []
-    for (const way of waysIn) {
-      if (!way.offer) { drawn.push(way); continue }
-      let said: SourceOffer | null | undefined
-      try {
-        said = way.offer(source)
-      } catch (cause) {
-        diagnostics.report({ level: 'error', where: 'sourceOffer', message: way.kind, cause })
-        drawn.push(way)
-        continue
-      }
-      if (said === null) continue
-      drawn.push(said ? { ...way, labelKey: said.labelKey } : way)
-    }
-    return drawn
-    // `askedWaysIn` is a dependency nothing below reads: it is the provider
-    // saying its answer has moved, and asking again is the whole of what that
-    // means here.
-  }, [waysIn, source, diagnostics, askedWaysIn])
-
-  /**
-   * Every provider's menu lines, asked for at the moment the menu draws them.
-   *
-   * A provider's own code runs here, so a provider that throws costs its own
-   * lines and not the menu: the rest of the list is what a person came to the
-   * menu for, and half a menu is worse than a missing section. It goes into the
-   * trail the way every other failure in this shell does.
-   */
-  const sourceEntries = useCallback((): readonly SourceMenuEntry[] => {
-    const lines: SourceMenuEntry[] = []
-    for (const { kind, menu } of menus) {
-      try {
-        lines.push(...menu({
-          session: kind === openProvider ? openScope : undefined,
-          readOnly: sourceIsReadOnly(source),
-          open: openSomewhere,
-        }))
-      } catch (cause) {
-        diagnostics.report({ level: 'error', where: 'sourceMenu', message: kind, cause })
-      }
-    }
-    return lines
-  }, [menus, openProvider, openScope, source, diagnostics, openSomewhere])
-
-  /**
-   * What the menu is given about the providers, and nothing at all where no
-   * provider registered a line — so a build with none passes the menu exactly
-   * what it always passed, and the section is not there to be empty.
-   */
-  const overflowSource = menus.length > 0 ? { sourceEntries, onSourceWork } : undefined
-
-  return (
-    /* The theme lives here and not at module level: it hangs off state (light /
-       dark / system) and must be able to change with it. CssBaseline sits inside
-       it, because that is what paints the page background. */
-    <ThemeProvider theme={prefs.theme}>
-      <CssBaseline />
-      <Box sx={{ height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column' }}>
-        {/* Inside the theme, so the fallback is painted in the user's colours,
-            and around the two screens rather than around everything: a crash
-            must not take the toast bar with it. */}
-        <ErrorBoundary where="app" diagnostics={diagnostics} controls={hostControls} s={s}>
-        {needsFolder && onChooseWorkingDirectory
-          && source.kind !== 'folder' && source.kind !== 'registered' ? (
-          /* The desktop, with nowhere to keep anything yet. Not the picker:
-             there is nowhere for a project to be until this is answered, and
-             offering a list of projects kept inside the app is offering the
-             thing ADR-0003 removed. A source a provider answers for is an
-             answer to the same question — this screen asks where work should
-             live, not which folder it is in, and a build that has connected to
-             one and is still being asked has been asked twice. */
-          <ChooseFolder
-            recent={recentFolders}
-            onChoose={onChooseWorkingDirectory}
-            onOpen={onOpenWorkingDirectory ?? (() => {})}
-            waysIn={offered}
-            s={s}
-            windowChrome={windowChrome}
-          />
-        ) : project ? (
-          <ProjectWorkspace
-            // Remounting on a project switch is the mechanism, not an accident:
-            // the session's undo stack, aliases and pending batches belong to
-            // one project and must not survive into another.
-            key={`${project.path}#${reloadKey}`}
-            project={project}
-            source={{
-              store: workspaceStore,
-              watch: watchOpenProject,
-              // Two facts about where work is kept that the workspace reads as
-              // its own: whether it may be written at all, and what this source
-              // means by the words on the bar.
-              readOnly: sourceIsReadOnly(source),
-              status: sourceStatus,
-              onWork: onSourceWork,
-              onSession: takeScopeSession,
-              publishesSteps,
-              onResult: reportStorage,
-            }}
-            tree={{
-              index: tree.index,
-              scopes: organisation.tree,
-              ancestorDecisions,
-              groupName,
-              groupClient,
-              models: readTreeModels,
-              workingSet: readWorkingSet,
-              onAdoptScopes: adoptScopes,
-              onChanged: treeChanged,
-            }}
-            navigation={{ crumbs, onGoHome: goHome, onOpenScope: openScopeAt, initialPage }}
-            settings={{ onOpen: organisation.refresh, onApply: applyProjectSettings }}
-            host={{
-              commands: bus.on,
-              hostMenu,
-              overflow: hostMenu ? undefined : {
-                ...overflowSource,
-                themeMode: prefs.themeMode,
-                can: { folders: Boolean(onChooseWorkingDirectory), scope: true },
-                onCommand: bus.send,
-              },
-              onUnsavedWork,
-              windowChrome,
-              controls: hostControls,
-              diagnostics,
-            }}
-            files={{
-              documents,
-              askPassword: password.askPassword,
-              landing: openInto.prompts,
-              chooseFolder: onChooseFolderForWorkingFile,
-            }}
-            snapshots={{ history, onTaken: sync.afterSnapshot }}
-            agent={{ onSession: registerAgentSession, bar: agentBar }}
-            shell={{ s, language: prefs.language, notify: toasts.notify, makeId }}
-            preferences={{ initial: prefs.preferences, onChange: prefs.savePreferences }}
-          />
-        ) : (
-          <OrganisationScreen
-            organisation={organisation}
-            examples={examples}
-            order={order}
-            onOrderChange={chooseOrder}
-            source={source}
-            sourceDescription={sourceDescription}
-            sourceChip={chip}
-            onChooseWorkingDirectory={onChooseWorkingDirectory}
-            waysIn={offered}
-            // The same two the workspace's bar carries: the menu on a host
-            // that has none of its own, and the agent glyph, which has to be
-            // reachable with nothing open (ADR-0007).
-            overflow={hostMenu ? undefined : {
-              ...overflowSource,
-              themeMode: prefs.themeMode,
-              // The folder's history, from its front door too (`homeHistory`).
-              can: { folders: Boolean(onChooseWorkingDirectory), history: homeHistory.available, scope: false },
-              onCommand: bus.send,
-            }}
-            agent={agentBar}
-            onGoHome={goHome}
-            findings={treeFindings}
-            register={register}
-            technology={technology}
-            initiatives={initiatives}
-            sharedObservations={sharedObservations}
-            onOpenRegisterRow={(path, id) => openScopeAt(path, { page: 'element', id })}
-            onOpenRegisterPage={(path, id) => openScopeAt(path, { page: 'document', id })}
-            onLinkFromRegister={(path, id, to) => openScopeAt(path, { page: 'link', id, to })}
-            pageRequest={orgPageRequest}
-            onPageChange={setOrgPage}
-            today={todayDay}
-            language={prefs.language}
-            s={s}
-            windowChrome={windowChrome}
-          />
-        )}
-        </ErrorBoundary>
-        {!project && (
-          <>
-            <SnapshotDialog
-              open={homeHistory.dialogOpen}
-              keeping={homeHistory.keeping}
-              draft={homeHistory.draft}
-              onCancel={homeHistory.closeDialog}
-              onTake={homeHistory.take}
-              s={s}
-            />
-            <HistoryPage
-              open={homeHistory.pageOpen}
-              onClose={homeHistory.closePage}
-              entries={homeHistory.entries}
-              chosen={homeHistory.chosen}
-              onChoose={homeHistory.choose}
-              current={homeModel}
-              subject={homeHistory.subject}
-              onSubjectChange={homeHistory.setSubject}
-              scopes={homeHistory.places.map((place) => scopeLabel(place.path))}
-              onRestore={homeHistory.restore}
-              onLabel={homeHistory.label}
-              language={prefs.language}
-              s={s}
-              windowChrome={windowChrome}
-            />
-          </>
-        )}
-        <SyncNotice
-          open={sync.diverged}
-          onTakeTheirs={() => sync.resolve('theirs')}
-          onKeepOurs={() => sync.resolve('ours')}
-          s={s}
-        />
-        <AgentDrivingBanner driving={agentShell.driving} onStop={agentShell.stop} s={s} />
-        {source.kind === 'memory' && (
-          /* Along the bottom rather than above the toolbar: on the desktop that
-             bar is the title bar, and anything pushed above it lands under the
-             traffic lights. A standing strip is as visible and owes the window
-             nothing. */
-          <Alert
-            severity="warning"
-            square
-            data-testid="storage-notice"
-            sx={{ flex: '0 0 auto', borderRadius: 0, py: 0, fontSize: 12 }}
-          >
-            {s('shell.storageFailed')}
-          </Alert>
-        )}
-        {chromes.map(({ kind, chrome: Chrome }) => (
-          /* Inside the theme and inside the language, so a provider's strip is
-             in this person's dark mode and this person's Frisian; beside the
-             app's own notices rather than around the screens, because it is one
-             of them. In a boundary of its own for the reason the canvas has
-             one: a strip somebody else wrote falling over must cost the strip
-             and not the window — and one boundary EACH, so it does not cost the
-             next provider's strip either.
-
-             Every registration, open or not: the provider whose way in has just
-             been pressed is by definition not the source yet, and its dialog has
-             to be somewhere. The session goes to the one that answers for the
-             source that is open, and to nobody else. */
-          <ErrorBoundary
-            key={kind}
-            where="sourceChrome"
-            diagnostics={diagnostics}
-            controls={hostControls}
-            s={s}
-          >
-            <LanguageProvider language={prefs.language}>
-              <Chrome session={kind === openProvider ? openScope : undefined} open={openSomewhere} />
-            </LanguageProvider>
-          </ErrorBoundary>
-        ))}
-        {password.dialog}
-        {openInto.dialogs}
-        {/* Invisible; the home's Open… clicks it. Beside the dialog rather than on
-            the screen, because the home does not own the working file either. */}
-        {project ? null : homePicker.input}
-        <PreferencesDialog
-          open={prefsOpen}
-          onClose={() => setPrefsOpen(false)}
-          language={prefs.language}
-          onLanguageChange={prefs.chooseLanguage}
-          themeMode={prefs.themeMode}
-          onThemeChange={prefs.chooseTheme}
-          order={order}
-          onOrderChange={chooseOrder}
-          updates={updateSettings && updates && {
-            checkAutomatically: updates.checkAutomatically, channel: updates.channel, onChange: changeUpdates,
-          }}
-          machine={folderSettings && history && local && { ...local.git, onChange: changeLocal }}
-          s={s}
-        />
-        <ConnectAgentDialog
-          open={agentOpen}
-          onClose={() => setAgentOpen(false)}
-          status={agent ? agentStatus : undefined}
-          onEnabledChange={changeAgentEnabled}
-          onNewToken={newAgentToken}
-          copyText={hostControls.copyText}
-          /* Built here rather than named there, so the dialog stays a dialog: it
-             places what it is handed, and the session, the trail and the
-             boundary are this file's to wire. The boundary is the chromes'
-             reasoning inside a dialog — a panel somebody else wrote falling over
-             must cost the panel and not the window. */
-          sourcePanel={AgentPanel && (
-            <ErrorBoundary
-              where="sourceAgentPanel"
-              diagnostics={diagnostics}
-              controls={hostControls}
-              s={s}
-            >
-              <AgentPanel session={openScope} />
-            </ErrorBoundary>
-          )}
-          s={s}
-        />
-        <ToastBar
-          toast={toasts.toast}
-          open={toasts.open}
-          onClose={toasts.close}
-          onExited={toasts.exited}
-        />
-      </Box>
-    </ThemeProvider>
-  )
+  const organisation = useOrganisation({
+    scopes: projects,
+    active: project === undefined,
+    at: nav.home,
+    onEnter: enter,
+    onTreeChanged: tree.refresh,
+    notify: toasts.notify,
+    onFailure: failed,
+    onStorageResult: reportStorage,
+    s,
+  })
+  refreshTree.current = organisation.refresh
+  return {
+    projects, source, folder, host, services, todayDay, nav, sync, tree, agentServer, machine, commands, order,
+    organisation, refreshTree,
+  }
 }

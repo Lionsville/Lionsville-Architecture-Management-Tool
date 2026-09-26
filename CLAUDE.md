@@ -425,10 +425,12 @@ src/app/          The shell around the editor.
                                       of a step, because a step that coalesces
                                       is answered for one fold at a time
                     App · ProjectWorkspace · ShellToolbar · SaveMenu · ToastBar
-                    appProps          what the composition root hands `App`:
-                                      the five seams, and one object each for
-                                      the boot, the provider, the folder and
-                                      the window
+                    appProps · shellParts   what the composition root hands
+                                      `App` — the five seams, and one object
+                                      each for the boot, the provider, the
+                                      folder and the window — and what its
+                                      hooks hand the panels that draw it
+                                      (AppPanels)
                     workspaceProps · workspaceParts   what the workspace is
                                       handed, one object per concern, and what
                                       its hooks hand the panels that draw it
