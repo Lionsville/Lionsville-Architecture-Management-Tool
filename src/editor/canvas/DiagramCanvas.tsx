@@ -1609,7 +1609,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
 
   return (
     <Box
-      ref={containerRef}
+      ref={containerRef} data-guide="board.canvas"
       onKeyDown={handleContainerKeyDown}
       onFocus={handleContainerFocus}
       onPointerDownCapture={() => {
@@ -1736,7 +1736,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
       {connectFrom !== null && (
         <Paper
           role="status"
-          data-testid="lv-connect-hint"
+          data-testid="lv-connect-hint" data-guide="board.connect"
           elevation={3}
           sx={{
             position: 'absolute',

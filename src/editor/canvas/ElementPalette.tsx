@@ -437,7 +437,7 @@ export function ElementPalette({
     return (
       <Box
         component="aside"
-        aria-label={t('palette.aside')}
+        aria-label={t('palette.aside')} data-guide="board.palette"
         sx={{ ...chromeSx, width: PALETTE_RAIL_WIDTH, alignItems: 'center', gap: 0.5, py: 0.5 }}
       >
         {onToggleCollapsed && (
@@ -513,7 +513,7 @@ export function ElementPalette({
             }
           >
             <ButtonBase
-              aria-label={t('palette.existing')}
+              aria-label={t('palette.existing')} data-guide="board.library"
               onClick={onAddExisting}
               sx={{
                 width: 34,
@@ -684,7 +684,7 @@ export function ElementPalette({
   };
 
   return (
-    <Box component="aside" aria-label={t('palette.aside')} sx={{ ...chromeSx, width }}>
+    <Box component="aside" aria-label={t('palette.aside')} data-guide="board.palette" sx={{ ...chromeSx, width }}>
       <Box
         sx={{
           display: 'flex',
@@ -778,7 +778,7 @@ export function ElementPalette({
             {section.keys.map(renderRow)}
             {section.id === 'systems' && onAddExisting && existingMatches && (
               <ButtonBase
-                aria-label={t('palette.existing')}
+                aria-label={t('palette.existing')} data-guide="board.library"
                 onClick={onAddExisting}
                 sx={rowSx(theme, mode)}
               >

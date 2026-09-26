@@ -433,7 +433,7 @@ export function SheetPage(props: SheetPageProps) {
             : { flex: '1 1 auto', minWidth: 0, overflow: 'auto', p: 2 }}
         >
         <Box
-          data-testid="sheet-canvas"
+          data-testid="sheet-canvas" data-guide="sheet.canvas"
           data-width={fixedWidth !== undefined ? fixedWidth - 32 : 'fit'}
           sx={fixedWidth !== undefined ? { width: fixedWidth - 32, minWidth: fixedWidth - 32 } : undefined}
         >
@@ -1297,7 +1297,7 @@ function UnmappedBand({ elements, onSelect, t }: {
 }) {
   return (
     <Box
-      data-testid="sheet-unmapped"
+      data-testid="sheet-unmapped" data-guide="sheet.unmapped"
       sx={{
         mt: 3, p: 1.5, borderRadius: 1,
         border: '1px dashed', borderColor: 'warning.main',

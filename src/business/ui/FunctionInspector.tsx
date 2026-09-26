@@ -225,7 +225,7 @@ export function FunctionInspector(props: FunctionInspectorProps) {
 
   return (
     <Box
-      data-testid="sheet-inspector"
+      data-testid="sheet-inspector" data-guide="sheet.inspector"
       sx={{
         width, flex: `0 0 ${width}px`, overflow: 'auto',
         borderLeft: props.width === undefined ? 1 : 0, borderColor: 'divider',
@@ -562,7 +562,7 @@ function Coverage({ element, model, readOnly, actions, applications, elsewhere }
     ?? id
 
   return (
-    <Box data-testid="sheet-inspector-coverage">
+    <Box data-testid="sheet-inspector-coverage" data-guide="sheet.coverage">
       <Typography sx={{
         fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
         color: 'text.secondary', mb: 0.5,
@@ -597,6 +597,7 @@ function Coverage({ element, model, readOnly, actions, applications, elsewhere }
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mt: 1 }}>
           <Picker
             label={t('sheet.supportedBy')}
+            named="sheet.supportedBy"
             options={supporters}
             picked={own.supportedBy}
             onPick={(sourceId, on) =>
@@ -605,6 +606,7 @@ function Coverage({ element, model, readOnly, actions, applications, elsewhere }
           />
           <Picker
             label={t('sheet.doneBy')}
+            named="sheet.doneBy"
             options={people}
             picked={own.assignedTo}
             onPick={(sourceId, on) =>
@@ -633,8 +635,10 @@ function Coverage({ element, model, readOnly, actions, applications, elsewhere }
  * is narrowed to what is actually on offer; the row itself stays where it is
  * and the line above still names it.
  */
-function Picker({ label, options, picked, onPick, t }: {
+function Picker({ label, named, options, picked, onPick, t }: {
   label: string
+  /** Its stable name (`data-guide`, `CONTROL_NAMES`). */
+  named: string
   options: readonly Supporter[]
   picked: readonly ElementId[]
   onPick(id: ElementId, on: boolean): void
@@ -646,6 +650,7 @@ function Picker({ label, options, picked, onPick, t }: {
   return (
     <Autocomplete
       multiple
+      data-guide={named}
       // The list stays open after a pick: what supports a capability is
       // usually several things, and closing after each was a click per row.
       disableCloseOnSelect

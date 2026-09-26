@@ -53,6 +53,7 @@ export function InspectorPanel({
     <Box
       component="aside"
       aria-label={t('inspector.aside')}
+      data-guide="board.inspector"
       sx={{
         width: collapsed ? INSPECTOR_RAIL_WIDTH : width,
         flexShrink: 0,

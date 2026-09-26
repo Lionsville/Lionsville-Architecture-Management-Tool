@@ -104,7 +104,7 @@ function UsesPicker({ uses, picker }: { uses: Uses; picker: Picker }) {
         />
       )}
       sx={{ mt: 1 }}
-      data-testid="element-uses-picker"
+      data-testid="element-uses-picker" data-guide="record.uses"
     />
   );
 }

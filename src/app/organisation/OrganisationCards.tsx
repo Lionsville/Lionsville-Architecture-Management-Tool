@@ -155,7 +155,7 @@ export function OrganisationCards({
     // A grid rather than a wrapping row: equal columns, so six cards are two
     // rows of three the same size and left-aligned, not four and two wider ones
     // starting half a gutter in.
-    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 1.5, mb: 4 }} data-testid="organisation-cards">
+    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 1.5, mb: 4 }} data-testid="organisation-cards" data-guide="org.cards">
       {shows.documentation && (
         <OnePage
           icon={<DocumentIcon />}
@@ -182,7 +182,7 @@ export function OrganisationCards({
         finding={businessFinding}
         action={(
           <Stack direction="row" spacing={0.5}>
-            <Button size="small" onClick={onOpenBusiness} sx={quiet} data-testid="open-business">
+            <Button size="small" onClick={onOpenBusiness} sx={quiet} data-testid="open-business" data-guide="org.card.business">
               {/* A scope with no sheet is not missing one; it has not been given
                   one yet, and the word says which. */}
               {pages.business.sheetId ? s('picker.open') : s('org.businessMake')}
@@ -190,7 +190,7 @@ export function OrganisationCards({
             {/* The map is the same layer read the other way — what supports
                 each capability, across the tree — and lives behind the same
                 card rather than a fifth. */}
-            <Button size="small" onClick={onOpenMap} sx={quiet} data-testid="open-map">
+            <Button size="small" onClick={onOpenMap} sx={quiet} data-testid="open-map" data-guide="org.card.map">
               {pages.business.mapId ? s('org.map') : s('org.mapMake')}
             </Button>
           </Stack>
@@ -213,7 +213,7 @@ export function OrganisationCards({
           })
           : undefined}
         action={(
-          <Button size="small" onClick={onOpenDecisions} sx={quiet} data-testid="open-decisions">
+          <Button size="small" onClick={onOpenDecisions} sx={quiet} data-testid="open-decisions" data-guide="org.card.decisions">
             {s('picker.open')}
           </Button>
         )}
@@ -242,7 +242,7 @@ export function OrganisationCards({
             : '',
         ].filter(Boolean).join(' · ') || undefined}
         action={(
-          <Button size="small" onClick={onOpenObservations} sx={quiet} data-testid="open-observations">
+          <Button size="small" onClick={onOpenObservations} sx={quiet} data-testid="open-observations" data-guide="org.card.observations">
             {s('picker.open')}
           </Button>
         )}
@@ -276,7 +276,7 @@ export function OrganisationCards({
             })
             : s('org.noFindings')}
         action={(
-          <Button size="small" onClick={onOpenRoadmap} sx={quiet} data-testid="open-roadmap">
+          <Button size="small" onClick={onOpenRoadmap} sx={quiet} data-testid="open-roadmap" data-guide="org.card.roadmap">
             {s('picker.open')}
           </Button>
         )}
@@ -298,7 +298,7 @@ export function OrganisationCards({
           plural(s, { one: 'register.outsideOne', other: 'register.outsideOther' }, register.outside),
         ].join(' · ')}
         action={(
-          <Button size="small" onClick={onOpenRegister} sx={quiet} data-testid="open-register">
+          <Button size="small" onClick={onOpenRegister} sx={quiet} data-testid="open-register" data-guide="org.card.register">
             {s('picker.open')}
           </Button>
         )}
@@ -318,12 +318,12 @@ export function OrganisationCards({
         ].join(' · ')}
         action={(
           <Stack direction="row" spacing={0.5}>
-            <Button size="small" onClick={onOpenTechnology} sx={quiet} data-testid="open-technology">
+            <Button size="small" onClick={onOpenTechnology} sx={quiet} data-testid="open-technology" data-guide="org.card.technology">
               {s('picker.open')}
             </Button>
             {/* The landscape is the same layer as a picture — who uses what,
                 what is offered, what delivers it — behind the same card. */}
-            <Button size="small" onClick={onOpenTechnologyLandscape} sx={quiet} data-testid="open-technology-landscape">
+            <Button size="small" onClick={onOpenTechnologyLandscape} sx={quiet} data-testid="open-technology-landscape" data-guide="org.card.landscape">
               {pages.technology.landscapeId ? s('org.technologyLandscape') : s('org.technologyLandscapeMake')}
             </Button>
           </Stack>

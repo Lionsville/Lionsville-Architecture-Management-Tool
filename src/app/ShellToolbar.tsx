@@ -179,7 +179,7 @@ export function Crumbs({ crumbs, current, currentPath, onGoHome, s }: {
     minWidth: 0, flexShrink: order, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
   } as const)
   return (
-    <Box data-testid="crumbs" sx={{ display: 'flex', alignItems: 'center', gap: 0.25, minWidth: 0, flexShrink: 1 }}>
+    <Box data-testid="crumbs" data-guide="shell.crumbs" sx={{ display: 'flex', alignItems: 'center', gap: 0.25, minWidth: 0, flexShrink: 1 }}>
       {crumbs.map((crumb, index) => (
         <Box key={crumb.path} sx={{ display: 'flex', alignItems: 'center', gap: 0.25, ...shrinking(crumbs.length - index + 1) }}>
           <Tooltip title={s('shell.crumbTip', { name: crumb.name })}>
@@ -383,7 +383,7 @@ export function ShellToolbar({
       </Tooltip>
       {alsoHere.length > 0 && (
         <Typography
-          data-testid="also-here"
+          data-testid="also-here" data-guide="shell.alsoHere"
           sx={{ fontSize: 11, color: 'text.secondary', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 260 }}
         >
           {s('shell.alsoHere', { names: alsoHere.join(', ') })}
@@ -404,7 +404,7 @@ export function ShellToolbar({
         </Tooltip>
       ))}
       <Tooltip title={s('shell.activityTip')}>
-        <Button size="small" color="inherit" onClick={(e) => setActivityMenu(e.currentTarget)} sx={quiet}>
+        <Button size="small" color="inherit" onClick={(e) => setActivityMenu(e.currentTarget)} sx={quiet} data-guide="shell.activity">
           {s('shell.activity')}
         </Button>
       </Tooltip>

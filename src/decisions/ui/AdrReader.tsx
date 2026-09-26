@@ -162,7 +162,7 @@ export function AdrReader(props: AdrReaderProps) {
     <Box data-testid="adr-reader" sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%' }}>
       {/* ---- the record's own bar: mode, status moves, delete ---- */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 0.75, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flexWrap: 'wrap' }}>
-        <Chip size="small" color={STATUS_COLOR[adr.status]} label={s(STATUS_LABEL[adr.status])} data-testid="adr-status" />
+        <Chip size="small" color={STATUS_COLOR[adr.status]} label={s(STATUS_LABEL[adr.status])} data-testid="adr-status" data-guide="decision.status" />
         <Typography variant="caption" color="text.secondary">{adr.date}</Typography>
         <Box sx={{ flex: 1 }} />
         {!readOnly && moves.map((next) => (
@@ -336,7 +336,7 @@ function SignersTable({ signers, editable, today, s, onChange }: SignersTablePro
   }
 
   return (
-    <Box component="section" data-testid="adr-signers" sx={{ mt: 5, pt: 2, borderTop: 1, borderColor: 'divider' }}>
+    <Box component="section" data-testid="adr-signers" data-guide="decision.signers" sx={{ mt: 5, pt: 2, borderTop: 1, borderColor: 'divider' }}>
       <Typography variant="h6" component="h2" sx={{ fontSize: 17, fontWeight: 600 }}>{s('adr.signers')}</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>{s('adr.signersHelp')}</Typography>
       {signers.length === 0 && !editable && (

@@ -461,7 +461,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
   )
 
   const register = (
-    <Box data-testid="observation-register" sx={{ overflow: 'auto', minHeight: 0, minWidth: 0, bgcolor: 'background.paper' }}>
+    <Box data-testid="observation-register" data-guide="observations.register" sx={{ overflow: 'auto', minHeight: 0, minWidth: 0, bgcolor: 'background.paper' }}>
       <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', p: 1.5, borderBottom: 1, borderColor: 'divider' }}>
         <TextField
           size="small"
@@ -718,7 +718,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
 
   const solutionsView = (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0 }}>
-      <Box data-testid="solution-phases" sx={{ display: 'flex', gap: 3, px: 2, py: 1, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flexWrap: 'wrap', alignItems: 'center' }}>
+      <Box data-testid="solution-phases" data-guide="solutions.phases" sx={{ display: 'flex', gap: 3, px: 2, py: 1, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flexWrap: 'wrap', alignItems: 'center' }}>
         {phaseCounts.map(([phase, count]) => (
           <Typography key={phase} variant="body2" sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
             <Box component="b" sx={{ fontSize: 18, fontVariantNumeric: 'tabular-nums' }}>{count}</Box>
@@ -928,17 +928,17 @@ export function ObservationsPage(props: ObservationsPageProps) {
             <Box component="span" sx={{ color: 'text.primary', fontWeight: 600 }}>{s('observation.title')}</Box>
           </Typography>
           <ToggleButtonGroup exclusive size="small" value={tab} onChange={(_e, value: Tab | null) => { if (value) { setTab(value); setEditingKey(undefined) } }} sx={{ ml: 2 }}>
-            <ToggleButton value="register" data-testid="observation-tab-register">{s('observation.tabRegister')}</ToggleButton>
-            <ToggleButton value="analysis" data-testid="observation-tab-analysis">{s('observation.tabAnalysis')}</ToggleButton>
-            <ToggleButton value="solutions" data-testid="observation-tab-solutions">{s('solution.tab')}</ToggleButton>
+            <ToggleButton value="register" data-testid="observation-tab-register" data-guide="observations.tabRegister">{s('observation.tabRegister')}</ToggleButton>
+            <ToggleButton value="analysis" data-testid="observation-tab-analysis" data-guide="observations.tabAnalysis">{s('observation.tabAnalysis')}</ToggleButton>
+            <ToggleButton value="solutions" data-testid="observation-tab-solutions" data-guide="observations.tabSolutions">{s('solution.tab')}</ToggleButton>
           </ToggleButtonGroup>
           <Box sx={{ flex: 1 }} />
           {!readOnly && (
             <>
-              <Button size="small" onClick={() => setCreatingCause(true)}>+ {s('observation.newCause')}</Button>
+              <Button size="small" onClick={() => setCreatingCause(true)} data-guide="observations.newCause">+ {s('observation.newCause')}</Button>
               {tab === 'solutions'
-                ? <Button size="small" variant="contained" onClick={() => setProposing({})} data-testid="solution-new">+ {s('solution.new')}</Button>
-                : <Button size="small" variant="contained" onClick={() => setCreating(true)}>+ {s('observation.new')}</Button>}
+                ? <Button size="small" variant="contained" onClick={() => setProposing({})} data-testid="solution-new" data-guide="solutions.new">+ {s('solution.new')}</Button>
+                : <Button size="small" variant="contained" onClick={() => setCreating(true)} data-guide="observations.new">+ {s('observation.new')}</Button>}
             </>
           )}
         </Box>

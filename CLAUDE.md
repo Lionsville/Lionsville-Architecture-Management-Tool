@@ -383,6 +383,10 @@ src/platform/     What the app runs inside, and what a failure looks like.
                                       link may carry), the sentence it gives for
                                       where work is kept, and what it means by
                                       the five words the bar says (ADR-0022)
+                    controlNames      the stable name each main control carries
+                                      on screen (`data-guide`), listed once: a
+                                      public contract, so a rename is a
+                                      breaking change
                     desktopHook       what a build composed from this one may ask
                                       of the main process: somewhere to answer the
                                       renderer, somewhere to keep a small secret,
@@ -797,6 +801,21 @@ one writable both land, among others — and then the store's suite runs over it
   every pair the theme and the board draw with, text at 4.5:1 and rings,
   outlines and lines at 3:1, and `text.disabled` for a control that is off
   and nothing else. A token that carries text goes in that test.
+- **A main control carries a stable name**, `data-guide="<screen>.<control>"`
+  — `board.palette`, `register.row`, `plan.milestone` — listed once in
+  `platform/controlNames.ts` (`CONTROL_NAMES`). It is a **public contract**
+  for anything outside this tree that has to point at a control: a build
+  composed from this one, a screenshot script, somebody's own end-to-end
+  suite. So **renaming or removing one is a breaking change**, said in the
+  release notes like any other, and adding one is not. A name says what the
+  control is in this product, in the words the code already uses for its
+  screen, and never what a reader outside means to do with it; a name on a
+  repeated thing (a row, a milestone) is on every one of them. A test id stays
+  this repository's own and may move with its tests; the name may not.
+  `app/App.controlNames.test.tsx` finds every listed name on its screen, and
+  `build/controlNames.test.ts` refuses a name written on a control and not
+  listed. A unit already in `GROWN` takes the attribute on a line it already
+  has.
 - **Component tests go through `ui/testing/renderShell.tsx`.** It supplies the
   theme and the language, and checks on every render that the theme reached the
   tree — which is how a doubled Emotion gets caught by every test rather than by

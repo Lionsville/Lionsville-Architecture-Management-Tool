@@ -352,7 +352,7 @@ function Facts({ plan, model, decisions, readOnly, actions, initiativeToggle }: 
         )
       })}
       {!readOnly && candidates.length > 0 && (
-        <Box data-testid="plan-add-element" sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+        <Box data-testid="plan-add-element" data-guide="plan.addElement" sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
           <TextField
             select size="small" label={t('plan.addElement')} value={adding.elementId} sx={{ flex: 1 }}
             slotProps={{ htmlInput: { 'aria-label': t('plan.addElement') } }}
@@ -385,7 +385,7 @@ function Facts({ plan, model, decisions, readOnly, actions, initiativeToggle }: 
         <Typography variant="body2" color="text.secondary">{t('plan.noMilestones')}</Typography>
       )}
       {plan.milestones.map((milestone, index) => (
-        <Box key={index} data-testid="plan-milestone" sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+        <Box key={index} data-testid="plan-milestone" data-guide="plan.milestone" sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
           <TextField
             type="date" size="small" value={milestone.date} disabled={readOnly} sx={{ width: 150 }}
             slotProps={{ htmlInput: { 'aria-label': t('plan.milestoneDate') } }}
@@ -436,7 +436,7 @@ function Facts({ plan, model, decisions, readOnly, actions, initiativeToggle }: 
         )
       })}
       {!readOnly && decisionCandidates.length > 0 && (
-        <Box data-testid="plan-add-decision" sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+        <Box data-testid="plan-add-decision" data-guide="plan.addDecision" sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
           <TextField
             select size="small" label={t('plan.decision')} value={addingDecision} sx={{ flex: 1 }}
             slotProps={{ htmlInput: { 'aria-label': t('plan.decision') } }}

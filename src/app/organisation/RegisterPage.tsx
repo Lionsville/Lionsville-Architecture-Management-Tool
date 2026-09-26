@@ -134,6 +134,12 @@ type RegisterConfig<R extends Listed, Order extends string, Summary> = {
   /** The test-id prefix of the page's parts (`<page>-topbar`), and of a row's (`<row>-row-<id>`). */
   page: string
   row: string
+  /**
+   * The prefix of the stable names its row, its columns and its open button
+   * carry (`<named>.row`, `data-guide`): a contract a build composed from this
+   * one may read, so it changes only as a breaking change (`CONTROL_NAMES`).
+   */
+  named: string
   title: StringKey
   what: StringKey
   empty: StringKey
@@ -155,7 +161,12 @@ type RegisterConfig<R extends Listed, Order extends string, Summary> = {
   counts: readonly Counted<Summary>[]
   /** The findings under the introduction, said where there are any. */
   findings: readonly Counted<Summary>[]
-  columns: readonly { header: StringKey; cell(row: R, s: Translate, organisation: string): ReactNode }[]
+  columns: readonly {
+    header: StringKey
+    /** The column's stable name, where it has one (`CONTROL_NAMES`). */
+    named?: string
+    cell(row: R, s: Translate, organisation: string): ReactNode
+  }[]
   /** Beside the name, where the row says what sort of thing it is. */
   badge?(row: R, s: Translate): ReactNode
   /** Under the name, after who it belongs to. */
@@ -169,6 +180,7 @@ type RegisterConfig<R extends Listed, Order extends string, Summary> = {
 const APPLICATIONS: RegisterConfig<RegisterRow, 'name' | 'scope', RegisterSummary> = {
   page: 'register',
   row: 'register',
+  named: 'register',
   title: 'register.title',
   what: 'register.what',
   empty: 'register.empty',
@@ -197,6 +209,7 @@ const APPLICATIONS: RegisterConfig<RegisterRow, 'name' | 'scope', RegisterSummar
   columns: [
     {
       header: 'register.colDrawn',
+      named: 'register.colDrawn',
       cell: (row, s, organisation) => (row.drawnIn.length === 0 ? (
         <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{s('register.drawnNowhere')}</Typography>
       ) : (
@@ -223,6 +236,7 @@ const isService = (row: TechnologyRow) => row.kind === 'platformService'
 const TECHNOLOGY: RegisterConfig<TechnologyRow, TechnologyOrder, TechnologySummary> = {
   page: 'technology-register',
   row: 'technology',
+  named: 'technologyRegister',
   title: 'techRegister.title',
   what: 'techRegister.what',
   empty: 'techRegister.empty',
@@ -345,9 +359,11 @@ function Register<R extends Listed, Order extends string, Summary>(props: PagePr
       <Box component="thead">
         <Box component="tr" sx={{ '& th': { textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'text.secondary', borderBottom: 1, borderColor: 'divider', py: 0.75, textTransform: 'uppercase', letterSpacing: 0.6 } }}>
           <Box component="th">{s(config.nameColumn)}</Box>
-          <Box component="th">{s('register.colMaster')}</Box>
-          {config.columns.map((column) => <Box component="th" key={column.header}>{s(column.header)}</Box>)}
-          <Box component="th">{s('register.colFindings')}</Box>
+          <Box component="th" data-guide={`${config.named}.colMaster`}>{s('register.colMaster')}</Box>
+          {config.columns.map((column) => (
+            <Box component="th" key={column.header} data-guide={column.named}>{s(column.header)}</Box>
+          ))}
+          <Box component="th" data-guide={`${config.named}.colFindings`}>{s('register.colFindings')}</Box>
           <Box component="th" />
         </Box>
       </Box>
@@ -500,6 +516,7 @@ function Row<R extends Listed, Order extends string, Summary>({ config, row, lab
     <Box
       component="tr"
       data-testid={`${prefix}-row-${row.id}`}
+      data-guide={`${config.named}.row`}
       sx={{
         '& td': {
           borderBottom: 1, borderColor: 'divider', py: 0.75, verticalAlign: 'top',
@@ -553,6 +570,7 @@ function Row<R extends Listed, Order extends string, Summary>({ config, row, lab
               color="inherit"
               sx={{ fontSize: 11, minWidth: 0, px: 1 }}
               data-testid={`${prefix}-open-${row.id}`}
+              data-guide={`${config.named}.openRow`}
               onClick={() => onOpen(row.master!, row.id)}
             >
               {s('picker.open')}

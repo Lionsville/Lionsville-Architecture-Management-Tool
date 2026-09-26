@@ -157,6 +157,7 @@ export function ElementRecord(props: ElementRecordProps) {
             <TextField
               select
               label={t('field.party')}
+              data-guide="record.party"
               value={element.partyId ?? ''}
               disabled={readOnly || owned('partyId')}
               sx={{ flex: 1, minWidth: 180 }}
@@ -213,7 +214,7 @@ export function ElementRecord(props: ElementRecordProps) {
             (ADR-0010). Beside the field rather than under it, so "replaced
             by" and "replace…" read as one question. */}
         {!readOnly && !owned('successorId') && props.onReplace && (
-          <Button size="small" variant="outlined" onClick={() => props.onReplace?.(element.id)}>
+          <Button size="small" variant="outlined" data-guide="record.replace" onClick={() => props.onReplace?.(element.id)}>
             {t('field.replace')}
           </Button>
         )}

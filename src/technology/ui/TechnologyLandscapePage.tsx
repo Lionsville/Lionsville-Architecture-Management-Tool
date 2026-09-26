@@ -450,7 +450,7 @@ export function TechnologyLandscapePage(props: TechnologyLandscapePageProps) {
                 action={(
                   <>
                     {add && services && <AddButton label={t('landscape.addService')} testId="landscape-add-service" onClick={() => add({ kind: 'platformService' })} />}
-                    <Button size="small" data-testid="landscape-services-band" onClick={(event) => { event.stopPropagation(); setServices((held) => !held) }} sx={{ fontSize: 11, py: 0 }}>
+                    <Button size="small" data-testid="landscape-services-band" data-guide="landscape.servicesBand" onClick={(event) => { event.stopPropagation(); setServices((held) => !held) }} sx={{ fontSize: 11, py: 0 }}>
                       {services ? t('landscape.hideServices') : t('landscape.showServices')}
                     </Button>
                   </>
@@ -463,7 +463,7 @@ export function TechnologyLandscapePage(props: TechnologyLandscapePageProps) {
                   </Box>
                 )}
                 {services && shared.length > 0 && showShared && (
-                  <Box data-testid="landscape-shared-row" sx={{ mt: own.length > 0 ? 1.5 : 0, pt: own.length > 0 ? 1.5 : 0, borderTop: own.length > 0 ? 1 : 0, borderColor: 'divider' }}>
+                  <Box data-testid="landscape-shared-row" data-guide="landscape.sharedRow" sx={{ mt: own.length > 0 ? 1.5 : 0, pt: own.length > 0 ? 1.5 : 0, borderTop: own.length > 0 ? 1 : 0, borderColor: 'divider' }}>
                     <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, mb: 1 }}>
                       <Typography sx={{ fontSize: 10.5, letterSpacing: '.12em', textTransform: 'uppercase', color: 'text.secondary', whiteSpace: 'nowrap' }}>{t('landscape.sharedRow')}</Typography>
                       <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{t('landscape.sharedRowNote')}</Typography>
@@ -1008,7 +1008,7 @@ function Inspector({ landscape, model, selected, view, t, onOpenDocumentation, o
   }
 
   return (
-    <Box data-testid="landscape-inspector" onClick={(event) => event.stopPropagation()}
+    <Box data-testid="landscape-inspector" data-guide="landscape.inspector" onClick={(event) => event.stopPropagation()}
       sx={{ width: INSPECTOR_WIDTH, flexShrink: 0, borderLeft: 1, borderColor: 'divider', bgcolor: 'background.paper', overflow: 'auto', p: 2 }}>
       <Typography data-testid="landscape-inspector-title" sx={{ fontSize: 15, fontWeight: 700 }}>{title}</Typography>
       <Typography sx={{ fontSize: 10.5, letterSpacing: '.1em', textTransform: 'uppercase', color: 'text.secondary', mb: 1 }}>{t(KIND_LABEL[kind])}</Typography>

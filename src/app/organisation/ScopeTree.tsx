@@ -124,7 +124,7 @@ export function ScopeTree({
   }
 
   return (
-    <Box>
+    <Box data-guide="org.tree">
       {rows.map((scope) => {
         const depth = scopeSegments(scope.path).length - base - 1
         const shut = collapsed.has(scope.path)
@@ -134,6 +134,7 @@ export function ScopeTree({
             direction="row"
             spacing={0.5}
             data-testid={`scope-${scope.path}`}
+            data-guide="org.tree.row"
             data-depth={depth}
             sx={{
               alignItems: 'center',

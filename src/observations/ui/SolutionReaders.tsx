@@ -167,7 +167,7 @@ export function SolutionReader(props: SolutionReaderProps) {
         {canEdit && (
           <>
             <Button size="small" variant="outlined" onClick={props.onAddress}>{s('solution.addressCause')}</Button>
-            <Button size="small" variant="outlined" onClick={props.onPlanExperiment}>{s('solution.planExperiment')}</Button>
+            <Button size="small" variant="outlined" onClick={props.onPlanExperiment} data-guide="solution.planExperiment">{s('solution.planExperiment')}</Button>
             {solution.state !== 'adopted' && <Button size="small" onClick={props.onDrop} data-testid="solution-drop">{s('solution.drop')}</Button>}
             <Button size="small" color="error" onClick={props.onDelete}>{s('observation.delete')}</Button>
           </>
@@ -340,7 +340,7 @@ export function SolutionReader(props: SolutionReaderProps) {
                       <Box component="span" sx={{ flex: 1 }}>{s(GATE_LABEL[one.item])}</Box>
                       {!one.ok && canEdit && one.item === 'experimentPlanned' && <Button size="small" onClick={props.onPlanExperiment}>{s('solution.planExperiment')}</Button>}
                       {!one.ok && canEdit && one.item === 'decisionAccepted' && !solution.decision && props.onDecide && (
-                        <Button size="small" onClick={props.onDecide} data-testid="solution-decide">{s('solution.proposeDecision')}</Button>
+                        <Button size="small" onClick={props.onDecide} data-testid="solution-decide" data-guide="solution.decide">{s('solution.proposeDecision')}</Button>
                       )}
                     </Box>
                   ))}

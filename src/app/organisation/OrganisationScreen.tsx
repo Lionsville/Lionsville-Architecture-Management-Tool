@@ -659,7 +659,7 @@ function BoardsTable({ boards, onOpen, onAdd, onAddSheet, onAddMap, onAddTechnol
   const [newMenu, setNewMenu] = useState<HTMLElement | null>(null)
   const pick = (make: () => void) => () => { setNewMenu(null); make() }
   return (
-    <Box sx={{ mb: 4 }} data-testid="boards">
+    <Box sx={{ mb: 4 }} data-testid="boards" data-guide="org.boards">
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 1 }}>
         <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, flex: 1, textTransform: 'uppercase' }}>
           {s('org.boards')}
@@ -670,7 +670,7 @@ function BoardsTable({ boards, onOpen, onAdd, onAddSheet, onAddMap, onAddTechnol
           onClick={(event) => setNewMenu(event.currentTarget)}
           aria-haspopup="menu"
           aria-expanded={Boolean(newMenu)}
-          data-testid="new-board"
+          data-testid="new-board" data-guide="org.newBoard"
         >
           {s('org.newBoard')}
         </Button>

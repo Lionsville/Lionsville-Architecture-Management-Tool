@@ -85,7 +85,7 @@ export function AnalysisPicture({ analysis, shared, selectedKey, onSelect, onMen
         height={height}
         role="img"
         aria-label={s('observation.tabAnalysis')}
-        data-testid="analysis-picture"
+        data-testid="analysis-picture" data-guide="observations.picture"
         style={{ display: 'block', fontFamily: theme.typography.fontFamily }}
       >
         {/* lane headings */}

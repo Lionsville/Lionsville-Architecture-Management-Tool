@@ -186,9 +186,9 @@ export function ObservationReader(props: ObservationReaderProps) {
         <Box sx={{ flex: 1 }} />
         {canEdit && (
           <>
-            <Button size="small" variant="outlined" onClick={props.onSeenAgain} data-testid="observation-seen-again">{s('observation.seenAgain')}</Button>
+            <Button size="small" variant="outlined" onClick={props.onSeenAgain} data-testid="observation-seen-again" data-guide="observation.seenAgain">{s('observation.seenAgain')}</Button>
             <Button size="small" variant="outlined" onClick={props.onLink}>{s('observation.link')}</Button>
-            <Button size="small" onClick={props.onMerge}>{s('observation.merge')}</Button>
+            <Button size="small" onClick={props.onMerge} data-guide="observation.merge">{s('observation.merge')}</Button>
             {props.canShare && (
               <Tooltip title={s('observation.shareHelp')}>
                 <Button size="small" onClick={() => props.onShare(!observation.shared)} data-testid="observation-share">
@@ -206,7 +206,7 @@ export function ObservationReader(props: ObservationReaderProps) {
         {fromScope && !readOnly && !mergedInto && !archived && (
           <>
             <Button size="small" variant="outlined" onClick={props.onLink}>{s('observation.link')}</Button>
-            <Button size="small" onClick={props.onMerge}>{s('observation.merge')}</Button>
+            <Button size="small" onClick={props.onMerge} data-guide="observation.merge">{s('observation.merge')}</Button>
           </>
         )}
         <ToggleButtonGroup exclusive size="small" value={mode} onChange={(_e, value: Mode | null) => switchMode(value)}>

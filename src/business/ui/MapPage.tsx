@@ -156,7 +156,7 @@ export function MapPage(props: MapPageProps) {
         )}
         <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{map?.name ?? t('map.page')}</Typography>
         {laidOut && laidOut.rows.length > 0 && (
-          <Typography data-testid="map-summary" sx={{ fontSize: 11, color: 'text.secondary', ml: 1 }}>
+          <Typography data-testid="map-summary" data-guide="map.summary" sx={{ fontSize: 11, color: 'text.secondary', ml: 1 }}>
             {t('map.summary', laidOut.counts)}
           </Typography>
         )}
@@ -239,7 +239,7 @@ function Grid({ laidOut, onSelect, onOpen, openable, t }: {
   return (
     <Box
       component="table"
-      data-testid="map-grid"
+      data-testid="map-grid" data-guide="map.grid"
       sx={{
         borderCollapse: 'separate', borderSpacing: 0, fontSize: 11.5,
         '& th, & td': { p: 0, borderBottom: line, whiteSpace: 'nowrap' },

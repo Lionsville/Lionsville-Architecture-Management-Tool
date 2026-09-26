@@ -35,7 +35,7 @@ export function NeedsAttention({ items, onOpen, s }: {
   if (items.length === 0) return null
   const shown = unfolded ? items : items.slice(0, SHOWN_FOLDED)
   return (
-    <Box sx={{ mb: 4 }} data-testid="needs-attention">
+    <Box sx={{ mb: 4 }} data-testid="needs-attention" data-guide="org.attention">
       <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, mb: 1, textTransform: 'uppercase', color: 'warning.main' }}>
         {s('org.attention')}
       </Typography>
@@ -61,7 +61,7 @@ export function NeedsAttention({ items, onOpen, s }: {
         ))}
       </Stack>
       {items.length > shown.length && (
-        <Button size="small" onClick={() => setUnfolded(true)} data-testid="attention-more" sx={{ mt: 0.5, fontSize: 11 }}>
+        <Button size="small" onClick={() => setUnfolded(true)} data-testid="attention-more" data-guide="org.attentionMore" sx={{ mt: 0.5, fontSize: 11 }}>
           {s('org.attentionMore', { count: items.length })}
         </Button>
       )}

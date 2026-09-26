@@ -211,7 +211,7 @@ export function RoadmapPage(props: RoadmapPageProps) {
         <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{t('roadmap.title')}</Typography>
         <Box sx={{ flex: 1 }} />
         {!readOnly && (
-          <Button size="small" variant="outlined" onClick={() => setNewTitle('')}>
+          <Button size="small" variant="outlined" onClick={() => setNewTitle('')} data-guide="roadmap.newPlan">
             {t('roadmap.newPlan')}
           </Button>
         )}
@@ -481,7 +481,7 @@ export function RoadmapPage(props: RoadmapPageProps) {
                 </>
               )}
 
-              <Box sx={{ mt: 3 }}>
+              <Box sx={{ mt: 3 }} data-guide="roadmap.findings">
                 <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary' }}>
                   {t('check.title')}
                 </Typography>

@@ -322,7 +322,7 @@ export function AdrPage(props: AdrPageProps) {
           </Typography>
           <Box sx={{ flex: 1 }} />
           {!readOnly && (
-            <Button size="small" variant="contained" onClick={() => setCreating(true)}>
+            <Button size="small" variant="contained" onClick={() => setCreating(true)} data-guide="decisions.new">
               + {s('adr.new')}
             </Button>
           )}
@@ -365,7 +365,7 @@ export function AdrPage(props: AdrPageProps) {
           </Box>
 
           {/* the list */}
-          <Box data-testid="adr-list" sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, borderRight: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
+          <Box data-testid="adr-list" data-guide="decisions.list" sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, borderRight: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
             <Box sx={{ p: 1.5, borderBottom: 1, borderColor: 'divider' }}>
               <TextField
                 fullWidth
@@ -413,7 +413,7 @@ export function AdrPage(props: AdrPageProps) {
                 scope answers for, and the same way out. */}
             {selected && ancestorAt(scopeOfRecord(selected)) && (
               <Box
-                data-testid="adr-from-ancestor"
+                data-testid="adr-from-ancestor" data-guide="decisions.fromAbove"
                 sx={{
                   display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 1,
                   bgcolor: 'action.hover', borderBottom: 1, borderColor: 'divider',
