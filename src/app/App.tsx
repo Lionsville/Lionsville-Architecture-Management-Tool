@@ -1618,57 +1618,55 @@ export function App({
             // one project and must not survive into another.
             key={`${project.path}#${reloadKey}`}
             project={project}
-            projects={workspaceStore}
-            index={tree.index}
-            watch={watchOpenProject}
-            // Two facts about where work is kept that the workspace reads as
-            // its own: whether it may be written at all, and what this source
-            // means by the words on the bar.
-            readOnly={sourceIsReadOnly(source)}
-            sourceStatus={sourceStatus}
-            onSourceWork={onSourceWork}
-            onScopeSession={takeScopeSession}
-            commands={bus.on}
-            hostMenu={hostMenu}
-            overflow={hostMenu ? undefined : {
-              ...overflowSource,
-              themeMode: prefs.themeMode,
-              can: { folders: Boolean(onChooseWorkingDirectory), scope: true },
-              onCommand: bus.send,
+            source={{
+              store: workspaceStore,
+              watch: watchOpenProject,
+              // Two facts about where work is kept that the workspace reads as
+              // its own: whether it may be written at all, and what this source
+              // means by the words on the bar.
+              readOnly: sourceIsReadOnly(source),
+              status: sourceStatus,
+              onWork: onSourceWork,
+              onSession: takeScopeSession,
+              onResult: reportStorage,
             }}
-            onUnsavedWork={onUnsavedWork}
-            history={history}
-            onSnapshotTaken={sync.afterSnapshot}
-            onAgentSession={registerAgentSession}
-            agentBar={agentBar}
-            documents={documents}
-            askPassword={password.askPassword}
-            landing={openInto.prompts}
-            chooseFolder={onChooseFolderForWorkingFile}
-            notify={toasts.notify}
-            onStorageResult={reportStorage}
-            s={s}
-            language={prefs.language}
-            editorPreferences={prefs.preferences}
-            onEditorPreferencesChange={prefs.savePreferences}
-            onGoHome={goHome}
-            crumbs={crumbs}
-            onOpenScope={openScopeAt}
-            scopes={organisation.tree}
-            models={readTreeModels}
-            workingSet={readWorkingSet}
-            onAdoptScopes={adoptScopes}
-            onOpenSettings={organisation.refresh}
-            onTreeChanged={treeChanged}
-            onApplySettings={applyProjectSettings}
-            makeId={makeId}
-            ancestorDecisions={ancestorDecisions}
-            groupName={groupName}
-            groupClient={groupClient}
-            diagnostics={diagnostics}
-            hostControls={hostControls}
-            initialPage={initialPage}
-            windowChrome={windowChrome}
+            tree={{
+              index: tree.index,
+              scopes: organisation.tree,
+              ancestorDecisions,
+              groupName,
+              groupClient,
+              models: readTreeModels,
+              workingSet: readWorkingSet,
+              onAdoptScopes: adoptScopes,
+              onChanged: treeChanged,
+            }}
+            navigation={{ crumbs, onGoHome: goHome, onOpenScope: openScopeAt, initialPage }}
+            settings={{ onOpen: organisation.refresh, onApply: applyProjectSettings }}
+            host={{
+              commands: bus.on,
+              hostMenu,
+              overflow: hostMenu ? undefined : {
+                ...overflowSource,
+                themeMode: prefs.themeMode,
+                can: { folders: Boolean(onChooseWorkingDirectory), scope: true },
+                onCommand: bus.send,
+              },
+              onUnsavedWork,
+              windowChrome,
+              controls: hostControls,
+              diagnostics,
+            }}
+            files={{
+              documents,
+              askPassword: password.askPassword,
+              landing: openInto.prompts,
+              chooseFolder: onChooseFolderForWorkingFile,
+            }}
+            snapshots={{ history, onTaken: sync.afterSnapshot }}
+            agent={{ onSession: registerAgentSession, bar: agentBar }}
+            shell={{ s, language: prefs.language, notify: toasts.notify, makeId }}
+            preferences={{ initial: prefs.preferences, onChange: prefs.savePreferences }}
           />
         ) : (
           <OrganisationScreen

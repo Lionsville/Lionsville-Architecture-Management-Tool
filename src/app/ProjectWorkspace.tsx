@@ -22,10 +22,8 @@ import type { EditorHandle, EditorOwnership, PageView, StandInNote } from '../ed
 import { RendererRefused } from '../agent/renderer'
 import type { RendererView } from '../agent/renderer'
 import type { Destination } from '../agent/screen'
-import type { Language, Translate } from '../i18n'
-import type { ScopeModel, ScopeSnapshot, ScopeSummary } from '../projects/scope'
+import type { ScopeSnapshot } from '../projects/scope'
 import type { ScopePath } from '../projects/scopePath'
-import type { ScopeIndex } from '../projects/scopeIndex'
 import { FIXED_ON_A_STANDIN, mayApplyPatch, mayEdit } from '../projects/mayEdit'
 import { CHECK_LABEL, documentFindings, identityFindings, offeredBeyond } from '../projects/checks'
 import { technologyRows } from '../projects/technologyRegister'
@@ -40,15 +38,10 @@ import {
 import type { DesignElement, ElementId, PlatformDescription, Relation, DesignDiagram, SharedElsewhere } from '../model'
 import { transitionLabel } from '../model/transition'
 import { formatAdrNumber, newAdr, nextAdrNumber } from '../decisions/adr'
-import type { EditorPreferences } from '../editor'
 import type { Adr } from '../decisions/adr'
-import type { AncestorRecords } from '../decisions/adrScope'
 import type { SearchHit } from '../search/search'
 import type { WindowChrome } from '../platform/windowChrome'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
-import type { SourceStatus, SourceWork, SourceWorkChanged } from '../platform/sourceProvider'
-import type { HostCommand } from '../platform/hostCommands'
-import type { ProjectHistory } from '../ports/ProjectHistory'
 import { ConfirmDialog } from '../widgets/ConfirmDialog'
 import { AdrPage } from '../decisions/ui/AdrPage'
 import { ObservationsPage } from '../observations/ui/ObservationsPage'
@@ -63,12 +56,9 @@ import { MoveRecordDialog } from './dialogs/MoveRecordDialog'
 import { ShellDialogs } from './dialogs/ShellDialogs'
 import { ErrorBoundary } from './ErrorBoundary'
 import { messageFor } from './messageFor'
-import type { CrashTrail } from './ErrorBoundary'
-import type { HostControls } from '../ports/HostControls'
 import { GlobalSearchDialog } from '../search/ui/GlobalSearchDialog'
 import { ProjectSettingsDialog } from './ProjectSettingsDialog'
 import type { ProjectSettings } from './ProjectSettingsDialog'
-import type { InitialPage } from './App'
 import { renderMarkdown } from '../documentation/ui/renderMarkdown'
 import { PlanPage, ReplaceDialog, RoadmapPage } from '../roadmap'
 import { MapPage, SheetPage } from '../business'
@@ -78,12 +68,9 @@ import type { SheetHandle } from '../business'
 import { documentsUsing, imageSrcFile } from '../documentation'
 import type { MarkdownRenderOptions } from '../documentation'
 import { ShellToolbar } from './ShellToolbar'
-import type { Crumb, ToolbarAgent, ToolbarOverflow } from './ShellToolbar'
 import { useDocumentSession } from './useDocumentSession'
-import type { ProjectSaver } from './useDocumentSession'
 import type { WorkspaceAgentView } from './useAgentShell'
 import { useDiagramActions } from './useDiagramActions'
-import type { MakeId } from './useDiagramActions'
 import { useFilePicker } from './useFilePicker'
 import { useGestures } from './useGestures'
 import { useModelSession } from './useModelSession'
@@ -100,212 +87,8 @@ import { useMap } from './useMap'
 import { useTechnologyLandscape } from './useTechnologyLandscape'
 import { usePlatformReport } from './usePlatformReport'
 import { useProjectFiles } from './useProjectFiles'
-import type { ProjectFileChannel } from './useProjectFiles'
-import type { AskPassword } from './usePasswordPrompt'
-import type { ChooseFolderForWorkingFile, LandingPrompts } from './workingFileFlows'
 import { useNearlyFullNotice } from './useStorageNotice'
-import type { StorageNotice } from './useStorageNotice'
-import type { Notify } from './useToasts'
-
-export type ProjectWorkspaceProps = {
-  project: ScopeSnapshot
-  projects: ProjectSaver
-  /**
-   * The organisation's index, read-only (ADR-0012 §2, §10).
-   *
-   * Held above this workspace because it outlives a scope switch and because
-   * the first screen reads it too. Everything below takes what it needs from
-   * it: the id policy the ids spoken for, `mayEdit` who answers for one, and a
-   * sheet at the root the `supports` rows a landscape wrote.
-   */
-  index: ScopeIndex
-  /**
-   * Somebody else changed this project's files. Bound to this project's ref by
-   * the caller, and absent in a browser tab, where nothing can watch.
-   */
-  watch?: (onChanged: () => void) => () => void
-  /**
-   * May work here be written?
-   *
-   * A fact about the source this scope is kept in, read rather than assumed —
-   * it was the constant `false` until a source could be somewhere other than a
-   * folder this machine owns, and for all three sources that ship it still is.
-   */
-  readOnly?: boolean
-  /**
-   * What this source means by *dirty*, *saving*, *clean*, *external-changed*
-   * and *conflict*. Absent where the document's own machine is the whole
-   * answer, which is what a file is.
-   */
-  sourceStatus?: (work: SourceWork) => SourceStatus
-  /**
-   * The source says its answer to {@link ProjectWorkspaceProps.sourceStatus}
-   * has moved. Absent where the document's own machine is the whole answer.
-   */
-  onSourceWork?: SourceWorkChanged
-  /**
-   * Whoever answers for the source wants the session over this scope
-   * (`composition.ts`). Handed over once it exists and taken back on unmount,
-   * the way the agent's view is; absent for all three sources that ship.
-   */
-  onScopeSession?: (session: ScopeSession) => (() => void) | void
-  /**
-   * Menu items, the web's overflow and files the OS opened us with — the ones
-   * about the project that is open. The shell above takes the ones about
-   * folders and preferences; subscribing in both places is how each layer
-   * handles what it owns.
-   */
-  commands?: (listener: (command: HostCommand) => void) => () => void
-  /** The host has a menu bar of its own, which carries ⌘Z and ⌘⇧Z (ADR-0005, amended). */
-  hostMenu?: boolean
-  /**
-   * The menu, for a host with no menu bar. Absent on the desktop. The
-   * workspace fills in the one capability it knows — whether there is a
-   * history to offer — and passes the rest through.
-   */
-  overflow?: Omit<ToolbarOverflow, 'can'> & { can: Omit<ToolbarOverflow['can'], 'history'> }
-  /**
-   * Tell the host whether closing the window would lose something. Absent in a
-   * browser tab, where the window is ours and `beforeunload` says it.
-   */
-  onUnsavedWork?: (unsaved: boolean) => void
-  /**
-   * The snapshots of the folder this project is in. Absent in a browser tab and
-   * until a folder is chosen — there is nothing for a history to be a history
-   * of — and the menu offers nothing when it is.
-   */
-  history?: ProjectHistory
-  /** A snapshot succeeded. The shell decides whether that means a push. */
-  onSnapshotTaken?: () => void
-  /**
-   * The agent's view of this session (ADR-0007, ADR-0019), handed up as
-   * soon as it exists and taken back on unmount. The shell binds the seam,
-   * because the subscription must outlive a scope switch and an agent's
-   * `app.open` is what causes one; what the workspace owns is the session,
-   * the page over the canvas and how to show another.
-   */
-  onAgentSession?: (view: WorkspaceAgentView | undefined) => void
-  /** The glyph on the bar: the server's state, and the way to the dialog. */
-  agentBar?: ToolbarAgent
-  documents: ProjectFileChannel
-  /** The shell's one password dialog, behind a promise (ADR-0023). */
-  askPassword: AskPassword
-  /** Where a working file goes, asked before it lands (ADR-0025). */
-  landing: LandingPrompts
-  /** A folder it may become; absent where none can be chosen. */
-  chooseFolder?: ChooseFolderForWorkingFile
-
-  notify: Notify
-  onStorageResult: StorageNotice
-  s: Translate
-  language: Language
-  editorPreferences: unknown
-  onEditorPreferencesChange: (next: EditorPreferences) => void
-
-  /**
-   * Leave this scope for a home: one above it from a crumb on the bar, or its
-   * own when a page closes over a canvas that draws nothing. Where a home is
-   * the shell's state, the same as which scope is open.
-   */
-  onGoHome: (path: ScopePath) => void
-  /** Every scope above this one, root first, for the bar (`crumbsFor`). */
-  crumbs: readonly Crumb[]
-  /**
-   * Open another scope by its path — *Open …* beside a field another scope
-   * answers for (ADR-0012 §10).
-   *
-   * The shell's, because opening a scope is the shell's: it reads it, makes it
-   * the one that is open, and remembers it. This workspace neither loads nor
-   * lists. Absent where there is nowhere to go, and the button is then not
-   * drawn rather than drawn and dead.
-   */
-  onOpenScope?: (path: ScopePath, page?: InitialPage) => void
-  /** The tree as it stands, for the settings dialog's "filed under" select. */
-  scopes: ScopeSummary
-  /**
-   * Every scope's records, read when a gesture is asked for (ADR-0012 §10).
-   *
-   * Not the index, which keeps a summary: deciding whether the scope a
-   * definition would move into already answers for the id needs the record.
-   * Read on the gesture rather than held, because a gesture is a decision and
-   * not a keystroke. Absent in a test, and nothing is then offered.
-   */
-  models?: () => Promise<ScopeModel[]>
-  /**
-   * Every scope in full, read when an export asks (ADR-0018). Beside `models`
-   * and for the opposite reason: that one is the thin read the index wants,
-   * this is the whole thing the working file is made of.
-   */
-  workingSet?: () => Promise<ScopeSnapshot[]>
-  /**
-   * Write the scopes an opened working file brought with it (ADR-0018). The
-   * shell's, because it owns the store; absent where there is none, and such a
-   * file is then refused rather than half-opened.
-   */
-  onAdoptScopes?: (scopes: readonly ScopeSnapshot[]) => Promise<void>
-  /** Called when the dialog opens, so the caller can refresh that list. */
-  onOpenSettings: () => void
-  /**
-   * A gesture changed the tree: read the listing and the index again
-   * (ADR-0012 §10). The shell owns both, and a gesture is the one thing this
-   * workspace does that changes a scope other than the one it has open.
-   */
-  onTreeChanged?: () => void
-  /**
-   * Apply the settings to the project as it stands, and hand back what was
-   * saved so the session can take it on. Nothing comes back from a move: that
-   * changes the ref, and this workspace is remounted on it.
-   */
-  onApplySettings: (
-    settings: ProjectSettings,
-    current: ScopeSnapshot,
-  ) => Promise<ScopeSnapshot | undefined>
-  makeId: MakeId
-  /**
-   * The records of every scope above this one, nearest first (ADR-0012 §7).
-   *
-   * One list, read up the tree. They are not this scope's to change — a record
-   * is edited where it lives — so they arrive and nothing goes back: the
-   * decisions page shows them in a *From …* section and offers to open the
-   * scope that holds them.
-   */
-  ancestorDecisions: readonly AncestorRecords[]
-  /**
-   * What the organisation this scope sits in is called, walked up the tree
-   * (`projects/scopeLabel.ts`). Shown on the bar and above a description.
-   */
-  groupName: string
-  /**
-   * Who drawings made here are addressed to. Absent = the organisation's name,
-   * which is what the title block said before a scope could say otherwise.
-   */
-  groupClient?: string
-  /**
-   * For the boundary around the canvas. The editor is the largest thing in the
-   * app and the likeliest to throw; catching it here is what keeps the toolbar,
-   * the save menu and the pages beside it alive when it does.
-   */
-  diagnostics: CrashTrail
-  hostControls: HostControls
-  /** Today as `yyyy-mm-dd`, for a decision's dates. Injected so a test can pin it. */
-  today?: () => string
-  /**
-   * Which page to show the moment this appears, when it was opened for one.
-   *
-   * The organisation screen's cards open the ROOT scope, which usually draws
-   * nothing at all: its decisions, its plans and its business architecture are
-   * what it holds, and a canvas is not. Without this a person pressing *Open*
-   * on a card would land on an empty board and have to find the page again on
-   * the bar. Absent is the ordinary case — a landscape opened on its canvas.
-   *
-   * `sheet` with no id means "the one this scope is about to be given": the
-   * seeding is a `Command` through the session like any other, so it is one
-   * undo step and one Activity line rather than a write from the screen.
-   */
-  initialPage?: InitialPage
-  /** Passed straight to the toolbar, which is the bar the window borrows. */
-  windowChrome?: WindowChrome
-}
+import type { ProjectWorkspaceProps } from './workspaceProps'
 
 function localToday(): string {
   const now = new Date()
@@ -314,15 +97,26 @@ function localToday(): string {
 }
 
 export function ProjectWorkspace({
-  project, projects, index, watch, readOnly: sourceReadOnly = false, sourceStatus, onSourceWork, onScopeSession,
-  commands, hostMenu = false, overflow, onUnsavedWork, history: projectHistory,
-  onSnapshotTaken, onAgentSession, agentBar, documents, askPassword, landing, chooseFolder, notify, onStorageResult, s, language, editorPreferences, onEditorPreferencesChange,
-  onGoHome, crumbs, onOpenScope, scopes, models, workingSet, onAdoptScopes,
-  onOpenSettings, onTreeChanged = () => {},
-  onApplySettings, makeId, ancestorDecisions,
-  groupName, groupClient,
-  diagnostics, hostControls, today = localToday, initialPage, windowChrome,
+  project, source, tree, navigation, settings, host, files: fileSeams, snapshots: snapshotSeams, agent, shell, preferences,
 }: ProjectWorkspaceProps) {
+  const {
+    store: projects, watch, readOnly: sourceReadOnly = false, status: sourceStatus, onWork: onSourceWork,
+    onSession: onScopeSession, onResult: onStorageResult,
+  } = source
+  const {
+    index, scopes, ancestorDecisions, groupName, groupClient, models, workingSet, onAdoptScopes,
+    onChanged: onTreeChanged = () => {},
+  } = tree
+  const { crumbs, onGoHome, onOpenScope, initialPage } = navigation
+  const { onOpen: onOpenSettings, onApply: onApplySettings } = settings
+  const {
+    commands, hostMenu = false, overflow, onUnsavedWork, windowChrome, controls: hostControls, diagnostics,
+  } = host
+  const { documents, askPassword, landing, chooseFolder } = fileSeams
+  const { history: projectHistory, onTaken: onSnapshotTaken } = snapshotSeams
+  const { onSession: onAgentSession, bar: agentBar } = agent
+  const { s, language, notify, makeId, today = localToday } = shell
+  const { initial: editorPreferences, onChange: onEditorPreferencesChange } = preferences
   /**
    * Whether anything here may be written: not where the source says so, and
    * not in a scope a file of which did not read (`ScopeSnapshot.unreadable`) —
