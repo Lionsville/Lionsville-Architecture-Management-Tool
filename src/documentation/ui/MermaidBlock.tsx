@@ -49,7 +49,11 @@ const drawn = remembering<string>(DIAGRAMS_REMEMBERED)
 
 export const renderWithMermaid: MermaidRenderer = async (code, theme) => {
   const mermaid = (await import('mermaid')).default
-  mermaid.initialize({ startOnLoad: false, theme, securityLevel: 'strict', fontFamily: 'inherit' })
+  // Mermaid 12 made ELK and a new look the defaults; `dagre` and `classic` keep
+  // a diagram someone already wrote looking the way it did when they wrote it.
+  mermaid.initialize({
+    startOnLoad: false, theme, securityLevel: 'strict', fontFamily: 'inherit', layout: 'dagre', look: 'classic',
+  })
   sequence += 1
   const { svg } = await mermaid.render(`lv-mermaid-${sequence}`, code)
   return svg
