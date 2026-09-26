@@ -14,7 +14,18 @@ import { ESLint } from 'eslint'
 import { describe, expect, it } from 'vitest'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
-const eslint = new ESLint({ cwd: root })
+
+// The text is handed over, not read from disk, and typescript-eslint must
+// parse that text. Where `CI=true` it infers a single run, builds the
+// `project` program (main's, `tsconfig.electron.json`) once from the files on
+// disk and parses those instead — the file at `electron/main/log.ts` rather
+// than the text asked about, which a rule then walks with the text's lines
+// and falls over. Saying it is not a single run makes the answer the same on
+// every machine.
+const eslint = new ESLint({
+  cwd: root,
+  overrideConfig: { languageOptions: { parserOptions: { disallowAutomaticSingleRunInference: true } } },
+})
 
 const HEADER = '// SPDX-License-Identifier: AGPL-3.0-only\n// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV\n\n'
 
