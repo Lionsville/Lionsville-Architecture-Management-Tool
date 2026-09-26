@@ -221,6 +221,10 @@ the future diagram this record started from is therefore *Duplicate as of…* on
 the diagram tab — a copy of the placements, a date, and a tidy pass — and it
 cannot drift, because there is nothing in it to drift.
 
+> **Amended by ADR-0027.** Looking at a board on another day is no longer a
+> step: the window holds the look, and *Save* in the date control is the
+> command below. The rest of this paragraph is the original text.
+
 Setting the date is an ordinary undoable step with a coalesce key, so dragging
 a date control is one entry in Activity and one ⌘Z, exactly as typing a name
 is. There is deliberately no second, temporary "peek" mechanism: two ways to
@@ -453,7 +457,8 @@ sanitising and a Content Security Policy argument back on the table for no gain.
   against reality; a landscape whose dates nobody maintains says confident
   things about 2028 that are false. The roadmap's checks are the only defence
   and they only catch contradictions, never staleness.
-* **`asOf` dirties the document.** Changing what a diagram shows is an edit,
+* **`asOf` dirties the document** — no longer: ADR-0027 made looking a view
+  state and saving the one edit. Changing what a diagram shows is an edit,
   and looking at next year and looking away leaves an undo step behind. That is
   the price of having one mechanism instead of two, and ⌘Z is the remedy.
 * **An image is not undoable.** Stated above; it is the logo wart inherited

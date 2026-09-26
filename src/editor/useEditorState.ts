@@ -434,10 +434,11 @@ export interface EditorActions {
   /**
    * The day the active diagram shows (ADR-0009); `undefined` means today.
    *
-   * Undoable, unlike the routing mode above, and coalesced per diagram: what a
-   * board shows IS content — a "after the cutover" view is a thing somebody
-   * made — and stepping a date control should leave one entry in Activity
-   * rather than one per day stepped through.
+   * Undoable, unlike the routing mode above: the day a board is saved as IS
+   * content — an "after the cutover" view is a thing somebody made. It is the
+   * *Save* in the date control and nothing else (ADR-0027): moving the date to
+   * look around is the viewer's and never reaches here. Coalesced per diagram
+   * all the same, so two saves in a row are one entry in Activity.
    */
   setAsOf(day: string | undefined): void;
 }

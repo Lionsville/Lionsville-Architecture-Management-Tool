@@ -17,6 +17,7 @@ import type { IdPolicy } from '../model/keys';
 import type { Language } from '../i18n/strings';
 import type { MarkdownRenderOptions } from '../documentation/documentation';
 import type { EditorPreferences } from './preferences';
+import type { ShownDays } from './useShownDays';
 import type { StandInNote } from './nodes/nodeData';
 import type {
   DesignElement, DesignModel, DiagramSettings, DocumentImage, ElementId, Layer7Zone,
@@ -318,6 +319,13 @@ export interface EditorDocument {
   model: DesignModel;
   activeDiagramId: string;
   onActiveDiagramChange(diagramId: string): void;
+  /**
+   * The day each board is being looked at, where somebody has moved it off
+   * the day the board is saved as (ADR-0027). The host holds it when another
+   * page of its own moves it too — the roadmap's scrubber — so the two cannot
+   * disagree. Absent = the editor holds its own, for as long as it is mounted.
+   */
+  viewing?: ShownDays;
 }
 
 /**

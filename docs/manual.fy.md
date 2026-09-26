@@ -714,8 +714,11 @@ de hybride faze fan in ferfanging.
 *Hjoed* oant jo in dei neame, en dan stiet dy dei der en ljochtet er op, sadat
 in boerd dat 2028 toant net liket op in boerd dat no toant. Elk kaartsje tekenet
 de faze dêr't it op dy dei yn sit, en in line mei in finster ferskynt allinnich
-dêrbinnen. De dei feroarje is in gewoane bewurking: it is ien rigel yn
-Aktiviteit en ⌘Z nimt it werom.
+dêrbinnen. In dei kieze feroaret allinnich wat jo finster toant: der wurdt neat bewarre,
+nimmen oars sjocht it, en in stippele râne om de knop seit dat. Wolle jo dat it
+boerd foar elkenien op dy dei iepenet, kies dan **Bewarje** ûnder de datum — dat
+is wol in bewurking, ien rigel yn Aktiviteit, en ⌘Z nimt it werom. **Hjoed
+toane** en dan **Bewarje** set in datearre boerd wer op de kalinder.
 
 Sa wurdt in takomstich diagram makke. Rjochtsklik op in tabblêd en kies
 **Duplisearje per datum…**, kies in dei, en jo hawwe in twadde boerd fan
@@ -741,7 +744,8 @@ ferpleatst elke line in datum jout.
 
 De skúf lâns de boppekant ferpleatst dat boerd. Sleep him en it tekenflak
 derefter folget, sadat de plaat en de as it net ûniens wêze kinne oer hokker
-dei it giet.
+dei it giet. Krekt as de datumknop sjocht er allinnich: **Bewarje** op de balke
+fan it boerd hâldt in dei fêst.
 
 ### Plannen
 

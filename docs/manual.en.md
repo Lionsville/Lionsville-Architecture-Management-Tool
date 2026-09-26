@@ -692,8 +692,11 @@ replacement.
 *Today* until you name a day, and then reads that day and highlights itself, so
 a board showing 2028 does not look like a board showing now. Every card draws
 the phase it is in on that day, and a line with a window appears only inside it.
-Changing the day is an ordinary edit: it is one entry in Activity and ⌘Z takes
-it back.
+Picking a day only changes what your window shows: nothing is saved, nobody else
+sees it, and a dashed outline round the button says so. To make the board open on
+that day for everybody, choose **Save** under the date — that one is an edit, one
+entry in Activity, and ⌘Z takes it back. **Show today** and then **Save** puts a
+dated board back on the calendar.
 
 That is how a future diagram is made. Right-click a tab and choose **Duplicate
 as of…**, pick a day, and you have a second board of the same landscape as it
@@ -717,6 +720,7 @@ moves every interface dates every line.
 
 The slider along the top moves that board. Drag it and the canvas behind follows,
 so the picture and the axis cannot disagree about which day is under discussion.
+Like the date control, it only looks: **Save** on the board's bar keeps a day.
 
 ### Plans
 

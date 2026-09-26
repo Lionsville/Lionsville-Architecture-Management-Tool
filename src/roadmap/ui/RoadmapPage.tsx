@@ -12,10 +12,10 @@
  * fact about the landscape.
  *
  * The scrubber is the join between this page and the canvas behind it: dragging
- * it sets the open diagram's `asOf`, so the board and the axis cannot disagree
- * about which day is being discussed. That is an ordinary undoable command, not
- * a view state, for the reason ADR-0009 gives: one mechanism cannot contradict
- * itself.
+ * it moves the day the open board is being looked at, so the board and the axis
+ * cannot disagree about which day is being discussed. It is the same look the
+ * board's date control makes — one mechanism still, as ADR-0009 wanted — and,
+ * like that one, a view state and never a write (ADR-0027).
  *
  * A fullscreen dialog, and it takes `windowChrome` for the same reason
  * `DocumentationPage` and `AdrPage` do — Electron computes drag regions from
@@ -79,7 +79,7 @@ export type RoadmapActions = {
   addTransition(title: string): void
   /** Read a plan on its own page. */
   onOpenPlan(id: string): void
-  /** Put the board behind this page on a day. */
+  /** Look at the board behind this page on a day; `undefined` is today. Writes nothing. */
   setAsOf(day: string | undefined): void
   /** Show an element on the canvas. */
   onOpenElement(id: ElementId): void

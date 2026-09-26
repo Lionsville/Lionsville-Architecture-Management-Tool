@@ -15,7 +15,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Box from '@mui/material/Box'
-import { EditorRefused, SolutionDesignEditor } from '../editor'
+import { EditorRefused, SolutionDesignEditor, shownAsOf, useShownDays } from '../editor'
 import type { ReactNode } from 'react'
 import type { EditorHandle, EditorOwnership, PageView, StandInNote } from '../editor'
 import { RendererRefused } from '../agent/renderer'
@@ -1012,8 +1012,15 @@ export function ProjectWorkspace({
   // The toolbar's pages are one at a time: opening one closes the others, so
   // the bar reads as tabs rather than stacking pages under each other.
   const showDecision = useCallback((adrId?: string) => setAdrPage({ open: true, adrId }), [])
+  // The day each board is being looked at, which is nobody's write
+  // (ADR-0027): the bar's date control and the roadmap's scrubber move this,
+  // and only *Save* on the bar puts a day on the board.
+  const viewing = useShownDays(useCallback(
+    (id: string) => session.current().diagrams.find((d) => d.id === id)?.asOf,
+    [session],
+  ))
   const plans = usePlans({
-    session, makeId, s,
+    session, makeId, s, viewing,
     navigate: useMemo(() => ({ toElement: focusElement, toDecision: showDecision }), [focusElement, showDecision]),
   })
   // The toolbar's pages are one at a time, and the sheet and the map are two of them.
@@ -1547,6 +1554,7 @@ export function ProjectWorkspace({
             model: session.model,
             activeDiagramId: session.activeDiagramId,
             onActiveDiagramChange: session.setActiveDiagramId,
+            viewing,
           }}
           editing={{ dispatch: session.dispatch, history, ids: session.ids }}
           pages={{ render: renderPage }}
@@ -1691,7 +1699,10 @@ export function ProjectWorkspace({
         onOpenInitiative={onOpenScope ? (scope, id) => onOpenScope(scope, { page: 'plan', id }) : undefined}
         today={todayDay}
         platformTree={ownership.platformTree}
-        asOf={session.model.diagrams.find((d) => d.id === session.activeDiagramId)?.asOf}
+        asOf={(() => {
+          const open = session.model.diagrams.find((d) => d.id === session.activeDiagramId)
+          return open ? shownAsOf(open, viewing.days) : undefined
+        })()}
         readOnly={readOnly}
         actions={plans.roadmapActions}
         onClose={() => { plans.closeRoadmap(); leaveIfNothingToDraw() }}

@@ -776,9 +776,13 @@ was genau die Hybridphase einer Ablösung ist.
 sich *Heute*, bis Sie einen Tag nennen, und dann liest es sich als dieser Tag
 und hebt sich hervor, sodass ein Board, das 2028 zeigt, nicht wie ein Board
 aussieht, das jetzt zeigt. Jede Karte zeichnet die Phase, in der sie an diesem
-Tag ist, und eine Linie mit Zeitfenster erscheint nur innerhalb davon. Den Tag
-zu ändern ist eine gewöhnliche Bearbeitung: sie ist ein Eintrag in Aktivität,
-und ⌘Z nimmt sie zurück.
+Tag ist, und eine Linie mit Zeitfenster erscheint nur innerhalb davon. Einen Tag
+zu wählen ändert nur, was Ihr Fenster zeigt: Es wird nichts gespeichert, niemand
+sonst sieht es, und ein gestrichelter Rahmen um die Schaltfläche sagt das. Soll
+das Board für alle an diesem Tag öffnen, wählen Sie **Speichern** unter dem
+Datum — das ist eine Bearbeitung, ein Eintrag in Aktivität, und ⌘Z nimmt sie
+zurück. **Heute zeigen** und dann **Speichern** stellt ein datiertes Board
+wieder auf den Kalender.
 
 So entsteht ein zukünftiges Diagramm. Klicken Sie mit rechts auf einen Reiter,
 wählen Sie **Duplizieren zum Stand…**, wählen Sie einen Tag, und Sie haben ein
@@ -805,7 +809,8 @@ Schnittstelle verlegt, jede Linie datiert.
 
 Der Schieberegler oben bewegt dieses Board. Ziehen Sie ihn, und die
 Zeichenfläche dahinter folgt, sodass das Bild und die Achse nicht uneins darüber
-sein können, über welchen Tag gesprochen wird.
+sein können, über welchen Tag gesprochen wird. Wie die Datumsschaltfläche
+schaut er nur: **Speichern** in der Leiste des Boards behält einen Tag.
 
 ### Pläne
 

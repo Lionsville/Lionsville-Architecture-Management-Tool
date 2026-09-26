@@ -62,6 +62,7 @@ const project = (m: HostModel = model()): ScopeSnapshot => ({
 /** The real session underneath, so what is pinned is the stack and the model. */
 function mount(initial = project()) {
   const navigate = { toElement: vi.fn(), toDecision: vi.fn() }
+  const viewing = { show: vi.fn() }
   let plans!: Plans
   let session!: ModelSession
   let counter = 0
@@ -71,12 +72,13 @@ function mount(initial = project()) {
     // a create on an id the model already holds is refused `command.taken`,
     // and `tr-1` here would be this fake colliding with `PLAN` rather than
     // anything the hook does. The real `makeId` carries the clock.
-    plans = usePlans({ session, makeId: (p) => `${p}-new-${++counter}`, s: translator('en'), navigate })
+    plans = usePlans({ session, makeId: (p) => `${p}-new-${++counter}`, s: translator('en'), navigate, viewing })
     return null
   }
   render(<Host />)
   return {
     navigate,
+    viewing,
     plans: () => plans,
     model: () => session.current(),
     steps: () => session.history().length,
@@ -95,12 +97,14 @@ describe('the roadmap', () => {
     expect(h.steps()).toBe(1)
   })
 
-  it('puts the board behind the page on a day, as one coalesced step', () => {
+  it('looks at the board behind the page on a day, and writes nothing (ADR-0027)', () => {
     const h = mount()
+    const before = h.model().diagrams[0]?.asOf
     act(() => h.plans().roadmapActions.setAsOf('2027-06-01'))
     act(() => h.plans().roadmapActions.setAsOf('2027-07-01'))
-    expect(h.model().diagrams[0]?.asOf).toBe('2027-07-01')
-    expect(h.steps()).toBe(1)
+    expect(h.viewing.show).toHaveBeenLastCalledWith(h.model().diagrams[0]?.id, '2027-07-01')
+    expect(h.model().diagrams[0]?.asOf).toBe(before)
+    expect(h.steps()).toBe(0)
   })
 
   it('closes before it hands over to the board', () => {

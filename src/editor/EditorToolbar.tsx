@@ -140,12 +140,19 @@ export interface EditorToolbarProps {
   /** What the one-thing overlay may ask about (ADR-0020): this scope's platforms and offerings, by name. */
   overlayCandidates?: readonly { id: ElementId; name: string }[];
   /**
-   * The day the board shows (ADR-0009); absent = today. Set it and the same
-   * single model is drawn as it stood then — which is how a future diagram is
-   * made, rather than by copying the project.
+   * The day the board is drawn on (ADR-0009); absent = today. The same single
+   * model as it stood then — which is how a future diagram is made, rather
+   * than by copying the project.
+   *
+   * Moving it is looking, not writing (ADR-0027): `onAsOfChange` changes what
+   * this window shows and nothing else. `savedAsOf` is the day the board is
+   * saved as, and `onSaveAsOf` makes the day on screen that — absent, the
+   * control only looks, which is what a reader gets.
    */
   asOf?: string;
+  savedAsOf?: string;
   onAsOfChange(day: string | undefined): void;
+  onSaveAsOf?(): void;
   /** In-memory undo/redo (U7); buttons hidden under readOnly, gated on stack depth. */
   onUndo(): void;
   onRedo(): void;
@@ -561,7 +568,12 @@ export function EditorToolbar(props: EditorToolbarProps) {
           </IconButton>
         </span>
       </Tooltip>
-      <AsOfControl asOf={props.asOf} onChange={props.onAsOfChange} readOnly={props.readOnly} />
+      <AsOfControl
+        asOf={props.asOf}
+        savedAsOf={props.savedAsOf}
+        onChange={props.onAsOfChange}
+        onSave={props.readOnly ? undefined : props.onSaveAsOf}
+      />
       <Tooltip title={t('toolbar.lifecycleTip')}>
         <IconButton
           size="small"
@@ -983,34 +995,48 @@ function Breadcrumb({
 }
 
 /**
- * What day the board shows (ADR-0009).
+ * What day the board shows (ADR-0009), and whether that is the board's day or
+ * only this window's (ADR-0027).
  *
  * A button that reads "Today" until somebody names a day, and reads the day —
  * highlighted — once they have. The highlight is the point: a board showing
  * 2028 looks exactly like a board showing now, and a person who has forgotten
  * they set a date will otherwise read a future landscape as the present one.
+ * A day that is only being looked at wears a dashed outline on top of that,
+ * because it is also the one thing on the bar that nobody else sees.
  *
- * Clearing it is a first-class action rather than emptying the field, because
+ * Picking a day looks; it writes nothing, so it is offered to a reader too.
+ * *Save* is the write: it makes the day on screen the one the board opens on
+ * for everybody, and "today" is a day it can save as well — that is how a
+ * board somebody dated goes back to following the calendar.
+ *
+ * Clearing is a first-class action rather than emptying the field, because
  * "no date" and "an unfinished date" are different things and a date input
  * cannot tell you which one it is holding.
  */
 function AsOfControl(
-  { asOf, onChange, readOnly }: {
+  { asOf, savedAsOf, onChange, onSave }: {
     asOf?: string
+    savedAsOf?: string
     onChange(day: string | undefined): void
-    readOnly: boolean
+    onSave?(): void
   },
 ) {
   const { t } = useStrings();
   const theme = useTheme();
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const dated = Boolean(asOf);
+  const looking = asOf !== savedAsOf;
+  const tip = looking
+    ? t('toolbar.asOfLooking', { date: asOf ?? t('toolbar.asOfToday'), saved: savedAsOf ?? t('toolbar.asOfToday') })
+    : dated ? t('toolbar.asOfSet', { date: asOf ?? '' }) : t('toolbar.asOfTodayTip');
   return (
     <>
-      <Tooltip title={dated ? t('toolbar.asOfSet', { date: asOf ?? '' }) : t('toolbar.asOfTodayTip')}>
+      <Tooltip title={tip}>
         <Button
           size="small"
           aria-label={t('toolbar.asOf')}
+          data-looking={looking ? 'true' : undefined}
           onClick={(e) => setAnchor(e.currentTarget)}
           startIcon={<AsOfIcon />}
           sx={{
@@ -1018,8 +1044,10 @@ function AsOfControl(
             textTransform: 'none',
             fontSize: 12,
             fontWeight: dated ? 700 : 500,
-            color: dated ? 'primary.main' : 'text.secondary',
+            color: dated || looking ? 'primary.main' : 'text.secondary',
             backgroundColor: dated ? alpha(theme.palette.primary.main, 0.12) : 'transparent',
+            outline: looking ? `1px dashed ${theme.palette.primary.main}` : 'none',
+            outlineOffset: -1,
           }}
         >
           {asOf ?? t('toolbar.asOfToday')}
@@ -1040,7 +1068,6 @@ function AsOfControl(
             type="date"
             size="small"
             autoFocus
-            disabled={readOnly}
             label={t('toolbar.asOf')}
             value={asOf ?? ''}
             onChange={(e) => onChange(e.target.value || undefined)}
@@ -1048,11 +1075,31 @@ function AsOfControl(
           />
           <Button
             size="small"
-            disabled={readOnly || !dated}
+            disabled={!dated}
             onClick={() => { onChange(undefined); setAnchor(null); }}
           >
             {t('toolbar.asOfClear')}
           </Button>
+          {looking && savedAsOf && (
+            <Button size="small" onClick={() => { onChange(savedAsOf); setAnchor(null); }}>
+              {t('toolbar.asOfBack', { date: savedAsOf })}
+            </Button>
+          )}
+          {looking && (
+            <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
+              {t('toolbar.asOfOnlyHere')}
+            </Typography>
+          )}
+          {onSave && (
+            <Button
+              size="small"
+              variant="outlined"
+              disabled={!looking}
+              onClick={() => { onSave(); setAnchor(null); }}
+            >
+              {dated ? t('toolbar.asOfSave', { date: asOf ?? '' }) : t('toolbar.asOfSaveToday')}
+            </Button>
+          )}
         </Box>
       </Popover>
     </>

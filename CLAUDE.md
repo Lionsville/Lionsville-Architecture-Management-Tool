@@ -196,6 +196,8 @@ src/editor/       The canvas and everything docked to it. React.
                                       is the slot a laid-out view is drawn through
                                       in place of the canvas (ADR-0016)
                     useEditorState    the selection, and gestures said as commands
+                    useShownDays      the day a board is looked at, which is a
+                                      window's and never a command (ADR-0027)
                     testing/          editorHost: the editor over a real reducer
 src/documentation/  Descriptions as documents.
                     documentation     outline, element links, the template

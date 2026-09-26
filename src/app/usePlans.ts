@@ -30,6 +30,7 @@ import type { MakeId } from '../model/keys'
 import { planBodyTemplate } from '../roadmap'
 import type { PlanActions, ReplaceAnswer, RoadmapActions } from '../roadmap'
 import type { ModelSession } from './useModelSession'
+import type { ShownDays } from '../editor/useShownDays'
 
 /** Where a person goes when they leave these pages for something else. */
 export type PlanNavigation = {
@@ -66,8 +67,11 @@ export function usePlans(deps: {
   makeId: MakeId
   s: Translate
   navigate: PlanNavigation
+  /** The day the board behind the page is being looked at (ADR-0027). */
+  viewing: Pick<ShownDays, 'show'>
 }): Plans {
   const { session, makeId, s, navigate } = deps
+  const look = deps.viewing.show
   const [roadmapOpen, setRoadmapOpen] = useState(false)
   const [planId, setPlanId] = useState<string | undefined>(undefined)
   const [replacingId, setReplacingId] = useState<ElementId | undefined>(undefined)
@@ -99,10 +103,16 @@ export function usePlans(deps: {
       setPlanId(id)
     },
     onOpenPlan(id) { setPlanId(id) },
+    /**
+     * The scrubber looks; it does not write (ADR-0027). Dragging it through a
+     * year used to be a step per day it passed, sent to everybody sharing the
+     * scope; now it is the same look the bar's date control makes, and *Save*
+     * there is how the day lands on the board.
+     */
     setAsOf(day) {
       const id = session.currentActiveId()
       if (!id) return
-      session.dispatch({ type: 'diagram.update', id, patch: { asOf: day }, coalesce: `asOf:${id}` })
+      look(id, day)
     },
     onOpenElement(id) { leaveFor(() => navigate.toElement(id)) },
     /**
@@ -123,7 +133,7 @@ export function usePlans(deps: {
       const nameOf = (id: ElementId) => elements.find((element) => element.id === id)?.name ?? id
       session.dispatch(acceptImplied(implied, makeId('c'), nameOf))
     },
-  }), [session, makeId, s, navigate, leaveFor])
+  }), [session, makeId, s, navigate, leaveFor, look])
 
   /**
    * What a plan's page may do (ADR-0010). The dates on an element the plan

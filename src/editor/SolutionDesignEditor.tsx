@@ -102,6 +102,7 @@ import { selectAllContent } from './useEditorState';
 import { useFocusElement } from './useFocusElement';
 import { useAutoLayout } from './useAutoLayout';
 import { useLiveRouting } from './useLiveRouting';
+import { shownAsOf, useShownDays } from './useShownDays';
 
 /**
  * The @lionsville/solution-design editor: toolbar (diagram tabs/breadcrumb,
@@ -307,6 +308,24 @@ function EditorBody(props: SolutionDesignEditorProps) {
 
   const readOnly = props.editing.readOnly ?? false;
   const activeDiagram = state.model.diagrams.find((d) => d.id === props.document.activeDiagramId);
+  /**
+   * The day a person is looking at, which is not a write (ADR-0027). The
+   * host's when it has one, so the roadmap's scrubber and this bar move one
+   * thing; the editor's own otherwise. `shownDiagram` is `activeDiagram` with
+   * that day on it, and is what anything that DRAWS is handed — a write is
+   * always built from the model's diagram, so the look cannot leak into one.
+   */
+  const modelRef = useRef(state.model);
+  modelRef.current = state.model;
+  const ownDays = useShownDays(
+    useCallback((id: string) => modelRef.current.diagrams.find((d) => d.id === id)?.asOf, []),
+  );
+  const viewing = props.document.viewing ?? ownDays;
+  const lookingAt = activeDiagram ? shownAsOf(activeDiagram, viewing.days) : undefined;
+  const shownDiagram = useMemo(() => {
+    if (!activeDiagram || lookingAt === activeDiagram.asOf) return activeDiagram;
+    return { ...activeDiagram, asOf: lookingAt };
+  }, [activeDiagram, lookingAt]);
   // A laid-out view in the tab (ADR-0016). The technology landscape authors
   // the layer's two kinds, so it keeps the palette and the inspector docked;
   // the sheet and the map carry their own and take the whole body.
@@ -327,8 +346,8 @@ function EditorBody(props: SolutionDesignEditorProps) {
     : held ?? activeDiagram?.colourBy;
   const platformTree = props.ownership?.platformTree;
   const overlay = useMemo(
-    () => (activeDiagram ? overlayBands(state.model, activeDiagram, colourBy, activeDiagram.asOf ?? today(), platformTree) : []),
-    [state.model, activeDiagram, colourBy, platformTree],
+    () => (shownDiagram ? overlayBands(state.model, shownDiagram, colourBy, shownDiagram.asOf ?? today(), platformTree) : []),
+    [state.model, shownDiagram, colourBy, platformTree],
   );
   const overlayTints = useMemo(() => {
     const tints = new Map<ElementId, string>();
@@ -958,8 +977,10 @@ function EditorBody(props: SolutionDesignEditorProps) {
       // A board dated for a day that is not today says so on the picture. An
       // exported PNG travels without the app around it, and a future landscape
       // that does not announce itself is read as the present one (ADR-0009).
-      title: activeDiagram.asOf
-        ? `${state.model.name} — ${activeDiagram.name} · ${t('export.asOf', { date: activeDiagram.asOf })}`
+      // The day on the screen is the day in the picture: a PNG exported while
+      // looking at 2028 says 2028, saved or not.
+      title: lookingAt
+        ? `${state.model.name} — ${activeDiagram.name} · ${t('export.asOf', { date: lookingAt })}`
         : `${state.model.name} — ${activeDiagram.name}`,
       author: activeDiagram.author ?? props.exportTitleBlock?.author,
       // Absent = the day of export, which is the exporter's own default.
@@ -968,7 +989,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
       // A container diagram's corner, which takes the title's place.
       c4: c4PanelFor(state.model, activeDiagram, t, language),
     };
-  }, [activeDiagram, props.exportTitleBlock, state.model, t, language, exportTheme, showLifecycle]);
+  }, [activeDiagram, lookingAt, props.exportTitleBlock, state.model, t, language, exportTheme, showLifecycle]);
 
   /**
    * The picture, at a ratio: the export's own when none is named, a small one
@@ -1373,8 +1394,13 @@ function EditorBody(props: SolutionDesignEditorProps) {
             },
           }
           : {})}
-        asOf={activeDiagram.asOf}
-        onAsOfChange={state.actions.setAsOf}
+        asOf={lookingAt}
+        savedAsOf={activeDiagram.asOf}
+        onAsOfChange={(day) => viewing.show(activeDiagram.id, day)}
+        onSaveAsOf={readOnly ? undefined : () => {
+          state.actions.setAsOf(lookingAt);
+          viewing.forget(activeDiagram.id);
+        }}
         onUndo={state.undo}
         onRedo={state.redo}
         canUndo={state.canUndo}
@@ -1430,7 +1456,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
             beside it only where the view authors. */}
         {laidOut ? (
           <Box data-testid="laid-out-view" sx={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-            {props.pages?.render(activeDiagram, {
+            {props.pages?.render(shownDiagram ?? activeDiagram, {
               readOnly,
               ...(state.selectedElement ? { selectedId: state.selectedElement.id } : {}),
               onSelect: (elementId) => state.setSelection(elementId === undefined ? EMPTY_SELECTION : selectElement(elementId)),
@@ -1457,7 +1483,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
         ) : (
         <ThemeProvider theme={exportTheme}>
         <CanvasForDiagram
-          diagram={activeDiagram}
+          diagram={shownDiagram ?? activeDiagram}
           state={state}
           readOnly={readOnly}
           autoRoute={autoRoute}

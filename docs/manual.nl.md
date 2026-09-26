@@ -733,8 +733,12 @@ hybride fase van een vervanging.
 **Toont** op de diagrambalk zegt welke dag het bord tekent. Er staat *Vandaag*
 tot u een dag kiest; daarna staat die dag er, opgelicht, zodat een bord met 2028
 er niet uitziet als een bord van nu. Elke kaart tekent de fase waarin zij op die
-dag verkeert, en een lijn met een venster verschijnt alleen daarbinnen. De dag
-wijzigen is een gewone bewerking: één regel in Activiteit, en ⌘Z draait hem terug.
+dag verkeert, en een lijn met een venster verschijnt alleen daarbinnen. Een dag
+kiezen verandert alleen wat uw venster toont: er wordt niets opgeslagen, niemand
+anders ziet het, en een gestippelde rand om de knop zegt dat. Wilt u dat het bord
+voor iedereen op die dag opent, kies dan **Opslaan** onder de datum — dat is wel
+een bewerking, één regel in Activiteit, en ⌘Z draait hem terug. **Toon vandaag**
+en dan **Opslaan** zet een gedateerd bord weer op de kalender.
 
 Zo maakt u een toekomstig diagram. Klik met rechts op een tab, kies **Dupliceren
 per datum…**, kies een dag, en u heeft een tweede bord van hetzelfde landschap
@@ -759,7 +763,8 @@ verplaatst elke lijn een datum geeft.
 
 De schuifbalk bovenaan verplaatst dat bord. Sleep hem en het canvas erachter
 volgt, zodat de tekening en de as het niet oneens kunnen zijn over welke dag
-wordt besproken.
+wordt besproken. Net als de datumknop kijkt hij alleen: **Opslaan** op de balk van
+het bord bewaart een dag.
 
 ### Plannen
 
