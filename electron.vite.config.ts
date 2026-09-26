@@ -14,6 +14,7 @@ import { resolve } from 'node:path'
 import { libavoidWasm } from './build/libavoidWasm'
 import { oneElk } from './build/oneElk'
 import { bundleBudget, DESKTOP_BUDGET } from './build/bundleBudget'
+import { bundleChecks } from './build/bundleChecks'
 
 const root = __dirname
 
@@ -75,7 +76,11 @@ export default defineConfig({
   },
   renderer: {
     root,
-    plugins: [react(), libavoidWasm(root), oneElk(root), bundleBudget(DESKTOP_BUDGET)],
+    // The web build's checks, over the renderer: it is the same page.
+    plugins: [
+      react(), libavoidWasm(root), oneElk(root), bundleBudget(DESKTOP_BUDGET),
+      bundleChecks({ root, browser: true, notices: resolve(root, 'THIRD-PARTY-NOTICES.md') }),
+    ],
     worker: { format: 'es' },
     build: {
       chunkSizeWarningLimit: DESKTOP_BUDGET.file / 1000,
