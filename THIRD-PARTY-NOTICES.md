@@ -26,7 +26,7 @@ which is the safe direction for a notice to be wrong in.
 - @iconify/types 2.0.0 — MIT
 - @iconify/utils 3.1.5 — MIT
 - @mermaid-js/parser 1.2.1 — MIT
-- @modelcontextprotocol/sdk 1.30.0 — MIT
+- @modelcontextprotocol/sdk 1.30.1 — MIT
 - @mui/core-downloads-tracker 6.5.0 — MIT
 - @mui/material 6.5.0 — MIT
 - @mui/private-theming 6.4.9 — MIT
@@ -37,8 +37,8 @@ which is the safe direction for a notice to be wrong in.
 - @popperjs/core 2.11.8 — MIT
 - @ungap/structured-clone 1.4.0 — ISC
 - @upsetjs/venn.js 2.0.0 — MIT
-- @xyflow/react 12.11.3 — MIT
-- @xyflow/system 0.0.80 — MIT
+- @xyflow/react 12.12.0 — MIT
+- @xyflow/system 0.0.83 — MIT
 - accepts 2.0.0 — MIT
 - ajv 6.15.0 — MIT
 - ajv-formats 3.0.1 — MIT
@@ -244,8 +244,8 @@ which is the safe direction for a notice to be wrong in.
 - qs 6.16.0 — BSD-3-Clause
 - range-parser 1.3.0 — MIT
 - raw-body 3.0.2 — MIT
-- react 19.2.8 — MIT
-- react-dom 19.2.8 — MIT
+- react 19.3.0 — MIT
+- react-dom 19.3.0 — MIT
 - react-is 19.2.8 — MIT
 - react-markdown 10.1.0 — MIT
 - react-transition-group 4.4.5 — BSD-3-Clause
@@ -258,7 +258,7 @@ which is the safe direction for a notice to be wrong in.
 - router 2.2.0 — MIT
 - rw 1.3.3 — BSD-3-Clause
 - safer-buffer 2.1.2 — MIT
-- scheduler 0.27.0 — MIT
+- scheduler 0.28.0 — MIT
 - send 1.2.1 — MIT
 - serve-static 2.2.1 — MIT
 - setprototypeof 1.2.0 — ISC
@@ -268,7 +268,7 @@ which is the safe direction for a notice to be wrong in.
 - side-channel-list 1.0.1 — MIT
 - side-channel-map 1.0.1 — MIT
 - side-channel-weakmap 1.0.2 — MIT
-- simple-icons 16.29.0 — CC0-1.0
+- simple-icons 16.32.0 — CC0-1.0
 - space-separated-tokens 2.0.2 — MIT
 - statuses 2.0.2 — MIT
 - strictdom 1.0.1 — MIT
@@ -966,7 +966,7 @@ SOFTWARE.
 
 ---
 
-## @modelcontextprotocol/sdk 1.30.0
+## @modelcontextprotocol/sdk 1.30.1
 
 Licence: MIT
 
@@ -1290,7 +1290,7 @@ SOFTWARE.
 
 ---
 
-## @xyflow/react 12.11.3
+## @xyflow/react 12.12.0
 
 Licence: MIT
 
@@ -1320,7 +1320,7 @@ SOFTWARE.
 
 ---
 
-## @xyflow/system 0.0.80
+## @xyflow/system 0.0.83
 
 Licence: MIT
 
@@ -8322,7 +8322,7 @@ THE SOFTWARE.
 
 ---
 
-## react 19.2.8
+## react 19.3.0
 
 Licence: MIT
 
@@ -8352,7 +8352,7 @@ SOFTWARE.
 
 ---
 
-## react-dom 19.2.8
+## react-dom 19.3.0
 
 Licence: MIT
 
@@ -8763,7 +8763,7 @@ SOFTWARE.
 
 ---
 
-## scheduler 0.27.0
+## scheduler 0.28.0
 
 Licence: MIT
 
@@ -9037,7 +9037,7 @@ SOFTWARE.
 
 ---
 
-## simple-icons 16.29.0
+## simple-icons 16.32.0
 
 Licence: CC0-1.0
 
