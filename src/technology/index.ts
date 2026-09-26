@@ -19,10 +19,8 @@
  * laid out like the sheet and the map from `model/technologyLandscape.ts`,
  * with the same division — the arithmetic below, the page here.
  */
-export { PlatformReportPage } from './ui/PlatformReportPage'
-export type { PlatformReportPageProps } from './ui/PlatformReportPage'
-export { ServiceReportPage } from './ui/ServiceReportPage'
-export type { ServiceReportPageProps } from './ui/ServiceReportPage'
+export { PlatformReportPage, ServiceReportPage } from './ui/ReportPage'
+export type { PlatformReportPageProps, ServiceReportPageProps } from './ui/ReportPage'
 /** The technology landscape (ADR-0015): the one view on this layer, laid out from the rows. */
 export { TechnologyLandscapePage } from './ui/TechnologyLandscapePage'
 export type { TechnologyLandscapePageProps } from './ui/TechnologyLandscapePage'

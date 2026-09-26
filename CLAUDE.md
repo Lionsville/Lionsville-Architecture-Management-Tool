@@ -246,10 +246,13 @@ src/business/     The business layer, and the arithmetic over its four trees
 src/technology/   The physical view (ADR-0013, ADR-0014): a platform's report
                   and a service's. Read, never drawn; the arithmetic is the
                   model's, because the agent asks for it too.
-                    ui/PlatformReportPage   what runs on it, what uses it, and
-                                      the container interfaces that cross it
-                    ui/ServiceReportPage    who maintains it, what realises it,
-                                      who leans on it, and what would be stranded
+                    ui/ReportPage     one page drawn twice, a configuration
+                                      each: PlatformReportPage — what runs on
+                                      it, what uses it, and the container
+                                      interfaces that cross it — and
+                                      ServiceReportPage — who maintains it,
+                                      what realises it, who leans on it, and
+                                      what would be stranded
                     ui/TechnologyLandscapePage   the layer's one view (ADR-0015):
                                       applications, services, platforms, no lines
                                       at rest

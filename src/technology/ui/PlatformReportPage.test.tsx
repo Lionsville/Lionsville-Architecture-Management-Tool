@@ -14,8 +14,8 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, within } from '@testing-library/react'
-import { PlatformReportPage } from './PlatformReportPage'
-import type { PlatformReportPageProps } from './PlatformReportPage'
+import { PlatformReportPage } from './ReportPage'
+import type { PlatformReportPageProps } from './ReportPage'
 import { renderShell } from '../../app/testing/renderShell'
 import { element } from '../../model/testFixtures'
 import type { DesignModel, Relation } from '../../model'

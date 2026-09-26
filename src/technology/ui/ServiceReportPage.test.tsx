@@ -13,8 +13,8 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, within } from '@testing-library/react'
-import { ServiceReportPage } from './ServiceReportPage'
-import type { ServiceReportPageProps } from './ServiceReportPage'
+import { ServiceReportPage } from './ReportPage'
+import type { ServiceReportPageProps } from './ReportPage'
 import { renderShell } from '../../app/testing/renderShell'
 import { element } from '../../model/testFixtures'
 import type { DesignModel, Relation } from '../../model'
