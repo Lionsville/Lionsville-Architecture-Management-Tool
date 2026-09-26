@@ -160,6 +160,10 @@ jobs:
       # electron-builder writes the installers, the blockmaps and the
       # latest*.yml update manifests onto the release.
       contents: write
+      # The provenance attestation below: a token from the runner's OIDC
+      # issuer to sign with, and somewhere in this repository to keep it.
+      id-token: write
+      attestations: write
     strategy:
       # One platform failing must not throw away the two that succeeded; the
       # artifacts of the survivors are worth having, and a re-run of one job is
@@ -359,9 +363,25 @@ jobs:
             sum "$file" > "$file.sha256"
             cat "$file.sha256"
           done
+          # The same lines, once more, as the subjects of the attestation
+          # below — outside release/, so neither the upload nor the SHA256SUMS
+          # job picks up a file three runners would each write.
+          cat ./*.sha256 > ../installers.sha256
           if [ "$PUBLISHING" = 'yes' ]; then
             gh release upload "$TAG" ./*.sha256 --clobber
           fi
+
+      # Where an installer came from, signed by GitHub for this repository,
+      # this workflow and this commit, so a download can be checked against
+      # more than a checksum the same release carries: `gh attestation verify
+      # <installer> --repo Lionsville/Lionsville-Architecture-Management-Tool`.
+      # Public repositories keep attestations on any plan. Built on a manual
+      # run too, since its installers are downloadable from the run.
+      - name: Attest where the installers came from
+        if: success() && hashFiles('installers.sha256') != ''
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-checksums: installers.sha256
 
       # Proof, and a safety net: if the upload to the release fails, the
       # installers still exist and can be attached by hand.

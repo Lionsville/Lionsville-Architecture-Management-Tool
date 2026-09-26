@@ -58,6 +58,15 @@ This is a check against a damaged or swapped download, not a signature: the
 macOS and Windows installers are signed, and that is what proves who built
 them.
 
+Every installer also has a **build-provenance attestation**: each build job
+hands the same sums to `actions/attest-build-provenance`, and GitHub signs a
+statement that this file came from this repository, this workflow and this
+commit. It is what the Linux installers, which nobody signs, have instead, and
+it is checked with the GitHub CLI:
+`gh attestation verify <file> --repo Lionsville/Lionsville-Architecture-Management-Tool`.
+A public repository keeps attestations on any plan. The web zip has none: it
+is not installed but deployed, and this same workflow deploys it.
+
 ## Rolling back
 
 There is no rollback button and no separate procedure: **putting the previous

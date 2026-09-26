@@ -41,4 +41,9 @@ jobs:
           cache: npm
           cache-dependency-path: package-lock.json
       - run: npm ci
+      # What ships is bundled from node_modules, and a bundled app declares
+      # every package it bundles as a dev dependency — so `--omit=dev` would
+      # audit nothing here. The whole tree, then, and a high finding fails the
+      # check the way a red test does.
+      - run: npm audit --audit-level=high
       - run: npm run check
