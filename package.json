@@ -24,7 +24,7 @@
     "setup": "npm install && node scripts/installHooks.mjs",
     "smoke": "node scripts/verify.mjs smoke",
     "smoke:desktop": "npm run smoke",
-    "smoke:run": "electron . --smoke",
+    "smoke:run": "node build/fresh.ts out src electron index.html package-lock.json vite.config.ts electron.vite.config.ts && electron . --smoke",
     "start:desktop": "electron-vite preview",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
