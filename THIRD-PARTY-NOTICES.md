@@ -116,7 +116,7 @@ which is the safe direction for a notice to be wrong in.
 - dompurify 3.4.14 — (MPL-2.0 OR Apache-2.0)
 - dunder-proto 1.0.1 — MIT
 - ee-first 1.1.1 — MIT
-- elkjs 0.9.3 — EPL-2.0
+- elkjs 0.12.0 — EPL-2.0 OR GPL-3.0-or-later
 - encodeurl 2.0.0 — MIT
 - es-define-property 1.0.1 — MIT
 - es-errors 1.3.0 — MIT
@@ -4545,9 +4545,9 @@ THE SOFTWARE.
 
 ---
 
-## elkjs 0.9.3
+## elkjs 0.12.0
 
-Licence: EPL-2.0
+Licence: EPL-2.0 OR GPL-3.0-or-later
 
 ```
 # Eclipse Public License - v 2.0
@@ -4802,8 +4802,7 @@ No third-party beneficiary rights are created under this Agreement.
 
 “This Source Code may also be made available under the following
 Secondary Licenses when the conditions for such availability set forth
-in the Eclipse Public License, v. 2.0 are satisfied: {name license(s),
-version(s), and exceptions or additional permissions here}.”
+in the Eclipse Public License, v. 2.0 are satisfied: GNU General Public License v3.0 or later”
 
 > Simply including a copy of this Agreement, including this Exhibit A is
 > not sufficient to license the Source Code under Secondary Licenses.
