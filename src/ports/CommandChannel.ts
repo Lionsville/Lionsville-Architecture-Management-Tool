@@ -63,6 +63,18 @@ export type StepEnvelope = {
   command: Command
   /** When the sender made it, epoch milliseconds. */
   at: number
+  /**
+   * The trace this publish belongs to, where the sender keeps one: a W3C
+   * trace context (`traceparent`, `00-<trace id>-<parent id>-<flags>`).
+   *
+   * Optional and never part of the step. A channel that records what it does
+   * with a step may continue this trace, so whatever the sender wrote down
+   * about the publish and whatever the channel wrote down about taking it are
+   * found under one id; a channel that records nothing ignores it. It is not
+   * handed out on the {@link SequencedStep}, because who else hears of a step
+   * has no business with how its sender was being watched.
+   */
+  traceparent?: string
 }
 
 /** A step as the channel hands it out, in order. */
@@ -107,9 +119,22 @@ export type SequencedStep = {
  * no reason to re-read. A channel's own refusal is for the steps the reducer
  * would have taken.
  */
-export type PublishAnswer =
+export type PublishAnswer = (
   | { seq: number }
   | { refused: CommandRefusal | 'agent.readOnly' | (string & Record<never, never>) }
+) & {
+  /**
+   * The trace the channel recorded taking this publish under, where it
+   * records one: 32 lower-case hex digits, never all zeros. Where the
+   * envelope carried a `traceparent`, it is that context's trace id — a
+   * channel continues the trace it was handed rather than starting another —
+   * so a sender can write it beside the step in its own trail and whoever
+   * reads that trail can find the other side's account of the same publish.
+   * Absent where the channel records nothing, and never a reason to treat an
+   * answer differently.
+   */
+  traceId?: string
+}
 
 export interface CommandChannel {
   /** Which channel this is, for a diagnostic to name. */

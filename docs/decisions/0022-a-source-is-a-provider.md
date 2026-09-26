@@ -838,6 +838,32 @@ app's language, and shut by the provider. `composition.test.tsx` pins the
 registry answering the panel for the open source's provider and for nobody
 else. `ShellToolbar.test.tsx` still pins the three that ship byte for byte.
 
+## Amended — the one a build that watches its own server needed
+
+*27 September 2026.* A build whose channel is answered by a server that records
+what it does with each step — how long it waited, what it was refused, what
+wrote it down afterwards — found that a person holding *Copy diagnostics* had
+nothing in it to find that record by. The sender's trail said which step it
+sent and what it was answered; the other side's account of the same publish
+was under an id of its own. It is added as the smallest public thing that
+joins the two, and optional on both sides, so every channel that exists is
+already one that ignores it.
+
+* **A publish may carry a trace context, and be answered the trace.**
+  `StepEnvelope.traceparent` is a W3C trace context the sender minted, and
+  `PublishAnswer.traceId` is the trace the channel recorded taking the publish
+  under — the context's own trace id where there was one, because a channel
+  continues the trace it is handed rather than starting another. Neither is
+  part of the step: the context is not handed out on the `SequencedStep`, and
+  an answer is the same answer with or without an id beside it, which is why
+  the suite compares answers without it. A channel that records nothing
+  answers none; the in-memory filling is one.
+
+`CommandChannel.contract.ts` pins it for every channel: a step that carries a
+trace context is sequenced as one that does not, nobody else is handed the
+context, and an answer that names a trace names the one the publish carried,
+refusals included.
+
 ## More Information
 
 ADR-0002 for the command and its inverse, which is the whole reason this is a

@@ -138,6 +138,20 @@ function replay(steps: readonly SequencedStep[], from: Model = fromArrays(sample
   return model
 }
 
+/**
+ * An answer without the trace it was recorded under: which trace a channel
+ * records a publish under is its own business (see {@link PublishAnswer}), and
+ * two publishes of one envelope may well be two traces with one answer.
+ */
+function plain(answer: PublishAnswer): PublishAnswer {
+  const { traceId: _recordedUnder, ...rest } = answer
+  return rest
+}
+
+/** A trace context as a sender that keeps one would mint it. Fixed here, so a failure reads. */
+const TRACE_ID = '4bf92f3577b34da6a3ce929d0e0e4736'
+const TRACEPARENT = `00-${TRACE_ID}-00f067aa0ba902b7-01`
+
 /** The sequence number answered, or the failure said out loud. */
 function seqOf(answer: PublishAnswer): number {
   if ('refused' in answer) throw new Error(`refused: ${answer.refused}`)
@@ -162,7 +176,8 @@ function over(under: ChannelUnderTest) {
     },
     /** Publish, and wait until everybody who is going to hear it has. */
     publish: async (
-      channel: CommandChannel, command: Command, held: Partial<{ base: number; stepId: string }> = {},
+      channel: CommandChannel, command: Command,
+      held: Partial<{ base: number; stepId: string; traceparent: string }> = {},
     ): Promise<PublishAnswer> => {
       const answer = await channel.publish({
         scope: SAMPLE_SCOPE,
@@ -170,6 +185,7 @@ function over(under: ChannelUnderTest) {
         base: held.base ?? 0,
         command,
         at: Date.UTC(2026, 8, 21),
+        ...(held.traceparent ? { traceparent: held.traceparent } : {}),
       })
       await settle()
       return answer
@@ -273,7 +289,7 @@ export function describeCommandChannel(name: string, make: MakeCommandChannel): 
       const mine = channel.connect('me')
       const here = await channel.listen(mine)
       const before = seqOf(await channel.publish(mine, addBilling))
-      expect(await channel.publish(mine, { type: 'element.update', id: 'nope', patch: {} }))
+      expect(plain(await channel.publish(mine, { type: 'element.update', id: 'nope', patch: {} })))
         .toEqual({ refused: 'command.gone' })
       expect(here.seen.map((step) => step.seq)).toEqual([before])
       expect(seqOf(await channel.publish(mine, renameCrews))).toBe(before + 1)
@@ -293,7 +309,7 @@ export function describeCommandChannel(name: string, make: MakeCommandChannel): 
       const theirs = channel.connect('you')
       const here = await channel.listen(mine)
       await channel.publish(mine, addBilling)
-      expect(await channel.publish(theirs, addBilling)).toEqual({ refused: 'command.taken' })
+      expect(plain(await channel.publish(theirs, addBilling))).toEqual({ refused: 'command.taken' })
       expect(here.seen).toHaveLength(1)
 
       // Minted again, it lands.
@@ -329,7 +345,7 @@ export function describeCommandChannel(name: string, make: MakeCommandChannel): 
       const here = await channel.listen(mine)
       const at = seqOf(await channel.publish(mine, addBilling))
 
-      expect(await channel.publish(theirs, addBilling, { base: at - 1 }))
+      expect(plain(await channel.publish(theirs, addBilling, { base: at - 1 })))
         .toEqual({ refused: 'command.taken' })
       // Refused is not sequenced, however far behind the sender was.
       expect(here.seen.map((step) => step.seq)).toEqual([at])
@@ -346,7 +362,7 @@ export function describeCommandChannel(name: string, make: MakeCommandChannel): 
       const mine = channel.connect('me')
       const here = await channel.listen(mine)
       const at = seqOf(await channel.publish(mine, addBilling))
-      expect(await channel.publish(mine, { type: 'diagram.rename', id: 'l7', name: 'Landscape' })).toEqual({ seq: at })
+      expect(plain(await channel.publish(mine, { type: 'diagram.rename', id: 'l7', name: 'Landscape' }))).toEqual({ seq: at })
       expect(here.seen).toHaveLength(1)
       here.stop()
     })
@@ -362,14 +378,41 @@ export function describeCommandChannel(name: string, make: MakeCommandChannel): 
       const here = await channel.listen(mine)
       const first = await channel.publish(mine, addBilling, { stepId: 'retried' })
       const again = await channel.publish(mine, addBilling, { stepId: 'retried' })
-      expect(again).toEqual(first)
+      expect(plain(again)).toEqual(plain(first))
       expect(here.seen).toHaveLength(1)
 
       // Including a refusal: the answer is the answer, whichever it was.
       const bad: Command = { type: 'element.update', id: 'nope', patch: {} }
-      expect(await channel.publish(mine, bad, { stepId: 'refused-once' })).toEqual({ refused: 'command.gone' })
-      expect(await channel.publish(mine, bad, { stepId: 'refused-once' })).toEqual({ refused: 'command.gone' })
+      expect(plain(await channel.publish(mine, bad, { stepId: 'refused-once' }))).toEqual({ refused: 'command.gone' })
+      expect(plain(await channel.publish(mine, bad, { stepId: 'refused-once' }))).toEqual({ refused: 'command.gone' })
       expect(here.seen).toHaveLength(1)
+      here.stop()
+    })
+
+    /**
+     * A trace context is the sender's, and changes nothing about the step: it
+     * lands where it would have landed, nobody else is handed it, and a
+     * channel that says which trace it recorded the publish under says the one
+     * it was handed — so the sender's trail and the channel's meet on one id.
+     */
+    it('sequences a step that carries a trace context as one that does not, and hands the context to nobody', async () => {
+      const channel = await one()
+      const mine = channel.connect('me')
+      const here = await channel.listen(channel.connect('you'))
+      const traced = await channel.publish(mine, addBilling, { traceparent: TRACEPARENT })
+      const untraced = await channel.publish(mine, renameCrews)
+      expect(seqOf(untraced)).toBe(seqOf(traced) + 1)
+      expect(here.seen.map((step) => step.seq)).toEqual([seqOf(traced), seqOf(untraced)])
+      for (const step of here.seen) expect(step).not.toHaveProperty('traceparent')
+      if (traced.traceId !== undefined) expect(traced.traceId).toBe(TRACE_ID)
+      for (const answer of [traced, untraced]) {
+        if (answer.traceId !== undefined) expect(answer.traceId).toMatch(/^(?!0{32})[0-9a-f]{32}$/)
+      }
+
+      // A refusal too: the trace is about the publish, whatever it was answered.
+      const refused = await channel.publish(mine, addBilling, { traceparent: TRACEPARENT })
+      expect(plain(refused)).toEqual({ refused: 'command.taken' })
+      if (refused.traceId !== undefined) expect(refused.traceId).toBe(TRACE_ID)
       here.stop()
     })
 
