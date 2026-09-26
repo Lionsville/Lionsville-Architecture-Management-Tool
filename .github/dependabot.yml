@@ -1,14 +1,17 @@
 # A pinned action is a frozen action; this is what thaws it on purpose.
 #
-# **No majors.** A major is a migration — a new MUI, a new TypeScript, a new
-# Electron — and is made by hand in a commit that says why. Dependabot opening
-# one is a pull request that cannot pass and a run spent finding that out.
-# The same holds for a 0.x package's minor, which is how 0.x says "breaking"
-# (the layout engines and the archive library), and for TypeScript's minor:
-# `package.json` pins it with a tilde on purpose, so a new minor is a choice.
+# **Majors too, one pull request each.** A major is read on its merits — its
+# licence (it must stay one an AGPL application can ship), its changelog and
+# breaking changes, its peer ranges — and taken when nothing stands in the
+# way, with the migration in the same commit. One with a real blocker (a peer
+# range that does not accept it yet, a tool that breaks on it) is closed with
+# the blocker named. The same holds for a 0.x package's minor, which is how
+# 0.x says "breaking" (the layout engines and the archive library), and for
+# TypeScript's minor, which `package.json` pins with a tilde so that it
+# arrives as a pull request of its own.
 #
-# **Monthly, grouped, at most two open**: a month's small moves are one pull
-# request per ecosystem, read once.
+# **Monthly, at most two open**: a month's minors and patches are one grouped
+# pull request per ecosystem, read once; a major is its own.
 version: 2
 updates:
   - package-ecosystem: github-actions
@@ -16,9 +19,6 @@ updates:
     schedule:
       interval: monthly
     open-pull-requests-limit: 2
-    ignore:
-      - dependency-name: '*'
-        update-types: ['version-update:semver-major']
     groups:
       actions:
         update-types: [minor, patch]
@@ -28,17 +28,7 @@ updates:
     schedule:
       interval: monthly
     open-pull-requests-limit: 2
-    ignore:
-      - dependency-name: '*'
-        update-types: ['version-update:semver-major']
-      - dependency-name: typescript
-        update-types: ['version-update:semver-minor']
-      - dependency-name: elkjs
-        update-types: ['version-update:semver-minor']
-      - dependency-name: libavoid-js
-        update-types: ['version-update:semver-minor']
-      - dependency-name: fflate
-        update-types: ['version-update:semver-minor']
     groups:
       minor-and-patch:
         update-types: [minor, patch]
+        exclude-patterns: [typescript, elkjs, libavoid-js, fflate]

@@ -37,7 +37,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  NODE_VERSION: '24'
+  NODE_VERSION: '26'
 
 jobs:
   # Secrets cannot be read from a job-level `if:`, and a `${{ secrets.X }}` that
@@ -542,7 +542,7 @@ jobs:
         with:
           sparse-checkout: .github/staticwebapp.config.json
           sparse-checkout-cone-mode: false
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: web-${{ needs.preflight.outputs.version }}
       - name: Unpack it, with how the host serves it
@@ -554,7 +554,7 @@ jobs:
           mkdir app && unzip -q "web-$VERSION.zip" -d app
           cp .github/staticwebapp.config.json app/
           test -f app/index.html && test -f app/version.json
-      - uses: azure/login@7184910d9eb2b1c5e48f7073824a90609bb9b6d6 # v2.3.1
+      - uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
         with:
           client-id: ${{ vars.WEB_HOST_CLIENT_ID }}
           tenant-id: ${{ vars.WEB_HOST_TENANT_ID }}

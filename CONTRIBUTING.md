@@ -8,8 +8,8 @@ section first: it says why pull requests are reviewed but not yet merged.
 
 ## Setting up
 
-Node 20 or newer. Internet is needed once, for `npm install`; everything after
-that is local.
+Node 26, the version CI builds with (22.12 or newer works). Internet is needed
+once, for `npm install`; everything after that is local.
 
 ```bash
 npm run setup
