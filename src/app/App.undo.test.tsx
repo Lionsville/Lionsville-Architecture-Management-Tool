@@ -75,7 +75,7 @@ const project = (): ScopeSnapshot => ({
 function show() {
   const initial = project()
   const projects = new InMemoryScopeStore([initial])
-  renderApp({ scopes: projects, initialProject: initial })
+  renderApp({ scopes: projects, boot: { initialProject: initial } })
   return projects
 }
 

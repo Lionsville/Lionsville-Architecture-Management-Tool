@@ -46,31 +46,18 @@ import {
 import type { ScopePath } from '../projects/scopePath'
 import { crumbsFor } from './ShellToolbar'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
-import type { ThemeMode } from '../platform/theme'
 import { manualUrl } from '../platform/manual'
 import type { UpdateSettings, UpdateSettingsPatch } from '../platform/updateSettings'
-import type { PullOutcome } from '../platform/sync'
 import type { LocalSettings, LocalSettingsPatch } from '../projects/folderSettings'
-import type { AgentGateway } from '../ports/AgentGateway'
-import type { FolderSettingsStore } from '../ports/FolderSettings'
-import type { ProjectHistory } from '../ports/ProjectHistory'
-import type { UpdateSettingsStore } from '../ports/UpdateSettings'
 import { AGENT_OFF } from '../platform/agentServer'
 import type { AgentServerStatus } from '../platform/agentServer'
 import { ConnectAgentDialog } from './dialogs/ConnectAgentDialog'
 import { PreferencesDialog } from './dialogs/PreferencesDialog'
 import { SyncNotice } from './SyncNotice'
 import { useSync } from './useSync'
-import type { WindowChrome } from '../platform/windowChrome'
 import { BROWSER_STORAGE, sourceIsReadOnly, sourceProviderKind } from '../platform/workingSource'
-import type { WorkingSource } from '../platform/workingSource'
-import type {
-  SourceChip, SourceFailure, SourceMenuEntry, SourceOffer, SourceStatus, SourceWayIn, SourceWork,
-  SourceWorkChanged,
-} from '../platform/sourceProvider'
-import type { ExampleProject } from './examples'
+import type { SourceChip, SourceMenuEntry, SourceOffer, SourceWayIn } from '../platform/sourceProvider'
 import { ErrorBoundary } from './ErrorBoundary'
-import type { HostControls } from '../ports/HostControls'
 import { HistoryPage } from './history/HistoryPage'
 import { SnapshotDialog } from './history/SnapshotDialog'
 import { useProjectHistory } from './history/useProjectHistory'
@@ -84,8 +71,6 @@ import { ProjectWorkspace } from './ProjectWorkspace'
 import type { ScopeSession } from './useModelSession'
 import type { ProjectSettings } from './ProjectSettingsDialog'
 import { ToastBar } from './ToastBar'
-import type { MakeId } from './useDiagramActions'
-import type { ProjectFileChannel } from './useProjectFiles'
 import { useAgentShell } from './useAgentShell'
 import type { WorkspaceAgentView } from './useAgentShell'
 import { AgentDrivingBanner } from './AgentDrivingBanner'
@@ -97,11 +82,8 @@ import { useFilePicker } from './useFilePicker'
 import { useHostCommands } from './useHostCommands'
 import { usePasswordPrompt } from './usePasswordPrompt'
 import { useOpenIntoPrompt } from './useOpenIntoPrompt'
-import type { ChooseFolderForWorkingFile } from './workingFileFlows'
-import type { CommandStream } from './useHostCommands'
 import { useIndex } from './useIndex'
 import { useShellPreferences } from './useShellPreferences'
-import type { PreferencesWriter } from './useShellPreferences'
 import { useStorageNotice } from './useStorageNotice'
 import type { StorageNotice } from './useStorageNotice'
 import { useToasts } from './useToasts'
@@ -359,245 +341,9 @@ export type ScopeSettingsPatch = {
   parent?: ScopePath
 }
 
-export type AppProps = {
-  scopes: ScopeLibrary
-  preferences: PreferencesWriter
-  documents: ProjectFileChannel
-  diagnostics: ShellDiagnostics
-  /** What the crash fallback can do about it: reload, and copy the trail. */
-  /** The host's three: reload and the clipboard for the crash page, and a way out to the manual. */
-  hostControls: HostControls
-  /**
-   * What you are working from (ADR-0005): a folder by name, the browser's
-   * storage, or memory. `memory` means storage refused at boot — a private
-   * window, a strict policy — and nothing typed here will be there tomorrow.
-   * That is worth a standing notice rather than a toast, because it is true
-   * for the whole session and not an event within it; the top bar says it too.
-   */
-  source?: WorkingSource
-  /**
-   * What this source means by the five words the bar says (ADR-0005; the
-   * source provider says the rest). Absent where the document's own machine is
-   * the whole answer, which is what all three built-in sources are, and the
-   * bar then says exactly what it has always said.
-   */
-  sourceStatus?: (work: SourceWork) => SourceStatus
-  /**
-   * The source says its answer to {@link AppProps.sourceStatus} has moved, so
-   * the bar asks again. Absent for all three sources that ship, whose every
-   * answer moves with the document's own machine.
-   */
-  onSourceWork?: SourceWorkChanged
-  /**
-   * The sentence this source's provider gives for where work is kept, as the key
-   * of its own string — what the organisation's home says about the chip that
-   * names the source.
-   *
-   * Absent for the three that ship, whose sentences this tree holds already
-   * (`ShellToolbar`'s `sourceTipKey`), and absent for a registered provider that
-   * gives none: the chip then says nothing rather than a sentence of ours about
-   * somewhere this shell has never heard of. Read from the registration by the
-   * boot, which is the one place that may ask (`composition.ts`).
-   */
-  sourceDescription?: StringKey | (string & {})
-  /**
-   * What this source's provider calls the chip that names it, at this moment,
-   * and what pressing it does (`platform/sourceProvider.ts`'s `chip`).
-   *
-   * Read again whenever {@link AppProps.onSourceWork} fires, because the word
-   * worth putting there — who is signed in, and whether anybody is — is an
-   * answer that arrives after the source was opened and moves again while the
-   * window is open. Absent for the three that ship, and for a registered
-   * provider that gave none, and then the chip says the name the source was
-   * opened under, exactly as it always has. Read from the registration by the
-   * boot, which is the one place that may ask (`composition.ts`).
-   */
-  sourceChip?: (work?: SourceWork) => SourceChip
-  /**
-   * What this source says a refusal where it keeps work means, in its own
-   * sentence (`platform/sourceProvider.ts`'s `SourceFailure`).
-   *
-   * Named for the notice it feeds rather than for the source that gives it,
-   * because {@link AppProps.sourceFailure} below is already a source that would
-   * not OPEN — one cause, said once, about a press that went nowhere — and this
-   * is a sentence-maker asked every time a write is not taken.
-   *
-   * Absent for the three that ship, and for a registered provider that gives
-   * none, and a refused save then says what it has always said: that this
-   * browser could not save the design.
-   */
-  storageFailure?: SourceFailure
-  /**
-   * The lines the source providers put in the app's own menu, one entry per
-   * registration ({@link SourceMenu}).
-   *
-   * Every registered provider's and not the open source's, for the reason
-   * {@link AppProps.chrome} is: a provider that is not the source yet is exactly
-   * the one with something to offer — *sign in*, *connect to…* — and the one
-   * whose provider answers for the open source is the only one handed the
-   * session.
-   *
-   * Empty for every build in this repository: a folder, this browser's storage
-   * and memory have nothing to add to a menu that already says what can be done
-   * to a folder.
-   */
-  sourceMenu?: readonly RegisteredMenu[]
-  /**
-   * A scope has been opened, and here is the session over it: for whoever
-   * answers for the source (`composition.ts`). Passed straight through to the
-   * workspace, which is where a session exists; absent for all three sources
-   * that ship, and then nothing subscribes to anything.
-   */
-  onScopeSession?: (session: ScopeSession) => (() => void) | void
-  /** See `Shell.publishesSteps`: the open scope's changes travel as steps, and are not written whole. */
-  publishesSteps?: boolean
-  /**
-   * Whatever the source providers draw for themselves ({@link SourceChrome}),
-   * one entry per registration and not per open source.
-   *
-   * Every registered provider's, because a provider that is not the source yet
-   * is exactly the one with something to ask: its way in has to be able to draw
-   * a dialog, and before this there was nowhere for it to go. The one whose
-   * provider answers for the open source is handed the session; the rest are
-   * drawn with nothing.
-   *
-   * Empty for every build in this repository: a folder, this browser's storage
-   * and memory have nothing to say that the bar does not say for them.
-   */
-  chrome?: readonly RegisteredChrome[]
-  /**
-   * What the provider answering for the open source puts inside *Connect an
-   * agent* ({@link SourceAgentPanel}).
-   *
-   * The open source's alone, unlike the two above — that dialog is about
-   * reaching the landscape that is open, so a panel from a provider that answers
-   * for nothing would be a way in to nowhere. Read from the registration by the
-   * boot, which is the one place that may ask (`composition.ts`).
-   *
-   * Absent for every build in this repository, and the dialog is then what it
-   * has always been: the switch on the desktop, and the sentence about the
-   * desktop in a tab.
-   */
-  agentPanel?: SourceAgentPanel
-  /**
-   * How to change the folder. Absent in a browser tab whose browser cannot
-   * give one: an app that showed the button anyway would be offering what it
-   * cannot do.
-   */
-  onChooseWorkingDirectory?: () => void
-  /**
-   * The other places this build can work from: what each button says, and what
-   * pressing it does (`platform/sourceProvider.ts`).
-   *
-   * Built at the boot from the providers this build registered, so it is empty
-   * for every build in this repository — core registers a folder, this
-   * browser's storage and memory, and only the first of those is something a
-   * person goes to. Offered on the root's home and on the first-run screen,
-   * which are the two screens that ask where work should live; everything
-   * below them is about work that already has somewhere to be.
-   */
-  waysIn?: readonly SourceWayIn[]
-  /**
-   * Does this host keep projects ONLY in folders?
-   *
-   * True on the desktop, where keeping them anywhere else means a leveldb
-   * inside `userData` (ADR-0003) and the app therefore asks for a folder before
-   * it shows anything. A browser tab keeps them itself and merely *may* have a
-   * folder, so it is offered one and never made to choose.
-   */
-  needsFolder?: boolean
-  /**
-   * Tell me when a project's folder changed under us. Absent where nothing can
-   * watch, and the workspace then never leaves the states it can reach alone.
-   */
-  watchProject?: (path: ScopePath, onChanged: () => void, wholeTree?: boolean) => () => void
-  /**
-   * Menu items and files the OS opened us with. Subscribed to here for the
-   * commands about folders, and handed to the workspace for the ones about the
-   * project that is open — each layer taking what it owns.
-   */
-  commands?: CommandStream
-  /**
-   * Does the host draw a menu bar of its own? When it does not, the toolbar
-   * carries the menu in an overflow (ADR-0005). A browser tab never has one.
-   */
-  hostMenu?: boolean
-  /** Tell the host whether closing the window would lose something. */
-  onUnsavedWork?: (unsaved: boolean) => void
-  /** Tell the host which theme is on, so its View menu's radio can be right. */
-  onThemeMode?: (mode: ThemeMode) => void
-  /** Whether a scope is open, for the menu bar's items that act on one (ADR-0005, amended). */
-  onScopeOpen?: (open: boolean) => void
-  /** Work in a folder the user has already granted. The Recent submenu. */
-  onOpenWorkingDirectory?: (root: string) => void
-  /**
-   * A folder a working file may become (ADR-0025). Absent where no folder
-   * can be chosen, and the dialog then offers only to replace what is open.
-   */
-  onChooseFolderForWorkingFile?: ChooseFolderForWorkingFile
-  /** Folders this machine has worked in before, for the first-run screen. */
-  recentFolders?: readonly { root: string; name: string }[]
-  /** The snapshots of the working directory. Absent where there can be none. */
-  history?: ProjectHistory
-  /**
-   * The two folder scopes of ADR-0005. Absent where there is no folder; the
-   * machine section of the preferences dialog needs this AND a history.
-   */
-  folderSettings?: FolderSettingsStore
-  /** The desktop's own update settings. Absent on the web, and the section with it. */
-  updateSettings?: UpdateSettingsStore
-  /**
-   * Where an agent's tool calls arrive (ADR-0007). Absent in a browser tab.
-   * The open workspace answers them; with no project open, this shell does,
-   * with a refusal.
-   */
-  agent?: AgentGateway
-  /**
-   * What the boot's pull answered, when the machine asked for one. Made at
-   * the edge of the app, before the project was read and before the watcher
-   * started, so a fast-forward's writes are never reported as somebody
-   * else's change; what is left for the shell is to say so.
-   */
-  initialSync?: PullOutcome
-  /**
-   * A folder that was picked and did not open, from the shell's attempt just
-   * before this render. Said once on the toast bar, because the shell has no
-   * bar of its own and a pick that ends in nothing looks like a button that
-   * does nothing.
-   */
-  folderFailure?: unknown
-  /**
-   * The same, for a way in a registered provider offered: pressed, and gone
-   * nowhere. Its own prop rather than a second meaning for the one above,
-   * because the two say different sentences — this one cannot say *folder*, and
-   * the boot cannot say what a provider's own dialog was asking for.
-   */
-  sourceFailure?: unknown
+import type { AppProps } from './appProps'
 
-  /** Today as `yyyy-mm-dd`. Injected so a card's finding is not at the clock's mercy. */
-  today?: () => string
-
-  /** Read by the composition root before the first render, so this can be sync. */
-  initialProject: ScopeSnapshot | undefined
-  initialPreferences: unknown
-
-  examples: readonly ExampleProject[]
-  /** Fresh ids. Injected because a clock inside a component cannot be tested. */
-  makeId: MakeId
-  /** What the browser reports; injected so a test can pin the starting language. */
-  browserLanguages?: readonly string[] | string
-  /**
-   * What the window around the app leaves to us. On the desktop the title bar
-   * is hidden, so our own top bar has to keep clear of the window controls and
-   * be the thing you drag the window by. A browser tab needs neither.
-   */
-  windowChrome?: WindowChrome
-  /**
-   * Say what this window is about. Absent in a test, which has no window to
-   * name and would otherwise rename the runner's.
-   */
-  onTitle?: (organisation: string, scope?: string) => void
-}
+export type { AppBoot, AppFolder, AppHost, AppProps, AppProvider } from './appProps'
 
 /** The organisation screen has no command log: the history drafts its default message. */
 const NO_STEPS = (): readonly { summary: StepSummary }[] => []
@@ -630,6 +376,9 @@ export function initialPageFor(to: Destination): InitialPage | undefined {
 /** What the history page compares against before the home's document has been read. */
 const EMPTY_MODEL: HostModel = { name: '', elements: [], relations: [], diagrams: [] }
 
+/** A group nobody filled in: every field in it is optional. */
+const NOTHING = {} as const
+
 function localToday(): string {
   const now = new Date()
   const pad = (n: number) => String(n).padStart(2, '0')
@@ -637,18 +386,25 @@ function localToday(): string {
 }
 
 export function App({
-  scopes: projects, preferences, documents, diagnostics, hostControls,
-  source = BROWSER_STORAGE, sourceStatus, onSourceWork, sourceDescription,
-  sourceChip, storageFailure, sourceMenu: menus = [],
-  onScopeSession, publishesSteps = false, chrome: chromes = [], agentPanel: AgentPanel,
-  onChooseWorkingDirectory, waysIn, needsFolder = false, watchProject,
-  commands, hostMenu = false, onUnsavedWork, onThemeMode, onScopeOpen, onOpenWorkingDirectory, recentFolders,
-  onChooseFolderForWorkingFile,
-  history, folderSettings, updateSettings, agent, initialSync, folderFailure, sourceFailure,
-  today = localToday,
-  initialProject, initialPreferences,
-  examples, makeId, browserLanguages, windowChrome = NO_WINDOW_CHROME, onTitle,
+  scopes: projects, preferences, documents, diagnostics, hostControls, boot,
+  source = BROWSER_STORAGE, provider = NOTHING, folder = NOTHING, host = NOTHING, agent,
+  examples, makeId, today = localToday,
 }: AppProps) {
+  const { initialProject, initialPreferences, browserLanguages, initialSync, folderFailure, sourceFailure } = boot
+  const {
+    status: sourceStatus, onWork: onSourceWork, description: sourceDescription, chip: sourceChip,
+    storageFailure, menu: menus = [], onScopeSession, publishesSteps = false, chrome: chromes = [],
+    agentPanel: AgentPanel, waysIn,
+  } = provider
+  const {
+    needed: needsFolder = false, onChoose: onChooseWorkingDirectory, onOpen: onOpenWorkingDirectory,
+    onChooseForWorkingFile: onChooseFolderForWorkingFile, recent: recentFolders, watch: watchProject,
+    history, settings: folderSettings,
+  } = folder
+  const {
+    commands, hostMenu = false, onUnsavedWork, onThemeMode, onScopeOpen, windowChrome = NO_WINDOW_CHROME,
+    onTitle, updateSettings,
+  } = host
   const toasts = useToasts()
   // Read once per render rather than per card: a finding re-derived because a
   // millisecond passed is a model walked again for nothing.

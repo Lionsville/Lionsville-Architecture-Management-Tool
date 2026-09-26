@@ -238,9 +238,12 @@ async function twoWorkspaces() {
   const wireB = listeningGateway()
   const menuA = hostMenu()
   const a = renderApp({
-    initialProject: scope, agent: wireA.gateway, onScopeSession: first.bind, commands: menuA.on,
+    agent: wireA.gateway,
+    boot: { initialProject: scope },
+    provider: { onScopeSession: first.bind },
+    host: { commands: menuA.on },
   })
-  const b = renderApp({ initialProject: scope, agent: wireB.gateway, onScopeSession: second.bind })
+  const b = renderApp({ agent: wireB.gateway, boot: { initialProject: scope }, provider: { onScopeSession: second.bind } })
   await waitFor(() => expect(wireA.bound() && wireB.bound()).toBe(true))
   return { channel, a, b, first, second, menuA, askA: wireA.ask, askB: wireB.ask }
 }
@@ -393,7 +396,7 @@ describe('the session handed to whoever answers for the source', () => {
     const wire = listeningGateway()
     let handed: ScopeSession | undefined
     const take = (session: ScopeSession) => { handed = session }
-    renderApp({ initialProject: scope, agent: wire.gateway, onScopeSession: take })
+    renderApp({ agent: wire.gateway, boot: { initialProject: scope }, provider: { onScopeSession: take } })
     await waitFor(() => expect(wire.bound()).toBe(true))
     expect(handed?.scope).toBe(scope.path)
 
@@ -413,8 +416,9 @@ describe('the session handed to whoever answers for the source', () => {
     const wire = listeningGateway()
     let handed: ScopeSession | undefined
     renderApp({
-      initialProject: { ...scope, revision: 'read-7' }, agent: wire.gateway,
-      onScopeSession: (session: ScopeSession) => { handed = session },
+      agent: wire.gateway,
+      boot: { initialProject: { ...scope, revision: 'read-7' } },
+      provider: { onScopeSession: (session: ScopeSession) => { handed = session } },
     })
     await waitFor(() => expect(handed).toBeDefined())
     expect(handed?.openedFrom).toBe('read-7')

@@ -681,47 +681,51 @@ function renderApp(
         documents={shell.documents}
         diagnostics={shell.diagnostics}
         hostControls={shell.hostControls}
+        boot={{
+          initialProject,
+          initialPreferences: storedPreferences,
+          browserLanguages: navigator.languages ?? navigator.language,
+          initialSync,
+          folderFailure,
+          sourceFailure,
+        }}
         source={shell.source}
-        sourceStatus={shell.sourceStatus}
-        onSourceWork={shell.onSourceWork}
-        sourceDescription={sourceDescription(shell.source)}
-        sourceChip={sourceChip(shell.source)}
-        storageFailure={shell.sourceFailure}
-        agentPanel={sourceAgentPanel(shell.source)}
-        sourceMenu={menus}
-        onScopeSession={shell.onScopeSession}
-        publishesSteps={shell.publishesSteps}
-        chrome={chromes}
-        onChooseWorkingDirectory={
-          files || browserFolders.possible() ? chooseWorkingDirectory : undefined
-        }
-        waysIn={waysIn}
-        needsFolder={Boolean(files)}
-        onOpenWorkingDirectory={files ? openWorkingDirectory : undefined}
-        onChooseFolderForWorkingFile={
-          files || browserFolders.possible() ? chooseFolderForWorkingFile : undefined
-        }
-        recentFolders={recentFolders}
-        watchProject={shell.watchProject}
-        commands={commands?.on}
-        hostMenu={Boolean(commands)}
-        onUnsavedWork={commands?.reportUnsaved}
-        onThemeMode={commands?.reportTheme}
-        onScopeOpen={commands?.reportScopeOpen}
-        history={shell.history}
-        folderSettings={shell.folderSettings}
-        updateSettings={shell.updateSettings}
+        provider={{
+          status: shell.sourceStatus,
+          onWork: shell.onSourceWork,
+          description: sourceDescription(shell.source),
+          chip: sourceChip(shell.source),
+          storageFailure: shell.sourceFailure,
+          agentPanel: sourceAgentPanel(shell.source),
+          menu: menus,
+          onScopeSession: shell.onScopeSession,
+          publishesSteps: shell.publishesSteps,
+          chrome: chromes,
+          waysIn,
+        }}
+        folder={{
+          needed: Boolean(files),
+          onChoose: files || browserFolders.possible() ? chooseWorkingDirectory : undefined,
+          onOpen: files ? openWorkingDirectory : undefined,
+          onChooseForWorkingFile: files || browserFolders.possible() ? chooseFolderForWorkingFile : undefined,
+          recent: recentFolders,
+          watch: shell.watchProject,
+          history: shell.history,
+          settings: shell.folderSettings,
+        }}
+        host={{
+          commands: commands?.on,
+          hostMenu: Boolean(commands),
+          onUnsavedWork: commands?.reportUnsaved,
+          onThemeMode: commands?.reportTheme,
+          onScopeOpen: commands?.reportScopeOpen,
+          windowChrome: shell.windowChrome,
+          onTitle: shell.showTitle,
+          updateSettings: shell.updateSettings,
+        }}
         agent={shell.agent}
-        initialSync={initialSync}
-        folderFailure={folderFailure}
-        sourceFailure={sourceFailure}
-        initialProject={initialProject}
-        initialPreferences={storedPreferences}
         examples={EXAMPLES}
         makeId={makeId}
-        browserLanguages={navigator.languages ?? navigator.language}
-        windowChrome={shell.windowChrome}
-        onTitle={shell.showTitle}
       />
     </StrictMode>,
   )

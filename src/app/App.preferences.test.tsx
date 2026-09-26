@@ -83,9 +83,9 @@ function show(over: Parameters<typeof renderApp>[0] = {}) {
   const listeners: ((command: HostCommand) => void)[] = []
   const harness = renderApp({
     scopes: new InMemoryScopeStore([project()]),
-    initialProject: project(),
-    commands: (listener) => { listeners.push(listener); return () => {} },
     ...over,
+    boot: { initialProject: project(), ...over.boot },
+    host: { commands: (listener) => { listeners.push(listener); return () => {} }, ...over.host },
   })
   return {
     ...harness,
@@ -141,7 +141,7 @@ describe('the update check', () => {
 
   it('is read from the host and written back to it', async () => {
     const updates = fakeUpdates({ checkAutomatically: true, channel: 'stable' })
-    const view = show({ updateSettings: updates.store })
+    const view = show({ host: { updateSettings: updates.store } })
     await opened(view)
     const box = await screen.findByLabelText('Check for updates automatically') as HTMLInputElement
     expect(box.checked).toBe(true)
@@ -153,7 +153,7 @@ describe('the update check', () => {
 
   it('switches the channel through the same store (ADR-0006)', async () => {
     const updates = fakeUpdates()
-    const view = show({ updateSettings: updates.store })
+    const view = show({ host: { updateSettings: updates.store } })
     await opened(view)
     fireEvent.click(await screen.findByText('Beta'))
     await waitFor(() => expect(updates.writes).toEqual([{ channel: 'beta' }]))
@@ -162,20 +162,20 @@ describe('the update check', () => {
 
 describe('the machine scope', () => {
   it('is absent without a folder', async () => {
-    const view = show({ history: history(true) })
+    const view = show({ folder: { history: history(true) } })
     await opened(view)
     expect(screen.queryByText(/ON THIS MACHINE/)).toBeNull()
   })
 
   it('is absent with a folder but no history — a tab with a directory handle', async () => {
-    const view = show({ folderSettings: fakeFolderSettings().store })
+    const view = show({ folder: { settings: fakeFolderSettings().store } })
     await opened(view)
     await act(() => Promise.resolve())
     expect(screen.queryByText(/ON THIS MACHINE/)).toBeNull()
   })
 
   it('is absent when the history says this machine cannot keep one', async () => {
-    const view = show({ folderSettings: fakeFolderSettings().store, history: history(false) })
+    const view = show({ folder: { settings: fakeFolderSettings().store, history: history(false) } })
     await opened(view)
     await act(() => Promise.resolve())
     expect(screen.queryByText(/ON THIS MACHINE/)).toBeNull()
@@ -183,7 +183,7 @@ describe('the machine scope', () => {
 
   it('writes through the store, as a patch, and says it stays with this install', async () => {
     const folder = fakeFolderSettings()
-    const view = show({ folderSettings: folder.store, history: history(true) })
+    const view = show({ folder: { settings: folder.store, history: history(true) } })
     await opened(view)
     expect(await screen.findByText('THIS FOLDER, ON THIS MACHINE')).toBeDefined()
     expect(screen.getByText(/nothing is written into the folder/)).toBeDefined()

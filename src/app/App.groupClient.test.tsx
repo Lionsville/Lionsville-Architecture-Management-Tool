@@ -53,7 +53,7 @@ describe('the client on an export', () => {
   it('is the organisation\'s name when nothing above has said otherwise', async () => {
     renderApp({
       scopes: new InMemoryScopeStore([parent(), project()]),
-      initialProject: project(),
+      boot: { initialProject: project() },
     })
     expect((await screen.findByTestId('export-client')).textContent).toBe('Acme')
   })
@@ -61,7 +61,7 @@ describe('the client on an export', () => {
   it('is what the scope above says once it says something', async () => {
     renderApp({
       scopes: new InMemoryScopeStore([parent({ client: 'Acme Logistics BV' }), project()]),
-      initialProject: project(),
+      boot: { initialProject: project() },
     })
     await screen.findByText('Acme Logistics BV')
   })
@@ -73,7 +73,7 @@ describe('the client on an export', () => {
         parent({ client: 'Acme Logistics BV' }),
         { ...project(), client: 'Acme Rail BV' },
       ]),
-      initialProject: { ...project(), client: 'Acme Rail BV' },
+      boot: { initialProject: { ...project(), client: 'Acme Rail BV' } },
     })
     await screen.findByText('Acme Rail BV')
   })

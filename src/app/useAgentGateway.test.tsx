@@ -110,14 +110,14 @@ const parsed = (answer: AgentAnswer): Record<string, unknown> => {
 describe('the agent seam, bound to the shell', () => {
   it('answers from the project that is open', async () => {
     const { gateway, ask } = fakeGateway()
-    renderApp({ initialProject: project, agent: gateway })
+    renderApp({ agent: gateway, boot: { initialProject: project } })
     await waitFor(() => expect(screen.getByTestId('rename-billing')).toBeDefined())
     expect(parsed(await ask('project.current'))).toMatchObject({ name: 'Warehouse landscape', elements: 1 })
   })
 
   it('answers against the model as it stands, not as it was opened', async () => {
     const { gateway, ask } = fakeGateway()
-    renderApp({ initialProject: project, agent: gateway })
+    renderApp({ agent: gateway, boot: { initialProject: project } })
     await waitFor(() => expect(screen.getByTestId('rename-billing')).toBeDefined())
     fireEvent.click(screen.getByTestId('rename-billing'))
     const held = parsed(await ask('element.describe', { id: 'billing' }))
@@ -126,14 +126,14 @@ describe('the agent seam, bound to the shell', () => {
 
   it('refuses with agent.noProject when nothing is open', async () => {
     const { gateway, ask, bound } = fakeGateway()
-    renderApp({ initialProject: undefined, agent: gateway })
+    renderApp({ agent: gateway, boot: { initialProject: undefined } })
     await waitFor(() => expect(bound()).toBe(true))
     expect(await ask('project.current')).toEqual({ ok: false, refusal: 'agent.noProject' })
   })
 
   it('points, draws and tidies through the editor’s handle', async () => {
     const { gateway, ask } = fakeGateway()
-    renderApp({ initialProject: project, agent: gateway })
+    renderApp({ agent: gateway, boot: { initialProject: project } })
     await waitFor(() => expect(screen.getByTestId('rename-billing')).toBeDefined())
 
     expect(parsed(await ask('focus', { elementId: 'billing' }))).toMatchObject({ focused: true })
@@ -151,7 +151,7 @@ describe('the agent seam, bound to the shell', () => {
 
   it('moves the binding from the shell to the workspace when a project opens', async () => {
     const { gateway, ask } = fakeGateway()
-    renderApp({ initialProject: undefined, agent: gateway, scopes: new InMemoryScopeStore([project]) })
+    renderApp({ agent: gateway, scopes: new InMemoryScopeStore([project]), boot: { initialProject: undefined } })
     await waitFor(() => expect(screen.getByTestId('scope-acme/landscape')).toBeDefined())
     // The row's own Open: the cards above it open the ROOT scope's pages, and
     // this is the scope the agent is about to be asked about.

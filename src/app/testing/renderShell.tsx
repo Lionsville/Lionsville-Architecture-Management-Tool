@@ -40,7 +40,7 @@ import { InMemoryPreferencesStore } from '../../adapters/memory/InMemoryPreferen
 import { InMemoryScopeStore } from '../../adapters/memory/InMemoryScopeStore'
 import { RecordingDiagnostics } from '../../adapters/memory/RecordingDiagnostics'
 import type { ScopeSnapshot } from '../../projects/scope'
-import type { AppProps } from '../App'
+import type { AppBoot, AppProps } from '../App'
 import { App } from '../App'
 import type { SavedDocument } from '../../ports/DocumentGateway'
 
@@ -159,6 +159,9 @@ export function shellHarness(projects: readonly ScopeSnapshot[] = []): ShellHarn
 
 export type AppRender = ShellRender & ShellHarness
 
+/** What a test says about the app: any prop, and what the boot read one field at a time. */
+export type AppOverrides = Omit<Partial<AppProps>, 'boot'> & { boot?: Partial<AppBoot> }
+
 /**
  * The whole shell, opened where you say.
  *
@@ -171,22 +174,26 @@ export type AppRender = ShellRender & ShellHarness
  * which by reading.
  */
 export function renderApp(
-  over: Partial<AppProps> = {},
+  over: AppOverrides = {},
   options: ShellOptions = {},
 ): AppRender {
   const harness = shellHarness()
+  const { boot, ...rest } = over
   const props: AppProps = {
     scopes: harness.scopes,
     preferences: harness.preferences,
     documents: harness.documents,
     diagnostics: harness.diagnostics,
     hostControls: harness.hostControls,
-    initialProject: undefined,
-    initialPreferences: { language: options.language ?? 'en' },
+    boot: {
+      initialProject: undefined,
+      initialPreferences: { language: options.language ?? 'en' },
+      browserLanguages: [options.language ?? 'en'],
+      ...boot,
+    },
     examples: [],
     makeId: (prefix) => `${prefix}-new`,
-    browserLanguages: [options.language ?? 'en'],
-    ...over,
+    ...rest,
   }
   return { ...renderShell(<App {...props} />, options), ...harness }
 }

@@ -87,7 +87,7 @@ function fakeHistory(over: Omit<Partial<ProjectHistory>, 'entries'> & { entries?
 
 function show(history?: ProjectHistory) {
   const projects = new InMemoryScopeStore([project()])
-  return { ...renderApp({ scopes: projects, initialProject: project(), history }), projects }
+  return { ...renderApp({ scopes: projects, boot: { initialProject: project() }, folder: { history } }), projects }
 }
 
 /**
@@ -101,12 +101,14 @@ function showDesktop(history: ProjectHistory, options: { open?: boolean } = {}) 
   const projects = new InMemoryScopeStore([project()])
   const view = renderApp({
     scopes: projects,
-    initialProject: options.open === false ? undefined : project(),
-    history,
-    hostMenu: true,
-    commands: (listener) => {
-      listeners.push(listener)
-      return () => { listeners.splice(listeners.indexOf(listener), 1) }
+    boot: { initialProject: options.open === false ? undefined : project() },
+    folder: { history },
+    host: {
+      hostMenu: true,
+      commands: (listener) => {
+        listeners.push(listener)
+        return () => { listeners.splice(listeners.indexOf(listener), 1) }
+      },
     },
   })
   const send = (command: HostCommand) => act(() => { for (const held of [...listeners]) held(command) })
@@ -149,7 +151,7 @@ describe('what the menu offers', () => {
   })
 
   it('offers both on the organisation screen too: a snapshot is of the folder', async () => {
-    renderApp({ scopes: new InMemoryScopeStore([project()]), history: fakeHistory().history })
+    renderApp({ scopes: new InMemoryScopeStore([project()]), folder: { history: fakeHistory().history } })
     await screen.findByTestId('shell-toolbar')
     await openSaveMenu()
     await waitFor(() => expect(screen.getByText('Snapshot…')).toBeDefined())
@@ -346,9 +348,9 @@ describe('reading one back', () => {
     const held = fakeHistory({ keeping: () => Promise.resolve(true) })
     renderApp({
       scopes: new InMemoryScopeStore([project()]),
-      initialProject: project(),
-      history: held.history,
-      windowChrome: { draggable: true, controlsInset: 78 },
+      boot: { initialProject: project() },
+      folder: { history: held.history },
+      host: { windowChrome: { draggable: true, controlsInset: 78 } },
     })
     await openSaveMenu()
     await waitFor(() => expect(screen.getByText('History…')).toBeDefined())
@@ -395,7 +397,7 @@ describe('the history of one thing (ADR-0008)', () => {
 
   function showDescribed(history: InMemoryProjectHistory) {
     const projects = new InMemoryScopeStore([withDescribed()])
-    return renderApp({ scopes: projects, initialProject: withDescribed(), history })
+    return renderApp({ scopes: projects, boot: { initialProject: withDescribed() }, folder: { history } })
   }
 
   it('opens on a diagram from its tab, listing only the snapshots that touched it', async () => {
@@ -457,19 +459,21 @@ describe('the history of one thing (ADR-0008)', () => {
     const projects = new InMemoryScopeStore([master(), drawing()])
     renderApp({
       scopes: projects,
-      initialProject: drawing(),
-      history: new InMemoryProjectHistory([
-        {
-          id: 'c2', subject: 'What billing means to us', at: at + 1000, author: 'W.',
-          touched: ['acme/landscape/docs/billing.md'],
-          projects: [drawing()],
-        },
-        {
-          id: 'c1', subject: 'What billing is', at, author: 'W.',
-          touched: ['acme/docs/billing.md'],
-          projects: [drawing()],
-        },
-      ]),
+      boot: { initialProject: drawing() },
+      folder: {
+        history: new InMemoryProjectHistory([
+          {
+            id: 'c2', subject: 'What billing means to us', at: at + 1000, author: 'W.',
+            touched: ['acme/landscape/docs/billing.md'],
+            projects: [drawing()],
+          },
+          {
+            id: 'c1', subject: 'What billing is', at, author: 'W.',
+            touched: ['acme/docs/billing.md'],
+            projects: [drawing()],
+          },
+        ]),
+      },
     })
     fireEvent.click(await screen.findByTestId('history-of-the-diagram'))
     fireEvent.change(await screen.findByLabelText('Show the history of'), { target: { value: 'description:billing' } })
@@ -527,7 +531,7 @@ describe('going back, as going forward (ADR-0008)', () => {
   it('restores one diagram as a new step: named in the Activity list, undoable, and offered a snapshot', async () => {
     const history = oneSnapshot()
     const projects = new InMemoryScopeStore([now()])
-    renderApp({ scopes: projects, initialProject: now(), history })
+    renderApp({ scopes: projects, boot: { initialProject: now() }, folder: { history } })
     await openHistoryOfTheDiagram()
     fireEvent.click(screen.getByRole('button', { name: 'Restore this version…' }))
     // The copy says what a restore is before the first one is taken.
@@ -557,7 +561,7 @@ describe('going back, as going forward (ADR-0008)', () => {
 
   it('refuses to restore a locked decision, and says why', async () => {
     const history = oneSnapshot()
-    renderApp({ scopes: new InMemoryScopeStore([now()]), initialProject: now(), history })
+    renderApp({ scopes: new InMemoryScopeStore([now()]), boot: { initialProject: now() }, folder: { history } })
     fireEvent.click(screen.getByText('Decisions'))
     fireEvent.click(within(await screen.findByTestId('adr-list')).getByText('One writer'))
     fireEvent.click(within(await screen.findByTestId('adr-reader')).getByRole('button', { name: 'History…' }))
@@ -574,7 +578,7 @@ describe('going back, as going forward (ADR-0008)', () => {
 
   it('restores the whole project behind its own confirm', async () => {
     const history = oneSnapshot(before({ decisions: [] }))
-    renderApp({ scopes: new InMemoryScopeStore([now({ decisions: [] })]), initialProject: now({ decisions: [] }), history })
+    renderApp({ scopes: new InMemoryScopeStore([now({ decisions: [] })]), boot: { initialProject: now({ decisions: [] }) }, folder: { history } })
     await openSaveMenu()
     await waitFor(() => expect(screen.getByText('History…')).toBeDefined())
     fireEvent.click(screen.getByText('History…'))

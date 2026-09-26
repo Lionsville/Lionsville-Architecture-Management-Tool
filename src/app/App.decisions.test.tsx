@@ -63,7 +63,7 @@ const landscape = (): ScopeSnapshot => ({
 describe('a decision from the scope above', () => {
   const open = () => renderApp({
     scopes: new InMemoryScopeStore([root(), landscape()]),
-    initialProject: landscape(),
+    boot: { initialProject: landscape() },
   })
 
   it('shows it in a From section, read-only, beside this scope’s own list', async () => {

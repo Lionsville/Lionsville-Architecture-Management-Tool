@@ -105,7 +105,7 @@ const quiet = folderSettings({ git: { pullOnOpen: false, pushAfterSnapshot: fals
 
 function show(over: Parameters<typeof renderApp>[0] = {}) {
   const projects = new InMemoryScopeStore([project()])
-  return { ...renderApp({ scopes: projects, initialProject: project(), ...over }), projects }
+  return { ...renderApp({ scopes: projects, ...over, boot: { initialProject: project(), ...over.boot } }), projects }
 }
 
 /** Everything the fakes have queued, carried out and drawn. */
@@ -125,7 +125,7 @@ async function takeSnapshot() {
 
 describe('what the boot’s pull becomes', () => {
   it('nothing, when it went well or was never asked for', () => {
-    show({ initialSync: 'done' })
+    show({ boot: { initialSync: 'done' } })
     expect(screen.queryByTestId('sync-notice')).toBeNull()
     cleanup()
     show()
@@ -133,13 +133,13 @@ describe('what the boot’s pull becomes', () => {
   })
 
   it('a notice, when the remote refused — the folder still opened', () => {
-    show({ initialSync: 'credentials' })
+    show({ boot: { initialSync: 'credentials' } })
     expect(screen.getByText(/refused this machine/)).toBeDefined()
     expect(screen.getByTestId('editor')).toBeDefined()
   })
 
   it('the standing strip, when the two sides disagree', () => {
-    show({ initialSync: 'diverged', ...fakeHistory() })
+    show({ boot: { initialSync: 'diverged' }, folder: { history: fakeHistory().history } })
     expect(screen.getByTestId('sync-notice')).toBeDefined()
     expect(screen.getByText('Take theirs')).toBeDefined()
     expect(screen.getByText('Keep ours')).toBeDefined()
@@ -149,7 +149,7 @@ describe('what the boot’s pull becomes', () => {
 describe('the push after a snapshot', () => {
   it('happens when this machine says so, and says it did', async () => {
     const held = fakeHistory({ push: 'done' })
-    show({ history: held.history, folderSettings: pushing })
+    show({ folder: { history: held.history, settings: pushing } })
     await takeSnapshot()
     await settled(held.asked.push)
     expect(held.calls.pushes).toBe(1)
@@ -158,7 +158,7 @@ describe('the push after a snapshot', () => {
 
   it('does not happen when this machine does not say so', async () => {
     const held = fakeHistory()
-    show({ history: held.history, folderSettings: quiet })
+    show({ folder: { history: held.history, settings: quiet } })
     await takeSnapshot()
     await settled()
     expect(held.calls.pushes).toBe(0)
@@ -166,7 +166,7 @@ describe('the push after a snapshot', () => {
 
   it('does not happen without the folder scope at all', async () => {
     const held = fakeHistory()
-    show({ history: held.history })
+    show({ folder: { history: held.history } })
     await takeSnapshot()
     await settled()
     expect(held.calls.pushes).toBe(0)
@@ -174,7 +174,7 @@ describe('the push after a snapshot', () => {
 
   it('never unmakes the snapshot: a refusal is a notice', async () => {
     const held = fakeHistory({ push: 'unreachable' })
-    show({ history: held.history, folderSettings: pushing })
+    show({ folder: { history: held.history, settings: pushing } })
     await takeSnapshot()
     await settled(held.asked.push)
     expect(screen.getByText(/was not pushed/)).toBeDefined()
@@ -184,7 +184,7 @@ describe('the push after a snapshot', () => {
 
   it('turns a rejection into the same strip a diverged pull gives', async () => {
     const held = fakeHistory({ push: 'rejected' })
-    show({ history: held.history, folderSettings: pushing })
+    show({ folder: { history: held.history, settings: pushing } })
     await takeSnapshot()
     await settled(held.asked.push)
     expect(screen.getByTestId('sync-notice')).toBeDefined()
@@ -194,7 +194,7 @@ describe('the push after a snapshot', () => {
 describe('the two answers', () => {
   it('take theirs: the remote stands, and the open project is read again from disk', async () => {
     const held = fakeHistory()
-    const view = show({ initialSync: 'diverged', history: held.history, folderSettings: quiet })
+    const view = show({ boot: { initialSync: 'diverged' }, folder: { history: held.history, settings: quiet } })
     // What "disk" now holds, as the remote left it.
     await view.projects.save(project('From the remote'))
     fireEvent.click(screen.getByText('Take theirs'))
@@ -207,7 +207,7 @@ describe('the two answers', () => {
 
   it('keep ours: our version stands, unread and unmoved', async () => {
     const held = fakeHistory()
-    const view = show({ initialSync: 'diverged', history: held.history, folderSettings: quiet })
+    const view = show({ boot: { initialSync: 'diverged' }, folder: { history: held.history, settings: quiet } })
     await view.projects.save(project('From the remote'))
     fireEvent.click(screen.getByText('Keep ours'))
 
@@ -222,7 +222,7 @@ describe('the two answers', () => {
 
   it('keep ours pushes straight away where this machine pushes after a snapshot', async () => {
     const held = fakeHistory()
-    show({ initialSync: 'diverged', history: held.history, folderSettings: pushing })
+    show({ boot: { initialSync: 'diverged' }, folder: { history: held.history, settings: pushing } })
     fireEvent.click(screen.getByText('Keep ours'))
     await settled(held.asked.push)
     expect(held.calls.pushes).toBe(1)
@@ -230,7 +230,7 @@ describe('the two answers', () => {
 
   it('a refusal leaves the folder as it was, and the question standing', async () => {
     const held = fakeHistory({ resolve: 'unreachable' })
-    show({ initialSync: 'diverged', history: held.history, folderSettings: quiet })
+    show({ boot: { initialSync: 'diverged' }, folder: { history: held.history, settings: quiet } })
     fireEvent.click(screen.getByText('Take theirs'))
     await settled(held.asked.resolve)
     expect(screen.getByText(/Nothing was changed/)).toBeDefined()

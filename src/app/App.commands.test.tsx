@@ -64,12 +64,15 @@ function show(over: Parameters<typeof renderApp>[0] = {}) {
   const projects = new InMemoryScopeStore([project()])
   const harness = renderApp({
     scopes: projects,
-    initialProject: project(),
-    commands: (listener) => {
-      listeners.push(listener)
-      return () => { listeners.splice(listeners.indexOf(listener), 1) }
-    },
     ...over,
+    boot: { initialProject: project(), ...over.boot },
+    host: {
+      commands: (listener) => {
+        listeners.push(listener)
+        return () => { listeners.splice(listeners.indexOf(listener), 1) }
+      },
+      ...over.host,
+    },
   })
   return {
     ...harness,
@@ -156,7 +159,7 @@ describe('commands from the host', () => {
   })
 
   it('the theme is chosen outright, from the View menu or the overflow', async () => {
-    const view = show({ initialPreferences: { themeMode: 'light' } })
+    const view = show({ boot: { initialPreferences: { themeMode: 'light' } } })
     view.send({ type: 'theme', mode: 'dark' })
     await waitFor(async () => {
       expect(await view.preferences.read()).toMatchObject({ themeMode: 'dark' })
@@ -165,7 +168,7 @@ describe('commands from the host', () => {
 
   it('reports the theme to the host, so a radio item can be right', async () => {
     const reported: string[] = []
-    const view = show({ onThemeMode: (mode) => reported.push(mode) })
+    const view = show({ host: { onThemeMode: (mode) => reported.push(mode) } })
     expect(reported).toEqual(['system'])
     view.send({ type: 'theme', mode: 'light' })
     await waitFor(() => expect(reported.at(-1)).toBe('light'))
@@ -175,14 +178,14 @@ describe('commands from the host', () => {
     // The third fact main is told (ADR-0005, amended): true with the project
     // open, false once the person is back on the organisation's home.
     const reported: boolean[] = []
-    show({ onScopeOpen: (open) => reported.push(open) })
+    show({ host: { onScopeOpen: (open) => reported.push(open) } })
     expect(reported).toEqual([true])
     fireEvent.click(screen.getByTestId('crumb-'))
     await waitFor(() => expect(reported.at(-1)).toBe(false))
   })
 
   it('opens the manual in the app\'s language, outside the app', () => {
-    const view = show({ initialPreferences: { language: 'nl' } })
+    const view = show({ boot: { initialPreferences: { language: 'nl' } } })
     view.send({ type: 'manual' })
     expect(view.hostControls.openExternal).toHaveBeenCalledWith(
       'https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/blob/main/docs/manual.nl.md',
@@ -249,11 +252,13 @@ describe('commands from the host', () => {
   it('a new folder is offered where one can be chosen, checked for what it holds, and written with the file at its root', async () => {
     const placed: string[][] = []
     const view = show({
-      onChooseFolderForWorkingFile: () => Promise.resolve({
-        name: 'Elsewhere',
-        occupied: true,
-        place: (scopes) => { placed.push(scopes.map((scope) => scope.path)); return Promise.resolve() },
-      }),
+      folder: {
+        onChooseForWorkingFile: () => Promise.resolve({
+          name: 'Elsewhere',
+          occupied: true,
+          place: (scopes) => { placed.push(scopes.map((scope) => scope.path)); return Promise.resolve() },
+        }),
+      },
     })
     view.send({
       type: 'openDocument',
@@ -282,7 +287,7 @@ describe('commands from the host', () => {
 
   it('Open Folder… asks the shell, which is the only layer that can', () => {
     const choose = vi.fn()
-    const view = show({ onChooseWorkingDirectory: choose })
+    const view = show({ folder: { onChoose: choose } })
     view.send({ type: 'chooseFolder' })
 
     expect(choose).toHaveBeenCalled()
@@ -290,7 +295,7 @@ describe('commands from the host', () => {
 
   it('a folder from the Recent menu is opened by its root', () => {
     const open = vi.fn()
-    const view = show({ onOpenWorkingDirectory: open })
+    const view = show({ folder: { onOpen: open } })
     view.send({ type: 'openFolder', root: '/Users/someone/Architecture' })
 
     expect(open).toHaveBeenCalledWith('/Users/someone/Architecture')
@@ -326,7 +331,7 @@ describe('the overflow on the web', () => {
   }
 
   it('reaches every item the desktop menu bar carries', async () => {
-    show({ history, onChooseWorkingDirectory: () => {} })
+    show({ folder: { history, onChoose: () => {} } })
     await openOverflow()
     // Wait for the history to have answered, so its two items are offered.
     await waitFor(() => expect(screen.getByText('Snapshot…')).toBeDefined())
@@ -340,7 +345,7 @@ describe('the overflow on the web', () => {
   })
 
   it('sends the same command the menu bar would', async () => {
-    const view = show({ history })
+    const view = show({ folder: { history } })
     await openOverflow()
     fireEvent.click(screen.getByText('Save a Copy of the Working File…'))
 
@@ -357,7 +362,7 @@ describe('the overflow on the web', () => {
   })
 
   it('is absent on a host that has a menu bar of its own', () => {
-    show({ hostMenu: true })
+    show({ host: { hostMenu: true } })
     expect(screen.queryByTestId('overflow-button')).toBeNull()
   })
 })

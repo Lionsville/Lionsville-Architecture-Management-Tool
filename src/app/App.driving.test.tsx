@@ -95,7 +95,7 @@ const refusal = (answer: AgentAnswer) => (answer.ok ? undefined : answer.refusal
 
 async function organisationOnScreen() {
   const wire = fakeGateway()
-  renderApp({ initialProject: undefined, agent: wire.gateway, scopes: new InMemoryScopeStore([root, retail]) })
+  renderApp({ agent: wire.gateway, scopes: new InMemoryScopeStore([root, retail]), boot: { initialProject: undefined } })
   await waitFor(() => expect(wire.bound()).toBe(true))
   return wire
 }

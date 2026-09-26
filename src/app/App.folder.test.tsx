@@ -38,9 +38,8 @@ describe('a desktop with no folder yet', () => {
   it('asks for one instead of listing projects kept inside the app', () => {
     renderApp({
       scopes: new InMemoryScopeStore([project()]),
-      onChooseWorkingDirectory: () => {},
-      needsFolder: true,
       source: { kind: 'browserStorage' },
+      folder: { onChoose: () => {}, needed: true },
     })
 
     expect(screen.getByTestId('choose-folder')).toBeDefined()
@@ -50,10 +49,12 @@ describe('a desktop with no folder yet', () => {
   it('offers the folders this machine has used before', () => {
     const open = vi.fn()
     renderApp({
-      onChooseWorkingDirectory: () => {},
-      needsFolder: true,
-      onOpenWorkingDirectory: open,
-      recentFolders: [{ root: '/Users/someone/Architecture', name: 'Architecture' }],
+      folder: {
+        onChoose: () => {},
+        needed: true,
+        onOpen: open,
+        recent: [{ root: '/Users/someone/Architecture', name: 'Architecture' }],
+      },
     })
 
     fireEvent.click(screen.getByText('Architecture'))
@@ -62,7 +63,7 @@ describe('a desktop with no folder yet', () => {
 
   it('asks the shell for a folder, which is the only layer that can', () => {
     const choose = vi.fn()
-    renderApp({ onChooseWorkingDirectory: choose, needsFolder: true })
+    renderApp({ folder: { onChoose: choose, needed: true } })
 
     fireEvent.click(screen.getByText('Choose a folder…'))
     expect(choose).toHaveBeenCalled()
@@ -73,9 +74,8 @@ describe('once there is a folder', () => {
   it('goes back to being the app', () => {
     renderApp({
       scopes: new InMemoryScopeStore([project()]),
-      onChooseWorkingDirectory: () => {},
-      needsFolder: true,
       source: { kind: 'folder', name: 'Architecture', root: '/Users/someone/Architecture' },
+      folder: { onChoose: () => {}, needed: true },
     })
 
     expect(screen.queryByTestId('choose-folder')).toBeNull()
@@ -95,7 +95,7 @@ describe('a browser tab', () => {
   it('is offered a folder where the browser has one, and never made to choose', () => {
     // Chromium can hand a page a real directory; a tab that can have a folder
     // is still a tab that works perfectly well without one.
-    renderApp({ scopes: new InMemoryScopeStore([project()]), onChooseWorkingDirectory: () => {} })
+    renderApp({ scopes: new InMemoryScopeStore([project()]), folder: { onChoose: () => {} } })
 
     expect(screen.queryByTestId('choose-folder')).toBeNull()
     expect(screen.getByTestId('working-source').textContent).toContain('In this browser')
@@ -108,8 +108,10 @@ describe('a browser tab', () => {
     // used to be a line in the console and a screen that did not change.
     renderApp({
       scopes: new InMemoryScopeStore([project()]),
-      onChooseWorkingDirectory: () => {},
-      folderFailure: Object.assign(new Error('write access was denied'), { name: 'NotAllowedError' }),
+      folder: { onChoose: () => {} },
+      boot: {
+        folderFailure: Object.assign(new Error('write access was denied'), { name: 'NotAllowedError' }),
+      },
     })
 
     expect((await screen.findByRole('alert')).textContent).toContain('The folder could not be opened')

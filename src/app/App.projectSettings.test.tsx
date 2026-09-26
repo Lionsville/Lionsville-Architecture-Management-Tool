@@ -60,7 +60,7 @@ const project = (): ScopeSnapshot => ({
 
 function show(initial: ScopeSnapshot) {
   const projects = new InMemoryScopeStore([initial])
-  renderApp({ scopes: projects, initialProject: initial })
+  renderApp({ scopes: projects, boot: { initialProject: initial } })
   return projects
 }
 
@@ -111,7 +111,7 @@ describe('project settings on an open project', () => {
         await store.remove(ref)
       },
     }
-    renderApp({ scopes: held, initialProject: project() })
+    renderApp({ scopes: held, boot: { initialProject: project() } })
     fireEvent.click(screen.getByTestId('edit-the-diagram'))
 
     fireEvent.click(screen.getByText('Settings…'))

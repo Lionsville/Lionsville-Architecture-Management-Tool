@@ -105,7 +105,7 @@ describe('what the root’s home says you are working from', () => {
   })
 
   it('keeps it off the bar over an open scope, where the crumbs are', () => {
-    renderApp({ initialProject: project, source: { kind: 'memory' } })
+    renderApp({ source: { kind: 'memory' }, boot: { initialProject: project } })
     expect(screen.queryByTestId('working-source')).toBeNull()
     expect(screen.getByTestId('storage-notice')).toBeDefined()
   })
@@ -141,7 +141,7 @@ describe('a source a provider answers for', () => {
   })
 
   it('offers what a folder offers when it writes', async () => {
-    renderApp({ initialProject: scope, source: elsewhere })
+    renderApp({ source: elsewhere, boot: { initialProject: scope } })
     fireEvent.click(await screen.findByText('Roadmap'))
     expect(await screen.findByText('New plan')).toBeDefined()
   })
@@ -155,10 +155,9 @@ describe('a source a provider answers for', () => {
     let held: SourceStatus = 'clean'
     const asked = asksAgain()
     renderApp({
-      initialProject: scope,
       source: elsewhere,
-      sourceStatus: () => held,
-      onSourceWork: asked.onSourceWork,
+      boot: { initialProject: scope },
+      provider: { status: () => held, onWork: asked.onSourceWork },
     })
     const bar = await screen.findByTestId('saved-indicator')
     expect(bar.textContent).toBe('Not saved yet')
@@ -176,7 +175,7 @@ describe('a source a provider answers for', () => {
    */
   it('describes where work is kept in the provider\'s own sentence', async () => {
     registerStrings('en', { 'elsewhere.kept': 'Your work is kept elsewhere, and elsewhere says when.' })
-    renderApp({ source: elsewhere, sourceDescription: 'elsewhere.kept' })
+    renderApp({ source: elsewhere, provider: { description: 'elsewhere.kept' } })
     fireEvent.mouseOver(screen.getByTestId('working-source'))
     expect((await screen.findByRole('tooltip')).textContent)
       .toBe('Your work is kept elsewhere, and elsewhere says when.')
@@ -197,7 +196,7 @@ describe('a source a provider answers for', () => {
   })
 
   it('hides what writes when it says it only reads', async () => {
-    renderApp({ initialProject: scope, source: { ...elsewhere, readOnly: true } })
+    renderApp({ source: { ...elsewhere, readOnly: true }, boot: { initialProject: scope } })
     fireEvent.click(await screen.findByText('Roadmap'))
     // The page is up; what is missing is the one thing on it that writes.
     expect(await screen.findByText('Roadmap', { selector: 'p' })).toBeDefined()
@@ -246,7 +245,7 @@ describe('the chrome a registered provider brought', () => {
   }
 
   it('is drawn with nothing open, where the source is still the source', () => {
-    renderApp({ source: elsewhere, chrome: [{ kind: 'elsewhere', chrome: Strip }] })
+    renderApp({ source: elsewhere, provider: { chrome: [{ kind: 'elsewhere', chrome: Strip }] } })
     expect(screen.getByTestId('provider-strip').textContent).toBe('en: nothing open')
     // Beside the app's own screen rather than instead of it.
     expect(screen.getByTestId('working-source').textContent).toBe('Elsewhere')
@@ -254,7 +253,9 @@ describe('the chrome a registered provider brought', () => {
 
   it('is handed the session of the scope that is open, and told when it closes', async () => {
     renderApp({
-      initialProject: scope, source: elsewhere, chrome: [{ kind: 'elsewhere', chrome: Strip }],
+      source: elsewhere,
+      boot: { initialProject: scope },
+      provider: { chrome: [{ kind: 'elsewhere', chrome: Strip }] },
     })
     await waitFor(() => {
       expect(screen.getByTestId('provider-strip').textContent).toBe('en: acme/landscape')
@@ -270,7 +271,7 @@ describe('the chrome a registered provider brought', () => {
 
   /** Inside the app's language, which is the whole reason it is not on `body`. */
   it('renders in the language the app is in', () => {
-    renderApp({ source: elsewhere, chrome: [{ kind: 'elsewhere', chrome: Strip }] }, { language: 'nl' })
+    renderApp({ source: elsewhere, provider: { chrome: [{ kind: 'elsewhere', chrome: Strip }] } }, { language: 'nl' })
     expect(screen.getByTestId('provider-strip').textContent).toBe('nl: nothing open')
   })
 
@@ -281,12 +282,14 @@ describe('the chrome a registered provider brought', () => {
   it('leaves the provider\'s own subscription exactly where it was', async () => {
     const seen: string[] = []
     renderApp({
-      initialProject: scope,
       source: elsewhere,
-      chrome: [{ kind: 'elsewhere', chrome: Strip }],
-      onScopeSession: (session) => {
-        seen.push(session.scope)
-        return () => seen.push('let go')
+      boot: { initialProject: scope },
+      provider: {
+        chrome: [{ kind: 'elsewhere', chrome: Strip }],
+        onScopeSession: (session) => {
+          seen.push(session.scope)
+          return () => seen.push('let go')
+        },
       },
     })
     await waitFor(() => expect(seen).toEqual(['acme/landscape']))
@@ -309,7 +312,7 @@ describe('the chrome a registered provider brought', () => {
   it('is drawn for a provider that answers for nothing here', () => {
     renderApp({
       source: { kind: 'folder', name: 'Architecture', root: '/work' },
-      chrome: [{ kind: 'elsewhere', chrome: Strip }],
+      provider: { chrome: [{ kind: 'elsewhere', chrome: Strip }] },
     })
     expect(screen.getByTestId('provider-strip').textContent).toBe('en: nothing open')
     expect(screen.getByTestId('working-source').textContent).toBe('Folder \u00b7 Architecture')
@@ -326,9 +329,11 @@ describe('the chrome a registered provider brought', () => {
       return <p data-testid="other-strip">{session ? session.scope : 'nothing open'}</p>
     }
     renderApp({
-      initialProject: scope,
       source: elsewhere,
-      chrome: [{ kind: 'elsewhere', chrome: Strip }, { kind: 'other', chrome: Other }],
+      boot: { initialProject: scope },
+      provider: {
+        chrome: [{ kind: 'elsewhere', chrome: Strip }, { kind: 'other', chrome: Other }],
+      },
     })
     await waitFor(() => {
       expect(screen.getByTestId('provider-strip').textContent).toBe('en: acme/landscape')
@@ -345,7 +350,9 @@ describe('the chrome a registered provider brought', () => {
     try {
       renderApp({
         source: elsewhere,
-        chrome: [{ kind: 'elsewhere', chrome: () => { throw new Error('the strip fell over') } }],
+        provider: {
+          chrome: [{ kind: 'elsewhere', chrome: () => { throw new Error('the strip fell over') } }],
+        },
       })
       expect(screen.getByTestId('crash-fallback')).toBeDefined()
       expect(screen.getByTestId('working-source').textContent).toBe('Elsewhere')
@@ -374,10 +381,12 @@ describe('the chrome a registered provider brought', () => {
     renderApp({
       scopes: new InMemoryScopeStore([scope]),
       source: elsewhere,
-      chrome: [{
-        kind: 'elsewhere',
-        chrome: ({ open }) => <Notice open={open} to={{ scope: 'acme/landscape' }} />,
-      }],
+      provider: {
+        chrome: [{
+          kind: 'elsewhere',
+          chrome: ({ open }) => <Notice open={open} to={{ scope: 'acme/landscape' }} />,
+        }],
+      },
     })
     // Nothing is open: the home is up, and the strip is the way off it.
     expect(screen.getByTestId('working-source')).toBeDefined()
@@ -395,12 +404,14 @@ describe('the chrome a registered provider brought', () => {
   it('takes the scope that is open where the destination names none', async () => {
     renderApp({
       scopes: new InMemoryScopeStore([scope]),
-      initialProject: scope,
       source: elsewhere,
-      chrome: [{
-        kind: 'elsewhere',
-        chrome: ({ open }) => <Notice open={open} to={{ page: 'roadmap' }} />,
-      }],
+      boot: { initialProject: scope },
+      provider: {
+        chrome: [{
+          kind: 'elsewhere',
+          chrome: ({ open }) => <Notice open={open} to={{ page: 'roadmap' }} />,
+        }],
+      },
     })
     fireEvent.click(screen.getByTestId('provider-open'))
     expect(await screen.findByText('Roadmap', { selector: 'p' })).toBeDefined()
@@ -413,10 +424,12 @@ describe('the chrome a registered provider brought', () => {
     try {
       renderApp({
         source: elsewhere,
-        chrome: [
-          { kind: 'falls', chrome: () => { throw new Error('the strip fell over') } },
-          { kind: 'elsewhere', chrome: Strip },
-        ],
+        provider: {
+          chrome: [
+            { kind: 'falls', chrome: () => { throw new Error('the strip fell over') } },
+            { kind: 'elsewhere', chrome: Strip },
+          ],
+        },
       })
       expect(screen.getByTestId('crash-fallback')).toBeDefined()
       expect(screen.getByTestId('provider-strip').textContent).toBe('en: nothing open')
@@ -442,7 +455,7 @@ describe('a way in a registered provider brought', () => {
   ]
 
   it('is a button each on the root\u2019s home, beside the one that chooses a folder', () => {
-    renderApp({ waysIn, onChooseWorkingDirectory: () => {} })
+    renderApp({ provider: { waysIn }, folder: { onChoose: () => {} } })
     expect(screen.getByTestId('connect-source-elsewhere').textContent).toBe('Connect to elsewhere\u2026')
     expect(screen.getByTestId('connect-source-somewhere').textContent).toBe('Connect to somewhere\u2026')
     expect(screen.getByText('Choose folder\u2026')).toBeDefined()
@@ -450,7 +463,7 @@ describe('a way in a registered provider brought', () => {
 
   it('presses through to whoever registered it', () => {
     let pressed = ''
-    renderApp({ waysIn: [{ ...waysIn[0], onConnect: () => { pressed = 'elsewhere' } }] })
+    renderApp({ provider: { waysIn: [{ ...waysIn[0], onConnect: () => { pressed = 'elsewhere' } }] } })
     fireEvent.click(screen.getByTestId('connect-source-elsewhere'))
     expect(pressed).toBe('elsewhere')
   })
@@ -461,7 +474,7 @@ describe('a way in a registered provider brought', () => {
    * thing that build exists not to use.
    */
   it('is offered on the first-run screen too', () => {
-    renderApp({ waysIn, needsFolder: true, onChooseWorkingDirectory: () => {} })
+    renderApp({ provider: { waysIn }, folder: { needed: true, onChoose: () => {} } })
     expect(screen.getByTestId('choose-folder')).toBeDefined()
     expect(screen.getByTestId('connect-source-elsewhere')).toBeDefined()
   })
@@ -472,10 +485,9 @@ describe('a way in a registered provider brought', () => {
    */
   it('leaves the first-run screen behind once a source is open', () => {
     renderApp({
-      waysIn,
-      needsFolder: true,
-      onChooseWorkingDirectory: () => {},
       source: { kind: 'registered', provider: 'elsewhere', name: 'Elsewhere', key: 'one' },
+      provider: { waysIn },
+      folder: { needed: true, onChoose: () => {} },
     })
     expect(screen.queryByTestId('choose-folder')).toBeNull()
     expect(screen.getByTestId('working-source').textContent).toBe('Elsewhere')
@@ -483,7 +495,7 @@ describe('a way in a registered provider brought', () => {
 
   /** Nothing registered, nothing drawn: every build in this repository. */
   it('draws nothing where a build registered none', () => {
-    renderApp({ onChooseWorkingDirectory: () => {} })
+    renderApp({ folder: { onChoose: () => {} } })
     expect(screen.queryByTestId('connect-source-elsewhere')).toBeNull()
   })
 
@@ -501,8 +513,8 @@ describe('a way in a registered provider brought', () => {
   it('is not drawn at all where its provider says not here', () => {
     renderApp({
       source: open,
-      waysIn: [{ ...waysIn[0], offer: () => null }, waysIn[1]],
-      onChooseWorkingDirectory: () => {},
+      provider: { waysIn: [{ ...waysIn[0], offer: () => null }, waysIn[1]] },
+      folder: { onChoose: () => {} },
     })
     expect(screen.queryByTestId('connect-source-elsewhere')).toBeNull()
     // Its own button and nobody else's: the other provider's stands, and so does
@@ -514,8 +526,10 @@ describe('a way in a registered provider brought', () => {
   it('says what its provider now says on it, where it gave a word', () => {
     renderApp({
       source: open,
-      waysIn: [{ ...waysIn[0], offer: () => ({ labelKey: 'Sign in to elsewhere\u2026' }) }],
-      onChooseWorkingDirectory: () => {},
+      provider: {
+        waysIn: [{ ...waysIn[0], offer: () => ({ labelKey: 'Sign in to elsewhere\u2026' }) }],
+      },
+      folder: { onChoose: () => {} },
     })
     expect(screen.getByTestId('connect-source-elsewhere').textContent).toBe('Sign in to elsewhere\u2026')
   })
@@ -524,7 +538,9 @@ describe('a way in a registered provider brought', () => {
     const asked: unknown[] = []
     renderApp({
       source: open,
-      waysIn: [{ ...waysIn[0], offer: (source) => { asked.push(source); return null } }],
+      provider: {
+        waysIn: [{ ...waysIn[0], offer: (source) => { asked.push(source); return null } }],
+      },
     })
     expect(asked[0]).toEqual(open)
   })
@@ -539,9 +555,11 @@ describe('a way in a registered provider brought', () => {
     const asked = asksAgain()
     renderApp({
       source: open,
-      waysIn: [{ ...waysIn[0], offer: () => said }],
-      onSourceWork: asked.onSourceWork,
-      onChooseWorkingDirectory: () => {},
+      provider: {
+        waysIn: [{ ...waysIn[0], offer: () => said }],
+        onWork: asked.onSourceWork,
+      },
+      folder: { onChoose: () => {} },
     })
     expect(screen.queryByTestId('connect-source-elsewhere')).toBeNull()
 
@@ -558,8 +576,10 @@ describe('a way in a registered provider brought', () => {
   it('stands as registered where the provider throws, with the cause in the trail', () => {
     const { diagnostics } = renderApp({
       source: open,
-      waysIn: [{ ...waysIn[0], offer: () => { throw new Error('asked too soon') } }, waysIn[1]],
-      onChooseWorkingDirectory: () => {},
+      provider: {
+        waysIn: [{ ...waysIn[0], offer: () => { throw new Error('asked too soon') } }, waysIn[1]],
+      },
+      folder: { onChoose: () => {} },
     })
     expect(screen.getByTestId('connect-source-elsewhere').textContent).toBe('Connect to elsewhere\u2026')
     expect(screen.getByTestId('connect-source-somewhere')).toBeDefined()
@@ -617,7 +637,7 @@ describe('a refusal where the source keeps work', () => {
   const copy = async () => fireEvent.click(await screen.findByText('Copy into this folder\u2026'))
 
   it('says the provider\u2019s sentence instead of ours', async () => {
-    refuse({ storageFailure: () => 'Elsewhere is not taking changes: sign in again.' })
+    refuse({ provider: { storageFailure: () => 'Elsewhere is not taking changes: sign in again.' } })
     await copy()
     await waitFor(() => expect(screen.getByRole('alert').textContent)
       .toContain('Elsewhere is not taking changes'))
@@ -629,7 +649,7 @@ describe('a refusal where the source keeps work', () => {
    * its own, and two sentences for one refusal read as two failures.
    */
   it('says nothing where the provider answered nothing', async () => {
-    const { diagnostics } = refuse({ storageFailure: () => undefined })
+    const { diagnostics } = refuse({ provider: { storageFailure: () => undefined } })
     await copy()
     // The failure still reached the trail, which is where a failure always goes.
     await waitFor(() => expect(diagnostics.recent()
@@ -700,7 +720,7 @@ describe('an agent on a source that only reads', () => {
 
   async function open(source: typeof readOnly | undefined) {
     const wire = listeningGateway()
-    renderApp({ initialProject: scope, agent: wire.gateway, ...(source ? { source } : {}) })
+    renderApp({ boot: { initialProject: scope }, agent: wire.gateway, ...(source ? { source } : {}) })
     await waitFor(() => expect(wire.bound()).toBe(true))
     return wire
   }
@@ -736,7 +756,7 @@ describe('a scope whose model did not read', () => {
 
   it('opens read-only with a sentence, and refuses an agent\'s write', async () => {
     const wire = listeningGateway()
-    renderApp({ initialProject: scope, agent: wire.gateway })
+    renderApp({ agent: wire.gateway, boot: { initialProject: scope } })
     await waitFor(() => expect(wire.bound()).toBe(true))
     expect(screen.getByTestId('unreadable-notice').textContent).toContain('model.json')
     const refused = await wire.ask('element.add', { kind: 'application', name: 'Ledger' })
@@ -779,16 +799,18 @@ describe('the lines a registered provider puts in the menu', () => {
     const pressed: string[] = []
     renderApp({
       source: elsewhere,
-      sourceMenu: [{
-        kind: 'elsewhere',
-        menu: () => [
-          { key: 'account', labelKey: 'elsewhere.account', onSelect: () => pressed.push('account') },
-          {
-            key: 'pages', labelKey: 'elsewhere.pages', divider: true,
-            onSelect: () => pressed.push('pages'),
-          },
-        ],
-      }],
+      provider: {
+        menu: [{
+          kind: 'elsewhere',
+          menu: () => [
+            { key: 'account', labelKey: 'elsewhere.account', onSelect: () => pressed.push('account') },
+            {
+              key: 'pages', labelKey: 'elsewhere.pages', divider: true,
+              onSelect: () => pressed.push('pages'),
+            },
+          ],
+        }],
+      },
     })
     open()
     const lines = provided()
@@ -814,14 +836,16 @@ describe('the lines a registered provider puts in the menu', () => {
     renderApp({
       scopes: new InMemoryScopeStore([scope]),
       source: elsewhere,
-      sourceMenu: [{
-        kind: 'elsewhere',
-        menu: ({ open: go }) => [{
-          key: 'board',
-          labelKey: 'elsewhere.board',
-          onSelect: () => go({ scope: 'acme/landscape' }),
+      provider: {
+        menu: [{
+          kind: 'elsewhere',
+          menu: ({ open: go }) => [{
+            key: 'board',
+            labelKey: 'elsewhere.board',
+            onSelect: () => go({ scope: 'acme/landscape' }),
+          }],
         }],
-      }],
+      },
     })
     open()
     fireEvent.click(provided()[0])
@@ -848,15 +872,17 @@ describe('the lines a registered provider puts in the menu', () => {
     let tell: (() => void) | undefined
     renderApp({
       source: elsewhere,
-      onSourceWork: (listener) => { tell = listener; return () => { tell = undefined } },
-      sourceMenu: [{
-        kind: 'elsewhere',
-        menu: () => [{
-          key: 'who',
-          labelKey: signedIn ? 'elsewhere.signedIn' : 'elsewhere.signIn',
-          onSelect: () => {},
+      provider: {
+        onWork: (listener) => { tell = listener; return () => { tell = undefined } },
+        menu: [{
+          kind: 'elsewhere',
+          menu: () => [{
+            key: 'who',
+            labelKey: signedIn ? 'elsewhere.signedIn' : 'elsewhere.signIn',
+            onSelect: () => {},
+          }],
         }],
-      }],
+      },
     })
     open()
     expect(screen.getByTestId('source-entry-who').textContent).toBe('Sign in…')
@@ -882,9 +908,9 @@ describe('the lines a registered provider puts in the menu', () => {
       },
     })
     renderApp({
-      initialProject: scope,
       source: { ...elsewhere, readOnly: true },
-      sourceMenu: [watcher('elsewhere'), watcher('other')],
+      boot: { initialProject: scope },
+      provider: { menu: [watcher('elsewhere'), watcher('other')] },
     })
     await screen.findByTestId('shell-toolbar')
     open()
@@ -899,13 +925,15 @@ describe('the lines a registered provider puts in the menu', () => {
     registerStrings('en', { 'elsewhere.account': 'Your account…' })
     const { diagnostics } = renderApp({
       source: elsewhere,
-      sourceMenu: [
-        { kind: 'falls', menu: () => { throw new Error('asked at a bad moment') } },
-        {
-          kind: 'elsewhere',
-          menu: () => [{ key: 'account', labelKey: 'elsewhere.account', onSelect: () => {} }],
-        },
-      ],
+      provider: {
+        menu: [
+          { kind: 'falls', menu: () => { throw new Error('asked at a bad moment') } },
+          {
+            kind: 'elsewhere',
+            menu: () => [{ key: 'account', labelKey: 'elsewhere.account', onSelect: () => {} }],
+          },
+        ],
+      },
     })
     open()
     expect(provided().map((line) => line.textContent)).toEqual(['Your account…'])
@@ -930,7 +958,7 @@ describe('the chip a registered provider names', () => {
     registerStrings('en', { 'elsewhere.signedIn': 'Signed in as Anna Berg.' })
     renderApp({
       source: elsewhere,
-      sourceChip: () => ({ label: 'Anna Berg', tipKey: 'elsewhere.signedIn' }),
+      provider: { chip: () => ({ label: 'Anna Berg', tipKey: 'elsewhere.signedIn' }) },
     })
     expect(screen.getByTestId('working-source').textContent).toBe('Anna Berg')
     fireEvent.mouseOver(screen.getByTestId('working-source'))
@@ -942,8 +970,7 @@ describe('the chip a registered provider names', () => {
     const asked = asksAgain()
     renderApp({
       source: elsewhere,
-      sourceChip: () => ({ label }),
-      onSourceWork: asked.onSourceWork,
+      provider: { chip: () => ({ label }), onWork: asked.onSourceWork },
     })
     expect(screen.getByTestId('working-source').textContent).toBe('Not signed in')
 
@@ -961,7 +988,7 @@ describe('the chip a registered provider names', () => {
     const pressed: number[] = []
     renderApp({
       source: elsewhere,
-      sourceChip: () => ({ label: 'Anna Berg', onClick: () => pressed.push(1) }),
+      provider: { chip: () => ({ label: 'Anna Berg', onClick: () => pressed.push(1) }) },
     })
     const chip = screen.getByTestId('working-source')
     expect(chip.tagName).toBe('BUTTON')

@@ -103,7 +103,7 @@ async function twoScopes() {
     remove: (path: string) => held.remove(path),
     models: () => { read += 1; return held.models() },
   }
-  renderApp({ scopes, initialProject: scope('acme/finance'), agent: wire.gateway })
+  renderApp({ scopes, agent: wire.gateway, boot: { initialProject: scope('acme/finance') } })
   // Nothing on screen waits for the tree to be read, so the test does — which
   // is the same wait the watcher's report ends on disk.
   await waitFor(() => expect(read).toBeGreaterThan(0))
@@ -140,8 +140,8 @@ describe('an agent is refused the owner\'s detail, as a person is', () => {
         remove: (path: string) => held.remove(path),
         models: () => { read += 1; return held.models() },
       },
-      initialProject: open,
       agent: wire.gateway,
+      boot: { initialProject: open },
     })
     await waitFor(() => expect(read).toBeGreaterThan(0))
     await act(async () => {})

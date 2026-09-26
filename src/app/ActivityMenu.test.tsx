@@ -72,7 +72,7 @@ const project = (): ScopeSnapshot => ({
 
 function show() {
   const initial = project()
-  renderApp({ scopes: new InMemoryScopeStore([initial]), initialProject: initial })
+  renderApp({ scopes: new InMemoryScopeStore([initial]), boot: { initialProject: initial } })
 }
 
 const click = (id: string) => act(() => { fireEvent.click(screen.getByTestId(id)) })

@@ -65,10 +65,10 @@ function show(status: AgentServerStatus, over: Parameters<typeof renderApp>[0] =
   const wire = fakeGateway(status)
   const listeners: ((command: HostCommand) => void)[] = []
   const app = renderApp({
-    initialProject: project,
     agent: wire.gateway,
-    commands: (listener) => { listeners.push(listener); return () => {} },
     ...over,
+    boot: { initialProject: project, ...over.boot },
+    host: { commands: (listener) => { listeners.push(listener); return () => {} }, ...over.host },
   })
   return { ...wire, app, send: (command: HostCommand) => act(() => { for (const held of listeners) held(command) }) }
 }
@@ -110,7 +110,7 @@ describe('the agent glyph', () => {
   })
 
   it('in a browser tab shows the glyph off and the dialog explains instead of switching', async () => {
-    renderApp({ initialProject: project })
+    renderApp({ boot: { initialProject: project } })
     await waitFor(() => expect(screen.getByTestId('agent-glyph').getAttribute('data-state')).toBe('off'))
     fireEvent.click(screen.getByTestId('agent-glyph'))
     expect(await screen.findByTestId('agent-desktop-only')).toBeDefined()

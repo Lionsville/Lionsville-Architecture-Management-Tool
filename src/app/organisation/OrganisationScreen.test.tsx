@@ -411,7 +411,7 @@ describe('the organisation screen — a fresh folder', () => {
       scopes: new InMemoryScopeStore([scope('', 'Acme Logistics')]),
       today: TODAY,
       source: { kind: 'registered', provider: 'elsewhere', name: 'Elsewhere', key: 'one' },
-      sourceDescription: 'elsewhere.kept',
+      provider: { description: 'elsewhere.kept' },
     })
     const subtitle = await screen.findByTestId('organisation-subtitle')
     expect(subtitle.textContent).toContain('Your work is kept elsewhere, and elsewhere says when.')
