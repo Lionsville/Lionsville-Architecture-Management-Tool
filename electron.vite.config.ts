@@ -2,10 +2,11 @@
  * The desktop build: main, preload, renderer, one config.
  *
  * The renderer half is `vite.config.ts` — same `worker.format`, same wasm
- * plugin, the same one ELK and the same budget. It is repeated rather than imported because electron-vite loads this
- * file per target and the web config carries `server`/`preview` settings that
- * mean nothing here; the wasm publish is the one shared part that could drift
- * silently, so that is the one that is factored out.
+ * plugin, the same one ELK, and a budget of its own because this bundle is not
+ * minified. It is repeated rather than imported because electron-vite loads
+ * this file per target and the web config carries `server`/`preview` settings
+ * that mean nothing here; the parts that could drift silently are plugins in
+ * `build/`, so they are factored out.
  */
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
 import react from '@vitejs/plugin-react'
