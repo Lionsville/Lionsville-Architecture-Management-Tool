@@ -181,7 +181,8 @@ function buildTokens(theme: Theme): NodeTokens {
         management: alpha(palette.warning.main, dark ? 0.07 : 0.05),
         landscape: 'transparent',
       },
-      label: alpha(text, 0.45),
+      // A band's name is words at 11px: the secondary ink, not a fainter one.
+      label: palette.text.secondary,
     },
     domainGroup: {
       border: alpha(text, 0.35),
@@ -205,14 +206,17 @@ function buildTokens(theme: Theme): NodeTokens {
       managed: statusToken(theme, 'success'),
       partial: statusToken(theme, 'warning'),
       atRisk: statusToken(theme, 'error'),
+      // A badge's letters are words, 8px of them, so both quiet states are
+      // drawn in the secondary ink (4.5:1 and more) and told apart by their
+      // border; the disabled ink is for a control that is off, and was 2.7:1.
       none: {
         bg: 'transparent',
-        fg: palette.text.disabled,
+        fg: palette.text.secondary,
         border: palette.divider,
       },
       unset: {
         bg: 'transparent',
-        fg: alpha(palette.text.disabled, 0.6),
+        fg: palette.text.secondary,
         border: alpha(palette.divider, 0.6),
       },
     },
@@ -222,9 +226,11 @@ function buildTokens(theme: Theme): NodeTokens {
       planned: statusToken(theme, 'info'),
       live: statusToken(theme, 'success'),
       retiring: statusToken(theme, 'warning'),
+      // Neutral rather than an alert, in the secondary ink for the reason the
+      // quiet aspect states are; the tint is the same grey it always was.
       retired: {
-        bg: alpha(palette.text.disabled, dark ? 0.18 : 0.1),
-        fg: palette.text.disabled,
+        bg: alpha(palette.text.secondary, dark ? 0.18 : 0.1),
+        fg: palette.text.secondary,
         border: palette.divider,
       },
     },

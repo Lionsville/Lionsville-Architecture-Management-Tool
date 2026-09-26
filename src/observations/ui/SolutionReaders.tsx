@@ -336,7 +336,7 @@ export function SolutionReader(props: SolutionReaderProps) {
                 <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0, fontSize: 14 }}>
                   {gate.items.map((one) => (
                     <Box component="li" key={one.item} data-testid={`solution-gate-${one.item}`} data-ok={one.ok ? 'true' : 'false'} sx={{ display: 'flex', gap: 1, py: 0.5, borderBottom: 1, borderColor: 'divider' }}>
-                      <Box component="span" aria-hidden sx={{ width: 16, fontWeight: 700, color: one.ok ? 'success.main' : 'text.disabled' }}>{one.ok ? '✓' : '○'}</Box>
+                      <Box component="span" aria-hidden sx={{ width: 16, fontWeight: 700, color: one.ok ? 'success.main' : 'text.secondary' }}>{one.ok ? '✓' : '○'}</Box>
                       <Box component="span" sx={{ flex: 1 }}>{s(GATE_LABEL[one.item])}</Box>
                       {!one.ok && canEdit && one.item === 'experimentPlanned' && <Button size="small" onClick={props.onPlanExperiment}>{s('solution.planExperiment')}</Button>}
                       {!one.ok && canEdit && one.item === 'decisionAccepted' && !solution.decision && props.onDecide && (

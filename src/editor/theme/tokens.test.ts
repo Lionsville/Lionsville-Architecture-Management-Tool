@@ -21,7 +21,7 @@ describe('getNodeTokens', () => {
       expect(tokens.aspects.atRisk.fg).toBe(
         theme.palette.mode === 'dark' ? theme.palette.error.light : theme.palette.error.dark,
       );
-      expect(tokens.aspects.none.fg).toBe(theme.palette.text.disabled);
+      expect(tokens.aspects.none.fg).toBe(theme.palette.text.secondary);
     }
   });
 
@@ -62,7 +62,7 @@ describe('getNodeTokens', () => {
       expect(lifecycle.planned.fg).toBe(useLight ? theme.palette.info.light : theme.palette.info.dark);
       expect(lifecycle.live.fg).toBe(useLight ? theme.palette.success.light : theme.palette.success.dark);
       expect(lifecycle.retiring.fg).toBe(useLight ? theme.palette.warning.light : theme.palette.warning.dark);
-      expect(lifecycle.retired.fg).toBe(theme.palette.text.disabled);
+      expect(lifecycle.retired.fg).toBe(theme.palette.text.secondary);
     }
   });
 

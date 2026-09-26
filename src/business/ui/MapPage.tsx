@@ -318,7 +318,7 @@ function Heading({ column, onOpen, openable, t }: {
             display: 'inline-block', writingMode: 'vertical-rl', transform: 'rotate(180deg)',
             maxHeight: HEADING_HEIGHT - 8, overflow: 'hidden', textOverflow: 'ellipsis',
             font: 'inherit', fontSize: 11, lineHeight: `${CELL}px`, textAlign: 'left',
-            color: column.known ? 'inherit' : 'text.disabled',
+            color: column.known ? 'inherit' : 'text.secondary',
             fontStyle: column.known ? 'normal' : 'italic',
             appearance: 'none', bgcolor: 'transparent', border: 0, p: 0,
             cursor: openable ? 'pointer' : 'default',

@@ -31,7 +31,7 @@ export function UsesField({ field, uses, picker }: { field: InspectorField; uses
     <Box data-testid="element-uses">
       <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{t('field.uses')}</Typography>
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
-        {usesIds.length === 0 && <Typography sx={{ fontSize: 12, color: 'text.disabled' }}>{t('field.usesNothing')}</Typography>}
+        {usesIds.length === 0 && <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('field.usesNothing')}</Typography>}
         {usesIds.map((id) => (
           <Chip
             key={id}

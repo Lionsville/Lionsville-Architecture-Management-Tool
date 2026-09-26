@@ -28,23 +28,58 @@
  * on the palette production runs on rather than on a default that only
  * resembles it.
  */
-import { createTheme } from '@mui/material/styles'
+import { alpha, createTheme } from '@mui/material/styles'
 import type { Theme } from '@mui/material/styles'
+
+/**
+ * The outline of a field at rest (1.4.11). MUI draws it at 23 % of the ink,
+ * which is 1.6:1 on paper: a box you have to know is there. This is the
+ * lightest that still says where the field is, at 3:1 on either ground.
+ */
+export function fieldOutline(theme: Theme): string {
+  return outlineOver(theme.palette.text.primary, theme.palette.mode)
+}
+
+function outlineOver(ink: string, mode: 'light' | 'dark'): string {
+  return alpha(ink, mode === 'dark' ? 0.42 : 0.46)
+}
 
 export function shellTheme(mode: 'light' | 'dark'): Theme {
   const dark = mode === 'dark'
+  // Material's ink in the light mode, said so the field outline can be read off it.
+  const ink = dark ? '#e4e7ee' : 'rgba(0, 0, 0, 0.87)'
+  const outline = outlineOver(ink, mode)
   return createTheme({
     palette: {
       mode,
+      // The ink MUI picks for a button or a filled alert is whichever of black
+      // and white reaches this against the fill; its default, 3, is the
+      // threshold for large text, and a button's label is not large.
+      contrastThreshold: 4.5,
       primary: { main: dark ? '#8e96f2' : '#4f5bd5' },
+      // The status colours MUI ships that are below 4.5:1 as text on these
+      // grounds: orange and light blue on paper in the light mode, red on the
+      // dark paper. Darker steps of the same hues in the light mode; in the
+      // dark, Material's red a step lighter all through — 400 for the text,
+      // 200 for a badge's letters on its own tint, 600 under a filled alert,
+      // which MUI letters in black because that is what the 400 takes.
+      ...(dark
+        ? { error: { main: '#ef5350', light: '#ef9a9a', dark: '#e53935' } }
+        : { warning: { main: '#b45309' }, info: { main: '#0271b3' } }),
       background: dark
         ? { default: '#15171b', paper: '#1e2126' }
         : { default: '#f4f5f7', paper: '#ffffff' },
       divider: dark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(0, 0, 0, 0.10)',
-      ...(dark ? { text: { primary: '#e4e7ee' } } : {}),
+      text: { primary: ink },
     },
     components: {
       MuiPaper: { styleOverrides: { root: { backgroundImage: 'none' } } },
+      MuiOutlinedInput: { styleOverrides: { notchedOutline: { borderColor: outline } } },
+      MuiInput: { styleOverrides: { underline: { '&::before': { borderBottomColor: outline } } } },
     },
+    // MUI's own keyboard ring on every control it draws — a 2px outline in the
+    // accent, inset where a parent clips (a tab, a menu item) — in place of the
+    // faint tint a focused button gets by default, which nobody could find.
+    focusVisible: true,
   })
 }

@@ -419,7 +419,7 @@ export function ShellToolbar({
               // something is actually editing beside the person.
               color: agent.status.kind === 'connected'
                 ? 'primary.main'
-                : agent.status.kind === 'listening' ? 'text.secondary' : 'text.disabled',
+                : agent.status.kind === 'listening' ? 'text.primary' : 'text.secondary',
             }}
           >
             <AgentIcon filled={agent.status.kind === 'connected'} />

@@ -970,7 +970,7 @@ function OrganisationBar({
               width: 30, height: 30,
               color: agent.status.kind === 'connected'
                 ? 'primary.main'
-                : agent.status.kind === 'listening' ? 'text.secondary' : 'text.disabled',
+                : agent.status.kind === 'listening' ? 'text.primary' : 'text.secondary',
             }}
           >
             <AgentIcon filled={agent.status.kind === 'connected'} />

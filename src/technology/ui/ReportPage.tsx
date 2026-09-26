@@ -314,7 +314,7 @@ function Body<R>({ config, report, openable, onOpen, t }: {
           <Box key={list.key} data-testid={`${config.prefix}-${list.key}`}>
             <Caption text={t(list.title)} />
             {list.ends.length === 0 ? (
-              <Typography sx={{ fontSize: 11.5, color: 'text.disabled' }}>{t(list.empty)}</Typography>
+              <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>{t(list.empty)}</Typography>
             ) : (
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                 {list.ends.map(name)}
@@ -373,7 +373,7 @@ function Name({ end, openable, onOpen, config, t }: {
         data-testid={`${config.prefix}-name-${end.id}`}
         sx={{
           font: 'inherit', fontSize: 12, appearance: 'none', bgcolor: 'transparent', border: 0, p: 0,
-          color: end.known ? 'inherit' : 'text.disabled', fontStyle: end.known ? 'normal' : 'italic',
+          color: end.known ? 'inherit' : 'text.secondary', fontStyle: end.known ? 'normal' : 'italic',
           cursor: openable ? 'pointer' : 'default', textAlign: 'left', whiteSpace: 'nowrap',
           '&:hover': openable ? { textDecoration: 'underline' } : undefined,
         }}

@@ -549,7 +549,7 @@ function strokeOf(kind: LandscapeEdgeKind, theme: Theme): string {
     case 'realises': return theme.palette.secondary.main
     case 'leverages': return theme.palette.warning.main
     case 'binds': return theme.palette.info.main
-    case 'hostedOn': return theme.palette.text.disabled
+    case 'hostedOn': return theme.palette.text.secondary
   }
 }
 
@@ -645,7 +645,7 @@ function Band({ title, note, action, testId, last, strip, children }: {
 }
 
 function Empty({ text }: { text: string }) {
-  return <Typography sx={{ fontSize: 11.5, color: 'text.disabled' }}>{text}</Typography>
+  return <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>{text}</Typography>
 }
 
 /** The look a card shares: chosen, dimmed, or hidden. */
@@ -919,7 +919,7 @@ function Inspector({ landscape, model, selected, view, t, onOpenDocumentation, o
     : <>{name(of)}</>)
   const edges = landscapeEdges(landscape, { ...view, folded: new Set() })
   const list = (ids: readonly ElementId[], note?: (of: ElementId) => string | undefined) => (ids.length === 0
-    ? <Typography sx={{ fontSize: 12, color: 'text.disabled' }}>{t('landscape.nothing')}</Typography>
+    ? <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('landscape.nothing')}</Typography>
     : <Box component="ul" sx={{ m: 0, pl: 2, fontSize: 12.5 }}>{ids.map((of) => <li key={of}>{link(of)}{note?.(of) ? <Box component="span" sx={{ color: 'text.secondary' }}> · {note(of)}</Box> : null}</li>)}</Box>)
 
   let title = ''

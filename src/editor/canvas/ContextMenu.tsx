@@ -189,7 +189,7 @@ function ItemContent({
             ml: 3,
             fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
             fontSize: 11,
-            color: 'text.disabled',
+            color: 'text.secondary',
             whiteSpace: 'nowrap',
           }}
         >
