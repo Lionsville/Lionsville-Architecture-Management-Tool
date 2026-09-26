@@ -521,6 +521,21 @@ jobs:
         env:
           VERSION: ${{ needs.preflight.outputs.version }}
         run: sha256sum "web-$VERSION.zip" > "web-$VERSION.zip.sha256"
+      # The bill of materials, in CycloneDX, for every form the release takes:
+      # the installers and this build are one bundle of the same packages, so
+      # one document describes them all, and this is the one job that runs
+      # once and has the tree installed. Not `npm sbom --omit dev` as it
+      # stands — everything bundled is a dev dependency, so that document is
+      # empty; `build/sbom.ts` says how it narrows npm's own to what ships.
+      # Its checksum lands in SHA256SUMS with the rest.
+      - name: The bill of materials
+        shell: bash
+        env:
+          VERSION: ${{ needs.preflight.outputs.version }}
+        run: |
+          set -euo pipefail
+          node build/sbom.ts "sbom-$VERSION.cdx.json" .=src,electron
+          sha256sum "sbom-$VERSION.cdx.json" > "sbom-$VERSION.cdx.json.sha256"
       - name: Put it on the release
         if: github.event_name == 'release'
         shell: bash
@@ -528,13 +543,17 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ github.event.release.tag_name }}
           VERSION: ${{ needs.preflight.outputs.version }}
-        run: gh release upload "$TAG" "web-$VERSION.zip" "web-$VERSION.zip.sha256" --clobber
+        run: |
+          gh release upload "$TAG" "web-$VERSION.zip" "web-$VERSION.zip.sha256" \
+            "sbom-$VERSION.cdx.json" "sbom-$VERSION.cdx.json.sha256" --clobber
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: web-${{ needs.preflight.outputs.version }}
           path: |
             web-${{ needs.preflight.outputs.version }}.zip
             web-${{ needs.preflight.outputs.version }}.zip.sha256
+            sbom-${{ needs.preflight.outputs.version }}.cdx.json
+            sbom-${{ needs.preflight.outputs.version }}.cdx.json.sha256
           retention-days: 14
 
   # app.architecture.lionsville.nl runs the newest stable release, and this is

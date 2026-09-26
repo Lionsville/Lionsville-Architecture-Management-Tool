@@ -15,6 +15,7 @@ later the release page carries:
 | `latest.yml`, `latest-mac.yml`, `latest-linux.yml`, `*.blockmap` | update manifests — written by electron-builder, read by nothing since the notice replaced the self-updater |
 | `SHA256SUMS`, `<file>.sha256` | a SHA-256 per file, and one file listing them all |
 | `web-<version>.zip` | the web build — `npm run build`'s `dist/`, with a `version.json` saying which release it is; what [app.architecture.lionsville.nl](https://app.architecture.lionsville.nl/) runs |
+| `sbom-<version>.cdx.json` | the bill of materials, in CycloneDX: every package the installers and the web build are made of, with its version, licence and hash — npm's own document, narrowed to what ships (`build/sbom.ts`) |
 
 **Then the README, by itself.** Its Download section links three installers
 by full name, and the name carries the version (`…-1.1.0-mac-arm64.dmg`). The
