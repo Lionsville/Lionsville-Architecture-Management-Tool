@@ -407,4 +407,16 @@ describe('the session handed to whoever answers for the source', () => {
     expect(handed!.indexed().order.elements).toEqual(['billing', 'ledger'])
     expect(handed!.current().elements.map((element) => element.id)).toEqual(['billing', 'ledger'])
   })
+
+  /** What a far end that numbers a scope's steps resumes from (`ScopeSession.openedFrom`). */
+  it('says which read of the store the model was opened on', async () => {
+    const wire = listeningGateway()
+    let handed: ScopeSession | undefined
+    renderApp({
+      initialProject: { ...scope, revision: 'read-7' }, agent: wire.gateway,
+      onScopeSession: (session: ScopeSession) => { handed = session },
+    })
+    await waitFor(() => expect(handed).toBeDefined())
+    expect(handed?.openedFrom).toBe('read-7')
+  })
 })

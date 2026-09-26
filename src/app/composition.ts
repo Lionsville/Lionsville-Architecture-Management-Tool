@@ -181,6 +181,17 @@ export type Shell = {
    */
   onScopeSession?: (session: ScopeSession) => (() => void) | void
   /**
+   * Every change of the open scope travels as a step through whoever took its
+   * session (ADR-0022: *a step is published, not saved*).
+   *
+   * Then a whole write of the open scope made by this shell after a command
+   * is a second copy of what the step already carried — one taken of this
+   * window's model, which lands over every step somebody else made to that
+   * scope in the meantime. The shell makes none of its own where this is
+   * true. Absent for all three sources that ship, whose changes are written.
+   */
+  publishesSteps?: boolean
+  /**
    * Tell me when this project's folder changed under us, other than by us.
    *
    * Absent when nothing can watch — a browser tab, or a folder the platform

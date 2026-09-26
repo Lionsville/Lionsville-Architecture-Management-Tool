@@ -26,9 +26,10 @@ import type { IndexSource } from '../projects/scopeIndex'
 import type { ScopeSnapshot } from '../projects/scope'
 import { isWithinScope } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
+import { rewriteScope } from './rewriteScope'
 
 /** What this pass does to a store: reads the tree, and writes the scopes outside the move. */
-export type CarryStore = IndexSource & { save(scope: ScopeSnapshot): Promise<void> }
+export type CarryStore = IndexSource & { save(scope: ScopeSnapshot, expects?: string): Promise<void> }
 
 /**
  * Carry every address that points into the subtree at `from` over to `to`.
@@ -48,8 +49,10 @@ export async function carryRefs(deps: {
   const within = new Map<ScopePath, RefPatch>()
   for (const patch of patches) {
     if (isWithinScope(patch.path, from)) { within.set(patch.path, patch); continue }
-    const held = await scopes.load(patch.path)
-    if (held) await scopes.save(applyRefPatch(held, patch))
+    // Expecting what was read, and made again over a scope that moved since:
+    // the patch is addresses, so it applies as well to their version as to the
+    // one this read (`rewriteScope.ts`).
+    await rewriteScope(scopes, patch.path, (held) => (held ? applyRefPatch(held, patch) : undefined))
   }
   return within
 }

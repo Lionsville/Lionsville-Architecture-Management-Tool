@@ -109,9 +109,10 @@ export function useScopeSessionSeam(
     indexed: session.indexed,
     history: session.history,
     revision: session.revision,
+    ...(project.revision !== undefined ? { openedFrom: project.revision } : {}),
     alsoHere: setAlsoHere,
   }), [
-    project.path, session.steps, session.dispatch,
+    project.path, project.revision, session.steps, session.dispatch,
     session.current, session.indexed, session.history, session.revision,
   ])
   useEffect(() => onScopeSession?.(scopeSession), [onScopeSession, scopeSession])

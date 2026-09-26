@@ -72,6 +72,12 @@ export type WorkspaceSource = {
    * the way the agent's view is; absent for all three sources that ship.
    */
   onSession?: (session: ScopeSession) => (() => void) | void
+  /**
+   * Every change of the open scope travels as a step (`Shell.publishesSteps`),
+   * and the scope is not written whole after one. Absent for all three sources
+   * that ship, whose changes are written.
+   */
+  publishesSteps?: boolean
   /** How a save went: the shell's notice says what a refusal means (`useStorageNotice`). */
   onResult: StorageNotice
 }

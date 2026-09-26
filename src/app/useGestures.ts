@@ -38,6 +38,7 @@ import type { ScopeModel, ScopeSnapshot } from '../projects/scope'
 import type { ScopeIndex } from '../projects/scopeIndex'
 import { ancestorScopes, isWithinScope, ROOT_SCOPE } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
+import { rewriteScope } from './rewriteScope'
 import type { Notify } from './useToasts'
 
 /** Which dialog is up. One at a time, because both are about one record. */
@@ -72,9 +73,17 @@ export function useGestures(deps: {
   scope: ScopePath
   /** Reading and writing another scope: the narrowest shape that will do. */
   scopes: {
-    save(scope: ScopeSnapshot): Promise<void>
+    save(scope: ScopeSnapshot, expects?: string): Promise<void>
     load?(path: ScopePath): Promise<ScopeSnapshot | undefined>
   }
+  /**
+   * Whether the source carries every change of the open scope as a step
+   * (`Shell.publishesSteps`, ADR-0022). Then the command dispatched here has
+   * already gone out, and a whole write of the scope after it would be a
+   * second copy of it — one that lands over whatever anybody else's steps did
+   * in between.
+   */
+  published?: boolean
   /**
    * Every scope's records, read when a gesture is asked for.
    *
@@ -103,7 +112,7 @@ export function useGestures(deps: {
 }): Gestures {
   const {
     scope, scopes, models, index, session, onTreeChanged, onOpenScope, scopeLabel,
-    notify, onFailure, s,
+    notify, onFailure, s, published = false,
   } = deps
   const [choice, setChoice] = useState<GestureChoice | undefined>(undefined)
   const [busy, setBusy] = useState(false)
@@ -161,12 +170,17 @@ export function useGestures(deps: {
     setBusy(true)
     try {
       for (const write of plan.writes) {
-        const held = await scopes.load?.(write.path)
-        if (!held) {
+        // Expecting what was read, and made again over a scope that moved in
+        // between: the definition is written into the scope as it stands, so a
+        // colleague's change to it survives the gesture (`rewriteScope.ts`).
+        const written = scopes.load
+          ? await rewriteScope({ load: scopes.load.bind(scopes), save: scopes.save.bind(scopes) }, write.path,
+            (held) => (held ? withDefinition(held, write.element) : undefined))
+          : undefined
+        if (!written) {
           notify(s(GESTURE_REFUSAL['gesture.noSuchScope']), 'warning')
           return
         }
-        await scopes.save(withDefinition(held, write.element))
       }
     } catch (cause) {
       onFailure('gesture.write', cause)
@@ -182,14 +196,20 @@ export function useGestures(deps: {
     }
     if (session.dispatch(command) === undefined) return
     const scopeName = scopeLabel(plan.owner)
-    try {
-      // Through the store rather than through the document session's own save,
-      // because this one has to be able to fail out loud: everything above it
-      // has already landed in another scope.
-      await scopes.save(session.snapshot())
-    } catch (cause) {
-      onFailure('gesture.save', cause)
-      notify(s('gesture.leftCopy', { scope: scopeName, message: reasonOf(cause) }), 'warning')
+    // Where the source publishes every step, the dispatch above is the write:
+    // it has gone out as a step and lands in its order. A whole snapshot after
+    // it is a second copy, taken of this window's model, and it would land
+    // over every step somebody else made to this scope in the meantime.
+    if (!published) {
+      try {
+        // Through the store rather than through the document session's own
+        // save, because this one has to be able to fail out loud: everything
+        // above it has already landed in another scope.
+        await scopes.save(session.snapshot())
+      } catch (cause) {
+        onFailure('gesture.save', cause)
+        notify(s('gesture.leftCopy', { scope: scopeName, message: reasonOf(cause) }), 'warning')
+      }
     }
     onTreeChanged()
     notify(
@@ -199,7 +219,7 @@ export function useGestures(deps: {
       'success',
       onOpenScope ? { label: s('standIn.open', { scope: scopeName }), onClick: () => onOpenScope(plan.owner) } : undefined,
     )
-  }, [scopes, session, notify, onFailure, s, scopeLabel, onTreeChanged, onOpenScope])
+  }, [scopes, session, notify, onFailure, s, scopeLabel, onTreeChanged, onOpenScope, published])
 
   const ask = useCallback((request: Omit<GestureRequest, 'scope'>) => {
     if (!models) return

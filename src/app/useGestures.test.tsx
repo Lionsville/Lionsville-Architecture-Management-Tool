@@ -69,19 +69,31 @@ type Harness = {
   failures: string[]
 }
 
-function mount(open: string, initial = tree(), failOnWrite?: number): Harness {
+type Options = {
+  /** The source carries the open scope's changes as steps (`Shell.publishesSteps`). */
+  published?: boolean
+  /** Somebody else's save, made between this side's read of a scope and its write. */
+  meanwhile?: (store: InMemoryScopeStore, path: string) => Promise<void>
+}
+
+function mount(open: string, initial = tree(), failOnWrite?: number, options: Options = {}): Harness {
   const store = new InMemoryScopeStore(initial)
   const writes: string[] = []
   const notices: [string, string | undefined][] = []
   const failures: string[] = []
   const held = initial.find((one) => one.path === open)!
+  let interloped = false
   const scopes = {
-    save: (one: ScopeSnapshot) => {
+    save: async (one: ScopeSnapshot, expects?: string) => {
       writes.push(one.path)
       if (failOnWrite !== undefined && writes.length === failOnWrite) {
-        return Promise.reject(new Error('the store said no'))
+        throw new Error('the store said no')
       }
-      return store.save(one)
+      if (options.meanwhile && !interloped) {
+        interloped = true
+        await options.meanwhile(store, one.path)
+      }
+      return store.save(one, expects)
     },
     load: (path: string) => store.load(path),
   }
@@ -104,6 +116,7 @@ function mount(open: string, initial = tree(), failOnWrite?: number): Harness {
       notify,
       onFailure: (where) => { failures.push(where) },
       s,
+      ...(options.published ? { published: true } : {}),
     })
     return null
   }
@@ -222,5 +235,52 @@ describe('what is on offer', () => {
     expect(held.gestures().choice).toBeUndefined()
     act(() => held.gestures().choose('wms'))
     expect(held.gestures().choice).toMatchObject({ kind: 'choosing', name: 'Retail WMS' })
+  })
+})
+
+/**
+ * A whole write lands over whatever else happened to the scope it writes, so
+ * the two the gestures make are made the way a second writer needs them made.
+ */
+describe('with somebody else writing too', () => {
+  /**
+   * The other scope is read, changed and written back. A colleague's save to
+   * it in between is written over by a blind save; expecting what was read,
+   * the store refuses, and the definition is written again into their version.
+   */
+  it('writes the definition into the other scope as it stands, keeping what was saved meanwhile', async () => {
+    const held = mount('retail', tree(), undefined, {
+      meanwhile: async (store, path) => {
+        const theirs = await store.load(path)
+        await store.save({ ...theirs!, model: { ...theirs!.model, name: 'Renamed meanwhile' } })
+      },
+    })
+    await act(async () => { held.gestures().ask({ gesture: 'promote', id: 'wms', to: '' }) })
+    await settle()
+    await act(async () => { held.gestures().confirm() })
+    await settle()
+
+    const above = await held.store.load('')
+    expect(above?.model.name).toBe('Renamed meanwhile')
+    expect(above?.model.elements[0]).toMatchObject({ id: 'wms', name: 'Retail WMS' })
+    expect(held.writes).toEqual(['', '', 'retail'])
+  })
+
+  /**
+   * Where every change of the open scope is published as a step, the command
+   * the gesture dispatched has gone out already, and a whole write of this
+   * window's model after it would land over every step somebody else made to
+   * the scope in the meantime.
+   */
+  it('does not write the open scope whole where its steps are published', async () => {
+    const held = mount('retail', tree(), undefined, { published: true })
+    await act(async () => { held.gestures().ask({ gesture: 'promote', id: 'wms', to: '' }) })
+    await settle()
+    await act(async () => { held.gestures().confirm() })
+    await settle()
+
+    expect(held.writes).toEqual([''])
+    expect(held.session().current().elements[0]).toMatchObject({ id: 'wms', ref: '' })
+    expect(held.notices.some(([, severity]) => severity === 'success')).toBe(true)
   })
 })

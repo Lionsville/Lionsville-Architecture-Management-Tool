@@ -39,6 +39,7 @@ import { applyRefPatch } from '../projects/readdress'
 import { treeModels, treeScopes } from '../projects/scopeIndex'
 import { organisationLabel, scopeClient } from '../projects/scopeLabel'
 import type { RecordLink } from '../projects/links'
+import { isScopeMoved, SCOPE_MOVED } from '../projects/revision'
 import {
   ancestorScopes, parentScope, ROOT_SCOPE, scopePathFor, scopePathLabel,
 } from '../projects/scopePath'
@@ -327,7 +328,8 @@ export type InitialPage =
 export type ScopeLibrary = {
   list(): Promise<ScopeSummary>
   load(path: ScopePath): Promise<ScopeSnapshot | undefined>
-  save(scope: ScopeSnapshot): Promise<void>
+  /** See `ScopeStore.save`: a save may say what it expects to overwrite. */
+  save(scope: ScopeSnapshot, expects?: string): Promise<void>
   remove(path: ScopePath): Promise<void>
   /**
    * Every scope's records and rows, for the index (ADR-0012 §2). Optional on
@@ -447,6 +449,8 @@ export type AppProps = {
    * that ship, and then nothing subscribes to anything.
    */
   onScopeSession?: (session: ScopeSession) => (() => void) | void
+  /** See `Shell.publishesSteps`: the open scope's changes travel as steps, and are not written whole. */
+  publishesSteps?: boolean
   /**
    * Whatever the source providers draw for themselves ({@link SourceChrome}),
    * one entry per registration and not per open source.
@@ -636,7 +640,7 @@ export function App({
   scopes: projects, preferences, documents, diagnostics, hostControls,
   source = BROWSER_STORAGE, sourceStatus, onSourceWork, sourceDescription,
   sourceChip, storageFailure, sourceMenu: menus = [],
-  onScopeSession, chrome: chromes = [], agentPanel: AgentPanel,
+  onScopeSession, publishesSteps = false, chrome: chromes = [], agentPanel: AgentPanel,
   onChooseWorkingDirectory, waysIn, needsFolder = false, watchProject,
   commands, hostMenu = false, onUnsavedWork, onThemeMode, onScopeOpen, onOpenWorkingDirectory, recentFolders,
   onChooseFolderForWorkingFile,
@@ -1024,9 +1028,20 @@ export function App({
     if (!held) return
     const result = apply(fromArrays(held.model), command)
     if (!result.ok) { toasts.notify(s(result.reason), 'error'); return }
-    void projects.save({ ...held, model: toArrays(result.model) }).then(
+    // Expecting what the screen read. A restore is not made again over a scope
+    // that moved: it was worked out from what the page showed, and putting back
+    // a version over changes the person never saw is not what they chose — so
+    // the refusal is said, and the page reads the scope as it stands now.
+    void projects.save({ ...held, model: toArrays(result.model) }, held.revision).then(
       () => { organisation.refresh(); tree.refresh() },
-      (cause: unknown) => failedRef.current('organisation.restore', cause, 'group.saveFailed'),
+      (cause: unknown) => {
+        if (isScopeMoved(cause)) {
+          toasts.notify(s(SCOPE_MOVED), 'warning')
+          organisation.refresh()
+          return
+        }
+        failedRef.current('organisation.restore', cause, 'group.saveFailed')
+      },
     )
   }, [organisation, projects, tree, toasts, s])
   const homeHistory = useProjectHistory({
@@ -1628,6 +1643,7 @@ export function App({
               status: sourceStatus,
               onWork: onSourceWork,
               onSession: takeScopeSession,
+              publishesSteps,
               onResult: reportStorage,
             }}
             tree={{

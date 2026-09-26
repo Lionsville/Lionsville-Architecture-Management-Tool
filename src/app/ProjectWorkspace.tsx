@@ -185,6 +185,7 @@ function useTreeParts(props: ProjectWorkspaceProps, base: ReturnType<typeof useS
       host.diagnostics.report({ level: 'error', where, message: 'rejected', cause })
     }, [host.diagnostics]),
     s,
+    published: source.publishesSteps ?? false,
   })
   /**
    * The register as a library (ADR-0012 §2): an application the organisation

@@ -45,6 +45,7 @@ import {
 } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
 import { carryRefs } from '../carryRefs'
+import { rewriteScope } from '../rewriteScope'
 import { copyExampleInto } from '../examples'
 import type { ExampleProject } from '../examples'
 import type { InitialPage, ScopeLibrary, ScopeSettingsPatch } from '../App'
@@ -311,19 +312,24 @@ export function useOrganisation({
     if (!wanted.name) return
     setDialog({ kind: 'none' })
     void (async () => {
-      const held = await scopes.load(wanted.path) ?? bareScope(wanted.path, scopePathLabel(wanted.path))
-      const diagram: DesignDiagram = {
-        id: claimKey(s('shell.newDiagram'), new Set(idsIn(held.model))),
-        kind: 'layer7', name: wanted.name, members: [], geometry: { nodes: [] },
-        ...(held.model.defaultAspectConfig ? { aspectConfig: [...held.model.defaultAspectConfig] } : {}),
-      }
-      const next: ScopeSnapshot = {
-        ...held,
-        model: { ...held.model, diagrams: [...held.model.diagrams, diagram] },
-        activeDiagramId: diagram.id,
-      }
-      await scopes.save(next)
-      onEnter(next, { page: 'board', id: diagram.id })
+      // Expecting what was read, and made again over a scope that moved in
+      // between (`rewriteScope.ts`): the board is added to the scope as it
+      // stands, and its id claimed against that.
+      const next = await rewriteScope(scopes, wanted.path, (read) => {
+        const held = read ?? bareScope(wanted.path, scopePathLabel(wanted.path))
+        const diagram: DesignDiagram = {
+          id: claimKey(s('shell.newDiagram'), new Set(idsIn(held.model))),
+          kind: 'layer7', name: wanted.name, members: [], geometry: { nodes: [] },
+          ...(held.model.defaultAspectConfig ? { aspectConfig: [...held.model.defaultAspectConfig] } : {}),
+        }
+        return {
+          ...held,
+          model: { ...held.model, diagrams: [...held.model.diagrams, diagram] },
+          activeDiagramId: diagram.id,
+        }
+      })
+      if (!next) return
+      onEnter(next, { page: 'board', id: next.activeDiagramId })
       refresh()
       onTreeChanged?.()
       notify(s('shell.scopeCreated', { name: wanted.name }), 'success')
@@ -347,30 +353,40 @@ export function useOrganisation({
     const { path, board } = dialog
     setDialog({ kind: 'none' })
     void (async () => {
-      const held = await scopes.load(path)
-      if (!held) return
-      // A container view is the DETAIL of an application, not the application:
-      // the containers go, the interfaces they were carrying are written on the
-      // landscape first, and the application stays where it was drawn
-      // (`model/containerDiagram.ts`). A landscape has no such insides, so it
-      // is the plain drop it always was.
-      const taken = new Set(idsIn(held.model))
-      const command = removeContainerDiagram(held.model, board.id, () => claimKey('interface', taken))
-        ?? { type: 'diagram.delete' as const, id: board.id }
-      const result = apply(fromArrays(held.model), command)
-      if (!result.ok) {
-        notify(s(result.reason), 'error')
+      let refused: StringKey | undefined
+      // Expecting what was read, and taken off again over a scope that moved
+      // in between (`rewriteScope.ts`), so a board somebody drew meanwhile is
+      // not taken with it.
+      const next = await rewriteScope(scopes, path, (held) => {
+        refused = undefined
+        if (!held) return undefined
+        // A container view is the DETAIL of an application, not the
+        // application: the containers go, the interfaces they were carrying are
+        // written on the landscape first, and the application stays where it
+        // was drawn (`model/containerDiagram.ts`). A landscape has no such
+        // insides, so it is the plain drop it always was.
+        const taken = new Set(idsIn(held.model))
+        const command = removeContainerDiagram(held.model, board.id, () => claimKey('interface', taken))
+          ?? { type: 'diagram.delete' as const, id: board.id }
+        const result = apply(fromArrays(held.model), command)
+        if (!result.ok) {
+          refused = result.reason
+          return undefined
+        }
+        const model = toArrays(result.model)
+        return {
+          ...held,
+          model,
+          activeDiagramId: held.activeDiagramId === board.id
+            ? model.diagrams[0]?.id ?? ''
+            : held.activeDiagramId,
+        }
+      })
+      if (refused) {
+        notify(s(refused), 'error')
         return
       }
-      const model = toArrays(result.model)
-      const next: ScopeSnapshot = {
-        ...held,
-        model,
-        activeDiagramId: held.activeDiagramId === board.id
-          ? model.diagrams[0]?.id ?? ''
-          : held.activeDiagramId,
-      }
-      await scopes.save(next)
+      if (!next) return
       refresh()
       notify(s('shell.deleted', { name: board.name }), 'success')
     })().catch((cause: unknown) => {
@@ -413,25 +429,30 @@ export function useOrganisation({
         return
       }
       const links = normaliseLinks(patch.links)
-      const next: ScopeSnapshot = {
-        ...(held ?? bareScope(path, patch.name)),
-        path: to,
-        model: {
-          ...(held?.model ?? bareScope(path, patch.name).model),
-          name: patch.name.trim() || scopePathLabel(path),
-          ...(patch.description?.trim()
-            ? { description: patch.description.trim() }
-            : { description: undefined }),
-        },
-        ...(patch.client?.trim() ? { client: patch.client.trim() } : { client: undefined }),
-        ...(links.length ? { links } : { links: undefined }),
-        ...(patch.kind ? { kind: patch.kind } : {}),
+      /** The record, patched over the scope as it stands — whichever read that is. */
+      const patched = (read: ScopeSnapshot | undefined): ScopeSnapshot => {
+        const next: ScopeSnapshot = {
+          ...(read ?? bareScope(path, patch.name)),
+          path: to,
+          model: {
+            ...(read?.model ?? bareScope(path, patch.name).model),
+            name: patch.name.trim() || scopePathLabel(path),
+            ...(patch.description?.trim()
+              ? { description: patch.description.trim() }
+              : { description: undefined }),
+          },
+          ...(patch.client?.trim() ? { client: patch.client.trim() } : { client: undefined }),
+          ...(links.length ? { links } : { links: undefined }),
+          ...(patch.kind ? { kind: patch.kind } : {}),
+        }
+        // Absent rather than set to `undefined`, so the file has the shape a
+        // hand-written one would.
+        if (next.model.description === undefined) delete next.model.description
+        if (next.client === undefined) delete next.client
+        if (next.links === undefined) delete next.links
+        return next
       }
-      // Absent rather than set to `undefined`, so the file has the shape a
-      // hand-written one would.
-      if (next.model.description === undefined) delete next.model.description
-      if (next.client === undefined) delete next.client
-      if (next.links === undefined) delete next.links
+      const next = patched(held)
 
       /**
        * A ref is an address, so a move carries the ones pointing into it
@@ -451,7 +472,16 @@ export function useOrganisation({
       }
 
       try {
-        await scopes.save(applyRefPatch(next, carried.get(path)))
+        if (moving) {
+          // A new address: there is nothing there to expect, and the old one is
+          // removed below as it always was.
+          await scopes.save(applyRefPatch(next, carried.get(path)))
+        } else {
+          // In place: expecting what was read, and patched again over a scope
+          // that moved in between, so a step somebody made to it survives a
+          // rename (`rewriteScope.ts`).
+          await rewriteScope(scopes, path, patched)
+        }
         if (moving && subtree) {
           // The scope itself is already written; what is left is everything
           // filed under it, parents first.

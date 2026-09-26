@@ -705,6 +705,50 @@ that answered a promise, refused for a source with no store, and nothing
 changed where no filling is given. `describeDirectoryHandle` runs over the
 in-memory double and over the desktop's handle on a real temporary folder.
 
+## Amended — the three a build with a second writer on the same scope needed
+
+*26 September 2026.* The same build has more than one writer on a scope at a
+time — the steps of everybody who has it open, and the whole writes this shell
+makes outside the open session — and found three places where a whole write
+could land over a step without anybody being told. Each is added as the
+smallest public thing that closes it, and the three built-ins are written the
+way they were except that they now answer the first.
+
+* **A save may say what it expects to overwrite.** `ScopeStore.load` stamps
+  `ScopeSnapshot.revision`, the store's own opaque word for the state it read,
+  and `save(scope, expects)` refuses with `shell.scopeMoved` and writes nothing
+  when the store no longer holds that state. The three built-ins answer it with
+  a fingerprint of what they keep (`projects/revision.ts`) — content, because
+  it is the one thing every store can compare without keeping a counter beside
+  it — and a store that serialises several writers checks where it serialises
+  them. The callers that read a scope, change it and write it whole outside
+  the open session pass what they read: the organisation screen's board and
+  settings dialogs, the gestures' write of the other scope and the pass a move
+  makes over the references into it read again and make their change again
+  (`app/rewriteScope.ts`), because each change is a function of the scope as it
+  stands; the home's restore says so instead, because a version worked out from
+  what the page showed is not what a person chose once the scope has moved. A
+  save that expects nothing overwrites as before, which is what the open
+  scope's own document session and the creation of a scope mean.
+* **A source may say its steps are the write.** `Shell.publishesSteps`: every
+  change of the open scope travels as a step through whoever took its session,
+  so the whole write of the open scope a gesture made after its command — a
+  second copy of the step, taken of one window's model — is not made. Absent
+  for the three that ship.
+* **A session says what it was opened from.** `ScopeSession.openedFrom` is the
+  revision of the read the model was opened on. A far end that numbers what
+  happened to a scope can then resume from the number that read was at rather
+  than from anything it was told before the read, which may be older and then
+  replays what the model already holds.
+
+`ScopeStore.contract.ts` pins the first for every store: a revision is stamped
+and is the same for two reads of one state, a save expecting it lands and moves
+it, a save expecting a revision somebody else saved over is refused and theirs
+is kept, a save expecting a scope removed since is refused, and a save that
+expects nothing overwrites. `rewriteScope.test.ts` pins reading again and giving
+up; `useGestures.test.tsx` pins the other scope's write keeping a colleague's
+save and the open scope not written whole where its steps are published.
+
 ## More Information
 
 ADR-0002 for the command and its inverse, which is the whole reason this is a

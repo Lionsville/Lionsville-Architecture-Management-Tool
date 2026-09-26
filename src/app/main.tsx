@@ -690,6 +690,7 @@ function renderApp(
         agentPanel={sourceAgentPanel(shell.source)}
         sourceMenu={menus}
         onScopeSession={shell.onScopeSession}
+        publishesSteps={shell.publishesSteps}
         chrome={chromes}
         onChooseWorkingDirectory={
           files || browserFolders.possible() ? chooseWorkingDirectory : undefined

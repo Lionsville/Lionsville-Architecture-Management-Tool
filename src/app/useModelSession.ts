@@ -482,6 +482,18 @@ export type ScopeSession = {
   /** The counter that moves with every change, external ones included. */
   revision: () => number
   /**
+   * What the store called the state this scope was read in, when the session
+   * was opened on it: the `revision` its `load` stamped (`ScopeSnapshot`), or
+   * `undefined` for a scope that was not read — one just made, or a store that
+   * could not say.
+   *
+   * The one fact about the model's starting point that whoever answers for the
+   * source cannot work out for itself: the model handed over is that read,
+   * and a far end that numbers what happened to a scope has to know which
+   * number that read was at, or it replays what the model already holds.
+   */
+  openedFrom?: string
+  /**
    * Who else has this scope open: names, and nothing else.
    *
    * The one thing this handover carries INTO the shell rather than out of it,
