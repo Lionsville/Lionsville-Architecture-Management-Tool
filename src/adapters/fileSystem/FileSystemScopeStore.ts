@@ -646,10 +646,19 @@ export class FileSystemScopeStore implements ScopeStore {
     }
   }
 
-  async remove(path: ScopePath): Promise<void> {
+  /**
+   * See {@link ScopeStore.remove}. `expects` is checked the way `save` checks
+   * it — by reading the scope again, paid only by a caller that asked — and a
+   * folder that holds no scope any more has nothing to lose.
+   */
+  async remove(path: ScopePath, expects?: string): Promise<void> {
     // The root is the folder the user chose. Emptying it is not this store's
     // call, and there is no parent to remove it from.
     if (!usablePath(path) || path === ROOT_SCOPE) return
+    if (expects !== undefined) {
+      const now = await this.revisionNow(path)
+      if (now !== undefined && now !== expects) throw scopeMoved(path)
+    }
     const parent = await this.folderAt(scopeSegments(parentScope(path) ?? ROOT_SCOPE), false)
     if (!parent) return
     try {

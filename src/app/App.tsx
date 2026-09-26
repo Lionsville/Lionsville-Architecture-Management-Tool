@@ -282,7 +282,8 @@ export type ScopeLibrary = {
   load(path: ScopePath): Promise<ScopeSnapshot | undefined>
   /** See `ScopeStore.save`: a save may say what it expects to overwrite. */
   save(scope: ScopeSnapshot, expects?: string): Promise<void>
-  remove(path: ScopePath): Promise<void>
+  /** See `ScopeStore.remove`: a removal may say what it expects to remove. */
+  remove(path: ScopePath, expects?: string): Promise<void>
   /**
    * Every scope's records and rows, for the index (ADR-0012 §2). Optional on
    * the seam and optional here; `indexOf` loads each scope where a store

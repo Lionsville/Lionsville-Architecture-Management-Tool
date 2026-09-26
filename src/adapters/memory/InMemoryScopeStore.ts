@@ -92,9 +92,15 @@ export class InMemoryScopeStore implements ScopeStore {
     return Promise.resolve()
   }
 
-  remove(path: ScopePath): Promise<void> {
+  remove(path: ScopePath, expects?: string): Promise<void> {
     // The root is the folder you opened, not something this app may throw away.
     if (!isSafeScopePath(path) || path === ROOT_SCOPE) return Promise.resolve()
+    // Somebody saved it since it was read: removing it would take their save
+    // with it. Gone already is nothing to lose (`ScopeStore.remove`).
+    const now = this.revisions.get(path)
+    if (expects !== undefined && now !== undefined && now !== expects) {
+      return Promise.reject(scopeMoved(path))
+    }
     // And everything filed under it: a child left behind by a removed parent is
     // addressed by nothing.
     for (const held of [...this.held.keys()]) {

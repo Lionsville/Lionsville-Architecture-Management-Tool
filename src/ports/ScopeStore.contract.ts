@@ -24,7 +24,8 @@
  * added, all four about the tree: the root exists on an empty store and can be
  * saved, a child is listed under its parent, a nested scope is kept apart from
  * its parent, and a reserved name is refused. And, since a second writer, the
- * clauses about a save that says what it expects to overwrite.
+ * clauses about a save that says what it expects to overwrite, and a removal
+ * that says what it expects to remove.
  *
  * Named `.contract.ts` and not `.test.ts` on purpose: the runner must not pick
  * it up on its own, because without an adapter there is nothing to run.
@@ -306,6 +307,41 @@ export function describeScopeStore(
       const refused = await store.save(read!, read!.revision).then(() => undefined, (cause: unknown) => cause)
       expect(isScopeMoved(refused), String(refused)).toBe(true)
       await expect(store.load('acme/one')).resolves.toBeUndefined()
+    })
+
+    /**
+     * …and so may a removal (`ScopeStore.remove`). A move is a save at the new
+     * address and a removal at the old one, and a save somebody made to the old
+     * address in between is otherwise removed with it.
+     */
+    it('removes a scope that is still what the removal expects', async () => {
+      const store = await create()
+      await store.save(scopeAt('acme'))
+      await store.save(scopeAt('acme/rail'))
+      const read = await store.load('acme')
+      await store.remove('acme', read!.revision)
+      await expect(store.load('acme')).resolves.toBeUndefined()
+      await expect(store.load('acme/rail')).resolves.toBeUndefined()
+    })
+
+    it('refuses a removal that expects a revision somebody else has saved over, and keeps theirs', async () => {
+      const store = await create()
+      await store.save(scopeAt('acme/one', 'One'))
+      const mine = await store.load('acme/one')
+      const theirs = await store.load('acme/one')
+      await store.save({ ...theirs!, model: { ...theirs!.model, name: 'Theirs' } }, theirs!.revision)
+
+      const refused = await store.remove('acme/one', mine!.revision).then(() => undefined, (cause: unknown) => cause)
+      expect(isScopeMoved(refused), String(refused)).toBe(true)
+      expect((await store.load('acme/one'))?.model.name).toBe('Theirs')
+    })
+
+    it('does not mind a removal that expects a scope somebody else has removed already', async () => {
+      const store = await create()
+      await store.save(scopeAt('acme/one', 'One'))
+      const read = await store.load('acme/one')
+      await store.remove('acme/one')
+      await expect(store.remove('acme/one', read!.revision)).resolves.toBeUndefined()
     })
 
     it('overwrites whatever is there when a save expects nothing', async () => {

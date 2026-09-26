@@ -81,7 +81,7 @@ function mount(
     list: () => store.list(),
     load: (path) => store.load(path),
     save: (scope) => store.save(scope),
-    remove: (path) => store.remove(path),
+    remove: (path, expects) => store.remove(path, expects),
     ...over,
   }, store, active)
 }
@@ -490,6 +490,33 @@ describe('useOrganisation', () => {
       expect(writes).toEqual([])
       expect(failures).toContain('organisation.settings.readdress')
       expect(await store.load('rail')).toBeDefined()
+    })
+
+    /**
+     * A change somebody made to the old address while the move was being
+     * written is not removed with it: the removal expects what the move read,
+     * and a refused one leaves two copies rather than one that lost a change.
+     */
+    it('keeps the old address where somebody changed it while the move was written', async () => {
+      const store = new InMemoryScopeStore(tree())
+      const { held, failures } = mountWith({
+        models: () => store.models(),
+        list: () => store.list(),
+        load: (path) => store.load(path),
+        save: (one, expects) => store.save(one, expects),
+        remove: async (path, expects) => {
+          const theirs = await store.load(path)
+          await store.save({ ...theirs!, model: { ...theirs!.model, name: 'Changed meanwhile' } })
+          return store.remove(path, expects)
+        },
+      }, store)
+      await settle()
+      await act(async () => { held().applySettings('rail', { name: 'Rail', parent: 'freight' }) })
+      await settle()
+
+      expect((await store.load('rail'))?.model.name).toBe('Changed meanwhile')
+      expect((await store.load('freight/rail'))?.model.name).toBe('Rail')
+      expect(failures).toContain('organisation.settings.remove')
     })
   })
 

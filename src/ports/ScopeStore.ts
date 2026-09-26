@@ -110,8 +110,23 @@ export interface ScopeStore {
    * A scope is a folder and its children are inside it; removing the folder and
    * leaving the children would leave them addressed by nothing. Removing what
    * is not there is not an error.
+   *
+   * **A removal may say what it expects to remove**, as a save may say what it
+   * expects to overwrite. `expects` is the `revision` a `load` stamped on the
+   * scope the caller read; where it is given and the store holds that scope in
+   * another state — somebody saved it since — nothing is removed and the call
+   * rejects with `shell.scopeMoved`. A move is a save at the new address and
+   * then this at the old one, and a change landing on the old address in
+   * between is otherwise gone with it without anybody being told; refused, the
+   * move leaves two copies, which a person can see and settle. Where the scope
+   * is not there any more there is nothing to lose, and the call resolves as it
+   * would without `expects`. The revision is the named scope's own: what is
+   * filed under it goes with it as before.
+   *
+   * The check and the removal are one act as far as the store can make them
+   * one, in the same sense as `save`'s.
    */
-  remove(path: ScopePath): Promise<void>
+  remove(path: ScopePath, expects?: string): Promise<void>
 
   /**
    * How close this store is to being full, when it can say.
