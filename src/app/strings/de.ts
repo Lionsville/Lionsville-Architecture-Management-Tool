@@ -25,6 +25,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.diskChanged': 'Dieses Projekt wurde auf der Festplatte geändert. Hier ist nichts ungespeichert.',
   'shell.unreadableScope': '{files} in diesem Bereich konnte nicht gelesen werden, deshalb ist er zum Ansehen geöffnet und nicht zum Ändern: Speichern ohne diese Datei würde verlieren, was sie enthält. Reparieren Sie die Datei oder holen Sie sie aus dem Verlauf zurück, und öffnen Sie den Bereich erneut.',
   'shell.unreadNotMoved': 'Dieser Bereich wurde nicht verschoben: eine Datei darin konnte nicht gelesen werden, und Verschieben hätte sie mit dem alten Ordner gelöscht. Reparieren Sie die Datei oder holen Sie sie aus dem Verlauf zurück, und versuchen Sie es erneut.',
+  'shell.unreadableInTheWay': 'Es wurde nichts geschrieben: an dieser Adresse liegt bereits ein Bereich, der nicht gelesen werden konnte, und Schreiben hätte ihn ersetzt. Reparieren Sie seine scope.json oder holen Sie sie aus dem Verlauf zurück, und versuchen Sie es erneut.',
   'shell.readOnlyRefused': 'Dieser Bereich ist zum Lesen geöffnet und nicht zum Ändern, deshalb wurde nichts getan.',
   'shell.diskConflict': 'Dieses Projekt wurde auf der Festplatte geändert, und hier gibt es ungespeicherte Änderungen.',
   'shell.takeTheirs': 'Die von der Festplatte',
@@ -425,6 +426,9 @@ export const DE: Record<keyof typeof EN, string> = {
   'org.domainsOther': '{count} Domänen',
   'org.landscapesOne': '{count} Landschaft',
   'org.landscapesOther': '{count} Landschaften',
+  'org.unreadableOne': 'Ein Bereich konnte nicht gelesen werden und wird nicht angezeigt: {paths}. Sein Ordner bleibt, wie er ist, und an seiner Stelle wird nichts angelegt.',
+  'org.unreadableOther': '{count} Bereiche konnten nicht gelesen werden und werden nicht angezeigt: {paths}. Ihre Ordner bleiben, wie sie sind, und an ihrer Stelle wird nichts angelegt.',
+  'org.unreadableFolder': 'Dieser Ordner konnte nicht gelesen werden, daher wird sein Inhalt nicht angezeigt. Darin wurde nichts verändert, und darin wird nichts angelegt, bis er wieder lesbar ist.',
   'org.diagramsOne': '{count} Diagramm',
   'org.diagramsOther': '{count} Diagramme',
 

@@ -25,6 +25,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.diskChanged': 'Dit project is op schijf gewijzigd. Hier staat niets open.',
   'shell.unreadableScope': '{files} in deze scope kon niet worden gelezen, dus hij staat open om te bekijken en niet om te wijzigen: opslaan zonder dat bestand zou verliezen wat erin staat. Herstel het bestand, of haal het terug uit de geschiedenis, en open de scope opnieuw.',
   'shell.unreadNotMoved': 'Deze scope is niet verplaatst: een bestand erin kon niet worden gelezen, en verplaatsen zou het met de oude map hebben verwijderd. Herstel het bestand, of haal het terug uit de geschiedenis, en probeer het opnieuw.',
+  'shell.unreadableInTheWay': 'Er is niets geschreven: op dat adres staat al een scope die niet kon worden gelezen, en schrijven zou die hebben vervangen. Herstel de scope.json ervan, of haal die terug uit de geschiedenis, en probeer het opnieuw.',
   'shell.readOnlyRefused': 'Deze scope staat open om te lezen en niet om te wijzigen, dus er is niets gedaan.',
   'shell.diskConflict': 'Dit project is op schijf gewijzigd, en hier staan wijzigingen open.',
   'shell.takeTheirs': 'Die van schijf',
@@ -425,6 +426,9 @@ export const NL: Record<keyof typeof EN, string> = {
   'org.domainsOther': '{count} domeinen',
   'org.landscapesOne': '{count} landschap',
   'org.landscapesOther': '{count} landschappen',
+  'org.unreadableOne': 'Eén scope kon niet worden gelezen en wordt niet getoond: {paths}. De map blijft zoals die is, en er wordt niets op die plek aangemaakt.',
+  'org.unreadableOther': '{count} scopes konden niet worden gelezen en worden niet getoond: {paths}. De mappen blijven zoals ze zijn, en er wordt niets op die plekken aangemaakt.',
+  'org.unreadableFolder': 'Deze map kon niet worden gelezen, dus wat erin staat wordt niet getoond. Er is niets in veranderd, en er wordt niets in aangemaakt tot hij weer te lezen is.',
   'org.diagramsOne': '{count} diagram',
   'org.diagramsOther': '{count} diagrammen',
 

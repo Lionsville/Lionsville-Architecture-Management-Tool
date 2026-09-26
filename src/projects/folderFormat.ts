@@ -653,6 +653,20 @@ export function modelUnreadable(text: string | undefined): boolean {
 }
 
 /**
+ * Is this a `scope.json` that is there and says nothing this build can get a
+ * scope out of — not JSON, not a header, or a version newer than this build?
+ *
+ * Such a folder does not open and is not listed, so its address looks free;
+ * a save of a new scope there would write an empty header over one somebody
+ * else's build wrote, or over a hand edit that lost a brace, and an empty
+ * model over the model beside it. A store refuses that save, the way it
+ * refuses one over a model that does not parse (ADR-0028, amended).
+ */
+export function headerUnreadable(text: string | undefined): boolean {
+  return text !== undefined && folderFormatVersion(text) === undefined
+}
+
+/**
  * What the closed `platformCategory` of ADR-0013 reads as, now that a platform
  * carries an archetype and the sort of technology it is has become the
  * service it realises (ADR-0014).

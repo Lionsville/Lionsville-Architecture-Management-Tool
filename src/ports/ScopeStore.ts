@@ -54,6 +54,15 @@ export interface ScopeStore {
    * Always answers — the root exists whether or not anybody has named it, and a
    * store with nothing in it answers with a root that has no children. That is
    * what makes "there is nothing here yet" a screen rather than a failure.
+   *
+   * **Every scope it can read, and where it could not.** A store that keeps
+   * scopes in pieces can meet a scope whose header will not read while the rest
+   * of the tree reads fine; it lists the rest, and names that path on the
+   * root's `unreadable` rather than leaving it out in silence or giving up on
+   * the tree. A scope missing from a listing is an address that looks free,
+   * and whoever creates a scope there asks `unreadableAt` first. And a save of
+   * a new scope at such a path is refused with nothing written, whoever asked
+   * (ADR-0028, amended).
    */
   list(): Promise<ScopeSummary>
 

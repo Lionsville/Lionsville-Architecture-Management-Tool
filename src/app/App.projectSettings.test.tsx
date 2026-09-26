@@ -161,6 +161,32 @@ describe('project settings on an open project', () => {
     expect(await store.load('acme/landscape')).toBeTruthy()
   })
 
+  /**
+   * A scope the listing could not read is not offered as taken, so a move
+   * could land on its address and write over it.
+   */
+  it('refuses to move a project onto an address the listing could not read, and says so', async () => {
+    const opened = project()
+    const store = new InMemoryScopeStore([opened, bareScope('globex', 'Globex', 'domain')])
+    const saved: ScopePath[] = []
+    const held = {
+      list: async () => ({ ...await store.list(), unreadable: ['globex/landscape'] }),
+      load: (ref: ScopePath) => store.load(ref),
+      save: (one: ScopeSnapshot) => { saved.push(one.path); return store.save(one) },
+      remove: (ref: ScopePath) => store.remove(ref),
+    }
+    renderApp({ scopes: held, boot: { initialProject: opened } })
+
+    fireEvent.click(screen.getByText('Settings…'))
+    fireEvent.mouseDown(screen.getByLabelText('Group'))
+    fireEvent.click(await screen.findByRole('option', { name: 'Globex' }))
+    fireEvent.click(screen.getByText('Save'))
+
+    expect(await screen.findByText(/a scope that could not be read is already at that address/)).toBeTruthy()
+    expect(saved).not.toContain('globex/landscape')
+    expect(await store.load('acme/landscape')).toBeTruthy()
+  })
+
   it('keeps the editing the session has done', async () => {
     const store = show(project())
     fireEvent.click(screen.getByTestId('edit-the-diagram'))

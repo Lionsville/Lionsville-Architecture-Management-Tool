@@ -178,6 +178,37 @@ describe('the organisation screen — identity', () => {
   })
 })
 
+describe('the organisation screen — what the listing could not read', () => {
+  /** A store whose listing says it could not read these paths (`ScopeSummary.unreadable`). */
+  function listingWithout(unreadable: string[]): InMemoryScopeStore {
+    const store = new InMemoryScopeStore([organisation(), scope('retail', 'Retail')])
+    const listing = store.list.bind(store)
+    store.list = async () => ({ ...await listing(), unreadable })
+    return store
+  }
+
+  it('says which scopes it could not read, rather than leaving them out in silence', async () => {
+    renderApp({ scopes: listingWithout(['finance', 'retail/north']), today: TODAY })
+    expect((await screen.findByTestId('organisation-unreadable')).textContent).toBe(
+      '2 scopes could not be read and are not shown: finance, retail/north. '
+      + 'Their folders are left as they are, and nothing is created in their place.',
+    )
+    expect(screen.getByText('Retail')).toBeDefined()
+  })
+
+  it('says so when the folder itself could not be read', async () => {
+    renderApp({ scopes: listingWithout(['']), today: TODAY })
+    expect((await screen.findByTestId('organisation-unreadable')).textContent)
+      .toContain('This folder could not be read')
+  })
+
+  it('says nothing when everything read', async () => {
+    renderApp({ scopes: new InMemoryScopeStore([organisation()]), today: TODAY })
+    await screen.findByTestId('organisation-name')
+    expect(screen.queryByTestId('organisation-unreadable')).toBeNull()
+  })
+})
+
 describe('the organisation screen — its own pages', () => {
   it('counts the root’s own business layer, and says what is not yet mapped', async () => {
     renderApp({ scopes: new InMemoryScopeStore([organisation()]), today: TODAY })

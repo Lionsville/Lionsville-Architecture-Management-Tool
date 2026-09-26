@@ -788,7 +788,9 @@ export async function chooseFolderDestination(): Promise<FolderDestination | und
   if (!opening) return undefined
   const store = new FileSystemScopeStore(opening.handle)
   const listed = await store.list()
+  // A folder holding a scope the listing could not read is not an empty one.
   const occupied = listed.name.trim() !== '' || listed.children.length > 0 || listed.diagrams > 0
+    || (listed.unreadable?.length ?? 0) > 0
   return {
     opening,
     occupied,

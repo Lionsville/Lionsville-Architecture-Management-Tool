@@ -50,6 +50,12 @@ export const EN = {
    */
   'shell.unreadNotMoved': 'This scope was not moved: a file in it could not be read, and moving would have removed it with the old folder. Mend the file, or take it back from the history, and try again.',
   /**
+   * A scope created, or moved, at an address the listing could not read: a
+   * scope is there whose `scope.json` would not read or is not one this build
+   * reads (`ScopeSummary.unreadable`), and writing would have replaced it.
+   */
+  'shell.unreadableInTheWay': 'Nothing was written there: a scope that could not be read is already at that address, and writing would have replaced it. Mend its scope.json, or take it back from the history, and try again.',
+  /**
    * A change refused because the scope is only read: a viewer's, or one a
    * file of which did not read. Said by the session, whichever way the change
    * came in, so a control that forgot to hide itself still changes nothing.
@@ -590,6 +596,13 @@ export const EN = {
   'org.domainsOther': '{count} domains',
   'org.landscapesOne': '{count} landscape',
   'org.landscapesOther': '{count} landscapes',
+  /**
+   * What the listing could not read (`ScopeSummary.unreadable`): not shown in
+   * the tree, left as it is, and never an address a new scope is created at.
+   */
+  'org.unreadableOne': 'One scope could not be read and is not shown: {paths}. Its folder is left as it is, and nothing is created in its place.',
+  'org.unreadableOther': '{count} scopes could not be read and are not shown: {paths}. Their folders are left as they are, and nothing is created in their place.',
+  'org.unreadableFolder': 'This folder could not be read, so what it holds is not shown. Nothing in it has been changed, and nothing is created in it until it reads again.',
   'org.diagramsOne': '{count} diagram',
   'org.diagramsOther': '{count} diagrams',
 

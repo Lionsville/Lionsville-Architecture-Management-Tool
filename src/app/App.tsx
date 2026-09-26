@@ -23,7 +23,7 @@ import type { Command, ElementId } from '../model'
 import { apply, fromArrays, toArrays } from '../model'
 import type { Diagnostic, DiagnosticEntry } from '../platform/diagnostics'
 import { reasonOf } from '../platform/errors'
-import { flattenScopes, moveScope, namesUnder, renameScope, setScopeDefaults } from '../projects/scope'
+import { flattenScopes, moveScope, namesUnder, renameScope, setScopeDefaults, unreadableAt } from '../projects/scope'
 import type { ScopeKind, ScopeModel, ScopeSnapshot, ScopeSummary } from '../projects/scope'
 import { applyRefPatch } from '../projects/readdress'
 import { treeModels, treeScopes } from '../projects/scopeIndex'
@@ -498,6 +498,12 @@ function useShellParts(props: AppProps): ShellParts {
       // arrive at the other end (`ScopeSnapshot.unread`).
       if (moved && current.unread?.length) {
         failed('applyProjectSettings.unread', undefined, 'shell.unreadNotMoved')
+        return undefined
+      }
+      // And a scope the listing could not read at the new address would be
+      // written over by the move (`unreadableAt`).
+      if (moved && unreadableAt(held, next.path) !== undefined) {
+        failed('applyProjectSettings.unreadable', undefined, 'shell.unreadableInTheWay')
         return undefined
       }
       // A ref is an address, and a move carries the ones pointing into this

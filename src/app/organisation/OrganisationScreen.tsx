@@ -48,7 +48,7 @@ import type { DesignDiagram } from '../../model'
 import type { ProjectOrder, ScopeSummary } from '../../projects/scope'
 import type { ElementId } from '../../model'
 import type { Finding } from '../../projects/checks'
-import { ROOT_SCOPE, scopePathLabel } from '../../projects/scopePath'
+import { isWithinScope, ROOT_SCOPE, scopePathLabel } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
 import { NO_WINDOW_CHROME } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
@@ -246,10 +246,7 @@ export function OrganisationScreen({
    * Ordered here and not in the store: the order is what this screen shows, and
    * the toggle has to change it without a round trip to storage.
    */
-  const ordered = useMemo<ScopeSummary>(
-    () => ({ ...home, children: sortScopes(home.children, order) }),
-    [home, order],
-  )
+  const ordered = useMemo<ScopeSummary>(() => ({ ...home, children: sortScopes(home.children, order) }), [home, order])
   /** The whole tree in the same order, for the dialogs' *filed under* selects. */
   const orderedTree = useMemo<ScopeSummary>(
     () => ({ ...tree, children: sortScopes(tree.children, order) }),
@@ -470,6 +467,8 @@ export function OrganisationScreen({
             />
           )}
 
+          <UnreadableScopes tree={tree} at={at} s={s} />
+
           {/* The tree, under its heading whether or not there is anything in
               it yet: an empty organisation says so in a sentence, with the
               examples underneath at the root. A landscape's home has no tree
@@ -523,7 +522,7 @@ export function OrganisationScreen({
               organisation holds a view or a scope, an offer to copy one in
               beside the real work is a way to file an example under it by
               accident, so the section goes. */}
-          {atRoot && examples.length > 0 && tree.children.length === 0 && tree.diagrams === 0 && (
+          {atRoot && examples.length > 0 && holdsNothing(tree) && (
             <>
               <Divider sx={{ my: 3 }} />
               <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, mb: 1, textTransform: 'uppercase' }}>
@@ -824,6 +823,32 @@ function whereSaid(
       ? 'org.whereFolder'
       : source?.kind === 'memory' ? 'org.whereMemory' : 'org.whereBrowser'),
   })
+}
+
+/**
+ * Is this folder known to hold nothing — no scope, no board, and nothing the
+ * listing could not read? What the examples are offered for.
+ */
+function holdsNothing(tree: ScopeSummary): boolean {
+  return tree.children.length === 0 && tree.diagrams === 0 && !tree.unreadable?.length
+}
+
+/**
+ * What the listing could not read under this home, said in a sentence
+ * (`ScopeSummary.unreadable`, ADR-0028 amended). Not shown in the tree, which
+ * has nothing to draw it from; said here because a scope that is missing
+ * without a word is one a person goes looking for, or creates again.
+ */
+function UnreadableScopes({ tree, at, s }: { tree: ScopeSummary; at: ScopePath; s: Translate }) {
+  const here = (tree.unreadable ?? []).filter((path) => isWithinScope(path, at) && (path !== at || at === ROOT_SCOPE))
+  if (here.length === 0) return null
+  return (
+    <Typography sx={{ fontSize: 13, color: 'warning.main', mb: 2, maxWidth: 720 }} data-testid="organisation-unreadable">
+      {here.includes(ROOT_SCOPE)
+        ? s('org.unreadableFolder')
+        : plural(s, { one: 'org.unreadableOne', other: 'org.unreadableOther' }, here.length, { paths: here.join(', ') })}
+    </Typography>
+  )
 }
 
 /**

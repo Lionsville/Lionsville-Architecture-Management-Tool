@@ -124,6 +124,19 @@ empty tree.
 > answers a file that is there and will not read as a refusal rather than as
 > absence, which is what it had been, and `describeScopeStore` holds every
 > filling that keeps a scope in pieces to this.
+>
+> **And a listing lists what it can read, and says what it could not** (the
+> same day). The folder store's `list()` gave up on the whole tree at the
+> first `scope.json` that would not read, so the organisation screen showed
+> fewer scopes or none, and creating a scope at an address it no longer
+> showed saved an empty scope over the one it could not see. A listing now
+> answers every scope it could read and names on the root's `unreadable` each
+> path whose header would not read or said nothing this build reads, and each
+> folder that would not list; the screen says them in a sentence. Creating a
+> scope, or moving one, refuses an address at or under one of those paths
+> before it writes anything (`unreadableAt`), and a store refuses a save of a
+> new scope over a header that is there and will not read or not parse,
+> whoever asked. Two more clauses in `describeScopeStore` hold both.
 
 ### Consequences
 

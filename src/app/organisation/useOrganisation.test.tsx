@@ -169,6 +169,34 @@ describe('useOrganisation', () => {
   })
 
   /**
+   * A scope the listing could not read is not in the tree, so its address
+   * looks free; a new scope saved there — or a missing ancestor made on the
+   * way — would be written over it (ADR-0028, amended).
+   */
+  it.each([
+    ['at the address', '', 'retail'],
+    ['above it, where an ancestor would be made', 'acme/rail', 'acme'],
+  ])('creates nothing where the listing could not read a scope %s', async (_said, parent, unreadable) => {
+    const writes: string[] = []
+    const store = new InMemoryScopeStore([])
+    const { held, failures, entered } = mountWith({
+      list: async () => ({ ...await store.list(), unreadable: [unreadable] }),
+      load: (path) => store.load(path),
+      save: (one) => { writes.push(`save ${one.path}`); return store.save(one) },
+      remove: (path) => store.remove(path),
+    }, store)
+    await settle()
+    act(() => held().addUnder(parent))
+    act(() => held().setNewScopeName('Retail'))
+    await act(async () => { held().create(); await Promise.resolve() })
+    await settle()
+
+    expect(writes).toEqual([])
+    expect(entered).not.toHaveBeenCalled()
+    expect(failures).toEqual(['organisation.create.unreadable'])
+  })
+
+  /**
    * A board for a scope that is already there: read-patch-write, since the
    * home is outside any session, then entered on the board just made.
    */
@@ -443,6 +471,25 @@ describe('useOrganisation', () => {
       expect(writes).toEqual([])
       expect(failures).toContain('organisation.settings.readdress')
       expect(await store.load('rail/rolling-stock')).toBeDefined()
+    })
+
+    it('refuses to move a scope onto an address the listing could not read, before it writes anything', async () => {
+      const writes: string[] = []
+      const store = new InMemoryScopeStore(tree())
+      const { held, failures } = mountWith({
+        models: () => store.models(),
+        list: async () => ({ ...await store.list(), unreadable: ['freight/rail'] }),
+        load: (path) => store.load(path),
+        save: (one) => { writes.push(`save ${one.path}`); return store.save(one) },
+        remove: (path) => { writes.push(`remove ${path}`); return store.remove(path) },
+      }, store)
+      await settle()
+      await act(async () => { held().applySettings('rail', { name: 'Rail', parent: 'freight' }) })
+      await settle()
+
+      expect(writes).toEqual([])
+      expect(failures).toContain('organisation.settings.readdress')
+      expect(await store.load('rail')).toBeDefined()
     })
   })
 

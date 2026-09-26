@@ -105,8 +105,8 @@ async function paths(store: ScopeStore): Promise<ScopePath[]> {
  * A fresh, empty store that keeps a scope in more than one piece, and a way to
  * make one of those pieces refuse to be read — the way a file a sync client
  * holds, or one whose permission was withdrawn, refuses. `file` is the piece
- * as the folder format names it inside the scope's folder (`model.json`,
- * `docs/<id>.md`, `images/<file>`), because that format is what says what a
+ * as the folder format names it inside the scope's folder (`scope.json`,
+ * `model.json`, `docs/<id>.md`, `images/<file>`), because that format is what says what a
  * scope's pieces are; `undefined` reads everything again.
  */
 export type RefusingStore = {
@@ -505,6 +505,8 @@ export function describeScopeStore(
  * would remove as no longer wanted, with nobody having wanted that. Where the
  * scope can be understood without the piece it is left where it is; where it
  * cannot — the model — the scope opens to be read and nothing is written.
+ * And where it is the header, the listing names the scope rather than
+ * leaving it out, and no new scope is written over it.
  */
 function describePiecesItCouldNotRead(refusing: ScopeStoreOptions['refusing']): void {
   const described = () => {
@@ -551,6 +553,40 @@ function describePiecesItCouldNotRead(refusing: ScopeStoreOptions['refusing']): 
 
       const again = await store.load(SAMPLE_PATH)
       expect(again?.unreadable).toBeUndefined()
+      expect(again?.model.elements.map((one) => one.description))
+        .toEqual(['All about Crews.', 'All about Reisinformatie.'])
+    })
+
+    /**
+     * A header that will not read is one scope the listing cannot show, not a
+     * tree it cannot show: the rest are listed, and the one it could not read
+     * is named, so nobody is offered its address as free.
+     */
+    it('lists every scope whose header reads, and names the one that would not', async () => {
+      const { store, refuse } = await refusing!()
+      await store.save(bareScope(ROOT_SCOPE, 'Acme Logistics', 'organisation'))
+      await store.save(bareScope('acme-logistics', 'Acme', 'domain'))
+      await store.save(described())
+      await store.save(scopeAt('acme-logistics/other'))
+      await refuse(SAMPLE_PATH, 'scope.json')
+
+      const listed = await store.list()
+      await refuse(SAMPLE_PATH, undefined)
+      expect(flattenScopes(listed).map((scope) => scope.path).sort())
+        .toEqual([ROOT_SCOPE, 'acme-logistics', 'acme-logistics/other'])
+      expect(listed.unreadable).toEqual([SAMPLE_PATH])
+      expect((await store.list()).unreadable).toBeUndefined()
+    })
+
+    it('writes no new scope over one whose header would not read', async () => {
+      const { store, refuse } = await refusing!()
+      await store.save(described())
+      await refuse(SAMPLE_PATH, 'scope.json')
+      await expect(store.save(bareScope(SAMPLE_PATH, 'Fresh', 'landscape'))).rejects.toThrow()
+      await refuse(SAMPLE_PATH, undefined)
+
+      const again = await store.load(SAMPLE_PATH)
+      expect(again?.model.name).toBe('Application landscape')
       expect(again?.model.elements.map((one) => one.description))
         .toEqual(['All about Crews.', 'All about Reisinformatie.'])
     })

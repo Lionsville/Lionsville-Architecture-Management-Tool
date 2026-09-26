@@ -29,7 +29,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { StringKey, Translate } from '../../i18n'
 import {
-  bareScope, emptyScope, flattenScopes, movedPaths, namesUnder, scopeTree,
+  bareScope, emptyScope, flattenScopes, movedPaths, namesUnder, scopeTree, unreadableAt,
 } from '../../projects/scope'
 import type { ScopeSnapshot, ScopeSummary } from '../../projects/scope'
 import { claimKey, idsIn } from '../../model/keys'
@@ -165,6 +165,7 @@ type MovedScope = { from: ScopePath; to: ScopePath; scope: ScopeSnapshot }
  */
 async function readTheMove(
   scopes: Pick<ScopeLibrary, 'load'>, held: ScopeSnapshot | undefined, subtree: ScopeSummary | undefined, to: ScopePath,
+  listing: ScopeSummary,
 ): Promise<MovedScope[]> {
   if (held?.unread?.length) throw new ShellError('shell.unreadNotMoved')
   const read: MovedScope[] = []
@@ -173,12 +174,23 @@ async function readTheMove(
     if (scope?.unread?.length) throw new ShellError('shell.unreadNotMoved')
     if (scope) read.push({ ...pair, scope })
   }
+  // And every address it writes, against what the listing could not read: a
+  // scope there that nobody could see would be written over by the move.
+  if ([to, ...read.map((child) => child.to)].some((path) => unreadableAt(listing, path) !== undefined)) {
+    throw new ShellError('shell.unreadableInTheWay')
+  }
   return read
 }
 
+/** A new scope refused because a scope nobody could read is at its address, or above it. */
+function refuseInTheWay(onFailure: UseOrganisationInput['onFailure']): void {
+  onFailure('organisation.create.unreadable', undefined, 'shell.unreadableInTheWay')
+}
+
 /** What to say about a move that did not start: its own refusal, or that saving failed. */
-function moveRefusal(cause: unknown): 'shell.unreadNotMoved' | 'group.saveFailed' {
-  return cause instanceof ShellError && cause.key === 'shell.unreadNotMoved' ? cause.key : 'group.saveFailed'
+function moveRefusal(cause: unknown): 'shell.unreadNotMoved' | 'shell.unreadableInTheWay' | 'group.saveFailed' {
+  if (!(cause instanceof ShellError)) return 'group.saveFailed'
+  return cause.key === 'shell.unreadNotMoved' || cause.key === 'shell.unreadableInTheWay' ? cause.key : 'group.saveFailed'
 }
 
 export function useOrganisation({
@@ -294,8 +306,11 @@ export function useOrganisation({
     setDialog({ kind: 'none' })
     void scopes.list().then(async (held) => {
       const all = flattenScopes(held)
-      const parent = all.find((scope) => scope.path === wanted.parent)
-      const path = scopePathFor(wanted.parent, wanted.name, namesUnder(parent))
+      const path = scopePathFor(wanted.parent, wanted.name, namesUnder(all.find((scope) => scope.path === wanted.parent)))
+      // Free by the listing, and not by the folder: a scope the listing could
+      // not read is still there, and a new one — or a missing ancestor made on
+      // the way — saved at its address would replace it.
+      if (unreadableAt(held, path) !== undefined) return refuseInTheWay(onFailure)
       try {
         for (const missing of ancestorScopes(path).reverse()) {
           if (missing === ROOT_SCOPE || all.some((scope) => scope.path === missing)) continue
@@ -493,7 +508,7 @@ export function useOrganisation({
       let beneath: readonly MovedScope[] = []
       if (moving) {
         try {
-          beneath = await readTheMove(scopes, held, subtree, to)
+          beneath = await readTheMove(scopes, held, subtree, to, listing)
           carried = await carryRefs({ scopes, from: path, to })
         } catch (cause) {
           onFailure('organisation.settings.readdress', cause, moveRefusal(cause))

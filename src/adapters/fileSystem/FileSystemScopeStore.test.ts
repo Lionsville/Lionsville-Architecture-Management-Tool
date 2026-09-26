@@ -104,10 +104,10 @@ describe('FileSystemScopeStore — the folder is somebody else’s too', () => {
     expect(await listed(store)).toEqual([])
   })
 
-  it('skips a scope whose header is corrupt rather than failing the whole listing', async () => {
-    // Half a write, a sync client's leftovers, something edited by hand. The
-    // user cannot act on it, and hiding their other scopes behind it would be
-    // a worse answer than quietly leaving it out.
+  it('skips a scope whose header is corrupt rather than failing the whole listing, and says which', async () => {
+    // Half a write, a sync client's leftovers, something edited by hand.
+    // Hiding the other scopes behind it would be a worse answer than leaving
+    // it out — and leaving it out in silence offers its address as free.
     const { root, store } = setup()
     await store.save(sampleScope())
     const broken = await (await root.getDirectoryHandle('acme-logistics'))
@@ -115,7 +115,40 @@ describe('FileSystemScopeStore — the folder is somebody else’s too', () => {
     broken.writeRaw('scope.json', '{ "name": ')
 
     expect(await listed(store)).toEqual(['acme-logistics/landscape'])
+    expect((await store.list()).unreadable).toEqual(['acme-logistics/broken'])
     expect(await store.load('acme-logistics/broken')).toBeUndefined()
+  })
+
+  it('writes no new scope over a header this build cannot read', async () => {
+    // A newer build's scope: not listed, not opened — and so an address that
+    // looks free to a person creating a scope, with a model beside it.
+    const { root, store } = setup()
+    await store.save(scopeAt('acme/later'))
+    const later = await (await root.getDirectoryHandle('acme')).getDirectoryHandle('later') as FakeDirectory
+    const header = JSON.stringify({ type: 'lionsville-architecture', version: 99, name: 'Later', diagrams: ['l7'] })
+    later.writeRaw('scope.json', header)
+    const model = await read(root, 'acme/later/model.json')
+
+    expect((await store.list()).unreadable).toEqual(['acme/later'])
+    await expect(store.save(scopeAt('acme/later', 'Fresh'))).rejects.toMatchObject({ key: 'shell.unreadableNotSaved' })
+    expect(await read(root, 'acme/later/scope.json')).toBe(header)
+    expect(await read(root, 'acme/later/model.json')).toBe(model)
+  })
+
+  it('lists the rest of the tree past a folder that will not list, and names that folder', async () => {
+    const { root, store } = setup()
+    await store.save(scopeAt('acme/rail'))
+    await store.save(scopeAt('acme/locked/inside'))
+    await store.save(scopeAt('other'))
+    const diagnostics = new RecordingDiagnostics()
+    const held = new FileSystemScopeStore(
+      refusing(root, { list: 'locked', cause: new Error('NotAllowedError: permission withdrawn') }), diagnostics,
+    )
+
+    const tree = await held.list()
+    expect(flattenScopes(tree).map((scope) => scope.path).sort()).toEqual(['', 'acme/rail', 'other'])
+    expect(tree.unreadable).toEqual(['acme/locked'])
+    expect(diagnostics.recent().map((entry) => entry.message)).toEqual(['a folder of the tree could not be read'])
   })
 
   it('reads a scope back from where it now lives, not from what it says inside', async () => {
@@ -438,6 +471,8 @@ describe('FileSystemScopeStore — the folder is somebody else’s too', () => {
     const store = new FileSystemScopeStore(gone)
 
     expect(await listed(store)).toEqual([])
+    // Empty, and said to be unread: nothing is known to be free in it.
+    expect((await store.list()).unreadable).toEqual([''])
     await expect(store.load('a/b')).resolves.toBeUndefined()
   })
 
@@ -518,7 +553,7 @@ describe('FileSystemScopeStore — the folder is somebody else’s too', () => {
  * file a sync client holds, or a folder somebody locked, refuses them.
  */
 function refusing(
-  folder: DirectoryHandleLike, what: { read?: string; remove?: string; cause: Error },
+  folder: DirectoryHandleLike, what: { read?: string; remove?: string; list?: string; cause: Error },
 ): DirectoryHandleLike {
   const file = (handle: FileHandleLike): FileHandleLike => handle.name !== what.read ? handle : {
     kind: 'file',
@@ -533,6 +568,7 @@ function refusing(
     getFileHandle: async (name, options) => file(await held.getFileHandle(name, options)),
     removeEntry: (name, options) => name === what.remove ? Promise.reject(what.cause) : held.removeEntry(name, options),
     values: async function* () {
+      if (held.name === what.list) throw what.cause
       for await (const entry of held.values()) yield entry.kind === 'directory' ? wrap(entry) : file(entry)
     },
   })

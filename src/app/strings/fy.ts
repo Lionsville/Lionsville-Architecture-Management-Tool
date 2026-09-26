@@ -25,6 +25,7 @@ export const FY: Record<keyof typeof EN, string> = {
   'shell.diskChanged': 'Dit projekt is op skiif wizige. Hjir stiet neat iepen.',
   'shell.unreadableScope': '{files} yn dizze scope koe net lêzen wurde, dus hy stiet iepen om te besjen en net om te wizigjen: bewarje sûnder dat bestân soe ferlieze wat der yn stiet. Meitsje it bestân wer goed, of helje it werom út de skiednis, en iepenje de scope opnij.',
   'shell.unreadNotMoved': 'Dizze scope is net ferpleatst: in bestân deryn koe net lêzen wurde, en ferpleatse soe it mei de âlde map fuorthelle ha. Meitsje it bestân wer goed, of helje it werom út de skiednis, en besykje it opnij.',
+  'shell.unreadableInTheWay': 'Der is neat skreaun: op dat adres stiet al in scope dy\'t net lêzen wurde koe, en skriuwe soe dy ferfongen ha. Meitsje de scope.json derfan wer goed, of helje dy werom út de skiednis, en besykje it opnij.',
   'shell.readOnlyRefused': 'Dizze scope stiet iepen om te lêzen en net om te wizigjen, dus der is neat dien.',
   'shell.diskConflict': 'Dit projekt is op skiif wizige, en hjir steane wizigings iepen.',
   'shell.takeTheirs': 'Dy fan skiif',
@@ -425,6 +426,9 @@ export const FY: Record<keyof typeof EN, string> = {
   'org.domainsOther': '{count} domeinen',
   'org.landscapesOne': '{count} lânskip',
   'org.landscapesOther': '{count} lânskippen',
+  'org.unreadableOne': 'Ien scope koe net lêzen wurde en wurdt net toand: {paths}. De map bliuwt sa\'t er is, en der wurdt neat op dat plak oanmakke.',
+  'org.unreadableOther': '{count} scopes koene net lêzen wurde en wurde net toand: {paths}. De mappen bliuwe sa\'t se binne, en der wurdt neat op dy plakken oanmakke.',
+  'org.unreadableFolder': 'Dizze map koe net lêzen wurde, dus wat der yn stiet wurdt net toand. Der is neat yn feroare, en der wurdt neat yn oanmakke oant er wer te lêzen is.',
   'org.diagramsOne': '{count} diagram',
   'org.diagramsOther': '{count} diagrammen',
 

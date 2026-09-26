@@ -700,7 +700,8 @@ children, `updatedAt` is stamped, a path that could escape the folder is
 refused, a scope survives a round trip unchanged, and a save that says what it
 expects to overwrite (the `revision` a load stamped) is refused once somebody
 else saved over it — and, for a store that keeps a scope in pieces, that a
-piece that would not read is still there after the next save (ADR-0028,
+piece that would not read is still there after the next save, and a header
+that would not read is named by the listing and never saved over (ADR-0028,
 amended). Passing it is the whole admission test. Then one `registerSourceProvider` in `composition.ts` — a kind,
 what opening it gives the shell (from its own opening and from the `SourceBase`
 the shell hands over, and it may answer a promise), and what it means by the

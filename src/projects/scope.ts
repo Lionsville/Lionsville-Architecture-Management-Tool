@@ -29,7 +29,7 @@ import type { HostModel, WorkingFile } from '../model/hostModel'
 import type { Observation } from '../model/observation'
 import { isBoardKind } from '../model/placement'
 import type { RecordLink } from './links'
-import { ancestorScopes, ROOT_SCOPE } from './scopePath'
+import { ancestorScopes, isWithinScope, ROOT_SCOPE } from './scopePath'
 import type { ScopePath } from './scopePath'
 
 /**
@@ -152,6 +152,34 @@ export type ScopeSummary = {
   /** The scopes filed directly under it, in the order the store listed them. */
   children: ScopeSummary[]
   updatedAt?: string
+  /**
+   * On the root of a listing only: where the store found something it could
+   * not read — a `scope.json` that would not read or said nothing a listing
+   * can hold, or a folder that would not list — by path. Absent when
+   * everything read.
+   *
+   * A listing answers with every scope it could read rather than with none,
+   * and says what it left out, because a scope missing from the tree is a
+   * scope a screen would offer to create **over**: the address looks free,
+   * and the save of an empty scope there writes over one nobody could see
+   * (ADR-0028, amended). {@link unreadableAt} is the question a write to a new
+   * address asks of it.
+   */
+  unreadable?: readonly ScopePath[]
+}
+
+/**
+ * The path a listing could not read that stands at or above this one, or
+ * `undefined` where there is none.
+ *
+ * What creating a scope, or moving one, asks before it writes to an address
+ * the listing did not show as taken. At: a scope is there that could not be
+ * read, and a new one saved there would replace it. Above: the folder was not
+ * listed, so nothing under it is known to be free — and creating a scope
+ * writes its missing ancestors too.
+ */
+export function unreadableAt(listing: ScopeSummary, path: ScopePath): ScopePath | undefined {
+  return listing.unreadable?.find((held) => isWithinScope(path, held))
 }
 
 /**

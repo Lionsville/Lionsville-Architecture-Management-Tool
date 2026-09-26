@@ -49,7 +49,8 @@
  * tested without a filesystem at all.
  */
 import {
-  DECISIONS_FOLDER, DOCS_FOLDER, folderFormatVersion, isFormatPath, MODEL_FILE, modelListsFrom, modelUnreadable,
+  DECISIONS_FOLDER, DOCS_FOLDER, folderFormatVersion, headerUnreadable, isFormatPath, MODEL_FILE, modelListsFrom,
+  modelUnreadable,
   SCOPE_FILE,
   TRANSITIONS_FOLDER, OBSERVATIONS_FOLDER,
   SCOPE_FOLDERS, SCOPE_FORMAT_VERSION, scopeFiles, scopeSummaryFrom,
@@ -269,27 +270,38 @@ export class FileSystemScopeStore implements ScopeStore {
    * A dot-folder is never a scope: `.git` is the history and
    * `.lionsville-architecture` is the settings (ADR-0005), and neither is one
    * however it is spelled.
+   *
+   * A folder that will not list fails the walk, unless `unlisted` is given:
+   * then it is handed there and the walk goes on with its siblings, which is
+   * what the listing wants — every scope it can read, and where it could not.
    */
   private async walk(
     folder: DirectoryHandleLike,
     segments: string[],
     visit: (held: { folder: DirectoryHandleLike; path: ScopePath; header: FileHandleLike; current: boolean }) => Promise<void>,
+    unlisted?: (path: ScopePath, cause: unknown) => void,
   ): Promise<void> {
     const children: DirectoryHandleLike[] = []
     let header: FileHandleLike | undefined
     let older: FileHandleLike | undefined
-    for await (const entry of folder.values()) {
-      if (entry.kind === 'directory') {
-        if (!entry.name.startsWith('.') && !SCOPE_FOLDERS.includes(entry.name)) children.push(entry)
-      } else if (entry.name === SCOPE_FILE) header = entry
-      else if (isSupersededPath(entry.name)) older = entry
+    try {
+      for await (const entry of folder.values()) {
+        if (entry.kind === 'directory') {
+          if (!entry.name.startsWith('.') && !SCOPE_FOLDERS.includes(entry.name)) children.push(entry)
+        } else if (entry.name === SCOPE_FILE) header = entry
+        else if (isSupersededPath(entry.name)) older = entry
+      }
+    } catch (cause) {
+      if (!unlisted) throw cause
+      unlisted(segments.join('/'), cause)
+      return
     }
 
     const held = header ?? older
     if (held) {
       await visit({ folder, path: segments.join('/'), header: held, current: header !== undefined })
     }
-    for (const child of children) await this.walk(child, [...segments, child.name], visit)
+    for (const child of children) await this.walk(child, [...segments, child.name], visit, unlisted)
   }
 
   /** See {@link ScopeStore.outdated}. */
@@ -410,34 +422,61 @@ export class FileSystemScopeStore implements ScopeStore {
     return found.sort((a, b) => a.number - b.number)
   }
 
+  /**
+   * See {@link ScopeStore.list}. **Every scope it can read, and where it could
+   * not** (ADR-0028, amended): a `scope.json` that will not read, or reads and
+   * says nothing a listing can hold, and a folder that will not list, are each
+   * said on the root's `unreadable` and on the trail, and the walk goes on. It
+   * used to give up on the whole tree at the first of them, and a screen shown
+   * fewer scopes than there are — or none — offers to create one at an address
+   * that is not free.
+   */
   async list(): Promise<ScopeSummary> {
     const found: ScopeSummary[] = []
-    try {
-      await this.walk(this.root, [], async ({ folder, path, header }) => {
-        // The date comes off the files and never out of a field: a screen
-        // orders by it, and a stored timestamp goes stale the moment anything
-        // but this tool touches the folder — which, in a working directory, it
-        // will.
-        let latest = 0
-        for (const entry of await this.entries(folder)) {
-          latest = Math.max(latest, await this.stampOf(entry.handle))
-        }
-        const summary = scopeSummaryFrom(
-          await (await header.getFile()).text(),
-          path,
-          latest ? new Date(latest).toISOString() : undefined,
-        )
-        if (summary) found.push(summary)
-      })
-    } catch (cause) {
-      // A folder that has become unreadable — permission withdrawn, drive
-      // unplugged — is an empty tree rather than a broken screen, and the
-      // trail says which of the two it was.
-      this.fault('the folder\'s listing', cause)
-      return scopeTree([], this.root.name)
+    const unreadable: ScopePath[] = []
+    const unlisted = (path: ScopePath, cause: unknown) => {
+      this.fault(path === ROOT_SCOPE ? 'the folder\'s listing' : 'a folder of the tree', cause)
+      unreadable.push(path)
     }
+    await this.walk(this.root, [], async ({ folder, path, header, current }) => {
+      const text = await header.getFile().then((file) => file.text()).catch((cause: unknown) => {
+        // Gone since the listing is an ordinary answer: there is no scope there.
+        if (!isAbsent(cause)) unlisted(path, cause)
+        return undefined
+      })
+      if (text === undefined) return
+      const summary = scopeSummaryFrom(text, path, await this.latestIn(folder))
+      if (summary) found.push(summary)
+      // A header an older format wrote is folded when the scope is opened, and
+      // this listing has always passed over one it could not summarise.
+      else if (current) unlisted(path, new Error('a scope header this build cannot read'))
+    }, unlisted)
     const root = scopeTree(found, this.root.name)
-    return { ...root, children: sortScopes(root.children) }
+    return {
+      ...root,
+      children: sortScopes(root.children),
+      ...(unreadable.length ? { unreadable: unreadable.sort() } : {}),
+    }
+  }
+
+  /**
+   * When anything of one scope was last written, as a listing says it.
+   *
+   * The date comes off the files and never out of a field: a screen orders by
+   * it, and a stored timestamp goes stale the moment anything but this tool
+   * touches the folder — which, in a working directory, it will. A scope whose
+   * own folders will not list is still listed, undated; the trail says why.
+   */
+  private async latestIn(folder: DirectoryHandleLike): Promise<string | undefined> {
+    let latest = 0
+    try {
+      for (const entry of await this.entries(folder)) {
+        latest = Math.max(latest, await this.stampOf(entry.handle))
+      }
+    } catch (cause) {
+      this.fault('a scope\'s dates', cause)
+    }
+    return latest ? new Date(latest).toISOString() : undefined
   }
 
   async load(path: ScopePath): Promise<ScopeSnapshot | undefined> {
@@ -571,8 +610,13 @@ export class FileSystemScopeStore implements ScopeStore {
     // names. Read here, from the disk, rather than off the snapshot, because
     // a snapshot is rebuilt by whoever saves and need not carry the mark.
     const model = held[files.findIndex((file) => file.path === MODEL_FILE)]
+    // And a header on disk this build cannot read — a newer build's, a hand
+    // edit that lost a brace — is a scope nothing listed, so a new scope saved
+    // at its address would be written over it.
+    const header = held[files.findIndex((file) => file.path === SCOPE_FILE)]
     const refused = files.some((file, n) => unread.has(file.path) || held[n] === UNREAD)
-    if (refused || (typeof model === 'string' && modelUnreadable(model))) {
+    if (refused || (typeof model === 'string' && modelUnreadable(model))
+      || (typeof header === 'string' && headerUnreadable(header))) {
       throw new ShellError('shell.unreadableNotSaved')
     }
     // Written before anything is removed: an interrupted save then leaves a
