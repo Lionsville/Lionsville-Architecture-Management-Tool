@@ -28,7 +28,7 @@
  * do through the real MCP client over the real loopback server. The one thing
  * wrapped from the outside is `window.Worker`, because "did it construct a
  * module worker" is not otherwise observable. Test ids are used where the words
- * on a button exist in four languages.
+ * on a button exist in three languages.
  *
  * **What a check proves is on disk or over the wire**, never a React state.
  * A saved element is looked for in `model.json`; a decision in `decisions/`;
@@ -256,7 +256,7 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
   /**
    * Copy the example into whatever root is on screen, and wait for its
    * landscape's canvas. By its test id rather than by its words: the cards say
-   * "Open" too, and the words exist in four languages.
+   * "Open" too, and the words exist in three languages.
    */
   const copyExample = () => page(`
     (async () => {
@@ -779,7 +779,7 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
     await openFolder(first)
     // Its home, not its canvas: nothing is open until a person opens it. The
     // landscape's row is in the tree; its Open is the one button on the row
-    // with neither an aria-label (the icon buttons carry one, in four
+    // with neither an aria-label (the icon buttons carry one, in three
     // languages) nor a test id (the way to its home carries one).
     await page(`
       (async () => {

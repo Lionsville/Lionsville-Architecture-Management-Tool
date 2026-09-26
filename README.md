@@ -43,8 +43,7 @@ tells you and hands you the installer; it never installs anything behind your
 back.
 
 New here? The **[user manual](docs/manual.en.md)** (also in
-[Dutch](docs/manual.nl.md), [Frisian](docs/manual.fy.md) and
-[German](docs/manual.de.md)) is the place to start.
+[Dutch](docs/manual.nl.md) and [German](docs/manual.de.md)) is the place to start.
 
 Prefer a browser? [app.architecture.lionsville.nl](https://app.architecture.lionsville.nl/)
 is this release, with nothing installed — your work stays in that browser, or in
@@ -218,9 +217,9 @@ for one channel — where it leaves your stored routes exactly as they are. A ve
 large **PNG export** asks first, with the size of the image, before it starts
 drawing.
 
-### Four languages, three themes
+### Three languages, three themes
 
-Dutch, Frisian, German and English, switchable at any moment, covering menus,
+Dutch, German and English, switchable at any moment, covering menus,
 dialogs, band names, errors and the export title block — not a partial
 translation. Light, dark and system themes.
 
@@ -387,9 +386,8 @@ is save-then-remove in that order.
 
 ## The user manual
 
-In four languages, one file each: [docs/manual.en.md](docs/manual.en.md),
-[docs/manual.nl.md](docs/manual.nl.md), [docs/manual.fy.md](docs/manual.fy.md)
-and [docs/manual.de.md](docs/manual.de.md). It covers the organisation and its
+In three languages, one file each: [docs/manual.en.md](docs/manual.en.md),
+[docs/manual.nl.md](docs/manual.nl.md) and [docs/manual.de.md](docs/manual.de.md). It covers the organisation and its
 scopes, the workspace, drawing, elements, connections, layout, the
 documentation page, decisions, the roadmap, the business architecture and the
 map, diagram settings, saving and sharing, and the shortcuts worth knowing.
@@ -408,7 +406,7 @@ map, diagram settings, saving and sharing, and the shortcuts worth knowing.
 | `src/ports/ProjectStore.contract.ts` | The behaviour every store must show |
 | `electron/main/index.ts` | The desktop main process; its header states what is load-bearing |
 | `build/libavoidWasm.ts` | Publishes the router's wasm; fails a build, not a shipped app |
-| `docs/manual.{en,nl,fy,de}.md` | The user manual, in English, Dutch, Frisian and German |
+| `docs/manual.{en,nl,de}.md` | The user manual, in English, Dutch and German |
 | `LICENSE` | The licence |
 
 ## Licence

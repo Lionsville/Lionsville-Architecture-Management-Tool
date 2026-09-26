@@ -163,7 +163,7 @@ describe('who took the step', () => {
     expect(screen.getByTestId('activity-origin').textContent).toBe('BY A. Author VIA their client')
   })
 
-  it('names the client in each of the four languages', () => {
+  it('names the client in each of the three languages', () => {
     const said = (language: Language) => {
       cleanup()
       list([entry({ origin: 'remote', by: 'A. Author', via: 'their client' })], language)
@@ -171,7 +171,6 @@ describe('who took the step', () => {
     }
     expect(said('nl')).toBe('DOOR A. Author VIA their client')
     expect(said('de')).toBe('VON A. Author \u00dcBER their client')
-    expect(said('fy')).toBe('FAN A. Author FIA their client')
     expect(said('en')).toBe('BY A. Author VIA their client')
   })
 

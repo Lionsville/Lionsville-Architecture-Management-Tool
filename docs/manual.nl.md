@@ -3,7 +3,7 @@
 Lionsville Architect tekent een applicatielandschap in Layer 7-banden en de
 C4-containerdiagrammen eronder. Dit is de handleiding voor het gebruik. Wat het is en waarom het bestaat staat in de
 [README](../README.md); deze handleiding is er ook in het
-[Engels](manual.en.md), het [Fries](manual.fy.md) en het [Duits](manual.de.md).
+[Engels](manual.en.md) en het [Duits](manual.de.md).
 
 ## Beginnen
 
@@ -366,11 +366,13 @@ is het project weg als het tabblad sluit. Elke melding (bewaard, geladen, misluk
 die balk onderin.
 
 **Taal.** De taalknop rechts in de werkbalk van de editor (hij toont de code
-van de taal waarin je zit: NL, FY, DE of EN) opent een menu met de vier:
-Nederlands, Frysk, Deutsch en English. Een keuze schakelt de hele interface om:
+van de taal waarin je zit: NL, DE of EN) opent een menu met de drie:
+Nederlands, Deutsch en English. Een keuze schakelt de hele interface om:
 menu's, dialogen, tooltips, bandnamen, foutmeldingen en het titelblok van een
 PNG-export. De eerste keer beslist de taal van de browser. Het ontwerp zelf
-verandert niet; namen van elementen zijn inhoud, geen interface.
+verandert niet; namen van elementen zijn inhoud, geen interface. Frysk werd
+aangeboden tot 26 september 2026; wie het had gekozen, opent de app nu in het
+Nederlands.
 
 ## Tekenen
 

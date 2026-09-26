@@ -315,7 +315,7 @@ export type SourceProvider<Parts, Opening = void, Base = unknown> = {
    *
    * A key, and `string` beside `StringKey` for the reason
    * {@link SourceConnect.labelKey} is: a provider brings its own table through
-   * `i18n`'s `registerStrings`, so the sentence is in all four languages
+   * `i18n`'s `registerStrings`, so the sentence is in every language
    * without this tree holding a word of it.
    *
    * Absent means the chip says nothing at all — no tooltip rather than a
@@ -360,7 +360,7 @@ export type SourceProvider<Parts, Opening = void, Base = unknown> = {
  * A label rather than a key, because what it says is usually not a word at all:
  * a person's name, an address, the thing this provider was told to call itself.
  * The tip beside it IS a key, for the reason {@link SourceProvider.describeKey}
- * is one — a sentence has to be in four languages and this tree holds none of
+ * is one — a sentence has to be in every language and this tree holds none of
  * this provider's.
  */
 export type SourceChip = {

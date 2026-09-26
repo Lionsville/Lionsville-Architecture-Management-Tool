@@ -53,6 +53,14 @@ describe('useShellPreferences — where the settings start', () => {
     expect(mount({ themeMode: 'purple' }).prefs().themeMode).toBe('system')
   })
 
+  it('starts a person who chose Frisian in Dutch, whatever the browser says, and writes nothing', async () => {
+    const { prefs, written, onWriteFailed } = mount({ language: 'fy' }, { browserLanguages: ['de-DE'] })
+    expect(prefs().language).toBe('nl')
+    await settle()
+    expect(written).toHaveLength(0)
+    expect(onWriteFailed).not.toHaveBeenCalled()
+  })
+
 })
 
 describe('useShellPreferences — writing', () => {

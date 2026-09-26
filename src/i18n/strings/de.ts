@@ -21,7 +21,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'common.name': 'Name',
   'common.language': 'Sprache',
   'common.languageNl': 'Nederlands',
-  'common.languageFy': 'Frysk',
   'common.languageDe': 'Deutsch',
   'common.languageEn': 'English',
   'common.empty': 'Noch nichts geschrieben.',

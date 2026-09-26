@@ -40,7 +40,7 @@ const NOT_THE_PROGRAM = /\.(test|spec|perf\.test)\.tsx?$|\.contract\.ts$|\.d\.ts
 
 /** The files that compose the string table, as `eslint.config.js` names them. */
 export const COMPOSES_THE_TABLE = [
-  'src/i18n/strings.en.ts', 'src/i18n/strings.nl.ts', 'src/i18n/strings.fy.ts', 'src/i18n/strings.de.ts',
+  'src/i18n/strings.en.ts', 'src/i18n/strings.nl.ts', 'src/i18n/strings.de.ts',
 ]
 
 /** Every file of the program under `folder`, relative to `root`. */

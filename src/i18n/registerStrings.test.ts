@@ -29,7 +29,7 @@ describe('registerStrings', () => {
    */
   it('falls back to English for a language the registration left out', () => {
     registerStrings('en', { 'elsewhere.only': 'Only in English' });
-    expect(t('fy', 'elsewhere.only' as never)).toBe('Only in English');
+    expect(t('de', 'elsewhere.only' as never)).toBe('Only in English');
   });
 
   it('interpolates a registered string like any other', () => {

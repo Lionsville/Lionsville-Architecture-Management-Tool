@@ -17,7 +17,7 @@
  * `PreferencesStore` (`src/ports/`), so the desktop can later have a different
  * store without these two functions noticing.
  */
-import { isLanguage } from '../i18n/languages'
+import { languageFrom } from '../i18n/languages'
 import { isThemeMode } from '../platform/theme'
 import type { ThemeMode } from '../platform/theme'
 import type { Language } from '../i18n/languages'
@@ -32,12 +32,13 @@ export type { ThemeMode } from '../platform/theme'
  * usable — the browser decides then (`detectBrowserLanguage`).
  *
  * The package ignores fields it does not recognise, so the blob is allowed to
- * carry more than `EditorPreferences`.
+ * carry more than `EditorPreferences`. A language this app no longer ships is
+ * read as the one that took its place (`languageFrom`), so a person who chose
+ * Frisian opens in Dutch rather than in whatever the browser says.
  */
 export function readLanguage(stored: unknown): Language | undefined {
   if (!stored || typeof stored !== 'object') return undefined
-  const raw = (stored as Record<string, unknown>).language
-  return isLanguage(raw) ? raw : undefined
+  return languageFrom((stored as Record<string, unknown>).language)
 }
 
 /** The same for the theme. */

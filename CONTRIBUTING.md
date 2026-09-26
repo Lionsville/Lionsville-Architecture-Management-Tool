@@ -44,9 +44,9 @@ and the rules are the same for a person. Read it before changing anything.
   naming the area (`docs:`, `editor:`, `tests:`, `chrome:`). The body says why
   the change is right, not what it does — the diff already says that. A commit
   that has to explain four unrelated things is four commits.
-- **Every UI string in four languages.** English, Dutch, Frisian and German.
+- **Every UI string in three languages.** English, Dutch and German.
   Each module owns `strings/en.ts`, which is the schema for its keys, and the
-  `nl`, `fy` and `de` twins typed from it, so a missing translation is a
+  `nl` and `de` twins typed from it, so a missing translation is a
   compile error where the word lives. A string is never inline.
 - **Every pure function gets a unit test.** Tests sit beside the code they
   test, and `npm run check` runs them all.
@@ -85,7 +85,7 @@ be closed with a pointer back here.
 - One change per pull request. Two changes are two pull requests.
 - `npm run check` is green. If the change touches the build or the desktop,
   `npm run verify` is too.
-- New or changed strings exist in all four languages.
+- New or changed strings exist in all three languages.
 - New pure functions have tests; a new adapter passes its port's contract.
 - A behaviour that changed has a decision record, or an amendment to one.
 - Commits are in the style above, and the description says why.

@@ -27,13 +27,40 @@
  * Every language there is. THE place to register one, together with its table in
  * `strings.ts` and its entry in `LANGUAGES` (the order the menu offers).
  */
-export const LANGUAGE_CODES = ['en', 'nl', 'fy', 'de'] as const
+export const LANGUAGE_CODES = ['en', 'nl', 'de'] as const
 
 export type Language = (typeof LANGUAGE_CODES)[number]
 
 /** Is this one of ours? `hasOwnProperty`-safe: `'toString'` is not a language. */
 export function isLanguage(value: unknown): value is Language {
   return typeof value === 'string' && (LANGUAGE_CODES as readonly string[]).includes(value)
+}
+
+/**
+ * Languages this app once shipped and no longer does, and the one each now
+ * reads as.
+ *
+ * Frisian was offered until 26 September 2026 and went because it was unused.
+ * A person who had chosen it still has `fy` in a stored blob, and a Frisian
+ * browser still sends `fy-NL`; both read as Dutch, which is what Frisian
+ * readers read everywhere else and what the dates were formatted in all along.
+ * Quietly, because a preference that names a language we no longer have is a
+ * preference, not an error. Not a `Language`, so nothing can choose one of
+ * these again.
+ */
+const RETIRED: Readonly<Record<string, Language>> = { fy: 'nl' }
+
+/**
+ * The language a stored or sent code means today: one of ours as it is, a
+ * retired one as its successor, and `undefined` for anything else.
+ *
+ * Every reader of a code somebody wrote down earlier goes through this rather
+ * than {@link isLanguage}, so a code that was valid when it was written never
+ * becomes a failure when it is read.
+ */
+export function languageFrom(value: unknown): Language | undefined {
+  if (isLanguage(value)) return value
+  return typeof value === 'string' && Object.hasOwn(RETIRED, value) ? RETIRED[value] : undefined
 }
 
 /**
@@ -52,8 +79,8 @@ export function detectBrowserLanguage(
   const list = typeof tags === 'string' ? [tags] : (tags ?? [])
   for (const tag of list) {
     if (typeof tag !== 'string') continue
-    const primary = tag.toLowerCase().split('-')[0]
-    if (isLanguage(primary)) return primary
+    const primary = languageFrom(tag.toLowerCase().split('-')[0])
+    if (primary) return primary
   }
   return 'en'
 }

@@ -24,6 +24,7 @@ import {
   detectBrowserLanguage,
   interpolate,
   isLanguage,
+  languageFrom,
   plural,
   t,
   translator,
@@ -67,8 +68,8 @@ const placeholders = (value: string) =>
   (value.match(/\{(\w+)\}/g) ?? []).slice().sort().join(',');
 
 describe('the string registry', () => {
-  it('registers English, Dutch, Frisian and German, each by its own name, all in the toggle', () => {
-    expect(languages.slice().sort()).toEqual(['de', 'en', 'fy', 'nl']);
+  it('registers English, Dutch and German, each by its own name, all in the toggle', () => {
+    expect(languages.slice().sort()).toEqual(['de', 'en', 'nl']);
     // A proper noun: "Deutsch" on a Dutch screen, so a German finds it.
     for (const language of languages) {
       const own = STRINGS[language][LANGUAGE_NAME[language]];
@@ -187,8 +188,7 @@ describe('detectBrowserLanguage', () => {
     expect(detectBrowserLanguage(['NL-be'])).toBe('nl');
   });
 
-  it('picks Frisian and German for their tags', () => {
-    expect(detectBrowserLanguage(['fy-NL', 'nl'])).toBe('fy');
+  it('picks German for its tags', () => {
     expect(detectBrowserLanguage(['de-DE', 'en'])).toBe('de');
     expect(detectBrowserLanguage(['de-AT'])).toBe('de');
   });
@@ -198,6 +198,11 @@ describe('detectBrowserLanguage', () => {
     expect(detectBrowserLanguage(['fr-FR', 'it'])).toBe('en');
     expect(detectBrowserLanguage([])).toBe('en');
     expect(detectBrowserLanguage(undefined)).toBe('en');
+  });
+
+  it('reads a Frisian browser as Dutch, now that Frisian is not offered', () => {
+    expect(detectBrowserLanguage(['fy-NL', 'en'])).toBe('nl');
+    expect(detectBrowserLanguage('fy')).toBe('nl');
   });
 
   it('honours order — the first understood tag wins', () => {
@@ -214,11 +219,30 @@ describe('isLanguage', () => {
   it('accepts only registered languages', () => {
     expect(isLanguage('nl')).toBe(true);
     expect(isLanguage('en')).toBe(true);
-    expect(isLanguage('fy')).toBe(true);
     expect(isLanguage('de')).toBe(true);
+    expect(isLanguage('fy')).toBe(false);
     expect(isLanguage('fr')).toBe(false);
     expect(isLanguage(undefined)).toBe(false);
     expect(isLanguage('toString')).toBe(false);
+  });
+});
+
+describe('languageFrom', () => {
+  it('reads each of ours as itself', () => {
+    for (const language of languages) expect(languageFrom(language)).toBe(language);
+  });
+
+  it('reads a stored Frisian as Dutch, without complaint', () => {
+    expect(languageFrom('fy')).toBe('nl');
+  });
+
+  it('reads anything else as nothing', () => {
+    expect(languageFrom('fr')).toBeUndefined();
+    expect(languageFrom('FY')).toBeUndefined();
+    expect(languageFrom('toString')).toBeUndefined();
+    expect(languageFrom('hasOwnProperty')).toBeUndefined();
+    expect(languageFrom(undefined)).toBeUndefined();
+    expect(languageFrom(42)).toBeUndefined();
   });
 });
 

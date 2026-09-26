@@ -4,8 +4,7 @@ Lionsville Architect zeichnet eine Anwendungslandschaft in Layer-7-Bändern
 und die C4-Container-Diagramme darunter. Dies ist das Handbuch für die
 Benutzung. Was es ist und warum es existiert, steht in der
 [README](../README.md); dieses Handbuch gibt es auch auf
-[Englisch](manual.en.md), [Niederländisch](manual.nl.md) und
-[Friesisch](manual.fy.md).
+[Englisch](manual.en.md) und [Niederländisch](manual.nl.md).
 
 ## Erste Schritte
 
@@ -393,12 +392,13 @@ Jede Meldung (gespeichert, geladen, fehlgeschlagen) erscheint in dieser unteren
 Leiste.
 
 **Sprache.** Die Sprachschaltfläche rechts in der Werkzeugleiste des Editors
-(sie zeigt das Kürzel der Sprache, in der Sie sind: NL, FY, DE oder EN) öffnet
-ein Menü der vier: Nederlands, Frysk, Deutsch und English. Eine zu wählen
+(sie zeigt das Kürzel der Sprache, in der Sie sind: NL, DE oder EN) öffnet
+ein Menü der drei: Nederlands, Deutsch und English. Eine zu wählen
 schaltet die ganze Oberfläche um: Menüs, Dialoge, Tooltips, Bandnamen,
 Fehlermeldungen und den Titelblock eines PNG-Exports. Beim ersten Mal
 entscheidet die Sprache des Browsers. Der Entwurf selbst ändert sich nicht;
-Elementnamen sind Inhalt, nicht Oberfläche.
+Elementnamen sind Inhalt, nicht Oberfläche. Frysk wurde bis zum 26. September
+2026 angeboten; wer es gewählt hatte, sieht die App jetzt auf Niederländisch.
 
 ## Zeichnen
 

@@ -67,6 +67,33 @@ the bar carries.
   the language exists; that is out of scope here and is said in the release
   notes.
 
+**Amended 26 September 2026: three languages, and a Frisian already chosen
+reads as Dutch.** The language this record keeps in the person's preferences
+is one of **English, Dutch and German**. Frisian was withdrawn because it
+was unused: its tables, its manual and its entry in the
+menu are gone, and `Language` no longer admits `fy`, so a leftover use is a
+type error rather than a screen.
+
+* **A preference outlives the language it names.** A person who chose Frisian
+  has `"language": "fy"` in the blob this record puts in `lvarch.preferences` —
+  on the web and in the desktop's renderer alike — and nothing rewrites it.
+  `readLanguage` reads it as **Dutch**, without a notice and without an error:
+  it is what a Frisian reader reads everywhere else, and the dates were
+  already formatted in Dutch. Reading it as *unset* instead would have handed
+  the choice back to the browser, which for most such people says English —
+  a preference silently undone. The blob is not rewritten on read; the next
+  choice a person makes writes over it, as any choice does.
+* **One reader for a saved code.** `i18n/languages.ts` keeps `RETIRED`, the
+  codes this app once shipped and what each reads as, and `languageFrom` is
+  what every reader of a code somebody wrote down goes through;
+  `isLanguage` stays strict, so nothing can *choose* a retired code. Browser
+  detection uses the same reader, so a `fy-NL` browser starts in Dutch too.
+* **Where else a language is kept.** Nowhere in this repository: the
+  desktop's own settings file holds the update check and nothing about
+  language, the folder's settings hold none, and the agent's tools take no
+  language. A build composed from this one that keeps a language of its own
+  reads it through `languageFrom` as well.
+
 ## Context and Problem Statement
 
 There is no preferences screen. What a user can configure is real but scattered,

@@ -176,7 +176,6 @@ const barrelPaths = (from) => BARRELS_THAT_DRAW
 const COMPOSES_THE_TABLE = [
   'src/i18n/strings.en.ts',
   'src/i18n/strings.nl.ts',
-  'src/i18n/strings.fy.ts',
   'src/i18n/strings.de.ts',
 ]
 

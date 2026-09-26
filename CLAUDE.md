@@ -729,8 +729,13 @@ one writable both land, among others — and then the store's suite runs over it
   `strings/en.ts` (`as const`, the schema for its keys) and `strings/nl.ts`
   (typed from it, so a missing translation is a compile error where the word
   lives). `i18n/strings.en.ts` composes the slices; that file and its Dutch twin
-  are the only ones that name every module. Adding a language is a new
-  `strings/<lang>.ts` per module plus one line in `TABLES`. `strings.test.ts`
+  are the only ones that name every module. **Three languages: English, Dutch
+  and German** (`LANGUAGE_CODES`). Adding a language is a new
+  `strings/<lang>.ts` per module plus one line in `TABLES`. Withdrawing one is
+  deleting those and moving its code to `RETIRED` in `i18n/languages.ts` with the
+  language it now reads as — Frisian went on 26 September 2026 and a stored `fy`
+  reads as Dutch — because a code a person saved is read back for years, and
+  every reader of a saved code goes through `languageFrom`, never `isLanguage`. `strings.test.ts`
   loops over every registered language for completeness, empty values,
   placeholders and "was it actually translated", and over the slices for keys
   lost, keys nobody owns, and two modules claiming the same key.
@@ -1301,7 +1306,8 @@ addressed elsewhere is refused with `agent.scopeNotOpen`; `scopes.list`,
 from the file's own diagram interchange and with no library — `documentation/
 bpmn.ts` carries a small XML reader so it is pure and tested in node. ADR-0012
 has its *Built* preamble, and the manual is in Frisian and German since the
-fifth beta. **2.0.0 is the stable cut of all this**, with the notes over
+fifth beta (Frisian was withdrawn again on 26 September 2026: ADR-0005's
+amendment of that date). **2.0.0 is the stable cut of all this**, with the notes over
 every beta in its release.
 
 Then the register became a **library** (`projects/library.ts`). A landscape
@@ -1526,7 +1532,7 @@ allowed to reach, folded into `connect-src`, and into `img-src` where pictures
 load from there; the header is assembled per document by `electron/main/csp.ts`,
 which drops anything that is not an origin. A step may say **`via`**, the client
 its author made it with, and the Activity list says *by NAME via CLIENT* in the
-four languages while `activity.list` answers it as a field. And **where work is
+languages the app speaks while `activity.list` answers it as a field. And **where work is
 kept** is the provider's own sentence for a registered source (`describeKey`) or
 nothing at all, because a sentence of ours about somewhere this shell has never
 heard of could promise a copy that cannot be made.

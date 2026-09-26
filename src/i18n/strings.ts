@@ -27,7 +27,6 @@
 import { DE } from './strings.de';
 import { interpolate } from './interpolate';
 import { EN } from './strings.en';
-import { FY } from './strings.fy';
 import { NL } from './strings.nl';
 import type { Language } from './languages';
 import type { StringKey, StringParams, StringTable } from './table';
@@ -39,7 +38,7 @@ export type { StringKey, StringParams, StringTable } from './table';
  * node process — can do that without importing every module's words.
  */
 export type { Language } from './languages';
-export { LANGUAGE_CODES, detectBrowserLanguage, isLanguage } from './languages';
+export { LANGUAGE_CODES, detectBrowserLanguage, isLanguage, languageFrom } from './languages';
 /**
  * Re-exported where it always was. It lives in `./interpolate` now so that a
  * caller that has a table of its own — a node process drafting a commit message
@@ -49,7 +48,6 @@ export { LANGUAGE_CODES, detectBrowserLanguage, isLanguage } from './languages';
 export { interpolate } from './interpolate';
 export { DE } from './strings.de';
 export { EN } from './strings.en';
-export { FY } from './strings.fy';
 export { NL } from './strings.nl';
 
 /**
@@ -61,7 +59,7 @@ export { NL } from './strings.nl';
  * too. That is what lets `Language` be a list in a file with no words in it
  * (`languages.ts`) without becoming a list somebody has to remember.
  */
-const TABLES = { en: EN, nl: NL, fy: FY, de: DE } satisfies Record<Language, StringTable>;
+const TABLES = { en: EN, nl: NL, de: DE } satisfies Record<Language, StringTable>;
 
 export const STRINGS: Record<Language, StringTable> = TABLES;
 
@@ -128,13 +126,12 @@ export function registerStrings(
 
 /**
  * The languages in menu order — a presentation choice, so it is written out
- * rather than derived from `TABLES` (whose order means nothing). Dutch first and
- * Frisian beside it because that is where the tool comes from; then the two
- * neighbours. `strings.test.ts` checks it covers every registered language, so
+ * rather than derived from `TABLES` (whose order means nothing). Dutch first
+ * because that is where the tool comes from; then German and English. `strings.test.ts` checks it covers every registered language, so
  * adding one and forgetting the menu fails a test rather than hiding a language
  * from the UI.
  */
-export const LANGUAGES: readonly Language[] = ['nl', 'fy', 'de', 'en'];
+export const LANGUAGES: readonly Language[] = ['nl', 'de', 'en'];
 
 /**
  * How each language names itself, in the common vocabulary — a proper noun, so
@@ -143,7 +140,6 @@ export const LANGUAGES: readonly Language[] = ['nl', 'fy', 'de', 'en'];
  */
 export const LANGUAGE_NAME: Record<Language, StringKey> = {
   nl: 'common.languageNl',
-  fy: 'common.languageFy',
   de: 'common.languageDe',
   en: 'common.languageEn',
 };
@@ -151,16 +147,12 @@ export const LANGUAGE_NAME: Record<Language, StringKey> = {
 /**
  * The BCP 47 tag `Intl` formats dates, times and numbers in for each language.
  *
- * Frisian has a tag of its own (`fy-NL`), but Chromium's ICU carries no data
- * for it, and `toLocale*` on an unknown tag falls back on the machine's own
- * default — a 12-hour clock on an American laptop, in a Frisian interface.
- * Frisian writes its dates, times and decimals exactly as Dutch does, so the
- * Dutch locale is the honest answer: the format is right and it is the same on
- * every machine. Only a written-out month name comes out Dutch.
+ * A tag with a region, and one Chromium's ICU carries data for: `toLocale*` on
+ * a tag it does not know falls back on the machine's own default, which is a
+ * 12-hour clock on an American laptop whatever the interface says.
  */
 export const LOCALE: Record<Language, string> = {
   nl: 'nl-NL',
-  fy: 'nl-NL',
   de: 'de-DE',
   en: 'en-GB',
 };

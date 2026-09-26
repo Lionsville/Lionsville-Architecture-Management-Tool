@@ -14,7 +14,7 @@
  * English.
  */
 export {
-  LANGUAGES, LANGUAGE_NAME, LOCALE, STRINGS, detectBrowserLanguage, isLanguage, registerStrings, t, translator,
+  LANGUAGES, LANGUAGE_NAME, LOCALE, STRINGS, detectBrowserLanguage, isLanguage, languageFrom, registerStrings, t, translator,
 } from './strings'
 export type { Language, StringKey, StringParams, StringTable, Translate } from './strings'
 export { LanguageProvider, useStrings } from './LanguageContext'

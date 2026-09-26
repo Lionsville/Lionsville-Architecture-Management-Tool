@@ -155,8 +155,8 @@ describe('SolutionDesignEditor — language', () => {
     const { onLanguageChange } = renderEditor({ language: 'nl' });
     fireEvent.click(screen.getByLabelText('Taal'));
     // The menu names every language the way it names itself.
-    expect(screen.getByRole('menuitem', { name: 'Frysk' })).toBeDefined();
-    expect(screen.getByRole('menuitem', { name: 'Deutsch' })).toBeDefined();
+    expect(screen.getAllByRole('menuitem').map((item) => item.textContent))
+      .toEqual(['Nederlands', 'Deutsch', 'English']);
     fireEvent.click(screen.getByRole('menuitem', { name: 'English' }));
     expect(onLanguageChange).toHaveBeenCalledWith('en');
     // Still Dutch: the editor does not own the value.

@@ -2,8 +2,7 @@
 
 Lionsville Architect draws an application landscape in Layer-7 bands and the
 C4 container diagrams underneath it. This is the manual for using it. What it is and why it exists is in the [README](../README.md);
-this manual is also in [Dutch](manual.nl.md), [Frisian](manual.fy.md) and
-[German](manual.de.md).
+this manual is also in [Dutch](manual.nl.md) and [German](manual.de.md).
 
 ## Starting
 
@@ -350,12 +349,13 @@ tab closes.
 Every notice (saved, loaded, failed) appears in that bottom bar.
 
 **Language.** The language button at the right of the editor's toolbar
-(it shows the code of the language you are in: NL, FY, DE or EN) opens a
-menu of the four: Nederlands, Frysk, Deutsch and English. Choosing one switches
+(it shows the code of the language you are in: NL, DE or EN) opens a
+menu of the three: Nederlands, Deutsch and English. Choosing one switches
 the whole interface: menus, dialogs, tooltips, band names, error messages and
 the title block of a PNG export. The first time, the browser's language
 decides. The design itself does not change; element names are content, not
-interface.
+interface. Frysk was offered until 26 September 2026; if you had chosen it,
+the app now opens in Dutch.
 
 ## Drawing
 

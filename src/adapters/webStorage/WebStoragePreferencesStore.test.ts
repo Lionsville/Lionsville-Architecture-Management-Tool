@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { describe, expect, it } from 'vitest'
+import { readLanguage } from '../../projects/preferences'
 import type { KeyValueStorage } from './KeyValueStorage'
 import { PREFERENCES_KEY, WebStoragePreferencesStore } from './WebStoragePreferencesStore'
 
@@ -30,6 +31,15 @@ describe('WebStoragePreferencesStore', () => {
     const store4 = new WebStoragePreferencesStore(fakeStorage())
     await store4.write({ language: 'en', somethingNew: { deep: true } })
     expect(await store4.read()).toEqual({ language: 'en', somethingNew: { deep: true } })
+  })
+
+  it('hands back a Frisian written by an earlier build, which the shell then reads as Dutch', async () => {
+    // What the desktop's renderer and the web build both keep, byte for byte.
+    const stored = JSON.stringify({ language: 'fy', themeMode: 'dark' })
+    const store = new WebStoragePreferencesStore(fakeStorage({ [PREFERENCES_KEY]: stored }))
+    const read = await store.read()
+    expect(read).toEqual({ language: 'fy', themeMode: 'dark' })
+    expect(readLanguage(read)).toBe('nl')
   })
 
   it('refuses visibly when storage is full', async () => {

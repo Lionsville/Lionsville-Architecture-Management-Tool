@@ -19,6 +19,10 @@ describe('readLanguage', () => {
     expect(readLanguage({ language: 'en' })).toBe('en')
   })
 
+  it('reads a Frisian chosen before Frisian was withdrawn as Dutch', () => {
+    expect(readLanguage({ language: 'fy', themeMode: 'dark' })).toBe('nl')
+  })
+
   it('returns nothing for a language we do not speak', () => {
     expect(readLanguage({ language: 'fr' })).toBeUndefined()
     expect(readLanguage({ language: 42 })).toBeUndefined()

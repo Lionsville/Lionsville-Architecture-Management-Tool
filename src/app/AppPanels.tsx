@@ -252,7 +252,7 @@ export function AppNotices({ parts }: { parts: ShellParts }) {
       )}
       {provider.chromes.map(({ kind, chrome: Chrome }) => (
         /* Inside the theme and inside the language, so a provider's strip is
-           in this person's dark mode and this person's Frisian; beside the
+           in this person's dark mode and this person's German; beside the
            app's own notices rather than around the screens, because it is one
            of them. In a boundary of its own for the reason the canvas has
            one: a strip somebody else wrote falling over must cost the strip
