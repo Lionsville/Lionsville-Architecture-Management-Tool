@@ -68,3 +68,18 @@ describe('invokeHook', () => {
     expect(electron.invoked).toHaveLength(before)
   })
 })
+
+/**
+ * A working file lands on the desktop in one call (ADR-0023, amendment 2), so
+ * the page going away part way cannot cut it short: the preload hands the
+ * whole set to main's staged write, as it was given.
+ */
+describe('several files written as one', () => {
+  it('goes to main in one invoke, every write and removal in it', async () => {
+    await bridge()
+    const files = (electron.exposed as { files: import('../../src/adapters/desktop/channel').DesktopFiles }).files
+    const writes = [{ path: 'model.json', bytes: new Uint8Array([1]) }, { path: 'acme/model.json', bytes: new Uint8Array([2]) }]
+    await files.writeTogether('/work', writes, ['diagrams/old.json'])
+    expect(electron.invoked.at(-1)).toEqual({ channel: 'files:writeTogether', args: ['/work', writes, ['diagrams/old.json']] })
+  })
+})

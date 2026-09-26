@@ -92,6 +92,21 @@ export class InMemoryScopeStore implements ScopeStore {
     return Promise.resolve()
   }
 
+  /** Every entry checked, then every entry kept: nothing is written where one is refused. */
+  saveTogether(entries: readonly { scope: ScopeSnapshot; expects?: string }[]): Promise<void> {
+    for (const { scope, expects } of entries) {
+      if (!isSafeScopePath(scope.path)) {
+        return Promise.reject(new ShellError('shell.badScopePath', { path: String(scope.path) }))
+      }
+      if (expects !== undefined && this.revisions.get(scope.path) !== expects) {
+        return Promise.reject(scopeMoved(scope.path))
+      }
+    }
+    const at = new Date().toISOString()
+    for (const { scope } of entries) this.keep(scope, at)
+    return Promise.resolve()
+  }
+
   remove(path: ScopePath, expects?: string): Promise<void> {
     // The root is the folder you opened, not something this app may throw away.
     if (!isSafeScopePath(path) || path === ROOT_SCOPE) return Promise.resolve()

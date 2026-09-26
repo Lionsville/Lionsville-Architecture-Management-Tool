@@ -530,6 +530,49 @@ export function describeScopeStore(
       expect((await create()).id).toBeTruthy()
     })
 
+    /**
+     * Several scopes written as one (`ScopeStore.saveTogether`), where a store
+     * offers it: a working file lands whole, or not at all (ADR-0023,
+     * amendment 2). A store that does not offer it skips these, and the caller
+     * saves one scope at a time.
+     */
+    it('writes every scope it is handed as one, each as a save would', async (context) => {
+      const store = await create()
+      if (!store.saveTogether) return context.skip()
+      const handed = [scopeAt('', 'Acme'), scopeAt('acme', 'Acme group'), sampleScope(), scopeAt('acme/north/team', 'Team')]
+      await store.saveTogether(handed.map((scope) => ({ scope })))
+      for (const scope of handed) expect((await store.load(scope.path))?.model.name, scope.path).toBe(scope.model.name)
+      expect((await store.load(SAMPLE_PATH))?.model.diagrams.length).toBe(sampleScope().model.diagrams.length)
+    })
+
+    it('writes none of them where one expects a revision somebody has saved over', async (context) => {
+      const store = await create()
+      if (!store.saveTogether) return context.skip()
+      await store.save(sampleScope())
+      const mine = await store.load(SAMPLE_PATH)
+      await store.save({ ...mine!, model: { ...mine!.model, name: 'Theirs' } }, mine!.revision)
+      const refused = await store.saveTogether([
+        { scope: scopeAt('acme-logistics', 'New group') },
+        { scope: { ...mine!, model: { ...mine!.model, name: 'Mine' } }, expects: mine!.revision },
+        { scope: scopeAt('acme-logistics/landscape/team', 'New team') },
+      ]).then(() => undefined, (cause: unknown) => cause)
+      expect(isScopeMoved(refused), String(refused)).toBe(true)
+      expect((await store.load(SAMPLE_PATH))?.model.name).toBe('Theirs')
+      await expect(store.load('acme-logistics/landscape/team')).resolves.toBeUndefined()
+      expect((await store.load('acme-logistics'))?.model.name).not.toBe('New group')
+    })
+
+    it('writes none of them where one is at a path no scope may have', async (context) => {
+      const store = await create()
+      if (!store.saveTogether) return context.skip()
+      await expect(store.saveTogether([
+        { scope: scopeAt('acme', 'Acme group') },
+        { scope: scopeAt('acme/decisions') },
+      ])).rejects.toBeInstanceOf(Error)
+      await expect(store.load('acme')).resolves.toBeUndefined()
+      await expect(store.load('acme/decisions')).resolves.toBeUndefined()
+    })
+
     describePiecesItCouldNotRead(options.refusing)
   })
 }

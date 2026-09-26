@@ -29,7 +29,7 @@ export type ScopeStoreFilling = (built: ScopeStore) => Partial<ScopeStore>
 
 /** Every member of the port, once. `satisfies` is what makes a new one a compile error. */
 const MEMBERS = {
-  id: true, list: true, load: true, save: true, remove: true,
+  id: true, list: true, load: true, save: true, saveTogether: true, remove: true,
   pressure: true, outdated: true, models: true, descriptions: true,
 } as const satisfies Record<keyof ScopeStore, true>
 

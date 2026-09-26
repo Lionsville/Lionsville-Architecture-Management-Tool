@@ -16,6 +16,7 @@ import { useProjectFiles } from './useProjectFiles'
 import type { ProjectFiles } from './useProjectFiles'
 import type { Notify } from './useToasts'
 import type { WorkspaceFiles, WorkspaceTree } from './workspaceProps'
+import type { WorkingFileManifest } from '../projects/workingFileManifest'
 
 export type WorkspaceFileParts = {
   files: ProjectFiles
@@ -42,8 +43,8 @@ export function useWorkspaceFiles(deps: {
   const { documents, askPassword, landing, chooseFolder } = deps.seams
   /** The store write, and then the two reads a changed tree needs (ADR-0012 §10). */
   const adoptWorkingSet = useCallback(
-    async (held: readonly ScopeSnapshot[]) => {
-      await onAdoptScopes!(held)
+    async (held: readonly ScopeSnapshot[], manifest?: WorkingFileManifest) => {
+      await onAdoptScopes!(held, manifest)
       onTreeChanged()
     },
     [onAdoptScopes, onTreeChanged],

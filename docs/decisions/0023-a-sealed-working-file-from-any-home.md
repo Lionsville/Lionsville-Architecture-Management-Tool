@@ -1,6 +1,6 @@
 # ADR-0023 — A sealed working file, from any home, and settings that stay with the install
 
-* Status: accepted; amended 26 September 2026 (a manifest, and a landing that is checked)
+* Status: accepted; amended 26 September 2026 (a manifest, and a landing that is checked; a landing is one write)
 * Date: 2026-09-21
 * Deciders: Wouter Simons
 * Extends: ADR-0018 (the working file is the working set)
@@ -237,4 +237,68 @@ the person is told at the moment they have the file in hand.
   written out altered, and the manifest's hash of it was then a hash of the
   damage. A store of another build reading a scope's files follows the same
   rule.
+
+## Amendment 2 — 26 September 2026: a landing is one write
+
+Amendment 1 made a landing say what did not arrive. It did not make a landing
+arrive whole, and the read-back can only speak if the page that started the
+landing is still there when the writes end. They were a walk: every scope of
+the file saved one after the other, each save one or several writes, from the
+page. A landing of an organisation over a slow connection took long enough for
+the page to go away in the middle of it — a reload, a window closed, a
+renderer that crashed — and what was left was the first scopes of the file
+written and the rest not, with nothing on screen any more to say so. The one
+that was not written was the largest, because the walk writes the scopes
+shallowest first and the largest is usually a team filed two deep.
+
+**The store is asked to write the set as one** (`ScopeStore.saveTogether`).
+Each entry is what `save` would be handed, `expects` included, and every
+refusal `save` can make is made of every entry before anything is written: one
+scope that moved since it was read, one path no scope may have, one scope that
+would write over a file nobody could read, and nothing is written. Then the
+writes are made so that the page going away cannot cut them short, as far as
+the store can make them one. `held.manifest` hands the store what the file
+says it holds, for a store that checks what it was handed against it before it
+writes anything.
+
+* **A folder on the desktop** stages the landing in main
+  (`DirectoryHandleLike.writeTogether`, `files:writeTogether`): the folder store
+  plans every scope first, and main writes every file under a temporary name
+  beside its target, flushed, before it renames any of them into place, and
+  makes the removals last. A failure while staging leaves the folder as it was,
+  and a renderer that reloads or closes once the call has begun does not stop
+  it — main finishes. What is left is the machine itself stopping during the
+  renames, which is a moment rather than a load; each rename is atomic on its
+  own, and a folder that keeps a history has the snapshot *Replace here* took
+  just before (ADR-0025, amended).
+* **A folder in a browser** has no rename to stage with, and its handle offers
+  no `writeTogether`: it is planned whole — so a refusal still writes nothing —
+  and then written a scope at a time, as before.
+* **A store with nothing to stage** (one in memory) checks every entry and
+  then keeps every entry.
+* **A store that cannot promise the second half** leaves `saveTogether` out,
+  and the landing saves a scope at a time as it always did. The read-back of
+  amendment 1 is what says what did not arrive.
+
+**A refusal is said as what it is.** Where the store took the set as one and
+refused it, the person is told the working file was not loaded and nothing of
+it was written, with the store's own reason — in English, Dutch and German
+(`shell.workingFileNotLanded`) — rather than a sentence about the file.
+Loading it again starts from the organisation as it was.
+
+### Consequences
+
+* `ScopeStore.saveTogether?(entries, held?)`, with three contract clauses: the
+  set is written, each scope as a save would write it; a set with one scope
+  that moved writes none of them; a set with one unusable path writes none of
+  them. A store that offers none skips them.
+* `DirectoryHandleLike.writeTogether?(writes, removals)`; `DesktopFiles.writeTogether`,
+  answering each write's stamp so the watcher still knows the landing's own
+  writes for its own (`rememberingWrites`).
+* `FileSystemScopeStore.save` is a plan and then its writes; `saveTogether`
+  plans every scope and hands the writes to `writeTogether` where the handle
+  has it.
+* The home's `adopt` and the workspace's `adoptWorkingSet` take the file's
+  manifest beside its scopes; the shell's `adoptScopes` reads every scope's
+  revision and then writes through `saveTogether` where the store has it.
 

@@ -37,6 +37,7 @@ import type { AskPassword } from './usePasswordPrompt'
 import type { StorageNotice } from './useStorageNotice'
 import type { Notify } from './useToasts'
 import type { ChooseFolderForWorkingFile, LandingPrompts } from './workingFileFlows'
+import type { WorkingFileManifest } from '../projects/workingFileManifest'
 
 /** Where this scope is kept, and what the source it is kept in says about it. */
 export type WorkspaceSource = {
@@ -140,7 +141,7 @@ export type WorkspaceTree = {
    * shell's, because it owns the store; absent where there is none, and such a
    * file is then refused rather than half-opened.
    */
-  onAdoptScopes?: (scopes: readonly ScopeSnapshot[]) => Promise<void>
+  onAdoptScopes?: (scopes: readonly ScopeSnapshot[], manifest?: WorkingFileManifest) => Promise<void>
   /**
    * One scope as the store holds it now, to read an opened working file back
    * and hold it to the file (ADR-0023, amended).

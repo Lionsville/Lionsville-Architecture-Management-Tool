@@ -86,6 +86,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.workingFileArrivedOwn': 'Arbeitsdatei „{name}“ geladen und mit ihrem Inhalt abgeglichen, weil eine ältere Version sie ohne Manifest gespeichert hat: {scopes} Bereiche, {views} Ansichten und {files} Dateien, alle angekommen.',
   'shell.workingFileShort': 'Arbeitsdatei „{name}“ ist nicht vollständig angekommen. Nach dem Laden fehlt: {what}.',
   'shell.workingFileShortOwn': 'Arbeitsdatei „{name}“ ist nicht vollständig angekommen. Sie hat kein Manifest, weil eine ältere Version sie gespeichert hat, deshalb wurde sie mit ihrem Inhalt abgeglichen. Nach dem Laden fehlt: {what}.',
+  'shell.workingFileNotLanded': 'Die Arbeitsdatei wurde nicht geladen, und nichts davon wurde geschrieben: Alle Bereiche darin kommen gemeinsam an oder keiner. {reason}',
   'shell.shortScope': 'der Bereich „{name}“ ({path})',
   'shell.shortView': 'die Ansicht „{view}“ in „{scope}“',
   'shell.shortFiles': '{count} Dateien von „{scope}“',

@@ -164,6 +164,16 @@ export type DesktopFiles = {
    * difference between an interrupted save and a lost project.
    */
   write(root: string, path: string, bytes: Uint8Array): Promise<DesktopStamp>
+  /**
+   * Several files written and removed as one: every write staged beside its
+   * target and flushed before any is renamed into place, then the removals.
+   * A failure while staging leaves the folder as it was, and the renderer
+   * going away once this has begun does not stop it. Each write's stamp, in
+   * order (ADR-0023, amendment 2).
+   */
+  writeTogether(
+    root: string, writes: readonly { path: string; bytes: Uint8Array }[], removals: readonly string[],
+  ): Promise<DesktopStamp[]>
   /** A file, or a directory with `recursive`. Removing what is not there is fine. */
   remove(root: string, path: string, options?: { recursive?: boolean }): Promise<void>
   /** What is on disk right now, without reading the whole file back. */

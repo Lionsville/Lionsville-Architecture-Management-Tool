@@ -26,6 +26,7 @@ import type { AskPassword } from './usePasswordPrompt'
 import type { Notify } from './useToasts'
 import { landWorkingFile, savedWithout, sealedWorkingFile, unsealedBytes } from './workingFileFlows'
 import type { ChooseFolderForWorkingFile, LandingPrompts, OpenedWorkingFile, ReadScope } from './workingFileFlows'
+import type { WorkingFileManifest } from '../projects/workingFileManifest'
 
 /**
  * What this hook needs from a document channel.
@@ -92,7 +93,7 @@ export function useProjectFiles(deps: {
    * than opened for its top scope alone. Half a working set is the loss this
    * whole arrangement exists to prevent.
    */
-  adoptWorkingSet?: (scopes: readonly ScopeSnapshot[]) => Promise<void>
+  adoptWorkingSet?: (scopes: readonly ScopeSnapshot[], manifest?: WorkingFileManifest) => Promise<void>
   /**
    * One scope as the store now holds it: what a landing is read back through
    * and held to the file's manifest (ADR-0023, amended). Absent where there
@@ -195,7 +196,7 @@ export function useProjectFiles(deps: {
       notify(s('shell.workingSetNotHere'), 'error')
       return false
     }
-    if (adoptWorkingSet) await adoptWorkingSet([result.scope, ...rest])
+    if (adoptWorkingSet) await adoptWorkingSet([result.scope, ...rest], result.manifest)
     session.adopt(result.scope, result.relayout)
     return true
   }, [session, adoptWorkingSet, notify, s])
@@ -214,7 +215,9 @@ export function useProjectFiles(deps: {
         ...(beforeReplace ? { beforeReplace } : {}),
         notify, s,
       })
-    }).catch((err: unknown) => notify(s('shell.processFailed', { message: reasonOf(err) }), 'error'))
+    }).catch((err: unknown) => notify(err instanceof ShellError
+      ? messageFor(err, s)
+      : s('shell.processFailed', { message: reasonOf(err) }), 'error'))
   }, [session, landHere, readScope, askPassword, landing, chooseFolder, beforeReplace, notify, s])
 
   const openFile = useCallback((file: File) => {

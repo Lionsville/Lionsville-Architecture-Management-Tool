@@ -35,7 +35,7 @@ import { log } from './log'
 import { watchFolder } from './watch'
 import {
   fingerprint, listDirectory, makeDirectory, readFile as readInside, removeEntry, resolveInside,
-  writeFile as writeInside,
+  writeFile as writeInside, writeTogether as writeTogetherInside,
 } from './fileStore'
 
 /** Where the list of folders the user has chosen is kept, between runs. */
@@ -203,6 +203,17 @@ export function registerFileChannel(options: { onRecentsChanged?: () => void } =
   ipcMain.handle('files:write', async (_event, root: unknown, path: unknown, bytes: unknown) => {
     if (!isGranted(root) || !isPath(path) || !isBytes(bytes)) throw new Error('shell.pathRefused')
     return writeInside(root, path, bytes)
+  })
+
+  ipcMain.handle('files:writeTogether', async (_event, root: unknown, writes: unknown, removals: unknown) => {
+    const shaped = Array.isArray(writes) && writes.every((write: unknown) => {
+      const held = write as { path?: unknown; bytes?: unknown } | undefined
+      return isPath(held?.path) && isBytes(held?.bytes)
+    })
+    if (!isGranted(root) || !shaped || !Array.isArray(removals) || !removals.every(isPath)) {
+      throw new Error('shell.pathRefused')
+    }
+    return writeTogetherInside(root, writes as { path: string; bytes: Uint8Array }[], removals as string[])
   })
 
   ipcMain.handle('files:remove', async (_event, root: unknown, path: unknown, options: unknown) => {

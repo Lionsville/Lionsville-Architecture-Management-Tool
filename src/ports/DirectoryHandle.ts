@@ -50,4 +50,19 @@ export type DirectoryHandleLike = {
   getFileHandle(name: string, options?: { create?: boolean }): Promise<FileHandleLike>
   removeEntry(name: string, options?: { recursive?: boolean }): Promise<void>
   values(): AsyncIterableIterator<FileHandleLike | DirectoryHandleLike>
+  /**
+   * Several files written and removed as one, by paths inside this folder.
+   *
+   * Every write is staged first — its bytes on disk under a name of its own,
+   * beside where it goes — and only when all of them are there is any of them
+   * moved into place; then the removals. A failure while staging leaves the
+   * folder as it was. Offered where something outside the page does the work —
+   * the desktop's main process — so that the page going away part way cannot
+   * cut it short; a browser's own handle has no rename and offers none, and
+   * the folder store then writes one file at a time, as it always has.
+   */
+  writeTogether?(
+    writes: readonly { path: string; data: string | Uint8Array }[],
+    removals: readonly string[],
+  ): Promise<void>
 }

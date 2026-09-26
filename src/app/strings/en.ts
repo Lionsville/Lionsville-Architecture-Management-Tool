@@ -151,6 +151,7 @@ export const EN = {
   'shell.workingFileArrivedOwn': 'Working file “{name}” loaded and checked against what it holds, because an older version saved it without a manifest: {scopes} scopes, {views} views and {files} files, every one arrived.',
   'shell.workingFileShort': 'Working file “{name}” did not arrive whole. Not there after loading: {what}.',
   'shell.workingFileShortOwn': 'Working file “{name}” did not arrive whole. It has no manifest, because an older version saved it, so it was checked against what it holds. Not there after loading: {what}.',
+  'shell.workingFileNotLanded': 'The working file was not loaded, and nothing of it was written: every scope in it lands together or none does. {reason}',
   'shell.shortScope': 'the scope “{name}” ({path})',
   'shell.shortView': 'the view “{view}” in “{scope}”',
   'shell.shortFiles': '{count} files of “{scope}”',

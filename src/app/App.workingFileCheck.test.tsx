@@ -19,6 +19,7 @@ import { laidOut } from '../model/testFixtures'
 import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
 import type { HostCommand } from '../platform/hostCommands'
 import type { ScopeSnapshot, ScopeSummary } from '../projects/scope'
+import { scopeMoved } from '../projects/revision'
 import { workingFileBytes } from '../projects/workingFile'
 import { MANIFEST_FILE, manifestOf, readManifest } from '../projects/workingFileManifest'
 import { unsealBytes } from '../projects/sealedFile'
@@ -60,6 +61,17 @@ class LosingStore extends InMemoryScopeStore {
   constructor(scopes: ScopeSnapshot[], private readonly losing: string) { super(scopes) }
   override save(scope: ScopeSnapshot, expects?: string): Promise<void> {
     return scope.path === this.losing ? Promise.resolve() : super.save(scope, expects)
+  }
+
+  override saveTogether(entries: readonly { scope: ScopeSnapshot; expects?: string }[]): Promise<void> {
+    return super.saveTogether(entries.filter((entry) => entry.scope.path !== this.losing))
+  }
+}
+
+/** A store that takes several scopes as one, and refuses this set: one of them moved. */
+class RefusingTogetherStore extends InMemoryScopeStore {
+  override saveTogether(): Promise<void> {
+    return Promise.reject(scopeMoved('fleet'))
   }
 }
 
@@ -126,6 +138,39 @@ describe('a working file opened on a home', () => {
     await waitFor(() => expect(screen.getByText(
       'Working file “org.lvarch” did not arrive whole. Not there after loading: the scope “Fleet” (fleet).',
     )).toBeDefined())
+  })
+})
+
+describe('a working file landed as one (ADR-0023, amendment 2)', () => {
+  it('is written in one call where the store can, with what the file says it holds', async () => {
+    const store = new InMemoryScopeStore([project()])
+    const together = vi.spyOn(store, 'saveTogether')
+    const one = vi.spyOn(store, 'save')
+    const view = show(store)
+    await goHome()
+    const theirs = [project('Organisation', ''), project('Depots', 'depots'), project('Fleet', 'depots/fleet')]
+    const manifest = await manifestOf(theirs)
+    view.send({ type: 'openDocument', name: 'org.lvarch', bytes: workingFileBytes(theirs, manifest) })
+    await waitFor(() => expect(screen.getByTestId('open-into-here')).toBeDefined())
+    fireEvent.click(screen.getByTestId('open-into-here'))
+    await waitFor(() => expect(screen.getByText(/loaded and checked against what it says it holds: 3 scopes/)).toBeDefined())
+    expect(together).toHaveBeenCalledTimes(1)
+    expect(together.mock.calls[0][0].map((entry) => entry.scope.path)).toEqual(['', 'depots', 'depots/fleet'])
+    expect((together.mock.calls[0] as unknown[])[1]).toEqual({ manifest })
+    expect(one).not.toHaveBeenCalled()
+  })
+
+  it('says that nothing of it was written, and why, where the store refused the set', async () => {
+    const store = new RefusingTogetherStore([project()])
+    const view = show(store)
+    await goHome()
+    const theirs = [project('Organisation', ''), project('Depots', 'depots'), project('Fleet', 'fleet')]
+    view.send({ type: 'openDocument', name: 'org.lvarch', bytes: workingFileBytes(theirs, await manifestOf(theirs)) })
+    await waitFor(() => expect(screen.getByTestId('open-into-here')).toBeDefined())
+    fireEvent.click(screen.getByTestId('open-into-here'))
+    await waitFor(() => expect(screen.getByText(/^The working file was not loaded, and nothing of it was written/)).toBeDefined())
+    await expect(store.load('depots')).resolves.toBeUndefined()
+    expect(screen.queryByText(/loaded and checked/)).toBeNull()
   })
 })
 

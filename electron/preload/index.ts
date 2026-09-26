@@ -59,6 +59,7 @@ const files: DesktopFiles = {
   makeDirectory: (root, path) => ipcRenderer.invoke('files:makeDirectory', root, path),
   read: (root, path) => ipcRenderer.invoke('files:read', root, path),
   write: (root, path, bytes) => ipcRenderer.invoke('files:write', root, path, bytes),
+  writeTogether: (root, writes, removals) => ipcRenderer.invoke('files:writeTogether', root, writes, removals),
   remove: (root, path, options) => ipcRenderer.invoke('files:remove', root, path, options),
   fingerprint: (root, path) => ipcRenderer.invoke('files:fingerprint', root, path),
   revealInFolder: (root, path) => ipcRenderer.invoke('files:revealInFolder', root, path),

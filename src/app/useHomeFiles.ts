@@ -19,6 +19,7 @@ import { useCallback } from 'react'
 import type { Translate } from '../i18n'
 import { reasonOf, ShellError } from '../platform/errors'
 import type { ScopeSnapshot } from '../projects/scope'
+import type { WorkingFileManifest } from '../projects/workingFileManifest'
 import { messageFor } from './messageFor'
 import type { ProjectFileChannel } from './useProjectFiles'
 import type { AskPassword } from './usePasswordPrompt'
@@ -38,8 +39,11 @@ export function useHomeFiles(deps: {
   workingSet: () => Promise<ScopeSnapshot[]>
   /** The scope this home is about, as it stands — bare where nothing is written yet. */
   into: () => ScopeSnapshot
-  /** Write what a file brought, shallowest first, and tell the tree. */
-  adopt: (scopes: readonly ScopeSnapshot[]) => Promise<void>
+  /**
+   * Write what a file brought, shallowest first, and tell the tree — as one,
+   * where the store can, held to what the file says it holds.
+   */
+  adopt: (scopes: readonly ScopeSnapshot[], manifest?: WorkingFileManifest) => Promise<void>
   /** One scope as the store now holds it, to check a landing against the file (ADR-0023, amended). */
   readScope?: ReadScope
   askPassword: AskPassword
@@ -73,12 +77,14 @@ export function useHomeFiles(deps: {
       if (!bytes) return
       await landWorkingFile({
         name, bytes, into: into(), prompts: landing, chooseFolder,
-        here: (result) => adopt([result.scope, ...(result.rest ?? [])]),
+        here: (result) => adopt([result.scope, ...(result.rest ?? [])], result.manifest),
         ...(readScope ? { read: readScope } : {}),
         ...(beforeReplace ? { beforeReplace } : {}),
         notify, s,
       })
-    }).catch((err: unknown) => notify(s('shell.processFailed', { message: reasonOf(err) }), 'error'))
+    }).catch((err: unknown) => notify(err instanceof ShellError
+      ? messageFor(err, s)
+      : s('shell.processFailed', { message: reasonOf(err) }), 'error'))
   }, [askPassword, landing, chooseFolder, beforeReplace, into, adopt, readScope, notify, s])
 
   const openFile = useCallback((file: File) => {

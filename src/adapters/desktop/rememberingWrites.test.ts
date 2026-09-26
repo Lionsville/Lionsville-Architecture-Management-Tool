@@ -23,6 +23,7 @@ function channel(): DesktopFiles {
     makeDirectory: () => Promise.resolve(),
     read: () => Promise.resolve(undefined),
     write: vi.fn(() => Promise.resolve(stamp('abc'))),
+    writeTogether: vi.fn((_root: string, writes: readonly unknown[]) => Promise.resolve(writes.map((_, at) => stamp(`w${at}`)))),
     remove: vi.fn(() => Promise.resolve()),
     fingerprint: () => Promise.resolve(undefined),
     revealInFolder: () => Promise.resolve(),
@@ -54,6 +55,19 @@ describe('rememberingWrites', () => {
     await held5.files.remove('/work', 'diagrams/old.json')
 
     expect(held5.ours({ root: '/work', path: 'diagrams/old.json' })).toBe(true)
+  })
+
+  it('recognises every file a write of several as one made or removed', async () => {
+    const held = rememberingWrites(channel())
+    await held.files.writeTogether('/work', [
+      { path: 'model.json', bytes: new Uint8Array([1]) },
+      { path: 'acme/model.json', bytes: new Uint8Array([2]) },
+    ], ['diagrams/old.json'])
+
+    expect(held.ours({ root: '/work', path: 'model.json', stamp: stamp('w0') })).toBe(true)
+    expect(held.ours({ root: '/work', path: 'acme/model.json', stamp: stamp('w1') })).toBe(true)
+    expect(held.ours({ root: '/work', path: 'acme/model.json', stamp: stamp('w0') })).toBe(false)
+    expect(held.ours({ root: '/work', path: 'diagrams/old.json' })).toBe(true)
   })
 
   it('recognises a report whose bytes are what we last read', async () => {

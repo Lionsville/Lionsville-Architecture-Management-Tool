@@ -23,6 +23,7 @@ import type { ShellServices, useProjectOrder } from './useShellServices'
 import type { SyncState } from './useSync'
 import type { TreeFindings } from './useTreeFindings'
 import type { WorkspaceSource } from './workspaceProps'
+import type { WorkingFileManifest } from '../projects/workingFileManifest'
 
 /**
  * The shell's state, as the hooks that hold it hand it out: one object per
@@ -60,7 +61,7 @@ export interface ShellParts {
     store: WorkspaceSource['store']
     readTreeModels: () => Promise<ScopeModel[]>
     readWorkingSet: () => Promise<ScopeSnapshot[]>
-    adoptScopes: (held: readonly ScopeSnapshot[]) => Promise<void>
+    adoptScopes: (held: readonly ScopeSnapshot[], manifest?: WorkingFileManifest) => Promise<void>
     readScope: (path: ScopePath) => Promise<ScopeSnapshot | undefined>
     treeChanged: () => void
     applyProjectSettings: (settings: ProjectSettings, current: ScopeSnapshot) => Promise<ScopeSnapshot | undefined>

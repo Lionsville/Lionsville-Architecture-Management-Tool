@@ -27,6 +27,7 @@ import type { usePasswordPrompt } from './usePasswordPrompt'
 import type { ProjectFileChannel } from './useProjectFiles'
 import type { Notify } from './useToasts'
 import type { ChooseFolderForWorkingFile } from './workingFileFlows'
+import type { WorkingFileManifest } from '../projects/workingFileManifest'
 
 /** The organisation screen has no command log: the history drafts its default message. */
 const NO_STEPS = (): readonly { summary: StepSummary }[] => []
@@ -50,7 +51,7 @@ export function useHomeParts(deps: {
   onSnapshotTaken: () => void
   documents: ProjectFileChannel
   workingSet: () => Promise<ScopeSnapshot[]>
-  adopt: (held: readonly ScopeSnapshot[]) => Promise<void>
+  adopt: (held: readonly ScopeSnapshot[], manifest?: WorkingFileManifest) => Promise<void>
   /** One scope as the store holds it now: an opened working file is read back through it (ADR-0023, amended). */
   readScope: (path: ScopePath) => Promise<ScopeSnapshot | undefined>
   password: ReturnType<typeof usePasswordPrompt>

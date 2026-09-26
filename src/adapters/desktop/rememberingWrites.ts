@@ -57,6 +57,12 @@ export function rememberingWrites(files: DesktopFiles): FolderChannel {
         seen.set(keyFor(root, path), stamp.sha256)
         return stamp
       },
+      async writeTogether(root, writes, removals): Promise<DesktopStamp[]> {
+        const stamps = await files.writeTogether(root, writes, removals)
+        for (const [at, write] of writes.entries()) seen.set(keyFor(root, write.path), stamps[at]?.sha256)
+        for (const path of removals) seen.set(keyFor(root, path), undefined)
+        return stamps
+      },
       async remove(root, path, options): Promise<void> {
         await files.remove(root, path, options)
         // Only the path asked for. A recursive remove takes files with it whose

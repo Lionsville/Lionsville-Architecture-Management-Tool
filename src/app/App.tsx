@@ -23,7 +23,9 @@ import type { Command, ElementId } from '../model'
 import type { StringKey, Translate } from '../i18n'
 import { apply, fromArrays, toArrays } from '../model'
 import type { Diagnostic, DiagnosticEntry } from '../platform/diagnostics'
-import { reasonOf } from '../platform/errors'
+import { reasonOf, ShellError } from '../platform/errors'
+import type { WorkingFileManifest } from '../projects/workingFileManifest'
+import { messageFor } from './messageFor'
 import { flattenScopes, moveScope, namesUnder, renameScope, setScopeDefaults } from '../projects/scope'
 import type { ScopeKind, ScopeModel, ScopeSnapshot, ScopeSummary } from '../projects/scope'
 import { treeModels, treeScopes } from '../projects/scopeIndex'
@@ -318,6 +320,10 @@ export type ScopeLibrary = {
   load(path: ScopePath): Promise<ScopeSnapshot | undefined>
   /** See `ScopeStore.save`: a save may say what it expects to overwrite. */
   save(scope: ScopeSnapshot, expects?: string): Promise<void>
+  /** See `ScopeStore.saveTogether`: several scopes as one, where the store can. */
+  saveTogether?(
+    entries: readonly { scope: ScopeSnapshot; expects?: string }[], held?: { manifest?: WorkingFileManifest },
+  ): Promise<void>
   /** See `ScopeStore.remove`: a removal may say what it expects to remove. */
   remove(path: ScopePath, expects?: string): Promise<void>
   /**
@@ -468,13 +474,33 @@ function useShellParts(props: AppProps): ShellParts {
    * writes such a save rather than taking it for the session's own
    * (`ScopeStore.save`). Without it, the scope that was open was the one scope
    * of the file never written.
+   *
+   * **As one, where the store can** (`ScopeStore.saveTogether`, ADR-0023,
+   * amendment 2): every scope or none, so a page that reloads, a window that
+   * closes or a connection that drops part way leaves the organisation as it
+   * was rather than half of the file in it. A refusal is then said as what it
+   * is — nothing of the file was written — with the store's reason. A store
+   * that cannot write several scopes as one is written a scope at a time, as
+   * before, and the read-back after the landing says what did not arrive.
    */
-  const adoptScopes = useCallback(async (held: readonly ScopeSnapshot[]) => {
+  const adoptScopes = useCallback(async (held: readonly ScopeSnapshot[], manifest?: WorkingFileManifest) => {
+    const entries: { scope: ScopeSnapshot; expects?: string }[] = []
     for (const scope of held) {
       const was = await projects.load(scope.path)
-      await projects.save(scope, was?.revision)
+      entries.push({ scope, ...(was?.revision !== undefined ? { expects: was.revision } : {}) })
     }
-  }, [projects])
+    if (!projects.saveTogether) {
+      for (const { scope, expects } of entries) await projects.save(scope, expects)
+      return
+    }
+    try {
+      await projects.saveTogether(entries, manifest ? { manifest } : {})
+    } catch (cause) {
+      throw new ShellError('shell.workingFileNotLanded', {
+        reason: cause instanceof ShellError ? messageFor(cause, s) : reasonOf(cause),
+      })
+    }
+  }, [projects, s])
   /** One scope as the store holds it now: what an opened working file is read back through (ADR-0023, amended). */
   const readScope = useCallback((path: ScopePath) => projects.load(path), [projects])
   const treeChanged = useCallback(() => {
@@ -493,8 +519,8 @@ function useShellParts(props: AppProps): ShellParts {
     index: tree.index, restore: restoreIntoHome, onSnapshotTaken: sync.afterSnapshot, documents: props.documents,
     workingSet: readWorkingSet,
     readScope,
-    adopt: async (held) => {
-      await adoptScopes(held)
+    adopt: async (held, manifest) => {
+      await adoptScopes(held, manifest)
       treeChanged()
     },
     ...prompts, chooseFolder: folder.onChooseForWorkingFile,

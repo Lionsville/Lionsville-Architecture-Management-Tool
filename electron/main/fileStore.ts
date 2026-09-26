@@ -186,6 +186,56 @@ export async function writeFile(root: string, path: string, bytes: Uint8Array): 
   return stampOf(bytes, await stat(target))
 }
 
+/**
+ * Several files written and removed as one (ADR-0023, amendment 2): what a
+ * working file lands with on the desktop.
+ *
+ * **Staged, then moved into place.** Every file is written under a temporary
+ * name beside where it goes and flushed; only when every one of them is on
+ * disk is any renamed over its target, and only then are the removals made.
+ * A failure while staging removes what was staged and leaves the folder as it
+ * was. Here rather than a file at a time from the renderer, because this is
+ * the process a page reloading, a window closing or a renderer crashing does
+ * not interrupt: once this call has begun, the folder ends up with all of it.
+ * What is left is the machine itself stopping during the renames — a moment,
+ * not a load — and each rename is atomic on its own.
+ *
+ * Every path is checked before anything is written, so one path outside the
+ * root refuses the whole call. Answers each write's stamp, in order.
+ */
+export async function writeTogether(
+  root: string,
+  writes: readonly { path: string; bytes: Uint8Array }[],
+  removals: readonly string[],
+): Promise<DesktopStamp[]> {
+  const targets = await Promise.all(writes.map((write) => resolveInside(root, write.path)))
+  const gone = await Promise.all(removals.map(async (path) => (safeRelativePath(path) ? resolveInside(root, path) : undefined)))
+  if (targets.some((target) => !target) || gone.some((target) => !target)) throw new Error('shell.pathRefused')
+  const suffix = `.${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}.landing`
+  const staged: string[] = []
+  try {
+    for (const [at, write] of writes.entries()) {
+      const target = targets[at]!
+      await mkdir(dirname(target), { recursive: true })
+      const temporary = `${target}${suffix}`
+      staged.push(temporary)
+      const handle = await open(temporary, 'w')
+      try {
+        await handle.write(write.bytes)
+        await handle.sync()
+      } finally {
+        await handle.close()
+      }
+    }
+  } catch (cause) {
+    await Promise.all(staged.map((temporary) => unlink(temporary).catch(() => undefined)))
+    throw cause
+  }
+  for (const [at, temporary] of staged.entries()) await rename(temporary, targets[at]!)
+  for (const target of gone) await rm(target!, { force: true })
+  return Promise.all(writes.map(async (write, at) => stampOf(write.bytes, await stat(targets[at]!))))
+}
+
 export async function removeEntry(
   root: string, path: string, options?: { recursive?: boolean },
 ): Promise<void> {

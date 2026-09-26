@@ -37,6 +37,7 @@
  */
 import type { ScopeModel, ScopeSnapshot, ScopeSummary } from '../projects/scope'
 import type { ScopePath } from '../projects/scopePath'
+import type { WorkingFileManifest } from '../projects/workingFileManifest'
 
 
 export interface ScopeStore {
@@ -103,6 +104,31 @@ export interface ScopeStore {
    * them, so two saves that both expected the same revision cannot both land.
    */
   save(scope: ScopeSnapshot, expects?: string): Promise<void>
+
+  /**
+   * Several scopes written as one: every one of them, or none.
+   *
+   * What a working file is landed with (ADR-0023, amendment 2). Each entry is
+   * what {@link ScopeStore.save} would be handed, `expects` included, and every
+   * refusal `save` can make is asked of every entry before anything is
+   * written — so one scope that moved, one path that is not usable, one scope
+   * that would write over a file nobody could read, and nothing is written at
+   * all. Then the writes are made so that the page, the window or the
+   * connection going away part way cannot leave some of them written and the
+   * rest not, as far as the store can make them one: a store that serialises
+   * several writers takes the whole set before it writes any of it, a folder
+   * on disk stages every file before it moves any of them into place.
+   *
+   * `held.manifest` is what the file the scopes came from says it holds, for a
+   * store that holds what it was handed to it before it writes anything.
+   *
+   * Optional, because a store that cannot promise the second half should not
+   * pretend to; the caller then saves one scope at a time, as it always did.
+   */
+  saveTogether?(
+    entries: readonly { scope: ScopeSnapshot; expects?: string }[],
+    held?: { manifest?: WorkingFileManifest },
+  ): Promise<void>
 
   /**
    * Remove one scope, and everything filed under it.

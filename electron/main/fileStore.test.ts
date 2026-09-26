@@ -12,12 +12,12 @@
  * half of the new one.
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { chmod, mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises'
+import { chmod, mkdir, mkdtemp, readdir, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
   fingerprint, listDirectory, makeDirectory, readFile as readInside, removeEntry, resolveInside,
-  safeRelativePath, writeFile as writeInside,
+  safeRelativePath, writeFile as writeInside, writeTogether,
 } from './fileStore'
 
 let root = ''
@@ -154,5 +154,59 @@ describe('what the channel does with a folder', () => {
 
   it('does not mind removing what is not there', async () => {
     await expect(removeEntry(root, 'nothing/here.json')).resolves.toBeUndefined()
+  })
+})
+
+/**
+ * A working file lands on the desktop as one call (ADR-0023, amendment 2):
+ * staged beside every target first, then moved into place, so the renderer
+ * going away part way cannot leave half an organisation.
+ */
+describe('several files written as one', () => {
+  /** Every file under the root, relative, sorted: what a person would find. */
+  async function everything(at = root, within = ''): Promise<string[]> {
+    const found: string[] = []
+    for (const entry of await readdir(at, { withFileTypes: true })) {
+      const path = within ? `${within}/${entry.name}` : entry.name
+      if (entry.isDirectory()) found.push(...await everything(join(at, entry.name), path))
+      else found.push(path)
+    }
+    return found.sort()
+  }
+
+  it('writes every file and makes every removal, and answers each write its stamp', async () => {
+    await writeInside(root, 'acme/old.json', bytes('old'))
+    await writeInside(root, 'model.json', bytes('before'))
+    const stamps = await writeTogether(root, [
+      { path: 'model.json', bytes: bytes('after') },
+      { path: 'acme/north/team/model.json', bytes: bytes('team') },
+    ], ['acme/old.json'])
+
+    expect(await everything()).toEqual(['acme/north/team/model.json', 'model.json'])
+    expect(await readFile(join(root, 'model.json'), 'utf8')).toBe('after')
+    expect(stamps.map((stamp) => stamp.size)).toEqual([5, 4])
+  })
+
+  it('leaves the folder as it was when one file cannot be staged', async () => {
+    await writeInside(root, 'model.json', bytes('before'))
+    await writeInside(root, 'acme', bytes('a file where a folder would have to be'))
+    await expect(writeTogether(root, [
+      { path: 'model.json', bytes: bytes('after') },
+      { path: 'acme/team/model.json', bytes: bytes('team') },
+    ], [])).rejects.toThrow()
+
+    expect(await everything()).toEqual(['acme', 'model.json'])
+    expect(await readFile(join(root, 'model.json'), 'utf8')).toBe('before')
+  })
+
+  it('writes nothing at all when one path leads out', async () => {
+    await expect(writeTogether(root, [
+      { path: 'model.json', bytes: bytes('after') },
+      { path: '../private/stolen', bytes: bytes('x') },
+    ], [])).rejects.toThrow('shell.pathRefused')
+    await expect(writeTogether(root, [{ path: 'model.json', bytes: bytes('after') }], ['..'])).rejects.toThrow('shell.pathRefused')
+
+    expect(await everything()).toEqual([])
+    expect(await readdir(outside)).toEqual([])
   })
 })

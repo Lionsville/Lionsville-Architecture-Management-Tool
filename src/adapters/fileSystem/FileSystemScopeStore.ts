@@ -149,6 +149,9 @@ const UNREAD = Symbol('unread')
 /** One file in a scope's folder, with enough to read it, replace it or remove it. */
 type Entry = { path: string; name: string; parent: DirectoryHandleLike; handle: FileHandleLike }
 
+/** What a save of one scope will write and remove, every refusal already made. */
+type Plan = { path: ScopePath; writes: FolderFile[]; removals: Entry[] }
+
 export class FileSystemScopeStore implements ScopeStore {
   readonly id = 'folder on disk'
 
@@ -565,13 +568,44 @@ export class FileSystemScopeStore implements ScopeStore {
     return held
   }
 
+  async save(scope: ScopeSnapshot, expects?: string): Promise<void> {
+    await this.apply(await this.plan(scope, expects))
+  }
+
   /**
-   * See {@link ScopeStore.save}. The check reads the scope again, which a
-   * folder has no cheaper way to answer; it is paid only by a caller that
-   * asked, and the open scope's own autosave never does. A folder has no
-   * lock to take, so on a disk shared with somebody else's machine the check
-   * narrows the window rather than closing it — which is what a folder can
-   * promise, and a store that serialises its writers closes it.
+   * See {@link ScopeStore.saveTogether}. Every scope is planned — each of the
+   * checks {@link save} makes, and what it would write and remove — before
+   * anything is written, so a refusal of any one writes none. Then, where the
+   * folder can take them as one (`DirectoryHandleLike.writeTogether`: the
+   * desktop's main process stages every file before it moves any), in one
+   * call; where it cannot — a browser's own handle has no rename — scope by
+   * scope, as {@link save} would.
+   *
+   * The folder holds no manifest check of its own: the caller reads the
+   * landing back and holds it to the file (ADR-0023, amended).
+   */
+  async saveTogether(entries: readonly { scope: ScopeSnapshot; expects?: string }[]): Promise<void> {
+    const plans: Plan[] = []
+    for (const { scope, expects } of entries) plans.push(await this.plan(scope, expects))
+    const together = this.root.writeTogether?.bind(this.root)
+    if (!together) {
+      for (const plan of plans) await this.apply(plan)
+      return
+    }
+    const writes: { path: string; data: string | Uint8Array }[] = []
+    const removals: string[] = []
+    for (const plan of plans) {
+      const at = scopeSegments(plan.path)
+      const under = (inside: string) => [...at, inside].join('/')
+      for (const file of plan.writes) writes.push({ path: under(file.path), data: 'text' in file ? file.text : file.bytes })
+      for (const entry of plan.removals) removals.push(under(entry.path))
+    }
+    await together(writes, removals)
+  }
+
+  /**
+   * Everything a save of this scope will do, and every refusal it makes, with
+   * nothing written: what it writes, and the files of the format it removes.
    *
    * **A save removes only what a read took in** (ADR-0028, amended). What it
    * writes is what the snapshot holds, and what it removes is the format's
@@ -583,21 +617,29 @@ export class FileSystemScopeStore implements ScopeStore {
    * will not read now is treated the same way, whoever made the snapshot:
    * nothing written over it, nothing removed. And a scope that cannot be
    * understood without the file it could not read is not saved at all.
+   *
+   * The `expects` check reads the scope again, which a folder has no cheaper
+   * way to answer; it is paid only by a caller that asked, and the open
+   * scope's own autosave never does. A folder has no lock to take, so on a
+   * disk shared with somebody else's machine the check narrows the window
+   * rather than closing it — which is what a folder can promise, and a store
+   * that serialises its writers closes it.
    */
-  async save(scope: ScopeSnapshot, expects?: string): Promise<void> {
+  private async plan(scope: ScopeSnapshot, expects?: string): Promise<Plan> {
     if (!usablePath(scope.path)) {
       throw new ShellError('shell.badScopePath', { path: String(scope.path) })
     }
     if (expects !== undefined && await this.revisionNow(scope.path) !== expects) {
       throw scopeMoved(scope.path)
     }
-    const folder = await this.scopeFolder(scope.path, true)
-    if (!folder) throw new ShellError('shell.folderUnavailable')
     if (scope.unreadable?.length) throw new ShellError('shell.unreadableNotSaved')
+    // Not made yet: a plan writes nothing, and a scope that is new has no
+    // folder to compare with until it is written.
+    const folder = await this.scopeFolder(scope.path, false)
 
     const files = scopeFiles(scope)
     const unread = new Set(scope.unread)
-    const present = await this.entries(folder)
+    const present = folder ? await this.entries(folder) : []
     const at = new Map(present.map((entry) => [entry.path, entry]))
     // Every file compared before any is written, so a save that has to be
     // refused writes nothing. Written only where it would differ: an autosave
@@ -619,14 +661,12 @@ export class FileSystemScopeStore implements ScopeStore {
       || (typeof header === 'string' && headerUnreadable(header))) {
       throw new ShellError('shell.unreadableNotSaved')
     }
-    // Written before anything is removed: an interrupted save then leaves a
-    // folder with too much in it, which opens, rather than too little.
-    for (const [n, file] of files.entries()) {
+    const writes = files.filter((file, n) => {
       const was = held[n]
-      if (was === undefined || was === UNREAD || !same(was, file)) await this.write(folder, file)
-    }
-
+      return was === undefined || was === UNREAD || !same(was, file)
+    })
     const wanted = new Set(files.map((file) => file.path))
+    const removals: Entry[] = []
     for (const entry of present) {
       if (wanted.has(entry.path) || unread.has(entry.path)) continue
       // A file that will not read now is one no read of this scope took in.
@@ -634,7 +674,19 @@ export class FileSystemScopeStore implements ScopeStore {
       // Only what this format writes — a deleted diagram's two files, a
       // decision that was renamed. Everything else in the folder is somebody's,
       // and a scope filed inside this one is never among these at all.
-      //
+      removals.push(entry)
+    }
+    return { path: scope.path, writes, removals }
+  }
+
+  /** A planned save, made: written before anything is removed. */
+  private async apply(plan: Plan): Promise<void> {
+    const folder = await this.scopeFolder(plan.path, true)
+    if (!folder) throw new ShellError('shell.folderUnavailable')
+    // Written before anything is removed: an interrupted save then leaves a
+    // folder with too much in it, which opens, rather than too little.
+    for (const file of plan.writes) await this.write(folder, file)
+    for (const entry of plan.removals) {
       // One that will not go is not a failed save — everything wanted is
       // written — but it is a deleted diagram or decision that comes back on
       // the next open, so it is said rather than dropped.

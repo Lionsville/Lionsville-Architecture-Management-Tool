@@ -113,6 +113,24 @@ export class IpcDirectoryHandle implements DirectoryHandleLike {
     await this.files.remove(this.root, this.within(name), options)
   }
 
+  /**
+   * Handed to main whole (`files:writeTogether`), which stages every write
+   * before it renames any into place — so a renderer that reloads or closes
+   * part way through a landing leaves the folder with all of it.
+   */
+  async writeTogether(
+    writes: readonly { path: string; data: string | Uint8Array }[], removals: readonly string[],
+  ): Promise<void> {
+    await this.files.writeTogether(
+      this.root,
+      writes.map((write) => ({
+        path: this.within(write.path),
+        bytes: typeof write.data === 'string' ? new TextEncoder().encode(write.data) : write.data,
+      })),
+      removals.map((path) => this.within(path)),
+    )
+  }
+
   async *values(): AsyncIterableIterator<FileHandleLike | DirectoryHandleLike> {
     // A folder that has gone away — unplugged, deleted, permission withdrawn —
     // reads as empty rather than throwing, and the store turns that into an
