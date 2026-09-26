@@ -776,7 +776,7 @@ function NewBoardDialog({ open, name, onNameChange, onCancel, onCreate, s }: {
           label={s('org.boardName')}
           value={name}
           onChange={(e) => onNameChange(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter' && ready) onCreate() }}
+          onKeyDown={(e) => { if (e.key === 'Enter' && ready) { e.preventDefault(); onCreate() } }}
         />
       </DialogContent>
       <DialogActions>

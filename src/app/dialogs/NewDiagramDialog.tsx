@@ -36,7 +36,7 @@ export function NewDiagramDialog({ name, onNameChange, onConfirm, s }: NewDiagra
           label={s('common.name')}
           value={name ?? ''}
           onChange={(e) => onNameChange(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter' && !empty) onConfirm() }}
+          onKeyDown={(e) => { if (e.key === 'Enter' && !empty) { e.preventDefault(); onConfirm() } }}
         />
       </DialogContent>
       <DialogActions>

@@ -44,6 +44,18 @@ export function PasswordDialog({ open, mode, error, onCancel, onConfirm, s }: Pa
   const mismatch = mode === 'set' && repeat.length > 0 && repeat !== password
   const ready = password.length > 0 && (mode === 'enter' || repeat === password)
   const confirm = () => { if (ready) onConfirm(password) }
+  /**
+   * *Enter* confirms, and its default is prevented: the dialog closes inside
+   * this keydown and hands the focus back to whatever opened it — the ⋯
+   * button, where the file was opened from the menu — and a browser delivers
+   * the same key's keypress there, which a button takes as a press. The menu
+   * opened again behind the next dialog and stayed over the page.
+   */
+  const confirmOnEnter = (event: React.KeyboardEvent) => {
+    if (event.key !== 'Enter') return
+    event.preventDefault()
+    confirm()
+  }
 
   return (
     <Dialog open={open} onClose={onCancel} fullWidth maxWidth="sm">
@@ -62,7 +74,7 @@ export function PasswordDialog({ open, mode, error, onCancel, onConfirm, s }: Pa
           error={mode === 'enter' && Boolean(error)}
           helperText={mode === 'enter' ? error : undefined}
           onChange={(event) => setPassword(event.target.value)}
-          onKeyDown={(event) => { if (event.key === 'Enter') confirm() }}
+          onKeyDown={confirmOnEnter}
           slotProps={{ htmlInput: { 'data-testid': 'password' } }}
         />
         {mode === 'set' && (
@@ -75,7 +87,7 @@ export function PasswordDialog({ open, mode, error, onCancel, onConfirm, s }: Pa
             error={mismatch}
             helperText={mismatch ? s('seal.mismatch') : undefined}
             onChange={(event) => setRepeat(event.target.value)}
-            onKeyDown={(event) => { if (event.key === 'Enter') confirm() }}
+            onKeyDown={confirmOnEnter}
             slotProps={{ htmlInput: { 'data-testid': 'password-repeat' } }}
             sx={{ mt: 2 }}
           />

@@ -38,7 +38,7 @@ export function LabelDialog({ open, onCancel, onLabel, s }: LabelDialogProps) {
           label={s('history.labelField')}
           value={name}
           onChange={(event) => setName(event.target.value)}
-          onKeyDown={(event) => { if (event.key === 'Enter' && name.trim()) onLabel(name.trim()) }}
+          onKeyDown={(event) => { if (event.key === 'Enter' && name.trim()) { event.preventDefault(); onLabel(name.trim()) } }}
         />
       </DialogContent>
       <DialogActions>

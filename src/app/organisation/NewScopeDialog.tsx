@@ -80,7 +80,7 @@ export function NewScopeDialog({
             error={reserved}
             helperText={reserved ? s('picker.reservedName') : undefined}
             onChange={(e) => onNameChange(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter' && ready) onCreate() }}
+            onKeyDown={(e) => { if (e.key === 'Enter' && ready) { e.preventDefault(); onCreate() } }}
           />
           <FormControlLabel
             control={(
