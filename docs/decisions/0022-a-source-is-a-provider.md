@@ -782,6 +782,17 @@ expecting a scope somebody else removed already resolves. `useOrganisation.test.
 pins the move keeping the old address where it, or a scope under it, was
 changed while the move was being written.
 
+The open workspace's settings dialog moved a scope as well, and it was a second
+move: it wrote only the open scope at the new address and removed the old one
+expecting nothing, so the scopes filed under it went with the folder and were
+written nowhere. There is now one move (`app/moveSubtree.ts`) and both dialogs
+call it; the workspace adds only what is its own — the session's snapshot is
+what lands, and nothing writes to the old address once the move has begun. It
+reads the old address afresh for the revision its removal expects, because the
+session's autosaves do not carry one back. `App.projectSettings.test.tsx` pins
+the scopes under the open one arriving, and the old address kept where it was
+changed while the move was written.
+
 ## Amended — the two a build whose strip follows the person needed
 
 *26 September 2026.* The same build had a chrome with something to say about the

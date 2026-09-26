@@ -187,6 +187,61 @@ describe('project settings on an open project', () => {
     expect(await store.load('acme/landscape')).toBeTruthy()
   })
 
+  /**
+   * A removal takes a scope and everything filed under it, so a move that
+   * wrote only the open scope at its new address lost the scopes under it.
+   * It is the organisation screen's move: the subtree first, then the old
+   * folder.
+   */
+  it('moves the scopes filed under the open one with it', async () => {
+    const child: ScopeSnapshot = { ...bareScope('acme/landscape/team', 'Team', 'team') }
+    const store = new InMemoryScopeStore([project(), child, bareScope('globex', 'Globex', 'domain')])
+    renderApp({ scopes: store, boot: { initialProject: project() } })
+
+    fireEvent.click(screen.getByText('Settings…'))
+    fireEvent.mouseDown(screen.getByLabelText('Group'))
+    fireEvent.click(await screen.findByRole('option', { name: 'Globex' }))
+    fireEvent.click(screen.getByText('Save'))
+
+    await waitFor(async () => expect(await store.load('acme/landscape')).toBeUndefined())
+    expect((await store.load('globex/landscape/team'))?.model.name).toBe('Team')
+    expect(await store.load('globex/landscape')).toBeTruthy()
+  })
+
+  /**
+   * A change somebody made to the old address while the move was being
+   * written is not removed with it: each removal expects what the move read,
+   * and a refused one leaves two copies and says so, rather than one that
+   * lost the change.
+   */
+  it('keeps the old address where somebody changed it while the move was written', async () => {
+    const store = new InMemoryScopeStore([project(), bareScope('globex', 'Globex', 'domain')])
+    let changed = false
+    const held = {
+      list: () => store.list(),
+      load: (ref: ScopePath) => store.load(ref),
+      save: (one: ScopeSnapshot, expects?: string) => store.save(one, expects),
+      remove: async (ref: ScopePath, expects?: string) => {
+        if (!changed) {
+          changed = true
+          const theirs = await store.load('acme/landscape')
+          await store.save({ ...theirs!, model: { ...theirs!.model, name: 'Changed meanwhile' } })
+        }
+        return store.remove(ref, expects)
+      },
+    }
+    renderApp({ scopes: held, boot: { initialProject: project() } })
+
+    fireEvent.click(screen.getByText('Settings…'))
+    fireEvent.mouseDown(screen.getByLabelText('Group'))
+    fireEvent.click(await screen.findByRole('option', { name: 'Globex' }))
+    fireEvent.click(screen.getByText('Save'))
+
+    await waitFor(() => expect(changed).toBe(true))
+    await waitFor(async () => expect(await store.load('globex/landscape')).toBeTruthy())
+    expect((await store.load('acme/landscape'))?.model.name).toBe('Changed meanwhile')
+  })
+
   it('keeps the editing the session has done', async () => {
     const store = show(project())
     fireEvent.click(screen.getByTestId('edit-the-diagram'))

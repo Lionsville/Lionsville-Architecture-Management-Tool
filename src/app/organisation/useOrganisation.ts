@@ -29,7 +29,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { StringKey, Translate } from '../../i18n'
 import {
-  bareScope, emptyScope, flattenScopes, movedPaths, namesUnder, scopeTree, unreadableAt,
+  bareScope, emptyScope, flattenScopes, namesUnder, scopeTree, unreadableAt,
 } from '../../projects/scope'
 import type { ScopeSnapshot, ScopeSummary } from '../../projects/scope'
 import { claimKey, idsIn } from '../../model/keys'
@@ -37,14 +37,12 @@ import { apply, fromArrays, removeContainerDiagram, toArrays } from '../../model
 import type { DesignDiagram } from '../../model'
 import { isBoardKind } from '../../model/placement'
 import { normaliseLinks } from '../../projects/links'
-import { applyRefPatch } from '../../projects/readdress'
-import type { RefPatch } from '../../projects/readdress'
-import { reasonOf, ShellError } from '../../platform/errors'
+import { reasonOf } from '../../platform/errors'
 import {
   ancestorScopes, parentScope, ROOT_SCOPE, scopePathFor, scopePathLabel,
 } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
-import { carryRefs } from '../carryRefs'
+import { moveRefusal, moveSubtree } from '../moveSubtree'
 import { rewriteScope } from '../rewriteScope'
 import { copyExampleInto } from '../examples'
 import type { ExampleProject } from '../examples'
@@ -153,44 +151,9 @@ export type Organisation = {
   nameOrganisation: (name: string) => void
 }
 
-/** A scope filed under one being moved, as read, and where it goes. */
-type MovedScope = { from: ScopePath; to: ScopePath; scope: ScopeSnapshot }
-
-/**
- * What a move writes under the scope it moves, read before anything is
- * written. A move removes the old folder once the subtree stands at its new
- * address, so a scope whose read left a file out (`ScopeSnapshot.unread`,
- * ADR-0028) would lose that file with it: the move is refused before it
- * starts, the moved scope's own read (`held`) included.
- */
-async function readTheMove(
-  scopes: Pick<ScopeLibrary, 'load'>, held: ScopeSnapshot | undefined, subtree: ScopeSummary | undefined, to: ScopePath,
-  listing: ScopeSummary,
-): Promise<MovedScope[]> {
-  if (held?.unread?.length) throw new ShellError('shell.unreadNotMoved')
-  const read: MovedScope[] = []
-  for (const pair of subtree ? movedPaths(subtree, to).slice(1) : []) {
-    const scope = await scopes.load(pair.from)
-    if (scope?.unread?.length) throw new ShellError('shell.unreadNotMoved')
-    if (scope) read.push({ ...pair, scope })
-  }
-  // And every address it writes, against what the listing could not read: a
-  // scope there that nobody could see would be written over by the move.
-  if ([to, ...read.map((child) => child.to)].some((path) => unreadableAt(listing, path) !== undefined)) {
-    throw new ShellError('shell.unreadableInTheWay')
-  }
-  return read
-}
-
 /** A new scope refused because a scope nobody could read is at its address, or above it. */
 function refuseInTheWay(onFailure: UseOrganisationInput['onFailure']): void {
   onFailure('organisation.create.unreadable', undefined, 'shell.unreadableInTheWay')
-}
-
-/** What to say about a move that did not start: its own refusal, or that saving failed. */
-function moveRefusal(cause: unknown): 'shell.unreadNotMoved' | 'shell.unreadableInTheWay' | 'group.saveFailed' {
-  if (!(cause instanceof ShellError)) return 'group.saveFailed'
-  return cause.key === 'shell.unreadNotMoved' || cause.key === 'shell.unreadableInTheWay' ? cause.key : 'group.saveFailed'
 }
 
 export function useOrganisation({
@@ -453,7 +416,6 @@ export function useOrganisation({
     void (async () => {
       const listing = await scopes.list()
       const all = flattenScopes(listing)
-      const subtree = all.find((scope) => scope.path === path)
       const from = parentScope(path) ?? ROOT_SCOPE
       const moving = patch.parent !== undefined && patch.parent !== from && path !== ROOT_SCOPE
       const to = moving
@@ -497,59 +459,32 @@ export function useOrganisation({
       }
       const next = patched(held)
 
-      /**
-       * A ref is an address, so a move carries the ones pointing into it
-       * (ADR-0012 §3). The scopes OUTSIDE the subtree are written by this call;
-       * what comes back is what the subtree's own scopes should say, applied
-       * below as each is written at its new address. A failure here is a move
-       * that has not started, which is why it has a guard of its own.
-       */
-      let carried = new Map<ScopePath, RefPatch>()
-      let beneath: readonly MovedScope[] = []
       if (moving) {
-        try {
-          beneath = await readTheMove(scopes, held, subtree, to, listing)
-          carried = await carryRefs({ scopes, from: path, to })
-        } catch (cause) {
-          onFailure('organisation.settings.readdress', cause, moveRefusal(cause))
+        // The one move (`moveSubtree.ts`): the refs pointing into it carried,
+        // the subtree written at its new address, and the old one removed
+        // deepest first, each scope expecting what was read of it.
+        const outcome = await moveSubtree(scopes, { from: path, next, held, listing })
+        if (outcome.stage === 'notStarted') {
+          onFailure('organisation.settings.readdress', outcome.cause, moveRefusal(outcome.cause) ?? 'group.saveFailed')
           return
         }
-      }
-
-      try {
-        if (moving) {
-          // A new address: there is nothing there to expect, and the old one is
-          // removed below as it always was.
-          await scopes.save(applyRefPatch(next, carried.get(path)))
-        } else {
+        if (outcome.stage === 'notSaved') {
+          onFailure('organisation.settings.save', outcome.cause, 'group.saveFailed')
+          return
+        }
+        if (outcome.leftCopy !== undefined) {
+          onFailure('organisation.settings.remove', outcome.leftCopy)
+          notify(s('shell.moveLeftCopy', { message: reasonOf(outcome.leftCopy) }), 'warning')
+        }
+      } else {
+        try {
           // In place: expecting what was read, and patched again over a scope
           // that moved in between, so a step somebody made to it survives a
           // rename (`rewriteScope.ts`).
           await rewriteScope(scopes, path, patched)
-        }
-        // The scope itself is already written; what is left is everything
-        // filed under it, parents first.
-        for (const child of beneath) {
-          await scopes.save(applyRefPatch({ ...child.scope, path: child.to }, carried.get(child.from)))
-        }
-      } catch (cause) {
-        onFailure('organisation.settings.save', cause, 'group.saveFailed')
-        return
-      }
-
-      if (moving) {
-        // Inside its own guard: the saves have landed, so the subtree exists at
-        // both addresses, and a remove that throws here leaves a duplicate
-        // rather than a loss. The move itself still counts as done. Deepest
-        // first, each expecting what was read of it: a removal checks only the
-        // scope it names, and a change made under the old address since would
-        // otherwise go unannounced; refused, it is the duplicate warned of below.
-        try {
-          for (const child of [...beneath].reverse()) await scopes.remove(child.from, child.scope.revision)
-          await scopes.remove(path, held?.revision)
         } catch (cause) {
-          onFailure('organisation.settings.remove', cause)
-          notify(s('shell.moveLeftCopy', { message: reasonOf(cause) }), 'warning')
+          onFailure('organisation.settings.save', cause, 'group.saveFailed')
+          return
         }
       }
 

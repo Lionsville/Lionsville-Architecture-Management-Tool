@@ -20,12 +20,12 @@ import Box from '@mui/material/Box'
 import CssBaseline from '@mui/material/CssBaseline'
 import { ThemeProvider } from '@mui/material/styles'
 import type { Command, ElementId } from '../model'
+import type { StringKey, Translate } from '../i18n'
 import { apply, fromArrays, toArrays } from '../model'
 import type { Diagnostic, DiagnosticEntry } from '../platform/diagnostics'
 import { reasonOf } from '../platform/errors'
-import { flattenScopes, moveScope, namesUnder, renameScope, setScopeDefaults, unreadableAt } from '../projects/scope'
+import { flattenScopes, moveScope, namesUnder, renameScope, setScopeDefaults } from '../projects/scope'
 import type { ScopeKind, ScopeModel, ScopeSnapshot, ScopeSummary } from '../projects/scope'
-import { applyRefPatch } from '../projects/readdress'
 import { treeModels, treeScopes } from '../projects/scopeIndex'
 import type { RecordLink } from '../projects/links'
 import { isScopeMoved, SCOPE_MOVED } from '../projects/revision'
@@ -36,7 +36,7 @@ import { useSync } from './useSync'
 import { BROWSER_STORAGE } from '../platform/workingSource'
 import type { SourceMenuEntry } from '../platform/sourceProvider'
 import { ErrorBoundary } from './ErrorBoundary'
-import { carryRefs } from './carryRefs'
+import { moveRefusal, moveSubtree } from './moveSubtree'
 import { useOrganisation } from './organisation/useOrganisation'
 import type { ScopeSession } from './useModelSession'
 import type { ProjectSettings } from './ProjectSettingsDialog'
@@ -55,6 +55,9 @@ import { useShellAgent } from './useShellAgent'
 import { useHostFacts, useShellCommands, useWindowTitle } from './useShellCommands'
 import { useShellNavigation } from './useShellNavigation'
 import { useOpeningFailures, useProjectOrder, useShellServices } from './useShellServices'
+import type { Failed } from './useShellServices'
+import type { Notify } from './useToasts'
+import type { StorageNotice } from './useStorageNotice'
 import { useTreeFindings, useTreeIndex } from './useTreeFindings'
 import type { ShellParts } from './shellParts'
 
@@ -527,54 +530,19 @@ function useShellParts(props: AppProps): ShellParts {
       }
 
       const moved = moving && current.path !== next.path
-      // A move writes the scope at its new address and removes the old folder,
-      // so a file the read did not take in would go with the folder and not
-      // arrive at the other end (`ScopeSnapshot.unread`).
-      if (moved && current.unread?.length) {
-        failed('applyProjectSettings.unread', undefined, 'shell.unreadNotMoved')
-        return undefined
-      }
-      // And a scope the listing could not read at the new address would be
-      // written over by the move (`unreadableAt`).
-      if (moved && unreadableAt(held, next.path) !== undefined) {
-        failed('applyProjectSettings.unreadable', undefined, 'shell.unreadableInTheWay')
-        return undefined
-      }
-      // A ref is an address, and a move carries the ones pointing into this
-      // scope (ADR-0012 §3) — the same pass the organisation screen's move
-      // makes, because it is the same act from a different dialog.
       if (moved) {
+        const landed = await moveOpenScope(
+          { projects, movedAway, failed, reportStorage, notify: toasts.notify, s }, current, next, held,
+        )
+        if (!landed) return undefined
+        next = landed
+      } else {
         try {
-          const carried = await carryRefs({ scopes: projects, from: current.path, to: next.path })
-          next = applyRefPatch(next, carried.get(current.path))
+          await projects.save(next)
         } catch (cause) {
-          failed('applyProjectSettings.readdress', cause)
+          failed('applyProjectSettings.save', cause)
           reportStorage(false)
           return undefined
-        }
-      }
-
-      // Before the save, so nothing can write to the old address from the
-      // moment this app stops considering it ours.
-      if (moving) movedAway.current = current.path
-      try {
-        await projects.save(next)
-      } catch (cause) {
-        failed('applyProjectSettings.save', cause)
-        reportStorage(false)
-        movedAway.current = undefined
-        return undefined
-      }
-      if (moved) {
-        // Inside the guard, not after it. The save has landed, so the project
-        // exists at both addresses; a remove that throws here used to do so
-        // silently and leave a duplicate for the user to find in the picker
-        // weeks later. The move itself still counts as done.
-        try {
-          await projects.remove(current.path)
-        } catch (cause) {
-          failed('applyProjectSettings.remove', cause)
-          toasts.notify(s('shell.moveLeftCopy', { message: reasonOf(cause) }), 'warning')
         }
       }
       enter(next)
@@ -614,6 +582,60 @@ function useShellParts(props: AppProps): ShellParts {
     commands, provider, order, prompts, todayDay,
     writes: { store: workspaceStore, readTreeModels, readWorkingSet, adoptScopes, treeChanged, applyProjectSettings },
   }
+}
+
+/**
+ * The organisation screen's move (`moveSubtree.ts`), with what the open
+ * workspace adds: the session's own snapshot is what lands, and nothing may
+ * write to the old address from the moment this app stops considering it
+ * ours. The old address is read here for the revision its removal expects;
+ * the session's autosaves do not carry one back.
+ */
+async function moveOpenScope(
+  deps: {
+    projects: ScopeLibrary
+    movedAway: { current: ScopePath | undefined }
+    failed: Failed
+    reportStorage: StorageNotice
+    notify: Notify
+    s: Translate
+  },
+  open: ScopeSnapshot, next: ScopeSnapshot, listing: ScopeSummary,
+): Promise<ScopeSnapshot | undefined> {
+  const { projects, movedAway, failed, reportStorage, notify, s } = deps
+  movedAway.current = open.path
+  const stop = (where: string, cause: unknown, key?: StringKey) => {
+    failed(where, cause, key)
+    if (key === undefined) reportStorage(false)
+    movedAway.current = undefined
+    return undefined
+  }
+  let read: ScopeSnapshot | undefined
+  try {
+    read = await projects.load(open.path)
+  } catch (cause) {
+    return stop('applyProjectSettings.load', cause)
+  }
+  // A file the session's read left out refuses the move as surely as one
+  // this read left out: either would go with the old folder.
+  const unread = open.unread?.length ? open.unread : read?.unread
+  const outcome = await moveSubtree(projects, {
+    from: open.path, next, held: { ...(read ?? open), ...(unread?.length ? { unread } : {}) }, listing,
+  })
+  if (outcome.stage === 'notStarted') {
+    const refusal = moveRefusal(outcome.cause)
+    return refusal
+      ? stop('applyProjectSettings.refused', undefined, refusal)
+      : stop('applyProjectSettings.readdress', outcome.cause)
+  }
+  if (outcome.stage === 'notSaved') return stop('applyProjectSettings.save', outcome.cause)
+  // Moved, and the old address possibly still there: two copies rather than
+  // a loss, and the person is told.
+  if (outcome.leftCopy !== undefined) {
+    failed('applyProjectSettings.remove', outcome.leftCopy)
+    notify(s('shell.moveLeftCopy', { message: reasonOf(outcome.leftCopy) }), 'warning')
+  }
+  return outcome.scope
 }
 
 /** The services, where the shell is, the tree, the host's doors and the organisation screen. */
