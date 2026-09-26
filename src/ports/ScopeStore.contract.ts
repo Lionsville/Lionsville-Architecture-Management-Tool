@@ -23,7 +23,8 @@
  * It is `describeProjectStore` with the two records merged and four clauses
  * added, all four about the tree: the root exists on an empty store and can be
  * saved, a child is listed under its parent, a nested scope is kept apart from
- * its parent, and a reserved name is refused.
+ * its parent, and a reserved name is refused. And, since a second writer, the
+ * clauses about a save that says what it expects to overwrite.
  *
  * Named `.contract.ts` and not `.test.ts` on purpose: the runner must not pick
  * it up on its own, because without an adapter there is nothing to run.
@@ -31,6 +32,7 @@
 import { describe, expect, it } from 'vitest'
 import type { DesignElement } from '../model'
 import type { HostModel } from '../model/hostModel'
+import { isScopeMoved } from '../projects/revision'
 import { bareScope, flattenScopes } from '../projects/scope'
 import type { ScopeSnapshot } from '../projects/scope'
 import { ROOT_SCOPE, scopePathLabel } from '../projects/scopePath'
@@ -229,6 +231,67 @@ export function describeScopeStore(name: string, create: () => ScopeStore | Prom
       expect((await store.load(SAMPLE_PATH))?.activeDiagramId).toBe('cd')
     })
 
+    /**
+     * A save may say what it expects to overwrite (`projects/revision.ts`).
+     *
+     * The clauses a whole write outside the open session leans on: the
+     * organisation screen's dialogs, the gestures and a move each read a scope,
+     * change it and write it back, and somebody else's save in between is work
+     * that a blind write takes away without telling anybody.
+     */
+    it('stamps what it read, and the same state twice is the same revision', async () => {
+      const store = await create()
+      await store.save(sampleScope())
+      const one = await store.load(SAMPLE_PATH)
+      const two = await store.load(SAMPLE_PATH)
+      expect(one?.revision, 'revision').toBeTruthy()
+      expect(two?.revision).toBe(one?.revision)
+    })
+
+    it('lands a save that expects what it read, and moves the revision', async () => {
+      const store = await create()
+      await store.save(sampleScope())
+      const read = await store.load(SAMPLE_PATH)
+      const changed = { ...read!, model: { ...read!.model, name: 'Renamed' } }
+      await store.save(changed, read!.revision)
+      const back = await store.load(SAMPLE_PATH)
+      expect(back?.model.name).toBe('Renamed')
+      expect(back?.revision).not.toBe(read?.revision)
+    })
+
+    it('refuses a save that expects a revision somebody else has saved over, and keeps theirs', async () => {
+      const store = await create()
+      await store.save(sampleScope())
+      const mine = await store.load(SAMPLE_PATH)
+      const theirs = await store.load(SAMPLE_PATH)
+      await store.save({ ...theirs!, model: { ...theirs!.model, name: 'Theirs' } }, theirs!.revision)
+
+      const refused = await store.save(
+        { ...mine!, model: { ...mine!.model, name: 'Mine' } }, mine!.revision,
+      ).then(() => undefined, (cause: unknown) => cause)
+      expect(isScopeMoved(refused), String(refused)).toBe(true)
+      expect((await store.load(SAMPLE_PATH))?.model.name).toBe('Theirs')
+    })
+
+    it('refuses a save that expects a scope removed since it was read', async () => {
+      const store = await create()
+      await store.save(scopeAt('acme/one', 'One'))
+      const read = await store.load('acme/one')
+      await store.remove('acme/one')
+      const refused = await store.save(read!, read!.revision).then(() => undefined, (cause: unknown) => cause)
+      expect(isScopeMoved(refused), String(refused)).toBe(true)
+      await expect(store.load('acme/one')).resolves.toBeUndefined()
+    })
+
+    it('overwrites whatever is there when a save expects nothing', async () => {
+      const store = await create()
+      await store.save(sampleScope())
+      const stale = await store.load(SAMPLE_PATH)
+      await store.save(sampleScope({ activeDiagramId: 'cd' }))
+      await store.save({ ...stale!, model: { ...stale!.model, name: 'Blind' } })
+      expect((await store.load(SAMPLE_PATH))?.model.name).toBe('Blind')
+    })
+
     it('lists a summary of every scope it holds', async () => {
       const store = await create()
       await store.save(sampleScope({ kind: 'landscape', client: 'Acme Logistics BV' }))
@@ -311,7 +374,8 @@ export function describeScopeStore(name: string, create: () => ScopeStore | Prom
       const scope = sampleScope({ kind: 'landscape', client: 'Acme BV', links: [{ label: 'Wiki', url: 'https://example.test/wiki' }] })
       await store.save(scope)
       const back = await store.load(SAMPLE_PATH)
-      expect(stableJson({ ...back, updatedAt: undefined }))
+      // The two a store stamps on a read, and nothing else.
+      expect(stableJson({ ...back, updatedAt: undefined, revision: undefined }))
         .toBe(stableJson({ ...scope, updatedAt: undefined }))
     })
 

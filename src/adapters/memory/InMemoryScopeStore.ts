@@ -14,6 +14,7 @@
 import { ShellError } from '../../platform/errors'
 import { isStoredScope, scopeTree, sortScopes, summarise } from '../../projects/scope'
 import type { ScopeModel, ScopeSnapshot, ScopeSummary } from '../../projects/scope'
+import { scopeMoved } from '../../projects/revision'
 import { isSafeScopePath, isWithinScope, ROOT_SCOPE } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
 import type { ScopeStore } from '../../ports/ScopeStore'
@@ -21,9 +22,23 @@ import type { ScopeStore } from '../../ports/ScopeStore'
 export class InMemoryScopeStore implements ScopeStore {
   readonly id = 'memory'
   private held = new Map<ScopePath, ScopeSnapshot>()
+  /**
+   * Which save each scope is at, as its revision. One counter for the store
+   * rather than one per scope, so a scope removed and saved again is never
+   * back at a number somebody read before it went.
+   */
+  private saves = 0
+  private readonly revisions = new Map<ScopePath, string>()
 
   constructor(initial: readonly ScopeSnapshot[] = []) {
-    for (const scope of initial) this.held.set(scope.path, structuredClone(scope))
+    for (const scope of initial) this.keep(scope)
+  }
+
+  private keep(scope: ScopeSnapshot, updatedAt?: string): void {
+    const { revision: _read, ...held } = structuredClone(scope)
+    this.held.set(scope.path, updatedAt ? { ...held, updatedAt } : held)
+    this.saves += 1
+    this.revisions.set(scope.path, String(this.saves))
   }
 
   list(): Promise<ScopeSummary> {
@@ -62,17 +77,18 @@ export class InMemoryScopeStore implements ScopeStore {
     if (!isSafeScopePath(path)) return Promise.resolve(undefined)
     const scope = this.held.get(path)
     if (!isStoredScope(scope)) return Promise.resolve(undefined)
-    return Promise.resolve(structuredClone(scope))
+    const revision = this.revisions.get(path)
+    return Promise.resolve({ ...structuredClone(scope), ...(revision ? { revision } : {}) })
   }
 
-  save(scope: ScopeSnapshot): Promise<void> {
+  save(scope: ScopeSnapshot, expects?: string): Promise<void> {
     if (!isSafeScopePath(scope.path)) {
       return Promise.reject(new ShellError('shell.badScopePath', { path: String(scope.path) }))
     }
-    this.held.set(scope.path, {
-      ...structuredClone(scope),
-      updatedAt: new Date().toISOString(),
-    })
+    if (expects !== undefined && this.revisions.get(scope.path) !== expects) {
+      return Promise.reject(scopeMoved(scope.path))
+    }
+    this.keep(scope, new Date().toISOString())
     return Promise.resolve()
   }
 
@@ -82,7 +98,10 @@ export class InMemoryScopeStore implements ScopeStore {
     // And everything filed under it: a child left behind by a removed parent is
     // addressed by nothing.
     for (const held of [...this.held.keys()]) {
-      if (isWithinScope(held, path)) this.held.delete(held)
+      if (isWithinScope(held, path)) {
+        this.held.delete(held)
+        this.revisions.delete(held)
+      }
     }
     return Promise.resolve()
   }

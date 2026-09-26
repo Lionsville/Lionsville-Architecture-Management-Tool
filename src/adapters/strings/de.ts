@@ -15,4 +15,5 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.badScopePath': 'Dieser Bereich hat keine verwendbare Adresse ({path}) und kann daher nicht gespeichert werden.',
   'shell.folderUnavailable': 'Dieser Ordner ist nicht verfügbar. Wählen Sie ihn erneut aus, oder verbinden Sie das Laufwerk wieder, auf dem er liegt.',
   'shell.unreadableNotSaved': 'Dieser Bereich wurde nicht gespeichert: seine model.json konnte nicht gelesen werden, und Speichern hätte ein leeres Modell darübergeschrieben. Reparieren Sie die Datei oder holen Sie sie aus dem Verlauf zurück, und öffnen Sie den Bereich erneut.',
+  'shell.scopeMoved': 'Jemand hat diesen Bereich geändert, während dies lief, deshalb wurde nichts geschrieben. Öffnen Sie es erneut und nehmen Sie die Änderung noch einmal vor.',
 }

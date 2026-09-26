@@ -28,4 +28,10 @@ export const EN = {
    * description filed beside it (ADR-0028).
    */
   'shell.unreadableNotSaved': 'This scope was not saved: its model.json could not be read, and saving would have written an empty model over it. Mend the file, or take it back from the history, and open the scope again.',
+  /**
+   * A whole write of a scope that somebody else wrote since it was read
+   * (`projects/revision.ts`). Nothing was written, which is the point: the
+   * sentence says so, and what to do about it.
+   */
+  'shell.scopeMoved': 'Somebody changed this scope while this was being done, so nothing was written. Open it again and redo the change.',
 } as const

@@ -52,6 +52,7 @@ import { markdownBody } from '../../projects/fileText'
 import { OBSERVATION_SUBFOLDERS, observationFromFile } from '../../projects/observationFile'
 import type { Observation } from '../../model/observation'
 import { isSupersededPath, openScopeFolder } from '../../projects/migrate4to5'
+import { folderRevision, scopeMoved } from '../../projects/revision'
 import { scopeTree, sortScopes } from '../../projects/scope'
 import type { ScopeModel, ScopeSnapshot, ScopeSummary } from '../../projects/scope'
 import type { Transition } from '../../model/transition'
@@ -369,16 +370,35 @@ export class FileSystemScopeStore implements ScopeStore {
     if (!folder) return undefined
     try {
       const entries = await this.entries(folder)
-      const files = (await Promise.all(entries.map((entry) => this.read(entry))))
-        .filter((file): file is FolderFile => !!file)
+      const files = await this.readAll(entries)
       const scope = openScopeFolder(files, path)
       if (!scope) return undefined
       const latest = Math.max(0, ...await Promise.all(entries.map(async (entry) =>
         (await entry.handle.getFile().catch(() => undefined))?.lastModified ?? 0)))
-      return latest ? { ...scope, updatedAt: new Date(latest).toISOString() } : scope
+      const revision = folderRevision(files)
+      return latest
+        ? { ...scope, updatedAt: new Date(latest).toISOString(), revision }
+        : { ...scope, revision }
     } catch {
       return undefined
     }
+  }
+
+  private async readAll(entries: readonly Entry[]): Promise<FolderFile[]> {
+    return (await Promise.all(entries.map((entry) => this.read(entry))))
+      .filter((file): file is FolderFile => !!file)
+  }
+
+  /**
+   * What `load` would stamp on this scope now, or `undefined` where there is
+   * no scope there to stamp — read the same way, so a folder nobody wrote to
+   * answers the revision it was read at.
+   */
+  private async revisionNow(path: ScopePath): Promise<string | undefined> {
+    const folder = await this.scopeFolder(path, false)
+    if (!folder) return undefined
+    const files = await this.readAll(await this.entries(folder))
+    return openScopeFolder(files, path) ? folderRevision(files) : undefined
   }
 
   private async write(folder: DirectoryHandleLike, file: FolderFile): Promise<void> {
@@ -412,9 +432,20 @@ export class FileSystemScopeStore implements ScopeStore {
     return held
   }
 
-  async save(scope: ScopeSnapshot): Promise<void> {
+  /**
+   * See {@link ScopeStore.save}. The check reads the scope again, which a
+   * folder has no cheaper way to answer; it is paid only by a caller that
+   * asked, and the open scope's own autosave never does. A folder has no
+   * lock to take, so on a disk shared with somebody else's machine the check
+   * narrows the window rather than closing it — which is what a folder can
+   * promise, and a store that serialises its writers closes it.
+   */
+  async save(scope: ScopeSnapshot, expects?: string): Promise<void> {
     if (!usablePath(scope.path)) {
       throw new ShellError('shell.badScopePath', { path: String(scope.path) })
+    }
+    if (expects !== undefined && await this.revisionNow(scope.path) !== expects) {
+      throw scopeMoved(scope.path)
     }
     const folder = await this.scopeFolder(scope.path, true)
     if (!folder) throw new ShellError('shell.folderUnavailable')

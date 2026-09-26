@@ -67,6 +67,9 @@ export interface ScopeStore {
    *
    * A scope with no views comes back like any other. Whether the canvas can
    * show one is the shell's question, not this seam's.
+   *
+   * It comes back with its `revision` stamped: what {@link ScopeStore.save}
+   * is handed back as the state a whole write of it expects to overwrite.
    */
   load(path: ScopePath): Promise<ScopeSnapshot | undefined>
 
@@ -76,8 +79,21 @@ export interface ScopeStore {
    * The path comes from the scope rather than a separate argument so the two
    * can never disagree — saving a scope at somebody else's address is not a
    * thing a caller should be able to express by accident.
+   *
+   * **A save may say what it expects to overwrite.** `expects` is the
+   * `revision` a `load` of this store stamped on the scope the caller read and
+   * changed; where it is given and the store no longer holds that — somebody
+   * saved the scope since, or removed it — nothing is written and the save
+   * rejects with the key `shell.scopeMoved` (`projects/revision.ts`). The
+   * caller then reads the scope again and makes its change again, or says so.
+   * Without it a save overwrites whatever is there, which is what the open
+   * scope's own document session asks for and what creating a scope means.
+   *
+   * The check and the write are one act as far as the store can make them
+   * one: a store that answers for several writers checks where it serialises
+   * them, so two saves that both expected the same revision cannot both land.
    */
-  save(scope: ScopeSnapshot): Promise<void>
+  save(scope: ScopeSnapshot, expects?: string): Promise<void>
 
   /**
    * Remove one scope, and everything filed under it.

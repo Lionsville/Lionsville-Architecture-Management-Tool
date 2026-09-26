@@ -95,6 +95,17 @@ export type ScopeSnapshot = {
    * opening the scope again is the way back.
    */
   unreadable?: readonly string[]
+  /**
+   * What the store that read this scope calls the state it read it in.
+   *
+   * Stamped by a store on `load`, like `updatedAt`, and never written: it is
+   * the store's word about its own contents, opaque to everybody else, and
+   * only ever handed back to the same store as what a save expects to
+   * overwrite (`ScopeStore.save`). Two loads with nothing saved between them
+   * answer the same one; a save by anybody in between answers another.
+   * Absent where the store could not say, and then a save cannot ask.
+   */
+  revision?: string
 }
 
 /**

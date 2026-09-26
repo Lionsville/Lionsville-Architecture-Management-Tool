@@ -15,4 +15,5 @@ export const FY: Record<keyof typeof EN, string> = {
   'shell.badScopePath': 'Dat ûnderdiel hat gjin brûkber adres ({path}) en kin dus net bewarre wurde.',
   'shell.folderUnavailable': 'Dy map is net beskikber. Kies him opnij, of keppel de skiif wer oan dêr\'t er op stiet.',
   'shell.unreadableNotSaved': 'Dizze scope is net bewarre: syn model.json koe net lêzen wurde, en bewarje soe der in leech model oerhinne skreaun ha. Meitsje it bestân wer goed, of helje it werom út de skiednis, en iepenje de scope opnij.',
+  'shell.scopeMoved': 'Immen hat dit ûnderdiel feroare wylst dit dwaande wie, dus der is neat wegskreaun. Iepenje it opnij en doch de feroaring nochris.',
 }

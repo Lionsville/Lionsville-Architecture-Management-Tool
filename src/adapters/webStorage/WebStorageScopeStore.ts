@@ -23,6 +23,7 @@
  */
 import { ShellError } from '../../platform/errors'
 import { isBeforeFormat4, migrateModel } from '../../projects/migrate3to4'
+import { fingerprint, scopeMoved } from '../../projects/revision'
 import { isStoredScope, scopeTree, sortScopes, summarise } from '../../projects/scope'
 import type { ScopeModel, ScopeSnapshot, ScopeSummary } from '../../projects/scope'
 import { isSafeScopePath, isWithinScope, pathOfOldRef, ROOT_SCOPE } from '../../projects/scopePath'
@@ -261,15 +262,46 @@ export class WebStorageScopeStore implements ScopeStore {
     if (!isSafeScopePath(path)) return Promise.resolve(undefined)
     // The old key second, so a record the pass has already moved wins over the
     // one it has not yet taken away.
-    return Promise.resolve(this.read(this.keyFor(path)) ?? this.read(this.legacyKeyFor(path)))
+    for (const key of [this.keyFor(path), this.legacyKeyFor(path)]) {
+      const held = this.read(key)
+      if (!held) continue
+      const revision = this.revisionAt(key)
+      return Promise.resolve(revision === undefined ? held : { ...held, revision })
+    }
+    return Promise.resolve(undefined)
   }
 
-  save(scope: ScopeSnapshot): Promise<void> {
+  /**
+   * What a scope's record is at: a fingerprint of the text under its key
+   * (`projects/revision.ts`). The text carries the time of its save, so two
+   * saves of the same model are two revisions, which is the safe direction.
+   */
+  private revisionAt(key: string): string | undefined {
+    try {
+      const raw = this.storage.getItem(key)
+      return raw ? fingerprint([raw]) : undefined
+    } catch {
+      return undefined
+    }
+  }
+
+  /** The revision of what `load` would answer for this path now. */
+  private currentRevision(path: ScopePath): string | undefined {
+    const key = [this.keyFor(path), this.legacyKeyFor(path)].find((one) => this.read(one) !== undefined)
+    return key === undefined ? undefined : this.revisionAt(key)
+  }
+
+  save(scope: ScopeSnapshot, expects?: string): Promise<void> {
     if (!isSafeScopePath(scope.path)) {
       return Promise.reject(new ShellError('shell.badScopePath', { path: String(scope.path) }))
     }
+    // A tab is one thread, so the check and the write below are one act.
+    if (expects !== undefined && this.currentRevision(scope.path) !== expects) {
+      return Promise.reject(scopeMoved(scope.path))
+    }
     try {
-      const stamped: ScopeSnapshot = { ...scope, updatedAt: new Date().toISOString() }
+      const { revision: _read, ...kept } = scope
+      const stamped: ScopeSnapshot = { ...kept, updatedAt: new Date().toISOString() }
       const key = this.keyFor(scope.path)
       const text = JSON.stringify(stamped)
       this.storage.setItem(key, text)
