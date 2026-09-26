@@ -45,7 +45,7 @@ import type { ReadTool } from './answer'
 import { currentApp, endSession, listViews, openApp, startSession, untilStopped } from './shell'
 import type { ShellView } from './shell'
 import { drives } from './driving'
-import { commandFor } from './commandFor'
+import { commandFor, isCommandTool } from './commandFor'
 import type { WriteView } from './commandFor'
 import { boundsOf, inspect } from './inspect'
 import { inspectSheet } from './inspectSheet'
@@ -550,10 +550,7 @@ async function uploadImage(args: Record<string, unknown>, session: SessionView):
 
 /** What a batch may hold: every command-building tool, and none that draws, looks or asks the session. */
 function batchable(name: string): name is ToolName {
-  if (!isToolName(name)) return false
-  const spec = toolSpec(name)
-  if (spec.tier === 'write') return !['batch', 'undo', 'project.save', 'image.upload'].includes(name)
-  return spec.tier === 'see' && !['diagram.inspect', 'diagram.render', 'diagram.tidy', 'diagram.route', 'focus'].includes(name)
+  return isToolName(name) && isCommandTool(name)
 }
 
 /**

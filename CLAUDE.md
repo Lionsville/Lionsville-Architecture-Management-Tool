@@ -268,6 +268,9 @@ src/agent/        An agent as a peer of the menu (ADR-0007). Pure; the first
                                       protocol contract, English, outside i18n
                     answer · commandFor   the read tier over the model, and a write
                                       as one Command through the session
+                    write/            one builder per tool, by family, and the
+                                      table commandFor looks a tool up in —
+                                      typed, so a tool without one does not compile
                     inspect           the layout report, in geometry not pixels
                     handle · renderer   one request in, one answer out; the four
                                       things only the canvas can do, as a view

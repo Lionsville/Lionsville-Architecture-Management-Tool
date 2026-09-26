@@ -1994,6 +1994,9 @@ const SPECS = [
 
 export type ToolName = (typeof SPECS)[number]['name']
 
+/** The tools of one tier, as a type: what a table over a tier is checked against, whole. */
+export type ToolOfTier<T extends ToolTier> = Extract<(typeof SPECS)[number], { readonly tier: T }>['name']
+
 /**
  * Every tool that changes something also takes `ifRevision`: the project's
  * revision the caller last saw, so two writers do not clobber each other. The
