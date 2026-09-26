@@ -12,11 +12,19 @@
  * people turn off.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { watch } from 'node:fs'
+import type { FSWatcher, WatchListener } from 'node:fs'
 import { mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { watchFolder } from './watch'
 import type { FolderChange } from './watch'
+
+// The real `watch`, spied on so one test can stand in for the platform.
+vi.mock('node:fs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs')>()
+  return { ...actual, watch: vi.fn(actual.watch) }
+})
 
 let root = ''
 const stops: (() => void)[] = []
@@ -26,6 +34,7 @@ beforeEach(async () => {
 })
 
 afterEach(async () => {
+  vi.useRealTimers()
   for (const stop of stops.splice(0)) stop()
   await rm(root, { recursive: true, force: true })
 })
@@ -75,6 +84,37 @@ function collecting() {
       await pause(300)
       return changes
     },
+  }
+}
+
+/**
+ * The platform, played by the test: the watcher's listener, called when the
+ * test says, and the settling window on a clock the test moves. What a burst
+ * becomes is the watcher's arithmetic, and a real notification arrives when a
+ * loaded machine gets round to it — which is how the burst test used to fail
+ * beside another run. The files are real, so what is reported is read.
+ */
+function playedWatcher(settleMs: number) {
+  let listener: WatchListener<string> | undefined
+  vi.mocked(watch).mockImplementationOnce(((_path: string, _options: unknown, heard: WatchListener<string>) => {
+    listener = heard
+    return { on: () => undefined, close: () => undefined } as unknown as FSWatcher
+  }) as unknown as typeof watch)
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+  const batches: FolderChange[][] = []
+  const waiting: (() => void)[] = []
+  const stop = watchFolder(root, (batch) => {
+    batches.push(batch)
+    for (const resolve of waiting.splice(0)) resolve()
+  }, settleMs)
+  stops.push(stop)
+  return {
+    batches,
+    stop,
+    event: (path: string) => listener?.('change', path),
+    tick: (ms: number) => vi.advanceTimersByTime(ms),
+    /** The next report: a settled burst is read from the folder before it is reported. */
+    next: () => new Promise<void>((resolve) => { waiting.push(resolve) }),
   }
 }
 
@@ -137,15 +177,42 @@ describe('watchFolder', () => {
   })
 
   it('collects a burst into one report rather than one per event', async () => {
-    const batches: number[] = []
-    stops.push(watchFolder(root, (batch) => batches.push(batch.length), 20))
-    await writeFile(join(root, 'a.json'), '1')
-    await writeFile(join(root, 'b.json'), '2')
-    await writeFile(join(root, 'c.json'), '3')
-    await pause(300)
+    for (const name of ['a', 'b', 'c']) await writeFile(join(root, `${name}.json`), name)
+    const watcher = playedWatcher(20)
+    // Three saves, each inside the window the one before it opened, and one
+    // path told twice — the way a platform reports a write and its rename.
+    watcher.event('c.json')
+    watcher.tick(10)
+    watcher.event('a.json')
+    watcher.tick(10)
+    watcher.event('b.json')
+    watcher.event('c.json')
+    watcher.tick(19)
+    expect(vi.getTimerCount()).toBe(1)
 
-    expect(batches.length).toBeLessThanOrEqual(2)
-    expect(batches.reduce((total, held) => total + held, 0)).toBeGreaterThanOrEqual(3)
+    const first = watcher.next()
+    watcher.tick(1)
+    await first
+    expect(watcher.batches).toHaveLength(1)
+    expect(watcher.batches[0].map((change) => change.path)).toEqual(['a.json', 'b.json', 'c.json'])
+    expect(watcher.batches[0].every((change) => change.stamp?.sha256)).toBe(true)
+
+    // A save after the burst settled is a burst of its own.
+    watcher.event('a.json')
+    const second = watcher.next()
+    watcher.tick(20)
+    await second
+    expect(watcher.batches.map((batch) => batch.map((change) => change.path))).toEqual([['a.json', 'b.json', 'c.json'], ['a.json']])
+  })
+
+  it('drops a burst still settling when it is stopped', () => {
+    const watcher = playedWatcher(20)
+    watcher.event('a.json')
+    watcher.stop()
+    // Nothing left to settle, so nothing is ever read or reported.
+    expect(vi.getTimerCount()).toBe(0)
+    watcher.tick(20)
+    expect(watcher.batches).toEqual([])
   })
 
   it('says nothing more once it is stopped', async () => {
