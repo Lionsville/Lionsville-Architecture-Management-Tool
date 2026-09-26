@@ -184,7 +184,7 @@ describe('the tree', () => {
     expect(await store.load('finance/retail/warehouse')).toBeDefined()
     expect(await store.load('retail')).toBeUndefined()
     expect(order).toEqual([
-      'save finance/retail', 'save finance/retail/warehouse', 'remove retail',
+      'save finance/retail', 'save finance/retail/warehouse', 'remove retail/warehouse', 'remove retail',
     ])
   })
 })

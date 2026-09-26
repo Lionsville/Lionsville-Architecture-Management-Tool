@@ -442,6 +442,7 @@ describe('useOrganisation', () => {
         'save road',
         'save freight/rail',
         'save freight/rail/rolling-stock',
+        'remove rail/rolling-stock',
         'remove rail',
       ])
     })
@@ -505,8 +506,10 @@ describe('useOrganisation', () => {
         load: (path) => store.load(path),
         save: (one, expects) => store.save(one, expects),
         remove: async (path, expects) => {
-          const theirs = await store.load(path)
-          await store.save({ ...theirs!, model: { ...theirs!.model, name: 'Changed meanwhile' } })
+          if (path === 'rail') {
+            const theirs = await store.load(path)
+            await store.save({ ...theirs!, model: { ...theirs!.model, name: 'Changed meanwhile' } })
+          }
           return store.remove(path, expects)
         },
       }, store)
@@ -516,6 +519,38 @@ describe('useOrganisation', () => {
 
       expect((await store.load('rail'))?.model.name).toBe('Changed meanwhile')
       expect((await store.load('freight/rail'))?.model.name).toBe('Rail')
+      expect(failures).toContain('organisation.settings.remove')
+    })
+
+    /**
+     * A removal checks only the scope it names and takes what is filed under
+     * it, so the move removes the subtree deepest first, each scope expecting
+     * what was read of it: a change to a scope under the one moved is kept too.
+     */
+    it('keeps a scope under the old address where somebody changed it while the move was written', async () => {
+      const store = new InMemoryScopeStore(tree())
+      let changed = false
+      const { held, failures } = mountWith({
+        models: () => store.models(),
+        list: () => store.list(),
+        load: (path) => store.load(path),
+        save: (one, expects) => store.save(one, expects),
+        remove: async (path, expects) => {
+          if (!changed) {
+            changed = true
+            const theirs = await store.load('rail/rolling-stock')
+            await store.save({ ...theirs!, model: { ...theirs!.model, name: 'Changed meanwhile' } })
+          }
+          return store.remove(path, expects)
+        },
+      }, store)
+      await settle()
+      await act(async () => { held().applySettings('rail', { name: 'Rail', parent: 'freight' }) })
+      await settle()
+
+      expect((await store.load('rail/rolling-stock'))?.model.name).toBe('Changed meanwhile')
+      expect(await store.load('rail')).toBeDefined()
+      expect(await store.load('freight/rail/rolling-stock')).toBeDefined()
       expect(failures).toContain('organisation.settings.remove')
     })
   })

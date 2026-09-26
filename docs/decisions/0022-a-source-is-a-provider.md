@@ -749,7 +749,7 @@ expects nothing overwrites. `rewriteScope.test.ts` pins reading again and giving
 up; `useGestures.test.tsx` pins the other scope's write keeping a colleague's
 save and the open scope not written whole where its steps are published.
 
-## Amended — the one a move under a second writer needed
+## Amended — the one a build that moves a scope under a second writer needed
 
 *26 September 2026.* The same build with more than one writer on a scope found
 the one whole write the last amendment left blind. A move is a save at the new
@@ -767,17 +767,20 @@ that closes it, and the three built-ins answer it the way they answer a save.
   The revision is the named scope's own — what is filed under it goes with it
   as before, because a revision for every scope of a subtree is a list the
   caller would have to have read and the port has no word for. The
-  organisation screen's move passes what it read, so a change made to the old
-  address in between leaves two copies and the warning the move already had for
-  a removal that failed (`shell.moveLeftCopy`), which a person can see and
-  settle, instead of one copy that has lost a change.
+  organisation screen's move therefore removes the subtree deepest first, each
+  scope expecting what it read of that scope, so a change made to the old
+  address — or to any scope under it — in between leaves two copies and the
+  warning the move already had for a removal that failed
+  (`shell.moveLeftCopy`), which a person can see and settle, instead of one copy
+  that has lost a change. A scope created under the old address after the
+  move's listing is the one thing still taken unasked.
 
 `ScopeStore.contract.ts` pins it for every store: a removal expecting what it
 read removes the scope and what is filed under it, a removal expecting a
 revision somebody else saved over is refused and theirs is kept, and a removal
 expecting a scope somebody else removed already resolves. `useOrganisation.test.tsx`
-pins the move keeping the old address where it was changed while the move was
-being written.
+pins the move keeping the old address where it, or a scope under it, was
+changed while the move was being written.
 
 ## More Information
 

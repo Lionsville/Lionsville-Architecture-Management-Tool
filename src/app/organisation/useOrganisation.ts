@@ -540,12 +540,12 @@ export function useOrganisation({
       if (moving) {
         // Inside its own guard: the saves have landed, so the subtree exists at
         // both addresses, and a remove that throws here leaves a duplicate
-        // rather than a loss. The move itself still counts as done.
-        //
-        // Expecting what was read: a change somebody made to the old address
-        // since would otherwise go with the folder, and nobody would be told.
-        // Refused, it is the duplicate the warning below already describes.
+        // rather than a loss. The move itself still counts as done. Deepest
+        // first, each expecting what was read of it: a removal checks only the
+        // scope it names, and a change made under the old address since would
+        // otherwise go unannounced; refused, it is the duplicate warned of below.
         try {
+          for (const child of [...beneath].reverse()) await scopes.remove(child.from, child.scope.revision)
           await scopes.remove(path, held?.revision)
         } catch (cause) {
           onFailure('organisation.settings.remove', cause)
