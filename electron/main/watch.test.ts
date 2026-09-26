@@ -47,17 +47,41 @@ const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 // when something is actually wrong.
 vi.setConfig({ testTimeout: 30_000 })
 
+/** What `collecting` writes until the watcher reports it; never one of a test's own changes. */
+const PROBE = 'watch-ready.json'
+
 /**
- * Collect what the watcher reports.
+ * Collect what the watcher reports, once it is reporting.
+ *
+ * `watch` returns before the platform is listening: on macOS the stream is
+ * started on a thread of its own, and a write made before it is running is
+ * never reported at all. On a quiet machine that gap is shorter than the next
+ * statement; beside another test run it is not, and a test that wrote its file
+ * straight away waited fifteen seconds for news that was never coming. So a
+ * probe is written until the watcher reports it — its own event says it is
+ * live — and only then does the test act. That also gives `quiet` its meaning:
+ * silence from a watcher known to be listening.
  *
  * `sees` polls rather than waiting a fixed time: a filesystem notification is
  * as fast as the platform feels like being, and a test that waits exactly long
  * enough on this machine is a test that fails on a loaded one. `quiet` has to
  * wait — proving that nothing arrives is the one thing polling cannot do.
  */
-function collecting() {
+async function collecting() {
   const changes: FolderChange[] = []
-  stops.push(watchFolder(root, (batch) => changes.push(...batch), 20))
+  let live = false
+  stops.push(watchFolder(root, (batch) => {
+    for (const change of batch) {
+      if (change.path === PROBE) live = true
+      else changes.push(change)
+    }
+  }, 20))
+  const deadline = Date.now() + 15_000
+  for (let touch = 0; !live; touch += 1) {
+    if (Date.now() > deadline) throw new Error('the watcher never reported its probe')
+    await writeFile(join(root, PROBE), String(touch))
+    await pause(50)
+  }
   return {
     changes,
     /**
@@ -120,7 +144,7 @@ function playedWatcher(settleMs: number) {
 
 describe('watchFolder', () => {
   it('reports a file somebody else wrote, with what is now in it', async () => {
-    const watcher = collecting()
+    const watcher = await collecting()
     await writeFile(join(root, 'model.json'), '{"a":1}')
 
     expect((await watcher.sees('model.json')).stamp?.sha256).toBeTruthy()
@@ -129,7 +153,7 @@ describe('watchFolder', () => {
   it('reports a file inside a project folder by its path', async () => {
     const { mkdir } = await import('node:fs/promises')
     await mkdir(join(root, 'acme/landscape/diagrams'), { recursive: true })
-    const watcher = collecting()
+    const watcher = await collecting()
     await writeFile(join(root, 'acme/landscape/diagrams/l7.geometry.json'), '{}')
 
     await expect(watcher.sees('acme/landscape/diagrams/l7.geometry.json')).resolves.toBeTruthy()
@@ -137,7 +161,7 @@ describe('watchFolder', () => {
 
   it('reports a deleted file with no fingerprint at all', async () => {
     await writeFile(join(root, 'gone.json'), '{}')
-    const watcher = collecting()
+    const watcher = await collecting()
     await rm(join(root, 'gone.json'))
 
     expect((await watcher.sees('gone.json', (change) => !change.stamp)).stamp).toBeUndefined()
@@ -146,7 +170,7 @@ describe('watchFolder', () => {
   it('says nothing about a folder appearing, and reports the file inside it', async () => {
     // A save makes a scope's folders as it goes; a folder has no content to
     // fingerprint, and reported it would read as somebody else's write.
-    const seen = collecting()
+    const seen = await collecting()
     await mkdir(join(root, 'acme/docs'), { recursive: true })
     await writeFile(join(root, 'acme/docs/erp.md'), '# ERP')
     await seen.sees('acme/docs/erp.md')
@@ -157,7 +181,7 @@ describe('watchFolder', () => {
   })
 
   it('says nothing about an editor’s scratch files', async () => {
-    const watcher = collecting()
+    const watcher = await collecting()
     await writeFile(join(root, 'model.json.tmp'), 'half')
     await writeFile(join(root, '.model.json.swp'), 'half')
     await writeFile(join(root, 'model.json~'), 'old')
@@ -167,7 +191,7 @@ describe('watchFolder', () => {
 
   it('says nothing about what a snapshot writes into .git', async () => {
     const { mkdir } = await import('node:fs/promises')
-    const watcher = collecting()
+    const watcher = await collecting()
     await mkdir(join(root, '.git', 'objects', 'f2'), { recursive: true })
     await writeFile(join(root, '.git', 'index'), 'x')
     await writeFile(join(root, '.git', 'objects', 'f2', '05c0049080'), 'x')
