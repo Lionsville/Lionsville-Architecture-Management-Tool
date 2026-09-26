@@ -40,6 +40,10 @@ describe('the packages a source names', () => {
     expect(found).toEqual(['@mui/material', 'elkjs', 'react'])
   })
 
+  it('keeps only what could be a package name, not prose that says from', () => {
+    expect(packagesImportedBy(["const said = `a line from ' beside ' the other`", "import x from 'Not A Name'"])).toEqual([])
+  })
+
   it('keeps a scope with its name and drops the subpath', () => {
     expect(packagesImportedBy(["from '@xyflow/react/dist/style.css'"])).toEqual(['@xyflow/react'])
   })
@@ -60,6 +64,17 @@ describe('the dependency closure', () => {
 
   it('leaves out what is not installed rather than throwing', () => {
     expect(dependencyClosure(['mermaid', 'gone'], read)).not.toContain('gone')
+  })
+
+  it('follows a peer the way a bundler resolves one, and leaves out a peer nobody installed', () => {
+    const peers: Record<string, Manifest> = {
+      '@mui/material': { version: '9', peerDependencies: { '@emotion/react': '^11', '@mui/material-pigment-css': '^9' } },
+      '@emotion/react': { version: '11', dependencies: { 'hoist-non-react-statics': '^3' } },
+      'hoist-non-react-statics': { version: '3' },
+    }
+    expect(dependencyClosure(['@mui/material'], (name) => peers[name])).toEqual([
+      '@emotion/react', '@mui/material', 'hoist-non-react-statics',
+    ])
   })
 
   it('leaves out type-only packages, which put no code in the app', () => {
@@ -138,5 +153,8 @@ describe('THIRD-PARTY-NOTICES.md as committed', () => {
     expect(COMMITTED).toContain('LGPL-2.1-or-later')
     // The one that started this: React Flow's badge is kept, and so is its text.
     expect(COMMITTED).toContain('- @xyflow/react ')
+    // Reached only as MUI's peers, and bundled all the same.
+    expect(COMMITTED).toContain('- @emotion/react ')
+    expect(COMMITTED).toContain('- @emotion/styled ')
   })
 })

@@ -40,6 +40,7 @@ export interface Manifest {
   license?: string | { type?: string }
   licenses?: { type?: string }[]
   dependencies?: Record<string, string>
+  peerDependencies?: Record<string, string>
   homepage?: string
   repository?: string | { url?: string }
 }
@@ -50,6 +51,14 @@ export function isShipped(path: string): boolean {
 }
 
 const SPECIFIER = /(?:\bfrom\s*|\bimport\s*\(?\s*|\brequire\s*\(\s*)['"]([^'"]+)['"]/g
+
+/**
+ * What npm accepts as a package name. The pattern above also matches prose in a
+ * string that happens to say *from '…'*, and a list of what ships is read by
+ * people and by the dependency check, so only a name that could be installed
+ * is kept.
+ */
+const PACKAGE_NAME = /^(?:@[a-z0-9~-][a-z0-9._~-]*\/)?[a-z0-9~-][a-z0-9._~-]*$/
 
 /**
  * The packages named by these sources. A bare specifier only: a relative path
@@ -64,7 +73,8 @@ export function packagesImportedBy(sources: string[]): string[] {
       if (!bare || bare.startsWith('.') || bare.startsWith('/')) continue
       if (bare.startsWith('node:') || bare === 'electron') continue
       const parts = bare.split('/')
-      found.add(parts[0].startsWith('@') ? `${parts[0]}/${parts[1]}` : parts[0])
+      const name = parts[0].startsWith('@') ? `${parts[0]}/${parts[1]}` : parts[0]
+      if (PACKAGE_NAME.test(name)) found.add(name)
     }
   }
   return [...found].sort()
@@ -83,6 +93,12 @@ export function shipsCode(name: string): boolean {
  * undefined means the package is not installed — a `node:` builtin that slipped
  * through, or an optional dependency — and it is left out rather than thrown
  * over, because a missing optional is not a licence problem.
+ *
+ * Peer dependencies are followed as well, where they are installed: a bundler
+ * resolves a peer like any other import, and MUI reaches Emotion only as a peer,
+ * which is how `@emotion/react` and `@emotion/styled` were in every bundle and
+ * in no notice. An optional peer nobody installed is not followed, because it is
+ * not there to be bundled.
  */
 export function dependencyClosure(seeds: string[], read: (name: string) => Manifest | undefined): string[] {
   const seen = new Set<string>()
@@ -93,7 +109,7 @@ export function dependencyClosure(seeds: string[], read: (name: string) => Manif
     const manifest = read(name)
     if (!manifest) continue
     seen.add(name)
-    queue.push(...Object.keys(manifest.dependencies ?? {}))
+    queue.push(...Object.keys(manifest.dependencies ?? {}), ...Object.keys(manifest.peerDependencies ?? {}))
   }
   return [...seen].sort()
 }
@@ -190,7 +206,7 @@ export function renderNotices(notices: PackageNotice[], productName: string): st
 }
 
 /** The licence-ish file a package ships, if it ships one. */
-function licenseTextIn(directory: string): string | undefined {
+export function licenseTextIn(directory: string): string | undefined {
   let entries: string[]
   try {
     entries = readdirSync(directory)
@@ -216,13 +232,39 @@ function sourceFilesIn(directory: string, found: string[] = []): string[] {
   return found
 }
 
+/** The text of every shipped source file under these directories. */
+export function shippedSources(directories: readonly string[]): string[] {
+  return directories
+    .flatMap((dir) => sourceFilesIn(dir))
+    .filter((path) => isShipped(path.replaceAll('\\', '/')))
+    .map((path) => readFileSync(path, 'utf8'))
+}
+
 /**
- * The notices for one checkout. `modules` is a node_modules directory; npm
- * hoists, so a package is looked for there and a nested copy of a second
- * version is not listed separately.
+ * One install a product is built from, relative to the root being described.
+ * `sources` are the folders whose bare imports the product bundles from that
+ * install; `production` says the install's own `dependencies` ship as they are,
+ * in a `node_modules` beside a program that is not bundled. A product built from
+ * two installs — a bundle from one tree and a server from another — is two parts.
  */
-export function noticesFor(root: string, sourceRoots = ['src', 'electron']): PackageNotice[] {
-  const modules = join(root, 'node_modules')
+export type Part = { install: string; sources?: readonly string[]; production?: boolean }
+
+/** Not a dependency: the host the code runs in. */
+const isHost = (name: string) => name === 'electron' || name.startsWith('node:')
+
+/**
+ * What one part ships: the packages it names directly, and those with
+ * everything they depend on. npm hoists, so a package is looked for at the top
+ * of the install and a nested copy of a second version is not listed separately.
+ */
+export function partClosure(root: string, part: Part): {
+  modules: string
+  read: (name: string) => Manifest | undefined
+  direct: string[]
+  all: string[]
+} {
+  const install = join(root, part.install)
+  const modules = join(install, 'node_modules')
   const read = (name: string): Manifest | undefined => {
     try {
       return JSON.parse(readFileSync(join(modules, name, 'package.json'), 'utf8')) as Manifest
@@ -230,21 +272,41 @@ export function noticesFor(root: string, sourceRoots = ['src', 'electron']): Pac
       return undefined
     }
   }
-  const sources = sourceRoots
-    .flatMap((dir) => sourceFilesIn(join(root, dir)))
-    .filter((path) => isShipped(path.replaceAll('\\', '/')))
-    .map((path) => readFileSync(path, 'utf8'))
-  const names = dependencyClosure(packagesImportedBy(sources), read)
-  return names.map((name) => {
-    const manifest = read(name) as Manifest
-    return {
-      name,
-      version: manifest.version ?? '',
-      license: licenseOf(manifest),
-      text: licenseTextIn(join(modules, name)),
-      homepage: homepageOf(manifest),
+  const seeds = new Set<string>()
+  if (part.sources?.length) {
+    for (const name of packagesImportedBy(shippedSources(part.sources.map((dir) => join(root, dir))))) seeds.add(name)
+  }
+  if (part.production) {
+    const manifest = JSON.parse(readFileSync(join(install, 'package.json'), 'utf8')) as Manifest
+    for (const name of Object.keys(manifest.dependencies ?? {})) if (!isHost(name)) seeds.add(name)
+  }
+  const direct = [...seeds].filter(shipsCode).sort()
+  return { modules, read, direct, all: dependencyClosure(direct, read) }
+}
+
+/** The notices for a product built from these parts, one section per package. */
+export function noticesOver(root: string, parts: readonly Part[]): PackageNotice[] {
+  const byName = new Map<string, PackageNotice>()
+  for (const part of parts) {
+    const { modules, read, all } = partClosure(root, part)
+    for (const name of all) {
+      if (byName.has(name)) continue
+      const manifest = read(name) as Manifest
+      byName.set(name, {
+        name,
+        version: manifest.version ?? '',
+        license: licenseOf(manifest),
+        text: licenseTextIn(join(modules, name)),
+        homepage: homepageOf(manifest),
+      })
     }
-  })
+  }
+  return [...byName.values()].sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
+}
+
+/** The notices for one checkout whose shipped source is under `sourceRoots`. */
+export function noticesFor(root: string, sourceRoots = ['src', 'electron']): PackageNotice[] {
+  return noticesOver(root, [{ install: '.', sources: sourceRoots }])
 }
 
 // `node build/thirdPartyNotices.ts [--check]`, from the repository root.
