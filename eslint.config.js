@@ -316,6 +316,60 @@ const IMPORT_MATRIX = MODULES.map((from) => ({
   },
 }))
 
+/**
+ * A TRANSLATION SLICE IS A TABLE, AND NOTHING ELSE.
+ *
+ * Every module keeps its words in `strings/<language>.ts`, and the registry
+ * (`i18n/strings.ts`) imports every one of them to compose the table `t()`
+ * reads. So whatever reaches the registry reaches every slice — `app/`'s and
+ * `editor/`'s included — and a process with no screen reaches the registry the
+ * moment it wants a sentence in English. That is fine for as long as a slice is
+ * data. The day one of them imports a helper, or reads `navigator` to pick a
+ * shortcut's name, that process fails at its first import, in a place nobody
+ * was looking.
+ *
+ * So a slice imports nothing it has to evaluate — the type of its English
+ * twin, and that is all it ever needs — and names no global a node process
+ * lacks; the files the registry is made of name none either.
+ * `i18n/registry.test.ts` walks the registry and loads it in a plain node
+ * process, which is what this rule is the early sentence for.
+ *
+ * After the matrix, because a later block's `no-restricted-imports` replaces an
+ * earlier one's for the same files; nothing is lost by it, since a slice that
+ * may import nothing is inside every row. The storage globals are repeated for
+ * the same reason.
+ */
+const NO_BROWSER = ['window', 'document', 'navigator', 'self', 'location', 'globalThis'].map((name) => ({
+  name,
+  message: 'The registry and every slice load in a process with no browser: a word is a string, and choosing one belongs to whoever draws it.',
+}))
+const STORAGE_GLOBALS = [
+  { name: 'localStorage', message: 'Storage goes through a ProjectStore or PreferencesStore (src/ports), implemented in src/adapters.' },
+  { name: 'sessionStorage', message: 'Storage goes through a store from src/ports, implemented in src/adapters.' },
+]
+const TRANSLATION_SLICES = [
+  {
+    files: ['src/**/strings/*.ts'],
+    ignores: ['**/*.test.ts'],
+    rules: {
+      'no-restricted-imports': 'off',
+      '@typescript-eslint/no-restricted-imports': ['error', {
+        patterns: [{
+          regex: '.*',
+          allowTypeImports: true,
+          message: 'A translation slice is a table: it may name its English twin\'s type and import nothing it would have to evaluate.',
+        }],
+      }],
+      'no-restricted-globals': ['error', ...STORAGE_GLOBALS, ...NO_BROWSER],
+    },
+  },
+  {
+    files: ['src/i18n/strings.ts', 'src/i18n/strings.*.ts', 'src/i18n/interpolate.ts', 'src/i18n/languages.ts', 'src/i18n/table.ts'],
+    ignores: ['**/*.test.ts'],
+    rules: { 'no-restricted-globals': ['error', ...STORAGE_GLOBALS, ...NO_BROWSER] },
+  },
+]
+
 export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
@@ -367,5 +421,6 @@ export default tseslint.config(
     rules: { 'layering/known-module': 'error' },
   },
   ...IMPORT_MATRIX,
+  ...TRANSLATION_SLICES,
 
 )

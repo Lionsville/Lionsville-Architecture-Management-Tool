@@ -16,7 +16,9 @@ const eslint = new ESLint({ cwd: root })
 
 const HEADER = '// SPDX-License-Identifier: AGPL-3.0-only\n// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV\n\n'
 
-const LAYERING = ['layering/known-module', 'no-restricted-imports']
+const LAYERING = [
+  'layering/known-module', 'no-restricted-imports', '@typescript-eslint/no-restricted-imports', 'no-restricted-globals',
+]
 
 /** What the layering rules say about `source`, were it at `path`. */
 async function layeringAt(path: string, source = 'export const one = 1\n'): Promise<string[]> {
@@ -49,3 +51,25 @@ describe('the import matrix', () => {
   })
 })
 
+/**
+ * The registry imports every slice, so a process that wants one sentence in
+ * English loads all of them; a slice that imported a helper or read a global
+ * would be that process failing at its first import.
+ */
+describe('a translation slice', () => {
+  it('may name its English twin\'s type', async () => {
+    expect(await layeringAt('src/app/strings/nl.ts', "import type { EN } from './en'\nexport const NL = {} satisfies Partial<Record<keyof typeof EN, string>>\n"))
+      .toEqual([])
+  })
+
+  it('may import nothing it would have to evaluate, even from its own module', async () => {
+    const said = await layeringAt('src/app/strings/en.ts', "import { EN as MORE } from '../../model/strings/en'\nexport const EN = { ...MORE }\n")
+    expect(said.join('\n')).toMatch(/a translation slice is a table/i)
+  })
+
+  it('names no global a process without a browser lacks, and neither does the registry', async () => {
+    const reading = "export const EN = { key: navigator.platform === 'MacIntel' ? '\u2318' : 'Ctrl' }\n"
+    expect(await layeringAt('src/editor/strings/en.ts', reading)).toHaveLength(1)
+    expect(await layeringAt('src/i18n/strings.ts', 'export const here = window.location.href\n')).toHaveLength(1)
+  })
+})

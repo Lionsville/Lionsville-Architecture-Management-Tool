@@ -684,6 +684,11 @@ one writable both land, among others — and then the store's suite runs over it
   loops over every registered language for completeness, empty values,
   placeholders and "was it actually translated", and over the slices for keys
   lost, keys nobody owns, and two modules claiming the same key.
+  **A slice is a table and nothing else**: it imports nothing but its English
+  twin's type and names no browser global, because the registry imports every
+  slice and a process with no screen loads the registry for one English
+  sentence (`TRANSLATION_SLICES` in `eslint.config.js`; `i18n/registry.test.ts`
+  walks the registry and loads it in plain node).
 - **A module does not name another module's key.** `common.` is the exception —
   shared vocabulary — and so is a refusal key that is part of a published type
   (`KindChangeRefusal`). Anything else means publishing a table, the way
