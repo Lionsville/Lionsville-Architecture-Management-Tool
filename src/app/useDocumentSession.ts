@@ -226,7 +226,9 @@ export function useDocumentSession(deps: {
     if (opened.current) { opened.current = false; return undefined }
     editedAt.current = Date.now()
     apply({ type: 'edited' })
-    const timer = window.setTimeout(() => saving.current('idle'), AUTOSAVE_IDLE_MS)
+    // A save answers its own failure (`saveFailed`, `onResult`), so a timer
+    // that starts one has nothing to wait for.
+    const timer = window.setTimeout(() => { void saving.current('idle') }, AUTOSAVE_IDLE_MS)
     return () => window.clearTimeout(timer)
     // These two and nothing else. Everything the body reaches for besides
     // them is a path or is stable for the life of the hook; a dependency that
@@ -252,12 +254,12 @@ export function useDocumentSession(deps: {
     before.current = state.status
     const decided = was === 'saving' || was === 'conflict'
     if (state.status !== 'dirty' || !decided || state.lastError) return undefined
-    const timer = window.setTimeout(() => saving.current('idle'), AUTOSAVE_IDLE_MS)
+    const timer = window.setTimeout(() => { void saving.current('idle') }, AUTOSAVE_IDLE_MS)
     return () => window.clearTimeout(timer)
   }, [state.status, state.lastError])
 
   useEffect(() => {
-    const onBlur = () => save('blur')
+    const onBlur = () => { void save('blur') }
     window.addEventListener('blur', onBlur)
     return () => window.removeEventListener('blur', onBlur)
   }, [save])

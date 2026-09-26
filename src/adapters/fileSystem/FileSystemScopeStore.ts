@@ -64,6 +64,7 @@ import {
 import type { ScopePath } from '../../projects/scopePath'
 import { ShellError } from '../../platform/errors'
 import type { ScopeStore } from '../../ports/ScopeStore'
+import type { Diagnostics } from '../../ports/Diagnostics'
 import type { DirectoryHandleLike, FileHandleLike } from '../../ports/DirectoryHandle'
 
 /**
@@ -116,13 +117,69 @@ function ownFolder(name: string, within: string): boolean {
   return within === OBSERVATIONS_FOLDER && OBSERVATION_SUBFOLDERS.includes(name)
 }
 
+/**
+ * Is this refusal only the thing not being there?
+ *
+ * A folder the format may write and has not — no `docs/`, no `transitions/` —
+ * and a file removed between the listing and the read are ordinary answers,
+ * and `undefined` says them. Anything else a handle throws is a failure: a
+ * permission withdrawn, a file a sync client holds open, a disk that is gone.
+ * The browser says the first with `NotFoundError` (and `TypeMismatchError` for
+ * a file where a folder was asked for); the desktop's handle and the suites'
+ * double say it in the message, because an `Error` over IPC loses its name.
+ */
+function isAbsent(cause: unknown): boolean {
+  if (typeof cause !== 'object' || cause === null) return false
+  const { name, message } = cause as { name?: unknown; message?: unknown }
+  const said = (word: string) => name === word || (typeof message === 'string' && message.startsWith(`${word}:`))
+  return said('NotFoundError') || said('TypeMismatchError')
+}
+
 /** One file in a scope's folder, with enough to read it, replace it or remove it. */
 type Entry = { path: string; name: string; parent: DirectoryHandleLike; handle: FileHandleLike }
 
 export class FileSystemScopeStore implements ScopeStore {
   readonly id = 'folder on disk'
 
-  constructor(private readonly root: DirectoryHandleLike) {}
+  /**
+   * `diagnostics` is where a file that is there and will not read is said.
+   * The store still answers without it — a scope with the rest of its files, a
+   * listing without that date — because one unreadable file is no reason to
+   * refuse a folder; but an answer that quietly left something out is how a
+   * decision goes missing and nobody can say why.
+   */
+  constructor(
+    private readonly root: DirectoryHandleLike,
+    private readonly diagnostics?: Pick<Diagnostics, 'report'>,
+  ) {}
+
+  /**
+   * The handler for a read that may meet nothing: `undefined` either way, and
+   * said on the trail when it was not absence. The message is what was being
+   * read, never which file — a path off the user's disk is theirs.
+   */
+  private orAbsent(what: string): (cause: unknown) => undefined {
+    return (cause) => {
+      if (!isAbsent(cause)) this.fault(what, cause)
+      return undefined
+    }
+  }
+
+  private fault(what: string, cause: unknown): void {
+    this.diagnostics?.report({ level: 'warn', where: 'folder', message: `${what} could not be read`, cause })
+  }
+
+  /** A file's text, or `undefined` where there is no file or it will not read — the second said. */
+  private async textOf(handle: FileHandleLike | undefined, what: string): Promise<string | undefined> {
+    if (!handle) return undefined
+    const file = await handle.getFile().catch(this.orAbsent(what))
+    return file?.text().catch(this.orAbsent(what))
+  }
+
+  /** When a file was last written, or 0 where that cannot be read — which is said. */
+  private async stampOf(handle: FileHandleLike): Promise<number> {
+    return (await handle.getFile().catch(this.orAbsent('a file\'s date')))?.lastModified ?? 0
+  }
 
   /**
    * Walk down a path of folder names.
@@ -178,10 +235,10 @@ export class FileSystemScopeStore implements ScopeStore {
       return isBinary(entry.path)
         ? { path: entry.path, bytes: new Uint8Array(await file.arrayBuffer()) }
         : { path: entry.path, text: await file.text() }
-    } catch {
+    } catch (cause) {
       // Half a write, a file removed under us, permission withdrawn. The rest
-      // of the scope is still worth reading.
-      return undefined
+      // of the scope is still worth reading — and all but the second is said.
+      return this.orAbsent('a file of the scope')(cause)
     }
   }
 
@@ -225,13 +282,14 @@ export class FileSystemScopeStore implements ScopeStore {
     try {
       await this.walk(this.root, [], async ({ path, header, current }) => {
         if (!current) { found.push(path); return }
-        const text = await (await header.getFile().catch(() => undefined))?.text().catch(() => undefined)
+        const text = await this.textOf(header, 'a scope header')
         const version = text === undefined ? undefined : folderFormatVersion(text)
         if (version !== undefined && version < SCOPE_FORMAT_VERSION) found.push(path)
       })
-    } catch {
+    } catch (cause) {
       // Unreadable is not old: an empty answer leaves the folder alone, which
       // is the safe direction for something that rewrites files.
+      this.fault('the folder\'s format', cause)
       return []
     }
     return found
@@ -260,9 +318,8 @@ export class FileSystemScopeStore implements ScopeStore {
   async models(): Promise<ScopeModel[]> {
     const found: ScopeModel[] = []
     await this.walk(this.root, [], async ({ folder, path }) => {
-      const handle = await folder.getFileHandle(MODEL_FILE).catch(() => undefined)
-      if (!handle) return
-      const text = await (await handle.getFile().catch(() => undefined))?.text().catch(() => undefined)
+      const handle = await folder.getFileHandle(MODEL_FILE).catch(this.orAbsent('a model'))
+      const text = await this.textOf(handle, 'a model')
       if (text === undefined) return
       const lists = modelListsFrom(text)
       if (!lists) return
@@ -285,22 +342,23 @@ export class FileSystemScopeStore implements ScopeStore {
     if (!folder) return undefined
     const found: Record<string, string> = {}
     try {
-      const handle = await folder.getFileHandle(MODEL_FILE).catch(() => undefined)
-      const text = await (await handle?.getFile().catch(() => undefined))?.text().catch(() => undefined)
+      const handle = await folder.getFileHandle(MODEL_FILE).catch(this.orAbsent('a model'))
+      const text = await this.textOf(handle, 'a model')
       const lists = modelListsFrom(text)
       if (text === undefined || !lists) return undefined
       for (const element of lists.elements) {
         if (element.description !== undefined) found[element.id] = element.description
       }
-      const docs = await folder.getDirectoryHandle(DOCS_FOLDER).catch(() => undefined)
+      const docs = await folder.getDirectoryHandle(DOCS_FOLDER).catch(this.orAbsent('the descriptions folder'))
       if (docs) {
         for await (const entry of docs.values()) {
           if (entry.kind !== 'file' || !entry.name.endsWith('.md')) continue
-          const prose = await (await entry.getFile().catch(() => undefined))?.text().catch(() => undefined)
+          const prose = await this.textOf(entry, 'a description')
           if (prose !== undefined) found[entry.name.slice(0, -'.md'.length)] = markdownBody(prose)
         }
       }
-    } catch {
+    } catch (cause) {
+      this.fault('the descriptions', cause)
       return undefined
     }
     return found
@@ -308,12 +366,12 @@ export class FileSystemScopeStore implements ScopeStore {
 
   /** The plans filed in one scope's folder, by number. A file that will not read is left out. */
   private async transitionsIn(folder: DirectoryHandleLike): Promise<Transition[]> {
-    const plans = await folder.getDirectoryHandle(TRANSITIONS_FOLDER).catch(() => undefined)
+    const plans = await folder.getDirectoryHandle(TRANSITIONS_FOLDER).catch(this.orAbsent('the plans folder'))
     if (!plans) return []
     const found: Transition[] = []
     for await (const entry of plans.values()) {
       if (entry.kind !== 'file' || !entry.name.endsWith('.md')) continue
-      const text = await (await entry.getFile().catch(() => undefined))?.text().catch(() => undefined)
+      const text = await this.textOf(entry, 'a plan')
       if (text === undefined) continue
       const plan = transitionFromFile(text, `${TRANSITIONS_FOLDER}/${entry.name}`)
       if (plan) found.push(plan)
@@ -323,12 +381,12 @@ export class FileSystemScopeStore implements ScopeStore {
 
   /** The observations, likewise (ADR-0021): the shared ones are what a scope above reads. */
   private async observationsIn(folder: DirectoryHandleLike): Promise<Observation[]> {
-    const held = await folder.getDirectoryHandle(OBSERVATIONS_FOLDER).catch(() => undefined)
+    const held = await folder.getDirectoryHandle(OBSERVATIONS_FOLDER).catch(this.orAbsent('the observations folder'))
     if (!held) return []
     const found: Observation[] = []
     for await (const entry of held.values()) {
       if (entry.kind !== 'file' || !entry.name.endsWith('.md')) continue
-      const text = await (await entry.getFile().catch(() => undefined))?.text().catch(() => undefined)
+      const text = await this.textOf(entry, 'an observation')
       if (text === undefined) continue
       const observation = observationFromFile(text, `${OBSERVATIONS_FOLDER}/${entry.name}`)
       if (observation) found.push(observation)
@@ -346,7 +404,7 @@ export class FileSystemScopeStore implements ScopeStore {
         // will.
         let latest = 0
         for (const entry of await this.entries(folder)) {
-          latest = Math.max(latest, (await entry.handle.getFile().catch(() => undefined))?.lastModified ?? 0)
+          latest = Math.max(latest, await this.stampOf(entry.handle))
         }
         const summary = scopeSummaryFrom(
           await (await header.getFile()).text(),
@@ -355,9 +413,11 @@ export class FileSystemScopeStore implements ScopeStore {
         )
         if (summary) found.push(summary)
       })
-    } catch {
+    } catch (cause) {
       // A folder that has become unreadable — permission withdrawn, drive
-      // unplugged — is an empty tree rather than a broken screen.
+      // unplugged — is an empty tree rather than a broken screen, and the
+      // trail says which of the two it was.
+      this.fault('the folder\'s listing', cause)
       return scopeTree([], this.root.name)
     }
     const root = scopeTree(found, this.root.name)
@@ -373,13 +433,17 @@ export class FileSystemScopeStore implements ScopeStore {
       const files = await this.readAll(entries)
       const scope = openScopeFolder(files, path)
       if (!scope) return undefined
-      const latest = Math.max(0, ...await Promise.all(entries.map(async (entry) =>
-        (await entry.handle.getFile().catch(() => undefined))?.lastModified ?? 0)))
+      // Dated by the files that read: one that did not has been said once already.
+      const read = new Set(files.map((file) => file.path))
+      const latest = Math.max(0, ...await Promise.all(entries
+        .filter((entry) => read.has(entry.path))
+        .map((entry) => this.stampOf(entry.handle))))
       const revision = folderRevision(files)
       return latest
         ? { ...scope, updatedAt: new Date(latest).toISOString(), revision }
         : { ...scope, revision }
-    } catch {
+    } catch (cause) {
+      this.fault('a scope', cause)
       return undefined
     }
   }
@@ -469,15 +533,22 @@ export class FileSystemScopeStore implements ScopeStore {
       // Only what this format writes — a deleted diagram's two files, a
       // decision that was renamed. Everything else in the folder is somebody's,
       // and a scope filed inside this one is never among these at all.
-      await entry.parent.removeEntry(entry.name).catch(() => undefined)
+      //
+      // One that will not go is not a failed save — everything wanted is
+      // written — but it is a deleted diagram or decision that comes back on
+      // the next open, so it is said rather than dropped.
+      await entry.parent.removeEntry(entry.name).catch((cause: unknown) => {
+        if (!isAbsent(cause)) {
+          this.diagnostics?.report({ level: 'warn', where: 'folder', message: 'a file the format no longer writes could not be removed', cause })
+        }
+      })
     }
   }
 
   /** Is there a `model.json` in this folder that does not parse? A file that cannot be read at all is not one. */
   private async unreadableModel(folder: DirectoryHandleLike): Promise<boolean> {
-    const handle = await folder.getFileHandle(MODEL_FILE).catch(() => undefined)
-    const text = await (await handle?.getFile().catch(() => undefined))?.text().catch(() => undefined)
-    return modelUnreadable(text)
+    const handle = await folder.getFileHandle(MODEL_FILE).catch(this.orAbsent('a model'))
+    return modelUnreadable(await this.textOf(handle, 'a model'))
   }
 
   async remove(path: ScopePath): Promise<void> {

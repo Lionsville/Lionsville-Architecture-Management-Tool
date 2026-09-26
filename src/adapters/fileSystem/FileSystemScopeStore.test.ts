@@ -17,9 +17,10 @@
 import { describe, expect, it } from 'vitest'
 import { describeScopeStore, sampleScope, scopeAt } from '../../ports/ScopeStore.contract'
 import { flattenScopes } from '../../projects/scope'
+import { RecordingDiagnostics } from '../memory/RecordingDiagnostics'
 import { FakeDirectory } from './fakeDirectory'
 import { FileSystemScopeStore } from './FileSystemScopeStore'
-import type { DirectoryHandleLike } from './FileSystemScopeStore'
+import type { DirectoryHandleLike, FileHandleLike } from './FileSystemScopeStore'
 
 describeScopeStore('folder on disk', () => new FileSystemScopeStore(new FakeDirectory()))
 
@@ -179,7 +180,7 @@ describe('FileSystemScopeStore — the folder is somebody else’s too', () => {
     moved.model.diagrams[0].geometry.nodes = [{ id: 'crews', x: 999, y: 20 }]
     await store.save(moved)
 
-    expect(await touched(before, await stamps(root)))
+    expect(touched(before, await stamps(root)))
       .toEqual(['acme-logistics/landscape/diagrams/l7.geometry.json'])
   })
 
@@ -320,6 +321,68 @@ describe('FileSystemScopeStore — the folder is somebody else’s too', () => {
     await expect(store.load('a/b')).resolves.toBeUndefined()
   })
 
+  /**
+   * A file that is there and will not read — held open by a sync client,
+   * permission withdrawn — was answered as a file that is not there, and
+   * nothing anywhere said so: the scope opened without that description and
+   * nobody could tell why. It still opens; the trail now says it.
+   */
+  it('says on the trail a file that is there and will not read, and opens the rest of the scope', async () => {
+    const { root, store } = setup()
+    const scope = sampleScope()
+    scope.model.elements = scope.model.elements.map((one) => ({ ...one, description: `All about ${one.name}.` }))
+    await store.save(scope)
+
+    const diagnostics = new RecordingDiagnostics()
+    const held = new FileSystemScopeStore(
+      refusing(root, { read: 'crews.md', cause: new Error('NotReadableError: held open') }), diagnostics,
+    )
+    const opened = await held.load(scope.path)
+    expect(opened?.model.elements.find((one) => one.id === 'reisinfo')?.description).toBe('All about Reisinformatie.')
+    expect(opened?.model.elements.find((one) => one.id === 'crews')?.description).toBeUndefined()
+    expect(await held.descriptions(scope.path)).not.toHaveProperty('crews')
+
+    const said = diagnostics.recent()
+    expect(said.map((entry) => [entry.level, entry.where, entry.message])).toEqual([
+      ['warn', 'folder', 'a file of the scope could not be read'],
+      ['warn', 'folder', 'a description could not be read'],
+    ])
+    // What was being read, and never which file: a path off the user's disk is theirs.
+    expect(said.every((entry) => !entry.message.includes('crews'))).toBe(true)
+  })
+
+  it('says nothing about a folder the format may write and has not', async () => {
+    const { root } = setup()
+    const diagnostics = new RecordingDiagnostics()
+    const store = new FileSystemScopeStore(root, diagnostics)
+    await store.save(sampleScope())
+
+    await store.load(sampleScope().path)
+    await store.descriptions(sampleScope().path)
+    await store.models()
+    await store.list()
+    expect(diagnostics.recent()).toEqual([])
+  })
+
+  /** A file the format no longer writes that stays is a deleted diagram that comes back on the next open. */
+  it('says so when a file the format no longer writes will not go, and still saves the rest', async () => {
+    const { root, store } = setup()
+    await store.save(sampleScope())
+
+    const diagnostics = new RecordingDiagnostics()
+    const held = new FileSystemScopeStore(
+      refusing(root, { remove: 'cd.json', cause: new Error('NoModificationAllowedError: locked') }), diagnostics,
+    )
+    const fewer = sampleScope()
+    fewer.model.diagrams = [fewer.model.diagrams[0]]
+    await held.save(fewer)
+
+    expect(root.paths()).toContain('acme-logistics/landscape/diagrams/cd.json')
+    expect(root.paths()).not.toContain('acme-logistics/landscape/diagrams/cd.geometry.json')
+    expect(diagnostics.recent().map((entry) => entry.message))
+      .toEqual(['a file the format no longer writes could not be removed'])
+  })
+
   it('refuses to walk out of the folder it was given', async () => {
     const { store } = setup()
     const escape = '../escape'
@@ -329,6 +392,32 @@ describe('FileSystemScopeStore — the folder is somebody else’s too', () => {
     await expect(store.remove(escape)).resolves.toBeUndefined()
   })
 })
+
+/**
+ * The same folder, with one file's reads or its removal refused the way a
+ * file a sync client holds, or a folder somebody locked, refuses them.
+ */
+function refusing(
+  folder: DirectoryHandleLike, what: { read?: string; remove?: string; cause: Error },
+): DirectoryHandleLike {
+  const file = (handle: FileHandleLike): FileHandleLike => handle.name !== what.read ? handle : {
+    kind: 'file',
+    name: handle.name,
+    getFile: () => Promise.reject(what.cause),
+    createWritable: () => handle.createWritable(),
+  }
+  const wrap = (held: DirectoryHandleLike): DirectoryHandleLike => ({
+    kind: 'directory',
+    name: held.name,
+    getDirectoryHandle: async (name, options) => wrap(await held.getDirectoryHandle(name, options)),
+    getFileHandle: async (name, options) => file(await held.getFileHandle(name, options)),
+    removeEntry: (name, options) => name === what.remove ? Promise.reject(what.cause) : held.removeEntry(name, options),
+    values: async function* () {
+      for await (const entry of held.values()) yield entry.kind === 'directory' ? wrap(entry) : file(entry)
+    },
+  })
+  return wrap(folder)
+}
 
 /** Every file under a folder with the moment it was last written. */
 async function stamps(root: FakeDirectory): Promise<Record<string, number>> {

@@ -150,7 +150,7 @@ function useTidy(args: LayoutArgs, running: LayoutRunning) {
       if (result.routingError !== undefined) {
         reportLayoutError(t(unattended ? 'error.tidyRoutingUnattended' : 'error.tidyRouting'), result.routingError);
       } else reportSkippedTiers(result.skipped);
-      requestAnimationFrame(() => fitView({ ...FIT_ALL, duration: 300 }));
+      requestAnimationFrame(() => { void fitView({ ...FIT_ALL, duration: 300 }) });
     } catch (error) {
       const message = layoutFailureMessage(error, unattended ? 'error.tidyUnattended' : 'error.tidy', t);
       if (message !== undefined) reportLayoutError(message, error);

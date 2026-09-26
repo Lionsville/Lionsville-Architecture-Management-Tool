@@ -739,7 +739,12 @@ one writable both land, among others — and then the store's suite runs over it
   ordinary answer stays a returned value (`openProjectDocument`).
 - **A failure has somewhere to go.** Report it through the `Diagnostics` seam
   before you draw anything about it; every `void promise` needs a rejection
-  handler or a comment saying why not. Never toast a success you did not wait
+  handler or a comment saying why not. The lint runs with the types and fails a
+  promise nobody awaits or catches, an async handler where nothing waits for
+  it, and an `await` of a plain value (`build/promises.test.ts`). A read that
+  may meet nothing answers `undefined` for absence and says anything else on
+  the trail (`FileSystemScopeStore.orAbsent`), rather than `.catch(() =>
+  undefined)`, which answers a locked file as a missing one. Never toast a success you did not wait
   for. Log messages and keys, never model content — the desktop writes the
   trail to a file the user is invited to hand over.
 - **A page's wiring is a hook, not a stretch of the workspace.** What a page

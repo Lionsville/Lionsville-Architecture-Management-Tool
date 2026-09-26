@@ -31,7 +31,7 @@ import type { WorkspacePages } from './useWorkspacePages'
  */
 export function useWorkspaceCommands(deps: {
   commands: ((listener: (command: HostCommand) => void) => () => void) | undefined
-  forceSave: () => void
+  forceSave: () => Promise<void>
   files: ProjectFiles
   documentPicker: FilePicker
   snapshots: ProjectHistoryState
@@ -42,7 +42,9 @@ export function useWorkspaceCommands(deps: {
   const { commands, forceSave, files, documentPicker, snapshots, session, hostControls, editorHandle } = deps
   useEffect(() => commands?.((command) => {
     switch (command.type) {
-      case 'save': forceSave(); break
+      // A save answers its own failure — the bar's status and the refusal's
+      // notice — so the menu's press has nothing left to wait for.
+      case 'save': void forceSave(); break
       case 'export': files.saveWorkingFile(); break
       case 'open': documentPicker.open(); break
       case 'openDocument': files.openDocument(command.name, command.bytes); break

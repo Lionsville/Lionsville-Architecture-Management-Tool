@@ -95,12 +95,12 @@ describe('setUses (ADR-0020)', () => {
     ]), { activeDiagramId: 'l7' });
     const steps = () => host.current.commands.length;
     const before = steps();
-    act(() => result.current.actions.setUses('wms', ['containers', 'registry', 'openshift']));
+    act(() => { result.current.actions.setUses('wms', ['containers', 'registry', 'openshift']) });
     expect(rows(host.current.model)).toEqual([
       'uses:crm>containers', 'uses:wms>registry@2027-01-01', 'uses:wms>containers', 'uses:wms>openshift',
     ]);
     expect(steps()).toBe(before + 1);
-    act(() => result.current.actions.setUses('wms', ['openshift']));
+    act(() => { result.current.actions.setUses('wms', ['openshift']) });
     expect(rows(host.current.model)).toEqual(['uses:crm>containers', 'uses:wms>openshift']);
     act(() => host.current.history.undo());
     expect(rows(host.current.model)).toEqual([
@@ -108,20 +108,20 @@ describe('setUses (ADR-0020)', () => {
     ]);
     // Saying the same thing is not a step.
     const same = steps();
-    act(() => result.current.actions.setUses('wms', ['registry', 'containers', 'openshift']));
+    act(() => { result.current.actions.setUses('wms', ['registry', 'containers', 'openshift']) });
     expect(steps()).toBe(same);
   });
 
   it('writes the stand-in in the same step as the row, and not twice', () => {
     const { result, host } = renderEditorState(model(), { activeDiagramId: 'l7' });
-    act(() => result.current.actions.setUses('wms', ['ent-bus'], [bus]));
+    act(() => { result.current.actions.setUses('wms', ['ent-bus'], [bus]) });
     expect(host.current.model.elements.some((one) => one.id === 'ent-bus' && one.ref === 'platforms')).toBe(true);
     expect(rows(host.current.model)).toEqual(['uses:wms>ent-bus']);
     act(() => host.current.history.undo());
     expect(host.current.model.elements.some((one) => one.id === 'ent-bus')).toBe(false);
     expect(rows(host.current.model)).toEqual([]);
-    act(() => result.current.actions.setUses('wms', ['ent-bus'], [bus]));
-    act(() => result.current.actions.setUses('crm', ['ent-bus'], [bus]));
+    act(() => { result.current.actions.setUses('wms', ['ent-bus'], [bus]) });
+    act(() => { result.current.actions.setUses('crm', ['ent-bus'], [bus]) });
     expect(host.current.model.elements.filter((one) => one.id === 'ent-bus')).toHaveLength(1);
     expect(rows(host.current.model)).toEqual(['uses:wms>ent-bus', 'uses:crm>ent-bus']);
   });
@@ -143,7 +143,7 @@ describe('setUses (ADR-0020)', () => {
   it('is one Activity line, naming the application and the count', () => {
     const { result, host } = renderEditorState(model(), { activeDiagramId: 'l7' });
     const before = fromArrays(host.current.model);
-    act(() => result.current.actions.setUses('wms', ['containers', 'ent-bus'], [bus]));
+    act(() => { result.current.actions.setUses('wms', ['containers', 'ent-bus'], [bus]) });
     expect(summarise([host.current.commands.at(-1)!], before)).toEqual({ key: 'activity.usesSet', name: 'wms', count: 2 });
   });
 });

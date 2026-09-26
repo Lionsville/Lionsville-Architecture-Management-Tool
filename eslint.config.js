@@ -389,6 +389,46 @@ export default tseslint.config(
     },
   },
   {
+    /**
+     * **Promises, checked with the types.** The renderer is a window that
+     * saves, loads, watches a folder and answers an agent, and the main
+     * process is the other end of every one of those: a promise nobody awaits
+     * and nobody catches is a failure that happened and was never said —
+     * in the renderer an unhandled rejection in a console nobody reads, in
+     * main one that takes the process with it. None of the three is visible
+     * without the types, which is why they are here and not in
+     * `tseslint.configs.recommended`.
+     *
+     * A promise deliberately left running is written `void`, with its
+     * rejection handled on the line or a comment saying who handles it (the
+     * convention *A failure has somewhere to go* in CLAUDE.md asks the same);
+     * a disable comment is not an answer to any of these.
+     */
+    files: ['**/*.ts', '**/*.tsx'],
+    rules: {
+      '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/no-misused-promises': 'error',
+      '@typescript-eslint/await-thenable': 'error',
+    },
+  },
+  {
+    // The renderer's program, `tsconfig.json`, which the project service
+    // finds for itself.
+    files: ['src/**/*.ts', 'src/**/*.tsx'],
+    languageOptions: {
+      parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname },
+    },
+  },
+  {
+    // Main, the preload and the build's own code are the second program,
+    // `tsconfig.electron.json`, and the project service only ever looks for a
+    // file named `tsconfig.json` — so these are pointed at theirs by name.
+    files: ['electron/**/*.ts', 'build/**/*.ts'],
+    languageOptions: {
+      parserOptions: { project: './tsconfig.electron.json', tsconfigRootDir: import.meta.dirname },
+    },
+  },
+  {
     // The outside world belongs in an adapter. Once `localStorage` sits in an
     // ordinary file, the assumption "this runs in a browser" seeps through the
     // whole tree, and a second target (phase 6) stops being a layer and becomes

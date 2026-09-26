@@ -12,7 +12,21 @@ import { ESLint } from 'eslint'
 import { describe, expect, it } from 'vitest'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
-const eslint = new ESLint({ cwd: root })
+// Without the types: the files asked about here do not exist, so no program
+// holds them, and what is asked is the layering — which reads the path and the
+// import lines and nothing a compiler knows. `promises.test.ts` asks the rules
+// that do need the types.
+const eslint = new ESLint({
+  cwd: root,
+  overrideConfig: {
+    languageOptions: { parserOptions: { projectService: false, project: null } },
+    rules: {
+      '@typescript-eslint/no-floating-promises': 'off',
+      '@typescript-eslint/no-misused-promises': 'off',
+      '@typescript-eslint/await-thenable': 'off',
+    },
+  },
+})
 
 const HEADER = '// SPDX-License-Identifier: AGPL-3.0-only\n// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV\n\n'
 

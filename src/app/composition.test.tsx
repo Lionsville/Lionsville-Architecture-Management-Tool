@@ -120,6 +120,16 @@ describe('inWorkingDirectory — what a scope hears about', () => {
 })
 
 describe('inWorkingDirectory', () => {
+  /** A watcher that could not be set up is a window deaf to the folder, and was said nowhere. */
+  it('says on the trail a folder that cannot be watched', async () => {
+    const diagnostics = new RecordingDiagnostics()
+    const files = { ...channel(), watch: () => Promise.reject(new Error('EMFILE: too many open files')) }
+    const shell = inWorkingDirectory({ diagnostics } as unknown as Shell, files, { root: '/work', name: 'work' })
+    shell.watchProject!('acme', () => {})
+    await new Promise((settled) => setTimeout(settled, 0))
+    expect(diagnostics.messages()).toEqual(['the folder cannot be watched'])
+  })
+
   it('keeps every method of the folder settings store, not only the one it wraps', async () => {
     const shell = inWorkingDirectory({} as Shell, channel(), { root: '/work', name: 'work' })
     const settings = shell.folderSettings!
@@ -703,6 +713,23 @@ describe('the folder source', () => {
    * Nothing to say about the five words: a folder means by them exactly what
    * `documentSession` means, which is what all three that ship mean.
    */
+  /** The store is handed the trail the shell keeps, so a folder that will not read is said where *Copy diagnostics* can reach it. */
+  it('hands its store the trail the shell keeps', async () => {
+    const base = opening()
+    const unreadable = {
+      kind: 'directory' as const,
+      name: 'work',
+      getDirectoryHandle: () => Promise.reject(new Error('NotAllowedError: withdrawn')),
+      getFileHandle: () => Promise.reject(new Error('NotAllowedError: withdrawn')),
+      removeEntry: () => Promise.reject(new Error('NotAllowedError: withdrawn')),
+      // eslint-disable-next-line require-yield
+      values: async function* () { throw new Error('NotAllowedError: withdrawn') },
+    }
+    const parts = await openSource('folder', { handle: unreadable, name: 'work', root: '/work' }, base)
+    await parts.scopes!.list()
+    expect(base.diagnostics.messages()).toEqual(['the folder\'s listing could not be read'])
+  })
+
   it('leaves the document\'s own machine to say what dirty means', () => {
     const shell = inWorkingDirectory({} as Shell, channel(), { root: '/work', name: 'work' })
     expect(shell.sourceStatus).toBeUndefined()

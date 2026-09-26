@@ -201,26 +201,30 @@ describe('making something', () => {
 
   it('adds a capability with no order, because its row has none', () => {
     const host = opened()
-    act(() => host.sheets().actions.addElement({
-      kind: 'function', name: 'Bulk picking', parentId: 'warehousing',
-    }))
+    act(() => {
+      host.sheets().actions.addElement({
+        kind: 'function', name: 'Bulk picking', parentId: 'warehousing',
+      })
+    })
     expect(host.element('bulk-picking')).toMatchObject({ parentId: 'warehousing' })
     expect(host.element('bulk-picking')?.order).toBeUndefined()
   })
 
   it('gives a step the lane of the row it was made in, and a stakeholder the side it is on', () => {
     const host = opened()
-    act(() => host.sheets().actions.addElement({
-      kind: 'step', name: 'Chase the quote', parentId: 'quote', lane: 'key-account',
-    }))
+    act(() => {
+      host.sheets().actions.addElement({
+        kind: 'step', name: 'Chase the quote', parentId: 'quote', lane: 'key-account',
+      })
+    })
     expect(host.element('chase-the-quote')?.lane).toBe('key-account')
     cleanup()
     const host2 = opened()
-    act(() => host2.sheets().actions.addElement({ kind: 'actor', name: 'Auditor', outside: true }))
+    act(() => { host2.sheets().actions.addElement({ kind: 'actor', name: 'Auditor', outside: true }) })
     expect(host2.element('auditor')).toMatchObject({ kind: 'actor', outside: true })
     cleanup()
     const host3 = opened()
-    act(() => host3.sheets().actions.addJourney({ journey: 'Onboard a client', phase: 'Start' }))
+    act(() => { host3.sheets().actions.addJourney({ journey: 'Onboard a client', phase: 'Start' }) })
     expect(host3.sheetOf('sh-1')?.journeyId).toBe('ship')
   })
 
@@ -229,7 +233,7 @@ describe('making something', () => {
     // this gesture has to fill.
     const host = mount(project(model({ elements: [] })))
     act(() => host.sheets().create())
-    act(() => host.sheets().actions.addJourney({ journey: 'Onboard a client', phase: 'Start' }))
+    act(() => { host.sheets().actions.addJourney({ journey: 'Onboard a client', phase: 'Start' }) })
 
     expect(host.element('onboard-a-client')).toMatchObject({ kind: 'step' })
     expect(host.element('start')).toMatchObject({ kind: 'step', parentId: 'onboard-a-client' })
@@ -243,7 +247,7 @@ describe('making something', () => {
 
   it('adds an area and draws it on this sheet in the same step', () => {
     const host = opened()
-    act(() => host.sheets().actions.addArea('Compliance'))
+    act(() => { host.sheets().actions.addArea('Compliance') })
     expect(host.element('compliance')).toMatchObject({ kind: 'function' })
     expect(host.sheetOf('sh-1')?.areas).toEqual(['fulfilment', 'billing', 'compliance'])
     host.undo()
@@ -268,9 +272,11 @@ describe('making something', () => {
 
   it('makes the stakeholder too when the person typed a name', () => {
     const host = opened()
-    act(() => host.sheets().actions.addLane({
-      name: 'Auditor', outside: true, phaseId: 'order', stepName: 'Ask for the file',
-    }))
+    act(() => {
+      host.sheets().actions.addLane({
+        name: 'Auditor', outside: true, phaseId: 'order', stepName: 'Ask for the file',
+      })
+    })
     expect(host.element('auditor')).toMatchObject({ kind: 'actor', outside: true })
     expect(host.element('ask-for-the-file')?.lane).toBe('auditor')
     // The actor and its first step are one thing that happened.

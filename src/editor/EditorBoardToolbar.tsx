@@ -40,7 +40,7 @@ export function BoardToolbar({ parts, diagram, laidOut }: { parts: EditorParts; 
       autoRoute={layout.autoRoute}
       onToggleAutoRoute={layout.handleToggleAutoRoute}
       autoRouteNote={layout.autoRouteNote}
-      onFitView={() => fitView({ ...FIT_ALL, duration: 300 })}
+      onFitView={() => { void fitView({ ...FIT_ALL, duration: 300 }) }}
       onExport={exports.openExport}
       exportBusy={exports.exporting}
       onOpenHelp={dialogs.openHelp}

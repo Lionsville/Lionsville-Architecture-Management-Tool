@@ -145,6 +145,11 @@ const commands = desktopCommandChannel()
  * checked this way round on purpose: a path in a preferences blob is a wish,
  * and a blob can be edited by anybody with a text editor.
  */
+/** A preference that could not be written: nothing is lost now, and the next start asks again. */
+function reportPreferences(cause: unknown): void {
+  shell.diagnostics.report({ level: 'warn', where: 'preferences', message: 'the preferences could not be written', cause })
+}
+
 async function rememberedDirectory(stored: unknown): Promise<void> {
   if (!files) {
     // A browser tab, where a folder is best effort: only if this browser can
@@ -154,7 +159,12 @@ async function rememberedDirectory(stored: unknown): Promise<void> {
     if (handle) shell = inBrowserFolder(shell, handle, handle.name)
     return
   }
-  const granted = await files.recentDirectories().catch(() => [])
+  // None is an answer the first-run screen can give; a channel that failed to
+  // say is one the trail should have.
+  const granted = await files.recentDirectories().catch((cause: unknown) => {
+    shell.diagnostics.report({ level: 'warn', where: 'workingDirectory', message: 'the recent folders could not be read', cause })
+    return []
+  })
   // Kept for the first-run screen: a machine that has worked in a folder before
   // should be one click away from it, not one dialog.
   recentFolders = granted
@@ -420,7 +430,9 @@ async function openBrowserFolderWith(handle: Parameters<typeof inBrowserFolder>[
   let kept = withWorkingDirectory(stored, handle.name)
   kept = withAdoption(kept, handle.name, await adoptInto(inFolder, handle.name, handle.name))
   stored = kept
-  await shell.preferences.write(kept).catch(() => undefined)
+  // The folder opens either way; one that could not be remembered is asked
+  // for again at the next start, and the trail says why.
+  await shell.preferences.write(kept).catch(reportPreferences)
   shell = inFolder
   await upgradeFormat()
   shell.diagnostics.report({ level: 'info', where: 'workingDirectory', message: 'the folder is open' })
@@ -621,7 +633,10 @@ async function upgradeFormat(): Promise<void> {
   // is what the name is for. The key is left in the file: nothing this build
   // writes into a person's folder is a settings file of ours (ADR-0023), and
   // once the root has its name nothing reads the key again.
-  const settings = await folderSettings?.readFolder().catch(() => undefined)
+  const settings = await folderSettings?.readFolder().catch((cause: unknown) => {
+    diagnostics.report({ level: 'warn', where: 'formatUpgrade', message: 'the folder settings could not be read', cause })
+    return undefined
+  })
   const tally = await upgradeProjects(shell.scopes, {
     rootName: settings?.legacyOrganisationName
       ?? (shell.source.kind === 'folder' ? shell.source.name : undefined),
@@ -793,7 +808,7 @@ void shell.preferences.read()
           // Best effort: the store may be the very thing that refused. Writing
           // it back is what stops the next boot repeating this one — the render
           // below happens either way.
-          void shell.preferences.write(kept).catch(() => {})
+          void shell.preferences.write(kept).catch(reportPreferences)
           renderApp(kept, undefined)
         }}
       />,

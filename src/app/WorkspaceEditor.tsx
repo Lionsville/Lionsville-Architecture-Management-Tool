@@ -66,7 +66,8 @@ export function WorkspaceEditor({ parts }: { parts: WorkspaceParts }) {
         onAddImage={files.addImage}
         images={{ library: session.imageLibrary, usedBy: pictures.imageUsedBy, onRemove: files.removeImage }}
         windowChrome={parts.pageChrome}
-        onForceSave={parts.document.document.forceSave}
+        // ⌘S does not wait: a save says how it went on the bar itself.
+        onForceSave={() => { void parts.document.document.forceSave() }}
         onHandle={renderer.onEditorHandle}
       />
       </ErrorBoundary>

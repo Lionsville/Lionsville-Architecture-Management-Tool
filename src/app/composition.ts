@@ -705,8 +705,11 @@ export function inWorkingDirectory(
     // Watching the whole folder rather than one scope: it is one watcher for
     // the window, and watching the same root twice is a no-op in main. Nothing
     // unwatches it — another scope may be opened a second later, and the
-    // watcher costs one handle.
-    void channel.files.watch(directory.root).catch(() => undefined)
+    // watcher costs one handle. One that could not be set up is a folder whose
+    // outside changes this window will not hear about, so the trail says so.
+    void channel.files.watch(directory.root).catch((cause: unknown) => {
+      shell.diagnostics.report({ level: 'warn', where: 'workingDirectory', message: 'the folder cannot be watched', cause })
+    })
     // The scope's OWN files: what is on screen is this scope's document, and
     // a landscape filed under a domain being edited elsewhere, a README
     // dropped beside `scope.json`, an export saved into the folder are none of
@@ -837,8 +840,9 @@ async function chooseFolderOpening(): Promise<FolderOpening | undefined> {
 const FOLDER_SOURCE: SourceProvider<SourceParts, FolderOpening> = {
   kind: 'folder',
   connect: { labelKey: 'picker.chooseFolder', open: chooseFolderOpening },
-  open: ({ handle, name, root }) => ({
-    scopes: new FileSystemScopeStore(handle),
+  // The trail the app keeps is where a file that will not read is said.
+  open: ({ handle, name, root }, { diagnostics }) => ({
+    scopes: new FileSystemScopeStore(handle, diagnostics),
     folderSettings: new FileSystemFolderSettings(handle),
     source: { kind: 'folder', name, root },
   }),

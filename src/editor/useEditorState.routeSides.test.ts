@@ -76,9 +76,9 @@ describe('setRouteSides', () => {
 
   it('merges into a hand-drawn row, which stays hand-drawn with its bends', () => {
     const { result, stored } = render(model([MANUAL]));
-    act(() => result.current.actions.setRouteSides('c1', { targetSide: 'left' }));
+    act(() => { result.current.actions.setRouteSides('c1', { targetSide: 'left' }) });
     expect(stored()).toEqual({ ...MANUAL, targetSide: 'left' });
-    act(() => result.current.actions.setRouteSides('c1', { sourceSide: 'bottom' }));
+    act(() => { result.current.actions.setRouteSides('c1', { sourceSide: 'bottom' }) });
     expect(stored()).toEqual({ ...MANUAL, sourceSide: 'bottom', targetSide: 'left' });
   });
 
@@ -104,7 +104,7 @@ describe('setRouteSides', () => {
 
   it('freeing the last side of a side-only row forgets the row', () => {
     const { result, stored, asked } = render(model([{ relationId: 'c1', waypoints: [], source: 'auto', sourceSide: 'top' }]));
-    act(() => result.current.actions.setRouteSides('c1', { sourceSide: undefined }));
+    act(() => { result.current.actions.setRouteSides('c1', { sourceSide: undefined }) });
     expect(stored()).toBeUndefined();
     expect(asked()).toEqual(['route.clear']);
   });
@@ -132,7 +132,7 @@ describe('setRouteSides', () => {
   it('with live routing ON bumps the geometry so the live pass follows on its own', () => {
     const { result } = render(model([AUTO], true));
     const before = result.current.geometryVersion;
-    act(() => result.current.actions.setRouteSides('c1', { sourceSide: 'top' }));
+    act(() => { result.current.actions.setRouteSides('c1', { sourceSide: 'top' }) });
     expect(result.current.geometryVersion).toBeGreaterThan(before);
   });
 });
@@ -163,7 +163,7 @@ describe('connect / reconnect with sides (Alt-drag)', () => {
 
   it('connect without sides writes no route row, exactly as before', () => {
     const { result, host } = render(model());
-    act(() => result.current.actions.connect('e1', 'e3'));
+    act(() => { result.current.actions.connect('e1', 'e3') });
     expect(edgeRoutesOf(result.current.model.diagrams[0])).toEqual([]);
     expect(host.current.commands).toHaveLength(1);
     expect(result.current.actions.connect('e1', 'e1')).toBeUndefined();
@@ -211,24 +211,24 @@ describe('the other route actions carry sides', () => {
     act(() => result.current.actions.setRouteSource('c1', 'auto'));
     expect(stored()).toMatchObject({ source: 'auto', targetSide: 'right' });
     expect(stored()?.pinned).toBeUndefined();
-    act(() => result.current.actions.resetEdgeRoute('c1'));
+    act(() => { result.current.actions.resetEdgeRoute('c1') });
     expect(stored()).toBeUndefined();
   });
 
   it('applyTidyResult writes the sides the pass emitted, and keeps the sides of a row it clears', () => {
     const { result, stored } = render(model([{ ...AUTO, sourceSide: 'top' }]));
-    act(() =>
+    act(() => {
       result.current.actions.applyTidyResult({
         placements: [],
         edgeRoutes: [{ relationId: 'c1', waypoints: [{ x: 200, y: 60 }], source: 'auto', sourceSide: 'top' }],
-      }),
-    );
+      });
+    });
     expect(stored()).toMatchObject({ waypoints: [{ x: 200, y: 60 }], sourceSide: 'top' });
 
     // A result that lists nothing for c1 (a routed board where c1 was unroutable):
     // bends gone, side kept, row the router's.
     const cleared = render(model([{ ...MANUAL, sourceSide: 'top' }]));
-    act(() => cleared.result.current.actions.applyTidyResult({ placements: [], edgeRoutes: [] }));
+    act(() => { cleared.result.current.actions.applyTidyResult({ placements: [], edgeRoutes: [] }) });
     expect(cleared.stored()).toEqual({ relationId: 'c1', waypoints: [], labelPosition: undefined, source: 'auto', sourceSide: 'top' });
   });
 });
