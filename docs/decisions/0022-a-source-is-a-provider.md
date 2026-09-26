@@ -656,6 +656,55 @@ registered-chrome path pressing its own notice open and the named scope arriving
 in the crumbs, a destination with no scope landing on the scope that is open,
 and a menu line told the same call sending the person to the scope it names.
 
+## Amended — the two a build that fills the folder store needed
+
+*26 September 2026.* The same build keeps its scopes in this tree's folder store
+over a `DirectoryHandleLike` of its own, and had to reach past the seam twice to
+do it: once to put answers of its own on the store the folder source built, and
+once to find out that its handle kept only the last of two writes — which
+nothing here said was wrong. Each is added as the smallest public thing that
+closes it, and the three built-ins are written exactly as they were.
+
+* **A caller hands its own answers to the open, rather than patching the store
+  it got back.** `openSource(kind, opening, base, filling)` takes a
+  `SourceFilling` — for now `scopes`, a function handed the store the source
+  built and answering the members the caller answers for itself — and the parts
+  come back with a store made by `projects/filledStore.ts`. That store answers
+  each member of the port from the filling where it gave one and from the
+  source's store otherwise, **called as that store**. The alternative a build
+  had was a copy derived from the live store by its prototype, with the new
+  methods set on the copy: it works until the store keeps anything private, and
+  then every method called through the copy fails on the first line that reads
+  a `#field`, which is a refactor inside this tree breaking a build outside it
+  with no compile error on either side. The member list is checked against the
+  port with `satisfies`, so a member the port grows is a compile error in the
+  helper rather than a member a filled store silently lacks, and an optional
+  member neither side has stays absent — absent is an answer the port gives a
+  meaning to. `filledStore` is exported on its own too, for a caller holding a
+  store it did not open (the shell's own, handed over as `SourceBase.shell`).
+  A filling for a source that brought no store is refused as a wiring mistake,
+  in the words a source with nowhere to keep a scope already gets.
+* **The directory handle has a contract of its own.** `DirectoryHandleLike` had
+  four fillings and no suite; the store's suite ran over each and was taken as
+  the proof, which proved what the store asks and not what the port says. The
+  store writes a file in one `write`, so a filling that kept only the last of
+  two writes passed every clause. `ports/DirectoryHandle.contract.ts` is the
+  port's promise — a file reads back as written; **two writes to one writable
+  both land, in order**, as text and as bytes; the old contents stand until
+  `close`; a second writable replaces rather than appends; a folder written
+  into is listed with its file; a missing entry is refused without `create`; a
+  file can be removed — and deliberately nothing the port leaves open, such as
+  whether `create` makes an empty file or whether an empty folder is listed.
+
+`filledStore.test.ts` pins the store with a private field still working through
+its filling, the filling's answer winning and falling back on the store's, an
+optional member left absent, and the folder store with an index of its own
+passing `describeScopeStore` whole. `composition.test.tsx` pins the filling
+through `openSource`: over the folder source, falling back on it, over a source
+that answered a promise, refused for a source with no store, and nothing
+changed where no filling is given. `describeDirectoryHandle` runs over the
+in-memory double and over the desktop's handle on a real temporary folder.
+
 ## More Information
 
 ADR-0002 for the command and its inverse, which is the whole reason this is a

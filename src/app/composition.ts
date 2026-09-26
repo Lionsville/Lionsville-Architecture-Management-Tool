@@ -32,6 +32,8 @@ import { registerLogoPack } from '../model/logoRegistry'
 import { FileSystemFolderSettings } from '../adapters/fileSystem/FileSystemFolderSettings'
 import { FileSystemScopeStore } from '../adapters/fileSystem/FileSystemScopeStore'
 import type { ScopeSnapshot } from '../projects/scope'
+import { filledStore } from '../projects/filledStore'
+import type { ScopeStoreFilling } from '../projects/filledStore'
 import {
   canChooseDirectory, chooseDirectory as chooseBrowserDirectory, rememberedDirectory,
 } from '../adapters/browser/workingDirectory'
@@ -443,6 +445,22 @@ export function sourceAgentPanel(source: WorkingSource): SourceAgentPanel | unde
 }
 
 /**
+ * What the caller opening a source answers for itself, over the parts the
+ * source builds (ADR-0022, the ninth amendment).
+ *
+ * The store only, because the store is what a build composed from this one has
+ * had to answer for so far: an index in one round trip where the source's own
+ * store would walk the tree for it, and a save that the build's own channel has
+ * already carried. Handed at the open rather than laid over the parts after it,
+ * so the store a caller gets back is one this file built — with the source's
+ * own answers called as the source, which is what a copy made from the live
+ * store by its prototype could not promise ({@link filledStore}).
+ */
+export type SourceFilling = {
+  readonly scopes?: ScopeStoreFilling
+}
+
+/**
  * Open a source by its kind, with what it asked to be given.
  *
  * The provider's word about the five statuses travels with its parts, so the
@@ -459,16 +477,25 @@ export function sourceAgentPanel(source: WorkingSource): SourceAgentPanel | unde
  * out would be handing a provider a source with nowhere to report and nothing
  * of this shell to reuse, and it would find that out the first time something
  * went wrong there. {@link SourceBase} says what belongs in it.
+ *
+ * `filling` is the caller's own answers for the store the source brings
+ * ({@link SourceFilling}). A filling for a source that brought no store is the
+ * same wiring mistake as a source with nowhere to keep a scope, and is said the
+ * same way.
  */
 export function openSource<Opening>(
-  kind: string, opening: Opening, base: SourceBase,
+  kind: string, opening: Opening, base: SourceBase, filling: SourceFilling = {},
 ): SourceParts | Promise<SourceParts> {
   const provider = sourceProvider<Opening>(kind)
   // The boot, in the one file that chose the kind. A wiring mistake found here
   // is a wiring mistake; found at the first save it is a lost document.
   if (!provider) throw new Error(`no source provider is registered for '${kind}'`)
   const built = provider.open(opening, base)
-  const carrying = (parts: SourceParts): SourceParts => ({ ...parts, sourceStatus: provider.statusOf })
+  const carrying = (parts: SourceParts): SourceParts => ({
+    ...parts,
+    ...(filling.scopes ? { scopes: filledStore(keeper(kind, parts), filling.scopes) } : {}),
+    sourceStatus: provider.statusOf,
+  })
   // Awaited rather than handed on as a promise of parts: what travels with them
   // travels either way, and a caller that had to know which of the two it was
   // holding would be every caller writing the same `await` differently.

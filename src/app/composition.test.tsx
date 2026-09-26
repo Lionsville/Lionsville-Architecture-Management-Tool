@@ -18,6 +18,8 @@ import { DEFAULT_LOCAL_SETTINGS } from '../projects/folderSettings'
 import { InMemoryPreferencesStore } from '../adapters/memory/InMemoryPreferencesStore'
 import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
 import { RecordingDiagnostics } from '../adapters/memory/RecordingDiagnostics'
+import { FakeDirectory } from '../adapters/fileSystem/fakeDirectory'
+import { sampleScope, SAMPLE_PATH } from '../ports/ScopeStore.contract'
 import { IN_MEMORY } from '../platform/workingSource'
 import type { SourceProvider } from '../platform/sourceProvider'
 import {
@@ -358,6 +360,62 @@ describe('a provider that opens asynchronously', () => {
       open: () => Promise.reject(new Error('elsewhere would not have us')),
     })
     await expect(openSource('refused', undefined, opening())).rejects.toThrow(/would not have us/)
+  })
+})
+
+/**
+ * A caller's own answers for the store a source brings (ADR-0022, the ninth
+ * amendment).
+ *
+ * A build composed from this one opens the folder source over a handle of its
+ * own and wants one or two answers of its own on top. It used to take the store
+ * out of the parts and derive a copy from it by prototype; now it says what it
+ * answers for when it opens the source, and the store it gets back is one this
+ * file built.
+ */
+describe('a source opened with a filling of the caller\u2019s own', () => {
+  const folder = (): FolderOpening => ({ handle: new FakeDirectory(), name: 'Folder', root: 'folder' })
+
+  it('answers with the filling where it gave one and with the source everywhere else', async () => {
+    const parts = await openSource('folder', folder(), opening(), {
+      scopes: () => ({ models: () => Promise.resolve([]) }),
+    })
+    await parts.scopes!.save(sampleScope())
+    expect(await parts.scopes!.models!()).toEqual([])
+    expect((await parts.scopes!.load(SAMPLE_PATH))?.model.name).toBe('Application landscape')
+    expect(parts.source).toEqual({ kind: 'folder', name: 'Folder', root: 'folder' })
+  })
+
+  it('hands the filling the store it fills, so an answer can fall back on the source\u2019s', async () => {
+    const saved: string[] = []
+    const parts = await openSource('folder', folder(), opening(), {
+      scopes: (built) => ({ save: (scope) => { saved.push(scope.path); return built.save(scope) } }),
+    })
+    await parts.scopes!.save(sampleScope())
+    expect(saved).toEqual([SAMPLE_PATH])
+    expect(await parts.scopes!.load(SAMPLE_PATH)).toBeDefined()
+  })
+
+  it('fills the store of a source that answered a promise, too', async () => {
+    const parts = await openSource('awaited', { name: 'Awaited' }, opening(), {
+      scopes: () => ({ id: 'filled' }),
+    })
+    expect(parts.scopes?.id).toBe('filled')
+    expect(parts.sourceStatus).toBeDefined()
+  })
+
+  it('refuses to fill a store the source did not bring', () => {
+    registerSourceProvider({
+      kind: 'storeless',
+      open: () => ({ source: { kind: 'registered', provider: 'storeless', name: 'Storeless', key: 'one' } }),
+    })
+    expect(() => openSource('storeless', undefined, opening(), { scopes: () => ({}) }))
+      .toThrow(/nowhere to keep a scope/)
+  })
+
+  it('leaves the parts exactly as the source built them where no filling is given', async () => {
+    const parts = await openSource('memory', undefined, opening())
+    expect(parts.scopes?.constructor.name).toBe('InMemoryScopeStore')
   })
 })
 
