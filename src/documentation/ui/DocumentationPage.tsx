@@ -298,7 +298,7 @@ export function DocumentationPage(props: DocumentationPageProps) {
       {/* ---- top bar ---- */}
       <Box
         sx={{
-          display: 'flex',
+          display: 'flex', flexWrap: 'wrap', rowGap: 0.5,
           alignItems: 'center',
           gap: 1,
           px: 1.5,

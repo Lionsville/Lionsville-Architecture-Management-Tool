@@ -374,7 +374,7 @@ function Register<R extends Listed, Order extends string, Summary>(props: PagePr
       <Box
         data-testid={`${config.page}-topbar`}
         sx={{
-          display: 'flex', alignItems: 'center', gap: 1, px: 1.5,
+          display: 'flex', flexWrap: 'wrap', rowGap: 0.5, alignItems: 'center', gap: 1, px: 1.5,
           pl: `${12 + bar.controlsInset}px`,
           WebkitAppRegion: bar.draggable ? 'drag' : undefined,
           '& button, & a, & input': { WebkitAppRegion: 'no-drag' },

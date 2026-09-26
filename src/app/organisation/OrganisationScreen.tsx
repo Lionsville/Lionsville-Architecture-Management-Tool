@@ -65,7 +65,7 @@ import MenuItem from '@mui/material/MenuItem'
 import type { ExampleProject } from '../examples'
 import { OverflowMenu } from '../OverflowMenu'
 import type { ToolbarAgent, ToolbarOverflow } from '../ShellToolbar'
-import { agentTip, Crumbs, crumbsFor, sourceIsAlarming, sourceLabel, sourceTipKey } from '../ShellToolbar'
+import { agentTip, Crumbs, crumbsFor, QUIET, sourceIsAlarming, sourceLabel, sourceTipKey, WRAPS } from '../ShellToolbar'
 import { NewScopeDialog } from './NewScopeDialog'
 import { registerSummary, registerWithin } from './register'
 import type { RegisterRow } from './register'
@@ -883,11 +883,11 @@ function OrganisationBar({
   s: Translate
   windowChrome: WindowChrome
 }) {
-  const quiet = { fontSize: 11, minWidth: 0, px: 1, color: 'text.secondary' } as const
+  const quiet = QUIET
   const crumbs = useMemo(() => crumbsFor(home.path, flattenScopes(tree), s), [home.path, tree, s])
   return (
     <Box ref={barRef} data-testid="shell-toolbar" sx={{
-      display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 0.75,
+      display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 0.75, ...WRAPS,
       borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flex: '0 0 auto',
       // The window controls are painted over this bar's start, so the first
       // thing begins after them rather than under them.
@@ -896,7 +896,7 @@ function OrganisationBar({
       '& button, & a, & input': { WebkitAppRegion: 'no-drag' },
     }}>
       <Crumbs crumbs={crumbs} current={heading} currentPath={home.path} onGoHome={onGoHome} s={s} />
-      <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
+      <Typography sx={{ fontSize: 11, color: 'text.secondary', whiteSpace: 'nowrap' }}>
         {s(SCOPE_KIND_LABEL[home.kind ?? level])}
       </Typography>
       <Tooltip title={s('group.openFor', { name: heading })}>
@@ -926,7 +926,7 @@ function OrganisationBar({
               ? { component: 'button' as const, type: 'button', onClick: sourceChip.onClick }
               : {})}
             sx={{
-              fontSize: 11, px: 0.75, py: 0.25, borderRadius: 1,
+              fontSize: 11, px: 0.75, py: 0.25, borderRadius: 1, whiteSpace: 'nowrap',
               color: sourceIsAlarming(source) ? 'warning.main' : 'text.secondary',
               border: 1, borderColor: sourceIsAlarming(source) ? 'warning.main' : 'divider',
               // A button brings the browser's own font and background with it,

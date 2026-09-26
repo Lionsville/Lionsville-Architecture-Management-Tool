@@ -301,7 +301,9 @@ export function EditorToolbar(props: EditorToolbarProps) {
         borderBottom: 1,
         borderColor: 'divider',
         bgcolor: 'background.paper',
-        minHeight: 48,
+        // Out of width — a narrow window, or 400 % zoom (1.4.10) — the tools
+        // take a second row rather than running off the side of the window.
+        minHeight: 48, flexWrap: 'wrap',
       }}
     >
       {isContainer ? (

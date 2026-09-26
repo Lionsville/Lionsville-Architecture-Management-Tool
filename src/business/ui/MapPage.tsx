@@ -140,7 +140,7 @@ export function MapPage(props: MapPageProps) {
       <Box
         data-testid="map-topbar"
         sx={{
-          display: 'flex', alignItems: 'center', gap: 1, px: 1.5, minHeight: 48, flexShrink: 0,
+          display: 'flex', flexWrap: 'wrap', rowGap: 0.5, alignItems: 'center', gap: 1, px: 1.5, minHeight: 48, flexShrink: 0,
           pl: props.inline ? undefined : `${12 + bar.controlsInset}px`,
           WebkitAppRegion: !props.inline && bar.draggable ? 'drag' : undefined,
           '& button, & a, & input': { WebkitAppRegion: 'no-drag' },

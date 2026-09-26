@@ -323,6 +323,16 @@ export type ShellToolbarProps = {
   windowChrome?: WindowChrome
 }
 
+/**
+ * A quiet button in a top bar: it keeps its width. It used to give way to
+ * nothing (`minWidth: 0`) and its label spilled over its neighbour's; at 400 %
+ * zoom (1.4.10) every label in the bar was drawn over another.
+ */
+export const QUIET = { fontSize: 11, minWidth: 0, px: 1, color: 'text.secondary', flexShrink: 0, whiteSpace: 'nowrap' } as const
+
+/** A top bar that runs out of width takes a second row, rather than overlapping itself. */
+export const WRAPS = { flexWrap: 'wrap', rowGap: 0.5 } as const
+
 export function ShellToolbar({
   designName, crumbs, scopePath, savedAt, status = 'clean', saveFailed = false,
   alsoHere = [], language, onGoHome, onOpenSettings, onOpenDocumentation, onOpenDecisions, onOpenObservations, onOpenRoadmap,
@@ -334,7 +344,7 @@ export function ShellToolbar({
   // hover, before the bar has to wrap or clip.
   const narrow = useMediaQuery('(max-width: 1100px)')
 
-  const quiet = { fontSize: 11, minWidth: 0, px: 1, color: 'text.secondary' } as const
+  const quiet = QUIET
   const statusText = saveFailed
     ? s('shell.saveRefused')
     : STATUS_LABEL[status]
@@ -343,7 +353,7 @@ export function ShellToolbar({
 
   return (
     <Box data-testid="shell-toolbar" sx={{
-      display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 0.75,
+      display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 0.75, ...WRAPS,
       borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flex: '0 0 auto',
       // The window controls are painted over this bar's start, so the first
       // button begins after them rather than under them. 12px is this bar's own
