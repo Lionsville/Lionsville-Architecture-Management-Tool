@@ -185,6 +185,19 @@ describe('useModelSession — the snapshot', () => {
     expect(written.links).toEqual(opened.links)
   })
 
+  /**
+   * The files its read left out go with every save of the session, which is
+   * how the store knows to leave them where they are (ADR-0028, amended): a
+   * description that would not read is not a description the person removed.
+   */
+  it('carries the files its read left out into every save, until it adopts a read without them', () => {
+    const { session } = mount(project({ unread: ['docs/crews.md'] }))
+    act(() => { session().dispatch(rename('Renamed')) })
+    expect(session().snapshot().unread).toEqual(['docs/crews.md'])
+    act(() => session().adopt(project(), false))
+    expect(session().snapshot()).not.toHaveProperty('unread')
+  })
+
   it('takes the header of a project it adopts, and drops one it no longer has', () => {
     const { session } = mount(project({ kind: 'team', client: 'Acme BV' }))
     act(() => session().adopt(project({ kind: 'domain' }), false))

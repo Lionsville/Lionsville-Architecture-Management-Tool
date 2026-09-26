@@ -102,6 +102,29 @@ async function paths(store: ScopeStore): Promise<ScopePath[]> {
 }
 
 /**
+ * A fresh, empty store that keeps a scope in more than one piece, and a way to
+ * make one of those pieces refuse to be read — the way a file a sync client
+ * holds, or one whose permission was withdrawn, refuses. `file` is the piece
+ * as the folder format names it inside the scope's folder (`model.json`,
+ * `docs/<id>.md`, `images/<file>`), because that format is what says what a
+ * scope's pieces are; `undefined` reads everything again.
+ */
+export type RefusingStore = {
+  store: ScopeStore
+  refuse(path: ScopePath, file: string | undefined): void | Promise<void>
+}
+
+/**
+ * What a filling can offer beyond `create`. `refusing` is for a store that
+ * keeps a scope in pieces — a folder, a server over one — and is what the
+ * clauses about a piece that would not read run over. A store that keeps each
+ * scope whole has no piece to fail on its own, and offers none.
+ */
+export type ScopeStoreOptions = {
+  refusing?: () => RefusingStore | Promise<RefusingStore>
+}
+
+/**
  * The test. `create` must hand back an empty, fresh store on every call —
  * otherwise one test leaks into the next and the suite proves nothing.
  *
@@ -109,7 +132,9 @@ async function paths(store: ScopeStore): Promise<ScopePath[]> {
  * connected before it is a store. Every clause awaits it; a maker that is
  * synchronous is awaited too and nothing about its run changes.
  */
-export function describeScopeStore(name: string, create: () => ScopeStore | Promise<ScopeStore>): void {
+export function describeScopeStore(
+  name: string, create: () => ScopeStore | Promise<ScopeStore>, options: ScopeStoreOptions = {},
+): void {
   describe(`ScopeStore contract: ${name}`, () => {
     /**
      * The root is not created; it is where you are. A store that answered with
@@ -467,6 +492,67 @@ export function describeScopeStore(name: string, create: () => ScopeStore | Prom
 
     it('names itself, so a message can say where it went wrong', async () => {
       expect((await create()).id).toBeTruthy()
+    })
+
+    describePiecesItCouldNotRead(options.refusing)
+  })
+}
+
+/**
+ * **A save removes only what a read took in** (ADR-0028, amended). A save
+ * writes what the snapshot holds and removes what it no longer produces, so a
+ * piece the read left out — because it would not read — is one the next save
+ * would remove as no longer wanted, with nobody having wanted that. Where the
+ * scope can be understood without the piece it is left where it is; where it
+ * cannot — the model — the scope opens to be read and nothing is written.
+ */
+function describePiecesItCouldNotRead(refusing: ScopeStoreOptions['refusing']): void {
+  const described = () => {
+    const scope = sampleScope()
+    scope.model.elements = scope.model.elements.map((one) => ({ ...one, description: `All about ${one.name}.` }))
+    return scope
+  }
+
+  describe.skipIf(!refusing)('a piece of a scope it could not read', () => {
+    it('keeps a description it could not read through the next save', async () => {
+      const { store, refuse } = await refusing!()
+      await store.save(described())
+      await refuse(SAMPLE_PATH, 'docs/crews.md')
+      const opened = await store.load(SAMPLE_PATH)
+      expect(opened).toBeDefined()
+      await store.save({ ...opened!, model: { ...opened!.model, name: 'Renamed' } })
+      await refuse(SAMPLE_PATH, undefined)
+
+      const again = await store.load(SAMPLE_PATH)
+      expect(again?.model.name).toBe('Renamed')
+      expect(again?.model.elements.find((one) => one.id === 'crews')?.description).toBe('All about Crews.')
+    })
+
+    it('keeps a picture it could not read through the next save', async () => {
+      const { store, refuse } = await refusing!()
+      await store.save({ ...described(), imageLibrary: [{ file: 'map.png', url: 'data:image/png;base64,iVBORw0KGgo=' }] })
+      await refuse(SAMPLE_PATH, 'images/map.png')
+      const opened = await store.load(SAMPLE_PATH)
+      expect(opened).toBeDefined()
+      await store.save(opened!)
+      await refuse(SAMPLE_PATH, undefined)
+
+      expect((await store.load(SAMPLE_PATH))?.imageLibrary?.map((one) => one.file)).toEqual(['map.png'])
+    })
+
+    it('opens a scope whose model will not read to be looked at, and writes nothing over it', async () => {
+      const { store, refuse } = await refusing!()
+      await store.save(described())
+      await refuse(SAMPLE_PATH, 'model.json')
+      const opened = await store.load(SAMPLE_PATH)
+      expect(opened?.unreadable).toContain('model.json')
+      await expect(store.save(opened!)).rejects.toThrow()
+      await refuse(SAMPLE_PATH, undefined)
+
+      const again = await store.load(SAMPLE_PATH)
+      expect(again?.unreadable).toBeUndefined()
+      expect(again?.model.elements.map((one) => one.description))
+        .toEqual(['All about Crews.', 'All about Reisinformatie.'])
     })
   })
 }

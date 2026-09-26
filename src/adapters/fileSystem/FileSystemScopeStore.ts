@@ -37,6 +37,13 @@
  * an untouched diagram touches no mtime, wakes no watcher and shows up in no
  * `git status`.
  *
+ * **And of its own files, a save removes only what a read took in** (ADR-0028,
+ * amended). A file that is there and will not read — held by a sync client,
+ * its permission withdrawn — or reads and says nothing the scope can hold is
+ * on the snapshot as `unread`, and no save of it removes or writes over that
+ * file. Where the scope cannot be understood without it — `model.json`, a mark
+ * the header names — the scope opens to be read and is not saved at all.
+ *
  * This adapter deliberately does NOT watch for changes or resolve conflicts.
  * That is `documentSession`'s job in the layer above, which is where it can be
  * tested without a filesystem at all.
@@ -135,6 +142,9 @@ function isAbsent(cause: unknown): boolean {
   return said('NotFoundError') || said('TypeMismatchError')
 }
 
+/** What {@link FileSystemScopeStore.read} answers for a file that is there and will not read. */
+const UNREAD = Symbol('unread')
+
 /** One file in a scope's folder, with enough to read it, replace it or remove it. */
 type Entry = { path: string; name: string; parent: DirectoryHandleLike; handle: FileHandleLike }
 
@@ -229,16 +239,22 @@ export class FileSystemScopeStore implements ScopeStore {
     return found
   }
 
-  private async read(entry: Entry): Promise<FolderFile | undefined> {
+  /**
+   * One file's contents: `undefined` where it has gone since the listing, and
+   * {@link UNREAD} where it is there and would not read — half a write, a sync
+   * client holding it, permission withdrawn. The rest of the scope is still
+   * worth reading, and the second is said.
+   */
+  private async read(entry: Entry): Promise<FolderFile | typeof UNREAD | undefined> {
     try {
       const file = await entry.handle.getFile()
       return isBinary(entry.path)
         ? { path: entry.path, bytes: new Uint8Array(await file.arrayBuffer()) }
         : { path: entry.path, text: await file.text() }
     } catch (cause) {
-      // Half a write, a file removed under us, permission withdrawn. The rest
-      // of the scope is still worth reading — and all but the second is said.
-      return this.orAbsent('a file of the scope')(cause)
+      if (isAbsent(cause)) return undefined
+      this.fault('a file of the scope', cause)
+      return UNREAD
     }
   }
 
@@ -430,8 +446,10 @@ export class FileSystemScopeStore implements ScopeStore {
     if (!folder) return undefined
     try {
       const entries = await this.entries(folder)
-      const files = await this.readAll(entries)
-      const scope = openScopeFolder(files, path)
+      const { files, failed } = await this.readAll(entries)
+      // Handed on, so the snapshot says what it did not take in and a save of
+      // it leaves those files where they are (see `save`).
+      const scope = openScopeFolder(files, path, failed)
       if (!scope) return undefined
       // Dated by the files that read: one that did not has been said once already.
       const read = new Set(files.map((file) => file.path))
@@ -448,9 +466,15 @@ export class FileSystemScopeStore implements ScopeStore {
     }
   }
 
-  private async readAll(entries: readonly Entry[]): Promise<FolderFile[]> {
-    return (await Promise.all(entries.map((entry) => this.read(entry))))
-      .filter((file): file is FolderFile => !!file)
+  private async readAll(entries: readonly Entry[]): Promise<{ files: FolderFile[]; failed: string[] }> {
+    const read = await Promise.all(entries.map((entry) => this.read(entry)))
+    const files: FolderFile[] = []
+    const failed: string[] = []
+    read.forEach((held, at) => {
+      if (held === UNREAD) failed.push(entries[at].path)
+      else if (held) files.push(held)
+    })
+    return { files, failed }
   }
 
   /**
@@ -461,25 +485,31 @@ export class FileSystemScopeStore implements ScopeStore {
   private async revisionNow(path: ScopePath): Promise<string | undefined> {
     const folder = await this.scopeFolder(path, false)
     if (!folder) return undefined
-    const files = await this.readAll(await this.entries(folder))
+    const { files } = await this.readAll(await this.entries(folder))
     return openScopeFolder(files, path) ? folderRevision(files) : undefined
+  }
+
+  /**
+   * What a file the listing found holds now: its contents, `undefined` where
+   * there was none or it has gone since, or {@link UNREAD} where it is there
+   * and will not read — which is said.
+   */
+  private async contentsOf(entry: Entry | undefined, file: FolderFile): Promise<string | Uint8Array | typeof UNREAD | undefined> {
+    if (!entry) return undefined
+    return entry.handle.getFile().then(
+      async (held) => 'text' in file ? held.text() : new Uint8Array(await held.arrayBuffer()),
+      (cause: unknown) => {
+        if (isAbsent(cause)) return undefined
+        this.fault('a file of the scope', cause)
+        return UNREAD
+      },
+    )
   }
 
   private async write(folder: DirectoryHandleLike, file: FolderFile): Promise<void> {
     const parts = file.path.split('/')
     const parent = await this.folderInside(folder, parts.slice(0, -1))
     const handle = await parent.getFileHandle(parts[parts.length - 1], { create: true })
-
-    // Written only when it would differ. An autosave of a scope whose model has
-    // not changed then touches no mtime: no watcher wakes, no sync client
-    // uploads, and `git status` stays empty. It costs a read, which is the
-    // cheap half of the pair.
-    const existing = await handle.getFile().then(
-      async (held) => 'text' in file ? held.text() : new Uint8Array(await held.arrayBuffer()),
-      () => undefined,
-    )
-    if (existing !== undefined && same(existing, file)) return
-
     const writable = await handle.createWritable()
     try {
       await writable.write('text' in file ? file.text : file.bytes)
@@ -503,6 +533,17 @@ export class FileSystemScopeStore implements ScopeStore {
    * lock to take, so on a disk shared with somebody else's machine the check
    * narrows the window rather than closing it — which is what a folder can
    * promise, and a store that serialises its writers closes it.
+   *
+   * **A save removes only what a read took in** (ADR-0028, amended). What it
+   * writes is what the snapshot holds, and what it removes is the format's
+   * files the snapshot no longer produces — so a file the snapshot never held
+   * would be removed as *no longer wanted* with nobody having wanted that. A
+   * file that was there and would not read, or read and said nothing the scope
+   * could hold, is on the snapshot as `unread`; a save neither removes it nor
+   * writes over it, and one that would write over it is refused. A file that
+   * will not read now is treated the same way, whoever made the snapshot:
+   * nothing written over it, nothing removed. And a scope that cannot be
+   * understood without the file it could not read is not saved at all.
    */
   async save(scope: ScopeSnapshot, expects?: string): Promise<void> {
     if (!usablePath(scope.path)) {
@@ -513,23 +554,39 @@ export class FileSystemScopeStore implements ScopeStore {
     }
     const folder = await this.scopeFolder(scope.path, true)
     if (!folder) throw new ShellError('shell.folderUnavailable')
+    if (scope.unreadable?.length) throw new ShellError('shell.unreadableNotSaved')
+
+    const files = scopeFiles(scope)
+    const unread = new Set(scope.unread)
+    const present = await this.entries(folder)
+    const at = new Map(present.map((entry) => [entry.path, entry]))
+    // Every file compared before any is written, so a save that has to be
+    // refused writes nothing. Written only where it would differ: an autosave
+    // of a scope whose model has not changed then touches no mtime, wakes no
+    // watcher and shows up in no `git status`.
+    const held = await Promise.all(files.map((file) => this.contentsOf(at.get(file.path), file)))
     // A model on disk that does not parse was opened as an empty one, and
     // writing what that snapshot holds would make it one for good — and
     // remove every description filed beside it, whose elements it no longer
     // names. Read here, from the disk, rather than off the snapshot, because
     // a snapshot is rebuilt by whoever saves and need not carry the mark.
-    if (scope.unreadable?.length || await this.unreadableModel(folder)) {
+    const model = held[files.findIndex((file) => file.path === MODEL_FILE)]
+    const refused = files.some((file, n) => unread.has(file.path) || held[n] === UNREAD)
+    if (refused || (typeof model === 'string' && modelUnreadable(model))) {
       throw new ShellError('shell.unreadableNotSaved')
     }
-
-    const files = scopeFiles(scope)
     // Written before anything is removed: an interrupted save then leaves a
     // folder with too much in it, which opens, rather than too little.
-    for (const file of files) await this.write(folder, file)
+    for (const [n, file] of files.entries()) {
+      const was = held[n]
+      if (was === undefined || was === UNREAD || !same(was, file)) await this.write(folder, file)
+    }
 
     const wanted = new Set(files.map((file) => file.path))
-    for (const entry of await this.entries(folder)) {
-      if (wanted.has(entry.path)) continue
+    for (const entry of present) {
+      if (wanted.has(entry.path) || unread.has(entry.path)) continue
+      // A file that will not read now is one no read of this scope took in.
+      if (await this.read(entry) === UNREAD) continue
       // Only what this format writes — a deleted diagram's two files, a
       // decision that was renamed. Everything else in the folder is somebody's,
       // and a scope filed inside this one is never among these at all.
@@ -543,12 +600,6 @@ export class FileSystemScopeStore implements ScopeStore {
         }
       })
     }
-  }
-
-  /** Is there a `model.json` in this folder that does not parse? A file that cannot be read at all is not one. */
-  private async unreadableModel(folder: DirectoryHandleLike): Promise<boolean> {
-    const handle = await folder.getFileHandle(MODEL_FILE).catch(this.orAbsent('a model'))
-    return modelUnreadable(await this.textOf(handle, 'a model'))
   }
 
   async remove(path: ScopePath): Promise<void> {

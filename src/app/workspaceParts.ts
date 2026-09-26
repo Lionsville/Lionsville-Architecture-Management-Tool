@@ -35,8 +35,9 @@ export interface WorkspaceParts {
   props: ProjectWorkspaceProps
   /**
    * Whether anything here may be written: not where the source says so, and
-   * not in a scope a file of which did not read (`ScopeSnapshot.unreadable`) —
-   * a save there would write an empty model over the one that did not parse.
+   * not in a scope a file of which did not read and cannot be done without
+   * (`ScopeSnapshot.unreadable`) — a save there would write the scope without
+   * it, an empty model over the one that did not parse.
    * One flag, so every affordance and the agent's refusal follow it.
    */
   readOnly: boolean

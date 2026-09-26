@@ -84,9 +84,10 @@ export type ScopeSnapshot = {
   /** ISO timestamp of the last save. Absent until a store has written it once. */
   updatedAt?: string
   /**
-   * The files of this scope that are there and could not be read — today only
-   * ever `model.json` (`folderFormat.modelUnreadable`). Absent when every file
-   * read.
+   * The files of this scope the scope cannot be understood without and that
+   * could not be read: `model.json`, when it would not read or did not parse
+   * (`folderFormat.modelUnreadable`), and a mark `scope.json` names. Absent
+   * when every such file read.
    *
    * A scope with any is opened to be looked at and **not written**: what was
    * read of it is shown, and a save is refused, because a save writes what
@@ -95,6 +96,20 @@ export type ScopeSnapshot = {
    * opening the scope again is the way back.
    */
   unreadable?: readonly string[]
+  /**
+   * The files that were in this scope's folder when it was read and that the
+   * read did not take in, by path inside the folder: one that would not read,
+   * a view that did not parse, a description of an element the model does not
+   * name (`folderFormat.scopeFromFolder`). Absent when every file was taken in.
+   *
+   * **A save neither removes nor writes over any of them** (ADR-0028,
+   * amended). A save writes what the snapshot holds and removes the format's
+   * files it no longer produces; a file the read never held is one it would
+   * remove as *no longer wanted* without anybody having wanted that. Stamped
+   * by a store on `load`, like `revision`, and carried by whoever rebuilds the
+   * snapshot to save it.
+   */
+  unread?: readonly string[]
   /**
    * What the store that read this scope calls the state it read it in.
    *

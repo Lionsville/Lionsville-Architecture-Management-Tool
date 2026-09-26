@@ -880,9 +880,32 @@ function markFor(file: FolderFile, mediaType: string): string {
  * of its own and still holds its name, its decisions and its plans. Whether a
  * scope can be OPENED is the shell's question (`isOpenableScope`), not the
  * format's, and that is the line that moved at format 5.
+ *
+ * **What it leaves out is said on it** (`ScopeSnapshot.unread`), because
+ * that is what a save needs to know before it removes anything (ADR-0028,
+ * amended). `failed` are the files that were there and would not read, as
+ * the store that tried says them.
+ *
+ * A file is **taken in** when the scope holds what it says: every record, every
+ * picture and mark, a view's definition that parses and its geometry, a
+ * description whose element the model names. One is **not**, and is on
+ * `unread`, when it was there and would not read, or read and said nothing the
+ * scope could hold: a view's definition
+ * that does not parse, a geometry with no view read beside it, a description
+ * of an element the model does not name, a `model.json` that is not a model.
+ * A save writes what the snapshot holds, so a file it does not hold is one the
+ * save would remove as *no longer wanted*, or write over — and neither is a
+ * decision anybody made.
+ *
+ * Two cannot be left out, because the scope is not understood without them,
+ * and they are on `unreadable` as well, which opens the scope to be read and
+ * not written. `model.json`, because the scope written without it is an empty
+ * model; and a mark `scope.json` names, because the header written without it
+ * drops the mark's key and label for good. A `scope.json` that did not read is
+ * no scope at all, and answers `undefined` here; the store says why.
  */
 export function scopeFromFolder(
-  files: readonly FolderFile[], path: ScopePath,
+  files: readonly FolderFile[], path: ScopePath, failed: readonly string[] = [],
 ): ScopeSnapshot | undefined {
   const folder = folderOf(files)
   const held = readableHeader(jsonAt(folder, SCOPE_FILE))
@@ -953,8 +976,63 @@ export function scopeFromFolder(
       ? held.activeDiagramId : undefined),
     logoLibrary: readLogos(folder, held),
     ...(images.length ? { imageLibrary: images } : {}),
-    // Read as far as it reads, so it can be looked at; said, so nothing
-    // writes the empty model it would otherwise be saved as.
-    ...(modelUnreadable(textAt(folder, MODEL_FILE)) ? { unreadable: [MODEL_FILE] } : {}),
+    // Read as far as it reads, so it can be looked at; said, so nothing writes
+    // the empty model — or the header without a mark — it would be saved as.
+    ...leftOut(folder, held, byName, elements, failed),
   }
+}
+
+/** What a reading left out, and what of that the scope cannot do without — see {@link scopeFromFolder}. */
+function leftOut(
+  folder: Folder,
+  held: ScopeFile,
+  views: ReadonlyMap<string, DesignDiagram | undefined>,
+  elements: readonly DesignElement[],
+  failed: readonly string[],
+): Pick<ScopeSnapshot, 'unread' | 'unreadable'> {
+  const modelFailed = failed.includes(MODEL_FILE) || modelUnreadable(textAt(folder, MODEL_FILE))
+  const unread = [...failed, ...untakenFiles(folder, views, elements, modelFailed)].sort()
+  const unreadable = [
+    ...(modelFailed ? [MODEL_FILE] : []),
+    ...namedMarks(held).filter((mark) => failed.includes(mark)),
+  ]
+  return {
+    ...(unread.length ? { unread } : {}),
+    ...(unreadable.length ? { unreadable } : {}),
+  }
+}
+
+/** The mark files `scope.json` names, by path in the folder. */
+function namedMarks(held: ScopeFile): string[] {
+  return (held.logos ?? [])
+    .flatMap((entry) => (typeof entry?.file === 'string' ? [`${LOGOS_FOLDER}/${entry.file}`] : []))
+}
+
+/**
+ * The files that read and that the scope does not hold — see
+ * {@link readScopeFolder}. Every record reads as far as it reads (its number
+ * is in its name), and every picture and mark is bytes, so what is left out is
+ * a view that did not parse, a geometry with no view, a description of nobody,
+ * and a `model.json` that is not one.
+ */
+function untakenFiles(
+  folder: Folder,
+  views: ReadonlyMap<string, DesignDiagram | undefined>,
+  elements: readonly DesignElement[],
+  modelFailed: boolean,
+): string[] {
+  const ids = new Set(elements.map((element) => element.id))
+  const untaken: string[] = []
+  for (const path of folder.keys()) {
+    const [within, name, deeper] = path.split('/')
+    if (path === MODEL_FILE) {
+      if (modelFailed) untaken.push(path)
+    } else if (within === DIAGRAMS_FOLDER && deeper === undefined && name.endsWith('.json')) {
+      const stem = name.slice(0, -(name.endsWith(GEOMETRY_SUFFIX) ? GEOMETRY_SUFFIX : '.json').length)
+      if (!views.get(stem)) untaken.push(path)
+    } else if (within === DOCS_FOLDER && deeper === undefined && name.endsWith('.md')) {
+      if (!ids.has(name.slice(0, -'.md'.length))) untaken.push(path)
+    }
+  }
+  return untaken
 }

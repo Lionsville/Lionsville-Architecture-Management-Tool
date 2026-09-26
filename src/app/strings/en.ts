@@ -38,12 +38,17 @@ export const EN = {
    */
   'shell.diskChanged': 'This project changed on disk. Nothing here is unsaved.',
   /**
-   * A scope whose `model.json` is there and did not parse
+   * A scope with a file it cannot be understood without that did not read —
+   * a `model.json` that did not parse, a mark the header names
    * (`ScopeSnapshot.unreadable`, ADR-0028). What was read is shown and nothing
-   * may be changed, because a save would write an empty model over the one
-   * that did not read.
+   * may be changed, because a save would write the scope without it.
    */
-  'shell.unreadableScope': '{files} in this scope could not be read, so it is open to be looked at and not changed: saving would write an empty model over it. Mend the file, or take it back from the history, and open the scope again.',
+  'shell.unreadableScope': '{files} in this scope could not be read, so it is open to be looked at and not changed: saving without it would lose what it holds. Mend the file, or take it back from the history, and open the scope again.',
+  /**
+   * A move refused because a file of a scope in it could not be read: the
+   * old folder is removed after the move, and that file would go with it.
+   */
+  'shell.unreadNotMoved': 'This scope was not moved: a file in it could not be read, and moving would have removed it with the old folder. Mend the file, or take it back from the history, and try again.',
   /**
    * A change refused because the scope is only read: a viewer's, or one a
    * file of which did not read. Said by the session, whichever way the change

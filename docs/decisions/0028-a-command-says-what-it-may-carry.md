@@ -105,6 +105,26 @@ the whole tree leaves such a scope out rather than counting it as defining
 nothing — and a walk of the tree that fails rejects rather than answering an
 empty tree.
 
+> **Amended 26 September 2026: a save removes only what a read took in.** The
+> rule above was one case of a wider one. A save writes what the snapshot
+> holds and removes the format's files it no longer produces, so any file the
+> read left out is one the next save removes as *no longer wanted*, with
+> nobody having wanted that: a description held open by a sync client, a
+> picture whose permission was withdrawn, a view that did not parse. So the
+> reader says what it did not take in (`ScopeSnapshot.unread`: a file that was
+> there and would not read, or read and said nothing the scope could hold),
+> the session carries it into every save, and a save neither removes nor
+> writes over any of them — one that would write over one is refused. A file
+> that will not read at the moment of saving is treated the same, whoever made
+> the snapshot. What the scope cannot be understood without is on
+> `unreadable` as well and opens it read-only: `model.json`, without which
+> the scope is written as an empty model, and a mark `scope.json` names, which
+> the header written without it would drop. A move refuses a scope with anything on
+> `unread`, because it removes the old folder. The desktop's main process
+> answers a file that is there and will not read as a refusal rather than as
+> absence, which is what it had been, and `describeScopeStore` holds every
+> filling that keeps a scope in pieces to this.
+
 ### Consequences
 
 * Good: one malformed step can no longer replace a list of the model, on

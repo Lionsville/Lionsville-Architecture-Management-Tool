@@ -134,6 +134,33 @@ describe('project settings on an open project', () => {
     expect(await store.load('acme/landscape')).toBeUndefined()
   })
 
+  /**
+   * A move writes the scope at its new address and removes the old folder, so
+   * a file the read left out would go with the folder (ADR-0028, amended).
+   */
+  it('refuses to move a project a file of which its read left out, and says so', async () => {
+    const opened = { ...project(), unread: ['docs/crews.md'] }
+    const store = new InMemoryScopeStore([opened, bareScope('globex', 'Globex', 'domain')])
+    const removed: ScopePath[] = []
+    const held = {
+      list: () => store.list(),
+      load: (ref: ScopePath) => store.load(ref),
+      save: (one: ScopeSnapshot) => store.save(one),
+      remove: (ref: ScopePath) => { removed.push(ref); return store.remove(ref) },
+    }
+    renderApp({ scopes: held, boot: { initialProject: opened } })
+
+    fireEvent.click(screen.getByText('Settings…'))
+    fireEvent.mouseDown(screen.getByLabelText('Group'))
+    fireEvent.click(await screen.findByRole('option', { name: 'Globex' }))
+    fireEvent.click(screen.getByText('Save'))
+
+    expect(await screen.findByText(/This scope was not moved/)).toBeTruthy()
+    expect(removed).toEqual([])
+    expect(await store.load('globex/landscape')).toBeUndefined()
+    expect(await store.load('acme/landscape')).toBeTruthy()
+  })
+
   it('keeps the editing the session has done', async () => {
     const store = show(project())
     fireEvent.click(screen.getByTestId('edit-the-diagram'))

@@ -12,7 +12,7 @@
  * untested here is `ipcRenderer.invoke` itself, which is a function call.
  */
 import { afterAll, describe, expect, it } from 'vitest'
-import { mkdtempSync, realpathSync, rmSync } from 'node:fs'
+import { chmodSync, existsSync, mkdtempSync, realpathSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
 import {
@@ -69,7 +69,25 @@ function storeOver(folder: string): FileSystemScopeStore {
   )
 }
 
-describeScopeStore('desktop folder over IPC', () => storeOver(freshFolder()))
+/** A mode of 0 refuses a read only where modes are kept and nobody is root. */
+const modesBite = process.platform !== 'win32' && process.getuid?.() !== 0
+
+describeScopeStore('desktop folder over IPC', () => storeOver(freshFolder()), !modesBite ? {} : {
+  // A file main cannot read, as the disk refuses it: no permission to read.
+  refusing: () => {
+    const folder = freshFolder()
+    let refused: string | undefined
+    return {
+      store: storeOver(folder),
+      refuse: (path, file) => {
+        // A file the save removed has no permission to give back; the clause says so.
+        if (refused && existsSync(refused)) chmodSync(refused, 0o644)
+        refused = file === undefined ? undefined : join(folder, path, file)
+        if (refused) chmodSync(refused, 0o000)
+      },
+    }
+  },
+})
 
 describeDirectoryHandle('desktop folder over IPC', () => {
   const folder = freshFolder()

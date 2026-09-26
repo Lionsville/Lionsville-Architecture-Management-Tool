@@ -1127,13 +1127,16 @@ export function useModelSession(deps: {
 
 /**
  * The fields of a scope that are about the scope rather than its document,
- * absent where absent so the file is written back as it was read.
+ * absent where absent so the file is written back as it was read — and the
+ * files the read did not take in, so every save of this session leaves them
+ * where they are (`ScopeSnapshot.unread`).
  */
-function scopeHeader(project: ScopeSnapshot): Pick<ScopeSnapshot, 'kind' | 'client' | 'links'> {
+function scopeHeader(project: ScopeSnapshot): Pick<ScopeSnapshot, 'kind' | 'client' | 'links' | 'unread'> {
   return {
     ...(project.kind !== undefined ? { kind: project.kind } : {}),
     ...(project.client !== undefined ? { client: project.client } : {}),
     ...(project.links !== undefined ? { links: project.links } : {}),
+    ...(project.unread?.length ? { unread: project.unread } : {}),
   }
 }
 

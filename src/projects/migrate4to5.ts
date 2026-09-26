@@ -127,12 +127,17 @@ export function foldFolderToFormat5(files: readonly FolderFile[]): FolderFile[] 
  * may not know the migration. Every reader of a folder — the store, the
  * container, the history — goes through this one door, so there is nowhere a
  * version can be forgotten.
+ *
+ * `failed` are the files that were there and would not read, which the
+ * snapshot says it did not take in (`ScopeSnapshot.unread`). A file a fold
+ * consumed is taken in — it is what a header or a model was made from — and a
+ * save removes it, which is how a superseded file leaves the folder.
  */
 export function openScopeFolder(
-  files: readonly FolderFile[], path: ScopePath,
+  files: readonly FolderFile[], path: ScopePath, failed: readonly string[] = [],
 ): ScopeSnapshot | undefined {
-  const now = scopeFromFolder(files, path)
+  const now = scopeFromFolder(files, path, failed)
   if (now) return now
   const folded = foldFolderToFormat5(files)
-  return folded ? scopeFromFolder(folded, path) : undefined
+  return folded ? scopeFromFolder(folded, path, failed) : undefined
 }

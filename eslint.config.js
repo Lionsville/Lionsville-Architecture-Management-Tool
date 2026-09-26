@@ -405,7 +405,7 @@ export const GROWN = {
   'src/app/organisation/OrganisationScreen.tsx': { complexity: 51, lines: 350 },
   'src/app/organisation/ScopeSettingsDialog.tsx': { lines: 160 },
   'src/app/organisation/organisationPages.ts': { complexity: 30 },
-  'src/app/organisation/useOrganisation.ts': { lines: 321 },
+  'src/app/organisation/useOrganisation.ts': { lines: 320 },
   'src/app/useModelSession.ts': { lines: 336 },
   'src/business/ui/FunctionInspector.tsx': { lines: 153 },
   'src/business/ui/SheetPage.tsx': { complexity: 68, lines: 359 },

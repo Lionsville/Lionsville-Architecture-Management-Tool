@@ -23,11 +23,12 @@ export const EN = {
    */
   'shell.folderUnavailable': 'That folder is not available. Choose it again, or reconnect the drive it is on.',
   /**
-   * A save refused because the scope's `model.json` on disk did not parse:
-   * writing would put an empty model in its place and remove every
-   * description filed beside it (ADR-0028).
+   * A save refused because of a file of the scope that did not read: a
+   * `model.json` that did not parse, which writing would put an empty model in
+   * place of; or a file the read left out, which the save would write over
+   * (ADR-0028, amended).
    */
-  'shell.unreadableNotSaved': 'This scope was not saved: its model.json could not be read, and saving would have written an empty model over it. Mend the file, or take it back from the history, and open the scope again.',
+  'shell.unreadableNotSaved': 'This scope was not saved: a file of it could not be read, and saving would have written over it or lost what it holds. Mend the file, or take it back from the history, and open the scope again.',
   /**
    * A whole write of a scope that somebody else wrote since it was read
    * (`projects/revision.ts`). Nothing was written, which is the point: the

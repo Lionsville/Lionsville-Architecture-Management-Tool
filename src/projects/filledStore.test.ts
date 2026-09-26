@@ -10,7 +10,7 @@
  * one calls them as the store.
  */
 import { describe, expect, it } from 'vitest'
-import { FakeDirectory } from '../adapters/fileSystem/fakeDirectory'
+import { FakeDirectory, refusingReads } from '../adapters/fileSystem/fakeDirectory'
 import { FileSystemScopeStore } from '../adapters/fileSystem/FileSystemScopeStore'
 import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
 import { describeScopeStore, sampleScope, SAMPLE_PATH } from '../ports/ScopeStore.contract'
@@ -32,6 +32,14 @@ class PrivateStore implements ScopeStore {
 describeScopeStore('a folder store with an index of its own', () => {
   const built = new FileSystemScopeStore(new FakeDirectory())
   return filledStore(built, (store) => ({ models: () => store.models!() }))
+}, {
+  refusing: () => {
+    const held = refusingReads(new FakeDirectory())
+    return {
+      store: filledStore(new FileSystemScopeStore(held.handle), (store) => ({ models: () => store.models!() })),
+      refuse: (path, file) => held.refuse(file === undefined ? undefined : [path, file].filter(Boolean).join('/')),
+    }
+  },
 })
 
 describe('filledStore', () => {

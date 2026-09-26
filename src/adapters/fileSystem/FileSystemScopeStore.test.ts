@@ -15,14 +15,22 @@
  * files, and about the fact that a folder has other inhabitants.
  */
 import { describe, expect, it } from 'vitest'
-import { describeScopeStore, sampleScope, scopeAt } from '../../ports/ScopeStore.contract'
+import { describeScopeStore, SAMPLE_PATH, sampleScope, scopeAt } from '../../ports/ScopeStore.contract'
 import { flattenScopes } from '../../projects/scope'
 import { RecordingDiagnostics } from '../memory/RecordingDiagnostics'
-import { FakeDirectory } from './fakeDirectory'
+import { FakeDirectory, refusingReads } from './fakeDirectory'
 import { FileSystemScopeStore } from './FileSystemScopeStore'
 import type { DirectoryHandleLike, FileHandleLike } from './FileSystemScopeStore'
 
-describeScopeStore('folder on disk', () => new FileSystemScopeStore(new FakeDirectory()))
+describeScopeStore('folder on disk', () => new FileSystemScopeStore(new FakeDirectory()), {
+  refusing: () => {
+    const held = refusingReads(new FakeDirectory())
+    return {
+      store: new FileSystemScopeStore(held.handle),
+      refuse: (path, file) => held.refuse(file === undefined ? undefined : [path, file].filter(Boolean).join('/')),
+    }
+  },
+})
 
 describe('FileSystemScopeStore — the folder is somebody else’s too', () => {
   const setup = () => {
@@ -289,6 +297,118 @@ describe('FileSystemScopeStore — the folder is somebody else’s too', () => {
     // The index does not count it as a scope that defines nothing.
     expect((await store.models()).map((held) => held.path)).not.toContain(scope.path)
     expect(await store.descriptions(scope.path)).toBeUndefined()
+  })
+
+  /**
+   * A file that is there and will not read — a sync client holding it,
+   * permission withdrawn — was left out of the scope it was opened as, and the
+   * next save removed it as a file the scope no longer wanted. Nobody had
+   * wanted that: the read never held it. A save removes only what a read took
+   * in (ADR-0028, amended).
+   */
+  describe('a file the read did not take in', () => {
+    const described = () => {
+      const scope = sampleScope()
+      scope.model.elements = scope.model.elements.map((one) => ({ ...one, description: `All about ${one.name}.` }))
+      return scope
+    }
+    const landscape = async (root: FakeDirectory) => await (await root.getDirectoryHandle('acme-logistics'))
+      .getDirectoryHandle('landscape') as FakeDirectory
+
+    it('keeps a description it could not read through the next save, and writes the rest', async () => {
+      const { root, store } = setup()
+      await store.save(described())
+      const held = new FileSystemScopeStore(refusing(root, { read: 'crews.md', cause: new Error('NotReadableError: held open') }))
+
+      const opened = await held.load(SAMPLE_PATH)
+      expect(opened?.unread).toEqual(['docs/crews.md'])
+      expect(opened?.unreadable).toBeUndefined()
+      await held.save({ ...opened!, model: { ...opened!.model, name: 'Renamed' } })
+
+      const again = await store.load(SAMPLE_PATH)
+      expect(again?.model.name).toBe('Renamed')
+      expect(again?.model.elements.find((one) => one.id === 'crews')?.description).toBe('All about Crews.')
+    })
+
+    it('keeps a picture it could not read through the next save', async () => {
+      const { root, store } = setup()
+      await store.save({ ...described(), imageLibrary: [{ file: 'map.png', url: 'data:image/png;base64,iVBORw0KGgo=' }] })
+      const held = new FileSystemScopeStore(refusing(root, { read: 'map.png', cause: new Error('NotReadableError: held open') }))
+
+      const opened = await held.load(SAMPLE_PATH)
+      expect(opened?.imageLibrary).toBeUndefined()
+      expect(opened?.unread).toEqual(['images/map.png'])
+      await held.save(opened!)
+
+      expect(root.paths()).toContain('acme-logistics/landscape/images/map.png')
+      expect((await store.load(SAMPLE_PATH))?.imageLibrary?.map((one) => one.file)).toEqual(['map.png'])
+    })
+
+    it('opens a scope whose model.json will not read to be looked at, and writes nothing over it', async () => {
+      const { root, store } = setup()
+      await store.save(described())
+      const before = root.paths()
+      const model = await read(root, 'acme-logistics/landscape/model.json')
+      const held = new FileSystemScopeStore(refusing(root, { read: 'model.json', cause: new Error('NotReadableError: held open') }))
+
+      const opened = await held.load(SAMPLE_PATH)
+      expect(opened?.unreadable).toEqual(['model.json'])
+
+      // As opened; rebuilt without the mark while the file still will not
+      // read; and rebuilt without the mark once it reads again, by a session
+      // that carried what its read left out — all refused.
+      await expect(held.save(opened!)).rejects.toMatchObject({ key: 'shell.unreadableNotSaved' })
+      await expect(held.save({ ...opened!, unreadable: undefined, unread: undefined }))
+        .rejects.toMatchObject({ key: 'shell.unreadableNotSaved' })
+      await expect(store.save({ ...opened!, unreadable: undefined }))
+        .rejects.toMatchObject({ key: 'shell.unreadableNotSaved' })
+
+      expect(root.paths()).toEqual(before)
+      expect(await read(root, 'acme-logistics/landscape/model.json')).toBe(model)
+      expect((await store.load(SAMPLE_PATH))?.model.elements.map((one) => one.description))
+        .toEqual(['All about Crews.', 'All about Reisinformatie.'])
+    })
+
+    it('keeps a view whose definition does not parse, and its geometry, through the next save', async () => {
+      const { root, store } = setup()
+      await store.save(described())
+      const folder = await landscape(root)
+      const diagrams = await folder.getDirectoryHandle('diagrams') as FakeDirectory
+      diagrams.writeRaw('cd.json', '{ "id": "cd", <<<<<<< HEAD')
+
+      const opened = await store.load(SAMPLE_PATH)
+      expect(opened?.model.diagrams.map((one) => one.id)).toEqual(['l7'])
+      expect(opened?.unread).toEqual(['diagrams/cd.geometry.json', 'diagrams/cd.json'])
+      await store.save(opened!)
+
+      expect(root.paths()).toContain('acme-logistics/landscape/diagrams/cd.json')
+      expect(root.paths()).toContain('acme-logistics/landscape/diagrams/cd.geometry.json')
+    })
+
+    it('refuses a save that would write over a file its read did not take in', async () => {
+      const { root, store } = setup()
+      await store.save(described())
+      const held = new FileSystemScopeStore(refusing(root, { read: 'crews.md', cause: new Error('NotReadableError: held open') }))
+      const opened = await held.load(SAMPLE_PATH)
+
+      const written = { ...opened!, model: { ...opened!.model, elements: opened!.model.elements
+        .map((one) => (one.id === 'crews' ? { ...one, description: 'Written over.' } : one)) } }
+      await expect(store.save(written)).rejects.toMatchObject({ key: 'shell.unreadableNotSaved' })
+      expect(await read(root, 'acme-logistics/landscape/docs/crews.md')).toContain('All about Crews.')
+    })
+
+    it('neither writes over nor removes a file that will not read now, whoever made the snapshot', async () => {
+      const { root, store } = setup()
+      await store.save(described())
+      const held = new FileSystemScopeStore(refusing(root, { read: 'reisinfo.md', cause: new Error('NotReadableError: held open') }))
+
+      const fewer = described()
+      fewer.model.elements = fewer.model.elements.filter((one) => one.id !== 'reisinfo')
+      await held.save(fewer)
+      expect(root.paths()).toContain('acme-logistics/landscape/docs/reisinfo.md')
+
+      await expect(held.save(described())).rejects.toMatchObject({ key: 'shell.unreadableNotSaved' })
+    })
   })
 
   it('rejects a walk of the tree that fails, rather than answering that the tree defines nothing', async () => {

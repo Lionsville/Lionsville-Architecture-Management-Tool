@@ -493,6 +493,13 @@ function useShellParts(props: AppProps): ShellParts {
       }
 
       const moved = moving && current.path !== next.path
+      // A move writes the scope at its new address and removes the old folder,
+      // so a file the read did not take in would go with the folder and not
+      // arrive at the other end (`ScopeSnapshot.unread`).
+      if (moved && current.unread?.length) {
+        failed('applyProjectSettings.unread', undefined, 'shell.unreadNotMoved')
+        return undefined
+      }
       // A ref is an address, and a move carries the ones pointing into this
       // scope (ADR-0012 §3) — the same pass the organisation screen's move
       // makes, because it is the same act from a different dialog.

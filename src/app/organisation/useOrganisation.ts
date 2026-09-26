@@ -39,7 +39,7 @@ import { isBoardKind } from '../../model/placement'
 import { normaliseLinks } from '../../projects/links'
 import { applyRefPatch } from '../../projects/readdress'
 import type { RefPatch } from '../../projects/readdress'
-import { reasonOf } from '../../platform/errors'
+import { reasonOf, ShellError } from '../../platform/errors'
 import {
   ancestorScopes, parentScope, ROOT_SCOPE, scopePathFor, scopePathLabel,
 } from '../../projects/scopePath'
@@ -151,6 +151,34 @@ export type Organisation = {
   copyExample: (example: ExampleProject) => void
   /** Give the root a name, from the field a fresh folder shows instead of a heading. */
   nameOrganisation: (name: string) => void
+}
+
+/** A scope filed under one being moved, as read, and where it goes. */
+type MovedScope = { from: ScopePath; to: ScopePath; scope: ScopeSnapshot }
+
+/**
+ * What a move writes under the scope it moves, read before anything is
+ * written. A move removes the old folder once the subtree stands at its new
+ * address, so a scope whose read left a file out (`ScopeSnapshot.unread`,
+ * ADR-0028) would lose that file with it: the move is refused before it
+ * starts, the moved scope's own read (`held`) included.
+ */
+async function readTheMove(
+  scopes: Pick<ScopeLibrary, 'load'>, held: ScopeSnapshot | undefined, subtree: ScopeSummary | undefined, to: ScopePath,
+): Promise<MovedScope[]> {
+  if (held?.unread?.length) throw new ShellError('shell.unreadNotMoved')
+  const read: MovedScope[] = []
+  for (const pair of subtree ? movedPaths(subtree, to).slice(1) : []) {
+    const scope = await scopes.load(pair.from)
+    if (scope?.unread?.length) throw new ShellError('shell.unreadNotMoved')
+    if (scope) read.push({ ...pair, scope })
+  }
+  return read
+}
+
+/** What to say about a move that did not start: its own refusal, or that saving failed. */
+function moveRefusal(cause: unknown): 'shell.unreadNotMoved' | 'group.saveFailed' {
+  return cause instanceof ShellError && cause.key === 'shell.unreadNotMoved' ? cause.key : 'group.saveFailed'
 }
 
 export function useOrganisation({
@@ -462,11 +490,13 @@ export function useOrganisation({
        * that has not started, which is why it has a guard of its own.
        */
       let carried = new Map<ScopePath, RefPatch>()
+      let beneath: readonly MovedScope[] = []
       if (moving) {
         try {
+          beneath = await readTheMove(scopes, held, subtree, to)
           carried = await carryRefs({ scopes, from: path, to })
         } catch (cause) {
-          onFailure('organisation.settings.readdress', cause, 'group.saveFailed')
+          onFailure('organisation.settings.readdress', cause, moveRefusal(cause))
           return
         }
       }
@@ -482,13 +512,10 @@ export function useOrganisation({
           // rename (`rewriteScope.ts`).
           await rewriteScope(scopes, path, patched)
         }
-        if (moving && subtree) {
-          // The scope itself is already written; what is left is everything
-          // filed under it, parents first.
-          for (const pair of movedPaths(subtree, to).slice(1)) {
-            const child = await scopes.load(pair.from)
-            if (child) await scopes.save(applyRefPatch({ ...child, path: pair.to }, carried.get(pair.from)))
-          }
+        // The scope itself is already written; what is left is everything
+        // filed under it, parents first.
+        for (const child of beneath) {
+          await scopes.save(applyRefPatch({ ...child.scope, path: child.to }, carried.get(child.from)))
         }
       } catch (cause) {
         onFailure('organisation.settings.save', cause, 'group.saveFailed')

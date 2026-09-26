@@ -417,6 +417,33 @@ describe('useOrganisation', () => {
         'remove rail',
       ])
     })
+
+    /**
+     * A move writes the subtree at its new address and removes the old folder.
+     * A file a read left out (`ScopeSnapshot.unread`) is not written at the new
+     * address, so the removal would take it with the folder (ADR-0028, amended).
+     */
+    it('refuses to move a scope a file of which its read left out, before it writes anything', async () => {
+      const writes: string[] = []
+      const store = new InMemoryScopeStore(tree())
+      const { held, failures } = mountWith({
+        models: () => store.models(),
+        list: () => store.list(),
+        load: async (path) => {
+          const scope = await store.load(path)
+          return scope && path === 'rail/rolling-stock' ? { ...scope, unread: ['docs/wms.md'] } : scope
+        },
+        save: (one) => { writes.push(`save ${one.path}`); return store.save(one) },
+        remove: (path) => { writes.push(`remove ${path}`); return store.remove(path) },
+      }, store)
+      await settle()
+      await act(async () => { held().applySettings('rail', { name: 'Rail', parent: 'freight' }) })
+      await settle()
+
+      expect(writes).toEqual([])
+      expect(failures).toContain('organisation.settings.readdress')
+      expect(await store.load('rail/rolling-stock')).toBeDefined()
+    })
   })
 
   it('folds a scope shut and open again', async () => {

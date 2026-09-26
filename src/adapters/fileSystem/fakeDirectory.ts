@@ -137,6 +137,41 @@ export class FakeDirectory implements DirectoryHandleLike {
   }
 }
 
+/**
+ * The same folder, with the reads of one file refused for as long as asked —
+ * the way a file a sync client holds open, or one whose permission was
+ * withdrawn, refuses them. `path` is from the folder's root; `undefined`
+ * reads everything again. Everything else, writes included, goes through.
+ */
+export function refusingReads(folder: DirectoryHandleLike): {
+  handle: DirectoryHandleLike
+  refuse(path: string | undefined): void
+} {
+  let refused: string | undefined
+  const file = (held: FileHandleLike, path: string): FileHandleLike => ({
+    kind: 'file',
+    name: held.name,
+    getFile: () => (path === refused ? Promise.reject(new Error('NotReadableError: held open')) : held.getFile()),
+    createWritable: () => held.createWritable(),
+  })
+  const wrap = (held: DirectoryHandleLike, within: string): DirectoryHandleLike => {
+    const at = (name: string) => (within ? `${within}/${name}` : name)
+    return {
+      kind: 'directory',
+      name: held.name,
+      getDirectoryHandle: async (name, options) => wrap(await held.getDirectoryHandle(name, options), at(name)),
+      getFileHandle: async (name, options) => file(await held.getFileHandle(name, options), at(name)),
+      removeEntry: (name, options) => held.removeEntry(name, options),
+      values: async function* () {
+        for await (const entry of held.values()) {
+          yield entry.kind === 'directory' ? wrap(entry, at(entry.name)) : file(entry, at(entry.name))
+        }
+      },
+    }
+  }
+  return { handle: wrap(folder, ''), refuse: (path) => { refused = path } }
+}
+
 function joinBytes(chunks: readonly (string | Uint8Array)[]): Uint8Array {
   const parts = chunks.map(bytesOf)
   const joined = new Uint8Array(parts.reduce((total, part) => total + part.length, 0))
