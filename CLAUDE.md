@@ -59,6 +59,12 @@ A few seconds: typecheck and lint of everything, plus all 4544 tests. Run it
 after every change. The tests run with coverage on, and `build/coverage.ts`
 prints one line per module of the import matrix and fails below that module's
 floor — the level it was measured at, written down so it can only go up.
+The check also holds what the app is built from to `build/dependencyPolicy.ts`
+(`build/dependencies.ts`; `npm run deps` on its own): one installed version of
+React, MUI and Emotion; every package the shipped source imports on a list
+with its licence and why; every shipped licence in the allowed set or a named
+exception; a lockfile of registry packages with hashes. A new dependency fails
+it until its line is written.
 That is the whole feedback loop — there is no gate to pass, no ceremony, no
 reviewer step. It is fast on purpose so you run it constantly instead of
 batching up and discovering three problems at once.
@@ -71,7 +77,11 @@ Adds a production build. Run it once before you hand work back, not during.
 The build has a budget (`build/bundleBudget.ts`): a ceiling per file and one
 for the whole, and ELK's engine in one file only — it ships as the worker, and
 `build/oneElk.ts` answers the self-contained bundle's import with it. Over the
-budget the build fails; raising it is a commit that says why.
+budget the build fails; raising it is a commit that says why. Every build also
+reads its own output (`build/bundleChecks.ts`): React once, nothing only Node
+has, no secret or `VITE_*` value, every bundled package in the notices, and no
+word from the list the pre-push hook reads when there is one. `smoke:run`
+refuses an `out/` older than its sources (`build/fresh.ts`).
 
 ```bash
 npm run verify
