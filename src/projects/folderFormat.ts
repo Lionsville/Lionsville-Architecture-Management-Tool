@@ -499,6 +499,21 @@ export function isFormatPath(path: string): boolean {
   return false
 }
 
+/**
+ * Whether a file of the format is bytes rather than text: every picture but
+ * an SVG, which is XML and diffs as XML.
+ *
+ * The one rule for every reader, because the writers already follow it — a
+ * picture or a mark is written as the bytes it is. It used to be `.png` alone
+ * at every reader, so a JPEG or a WebP written as bytes was read back as text,
+ * decoded as UTF-8 and written out again altered: a picture that did not
+ * survive a working file or the next save of its scope.
+ */
+export function isBinaryPath(path: string): boolean {
+  const name = path.split('/').pop() ?? path
+  return isImageFile(name) && !name.toLowerCase().endsWith('.svg')
+}
+
 /** A record of the files, by path, for the readers below. */
 type Folder = Map<string, FolderFile>
 

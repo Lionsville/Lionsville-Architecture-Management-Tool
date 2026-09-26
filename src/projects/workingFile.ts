@@ -33,7 +33,7 @@ import { unzipSync, zipSync } from 'fflate'
 import { slug } from '../model/keys'
 import { WORKING_FILE_EXTENSION } from '../model/hostModel'
 import { bytesFromText, parseJson, textFromBytes } from './fileText'
-import { SCOPE_FILE, scopeFiles } from './folderFormat'
+import { isBinaryPath, SCOPE_FILE, scopeFiles } from './folderFormat'
 import { migrateSnapshot } from './migrate3to4'
 import { openScopeFolder } from './migrate4to5'
 import type { FolderFile } from './folderFormat'
@@ -143,9 +143,9 @@ function filesOfScope(files: readonly FolderFile[], root: string, roots: readonl
       : { path: file.path.slice(prefix.length), bytes: file.bytes }))
 }
 
-/** Text unless the extension says otherwise — the same rule the folder store uses. */
+/** Text unless the extension says otherwise — the same rule the folder store uses (`isBinaryPath`). */
 function fileFrom(path: string, bytes: Uint8Array): FolderFile {
-  return path.endsWith('.png') ? { path, bytes } : { path, text: textFromBytes(bytes) }
+  return isBinaryPath(path) ? { path, bytes } : { path, text: textFromBytes(bytes) }
 }
 
 /**

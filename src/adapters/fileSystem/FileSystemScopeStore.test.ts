@@ -611,3 +611,13 @@ async function copy(from: DirectoryHandleLike, to: DirectoryHandleLike): Promise
     await writable.close()
   }
 }
+
+describe('a picture that is not a PNG', () => {
+  it('reads back as the bytes that were written, where it used to be read as text and written back altered', async () => {
+    const store = new FileSystemScopeStore(new FakeDirectory())
+    const bytes = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x80, 0x81, 0x00, 0xfe])
+    const url = `data:image/jpeg;base64,${btoa(String.fromCharCode(...bytes))}`
+    await store.save({ ...sampleScope(), imageLibrary: [{ file: 'photo.jpg', url }] })
+    expect((await store.load(SAMPLE_PATH))?.imageLibrary?.[0].url).toBe(url)
+  })
+})

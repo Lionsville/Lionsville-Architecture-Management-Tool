@@ -53,7 +53,7 @@ import {
   modelUnreadable,
   SCOPE_FILE,
   TRANSITIONS_FOLDER, OBSERVATIONS_FOLDER,
-  SCOPE_FOLDERS, SCOPE_FORMAT_VERSION, scopeFiles, scopeSummaryFrom,
+  SCOPE_FOLDERS, SCOPE_FORMAT_VERSION, scopeFiles, scopeSummaryFrom, isBinaryPath,
 } from '../../projects/folderFormat'
 import type { FolderFile } from '../../projects/folderFormat'
 import { markdownBody } from '../../projects/fileText'
@@ -88,9 +88,9 @@ export type {
   DirectoryHandleLike, FileHandleLike, FileLike, WritableLike,
 } from '../../ports/DirectoryHandle'
 
-/** Text unless the extension says otherwise. Only the bitmaps are bytes. */
+/** Text unless the extension says otherwise: every picture but an SVG is bytes (`isBinaryPath`). */
 function isBinary(path: string): boolean {
-  return path.endsWith('.png')
+  return isBinaryPath(path)
 }
 
 /**

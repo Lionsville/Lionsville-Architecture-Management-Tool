@@ -14,6 +14,7 @@ import { unzipSync, zipSync } from 'fflate'
 import { WORKING_FILE_TYPE } from '../model/hostModel'
 import { bytesFromText, stableJson, textFromBytes } from './fileText'
 import { SCOPE_FORMAT_VERSION, scopeFiles } from './folderFormat'
+import { bareScope } from './scope'
 import type { ScopeSnapshot } from './scope'
 import { isZip, openDocumentBytes, workingFileBytes, workingFileName } from './workingFile'
 
@@ -328,5 +329,22 @@ describe('openDocumentBytes', () => {
       .toEqual({ ok: false, messageKey: 'shell.unknownFile' })
     expect(openDocumentBytes(new Uint8Array([0x50, 0x4b, 0x03, 0x04, 9, 9]), into))
       .toEqual({ ok: false, messageKey: 'shell.unknownFile' })
+  })
+})
+
+describe('a picture that is not a PNG', () => {
+  it('survives a working file byte for byte, where it used to be read back as text', () => {
+    const bytes = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x80, 0x81, 0x00, 0xfe])
+    const url = `data:image/jpeg;base64,${btoa(String.fromCharCode(...bytes))}`
+    const withPicture: ScopeSnapshot = {
+      path: '',
+      model: { name: 'Pictures', elements: [], relations: [], diagrams: [laidOut({ id: 'd', kind: 'layer7', name: 'D', placements: [] })] },
+      activeDiagramId: 'd',
+      logoLibrary: [],
+      imageLibrary: [{ file: 'photo.jpg', url }],
+    }
+    const opened = openDocumentBytes(workingFileBytes([withPicture]), bareScope('', ''))
+    if (!opened.ok) throw new Error('did not open')
+    expect(opened.scope.imageLibrary?.[0].url).toBe(url)
   })
 })
