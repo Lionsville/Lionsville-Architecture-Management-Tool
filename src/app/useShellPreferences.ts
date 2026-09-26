@@ -114,7 +114,9 @@ export function useShellPreferences(deps: {
   // without a refresh.
   const systemDark = useMediaQuery('(prefers-color-scheme: dark)')
   const mode: 'light' | 'dark' = themeMode === 'system' ? (systemDark ? 'dark' : 'light') : themeMode
-  const theme = useMemo(() => shellTheme(mode), [mode])
+  // The language rides on the theme as well as in context: MUI's own labels
+  // (an autocomplete's buttons, a toast's close) are read off the theme.
+  const theme = useMemo(() => shellTheme(mode, language), [mode, language])
 
   return {
     preferences, language, themeMode, theme,

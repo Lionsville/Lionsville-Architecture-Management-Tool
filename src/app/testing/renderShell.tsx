@@ -73,7 +73,7 @@ export type ShellRender = RenderResult & {
 
 export function renderShell(node: ReactElement, options: ShellOptions = {}): ShellRender {
   const { language = 'en', mode = 'dark' } = options
-  const theme = shellTheme(mode)
+  const theme = shellTheme(mode, language)
   const wrapper = ({ children }: { children: ReactNode }) =>
     <Surroundings theme={theme} language={language}>{children}</Surroundings>
 

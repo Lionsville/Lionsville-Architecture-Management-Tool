@@ -29,7 +29,17 @@
  * resembles it.
  */
 import { alpha, createTheme } from '@mui/material/styles'
-import type { Theme } from '@mui/material/styles'
+import type { Theme, ThemeOptions } from '@mui/material/styles'
+import { deDE, nlNL } from '@mui/material/locale'
+import type { Language } from '../i18n'
+
+/**
+ * MUI's own words — an autocomplete's clear, open and close buttons and what
+ * its list says when it is empty, a toast's close button — in the language
+ * that is on. MUI ships a locale for each language the app speaks but its own
+ * English, which is MUI's default and needs none.
+ */
+const MUI_LOCALE: Partial<Record<Language, ThemeOptions>> = { nl: nlNL, de: deDE }
 
 /**
  * The outline of a field at rest (1.4.11). MUI draws it at 23 % of the ink,
@@ -44,7 +54,7 @@ function outlineOver(ink: string, mode: 'light' | 'dark'): string {
   return alpha(ink, mode === 'dark' ? 0.42 : 0.46)
 }
 
-export function shellTheme(mode: 'light' | 'dark'): Theme {
+export function shellTheme(mode: 'light' | 'dark', language: Language = 'en'): Theme {
   const dark = mode === 'dark'
   // Material's ink in the light mode, said so the field outline can be read off it.
   const ink = dark ? '#e4e7ee' : 'rgba(0, 0, 0, 0.87)'
@@ -81,5 +91,5 @@ export function shellTheme(mode: 'light' | 'dark'): Theme {
     // accent, inset where a parent clips (a tab, a menu item) — in place of the
     // faint tint a focused button gets by default, which nobody could find.
     focusVisible: true,
-  })
+  }, MUI_LOCALE[language] ?? {})
 }
