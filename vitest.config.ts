@@ -38,5 +38,9 @@ export default defineConfig({
     // The date tests were written against a fixed zone. Not optional, so it is
     // here rather than in front of a command someone has to remember.
     env: { TZ: 'UTC' },
+    // A test fails when React complained while it ran — a key, act(), a DOM
+    // prop, an error a boundary drew over — rather than passing with the
+    // sentence in its scrollback (`src/app/testing/reactComplaints.ts`).
+    setupFiles: ['src/app/testing/reactComplaints.ts'],
   },
 })

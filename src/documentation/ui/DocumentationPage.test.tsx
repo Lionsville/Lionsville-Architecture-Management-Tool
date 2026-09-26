@@ -52,7 +52,8 @@ function model(main: DesignElement): DesignModel {
   return {
     name: 'Design',
     diagrams: [diagram()],
-    elements: [main, billing, planner, offDiagram],
+    // Once each: the element the page is on may be one of the three others.
+    elements: [main, ...[billing, planner, offDiagram].filter((other) => other.id !== main.id)],
     relations: [],
   };
 }

@@ -13,7 +13,7 @@
  * A standing notice rather than a toast: it is true for the whole session, not
  * an event within it.
  */
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { laidOut } from '../model/testFixtures';
 import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { scopeTree } from '../projects/scope'
@@ -25,8 +25,12 @@ import type { ScopeSession } from './useModelSession'
 import type { Destination } from '../agent/screen'
 import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
 import { renderApp } from './testing/renderShell'
+import { installReactFlowMocks } from '../editor/reactFlowTestSetup'
 
 afterEach(() => cleanup())
+// Some of these open a scope, and the board it draws needs what jsdom lacks;
+// without it the pane threw into the editor's boundary on every such test.
+beforeAll(() => installReactFlowMocks())
 
 /**
  * A provider's *ask me again*, told to every listener.
