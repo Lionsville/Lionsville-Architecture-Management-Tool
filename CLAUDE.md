@@ -163,7 +163,12 @@ src/model/        What a landscape is made of, and the arithmetic over it.
                     commands/         one entry per kind of command, by family,
                                       and the table `apply` looks it up in —
                                       typed over `Command['type']`, so a command
-                                      with no entry does not compile
+                                      with no entry does not compile. Beside
+                                      each `apply`, its descriptor (ADR-0028):
+                                      the fields it carries, the keys its patch
+                                      may name (any other is refused), what it
+                                      writes (`writesOf`) and its guard
+                                      (`applyGuarded`)
                     activity          what a step is called, for a list to read
                     routes · floatingEdgeMath   where a line leaves a box
                     hostModel · fromInterchange · toInterchange · containerDiagram

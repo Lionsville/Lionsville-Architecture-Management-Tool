@@ -79,6 +79,11 @@ normalised model and returns the command that undoes it:
 apply(model, command): { model: Model; inverse: Command }
 ```
 
+> **Amended by ADR-0028.** The reducer no longer applies whatever it is handed:
+> each command's entry carries a descriptor — its fields, the keys its patch
+> may name, what it writes and who may write it — and a patch naming another
+> key is refused. The rest of this section is the original text.
+
 Undo is `apply(model, inverse)`; redo re-applies the original. The session owns
 the model, the undo stack and the command log. The editor is a view: it
 dispatches commands and holds nothing but ephemeral state — selection,
