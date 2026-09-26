@@ -35,7 +35,8 @@ import {
 } from './normalised'
 import { memberOf, nodeGeometryOf, placedNodes } from './placement'
 import { edgeRoutesOf, splitRoutes } from './routes'
-import type { DiagramSettings, Relation } from './types'
+import { FIXED_ON_A_STANDIN } from './standIn'
+import type { DesignElement, DiagramSettings, Relation } from './types'
 
 /** The same shape `projects/historyPath.ts` asks a history by; the model's own word for it. */
 export type RestoreSubject = { what: 'diagram' | 'description' | 'decision'; id: string }
@@ -122,7 +123,7 @@ function restoreProject(then: Model, now: Model, asOf: string): RestoreResult {
     const current = now.elements[id]
     if (!current) commands.push({ type: 'element.create', element: target })
     else {
-      const patch = differing(current, target)
+      const patch = ownFields(current, target, differing(current, target))
       if (Object.keys(patch).length) commands.push({ type: 'element.update', id, patch })
     }
   }
@@ -350,6 +351,25 @@ function differing<T extends object>(from: T, to: T): Partial<T> {
     if (!same(from[key], to[key])) patch[key] = to[key]
   }
   return patch
+}
+
+/**
+ * What of a stand-in's difference is this scope's to put back.
+ *
+ * A record that stood in then and stands in now carries the owner's detail,
+ * its two caches and its description as copies of what the defining scope
+ * says (`standIn.ts`); what they said at the snapshot is an older copy, not
+ * this scope's past. Restoring them would write another scope's facts here —
+ * which is what the one writer's guard refuses (ADR-0028) — and a refresh
+ * brings the caches up to date from the tree anyway.
+ */
+function ownFields(
+  current: DesignElement, target: DesignElement, patch: Partial<DesignElement>,
+): Partial<DesignElement> {
+  if (current.ref === undefined || target.ref === undefined) return patch
+  const own = { ...patch }
+  for (const field of FIXED_ON_A_STANDIN) delete own[field]
+  return own
 }
 
 const PROJECT_FIELDS = ['name', 'description', 'defaultAuthor', 'defaultAspectConfig'] as const

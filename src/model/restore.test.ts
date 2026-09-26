@@ -14,7 +14,7 @@ import type { Adr } from './adr'
 import type { HostModel } from './hostModel'
 import { fromArrays, toArrays } from './normalised'
 import type { Model } from './normalised'
-import { apply } from './reducer'
+import { apply, applyGuarded } from './reducer'
 import { restoreCommand } from './restore'
 import type { RestoreSubject } from './restore'
 import { summarise } from './activity'
@@ -207,6 +207,28 @@ describe('restoring the whole project', () => {
     })
     expect(refOf(restored(then(), linked, undefined).after)).toBeUndefined()
     expect(refOf(restored(linked, then(), undefined).after)).toBe('acme/retail')
+  })
+
+  /**
+   * A stand-in then and a stand-in now: its caches, its owner's detail and its
+   * description were copies of the defining scope's, and the snapshot's are
+   * only older copies. Restoring them would write another scope's facts here,
+   * which the guard of a writer shared with other authors refuses (ADR-0028) —
+   * and would refuse the whole restore with it.
+   */
+  it('leaves what a stand-in copies from its owner alone, and puts back what is this scope\'s', () => {
+    const standIn = (over: Partial<DesignElement>) => element('crm', 'CRM', { ref: 'acme/retail', ...over })
+    const earlier = then({ elements: [element('billing', 'Billing'), standIn({ name: 'CRM (old)', vendor: 'Old', accentColor: '#111111' })] })
+    const later = now({ elements: [element('billing', 'Billing'), standIn({ name: 'CRM', accentColor: '#222222' })] })
+    const result = restoreCommand(fromArrays(earlier), fromArrays(later), undefined, '2026-09-03')
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const applied = applyGuarded(fromArrays(later), result.command)
+    expect(applied.ok).toBe(true)
+    const crm = applied.ok ? applied.model.elements.crm : undefined
+    expect(crm?.name).toBe('CRM')
+    expect(crm?.vendor).toBeUndefined()
+    expect(crm?.accentColor).toBe('#111111')
   })
 
   it('creates the diagram of a restored element before deleting today\'s, so a landscape is never the last', () => {

@@ -7,26 +7,45 @@
  * transaction that knows its name.
  */
 import { NOTHING, reverse } from '../commands'
-import type { Command, ProjectPatch } from '../commands'
-import type { Model } from '../normalised'
+import type { Command } from '../commands'
 import { ok } from './handler'
-import type { CommandTable } from './handler'
+import type { CommandTable, PatchKeys } from './handler'
 import { patched } from './rows'
+import { patchWrites } from './writes'
+
+/**
+ * The model's own scalars, and nothing else of it (`ProjectPatch`).
+ *
+ * The one patch spread over the model itself rather than over a record in
+ * it, which is why a key outside this list is the refusal that matters most:
+ * `elements` or `diagrams` in a settings patch would replace a list of the
+ * scope with whatever came with it.
+ */
+const PROJECT_FIELDS: PatchKeys<'project.settings'> = {
+  name: true, description: true, defaultAuthor: true, defaultAspectConfig: true,
+}
 
 export const PROJECT_COMMANDS = {
   'project.settings': {
+    carries: { patch: true },
+    patch: { keys: PROJECT_FIELDS, row: (model) => model },
+    writes: (command) => patchWrites('project', command.patch),
     apply(model, command, { meta }) {
-      const { row, inverse } = patched(model, command.patch as Partial<Model>)
-      return ok(row, { type: 'project.settings', patch: inverse as ProjectPatch }, meta)
+      const { row, inverse } = patched(model, command.patch)
+      return ok(row, { type: 'project.settings', patch: inverse }, meta)
     },
   },
 
   'restore': {
+    carries: { restored: true, commands: true },
+    writes: (command, inner) => command.commands.flatMap(inner),
     apply: (model, command, { meta, apply }) =>
       apply(model, { ...meta, type: 'transaction', commands: command.commands }),
   },
 
   'transaction': {
+    carries: { commands: true },
+    writes: (command, inner) => command.commands.flatMap(inner),
     apply(model, command, { meta, apply }) {
       let next = model
       const inverses: Command[] = []

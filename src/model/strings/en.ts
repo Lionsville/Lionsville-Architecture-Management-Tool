@@ -62,6 +62,8 @@ export const EN = {
   'command.hostedOnContainers': 'An application with containers runs where its containers run. Say where on the container instead.',
   'command.technologyEnds': 'Hosted on runs from an application or a container to a platform. A platform inside another is filed under it, not hosted on it.',
   'command.taken': 'Something here already has that id — another author took it while this change was being made. Try again.',
+  'command.notAField': 'That change carries a field this record does not have, so none of it was made.',
+  'command.ownedElsewhere': 'This is a stand-in: its lifecycle, dates, owner, vendor, name and description are written in the scope that defines it.',
   // A restore that cannot be (ADR-0008). A refusal, never an exception.
   'restore.absentThen': 'This was not in the project at that snapshot.',
   'restore.absentNow': 'The element is no longer in the project; restore the whole project to bring it back.',

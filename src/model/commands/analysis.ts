@@ -8,11 +8,38 @@
  */
 import { causesOf, experimentsOf, observationsOf, solutionsOf } from '../normalised'
 import { gone, ok, taken } from './handler'
-import type { CommandTable } from './handler'
+import type { CommandTable, PatchKeys } from './handler'
 import { drop, patched, put, withCauses, withExperiments, withObservations, withSolutions } from './rows'
+import { patchWrites } from './writes'
+
+/** Every field of an observation but its id. */
+const OBSERVATION_FIELDS: PatchKeys<'observation.update'> = {
+  number: true, title: true, date: true, where: true, by: true, impact: true, seen: true,
+  shared: true, archived: true, body: true, history: true,
+}
+
+/** Every field of a cause but its id. */
+const CAUSE_FIELDS: PatchKeys<'cause.update'> = {
+  number: true, title: true, state: true, body: true, explains: true,
+}
+
+/** Every field of a solution but its id. */
+const SOLUTION_FIELDS: PatchKeys<'solution.update'> = {
+  number: true, title: true, state: true, addresses: true, benefit: true, cost: true,
+  validatedWith: true, attempts: true, noneKnown: true, whyNow: true, waived: true,
+  droppedFrom: true, dropNote: true, decision: true, plan: true, body: true, history: true,
+}
+
+/** Every field of an experiment but its id. */
+const EXPERIMENT_FIELDS: PatchKeys<'experiment.update'> = {
+  number: true, title: true, tests: true, strength: true, hypothesis: true, measure: true,
+  where: true, by: true, from: true, to: true, outcome: true, result: true, body: true,
+}
 
 export const OBSERVATION_COMMANDS = {
   'observation.add': {
+    carries: { observation: true },
+    writes: (command) => [`observation/${command.observation.id}`],
     apply(model, command, { meta }) {
       const { observation, at } = command
       if (observation.id in observationsOf(model)) return taken
@@ -22,6 +49,9 @@ export const OBSERVATION_COMMANDS = {
   },
 
   'observation.update': {
+    carries: { id: true, patch: true },
+    patch: { keys: OBSERVATION_FIELDS, row: (model, command) => observationsOf(model)[command.id] },
+    writes: (command) => patchWrites(`observation/${command.id}`, command.patch),
     apply(model, command, { meta }) {
       const held = observationsOf(model)[command.id]
       if (!held) return gone
@@ -32,6 +62,8 @@ export const OBSERVATION_COMMANDS = {
   },
 
   'observation.remove': {
+    carries: { id: true },
+    writes: (command) => [`observation/${command.id}`],
     apply(model, command, { meta }) {
       const held = observationsOf(model)[command.id]
       if (!held) return gone
@@ -44,6 +76,8 @@ export const OBSERVATION_COMMANDS = {
 
 export const CAUSE_COMMANDS = {
   'cause.add': {
+    carries: { cause: true },
+    writes: (command) => [`cause/${command.cause.id}`],
     apply(model, command, { meta }) {
       const { cause, at } = command
       if (cause.id in causesOf(model)) return taken
@@ -53,6 +87,9 @@ export const CAUSE_COMMANDS = {
   },
 
   'cause.update': {
+    carries: { id: true, patch: true },
+    patch: { keys: CAUSE_FIELDS, row: (model, command) => causesOf(model)[command.id] },
+    writes: (command) => patchWrites(`cause/${command.id}`, command.patch),
     apply(model, command, { meta }) {
       const held = causesOf(model)[command.id]
       if (!held) return gone
@@ -63,6 +100,8 @@ export const CAUSE_COMMANDS = {
   },
 
   'cause.remove': {
+    carries: { id: true },
+    writes: (command) => [`cause/${command.id}`],
     apply(model, command, { meta }) {
       const held = causesOf(model)[command.id]
       if (!held) return gone
@@ -75,6 +114,8 @@ export const CAUSE_COMMANDS = {
 
 export const SOLUTION_COMMANDS = {
   'solution.add': {
+    carries: { solution: true },
+    writes: (command) => [`solution/${command.solution.id}`],
     apply(model, command, { meta }) {
       const { solution, at } = command
       if (solution.id in solutionsOf(model)) return taken
@@ -84,6 +125,9 @@ export const SOLUTION_COMMANDS = {
   },
 
   'solution.update': {
+    carries: { id: true, patch: true },
+    patch: { keys: SOLUTION_FIELDS, row: (model, command) => solutionsOf(model)[command.id] },
+    writes: (command) => patchWrites(`solution/${command.id}`, command.patch),
     apply(model, command, { meta }) {
       const held = solutionsOf(model)[command.id]
       if (!held) return gone
@@ -94,6 +138,8 @@ export const SOLUTION_COMMANDS = {
   },
 
   'solution.remove': {
+    carries: { id: true },
+    writes: (command) => [`solution/${command.id}`],
     apply(model, command, { meta }) {
       const held = solutionsOf(model)[command.id]
       if (!held) return gone
@@ -106,6 +152,8 @@ export const SOLUTION_COMMANDS = {
 
 export const EXPERIMENT_COMMANDS = {
   'experiment.add': {
+    carries: { experiment: true },
+    writes: (command) => [`experiment/${command.experiment.id}`],
     apply(model, command, { meta }) {
       const { experiment, at } = command
       if (experiment.id in experimentsOf(model)) return taken
@@ -115,6 +163,9 @@ export const EXPERIMENT_COMMANDS = {
   },
 
   'experiment.update': {
+    carries: { id: true, patch: true },
+    patch: { keys: EXPERIMENT_FIELDS, row: (model, command) => experimentsOf(model)[command.id] },
+    writes: (command) => patchWrites(`experiment/${command.id}`, command.patch),
     apply(model, command, { meta }) {
       const held = experimentsOf(model)[command.id]
       if (!held) return gone
@@ -125,6 +176,8 @@ export const EXPERIMENT_COMMANDS = {
   },
 
   'experiment.remove': {
+    carries: { id: true },
+    writes: (command) => [`experiment/${command.id}`],
     apply(model, command, { meta }) {
       const held = experimentsOf(model)[command.id]
       if (!held) return gone

@@ -14,7 +14,9 @@
  *   stand-in — reported rather than stripped on save, because somebody wrote
  *   it and a file quietly losing fields is worse than a line saying which
  *   scope answers for them;
- * - `projects/mayEdit.ts` **refuses** a write to one;
+ * - `projects/mayEdit.ts` **refuses** a write to one, for a screen and an
+ *   agent, and `element.update`'s guard refuses it for a writer with nobody
+ *   in front of it (ADR-0028) — both through {@link FIXED_ON_A_STANDIN};
  * - the reducer's `element.link` **drops** them, which is the one moment a
  *   record deliberately stops answering for itself.
  *
@@ -40,6 +42,54 @@ export const OWNER_DETAIL = [
 ] as const satisfies readonly (keyof DesignElement)[]
 
 export type OwnerDetailField = typeof OWNER_DETAIL[number]
+
+/**
+ * A stand-in's two caches (ADR-0012 §3), and its description.
+ *
+ * Not part of the owner's detail, because they are not the owner's detail:
+ * the caches are this record's copy of what the tree says, and every record
+ * has a name whether or not anybody wrote one. They are refused for a
+ * different reason — "a refresh rewrites them; a person does not" (§10) —
+ * and they are refused all the same, which is why both lists feed one
+ * predicate. The description is refused because it is not this record's at
+ * all: a card and an inspector show the owner's, read from the owning scope,
+ * and the place to change it is there.
+ */
+const CACHED_ON_A_STANDIN = ['name', 'ref', 'description'] as const satisfies readonly (keyof DesignElement)[]
+
+/**
+ * Every field a stand-in may not be written by hand: the owner's detail, the
+ * two caches, and the description.
+ *
+ * The list an inspector greys out, the list `mayEditField` refuses and the list
+ * `element.update`'s guard refuses, said once so they cannot drift.
+ */
+export const FIXED_ON_A_STANDIN: readonly (keyof DesignElement)[] = [...OWNER_DETAIL, ...CACHED_ON_A_STANDIN]
+
+/**
+ * Does this patch write something on a stand-in that is the defining scope's?
+ *
+ * The rule `projects/mayEdit.ts` applies with the tree in hand, asked of the
+ * record alone — which is all a writer with nobody in front of it has, and
+ * all the rule needs: the live record says whether it stands in (`ref`), and
+ * the tree only says where the owner is.
+ *
+ * Two things a patch may say about a fixed field without writing it. **The
+ * value the record already holds**, because a patch built as a whole row's
+ * replacement names every field the row has. And **the ref taken off**:
+ * that patch is the record ceasing to stand in — what undoing a *link* is —
+ * and what it leaves is a definition, whose fields are its own.
+ */
+export function writesOwnersDetail(held: DesignElement, patch: Partial<DesignElement>): boolean {
+  if (held.ref === undefined) return false
+  if ('ref' in patch && patch.ref === undefined) return false
+  return FIXED_ON_A_STANDIN.some((field) => field in patch && !sameValue(patch[field], held[field]))
+}
+
+/** Records here are small and built by one writer, so JSON says whether two values are the same. */
+function sameValue(a: unknown, b: unknown): boolean {
+  return a === b || JSON.stringify(a) === JSON.stringify(b)
+}
 
 /**
  * The record as a stand-in of the scope that answers for it — *link*

@@ -35,6 +35,7 @@
  * two places; a team that wants it enforced upstream uses `CODEOWNERS`.
  */
 import type { DesignElement, ElementId } from '../model'
+import { FIXED_ON_A_STANDIN } from '../model/standIn'
 import { OWNER_DETAIL } from './checks'
 import type { ScopeIndex } from './scopeIndex'
 import type { ScopePath } from './scopePath'
@@ -129,34 +130,17 @@ export function mayApplyPatch(
   return mayEditField(touched[0] as keyof DesignElement, id, scope, index, held)
 }
 
-/**
- * A stand-in's two caches (ADR-0012 §3), and its description.
- *
- * Not part of the owner's detail, because they are not the owner's detail:
- * the caches are this record's copy of what the tree says, and every record
- * has a name whether or not anybody wrote one. They are refused for a
- * different reason — "a refresh rewrites them; a person does not" (§10) —
- * and they are refused all the same, which is why both lists feed one
- * predicate. The description is refused because it is not this record's at
- * all: a card and an inspector show the owner's, read from the owning scope
- * (`app/useOwnerDescriptions.ts`), and the place to change it is there.
- */
-const CACHED_ON_STANDIN: readonly (keyof DesignElement)[] = ['name', 'ref', 'description']
-
 /** Is this one of the fields the owning scope answers for? See `checks.OWNER_DETAIL`. */
 export function isOwnerDetail(field: string): field is keyof DesignElement {
   return (OWNER_DETAIL as readonly string[]).includes(field)
 }
 
 /**
- * Every field a stand-in may not be written by hand: the owner's detail, the
- * two caches, and the description.
- *
- * The list an inspector greys out and the list `mayEditField` refuses, said
- * once so they cannot drift.
+ * Every field a stand-in may not be written by hand — the list itself is
+ * `model/standIn.ts`'s, because the one writer's guard reads it too.
  */
-export const FIXED_ON_A_STANDIN: readonly string[] = [...OWNER_DETAIL, ...CACHED_ON_STANDIN]
+export { FIXED_ON_A_STANDIN }
 
 function isFixedOnAStandIn(field: string): boolean {
-  return FIXED_ON_A_STANDIN.includes(field)
+  return (FIXED_ON_A_STANDIN as readonly string[]).includes(field)
 }

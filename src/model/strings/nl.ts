@@ -62,6 +62,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'command.hostedOnContainers': 'Een applicatie met containers draait waar haar containers draaien. Zeg het op de container.',
   'command.technologyEnds': 'Draait op loopt van een applicatie of een container naar een platform. Een platform in een ander platform valt eronder, het draait er niet op.',
   'command.taken': 'Iets hier heeft dat id al — een andere auteur nam het terwijl deze wijziging werd gemaakt. Probeer het opnieuw.',
+  'command.notAField': 'Deze wijziging bevat een veld dat dit record niet heeft, dus er is niets van doorgevoerd.',
+  'command.ownedElsewhere': 'Dit is een verwijzing: de levenscyclus, data, eigenaar, leverancier, naam en beschrijving worden geschreven in de scope die het definieert.',
   'restore.absentThen': 'Dit stond bij die momentopname niet in het project.',
   'restore.absentNow': 'Het element staat niet meer in het project; zet het hele project terug om het terug te halen.',
   'restore.locked': 'Dit besluit is aanvaard, afgewezen of vervangen, en een afgesloten record wordt niet gewijzigd. Schrijf een nieuw besluit dat het vervangt.',

@@ -62,6 +62,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'command.hostedOnContainers': 'Eine Anwendung mit Containern läuft dort, wo ihre Container laufen. Sagen Sie es am Container.',
   'command.technologyEnds': 'Läuft auf geht von einer Anwendung oder einem Container zu einer Plattform. Eine Plattform in einer anderen ist darunter abgelegt, sie läuft nicht darauf.',
   'command.taken': 'Etwas hier hat diese Kennung bereits — jemand anders hat sie genommen, während diese Änderung entstand. Bitte noch einmal versuchen.',
+  'command.notAField': 'Diese Änderung enthält ein Feld, das dieser Datensatz nicht hat, deshalb wurde nichts davon übernommen.',
+  'command.ownedElsewhere': 'Dies ist ein Platzhalter: Lebenszyklus, Daten, Verantwortliche, Hersteller, Name und Beschreibung werden in dem Bereich geschrieben, der ihn definiert.',
   'restore.absentThen': 'Dies war bei diesem Schnappschuss nicht im Projekt.',
   'restore.absentNow': 'Das Element ist nicht mehr im Projekt; stellen Sie das ganze Projekt wieder her, um es zurückzuholen.',
   'restore.locked': 'Diese Entscheidung wurde angenommen, abgelehnt oder ersetzt, und ein abgeschlossener Eintrag wird nicht geändert. Schreiben Sie eine neue, die sie ersetzt.',

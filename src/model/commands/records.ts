@@ -4,11 +4,26 @@
 /** A scope's decision records, and its plans (ADR-0009): added, patched, removed. */
 import { decisionsOf, transitionsOf } from '../normalised'
 import { gone, ok, taken } from './handler'
-import type { CommandTable } from './handler'
+import type { CommandTable, PatchKeys } from './handler'
 import { drop, patched, put, withDecisions, withTransitions } from './rows'
+import { patchWrites } from './writes'
+
+/** Every field of a decision record but its id. */
+const DECISION_FIELDS: PatchKeys<'decision.update'> = {
+  number: true, title: true, status: true, date: true, body: true,
+  subjectId: true, supersededBy: true, signers: true,
+}
+
+/** Every field of a plan but its id. */
+const TRANSITION_FIELDS: PatchKeys<'transition.update'> = {
+  number: true, title: true, status: true, from: true, to: true, owner: true, initiative: true,
+  elements: true, decisions: true, milestones: true, body: true,
+}
 
 export const DECISION_COMMANDS = {
   'decision.add': {
+    carries: { decision: true },
+    writes: (command) => [`decision/${command.decision.id}`],
     apply(model, command, { meta }) {
       const { decision, at } = command
       if (decision.id in decisionsOf(model)) return taken
@@ -18,6 +33,9 @@ export const DECISION_COMMANDS = {
   },
 
   'decision.update': {
+    carries: { id: true, patch: true },
+    patch: { keys: DECISION_FIELDS, row: (model, command) => decisionsOf(model)[command.id] },
+    writes: (command) => patchWrites(`decision/${command.id}`, command.patch),
     apply(model, command, { meta }) {
       const held = decisionsOf(model)[command.id]
       if (!held) return gone
@@ -28,6 +46,8 @@ export const DECISION_COMMANDS = {
   },
 
   'decision.remove': {
+    carries: { id: true },
+    writes: (command) => [`decision/${command.id}`],
     apply(model, command, { meta }) {
       const held = decisionsOf(model)[command.id]
       if (!held) return gone
@@ -40,6 +60,8 @@ export const DECISION_COMMANDS = {
 
 export const TRANSITION_COMMANDS = {
   'transition.add': {
+    carries: { transition: true },
+    writes: (command) => [`transition/${command.transition.id}`],
     apply(model, command, { meta }) {
       const { transition, at } = command
       if (transition.id in transitionsOf(model)) return taken
@@ -49,6 +71,9 @@ export const TRANSITION_COMMANDS = {
   },
 
   'transition.update': {
+    carries: { id: true, patch: true },
+    patch: { keys: TRANSITION_FIELDS, row: (model, command) => transitionsOf(model)[command.id] },
+    writes: (command) => patchWrites(`transition/${command.id}`, command.patch),
     apply(model, command, { meta }) {
       const held = transitionsOf(model)[command.id]
       if (!held) return gone
@@ -59,6 +84,8 @@ export const TRANSITION_COMMANDS = {
   },
 
   'transition.remove': {
+    carries: { id: true },
+    writes: (command) => [`transition/${command.id}`],
     apply(model, command, { meta }) {
       const held = transitionsOf(model)[command.id]
       if (!held) return gone

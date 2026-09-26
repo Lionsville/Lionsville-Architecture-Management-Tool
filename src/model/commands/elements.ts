@@ -4,19 +4,31 @@
 /** An element: made, rewritten, taken away with everything about it, and stood in for. */
 import { NOTHING, replacement, transaction } from '../commands'
 import type { Command, CommandMeta, StandInCache } from '../commands'
-import { asStandIn, isLinked } from '../standIn'
+import { asStandIn, isLinked, writesOwnersDetail } from '../standIn'
 import type { Model } from '../normalised'
 import { routesOf } from '../normalised'
 import { datesInOrder } from '../lifecycle'
 import type { DesignElement, ElementId } from '../types'
 import { gone, ok, outOfOrder, taken } from './handler'
-import type { ApplyResult, CommandTable } from './handler'
+import type { ApplyResult, CommandTable, PatchKeys } from './handler'
 import { drop, patched, put, setDiagram, withDiagrams, withElements, withMembers } from './rows'
 import type { Rows } from './rows'
 import { removeRelation } from './relations'
+import { patchWrites } from './writes'
+
+/** Every field of an element but its id: what `element.update` may name. */
+const ELEMENT_FIELDS: PatchKeys<'element.update'> = {
+  kind: true, ref: true, parentId: true, order: true, lane: true, name: true,
+  category: true, vendor: true, technology: true, platformArchetype: true, shared: true,
+  description: true, outside: true, partyId: true, scopes: true,
+  lifecycle: true, lifecycleDates: true, successorId: true, owner: true, isManaged: true, aspects: true,
+  accentColor: true, shapeVariant: true, iconKey: true, iconSize: true,
+}
 
 export const ELEMENT_COMMANDS = {
   'element.create': {
+    carries: { element: true },
+    writes: (command) => [`element/${command.element.id}`],
     apply(model, command, { meta }) {
       const { element, at } = command
       if (element.id in model.elements) return taken
@@ -26,6 +38,17 @@ export const ELEMENT_COMMANDS = {
   },
 
   'element.update': {
+    carries: { id: true, patch: true },
+    patch: { keys: ELEMENT_FIELDS, row: (model, command) => model.elements[command.id] },
+    writes: (command) => patchWrites(`element/${command.id}`, command.patch),
+    /**
+     * A stand-in's owner's detail, its caches and its description are the
+     * defining scope's (`projects/mayEdit.ts`, `model/standIn.ts`).
+     */
+    guard(model, command) {
+      const held = model.elements[command.id]
+      return held && writesOwnersDetail(held, command.patch) ? 'command.ownedElsewhere' : undefined
+    },
     apply(model, command, { meta }) {
       const held = model.elements[command.id]
       if (!held) return gone
@@ -40,6 +63,8 @@ export const ELEMENT_COMMANDS = {
   },
 
   'element.delete': {
+    carries: { id: true },
+    writes: (command) => [`element/${command.id}`],
     apply: (model, command, { meta }) => deleteElement(model, command.id, meta),
   },
 
@@ -55,6 +80,8 @@ export const ELEMENT_COMMANDS = {
    * with a confirmation, and never a side effect of refreshing.
    */
   'standin.refresh': {
+    carries: { entries: true },
+    writes: (command) => command.entries.map((entry) => `element/${entry.id}`),
     apply(model, command, { meta }) {
       const wanted = command.entries.filter((entry) => {
         const row = model.elements[entry.id]
@@ -82,6 +109,10 @@ export const ELEMENT_COMMANDS = {
    * finds nothing stale is not one.
    */
   'element.link': {
+    carries: { id: true, name: true, ref: true },
+    // The name, the ref and the owner's detail together: the record, coarsely,
+    // because that is what the gesture is.
+    writes: (command) => [`element/${command.id}`],
     apply(model, command, { meta }) {
       const held = model.elements[command.id]
       if (!held) return gone

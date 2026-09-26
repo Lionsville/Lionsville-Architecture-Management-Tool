@@ -63,16 +63,21 @@ export function same<T extends object>(a: T, b: T): boolean {
  * is `undefined` deletes the field; the inverse names the same keys, so a field
  * that was not there comes back as not there.
  */
-export function patched<T extends object>(row: T, patch: Partial<T>): { row: T; inverse: Partial<T> } {
-  const out = { ...row }
-  const inverse: Partial<T> = {}
-  for (const key of Object.keys(patch) as (keyof T)[]) {
-    inverse[key] = row[key]
-    const value = patch[key]
+export function patched<T extends object, P extends Partial<T>>(
+  row: T, patch: P,
+): { row: T; inverse: { [K in keyof P & keyof T]?: T[K] } } {
+  // Which keys a patch may name is the command's descriptor's to say, and the
+  // one writer holds every patch to it before an entry is reached (ADR-0028);
+  // so the keys of what puts it back are the patch's own, typed from the row.
+  const out = { ...row } as Record<string, unknown>
+  const held = row as Record<string, unknown>
+  const inverse: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(patch)) {
+    inverse[key] = held[key]
     if (value === undefined) delete out[key]
     else out[key] = value
   }
-  return { row: out, inverse }
+  return { row: out as T, inverse: inverse as { [K in keyof P & keyof T]?: T[K] } }
 }
 
 // --- putting a model back together -------------------------------------------

@@ -11,8 +11,16 @@ import { technologyEndsRefusal } from '../relations'
 import { refinementRefusal } from '../refines'
 import type { Relation } from '../types'
 import { gone, taken } from './handler'
-import type { ApplyResult, CommandTable, Refused } from './handler'
+import type { ApplyResult, CommandTable, PatchKeys, Refused } from './handler'
 import { drop, patched, put, setDiagram, withRelations, withRoutes } from './rows'
+import { patchWrites } from './writes'
+
+/** Every field of a relation but its id: what `relation.update` may name. */
+const RELATION_FIELDS: PatchKeys<'relation.update'> = {
+  type: true, sourceId: true, targetId: true, label: true, protocol: true, technology: true,
+  refines: true, validFrom: true, validUntil: true, isBidirectional: true,
+  color: true, lineStyle: true, routing: true, sourceArrowhead: true, targetArrowhead: true,
+}
 
 const REFINES_REFUSAL = {
   ends: { ok: false, reason: 'command.refinesEnds' },
@@ -21,6 +29,8 @@ const REFINES_REFUSAL = {
 
 export const RELATION_COMMANDS = {
   'relation.create': {
+    carries: { relation: true },
+    writes: (command) => [`relation/${command.relation.id}`],
     apply(model, command, { meta }) {
       const { relation, at } = command
       // One end is enough (ADR-0012 §5): a row is this scope's when it is
@@ -42,6 +52,9 @@ export const RELATION_COMMANDS = {
   },
 
   'relation.update': {
+    carries: { id: true, patch: true },
+    patch: { keys: RELATION_FIELDS, row: (model, command) => model.relations[command.id] },
+    writes: (command) => patchWrites(`relation/${command.id}`, command.patch),
     apply(model, command, { meta }) {
       const held = model.relations[command.id]
       if (!held) return gone
@@ -59,6 +72,8 @@ export const RELATION_COMMANDS = {
   },
 
   'relation.delete': {
+    carries: { id: true },
+    writes: (command) => [`relation/${command.id}`],
     apply: (model, command, { meta }) => deleteRelation(model, command.id, meta),
   },
 } satisfies Partial<CommandTable>

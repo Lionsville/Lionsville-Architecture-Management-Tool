@@ -9,9 +9,12 @@ import { gone, ok } from './handler'
 import type { CommandTable } from './handler'
 import { drop, same, setDiagram, withMembers } from './rows'
 import type { Rows } from './rows'
+import { each } from './writes'
 
 export const MEMBER_COMMANDS = {
   'member.set': {
+    carries: { diagramId: true, members: true },
+    writes: (command) => each(`diagram/${command.diagramId}/member`, command.members.map((member) => member.id)),
     apply(model, command, { meta }) {
       const diagram = model.diagrams[command.diagramId]
       if (!diagram) return gone
@@ -59,6 +62,12 @@ export const MEMBER_COMMANDS = {
   },
 
   'member.remove': {
+    carries: { diagramId: true, elementIds: true },
+    // A member goes with its node, so removing one writes both.
+    writes: (command) => [
+      ...each(`diagram/${command.diagramId}/member`, command.elementIds),
+      ...each(`diagram/${command.diagramId}/node`, command.elementIds),
+    ],
     apply(model, command, { meta }) {
       const diagram = model.diagrams[command.diagramId]
       if (!diagram) return gone
@@ -90,6 +99,8 @@ export const MEMBER_COMMANDS = {
   },
 
   'node.set': {
+    carries: { diagramId: true, nodes: true },
+    writes: (command) => each(`diagram/${command.diagramId}/node`, command.nodes.map((node) => node.id)),
     apply(model, command, { meta }) {
       const diagram = model.diagrams[command.diagramId]
       if (!diagram) return gone
@@ -119,6 +130,8 @@ export const MEMBER_COMMANDS = {
   },
 
   'node.remove': {
+    carries: { diagramId: true, elementIds: true },
+    writes: (command) => each(`diagram/${command.diagramId}/node`, command.elementIds),
     apply(model, command, { meta }) {
       const diagram = model.diagrams[command.diagramId]
       if (!diagram) return gone

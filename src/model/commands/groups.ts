@@ -11,9 +11,12 @@ import { gone, ok } from './handler'
 import type { CommandTable } from './handler'
 import { drop, same, setDiagram, withGroups } from './rows'
 import type { Rows } from './rows'
+import { each } from './writes'
 
 export const GROUP_COMMANDS = {
   'box.set': {
+    carries: { diagramId: true, boxes: true },
+    writes: (command) => each(`diagram/${command.diagramId}/box`, command.boxes.map((box) => box.id)),
     apply(model, command, { meta }) {
       const diagram = model.diagrams[command.diagramId]
       if (!diagram) return gone
@@ -39,6 +42,8 @@ export const GROUP_COMMANDS = {
   },
 
   'box.remove': {
+    carries: { diagramId: true, groupIds: true },
+    writes: (command) => each(`diagram/${command.diagramId}/box`, command.groupIds),
     apply(model, command, { meta }) {
       const diagram = model.diagrams[command.diagramId]
       if (!diagram) return gone
@@ -59,6 +64,8 @@ export const GROUP_COMMANDS = {
   },
 
   'group.set': {
+    carries: { diagramId: true, groups: true },
+    writes: (command) => each(`diagram/${command.diagramId}/group`, command.groups.map((group) => group.id)),
     apply(model, command, { meta }) {
       const diagram = model.diagrams[command.diagramId]
       if (!diagram) return gone
@@ -94,6 +101,12 @@ export const GROUP_COMMANDS = {
   },
 
   'group.remove': {
+    carries: { diagramId: true, groupIds: true },
+    // A group goes with its box, so removing one writes both.
+    writes: (command) => [
+      ...each(`diagram/${command.diagramId}/group`, command.groupIds),
+      ...each(`diagram/${command.diagramId}/box`, command.groupIds),
+    ],
     apply(model, command, { meta }) {
       const diagram = model.diagrams[command.diagramId]
       if (!diagram) return gone

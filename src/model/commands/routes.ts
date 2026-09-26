@@ -11,9 +11,12 @@ import { gone, ok } from './handler'
 import type { CommandTable } from './handler'
 import { drop, setDiagram, withRoutes } from './rows'
 import type { Rows } from './rows'
+import { each } from './writes'
 
 export const ROUTE_COMMANDS = {
   'route.set': {
+    carries: { diagramId: true, routes: true },
+    writes: (command) => each(`diagram/${command.diagramId}/route`, command.routes.map((route) => route.relationId)),
     apply(model, command, { meta }) {
       const diagram = model.diagrams[command.diagramId]
       if (!diagram) return gone
@@ -49,6 +52,8 @@ export const ROUTE_COMMANDS = {
   },
 
   'route.clear': {
+    carries: { diagramId: true, relationIds: true },
+    writes: (command) => each(`diagram/${command.diagramId}/route`, command.relationIds),
     apply(model, command, { meta }) {
       const diagram = model.diagrams[command.diagramId]
       if (!diagram) return gone
