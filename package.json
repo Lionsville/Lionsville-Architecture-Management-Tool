@@ -14,6 +14,7 @@
     "check": "npm run typecheck && npm run test:coverage && npm run coverage && npm run lint",
     "check:all": "npm run check && npm run build",
     "coverage": "node --experimental-strip-types build/coverage.ts",
+    "deps": "node build/dependencies.ts",
     "dev": "vite",
     "dev:desktop": "electron-vite dev",
     "dist:desktop": "electron-vite build && electron-builder",
