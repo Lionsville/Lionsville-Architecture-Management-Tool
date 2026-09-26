@@ -43,7 +43,7 @@ export { SolutionDesignEditor } from './SolutionDesignEditor'
 /** What the editor is handed: props, decorations, export options. */
 export type {
   EditorDiagramActions, EditorDocument, EditorEditing, EditorHistory, EditorLanguage,
-  EditorLayoutReports, EditorLogos, EditorOwnership, PageView, EditorPages, EditorPlans, EditorPreferencesSeam,
+  EditorLayoutReports, EditorLogos, EditorOwnership, PartyElsewhere, PageView, EditorPages, EditorPlans, EditorPreferencesSeam,
   EditorRequests,
   EditorHandle, EditorRefusal, ExportDiagramPngOptions, ExportTitleBlock, SolutionDesignEditorProps,
 } from './props'

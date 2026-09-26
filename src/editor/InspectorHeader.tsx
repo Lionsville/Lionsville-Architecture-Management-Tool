@@ -21,6 +21,7 @@ import { useStrings } from '../i18n/LanguageContext';
 import { recordSummary } from './ElementRecord';
 import type { InspectorField } from './elementInspectorFacts';
 import type { ElementInspectorProps } from './ElementInspectorProps';
+import type { PartyElsewhere } from './props';
 
 const STRIP = { px: 1, py: 0.75, borderRadius: 1, bgcolor: 'action.hover' } as const;
 
@@ -121,13 +122,14 @@ export function MoveRecord({ move }: { move: NonNullable<ElementInspectorProps['
  * the page, where the fields are. Outside the tabs because it is about the
  * whole record, like the name above it.
  */
-export function RecordSummaryLine({ element, model, onOpenDocumentation }: {
+export function RecordSummaryLine({ element, model, parties, onOpenDocumentation }: {
   element: DesignElement;
   model: DesignModel;
+  parties?: readonly PartyElsewhere[];
   onOpenDocumentation?(elementId: ElementId): void;
 }) {
   const { t } = useStrings();
-  const summary = recordSummary(element, model, t);
+  const summary = recordSummary(element, model, t, parties);
   return (
     <Box data-testid="record-summary" sx={{ display: 'flex', alignItems: 'center', gap: 1, ...STRIP }}>
       <Typography variant="caption" color="text.secondary" sx={{ flex: 1, minWidth: 0 }}>

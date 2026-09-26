@@ -417,6 +417,13 @@ export interface EditorPlans {
  * Absent is the ordinary case and means what it has always meant: this
  * document answers for everything in it.
  */
+/** An actor another scope keeps, and what to call that scope on screen. */
+export interface PartyElsewhere {
+  id: ElementId;
+  name: string;
+  where: string;
+}
+
 export interface EditorOwnership {
   /**
    * Who answers for this element, or nothing when this scope does.
@@ -507,6 +514,15 @@ export interface EditorOwnership {
     }[];
     standInFor(id: ElementId): DesignElement | undefined;
   };
+  /**
+   * The parties the scopes above this one keep and this one does not
+   * (ADR-0012 §4): the actors *Belongs to* may name besides this scope's own,
+   * nearest scope first, each with what to call the scope that keeps it. A
+   * `partyId` is a plain id whichever scope keeps the actor — ids are unique
+   * across the tree — so choosing one writes the id and nothing else. Absent
+   * in a shell with no tree, and the field then offers this scope's own.
+   */
+  parties?: readonly PartyElsewhere[];
   /**
    * The gestures that cross scopes (ADR-0012 §10), as far as a panel needs
    * them: is there one to offer on this record, and one way to ask for it.

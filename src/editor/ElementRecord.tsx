@@ -20,12 +20,14 @@
  *
  * `outside` and the party it belongs to are asked here for the first time —
  * the register reported "nobody said whose" about a record no screen could say
- * it on. The party is an actor of this scope's model, which for a landscape
- * means a stand-in of one of the organisation's (ADR-0012 §4).
+ * it on. The party is an actor this scope can see: one of its own — for a
+ * landscape often a stand-in of one of the organisation's — or one a scope
+ * above keeps, named by its plain id (ADR-0012 §4).
  */
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import FormControlLabel from '@mui/material/FormControlLabel';
+import ListSubheader from '@mui/material/ListSubheader';
 import MenuItem from '@mui/material/MenuItem';
 import Switch from '@mui/material/Switch';
 import TextField from '@mui/material/TextField';
@@ -36,6 +38,7 @@ import { useStrings } from '../i18n/LanguageContext';
 import type { StringKey, Translate } from '../i18n/strings';
 import { fieldEdit } from '../model/commands';
 import type { EditorActions } from './useEditorState';
+import type { PartyElsewhere } from './props';
 
 /**
  * Who sells it — asked of an application and of nothing else.
@@ -79,6 +82,63 @@ export function withDate(
   return Object.keys(next).length ? next : undefined;
 }
 
+/** The choices under *Belongs to*, grouped by the scope that keeps them. */
+export interface PartyChoices {
+  /** This scope's own actors, stand-ins included. */
+  here: readonly { id: ElementId; name: string }[];
+  /** The actors each scope above keeps and this one does not, nearest first. */
+  above: readonly { where: string; parties: readonly PartyElsewhere[] }[];
+  /**
+   * The party the record names where nothing above offers it — a scope that
+   * is gone, a sibling's actor. Offered under its id so the field shows what
+   * is written rather than a blank, and a person can see it and change it.
+   */
+  unknown?: ElementId;
+}
+
+/**
+ * Which actors *Belongs to* may name (ADR-0012 §4): this scope's own, then
+ * those of the scopes above that this one holds no record of, as the host
+ * hands them over. An id held here is this scope's, even when it is a
+ * stand-in of an actor above: the record is the same actor.
+ */
+export function partyChoices(
+  element: DesignElement,
+  model: DesignModel,
+  elsewhere: readonly PartyElsewhere[] = [],
+): PartyChoices {
+  const here = model.elements
+    .filter((other) => other.kind === 'actor' && other.id !== element.id)
+    .map(({ id, name }) => ({ id, name }));
+  const held = new Set(model.elements.map((other) => other.id));
+  const above: { where: string; parties: PartyElsewhere[] }[] = [];
+  for (const party of elsewhere) {
+    if (held.has(party.id)) continue;
+    const group = above.find((one) => one.where === party.where);
+    if (group) group.parties.push(party);
+    else above.push({ where: party.where, parties: [party] });
+  }
+  const offered = (id: ElementId) =>
+    here.some((one) => one.id === id) || above.some((group) => group.parties.some((one) => one.id === id));
+  const named = element.partyId;
+  return {
+    here,
+    above,
+    ...(named !== undefined && !offered(named) ? { unknown: named } : {}),
+  };
+}
+
+/** What to call the party a record names: its name where this scope or one above keeps it. */
+function partyName(
+  partyId: ElementId | undefined,
+  model: DesignModel,
+  elsewhere: readonly PartyElsewhere[] = [],
+): string | undefined {
+  if (partyId === undefined) return undefined;
+  return model.elements.find((other) => other.id === partyId)?.name
+    ?? elsewhere.find((other) => other.id === partyId)?.name;
+}
+
 export interface ElementRecordProps {
   element: DesignElement;
   model: DesignModel;
@@ -86,6 +146,8 @@ export interface ElementRecordProps {
   actions: EditorActions;
   /** Is this field another scope's to answer for? See `ElementInspectorProps.owned`. */
   owned(field: string): boolean;
+  /** The actors the scopes above keep, as the host reads them. Absent = this scope's own only. */
+  parties?: readonly PartyElsewhere[];
   /** Start a replacement (ADR-0010). Absent = no Replace… button. */
   onReplace?(elementId: ElementId): void;
 }
@@ -98,7 +160,7 @@ export function ElementRecord(props: ElementRecordProps) {
   const typed = (field: string, patch: Partial<Omit<DesignElement, 'id' | 'kind'>>) =>
     actions.updateElement(element.id, patch, fieldEdit(element.id, field));
 
-  const parties = model.elements.filter((other) => other.kind === 'actor' && other.id !== element.id);
+  const parties = partyChoices(element, model, props.parties);
 
   return (
     <Box data-testid="element-record" sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
@@ -164,9 +226,20 @@ export function ElementRecord(props: ElementRecordProps) {
               onChange={(e) => update({ partyId: e.target.value || undefined })}
             >
               <MenuItem value="">{t('field.partyNone')}</MenuItem>
-              {parties.map((party) => (
+              {parties.here.map((party) => (
                 <MenuItem key={party.id} value={party.id}>{party.name}</MenuItem>
               ))}
+              {/* A select's children, not a fragment per group: MUI reads
+                  the options off its direct children. */}
+              {parties.above.flatMap((group) => [
+                <ListSubheader key={`where:${group.where}`} role="presentation">{group.where}</ListSubheader>,
+                ...group.parties.map((party) => (
+                  <MenuItem key={party.id} value={party.id}>{party.name}</MenuItem>
+                )),
+              ])}
+              {parties.unknown !== undefined && (
+                <MenuItem value={parties.unknown}>{parties.unknown}</MenuItem>
+              )}
             </TextField>
           )}
         </Box>
@@ -232,13 +305,14 @@ export function recordSummary(
   element: DesignElement,
   model: DesignModel,
   t: Translate,
+  parties?: readonly PartyElsewhere[],
 ): string[] {
   const parts: string[] = [];
   if (element.owner) parts.push(`${t('field.owner')}: ${element.owner}`);
   if (element.vendor) parts.push(`${t('field.vendor')}: ${element.vendor}`);
   if (element.technology) parts.push(`${t('field.technology')}: ${element.technology}`);
   if (element.outside) {
-    const party = model.elements.find((other) => other.id === element.partyId)?.name;
+    const party = partyName(element.partyId, model, parties);
     parts.push(party ? t('record.outsideOf', { name: party }) : t('field.outside'));
   }
   const successor = model.elements.find((other) => other.id === element.successorId)?.name;

@@ -115,6 +115,7 @@ function PageInspector({ props, state, readOnly, inspectorReadOnly, docs, elemen
       offeredBeyond={ownership?.offeredBeyond?.(element.id)}
       leverage={ownership?.leverageOf?.(element.id)}
       technology={ownership?.technology}
+      parties={ownership?.parties}
       onShowOnTechnology={diagrams.onOpenTechnologyFor
         ? (id) => { docs.leave(); diagrams.onOpenTechnologyFor?.(id); }
         : undefined}

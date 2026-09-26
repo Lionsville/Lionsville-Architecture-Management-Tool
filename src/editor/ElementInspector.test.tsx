@@ -92,6 +92,8 @@ function renderInspector(
     leverage?: LeverageLine;
     /** The technology the rest of the organisation defines (ADR-0017). */
     technology?: ElementInspectorProps['technology'];
+    /** The actors the scopes above keep (ADR-0012 §4). */
+    parties?: ElementInspectorProps['parties'];
     /** Make the application's container diagram, on purpose. */
     onCreateContainer?: (id: string) => void;
     /** The door to the technology landscape (ADR-0020). */
@@ -122,6 +124,7 @@ function renderInspector(
         offeredBeyond={opts.offeredBeyond}
         leverage={opts.leverage}
         technology={opts.technology}
+        parties={opts.parties}
         onShowOnTechnology={opts.onShowOnTechnology}
       />
     </ThemeProvider>,
@@ -558,6 +561,39 @@ describe('ElementInspector — the record on the page', () => {
   it('reads the party back into the panel\'s one line', () => {
     renderInspector(element({ outside: true, partyId: 'p1' }), { others: [actor('p1', 'Globex')] });
     expect(screen.getByTestId('record-summary').textContent).toContain('Outside · Globex');
+  });
+
+  const above = [
+    { id: 'p1', name: 'Globex', where: 'Retail' },
+    { id: 'p2', name: 'Initech', where: 'Acme' },
+    { id: 'p3', name: 'Umbrella', where: 'Acme' },
+  ];
+
+  it('offers the parties the scopes above keep, under the scope that keeps them, and writes the plain id', () => {
+    const { updateElement } = renderInspector(element({ outside: true, partyId: 'p2' }), {
+      layout: 'stacked', others: [actor('p1', 'Globex')], parties: above,
+    });
+    expect(screen.getByLabelText('Belongs to').textContent).toBe('Initech');
+    fireEvent.mouseDown(screen.getByLabelText('Belongs to'));
+    const listbox = screen.getByRole('listbox');
+    // Globex is held here — a stand-in — so it is offered once, as this
+    // scope's. MUI gives a group's heading the option role as well.
+    expect(within(listbox).getAllByRole('option').map((one) => one.textContent))
+      .toEqual(['Nobody said', 'Globex', 'Acme', 'Initech', 'Umbrella']);
+    expect(within(listbox).queryByText('Retail')).toBeNull();
+    expect(within(listbox).getByText('Acme')).toBeDefined();
+    fireEvent.click(within(listbox).getByRole('option', { name: 'Umbrella' }));
+    expect(updateElement).toHaveBeenLastCalledWith('e1', { partyId: 'p3' });
+  });
+
+  it('shows a party nobody offers by its id rather than a blank', () => {
+    renderInspector(element({ outside: true, partyId: 'gone' }), { layout: 'stacked', parties: above });
+    expect(screen.getByLabelText('Belongs to').textContent).toBe('gone');
+  });
+
+  it('names a party kept above in the panel\'s one line', () => {
+    renderInspector(element({ outside: true, partyId: 'p2' }), { parties: above });
+    expect(screen.getByTestId('record-summary').textContent).toContain('Outside · Initech');
   });
 });
 

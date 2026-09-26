@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import type { ReactNode } from 'react';
-import type { EditorOwnership } from './props';
+import type { EditorOwnership, PartyElsewhere } from './props';
 import type { DesignDiagram, DesignElement, DesignModel, ElementId } from '../model/types';
 import type { MarkdownRenderOptions } from '../documentation/documentation';
 import type { LeverageLine } from '../model/leverage';
@@ -91,6 +91,8 @@ export interface ElementInspectorProps {
   offeredBeyond?: readonly string[];
   /** The technology the rest of the organisation defines, for *Hosted on* and *Uses* (ADR-0017, ADR-0020). */
   technology?: EditorOwnership['technology'];
+  /** The actors the scopes above keep, for *Belongs to* (ADR-0012 §4). See `EditorOwnership.parties`. */
+  parties?: readonly PartyElsewhere[];
   /**
    * The door under *Leverages* (ADR-0020): open the technology landscape
    * with this application selected. Absent where the host has no landscape

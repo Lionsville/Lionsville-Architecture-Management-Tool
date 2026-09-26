@@ -19,6 +19,7 @@ import { CHECK_LABEL, identityFindings, offeredBeyond } from '../projects/checks
 import { standInOf } from '../projects/library'
 import type { ScopeIndex } from '../projects/scopeIndex'
 import type { ScopePath } from '../projects/scopePath'
+import { ancestorScopes } from '../projects/scopePath'
 import type { InitialPage } from './App'
 import type { ProjectSaver } from './useDocumentSession'
 import type { Gestures } from './useGestures'
@@ -89,6 +90,10 @@ export function useWorkspaceOwnership(deps: {
         return entry && ref !== undefined ? standInOf(entry, ref) : undefined
       },
     },
+    // The actors the scopes above keep (ADR-0012 §4), for *Belongs to*: an
+    // outside application in a landscape usually belongs to one of the
+    // organisation's parties, which the landscape need not hold a record of.
+    parties: partiesAbove(index, scope, scopeLabel),
     gestures: {
       offered: (elementId) => gestureOffers(elementId).length > 0,
       label: s('gesture.move'),
@@ -176,6 +181,19 @@ function ownerAnswer(elementId: string, at: {
       }
       : {}),
   }
+}
+
+/**
+ * The actors the scopes above this one keep (ADR-0012 §4), nearest scope
+ * first, named with the scope that keeps them. Not a sibling's or a child's:
+ * what a scope can see is itself and what it is filed under.
+ */
+export function partiesAbove(index: ScopeIndex, scope: ScopePath, scopeLabel: (path: ScopePath) => string) {
+  const above = ancestorScopes(scope)
+  const actors = index.entries().filter((entry) => entry.kind === 'actor' && entry.master !== undefined)
+  return above.flatMap((path) => actors
+    .filter((entry) => entry.master === path)
+    .map((entry) => ({ id: entry.id, name: entry.name, where: scopeLabel(path) })))
 }
 
 /**
