@@ -22,9 +22,11 @@
  * test without an editor, without a model and without browser APIs.
  */
 import { useState } from 'react'
+import type { MouseEvent, ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import IconButton from '@mui/material/IconButton'
+import Popover from '@mui/material/Popover'
 import Tooltip from '@mui/material/Tooltip'
 import useMediaQuery from '@mui/material/useMediaQuery'
 import Typography from '@mui/material/Typography'
@@ -128,6 +130,79 @@ export function sourceTipKey(
  */
 export function sourceIsAlarming(source: WorkingSource): boolean {
   return source.kind === 'memory'
+}
+
+/**
+ * The chip that names where work is kept, as a bar draws it: the source, the
+ * provider's sentence and its word for it now, and what pressing it opens.
+ */
+export type ToolbarChip = {
+  source: WorkingSource
+  describeKey?: StringKey | (string & {})
+  chip?: SourceChip
+  /**
+   * The provider's panel (`App`'s `SourceChipPanel`), already inside its
+   * boundary and the language: drawn under the chip while it is open, and
+   * handed the way to shut it.
+   */
+  panel?: (close: () => void) => ReactNode
+}
+
+/**
+ * The chip itself: the same on a home's bar and on the workspace's.
+ *
+ * A real `button` where there is something to press — the provider's `onClick`,
+ * its panel, or both — and not a span that listens: this bar is the window's
+ * drag surface on the desktop, and the rule that keeps a control clickable
+ * inside it names elements (`& button, & a, & input`) rather than whatever
+ * happens to have a handler. A span with an `onClick` here would be dead
+ * surface that drags the window instead.
+ */
+export function SourceChipView({ source, describeKey, chip, panel, s }: ToolbarChip & { s: Translate }) {
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null)
+  const presses = chip?.onClick !== undefined || panel !== undefined
+  const press = (event: MouseEvent<HTMLElement>) => {
+    chip?.onClick?.()
+    if (panel) setAnchor(event.currentTarget)
+  }
+  const tip = sourceTipKey(source, describeKey, chip)
+  return (
+    <>
+      {/* The sentence about where work is kept: this tree's for a built-in
+          kind, the provider's own for a registered source, and — where a
+          provider gave none — nothing, which an empty title is how MUI says.
+          A guess of ours about somewhere this shell has never heard of could
+          promise a copy that cannot be made. */}
+      <Tooltip title={tip === undefined ? '' : s(tip as StringKey)}>
+        <Typography
+          data-testid="working-source"
+          {...(presses ? { component: 'button' as const, type: 'button', onClick: press } : {})}
+          sx={{
+            fontSize: 11, px: 0.75, py: 0.25, borderRadius: 1, whiteSpace: 'nowrap',
+            color: sourceIsAlarming(source) ? 'warning.main' : 'text.secondary',
+            border: 1, borderColor: sourceIsAlarming(source) ? 'warning.main' : 'divider',
+            // A button brings the browser's own font and background with it,
+            // so both are said back to what the chip has always looked like.
+            fontFamily: 'inherit', bgcolor: 'transparent',
+            cursor: presses ? 'pointer' : undefined,
+          }}
+        >
+          {sourceLabel(source, s, chip)}
+        </Typography>
+      </Tooltip>
+      {panel && (
+        <Popover
+          open={anchor !== null}
+          anchorEl={anchor}
+          onClose={() => setAnchor(null)}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+          transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        >
+          {anchor && panel(() => setAnchor(null))}
+        </Popover>
+      )}
+    </>
+  )
 }
 
 /**
@@ -314,6 +389,14 @@ export type ShellToolbarProps = {
   overflow?: ToolbarOverflow
   /** The agent glyph. Present on every host: on the web it opens the explanation. */
   agent?: ToolbarAgent
+  /**
+   * The chip that names where work is kept, on this bar too: only where the
+   * open source's provider gave a word or a panel of its own for it, because
+   * a way into something has to be where the person is. Absent for every
+   * source that ships, whose chip is on the organisation's home and nowhere
+   * else, as it always was.
+   */
+  sourceChip?: ToolbarChip
   s: Translate
   /**
    * What the window leaves to this bar. On the desktop the macOS title bar is
@@ -337,7 +420,7 @@ export function ShellToolbar({
   designName, crumbs, scopePath, savedAt, status = 'clean', saveFailed = false,
   alsoHere = [], language, onGoHome, onOpenSettings, onOpenDocumentation, onOpenDecisions, onOpenObservations, onOpenRoadmap,
   onOpenSearch, activity,
-  overflow, agent, s, windowChrome = NO_WINDOW_CHROME,
+  overflow, agent, sourceChip, s, windowChrome = NO_WINDOW_CHROME,
 }: ShellToolbarProps) {
   const [activityMenu, setActivityMenu] = useState<HTMLElement | null>(null)
   // Half a screen: the status collapses to a dot that says the same thing on
@@ -390,6 +473,7 @@ export function ShellToolbar({
         </Typography>
       )}
       <Box sx={{ flex: 1 }} />
+      {sourceChip && <SourceChipView {...sourceChip} s={s} />}
       {([
         ['shell.documentation', 'shell.documentationTip', onOpenDocumentation],
         ['shell.decisions', 'shell.decisionsTip', onOpenDecisions],

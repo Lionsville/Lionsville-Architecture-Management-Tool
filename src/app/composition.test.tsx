@@ -24,7 +24,7 @@ import { IN_MEMORY } from '../platform/workingSource'
 import type { SourceProvider } from '../platform/sourceProvider'
 import {
   inWorkingDirectory, openSource, registerSourceProvider, registeredChrome, registeredConnects,
-  registeredMenus, sourceAgentPanel, sourceChip, sourceDescription, sourceProvider,
+  registeredMenus, sourceAgentPanel, sourceChip, sourceChipPanel, sourceDescription, sourceProvider,
   type FolderOpening, type Shell, type SourceBase, type SourceParts,
 } from './composition'
 
@@ -700,6 +700,32 @@ describe('sourceAgentPanel', () => {
     expect(sourceAgentPanel({
       kind: 'registered', provider: 'lined', name: 'Lined', key: 'one',
     })).toBeUndefined()
+  })
+})
+
+/**
+ * What pressing the chip opens: the open source's provider's own, for the
+ * reason the chip is — it names that source, and nobody else's panel belongs
+ * under that name.
+ */
+describe('sourceChipPanel', () => {
+  function Panel() {
+    return <p>Signed in</p>
+  }
+
+  it('is the provider\u2019s own for a source it answers for, and nothing otherwise', () => {
+    registerSourceProvider({
+      kind: 'pressable',
+      chipPanel: Panel,
+      open: () => ({
+        scopes: new InMemoryScopeStore(),
+        source: { kind: 'registered', provider: 'pressable', name: 'Pressable', key: 'one' },
+      }),
+    })
+    expect(sourceChipPanel({ kind: 'registered', provider: 'pressable', name: 'Pressable', key: 'one' })).toBe(Panel)
+    expect(sourceChipPanel(IN_MEMORY)).toBeUndefined()
+    expect(sourceChipPanel({ kind: 'folder', name: 'work', root: '/work' })).toBeUndefined()
+    expect(sourceChipPanel({ kind: 'registered', provider: 'lined', name: 'Lined', key: 'one' })).toBeUndefined()
   })
 })
 

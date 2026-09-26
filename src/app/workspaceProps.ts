@@ -27,7 +27,7 @@ import type { ProjectHistory } from '../ports/ProjectHistory'
 import type { CrashTrail } from './ErrorBoundary'
 import type { InitialPage } from './App'
 import type { ProjectSettings } from './ProjectSettingsDialog'
-import type { Crumb, ToolbarAgent, ToolbarOverflow } from './ShellToolbar'
+import type { Crumb, ToolbarAgent, ToolbarChip, ToolbarOverflow } from './ShellToolbar'
 import type { ProjectSaver } from './useDocumentSession'
 import type { WorkspaceAgentView } from './useAgentShell'
 import type { MakeId } from './useDiagramActions'
@@ -72,6 +72,12 @@ export type WorkspaceSource = {
    * the way the agent's view is; absent for all three sources that ship.
    */
   onSession?: (session: ScopeSession) => (() => void) | void
+  /**
+   * The chip that names where work is kept, for the bar: only where the open
+   * source's provider gave a word or a panel for it. Absent for all three
+   * sources that ship, whose chip is on the organisation's home alone.
+   */
+  chip?: ToolbarChip
   /**
    * Every change of the open scope travels as a step (`Shell.publishesSteps`),
    * and the scope is not written whole after one. Absent for all three sources

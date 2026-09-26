@@ -41,7 +41,7 @@ import { useOrganisation } from './organisation/useOrganisation'
 import type { ScopeSession } from './useModelSession'
 import type { ProjectSettings } from './ProjectSettingsDialog'
 import { ToastBar } from './ToastBar'
-import type { Destination } from '../agent/screen'
+import type { Destination, Screen } from '../agent/screen'
 import { usePasswordPrompt } from './usePasswordPrompt'
 import { useOpenIntoPrompt } from './useOpenIntoPrompt'
 import { useAgentServer } from './useAgentServer'
@@ -117,8 +117,16 @@ export type ShellDiagnostics = {
  * find it in the tree. It is {@link SourceOpen}, so what a chrome can ask for is
  * what the agent can ask for (ADR-0019) and not a second grammar for the same
  * three words.
+ *
+ * `screen` is where the app is, as `app.current` tells the agent (ADR-0019's
+ * `Screen`): the scope that is open with its view and the page over it, or
+ * the home that is up and its page. The other half of `open` — a chrome that
+ * can send a person somewhere can see when they have arrived, and a strip
+ * about a place can say nothing while the person is somewhere else — and
+ * the same words, so the two cannot drift. A new value each time the screen
+ * moves and the same one while it does not, so a chrome may compare it.
  */
-export type SourceChrome = ComponentType<{ session?: ScopeSession; open: SourceOpen }>
+export type SourceChrome = ComponentType<{ session?: ScopeSession; open: SourceOpen; screen: Screen }>
 
 /**
  * Sending the person to a scope, as a provider's chrome or a menu line may.
@@ -177,6 +185,31 @@ export type RegisteredChrome = {
  * registration, beside `chrome` and `menu`, and core's three register none.
  */
 export type SourceAgentPanel = ComponentType<{ session?: ScopeSession }>
+
+/**
+ * What pressing the chip that names a registered source opens: a panel of the
+ * provider's own, anchored to the chip.
+ *
+ * The chip's `onClick` (`platform/sourceProvider.ts`) can only run something,
+ * and what a name on a bar is usually a way into — who is signed in, what they
+ * can reach from here, a short account of where the work stands — is
+ * something to show beside it. Without this a provider's chrome would have to
+ * draw a popover of its own and find the chip in the page to hang it from,
+ * which is the second app in the same window that `chrome` exists to stop.
+ *
+ * So the shell draws it: under the chip, inside the theme and the language, in
+ * a boundary of its own, and wherever the chip is — on every home and on the
+ * workspace's bar, which every page opens beneath. It is handed what a chrome
+ * is handed ({@link SourceChrome}) and `close`, which shuts it; Escape and a
+ * press outside shut it too. Asked of the open source's provider alone, as the
+ * chip is. On the registration beside `chrome`, and core's three register none.
+ */
+export type SourceChipPanel = ComponentType<{
+  session?: ScopeSession
+  open: SourceOpen
+  screen: Screen
+  close: () => void
+}>
 
 /**
  * What a provider is told when it is asked what it wants in the menu.
@@ -565,6 +598,7 @@ function useShellParts(props: AppProps): ShellParts {
     gateway: agent, status: agentServer.status, tree: findings.shellTree, project, home: nav.home,
     homeName: home.name, organisationName: organisation.tree.name, goHome: nav.goHome,
     openScopeAt: nav.openScopeAt, notify: toasts.notify, s,
+    watchScreen: (props.provider?.chrome?.length ?? 0) > 0 || props.provider?.chipPanel !== undefined,
   })
   useWindowTitle({
     onTitle: host.onTitle, project, groupName: ancestry.groupName, organisationName: organisation.tree.name,

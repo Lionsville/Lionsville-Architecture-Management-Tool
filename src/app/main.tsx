@@ -51,7 +51,7 @@ import { detectBrowserLanguage, translator } from '../i18n'
 import {
   browserFolders, chooseFolderDestination, composeShell, desktopCommandChannel, desktopFileChannel,
   inBrowserFolder, inWorkingDirectory, openSource, registeredChrome, registeredConnects,
-  registeredMenus, sourceAgentPanel, sourceChip, sourceDescription,
+  registeredMenus, sourceAgentPanel, sourceChip, sourceChipPanel, sourceDescription,
 } from './composition'
 import type { WorkingFileDestination } from './workingFileFlows'
 import type { DesktopDirectory, RegisteredConnect, Shell } from './composition'
@@ -712,6 +712,7 @@ function renderApp(
           chip: sourceChip(shell.source),
           storageFailure: shell.sourceFailure,
           agentPanel: sourceAgentPanel(shell.source),
+          chipPanel: sourceChipPanel(shell.source),
           menu: menus,
           onScopeSession: shell.onScopeSession,
           publishesSteps: shell.publishesSteps,

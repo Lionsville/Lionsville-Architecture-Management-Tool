@@ -6,6 +6,7 @@
  * screens, the home's history, the standing notices and the providers'
  * strips, and the dialogs that outlive a scope.
  */
+import type { ReactNode } from 'react'
 import Alert from '@mui/material/Alert'
 import { LanguageProvider } from '../i18n'
 import { sourceIsReadOnly } from '../platform/workingSource'
@@ -21,6 +22,7 @@ import type { ScopeSnapshot } from '../projects/scope'
 import { SyncNotice } from './SyncNotice'
 import { AgentDrivingBanner } from './AgentDrivingBanner'
 import type { ShellParts } from './shellParts'
+import type { ToolbarChip } from './ShellToolbar'
 
 /** One of the three: nowhere to keep anything yet, a scope open, or a home. */
 export function AppScreen({ parts }: { parts: ShellParts }) {
@@ -79,6 +81,7 @@ function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSn
         status: props.provider?.status,
         onWork: props.provider?.onWork,
         onSession: parts.provider.takeScopeSession,
+        chip: workspaceChip(parts),
         publishesSteps: props.provider?.publishesSteps ?? false,
         onResult: reportStorage,
       }}
@@ -130,6 +133,7 @@ function Home({ parts }: { parts: ShellParts }) {
       source={parts.source}
       sourceDescription={props.provider?.description}
       sourceChip={parts.provider.chip}
+      chipPanel={chipPanelFor(parts)}
       onChooseWorkingDirectory={folder.onChoose}
       waysIn={parts.provider.offered}
       // The same two the workspace's bar carries: the menu on a host
@@ -191,6 +195,35 @@ export function HomeHistoryDialogs({ parts }: { parts: ShellParts }) {
   )
 }
 
+/**
+ * What pressing the chip opens, where the open source's provider gave a panel:
+ * inside the language and in a boundary of its own, for the reason a chrome is,
+ * and handed what a chrome is handed.
+ */
+function chipPanelFor(parts: ShellParts): ((close: () => void) => ReactNode) | undefined {
+  const { props, services: { prefs, s }, agent, provider } = parts
+  const Panel = provider.ChipPanel
+  if (!Panel) return undefined
+  return (close) => (
+    <ErrorBoundary where="sourceChipPanel" diagnostics={props.diagnostics} controls={props.hostControls} s={s}>
+      <LanguageProvider language={prefs.language}>
+        <Panel session={provider.openScope} open={agent.openSomewhere} screen={agent.screen ?? agent.screenNow()} close={close} />
+      </LanguageProvider>
+    </ErrorBoundary>
+  )
+}
+
+/**
+ * The chip on the workspace's bar: only where the open source's provider gave a
+ * word or a panel for it. Every source that ships has neither, and its chip
+ * stays on the organisation's home alone.
+ */
+function workspaceChip(parts: ShellParts): ToolbarChip | undefined {
+  const { chip, ChipPanel } = parts.provider
+  if (!chip && !ChipPanel) return undefined
+  return { source: parts.source, describeKey: parts.props.provider?.description, chip, panel: chipPanelFor(parts) }
+}
+
 /** The standing notices, and every registered provider's own strip. */
 export function AppNotices({ parts }: { parts: ShellParts }) {
   const { props, services: { prefs, s }, sync, agent, provider } = parts
@@ -238,7 +271,11 @@ export function AppNotices({ parts }: { parts: ShellParts }) {
           s={s}
         >
           <LanguageProvider language={prefs.language}>
-            <Chrome session={kind === provider.openProvider ? provider.openScope : undefined} open={agent.openSomewhere} />
+            <Chrome
+              session={kind === provider.openProvider ? provider.openScope : undefined}
+              open={agent.openSomewhere}
+              screen={agent.screen ?? agent.screenNow()}
+            />
           </LanguageProvider>
         </ErrorBoundary>
       ))}

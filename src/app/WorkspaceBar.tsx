@@ -66,6 +66,7 @@ export function WorkspaceBar({ parts, toolbarRef }: {
         onOpenSearch={() => dialogs.setSearchOpen(true)}
         activity={session.history}
         agent={props.agent.bar}
+        sourceChip={props.source.chip}
         s={s}
         windowChrome={windowChrome}
       />

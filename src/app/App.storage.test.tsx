@@ -15,14 +15,14 @@
  */
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { laidOut } from '../model/testFixtures';
-import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { scopeTree } from '../projects/scope'
 import { registerStrings, useStrings } from '../i18n'
 import type { SourceStatus } from '../platform/sourceProvider'
 import type { AgentAnswer, AgentRequest } from '../agent/tools'
 import type { AgentGateway } from '../ports/AgentGateway'
 import type { ScopeSession } from './useModelSession'
-import type { Destination } from '../agent/screen'
+import type { Destination, Screen } from '../agent/screen'
 import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
 import { renderApp } from './testing/renderShell'
 import { installReactFlowMocks } from '../editor/reactFlowTestSetup'
@@ -271,6 +271,35 @@ describe('the chrome a registered provider brought', () => {
     await waitFor(() => {
       expect(screen.getByTestId('provider-strip').textContent).toBe('en: nothing open')
     })
+  })
+
+  /**
+   * Where the app is, in the words `app.current` gives the agent: the scope
+   * and its view, the page over it, the home — handed again when it moves,
+   * and the same value while it does not, so a chrome can compare it.
+   */
+  it('is told where the app is, and told again when it moves', async () => {
+    const told: Screen[] = []
+    function Where({ screen: where }: { screen: Screen }) {
+      told.push(where)
+      const at = where.open ? `${where.open.path} ${where.open.view?.id ?? ''}` : `home ${where.home?.path ?? ''}`
+      return <p data-testid="provider-where">{`${at} ${where.page?.page ?? ''}`.trim()}</p>
+    }
+    renderApp({
+      source: elsewhere,
+      boot: { initialProject: scope },
+      provider: { chrome: [{ kind: 'elsewhere', chrome: Where }] },
+    })
+    const where = () => screen.getByTestId('provider-where').textContent
+    await waitFor(() => expect(where()).toBe('acme/landscape d1'))
+    fireEvent.click(screen.getByText('Roadmap'))
+    await waitFor(() => expect(where()).toBe('acme/landscape d1 roadmap'))
+    fireEvent.click(screen.getByTestId('crumb-'))
+    await waitFor(() => expect(where()).toBe('home'))
+    // A new value only where something moved: every render in between was
+    // handed the one it already had.
+    const distinct = new Set(told)
+    expect(distinct.size).toBe(new Set(told.map((one) => JSON.stringify(one))).size)
   })
 
   /** Inside the app's language, which is the whole reason it is not on `body`. */
@@ -1006,5 +1035,74 @@ describe('the chip a registered provider names', () => {
     const chip = screen.getByTestId('working-source')
     expect(chip.textContent).toBe('Elsewhere')
     expect(chip.tagName).not.toBe('BUTTON')
+  })
+
+  const board = laidOut({ id: 'd1', kind: 'layer7' as const, name: 'L7', placements: [] })
+  const tree = [
+    { path: '', model: { name: 'Acme', elements: [], relations: [], diagrams: [] }, activeDiagramId: '', logoLibrary: [] },
+    { path: 'acme', model: { name: 'Domain', elements: [], relations: [], diagrams: [] }, activeDiagramId: '', logoLibrary: [] },
+    { path: 'acme/landscape', model: { name: 'Landscape', elements: [], relations: [], diagrams: [board] }, activeDiagramId: 'd1', logoLibrary: [] },
+  ]
+  const onBar = () => within(screen.getByTestId('shell-toolbar')).queryByTestId('working-source')
+
+  /**
+   * Wherever the person is: a way into something that is only on the
+   * organisation's home is a way in for somebody who went back there.
+   */
+  it('is on the workspace’s bar and on every home where the provider gave one', async () => {
+    renderApp({
+      scopes: new InMemoryScopeStore(tree),
+      source: elsewhere,
+      boot: { initialProject: tree[2] },
+      provider: { chip: () => ({ label: 'Anna Berg' }) },
+    })
+    await waitFor(() => expect(onBar()?.textContent).toBe('Anna Berg'))
+    fireEvent.click(screen.getByTestId('crumb-acme'))
+    await screen.findByTestId('organisation-name')
+    expect(onBar()?.textContent).toBe('Anna Berg')
+  })
+
+  it('stays on the organisation’s home alone where the provider gave none', async () => {
+    renderApp({ scopes: new InMemoryScopeStore(tree), source: elsewhere, boot: { initialProject: tree[2] } })
+    await screen.findByTestId('crumb-acme')
+    expect(onBar()).toBeNull()
+    fireEvent.click(screen.getByTestId('crumb-acme'))
+    await screen.findByTestId('organisation-name')
+    expect(onBar()).toBeNull()
+  })
+
+  /**
+   * A panel of the provider's own, under the chip: in the theme and the
+   * language, handed the open scope and where the app is, and shut by the
+   * provider or by the person.
+   */
+  it('opens the provider’s panel under it, and shuts it again', async () => {
+    function Panel({ session, screen: where, close }: {
+      session?: ScopeSession; screen: Screen; close: () => void
+    }) {
+      const { language } = useStrings()
+      return (
+        <div data-testid="chip-panel">
+          {`${language}: ${session?.scope ?? 'nothing open'} at ${where.open?.path ?? 'home'}`}
+          <button type="button" onClick={close}>Done</button>
+        </div>
+      )
+    }
+    renderApp({
+      scopes: new InMemoryScopeStore(tree),
+      source: elsewhere,
+      boot: { initialProject: tree[2] },
+      provider: { chipPanel: Panel },
+    })
+    await waitFor(() => expect(onBar()?.tagName).toBe('BUTTON'))
+    // No word of the provider's, so the chip says the name it was opened under.
+    expect(onBar()?.textContent).toBe('Elsewhere')
+    expect(screen.queryByTestId('chip-panel')).toBeNull()
+    fireEvent.click(onBar()!)
+    await waitFor(() => {
+      expect(screen.getByTestId('chip-panel').textContent).toContain('en: acme/landscape at acme/landscape')
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Done' }))
+    await waitFor(() => expect(screen.queryByTestId('chip-panel')).toBeNull())
   })
 })

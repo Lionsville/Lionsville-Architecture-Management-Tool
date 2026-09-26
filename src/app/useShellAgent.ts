@@ -7,7 +7,7 @@
  * is up is the one fact about that screen the shell has to hold, because an
  * agent may ask for either and may ask where it stands.
  */
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Translate } from '../i18n'
 import type { Destination, Screen } from '../agent/screen'
 import type { TreeView } from '../agent/tree'
@@ -38,8 +38,15 @@ export function useShellAgent(deps: {
   openScopeAt: (path: ScopePath, page?: InitialPage) => void
   notify: Notify
   s: Translate
+  /**
+   * Keep {@link ShellAgent}'s `screen` as the screen moves, for a source
+   * provider's chrome to be handed. Off where no provider draws one, which is
+   * every build in this repository: nobody then pays a look per render.
+   */
+  watchScreen?: boolean
 }) {
   const { gateway, status, tree, project, home, homeName, organisationName, goHome, openScopeAt, notify, s } = deps
+  const watchScreen = deps.watchScreen ?? false
   const [orgPage, setOrgPage] = useState<OrgPage | undefined>(undefined)
   const [orgPageRequest, setOrgPageRequest] = useState<{ page: OrgPage; nonce: number } | undefined>(undefined)
   const agentSessionRef = useRef<WorkspaceAgentView | undefined>(undefined)
@@ -47,6 +54,28 @@ export function useShellAgent(deps: {
     (): Screen => screenOf(agentSessionRef.current, project, { home, homeName, organisationName, orgPage }),
     [project, home, homeName, organisationName, orgPage],
   )
+  /**
+   * Where the app is, as `app.current` says it (ADR-0019), held as state so a
+   * provider's chrome is drawn again when it moves — `screenNow` is read at
+   * call time and moves nothing.
+   *
+   * Looked at again whenever what the shell holds about it changes (the scope,
+   * the home, the home's page) and whenever the workspace registers its view,
+   * which it does again when the page over the canvas or the view on show
+   * changes. A look that finds the same screen keeps the one already held, so
+   * a registration that moved nothing draws nothing.
+   */
+  const [screen, setScreen] = useState<Screen | undefined>(() => (watchScreen ? screenNow() : undefined))
+  const lookAgain = useCallback(() => {
+    if (!watchScreen) return
+    const next = screenNow()
+    setScreen((held) => (held && JSON.stringify(held) === JSON.stringify(next) ? held : next))
+  }, [watchScreen, screenNow])
+  useEffect(lookAgain, [lookAgain])
+  // Through a ref, so registering the view does not change identity with the
+  // screen: the workspace re-registers whenever this function changes.
+  const lookAgainRef = useRef(lookAgain)
+  lookAgainRef.current = lookAgain
   const openFor = useCallback((to: Destination & { scope: string }) => {
     if (to.page === 'home' || to.page === 'register' || to.page === 'technologyRegister') {
       const page = to.page
@@ -83,8 +112,16 @@ export function useShellAgent(deps: {
   const registerAgentSession = useCallback((view: WorkspaceAgentView | undefined) => {
     agentSessionRef.current = view
     registerAgent(view)
+    // Only a view arriving: the workspace lets its view go before handing a
+    // new one over, and a look in between would be a different screen every
+    // time — a new value, a render, a new view, for ever. Leaving for good
+    // moves the scope, which the effect above looks at.
+    if (view) lookAgainRef.current()
   }, [registerAgent])
-  return { orgPageRequest, setOrgPage, openSomewhere, driving: agentShell.driving, stop: agentShell.stop, registerAgentSession }
+  return {
+    orgPageRequest, setOrgPage, openSomewhere, driving: agentShell.driving, stop: agentShell.stop, registerAgentSession,
+    screen, screenNow,
+  }
 }
 
 /**

@@ -29,7 +29,7 @@ export function useProviderParts(deps: {
   const { source, diagnostics, openSomewhere } = deps
   const {
     onWork: onSourceWork, chip: sourceChip, menu: menus = NONE, onScopeSession, chrome: chromes = NONE,
-    agentPanel: AgentPanel, waysIn,
+    agentPanel: AgentPanel, chipPanel: ChipPanel, waysIn,
   } = deps.provider
   /**
    * The scope that is open, as whoever answers for the source sees it — held
@@ -53,7 +53,7 @@ export function useProviderParts(deps: {
   // Held for whoever will be handed it, and for nobody else: a subscription per
   // scope ever opened is a leak with a slow fuse, and a build that registered
   // none of these asks the workspace for nothing.
-  const takeScopeSession = chromes.length > 0 || menus.length > 0 || onScopeSession || AgentPanel
+  const takeScopeSession = chromes.length > 0 || menus.length > 0 || onScopeSession || AgentPanel || ChipPanel
     ? holdScopeSession
     : undefined
   /**
@@ -133,7 +133,7 @@ export function useProviderParts(deps: {
    */
   const overflowSource = menus.length > 0 ? { sourceEntries, onSourceWork } : undefined
 
-  return { chromes, AgentPanel, openScope, takeScopeSession, openProvider, chip, offered, overflowSource }
+  return { chromes, AgentPanel, ChipPanel, openScope, takeScopeSession, openProvider, chip, offered, overflowSource }
 }
 
 /** Each way in as its provider now says it: as registered, relabelled, or not drawn at all. */

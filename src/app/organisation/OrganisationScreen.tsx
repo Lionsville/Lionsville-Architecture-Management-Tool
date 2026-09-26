@@ -25,6 +25,7 @@
  * inventing a second one that guessed would hide affordances that work.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
@@ -65,7 +66,7 @@ import MenuItem from '@mui/material/MenuItem'
 import type { ExampleProject } from '../examples'
 import { OverflowMenu } from '../OverflowMenu'
 import type { ToolbarAgent, ToolbarOverflow } from '../ShellToolbar'
-import { agentTip, Crumbs, crumbsFor, QUIET, sourceIsAlarming, sourceLabel, sourceTipKey, WRAPS } from '../ShellToolbar'
+import { agentTip, Crumbs, crumbsFor, QUIET, SourceChipView, WRAPS } from '../ShellToolbar'
 import { NewScopeDialog } from './NewScopeDialog'
 import { registerSummary, registerWithin } from './register'
 import type { RegisterRow } from './register'
@@ -118,6 +119,12 @@ export type OrganisationScreenProps = {
    * the chip is the fact it always was.
    */
   sourceChip?: SourceChip
+  /**
+   * What pressing the chip opens, drawn under it (`ShellToolbar`'s
+   * `ToolbarChip`). Where a provider gave this or its own `sourceChip`, the
+   * chip is on every scope's home and not the organisation's alone.
+   */
+  chipPanel?: (close: () => void) => ReactNode
   onChooseWorkingDirectory?: () => void
   /**
    * The other places this build can work from, one button each, beside the one
@@ -189,7 +196,7 @@ export type OrganisationScreenProps = {
 }
 
 export function OrganisationScreen({
-  organisation, examples, order, onOrderChange, source, sourceDescription, sourceChip,
+  organisation, examples, order, onOrderChange, source, sourceDescription, sourceChip, chipPanel,
   onChooseWorkingDirectory, waysIn,
   overflow, agent, onGoHome, findings, register = [], technology = [], initiatives = 0, sharedObservations = 0,
   onOpenRegisterRow, onOpenRegisterPage, onLinkFromRegister, pageRequest, onPageChange,
@@ -322,9 +329,9 @@ export function OrganisationScreen({
         home={home}
         heading={heading}
         level={level}
-        source={atRoot ? source : undefined}
+        source={chipHere(atRoot, sourceChip, chipPanel) ? source : undefined}
         sourceDescription={sourceDescription}
-        sourceChip={sourceChip}
+        sourceChip={sourceChip} chipPanel={chipPanel}
         onChooseWorkingDirectory={atRoot ? onChooseWorkingDirectory : undefined}
         waysIn={atRoot ? waysIn : undefined}
         onGoHome={onGoHome}
@@ -783,18 +790,13 @@ function NewBoardDialog({ open, name, onNameChange, onCancel, onCreate, s }: {
 }
 
 /**
- * The sentence for the chip, or the empty string where there is none to say.
- *
- * A provider's key comes from its own table (`i18n`'s `registerStrings`), so it
- * is rendered exactly as the ways in render their labels: this shell passes the
- * key through and never holds the words.
+ * Whether this home's bar names where work is kept: the organisation's always,
+ * and every other home's where the provider gave a word or a panel of its own
+ * for the chip — a way into something has to be where the person is. The
+ * three that ship give neither, so theirs stays on the organisation's home.
  */
-function tipFor(
-  source: WorkingSource, describeKey: StringKey | (string & {}) | undefined, s: Translate,
-  chip?: SourceChip,
-): string {
-  const key = sourceTipKey(source, describeKey, chip)
-  return key === undefined ? '' : s(key as StringKey)
+function chipHere(atRoot: boolean, chip: SourceChip | undefined, panel: unknown): boolean {
+  return atRoot || chip !== undefined || panel !== undefined
 }
 
 /**
@@ -860,7 +862,7 @@ function UnreadableScopes({ tree, at, s }: { tree: ScopeSummary; at: ScopePath; 
  * traffic lights, and be the surface the window is dragged by.
  */
 function OrganisationBar({
-  barRef, tree, home, heading, level, source, sourceDescription, sourceChip,
+  barRef, tree, home, heading, level, source, sourceDescription, sourceChip, chipPanel,
   onChooseWorkingDirectory, waysIn = [],
   onGoHome, onSettings, overflow, agent, s, windowChrome,
 }: {
@@ -874,6 +876,7 @@ function OrganisationBar({
   source?: WorkingSource
   sourceDescription?: StringKey | (string & {})
   sourceChip?: SourceChip
+  chipPanel?: (close: () => void) => ReactNode
   onChooseWorkingDirectory?: () => void
   waysIn?: readonly SourceWayIn[]
   onGoHome: (path: ScopePath) => void
@@ -908,36 +911,7 @@ function OrganisationBar({
       <Box sx={{ flex: 1 }} />
 
       {source && (
-        /* The sentence about where work is kept: this tree's for a built-in
-           kind, the provider's own for a registered source, and — where a
-           provider gave none — nothing, which an empty title is how MUI says.
-           A guess of ours about somewhere this shell has never heard of could
-           promise a copy that cannot be made. */
-        <Tooltip title={tipFor(source, sourceDescription, s, sourceChip)}>
-          <Typography
-            data-testid="working-source"
-            /* A real `button` where a provider gave something to press, and not
-               a span that listens: this bar is the window's drag surface on the
-               desktop, and the rule that keeps a control clickable inside it
-               names elements (`& button, & a, & input`) rather than whatever
-               happens to have a handler. A span with an `onClick` here would be
-               dead surface that drags the window instead. */
-            {...(sourceChip?.onClick
-              ? { component: 'button' as const, type: 'button', onClick: sourceChip.onClick }
-              : {})}
-            sx={{
-              fontSize: 11, px: 0.75, py: 0.25, borderRadius: 1, whiteSpace: 'nowrap',
-              color: sourceIsAlarming(source) ? 'warning.main' : 'text.secondary',
-              border: 1, borderColor: sourceIsAlarming(source) ? 'warning.main' : 'divider',
-              // A button brings the browser's own font and background with it,
-              // so both are said back to what the chip has always looked like.
-              fontFamily: 'inherit', bgcolor: 'transparent',
-              cursor: sourceChip?.onClick ? 'pointer' : undefined,
-            }}
-          >
-            {sourceLabel(source, s, sourceChip)}
-          </Typography>
-        </Tooltip>
+        <SourceChipView source={source} describeKey={sourceDescription} chip={sourceChip} panel={chipPanel} s={s} />
       )}
       {onChooseWorkingDirectory && (
         <Button size="small" color="inherit" onClick={onChooseWorkingDirectory} sx={quiet}>

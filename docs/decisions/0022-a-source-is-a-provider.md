@@ -782,6 +782,51 @@ expecting a scope somebody else removed already resolves. `useOrganisation.test.
 pins the move keeping the old address where it, or a scope under it, was
 changed while the move was being written.
 
+## Amended — the two a build whose strip follows the person needed
+
+*26 September 2026.* The same build had a chrome with something to say about the
+place a person was looking at, and a chip that is a way into something of its
+own. The chrome could send somebody to a scope (`open`) and could not see that
+they had arrived, or where they went next; the chip could run a function and
+was drawn on the organisation's home alone, so a person working on a board had
+no way to it but going back. Each is added as the smallest public thing that
+closes it, and the three built-ins are written exactly as they were.
+
+* **A chrome is handed where the app is.** `SourceChrome` takes `screen`: the
+  `Screen` ADR-0019 already defines, which `app.current` answers the agent
+  with — the scope that is open, its view and the page over it, or the home
+  that is up and its page. The same words and not a second description of the
+  app, for the reason `open` takes a `Destination`: a shell with two ways to
+  say *the roadmap of that scope* is a shell where one of them is a version
+  behind. It is held as state in the shell (`useShellAgent`), looked at again
+  when the scope, the home or the home's page moves and when the workspace
+  hands its view over again, and kept as the same value while nothing moved,
+  so a chrome may compare what it was handed. The shell looks only where a
+  provider registered a chrome or a panel; a build with neither pays nothing.
+  `app.current` itself is unchanged.
+* **The chip may open a panel, and is wherever the person is.** A provider
+  registers `chipPanel`, a component the shell draws under the chip when it is
+  pressed — inside the theme and the language, in a boundary of its own, handed
+  what a chrome is handed and `close` — because the alternative was a chrome
+  drawing a popover of its own and hunting the page for the chip to hang it
+  from. And where the open source's provider gave a `chip` or a `chipPanel`,
+  the chip is drawn on every scope's home and on the workspace's bar, which
+  every page opens beneath, rather than on the organisation's home alone. It is
+  one component on both bars (`ShellToolbar`'s `SourceChipView`), so it reads
+  and presses the same on each. Where a provider gave neither — the three that
+  ship — the chip stays where it always was and says what it always said.
+  `chip` itself stays a label: a word on a bar, with the panel as the thing
+  behind it.
+
+`App.storage.test.tsx` pins both: a chrome told the open scope and its view,
+told again when a page opens over it and when the person goes home, and handed
+the same value in between; a provider's chip on the workspace's bar and on a
+domain's home, the chip absent from both where the provider gave none, and a
+panel opened by pressing the chip, handed the open scope and the screen in the
+app's language, and shut by the provider. `composition.test.tsx` pins the
+registry answering the panel for the open source's provider and for nobody
+else. `ShellToolbar.test.tsx` still pins the three that ship byte for byte.
+
 ## More Information
 
 ADR-0002 for the command and its inverse, which is the whole reason this is a

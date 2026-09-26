@@ -78,7 +78,7 @@ import type {
 } from '../platform/sourceProvider'
 import type { StringKey } from '../i18n/strings'
 import type {
-  RegisteredChrome, RegisteredMenu, SourceAgentPanel, SourceChrome, SourceMenu,
+  RegisteredChrome, RegisteredMenu, SourceAgentPanel, SourceChipPanel, SourceChrome, SourceMenu,
 } from './App'
 import type { ScopeSession } from './useModelSession'
 import type { KeyValueStorage } from '../adapters/webStorage/KeyValueStorage'
@@ -319,6 +319,12 @@ export type RegisteredSourceProvider<Opening = never> =
      * a folder, and this shell already says so.
      */
     readonly agentPanel?: SourceAgentPanel
+    /**
+     * What pressing the chip that names this provider's source opens
+     * ({@link SourceChipPanel}). Here rather than in `platform/` for the
+     * reason `chrome` is: it is a component. Core's three register none.
+     */
+    readonly chipPanel?: SourceChipPanel
   }
 
 /**
@@ -453,6 +459,17 @@ export function sourceChip(
  */
 export function sourceAgentPanel(source: WorkingSource): SourceAgentPanel | undefined {
   return source.kind === 'registered' ? sourceProvider(source.provider)?.agentPanel : undefined
+}
+
+/**
+ * What pressing the chip that names this source opens, or nothing.
+ *
+ * The open source's alone, for the reason {@link sourceChip} is: the chip names
+ * that source, so a panel from any other provider would be hanging from
+ * somebody else's name. Nothing for the three that ship.
+ */
+export function sourceChipPanel(source: WorkingSource): SourceChipPanel | undefined {
+  return source.kind === 'registered' ? sourceProvider(source.provider)?.chipPanel : undefined
 }
 
 /**

@@ -27,7 +27,7 @@ import type { HostControls } from '../ports/HostControls'
 import type { ProjectHistory } from '../ports/ProjectHistory'
 import type { UpdateSettingsStore } from '../ports/UpdateSettings'
 import type {
-  RegisteredChrome, RegisteredMenu, ScopeLibrary, ShellDiagnostics, SourceAgentPanel,
+  RegisteredChrome, RegisteredMenu, ScopeLibrary, ShellDiagnostics, SourceAgentPanel, SourceChipPanel,
 } from './App'
 import type { ExampleProject } from './examples'
 import type { MakeId } from './useDiagramActions'
@@ -178,6 +178,15 @@ export type AppProvider = {
    * desktop in a tab.
    */
   agentPanel?: SourceAgentPanel
+  /**
+   * What pressing the chip opens, from the open source's provider
+   * (`SourceChipPanel`). Where one is given, or a `chip` is, the chip is drawn
+   * on every home and on the workspace's bar rather than on the organisation's
+   * home alone, because a way into something has to be where the person is.
+   * Absent for every build in this repository, and the chip is then exactly
+   * where it always was. Read from the registration by the boot.
+   */
+  chipPanel?: SourceChipPanel
   /**
    * The other places this build can work from: what each button says, and what
    * pressing it does (`platform/sourceProvider.ts`).
