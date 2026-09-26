@@ -61,6 +61,10 @@ function tree(): TreeView & { read: TreeView['read'] & { asked: string[] } } {
   const entries = {
     erp: { id: 'erp', kind: 'application' as const, name: 'Finance system', master: 'acme/finance', declarations: [], drawnIn: [], stale: [] },
     wms: { id: 'wms', kind: 'application' as const, name: 'Warehouse system', master: 'acme/retail', declarations: [], drawnIn: ['acme/finance'], stale: ['acme/finance'], outside: true as const },
+    // Three parties: the organisation's, the domain finance is filed under, and a sibling's.
+    carrier: { id: 'carrier', kind: 'actor' as const, name: 'Carrier', master: '', declarations: [], drawnIn: [], stale: [] },
+    'domain-desk': { id: 'domain-desk', kind: 'actor' as const, name: 'Domain desk', master: 'acme', declarations: [], drawnIn: [], stale: [] },
+    'shop-floor': { id: 'shop-floor', kind: 'actor' as const, name: 'Shop floor', master: 'acme/retail', declarations: [], drawnIn: [], stale: [] },
   }
   return {
     scopes: () => [
@@ -286,6 +290,28 @@ describe('scope on anything that needs the session', () => {
     )
     expect(out.ok).toBe(true)
     expect(view.revision()).toBe(1)
+  })
+})
+
+describe('a party kept above (ADR-0012 §4)', () => {
+  const update = (partyId: string, over: Partial<SessionView> = {}) => {
+    const held = session(over)
+    return { held, out: handle({ id: '1', tool: 'element.update', args: { id: 'erp', partyId } }, held) }
+  }
+
+  it('is one the agent may name, as Belongs to lets a person, and lands as the plain id', async () => {
+    for (const partyId of ['carrier', 'domain-desk']) {
+      const { held, out } = update(partyId)
+      expect(refusal(await out)).toBeUndefined()
+      expect(held.model().elements.erp.partyId).toBe(partyId)
+    }
+  })
+
+  it('is not a sibling’s actor, an id nobody keeps, or anything at all without a tree', async () => {
+    expect(refusal(await update('shop-floor').out)).toBe('agent.badArguments')
+    expect(refusal(await update('ghost').out)).toBe('agent.unknownId')
+    expect(refusal(await update('carrier', { tree: undefined }).out)).toBe('agent.unknownId')
+    expect(refusal(await update('wms').out)).toBe('agent.badArguments')
   })
 })
 

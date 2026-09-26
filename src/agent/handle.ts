@@ -362,7 +362,7 @@ function writeView(session: SessionView, over: Partial<WriteView> = {}): WriteVi
     containerName: session.containerName,
     ...(session.ownedElsewhere ? { ownedElsewhere: session.ownedElsewhere } : {}),
     ...(session.standInFor ? { standInFor: session.standInFor } : {}),
-    ...(session.tree ? { known: (id: string) => session.tree?.lookup(id) !== undefined } : {}),
+    ...(session.tree ? { tree: session.tree, known: (id: string) => session.tree?.lookup(id) !== undefined } : {}),
     ...over,
   }
 }

@@ -166,7 +166,7 @@ const ELEMENT_FIELDS = {
   isManaged: { type: 'boolean', description: 'Whether the organisation manages it itself.' },
   owner: { type: 'string', description: 'Who answers for it — a person or a team. Which scope owns it is the folder.' },
   outside: { type: 'boolean', description: 'True when nobody in this organisation owns it. What the externalSystem kind used to say, as the fact it always was.' },
-  partyId: { type: 'string', description: 'The id of the actor it belongs to, where that has been said. Only meaningful with outside.' },
+  partyId: { type: 'string', description: 'The id of the actor it belongs to, where that has been said: one this scope keeps or one a scope above it keeps. Only meaningful with outside.' },
   order: { type: 'number', description: 'Where it sits among its siblings, low first. Only say it where the order is a decision — a journey reads left to right.' },
   lane: { type: 'string', description: 'A step only: the id of the actor whose own path this step is. Absent means the row every lane shares.' },
   liveOn: { type: 'string', description: 'The day it goes live, yyyy-mm-dd. Before it, planned.' },

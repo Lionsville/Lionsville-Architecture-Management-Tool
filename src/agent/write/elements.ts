@@ -228,14 +228,37 @@ const ownership: FieldReader = (args, _held, view, patch) => {
   if (args.outside !== undefined) patch.outside = args.outside === true ? true : undefined
   if (cleared(args.partyId)) patch.partyId = undefined
   else if (typeof args.partyId === 'string') {
-    const party = view.model.elements[args.partyId]
-    if (!party) return refused('agent.unknownId', `element ${args.partyId}`)
+    const party = partyOf(view, args.partyId)
+    if ('ok' in party) return party
     if (party.kind !== 'actor') return refused('agent.badArguments', '"partyId" must name an actor')
     patch.partyId = args.partyId
   }
   if (args.order === null) patch.order = undefined
   else if (typeof args.order === 'number') patch.order = args.order
   return undefined
+}
+
+/**
+ * The actor a `partyId` names: this scope's own, or one a scope above it keeps
+ * — the parties *Belongs to* offers a person (ADR-0012 §4, ADR-0011). Ids are
+ * unique across the tree, so the id is written as it is wherever the actor
+ * lives. A sibling's or a child's actor is not one this scope can see.
+ */
+function partyOf(view: ReadView, id: string): { kind: ElementKind } | AgentAnswer {
+  const own = view.model.elements[id]
+  if (own) return own
+  const entry = view.tree?.lookup(id)
+  if (!entry || entry.master === undefined) return refused('agent.unknownId', `element ${id}`)
+  if (!isAbove(entry.master, view.scopePath)) {
+    return refused('agent.badArguments', `"partyId" ${id} is kept in ${entry.master || 'the organisation'}, which is not this scope or one above it`)
+  }
+  return entry
+}
+
+/** Is `path` a scope strictly above `scope`? The organisation, the empty path, is above every other. */
+function isAbove(path: string, scope: string): boolean {
+  if (path === scope) return false
+  return path === '' || scope.startsWith(`${path}/`)
 }
 
 /** The tree: a step's lane, and the parent — a loop refused rather than hidden. */
