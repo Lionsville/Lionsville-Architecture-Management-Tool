@@ -41,6 +41,14 @@ export type FileHandleLike = {
   name: string
   getFile(): Promise<FileLike>
   createWritable(): Promise<WritableLike>
+  /**
+   * This file renamed within its folder, over a file of that name if there is
+   * one — the one step of a staged landing (ADR-0023, amendment 3) that makes
+   * a written file the file. A browser's own handle has it where the browser
+   * can rename a file the person chose; absent, a folder is written one file
+   * at a time.
+   */
+  move?(name: string): Promise<void>
 }
 
 export type DirectoryHandleLike = {
@@ -58,8 +66,10 @@ export type DirectoryHandleLike = {
    * moved into place; then the removals. A failure while staging leaves the
    * folder as it was. Offered where something outside the page does the work —
    * the desktop's main process — so that the page going away part way cannot
-   * cut it short; a browser's own handle has no rename and offers none, and
-   * the folder store then writes one file at a time, as it always has.
+   * cut it short. A browser's own handle offers none, because the page is
+   * what would do the work; the folder store then stages with the handles'
+   * own `move` where they have it, and writes one file at a time where they
+   * do not (ADR-0023, amendment 3).
    */
   writeTogether?(
     writes: readonly { path: string; data: string | Uint8Array }[],

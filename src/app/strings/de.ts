@@ -87,6 +87,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.workingFileShort': 'Arbeitsdatei „{name}“ ist nicht vollständig angekommen. Nach dem Laden fehlt: {what}.',
   'shell.workingFileShortOwn': 'Arbeitsdatei „{name}“ ist nicht vollständig angekommen. Sie hat kein Manifest, weil eine ältere Version sie gespeichert hat, deshalb wurde sie mit ihrem Inhalt abgeglichen. Nach dem Laden fehlt: {what}.',
   'shell.workingFileNotLanded': 'Die Arbeitsdatei wurde nicht geladen, und nichts davon wurde geschrieben: Alle Bereiche darin kommen gemeinsam an oder keiner. {reason}',
+  'shell.workingFileLandedInPart': 'Möglicherweise wurde nur ein Teil der Arbeitsdatei geschrieben: Dieser Ordner wird Datei für Datei geschrieben, und das Schreiben hat unterwegs aufgehört. {reason}',
   'shell.shortScope': 'der Bereich „{name}“ ({path})',
   'shell.shortView': 'die Ansicht „{view}“ in „{scope}“',
   'shell.shortFiles': '{count} Dateien von „{scope}“',

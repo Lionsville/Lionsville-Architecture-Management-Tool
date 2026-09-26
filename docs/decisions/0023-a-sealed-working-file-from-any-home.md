@@ -1,6 +1,6 @@
 # ADR-0023 — A sealed working file, from any home, and settings that stay with the install
 
-* Status: accepted; amended 26 September 2026 (a manifest, and a landing that is checked; a landing is one write)
+* Status: accepted; amended 26 September 2026 (a manifest, and a landing that is checked; a landing is one write; a folder in a browser stages too)
 * Date: 2026-09-21
 * Deciders: Wouter Simons
 * Extends: ADR-0018 (the working file is the working set)
@@ -302,3 +302,51 @@ Loading it again starts from the organisation as it was.
   manifest beside its scopes; the shell's `adoptScopes` reads every scope's
   revision and then writes through `saveTogether` where the store has it.
 
+## Amendment 3 — 26 September 2026: a folder in a browser stages too
+
+Amendment 2 left one landing a walk: a browser tab that was given a folder
+and has no server. Its handle has no `writeTogether`, so the folder store
+planned the set whole — a refusal still wrote nothing — and then wrote it a
+scope at a time from the page. Two things followed. The page going away part
+way left the first scopes written and the rest not, which is the loss
+amendment 2 closed everywhere else. And a failure part way was said as the
+refusal of amendment 2 — *not loaded, and nothing of it was written* — over a
+folder that held the first half of the file.
+
+**Where the browser can rename a file the person chose, the page stages.** A
+browser's file handle can rename itself within its folder, over a file of the
+name it is given (`FileHandleLike.move`; Chromium since 111, the only engine
+with a folder picker). The folder store then does in the page what main does
+on the desktop (`adapters/fileSystem/stagedWrites.ts`): every file written
+under a name of its own beside where it goes — its target's name, the
+landing's mark, and `.landing`, so no reader of the format takes it for a
+file — and only when all of them are there is any renamed into place; the
+removals last. A failure while staging removes what was staged and writes
+nothing. The page going away while it stages leaves the folder as it was but
+for staged files nothing reads; going away during the renames is the moment
+the desktop has too, each rename whole on its own.
+
+**Where it cannot, the landing is checked, and a failure part way is said as
+what it is.** A handle with no `move`, or a first rename the browser refuses,
+removes what was staged and writes a scope at a time as before. A failure
+after something was written — a scope in that walk, or a rename after another
+went through — is `shell.workingFileLandedInPart` and not a refusal; the
+landing goes on to the read-back of amendment 1, which names what did not
+arrive: *did not arrive whole. Not there after loading: the scope “…” (…)*.
+Where there is nothing to read back through, the store's own sentence says
+that only part may have been written — in English, Dutch and German.
+
+*A new folder…* lands through `saveTogether` too, where it was a walk on the
+desktop as well as in a browser.
+
+### Consequences
+
+* `FileHandleLike.move?(name)`, with a clause in the handle contract, skipped
+  where a handle has none.
+* `FileSystemScopeStore.saveTogether` hands the writes to `writeTogether`
+  where the folder has it, stages them where its handles can move, and walks
+  where they cannot, answering `shell.workingFileLandedInPart` for a walk
+  that stopped part way.
+* The shell's `adoptScopes` passes that answer on rather than saying nothing
+  was written, and `landWorkingFile` reads a landing written in part back,
+  after *Replace here* and after *A new folder…* alike.

@@ -152,6 +152,7 @@ export const EN = {
   'shell.workingFileShort': 'Working file “{name}” did not arrive whole. Not there after loading: {what}.',
   'shell.workingFileShortOwn': 'Working file “{name}” did not arrive whole. It has no manifest, because an older version saved it, so it was checked against what it holds. Not there after loading: {what}.',
   'shell.workingFileNotLanded': 'The working file was not loaded, and nothing of it was written: every scope in it lands together or none does. {reason}',
+  'shell.workingFileLandedInPart': 'Only part of the working file may have been written: this folder is written one file at a time, and the writing stopped part way. {reason}',
   'shell.shortScope': 'the scope “{name}” ({path})',
   'shell.shortView': 'the view “{view}” in “{scope}”',
   'shell.shortFiles': '{count} files of “{scope}”',

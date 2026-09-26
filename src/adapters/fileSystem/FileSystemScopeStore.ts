@@ -70,10 +70,12 @@ import {
   isSafeScopePath, parentScope, ROOT_SCOPE, scopePathLabel, scopeSegments,
 } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
-import { ShellError } from '../../platform/errors'
+import { ShellError, reasonOf } from '../../platform/errors'
 import type { ScopeStore } from '../../ports/ScopeStore'
 import type { Diagnostics } from '../../ports/Diagnostics'
 import type { DirectoryHandleLike, FileHandleLike } from '../../ports/DirectoryHandle'
+import { writeStaged } from './stagedWrites'
+import type { StagedWrite } from './stagedWrites'
 
 /**
  * The slice of the File System Access API this store works through.
@@ -578,8 +580,11 @@ export class FileSystemScopeStore implements ScopeStore {
    * anything is written, so a refusal of any one writes none. Then, where the
    * folder can take them as one (`DirectoryHandleLike.writeTogether`: the
    * desktop's main process stages every file before it moves any), in one
-   * call; where it cannot — a browser's own handle has no rename — scope by
-   * scope, as {@link save} would.
+   * call; where its handles can rename a file (a browser's, ADR-0023,
+   * amendment 3), staged here and moved into place; and where they cannot,
+   * scope by scope, as {@link save} would — and then a failure part way is
+   * `shell.workingFileLandedInPart`, because some of it may be written, and
+   * the caller reads the landing back to say what.
    *
    * The folder holds no manifest check of its own: the caller reads the
    * landing back and holds it to the file (ADR-0023, amended).
@@ -588,19 +593,45 @@ export class FileSystemScopeStore implements ScopeStore {
     const plans: Plan[] = []
     for (const { scope, expects } of entries) plans.push(await this.plan(scope, expects))
     const together = this.root.writeTogether?.bind(this.root)
-    if (!together) {
-      for (const plan of plans) await this.apply(plan)
+    if (together) {
+      const writes: { path: string; data: string | Uint8Array }[] = []
+      const removals: string[] = []
+      for (const plan of plans) {
+        const at = scopeSegments(plan.path)
+        const under = (inside: string) => [...at, inside].join('/')
+        for (const file of plan.writes) writes.push({ path: under(file.path), data: 'text' in file ? file.text : file.bytes })
+        for (const entry of plan.removals) removals.push(under(entry.path))
+      }
+      await together(writes, removals)
       return
     }
-    const writes: { path: string; data: string | Uint8Array }[] = []
-    const removals: string[] = []
-    for (const plan of plans) {
-      const at = scopeSegments(plan.path)
-      const under = (inside: string) => [...at, inside].join('/')
-      for (const file of plan.writes) writes.push({ path: under(file.path), data: 'text' in file ? file.text : file.bytes })
-      for (const entry of plan.removals) removals.push(under(entry.path))
+    if (await writeStaged(await this.stagedWrites(plans))) {
+      for (const plan of plans) await this.removeAll(plan.removals)
+      return
     }
-    await together(writes, removals)
+    try {
+      for (const plan of plans) await this.apply(plan)
+    } catch (cause) {
+      throw new ShellError('shell.workingFileLandedInPart', { reason: reasonOf(cause) })
+    }
+  }
+
+  /** Every file the plans write, as the folder it goes in and its name there — the folders made on the way. */
+  private async stagedWrites(plans: readonly Plan[]): Promise<StagedWrite[]> {
+    const staged: StagedWrite[] = []
+    for (const plan of plans) {
+      const folder = await this.scopeFolder(plan.path, true)
+      if (!folder) throw new ShellError('shell.folderUnavailable')
+      for (const file of plan.writes) {
+        const parts = file.path.split('/')
+        staged.push({
+          folder: await this.folderInside(folder, parts.slice(0, -1)),
+          name: parts[parts.length - 1],
+          data: 'text' in file ? file.text : file.bytes,
+        })
+      }
+    }
+    return staged
   }
 
   /**
@@ -686,7 +717,11 @@ export class FileSystemScopeStore implements ScopeStore {
     // Written before anything is removed: an interrupted save then leaves a
     // folder with too much in it, which opens, rather than too little.
     for (const file of plan.writes) await this.write(folder, file)
-    for (const entry of plan.removals) {
+    await this.removeAll(plan.removals)
+  }
+
+  private async removeAll(removals: readonly Entry[]): Promise<void> {
+    for (const entry of removals) {
       // One that will not go is not a failed save — everything wanted is
       // written — but it is a deleted diagram or decision that comes back on
       // the next open, so it is said rather than dropped.

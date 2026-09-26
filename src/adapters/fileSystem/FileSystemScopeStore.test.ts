@@ -621,3 +621,101 @@ describe('a picture that is not a PNG', () => {
     expect((await store.load(SAMPLE_PATH))?.imageLibrary?.[0].url).toBe(url)
   })
 })
+
+/**
+ * The same folder, with the writing of one file refused — the way a full disk
+ * or a file another program holds refuses it — or the renaming of the staged
+ * file at one place in the order the renames are made. `write` is the path
+ * from the folder's root of the file as it will be called; a staged file is
+ * matched by that name.
+ */
+function refusingWrites(folder: DirectoryHandleLike, refuse: { write?: string; moveAt?: number }): DirectoryHandleLike {
+  let moves = 0
+  const target = (path: string) => path.replace(/\.[a-z0-9]+\.landing$/, '')
+  const file = (held: FileHandleLike, path: string): FileHandleLike => ({
+    kind: 'file',
+    name: held.name,
+    getFile: () => held.getFile(),
+    createWritable: () => (target(path) === refuse.write
+      ? Promise.reject(new Error('QuotaExceededError: the disk is full'))
+      : held.createWritable()),
+    ...(held.move
+      ? {
+        move: (to: string) => {
+          moves += 1
+          return moves - 1 === refuse.moveAt
+            ? Promise.reject(new Error('NoModificationAllowedError: held open'))
+            : held.move?.(to) ?? Promise.resolve()
+        },
+      }
+      : {}),
+  })
+  const wrap = (held: DirectoryHandleLike, within: string): DirectoryHandleLike => {
+    const at = (name: string) => (within ? `${within}/${name}` : name)
+    return {
+      kind: 'directory',
+      name: held.name,
+      getDirectoryHandle: async (name, options) => wrap(await held.getDirectoryHandle(name, options), at(name)),
+      getFileHandle: async (name, options) => file(await held.getFileHandle(name, options), at(name)),
+      removeEntry: (name, options) => held.removeEntry(name, options),
+      values: async function* () {
+        for await (const entry of held.values()) {
+          yield entry.kind === 'directory' ? wrap(entry, at(entry.name)) : file(entry, at(entry.name))
+        }
+      },
+    }
+  }
+  return wrap(folder, '')
+}
+
+describe('a working file landed in a folder a browser holds (ADR-0023, amendment 3)', () => {
+  const set = () => [scopeAt('', 'Organisation'), scopeAt('depots'), scopeAt('depots/fleet')]
+  const entries = () => set().map((scope) => ({ scope }))
+  const staged = (root: FakeDirectory) => root.paths().filter((path) => path.endsWith('.landing'))
+  const fleet = async (root: FakeDirectory) => (await new FileSystemScopeStore(root).load('depots/fleet'))?.model.name
+
+  it('is staged and moved into place, and leaves no staged file behind', async () => {
+    const root = new FakeDirectory()
+    await new FileSystemScopeStore(root).saveTogether(entries())
+    expect(await fleet(root)).toBe('fleet')
+    expect(staged(root)).toEqual([])
+  })
+
+  it('writes nothing of the set where one file cannot be written, where it used to leave the first scopes written', async () => {
+    const root = new FakeDirectory()
+    await new FileSystemScopeStore(root).save(scopeAt('', 'Was here'))
+    const before = root.paths()
+    const refusing = new FileSystemScopeStore(refusingWrites(root, { write: 'depots/fleet/model.json' }))
+    await expect(refusing.saveTogether(entries())).rejects.toThrow(/disk is full/)
+    // Folders may have been made on the way; no file was.
+    expect(root.paths()).toEqual(before)
+    expect((await new FileSystemScopeStore(root).load(''))?.model.name).toBe('Was here')
+  })
+
+  it('writes one scope at a time where the handles cannot rename a file, and says a failure part way is in part', async () => {
+    const root = new FakeDirectory('', { canMove: false })
+    await new FileSystemScopeStore(root).saveTogether(entries())
+    expect(await fleet(root)).toBe('fleet')
+
+    const other = new FakeDirectory('', { canMove: false })
+    const refusing = new FileSystemScopeStore(refusingWrites(other, { write: 'depots/fleet/model.json' }))
+    await expect(refusing.saveTogether(entries())).rejects.toMatchObject({ key: 'shell.workingFileLandedInPart' })
+    expect((await new FileSystemScopeStore(other).load('depots'))?.model.name).toBe('depots')
+    expect(staged(other)).toEqual([])
+  })
+
+  it('falls back to one file at a time where the first rename is refused, with nothing staged left', async () => {
+    const root = new FakeDirectory()
+    const store = new FileSystemScopeStore(refusingWrites(root, { moveAt: 0 }))
+    await expect(store.saveTogether(entries())).resolves.toBeUndefined()
+    expect(await fleet(root)).toBe('fleet')
+    expect(staged(root)).toEqual([])
+  })
+
+  it('says a rename refused after another went through is a landing in part, and removes what is still staged', async () => {
+    const root = new FakeDirectory()
+    const store = new FileSystemScopeStore(refusingWrites(root, { moveAt: 2 }))
+    await expect(store.saveTogether(entries())).rejects.toMatchObject({ key: 'shell.workingFileLandedInPart' })
+    expect(staged(root)).toEqual([])
+  })
+})

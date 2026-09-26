@@ -4,6 +4,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { laidOut } from '../model/testFixtures'
 import { translator } from '../i18n'
+import { ShellError } from '../platform/errors'
 import type { ScopeSnapshot } from '../projects/scope'
 import { workingFileBytes } from '../projects/workingFile'
 import { manifestOf } from '../projects/workingFileManifest'
@@ -197,6 +198,30 @@ describe('a landing, read back and held to the file (ADR-0023, amended)', () => 
     })
     expect(notify).toHaveBeenCalledWith(
       'Working file “org.lvarch” did not arrive whole. Not there after loading: the scope “Depots” (depots).', 'error')
+  })
+
+  it('reads a new folder written in part back too, and names what did not arrive (amendment 3)', async () => {
+    const kept = store()
+    const notify = vi.fn()
+    const place = async (scopes: readonly ScopeSnapshot[]) => {
+      await kept.write(scopes.slice(0, 1))
+      throw new ShellError('shell.workingFileLandedInPart', { reason: 'held open' })
+    }
+    await landWorkingFile({
+      name: 'org.lvarch', bytes: await sealedSet(), into, prompts: prompts('folder'),
+      chooseFolder: () => Promise.resolve({ name: 'New', occupied: false, place, read: kept.read }),
+      here: vi.fn(), notify, s,
+    })
+    expect(notify).toHaveBeenCalledTimes(1)
+    expect(notify.mock.calls[0][0]).toMatch(/^Working file “org\.lvarch” did not arrive whole\. Not there after loading: the scope “Depots” \(depots\); the scope “Fleet”/)
+  })
+
+  it('throws a landing in part on where there is nothing to read it back through', async () => {
+    const here = () => Promise.reject(new ShellError('shell.workingFileLandedInPart', { reason: 'held open' }))
+    await expect(landWorkingFile({
+      name: 'org.lvarch', bytes: await sealedSet(), into: scope('Here', ''), prompts: prompts('here'),
+      here, notify: vi.fn(), s,
+    })).rejects.toMatchObject({ key: 'shell.workingFileLandedInPart' })
   })
 
   it('says nothing more where "here" landed nothing and said why', async () => {

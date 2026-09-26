@@ -19,6 +19,7 @@ import { isSealed, sealBytes, SEALED_FILE_MEDIA_TYPE, unsealBytes } from '../pro
 import { openDocumentBytes, workingFileBytes, workingFileName } from '../projects/workingFile'
 import { compareManifests, manifestOf, manifestTotals, MANIFEST_TYPE } from '../projects/workingFileManifest'
 import type { ManifestDifference, WorkingFileManifest } from '../projects/workingFileManifest'
+import { ShellError } from '../platform/errors'
 import type { AskPassword } from './usePasswordPrompt'
 import type { Notify } from './useToasts'
 
@@ -157,7 +158,7 @@ export async function landWorkingFile(args: {
   if (choice === undefined) return
   if (choice === 'here' || !chooseFolder) {
     if (beforeReplace && !(await beforeReplace())) return
-    if ((await here(opened)) === false) return
+    if ((await inPart(() => here(opened), read)) === false) return
     await said(opened, read)
     return
   }
@@ -166,8 +167,25 @@ export async function landWorkingFile(args: {
   if (destination.occupied && !(await prompts.confirmReplace(destination.name))) return
   const rooted = openDocumentBytes(bytes, bareScope(ROOT_SCOPE, ''))
   if (!rooted.ok) { notify(s(rooted.messageKey), 'error'); return }
-  await destination.place([rooted.scope, ...(rooted.rest ?? [])])
+  await inPart(() => destination.place([rooted.scope, ...(rooted.rest ?? [])]), destination.read)
   if (destination.read) await said(rooted, destination.read)
+}
+
+/**
+ * A landing the store wrote in part (`shell.workingFileLandedInPart`: a
+ * folder written one file at a time, stopped part way) goes on to the
+ * read-back, which says which scopes, views and files did not arrive — in
+ * the words of ADR-0023's first amendment, rather than a sentence about the
+ * store. Where there is nothing to read back, the store's own sentence is
+ * all there is, and it is thrown on.
+ */
+async function inPart<T>(land: () => T | Promise<T>, read: ReadScope | undefined): Promise<T | undefined> {
+  try {
+    return await land()
+  } catch (cause) {
+    if (read && cause instanceof ShellError && cause.key === 'shell.workingFileLandedInPart') return undefined
+    throw cause
+  }
 }
 
 /** What a landing is held to, and whether the file said it or it was made from the file's contents. */

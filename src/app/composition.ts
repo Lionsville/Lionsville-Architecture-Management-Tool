@@ -790,8 +790,9 @@ export type FolderOpening = {
  * A folder a working file may become (ADR-0025): chosen with the same picker
  * as *Open Folder…*, looked at before anything is written — a name, a scope
  * or a board in it is "occupied", and the shell asks again before writing
- * over one — and written scope by scope, shallowest first, the way a file's
- * scopes are answered. Moving the app there is the boot's, which owns the
+ * over one — and written as one where the folder can take it (ADR-0023,
+ * amendments 2 and 3), shallowest first, the way a file's scopes are
+ * answered. Moving the app there is the boot's, which owns the
  * shell; this only knows the store.
  */
 export type FolderDestination = {
@@ -813,7 +814,8 @@ export async function chooseFolderDestination(): Promise<FolderDestination | und
   return {
     opening,
     occupied,
-    place: async (scopes) => { for (const scope of scopes) await store.save(scope) },
+    // As one, the way *Replace here* lands (ADR-0023, amendments 2 and 3).
+    place: (scopes) => store.saveTogether(scopes.map((scope) => ({ scope }))),
     read: (path) => store.load(path),
   }
 }

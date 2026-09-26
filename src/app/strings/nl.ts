@@ -87,6 +87,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.workingFileShort': 'Werkbestand “{name}” is niet volledig aangekomen. Na het laden ontbreekt: {what}.',
   'shell.workingFileShortOwn': 'Werkbestand “{name}” is niet volledig aangekomen. Het heeft geen manifest, omdat een oudere versie het bewaarde, dus het is gecontroleerd tegen wat het bevat. Na het laden ontbreekt: {what}.',
   'shell.workingFileNotLanded': 'Het werkbestand is niet geladen, en er is niets van geschreven: alle scopes erin komen samen aan of geen enkele. {reason}',
+  'shell.workingFileLandedInPart': 'Mogelijk is maar een deel van het werkbestand geschreven: deze map wordt bestand voor bestand geschreven, en het schrijven is halverwege gestopt. {reason}',
   'shell.shortScope': 'de scope “{name}” ({path})',
   'shell.shortView': 'de view “{view}” in “{scope}”',
   'shell.shortFiles': '{count} bestanden van “{scope}”',

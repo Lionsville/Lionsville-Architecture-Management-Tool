@@ -20,6 +20,7 @@ import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
 import type { HostCommand } from '../platform/hostCommands'
 import type { ScopeSnapshot, ScopeSummary } from '../projects/scope'
 import { scopeMoved } from '../projects/revision'
+import { ShellError } from '../platform/errors'
 import { workingFileBytes } from '../projects/workingFile'
 import { MANIFEST_FILE, manifestOf, readManifest } from '../projects/workingFileManifest'
 import { unsealBytes } from '../projects/sealedFile'
@@ -72,6 +73,22 @@ class LosingStore extends InMemoryScopeStore {
 class RefusingTogetherStore extends InMemoryScopeStore {
   override saveTogether(): Promise<void> {
     return Promise.reject(scopeMoved('fleet'))
+  }
+}
+
+/**
+ * A store that writes a set one scope at a time and stops part way — a
+ * folder in a browser that cannot stage — saying so, as the folder store does.
+ */
+class StoppingStore extends InMemoryScopeStore {
+  constructor(scopes: ScopeSnapshot[], private readonly stopAt: string) { super(scopes) }
+  override async saveTogether(entries: readonly { scope: ScopeSnapshot; expects?: string }[]): Promise<void> {
+    for (const { scope } of entries) {
+      if (scope.path === this.stopAt) {
+        throw new ShellError('shell.workingFileLandedInPart', { reason: 'NoModificationAllowedError' })
+      }
+      await super.save(scope)
+    }
   }
 }
 
@@ -171,6 +188,20 @@ describe('a working file landed as one (ADR-0023, amendment 2)', () => {
     await waitFor(() => expect(screen.getByText(/^The working file was not loaded, and nothing of it was written/)).toBeDefined())
     await expect(store.load('depots')).resolves.toBeUndefined()
     expect(screen.queryByText(/loaded and checked/)).toBeNull()
+  })
+
+  it('reads a landing the store wrote in part back, and names the scopes that did not arrive (amendment 3)', async () => {
+    const store = new StoppingStore([project()], 'fleet')
+    const view = show(store)
+    await goHome()
+    const theirs = [project('Organisation', ''), project('Depots', 'depots'), project('Fleet', 'fleet')]
+    view.send({ type: 'openDocument', name: 'org.lvarch', bytes: workingFileBytes(theirs, await manifestOf(theirs)) })
+    await waitFor(() => expect(screen.getByTestId('open-into-here')).toBeDefined())
+    fireEvent.click(screen.getByTestId('open-into-here'))
+    await waitFor(() => expect(screen.getByText(
+      'Working file “org.lvarch” did not arrive whole. Not there after loading: the scope “Fleet” (fleet).',
+    )).toBeDefined())
+    expect(screen.queryByText(/nothing of it was written/)).toBeNull()
   })
 })
 

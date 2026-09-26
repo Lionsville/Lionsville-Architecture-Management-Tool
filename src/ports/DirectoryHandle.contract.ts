@@ -122,5 +122,16 @@ export function describeDirectoryHandle(
       await expect(folder.getFileHandle('gone.txt')).rejects.toThrow()
       expect(await namesIn(folder)).toEqual([])
     })
+
+    /** Where the handle can rename a file (ADR-0023, amendment 3); skipped where it cannot. */
+    it('moves a file over one of the name it is given, leaving one file with the moved contents', async (context) => {
+      const folder = await make()
+      await writePieces(folder, 'model.json', ['old'])
+      const staged = await writePieces(folder, 'model.json.x.landing', ['new'])
+      if (!staged.move) return context.skip()
+      await staged.move('model.json')
+      expect(await textOf(folder, 'model.json')).toBe('new')
+      expect(await namesIn(folder)).toEqual(['file:model.json'])
+    })
   })
 }

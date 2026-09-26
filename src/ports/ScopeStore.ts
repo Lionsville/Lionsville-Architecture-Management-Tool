@@ -124,6 +124,10 @@ export interface ScopeStore {
    *
    * Optional, because a store that cannot promise the second half should not
    * pretend to; the caller then saves one scope at a time, as it always did.
+   * A store that offers it and finds, once writing, that it cannot keep the
+   * second half — a folder written a file at a time, stopped part way —
+   * rejects with `shell.workingFileLandedInPart`, and the caller reads the
+   * landing back to say what arrived (ADR-0023, amendment 3).
    */
   saveTogether?(
     entries: readonly { scope: ScopeSnapshot; expects?: string }[],

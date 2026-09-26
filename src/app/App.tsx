@@ -481,7 +481,10 @@ function useShellParts(props: AppProps): ShellParts {
    * was rather than half of the file in it. A refusal is then said as what it
    * is — nothing of the file was written — with the store's reason. A store
    * that cannot write several scopes as one is written a scope at a time, as
-   * before, and the read-back after the landing says what did not arrive.
+   * before, and the read-back after the landing says what did not arrive —
+   * which is also what follows a landing a store says it wrote in part
+   * (`shell.workingFileLandedInPart`, ADR-0023, amendment 3), rather than a
+   * sentence saying nothing was written.
    */
   const adoptScopes = useCallback(async (held: readonly ScopeSnapshot[], manifest?: WorkingFileManifest) => {
     const entries: { scope: ScopeSnapshot; expects?: string }[] = []
@@ -490,12 +493,21 @@ function useShellParts(props: AppProps): ShellParts {
       entries.push({ scope, ...(was?.revision !== undefined ? { expects: was.revision } : {}) })
     }
     if (!projects.saveTogether) {
-      for (const { scope, expects } of entries) await projects.save(scope, expects)
+      let saved = 0
+      try {
+        for (const { scope, expects } of entries) { await projects.save(scope, expects); saved += 1 }
+      } catch (cause) {
+        if (saved === 0) throw cause
+        throw new ShellError('shell.workingFileLandedInPart', { reason: reasonOf(cause) })
+      }
       return
     }
     try {
       await projects.saveTogether(entries, manifest ? { manifest } : {})
     } catch (cause) {
+      // Written in part, which a store that could not stage says: the
+      // read-back is what says which scopes, not a sentence about none.
+      if (cause instanceof ShellError && cause.key === 'shell.workingFileLandedInPart') throw cause
       throw new ShellError('shell.workingFileNotLanded', {
         reason: cause instanceof ShellError ? messageFor(cause, s) : reasonOf(cause),
       })
