@@ -379,7 +379,7 @@ const TRANSLATION_SLICES = [
  * to single figures by dispatching on a table and extracting the pieces; this
  * is what keeps that from growing back, and keeps the next one from starting.
  * Tests are held to the complexity and not to the length: a `describe` is one
- * function as long as its cases.
+ * function as long as its cases, and so is the desktop's smoke run.
  *
  * **The units already over either line are listed, each at its own measure**
  * — the file's largest, the day this was written — so nothing listed can grow
@@ -394,7 +394,6 @@ export const LONGEST_FUNCTION = 150
 
 /** The units over the line on 26 September 2026: each file's largest, by rule. */
 export const GROWN = {
-  'electron/main/smoke.ts': { lines: 572 },
   'src/agent/answer.ts': { complexity: 101, lines: 352 },
   'src/agent/handle.ts': { complexity: 39 },
   'src/agent/screen.ts': { complexity: 27 },
@@ -455,7 +454,9 @@ const UNIT_SIZE = [
   },
   {
     files: ['src/**/*.{ts,tsx}', 'electron/**/*.ts'],
-    ignores: ['**/*.test.{ts,tsx}', '**/*.contract.ts', '**/testing/**'],
+    // The desktop's smoke run is a test that ships in main, one check after
+    // another, and is as long as its checks for the reason a `describe` is.
+    ignores: ['**/*.test.{ts,tsx}', '**/*.contract.ts', '**/testing/**', 'electron/main/smoke.ts'],
     rules: { 'max-lines-per-function': functionLines(LONGEST_FUNCTION) },
   },
   ...Object.entries(GROWN).map(([file, grown]) => ({

@@ -46,13 +46,15 @@ export default defineConfig({
     // which `check` does; `test:watch` stays fast. `build/coverage.ts` reads
     // the summary written here, prints one line per module of the import
     // matrix and fails `check` below a floor. Test code is not measured: the
-    // suites, the contracts every filling runs, and the harnesses under a
-    // `testing/` folder, which are there to be called by a test.
+    // suites, the contracts every filling runs, the harnesses under a
+    // `testing/` folder, which are there to be called by a test, and the
+    // desktop's smoke run, which is a test that ships in main.
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}', 'electron/**/*.ts'],
       exclude: [
         '**/*.test.{ts,tsx}', '**/*.perf.test.{ts,tsx}', '**/*.contract.ts', '**/*.d.ts', '**/testing/**',
+        'electron/main/smoke.ts',
       ],
       reporter: [['json-summary', { file: 'coverage-summary.json' }]],
       reportsDirectory: 'tmp/coverage',
