@@ -38,7 +38,7 @@ export function ToastBar({ toast, open, onClose, onExited }: ToastBarProps) {
       open={toast !== null && open}
       autoHideDuration={hideAfter(toast?.severity)}
       onClose={(_e, reason) => { if (reason !== 'clickaway') onClose() }}
-      TransitionProps={{ onExited }}
+      slotProps={{ transition: { onExited } }}
       anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
     >
       {/* Separate from the Snackbar props: the Alert carries both the colour and

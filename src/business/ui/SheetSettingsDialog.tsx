@@ -99,7 +99,7 @@ export function SheetSettingsDialog({ model, sheet, actions, onClose }: SheetSet
                       <Checkbox
                         size="small"
                         checked={on}
-                        inputProps={{ 'aria-label': t('sheet.settingsDraw', { name: named(id) }) }}
+                        slotProps={{ input: { 'aria-label': t('sheet.settingsDraw', { name: named(id) }) } }}
                         onChange={() => actions.updateSheet({
                           areas: on ? drawn.filter((held) => held !== id) : [...drawn, id],
                         })}
@@ -149,7 +149,7 @@ export function SheetSettingsDialog({ model, sheet, actions, onClose }: SheetSet
             <Checkbox
               size="small"
               checked={sheet.showActors !== false}
-              inputProps={{ 'aria-label': t('sheet.settingsRail') }}
+              slotProps={{ input: { 'aria-label': t('sheet.settingsRail') } }}
               onChange={(e) => actions.updateSheet({ showActors: e.target.checked })}
             />
           )}

@@ -178,7 +178,7 @@ export function ScopeSettingsDialog({
                 // dropped on save, by `normaliseLinks`.
                 const bad = link.url.trim().length > 0 && !isSafeLinkUrl(link.url)
                 return (
-                  <Stack key={index} direction="row" spacing={0.5} alignItems="flex-start">
+                  <Stack key={index} direction="row" spacing={0.5} sx={{ alignItems: 'flex-start' }}>
                     <TextField
                       size="small"
                       label={index === 0 ? s('group.linkLabel') : undefined}

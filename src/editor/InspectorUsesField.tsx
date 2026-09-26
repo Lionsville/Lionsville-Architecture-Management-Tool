@@ -62,7 +62,7 @@ function UsesPicker({ uses, picker }: { uses: Uses; picker: Picker }) {
       value={usable.filter((option) => picker.pending.includes(option.id))}
       onChange={(_e, value) => picker.setPending(value.map((option) => option.id))}
       onClose={picker.commit}
-      renderTags={() => null}
+      renderValue={() => null}
       renderGroup={(params) => (
         <li key={params.key}>
           <ListSubheader component="div" sx={{ lineHeight: '28px' }}>
@@ -88,7 +88,10 @@ function UsesPicker({ uses, picker }: { uses: Uses; picker: Picker }) {
           label={t('field.usesPick')}
           placeholder={t('field.usesSearch')}
           helperText={t('field.usesHelp')}
-          inputProps={{ ...params.inputProps, 'data-testid': 'uses-pick' }}
+          slotProps={{
+            ...params.slotProps,
+            htmlInput: { ...params.slotProps.htmlInput, 'data-testid': 'uses-pick' },
+          }}
         />
       )}
       sx={{ mt: 1 }}

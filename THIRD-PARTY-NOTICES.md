@@ -31,13 +31,13 @@ which is the safe direction for a notice to be wrong in.
 - @iconify/utils 3.1.5 — MIT
 - @mermaid-js/parser 2.0.0 — MIT
 - @modelcontextprotocol/sdk 1.30.1 — MIT
-- @mui/core-downloads-tracker 6.5.0 — MIT
-- @mui/material 6.5.0 — MIT
-- @mui/private-theming 6.4.9 — MIT
-- @mui/styled-engine 6.5.0 — MIT
-- @mui/system 6.5.0 — MIT
-- @mui/types 7.2.24 — MIT
-- @mui/utils 6.4.9 — MIT
+- @mui/core-downloads-tracker 9.4.0 — MIT
+- @mui/material 9.4.0 — MIT
+- @mui/private-theming 9.4.0 — MIT
+- @mui/styled-engine 9.4.0 — MIT
+- @mui/system 9.4.0 — MIT
+- @mui/types 9.4.0 — MIT
+- @mui/utils 9.4.0 — MIT
 - @popperjs/core 2.11.8 — MIT
 - @ungap/structured-clone 1.4.0 — ISC
 - @upsetjs/venn.js 2.0.0 — MIT
@@ -1843,12 +1843,12 @@ SOFTWARE.
 
 ---
 
-## @mui/core-downloads-tracker 6.5.0
+## @mui/core-downloads-tracker 9.4.0
 
 Licence: MIT
 
 ```
-The MIT License (MIT)
+MIT License
 
 Copyright (c) 2014 Call-Em-All
 
@@ -1873,12 +1873,12 @@ SOFTWARE.
 
 ---
 
-## @mui/material 6.5.0
+## @mui/material 9.4.0
 
 Licence: MIT
 
 ```
-The MIT License (MIT)
+MIT License
 
 Copyright (c) 2014 Call-Em-All
 
@@ -1903,12 +1903,12 @@ SOFTWARE.
 
 ---
 
-## @mui/private-theming 6.4.9
+## @mui/private-theming 9.4.0
 
 Licence: MIT
 
 ```
-The MIT License (MIT)
+MIT License
 
 Copyright (c) 2014 Call-Em-All
 
@@ -1933,12 +1933,12 @@ SOFTWARE.
 
 ---
 
-## @mui/styled-engine 6.5.0
+## @mui/styled-engine 9.4.0
 
 Licence: MIT
 
 ```
-The MIT License (MIT)
+MIT License
 
 Copyright (c) 2014 Call-Em-All
 
@@ -1963,12 +1963,12 @@ SOFTWARE.
 
 ---
 
-## @mui/system 6.5.0
+## @mui/system 9.4.0
 
 Licence: MIT
 
 ```
-The MIT License (MIT)
+MIT License
 
 Copyright (c) 2014 Call-Em-All
 
@@ -1993,12 +1993,12 @@ SOFTWARE.
 
 ---
 
-## @mui/types 7.2.24
+## @mui/types 9.4.0
 
 Licence: MIT
 
 ```
-The MIT License (MIT)
+MIT License
 
 Copyright (c) 2014 Call-Em-All
 
@@ -2023,12 +2023,12 @@ SOFTWARE.
 
 ---
 
-## @mui/utils 6.4.9
+## @mui/utils 9.4.0
 
 Licence: MIT
 
 ```
-The MIT License (MIT)
+MIT License
 
 Copyright (c) 2014 Call-Em-All
 

@@ -135,7 +135,7 @@ export function ConnectAgentDialog({
                     size="small"
                     checked={on}
                     onChange={(event) => onEnabledChange(event.target.checked)}
-                    inputProps={{ 'aria-label': s('agent.enable') }}
+                    slotProps={{ input: { 'aria-label': s('agent.enable') } }}
                   />
                 )}
                 label={<Typography sx={{ fontSize: 13 }}>{s('agent.enable')}</Typography>}
@@ -177,7 +177,7 @@ export function ConnectAgentDialog({
               >
                 {recipe}
               </Box>
-              <Stack direction="row" spacing={1} alignItems="center">
+              <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
                 <Button size="small" variant="outlined" onClick={copy}>
                   {copied ? s('agent.copied') : s('agent.copy')}
                 </Button>

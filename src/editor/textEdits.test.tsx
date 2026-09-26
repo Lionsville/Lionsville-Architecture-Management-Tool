@@ -137,7 +137,7 @@ describe('typing into a field', () => {
     const name = () => within(inspector()).getByLabelText('Name');
     type(name(), 'Store');
     // A change of a different kind: the run is over.
-    fireEvent.click(within(inspector()).getByRole('checkbox', { name: 'Managed' }));
+    fireEvent.click(within(inspector()).getByRole('switch', { name: 'Managed' }));
     type(name(), 'Storefront');
 
     act(() => host.current.history.undo());

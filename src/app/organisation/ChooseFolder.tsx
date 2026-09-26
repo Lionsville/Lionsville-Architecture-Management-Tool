@@ -72,7 +72,7 @@ export function ChooseFolder({
           {s('folder.body')}
         </Typography>
 
-        <Stack direction="row" spacing={1} sx={{ mt: 3 }} flexWrap="wrap">
+        <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', mt: 3 }}>
           <Button variant="contained" onClick={onChoose}>
             {s('folder.choose')}
           </Button>
@@ -95,7 +95,7 @@ export function ChooseFolder({
             <Typography sx={{ fontSize: 12, fontWeight: 700, mb: 1 }}>
               {s('folder.recent')}
             </Typography>
-            <Stack alignItems="flex-start">
+            <Stack sx={{ alignItems: 'flex-start' }}>
               {recent.map((held) => (
                 <Button key={held.root} size="small" onClick={() => onOpen(held.root)}>
                   {held.name}

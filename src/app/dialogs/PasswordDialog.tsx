@@ -63,7 +63,7 @@ export function PasswordDialog({ open, mode, error, onCancel, onConfirm, s }: Pa
           helperText={mode === 'enter' ? error : undefined}
           onChange={(event) => setPassword(event.target.value)}
           onKeyDown={(event) => { if (event.key === 'Enter') confirm() }}
-          inputProps={{ 'data-testid': 'password' }}
+          slotProps={{ htmlInput: { 'data-testid': 'password' } }}
         />
         {mode === 'set' && (
           <TextField
@@ -76,7 +76,7 @@ export function PasswordDialog({ open, mode, error, onCancel, onConfirm, s }: Pa
             helperText={mismatch ? s('seal.mismatch') : undefined}
             onChange={(event) => setRepeat(event.target.value)}
             onKeyDown={(event) => { if (event.key === 'Enter') confirm() }}
-            inputProps={{ 'data-testid': 'password-repeat' }}
+            slotProps={{ htmlInput: { 'data-testid': 'password-repeat' } }}
             sx={{ mt: 2 }}
           />
         )}

@@ -21,6 +21,7 @@ import ListItemText from '@mui/material/ListItemText';
 import Menu from '@mui/material/Menu';
 import ListSubheader from '@mui/material/ListSubheader';
 import MenuItem from '@mui/material/MenuItem';
+import MenuList from '@mui/material/MenuList';
 import Popover from '@mui/material/Popover';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
@@ -866,9 +867,11 @@ function TabLabel({
             anchorEl={anchor}
             onClose={() => setAnchor(null)}
             onClick={(event) => event.stopPropagation()}
-            MenuListProps={{
-              dense: true,
-              'aria-label': t('toolbar.containerDiagramsOf', { name: diagram.name }),
+            slotProps={{
+              list: {
+                dense: true,
+                'aria-label': t('toolbar.containerDiagramsOf', { name: diagram.name }),
+              },
             }}
           >
             {containers.map((container) => (
@@ -890,8 +893,7 @@ function TabLabel({
                 <ListItemText
                   primary={nameOf(container)}
                   secondary={t('toolbar.containerView')}
-                  primaryTypographyProps={{ fontSize: 13 }}
-                  secondaryTypographyProps={{ fontSize: 10.5 }}
+                  slotProps={{ primary: { sx: { fontSize: 13 } }, secondary: { sx: { fontSize: 10.5 } } }}
                 />
               </MenuItem>
             ))}
@@ -1151,21 +1153,30 @@ function ColourByControl(props: {
         slotProps={{ paper: { sx: { p: 1, mt: 0.5, minWidth: 200 } } }}
       >
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
-          {COLOUR_BY_OPTIONS.map((option) => (
-            <MenuItem
-              key={option.value ?? 'none'}
-              dense
-              selected={props.colourBy === option.value}
-              onClick={() => { props.onChange(option.value); setAnchor(null); }}
-            >
-              {t(option.labelKey)}
-            </MenuItem>
-          ))}
+          {/* A MenuItem stands in a MenuList since MUI 9, which is also what
+              gives the choices their arrow keys inside a popover. */}
+          <MenuList
+            dense
+            disablePadding
+            aria-label={t('toolbar.colourBy')}
+            sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}
+          >
+            {COLOUR_BY_OPTIONS.map((option) => (
+              <MenuItem
+                key={option.value ?? 'none'}
+                dense
+                selected={props.colourBy === option.value}
+                onClick={() => { props.onChange(option.value); setAnchor(null); }}
+              >
+                {t(option.labelKey)}
+              </MenuItem>
+            ))}
+          </MenuList>
           {/* The reverse question (ADR-0020): who stands on this one thing. */}
           {props.candidates.length > 0 && (
             <>
               <ListSubheader disableSticky sx={{ lineHeight: '28px', fontSize: 11 }}>{t('overlay.one')}</ListSubheader>
-              <Box sx={{ maxHeight: 240, overflow: 'auto' }}>
+              <MenuList dense disablePadding aria-label={t('overlay.one')} sx={{ maxHeight: 240, overflow: 'auto' }}>
                 {props.candidates.map((candidate) => (
                   <MenuItem
                     key={candidate.id}
@@ -1177,7 +1188,7 @@ function ColourByControl(props: {
                     {candidate.name}
                   </MenuItem>
                 ))}
-              </Box>
+              </MenuList>
             </>
           )}
           {props.bands.length > 0 && (

@@ -107,7 +107,7 @@ describe('DiagramSettingsDialog — what it saves', () => {
 
   it('turns the title block off as an explicit false, not an absence', () => {
     const { onSave } = open();
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Draw the title block' }));
+    fireEvent.click(screen.getByRole('switch', { name: 'Draw the title block' }));
     save();
     expect(onSave.mock.calls[0][1].showTitleBlock).toBe(false);
   });
@@ -199,7 +199,7 @@ describe('DiagramSettingsDialog — what it saves', () => {
 
   it('hides the badges without discarding the columns', () => {
     const { onSave } = open({ aspectConfig: [{ key: 'dr', label: 'Continuity' }] });
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Show the operational aspects' }));
+    fireEvent.click(screen.getByRole('switch', { name: 'Show the operational aspects' }));
     save();
     expect(onSave.mock.calls[0][1]).toMatchObject({
       showAspects: false,

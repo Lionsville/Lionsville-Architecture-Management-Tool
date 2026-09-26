@@ -88,7 +88,7 @@ export function NewScopeDialog({
                 size="small"
                 checked={withBoard}
                 onChange={(e) => onWithBoardChange(e.target.checked)}
-                inputProps={{ 'aria-label': s('picker.withBoard') }}
+                slotProps={{ input: { 'aria-label': s('picker.withBoard') } }}
               />
             )}
             label={s('picker.withBoard')}

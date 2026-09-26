@@ -365,7 +365,7 @@ export function DocumentationPage(props: DocumentationPageProps) {
                     onClick={() => item.id !== element.id && navigate(item.id)}
                     sx={{ py: 0.5 }}
                   >
-                    <ListItemText primary={item.name} slotProps={{ primary: { noWrap: true, fontSize: 13 } }} />
+                    <ListItemText primary={item.name} slotProps={{ primary: { noWrap: true, sx: { fontSize: 13 } } }} />
                     {hasDocumentation(item.description) && (
                       <Box sx={{ color: 'text.secondary', display: 'flex', ml: 1 }} aria-hidden>
                         <DocGlyph />

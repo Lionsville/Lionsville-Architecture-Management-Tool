@@ -66,8 +66,10 @@ export function ContextMenu({
       onClose={onClose}
       anchorReference="anchorPosition"
       anchorPosition={position ? { top: position.y, left: position.x } : undefined}
-      MenuListProps={{ dense: true, 'aria-label': ariaLabel ?? t('menu.contextLabel') }}
-      slotProps={{ paper: { sx: { minWidth: 220, maxWidth: 340 } } }}
+      slotProps={{
+        list: { dense: true, 'aria-label': ariaLabel ?? t('menu.contextLabel') },
+        paper: { sx: { minWidth: 220, maxWidth: 340 } },
+      }}
     >
       {rendered}
     </Menu>
@@ -176,7 +178,7 @@ function ItemContent({
       )}
       <ListItemText
         primary={item.label}
-        primaryTypographyProps={{ fontSize: 13, noWrap: true }}
+        slotProps={{ primary: { noWrap: true, sx: { fontSize: 13 } } }}
         sx={{ my: 0 }}
       />
       {item.shortcut && (

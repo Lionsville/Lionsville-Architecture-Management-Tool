@@ -85,7 +85,7 @@ export function AspectColumnsEditor({
           </Typography>
         )}
         {columns.map((column, index) => (
-          <Stack key={column.key} direction="row" spacing={0.5} alignItems="center">
+          <Stack key={column.key} direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
             <TextField
               size="small"
               label={index === 0 ? t('diagramSettings.columnLabel') : undefined}

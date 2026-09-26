@@ -476,7 +476,7 @@ export function OrganisationScreen({
               and no heading — it draws, and files nothing. */}
           {(atRoot || level === 'domain' || home.children.length > 0) && (
             <>
-              <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+              <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 1 }}>
                 <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, flex: 1, textTransform: 'uppercase' }}>
                   {s('org.tree')}
                 </Typography>
@@ -532,7 +532,7 @@ export function OrganisationScreen({
               <Stack spacing={0.75}>
                 {examples.map((example) => (
                   <Card key={example.key} variant="outlined">
-                    <Stack direction="row" alignItems="center" sx={{ px: 1.5, py: 1 }} spacing={2}>
+                    <Stack direction="row" sx={{ alignItems: 'center', px: 1.5, py: 1 }} spacing={2}>
                       <Box sx={{ flex: 1 }}>
                         <Typography sx={{ fontSize: 12, fontWeight: 700 }}>{example.label}</Typography>
                         <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
@@ -661,7 +661,7 @@ function BoardsTable({ boards, onOpen, onAdd, onAddSheet, onAddMap, onAddTechnol
   const pick = (make: () => void) => () => { setNewMenu(null); make() }
   return (
     <Box sx={{ mb: 4 }} data-testid="boards">
-      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+      <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 1 }}>
         <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, flex: 1, textTransform: 'uppercase' }}>
           {s('org.boards')}
         </Typography>
@@ -675,7 +675,7 @@ function BoardsTable({ boards, onOpen, onAdd, onAddSheet, onAddMap, onAddTechnol
         >
           {s('org.newBoard')}
         </Button>
-        <Menu open={Boolean(newMenu)} anchorEl={newMenu} onClose={() => setNewMenu(null)} MenuListProps={{ dense: true }}>
+        <Menu open={Boolean(newMenu)} anchorEl={newMenu} onClose={() => setNewMenu(null)} slotProps={{ list: { dense: true } }}>
           <MenuItem onClick={pick(onAdd)} data-testid="new-board-landscape">{s('org.newBoardLandscape')}</MenuItem>
           <MenuItem onClick={pick(onAddSheet)}>{s('org.newBoardSheet')}</MenuItem>
           <MenuItem onClick={pick(onAddMap)}>{s('org.newBoardMap')}</MenuItem>
@@ -691,10 +691,9 @@ function BoardsTable({ boards, onOpen, onAdd, onAddSheet, onAddMap, onAddTechnol
         <Stack
           key={board.id}
           direction="row"
-          alignItems="center"
           spacing={1}
           data-testid={`board-${board.id}`}
-          sx={{ py: 0.75, borderBottom: 1, borderColor: 'divider' }}
+          sx={{ alignItems: 'center', py: 0.75, borderBottom: 1, borderColor: 'divider' }}
         >
           <Box sx={{ flex: 1, minWidth: 0 }}>
             {/* The name opens it too: a row whose only door is the button at
@@ -980,13 +979,13 @@ function NameTheOrganisation({ onName, s }: { onName: (name: string) => void; s:
   // leave a stale draft sitting in this field.
   useEffect(() => () => setName(''), [])
   return (
-    <Stack direction="row" spacing={1} alignItems="flex-end" sx={{ maxWidth: 480 }}>
+    <Stack direction="row" spacing={1} sx={{ alignItems: 'flex-end', maxWidth: 480 }}>
       <TextField
         fullWidth
         variant="standard"
         label={s('org.nameThis')}
         value={name}
-        inputProps={{ 'data-testid': 'organisation-name-field' }}
+        slotProps={{ htmlInput: { 'data-testid': 'organisation-name-field' } }}
         onChange={(e) => setName(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Enter' && name.trim()) onName(name) }}
       />

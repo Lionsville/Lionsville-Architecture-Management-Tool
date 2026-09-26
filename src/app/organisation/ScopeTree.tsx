@@ -132,11 +132,11 @@ export function ScopeTree({
           <Stack
             key={scope.path}
             direction="row"
-            alignItems="center"
             spacing={0.5}
             data-testid={`scope-${scope.path}`}
             data-depth={depth}
             sx={{
+              alignItems: 'center',
               ml: depth * 2.5,
               py: 0.75,
               borderBottom: 1,
@@ -164,7 +164,7 @@ export function ScopeTree({
             )}
 
             <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Stack direction="row" alignItems="center" spacing={0.75}>
+              <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
                 <Button
                   size="small"
                   color="inherit"

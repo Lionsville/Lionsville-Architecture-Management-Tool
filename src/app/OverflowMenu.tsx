@@ -92,14 +92,14 @@ export function OverflowMenu({
         open={anchor !== null}
         anchorEl={anchor}
         onClose={() => setAnchor(null)}
-        MenuListProps={{ dense: true, 'aria-label': s('menu.more') }}
+        slotProps={{ list: { dense: true, 'aria-label': s('menu.more') } }}
         data-testid="overflow-menu"
       >
         {entries.map((entry, at) => (
           entry.kind === 'item'
             ? (
               <MenuItem key={entry.label} onClick={choose(entry.command)}>
-                <ListItemText primary={s(entry.label)} primaryTypographyProps={{ fontSize: 13 }} />
+                <ListItemText primary={s(entry.label)} slotProps={{ primary: { sx: { fontSize: 13 } } }} />
               </MenuItem>
             )
             : <Divider key={`separator-${at}`} />
@@ -114,19 +114,19 @@ export function OverflowMenu({
             onClick={choose({ type: 'theme', mode })}
           >
             <ListItemIcon sx={{ minWidth: 24, fontSize: 12 }}>{mode === themeMode ? '✓' : ''}</ListItemIcon>
-            <ListItemText primary={s(label)} primaryTypographyProps={{ fontSize: 13 }} />
+            <ListItemText primary={s(label)} slotProps={{ primary: { sx: { fontSize: 13 } } }} />
           </MenuItem>
         ))}
         <Divider />
         <MenuItem onClick={choose(PREFERENCES_ITEM.command)}>
-          <ListItemText primary={s(PREFERENCES_ITEM.label)} primaryTypographyProps={{ fontSize: 13 }} />
+          <ListItemText primary={s(PREFERENCES_ITEM.label)} slotProps={{ primary: { sx: { fontSize: 13 } } }} />
         </MenuItem>
         {/* Help, under its own heading: the same two the desktop's Help menu carries. */}
         {help.length > 0 && <Divider />}
         {help.length > 0 && <ListSubheader sx={{ lineHeight: '28px', fontSize: 11 }}>{s('menu.help')}</ListSubheader>}
         {help.map((entry) => (entry.kind === 'item' ? (
           <MenuItem key={entry.label} onClick={choose(entry.command)}>
-            <ListItemText primary={s(entry.label)} primaryTypographyProps={{ fontSize: 13 }} />
+            <ListItemText primary={s(entry.label)} slotProps={{ primary: { sx: { fontSize: 13 } } }} />
           </MenuItem>
         ) : null))}
         {/* The providers' own lines, last and under a rule. A rule and not a
@@ -147,7 +147,7 @@ export function OverflowMenu({
             {...(line.href ? { component: 'a' as const, href: line.href, target: '_blank', rel: 'noreferrer' } : {})}
             onClick={() => { setAnchor(null); line.onSelect() }}
           >
-            <ListItemText primary={s(line.labelKey as StringKey)} primaryTypographyProps={{ fontSize: 13 }} />
+            <ListItemText primary={s(line.labelKey as StringKey)} slotProps={{ primary: { sx: { fontSize: 13 } } }} />
           </MenuItem>,
         ])}
       </Menu>

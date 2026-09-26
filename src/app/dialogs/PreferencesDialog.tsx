@@ -89,7 +89,7 @@ function Section({ title, note, children }: { title: string; note?: string; chil
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
+    <Stack direction="row" spacing={2} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
       <Typography sx={{ fontSize: 13 }}>{label}</Typography>
       {children}
     </Stack>

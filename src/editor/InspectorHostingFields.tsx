@@ -64,7 +64,7 @@ function HostedOnSelect({ field, technology, platforms, elsewhere }: {
           ? t('field.hostedOnSeveral', { count: String(hosting.platformIds.length - 1) })
           : t('field.hostedOnHelp')}
         onChange={(e) => choose(e.target.value || undefined)}
-        inputProps={{ 'data-testid': 'hosted-on' }}
+        slotProps={{ htmlInput: { 'data-testid': 'hosted-on' } }}
       >
         <MenuItem value="">{t('common.none')}</MenuItem>
         {platforms.map((platform) => (

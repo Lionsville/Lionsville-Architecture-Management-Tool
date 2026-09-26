@@ -99,7 +99,7 @@ function OnePage({ icon, title, description, count, finding, action }: {
     // row, with the action pinned to the bottom so the buttons line up whatever
     // the count above them wrapped to.
     <Card variant="outlined" sx={{ p: 1.5, height: '100%', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-      <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 0.5 }}>
+      <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center', mb: 0.5 }}>
         <Box sx={{ color: 'text.secondary', display: 'flex' }}>{icon}</Box>
         <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{title}</Typography>
       </Stack>

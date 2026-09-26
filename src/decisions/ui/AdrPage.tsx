@@ -284,7 +284,7 @@ export function AdrPage(props: AdrPageProps) {
       <ListItemText
         primary={label}
         secondary={note}
-        slotProps={{ primary: { noWrap: true, fontSize: 13 }, secondary: { noWrap: true, fontSize: 11 } }}
+        slotProps={{ primary: { noWrap: true, sx: { fontSize: 13 } }, secondary: { noWrap: true, sx: { fontSize: 11 } } }}
       />
       {count(key) > 0 && (
         <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>{count(key)}</Typography>

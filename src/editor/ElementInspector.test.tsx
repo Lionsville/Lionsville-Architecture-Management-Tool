@@ -655,11 +655,11 @@ describe('ElementInspector — a service offered beyond its team', () => {
 
   it('offers the tick to a service only, and writes true or clears the field', () => {
     const { updateElement } = renderInspector(service());
-    fireEvent.click(within(screen.getByTestId('service-shared')).getByRole('checkbox'));
+    fireEvent.click(within(screen.getByTestId('service-shared')).getByRole('switch'));
     expect(updateElement).toHaveBeenCalledWith('containers', { shared: true });
     cleanup();
     const ticked = renderInspector(element({ id: 'containers', kind: 'platformService', shared: true }));
-    fireEvent.click(within(screen.getByTestId('service-shared')).getByRole('checkbox'));
+    fireEvent.click(within(screen.getByTestId('service-shared')).getByRole('switch'));
     expect(ticked.updateElement).toHaveBeenCalledWith('containers', { shared: undefined });
     cleanup();
     renderInspector(element({ kind: 'platform' }));
@@ -680,7 +680,7 @@ describe('ElementInspector — a service offered beyond its team', () => {
 
   it('disables the tick when read-only', () => {
     renderInspector(service(), { readOnly: true });
-    expect((within(screen.getByTestId('service-shared')).getByRole('checkbox') as HTMLInputElement).disabled).toBe(true);
+    expect((within(screen.getByTestId('service-shared')).getByRole('switch') as HTMLInputElement).disabled).toBe(true);
   });
 });
 

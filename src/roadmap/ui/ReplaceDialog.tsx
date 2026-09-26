@@ -137,7 +137,12 @@ export function ReplaceDialog({ subject, model, onCancel, onConfirm }: ReplaceDi
             <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 0.5 }}>
               <TextField
                 select size="small" label={t('plan.addElement')} value={adding} sx={{ flex: 1 }}
-                slotProps={{ htmlInput: { 'aria-label': t('replace.alsoField') } }}
+                // MUI 9 names a select by its visible label alone; the fuller
+                // name is the one that says what the field is for.
+                slotProps={{
+                  htmlInput: { 'aria-label': t('replace.alsoField') },
+                  select: { SelectDisplayProps: { 'aria-labelledby': undefined } },
+                }}
                 onChange={(e) => setAdding(e.target.value)}
               >
                 {others.filter((element) => element.id !== existingId).map((element) => (

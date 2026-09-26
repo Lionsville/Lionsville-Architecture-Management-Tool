@@ -303,7 +303,7 @@ export function FunctionInspector(props: FunctionInspectorProps) {
                   size="small"
                   checked={element.outside === true}
                   disabled={readOnly || owned('outside')}
-                  inputProps={{ 'aria-label': t('sheet.outsideOrganisation') }}
+                  slotProps={{ input: { 'aria-label': t('sheet.outsideOrganisation') } }}
                   onChange={(e) => actions.updateElement(
                     element.id, { outside: e.target.checked ? true : undefined },
                   )}

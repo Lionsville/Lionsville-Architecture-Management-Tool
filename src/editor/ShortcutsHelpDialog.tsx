@@ -65,8 +65,7 @@ export function ShortcutsHelpDialog({ open, onClose }: ShortcutsHelpDialogProps)
             <Box key={group} sx={{ mb: 2, '&:last-of-type': { mb: 0 } }}>
               <Typography
                 variant="subtitle2"
-                fontWeight={700}
-                sx={{ color: 'text.primary', mb: 1 }}
+                sx={{ fontWeight: 700, color: 'text.primary', mb: 1 }}
               >
                 {t(labelKey)}
               </Typography>

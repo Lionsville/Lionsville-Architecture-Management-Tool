@@ -512,7 +512,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
           <ListItemButton key={cause.id} selected={cause.id === selectedKey} onClick={() => setSelectedKey(cause.id)} sx={{ py: 0.5 }}>
             <ListItemText
               primary={`${formatCauseNumber(cause.number)} ${cause.title}`}
-              slotProps={{ primary: { fontSize: 13 } }}
+              slotProps={{ primary: { sx: { fontSize: 13 } } }}
             />
             {isRootCause(cause, causes) && <Chip size="small" variant="outlined" color="secondary" label={s('observation.rootCause')} sx={{ height: 18, fontSize: 10, mr: 1 }} />}
             <Chip size="small" color={STATE_COLOR[cause.state]} label={s(STATE_LABEL[cause.state])} sx={{ height: 18, fontSize: 10 }} />
@@ -525,7 +525,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
           const phase = phaseOf(one)
           return (
             <ListItemButton key={one.id} selected={solutionKey(one.id) === selectedKey} onClick={() => setSelectedKey(solutionKey(one.id))} sx={{ py: 0.5, opacity: isLive(one) ? 1 : 0.55 }}>
-              <ListItemText primary={`${formatSolutionNumber(one.number)} ${one.title}`} slotProps={{ primary: { fontSize: 13 } }} />
+              <ListItemText primary={`${formatSolutionNumber(one.number)} ${one.title}`} slotProps={{ primary: { sx: { fontSize: 13 } } }} />
               <Chip size="small" color={PHASE_COLOR[phase]} label={s(PHASE_LABEL[phase])} sx={{ height: 18, fontSize: 10 }} />
             </ListItemButton>
           )
@@ -535,7 +535,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
         <ListSubheader disableSticky sx={{ lineHeight: '32px', bgcolor: 'background.default' }}>{s('solution.experiments')}</ListSubheader>
         {experimentRows.map((one) => (
           <ListItemButton key={one.id} selected={experimentKey(one.id) === selectedKey} onClick={() => setSelectedKey(experimentKey(one.id))} sx={{ py: 0.5 }}>
-            <ListItemText primary={`${formatExperimentNumber(one.number)} ${one.title}`} secondary={one.tests.map((id) => nameOf(id)).join(', ')} slotProps={{ primary: { fontSize: 13 }, secondary: { fontSize: 11 } }} />
+            <ListItemText primary={`${formatExperimentNumber(one.number)} ${one.title}`} secondary={one.tests.map((id) => nameOf(id)).join(', ')} slotProps={{ primary: { sx: { fontSize: 13 } }, secondary: { sx: { fontSize: 11 } } }} />
           </ListItemButton>
         ))}
       </List>
@@ -749,7 +749,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
       <List dense disablePadding>
         {queue.map((one) => (
           <ListItemButton key={one.id} selected={one.id === selectedKey} onClick={() => setSelectedKey(one.id)} sx={{ py: 0.25 }}>
-            <ListItemText primary={`${formatObservationNumber(one.number)} ${one.title}`} slotProps={{ primary: { fontSize: 12, noWrap: true } }} />
+            <ListItemText primary={`${formatObservationNumber(one.number)} ${one.title}`} slotProps={{ primary: { noWrap: true, sx: { fontSize: 12 } } }} />
             <Chip size="small" color={IMPACT_COLOR[one.impact]} label={s(IMPACT_LABEL[one.impact])} sx={{ height: 18, fontSize: 10 }} />
           </ListItemButton>
         ))}
@@ -757,7 +757,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
           const key = nodeKey(one.observation.id, one.scope)
           return (
             <ListItemButton key={key} selected={key === selectedKey} onClick={() => setSelectedKey(key)} sx={{ py: 0.25 }}>
-              <ListItemText primary={`${formatObservationNumber(one.observation.number)} ${one.observation.title}`} secondary={scopeLabel(one.scope)} slotProps={{ primary: { fontSize: 12, noWrap: true }, secondary: { fontSize: 11 } }} />
+              <ListItemText primary={`${formatObservationNumber(one.observation.number)} ${one.observation.title}`} secondary={scopeLabel(one.scope)} slotProps={{ primary: { noWrap: true, sx: { fontSize: 12 } }, secondary: { sx: { fontSize: 11 } } }} />
               <Chip size="small" color={IMPACT_COLOR[one.observation.impact]} label={s(IMPACT_LABEL[one.observation.impact])} sx={{ height: 18, fontSize: 10 }} />
             </ListItemButton>
           )

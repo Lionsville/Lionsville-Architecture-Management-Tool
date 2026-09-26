@@ -384,19 +384,19 @@ export function TechnologyLandscapePage(props: TechnologyLandscapePageProps) {
           </Button>
           <FormControlLabel
             sx={{ ml: 0, '& .MuiTypography-root': { fontSize: 12 } }}
-            control={<Checkbox size="small" checked={foldHosting} onChange={(event) => setFoldHosting(event.target.checked)} inputProps={{ 'data-testid': 'landscape-fold-hosting' } as never} />}
+            control={<Checkbox size="small" checked={foldHosting} onChange={(event) => setFoldHosting(event.target.checked)} slotProps={{ input: { 'data-testid': 'landscape-fold-hosting' } as never }} />}
             label={t('landscape.foldHosting')}
           />
           {shared.length > 0 && (
             <FormControlLabel
               sx={{ ml: 0, '& .MuiTypography-root': { fontSize: 12 } }}
-              control={<Checkbox size="small" checked={showShared} onChange={(event) => setShowShared(event.target.checked)} inputProps={{ 'data-testid': 'landscape-show-shared' } as never} />}
+              control={<Checkbox size="small" checked={showShared} onChange={(event) => setShowShared(event.target.checked)} slotProps={{ input: { 'data-testid': 'landscape-show-shared' } as never }} />}
               label={t('landscape.sharedRow')}
             />
           )}
           <FormControlLabel
             sx={{ ml: 0, '& .MuiTypography-root': { fontSize: 12 } }}
-            control={<Checkbox size="small" checked={onlyTouched} onChange={(event) => setOnlyTouched(event.target.checked)} inputProps={{ 'data-testid': 'landscape-only-touched' } as never} />}
+            control={<Checkbox size="small" checked={onlyTouched} onChange={(event) => setOnlyTouched(event.target.checked)} slotProps={{ input: { 'data-testid': 'landscape-only-touched' } as never }} />}
             label={t('landscape.onlyTouched')}
           />
         </Box>
