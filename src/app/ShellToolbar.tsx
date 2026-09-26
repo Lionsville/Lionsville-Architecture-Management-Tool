@@ -28,7 +28,6 @@ import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
 import useMediaQuery from '@mui/material/useMediaQuery'
 import Typography from '@mui/material/Typography'
-import { LOCALE } from '../i18n'
 import type { Language, StringKey, Translate } from '../i18n'
 import type { DocumentStatus } from '../projects/documentSession'
 import { ancestorScopes, ROOT_SCOPE, scopePathLabel } from '../projects/scopePath'
@@ -45,18 +44,7 @@ import type { SourceChip, SourceMenuEntry, SourceWorkChanged } from '../platform
 import { ActivityMenu } from './ActivityMenu'
 import type { ActivityEntry } from './ActivityMenu'
 import { OverflowMenu } from './OverflowMenu'
-
-/**
- * The clock in the user's language.
- *
- * `nl-NL` used to be hardcoded here, which gave a Dutch time on an English
- * screen. The locale now follows the language choice — same button, same answer.
- */
-export function clockTime(at: Date, language: Language): string {
-  return at.toLocaleTimeString(LOCALE[language], {
-    hour: '2-digit', minute: '2-digit',
-  })
-}
+import { clockTime } from './clockTime'
 
 /**
  * The word for each state, and the two that have none.

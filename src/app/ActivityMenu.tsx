@@ -20,7 +20,7 @@ import MenuItem from '@mui/material/MenuItem'
 import Typography from '@mui/material/Typography'
 import type { Language, Translate } from '../i18n'
 import type { StepSummary } from '../model'
-import { clockTime } from './ShellToolbar'
+import { clockTime } from './clockTime'
 
 /** One line of the list: what was done, when, and by whom where that is not obvious. */
 export type ActivityEntry = {

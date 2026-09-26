@@ -515,7 +515,12 @@ written. **It is an allow-list in fact**: a file in a folder under `src/` that
 is not in `MODULES` fails the lint (`layering/known-module`, pinned by
 `build/layering.test.ts`), so a new module arrives with a row and a reason or
 not at all. If a rule blocks you, the design is telling you something; move the
-code, don't route around the rule.
+code, don't route around the rule. **And no loop**, which the matrix cannot see
+because every edge of one may be allowed: `build/cycles.test.ts` reads the
+imports that survive compilation and fails on a loop between two files or
+between two modules (the composed string table set aside, as the matrix sets
+it aside); the one loop of types between modules, `ports` ↔ `projects`, is
+listed there by name.
 
 Three rows are worth knowing because they are not obvious. `editor` may not import
 `decisions` or `projects` — a canvas that knows what a project is cannot be
