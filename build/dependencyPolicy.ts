@@ -33,11 +33,11 @@ export const policy: Policy = {
   exceptions: {
     'elkjs': {
       licence: 'EPL-2.0 OR GPL-3.0-or-later',
-      why: 'Taken under EPL-2.0, which asks that the library\'s own source stays available under it: it ships unmodified, as its own worker file, and its notice names where the source is.',
+      why: 'Taken under EPL-2.0, which asks that the library\'s own source stays available under it: it ships unmodified, as its own worker file, and its notice names where the source is; confirmed by the owner, 26 September 2026.',
     },
     'libavoid-js': {
       licence: 'LGPL-2.1-or-later',
-      why: 'The router. Its engine is a WebAssembly file published beside the bundle rather than compiled into it (`build/libavoidWasm.ts`), so a user can replace it with their own build, which is what the LGPL asks of a work that uses the library.',
+      why: 'The router. Its engine is a WebAssembly file published beside the bundle rather than compiled into it (`build/libavoidWasm.ts`), so a user can replace it with their own build, which is what the LGPL asks of a work that uses the library; confirmed by the owner, 26 September 2026.',
     },
   },
 
