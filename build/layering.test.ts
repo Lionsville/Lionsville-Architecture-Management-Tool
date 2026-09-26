@@ -1,0 +1,51 @@
+/**
+ * The import matrix in `eslint.config.js`, asked about files that are not there.
+ *
+ * The matrix is an allow-list only if a folder nobody listed is refused rather
+ * than left out of every rule, and that is a property of the config that no
+ * file in the tree exercises — the day it stops holding, nothing goes red. So
+ * the linter is handed a file at a path that does not exist and asked what it
+ * thinks.
+ */
+import { fileURLToPath } from 'node:url'
+import { ESLint } from 'eslint'
+import { describe, expect, it } from 'vitest'
+
+const root = fileURLToPath(new URL('..', import.meta.url))
+const eslint = new ESLint({ cwd: root })
+
+const HEADER = '// SPDX-License-Identifier: AGPL-3.0-only\n// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV\n\n'
+
+const LAYERING = ['layering/known-module', 'no-restricted-imports']
+
+/** What the layering rules say about `source`, were it at `path`. */
+async function layeringAt(path: string, source = 'export const one = 1\n'): Promise<string[]> {
+  const [result] = await eslint.lintText(`${HEADER}${source}`, { filePath: path })
+  return result.messages
+    .filter((message) => LAYERING.includes(message.ruleId ?? ''))
+    .map((message) => message.message)
+}
+
+describe('the import matrix', () => {
+  it('fails a file in a folder under src/ that is not a module', async () => {
+    const said = await layeringAt('src/stray/one.ts')
+    expect(said).toHaveLength(1)
+    expect(said[0]).toMatch(/`src\/stray` is not a module/)
+  })
+
+  it('fails a file of code at the root of src/, which is in no module either', async () => {
+    expect(await layeringAt('src/loose.ts')).toHaveLength(1)
+  })
+
+  it('passes a file in a module, and a declaration at the root', async () => {
+    expect(await layeringAt('src/model/one.ts')).toEqual([])
+    expect(await layeringAt('src/ambient.d.ts', 'declare const one: number\n')).toEqual([])
+  })
+
+  /** The rows still apply to the modules they name: the allow-list did not replace them. */
+  it('still refuses what a module\'s row does not allow', async () => {
+    const said = await layeringAt('src/model/one.ts', "import { App } from '../app/App'\nexport const one = App\n")
+    expect(said.join('\n')).toMatch(/model is the bottom of the tree/)
+  })
+})
+

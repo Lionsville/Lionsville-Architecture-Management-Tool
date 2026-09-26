@@ -1,5 +1,6 @@
 import eslint from '@eslint/js'
 import tseslint from 'typescript-eslint'
+import { relative } from 'node:path'
 
 /**
  * Every line of TypeScript in the repository. The editor's tree under
@@ -235,6 +236,54 @@ const licenceHeader = {
   },
 }
 
+/**
+ * THE MATRIX IS AN ALLOW-LIST, AND THIS IS WHAT MAKES IT ONE.
+ *
+ * The rows below say what each module may import, and a module nobody listed
+ * has no row — which used to mean no rule at all: a new folder under `src/`
+ * could import anything, and anything could import it, because every `group`
+ * is built from `MODULES` and a folder outside it is in no group. The matrix
+ * was documented as an allow-list and behaved as a deny-list for the one case
+ * an allow-list exists for.
+ *
+ * So a file under `src/` whose folder is not a module fails here, with the
+ * sentence that says what to do about it. The answer is always the same: add
+ * the folder to `MODULES` with a row of its own and a `WHY`, or put the file in
+ * the module it belongs to. The declarations at the root of `src/` are the one
+ * thing that is not in a module, and they hold no code.
+ */
+const TOP_LEVEL = new Set(MODULES.map((module) => module.split('/')[0]))
+
+const knownModule = {
+  rules: {
+    'known-module': {
+      meta: {
+        type: 'problem',
+        schema: [],
+        messages: {
+          stray: '`src/{{folder}}` is not a module, so the import matrix says nothing about it. Add it to MODULES in eslint.config.js with a row and a reason, or move the file into the module it belongs to.',
+          loose: 'A file at the root of `src/` is in no module, so the import matrix says nothing about it. Only declarations (`*.d.ts`) live there.',
+        },
+      },
+      create(context) {
+        return {
+          Program(node) {
+            // From the root of the repository rather than by looking for a
+            // folder called `src` in the path, which a checkout may well sit in.
+            const [top, ...inside] = relative(context.cwd, context.filename).split(/[\\/]/)
+            if (top !== 'src') return
+            if (inside.length === 1) {
+              if (!inside[0].endsWith('.d.ts')) context.report({ node, messageId: 'loose' })
+              return
+            }
+            if (!TOP_LEVEL.has(inside[0])) context.report({ node, messageId: 'stray', data: { folder: inside[0] } })
+          },
+        }
+      },
+    },
+  },
+}
+
 const IMPORT_MATRIX = MODULES.map((from) => ({
   files: [`src/${from}/**/*.{ts,tsx}`],
   // Tests are exempt: a test reaching across the tree for a fixture is not the
@@ -311,6 +360,11 @@ export default tseslint.config(
     ignores: ['**/*.d.ts'],
     plugins: { licence: licenceHeader },
     rules: { 'licence/header': 'error' },
+  },
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    plugins: { layering: knownModule },
+    rules: { 'layering/known-module': 'error' },
   },
   ...IMPORT_MATRIX,
 

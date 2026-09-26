@@ -488,7 +488,10 @@ step out: `agent/commandFor.ts` said `from '../business'` for six pure functions
 and got three dialogs with them. Those modules name the file they want.
 `src/agent/pure.test.ts` walks the chain that has to stay loadable by node, and
 is what catches a barrel that grows a page after the list in the config was
-written. If a rule blocks you, the design is telling you something; move the
+written. **It is an allow-list in fact**: a file in a folder under `src/` that
+is not in `MODULES` fails the lint (`layering/known-module`, pinned by
+`build/layering.test.ts`), so a new module arrives with a row and a reason or
+not at all. If a rule blocks you, the design is telling you something; move the
 code, don't route around the rule.
 
 Three rows are worth knowing because they are not obvious. `editor` may not import
