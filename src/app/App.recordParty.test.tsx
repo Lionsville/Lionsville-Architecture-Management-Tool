@@ -33,15 +33,25 @@ const organisation = example.find((scope) => scope.path === '')!
 
 async function recordOf(id: string) {
   renderApp({ scopes: new InMemoryScopeStore(example), boot: { initialProject: landscape } })
-  await waitFor(() => expect(document.querySelectorAll('.react-flow__node').length).toBeGreaterThan(0))
-  const card = document.querySelector<HTMLElement>(`.react-flow__node[data-id="${id}"]`)!
+  const card = await waitFor(() => {
+    const found = document.querySelector<HTMLElement>(`.react-flow__node[data-id="${id}"]`)
+    expect(found, id).not.toBeNull()
+    return found!
+  })
   card.focus()
   fireEvent.keyDown(card, { key: 'Enter' })
   fireEvent.keyDown(card, { key: 'Enter' })
   return screen.findByTestId('element-record')
 }
 
-describe('whose an outside application is, from a scope below the party', () => {
+// The whole app on the whole example, and a record opened from its board: the
+// work is the render, and each wait below is for the thing it needs. Alone on
+// a laptop it takes under a second; on the runner, with coverage and the
+// suite's other workers beside it, it took seven (Check, 26 September 2026:
+// 6955 ms and 6890 ms, against the default 5 s). So it has the other
+// whole-app suites' 20 s, which is also longer than any one wait: a wait that
+// is never met fails naming what it waited for, not as a timed-out test.
+describe('whose an outside application is, from a scope below the party', { timeout: 20_000 }, () => {
   const payments = landscape.model.elements.find((one) => one.id === 'payments')!
   const party = organisation.model.elements.find((one) => one.id === payments.partyId)!
 
