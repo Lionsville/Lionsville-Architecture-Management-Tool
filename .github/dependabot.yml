@@ -1,17 +1,44 @@
 # A pinned action is a frozen action; this is what thaws it on purpose.
+#
+# **No majors.** A major is a migration — a new MUI, a new TypeScript, a new
+# Electron — and is made by hand in a commit that says why. Dependabot opening
+# one is a pull request that cannot pass and a run spent finding that out.
+# The same holds for a 0.x package's minor, which is how 0.x says "breaking"
+# (the layout engines and the archive library), and for TypeScript's minor:
+# `package.json` pins it with a tilde on purpose, so a new minor is a choice.
+#
+# **Monthly, grouped, at most two open**: a month's small moves are one pull
+# request per ecosystem, read once.
 version: 2
 updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
+    open-pull-requests-limit: 2
+    ignore:
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
+    groups:
+      actions:
+        update-types: [minor, patch]
 
   - package-ecosystem: npm
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
+    open-pull-requests-limit: 2
+    ignore:
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
+      - dependency-name: typescript
+        update-types: ['version-update:semver-minor']
+      - dependency-name: elkjs
+        update-types: ['version-update:semver-minor']
+      - dependency-name: libavoid-js
+        update-types: ['version-update:semver-minor']
+      - dependency-name: fflate
+        update-types: ['version-update:semver-minor']
     groups:
-      # One pull request a week for the small moves, so the noticeable ones
-      # arrive on their own.
       minor-and-patch:
         update-types: [minor, patch]
