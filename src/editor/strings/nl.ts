@@ -253,7 +253,10 @@ export const NL: Record<keyof typeof EN, string> = {
   'toolbar.containerMenu': 'Dit containeraanzicht hernoemen, instellen of verwijderen',
   'toolbar.containerMenuOf': 'Menu van het containeraanzicht van {name}',
 
-  'canvas.connectHint': 'Klik een doelelement aan — Esc annuleert',
+  'canvas.connectHint': 'Klik een doelelement aan, of ga er met Tab heen en druk op Enter — Esc annuleert',
+  'canvas.a11yNode': 'Enter of spatie selecteert het, Shift+Enter voegt het aan de selectie toe. De pijltjestoetsen verschuiven de selectie, Shift+F10 opent het contextmenu, F2 hernoemt het en Delete verwijdert het.',
+  'canvas.a11yEdge': 'Enter of spatie selecteert de koppeling. Shift+F10 opent het contextmenu, F2 bewerkt het label en Delete verwijdert de koppeling.',
+  'canvas.edgeName': 'Van {source} naar {target}',
   'canvas.gridOn': 'Raster: aan',
   'canvas.gridOff': 'Raster: uit',
   'canvas.gridToggle': 'Raster tonen of verbergen',

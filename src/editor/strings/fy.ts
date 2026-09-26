@@ -253,7 +253,10 @@ export const FY: Record<keyof typeof EN, string> = {
   'toolbar.containerMenu': 'Dit containerdiagram omneame, ynstelle of fuortsmite',
   'toolbar.containerMenuOf': 'Menu fan it containerdiagram fan {name}',
 
-  'canvas.connectHint': 'Klik in doelelemint oan — Esc annulearret',
+  'canvas.connectHint': 'Klik in doelelemint oan, of gean der mei Tab hinne en druk op Enter — Esc annulearret',
+  'canvas.a11yNode': 'Enter of spaasje selektearret it, Shift+Enter foeget it ta oan de seleksje. De pylktoetsen ferskowe de seleksje, Shift+F10 iepenet it kontekstmenu, F2 neamt it om en Delete smyt it fuort.',
+  'canvas.a11yEdge': 'Enter of spaasje selektearret de ferbining. Shift+F10 iepenet it kontekstmenu, F2 bewurket it label en Delete smyt de ferbining fuort.',
+  'canvas.edgeName': 'Fan {source} nei {target}',
   'canvas.gridOn': 'Roaster: oan',
   'canvas.gridOff': 'Roaster: út',
   'canvas.gridToggle': 'Roaster toane of ferbergje',

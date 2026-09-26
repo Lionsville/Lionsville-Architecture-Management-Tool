@@ -803,7 +803,8 @@ function Finder({ query, hits, onQuery, onPick, t }: {
               appearance: 'none', cursor: 'pointer', font: 'inherit', color: 'inherit',
               display: 'flex', alignItems: 'baseline', gap: 1, width: '100%', textAlign: 'left',
               background: 'none', border: 0, px: 1.5, py: 0.5,
-              '&:hover, &:focus-visible': { bgcolor: 'action.hover', outline: 'none' },
+              '&:hover': { bgcolor: 'action.hover' },
+              '&:focus-visible': { bgcolor: 'action.hover', outline: '2px solid', outlineColor: 'primary.main', outlineOffset: -2 },
             }}
           >
             <Typography sx={{ fontSize: 12.5, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

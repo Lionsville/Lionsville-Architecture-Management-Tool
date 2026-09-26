@@ -158,3 +158,58 @@ describe('the menu action table', () => {
     }
   });
 });
+
+/**
+ * Every action is reachable without a mouse, or says why not (the keyboard
+ * audit, `docs/accessibility.md`). A menu is reached from the keyboard through
+ * what it is opened on: the path to each target is the entry below, and each
+ * is pressed for real in `SolutionDesignEditor.keyboard.test.tsx` and, for a
+ * tab, `SolutionDesignEditor.test.tsx`. An action offered on at least one
+ * target with a path has one; the rest are listed with their reason, and the
+ * list may hold nothing else.
+ */
+describe('the menu action table, from the keyboard', () => {
+  const PATH: Record<MenuTarget['kind'], string | null> = {
+    node: 'Tab to the card, Enter to select it, Shift+F10 or the Menu key',
+    selection: 'Shift+Enter on each card (or Ctrl/⌘+A), then Shift+F10',
+    edge: 'Tab to the line, Enter to select it, Shift+F10',
+    group: 'Tab to the group’s name, Enter to select it, Shift+F10',
+    pane: 'Shift+F10 with nothing selected',
+    tab: 'Shift+F10 or the Menu key on the focused tab; a container view’s chevron button',
+    // A bend is a point on a line that a pointer put there; nothing focuses it.
+    edgeHandle: null,
+  };
+
+  const POINTER_ONLY: Partial<Record<MenuActionId, string>> = {
+    'remove-bend':
+      'A bend is a point a pointer placed and nothing focuses; the line’s own menu has *Remove all bends*.',
+  };
+
+  function targetsOffering(): Map<MenuActionId, Set<MenuTarget['kind']>> {
+    const by = new Map<MenuActionId, Set<MenuTarget['kind']>>();
+    for (const ctx of contexts()) {
+      for (const target of TARGETS) {
+        for (const id of actionsIn(menuItemsFor(target, ctx), new Set())) {
+          by.set(id, (by.get(id) ?? new Set()).add(target.kind));
+        }
+      }
+    }
+    return by;
+  }
+
+  it('has a keyboard path, or a declared reason, for every action in the table', () => {
+    const by = targetsOffering();
+    const unexplained = (Object.keys(MENU_ACTIONS) as MenuActionId[]).filter((id) => {
+      const reachable = [...(by.get(id) ?? [])].some((kind) => PATH[kind] !== null);
+      return !reachable && POINTER_ONLY[id] === undefined;
+    });
+    expect(unexplained).toEqual([]);
+  });
+
+  it('declares a reason only for an action no keyboard path reaches', () => {
+    const by = targetsOffering();
+    const stale = (Object.keys(POINTER_ONLY) as MenuActionId[])
+      .filter((id) => [...(by.get(id) ?? [])].some((kind) => PATH[kind] !== null));
+    expect(stale).toEqual([]);
+  });
+});

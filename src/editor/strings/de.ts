@@ -253,7 +253,10 @@ export const DE: Record<keyof typeof EN, string> = {
   'toolbar.containerMenu': 'Dieses Container-Diagramm umbenennen, einstellen oder löschen',
   'toolbar.containerMenuOf': 'Menü des Container-Diagramms von {name}',
 
-  'canvas.connectHint': 'Klicken Sie ein Zielelement an — Esc bricht ab',
+  'canvas.connectHint': 'Klicken Sie ein Zielelement an, oder gehen Sie mit Tab dorthin und drücken Sie die Eingabetaste — Esc bricht ab',
+  'canvas.a11yNode': 'Eingabe oder Leertaste wählt es aus, Umschalt+Eingabe fügt es der Auswahl hinzu. Die Pfeiltasten verschieben die Auswahl, Umschalt+F10 öffnet das Kontextmenü, F2 benennt es um und Entf löscht es.',
+  'canvas.a11yEdge': 'Eingabe oder Leertaste wählt die Verbindung aus. Umschalt+F10 öffnet das Kontextmenü, F2 bearbeitet die Beschriftung und Entf löscht die Verbindung.',
+  'canvas.edgeName': 'Von {source} nach {target}',
   'canvas.gridOn': 'Raster: an',
   'canvas.gridOff': 'Raster: aus',
   'canvas.gridToggle': 'Raster ein- oder ausblenden',

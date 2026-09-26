@@ -25,6 +25,7 @@ import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
+import type { Theme } from '@mui/material/styles';
 import { getNodeTokens } from '../theme/tokens';
 import { buildEdges, buildNodes, type FloatingEdgeModel } from '../graph';
 import { placedNodes, domainGroupRectMap } from '../../model/placement';
@@ -69,6 +70,7 @@ import { useContextMenu, type ContextMenuState, type MenuOpenEvent } from './use
 import { dispatchMenuAction, type MenuActionHost } from './useMenuActions';
 import { GRID_SIZE } from './gridSize';
 import { isRectFullyVisible, toRect } from './viewportFit';
+import { keyboardIntent } from './keyboardIntent';
 import { ViewportMemory, type Viewport } from './viewportMemory';
 import { ZoomControls } from './ZoomControls';
 import { FIT_ALL } from './fitAll';
@@ -103,6 +105,9 @@ const NO_HELPER_LINES: HelperLineResult = {};
  * Tab a moment later is read as the keyboard it is.
  */
 const POINTER_FOCUS_MS = 300;
+
+/** A line the keyboard has reached: the accent, and heavier. */
+const FOCUSED_LINE = { stroke: (theme: Theme) => `${theme.palette.primary.main} !important`, strokeWidth: '3px !important' };
 
 /**
  * Whether this browser understands `:focus-visible` at all. jsdom does not, and
@@ -553,7 +558,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
         previewRoutes: props.autoRoute ? preview.previewRoutes : undefined,
         asOfDay,
         showLifecycle: props.showLifecycle,
-        replacesLabel: t('edge.replaces'),
+        replacesLabel: t('edge.replaces'), lineName: (source, target) => t('canvas.edgeName', { source, target }),
       }, lastEdges.current);
       lastEdges.current = next;
       return next;
@@ -1450,6 +1455,16 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
     ],
   );
 
+  // What a screen reader is told a card and a line answer to: the keys this
+  // canvas binds, in the app's language, not React Flow's English defaults.
+  // Both of a card's keys, because which one React Flow shows with its own
+  // keyboard handling off is its business.
+  const ariaLabels = useMemo(() => ({
+    'node.a11yDescription.default': t('canvas.a11yNode'),
+    'node.a11yDescription.keyboardDisabled': t('canvas.a11yNode'),
+    'edge.a11yDescription.default': t('canvas.a11yEdge'),
+  }), [t]);
+
   const handleMenuSelect = useCallback(
     (item: MenuItemModel) => {
       if (menu.state) dispatchMenuAction(item, menu.state, menuHost);
@@ -1529,7 +1544,8 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
   }, [menuRequest, selectionMenuTarget, anchorFor, tryOpenMenu, menuHost, screenToFlowPosition, t]);
 
   /**
-   * Enter / Space on a TAB-FOCUSED node selects it (4B).
+   * Enter / Space on a TAB-FOCUSED card or line (4B, and the accessibility
+   * audit): select it, or end the line being drawn there (`keyboardIntent`).
    *
    * React Flow's own key handling is off (`disableKeyboardA11y`) because the
    * keymap owns the arrow keys — RF's arrow move is visual-only and never
@@ -1540,23 +1556,14 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
    */
   const handleContainerKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {
-      if (event.key !== 'Enter' && event.key !== ' ') return;
-      const node = (event.target as HTMLElement | null)?.closest?.('.react-flow__node');
-      const id = node?.getAttribute('data-id');
-      if (!id) return;
+      const intent = keyboardIntent(event.key, event.shiftKey, event.target, props.selection, connectFrom);
+      if (!intent) return;
       event.preventDefault();
-      props.onSelectionChange(
-        event.shiftKey
-          ? {
-              ...props.selection,
-              elementIds: props.selection.elementIds.includes(id)
-                ? props.selection.elementIds.filter((existing) => existing !== id)
-                : [...props.selection.elementIds, id],
-            }
-          : { elementIds: [id], connectionIds: [], domainGroups: [] },
-      );
+      if (intent.kind === 'select') return props.onSelectionChange(intent.selection);
+      if (connectFrom !== null && intent.targetId !== connectFrom) actions.connect(connectFrom, intent.targetId);
+      setConnectFrom(null);
     },
-    [props],
+    [props, connectFrom, actions],
   );
 
   /**
@@ -1616,6 +1623,9 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
         // browser's own outline would sit outside the card's rounded corner and
         // read as a second, squarer box.
         '& .react-flow__node:focus-visible': { outline: 'none' },
+        // A line's stroke is inline, which React Flow's focus rule cannot beat:
+        // without this a line the keyboard reached looked like every other.
+        '& .react-flow__edge:focus-visible .react-flow__edge-path': FOCUSED_LINE,
         ...(connectFrom !== null
           ? { cursor: 'crosshair', '& .react-flow__pane, & .react-flow__node': { cursor: 'crosshair' } }
           : {}),
@@ -1644,6 +1654,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
           // built-in arrow-key node move is visual-only (never committed), so we
           // suppress it here to avoid a double-move (U4c, OQ2).
           disableKeyboardA11y
+          ariaLabelConfig={ariaLabels}
           zoomOnDoubleClick={false}
           nodesDraggable={!props.readOnly}
           nodesConnectable={!props.readOnly}

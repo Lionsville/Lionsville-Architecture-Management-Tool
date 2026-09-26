@@ -69,3 +69,17 @@ export function ownsContextMenu(target: EventTarget | null): boolean {
   const element = typeof node?.closest === 'function' ? node : node?.parentElement;
   return !!element?.closest?.(`[${OWN_MENU_ATTR}]`);
 }
+
+/**
+ * The widgets whose keyboard contract is the arrow keys (WAI-ARIA's composite
+ * widgets): the canvas does not nudge from inside one. `isEditableTarget`
+ * already covers a listbox and its options, which it treats as text entry.
+ */
+const ARROW_WIDGETS = '[role="tablist"], [role="menu"], [role="menubar"], [role="radiogroup"], [role="slider"], [role="toolbar"], [role="tree"], [role="grid"]';
+
+/** True when the event happened inside a widget the arrow keys move around in. */
+export function ownsArrows(target: EventTarget | null): boolean {
+  const node = target as (Node & { closest?: (selector: string) => Element | null }) | null;
+  const element = typeof node?.closest === 'function' ? node : node?.parentElement;
+  return !!element?.closest?.(ARROW_WIDGETS);
+}

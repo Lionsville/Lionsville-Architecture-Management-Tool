@@ -15,7 +15,8 @@ import type {
   ElementId,
   Point,
 } from '../model/types';
-import { isEditableTarget, isShortcutIgnoredTarget, ownsContextMenu } from './isEditableTarget';
+import { isEditableTarget, isShortcutIgnoredTarget, ownsArrows, ownsContextMenu } from './isEditableTarget';
+import { enterIsTheItems } from './canvas/keyboardIntent';
 import { CANVAS_SHORTCUTS, detectPlatform, matchEvent } from './keymap';
 import {
   EMPTY_SELECTION,
@@ -80,13 +81,17 @@ export interface CanvasShortcutHandlers {
 
 /** The two chords a control with a menu of its own keeps (`ownsContextMenu`). */
 const CONTEXT_MENU = new Set(['context-menu', 'context-menu-key']);
+/** The arrows, which a tablist, a menu or a radio group walks with (`ownsArrows`). */
+const ARROWS = new Set(['nudge', 'nudge-fine']);
 
 /**
  * Whether the focused control keeps this chord, although it takes the rest:
- * a tab keeps Shift+F10 for its own menu.
+ * a tab keeps Shift+F10 for its own menu, and a tablist its arrows — without
+ * this, ← → on the inspector's tabs moved the selected card as well.
  */
 function keepsItsChord(id: string, target: EventTarget | null): boolean {
-  return CONTEXT_MENU.has(id) && ownsContextMenu(target);
+  if (CONTEXT_MENU.has(id)) return ownsContextMenu(target);
+  return ARROWS.has(id) && ownsArrows(target);
 }
 
 /** Browser-owned chords we always suppress, even when the action is inert. */
@@ -406,7 +411,7 @@ function dispatch(
       h.onOpenContextMenu();
       return;
     case 'open-documentation':
-      if (h.selectedElement) h.onOpenDocumentation?.(h.selectedElement.id);
+      openDocumentation(event, h);
       return;
     case 'rename':
       h.onRequestRename();
@@ -415,6 +420,17 @@ function dispatch(
       h.onOpenSearch?.();
       return;
   }
+}
+
+/**
+ * Enter opens the selected element's page — unless the key was pressed on a
+ * card or a line the keyboard is choosing, where it selects that instead
+ * (`keyboardIntent`). Without this, Tab to a second card and Enter opened the
+ * first one's page and selected the second.
+ */
+function openDocumentation(event: KeyboardEvent, h: CanvasShortcutHandlers): void {
+  if (!h.selectedElement || enterIsTheItems(event.target, h.selectedElement.id)) return;
+  h.onOpenDocumentation?.(h.selectedElement.id);
 }
 
 function copyToClipboard(h: CanvasShortcutHandlers, diagram: DesignDiagram): void {

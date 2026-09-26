@@ -263,7 +263,10 @@ export const EN = {
   'toolbar.containerMenuOf': 'Menu of the container diagram of {name}',
 
   // --- canvas --------------------------------------------------------------
-  'canvas.connectHint': 'Click a target element — Esc cancels',
+  'canvas.connectHint': 'Click a target element, or Tab to it and press Enter — Esc cancels',
+  'canvas.a11yNode': 'Enter or Space selects it, and Shift+Enter adds it to the selection. The arrow keys move the selection, Shift+F10 opens its menu, F2 renames it and Delete removes it.',
+  'canvas.a11yEdge': 'Enter or Space selects it. Shift+F10 opens its menu, F2 edits its label and Delete removes it.',
+  'canvas.edgeName': 'From {source} to {target}',
   'canvas.gridOn': 'Show grid: on',
   'canvas.gridOff': 'Show grid: off',
   'canvas.gridToggle': 'Toggle grid visibility',

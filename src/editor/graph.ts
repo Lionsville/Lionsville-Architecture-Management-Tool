@@ -50,6 +50,11 @@ export interface BuildGraphArgs {
    */
   replacesLabel?: string;
   /**
+   * What a line is called to a screen reader, from the names at its two ends:
+   * the host's words. Absent leaves React Flow's own, which names the ids.
+   */
+  lineName?(source: string, target: string): string;
+  /**
    * Elements being dragged right now. Edges incident to one of them render as if
    * they had no stored route, so the line follows the cursor instead of hanging
    * off a bend measured against the position the node just left.
@@ -145,6 +150,7 @@ export function buildNodes(args: BuildGraphArgs, previous?: readonly ElementNode
       draggable: !args.readOnly,
       selectable: true,
       selected: args.selectedElementIds?.has(element.id) ?? false,
+      domAttributes: DESCRIBED,
       data: {
         // The platform badge is the rows' opinion where nobody typed one
         // (ADR-0013); the same object where there is nothing to derive.
@@ -339,6 +345,7 @@ export function buildEdges(
       target: targetId,
       selected: args.selectedConnectionIds?.has(connection.id) ?? false,
       reconnectable: grabbable(connection),
+      ariaLabel: lineName(args, connection, elementsById),
       markerEnd: heads.end ? marker : undefined,
       markerStart: heads.start ? marker : undefined,
       data: {
@@ -440,6 +447,16 @@ function keepingUnchanged<T extends { id: string }>(
   return unmoved ? (previous as T[]) : built;
 }
 
+/**
+ * Where a card's keys are said. React Flow writes the sentence — ours, from
+ * `ariaLabelConfig` on the canvas — into a hidden element for every board, but
+ * with its own keyboard handling off (`disableKeyboardA11y`, because the
+ * keymap owns the arrows) it stops pointing the cards at it; a line still is.
+ * The id is React Flow's for a board with no `id` of its own, which is every
+ * board here; `SolutionDesignEditor.keyboard.test.tsx` reads it back.
+ */
+const DESCRIBED = { 'aria-describedby': 'react-flow__node-desc-1' } as const;
+
 function sameNode(held: ElementNode, next: ElementNode): boolean {
   return (
     held.type === next.type &&
@@ -477,6 +494,18 @@ function sameNodeData(held: ElementNodeData, next: ElementNodeData): boolean {
   );
 }
 
+/** A line's accessible name: where it runs, in the host's words, and its label. */
+function lineName(
+  args: BuildGraphArgs,
+  connection: { sourceId: ElementId; targetId: ElementId; label?: string },
+  elementsById: ReadonlyMap<ElementId, { name: string }>,
+): string | undefined {
+  if (!args.lineName) return undefined;
+  const nameOf = (id: ElementId) => elementsById.get(id)?.name ?? id;
+  const route = args.lineName(nameOf(connection.sourceId), nameOf(connection.targetId));
+  return connection.label ? `${route}: ${connection.label}` : route;
+}
+
 function sameEdge(held: FloatingEdgeModel, next: FloatingEdgeModel): boolean {
   return (
     held.type === next.type &&
@@ -484,6 +513,7 @@ function sameEdge(held: FloatingEdgeModel, next: FloatingEdgeModel): boolean {
     held.target === next.target &&
     held.selected === next.selected &&
     held.reconnectable === next.reconnectable &&
+    held.ariaLabel === next.ariaLabel &&
     sameMarker(held.markerEnd, next.markerEnd) &&
     sameMarker(held.markerStart, next.markerStart) &&
     sameEdgeData(held.data, next.data)
