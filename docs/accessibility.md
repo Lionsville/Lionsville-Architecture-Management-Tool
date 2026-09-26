@@ -1,9 +1,11 @@
 # Accessibility
 
 *Audited 26 September 2026, against WCAG 2.1 level AA, on the web build and
-the desktop app — one renderer, so one audit. What follows is what was checked,
-how, what was fixed, and what does not conform yet. It is kept beside the code
-so that the next change to a screen can see what it has to keep true.*
+the desktop app — one renderer, so one audit — and followed up the same day
+for contrast, MUI's own labels, reflow, text spacing and the focus ring. What
+follows is what was checked, how, what was fixed, and what does not conform
+yet. It is kept beside the code so that the next change to a screen can see
+what it has to keep true.*
 
 ## How it is checked
 
@@ -23,11 +25,25 @@ rather than waiting for the next audit.
   a block in each component's own test file. jsdom lays nothing out, so axe's
   colour-contrast and target-size rules are off there.
 - **Contrast, measured.** `src/app/theme.contrast.test.ts` computes the WCAG
-  ratio of the palette's own pairs in both modes: the inks on the two grounds,
-  the accent, text on a contained button, a card's name and second line, the
-  error red, and every badge state a card carries. The pairs below 4.5:1 are a
-  list the test holds the measurement to, exactly — so fixing one fails the
-  test until the list, and this page, say so.
+  ratio of every pair the theme and the board draw with, in both modes, each
+  over the layers it actually sits on: the inks and every palette colour on
+  the two grounds, every contained button and every alert as MUI paints them,
+  a zone's and a domain group's label on its tint, a card's and every other
+  node's text over each zone, a line's label, and every badge state. Text
+  fails below 4.5:1; the focus ring, a field's outline, a card's focus and
+  selection rings and a line on the board fail below 3:1 (1.4.11). The
+  disabled ink (`text.disabled`) is for a control that is off, which 1.4.3
+  exempts, and a test there holds the source to that: a new use of it fails
+  until it is one of the listed kinds — a separator glyph, a chevron, a
+  retired bar, a border beside a name.
+- **Reflow, held in the source.** jsdom lays nothing out, so
+  `src/app/reflow.test.ts` holds every bar that covers the window's width to
+  wrapping rather than overlapping itself, and a shell bar's quiet buttons to
+  keeping their width. What 400 % zoom looks like was checked by eye, in a
+  320 × 256 frame (see *Reflow and zoom* below).
+- **MUI's own words.** `src/app/theme.locale.test.tsx` renders an
+  autocomplete and a toast in each language and reads the names MUI gave
+  their buttons.
 - **The keyboard, pressed.** `SolutionDesignEditor.keyboard.test.tsx` (the
   board and the inspector), `App.keyboard.test.tsx` (the menu and a dialog),
   the tab tests in `SolutionDesignEditor.test.tsx`, and a test over the menu
@@ -64,7 +80,11 @@ stop and the arrows move between them, and an autocomplete's clear and open
 buttons are the field's own keys. The arrow keys on the inspector's tabs used
 to move the selected card as well; they no longer do.
 
-**Focus visible.** Controls show the browser's or MUI's focus indicator. A
+**Focus visible.** Every control MUI draws shows MUI's own focus ring — a
+2px outline in the accent, at least 3:1 against both grounds in both modes,
+drawn inside the control where a parent would clip it (a tab, a menu item).
+Until the follow-up it showed MUI's default, a faint tint of the control's
+own background, which on a quiet button in the bar was hard to find. A field's outline, which MUI draws at 1.6:1, is 3:1 now. A
 card draws its own ring. A line did not show that it had the focus at all —
 its colour is set inline, which React Flow's focus rule cannot override — and
 now turns the accent and heavier. A row in the sheet's finder showed focus by
@@ -105,23 +125,84 @@ app's language.
   one's documentation as well as selecting the second; the arrows on the
   inspector's tabs moved the selection.
 
+## Fixed in the follow-up
+
+- **Contrast.** The six badge states and the dark mode's red are above 4.5:1:
+  the quiet badge states (*none*, *not set*, *retired*) in the secondary ink
+  rather than the disabled one, MUI's orange and light blue a step darker in
+  the light mode (they were 3.1 and 3.9 as text on paper) and its red a step
+  lighter in the dark, with the lighter red of a badge on its tint. The zone
+  labels on the board were 3.3 and 3.8 and are in the secondary ink too. MUI
+  picks black or white for a button's label by whichever reaches 4.5:1 now,
+  not 3:1. Words that were drawn in the disabled ink — an empty list's
+  sentence, a name nobody defined, a menu's shortcut, the agent button when
+  off — are in the secondary ink.
+- **MUI's own labels.** An autocomplete's clear, open and close buttons,
+  what its list says when it is empty, and a toast's close button were
+  English on every screen. The theme carries MUI's locale for the language
+  that is on (Dutch and German; English is MUI's default).
+- **Reflow.** At 320 CSS pixels every bar across the top of a screen drew its
+  labels over each other, and the editor's toolbar ran 280 pixels off the
+  side of the window. Every such bar now takes a second row.
+
+## Reflow and zoom
+
+Checked at 320 × 256 CSS pixels — a 1280 × 1024 window at 400 % — by loading
+the web build into a frame of that size, which lays out as a desktop window
+does rather than as a phone.
+
+- **The homes and the register pages reflow**: the organisation's and a
+  scope's home and the technology register scroll down only, with nothing
+  past the right edge once the bars wrap; the application register's rows
+  are 20 pixels wider than the window and scroll sideways by that much. At
+  256 pixels high, though, the bar over a home (three rows) and a page's own
+  bar (two) leave the page a strip of about a third of the window.
+- **The pages with a list beside a reader do not**: decisions, observations
+  and the documentation page keep their two columns side by side, 646 to 660
+  pixels wide, and the reader is reached by scrolling sideways. Stacking them
+  below a width is the fix, one page at a time.
+- **The board is the exception 1.4.10 makes** for content that needs two
+  dimensions to mean anything: a landscape is a picture of where things sit
+  relative to each other, and it pans and zooms on its own. What is around it
+  wraps, but at 256 pixels high the bars, the palette and the inspector leave
+  the board no height at all. At 200 % (640 × 512) the board is 350 pixels
+  high and, with the palette and the inspector open, 76 wide; each folds away
+  with its own button, and then the board has the window's width. Folding
+  them by themselves below a width is the fix.
+
+## Text spacing
+
+Checked with the 1.4.12 values applied to every element — line height 1.5,
+paragraph spacing 2em, letter spacing 0.12em, word spacing 0.16em.
+
+- **The organisation's home, the bars and the palette** take them without
+  losing anything: the bars wrap where they grew, and nothing is clipped.
+  The other pages were not checked one by one.
+- **The board's cards do not.** A card's size is a fact of the diagram, not of
+  its text, so a longer line is cut: with the spacing applied, 35 names and
+  descriptions on the example landscape end in an ellipsis where 9 did before,
+  and a badge's letters can be cut by its box. Every one is said in full in
+  the inspector, on the element's page and as the card's accessible name.
+
 ## Does not conform yet
 
 - **Pointer only.** Resizing a card, a band, a group or the canvas; moving a
   group; bending a line, moving or removing one bend, and moving a line's end to
   another card. The keyboard's alternatives are partial: a group's members move
   with their cards, and a line can be deleted and drawn again.
-- **Contrast (1.4.3).** Six badge states on a card are below 4.5:1 — in the
-  light theme *partial* (3.3), *none* (2.7), *retiring* (3.3) and *retired*
-  (2.6); in the dark theme *at risk* (3.9) and *retired* (3.6) — and the
-  error red on a panel in the dark theme is 4.4:1. Badge text is 8 pixels. Each
-  badge's state is also its accessible name and is written out in the
-  inspector. The contrast of component outlines and dividers against their
-  ground (1.4.11) has not been measured.
+- **Contrast, what is left (1.4.3, 1.4.11).** A retired element's card is
+  drawn at 55 % opacity when the board shows the lifecycle, on purpose, and
+  its text falls below 4.5:1 with it. A card's border and the dividers are
+  not measured: a card is known by its name and its fill, and a divider
+  separates rather than identifies. A picture exported in the other mode
+  than the one on screen is drawn with MUI's default palette, not this one
+  (`src/editor/useExport.ts`).
+- **Text spacing (1.4.12)** on the board's cards, above.
+- **Reflow (1.4.10)**: the editor at 400 %, and the three pages with a list
+  beside a reader, above.
 - **The board to a screen reader.** Cards and lines are named and selectable,
   but the board's structure — which band a card is in, what crosses what — is
   carried by names and the menus rather than by the reading order, and the
   order Tab walks is the drawing order, not the layout.
-- **Not assessed.** Reflow at 320 CSS pixels and 400 % zoom (1.4.10), text
-  spacing (1.4.12), content on hover (1.4.13) beyond MUI's tooltips, and the
+- **Not assessed.** Content on hover (1.4.13) beyond MUI's tooltips, and the
   desktop's native menu bar, whose keyboard access is the operating system's.

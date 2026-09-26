@@ -793,8 +793,10 @@ one writable both land, among others — and then the store's suite runs over it
   WCAG 2.1 A and AA) is empty, and a control that only a pointer can reach is
   either given a keyboard path or written down in `docs/accessibility.md`,
   the audit — which says what does not conform yet, and changes when the code
-  does. The palette's contrast is measured in `app/theme.contrast.test.ts`,
-  whose list of pairs below 4.5:1 is that page's list.
+  does. The palette's contrast is measured in `app/theme.contrast.test.ts`:
+  every pair the theme and the board draw with, text at 4.5:1 and rings,
+  outlines and lines at 3:1, and `text.disabled` for a control that is off
+  and nothing else. A token that carries text goes in that test.
 - **Component tests go through `ui/testing/renderShell.tsx`.** It supplies the
   theme and the language, and checks on every render that the theme reached the
   tree — which is how a doubled Emotion gets caught by every test rather than by
