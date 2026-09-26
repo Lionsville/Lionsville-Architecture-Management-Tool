@@ -44,6 +44,12 @@ export const EN = {
    * that did not read.
    */
   'shell.unreadableScope': '{files} in this scope could not be read, so it is open to be looked at and not changed: saving would write an empty model over it. Mend the file, or take it back from the history, and open the scope again.',
+  /**
+   * A change refused because the scope is only read: a viewer's, or one a
+   * file of which did not read. Said by the session, whichever way the change
+   * came in, so a control that forgot to hide itself still changes nothing.
+   */
+  'shell.readOnlyRefused': 'This scope is open to be read and not changed, so nothing was done.',
   'shell.diskConflict': 'This project changed on disk, and there are unsaved changes here.',
   'shell.takeTheirs': 'Take theirs',
   'shell.keepMine': 'Keep mine',

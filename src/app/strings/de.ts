@@ -24,6 +24,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.conflict': 'Hier und auf der Festplatte geändert',
   'shell.diskChanged': 'Dieses Projekt wurde auf der Festplatte geändert. Hier ist nichts ungespeichert.',
   'shell.unreadableScope': '{files} in diesem Bereich konnte nicht gelesen werden, deshalb ist er zum Ansehen geöffnet und nicht zum Ändern: Speichern würde ein leeres Modell darüberschreiben. Reparieren Sie die Datei oder holen Sie sie aus dem Verlauf zurück, und öffnen Sie den Bereich erneut.',
+  'shell.readOnlyRefused': 'Dieser Bereich ist zum Lesen geöffnet und nicht zum Ändern, deshalb wurde nichts getan.',
   'shell.diskConflict': 'Dieses Projekt wurde auf der Festplatte geändert, und hier gibt es ungespeicherte Änderungen.',
   'shell.takeTheirs': 'Die von der Festplatte',
   'shell.keepMine': 'Meine behalten',

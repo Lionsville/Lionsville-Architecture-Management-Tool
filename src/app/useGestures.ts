@@ -94,11 +94,17 @@ export function useGestures(deps: {
    */
   models?: () => Promise<ScopeModel[]>
   index: ScopeIndex
-  /** The open scope's records as the session has them, and the one way in. */
+  /**
+   * The open scope's records as the session has them, and the one way in —
+   * and whether that way is open, asked BEFORE the other scope is written,
+   * because a gesture refused at its last step has already written the first.
+   */
   session: {
     current: () => { elements: readonly DesignElement[] }
     snapshot: () => ScopeSnapshot
     dispatch: (command: Command) => unknown
+    readOnly: boolean
+    mayChange: () => boolean
   }
   /** The tree changed: read the index again. */
   onTreeChanged: () => void
@@ -127,7 +133,7 @@ export function useGestures(deps: {
    * one lookup — because an inspector asks it on every render.
    */
   const offers = useCallback((id: ElementId): GestureKind[] => {
-    if (!models) return []
+    if (!models || session.readOnly) return []
     const held = session.current().elements.find((element) => element.id === id)
     if (!held || held.ref !== undefined) return []
     const entry = index.lookup(id)
@@ -167,6 +173,7 @@ export function useGestures(deps: {
    * is the state ADR-0012 §10 asks for, and the reason the toast says so.
    */
   const run = useCallback(async (plan: GesturePlan) => {
+    if (!session.mayChange()) return
     setBusy(true)
     try {
       for (const write of plan.writes) {
@@ -222,7 +229,7 @@ export function useGestures(deps: {
   }, [scopes, session, notify, onFailure, s, scopeLabel, onTreeChanged, onOpenScope, published])
 
   const ask = useCallback((request: Omit<GestureRequest, 'scope'>) => {
-    if (!models) return
+    if (!models || !session.mayChange()) return
     setBusy(true)
     void models().then(
       (tree) => {

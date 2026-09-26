@@ -43,7 +43,13 @@ export function useWorkspaceDialogs(deps: {
   const { session, diagnostics, notify, s, focusElement, openDocumentation, openDecisions } = deps
   const { onOpen: onOpenSettings, onApply: onApplySettings } = deps.settings
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const openSettings = useCallback(() => { onOpenSettings(); setSettingsOpen(true) }, [onOpenSettings])
+  // The settings rename the scope and can move it, which writes it whole —
+  // so on a scope that is only read they are refused at the door, not after.
+  const openSettings = useCallback(() => {
+    if (!session.mayChange()) return
+    onOpenSettings()
+    setSettingsOpen(true)
+  }, [session, onOpenSettings])
   const [searchOpen, setSearchOpen] = useState(false)
 
   const chooseHit = useCallback((hit: SearchHit) => {
@@ -83,6 +89,7 @@ export function useWorkspaceDialogs(deps: {
    * dialog and the next autosave writes the settings straight back out again.
    */
   const applySettings = useCallback((settings: ProjectSettings) => {
+    if (!session.mayChange()) return
     void onApplySettings(settings, session.snapshot()).then(
       (saved: ScopeSnapshot | undefined) => { if (saved) session.adopt(saved, false) },
       // The caller reports what it could; this is the case where the promise

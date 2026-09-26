@@ -46,6 +46,7 @@ function RecordPages({ parts }: { parts: WorkspaceParts }) {
         {...(onOpenScope ? { onOpenScope } : {})}
         onProjectDecisionsChange={analysis.onDecisionsChange}
         initialAdrId={pages.adrPage.adrId}
+        readOnly={readOnly}
         s={s}
         language={language}
         makeId={makeId}
@@ -69,6 +70,7 @@ function RecordPages({ parts }: { parts: WorkspaceParts }) {
         canShare={props.project.path !== ''}
         {...(onOpenScope ? { onOpenScope: (path: string) => onOpenScope(path, { page: 'observations' }) } : {})}
         onChange={analysis.onAnalysisChange}
+        readOnly={readOnly}
         onDecide={readOnly ? undefined : analysis.onDecideSolution}
         onStartPlan={readOnly ? undefined : analysis.onStartSolutionPlan}
         onOpenDecision={(adrId) => { pages.closeObservations(); pages.openDecisions(adrId) }}

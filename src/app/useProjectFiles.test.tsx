@@ -50,9 +50,11 @@ const snapshot = (): ScopeSnapshot => ({
 })
 
 /** Only the six members this hook reaches for; the rest would be scenery. */
-function fakeSession() {
+function fakeSession(readOnly = false) {
   const library: UploadedLogo[] = []
   return {
+    readOnly,
+    mayChange: () => !readOnly,
     snapshot: () => snapshot(),
     current: () => model(),
     currentLibrary: () => library,
@@ -75,9 +77,10 @@ function mount(
   workingSet?: () => Promise<ScopeSnapshot[]>,
   adoptWorkingSet?: (scopes: readonly ScopeSnapshot[]) => Promise<void>,
   askPassword: AskPassword = typed,
+  readOnly = false,
 ) {
   const notify = vi.fn()
-  const session = fakeSession()
+  const session = fakeSession(readOnly)
   const channel: ProjectFileChannel = {
     save: () => Promise.resolve(),
     readBytes: () => Promise.resolve(bytes('{}')),
@@ -244,6 +247,17 @@ describe('opening a file', () => {
     })
     act(() => files().openFile(file()))
     await waitFor(() => expect(session.adopt).toHaveBeenCalledWith(expect.anything(), false))
+  })
+
+  /** Replacing the open scope is a change to it; a scope that is only read takes none. */
+  it('replaces nothing on a scope that is only read', async () => {
+    const { files, session } = mount(
+      { readBytes: () => Promise.resolve(workingFileBytes([snapshot()])) }, undefined, undefined, typed, true,
+    )
+    act(() => files().openFile(file()))
+    await settle()
+    await settle()
+    expect(session.adopt).not.toHaveBeenCalled()
   })
 
   it('still adopts a version-2 working file, which is not a zip at all', async () => {

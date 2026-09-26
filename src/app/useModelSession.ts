@@ -390,8 +390,27 @@ export type ModelSession = {
 
   // --- the one way in -------------------------------------------------------
   /**
+   * Nothing here may be changed by this session: the source says nobody here
+   * writes, or a file of the scope did not read and a save would write an empty
+   * model over it. Fixed for the life of the session, as the scope is.
+   *
+   * A widget reads it to hide what it would only be refused; the refusal
+   * itself is `dispatch`'s, and `undo`'s, `redo`'s and the libraries' — so a
+   * widget that forgot to ask changes nothing either. A step another author
+   * made still lands (`steps.applyExternal`): a viewer sees what everybody does.
+   */
+  readOnly: boolean
+  /**
+   * May this session change the model now? `false` on a read-only scope, and
+   * the refusal has then been said. For a caller that writes somewhere ELSE
+   * before it dispatches here — a gesture writes the other scope first — and
+   * has to know before it starts rather than after.
+   */
+  mayChange: () => boolean
+  /**
    * Apply a command, and answer with the model as it now stands — `undefined`
-   * when the reducer refused it, which is also when the refusal is shown.
+   * when the reducer refused it, or when the scope is only read, which is also
+   * when the refusal is shown.
    *
    * The model comes back rather than a boolean so a caller can make its next
    * decision against the result instead of against a prop that will not arrive
@@ -563,8 +582,10 @@ export function useModelSession(deps: {
    * had one.
    */
   takenInTree?: () => Iterable<string>
+  /** Nothing may be changed here (`ModelSession.readOnly`). Absent is `false`. */
+  readOnly?: boolean
 }): ModelSession {
-  const { initialProject, notify, s, takenInTree } = deps
+  const { initialProject, notify, s, takenInTree, readOnly = false } = deps
 
   const [model, setModel]
  = useState<Model>(() => fromArrays(initialProject.model))
@@ -573,6 +594,23 @@ export function useModelSession(deps: {
   // and travels in the working file.
   const [logoLibrary, setLogoLibrary] = useState<UploadedLogo[]>(initialProject.logoLibrary)
   const [imageLibrary, setImageLibrary] = useState<DocumentImage[]>(initialProject.imageLibrary ?? [])
+
+  /**
+   * The one place read-only is decided (`ModelSession.readOnly`). Everything a
+   * person or a caller can change goes through here first; what another
+   * author did, and a document adopted in place of this one, do not.
+   */
+  const mayChange = useCallback((): boolean => {
+    if (!readOnly) return true
+    notify(s('shell.readOnlyRefused'), 'warning')
+    return false
+  }, [readOnly, notify, s])
+  const guardedLogos = useCallback<ModelSession['setLogoLibrary']>((next) => {
+    if (mayChange()) setLogoLibrary(next)
+  }, [mayChange])
+  const guardedImages = useCallback<ModelSession['setImageLibrary']>((next) => {
+    if (mayChange()) setImageLibrary(next)
+  }, [mayChange])
   const [editorKey, setEditorKey] = useState(0)
 
   const modelRef = useRef(model)
@@ -787,6 +825,7 @@ export function useModelSession(deps: {
   }, [notify, s, setActiveDiagramId])
 
   const dispatch = useCallback<ModelSession['dispatch']>((command, options) => {
+    if (!mayChange()) return undefined
     const before = modelRef.current
     const result = apply(before, command)
     if (!result.ok) {
@@ -804,7 +843,7 @@ export function useModelSession(deps: {
     record(before, result.model, [command], [result.inverse], meta)
     if (deletesAnElement(command)) reportOrphans(before, result.model)
     return asArrays(result.model)
-  }, [notify, s, record, setActiveDiagramId, asArrays, reportOrphans])
+  }, [notify, s, record, setActiveDiagramId, asArrays, reportOrphans, mayChange])
 
   const step = useCallback((from: 'past' | 'future') => {
     const stack = from === 'past' ? past.current : future.current
@@ -863,8 +902,8 @@ export function useModelSession(deps: {
     })
   }, [notify, s, announce])
 
-  const undo = useCallback(() => step('past'), [step])
-  const redo = useCallback(() => step('future'), [step])
+  const undo = useCallback(() => { if (mayChange()) step('past') }, [step, mayChange])
+  const redo = useCallback(() => { if (mayChange()) step('future') }, [step, mayChange])
 
   /**
    * A command another author made, through the same door as our own.
@@ -1069,8 +1108,8 @@ export function useModelSession(deps: {
   return {
     model: arrays, activeDiagramId: activeId, setActiveDiagramId,
     ids: ids.current,
-    editorKey, logoLibrary, setLogoLibrary, imageLibrary, setImageLibrary,
-    dispatch, undo, redo,
+    editorKey, logoLibrary, setLogoLibrary: guardedLogos, imageLibrary, setImageLibrary: guardedImages,
+    readOnly, mayChange, dispatch, undo, redo,
     steps,
     canUndo: newestOwn(past.current) >= 0,
     canRedo: future.current.length > 0,

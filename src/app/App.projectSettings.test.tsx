@@ -167,3 +167,18 @@ describe('project settings on an open project', () => {
     })
   })
 })
+
+/**
+ * The settings rename the scope and can move it — a write of the whole scope
+ * that does not go through a command. On a scope that is only read they are
+ * refused before the dialog opens, with the session's sentence.
+ */
+describe('project settings on a scope that is only read', () => {
+  it('does not open, and says why', async () => {
+    const store = show({ ...project(), unreadable: ['model.json'] })
+    fireEvent.click(screen.getByText('Settings…'))
+    await screen.findByText(/open to be read and not changed/)
+    expect(screen.queryByLabelText('Project name')).toBeNull()
+    expect((await saved(store))?.model.name).toBe('Landscape')
+  })
+})

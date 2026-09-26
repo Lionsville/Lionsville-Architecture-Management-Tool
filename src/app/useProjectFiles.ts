@@ -169,6 +169,9 @@ export function useProjectFiles(deps: {
    * `openProjectDocument`, testable without a browser.
    */
   const landHere = useCallback((name: string, result: OpenedWorkingFile) => {
+    // Replacing the open scope is a change to it like any other, and the
+    // scopes under it are written first, so it is asked before anything is.
+    if (!session.mayChange()) return
     try {
       const rest = result.rest ?? []
       if (rest.length && !adoptWorkingSet) {

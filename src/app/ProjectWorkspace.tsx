@@ -117,6 +117,9 @@ function useSessionParts(props: ProjectWorkspaceProps) {
     // Read per ask, not captured: the index is rebuilt under a live session
     // whenever the folder changes (ADR-0012 §2).
     takenInTree: useCallback(() => indexRef.current.takenIds(), []),
+    // The one place it is decided: every change from here on is refused at
+    // the session, and what is handed `readOnly` below only hides what would be.
+    readOnly,
   })
   const diagrams = useDiagramActions({ session, notify, s, makeId })
   const { files, pickers, safeguardRef } = useWorkspaceFiles({

@@ -53,12 +53,13 @@ const project = (over: Partial<ScopeSnapshot> = {}): ScopeSnapshot => ({
   ...over,
 })
 
-function mount(initial = project(), takenInTree?: () => Iterable<string>) {
+function mount(initial = project(), takenInTree?: () => Iterable<string>, readOnly?: boolean) {
   const notify = vi.fn()
   let session!: ModelSession
   function Host() {
     session = useModelSession({
       initialProject: initial, notify, s: translator('en'), takenInTree,
+      ...(readOnly !== undefined ? { readOnly } : {}),
     })
     return null
   }
@@ -902,5 +903,79 @@ describe('useModelSession — saying that a change was made here', () => {
     stop()
     act(() => { session().dispatch(rename('Two')) })
     expect(heard).toHaveLength(1)
+  })
+})
+
+/**
+ * A scope that is only read — a viewer's, one whose `model.json` did not
+ * parse, one a source says nobody writes — is refused HERE, at the one door,
+ * rather than at each widget that might have forgotten to hide itself. The
+ * widgets reflect it; this is what holds when one of them does not.
+ */
+describe('useModelSession — a scope that is only read', () => {
+  const readOnly = () => mount(project(), undefined, true)
+  const refusal = 'This scope is open to be read and not changed, so nothing was done.'
+
+  it('refuses a change with a sentence, and the model stays as it was', () => {
+    const { session, notify } = readOnly()
+    let answer: HostModel | undefined
+    act(() => { answer = session().dispatch(rename('Renamed')) })
+    expect(answer).toBeUndefined()
+    expect(session().current().elements[0].name).toBe('Billing')
+    expect(session().history()).toHaveLength(0)
+    expect(notify).toHaveBeenCalledWith(refusal, 'warning')
+  })
+
+  it('refuses a change that would not be a step, too', () => {
+    const { session } = readOnly()
+    act(() => {
+      session().dispatch({ type: 'diagram.update', id: 'd1', patch: { autoRoute: true }, undoable: false })
+    })
+    expect(session().current().diagrams[0].autoRoute).not.toBe(true)
+  })
+
+  it('takes nothing back and puts nothing back', () => {
+    const { session, notify } = readOnly()
+    act(() => { session().undo() })
+    act(() => { session().redo() })
+    expect(notify).toHaveBeenCalledTimes(2)
+    expect(notify).toHaveBeenLastCalledWith(refusal, 'warning')
+  })
+
+  it('takes no picture and no mark into the scope', () => {
+    const { session, notify } = readOnly()
+    act(() => {
+      session().setImageLibrary((library) => [...library, { file: 'a.png', url: 'data:image/png;base64,' }])
+      session().setLogoLibrary((library) => [...library, { key: 'mark', label: 'Mark', url: 'data:image/png;base64,' }])
+    })
+    expect(session().imageLibrary).toEqual([])
+    expect(session().logoLibrary).toEqual([])
+    expect(notify).toHaveBeenCalledWith(refusal, 'warning')
+  })
+
+  it('says so to a caller that has to ask before it writes somewhere else', () => {
+    const { session, notify } = readOnly()
+    expect(session().readOnly).toBe(true)
+    let may = true
+    act(() => { may = session().mayChange() })
+    expect(may).toBe(false)
+    expect(notify).toHaveBeenCalledWith(refusal, 'warning')
+  })
+
+  /** A viewer still sees what everybody else does: their steps land. */
+  it('still lands a step another author made', () => {
+    const { session, notify } = readOnly()
+    act(() => { session().steps.applyExternal(rename('Theirs'), { by: 'A. Author' }) })
+    expect(session().current().elements[0].name).toBe('Theirs')
+    expect(notify).not.toHaveBeenCalled()
+  })
+
+  it('refuses nothing where the scope may be written', () => {
+    const { session, notify } = mount()
+    expect(session().readOnly).toBe(false)
+    let may = false
+    act(() => { may = session().mayChange() })
+    expect(may).toBe(true)
+    expect(notify).not.toHaveBeenCalled()
   })
 })

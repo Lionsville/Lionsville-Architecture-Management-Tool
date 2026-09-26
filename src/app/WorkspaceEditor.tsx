@@ -32,7 +32,7 @@ export function WorkspaceEditor({ parts }: { parts: WorkspaceParts }) {
           onActiveDiagramChange: session.setActiveDiagramId,
           viewing: parts.viewing,
         }}
-        editing={{ dispatch: session.dispatch, history: seams.history, ids: session.ids }}
+        editing={{ dispatch: session.dispatch, history: seams.history, ids: session.ids, readOnly: session.readOnly }}
         pages={{ render: (diagram, view) => laidOutPage(parts, diagram, view) }}
         diagrams={diagramCalls(parts)}
         history={seams.historyRequests}

@@ -74,6 +74,8 @@ type Options = {
   published?: boolean
   /** Somebody else's save, made between this side's read of a scope and its write. */
   meanwhile?: (store: InMemoryScopeStore, path: string) => Promise<void>
+  /** The open scope is only read (`ModelSession.readOnly`). */
+  readOnly?: boolean
 }
 
 function mount(open: string, initial = tree(), failOnWrite?: number, options: Options = {}): Harness {
@@ -104,7 +106,7 @@ function mount(open: string, initial = tree(), failOnWrite?: number, options: Op
   function Probe() {
     // The session's toasts go to the same list: the refusal at ⌘Z is the
     // session's, and it is what a person sees after a gesture.
-    session = useModelSession({ initialProject: held, notify, s })
+    session = useModelSession({ initialProject: held, notify, s, ...(options.readOnly ? { readOnly: true } : {}) })
     gestures = useGestures({
       scope: open,
       scopes,
@@ -282,5 +284,26 @@ describe('with somebody else writing too', () => {
     expect(held.writes).toEqual([''])
     expect(held.session().current().elements[0]).toMatchObject({ id: 'wms', ref: '' })
     expect(held.notices.some(([, severity]) => severity === 'success')).toBe(true)
+  })
+})
+
+/**
+ * A scope that is only read makes no gesture. Asked at the start rather than
+ * at the session's own refusal at the end: by then the other scope would
+ * already hold the definition, and this one would never be told.
+ */
+describe('on a scope that is only read', () => {
+  it('offers nothing', () => {
+    const held = mount('road', tree(), undefined, { readOnly: true })
+    expect(held.gestures().offers('wms')).toEqual([])
+  })
+
+  it('writes no scope at all, and says why', async () => {
+    const held = mount('retail', tree(), undefined, { readOnly: true })
+    await act(async () => { held.gestures().ask({ gesture: 'promote', id: 'wms', to: '' }) })
+    await settle()
+    expect(held.gestures().choice).toBeUndefined()
+    expect(held.writes).toEqual([])
+    expect(held.notices.map(([message]) => message).join(' ')).toContain('open to be read and not changed')
   })
 })

@@ -716,7 +716,10 @@ one writable both land, among others — and then the store's suite runs over it
   (`KindChangeRefusal`). Anything else means publishing a table, the way
   `decisions` publishes `STATUS_LABEL` and `SCOPE_LABEL`.
 - Every pure function gets a unit test. Every port gets a contract or a suite.
-- `readOnly` must hide every mutating affordance you add.
+- `readOnly` must hide every mutating affordance you add. The session is
+  what refuses (`ModelSession.readOnly`, `mayChange`), so one you forget
+  changes nothing; a hook that writes another scope before it dispatches asks
+  `mayChange()` first.
 - Anything that covers the whole window (a fullscreen dialog) must take
   `windowChrome` and apply it to its top bar — the inset for the macOS traffic
   lights, `-webkit-app-region: drag` on the bar and `no-drag` on its controls.
