@@ -416,10 +416,12 @@ src/app/          The shell around the editor.
                                       in the tree, derived (ADR-0012 §2); a page
                                       here rather than under `projects/ui/`,
                                       which may not import React
-                                      TechnologyPage   every service and
-                                      platform in the tree, the same fold over
-                                      the same index (ADR-0014) — the fold
-                                      itself is `projects/technologyRegister`
+                                      and TechnologyPage beside it, one page
+                                      drawn with a configuration each: every
+                                      service and platform in the tree, the
+                                      same fold over the same index
+                                      (ADR-0014) — the fold itself is
+                                      `projects/technologyRegister`
                     useGestures · dialogs/MoveRecordDialog   the four gestures
                                       applied: the other scope first, the
                                       confirm, and the barrier on the stack (§10)
