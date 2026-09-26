@@ -421,6 +421,15 @@ element onder de focus en Shift+Enter voegt het toe aan de selectie. De pijltjes
 verplaatsen de selectie een rasterstap, met Shift één pixel. `?` toont alle
 sneltoetsen.
 
+Koppelingen en de namen van domeingroepen zitten in dezelfde rondgang, en Enter
+selecteert ze ook; Shift+F10 opent het menu van wat geselecteerd is, en Enter op
+het element dat al geselecteerd is opent de documentatie ervan. Een koppeling
+trek je zonder muis met **Koppeling starten naar…** uit het menu van een
+element: ga met Tab naar het andere eind en druk op Enter. Op een tab van een
+landschap toont ↓ de containerdiagrammen en opent Shift+F10 het menu van de tab.
+Een element, een baan of een groep groter of kleiner maken, een groep
+verplaatsen en een koppeling een knik geven gaan nog met een aanwijzer.
+
 ## Elementen
 
 Zeven soorten: applicatie, component, extern systeem, invoerkanaal,

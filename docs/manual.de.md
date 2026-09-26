@@ -454,6 +454,16 @@ fokussierte aus, und Shift+Enter fügt es der Auswahl hinzu. Die Pfeiltasten
 verschieben die Auswahl um einen Rasterschritt, mit Shift um ein Pixel. `?`
 zeigt jedes Tastenkürzel.
 
+Verbindungen und die Namen von Domänengruppen liegen auf demselben Weg, und
+Enter wählt auch sie aus; Shift+F10 öffnet das Menü dessen, was ausgewählt ist,
+und Enter auf dem bereits ausgewählten Element öffnet seine Dokumentation. Eine
+Verbindung ziehen Sie ohne Maus mit **Verbindung beginnen zu…** aus dem Menü
+eines Elements: mit Tab zum anderen Ende gehen und Enter drücken. Auf dem Tab
+einer Landschaft listet ↓ ihre Containerdiagramme, und Shift+F10 öffnet das
+Menü des Tabs. Ein Element, ein Band oder eine Gruppe in der Größe ändern, eine
+Gruppe verschieben und einer Verbindung einen Knick geben braucht weiterhin
+einen Zeiger.
+
 ## Elemente
 
 Sieben Arten: Anwendung, Komponente, externes System, Eingabekanal,

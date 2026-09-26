@@ -412,6 +412,15 @@ it elemint mei fokus en Shift+Enter foeget it oan de seleksje ta. De pylktoetsen
 ferskowe de seleksje in roasterstap, mei Shift ien piksel. `?` toant elke
 fluchtoets.
 
+Ferbiningen en de nammen fan domeingroepen sitte yn deselde rûnte, en Enter
+selektearret se ek; Shift+F10 iepenet it menu fan wat selektearre is, en Enter
+op it elemint dat al selektearre is iepenet de dokumintaasje derfan. In
+ferbining lûkst sûnder mûs mei **Ferbining begjinne nei…** út it menu fan in
+elemint: gean mei Tab nei it oare ein en druk op Enter. Op in ljepper fan in
+lânskip toant ↓ de containerdiagrammen en iepenet Shift+F10 it menu fan de
+ljepper. In elemint, in baan of in groep grutter of lytser meitsje, in groep
+ferpleatse en in ferbining in knik jaan geane noch mei in oanwizer.
+
 ## Eleminten
 
 Sân soarten: applikaasje, komponint, ekstern systeem, ynfierkanaal, beharkark,

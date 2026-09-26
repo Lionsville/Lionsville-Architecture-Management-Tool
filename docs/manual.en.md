@@ -403,6 +403,14 @@ map.
 one and Shift+Enter adds it to the selection. The arrow keys nudge the
 selection by a grid step, Shift by one pixel. `?` shows every shortcut.
 
+Lines and the names of domain groups are in the same walk, and Enter selects
+them too; Shift+F10 opens the menu of whatever is selected, and Enter on the
+element that is already selected opens its documentation. To draw a line
+without the mouse, choose **Start connection to…** from an element's menu, Tab
+to the other end and press Enter. On a landscape tab, ↓ lists its container
+diagrams and Shift+F10 opens the tab's menu. Resizing an element, a band or a
+group, moving a group and bending a line still need a pointer.
+
 ## Elements
 
 Seven kinds: application, component, external system, input channel,

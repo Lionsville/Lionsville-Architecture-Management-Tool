@@ -787,6 +787,13 @@ one writable both land, among others — and then the store's suite runs over it
   `adapters/desktop/channel` and one path constant in `projects`; it never
   imports `app`, which the matrix cannot see from `electron/`, so this line
   has to.
+- **A screen is checked by axe, and reached by the keyboard.** A main
+  surface's component test asserts `await axeFindings()` (`app/testing/axe.ts`,
+  WCAG 2.1 A and AA) is empty, and a control that only a pointer can reach is
+  either given a keyboard path or written down in `docs/accessibility.md`,
+  the audit — which says what does not conform yet, and changes when the code
+  does. The palette's contrast is measured in `app/theme.contrast.test.ts`,
+  whose list of pairs below 4.5:1 is that page's list.
 - **Component tests go through `ui/testing/renderShell.tsx`.** It supplies the
   theme and the language, and checks on every render that the theme reached the
   tree — which is how a doubled Emotion gets caught by every test rather than by
