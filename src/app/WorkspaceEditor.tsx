@@ -14,6 +14,7 @@ import type { DesignDiagram } from '../model'
 import { MapPage, SheetPage } from '../business'
 import { TechnologyLandscapePage } from '../technology'
 import { ErrorBoundary } from './ErrorBoundary'
+import { shellTheme } from './theme'
 import type { WorkspaceParts } from './workspaceParts'
 
 export function WorkspaceEditor({ parts }: { parts: WorkspaceParts }) {
@@ -66,6 +67,7 @@ export function WorkspaceEditor({ parts }: { parts: WorkspaceParts }) {
         onAddImage={files.addImage}
         images={{ library: session.imageLibrary, usedBy: pictures.imageUsedBy, onRemove: files.removeImage }}
         windowChrome={parts.pageChrome}
+        themeFor={seams.themeFor}
         // ⌘S does not wait: a save says how it went on the bar itself.
         onForceSave={() => { void parts.document.document.forceSave() }}
         onHandle={renderer.onEditorHandle}
@@ -78,7 +80,7 @@ export function WorkspaceEditor({ parts }: { parts: WorkspaceParts }) {
 /** What the editor is handed that the workspace keeps stable across renders. */
 function useEditorSeams(parts: WorkspaceParts) {
   const { session } = parts
-  const { s, notify } = parts.props.shell
+  const { s, notify, language } = parts.props.shell
   const hostMenu = parts.props.host.hostMenu ?? false
   /**
    * The PNG still succeeds when a mark could not be embedded — the element falls
@@ -117,7 +119,13 @@ function useEditorSeams(parts: WorkspaceParts) {
     canUndo: session.canUndo, canRedo: session.canRedo,
     keysOwnedByHost: hostMenu,
   }), [session.undo, session.redo, session.canUndo, session.canRedo, hostMenu])
-  return { onExportImagesMissing, onLayoutError, historyRequests, history }
+
+  /**
+   * The app's own theme in the other mode, for an export made in it: the
+   * picture wears this palette's surfaces and accent, not MUI's defaults.
+   */
+  const themeFor = useCallback((mode: 'light' | 'dark') => shellTheme(mode, language), [language])
+  return { onExportImagesMissing, onLayoutError, historyRequests, history, themeFor }
 }
 
 /** The tab strip's calls: a board made, renamed or removed, and a view of each kind opened or made. */

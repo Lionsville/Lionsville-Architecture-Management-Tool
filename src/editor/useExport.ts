@@ -58,7 +58,7 @@ function downloadBlob(blob: Blob, filename: string): void {
 }
 
 export interface ExportArgs {
-  props: Pick<SolutionDesignEditorProps, 'logos' | 'exportTitleBlock'>;
+  props: Pick<SolutionDesignEditorProps, 'logos' | 'exportTitleBlock' | 'themeFor'>;
   wrapperRef: RefObject<HTMLDivElement | null>;
   theme: Theme;
   showEdgeLabels: boolean;
@@ -156,6 +156,21 @@ function useConfirmExport(
   }, [exportOptions, diagram, titleBlock.model.name, props.exportTitleBlock, closeExport, reportLayoutError, t, renderExportRef, setExporting]);
 }
 
+/**
+ * The theme a picture is made in. The window's own when the mode is the
+ * window's; otherwise the host's theme for the other mode, so a dark window's
+ * light export wears the same surfaces, inks and accent a light window would.
+ * Only a host with no theme of its own gets MUI's default for that mode.
+ */
+export function exportThemeFor(
+  theme: Theme,
+  mode: 'light' | 'dark' | undefined,
+  themeFor: SolutionDesignEditorProps['themeFor'],
+): Theme {
+  if (!mode || mode === theme.palette.mode) return theme;
+  return themeFor ? themeFor(mode) : createTheme({ palette: { mode } });
+}
+
 /** The picture renderer, read through a ref (see `usePicture`). */
 type RenderRef = RefObject<(options: ExportOptions, pixelRatio?: number) => Promise<Blob | undefined>>;
 
@@ -171,10 +186,8 @@ function usePicture(args: ExportArgs, exportMode: 'light' | 'dark' | undefined) 
   const { props, wrapperRef, theme, titleBlock } = args;
   const { diagram } = titleBlock;
   const { getNodes } = useReactFlow();
-  const exportTheme = useMemo(
-    () => (exportMode && exportMode !== theme.palette.mode ? createTheme({ palette: { mode: exportMode } }) : theme),
-    [exportMode, theme],
-  );
+  const { themeFor } = props;
+  const exportTheme = useMemo(() => exportThemeFor(theme, exportMode, themeFor), [exportMode, theme, themeFor]);
   /** The region the export captures: the whole board, and on a landscape the sheet itself. */
   const exportBounds = useCallback((): Rect => {
     const nodesBounds = getNodesBounds(getNodes());

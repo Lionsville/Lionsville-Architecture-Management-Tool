@@ -10,6 +10,7 @@
  * have to see any of that to read what an element is.
  */
 import type { ReactNode } from 'react';
+import type { Theme } from '@mui/material/styles';
 import type { C4PanelInfo } from './export/c4Panel';
 import type { AspectToken, ExportTokens } from './theme/tokens';
 import type { Command } from '../model/commands';
@@ -620,6 +621,14 @@ export interface SolutionDesignEditorProps {
    * where the page owns every pixel.
    */
   windowChrome?: WindowChrome;
+  /**
+   * The host's theme in a mode, for a picture exported in the mode the window
+   * is not in: the board is drawn under it while the export dialog is open,
+   * and the picture's tokens come off it. Keep it stable across renders — a
+   * new function is a new theme, and the board is drawn again under it.
+   * Absent = MUI's default palette for that mode.
+   */
+  themeFor?(mode: 'light' | 'dark'): Theme;
   /**
    * Force-save hook (U4c, DK8). Mod+S always suppresses the browser's save
    * dialog; when this prop is present it also flushes the host's pending saves
