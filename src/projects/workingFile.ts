@@ -40,6 +40,8 @@ import type { FolderFile } from './folderFormat'
 import { openScopeDocument } from './scope'
 import { joinScopePath } from './scopePath'
 import type { OpenResult, ScopeSnapshot } from './scope'
+import { MANIFEST_FILE, manifestText, readManifest } from './workingFileManifest'
+import type { WorkingFileManifest } from './workingFileManifest'
 
 export { WORKING_FILE_EXTENSION }
 
@@ -80,9 +82,15 @@ export function isZip(bytes: Uint8Array): boolean {
  * The caller decides what goes in. Nothing here walks a tree or reads a store:
  * hand it one scope and the file holds one, hand it the whole organisation and
  * the file holds the organisation.
+ *
+ * With a `manifest` (ADR-0023, amended), the file also says what it holds, in
+ * {@link MANIFEST_FILE} beside the top scope's header, so whoever opens it can
+ * be told whether all of it arrived. The caller makes it, because a hash is
+ * asynchronous and this is not.
  */
-export function workingFileBytes(scopes: readonly ScopeSnapshot[]): Uint8Array {
+export function workingFileBytes(scopes: readonly ScopeSnapshot[], manifest?: WorkingFileManifest): Uint8Array {
   const entries: Record<string, [Uint8Array, { mtime: Date }]> = {}
+  if (manifest) entries[MANIFEST_FILE] = [bytesFromText(manifestText(manifest)), { mtime: FIXED_MTIME }]
   const top = scopes.length ? scopes[0].path : ''
   const under = top ? `${top}/` : ''
   for (const scope of scopes) {
@@ -182,8 +190,13 @@ function folderIn(bytes: Uint8Array): FolderFile[] | undefined {
  */
 export function openDocumentBytes(bytes: Uint8Array, into: ScopeSnapshot): OpenResult {
   if (isZip(bytes)) {
-    const files = folderIn(bytes)
-    if (!files) return { ok: false, messageKey: 'shell.unknownFile' }
+    const held = folderIn(bytes)
+    if (!held) return { ok: false, messageKey: 'shell.unknownFile' }
+    // The manifest is the file's word about itself, not a file of its top
+    // scope: taken out here, and handed on for the landing to be held to.
+    const said = held.find((file) => file.path === MANIFEST_FILE)
+    const manifest = said && 'text' in said ? readManifest(said.text) : undefined
+    const files = held.filter((file) => file.path !== MANIFEST_FILE)
     const roots = scopeRootsIn(files)
     // No `scope.json` anywhere: an older zip, which is one scope and has no
     // header to find. `openScopeFolder` is the reader that folds it forward.
@@ -195,11 +208,22 @@ export function openDocumentBytes(bytes: Uint8Array, into: ScopeSnapshot): OpenR
     // Filed where the file says, relative to where the top one landed: a
     // `retail` inside the file opened into `acme` is `acme/retail`.
     const under = top ? `${top}/` : ''
+    // A scope in the file whose folder does not open is named, not dropped:
+    // the landing says it did not arrive, where it used to be left out with
+    // nothing said.
+    const unopened: string[] = []
     const rest = tops.slice(1).flatMap((root) => {
-      const held = openScopeFolder(filesOfScope(files, root, tops), joinScopePath(into.path, root.slice(under.length)))
-      return held ? [held] : []
+      const relative = root.slice(under.length)
+      const opened = openScopeFolder(filesOfScope(files, root, tops), joinScopePath(into.path, relative))
+      if (!opened) unopened.push(relative)
+      return opened ? [opened] : []
     })
-    return { ok: true, kind: 'workingFile', relayout: false, scope, ...(rest.length ? { rest } : {}) }
+    return {
+      ok: true, kind: 'workingFile', relayout: false, scope,
+      ...(rest.length ? { rest } : {}),
+      ...(manifest ? { manifest } : {}),
+      ...(unopened.length ? { unopened } : {}),
+    }
   }
   const opened = openScopeDocument(parseJson(textFromBytes(bytes)), into)
   // A version-1 or -2 document holds the model as it was said before ADR-0012:

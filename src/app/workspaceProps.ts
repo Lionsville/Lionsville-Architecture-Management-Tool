@@ -142,6 +142,11 @@ export type WorkspaceTree = {
    */
   onAdoptScopes?: (scopes: readonly ScopeSnapshot[]) => Promise<void>
   /**
+   * One scope as the store holds it now, to read an opened working file back
+   * and hold it to the file (ADR-0023, amended).
+   */
+  readScope?: (path: ScopePath) => Promise<ScopeSnapshot | undefined>
+  /**
    * A gesture changed the tree: read the listing and the index again
    * (ADR-0012 §10). The shell owns both, and a gesture is the one thing this
    * workspace does that changes a scope other than the one it has open.

@@ -1,6 +1,6 @@
 # ADR-0023 — A sealed working file, from any home, and settings that stay with the install
 
-* Status: accepted
+* Status: accepted; amended 26 September 2026 (a manifest, and a landing that is checked)
 * Date: 2026-09-21
 * Deciders: Wouter Simons
 * Extends: ADR-0018 (the working file is the working set)
@@ -155,3 +155,86 @@ desktop that store is only read through.
 * Open: whether opening a working set on a home should ask before writing
   over scopes that are already there — ADR-0018's open question, now with a
   second screen it applies to.
+
+## Amendment 1 — 26 September 2026: a manifest, and a landing that is checked
+
+A working file is a whole organisation, and landing one is a walk that writes
+it one scope at a time into wherever it goes. Nothing looked at the result. A
+file opened on an organisation's home and found, afterwards, to be short of a
+scope and its largest view had been reported *loaded* exactly as a whole one
+would have been — and nothing in the app could say whether the file had held
+them, whether the walk had written them, or whether the store had kept them.
+Several ways to lose part of a working set without a word were in the code:
+
+* **Opening a file over the open scope wrote the file's top scope nowhere.**
+  It was adopted by the session and left to the session's own save, and a
+  source whose open scope's changes travel as steps does not write that save,
+  because adopting a document is not a step. The scopes under it were written;
+  the top one existed on one screen until it was closed.
+* **An export left out, in silence, a scope the listing could not read and one
+  it listed that then would not load** (`treeScopes`), and a file handed over
+  without them was the organisation as far as anybody could tell.
+* **A scope in a file whose folder would not open was dropped** by the reader
+  (`openDocumentBytes`), and the rest opened as if it had never been there.
+
+**The file says what it holds.** Beside the top scope's `scope.json` the zip
+carries `lvarch-manifest.json` (`projects/workingFileManifest.ts`): every scope
+by its path relative to the top, with its name; every file the format made of
+it, with its size and a SHA-256 of its bytes; every view, with its kind and how
+much is on it; and the counts a person would recognise. A file a scope was read
+without — one that was there and would not read (ADR-0028, amended) — is not
+in the file, and the manifest says so under `omitted`. The file is made from
+the same scopes and in the same order as before; a build that knows nothing of
+the manifest opens it exactly as it did, and a folder unzipped by hand holds one
+file the folder store leaves alone. The format's version does not turn.
+
+**A landing is read back and held to it.** After *Replace here*, and after *A
+new folder…*, every scope the file lists is read again from the store it was
+written to, at the address it was written at, and its files hashed as the
+format makes them. A scope that is not there, a view whose files are not there,
+and a file with other contents are named to the person in one sentence, as an
+error: *did not arrive whole. Not there after loading: the scope “…” (…)*. A
+landing that is whole says so with its totals. The landing never finishes on
+*loaded* without having looked.
+
+**A file with no manifest** — everything written before this — is held to
+what it contains: the manifest is made from the scopes it opened to, a scope in
+it whose folder would not open is named as missing (the reader now answers
+`unopened` rather than leaving it out), and the sentence says the file carries
+no manifest because an older version saved it.
+
+**Every scope a file brings is written through the store, the open one
+included**, shallowest first and each saying what it expects to write over —
+the revision a read of it answers at that moment — before the open one is
+adopted on screen. A whole write made on purpose from outside any session is
+what `ScopeStore.save`'s `expects` exists to say, and a source that keeps the
+open scope's changes as steps writes such a save rather than skipping it.
+
+**An export refuses to be partial.** A scope the listing names as unreadable,
+or one it lists that then does not load, refuses the save with a sentence
+naming it (`shell.exportUnreadable`); the root of a store nothing was written
+to yet is an organisation with no files, not a scope that would not read. A
+scope read without some of its files is exported, the manifest says which, and
+the person is told at the moment they have the file in hand.
+
+### Consequences
+
+* `projects/workingFileManifest.ts`: `manifestOf`, `readManifest`,
+  `compareManifests`, `manifestTotals`, `MANIFEST_FILE`. `workingFileBytes`
+  takes an optional manifest; `OpenResult` carries `manifest` and `unopened`.
+* `app/workingFileFlows.ts`: `checkLanding`, `landingSentence`, `savedWithout`;
+  `landWorkingFile` takes `read`, `here` may answer `false` for *nothing
+  landed*, and a `WorkingFileDestination` may bring `read`.
+* `useProjectFiles` and `useHomeFiles` take `readScope`; the shell hands them
+  the store's `load`. The workspace hands the open scope to `adoptWorkingSet`
+  with the rest.
+* `treeScopes` throws `shell.exportUnreadable` rather than leaving a scope out.
+* Hashing is asynchronous (`crypto.subtle`), which is why the caller makes the
+  manifest and `workingFileBytes` stays synchronous.
+* **Every picture but an SVG is read as bytes** (`isBinaryPath`), by the
+  working file's reader and by the folder store. Both read `.png` alone as
+  bytes, so a JPEG or a WebP — written as bytes — was read back as text and
+  written out altered, and the manifest's hash of it was then a hash of the
+  damage. A store of another build reading a scope's files follows the same
+  rule.
+

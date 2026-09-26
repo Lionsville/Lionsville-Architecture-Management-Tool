@@ -15,7 +15,7 @@
  */
 import { useCallback } from 'react'
 import type { Translate } from '../i18n'
-import { reasonOf } from '../platform/errors'
+import { reasonOf, ShellError } from '../platform/errors'
 import { readLogoFile, takenLogoKeys } from '../model/logo'
 import { readImageFile, takenImageFiles } from '../model/documentImage'
 import type { SavedDocument } from '../ports/DocumentGateway'
@@ -24,8 +24,8 @@ import type { ScopeSnapshot } from '../projects/scope'
 import type { ModelSession } from './useModelSession'
 import type { AskPassword } from './usePasswordPrompt'
 import type { Notify } from './useToasts'
-import { landWorkingFile, sealedWorkingFile, unsealedBytes } from './workingFileFlows'
-import type { ChooseFolderForWorkingFile, LandingPrompts, OpenedWorkingFile } from './workingFileFlows'
+import { landWorkingFile, savedWithout, sealedWorkingFile, unsealedBytes } from './workingFileFlows'
+import type { ChooseFolderForWorkingFile, LandingPrompts, OpenedWorkingFile, ReadScope } from './workingFileFlows'
 
 /**
  * What this hook needs from a document channel.
@@ -94,6 +94,12 @@ export function useProjectFiles(deps: {
    */
   adoptWorkingSet?: (scopes: readonly ScopeSnapshot[]) => Promise<void>
   /**
+   * One scope as the store now holds it: what a landing is read back through
+   * and held to the file's manifest (ADR-0023, amended). Absent where there
+   * is no store, and the landing is said as it always was.
+   */
+  readScope?: ReadScope
+  /**
    * The password a working file leaves under, and the one a sealed file is
    * opened with (ADR-0023). A dialog behind a promise; `undefined` is a cancel.
    */
@@ -107,7 +113,9 @@ export function useProjectFiles(deps: {
   notify: Notify
   s: Translate
 }): ProjectFiles {
-  const { session, documents, workingSet, adoptWorkingSet, askPassword, landing, chooseFolder, beforeReplace, notify, s } = deps
+  const {
+    session, documents, workingSet, adoptWorkingSet, readScope, askPassword, landing, chooseFolder, beforeReplace, notify, s,
+  } = deps
 
   /**
    * Hand a document over, and say what happened — after it happened.
@@ -117,9 +125,9 @@ export function useProjectFiles(deps: {
    * cancelled picker) then showed "saved" and the user had every reason to
    * believe it. The promise decides now, and both branches say so.
    */
-  const handOver = useCallback((doc: SavedDocument, success: string) => {
+  const handOver = useCallback((doc: SavedDocument, success: string, warning?: string) => {
     documents.save(doc).then(
-      () => notify(success, 'success'),
+      () => notify(warning ?? success, warning ? 'warning' : 'success'),
       (err: unknown) => notify(s('shell.saveFileFailed', { message: reasonOf(err) }), 'error'),
     )
   }, [documents, notify, s])
@@ -155,9 +163,11 @@ export function useProjectFiles(deps: {
           ? stored.map((scope) => (scope.path === live.path ? live : scope))
           : [live, ...stored]
         const doc = await sealedWorkingFile(scopes, askPassword)
-        if (doc) handOver(doc, s('shell.savedWorkingFile'))
+        if (doc) handOver(doc, s('shell.savedWorkingFile'), savedWithout(scopes, s))
       },
-    ).catch((err: unknown) => notify(s('shell.saveFileFailed', { message: reasonOf(err) }), 'error'))
+    ).catch((err: unknown) => notify(err instanceof ShellError
+      ? messageFor(err, s)
+      : s('shell.saveFileFailed', { message: reasonOf(err) }), 'error'))
   }, [session, workingSet, askPassword, handOver, notify, s])
 
   /**
@@ -166,35 +176,28 @@ export function useProjectFiles(deps: {
    * The file supplies the content; the open project supplies where it is filed.
    * Recognising the file and deciding whether to lay out again sit in
    * `openProjectDocument`, testable without a browser.
+   *
+   * **Every scope the file brings is written through the store, the open one
+   * included**, shallowest first, and only then is the open one adopted on
+   * screen. The open scope used to be adopted alone and left to the session's
+   * own save — which a source whose open scope travels as steps does not do,
+   * because adopting a document is not a step: the file's top scope was on
+   * the screen and nowhere else. Written with the rest, it is in the store
+   * the landing is read back from (ADR-0023, amended). `false` is *nothing
+   * was landed*, with the reason already said.
    */
-  const landHere = useCallback((name: string, result: OpenedWorkingFile) => {
+  const landHere = useCallback(async (result: OpenedWorkingFile): Promise<boolean> => {
     // Replacing the open scope is a change to it like any other, and the
     // scopes under it are written first, so it is asked before anything is.
-    if (!session.mayChange()) return
-    try {
-      const rest = result.rest ?? []
-      if (rest.length && !adoptWorkingSet) {
-        notify(s('shell.workingSetNotHere'), 'error')
-        return
-      }
-      if (!rest.length) {
-        session.adopt(result.scope, result.relayout)
-        notify(s('shell.workingFileLoaded', { name }), 'success')
-        return
-      }
-      // The scopes under it first. The open one is adopted last, because that
-      // is the one the screen is about to redraw from and it should not do so
-      // over a tree that is still half written.
-      void adoptWorkingSet!(rest).then(
-        () => {
-          session.adopt(result.scope, result.relayout)
-          notify(s('shell.workingSetLoaded', { name, count: String(rest.length) }), 'success')
-        },
-        (err: unknown) => notify(s('shell.processFailed', { message: reasonOf(err) }), 'error'),
-      )
-    } catch (err) {
-      notify(s('shell.processFailed', { message: (err as Error).message }), 'error')
+    if (!session.mayChange()) return false
+    const rest = result.rest ?? []
+    if (rest.length && !adoptWorkingSet) {
+      notify(s('shell.workingSetNotHere'), 'error')
+      return false
     }
+    if (adoptWorkingSet) await adoptWorkingSet([result.scope, ...rest])
+    session.adopt(result.scope, result.relayout)
+    return true
   }, [session, adoptWorkingSet, notify, s])
 
   const openDocument = useCallback((name: string, held: Uint8Array) => {
@@ -206,12 +209,13 @@ export function useProjectFiles(deps: {
       if (!bytes) return
       await landWorkingFile({
         name, bytes, into: session.snapshot(), prompts: landing, chooseFolder,
-        here: (opened) => landHere(name, opened),
+        here: landHere,
+        ...(readScope ? { read: readScope } : {}),
         ...(beforeReplace ? { beforeReplace } : {}),
         notify, s,
       })
     }).catch((err: unknown) => notify(s('shell.processFailed', { message: reasonOf(err) }), 'error'))
-  }, [session, landHere, askPassword, landing, chooseFolder, beforeReplace, notify, s])
+  }, [session, landHere, readScope, askPassword, landing, chooseFolder, beforeReplace, notify, s])
 
   const openFile = useCallback((file: File) => {
     documents.readBytes(file).then(

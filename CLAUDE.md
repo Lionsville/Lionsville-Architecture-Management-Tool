@@ -347,6 +347,8 @@ src/projects/     A scope: open, save, order, summarise, address, remember.
                     migrate3to4 · migrate4to5   the last readers of the two
                                       formats before this one (ADR-0012 §11)
                     workingFile       the .lvarch container: v5 is the folder, zipped
+                    workingFileManifest   what a working file says it holds, and a
+                                      landing held to it (ADR-0023, amended)
                     historyPath       where one thing is filed, for its history —
                                       and, for an element's page, everywhere in
                                       the tree it is filed (§7)

@@ -53,6 +53,7 @@
 import type { DesignElement, ElementId, ElementKind, PlatformArchetype, Relation, RelationType } from '../model'
 import type { Transition } from '../model/transition'
 import type { Observation } from '../model/observation'
+import { ShellError } from '../platform/errors'
 import { flattenScopes } from './scope'
 import type { ScopeModel, ScopeSnapshot, ScopeSummary } from './scope'
 import { scopeSegments } from './scopePath'
@@ -486,10 +487,28 @@ export async function treeModels(source: IndexSource): Promise<ScopeModel[]> {
  * scopes (ADR-0018) — every view, every description, every decision, every
  * mark. So there is no `models()` fast path here: a store that has one is
  * answering a narrower question than this one asks.
+ *
+ * **Refused, naming them, where a scope could not be read** — one the listing
+ * names as unreadable, or one it lists that then does not load (ADR-0023,
+ * amended). Those used to be left out without a word, and a working file
+ * without one of its scopes was saved and handed over as the organisation.
+ * A scope that loaded with a file it could not read is not refused: its
+ * snapshot says so (`unread`), and the file's manifest carries it.
  */
 export async function treeScopes(source: IndexSource): Promise<ScopeSnapshot[]> {
-  const paths = flattenScopes(await source.list()).map((scope) => scope.path)
+  const listed = await source.list()
+  const paths = flattenScopes(listed).map((scope) => scope.path)
   const loaded = await Promise.all(paths.map((path) => source.load(path)))
+  // The root is listed whether or not anything was ever written there — a
+  // store that is empty is still an organisation — so a root that does not
+  // load is nothing yet, and not a scope that would not read.
+  const unreadable = [
+    ...(listed.unreadable ?? []),
+    ...paths.filter((path, at) => loaded[at] === undefined && path !== ''),
+  ]
+  if (unreadable.length) {
+    throw new ShellError('shell.exportUnreadable', { paths: unreadable.map((path) => path || '/').join(', ') })
+  }
   return loaded.filter((scope): scope is ScopeSnapshot => scope !== undefined)
 }
 

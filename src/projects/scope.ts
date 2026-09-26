@@ -31,6 +31,7 @@ import { isBoardKind } from '../model/placement'
 import type { RecordLink } from './links'
 import { ancestorScopes, isWithinScope, ROOT_SCOPE } from './scopePath'
 import type { ScopePath } from './scopePath'
+import type { WorkingFileManifest } from './workingFileManifest'
 
 /**
  * What a scope is called in the picker — a **label**, not a type.
@@ -394,6 +395,13 @@ export type OpenResult =
      * that does know is told plainly that there is.
      */
     rest?: readonly ScopeSnapshot[]
+    /**
+     * What the file says it holds (ADR-0023, amended), where it carries a
+     * manifest; absent for every file written before there was one.
+     */
+    manifest?: WorkingFileManifest
+    /** Scopes in the file, relative to its top, whose folders would not open. */
+    unopened?: readonly ScopePath[]
     relayout: boolean
     kind: 'workingFile'
   }

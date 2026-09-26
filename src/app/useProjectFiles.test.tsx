@@ -228,6 +228,16 @@ describe('exporting the whole working set', () => {
     expect(save.mock.calls[0][0].name).toBe('landscape.lvarch')
   })
 
+  it('says what it was saved without, where a scope read with a file it could not read', async () => {
+    const save = saveSpy()
+    const lacking: ScopeSnapshot = { ...organisation(), unread: ['diagrams/big.json'] }
+    const { files, notify } = mount({ save }, () => Promise.resolve([lacking, snapshot()]))
+    act(() => files().saveWorkingFile())
+    await waitFor(() => expect(notify).toHaveBeenCalledWith(
+      'Working file saved, sealed under your password, without 1 files that would not read: diagrams/big.json. '
+        + 'The file says so, and opening it will say so again.', 'warning'))
+  })
+
   it('says so, once, when the store cannot be read', async () => {
     const { files, notify } = mount({}, () => Promise.reject(new Error('folder gone')))
     act(() => files().saveWorkingFile())
@@ -332,15 +342,19 @@ describe('opening a working set', () => {
   /** A file holding the organisation and one scope filed under it. */
   const setBytes = () => workingFileBytes([organisation(), { ...snapshot(), path: 'acme' }])
 
-  it('writes the scopes that came with it, then adopts the one at the top', async () => {
+  it('writes every scope that came with it, the open one first, then adopts the one at the top', async () => {
+    // The open one is written through the store too, and not left to the
+    // session's own save: a source whose open scope's changes travel as
+    // steps does not write that save, and adopting a document is not a step
+    // (ADR-0023, amended). Flipped from "the ones under it only".
     const adopt = vi.fn((_scopes: readonly ScopeSnapshot[]) => Promise.resolve())
     const { files, notify, session } = mount(
       { readBytes: () => Promise.resolve(setBytes()) }, undefined, adopt,
     )
     act(() => files().openFile(file('acme.lvarch')))
     await waitFor(() => expect(adopt).toHaveBeenCalledTimes(1))
-    expect(adopt.mock.calls[0][0].map((scope) => scope.path)).toEqual(['acme/landscape/acme'])
-    expect(session.adopt).toHaveBeenCalled()
+    expect(adopt.mock.calls[0][0].map((scope) => scope.path)).toEqual(['acme/landscape', 'acme/landscape/acme'])
+    await waitFor(() => expect(session.adopt).toHaveBeenCalled())
     expect(notify).toHaveBeenCalledWith(
       'Working file “acme.lvarch” loaded, with 1 scopes filed under it.', 'success')
   })
@@ -367,15 +381,15 @@ describe('opening a working set', () => {
     expect(notify).toHaveBeenCalledWith('The document could not be processed: disk full', 'error')
   })
 
-  it('takes the ordinary one-scope file the way it always did', async () => {
+  it('takes the ordinary one-scope file, written through the store as well as adopted', async () => {
     const one = workingFileBytes([snapshot()])
     const adopt = vi.fn((_scopes: readonly ScopeSnapshot[]) => Promise.resolve())
     const { files, notify, session } = mount(
       { readBytes: () => Promise.resolve(one) }, undefined, adopt,
     )
     act(() => files().openFile(file('one.lvarch')))
-    await waitFor(() => expect(adopt).not.toHaveBeenCalled())
-    expect(session.adopt).toHaveBeenCalled()
+    await waitFor(() => expect(session.adopt).toHaveBeenCalled())
+    expect(adopt.mock.calls[0][0].map((scope) => scope.path)).toEqual(['acme/landscape'])
     expect(notify).toHaveBeenCalledWith('Working file “one.lvarch” loaded.', 'success')
   })
 })

@@ -51,6 +51,8 @@ export function useHomeParts(deps: {
   documents: ProjectFileChannel
   workingSet: () => Promise<ScopeSnapshot[]>
   adopt: (held: readonly ScopeSnapshot[]) => Promise<void>
+  /** One scope as the store holds it now: an opened working file is read back through it (ADR-0023, amended). */
+  readScope: (path: ScopePath) => Promise<ScopeSnapshot | undefined>
   password: ReturnType<typeof usePasswordPrompt>
   openInto: ReturnType<typeof useOpenIntoPrompt>
   chooseFolder: ChooseFolderForWorkingFile | undefined
@@ -123,6 +125,7 @@ function useHomeFileDoors(deps: Parameters<typeof useHomeParts>[0] & {
     workingSet: deps.workingSet,
     into: deps.homeDocument,
     adopt: deps.adopt,
+    readScope: deps.readScope,
     askPassword: password.askPassword,
     landing: openInto.prompts,
     chooseFolder: deps.chooseFolder,

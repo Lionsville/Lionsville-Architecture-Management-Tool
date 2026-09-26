@@ -416,6 +416,7 @@ async function chooseFolderForWorkingFile(): Promise<WorkingFileDestination | un
       if (files) await workIn({ root: found.opening.root, name: found.opening.name })
       else await openBrowserFolderWith(found.opening.handle)
     },
+    read: (path) => found.read(path),
   }
 }
 

@@ -798,6 +798,8 @@ export type FolderDestination = {
   opening: FolderOpening
   occupied: boolean
   place(scopes: readonly ScopeSnapshot[]): Promise<void>
+  /** One scope of the folder as it now reads: what the landing is checked against (ADR-0023, amended). */
+  read(path: ScopePath): Promise<ScopeSnapshot | undefined>
 }
 
 export async function chooseFolderDestination(): Promise<FolderDestination | undefined> {
@@ -812,6 +814,7 @@ export async function chooseFolderDestination(): Promise<FolderDestination | und
     opening,
     occupied,
     place: async (scopes) => { for (const scope of scopes) await store.save(scope) },
+    read: (path) => store.load(path),
   }
 }
 

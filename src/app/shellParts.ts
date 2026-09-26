@@ -4,6 +4,7 @@
 import type { WindowChrome } from '../platform/windowChrome'
 import type { WorkingSource } from '../platform/workingSource'
 import type { ScopeModel, ScopeSnapshot } from '../projects/scope'
+import type { ScopePath } from '../projects/scopePath'
 import type { AppFolder, AppHost, AppProps } from './appProps'
 import type { IndexHook } from './useIndex'
 import type { Organisation } from './organisation/useOrganisation'
@@ -60,6 +61,7 @@ export interface ShellParts {
     readTreeModels: () => Promise<ScopeModel[]>
     readWorkingSet: () => Promise<ScopeSnapshot[]>
     adoptScopes: (held: readonly ScopeSnapshot[]) => Promise<void>
+    readScope: (path: ScopePath) => Promise<ScopeSnapshot | undefined>
     treeChanged: () => void
     applyProjectSettings: (settings: ProjectSettings, current: ScopeSnapshot) => Promise<ScopeSnapshot | undefined>
   }

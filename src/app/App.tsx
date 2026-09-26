@@ -461,10 +461,22 @@ function useShellParts(props: AppProps): ShellParts {
    * Shallowest first, which is the order `openDocumentBytes` answers in: a
    * child written before its parent would be filed under a folder that is not a
    * scope yet.
+   *
+   * Each saying what it expects to write over — the revision a read of it
+   * answers now — because this is a whole write made on purpose from outside
+   * any session, and a source whose open scope's changes travel as steps
+   * writes such a save rather than taking it for the session's own
+   * (`ScopeStore.save`). Without it, the scope that was open was the one scope
+   * of the file never written.
    */
   const adoptScopes = useCallback(async (held: readonly ScopeSnapshot[]) => {
-    for (const scope of held) await projects.save(scope)
+    for (const scope of held) {
+      const was = await projects.load(scope.path)
+      await projects.save(scope, was?.revision)
+    }
   }, [projects])
+  /** One scope as the store holds it now: what an opened working file is read back through (ADR-0023, amended). */
+  const readScope = useCallback((path: ScopePath) => projects.load(path), [projects])
   const treeChanged = useCallback(() => {
     refreshTree.current()
     tree.refresh()
@@ -480,6 +492,7 @@ function useShellParts(props: AppProps): ShellParts {
     organisation, home: nav.home, setHome: nav.setHome, scopeOpen: project !== undefined, history: folder.history,
     index: tree.index, restore: restoreIntoHome, onSnapshotTaken: sync.afterSnapshot, documents: props.documents,
     workingSet: readWorkingSet,
+    readScope,
     adopt: async (held) => {
       await adoptScopes(held)
       treeChanged()
@@ -580,7 +593,7 @@ function useShellParts(props: AppProps): ShellParts {
     props, source, folder, host, hostMenu: host.hostMenu ?? false, windowChrome: host.windowChrome ?? NO_WINDOW_CHROME,
     services, nav, sync, tree, organisation, findings, home, ancestry, agentServer, agent: shellAgent, machine,
     commands, provider, order, prompts, todayDay,
-    writes: { store: workspaceStore, readTreeModels, readWorkingSet, adoptScopes, treeChanged, applyProjectSettings },
+    writes: { store: workspaceStore, readTreeModels, readWorkingSet, adoptScopes, readScope, treeChanged, applyProjectSettings },
   }
 }
 

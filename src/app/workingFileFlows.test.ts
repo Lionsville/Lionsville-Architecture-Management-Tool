@@ -6,6 +6,7 @@ import { laidOut } from '../model/testFixtures'
 import { translator } from '../i18n'
 import type { ScopeSnapshot } from '../projects/scope'
 import { workingFileBytes } from '../projects/workingFile'
+import { manifestOf } from '../projects/workingFileManifest'
 import { landWorkingFile } from './workingFileFlows'
 import type { LandingPrompts, WorkingFileDestination } from './workingFileFlows'
 
@@ -126,3 +127,84 @@ describe('landWorkingFile', () => {
   })
 })
 
+
+describe('a landing, read back and held to the file (ADR-0023, amended)', () => {
+  /** An organisation, a domain, and the team under it with the most views: the last scope written. */
+  const organisation = () => [
+    scope('Organisation', ''), scope('Depots', 'depots'),
+    { ...scope('Fleet', 'depots/fleet'), model: { ...scope('Fleet', 'depots/fleet').model, name: 'Fleet' } },
+  ]
+  const sealedSet = async () => {
+    const set = organisation()
+    return workingFileBytes(set, await manifestOf(set))
+  }
+  /** A store that keeps what it is handed, except the paths it is told to lose without a word. */
+  function store(losing: string[] = []) {
+    const held = new Map<string, ScopeSnapshot>()
+    return {
+      held,
+      write: (scopes: readonly ScopeSnapshot[]) => {
+        for (const one of scopes) if (!losing.includes(one.path)) held.set(one.path, one)
+        return Promise.resolve()
+      },
+      read: (path: string) => Promise.resolve(held.get(path)),
+    }
+  }
+
+  it('says every scope, view and file arrived, once it has read them back', async () => {
+    const kept = store()
+    const notify = vi.fn()
+    await landWorkingFile({
+      name: 'org.lvarch', bytes: await sealedSet(), into: scope('Here', ''), prompts: prompts('here'),
+      here: (opened) => kept.write([opened.scope, ...(opened.rest ?? [])]), read: kept.read, notify, s,
+    })
+    expect(notify).toHaveBeenCalledTimes(1)
+    expect(notify.mock.calls[0]).toEqual([
+      'Working file “org.lvarch” loaded and checked against what it says it holds: 3 scopes, 3 views and 12 files, every one arrived.',
+      'success',
+    ])
+  })
+
+  it('names the scope that did not arrive, rather than saying "loaded"', async () => {
+    const lossy = store(['depots/fleet'])
+    const notify = vi.fn()
+    await landWorkingFile({
+      name: 'org.lvarch', bytes: await sealedSet(), into: scope('Here', ''), prompts: prompts('here'),
+      here: (opened) => lossy.write([opened.scope, ...(opened.rest ?? [])]), read: lossy.read, notify, s,
+    })
+    expect(notify).toHaveBeenCalledWith(
+      'Working file “org.lvarch” did not arrive whole. Not there after loading: the scope “Fleet” (depots/fleet).', 'error')
+  })
+
+  it('holds a file with no manifest to what it contains, and says it has none', async () => {
+    const lossy = store(['depots/fleet'])
+    const notify = vi.fn()
+    await landWorkingFile({
+      name: 'old.lvarch', bytes: workingFileBytes(organisation()), into: scope('Here', ''), prompts: prompts('here'),
+      here: (opened) => lossy.write([opened.scope, ...(opened.rest ?? [])]), read: lossy.read, notify, s,
+    })
+    expect(notify.mock.calls[0][0]).toContain('It has no manifest, because an older version saved it')
+    expect(notify.mock.calls[0][0]).toContain('the scope “Fleet” (depots/fleet)')
+  })
+
+  it('checks a new folder the same way, through the folder it wrote', async () => {
+    const lossy = store(['depots'])
+    const notify = vi.fn()
+    await landWorkingFile({
+      name: 'org.lvarch', bytes: await sealedSet(), into, prompts: prompts('folder'),
+      chooseFolder: () => Promise.resolve({ name: 'New', occupied: false, place: lossy.write, read: lossy.read }),
+      here: vi.fn(), notify, s,
+    })
+    expect(notify).toHaveBeenCalledWith(
+      'Working file “org.lvarch” did not arrive whole. Not there after loading: the scope “Depots” (depots).', 'error')
+  })
+
+  it('says nothing more where "here" landed nothing and said why', async () => {
+    const notify = vi.fn()
+    await landWorkingFile({
+      name: 'org.lvarch', bytes: await sealedSet(), into, prompts: prompts('here'),
+      here: () => false, read: () => Promise.resolve(undefined), notify, s,
+    })
+    expect(notify).not.toHaveBeenCalled()
+  })
+})

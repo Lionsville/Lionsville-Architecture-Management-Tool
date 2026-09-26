@@ -17,14 +17,14 @@
  */
 import { useCallback } from 'react'
 import type { Translate } from '../i18n'
-import { reasonOf } from '../platform/errors'
+import { reasonOf, ShellError } from '../platform/errors'
 import type { ScopeSnapshot } from '../projects/scope'
 import { messageFor } from './messageFor'
 import type { ProjectFileChannel } from './useProjectFiles'
 import type { AskPassword } from './usePasswordPrompt'
 import type { Notify } from './useToasts'
-import { landWorkingFile, sealedWorkingFile, unsealedBytes } from './workingFileFlows'
-import type { ChooseFolderForWorkingFile, LandingPrompts } from './workingFileFlows'
+import { landWorkingFile, savedWithout, sealedWorkingFile, unsealedBytes } from './workingFileFlows'
+import type { ChooseFolderForWorkingFile, LandingPrompts, ReadScope } from './workingFileFlows'
 
 export type HomeFiles = {
   exportWorkingFile: () => void
@@ -40,6 +40,8 @@ export function useHomeFiles(deps: {
   into: () => ScopeSnapshot
   /** Write what a file brought, shallowest first, and tell the tree. */
   adopt: (scopes: readonly ScopeSnapshot[]) => Promise<void>
+  /** One scope as the store now holds it, to check a landing against the file (ADR-0023, amended). */
+  readScope?: ReadScope
   askPassword: AskPassword
   /** Where a working file goes, asked before it lands (ADR-0025). */
   landing: LandingPrompts
@@ -50,7 +52,7 @@ export function useHomeFiles(deps: {
   notify: Notify
   s: Translate
 }): HomeFiles {
-  const { documents, workingSet, into, adopt, askPassword, landing, chooseFolder, beforeReplace, notify, s } = deps
+  const { documents, workingSet, into, adopt, readScope, askPassword, landing, chooseFolder, beforeReplace, notify, s } = deps
 
   const exportWorkingFile = useCallback(() => {
     void workingSet().then(async (stored) => {
@@ -59,8 +61,11 @@ export function useHomeFiles(deps: {
       const doc = await sealedWorkingFile(scopes, askPassword)
       if (!doc) return
       await documents.save(doc)
-      notify(s('shell.savedWorkingFile'), 'success')
-    }).catch((err: unknown) => notify(s('shell.saveFileFailed', { message: reasonOf(err) }), 'error'))
+      const without = savedWithout(scopes, s)
+      notify(without ?? s('shell.savedWorkingFile'), without ? 'warning' : 'success')
+    }).catch((err: unknown) => notify(err instanceof ShellError
+      ? messageFor(err, s)
+      : s('shell.saveFileFailed', { message: reasonOf(err) }), 'error'))
   }, [workingSet, into, askPassword, documents, notify, s])
 
   const openDocument = useCallback((name: string, held: Uint8Array) => {
@@ -68,18 +73,13 @@ export function useHomeFiles(deps: {
       if (!bytes) return
       await landWorkingFile({
         name, bytes, into: into(), prompts: landing, chooseFolder,
-        here: async (result) => {
-          const rest = result.rest ?? []
-          await adopt([result.scope, ...rest])
-          notify(rest.length
-            ? s('shell.workingSetLoaded', { name, count: String(rest.length) })
-            : s('shell.workingFileLoaded', { name }), 'success')
-        },
+        here: (result) => adopt([result.scope, ...(result.rest ?? [])]),
+        ...(readScope ? { read: readScope } : {}),
         ...(beforeReplace ? { beforeReplace } : {}),
         notify, s,
       })
     }).catch((err: unknown) => notify(s('shell.processFailed', { message: reasonOf(err) }), 'error'))
-  }, [askPassword, landing, chooseFolder, beforeReplace, into, adopt, notify, s])
+  }, [askPassword, landing, chooseFolder, beforeReplace, into, adopt, readScope, notify, s])
 
   const openFile = useCallback((file: File) => {
     documents.readBytes(file).then(

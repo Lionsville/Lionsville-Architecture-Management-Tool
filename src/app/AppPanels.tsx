@@ -94,6 +94,7 @@ function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSn
         models: writes.readTreeModels,
         workingSet: writes.readWorkingSet,
         onAdoptScopes: writes.adoptScopes,
+        readScope: writes.readScope,
         onChanged: writes.treeChanged,
       }}
       navigation={{ crumbs: ancestry.crumbs, onGoHome: nav.goHome, onOpenScope: nav.openScopeAt, initialPage: nav.initialPage }}

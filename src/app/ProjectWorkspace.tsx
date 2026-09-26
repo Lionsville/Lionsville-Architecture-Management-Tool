@@ -123,7 +123,7 @@ function useSessionParts(props: ProjectWorkspaceProps) {
   })
   const diagrams = useDiagramActions({ session, notify, s, makeId })
   const { files, pickers, safeguardRef } = useWorkspaceFiles({
-    session, seams: props.files, workingSet: tree.workingSet, onAdoptScopes: tree.onAdoptScopes, onTreeChanged, notify, s,
+    session, seams: props.files, workingSet: tree.workingSet, onAdoptScopes: tree.onAdoptScopes, readScope: tree.readScope, onTreeChanged, notify, s,
   })
   const requests = useWorkspaceRequests({ session, scope: project.path, indexRef, onOpenScope, notify, s })
   /**
