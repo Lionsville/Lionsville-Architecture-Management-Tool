@@ -67,8 +67,8 @@ export function useRendererView(session: ModelSession, focusElement: (id: string
         await new Promise((resolve) => setTimeout(resolve, 150))
         await settled(diagramId)
       },
-      tidy: () => current().tidy().catch(asRefusal),
-      route: () => current().routeEdges().catch(asRefusal),
+      tidy: (meta) => current().tidy(meta).catch(asRefusal),
+      route: (meta) => current().routeEdges(meta).catch(asRefusal),
       capture: async (options) => {
         const blob = await current().capture(options).catch(asRefusal)
         return new Uint8Array(await blob.arrayBuffer())

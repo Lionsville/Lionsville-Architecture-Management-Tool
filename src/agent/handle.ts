@@ -628,7 +628,9 @@ async function seeing(
   try {
     await renderer.show(diagram.id)
     if (tool === 'diagram.tidy' || tool === 'diagram.route') {
-      await (tool === 'diagram.tidy' ? renderer.tidy() : renderer.route())
+      // The step the pass lands is the agent's like any other write of its
+      // (`everyWrite.test.ts`): the renderer dispatches it, so it is told.
+      await (tool === 'diagram.tidy' ? renderer.tidy({ origin: 'agent' }) : renderer.route({ origin: 'agent' }))
       // The report afterwards, against the model as it now stands: the loop
       // an agent runs is inspect, change, inspect again.
       const after = session.indexed()

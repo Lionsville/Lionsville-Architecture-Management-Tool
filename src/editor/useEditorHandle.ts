@@ -6,6 +6,7 @@
  * a double-click on a card or a line takes the reader.
  */
 import { useCallback, useEffect } from 'react';
+import type { CommandMeta } from '../model/commands';
 import type { DesignDiagram, ElementId, Rect } from '../model/types';
 import { EditorRefused, type EditorHandle, type SolutionDesignEditorProps } from './props';
 import { doubleClickTarget, lineDoubleClickTarget } from './doubleClick';
@@ -18,8 +19,8 @@ export interface HandleArgs {
   diagram: DesignDiagram | undefined;
   readOnly: boolean;
   busy: boolean;
-  tidy(): Promise<void>;
-  routeEdges(): Promise<void>;
+  tidy(meta?: CommandMeta): Promise<void>;
+  routeEdges(meta?: CommandMeta): Promise<void>;
   capture(options: { bounds: Rect; pixelRatio: number; padding: number }): Promise<Blob>;
   deletes: DeleteRequests;
   showShortcuts(): void;
@@ -39,8 +40,8 @@ export function useEditorHandle(args: HandleArgs) {
     const handle: EditorHandle = {
       activeDiagramId: diagram?.id,
       busy,
-      tidy: () => (busy ? Promise.reject(new EditorRefused('busy')) : tidy()),
-      routeEdges: () => (busy ? Promise.reject(new EditorRefused('busy')) : routeEdges()),
+      tidy: (meta) => (busy ? Promise.reject(new EditorRefused('busy')) : tidy(meta)),
+      routeEdges: (meta) => (busy ? Promise.reject(new EditorRefused('busy')) : routeEdges(meta)),
       capture,
       // The same three doors the Delete key takes (`use-canvas-shortcuts`):
       // one element to the remove-or-delete question, a line and a selection

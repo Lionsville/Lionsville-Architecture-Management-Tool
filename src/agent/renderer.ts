@@ -13,6 +13,7 @@
  * Every refusal the renderer can make is a {@link RendererRefused} with a
  * reason, so the handler can turn it into the key the agent reads.
  */
+import type { CommandMeta } from '../model/commands'
 import type { Rect } from '../model/types'
 
 export type RendererRefusal =
@@ -50,10 +51,14 @@ export type CaptureOptions = {
 export type RendererView = {
   /** Put this diagram on screen and resolve once the editor has drawn it and settled. */
   show(diagramId: string): Promise<void>
-  /** Lay the diagram on screen out, as the Tidy button does. Rejects with the layout's own refusal. */
-  tidy(): Promise<void>
-  /** Route the lines around the cards, as the Route button does. */
-  route(): Promise<void>
+  /**
+   * Lay the diagram on screen out, as the Tidy button does. Rejects with the
+   * layout's own refusal. `meta` rides on the step the layout lands — what an
+   * agent's pass says about itself, as every other write of an agent's does.
+   */
+  tidy(meta?: CommandMeta): Promise<void>
+  /** Route the lines around the cards, as the Route button does; `meta` as for {@link tidy}. */
+  route(meta?: CommandMeta): Promise<void>
   /** The board as a PNG. */
   capture(options: CaptureOptions): Promise<Uint8Array>
   /** Select an element and bring it into view, so the person sees which one is meant. */

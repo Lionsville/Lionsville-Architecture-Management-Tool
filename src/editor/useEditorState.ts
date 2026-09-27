@@ -14,7 +14,7 @@ import type { TidyResult } from '../layout/tidy';
 import { remapClipboard, type ClipboardPayload } from '../model/clipboard';
 import { idPolicy, idsIn } from '../model/keys';
 import type { IdPolicy } from '../model/keys';
-import type { Command } from '../model/commands';
+import type { Command, CommandMeta } from '../model/commands';
 import { placedNodes,
   canPlaceKind,
   clampPlacementIntoZone,
@@ -232,9 +232,10 @@ export interface EditorActions {
    * `layoutConfig.domainGroups` BY NAME — create-or-resize: an existing rect is
    * resized in place, a tidy rect with a new name is appended (Tidy emits one
    * per group with members) — and rects Tidy didn't touch (e.g. member-less
-   * groups) are preserved.
+   * groups) are preserved. `meta` rides on that one step: whose pass it was,
+   * where it was not the person's (an agent's tidy, ADR-0007).
    */
-  applyTidyResult(result: TidyResult, amend?: CommitToken): CommitToken;
+  applyTidyResult(result: TidyResult, amend?: CommitToken, meta?: CommandMeta): CommitToken;
   setDomainGroup(elementId: ElementId, groupId: string | undefined): void;
   /**
    * The same, for a whole selection, in ONE step — so bulk-assigning a domain
@@ -799,7 +800,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
 
       applyTidyResult(
         { placements, domainGroups, canvas, edgeRoutes, partial, routingError },
-        amend,
+        amend, meta,
       ) {
         const diagram = currentDiagram();
         if (!diagram) return tokenRef.current;
@@ -898,7 +899,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         // `dispatch`, never `geometry`: a tidy — and an auto-layout, which is
         // one — routes as its own final step, so bumping here would queue a
         // second pass to fight the 'clear' policy it just ran under.
-        return dispatch(transaction(commands), amend === undefined ? undefined : { amend });
+        return dispatch(transaction(commands, meta), amend === undefined ? undefined : { amend });
       },
 
       setDomainGroup(elementId, groupId) {

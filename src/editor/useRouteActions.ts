@@ -6,6 +6,7 @@
  * or a side on one line followed by a pass, and live auto-routing.
  */
 import { useCallback, useRef } from 'react';
+import type { CommandMeta } from '../model/commands';
 import type { DesignDiagram } from '../model/types';
 import type { Translate } from '../i18n';
 import { routeDiagramEdges } from '../layout/routeOnly';
@@ -48,12 +49,12 @@ export function useRouteActions(args: LayoutArgs, running: LayoutRunning) {
   // the ONE difference between the two menu entries: "Route connections"
   // leaves every hand-drawn and pinned route where it is, "Re-route
   // everything (ignore pins)" hands the whole board to the router.
-  const routeEdges = useCallback(async (preserve: ReadonlySet<string> | undefined) => {
+  const routeEdges = useCallback(async (preserve: ReadonlySet<string> | undefined, meta?: CommandMeta) => {
     if (!diagram || busy) return;
     setBusy('route');
     try {
       const result = await routeDiagramEdges(state.model, diagram, 'keep-stored', undefined, preserve);
-      state.actions.applyTidyResult(result);
+      state.actions.applyTidyResult(result, undefined, meta);
       reportSkippedTiers(result.skipped);
     } catch (error) {
       reportLayoutError(t('error.route'), error);
@@ -62,7 +63,7 @@ export function useRouteActions(args: LayoutArgs, running: LayoutRunning) {
     }
   }, [diagram, busy, state.model, state.actions, reportLayoutError, reportSkippedTiers, t, setBusy]);
   const handleRouteEdges = useCallback(
-    () => routeEdges(diagram ? manualRouteIds(diagram) : undefined),
+    (meta?: CommandMeta) => routeEdges(diagram ? manualRouteIds(diagram) : undefined, meta),
     [routeEdges, diagram],
   );
   const handleRouteEdgesAll = useCallback(() => routeEdges(undefined), [routeEdges]);

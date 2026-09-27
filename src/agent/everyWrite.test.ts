@@ -16,6 +16,12 @@
  * mark, and so must its inverse — the step that takes an agent's write back
  * is the agent's too. `batch` is the one write that is several tools in one
  * step, and `handle.test.ts` pins that its transaction carries the mark.
+ *
+ * The layout passes, `diagram.tidy` and `diagram.route`, build no command
+ * here: the renderer lays the board out and dispatches the step itself. They
+ * are writes all the same, so the handler hands the renderer the mark, and
+ * `editor/SolutionDesignEditor.handle.test.tsx` pins that the editor puts it
+ * on the step it lands.
  */
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_TRANSLATE } from '../i18n/strings'
@@ -26,9 +32,13 @@ import type { Model } from '../model/normalised'
 import { apply } from '../model/reducer'
 import { laidOut } from '../model/testFixtures'
 import { commandFor, isCommandTool } from './commandFor'
+import { handle } from './handle'
+import type { SessionView } from './handle'
+import type { RendererView } from './renderer'
 import type { CommandTool, Prepared, WriteView } from './commandFor'
 import { TOOLS } from './tools'
 import type { AgentAnswer, ToolName } from './tools'
+import type { CommandMeta } from '../model/commands'
 
 const element = (id: string, name: string, over: Partial<HostModel['elements'][number]> = {}) => ({
   id, kind: 'application' as const, name, lifecycle: 'live' as const, isManaged: true, aspects: {}, ...over,
@@ -232,5 +242,50 @@ describe('every agent write says so', () => {
         expect(applied.inverse.origin).toBe('agent')
       })
     }
+  }
+})
+
+describe('the layout passes say so too', () => {
+  /** A session with a board and a renderer that keeps what each pass was told. */
+  function laying() {
+    const told: { pass: 'tidy' | 'route'; meta: CommandMeta | undefined }[] = []
+    const renderer: RendererView = {
+      show: async () => {},
+      tidy: async (meta) => { told.push({ pass: 'tidy', meta }) },
+      route: async (meta) => { told.push({ pass: 'route', meta }) },
+      capture: async () => new Uint8Array(),
+      focus: () => {},
+    }
+    const model = fromArrays(host)
+    const session: SessionView = {
+      indexed: () => model,
+      current: () => toArrays(model),
+      activeDiagramId: () => 'l7',
+      scopePath: () => 'acme/landscape',
+      ancestorDecisions: () => [],
+      blocked: () => undefined,
+      dispatch: () => undefined,
+      ids: idPolicy(() => [...model.order.elements, ...model.order.relations, ...model.order.diagrams]),
+      makeId: (prefix) => `${prefix}-new`,
+      today: () => '2026-09-20',
+      translate: DEFAULT_TRANSLATE,
+      containerName: (name) => name,
+      renderer,
+      revision: () => 0,
+      history: () => [],
+      undo: () => {},
+      images: () => [],
+      save: async () => {},
+    }
+    return { session, told }
+  }
+
+  for (const tool of ['diagram.tidy', 'diagram.route'] as const) {
+    it(`${tool} asks the renderer for a step marked as the agent's`, async () => {
+      const { session, told } = laying()
+      const answer = await handle({ id: '1', tool, args: {} }, session)
+      expect(answer.ok).toBe(true)
+      expect(told).toEqual([{ pass: tool === 'diagram.tidy' ? 'tidy' : 'route', meta: { origin: 'agent' } }])
+    })
   }
 })

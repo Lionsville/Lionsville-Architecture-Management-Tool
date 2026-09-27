@@ -13,7 +13,7 @@ import type { ReactNode } from 'react';
 import type { Theme } from '@mui/material/styles';
 import type { C4PanelInfo } from './export/c4Panel';
 import type { AspectToken, ExportTokens } from './theme/tokens';
-import type { Command } from '../model/commands';
+import type { Command, CommandMeta } from '../model/commands';
 import type { IdPolicy } from '../model/keys';
 import type { Language } from '../i18n/strings';
 import type { MarkdownRenderOptions } from '../documentation/documentation';
@@ -212,10 +212,14 @@ export interface EditorHandle {
   readonly activeDiagramId: string | undefined;
   /** A layout pass is running; `tidy` and `routeEdges` refuse meanwhile. */
   readonly busy: boolean;
-  /** Lay the diagram on screen out, as the Tidy button does. Rejects with the layout's own refusal. */
-  tidy(): Promise<void>;
-  /** Route the lines around the cards, as the Route button does. */
-  routeEdges(): Promise<void>;
+  /**
+   * Lay the diagram on screen out, as the Tidy button does. Rejects with the
+   * layout's own refusal. `meta` rides on the one step the pass lands: the
+   * host says whose pass it was (an agent's, ADR-0007).
+   */
+  tidy(meta?: CommandMeta): Promise<void>;
+  /** Route the lines around the cards, as the Route button does; `meta` as for `tidy`. */
+  routeEdges(meta?: CommandMeta): Promise<void>;
   /**
    * The board as a PNG: a region of it, at a ratio, with padding. Rejects
    * with {@link EditorRefused} when the window cannot draw.

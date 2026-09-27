@@ -9,6 +9,7 @@ import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
 import type { DesignDiagram, UploadedLogo } from '../model/types';
 import type { ClipboardPayload } from '../model/clipboard';
+import type { CommandMeta } from '../model/commands';
 import { isBoardKind } from '../model/placement';
 import type { SolutionDesignEditorProps } from './props';
 import { LogoLibraryProvider } from './nodes/logoRegistry';
@@ -154,7 +155,7 @@ function useEditorParts(props: SolutionDesignEditorProps) {
   };
   useEditorHandle({
     onHandle: props.onHandle, state, diagram: activeDiagram, readOnly, busy: layout.busy !== undefined,
-    tidy: useCallback(() => layout.handleTidy(undefined, true), [layout.handleTidy]),
+    tidy: useCallback((meta?: CommandMeta) => layout.handleTidy(undefined, true, meta), [layout.handleTidy]),
     routeEdges: layout.handleRouteEdges, capture: capture.captureBoard, deletes, showShortcuts: dialogs.openHelp,
   });
   const setWrapperNode = useKeyboard(parts, activeDiagram, wrapperRef);

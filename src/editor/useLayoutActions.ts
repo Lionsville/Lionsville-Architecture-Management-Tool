@@ -12,6 +12,7 @@
  */
 import { useCallback, useState } from 'react';
 import { useReactFlow } from '@xyflow/react';
+import type { CommandMeta } from '../model/commands';
 import type { DesignDiagram } from '../model/types';
 import type { Translate } from '../i18n';
 import { tidyContainer, tidyGroup, tidyLayer7, type TidyOptions } from '../layout/tidy';
@@ -131,9 +132,10 @@ function useTidy(args: LayoutArgs, running: LayoutRunning) {
    * the button cannot drift apart. Rethrows so an UNATTENDED caller can tell
    * "laid out" from "did not": `useAutoLayout` must not clear the persisted
    * flag for a pass that produced nothing. The button's call site has been
-   * told by the toast, so it attaches a no-op `.catch`.
+   * told by the toast, so it attaches a no-op `.catch`. `meta` rides on the
+   * step the pass lands: a host's handle says whose pass it was.
    */
-  const handleTidy = useCallback(async (override?: TidyOptions, unattended = false) => {
+  const handleTidy = useCallback(async (override?: TidyOptions, unattended = false, meta?: CommandMeta) => {
     if (!diagram || busy) return;
     const options = override ?? tidyOptions;
     setBusy('tidy');
@@ -143,7 +145,7 @@ function useTidy(args: LayoutArgs, running: LayoutRunning) {
         : await tidyContainer(state.model, diagram, options);
       // Applied FIRST, and applied even when routing failed: `routingError`
       // means the placements are good and only the routes are missing.
-      state.actions.applyTidyResult(result);
+      state.actions.applyTidyResult(result, undefined, meta);
       // The unattended wording says what happened and stops: "reload and try
       // again" is advice for someone who pressed a button, not for a pass
       // that ran by itself on open. One message per press, the failure first.

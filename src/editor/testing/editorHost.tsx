@@ -70,6 +70,8 @@ export type HostedEditorProps = {
   ownership?: SolutionDesignEditorProps['ownership']
   windowChrome?: WindowChrome
   onForceSave?(): void
+  /** The handle a host asks the editor through (ADR-0007): what the agent's renderer view wraps. */
+  onHandle?: SolutionDesignEditorProps['onHandle']
 }
 
 export type EditorHostState = {
@@ -212,6 +214,7 @@ export function hostedProps(
     ownership: o.ownership,
     windowChrome: o.windowChrome,
     onForceSave: o.onForceSave,
+    onHandle: o.onHandle,
   }
 }
 
