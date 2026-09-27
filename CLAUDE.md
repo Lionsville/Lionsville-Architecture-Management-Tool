@@ -212,6 +212,9 @@ src/model/        What a landscape is made of, and the arithmetic over it.
                     diff              what changed, in the landscape's own terms
                     restore           going back as one command (ADR-0008)
                     textSearch        the one rule for "found"
+                    searchable        what each list's records say to a search:
+                                      typed over `ModelOrder`, so a list with no
+                                      line does not compile (ADR-0029)
                     adr               what a decision record IS (rules: decisions/)
                     testing/          the generated landscape, and the budgets
 src/layout/       Where things end up: tidy, ELK, libavoid, the router worker.
@@ -281,8 +284,12 @@ src/technology/   The physical view (ADR-0013, ADR-0014): a platform's report
                     ui/TechnologyLandscapePage   the layer's one view (ADR-0015):
                                       applications, services, platforms, no lines
                                       at rest
-src/search/       One search over elements, documentation and decisions; ⌘K, ⌘F.
-                    searchIndex       the haystack, folded once per model
+src/search/       One search over every kind of record, across the tree; ⌘K, ⌘F.
+                    recordIndex       what each kind declares (model/searchable),
+                                      folded once per record (ADR-0029)
+                    search            sources nearest first, eight per kind, and
+                                      where a hit opens
+                    searchIndex       ⌘F's haystack, and where an element is drawn
 src/agent/        An agent as a peer of the menu (ADR-0007). Pure; the first
                   module that exists for a client that is not a person.
                     tools             the vocabulary: names, schemas, refusals — a

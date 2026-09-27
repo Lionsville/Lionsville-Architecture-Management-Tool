@@ -203,6 +203,7 @@ keyboard.
 * **Should the app's own search index plans?** The agent's `search` covers
   them by applying the one rule for "found" itself; ⌘K does not yet.
   *Recommended: yes, when the search dialog has a row for a plan to open.*
+  *Answered by ADR-0029: it does, and every other kind with it.*
 * **Should an agent's save be a snapshot?** `project.save` writes the folder;
   ADR-0008's snapshot is a commit. *Recommended: not yet; a snapshot is a
   person's judgement about a moment, and the File menu is where it is made.*

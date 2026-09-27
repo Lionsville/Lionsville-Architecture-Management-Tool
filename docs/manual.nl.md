@@ -1146,12 +1146,19 @@ gebruiken.
 
 ## Zoeken
 
-**Zoeken** in de bovenbalk, of ⌘K, doorzoekt het hele project in één keer:
-elementen op naam, categorie, leverancier en technologie; documentatie op wat
-erin geschreven staat; en besluiten op alle drie de niveaus, die van de groep
-inbegrepen. Een element kiezen selecteert het en schuift ernaartoe, een
-documentatietreffer opent de pagina van dat element, en een besluit opent de
-vastlegging. ⌘F in de editor blijft de snelle zoeker als u alleen een blok op
+**Zoeken** in de bovenbalk, of ⌘K, doorzoekt alles in één keer: elementen op
+naam, categorie, leverancier, technologie en eigenaar; documentatie op wat erin
+geschreven staat; aanzichten op naam; relaties op label, protocol en
+technologie; besluiten, plannen en hun mijlpalen; en waarnemingen, oorzaken,
+oplossingen en experimenten op hun titel en wat erin staat. Het leest de scope
+waarin u werkt, de besluiten van de scopes erboven, en wat de rest van de
+organisatie vastlegt aan elementen, relaties, plannen en waarnemingen. Elke
+treffer zegt wat hij is — een kop per soort, en de soort van het element of de
+status van de vastlegging ernaast — en in welke scope hij staat. Een element
+kiezen selecteert het en schuift ernaartoe, een documentatietreffer opent de
+pagina van dat element, een relatie opent het blok waar ze vertrekt, en een
+vastlegging opent op haar eigen pagina; een treffer uit een andere scope opent
+die scope daar, alleen-lezen waar uw bron dat is. ⌘F in de editor blijft de snelle zoeker als u alleen een blok op
 het canvas zoekt.
 
 ## Diagraminstellingen

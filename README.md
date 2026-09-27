@@ -142,10 +142,13 @@ scopes above, which can then analyse it or merge it into their own
 
 ### One search over all of it
 
-**⌘K** searches everything a project knows at once — element names, the prose
-written about them, and the decisions taken around them — and each kind of hit
-opens the thing it is about: the box on the canvas, that element's page, or the
-record. **⌘F** is the narrower one on the canvas: find a box by name, category,
+**⌘K** searches everything the organisation holds at once — elements and the
+prose written about them, views, relations, decision records, plans and their
+milestones, observations, causes, solutions and experiments — in the scope you
+are in, the scopes above it and the rest of the tree. Each hit says what it is
+and which scope holds it, and opens where it lives: the box on the canvas, that
+element's page, the record on its page, in its own scope
+(`docs/decisions/0029`). **⌘F** is the narrower one on the canvas: find a box by name, category,
 vendor or technology, including boxes not on the diagram you are looking at.
 
 ### Editing, in general

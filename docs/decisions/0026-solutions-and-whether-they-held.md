@@ -166,7 +166,8 @@ a waiver is a reason a person gave.
 * Open: solutions are not shared upward; a domain's solution that needs the
   scopes above makes its plan an initiative, which is already read upward.
   A solution addresses causes of its own scope only. Solutions are not in ⌘K
-  or the history page, which ADR-0021 also left open for observations. There
+  *(closed by ADR-0029)* or the history page, which ADR-0021 also left open
+  for observations. There
   is no scoring beyond benefit and cost: the money is the plan's business
   case.
 

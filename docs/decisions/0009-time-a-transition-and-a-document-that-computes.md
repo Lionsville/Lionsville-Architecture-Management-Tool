@@ -18,7 +18,8 @@ departures from the text below that are worth knowing before reading it:
   than routed around.
 * **Plans are not in ⌘K.** The roadmap lists every plan directly and a project
   has a handful of them, so the search hit is a small follow-up rather than a
-  gap. Nothing else in step 6's list was dropped.
+  gap. Nothing else in step 6's list was dropped. *(Closed by ADR-0029: plans
+  and their milestones are hits of their own.)*
 * **The inspector fields were missed and then found.** Steps 4 and 5 put dates
   on the model and drew them, and nothing edited them — the feature was
   unreachable until running the app in a browser showed it. The three lifecycle

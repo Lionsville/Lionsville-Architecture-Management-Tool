@@ -1222,12 +1222,20 @@ begonnen haben.
 
 ## Suchen
 
-**Suchen** in der oberen Leiste, oder ⌘K, durchsucht das ganze Projekt auf
-einmal: Elemente nach Name, Kategorie, Anbieter und Technologie; Dokumentation
-nach dem, was darin geschrieben steht; und Entscheidungen auf allen drei
-Ebenen, die der Gruppe eingeschlossen. Ein Element zu wählen wählt es aus und
+**Suchen** in der oberen Leiste, oder ⌘K, durchsucht alles auf einmal: Elemente
+nach Name, Kategorie, Anbieter, Technologie und Verantwortlichem; Dokumentation
+nach dem, was darin geschrieben steht; Ansichten nach Name; Beziehungen nach
+Beschriftung, Protokoll und Technologie; Entscheidungen, Pläne und ihre
+Meilensteine; und Beobachtungen, Ursachen, Lösungen und Experimente nach Titel
+und Inhalt. Sie liest den Bereich, in dem Sie arbeiten, die Entscheidungen der
+Bereiche darüber und was der Rest der Organisation an Elementen, Beziehungen,
+Plänen und Beobachtungen festhält. Jeder Treffer sagt, was er ist — eine
+Überschrift je Art, daneben die Art des Elements oder der Stand des Eintrags —
+und in welchem Bereich er liegt. Ein Element zu wählen wählt es aus und
 schwenkt dorthin, ein Dokumentationstreffer öffnet die Seite dieses Elements,
-und eine Entscheidung öffnet ihren Eintrag. ⌘F im Editor bleibt der schnelle
+eine Beziehung öffnet den Kasten, von dem sie ausgeht, und ein Eintrag öffnet
+sich auf seiner eigenen Seite; ein Treffer aus einem anderen Bereich öffnet
+diesen Bereich dort, schreibgeschützt, wo Ihre Quelle es ist. ⌘F im Editor bleibt der schnelle
 Sucher, wenn alles, was Sie wollen, ein Kasten auf der Zeichenfläche ist.
 
 ## Diagrammeinstellungen

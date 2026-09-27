@@ -1082,11 +1082,18 @@ own team's things other teams have quietly come to depend on.
 
 ## Search
 
-**Search** in the top bar, or ⌘K, searches the whole project at once: elements
-by name, category, vendor and technology; documentation by what is written in
-it; and decisions at all three levels, the group's included. Choosing an
-element selects it and pans to it, a documentation hit opens that element's
-page, and a decision opens its record. ⌘F inside the editor remains the quick
+**Search** in the top bar, or ⌘K, searches everything at once: elements by
+name, category, vendor, technology and owner; documentation by what is written
+in it; views by name; relations by label, protocol and technology; decision
+records, plans and their milestones; and observations, causes, solutions and
+experiments by their title and what is written in them. It reads the scope you
+are in, the decision records of the scopes above it, and what the rest of the
+organisation holds of elements, relations, plans and observations. Each hit
+says what it is — a heading per kind, and the element's kind or the record's
+status beside it — and which scope holds it. Choosing an element selects it
+and pans to it, a documentation hit opens that element's page, a relation
+opens the box it leaves, and a record opens on its own page; a hit from
+another scope opens that scope there, read-only where your source is. ⌘F inside the editor remains the quick
 finder when all you want is a box on the canvas.
 
 ## Diagram settings

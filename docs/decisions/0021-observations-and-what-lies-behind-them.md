@@ -187,7 +187,7 @@ beta.
   `FileSystemScopeStore.models()` (reads the folder per scope, as it reads
   the plans), `SCOPE_FORMAT_VERSION` 6 → 7, the shipped example's headers.
 * A record is edited where it lives, still: no scope writes into another.
-* Open: the observations are not yet in ⌘K search, not yet a history
+* Open: the observations are not yet in ⌘K search *(closed by ADR-0029)*, not yet a history
   subject (ADR-0008), and not yet an agent resource URI. A cause's
   verification carries no signers table; the body is where the evidence
   goes. The picture has no export of its own beyond the window. A cause
