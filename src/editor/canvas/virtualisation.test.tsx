@@ -5,7 +5,8 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { placedNodes } from '../../model/placement';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { ThemeProvider } from '@mui/material/styles';
+import { testTheme } from '../testing/theme';
 import { VIRTUALISE_ABOVE, virtualising } from './DiagramCanvas';
 import { HostedEditor } from '../testing/editorHost';
 import { installReactFlowMocks } from '../reactFlowTestSetup';
@@ -57,7 +58,7 @@ const big = syntheticModel({
 
 function renderEditor(model: DesignModel, activeDiagramId: string) {
   return render(
-    <ThemeProvider theme={createTheme()}>
+    <ThemeProvider theme={testTheme}>
       <div style={{ width: '1200px', height: '800px' }}>
         <HostedEditor model={model} activeDiagramId={activeDiagramId} />
       </div>

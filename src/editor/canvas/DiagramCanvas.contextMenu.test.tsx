@@ -7,7 +7,8 @@ import { diagramWithRoutes, edgeRoutesOf } from '../../model/routes';
 import { placedNodes } from '../../model/placement';
 import { laidOut } from '../../model/testFixtures';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { ThemeProvider } from '@mui/material/styles';
+import { testTheme } from '../testing/theme';
 import { HostedEditor } from '../testing/editorHost';
 import type { EditorHostState, HostedEditorProps } from '../testing/editorHost';
 import { installReactFlowMocks } from '../reactFlowTestSetup';
@@ -68,7 +69,7 @@ function renderEditor(overrides: Partial<HostedEditorProps> = {}) {
     ...overrides,
   };
   const view = render(
-    <ThemeProvider theme={createTheme()}>
+    <ThemeProvider theme={testTheme}>
       <div style={{ width: '1200px', height: '800px' }}>
         <HostedEditor {...props} hostRef={host} />
       </div>
@@ -517,7 +518,7 @@ describe('DiagramCanvas — keyboard', () => {
   it('Shift+F10 opens the menu for the selected element; F2 renames it', async () => {
     const { rerender, props } = renderEditor();
     rerender(
-      <ThemeProvider theme={createTheme()}>
+      <ThemeProvider theme={testTheme}>
         <div style={{ width: '1200px', height: '800px' }}>
           <HostedEditor {...props} focusElement={{ id: 'a1', nonce: 1 }} />
         </div>

@@ -5,7 +5,8 @@
 import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { ThemeProvider } from '@mui/material/styles';
+import { testTheme } from '../testing/theme';
 import { ElementPalette, PALETTE_DRAG_MIME } from './ElementPalette';
 import type { UploadedLogo } from '../../model/types';
 import type { CanvasKind } from '../../model/placement';
@@ -41,7 +42,7 @@ const LIBRARY: UploadedLogo[] = [
 function Harness({ initial = false }: { initial?: boolean }) {
   const [collapsed, setCollapsed] = useState(initial);
   return (
-    <ThemeProvider theme={createTheme()}>
+    <ThemeProvider theme={testTheme}>
       <ElementPalette
         kinds={KINDS}
         onAdd={vi.fn()}
@@ -55,7 +56,7 @@ function Harness({ initial = false }: { initial?: boolean }) {
 function renderPalette(props: Partial<React.ComponentProps<typeof ElementPalette>> = {}) {
   const onAdd = props.onAdd ?? vi.fn();
   render(
-    <ThemeProvider theme={createTheme()}>
+    <ThemeProvider theme={testTheme}>
       <ElementPalette kinds={KINDS} {...props} onAdd={onAdd} />
     </ThemeProvider>,
   );
@@ -368,7 +369,7 @@ describe('ElementPalette — the logo tray', () => {
   it('shows the upload tile only when the host can handle it', () => {
     const onRequestLogoUpload = vi.fn();
     const { unmount } = render(
-      <ThemeProvider theme={createTheme()}>
+      <ThemeProvider theme={testTheme}>
         <ElementPalette kinds={KINDS} onAdd={vi.fn()} onRequestLogoUpload={onRequestLogoUpload} />
       </ThemeProvider>,
     );
@@ -430,7 +431,7 @@ describe('ElementPalette — the collapsed rail', () => {
   function Collapsible(props: Partial<React.ComponentProps<typeof ElementPalette>> = {}) {
     const [collapsed, setCollapsed] = useState(false);
     return (
-      <ThemeProvider theme={createTheme()}>
+      <ThemeProvider theme={testTheme}>
         <ElementPalette
           kinds={KINDS}
           onAdd={vi.fn()}

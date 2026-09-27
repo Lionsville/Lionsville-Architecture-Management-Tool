@@ -6,7 +6,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { V3Diagram } from '../model/testFixtures';
 import { laidOut } from '../model/testFixtures';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { ThemeProvider } from '@mui/material/styles';
+import { testTheme } from './testing/theme';
 import { ElementInspector } from './ElementInspector';
 import type { ElementInspectorProps } from './ElementInspector';
 import type { EditorActions } from './useEditorState';
@@ -104,7 +105,7 @@ function renderInspector(
   const { actions, updateElement, setDomainGroup, setHostedOn, setUses, setRealises, setMaintainedBy } = makeActions();
   const m = model(el, dia);
   const view = render(
-    <ThemeProvider theme={createTheme()}>
+    <ThemeProvider theme={testTheme}>
       <ElementInspector
         element={el}
         model={{
@@ -311,7 +312,7 @@ describe('ElementInspector — icon size', () => {
 describe('ElementInspector — active tab resets on selection change', () => {
   it('returns to General when the selected element id changes', () => {
     const { rerender } = render(
-      <ThemeProvider theme={createTheme()}>
+      <ThemeProvider theme={testTheme}>
         <ElementInspector
           element={element({ id: 'e1' })}
           model={model(element({ id: 'e1' }), diagram())}
@@ -326,7 +327,7 @@ describe('ElementInspector — active tab resets on selection change', () => {
     expect(screen.getByRole('tab', { name: 'Appearance' }).getAttribute('aria-selected')).toBe('true');
 
     rerender(
-      <ThemeProvider theme={createTheme()}>
+      <ThemeProvider theme={testTheme}>
         <ElementInspector
           element={element({ id: 'e2', name: 'Other' })}
           model={model(element({ id: 'e2' }), diagram())}
@@ -959,7 +960,7 @@ describe('Create container diagram on the General tab', () => {
     const dia = diagram();
     const el = element();
     render(
-      <ThemeProvider theme={createTheme()}>
+      <ThemeProvider theme={testTheme}>
         <ElementInspector
           element={el}
           model={{ ...model(el, dia), diagrams: [dia, cd] }}

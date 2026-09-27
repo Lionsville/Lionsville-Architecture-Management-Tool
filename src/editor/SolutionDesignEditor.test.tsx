@@ -8,7 +8,8 @@ import { placedNodes } from '../model/placement';
 import { laidOut } from '../model/testFixtures';
 import { act, cleanup, createEvent, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach } from 'vitest';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { ThemeProvider } from '@mui/material/styles';
+import { testTheme } from './testing/theme';
 import { HostedEditor } from './testing/editorHost';
 import type { EditorHostState, HostedEditorProps } from './testing/editorHost';
 import { GRID_SIZE } from './canvas/DiagramCanvas';
@@ -55,7 +56,7 @@ function modelWithPlacement(diagramId: 'd1' | 'd2'): DesignModel {
 
 function editorUi(props: HostedEditorProps, host: { current: EditorHostState }) {
   return (
-    <ThemeProvider theme={createTheme()}>
+    <ThemeProvider theme={testTheme}>
       <div style={{ width: '1200px', height: '800px' }}>
         <HostedEditor {...props} hostRef={host} />
       </div>

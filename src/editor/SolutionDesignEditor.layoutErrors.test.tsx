@@ -6,7 +6,8 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import { placedNodes } from '../model/placement';
 import { laidOut } from '../model/testFixtures';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { ThemeProvider } from '@mui/material/styles';
+import { testTheme } from './testing/theme';
 import { HostedEditor } from './testing/editorHost';
 import type { EditorHostState, HostedEditorProps } from './testing/editorHost';
 import type { DesignModel } from '../model/types';
@@ -89,7 +90,7 @@ function renderEditor() {
     onLayoutError,
   };
   render(
-    <ThemeProvider theme={createTheme()}>
+    <ThemeProvider theme={testTheme}>
       <div style={{ width: '1200px', height: '800px' }}>
         <HostedEditor {...props} hostRef={host} />
       </div>
@@ -304,7 +305,7 @@ describe('SolutionDesignEditor — live routing on an over-cap board', () => {
       onLayoutError,
     };
     render(
-      <ThemeProvider theme={createTheme()}>
+      <ThemeProvider theme={testTheme}>
         <div style={{ width: '1200px', height: '800px' }}>
           <HostedEditor {...props} hostRef={host} />
         </div>
@@ -383,7 +384,7 @@ describe('SolutionDesignEditor — an automatic layout that failed', () => {
       onLayoutSettled,
     };
     render(
-      <ThemeProvider theme={createTheme()}>
+      <ThemeProvider theme={testTheme}>
         <div style={{ width: '1200px', height: '800px' }}>
           <HostedEditor {...props} hostRef={host} />
         </div>

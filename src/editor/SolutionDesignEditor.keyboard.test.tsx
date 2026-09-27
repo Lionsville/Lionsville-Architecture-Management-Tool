@@ -15,7 +15,8 @@
  */
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { ThemeProvider } from '@mui/material/styles';
+import { testTheme } from './testing/theme';
 import { laidOut } from '../model/testFixtures';
 import type { DesignModel } from '../model/types';
 import { HostedEditor } from './testing/editorHost';
@@ -55,7 +56,7 @@ function model(): DesignModel {
 function renderEditor(over: Partial<HostedEditorProps> = {}) {
   const host = { current: undefined as unknown as EditorHostState };
   const view = render(
-    <ThemeProvider theme={createTheme()}>
+    <ThemeProvider theme={testTheme}>
       <div style={{ width: '1200px', height: '800px' }}>
         <HostedEditor model={model()} activeDiagramId="d1" {...over} hostRef={host} />
       </div>
