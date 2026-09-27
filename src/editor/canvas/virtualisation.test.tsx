@@ -46,9 +46,13 @@ const captured: number[] = [];
 beforeAll(() => installReactFlowMocks());
 afterEach(() => { cleanup(); captured.length = 0; });
 
-/** A landscape past the threshold, on one board. */
+/**
+ * A landscape past the threshold, on one board. The boxes are the point and
+ * the lines are not: every test here counts boxes, and a line is one more
+ * component to mount on every render without changing any count.
+ */
 const big = syntheticModel({
-  elements: 230, connections: 300, diagrams: 2, descriptionBytes: 120, decisions: 0, seed: 9,
+  elements: 230, connections: 40, diagrams: 2, descriptionBytes: 120, decisions: 0, seed: 9,
 }) as DesignModel;
 
 function renderEditor(model: DesignModel, activeDiagramId: string) {
@@ -87,7 +91,7 @@ describe('the rule', () => {
 
 /** A board the threshold leaves alone, out of the same generator. */
 const small = syntheticModel({
-  elements: 60, connections: 80, diagrams: 2, descriptionBytes: 120, decisions: 0, seed: 11,
+  elements: 30, connections: 20, diagrams: 2, descriptionBytes: 120, decisions: 0, seed: 11,
 }) as DesignModel;
 
 describe('what the canvas asks React Flow to draw', () => {
@@ -96,7 +100,9 @@ describe('what the canvas asks React Flow to draw', () => {
     await waitFor(() => expect(drawn()).toBe(placedNodes(small.diagrams[0]).length), SLOWLY);
   }, SLOWLY.timeout);
 
-  it('draws fewer than all of them once a board is past the threshold', async () => {
+  // One board for both halves: the capture is only worth asking about on a
+  // board that draws fewer boxes than it has, so the test says that first.
+  it('draws fewer than all of them once a board is past the threshold, and captures the whole board anyway', async () => {
     // What the viewport actually holds is not a question jsdom can answer — it
     // has no layout, so React Flow sees a board at the origin and a window of
     // nothing much. So this asserts the decision rather than the arithmetic:
@@ -106,11 +112,6 @@ describe('what the canvas asks React Flow to draw', () => {
     renderEditor(big, 'landscape');
     await waitFor(() => expect(drawn()).toBeGreaterThan(0), SLOWLY);
     expect(drawn()).toBeLessThan(placedNodes(big.diagrams[0]).length);
-  }, SLOWLY.timeout);
-
-  it('captures the whole board, not the part that happens to be drawn', async () => {
-    renderEditor(big, 'landscape');
-    await waitFor(() => expect(drawn()).toBeGreaterThan(0), SLOWLY);
     const downloads = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
 
     fireEvent.click(screen.getByRole('button', { name: 'Export PNG' }));
