@@ -24,6 +24,10 @@ import { useAnalysisActions } from './useAnalysisActions'
 import { useTreeReadings } from './useTreeReadings'
 import { useWorkspacePages } from './useWorkspacePages'
 import { useWorkspaceRequests } from './useWorkspaceRequests'
+import { useWorkspaceDialogs } from './WorkspaceDialogs'
+import { showOn } from './useWorkspaceAgentView'
+import { scopeSources, searchAll, treeSources } from '../search/search'
+import type { Observation } from '../model'
 
 afterEach(() => cleanup())
 
@@ -120,6 +124,53 @@ describe('the pages beside the canvas', () => {
     const bare = mount(model({ diagrams: [] }))
     act(() => bare.pages().leaveIfNothingToDraw())
     expect(bare.onGoHome).toHaveBeenCalledWith('north/south')
+  })
+})
+
+describe('a search hit, chosen', () => {
+  const observation: Observation = {
+    id: 'ob-1', number: 1, title: 'Tills freeze at noon', date: '2026-09-01', impact: 'major', seen: 1, body: '', history: [],
+  }
+  function mount() {
+    const onOpenScope = vi.fn()
+    const openDocumentation = vi.fn()
+    const view = renderHook(() => {
+      const session = useModelSession({ initialProject: snapshot(model({ observations: [observation] })), notify: vi.fn(), s })
+      const viewing = useShownDays(() => undefined)
+      const maps = { mapId: undefined, map: undefined, open: vi.fn(), create: vi.fn() }
+      const landscapes = { diagramId: undefined, diagram: undefined, focus: undefined, open: vi.fn(), create: vi.fn(), showOn: vi.fn() }
+      const pages = useWorkspacePages({
+        session, scope: 'north/south', makeId: (prefix) => `${prefix}-1`, s, viewing,
+        focusElement: vi.fn(), maps, landscapes, onGoHome: vi.fn(),
+      })
+      const dialogs = useWorkspaceDialogs({
+        session, settings: { onOpen: vi.fn(), onApply: vi.fn() }, diagnostics: { report: vi.fn() } as never, notify: vi.fn(), s,
+        scope: 'north/south', show: showOn(pages, vi.fn(), openDocumentation), onOpenScope,
+      })
+      return { session, pages, dialogs }
+    })
+    return { view, onOpenScope, openDocumentation }
+  }
+
+  it('opens on its page when this scope holds it', () => {
+    const { view, onOpenScope } = mount()
+    const [hit] = searchAll({ sources: scopeSources({ model: view.result.current.session.model, scope: 'north/south' }), query: 'tills' })
+    expect(hit.kind).toBe('observation')
+    act(() => view.result.current.dialogs.chooseHit(hit))
+    expect(view.result.current.pages.page()).toEqual({ page: 'observations', id: 'ob-1' })
+    expect(onOpenScope).not.toHaveBeenCalled()
+  })
+
+  it('opens the scope that holds it, on the same page, when another scope does', () => {
+    const { view, onOpenScope } = mount()
+    const sources = treeSources({
+      scope: 'north/south', model: { elements: [] }, above: [],
+      tree: [{ path: 'north', model: { elements: [], observations: [{ ...observation, id: 'ob-n', title: 'Tills slow up north' }] } }],
+    })
+    const [hit] = searchAll({ sources, query: 'tills' })
+    act(() => view.result.current.dialogs.chooseHit(hit))
+    expect(onOpenScope).toHaveBeenCalledWith('north', { page: 'observations', id: 'ob-n' })
+    expect(view.result.current.pages.page()).toBeUndefined()
   })
 })
 

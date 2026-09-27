@@ -32,8 +32,9 @@
  * happen, drawn over work that is perfectly fine.
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { EMPTY_INDEX, indexOf } from '../projects/scopeIndex'
+import { EMPTY_INDEX, indexScopes, treeModels } from '../projects/scopeIndex'
 import type { IndexSource, ScopeIndex } from '../projects/scopeIndex'
+import type { ScopeModel } from '../projects/scope'
 
 export type IndexHook = {
   /**
@@ -45,6 +46,14 @@ export type IndexHook = {
    * tree had an index at all. That is why nothing below has a loading state.
    */
   index: ScopeIndex
+  /**
+   * What the index was built from: every scope's records, rows, plans and
+   * observations as the same read had them (ADR-0012 §2). Kept rather than
+   * read again, because the search over the tree (ADR-0029) asks for it on a
+   * keystroke — and the same objects from one read to the next are what its
+   * folds are cached against. Empty exactly when the index is.
+   */
+  models: readonly ScopeModel[]
   /** Read the tree again. What the watcher calls, and what a write can call. */
   refresh: () => void
 }
@@ -65,7 +74,7 @@ export function useIndex(deps: {
   onFailure: (where: string, cause: unknown) => void
 }): IndexHook {
   const { scopes, watch, onFailure } = deps
-  const [index, setIndex] = useState<ScopeIndex>(EMPTY_INDEX)
+  const [held, setHeld] = useState<{ index: ScopeIndex; models: readonly ScopeModel[] }>(NOTHING_READ)
 
   // Read through refs so `refresh` keeps one identity for the life of the
   // hook: it is handed to the watcher, and a new function per render would be
@@ -82,10 +91,12 @@ export function useIndex(deps: {
   const read = useCallback(() => {
     if (reading.current) { again.current = true; return }
     reading.current = true
-    void indexOf(source.current).then(
-      (held) => {
+    // Built inside the chain, so a fold that throws is the failure below and
+    // not an exception out of a callback nobody awaits.
+    void treeModels(source.current).then((models) => ({ index: indexScopes(models), models })).then(
+      (built) => {
         reading.current = false
-        if (live.current) setIndex(held)
+        if (live.current) setHeld(built)
         if (again.current) { again.current = false; read() }
       },
       (cause: unknown) => {
@@ -113,5 +124,7 @@ export function useIndex(deps: {
     return watch(read)
   }, [watch, read])
 
-  return { index, refresh: read }
+  return { index: held.index, models: held.models, refresh: read }
 }
+
+const NOTHING_READ = { index: EMPTY_INDEX, models: [] }

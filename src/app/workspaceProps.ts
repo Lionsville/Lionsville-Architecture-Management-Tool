@@ -100,6 +100,14 @@ export type WorkspaceTree = {
    * sheet at the root the `supports` rows a landscape wrote.
    */
   index: ScopeIndex
+  /**
+   * What the index was built from: every scope's records, rows, plans and
+   * observations as the tree's last read had them (ADR-0012 §2). The search
+   * over the organisation (ADR-0029) reads the other scopes from here, so a
+   * keystroke loads nothing. Absent in a test, and the search is then this
+   * scope's and its ancestors' records.
+   */
+  scopeModels?: readonly ScopeModel[]
   /** The tree as it stands, for the settings dialog's "filed under" select. */
   scopes: ScopeSummary
   /**

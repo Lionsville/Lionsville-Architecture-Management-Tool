@@ -313,12 +313,40 @@ describe('decisions.list and decision.read', () => {
 })
 
 describe('search', () => {
-  it('is the app’s own ⌘K, over elements, documentation and decisions', () => {
+  it('is the app’s own ⌘K, over every kind of record the scope holds', () => {
     const held = read('search', { query: 'billing' }) as { hits: { kind: string }[] }
     const kinds = new Set(held.hits.map((h) => h.kind))
-    expect(kinds).toEqual(new Set(['element', 'adr']))
+    // The container diagram is called after the application it draws.
+    expect(kinds).toEqual(new Set(['element', 'view', 'adr']))
     expect(read('search', { query: 'invoices' })).toMatchObject({ hits: [{ kind: 'documentation', elementId: 'billing' }] })
     expect(read('search', { query: 'identity provider' })).toMatchObject({ hits: [{ kind: 'adr', adrId: 'g-1', scope: 'group' }] })
+  })
+
+  it('finds observations, causes, solutions and experiments, and what the scopes below share', () => {
+    const observation = {
+      id: 'ob-1', number: 2, title: 'Invoices printed twice', date: '2026-09-01', impact: 'minor' as const, seen: 1, body: '', history: [],
+    }
+    const withAnalysis: HostModel = {
+      ...host,
+      observations: [observation],
+      causes: [{ id: 'ca-1', number: 1, title: 'Invoices retried on timeout', state: 'assumed', body: '', explains: [] }],
+      solutions: [{ id: 'so-1', number: 1, title: 'Idempotent invoices', state: 'idea', addresses: [], validatedWith: [], attempts: [], body: '', history: [] }],
+      experiments: [{ id: 'ex-1', number: 1, title: 'Invoices keyed for a week', tests: ['so-1'], hypothesis: 'No doubles', outcome: 'planned', body: '' }],
+    }
+    const below = view(withAnalysis)
+    const tree = {
+      lookup: () => undefined, rowsTo: () => [], initiativesBelow: () => [],
+      observationsBelow: () => [{ scope: 'shop', observation: { ...observation, id: 'ob-s', title: 'Invoices lost in the shop', shared: true as const } }],
+    }
+    const hits = (read('search', { query: 'invoices', kinds: ['observation', 'cause', 'solution', 'experiment'] }, { ...below, tree }) as {
+      hits: Record<string, unknown>[]
+    }).hits
+    expect(hits.map((h) => [h.kind, h.id, h.scopePath])).toEqual([
+      ['observation', 'ob-1', undefined], ['observation', 'ob-s', 'shop'],
+      ['cause', 'ca-1', undefined], ['solution', 'so-1', undefined], ['experiment', 'ex-1', undefined],
+    ])
+    expect(hits[0]).toMatchObject({ label: 'OB-0002', status: 'minor', title: 'Invoices printed twice' })
+    expect(answer('search', { query: 'invoices', kinds: ['nonsense'] }, below)).toMatchObject({ ok: false, refusal: 'agent.badArguments' })
   })
 })
 
@@ -410,11 +438,13 @@ describe('plans.list (ADR-0010)', () => {
     expect(dated.find((c) => c.id === 'c3')).not.toHaveProperty('plan')
   })
 
-  it('search finds a plan by its title, its body or a milestone, beside the app’s own hits', () => {
+  it('search finds a plan by its title or its body, and a milestone of it as a milestone', () => {
     const model: HostModel = { ...withPlan, transitions: [{ ...plan, body: 'Move the **ledger** first.', milestones: [{ date: '2027-03-01', name: 'Pilot' }] }] }
     const hits = (read('search', { query: 'ledger' }, view(model)) as { hits: Record<string, unknown>[] }).hits
     expect(hits.filter((h) => h.kind === 'plan')).toEqual([expect.objectContaining({ planId: 'tr-1', label: 'TR-0001', snippet: expect.stringContaining('ledger') })])
-    expect((read('search', { query: 'pilot' }, view(model)) as { hits: { kind: string }[] }).hits.map((h) => h.kind)).toEqual(['plan'])
+    // A milestone is a hit of its own, and opens on its plan.
+    expect((read('search', { query: 'pilot' }, view(model)) as { hits: { kind: string }[] }).hits)
+      .toEqual([expect.objectContaining({ kind: 'milestone', title: 'Pilot', label: 'TR-0001', detail: '2027-03-01 · Replace billing' })])
     expect((read('search', { query: 'nothing here' }, view(model)) as { hits: unknown[] }).hits).toEqual([])
   })
 

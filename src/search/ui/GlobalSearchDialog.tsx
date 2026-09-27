@@ -2,14 +2,19 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * ⌘K: one field over everything the project knows.
+ * ⌘K: one field over everything the organisation holds.
  *
  * The editor's own ⌘F finds a box on the canvas and nothing else, on purpose —
  * a paragraph would out-match every name. This dialog is the wider one: it
- * asks `searchAll` for elements, documentation and decisions together and lets
- * each kind of hit open the thing it is about. It is the same combobox-over-
- * listbox pattern as the element finder — focus stays in the field, ↑/↓ move
- * the active row, Enter takes it — so the two feel like one tool.
+ * asks `searchAll` for every kind of record the sources hold and lets each
+ * hit open the thing it is about, where it lives. It is the same
+ * combobox-over-listbox pattern as the element finder — focus stays in the
+ * field, ↑/↓ move the active row, Enter takes it — so the two feel like one
+ * tool.
+ *
+ * A row says what it is — the heading of its group, and beside the title the
+ * element's kind, the view's, or the record's status — and which scope holds
+ * it, so a hit from another scope is not mistaken for one here.
  *
  * Pure rendering: the hits come from `core/search`, and what a chosen hit does
  * is the caller's (`onChoose`), because opening a page is the workspace's job.
@@ -23,30 +28,75 @@ import ListSubheader from '@mui/material/ListSubheader'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import type { StringKey, Translate } from '../../i18n'
-import type { Adr } from '../../decisions/adr'
-import { SCOPE_LABEL } from '../../decisions/adrScope'
-import { formatAdrNumber } from '../../decisions/adr'
-import type { HostModel } from '../../model/hostModel'
-import { searchAll } from '../search'
-import type { SearchHit } from '../search'
 import { STATUS_LABEL } from '../../decisions/adrScope'
+import { isElementKind, kindLabel } from '../../model/kinds'
+import { isRelationType, RELATION_LABEL } from '../../model/relations'
+import type { SearchKind } from '../../model/searchable'
+import {
+  ARCHIVED_LABEL, IMPACT_LABEL, OUTCOME_LABEL, PHASE_LABEL, STATE_LABEL,
+} from '../../observations/observationScope'
+import { PLAN_STATUS_LABEL } from '../../roadmap/labels'
+import { searchAll } from '../search'
+import type { SearchHit, SearchSource } from '../search'
 
 export type GlobalSearchDialogProps = {
   open: boolean
-  model: HostModel
-  ancestorDecisions: readonly Adr[]
+  /** Nearest first: the open scope, then the scopes above, then the rest of the tree. */
+  sources: readonly SearchSource[]
+  /** What to call a scope on a row. */
+  scopeLabel: (path: string) => string
   onClose: () => void
   onChoose: (hit: SearchHit) => void
   s: Translate
 }
 
-const KIND_LABEL: Record<SearchHit['kind'], StringKey> = {
-  element: 'gsearch.elements',
-  documentation: 'gsearch.documentation',
-  adr: 'gsearch.decisions',
+const KIND_LABEL: Record<SearchKind, StringKey> = {
+  element: 'gsearch.kind.element',
+  documentation: 'gsearch.kind.documentation',
+  view: 'gsearch.kind.view',
+  relation: 'gsearch.kind.relation',
+  decision: 'gsearch.kind.decision',
+  plan: 'gsearch.kind.plan',
+  milestone: 'gsearch.kind.milestone',
+  observation: 'gsearch.kind.observation',
+  cause: 'gsearch.kind.cause',
+  solution: 'gsearch.kind.solution',
+  experiment: 'gsearch.kind.experiment',
 }
 
-export function GlobalSearchDialog({ open, model, ancestorDecisions, onClose, onChoose, s }: GlobalSearchDialogProps) {
+const VIEW_LABEL: Record<string, StringKey> = {
+  layer7: 'gsearch.view.layer7',
+  container: 'gsearch.view.container',
+  sheet: 'gsearch.view.sheet',
+  map: 'gsearch.view.map',
+  technology: 'gsearch.view.technology',
+}
+
+/** Each kind's status words, from the tables the modules that own them publish. */
+const STATUS_TABLES: Partial<Record<SearchKind, Readonly<Record<string, StringKey>>>> = {
+  decision: STATUS_LABEL,
+  plan: PLAN_STATUS_LABEL,
+  observation: { ...IMPACT_LABEL, archived: ARCHIVED_LABEL },
+  cause: STATE_LABEL,
+  solution: PHASE_LABEL,
+  experiment: OUTCOME_LABEL,
+}
+
+/** What the chip beside a title says: which kind of element or view, or where the record stands. */
+export function chipOf(hit: SearchHit, s: Translate): string | undefined {
+  const { variant, status } = hit
+  if (status !== undefined) {
+    const key = STATUS_TABLES[hit.kind]?.[status]
+    return key ? s(key) : status
+  }
+  if (variant === undefined) return undefined
+  if ((hit.kind === 'element' || hit.kind === 'documentation') && isElementKind(variant)) return kindLabel(variant, s)
+  if (hit.kind === 'view' && VIEW_LABEL[variant]) return s(VIEW_LABEL[variant])
+  if (hit.kind === 'relation' && isRelationType(variant)) return s(RELATION_LABEL[variant])
+  return undefined
+}
+
+export function GlobalSearchDialog({ open, sources, scopeLabel, onClose, onChoose, s }: GlobalSearchDialogProps) {
   const [query, setQuery] = useState('')
   const [activeIndex, setActiveIndex] = useState(0)
   const listRef = useRef<HTMLDivElement>(null)
@@ -59,17 +109,17 @@ export function GlobalSearchDialog({ open, model, ancestorDecisions, onClose, on
   /**
    * The field stays live while the list catches up.
    *
-   * The search is fast on the landscapes anybody has today, and on a big one it
-   * is a scan over every element and every decision. `useDeferredValue` lets
-   * React paint the character you just typed at once and re-run the search at
-   * lower priority, so a slow answer never makes the field itself lag. When
-   * there is no lag to hide, this is the query.
+   * The search is a scan over every record of the tree, folded once. On a big
+   * organisation `useDeferredValue` lets React paint the character you just
+   * typed at once and re-run the search at lower priority, so a slow answer
+   * never makes the field itself lag. When there is no lag to hide, this is
+   * the query.
    */
   const asked = useDeferredValue(query)
 
   const hits = useMemo(
-    () => (open ? searchAll({ model, ancestorDecisions, query: asked }) : []),
-    [open, model, ancestorDecisions, asked],
+    () => (open ? searchAll({ sources, query: asked }) : []),
+    [open, sources, asked],
   )
   // Keyed on the query the list was built from, not on the one being typed: the
   // highlight resets when the rows it points into change.
@@ -159,7 +209,7 @@ export function GlobalSearchDialog({ open, model, ancestorDecisions, onClose, on
                   onClick={() => choose(hit)}
                   sx={{ display: 'block', px: 2, py: 0.75 }}
                 >
-                  <HitRow hit={hit} s={s} />
+                  <HitRow hit={hit} scopeLabel={scopeLabel} s={s} />
                 </ListItemButton>
               )
             })}
@@ -180,8 +230,8 @@ export function GlobalSearchDialog({ open, model, ancestorDecisions, onClose, on
 }
 
 /** The hits in runs of one kind, in the order they came, with where each run starts. */
-function runsOfKind(hits: readonly SearchHit[]): { kind: SearchHit['kind']; from: number; run: SearchHit[] }[] {
-  const runs: { kind: SearchHit['kind']; from: number; run: SearchHit[] }[] = []
+function runsOfKind(hits: readonly SearchHit[]): { kind: SearchKind; from: number; run: SearchHit[] }[] {
+  const runs: { kind: SearchKind; from: number; run: SearchHit[] }[] = []
   hits.forEach((hit, index) => {
     const last = runs[runs.length - 1]
     if (last && last.kind === hit.kind) last.run.push(hit)
@@ -190,39 +240,33 @@ function runsOfKind(hits: readonly SearchHit[]): { kind: SearchHit['kind']; from
   return runs
 }
 
-function HitRow({ hit, s }: { hit: SearchHit; s: Translate }) {
-  switch (hit.kind) {
-    case 'element':
-      return (
-        <>
-          <Typography sx={{ fontSize: 13, fontWeight: 600 }}>{hit.name}</Typography>
-          {hit.detail && <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{hit.detail}</Typography>}
-        </>
-      )
-    case 'documentation':
-      return (
-        <>
-          <Typography sx={{ fontSize: 13, fontWeight: 600 }}>{hit.name}</Typography>
-          <Typography sx={{ fontSize: 11, color: 'text.secondary' }} noWrap>{hit.snippet}</Typography>
-        </>
-      )
-    case 'adr':
-      return (
-        <>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Typography sx={{ fontSize: 11, color: 'text.secondary', fontFamily: 'ui-monospace, Menlo, monospace' }}>
-              {formatAdrNumber(hit.number)}
-            </Typography>
-            <Typography sx={{ fontSize: 13, fontWeight: 600, flex: 1, minWidth: 0 }} noWrap>{hit.title}</Typography>
-            <Chip size="small" label={s(STATUS_LABEL[hit.status])} sx={{ height: 18, fontSize: 10 }} />
-          </Box>
-          <Typography sx={{ fontSize: 11, color: 'text.secondary' }} noWrap>
-            {[
-              hit.scope === 'application' ? (hit.subjectName ?? s(SCOPE_LABEL.application)) : s(SCOPE_LABEL[hit.scope]),
-              hit.snippet || undefined,
-            ].filter(Boolean).join(' · ')}
+function HitRow({ hit, scopeLabel, s }: {
+  hit: SearchHit; scopeLabel: (path: string) => string; s: Translate
+}) {
+  const chip = chipOf(hit, s)
+  const about = hit.about.join(' → ')
+  // A relation with no label is called by its two ends.
+  const title = hit.title !== '' ? hit.title : about
+  const second = [
+    hit.scope !== undefined ? scopeLabel(hit.scope) : undefined,
+    hit.title !== '' && about !== '' ? about : undefined,
+    hit.detail,
+    hit.snippet || undefined,
+  ].filter(Boolean).join(' · ')
+  return (
+    <>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        {hit.label !== undefined && (
+          <Typography sx={{ fontSize: 11, color: 'text.secondary', fontFamily: 'ui-monospace, Menlo, monospace' }}>
+            {hit.label}
           </Typography>
-        </>
-      )
-  }
+        )}
+        <Typography sx={{ fontSize: 13, fontWeight: 600, flex: 1, minWidth: 0 }} noWrap>{title}</Typography>
+        {chip !== undefined && <Chip size="small" label={chip} sx={{ height: 18, fontSize: 10 }} />}
+      </Box>
+      {second !== '' && (
+        <Typography sx={{ fontSize: 11, color: 'text.secondary' }} noWrap>{second}</Typography>
+      )}
+    </>
+  )
 }

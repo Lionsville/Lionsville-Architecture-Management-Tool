@@ -40,7 +40,10 @@ export type ArgumentSchema =
   | { readonly type: 'integer'; readonly description: string; readonly minimum?: number; readonly maximum?: number }
   | { readonly type: 'number'; readonly description: string }
   | { readonly type: 'boolean'; readonly description: string }
-  | { readonly type: 'array'; readonly description: string; readonly items: { readonly type: 'string' } | RowSchema }
+  | {
+    readonly type: 'array'; readonly description: string
+    readonly items: { readonly type: 'string'; readonly enum?: readonly string[] } | RowSchema
+  }
   | RowSchema
   | MapSchema
 
@@ -99,6 +102,16 @@ const KINDS = ['actor', 'step', 'function', 'process', 'application', 'component
 const PLATFORM_ARCHETYPES = ['place', 'service', 'network'] as const
 const LIFECYCLES = ['planned', 'live', 'retiring', 'retired'] as const
 const ZONES = ['actors', 'inputChannels', 'externalSystems', 'landscape', 'management'] as const
+
+/**
+ * What `search` finds, in the protocol's words (ADR-0029): one per kind of
+ * record the model declares searchable. A decision record is `adr`, the word
+ * the hits said before the other kinds were searched.
+ */
+export const SEARCH_HIT_KINDS = [
+  'element', 'documentation', 'view', 'relation', 'adr', 'plan', 'milestone',
+  'observation', 'cause', 'solution', 'experiment',
+] as const
 const LINE_STYLES = ['solid', 'dashed', 'dotted'] as const
 /**
  * ADR-0012 §5. Written out here rather than imported from `model/relations`
@@ -641,13 +654,24 @@ const SPECS = [
     name: 'search',
     tier: 'read',
     description:
-      'Search elements, their documentation, the decision records and the plans together, the way ⌘K does in the app. '
-      + 'Every word of the query must occur; case and accents do not matter.',
+      'Search every kind of record together, the way ⌘K does in the app: elements and their documentation, views, '
+      + 'relations, decision records, plans and their milestones, observations, causes, solutions and experiments — '
+      + 'in this scope, the decision records of the scopes above, and the observations and initiatives the scopes '
+      + 'below share with it. Every word of the query must occur; case and accents do not matter. Each hit says its '
+      + 'kind, its id, its title and, where it has one, its label (OB-0007), status and a snippet of the prose that '
+      + 'matched; a hit held by another scope says so as scopePath — read it there by passing that as scope. '
+      + 'A hit of kind adr also carries adrId and scope (group, landscape or application), an element or its '
+      + 'documentation elementId and name, and a plan planId, as they did before the other kinds were searched.',
     inputSchema: {
       type: 'object',
       properties: {
         query: { type: 'string', description: 'What to look for.' },
         limit: { type: 'integer', description: 'At most this many hits per kind. Default 8.', minimum: 1, maximum: 100 },
+        kinds: {
+          type: 'array',
+          description: 'Only these kinds of hit. Default: every kind.',
+          items: { type: 'string', enum: SEARCH_HIT_KINDS },
+        },
       },
       required: ['query'],
       additionalProperties: false,
@@ -2200,6 +2224,13 @@ export function json(value: unknown): AgentAnswer {
 
 // --- checking a call against its own schema ------------------------------------
 
+/** A list of strings, each one of `allowed` where it says. */
+function stringsWrong(value: readonly unknown[], allowed: readonly string[] | undefined): string | undefined {
+  if (!value.every((item) => typeof item === 'string')) return 'must be a list of strings'
+  const odd = allowed ? value.find((item) => !allowed.includes(item as string)) : undefined
+  return odd === undefined ? undefined : `holds ${String(odd)}, which is not one of ${allowed?.join(', ')}`
+}
+
 /**
  * Does `args` fit the tool's schema? Answers with what is wrong, or nothing.
  *
@@ -2244,9 +2275,7 @@ function checkValue(spec: ArgumentSchema, value: unknown): string | undefined {
       return typeof value === 'boolean' ? undefined : 'must be true or false'
     case 'array': {
       if (!Array.isArray(value)) return spec.items.type === 'string' ? 'must be a list of strings' : 'must be a list'
-      if (spec.items.type === 'string') {
-        return value.every((item) => typeof item === 'string') ? undefined : 'must be a list of strings'
-      }
+      if (spec.items.type === 'string') return stringsWrong(value, spec.items.enum)
       for (const [index, item] of value.entries()) {
         const wrong = checkValue(spec.items, item)
         if (wrong) return `[${index}] ${wrong}`

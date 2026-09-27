@@ -73,7 +73,7 @@ const MAY_IMPORT = {
   roadmap: ['model', 'i18n', 'platform', 'widgets', 'documentation', 'decisions'],
   business: ['model', 'i18n', 'platform', 'widgets', 'documentation'],
   technology: ['model', 'i18n', 'platform', 'widgets'],
-  search: ['model', 'i18n', 'platform', 'widgets', 'documentation', 'decisions', 'roadmap'],
+  search: ['model', 'i18n', 'platform', 'widgets', 'documentation', 'decisions', 'observations', 'roadmap'],
   projects: ['model', 'i18n', 'platform', 'decisions', 'observations', 'ports'],
   editor: ['model', 'layout', 'i18n', 'platform', 'widgets', 'documentation', 'search'],
   agent: ['model', 'layout', 'i18n', 'platform', 'documentation', 'decisions', 'observations', 'business', 'search'],
@@ -97,7 +97,7 @@ const WHY = {
   roadmap: 'A roadmap is the model on a time axis, and the plans over it. It does not know how a landscape is drawn or where it is saved.',
   business: 'A sheet is laid out from the model\'s own trees, not dragged. It does not know what a canvas is, nor a project.',
   technology: 'A platform\'s report is derived from the rows that name it (ADR-0013). It is read, never drawn and never captured, so it does not know what a canvas is, nor a project.',
-  search: 'search reads what it searches — the model, documentation, decisions, plans — and nothing that draws them.',
+  search: 'search reads what it searches — the model, documentation, decisions, observations, plans — and nothing that draws them.',
   projects: 'A project is what is saved and reopened: the model, its decisions, and the ports it is saved through.',
   editor: 'The editor takes a model and emits batches. Decisions and projects reach it as props.',
   agent: 'An agent asks about the landscape in the landscape\'s own terms — including a laid-out page, which is arithmetic like any other. It does not know how the model is drawn or where it is saved.',
@@ -393,11 +393,11 @@ export const LONGEST_FUNCTION = 150
 
 /** The units over the line on 26 September 2026: each file's largest, by rule. */
 export const GROWN = {
-  'src/agent/answer.ts': { complexity: 101, lines: 352 },
+  'src/agent/answer.ts': { complexity: 100, lines: 336 },
   'src/agent/handle.ts': { complexity: 39 },
   'src/agent/screen.ts': { complexity: 27 },
   'src/agent/shell.ts': { complexity: 42 },
-  'src/agent/tools.ts': { complexity: 34 },
+  'src/agent/tools.ts': { complexity: 33 },
   'src/app/history/HistoryPage.tsx': { lines: 218 },
   'src/app/history/useProjectHistory.ts': { lines: 164 },
   'src/app/organisation/OrganisationCards.tsx': { complexity: 38, lines: 180 },

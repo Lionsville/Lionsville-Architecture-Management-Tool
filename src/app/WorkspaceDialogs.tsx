@@ -6,10 +6,13 @@
  * dialogs, the choosers, the wider search, the four gestures and the scope's
  * settings.
  */
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { Destination } from '../agent/screen'
 import { ConfirmDialog } from '../widgets/ConfirmDialog'
 import { GlobalSearchDialog } from '../search/ui/GlobalSearchDialog'
+import { treeSources } from '../search/search'
 import type { SearchHit } from '../search/search'
+import type { ScopePath } from '../projects/scopePath'
 import type { ScopeSnapshot } from '../projects/scope'
 import { HistoryPage } from './history/lazyHistoryPage'
 import { SnapshotDialog } from './history/SnapshotDialog'
@@ -20,6 +23,8 @@ import { ShellDialogs } from './dialogs/ShellDialogs'
 import { messageFor } from './messageFor'
 import { ProjectSettingsDialog } from './ProjectSettingsDialog'
 import type { ProjectSettings } from './ProjectSettingsDialog'
+import type { InitialPage } from './App'
+import { initialPageFor } from './useShellAgent'
 import type { ModelSession } from './useModelSession'
 import type { WorkspaceParts } from './workspaceParts'
 import type { WorkspaceHost, WorkspaceSettings, WorkspaceShell } from './workspaceProps'
@@ -36,11 +41,14 @@ export function useWorkspaceDialogs(deps: {
   diagnostics: WorkspaceHost['diagnostics']
   notify: WorkspaceShell['notify']
   s: WorkspaceShell['s']
-  focusElement: (id: string) => void
-  openDocumentation: (elementId?: string) => void
-  openDecisions: (adrId?: string) => void
+  /** The scope that is open: a hit here opens on its page, a hit elsewhere opens that scope. */
+  scope: ScopePath
+  /** Show a page of this scope, as the agent's `app.open` does (ADR-0019). */
+  show: (to: Destination & { scope: string }) => void
+  /** Open another scope on a page; absent where there is nowhere to go. */
+  onOpenScope?: (path: ScopePath, page?: InitialPage) => void
 }) {
-  const { session, diagnostics, notify, s, focusElement, openDocumentation, openDecisions } = deps
+  const { session, diagnostics, notify, s, scope, show, onOpenScope } = deps
   const { onOpen: onOpenSettings, onApply: onApplySettings } = deps.settings
   const [settingsOpen, setSettingsOpen] = useState(false)
   // The settings rename the scope and can move it, which writes it whole —
@@ -52,19 +60,18 @@ export function useWorkspaceDialogs(deps: {
   }, [session, onOpenSettings])
   const [searchOpen, setSearchOpen] = useState(false)
 
+  /**
+   * A hit opens where it lives (ADR-0012 §7, ADR-0029): on its page here, or
+   * in the scope that holds it — which the shell opens as it opens any scope,
+   * read-only where the source is. The page words are the destination's, the
+   * same three words the agent's `app.open` takes, so a hit and an agent land
+   * in the same place.
+   */
   const chooseHit = useCallback((hit: SearchHit) => {
-    switch (hit.kind) {
-      case 'element':
-        focusElement(hit.elementId)
-        break
-      case 'documentation':
-        openDocumentation(hit.elementId)
-        break
-      case 'adr':
-        openDecisions(hit.adrId)
-        break
-    }
-  }, [focusElement, openDocumentation, openDecisions])
+    const to: Destination = { page: hit.opens.page, id: hit.opens.id }
+    if (hit.scope !== undefined && hit.scope !== scope && onOpenScope) onOpenScope(hit.scope, initialPageFor(to))
+    else show({ ...to, scope })
+  }, [scope, show, onOpenScope])
 
   // ⌘K / Ctrl+K from anywhere in the workspace. The editor's own ⌘F stays the
   // canvas finder; this is the wider one.
@@ -150,8 +157,22 @@ export function HistoryDialogs({ parts }: { parts: WorkspaceParts }) {
 
 /** The choosers, the wider search, the gestures and the settings, after the pages. */
 export function WorkspaceDialogs({ parts }: { parts: WorkspaceParts }) {
-  const { props, session, showElement, library, readings, dialogs, ancestorRecords } = parts
+  const { props, session, showElement, library, readings, dialogs } = parts
   const { s } = props.shell
+  const { index, scopeModels, ancestorDecisions } = props.tree
+  /**
+   * What ⌘K searches, nearest first: this scope as the session has it, the
+   * scopes above with their records, and the rest of the tree as the index
+   * read it. Rebuilt when one of those moves; each source's folds are kept
+   * on its own lists, so a rebuild re-folds nothing that did not change.
+   */
+  const sources = useMemo(() => treeSources({
+    scope: props.project.path,
+    model: session.model,
+    above: ancestorDecisions,
+    ...(scopeModels ? { tree: scopeModels } : {}),
+    masterOf: (id) => index.lookup(id)?.master,
+  }), [props.project.path, session.model, ancestorDecisions, scopeModels, index])
   return (
     <>
       <ChooseBoardDialog
@@ -172,8 +193,8 @@ export function WorkspaceDialogs({ parts }: { parts: WorkspaceParts }) {
       />
       <GlobalSearchDialog
         open={dialogs.searchOpen}
-        model={session.model}
-        ancestorDecisions={ancestorRecords}
+        sources={sources}
+        scopeLabel={readings.scopeLabel}
         onClose={() => dialogs.setSearchOpen(false)}
         onChoose={dialogs.chooseHit}
         s={s}

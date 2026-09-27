@@ -36,9 +36,11 @@ import { matchesQuery } from '../model/textSearch'
 import type { DesignElement, ElementId, Relation } from '../model/types'
 import { businessCaseFence, computeBusinessCase, readBusinessCase } from '../documentation/businessCase'
 import { formatAdrNumber } from '../decisions/adr'
-import { SEARCH_LIMIT_PER_KIND, searchAll, snippet } from '../search/search'
+import { SEARCH_LIMIT_PER_KIND, searchAll } from '../search/search'
+import type { SearchHit, SearchSource } from '../search/search'
+import type { SearchKind } from '../model/searchable'
 import type { AgentAnswer, ToolName } from './tools'
-import { checkArguments, json, refused, text, toolSpec } from './tools'
+import { checkArguments, json, refused, SEARCH_HIT_KINDS, text, toolSpec } from './tools'
 import { identityOf } from './tree'
 import type { TreeView } from './tree'
 import { causeList, experimentList, observationList, observationsOf, solutionList } from '../model/normalised'
@@ -483,30 +485,8 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
       })
     }
 
-    case 'search': {
-      const query = args.query as string
-      const limit = (args.limit as number | undefined) ?? SEARCH_LIMIT_PER_KIND
-      // Plans are not in the app's index yet; the same rule for "found",
-      // applied here, so an agent's search covers them as well.
-      const plans = transitionList(model)
-        .filter((plan) => matchesQuery(query, [transitionLabel(plan), plan.title, plan.owner, plan.body, ...plan.milestones.map((m) => m.name)]))
-        .slice(0, limit)
-        .map((plan) => ({
-          kind: 'plan' as const, planId: plan.id, label: transitionLabel(plan), title: plan.title, status: plan.status,
-          snippet: snippet(plan.body, query),
-        }))
-      return json({
-        hits: [
-          // `above` is what the app calls a record from a scope above this one
-          // since the three decision lists became one (ADR-0012 §7); the
-          // protocol still says `group`, which `decisions.list`'s own `scope`
-          // enum says too. Both change together, in the agent's own stretch.
-          ...searchAll({ model: view.current(), ancestorDecisions: view.ancestorDecisions, query, limitPerKind: limit })
-            .map((hit) => (hit.kind === 'adr' && hit.scope === 'above' ? { ...hit, scope: 'group' } : hit)),
-          ...plans,
-        ],
-      })
-    }
+    case 'search':
+      return json({ hits: searchHits(args, view) })
 
     case 'project.export':
       return args.format === 'json' ? json(view.current()) : text(exportMarkdown(model, view))
@@ -1035,5 +1015,104 @@ function decisionLine(adr: Adr, scope: 'group' | 'landscape' | 'application') {
     date: adr.date,
     scope,
     subjectId: adr.subjectId,
+  }
+}
+
+// --- search (ADR-0029) -----------------------------------------------------------
+
+/**
+ * What the agent's `search` reads, nearest first: this scope's every list,
+ * the records of the scopes above, and what the scopes below offer up — the
+ * observations they shared and the plans they flagged as initiatives, which
+ * this scope's own pages show too. A scope elsewhere is searched by naming
+ * it: every tool takes `scope`.
+ */
+function searchHits(args: Args, view: ReadView): Record<string, unknown>[] {
+  const kinds = (args.kinds as string[] | undefined)?.map(searchKindOf)
+  return searchAll({
+    sources: searchSources(view),
+    query: args.query as string,
+    limitPerKind: (args.limit as number | undefined) ?? SEARCH_LIMIT_PER_KIND,
+    ...(kinds ? { kinds } : {}),
+  }).map((hit) => searchLine(hit, view))
+}
+
+function searchSources(view: ReadView): SearchSource[] {
+  const here = view.scopePath
+  const sources: SearchSource[] = [{ scope: here, model: view.current() }]
+  if (view.ancestorDecisions.length > 0) sources.push({ model: { decisions: view.ancestorDecisions } })
+  const below = new Map<string, { observations: Observation[]; transitions: Transition[] }>()
+  const at = (scope: string) => {
+    const held = below.get(scope) ?? { observations: [], transitions: [] }
+    below.set(scope, held)
+    return held
+  }
+  for (const one of view.tree?.observationsBelow?.(here) ?? []) at(one.scope).observations.push(one.observation)
+  for (const one of view.tree?.initiativesBelow(here) ?? []) at(one.scope).transitions.push(one.transition)
+  for (const [scope, model] of below) sources.push({ scope, model })
+  return sources
+}
+
+/**
+ * The protocol's word for each kind. A decision record was `adr` before the
+ * other kinds were searched, and a client reading the hits reads that word;
+ * everything else is the kind's own name.
+ */
+const PROTOCOL_KIND: Record<SearchKind, (typeof SEARCH_HIT_KINDS)[number]> = {
+  element: 'element', documentation: 'documentation', view: 'view', relation: 'relation',
+  decision: 'adr', plan: 'plan', milestone: 'milestone',
+  observation: 'observation', cause: 'cause', solution: 'solution', experiment: 'experiment',
+}
+
+function searchKindOf(word: string): SearchKind {
+  return (Object.keys(PROTOCOL_KIND) as SearchKind[]).find((kind) => PROTOCOL_KIND[kind] === word) as SearchKind
+}
+
+/**
+ * One hit as the agent reads it: the same fields for every kind, and beside
+ * them, for the four kinds that were searched before the rest, the fields a
+ * client already reads — so an answer that was right stays right.
+ */
+function searchLine(hit: SearchHit, view: ReadView): Record<string, unknown> {
+  const elsewhere = hit.scope !== undefined && hit.scope !== view.scopePath
+  const line: Record<string, unknown> = {
+    kind: PROTOCOL_KIND[hit.kind],
+    id: hit.id,
+    title: hit.title,
+    ...(hit.label !== undefined ? { label: hit.label } : {}),
+    ...(hit.status !== undefined ? { status: hit.status } : {}),
+    ...(hit.variant !== undefined ? { variant: hit.variant } : {}),
+    ...(hit.detail !== undefined ? { detail: hit.detail } : {}),
+    ...(hit.about.length > 0 ? { about: hit.about } : {}),
+    ...(hit.snippet !== '' ? { snippet: hit.snippet } : {}),
+    // The path of the scope that holds it, where that is not the one asked
+    // about: read it there by passing it as `scope`.
+    ...(elsewhere ? { scopePath: hit.scope } : {}),
+  }
+  switch (hit.kind) {
+    case 'element':
+      return { ...line, elementId: hit.id, name: hit.title, elementKind: hit.variant }
+    case 'documentation':
+      return { ...line, elementId: hit.id, name: hit.title, snippet: hit.snippet }
+    case 'plan':
+      return { ...line, planId: hit.id }
+    case 'decision': {
+      const own = hit.scope === view.scopePath ? decisionsOf(view.model)[hit.id] : undefined
+      const adr = own ?? view.ancestorDecisions.find((held) => held.id === hit.id)
+      return {
+        ...line,
+        adrId: hit.id,
+        // `above` is what the app calls a record from a scope above this
+        // one since the three decision lists became one (ADR-0012 §7); the
+        // protocol still says `group`, which `decisions.list`'s own `scope`
+        // enum says too. Both change together, in the agent's own stretch.
+        scope: own ? (own.subjectId ? 'application' : 'landscape') : 'group',
+        ...(adr ? { number: adr.number } : {}),
+        ...(adr?.subjectId ? { subjectId: adr.subjectId, subjectName: hit.about[0] } : {}),
+        snippet: hit.snippet,
+      }
+    }
+    default:
+      return line
   }
 }

@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * Everything a query is matched against, folded once.
+ * The element finder's haystack, folded once.
  *
  * Both searches used to fold their haystack inside the loop: `matchesQuery`
  * lowercases and strips accents from an element's fields — and, for ⌘K, from
@@ -12,7 +12,9 @@
  * with the project while the typing does not.
  *
  * So the folding moves here and happens once. What is left in the search
- * proper is a token test against a string that is already folded.
+ * proper is a token test against a string that is already folded. ⌘K has an
+ * index of its own now, over every kind of record (`recordIndex.ts`); this
+ * one is ⌘F's, which also wants to know where an element is drawn.
  *
  * **The rule of "found" does not change.** `matchesQuery` is still the
  * definition — fold case and diacritics, every whitespace-separated token must
@@ -25,7 +27,7 @@
  * is cached on the model's identity, so a run of keystrokes in the search field
  * builds nothing. When the model IS replaced — the reducer hands back a new one
  * for every command — the per-row folds come back out of a `WeakMap` keyed on
- * the element and the decision themselves, and a command touches the path it
+ * the element itself, and a command touches the path it
  * names (ADR-0002), so renaming one element re-folds one element. Nothing here
  * needs a size limit or an eviction rule: what the model has dropped, the
  * collector takes.
@@ -35,17 +37,9 @@
  * can stop when it has them instead of matching two thousand and sorting the
  * result.
  */
-import type { Adr } from '../decisions/adr'
 import { placedNodes } from '../model/placement';
 import type { DesignDiagram, DesignElement, ElementId } from '../model/types'
 import { fold } from '../model'
-
-/**
- * Where a record was found: a scope above this one, this scope itself, or one
- * subject in it (ADR-0012 §7). `above` was `group` while there was one list
- * over the open scope and it was the group's.
- */
-export type AdrScope = 'above' | 'landscape' | 'application'
 
 /** One element, with its haystacks already folded. */
 export type ElementEntry = {
@@ -54,18 +48,6 @@ export type ElementEntry = {
   fields: string
   /** The name on its own, folded — the starts-with tier reads this. */
   name: string
-  /** The description folded, or `''` when the element has none. */
-  description: string
-}
-
-/** One decision record, with its haystacks already folded. */
-export type AdrEntry = {
-  adr: Adr
-  scope: AdrScope
-  /** Title, body and signer names, joined and folded. */
-  fields: string
-  /** The title on its own, folded — a title match shows no snippet. */
-  title: string
 }
 
 /** Where an element is drawn, for the finder's ranking. */
@@ -79,9 +61,6 @@ export type ElementPlaces = {
 export type SearchIndex = {
   /** In name order; see the note about the early exit at the top. */
   elements: readonly ElementEntry[]
-  /** The project's own decisions, landscape and application, in model order. */
-  decisions: readonly AdrEntry[]
-  names: ReadonlyMap<ElementId, string>
   places: ElementPlaces
 }
 
@@ -126,7 +105,6 @@ export function bestMatches<T>(
 export type IndexableModel = {
   elements: readonly DesignElement[]
   diagrams: readonly DesignDiagram[]
-  decisions?: readonly Adr[]
 }
 
 /** The index for a model, built on first use and kept for as long as the model is. */
@@ -138,25 +116,8 @@ export function searchIndex(model: IndexableModel): SearchIndex {
   return built
 }
 
-/**
- * An ancestor's records, indexed (ADR-0012 §7).
- *
- * Separate because they arrive separately — they belong to a scope above this
- * one, read up the tree rather than held on this model — and because the list
- * usually outlives several models.
- */
-export function ancestorDecisionIndex(decisions: readonly Adr[]): readonly AdrEntry[] {
-  const held = groupIndexes.get(decisions)
-  if (held) return held
-  const built = decisions.map((adr) => adrEntry(adr, 'above'))
-  groupIndexes.set(decisions, built)
-  return built
-}
-
 const indexes = new WeakMap<IndexableModel, SearchIndex>()
-const groupIndexes = new WeakMap<readonly Adr[], readonly AdrEntry[]>()
 const elementEntries = new WeakMap<DesignElement, ElementEntry>()
-const adrEntries = new WeakMap<Adr, AdrEntry>()
 
 /**
  * One collator rather than `localeCompare` per comparison: sorting a few
@@ -182,9 +143,6 @@ function build(model: IndexableModel): SearchIndex {
 
   return {
     elements,
-    decisions: (model.decisions ?? []).map((adr) =>
-      adrEntry(adr, adr.subjectId ? 'application' : 'landscape')),
-    names: new Map(model.elements.map((e) => [e.id, e.name])),
     places: { carries, first },
   }
 }
@@ -197,26 +155,8 @@ function elementEntry(element: DesignElement): ElementEntry {
     fields: fold([element.name, element.category, element.vendor, element.technology]
       .filter(Boolean).join(' ')),
     name: fold(element.name),
-    description: element.description ? fold(element.description) : '',
   }
   elementEntries.set(element, entry)
   return entry
 }
 
-/**
- * A record's scope is not a property of the record — the same shape appears in
- * a group's list and in a project's — so a cached entry is only reused for the
- * scope it was built under.
- */
-function adrEntry(adr: Adr, scope: AdrScope): AdrEntry {
-  const held = adrEntries.get(adr)
-  if (held && held.scope === scope) return held
-  const entry: AdrEntry = {
-    adr,
-    scope,
-    fields: fold([adr.title, adr.body, ...adr.signers.map((s) => s.name)].filter(Boolean).join(' ')),
-    title: fold(adr.title),
-  }
-  adrEntries.set(adr, entry)
-  return entry
-}

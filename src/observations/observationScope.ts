@@ -23,6 +23,9 @@ export const IMPACT_COLOR: Record<ObservationImpact, 'default' | 'warning' | 'er
   critical: 'error',
 }
 
+/** What an archived observation is marked with, in a list that shows the impact otherwise. */
+export const ARCHIVED_LABEL: StringKey = 'observation.archivedMark'
+
 export const STATE_LABEL: Record<CauseState, StringKey> = {
   assumed: 'observation.stateAssumed',
   verified: 'observation.stateVerified',

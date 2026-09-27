@@ -55,7 +55,7 @@ export function useWorkspaceAgentView(deps: {
     session, scope, indexRef, rowsElsewhereRef, scopes, projects, ancestorRecords, readOnly, documentStatus,
     renderer, save, pages, showElement, openDocumentation, makeId, today, s, onAgentSession,
   } = deps
-  const { page, openView, openDecisions, openRoadmap, closePages, openPlatformReport, openServiceReport } = pages
+  const { page, openView, openDecisions, openObservations, openRoadmap, closePages, openPlatformReport, openServiceReport } = pages
   const openPlan = pages.plans.openPlan
   const agentView = useMemo<WorkspaceAgentView>(() => ({
     ...throughSession(session),
@@ -84,7 +84,7 @@ export function useWorkspaceAgentView(deps: {
     tree: agentTree({ session, scope, indexRef, rowsElsewhereRef, scopes, projects }),
   }), [
     session, scope, ancestorRecords, documentStatus, readOnly, makeId, today, s, renderer, save, scopes, projects,
-    page, openPlan, openView, openDecisions, openRoadmap, closePages, showElement, openDocumentation,
+    page, openPlan, openView, openDecisions, openObservations, openRoadmap, closePages, showElement, openDocumentation,
     openPlatformReport, openServiceReport, indexRef, rowsElsewhereRef,
   ])
   useEffect(() => {
@@ -95,14 +95,15 @@ export function useWorkspaceAgentView(deps: {
 
 /**
  * Show a view or a page of the open scope, as the agent asks for one
- * (ADR-0019). The destination has been checked against the model already.
+ * (ADR-0019) and as a search hit opens one (ADR-0029). The destination has
+ * been checked against the model already.
  */
-function showOn(
+export function showOn(
   pages: WorkspacePages,
   showElement: (id: string) => void,
   openDocumentation: (elementId?: string, diagramId?: string) => void,
 ): WorkspaceAgentView['show'] {
-  const { openView, openDecisions, openRoadmap, closePages, openPlatformReport, openServiceReport } = pages
+  const { openView, openDecisions, openObservations, openRoadmap, closePages, openPlatformReport, openServiceReport } = pages
   const openPlan = pages.plans.openPlan
   return (to: Destination & { scope: string }) => {
     switch (to.page) {
@@ -110,6 +111,9 @@ function showOn(
         if (to.id !== undefined) openView(to.id)
         break
       case 'decisions': openDecisions(to.id); break
+      // It fell through to closing every page, so `app.open` on the
+      // observations of the scope already open landed on the canvas.
+      case 'observations': openObservations(to.id); break
       case 'roadmap': openRoadmap(); break
       case 'plan': openRoadmap(); if (to.id !== undefined) openPlan(to.id); break
       case 'element': closePages(); if (to.id !== undefined) showElement(to.id); break

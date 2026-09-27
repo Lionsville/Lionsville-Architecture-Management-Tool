@@ -3,13 +3,13 @@
 
 import { describe, expect, it } from 'vitest'
 import { placedNodes } from '../model/placement';
-import { bestMatches, ancestorDecisionIndex, matchesTokens, NO_MATCH, searchIndex } from './searchIndex'
-import { searchAll } from './search'
+import { bestMatches, matchesTokens, NO_MATCH, searchIndex } from './searchIndex'
+import { scopeSources, searchAll } from './search'
+import type { SearchKind } from '../model/searchable'
 import { searchElements, SEARCH_RESULT_LIMIT } from './elementSearch'
 import { fold, matchesQuery, queryTokens } from '../model/textSearch'
 import { syntheticModel } from '../model/testing/synthetic'
 import type { DesignElement, DesignModel } from '../model/types'
-import type { Adr } from '../decisions/adr'
 
 /**
  * The index folds the haystack ahead of time, which is a change to WHEN the
@@ -72,15 +72,6 @@ describe('the index', () => {
     expect(places.first.get(model.elements[0].id)?.id).toBe('landscape')
   })
 
-  it('indexes an ancestor\'s records apart from this scope\'s', () => {
-    const records: Adr[] = [{
-      id: 'g1', number: 1, title: 'Use one identity provider', status: 'accepted',
-      date: '2026-01-01', body: 'Context.', signers: [],
-    }]
-    const indexed = ancestorDecisionIndex(records)
-    expect(indexed).toBe(ancestorDecisionIndex(records))
-    expect(indexed[0].scope).toBe('above')
-  })
 })
 
 describe('taking the best matches', () => {
@@ -146,12 +137,14 @@ function naiveFinder(query: string, activeDiagramId: string): string[] {
 
 const QUERIES = ['bill', 'billing gateway', 'kestrel', 'go', 'z', 'order to cash', 'a', 'ledger 3']
 
+/** ⌘K's hits of one kind, by id. */
+const found = (query: string, kind: SearchKind) => searchAll({ sources: scopeSources({ model }), query })
+  .filter((hit) => hit.kind === kind)
+  .map((hit) => hit.id)
+
 describe('the same answers as the filter and sort it replaced', () => {
   it.each(QUERIES)('finds the same elements for %j', (query) => {
-    const found = searchAll({ model, ancestorDecisions: [], query })
-      .filter((hit) => hit.kind === 'element')
-      .map((hit) => hit.elementId)
-    expect(found).toEqual(naiveElements(query, 8))
+    expect(found(query, 'element')).toEqual(naiveElements(query, 8))
   })
 
   it.each(QUERIES)('finds the same elements from the canvas for %j', (query) => {
@@ -160,26 +153,29 @@ describe('the same answers as the filter and sort it replaced', () => {
   })
 
   it.each(QUERIES)('finds the same documentation for %j', (query) => {
-    const found = searchAll({ model, ancestorDecisions: [], query })
-      .filter((hit) => hit.kind === 'documentation')
-      .map((hit) => hit.elementId)
     const expected = model.elements
       .filter((e) => e.description && matchesQuery(query, [e.description]))
       .sort((a, b) => a.name.localeCompare(b.name))
       .slice(0, 8)
       .map((e) => e.id)
-    expect(found).toEqual(expected)
+    expect(found(query, 'documentation')).toEqual(expected)
   })
 
+  // Decisions gained the two bands elements always had — a title that starts
+  // with the query first — and their label as a field (`ADR-0003`), when every
+  // kind came to be searched the same way (ADR-0029).
   it.each(QUERIES)('finds the same decisions for %j', (query) => {
-    const found = searchAll({ model, ancestorDecisions: [], query })
-      .filter((hit) => hit.kind === 'adr')
-      .map((hit) => hit.adrId)
+    const folded = fold(query.trim())
+    const band = (title: string) => (fold(title).startsWith(folded) ? 0 : 1)
     const expected = (model.decisions ?? [])
-      .filter((adr) => matchesQuery(query, [adr.title, adr.body, ...adr.signers.map((s) => s.name)]))
+      .filter((adr) => matchesQuery(query, [
+        `ADR-${String(adr.number).padStart(4, '0')}`, adr.title, ...adr.signers.map((s) => s.name), adr.body,
+      ]))
+      .map((adr, at) => ({ adr, at }))
+      .sort((a, b) => band(a.adr.title) - band(b.adr.title) || a.at - b.at)
       .slice(0, 8)
-      .map((adr) => adr.id)
-    expect(found).toEqual(expected)
+      .map(({ adr }) => adr.id)
+    expect(found(query, 'decision')).toEqual(expected)
   })
 
   it('ranks an element on the open diagram above one that is not', () => {

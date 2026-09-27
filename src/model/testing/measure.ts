@@ -41,9 +41,18 @@
  * | history: restore one diagram | 1.2 ms | 50 ms |
  * | history: restore the whole project | 18 ms | 500 ms |
  * | the index over twenty scopes of the large fixture | 7.6 ms | 500 ms |
+ * | search: every kind re-indexed after one step | 4.2 ms | 20 ms |
+ * | search: twenty scopes folded after the tree was read | 116 ms | 500 ms |
+ * | search: one keystroke across twenty scopes, no early exit | 7.2 ms | 20 ms |
  *
- * The last row was measured 12 September 2026 (ADR-0012 §2), on the same
+ * The index row was measured 12 September 2026 (ADR-0012 §2), on the same
  * machine, over twenty copies of the `large` fixture under twenty paths.
+ *
+ * The three search rows were measured 27 September 2026 (ADR-0029), on the
+ * same machine: the `large` fixture with 400 observations, 200 causes, 150
+ * solutions, 100 experiments and 100 plans of two milestones beside it, and
+ * twenty copies of it as the tree's thin read has them — no element prose.
+ * The one-keystroke rows above it held at 0.3–0.4 ms with every kind in.
  *
  * The three history rows were measured 8 September 2026 (ADR-0008), on the
  * same machine and fixture. Measuring them is what found `placement.set`

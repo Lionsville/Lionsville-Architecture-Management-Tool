@@ -35,7 +35,7 @@ import { useSheet } from './useSheet'
 import { useShowElement } from './useShowElement'
 import { useTechnologyLandscape } from './useTechnologyLandscape'
 import { useTreeReadings } from './useTreeReadings'
-import { useWorkspaceAgentView } from './useWorkspaceAgentView'
+import { showOn, useWorkspaceAgentView } from './useWorkspaceAgentView'
 import { useInitialPage, useWorkspaceCommands } from './useWorkspaceCommands'
 import { useScopeSessionSeam, useWorkspaceDocument } from './useWorkspaceDocument'
 import { useWorkspaceFiles } from './useWorkspaceFiles'
@@ -263,9 +263,13 @@ function useScreenParts(
     initialPage: navigation.initialPage, pages, createSheet: base.sheets.create, showElement: showElement.show,
     openDocumentation: requests.openDocumentation, gestures: tree.gestures,
   })
+  const show = useMemo(
+    () => showOn(pages, showElement.show, requests.openDocumentation),
+    [pages, showElement.show, requests.openDocumentation],
+  )
   const dialogs = useWorkspaceDialogs({
     session, settings: props.settings, diagnostics: host.diagnostics, notify, s,
-    focusElement: requests.focusElement, openDocumentation: requests.openDocumentation, openDecisions: pages.openDecisions,
+    scope: project.path, show, ...(navigation.onOpenScope ? { onOpenScope: navigation.onOpenScope } : {}),
   })
   const analysis = useAnalysisActions({ session, makeId, today, s })
   return { snapshots, toolbarRef, pageChrome, todayDay, today, viewing, pages, dialogs, analysis }
