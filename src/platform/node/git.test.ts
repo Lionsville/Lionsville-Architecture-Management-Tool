@@ -236,7 +236,7 @@ describe.skipIf(!available)('git in a working directory', () => {
  * exactly the things a double would agree with whatever this file believed.
  */
 import {
-  excludeLocalSettings, pull, push, remote, resolve,
+  excludeLocalSettings, gitEnvironment, pull, push, remote, resolve,
 } from './git'
 import { LOCAL_SETTINGS_PATH } from '../../projects/folderSettings'
 
@@ -397,6 +397,35 @@ describe.skipIf(!available)('the remote', () => {
     // And it fast-forwards for everyone else.
     expect(await push(root)).toBe('done')
     expect(await sh(bare, ['rev-parse', 'main'])).toBe(await sh(root, ['rev-parse', 'HEAD']))
+  })
+
+  it('runs the ssh the process names rather than its own', async () => {
+    // An unattended process names its key through `GIT_SSH_COMMAND`; the quiet
+    // environment used to write over it, and the push went out with no key.
+    const called = join(bare, 'ssh-was-called')
+    const fake = join(bare, 'fake-ssh.sh')
+    await writeFile(fake, `#!/bin/sh\necho "$@" > '${called}'\nexit 1\n`, { mode: 0o755 })
+    const before = process.env.GIT_SSH_COMMAND
+    process.env.GIT_SSH_COMMAND = `'${fake}'`
+    try {
+      await initRepository(root)
+      await sh(root, ['remote', 'add', 'origin', 'ssh://git@host.invalid/folder.git'])
+      await project('scope.json', '{}')
+      await snapshot(root, 'One')
+      expect(await push(root)).toBe('unreachable')
+      expect(await readFile(called, 'utf8')).toContain('host.invalid')
+    } finally {
+      if (before === undefined) delete process.env.GIT_SSH_COMMAND
+      else process.env.GIT_SSH_COMMAND = before
+    }
+  })
+
+  it('asks nothing of an ssh the process does not name', () => {
+    expect(gitEnvironment({ PATH: '/bin' })).toEqual({
+      PATH: '/bin', GIT_TERMINAL_PROMPT: '0', GIT_OPTIONAL_LOCKS: '0', GIT_SSH_COMMAND: 'ssh -o BatchMode=yes',
+    })
+    expect(gitEnvironment({ GIT_SSH_COMMAND: ' ' }).GIT_SSH_COMMAND).toBe('ssh -o BatchMode=yes')
+    expect(gitEnvironment({ GIT_SSH_COMMAND: 'ssh -i key' }).GIT_SSH_COMMAND).toBe('ssh -i key')
   })
 
   it('leaves the folder as it was when resolving is refused', async () => {

@@ -77,6 +77,16 @@ network each of those was a request the first paint stood in line behind,
 for an answer this machine does not act on. Absent is the folder's own
 setting, as it always was, and the three sources that ship leave it absent.
 
+**Amended 27 September 2026: an `ssh` the process names is kept.** Every
+git this app runs still has `GIT_TERMINAL_PROMPT=0`, and `GIT_SSH_COMMAND`
+is `ssh -o BatchMode=yes` — *unless the process was started with a
+`GIT_SSH_COMMAND` of its own*, which is then used as it is
+(`gitEnvironment` in `src/platform/node/git.ts`). A process that runs
+unattended names its deploy key that way, and writing over it sent every push
+out with no key; whoever sets it has chosen the key and the host file and
+keeps it from asking. A desktop started from the dock or the start menu is
+given no such variable, and nothing changes for it.
+
 **Amended 26 September 2026: three languages, and a Frisian already chosen
 reads as Dutch.** The language this record keeps in the person's preferences
 is one of **English, Dutch and German**. Frisian was withdrawn because it

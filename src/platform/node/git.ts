@@ -109,7 +109,21 @@ const UNIT = '\x1f'
 const QUIET_ENV = {
   GIT_TERMINAL_PROMPT: '0',
   GIT_OPTIONAL_LOCKS: '0',
-  GIT_SSH_COMMAND: 'ssh -o BatchMode=yes',
+}
+
+/** The `ssh` git runs when the process names none: one that never asks. */
+const QUIET_SSH = 'ssh -o BatchMode=yes'
+
+/**
+ * The environment every git here runs in. An `ssh` command the process was
+ * already given is kept: whoever set it chose the key and the host file, and
+ * took on keeping it from asking — a process that runs unattended with a key
+ * of its own names it this way, and overwriting it would push with no key at
+ * all. Where none is set, the quiet one above.
+ */
+export function gitEnvironment(from: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
+  const ssh = from.GIT_SSH_COMMAND?.trim() ? from.GIT_SSH_COMMAND : QUIET_SSH
+  return { ...from, ...QUIET_ENV, GIT_SSH_COMMAND: ssh }
 }
 
 type GitError = Error & { stderr?: string; killed?: boolean; signal?: string; code?: number | string }
@@ -120,7 +134,7 @@ async function git(root: string, args: readonly string[], timeout = TIMEOUT_MS):
     timeout,
     maxBuffer: MAX_OUTPUT,
     windowsHide: true,
-    env: { ...process.env, ...QUIET_ENV },
+    env: gitEnvironment(),
   })
   return stdout
 }
