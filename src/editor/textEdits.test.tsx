@@ -69,6 +69,11 @@ function renderEditor() {
 
 const node = (id: string) => document.querySelector(`.react-flow__node[data-id="${id}"]`) as HTMLElement;
 const inspector = () => screen.getByRole('complementary', { name: 'Inspector' });
+/**
+ * One change per keystroke, as a person's typing arrives. A few letters are
+ * a run as surely as a sentence is, and every one of them re-renders the whole
+ * editor, so the words below are short on purpose.
+ */
 const type = (field: HTMLElement, text: string) => {
   for (let i = 1; i <= text.length; i += 1) {
     fireEvent.change(field, { target: { value: text.slice(0, i) } });
@@ -81,13 +86,13 @@ describe('typing into a field', () => {
     fireEvent.click(node('a1'));
     const name = within(inspector()).getByLabelText('Name');
 
-    type(name, 'Storefront');
+    type(name, 'Shop');
 
     // Live in the model — that is what the canvas draws from.
-    expect(host.current.model.elements[0].name).toBe('Storefront');
-    expect(host.current.commands).toHaveLength('Storefront'.length);
+    expect(host.current.model.elements[0].name).toBe('Shop');
+    expect(host.current.commands).toHaveLength('Shop'.length);
 
-    // …and one step, not ten.
+    // …and one step, not four.
     act(() => host.current.history.undo());
     expect(host.current.model.elements[0].name).toBe('Webshop');
     expect(host.current.history.canUndo).toBe(false);
@@ -96,24 +101,24 @@ describe('typing into a field', () => {
   it('redoes the whole sentence too', () => {
     const { host } = renderEditor();
     fireEvent.click(node('a1'));
-    type(within(inspector()).getByLabelText('Name'), 'Storefront');
+    type(within(inspector()).getByLabelText('Name'), 'Shop');
 
     act(() => host.current.history.undo());
     act(() => host.current.history.redo());
-    expect(host.current.model.elements[0].name).toBe('Storefront');
+    expect(host.current.model.elements[0].name).toBe('Shop');
   });
 
   it('keeps two fields apart: each is its own step', () => {
     const { host } = renderEditor();
     fireEvent.click(node('a1'));
-    type(within(inspector()).getByLabelText('Name'), 'Storefront');
+    type(within(inspector()).getByLabelText('Name'), 'Shop');
     // The description: the other field the panel still types into since the
     // record (vendor, owner, dates) moved to the page.
-    type(within(inspector()).getByLabelText('Description'), 'Sells things.');
+    type(within(inspector()).getByLabelText('Description'), 'Sells');
 
     act(() => host.current.history.undo());
     expect(host.current.model.elements[0].description).toBeUndefined();
-    expect(host.current.model.elements[0].name).toBe('Storefront');
+    expect(host.current.model.elements[0].name).toBe('Shop');
 
     act(() => host.current.history.undo());
     expect(host.current.model.elements[0].name).toBe('Webshop');
@@ -122,35 +127,35 @@ describe('typing into a field', () => {
   it('keeps the same field on two elements apart', () => {
     const { host } = renderEditor();
     fireEvent.click(node('a1'));
-    type(within(inspector()).getByLabelText('Name'), 'Storefront');
+    type(within(inspector()).getByLabelText('Name'), 'Shop');
     fireEvent.click(node('b1'));
-    type(within(inspector()).getByLabelText('Name'), 'Order service');
+    type(within(inspector()).getByLabelText('Name'), 'Hub');
 
     act(() => host.current.history.undo());
     expect(host.current.model.elements[1].name).toBe('Orders');
-    expect(host.current.model.elements[0].name).toBe('Storefront');
+    expect(host.current.model.elements[0].name).toBe('Shop');
   });
 
   it('starts a new step when something else happens in between', () => {
     const { host } = renderEditor();
     fireEvent.click(node('a1'));
     const name = () => within(inspector()).getByLabelText('Name');
-    type(name(), 'Store');
+    type(name(), 'Sh');
     // A change of a different kind: the run is over.
     fireEvent.click(within(inspector()).getByRole('switch', { name: 'Managed' }));
-    type(name(), 'Storefront');
+    type(name(), 'Shop');
 
     act(() => host.current.history.undo());
-    expect(host.current.model.elements[0].name).toBe('Store');
+    expect(host.current.model.elements[0].name).toBe('Sh');
   });
 
   it('does the same for a connection label', async () => {
     const { host } = renderEditor();
     await measured();
     fireEvent.click(screen.getByTestId('rf__edge-c1'));
-    type(within(inspector()).getByLabelText('Label'), 'Sends orders');
+    type(within(inspector()).getByLabelText('Label'), 'Sends');
 
-    expect(host.current.model.relations[0].label).toBe('Sends orders');
+    expect(host.current.model.relations[0].label).toBe('Sends');
     act(() => host.current.history.undo());
     expect(host.current.model.relations[0].label).toBeUndefined();
     expect(host.current.history.canUndo).toBe(false);
