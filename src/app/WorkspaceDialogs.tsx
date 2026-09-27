@@ -12,6 +12,7 @@ import { ConfirmDialog } from '../widgets/ConfirmDialog'
 import { GlobalSearchDialog } from '../search/ui/GlobalSearchDialog'
 import { treeSources } from '../search/search'
 import type { SearchHit } from '../search/search'
+import { flattenScopes } from '../projects/scope'
 import type { ScopePath } from '../projects/scopePath'
 import type { ScopeSnapshot } from '../projects/scope'
 import { HistoryPage } from './history/lazyHistoryPage'
@@ -173,6 +174,12 @@ export function WorkspaceDialogs({ parts }: { parts: WorkspaceParts }) {
     ...(scopeModels ? { tree: scopeModels } : {}),
     masterOf: (id) => index.lookup(id)?.master,
   }), [props.project.path, session.model, ancestorDecisions, scopeModels, index])
+  /** A hit's scope by its name where the listing has one, which is what a person calls it. */
+  const pathLabel = readings.scopeLabel
+  const scopeLabel = useMemo(() => {
+    const names = new Map(flattenScopes(props.tree.scopes).map((one) => [one.path, one.name]))
+    return (path: string) => names.get(path) || pathLabel(path)
+  }, [props.tree.scopes, pathLabel])
   return (
     <>
       <ChooseBoardDialog
@@ -194,7 +201,7 @@ export function WorkspaceDialogs({ parts }: { parts: WorkspaceParts }) {
       <GlobalSearchDialog
         open={dialogs.searchOpen}
         sources={sources}
-        scopeLabel={readings.scopeLabel}
+        scopeLabel={scopeLabel}
         onClose={() => dialogs.setSearchOpen(false)}
         onChoose={dialogs.chooseHit}
         s={s}
