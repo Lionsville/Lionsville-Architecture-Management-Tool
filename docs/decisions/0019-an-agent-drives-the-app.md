@@ -40,9 +40,8 @@ each of them then sees a screen the other did not expect.
   cannot interrupt a client; what it can do is answer the next call with a
   refusal it will read. And a call in flight when Stop is pressed must be
   answered the same way at once, not left to finish and report success.
-* **One address.** The private plan has a step for *one address for
-  everything*: a scope path, a page and an id. The agent's destination should
-  be that triple, not a second grammar.
+* **One address.** A place in the app is a scope path, a page and an id. The
+  agent's destination should be that triple, not a second grammar.
 
 ## Considered Options
 

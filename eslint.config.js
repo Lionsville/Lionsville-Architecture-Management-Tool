@@ -373,9 +373,9 @@ const TRANSLATION_SLICES = [
  * THE SIZE OF A UNIT.
  *
  * A function's cyclomatic complexity at most 25, and at most 150 lines of
- * code, not counting blank lines and comments. Step 49 took the five units
- * that held the product's decision logic from 155, 150, 128, 127 and 115 down
- * to single figures by dispatching on a table and extracting the pieces; this
+ * code, not counting blank lines and comments. On 26 September 2026 the five units
+ * that held the product's decision logic went from 155, 150, 128, 127 and 115
+ * down to single figures by dispatching on a table and extracting the pieces; this
  * is what keeps that from growing back, and keeps the next one from starting.
  * Tests are held to the complexity and not to the length: a `describe` is one
  * function as long as its cases, and so is the desktop's smoke run.

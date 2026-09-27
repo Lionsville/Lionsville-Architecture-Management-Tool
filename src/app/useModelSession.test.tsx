@@ -395,7 +395,7 @@ describe('useModelSession — undo and redo', () => {
 })
 
 /**
- * A change can be made somewhere other than this keyboard (step 24a). The
+ * A change can be made somewhere other than this keyboard (ADR-0022). The
  * session is still the one door it comes through: the same reducer, the same
  * stack, the same Activity list — with two differences that are the whole
  * point. It is marked as somebody else's, and ⌘Z steps over it.

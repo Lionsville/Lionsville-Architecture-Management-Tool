@@ -273,7 +273,8 @@ platform. The two reports stay reports.
   once a tree spans more than one enterprise.
 * **Versions of an offering** — *Managed Postgres 14* and *15* as one
   service or two — which the first organisation running two decides.
-* **What ArchiMate's technology layer maps to now** (step 16): the
+* **What ArchiMate's technology layer maps to now**, for an exchange with
+  ArchiMate when there is one: the
   archetype gives node, technology service and network, and
   `platformService` gives the technology service. Decide it there, against
   a real file.
