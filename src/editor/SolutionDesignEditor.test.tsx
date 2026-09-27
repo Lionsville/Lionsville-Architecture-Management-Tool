@@ -6,7 +6,7 @@ import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { diagramWithRoutes, edgeRoutesOf } from '../model/routes';
 import { placedNodes } from '../model/placement';
 import { laidOut } from '../model/testFixtures';
-import { cleanup, createEvent, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, createEvent, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach } from 'vitest';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { HostedEditor } from './testing/editorHost';
@@ -699,14 +699,22 @@ describe('SolutionDesignEditor — line labels hidden', () => {
     expect(chip.textContent).toContain('Sends orders');
 
     // Leaving is deferred a beat so the chip can be reached from the line;
-    // stepping onto the chip keeps it.
-    fireEvent.mouseLeave(path);
-    fireEvent.mouseEnter(chip);
-    await new Promise((resolve) => setTimeout(resolve, 200));
-    expect(screen.getByTestId('edge-label-c1')).toBeDefined();
+    // stepping onto the chip keeps it. The beat is a timer, so the clock is
+    // the test's from here: a second of it passes in no time at all, and
+    // well past the beat either way.
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      fireEvent.mouseLeave(path);
+      fireEvent.mouseEnter(chip);
+      act(() => { vi.advanceTimersByTime(1_000); });
+      expect(screen.getByTestId('edge-label-c1')).toBeDefined();
 
-    fireEvent.mouseLeave(chip);
-    await waitFor(() => expect(screen.queryByTestId('edge-label-c1')).toBeNull());
+      fireEvent.mouseLeave(chip);
+      act(() => { vi.advanceTimersByTime(1_000); });
+      expect(screen.queryByTestId('edge-label-c1')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('puts a hovered label where the pointer is, and follows it along the line', async () => {
