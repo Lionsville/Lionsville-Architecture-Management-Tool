@@ -92,53 +92,60 @@ async function recordOf(id: string) {
   await screen.findByTestId('element-record')
 }
 
+/** A screen, the names that are on it, and how it is reached from where the journey stands. */
+type Screen = readonly [string, readonly ControlName[], () => Promise<void>]
+
 /**
- * Each screen, the names that are on it, and how it is reached. The union is
- * held to the list below, so a name added to the list without a screen here
- * fails as surely as a name taken off a screen.
+ * Each journey through the app, one render apiece: the first screen of a
+ * journey draws the app, and each after it is reached from the one before, by
+ * the press a person makes there. A journey is what saves drawing the whole
+ * example again for a screen one click away from the last (on the runner, a
+ * board is seconds). The screens after the first add names the ones before
+ * them do not draw, so a name held over from an earlier screen cannot answer
+ * for a later one. The union is held to the list below, so a name added to
+ * the list without a screen here fails as surely as a name taken off a screen.
  */
-const SCREENS: readonly [string, readonly ControlName[], () => Promise<void>][] = [
-  ['the organisation’s home', [
+const JOURNEYS: readonly (readonly Screen[])[] = [
+  [['the organisation’s home', [
     'shell.crumbs', 'org.tree', 'org.tree.row', 'org.newScope', 'org.cards', 'org.card.business', 'org.card.map',
     'org.card.decisions', 'org.card.observations', 'org.card.roadmap', 'org.card.register',
     'org.card.technology', 'org.card.landscape', 'org.attention', 'org.attentionMore',
   ], async () => {
     show(false)
     await screen.findByTestId('organisation-name')
-  }],
-  ['a landscape’s home', ['org.boards', 'org.newBoard'], async () => {
+  }]],
+  [['a landscape’s home', ['org.boards', 'org.newBoard'], async () => {
     show(false)
     fireEvent.click(await screen.findByTestId(`home-${landscape.path}`))
     await screen.findByTestId('boards')
-  }],
-  ['the register', [
+  }]],
+  [['the register', [
     'register.row', 'register.colMaster', 'register.colDrawn', 'register.colFindings', 'register.openRow',
   ], async () => {
     show(false)
     fireEvent.click(await screen.findByTestId('open-register'))
     await screen.findByTestId('register-table')
-  }],
-  ['the technology register', [
+  }]],
+  [['the technology register', [
     'technologyRegister.row', 'technologyRegister.colMaster', 'technologyRegister.colFindings',
     'technologyRegister.openRow',
   ], async () => {
     show(false)
     fireEvent.click(await screen.findByTestId('open-technology'))
     await screen.findByTestId('technology-register-table')
-  }],
-  ['a landscape open on its board', [
+  }]],
+  [['a landscape open on its board', [
     'shell.crumbs', 'shell.activity', 'board.canvas', 'board.palette', 'board.library', 'board.inspector',
   ], onBoard],
   ['a line being drawn', ['board.connect'], async () => {
-    await onBoard()
     const card = await selectCard('billing')
     fireEvent.keyDown(card, { key: 'F10', shiftKey: true })
     const menu = await screen.findByRole('menu', { name: 'Element menu' })
     fireEvent.click(within(menu).getByRole('menuitem', { name: /Start connection to/ }))
-  }],
-  ['an application’s record', ['record.replace', 'record.uses'], () => recordOf('billing')],
-  ['an outside application’s record', ['record.party'], () => recordOf('payments')],
-  ['the business architecture, a capability chosen', [
+  }]],
+  [['an application’s record', ['record.replace', 'record.uses'], () => recordOf('billing')]],
+  [['an outside application’s record', ['record.party'], () => recordOf('payments')]],
+  [['the business architecture, a capability chosen', [
     'sheet.canvas', 'sheet.unmapped', 'sheet.inspector', 'sheet.coverage', 'sheet.supportedBy', 'sheet.doneBy',
   ], async () => {
     show(false)
@@ -146,32 +153,31 @@ const SCREENS: readonly [string, readonly ControlName[], () => Promise<void>][] 
     await screen.findByTestId('sheet-canvas')
     await waitFor(() => expect(document.querySelector('[data-testid^="sheet-capability-"]')).not.toBeNull())
     fireEvent.click(document.querySelector<HTMLElement>('[data-testid^="sheet-capability-"]')!)
-  }],
-  ['the enterprise map', ['map.grid', 'map.summary'], async () => {
+  }]],
+  [['the enterprise map', ['map.grid', 'map.summary'], async () => {
     show(false)
     fireEvent.click(await screen.findByTestId('open-map'))
-  }],
-  ['the observations, one of them read', [
+  }]],
+  // The register lists the solutions under its observations, so the proven
+  // one is read from there before the tabs are changed.
+  [['the observations, one of them read', [
     'observations.tabRegister', 'observations.tabAnalysis', 'observations.tabSolutions', 'observations.register',
     'observations.new', 'observations.newCause', 'observation.seenAgain', 'observation.merge',
   ], async () => {
     const dialog = await page('Observations')
     fireEvent.click((await within(dialog).findAllByTestId(/^observation-row-/))[0])
   }],
-  ['the analysis', ['observations.picture'], async () => {
-    const dialog = await page('Observations')
-    fireEvent.click(await within(dialog).findByTestId('observation-tab-analysis'))
-  }],
-  ['the solutions', ['solutions.new', 'solutions.phases'], async () => {
-    const dialog = await page('Observations')
-    fireEvent.click(await within(dialog).findByTestId('observation-tab-solutions'))
-  }],
   ['a proven solution, read', ['solution.planExperiment', 'solution.decide'], async () => {
-    const dialog = await page('Observations')
-    const list = await within(dialog).findByTestId('solution-list')
+    const list = await within(screen.getByRole('dialog')).findByTestId('solution-list')
     fireEvent.click(within(list).getAllByRole('button').find((one) => /carrier onboarding kit/i.test(one.textContent ?? ''))!)
   }],
-  ['the decisions, one from above read', [
+  ['the analysis', ['observations.picture'], async () => {
+    fireEvent.click(await within(screen.getByRole('dialog')).findByTestId('observation-tab-analysis'))
+  }],
+  ['the solutions', ['solutions.new', 'solutions.phases'], async () => {
+    fireEvent.click(await within(screen.getByRole('dialog')).findByTestId('observation-tab-solutions'))
+  }]],
+  [['the decisions, one from above read', [
     'decisions.list', 'decisions.new', 'decisions.fromAbove', 'decision.status', 'decision.signers',
   ], async () => {
     const dialog = await page('Decisions')
@@ -179,35 +185,38 @@ const SCREENS: readonly [string, readonly ControlName[], () => Promise<void>][] 
     const scopes = within(dialog).getAllByTestId(/^adr-scope-/)
     fireEvent.click(scopes.find((one) => one.textContent?.includes('Acme Logistics'))!)
     fireEvent.click((await within(dialog).findAllByText('One register for the organisation'))[0])
-  }],
-  ['the roadmap', ['roadmap.newPlan', 'roadmap.findings'], async () => {
+  }]],
+  [['the roadmap', ['roadmap.newPlan', 'roadmap.findings'], async () => {
     await page('Roadmap')
   }],
   ['a plan', ['plan.addElement', 'plan.milestone', 'plan.addDecision'], async () => {
-    const dialog = await page('Roadmap')
-    fireEvent.click((await within(dialog).findAllByTestId('plan-band'))[0])
-  }],
-  ['the technology landscape, a card chosen', [
+    fireEvent.click((await within(screen.getByRole('dialog')).findAllByTestId('plan-band'))[0])
+  }]],
+  [['the technology landscape, a card chosen', [
     'landscape.servicesBand', 'landscape.sharedRow', 'landscape.inspector',
   ], async () => {
     show(false)
     fireEvent.click(await screen.findByTestId('open-technology-landscape'))
     await screen.findByTestId('landscape-shared-row')
     fireEvent.click(document.querySelector<HTMLElement>('[data-node]')!)
-  }],
+  }]],
 ]
 
 describe('the stable control names', { timeout: 20_000 }, () => {
   it('are each claimed by a screen below, and every one claimed is on the list', () => {
-    const claimed = new Set(SCREENS.flatMap(([, names]) => names))
+    const claimed = new Set(JOURNEYS.flat().flatMap(([, names]) => names))
     claimed.add('shell.alsoHere')
     expect([...claimed].sort()).toEqual([...new Set(CONTROL_NAMES)].sort())
   })
 
-  it.each(SCREENS)('are on %s', async (_screen, names, reach) => {
-    await reach()
-    await named(...names)
-  })
+  it.each(JOURNEYS.map((journey) => [journey.map(([label]) => label).join(', then '), journey] as const))(
+    'are on %s', async (_label, journey) => {
+      for (const [, names, reach] of journey) {
+        await reach()
+        await named(...names)
+      }
+    },
+  )
 
   // Who else is here is said only while somebody is, which only a channel's
   // presence makes true: the bar is drawn with a name, as the channel would.
