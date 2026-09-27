@@ -116,6 +116,10 @@ describe('a layout pass asked for through the handle', () => {
 
     fireEvent.click(screen.getByLabelText('Tidy layout'));
     await waitFor(() => expect(host.current.commands).toHaveLength(1));
+    // The toolbar is busy until the tidy has finished, and the command lands
+    // before it has: a press on a disabled button is nothing, which a slow
+    // runner showed.
+    await waitFor(() => expect((screen.getByLabelText('Route connections only') as HTMLButtonElement).disabled).toBe(false));
     fireEvent.click(screen.getByLabelText('Route connections only'));
     await waitFor(() => expect(host.current.commands.length).toBeGreaterThan(1));
 
