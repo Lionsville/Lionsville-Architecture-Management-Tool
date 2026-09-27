@@ -1105,4 +1105,63 @@ describe('the chip a registered provider names', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Done' }))
     await waitFor(() => expect(screen.queryByTestId('chip-panel')).toBeNull())
   })
+
+  /**
+   * A face of the provider's own, in place of the words: on both bars, named
+   * by the label it replaced, told whether the panel is open, and a menu
+   * button where there is a panel behind it.
+   */
+  it('draws the provider’s face in place of its label, named by the label', async () => {
+    function Face({ label, open }: { label: string; open: boolean }) {
+      const { language } = useStrings()
+      return <span data-testid="chip-face">{`${language}: ${label.slice(0, 1)}${open ? ' open' : ''}`}</span>
+    }
+    function Panel() {
+      return <div data-testid="chip-panel">Anna</div>
+    }
+    renderApp({
+      scopes: new InMemoryScopeStore(tree),
+      source: elsewhere,
+      boot: { initialProject: tree[2] },
+      provider: { chip: () => ({ label: 'Anna Berg' }), chipFace: Face, chipPanel: Panel },
+    })
+    await waitFor(() => expect(within(onBar()!).getByTestId('chip-face').textContent).toBe('en: A'))
+    const chip = onBar()!
+    expect(chip.tagName).toBe('BUTTON')
+    expect(chip.getAttribute('aria-label')).toBe('Anna Berg')
+    expect(chip.getAttribute('aria-haspopup')).toBe('dialog')
+    expect(chip.getAttribute('aria-expanded')).toBe('false')
+    // The words the face replaced are not drawn beside it.
+    expect(chip.textContent).toBe('en: A')
+    fireEvent.click(chip)
+    await screen.findByTestId('chip-panel')
+    expect(onBar()!.getAttribute('aria-expanded')).toBe('true')
+    expect(within(onBar()!).getByTestId('chip-face').textContent).toBe('en: A open')
+    // And on a domain's home, where the face alone puts the chip.
+    fireEvent.keyDown(screen.getByTestId('chip-panel'), { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByTestId('chip-panel')).toBeNull())
+    fireEvent.click(screen.getByTestId('crumb-acme'))
+    await screen.findByTestId('organisation-name')
+    expect(within(onBar()!).getByTestId('chip-face').textContent).toBe('en: A')
+  })
+
+  /** A face that falls over costs the face: the chip says its label, and the trail says why. */
+  it('is its label again where the face throws', async () => {
+    function Face(): never {
+      throw new Error('no face today')
+    }
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    try {
+      renderApp({
+        scopes: new InMemoryScopeStore(tree),
+        source: elsewhere,
+        boot: { initialProject: tree[2] },
+        provider: { chip: () => ({ label: 'Anna Berg' }), chipFace: Face },
+      })
+      await waitFor(() => expect(onBar()?.textContent).toBe('Anna Berg'))
+      expect(screen.queryByTestId('crash-fallback')).toBeNull()
+    } finally {
+      errors.mockRestore()
+    }
+  })
 })

@@ -22,6 +22,7 @@ import type { ScopeSnapshot } from '../projects/scope'
 import { SyncNotice } from './SyncNotice'
 import { AgentDrivingBanner } from './AgentDrivingBanner'
 import type { ShellParts } from './shellParts'
+import { sourceLabel } from './ShellToolbar'
 import type { ToolbarChip } from './ShellToolbar'
 
 /** One of the three: nowhere to keep anything yet, a scope open, or a home. */
@@ -136,6 +137,7 @@ function Home({ parts }: { parts: ShellParts }) {
       sourceDescription={props.provider?.description}
       sourceChip={parts.provider.chip}
       chipPanel={chipPanelFor(parts)}
+      chipFace={chipFaceFor(parts)}
       onChooseWorkingDirectory={folder.onChoose}
       waysIn={parts.provider.offered}
       // The same two the workspace's bar carries: the menu on a host
@@ -216,14 +218,38 @@ function chipPanelFor(parts: ShellParts): ((close: () => void) => ReactNode) | u
 }
 
 /**
+ * What the chip looks like where the open source's provider drew it a face:
+ * inside the language and in a boundary of its own, for the reason a panel is.
+ * A face that throws is drawn as nothing, and the chip is then its label again
+ * (`SourceChipView`'s `fallback`), which is what it would have said anyway.
+ */
+function chipFaceFor(parts: ShellParts): ((open: boolean, fallback: ReactNode) => ReactNode) | undefined {
+  const { props, services: { prefs, s }, provider } = parts
+  const Face = provider.ChipFace
+  if (!Face) return undefined
+  return (open, fallback) => (
+    <ErrorBoundary
+      where="sourceChipFace" diagnostics={props.diagnostics} controls={props.hostControls} s={s} fallback={fallback}
+    >
+      <LanguageProvider language={prefs.language}>
+        <Face label={sourceLabel(parts.source, s, provider.chip)} open={open} />
+      </LanguageProvider>
+    </ErrorBoundary>
+  )
+}
+
+/**
  * The chip on the workspace's bar: only where the open source's provider gave a
- * word or a panel for it. Every source that ships has neither, and its chip
- * stays on the organisation's home alone.
+ * word, a panel or a face for it. Every source that ships has none, and its
+ * chip stays on the organisation's home alone.
  */
 function workspaceChip(parts: ShellParts): ToolbarChip | undefined {
-  const { chip, ChipPanel } = parts.provider
-  if (!chip && !ChipPanel) return undefined
-  return { source: parts.source, describeKey: parts.props.provider?.description, chip, panel: chipPanelFor(parts) }
+  const { chip, ChipPanel, ChipFace } = parts.provider
+  if (!chip && !ChipPanel && !ChipFace) return undefined
+  return {
+    source: parts.source, describeKey: parts.props.provider?.description, chip,
+    panel: chipPanelFor(parts), face: chipFaceFor(parts),
+  }
 }
 
 /** The standing notices, and every registered provider's own strip. */

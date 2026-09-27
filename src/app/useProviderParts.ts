@@ -29,7 +29,7 @@ export function useProviderParts(deps: {
   const { source, diagnostics, openSomewhere } = deps
   const {
     onWork: onSourceWork, chip: sourceChip, menu: menus = NONE, onScopeSession, chrome: chromes = NONE,
-    agentPanel: AgentPanel, chipPanel: ChipPanel, waysIn, readOnlyAt,
+    agentPanel: AgentPanel, chipPanel: ChipPanel, chipFace: ChipFace, waysIn, readOnlyAt,
   } = deps.provider
   /**
    * The scope that is open, as whoever answers for the source sees it — held
@@ -134,7 +134,7 @@ export function useProviderParts(deps: {
    */
   const overflowSource = menus.length > 0 ? { sourceEntries, onSourceWork } : undefined
 
-  return { chromes, AgentPanel, ChipPanel, openScope, takeScopeSession, openProvider, chip, offered, overflowSource }
+  return { chromes, AgentPanel, ChipPanel, ChipFace, openScope, takeScopeSession, openProvider, chip, offered, overflowSource }
 }
 
 /** Each way in as its provider now says it: as registered, relabelled, or not drawn at all. */

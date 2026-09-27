@@ -57,6 +57,12 @@ export type ErrorBoundaryProps = {
   s: Translate
   /** Show the stack under the message. Defaults to development builds. */
   showStack?: boolean
+  /**
+   * What is drawn in place of the crash screen, for a boundary around
+   * something too small to hold one — a chip's face, where the chip's own
+   * label is the fallback. Reported all the same.
+   */
+  fallback?: ReactNode
 }
 
 type CopyState = 'idle' | 'copied' | 'failed'
@@ -91,6 +97,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     const { children, s, showStack = import.meta.env.DEV } = this.props
     const { error, copied } = this.state
     if (!error) return children
+    if (this.props.fallback !== undefined) return this.props.fallback
 
     return (
       <Box sx={{

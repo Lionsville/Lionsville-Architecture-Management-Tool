@@ -146,6 +146,12 @@ export type ToolbarChip = {
    * handed the way to shut it.
    */
   panel?: (close: () => void) => ReactNode
+  /**
+   * The provider's face for it (`App`'s `SourceChipFace`), already inside its
+   * boundary and the language: drawn in the chip in place of the label, told
+   * whether the panel is open, and handed the label to fall back on.
+   */
+  face?: (open: boolean, fallback: ReactNode) => ReactNode
 }
 
 /**
@@ -158,7 +164,7 @@ export type ToolbarChip = {
  * happens to have a handler. A span with an `onClick` here would be dead
  * surface that drags the window instead.
  */
-export function SourceChipView({ source, describeKey, chip, panel, s }: ToolbarChip & { s: Translate }) {
+export function SourceChipView({ source, describeKey, chip, panel, face, s }: ToolbarChip & { s: Translate }) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
   const presses = chip?.onClick !== undefined || panel !== undefined
   const press = (event: MouseEvent<HTMLElement>) => {
@@ -166,6 +172,18 @@ export function SourceChipView({ source, describeKey, chip, panel, s }: ToolbarC
     if (panel) setAnchor(event.currentTarget)
   }
   const tip = sourceTipKey(source, describeKey, chip)
+  const label = sourceLabel(source, s, chip)
+  if (face) {
+    return (
+      <>
+        <FacedChip label={label} tip={tip === undefined ? undefined : s(tip as StringKey)}
+          open={anchor !== null} presses={presses} onPress={press} hasPanel={panel !== undefined}>
+          {face(anchor !== null, label)}
+        </FacedChip>
+        {panel && <ChipPanelPopover anchor={anchor} onClose={() => setAnchor(null)} panel={panel} />}
+      </>
+    )
+  }
   return (
     <>
       {/* The sentence about where work is kept: this tree's for a built-in
@@ -190,18 +208,71 @@ export function SourceChipView({ source, describeKey, chip, panel, s }: ToolbarC
           {sourceLabel(source, s, chip)}
         </Typography>
       </Tooltip>
-      {panel && (
-        <Popover
-          open={anchor !== null}
-          anchorEl={anchor}
-          onClose={() => setAnchor(null)}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-          transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-        >
-          {anchor && panel(() => setAnchor(null))}
-        </Popover>
-      )}
+      {panel && <ChipPanelPopover anchor={anchor} onClose={() => setAnchor(null)} panel={panel} />}
     </>
+  )
+}
+
+/** The provider's panel, under the chip that opened it. */
+function ChipPanelPopover({ anchor, onClose, panel }: {
+  anchor: HTMLElement | null
+  onClose: () => void
+  panel: (close: () => void) => ReactNode
+}) {
+  return (
+    <Popover
+      open={anchor !== null}
+      anchorEl={anchor}
+      onClose={onClose}
+      anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+    >
+      {anchor && panel(onClose)}
+    </Popover>
+  )
+}
+
+/**
+ * The chip, where the provider drew it a face: the same `button` and the same
+ * press, with the face inside it in place of the words.
+ *
+ * A picture has no name, so the label the face replaced is the button's name,
+ * and the tooltip says it — the provider's sentence after it, where it gave
+ * one, as the description. Where there is a panel behind the press, the button
+ * says so and says whether it is open, which the word chip never needed: a
+ * word on a bar reads as a fact, and a face with a panel behind it is a menu
+ * button.
+ */
+function FacedChip({ label, tip, open, presses, onPress, hasPanel, children }: {
+  label: string
+  tip?: string
+  open: boolean
+  presses: boolean
+  onPress: (event: MouseEvent<HTMLElement>) => void
+  hasPanel: boolean
+  children: ReactNode
+}) {
+  return (
+    <Tooltip title={tip === undefined ? label : `${label} — ${tip}`}>
+      <Box
+        data-testid="working-source"
+        aria-label={label}
+        {...(presses
+          ? {
+            component: 'button' as const, type: 'button', onClick: onPress,
+            ...(hasPanel ? { 'aria-haspopup': 'dialog' as const, 'aria-expanded': open } : {}),
+          }
+          : { role: 'img' })}
+        sx={{
+          display: 'inline-flex', alignItems: 'center', p: 0, m: 0, border: 0, borderRadius: 999,
+          bgcolor: 'transparent', color: 'inherit', font: 'inherit', lineHeight: 0,
+          cursor: presses ? 'pointer' : undefined,
+          '&:focus-visible': { outline: 2, outlineColor: 'primary.main', outlineOffset: 2 },
+        }}
+      >
+        {children}
+      </Box>
+    </Tooltip>
   )
 }
 

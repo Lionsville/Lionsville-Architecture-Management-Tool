@@ -138,6 +138,12 @@ export type OrganisationScreenProps = {
    * chip is on every scope's home and not the organisation's alone.
    */
   chipPanel?: (close: () => void) => ReactNode
+  /**
+   * What the chip looks like, where the provider drew it a face (`ToolbarChip`'s
+   * `face`). Like a word or a panel of the provider's own, it puts the chip on
+   * every scope's home.
+   */
+  chipFace?: (open: boolean, fallback: ReactNode) => ReactNode
   onChooseWorkingDirectory?: () => void
   /**
    * The other places this build can work from, one button each, beside the one
@@ -209,7 +215,7 @@ export type OrganisationScreenProps = {
 }
 
 export function OrganisationScreen({
-  organisation, examples, order, onOrderChange, source, sourceDescription, sourceChip, chipPanel,
+  organisation, examples, order, onOrderChange, source, sourceDescription, sourceChip, chipPanel, chipFace,
   onChooseWorkingDirectory, waysIn,
   overflow, agent, onGoHome, findings, register = [], technology = [], initiatives = 0, sharedObservations = 0,
   onOpenRegisterRow, onOpenRegisterPage, onLinkFromRegister, pageRequest, onPageChange,
@@ -342,9 +348,9 @@ export function OrganisationScreen({
         home={home}
         heading={heading}
         level={level}
-        source={chipHere(atRoot, sourceChip, chipPanel) ? source : undefined}
+        source={chipHere(atRoot, sourceChip, chipPanel, chipFace) ? source : undefined}
         sourceDescription={sourceDescription}
-        sourceChip={sourceChip} chipPanel={chipPanel}
+        sourceChip={sourceChip} chipPanel={chipPanel} chipFace={chipFace}
         onChooseWorkingDirectory={atRoot ? onChooseWorkingDirectory : undefined}
         waysIn={atRoot ? waysIn : undefined}
         onGoHome={onGoHome}
@@ -804,12 +810,12 @@ function NewBoardDialog({ open, name, onNameChange, onCancel, onCreate, s }: {
 
 /**
  * Whether this home's bar names where work is kept: the organisation's always,
- * and every other home's where the provider gave a word or a panel of its own
- * for the chip — a way into something has to be where the person is. The
+ * and every other home's where the provider gave a word, a panel or a face of
+ * its own for the chip — a way into something has to be where the person is. The
  * three that ship give neither, so theirs stays on the organisation's home.
  */
-function chipHere(atRoot: boolean, chip: SourceChip | undefined, panel: unknown): boolean {
-  return atRoot || chip !== undefined || panel !== undefined
+function chipHere(atRoot: boolean, chip: SourceChip | undefined, ...more: unknown[]): boolean {
+  return atRoot || chip !== undefined || more.some((one) => one !== undefined)
 }
 
 /**
@@ -875,7 +881,7 @@ function UnreadableScopes({ tree, at, s }: { tree: ScopeSummary; at: ScopePath; 
  * traffic lights, and be the surface the window is dragged by.
  */
 function OrganisationBar({
-  barRef, tree, home, heading, level, source, sourceDescription, sourceChip, chipPanel,
+  barRef, tree, home, heading, level, source, sourceDescription, sourceChip, chipPanel, chipFace,
   onChooseWorkingDirectory, waysIn = [],
   onGoHome, onSettings, overflow, agent, s, windowChrome,
 }: {
@@ -890,6 +896,12 @@ function OrganisationBar({
   sourceDescription?: StringKey | (string & {})
   sourceChip?: SourceChip
   chipPanel?: (close: () => void) => ReactNode
+  /**
+   * What the chip looks like, where the provider drew it a face (`ToolbarChip`'s
+   * `face`). Like a word or a panel of the provider's own, it puts the chip on
+   * every scope's home.
+   */
+  chipFace?: (open: boolean, fallback: ReactNode) => ReactNode
   onChooseWorkingDirectory?: () => void
   waysIn?: readonly SourceWayIn[]
   onGoHome: (path: ScopePath) => void
@@ -924,7 +936,9 @@ function OrganisationBar({
       <Box sx={{ flex: 1 }} />
 
       {source && (
-        <SourceChipView source={source} describeKey={sourceDescription} chip={sourceChip} panel={chipPanel} s={s} />
+        <SourceChipView
+          source={source} describeKey={sourceDescription} chip={sourceChip} panel={chipPanel} face={chipFace} s={s}
+        />
       )}
       {onChooseWorkingDirectory && (
         <Button size="small" color="inherit" onClick={onChooseWorkingDirectory} sx={quiet}>

@@ -217,6 +217,31 @@ export type SourceChipPanel = ComponentType<{
 }>
 
 /**
+ * What the chip that names a registered source looks like, where a word is not
+ * the whole of it: a small component of the provider's own, drawn inside the
+ * chip in place of its label.
+ *
+ * A chip's `label` is a string, and a string cannot say what a picture of a
+ * person says at a glance — who is signed in, as a face or their initials, and
+ * a mark beside it that something is waiting behind the press. A provider that
+ * wanted that could only draw it somewhere else and point at the chip.
+ *
+ * So the shell keeps what makes the chip a chip — the one `button`, the press,
+ * the panel under it, the tooltip, the place on both bars — and hands the face
+ * two facts: `label`, the provider's word for it now, which stays the chip's
+ * accessible name and its tooltip because a picture has none; and `open`,
+ * whether the panel under it is showing. Drawn inside the theme and the
+ * language, in a boundary of its own, so a face that falls over costs the face
+ * and the chip goes back to its label. It should be small: it sits in a bar
+ * that is the window's drag surface on the desktop, beside the crumbs.
+ *
+ * Asked of the open source's provider alone, as the chip is. On the
+ * registration beside `chipPanel`, and core's three register none, so their
+ * chip is the word it always was.
+ */
+export type SourceChipFace = ComponentType<{ label: string; open: boolean }>
+
+/**
  * What a provider is told when it is asked what it wants in the menu.
  *
  * The same two facts the workspace reads about a source before it draws

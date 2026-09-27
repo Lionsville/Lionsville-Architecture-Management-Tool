@@ -24,7 +24,7 @@ import { IN_MEMORY } from '../platform/workingSource'
 import type { SourceProvider } from '../platform/sourceProvider'
 import {
   inWorkingDirectory, openSource, registerSourceProvider, registeredChrome, registeredConnects,
-  registeredMenus, sourceAgentPanel, sourceChip, sourceChipPanel, sourceDescription, sourceProvider,
+  registeredMenus, sourceAgentPanel, sourceChip, sourceChipFace, sourceChipPanel, sourceDescription, sourceProvider,
   type FolderOpening, type Shell, type SourceBase, type SourceParts,
 } from './composition'
 
@@ -727,6 +727,28 @@ describe('sourceChipPanel', () => {
     expect(sourceChipPanel(IN_MEMORY)).toBeUndefined()
     expect(sourceChipPanel({ kind: 'folder', name: 'work', root: '/work' })).toBeUndefined()
     expect(sourceChipPanel({ kind: 'registered', provider: 'lined', name: 'Lined', key: 'one' })).toBeUndefined()
+  })
+})
+
+/** What the chip looks like: the open source's provider's own face, and nobody else's. */
+describe('sourceChipFace', () => {
+  function Face({ label }: { label: string }) {
+    return <b>{label}</b>
+  }
+
+  it('is the provider\u2019s own for a source it answers for, and nothing otherwise', () => {
+    registerSourceProvider({
+      kind: 'faced',
+      chipFace: Face,
+      open: () => ({
+        scopes: new InMemoryScopeStore(),
+        source: { kind: 'registered', provider: 'faced', name: 'Faced', key: 'one' },
+      }),
+    })
+    expect(sourceChipFace({ kind: 'registered', provider: 'faced', name: 'Faced', key: 'one' })).toBe(Face)
+    expect(sourceChipFace(IN_MEMORY)).toBeUndefined()
+    expect(sourceChipFace({ kind: 'folder', name: 'work', root: '/work' })).toBeUndefined()
+    expect(sourceChipFace({ kind: 'registered', provider: 'lined', name: 'Lined', key: 'one' })).toBeUndefined()
   })
 })
 

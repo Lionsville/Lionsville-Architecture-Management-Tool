@@ -899,6 +899,37 @@ the three built-ins are written exactly as they were.
 source read-only holds a scope a writable source says is only read, and the
 same source's other scopes draw their palette. `scope.test.ts` pins `onView`.
 
+## Amended — the one a build whose chip is a picture needed
+
+*27 September 2026.* The build whose chip opens a panel wanted the chip to show
+the person it names the way a person is usually shown on a bar: as a picture
+or their initials, with a mark beside it when something behind the press is
+new. `chip` is a label, and a label is a string. A provider that wanted more
+could only draw it somewhere else and point at the chip, which is the second
+app in the same window this decision keeps stopping. It is added as the
+smallest public thing that closes it, optional on the registration, so the
+three built-ins are written exactly as they were.
+
+* **A chip may draw a face.** A provider registers `chipFace`, a component the
+  shell draws inside the chip in place of its label — in the theme and the
+  language, in a boundary of its own — and hands two facts: `label`, the
+  provider's word for the chip now, and `open`, whether the panel under it is
+  showing. Everything else stays the shell's: the one `button`, the press,
+  the panel, the tooltip, and the place on every home and on the workspace's
+  bar, where a face alone now puts the chip as a word or a panel does. A
+  picture has no name, so the label is the button's accessible name and what
+  its tooltip says, with the provider's sentence after it where it gave one;
+  and where a panel is behind the press the button says so (`aria-haspopup`)
+  and whether it is open (`aria-expanded`). A face that throws is drawn as the
+  label — the boundary's `fallback`, new for a boundary around something too
+  small to hold the crash screen — and the trail says why.
+
+`App.storage.test.tsx` pins it: a provider's face on the workspace's bar and on
+a domain's home, named by the label it replaced, told the panel opened, and the
+label again where the face throws. `composition.test.tsx` pins the registry
+answering the face for the open source's provider and for nobody else.
+`ShellToolbar.test.tsx` still pins the three that ship byte for byte.
+
 ## More Information
 
 ADR-0002 for the command and its inverse, which is the whole reason this is a

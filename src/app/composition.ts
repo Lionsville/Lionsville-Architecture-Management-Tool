@@ -79,7 +79,7 @@ import type {
 } from '../platform/sourceProvider'
 import type { StringKey } from '../i18n/strings'
 import type {
-  RegisteredChrome, RegisteredMenu, SourceAgentPanel, SourceChipPanel, SourceChrome, SourceMenu,
+  RegisteredChrome, RegisteredMenu, SourceAgentPanel, SourceChipFace, SourceChipPanel, SourceChrome, SourceMenu,
 } from './App'
 import type { ScopeSession } from './useModelSession'
 import type { KeyValueStorage } from '../adapters/webStorage/KeyValueStorage'
@@ -353,6 +353,13 @@ export type RegisteredSourceProvider<Opening = never> =
      * reason `chrome` is: it is a component. Core's three register none.
      */
     readonly chipPanel?: SourceChipPanel
+    /**
+     * What the chip that names this provider's source looks like, where a
+     * word is not enough ({@link SourceChipFace}): drawn inside the chip in
+     * place of its label. A component, so here beside `chipPanel`. Core's
+     * three register none.
+     */
+    readonly chipFace?: SourceChipFace
   }
 
 /**
@@ -498,6 +505,16 @@ export function sourceAgentPanel(source: WorkingSource): SourceAgentPanel | unde
  */
 export function sourceChipPanel(source: WorkingSource): SourceChipPanel | undefined {
   return source.kind === 'registered' ? sourceProvider(source.provider)?.chipPanel : undefined
+}
+
+/**
+ * What the chip that names this source looks like, where its provider drew it
+ * a face; nothing otherwise, and then the chip is its label.
+ *
+ * The open source's alone, for the reason {@link sourceChipPanel} is.
+ */
+export function sourceChipFace(source: WorkingSource): SourceChipFace | undefined {
+  return source.kind === 'registered' ? sourceProvider(source.provider)?.chipFace : undefined
 }
 
 /**

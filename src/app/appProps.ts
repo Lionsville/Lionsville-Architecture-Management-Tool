@@ -27,7 +27,8 @@ import type { HostControls } from '../ports/HostControls'
 import type { ProjectHistory } from '../ports/ProjectHistory'
 import type { UpdateSettingsStore } from '../ports/UpdateSettings'
 import type {
-  RegisteredChrome, RegisteredMenu, ScopeLibrary, ShellDiagnostics, SourceAgentPanel, SourceChipPanel,
+  RegisteredChrome, RegisteredMenu, ScopeLibrary, ShellDiagnostics, SourceAgentPanel, SourceChipFace,
+  SourceChipPanel,
 } from './App'
 import type { ExampleOffer } from './examples/offers'
 import type { MakeId } from './useDiagramActions'
@@ -193,6 +194,13 @@ export type AppProvider = {
    * where it always was. Read from the registration by the boot.
    */
   chipPanel?: SourceChipPanel
+  /**
+   * What the chip looks like, from the open source's provider
+   * (`SourceChipFace`): drawn inside it in place of the label, which stays its
+   * name. Absent for every build in this repository. Read from the
+   * registration by the boot.
+   */
+  chipFace?: SourceChipFace
   /**
    * The other places this build can work from: what each button says, and what
    * pressing it does (`platform/sourceProvider.ts`).
