@@ -923,10 +923,15 @@ three built-ins are written exactly as they were.
   and whether it is open (`aria-expanded`). A face that throws is drawn as the
   label — the boundary's `fallback`, new for a boundary around something too
   small to hold the crash screen — and the trail says why.
+* **The panel keeps still for somebody who asked it to.** It grew out of the
+  chip whatever the system said; where the person asked for less motion
+  (`prefers-reduced-motion`) it now simply appears. Focus goes into it and
+  back to the chip when it shuts, as it did.
 
 `App.storage.test.tsx` pins it: a provider's face on the workspace's bar and on
-a domain's home, named by the label it replaced, told the panel opened, and the
-label again where the face throws. `composition.test.tsx` pins the registry
+a domain's home, named by the label it replaced, told the panel opened, the
+label again where the face throws, and a panel that appears without a
+transition under reduced motion and with one otherwise. `composition.test.tsx` pins the registry
 answering the face for the open source's provider and for nobody else.
 `ShellToolbar.test.tsx` still pins the three that ship byte for byte.
 

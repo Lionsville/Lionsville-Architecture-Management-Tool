@@ -213,12 +213,17 @@ export function SourceChipView({ source, describeKey, chip, panel, face, s }: To
   )
 }
 
-/** The provider's panel, under the chip that opened it. */
+/**
+ * The provider's panel, under the chip that opened it: focus goes into it and
+ * comes back to the chip when it shuts, and it appears without growing where
+ * the person asked their system for less motion.
+ */
 function ChipPanelPopover({ anchor, onClose, panel }: {
   anchor: HTMLElement | null
   onClose: () => void
   panel: (close: () => void) => ReactNode
 }) {
+  const still = useMediaQuery('(prefers-reduced-motion: reduce)')
   return (
     <Popover
       open={anchor !== null}
@@ -226,6 +231,7 @@ function ChipPanelPopover({ anchor, onClose, panel }: {
       onClose={onClose}
       anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+      {...(still ? { transitionDuration: 0 } : {})}
     >
       {anchor && panel(onClose)}
     </Popover>

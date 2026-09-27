@@ -1145,6 +1145,41 @@ describe('the chip a registered provider names', () => {
     expect(within(onBar()!).getByTestId('chip-face').textContent).toBe('en: A')
   })
 
+  /** The panel grows out of the chip, and simply appears for somebody who asked for less motion. */
+  it('opens the panel without motion where the person asked for less', async () => {
+    function Panel() {
+      return <div data-testid="chip-panel">Anna</div>
+    }
+    const transitionOf = async (reduced: boolean): Promise<string> => {
+      vi.stubGlobal('matchMedia', (query: string) => ({
+        matches: reduced && query.includes('prefers-reduced-motion'), media: query,
+        addEventListener: () => undefined, removeEventListener: () => undefined,
+        addListener: () => undefined, removeListener: () => undefined,
+        onchange: null, dispatchEvent: () => false,
+      }))
+      // A panel with a height, which is what an unasked-for transition is timed by.
+      const height = vi.spyOn(Element.prototype, 'clientHeight', 'get').mockReturnValue(300)
+      try {
+        renderApp({
+          scopes: new InMemoryScopeStore(tree),
+          source: elsewhere,
+          boot: { initialProject: tree[2] },
+          provider: { chipPanel: Panel },
+        })
+        await waitFor(() => expect(onBar()?.tagName).toBe('BUTTON'))
+        fireEvent.click(onBar()!)
+        const paper = (await screen.findByTestId('chip-panel')).closest<HTMLElement>('.MuiPopover-paper')!
+        return paper.style.transition
+      } finally {
+        cleanup()
+        vi.unstubAllGlobals()
+        height.mockRestore()
+      }
+    }
+    expect(await transitionOf(true)).toMatch(/^opacity 0ms/)
+    expect(await transitionOf(false)).not.toMatch(/^opacity 0ms/)
+  })
+
   /** A face that falls over costs the face: the chip says its label, and the trail says why. */
   it('is its label again where the face throws', async () => {
     function Face(): never {
