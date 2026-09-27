@@ -123,9 +123,15 @@ describe('SolutionDesignEditor — a failed layout action is reported, not swall
     fireEvent.click(route);
     expect(route.disabled).toBe(true);
 
+    // The report and the release are two updates: the error is said from the
+    // pass's catch, the buttons are let go when it settles, a render later.
+    // Asserted the moment the report landed, a loaded machine saw the report
+    // before the release.
     await waitFor(() => expect(onLayoutError).toHaveBeenCalled());
-    expect(route.disabled).toBe(false);
-    expect(tidy.disabled).toBe(false);
+    await waitFor(() => {
+      expect(route.disabled).toBe(false);
+      expect(tidy.disabled).toBe(false);
+    });
   });
 
   it('reports a Tidy that failed outright and commits nothing', async () => {
