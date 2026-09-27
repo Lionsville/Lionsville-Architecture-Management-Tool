@@ -457,7 +457,7 @@ describe('the refusals before the reducer', () => {
     const withContainer = roundTrip(model, commandFor('diagram.create', { kind: 'container', applicationId: 'billing' }, view(model)))
     const again = prepared(commandFor('diagram.create', { kind: 'container', applicationId: 'billing' }, view(withContainer)))
     expect(again.activeDiagramId).toBe('cd-new-1')
-    expect(again.command).toEqual({ type: 'transaction', commands: [] })
+    expect(again.command).toEqual({ type: 'transaction', commands: [], origin: 'agent' })
   })
 })
 

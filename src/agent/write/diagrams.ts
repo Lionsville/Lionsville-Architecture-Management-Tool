@@ -88,7 +88,9 @@ function containerDiagram(args: Args, view: WriteView): Prepared | AgentAnswer {
     model.diagrams[id].kind === 'container' && model.diagrams[id].applicationElementId === applicationId)
   if (existing) {
     return {
-      command: transaction([]),
+      // Nothing to write, and still the agent's: a step that changes nothing
+      // must not be the one command in the log that reads as the person's.
+      command: transaction([], { origin: 'agent' }),
       activeDiagramId: existing,
       answer: json({ id: existing, kind: 'container', name: model.diagrams[existing].name, existed: true }),
     }
