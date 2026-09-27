@@ -247,17 +247,6 @@ const sh = (cwd: string, args: string[]) => run('git', args, {
 let bare = ''
 let other = ''
 
-beforeEach(async () => {
-  bare = await realpath(await mkdtemp(join(tmpdir(), 'lvarch-remote-')))
-  other = await realpath(await mkdtemp(join(tmpdir(), 'lvarch-other-')))
-  await sh(bare, ['init', '--bare', '--initial-branch=main'])
-})
-
-afterEach(async () => {
-  await rm(bare, { recursive: true, force: true })
-  await rm(other, { recursive: true, force: true })
-})
-
 /** A folder of ours, keeping history, with the bare repository as its origin. */
 async function withRemote(): Promise<void> {
   await initRepository(root)
@@ -277,6 +266,20 @@ async function colleagueCommits(name: string, contents: string): Promise<void> {
 }
 
 describe.skipIf(!available)('the remote', () => {
+  // Only here: a bare repository and a colleague's folder made for every test
+  // in the file cost a `git init` and two folders apiece to the two thirds
+  // that never look at a remote.
+  beforeEach(async () => {
+    bare = await realpath(await mkdtemp(join(tmpdir(), 'lvarch-remote-')))
+    other = await realpath(await mkdtemp(join(tmpdir(), 'lvarch-other-')))
+    await sh(bare, ['init', '--bare', '--initial-branch=main'])
+  })
+
+  afterEach(async () => {
+    await rm(bare, { recursive: true, force: true })
+    await rm(other, { recursive: true, force: true })
+  })
+
   it('has none for a folder that keeps no history, or has no remote', async () => {
     expect(await remote(root)).toBeUndefined()
     await initRepository(root)
