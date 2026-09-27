@@ -156,17 +156,20 @@ function refuseInTheWay(onFailure: UseOrganisationInput['onFailure']): void {
   onFailure('organisation.create.unreadable', undefined, 'shell.unreadableInTheWay')
 }
 
-export function useOrganisation({
-  scopes, active, at, onEnter, notify, onFailure, onStorageResult, s, onTreeChanged,
-}: UseOrganisationInput): Organisation {
+/**
+ * The two reads this screen is drawn from: the tree, and the home's own
+ * document.
+ */
+function useHomeReads({ scopes, active, at, revision, onFailure }: {
+  scopes: Pick<ScopeLibrary, 'list' | 'load'>
+  active: boolean
+  at: ScopePath
+  revision: number
+  onFailure: UseOrganisationInput['onFailure']
+}): { tree: ScopeSummary; root: ScopeSnapshot | undefined; ready: boolean } {
   const [tree, setTree] = useState<ScopeSummary>(() => scopeTree([]))
   const [root, setRoot] = useState<ScopeSnapshot | undefined>(undefined)
   const [ready, setReady] = useState(false)
-  const [dialog, setDialog] = useState<OrganisationDialog>({ kind: 'none' })
-  const [collapsed, setCollapsed] = useState<ReadonlySet<ScopePath>>(() => new Set())
-  const [revision, setRevision] = useState(0)
-
-  const refresh = useCallback(() => setRevision((held) => held + 1), [])
 
   /**
    * How a failure is reported is not an input to reading the tree.
@@ -185,9 +188,8 @@ export function useOrganisation({
    * Two reads and not one per card. An empty tree and a tree that would not
    * read look identical on this screen, and one of them means "you have nothing
    * here" while the other means "your work is still there, somewhere" — so a
-   * refusal says which. A different home is a different document, so the
-   * read runs again when the crumb changes — and `ready` drops first, so the
-   * cards do not say a domain's numbers under the organisation's name.
+   * refusal says which. Two effects: a crumb is another home in the same
+   * tree, and one effect over both listed the whole tree on every crumb.
    */
   useEffect(() => {
     let live = true
@@ -199,6 +201,13 @@ export function useOrganisation({
         failedRef.current('organisation.list', cause, 'picker.listFailed')
       },
     )
+    return () => { live = false }
+  }, [scopes, revision])
+
+  // A different home is a different document, and `ready` drops first, so
+  // the cards do not say a domain's numbers under the organisation's name.
+  useEffect(() => {
+    let live = true
     if (!active) return () => { live = false }
     setReady(false)
     void scopes.load(at).then(
@@ -214,6 +223,20 @@ export function useOrganisation({
     )
     return () => { live = false }
   }, [scopes, active, at, revision])
+
+  return { tree, root, ready }
+}
+
+export function useOrganisation({
+  scopes, active, at, onEnter, notify, onFailure, onStorageResult, s, onTreeChanged,
+}: UseOrganisationInput): Organisation {
+  const [dialog, setDialog] = useState<OrganisationDialog>({ kind: 'none' })
+  const [collapsed, setCollapsed] = useState<ReadonlySet<ScopePath>>(() => new Set())
+  const [revision, setRevision] = useState(0)
+
+  const refresh = useCallback(() => setRevision((held) => held + 1), [])
+  const { tree, root, ready } = useHomeReads({ scopes, active, at, revision, onFailure })
+
 
   const toggleCollapsed = useCallback((path: ScopePath) => {
     setCollapsed((held) => {

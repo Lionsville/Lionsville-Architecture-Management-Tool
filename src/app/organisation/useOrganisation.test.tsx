@@ -142,6 +142,44 @@ describe('useOrganisation', () => {
   })
 
   /**
+   * A crumb is another home in the same tree: the home's document is read
+   * again, and the tree — the read that grows with the organisation, and over
+   * a network the costly one — is not listed again for it.
+   */
+  it('reads the new home and not the whole tree again when a crumb moves it', async () => {
+    const store = new InMemoryScopeStore([
+      { path: '', model: { name: 'Acme', elements: [], relations: [], diagrams: [] }, activeDiagramId: '', logoLibrary: [] },
+      { path: 'rail', model: { name: 'Rail', elements: [], relations: [], diagrams: [] }, activeDiagramId: '', logoLibrary: [] },
+    ])
+    const list = vi.fn(() => store.list())
+    const load = vi.fn((path: string) => store.load(path))
+    // One library for the life of the screen, as the shell hands it over.
+    const scopes: ScopeLibrary = { list, load, save: (scope) => store.save(scope), remove: (path) => store.remove(path) }
+    let current: Organisation | undefined
+    function Probe({ at }: { at: string }) {
+      current = useOrganisation({
+        scopes,
+        active: true,
+        at,
+        onEnter: () => {},
+        notify: () => {},
+        onFailure: () => {},
+        onStorageResult: () => {},
+        s,
+        onTreeChanged: () => {},
+      })
+      return null
+    }
+    const { rerender } = render(<Probe at="" />)
+    await settle()
+    rerender(<Probe at="rail" />)
+    await settle()
+    expect(current?.root?.model.name).toBe('Rail')
+    expect(load.mock.calls.map(([path]) => path)).toEqual(['', 'rail'])
+    expect(list).toHaveBeenCalledTimes(1)
+  })
+
+  /**
    * A folder with no `scope.json` is not a scope (ADR-0012 §1), so a child
    * filed under one would be filed under nothing and nothing would list it.
    */
