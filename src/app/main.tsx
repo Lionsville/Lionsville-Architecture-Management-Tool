@@ -51,7 +51,7 @@ import { detectBrowserLanguage, translator } from '../i18n'
 import {
   browserFolders, chooseFolderDestination, composeShell, desktopCommandChannel, desktopFileChannel,
   inBrowserFolder, inWorkingDirectory, openSource, registeredChrome, registeredConnects,
-  registeredMenus, sourceAgentPanel, sourceChip, sourceChipPanel, sourceDescription,
+  registeredMenus, reloadWhenScriptsAreGone, sourceAgentPanel, sourceChip, sourceChipPanel, sourceDescription,
 } from './composition'
 import type { WorkingFileDestination } from './workingFileFlows'
 import type { DesktopDirectory, RegisteredConnect, Shell } from './composition'
@@ -67,7 +67,7 @@ import type { PullOutcome } from '../platform/sync'
 import { sourceKey } from '../platform/workingSource'
 import { isOpenableScope } from '../projects/scope'
 import type { ScopeSnapshot } from '../projects/scope'
-import { EXAMPLES } from './examples'
+import { EXAMPLE_OFFERS } from './examples/offers'
 import { App } from './App'
 import { AdoptFolder } from './AdoptFolder'
 import { BootFailure } from './BootFailure'
@@ -127,6 +127,10 @@ const root = createRoot(container)
 /** The one line that chooses what the seams are filled with. */
 const browserShell = composeShell()
 let shell = browserShell
+
+// Before anything is rendered: a part reached later is a script of its own,
+// and a deploy while this tab was open is a script that is gone.
+reloadWhenScriptsAreGone(browserShell)
 
 /**
  * The desktop's file channel, or nothing at all in a browser tab.
@@ -682,7 +686,7 @@ function renderApp(
           updateSettings: shell.updateSettings,
         }}
         agent={shell.agent}
-        examples={EXAMPLES}
+        examples={EXAMPLE_OFFERS}
         makeId={makeId}
       />
     </StrictMode>,

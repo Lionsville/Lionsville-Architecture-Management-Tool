@@ -403,8 +403,11 @@ src/platform/     What the app runs inside, and what a failure looks like.
                                       files at one, and `.git/info/exclude` —
                                       `electron/main` was its first caller and
                                       is no longer its only one
-src/widgets/      Presentation with no opinions: icons, one confirm dialog, and
-                  a laid-out page rasterised (`capturePage`).
+src/widgets/      Presentation with no opinions: icons, one confirm dialog,
+                  a laid-out page rasterised (`capturePage`), and a part that
+                  is not in the first download (`lazyPart`): a page behind a
+                  card, fetched when it is opened, and every part preloaded
+                  before a suite's first test (`app/testing/lazyParts.ts`).
 src/ports/        The seams. Interfaces only, no implementations.
                     DirectoryHandle   as little of a folder as the folder store
                                       asks for — the shape a browser's handle,

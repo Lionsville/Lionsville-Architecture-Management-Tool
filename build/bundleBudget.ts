@@ -15,7 +15,15 @@
  * itself, `index-*.js`) at 2.74 MB against a ceiling of 2.9 MB, the whole
  * bundle at 8.0 MB against 8.4 MB. Not a target and not a promise that the
  * app will stay this size; the point is that it cannot grow by a megabyte
- * without somebody deciding it may. `libavoid.wasm` is published from
+ * without somebody deciding it may.
+ *
+ * **Taken down on 27 September 2026**, when the pages a person reaches later
+ * — the registers, the reports, the history, the markdown renderer and the
+ * shipped example — left the first download for scripts of their own
+ * (`widgets/lazyPart`): the app at 2.37 MB against 2.55 MB, the whole at
+ * 7.9 MB against 8.3 MB; the desktop's renderer at 4.60 MB against 4.9 MB and
+ * 15.1 MB against 16 MB. Room that is not taken back is room the next page
+ * grows into without anybody deciding it may. `libavoid.wasm` is published from
  * `public/` beside the bundle rather than through it (`libavoidWasm.ts`), and is
  * not counted.
  *
@@ -33,7 +41,7 @@ export type Budget = {
   total: number
 }
 
-export const WEB_BUDGET: Budget = { file: 2_900_000, total: 8_400_000 }
+export const WEB_BUDGET: Budget = { file: 2_550_000, total: 8_300_000 }
 
 /**
  * The desktop's renderer is the same bundle unminified — electron-vite's
@@ -41,7 +49,7 @@ export const WEB_BUDGET: Budget = { file: 2_900_000, total: 8_400_000 }
  * ceilings of its own, set the same way: 5.22 MB for the largest file against
  * 5.5 MB, 15.3 MB for the whole against 16 MB.
  */
-export const DESKTOP_BUDGET: Budget = { file: 5_500_000, total: 16_000_000 }
+export const DESKTOP_BUDGET: Budget = { file: 4_900_000, total: 16_000_000 }
 
 /** What only ELK's engine says, and neither its API nor anything else here. */
 export const ELK_ENGINE_MARK = 'RecursiveGraphLayoutEngine'

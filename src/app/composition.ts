@@ -59,6 +59,7 @@ export type { DesktopDirectory }
 import { RAIL_PACK } from './iconPacks/rail'
 import { BrowserDocumentGateway } from '../adapters/browser/BrowserDocumentGateway'
 import { browserHostControls } from '../adapters/browser/browserHostControls'
+import { reloadOnStaleScripts } from '../adapters/browser/staleScripts'
 import { ConsoleDiagnostics } from '../adapters/browser/ConsoleDiagnostics'
 import { hostWindowChrome, showWindowTitle } from '../adapters/browser/hostWindow'
 import { InMemoryPreferencesStore } from '../adapters/memory/InMemoryPreferencesStore'
@@ -908,3 +909,12 @@ registerLogoPack(RAIL_PACK)
 registerSourceProvider(FOLDER_SOURCE)
 registerSourceProvider(BROWSER_STORAGE_SOURCE)
 registerSourceProvider(IN_MEMORY_SOURCE)
+
+/**
+ * A tab left open over a deploy asks for a script that is gone, the first time
+ * somebody reaches a part it had not loaded yet; the page again is the answer
+ * (`adapters/browser/staleScripts.ts`). Once, and on this shell's own reload.
+ */
+export function reloadWhenScriptsAreGone(shell: Pick<Shell, 'hostControls' | 'diagnostics'>): () => void {
+  return reloadOnStaleScripts({ reload: () => shell.hostControls.reload(), diagnostics: shell.diagnostics })
+}

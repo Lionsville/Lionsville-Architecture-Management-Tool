@@ -29,7 +29,7 @@ import type { UpdateSettingsStore } from '../ports/UpdateSettings'
 import type {
   RegisteredChrome, RegisteredMenu, ScopeLibrary, ShellDiagnostics, SourceAgentPanel, SourceChipPanel,
 } from './App'
-import type { ExampleProject } from './examples'
+import type { ExampleOffer } from './examples/offers'
 import type { MakeId } from './useDiagramActions'
 import type { ScopeSession } from './useModelSession'
 import type { CommandStream } from './useHostCommands'
@@ -300,7 +300,7 @@ export type AppProps = {
    * with a refusal.
    */
   agent?: AgentGateway
-  examples: readonly ExampleProject[]
+  examples: readonly ExampleOffer[]
   /** Fresh ids. Injected because a clock inside a component cannot be tested. */
   makeId: MakeId
   /** Today as `yyyy-mm-dd`. Injected so a card's finding is not at the clock's mercy. */

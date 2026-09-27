@@ -6,12 +6,27 @@
  * decisions and the observations, the roadmap and a plan on it, and a
  * platform's report and a service's.
  */
+import type { ComponentProps } from 'react'
 import { shownAsOf } from '../editor'
 import { AdrPage } from '../decisions/ui/AdrPage'
 import { ObservationsPage } from '../observations/ui/ObservationsPage'
 import { PlanPage, ReplaceDialog, RoadmapPage } from '../roadmap'
-import { PlatformReportPage, ServiceReportPage } from '../technology'
+import type {
+  PlatformReportPage as PlatformReportShape, ServiceReportPage as ServiceReportShape,
+} from '../technology/ui/ReportPage'
+import { lazyPart } from '../widgets/lazyPart'
 import type { WorkspaceParts } from './workspaceParts'
+
+/**
+ * A platform's report and a service's are pages reached from a card, never the
+ * first view: their script arrives with the first one opened (`widgets/lazyPart`).
+ */
+const ServiceReportPage = lazyPart<ComponentProps<typeof ServiceReportShape>>(
+  () => import('../technology/ui/ReportPage').then((held) => held.ServiceReportPage), { until: (props) => props.open },
+)
+const PlatformReportPage = lazyPart<ComponentProps<typeof PlatformReportShape>>(
+  () => import('../technology/ui/ReportPage').then((held) => held.PlatformReportPage), { until: (props) => props.open },
+)
 
 export function WorkspacePages({ parts }: { parts: WorkspaceParts }) {
   return (

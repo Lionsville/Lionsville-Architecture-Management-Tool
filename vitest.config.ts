@@ -41,7 +41,7 @@ export default defineConfig({
     // A test fails when React complained while it ran — a key, act(), a DOM
     // prop, an error a boundary drew over — rather than passing with the
     // sentence in its scrollback (`src/app/testing/reactComplaints.ts`).
-    setupFiles: ['src/app/testing/reactComplaints.ts'],
+    setupFiles: ['src/app/testing/reactComplaints.ts', 'src/app/testing/lazyParts.ts'],
     // What the tests reach, per module. On when the run says `--coverage`,
     // which `check` does; `test:watch` stays fast. `build/coverage.ts` reads
     // the summary written here, prints one line per module of the import

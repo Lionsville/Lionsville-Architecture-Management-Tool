@@ -25,7 +25,7 @@
  * inventing a second one that guessed would hide affordances that work.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { ReactNode } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
@@ -63,14 +63,15 @@ import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Link from '@mui/material/Link'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
-import type { ExampleProject } from '../examples'
+import type { ExampleOffer } from '../examples/offers'
 import { OverflowMenu } from '../OverflowMenu'
 import type { ToolbarAgent, ToolbarOverflow } from '../ShellToolbar'
 import { agentTip, Crumbs, crumbsFor, QUIET, SourceChipView, WRAPS } from '../ShellToolbar'
 import { NewScopeDialog } from './NewScopeDialog'
 import { registerSummary, registerWithin } from './register'
 import type { RegisterRow } from './register'
-import { RegisterPage, TechnologyPage } from './RegisterPage'
+import type { RegisterPage as RegisterPageShape, TechnologyPage as TechnologyPageShape } from './RegisterPage'
+import { lazyPart } from '../../widgets/lazyPart'
 import { technologySummary, technologyWithin } from '../../projects/technologyRegister'
 import type { TechnologyRow } from '../../projects/technologyRegister'
 import { OrganisationCards } from './OrganisationCards'
@@ -81,9 +82,21 @@ import { ScopeSettingsDialog, SCOPE_KIND_LABEL } from './ScopeSettingsDialog'
 import { ScopeTree } from './ScopeTree'
 import type { Organisation } from './useOrganisation'
 
+/**
+ * The two registers are pages behind a card, and the first view of this
+ * screen is the cards: their script arrives when one is opened
+ * (`widgets/lazyPart`).
+ */
+const RegisterPage = lazyPart<ComponentProps<typeof RegisterPageShape>>(
+  () => import('./RegisterPage').then((held) => held.RegisterPage), { until: (props) => props.open },
+)
+const TechnologyPage = lazyPart<ComponentProps<typeof TechnologyPageShape>>(
+  () => import('./RegisterPage').then((held) => held.TechnologyPage), { until: (props) => props.open },
+)
+
 export type OrganisationScreenProps = {
   organisation: Organisation
-  examples: readonly ExampleProject[]
+  examples: readonly ExampleOffer[]
   order: ProjectOrder
   onOrderChange: (order: ProjectOrder) => void
   /**

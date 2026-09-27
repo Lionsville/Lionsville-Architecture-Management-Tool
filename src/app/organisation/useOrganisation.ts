@@ -44,8 +44,9 @@ import {
 import type { ScopePath } from '../../projects/scopePath'
 import { moveRefusal, moveSubtree } from '../moveSubtree'
 import { rewriteScope } from '../rewriteScope'
-import { copyExampleInto } from '../examples'
-import type { ExampleProject } from '../examples'
+import { copyExampleInto } from '../examples/copy'
+import { exampleOf } from '../examples/offers'
+import type { ExampleOffer } from '../examples/offers'
 import type { InitialPage, ScopeLibrary, ScopeSettingsPatch } from '../App'
 
 /** Which dialog is up. One at a time, because they all ask about one scope. */
@@ -146,7 +147,7 @@ export type Organisation = {
   applySettings: (path: ScopePath, patch: ScopeSettingsPatch) => void
   confirmDelete: () => void
   open: (path: ScopePath, page?: InitialPage) => void
-  copyExample: (example: ExampleProject) => void
+  copyExample: (example: ExampleOffer) => void
   /** Give the root a name, from the field a fresh folder shows instead of a heading. */
   nameOrganisation: (name: string) => void
 }
@@ -567,8 +568,9 @@ export function useOrganisation({
    * it, parents first, and landing the person in the scope that has the work in
    * it rather than in the name above it.
    */
-  const copyExample = useCallback((example: ExampleProject) => {
+  const copyExample = useCallback((offer: ExampleOffer) => {
     void (async () => {
+      const example = await exampleOf(offer)
       const copy = copyExampleInto(example, tree)
       // A shipped example this build cannot read is a bug the example tests
       // exist to prevent, so it reaches here as nothing rather than as a crash.
