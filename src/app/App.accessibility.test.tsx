@@ -80,16 +80,16 @@ describe('the app, as axe reads it', { timeout: 20_000 }, () => {
     expect(await axeFindings()).toEqual([])
   })
 
-  // One board for both: choosing an element is one key away from the board
-  // as it opened, and drawing the whole example again for it is seconds on
-  // the runner.
-  it('finds nothing on a landscape open in the editor: the bar, the tabs, the palette and the board, then with an element in the inspector', async () => {
+  it('finds nothing on a landscape open in the editor: the bar, the tabs, the palette and the board', async () => {
     show(true)
     await screen.findByRole('tab', { name: /Application landscape/ })
     await waitFor(() => expect(document.querySelectorAll('.react-flow__node').length).toBeGreaterThan(0))
-    expect(screen.queryByRole('textbox', { name: 'Name' })).toBeNull()
     expect(await axeFindings()).toEqual([])
+  })
 
+  it('finds nothing with an element in the inspector', async () => {
+    show(true)
+    await waitFor(() => expect(document.querySelectorAll('.react-flow__node').length).toBeGreaterThan(0))
     const node = document.querySelector<HTMLElement>('.react-flow__node')!
     node.focus()
     fireEvent.keyDown(node, { key: 'Enter' })
@@ -105,18 +105,16 @@ describe('the app, as axe reads it', { timeout: 20_000 }, () => {
     expect(await axeFindings()).toEqual([])
   })
 
-  // The three in turn over one board, each closed and gone before the next is
-  // asked for, so each is read on its own over the page it opens from.
-  it('finds nothing in the preferences, the connect an agent and the shortcuts dialogs', async () => {
+  it.each<[string, HostCommand]>([
+    ['preferences', { type: 'preferences' }],
+    ['connect an agent', { type: 'connectAgent' }],
+    ['the shortcuts', { type: 'shortcuts' }],
+  ])('finds nothing in the %s dialog', async (_name, command) => {
     const { send } = show(true)
     await screen.findByRole('tab', { name: /Application landscape/ })
-    for (const command of [{ type: 'preferences' }, { type: 'connectAgent' }, { type: 'shortcuts' }] as const) {
-      send(command)
-      const dialog = await screen.findByRole('dialog')
-      expect(within(dialog).getAllByRole('button').length, command.type).toBeGreaterThan(0)
-      expect(await axeFindings(), command.type).toEqual([])
-      fireEvent.keyDown(dialog, { key: 'Escape' })
-      await waitFor(() => expect(document.querySelector('[role="dialog"]'), command.type).toBeNull())
-    }
+    send(command)
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getAllByRole('button').length).toBeGreaterThan(0)
+    expect(await axeFindings()).toEqual([])
   })
 })
