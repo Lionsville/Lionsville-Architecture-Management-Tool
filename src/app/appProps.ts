@@ -14,6 +14,7 @@
 import type { StringKey } from '../i18n'
 import type { ScopeSnapshot } from '../projects/scope'
 import type { ScopePath } from '../projects/scopePath'
+import type { BootDialog } from './bootLanding'
 import type { ThemeMode } from '../platform/theme'
 import type { PullOutcome } from '../platform/sync'
 import type { WindowChrome } from '../platform/windowChrome'
@@ -42,6 +43,18 @@ import type { ChooseFolderForWorkingFile } from './workingFileFlows'
 export type AppBoot = {
   /** Read by the composition root before the first render, so this can be sync. */
   initialProject: ScopeSnapshot | undefined
+  /**
+   * Whose home is up at the first paint, where nothing is open: the scope an
+   * address named without naming one of its views (`bootLanding`). Absent is
+   * the organisation's.
+   */
+  initialHome?: ScopePath
+  /**
+   * One of the shell's own dialogs, open at the first paint because the
+   * address asked for it (`bootLanding`'s `dialogAsked`) — a page elsewhere
+   * whose *Preferences* is a link back into the app with them open.
+   */
+  opensDialog?: BootDialog
   initialPreferences: unknown
   /** What the browser reports; injected so a test can pin the starting language. */
   browserLanguages?: readonly string[] | string

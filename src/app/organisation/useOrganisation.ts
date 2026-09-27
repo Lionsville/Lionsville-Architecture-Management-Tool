@@ -115,6 +115,11 @@ export type Organisation = {
    */
   root: ScopeSnapshot | undefined
   ready: boolean
+  /**
+   * Whether the listing has been read at least once: before it has, a home it
+   * does not hold yet is a home nobody has looked for, not one that is gone.
+   */
+  listed: boolean
   refresh: () => void
   dialog: OrganisationDialog
   /** Which scopes are folded shut. Per session: a fold is not a preference. */
@@ -167,8 +172,9 @@ function useHomeReads({ scopes, active, at, revision, onFailure }: {
   at: ScopePath
   revision: number
   onFailure: UseOrganisationInput['onFailure']
-}): { tree: ScopeSummary; root: ScopeSnapshot | undefined; ready: boolean } {
+}): { tree: ScopeSummary; root: ScopeSnapshot | undefined; ready: boolean; listed: boolean } {
   const [tree, setTree] = useState<ScopeSummary>(() => scopeTree([]))
+  const [listed, setListed] = useState(false)
   const [root, setRoot] = useState<ScopeSnapshot | undefined>(undefined)
   const [ready, setReady] = useState(false)
 
@@ -195,10 +201,11 @@ function useHomeReads({ scopes, active, at, revision, onFailure }: {
   useEffect(() => {
     let live = true
     void scopes.list().then(
-      (held) => { if (live) setTree(held) },
+      (held) => { if (live) { setTree(held); setListed(true) } },
       (cause: unknown) => {
         if (!live) return
         setTree(scopeTree([]))
+        setListed(true)
         failedRef.current('organisation.list', cause, 'picker.listFailed')
       },
     )
@@ -225,7 +232,7 @@ function useHomeReads({ scopes, active, at, revision, onFailure }: {
     return () => { live = false }
   }, [scopes, active, at, revision])
 
-  return { tree, root, ready }
+  return { tree, root, ready, listed }
 }
 
 export function useOrganisation({
@@ -236,7 +243,7 @@ export function useOrganisation({
   const [revision, setRevision] = useState(0)
 
   const refresh = useCallback(() => setRevision((held) => held + 1), [])
-  const { tree, root, ready } = useHomeReads({ scopes, active, at, revision, onFailure })
+  const { tree, root, ready, listed } = useHomeReads({ scopes, active, at, revision, onFailure })
 
 
   const toggleCollapsed = useCallback((path: ScopePath) => {
@@ -613,13 +620,13 @@ export function useOrganisation({
   }, [applySettings])
 
   return useMemo(() => ({
-    tree, at, root, ready, refresh, dialog, collapsed, toggleCollapsed,
+    tree, listed, at, root, ready, refresh, dialog, collapsed, toggleCollapsed,
     addUnder, editScope, askDelete, closeDialog, setNewScopeName, setNewScopeParent,
     setNewScopeWithBoard, create, addBoard, setNewBoardName, createBoard,
     askDeleteBoard, confirmDeleteBoard,
     applySettings, confirmDelete, open, copyExample, nameOrganisation,
   }), [
-    tree, at, root, ready, refresh, dialog, collapsed, toggleCollapsed,
+    tree, listed, at, root, ready, refresh, dialog, collapsed, toggleCollapsed,
     addUnder, editScope, askDelete, closeDialog, setNewScopeName, setNewScopeParent,
     setNewScopeWithBoard, create, addBoard, setNewBoardName, createBoard,
     askDeleteBoard, confirmDeleteBoard,

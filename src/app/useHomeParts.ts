@@ -106,7 +106,9 @@ export function useHomeParts(deps: {
    */
   const homeListed = home === ROOT_SCOPE
     || flattenScopes(organisation.tree).some((scope) => scope.path === home)
-  useEffect(() => { if (!homeListed) setHome(ROOT_SCOPE) }, [homeListed, setHome])
+  // Only once the listing has been read: a home the boot landed on is not in
+  // the empty tree the first paint has, and is not gone for that.
+  useEffect(() => { if (organisation.listed && !homeListed) setHome(ROOT_SCOPE) }, [organisation.listed, homeListed, setHome])
   /** What the home that is up is called, for the window's title and the agent. */
   const name = useMemo(
     () => flattenScopes(organisation.tree).find((scope) => scope.path === home)?.name,

@@ -736,7 +736,7 @@ function useShellBase(props: AppProps) {
   const todayDay = useMemo(() => today(), [today])
   const refreshTree = useRef<() => void>(() => {})
   const nav = useShellNavigation({
-    initialProject: boot.initialProject, projects, watchProject: folder.watch, prefs, failedRef, refreshTree,
+    initialProject: boot.initialProject, initialHome: boot.initialHome, projects, watchProject: folder.watch, prefs, failedRef, refreshTree,
   })
   const { project, enter } = nav
   const sync = useSync({
@@ -747,7 +747,7 @@ function useShellBase(props: AppProps) {
   const agentServer = useAgentServer({ agent, failedRef, notify: toasts.notify, s })
   const machine = useMachineSettings({
     updateSettings: host.updateSettings, folderSettings: folder.settings, history: folder.history,
-    failedRef, notify: toasts.notify, s,
+    failedRef, notify: toasts.notify, s, initiallyOpen: boot.opensDialog === 'preferences',
   })
   const commands = useShellCommands({
     commands: host.commands, onChooseFolder: folder.onChoose, onOpenFolder: folder.onOpen, prefs,

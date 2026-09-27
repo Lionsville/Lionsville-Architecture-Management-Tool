@@ -216,10 +216,15 @@ export type SourceOffer = {
  * environment* — and the provider that recognised the address is the one that
  * knows which part of it names the place. So it says so with its parts
  * (`Shell.opensAt`), and the boot opens that scope in place of the one this
- * machine last had open. A scope that is not there, or that this person may
- * not read, loads as nothing, and the boot then does what it does for any
- * scope that is gone: the home. A view the scope does not hold is ignored,
- * and the scope opens on the view it would have opened on anyway.
+ * machine last had open: **on its home** where the address named no view —
+ * the way opening a scope from a home does — and on the view where it named
+ * one. A scope that is not there, or that this person may not read, loads as
+ * nothing, and the boot then does what it does for any scope that is gone:
+ * the organisation's home. A view the scope does not hold is ignored, and the
+ * scope opens on the view it would have opened on anyway. A provider that
+ * wants a fresh start with no place in its address to begin at the
+ * organisation's home, rather than where this machine last was, lands on the
+ * root: `{ scope: '' }`.
  *
  * A path, and never a name: the path is the ref (ADR-0012 §1).
  */

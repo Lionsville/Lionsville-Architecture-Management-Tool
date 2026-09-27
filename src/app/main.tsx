@@ -66,8 +66,8 @@ import { modelsAhead } from '../projects/readAhead'
 import { pullOnOpen as pullBeforeOpening, upgradeFormat as upgradeFormatOf } from './bootReads'
 import type { PullOutcome } from '../platform/sync'
 import { sourceKey } from '../platform/workingSource'
-import { isOpenableScope, onView } from '../projects/scope'
-import type { ScopeSnapshot } from '../projects/scope'
+import { dialogAsked, landingOf, withoutDialog } from './bootLanding'
+import type { BootDialog, BootLanding } from './bootLanding'
 import { EXAMPLE_OFFERS } from './examples/offers'
 import { App } from './App'
 import { AdoptFolder } from './AdoptFolder'
@@ -346,6 +346,18 @@ async function sourceFromLocation(): Promise<boolean> {
   }
   return false
 }
+
+/**
+ * A dialog the address asked to have open at the first paint (`bootLanding`),
+ * read once, and taken out of the address at once so a reload does not open
+ * it again. The desktop's page has no query, so there it is always nothing.
+ */
+const askedDialog = (() => {
+  const asked = dialogAsked(window.location.search)
+  const rest = withoutDialog(window.location.href)
+  if (rest !== undefined) window.history.replaceState(window.history.state, '', rest)
+  return asked
+})()
 
 /**
  * Where the page was opened, as much of it as a provider may read.
@@ -629,7 +641,7 @@ function upgradeFormat(): Promise<void> {
  * an error, so nothing here reports it.
  */
 function renderApp(
-  storedPreferences: unknown, initialProject: ScopeSnapshot | undefined, initialSync?: PullOutcome,
+  storedPreferences: unknown, landing: BootLanding & { dialog?: BootDialog } | undefined, initialSync?: PullOutcome,
   folderFailure?: unknown, sourceFailure?: unknown,
 ): void {
   root.render(
@@ -644,7 +656,9 @@ function renderApp(
         diagnostics={shell.diagnostics}
         hostControls={shell.hostControls}
         boot={{
-          initialProject,
+          initialProject: landing?.initialProject,
+          ...(landing?.initialHome !== undefined ? { initialHome: landing.initialHome } : {}),
+          ...(landing?.dialog ? { opensDialog: landing.dialog } : {}),
           initialPreferences: storedPreferences,
           browserLanguages: navigator.languages ?? navigator.language,
           initialSync,
@@ -745,9 +759,9 @@ void shell.preferences.read()
     shell = { ...shell, scopes: modelsAhead(shell.scopes) }
     const held = lastScope === undefined ? undefined : await shell.scopes.load(lastScope)
     // A scope with no views is a domain (ADR-0012 §1): there is nothing for the
-    // canvas to show, so the picker opens instead of an empty editor.
-    const initialProject = isOpenableScope(held) ? onView(held, shell.opensAt?.view) : undefined
-    renderApp(storedPreferences, initialProject, initialSync)
+    // canvas to show, so its home opens instead of an empty editor — and a
+    // scope an address named opens on its home unless it named a view.
+    renderApp(storedPreferences, { ...landingOf(held, shell.opensAt), dialog: askedDialog }, initialSync)
   })
   .catch((error: unknown) => {
     shell.diagnostics.report({

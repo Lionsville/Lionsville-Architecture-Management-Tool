@@ -19,6 +19,8 @@ export type ShellNavigation = ReturnType<typeof useShellNavigation>
 
 export function useShellNavigation(deps: {
   initialProject: ScopeSnapshot | undefined
+  /** Whose home is up at the first paint where nothing is open; the root's where absent. */
+  initialHome?: ScopePath
   projects: Pick<ScopeLibrary, 'load'>
   watchProject: AppFolder['watch']
   prefs: ShellPreferences
@@ -30,7 +32,7 @@ export function useShellNavigation(deps: {
    */
   refreshTree: RefObject<() => void>
 }) {
-  const { initialProject, projects, watchProject, prefs, failedRef, refreshTree } = deps
+  const { initialProject, initialHome, projects, watchProject, prefs, failedRef, refreshTree } = deps
   const [project, setProject] = useState<ScopeSnapshot | undefined>(initialProject)
 
   /**
@@ -92,7 +94,7 @@ export function useShellNavigation(deps: {
    * own. Session state and not a preference: `lastScope` says where the work
    * was, and a home is a place you pass through on the way to it.
    */
-  const [home, setHome] = useState<ScopePath>(ROOT_SCOPE)
+  const [home, setHome] = useState<ScopePath>(initialHome ?? ROOT_SCOPE)
 
   /**
    * Open another scope by its path — what *Open …* beside a field another

@@ -35,9 +35,12 @@ export function useMachineSettings(deps: {
   failedRef: RefObject<Failed>
   notify: Notify
   s: Translate
+  /** The dialog open from the first paint: an address asked for it. */
+  initiallyOpen?: boolean
 }): MachineSettings {
-  const { updateSettings, folderSettings, history, failedRef, notify, s } = deps
-  const [open, setOpen] = useState(false)
+  const { updateSettings, folderSettings, history, failedRef, notify, s, initiallyOpen = false } = deps
+  // Open at the first paint where the address asked for it (`bootLanding`).
+  const [open, setOpen] = useState(initiallyOpen)
   /**
    * Read when the dialog opens, not at boot: the update settings are a round
    * trip to main and the machine file is a read from the folder, and neither
