@@ -5,13 +5,14 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { placedNodes } from '../model/placement';
 import { laidOut } from '../model/testFixtures';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { ThemeProvider } from '@mui/material/styles';
 import { testTheme } from './testing/theme';
 import { HostedEditor } from './testing/editorHost';
 import type { EditorHostState, HostedEditorProps } from './testing/editorHost';
 import type { DesignModel } from '../model/types';
 import { installReactFlowMocks } from './reactFlowTestSetup';
+import { LIVE_REROUTE_DEBOUNCE_MS } from './useLiveRouting';
 import { routeDiagramEdges } from '../layout/routeOnly';
 import { tidyLayer7 } from '../layout/tidy';
 
@@ -324,6 +325,16 @@ describe('SolutionDesignEditor — live routing on an over-cap board', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Add application' }));
   };
 
+  /**
+   * The live pass waits out a debounce after the last change. The clock is the
+   * test's once the board is up, so the wait is a step rather than a poll, and
+   * the async act lets the mocked router's answer — a microtask — land inside
+   * it: whatever the pass does with that answer has been done when this returns.
+   */
+  const ownTheClock = () => vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+  const pastTheDebounce = () => act(async () => { vi.advanceTimersByTime(LIVE_REROUTE_DEBOUNCE_MS); });
+  afterEach(() => { vi.useRealTimers(); });
+
   it('shows the toggle pressed when the diagram has the mode on', () => {
     renderLive();
     expect(
@@ -334,15 +345,17 @@ describe('SolutionDesignEditor — live routing on an over-cap board', () => {
   it('turns itself off and reports once when the board is over the cap', async () => {
     mockRoute.mockResolvedValue({ placements: [], edgeRoutes: [], skipped: overCap });
     const { host, onLayoutError } = renderLive();
+    ownTheClock();
 
     // Two geometry changes: the message must still arrive exactly once.
     changeGeometry();
     changeGeometry();
+    await pastTheDebounce();
 
-    await waitFor(() => expect(onLayoutError).toHaveBeenCalledTimes(1), { timeout: 2000 });
+    expect(onLayoutError).toHaveBeenCalledTimes(1);
     expect(onLayoutError.mock.calls[0][0]).toContain('200');
     // Persisted off, so reopening does not re-enter a mode that cannot work.
-    await waitFor(() => expect(host.current.model.diagrams[0].autoRoute).toBe(false));
+    expect(host.current.model.diagrams[0].autoRoute).toBe(false);
   });
 
   it('does not report a live pass that FAILED, because nobody asked for it', async () => {
@@ -350,11 +363,15 @@ describe('SolutionDesignEditor — live routing on an over-cap board', () => {
     // about a pass they did not start, is noise. The console still carries it.
     mockRoute.mockRejectedValue(wasmDown());
     const { onLayoutError } = renderLive();
+    ownTheClock();
 
     changeGeometry();
+    await pastTheDebounce();
 
-    await waitFor(() => expect(mockRoute).toHaveBeenCalled(), { timeout: 2000 });
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(mockRoute).toHaveBeenCalledTimes(1);
+    // The rejection was handled inside the act; the console has it and the
+    // person does not.
+    expect(console.error).toHaveBeenCalledWith('Live re-routing failed.', expect.any(Error));
     expect(onLayoutError).not.toHaveBeenCalled();
   });
 });
