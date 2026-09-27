@@ -864,6 +864,41 @@ trace context is sequenced as one that does not, nobody else is handed the
 context, and an answer that names a trace names the one the publish carried,
 refusals included.
 
+## Amended — the two a build whose people may write some scopes and only read others needed
+
+*27 September 2026.* A source that keeps a tree of scopes for several people
+found that *may work here be written* was one answer for the whole source:
+`WorkingSource.readOnly`, read once at the first paint. A person who may write
+one subtree and only read another was drawn either a canvas that offered what
+would be refused everywhere they may only read, or none anywhere. And a link
+that named a board brought a person to the source and not to the board: the
+boot reopened whatever this machine last had open. Each is added as the
+smallest public thing that closes it, optional on the parts a source brings, so
+the three built-ins are written exactly as they were.
+
+* **A source may say a scope is only read.** `Shell.readOnlyAt(scope)` is asked
+  with the path of each scope a workspace opens, and `true` makes that workspace
+  read-only exactly as a read-only source makes every one: the session refuses,
+  and every mutating affordance hides. The provider's menu is told the same
+  about the scope that is open. It is a function and not a list, because what
+  the source knows is a rule about paths — a subtree, and everything below it —
+  and a list would be the tree written out a second time. The source is still
+  the authority on a write; this only stops the shell offering what would be
+  refused.
+* **A source may say where its address landed.** `Shell.opensAt` is a
+  `SourceLanding` — a scope path, and a view of it where the address named one
+  — which the boot opens in place of the scope this machine last had open, for
+  the reason the address already wins over the folder: it is what was asked for
+  just now. A scope that will not load, because it is gone or because this
+  person may not read it, is what a remembered scope that has gone is — the
+  home; a view the scope does not hold is ignored (`onView`), and the scope
+  opens where it would have. What part of an address names the place is the
+  provider's business, as the rest of the address is.
+
+`App.readOnly.test.tsx` pins the first: every clause that holds a viewer's
+source read-only holds a scope a writable source says is only read, and the
+same source's other scopes draw their palette. `scope.test.ts` pins `onView`.
+
 ## More Information
 
 ADR-0002 for the command and its inverse, which is the whole reason this is a

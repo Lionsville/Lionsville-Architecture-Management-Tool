@@ -285,6 +285,19 @@ export function isOpenableScope(scope: ScopeSnapshot | undefined): scope is Scop
 }
 
 /**
+ * The scope, opening on this view where it holds one.
+ *
+ * What a link that names a board asks for (`SourceLanding`). A view the scope
+ * does not hold — removed since the link was made, or never there — is not an
+ * error: the scope opens on the view it would have opened on anyway, and the
+ * link has still brought the person to the right scope.
+ */
+export function onView(scope: ScopeSnapshot, view: string | undefined): ScopeSnapshot {
+  if (view === undefined || view === scope.activeDiagramId) return scope
+  return scope.model.diagrams.some((diagram) => diagram.id === view) ? { ...scope, activeDiagramId: view } : scope
+}
+
+/**
  * Is this something a store read back and can hand over as a scope?
  *
  * Weaker than {@link isOpenableScope} on purpose, and about shape rather than

@@ -72,16 +72,26 @@ const viewer = {
   provider: 'elsewhere', name: 'Elsewhere', key: 'one', readOnly: true,
 }
 
-const ways = [
+/** A source somebody may write in one subtree and only read in this one. */
+const writableElsewhere = {
+  kind: 'registered' as const,
+  provider: 'elsewhere', name: 'Elsewhere', key: 'two',
+}
+const readHere = { readOnlyAt: (path: string) => path === 'acme/landscape' }
+
+type Way = () => { source?: typeof viewer | typeof writableElsewhere; initialProject: ScopeSnapshot; provider?: typeof readHere }
+
+const ways: readonly (readonly [string, Way])[] = [
   ['a viewer’s source', () => ({ source: viewer, initialProject: scope() })],
-  ['a scope whose model did not read', () => ({ source: undefined, initialProject: scope({ unreadable: ['model.json'] }) })],
-] as const
+  ['a scope whose model did not read', () => ({ initialProject: scope({ unreadable: ['model.json'] }) })],
+  ['a scope its source says is only read here', () => ({ source: writableElsewhere, initialProject: scope(), provider: readHere })],
+]
 
 describe.each(ways)('on %s', (_name, way) => {
   async function open() {
     const wire = listeningGateway()
-    const { source, initialProject } = way()
-    renderApp({ agent: wire.gateway, boot: { initialProject }, ...(source ? { source } : {}) })
+    const { source, initialProject, provider } = way()
+    renderApp({ agent: wire.gateway, boot: { initialProject }, ...(source ? { source } : {}), ...(provider ? { provider } : {}) })
     await waitFor(() => expect(wire.bound()).toBe(true))
     /** How many steps this session has taken: what any change, from anywhere, leaves behind. */
     const steps = async () => {
@@ -129,7 +139,7 @@ describe.each(ways)('on %s', (_name, way) => {
 
   /** A laid-out view in the tab (ADR-0016) is handed the editor's own flag. */
   it('lays out the sheet without its author’s controls', async () => {
-    const { source, initialProject } = way()
+    const { source, initialProject, provider } = way()
     const withSheet: ScopeSnapshot = {
       ...initialProject,
       model: {
@@ -138,7 +148,7 @@ describe.each(ways)('on %s', (_name, way) => {
       },
       activeDiagramId: 's1',
     }
-    renderApp({ boot: { initialProject: withSheet }, ...(source ? { source } : {}) })
+    renderApp({ boot: { initialProject: withSheet }, ...(source ? { source } : {}), ...(provider ? { provider } : {}) })
     await screen.findByLabelText('Save as a picture…')
     expect(screen.queryByLabelText('What this sheet draws')).toBeNull()
   })
@@ -156,5 +166,18 @@ describe.each(ways)('on %s', (_name, way) => {
     await screen.findByTestId('observation-tab-register')
     expect(screen.queryByText(/New observation/)).toBeNull()
     expect(screen.queryByText(/New cause/)).toBeNull()
+  })
+})
+
+/** The same source, and a scope it says may be written: drawn as writable. */
+describe('a scope its source does not say is only read', () => {
+  it('draws the canvas with its palette', async () => {
+    renderApp({
+      boot: { initialProject: scope({ path: 'acme/other' }) },
+      source: writableElsewhere,
+      provider: readHere,
+    })
+    expect(await screen.findByLabelText('Element palette')).toBeDefined()
+    expect(screen.queryByText('Read-only')).toBeNull()
   })
 })

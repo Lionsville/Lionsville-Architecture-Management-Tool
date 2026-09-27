@@ -65,7 +65,7 @@ import { modelsAhead } from '../projects/readAhead'
 import { pullOnOpen as pullBeforeOpening, upgradeFormat as upgradeFormatOf } from './bootReads'
 import type { PullOutcome } from '../platform/sync'
 import { sourceKey } from '../platform/workingSource'
-import { isOpenableScope } from '../projects/scope'
+import { isOpenableScope, onView } from '../projects/scope'
 import type { ScopeSnapshot } from '../projects/scope'
 import { EXAMPLE_OFFERS } from './examples/offers'
 import { App } from './App'
@@ -662,6 +662,7 @@ function renderApp(
           menu: menus,
           onScopeSession: shell.onScopeSession,
           publishesSteps: shell.publishesSteps,
+          readOnlyAt: shell.readOnlyAt,
           chrome: chromes,
           waysIn,
         }}
@@ -731,9 +732,11 @@ void shell.preferences.read()
     // a desktop with nowhere to keep anything, where the only place a project
     // could be is the app's own storage, which is exactly what ADR-0003 retired.
     const hasSource = shell.source.kind === 'folder' || shell.source.kind === 'registered'
-    const lastScope = files && !hasSource
+    // An address that named a place wins over the scope this machine last had
+    // open, for the reason the address wins over the folder above.
+    const lastScope = shell.opensAt?.scope ?? (files && !hasSource
       ? undefined
-      : readLastScope(storedPreferences)
+      : readLastScope(storedPreferences))
     // The tree's models and the scope it reopens, asked for together: the index
     // is read the moment the app mounts, and nothing about it waits on which
     // scope is open. After the format pass, so what is read is this format.
@@ -741,7 +744,7 @@ void shell.preferences.read()
     const held = lastScope === undefined ? undefined : await shell.scopes.load(lastScope)
     // A scope with no views is a domain (ADR-0012 §1): there is nothing for the
     // canvas to show, so the picker opens instead of an empty editor.
-    const initialProject = isOpenableScope(held) ? held : undefined
+    const initialProject = isOpenableScope(held) ? onView(held, shell.opensAt?.view) : undefined
     renderApp(storedPreferences, initialProject, initialSync)
   })
   .catch((error: unknown) => {

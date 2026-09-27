@@ -29,7 +29,7 @@ export function useProviderParts(deps: {
   const { source, diagnostics, openSomewhere } = deps
   const {
     onWork: onSourceWork, chip: sourceChip, menu: menus = NONE, onScopeSession, chrome: chromes = NONE,
-    agentPanel: AgentPanel, chipPanel: ChipPanel, waysIn,
+    agentPanel: AgentPanel, chipPanel: ChipPanel, waysIn, readOnlyAt,
   } = deps.provider
   /**
    * The scope that is open, as whoever answers for the source sees it — held
@@ -116,7 +116,8 @@ export function useProviderParts(deps: {
       try {
         lines.push(...menu({
           session: kind === openProvider ? openScope : undefined,
-          readOnly: sourceIsReadOnly(source),
+          readOnly: sourceIsReadOnly(source) || (kind === openProvider && openScope !== undefined
+            && (readOnlyAt?.(openScope.scope) ?? false)),
           open: openSomewhere,
         }))
       } catch (cause) {
@@ -124,7 +125,7 @@ export function useProviderParts(deps: {
       }
     }
     return lines
-  }, [menus, openProvider, openScope, source, diagnostics, openSomewhere])
+  }, [menus, openProvider, openScope, source, diagnostics, openSomewhere, readOnlyAt])
 
   /**
    * What the menu is given about the providers, and nothing at all where no

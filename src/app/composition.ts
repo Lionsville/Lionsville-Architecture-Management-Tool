@@ -75,7 +75,7 @@ import type { WorkingSource } from '../platform/workingSource'
 import type { HookInvoke } from '../platform/desktopHook'
 import type {
   SourceChip as ProviderChip,
-  SourceConnect, SourceFailure, SourceProvider, SourceStatus, SourceWork, SourceWorkChanged,
+  SourceConnect, SourceFailure, SourceLanding, SourceProvider, SourceStatus, SourceWork, SourceWorkChanged,
 } from '../platform/sourceProvider'
 import type { StringKey } from '../i18n/strings'
 import type {
@@ -193,6 +193,33 @@ export type Shell = {
    */
   publishesSteps?: boolean
   /**
+   * Which scopes of this source may be read and not written, where that is an
+   * answer per scope rather than one for the whole source.
+   *
+   * `WorkingSource.readOnly` says it of everything, which is right for a
+   * source that nobody here may write. A source that keeps a tree of scopes
+   * for several people may let the same person write one subtree and only
+   * read another, and the workspace has to draw the one as it draws a
+   * read-only source and the other as it draws a writable one. Asked with the
+   * path of the scope a workspace opens, and again for each scope opened:
+   * `true` makes that workspace read-only exactly as a read-only source does
+   * (`ModelSession.readOnly` refuses, and every mutating affordance hides).
+   *
+   * The source is still the authority on a write — this only stops the shell
+   * offering what would be refused. Absent for all three sources that ship,
+   * and then a scope is as writable as its source.
+   */
+  readOnlyAt?: (scope: ScopePath) => boolean
+  /**
+   * Where the address this source was reached at asked to land
+   * (`SourceLanding`): read by the boot in place of the scope this machine last
+   * had open. Absent for all three sources that ship, which are not reached by
+   * an address, and for a registered source opened by a way in rather than a
+   * link.
+   */
+  opensAt?: SourceLanding
+  /**
+   * Tell me when this project's folder changed under us, other than by us.  /**
    * Tell me when this project's folder changed under us, other than by us.
    *
    * Absent when nothing can watch — a browser tab, or a folder the platform

@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest'
 import {
   bareScope, countScopes, emptyScope, flattenScopes, isOpenableScope, isProjectOrder, isStoredScope,
   moveScope, movedPaths, namesUnder, newestChange,
-  openScopeDocument, renameScope, resolveActive, scopeTree, setScopeDefaults,
+  onView, openScopeDocument, renameScope, resolveActive, scopeTree, setScopeDefaults,
   sortScopes, subtreeTotals, summarise, toWorkingFile,
 } from './scope'
 import type { ScopeSummary } from './scope'
@@ -32,6 +32,19 @@ describe('emptyScope', () => {
     // And it is a scope a store will accept, which says what it is.
     expect(isOpenableScope(fresh)).toBe(true)
     expect(fresh.kind).toBe('landscape')
+  })
+})
+
+describe('onView', () => {
+  const held = { ...sampleScope(), activeDiagramId: 'l7' }
+
+  it('opens on the view a link named, where the scope holds it', () => {
+    expect(onView(held, 'cd').activeDiagramId).toBe('cd')
+  })
+
+  it('opens where it would have where the view is not there, or none was named', () => {
+    expect(onView(held, 'gone')).toBe(held)
+    expect(onView(held, undefined)).toBe(held)
   })
 })
 

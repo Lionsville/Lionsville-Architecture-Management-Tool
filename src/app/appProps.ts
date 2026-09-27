@@ -151,6 +151,12 @@ export type AppProvider = {
   /** See `Shell.publishesSteps`: the open scope's changes travel as steps, and are not written whole. */
   publishesSteps?: boolean
   /**
+   * See `Shell.readOnlyAt`: which scopes of this source may be read and not
+   * written. Asked for the scope a workspace opens; absent for all three
+   * sources that ship, whose scopes are as writable as the source.
+   */
+  readOnlyAt?: (scope: string) => boolean
+  /**
    * Whatever the source providers draw for themselves (`SourceChrome`),
    * one entry per registration and not per open source.
    *

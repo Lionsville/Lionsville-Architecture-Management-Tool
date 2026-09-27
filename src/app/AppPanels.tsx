@@ -77,7 +77,7 @@ function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSn
         // Two facts about where work is kept that the workspace reads as
         // its own: whether it may be written at all, and what this source
         // means by the words on the bar.
-        readOnly: sourceIsReadOnly(parts.source),
+        readOnly: sourceIsReadOnly(parts.source) || (props.provider?.readOnlyAt?.(project.path) ?? false),
         status: props.provider?.status,
         onWork: props.provider?.onWork,
         onSession: parts.provider.takeScopeSession,

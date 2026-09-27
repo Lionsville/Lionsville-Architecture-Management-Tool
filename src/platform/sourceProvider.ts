@@ -209,6 +209,26 @@ export type SourceOffer = {
 }
 
 /**
+ * Where an address asked to land: a scope, and one of its views where it named
+ * one.
+ *
+ * A link is a way in to a place as well as to a source — *this board, in that
+ * environment* — and the provider that recognised the address is the one that
+ * knows which part of it names the place. So it says so with its parts
+ * (`Shell.opensAt`), and the boot opens that scope in place of the one this
+ * machine last had open. A scope that is not there, or that this person may
+ * not read, loads as nothing, and the boot then does what it does for any
+ * scope that is gone: the home. A view the scope does not hold is ignored,
+ * and the scope opens on the view it would have opened on anyway.
+ *
+ * A path, and never a name: the path is the ref (ADR-0012 §1).
+ */
+export type SourceLanding = {
+  readonly scope: string
+  readonly view?: string
+}
+
+/**
  * Where the page was opened, as much of it as a provider may read.
  *
  * Written out rather than taken from the DOM's `Location`: this module is pure
