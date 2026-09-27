@@ -3,6 +3,11 @@
 * Status: accepted
 * Date: 2026-09-10
 * Deciders: Wouter Simons
+* Superseded-by: ADR-0016, in part, 2026-09-16 — §6: a sheet is opened as a
+  page over the canvas
+* Superseded-by: ADR-0018, in part, 2026-09-19 — §11 and its Decision Drivers
+  and Consequences — "the interchange format is a contract with other tools
+  and does not change"
 
 *This is the 2.0.0 record. It decides what the model is built towards, not the
 order it is reached in; the last section sketches that order and is the least

@@ -3,7 +3,7 @@
 * Status: accepted
 * Date: 2026-09-20
 * Deciders: Wouter Simons
-* Amends: ADR-0015 §2 (hosting was a line only on request; the landscape
+* Supersedes: ADR-0015 §2 (hosting was a line only on request; the landscape
   drew and was not written on; the offerings drawn were this scope's own)
   and ADR-0017 §4 (the *Uses* picker it left open)
 

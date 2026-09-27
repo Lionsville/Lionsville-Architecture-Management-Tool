@@ -3,10 +3,12 @@
 * Status: accepted
 * Date: 2026-09-16
 * Deciders: Wouter Simons
-* Amends: ADR-0013's *Redone* preamble (a `technology` view kind goes) and
+* Supersedes: ADR-0013's *Redone* preamble (a `technology` view kind goes) and
   ADR-0014 §9 (the report rather than a view kind)
-* Amended, 20 September 2026, by ADR-0020: hosting is a line at rest and
-  folds on request, the offerings other scopes mark shared join the
+* Superseded-by: ADR-0016, in part, 2026-09-16 — §5: where the technology
+  landscape lives
+* Superseded-by: ADR-0020, in part, 2026-09-20 — §2: hosting is a line at rest
+  and folds on request, the offerings other scopes mark shared join the
   services, and the landscape is written on — one drop gesture, the
   inspector's *Uses* picker docked beside it
 

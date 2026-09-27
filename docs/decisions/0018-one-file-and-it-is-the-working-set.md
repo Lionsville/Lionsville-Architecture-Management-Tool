@@ -7,8 +7,8 @@
   interchange format is a contract with other tools and does not change";
   ADR-0007's Consequences, where the tool vocabulary is called a published
   surface "like the interchange"
-* Amends: ADR-0003, which kept the single file as the export container — it is
-  the whole working directory now, not one scope out of it
+* Supersedes: ADR-0003, which kept the single file as the export container —
+  it is the whole working directory now, not one scope out of it
 
 ## Context and Problem Statement
 

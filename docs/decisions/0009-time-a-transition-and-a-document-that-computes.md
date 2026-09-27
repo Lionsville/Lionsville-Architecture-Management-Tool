@@ -3,6 +3,9 @@
 * Status: accepted
 * Date: 2026-09-08
 * Deciders: Wouter Simons
+* Superseded-by: ADR-0027, in part, 2026-09-26 — *a diagram carries `asOf` and
+  changing it is a command*, and the accepted cost *`asOf` dirties the
+  document*
 
 **Built, 8 September 2026**, in the order the last section gives, with four
 departures from the text below that are worth knowing before reading it:

@@ -3,6 +3,8 @@
 * Status: accepted
 * Date: 2026-09-07
 * Deciders: Wouter Simons
+* Superseded-by: ADR-0018, in part, 2026-09-19 — its Consequences, where the
+  tool vocabulary is called a published surface "like the interchange"
 
 **Built, 7 September 2026**, in the order the last section gives, with
 three departures from the text below that are worth knowing before reading

@@ -3,7 +3,7 @@
 * Status: accepted
 * Date: 2026-09-26
 * Deciders: Wouter Simons
-* Amends: ADR-0002 (commands as the unit of change), its *one reducer applies
+* Supersedes: ADR-0002 (commands as the unit of change), its *one reducer applies
   it*: the reducer now holds a command to what the command says about itself
   before it applies it
 

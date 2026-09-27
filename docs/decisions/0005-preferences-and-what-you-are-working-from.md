@@ -3,6 +3,8 @@
 * Status: accepted
 * Date: 2026-09-07
 * Deciders: Wouter Simons
+* Superseded-by: ADR-0023, in part, 2026-09-21 — the machine's settings for a
+  folder are no longer a file in the folder
 
 **Built, 7 September 2026**, in the order the last section gives; `git log`
 has the eight commits. The two *Open questions* were answered by the

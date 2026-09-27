@@ -4,7 +4,7 @@
 * Date: 2026-09-21
 * Deciders: Wouter Simons
 * Extends: ADR-0018 (the working file is the working set)
-* Amends: ADR-0005 — the machine's settings for a folder are no longer a file
+* Supersedes: ADR-0005 — the machine's settings for a folder are no longer a file
   in the folder
 
 ## Context and Problem Statement

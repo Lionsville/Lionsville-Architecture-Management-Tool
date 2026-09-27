@@ -3,7 +3,7 @@
 * Status: accepted
 * Date: 2026-09-16
 * Deciders: Wouter Simons
-* Amends: ADR-0012 §6 (a sheet is opened as a page over the canvas),
+* Supersedes: ADR-0012 §6 (a sheet is opened as a page over the canvas),
   ADR-0015 §5 (where the technology landscape lives)
 
 ## Context and Problem Statement

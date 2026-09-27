@@ -3,6 +3,9 @@
 * Status: accepted
 * Date: 2026-09-06
 * Deciders: Wouter Simons
+* Superseded-by: ADR-0028, in part, 2026-09-26 — its *one reducer applies it*:
+  the reducer now holds a command to what the command says it may carry before
+  it applies it
 
 ## Context and Problem Statement
 

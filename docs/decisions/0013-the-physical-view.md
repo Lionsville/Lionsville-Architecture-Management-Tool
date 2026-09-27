@@ -3,12 +3,14 @@
 * Status: accepted
 * Date: 2026-09-15
 * Deciders: Wouter Simons
-* Superseded in part, 15 September 2026, by ADR-0014: §1's closed category
-  is replaced by a three-value archetype and the offering becomes a kind of
-  its own; §2's relation ends gain three rows and `hostedOn` is held to
-  application | component → platform; and the report's shape described in
-  the preamble below now gathers over the platform and everything filed
-  under it.
+* Superseded-by: ADR-0014, in part, 2026-09-15 — §1's closed category is
+  replaced by a three-value archetype and the offering becomes a kind of its
+  own; §2's relation ends gain three rows and `hostedOn` is held to
+  application | component → platform; and the report's shape described in the
+  *Redone* preamble now gathers over the platform and everything filed under
+  it
+* Superseded-by: ADR-0015, in part, 2026-09-16 — the *Redone* preamble's
+  `technology` view kind goes
 
 **Redone, 15 September 2026.** The kind, the category, the two relations and
 the platform scope were built as written below, and the rest was tried on a

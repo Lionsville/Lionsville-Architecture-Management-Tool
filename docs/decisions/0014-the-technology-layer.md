@@ -5,6 +5,10 @@
 * Deciders: Wouter Simons
 * Supersedes: ADR-0013 §1 (the category), §2 (the relation ends), and the
   parts of its *Redone* preamble that describe the report's shape
+* Superseded-by: ADR-0015, in part, 2026-09-16 — §9: the report rather than a
+  view kind
+* Superseded-by: ADR-0017, in part, 2026-09-17 — §5: one thing per question,
+  and the rest computed
 
 ## Context and Problem Statement
 

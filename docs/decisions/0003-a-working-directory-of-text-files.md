@@ -3,6 +3,8 @@
 * Status: accepted
 * Date: 2026-09-06
 * Deciders: Wouter Simons
+* Superseded-by: ADR-0018, in part, 2026-09-19 — the single file as the export
+  container: it is the whole working directory now, not one scope out of it
 
 **Built, and the format turned once since. 12 September 2026:** the folder is
 version 4, and what that changed is that the file says what the model says —

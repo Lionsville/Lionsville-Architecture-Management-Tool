@@ -3,7 +3,7 @@
 * Status: accepted
 * Date: 2026-09-26
 * Deciders: Wouter Simons
-* Amends: ADR-0009 (time on the facts), its *A diagram carries `asOf` and
+* Supersedes: ADR-0009 (time on the facts), its *A diagram carries `asOf` and
   changing it is a command* and its accepted cost *`asOf` dirties the document*
 
 ## Context and Problem Statement
