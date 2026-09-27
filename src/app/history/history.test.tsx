@@ -523,6 +523,23 @@ describe('going back, as going forward (ADR-0008)', () => {
     }),
   })
 
+  /**
+   * Press Restore and let the page go. The toast is up at once, but hidden from
+   * assistive technology until the full-screen page has finished leaving,
+   * which is MUI's exit transition — a timer, so the clock is the test's for it
+   * and a second passes at once.
+   */
+  const restoreAndLetThePageGo = () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      fireEvent.click(screen.getByRole('button', { name: 'Restore' }))
+      act(() => { vi.advanceTimersByTime(1_000) })
+    } finally {
+      vi.useRealTimers()
+    }
+    return screen.getByRole('alert')
+  }
+
   const openHistoryOfTheDiagram = async () => {
     fireEvent.click(await screen.findByTestId('history-of-the-diagram'))
     return within(await screen.findByTestId('history-diff')).findByText('Changed the diagram L7 (name)')
@@ -536,9 +553,8 @@ describe('going back, as going forward (ADR-0008)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Restore this version…' }))
     // The copy says what a restore is before the first one is taken.
     expect(await screen.findByText(/as a new change/)).toBeDefined()
-    fireEvent.click(screen.getByRole('button', { name: 'Restore' }))
 
-    const toast = await screen.findByRole('alert')
+    const toast = restoreAndLetThePageGo()
     expect(toast.textContent).toContain(`Restored Old name as of ${asOf}.`)
     // The page has closed, so the person sees what came back.
     expect(screen.queryByTestId('history-list')).toBeNull()
@@ -585,9 +601,8 @@ describe('going back, as going forward (ADR-0008)', () => {
     await within(await screen.findByTestId('history-diff')).findByText('Changed the diagram L7 (name)')
     fireEvent.click(screen.getByRole('button', { name: 'Restore the whole project…' }))
     expect(await screen.findByText(/Every element, connection, diagram and decision/)).toBeDefined()
-    fireEvent.click(screen.getByRole('button', { name: 'Restore' }))
 
-    expect((await screen.findByRole('alert')).textContent).toContain(`Restored the whole project as of ${asOf}.`)
+    expect(restoreAndLetThePageGo().textContent).toContain(`Restored the whole project as of ${asOf}.`)
     act(() => { fireEvent.click(screen.getByText('Activity')) })
     expect(screen.getAllByRole('menuitem')[0].textContent).toContain('Restored the whole project')
   })
