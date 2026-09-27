@@ -121,4 +121,13 @@ export interface ProjectSync {
   pull(): Promise<PullOutcome>
   push(): Promise<PushOutcome>
   resolve(side: SyncSide): Promise<ResolveOutcome>
+  /**
+   * `false` where a boot is not the moment this history pulls: its remote is
+   * pulled by whoever keeps the folder for everybody who reads it, not by each
+   * of them as they open it. Then the boot does not ask the folder's settings
+   * whether to pull on open at all — that question, and the snapshot before a
+   * pull, are requests a first paint would otherwise wait on for an answer
+   * that is not this machine's to act on. Absent is the folder's own setting.
+   */
+  readonly pullsOnOpen?: false
 }

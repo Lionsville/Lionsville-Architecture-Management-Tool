@@ -67,6 +67,16 @@ the bar carries.
   the language exists; that is out of scope here and is said in the release
   notes.
 
+**Amended 27 September 2026: a history whose remote is pulled for everybody
+says so.** *Pull on open* is this machine pulling its own folder before it
+reads it. A history whose folder is kept by somebody else — who pulls it
+once for everybody who reads it — answers `pullsOnOpen: false` on its
+`ProjectSync`, and then the boot asks nothing about pulling: not the
+folder's settings, not whether a history is kept, no snapshot. Over a
+network each of those was a request the first paint stood in line behind,
+for an answer this machine does not act on. Absent is the folder's own
+setting, as it always was, and the three sources that ship leave it absent.
+
 **Amended 26 September 2026: three languages, and a Frisian already chosen
 reads as Dutch.** The language this record keeps in the person's preferences
 is one of **English, Dutch and German**. Frisian was withdrawn because it

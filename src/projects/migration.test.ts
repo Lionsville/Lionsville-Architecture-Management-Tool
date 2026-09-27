@@ -9,7 +9,7 @@
  * folder. Both are irreversible, both are triggered by an action as casual as
  * choosing a folder, and both would be discovered days later.
  */
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
 import { sampleScope, scopeAt } from '../ports/ScopeStore.contract'
 import { copyScopesInto, holdsScopes, migrated, migrateInto, upgradeProjects } from './migration'
@@ -267,5 +267,29 @@ describe('upgradeProjects — the folders that were never records', () => {
     const store = new InMemoryScopeStore([named('acme', 'one', 'One')])
     expect(await upgradeProjects(outdated(store, []))).toMatchObject({ created: 0 })
     expect(await store.load('')).toBeUndefined()
+  })
+
+  /**
+   * The name is a read of the folder's settings, and a boot over a folder
+   * already in this format — almost every boot — waited for it for nothing.
+   */
+  it('asks for the root\'s name only when there is something to rewrite', async () => {
+    const asked = vi.fn(() => Promise.resolve('Acme Logistics'))
+    const current = new InMemoryScopeStore([named('acme', 'one', 'One')])
+    await upgradeProjects(outdated(current, []), { rootName: asked })
+    expect(asked).not.toHaveBeenCalled()
+
+    const old = new InMemoryScopeStore([named('acme', 'one', 'One')])
+    await upgradeProjects(outdated(old, ['acme/one']), { rootName: asked })
+    expect(asked).toHaveBeenCalledTimes(1)
+    expect((await old.load(''))?.model.name).toBe('Acme Logistics')
+  })
+
+  it('names the root from the tree when the question about its name fails', async () => {
+    const store = new InMemoryScopeStore([named('acme', 'one', 'One')])
+    const tally = await upgradeProjects(outdated(store, ['acme/one']), {
+      rootName: () => Promise.reject(new Error('the settings would not read')),
+    })
+    expect(tally).toMatchObject({ created: 2, failed: 0 })
   })
 })

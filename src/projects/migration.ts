@@ -194,8 +194,13 @@ export type UpgradeOptions = {
    * The organisation's name, which at format 4 lived in `folder.json` and
    * otherwise nowhere (ADR-0012 §1) — so the caller reads it from there, and
    * falls back to the folder's own name, which is what a person called it.
+   *
+   * May be a question rather than an answer, and then it is asked only when
+   * there is something to rewrite: reading it is a read of the folder's
+   * settings, and a boot over a folder that is already this format — which is
+   * almost every boot — has no use for the name and should not wait for it.
    */
-  rootName?: string
+  rootName?: string | (() => Promise<string | undefined>)
 }
 
 /**
@@ -238,7 +243,7 @@ export async function upgradeProjects(
       tally.failed += 1
     }
   }
-  await nameTheFolders(store, tally, rootName)
+  await nameTheFolders(store, tally, typeof rootName === 'function' ? await rootName().catch(() => undefined) : rootName)
   return tally
 }
 

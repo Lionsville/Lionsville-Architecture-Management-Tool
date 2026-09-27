@@ -435,6 +435,10 @@ src/adapters/     The outside world, one folder per flavour.
                     desktop/          the Electron file channel, as a folder handle
 src/app/          The shell around the editor.
                     main.tsx          composition root. Read its header first.
+                    bootReads         what a first paint waits on besides the
+                                      scope it reopens — the pull, the format
+                                      pass — each asked only where it can
+                                      learn something
                     composition.ts    which adapter, which icon packs, and which
                                       source providers (ADR-0022) — with
                                       `openSource`, `SourceBase`,
