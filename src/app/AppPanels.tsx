@@ -211,7 +211,7 @@ function chipPanelFor(parts: ShellParts): ((close: () => void) => ReactNode) | u
   return (close) => (
     <ErrorBoundary where="sourceChipPanel" diagnostics={props.diagnostics} controls={props.hostControls} s={s}>
       <LanguageProvider language={prefs.language}>
-        <Panel session={provider.openScope} open={agent.openSomewhere} screen={agent.screen ?? agent.screenNow()} close={close} />
+        <Panel session={provider.openScope} open={agent.openSomewhere} screen={agent.screen ?? agent.screenNow()} movedBy={agent.movedBy} close={close} />
       </LanguageProvider>
     </ErrorBoundary>
   )
@@ -303,6 +303,7 @@ export function AppNotices({ parts }: { parts: ShellParts }) {
               session={kind === provider.openProvider ? provider.openScope : undefined}
               open={agent.openSomewhere}
               screen={agent.screen ?? agent.screenNow()}
+              movedBy={agent.movedBy}
             />
           </LanguageProvider>
         </ErrorBoundary>

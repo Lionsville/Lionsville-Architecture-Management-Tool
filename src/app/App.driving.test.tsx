@@ -16,6 +16,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { laidOut } from '../model/testFixtures'
 import type { AgentAnswer, AgentRequest } from '../agent/tools'
+import type { MovedBy, Screen } from '../agent/screen'
 import type { AgentGateway } from '../ports/AgentGateway'
 import type { ScopeSnapshot } from '../projects/scope'
 import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
@@ -167,5 +168,75 @@ describe('with the organisation screen up', () => {
     expect((await ask('element.update', { id: 'wms', name: 'WMS' })).ok).toBe(true)
     expect(parsed(await ask('session.end'))).toEqual({ ended: true })
     await waitFor(() => expect(screen.queryByTestId('agent-driving')).toBeNull())
+  })
+})
+
+/**
+ * A provider's chrome is told who moved the app (ADR-0022, amended): an arrival
+ * the agent caused is the agent's, and so is any move while its banner is up;
+ * the screen it brought the app to stays its own after the session ends, and
+ * the next move the person makes is theirs.
+ */
+describe('a chrome, told who moved the app', () => {
+  it('says the agent for its moves and the person for theirs', async () => {
+    const told: { at: string; by: MovedBy }[] = []
+    function Where({ screen: where, movedBy }: { screen: Screen; movedBy: MovedBy }) {
+      const at = where.open ? where.open.path : `home ${where.home?.path ?? ''}`
+      if (told[told.length - 1]?.at !== at || told[told.length - 1]?.by !== movedBy) told.push({ at, by: movedBy })
+      return <p data-testid="provider-where">{`${at} by ${movedBy}`}</p>
+    }
+    const wire = fakeGateway()
+    renderApp({
+      agent: wire.gateway,
+      scopes: new InMemoryScopeStore([root, retail]),
+      boot: { initialProject: undefined },
+      provider: { chrome: [{ kind: 'elsewhere', chrome: Where }] },
+    })
+    await waitFor(() => expect(wire.bound()).toBe(true))
+    const where = () => screen.getByTestId('provider-where').textContent
+    expect(where()).toBe('home  by person')
+
+    await waitFor(async () => expect(parsed(await wire.ask('app.current')).scopes).toBe(2))
+    expect(parsed(await wire.ask('app.open', { scope: 'acme/retail' })).arrived).toBe(true)
+    await waitFor(() => expect(where()).toBe('acme/retail by agent'))
+
+    // The person's own click while the banner is up is still the agent's.
+    fireEvent.click(screen.getByTestId('crumb-'))
+    await waitFor(() => expect(where()).toBe('home  by agent'))
+    expect(parsed(await wire.ask('app.open', { scope: 'acme/retail' })).arrived).toBe(true)
+    await waitFor(() => expect(where()).toBe('acme/retail by agent'))
+
+    // The session ends: where the agent left the app is still its doing.
+    expect(parsed(await wire.ask('session.end'))).toEqual({ ended: true })
+    await waitFor(() => expect(screen.queryByTestId('agent-driving')).toBeNull())
+    expect(where()).toBe('acme/retail by agent')
+
+    // And the next move is the person's.
+    fireEvent.click(screen.getByTestId('crumb-'))
+    await waitFor(() => expect(where()).toBe('home  by person'))
+    expect(told.map((one) => `${one.at} by ${one.by}`)).toEqual([
+      'home  by person', 'acme/retail by agent', 'home  by agent', 'acme/retail by agent', 'home  by person',
+    ])
+  })
+
+  it('says the person again once they stop the agent', async () => {
+    function Where({ screen: where, movedBy }: { screen: Screen; movedBy: MovedBy }) {
+      return <p data-testid="provider-where">{`${where.open?.path ?? 'home'} by ${movedBy}`}</p>
+    }
+    const wire = fakeGateway()
+    renderApp({
+      agent: wire.gateway,
+      scopes: new InMemoryScopeStore([root, retail]),
+      boot: { initialProject: undefined },
+      provider: { chrome: [{ kind: 'elsewhere', chrome: Where }] },
+    })
+    await waitFor(() => expect(wire.bound()).toBe(true))
+    await waitFor(async () => expect(parsed(await wire.ask('app.current')).scopes).toBe(2))
+    await wire.ask('app.open', { scope: 'acme/retail' })
+    await waitFor(() => expect(screen.getByTestId('provider-where').textContent).toBe('acme/retail by agent'))
+    fireEvent.click(screen.getByTestId('agent-stop'))
+    await waitFor(() => expect(screen.queryByTestId('agent-driving')).toBeNull())
+    fireEvent.click(screen.getByTestId('crumb-'))
+    await waitFor(() => expect(screen.getByTestId('provider-where').textContent).toBe('home by person'))
   })
 })

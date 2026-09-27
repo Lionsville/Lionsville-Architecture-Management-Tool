@@ -935,6 +935,32 @@ transition under reduced motion and with one otherwise. `composition.test.tsx` p
 answering the face for the open source's provider and for nobody else.
 `ShellToolbar.test.tsx` still pins the three that ship byte for byte.
 
+## Amended — the one a build that waits for a person to arrive needed
+
+*27 September 2026.* A build whose chrome points a person at a place and waits
+for them to get there found that it could see the app arrive and could not see
+who brought it. An agent moves the app as a person does (ADR-0019), and a
+chrome that answers an arrival the same whoever caused it cannot tell somebody
+who went to the roadmap from somebody whose agent opened it for them. It is
+added as the smallest public thing that closes it, beside `screen`, so the
+three built-ins are written exactly as they were.
+
+* **A chrome is told who moved the app.** `SourceChrome` and `SourceChipPanel`
+  take `movedBy`, a `MovedBy` (`agent/screen.ts`): `agent` where the move that
+  produced `screen` was an agent's `app.open`, or happened while an agent's
+  driving session was up — the banner already says a click then changes what
+  the agent sees, and the two are not told apart — and `person` otherwise,
+  including the screen the app started on. It is said of the move and handed
+  with it, so a screen an agent brought the app to stays the agent's after its
+  session ends, and the next move is the person's. A session that ends in the
+  render its last move happened in is looked at before its mark is let go.
+  `app.current` is unchanged, and so is `screen`.
+
+`App.driving.test.tsx` pins it: an agent's `app.open` is the agent's, a person's
+click while the banner is up is the agent's too, the screen stays the agent's
+after `session.end`, and the next click — after `session.end` or after Stop — is
+the person's.
+
 ## More Information
 
 ADR-0002 for the command and its inverse, which is the whole reason this is a

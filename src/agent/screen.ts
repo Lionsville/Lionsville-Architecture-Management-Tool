@@ -78,6 +78,19 @@ export type Screen = {
   readonly page?: ScreenPage
 }
 
+/**
+ * Who moved the app to the screen it is on: the person, or an agent.
+ *
+ * `agent` where the move was an agent's `app.open`, or happened while an
+ * agent's driving session was up — whatever the person clicked in the middle of
+ * it, since the banner says a click then changes what the agent sees and the
+ * two cannot be told apart. `person` otherwise, and for the screen the app
+ * started on. It is said of the move, not of the moment: a screen an agent
+ * brought the app to stays the agent's after its session ends, until something
+ * moves the app again.
+ */
+export type MovedBy = 'person' | 'agent'
+
 /** The scope a screen is about: the open one, else the home that is up. */
 export function scopeOf(screen: Screen): string | undefined {
   return screen.open?.path ?? screen.home?.path

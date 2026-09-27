@@ -9,7 +9,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Translate } from '../i18n'
-import type { Destination, Screen } from '../agent/screen'
+import type { Destination, MovedBy, Screen } from '../agent/screen'
 import type { TreeView } from '../agent/tree'
 import type { AgentServerStatus } from '../platform/agentServer'
 import type { AgentGateway } from '../ports/AgentGateway'
@@ -65,11 +65,25 @@ export function useShellAgent(deps: {
    * changes. A look that finds the same screen keeps the one already held, so
    * a registration that moved nothing draws nothing.
    */
-  const [screen, setScreen] = useState<Screen | undefined>(() => (watchScreen ? screenNow() : undefined))
+  const [where, setWhere] = useState<{ screen: Screen; by: MovedBy } | undefined>(
+    () => (watchScreen ? { screen: screenNow(), by: 'person' } : undefined),
+  )
+  /**
+   * Whether the move being looked at is an agent's ({@link MovedBy}): its
+   * `app.open` raised the first, and the second is whether its driving session
+   * is up — both read when the look is taken, which is after the render the
+   * move caused.
+   */
+  const agentOpened = useRef(false)
+  const agentDriving = useRef(false)
   const lookAgain = useCallback(() => {
     if (!watchScreen) return
     const next = screenNow()
-    setScreen((held) => (held && JSON.stringify(held) === JSON.stringify(next) ? held : next))
+    const by: MovedBy = agentOpened.current || agentDriving.current ? 'agent' : 'person'
+    setWhere((held) => {
+      if (held && JSON.stringify(held.screen) === JSON.stringify(next)) return held
+      return { screen: next, by }
+    })
   }, [watchScreen, screenNow])
   useEffect(lookAgain, [lookAgain])
   // Through a ref, so registering the view does not change identity with the
@@ -107,7 +121,23 @@ export function useShellAgent(deps: {
   const agentStopped = useCallback((client: string | undefined) => {
     notify(s('agent.stoppedToast', { name: client ?? s('agent.someone') }), 'info')
   }, [notify, s])
-  const agentShell = useAgentShell({ gateway, status, tree, screen: screenNow, open: openFor, onStopped: agentStopped })
+  const agentOpen = useCallback((to: Destination & { scope: string }) => {
+    agentOpened.current = true
+    openFor(to)
+  }, [openFor])
+  const agentShell = useAgentShell({ gateway, status, tree, screen: screenNow, open: agentOpen, onStopped: agentStopped })
+  const driving = agentShell.driving.session !== undefined
+  agentDriving.current = driving
+  // A session that ends — Stop, `session.end`, the client gone — may end in the
+  // same render as the move it made last: that move is looked at as the agent's
+  // before the mark is let go, and every move after it is the person's.
+  useEffect(() => {
+    if (driving) return
+    agentDriving.current = true
+    lookAgainRef.current()
+    agentDriving.current = false
+    agentOpened.current = false
+  }, [driving])
   const registerAgent = agentShell.register
   const registerAgentSession = useCallback((view: WorkspaceAgentView | undefined) => {
     agentSessionRef.current = view
@@ -120,7 +150,7 @@ export function useShellAgent(deps: {
   }, [registerAgent])
   return {
     orgPageRequest, setOrgPage, openSomewhere, driving: agentShell.driving, stop: agentShell.stop, registerAgentSession,
-    screen, screenNow,
+    screen: where?.screen, movedBy: where?.by ?? 'person', screenNow,
   }
 }
 

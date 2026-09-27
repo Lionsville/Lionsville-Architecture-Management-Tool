@@ -43,7 +43,7 @@ import { useOrganisation } from './organisation/useOrganisation'
 import type { ScopeSession } from './useModelSession'
 import type { ProjectSettings } from './ProjectSettingsDialog'
 import { ToastBar } from './ToastBar'
-import type { Destination, Screen } from '../agent/screen'
+import type { Destination, MovedBy, Screen } from '../agent/screen'
 import { usePasswordPrompt } from './usePasswordPrompt'
 import { useOpenIntoPrompt } from './useOpenIntoPrompt'
 import { useAgentServer } from './useAgentServer'
@@ -130,8 +130,13 @@ export type ShellDiagnostics = {
  * about a place can say nothing while the person is somewhere else — and
  * the same words, so the two cannot drift. A new value each time the screen
  * moves and the same one while it does not, so a chrome may compare it.
+ *
+ * `movedBy` is who moved the app there ({@link MovedBy}): an agent can move it
+ * as a person can (ADR-0019), and a chrome that waits for somebody to arrive
+ * somewhere may care which of them did. Said of the move that produced
+ * `screen`, and handed with it.
  */
-export type SourceChrome = ComponentType<{ session?: ScopeSession; open: SourceOpen; screen: Screen }>
+export type SourceChrome = ComponentType<{ session?: ScopeSession; open: SourceOpen; screen: Screen; movedBy: MovedBy }>
 
 /**
  * Sending the person to a scope, as a provider's chrome or a menu line may.
@@ -213,6 +218,7 @@ export type SourceChipPanel = ComponentType<{
   session?: ScopeSession
   open: SourceOpen
   screen: Screen
+  movedBy: MovedBy
   close: () => void
 }>
 
