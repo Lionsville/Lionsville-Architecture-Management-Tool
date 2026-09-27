@@ -1168,7 +1168,7 @@ describe('SolutionDesignEditor — diagram tab menu', () => {
     expect(onRenameDiagram).not.toHaveBeenCalled();
   });
 
-  it('"Rename diagram…" collects the new name in a dialog and hands it to the host', async () => {
+  it('"Rename diagram…" collects the new name in a dialog and hands it to the host', () => {
     const onRenameDiagram = vi.fn();
     renderEditor({ model: twoLandscapes(), onRenameDiagram });
 
@@ -1181,13 +1181,21 @@ describe('SolutionDesignEditor — diagram tab menu', () => {
     // Unchanged name: nothing to save.
     expect((within(dialog).getByRole('button', { name: 'Save' }) as HTMLButtonElement).disabled).toBe(true);
     fireEvent.change(field, { target: { value: '  Europa  ' } });
-    fireEvent.keyDown(field, { key: 'Enter' });
+    // The dialog leaves through MUI's exit transition, which is a timer: the
+    // clock is the test's for it, so a second passes at once.
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      fireEvent.keyDown(field, { key: 'Enter' });
 
-    expect(onRenameDiagram).toHaveBeenCalledExactlyOnceWith('d1', 'Europa');
-    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+      expect(onRenameDiagram).toHaveBeenCalledExactlyOnceWith('d1', 'Europa');
+      act(() => { vi.advanceTimersByTime(1_000); });
+      expect(screen.queryByRole('dialog')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
-  it('refuses to delete the last landscape and hides entries whose callback is absent', async () => {
+  it('refuses to delete the last landscape and hides entries whose callback is absent', () => {
     const onDeleteDiagram = vi.fn();
     renderEditor({ model: modelWithPlacement('d1'), onDeleteDiagram });
 
@@ -1199,8 +1207,15 @@ describe('SolutionDesignEditor — diagram tab menu', () => {
     expect(remove.getAttribute('aria-disabled')).toBe('true');
     fireEvent.click(remove);
     expect(onDeleteDiagram).not.toHaveBeenCalled();
-    fireEvent.mouseOver(within(remove).getByText('Delete diagram…'));
-    await waitFor(() => expect(screen.getByRole('tooltip').textContent).toMatch(/last landscape/));
+    // The tooltip opens after MUI's enter delay, which is a timer.
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      fireEvent.mouseOver(within(remove).getByText('Delete diagram…'));
+      act(() => { vi.advanceTimersByTime(1_000); });
+      expect(screen.getByRole('tooltip').textContent).toMatch(/last landscape/);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('"History…" on a tab asks the host for that diagram\'s history (ADR-0008)', () => {
