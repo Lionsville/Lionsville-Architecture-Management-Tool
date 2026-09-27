@@ -66,7 +66,7 @@ import { modelsAhead } from '../projects/readAhead'
 import { pullOnOpen as pullBeforeOpening, upgradeFormat as upgradeFormatOf } from './bootReads'
 import type { PullOutcome } from '../platform/sync'
 import { sourceKey } from '../platform/workingSource'
-import { dialogAsked, landingOf, withoutDialog } from './bootLanding'
+import { dialogAsked, landingOf, scopeToRead, withoutDialog } from './bootLanding'
 import type { BootDialog, BootLanding } from './bootLanding'
 import { EXAMPLE_OFFERS } from './examples/offers'
 import { App } from './App'
@@ -750,7 +750,9 @@ void shell.preferences.read()
     const hasSource = shell.source.kind === 'folder' || shell.source.kind === 'registered'
     // An address that named a place wins over the scope this machine last had
     // open, for the reason the address wins over the folder above.
-    const lastScope = shell.opensAt?.scope ?? (files && !hasSource
+    // A home an address named is not read here at all: it reads its own
+    // document once it is up (`scopeToRead`).
+    const lastScope = scopeToRead(shell.opensAt, files && !hasSource
       ? undefined
       : readLastScope(storedPreferences))
     // The tree's models and the scope it reopens, asked for together: the index

@@ -7,7 +7,7 @@
 import { describe, expect, it } from 'vitest'
 import { laidOut } from '../model/testFixtures'
 import type { ScopeSnapshot } from '../projects/scope'
-import { dialogAsked, landingOf, withoutDialog } from './bootLanding'
+import { dialogAsked, landingOf, scopeToRead, withoutDialog } from './bootLanding'
 
 const board = (id: string) => laidOut({ id, kind: 'layer7' as const, name: id, placements: [] })
 
@@ -31,20 +31,28 @@ describe('where the first paint lands', () => {
   })
 
   it('lands an address that named a scope and no view on that scope’s home, not on a board', () => {
-    expect(landingOf(retail, { scope: 'retail' })).toEqual({ initialHome: 'retail' })
-    expect(landingOf(scope('domain', []), { scope: 'domain' })).toEqual({ initialHome: 'domain' })
+    expect(landingOf(undefined, { scope: 'retail' })).toEqual({ initialHome: 'retail' })
+    expect(landingOf(scope('domain', []), { scope: 'domain', view: 'x' })).toEqual({ initialHome: 'domain' })
   })
 
   it('lands a fresh start a source sent to the root on the organisation’s home', () => {
-    expect(landingOf(scope('', ['root-board']), { scope: '' })).toEqual({ initialHome: '' })
+    expect(landingOf(undefined, { scope: '' })).toEqual({})
   })
 
   it('opens the view an address named', () => {
     expect(landingOf(retail, { scope: 'retail', view: 'two' }).initialProject?.activeDiagramId).toBe('two')
   })
 
-  it('falls back to the organisation’s home for a scope that is not there', () => {
+  it('falls back to the organisation’s home for a board of a scope that is not there', () => {
     expect(landingOf(undefined, { scope: 'gone', view: 'x' })).toEqual({})
+  })
+
+  /** A home reads its own document once it is up: the first paint does not wait a round trip for it. */
+  it('reads nothing before the first paint for a home, and the scope for a board or a reopening', () => {
+    expect(scopeToRead({ scope: '' }, 'retail')).toBeUndefined()
+    expect(scopeToRead({ scope: 'retail' }, 'finance')).toBeUndefined()
+    expect(scopeToRead({ scope: 'retail', view: 'two' }, 'finance')).toBe('retail')
+    expect(scopeToRead(undefined, 'finance')).toBe('finance')
   })
 })
 

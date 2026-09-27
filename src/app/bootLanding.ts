@@ -8,6 +8,7 @@
  */
 import { isOpenableScope, onView } from '../projects/scope'
 import type { ScopeSnapshot } from '../projects/scope'
+import { ROOT_SCOPE } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
 import type { SourceLanding } from '../platform/sourceProvider'
 
@@ -26,7 +27,7 @@ export type BootLanding = {
  * which a person who was sent a link to a scope reads as a board picked at
  * random. An address that named a view opens the scope on it, as it always
  * did. A scope that is not there, or that the person may not read, is the
- * organisation's home.
+ * organisation's home — for a home, once the listing has been read.
  *
  * With no address, the scope this machine last had open reopens as it was:
  * a window taking up where it was left is what a desktop does, and a source
@@ -35,9 +36,22 @@ export type BootLanding = {
  */
 export function landingOf(held: ScopeSnapshot | undefined, opensAt: SourceLanding | undefined): BootLanding {
   if (opensAt === undefined) return isOpenableScope(held) ? { initialProject: held } : {}
+  if (opensAt.view === undefined) return opensAt.scope === ROOT_SCOPE ? {} : { initialHome: opensAt.scope }
   if (held === undefined) return {}
-  if (opensAt.view !== undefined && isOpenableScope(held)) return { initialProject: onView(held, opensAt.view) }
-  return { initialHome: held.path }
+  // A scope that draws nothing has no board to open: its home.
+  const { path } = held
+  return isOpenableScope(held) ? { initialProject: onView(held, opensAt.view) } : { initialHome: path }
+}
+
+/**
+ * Which scope the boot must read before the first paint: none for a home,
+ * because a home reads its own document once it is up and the first paint
+ * need not wait a round trip for it. A home that turns out not to be there
+ * falls back to the organisation's once the listing is read (`useHomeParts`).
+ */
+export function scopeToRead(opensAt: SourceLanding | undefined, last: ScopePath | undefined): ScopePath | undefined {
+  if (opensAt === undefined) return last
+  return opensAt.view === undefined ? undefined : opensAt.scope
 }
 
 /**
