@@ -30,8 +30,8 @@ afterEach(() => cleanup())
 
 const TODAY = () => '2026-09-12'
 
-// The two tests that copy the shipped example get this instead of the 5s
-// default; see the comment on the first of them.
+// The test that copies the shipped example gets this instead of the 5s
+// default; see the comment on it.
 const COPY_THE_EXAMPLE_BUDGET = 20_000
 
 const board = () => laidOut({ id: 'l7', kind: 'layer7' as const, name: 'L7', placements: [] })
@@ -466,23 +466,6 @@ describe('the organisation screen — a fresh folder', () => {
     const subtitle = await screen.findByTestId('organisation-subtitle')
     expect(subtitle.textContent).toBe('Each scope below \u2014 a domain, a team, a landscape scope \u2014 has its own boards, pages and decisions.')
   })
-
-  // Copying the shipped example is the heaviest thing this file does: every
-  // scope of it is written and the editor for the landing scope is mounted.
-  // Under a second here; six on a starved CI runner (the v2.2.0 release run
-  // took 239s for a suite that takes 40s locally). The budget matches the
-  // work, as libavoidRouter.test.ts does, rather than the runner's mood.
-  it('offers no examples once the folder holds architecture of its own', async () => {
-    const scopes = new InMemoryScopeStore([])
-    renderApp({ scopes, today: TODAY, examples: EXAMPLES })
-    fireEvent.click(await screen.findByRole('button', { name: 'Copy into this folder…' }))
-    await waitFor(() => expect(screen.getByTestId('saved-indicator')).toBeDefined())
-    fireEvent.click(screen.getByTestId('crumb-'))
-
-    expect((await screen.findByTestId('organisation-name')).textContent).toBe('Acme Logistics')
-    expect(screen.queryByText('Examples')).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Copy into this folder…' })).toBeNull()
-  }, COPY_THE_EXAMPLE_BUDGET)
 })
 
 /**
@@ -493,7 +476,13 @@ describe('the organisation screen — a fresh folder', () => {
  * impression of itself.
  */
 describe('the organisation screen — the shipped example', () => {
-  it('becomes the organisation, with its landscape as a row beneath', async () => {
+  // Copying the shipped example is the heaviest thing this file does: every
+  // scope of it is written and the editor for the landing scope is mounted.
+  // Under a second here; six on a starved CI runner (the v2.2.0 release run
+  // took 239s for a suite that takes 40s locally). The budget matches the
+  // work, as libavoidRouter.test.ts does, rather than the runner's mood. It is
+  // done once: what the folder offers afterwards is read off the same copy.
+  it('becomes the organisation, with its landscape as a row beneath, and offers no examples any more', async () => {
     const scopes = new InMemoryScopeStore([])
     renderApp({ scopes, today: TODAY, examples: EXAMPLES })
 
@@ -516,5 +505,8 @@ describe('the organisation screen — the shipped example', () => {
     expect(cards).toContain('Business architecture')
     expect(cards).toContain('1 journey')
     expect(cards).not.toContain('Nothing at this level yet.')
+    // The folder holds architecture of its own now: no examples on offer.
+    expect(screen.queryByText('Examples')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Copy into this folder…' })).toBeNull()
   }, COPY_THE_EXAMPLE_BUDGET)
 })
