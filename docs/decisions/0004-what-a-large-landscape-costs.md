@@ -82,6 +82,7 @@ markdown on each element — median of seven runs, September 2026:
 | re-index after a command | 1.2 ms | — |
 | read 600 element descriptions | 0.07 ms | — |
 | derive a 600-node board after one move | 2.5 ms | 30 ms |
+| render a 600-node board after one step from somebody else (jsdom, no paint; added 27 September 2026) | 130 ms | 500 ms |
 
 Two of those were something else before this phase: a keystroke in a search
 field cost 4.7–6.2 ms, and reading six hundred descriptions cost 8.7 ms on

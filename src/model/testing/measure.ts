@@ -74,6 +74,12 @@ export const BUDGET = {
   /** Nodes and edges for a 600-node board, re-derived after one element moved. */
   derive: 30,
   /**
+   * The editor drawing a 600-node board again after one step somebody else
+   * made (`editor/remoteStep.perf.test.tsx`): the derive above plus React's
+   * and React Flow's render, in jsdom and without paint.
+   */
+  remoteStep: 500,
+  /**
    * The agent's layout report over the generated landscape (ADR-0007): every
    * box against every box it could overlap, every line against every box its
    * span could touch. The loop an agent runs pays this on every turn.
