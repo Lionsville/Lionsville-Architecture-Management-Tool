@@ -59,6 +59,20 @@ export const SCOPE_KIND_LABEL = {
   landscape: 'org.kindLandscape',
 } as const satisfies Record<ScopeKind, StringKey>
 
+/**
+ * The same words, counted (`countScopeKinds`), so a home's line and its
+ * tree's badges cannot come to call one scope two things. A scope that says
+ * nothing about itself is counted as a scope.
+ */
+export const SCOPE_KIND_COUNT = {
+  organisation: { one: 'org.organisationsOne', other: 'org.organisationsOther' },
+  domain: { one: 'org.domainsOne', other: 'org.domainsOther' },
+  programme: { one: 'org.programmesOne', other: 'org.programmesOther' },
+  team: { one: 'org.teamsOne', other: 'org.teamsOther' },
+  landscape: { one: 'org.landscapeScopesOne', other: 'org.landscapeScopesOther' },
+  unsaid: { one: 'org.scopesOne', other: 'org.scopesOther' },
+} as const satisfies Record<ScopeKind | 'unsaid', { one: StringKey; other: StringKey }>
+
 export type ScopeSettingsDialogProps = {
   /** The scope being edited; the dialog is closed while undefined. */
   target?: ScopeSummary

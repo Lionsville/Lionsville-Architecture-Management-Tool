@@ -149,19 +149,20 @@ describe('the organisation screen — identity', () => {
     expect(link.getAttribute('rel')).toContain('noopener')
   })
 
-  it('counts a domain by what is under it and a landscape by what it draws', async () => {
+  it('counts the scopes beneath by what each says it is, in the words of the badges', async () => {
     renderApp({
       scopes: new InMemoryScopeStore([
         organisation(),
-        { ...scope('retail', 'Retail'), model: { name: 'Retail', elements: [], relations: [], diagrams: [] } },
-        scope('retail/warehouse', 'Warehouse'),
+        { ...scope('retail', 'Retail', { kind: 'domain' }), model: { name: 'Retail', elements: [], relations: [], diagrams: [] } },
+        scope('retail/warehouse', 'Warehouse', { kind: 'landscape' }),
+        scope('retail/returns', 'Returns', { kind: 'team' }),
         scope('finance', 'Finance'),
       ]),
       today: TODAY,
     })
     const meta = await screen.findByTestId('organisation-meta')
-    await waitFor(() => expect(meta.textContent).toContain('1 domain'))
-    expect(meta.textContent).toContain('2 landscapes')
+    // The whole tree beneath, in kind order; one that says nothing is a scope.
+    await waitFor(() => expect(meta.textContent).toContain('1 domain · 1 team · 1 landscape scope · 1 scope'))
   })
 
   /** "For Acme Logistics" under the heading "Acme Logistics" says it twice. */
@@ -402,8 +403,8 @@ describe('the organisation screen — a fresh folder', () => {
     expect(screen.getByRole('button', { name: 'Copy into this folder…' })).toBeDefined()
     // Flipped: the heading used to be hidden on an empty tree, which left the
     // empty-tree sentence with nowhere to show. It is under its heading now.
-    expect(screen.getByText('Domains and landscapes')).toBeDefined()
-    expect(screen.getByTestId('tree-empty').textContent).toBe('Nothing is filed under the organisation yet. Add a domain or a landscape below it.')
+    expect(screen.getByText('Scopes within the organisation')).toBeDefined()
+    expect(screen.getByTestId('tree-empty').textContent).toBe('Nothing is filed under the organisation yet. Add a domain or a team below it.')
   })
 
   /**
@@ -416,14 +417,14 @@ describe('the organisation screen — a fresh folder', () => {
     renderApp({ scopes: new InMemoryScopeStore([scope('', 'Acme Logistics')]), today: TODAY })
     const subtitle = await screen.findByTestId('organisation-subtitle')
     expect(subtitle.textContent).toContain('Everything here is kept in this browser.')
-    expect(subtitle.textContent).toContain('Each domain and landscape below is a scope of its own')
+    expect(subtitle.textContent).toContain('Each scope below \u2014 a domain, a team, a landscape scope \u2014 has its own')
     const cards = await screen.findByTestId('organisation-cards')
     await waitFor(() => expect(within(cards).getAllByTestId('card-description')).toHaveLength(7))
     const said = within(cards).getAllByTestId('card-description').map((one) => one.textContent)
     expect(said).toContain('A page for every record on this scope\'s boards: its owner, vendor, dates and description.')
     expect(said).toContain('Every application anywhere in the organisation, with the scope that answers for it and where else it is drawn.')
     expect(screen.getByTestId('tree-empty').textContent).toContain('Nothing is filed under Acme Logistics yet.')
-    expect(screen.getByRole('button', { name: 'New domain or landscape…' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'New domain or team…' })).toBeDefined()
     // Nothing to attend to, so no block at all — not an empty heading.
     expect(screen.queryByTestId('needs-attention')).toBeNull()
   })
@@ -448,7 +449,7 @@ describe('the organisation screen — a fresh folder', () => {
     expect(subtitle.textContent).toContain('Your work is kept elsewhere, and elsewhere says when.')
     expect(subtitle.textContent).not.toContain('in this browser')
     // The rest of the sentence is this screen's own, and is still said.
-    expect(subtitle.textContent).toContain('Each domain and landscape below is a scope of its own')
+    expect(subtitle.textContent).toContain('Each scope below \u2014 a domain, a team, a landscape scope \u2014 has its own')
   })
 
   /**
@@ -463,7 +464,7 @@ describe('the organisation screen — a fresh folder', () => {
       source: { kind: 'registered', provider: 'nowords', name: 'Elsewhere', key: 'one' },
     })
     const subtitle = await screen.findByTestId('organisation-subtitle')
-    expect(subtitle.textContent).toBe('Each domain and landscape below is a scope of its own, with its own boards, pages and decisions.')
+    expect(subtitle.textContent).toBe('Each scope below \u2014 a domain, a team, a landscape scope \u2014 has its own boards, pages and decisions.')
   })
 
   // Copying the shipped example is the heaviest thing this file does: every
@@ -504,10 +505,10 @@ describe('the organisation screen — the shipped example', () => {
 
     expect((await screen.findByTestId('organisation-name')).textContent).toBe('Acme Logistics')
     expect(screen.getByTestId('scope-application-landscape')).toBeDefined()
-    // The platform scope draws a board of its own since ADR-0014, and a
-    // scope that draws is counted by shape, whatever it calls itself.
+    // The line counts what each scope beneath says it is, in the badges'
+    // words — never "landscape" alone, which is what a board is called.
     await waitFor(() => expect(screen.getByTestId('organisation-meta').textContent)
-      .toContain('2 landscapes'))
+      .toContain('1 domain · 1 landscape scope'))
     // The sheet is the ORGANISATION's now that a cross-scope id resolves
     // (ADR-0012 §1): the journey, the rail and the areas are what this level
     // holds, and the applications are the row beneath it.

@@ -961,6 +961,46 @@ click while the banner is up is the agent's too, the screen stays the agent's
 after `session.end`, and the next click — after `session.end` or after Stop — is
 the person's.
 
+## Amended — the three a build whose pages live beside the app needed
+
+*27 September 2026.* A build whose chip is the person's face, and whose pages
+about that person are served beside the app rather than drawn in it, was
+tried by somebody who went from a board to one of those pages and back. Three
+things were wrong, and each was a place this shell had decided something a
+person could not see: where the chip sat, where a link to a scope landed, and
+that a page elsewhere had no way to open this shell's own preferences.
+
+* **The chip sits at the right end, beside the agent control.** On the
+  workspace's bar it sat after the spacer and before the page buttons; on a
+  home, before the folder's buttons. A chip the provider gave a word, a panel
+  or a face of its own now sits after the agent control and before the menu,
+  on the workspace's bar and on every home alike, so the person finds who and
+  where they are in one place and Tab reaches it right after the agent. The
+  word a built-in source is said with stays beside the button that changes
+  it, where it always was.
+* **An address that names a scope and no view lands on its home.** It
+  opened the scope on whichever board it had open last, which a person who
+  was sent to a scope reads as a board picked at random — the same thing the
+  tree's *Open* did, which now goes to the scope's home too, a board being
+  opened from the home's list where it is named. An address that names a
+  view opens it, as before. A provider that wants a fresh start with no place
+  in its address to begin at the organisation's home, rather than where this
+  machine last was, lands on the root: `{ scope: '' }`. A home the boot
+  landed on falls back to the organisation's only once the listing has been
+  read, not while it is still empty.
+* **An address may ask for the preferences.** `?open=preferences` opens the
+  preferences dialog at the first paint, and the parameter is taken out of
+  the address at once so a reload does not open it again. A closed list
+  (`BOOT_DIALOGS` in `app/bootLanding.ts`) of one, because an address is
+  anybody's to write and a parameter that opened whatever it named would put
+  an arbitrary dialog in front of somebody. It is how a page that is not this
+  shell offers *Preferences* without a copy of them.
+
+`bootLanding.test.ts` pins the landing and the parameter, `App.landing.test.tsx`
+the first paint on a named home and with the preferences open, and
+`App.storage.test.tsx` the chip right after the agent control on the
+workspace's bar, a domain's home and the organisation's.
+
 ## More Information
 
 ADR-0002 for the command and its inverse, which is the whole reason this is a

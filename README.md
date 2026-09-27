@@ -176,10 +176,10 @@ disabling it.
 The app opens on the **organisation** — the working folder itself. Everything
 in it is a **scope**: one document with a name, its boards, decisions, plans and
 business architecture — and scopes nest, the organisation at the top, a
-**domain** under it, a **landscape** under that, as deep as the work needs. The
-first screen is the organisation's home: its name and links, its own pages, the
-tree of domains and landscapes beneath, sorted by name or by what changed most
-recently, and the examples last. A scope's name, its kind and where it is filed
+**domain** or a **team** under it, a **landscape scope** under that, as deep as
+the work needs. The first screen is the organisation's home: its name and
+links, its own pages, its boards, the scopes within it, sorted by name or by
+what changed most recently, and the examples last. A scope's name, its kind and where it is filed
 can all be changed afterwards.
 
 Examples are **copied** in when you open one — into an empty organisation as

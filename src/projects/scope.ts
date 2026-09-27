@@ -565,6 +565,28 @@ export function countScopes(root: ScopeSummary): { domains: number; landscapes: 
 }
 
 /**
+ * The scopes filed under a home, tallied by the word each says about itself —
+ * for the line under a scope's name, in the words its tree's badges use.
+ *
+ * The whole subtree beneath `root`, not only its children, as
+ * {@link countScopes} counts, and the root itself left out for the same
+ * reason. One entry per kind that occurs, in {@link SCOPE_KINDS} order, then
+ * the scopes that say nothing about themselves as `kind: undefined`; nothing
+ * at all for a scope with nothing under it.
+ *
+ * This reads the label, and that is allowed here only because the result is
+ * a label again: it repeats what the scopes say, to a person, and decides
+ * nothing. Anything that must decide keeps to the shape ({@link countScopes},
+ * {@link isOpenableScope}).
+ */
+export function countScopeKinds(root: ScopeSummary): { kind: ScopeKind | undefined; count: number }[] {
+  const under = flattenScopes(root).slice(1)
+  return [...SCOPE_KINDS, undefined]
+    .map((kind) => ({ kind, count: under.filter((scope) => scope.kind === kind).length }))
+    .filter(({ count }) => count > 0)
+}
+
+/**
  * One scope and everything filed under it, as the two numbers a row says.
  *
  * The scope itself is included: a domain that draws two boards of its own and

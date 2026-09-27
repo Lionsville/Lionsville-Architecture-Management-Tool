@@ -99,7 +99,7 @@ async function recordOf(id: string) {
  */
 const SCREENS: readonly [string, readonly ControlName[], () => Promise<void>][] = [
   ['the organisation’s home', [
-    'shell.crumbs', 'org.tree', 'org.tree.row', 'org.cards', 'org.card.business', 'org.card.map',
+    'shell.crumbs', 'org.tree', 'org.tree.row', 'org.newScope', 'org.cards', 'org.card.business', 'org.card.map',
     'org.card.decisions', 'org.card.observations', 'org.card.roadmap', 'org.card.register',
     'org.card.technology', 'org.card.landscape', 'org.attention', 'org.attentionMore',
   ], async () => {

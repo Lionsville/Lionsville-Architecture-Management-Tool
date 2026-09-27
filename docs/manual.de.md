@@ -43,19 +43,22 @@ ist. Ein **Bereich** ist ein Dokument: ein Name, eine Landschaft, die
 Container-Diagramme darunter, die Entscheidungen, die Pläne, die
 Geschäftsarchitektur, und alles, was darauf platziert ist. Bereiche sind
 **geschachtelt**, und jeder von ihnen ist dasselbe Dokument — die Organisation
-ganz oben, eine **Domäne** darunter, eine **Landschaft** darunter, so tief, wie
-Ihre Arbeit es braucht.
+ganz oben, eine **Domäne** oder ein **Team** darunter, ein
+**Landschaftsbereich** darunter, so tief, wie Ihre Arbeit es braucht. Ein
+Landschaftsbereich ist ein Bereich; eine Landschaft ist auch eine Art Tafel,
+also eine Zeichnung in einem Bereich.
 
 Der Bildschirm ist das Zuhause der Organisation und keine Liste von
 Dokumenten. Eine Zeile unter dem Namen sagt, was er ist und wo alles liegt —
 als Dateien in dem Ordner, den die Leiste nennt, oder in diesem Browser — und
 dann hat er fünf Teile.
 
-![Der Organisationsbildschirm: der Name und die Links oben, die eigenen Seiten der Organisation als Karten, der Baum der Domänen und Landschaften, und zuletzt die Beispiele](screenshot-organisation.png)
+![Der Organisationsbildschirm: der Name und die Links oben, die eigenen Seiten der Organisation als Karten, die Bereiche darin, und zuletzt die Beispiele](screenshot-organisation.png)
 
 **Ihre Identität**, ganz oben: der Name, der Auftraggeber, wenn die Zeichnungen
-für jemand anderen angefertigt werden, wie viele Domänen und Landschaften
-darunter abgelegt sind, wann sich zuletzt etwas darin geändert hat, die
+für jemand anderen angefertigt werden, wie viele Bereiche darunter abgelegt
+sind, nach dem, was jeder von sich sagt (*2 Domänen · 1 Team*, in den Worten
+der Etiketten auf ihren Zeilen), wann sich zuletzt etwas darin geändert hat, die
 Beschreibung und ihre Links. Ein Ordner, den noch niemand benannt hat, fragt
 hier nach einem Namen, statt eine Überschrift zu zeigen.
 
@@ -81,10 +84,11 @@ dem ausgewählten Datensatz öffnet, sodass der Ort zum Beheben einen Klick
 entfernt ist. Der Rest von *Ein Name in der ganzen Organisation* weiter unten
 sagt, was jeder bedeutet.
 
-**Domänen und Landschaften**, darunter: eine Zeile je Bereich, die Kinder
-eingerückt, mit einem Pfeil, um eine Domäne zuzuklappen. Eine Zeile sagt, wie
-viel darin steckt — Landschaften und Diagramme über den ganzen Teilbaum bei
-einer Domäne, Diagramme bei einer Landschaft — und wann sie sich zuletzt
+**Bereiche in** der Organisation, darunter: eine Zeile je Bereich, die Kinder
+eingerückt, mit einem Pfeil, um eine Domäne zuzuklappen, und einem Etikett mit
+dem, was der Bereich von sich sagt. Eine Zeile sagt, wie viel darin steckt —
+Bereiche mit Tafeln und Diagramme über den ganzen Teilbaum bei einer Domäne,
+Diagramme bei einem Bereich, unter dem nichts liegt — und wann sie sich zuletzt
 geändert hat. **Reihenfolge** sortiert nach Name oder nach dem, was Sie zuletzt
 geändert haben. Eine Organisation, unter der noch nichts abgelegt ist, sagt das
 in einem Satz. Ein Bereich, der zeichnet, listet über dem Baum stattdessen seine
@@ -92,14 +96,15 @@ in einem Satz. Ein Bereich, der zeichnet, listet über dem Baum stattdessen sein
 der `+`-Reiter des Editors: eine Landschaft, eine Geschäftsarchitektur, eine
 Unternehmenskarte oder eine Technologielandschaft.
 
-- **Öffnen** betritt einen Bereich, der etwas zeichnet. Ein Bereich, der nichts
-  zeichnet, ist eine Domäne: alles, was darunter abgelegt ist, wird aufgelistet,
-  und es gibt keine Zeichenfläche zu zeigen.
-- **Neue Domäne oder Landschaft…** fragt nach einem Namen und danach, unter
-  welchem Bereich sie abgelegt wird. Jede Zeile hat einen eigenen Eintrag, was
-  der schnelle Weg ist, unter diesem Bereich etwas hinzuzufügen.
+- **Öffnen** auf einer Zeile führt zum Zuhause dieses Bereichs: seine eigenen
+  Karten, seine Tafeln und die Bereiche darin, jeder mit einer eigenen Zeile.
+  Eine Tafel öffnen Sie über ihre Zeile unter **Tafeln**.
+- **Neue Domäne oder neues Team…**, einmal, oben im Abschnitt, fragt nach einem
+  Namen und legt den neuen Bereich unter dem Bereich ab, dessen Zuhause Sie
+  sehen; **Abgelegt unter** im Dialog legt ihn woanders ab.
 - **Einstellungen…** auf jeder Zeile enthält den Namen, was es ist
-  (Organisation, Domäne, Programm, Landschaft — ein Wort für den Bildschirm,
+  (Organisation, Domäne, Programm, Team, Landschaftsbereich — ein Wort für den
+  Bildschirm,
   nichts verhält sich anders), einen Auftraggeber, eine Beschreibung, Links und
   **Abgelegt unter**, was ihn verschiebt.
 - **Löschen** entfernt den Bereich und alles, was darunter abgelegt ist, und

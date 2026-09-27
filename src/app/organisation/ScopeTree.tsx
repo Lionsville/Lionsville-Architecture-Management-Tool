@@ -47,14 +47,16 @@ export type ScopeTreeProps = {
   name: string
   collapsed: ReadonlySet<ScopePath>
   onToggleCollapsed: (path: ScopePath) => void
-  /** Onto the scope's canvas. Offered only where there is one. */
-  onOpen: (path: ScopePath) => void
   /**
-   * To the scope's home: its own pages, and the tree under it. Every row has
-   * one, which is what its name does.
+   * To the scope's home: its own pages, its boards and the tree under it.
+   * Every row has one, which is what its name and its *Open* do — opening a
+   * scope is arriving at its home, and a board is opened from the home's list
+   * of boards, where it is named. *Open* used to go straight onto whichever
+   * board the scope had open last, which read as a board picked at random.
+   * Creating a scope under this one is on its home too, once, rather than on
+   * every row of its parent's tree.
    */
   onHome: (path: ScopePath) => void
-  onAddUnder: (path: ScopePath) => void
   onSettings: (scope: ScopeSummary) => void
   onDelete: (scope: ScopeSummary) => void
   language: Language
@@ -107,7 +109,7 @@ function visibleRows(tree: ScopeSummary, collapsed: ReadonlySet<ScopePath>): Sco
 }
 
 export function ScopeTree({
-  tree, name, collapsed, onToggleCollapsed, onOpen, onHome, onAddUnder, onSettings, onDelete,
+  tree, name, collapsed, onToggleCollapsed, onHome, onSettings, onDelete,
   language, s,
 }: ScopeTreeProps) {
   const rows = visibleRows(tree, collapsed)
@@ -188,22 +190,15 @@ export function ScopeTree({
               </Typography>
             </Box>
 
-            {scope.diagrams > 0 && (
-              <Button size="small" onClick={() => onOpen(scope.path)} sx={{ fontSize: 11, minWidth: 0, px: 1 }}>
-                {s('picker.open')}
-              </Button>
-            )}
-            <Tooltip title={s('picker.addUnder', { name: scope.name })}>
-              <Button
-                size="small"
-                color="inherit"
-                onClick={() => onAddUnder(scope.path)}
-                sx={quiet}
-                aria-label={s('picker.addUnder', { name: scope.name })}
-              >
-                {s('picker.newScope')}
-              </Button>
-            </Tooltip>
+            <Button
+              size="small"
+              onClick={() => onHome(scope.path)}
+              data-testid={`open-${scope.path}`}
+              aria-label={`${s('picker.open')} ${scope.name}`}
+              sx={{ fontSize: 11, minWidth: 0, px: 1 }}
+            >
+              {s('picker.open')}
+            </Button>
             <Tooltip title={s('group.openFor', { name: scope.name })}>
               <Button
                 size="small"

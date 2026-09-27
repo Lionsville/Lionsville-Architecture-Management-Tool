@@ -1145,6 +1145,41 @@ describe('the chip a registered provider names', () => {
     expect(within(onBar()!).getByTestId('chip-face').textContent).toBe('en: A')
   })
 
+  /**
+   * Where the chip is on each bar: at the right end, right after the agent
+   * control, so the person finds who and where they are in one place on every
+   * screen — and reaches it with Tab right after the agent, since the order a
+   * keyboard walks is the order the bar is drawn in.
+   */
+  it('sits at the right end, beside the agent control, on the workspace and on every home', async () => {
+    function Panel() {
+      return <div data-testid="chip-panel">Anna</div>
+    }
+    renderApp({
+      scopes: new InMemoryScopeStore(tree),
+      source: elsewhere,
+      boot: { initialProject: tree[2] },
+      provider: { chip: () => ({ label: 'Anna Berg' }), chipPanel: Panel },
+    })
+    const besideTheAgent = () => {
+      const bar = screen.getByTestId('shell-toolbar')
+      const controls = [...bar.querySelectorAll('button, a[href], input')]
+      const agent = controls.indexOf(within(bar).getByTestId('agent-glyph'))
+      const chip = controls.indexOf(within(bar).getByTestId('working-source'))
+      expect(agent).toBeGreaterThan(-1)
+      expect(chip).toBe(agent + 1)
+    }
+    await waitFor(() => expect(onBar()?.tagName).toBe('BUTTON'))
+    besideTheAgent()
+    // A domain's home, and the organisation's.
+    fireEvent.click(screen.getByTestId('crumb-acme'))
+    await screen.findByTestId('organisation-name')
+    besideTheAgent()
+    fireEvent.click(screen.getByTestId('crumb-'))
+    await waitFor(() => expect(screen.queryByTestId('crumb-acme')).toBeNull())
+    besideTheAgent()
+  })
+
   /** The panel grows out of the chip, and simply appears for somebody who asked for less motion. */
   it('opens the panel without motion where the person asked for less', async () => {
     function Panel() {

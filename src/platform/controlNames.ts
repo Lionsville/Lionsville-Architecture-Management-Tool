@@ -27,7 +27,7 @@ export const CONTROL_NAMES = [
   // The bar over an open scope, and the parts it shares with a home's.
   'shell.crumbs', 'shell.activity', 'shell.alsoHere',
   // A scope's home.
-  'org.tree', 'org.tree.row', 'org.cards',
+  'org.tree', 'org.tree.row', 'org.newScope', 'org.cards',
   'org.card.business', 'org.card.map', 'org.card.decisions', 'org.card.observations',
   'org.card.roadmap', 'org.card.register', 'org.card.technology', 'org.card.landscape',
   'org.attention', 'org.attentionMore', 'org.boards', 'org.newBoard',

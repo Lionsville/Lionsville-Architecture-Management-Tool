@@ -373,20 +373,20 @@ export const EN = {
   'picker.deleteBodyFolder': 'This deletes {name}, everything filed under it, and its folder on disk. A working file you saved elsewhere is not touched.',
   'picker.deleteBodyBrowser': 'This deletes {name} and everything filed under it from this browser. A working file you saved elsewhere is not touched.',
   'shell.scopeCreated': '\u201c{name}\u201d created.',
-  'picker.newScope': 'New domain or landscape\u2026',
-  'picker.newScopeTitle': 'New domain or landscape',
+  'picker.newScope': 'New domain or team\u2026',
+  'picker.newScopeTitle': 'New domain or team',
   'picker.scopeName': 'Name',
   'picker.under': 'Filed under',
-  'picker.addUnder': 'New domain or landscape under {name}',
+  'picker.addUnder': 'New domain or team under {name}',
   'picker.organisation': 'This organisation',
   'picker.reservedName': 'A scope cannot be called that \u2014 the folder is already used for what a scope holds.',
   /** Off makes a domain on purpose: a scope that files others and draws nothing itself. */
-  'picker.withBoard': 'Start with a landscape',
+  'picker.withBoard': 'Start with a landscape board',
   'scope.kind.organisation': 'Organisation',
   'scope.kind.domain': 'Domain',
   'scope.kind.programme': 'Programme',
   'scope.kind.team': 'Team',
-  'scope.kind.landscape': 'Landscape',
+  'scope.kind.landscape': 'Landscape scope',
   'picker.create': 'Create',
   'picker.loadFailed': 'That project could not be opened.',
   'picker.listFailed': 'Your projects could not be read.',
@@ -593,7 +593,7 @@ export const EN = {
   'org.kindDomain': 'Domain',
   'org.kindProgramme': 'Programme',
   'org.kindTeam': 'Team',
-  'org.kindLandscape': 'Landscape',
+  'org.kindLandscape': 'Landscape scope',
   'org.filedUnder': 'Filed under',
   'org.filedUnderHelp': 'Moving changes the address of this scope and of everything under it. The content is untouched.',
 
@@ -602,14 +602,30 @@ export const EN = {
   'org.forClient': 'For {name}',
   'org.lastChanged': 'Last changed {when}',
   'org.subtitleWhere': 'Everything here is kept {where}.',
-  'org.subtitle': 'Each domain and landscape below is a scope of its own, with its own boards, pages and decisions.',
+  'org.subtitle': 'Each scope below \u2014 a domain, a team, a landscape scope \u2014 has its own boards, pages and decisions.',
   'org.whereFolder': 'as files in the folder above',
   'org.whereBrowser': 'in this browser',
   'org.whereMemory': 'nowhere yet \u2014 save a working file to keep it',
+  /**
+   * The line under a home's name counts the scopes filed under it by what
+   * each says it is (`countScopeKinds`), in the words its tree's badges use;
+   * the silent ones are counted as scopes.
+   */
+  'org.organisationsOne': '{count} organisation',
+  'org.organisationsOther': '{count} organisations',
   'org.domainsOne': '{count} domain',
   'org.domainsOther': '{count} domains',
-  'org.landscapesOne': '{count} landscape',
-  'org.landscapesOther': '{count} landscapes',
+  'org.programmesOne': '{count} programme',
+  'org.programmesOther': '{count} programmes',
+  'org.teamsOne': '{count} team',
+  'org.teamsOther': '{count} teams',
+  'org.landscapeScopesOne': '{count} landscape scope',
+  'org.landscapeScopesOther': '{count} landscape scopes',
+  'org.scopesOne': '{count} scope',
+  'org.scopesOther': '{count} scopes',
+  /** A row's total: the scopes beneath that draw, by shape and not by what they say. */
+  'org.landscapesOne': '{count} scope with boards',
+  'org.landscapesOther': '{count} scopes with boards',
   /**
    * What the listing could not read (`ScopeSummary.unreadable`): not shown in
    * the tree, left as it is, and never an address a new scope is created at.
@@ -671,6 +687,10 @@ export const EN = {
   'org.viewToday': 'Today',
   'org.onItOne': '{count} on it',
   'org.onItOther': '{count} on it',
+  /** A landscape's container diagrams, listed under it: what the group is, for a screen reader. */
+  'org.containersOn': 'Container diagrams on {name}',
+  /** Container diagrams whose application is on none of this scope's landscapes, listed last. */
+  'org.containersLoose': 'Container diagrams of applications on no landscape here',
   'org.describedOne': '{count} of {total} described',
   'org.describedOther': '{count} of {total} described',
   'org.recordsOne': '{count} record',
@@ -694,8 +714,8 @@ export const EN = {
   'org.nothingHere': 'Nothing at this level yet.',
 
   // The tree of scopes beneath.
-  'org.tree': 'Domains and landscapes',
-  'org.treeEmpty': 'Nothing is filed under {name} yet. Add a domain or a landscape below it.',
+  'org.tree': 'Scopes within {name}',
+  'org.treeEmpty': 'Nothing is filed under {name} yet. Add a domain or a team below it.',
   'org.expand': 'Show what is under {name}',
   'org.collapse': 'Hide what is under {name}',
 

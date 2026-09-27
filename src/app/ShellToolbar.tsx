@@ -469,9 +469,10 @@ export type ShellToolbarProps = {
   /**
    * The chip that names where work is kept, on this bar too: only where the
    * open source's provider gave a word or a panel of its own for it, because
-   * a way into something has to be where the person is. Absent for every
-   * source that ships, whose chip is on the organisation's home and nowhere
-   * else, as it always was.
+   * a way into something has to be where the person is. Drawn at the right
+   * end of the bar, after the agent control and before the menu — the place
+   * it has on every home too. Absent for every source that ships, whose chip
+   * is on the organisation's home and nowhere else, as it always was.
    */
   sourceChip?: ToolbarChip
   s: Translate
@@ -550,7 +551,6 @@ export function ShellToolbar({
         </Typography>
       )}
       <Box sx={{ flex: 1 }} />
-      {sourceChip && <SourceChipView {...sourceChip} s={s} />}
       {([
         ['shell.documentation', 'shell.documentationTip', onOpenDocumentation],
         ['shell.decisions', 'shell.decisionsTip', onOpenDecisions],
@@ -597,6 +597,10 @@ export function ShellToolbar({
           </IconButton>
         </Tooltip>
       )}
+      {/* The chip at the right end, beside the agent control: what it names
+          is who and where the person is, which a bar says last, and the
+          same place on every screen it is drawn on. */}
+      {sourceChip && <SourceChipView {...sourceChip} s={s} />}
       {overflow && (
         <OverflowMenu
           themeMode={overflow.themeMode}

@@ -42,7 +42,7 @@ import Typography from '@mui/material/Typography'
 import { LOCALE } from '../../i18n'
 import { plural } from '../../i18n/strings'
 import type { Language, StringKey, Translate } from '../../i18n'
-import { countScopes, flattenScopes, isOpenableScope, newestChange, sortScopes } from '../../projects/scope'
+import { countScopeKinds, flattenScopes, isOpenableScope, newestChange, sortScopes } from '../../projects/scope'
 
 import type { ProjectOrder, ScopeSummary } from '../../projects/scope'
 import type { ElementId } from '../../model'
@@ -75,7 +75,7 @@ import { BoardsTable } from './BoardsTable'
 import { attentionItems } from './attention'
 import { NeedsAttention } from './NeedsAttention'
 import { organisationPages } from './organisationPages'
-import { ScopeSettingsDialog, SCOPE_KIND_LABEL } from './ScopeSettingsDialog'
+import { ScopeSettingsDialog, SCOPE_KIND_COUNT, SCOPE_KIND_LABEL } from './ScopeSettingsDialog'
 import { ScopeTree } from './ScopeTree'
 import type { Organisation } from './useOrganisation'
 
@@ -280,7 +280,7 @@ export function OrganisationScreen({
   const registerCounts = useMemo(() => registerSummary(registerHere), [registerHere])
   const technologyHere = useMemo(() => technologyWithin(technology, at), [technology, at])
   const technologyCounts = useMemo(() => technologySummary(technologyHere), [technologyHere])
-  const counts = useMemo(() => countScopes(home), [home])
+  const counts = useMemo(() => countScopeKinds(home), [home])
   const changed = useMemo(() => newestChange(home), [home])
   /**
    * What to call a scope a finding names: its name where the tree has one,
@@ -377,8 +377,7 @@ export function OrganisationScreen({
               home.client?.trim() && home.client.trim() !== home.name.trim()
                 ? s('org.forClient', { name: home.client.trim() })
                 : '',
-              plural(s, { one: 'org.domainsOne', other: 'org.domainsOther' }, counts.domains),
-              plural(s, { one: 'org.landscapesOne', other: 'org.landscapesOther' }, counts.landscapes),
+              ...counts.map(({ kind, count }) => plural(s, SCOPE_KIND_COUNT[kind ?? 'unsaid'], count)),
               changed
                 ? s('org.lastChanged', {
                   when: new Date(changed).toLocaleString(LOCALE[language], {
@@ -493,53 +492,54 @@ export function OrganisationScreen({
           <UnreadableScopes tree={tree} at={at} s={s} />
 
           {/* The tree, under its heading whether or not there is anything in
-              it yet: an empty organisation says so in a sentence, with the
-              examples underneath at the root. A landscape's home has no tree
-              and no heading — it draws, and files nothing. */}
-          {(atRoot || level === 'domain' || home.children.length > 0) && (
-            <>
-              <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 1 }}>
-                <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, flex: 1, textTransform: 'uppercase' }}>
-                  {s('org.tree')}
-                </Typography>
-                {home.children.length > 0 && (
-                  <>
-                    <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{s('picker.order')}</Typography>
-                    <ToggleButtonGroup
-                      size="small"
-                      exclusive
-                      value={order}
-                      onChange={(_e, next: ProjectOrder | null) => { if (next) onOrderChange(next) }}
-                      aria-label={s('picker.order')}
-                    >
-                      <ToggleButton value="name" sx={{ fontSize: 11, py: 0.25, px: 1 }}>
-                        {s('picker.orderName')}
-                      </ToggleButton>
-                      <ToggleButton value="updated" sx={{ fontSize: 11, py: 0.25, px: 1 }}>
-                        {s('picker.orderUpdated')}
-                      </ToggleButton>
-                    </ToggleButtonGroup>
-                  </>
-                )}
-                <Button size="small" variant="contained" onClick={() => organisation.addUnder(at)}>
-                  {s('picker.newScope')}
-                </Button>
-              </Stack>
-              <ScopeTree
-                tree={ordered}
-                name={named || !atRoot ? heading : s('common.organisation')}
-                collapsed={organisation.collapsed}
-                onToggleCollapsed={organisation.toggleCollapsed}
-                onOpen={(path) => organisation.open(path)}
-                onHome={onGoHome}
-                onAddUnder={organisation.addUnder}
-                onSettings={organisation.editScope}
-                onDelete={organisation.askDelete}
-                language={language}
-                s={s}
-              />
-            </>
-          )}
+              it yet: an empty scope says so in a sentence, with the examples
+              underneath at the root. On every home, a landscape's too: the
+              way to file a scope under this one is at the head of it, and a
+              scope that draws may still hold scopes of its own. */}
+          <>
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 1 }}>
+              <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, flex: 1, textTransform: 'uppercase' }}>
+                {s('org.tree', { name: named || !atRoot ? heading : s('common.organisation') })}
+              </Typography>
+              {home.children.length > 0 && (
+                <>
+                  <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{s('picker.order')}</Typography>
+                  <ToggleButtonGroup
+                    size="small"
+                    exclusive
+                    value={order}
+                    onChange={(_e, next: ProjectOrder | null) => { if (next) onOrderChange(next) }}
+                    aria-label={s('picker.order')}
+                  >
+                    <ToggleButton value="name" sx={{ fontSize: 11, py: 0.25, px: 1 }}>
+                      {s('picker.orderName')}
+                    </ToggleButton>
+                    <ToggleButton value="updated" sx={{ fontSize: 11, py: 0.25, px: 1 }}>
+                      {s('picker.orderUpdated')}
+                    </ToggleButton>
+                  </ToggleButtonGroup>
+                </>
+              )}
+              {/* The one way to a new scope, on the home it is filed under. */}
+              <Button
+                size="small" variant="contained" onClick={() => organisation.addUnder(at)}
+                data-testid="new-scope" data-guide="org.newScope"
+              >
+                {s('picker.newScope')}
+              </Button>
+            </Stack>
+            <ScopeTree
+              tree={ordered}
+              name={named || !atRoot ? heading : s('common.organisation')}
+              collapsed={organisation.collapsed}
+              onToggleCollapsed={organisation.toggleCollapsed}
+              onHome={onGoHome}
+              onSettings={organisation.editScope}
+              onDelete={organisation.askDelete}
+              language={language}
+              s={s}
+            />
+          </>
 
           {/* The examples are for a folder with nothing in it yet. Once the
               organisation holds a view or a scope, an offer to copy one in
@@ -797,6 +797,17 @@ function OrganisationBar({
 }) {
   const quiet = QUIET
   const crumbs = useMemo(() => crumbsFor(home.path, flattenScopes(tree), s), [home.path, tree, s])
+  // A chip the provider gave a word, a panel or a face of its own sits at the
+  // right end, beside the agent control, as it does on the workspace's bar: it
+  // names who and where the person is, and is in one place on every screen.
+  // The word a built-in source is said with stays beside the button that
+  // changes it, where it always was.
+  const atTheEnd = sourceChip !== undefined || chipPanel !== undefined || chipFace !== undefined
+  const chip = source && (
+    <SourceChipView
+      source={source} describeKey={sourceDescription} chip={sourceChip} panel={chipPanel} face={chipFace} s={s}
+    />
+  )
   return (
     <Box ref={barRef} data-testid="shell-toolbar" sx={{
       display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 0.75, ...WRAPS,
@@ -819,11 +830,7 @@ function OrganisationBar({
 
       <Box sx={{ flex: 1 }} />
 
-      {source && (
-        <SourceChipView
-          source={source} describeKey={sourceDescription} chip={sourceChip} panel={chipPanel} face={chipFace} s={s}
-        />
-      )}
+      {source && !atTheEnd && chip}
       {onChooseWorkingDirectory && (
         <Button size="small" color="inherit" onClick={onChooseWorkingDirectory} sx={quiet}>
           {s(source?.kind === 'folder' ? 'picker.changeFolder' : 'picker.chooseFolder')}
@@ -862,6 +869,7 @@ function OrganisationBar({
           </IconButton>
         </Tooltip>
       )}
+      {source && atTheEnd && chip}
       {overflow && (
         <OverflowMenu
           themeMode={overflow.themeMode}

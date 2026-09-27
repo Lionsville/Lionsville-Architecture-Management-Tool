@@ -7,8 +7,8 @@
  * done to a row.
  *
  * What the picker's tree test pinned still holds and is here — nesting, opening
- * a scope that draws and not one that does not, settings on every scope,
- * refusing to delete the root, creating under the row whose button was pressed,
+ * a scope onto its home, settings on every scope,
+ * refusing to delete the root, creating under the scope whose home it is,
  * and a reserved name refused where a person can see it. Two things it could
  * not pin are new: **the root is not a row** (it is the screen), and a scope
  * with children folds shut.
@@ -66,7 +66,7 @@ describe('the tree', () => {
   it('sums a subtree on a scope that has one, and a leaf on one that has not', async () => {
     show()
     const retail = await screen.findByTestId('scope-retail')
-    expect(retail.textContent).toContain('1 landscape')
+    expect(retail.textContent).toContain('1 scope with boards')
     expect(retail.textContent).toContain('1 diagram')
     expect(screen.getByTestId('scope-finance').textContent).toContain('1 diagram')
   })
@@ -81,13 +81,25 @@ describe('the tree', () => {
     expect(screen.getByTestId('scope-retail/warehouse')).toBeDefined()
   })
 
-  it('opens a scope that draws, and offers no way in to one that does not', async () => {
+  /**
+   * Opening a scope is arriving at its home — its pages, its boards, what is
+   * filed under it — and never onto whichever board it had open last. Every
+   * row offers it, a scope that draws nothing as much as one that does.
+   */
+  it('opens a scope on its home, and not on one of its boards', async () => {
     show()
-    const retail = await screen.findByTestId('scope-retail')
-    expect(within(retail).queryByRole('button', { name: 'Open' })).toBeNull()
-    fireEvent.click(within(screen.getByTestId('scope-retail/warehouse')).getByRole('button', { name: 'Open' }))
+    await screen.findByTestId('scope-retail')
+    fireEvent.click(screen.getByTestId('open-retail/warehouse'))
+    expect((await screen.findByTestId('organisation-name')).textContent).toBe('Warehouse')
+    expect(screen.getByTestId('crumb-current').textContent).toBe('Warehouse')
     // The workspace's own bar, which only exists once a scope is open.
+    expect(screen.queryByTestId('saved-indicator')).toBeNull()
+    // A board is opened from the home's list of boards, by its name.
+    fireEvent.click(await screen.findByTestId('board-name-l7'))
     await waitFor(() => expect(screen.getByTestId('saved-indicator')).toBeDefined())
+    fireEvent.click(screen.getByTestId('crumb-'))
+    fireEvent.click(await screen.findByTestId('open-retail'))
+    expect((await screen.findByTestId('organisation-name')).textContent).toBe('Retail')
   })
 
   it('offers every scope its own settings, the root included', async () => {
@@ -111,12 +123,39 @@ describe('the tree', () => {
     expect(await store.load('retail/warehouse')).toBeUndefined()
   })
 
-  it('creates a scope under the row whose button was pressed', async () => {
+  /**
+   * A new scope is made on the home of the scope it is filed under, once, at
+   * the head of the tree — not on every row of its parent's tree.
+   */
+  it('creates a scope under the scope whose home it was made on', async () => {
     const { store } = show()
-    fireEvent.click(await screen.findByRole('button', { name: 'New domain or landscape under Retail' }))
+    await screen.findByTestId('scope-retail')
+    expect(within(screen.getByTestId('scope-retail')).queryByTestId('new-scope')).toBeNull()
+    expect(screen.getAllByTestId('new-scope')).toHaveLength(1)
+    fireEvent.click(screen.getByTestId('home-retail'))
+    expect((await screen.findByTestId('organisation-name')).textContent).toBe('Retail')
+    fireEvent.click(screen.getByTestId('new-scope'))
     fireEvent.change(await screen.findByLabelText('Name'), { target: { value: 'Returns' } })
     fireEvent.click(screen.getByRole('button', { name: 'Create' }))
     await waitFor(async () => expect(await store.load('retail/returns')).toBeDefined())
+  })
+
+  /** The organisation's home is the root's, so what it makes is filed at the top. */
+  it('creates a top-level scope from the organisation’s home', async () => {
+    const { store } = show()
+    await screen.findByTestId('scope-retail')
+    fireEvent.click(screen.getByTestId('new-scope'))
+    fireEvent.change(await screen.findByLabelText('Name'), { target: { value: 'Returns' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Create' }))
+    await waitFor(async () => expect(await store.load('returns')).toBeDefined())
+  })
+
+  /** A scope that draws may still hold scopes of its own, so its home offers the way too. */
+  it('offers the way to a new scope on a landscape’s home as well', async () => {
+    show()
+    fireEvent.click(await screen.findByTestId('home-finance'))
+    expect((await screen.findByTestId('organisation-name')).textContent).toBe('Finance')
+    expect(await screen.findByTestId('new-scope')).toBeDefined()
   })
 
   /**
@@ -124,11 +163,13 @@ describe('the tree', () => {
    * purpose — a folder for other scopes, which until now only came about as
    * a missing ancestor.
    */
-  it('makes a domain on purpose when the landscape is unticked', async () => {
+  it('makes a domain on purpose when the landscape board is unticked', async () => {
     const { store } = show()
-    fireEvent.click(await screen.findByRole('button', { name: 'New domain or landscape under Retail' }))
+    fireEvent.click(await screen.findByTestId('home-retail'))
+    await waitFor(() => expect(screen.getByTestId('organisation-name').textContent).toBe('Retail'))
+    fireEvent.click(await screen.findByTestId('new-scope'))
     fireEvent.change(await screen.findByLabelText('Name'), { target: { value: 'Returns' } })
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Start with a landscape' }))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Start with a landscape board' }))
     fireEvent.click(screen.getByRole('button', { name: 'Create' }))
     await waitFor(async () => expect(await store.load('retail/returns')).toBeDefined())
     const made = await store.load('retail/returns')
@@ -143,7 +184,7 @@ describe('the tree', () => {
     // an empty tree, and clicking that one clicks a button React is about to
     // replace.
     await screen.findByTestId('scope-retail')
-    fireEvent.click(screen.getByRole('button', { name: 'New domain or landscape…' }))
+    fireEvent.click(screen.getByTestId('new-scope'))
     fireEvent.change(await screen.findByLabelText('Name'), { target: { value: 'Decisions' } })
     expect(await screen.findByText(/cannot be called that/)).toBeDefined()
     expect(screen.getByRole('button', { name: 'Create' })).toHaveProperty('disabled', true)
@@ -299,7 +340,7 @@ describe('a domain’s home', () => {
     const { store } = show()
     fireEvent.click(await screen.findByTestId('home-retail'))
     expect(screen.getByRole('button', { name: 'Settings for Retail' })).toBeDefined()
-    fireEvent.click(screen.getByRole('button', { name: 'New domain or landscape…' }))
+    fireEvent.click(screen.getByTestId('new-scope'))
     fireEvent.change(await screen.findByLabelText('Name'), { target: { value: 'Returns' } })
     fireEvent.click(screen.getByRole('button', { name: 'Create' }))
     await waitFor(async () => expect(await store.load('retail/returns')).toBeDefined())
@@ -362,7 +403,8 @@ describe('a domain’s home', () => {
 describe('the crumbs over an open scope', () => {
   it('name the organisation, the domain and the landscape, in that order', async () => {
     show()
-    fireEvent.click(within(await screen.findByTestId('scope-retail/warehouse')).getByRole('button', { name: 'Open' }))
+    fireEvent.click(await screen.findByTestId('open-retail/warehouse'))
+    fireEvent.click(await screen.findByTestId('board-name-l7'))
     await waitFor(() => expect(screen.getByTestId('saved-indicator')).toBeDefined())
     const bar = screen.getByTestId('shell-toolbar').textContent ?? ''
     expect(bar.indexOf('Acme Logistics')).toBeLessThan(bar.indexOf('Retail'))
@@ -372,7 +414,8 @@ describe('the crumbs over an open scope', () => {
 
   it('land on the home of the crumb pressed', async () => {
     show()
-    fireEvent.click(within(await screen.findByTestId('scope-retail/warehouse')).getByRole('button', { name: 'Open' }))
+    fireEvent.click(await screen.findByTestId('open-retail/warehouse'))
+    fireEvent.click(await screen.findByTestId('board-name-l7'))
     await waitFor(() => expect(screen.getByTestId('saved-indicator')).toBeDefined())
     fireEvent.click(screen.getByTestId('crumb-retail'))
     expect((await screen.findByTestId('organisation-name')).textContent).toBe('Retail')

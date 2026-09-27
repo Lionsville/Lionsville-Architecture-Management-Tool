@@ -39,17 +39,19 @@ scope like any other and the one everything else is filed under. A **scope** is
 one document: a name, a landscape, the container diagrams under it, the
 decisions, the plans, the business architecture, and everything placed on them.
 Scopes **nest**, and every one of them is the same document — the organisation
-at the top, a **domain** under it, a **landscape** under that, as deep as your
-work needs.
+at the top, a **domain** or a **team** under it, a **landscape scope** under
+that, as deep as your work needs. A landscape scope is a scope; a landscape is
+also a kind of board, which is a drawing inside a scope.
 
 The screen is the organisation's home rather than a list of documents. A line
 under the name says what it is and where things live — as files in the folder
 named on the bar, or in this browser — and then it has five parts.
 
-![The organisation screen: the name and links at the top, the organisation's own pages as cards, the tree of domains and landscapes, and the examples last](screenshot-organisation.png)
+![The organisation screen: the name and links at the top, the organisation's own pages as cards, the scopes within it, and the examples last](screenshot-organisation.png)
 
 **Its identity**, at the top: the name, the client if the drawings are made out
-to somebody else, how many domains and landscapes are filed under it, when
+to somebody else, how many scopes are filed under it by what each says it is
+(*2 domains · 1 team*, in the words of the badges on their rows), when
 anything in it last changed, the description, and its links. A folder nobody has
 named yet asks for a name here instead of showing a heading.
 
@@ -72,23 +74,26 @@ service no platform delivers. Each sentence is a button that opens the scope it
 is about with the record selected, so the place to fix it is one click away.
 The rest of *One name across the organisation* below says what each means.
 
-**Domains and landscapes**, beneath: one row per scope, the children indented,
-with a chevron to fold a domain shut. A row says how much is inside it —
-landscapes and diagrams over the whole subtree for a domain, diagrams for a
-landscape — and when it last changed. **Order** lists by name or by what you
+**Scopes within** the organisation, beneath: one row per scope, the children
+indented, with a chevron to fold a domain shut, and a badge saying what the
+scope says it is. A row says how much is inside it — scopes with boards and
+diagrams over the whole subtree for a domain, diagrams for a scope with nothing
+under it — and when it last changed. **Order** lists by name or by what you
 changed most recently. An organisation with nothing filed under it yet says so
 in a sentence. A scope that draws lists its **Boards** above the tree instead,
 one row each, and **New board…** offers the same kinds the editor's `+` tab
 does: a landscape, a business architecture, an enterprise map or a technology
 landscape.
 
-- **Open** enters a scope that draws something. A scope that draws nothing is a
-  domain: everything filed under it is listed, and there is no canvas to show.
-- **New domain or landscape…** asks for a name and which scope to file it
-  under. Every row has one of its own, which is the quick way to add under
-  that scope.
+- **Open** on a row goes to that scope's home: its own cards, its boards, and
+  the scopes within it, each with a row of its own. A board is opened from its
+  row under **Boards**.
+- **New domain or team…**, once, at the head of the section, asks for a name
+  and files the new scope under the scope whose home you are on; **Filed
+  under** in the dialog puts it somewhere else.
 - **Settings…** on any row holds its name, what it is (organisation, domain,
-  programme, landscape — a word for the screen, nothing behaves differently),
+  programme, team, landscape scope — a word for the screen, nothing behaves
+  differently),
   a client, a description, links, and **Filed under**, which moves it.
 - **Delete** removes the scope and everything filed under it, and the
   confirmation says so: its folder on disk, or, in a browser without a folder,

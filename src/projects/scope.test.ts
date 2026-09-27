@@ -10,7 +10,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
-  bareScope, countScopes, emptyScope, flattenScopes, isOpenableScope, isProjectOrder, isStoredScope,
+  bareScope, countScopeKinds, countScopes, emptyScope, flattenScopes, isOpenableScope, isProjectOrder, isStoredScope,
   moveScope, movedPaths, namesUnder, newestChange,
   onView, openScopeDocument, renameScope, resolveActive, scopeTree, setScopeDefaults,
   sortScopes, subtreeTotals, summarise, toWorkingFile,
@@ -343,6 +343,31 @@ describe('what a tree of scopes adds up to', () => {
     expect(countScopes(both)).toEqual({ domains: 1, landscapes: 2 })
     // The root is the organisation, not a row in its own list.
     expect(countScopes(scopeTree([at('', { diagrams: 4 })]))).toEqual({ domains: 0, landscapes: 0 })
+  })
+
+  it('tallies what the scopes under a home say they are, in kind order, the silent ones last', () => {
+    const said = scopeTree([
+      at('', { kind: 'organisation' }),
+      at('retail', { kind: 'team' }),
+      at('retail/warehouse', { kind: 'landscape', diagrams: 2 }),
+      at('retail/returns'),
+      at('finance', { kind: 'domain' }),
+      at('finance/ledger', { kind: 'team' }),
+    ])
+    // The whole subtree, not the children only, and never the home itself.
+    expect(countScopeKinds(said)).toEqual([
+      { kind: 'domain', count: 1 },
+      { kind: 'team', count: 2 },
+      { kind: 'landscape', count: 1 },
+      { kind: undefined, count: 1 },
+    ])
+    // A home further down counts what is under it.
+    expect(countScopeKinds(said.children.find((scope) => scope.path === 'retail')!)).toEqual([
+      { kind: 'landscape', count: 1 },
+      { kind: undefined, count: 1 },
+    ])
+    // Nothing filed under it says nothing, rather than "0".
+    expect(countScopeKinds(scopeTree([at('', { diagrams: 4 })]))).toEqual([])
   })
 
   it('sums a subtree including the scope you are looking at, and a leaf as itself', () => {

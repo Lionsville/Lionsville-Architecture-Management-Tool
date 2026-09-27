@@ -39,10 +39,11 @@ elk ander en waaronder al het andere valt. Een **onderdeel** is één document:
 een naam, een landschap, de containerdiagrammen eronder, de besluiten, de
 plannen, de bedrijfsarchitectuur en alles wat erop staat. Onderdelen
 **nestelen**, en ze zijn allemaal hetzelfde document — de organisatie bovenaan,
-een **domein** eronder, een **landschap** daar weer onder, zo diep als je werk
-vraagt.
+een **domein** of een **team** eronder, een **landschapsscope** daar weer
+onder, zo diep als je werk vraagt. Een landschapsscope is een onderdeel; een
+landschap is ook een soort bord, en dat is een tekening binnen een onderdeel.
 
-![Het organisatiescherm: de naam en koppelingen bovenaan, de eigen pagina's van de organisatie als kaarten, de boom van domeinen en landschappen, en de voorbeelden onderaan](screenshot-organisation.png)
+![Het organisatiescherm: de naam en koppelingen bovenaan, de eigen pagina's van de organisatie als kaarten, de scopes daarbinnen, en de voorbeelden onderaan](screenshot-organisation.png)
 
 Het scherm is het thuis van de organisatie en geen lijst met documenten. Een
 regel onder de naam zegt wat het is en waar alles staat — als bestanden in de
@@ -50,7 +51,8 @@ map die de balk noemt, of in deze browser — en daarna bestaat het uit vijf
 delen.
 
 **Wie het is**, bovenaan: de naam, de klant als de tekeningen voor iemand anders
-gemaakt zijn, hoeveel domeinen en landschappen eronder vallen, wanneer er voor
+gemaakt zijn, hoeveel scopes eronder vallen naar wat elk zegt te zijn
+(*2 domeinen · 1 team*, in de woorden van de labels op hun regels), wanneer er voor
 het laatst iets veranderde, de omschrijving en de koppelingen. Een map die nog
 geen naam heeft vraagt er hier om in plaats van een lege kop te tonen.
 
@@ -75,10 +77,12 @@ gaat, met het record geselecteerd, zodat de plek om het te herstellen één klik
 verder is. De rest van *Eén naam in de hele organisatie* hieronder zegt wat
 elk betekent.
 
-**Domeinen en landschappen**, eronder: één regel per onderdeel, de kinderen
-ingesprongen, met een pijltje om een domein dicht te klappen. Een regel zegt
-hoeveel erin zit — landschappen en diagrammen over de hele tak voor een domein,
-diagrammen voor een landschap — en wanneer het laatst iets veranderde.
+**Scopes binnen** de organisatie, eronder: één regel per onderdeel, de
+kinderen ingesprongen, met een pijltje om een domein dicht te klappen, en een
+label met wat het onderdeel zegt te zijn. Een regel zegt hoeveel erin zit —
+scopes met borden en diagrammen over de hele tak voor een domein, diagrammen
+voor een onderdeel waar niets onder valt — en wanneer het laatst iets
+veranderde.
 **Volgorde** sorteert op naam of op wat je het laatst hebt gewijzigd. Een
 organisatie waar nog niets bij is ondergebracht zegt dat in één zin. Een
 onderdeel dat tekent toont boven de boom zijn **Borden**, één regel elk, en
@@ -86,15 +90,15 @@ onderdeel dat tekent toont boven de boom zijn **Borden**, één regel elk, en
 landschap, een bedrijfsarchitectuur, een enterprisekaart of een
 technologielandschap.
 
-- **Openen** gaat een onderdeel in dat iets tekent. Een onderdeel dat niets
-  tekent is een domein: alles wat eronder valt staat eronder, en er is geen bord
-  om te tonen.
-- **Nieuw domein of landschap…** vraagt om een naam en om waaronder het valt.
-  Elke regel heeft er zelf een, en dat is de snelle manier om er iets onder te
-  hangen.
+- **Openen** op een regel gaat naar het thuis van dat onderdeel: zijn eigen
+  kaarten, zijn borden, en de scopes daarbinnen, elk met een eigen regel. Een
+  bord open je vanaf zijn regel onder **Borden**.
+- **Nieuw domein of team…**, één keer, bovenaan de sectie, vraagt om een naam
+  en brengt het nieuwe onderdeel onder bij het onderdeel waarvan je het thuis
+  ziet; **Valt onder** in de dialoog zet het ergens anders.
 - **Instellingen…** op elke regel bevat de naam, wat het is (organisatie,
-  domein, programma, landschap — een woord voor het scherm, er gedraagt zich
-  niets anders), een klant, een omschrijving, koppelingen en **Ondergebracht
+  domein, programma, team, landschapsscope — een woord voor het scherm, er
+  gedraagt zich niets anders), een klant, een omschrijving, koppelingen en **Ondergebracht
   bij**, waarmee je het verplaatst.
 - **Verwijderen** haalt het onderdeel weg, met alles wat eronder valt, en de
   bevestiging zegt dat ook: zijn map op schijf, of, in een browser zonder map,

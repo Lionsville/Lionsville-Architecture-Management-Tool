@@ -266,9 +266,10 @@ const SPECS = [
     name: 'scopes.list',
     tier: 'read',
     description:
-      'Every scope in the organisation (ADR-0012 §1): its path, its name, what it says it is, how many views '
-      + 'it holds, and which one is open in the app. A path is what `scope` takes on every other tool; "" is '
-      + 'the organisation itself.',
+      'Every scope in the organisation (ADR-0012 §1): its path, its name, what it says it is (organisation, '
+      + 'domain, programme, team or landscape — a landscape scope, which is not the same thing as a landscape '
+      + 'board), how many views it holds, and which one is open in the app. A path is what `scope` takes on '
+      + 'every other tool; "" is the organisation itself.',
     inputSchema: NO_ARGUMENTS,
   },
   {
@@ -2052,8 +2053,8 @@ const LOOKS_ONLY: readonly string[] = ['diagram.inspect', 'diagram.render', 'foc
 const SCOPE_ARGUMENT: ArgumentSchema = {
   type: 'string',
   description:
-    'Which scope to answer for, as its path: "" is the organisation, "acme/retail" a landscape under a domain '
-    + '(see scopes.list). Default: the scope open in the app. A read over another scope is answered from its '
+    'Which scope to answer for, as its path: "" is the organisation, "acme/retail" a scope filed under '
+    + 'another — a domain, a team, a landscape scope (see scopes.list). Default: the scope open in the app. A read over another scope is answered from its '
     + 'document on disk; a change, a picture, undo and the session\'s own lists need that scope open in the '
     + 'app, and are refused otherwise.',
 }

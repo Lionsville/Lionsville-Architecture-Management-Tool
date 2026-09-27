@@ -153,9 +153,11 @@ describe('the agent seam, bound to the shell', () => {
     const { gateway, ask } = fakeGateway()
     renderApp({ agent: gateway, scopes: new InMemoryScopeStore([project]), boot: { initialProject: undefined } })
     await waitFor(() => expect(screen.getByTestId('scope-acme/landscape')).toBeDefined())
-    // The row's own Open: the cards above it open the ROOT scope's pages, and
-    // this is the scope the agent is about to be asked about.
-    fireEvent.click(within(screen.getByTestId('scope-acme/landscape')).getByRole('button', { name: 'Open' }))
+    // The row's own Open, onto the scope's home — the cards above it open the
+    // ROOT scope's pages, and this is the scope the agent is about to be asked
+    // about — and its board from the home's list.
+    fireEvent.click(screen.getByTestId('open-acme/landscape'))
+    fireEvent.click(await screen.findByTestId('board-name-d1'))
     await waitFor(() => expect(screen.getByTestId('rename-billing')).toBeDefined())
     expect(parsed(await ask('project.current'))).toMatchObject({ name: 'Warehouse landscape' })
   })
