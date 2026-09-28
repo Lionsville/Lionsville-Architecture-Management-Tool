@@ -194,12 +194,12 @@ describe('a retirement with things still plugged into it', () => {
 
   it('counts a container line by the interface it is part of, and a container with its application', () => {
     const elements = [
-      element('wms', { lifecycleDates: { retired: '2031-03-31' }, successorId: 'x' }), element('x'),
-      element('billing', { lifecycleDates: { retired: '2028-12-31' }, successorId: 'x' }),
+      element('wms', { lifecycleDates: { retired: '2030-06-30' }, successorId: 'x' }), element('x'),
+      element('billing', { lifecycleDates: { retired: '2028-06-30' }, successorId: 'x' }),
       element('ledger', { kind: 'component', parentId: 'billing' }),
       element('orders'), element('orders-api', { kind: 'component', parentId: 'orders' }),
     ]
-    const dated = connection('i1', 'wms', 'orders', { validUntil: '2028-12-30' })
+    const dated = connection('i1', 'wms', 'orders', { validUntil: '2028-06-29' })
     // The landing has no dates; the interface it is part of ends in time.
     const landed = connection('r1', 'wms', 'orders-api', { refines: 'i1' })
     // A container of an application that is gone by then goes with it.
