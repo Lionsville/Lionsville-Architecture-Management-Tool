@@ -380,8 +380,10 @@ src/platform/     What the app runs inside, and what a failure looks like.
                     scopeHeader · windowTitle   what a scope's header file is
                                       called and what it is called on screen —
                                       the two things main reads about a folder
-                    updates           is this newer, which file is mine — the
+                    updates           is this newer, which file is mine, can this
+                                      copy replace itself where it runs — the
                                       desktop's update check, without its fetch
+                                      (ADR-0030)
                     agentServer       the server's three states, and mcp.json's shape
                     sourceProvider    a kind of place work is kept, as something
                                       that can be registered: what it opens to

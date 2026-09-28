@@ -67,7 +67,7 @@ now, with their words unchanged.
 | [0003](0003-a-working-directory-of-text-files.md) | A working directory of text files | 2026-09-06 | [0018](0018-one-file-and-it-is-the-working-set.md) in part |
 | [0004](0004-what-a-large-landscape-costs.md) | What a large landscape costs | 2026-09-06 | — |
 | [0005](0005-preferences-and-what-you-are-working-from.md) | Preferences, in three scopes, and a top bar that says where you are | 2026-09-07 | [0023](0023-a-sealed-working-file-from-any-home.md) in part |
-| [0006](0006-release-channels.md) | Release channels: stable, and beta | 2026-09-07 | — |
+| [0006](0006-release-channels.md) | Release channels: stable, and beta | 2026-09-07 | [0030](0030-a-build-with-a-feed-updates-itself.md) in part |
 | [0007](0007-an-agent-as-a-peer-of-the-menu.md) | An agent as a peer of the menu: an MCP server that speaks commands | 2026-09-07 | [0018](0018-one-file-and-it-is-the-working-set.md) in part |
 | [0008](0008-history-per-thing-and-a-way-back.md) | History per thing, and a way back that is itself history | 2026-09-08 | — |
 | [0009](0009-time-a-transition-and-a-document-that-computes.md) | Time on the facts, a transition as a record, and a document that computes | 2026-09-08 | [0027](0027-looking-at-another-day-is-not-an-edit.md) in part |
@@ -85,9 +85,10 @@ now, with their words unchanged.
 | [0021](0021-observations-and-what-lies-behind-them.md) | Observations, and what lies behind them | 2026-09-20 | — |
 | [0022](0022-a-source-is-a-provider.md) | A source is a provider, and a step can come from another author | 2026-09-21 | — |
 | [0023](0023-a-sealed-working-file-from-any-home.md) | A sealed working file, from any home, and settings that stay with the install | 2026-09-21 | — |
-| [0024](0024-the-web-build-is-a-release.md) | The web build is a release, and it has an address | 2026-09-21 | — |
+| [0024](0024-the-web-build-is-a-release.md) | The web build is a release, and it has an address | 2026-09-21 | [0030](0030-a-build-with-a-feed-updates-itself.md) in part |
 | [0025](0025-where-a-working-file-lands-is-asked.md) | Where a working file lands is asked | 2026-09-22 | — |
 | [0026](0026-solutions-and-whether-they-held.md) | Solutions, and whether they held | 2026-09-24 | — |
 | [0027](0027-looking-at-another-day-is-not-an-edit.md) | Looking at another day is not an edit | 2026-09-26 | — |
 | [0028](0028-a-command-says-what-it-may-carry.md) | A command says what it may carry | 2026-09-26 | — |
 | [0029](0029-every-record-says-what-it-is-to-a-search.md) | Every record says what it is to a search | 2026-09-27 | — |
+| [0030](0030-a-build-with-a-feed-updates-itself.md) | A build with a feed updates itself, and the releases here carry no installers | 2026-09-28 | — |

@@ -51,6 +51,10 @@ export const policy: Policy = {
     },
     '@mui/material': { licence: 'MIT', why: 'Every control, dialog and theme on every screen.' },
     '@xyflow/react': { licence: 'MIT', why: 'The canvas: nodes, edges, panning and selection on every board.' },
+    'electron-updater': {
+      licence: 'MIT',
+      why: 'The desktop replacing itself from a feed that a build composed from this one registers, asking first (ADR-0030); bundled into main, and loaded on the first check against a feed and never in a build without one.',
+    },
     'elkjs': { licence: 'EPL-2.0 OR GPL-3.0-or-later', why: 'Automatic layout, as a worker; see its licence exception.' },
     'fflate': { licence: 'MIT', why: 'The working file is a zip; it reads and writes it.' },
     'html-to-image': { licence: 'MIT', why: 'Exporting a board or a laid-out page as a picture.' },

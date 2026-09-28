@@ -10,13 +10,21 @@
  * are testable in node, and the desktop main process is left with nothing but
  * the fetch and the message box.
  *
- * The mechanism this serves is deliberately the modest one: **look at the
- * `latest` release, tell the user, hand them the file.** It replaced
- * electron-updater's install-in-place, which cannot work on the path most
- * people take on macOS — a DMG dragged into /Applications updates through
- * Squirrel.Mac, which needs the signed zip, a writable bundle and a code
- * signature it can verify, and fails silently when any of the three is missing.
- * A download link works on every platform, always, and asks first.
+ * Two mechanisms are served, and which one runs is decided by the build rather
+ * than by the machine (ADR-0030):
+ *
+ * - **With no feed registered**, the modest one: **look at the `latest`
+ *   release, tell the user, hand them the file.** It replaced electron-updater's
+ *   install-in-place, which could not work on the path most people took — it
+ *   downloaded before asking, and staged an install for a quit that closing
+ *   the window never is. A download link works on every platform, always, and
+ *   asks first.
+ * - **With a feed registered** by a build composed from this one, install in
+ *   place again, consent first: ask, download with progress, then *Restart to
+ *   update*. Whether this copy can replace itself at all is decided here
+ *   (`selfReplacement`) before anything is offered, and where it cannot, the
+ *   first mechanism's notice is what the person gets, pointed at the feed's
+ *   page.
  */
 
 import type { UpdateSettings } from './updateSettings'
@@ -289,7 +297,9 @@ export function shouldCheckForUpdates(
  * business: a machine that must not phone home, or **a build composed from this
  * one that keeps its own updates** — where this app's release page is not where
  * its versions come from, and an item that reaches it would answer a question
- * nobody asked about a product nobody is running.
+ * nobody asked about a product nobody is running. A build that publishes its
+ * versions as a feed registers the feed instead (ADR-0030), and then the item
+ * and the switch are about that feed.
  */
 export function offersUpdateCheck(env: Record<string, string | undefined>): boolean {
   return !env['LVARCH_NO_UPDATE']
@@ -307,4 +317,146 @@ export function offersUpdateCheck(env: Record<string, string | undefined>): bool
  */
 export function updateSettingsFor(kept: UpdateSettings, checks: boolean): UpdateSettings {
   return checks ? kept : { ...kept, checkAutomatically: false }
+}
+
+/**
+ * Where a build composed from this one publishes its own versions, for the
+ * desktop to update itself from (ADR-0030).
+ *
+ * The shape `electron/main/updates.ts` exports as `UpdateFeed`, said once here
+ * so that what a registration must look like is tested in node beside the
+ * rest of the arithmetic.
+ */
+export type UpdateFeedShape = {
+  /** Base URL of an electron-builder generic feed: the `latest*.yml` manifests and the files they name. */
+  readonly url: string
+  /** The page a person downloads the app from by hand: the fallback wherever the app cannot replace itself. */
+  readonly page: string
+}
+
+/**
+ * What is wrong with a feed a build tried to register, or `undefined` when
+ * nothing is.
+ *
+ * `https:` for both, and nothing else. The manifest names the file this app is
+ * about to install over itself, and the page is about to be opened in the
+ * person's browser: a plain-`http` feed is one anybody on the network between
+ * here and there can answer, and a `javascript:` page must never reach
+ * `openExternal`. A sentence rather than a key, because the only reader is
+ * whoever composed the build, at the moment the registration throws.
+ */
+export function updateFeedProblem(feed: UpdateFeedShape): string | undefined {
+  if (!isHttps(feed.url)) return `the update feed's url must be an https: URL, not '${feed.url}'`
+  if (!isHttps(feed.page)) return `the update feed's page must be an https: URL, not '${feed.page}'`
+  return undefined
+}
+
+/**
+ * Should the person be offered the version a feed's manifest names?
+ *
+ * The same answer `updateAvailable` gives about a release, plus the one thing a
+ * feed does not say for itself: whether a version is a prerelease that only
+ * the beta channel counts (ADR-0006). A GitHub release carries that flag and
+ * the stable request leaves prereleases out; a feed has one manifest per
+ * platform and whatever its publisher put in it, so the channel is applied
+ * here, to the version string, and a stable install is never talked into a
+ * beta because somebody published one to the same place.
+ *
+ * `manual` ignores a skipped version, for the reason `updateAvailable` gives.
+ */
+export function feedUpdateAvailable(
+  version: string | undefined,
+  currentVersion: string,
+  settings: Pick<UpdateSettings, 'skippedVersion' | 'channel'>,
+  manual: boolean,
+): version is string {
+  if (!version) return false
+  const parsed = parseVersion(version)
+  if (!parsed) return false
+  if (parsed.prerelease && settings.channel !== 'beta') return false
+  if (!manual && settings.skippedVersion === version) return false
+  return isNewerVersion(version, currentVersion)
+}
+
+/** What main can tell about where this copy is running from, for `selfReplacement`. */
+export type Installation = {
+  /** `process.platform`. */
+  readonly platform: string
+  /** `app.isPackaged`: a development run has nothing to replace. */
+  readonly packaged: boolean
+  /** `process.execPath`: on macOS, the binary inside the bundle. */
+  readonly executable: string
+  /** macOS: may this user write the folder the `.app` sits in? */
+  readonly bundleFolderWritable: boolean
+  /** The environment; on Linux `APPIMAGE` says the app is one. */
+  readonly env: Record<string, string | undefined>
+}
+
+/** Why a copy cannot replace itself, each of which the notice says in its own words. */
+export type NotInPlace =
+  /** A development run: there is no installed app to replace. */
+  | 'development'
+  /** macOS: running straight from the disk image, which is read-only. */
+  | 'mountedVolume'
+  /** macOS: Gatekeeper's randomised read-only copy of an app that was never moved. */
+  | 'translocated'
+  /** macOS: the folder the app sits in is not this user's to write. */
+  | 'notWritable'
+  /** Linux: installed by the package manager, whose business an upgrade is. */
+  | 'packageManager'
+  /** A platform nothing here knows how to update. */
+  | 'platform'
+
+export type SelfReplacement =
+  | { readonly possible: true }
+  | { readonly possible: false; readonly because: NotInPlace }
+
+/**
+ * The `.app` a macOS executable belongs to (`…/Name.app/Contents/MacOS/Name`),
+ * or `undefined` when it is not inside one.
+ */
+export function macBundleOf(executable: string): string | undefined {
+  const at = executable.lastIndexOf('.app/Contents/MacOS/')
+  return at === -1 ? undefined : executable.slice(0, at + '.app'.length)
+}
+
+/**
+ * Can this copy replace itself where it is, so that *Download and install* is
+ * a promise it can keep?
+ *
+ * Decided before anything is offered, because the failure it prevents is the
+ * one that made the self-updater go the first time: an install that fails
+ * with a line on stderr and nothing on screen, after the person agreed to it.
+ *
+ * - **macOS** updates through Squirrel.Mac, which swaps the bundle and needs to
+ *   write where it sits. A copy run from the disk image (`/Volumes/…`) is on a
+ *   read-only volume; a copy run from Downloads without being moved is
+ *   *translocated* — Gatekeeper runs it from a randomised read-only path with
+ *   `/AppTranslocation/` in it; and a copy in a folder this user cannot write,
+ *   /Applications for a standard account among them, cannot be swapped either.
+ *   Being in an Applications folder is not enough on its own, for that last
+ *   reason.
+ * - **Windows** always can: the NSIS installer runs again over the install,
+ *   asking for elevation itself where the install was per-machine.
+ * - **Linux** only as an AppImage, which says so in `APPIMAGE`. A `.deb` belongs
+ *   to the package manager, and an upgrade behind its back is how a system ends
+ *   up with two of this app.
+ */
+export function selfReplacement(install: Installation): SelfReplacement {
+  if (!install.packaged) return { possible: false, because: 'development' }
+  switch (install.platform) {
+    case 'darwin': {
+      const bundle = macBundleOf(install.executable) ?? install.executable
+      if (bundle.startsWith('/Volumes/')) return { possible: false, because: 'mountedVolume' }
+      if (bundle.includes('/AppTranslocation/')) return { possible: false, because: 'translocated' }
+      if (!install.bundleFolderWritable) return { possible: false, because: 'notWritable' }
+      return { possible: true }
+    }
+    case 'win32':
+      return { possible: true }
+    case 'linux':
+      return install.env['APPIMAGE'] ? { possible: true } : { possible: false, because: 'packageManager' }
+    default:
+      return { possible: false, because: 'platform' }
+  }
 }

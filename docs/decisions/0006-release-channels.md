@@ -3,6 +3,10 @@
 * Status: accepted
 * Date: 2026-09-07
 * Deciders: Wouter Simons
+* Superseded-by: ADR-0030, in part, 2026-09-28 — *Publishing a beta*'s "the
+  workflow builds and signs it like any other release", since a release here
+  builds no installer; and the driver *the mechanism stays modest* for a build
+  that registers a feed, which installs in place, asking first
 
 **Built, 7 September 2026**, in the order the last section gives. ADR-0005
 left the **Updates** section of the preferences dialog as the place this
@@ -33,6 +37,8 @@ about the request, and what it does not change.
 * **The mechanism stays modest.** A channel is a different question to the
   release page, not a different updater. Download, install the way you
   installed this one, nothing behind the user's back.
+  *Superseded in part by ADR-0030: a build that registers a feed installs in
+  place, asking first; the channel there lets a prerelease through.*
 * **A beta is a release, published the same way.** `docs/release.md` and
   `.github/workflows/release.yml` build and sign from a published GitHub
   release; the only difference for a beta must be one tick box and a tag.
@@ -95,7 +101,9 @@ newest ten are all drafts has nothing to offer anyway.
 
 Tag it `vX.Y.Z-beta.N`, title it the way `docs/release.md` says, tick
 **Set as a pre-release**. The workflow builds and signs it like any other
-release. That is the entire ceremony, and it is why option 1 lost: the
+release. *Superseded in part by ADR-0030: a release here carries no
+installer, so the workflow builds its web build and bill of materials, like
+any other release.* That is the entire ceremony, and it is why option 1 lost: the
 prerelease flag is a fact GitHub already keeps and already leaves out of
 `latest`.
 

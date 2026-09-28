@@ -4,17 +4,22 @@
 import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_UPDATE_SETTINGS,
+  feedUpdateAvailable,
   isNewerVersion,
+  macBundleOf,
   parseVersion,
   pickDownloadAsset,
   readNewestRelease,
   readRelease,
   readUpdateSettings,
   offersUpdateCheck,
+  selfReplacement,
   shouldCheckForUpdates,
   updateAvailable,
+  updateFeedProblem,
   updateSettingsFor,
 } from './updates'
+import type { Installation } from './updates'
 
 describe('parseVersion', () => {
   it('reads a tag with or without its v, fills in what it leaves out, and keeps the prerelease', () => {
@@ -270,5 +275,105 @@ describe('updateSettingsFor', () => {
     expect(updateSettingsFor({ checkAutomatically: true, channel: 'beta' }, false))
       .toEqual({ checkAutomatically: false, channel: 'beta' })
     expect(updateSettingsFor(DEFAULT_UPDATE_SETTINGS, false).checkAutomatically).toBe(false)
+  })
+})
+
+describe('updateFeedProblem', () => {
+  it('takes a feed and a page that are both https', () => {
+    expect(updateFeedProblem({ url: 'https://example.org/latest/', page: 'https://example.org/download' })).toBeUndefined()
+  })
+
+  /**
+   * The manifest names the file about to be installed over this app, and the
+   * page is about to be opened in the browser: neither may be something a
+   * network in between can answer, or something `openExternal` should run.
+   */
+  it('refuses a feed or a page that is not, and says which', () => {
+    expect(updateFeedProblem({ url: 'http://example.org/latest/', page: 'https://example.org/download' })).toMatch(/url/)
+    expect(updateFeedProblem({ url: 'https://example.org/latest/', page: 'javascript:alert(1)' })).toMatch(/page/)
+    expect(updateFeedProblem({ url: 'not a url', page: 'https://example.org/download' })).toMatch(/url/)
+  })
+})
+
+describe('feedUpdateAvailable', () => {
+  const stable = { channel: 'stable' as const }
+  const beta = { channel: 'beta' as const }
+
+  it('offers a newer version, and nothing that is not newer or not a version', () => {
+    expect(feedUpdateAvailable('3.2.0', '3.1.0', stable, false)).toBe(true)
+    expect(feedUpdateAvailable('3.1.0', '3.1.0', stable, false)).toBe(false)
+    expect(feedUpdateAvailable('3.0.0', '3.1.0', stable, false)).toBe(false)
+    expect(feedUpdateAvailable(undefined, '3.1.0', stable, false)).toBe(false)
+    expect(feedUpdateAvailable('latest', '3.1.0', stable, false)).toBe(false)
+  })
+
+  /** A feed does not flag a prerelease the way a release page does, so the channel reads the version. */
+  it('offers a prerelease on the beta channel only', () => {
+    expect(feedUpdateAvailable('3.2.0-beta.1', '3.1.0', stable, false)).toBe(false)
+    expect(feedUpdateAvailable('3.2.0-beta.1', '3.1.0', beta, false)).toBe(true)
+    expect(feedUpdateAvailable('3.2.0', '3.2.0-beta.1', stable, false)).toBe(true)
+  })
+
+  it('leaves a skipped version alone unless the person asked by hand', () => {
+    const skipped = { ...stable, skippedVersion: '3.2.0' }
+    expect(feedUpdateAvailable('3.2.0', '3.1.0', skipped, false)).toBe(false)
+    expect(feedUpdateAvailable('3.2.0', '3.1.0', skipped, true)).toBe(true)
+    expect(feedUpdateAvailable('3.2.1', '3.1.0', skipped, false)).toBe(true)
+  })
+})
+
+describe('macBundleOf', () => {
+  it('finds the .app an executable is inside, and nothing when it is not inside one', () => {
+    expect(macBundleOf('/Applications/Lionsville Architect.app/Contents/MacOS/Lionsville Architect'))
+      .toBe('/Applications/Lionsville Architect.app')
+    expect(macBundleOf('/usr/local/bin/electron')).toBeUndefined()
+  })
+})
+
+describe('selfReplacement', () => {
+  const mac = (executable: string, bundleFolderWritable = true): Installation => ({
+    platform: 'darwin', packaged: true, executable, bundleFolderWritable, env: {},
+  })
+  const inside = (folder: string) => `${folder}/Lionsville Architect.app/Contents/MacOS/Lionsville Architect`
+
+  it('replaces a macOS copy in a folder this user can write', () => {
+    expect(selfReplacement(mac(inside('/Applications')))).toEqual({ possible: true })
+    expect(selfReplacement(mac(inside('/Users/someone/Applications')))).toEqual({ possible: true })
+  })
+
+  /**
+   * The three ways a macOS copy is somewhere Squirrel.Mac cannot swap it: the
+   * disk image, Gatekeeper's translocated copy of an app that was never moved,
+   * and a folder that is not this user's — /Applications for a standard
+   * account, where being in an Applications folder is not enough.
+   */
+  it('does not replace a macOS copy run from the disk image, translocated, or in a folder it cannot write', () => {
+    expect(selfReplacement(mac(inside('/Volumes/Lionsville Architect'))))
+      .toEqual({ possible: false, because: 'mountedVolume' })
+    expect(selfReplacement(mac(inside('/private/var/folders/xy/T/AppTranslocation/1234-ABCD/d'))))
+      .toEqual({ possible: false, because: 'translocated' })
+    expect(selfReplacement(mac(inside('/Applications'), false)))
+      .toEqual({ possible: false, because: 'notWritable' })
+  })
+
+  it('replaces a Windows install, whose installer runs again over it', () => {
+    expect(selfReplacement({ platform: 'win32', packaged: true, executable: 'C:\\App\\app.exe', bundleFolderWritable: false, env: {} }))
+      .toEqual({ possible: true })
+  })
+
+  /** A .deb is the package manager's; only an AppImage says it is one. */
+  it('replaces a Linux AppImage and not a package', () => {
+    const linux = (env: Record<string, string | undefined>): Installation => ({
+      platform: 'linux', packaged: true, executable: '/opt/app/app', bundleFolderWritable: false, env,
+    })
+    expect(selfReplacement(linux({ APPIMAGE: '/home/someone/App.AppImage' }))).toEqual({ possible: true })
+    expect(selfReplacement(linux({}))).toEqual({ possible: false, because: 'packageManager' })
+  })
+
+  it('replaces nothing in a development run, or on a platform it does not know', () => {
+    expect(selfReplacement({ ...mac(inside('/Applications')), packaged: false }))
+      .toEqual({ possible: false, because: 'development' })
+    expect(selfReplacement({ ...mac(inside('/Applications')), platform: 'freebsd' }))
+      .toEqual({ possible: false, because: 'platform' })
   })
 })

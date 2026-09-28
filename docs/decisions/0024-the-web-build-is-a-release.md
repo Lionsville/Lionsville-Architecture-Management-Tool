@@ -3,6 +3,9 @@
 * Status: accepted
 * Date: 2026-09-21
 * Deciders: Wouter Simons
+* Superseded-by: ADR-0030, in part, 2026-09-28 — §2's deployment *after the
+  README job*, since there is no README job; the host now waits for the
+  release to be whole, and still never runs a beta
 
 ## Context and Problem Statement
 
@@ -41,6 +44,11 @@ offer, and never a beta, because the README never offers one. The host has no
 server behind it: the page is the same bundle, keeping work in the browser's
 storage or in a folder the browser hands it (ADR-0022's browser provider),
 and nothing leaves the machine.
+
+*Superseded in part by ADR-0030: a release here carries no installers and the
+README names none, so the deployment waits for the release to be whole — the
+web build, its sums and the bill of materials on the page — and not for a
+README job. It still never deploys a beta.*
 
 ### 3. The deployment can do one thing
 
