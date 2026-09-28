@@ -906,6 +906,7 @@ function treeOf(view: ReadView): PlatformTree {
     parentOf: (id) => view.tree?.lookup(id)?.parentId,
     archetypeOf: (id) => view.tree?.lookup(id)?.platformArchetype,
     outsideOf: (id) => view.tree?.lookup(id)?.outside,
+    retiredOf: (id) => view.tree?.lookup(id)?.retired,
   }
 }
 

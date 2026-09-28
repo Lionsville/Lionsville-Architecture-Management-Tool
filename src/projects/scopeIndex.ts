@@ -50,7 +50,8 @@
  *
  * Pure: `(path, model)` pairs in, answers out. No store, no React, no promise.
  */
-import type { DesignElement, ElementId, ElementKind, PlatformArchetype, Relation, RelationType } from '../model'
+import type { DesignElement, ElementId, ElementKind, LifecycleDates, PlatformArchetype, Relation, RelationType } from '../model'
+import { isDay } from '../model/lifecycle'
 import type { Transition } from '../model/transition'
 import type { Observation } from '../model/observation'
 import { ShellError } from '../platform/errors'
@@ -139,6 +140,14 @@ export type IndexEntry = {
   platformArchetype?: PlatformArchetype
   /** A service offered beyond the team that maintains it, as its master says (ADR-0014). */
   shared?: true
+  /**
+   * The day it is gone, as its master's `lifecycleDates.retired` says
+   * (ADR-0009). A stand-in carries no dates of its own (§3), so a landscape
+   * standing on another scope's cluster reads the day the cluster goes from
+   * here — what `model/liveness.ts` is handed as `retiredOf`. Only the day,
+   * and only a real one: the rest of the lifecycle stays the master's to show.
+   */
+  retired?: string
   /**
    * Where the stand-ins say the definition was last seen — kept ONLY where
    * nobody defines it (§3).
@@ -266,6 +275,33 @@ export type ScopeIndex = {
   scopes(): ScopePath[]
 }
 
+/**
+ * What an entry carries of its master's own detail — the tree facts (§3) a
+ * stand-in may not carry and every scope drawing the thing reads from here.
+ */
+type MasterDetail = Pick<IndexEntry, 'parentId' | 'outside' | 'partyId' | 'platformArchetype' | 'shared' | 'retired'>
+
+/**
+ * Those fields off a record, each only where it says something: an entry
+ * with a field present and empty is not what the master wrote. Read from a
+ * definition as it is indexed and again from the master as the entry is
+ * built, so the list of fields is said once.
+ */
+function masterDetailOf(held: {
+  parentId?: ElementId; outside?: boolean; partyId?: ElementId; platformArchetype?: PlatformArchetype
+  shared?: boolean; retired?: string; lifecycleDates?: LifecycleDates
+}): MasterDetail {
+  const retired = held.retired ?? held.lifecycleDates?.retired
+  return {
+    ...(held.parentId !== undefined ? { parentId: held.parentId } : {}),
+    ...(held.outside ? { outside: true as const } : {}),
+    ...(held.partyId !== undefined ? { partyId: held.partyId } : {}),
+    ...(held.platformArchetype !== undefined ? { platformArchetype: held.platformArchetype } : {}),
+    ...(held.shared ? { shared: true as const } : {}),
+    ...(isDay(retired) ? { retired } : {}),
+  }
+}
+
 /** An index over nothing: what a session has before anything has been read. */
 export const EMPTY_INDEX: ScopeIndex = indexScopes([])
 
@@ -289,10 +325,7 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
     standIns: { path: ScopePath; kind: ElementKind; name: string; ref: string }[]
   }
 
-  type Definition = {
-    path: ScopePath; depth: number; kind: ElementKind; name: string; parentId?: ElementId
-    outside?: true; partyId?: ElementId; platformArchetype?: PlatformArchetype; shared?: true
-  }
+  type Definition = { path: ScopePath; depth: number; kind: ElementKind; name: string } & MasterDetail
 
   const held = new Map<ElementId, Held>()
   const taken = new Set<string>()
@@ -316,14 +349,7 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
       taken.add(element.id)
       const row = at(element.id)
       if (element.ref === undefined) {
-        row.definitions.push({
-          path, depth, kind: element.kind, name: element.name,
-          ...(element.parentId !== undefined ? { parentId: element.parentId } : {}),
-          ...(element.outside ? { outside: element.outside } : {}),
-          ...(element.partyId !== undefined ? { partyId: element.partyId } : {}),
-          ...(element.platformArchetype !== undefined ? { platformArchetype: element.platformArchetype } : {}),
-          ...(element.shared ? { shared: element.shared } : {}),
-        })
+        row.definitions.push({ path, depth, kind: element.kind, name: element.name, ...masterDetailOf(element) })
       } else {
         row.standIns.push({ path, kind: element.kind, name: element.name, ref: element.ref })
       }
@@ -389,11 +415,7 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
       declarations: definitions.slice(tied.length).map((one) => one.path),
       // The master's, not the tree's: a declaration above it is a cache, and
       // a stand-in may not carry any of these at all (§3).
-      ...(master?.parentId !== undefined ? { parentId: master.parentId } : {}),
-      ...(master?.outside ? { outside: master.outside } : {}),
-      ...(master?.partyId !== undefined ? { partyId: master.partyId } : {}),
-      ...(master?.platformArchetype !== undefined ? { platformArchetype: master.platformArchetype } : {}),
-      ...(master?.shared ? { shared: master.shared } : {}),
+      ...(master ? masterDetailOf(master) : {}),
       ...(master === undefined && row.standIns[0] !== undefined ? { cachedRef: row.standIns[0].ref } : {}),
       drawnIn: row.standIns.map((one) => one.path),
       stale,

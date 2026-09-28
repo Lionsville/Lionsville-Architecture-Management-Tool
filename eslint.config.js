@@ -435,7 +435,7 @@ export const GROWN = {
   'src/observations/ui/SolutionReaders.tsx': { complexity: 63, lines: 297 },
   'src/projects/documentSession.ts': { complexity: 34 },
   'src/projects/folderFormat.ts': { complexity: 35 },
-  'src/projects/scopeIndex.ts': { complexity: 44 },
+  'src/projects/scopeIndex.ts': { complexity: 30 },
   'src/roadmap/ui/PlanPage.tsx': { lines: 185 },
   'src/roadmap/ui/RoadmapPage.tsx': { lines: 398 },
   'src/technology/ui/TechnologyLandscapePage.tsx': { complexity: 63, lines: 351 },

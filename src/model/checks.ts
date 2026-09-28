@@ -96,7 +96,8 @@ export type CheckContext = {
   /**
    * The platform tree where this scope holds stand-ins (ADR-0014 §2.7): a
    * container in a namespace goes when the cluster goes, and the namespace
-   * drawn here carries no `parentId` of its own.
+   * drawn here carries no `parentId` of its own — nor a retirement date,
+   * which the tree's `retiredOf` says for it (ADR-0012 §3, `liveness.ts`).
    */
   platformTree?: PlatformTree
 }
@@ -343,7 +344,7 @@ export function findings({ model, today, platformTree = {} }: CheckContext): Fin
   const reading: Reading = {
     model,
     byId: new Map(model.elements.map((element) => [element.id, element])),
-    live: livenessOf(model),
+    live: livenessOf(model, platformTree),
     tree: platformTree,
     today,
   }

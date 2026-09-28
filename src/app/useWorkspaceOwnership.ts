@@ -58,14 +58,16 @@ export function useWorkspaceOwnership(deps: {
   return useMemo<EditorOwnership>(() => ({
     ownerOf: (elementId) => ownerAnswer(elementId, { session, scope, index, ownerDescriptions, onOpenScope, s }),
     noteFor: (elementId) => notes.get(elementId),
-    // What a platform is filed under and what it is, off the index (ADR-0013,
-    // ADR-0014): the deployment boxes nest by the platform tree and draw a
-    // box only for a place, and a landscape holds stand-ins of the platforms
-    // it stands on — both facts are the scope's that defines them.
+    // What a platform is filed under, what it is and when it goes, off the
+    // index (ADR-0013, ADR-0014): the deployment boxes nest by the platform
+    // tree and draw a box only for a place, a landscape holds stand-ins of
+    // the platforms it stands on, and the checks date a stand-in by its
+    // master (ADR-0012 §3) — all facts of the scope that defines them.
     platformTree: {
       parentOf: (platformId) => index.lookup(platformId)?.parentId,
       archetypeOf: (platformId) => index.lookup(platformId)?.platformArchetype,
       outsideOf: (platformId) => index.lookup(platformId)?.outside,
+      retiredOf: (id) => index.lookup(id)?.retired,
     },
     // Who uses a service from another team (ADR-0014), off the rows the whole
     // tree holds: what the *Shared* tick says beside itself.

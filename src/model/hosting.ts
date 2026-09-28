@@ -20,6 +20,7 @@
  * retiring-platform finding, and the record's *Runs on* line.
  */
 import { relationLiveAt } from './lifecycle'
+import type { DatesElsewhere } from './liveness'
 import type { DesignElement, ElementId, PlatformArchetype, Relation } from './types'
 
 /** The containers filed under an application, in the order the model holds them. */
@@ -101,13 +102,14 @@ export function hostingOf(
 
 /**
  * What the scope that defines a platform says about it, where this scope
- * holds only a stand-in: what it is filed under, what it is, and whether it
- * is the organisation's. All three are the owner's detail (ADR-0012 §3), so
- * all three come from the index by way of the host, and every reader that
- * walks the tree takes this beside the model. Absent in a shell with no
- * tree, and the walk then goes by whatever this scope holds itself.
+ * holds only a stand-in: what it is filed under, what it is, whether it is
+ * the organisation's, and — `retiredOf`, from {@link DatesElsewhere} — the
+ * day it is gone. All four are the owner's detail (ADR-0012 §3), so all four
+ * come from the index by way of the host, and every reader that walks the
+ * tree takes this beside the model. Absent in a shell with no tree, and the
+ * walk then goes by whatever this scope holds itself.
  */
-export type PlatformTree = {
+export type PlatformTree = DatesElsewhere & {
   parentOf?(platformId: ElementId): ElementId | undefined
   archetypeOf?(platformId: ElementId): PlatformArchetype | undefined
   outsideOf?(platformId: ElementId): boolean | undefined

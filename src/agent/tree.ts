@@ -65,6 +65,8 @@ export type TreeEntry = {
   readonly platformArchetype?: PlatformArchetype
   /** A service offered beyond its team, as its master says (ADR-0014). */
   readonly shared?: true
+  /** The day it is gone, as its master says (ADR-0009): what a stand-in is dated by. */
+  readonly retired?: string
 }
 
 /** One row of the technology register (ADR-0014 §2.6): `projects/technologyRegister`'s, structurally. */

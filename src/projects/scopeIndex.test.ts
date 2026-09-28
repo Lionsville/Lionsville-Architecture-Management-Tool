@@ -194,6 +194,20 @@ describe('the index — what it is read for', () => {
     expect(index.lookup('wms')?.outside).toBeUndefined()
   })
 
+  it('carries the day a thing is gone, as its master says, for the stand-ins that carry no dates (ADR-0012 §3)', () => {
+    const index = indexScopes([
+      scope('platforms', [
+        element('openshift', { kind: 'platform', lifecycleDates: { retiring: '2027-01-01', retired: '2027-06-30' } }),
+        element('bus', { kind: 'platform', lifecycleDates: { retired: '2027-02-31' } }),
+      ]),
+      // A stand-in that still carries a date says nothing: the master answers.
+      scope('retail', [standIn('openshift', 'platforms', { kind: 'platform', lifecycleDates: { retired: '2026-01-01' } })]),
+    ])
+    expect(index.lookup('openshift')?.retired).toBe('2027-06-30')
+    // Not a day at all.
+    expect(index.lookup('bus')?.retired).toBeUndefined()
+  })
+
   it('carries what a platform is, as its master says, for the stand-ins that may not (ADR-0014)', () => {
     const index = indexScopes([
       scope('platforms', [element('openshift', { kind: 'platform', platformArchetype: 'place' }), element('bus', { kind: 'platform' })]),

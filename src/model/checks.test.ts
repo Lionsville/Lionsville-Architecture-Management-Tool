@@ -115,6 +115,29 @@ describe('a platform that retires before what stands on it (ADR-0013)', () => {
     expect(told.filter((one) => one.kind === 'platformRetiresFirst').map((one) => one.detail)).toEqual(['cluster · wms-db'])
   })
 
+  /**
+   * A stand-in carries no dates of its own (ADR-0012 §3): a landscape standing
+   * on another scope's cluster learns the day it goes from the tree, as it
+   * learns what the cluster is filed under.
+   */
+  it('dates a platform this scope holds only as a stand-in by the scope that defines it', () => {
+    const elements = [
+      platform('cluster', { ref: 'platforms' }), platform('ns', { ref: 'platforms' }),
+      element('wms'), element('wms-db', { kind: 'component', parentId: 'wms' }), element('orders'),
+    ]
+    const relations = [row('h1', 'hostedOn', 'wms-db', 'ns'), row('h2', 'hostedOn', 'orders', 'cluster')]
+    expect(kinds(findings({ model: { elements, relations }, today: TODAY }))).not.toContain('platformRetiresFirst')
+    const told = findings({
+      model: { elements, relations }, today: TODAY,
+      platformTree: {
+        parentOf: (id) => (id === 'ns' ? 'cluster' : undefined),
+        retiredOf: (id) => (id === 'cluster' ? '2027-06-30' : undefined),
+      },
+    })
+    expect(told.filter((one) => one.kind === 'platformRetiresFirst').map((one) => [one.id, one.detail]))
+      .toEqual([['orders', 'cluster'], ['wms', 'cluster · wms-db']])
+  })
+
   it('ranks under a retirement with dependants and above a line that outlives an end', () => {
     const list = check(
       [

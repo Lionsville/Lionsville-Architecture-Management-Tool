@@ -84,6 +84,9 @@ export function useTreeReadings(deps: {
       ...(entry.platformArchetype !== undefined ? { platformArchetype: entry.platformArchetype } : {}),
       ...(entry.parentId !== undefined ? { parentId: entry.parentId } : {}),
       ...(entry.outside ? { outside: entry.outside } : {}),
+      // When it goes, as its master says: a stand-in here carries no dates,
+      // and the map and the service report judge what is there by this.
+      ...(entry.retired !== undefined ? { retired: entry.retired } : {}),
     }
   }, [index, scope, scopeLabel])
 
