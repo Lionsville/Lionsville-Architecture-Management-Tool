@@ -338,6 +338,78 @@ describe('useModelSession — undo and redo', () => {
     expect(session().canUndo).toBe(false)
   })
 
+  it('finds nothing to do once the layout step has cleared the flag itself', () => {
+    const { session } = mount()
+    const before = session().current()
+    act(() => session().onLayoutSettled('d1'))
+    expect(session().current()).toBe(before)
+  })
+
+  /**
+   * The layout the editor makes by itself on first open, with the flag that
+   * asked for it cleared in the same step: one step, carried like any other,
+   * and marked so that nobody counts it as the person's work.
+   */
+  describe('a step the editor made by itself', () => {
+    const flagged = () => project({
+      model: model({
+        diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [], needsLayout: true })],
+      }),
+    })
+    const settle = () => transaction([
+      placeOn('d1', [{ id: 'billing', zone: 'landscape', x: 40, y: 60 }]),
+      { type: 'board.set', diagramId: 'd1', patch: { needsLayout: undefined } },
+    ], { unattended: true })
+
+    it('is announced once, marked, with the flag clearing inside it', () => {
+      const { session } = mount(flagged())
+      const heard: SessionChange[] = []
+      act(() => { session().steps.onChange((change) => heard.push(change)) })
+      act(() => { session().dispatch(settle()) })
+      expect(heard).toHaveLength(1)
+      expect(heard[0].unattended).toBe(true)
+      // The clearing rides in the announced step, as a key present with
+      // `undefined` — which is how a patch says clear, and what the wire keeps.
+      const [announced] = heard[0].commands
+      const board = announced.type === 'transaction'
+        ? announced.commands.find((command) => command.type === 'board.set')
+        : undefined
+      expect(board?.type === 'board.set' && 'needsLayout' in board.patch).toBe(true)
+      expect(session().current().diagrams[0].geometry?.needsLayout).toBeUndefined()
+      expect(session().history()[0].unattended).toBe(true)
+    })
+
+    it('hands the command on without the mark, which is the session\'s alone', () => {
+      const { session } = mount(flagged())
+      const heard: SessionChange[] = []
+      act(() => { session().steps.onChange((change) => heard.push(change)) })
+      act(() => { session().dispatch(settle()) })
+      expect('unattended' in heard[0].commands[0]).toBe(false)
+      expect('unattended' in session().history()[0].commands[0]).toBe(false)
+    })
+
+    it('is still an ordinary step to undo, and the undo is the person\'s', () => {
+      const { session } = mount(flagged())
+      const heard: SessionChange[] = []
+      act(() => { session().dispatch(settle()) })
+      act(() => { session().steps.onChange((change) => heard.push(change)) })
+      expect(session().canUndo).toBe(true)
+      act(() => session().undo())
+      expect(session().current().diagrams[0].geometry?.needsLayout).toBe(true)
+      expect(heard[0].kind).toBe('undo')
+      expect(heard[0].unattended).toBeUndefined()
+    })
+
+    it('leaves a step somebody asked for unmarked', () => {
+      const { session } = mount()
+      const heard: SessionChange[] = []
+      act(() => { session().steps.onChange((change) => heard.push(change)) })
+      act(() => { session().dispatch(rename('Renamed')) })
+      expect(heard[0].unattended).toBeUndefined()
+      expect(session().history()[0].unattended).toBeUndefined()
+    })
+  })
+
   /**
    * A gesture that wrote two scopes (ADR-0012 §10) has only half of itself on
    * this stack, so ⌘Z stops at it — with the reason, because a key that did

@@ -377,6 +377,96 @@ export type SourceProvider<Parts, Opening = void, Base = unknown> = {
    * Absent for the three that ship, and then the chip says what it always said.
    */
   readonly chip?: (work?: SourceWork) => SourceChip
+  /**
+   * What has lately been done to a scope, as the place that keeps it says —
+   * everybody's steps and not only this window's ({@link SourceRecentActivity}).
+   *
+   * Absent for the three that ship, whose Activity list is the open session's
+   * own steps and nothing else, exactly as it always was.
+   */
+  readonly recentActivity?: SourceRecentActivity
+  /**
+   * Whether the far end can be asked anything right now, where the source has
+   * one: `false` while its connection is down or waiting for a sign-in.
+   *
+   * A read the shell makes by itself — the tree read again after a step that
+   * changed its shape — is skipped while this says `false`, because a read of
+   * a source that is not there fails, and a failure the person did not ask for
+   * is an error on their screen about nothing they did. The provider owes the
+   * read instead, and says the tree changed when it is back (`watchProject`).
+   * Asked at the moment of the read, so it must be cheap and must not throw.
+   *
+   * Absent for the three that ship, which are always there to be read.
+   */
+  readonly connected?: () => boolean
+}
+
+/**
+ * The recent steps of one scope, as the place that keeps work remembers them,
+ * newest last.
+ *
+ * The Activity list reads the open session's steps, and a session begins when a
+ * scope is opened: for a folder on this machine that is the whole story, because
+ * nobody else writes to it while it is open. A source that many people write to
+ * at once keeps a log of every step with its author on it, and a list that
+ * showed only what happened since this window opened — with no name on this
+ * person's own steps — told a person who had just come in that nothing had
+ * happened, and told them nothing about who did what. So the list asks the
+ * source, and merges what it is told with what the session holds.
+ *
+ * A promise, because the log is somewhere else; asked when the list is opened
+ * and not before, because a list nobody opens is a request nobody needs.
+ * `undefined` is *nothing from me*: the list is then the session's alone and
+ * reads exactly as it does over a folder. An empty list is an answer — the
+ * scope has no steps yet. A scope the person may not read answers empty, the
+ * same as a scope with no steps, so the answer says nothing about which.
+ *
+ * A rejection is a source that could not be asked, and the list shows what the
+ * session holds, as it would have with no answer at all.
+ */
+export type SourceRecentActivity = (scope: string) => Promise<readonly SourceActivityLine[] | undefined>
+
+/**
+ * One step as the source's log keeps it: what it was called, when, and who
+ * made it.
+ *
+ * `summary` is the same shape as a step's summary in the model (a key of the
+ * step's words, and what it was done to), written out rather than imported for
+ * the reason {@link SourceWork} is: this layer may not know what a model is,
+ * and the list that reads it does.
+ */
+export type SourceActivityLine = {
+  readonly summary: {
+    readonly key: StringKey
+    readonly name?: string
+    readonly count?: number
+    readonly asOf?: string
+    readonly typeKey?: StringKey
+  }
+  /** Epoch milliseconds. */
+  readonly at: number
+  /**
+   * The name the step travelled under, where it had one: what tells a step
+   * the open session holds already from the same step in the source's log, so
+   * it is listed once.
+   */
+  readonly stepId?: string
+  /** Who made it, in the words a screen shows. Absent where the source has no name for them. */
+  readonly by?: string
+  /**
+   * The step is the person's own — the one looking at the list. Said by the
+   * source, which knows who is asking; the list then says *you* rather than a
+   * name.
+   */
+  readonly mine?: boolean
+  /** What it was made with, where the step said: the line reads *by … via …*. */
+  readonly via?: string
+  /**
+   * Nobody made it: the editor laid a board out by itself, as it opened. The
+   * list says so, with no author and no *you* — whoever's window it was did
+   * not do it.
+   */
+  readonly unattended?: boolean
 }
 
 /**

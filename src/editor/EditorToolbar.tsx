@@ -41,6 +41,7 @@ import { AddIcon, AsOfIcon, AutoRouteIcon, BackIcon, CaretIcon, DeploymentIcon, 
 import { badgeLegend } from '../model/aspects';
 import { ASPECT_STATUS_LABEL, LIFECYCLE_LEGEND } from './aspectLegend';
 import { useStrings } from '../i18n/LanguageContext';
+import { formatDay } from '../i18n/dates';
 import { LANGUAGES, LANGUAGE_NAME, type Language, type StringKey } from '../i18n/strings';
 
 /**
@@ -1070,14 +1071,21 @@ function AsOfControl(
     onSave?(): void
   },
 ) {
-  const { t } = useStrings();
+  const { t, language } = useStrings();
   const theme = useTheme();
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const dated = Boolean(asOf);
   const looking = asOf !== savedAsOf;
+  // A day as the rest of the screen says one (`formatDay`); the date input
+  // below is the one place the stored shape is shown, because it is the
+  // browser's own control.
+  const day = (value: string) => formatDay(value, language);
   const tip = looking
-    ? t('toolbar.asOfLooking', { date: asOf ?? t('toolbar.asOfToday'), saved: savedAsOf ?? t('toolbar.asOfToday') })
-    : dated ? t('toolbar.asOfSet', { date: asOf ?? '' }) : t('toolbar.asOfTodayTip');
+    ? t('toolbar.asOfLooking', {
+      date: asOf ? day(asOf) : t('toolbar.asOfToday'),
+      saved: savedAsOf ? day(savedAsOf) : t('toolbar.asOfToday'),
+    })
+    : dated ? t('toolbar.asOfSet', { date: asOf ? day(asOf) : '' }) : t('toolbar.asOfTodayTip');
   return (
     <>
       <Tooltip title={tip}>
@@ -1098,7 +1106,7 @@ function AsOfControl(
             outlineOffset: -1,
           }}
         >
-          {asOf ?? t('toolbar.asOfToday')}
+          {asOf ? day(asOf) : t('toolbar.asOfToday')}
         </Button>
       </Tooltip>
       <Popover
@@ -1130,7 +1138,7 @@ function AsOfControl(
           </Button>
           {looking && savedAsOf && (
             <Button size="small" onClick={() => { onChange(savedAsOf); setAnchor(null); }}>
-              {t('toolbar.asOfBack', { date: savedAsOf })}
+              {t('toolbar.asOfBack', { date: day(savedAsOf) })}
             </Button>
           )}
           {looking && (
@@ -1145,7 +1153,7 @@ function AsOfControl(
               disabled={!looking}
               onClick={() => { onSave(); setAnchor(null); }}
             >
-              {dated ? t('toolbar.asOfSave', { date: asOf ?? '' }) : t('toolbar.asOfSaveToday')}
+              {dated ? t('toolbar.asOfSave', { date: asOf ? day(asOf) : '' }) : t('toolbar.asOfSaveToday')}
             </Button>
           )}
         </Box>

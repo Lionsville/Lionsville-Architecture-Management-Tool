@@ -1,7 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
-/** A scope's decision records, and its plans (ADR-0009): added, patched, removed. */
+/**
+ * A scope's decision records, and its plans (ADR-0009): added, patched, removed.
+ *
+ * **No lifecycle rule is enforced here** (ADR-0008 and ADR-0009, amended 28
+ * September 2026). The locks and gates on a record's and a plan's moves are
+ * asked by the page and the agent before either builds a command, and not by
+ * this writer: a host that keeps a log of steps replays it through the writer,
+ * guarded, and a rule added today would silently skip every step written
+ * before it existed — the replay would no longer arrive where the log did.
+ */
 import { decisionsOf, transitionsOf } from '../normalised'
 import { gone, ok, taken } from './handler'
 import type { CommandTable, PatchKeys } from './handler'
@@ -11,13 +20,13 @@ import { patchWrites } from './writes'
 /** Every field of a decision record but its id. */
 const DECISION_FIELDS: PatchKeys<'decision.update'> = {
   number: true, title: true, status: true, date: true, body: true,
-  subjectId: true, supersededBy: true, signers: true,
+  subjectId: true, supersededBy: true, supersedes: true, proposedBy: true, reason: true, signers: true,
 }
 
 /** Every field of a plan but its id. */
 const TRANSITION_FIELDS: PatchKeys<'transition.update'> = {
   number: true, title: true, status: true, from: true, to: true, owner: true, initiative: true,
-  elements: true, decisions: true, milestones: true, body: true,
+  elements: true, decisions: true, milestones: true, body: true, doneOn: true,
 }
 
 export const DECISION_COMMANDS = {

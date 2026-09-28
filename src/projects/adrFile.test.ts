@@ -77,6 +77,16 @@ describe('adrFromFile', () => {
     expect(adrFromFile(adrFileText(headed), adrPath(headed))?.body).toBe('# Not the title\n\nprose')
   })
 
+  it('reads back what it supersedes, who proposed it and why it ended (ADR-0008, amended 28 September 2026)', () => {
+    const replacing = record({ supersedes: ['adr-3', 'adr-4'], proposedBy: 'Kim de Vries' })
+    expect(adrFromFile(adrFileText(replacing), adrPath(replacing))).toEqual(replacing)
+    const withdrawn = record({ status: 'rejected', signers: [], reason: 'Not now: the budget moved to next year.\nAsk again in Q1.' })
+    expect(adrFromFile(adrFileText(withdrawn), adrPath(withdrawn))).toEqual(withdrawn)
+    // Absent stays absent, rather than an empty list or an empty string.
+    expect(adrFromFile(adrFileText(record()), adrPath(record()))).not.toHaveProperty('supersedes')
+    expect(adrFileText(record())).not.toContain('reason')
+  })
+
   it('takes the number and the application from the path of a hand-written file, or refuses it', () => {
     const held = adrFromFile('# ADR-0012 — Written by hand\n\nprose\n', 'decisions/0012-written-by-hand.md')
     expect(held).toMatchObject({ number: 12, title: 'Written by hand', body: 'prose', status: 'proposed' })

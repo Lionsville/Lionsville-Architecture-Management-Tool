@@ -9,8 +9,6 @@ import {
   ReactFlow,
   applyEdgeChanges,
   applyNodeChanges,
-  getNodesBounds as boundsOfNodes,
-  getViewportForBounds,
   useReactFlow,
   type Connection,
   type Edge,
@@ -73,11 +71,7 @@ import { isRectFullyVisible, toRect } from './viewportFit';
 import { keyboardIntent } from './keyboardIntent';
 import { ViewportMemory, type Viewport } from './viewportMemory';
 import { ZoomControls } from './ZoomControls';
-import { FIT_ALL } from './fitAll';
-
-/** The zoom the canvas allows, said once for React Flow and for the framing above. */
-const MIN_ZOOM = 0.15;
-const MAX_ZOOM = 2.5;
+import { FIT_ALL, MAX_ZOOM, MIN_ZOOM, viewportOverNodes } from './fitAll';
 import { useDragRoutePreview } from './useDragRoutePreview';
 import { NodeResizeContext, type NodeResizeApi } from './NodeResizeContext';
 import { RouteEditingContext, type RouteEditingApi } from './RouteEditingContext';
@@ -621,10 +615,11 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
       if (!box || box.width === 0 || box.height === 0) return;
       // The pure helper over the nodes as given, with their declared sizes —
       // not the instance's `getNodesBounds`, which reads what React Flow has
-      // measured and is what this correction exists to get past.
-      const bounds = boundsOfNodes(nodes);
-      if (!(bounds.width > 0) || !(bounds.height > 0)) { void fitView(FIT_ALL); return; }
-      void setViewport(getViewportForBounds(bounds, box.width, box.height, MIN_ZOOM, MAX_ZOOM, FIT_ALL.padding));
+      // measured and is what this correction exists to get past. The frame
+      // after a layout pass is worked out the same way (`useLayoutActions`).
+      const viewport = viewportOverNodes(nodes, box.width, box.height);
+      if (!viewport) { void fitView(FIT_ALL); return; }
+      void setViewport(viewport);
     };
     requestAnimationFrame(attempt);
   }, [initialised, nodes, fitView, setViewport]);

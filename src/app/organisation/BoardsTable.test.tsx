@@ -30,7 +30,7 @@ const BOARDS = (): DesignDiagram[] => [
   laidOut({ id: 'cd-billing', kind: 'container' as const, name: 'Billing', applicationElementId: 'billing', placements: [] }),
 ]
 
-function show(boards = BOARDS()) {
+function show(boards = BOARDS(), readOnly = false) {
   const onOpen = vi.fn<(id: string) => void>()
   const onDelete = vi.fn<(board: { id: string; name: string }) => void>()
   const shell = renderShell(
@@ -42,6 +42,7 @@ function show(boards = BOARDS()) {
       onAddMap={vi.fn()}
       onAddTechnology={vi.fn()}
       onDelete={onDelete}
+      readOnly={readOnly}
       language="en"
       s={s}
     />,
@@ -111,6 +112,18 @@ describe('BoardsTable', () => {
     show([laidOut({ id: 'now', kind: 'layer7' as const, name: 'Finance today', placements: [at('ledger')] })])
     expect(screen.queryByRole('group')).toBeNull()
     expect(screen.queryByTestId('boards-empty')).toBeNull()
+  })
+
+  it('offers neither a new board nor a removal to somebody who may only read the scope', () => {
+    show(BOARDS(), true)
+    expect(screen.queryByTestId('new-board')).toBeNull()
+    expect(within(screen.getByTestId('board-cd-billing')).queryByRole('button', { name: 'Delete' })).toBeNull()
+    expect(within(screen.getByTestId('board-cd-billing')).getByRole('button', { name: 'Open' })).toBeDefined()
+  })
+
+  it('says the day a board shows as that day, wherever the clock is', () => {
+    show([laidOut({ id: 'then', kind: 'layer7' as const, name: 'Finance in 2027', placements: [], asOf: '2027-01-01' })])
+    expect(screen.getByTestId('board-then').textContent).toContain('1 Jan 2027')
   })
 
   it('says a scope with no board has none, and still offers the first one', () => {

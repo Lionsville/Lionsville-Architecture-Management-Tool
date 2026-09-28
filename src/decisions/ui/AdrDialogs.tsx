@@ -2,10 +2,11 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * The two questions the decisions page asks in a dialog: what a new record is
- * called, and which record replaces one being superseded.
+ * The questions the decisions page asks in a dialog: what a new record is
+ * called, which record replaces one being superseded, and why one is
+ * rejected or withdrawn.
  *
- * Both say what they want and let the page perform it — the page owns the
+ * Each says what it wants and lets the page perform it — the page owns the
  * lists, the numbering and the date.
  */
 import { useEffect, useState } from 'react'
@@ -61,7 +62,11 @@ export function NewAdrDialog({ open, onCancel, onCreate, s }: NewAdrDialogProps)
 export type SupersedeDialogProps = {
   /** The record being superseded; the dialog is closed while undefined. */
   target?: Adr
-  /** The other records in the same list — the only ones a link can point at. */
+  /**
+   * The accepted records in the same list — the only ones a link can point
+   * at: a link to another list is a dead end, and a proposal cannot replace a
+   * decision in force (ADR-0008, amended 28 September 2026).
+   */
   candidates: readonly Adr[]
   onCancel: () => void
   onConfirm: (successorId: string) => void
@@ -100,6 +105,55 @@ export function SupersedeDialog({ target, candidates, onCancel, onConfirm, s }: 
         <Button onClick={onCancel}>{s('common.cancel')}</Button>
         <Button variant="contained" disabled={!successor} onClick={() => onConfirm(successor)}>
           {s('adr.statusSuperseded')}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  )
+}
+
+export type ReasonDialogProps = {
+  /** The record being rejected or withdrawn; the dialog is closed while undefined. */
+  target?: Adr
+  /** A proposal withdrawn, rather than a reviewed record rejected: the words differ, the move is the same. */
+  withdraw: boolean
+  /** Whether a reason must be given: always to withdraw, and to reject when no signer rejected it. */
+  required: boolean
+  onCancel: () => void
+  onConfirm: (reason: string) => void
+  s: Translate
+}
+
+/**
+ * Why a record ends rejected. It keeps its number and is locked afterwards,
+ * so the reason is the one thing a later reader has to go on.
+ */
+export function ReasonDialog({ target, withdraw, required, onCancel, onConfirm, s }: ReasonDialogProps) {
+  const [reason, setReason] = useState('')
+  useEffect(() => { if (target) setReason('') }, [target])
+  const ready = !required || reason.trim().length > 0
+  const name = target ? `${formatAdrNumber(target.number)} ${target.title}` : ''
+
+  return (
+    <Dialog open={Boolean(target)} onClose={onCancel} maxWidth="sm" fullWidth>
+      <DialogTitle>{s(withdraw ? 'adr.withdrawTitle' : 'adr.rejectTitle', { name })}</DialogTitle>
+      <DialogContent>
+        <DialogContentText sx={{ fontSize: 14, mb: 2 }}>{s(withdraw ? 'adr.withdrawBody' : 'adr.rejectBody')}</DialogContentText>
+        <TextField
+          autoFocus
+          fullWidth
+          multiline
+          minRows={2}
+          size="small"
+          required={required}
+          label={s('adr.reasonField')}
+          value={reason}
+          onChange={(event) => setReason(event.target.value)}
+        />
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onCancel}>{s('common.cancel')}</Button>
+        <Button variant="contained" color="error" disabled={!ready} onClick={() => onConfirm(reason.trim())}>
+          {s(withdraw ? 'adr.withdraw' : 'adr.reject')}
         </Button>
       </DialogActions>
     </Dialog>

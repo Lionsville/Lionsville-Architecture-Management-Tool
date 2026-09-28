@@ -7,21 +7,48 @@
  */
 import { useCallback, useMemo, useState } from 'react'
 import type { RefObject } from 'react'
+import { bareScope } from '../projects/scope'
 import type { ScopeSnapshot } from '../projects/scope'
-import { ROOT_SCOPE } from '../projects/scopePath'
+import { ROOT_SCOPE, scopePathLabel } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
 import type { InitialPage, ScopeLibrary } from './App'
+import { rewriteScope } from './rewriteScope'
 import type { AppFolder } from './appProps'
 import type { Failed } from './useShellServices'
 import type { ShellPreferences } from './useShellPreferences'
 
 export type ShellNavigation = ReturnType<typeof useShellNavigation>
 
+/**
+ * Is this a page a scope has before anything is written in it — its decisions,
+ * its observations, its roadmap, or a sheet, map or technology landscape it is
+ * about to be given? Those open on a scope with no document. A page that names
+ * a record, a plan or a board names something that has to be there, and a
+ * scope that is not there is then one somebody removed, not one to make.
+ */
+export function opensOnNothing(page: InitialPage | undefined): boolean {
+  if (page === undefined) return false
+  switch (page.page) {
+    case 'decisions':
+    case 'observations':
+      return page.id === undefined
+    case 'roadmap':
+    case 'documentation':
+      return true
+    case 'sheet':
+    case 'map':
+    case 'technology':
+      return page.id === undefined
+    default:
+      return false
+  }
+}
+
 export function useShellNavigation(deps: {
   initialProject: ScopeSnapshot | undefined
   /** Whose home is up at the first paint where nothing is open; the root's where absent. */
   initialHome?: ScopePath
-  projects: Pick<ScopeLibrary, 'load'>
+  projects: Pick<ScopeLibrary, 'load' | 'save'>
   watchProject: AppFolder['watch']
   prefs: ShellPreferences
   failedRef: RefObject<Failed>
@@ -31,8 +58,20 @@ export function useShellNavigation(deps: {
    * `enter` it is given.
    */
   refreshTree: RefObject<() => void>
+  /**
+   * The index read again (`useIndex`), for the same reason and by the same
+   * route: going home is where the cards and the register are counted, and
+   * they are counted off the index, which a source that publishes steps is
+   * not rebuilt by on its own.
+   */
+  refreshIndex?: RefObject<() => void>
+  /**
+   * May this person change the scope at this path? What opening a page on a
+   * scope with no document asks before it writes one. Every scope where absent.
+   */
+  writable?: (path: ScopePath) => boolean
 }) {
-  const { initialProject, initialHome, projects, watchProject, prefs, failedRef, refreshTree } = deps
+  const { initialProject, initialHome, projects, watchProject, prefs, failedRef, refreshTree, refreshIndex, writable } = deps
   const [project, setProject] = useState<ScopeSnapshot | undefined>(initialProject)
 
   /**
@@ -106,16 +145,31 @@ export function useShellNavigation(deps: {
    * removed the scope between the index being read and the button being
    * pressed, and there is nothing useful to say about that beyond showing what
    * is there now.
+   *
+   * A page asked for on a scope with no document is not that: it is a page on
+   * a scope nobody has written yet, and it is answered as the organisation's
+   * home answers it (`useOrganisation`'s `open`). Written bare and whole first
+   * for somebody who may write there — a source whose changes travel as steps
+   * refuses a step on a scope that does not exist — and opened empty, with
+   * nothing written, for somebody who may only read.
    */
   const openScopeAt = useCallback((path: ScopePath, page?: InitialPage) => {
-    void projects.load(path).then(
-      (found) => {
-        if (found) enter(found, page)
-        else refreshTree.current()
-      },
-      (cause: unknown) => failedRef.current('openScopeAt', cause, 'picker.loadFailed'),
-    )
-  }, [projects, enter, refreshTree, failedRef])
+    void (async () => {
+      const found = await projects.load(path)
+      if (found) { enter(found, page); return }
+      if (!opensOnNothing(page)) { refreshTree.current(); return }
+      const bare = bareScope(path, scopePathLabel(path))
+      if (writable && !writable(path)) { enter(bare, page); return }
+      // Written only where nothing is: a scope somebody wrote in between is
+      // theirs, and is the one entered.
+      await rewriteScope(projects, path, (read) => (read ? undefined : bare))
+      const written = await projects.load(path)
+      if (!written) { refreshTree.current(); return }
+      enter(written, page)
+      refreshTree.current()
+      refreshIndex?.current()
+    })().catch((cause: unknown) => failedRef.current('openScopeAt', cause, 'picker.loadFailed'))
+  }, [projects, enter, refreshTree, refreshIndex, writable, failedRef])
 
   const goHome = useCallback((to: ScopePath) => {
     setHome(to)
@@ -125,7 +179,10 @@ export function useShellNavigation(deps: {
     // you never want to see it again, and a refresh should still land you back
     // in your work.
     refreshTree.current()
-  }, [refreshTree])
+    // And the index: what a session changed reaches the cards, the register
+    // and the findings here, however the source keeps it.
+    refreshIndex?.current()
+  }, [refreshTree, refreshIndex])
 
   return {
     project, watchOpenProject, reloadKey, reloadOpenProject, initialPage, enter, home, setHome, openScopeAt, goHome,

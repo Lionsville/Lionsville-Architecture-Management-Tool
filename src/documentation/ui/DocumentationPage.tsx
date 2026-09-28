@@ -400,7 +400,12 @@ export function DocumentationPage(props: DocumentationPageProps) {
 
           {showPreview && (
             <DocumentSheet ref={contentRef} testId="doc-content" dense={mode === 'edit'}>
-              <Typography variant="overline" color="text.secondary">
+              {/* A block element, not the variant's own inline span: the
+                  sheet's centring rule (DocumentSheet) sizes a child by its
+                  own width, and an inline overline reports the width of its
+                  text rather than the sheet's measure, so it drifted off the
+                  title's left edge. */}
+              <Typography variant="overline" component="div" color="text.secondary">
                 {kindLabel(element.kind, t)}
               </Typography>
               <Typography variant="h4" component="h1" sx={{ fontWeight: 600, lineHeight: 1.2 }}>

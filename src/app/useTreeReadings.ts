@@ -14,6 +14,9 @@ import type { Translate } from '../i18n'
 import type { DesignElement, ElementId, PlatformDescription, Relation, SharedElsewhere } from '../model'
 import type { ScopeIndex } from '../projects/scopeIndex'
 import type { ScopePath } from '../projects/scopePath'
+import { flattenScopes } from '../projects/scope'
+import type { ScopeSummary } from '../projects/scope'
+import { scopeDisplayName } from '../projects/scopeLabel'
 import type { Supporter } from '../business'
 
 export type TreeReadings = ReturnType<typeof useTreeReadings>
@@ -23,13 +26,24 @@ export function useTreeReadings(deps: {
   scope: ScopePath
   elements: readonly DesignElement[]
   groupName: string
+  /**
+   * The listing, for what each scope is called. Absent where the caller has
+   * none, and a scope is then called by the last segment of its path.
+   */
+  scopes?: ScopeSummary
   s: Translate
 }) {
-  const { index, scope, elements, groupName, s } = deps
-  /** What to call a scope on screen: its path, or the organisation's own name. */
+  const { index, scope, elements, groupName, scopes, s } = deps
+  const everyScope = useMemo(() => (scopes ? flattenScopes(scopes) : []), [scopes])
+  /**
+   * What to call a scope on screen: its own name out of the listing
+   * (`scopeDisplayName`), and the organisation's name or the word for one at
+   * the root. It used to be the path, which is how the map's column groups,
+   * a record's *Uses* and the *Supported by…* options came to say ids.
+   */
   const scopeLabel = useCallback(
-    (path: ScopePath) => path || groupName || s('common.organisation'),
-    [groupName, s],
+    (path: ScopePath) => scopeDisplayName(path, everyScope, groupName || s('common.organisation')),
+    [everyScope, groupName, s],
   )
 
   const { rowsElsewhere, rowsThrough, rowsElsewhereRef } = useRowsElsewhere(index, elements)

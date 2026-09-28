@@ -187,6 +187,55 @@ export function RoadmapPage(props: RoadmapPageProps) {
   const empty = whole.tracks.length === 0 && whole.relations.length === 0 && whole.transitions.length === 0
     && below.length === 0 && problems.length === 0
 
+  /**
+   * Where the dates disagree, under the axis — and under the empty state too,
+   * where it says that they agree: the one place on this page a finding is
+   * read, drawn whether or not there is anything dated above it.
+   */
+  const findingsBox = (
+    <Box sx={{ mt: 3 }} data-guide="roadmap.findings">
+      <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary' }}>
+        {t('check.title')}
+      </Typography>
+      {problems.length === 0 ? (
+        <Typography variant="body2" color="text.secondary">{t('check.none')}</Typography>
+      ) : (
+        <Box component="ul" sx={{ pl: '1.2em', my: 0.5 }}>
+          {problems.map((problem, index) => (
+            <Box component="li" key={`${problem.kind}-${problem.id}-${index}`} sx={{ fontSize: 13, my: 0.25 }}>
+              {t(CHECK_SENTENCE[problem.kind], {
+                name: problem.name,
+                detail: problem.detail ?? '',
+                count: String(problem.count ?? 0),
+                // Which kind of row it was (ADR-0012 §5), in words:
+                // *supports* where the finding means supports.
+                type: problem.relationType
+                  ? t(RELATION_LABEL[problem.relationType])
+                  : '',
+              })}
+              {/* The one finding with something to do about it: the
+                  application line nobody drew, written from the
+                  container lines that imply it (ADR-0013). */}
+              {problem.kind === 'impliedInterface' && !readOnly && (
+                <Button
+                  size="small"
+                  data-testid={`accept-interface-${problem.id}`}
+                  sx={{ ml: 1, py: 0, minWidth: 0, fontSize: 12 }}
+                  onClick={() => actions.acceptInterface(problem.id)}
+                >
+                  {t('check.accept')}
+                </Button>
+              )}
+            </Box>
+          ))}
+        </Box>
+      )}
+      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+        {t('check.staleness')}
+      </Typography>
+    </Box>
+  )
+
   return (
     <PageDialog
       open={props.open}
@@ -221,10 +270,15 @@ export function RoadmapPage(props: RoadmapPageProps) {
         {/* the axis */}
         <Box sx={{ overflow: 'auto', p: 2, minWidth: 0, flex: 1 }}>
           {empty ? (
-            <Box sx={{ color: 'text.secondary' }}>
-              <Typography>{t('roadmap.empty')}</Typography>
-              <Typography variant="body2">{t('roadmap.emptyHint')}</Typography>
-            </Box>
+            <>
+              <Box sx={{ color: 'text.secondary' }}>
+                <Typography>{t('roadmap.empty')}</Typography>
+                <Typography variant="body2">{t('roadmap.emptyHint')}</Typography>
+              </Box>
+              {/* Said on an empty page too: that nothing disagrees is an
+                  answer, and the box is where a person is sent to read it. */}
+              {findingsBox}
+            </>
           ) : (
             <>
               {/* The window's two ends are the axis's two ends, so the fields
@@ -481,47 +535,7 @@ export function RoadmapPage(props: RoadmapPageProps) {
                 </>
               )}
 
-              <Box sx={{ mt: 3 }} data-guide="roadmap.findings">
-                <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary' }}>
-                  {t('check.title')}
-                </Typography>
-                {problems.length === 0 ? (
-                  <Typography variant="body2" color="text.secondary">{t('check.none')}</Typography>
-                ) : (
-                  <Box component="ul" sx={{ pl: '1.2em', my: 0.5 }}>
-                    {problems.map((problem, index) => (
-                      <Box component="li" key={`${problem.kind}-${problem.id}-${index}`} sx={{ fontSize: 13, my: 0.25 }}>
-                        {t(CHECK_SENTENCE[problem.kind], {
-                          name: problem.name,
-                          detail: problem.detail ?? '',
-                          count: String(problem.count ?? 0),
-                          // Which kind of row it was (ADR-0012 §5), in words:
-                          // *supports* where the finding means supports.
-                          type: problem.relationType
-                            ? t(RELATION_LABEL[problem.relationType])
-                            : '',
-                        })}
-                        {/* The one finding with something to do about it: the
-                            application line nobody drew, written from the
-                            container lines that imply it (ADR-0013). */}
-                        {problem.kind === 'impliedInterface' && !readOnly && (
-                          <Button
-                            size="small"
-                            data-testid={`accept-interface-${problem.id}`}
-                            sx={{ ml: 1, py: 0, minWidth: 0, fontSize: 12 }}
-                            onClick={() => actions.acceptInterface(problem.id)}
-                          >
-                            {t('check.accept')}
-                          </Button>
-                        )}
-                      </Box>
-                    ))}
-                  </Box>
-                )}
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                  {t('check.staleness')}
-                </Typography>
-              </Box>
+              {findingsBox}
             </>
           )}
         </Box>

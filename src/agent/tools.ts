@@ -217,6 +217,18 @@ const PLAN_LISTS = {
   decisionIds: { type: 'array', description: 'The ids of the decision records it rests on.', items: { type: 'string' } },
 } as const satisfies Record<string, ArgumentSchema>
 
+/** The accepted records a proposal replaces (ADR-0008, amended 28 September 2026). */
+const SUPERSEDES: ArgumentSchema = {
+  type: 'array',
+  description: 'The ids of accepted records this one replaces, replacing the list. Accepting this record moves each of them to superseded in the same step; rejecting it leaves them accepted.',
+  items: { type: 'string' },
+}
+
+const PROPOSED_BY = {
+  type: 'string',
+  description: 'Who proposed it, as a name. When the only approving signer has the same name, accepting it answers with a warning.',
+} as const satisfies ArgumentSchema
+
 /** Who a decision was put to. Given whole: the list replaces the list. */
 const SIGNERS: ArgumentSchema = {
   type: 'array',
@@ -911,6 +923,8 @@ const SPECS = [
         applicationId: { type: 'string', description: 'The old name for subjectId. Accepted for one beta; use subjectId.' },
         signers: SIGNERS,
         planIds: { type: 'array', description: 'Plans that rest on this decision; each is linked to it.', items: { type: 'string' } },
+        supersedes: SUPERSEDES,
+        proposedBy: PROPOSED_BY,
       },
       required: ['title'],
       additionalProperties: false,
@@ -920,8 +934,9 @@ const SPECS = [
     name: 'decision.update',
     tier: 'write',
     description:
-      'Correct a record that is still proposed or reviewing: its title, its body, its date, or who it was '
-      + 'put to. Accepted, rejected and superseded records are locked; a group\'s records are changed on their page.',
+      'Correct a record that is still proposed or reviewing: its title, its body, its date, who it was '
+      + 'put to, who proposed it, or which accepted records it supersedes. Accepted, rejected and superseded '
+      + 'records are locked; a group\'s records are changed on their page.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -930,6 +945,8 @@ const SPECS = [
         body: { type: 'string', description: 'The record as MADR markdown.' },
         date: { type: 'string', description: 'The day the record carries, yyyy-mm-dd.' },
         signers: SIGNERS,
+        supersedes: SUPERSEDES,
+        proposedBy: { type: 'string', description: `${PROPOSED_BY.description} null clears it.` },
       },
       required: ['id'],
       additionalProperties: false,
@@ -945,14 +962,20 @@ const SPECS = [
     name: 'decision.transition',
     tier: 'write',
     description:
-      'Move a decision record to its next status: proposed → reviewing → accepted or rejected, '
-      + 'accepted → superseded (naming the successor). Accepted, rejected and superseded records are locked.',
+      'Move a decision record to its next status: proposed → reviewing → accepted or rejected, a proposal '
+      + 'withdrawn (proposed → rejected, with a reason), review sent back to proposed, and accepted → superseded '
+      + '(naming an accepted successor). Accepting is gated: the body has its context, at least two considered '
+      + 'options, an outcome naming one of them and a consequence, not the template\'s placeholders; a signer '
+      + 'approved and none rejected; and every record it supersedes is accepted — those move to superseded in the '
+      + 'same step. Rejecting needs a reason or a rejecting signer. A refusal names what the gate still needs. '
+      + 'Accepted, rejected and superseded records are locked; superseding is the one move an accepted record has.',
     inputSchema: {
       type: 'object',
       properties: {
         id: ID('decision record'),
         status: { type: 'string', description: 'The status to move to.', enum: ['proposed', 'reviewing', 'accepted', 'rejected', 'superseded'] },
-        supersededBy: { type: 'string', description: 'For superseded: the id of the record that replaces it.' },
+        supersededBy: { type: 'string', description: 'For superseded: the id of the accepted record that replaces it.' },
+        reason: { type: 'string', description: 'For rejected: why. Required to withdraw a proposal, and to reject one no signer rejected.' },
       },
       required: ['id', 'status'],
       additionalProperties: false,
@@ -1011,11 +1034,12 @@ const SPECS = [
   {
     name: 'observation.seen',
     tier: 'write',
-    description: 'The same thing was seen again today: the count goes up by one and the day is kept in its history.',
+    description: 'The same thing was seen again: the count goes up by one and the day is kept in its history. Today unless date says another day, which is never in the future and never before it was first seen.',
     inputSchema: {
       type: 'object',
       properties: {
         id: ID('observation'),
+        date: { type: 'string', description: 'The day it was seen, yyyy-mm-dd. Default: today. Not in the future, not before it was first seen.' },
         note: { type: 'string', description: 'A word about this sighting, kept beside the day.' },
       },
       required: ['id'],
@@ -1081,7 +1105,7 @@ const SPECS = [
       properties: {
         title: { type: 'string', description: 'The cause, as one sentence.' },
         body: { type: 'string', description: 'Why the team thinks so and how to verify it, as markdown.' },
-        state: { type: 'string', description: 'Default: assumed. Verified only when a person says it was checked.', enum: ['assumed', 'verified'] },
+        state: { type: 'string', description: 'Default: assumed. Verified only when a person says it was checked, and only with the body\'s "Why we think so" and "How to verify" filled in.', enum: ['assumed', 'verified'] },
         explains: {
           type: 'array',
           description: 'What this cause explains: observations of this scope, observations shared from below (with scope), or shallower causes of this scope.',
@@ -1105,7 +1129,7 @@ const SPECS = [
   {
     name: 'cause.update',
     tier: 'write',
-    description: 'Correct a cause: its title, its body, or its state — verified once a person says the team has checked it against evidence, never on your own reasoning; back to assumed when it has not.',
+    description: 'Correct a cause: its title, its body, or its state — verified once a person says the team has checked it against evidence, never on your own reasoning, and only with the body\'s "Why we think so" and "How to verify" filled in (the same call may write them); back to assumed when it has not.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -1234,7 +1258,7 @@ const SPECS = [
   {
     name: 'solution.address',
     tier: 'write',
-    description: 'A solution addresses a cause of this scope; addressing one it already addresses changes the strength.',
+    description: 'A solution addresses a cause of this scope; addressing one it already addresses changes the strength. A new cause only while the solution is an idea or shaped; past that, propose another solution.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -1341,7 +1365,7 @@ const SPECS = [
   {
     name: 'experiment.plan',
     tier: 'write',
-    description: 'Plan an experiment for one or more solutions (ADR-0026): how the team finds out whether a solution works before it is built. A hypothesis that could turn out wrong, what is counted to decide it, where, by whom and when — small and bounded. It starts planned, and every shaped solution it tests moves on to testing in the same step.',
+    description: 'Plan an experiment for one or more solutions (ADR-0026): how the team finds out whether a solution works before it is built. A hypothesis that could turn out wrong, what is counted to decide it, where, by whom and when — small and bounded. Only for shaped or testing solutions. It starts planned, and every shaped solution it tests moves on to testing in the same step.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -1395,13 +1419,20 @@ const SPECS = [
   {
     name: 'experiment.conclude',
     tier: 'write',
-    description: 'Say how an experiment went: running, confirmed, refuted or inconclusive, with the result — counted, where there are numbers. The outcome is what the team observed, so conclude only when told it. A refuted one stays; it is the evidence the next person asks for.',
+    description:
+      'Move an experiment on, one step at a time: planned → running (which sets from to today), running → planned, '
+      + 'running → confirmed, refuted or inconclusive (a conclusion needs the result — counted, where there are numbers '
+      + '— and ends on to, today unless given, never before from), and a concluded one → running, which reopens it. '
+      + 'The outcome is what the team observed, so conclude only when told it. Reopening a confirmed experiment may '
+      + 'take the proof from the solutions it proved: the answer lists them in proofWithdrawn, so tell the person. '
+      + 'A refuted one stays; it is the evidence the next person asks for.',
     inputSchema: {
       type: 'object',
       properties: {
         id: ID('experiment'),
-        outcome: { type: 'string', description: 'How it went.', enum: ['planned', 'running', 'confirmed', 'refuted', 'inconclusive'] },
-        result: { type: 'string', description: 'What happened, in numbers where there are numbers.' },
+        outcome: { type: 'string', description: 'Where it moves to.', enum: ['planned', 'running', 'confirmed', 'refuted', 'inconclusive'] },
+        result: { type: 'string', description: 'What happened, in numbers where there are numbers. Needed to conclude, unless already written.' },
+        to: { type: 'string', description: 'For a conclusion: the day it ended, yyyy-mm-dd. Default: today. Not before from.' },
       },
       required: ['id', 'outcome'],
       additionalProperties: false,
@@ -1479,14 +1510,14 @@ const SPECS = [
     tier: 'write',
     description:
       'Add a plan that is not a replacement (ADR-0009): a migration, a platform move, an upgrade. Numbered '
-      + 'after the last one; draft unless said otherwise. Name the elements it touches by role and the '
+      + 'after the last one, and always a draft: plan.update moves it on. Name the elements it touches by role and the '
       + 'decisions it rests on; the body is markdown and starts from the template — headings and a '
       + '```business-case fence — when left out. Answers with the id and the label.',
     inputSchema: {
       type: 'object',
       properties: {
         title: { type: 'string', description: 'What the plan does, as a title.' },
-        status: { type: 'string', description: 'Where it starts. Default draft.', enum: PLAN_STATUSES },
+        status: { type: 'string', description: 'Where it starts, which is always draft.', enum: ['draft'] },
         ...PLAN_FIELDS,
         ...PLAN_LISTS,
       },
@@ -1501,6 +1532,10 @@ const SPECS = [
       'Change a plan\'s fields, its lists or its body in place. Only what is given changes; null clears '
       + 'from, to and owner; a list given replaces that list whole. The status follows draft → agreed → '
       + 'running → done, with abandoned reachable from any of the first three and every arrow reversible. '
+      + 'The three forward moves are gated, over the plan as the call leaves it: agreed needs from and to '
+      + '(to not before from), an owner, an element it names and every decision it rests on accepted; running '
+      + 'the same and from not in the future; done every introduced element dated live, every retired one '
+      + 'dated gone and no interface left unported. A refusal names what the gate still needs. '
       + 'When the body holds a ```business-case fence the answer carries what it computes — read plan.read '
       + 'for the fence\'s shape. The dates on the elements a plan introduces or retires are the elements\' '
       + 'own: set them with element.update.',

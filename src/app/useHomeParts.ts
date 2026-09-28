@@ -14,7 +14,8 @@ import type { HostModel } from '../model/hostModel'
 import { bareScope, flattenScopes } from '../projects/scope'
 import type { ScopeSnapshot } from '../projects/scope'
 import type { ScopeIndex } from '../projects/scopeIndex'
-import { ROOT_SCOPE, scopePathLabel } from '../projects/scopePath'
+import { ROOT_SCOPE } from '../projects/scopePath'
+import { scopeDisplayName } from '../projects/scopeLabel'
 import type { ScopePath } from '../projects/scopePath'
 import type { ProjectHistory } from '../ports/ProjectHistory'
 import { useProjectHistory } from './history/useProjectHistory'
@@ -93,9 +94,15 @@ export function useHomeParts(deps: {
   })
   deps.doors.history.current = scopeOpen ? undefined : history
   const model: HostModel = organisation.root?.model ?? EMPTY_MODEL
+  /**
+   * What the history's places are called: each scope by its own name out of
+   * the listing (`scopeDisplayName`), never by its path, and the root by the
+   * organisation's name or the word for one.
+   */
+  const everyScope = useMemo(() => flattenScopes(organisation.tree), [organisation.tree])
   const scopeLabel = useCallback(
-    (path: ScopePath) => (path === ROOT_SCOPE ? organisation.tree.name : scopePathLabel(path)),
-    [organisation.tree.name],
+    (path: ScopePath) => scopeDisplayName(path, everyScope, organisation.tree.name.trim() || s('common.organisation')),
+    [everyScope, organisation.tree.name, s],
   )
   const { files, picker } = useHomeFileDoors({ ...deps, homeDocument, beforeReplace: history.safeguard })
 

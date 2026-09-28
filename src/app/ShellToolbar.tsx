@@ -32,8 +32,10 @@ import useMediaQuery from '@mui/material/useMediaQuery'
 import Typography from '@mui/material/Typography'
 import type { Language, StringKey, Translate } from '../i18n'
 import type { DocumentStatus } from '../projects/documentSession'
-import { ancestorScopes, ROOT_SCOPE, scopePathLabel } from '../projects/scopePath'
+import { ancestorScopes } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
+import type { ScopeSummary } from '../projects/scope'
+import { scopeDisplayName } from '../projects/scopeLabel'
 import type { AgentServerStatus } from '../platform/agentServer'
 import { AgentIcon } from '../widgets/icons'
 import type { HostCommand } from '../platform/hostCommands'
@@ -44,7 +46,7 @@ import type { WindowChrome } from '../platform/windowChrome'
 import type { WorkingSource } from '../platform/workingSource'
 import type { SourceChip, SourceMenuEntry, SourceWorkChanged } from '../platform/sourceProvider'
 import { ActivityMenu } from './ActivityMenu'
-import type { ActivityEntry } from './ActivityMenu'
+import type { ActivityEntry, ActivityMenuProps } from './ActivityMenu'
 import { OverflowMenu } from './OverflowMenu'
 import { clockTime } from './clockTime'
 
@@ -60,6 +62,31 @@ const STATUS_LABEL: Partial<Record<DocumentStatus, StringKey>> = {
   saving: 'shell.saving',
   'external-changed': 'shell.changedOnDisk',
   conflict: 'shell.conflict',
+}
+
+/**
+ * The indicator for a source whose changes travel as steps: the source's own
+ * word where its provider answers one, and nothing where it does not — never a
+ * save time, because nothing is saved. A refused write and the two states a
+ * person has to act on keep their words: those are true whatever the source.
+ */
+export function stepStatusText(
+  status: DocumentStatus, saveFailed: boolean, sourceStatus: boolean, s: Translate,
+): string {
+  if (saveFailed) return s('shell.saveRefused')
+  if (status === 'conflict' || status === 'external-changed') return s(STATUS_LABEL[status]!)
+  if (!sourceStatus) return ''
+  return status === 'dirty' || status === 'saving' ? s('shell.stepsSending') : s('shell.stepsSent')
+}
+
+/** The indicator for a source that is written whole: the state's word, or the time of the last save. */
+function saveStatusText(
+  status: DocumentStatus, saveFailed: boolean, savedAt: Date | null, language: Language, s: Translate,
+): string {
+  if (saveFailed) return s('shell.saveRefused')
+  const word = STATUS_LABEL[status]
+  if (word) return s(word)
+  return savedAt ? s('shell.saved', { time: clockTime(savedAt, language) }) : s('shell.notSaved')
 }
 
 /** Red is for what the user has to act on, not for what is merely in flight. */
@@ -191,7 +218,7 @@ export function SourceChipView({ source, describeKey, chip, panel, face, s }: To
           provider gave none — nothing, which an empty title is how MUI says.
           A guess of ours about somewhere this shell has never heard of could
           promise a copy that cannot be made. */}
-      <Tooltip title={tip === undefined ? '' : s(tip as StringKey)}>
+      <Tooltip title={tip === undefined ? '' : s(tip as StringKey)} disableFocusListener>
         <Typography
           data-testid="working-source"
           {...(presses ? { component: 'button' as const, type: 'button', onClick: press } : {})}
@@ -214,9 +241,22 @@ export function SourceChipView({ source, describeKey, chip, panel, face, s }: To
 }
 
 /**
+ * How tall the provider's panel may be: most of the window, and never more
+ * than a panel that is read at a glance needs.
+ */
+export const CHIP_PANEL_MAX_HEIGHT = 'min(640px, calc(100vh - 80px))'
+
+/**
  * The provider's panel, under the chip that opened it: focus goes into it and
  * comes back to the chip when it shuts, and it appears without growing where
  * the person asked their system for less motion.
+ *
+ * **Never taller than {@link CHIP_PANEL_MAX_HEIGHT}.** The paper is a column
+ * that scrolls: a panel that lets one part of itself grow (`flex: 1`,
+ * `minHeight: 0`, its own `overflow`) keeps its head and foot in place and
+ * scrolls the middle, and one that does not is scrolled whole — either way
+ * its last line is on the screen. As wide as what the panel draws, up to the
+ * width the popover allows.
  */
 function ChipPanelPopover({ anchor, onClose, panel }: {
   anchor: HTMLElement | null
@@ -231,6 +271,11 @@ function ChipPanelPopover({ anchor, onClose, panel }: {
       onClose={onClose}
       anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+      slotProps={{
+        paper: {
+          sx: { maxHeight: CHIP_PANEL_MAX_HEIGHT, display: 'flex', flexDirection: 'column', overflowY: 'auto' },
+        },
+      }}
       {...(still ? { transitionDuration: 0 } : {})}
     >
       {anchor && panel(onClose)}
@@ -259,7 +304,10 @@ function FacedChip({ label, tip, open, presses, onPress, hasPanel, children }: {
   children: ReactNode
 }) {
   return (
-    <Tooltip title={tip === undefined ? label : `${label} — ${tip}`}>
+    // Not on focus: the panel hands focus back to the chip when it shuts, and a
+    // tooltip that opened on that is a layer over the bar the next press can
+    // land on instead of the control under it. Hover still says it.
+    <Tooltip title={tip === undefined ? label : `${label} — ${tip}`} disableFocusListener>
       <Box
         data-testid="working-source"
         aria-label={label}
@@ -302,12 +350,13 @@ export type Crumb = { path: ScopePath; name: string }
  * the word for one.
  */
 export function crumbsFor(
-  of: ScopePath, scopes: readonly { path: ScopePath; name: string }[], s: Translate,
+  of: ScopePath, scopes: readonly ScopeSummary[], s: Translate,
 ): Crumb[] {
-  const byPath = new Map(scopes.map((scope) => [scope.path, scope.name.trim()]))
+  // One answer to "what is this scope called" (`scopeDisplayName`), the one the
+  // register, the map and the history say it with too.
   return ancestorScopes(of).reverse().map((path) => ({
     path,
-    name: byPath.get(path) || (path === ROOT_SCOPE ? s('picker.organisation') : scopePathLabel(path)),
+    name: scopeDisplayName(path, scopes, s('picker.organisation')),
   }))
 }
 
@@ -430,6 +479,21 @@ export type ShellToolbarProps = {
    */
   saveFailed?: boolean
   /**
+   * Every change of the open scope travels as a step (`Shell.publishesSteps`),
+   * so there is no save to report: "Not saved yet" and "Saved · 14:02" come
+   * from a write that never happens, and say something false about work that
+   * is already where it is kept. The bar then says what the source says
+   * instead — see {@link ShellToolbarProps.sourceStatus} — or nothing.
+   */
+  publishesSteps?: boolean
+  /**
+   * The source's provider answers the five words itself (`AppProvider.status`),
+   * so `status` is its word and not a file's. Read only where `publishesSteps`:
+   * then a clean status is "all sent" and a dirty or saving one is "sending",
+   * and without an answer of the provider's own the bar says nothing at all.
+   */
+  sourceStatus?: boolean
+  /**
    * Who else has this scope open, names only — the shell is told, and never
    * works it out (`useModelSession.ts`, `ScopeSession.alsoHere`). Empty for
    * every source that ships, and then the bar says nothing rather than saying
@@ -462,6 +526,12 @@ export type ShellToolbarProps = {
    * of this bar would be paying for a list nobody has opened.
    */
   activity: () => readonly ActivityEntry[]
+  /**
+   * What the source's own log says was lately done to this scope, by everybody
+   * (`platform/sourceProvider.ts`'s `SourceRecentActivity`, bound to the open
+   * scope). Absent where the source keeps none, and the list is the session's.
+   */
+  recentActivity?: ActivityMenuProps['recent']
   /** The menu, for a host that has no menu bar. */
   overflow?: ToolbarOverflow
   /** The agent glyph. Present on every host: on the web it opens the explanation. */
@@ -496,8 +566,8 @@ export const WRAPS = { flexWrap: 'wrap', rowGap: 0.5 } as const
 
 export function ShellToolbar({
   designName, crumbs, scopePath, savedAt, status = 'clean', saveFailed = false,
-  alsoHere = [], language, onGoHome, onOpenSettings, onOpenDocumentation, onOpenDecisions, onOpenObservations, onOpenRoadmap,
-  onOpenSearch, activity,
+  publishesSteps, sourceStatus, alsoHere = [], language, onGoHome, onOpenSettings, onOpenDocumentation, onOpenDecisions, onOpenObservations, onOpenRoadmap,
+  onOpenSearch, activity, recentActivity,
   overflow, agent, sourceChip, s, windowChrome = NO_WINDOW_CHROME,
 }: ShellToolbarProps) {
   const [activityMenu, setActivityMenu] = useState<HTMLElement | null>(null)
@@ -506,11 +576,9 @@ export function ShellToolbar({
   const narrow = useMediaQuery('(max-width: 1100px)')
 
   const quiet = QUIET
-  const statusText = saveFailed
-    ? s('shell.saveRefused')
-    : STATUS_LABEL[status]
-      ? s(STATUS_LABEL[status]!)
-      : savedAt ? s('shell.saved', { time: clockTime(savedAt, language) }) : s('shell.notSaved')
+  const statusText = publishesSteps === true
+    ? stepStatusText(status, saveFailed, sourceStatus === true, s)
+    : saveStatusText(status, saveFailed, savedAt, language, s)
 
   return (
     <Box data-testid="shell-toolbar" sx={{
@@ -533,7 +601,7 @@ export function ShellToolbar({
           {s('settings.open')}
         </Button>
       </Tooltip>
-      <Tooltip title={narrow ? statusText : ''}>
+      {statusText && <Tooltip title={narrow ? statusText : ''}>
         <Typography
           sx={{ fontSize: 11, color: alarming(status, saveFailed) ? 'error.main' : 'text.secondary', whiteSpace: 'nowrap', flexShrink: 0 }}
           data-testid="saved-indicator"
@@ -541,7 +609,7 @@ export function ShellToolbar({
         >
           {narrow ? '●' : statusText}
         </Typography>
-      </Tooltip>
+      </Tooltip>}
       {alsoHere.length > 0 && (
         <Typography
           data-testid="also-here" data-guide="shell.alsoHere"
@@ -564,7 +632,9 @@ export function ShellToolbar({
           </Button>
         </Tooltip>
       ))}
-      <Tooltip title={s('shell.activityTip')}>
+      {/* Since it was opened, or lately and by whom: which one the list is
+          depends on whether the source keeps a log of its own. */}
+      <Tooltip title={s(recentActivity ? 'shell.activityTipKept' : 'shell.activityTip')}>
         <Button size="small" color="inherit" onClick={(e) => setActivityMenu(e.currentTarget)} sx={quiet} data-guide="shell.activity">
           {s('shell.activity')}
         </Button>
@@ -573,6 +643,7 @@ export function ShellToolbar({
         anchorEl={activityMenu}
         onClose={() => setActivityMenu(null)}
         entries={activityMenu ? activity() : []}
+        {...(recentActivity ? { recent: recentActivity } : {})}
         language={language}
         s={s}
       />

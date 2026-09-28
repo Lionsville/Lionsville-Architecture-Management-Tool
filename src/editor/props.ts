@@ -263,8 +263,11 @@ export interface EditorLayoutReports {
      * An automatic layout has landed on this diagram. Fires exactly once per
      * diagram per session, and only when the pass produced placements.
      *
-     * The host clears the persisted `needsLayout` flag from here. Deliberately the
-     * host's job and not the content-save endpoint's: having a save clear it
+     * The pass has already cleared the persisted `needsLayout` flag, in the step
+     * it landed (`applyTidyResult`), so a host that carries steps elsewhere carries
+     * the clearing with the layout. What is left here is a fallback: a host whose
+     * flag is still set clears it, and that clearing is still not the content-save
+     * endpoint's: having a save clear it
      * whenever it receives placements is tempting and wrong, because an ordinary
      * node drag would then clear it before the layout ever ran, and a flag that
      * clears itself for reasons the editor cannot see is a flag nobody can reason

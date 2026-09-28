@@ -396,6 +396,9 @@ describe('SolutionDesignEditor — an automatic layout that failed', () => {
     const onLayoutSettled = vi.fn<(diagramId: string) => void>();
     const pending = model();
     pending.diagrams[0].geometry.needsLayout = true;
+    // A machine-written board nobody has placed anything on: with a stored
+    // position the pass would not run at all (`hasStoredPosition`).
+    pending.diagrams[0].geometry.nodes = [];
     const host = { current: undefined as unknown as EditorHostState };
     const props: HostedEditorProps = {
       model: pending,

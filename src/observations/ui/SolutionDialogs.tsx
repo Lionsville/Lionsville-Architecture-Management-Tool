@@ -4,7 +4,8 @@
 /**
  * The questions the Solutions tab asks in a dialog (ADR-0026): what a new
  * solution is and which cause it is for, which cause a solution addresses,
- * what an experiment is to find out, and why a solution is being dropped.
+ * what an experiment is to find out, why a solution is being dropped, and —
+ * since 28 September 2026 — what an experiment found and the day it ended.
  *
  * Each says what it wants and lets the page perform it, as the observation
  * dialogs do: the page owns the lists, the numbering and the date.
@@ -18,10 +19,13 @@ import DialogContentText from '@mui/material/DialogContentText'
 import DialogTitle from '@mui/material/DialogTitle'
 import MenuItem from '@mui/material/MenuItem'
 import TextField from '@mui/material/TextField'
+import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
+import { formatDay } from '../../i18n/dates'
 import { CAUSE_STRENGTHS, formatCauseNumber } from '../observation'
 import type { Cause, CauseStrength } from '../observation'
-import { STRENGTH_LABEL } from '../observationScope'
+import type { ExperimentOutcome } from '../solution'
+import { OUTCOME_LABEL, STRENGTH_LABEL } from '../observationScope'
 
 const NONE = '__none'
 
@@ -171,6 +175,57 @@ export function DropDialog({ subject, onCancel, onConfirm, s }: DropDialogProps)
       <DialogActions>
         <Button onClick={onCancel}>{s('common.cancel')}</Button>
         <Button variant="contained" disabled={!note.trim()} onClick={() => onConfirm(note.trim())} data-testid="drop-confirm">{s('solution.dropConfirm')}</Button>
+      </DialogActions>
+    </Dialog>
+  )
+}
+
+/**
+ * Concluding an experiment (ADR-0026, amended 28 September 2026): the result,
+ * in numbers where there are numbers, and the day it ended — today unless
+ * said, never before it started. Without a result there is no conclusion to
+ * make, so the button waits for one.
+ */
+export type ConcludeDialogProps = {
+  /** The experiment, by the name the page shows, the outcome it is concluded as, and what it holds already; closed when absent. */
+  subject?: { label: string; outcome: ExperimentOutcome; result?: string; from?: string }
+  /** `yyyy-mm-dd`. */
+  today: string
+  onCancel: () => void
+  onConfirm: (fields: { result: string; to: string }) => void
+  s: Translate
+}
+
+export function ConcludeDialog({ subject, today, onCancel, onConfirm, s }: ConcludeDialogProps) {
+  const [result, setResult] = useState('')
+  const [to, setTo] = useState(today)
+  const { language } = useStrings()
+  useEffect(() => { if (subject) { setResult(subject.result ?? ''); setTo(today) } }, [subject, today])
+  const early = Boolean(subject?.from && to && to < subject.from)
+  const ready = result.trim().length > 0 && /^\d{4}-\d{2}-\d{2}$/.test(to) && !early
+  return (
+    <Dialog open={Boolean(subject)} onClose={onCancel} maxWidth="sm" fullWidth>
+      <DialogTitle>{subject ? s('solution.concludeTitle', { name: subject.label, outcome: s(OUTCOME_LABEL[subject.outcome]).toLowerCase() }) : ''}</DialogTitle>
+      <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '8px !important' }}>
+        <TextField
+          autoFocus fullWidth multiline size="small"
+          label={s('solution.result')} helperText={s('solution.concludeResultHelp')}
+          value={result} onChange={(event) => setResult(event.target.value)}
+          slotProps={{ htmlInput: { 'data-testid': 'conclude-result' } }}
+        />
+        <TextField
+          type="date" size="small" label={s('solution.toField')} value={to}
+          error={early}
+          helperText={early && subject?.from ? s('solution.concludeBeforeFrom', { date: formatDay(subject.from, language) }) : undefined}
+          onChange={(event) => setTo(event.target.value)}
+          slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: subject?.from, 'data-testid': 'conclude-to' } }}
+        />
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onCancel}>{s('common.cancel')}</Button>
+        <Button variant="contained" disabled={!ready} onClick={() => onConfirm({ result: result.trim(), to })} data-testid="conclude-confirm">
+          {s('solution.concludeConfirm')}
+        </Button>
       </DialogActions>
     </Dialog>
   )

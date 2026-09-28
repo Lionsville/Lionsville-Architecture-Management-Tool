@@ -846,6 +846,29 @@ describe('ElementInspector — what an application uses (ADR-0020)', () => {
     expect(again.setUses).toHaveBeenCalledWith('e1', ['managed-db'], [managedDb]);
   });
 
+  it('keeps Escape to itself, so the canvas does not take the inspector away first', () => {
+    renderInspector(element(), { others: held(), technology: technology() });
+    expect(screen.getByTestId('element-uses-picker').hasAttribute('data-shortcuts-ignore')).toBe(true);
+  });
+
+  it('writes the ticks once when focus leaves the picker', () => {
+    const { setUses } = renderInspector(element(), { others: held(), technology: technology() });
+    const input = openPicker();
+    fireEvent.click(screen.getByTestId('uses-option-brokering'));
+    fireEvent.blur(input);
+    expect(setUses).toHaveBeenCalledTimes(1);
+    expect(setUses).toHaveBeenCalledWith('e1', ['brokering']);
+  });
+
+  it('writes the ticks when the inspector goes away with the list still open', () => {
+    const { setUses } = renderInspector(element(), { others: held(), technology: technology() });
+    openPicker();
+    fireEvent.click(screen.getByTestId('uses-option-bus'));
+    expect(setUses).not.toHaveBeenCalled();
+    cleanup();
+    expect(setUses).toHaveBeenCalledWith('e1', ['bus']);
+  });
+
   it('shows the rows as pills that remove, and nothing to write when read only', () => {
     const relations = [
       { id: 'u1', type: 'uses' as const, sourceId: 'e1', targetId: 'brokering' },

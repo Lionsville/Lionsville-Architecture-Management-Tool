@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { V3Diagram } from '../model/testFixtures';
 import { laidOut } from '../model/testFixtures';
 import { renderHook, waitFor } from '@testing-library/react';
-import { settlingOptions, useAutoLayout, type UseAutoLayoutArgs } from './useAutoLayout';
+import { hasStoredPosition, settlingOptions, useAutoLayout, type UseAutoLayoutArgs } from './useAutoLayout';
 import { DEFAULT_TIDY_OPTIONS, type TidyOptions } from '../layout/tidy';
 import type { DesignDiagram } from '../model/types';
 
@@ -25,11 +25,21 @@ function diagram(over: Partial<V3Diagram> = {}): DesignDiagram {
   });
 }
 
+/**
+ * A board a machine wrote and nobody has placed anything on: members, the
+ * flag, and no positions — what a new container view and an import without
+ * geometry both look like.
+ */
+function fresh(over: Partial<V3Diagram> = {}): DesignDiagram {
+  const made = diagram({ needsLayout: true, ...over });
+  return { ...made, geometry: { ...made.geometry, nodes: [] } };
+}
+
 function render(over: Partial<UseAutoLayoutArgs> = {}) {
   const run = vi.fn<(options: TidyOptions) => Promise<void>>().mockResolvedValue(undefined);
   const onSettled = vi.fn<(diagramId: string) => void>();
   const args: UseAutoLayoutArgs = {
-    diagram: diagram({ needsLayout: true }),
+    diagram: fresh(),
     readOnly: false,
     busy: undefined,
     options: DEFAULT_TIDY_OPTIONS,
@@ -66,7 +76,7 @@ describe('useAutoLayout — when it runs', () => {
   it('runs exactly once when BOTH sources name the same diagram', async () => {
     // The two-sources seam: a diagram can legitimately be created in this session
     // and flagged server-side. The session ref is what makes that harmless.
-    const { run } = render({ diagram: diagram({ needsLayout: true }) });
+    const { run } = render({ diagram: fresh() });
     await waitFor(() => expect(run).toHaveBeenCalledTimes(1));
     await new Promise((r) => setTimeout(r, 10));
     expect(run).toHaveBeenCalledTimes(1);
@@ -76,6 +86,16 @@ describe('useAutoLayout — when it runs', () => {
     // A design version is an immutable snapshot; it must not spend a quarter of a
     // second of somebody's main thread computing a layout it will throw away.
     const { run } = render({ readOnly: true });
+    await new Promise((r) => setTimeout(r, 10));
+    expect(run).not.toHaveBeenCalled();
+  });
+
+  it('does not relay a flagged board whose members already have positions', async () => {
+    // The flag outlived a layout that did land — a clearing that was lost on
+    // the way, or a seed that shipped coordinates with the flag still on. The
+    // board may have been arranged since, and relaying it on every open, as
+    // the step of whoever opened it, is the fault this rule exists to stop.
+    const { run } = render({ diagram: diagram({ needsLayout: true }) });
     await new Promise((r) => setTimeout(r, 10));
     expect(run).not.toHaveBeenCalled();
   });
@@ -90,7 +110,7 @@ describe('useAutoLayout — when it runs', () => {
   });
 
   it('skips an empty diagram', async () => {
-    const { run } = render({ diagram: diagram({ needsLayout: true, placements: [] }) });
+    const { run } = render({ diagram: fresh({ placements: [] }) });
     await new Promise((r) => setTimeout(r, 10));
     expect(run).not.toHaveBeenCalled();
   });
@@ -100,7 +120,7 @@ describe('useAutoLayout — when it runs', () => {
     await new Promise((r) => setTimeout(r, 10));
     expect(run).not.toHaveBeenCalled();
 
-    rerender({ ...args, diagram: diagram({ needsLayout: true }) });
+    rerender({ ...args, diagram: fresh() });
     await waitFor(() => expect(run).toHaveBeenCalledTimes(1));
   });
 });
@@ -170,5 +190,21 @@ describe('settlingOptions — the pin rule', () => {
       density: 'compact',
       pinGroups: false,
     });
+  });
+});
+
+describe('hasStoredPosition', () => {
+  it('is false for a board with no positions at all', () => {
+    expect(hasStoredPosition(fresh())).toBe(false);
+  });
+
+  it('is true once any member has one', () => {
+    expect(hasStoredPosition(diagram({ needsLayout: true }))).toBe(true);
+  });
+
+  it('does not count a position left behind by an element no longer on the board', () => {
+    const made = fresh();
+    const leftover = { ...made, geometry: { ...made.geometry, nodes: [{ id: 'gone', x: 1, y: 2 }] } };
+    expect(hasStoredPosition(leftover)).toBe(false);
   });
 });

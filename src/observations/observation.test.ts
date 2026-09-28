@@ -4,10 +4,10 @@
 import { describe, expect, it } from 'vitest'
 import { translator } from '../i18n'
 import {
-  absorbShared, absorbedBy, causeDepth, explainedBy, formatCauseNumber, formatObservationNumber, isArchived, isMerged,
-  isRootCause, linkCause, liveObservations, mergeObservations, newCause, newObservation, nextCauseNumber,
-  nextObservationNumber, removeCause, removeObservation, rootCauses, seenAgain, setArchived, setShared, unlinkCause,
-  updateObservation,
+  absorbShared, absorbedBy, causeDepth, causeEvidence, explainedBy, formatCauseNumber, formatObservationNumber,
+  isArchived, isMerged, isRootCause, linkCause, liveObservations, mergeObservations, newCause, newObservation,
+  nextCauseNumber, nextObservationNumber, removeCause, removeObservation, rootCauses, seenAgain, seenDayProblem,
+  setArchived, setShared, unlinkCause, updateCause, updateObservation, verifyCause, withConfirmation,
 } from './observation'
 import type { Analysis, Cause, Observation } from './observation'
 
@@ -198,5 +198,46 @@ describe('causes and their links', () => {
     expect(removeCause(held, 'c1').causes).toEqual([cause({ id: 'c2', number: 2, explains: [] })])
     expect(removeObservation(held, 'o1').causes[0].explains).toEqual([])
     expect(removeObservation(held, 'o1').observations).toEqual([])
+  })
+})
+
+describe('a sighting\'s day', () => {
+  it('is today or earlier, and not before the observation was first seen', () => {
+    const held = observation({})
+    expect(seenDayProblem(held, '2026-09-20', '2026-09-20')).toBeUndefined()
+    expect(seenDayProblem(held, '2026-09-08', '2026-09-20')).toBeUndefined()
+    expect(seenDayProblem(held, '2026-09-21', '2026-09-20')).toBe('future')
+    expect(seenDayProblem(held, '2026-09-07', '2026-09-20')).toBe('beforeFirst')
+    expect(seenDayProblem(held, '20-09-2026', '2026-09-20')).toBe('notADay')
+  })
+})
+
+describe('verifying a cause', () => {
+  const evidenced = '## Why we think so\n\nVolumes doubled since 2019.\n\n## How to verify\n\n2026-09-18: the run log shows it.\n'
+  it('reads the two sections a cause starts with, in any language the tool speaks', () => {
+    expect(causeEvidence(newCause({ id: 'x', number: 1, title: 'X', t }).body)).toEqual({ why: false, verify: false, complete: false })
+    expect(causeEvidence(evidenced)).toEqual({ why: true, verify: true, complete: true })
+    expect(causeEvidence('## Waarom we dat denken\n\nVolumes.\n\n## Hoe te verifiëren\n\nHet log.\n').complete).toBe(true)
+    expect(causeEvidence('## Why we think so\n\nVolumes.\n\n## How to verify\n\n').complete).toBe(false)
+    expect(causeEvidence('Just a note.').complete).toBe(false)
+  })
+  it('keeps a cause assumed when verified is asked of a body with no evidence', () => {
+    expect(updateCause([cause({})], 'c1', { state: 'verified' })[0].state).toBe('assumed')
+    expect(updateCause([cause({})], 'c1', { state: 'verified', body: evidenced })[0].state).toBe('verified')
+    expect(updateCause([cause({ state: 'verified' })], 'c1', { state: 'assumed' })[0].state).toBe('assumed')
+  })
+  it('verifies on the evidence written down, or on what confirmed it, added dated under How to verify', () => {
+    const args = { date: '2026-09-20', t }
+    expect(verifyCause([cause({ body: evidenced })], 'c1', args)[0].state).toBe('verified')
+    const bare = cause({ body: newCause({ id: 'x', number: 1, title: 'X', t }).body })
+    expect(verifyCause([bare], 'c1', args)[0]).toBe(bare)
+    const [confirmed] = verifyCause([bare], 'c1', { ...args, confirmed: ' The run log for June ' })
+    expect(confirmed.state).toBe('verified')
+    expect(confirmed.body).toContain('## How to verify\n\n2026-09-20: The run log for June\n')
+  })
+  it('adds the answer after what the section already says, and makes the section where there is none', () => {
+    const written = '## How to verify\n\nRan the query.\n\n## More\n\nx\n'
+    expect(withConfirmation(written, 'It held', '2026-09-20', t)).toBe('## How to verify\n\nRan the query.\n\n2026-09-20: It held\n\n## More\n\nx\n')
+    expect(withConfirmation('A note.', 'It held', '2026-09-20', t)).toBe('A note.\n\n## How to verify\n\n2026-09-20: It held\n')
   })
 })

@@ -34,11 +34,10 @@ import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import {
-  DATED_PHASES, TRANSITION_STATUSES, elementsWithRole, portsOf, transitionLabel, transitionStatusesFrom,
+  DATED_PHASES, elementsWithRole, portsOf, transitionLabel,
 } from '../../model'
 import type {
   DesignElement, DesignModel, ElementId, LifecycleDates, Port, Transition, TransitionRole,
-  TransitionStatus,
 } from '../../model'
 import type { Adr } from '../../model/adr'
 import { formatAdrNumber } from '../../decisions'
@@ -55,9 +54,7 @@ import { ConfirmDialog } from '../../widgets/ConfirmDialog'
 import { BackIcon } from '../../widgets/icons'
 import { PageDialog } from '../../widgets/PageDialog'
 import { SeamResizer } from '../../widgets/SeamResizer'
-import { PLAN_STATUS_LABEL as STATUS_LABEL } from '../labels'
-
-const ROLES: readonly TransitionRole[] = ['introduces', 'retires', 'changes']
+import { AddElement, ROLES, StatusField, WindowFields, namedSelect } from './PlanFacts'
 
 export type PlanActions = {
   updateTransition(id: string, patch: Partial<Transition>): void
@@ -85,6 +82,11 @@ export type PlanPageProps = {
   model: DesignModel
   /** The project's decision records, for the list of what the plan rests on. */
   decisions?: readonly Adr[]
+  /**
+   * The records of the scopes above, which a plan may rest on too: its gate
+   * asks whether they are accepted (ADR-0009, amended 28 September 2026).
+   */
+  ancestorDecisions?: readonly Adr[]
   /** The day "now" is, so a port whose day has come reads as done. */
   today: string
   readOnly: boolean
@@ -176,7 +178,10 @@ export function PlanPage(props: PlanPageProps) {
       {plan && (
         <Box sx={{ display: 'grid', gridTemplateColumns: fullPage ? 'minmax(0, 1fr)' : '480px minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
           {!fullPage && (
-            <Facts plan={plan} model={model} decisions={props.decisions ?? []} readOnly={readOnly} actions={actions} initiativeToggle={props.initiativeToggle === true} />
+            <Facts
+              plan={plan} model={model} decisions={props.decisions ?? []} decidedAbove={props.ancestorDecisions ?? []}
+              today={props.today} readOnly={readOnly} actions={actions} initiativeToggle={props.initiativeToggle === true}
+            />
           )}
           {/* The table scrolls inside a height of its own, dragged from the
               seam under it, so a plan with forty interfaces still leaves the
@@ -234,10 +239,12 @@ function Heading({ children }: { children: ReactNode }) {
   )
 }
 
-function Facts({ plan, model, decisions, readOnly, actions, initiativeToggle }: {
+function Facts({ plan, model, decisions, decidedAbove, today, readOnly, actions, initiativeToggle }: {
   plan: Transition
   model: DesignModel
   decisions: readonly Adr[]
+  decidedAbove: readonly Adr[]
+  today: string
   readOnly: boolean
   actions: PlanActions
   initiativeToggle: boolean
@@ -246,14 +253,8 @@ function Facts({ plan, model, decisions, readOnly, actions, initiativeToggle }: 
   const set = (patch: Partial<Transition>) => actions.updateTransition(plan.id, patch)
   const byId = new Map(model.elements.map((element) => [element.id, element]))
   const [shiftBy, setShiftBy] = useState('')
-  const [adding, setAdding] = useState<{ elementId: string; role: TransitionRole }>({ elementId: '', role: 'introduces' })
   const [addingDecision, setAddingDecision] = useState('')
   const days = Number(shiftBy)
-
-  const named = new Set(plan.elements.map((one) => one.elementId))
-  const candidates = model.elements
-    .filter((element) => !named.has(element.id))
-    .sort((a, b) => a.name.localeCompare(b.name))
   const restsOn = new Set(plan.decisions)
   const decisionCandidates = decisions.filter((adr) => !restsOn.has(adr.id))
 
@@ -266,32 +267,10 @@ function Facts({ plan, model, decisions, readOnly, actions, initiativeToggle }: 
         size="small" label={t('common.name')} value={plan.title} disabled={readOnly}
         onChange={(e) => set({ title: e.target.value })}
       />
-      <TextField
-        size="small" select label={t('roadmap.status')} value={plan.status} disabled={readOnly}
-        slotProps={{ htmlInput: { 'aria-label': t('roadmap.status') } }}
-        onChange={(e) => set({ status: e.target.value as TransitionStatus })}
-      >
-        {TRANSITION_STATUSES
-          // Only where the machine allows, plus where it already is.
-          .filter((status) => status === plan.status || transitionStatusesFrom(plan.status).includes(status))
-          .map((status) => (
-            <MenuItem key={status} value={status}>{t(STATUS_LABEL[status])}</MenuItem>
-          ))}
-      </TextField>
-      <Box sx={{ display: 'flex', gap: 1 }}>
-        <TextField
-          type="date" size="small" fullWidth label={t('roadmap.planFrom')}
-          value={plan.from ?? ''} disabled={readOnly}
-          slotProps={{ inputLabel: { shrink: true } }}
-          onChange={(e) => set({ from: e.target.value || undefined })}
-        />
-        <TextField
-          type="date" size="small" fullWidth label={t('roadmap.planTo')}
-          value={plan.to ?? ''} disabled={readOnly}
-          slotProps={{ inputLabel: { shrink: true } }}
-          onChange={(e) => set({ to: e.target.value || undefined })}
-        />
-      </Box>
+      <StatusField
+        plan={plan} model={model} decisions={[...decisions, ...decidedAbove]} today={today} readOnly={readOnly} set={set}
+      />
+      <WindowFields plan={plan} readOnly={readOnly} set={set} />
       <TextField
         size="small" label={t('roadmap.owner')} value={plan.owner ?? ''} disabled={readOnly}
         onChange={(e) => set({ owner: e.target.value || undefined })}
@@ -351,32 +330,8 @@ function Facts({ plan, model, decisions, readOnly, actions, initiativeToggle }: 
           </Box>
         )
       })}
-      {!readOnly && candidates.length > 0 && (
-        <Box data-testid="plan-add-element" data-guide="plan.addElement" sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-          <TextField
-            select size="small" label={t('plan.addElement')} value={adding.elementId} sx={{ flex: 1 }}
-            slotProps={{ htmlInput: { 'aria-label': t('plan.addElement') } }}
-            onChange={(e) => setAdding((a) => ({ ...a, elementId: e.target.value }))}
-          >
-            {candidates.map((element) => <MenuItem key={element.id} value={element.id}>{element.name}</MenuItem>)}
-          </TextField>
-          <TextField
-            select size="small" value={adding.role} sx={{ width: 130 }}
-            slotProps={namedSelect(t('plan.role'))}
-            onChange={(e) => setAdding((a) => ({ ...a, role: e.target.value as TransitionRole }))}
-          >
-            {ROLES.map((role) => <MenuItem key={role} value={role}>{t(`plan.${role}` as StringKey)}</MenuItem>)}
-          </TextField>
-          <Button
-            size="small" disabled={!adding.elementId}
-            onClick={() => {
-              setElements([...plan.elements, { elementId: adding.elementId, role: adding.role }])
-              setAdding((a) => ({ ...a, elementId: '' }))
-            }}
-          >
-            {t('plan.add')}
-          </Button>
-        </Box>
+      {!readOnly && (
+        <AddElement plan={plan} model={model} onAdd={(row) => setElements([...plan.elements, row])} />
       )}
 
       {/* ---- milestones ---- */}
@@ -418,7 +373,7 @@ function Facts({ plan, model, decisions, readOnly, actions, initiativeToggle }: 
         <Typography variant="body2" color="text.secondary">{t('plan.noDecisions')}</Typography>
       )}
       {plan.decisions.map((id) => {
-        const adr = decisions.find((one) => one.id === id)
+        const adr = decisions.find((one) => one.id === id) ?? decidedAbove.find((one) => one.id === id)
         return (
           <Box key={id} sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
             <Typography
@@ -708,15 +663,4 @@ function Body({ plan, model, editing, renderMarkdown, onAddImage, images, onChan
       )}
     </Box>
   )
-}
-
-/**
- * A select with no visible label, named twice: the field, and the list it
- * opens — which MUI names from the label, so without one it opens nameless.
- */
-function namedSelect(name: string) {
-  return {
-    htmlInput: { 'aria-label': name },
-    select: { MenuProps: { slotProps: { list: { 'aria-label': name } } } },
-  }
 }

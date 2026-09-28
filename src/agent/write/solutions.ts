@@ -10,16 +10,18 @@
 import type { Command } from '../../model/commands'
 import { experimentsToCommands, solutionsToCommands, transaction } from '../../model/commands'
 import type { Model } from '../../model/normalised'
-import { causeList, decisionList, experimentList, fromArrays, solutionList, toArrays, transitionList } from '../../model/normalised'
+import {
+  causeList, decisionList, experimentList, fromArrays, observationList, solutionList, toArrays, transitionList,
+} from '../../model/normalised'
 import { isDay } from '../../model/lifecycle'
 import { nextTransitionNumber, transitionLabel } from '../../model/transition'
 import type { Transition } from '../../model/transition'
 import type { Cause, CauseStrength, ExperimentOutcome, Solution, SolutionSize, SolutionState, EarlierAttempt } from '../../model/observation'
 import {
-  addressCause, concludeExperiment, decisionContext, defaultStrength, dropSolution, formatExperimentNumber,
-  formatSolutionNumber, linkRecord, moveSolution, newExperiment, newSolution, nextExperimentNumber, nextSolutionNumber,
-  planExperiment, removeExperiment, removeSolution, restoreSolution, setTestStrength, unaddressCause, updateExperiment,
-  updateSolution, waiveExperiment,
+  addressCause, concludeExperiment, decisionBody, defaultStrength, dropSolution, experimentMovesFrom,
+  formatExperimentNumber, formatSolutionNumber, linkRecord, mayAddress, mayPlanExperiment, moveSolution, newExperiment,
+  newSolution, nextExperimentNumber, nextSolutionNumber, planExperiment, removeExperiment, removeSolution,
+  reopenWithdraws, restoreSolution, setTestStrength, unaddressCause, updateExperiment, updateSolution, waiveExperiment,
 } from '../../observations/solution'
 import type { Experiment, ExperimentPatch, SolutionPatch, SolutionWork } from '../../observations/solution'
 import { formatCauseNumber, isRootCause } from '../../observations/observation'
@@ -78,6 +80,17 @@ function notRoot(cause: Cause, causes: readonly Cause[]): AgentAnswer | undefine
   return refused('agent.badArguments', deeper.length
     ? `${label} is not a root cause: ${deeper.map((one) => formatCauseNumber(one.number)).join(', ')} explains it. A solution addresses a root cause — address that one, or keep asking why until you reach one.`
     : `${label} is not a root cause: it explains nothing yet. Link it to what it explains first (cause.link).`)
+}
+
+/**
+ * Where a solution has no step back, how to get one (ADR-0026, amended 28
+ * September 2026): an adopted solution whose record stands accepted is
+ * reopened by superseding that record, and the sentence names it.
+ */
+function reopenHint(solution: Solution, model: Model): string {
+  if (solution.state !== 'adopted' || !solution.decision) return ''
+  const decision = decisionList(model).find((one) => one.id === solution.decision)
+  return decision?.status === 'accepted' ? ` To reopen, supersede ${formatAdrNumber(decision.number)} on the Decisions page.` : ''
 }
 
 /**
@@ -178,7 +191,11 @@ export const addressSolution = onSolution((solution, args, view, work) => {
   const cause = findCause(causes, String(args.cause))
   if (!cause) return refused('agent.unknownId', `cause ${String(args.cause)}`)
   // A link that is already there may change its strength, root or not.
-  const refusal = solution.addresses.some((address) => address.id === cause.id) ? undefined : notRoot(cause, causes)
+  const held = solution.addresses.some((address) => address.id === cause.id)
+  if (!held && !mayAddress(solution)) {
+    return refused('agent.badArguments', `${formatSolutionNumber(solution.number)} is ${solution.state}: a solution takes on a cause while it is an idea or shaped; propose another solution for this one.${reopenHint(solution, work.model)}`)
+  }
+  const refusal = held ? undefined : notRoot(cause, causes)
   if (refusal) return refusal
   const strength = (args.strength as CauseStrength | undefined) ?? defaultStrength(cause.id, causes)
   return finish(work, view, withSolutions(work, addressCause(work.before.solutions, solution.id, { id: cause.id, strength })), solutionAnswer(solution.id))
@@ -198,7 +215,7 @@ export const moveSolutionTool = onSolution((solution, args, view, work) => {
     const why = result.refusal === 'gate'
       ? `the gate to ${String(args.to)} still needs: ${result.open.join(', ')}`
       : result.refusal === 'decided'
-        ? `${solution.id} is adopted and its decision record is accepted; supersede the record before moving it back`
+        ? `${solution.id} is adopted and its decision record is accepted, which is locked; it has no step back.${reopenHint(solution, work.model)}`
         : `${solution.id} is ${solution.state}; it moves one step at a time, and not while dropped`
     return refused('agent.badArguments', why)
   }
@@ -227,11 +244,12 @@ export const decideSolution = onSolution((solution, args, view, work) => {
   if (solution.decision) return refused('agent.badArguments', `${solution.id} already rests on ${solution.decision}`)
   const day = view.today()
   const adr = newAdr({ id: view.makeId('adr'), number: nextAdrNumber(decisionList(work.model)), title: solution.title, date: day, t: view.translate })
-  if (typeof args.body === 'string' && args.body.trim()) adr.body = args.body
-  else {
-    const opening = adr.body.indexOf('\n\n') + 2
-    adr.body = `${adr.body.slice(0, opening)}${decisionContext(solution, work.causes, work.before.solutions, view.translate)}\n${adr.body.slice(opening)}`
-  }
+  adr.body = typeof args.body === 'string' && args.body.trim()
+    ? args.body
+    : decisionBody(solution, {
+      causes: work.causes, solutions: work.before.solutions, experiments: work.before.experiments,
+      observations: observationList(work.model),
+    }, view.translate)
   const after = withSolutions(work, linkRecord(work.before.solutions, solution.id, 'decision', adr.id, day))
   return finish(work, view, after, (facts) => ({
     ...solutionLine(facts.solutions.find((one) => one.id === solution.id)!, facts),
@@ -272,6 +290,16 @@ export const planExperimentTool: Handler = (args, view) => {
   const tests = testedIds(work, args.tests as string[])
   if ('ok' in tests) return tests
   if (tests.length === 0) return refused('agent.badArguments', '"tests" must name a solution')
+  for (const id of tests) {
+    const tested = before.solutions.find((one) => one.id === id)
+    if (!tested || mayPlanExperiment(tested)) continue
+    const label = formatSolutionNumber(tested.number)
+    const instead = tested.state === 'idea' ? ' Answer its gate and move it to shaped first.'
+      : tested.state === 'proven' ? ' Move it back to testing first, which says its proof is being tested again.'
+        : tested.state === 'dropped' ? ' Restore it first.'
+          : reopenHint(tested, work.model)
+    return refused('agent.badArguments', `${label} is ${tested.state}: an experiment is planned for a shaped or testing solution.${instead}`)
+  }
   for (const key of ['from', 'to'] as const) {
     if (typeof args[key] === 'string' && !isDay(args[key] as string)) return refused('agent.badArguments', `${key} ${String(args[key])} is not yyyy-mm-dd`)
   }
@@ -316,12 +344,38 @@ export const updateExperimentTool = onExperiment((experiment, args, view, work) 
   return finish(work, view, after, experimentAnswer(after, experiment.id))
 })
 
+/**
+ * An experiment moves as the page moves it (ADR-0026, amended 28 September
+ * 2026): planned starts running, running is concluded — with the result and
+ * the day it ended, today unless `to` says — or goes back to planned, and a
+ * concluded one is reopened. The answer says which solutions a reopen took
+ * the proof from, so the agent can tell the person.
+ */
 export const concludeExperimentTool = onExperiment((experiment, args, view, work) => {
-  const after = {
-    ...work.before,
-    experiments: concludeExperiment(work.before.experiments, experiment.id, args.outcome as ExperimentOutcome, args.result as string | undefined),
+  const outcome = args.outcome as ExperimentOutcome
+  const label = formatExperimentNumber(experiment.number)
+  const withdrawn = outcome === 'running' ? reopenWithdraws(work.before, experiment.id) : []
+  const result = concludeExperiment(work.before.experiments, experiment.id, outcome, view.today(), {
+    ...(typeof args.result === 'string' ? { result: args.result } : {}),
+    ...(typeof args.to === 'string' ? { to: args.to } : {}),
+  })
+  if (!result.ok) {
+    const why = result.refusal === 'notAllowed'
+      ? `${label} is ${experiment.outcome}: from there it moves to ${experimentMovesFrom(experiment.outcome).join(' or ')}${experiment.outcome === 'planned' ? ' — start it (running) before it is concluded' : ''}`
+      : result.refusal === 'result'
+        ? `"result" must say what happened, in numbers where there are numbers: a conclusion without one is a click`
+        : result.refusal === 'endDay'
+          ? `to ${String(args.to)} is not yyyy-mm-dd`
+          : result.refusal === 'endBeforeStart'
+            ? `to ${String(args.to ?? view.today())} is before ${label} started, on ${experiment.from ?? ''}`
+            : `experiment ${String(args.id)}`
+    return refused(result.refusal === 'missing' ? 'agent.unknownId' : 'agent.badArguments', why)
   }
-  return finish(work, view, after, experimentAnswer(after, experiment.id))
+  const after = { ...work.before, experiments: result.experiments }
+  return finish(work, view, after, () => ({
+    ...experimentLine(after.experiments.find((one) => one.id === experiment.id)!, after.solutions),
+    ...(withdrawn.length ? { proofWithdrawn: withdrawn.map((one) => formatSolutionNumber(one.number)) } : {}),
+  }))
 })
 
 export const removeExperimentTool = onExperiment((experiment, _args, view, work) => (

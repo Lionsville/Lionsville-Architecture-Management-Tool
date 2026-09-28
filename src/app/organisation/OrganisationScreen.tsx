@@ -19,10 +19,13 @@
  * the tree, and shows the same things one level down. The scope is never a row
  * in its own tree.
  *
- * `readOnly` is not a state this screen has. Everywhere else it is a prop the
- * editor is handed; here the honest signal that a store will not take a write
- * is the standing storage notice the shell already draws along the bottom, and
- * inventing a second one that guessed would hide affordances that work.
+ * **What may be written is asked, per scope** (`writable`). A store that
+ * refuses every write says so in the standing notice the shell draws along the
+ * bottom; a source that lets a person read one scope and write another is
+ * asked about each, the way the workspace is asked about the scope it opens.
+ * A scope the person may only read offers nothing that writes — no *Make…*,
+ * no new board or scope, no settings, no removal — and still opens every page
+ * it has, to read.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ComponentProps, ReactNode } from 'react'
@@ -48,6 +51,7 @@ import type { ProjectOrder, ScopeSummary } from '../../projects/scope'
 import type { ElementId } from '../../model'
 import type { Finding } from '../../projects/checks'
 import { isWithinScope, ROOT_SCOPE, scopePathLabel } from '../../projects/scopePath'
+import { scopeDisplayName } from '../../projects/scopeLabel'
 import type { ScopePath } from '../../projects/scopePath'
 import { NO_WINDOW_CHROME } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
@@ -204,6 +208,12 @@ export type OrganisationScreenProps = {
   onPageChange?: (page: 'register' | 'technologyRegister' | undefined) => void
   /** Resolve a conflict: open the scope that should yield, with *link* pending. */
   onLinkFromRegister?: (scope: ScopePath, id: ElementId, to: ScopePath) => void
+  /**
+   * May this person change the scope at this path? Asked per scope, because
+   * a source can let somebody write one domain and only read the next. Every
+   * scope may be written where absent, which is every source that ships.
+   */
+  writable?: (path: ScopePath) => boolean
   /** The day, injected so a card's finding is not at the mercy of the clock. */
   today: string
   language: Language
@@ -216,9 +226,10 @@ export function OrganisationScreen({
   onChooseWorkingDirectory, waysIn,
   overflow, agent, onGoHome, findings, register = [], technology = [], initiatives = 0, sharedObservations = 0,
   onOpenRegisterRow, onOpenRegisterPage, onLinkFromRegister, pageRequest, onPageChange,
-  today, language, s, windowChrome = NO_WINDOW_CHROME,
+  writable = ANYWHERE, today, language, s, windowChrome = NO_WINDOW_CHROME,
 }: OrganisationScreenProps) {
   const { tree, at, root, ready, dialog } = organisation
+  const mayWrite = writable(at)
   /**
    * The register is a page of its own, opened from its card — state here and
    * not in the hook, because it is the one page on this screen that neither
@@ -287,12 +298,13 @@ export function OrganisationScreen({
    * the word for the organisation at the root. The screen's vocabulary, so
    * the sentence builder is handed it rather than knowing it.
    */
-  const scopeName = useMemo(() => {
-    const names = new Map(flattenScopes(tree).map((scope) => [scope.path, scope.name]))
-    return (path: ScopePath) => (path === ROOT_SCOPE
+  const everyScope = useMemo(() => flattenScopes(tree), [tree])
+  const scopeName = useMemo(
+    () => (path: ScopePath) => (path === ROOT_SCOPE
       ? s('common.organisation')
-      : names.get(path) || scopePathLabel(path))
-  }, [tree, s])
+      : scopeDisplayName(path, everyScope, s('common.organisation'))),
+    [everyScope, s],
+  )
   /**
    * The findings, as sentences under the cards (ADR-0012 §9). Read off what
    * the shell already holds: the tree's findings and the technology rows.
@@ -333,6 +345,16 @@ export function OrganisationScreen({
   const named = home.name.trim().length > 0
   const heading = home.name.trim() || (atRoot ? s('picker.organisation') : scopePathLabel(home.path))
   const quiet = { fontSize: 11, minWidth: 0, px: 1, color: 'text.secondary' } as const
+  /**
+   * What the registers call a scope — *Kept in*, *Drawn in*, the scope a
+   * finding names: its own name out of the listing, and the organisation's
+   * heading at the root. Never its path.
+   */
+  const rootName = tree.name.trim() || s('picker.organisation')
+  const registerScopeName = useCallback(
+    (path: ScopePath) => scopeDisplayName(path, everyScope, rootName),
+    [everyScope, rootName],
+  )
 
   return (
     <Box sx={{
@@ -351,7 +373,7 @@ export function OrganisationScreen({
         onChooseWorkingDirectory={atRoot ? onChooseWorkingDirectory : undefined}
         waysIn={atRoot ? waysIn : undefined}
         onGoHome={onGoHome}
-        onSettings={() => organisation.editScope(home)}
+        onSettings={writable(home.path) ? () => organisation.editScope(home) : undefined}
         overflow={overflow}
         agent={agent}
         s={s}
@@ -359,10 +381,12 @@ export function OrganisationScreen({
       />
 
       <Box sx={{ flex: 1, overflowY: 'auto', px: 3, py: 4 }}>
-        <Box sx={{ maxWidth: 980, mx: 'auto' }}>
+        {/* Wider on a wide screen, where the cards and the tables have use
+            for the room; the sentences keep their own measure (720). */}
+        <Box sx={{ maxWidth: { xs: 980, xl: 1280 }, mx: 'auto' }}>
           {/* Identity. A folder nobody has named asks for a name where the
               heading would be, rather than showing a blank one. */}
-          {named || !atRoot ? (
+          {named || !atRoot || !mayWrite ? (
             <Typography sx={{ fontSize: 28, fontWeight: 500 }} data-testid="organisation-name">
               {heading}
             </Typography>
@@ -455,6 +479,7 @@ export function OrganisationScreen({
                 { page: 'technology', ...(pages.technology.landscapeId ? { id: pages.technology.landscapeId } : {}) },
               )}
               onOpenDocumentation={() => organisation.open(at, { page: 'documentation' })}
+              writable={mayWrite}
               s={s}
             />}
           </Box>
@@ -484,6 +509,7 @@ export function OrganisationScreen({
               onAddMap={() => organisation.open(at, { page: 'map' })}
               onAddTechnology={() => organisation.open(at, { page: 'technology' })}
               onDelete={(board) => organisation.askDeleteBoard(at, board)}
+              readOnly={!mayWrite}
               language={language}
               s={s}
             />
@@ -520,13 +546,16 @@ export function OrganisationScreen({
                   </ToggleButtonGroup>
                 </>
               )}
-              {/* The one way to a new scope, on the home it is filed under. */}
-              <Button
-                size="small" variant="contained" onClick={() => organisation.addUnder(at)}
-                data-testid="new-scope" data-guide="org.newScope"
-              >
-                {s('picker.newScope')}
-              </Button>
+              {/* The one way to a new scope, on the home it is filed under —
+                  for somebody who may write here. */}
+              {mayWrite && (
+                <Button
+                  size="small" variant="contained" onClick={() => organisation.addUnder(at)}
+                  data-testid="new-scope" data-guide="org.newScope"
+                >
+                  {s('picker.newScope')}
+                </Button>
+              )}
             </Stack>
             <ScopeTree
               tree={ordered}
@@ -536,6 +565,8 @@ export function OrganisationScreen({
               onHome={onGoHome}
               onSettings={organisation.editScope}
               onDelete={organisation.askDelete}
+              writable={writable}
+              landscape={level === 'landscape' || home.kind === 'landscape'}
               language={language}
               s={s}
             />
@@ -545,7 +576,7 @@ export function OrganisationScreen({
               organisation holds a view or a scope, an offer to copy one in
               beside the real work is a way to file an example under it by
               accident, so the section goes. */}
-          {atRoot && examples.length > 0 && holdsNothing(tree) && (
+          {atRoot && mayWrite && examples.length > 0 && holdsNothing(tree) && (
             <>
               <Divider sx={{ my: 3 }} />
               <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, mb: 1, textTransform: 'uppercase' }}>
@@ -583,9 +614,11 @@ export function OrganisationScreen({
         onClose={() => setRegisterOpen(false)}
         rows={registerHere}
         organisation={heading}
+        scopeName={registerScopeName}
         onOpen={onOpenRegisterRow}
         onOpenPage={onOpenRegisterPage}
         onLink={onLinkFromRegister}
+        readOnly={!mayWrite}
         s={s}
         windowChrome={pageChrome}
       />
@@ -594,6 +627,7 @@ export function OrganisationScreen({
         onClose={() => setTechnologyOpen(false)}
         rows={technologyHere}
         organisation={heading}
+        scopeName={registerScopeName}
         onOpen={onOpenRegisterRow}
         onOpenPage={onOpenRegisterPage}
         s={s}
@@ -653,6 +687,9 @@ export function OrganisationScreen({
     </Box>
   )
 }
+
+/** Every scope may be written: what a screen is told by every source that ships. */
+const ANYWHERE = () => true
 
 /**
  * What to call the board. One field, filled in with the usual name, so Enter
@@ -789,7 +826,8 @@ function OrganisationBar({
   onChooseWorkingDirectory?: () => void
   waysIn?: readonly SourceWayIn[]
   onGoHome: (path: ScopePath) => void
-  onSettings: () => void
+  /** Absent for somebody who may only read this scope: its record is not theirs to change. */
+  onSettings?: () => void
   overflow?: ToolbarOverflow
   agent?: ToolbarAgent
   s: Translate
@@ -822,11 +860,13 @@ function OrganisationBar({
       <Typography sx={{ fontSize: 11, color: 'text.secondary', whiteSpace: 'nowrap' }}>
         {s(SCOPE_KIND_LABEL[home.kind ?? level])}
       </Typography>
-      <Tooltip title={s('group.openFor', { name: heading })}>
-        <Button size="small" color="inherit" onClick={onSettings} sx={quiet}>
-          {s('group.open')}
-        </Button>
-      </Tooltip>
+      {onSettings && (
+        <Tooltip title={s('group.openFor', { name: heading })}>
+          <Button size="small" color="inherit" onClick={onSettings} sx={quiet}>
+            {s('group.open')}
+          </Button>
+        </Tooltip>
+      )}
 
       <Box sx={{ flex: 1 }} />
 

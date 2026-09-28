@@ -10,11 +10,11 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
-  addDays, elementsWithRole, findTransition, isTransitionFinished, nextTransitionNumber, setTransitionStatus,
-  shiftDays, sortTransitions, transitionDays, transitionLabel, transitionsForElement,
+  addDays, elementsWithRole, findTransition, isTransitionFinished, nextTransitionNumber, openPlanItems, planGate,
+  setTransitionStatus, shiftDays, sortTransitions, statusPatch, transitionDays, transitionLabel, transitionsForElement,
   transitionsFrom,
 } from './transition'
-import type { Transition, TransitionStatus } from './transition'
+import type { PlanGateContext, Transition, TransitionStatus } from './transition'
 
 function plan(over: Partial<Transition> = {}): Transition {
   return {
@@ -174,5 +174,62 @@ describe('addDays', () => {
 
   it('goes backwards', () => {
     expect(addDays('2027-01-01', -1)).toBe('2026-12-31')
+  })
+})
+
+describe('the gates (ADR-0009, amended 28 September 2026)', () => {
+  const dated: Record<string, { lifecycleDates?: Record<string, string> }> = {
+    'wms-new': { lifecycleDates: { live: '2027-04-01' } },
+    'wms-old': { lifecycleDates: { retired: '2028-01-31' } },
+    billing: {},
+  }
+  const context = (over: Partial<PlanGateContext> = {}): PlanGateContext => ({
+    decisions: [{ id: 'adr-4', status: 'accepted' }],
+    element: (id) => dated[id],
+    unported: () => 0,
+    today: '2027-02-01',
+    ...over,
+  })
+
+  it('agrees to a plan with a window, an owner, something it names and accepted decisions', () => {
+    expect(openPlanItems(planGate(plan({ status: 'draft' }), 'agreed', context()))).toEqual([])
+    const bare = plan({ status: 'draft', from: undefined, owner: ' ', elements: [], decisions: ['adr-4'] })
+    expect(openPlanItems(planGate(bare, 'agreed', context({ decisions: [{ id: 'adr-4', status: 'proposed' }] }))))
+      .toEqual(['window', 'owner', 'names', 'decisions'])
+    expect(openPlanItems(planGate(plan({ status: 'draft', to: '2026-01-01' }), 'agreed', context()))).toEqual(['window'])
+  })
+
+  it('does not hold a record it cannot see against a plan, where the caller says so', () => {
+    const elsewhere = plan({ status: 'draft', decisions: ['from-above'] })
+    expect(openPlanItems(planGate(elsewhere, 'agreed', context()))).toEqual(['decisions'])
+    expect(openPlanItems(planGate(elsewhere, 'agreed', context({ partial: true })))).toEqual([])
+  })
+
+  it('starts a plan only once its From has come, and does not ask without a clock', () => {
+    expect(openPlanItems(planGate(plan(), 'running', context({ today: '2026-12-31' })))).toEqual(['started'])
+    expect(openPlanItems(planGate(plan(), 'running', context({ today: undefined })))).toEqual([])
+  })
+
+  it('calls a plan done when what it introduces and retires is dated and every interface has moved', () => {
+    const running = plan({ status: 'running' })
+    expect(openPlanItems(planGate(running, 'done', context()))).toEqual([])
+    expect(openPlanItems(planGate(running, 'done', context({ element: () => ({}), unported: () => 2 }))))
+      .toEqual(['introducedLive', 'retiredDated', 'interfacesPorted'])
+  })
+
+  it('gates only the forward moves: back, abandoning and reopening are always open', () => {
+    expect(planGate(plan({ status: 'running' }), 'agreed', context())).toBeUndefined()
+    expect(planGate(plan({ status: 'agreed' }), 'abandoned', context())).toBeUndefined()
+    expect(planGate(plan({ status: 'done' }), 'running', context())).toBeUndefined()
+    expect(openPlanItems(undefined)).toEqual([])
+  })
+
+  it('records the day a plan is done, and clears it when it is reopened', () => {
+    expect(statusPatch(plan({ status: 'running' }), 'done', '2027-11-30')).toEqual({ status: 'done', doneOn: '2027-11-30' })
+    expect(statusPatch(plan({ status: 'done', doneOn: '2027-11-30' }), 'running', 'd')).toEqual({ status: 'running', doneOn: undefined })
+    expect(statusPatch(plan({ status: 'draft' }), 'agreed', 'd')).toEqual({ status: 'agreed' })
+    const done = setTransitionStatus(plan({ status: 'running' }), 'done', '2027-11-30')
+    expect(done.doneOn).toBe('2027-11-30')
+    expect(setTransitionStatus(done, 'running', '2027-12-01')).not.toHaveProperty('doneOn')
   })
 })

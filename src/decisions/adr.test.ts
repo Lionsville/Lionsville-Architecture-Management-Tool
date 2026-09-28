@@ -9,8 +9,9 @@
 import { describe, expect, it } from 'vitest'
 import { translator } from '../i18n'
 import {
-  adrsFor, formatAdrNumber, isAdr, isAdrDeletable, isAdrLocked, madrTemplate, newAdr, nextAdrNumber,
-  removeAdr, setAdrStatus, sortAdrs, transitionAdr, transitionsFrom, updateAdr,
+  adrGate, adrOpenItems, adrsFor, formatAdrNumber, isAdr, isAdrDeletable, isAdrLocked, madrTemplate, newAdr,
+  nextAdrNumber, removeAdr, selfAccepted, setAdrStatus, sortAdrs, supersededByUnaccepted, transitionAdr,
+  transitionsFrom, updateAdr,
 } from './adr'
 import type { Adr } from './adr'
 
@@ -22,6 +23,16 @@ function adr(over: Partial<Adr> = {}): Adr {
     body: '## Context\n\nText.', signers: [], ...over,
   }
 }
+
+/** A body the gate to accepted is satisfied with. */
+const DECIDED = [
+  '## Context and Problem Statement', '', 'Orders are queued twice, and nobody knows which queue is right.', '',
+  '## Considered Options', '', '* One queue', '* Two queues — as today', '',
+  '## Decision Outcome', '', 'Chosen option: “One queue”, because there is one place to look.', '',
+  '### Consequences', '', '* Good, because a lost order is found in one place.', '* Bad, because …', '',
+].join('\n')
+
+const approved = [{ name: 'Kim', verdict: 'approved' as const, signedAt: '2026-09-02' }]
 
 describe('numbering', () => {
   it('pads to four digits under an ADR- prefix', () => {
@@ -62,8 +73,8 @@ describe('a new record', () => {
 })
 
 describe('the state machine', () => {
-  it('goes proposed → reviewing → accepted | rejected, and review may go back', () => {
-    expect(transitionsFrom('proposed')).toEqual(['reviewing'])
+  it('goes proposed → reviewing → accepted | rejected, a proposal may be withdrawn, and review may go back', () => {
+    expect(transitionsFrom('proposed')).toEqual(['reviewing', 'rejected'])
     expect(transitionsFrom('reviewing')).toEqual(['accepted', 'rejected', 'proposed'])
   })
 
@@ -124,10 +135,23 @@ describe('the list', () => {
     expect(next[1]).toBe(list[1])
   })
 
-  it('supersedes only with a successor that is in the same list', () => {
+  it('supersedes only with a successor that is in the same list, and accepted', () => {
     expect(setAdrStatus(list, 'adr-b', 'superseded', 'd', { supersededBy: 'elsewhere' })[1].status).toBe('accepted')
-    const next = setAdrStatus(list, 'adr-b', 'superseded', 'd', { supersededBy: 'adr-a' })
-    expect(next[1]).toMatchObject({ status: 'superseded', supersededBy: 'adr-a' })
+    // A proposal cannot replace a decision in force: rejected later, it would
+    // leave nothing accepted and both records locked.
+    expect(setAdrStatus(list, 'adr-b', 'superseded', 'd', { supersededBy: 'adr-a' })[1].status).toBe('accepted')
+    const both = [adr({ status: 'accepted' }), list[1]]
+    const next = setAdrStatus(both, 'adr-b', 'superseded', 'd', { supersededBy: 'adr-a' })
+    expect(next[1]).toMatchObject({ status: 'superseded', supersededBy: 'adr-a', date: 'd' })
+  })
+
+  it('takes supersedes and a proposer while the record is written, and drops them when emptied', () => {
+    const named = updateAdr(list, 'adr-a', { supersedes: ['adr-b', 'adr-b', 'adr-a'], proposedBy: ' Kim ' })
+    expect(named[0]).toMatchObject({ supersedes: ['adr-b'], proposedBy: 'Kim' })
+    const cleared = updateAdr(named, 'adr-a', { supersedes: [], proposedBy: ' ' })
+    expect(cleared[0]).not.toHaveProperty('supersedes')
+    expect(cleared[0]).not.toHaveProperty('proposedBy')
+    expect(updateAdr(list, 'adr-b', { supersedes: ['adr-a'] })[1]).toBe(list[1])
   })
 
   it('removes a working record and drops links that pointed at it', () => {
@@ -158,10 +182,99 @@ describe('the list', () => {
   })
 })
 
+describe('the gate', () => {
+  const reviewing = (over: Partial<Adr> = {}) => adr({ status: 'reviewing', body: DECIDED, signers: approved, ...over })
+
+  it('lets a written, approved record be accepted', () => {
+    expect(adrOpenItems(adrGate(reviewing(), 'accepted'))).toEqual([])
+    const moved = setAdrStatus([reviewing()], 'adr-a', 'accepted', '2026-09-03')
+    expect(moved[0]).toMatchObject({ status: 'accepted', date: '2026-09-03' })
+  })
+
+  it('names every line the untouched template leaves open', () => {
+    const fresh = newAdr({ id: 'x', number: 1, title: 'T', date: 'd', t: en })
+    expect(adrOpenItems(adrGate({ ...fresh, status: 'reviewing' }, 'accepted')))
+      .toEqual(['context', 'options', 'outcome', 'consequence', 'approved'])
+    expect(setAdrStatus([{ ...fresh, status: 'reviewing' }], 'x', 'accepted', 'd')[0].status).toBe('reviewing')
+  })
+
+  it('recognises the template in every language, whatever language is on screen now', () => {
+    for (const language of ['en', 'nl', 'de'] as const) {
+      const body = madrTemplate(translator(language))
+      expect(adrOpenItems(adrGate(reviewing({ body }), 'accepted'))).toEqual(['context', 'options', 'outcome', 'consequence'])
+    }
+  })
+
+  it('wants an outcome that names one of the options', () => {
+    const elsewhere = DECIDED.replace('“One queue”', '“A third way”')
+    expect(adrOpenItems(adrGate(reviewing({ body: elsewhere }), 'accepted'))).toEqual(['outcome'])
+  })
+
+  it('wants an approval and no rejection', () => {
+    expect(adrOpenItems(adrGate(reviewing({ signers: [] }), 'accepted'))).toEqual(['approved'])
+    const split = [...approved, { name: 'Ali', verdict: 'rejected' as const }]
+    expect(adrOpenItems(adrGate(reviewing({ signers: split }), 'accepted'))).toEqual(['approved'])
+  })
+
+  it('withdraws a proposal only with a reason, and keeps the reason and the number', () => {
+    const list = [adr()]
+    expect(setAdrStatus(list, 'adr-a', 'rejected', 'd')[0].status).toBe('proposed')
+    expect(setAdrStatus(list, 'adr-a', 'rejected', 'd', { reason: '  ' })[0].status).toBe('proposed')
+    const withdrawn = setAdrStatus(list, 'adr-a', 'rejected', 'd', { reason: 'Overtaken by the merger.' })[0]
+    expect(withdrawn).toMatchObject({ status: 'rejected', number: 1, reason: 'Overtaken by the merger.' })
+  })
+
+  it('rejects from review on a rejecting signer, or on a reason', () => {
+    const turnedDown = [adr({ status: 'reviewing', signers: [{ name: 'Ali', verdict: 'rejected' }] })]
+    expect(setAdrStatus(turnedDown, 'adr-a', 'rejected', 'd')[0].status).toBe('rejected')
+    expect(setAdrStatus([adr({ status: 'reviewing' })], 'adr-a', 'rejected', 'd')[0].status).toBe('reviewing')
+  })
+
+  it('accepting a successor supersedes what it names, in the same step', () => {
+    const old = adr({ id: 'old', number: 1, status: 'accepted' })
+    const other = adr({ id: 'other', number: 2, status: 'accepted' })
+    const successor = reviewing({ id: 'new', number: 3, supersedes: ['old'] })
+    const next = setAdrStatus([old, other, successor], 'new', 'accepted', '2026-09-04')
+    expect(next.map((one) => one.status)).toEqual(['superseded', 'accepted', 'accepted'])
+    expect(next[0]).toMatchObject({ supersededBy: 'new', date: '2026-09-04' })
+  })
+
+  it('will not accept a successor that names a record not in force', () => {
+    const old = adr({ id: 'old', number: 1, status: 'rejected' })
+    const successor = reviewing({ id: 'new', number: 2, supersedes: ['old'] })
+    expect(adrOpenItems(adrGate(successor, 'accepted', { list: [old, successor] }))).toEqual(['predecessors'])
+    expect(setAdrStatus([old, successor], 'new', 'accepted', 'd')[1].status).toBe('reviewing')
+  })
+
+  it('rejecting a successor leaves what it named accepted', () => {
+    const old = adr({ id: 'old', number: 1, status: 'accepted' })
+    const successor = adr({ id: 'new', number: 2, status: 'reviewing', supersedes: ['old'] })
+    const next = setAdrStatus([old, successor], 'new', 'rejected', 'd', { reason: 'Not now.' })
+    expect(next.map((one) => one.status)).toEqual(['accepted', 'rejected'])
+  })
+
+  it('says when the only approval is the proposer’s own', () => {
+    expect(selfAccepted({ proposedBy: 'Kim', signers: approved })).toBe(true)
+    expect(selfAccepted({ proposedBy: ' kim ', signers: approved })).toBe(true)
+    expect(selfAccepted({ proposedBy: 'Kim', signers: [...approved, { name: 'Ali', verdict: 'approved' }] })).toBe(false)
+    expect(selfAccepted({ signers: approved })).toBe(false)
+  })
+
+  it('finds a record superseded by something that is not in force', () => {
+    const broken = adr({ id: 'old', status: 'superseded', supersededBy: 'new' })
+    expect(supersededByUnaccepted(broken, [broken, adr({ id: 'new', status: 'proposed' })])).toBe(true)
+    expect(supersededByUnaccepted(broken, [broken])).toBe(true)
+    expect(supersededByUnaccepted(broken, [broken, adr({ id: 'new', status: 'accepted' })])).toBe(false)
+    expect(supersededByUnaccepted(adr(), [adr()])).toBe(false)
+  })
+})
+
 describe('reading a record back out of storage', () => {
   it('accepts the shape this module writes', () => {
     expect(isAdr(adr())).toBe(true)
     expect(isAdr(adr({ signers: [{ name: 'K', role: 'CTO', verdict: 'approved', signedAt: '2026-09-01' }] }))).toBe(true)
+    expect(isAdr(adr({ supersedes: ['adr-b'], proposedBy: 'Kim', reason: 'Why.' }))).toBe(true)
+    expect(isAdr({ ...adr(), supersedes: 'adr-b' })).toBe(false)
   })
 
   it('refuses a status or a verdict outside the vocabulary, and a missing body', () => {

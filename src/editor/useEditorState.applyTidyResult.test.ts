@@ -450,3 +450,76 @@ describe('applyTidyResult (no second preserve filter)', () => {
     expect(edgeRoutesOf(result.current.model.diagrams[0])).toEqual(before);
   });
 });
+
+/**
+ * A board a machine wrote carries `needsLayout`. The pass that lays it out
+ * clears the flag in the SAME step as its placements, so that wherever the
+ * step is carried the clearing goes with it — a clearing of its own was a
+ * change nothing carried, and the board was laid out again on every open.
+ */
+function flaggedModel(): DesignModel {
+  return {
+    ...modelWithCanvas(),
+    diagrams: modelWithCanvas().diagrams.map((diagram) => ({
+      ...diagram,
+      geometry: { ...diagram.geometry, needsLayout: true },
+    })),
+  };
+}
+
+describe('applyTidyResult (settling a machine-written board)', () => {
+  it('clears the flag in the same step as the placements and the canvas', () => {
+    const { result, host } = renderEditorState(flaggedModel(), { activeDiagramId: 'd1' });
+    act(() => {
+      result.current.actions.applyTidyResult({
+        placements: [{ id: 'e1', zone: 'landscape', x: 800, y: 600 }],
+        domainGroups: [],
+        canvas: { width: 2400, height: 1600 },
+      });
+    });
+    expect(host.current.commands).toHaveLength(1);
+    expect(commandTypes(host.current.commands[0])).toEqual(['transaction', 'board.set']);
+    const board = host.current.commands[0].type === 'transaction'
+      ? host.current.commands[0].commands.find((c) => c.type === 'board.set')
+      : undefined;
+    expect(board?.type === 'board.set' && 'needsLayout' in board.patch).toBe(true);
+    expect(result.current.model.diagrams[0].geometry?.needsLayout).toBeUndefined();
+    expect(result.current.model.diagrams[0].geometry?.canvas).toEqual({ width: 2400, height: 1600 });
+
+    // One undo puts the board back as the machine wrote it, flag and all.
+    act(() => result.current.undo());
+    expect(result.current.model.diagrams[0].geometry?.needsLayout).toBe(true);
+  });
+
+  it('carries the mark it was handed on the step', () => {
+    const { result, host } = renderEditorState(flaggedModel(), { activeDiagramId: 'd1' });
+    act(() => {
+      result.current.actions.applyTidyResult(
+        { placements: [{ id: 'e1', zone: 'landscape', x: 800, y: 600 }], domainGroups: [] },
+        undefined,
+        { unattended: true },
+      );
+    });
+    expect(host.current.commands[0].unattended).toBe(true);
+  });
+
+  it('leaves the flag alone for a pass over one group', () => {
+    const { result } = renderEditorState(flaggedModel(), { activeDiagramId: 'd1' });
+    act(() => {
+      result.current.actions.applyTidyResult({
+        placements: [{ id: 'e1', zone: 'landscape', x: 800, y: 600 }],
+        domainGroups: [],
+        partial: true,
+      });
+    });
+    expect(result.current.model.diagrams[0].geometry?.needsLayout).toBe(true);
+  });
+
+  it('leaves the flag alone for a pass that placed nothing', () => {
+    const { result } = renderEditorState(flaggedModel(), { activeDiagramId: 'd1' });
+    act(() => {
+      result.current.actions.applyTidyResult({ placements: [], domainGroups: [], canvas: { width: 2400, height: 1600 } });
+    });
+    expect(result.current.model.diagrams[0].geometry?.needsLayout).toBe(true);
+  });
+});

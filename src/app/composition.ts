@@ -75,7 +75,8 @@ import type { WorkingSource } from '../platform/workingSource'
 import type { HookInvoke } from '../platform/desktopHook'
 import type {
   SourceChip as ProviderChip,
-  SourceConnect, SourceFailure, SourceLanding, SourceProvider, SourceStatus, SourceWork, SourceWorkChanged,
+  SourceConnect, SourceFailure, SourceLanding, SourceProvider, SourceRecentActivity, SourceStatus, SourceWork,
+  SourceWorkChanged,
 } from '../platform/sourceProvider'
 import type { StringKey } from '../i18n/strings'
 import type {
@@ -505,6 +506,25 @@ export function sourceAgentPanel(source: WorkingSource): SourceAgentPanel | unde
  */
 export function sourceChipPanel(source: WorkingSource): SourceChipPanel | undefined {
   return source.kind === 'registered' ? sourceProvider(source.provider)?.chipPanel : undefined
+}
+
+/**
+ * The open source's log of a scope, where its provider keeps one: the Activity
+ * list then shows everybody's steps rather than this window's alone. The open
+ * source's only, because the log is of the scopes that source holds. Nothing
+ * for the three that ship.
+ */
+export function sourceRecentActivity(source: WorkingSource): SourceRecentActivity | undefined {
+  return source.kind === 'registered' ? sourceProvider(source.provider)?.recentActivity : undefined
+}
+
+/**
+ * Whether the open source's far end can be asked anything now, where its
+ * provider says (`SourceProvider.connected`). Nothing for the three that ship,
+ * and a read is then never held back.
+ */
+export function sourceConnected(source: WorkingSource): (() => boolean) | undefined {
+  return source.kind === 'registered' ? sourceProvider(source.provider)?.connected : undefined
 }
 
 /**

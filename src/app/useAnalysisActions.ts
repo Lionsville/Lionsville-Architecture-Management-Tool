@@ -11,13 +11,14 @@
 import { useCallback } from 'react'
 import type { Translate } from '../i18n'
 import {
-  causeList, causesToCommands, decisionList, decisionsToCommands, experimentsToCommands, nextTransitionNumber,
-  observationsToCommands, replacement, solutionList, solutionsOf, solutionsToCommands, transaction, transitionList,
+  causeList, causesToCommands, decisionList, decisionsToCommands, experimentList, experimentsToCommands,
+  nextTransitionNumber, observationList, observationsToCommands, replacement, solutionList, solutionsOf,
+  solutionsToCommands, transaction, transitionList,
 } from '../model'
 import { newAdr, nextAdrNumber } from '../decisions/adr'
 import type { Adr } from '../decisions/adr'
 import type { ObservationWork } from '../observations/ui/ObservationsPage'
-import { decisionContext, linkRecord } from '../observations/solution'
+import { decisionBody, linkRecord } from '../observations/solution'
 import { planBodyTemplate } from '../roadmap/planTemplate'
 import type { MakeId } from './useDiagramActions'
 import type { ModelSession } from './useModelSession'
@@ -53,8 +54,10 @@ export function useAnalysisActions(deps: {
 
   /**
    * A solution's decision record, proposed from the Solutions tab (ADR-0026):
-   * a new record on the Decisions page, its context written from what the
-   * solution addresses and what else was considered, and the link — one step.
+   * a new record on the Decisions page, every section written from the
+   * records — what it addresses, what else was considered, what proved it,
+   * what it brings and costs, what should stop being seen — and the link,
+   * one step.
    */
   const onDecideSolution = useCallback((solutionId: string) => {
     const indexed = session.indexed()
@@ -62,8 +65,10 @@ export function useAnalysisActions(deps: {
     if (!solution || solution.decision) return
     const day = today()
     const adr = newAdr({ id: makeId('adr'), number: nextAdrNumber(decisionList(indexed)), title: solution.title, date: day, t: s })
-    const opening = adr.body.indexOf('\n\n') + 2
-    adr.body = `${adr.body.slice(0, opening)}${decisionContext(solution, causeList(indexed), solutionList(indexed), s)}\n${adr.body.slice(opening)}`
+    adr.body = decisionBody(solution, {
+      causes: causeList(indexed), solutions: solutionList(indexed), experiments: experimentList(indexed),
+      observations: observationList(indexed),
+    }, s)
     const [linked] = linkRecord([solution], solutionId, 'decision', adr.id, day)
     session.dispatch(transaction([
       { type: 'decision.add', decision: adr },

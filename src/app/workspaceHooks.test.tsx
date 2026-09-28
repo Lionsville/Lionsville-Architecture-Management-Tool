@@ -18,6 +18,7 @@ import { decisionList, solutionsOf } from '../model'
 import type { DesignElement, Solution } from '../model'
 import type { HostModel } from '../model/hostModel'
 import type { ScopeSnapshot } from '../projects/scope'
+import { scopeTree } from '../projects/scope'
 import { indexScopes } from '../projects/scopeIndex'
 import { useModelSession } from './useModelSession'
 import { useAnalysisActions } from './useAnalysisActions'
@@ -218,6 +219,19 @@ describe('what the tree says about this scope', () => {
     expect(read('Northwind').scopeLabel('north')).toBe('north')
     expect(read('Northwind').scopeLabel('')).toBe('Northwind')
     expect(read('').scopeLabel('')).toBe(s('common.organisation'))
+  })
+
+  it('calls a scope by its own name where the listing has one, the root included', () => {
+    const scopes = scopeTree([
+      { path: '', name: 'Northwind', diagrams: 0, children: [] },
+      { path: 'north', name: 'North region', diagrams: 1, children: [] },
+    ])
+    const readings = renderHook(() => useTreeReadings({
+      index, scope: 'north/south', elements: model().elements, groupName: '', scopes, s,
+    })).result.current
+    expect(readings.scopeLabel('north')).toBe('North region')
+    expect(readings.scopeLabel('')).toBe('Northwind')
+    expect(readings.scopeLabel('north/unlisted')).toBe('unlisted')
   })
 
   it('says where a column is answered for only when that is another scope', () => {

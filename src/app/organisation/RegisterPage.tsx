@@ -73,6 +73,13 @@ type PageProps<R> = {
   /** What the root is called on screen, since its path is the empty string. */
   organisation: string
   /**
+   * What any scope is called on screen — *Kept in*, the scopes a row is drawn
+   * in, the scope a finding names. Its own name out of the listing
+   * (`scopeDisplayName`); where the caller gives none, the path, and the
+   * organisation's name for the root.
+   */
+  scopeName?: (path: ScopePath) => string
+  /**
    * Open the scope that answers for a row, with the element selected. Through
    * the shell's own open, never through the store: entering a scope is the
    * shell's act.
@@ -165,7 +172,7 @@ type RegisterConfig<R extends Listed, Order extends string, Summary> = {
     header: StringKey
     /** The column's stable name, where it has one (`CONTROL_NAMES`). */
     named?: string
-    cell(row: R, s: Translate, organisation: string): ReactNode
+    cell(row: R, s: Translate, scopeName: (path: ScopePath) => string): ReactNode
   }[]
   /** Beside the name, where the row says what sort of thing it is. */
   badge?(row: R, s: Translate): ReactNode
@@ -210,10 +217,10 @@ const APPLICATIONS: RegisterConfig<RegisterRow, 'name' | 'scope', RegisterSummar
     {
       header: 'register.colDrawn',
       named: 'register.colDrawn',
-      cell: (row, s, organisation) => (row.drawnIn.length === 0 ? (
+      cell: (row, s, scopeName) => (row.drawnIn.length === 0 ? (
         <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{s('register.drawnNowhere')}</Typography>
       ) : (
-        <Tooltip title={row.drawnIn.map((path) => path || organisation).join(' · ')}>
+        <Tooltip title={row.drawnIn.map(scopeName).join(' · ')}>
           <Typography sx={{ fontSize: 12, cursor: 'default' }}>
             {plural(s, { one: 'register.drawnOne', other: 'register.drawnOther' }, row.drawnIn.length)}
           </Typography>
@@ -230,6 +237,8 @@ const APPLICATIONS: RegisterConfig<RegisterRow, 'name' | 'scope', RegisterSummar
 }
 
 const quiet = { fontSize: 12, color: 'text.secondary' } as const
+/** The findings column's width at most, in pixels: its chips wrap inside it rather than widen the table. */
+const FINDINGS_CELL_MAX = 220
 const names = (held: readonly { name: string }[]) => held.map((one) => one.name).join(', ')
 const isService = (row: TechnologyRow) => row.kind === 'platformService'
 
@@ -333,7 +342,7 @@ function Register<R extends Listed, Order extends string, Summary>(props: PagePr
   onLink?: RegisterPageProps['onLink']
   readOnly?: boolean
 }) {
-  const { config, open, onClose, rows, organisation, onOpen, onOpenPage, onLink, readOnly = false, s } = props
+  const { config, open, onClose, rows, organisation, scopeName, onOpen, onOpenPage, onLink, readOnly = false, s } = props
   const chrome = props.windowChrome ?? NO_WINDOW_CHROME
   const bar = barChromeFor(chrome)
   const [query, setQuery] = useState('')
@@ -344,8 +353,9 @@ function Register<R extends Listed, Order extends string, Summary>(props: PagePr
     [config, rows, query, order],
   )
   const summary = useMemo(() => config.summarise(rows), [config, rows])
+  const named = (path: ScopePath) => (scopeName ? scopeName(path) : path || organisation)
   const label = (path: ScopePath | undefined) => (
-    path === undefined ? s('register.nobody') : path || organisation
+    path === undefined ? s('register.nobody') : named(path)
   )
 
   const counts = config.counts.map((count) => plural(s, count, count.of(summary))).join(' · ')
@@ -374,7 +384,7 @@ function Register<R extends Listed, Order extends string, Summary>(props: PagePr
             config={config}
             row={row}
             label={label}
-            organisation={organisation}
+            scopeName={named}
             onOpen={onOpen}
             onOpenPage={onOpenPage}
             onLink={readOnly ? undefined : onLink}
@@ -469,11 +479,11 @@ function findingLine<Summary>(
   return parts.length ? parts.join(' · ') : s(config.settled)
 }
 
-function Row<R extends Listed, Order extends string, Summary>({ config, row, label, organisation, onOpen, onOpenPage, onLink, s }: {
+function Row<R extends Listed, Order extends string, Summary>({ config, row, label, scopeName, onOpen, onOpenPage, onLink, s }: {
   config: RegisterConfig<R, Order, Summary>
   row: R
   label: (path: ScopePath | undefined) => string
-  organisation: string
+  scopeName: (path: ScopePath) => string
   onOpen?: Open
   onOpenPage?: Open
   onLink?: RegisterPageProps['onLink']
@@ -500,8 +510,10 @@ function Row<R extends Listed, Order extends string, Summary>({ config, row, lab
         data-testid={`${prefix}-page-${row.id}`}
         onClick={() => onOpenPage(row.master!, row.id)}
         sx={{
-          fontSize: 13, fontWeight: 600, p: 0, border: 0, bgcolor: 'transparent',
-          color: 'text.primary', cursor: 'pointer', textAlign: 'left', font: 'inherit',
+          // `font` first: the shorthand resets the size and the weight, so
+          // said after them it undid both.
+          font: 'inherit', fontSize: 13, fontWeight: 600, p: 0, border: 0, bgcolor: 'transparent',
+          color: 'text.primary', cursor: 'pointer', textAlign: 'left',
           '&:hover': { color: 'primary.main', textDecoration: 'underline' },
         }}
       >
@@ -546,9 +558,12 @@ function Row<R extends Listed, Order extends string, Summary>({ config, row, lab
         </Typography>
       </Box>
       {config.columns.map((column) => (
-        <Box component="td" key={column.header}>{column.cell(row, s, organisation)}</Box>
+        <Box component="td" key={column.header}>{column.cell(row, s, scopeName)}</Box>
       ))}
-      <Box component="td">
+      {/* Capped, and each chip's words wrap inside it: a finding is a
+          sentence, and a chip that would not wrap pushed the table past its
+          page. */}
+      <Box component="td" sx={{ maxWidth: FINDINGS_CELL_MAX }}>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
           {chips.map((chip) => (
             <Chip
@@ -557,7 +572,10 @@ function Row<R extends Listed, Order extends string, Summary>({ config, row, lab
               color={config.warning.has(chip.key) ? 'warning' : 'default'}
               variant="outlined"
               label={chip.text}
-              sx={{ height: 20, fontSize: 10 }}
+              sx={{
+                height: 'auto', minHeight: 20, maxWidth: '100%', fontSize: 10,
+                '& .MuiChip-label': { whiteSpace: 'normal', overflowWrap: 'anywhere', py: 0.25 },
+              }}
             />
           ))}
         </Box>

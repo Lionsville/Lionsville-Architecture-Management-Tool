@@ -291,7 +291,9 @@ canvas can read them without knowing plans exist. What it offers instead is a
 transaction of `transition.update` plus the `element.update`s for the dates it
 introduced. One undo step, because a plan slipping is one thing that happened.
 
-**It does not lock, and a decision does.** `updateAdr` refuses an accepted,
+**It does not lock, and a decision does.** *(Amended 28 September 2026: a
+plan's forward moves now have a gate, which is not a lock. See the amendment
+below.)* `updateAdr` refuses an accepted,
 rejected or superseded record because a decision records a moment and a record
 that can be rewritten is not a record of one. A plan describes work, and work
 changes; `done` and `abandoned` end it for the roadmap's purposes and edit
@@ -567,6 +569,34 @@ Each has a recommendation, which the implementer takes unless told otherwise.
   spanning projects has no home; `GroupProfile` carries decisions and could
   carry transitions. *Recommended: out of scope. Revisit when a real one
   exists, not before.*
+
+## Amended 28 September 2026 — a gate on each forward move, and the day it was done
+
+A plan with no window, no owner, nothing it changes and nothing decided could
+be agreed, run and called done; the page sent the status as a raw patch, and
+`plan.create` took any status it was given. Three changes.
+
+* **A gate on the three forward moves.** `planGate(plan, to, context)` in
+  `model/transition.ts` answers with a checklist. *Agreed*: From and To are set
+  and To is not before From, an owner, something it introduces, retires or
+  changes, and every decision record it rests on accepted — a plan resting on
+  a proposal has agreed to something nobody decided. *Running*: the same, and
+  From has come. *Done*: everything it introduces has a day it goes live,
+  everything it retires a day it is gone, and no interface is left without a
+  day it moves. Back, abandoning and reopening have no gate. The page greys out
+  a status whose gate is not clear and shows what it waits for; the agent is
+  answered with the open lines; and `plan.create` makes a draft and nothing
+  else. The `transition.update` command carries no guard for the gate: a log
+  of steps replayed through the writer must arrive where it did, whatever the
+  rules were the day each step was written (ADR-0008, same amendment). The page
+  also refuses to write a window that runs backwards.
+* **A gate on a move is not a lock.** Everything above still holds: a plan in
+  any status edits freely, and the gate is asked only when its status moves
+  forward.
+* **A plan records the day it was done.** `doneOn` is set on the move to done
+  and cleared when the plan is reopened. `to` is the day the work was meant to
+  end, and a plan finished early or late is common; what came after it is
+  measured from the earlier of the two.
 
 ## More Information
 

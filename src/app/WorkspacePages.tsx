@@ -6,11 +6,15 @@
  * decisions and the observations, the roadmap and a plan on it, and a
  * platform's report and a service's.
  */
+import { useMemo } from 'react'
 import type { ComponentProps } from 'react'
 import { shownAsOf } from '../editor'
 import { AdrPage } from '../decisions/ui/AdrPage'
 import { ObservationsPage } from '../observations/ui/ObservationsPage'
+import { flattenScopes } from '../projects/scope'
+import { scopeDisplayName } from '../projects/scopeLabel'
 import { PlanPage, ReplaceDialog, RoadmapPage } from '../roadmap'
+import { Crumbs } from './ShellToolbar'
 import type {
   PlatformReportPage as PlatformReportShape, ServiceReportPage as ServiceReportShape,
 } from '../technology/ui/ReportPage'
@@ -47,9 +51,15 @@ function imagesOf({ session, pictures, files }: WorkspaceParts) {
 function RecordPages({ parts }: { parts: WorkspaceParts }) {
   const { props, session, pages, snapshots, analysis, readings, pictures, files, readOnly, requests, pageChrome } = parts
   const { s, language, makeId } = props.shell
-  const { groupName, ancestorDecisions } = props.tree
-  const { onOpenScope } = props.navigation
+  const { groupName, ancestorDecisions, scopes } = props.tree
+  const { onOpenScope, crumbs, onGoHome } = props.navigation
   const { plans } = pages
+  // Each scope above by its name in the tree, never its path — and the same
+  // list while nothing changes, because the page re-selects on a new one.
+  const ancestors = useMemo(() => {
+    const listed = flattenScopes(scopes)
+    return ancestorDecisions.map((one) => ({ ...one, name: scopeDisplayName(one.path, listed, groupName) }))
+  }, [ancestorDecisions, scopes, groupName])
   return (
     <>
       <AdrPage
@@ -57,7 +67,16 @@ function RecordPages({ parts }: { parts: WorkspaceParts }) {
         onClose={() => { pages.closeDecisions(); pages.leaveIfNothingToDraw() }}
         model={session.model}
         groupName={groupName}
-        ancestors={ancestorDecisions}
+        ancestors={ancestors}
+        crumbs={(
+          <Crumbs
+            crumbs={crumbs}
+            current={session.model.name}
+            currentPath={props.project.path}
+            onGoHome={(path) => { pages.closeDecisions(); onGoHome(path) }}
+            s={s}
+          />
+        )}
         {...(onOpenScope ? { onOpenScope } : {})}
         onProjectDecisionsChange={analysis.onDecisionsChange}
         initialAdrId={pages.adrPage.adrId}
@@ -72,6 +91,7 @@ function RecordPages({ parts }: { parts: WorkspaceParts }) {
           ? (adrId) => { pages.closeDecisions(); snapshots.openPage({ what: 'decision', id: adrId }) }
           : undefined}
         onOpenPlan={plans.openPlan}
+        onOpenSolution={(solutionId) => { pages.closeDecisions(); pages.openObservations(solutionId) }}
         windowChrome={pageChrome}
       />
       <ObservationsPage
@@ -79,6 +99,7 @@ function RecordPages({ parts }: { parts: WorkspaceParts }) {
         onClose={() => { pages.closeObservations(); pages.leaveIfNothingToDraw() }}
         model={session.model}
         groupName={groupName}
+        crumbs={crumbs}
         shared={readings.sharedBelow}
         scopeLabel={readings.scopeLabel}
         absorbedAbove={readings.absorbedAbove}
@@ -110,6 +131,9 @@ function PlanPages({ parts }: { parts: WorkspaceParts }) {
   const { onOpenScope } = props.navigation
   const { plans } = pages
   const open = session.model.diagrams.find((d) => d.id === session.activeDiagramId)
+  // A plan may rest on a record filed above this scope; its gate reads those too.
+  const { ancestorDecisions } = props.tree
+  const decidedAbove = useMemo(() => ancestorDecisions.flatMap((one) => one.decisions), [ancestorDecisions])
   return (
     <>
       <RoadmapPage
@@ -136,6 +160,7 @@ function PlanPages({ parts }: { parts: WorkspaceParts }) {
         plan={plans.plan}
         model={session.model}
         decisions={session.model.decisions}
+        ancestorDecisions={decidedAbove}
         today={todayDay}
         readOnly={readOnly}
         actions={plans.planActions}

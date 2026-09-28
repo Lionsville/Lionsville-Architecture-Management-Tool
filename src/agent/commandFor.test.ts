@@ -37,6 +37,17 @@ const decision = (id: string, number: number, title: string, status: Adr['status
   ...(subjectId ? { subjectId } : {}),
 })
 
+/** A body and a signature the gate to accepted is satisfied with. */
+const DECIDED = {
+  body: [
+    '## Context and Problem Statement', '', 'Billing runs on two platforms.', '',
+    '## Considered Options', '', '* Kestrel', '* Stay where it is', '',
+    '## Decision Outcome', '', 'Chosen option: \u201cKestrel\u201d, because it is already run.', '',
+    '### Consequences', '', '* Good, because one platform is watched.', '',
+  ].join('\n'),
+  signers: [{ name: 'Ada', verdict: 'approved' as const, signedAt: '2026-09-02' }],
+}
+
 const host: HostModel = {
   name: 'Landscape',
   elements: [
@@ -60,7 +71,7 @@ const host: HostModel = {
   decisions: [
     decision('adr-1', 1, 'Keep the ledger'),
     decision('adr-2', 2, 'Retire the fax', 'accepted'),
-    decision('adr-3', 1, 'Billing on Kestrel', 'reviewing', 'billing'),
+    { ...decision('adr-3', 1, 'Billing on Kestrel', 'reviewing', 'billing'), ...DECIDED },
   ],
 }
 
@@ -432,15 +443,67 @@ describe('the refusals before the reducer', () => {
   })
 
   it('keeps a locked decision locked, and a group’s where it is', () => {
-    expect(refuse('decision.transition', { id: 'adr-2', status: 'superseded', supersededBy: 'adr-1' }))
-      .toMatchObject({ refusal: 'agent.locked' })
+    expect(refuse('decision.transition', { id: 'adr-2', status: 'reviewing' })).toMatchObject({ refusal: 'agent.locked' })
     expect(refuse('decision.transition', { id: 'g-1', status: 'reviewing' })).toMatchObject({ refusal: 'agent.readOnly' })
+  })
+
+  it('supersedes an accepted record, which is the one move a locked record has, by an accepted successor only', () => {
+    // A proposal cannot replace a decision in force.
+    expect(refuse('decision.transition', { id: 'adr-2', status: 'superseded', supersededBy: 'adr-1' }))
+      .toMatchObject({ refusal: 'agent.badArguments', detail: 'the gate to superseded still needs: successor' })
+    const both = fromArrays({
+      ...host,
+      decisions: host.decisions!.map((adr) => (adr.id === 'adr-1' ? { ...adr, status: 'accepted' as const } : adr)),
+    })
+    const out = commandFor('decision.transition', { id: 'adr-2', status: 'superseded', supersededBy: 'adr-1' }, view(both))
+    expect(answerOf(out)).toMatchObject({ id: 'adr-2', status: 'superseded', supersededBy: 'adr-1' })
+    expect(roundTrip(both, out).decisions?.['adr-2']).toMatchObject({ status: 'superseded', supersededBy: 'adr-1', date: '2026-09-07' })
   })
 
   it('follows the status machine, and wants a successor for superseded', () => {
     expect(refuse('decision.transition', { id: 'adr-1', status: 'accepted' }))
-      .toMatchObject({ refusal: 'agent.badArguments', detail: 'proposed can only move to reviewing' })
+      .toMatchObject({ refusal: 'agent.badArguments', detail: 'proposed can only move to reviewing, rejected' })
     expect(refuse('decision.transition', { id: 'adr-3', status: 'superseded' })).toMatchObject({ refusal: 'agent.badArguments' })
+  })
+
+  it('refuses to accept what the gate still misses, and names it', () => {
+    const bare = fromArrays({ ...host, decisions: [decision('adr-9', 9, 'Bare', 'reviewing')] })
+    expect(commandFor('decision.transition', { id: 'adr-9', status: 'accepted' }, view(bare))).toMatchObject({
+      refusal: 'agent.badArguments',
+      detail: 'the gate to accepted still needs: context, options, outcome, consequence, approved',
+    })
+  })
+
+  it('withdraws a proposal with a reason, and not without one', () => {
+    expect(refuse('decision.transition', { id: 'adr-1', status: 'rejected' }))
+      .toMatchObject({ refusal: 'agent.badArguments', detail: 'the gate to rejected still needs: reason' })
+    const out = refuse('decision.transition', { id: 'adr-1', status: 'rejected', reason: 'Overtaken by events.' })
+    expect(answerOf(out)).toMatchObject({ id: 'adr-1', status: 'rejected', reason: 'Overtaken by events.' })
+    expect(roundTrip(model, out).decisions?.['adr-1']).toMatchObject({ status: 'rejected', number: 1, reason: 'Overtaken by events.' })
+  })
+
+  it('accepting a successor supersedes what it names, in one step, successor first', () => {
+    const chain = fromArrays({
+      ...host,
+      decisions: [
+        ...host.decisions!.filter((adr) => adr.id !== 'adr-3'),
+        { ...decision('adr-4', 3, 'Retire the fax, properly', 'reviewing'), ...DECIDED, supersedes: ['adr-2'], proposedBy: 'Ada' },
+      ],
+    })
+    const out = commandFor('decision.transition', { id: 'adr-4', status: 'accepted' }, view(chain))
+    expect(answerOf(out)).toMatchObject({ id: 'adr-4', status: 'accepted', superseded: ['adr-2'], warning: expect.any(String) })
+    const command = prepared(out).command
+    expect(command.type === 'transaction' && command.commands.map((one) => one.type === 'decision.update' && one.id)).toEqual(['adr-4', 'adr-2'])
+    const after = roundTrip(chain, out)
+    expect(after.decisions?.['adr-2']).toMatchObject({ status: 'superseded', supersededBy: 'adr-4' })
+  })
+
+  it('names only accepted records as what a proposal supersedes', () => {
+    expect(refuse('decision.update', { id: 'adr-1', supersedes: ['adr-3'] }))
+      .toMatchObject({ refusal: 'agent.badArguments' })
+    expect(refuse('decision.update', { id: 'adr-1', supersedes: ['adr-1'] })).toMatchObject({ refusal: 'agent.badArguments' })
+    const out = refuse('decision.update', { id: 'adr-1', supersedes: ['adr-2'], proposedBy: 'Ada' })
+    expect(roundTrip(model, out).decisions?.['adr-1']).toMatchObject({ supersedes: ['adr-2'], proposedBy: 'Ada' })
   })
 
   it('numbers a decision after the last one in its own list', () => {
@@ -925,11 +988,11 @@ describe('a plan as a record an agent may write (ADR-0009)', () => {
 
   it('plan.create numbers the plan after the last, starts it from the template, and undoes as one', () => {
     const out = commandFor('plan.create', {
-      title: 'Oracle to PostgreSQL', from: '2027-02-01', to: '2027-12-31', owner: 'Data', status: 'agreed',
+      title: 'Oracle to PostgreSQL', from: '2027-02-01', to: '2027-12-31', owner: 'Data',
       changes: ['billing', 'crm'], decisionIds: ['adr-2', 'g-1'],
     }, view(withPlan))
     // The template's fence reads: two named lines with nothing in them yet.
-    expect(answerOf(out)).toMatchObject({ id: 'tr-new-1', label: 'TR-0002', status: 'agreed', businessCase: { state: 'computed', totalIn: 0 } })
+    expect(answerOf(out)).toMatchObject({ id: 'tr-new-1', label: 'TR-0002', status: 'draft', businessCase: { state: 'computed', totalIn: 0 } })
     const after = roundTrip(withPlan, out)
     expect(after.transitions?.['tr-new-1']).toMatchObject({
       number: 2, owner: 'Data', decisions: ['adr-2', 'g-1'],
@@ -945,6 +1008,8 @@ describe('a plan as a record an agent may write (ADR-0009)', () => {
     expect(refuse({ title: 'x', introduces: ['crm'], retires: ['crm'] })).toMatchObject({ refusal: 'agent.badArguments' })
     expect(refuse({ title: 'x', from: '2027-06-01', to: '2027-01-01' })).toMatchObject({ refusal: 'agent.badArguments' })
     expect(refuse({ title: '  ' })).toMatchObject({ refusal: 'agent.badArguments' })
+    // Every plan starts as a draft: a status given here would step around the gate.
+    expect(refuse({ title: 'x', status: 'agreed' })).toMatchObject({ refusal: 'agent.badArguments' })
   })
 
   it('plan.update changes only what is given, takes the label as the id, and clears with null', () => {
@@ -963,7 +1028,12 @@ describe('a plan as a record an agent may write (ADR-0009)', () => {
   })
 
   it('plan.update replaces one role list and leaves the others, and follows the status machine', () => {
-    const out = commandFor('plan.update', { id: 'tr-1', introduces: ['crm'], status: 'agreed' }, view(withPlan))
+    // The plan rests on a proposal: agreeing to it would agree to something nobody decided.
+    expect(commandFor('plan.update', { id: 'tr-1', introduces: ['crm'], status: 'agreed' }, view(withPlan))).toMatchObject({
+      refusal: 'agent.badArguments', detail: 'the gate to agreed still needs: decisions',
+    })
+    // What the same call gives counts toward the gate.
+    const out = commandFor('plan.update', { id: 'tr-1', introduces: ['crm'], decisionIds: ['adr-2'], status: 'agreed' }, view(withPlan))
     const after = roundTrip(withPlan, out)
     expect(after.transitions?.['tr-1'].elements).toEqual([
       { elementId: 'crm', role: 'introduces' }, { elementId: 'billing', role: 'changes' },
@@ -974,6 +1044,33 @@ describe('a plan as a record an agent may write (ADR-0009)', () => {
     })
     expect(commandFor('plan.update', { id: 'tr-1', to: '2026-12-01' }, view(withPlan))).toMatchObject({ refusal: 'agent.badArguments' })
     expect(commandFor('plan.update', { id: 'tr-7' }, view(withPlan))).toMatchObject({ refusal: 'agent.unknownId' })
+  })
+
+  it('plan.update runs a plan only once its From has come, and records the day it is done', () => {
+    const agreed = fromArrays({
+      ...host,
+      transitions: [{ ...plan, status: 'agreed' as const, decisions: ['adr-2'], from: '2026-09-01' }],
+    })
+    const early = fromArrays({ ...host, transitions: [{ ...plan, status: 'agreed' as const, decisions: ['adr-2'] }] })
+    expect(commandFor('plan.update', { id: 'tr-1', status: 'running' }, view(early))).toMatchObject({
+      refusal: 'agent.badArguments', detail: 'the gate to running still needs: started',
+    })
+    const running = roundTrip(agreed, commandFor('plan.update', { id: 'tr-1', status: 'running' }, view(agreed)))
+    const done = roundTrip(running, commandFor('plan.update', { id: 'tr-1', status: 'done' }, view(running)))
+    expect(done.transitions?.['tr-1']).toMatchObject({ status: 'done', doneOn: '2026-09-07' })
+    const reopened = roundTrip(done, commandFor('plan.update', { id: 'tr-1', status: 'running' }, view(done)))
+    expect(reopened.transitions?.['tr-1'].status).toBe('running')
+    expect(reopened.transitions?.['tr-1']).not.toHaveProperty('doneOn')
+  })
+
+  it('plan.update calls a plan done only when what it introduces and retires is dated', () => {
+    const running = fromArrays({
+      ...host,
+      transitions: [{ ...plan, status: 'running' as const, elements: [{ elementId: 'crm', role: 'introduces' as const }] }],
+    })
+    expect(commandFor('plan.update', { id: 'tr-1', status: 'done' }, view(running))).toMatchObject({
+      refusal: 'agent.badArguments', detail: 'the gate to done still needs: introducedLive',
+    })
   })
 
   it('plan.update answers with what the body’s business case computes', () => {

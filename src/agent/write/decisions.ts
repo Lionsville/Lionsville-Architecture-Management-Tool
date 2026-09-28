@@ -1,13 +1,22 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
-/** Decision records: proposed, written, moved through their states, and removed. */
+/**
+ * Decision records: proposed, written, moved through their states, and removed.
+ *
+ * A move asks the same gate the decisions page draws as a checklist
+ * (ADR-0008, amended 28 September 2026), and a refusal names the lines still
+ * open, so an agent knows what to write before it asks again.
+ */
 import type { Adr, AdrSigner, AdrStatus, AdrVerdict } from '../../model/adr'
 import type { Command } from '../../model/commands'
 import { transaction } from '../../model/commands'
-import { decisionsOf } from '../../model/normalised'
+import { decisionList, decisionsOf } from '../../model/normalised'
 import { isDay } from '../../model/lifecycle'
-import { formatAdrNumber, isAdrDeletable, isAdrLocked, newAdr, nextAdrNumber, transitionAdr, transitionsFrom } from '../../decisions/adr'
+import {
+  adrGate, adrOpenItems, formatAdrNumber, isAdrDeletable, isAdrLocked, newAdr, nextAdrNumber, selfAccepted,
+  setAdrStatus, transitionsFrom,
+} from '../../decisions/adr'
 import type { ReadView } from '../answer'
 import type { AgentAnswer } from '../tools'
 import { json, refused } from '../tools'
@@ -36,6 +45,12 @@ export const proposeDecision: Handler = (args, view) => {
     if ('ok' in signers) return signers
     decision.signers = signers
   }
+  const replaces = supersedesOf(args, decision.id, view)
+  if (replaces !== undefined) {
+    if ('ok' in replaces) return replaces
+    if (replaces.length) decision.supersedes = replaces
+  }
+  if (typeof args.proposedBy === 'string' && args.proposedBy.trim()) decision.proposedBy = args.proposedBy.trim()
   // Linked from the plan's side, because that is where the link lives: a
   // plan names the decisions it rests on, and a decision names nothing.
   const linked: Command[] = []
@@ -61,6 +76,23 @@ function ownDecision(id: string, view: ReadView): Adr | AgentAnswer {
   return view.ancestorDecisions.some((adr) => adr.id === id)
     ? refused('agent.readOnly', 'a group\'s records are changed on the decisions page')
     : refused('agent.unknownId', `decision ${id}`)
+}
+
+/**
+ * The records a proposal replaces, as given: accepted records of this scope,
+ * never itself. Only what is in force can be superseded — a proposal named
+ * here would be superseded before it was decided.
+ */
+function supersedesOf(args: Args, self: string, view: ReadView): string[] | AgentAnswer | undefined {
+  const given = args.supersedes as string[] | undefined | null
+  if (given === undefined || given === null) return undefined
+  const own = decisionsOf(view.model)
+  for (const id of given) {
+    if (id === self) return refused('agent.badArguments', 'a record cannot supersede itself')
+    if (!own[id]) return refused('agent.unknownId', `decision ${id}`)
+    if (own[id].status !== 'accepted') return refused('agent.badArguments', `${id} is ${own[id].status}; only an accepted record can be superseded`)
+  }
+  return [...new Set(given)]
 }
 
 /** The signers as given, or nothing when they were not. */
@@ -104,12 +136,28 @@ export const updateDecision: Handler = (args, view) => {
     if ('ok' in signers) return signers
     patch.signers = signers
   }
+  const replaces = supersedesOf(args, id, view)
+  if (replaces !== undefined) {
+    if ('ok' in replaces) return replaces
+    patch.supersedes = replaces.length ? replaces : undefined
+  }
+  if (args.proposedBy === null) patch.proposedBy = undefined
+  else if (typeof args.proposedBy === 'string') patch.proposedBy = args.proposedBy.trim() || undefined
   return {
     command: { type: 'decision.update', id, patch, origin: 'agent' },
     answer: json({ id, label: formatAdrNumber(held.number), changed: Object.keys(patch) }),
   }
 }
 
+/**
+ * A move, through the table and then the gate.
+ *
+ * The table first: an accepted record is locked AND may still be superseded,
+ * so asking the lock first refused the one move a locked record has. The gate
+ * second, with the record carrying what the move brings — the successor, the
+ * reason — so its answer is about this move and not the record as it stood.
+ * Accepting a record that supersedes others moves them in the same step.
+ */
 export const transitionDecision: Handler = (args, view) => {
   const { model } = view
   const id = args.id as string
@@ -118,22 +166,52 @@ export const transitionDecision: Handler = (args, view) => {
   const held = ownDecision(id, view)
   if ('ok' in held) return held
   const status = args.status as AdrStatus
-  if (isAdrLocked(held)) return refused('agent.locked', id)
-  if (!transitionsFrom(held.status).includes(status)) {
-    return refused('agent.badArguments', `${held.status} can only move to ${transitionsFrom(held.status).join(', ') || 'nothing'}`)
+  const moves = transitionsFrom(held.status)
+  if (!moves.includes(status)) {
+    if (isAdrLocked(held)) return refused('agent.locked', id)
+    return refused('agent.badArguments', `${held.status} can only move to ${moves.join(', ') || 'nothing'}`)
   }
   const supersededBy = args.supersededBy as string | undefined
   if (status === 'superseded') {
     if (!supersededBy) return refused('agent.badArguments', '"supersededBy" is required for superseded')
     if (!model.decisions?.[supersededBy] || supersededBy === id) return refused('agent.unknownId', `decision ${supersededBy}`)
   }
-  const next = transitionAdr(held, status, view.today(), { supersededBy })
-  if (next === held) return refused('agent.badArguments', 'that transition is not allowed')
-  const patch: Partial<Adr> = { status: next.status, date: next.date }
-  if (next.supersededBy !== undefined) patch.supersededBy = next.supersededBy
+  const reason = typeof args.reason === 'string' ? args.reason.trim() : ''
+  const list = decisionList(model)
+  const carrying: Adr = {
+    ...held,
+    ...(status === 'superseded' && supersededBy ? { supersededBy } : {}),
+    ...(status === 'rejected' && reason ? { reason } : {}),
+  }
+  const open = adrOpenItems(adrGate(carrying, status, { list }))
+  if (open.length) return refused('agent.badArguments', `the gate to ${status} still needs: ${open.join(', ')}`)
+
+  const moved = setAdrStatus(list, id, status, view.today(), { supersededBy, reason })
+  // Only what moved, the record itself first, so that in the step as it is
+  // replayed a predecessor is superseded by a successor already accepted.
+  const byId = new Map(list.map((adr) => [adr.id, adr]))
+  const changed = moved.filter((adr) => adr !== byId.get(adr.id))
+    .sort((a, b) => (a.id === id ? -1 : b.id === id ? 1 : 0))
+  if (!changed.some((adr) => adr.id === id)) return refused('agent.badArguments', 'that transition is not allowed')
+  const commands: Command[] = changed.map((adr) => {
+    const before = byId.get(adr.id)!
+    const patch: Partial<Adr> = { status: adr.status, date: adr.date }
+    if (adr.supersededBy !== before.supersededBy) patch.supersededBy = adr.supersededBy
+    if (adr.reason !== before.reason) patch.reason = adr.reason
+    return { type: 'decision.update', id: adr.id, patch }
+  })
+  const self = changed.find((adr) => adr.id === id)!
+  const superseded = changed.filter((adr) => adr.id !== id).map((adr) => adr.id)
   return {
-    command: { type: 'decision.update', id, patch, origin: 'agent' },
-    answer: json({ id, number: held.number, status: next.status, date: next.date, supersededBy: next.supersededBy }),
+    command: commands.length === 1 ? { ...commands[0], origin: 'agent' } : transaction(commands, { origin: 'agent' }),
+    answer: json({
+      id, number: held.number, status: self.status, date: self.date, supersededBy: self.supersededBy,
+      ...(self.reason !== undefined ? { reason: self.reason } : {}),
+      ...(superseded.length ? { superseded } : {}),
+      ...(status === 'accepted' && selfAccepted(self)
+        ? { warning: 'The only approval is from the person who proposed it. Allowed, and worth a second reader.' }
+        : {}),
+    }),
   }
 }
 

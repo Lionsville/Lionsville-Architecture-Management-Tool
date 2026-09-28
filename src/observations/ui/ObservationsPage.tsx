@@ -49,6 +49,7 @@ import Typography from '@mui/material/Typography'
 import { LanguageProvider } from '../../i18n'
 import { matchesQuery } from '../../model'
 import type { Language, Translate } from '../../i18n'
+import { formatDay } from '../../i18n/dates'
 import type { MarkdownRenderOptions } from '../../documentation/documentation'
 import type { HostModel } from '../../model/hostModel'
 import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
@@ -61,7 +62,7 @@ import type { MakeId } from '../../model/keys'
 import {
   absorbShared, absorbedBy, explainedBy, formatCauseNumber, formatObservationNumber, isMerged, isRootCause,
   linkCause, liveObservations, mergeObservations, newCause, newObservation, nextCauseNumber,
-  isArchived, nextObservationNumber, removeCause, removeObservation, seenAgain, setArchived, setShared,
+  isArchived, nextObservationNumber, removeCause, removeObservation, setArchived, setShared,
   sortCauses, sortObservations, unlinkCause, updateCause, updateObservation,
 } from '../observation'
 import type {
@@ -71,22 +72,24 @@ import { nodeKey } from '../graph'
 import { IMPACT_COLOR, IMPACT_LABEL, STATE_COLOR, STATE_LABEL, STRENGTH_LABEL } from '../observationScope'
 import { AnalysisPicture, PictureLegend } from './AnalysisPicture'
 import { ArchiveDialog, LinkDialog, MergeDialog, NewCauseDialog, NewObservationDialog } from './ObservationDialogs'
+import { EmptyRegister, crumbTrail, experimentMoveActions, preselectedCause, useLifecycle } from './ObservationLifecycle'
 import { PictureMenu } from './PictureMenu'
 import type { MenuAction, PictureTarget } from './PictureMenu'
 import { CauseReader, ObservationReader, ReaderModeContext } from './Readers'
 import {
-  addressCause, alternatives, concludeExperiment, defaultStrength, dropSolution, experimentsFor, forgetCause,
-  formatExperimentNumber, formatSolutionNumber, implementedOn, isLive, moveSolution, newExperiment, newSolution,
-  nextExperimentNumber, nextSolutionNumber, planExperiment, removeExperiment, removeSolution, restoreSolution, setTestStrength,
-  openItems, previousState, rootsWithoutSolution, seenSinceImplemented, solutionGate, solutionPhase, solutionQuestions, unaddressCause, underneath,
-  untestSolution, updateExperiment, updateSolution, waiveExperiment, EXPERIMENT_OUTCOMES,
+  addressCause, alternatives, defaultStrength, dropSolution, experimentsFor,
+  forgetCause, formatExperimentNumber, formatSolutionNumber, implementedOn, isLive, mayAddress,
+  mayPlanExperiment, moveSolution, newExperiment, newSolution, nextExperimentNumber, nextSolutionNumber, planExperiment,
+  removeExperiment, removeSolution, restoreSolution, setTestStrength, openItems, previousState,
+  rootsWithoutSolution, seenSinceImplemented, solutionGate, solutionPhase, solutionPlanOf, solutionQuestions,
+  unaddressCause, underneath, untestSolution, updateExperiment, updateSolution, waiveExperiment,
 } from '../solution'
 import type {
-  Experiment, ExperimentOutcome, ExperimentPatch, Solution, SolutionContext, SolutionPatch, SolutionPhase,
+  Experiment, ExperimentPatch, Solution, SolutionContext, SolutionPatch, SolutionPhase,
   SolutionPlan, SolutionState, SolutionWork,
 } from '../solution'
 import { causesForProposal, experimentKey, solutionGraph, solutionKey } from '../solutionGraph'
-import { OUTCOME_LABEL, PHASE_COLOR, PHASE_LABEL, QUESTION_LABEL } from '../observationScope'
+import { OUTCOME_COLOR, OUTCOME_LABEL, PHASE_COLOR, PHASE_LABEL, QUESTION_LABEL } from '../observationScope'
 import { SolutionLegend, SolutionPicture } from './SolutionPicture'
 import { ExperimentReader, SolutionReader } from './SolutionReaders'
 import { AddressDialog, DropDialog, NewExperimentDialog, NewSolutionDialog } from './SolutionDialogs'
@@ -109,6 +112,12 @@ export type ObservationsPageProps = {
   onClose: () => void
   model: HostModel
   groupName: string
+  /**
+   * Every scope above this one, root first, named — the bar's crumbs. Drawn
+   * before this scope's name; where absent, the group's name stands in, and
+   * a name that is empty is left out rather than drawn as an empty crumb.
+   */
+  crumbs?: readonly { path: string; name: string }[]
   /** The observations the scopes below shared (ADR-0021), off the tree. */
   shared?: readonly SharedObservation[]
   /** What a scope below is called, for the headings; the path where the host cannot say. */
@@ -180,9 +189,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const experiments = useMemo(() => model.experiments ?? [], [model.experiments])
   const work = useMemo<ObservationWork>(
     () => ({ ...analysis, solutions: [...solutions], experiments: [...experiments] }), [analysis, solutions, experiments])
-  const plans = useMemo<SolutionPlan[]>(() => (model.transitions ?? []).map((one) => ({
-    id: one.id, status: one.status, ...(one.to ? { to: one.to } : {}), elements: one.elements,
-  })), [model.transitions])
+  const plans = useMemo<SolutionPlan[]>(() => (model.transitions ?? []).map(solutionPlanOf), [model.transitions])
   const context = useMemo<SolutionContext>(() => ({
     causes, experiments, plans, decisions: (model.decisions ?? []).map((one) => ({ id: one.id, status: one.status })),
   }), [causes, experiments, plans, model.decisions])
@@ -301,6 +308,8 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const commit = useCallback((next: Partial<ObservationWork>) => {
     if (!readOnly) onChange({ ...work, ...next })
   }, [onChange, readOnly, work])
+  /** Seen again, verified, an experiment concluded or reopened: the moves that ask first. */
+  const { seeAgain, verify, moveExperiment, dialogs } = useLifecycle({ lists: work, commit, today, nameOf, s })
 
   const create = (fields: { title: string; where: string; by: string; impact: Observation['impact']; shared: boolean }) => {
     const fresh = newObservation({
@@ -322,7 +331,6 @@ export function ObservationsPage(props: ObservationsPageProps) {
   }
   const patchObservation = (id: string, patch: ObservationPatch) => commit({ ...analysis, observations: updateObservation(observations, id, patch) })
   const patchCause = (id: string, patch: CausePatch) => commit({ ...analysis, causes: updateCause(causes, id, patch) })
-  const seen = (id: string) => commit({ ...analysis, observations: seenAgain(observations, id, today()) })
   const share = (id: string, on: boolean) => commit({ ...analysis, observations: setShared(observations, id, on, today()) })
   const archive = (id: string, note: string) => {
     commit({ ...analysis, observations: setArchived(observations, id, true, today(), note) })
@@ -392,7 +400,6 @@ export function ObservationsPage(props: ObservationsPageProps) {
     setSelectedKey(experimentKey(fresh.id))
   }
   const patchExperiment = (id: string, patch: ExperimentPatch) => commit({ experiments: updateExperiment(experiments, id, patch) })
-  const conclude = (id: string, outcome: ExperimentOutcome) => commit({ experiments: concludeExperiment(experiments, id, outcome) })
 
   const phaseOf = (one: Solution): SolutionPhase => solutionPhase(one, plans)
   const solutionsFor = (causeId: string) => solutions.filter((one) => one.addresses.some((address) => address.id === causeId))
@@ -431,6 +438,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
         onClick={() => setSelectedKey(key)}
         sx={{ cursor: 'pointer', opacity: merged || archived ? 0.55 : 1 }}
         data-testid={`observation-row-${key}`}
+        data-guide="observations.row"
       >
         <TableCell sx={{ fontFamily: 'ui-monospace, Menlo, monospace', fontSize: 11, color: 'text.secondary', whiteSpace: 'nowrap' }}>
           {formatObservationNumber(one.number)}
@@ -439,13 +447,13 @@ export function ObservationsPage(props: ObservationsPageProps) {
           {one.title}
           {archived && <Chip size="small" variant="outlined" label={s('observation.archivedMark')} sx={{ height: 18, fontSize: 10, ml: 1 }} />}
         </TableCell>
-        <TableCell sx={{ whiteSpace: 'nowrap', fontSize: 12 }}>{one.date}</TableCell>
+        <TableCell sx={{ whiteSpace: 'nowrap', fontSize: 12 }}>{formatDay(one.date, props.language)}</TableCell>
         <TableCell sx={{ fontSize: 12 }}>{one.where ?? ''}</TableCell>
         <TableCell><Chip size="small" color={IMPACT_COLOR[one.impact]} label={s(IMPACT_LABEL[one.impact])} sx={{ height: 18, fontSize: 10 }} /></TableCell>
         <TableCell sx={{ fontVariantNumeric: 'tabular-nums', fontSize: 12 }}>{s('observation.seenTimes', { count: one.seen })}</TableCell>
         <TableCell sx={{ fontSize: 12 }}>
           {merged
-            ? <Typography variant="caption" color="text.secondary">{merged.scope !== undefined ? s('observation.mergedAbove', { name: merged.label, scope: merged.scope, date: merged.date ?? '' }) : s('observation.mergedInto', { name: merged.label })}</Typography>
+            ? <Typography variant="caption" color="text.secondary">{merged.scope !== undefined ? s('observation.mergedAbove', { name: merged.label, scope: merged.scope, date: merged.date ? formatDay(merged.date, props.language) : '' }) : s('observation.mergedInto', { name: merged.label })}</Typography>
             : into.length
               ? into.map((cause) => <Chip key={cause.id} size="small" variant="outlined" label={formatCauseNumber(cause.number)} sx={{ height: 18, fontSize: 10, mr: 0.5 }} onClick={(event) => { event.stopPropagation(); setSelectedKey(cause.id) }} />)
               : <Typography variant="caption" color="text.secondary">{s('observation.notAnalysed')}</Typography>}
@@ -496,7 +504,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
           {heading(s('observation.scopeHere'))}
           {ownRows.map((one) => observationRow(one))}
           {ownRows.length === 0 && (
-            <TableRow><TableCell colSpan={7} sx={{ color: 'text.secondary' }}>{trimmed ? s('observation.searchEmpty', { query: trimmed }) : s('observation.listEmpty')}</TableCell></TableRow>
+            <TableRow><TableCell colSpan={7} sx={{ color: 'text.secondary' }} data-testid="observation-register-empty">{trimmed ? s('observation.searchEmpty', { query: trimmed }) : <EmptyRegister observations={observations} showArchived={showArchived} onShowArchived={() => setShowArchived(true)} s={s} />}</TableCell></TableRow>
           )}
           {sharedByScope.map(([scope, held]) => (
             <Fragment key={scope}>
@@ -536,6 +544,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
         {experimentRows.map((one) => (
           <ListItemButton key={one.id} selected={experimentKey(one.id) === selectedKey} onClick={() => setSelectedKey(experimentKey(one.id))} sx={{ py: 0.5 }}>
             <ListItemText primary={`${formatExperimentNumber(one.number)} ${one.title}`} secondary={one.tests.map((id) => nameOf(id)).join(', ')} slotProps={{ primary: { sx: { fontSize: 13 } }, secondary: { sx: { fontSize: 11 } } }} />
+            <Chip size="small" color={OUTCOME_COLOR[one.outcome]} label={s(OUTCOME_LABEL[one.outcome])} sx={{ height: 18, fontSize: 10 }} data-testid={`experiment-row-outcome-${one.id}`} />
           </ListItemButton>
         ))}
       </List>
@@ -615,7 +624,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
         if (mergedLabel(one)) return []
         return [
           edit,
-          { key: 'seen', label: s('observation.seenAgain'), onClick: () => seen(one.id) },
+          { key: 'seen', label: s('observation.seenAgain'), onClick: () => seeAgain(one) },
           { key: 'link', label: s('observation.link'), onClick: () => setLinking({ key, label: nameOf(one.id), link: { id: one.id } }) },
           { key: 'merge', label: s('observation.merge'), onClick: () => setMerging({ observation: one }) },
           ...(canShare ? [{ key: 'share', label: one.shared ? s('observation.unshare') : s('observation.share'), onClick: () => share(one.id, !one.shared) }] : []),
@@ -639,7 +648,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
           edit,
           {
             key: 'verify', label: one.state === 'assumed' ? s('observation.verify') : s('observation.unverify'),
-            onClick: () => patchCause(one.id, { state: one.state === 'assumed' ? 'verified' : 'assumed' }),
+            onClick: () => (one.state === 'assumed' ? verify(one) : patchCause(one.id, { state: 'assumed' })),
           },
           { key: 'link-deeper', label: s('observation.linkDeeper'), onClick: () => setLinking({ key: one.id, label: nameOf(one.id), link: { id: one.id } }) },
           ...(isRootCause(one, causes) ? [{ key: 'propose', label: s('solution.proposeForCause'), onClick: () => setProposing({ causeId: one.id }) }] : []),
@@ -655,8 +664,8 @@ export function ObservationsPage(props: ObservationsPageProps) {
         const waitsOnDecision = gate?.items.some((item) => item.item === 'decisionAccepted' && !item.ok) && !one.decision && props.onDecide
         return [
           edit,
-          { key: 'address', label: s('solution.addressCause'), onClick: () => setAddressing(one) },
-          { key: 'plan-experiment', label: s('solution.planExperiment'), onClick: () => setPlanning(one) },
+          ...(mayAddress(one) ? [{ key: 'address', label: s('solution.addressCause'), onClick: () => setAddressing(one) }] : []),
+          ...(mayPlanExperiment(one) ? [{ key: 'plan-experiment', label: s('solution.planExperiment'), onClick: () => setPlanning(one) }] : []),
           ...(gate ? [{
             key: 'move', label: s('solution.moveOn', { state: s(PHASE_LABEL[gate.to]).toLowerCase() }), divider: true,
             disabled: openItems(gate).length > 0, onClick: () => move(one.id, gate.to),
@@ -670,14 +679,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
       }
       case 'experiment': {
         const one = held.experiment
-        return [
-          edit,
-          ...EXPERIMENT_OUTCOMES.map((outcome, index) => ({
-            key: `outcome-${outcome}`, label: s(OUTCOME_LABEL[outcome]), checked: outcome === one.outcome, divider: index === 0,
-            onClick: () => { if (outcome !== one.outcome) conclude(one.id, outcome) },
-          })),
-          remove('experiment', one.id),
-        ]
+        return [edit, ...experimentMoveActions(one, s, (to) => moveExperiment(one, to)), remove('experiment', one.id)]
       }
     }
   }
@@ -782,6 +784,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
         phase={phase}
         gate={solutionGate(one, context)}
         mayGoBack={!(one.state === 'adopted' && decision?.status === 'accepted')}
+        {...(one.state === 'adopted' && decision?.status === 'accepted' ? { reopenBy: label4('ADR', decision.number) } : {})}
         questions={solutionQuestions(one, context)}
         addresses={one.addresses.map((address) => {
           const cause = causes.find((held) => held.id === address.id)
@@ -836,7 +839,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
       s={s}
       renderMarkdown={props.renderMarkdown}
       onUpdate={(patch) => patchExperiment(one.id, patch)}
-      onConclude={(outcome) => conclude(one.id, outcome)}
+      onMove={(to) => moveExperiment(one, to)}
       onDelete={() => setDeleting({ kind: 'experiment', id: one.id, label: nameOf(one.id) })}
       onOpen={openKey}
       onAddImage={props.onAddImage}
@@ -858,6 +861,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
       renderMarkdown={props.renderMarkdown}
       nameOf={nameOf}
       onUpdate={(patch) => patchCause(selected.cause.id, patch)}
+      onVerify={() => verify(selected.cause)}
       onLinkDeeper={() => setLinking({ key: selected.cause.id, label: nameOf(selected.cause.id), link: { id: selected.cause.id } })}
       onUnlink={(target) => unlink(selected.cause.id, target)}
       onUnlinkFrom={(causeId) => unlink(causeId, { id: selected.cause.id })}
@@ -884,7 +888,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
       renderMarkdown={props.renderMarkdown}
       nameOf={nameOf}
       onUpdate={(patch) => patchObservation(selected.observation.id, patch)}
-      onSeenAgain={() => seen(selected.observation.id)}
+      onSeenAgain={() => seeAgain(selected.observation)}
       onShare={(on) => share(selected.observation.id, on)}
       onArchive={() => setArchiving(selected.observation)}
       onRestore={() => restore(selected.observation.id)}
@@ -905,6 +909,8 @@ export function ObservationsPage(props: ObservationsPageProps) {
     />
   )
 
+  const crumbNames = crumbTrail(props.crumbs, groupName, model.name)
+
   return (
     <PageDialog open={open} topInset={chrome.topInset} onClose={onClose} aria-label={s('observation.title')}>
       <LanguageProvider language={props.language}>
@@ -923,8 +929,8 @@ export function ObservationsPage(props: ObservationsPageProps) {
               <Box component="span" aria-hidden sx={{ display: 'inline-block', width: 18, textAlign: 'center', fontSize: 16, lineHeight: 1 }}>‹</Box>
             </IconButton>
           </Tooltip>
-          <Typography variant="body2" color="text.secondary" sx={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {groupName} &nbsp;/&nbsp; {model.name} &nbsp;/&nbsp;
+          <Typography variant="body2" color="text.secondary" data-testid="observation-crumbs" sx={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {crumbNames.map((name, index) => <Fragment key={index}>{name} &nbsp;/&nbsp; </Fragment>)}
             <Box component="span" sx={{ color: 'text.primary', fontWeight: 600 }}>{s('observation.title')}</Box>
           </Typography>
           <ToggleButtonGroup exclusive size="small" value={tab} onChange={(_e, value: Tab | null) => { if (value) { setTab(value); setEditingKey(undefined) } }} sx={{ ml: 2 }}>
@@ -937,7 +943,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
             <>
               <Button size="small" onClick={() => setCreatingCause(true)} data-guide="observations.newCause">+ {s('observation.newCause')}</Button>
               {tab === 'solutions'
-                ? <Button size="small" variant="contained" onClick={() => setProposing({})} data-testid="solution-new" data-guide="solutions.new">+ {s('solution.new')}</Button>
+                ? <Button size="small" variant="contained" onClick={() => setProposing(preselectedCause(causes, selected))} data-testid="solution-new" data-guide="solutions.new">+ {s('solution.new')}</Button>
                 : <Button size="small" variant="contained" onClick={() => setCreating(true)} data-guide="observations.new">+ {s('observation.new')}</Button>}
             </>
           )}
@@ -973,6 +979,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
         <PictureMenu at={menu?.at} actions={menu ? menuActions(menu.target) : []} onClose={() => setMenu(undefined)} />
 
         <NewObservationDialog open={creating} canShare={canShare} onCancel={() => setCreating(false)} onCreate={create} s={s} />
+        {dialogs}
         <NewCauseDialog open={creatingCause} onCancel={() => setCreatingCause(false)} onCreate={addCause} s={s} />
         <ArchiveDialog
           subject={archiving ? { label: nameOf(archiving.id) } : undefined}

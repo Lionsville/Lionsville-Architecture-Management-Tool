@@ -290,3 +290,66 @@ the agent's side.
   conclude an experiment or accept a decision on the agent's own judgement —
   appended to the paragraph every host hands over on connect. The tool
   descriptions say the same where each call is made.
+
+## Amended — experiments move, a proof can be withdrawn, and each state offers only its own
+
+*28 September 2026.* The same walk found an experiment that went from planned
+to confirmed and back in five free clicks, with no result, and a solution
+that stayed proven — was adopted, read implemented — after its only
+experiment was refuted. §2's gates were only ever asked going forward.
+
+* **An experiment moves, as a record does** (`experimentMovesFrom`):
+  planned starts running, which sets From to the day it began; running goes
+  back to planned, or is concluded confirmed, refuted or inconclusive; a
+  concluded one is reopened, back to running. Never planned straight to an
+  outcome. Concluding asks for the result and the To day — today unless
+  said, never before From — and `concludeExperiment` refuses without either;
+  reopening takes the To day away and keeps the result until the next
+  conclusion. The reader draws the moves from where it stands as buttons, the
+  picture's right-click offers the same, and the agent's
+  `experiment.conclude` keeps to the same moves and takes an optional `to`.
+* **Reopening says what it withdraws.** Before a confirmed experiment is
+  reopened the page confirms it and names the solutions that stand proven, or
+  further, on it alone (`reopenWithdraws`): "SO-0001 is proven on this
+  experiment; reopening it withdraws that proof." The agent's answer lists
+  them as `proofWithdrawn`.
+* **A proof can be withdrawn, and that is a question, not a move.**
+  `proofWithdrawn` joins §4's questions: proven or later, with no confirmed
+  experiment that tests it and no waiver (`hasProof`). It shows in the reader,
+  on the picture's flags and in `solution.read`. The state is not moved back:
+  every move here is a dated act by a person, and an adopted solution is held
+  by its locked decision record. What changes is the gate to adopted, which
+  now asks for the proof again beside the accepted record.
+* **Each state offers only what it can do.** A solution takes on a new cause
+  while it is an idea or shaped (`mayAddress`); how directly it addresses one
+  it already does may still change. An experiment is planned for it while it
+  is shaped or testing (`mayPlanExperiment`): an idea has its own gate first,
+  and a proven one moves back to testing, so the history says its proof is
+  being tested again. `addressCause` and `planExperiment` refuse the rest, the
+  reader and the right-click do not offer it, and the agent's refusal says
+  what to do instead. Where there is no step back — adopted, its record
+  accepted — the reader and the agent say how to get one: "To reopen,
+  supersede ADR-0003 on the Decisions page."
+* **Why it works now is answered, not merely unasked.** The idea gate ticked
+  *why it works now* whenever no earlier attempt was listed, so it read done
+  while *was this tried before?* was still open. It is ticked by *none known*
+  with nothing listed, or by an earlier attempt and what is different now.
+* **The decision record is written, not templated** (`decisionBody`, in place
+  of §3's context paragraph). Every section is filled from the records: the
+  context and the drivers from what it addresses, its benefit and its cost;
+  the considered options from the solution and every alternative on the same
+  causes, a dropped one with why; the outcome, "Chosen option: SO-0001 …,
+  because EX-0002 … confirmed it: 41 to 12 a week", or the waiver; the good
+  and the bad consequence from the benefit and the cost; and the confirmation
+  from the observations that should stop being seen. What nobody said keeps
+  the template's line. The page and `solution.decide` both write it.
+* **Did it work, counted in days.** A sighting on the day it counts as
+  implemented is a sighting it did not stop: the comparison is on or after,
+  and the reader says "Seen on 28 Sept 2026, the day it was implemented" for
+  that one and "No sighting after 28 Sept 2026" for a quiet one. That day is
+  the earlier of the day the plan was done — which a plan now records — and
+  its end date, else the day it was adopted.
+* **A new solution starts from where you are**: the root cause being read,
+  or the first root cause of the solution being read, is preselected. An
+  experiment's row in the register carries its outcome, as a solution's
+  carries its phase.

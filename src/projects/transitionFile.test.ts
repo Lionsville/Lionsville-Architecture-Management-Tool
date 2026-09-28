@@ -48,6 +48,13 @@ describe('the round trip', () => {
     expect(transitionFileText(plan())).toBe(transitionFileText(plan()))
   })
 
+  it('keeps the day a plan was done, and only when set', () => {
+    const done = plan({ status: 'done', doneOn: '2027-12-20' })
+    expect(roundTrip(done)).toEqual(done)
+    expect(roundTrip(plan())).not.toHaveProperty('doneOn')
+    expect(transitionFileText(done)).toContain('doneOn: 2027-12-20')
+  })
+
   it('keeps the initiative flag, and only when set', () => {
     expect(roundTrip(plan({ initiative: true }))!.initiative).toBe(true)
     expect(roundTrip(plan())).not.toHaveProperty('initiative')

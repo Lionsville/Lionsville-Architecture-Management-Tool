@@ -37,7 +37,7 @@
  * as one step, because a plan slipping is one thing that happened.
  */
 import { isDay } from './lifecycle'
-import type { ElementId } from './types'
+import type { ElementId, LifecycleDates } from './types'
 
 export type TransitionStatus = 'draft' | 'agreed' | 'running' | 'done' | 'abandoned'
 
@@ -94,6 +94,13 @@ export type Transition = {
    * and the ```business-case block, which is where the money lives.
    */
   body: string
+  /**
+   * The day it moved to `done`, `yyyy-mm-dd`; cleared when it is reopened.
+   * `to` is the day the work was meant to end, and a plan finished early or
+   * late is common — what came after it is measured from this day, or from
+   * `to` where that is earlier.
+   */
+  doneOn?: string
 }
 
 /** Ended for the roadmap's purposes. Not sealed: see the note at the top. */
@@ -119,13 +126,134 @@ export function transitionsFrom(status: TransitionStatus): readonly TransitionSt
   }
 }
 
-/** Move a plan to another status, or leave it exactly as it is. */
+/**
+ * What a move to `next` writes: the status, and the day it was done — set on
+ * the way into `done`, cleared on the way out of it.
+ */
+export function statusPatch(
+  transition: Pick<Transition, 'status' | 'doneOn'>,
+  next: TransitionStatus,
+  today: string,
+): Partial<Transition> {
+  if (next === 'done') return { status: next, doneOn: today }
+  return transition.doneOn !== undefined ? { status: next, doneOn: undefined } : { status: next }
+}
+
+/**
+ * Move a plan to another status, or leave it exactly as it is when the table
+ * has no such arrow. The gate is the caller's to ask ({@link planGate}): this
+ * is the arithmetic of the move, not whether it may be made.
+ */
 export function setTransitionStatus(
   transition: Transition,
   next: TransitionStatus,
+  today?: string,
 ): Transition {
   if (!transitionsFrom(transition.status).includes(next)) return transition
-  return { ...transition, status: next }
+  if (today === undefined) return { ...transition, status: next }
+  const moved: Transition = { ...transition, ...statusPatch(transition, next, today) }
+  if (moved.doneOn === undefined) delete moved.doneOn
+  return moved
+}
+
+// --- the gates --------------------------------------------------------------------------
+
+/**
+ * What a forward move asks of a plan, one line each (ADR-0009, amended 28
+ * September 2026). The page and the agent say them in these words.
+ */
+export type PlanGateItem =
+  /** From and To are both set, and To is not before From. */
+  | 'window'
+  | 'owner'
+  /** It names at least one element it introduces, retires or changes. */
+  | 'names'
+  /** Every decision record it rests on is accepted. */
+  | 'decisions'
+  /** From is today or earlier. */
+  | 'started'
+  /** Every element it introduces has a day it goes live. */
+  | 'introducedLive'
+  /** Every element it retires has a day it is gone. */
+  | 'retiredDated'
+  /** No interface of what it retires is left without a day it moves. */
+  | 'interfacesPorted'
+
+export type PlanGate = {
+  /** The status the plan would move to. */
+  to: TransitionStatus
+  items: { item: PlanGateItem; ok: boolean }[]
+}
+
+/** What a gate reads beyond the plan: the decisions, the elements, the lines and the day. */
+export type PlanGateContext = {
+  /** The decision records the plan can rest on: this scope's, and those above it where the caller has them. */
+  decisions: readonly { id: string; status: string }[]
+  /**
+   * The caller cannot see every record the plan may name — it holds one
+   * scope and none above it — so a decision it does not hold is not counted
+   * against the plan. A page and an agent hold them all and leave this off.
+   */
+  partial?: boolean
+  element(id: ElementId): { lifecycleDates?: LifecycleDates } | undefined
+  /** How many of its interfaces have no day yet (`model/porting`). Asked only on the way to done. */
+  unported(): number
+  /** `yyyy-mm-dd`. Absent where there is no clock, and "started" is then not asked. */
+  today?: string
+}
+
+/**
+ * The gate on moving this plan to `to`, or nothing where the move has none.
+ *
+ * Only the three forward arrows are gated: agreeing to a plan, starting it,
+ * and calling it done. Back, abandoning and reopening are always open — a gate
+ * on a move is not a lock, and a plan still edits freely whatever its status.
+ * Whether the arrow exists at all is {@link transitionsFrom}'s question.
+ *
+ * - **agreed**: a window that runs forwards, an owner, something it changes,
+ *   and every decision it rests on accepted — a plan resting on a proposal
+ *   has agreed to something nobody decided.
+ * - **running**: the same, and its From has come.
+ * - **done**: what it introduces is dated live, what it retires is dated
+ *   gone, and every interface has a day it moves.
+ */
+export function planGate(plan: Transition, to: TransitionStatus, context: PlanGateContext): PlanGate | undefined {
+  const agreed = (): PlanGate['items'] => {
+    const status = new Map(context.decisions.map((one) => [one.id, one.status]))
+    return [
+      { item: 'window', ok: isDay(plan.from) && isDay(plan.to) && plan.to >= plan.from },
+      { item: 'owner', ok: Boolean(plan.owner?.trim()) },
+      { item: 'names', ok: plan.elements.length > 0 },
+      {
+        item: 'decisions',
+        ok: plan.decisions.every((id) => (status.has(id) ? status.get(id) === 'accepted' : context.partial === true)),
+      },
+    ]
+  }
+  if (plan.status === 'draft' && to === 'agreed') return { to, items: agreed() }
+  if (plan.status === 'agreed' && to === 'running') {
+    const items = agreed()
+    if (context.today !== undefined) items.push({ item: 'started', ok: isDay(plan.from) && plan.from <= context.today })
+    return { to, items }
+  }
+  if (plan.status === 'running' && to === 'done') {
+    const dated = (role: TransitionRole, phase: 'live' | 'retired') => elementsWithRole(plan, role)
+      .every((id) => isDay(context.element(id)?.lifecycleDates?.[phase]))
+    return {
+      to,
+      items: [
+        { item: 'introducedLive', ok: dated('introduces', 'live') },
+        { item: 'retiredDated', ok: dated('retires', 'retired') },
+        { item: 'interfacesPorted', ok: context.unported() === 0 },
+      ],
+    }
+  }
+  return undefined
+}
+
+/** The lines of a gate still open. Empty when the plan may move on. */
+export function openPlanItems(gate: PlanGate | undefined): PlanGateItem[] {
+  return gate ? gate.items.filter((one) => !one.ok).map((one) => one.item) : []
 }
 
 /** The next number for a project's plans. Sequential, and never reused. */

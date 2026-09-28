@@ -45,6 +45,7 @@ import type { ScopePath } from '../../projects/scopePath'
 import { moveRefusal, moveSubtree } from '../moveSubtree'
 import { rewriteScope } from '../rewriteScope'
 import { copyExampleInto } from '../examples/copy'
+import { opensOnNothing } from '../useShellNavigation'
 import { exampleOf } from '../examples/offers'
 import type { ExampleOffer } from '../examples/offers'
 import type { InitialPage, ScopeLibrary, ScopeSettingsPatch } from '../App'
@@ -100,6 +101,12 @@ export type UseOrganisationInput = {
   onFailure: (where: string, cause: unknown, key?: StringKey) => void
   /** Latched storage notice: a store that refuses says so once, standing. */
   onStorageResult: (ok: boolean) => void
+  /**
+   * May this person change the scope at this path? What `open` asks before it
+   * gives a scope with no document one (R2 below). Every scope may be written
+   * where absent, which is every source that ships.
+   */
+  writable?: (path: ScopePath) => boolean
   s: Translate
 }
 
@@ -155,6 +162,12 @@ export type Organisation = {
   copyExample: (example: ExampleOffer) => void
   /** Give the root a name, from the field a fresh folder shows instead of a heading. */
   nameOrganisation: (name: string) => void
+}
+
+/** What a scope is called for a document made for it: its name in the listing, else its address's last word. */
+function nameOf(tree: ScopeSummary, path: ScopePath): string {
+  const listed = flattenScopes(tree).find((scope) => scope.path === path)?.name.trim()
+  return listed || scopePathLabel(path)
 }
 
 /** A new scope refused because a scope nobody could read is at its address, or above it. */
@@ -235,8 +248,11 @@ function useHomeReads({ scopes, active, at, revision, onFailure }: {
   return { tree, root, ready, listed }
 }
 
+/** Every scope may be written: what the hook is told by every source that ships. */
+const ANYWHERE = () => true
+
 export function useOrganisation({
-  scopes, active, at, onEnter, notify, onFailure, onStorageResult, s, onTreeChanged,
+  scopes, active, at, onEnter, notify, onFailure, onStorageResult, s, onTreeChanged, writable = ANYWHERE,
 }: UseOrganisationInput): Organisation {
   const [dialog, setDialog] = useState<OrganisationDialog>({ kind: 'none' })
   const [collapsed, setCollapsed] = useState<ReadonlySet<ScopePath>>(() => new Set())
@@ -554,20 +570,47 @@ export function useOrganisation({
    * and the workspace shows that page over a canvas with nothing on it. Without
    * a page named, a scope with no views has nothing to show, so the tree offers
    * *Open* only on one that draws.
+   *
+   * **A page asked for on a scope with no document** — a root with scopes
+   * under it and no `scope.json` of its own, a folder somebody made by hand —
+   * is a page on a scope that has not been written yet, not a failure. For
+   * somebody who may write there the scope is written first, bare and whole,
+   * in ONE write: a source whose changes travel as steps refuses a step on a
+   * scope that does not exist, so the session opened on it could not start
+   * it. Then it is read back and entered, as the example's copy is. For
+   * somebody who may only read, nothing is written and the page opens empty —
+   * the workspace asks the source the same question and opens it read-only.
+   *
+   * A failure is said once, through `onFailure`: it used to be said here too,
+   * which was the same toast twice.
    */
   const open = useCallback((path: ScopePath, page?: InitialPage) => {
-    void scopes.load(path).then(
-      (found) => {
-        if (!found) {
-          notify(s('picker.loadFailed'), 'error')
-          refresh()
-          return
-        }
-        onEnter(found, page)
-      },
-      (cause: unknown) => onFailure('organisation.open', cause, 'picker.loadFailed'),
-    )
-  }, [scopes, onEnter, notify, refresh, onFailure, s])
+    void (async () => {
+      const found = await scopes.load(path)
+      if (found) { onEnter(found, page); return }
+      if (!opensOnNothing(page)) {
+        // Nothing there, and nothing asked for that a scope has before it is
+        // written: somebody removed it between the listing and the press. The
+        // listing is read again, and that is said.
+        refresh()
+        onFailure('organisation.open.gone', undefined, 'picker.loadFailed')
+        return
+      }
+      const bare = bareScope(path, nameOf(tree, path))
+      if (!writable(path)) { onEnter(bare, page); return }
+      // Expecting nothing to be there, and written only if nothing is: a scope
+      // somebody else wrote in between is theirs and is the one entered.
+      await rewriteScope(scopes, path, (read) => (read ? undefined : bare))
+      const written = await scopes.load(path)
+      if (!written) {
+        onFailure('organisation.open.unwritten', undefined, 'picker.loadFailed')
+        return
+      }
+      onEnter(written, page)
+      refresh()
+      onTreeChanged?.()
+    })().catch((cause: unknown) => onFailure('organisation.open', cause, 'picker.loadFailed'))
+  }, [scopes, tree, writable, onEnter, refresh, onTreeChanged, onFailure])
 
   /**
    * An example is a starting point, not a document you keep opening. Where the

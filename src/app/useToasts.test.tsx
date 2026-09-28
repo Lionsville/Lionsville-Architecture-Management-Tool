@@ -13,7 +13,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, screen } from '@testing-library/react'
 import { renderHook } from '@testing-library/react'
-import { hideAfter, ToastBar } from './ToastBar'
+import { hideAfter, hideAfterFor, ToastBar } from './ToastBar'
 import { useToasts } from './useToasts'
 import { renderShell } from './testing/renderShell'
 
@@ -48,6 +48,34 @@ describe('useToasts', () => {
     expect(result.current.toast?.message).toBe('second')
     // A new key is what restarts the bar's timer; without it the second message
     // inherits however much of the first one's five seconds was left.
+    expect(result.current.toast?.key).not.toBe(first)
+  })
+
+  it('restarts the standing message when the same words arrive again, rather than drawing them twice', () => {
+    const { result } = renderHook(() => useToasts())
+    act(() => result.current.notify('could not open', 'error'))
+    const first = result.current.toast!.key
+    act(() => result.current.notify('could not open', 'error'))
+    expect(result.current.toast?.key).toBe(first)
+    expect(result.current.toast?.repeats).toBe(1)
+    expect(hideAfterFor(result.current.toast)).not.toBe(hideAfter('error'))
+  })
+
+  it('sees a repeat that lands in the same tick as the first report', () => {
+    const { result } = renderHook(() => useToasts())
+    act(() => {
+      result.current.notify('could not open', 'error')
+      result.current.notify('could not open', 'error')
+    })
+    expect(result.current.toast?.repeats).toBe(1)
+  })
+
+  it('treats the same words after the bar was closed as a new message', () => {
+    const { result } = renderHook(() => useToasts())
+    act(() => result.current.notify('saved', 'success'))
+    const first = result.current.toast!.key
+    act(() => result.current.close())
+    act(() => result.current.notify('saved', 'success'))
     expect(result.current.toast?.key).not.toBe(first)
   })
 

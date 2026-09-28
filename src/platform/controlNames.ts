@@ -44,11 +44,13 @@ export const CONTROL_NAMES = [
   'map.grid', 'map.summary',
   // The observations page: its three tabs, one observation, and the solutions.
   'observations.tabRegister', 'observations.tabAnalysis', 'observations.tabSolutions',
-  'observations.register', 'observations.picture', 'observations.new', 'observations.newCause',
+  'observations.register', 'observations.row', 'observations.picture', 'observations.new', 'observations.newCause',
   'observation.seenAgain', 'observation.merge',
   'solutions.new', 'solutions.phases', 'solution.planExperiment', 'solution.decide',
-  // The decisions page, and one record.
-  'decisions.list', 'decisions.new', 'decisions.fromAbove', 'decision.status', 'decision.signers',
+  // The decisions page, and one record. A record in the list and a move of
+  // one record's status are each named on every one of them, as a row is.
+  'decisions.list', 'decisions.row', 'decisions.new', 'decisions.fromAbove',
+  'decision.status', 'decision.move', 'decision.signers',
   // The roadmap, and one plan.
   'roadmap.newPlan', 'roadmap.findings', 'plan.addElement', 'plan.milestone', 'plan.addDecision',
   // The technology landscape.

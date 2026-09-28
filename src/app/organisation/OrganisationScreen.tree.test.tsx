@@ -102,6 +102,31 @@ describe('the tree', () => {
     expect((await screen.findByTestId('organisation-name')).textContent).toBe('Retail')
   })
 
+  /** The whole row is the way home, and there is no second *Open* beside the name. */
+  it('opens a scope from anywhere on its row, and offers no separate Open', async () => {
+    show()
+    const finance = await screen.findByTestId('scope-finance')
+    expect(within(finance).queryByRole('button', { name: 'Open Finance' })).toBeNull()
+    fireEvent.click(within(finance).getByText('1 diagram', { exact: false }))
+    expect((await screen.findByTestId('organisation-name')).textContent).toBe('Finance')
+  })
+
+  it('keeps a row’s settings to itself: pressing them does not open the scope', async () => {
+    show()
+    fireEvent.click(await screen.findByRole('button', { name: 'Settings for Retail' }))
+    expect(await screen.findByRole('dialog')).toBeDefined()
+    expect(screen.getByTestId('organisation-name').textContent).toBe('Acme Logistics')
+  })
+
+  /** A landscape keeps its own views: its empty tree says what a scope under it is for. */
+  it('says what a scope under a landscape is for, where nothing is filed under one', async () => {
+    show()
+    fireEvent.click(await screen.findByTestId('open-finance'))
+    await screen.findByTestId('boards')
+    expect(screen.getByTestId('tree-empty').textContent)
+      .toBe('A landscape keeps its own views. Add a scope below it only to split it up.')
+  })
+
   it('offers every scope its own settings, the root included', async () => {
     show()
     expect(await screen.findByRole('button', { name: 'Settings for Retail' })).toBeDefined()

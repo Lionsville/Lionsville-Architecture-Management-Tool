@@ -430,7 +430,18 @@ export function SheetPage(props: SheetPageProps) {
           data-testid="sheet-body"
           sx={exporting
             ? { flex: '1 1 auto', minWidth: 0, overflow: 'visible', p: 2 }
-            : { flex: '1 1 auto', minWidth: 0, overflow: 'auto', p: 2 }}
+            : {
+              flex: '1 1 auto', minWidth: 0, overflow: 'auto', p: 2,
+              // The canvas is wider than the viewport whenever the sheet has
+              // more phases than fit; an overlay scrollbar hides itself the
+              // moment the pointer leaves it, so the cut-off last phase gave
+              // no sign that the rest scrolls into view. A scrollbar that
+              // stays on screen, on every engine, says so at a glance.
+              scrollbarWidth: 'thin',
+              '&::-webkit-scrollbar': { height: 10, width: 10 },
+              '&::-webkit-scrollbar-thumb': { bgcolor: 'action.disabled', borderRadius: 5 },
+              '&::-webkit-scrollbar-track': { bgcolor: 'transparent' },
+            }}
         >
         <Box
           data-testid="sheet-canvas" data-guide="sheet.canvas"
@@ -961,10 +972,16 @@ function JourneyBand({ journey, onSelect, onNewLane, author, t }: {
             data-element-id={phase.id}
             component="button"
             type="button"
+            title={phase.name}
             onClick={() => onSelect(phase.id)}
             sx={{
               appearance: 'none', cursor: 'pointer', font: 'inherit',
-              flex: 1, minWidth: 0, textAlign: 'center', px: 1, py: 0.5, border: 0,
+              // A phase used to shrink to nothing beside its neighbours; a
+              // floor keeps its name legible, and the ellipsis (with the
+              // full name in the title) says there is more than fits rather
+              // than wrapping or overlapping the next phase.
+              flex: 1, minWidth: 96, textAlign: 'center', px: 1, py: 0.5, border: 0,
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
               bgcolor: 'primary.main', color: 'primary.contrastText',
               borderRadius: '3px 3px 0 0',
               fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',

@@ -15,13 +15,16 @@
  * when the pane closes or moves to another record. A locked record — accepted,
  * rejected or superseded — has no Edit at all; the status buttons are the only
  * thing left to press, and only where the state machine allows a move.
+ *
+ * A move with a gate (ADR-0008, amended 28 September 2026) says what it still
+ * needs beside its button, and the button waits until the list is clear. The
+ * page asks the last question — a confirmation, a reason, a successor — in a
+ * dialog of its own.
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
-import Chip from '@mui/material/Chip'
 import IconButton from '@mui/material/IconButton'
-import Link from '@mui/material/Link'
 import MenuItem from '@mui/material/MenuItem'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
@@ -29,23 +32,22 @@ import TableCell from '@mui/material/TableCell'
 import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
 import TextField from '@mui/material/TextField'
-import ToggleButton from '@mui/material/ToggleButton'
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import { linkElementRefs, outline } from '../../documentation'
-import type { Translate } from '../../i18n'
+import type { Language, Translate } from '../../i18n'
+import { formatDay } from '../../i18n/dates'
 import type { MarkdownRenderOptions } from '../../documentation/documentation'
 import { DocumentSheet } from '../../documentation/ui/DocumentSheet'
 import { DocumentSource } from '../../documentation/ui/DocumentSource'
 import type { DocumentImages } from '../../documentation/ui/DocumentSource'
-import {
-  formatAdrNumber, isAdrDeletable, isAdrLocked, transitionsFrom,
-} from '../adr'
-import type { Adr, AdrSigner, AdrStatus, AdrVerdict } from '../adr'
-import { transitionLabel } from '../../model/transition'
+import { formatAdrNumber, isAdrLocked } from '../adr'
+import type { Adr, AdrPatch, AdrSigner, AdrStatus, AdrVerdict } from '../adr'
+import type { Solution } from '../../model/observation'
 import type { Transition } from '../../model/transition'
-import { STATUS_COLOR, STATUS_LABEL, VERDICT_LABEL } from '../adrScope'
+import { VERDICT_LABEL } from '../adrScope'
+import { Contents, FrontMatter, ReaderBar, ReaderNotices } from './AdrReaderParts'
+import type { Mode } from './AdrReaderParts'
 
 /** How long the text must be quiet before a draft becomes a commit. */
 const COMMIT_DELAY_MS = 1200
@@ -56,13 +58,19 @@ export type AdrReaderProps = {
   list: readonly Adr[]
   readOnly: boolean
   s: Translate
+  /** The language dates are said in. English where it is not given. */
+  language?: Language
   /** `yyyy-mm-dd`, for a verdict's date. Injected so a test can pin it. */
   today: () => string
   /** For `[[Name]]` links; the project's elements, or none on the group level. */
   elements: readonly { id: string; name: string }[]
   renderMarkdown: (md: string, options?: MarkdownRenderOptions) => ReactNode
-  onUpdate: (patch: Partial<Pick<Adr, 'title' | 'body' | 'signers'>>) => void
-  /** A status move. `superseded` is asked for here and completed by the page's dialog. */
+  onUpdate: (patch: AdrPatch) => void
+  /**
+   * A status move. Accepting, rejecting and superseding are asked for here
+   * and completed by the page's dialogs; a gated move is only offered once
+   * its gate is clear.
+   */
   onStatus: (next: AdrStatus) => void
   onDelete: () => void
   /** "History…", where the host offers one for this record. */
@@ -79,9 +87,13 @@ export type AdrReaderProps = {
    * rest on it — the link back from the one a plan carries. Absent: no row.
    */
   plans?: { list: readonly Transition[]; onOpen(transitionId: string): void }
+  /**
+   * The solutions of this scope (ADR-0026), so a record can say which one it
+   * was decided for — derived from the solution's `decision`, as the plans
+   * are from theirs. Absent: no row.
+   */
+  solutions?: { list: readonly Pick<Solution, 'id' | 'number' | 'title' | 'decision'>[]; onOpen(solutionId: string): void }
 }
-
-type Mode = 'read' | 'edit'
 
 export function AdrReader(props: AdrReaderProps) {
   const { adr, list, readOnly, s, today, elements, renderMarkdown, onUpdate, onStatus, onSelect } = props
@@ -135,58 +147,19 @@ export function AdrReader(props: AdrReaderProps) {
   const text = mode === 'edit' ? draft.body : adr.body
   const source = useMemo(() => linkElementRefs(text, elements), [text, elements])
   const headings = useMemo(() => outline(text).filter((h) => h.level <= 3), [text])
-  const successor = adr.supersededBy ? list.find((a) => a.id === adr.supersededBy) : undefined
-  const predecessors = list.filter((a) => a.supersededBy === adr.id)
-  const restingPlans = (props.plans?.list ?? []).filter((plan) => plan.decisions.includes(adr.id))
-  const moves = transitionsFrom(adr.status)
-  const deciders = adr.signers.map((signer) => signer.name.trim()).filter(Boolean)
-
-  const scrollToHeading = (headingText: string) => {
-    const root = contentRef.current
-    if (!root) return
-    const candidates = root.querySelectorAll('h1, h2, h3, h4, h5, h6, [role="heading"]')
-    const target = Array.from(candidates).find((el) => el.textContent?.trim() === headingText)
-    target?.scrollIntoView({ block: 'start', behavior: 'smooth' })
-  }
+  const day = (value: string) => formatDay(value, props.language ?? 'en')
 
   const rendered = source.trim()
     ? renderMarkdown(source, { onElementLink: props.onElementLink })
     : <Typography color="text.secondary">{s('common.empty')}</Typography>
 
-  const nameOf = (id: string) => {
-    const found = list.find((a) => a.id === id)
-    return found ? `${formatAdrNumber(found.number)} · ${found.title}` : id
-  }
-
   return (
     <Box data-testid="adr-reader" sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%' }}>
-      {/* ---- the record's own bar: mode, status moves, delete ---- */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 0.75, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flexWrap: 'wrap' }}>
-        <Chip size="small" color={STATUS_COLOR[adr.status]} label={s(STATUS_LABEL[adr.status])} data-testid="adr-status" data-guide="decision.status" />
-        <Typography variant="caption" color="text.secondary">{adr.date}</Typography>
-        <Box sx={{ flex: 1 }} />
-        {!readOnly && moves.map((next) => (
-          <Button key={next} size="small" variant="outlined" onClick={() => onStatus(next)}>
-            {s('adr.moveTo', { status: s(STATUS_LABEL[next]) })}
-          </Button>
-        ))}
-        {!readOnly && isAdrDeletable(adr) && (
-          <Button size="small" color="error" onClick={props.onDelete}>{s('adr.delete')}</Button>
-        )}
-        {props.onHistory && (
-          <Button size="small" onClick={props.onHistory}>{s('common.history')}</Button>
-        )}
-        <ToggleButtonGroup exclusive size="small" value={mode} onChange={(_e, value: Mode | null) => switchMode(value)}>
-          <ToggleButton value="read">{s('adr.read')}</ToggleButton>
-          {canEdit && <ToggleButton value="edit">{s('adr.edit')}</ToggleButton>}
-        </ToggleButtonGroup>
-      </Box>
-
-      {locked && (
-        <Typography variant="caption" color="text.secondary" sx={{ px: 2, py: 0.5, borderBottom: 1, borderColor: 'divider' }}>
-          {s('adr.locked', { status: s(STATUS_LABEL[adr.status]).toLowerCase() })}
-        </Typography>
-      )}
+      <ReaderBar
+        adr={adr} list={list} readOnly={readOnly} canEdit={canEdit} mode={mode} s={s} day={day}
+        onStatus={onStatus} onDelete={props.onDelete} onHistory={props.onHistory} onMode={switchMode}
+      />
+      <ReaderNotices adr={adr} list={list} readOnly={readOnly} s={s} />
 
       {/* ---- the body, or the source beside it ---- */}
       <Box sx={{ display: 'grid', gridTemplateColumns: mode === 'edit' && showPreview ? 'minmax(0, 1fr) minmax(0, 1fr)' : 'minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
@@ -220,83 +193,18 @@ export function AdrReader(props: AdrReaderProps) {
             <Typography variant="h4" component="h1" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
               {mode === 'edit' ? draft.title : adr.title}
             </Typography>
-
-            {/* MADR front matter, as a definition list rather than prose. */}
-            <Box component="dl" sx={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: 3, rowGap: 0.5, mt: 2, mb: 0, fontSize: 14 }}>
-              <Term>{s('adr.status')}</Term>
-              <Box component="dd" sx={{ m: 0 }}>
-                {s(STATUS_LABEL[adr.status])}
-                {successor && (
-                  <> · <Link component="button" type="button" onClick={() => onSelect(successor.id)} sx={{ fontSize: 'inherit', verticalAlign: 'baseline' }}>
-                    {s('adr.supersededBy', { name: nameOf(successor.id) })}
-                  </Link></>
-                )}
-              </Box>
-              <Term>{s('adr.date')}</Term>
-              <Box component="dd" sx={{ m: 0 }}>{adr.date}</Box>
-              <Term>{s('adr.deciders')}</Term>
-              <Box component="dd" sx={{ m: 0, color: deciders.length ? 'inherit' : 'text.secondary' }}>
-                {deciders.length ? deciders.join(', ') : '—'}
-              </Box>
-              {predecessors.length > 0 && (
-                <>
-                  <Term>{s('adr.statusSuperseded')}</Term>
-                  <Box component="dd" sx={{ m: 0 }}>
-                    {predecessors.map((p, i) => (
-                      <Box component="span" key={p.id}>
-                        {i > 0 && ', '}
-                        <Link component="button" type="button" onClick={() => onSelect(p.id)} sx={{ fontSize: 'inherit', verticalAlign: 'baseline' }}>
-                          {s('adr.supersedes', { name: nameOf(p.id) })}
-                        </Link>
-                      </Box>
-                    ))}
-                  </Box>
-                </>
-              )}
-              {restingPlans.length > 0 && (
-                <>
-                  <Term>{s('adr.plans')}</Term>
-                  <Box component="dd" sx={{ m: 0 }} data-testid="adr-plans">
-                    {restingPlans.map((plan, i) => (
-                      <Box component="span" key={plan.id}>
-                        {i > 0 && ', '}
-                        <Link component="button" type="button" onClick={() => props.plans?.onOpen(plan.id)} sx={{ fontSize: 'inherit', verticalAlign: 'baseline' }}>
-                          {transitionLabel(plan)} {plan.title}
-                        </Link>
-                      </Box>
-                    ))}
-                  </Box>
-                </>
-              )}
-            </Box>
-
-            {headings.length > 0 && (
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, py: 1.5, mt: 2, mb: 2, borderTop: 1, borderBottom: 1, borderColor: 'divider' }}>
-                <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '.05em' }}>
-                  {s('adr.contents')}
-                </Typography>
-                {headings.map((h, index) => (
-                  <Typography
-                    key={`${h.id}-${index}`}
-                    component="button"
-                    type="button"
-                    variant="caption"
-                    onClick={() => scrollToHeading(h.text)}
-                    sx={{ border: 0, p: 0, bgcolor: 'transparent', color: 'text.secondary', cursor: 'pointer', pl: h.level === 3 ? 1.5 : 0, '&:hover': { color: 'primary.main' } }}
-                  >
-                    {h.text}
-                  </Typography>
-                ))}
-              </Box>
-            )}
-
+            <FrontMatter
+              adr={adr} list={list} canEdit={canEdit} s={s} day={day} onUpdate={onUpdate} onSelect={onSelect}
+              plans={props.plans} solutions={props.solutions}
+            />
+            <Contents headings={headings} root={contentRef} s={s} />
             <Box sx={{ fontSize: 15, mt: headings.length ? 0 : 3 }} data-document>{rendered}</Box>
-
             <SignersTable
               signers={adr.signers}
               editable={canEdit}
               today={today}
               s={s}
+              day={day}
               onChange={(signers) => onUpdate({ signers })}
             />
           </DocumentSheet>
@@ -306,10 +214,6 @@ export function AdrReader(props: AdrReaderProps) {
   )
 }
 
-function Term({ children }: { children: ReactNode }) {
-  return <Box component="dt" sx={{ color: 'text.secondary', fontWeight: 500 }}>{children}</Box>
-}
-
 // --- the reviewers ------------------------------------------------------------------
 
 type SignersTableProps = {
@@ -317,6 +221,8 @@ type SignersTableProps = {
   editable: boolean
   today: () => string
   s: Translate
+  /** A day as the screen says it. */
+  day: (value: string) => string
   onChange: (signers: AdrSigner[]) => void
 }
 
@@ -325,7 +231,7 @@ type SignersTableProps = {
  * and picking one stamps today — a signature without a date is not one.
  * Edits commit straight away: a table row is a field, not a page.
  */
-function SignersTable({ signers, editable, today, s, onChange }: SignersTableProps) {
+function SignersTable({ signers, editable, today, s, day, onChange }: SignersTableProps) {
   const edit = (index: number, patch: Partial<AdrSigner>) =>
     onChange(signers.map((signer, i) => (i === index ? { ...signer, ...patch } : signer)))
   const setVerdict = (index: number, verdict: AdrVerdict | 'pending') => {
@@ -382,7 +288,7 @@ function SignersTable({ signers, editable, today, s, onChange }: SignersTablePro
                     </TextField>
                   ) : s(VERDICT_LABEL[signer.verdict ?? 'pending'])}
                 </TableCell>
-                <TableCell>{signer.signedAt ?? ''}</TableCell>
+                <TableCell>{signer.signedAt ? day(signer.signedAt) : ''}</TableCell>
                 {editable && (
                   <TableCell padding="none">
                     <Tooltip title={s('adr.removeSigner', { name: signer.name || '…' })}>

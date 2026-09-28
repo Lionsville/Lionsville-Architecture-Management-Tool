@@ -236,6 +236,14 @@ describe('the axis', () => {
     setup({ model: model({ elements: [element('billing', 'Billing')], transitions: [] }) })
     expect(screen.getByText('Nothing here has a date yet.')).toBeTruthy()
   })
+
+  it('still draws where the dates disagree on an empty page, saying that they agree', () => {
+    setup({ model: model({ elements: [element('billing', 'Billing')], transitions: [] }) })
+    const box = document.querySelector<HTMLElement>('[data-guide="roadmap.findings"]')
+    expect(box).not.toBeNull()
+    expect(within(box!).getByText('Where the dates disagree')).toBeTruthy()
+    expect(within(box!).getByText('The dates agree with each other.')).toBeTruthy()
+  })
 })
 
 describe('the checks', () => {

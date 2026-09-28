@@ -32,10 +32,23 @@ import type { TechnologyRow } from '../../projects/technologyRegister'
 export type AttentionItem = {
   /** What kind of thing it is, for a test and a key. */
   key: string
+  /**
+   * The same, as the one word a row carries on screen (`data-finding`):
+   * `conflict`, `dangling`, `unattributed`, `unrealised`… — the key without
+   * the table it is said from. A name for something outside this tree to
+   * point at a kind of finding by, which the sentence cannot be: that moves
+   * with the language.
+   */
+  kind: string
   /** The scope to open, and the record to select there. */
   scope: ScopePath
   id: ElementId
   text: string
+}
+
+/** The kind a key names: its last segment, `check.conflict` → `conflict`. */
+export function findingKind(key: string): string {
+  return key.slice(key.lastIndexOf('.') + 1)
 }
 
 export function attentionItems(
@@ -49,11 +62,11 @@ export function attentionItems(
   const within = (path: ScopePath) => at === ROOT_SCOPE || isWithinScope(path, at)
   const items: AttentionItem[] = []
   const seen = new Set<string>()
-  const add = (item: AttentionItem) => {
+  const add = (item: Omit<AttentionItem, 'kind'>) => {
     const key = `${item.key}|${item.scope}|${item.id}`
     if (seen.has(key)) return
     seen.add(key)
-    items.push(item)
+    items.push({ ...item, kind: findingKind(item.key) })
   }
   for (const [scope, held] of findings ?? []) {
     if (!within(scope)) continue

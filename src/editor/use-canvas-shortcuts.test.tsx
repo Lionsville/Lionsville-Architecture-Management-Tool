@@ -115,6 +115,10 @@ function Harness({ handlers, clipboardRef, pasteCountRef, mounted = true }: Harn
       <div data-testid="ignored" data-shortcuts-ignore="">
         <button type="button" data-testid="ignored-child" />
       </div>
+      {/* The inspector's Uses picker: a text field inside the marker. */}
+      <div data-testid="picker" data-shortcuts-ignore="">
+        <input data-testid="picker-field" />
+      </div>
     </div>
   );
 }
@@ -240,6 +244,16 @@ describe('useCanvasShortcuts — bail guard', () => {
       expect(setSelection).not.toHaveBeenCalled();
       expect(actions.movePlacements).not.toHaveBeenCalled();
       expect(undo).not.toHaveBeenCalled();
+    });
+
+    it(`leaves Escape to a text field inside the marker, so the selection stays (${path})`, () => {
+      // Escape from an ordinary field deselects, which closes the inspector.
+      // From the Uses picker's field it must only close the picker's list:
+      // deselecting unmounted the inspector before the picker could commit,
+      // and the ticks were lost.
+      const { view, setSelection } = setupWithPath();
+      fireEvent.keyDown(view.getByTestId('picker-field'), { key: 'Escape' });
+      expect(setSelection).not.toHaveBeenCalled();
     });
   }
 

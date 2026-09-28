@@ -82,6 +82,13 @@ export type OrganisationCardsProps = {
   onOpenTechnologyLandscape: () => void
   /** The documentation page, as the bar opens it. */
   onOpenDocumentation?: () => void
+  /**
+   * May this person change the scope? Where not, a page the scope has not been
+   * given yet is not offered — *Make a sheet…* would be a write they are
+   * refused — and a page it has is offered to read, as ever. Everything may be
+   * made where absent.
+   */
+  writable?: boolean
   s: Translate
 }
 
@@ -126,15 +133,25 @@ function tallyLine<T extends string>(
     .join(' · ')
 }
 
+/**
+ * A card's buttons: in one row while they fit and on two when they do not,
+ * each on one line — a label broken over two lines inside its button read as
+ * two buttons.
+ */
+function Actions({ children }: { children: ReactNode }) {
+  return <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.5 }}>{children}</Stack>
+}
+
 export function OrganisationCards({
   pages, ready, register, technology, initiatives = 0, sharedObservations = 0, shows, onOpenBusiness, onOpenMap, onOpenDecisions,
-  onOpenObservations, onOpenRoadmap, onOpenRegister, onOpenTechnology, onOpenTechnologyLandscape, onOpenDocumentation, s,
+  onOpenObservations, onOpenRoadmap, onOpenRegister, onOpenTechnology, onOpenTechnologyLandscape, onOpenDocumentation,
+  writable = true, s,
 }: OrganisationCardsProps) {
   // A fresh folder, and the shipped example's organisation until the sheet
   // moves up to it: one sentence on each card rather than four zeroes, which
   // read as a fault rather than as a beginning.
   const nothing = ready && pages.empty
-  const quiet = { fontSize: 11, minWidth: 0, px: 1 } as const
+  const quiet = { fontSize: 11, minWidth: 0, px: 1, whiteSpace: 'nowrap' } as const
 
   const businessCount = nothing ? s('org.nothingHere') : ready ? [
     plural(s, { one: 'org.journeysOne', other: 'org.journeysOther' }, pages.business.journeys),
@@ -155,7 +172,7 @@ export function OrganisationCards({
     // A grid rather than a wrapping row: equal columns, so six cards are two
     // rows of three the same size and left-aligned, not four and two wider ones
     // starting half a gutter in.
-    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 1.5, mb: 4 }} data-testid="organisation-cards" data-guide="org.cards">
+    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 1.5, mb: 4 }} data-testid="organisation-cards" data-guide="org.cards">
       {shows.documentation && (
         <OnePage
           icon={<DocumentIcon />}
@@ -181,19 +198,23 @@ export function OrganisationCards({
         count={businessCount}
         finding={businessFinding}
         action={(
-          <Stack direction="row" spacing={0.5}>
-            <Button size="small" onClick={onOpenBusiness} sx={quiet} data-testid="open-business" data-guide="org.card.business">
-              {/* A scope with no sheet is not missing one; it has not been given
-                  one yet, and the word says which. */}
-              {pages.business.sheetId ? s('picker.open') : s('org.businessMake')}
-            </Button>
+          <Actions>
+            {(pages.business.sheetId || writable) && (
+              <Button size="small" onClick={onOpenBusiness} sx={quiet} data-testid="open-business" data-guide="org.card.business">
+                {/* A scope with no sheet is not missing one; it has not been given
+                    one yet, and the word says which. */}
+                {pages.business.sheetId ? s('picker.open') : s('org.businessMake')}
+              </Button>
+            )}
             {/* The map is the same layer read the other way — what supports
                 each capability, across the tree — and lives behind the same
                 card rather than a fifth. */}
-            <Button size="small" onClick={onOpenMap} sx={quiet} data-testid="open-map" data-guide="org.card.map">
-              {pages.business.mapId ? s('org.map') : s('org.mapMake')}
-            </Button>
-          </Stack>
+            {(pages.business.mapId || writable) && (
+              <Button size="small" onClick={onOpenMap} sx={quiet} data-testid="open-map" data-guide="org.card.map">
+                {pages.business.mapId ? s('org.map') : s('org.mapMake')}
+              </Button>
+            )}
+          </Actions>
         )}
       />}
 
@@ -317,16 +338,18 @@ export function OrganisationCards({
           plural(s, { one: 'techRegister.sharedOne', other: 'techRegister.sharedOther' }, technology.shared),
         ].join(' · ')}
         action={(
-          <Stack direction="row" spacing={0.5}>
+          <Actions>
             <Button size="small" onClick={onOpenTechnology} sx={quiet} data-testid="open-technology" data-guide="org.card.technology">
               {s('picker.open')}
             </Button>
             {/* The landscape is the same layer as a picture — who uses what,
                 what is offered, what delivers it — behind the same card. */}
-            <Button size="small" onClick={onOpenTechnologyLandscape} sx={quiet} data-testid="open-technology-landscape" data-guide="org.card.landscape">
-              {pages.technology.landscapeId ? s('org.technologyLandscape') : s('org.technologyLandscapeMake')}
-            </Button>
-          </Stack>
+            {(pages.technology.landscapeId || writable) && (
+              <Button size="small" onClick={onOpenTechnologyLandscape} sx={quiet} data-testid="open-technology-landscape" data-guide="org.card.landscape">
+                {pages.technology.landscapeId ? s('org.technologyLandscape') : s('org.technologyLandscapeMake')}
+              </Button>
+            )}
+          </Actions>
         )}
       />}
     </Box>

@@ -10,6 +10,13 @@
  * and the button that moves it on, which stays disabled until the list is
  * clear. Once it is implemented the reader asks whether it worked: the
  * observations under what it addresses, and whether any was seen since.
+ * It offers only what its state allows (ADR-0026, amended 28 September
+ * 2026): a cause is taken on while it is an idea or shaped, an experiment is
+ * planned while it is shaped or testing, and where there is no step back the
+ * reader says how to get one.
+ *
+ * An experiment's reader moves it as `experimentMovesFrom` allows, one button
+ * per move; concluding and reopening ask first, through the page.
  *
  * Title and body follow the other readers: a local draft, committed when it
  * has been quiet for a moment and when the mode switches back to read.
@@ -25,12 +32,17 @@ import TextField from '@mui/material/TextField'
 import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Typography from '@mui/material/Typography'
+import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
+import { formatDay } from '../../i18n/dates'
 import type { MarkdownRenderOptions } from '../../documentation/documentation'
 import { DocumentSheet } from '../../documentation/ui/DocumentSheet'
 import { DocumentSource } from '../../documentation/ui/DocumentSource'
 import type { DocumentImages } from '../../documentation/ui/DocumentSource'
-import { EXPERIMENT_OUTCOMES, SOLUTION_SIZES, formatExperimentNumber, formatSolutionNumber, previousState } from '../solution'
+import {
+  SOLUTION_SIZES, experimentMovesFrom, formatExperimentNumber, formatSolutionNumber, isConcluded, mayAddress,
+  mayPlanExperiment, previousState,
+} from '../solution'
 import type {
   EarlierAttempt, Experiment, ExperimentOutcome, ExperimentPatch, Gate, Solution, SolutionPatch, SolutionPhase,
   SolutionQuestion, SolutionSize, SolutionState,
@@ -39,10 +51,10 @@ import type { CauseStrength } from '../observation'
 import {
   GATE_LABEL, OUTCOME_COLOR, OUTCOME_LABEL, PHASE_COLOR, PHASE_LABEL, QUESTION_LABEL, SIZE_LABEL, STRENGTH_LABEL,
 } from '../observationScope'
-import { LinkList, Term, Value, useDraft } from './Readers'
+import { LinkList, OverflowActions, READER_ROOT_SX, TITLE_SX, Term, Value, WIDE_ONLY_SX, useDraft } from './Readers'
 import type { Mode } from './Readers'
-
-const MONO = 'ui-monospace, Menlo, monospace'
+import type { MenuAction } from './PictureMenu'
+import { experimentMoveLabel } from './ObservationLifecycle'
 
 function Section({ title, children, testId }: { title: string; children: ReactNode; testId?: string }) {
   return (
@@ -96,6 +108,8 @@ export type SolutionReaderProps = {
   }
   /** False while it is adopted and its decision record stands accepted: the record is locked, and so is the step back. */
   mayGoBack: boolean
+  /** Where there is no step back, the record to supersede for one: `ADR-0003`. */
+  reopenBy?: string
   readOnly: boolean
   s: Translate
   renderMarkdown: (md: string, options?: MarkdownRenderOptions) => ReactNode
@@ -131,6 +145,12 @@ export function SolutionReader(props: SolutionReaderProps) {
   const label = formatSolutionNumber(solution.number)
   const back = props.mayGoBack ? previousState(solution.state) : undefined
   const open = gate ? gate.items.filter((one) => !one.ok) : []
+  const { language } = useStrings()
+  const day = (date: string) => formatDay(date, language)
+  const occasional: MenuAction[] = canEdit ? [
+    ...(solution.state !== 'adopted' ? [{ key: 'drop', label: s('solution.drop'), onClick: props.onDrop }] : []),
+    { key: 'delete', label: s('observation.delete'), divider: true, danger: true, onClick: props.onDelete },
+  ] : []
 
   const [name, setName] = useState('')
   const [attempt, setAttempt] = useState<EarlierAttempt>({ when: '', what: '', why: '' })
@@ -160,16 +180,17 @@ export function SolutionReader(props: SolutionReaderProps) {
   )
 
   return (
-    <Box data-testid="solution-reader" sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%' }}>
+    <Box data-testid="solution-reader" sx={READER_ROOT_SX}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 0.75, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flexWrap: 'wrap' }}>
         <Chip size="small" color={PHASE_COLOR[phase]} label={s(PHASE_LABEL[phase])} data-testid="solution-phase" />
         <Box sx={{ flex: 1 }} />
         {canEdit && (
           <>
-            <Button size="small" variant="outlined" onClick={props.onAddress}>{s('solution.addressCause')}</Button>
-            <Button size="small" variant="outlined" onClick={props.onPlanExperiment} data-guide="solution.planExperiment">{s('solution.planExperiment')}</Button>
-            {solution.state !== 'adopted' && <Button size="small" onClick={props.onDrop} data-testid="solution-drop">{s('solution.drop')}</Button>}
-            <Button size="small" color="error" onClick={props.onDelete}>{s('observation.delete')}</Button>
+            {mayAddress(solution) && <Button size="small" variant="outlined" onClick={props.onAddress} data-testid="solution-address">{s('solution.addressCause')}</Button>}
+            {mayPlanExperiment(solution) && <Button size="small" variant="outlined" onClick={props.onPlanExperiment} data-guide="solution.planExperiment">{s('solution.planExperiment')}</Button>}
+            {solution.state !== 'adopted' && <Button size="small" onClick={props.onDrop} data-testid="solution-drop" sx={WIDE_ONLY_SX}>{s('solution.drop')}</Button>}
+            <Button size="small" color="error" onClick={props.onDelete} sx={WIDE_ONLY_SX}>{s('observation.delete')}</Button>
+            <OverflowActions actions={occasional} label={s('observation.more')} />
           </>
         )}
         {dropped && !readOnly && (
@@ -201,7 +222,7 @@ export function SolutionReader(props: SolutionReaderProps) {
         {showPreview && (
           <DocumentSheet dense={mode === 'edit'}>
             <Typography variant="overline" color="text.secondary">{label}</Typography>
-            <Typography variant="h4" component="h1" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
+            <Typography variant="h4" component="h1" sx={TITLE_SX}>
               {mode === 'edit' ? draft.title : solution.title}
             </Typography>
 
@@ -368,6 +389,11 @@ export function SolutionReader(props: SolutionReaderProps) {
                 <Button size="small" onClick={() => props.onMove(back)} data-testid="solution-back">{s('solution.moveBack', { state: s(PHASE_LABEL[back]).toLowerCase() })}</Button>
               </Box>
             )}
+            {!back && props.reopenBy && !dropped && (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }} data-testid="solution-reopen-hint">
+                {s('solution.reopenBySuperseding', { label: props.reopenBy })}
+              </Typography>
+            )}
 
             {props.implemented && (
               <Section title={s('solution.didItWork')} testId="solution-did-it-work">
@@ -376,8 +402,12 @@ export function SolutionReader(props: SolutionReaderProps) {
                   {props.implemented.observations.map((one) => (
                     <Box component="li" key={one.key} sx={{ display: 'flex', gap: 1, py: 0.25 }}>
                       <Link component="button" type="button" onClick={() => props.onOpen(one.key)} sx={{ flex: 1, textAlign: 'left' }}>{one.label}</Link>
-                      <Typography variant="caption" color={one.seenOn ? 'error' : 'text.secondary'}>
-                        {one.seenOn ? s('solution.seenSince', { date: one.seenOn }) : s('solution.heldSince', { date: props.implemented!.since })}
+                      <Typography variant="caption" color={one.seenOn ? 'error' : 'text.secondary'} sx={{ flexShrink: 0 }}>
+                        {one.seenOn === undefined
+                          ? s('solution.heldSince', { date: day(props.implemented!.since) })
+                          : one.seenOn === props.implemented!.since
+                            ? s('solution.seenSameDay', { date: day(one.seenOn) })
+                            : s('solution.seenSince', { date: day(one.seenOn) })}
                       </Typography>
                     </Box>
                   ))}
@@ -391,7 +421,7 @@ export function SolutionReader(props: SolutionReaderProps) {
             <Box component="ol" data-testid="solution-history" sx={{ listStyle: 'none', m: 0, p: 0, fontSize: 13 }}>
               {solution.history.map((event, index) => (
                 <Box component="li" key={index} sx={{ display: 'flex', gap: 2, py: 0.25, borderBottom: 1, borderColor: 'divider' }}>
-                  <Box component="span" sx={{ fontFamily: MONO, color: 'text.secondary', whiteSpace: 'nowrap' }}>{event.date}</Box>
+                  <Box component="span" sx={{ color: 'text.secondary', whiteSpace: 'nowrap' }}>{day(event.date)}</Box>
                   <Box component="span">
                     {event.kind === 'moved' && event.to
                       ? s('solution.eventMoved', { state: s(PHASE_LABEL[event.to as SolutionState] ?? 'solution.phaseIdea').toLowerCase() })
@@ -429,7 +459,12 @@ export type ExperimentReaderProps = {
   s: Translate
   renderMarkdown: (md: string, options?: MarkdownRenderOptions) => ReactNode
   onUpdate: (patch: ExperimentPatch) => void
-  onConclude: (outcome: ExperimentOutcome) => void
+  /**
+   * Move it to one of the outcomes `experimentMovesFrom` offers. The page
+   * asks for the result and the day before a conclusion, and confirms a
+   * reopen, naming the proof it takes away.
+   */
+  onMove: (to: ExperimentOutcome) => void
   onDelete: () => void
   onOpen: (key: string) => void
   onAddImage?: (file: File) => Promise<string | undefined>
@@ -459,22 +494,37 @@ export function ExperimentReader(props: ExperimentReaderProps) {
     />
   )
   const shown = (value: string | undefined) => (value ? value : <Muted>—</Muted>)
+  const { language } = useStrings()
+  const shownDay = (value: string | undefined) => (value ? formatDay(value, language) : <Muted>—</Muted>)
 
   return (
-    <Box data-testid="experiment-reader" sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%' }}>
+    <Box data-testid="experiment-reader" sx={READER_ROOT_SX}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 0.75, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flexWrap: 'wrap' }}>
         <Chip size="small" color={OUTCOME_COLOR[experiment.outcome]} label={s(OUTCOME_LABEL[experiment.outcome])} data-testid="experiment-outcome" />
         <Box sx={{ flex: 1 }} />
         {canEdit && (
           <>
-            <ToggleButtonGroup
-              exclusive size="small" value={experiment.outcome}
-              onChange={(_e, next: ExperimentOutcome | null) => { if (next) props.onConclude(next) }}
-              aria-label={s('solution.outcome')}
-            >
-              {EXPERIMENT_OUTCOMES.map((one) => <ToggleButton key={one} value={one} sx={{ py: 0.25, fontSize: 11 }} data-testid={`experiment-outcome-${one}`}>{s(OUTCOME_LABEL[one])}</ToggleButton>)}
-            </ToggleButtonGroup>
-            <Button size="small" color="error" onClick={props.onDelete}>{s('observation.delete')}</Button>
+            {/* The moves from here, and only those: planned starts, running
+                goes back or is concluded, a concluded one is reopened. */}
+            <Box role="group" aria-label={s('solution.experimentMoves')} sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+              {experimentMovesFrom(experiment.outcome).map((to) => (
+                <Button
+                  key={to}
+                  size="small"
+                  variant={isConcluded(to) || (to === 'running' && experiment.outcome === 'planned') ? 'outlined' : 'text'}
+                  color={to === 'confirmed' ? 'success' : to === 'refuted' ? 'error' : 'primary'}
+                  onClick={() => props.onMove(to)}
+                  data-testid={`experiment-outcome-${to}`}
+                >
+                  {experimentMoveLabel(experiment.outcome, to, s)}
+                </Button>
+              ))}
+            </Box>
+            <Button size="small" color="error" onClick={props.onDelete} sx={WIDE_ONLY_SX}>{s('observation.delete')}</Button>
+            <OverflowActions
+              actions={[{ key: 'delete', label: s('observation.delete'), danger: true, onClick: props.onDelete }]}
+              label={s('observation.more')}
+            />
           </>
         )}
         <ToggleButtonGroup exclusive size="small" value={mode} onChange={(_e, value: Mode | null) => switchMode(value)}>
@@ -510,7 +560,7 @@ export function ExperimentReader(props: ExperimentReaderProps) {
         {showPreview && (
           <DocumentSheet dense={mode === 'edit'}>
             <Typography variant="overline" color="text.secondary">{formatExperimentNumber(experiment.number)}</Typography>
-            <Typography variant="h4" component="h1" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
+            <Typography variant="h4" component="h1" sx={TITLE_SX}>
               {mode === 'edit' ? draft.title : experiment.title}
             </Typography>
             <Box component="dl" sx={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: 3, rowGap: 0.5, mt: 2, mb: 0, fontSize: 14 }}>
@@ -522,8 +572,8 @@ export function ExperimentReader(props: ExperimentReaderProps) {
               <Term>{s('solution.measure')}</Term><Value>{shown(experiment.measure)}</Value>
               <Term>{s('solution.whereField')}</Term><Value>{shown(experiment.where)}</Value>
               <Term>{s('solution.byField')}</Term><Value>{shown(experiment.by)}</Value>
-              <Term>{s('solution.fromField')}</Term><Value>{shown(experiment.from)}</Value>
-              <Term>{s('solution.toField')}</Term><Value>{shown(experiment.to)}</Value>
+              <Term>{s('solution.fromField')}</Term><Value>{shownDay(experiment.from)}</Value>
+              <Term>{s('solution.toField')}</Term><Value>{shownDay(experiment.to)}</Value>
               <Term>{s('solution.result')}</Term><Value testId="experiment-result">{shown(experiment.result)}</Value>
             </Box>
             {experiment.outcome === 'refuted' && <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>{s('solution.refutedNote')}</Typography>}

@@ -1001,6 +1001,43 @@ the first paint on a named home and with the preferences open, and
 `App.storage.test.tsx` the chip right after the agent control on the
 workspace's bar, a domain's home and the organisation's.
 
+## Amended — the one a build whose scopes many people write to needed
+
+*Amended 28 September 2026.* A build whose scopes many people write to at once
+found that the Activity list told a person who had just opened a scope that
+nothing had happened: the list was the open session's steps, and a session
+begins when the scope is opened. The place that keeps the work holds a log of
+every step and who took it; the list had no way to ask for it. It is added as
+one optional member, so the three built-ins are written exactly as they were.
+
+* **A source may say what was lately done to a scope.** `SourceProvider` takes
+  `recentActivity`, a `SourceRecentActivity` (`platform/sourceProvider.ts`):
+  given a scope path, a promise of its recent steps as `SourceActivityLine`s,
+  newest last. `undefined` is *nothing from me*, and the list is then the
+  session's alone, as over a folder; an empty list is an answer; a rejection is
+  a source that could not be asked, and the list shows what the session holds.
+  A scope the person may not read answers empty, so the answer does not say
+  which of the two it is.
+* **Asked for the open source only, and only when the list opens.** The shell
+  reads it from the open source's provider (`sourceRecentActivity` in
+  `app/composition.ts`) and hands it to the workspace, which binds it to the
+  open scope; the list asks when it is opened and merges the answer with the
+  session's own steps. Absent for the three that ship.
+* **A source may say whether it is there to be asked.** `SourceProvider` takes
+  `connected`, a `() => boolean`, read through `sourceConnected` in
+  `app/composition.ts`. The tree the shell reads again by itself after a step
+  that changes its shape (`app/treeShape.ts`) is not read while it says
+  `false`: a step kept while the connection is down is not at the far end yet,
+  a read then fails and would be reported as an error nobody asked for, and
+  the provider says the tree changed once it is back. Absent for the three
+  that ship, which are always there, and a read is then never held back
+  (`treeShape.test.ts`).
+
+`ActivityMenu.test.tsx` pins it: the list asks the source when it opens, puts
+the log and the session's steps in the order they happened with each step
+once, says whose each line is, and shows the session alone where the log could
+not be read.
+
 ## More Information
 
 ADR-0002 for the command and its inverse, which is the whole reason this is a

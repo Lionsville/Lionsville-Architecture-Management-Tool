@@ -71,6 +71,7 @@ export function transitionFileText(transition: Transition): string {
     to: transition.to,
     owner: transition.owner,
     initiative: transition.initiative,
+    doneOn: transition.doneOn,
     // Written as a list of ids rather than rows, because a decision reference
     // is one value and a row with one column reads like a mistake.
     decisions: transition.decisions.filter(Boolean).map((id) => ({ id })),
@@ -141,6 +142,7 @@ export function transitionFromFile(text: string, path: string): Transition | und
   const from = frontMatterString(fields, 'from')
   const to = frontMatterString(fields, 'to')
   const owner = frontMatterString(fields, 'owner')
+  const doneOn = frontMatterString(fields, 'doneOn')
 
   return {
     id: frontMatterString(fields, 'id') || `tr-${number}`,
@@ -151,6 +153,7 @@ export function transitionFromFile(text: string, path: string): Transition | und
     ...(from ? { from } : {}),
     ...(to ? { to } : {}),
     ...(owner ? { owner } : {}),
+    ...(doneOn ? { doneOn } : {}),
     elements: elementsFrom(frontMatterRows(fields, 'elements')),
     decisions: decisionsFrom(frontMatterRows(fields, 'decisions')),
     milestones: milestonesFrom(frontMatterRows(fields, 'milestones')),

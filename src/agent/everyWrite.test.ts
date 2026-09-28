@@ -133,16 +133,21 @@ const SHAPED: readonly Step[] = [
   ['solution.move', { id: 'SO-0001', to: 'shaped' }],
 ]
 const TRIED: readonly Step[] = [...SHAPED, ['experiment.plan', { tests: ['SO-0001'], title: 'Two weeks at one desk', hypothesis: 'Calls halve' }]]
+// An experiment runs before it is concluded, and a conclusion says what happened (ADR-0026).
+const RUNNING: readonly Step[] = [...TRIED, ['experiment.conclude', { id: 'EX-0001', outcome: 'running' }]]
+const CONFIRMED: readonly Step[] = [...RUNNING, ['experiment.conclude', { id: 'EX-0001', outcome: 'confirmed', result: 'Calls halved' }]]
 const PROVEN: readonly Step[] = [
-  ...TRIED,
-  ['experiment.conclude', { id: 'EX-0001', outcome: 'confirmed' }],
+  ...CONFIRMED,
   ['solution.move', { id: 'SO-0001', to: 'proven' }],
 ]
-// The record `solution.decide` proposes, by the id the view mints for it.
+// The record `solution.decide` proposes, by the id the view mints for it. Its
+// body is written from the records and clears the gate's text lines; the
+// approval is the one line a person still has to give (ADR-0008).
 const ADOPTED: readonly Step[] = [
   ...PROVEN,
   ['solution.decide', { id: 'SO-0001' }],
   ['decision.transition', { id: 'adr-new-1', status: 'reviewing' }],
+  ['decision.update', { id: 'adr-new-1', signers: [{ name: 'Operations', verdict: 'approved', signedAt: '2026-09-20' }] }],
   ['decision.transition', { id: 'adr-new-1', status: 'accepted' }],
   ['solution.move', { id: 'SO-0001', to: 'adopted' }],
 ]
@@ -166,7 +171,7 @@ const EVERY_WRITE: { readonly [T in CommandTool]: readonly Case[] } = {
   'decision.propose': [{ args: { title: 'Move CRM to the cloud' } }],
   'decision.update': [{ args: { id: 'adr-1', title: 'Keep the ledger, for now' } }],
   'decision.remove': [{ args: { id: 'adr-1' } }],
-  'decision.transition': [{ args: { id: 'adr-2', status: 'accepted' } }],
+  'decision.transition': [{ args: { id: 'adr-2', status: 'rejected', reason: 'Not now.' } }],
 
   'observation.record': [{ args: { title: 'Duplicate customers', impact: 'major' } }],
   'observation.update': [{ args: { id: 'ob-2', shared: true } }],
@@ -184,7 +189,7 @@ const EVERY_WRITE: { readonly [T in CommandTool]: readonly Case[] } = {
   'solution.update': [{ args: { id: 'SO-0001', benefit: 'large' }, on: [PROPOSED] }],
   'solution.address': [{ args: { id: 'SO-0001', cause: 'ca-2', strength: 'weak' }, on: [PROPOSED] }],
   'solution.unaddress': [{ args: { id: 'SO-0001', cause: 'ca-2' }, on: [PROPOSED] }],
-  'solution.move': [{ args: { id: 'SO-0001', to: 'proven' }, on: [...TRIED, ['experiment.conclude', { id: 'EX-0001', outcome: 'confirmed' }]] }],
+  'solution.move': [{ args: { id: 'SO-0001', to: 'proven' }, on: CONFIRMED }],
   'solution.waive': [{ args: { id: 'SO-0001', reason: 'An appointment is not trialled' }, on: [PROPOSED] }],
   'solution.drop': [{ args: { id: 'SO-0001', note: 'Nobody would take it' }, on: [PROPOSED] }],
   'solution.restore': [{ args: { id: 'SO-0001' }, on: [PROPOSED, ['solution.drop', { id: 'SO-0001', note: 'Not now' }]] }],
@@ -193,7 +198,7 @@ const EVERY_WRITE: { readonly [T in CommandTool]: readonly Case[] } = {
   'solution.remove': [{ args: { id: 'SO-0001' }, on: [PROPOSED] }],
   'experiment.plan': [{ args: { tests: ['SO-0001'], title: 'Trial', hypothesis: 'It works' }, on: SHAPED }],
   'experiment.update': [{ args: { id: 'EX-0001', measure: 'Calls per week' }, on: TRIED }],
-  'experiment.conclude': [{ args: { id: 'EX-0001', outcome: 'refuted' }, on: TRIED }],
+  'experiment.conclude': [{ args: { id: 'EX-0001', outcome: 'refuted', result: 'Calls stayed' }, on: RUNNING }],
   'experiment.remove': [{ args: { id: 'EX-0001' }, on: TRIED }],
 
   'plan.replace': [{ args: { elementId: 'crm', newName: 'CRM next', shadowFrom: '2027-03-01', cutover: '2027-09-01' } }],

@@ -48,15 +48,21 @@ export function NeedsAttention({ items, onOpen, s }: {
             disabled={!onOpen}
             onClick={() => onOpen?.(item.scope, item.id)}
             data-testid={`attention-${item.scope}-${item.id}`}
+            data-finding={item.kind}
             title={s('org.attentionOpen')}
             sx={{
-              fontSize: 13, font: 'inherit', color: 'inherit', background: 'none', border: 0,
-              p: 0, py: 0.5, cursor: onOpen ? 'pointer' : 'default', textAlign: 'left',
+              // `font` first: the shorthand resets the size, so a size said
+              // before it was a size nobody saw.
+              font: 'inherit', fontSize: 13, color: 'inherit', background: 'none', border: 0,
+              display: 'flex', alignItems: 'center', gap: 1, width: '100%',
+              px: 0.75, py: 0.5, borderRadius: 0.5, cursor: onOpen ? 'pointer' : 'default', textAlign: 'left',
               borderBottom: 1, borderColor: 'divider',
-              '&:hover': { color: onOpen ? 'primary.main' : 'inherit' },
+              '&:hover': onOpen ? { bgcolor: 'action.hover', color: 'primary.main' } : {},
             }}
           >
-            {item.text}
+            <Box component="span" sx={{ flex: 1, minWidth: 0 }}>{item.text}</Box>
+            {/* That the row goes somewhere, said the way a menu line says it. */}
+            {onOpen && <Box component="span" aria-hidden sx={{ color: 'text.secondary', flexShrink: 0 }}>›</Box>}
           </Typography>
         ))}
       </Stack>

@@ -11,7 +11,7 @@ import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
-import { LOCALE } from '../../i18n'
+import { formatDay } from '../../i18n/dates'
 import { plural } from '../../i18n/strings'
 import type { Language, Translate } from '../../i18n'
 import { isBoardKind } from '../../model/placement'
@@ -38,7 +38,8 @@ const COMPACT_ACTION_SX = { ...ACTION_SX, py: 0, lineHeight: 1.6 } as const
 
 interface RowActions {
   onOpen: (id: string) => void
-  onDelete: (board: { id: string; name: string }) => void
+  /** Absent for somebody who may only read the scope: there is nothing to take off. */
+  onDelete?: (board: { id: string; name: string }) => void
   language: Language
   s: Translate
 }
@@ -49,7 +50,7 @@ interface RowActions {
  * ({@link outlineBoards}). What a row says is what tells two boards of one
  * landscape apart: the kind, the day it shows (ADR-0009) and how much is on it.
  */
-export function BoardsTable({ boards, onOpen, onAdd, onAddSheet, onAddMap, onAddTechnology, onDelete, language, s }: {
+export function BoardsTable({ boards, onOpen, onAdd, onAddSheet, onAddMap, onAddTechnology, onDelete, readOnly = false, language, s }: {
   boards: readonly DesignDiagram[]
   onOpen: (id: string) => void
   /** A landscape for this scope — the only way to its first one. */
@@ -63,20 +64,25 @@ export function BoardsTable({ boards, onOpen, onAdd, onAddSheet, onAddMap, onAdd
    * last one is refused, and a container diagram has no tab and no last one.
    */
   onDelete: (board: { id: string; name: string }) => void
+  /**
+   * The person may read this scope and not change it: the table lists the
+   * boards and opens them, and offers neither a new one nor a removal.
+   */
+  readOnly?: boolean
   language: Language
   s: Translate
 }) {
   const [newMenu, setNewMenu] = useState<HTMLElement | null>(null)
   const pick = (make: () => void) => () => { setNewMenu(null); make() }
   const { entries, loose } = outlineBoards(boards)
-  const actions: RowActions = { onOpen, onDelete, language, s }
+  const actions: RowActions = { onOpen, ...(readOnly ? {} : { onDelete }), language, s }
   return (
     <Box sx={{ mb: 4 }} data-testid="boards" data-guide="org.boards">
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 1 }}>
         <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, flex: 1, textTransform: 'uppercase' }}>
           {s('org.boards')}
         </Typography>
-        <Button
+        {!readOnly && <Button
           size="small"
           variant="outlined"
           onClick={(event) => setNewMenu(event.currentTarget)}
@@ -85,7 +91,7 @@ export function BoardsTable({ boards, onOpen, onAdd, onAddSheet, onAddMap, onAdd
           data-testid="new-board" data-guide="org.newBoard"
         >
           {s('org.newBoard')}
-        </Button>
+        </Button>}
         <Menu open={Boolean(newMenu)} anchorEl={newMenu} onClose={() => setNewMenu(null)} slotProps={{ list: { dense: true } }}>
           <MenuItem onClick={pick(onAdd)} data-testid="new-board-landscape">{s('org.newBoardLandscape')}</MenuItem>
           <MenuItem onClick={pick(onAddSheet)}>{s('org.newBoardSheet')}</MenuItem>
@@ -151,13 +157,9 @@ function BoardRow({ board, under, compact = false, onOpen, onDelete, language, s
     s(board.kind === 'container' ? 'org.viewContainer' : 'org.viewLayer7'),
     // The day the board shows. A board with no date moves with the
     // calendar, and says so rather than printing today's.
-    board.asOf
-      ? s('org.viewAsOf', {
-        date: new Date(board.asOf).toLocaleDateString(LOCALE[language], {
-          day: 'numeric', month: 'short', year: 'numeric',
-        }),
-      })
-      : s('org.viewToday'),
+    // A day, read as the local one it is: parsed as UTC it was the day before
+    // anywhere west of Greenwich.
+    board.asOf ? s('org.viewAsOf', { date: formatDay(board.asOf, language) }) : s('org.viewToday'),
     plural(s, { one: 'org.onItOne', other: 'org.onItOther' }, board.members.length),
   ].join(' · ')
   const actionSx = compact ? COMPACT_ACTION_SX : ACTION_SX
@@ -207,7 +209,7 @@ function BoardRow({ board, under, compact = false, onOpen, onDelete, language, s
       <Button size="small" onClick={() => onOpen(board.id)} sx={actionSx}>
         {s('picker.open')}
       </Button>
-      {board.kind === 'container' && (
+      {board.kind === 'container' && onDelete && (
         <Button
           size="small"
           color="error"

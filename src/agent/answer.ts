@@ -47,7 +47,7 @@ import { causeList, experimentList, observationList, observationsOf, solutionLis
 import type { Experiment, Solution } from '../model/observation'
 import {
   alternatives, experimentsFor, formatExperimentNumber, formatSolutionNumber, isLive, openItems, seenSinceImplemented,
-  solutionGate, solutionPhase, solutionQuestions,
+  solutionGate, solutionPhase, solutionPlanOf, solutionQuestions,
 } from '../observations/solution'
 import type { SolutionContext, SolutionPlan } from '../observations/solution'
 import type { Cause, Observation } from '../model/observation'
@@ -612,9 +612,8 @@ export type SolutionFacts = {
 
 export function solutionFacts(view: Pick<ReadView, 'model' | 'tree' | 'scopePath'>): SolutionFacts {
   const { model } = view
-  const plans: SolutionPlan[] = transitionList(model).map((one) => ({
-    id: one.id, status: one.status, ...(one.to ? { to: one.to } : {}), elements: one.elements,
-  }))
+  // The done day too, where the plan kept one: *did it work* counts from it.
+  const plans: SolutionPlan[] = transitionList(model).map(solutionPlanOf)
   return {
     model,
     solutions: solutionList(model),

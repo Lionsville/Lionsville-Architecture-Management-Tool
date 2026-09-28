@@ -52,7 +52,7 @@ import {
   browserFolders, chooseFolderDestination, composeShell, desktopCommandChannel, desktopFileChannel,
   inBrowserFolder, inWorkingDirectory, openSource, registeredChrome, registeredConnects,
   registeredMenus, reloadWhenScriptsAreGone, sourceAgentPanel, sourceChip, sourceChipFace, sourceChipPanel,
-  sourceDescription,
+  sourceConnected, sourceDescription, sourceRecentActivity,
 } from './composition'
 import type { WorkingFileDestination } from './workingFileFlows'
 import type { DesktopDirectory, RegisteredConnect, Shell } from './composition'
@@ -678,6 +678,8 @@ function renderApp(
           menu: menus,
           onScopeSession: shell.onScopeSession,
           publishesSteps: shell.publishesSteps,
+          recentActivity: sourceRecentActivity(shell.source),
+          connected: sourceConnected(shell.source),
           readOnlyAt: shell.readOnlyAt,
           chrome: chromes,
           waysIn,

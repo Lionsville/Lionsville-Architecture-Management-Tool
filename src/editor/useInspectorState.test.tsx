@@ -91,6 +91,34 @@ describe('the Uses picker', () => {
     expect(setUses).toHaveBeenCalledWith('a', ['s', 'far'], [standIn]);
   });
 
+  it('writes what is still ticked when it goes away without closing', () => {
+    // Escape on the canvas used to clear the selection and take the inspector
+    // away before the list said it closed; the ticks went with it.
+    const { view, setUses } = mount();
+    act(() => view.result.current.setPending(['s', 't']));
+    view.unmount();
+    expect(setUses).toHaveBeenCalledTimes(1);
+    expect(setUses).toHaveBeenCalledWith('a', ['s', 't']);
+  });
+
+  it('writes nothing on the way out when nothing is pending', () => {
+    const { view, setUses } = mount();
+    view.unmount();
+    expect(setUses).not.toHaveBeenCalled();
+  });
+
+  it('writes once when two doors close in the same event', () => {
+    // The list closing and the focus leaving arrive together on a blur.
+    const { view, setUses } = mount();
+    act(() => view.result.current.setPending(['s', 't']));
+    act(() => {
+      view.result.current.commit();
+      view.result.current.commit();
+    });
+    view.unmount();
+    expect(setUses).toHaveBeenCalledTimes(1);
+  });
+
   it('follows the rows when the element or its rows change underneath', () => {
     const { view } = mount();
     act(() => view.result.current.setPending(['s', 't']));

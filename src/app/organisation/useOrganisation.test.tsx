@@ -75,6 +75,7 @@ function mount(
   initial: readonly ScopeSnapshot[] = [],
   over: Partial<ScopeLibrary> = {},
   active = true,
+  writable?: (path: string) => boolean,
 ): Harness {
   const store = new InMemoryScopeStore(initial)
   return mountWith({
@@ -83,11 +84,13 @@ function mount(
     save: (scope) => store.save(scope),
     remove: (path, expects) => store.remove(path, expects),
     ...over,
-  }, store, active)
+  }, store, active, writable)
 }
 
 /** The same harness over a library somebody else built — one that counts its calls. */
-function mountWith(scopes: ScopeLibrary, store: InMemoryScopeStore, active = true): Harness {
+function mountWith(
+  scopes: ScopeLibrary, store: InMemoryScopeStore, active = true, writable?: (path: string) => boolean,
+): Harness {
   const entered = vi.fn<(scope: ScopeSnapshot, page?: InitialPage) => void>()
   const treeChanged = vi.fn()
   const failures: string[] = []
@@ -107,6 +110,7 @@ function mountWith(scopes: ScopeLibrary, store: InMemoryScopeStore, active = tru
       onStorageResult: () => {},
       s,
       onTreeChanged: treeChanged,
+      ...(writable ? { writable } : {}),
     })
     return null
   }
@@ -350,6 +354,43 @@ describe('useOrganisation', () => {
     await settle()
     await act(async () => { held().open('', { page: 'roadmap' }); await Promise.resolve() })
     expect(entered).toHaveBeenCalledWith(expect.objectContaining({ path: '' }), { page: 'roadmap' })
+  })
+
+  it('gives a scope with no document one, whole, before opening the page asked for on it', async () => {
+    const { held, entered, failures, store, treeChanged } = mount([{
+      path: 'retail', model: { name: 'Retail', elements: [], relations: [], diagrams: [] },
+      activeDiagramId: '', logoLibrary: [],
+    }])
+    await settle()
+    await act(async () => { held().open('', { page: 'decisions' }) })
+    await settle()
+    await settle()
+    expect(await store.load('')).toMatchObject({ path: '', model: { elements: [], diagrams: [] } })
+    expect(entered).toHaveBeenCalledWith(expect.objectContaining({ path: '' }), { page: 'decisions' })
+    expect(treeChanged).toHaveBeenCalled()
+    expect(failures).toEqual([])
+  })
+
+  it('opens the page empty and writes nothing where the scope may only be read', async () => {
+    const { held, entered, failures, store } = mount([{
+      path: 'retail', model: { name: 'Retail', elements: [], relations: [], diagrams: [] },
+      activeDiagramId: '', logoLibrary: [],
+    }], {}, true, () => false)
+    await settle()
+    await act(async () => { held().open('', { page: 'roadmap' }) })
+    await settle()
+    expect(await store.load('')).toBeUndefined()
+    expect(entered).toHaveBeenCalledWith(expect.objectContaining({ path: '' }), { page: 'roadmap' })
+    expect(failures).toEqual([])
+  })
+
+  it('says once, through the failure, that a scope asked for with no page is gone', async () => {
+    const { held, entered, failures } = mount([])
+    await settle()
+    await act(async () => { held().open('gone') })
+    await settle()
+    expect(entered).not.toHaveBeenCalled()
+    expect(failures).toEqual(['organisation.open.gone'])
   })
 
   describe('copying an example', () => {

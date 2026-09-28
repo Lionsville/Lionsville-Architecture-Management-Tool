@@ -166,7 +166,7 @@ function useTreeParts(props: ProjectWorkspaceProps, base: ReturnType<typeof useS
   const { onOpenScope } = navigation
   const { s, notify } = shell
   const { session, requests } = base
-  const readings = useTreeReadings({ index, scope: project.path, elements: session.model.elements, groupName: tree.groupName, s })
+  const readings = useTreeReadings({ index, scope: project.path, elements: session.model.elements, groupName: tree.groupName, scopes: tree.scopes, s })
   /**
    * The four gestures that cross scopes (ADR-0012 §10).
    *

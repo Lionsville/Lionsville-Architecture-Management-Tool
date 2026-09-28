@@ -20,7 +20,7 @@ import type { PullOutcome } from '../platform/sync'
 import type { WindowChrome } from '../platform/windowChrome'
 import type { WorkingSource } from '../platform/workingSource'
 import type {
-  SourceChip, SourceFailure, SourceStatus, SourceWayIn, SourceWork, SourceWorkChanged,
+  SourceChip, SourceFailure, SourceRecentActivity, SourceStatus, SourceWayIn, SourceWork, SourceWorkChanged,
 } from '../platform/sourceProvider'
 import type { AgentGateway } from '../ports/AgentGateway'
 import type { FolderSettingsStore } from '../ports/FolderSettings'
@@ -164,6 +164,18 @@ export type AppProvider = {
   onScopeSession?: (session: ScopeSession) => (() => void) | void
   /** See `Shell.publishesSteps`: the open scope's changes travel as steps, and are not written whole. */
   publishesSteps?: boolean
+  /**
+   * The open source's log of a scope, from its provider
+   * (`SourceRecentActivity`): the Activity list then shows everybody's steps.
+   * Absent for all three sources that ship.
+   */
+  recentActivity?: SourceRecentActivity
+  /**
+   * Whether the open source's far end can be asked anything now
+   * (`SourceProvider.connected`): a read the shell makes by itself is held back
+   * while it says no. Absent for all three sources that ship.
+   */
+  connected?: () => boolean
   /**
    * See `Shell.readOnlyAt`: which scopes of this source may be read and not
    * written. Asked for the scope a workspace opens; absent for all three

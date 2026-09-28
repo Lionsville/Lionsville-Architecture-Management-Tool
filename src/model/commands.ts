@@ -232,6 +232,26 @@ export type CommandMeta = {
    */
   origin?: 'agent'
   /**
+   * Nobody asked for this step: the editor made it by itself, and the only
+   * such step is the pass that lays out a board a machine wrote, on first
+   * open (`editor/useAutoLayout.ts`).
+   *
+   * It is still the session's own step — undoable, announced, published —
+   * because a layout that lands on the model and not wherever the model is
+   * carried is a layout every later open runs again. What it is not is the
+   * person's work, and a host that counts or attributes steps has to be able
+   * to tell. Beside `origin` rather than a third value of it, because
+   * `origin` says *who*, and the answer here is still this keyboard's
+   * session.
+   *
+   * **Never carried past the session.** The session lifts it off the command
+   * into the step it records (`HistoryStep.unattended`, `SessionChange.unattended`)
+   * and records and announces the command without it: a command's own meta is
+   * what a writer elsewhere checks field by field, and this is a fact about
+   * how the step came about, not about what it does.
+   */
+  unattended?: true
+  /**
    * The stack may not undo this step, and this key says why (ADR-0012 §10).
    *
    * What a gesture that wrote TWO scopes leaves behind. Only one of the two

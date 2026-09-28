@@ -14,7 +14,7 @@ import type { TidyResult } from '../layout/tidy';
 import { remapClipboard, type ClipboardPayload } from '../model/clipboard';
 import { idPolicy, idsIn } from '../model/keys';
 import type { IdPolicy } from '../model/keys';
-import type { Command, CommandMeta } from '../model/commands';
+import type { BoardPatch, Command, CommandMeta } from '../model/commands';
 import { placedNodes,
   canPlaceKind,
   clampPlacementIntoZone,
@@ -701,7 +701,13 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
           setSelection(selectElement(id));
           return;
         }
-        const placement = seedPlacement(seed, diagram, id);
+        // What each card already in the band is drawn as, so the free slot is
+        // measured against the rects that are really there.
+        const elementsById = new Map(currentModel().elements.map((e) => [e.id, e]));
+        const placement = seedPlacement(seed, diagram, id, (other, zone) => {
+          const held = elementsById.get(other);
+          return held ? nodeFigure(held, zone) : undefined;
+        });
         geometry(transaction([
           { type: 'element.create', element },
           placeOn(diagram.id, [placement]),
@@ -816,6 +822,18 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         // did NOT produce (member-less / other groups) are preserved untouched.
         // The canvas is written even when there are no domainGroups, so a
         // landscape with only loose apps still resizes/shrinks the board.
+        // The board's own numbers, as ONE patch: the grown canvas, and the
+        // flag that says a machine wrote this geometry. A whole-board pass
+        // that placed anything is the layout that flag asks for, so the flag
+        // goes in the SAME step as the placements — never in a change of its
+        // own, which a session that carries its steps elsewhere would not
+        // carry, leaving the board to be laid out again on every open. A
+        // partial pass (one group) is not the board's layout and leaves the
+        // flag alone. Deleted rather than set to false: a saved file should
+        // look like a hand-written one.
+        const board: BoardPatch = {};
+        const settles = placements.length > 0 && !partial && diagram.geometry?.needsLayout === true;
+        if (settles) board.needsLayout = undefined;
         if (diagram.kind === 'layer7') {
           // Boxes merge by id — create-OR-resize; a box for a group the board
           // does not hold is ignored by the reducer. The canvas is written even
@@ -824,8 +842,9 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
           if (domainGroups && domainGroups.length > 0) {
             commands.push({ type: 'box.set', diagramId: diagram.id, boxes: domainGroups });
           }
-          if (canvas) commands.push({ type: 'board.set', diagramId: diagram.id, patch: { canvas } });
+          if (canvas) board.canvas = canvas;
         }
+        if (Object.keys(board).length > 0) commands.push({ type: 'board.set', diagramId: diagram.id, patch: board });
         // U-edge-2: Tidy carries ELK's computed orthogonal edge routes, so
         // tidied edges route AROUND the relaid-out nodes instead of cutting
         // through them. For every edge ELK routed with bends, PERSIST those

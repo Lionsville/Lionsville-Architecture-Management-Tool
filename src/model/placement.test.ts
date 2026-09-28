@@ -438,13 +438,53 @@ describe('seedPlacement', () => {
     placements: [{ id: 'a', zone: 'landscape', x: 0, y: 0 }, { id: 'x', zone: 'externalSystems', x: 0, y: 0 }],
   });
 
-  it('lands an application in the landscape band, in the next cascade slot', () => {
+  it('lands an application in the landscape band, in the first slot nothing covers', () => {
+    // `a` sits at the board's origin, outside every slot of the band, so the
+    // first slot is free.
     const placed = seedPlacement({ kind: 'application' }, landscape, 'new');
     expect(placed.zone).toBe('landscape');
     expect(placed).toEqual({
       id: 'new', zone: 'landscape', group: undefined,
-      ...defaultZonePosition('landscape', 'application', 1, landscape.geometry),
+      ...freeZonePosition('landscape', 'application', [
+        { x: 0, y: 0, ...NODE_SIZES.application },
+      ], landscape.geometry),
     });
+  });
+
+  it('never lands on a card that sits in a slot, however many the band holds', () => {
+    // Counting members put the new card in slot 1 here — on top of `b`, which
+    // somebody moved there — while slot 0 stood empty.
+    const band = zoneRect('landscape', undefined);
+    const slot1 = cascadeSlot(band, 'application', 1);
+    const moved = laidOut({
+      id: 'd', kind: 'layer7', name: 'L',
+      placements: [{ id: 'b', zone: 'landscape', ...slot1 }],
+    });
+    const placed = seedPlacement({ kind: 'application' }, moved, 'new');
+    expect({ x: placed.x, y: placed.y }).toEqual(cascadeSlot(band, 'application', 0));
+
+    // And with slot 0 taken too, it goes past both rather than onto either.
+    const full = laidOut({
+      id: 'd', kind: 'layer7', name: 'L',
+      placements: [
+        { id: 'b', zone: 'landscape', ...slot1 },
+        { id: 'c', zone: 'landscape', ...cascadeSlot(band, 'application', 0) },
+      ],
+    });
+    const next = seedPlacement({ kind: 'application' }, full, 'new');
+    expect({ x: next.x, y: next.y }).toEqual(cascadeSlot(band, 'application', 2));
+  });
+
+  it('measures the cards already there at the size they are drawn', () => {
+    // A card stretched across slot 1 covers it even though it starts in slot 0.
+    const band = zoneRect('landscape', undefined);
+    const slot0 = cascadeSlot(band, 'application', 0);
+    const wide = laidOut({
+      id: 'd', kind: 'layer7', name: 'L',
+      placements: [{ id: 'w', zone: 'landscape', ...slot0, width: NODE_SIZES.application.width * 2 + 10 }],
+    });
+    const placed = seedPlacement({ kind: 'application' }, wide, 'new', () => 'application');
+    expect({ x: placed.x, y: placed.y }).toEqual(cascadeSlot(band, 'application', 2));
   });
 
   it('sends an outside application to the external band, and a stand-in wherever it was told', () => {

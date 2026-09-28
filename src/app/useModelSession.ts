@@ -135,6 +135,17 @@ export type HistoryStep = {
    */
   via?: string
   /**
+   * The editor made this step by itself, and not at the person's asking: the
+   * layout that settles a board a machine wrote (`CommandMeta.unattended`).
+   *
+   * It is ours in every other respect — ⌘Z takes it back, and it is announced
+   * and carried wherever this session's steps go — because a layout that is
+   * not carried is a layout every later open runs again. The mark is only for
+   * whoever counts or attributes steps, so that a board being opened is never
+   * mistaken for the person's work.
+   */
+  unattended?: true
+  /**
    * ⌘Z stops here, and this key says why (ADR-0012 §10).
    *
    * A gesture that wrote two scopes leaves one of its two writes on this
@@ -292,6 +303,13 @@ export type SessionChange = {
   /** Where the step came from, and who made it: absent on this keyboard's own. */
   origin?: StepOrigin
   by?: string
+  /**
+   * Set on the announcement of a step the editor made by itself
+   * (`HistoryStep.unattended`): published like any other, and never to be
+   * counted or attributed as the person's. Absent on an undo or a redo, which
+   * somebody asked for.
+   */
+  unattended?: true
   /** When this change was made, epoch milliseconds. */
   at: number
   /** What `revision()` answers now, so a caller need not ask. */
@@ -560,6 +578,24 @@ function mintStepId(): string {
   return crypto.randomUUID()
 }
 
+/**
+ * The command as it is recorded and announced: without the mark that says the
+ * editor made it by itself.
+ *
+ * The mark is the session's to keep (`HistoryStep.unattended`), and a command
+ * is what whoever hears the announcement carries on — to a writer that checks
+ * every field a command holds and refuses one it does not know. So it is taken
+ * off here, where it has been read, and nowhere else has to know it existed.
+ * Deleted rather than set to `undefined`, because a key that is present is a
+ * key that is sent.
+ */
+function withoutUnattended(command: Command): Command {
+  if (command.unattended === undefined) return command
+  const carried = { ...command }
+  delete carried.unattended
+  return carried
+}
+
 export function useModelSession(deps: {
   initialProject: ScopeSnapshot
   notify: Notify
@@ -779,6 +815,7 @@ export function useModelSession(deps: {
         ...(meta.origin !== undefined ? { origin: meta.origin } : {}),
         ...(meta.by !== undefined ? { by: meta.by } : {}),
         ...(meta.via !== undefined ? { via: meta.via } : {}),
+        ...(meta.unattended === true ? { unattended: true as const } : {}),
         ...(meta.barrier !== undefined ? { barrier: meta.barrier } : {}),
       }
       past.current.push(landed)
@@ -805,6 +842,7 @@ export function useModelSession(deps: {
       revision: revision.current,
       ...(landed.origin !== undefined ? { origin: landed.origin } : {}),
       ...(landed.by !== undefined ? { by: landed.by } : {}),
+      ...(landed.unattended === true ? { unattended: true as const } : {}),
     })
   }, [announce, trim])
 
@@ -840,7 +878,8 @@ export function useModelSession(deps: {
     if (command.undoable !== undefined) meta.undoable = command.undoable
     if (command.origin !== undefined) meta.origin = command.origin
     if (command.barrier !== undefined) meta.barrier = command.barrier
-    record(before, result.model, [command], [result.inverse], meta)
+    if (command.unattended === true) meta.unattended = true
+    record(before, result.model, [withoutUnattended(command)], [result.inverse], meta)
     if (deletesAnElement(command)) reportOrphans(before, result.model)
     return asArrays(result.model)
   }, [notify, s, record, setActiveDiagramId, asArrays, reportOrphans, mayChange])
@@ -1046,10 +1085,25 @@ export function useModelSession(deps: {
   const history = useCallback(() => past.current as readonly HistoryStep[], [])
   const revisionNow = useCallback(() => revision.current, [])
 
+  /**
+   * What is left for the host to do once a settling layout has landed: as a
+   * rule, nothing.
+   *
+   * The flag used to be cleared here, with a change that was not a step. A
+   * change that is not a step is not announced either, so a session whose
+   * steps are carried elsewhere laid the board out, carried the layout, and
+   * kept the flag — and every later open laid it out again, as the viewer's
+   * step. The layout pass now clears the flag in the step it lands
+   * (`applyTidyResult`), so the two travel together or not at all, and this
+   * finds nothing to do.
+   *
+   * It stays as the fallback for an editor that lands a layout without
+   * clearing the flag, and there it is still not a step: ⌘Z after opening a
+   * document must not ask for a flag back. The flag is deleted rather than set
+   * to false — a saved file should look like a hand-written one.
+   */
   const onLayoutSettled = useCallback((diagramId: string) => {
-    // Not a step: ⌘Z after opening a document must not ask for the layout back.
-    // The flag is deleted rather than set to false — a saved file should look
-    // like a hand-written one, and nothing reads the difference.
+    if (modelRef.current.diagrams[diagramId]?.needsLayout !== true) return
     dispatch({
       type: 'board.set', diagramId, patch: { needsLayout: undefined }, undoable: false,
     })

@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest'
 import { translator } from '../../i18n'
 import type { Finding } from '../../projects/checks'
-import { attentionItems } from './attention'
+import { attentionItems, findingKind } from './attention'
 import type { RegisterRow } from './register'
 import type { TechnologyRow } from '../../projects/technologyRegister'
 
@@ -59,6 +59,18 @@ describe('attentionItems', () => {
       'Post office is outside the organisation and nobody has said whose it is — name the party on its page',
     ])
     expect(items.map((item) => [item.scope, item.id])).toEqual([['platforms', 'brokering'], ['retail', 'post']])
+    // The kind each row carries on screen: the key without its table.
+    expect(items.map((item) => item.kind)).toEqual(['unrealised', 'unattributed'])
+  })
+
+  it('names each finding by its kind, the key without the table it is said from', () => {
+    expect(findingKind('check.conflict')).toBe('conflict')
+    expect(findingKind('check.danglingEnd')).toBe('danglingEnd')
+    expect(findingKind('techRegister.unrealised')).toBe('unrealised')
+    const findings = new Map<string, Finding[]>([
+      ['retail', [finding({ key: 'check.conflict', scope: 'retail', id: 'erp', name: 'ERP', scopes: ['finance'] })]],
+    ])
+    expect(attentionItems(findings, [], [], '', s, scopeName).map((item) => item.kind)).toEqual(['conflict'])
   })
 
   it('speaks only for the scope whose home it is, and says one thing once', () => {

@@ -6,6 +6,7 @@
  * screens, the home's history, the standing notices and the providers'
  * strips, and the dialogs that outlive a scope.
  */
+import { useCallback, useRef } from 'react'
 import type { ReactNode } from 'react'
 import Alert from '@mui/material/Alert'
 import { LanguageProvider } from '../i18n'
@@ -19,6 +20,9 @@ import { ChooseFolder } from './organisation/ChooseFolder'
 import { OrganisationScreen } from './organisation/OrganisationScreen'
 import { ProjectWorkspace } from './ProjectWorkspace'
 import type { ScopeSnapshot } from '../projects/scope'
+import type { ScopePath } from '../projects/scopePath'
+import type { ScopeSession } from './useModelSession'
+import { watchTreeShape } from './treeShape'
 import { SyncNotice } from './SyncNotice'
 import { AgentDrivingBanner } from './AgentDrivingBanner'
 import type { ShellParts } from './shellParts'
@@ -63,8 +67,54 @@ function overflowFor<Can extends { history?: boolean; scope: boolean }>(parts: S
   }
 }
 
+/**
+ * May this person change the scope at this path? What the workspace is told
+ * about the scope it opens, asked of any scope: the source may be read-only as
+ * a whole, or its provider may say so per scope (`AppProvider.readOnlyAt`).
+ */
+function writableFor(parts: ShellParts): (path: ScopePath) => boolean {
+  const { source, props } = parts
+  return (path) => !(sourceIsReadOnly(source) || (props.provider?.readOnlyAt?.(path) ?? false))
+}
+
+/**
+ * What the open scope's session is handed to: the provider's own taker, and —
+ * where the source publishes steps — the listener that reads the tree again
+ * after a step that changes its shape (`treeShape.ts`). One function, and the
+ * same one while neither half changes: the workspace hands its session over
+ * again whenever this does.
+ */
+function useScopeSessionTaker(parts: ShellParts): ((session: ScopeSession) => (() => void) | void) | undefined {
+  const take = parts.provider.takeScopeSession
+  const publishes = parts.props.provider?.publishesSteps ?? false
+  // Read through a ref, never a dependency: `treeChanged` is a new function
+  // on every render of the shell (the index hook answers a fresh object), and
+  // a taker that changed with it was a session taken back from the provider
+  // and handed over again on every render — which a provider that publishes
+  // steps answered by sending what it still held a second time, and the far
+  // end refused the second create as an id it already had.
+  const readAgain = useRef(parts.writes.treeChanged)
+  readAgain.current = parts.writes.treeChanged
+  // Through a ref for the same reason, and asked at the read: while the source
+  // says it is not connected, the read is skipped (`treeShape.ts`).
+  const connected = useRef(parts.props.provider?.connected)
+  connected.current = parts.props.provider?.connected
+  const both = useCallback((session: ScopeSession) => {
+    const watching = watchTreeShape(
+      session.steps.onChange, () => readAgain.current(), undefined, () => connected.current?.() ?? true,
+    )
+    const taken = take?.(session)
+    return () => {
+      watching()
+      if (typeof taken === 'function') taken()
+    }
+  }, [take])
+  return publishes ? both : take
+}
+
 function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSnapshot }) {
   const { props, services: { toasts, prefs, s, reportStorage }, nav, writes, ancestry, prompts, folder, host } = parts
+  const onSession = useScopeSessionTaker(parts)
   return (
     <ProjectWorkspace
       // Remounting on a project switch is the mechanism, not an accident:
@@ -81,9 +131,10 @@ function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSn
         readOnly: sourceIsReadOnly(parts.source) || (props.provider?.readOnlyAt?.(project.path) ?? false),
         status: props.provider?.status,
         onWork: props.provider?.onWork,
-        onSession: parts.provider.takeScopeSession,
+        onSession,
         chip: workspaceChip(parts),
         publishesSteps: props.provider?.publishesSteps ?? false,
+        recentActivity: props.provider?.recentActivity,
         onResult: reportStorage,
       }}
       tree={{
@@ -157,6 +208,7 @@ function Home({ parts }: { parts: ShellParts }) {
       onLinkFromRegister={(path, id, to) => openScopeAt(path, { page: 'link', id, to })}
       pageRequest={parts.agent.orgPageRequest}
       onPageChange={parts.agent.setOrgPage}
+      writable={writableFor(parts)}
       today={parts.todayDay}
       language={prefs.language}
       s={s}

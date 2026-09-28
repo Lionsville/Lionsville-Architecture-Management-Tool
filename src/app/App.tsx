@@ -35,7 +35,7 @@ import { parentScope, ROOT_SCOPE, scopePathFor, scopePathLabel } from '../projec
 import type { ScopePath } from '../projects/scopePath'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
 import { useSync } from './useSync'
-import { BROWSER_STORAGE } from '../platform/workingSource'
+import { BROWSER_STORAGE, sourceIsReadOnly } from '../platform/workingSource'
 import type { SourceMenuEntry } from '../platform/sourceProvider'
 import { ErrorBoundary } from './ErrorBoundary'
 import { moveRefusal, moveSubtree } from './moveSubtree'
@@ -735,8 +735,22 @@ function useShellBase(props: AppProps) {
   // millisecond passed is a model walked again for nothing.
   const todayDay = useMemo(() => today(), [today])
   const refreshTree = useRef<() => void>(() => {})
+  /** The index read again; bound once the index below exists, as `refreshTree` is. */
+  const refreshIndex = useRef<() => void>(() => {})
+  /**
+   * May this person change the scope at this path? The question the workspace
+   * asks of the scope it opens (`AppPanels`), asked here of any scope: a home
+   * offers nothing that writes where the answer is no, and a page opened on a
+   * scope with no document writes one only where it is yes.
+   */
+  const readOnlyAt = props.provider?.readOnlyAt
+  const writable = useCallback(
+    (path: ScopePath) => !(sourceIsReadOnly(source) || (readOnlyAt?.(path) ?? false)),
+    [source, readOnlyAt],
+  )
   const nav = useShellNavigation({
     initialProject: boot.initialProject, initialHome: boot.initialHome, projects, watchProject: folder.watch, prefs, failedRef, refreshTree,
+    refreshIndex, writable,
   })
   const { project, enter } = nav
   const sync = useSync({
@@ -744,6 +758,7 @@ function useShellBase(props: AppProps) {
     onTheirs: nav.reloadOpenProject, notify: toasts.notify, s, diagnostics,
   })
   const tree = useTreeIndex(projects, folder.watch, failed)
+  refreshIndex.current = tree.refresh
   const agentServer = useAgentServer({ agent, failedRef, notify: toasts.notify, s })
   const machine = useMachineSettings({
     updateSettings: host.updateSettings, folderSettings: folder.settings, history: folder.history,
@@ -775,6 +790,7 @@ function useShellBase(props: AppProps) {
     notify: toasts.notify,
     onFailure: failed,
     onStorageResult: reportStorage,
+    writable,
     s,
   })
   refreshTree.current = organisation.refresh

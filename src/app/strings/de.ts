@@ -22,6 +22,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.saving': 'Wird gespeichert…',
   'shell.changedOnDisk': 'Auf der Festplatte geändert',
   'shell.conflict': 'Hier und auf der Festplatte geändert',
+  'shell.stepsSending': 'Wird gesendet\u2026',
+  'shell.stepsSent': 'Alle Änderungen gesendet',
   'shell.diskChanged': 'Dieses Projekt wurde auf der Festplatte geändert. Hier ist nichts ungespeichert.',
   'shell.unreadableScope': '{files} in diesem Bereich konnte nicht gelesen werden, deshalb ist er zum Ansehen geöffnet und nicht zum Ändern: Speichern ohne diese Datei würde verlieren, was sie enthält. Reparieren Sie die Datei oder holen Sie sie aus dem Verlauf zurück, und öffnen Sie den Bereich erneut.',
   'shell.unreadNotMoved': 'Dieser Bereich wurde nicht verschoben: eine Datei darin konnte nicht gelesen werden, und Verschieben hätte sie mit dem alten Ordner gelöscht. Reparieren Sie die Datei oder holen Sie sie aus dem Verlauf zurück, und versuchen Sie es erneut.',
@@ -412,6 +414,11 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.activityBy': 'VON {name}',
   'shell.activityByVia': 'VON {name} ÜBER {client}',
   'shell.activityElsewhere': 'EIN ANDERER AUTOR',
+  'shell.activityYou': 'SIE',
+  'shell.activityYouVia': 'SIE ÜBER {client}',
+  'shell.activityReading': 'Was hier getan wurde, wird gelesen…',
+  'shell.activityTipKept': 'Was zuletzt an diesem Projekt getan wurde, und von wem',
+  'shell.activityUnattended': 'AUTOMATISCH ANGEORDNET',
   'shell.alsoHere': 'Auch hier: {names}',
   'shell.search': 'Suchen',
   'shell.searchTip': 'Elemente, Dokumentation und Entscheidungen durchsuchen (⌘K)',
@@ -525,6 +532,7 @@ export const DE: Record<keyof typeof EN, string> = {
 
   'org.tree': 'Bereiche in {name}',
   'org.treeEmpty': 'Unter {name} ist noch nichts abgelegt. Fügen Sie darunter eine Domäne oder ein Team hinzu.',
+  'org.treeEmptyLandscape': 'Eine Landschaft führt ihre eigenen Ansichten. Legen Sie nur dann einen Bereich darunter an, wenn Sie sie aufteilen wollen.',
   'org.expand': 'Zeigen, was unter {name} liegt',
   'org.collapse': 'Verbergen, was unter {name} liegt',
 

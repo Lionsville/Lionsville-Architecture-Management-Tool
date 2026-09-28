@@ -249,6 +249,31 @@ function toElkNode(child: ElkChild, spacing: number, groupDirection?: 'RIGHT' | 
   };
 }
 
+/**
+ * Ids in one order, whatever order they arrived in: code-unit order, so that
+ * it does not move with the reader's locale.
+ */
+function byId(a: { id: string }, b: { id: string }): number {
+  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+}
+
+/**
+ * The boxes, and every group's boxes, sorted by id.
+ *
+ * ELK's layered algorithm is deterministic for one input, but it breaks its
+ * ties — which of two nodes goes first in a layer, which crossing it keeps —
+ * by the order it is handed things. The order a board's members arrive in is
+ * an accident of where the model came from: the file, the server's snapshot,
+ * the order steps happened to land in. Handing that accident on made the same
+ * board lay out differently from one open to the next. Sorting here, at the
+ * one door every pass goes through, makes the result a function of the board.
+ */
+export function inIdOrder(children: readonly ElkChild[]): ElkChild[] {
+  return [...children]
+    .sort(byId)
+    .map((child) => (child.children ? { ...child, children: inIdOrder(child.children) } : child));
+}
+
 export async function layoutGraph(
   children: ElkChild[],
   edges: ElkEdgeSpec[],
@@ -274,7 +299,8 @@ export async function layoutGraph(
     ...(options.hierarchy ? { 'elk.hierarchyHandling': options.hierarchy } : {}),
   };
 
-  const elkEdges: ElkExtendedEdge[] = edges.map((e) => ({
+  // Edges too, for the same reason as the boxes (`inIdOrder`).
+  const elkEdges: ElkExtendedEdge[] = [...edges].sort(byId).map((e) => ({
     id: e.id,
     sources: [e.source],
     targets: [e.target],
@@ -299,7 +325,7 @@ export async function layoutGraph(
   const result = await raced(engine, {
     id: 'root',
     layoutOptions,
-    children: children.map((child) => toElkNode(child, spacing, options.groupDirection)),
+    children: inIdOrder(children).map((child) => toElkNode(child, spacing, options.groupDirection)),
     edges: elkEdges,
   });
 

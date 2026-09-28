@@ -31,12 +31,29 @@ export type ToastBarProps = {
   onExited: () => void
 }
 
+/**
+ * The duration handed to the bar, which is how a repeated message restarts
+ * its timer without being drawn again.
+ *
+ * MUI starts the timer when the bar opens and again whenever the duration
+ * changes, and offers no other way in from outside; a remount would restart it
+ * too, and would slide the same words in a second time. So each repeat moves
+ * the duration by a millisecond, alternately, which nobody can see and the
+ * timer cannot miss.
+ */
+export function hideAfterFor(toast: Toast | null): number {
+  return hideAfter(toast?.severity) + ((toast?.repeats ?? 0) % 2)
+}
+
 export function ToastBar({ toast, open, onClose, onExited }: ToastBarProps) {
   return (
     <Snackbar
       key={toast?.key}
       open={toast !== null && open}
-      autoHideDuration={hideAfter(toast?.severity)}
+      autoHideDuration={hideAfterFor(toast)}
+      // A message is timed while it is up, not while this window has focus:
+      // paused on blur, an error read in another window stayed up for good.
+      disableWindowBlurListener
       onClose={(_e, reason) => { if (reason !== 'clickaway') onClose() }}
       slotProps={{ transition: { onExited } }}
       anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}

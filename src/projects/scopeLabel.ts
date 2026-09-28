@@ -24,7 +24,7 @@
  */
 import type { ScopeSummary } from './scope'
 import type { ScopePath } from './scopePath'
-import { ancestorScopes, ROOT_SCOPE } from './scopePath'
+import { ancestorScopes, ROOT_SCOPE, scopePathLabel } from './scopePath'
 
 /** A scope and everything above it, nearest first. */
 function chain(path: ScopePath, byPath: ReadonlyMap<ScopePath, ScopeSummary>): ScopeSummary[] {
@@ -76,4 +76,27 @@ export function scopeClient(path: ScopePath, scopes: readonly ScopeSummary[]): s
   const stated = held.find((scope) => scope.client?.trim())
   if (stated) return stated.client!.trim()
   return organisationLabel(path, scopes) || (held[0]?.name.trim() ?? '')
+}
+
+/**
+ * What to call a scope on the screen: its own name, never its path.
+ *
+ * The listing knows every name, so a path is only ever a fallback — its last
+ * segment, and for the root the name the caller gives the organisation.
+ * `withParent` adds the nearest named scope above it ("Acme › Platforms"),
+ * which is what a list of scopes from several levels needs to stay unambiguous.
+ */
+export function scopeDisplayName(
+  path: ScopePath,
+  scopes: readonly ScopeSummary[],
+  rootName: string,
+  options: { withParent?: boolean } = {},
+): string {
+  const byPath = scopesByPath(scopes)
+  const own = (at: ScopePath): string =>
+    byPath.get(at)?.name.trim() || (at === ROOT_SCOPE ? rootName : scopePathLabel(at))
+  const name = own(path)
+  if (!options.withParent || path === ROOT_SCOPE) return name
+  const parent = ancestorScopes(path).find((at) => at !== ROOT_SCOPE && own(at))
+  return parent === undefined ? name : `${own(parent)} › ${name}`
 }

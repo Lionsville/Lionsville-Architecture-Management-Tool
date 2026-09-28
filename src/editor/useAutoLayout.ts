@@ -25,6 +25,19 @@ import type { LayoutAction } from './EditorToolbar';
  * diagram carries one because the interchange document deliberately holds no
  * coordinates. Both say so on the diagram itself, with `needsLayout`, which is
  * why this hook needs nothing from the host but the diagram.
+ *
+ * The flag alone is not enough, and the second condition is the one that
+ * matters for a board more than one person opens: **no member may have a
+ * stored position yet** ({@link hasStoredPosition}). A board whose flag
+ * survived a layout that did land — a pass whose flag clear was lost, a
+ * seed that shipped real coordinates with the flag still on — is a board
+ * somebody may already have looked at and arranged, and relaying it on every
+ * open, as the step of whoever happened to open it, rearranged it each time.
+ * Where both say "nobody has placed anything here", nothing is lost. Nor is it
+ * ever run for a reader: a read-only session must not change what it shows.
+ *
+ * The pass that runs is marked as the editor's own and carries the flag's
+ * clearing in the same step (`useLayoutActions`), so the two travel together.
  */
 export interface UseAutoLayoutArgs {
   /** The diagram on screen, or undefined while the host is still resolving it. */
@@ -79,6 +92,19 @@ export function settlingOptions(options: TidyOptions): TidyOptions {
   };
 }
 
+/**
+ * Whether any member of this board already has a position of its own.
+ *
+ * A position for an element no longer on the board does not count: it is a
+ * leftover, not an arrangement of what is there.
+ */
+export function hasStoredPosition(diagram: DesignDiagram): boolean {
+  const nodes = diagram.geometry?.nodes ?? [];
+  if (nodes.length === 0) return false;
+  const members = new Set(diagram.members.map((member) => member.id));
+  return nodes.some((node) => members.has(node.id));
+}
+
 export function useAutoLayout({
   diagram,
   readOnly,
@@ -105,6 +131,7 @@ export function useAutoLayout({
     // An empty diagram has nothing to lay out. `tidyLayer7` returns [] for it
     // without throwing, so this is politeness rather than safety.
     if (diagram.members.length === 0) return;
+    if (hasStoredPosition(diagram)) return;
     if (attemptedRef.current.has(diagram.id)) return;
 
     attemptedRef.current.add(diagram.id);

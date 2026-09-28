@@ -30,17 +30,18 @@
  * ## Whether it held
  *
  * The observations under what a solution addresses should stop being seen
- * once it is implemented. A `seen` event after that day is a finding against
+ * once it is implemented. A `seen` event on or after that day is a finding against
  * the solution, and the team says what it makes of it.
  */
 import type { Translate } from '../i18n/strings'
 import type { AdrStatus } from '../model/adr'
+import { isDay } from '../model/lifecycle'
 import type { TransitionStatus, TransitionRole } from '../model/transition'
 import type {
-  Cause, CauseStrength, EarlierAttempt, Experiment, ExperimentOutcome, Solution, SolutionEvent, SolutionLink,
-  SolutionSize, SolutionState,
+  Cause, CauseStrength, EarlierAttempt, Experiment, ExperimentOutcome, Observation, Solution, SolutionEvent,
+  SolutionLink, SolutionSize, SolutionState,
 } from '../model/observation'
-import { absorbedBy, isRootCause } from './observation'
+import { absorbedBy, formatCauseNumber, formatObservationNumber, isRootCause } from './observation'
 import type { Analysis, SharedObservation } from './observation'
 
 export type {
@@ -75,7 +76,31 @@ export type SolutionPlan = {
   id: string
   status: TransitionStatus
   to?: string
+  /**
+   * The day it moved to done, `yyyy-mm-dd`, where the plan recorded one. A
+   * plan finished before its end date was built by then, and a sighting that
+   * day or after is one the solution was meant to stop.
+   */
+  doneOn?: string
   elements: readonly { role: TransitionRole }[]
+}
+
+/**
+ * A plan of the model as the rules read it. Takes anything plan-shaped, so a
+ * plan written before plans recorded their done day reads the same.
+ */
+export function solutionPlanOf(plan: {
+  id: string
+  status: TransitionStatus
+  to?: string
+  doneOn?: string
+  elements: readonly { role: TransitionRole }[]
+}): SolutionPlan {
+  return {
+    id: plan.id, status: plan.status, elements: plan.elements,
+    ...(plan.to ? { to: plan.to } : {}),
+    ...(plan.doneOn ? { doneOn: plan.doneOn } : {}),
+  }
 }
 
 // --- numbers and labels ----------------------------------------------------------
@@ -226,10 +251,35 @@ export function updateSolution(list: readonly Solution[], id: string, patch: Sol
   })
 }
 
-/** Say that a solution addresses a cause, or change how directly. */
+/**
+ * Whether a solution may take on another cause: while it is an idea or shaped
+ * (ADR-0026, amended 28 September 2026). Once an experiment tests it, what it
+ * addresses is what the test is about; once it is proven or decided, a new
+ * cause is a new solution. How directly it addresses one it already does may
+ * still change.
+ */
+export function mayAddress(solution: Pick<Solution, 'state'>): boolean {
+  return solution.state === 'idea' || solution.state === 'shaped'
+}
+
+/**
+ * Whether an experiment may be planned for a solution: while it is shaped or
+ * testing. An idea has its own gate first; a proven one moves back to testing
+ * before it is tested again, so the history says the proof was reopened.
+ */
+export function mayPlanExperiment(solution: Pick<Solution, 'state'>): boolean {
+  return solution.state === 'shaped' || solution.state === 'testing'
+}
+
+/**
+ * Say that a solution addresses a cause, or change how directly. A new cause
+ * is refused, by returning the list unchanged, where {@link mayAddress} says
+ * no.
+ */
 export function addressCause(list: readonly Solution[], id: string, link: SolutionLink): Solution[] {
   return replace(list, id, (one) => {
     const held = one.addresses.find((address) => address.id === link.id)
+    if (!held && !mayAddress(one)) return one
     const addresses = held
       ? one.addresses.map((address) => (address === held ? { id: link.id, strength: link.strength } : address))
       : [...one.addresses, { id: link.id, strength: link.strength }]
@@ -277,6 +327,16 @@ export function experimentsFor(experiments: readonly Experiment[], solutionId: s
   return experiments.filter((one) => one.tests.includes(solutionId))
 }
 
+/**
+ * Whether what proves a solution still stands: a confirmed experiment that
+ * tests it, or a waiver with a reason. What the gate to proven asks, what the
+ * gate to adopted asks again, and what {@link solutionQuestions} asks of a
+ * solution past proven once an experiment is reopened or refuted.
+ */
+export function hasProof(solution: Pick<Solution, 'id' | 'waived'>, experiments: readonly Experiment[]): boolean {
+  return experimentsFor(experiments, solution.id).some((one) => one.outcome === 'confirmed') || Boolean(solution.waived?.trim())
+}
+
 const FORWARD: readonly SolutionState[] = ['idea', 'shaped', 'testing', 'proven', 'adopted']
 
 /** The state one step back, or nothing from an idea or out of the flow. */
@@ -302,17 +362,32 @@ export function solutionGate(solution: Solution, context: Pick<SolutionContext, 
         { item: 'cost', ok: solution.cost !== undefined },
         { item: 'validatedWith', ok: solution.validatedWith.length > 0 },
         { item: 'triedBefore', ok: solution.noneKnown === true || solution.attempts.length > 0 },
-        { item: 'whyNow', ok: solution.attempts.length === 0 || Boolean(solution.whyNow?.trim()) },
+        // Answered, not merely unasked: "none known" with nothing listed, or
+        // an earlier attempt and what is different now. An unanswered "was
+        // this tried before?" leaves this open too.
+        {
+          item: 'whyNow',
+          ok: solution.attempts.length === 0 ? solution.noneKnown === true : Boolean(solution.whyNow?.trim()),
+        },
       ],
     }
     case 'shaped': return { to: 'testing', items: [{ item: 'experimentPlanned', ok: has('planned', 'running', 'confirmed') }] }
     case 'testing': return {
       to: 'proven',
-      items: [{ item: 'experimentConfirmed', ok: has('confirmed') || Boolean(solution.waived?.trim()) }],
+      items: [{ item: 'experimentConfirmed', ok: hasProof(solution, tests) }],
     }
     case 'proven': {
+      // The proof is asked again: an experiment reopened or refuted since the
+      // solution was proven has taken it away, and a decision is not taken on
+      // a proof that no longer stands.
       const decision = context.decisions.find((one) => one.id === solution.decision)
-      return { to: 'adopted', items: [{ item: 'decisionAccepted', ok: decision?.status === 'accepted' }] }
+      return {
+        to: 'adopted',
+        items: [
+          { item: 'experimentConfirmed', ok: hasProof(solution, tests) },
+          { item: 'decisionAccepted', ok: decision?.status === 'accepted' },
+        ],
+      }
     }
     default: return undefined
   }
@@ -364,11 +439,14 @@ export function moveSolution(
 /**
  * A new experiment, and every shaped solution it tests moved on to testing in
  * the same step: planning the test is starting to test, and the move is still
- * a dated event in the solution's history. A solution anywhere else stays
- * where it is — an idea has its own gate first, and one already testing or
- * further along has nothing to gain.
+ * a dated event in the solution's history. One already testing stays where
+ * it is. Refused, by returning the work unchanged, when it tests a solution
+ * {@link mayPlanExperiment} says no to: an idea has its own gate first, and a
+ * proven or decided one moves back to testing before it is tested again.
  */
 export function planExperiment(work: SolutionWork, experiment: Experiment, date: string): SolutionWork {
+  const tested = work.solutions.filter((one) => experiment.tests.includes(one.id))
+  if (tested.some((one) => !mayPlanExperiment(one))) return work
   const experiments = [...work.experiments, experiment]
   let solutions = [...work.solutions]
   for (const id of experiment.tests) {
@@ -498,19 +576,89 @@ export function untestSolution(list: readonly Experiment[], id: string, solution
   return updateExperiment(list, id, { tests: (list.find((one) => one.id === id)?.tests ?? []).filter((test) => test !== solutionId) })
 }
 
-/** Say how it went. The result, when given, replaces what was written before. */
+/** Confirmed, refuted or inconclusive: it ran, and the team said how it went. */
+export function isConcluded(outcome: ExperimentOutcome): boolean {
+  return outcome === 'confirmed' || outcome === 'refuted' || outcome === 'inconclusive'
+}
+
+/**
+ * Where an experiment may go from here (ADR-0026, amended 28 September 2026).
+ * Planned starts running; running goes back to planned or is concluded;
+ * a concluded one is reopened, back to running. Never planned straight to an
+ * outcome: an experiment that did not run has nothing to say, and a
+ * conclusion is a result and a day, not a click.
+ */
+export function experimentMovesFrom(outcome: ExperimentOutcome): readonly ExperimentOutcome[] {
+  switch (outcome) {
+    case 'planned': return ['running']
+    case 'running': return ['planned', 'confirmed', 'refuted', 'inconclusive']
+    default: return ['running']
+  }
+}
+
+export type ConcludeRefusal =
+  /** No such experiment. */
+  | 'missing'
+  /** Not a move {@link experimentMovesFrom} offers from where it stands. */
+  | 'notAllowed'
+  /** Concluding without saying what happened. */
+  | 'result'
+  /** The end day is not `yyyy-mm-dd`. */
+  | 'endDay'
+  /** The end day is before the day it started. */
+  | 'endBeforeStart'
+
+export type ConcludeResult =
+  | { ok: true; experiments: Experiment[] }
+  | { ok: false; refusal: ConcludeRefusal }
+
+/**
+ * Move an experiment on, the way {@link experimentMovesFrom} allows.
+ *
+ * Starting it (planned → running) sets From to `date`: the day it began,
+ * which is the one the plan guessed at until then. Concluding it asks for the
+ * result — the one given, or the one already written — and the To day, `date`
+ * unless one is given, never before From. Reopening a concluded one takes the
+ * To day away, because it is running again; the result stays, as what the
+ * last run said, until the next conclusion replaces it.
+ */
 export function concludeExperiment(
-  list: readonly Experiment[], id: string, outcome: ExperimentOutcome, result?: string,
-): Experiment[] {
-  return list.map((one) => {
-    if (one.id !== id) return one
-    const next: Experiment = { ...one, outcome }
-    if (result !== undefined) {
-      if (result.trim()) next.result = result.trim()
-      else delete next.result
-    }
-    return next
-  })
+  list: readonly Experiment[], id: string, outcome: ExperimentOutcome, date: string,
+  fields: { result?: string; to?: string } = {},
+): ConcludeResult {
+  const one = list.find((held) => held.id === id)
+  if (!one) return { ok: false, refusal: 'missing' }
+  if (!experimentMovesFrom(one.outcome).includes(outcome)) return { ok: false, refusal: 'notAllowed' }
+  const next: Experiment = { ...one, outcome }
+  if (outcome === 'running' && one.outcome === 'planned') next.from = date
+  if (outcome === 'running' && isConcluded(one.outcome)) delete next.to
+  if (isConcluded(outcome)) {
+    const result = (fields.result ?? one.result ?? '').trim()
+    if (!result) return { ok: false, refusal: 'result' }
+    const end = (fields.to ?? date).trim()
+    if (!isDay(end)) return { ok: false, refusal: 'endDay' }
+    if (one.from && isDay(one.from) && end < one.from) return { ok: false, refusal: 'endBeforeStart' }
+    next.result = result
+    next.to = end
+  }
+  return { ok: true, experiments: list.map((held) => (held.id === id ? next : held)) }
+}
+
+/** The states that rest on a proof: past the gate that asked for one. */
+const PROOF_HELD: readonly SolutionState[] = ['proven', 'adopted']
+
+/**
+ * The solutions that stand proven, or further, on this experiment alone:
+ * reopening it would withdraw their proof. What the confirmation before a
+ * reopen names, so nobody takes a proof away without being told.
+ */
+export function reopenWithdraws(work: SolutionWork, experimentId: string): Solution[] {
+  const experiment = work.experiments.find((one) => one.id === experimentId)
+  if (!experiment || experiment.outcome !== 'confirmed') return []
+  const others = work.experiments.filter((one) => one.id !== experimentId)
+  return work.solutions.filter((one) => (
+    experiment.tests.includes(one.id) && PROOF_HELD.includes(one.state) && !hasProof(one, others)
+  ))
 }
 
 export function removeExperiment(list: readonly Experiment[], id: string): Experiment[] {
@@ -531,14 +679,17 @@ export function isLive(solution: Pick<Solution, 'state'>): boolean {
 }
 
 /**
- * The day it counts as implemented from, when it is: the plan's end date
- * where the plan has one, else the day it was adopted. A sighting after this
- * day is a sighting the solution was meant to stop.
+ * The day it counts as implemented from, when it is: the earlier of the day
+ * its plan was done and the plan's end date, where the plan says either — a
+ * plan done early was built by then, and one done late still promised its end
+ * date — else the day it was adopted. A sighting on this day or after is a
+ * sighting the solution was meant to stop.
  */
 export function implementedOn(solution: Solution, plans: readonly SolutionPlan[]): string | undefined {
   if (solutionPhase(solution, plans) !== 'implemented') return undefined
   const plan = plans.find((one) => one.id === solution.plan)
-  if (plan?.to) return plan.to
+  const ends = [plan?.doneOn, plan?.to].filter((day): day is string => typeof day === 'string' && isDay(day)).sort()
+  if (ends.length) return ends[0]
   const adopted = [...solution.history].reverse().find((event) => event.kind === 'moved' && event.to === 'adopted')
   return adopted?.date
 }
@@ -585,6 +736,14 @@ export function underneath(solution: Pick<Solution, 'addresses'>, analysis: Anal
 
 /** What a solution's record asks the team, without stopping it. */
 export type SolutionQuestion =
+  /**
+   * Proven or later, and nothing proves it any more: no confirmed experiment
+   * tests it and it was not waived. Asked, never acted on: its state is a
+   * dated move by a person (§2), and an adopted one is held by its locked
+   * decision record, so it does not slide back by itself. The gate to
+   * adopted asks for the proof again.
+   */
+  | 'proofWithdrawn'
   /** Proven or later, and addresses no root cause: it treats a symptom. */
   | 'worksAround'
   /** Its plan introduces and retires nothing. */
@@ -592,10 +751,13 @@ export type SolutionQuestion =
   /** Adopted, and no plan names it. */
   | 'adoptedUnplanned'
 
-export function solutionQuestions(solution: Solution, context: Pick<SolutionContext, 'causes' | 'plans'>): SolutionQuestion[] {
+export function solutionQuestions(
+  solution: Solution, context: Pick<SolutionContext, 'causes' | 'plans' | 'experiments'>,
+): SolutionQuestion[] {
   if (!isLive(solution)) return []
   const out: SolutionQuestion[] = []
   const late = FORWARD.indexOf(solution.state) >= FORWARD.indexOf('proven')
+  if (late && !hasProof(solution, context.experiments)) out.push('proofWithdrawn')
   const addressesRoot = solution.addresses.some((address) => {
     const cause = context.causes.find((one) => one.id === address.id)
     return cause !== undefined && isRootCause(cause, context.causes)
@@ -614,9 +776,11 @@ export function solutionQuestions(solution: Solution, context: Pick<SolutionCont
 export type SeenAgain = Reached & { date: string }
 
 /**
- * The observations under an implemented solution that were seen after the day
- * it counts as implemented from, with the latest such day. Empty when it is
- * not implemented, and empty when it held.
+ * The observations under an implemented solution that were seen on or after
+ * the day it counts as implemented from, with the latest such day. On, too:
+ * the days are days, and a sighting on the day it was built is one it did not
+ * stop — the page says which day it was. Empty when it is not implemented,
+ * and empty when it held.
  */
 export function seenSinceImplemented(
   solution: Solution, analysis: Analysis, shared: readonly SharedObservation[], plans: readonly SolutionPlan[],
@@ -628,7 +792,7 @@ export function seenSinceImplemented(
     const observation = reached.scope === undefined
       ? analysis.observations.find((one) => one.id === reached.id)
       : shared.find((one) => one.scope === reached.scope && one.observation.id === reached.id)?.observation
-    const days = (observation?.history ?? []).filter((event) => event.kind === 'seen' && event.date > since).map((event) => event.date)
+    const days = (observation?.history ?? []).filter((event) => event.kind === 'seen' && event.date >= since).map((event) => event.date)
     if (days.length) out.push({ ...reached, date: days.sort().at(-1)! })
   }
   return out
@@ -645,25 +809,96 @@ export function sizeRank(size: SolutionSize | undefined): number {
   return size === undefined ? 0 : size === 'small' ? 1 : size === 'medium' ? 2 : 3
 }
 
+/** The words for a size, as a sentence says them. */
+const SIZE_WORD = { small: 'solution.sizeSmall', medium: 'solution.sizeMedium', large: 'solution.sizeLarge' } as const
+
+/** What {@link decisionBody} reads from the scope around the solution. */
+export type DecisionBodyContext = {
+  causes: readonly Cause[]
+  solutions: readonly Solution[]
+  experiments: readonly Experiment[]
+  /** This scope's observations, so the confirmation can name what should stop being seen. */
+  observations?: readonly Observation[]
+}
+
 /**
- * The context a decision record starts from when it is proposed for a
- * solution: what it addresses, and what else was considered for the same
- * causes. Markdown, in the reader's language; the caller puts it under the
- * record's first heading.
+ * The decision record proposed for a solution, written from the records
+ * rather than left as the template's placeholders (ADR-0026, amended 28
+ * September 2026). Every section of the record is said:
+ *
+ * * **context**: the solution, and the causes it addresses;
+ * * **drivers**: those causes, the expected benefit and the rough cost;
+ * * **considered options**: this solution and every alternative on the same
+ *   causes, a dropped one with why it was dropped — or, where there is none,
+ *   leaving it as it is;
+ * * **outcome**: this solution, because the latest confirmed experiment said
+ *   so (its number and its result), or because the experiment was waived;
+ * * **consequences**: the benefit as the good one, the cost as the bad one;
+ * * **confirmation**: the observations under it, which should stop being seen.
+ *
+ * Markdown, in the reader's language, with the section headings the Decisions
+ * page's own template uses, so the record reads like every other. What it
+ * cannot know — a benefit or a cost nobody said — keeps the template's line.
  */
-export function decisionContext(solution: Solution, causes: readonly Cause[], list: readonly Solution[], t: Translate): string {
-  const lines = [`${formatSolutionNumber(solution.number)} ${solution.title}`, '', t('solution.decisionAddresses'), '']
-  for (const address of solution.addresses) {
-    const cause = causes.find((one) => one.id === address.id)
-    if (cause) lines.push(`* CA-${pad(cause.number)} ${cause.title}`)
-  }
-  const others = alternatives(solution, list)
-  if (others.length) {
-    lines.push('', t('solution.decisionAlternatives'), '')
-    for (const other of others) {
-      const note = other.state === 'dropped' && other.dropNote ? ` (${t('solution.decisionDropped', { note: other.dropNote })})` : ''
-      lines.push(`* ${formatSolutionNumber(other.number)} ${other.title}${note}`)
-    }
-  }
-  return `${lines.join('\n')}\n`
+export function decisionBody(solution: Solution, ctx: DecisionBodyContext, t: Translate): string {
+  const option = `${formatSolutionNumber(solution.number)} ${solution.title}`
+  const causes = solution.addresses
+    .map((address) => ctx.causes.find((one) => one.id === address.id))
+    .filter((cause): cause is Cause => cause !== undefined)
+    .map((cause) => `* ${formatCauseNumber(cause.number)} ${cause.title}`)
+  const size = (value: SolutionSize) => t(SIZE_WORD[value]).toLowerCase()
+
+  const drivers = [
+    ...causes,
+    ...(solution.benefit ? [`* ${t('solution.decisionDriverBenefit', { size: size(solution.benefit) })}`] : []),
+    ...(solution.cost ? [`* ${t('solution.decisionDriverCost', { size: size(solution.cost) })}`] : []),
+  ]
+  const others = alternatives(solution, ctx.solutions).map((other) => {
+    const note = other.state === 'dropped' && other.dropNote ? ` (${t('solution.decisionDropped', { note: other.dropNote })})` : ''
+    return `${formatSolutionNumber(other.number)} ${other.title}${note}`
+  })
+  // A decision weighs at least two options, and so does the gate on accepting
+  // one (ADR-0008): where no other solution was put forward, the one that is
+  // always there — doing nothing — is the other, said as such.
+  const options = [option, ...(others.length ? others : [t('solution.decisionLeaveAsIs')])].map((line) => `* ${line}`)
+
+  const confirmed = experimentsFor(ctx.experiments, solution.id)
+    .filter((one) => one.outcome === 'confirmed')
+    .sort((a, b) => b.number - a.number)[0]
+  const waiver = solution.waived?.trim()
+  const because = confirmed
+    ? t(confirmed.result?.trim() ? 'solution.decisionBecauseConfirmed' : 'solution.decisionBecauseConfirmedBare', {
+      experiment: `${formatExperimentNumber(confirmed.number)} ${confirmed.title}`, result: confirmed.result?.trim() ?? '',
+    })
+    : waiver
+      ? t('solution.decisionBecauseWaived', { reason: waiver })
+      : '\u2026'
+  const chosen = t('solution.decisionChosen', { option, because })
+
+  const good = solution.benefit ? t('solution.decisionGood', { size: size(solution.benefit) }) : t('adr.tplGood')
+  const bad = solution.cost ? t('solution.decisionBad', { size: size(solution.cost) }) : t('adr.tplBad')
+
+  const seen = ctx.observations
+    ? underneath(solution, { observations: [...ctx.observations], causes: [...ctx.causes] })
+      .filter((one) => one.scope === undefined)
+      .map((one) => ctx.observations!.find((held) => held.id === one.id))
+      .filter((one): one is Observation => one !== undefined)
+      .sort((a, b) => a.number - b.number)
+      .map((one) => formatObservationNumber(one.number))
+    : []
+  const confirmation = seen.length
+    ? t('solution.decisionConfirmation', { observations: seen.join(', ') })
+    : t('solution.decisionConfirmationBare')
+
+  const section = (level: '##' | '###', key: Parameters<Translate>[0], ...lines: string[]) =>
+    `${level} ${t(key)}\n\n${lines.join('\n')}\n`
+  return [
+    section('##', 'adr.tplContext', option, '', t('solution.decisionAddresses'), '', ...(causes.length ? causes : ['* \u2026'])),
+    section('##', 'adr.tplDrivers', ...(drivers.length ? drivers : [`* ${t('adr.tplDriver')}`])),
+    section('##', 'adr.tplOptions', ...options),
+    section('##', 'adr.tplOutcome', chosen),
+    section('###', 'adr.tplConsequences', `* ${good}`, `* ${bad}`),
+    section('###', 'adr.tplConfirmation', confirmation),
+    section('##', 'adr.tplMore', t('solution.decisionMore', { label: formatSolutionNumber(solution.number) })),
+  ].join('\n')
 }

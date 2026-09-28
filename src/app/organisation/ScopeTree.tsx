@@ -49,16 +49,30 @@ export type ScopeTreeProps = {
   onToggleCollapsed: (path: ScopePath) => void
   /**
    * To the scope's home: its own pages, its boards and the tree under it.
-   * Every row has one, which is what its name and its *Open* do — opening a
-   * scope is arriving at its home, and a board is opened from the home's list
-   * of boards, where it is named. *Open* used to go straight onto whichever
-   * board the scope had open last, which read as a board picked at random.
-   * Creating a scope under this one is on its home too, once, rather than on
-   * every row of its parent's tree.
+   * Every row has one, and **the whole row is it** — opening a scope is
+   * arriving at its home, and a board is opened from the home's list of
+   * boards, where it is named. The row used to carry its name as one way there
+   * and an *Open* as a second way to the same place, which read as two things
+   * to choose between. Creating a scope under this one is on its home too,
+   * once, rather than on every row of its parent's tree.
    */
   onHome: (path: ScopePath) => void
   onSettings: (scope: ScopeSummary) => void
   onDelete: (scope: ScopeSummary) => void
+  /**
+   * May this person change the scope at this path? Asked per row, because a
+   * source can let somebody write one domain and only read the next. A row
+   * they may only read offers neither its settings nor its removal: both
+   * would be refused, and a refusal is a worse way to learn that than a
+   * button that is not there. Every row may be written where absent.
+   */
+  writable?: (path: ScopePath) => boolean
+  /**
+   * The top of the tree is a landscape — a scope that draws — so the empty
+   * tree says what a scope under a landscape is for, rather than asking for
+   * one the way an empty domain does.
+   */
+  landscape?: boolean
   language: Language
   s: Translate
 }
@@ -108,8 +122,10 @@ function visibleRows(tree: ScopeSummary, collapsed: ReadonlySet<ScopePath>): Sco
   ))
 }
 
+const ANYWHERE = () => true
+
 export function ScopeTree({
-  tree, name, collapsed, onToggleCollapsed, onHome, onSettings, onDelete,
+  tree, name, collapsed, onToggleCollapsed, onHome, onSettings, onDelete, writable = ANYWHERE, landscape = false,
   language, s,
 }: ScopeTreeProps) {
   const rows = visibleRows(tree, collapsed)
@@ -120,7 +136,7 @@ export function ScopeTree({
   if (rows.length === 0) {
     return (
       <Typography sx={{ fontSize: 13, color: 'text.secondary', py: 2 }} data-testid="tree-empty">
-        {s('org.treeEmpty', { name })}
+        {landscape ? s('org.treeEmptyLandscape') : s('org.treeEmpty', { name })}
       </Typography>
     )
   }
@@ -130,7 +146,11 @@ export function ScopeTree({
       {rows.map((scope) => {
         const depth = scopeSegments(scope.path).length - base - 1
         const shut = collapsed.has(scope.path)
+        const mayWrite = writable(scope.path)
         return (
+          // The press anywhere on the row is the way home; the name is the
+          // button that carries it for a keyboard and a screen reader, and
+          // the controls at either end keep their press to themselves.
           <Stack
             key={scope.path}
             direction="row"
@@ -138,12 +158,15 @@ export function ScopeTree({
             data-testid={`scope-${scope.path}`}
             data-guide="org.tree.row"
             data-depth={depth}
+            onClick={() => onHome(scope.path)}
             sx={{
               alignItems: 'center',
               ml: depth * 2.5,
               py: 0.75,
               borderBottom: 1,
               borderColor: 'divider',
+              cursor: 'pointer',
+              '&:hover': { bgcolor: 'action.hover' },
             }}
           >
             {scope.children.length > 0 ? (
@@ -151,7 +174,7 @@ export function ScopeTree({
                 <IconButton
                   size="small"
                   aria-label={s(shut ? 'org.expand' : 'org.collapse', { name: scope.name })}
-                  onClick={() => onToggleCollapsed(scope.path)}
+                  onClick={(event) => { event.stopPropagation(); onToggleCollapsed(scope.path) }}
                   sx={{
                     width: 22, height: 22, color: 'text.secondary',
                     transform: shut ? 'rotate(-90deg)' : undefined,
@@ -166,12 +189,14 @@ export function ScopeTree({
               <Box sx={{ width: 22, flex: '0 0 auto' }} />
             )}
 
-            <Box sx={{ flex: 1, minWidth: 0 }}>
+            {/* `open-…` is the row's body, name and counts together: the id a
+                script pressed *Open* by, on what now does what *Open* did. */}
+            <Box sx={{ flex: 1, minWidth: 0 }} data-testid={`open-${scope.path}`}>
               <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
+                {/* No handler of its own: its press is the row's. */}
                 <Button
                   size="small"
                   color="inherit"
-                  onClick={() => onHome(scope.path)}
                   data-testid={`home-${scope.path}`}
                   sx={{ fontSize: 13, fontWeight: 500, minWidth: 0, px: 0.5, py: 0, textTransform: 'none' }}
                 >
@@ -190,34 +215,27 @@ export function ScopeTree({
               </Typography>
             </Box>
 
-            <Button
-              size="small"
-              onClick={() => onHome(scope.path)}
-              data-testid={`open-${scope.path}`}
-              aria-label={`${s('picker.open')} ${scope.name}`}
-              sx={{ fontSize: 11, minWidth: 0, px: 1 }}
-            >
-              {s('picker.open')}
-            </Button>
-            <Tooltip title={s('group.openFor', { name: scope.name })}>
-              <Button
-                size="small"
-                color="inherit"
-                onClick={() => onSettings(scope)}
-                sx={quiet}
-                aria-label={s('group.openFor', { name: scope.name })}
-              >
-                {s('group.open')}
-              </Button>
-            </Tooltip>
+            {mayWrite && (
+              <Tooltip title={s('group.openFor', { name: scope.name })}>
+                <Button
+                  size="small"
+                  color="inherit"
+                  onClick={(event) => { event.stopPropagation(); onSettings(scope) }}
+                  sx={quiet}
+                  aria-label={s('group.openFor', { name: scope.name })}
+                >
+                  {s('group.open')}
+                </Button>
+              </Tooltip>
+            )}
             {/* Never the root, which is not a row here anyway — the guard is
                 stated so a tree that one day drew one cannot offer it. */}
-            {scope.path !== ROOT_SCOPE && (
+            {mayWrite && scope.path !== ROOT_SCOPE && (
               <Tooltip title={s('picker.delete')}>
                 <IconButton
                   size="small"
                   aria-label={`${s('picker.delete')} ${scope.name}`}
-                  onClick={() => onDelete(scope)}
+                  onClick={(event) => { event.stopPropagation(); onDelete(scope) }}
                   sx={{ color: 'text.secondary' }}
                 >
                   ✕

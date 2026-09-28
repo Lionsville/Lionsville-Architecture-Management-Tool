@@ -101,7 +101,9 @@ not more constrained.
   ADR-0005.
 * **A decision record is locked once it ends.** `updateAdr` and `removeAdr`
   refuse an accepted, rejected or superseded record. A restore is a change,
-  and a change the model refuses stays refused.
+  and a change the model refuses stays refused. *(Amended 28 September 2026:
+  the one writer keeps this promise too, and a move into an end state has a
+  gate. See the last amendment below.)*
 
 ## Considered Options
 
@@ -319,6 +321,56 @@ working without the ones after it.
   snapshots that touched the file, and the diff row is the element's with
   `fields: ['description']`. Recommended: present it as the description's,
   since that is where the person is standing when they ask.
+
+## Amended 28 September 2026 — the moves a record makes, and what each asks
+
+A look at how records actually moved found the lock promised above and not
+kept everywhere, and the one move that locks a record for good taken in a
+single click. A record could be accepted on the untouched template, with
+nobody asked; a mere proposal could supersede an accepted record, and when
+the proposal was then rejected nothing accepted was left and both were locked.
+Five changes, each the smallest that closes one of those.
+
+* **A gate on the moves into an end state.** `adrGate(adr, to)` in
+  `decisions/adr.ts` answers with a checklist, the way a solution's gate does
+  (ADR-0026). *To accepted*: the context is written; at least two options were
+  considered that are not the template's "Option n"; the outcome names one of
+  them; one consequence is written; a signer approved and none rejected; every
+  record it supersedes is accepted. The template is recognised in every
+  language the build ships, because a record started in one language is often
+  accepted by somebody reading another. *To rejected*: a reason, or from review
+  a rejecting signer. *To superseded*: a successor in the same list, and
+  accepted. The page draws the checklist beside the move, keeps the move until
+  the list is clear, and then asks once more: "Accept ADR-0004? It is then
+  locked; to change it later, write a record that supersedes it." The agent is
+  answered with the lines still open.
+* **The two ends of a supersession are written together.** A record carries
+  `supersedes` — the accepted records it replaces — while it is proposed or
+  under review. Accepting it moves each of them to superseded, pointing back at
+  it, as one step; rejecting it leaves them accepted. The manual *Mark as
+  superseded* offers only accepted records. A record already superseded by one
+  that is not accepted is left as it is — both ends are locked — and the reader
+  says so.
+* **A proposal can be withdrawn.** Proposed may now move to rejected, with a
+  reason that is required. Deleting a proposal loses its number from the
+  conversation it was part of; withdrawing keeps the record, its number and why.
+* **The page and the agent refuse; the one writer does not.** The lock, the
+  move table and the gate are asked before a command is built: the page greys
+  out what it may not do and says what it waits for, and the agent is refused
+  with the open lines. The `decision.update` command carries no guard for any
+  of it. A host that keeps a log of steps replays that log through the writer,
+  and a rule added to the writer would silently skip every step written before
+  the rule existed, so the replay would no longer arrive where the log did. The
+  lock is therefore a rule of the tools that write, not of the model: a step
+  from a client that ignores it still lands.
+* **Accepting your own proposal is allowed, and said.** The core has no
+  accounts; `proposedBy` is free text, and when the only approving signer has
+  that name the reader and the agent's answer say so. A build that knows who
+  people are may ask for more.
+
+The agent could never supersede, contrary to its own tool description: it
+asked whether the record was locked before asking whether the move was one the
+table allows, and an accepted record is both. The table is asked first now.
 
 ## More Information
 

@@ -5,11 +5,12 @@ import { describe, expect, it } from 'vitest'
 import { translator } from '../i18n'
 import type { Analysis, Cause, Observation } from './observation'
 import {
-  addressCause, alternatives, concludeExperiment, decisionContext, defaultStrength, dropSolution, experimentsFor,
-  forgetCause, formatExperimentNumber, formatSolutionNumber, implementedOn, linkRecord, moveSolution, newExperiment,
-  newSolution, nextExperimentNumber, nextSolutionNumber, openItems, planExperiment, removeSolution, restoreSolution, setTestStrength,
-  rootsWithoutSolution, seenSinceImplemented, solutionGate, solutionPhase, solutionQuestions, unaddressCause,
-  testStrength, underneath, untestSolution, updateExperiment, updateSolution, waiveExperiment,
+  addressCause, alternatives, concludeExperiment, decisionBody, defaultStrength, dropSolution, experimentMovesFrom,
+  experimentsFor, forgetCause, formatExperimentNumber, formatSolutionNumber, hasProof, implementedOn, linkRecord,
+  mayAddress, mayPlanExperiment, moveSolution, newExperiment, newSolution, nextExperimentNumber, nextSolutionNumber,
+  openItems, planExperiment, removeSolution, reopenWithdraws, restoreSolution, setTestStrength, rootsWithoutSolution,
+  seenSinceImplemented, solutionGate, solutionPhase, solutionPlanOf, solutionQuestions, unaddressCause, testStrength,
+  underneath, untestSolution, updateExperiment, updateSolution, waiveExperiment,
 } from './solution'
 import type { Experiment, Solution, SolutionContext, SolutionPlan } from './solution'
 
@@ -110,7 +111,12 @@ describe('editing', () => {
 describe('the idea gate', () => {
   it('lists every item open on a bare idea', () => {
     expect(openItems(solutionGate(solution({}), context()))).toEqual(
-      ['addresses', 'benefit', 'cost', 'validatedWith', 'triedBefore'])
+      ['addresses', 'benefit', 'cost', 'validatedWith', 'triedBefore', 'whyNow'])
+  })
+  it('does not tick why-now while "was this tried before?" is unanswered', () => {
+    const unanswered = { ...vetted, noneKnown: undefined }
+    expect(openItems(solutionGate(unanswered, context()))).toEqual(['triedBefore', 'whyNow'])
+    expect(openItems(solutionGate(vetted, context()))).toEqual([])
   })
   it('is clear once each is said', () => {
     expect(solutionGate(vetted, context())).toMatchObject({ to: 'shaped' })
@@ -151,17 +157,31 @@ describe('moving', () => {
     const refuted = context({ experiments: [experiment({ outcome: 'refuted' })] })
     expect(moveSolution([shaped], 's1', 'testing', day, refuted).ok).toBe(false)
   })
-  it('moves every shaped solution an experiment tests on to testing when it is planned, and no other', () => {
+  it('moves every shaped solution an experiment tests on to testing when it is planned, and keeps one testing', () => {
     const shaped = { ...vetted, state: 'shaped' as const }
-    const idea = solution({ id: 's2', number: 2 })
-    const proven = { ...vetted, id: 's3', number: 3, state: 'proven' as const }
-    const trial = experiment({ tests: ['s1', 's2', 's3'] })
-    const work = planExperiment({ solutions: [shaped, idea, proven], experiments: [] }, trial, day)
+    const testing = { ...vetted, id: 's2', number: 2, state: 'testing' as const }
+    const trial = experiment({ tests: ['s1', 's2'] })
+    const work = planExperiment({ solutions: [shaped, testing], experiments: [] }, trial, day)
     expect(work.experiments).toEqual([trial])
-    expect(work.solutions.map((one) => one.state)).toEqual(['testing', 'idea', 'proven'])
+    expect(work.solutions.map((one) => one.state)).toEqual(['testing', 'testing'])
     expect(work.solutions[0].history.at(-1)).toEqual({ date: day, kind: 'moved', to: 'testing' })
-    expect(work.solutions[1]).toBe(idea)
-    expect(work.solutions[2]).toBe(proven)
+    expect(work.solutions[1]).toBe(testing)
+  })
+  it('plans an experiment only for a shaped or testing solution', () => {
+    const idea = solution({})
+    const proven = { ...vetted, state: 'proven' as const }
+    for (const one of [idea, proven, { ...vetted, state: 'adopted' as const }]) {
+      const work = { solutions: [one], experiments: [] }
+      expect(planExperiment(work, experiment({}), day)).toBe(work)
+    }
+    expect([idea, proven].map(mayPlanExperiment)).toEqual([false, false])
+    expect(mayPlanExperiment({ state: 'shaped' })).toBe(true)
+  })
+  it('takes on a new cause only while it is an idea or shaped, and still changes how directly', () => {
+    const proven = { ...vetted, state: 'proven' as const }
+    expect(mayAddress(proven)).toBe(false)
+    expect(addressCause([proven], 's1', { id: 'c1', strength: 'weak' })[0]).toBe(proven)
+    expect(addressCause([proven], 's1', { id: 'c2', strength: 'weak' })[0].addresses).toEqual([{ id: 'c2', strength: 'weak' }])
   })
   it('keeps how firmly an experiment bears on each solution, and forgets it with the link', () => {
     const trial = experiment({ tests: ['s1', 's2'] })
@@ -193,8 +213,16 @@ describe('moving', () => {
   })
   it('needs an accepted decision record to be adopted', () => {
     const proven = { ...vetted, state: 'proven' as const, decision: 'adr1' }
-    expect(moveSolution([proven], 's1', 'adopted', day, context({ decisions: [{ id: 'adr1', status: 'reviewing' }] })).ok).toBe(false)
-    expect(moveSolution([proven], 's1', 'adopted', day, context({ decisions: [{ id: 'adr1', status: 'accepted' }] })).ok).toBe(true)
+    const confirmed = [experiment({ outcome: 'confirmed', result: 'Halved' })]
+    expect(moveSolution([proven], 's1', 'adopted', day, context({ experiments: confirmed, decisions: [{ id: 'adr1', status: 'reviewing' }] })).ok).toBe(false)
+    expect(moveSolution([proven], 's1', 'adopted', day, context({ experiments: confirmed, decisions: [{ id: 'adr1', status: 'accepted' }] })).ok).toBe(true)
+  })
+  it('asks for the proof again on the way to adopted', () => {
+    const proven = { ...vetted, state: 'proven' as const, decision: 'adr1' }
+    const accepted = { decisions: [{ id: 'adr1', status: 'accepted' as const }] }
+    expect(moveSolution([proven], 's1', 'adopted', day, context({ ...accepted, experiments: [experiment({ outcome: 'refuted' })] })))
+      .toMatchObject({ ok: false, refusal: 'gate', open: ['experimentConfirmed'] })
+    expect(moveSolution([{ ...proven, waived: 'Not trialled' }], 's1', 'adopted', day, context(accepted)).ok).toBe(true)
   })
   it('goes back one step ungated, except out of adopted while its decision stands', () => {
     const shaped = { ...vetted, state: 'shaped' as const, benefit: undefined }
@@ -234,10 +262,43 @@ describe('experiments', () => {
     expect(updateExperiment(list, 'e1', { hypothesis: ' ' })[0]).toBe(list[0])
     expect(updateExperiment(list, 'e1', { where: '' })[0]).not.toHaveProperty('where')
   })
-  it('concludes with an outcome and a result', () => {
-    const [one] = concludeExperiment([experiment({})], 'e1', 'confirmed', ' 41 to 12 a week ')
-    expect(one).toMatchObject({ outcome: 'confirmed', result: '41 to 12 a week' })
+  it('moves planned to running, running to planned or an outcome, and an outcome back to running only', () => {
+    expect(experimentMovesFrom('planned')).toEqual(['running'])
+    expect(experimentMovesFrom('running')).toEqual(['planned', 'confirmed', 'refuted', 'inconclusive'])
+    for (const outcome of ['confirmed', 'refuted', 'inconclusive'] as const) expect(experimentMovesFrom(outcome)).toEqual(['running'])
+  })
+  it('refuses planned straight to an outcome, and sets From on the day it starts', () => {
+    expect(concludeExperiment([experiment({})], 'e1', 'confirmed', '2026-09-24', { result: 'Halved' })).toEqual({ ok: false, refusal: 'notAllowed' })
+    expect(concludeExperiment([experiment({})], 'nope', 'running', '2026-09-24')).toEqual({ ok: false, refusal: 'missing' })
+    const started = concludeExperiment([experiment({ from: '2026-09-01' })], 'e1', 'running', '2026-09-24')
+    expect(started).toMatchObject({ ok: true, experiments: [{ outcome: 'running', from: '2026-09-24' }] })
+  })
+  it('concludes with a result and a To day, today by default and never before From', () => {
+    const running = experiment({ outcome: 'running', from: '2026-09-10' })
+    expect(concludeExperiment([running], 'e1', 'confirmed', '2026-09-24')).toEqual({ ok: false, refusal: 'result' })
+    expect(concludeExperiment([running], 'e1', 'confirmed', '2026-09-24', { result: ' ' })).toEqual({ ok: false, refusal: 'result' })
+    expect(concludeExperiment([running], 'e1', 'refuted', '2026-09-24', { result: 'No change', to: '2026-09-01' })).toEqual({ ok: false, refusal: 'endBeforeStart' })
+    expect(concludeExperiment([running], 'e1', 'refuted', '2026-09-24', { result: 'No change', to: '24-09' })).toEqual({ ok: false, refusal: 'endDay' })
+    const done = concludeExperiment([running], 'e1', 'confirmed', '2026-09-24', { result: ' 41 to 12 a week ' })
+    expect(done.ok).toBe(true)
+    if (!done.ok) return
+    const [one] = done.experiments
+    expect(one).toMatchObject({ outcome: 'confirmed', result: '41 to 12 a week', from: '2026-09-10', to: '2026-09-24' })
     expect(experimentsFor([one, experiment({ id: 'e2', tests: ['s9'] })], 's1')).toEqual([one])
+    // Reopened, it runs again: the To day goes, the result stays until the next conclusion.
+    const reopened = concludeExperiment([one], 'e1', 'running', '2026-09-25')
+    expect(reopened.ok && reopened.experiments[0]).toMatchObject({ outcome: 'running', from: '2026-09-10', result: '41 to 12 a week' })
+    expect(reopened.ok && reopened.experiments[0]).not.toHaveProperty('to')
+  })
+  it('names the solutions a reopen takes the proof from, and none that keep another', () => {
+    const proven = { ...vetted, state: 'proven' as const }
+    const confirmed = experiment({ outcome: 'confirmed', result: 'Halved' })
+    expect(reopenWithdraws({ solutions: [proven], experiments: [confirmed] }, 'e1')).toEqual([proven])
+    const another = experiment({ id: 'e2', number: 2, outcome: 'confirmed', result: 'Halved again' })
+    expect(reopenWithdraws({ solutions: [proven], experiments: [confirmed, another] }, 'e1')).toEqual([])
+    expect(reopenWithdraws({ solutions: [{ ...proven, waived: 'Not trialled' }], experiments: [confirmed] }, 'e1')).toEqual([])
+    expect(reopenWithdraws({ solutions: [{ ...proven, state: 'testing' }], experiments: [confirmed] }, 'e1')).toEqual([])
+    expect(hasProof(proven, [confirmed])).toBe(true)
   })
 })
 
@@ -253,10 +314,18 @@ describe('what is derived', () => {
     expect(solutionPhase(adopted, [plan({ status: 'done' })])).toBe('implemented')
     expect(solutionPhase({ ...adopted, state: 'proven' }, [plan({ status: 'done' })])).toBe('proven')
   })
-  it('counts from the plan end, or from the day it was adopted', () => {
+  it('counts from the earlier of the day the plan was done and its end, or from the day it was adopted', () => {
     expect(implementedOn(adopted, [plan({ status: 'done', to: '2026-09-01' })])).toBe('2026-09-01')
+    expect(implementedOn(adopted, [plan({ status: 'done', to: '2026-09-01', doneOn: '2026-08-20' })])).toBe('2026-08-20')
+    expect(implementedOn(adopted, [plan({ status: 'done', to: '2026-09-01', doneOn: '2026-09-15' })])).toBe('2026-09-01')
+    expect(implementedOn(adopted, [plan({ status: 'done', doneOn: '2026-08-20' })])).toBe('2026-08-20')
     expect(implementedOn(adopted, [plan({ status: 'done' })])).toBe('2026-08-01')
     expect(implementedOn(adopted, [plan({})])).toBeUndefined()
+  })
+  it('reads a plan of the model, done day or not', () => {
+    expect(solutionPlanOf({ id: 'tr1', status: 'done', elements: [], to: '2026-09-01', doneOn: '2026-08-20' }))
+      .toEqual({ id: 'tr1', status: 'done', elements: [], to: '2026-09-01', doneOn: '2026-08-20' })
+    expect(solutionPlanOf({ id: 'tr1', status: 'draft', elements: [] })).toEqual({ id: 'tr1', status: 'draft', elements: [] })
   })
   it('finds the observations under what it addresses, however deep', () => {
     expect(underneath(vetted, analysis).map((one) => one.id).sort()).toEqual(['o1', 'o2'])
@@ -284,18 +353,36 @@ describe('what is derived', () => {
     expect(seenSinceImplemented(adopted, seen, [], plans)).toEqual([{ id: 'o2', date: '2026-09-10' }])
     expect(seenSinceImplemented(adopted, seen, [], [plan({ status: 'running', to: '2026-09-01' })])).toEqual([])
   })
+  it('counts a sighting on the day it was implemented', () => {
+    const seen: Analysis = {
+      ...analysis,
+      observations: [observation({ history: [{ date: '2026-06-01', kind: 'recorded' }, { date: '2026-09-01', kind: 'seen' }] })],
+    }
+    expect(seenSinceImplemented(adopted, seen, [], [plan({ status: 'done', to: '2026-09-01' })])).toEqual([{ id: 'o1', date: '2026-09-01' }])
+    expect(seenSinceImplemented(adopted, seen, [], [plan({ status: 'done', to: '2026-09-02' })])).toEqual([])
+  })
+  const confirmed = [experiment({ outcome: 'confirmed', result: 'Halved' })]
   it('asks whether a proven solution only treats a symptom', () => {
     const symptom = { ...vetted, state: 'proven' as const, addresses: [{ id: 'c1', strength: 'strong' as const }] }
-    expect(solutionQuestions(symptom, context())).toEqual(['worksAround'])
+    expect(solutionQuestions(symptom, context({ experiments: confirmed }))).toEqual(['worksAround'])
     expect(solutionQuestions({ ...symptom, state: 'shaped' }, context())).toEqual([])
-    expect(solutionQuestions({ ...vetted, state: 'proven' }, context())).toEqual([])
+    expect(solutionQuestions({ ...vetted, state: 'proven' }, context({ experiments: confirmed }))).toEqual([])
   })
   it('asks what a plan that only adds clears up, and about an adopted one with no plan', () => {
     const adds = plan({ elements: [{ role: 'introduces' }] })
-    expect(solutionQuestions(adopted, context({ plans: [adds] }))).toEqual(['addsOnly'])
-    expect(solutionQuestions(adopted, context({ plans: [plan({ elements: [{ role: 'introduces' }, { role: 'retires' }] })] }))).toEqual([])
-    expect(solutionQuestions({ ...adopted, plan: undefined }, context())).toEqual(['adoptedUnplanned'])
+    expect(solutionQuestions(adopted, context({ experiments: confirmed, plans: [adds] }))).toEqual(['addsOnly'])
+    expect(solutionQuestions(adopted, context({ experiments: confirmed, plans: [plan({ elements: [{ role: 'introduces' }, { role: 'retires' }] })] }))).toEqual([])
+    expect(solutionQuestions({ ...adopted, plan: undefined }, context({ experiments: confirmed }))).toEqual(['adoptedUnplanned'])
     expect(solutionQuestions({ ...adopted, state: 'dropped' }, context())).toEqual([])
+  })
+  it('asks about a proof withdrawn, and moves nothing back by itself', () => {
+    const proven = { ...vetted, state: 'proven' as const }
+    expect(solutionQuestions(proven, context({ experiments: [experiment({ outcome: 'refuted' })] }))).toEqual(['proofWithdrawn'])
+    expect(solutionQuestions(proven, context({ experiments: [experiment({ outcome: 'running' })] }))).toEqual(['proofWithdrawn'])
+    expect(solutionQuestions({ ...proven, waived: 'Not trialled' }, context())).toEqual([])
+    expect(solutionQuestions({ ...vetted, state: 'testing' }, context())).toEqual([])
+    const withPlan = context({ plans: [plan({ elements: [{ role: 'introduces' }, { role: 'retires' }] })] })
+    expect(solutionQuestions(adopted, withPlan)).toEqual(['proofWithdrawn'])
   })
   it('lists the alternatives on the same causes, dropped ones included', () => {
     const other = { ...vetted, id: 's2', state: 'dropped' as const }
@@ -307,11 +394,30 @@ describe('what is derived', () => {
     expect(rootsWithoutSolution(analysis.causes, [vetted])).toEqual([])
     expect(rootsWithoutSolution(analysis.causes, [{ ...vetted, state: 'dropped' }])).toEqual([analysis.causes[1]])
   })
-  it('writes a decision context naming the causes and the alternatives', () => {
+  it('writes every section of the decision record from the records', () => {
     const other = { ...vetted, id: 's2', number: 2, title: 'Rewrite', state: 'dropped' as const, dropNote: 'Too costly' }
-    const text = decisionContext(vetted, analysis.causes, [vetted, other], t)
-    expect(text).toContain('SO-0001 One estimate service')
-    expect(text).toContain('* CA-0002 Nobody owns the data')
-    expect(text).toContain('* SO-0002 Rewrite (dropped: Too costly)')
+    const trial = experiment({ outcome: 'confirmed', result: '41 to 12 a week' })
+    const text = decisionBody(vetted, {
+      causes: analysis.causes, solutions: [vetted, other], experiments: [trial], observations: analysis.observations,
+    }, t)
+    expect(text).toMatch(/^## Context and Problem Statement\n\nSO-0001 One estimate service\n/)
+    expect(text).toContain('## Decision Drivers\n\n* CA-0002 Nobody owns the data\n* Expected benefit: large\n* Rough cost: small\n')
+    expect(text).toContain('## Considered Options\n\n* SO-0001 One estimate service\n* SO-0002 Rewrite (dropped: Too costly)\n')
+    expect(text).toContain('Chosen option: \u201cSO-0001 One estimate service\u201d, because EX-0001 Two weeks at one desk confirmed it: 41 to 12 a week')
+    expect(text).toContain('* Good, because the expected benefit is large.\n* Bad, because the rough cost is small.')
+    expect(text).toContain('### Confirmation\n\nOnce it is built, OB-0001, OB-0002 should stop being seen.')
+    expect(text).toContain('## More Information\n\nProposed from SO-0001 on the Solutions tab.')
+    // No template placeholder is left in it.
+    expect(text).not.toContain('Option 1')
+    expect(text).not.toContain('\u2026')
+  })
+  it('says the waiver where no experiment confirmed it, and keeps the template where nothing was said', () => {
+    const waived = { ...solution({}), waived: 'An appointment is not trialled' }
+    const text = decisionBody(waived, { causes: analysis.causes, solutions: [waived], experiments: [] }, t)
+    expect(text).toContain('because no experiment was needed: An appointment is not trialled')
+    expect(text).toContain('* Good, because \u2026')
+    expect(text).toContain('Once it is built, what it addresses should stop being seen.')
+    // With no alternative put forward, leaving it as it is is the second option.
+    expect(text).toContain('## Considered Options\n\n* SO-0001 One estimate service\n* Leave it as it is: ')
   })
 })

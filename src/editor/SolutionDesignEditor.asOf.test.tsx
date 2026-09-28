@@ -18,6 +18,10 @@ import { HostedEditor } from './testing/editorHost';
 import type { EditorHostState, HostedEditorProps } from './testing/editorHost';
 import { installReactFlowMocks } from './reactFlowTestSetup';
 import type { DesignDiagram, DesignModel } from '../model/types';
+import { formatDay } from '../i18n/dates';
+
+/** A day as the bar says it: the way the rest of the screen does (`formatDay`). */
+const day = (value: string) => formatDay(value, 'en');
 
 beforeAll(() => installReactFlowMocks());
 afterEach(() => cleanup());
@@ -65,7 +69,7 @@ describe('the date control', () => {
 
     expect(asOfWrites(host)).toEqual([]);
     expect(host.current.model.diagrams[0]?.asOf).toBeUndefined();
-    expect(control().textContent).toContain('2028-02-01');
+    expect(control().textContent).toContain(day('2028-02-01'));
     expect(control().getAttribute('data-looking')).toBe('true');
     expect(screen.getByText('Only you see this day. Nothing is saved until you save it.')).toBeDefined();
   });
@@ -74,17 +78,17 @@ describe('the date control', () => {
     const host = renderEditor(model());
     fireEvent.click(control());
     act(() => { fireEvent.change(dateField(), { target: { value: '2028-01-01' } }); });
-    fireEvent.click(screen.getByRole('button', { name: 'Save 2028-01-01 as this board’s day' }));
+    fireEvent.click(screen.getByRole('button', { name: `Save ${day('2028-01-01')} as this board’s day` }));
 
     expect(asOfWrites(host)).toHaveLength(1);
     expect(host.current.model.diagrams[0]?.asOf).toBe('2028-01-01');
-    expect(control().textContent).toContain('2028-01-01');
+    expect(control().textContent).toContain(day('2028-01-01'));
     expect(control().getAttribute('data-looking')).toBeNull();
   });
 
   it('opens a dated board on its day, and saves today over it as a clear', () => {
     const host = renderEditor(model({ asOf: '2027-06-01' }));
-    expect(control().textContent).toContain('2027-06-01');
+    expect(control().textContent).toContain(day('2027-06-01'));
     expect(control().getAttribute('data-looking')).toBeNull();
 
     fireEvent.click(control());
@@ -105,8 +109,8 @@ describe('the date control', () => {
     renderEditor(model({ asOf: '2027-06-01' }));
     fireEvent.click(control());
     act(() => { fireEvent.change(dateField(), { target: { value: '2029-01-01' } }); });
-    fireEvent.click(screen.getByRole('button', { name: 'Back to 2027-06-01' }));
-    expect(control().textContent).toContain('2027-06-01');
+    fireEvent.click(screen.getByRole('button', { name: `Back to ${day('2027-06-01')}` }));
+    expect(control().textContent).toContain(day('2027-06-01'));
     expect(control().getAttribute('data-looking')).toBeNull();
   });
 
@@ -114,7 +118,7 @@ describe('the date control', () => {
     const host = renderEditor(model(), { readOnly: true });
     fireEvent.click(control());
     act(() => { fireEvent.change(dateField(), { target: { value: '2028-01-01' } }); });
-    expect(control().textContent).toContain('2028-01-01');
+    expect(control().textContent).toContain(day('2028-01-01'));
     expect(screen.queryByRole('button', { name: /^Save/ })).toBeNull();
     expect(asOfWrites(host)).toEqual([]);
   });

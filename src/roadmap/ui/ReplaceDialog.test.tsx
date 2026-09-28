@@ -21,7 +21,10 @@ function element(id: string, name: string, over: Partial<DesignElement> = {}): D
 
 const MODEL = {
   name: 'Acme', diagrams: [], connections: [],
-  elements: [element('wms', 'Warehouse Management'), element('erp', 'ERP'), element('scanner', 'Scanner', { kind: 'component' })],
+  elements: [
+    element('wms', 'Warehouse Management'), element('erp', 'ERP'), element('scanner', 'Scanner', { kind: 'component' }),
+    element('stock', 'Stock keeping', { kind: 'function' }),
+  ],
 } as unknown as DesignModel
 
 function setup() {
@@ -58,12 +61,12 @@ describe('Replace…', () => {
     expect((screen.getByRole('button', { name: 'Start the plan' }) as HTMLButtonElement).disabled).toBe(true)
   })
 
-  it('can replace with one that exists, of the same kind only', () => {
+  it('can replace with one that exists, an application only', () => {
     const { onConfirm } = setup()
     fireEvent.click(screen.getByLabelText('One that already exists'))
     fireEvent.mouseDown(screen.getByRole('combobox', { name: /Which one/ }))
     const offered = within(screen.getByRole('listbox')).getAllByRole('option').map((o) => o.textContent)
-    // Not itself, and not a component.
+    // Not itself, not a component and not a capability.
     expect(offered).toEqual(['ERP'])
     fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'ERP' }))
     dates()

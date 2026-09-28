@@ -86,6 +86,11 @@ export function shellTheme(mode: 'light' | 'dark', language: Language = 'en'): T
       MuiPaper: { styleOverrides: { root: { backgroundImage: 'none' } } },
       MuiOutlinedInput: { styleOverrides: { notchedOutline: { borderColor: outline } } },
       MuiInput: { styleOverrides: { underline: { '&::before': { borderBottomColor: outline } } } },
+      // MUI's own −11 px start margin on a switch or checkbox label, meant to
+      // align the control with text above it, instead pushes the control past
+      // a panel's own left edge. −4 px keeps the alignment close without the
+      // overhang.
+      MuiFormControlLabel: { styleOverrides: { root: { marginLeft: -4 } } },
     },
     // MUI's own keyboard ring on every control it draws — a 2px outline in the
     // accent, inset where a parent clips (a tab, a menu item) — in place of the

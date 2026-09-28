@@ -11,9 +11,10 @@
  * them.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor, waitForElementToBeRemoved, within } from '@testing-library/react'
 import { axeFindings } from '../../app/testing/axe'
 import { translator } from '../../i18n'
+import { formatDay } from '../../i18n/dates'
 import type { HostModel } from '../../model/hostModel'
 import type { Cause, Observation } from '../observation'
 import { MarkdownView } from '../../documentation/ui/MarkdownView'
@@ -99,7 +100,7 @@ describe('ObservationsPage', () => {
     fireEvent.click(screen.getByTestId('observation-row-o1'))
     expect(screen.getByTestId('observation-seen').textContent).toBe('4×')
     expect(screen.getByTestId('observation-explained-by').textContent).toContain('CA-0001 Window sized for 2019')
-    expect(screen.getByTestId('observation-history').textContent).toContain('2026-09-08')
+    expect(screen.getByTestId('observation-history').textContent).toContain(formatDay('2026-09-08', 'en'))
     expect(screen.getByTestId('observation-history').textContent).toContain('Recorded')
   })
 
@@ -122,6 +123,7 @@ describe('ObservationsPage', () => {
     const { onChange } = mount()
     fireEvent.click(screen.getByTestId('observation-row-o2'))
     fireEvent.click(screen.getByTestId('observation-seen-again'))
+    fireEvent.click(screen.getByTestId('seen-confirm'))
     expect(lastChange(onChange).observations[1]).toMatchObject({ seen: 2 })
     expect(lastChange(onChange).observations[1].history.at(-1)).toEqual({ date: '2026-09-20', kind: 'seen' })
     fireEvent.click(screen.getByTestId('observation-share'))
@@ -147,7 +149,7 @@ describe('ObservationsPage', () => {
     fireEvent.click(screen.getByLabelText('Show archived'))
     expect(within(register).getByTestId('observation-row-o2').textContent).toContain('Archived')
     fireEvent.click(within(register).getByTestId('observation-row-o2'))
-    expect(screen.getByTestId('observation-archived-note').textContent).toBe('Archived on 2026-09-20')
+    expect(screen.getByTestId('observation-archived-note').textContent).toBe(`Archived on ${formatDay('2026-09-20', 'en')}`)
     expect(screen.queryByTestId('observation-seen-again')).toBeNull()
     fireEvent.click(screen.getByTestId('observation-restore'))
     const back = lastChange(reopened.onChange).observations[1]
@@ -244,17 +246,57 @@ describe('ObservationsPage', () => {
     expect(screen.getByTestId('cause-root')).toBeDefined()
   })
 
-  it('a cause can be verified, and a root stops being one when a deeper cause is linked', () => {
+  it('a cause can be verified, and a root stops being one when a deeper cause is linked', async () => {
     const { onChange } = mount()
     fireEvent.click(within(screen.getByTestId('cause-list')).getByText('CA-0001 Window sized for 2019'))
     expect(screen.getByTestId('cause-root')).toBeDefined()
+    // Its body says why, but not how it was verified: the page asks what confirmed it.
     fireEvent.click(screen.getByTestId('cause-verify'))
+    expect(onChange).not.toHaveBeenCalled()
+    fireEvent.change(screen.getByTestId('verify-answer'), { target: { value: 'The June run log' } })
+    fireEvent.click(screen.getByTestId('verify-confirm'))
     expect(lastChange(onChange).causes[0].state).toBe('verified')
+    expect(lastChange(onChange).causes[0].body).toContain('2026-09-20: The June run log')
+    // The dialog fades out; until it is gone the page behind it is hidden from role queries.
+    await waitForElementToBeRemoved(() => screen.queryByTestId('verify-answer'))
     fireEvent.click(screen.getByRole('button', { name: 'Link to a deeper cause…' }))
     fireEvent.change(screen.getByLabelText('Name the cause'), { target: { value: 'No capacity planning' } })
     fireEvent.click(screen.getByRole('button', { name: 'Link' }))
     const next = lastChange(onChange)
     expect(next.causes[1]).toMatchObject({ title: 'No capacity planning', explains: [{ id: 'c1', strength: 'normal' }] })
+  })
+
+  it('asks on which day it was seen again, with a note, and never a day in the future', () => {
+    const { onChange } = mount()
+    fireEvent.click(screen.getByTestId('observation-row-o1'))
+    fireEvent.click(screen.getByTestId('observation-seen-again'))
+    expect((screen.getByTestId('seen-date') as HTMLInputElement).value).toBe('2026-09-20')
+    fireEvent.change(screen.getByTestId('seen-date'), { target: { value: '2026-09-21' } })
+    expect((screen.getByTestId('seen-confirm') as HTMLButtonElement).disabled).toBe(true)
+    fireEvent.change(screen.getByTestId('seen-date'), { target: { value: '2026-09-01' } })
+    expect((screen.getByTestId('seen-confirm') as HTMLButtonElement).disabled).toBe(true)
+    fireEvent.change(screen.getByTestId('seen-date'), { target: { value: '2026-09-15' } })
+    fireEvent.change(screen.getByTestId('seen-note'), { target: { value: 'Monday run' } })
+    fireEvent.click(screen.getByTestId('seen-confirm'))
+    expect(lastChange(onChange).observations[0].history.at(-1)).toEqual({ date: '2026-09-15', kind: 'seen', note: 'Monday run' })
+  })
+
+  it('says how many are archived when none is open, and shows them from there', () => {
+    const archived = (one: Observation): Observation => ({ ...one, archived: true, history: [...one.history, { date: '2026-09-19', kind: 'archived' }] })
+    mount({ model: { ...model, observations: model.observations!.map(archived) } })
+    const empty = screen.getByTestId('observation-register-empty')
+    expect(empty.textContent).toContain('No open observations here · 2 archived')
+    fireEvent.click(screen.getByTestId('observation-show-archived'))
+    expect(within(screen.getByTestId('observation-register')).getByTestId('observation-row-o1')).toBeTruthy()
+  })
+
+  it('marks every row for the guide, and starts the crumbs with a name, never an empty one', () => {
+    mount({ groupName: '' })
+    expect(screen.getByTestId('observation-row-o1').getAttribute('data-guide')).toBe('observations.row')
+    expect(screen.getByTestId('observation-crumbs').textContent!.trim().startsWith('Claims')).toBe(true)
+    cleanup()
+    mount({ crumbs: [{ path: '', name: 'Acme' }, { path: 'claims-domain', name: 'Claims domain' }] })
+    expect(screen.getByTestId('observation-crumbs').textContent).toMatch(/^Acme\s+\/\s+Claims domain\s+\/\s+Claims\s+\/\s+Observations$/)
   })
 
   it('has a seam the reading pane is resized at, with the keyboard too', () => {

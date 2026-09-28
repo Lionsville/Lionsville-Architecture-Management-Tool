@@ -13,6 +13,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, within } from '@testing-library/react'
 import { translator } from '../../i18n'
+import { formatDay } from '../../i18n/dates'
 import type { HostModel } from '../../model/hostModel'
 import type { Cause, Observation } from '../observation'
 import type { Experiment, Solution } from '../solution'
@@ -89,7 +90,8 @@ describe('the Solutions tab', () => {
     expect(within(gate).getByTestId('solution-gate-addresses').dataset.ok).toBe('true')
     expect(within(gate).getByTestId('solution-gate-benefit').dataset.ok).toBe('false')
     expect((screen.getByTestId('solution-move') as HTMLButtonElement).disabled).toBe(true)
-    expect(gate.textContent).toContain('4 to go')
+    // "Was this tried before?" is unanswered, so why-now is not ticked either.
+    expect(gate.textContent).toContain('5 to go')
   })
 
   it('moves a vetted idea on to shaped, as a dated event', () => {
@@ -135,10 +137,61 @@ describe('the Solutions tab', () => {
     expect(onDecide).toHaveBeenCalledWith('s1')
   })
 
-  it('concludes an experiment from its reader', () => {
-    const { onChange } = mount({ ...base, solutions: [solution({ state: 'testing' })], experiments: [experiment({})] }, { initialId: 'ex:e1' })
+  it('concludes an experiment from its reader, with a result and the day it ended', () => {
+    const { onChange } = mount({ ...base, solutions: [solution({ state: 'testing' })], experiments: [experiment({ from: '2026-09-10' })] }, { initialId: 'ex:e1' })
+    // Running: back to planned, or one of the three outcomes; nothing else.
+    expect(within(screen.getByRole('group', { name: 'Move the experiment' })).getAllByRole('button').map((one) => one.textContent))
+      .toEqual(['Back to planned', 'Confirmed…', 'Refuted…', 'Inconclusive…'])
     fireEvent.click(screen.getByTestId('experiment-outcome-confirmed'))
-    expect(lastChange(onChange).experiments[0].outcome).toBe('confirmed')
+    expect(onChange).not.toHaveBeenCalled()
+    expect((screen.getByTestId('conclude-confirm') as HTMLButtonElement).disabled).toBe(true)
+    fireEvent.change(screen.getByTestId('conclude-result'), { target: { value: '41 to 12 a week' } })
+    fireEvent.click(screen.getByTestId('conclude-confirm'))
+    expect(lastChange(onChange).experiments[0]).toMatchObject({ outcome: 'confirmed', result: '41 to 12 a week', from: '2026-09-10', to: '2026-09-24' })
+  })
+
+  it('starts a planned experiment on the day, and offers nothing else', () => {
+    const { onChange } = mount({ ...base, solutions: [solution({ state: 'testing' })], experiments: [experiment({ outcome: 'planned', from: '2026-09-01' })] }, { initialId: 'ex:e1' })
+    expect(screen.queryByTestId('experiment-outcome-confirmed')).toBeNull()
+    fireEvent.click(screen.getByTestId('experiment-outcome-running'))
+    expect(lastChange(onChange).experiments[0]).toMatchObject({ outcome: 'running', from: '2026-09-24' })
+  })
+
+  it('reopens a concluded experiment only after saying which proof it withdraws', () => {
+    const { onChange } = mount({
+      ...base, solutions: [solution({ state: 'proven' })],
+      experiments: [experiment({ outcome: 'confirmed', from: '2026-09-01', to: '2026-09-10', result: 'Halved' })],
+    }, { initialId: 'ex:e1' })
+    fireEvent.click(screen.getByTestId('experiment-outcome-running'))
+    expect(screen.getByRole('dialog').textContent).toContain('SO-0001 is proven on this experiment; reopening it withdraws that proof.')
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Reopen' }))
+    expect(lastChange(onChange).experiments[0]).toMatchObject({ outcome: 'running', result: 'Halved' })
+    expect(lastChange(onChange).experiments[0]).not.toHaveProperty('to')
+  })
+
+  it('asks about a proof withdrawn, and holds the move to adopted until it stands again', () => {
+    mount({
+      ...base, solutions: [solution({ state: 'proven', decision: 'adr1' })], experiments: [experiment({ outcome: 'refuted', result: 'No change' })],
+      decisions: [{ id: 'adr1', number: 1, title: 'Own the data', status: 'accepted', date: '2026-08-01', body: '', signers: [] }],
+    }, { initialId: 'so:s1' })
+    expect(screen.getByTestId('solution-question-proofWithdrawn')).toBeTruthy()
+    expect(screen.getByTestId('solution-gate-experimentConfirmed').dataset.ok).toBe('false')
+    expect((screen.getByTestId('solution-move') as HTMLButtonElement).disabled).toBe(true)
+    // Proven: no new cause and no new experiment until it moves back to testing.
+    expect(screen.queryByTestId('solution-address')).toBeNull()
+    expect(within(screen.getByTestId('solution-reader')).queryByRole('button', { name: 'Plan an experiment…' })).toBeNull()
+  })
+
+  it('preselects the cause being read when a new solution is proposed from the bar', () => {
+    mount(base, { initialId: 'c2' })
+    fireEvent.click(screen.getByTestId('observation-tab-solutions'))
+    fireEvent.click(screen.getByTestId('solution-new'))
+    expect(screen.getByRole('dialog').textContent).toContain('CA-0002')
+  })
+
+  it('shows each experiment\'s outcome in the register', () => {
+    mount({ ...base, solutions: [solution({})], experiments: [experiment({ outcome: 'refuted' })] })
+    expect(screen.getByTestId('experiment-row-outcome-e1').textContent).toBe('Refuted')
   })
 
   it('asks whether an implemented solution worked, and names what was seen since', () => {
@@ -150,10 +203,23 @@ describe('the Solutions tab', () => {
       transitions: [{ id: 'tr1', number: 1, title: 'Owner', status: 'done', to: '2026-09-01', elements: [], decisions: ['adr1'], milestones: [], body: '' }],
     }, { initialId: 'so:s1' })
     expect(screen.getByTestId('solution-phase').textContent).toBe('Implemented')
-    expect(screen.getByTestId('solution-did-it-work').textContent).toContain('Seen again on 2026-09-10')
+    expect(screen.getByTestId('solution-did-it-work').textContent).toContain(`Seen again on ${formatDay('2026-09-10', 'en')}`)
     expect(screen.getByTestId('solution-seen-again').textContent).toContain('OB-0001')
-    // Its decision stands accepted, so the step back is not offered.
+    // Its decision stands accepted, so the step back is not offered, and the reader says how to get one.
     expect(screen.queryByTestId('solution-back')).toBeNull()
+    expect(screen.getByTestId('solution-reopen-hint').textContent).toBe('To reopen, supersede ADR-0001 on the Decisions page.')
+  })
+
+  it('reads a sighting on the day it was implemented as that, and a quiet one as no sighting after', () => {
+    const adopted = solution({ state: 'adopted', decision: 'adr1', plan: 'tr1', benefit: 'large' })
+    mount({
+      ...base,
+      observations: [observation({ history: [{ date: '2026-06-01', kind: 'recorded' }, { date: '2026-09-01', kind: 'seen' }] })],
+      solutions: [adopted],
+      decisions: [{ id: 'adr1', number: 1, title: 'Own the data', status: 'accepted', date: '2026-08-01', body: '', signers: [] }],
+      transitions: [{ id: 'tr1', number: 1, title: 'Owner', status: 'done', to: '2026-09-01', elements: [], decisions: ['adr1'], milestones: [], body: '' }],
+    }, { initialId: 'so:s1' })
+    expect(screen.getByTestId('solution-did-it-work').textContent).toContain(`Seen on ${formatDay('2026-09-01', 'en')}, the day it was implemented`)
   })
 
   it('draws the picture with the solution in its lane and flags a root nobody works on', () => {
@@ -204,13 +270,15 @@ describe('the solutions picture’s right-click', () => {
     expect(lastChange(onChange).solutions[0].state).toBe('testing')
   })
 
-  it('concludes an experiment from the picture', () => {
+  it('concludes an experiment from the picture, asking for the result first', () => {
     const { onChange } = mount({ ...base, solutions: [solution({ state: 'testing' })], experiments: [experiment({})] })
     fireEvent.click(screen.getByTestId('observation-tab-solutions'))
     rightClick(screen.getByTestId('solution-picture').querySelector('[data-key="ex:e1"]')!)
     expect(screen.getByTestId('picture-menu-outcome-running').textContent).toContain('✓')
     fireEvent.click(screen.getByTestId('picture-menu-outcome-confirmed'))
-    expect(lastChange(onChange).experiments[0].outcome).toBe('confirmed')
+    fireEvent.change(screen.getByTestId('conclude-result'), { target: { value: 'Calls halved' } })
+    fireEvent.click(screen.getByTestId('conclude-confirm'))
+    expect(lastChange(onChange).experiments[0]).toMatchObject({ outcome: 'confirmed', result: 'Calls halved', to: '2026-09-24' })
   })
 
   it('proposes solutions on root causes only, from the menu and from the reader', () => {

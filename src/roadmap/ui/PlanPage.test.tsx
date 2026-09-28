@@ -129,6 +129,40 @@ describe('the facts', () => {
     expect(offered).toEqual(['Draft', 'Agreed', 'Running', 'Abandoned'])
   })
 
+  it('shows what a forward move still needs, and will not take it until the list is clear', () => {
+    const { actions } = setup()
+    // From is 15 January 2027 and today is 8 September 2026: not started.
+    const gate = screen.getByTestId('plan-gate-running')
+    expect(gate.querySelector('[data-gate-item="started"]')?.getAttribute('data-ok')).toBe('false')
+    expect(gate.querySelector('[data-gate-item="owner"]')?.getAttribute('data-ok')).toBe('true')
+    fireEvent.mouseDown(screen.getAllByRole('combobox')[0])
+    const running = within(screen.getByRole('listbox')).getByRole('option', { name: 'Running' })
+    expect(running.getAttribute('aria-disabled')).toBe('true')
+    expect(actions.updateTransition).not.toHaveBeenCalled()
+  })
+
+  it('records the day a plan is done, and clears it when the plan is reopened', () => {
+    const running = { ...PLAN, status: 'running' as const, elements: [{ elementId: 'wms-new', role: 'introduces' as const }] }
+    const { actions } = setup({ plan: running })
+    fireEvent.mouseDown(screen.getAllByRole('combobox')[0])
+    fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'Done' }))
+    expect(actions.updateTransition).toHaveBeenCalledWith('tr-1', { status: 'done', doneOn: '2026-09-08' })
+    cleanup()
+    const { actions: again } = setup({ plan: { ...running, status: 'done', doneOn: '2026-09-08' } })
+    fireEvent.mouseDown(screen.getAllByRole('combobox')[0])
+    fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'Running' }))
+    expect(again.updateTransition).toHaveBeenCalledWith('tr-1', { status: 'running', doneOn: undefined })
+  })
+
+  it('will not write a window that runs backwards, and says why', () => {
+    const { actions } = setup()
+    fireEvent.change(screen.getByLabelText('To'), { target: { value: '2026-12-31' } })
+    expect(actions.updateTransition).not.toHaveBeenCalled()
+    expect(screen.getByText('To cannot be before From.')).toBeTruthy()
+    fireEvent.change(screen.getByLabelText('To'), { target: { value: '2027-12-31' } })
+    expect(actions.updateTransition).toHaveBeenCalledWith('tr-1', { to: '2027-12-31' })
+  })
+
   it('moves by a number of days as one action', () => {
     const { actions } = setup()
     fireEvent.change(screen.getByLabelText('Days to move it, forwards or back'), { target: { value: '30' } })
@@ -147,7 +181,7 @@ describe('what it changes', () => {
 
   it('adds an element with a role, clears the dates with the last one, and offers none on a change', () => {
     const { actions } = setup()
-    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Application/ }))
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Element/ }))
     fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'Billing' }))
     fireEvent.click(within(screen.getByTestId('plan-add-element')).getByRole('button', { name: 'Add' }))
     expect(actions.updateTransition).toHaveBeenCalledWith('tr-1', {
@@ -160,6 +194,25 @@ describe('what it changes', () => {
     cleanup()
     setup({ plan: { ...PLAN, elements: [{ elementId: 'billing', role: 'changes' }] } })
     expect(screen.queryByLabelText('Billing: Live from')).toBeNull()
+  })
+
+  it('groups what can be named by kind, and introduces only what has a lifecycle', () => {
+    const model = {
+      ...MODEL,
+      elements: [...MODEL.elements, element('stock', 'Stock keeping', { kind: 'function' })],
+    } as DesignModel
+    setup({ model })
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Element/ }))
+    const listbox = screen.getByRole('listbox')
+    expect(within(listbox).getByText('Application')).toBeTruthy()
+    expect(within(listbox).queryByRole('option', { name: 'Stock keeping' })).toBeNull()
+    fireEvent.keyDown(listbox, { key: 'Escape' })
+    cleanup()
+    setup({ model })
+    fireEvent.mouseDown(within(screen.getByTestId('plan-add-element')).getByRole('combobox', { name: /Role/ }))
+    fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'Changes' }))
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Element/ }))
+    expect(within(screen.getByRole('listbox')).getByRole('option', { name: 'Stock keeping' })).toBeTruthy()
   })
 
   it('writes an element\'s dates to the element, never into the plan', () => {

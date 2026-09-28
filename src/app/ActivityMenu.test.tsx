@@ -23,8 +23,9 @@ import type { ScopeSnapshot } from '../projects/scope'
 import { renderApp, renderShell } from './testing/renderShell'
 import { translator } from '../i18n'
 import type { Language } from '../i18n'
-import { ActivityMenu } from './ActivityMenu'
+import { ActivityMenu, mergeActivity } from './ActivityMenu'
 import type { ActivityEntry } from './ActivityMenu'
+import type { SourceActivityLine } from '../platform/sourceProvider'
 
 vi.mock('../editor', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../editor')>()
@@ -79,8 +80,8 @@ const click = (id: string) => act(() => { fireEvent.click(screen.getByTestId(id)
 // By its words, not its accessible name: every button on this bar takes that
 // from its tooltip.
 const openActivity = () => act(() => { fireEvent.click(screen.getByText('Activity')) })
-const lines = () =>
-  screen.getAllByRole('menuitem').map((item) => item.textContent?.replace(/\d\d:\d\d$/, '') ?? '')
+// What each line says it was, without the tags and the moment beside it.
+const lines = () => screen.getAllByTestId('activity-summary').map((item) => item.textContent ?? '')
 
 describe('the activity list', () => {
   it('says nothing has happened yet', () => {
@@ -185,5 +186,110 @@ describe('who took the step', () => {
   it('says only the name where no client was said', () => {
     list([entry({ origin: 'remote', by: 'A. Author' })])
     expect(screen.getByTestId('activity-origin').textContent).toBe('BY A. Author')
+  })
+})
+
+/**
+ * A source that keeps a log of the scope (`SourceRecentActivity`): the list is
+ * that log and the session's steps as one, each step once, and every line says
+ * whose it was — *you*, or the author.
+ */
+describe('the list over a source that keeps a log', () => {
+  const renamed = (name: string) => ({ key: 'activity.diagramRenamed' as const, name })
+  const own = (over: Partial<ActivityEntry> = {}): ActivityEntry =>
+    ({ summary: renamed('Mine'), at: 3_000, stepId: 'step-own', folds: [{ changeId: 'change-own' }], ...over })
+  const logged = (over: Partial<SourceActivityLine> = {}): SourceActivityLine =>
+    ({ summary: renamed('Theirs'), at: 1_000, stepId: 'step-theirs', by: 'B. Colleague', ...over })
+
+  it('is the session alone, word for word, where the source says nothing', () => {
+    const entries = [own(), own({ origin: 'agent', at: 4_000 })]
+    expect(mergeActivity(entries, undefined)).toEqual(entries)
+  })
+
+  it('puts the log and the session in the order they happened, oldest first', () => {
+    const merged = mergeActivity([own()], [logged(), logged({ stepId: 'later', at: 5_000 })])
+    expect(merged.map((line) => line.at)).toEqual([1_000, 3_000, 5_000])
+  })
+
+  it('lists a step the session published once, by the name of its announcement', () => {
+    const merged = mergeActivity([own()], [logged({ stepId: 'change-own', mine: true, at: 3_001 })])
+    expect(merged).toHaveLength(1)
+    expect(merged[0]!.summary.name).toBe('Mine')
+  })
+
+  it('lists a step that arrived while the scope was open once, as the session holds it', () => {
+    const arrived = own({ stepId: 'step-theirs', folds: [], origin: 'remote', by: 'B. Colleague' })
+    expect(mergeActivity([arrived], [logged()])).toHaveLength(1)
+  })
+
+  it('says whose each line is: the person\'s own, and somebody else\'s', () => {
+    const merged = mergeActivity([own()], [logged(), logged({ stepId: 'mine-earlier', mine: true, at: 2_000 })])
+    expect(merged.map((line) => [line.you ?? false, line.origin, line.by])).toEqual([
+      [false, 'remote', 'B. Colleague'],
+      [true, undefined, undefined],
+      [true, undefined, undefined],
+    ])
+  })
+
+  it('says a layout the source marked as the editor\'s own is nobody\'s', () => {
+    const merged = mergeActivity([], [logged({ unattended: true, mine: true, via: 'Browser' })])
+    expect(merged[0]).toMatchObject({ unattended: true })
+    expect(merged[0]!.you).toBeUndefined()
+    expect(merged[0]!.origin).toBeUndefined()
+    expect(merged[0]!.by).toBeUndefined()
+    expect(merged[0]!.via).toBeUndefined()
+  })
+
+  it('draws it as laid out automatically, with no author', async () => {
+    list(async () => [logged({ stepId: 'layout', unattended: true, mine: true })])
+    expect(await screen.findByText('LAID OUT AUTOMATICALLY')).toBeDefined()
+    expect(screen.queryByText('YOU')).toBeNull()
+  })
+
+  it('does the same for a layout the session made by itself', async () => {
+    list(async () => [], [own({ unattended: true })])
+    expect(await screen.findByText('LAID OUT AUTOMATICALLY')).toBeDefined()
+    expect(screen.queryByText('YOU')).toBeNull()
+  })
+
+  it('leaves an agent\'s step tagged as an agent\'s', () => {
+    const merged = mergeActivity([own({ origin: 'agent' })], [])
+    expect(merged[0]!.you).toBeUndefined()
+    expect(merged[0]!.origin).toBe('agent')
+  })
+
+  const list = (recent: () => Promise<readonly SourceActivityLine[] | undefined>, entries: ActivityEntry[] = []) =>
+    renderShell(
+      <ActivityMenu
+        anchorEl={document.body}
+        onClose={() => {}}
+        entries={entries}
+        recent={recent}
+        language="en"
+        s={translator('en')}
+      />,
+      { language: 'en' },
+    )
+
+  it('asks the source when it opens, and names every author', async () => {
+    const recent = vi.fn(async () => [logged(), logged({ stepId: 'mine', mine: true, via: 'Browser', at: 2_000 })])
+    list(recent, [own()])
+    expect(await screen.findByText('BY B. Colleague')).toBeDefined()
+    expect(recent).toHaveBeenCalledTimes(1)
+    const tags = screen.getAllByTestId('activity-origin').map((tag) => tag.textContent)
+    // Newest first: the session's own step, the person's earlier one, the colleague's.
+    expect(tags).toEqual(['YOU', 'YOU VIA Browser', 'BY B. Colleague'])
+    expect(lines()).toEqual(['Renamed a diagram to Mine', 'Renamed a diagram to Theirs', 'Renamed a diagram to Theirs'])
+  })
+
+  it('says it is reading while the log has not answered and there is nothing else to show', () => {
+    list(() => new Promise(() => {}))
+    expect(screen.getByText('Reading what was done here…')).toBeDefined()
+  })
+
+  it('shows the session alone where the log could not be read', async () => {
+    list(async () => { throw new Error('offline') }, [own()])
+    expect(await screen.findByText('Renamed a diagram to Mine')).toBeDefined()
+    expect(screen.queryByTestId('activity-origin')).toBeNull()
   })
 })

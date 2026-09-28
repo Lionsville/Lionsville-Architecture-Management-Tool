@@ -18,7 +18,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, screen } from '@testing-library/react'
 import { translator } from '../i18n'
-import { ShellToolbar, sourceLabel, sourceTipKey } from './ShellToolbar'
+import { crumbsFor, ShellToolbar, sourceLabel, sourceTipKey } from './ShellToolbar'
 import { renderShell } from './testing/renderShell'
 
 afterEach(() => cleanup())
@@ -94,6 +94,39 @@ describe('the saved indicator', () => {
   it('keeps the time for a document that is clean', () => {
     renderShell(<ShellToolbar {...props} savedAt={new Date(2026, 8, 6, 14, 2)} status="clean" />)
     expect(indicator()).toContain('14:02')
+  })
+
+  /**
+   * A source whose changes travel as steps has nothing to save, so neither
+   * "Not saved yet" nor a save time is true of it.
+   */
+  it('says the source’s own word, and never a save, where changes travel as steps', () => {
+    for (const [status, expected] of [
+      ['clean', 'All changes sent'],
+      ['dirty', 'Sending…'],
+      ['saving', 'Sending…'],
+      ['conflict', 'Changed here and on disk'],
+    ] as const) {
+      cleanup()
+      renderShell(<ShellToolbar {...props} savedAt={new Date(2026, 8, 6, 14, 2)} status={status} publishesSteps sourceStatus />)
+      expect(indicator(), status).toBe(expected)
+    }
+  })
+
+  it('says nothing at all where such a source gives no word of its own', () => {
+    renderShell(<ShellToolbar {...props} status="clean" publishesSteps />)
+    expect(screen.queryByTestId('saved-indicator')).toBeNull()
+  })
+})
+
+describe('the crumbs', () => {
+  it('names each scope above by its own name, and the root by the organisation’s', () => {
+    const scopes = [
+      { path: '', name: 'Acme Logistics', diagrams: 0, children: [] },
+      { path: 'retail', name: 'Retail', diagrams: 0, children: [] },
+    ]
+    expect(crumbsFor('retail/warehouse', scopes, props.s).map((crumb) => crumb.name)).toEqual(['Acme Logistics', 'Retail'])
+    expect(crumbsFor('north/south', [], props.s).map((crumb) => crumb.name)).toEqual(['This organisation', 'north'])
   })
 })
 

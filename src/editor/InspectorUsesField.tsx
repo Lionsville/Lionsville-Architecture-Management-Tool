@@ -6,6 +6,12 @@
  * from it as pills, and a picker over this scope's offerings and service
  * platforms first, then what the rest of the organisation offers. The ticks
  * are the picker's until it closes (`useUsesPicker`).
+ *
+ * The picker keeps its keys, Escape among them (`data-shortcuts-ignore`, as the
+ * palette's filter does). The canvas listens for Escape on the whole document,
+ * ahead of anything here, and its Escape clears the selection — which takes the
+ * inspector, and the ticks with it, away before the list has said it closed.
+ * So the first Escape only closes the list, and closing is a commit.
  */
 import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
@@ -62,6 +68,8 @@ function UsesPicker({ uses, picker }: { uses: Uses; picker: Picker }) {
       value={usable.filter((option) => picker.pending.includes(option.id))}
       onChange={(_e, value) => picker.setPending(value.map((option) => option.id))}
       onClose={picker.commit}
+      // Focus leaving the picker is the list closing too, whichever way it left.
+      onBlur={picker.commit}
       renderValue={() => null}
       // A group the listbox can name, and options that hold nothing a
       // keyboard could land on: the box is a picture of `aria-selected`, which
@@ -104,7 +112,7 @@ function UsesPicker({ uses, picker }: { uses: Uses; picker: Picker }) {
         />
       )}
       sx={{ mt: 1 }}
-      data-testid="element-uses-picker" data-guide="record.uses"
+      data-testid="element-uses-picker" data-guide="record.uses" data-shortcuts-ignore=""
     />
   );
 }

@@ -13,14 +13,25 @@
  * Read-only on purpose. Stepping back to an entry is a different feature with a
  * different question behind it ("what happens to everything after it?"), and
  * ⌘Z already covers the one this answers.
+ *
+ * **Where the source keeps a log of its own, the list is that log as well**
+ * (`platform/sourceProvider.ts`'s `SourceRecentActivity`). The session's stack
+ * begins when the scope is opened, so over a source many people write to it
+ * said *nothing yet* to somebody who had just arrived, and named nobody on the
+ * person's own steps. The source's answer is merged with the stack — a step
+ * both hold is listed once — and every line then says whose it was: *you*, or
+ * the author's name. Where the source says nothing, the list is the stack
+ * alone and reads exactly as it always did.
  */
+import { useEffect, useState } from 'react'
 import Box from '@mui/material/Box'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 import Typography from '@mui/material/Typography'
 import type { Language, Translate } from '../i18n'
+import { formatMoment } from '../i18n/dates'
 import type { StepSummary } from '../model'
-import { clockTime } from './clockTime'
+import type { SourceActivityLine } from '../platform/sourceProvider'
 
 /** One line of the list: what was done, when, and by whom where that is not obvious. */
 export type ActivityEntry = {
@@ -46,6 +57,72 @@ export type ActivityEntry = {
    * every step in this repository does.
    */
   via?: string
+  /**
+   * The step's name outside this session, and the names each announcement of
+   * it went out under (`HistoryStep.stepId` and its `folds`). Read only to
+   * list a step once where the source's log holds it too.
+   */
+  stepId?: string
+  folds?: readonly { readonly changeId: string }[]
+  /**
+   * The editor made it by itself, not at anybody's asking (`HistoryStep`'s
+   * own): never said to be the person's.
+   */
+  unattended?: boolean
+}
+
+/** A line as the list draws it: an entry, and whether it was the person's own. */
+export type ActivityLine = ActivityEntry & {
+  /**
+   * The person's own step, said as *you*. Only where the source answered: over
+   * a source with no log of its own every untagged line is theirs, and the list
+   * has never needed to say so.
+   */
+  you?: boolean
+}
+
+/**
+ * The session's steps and the source's log, as one list, oldest first.
+ *
+ * Nothing from the source is the stack as it is, word for word. Otherwise a
+ * step the session holds — its own, published under the names of its
+ * announcements, or somebody else's that arrived while the scope was open —
+ * is dropped from the log's side, because the session's line knows more: the
+ * name of a row it deleted, an agent's tag. Everything else in the log is
+ * somebody's, and says whose.
+ */
+export function mergeActivity(
+  entries: readonly ActivityEntry[],
+  kept: readonly SourceActivityLine[] | undefined,
+): ActivityLine[] {
+  if (kept === undefined) return [...entries]
+  const held = new Set<string>()
+  for (const entry of entries) {
+    if (entry.stepId !== undefined) held.add(entry.stepId)
+    for (const fold of entry.folds ?? []) held.add(fold.changeId)
+  }
+  const fromLog: ActivityLine[] = kept
+    .filter((line) => line.stepId === undefined || !held.has(line.stepId))
+    .map((line) => ({
+      summary: line.summary,
+      at: line.at,
+      ...(line.stepId !== undefined ? { stepId: line.stepId } : {}),
+      // A layout the editor made by itself is nobody's: no author, no *you*.
+      ...(line.unattended === true
+        ? { unattended: true }
+        : {
+          ...(line.via !== undefined ? { via: line.via } : {}),
+          ...(line.mine
+            ? { you: true }
+            : { origin: 'remote' as const, ...(line.by !== undefined ? { by: line.by } : {}) }),
+        }),
+    }))
+  const fromSession: ActivityLine[] = entries.map((entry) => (
+    entry.origin === undefined && entry.unattended !== true ? { ...entry, you: true } : entry
+  ))
+  // Stable, so two steps of one moment keep the order they were found in: the
+  // log's before the session's, which is the order they happened in.
+  return [...fromLog, ...fromSession].sort((a, b) => a.at - b.at)
 }
 
 export type ActivityMenuProps = {
@@ -53,14 +130,46 @@ export type ActivityMenuProps = {
   onClose: () => void
   /** Oldest first, as the stack holds them. */
   entries: readonly ActivityEntry[]
+  /**
+   * The source's own log of this scope, asked for each time the list opens
+   * (`SourceRecentActivity`, bound to the open scope). Absent where the source
+   * keeps none, and the list is then {@link entries} alone.
+   */
+  recent?: () => Promise<readonly SourceActivityLine[] | undefined>
   language: Language
   s: Translate
 }
 
-export function ActivityMenu({ anchorEl, onClose, entries, language, s }: ActivityMenuProps) {
+/**
+ * What the source said, once the list is open: `undefined` until it has
+ * answered, and where it answered nothing or could not be asked.
+ */
+function useKept(open: boolean, recent: ActivityMenuProps['recent']) {
+  const [kept, setKept] = useState<readonly SourceActivityLine[] | undefined>(undefined)
+  const [asking, setAsking] = useState(false)
+  useEffect(() => {
+    if (!open || !recent) {
+      setKept(undefined)
+      setAsking(false)
+      return undefined
+    }
+    let gone = false
+    setAsking(true)
+    void recent().then(
+      (said) => { if (!gone) { setKept(said); setAsking(false) } },
+      // A log that could not be read is the stack alone, as with no log at all.
+      () => { if (!gone) { setKept(undefined); setAsking(false) } },
+    )
+    return () => { gone = true }
+  }, [open, recent])
+  return { kept, asking }
+}
+
+export function ActivityMenu({ anchorEl, onClose, entries, recent, language, s }: ActivityMenuProps) {
+  const { kept, asking } = useKept(Boolean(anchorEl), recent)
   // Newest at the top, which is the order a person reads a log in and the
   // opposite of the order a stack keeps it.
-  const lines = [...entries].reverse()
+  const lines = mergeActivity(entries, kept).reverse()
   return (
     <Menu
       anchorEl={anchorEl}
@@ -70,13 +179,15 @@ export function ActivityMenu({ anchorEl, onClose, entries, language, s }: Activi
     >
       {lines.length === 0 ? (
         <MenuItem disabled>
-          <Typography sx={{ fontSize: 12 }}>{s('shell.activityEmpty')}</Typography>
+          <Typography sx={{ fontSize: 12 }}>
+            {s(asking ? 'shell.activityReading' : 'shell.activityEmpty')}
+          </Typography>
         </MenuItem>
       ) : (
         lines.map((entry, i) => (
           <MenuItem key={`${entry.at}-${i}`} disableRipple sx={{ cursor: 'default' }}>
             <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'baseline', minWidth: 220 }}>
-              <Typography sx={{ fontSize: 12, flex: 1 }}>
+              <Typography data-testid="activity-summary" sx={{ fontSize: 12, flex: 1 }}>
                 {s(entry.summary.key, {
                   name: entry.summary.name ?? '—',
                   count: entry.summary.count ?? 1,
@@ -86,24 +197,36 @@ export function ActivityMenu({ anchorEl, onClose, entries, language, s }: Activi
                   type: entry.summary.typeKey ? s(entry.summary.typeKey) : '',
                 })}
               </Typography>
-              {entry.origin !== undefined && (
+              {(entry.origin !== undefined || entry.you || entry.unattended) && (
                 <Typography
                   data-testid="activity-origin"
                   sx={{ fontSize: 10, color: 'primary.main', fontWeight: 700, letterSpacing: 0.5 }}
                 >
-                  {entry.origin === 'agent'
+                  {entry.unattended
+                    // Nobody's: a board laid out as it opened. Before any
+                    // author, because whoever's window it was did not do it.
+                    ? s('shell.activityUnattended')
+                    : entry.origin === 'agent'
                     ? s('shell.activityAgent')
-                    // The author's own name where there is one — a step whose
-                    // author arrived nameless is still not this person's — and
-                    // the client beside it where the step said which.
-                    : s(entry.via === undefined ? 'shell.activityBy' : 'shell.activityByVia', {
-                      name: entry.by ?? s('shell.activityElsewhere'),
-                      client: entry.via ?? '',
-                    })}
+                    : entry.origin === undefined
+                      // The person's own, where the list also holds everybody
+                      // else's and an untagged line would no longer say whose.
+                      ? s(entry.via === undefined ? 'shell.activityYou' : 'shell.activityYouVia', {
+                        client: entry.via ?? '',
+                      })
+                      // The author's own name where there is one — a step whose
+                      // author arrived nameless is still not this person's — and
+                      // the client beside it where the step said which.
+                      : s(entry.via === undefined ? 'shell.activityBy' : 'shell.activityByVia', {
+                        name: entry.by ?? s('shell.activityElsewhere'),
+                        client: entry.via ?? '',
+                      })}
                 </Typography>
               )}
-              <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
-                {clockTime(new Date(entry.at), language)}
+              {/* The day as well as the time: a log a source keeps reaches back
+                  past today, and "09:12" alone would not say which morning. */}
+              <Typography sx={{ fontSize: 11, color: 'text.secondary', whiteSpace: 'nowrap' }}>
+                {formatMoment(entry.at, language)}
               </Typography>
             </Box>
           </MenuItem>

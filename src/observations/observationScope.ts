@@ -111,6 +111,7 @@ export const GATE_LABEL: Record<GateItem, StringKey> = {
 }
 
 export const QUESTION_LABEL: Record<SolutionQuestion, StringKey> = {
+  proofWithdrawn: 'solution.questionProofWithdrawn',
   worksAround: 'solution.questionWorksAround',
   addsOnly: 'solution.questionAddsOnly',
   adoptedUnplanned: 'solution.questionAdoptedUnplanned',

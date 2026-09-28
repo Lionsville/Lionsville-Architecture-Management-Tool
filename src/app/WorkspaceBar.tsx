@@ -44,6 +44,17 @@ export function WorkspaceBar({ parts, toolbarRef }: {
   const { props, session, document: { document, savedAt, saveFailed }, alsoHere, snapshots, pages, requests, dialogs } = parts
   const { s, language } = props.shell
   const { overflow, windowChrome } = props.host
+  /**
+   * The source's own log of the open scope, bound to it — held by scope, so the
+   * list asks once per opening rather than once per render of this bar.
+   * Nothing where the source keeps no log, and the list is the session's.
+   */
+  const keptLog = props.source.recentActivity
+  const scope = props.project.path
+  const recentActivity = useMemo(
+    () => (keptLog ? () => keptLog(scope) : undefined),
+    [keptLog, scope],
+  )
   return (
     <>
       <Box ref={toolbarRef} sx={{ flex: '0 0 auto' }}>
@@ -65,8 +76,11 @@ export function WorkspaceBar({ parts, toolbarRef }: {
         onOpenRoadmap={pages.openRoadmap}
         onOpenSearch={() => dialogs.setSearchOpen(true)}
         activity={session.history}
+        {...(recentActivity ? { recentActivity } : {})}
         agent={props.agent.bar}
         sourceChip={props.source.chip}
+        {...(props.source.publishesSteps !== undefined ? { publishesSteps: props.source.publishesSteps } : {})}
+        sourceStatus={props.source.status !== undefined}
         s={s}
         windowChrome={windowChrome}
       />

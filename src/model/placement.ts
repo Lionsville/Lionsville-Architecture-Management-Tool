@@ -415,28 +415,37 @@ export type PlacementSeed = Pick<DesignElement, 'kind' | 'outside' | 'ref'> & {
  * A seed that names no band goes to the home of what it would be drawn as
  * where nothing has been said — which for an application is the landscape,
  * and for one nobody here owns, or one another scope answers for, the
- * external band. No position means the next cascade slot in that band,
- * counted the way the palette has always counted. Here rather than in the
- * editor because the shell adds to a board too — a record picked from the
- * register is drawn without a drag — and two answers to "where does a new
- * card go" would drift.
+ * external band. No position means the first cascade slot in that band
+ * that nothing already on the board covers ({@link freeSlotIn}), the way a
+ * move into a band has always been placed. Here rather than in the editor
+ * because the shell adds to a board too — a record picked from the register
+ * is drawn without a drag — and two answers to "where does a new card go"
+ * would drift.
+ *
+ * It used to COUNT the band's members and take the slot after them, which
+ * assumes nobody has moved anything since the band was filled. Once somebody
+ * has — a Tidy, a drag, a board laid out by a machine — the Nth slot is
+ * wherever it is, and a new card landed on top of whatever sat there.
+ *
+ * `figureOf` says what each card already there is drawn as, so its rect is
+ * the size it is drawn at. A caller without the elements to hand leaves it
+ * out, and a card with no stored size is then measured as the new one: in one
+ * band the cards are nearly always of one figure, which is what a band is.
  */
 export function seedPlacement(
   seed: PlacementSeed,
   diagram: Pick<DesignDiagram, 'id' | 'kind' | 'members' | 'geometry'>,
   elementId: ElementId,
+  figureOf?: (id: ElementId, zone: Layer7Zone | undefined) => NodeFigure | undefined,
 ): PlacedNode {
   if (diagram.kind === 'layer7') {
     const zone = seed.zone ?? HOME_ZONE[nodeFigure(seed)];
     const figure = nodeFigure(seed, zone);
+    const occupied = placedNodes(diagram)
+      .filter((p) => p.id !== elementId && (p.zone ?? 'landscape') === zone)
+      .map((p) => placementRect(figureOf?.(p.id, p.zone) ?? figure, p));
     const position =
-      seed.position ??
-      defaultZonePosition(
-        zone,
-        figure,
-        placedNodes(diagram).filter((p) => (p.zone ?? 'landscape') === zone).length,
-        diagram.geometry,
-      );
+      seed.position ?? freeZonePosition(zone, figure, occupied, diagram.geometry);
     return { id: elementId, zone, group: seed.group, ...position };
   }
   const position =
@@ -451,7 +460,8 @@ export function seedPlacement(
  * palette does, assumes nobody has moved anything since; walking the slots
  * against the real rects does not. Falls back to the slot past the last
  * occupant when every slot is taken, which can only happen with an area too
- * small for its own contents.
+ * small for its own contents. The walk covers every slot the area holds, not
+ * one per occupant, because one wide card can cover several slots.
  */
 export function freeSlotIn(
   area: Rect,
@@ -460,12 +470,30 @@ export function freeSlotIn(
   inset?: { x: number; y: number },
 ): { x: number; y: number } {
   const size = NODE_SIZES[figure];
-  for (let index = 0; index <= occupied.length; index += 1) {
+  // Every slot the area holds, and never fewer than one past the occupants:
+  // a card wider or taller than a slot covers several, so the count of cards
+  // is no bound on how many slots are taken. Walked in order, so the answer
+  // is the same for the same board.
+  const bound = Math.max(occupied.length + 1, slotsIn(area, figure, inset));
+  for (let index = 0; index < bound; index += 1) {
     const slot = cascadeSlot(area, figure, index, inset);
     const candidate: Rect = { ...slot, width: size.width, height: size.height };
     if (!occupied.some((rect) => rectsIntersect(candidate, rect))) return slot;
   }
-  return cascadeSlot(area, figure, occupied.length, inset);
+  return cascadeSlot(area, figure, bound, inset);
+}
+
+/**
+ * How many cascade slots fit inside `area` for a node of `figure`: whole rows
+ * of {@link cascadeSlot}'s columns, at least one row.
+ */
+function slotsIn(area: Rect, figure: NodeFigure, inset: { x: number; y: number } = { x: ZONE_INSET, y: ZONE_INSET }): number {
+  const size = NODE_SIZES[figure];
+  const usableWidth = Math.max(area.width - inset.x * 2, size.width);
+  const perRow = Math.max(1, Math.floor(usableWidth / (size.width + CASCADE_GAP_X)));
+  const usableHeight = Math.max(area.height - inset.y * 2, size.height);
+  const rows = Math.max(1, Math.floor((usableHeight + CASCADE_GAP_Y) / (size.height + CASCADE_GAP_Y)));
+  return perRow * rows;
 }
 
 /** {@link freeSlotIn} for a Layer 7 band. */

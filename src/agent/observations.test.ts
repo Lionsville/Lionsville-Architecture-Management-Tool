@@ -68,6 +68,11 @@ const write = (model: Model, tool: ToolName, args: unknown): { model: Model; ans
   return { model: applied.model, answer: parse(out.answer) }
 }
 const read = (model: Model, tool: ReadTool, args: unknown = {}) => parse(answer(tool, args, view(model)))
+const refusal = (model: Model, tool: ToolName, args: unknown): string => {
+  const out = commandFor(tool, args, view(model))
+  if (!('ok' in out) || out.ok) throw new Error(`not refused: ${tool}`)
+  return JSON.stringify(out)
+}
 
 describe('observations.list and observation.read', () => {
   it('lists this scope’s own with their causes, and the shared ones from below with their scope', () => {
@@ -121,6 +126,24 @@ describe('recording and analysing', () => {
     expect(model.observations!['ob-new-1'].body).toMatch(/^## /)
   })
 
+  it('seen again on a day said, never in the future and never before it was first seen', () => {
+    const model = fromArrays(host)
+    const seen = write(model, 'observation.seen', { id: 'ob-2', date: '2026-09-15' }).model
+    expect(seen.observations!['ob-2'].history.at(-1)).toEqual({ date: '2026-09-15', kind: 'seen' })
+    expect(refusal(model, 'observation.seen', { id: 'ob-2', date: '2026-09-21' })).toContain('in the future')
+    expect(refusal(model, 'observation.seen', { id: 'ob-2', date: '2026-08-31' })).toContain('before OB-0002 was first seen')
+  })
+
+  it('verifies a cause only with its evidence written, in the same call or before', () => {
+    const model = fromArrays(host)
+    expect(refusal(model, 'cause.update', { id: 'ca-1', state: 'verified' })).toContain('cannot be verified yet')
+    const verified = write(model, 'cause.update', {
+      id: 'ca-1', state: 'verified',
+      body: '## Why we think so\n\nVolumes doubled.\n\n## How to verify\n\n2026-09-19: the run log shows 08:40 finishes.\n',
+    })
+    expect(verified.answer).toMatchObject({ state: 'verified' })
+  })
+
   it('seen again, then shared, both dated in the history', () => {
     let model = fromArrays(host)
     model = write(model, 'observation.seen', { id: 'ob-2', note: 'again at the desk' }).model
@@ -141,7 +164,13 @@ describe('recording and analysing', () => {
     expect(model.causes!['ca-new-1'].explains).toEqual([
       { id: 'ob-2', strength: 'strong' }, { id: 'in-1', scope: 'acme/claims/intake', strength: 'normal' },
     ])
-    const deeper = write(model, 'cause.add', { title: 'Nobody owns shared data', state: 'verified', explains: [{ id: 'ca-new-1' }] })
+    // Verified is a claim about evidence: refused on a bare body, taken with the evidence written.
+    expect(refusal(model, 'cause.add', { title: 'Nobody owns shared data', state: 'verified', explains: [{ id: 'ca-new-1' }] }))
+      .toContain('cannot be verified yet')
+    const deeper = write(model, 'cause.add', {
+      title: 'Nobody owns shared data', state: 'verified', explains: [{ id: 'ca-new-1' }],
+      body: '## Why we think so\n\nThree teams edit it.\n\n## How to verify\n\n2026-09-18: the change log names three teams.\n',
+    })
     model = deeper.model
     expect(deeper.answer).toMatchObject({ root: true, state: 'verified' })
     expect((read(model, 'cause.read', { id: 'CA-2' }) as { root: boolean; explainedBy: { id: string }[] })).toMatchObject({ root: false, explainedBy: [{ id: 'ca-new-2' }] })

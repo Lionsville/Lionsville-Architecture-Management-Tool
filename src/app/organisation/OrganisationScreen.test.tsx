@@ -253,10 +253,15 @@ describe('the organisation screen — its own pages', () => {
     expect(cards.textContent).not.toContain('unattributed')
     const attention = await screen.findByTestId('needs-attention')
     expect(attention.textContent).toContain('Post office is outside the organisation and nobody has said whose it is')
+    // Each row says what kind of finding it is, in a word that does not move
+    // with the language.
+    expect(attention.querySelector('[data-finding="unattributed"]')?.textContent)
+      .toContain('Post office is outside the organisation')
 
     fireEvent.click(within(cards).getByTestId('open-register'))
     const table = await screen.findByTestId('register-table')
-    expect(within(table).getByTestId('register-master-wms').textContent).toBe('retail')
+    // Kept in says the scope's name, never its path.
+    expect(within(table).getByTestId('register-master-wms').textContent).toBe('Retail')
     expect(table.textContent).toContain('Post office')
   })
 
@@ -280,7 +285,7 @@ describe('the organisation screen — its own pages', () => {
 
     fireEvent.click(within(cards).getByTestId('open-technology'))
     const table = await screen.findByTestId('technology-register-table')
-    expect(within(table).getByTestId('technology-master-containers').textContent).toBe('platforms')
+    expect(within(table).getByTestId('technology-master-containers').textContent).toBe('Shared platforms')
     expect(within(table).getByTestId('technology-who-containers').textContent).toBe('Platform team')
     expect(within(table).getByTestId('technology-shared-containers').textContent).toBe('Shared')
     expect(within(table).getByTestId('technology-use-containers').textContent).toBe('1 application · 1 scope')
@@ -465,6 +470,73 @@ describe('the organisation screen — a fresh folder', () => {
     })
     const subtitle = await screen.findByTestId('organisation-subtitle')
     expect(subtitle.textContent).toBe('Each scope below \u2014 a domain, a team, a landscape scope \u2014 has its own boards, pages and decisions.')
+  })
+})
+
+/**
+ * A source that lets this person read a scope and not change it
+ * (`AppProvider.readOnlyAt`): the home offers nothing that writes, and still
+ * opens every page the scope has, to read.
+ */
+describe('the organisation screen — for somebody who may only read', () => {
+  const reading = { readOnlyAt: () => true }
+
+  it('offers no new scope, no new board, no settings, no removal and no Make…', async () => {
+    renderApp({
+      scopes: new InMemoryScopeStore([organisation(), scope('retail', 'Retail')]),
+      today: TODAY,
+      provider: reading,
+    })
+    await screen.findByTestId('scope-retail')
+    expect(screen.queryByTestId('new-scope')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Settings for Retail' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Settings for Acme Logistics' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Delete Retail' })).toBeNull()
+    // No sheet and no map yet, and nobody here may make one.
+    await waitFor(() => expect(screen.getByTestId('open-decisions')).toBeDefined())
+    expect(screen.queryByTestId('open-business')).toBeNull()
+    expect(screen.queryByTestId('open-map')).toBeNull()
+    // A landscape's home lists its boards and offers no new one.
+    fireEvent.click(screen.getByTestId('open-retail'))
+    await screen.findByTestId('boards')
+    expect(screen.queryByTestId('new-board')).toBeNull()
+  })
+
+  it('still offers what a writer is offered where the source says the scope may be written', async () => {
+    renderApp({
+      scopes: new InMemoryScopeStore([organisation(), scope('retail', 'Retail')]),
+      today: TODAY,
+      provider: { readOnlyAt: () => false },
+    })
+    await screen.findByTestId('scope-retail')
+    expect(screen.getByTestId('new-scope')).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Settings for Retail' })).toBeDefined()
+    expect((await screen.findByTestId('open-business')).textContent).toBe('Make a sheet…')
+  })
+})
+
+/**
+ * A page asked for on a scope that has no document: the root of a folder with
+ * scopes under it and nothing of its own, say. It used to say it could not be
+ * opened, twice.
+ */
+describe('the organisation screen — a scope with no document of its own', () => {
+  it('gives it one, whole, and opens the page that was asked for', async () => {
+    const scopes = new InMemoryScopeStore([scope('retail', 'Retail')])
+    renderApp({ scopes, today: TODAY })
+    fireEvent.click(await screen.findByTestId('open-decisions'))
+    expect(await screen.findByText('Architecture decisions')).toBeDefined()
+    expect(await scopes.load('')).toBeDefined()
+    expect(screen.queryByText('That project could not be opened.')).toBeNull()
+  })
+
+  it('opens the page empty, and writes nothing, for somebody who may only read', async () => {
+    const scopes = new InMemoryScopeStore([scope('retail', 'Retail')])
+    renderApp({ scopes, today: TODAY, provider: { readOnlyAt: () => true } })
+    fireEvent.click(await screen.findByTestId('open-decisions'))
+    expect(await screen.findByText('Architecture decisions')).toBeDefined()
+    expect(await scopes.load('')).toBeUndefined()
+    expect(screen.queryByText('That project could not be opened.')).toBeNull()
   })
 })
 

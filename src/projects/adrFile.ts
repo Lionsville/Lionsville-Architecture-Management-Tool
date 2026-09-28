@@ -94,6 +94,12 @@ export function adrFileText(adr: Adr): string {
     date: adr.date,
     subjectId: adr.subjectId,
     supersededBy: adr.supersededBy,
+    // The records this one replaces, as a list of ids the way a plan writes
+    // the decisions it rests on: a reference is one value, and a row with one
+    // column reads like a mistake.
+    supersedes: adr.supersedes?.filter(Boolean).map((id) => ({ id })),
+    proposedBy: adr.proposedBy,
+    reason: adr.reason,
     signers: signerRows(adr.signers),
   })
   const heading = `# ADR-${numberPrefix(adr.number)} — ${adr.title}`
@@ -106,6 +112,10 @@ function statusOf(text: string | undefined): AdrStatus {
 
 function verdictOf(text: string | undefined): AdrVerdict | undefined {
   return text === 'approved' || text === 'rejected' ? text : undefined
+}
+
+function idsFrom(rows: Record<string, string | number | boolean>[]): string[] {
+  return rows.flatMap((row) => (typeof row.id === 'string' && row.id ? [row.id] : []))
 }
 
 function signersFrom(rows: Record<string, string | number | boolean>[]): AdrSigner[] {
@@ -162,6 +172,9 @@ export function adrFromFile(text: string, path: string): Adr | undefined {
     ?? frontMatterString(fields, 'applicationId')
     ?? folder
   const supersededBy = frontMatterString(fields, 'supersededBy')
+  const supersedes = idsFrom(frontMatterRows(fields, 'supersedes'))
+  const proposedBy = frontMatterString(fields, 'proposedBy')
+  const reason = frontMatterString(fields, 'reason')
 
   return {
     id: frontMatterString(fields, 'id') || `adr-${subjectId ? `${subjectId}-` : ''}${number}`,
@@ -172,6 +185,9 @@ export function adrFromFile(text: string, path: string): Adr | undefined {
     body: markdownBody(headingEnd === -1 ? rest : rest.slice(headingEnd + 1).replace(/^\n/, '')),
     ...(subjectId ? { subjectId } : {}),
     ...(supersededBy ? { supersededBy } : {}),
+    ...(supersedes.length ? { supersedes } : {}),
+    ...(proposedBy ? { proposedBy } : {}),
+    ...(reason ? { reason } : {}),
     signers: signersFrom(frontMatterRows(fields, 'signers')),
   }
 }

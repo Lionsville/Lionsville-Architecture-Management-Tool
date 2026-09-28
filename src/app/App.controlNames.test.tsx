@@ -28,7 +28,9 @@ afterEach(() => cleanup())
 // The example as the organisation itself, as the axe checks file it — plus
 // one decision on the organisation, so a landscape's decisions page has a
 // record from above to show, one solution proven and not yet decided, so its
-// gate offers the decision, and one outside application with no party.
+// gate offers the decision, and one outside application with no party. The
+// solution being tested stays in testing: an experiment is planned for a
+// shaped or testing solution only (ADR-0026), so that is where its button is.
 const top = EXAMPLES[0].path
 const example: ScopeSnapshot[] = exampleScopes(EXAMPLES[0]).map((scope) => {
   const path = scope.path === top ? '' : scope.path.slice(top.length + 1)
@@ -48,7 +50,9 @@ const landscape = example.find((scope) => scope.model.diagrams.some((diagram) =>
 landscape.model = {
   ...landscape.model,
   elements: landscape.model.elements.map((one) => (one.id === 'payments' ? { ...one, partyId: undefined } : one)),
-  solutions: (landscape.model.solutions ?? []).map((one) => (one.state === 'testing' ? { ...one, state: 'proven' } : one)),
+  solutions: (landscape.model.solutions ?? []).map((one) => (
+    one.id === 'so-portal-dispatch' ? { ...one, state: 'proven', droppedFrom: undefined, dropNote: undefined } : one
+  )),
 }
 
 function show(opened: boolean) {
@@ -162,14 +166,18 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   // one is read from there before the tabs are changed.
   [['the observations, one of them read', [
     'observations.tabRegister', 'observations.tabAnalysis', 'observations.tabSolutions', 'observations.register',
-    'observations.new', 'observations.newCause', 'observation.seenAgain', 'observation.merge',
+    'observations.row', 'observations.new', 'observations.newCause', 'observation.seenAgain', 'observation.merge',
   ], async () => {
     const dialog = await page('Observations')
     fireEvent.click((await within(dialog).findAllByTestId(/^observation-row-/))[0])
   }],
-  ['a proven solution, read', ['solution.planExperiment', 'solution.decide'], async () => {
+  ['a solution being tested, read', ['solution.planExperiment'], async () => {
     const list = await within(screen.getByRole('dialog')).findByTestId('solution-list')
     fireEvent.click(within(list).getAllByRole('button').find((one) => /carrier onboarding kit/i.test(one.textContent ?? ''))!)
+  }],
+  ['a proven solution, read', ['solution.decide'], async () => {
+    const list = within(screen.getByRole('dialog')).getByTestId('solution-list')
+    fireEvent.click(within(list).getAllByRole('button').find((one) => /let the portal show the estimate/i.test(one.textContent ?? ''))!)
   }],
   ['the analysis', ['observations.picture'], async () => {
     fireEvent.click(await within(screen.getByRole('dialog')).findByTestId('observation-tab-analysis'))
@@ -178,13 +186,20 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     fireEvent.click(await within(screen.getByRole('dialog')).findByTestId('observation-tab-solutions'))
   }]],
   [['the decisions, one from above read', [
-    'decisions.list', 'decisions.new', 'decisions.fromAbove', 'decision.status', 'decision.signers',
+    'decisions.list', 'decisions.row', 'decisions.new', 'decisions.fromAbove', 'decision.status', 'decision.signers',
   ], async () => {
     const dialog = await page('Decisions')
     await within(dialog).findByTestId('adr-list')
     const scopes = within(dialog).getAllByTestId(/^adr-scope-/)
     fireEvent.click(scopes.find((one) => one.textContent?.includes('Acme Logistics'))!)
     fireEvent.click((await within(dialog).findAllByText('One register for the organisation'))[0])
+  }],
+  // A record from above is read, not moved; the landscape's own accepted one
+  // offers the move the state machine allows.
+  ['one of its own decisions, read', ['decision.move'], async () => {
+    const dialog = screen.getByRole('dialog')
+    fireEvent.click(within(dialog).getByTestId('adr-scope-landscape'))
+    fireEvent.click((await within(dialog).findAllByText('One place where a price is decided'))[0])
   }]],
   [['the roadmap', ['roadmap.newPlan', 'roadmap.findings'], async () => {
     await page('Roadmap')

@@ -482,7 +482,8 @@ describe('the history of one thing (ADR-0008)', () => {
     expect(within(list).getByText('What billing is')).toBeDefined()
     // And the page says where it is looking, and that a restore is per scope.
     const where = await screen.findByTestId('history-everywhere')
-    expect(where.textContent).toContain('acme')
+    // The master scope's own name (scopeDisplayName), not its raw path.
+    expect(where.textContent).toContain('Acme')
     expect(where.textContent).toContain('what this scope holds')
   })
 

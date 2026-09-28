@@ -13,9 +13,9 @@ import { isDay } from '../../model/lifecycle'
 import type { Cause, CauseLink, CauseState, CauseStrength, Observation, ObservationImpact } from '../../model/observation'
 import { forgetCause } from '../../observations/solution'
 import {
-  absorbShared, formatCauseNumber, formatObservationNumber, linkCause, mergeObservations, newCause, newObservation,
-  nextCauseNumber, nextObservationNumber, removeCause, removeObservation, seenAgain, setArchived, setShared, unlinkCause,
-  updateCause, updateObservation,
+  absorbShared, causeEvidence, formatCauseNumber, formatObservationNumber, linkCause, mergeObservations, newCause,
+  newObservation, nextCauseNumber, nextObservationNumber, removeCause, removeObservation, seenAgain, seenDayProblem,
+  setArchived, setShared, unlinkCause, updateCause, updateObservation,
 } from '../../observations/observation'
 import type { Analysis, CausePatch, ObservationPatch } from '../../observations/observation'
 import { causeLine, findCause, findObservation, observationLine } from '../answer'
@@ -141,8 +141,22 @@ export const updateObservationTool = onObservation((held, args, view, work) => {
   return finish(work, after, observationAnswer(after, held.id))
 })
 
+/**
+ * Seen again, today or on the day `date` says (ADR-0021, amended 28 September
+ * 2026): never in the future, and never before it was first seen.
+ */
 export const observationSeen = onObservation((held, args, view, work) => {
-  const after = { ...work.before, observations: seenAgain(work.before.observations, held.id, view.today(), args.note as string | undefined) }
+  const today = view.today()
+  const day = typeof args.date === 'string' ? args.date : today
+  const problem = seenDayProblem(held, day, today)
+  if (problem) {
+    return refused('agent.badArguments', problem === 'notADay'
+      ? `date ${day} is not yyyy-mm-dd`
+      : problem === 'future'
+        ? `date ${day} is in the future; today is ${today}`
+        : `date ${day} is before ${formatObservationNumber(held.number)} was first seen, on ${held.date}`)
+  }
+  const after = { ...work.before, observations: seenAgain(work.before.observations, held.id, day, args.note as string | undefined) }
   return finish(work, after, observationAnswer(after, held.id))
 })
 
@@ -188,6 +202,10 @@ export const addCause: Handler = (args, view) => {
   const { before } = work
   const title = (args.title as string).trim()
   if (!title) return refused('agent.badArguments', '"title" must not be blank')
+  // Asked before an id is minted, so a refusal leaves no trace; a cause with
+  // no body starts as the template, which holds no evidence.
+  const body = typeof args.body === 'string' ? args.body : ''
+  if (args.state === 'verified' && !causeEvidence(body).complete) return unverified(formatCauseNumber(nextCauseNumber(before.causes)))
   const fresh = newCause({
     id: view.makeId('ca'), number: nextCauseNumber(before.causes), title, t: view.translate,
     ...(typeof args.body === 'string' ? { body: args.body } : {}),
@@ -211,9 +229,22 @@ export const updateCauseTool = onCause((held, args, _view, work) => {
   }
   if (typeof args.body === 'string') patch.body = args.body
   if (typeof args.state === 'string') patch.state = args.state as CauseState
+  if (patch.state === 'verified' && held.state !== 'verified' && !causeEvidence(patch.body ?? held.body).complete) {
+    return unverified(formatCauseNumber(held.number))
+  }
   const after = { ...work.before, causes: updateCause(work.before.causes, held.id, patch) }
   return finish(work, after, causeAnswer(work, after, held.id))
 })
+
+/**
+ * Verified is a claim about evidence (ADR-0021, amended 28 September 2026),
+ * and the body is where the evidence goes: refused until it says why the team
+ * thinks so and how it was verified — what confirmed it, and when — as a
+ * person said it.
+ */
+function unverified(label: string): AgentAnswer {
+  return refused('agent.badArguments', `${label} cannot be verified yet: its body must say, under "Why we think so" and under "How to verify", why the team thinks so and what confirmed it, with the day. Ask the person what confirmed it, write that into "body" in the same call, then mark it verified.`)
+}
 
 export const linkCauseTool = onCause((held, args, view, work) => {
   const link = linkOf(work, view, args.explains, args.scope, args.strength)

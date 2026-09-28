@@ -7,18 +7,20 @@
  * interfaces ported to what it introduces.
  */
 import { transaction } from '../../model/commands'
-import { toArrays, decisionsOf, transitionList } from '../../model/normalised'
+import { toArrays, decisionList, decisionsOf, transitionList } from '../../model/normalised'
 import { isDay } from '../../model/lifecycle'
 import { portCommands, portsOf, unplannedPorts, unportCommands } from '../../model/porting'
 import { replacementCommands } from '../../model/replacement'
-import { nextTransitionNumber, transitionLabel, transitionsFrom as planTransitionsFrom } from '../../model/transition'
+import {
+  nextTransitionNumber, openPlanItems, planGate, statusPatch, transitionLabel, transitionsFrom as planTransitionsFrom,
+} from '../../model/transition'
 import type { Transition, TransitionElement, TransitionMilestone, TransitionRole, TransitionStatus } from '../../model/transition'
 import type { ElementId } from '../../model/types'
 import type { ReadView } from '../answer'
 import { planEntry } from '../answer'
 import type { AgentAnswer } from '../tools'
 import { json, refused } from '../tools'
-import type { Args, Handler, Prepared } from './shared'
+import type { Args, Handler, Prepared, WriteView } from './shared'
 import { merged, planBody, planOf } from './shared'
 
 // --- a replacement, and its interfaces (ADR-0010) ----------------------------------------
@@ -205,12 +207,18 @@ export const createPlan: Handler = (args, view) => {
   const days = planDays(args)
   if ('ok' in days) return days
   if (days.from && days.to && days.to < days.from) return refused('agent.badArguments', 'to must not be before from')
+  // Every plan starts as a draft (ADR-0009, amended 28 September 2026): a
+  // status given here would be a gate stepped around. plan.update moves it,
+  // through the gate, the moment it is ready.
+  if (args.status !== undefined && args.status !== 'draft') {
+    return refused('agent.badArguments', 'a plan starts as a draft; move it on with plan.update once its gate is clear')
+  }
 
   const plan: Transition = {
     id: view.makeId('tr'),
     number: nextTransitionNumber(transitionList(view.model)),
     title,
-    status: (args.status as TransitionStatus | undefined) ?? 'draft',
+    status: 'draft',
     ...(days.from ? { from: days.from } : {}),
     ...(days.to ? { to: days.to } : {}),
     ...(typeof args.owner === 'string' && args.owner.trim() ? { owner: args.owner.trim() } : {}),
@@ -235,6 +243,8 @@ export const updatePlan: Handler = (args, view) => {
   planWords(args, patch)
   const lists = planLists(args, held, view, patch)
   if (lists) return lists
+  const gated = planMove(held, patch, view)
+  if (gated) return gated
   const next = merged(held, patch)
   return {
     command: { type: 'transition.update', id: held.id, patch, origin: 'agent' },
@@ -255,6 +265,29 @@ function planHeading(args: Args, held: Transition, patch: Partial<Transition>): 
     }
     patch.status = args.status as TransitionStatus
   }
+  return undefined
+}
+
+/**
+ * A status move asks the gate the plan's page draws (ADR-0009, amended 28
+ * September 2026), over the plan as this call leaves it — a window and an
+ * owner given in the same call count — and writes the day it was done, or
+ * clears it on reopening.
+ */
+function planMove(held: Transition, patch: Partial<Transition>, view: WriteView): AgentAnswer | undefined {
+  const to = patch.status
+  if (to === undefined) return undefined
+  const next = { ...merged(held, patch), status: held.status }
+  const current = view.current()
+  const gate = planGate(next, to, {
+    decisions: [...decisionList(view.model), ...view.ancestorDecisions],
+    element: (id) => view.model.elements[id],
+    unported: () => unplannedPorts(portsOf(current, next)).length,
+    today: view.today(),
+  })
+  const open = openPlanItems(gate)
+  if (open.length) return refused('agent.badArguments', `the gate to ${to} still needs: ${open.join(', ')}`)
+  Object.assign(patch, statusPatch(held, to, view.today()))
   return undefined
 }
 

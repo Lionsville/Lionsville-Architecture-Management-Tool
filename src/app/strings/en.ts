@@ -32,6 +32,12 @@ export const EN = {
   'shell.changedOnDisk': 'Changed on disk',
   'shell.conflict': 'Changed here and on disk',
   /**
+   * The same indicator for a source whose changes travel as steps: there is
+   * no save, so no time — what is still on its way, and when it has all gone.
+   */
+  'shell.stepsSending': 'Sending\u2026',
+  'shell.stepsSent': 'All changes sent',
+  /**
    * The strip above the canvas when the folder has a second author. Two
    * sentences and three buttons, because the app genuinely cannot choose: there
    * is no merge, only which version survives.
@@ -575,6 +581,19 @@ export const EN = {
   /** What that tag says when the step arrived with no author's name on it. */
   'shell.activityElsewhere': 'ANOTHER AUTHOR',
   /**
+   * The tag on the person's own step, where the list also holds everybody
+   * else's because the source keeps a log of the scope (`SourceRecentActivity`).
+   */
+  'shell.activityYou': 'YOU',
+  /** The same, where the step said which client the person made it with. */
+  'shell.activityYouVia': 'YOU VIA {client}',
+  /** The list while the source's log of the scope is being read, with nothing else to show yet. */
+  'shell.activityReading': 'Reading what was done here…',
+  /** The button's tip where the list is the source's log and not only this session's steps. */
+  'shell.activityTipKept': 'What was lately done in this project, and by whom',
+  /** The tag on a step nobody made: a board the editor laid out by itself as it opened. */
+  'shell.activityUnattended': 'LAID OUT AUTOMATICALLY',
+  /**
    * Who else has the open scope in front of them, on the bar beside the status.
    * Names only, as the source said them, and nothing at all when there is
    * nobody: a bar that says a scope is yours alone is a bar answering a
@@ -716,6 +735,8 @@ export const EN = {
   // The tree of scopes beneath.
   'org.tree': 'Scopes within {name}',
   'org.treeEmpty': 'Nothing is filed under {name} yet. Add a domain or a team below it.',
+  /** An empty tree under a landscape: what a scope under it would be for, not a request for one. */
+  'org.treeEmptyLandscape': 'A landscape keeps its own views. Add a scope below it only to split it up.',
   'org.expand': 'Show what is under {name}',
   'org.collapse': 'Hide what is under {name}',
 

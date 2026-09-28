@@ -25,24 +25,16 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Chip from '@mui/material/Chip'
-import IconButton from '@mui/material/IconButton'
-import List from '@mui/material/List'
-import ListItemButton from '@mui/material/ListItemButton'
-import ListItemText from '@mui/material/ListItemText'
-import ListSubheader from '@mui/material/ListSubheader'
-import TextField from '@mui/material/TextField'
-import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import { LanguageProvider } from '../../i18n'
+import { formatDay } from '../../i18n/dates'
 import { matchesQuery } from '../../model'
 import type { Language, Translate } from '../../i18n'
 import type { MarkdownRenderOptions } from '../../documentation/documentation'
 import {
   adrsFor, formatAdrNumber, newAdr, nextAdrNumber, removeAdr, setAdrStatus, sortAdrs, updateAdr,
 } from '../adr'
-import type { Adr, AdrStatus } from '../adr'
+import type { Adr, AdrPatch, AdrStatus } from '../adr'
 import type { HostModel } from '../../model/hostModel'
 import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
@@ -51,9 +43,10 @@ import { PageDialog } from '../../widgets/PageDialog'
 import type { DocumentImages } from '../../documentation/ui/DocumentSource'
 import type { MakeId } from '../../model/keys'
 import { NewAdrDialog, SupersedeDialog } from './AdrDialogs'
+import { AdrRecordList, AdrTopBar, AdrTree, FromAboveBanner, MoveDialogs } from './AdrPageParts'
 import { AdrReader } from './AdrReader'
 import {
-  STATUS_COLOR, STATUS_LABEL, fromScope, projectScopeOf, scopeFromPath, scopeSubjectId, subjectScope,
+  fromScope, projectScopeOf, scopeFromPath, scopeSubjectId,
 } from '../adrScope'
 import type { AncestorRecords, ScopeKey } from '../adrScope'
 
@@ -89,7 +82,32 @@ export type AdrPageProps = {
   images?: DocumentImages
   /** A plan resting on a record was followed; the page closes and the caller opens that plan (ADR-0010). */
   onOpenPlan?: (transitionId: string) => void
+  /**
+   * The solution a record was decided for was followed (ADR-0026); the page
+   * closes and the caller opens the observations page on it.
+   */
+  onOpenSolution?: (solutionId: string) => void
+  /**
+   * Where this scope sits, drawn by the caller — the shell's crumbs, which
+   * know the tree and how to go home. Absent, the bar names the organisation
+   * and the scope, leaving out whichever has no name.
+   */
+  crumbs?: ReactNode
   windowChrome?: WindowChrome
+}
+
+/**
+ * The list with the record that moved first, when a move supersedes others.
+ *
+ * The list goes back whole and is said as one change per record in the
+ * list's order (`decisionsToCommands`); a writer that checks each move
+ * against the records as they stand (ADR-0008) must see the successor
+ * accepted before the records it supersedes are marked. The model's own
+ * order is not a command, so nothing else moves.
+ */
+function movedFirst(list: readonly Adr[], id: string): Adr[] {
+  const moved = list.find((adr) => adr.id === id)
+  return moved ? [moved, ...list.filter((adr) => adr.id !== id)] : [...list]
 }
 
 export function AdrPage(props: AdrPageProps) {
@@ -107,6 +125,10 @@ export function AdrPage(props: AdrPageProps) {
   const [creating, setCreating] = useState(false)
   const [superseding, setSuperseding] = useState<Adr | undefined>(undefined)
   const [deleting, setDeleting] = useState<Adr | undefined>(undefined)
+  // The two moves that lock a record for good ask once more: acceptance
+  // confirms, rejection and withdrawal ask why.
+  const [accepting, setAccepting] = useState<Adr | undefined>(undefined)
+  const [rejecting, setRejecting] = useState<Adr | undefined>(undefined)
 
   // --- where things are ---------------------------------------------------------
 
@@ -168,6 +190,7 @@ export function AdrPage(props: AdrPageProps) {
     onProjectDecisionsChange(next)
   }, [onProjectDecisionsChange])
 
+  const day = (value: string) => formatDay(value, props.language)
   const scopeLabel = (key: ScopeKey): string => {
     const from = ancestorAt(key)
     if (from) return from.name || from.path || groupName || s('adr.scopeGroup')
@@ -242,15 +265,29 @@ export function AdrPage(props: AdrPageProps) {
     setSelectedId(fresh.id)
   }
 
-  const update = (adr: Adr, patch: Partial<Pick<Adr, 'title' | 'body' | 'signers'>>) => {
+  const update = (adr: Adr, patch: AdrPatch) => {
     const key = scopeOfRecord(adr)
     commitList(key, updateAdr(owningList(key), adr.id, patch))
   }
 
   const move = (adr: Adr, next: AdrStatus) => {
     if (next === 'superseded') { setSuperseding(adr); return }
+    if (next === 'accepted') { setAccepting(adr); return }
+    if (next === 'rejected') { setRejecting(adr); return }
     const key = scopeOfRecord(adr)
     commitList(key, setAdrStatus(owningList(key), adr.id, next, today()))
+  }
+
+  const accept = (adr: Adr) => {
+    const key = scopeOfRecord(adr)
+    commitList(key, movedFirst(setAdrStatus(owningList(key), adr.id, 'accepted', today()), adr.id))
+    setAccepting(undefined)
+  }
+
+  const reject = (adr: Adr, reason: string) => {
+    const key = scopeOfRecord(adr)
+    commitList(key, setAdrStatus(owningList(key), adr.id, 'rejected', today(), { reason }))
+    setRejecting(undefined)
   }
 
   const supersede = (adr: Adr, successorId: string) => {
@@ -273,24 +310,7 @@ export function AdrPage(props: AdrPageProps) {
   // --- the tree --------------------------------------------------------------------
 
   const count = (key: ScopeKey) => scopedList(key).length
-  const node = (key: ScopeKey, label: string, note?: string, indent = 0) => (
-    <ListItemButton
-      key={key}
-      selected={key === scope && !trimmed}
-      onClick={() => chooseScope(key)}
-      sx={{ py: 0.5, pl: 2 + indent * 2 }}
-      data-testid={`adr-scope-${key}`}
-    >
-      <ListItemText
-        primary={label}
-        secondary={note}
-        slotProps={{ primary: { noWrap: true, sx: { fontSize: 13 } }, secondary: { noWrap: true, sx: { fontSize: 11 } } }}
-      />
-      {count(key) > 0 && (
-        <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>{count(key)}</Typography>
-      )}
-    </ListItemButton>
-  )
+  const fromAbove = selected ? ancestorAt(scopeOfRecord(selected)) : undefined
 
   return (
     <PageDialog
@@ -300,140 +320,35 @@ export function AdrPage(props: AdrPageProps) {
       aria-label={s('adr.title')}
     >
       <LanguageProvider language={props.language}>
-        {/* ---- top bar: the window's, while this page is up ---- */}
-        <Box
-          data-testid="adr-topbar"
-          sx={{
-            display: 'flex', flexWrap: 'wrap', rowGap: 0.5, alignItems: 'center', gap: 1, px: 1.5,
-            pl: `${12 + bar.controlsInset}px`,
-            WebkitAppRegion: bar.draggable ? 'drag' : undefined,
-            '& button, & a, & input': { WebkitAppRegion: 'no-drag' },
-            minHeight: 48, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flexShrink: 0,
-          }}
-        >
-          <Tooltip title={s('adr.close')}>
-            <IconButton size="small" aria-label={s('adr.close')} onClick={onClose}>
-              <Box component="span" aria-hidden sx={{ display: 'inline-block', width: 18, textAlign: 'center', fontSize: 16, lineHeight: 1 }}>‹</Box>
-            </IconButton>
-          </Tooltip>
-          <Typography variant="body2" color="text.secondary" sx={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {groupName} &nbsp;/&nbsp; {model.name} &nbsp;/&nbsp;
-            <Box component="span" sx={{ color: 'text.primary', fontWeight: 600 }}>{s('adr.title')}</Box>
-          </Typography>
-          <Box sx={{ flex: 1 }} />
-          {!readOnly && (
-            <Button size="small" variant="contained" onClick={() => setCreating(true)} data-guide="decisions.new">
-              + {s('adr.new')}
-            </Button>
-          )}
-        </Box>
+        <AdrTopBar
+          bar={bar} crumbs={props.crumbs} names={[groupName, model.name]} readOnly={readOnly} s={s}
+          onClose={onClose} onNew={() => setCreating(true)}
+        />
 
         {/* ---- three columns ---- */}
         <Box sx={{ display: 'grid', gridTemplateColumns: '240px 320px minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
-          {/* the tree */}
-          <Box component="nav" data-testid="adr-tree" sx={{ borderRight: 1, borderColor: 'divider', bgcolor: 'background.paper', overflow: 'auto' }}>
-            <List component="div" dense disablePadding>
-              {/* This scope first: its own records, then one node per subject
-                  a record here is about (ADR-0012 §7). */}
-              <ListSubheader component="div" disableSticky sx={{ lineHeight: '32px', bgcolor: 'transparent' }}>{s('adr.scopeLandscape')}</ListSubheader>
-              {node('landscape', model.name, s('adr.scopeLandscapeNote'))}
-              <ListSubheader component="div" disableSticky sx={{ lineHeight: '32px', bgcolor: 'transparent' }}>{s('adr.scopeApplications')}</ListSubheader>
-              {subjects.map((one) => node(subjectScope(one.id), one.name, one.category, 1))}
-              {orphanIds.length > 0 && (
-                <>
-                  <ListSubheader component="div" disableSticky sx={{ lineHeight: '32px', bgcolor: 'transparent' }}>{s('adr.scopeRemoved')}</ListSubheader>
-                  {orphanIds.map((id) => node(subjectScope(id), id, undefined, 1))}
-                </>
-              )}
-              {/* Then the scopes above, read up the tree and read-only here:
-                  a record is edited where it lives. A scope with no records is
-                  not drawn — a heading over nothing is a heading about
-                  nothing. */}
-              {ancestors.filter((one) => one.decisions.length > 0).map((one) => (
-                <Box key={one.path}>
-                  <ListSubheader component="div" disableSticky sx={{ lineHeight: '32px', bgcolor: 'transparent' }}>
-                    {s('adr.scopeFrom', { scope: one.name || one.path || s('adr.scopeGroup') })}
-                  </ListSubheader>
-                  {node(
-                    fromScope(one.path),
-                    one.name || one.path || s('adr.scopeGroup'),
-                    s('adr.scopeFromNote'),
-                  )}
-                </Box>
-              ))}
-            </List>
-          </Box>
+          <AdrTree
+            modelName={model.name} subjects={subjects} orphanIds={orphanIds} ancestors={ancestors}
+            selected={trimmed ? undefined : scope} count={count} onChoose={chooseScope} s={s}
+          />
 
-          {/* the list */}
-          <Box data-testid="adr-list" data-guide="decisions.list" sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, borderRight: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
-            <Box sx={{ p: 1.5, borderBottom: 1, borderColor: 'divider' }}>
-              <TextField
-                fullWidth
-                size="small"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder={s('adr.searchPlaceholder')}
-                slotProps={{ htmlInput: { 'aria-label': s('adr.searchField'), autoComplete: 'off' } }}
-              />
-            </Box>
-            <List component="div" dense disablePadding sx={{ overflow: 'auto', flex: 1 }}>
-              {shown.map(({ adr, scope: where }) => (
-                <ListItemButton
-                  key={adr.id}
-                  selected={adr.id === selectedId}
-                  onClick={() => chooseRecord(adr, where)}
-                  alignItems="flex-start"
-                  sx={{ display: 'block', py: 1, borderBottom: 1, borderColor: 'divider' }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography sx={{ fontSize: 11, color: 'text.secondary', fontFamily: 'ui-monospace, Menlo, monospace' }}>
-                      {formatAdrNumber(adr.number)}
-                    </Typography>
-                    <Box sx={{ flex: 1 }} />
-                    <Chip size="small" color={STATUS_COLOR[adr.status]} label={s(STATUS_LABEL[adr.status])} sx={{ height: 18, fontSize: 10 }} />
-                  </Box>
-                  <Typography sx={{ fontSize: 13, fontWeight: 600, mt: 0.25 }}>{adr.title}</Typography>
-                  <Typography sx={{ fontSize: 11, color: 'text.secondary' }} noWrap>
-                    {[trimmed ? scopeLabel(where) : undefined, adr.date].filter(Boolean).join(' · ')}
-                  </Typography>
-                </ListItemButton>
-              ))}
-              {shown.length === 0 && (
-                <Typography sx={{ fontSize: 13, color: 'text.secondary', px: 2, py: 2 }}>
-                  {trimmed ? s('adr.searchEmpty', { query: trimmed }) : s('adr.listEmpty')}
-                </Typography>
-              )}
-            </List>
-          </Box>
+          <AdrRecordList
+            query={query} onQuery={setQuery} shown={shown} selectedId={selectedId}
+            describe={(adr, where) => [trimmed ? scopeLabel(where) : undefined, day(adr.date)].filter(Boolean).join(' · ')}
+            empty={trimmed ? s('adr.searchEmpty', { query: trimmed }) : s('adr.listEmpty')}
+            onChoose={chooseRecord} s={s}
+          />
 
           {/* the record */}
           <Box sx={{ minHeight: 0, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
             {/* Read here, edited where it lives (ADR-0012 §7) — the same
                 sentence a stand-in's inspector says about a field another
                 scope answers for, and the same way out. */}
-            {selected && ancestorAt(scopeOfRecord(selected)) && (
-              <Box
-                data-testid="adr-from-ancestor" data-guide="decisions.fromAbove"
-                sx={{
-                  display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 1,
-                  bgcolor: 'action.hover', borderBottom: 1, borderColor: 'divider',
-                }}
-              >
-                <Typography variant="caption" color="text.secondary" sx={{ flex: 1 }}>
-                  {s('adr.fromAncestor', { scope: scopeLabel(scopeOfRecord(selected)) })}
-                </Typography>
-                {onOpenScope && (
-                  <Button
-                    size="small"
-                    onClick={() => {
-                      const path = scopeFromPath(scopeOfRecord(selected))
-                      if (path !== undefined) { onClose(); onOpenScope(path) }
-                    }}
-                  >
-                    {s('adr.openScope', { scope: scopeLabel(scopeOfRecord(selected)) })}
-                  </Button>
-                )}
-              </Box>
+            {selected && fromAbove && (
+              <FromAboveBanner
+                scopeName={scopeLabel(scopeOfRecord(selected))} s={s}
+                onOpen={onOpenScope ? () => { onClose(); onOpenScope(fromAbove.path) } : undefined}
+              />
             )}
             {selected ? (
               <AdrReader
@@ -442,8 +357,9 @@ export function AdrPage(props: AdrPageProps) {
                 list={owningList(scopeOfRecord(selected))}
                 readOnly={lockedAt(scopeOfRecord(selected))}
                 s={s}
+                language={props.language}
                 today={today}
-                elements={ancestorAt(scopeOfRecord(selected)) ? [] : model.elements}
+                elements={fromAbove ? [] : model.elements}
                 renderMarkdown={props.renderMarkdown}
                 onAddImage={lockedAt(scopeOfRecord(selected)) ? undefined : props.onAddImage}
                 images={props.images}
@@ -453,7 +369,7 @@ export function AdrPage(props: AdrPageProps) {
                 // An ancestor's records are files in another scope's folder,
                 // which this scope's history does not cover; only this scope's
                 // own have one to show from here.
-                onHistory={props.onOpenHistory && !ancestorAt(scopeOfRecord(selected))
+                onHistory={props.onOpenHistory && !fromAbove
                   ? () => props.onOpenHistory?.(selected.id)
                   : undefined}
                 onSelect={(id) => {
@@ -461,8 +377,13 @@ export function AdrPage(props: AdrPageProps) {
                   if (target) chooseRecord(target, scopeOfRecord(target))
                 }}
                 onElementLink={followElement}
-                plans={props.onOpenPlan && !ancestorAt(scopeOfRecord(selected))
+                plans={props.onOpenPlan && !fromAbove
                   ? { list: model.transitions ?? [], onOpen: (id) => { onClose(); props.onOpenPlan?.(id) } }
+                  : undefined}
+                // Derived, as the plans are: the solution names its record,
+                // and the record reads the name back (ADR-0026).
+                solutions={props.onOpenSolution && !fromAbove
+                  ? { list: model.solutions ?? [], onOpen: (id) => { onClose(); props.onOpenSolution?.(id) } }
                   : undefined}
               />
             ) : (
@@ -476,10 +397,17 @@ export function AdrPage(props: AdrPageProps) {
         <NewAdrDialog open={creating} onCancel={() => setCreating(false)} onCreate={create} s={s} />
         <SupersedeDialog
           target={superseding}
-          candidates={superseding ? scopedList(scopeOfRecord(superseding)).filter((a) => a.id !== superseding.id) : []}
+          candidates={superseding
+            ? owningList(scopeOfRecord(superseding)).filter((a) => a.id !== superseding.id && a.status === 'accepted')
+            : []}
           onCancel={() => setSuperseding(undefined)}
           onConfirm={(id) => superseding && supersede(superseding, id)}
           s={s}
+        />
+        <MoveDialogs
+          accepting={accepting} rejecting={rejecting} listOf={(adr) => owningList(scopeOfRecord(adr))} s={s}
+          onAccept={accept} onReject={reject}
+          onCancel={() => { setAccepting(undefined); setRejecting(undefined) }}
         />
         <ConfirmDialog
           open={Boolean(deleting)}

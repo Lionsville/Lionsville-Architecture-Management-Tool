@@ -327,7 +327,12 @@ export function FunctionInspector(props: FunctionInspectorProps) {
             ))}
           </TextField>
 
-          <Box sx={{ display: 'flex', gap: 1 }}>
+          {/* A row shared three date inputs on `flex: 1`, which in the
+              inspector's own narrow column left each clipped to a couple of
+              digits. Stacked, each keeps the width the inspector actually
+              has; `minWidth: 0` stops a fixed-width native date control from
+              forcing the column itself wider than the panel. */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             {DATED_PHASES.map((phase) => (
               <TextField
                 key={phase}
@@ -335,6 +340,7 @@ export function FunctionInspector(props: FunctionInspectorProps) {
                 label={t(`sheet.date.${phase}` as StringKey)}
                 value={element.lifecycleDates?.[phase] ?? ''}
                 disabled={readOnly || owned('lifecycleDates')}
+                sx={{ minWidth: 0 }}
                 slotProps={{
                   inputLabel: { shrink: true },
                   htmlInput: { 'aria-label': `${element.name}: ${t(`sheet.date.${phase}` as StringKey)}` },

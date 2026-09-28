@@ -69,8 +69,10 @@ export function ReplaceDialog({ subject, model, onCancel, onConfirm }: ReplaceDi
 
   if (!subject) return null
 
+  // Applications only: a replacement is one system taking over from another,
+  // and a capability or a journey step does not retire into one.
   const others = model.elements
-    .filter((element) => element.id !== subject.id && element.kind === subject.kind && !also.includes(element.id))
+    .filter((element) => element.id !== subject.id && element.kind === 'application' && !also.includes(element.id))
     .sort((a, b) => a.name.localeCompare(b.name))
   const nameOf = (id: ElementId) => model.elements.find((element) => element.id === id)?.name ?? id
   const target = arrives === 'new' ? name.trim() : existingId
@@ -136,7 +138,7 @@ export function ReplaceDialog({ subject, model, onCancel, onConfirm }: ReplaceDi
           {others.filter((element) => element.id !== existingId).length > 0 && (
             <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 0.5 }}>
               <TextField
-                select size="small" label={t('plan.addElement')} value={adding} sx={{ flex: 1 }}
+                select size="small" label={t('plan.addApplication')} value={adding} sx={{ flex: 1 }}
                 // MUI 9 names a select by its visible label alone; the fuller
                 // name is the one that says what the field is for.
                 slotProps={{

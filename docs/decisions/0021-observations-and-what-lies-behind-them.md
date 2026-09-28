@@ -198,3 +198,45 @@ beta.
   save and read on no load — the analysis vanished on reopen. The walk now
   enters exactly that one subfolder, and the store's test round-trips a
   cause through the folder.
+
+## Amended — verified needs its evidence, and a sighting has a day
+
+*28 September 2026.* A walk through the page end to end found a cause marked
+verified with nothing in its body, a *Seen again* that could say neither when
+nor what, and a register that read "Nothing observed here yet" the moment its
+last open observation was archived.
+
+* **Verified is a claim about evidence, and the body is where the evidence
+  goes.** §1 left the state a toggle; the consequence above said the body is
+  where verification is written, and nothing asked for it. `causeEvidence`
+  reads the two sections a cause starts with — *Why we think so* and *How to
+  verify*, under their heading in any language the tool speaks — and a cause
+  goes to `verified` only when both have something in them. The page asks
+  what confirmed it where they do not, in a small dialog, and
+  `verifyCause` writes the answer into the body under *How to verify*, with
+  the day, before the state moves: the evidence lands where the next reader
+  looks for it, not in a field of its own. `updateCause` keeps the state where
+  it was when verified is asked without the evidence, so no caller flips it by
+  patch. The agent's `cause.update` and `cause.add` refuse `verified` until
+  the body, as it will be after the call, says both — the method already told
+  the agent never to verify on its own judgement; now the record holds it to
+  that. Back to assumed is never gated.
+* **Seen again says when, and may say what.** The rule always took a note;
+  the page never passed one. *Seen again* is a small dialog now: the day,
+  today unless changed, never in the future and never before the day it was
+  first seen (`seenDayProblem`), and an optional note, both kept in the
+  `seen` event. The agent's `observation.seen` takes the same optional
+  `date` and refuses the same days.
+* **An empty register says what it hides.** With every open observation
+  archived, it reads "No open observations here · 2 archived", with *Show
+  archived* beside it, rather than a sentence that says nothing was ever seen.
+* **Each row is an anchor** (`observations.row`), so a step that asks for a
+  record to be read is anchored on a record and not on the list around it.
+* **Dates read as dates.** The register, the reader, the history and the
+  notes on a merge or an archive say "28 Sept 2026" in the interface's
+  language (`i18n/dates.ts`), not the stored `2026-09-28`; the date inputs
+  are the one place the stored shape shows.
+* **The reader reads its own width.** Below 560 pixels a container query on
+  the reader shrinks the title and moves the occasional actions — verify,
+  link deeper, share, archive, delete — into a `⋯` menu, and a link row wraps
+  instead of running its note into its button.

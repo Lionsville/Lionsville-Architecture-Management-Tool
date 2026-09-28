@@ -11,7 +11,7 @@
  * the spinner on its own button.
  */
 import { useCallback, useState } from 'react';
-import { useReactFlow } from '@xyflow/react';
+import { useReactFlow, useStoreApi } from '@xyflow/react';
 import type { CommandMeta } from '../model/commands';
 import type { DesignDiagram } from '../model/types';
 import type { Translate } from '../i18n';
@@ -22,7 +22,7 @@ import type { StringKey } from '../i18n/strings';
 import type { LayoutAction } from './EditorToolbar';
 import type { EditorState } from './useEditorState';
 import type { SolutionDesignEditorProps } from './props';
-import { FIT_ALL } from './canvas/fitAll';
+import { FIT_ALL, viewportOverNodes } from './canvas/fitAll';
 import { useAutoLayout } from './useAutoLayout';
 import { useRouteActions } from './useRouteActions';
 
@@ -96,15 +96,22 @@ export function useLayoutActions(args: LayoutArgs) {
    * `run` is `handleTidy` itself, not a copy of its body, so the settling pass
    * inherits everything the button already does: one commit and one undo
    * step, the placements kept when only routing failed, a routing failure
-   * reported through the one message channel, and `fitView` — which on a
-   * first open is required, since the canvas framed the machine grid on mount.
+   * reported through the one message channel, and the frame over the board —
+   * which on a first open is required, since the canvas framed the machine
+   * grid on mount.
+   *
+   * Two things are its own. The step is marked `unattended`: nobody pressed
+   * anything, and a host that counts or attributes steps must not take a
+   * board being opened for the person's work. And the flag that asked for the
+   * pass is cleared inside that same step (`applyTidyResult`), so the layout
+   * and the clearing are carried together wherever steps go, or not at all.
    */
   useAutoLayout({
     diagram,
     readOnly,
     busy,
     options: tidyOptions,
-    run: (override) => handleTidy(override, true),
+    run: (override) => handleTidy(override, true, { unattended: true }),
     onSettled: props.layout?.onSettled,
   });
 
@@ -123,7 +130,29 @@ export type LayoutRunning = LayoutReports & {
 function useTidy(args: LayoutArgs, running: LayoutRunning) {
   const { state, diagram, tidyOptions, t } = args;
   const { busy, setBusy, reportLayoutError, reportSkippedTiers } = running;
-  const { fitView } = useReactFlow();
+  const { fitView, getNodes, setViewport } = useReactFlow();
+  const flow = useStoreApi();
+
+  /**
+   * Frame the whole board once the pass's placements are on the canvas.
+   *
+   * Two frames, not one: the step lands on the model, the model renders the
+   * editor, and only the canvas's effect after that render hands React Flow
+   * the moved nodes. Then from the nodes' positions and declared sizes, the
+   * way the canvas's own first framing works (`viewportOverNodes`) — React
+   * Flow's `fitView` counts what it has measured, and right after a layout it
+   * has measured nothing at the new positions, which framed a first open
+   * zoomed in on a corner. `fitView` stays as the answer only where there is
+   * no pane size to work from.
+   */
+  const frameBoard = useCallback(() => {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const { width, height } = flow.getState();
+      const viewport = viewportOverNodes(getNodes(), width, height);
+      if (viewport) void setViewport(viewport, { duration: 300 });
+      else void fitView({ ...FIT_ALL, duration: 300 });
+    }));
+  }, [flow, getNodes, setViewport, fitView]);
 
   /**
    * `override` exists so the settling pass can force the pin options off — see
@@ -152,7 +181,7 @@ function useTidy(args: LayoutArgs, running: LayoutRunning) {
       if (result.routingError !== undefined) {
         reportLayoutError(t(unattended ? 'error.tidyRoutingUnattended' : 'error.tidyRouting'), result.routingError);
       } else reportSkippedTiers(result.skipped);
-      requestAnimationFrame(() => { void fitView({ ...FIT_ALL, duration: 300 }) });
+      frameBoard();
     } catch (error) {
       const message = layoutFailureMessage(error, unattended ? 'error.tidyUnattended' : 'error.tidy', t);
       if (message !== undefined) reportLayoutError(message, error);
@@ -160,7 +189,7 @@ function useTidy(args: LayoutArgs, running: LayoutRunning) {
     } finally {
       setBusy(undefined);
     }
-  }, [diagram, busy, state.model, state.actions, fitView, tidyOptions, reportLayoutError, reportSkippedTiers, t, setBusy]);
+  }, [diagram, busy, state.model, state.actions, frameBoard, tidyOptions, reportLayoutError, reportSkippedTiers, t, setBusy]);
   return handleTidy;
 }
 

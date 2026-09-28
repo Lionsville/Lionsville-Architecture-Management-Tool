@@ -19,7 +19,7 @@ import type { AncestorRecords } from '../decisions/adrScope'
 import type { ScopeModel, ScopeSnapshot, ScopeSummary } from '../projects/scope'
 import type { ScopePath } from '../projects/scopePath'
 import type { ScopeIndex } from '../projects/scopeIndex'
-import type { SourceStatus, SourceWork, SourceWorkChanged } from '../platform/sourceProvider'
+import type { SourceRecentActivity, SourceStatus, SourceWork, SourceWorkChanged } from '../platform/sourceProvider'
 import type { HostCommand } from '../platform/hostCommands'
 import type { WindowChrome } from '../platform/windowChrome'
 import type { HostControls } from '../ports/HostControls'
@@ -85,6 +85,12 @@ export type WorkspaceSource = {
    * that ship, whose changes are written.
    */
   publishesSteps?: boolean
+  /**
+   * The source's own log of a scope, everybody's steps and not only this
+   * window's (`platform/sourceProvider.ts`'s `SourceRecentActivity`). Absent for
+   * all three sources that ship, whose Activity list is the session's.
+   */
+  recentActivity?: SourceRecentActivity
   /** How a save went: the shell's notice says what a refusal means (`useStorageNotice`). */
   onResult: StorageNotice
 }

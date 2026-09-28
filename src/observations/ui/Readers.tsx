@@ -15,11 +15,18 @@
  * Editing follows the decisions reader: a local draft, committed when it has
  * been quiet for a moment, when the mode switches back to read, and when the
  * pane closes or moves to another record.
+ *
+ * A reader reads its own width, not the window's: the pane is dragged narrow
+ * beside a picture as often as it is wide beside the register. Below 560
+ * pixels (a container query on the reader, so nothing is measured in script)
+ * the title steps down a size and the actions that are not the record's
+ * everyday ones move into a `⋯` menu, so the bar keeps to one row.
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
+import IconButton from '@mui/material/IconButton'
 import Link from '@mui/material/Link'
 import MenuItem from '@mui/material/MenuItem'
 import TextField from '@mui/material/TextField'
@@ -27,7 +34,9 @@ import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
+import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
+import { formatDay } from '../../i18n/dates'
 import type { MarkdownRenderOptions } from '../../documentation/documentation'
 import { DocumentSheet } from '../../documentation/ui/DocumentSheet'
 import { DocumentSource } from '../../documentation/ui/DocumentSource'
@@ -39,6 +48,8 @@ import type {
   Cause, CauseLink, CausePatch, Observation, ObservationImpact, ObservationPatch,
 } from '../observation'
 import { EVENT_LABEL, IMPACT_COLOR, IMPACT_LABEL, STATE_COLOR, STATE_LABEL, STRENGTH_LABEL } from '../observationScope'
+import { PictureMenu } from './PictureMenu'
+import type { MenuAction } from './PictureMenu'
 
 /** How long the text must be quiet before a draft becomes a commit. */
 const COMMIT_DELAY_MS = 1200
@@ -47,6 +58,48 @@ export type Mode = 'read' | 'edit'
 
 /** A name for whatever a link or an event points at, resolved by the page. */
 export type NameOf = (id: string, scope?: string) => string
+
+/** Below this the reader is compact: a query on the reader's own width. */
+const COMPACT = '@container reader (max-width: 559px)'
+
+/** The reader's outermost box: the container {@link COMPACT} measures. */
+export const READER_ROOT_SX = {
+  display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%',
+  containerType: 'inline-size', containerName: 'reader',
+} as const
+
+/** A record's title: a size smaller where the reader is narrow, so it does not take four lines. */
+export const TITLE_SX = { fontWeight: 600, lineHeight: 1.2, [COMPACT]: { fontSize: '1.5rem' } } as const
+
+/** An action that moves into the `⋯` menu where the reader is narrow. */
+export const WIDE_ONLY_SX = { [COMPACT]: { display: 'none' } } as const
+
+/**
+ * The `⋯` a narrow reader gathers its occasional actions under: hidden while
+ * the reader is wide, where each is a button of its own. The menu is the
+ * pictures' right-click menu, so an action reads the same wherever it is met.
+ */
+export function OverflowActions({ actions, label }: { actions: readonly MenuAction[]; label: string }) {
+  const [at, setAt] = useState<{ x: number; y: number } | undefined>(undefined)
+  if (actions.length === 0) return null
+  return (
+    <>
+      <IconButton
+        size="small"
+        aria-label={label}
+        data-testid="reader-more"
+        onClick={(event) => {
+          const box = event.currentTarget.getBoundingClientRect()
+          setAt({ x: box.left, y: box.bottom })
+        }}
+        sx={{ display: 'none', [COMPACT]: { display: 'inline-flex' } }}
+      >
+        <Box component="span" aria-hidden sx={{ display: 'inline-block', width: 18, textAlign: 'center', fontSize: 16, lineHeight: 1 }}>⋯</Box>
+      </IconButton>
+      <PictureMenu at={at} actions={actions} onClose={() => setAt(undefined)} />
+    </>
+  )
+}
 
 /**
  * Whether the reader on show is being edited, held by the page rather than
@@ -113,13 +166,16 @@ export function LinkList({ links, onOpen }: {
   return (
     <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
       {links.map((one) => (
-        <Box component="li" key={one.key} sx={{ display: 'flex', gap: 1, alignItems: 'center', py: 0.25 }}>
-          <Link component="button" type="button" onClick={() => onOpen(one.key)} sx={{ fontSize: 'inherit', textAlign: 'left' }}>
+        // The row wraps rather than squeezing: the label takes what is left and
+        // breaks, and the note and the button keep their own width, so a
+        // narrow reader never runs "normal" into "Unlink".
+        <Box component="li" key={one.key} sx={{ display: 'flex', flexWrap: 'wrap', columnGap: 1, rowGap: 0, alignItems: 'center', py: 0.25 }}>
+          <Link component="button" type="button" onClick={() => onOpen(one.key)} sx={{ fontSize: 'inherit', textAlign: 'left', minWidth: 0, overflowWrap: 'anywhere' }}>
             {one.label}
           </Link>
-          {one.note && <Typography variant="caption" color="text.secondary">{one.note}</Typography>}
+          {one.note && <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}>{one.note}</Typography>}
           {one.onRemove && (
-            <Button size="small" onClick={one.onRemove} sx={{ minWidth: 0, px: 0.5, fontSize: 11 }}>{one.removeLabel}</Button>
+            <Button size="small" onClick={one.onRemove} sx={{ minWidth: 0, px: 0.5, fontSize: 11, flexShrink: 0 }}>{one.removeLabel}</Button>
           )}
         </Box>
       ))}
@@ -174,15 +230,22 @@ export function ObservationReader(props: ObservationReaderProps) {
   const text = mode === 'edit' ? draft.body : observation.body
   const rendered = text.trim() ? renderMarkdown(text) : <Typography color="text.secondary">{s('common.empty')}</Typography>
   const label = formatObservationNumber(observation.number)
+  const { language } = useStrings()
+  const day = (date: string) => formatDay(date, language)
+  const occasional: MenuAction[] = canEdit ? [
+    ...(props.canShare ? [{ key: 'share', label: observation.shared ? s('observation.unshare') : s('observation.share'), onClick: () => props.onShare(!observation.shared) }] : []),
+    { key: 'archive', label: s('observation.archive'), onClick: props.onArchive },
+    { key: 'delete', label: s('observation.delete'), divider: true, danger: true, onClick: props.onDelete },
+  ] : []
 
   return (
-    <Box data-testid="observation-reader" sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%' }}>
+    <Box data-testid="observation-reader" sx={READER_ROOT_SX}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 0.75, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flexWrap: 'wrap' }}>
         <Chip size="small" color={IMPACT_COLOR[observation.impact]} label={s(IMPACT_LABEL[observation.impact])} data-testid="observation-impact" />
         <Chip size="small" variant="outlined" label={s('observation.seenTimes', { count: observation.seen })} data-testid="observation-seen" />
         {observation.shared && <Chip size="small" variant="outlined" color="info" label={s('observation.sharedMark')} />}
         {archived && <Chip size="small" variant="outlined" label={s('observation.archivedMark')} data-testid="observation-archived" />}
-        <Typography variant="caption" color="text.secondary">{observation.date}</Typography>
+        <Typography variant="caption" color="text.secondary">{day(observation.date)}</Typography>
         <Box sx={{ flex: 1 }} />
         {canEdit && (
           <>
@@ -191,13 +254,14 @@ export function ObservationReader(props: ObservationReaderProps) {
             <Button size="small" onClick={props.onMerge} data-guide="observation.merge">{s('observation.merge')}</Button>
             {props.canShare && (
               <Tooltip title={s('observation.shareHelp')}>
-                <Button size="small" onClick={() => props.onShare(!observation.shared)} data-testid="observation-share">
+                <Button size="small" onClick={() => props.onShare(!observation.shared)} data-testid="observation-share" sx={WIDE_ONLY_SX}>
                   {observation.shared ? s('observation.unshare') : s('observation.share')}
                 </Button>
               </Tooltip>
             )}
-            <Button size="small" onClick={props.onArchive} data-testid="observation-archive">{s('observation.archive')}</Button>
-            <Button size="small" color="error" onClick={props.onDelete}>{s('observation.delete')}</Button>
+            <Button size="small" onClick={props.onArchive} data-testid="observation-archive" sx={WIDE_ONLY_SX}>{s('observation.archive')}</Button>
+            <Button size="small" color="error" onClick={props.onDelete} sx={WIDE_ONLY_SX}>{s('observation.delete')}</Button>
+            <OverflowActions actions={occasional} label={s('observation.more')} />
           </>
         )}
         {archived && !readOnly && !fromScope && (
@@ -225,13 +289,13 @@ export function ObservationReader(props: ObservationReaderProps) {
       )}
       {archived && (
         <Typography variant="caption" color="text.secondary" data-testid="observation-archived-note" sx={{ px: 2, py: 0.5, borderBottom: 1, borderColor: 'divider' }}>
-          {s('observation.archivedOn', { date: archivedOn ?? '' })}
+          {s('observation.archivedOn', { date: archivedOn ? day(archivedOn) : '' })}
         </Typography>
       )}
       {mergedInto && (
         <Typography variant="caption" color="text.secondary" data-testid="observation-merged" sx={{ px: 2, py: 0.5, borderBottom: 1, borderColor: 'divider' }}>
           {mergedInto.scope !== undefined
-            ? s('observation.mergedAbove', { name: mergedInto.label, scope: mergedInto.scope, date: mergedInto.date ?? '' })
+            ? s('observation.mergedAbove', { name: mergedInto.label, scope: mergedInto.scope, date: mergedInto.date ? day(mergedInto.date) : '' })
             : s('observation.mergedInto', { name: mergedInto.label })}
         </Typography>
       )}
@@ -262,11 +326,11 @@ export function ObservationReader(props: ObservationReaderProps) {
         {showPreview && (
           <DocumentSheet dense={mode === 'edit'}>
             <Typography variant="overline" color="text.secondary">{label}</Typography>
-            <Typography variant="h4" component="h1" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
+            <Typography variant="h4" component="h1" sx={TITLE_SX}>
               {mode === 'edit' ? draft.title : observation.title}
             </Typography>
             <Box component="dl" sx={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: 3, rowGap: 0.5, mt: 2, mb: 0, fontSize: 14 }}>
-              <Term>{s('observation.dateField')}</Term><Value>{observation.date}</Value>
+              <Term>{s('observation.dateField')}</Term><Value>{day(observation.date)}</Value>
               <Term>{s('observation.whereField')}</Term>
               <Value><Box component="span" sx={{ color: observation.where ? 'inherit' : 'text.secondary' }}>{observation.where || '—'}</Box></Value>
               <Term>{s('observation.byField')}</Term>
@@ -298,7 +362,7 @@ export function ObservationReader(props: ObservationReaderProps) {
             <Box component="ol" data-testid="observation-history" sx={{ listStyle: 'none', m: 0, p: 0, fontSize: 13 }}>
               {observation.history.map((event, index) => (
                 <Box component="li" key={index} sx={{ display: 'flex', gap: 2, py: 0.25, borderBottom: 1, borderColor: 'divider' }}>
-                  <Box component="span" sx={{ fontFamily: 'ui-monospace, Menlo, monospace', color: 'text.secondary', whiteSpace: 'nowrap' }}>{event.date}</Box>
+                  <Box component="span" sx={{ color: 'text.secondary', whiteSpace: 'nowrap' }}>{day(event.date)}</Box>
                   <Box component="span">
                     {event.kind === 'absorbed'
                       ? s('observation.eventAbsorbed', { name: nameOf(event.id ?? '', event.scope), count: event.seen ?? 0 })
@@ -327,6 +391,12 @@ export type CauseReaderProps = {
   renderMarkdown: (md: string, options?: MarkdownRenderOptions) => ReactNode
   nameOf: NameOf
   onUpdate: (patch: CausePatch) => void
+  /**
+   * Mark it verified. The page decides how: straight away where the body
+   * already holds the evidence, or by asking what confirmed it (ADR-0021,
+   * amended 28 September 2026). Back to assumed is `onUpdate`.
+   */
+  onVerify: () => void
   onLinkDeeper: () => void
   onUnlink: (link: CauseLink) => void
   /** Another cause stops explaining this one. */
@@ -352,20 +422,27 @@ export function CauseReader(props: CauseReaderProps) {
   const rendered = text.trim() ? renderMarkdown(text) : <Typography color="text.secondary">{s('common.empty')}</Typography>
   const root = isRootCause(cause, causes)
   const explainedBy = causes.filter((other) => other.explains.some((link) => link.id === cause.id && link.scope === undefined))
+  const verify = () => (cause.state === 'assumed' ? props.onVerify() : props.onUpdate({ state: 'assumed' }))
+  const occasional: MenuAction[] = canEdit ? [
+    { key: 'verify', label: cause.state === 'assumed' ? s('observation.verify') : s('observation.unverify'), onClick: verify },
+    { key: 'link-deeper', label: s('observation.linkDeeper'), onClick: props.onLinkDeeper },
+    { key: 'delete', label: s('observation.delete'), divider: true, danger: true, onClick: props.onDelete },
+  ] : []
 
   return (
-    <Box data-testid="cause-reader" sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%' }}>
+    <Box data-testid="cause-reader" sx={READER_ROOT_SX}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 0.75, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flexWrap: 'wrap' }}>
         <Chip size="small" color={STATE_COLOR[cause.state]} label={s(STATE_LABEL[cause.state])} data-testid="cause-state" />
         {root && <Chip size="small" color="secondary" variant="outlined" label={s('observation.rootCause')} data-testid="cause-root" />}
         <Box sx={{ flex: 1 }} />
         {canEdit && (
           <>
-            <Button size="small" variant="outlined" onClick={() => props.onUpdate({ state: cause.state === 'assumed' ? 'verified' : 'assumed' })} data-testid="cause-verify">
+            <Button size="small" variant="outlined" onClick={verify} data-testid="cause-verify" sx={WIDE_ONLY_SX}>
               {cause.state === 'assumed' ? s('observation.verify') : s('observation.unverify')}
             </Button>
-            <Button size="small" variant="outlined" onClick={props.onLinkDeeper}>{s('observation.linkDeeper')}</Button>
-            <Button size="small" color="error" onClick={props.onDelete}>{s('observation.delete')}</Button>
+            <Button size="small" variant="outlined" onClick={props.onLinkDeeper} sx={WIDE_ONLY_SX}>{s('observation.linkDeeper')}</Button>
+            <Button size="small" color="error" onClick={props.onDelete} sx={WIDE_ONLY_SX}>{s('observation.delete')}</Button>
+            <OverflowActions actions={occasional} label={s('observation.more')} />
           </>
         )}
         <ToggleButtonGroup exclusive size="small" value={mode} onChange={(_e, value: Mode | null) => switchMode(value)}>
@@ -394,7 +471,7 @@ export function CauseReader(props: CauseReaderProps) {
         {showPreview && (
           <DocumentSheet dense={mode === 'edit'}>
             <Typography variant="overline" color="text.secondary">{formatCauseNumber(cause.number)}</Typography>
-            <Typography variant="h4" component="h1" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
+            <Typography variant="h4" component="h1" sx={TITLE_SX}>
               {mode === 'edit' ? draft.title : cause.title}
             </Typography>
             <Box component="dl" sx={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: 3, rowGap: 0.5, mt: 2, mb: 0, fontSize: 14 }}>

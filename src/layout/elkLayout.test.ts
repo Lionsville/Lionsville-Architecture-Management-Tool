@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { describe, expect, it } from 'vitest';
-import { LAYOUT_OPTIONS, groupOptions } from './elkLayout';
+import { LAYOUT_OPTIONS, groupOptions, inIdOrder } from './elkLayout';
 
 /**
  * Feedback round: layered spacing set on the root graph does NOT inherit into a
@@ -67,5 +67,37 @@ describe('groupOptions — the per-group direction', () => {
     for (const key of Object.keys(LAYOUT_OPTIONS).filter((k) => k.includes('.spacing.'))) {
       expect(group, `groupOptions is missing ${key}`).toHaveProperty(key);
     }
+  });
+});
+
+/**
+ * The same board has to lay out the same way on every open. ELK breaks its
+ * ties by input order, so the order it is handed must be the board's and not
+ * the accident of where the members came from.
+ */
+describe('inIdOrder — the order ELK is handed', () => {
+  const box = (id: string, children?: { id: string; width: number; height: number }[]) =>
+    ({ id, width: 10, height: 10, ...(children ? { children } : {}) });
+
+  it('sorts the boxes, and every group\'s boxes, by id', () => {
+    const sorted = inIdOrder([
+      box('c'),
+      box('a', [box('z'), box('m')]),
+      box('b'),
+    ]);
+    expect(sorted.map((child) => child.id)).toEqual(['a', 'b', 'c']);
+    expect(sorted[0].children?.map((child) => child.id)).toEqual(['m', 'z']);
+  });
+
+  it('gives one answer for any order of the same boxes', () => {
+    const one = inIdOrder([box('b'), box('a'), box('c')]);
+    const two = inIdOrder([box('c'), box('b'), box('a')]);
+    expect(one).toEqual(two);
+  });
+
+  it('leaves what it was handed as it was', () => {
+    const given = [box('b'), box('a')];
+    inIdOrder(given);
+    expect(given.map((child) => child.id)).toEqual(['b', 'a']);
   });
 });

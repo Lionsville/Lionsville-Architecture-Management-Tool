@@ -22,6 +22,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.saving': 'Bezig met bewaren…',
   'shell.changedOnDisk': 'Gewijzigd op schijf',
   'shell.conflict': 'Hier én op schijf gewijzigd',
+  'shell.stepsSending': 'Versturen\u2026',
+  'shell.stepsSent': 'Alle wijzigingen verstuurd',
   'shell.diskChanged': 'Dit project is op schijf gewijzigd. Hier staat niets open.',
   'shell.unreadableScope': '{files} in deze scope kon niet worden gelezen, dus hij staat open om te bekijken en niet om te wijzigen: opslaan zonder dat bestand zou verliezen wat erin staat. Herstel het bestand, of haal het terug uit de geschiedenis, en open de scope opnieuw.',
   'shell.unreadNotMoved': 'Deze scope is niet verplaatst: een bestand erin kon niet worden gelezen, en verplaatsen zou het met de oude map hebben verwijderd. Herstel het bestand, of haal het terug uit de geschiedenis, en probeer het opnieuw.',
@@ -412,6 +414,11 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.activityBy': 'DOOR {name}',
   'shell.activityByVia': 'DOOR {name} VIA {client}',
   'shell.activityElsewhere': 'EEN ANDERE AUTEUR',
+  'shell.activityYou': 'JIJ',
+  'shell.activityYouVia': 'JIJ VIA {client}',
+  'shell.activityReading': 'Lezen wat hier is gedaan…',
+  'shell.activityTipKept': 'Wat er de laatste tijd aan dit project is gedaan, en door wie',
+  'shell.activityUnattended': 'AUTOMATISCH INGEDEELD',
   'shell.alsoHere': 'Ook hier: {names}',
   'shell.search': 'Zoeken',
   'shell.searchTip': 'Zoek elementen, documentatie en besluiten (\u2318K)',
@@ -525,6 +532,7 @@ export const NL: Record<keyof typeof EN, string> = {
 
   'org.tree': 'Scopes binnen {name}',
   'org.treeEmpty': 'Er is nog niets ondergebracht bij {name}. Voeg er een domein of een team onder toe.',
+  'org.treeEmptyLandscape': 'Een landschap houdt zijn eigen weergaven bij. Voeg er alleen een scope onder toe om het op te splitsen.',
   'org.expand': 'Toon wat onder {name} zit',
   'org.collapse': 'Verberg wat onder {name} zit',
 

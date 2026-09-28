@@ -161,7 +161,12 @@ describe('AdrPage', () => {
   })
 
   it('locks an accepted record: no Edit, no Delete, only Superseded — which asks for a successor', () => {
-    mount({ initialAdrId: 'l2' })
+    // An accepted record to point at: a proposal is never offered as a successor (ADR-0008).
+    const withSuccessor = {
+      ...model,
+      decisions: [...model.decisions!, adr({ id: 'l3', number: 4, title: 'Event-driven integration, decided', status: 'accepted' })],
+    }
+    mount({ model: withSuccessor, initialAdrId: 'l2' })
     const reader = screen.getByTestId('adr-reader')
     expect(within(reader).queryByRole('button', { name: 'Edit' })).toBeNull()
     expect(within(reader).queryByRole('button', { name: 'Delete' })).toBeNull()
@@ -172,13 +177,19 @@ describe('AdrPage', () => {
   })
 
   it('records the successor and shows the link from the superseded record', () => {
-    const { onProject, rerender } = mount({ initialAdrId: 'l2' })
+    // Only an accepted record can replace one in force (ADR-0008): the
+    // proposal l1 is not offered, the accepted l3 is.
+    const withSuccessor = {
+      ...model,
+      decisions: [...model.decisions!, adr({ id: 'l3', number: 4, title: 'Event-driven integration, decided', status: 'accepted' })],
+    }
+    const { onProject, rerender } = mount({ model: withSuccessor, initialAdrId: 'l2' })
     fireEvent.click(screen.getByRole('button', { name: 'Move to Superseded' }))
     fireEvent.click(within(screen.getByRole('dialog', { name: /Mark as superseded/ })).getByRole('button', { name: 'Superseded' }))
     const next: Adr[] = onProject.mock.calls[0][0]
     const l2 = next.find((a) => a.id === 'l2')!
     expect(l2.status).toBe('superseded')
-    expect(l2.supersededBy).toBe('l1')
+    expect(l2.supersededBy).toBe('l3')
     rerender(
       <AdrPage
         open onClose={() => {}} model={{ ...model, decisions: next }} groupName="Acme Logistics"
@@ -187,7 +198,87 @@ describe('AdrPage', () => {
         renderMarkdown={(md) => <MarkdownView markdown={md} />}
       />,
     )
-    expect(screen.getByText(/Superseded by ADR-0001 · Event-driven integration/)).toBeTruthy()
+    expect(screen.getByText(/Superseded by ADR-0004 · Event-driven integration, decided/)).toBeTruthy()
+  })
+
+  it('offers no proposal as a successor, and says how to supersede instead', () => {
+    const { onProject } = mount({ initialAdrId: 'l2' })
+    fireEvent.click(screen.getByRole('button', { name: 'Move to Superseded' }))
+    const dialog = screen.getByRole('dialog', { name: /Mark as superseded/ })
+    expect(within(dialog).queryByLabelText('Successor')).toBeNull()
+    expect(within(dialog).getByText(/no accepted decision/)).toBeTruthy()
+    expect(onProject).not.toHaveBeenCalled()
+  })
+
+  it('shows what acceptance still needs, and keeps the move until the list is clear', () => {
+    mount({ initialAdrId: 'c1' })
+    const reader = screen.getByTestId('adr-reader')
+    expect(within(reader).getByRole('button', { name: 'Move to Accepted' }).hasAttribute('disabled')).toBe(true)
+    const gate = within(reader).getByTestId('adr-gate')
+    expect(gate.querySelector('[data-gate-item="approved"]')?.getAttribute('data-ok')).toBe('false')
+    expect(gate.querySelector('[data-gate-item="context"]')?.getAttribute('data-ok')).toBe('true')
+  })
+
+  it('confirms before it accepts, and supersedes what the record names in the same step', () => {
+    const decided = [
+      '## Context', '', 'Two systems.', '', '## Considered Options', '', '* One system', '* Two systems', '',
+      '## Decision Outcome', '', 'Chosen option: One system, because it is simpler.', '',
+      '### Consequences', '', '* Good, because stock is in one place.',
+    ].join('\n')
+    const ready = adr({
+      id: 'l4', number: 4, title: 'One warehouse system, properly', status: 'reviewing', body: decided,
+      supersedes: ['l2'], signers: [{ name: 'Kim', verdict: 'approved', signedAt: '2026-09-02' }],
+    })
+    const { onProject } = mount({ model: { ...model, decisions: [...model.decisions!, ready] }, initialAdrId: 'l4' })
+    fireEvent.click(within(screen.getByTestId('adr-reader')).getByRole('button', { name: 'Move to Accepted' }))
+    const dialog = screen.getByRole('dialog', { name: /Accept ADR-0004/ })
+    expect(within(dialog).getByText(/also marks ADR-0002 as superseded/)).toBeTruthy()
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Accept' }))
+    const next: Adr[] = onProject.mock.calls[0][0]
+    // The successor first, so a writer that checks each move sees it accepted.
+    expect(next[0]).toMatchObject({ id: 'l4', status: 'accepted', date: '2026-09-05' })
+    expect(next.find((a) => a.id === 'l2')).toMatchObject({ status: 'superseded', supersededBy: 'l4' })
+  })
+
+  it('withdraws a proposal only with a reason, and keeps its number', () => {
+    const { onProject } = mount({ initialAdrId: 'l1' })
+    fireEvent.click(within(screen.getByTestId('adr-reader')).getByRole('button', { name: 'Withdraw' }))
+    const dialog = screen.getByRole('dialog', { name: /Withdraw ADR-0001/ })
+    const confirm = within(dialog).getByRole('button', { name: 'Withdraw' })
+    expect(confirm.hasAttribute('disabled')).toBe(true)
+    fireEvent.change(within(dialog).getByLabelText(/Reason/), { target: { value: 'Overtaken by the merger.' } })
+    fireEvent.click(confirm)
+    const next: Adr[] = onProject.mock.calls[0][0]
+    expect(next.find((a) => a.id === 'l1')).toMatchObject({ status: 'rejected', number: 1, reason: 'Overtaken by the merger.' })
+  })
+
+  it('says when a record is superseded by one that is not accepted', () => {
+    const broken = {
+      ...model,
+      decisions: model.decisions!.map((one) => (one.id === 'l2' ? { ...one, status: 'superseded' as const, supersededBy: 'l1' } : one)),
+    }
+    mount({ model: broken, initialAdrId: 'l2' })
+    expect(screen.getByTestId('adr-broken-successor')).toBeTruthy()
+  })
+
+  it('names the solution a record was decided for, and opens it through the host', () => {
+    const onOpenSolution = vi.fn()
+    const solution = {
+      id: 'so-1', number: 1, title: 'One owner for stock', state: 'proven' as const, addresses: [], validatedWith: [],
+      attempts: [], history: [], body: '', decision: 'l2',
+    }
+    mount({ model: { ...model, solutions: [solution] as unknown as HostModel['solutions'] }, initialAdrId: 'l2', onOpenSolution })
+    fireEvent.click(within(screen.getByTestId('adr-decided-for')).getByRole('button', { name: 'SO-0001 One owner for stock' }))
+    expect(onOpenSolution).toHaveBeenCalledWith('so-1')
+  })
+
+  it('leaves out an empty crumb and an empty Applications heading', () => {
+    mount({ groupName: '', model: { ...model, elements: [] } })
+    const bar = screen.getByTestId('adr-topbar')
+    expect(bar.textContent).toContain('Warehouse landscape / Architecture decisions')
+    // The organisation has no name here: no crumb for it, and no separator before nothing.
+    expect(bar.textContent).not.toMatch(/‹\s*\//)
+    expect(within(screen.getByTestId('adr-tree')).queryByText('Applications')).toBeNull()
   })
 
   it('searches every list at once and says where each hit lives', () => {
@@ -196,10 +287,10 @@ describe('AdrPage', () => {
     const list = screen.getByTestId('adr-list')
     expect(within(list).getByText('One warehouse system')).toBeTruthy()
     expect(within(list).getByText('CRM stays system of record')).toBeTruthy()
-    expect(within(list).getByText(/Customer CRM · 2026-09-01/)).toBeTruthy()
+    expect(within(list).getByText(/Customer CRM · 1 Sept? 2026/)).toBeTruthy()
     fireEvent.change(screen.getByLabelText('Search decisions'), { target: { value: 'logs in' } })
     expect(within(list).getByText('One identity provider')).toBeTruthy()
-    expect(within(list).getByText(/Acme Logistics · 2026-09-01/)).toBeTruthy()
+    expect(within(list).getByText(/Acme Logistics · 1 Sept? 2026/)).toBeTruthy()
   })
 
   it('lets a reviewer be added and a verdict dated today', () => {

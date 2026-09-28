@@ -247,15 +247,22 @@ export function ElementRecord(props: ElementRecordProps) {
 
       {/* The dates on the lifecycle (ADR-0009). Optional throughout: an
           element that says nothing about time behaves exactly as it did
-          before dates existed, and these three stay empty. */}
-      <Box sx={{ display: 'flex', gap: 1 }}>
+          before dates existed, and these three stay empty.
+          A grid rather than a row of three: a native date input will not
+          shrink below its own text, so three sharing a narrow inspector
+          clipped the date to its first two parts. Each keeps room for a
+          whole date and they stack where there is not room for three. */}
+      <Box
+        data-testid="element-lifecycle-dates"
+        sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 1 }}
+      >
         {DATED_PHASES.map((phase) => (
           <TextField
             key={phase}
             type="date"
             label={t(`field.date.${phase}` as StringKey)}
             value={element.lifecycleDates?.[phase] ?? ''}
-            sx={{ flex: 1 }}
+            sx={{ minWidth: 0 }}
             disabled={readOnly || owned('lifecycleDates')}
             slotProps={{ inputLabel: { shrink: true } }}
             onChange={(e) => update({

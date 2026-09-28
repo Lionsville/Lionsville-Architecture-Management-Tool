@@ -47,9 +47,13 @@
  * enterprise's, and a domain reads its own.
  */
 import type { Translate } from '../i18n/strings'
+import { isDay } from '../model/lifecycle'
 import type {
   Cause, CauseLink, CauseState, CauseStrength, Observation, ObservationEvent, ObservationImpact,
 } from '../model/observation'
+import { DE } from './strings/de'
+import { EN } from './strings/en'
+import { NL } from './strings/nl'
 
 export type {
   Cause, CauseLink, CauseState, CauseStrength, Observation, ObservationEvent, ObservationEventKind,
@@ -185,7 +189,31 @@ export function updateObservation(list: readonly Observation[], id: string, patc
   })
 }
 
-/** Seen once more, today: the count goes up by one and the day is kept. */
+/** Why a day cannot be the day an observation was seen again. */
+export type SeenDayProblem =
+  /** Not `yyyy-mm-dd`. */
+  | 'notADay'
+  /** After today: nobody has seen it yet. */
+  | 'future'
+  /** Before the day it was first seen, which would make that day wrong. */
+  | 'beforeFirst'
+
+/**
+ * What is wrong with `day` as a sighting of this observation, or nothing:
+ * not in the future, and not before it was first seen (ADR-0021, amended 28
+ * September 2026). The page's dialog and the agent's `observation.seen` ask
+ * the same question.
+ */
+export function seenDayProblem(
+  observation: Pick<Observation, 'date'>, day: string, today: string,
+): SeenDayProblem | undefined {
+  if (!isDay(day)) return 'notADay'
+  if (day > today) return 'future'
+  if (isDay(observation.date) && day < observation.date) return 'beforeFirst'
+  return undefined
+}
+
+/** Seen once more, on `date`: the count goes up by one and the day is kept, with the note when there is one. */
 export function seenAgain(list: readonly Observation[], id: string, date: string, note?: string): Observation[] {
   return replace(list, id, (one) => withEvent(
     { ...one, seen: one.seen + 1 },
@@ -345,17 +373,102 @@ export function removeObservation(analysis: Analysis, id: string): Analysis {
 
 export type CausePatch = Partial<Pick<Cause, 'title' | 'body' | 'state'>>
 
+/**
+ * Change a cause. Its state goes to verified only where {@link causeEvidence}
+ * finds the evidence written down, in the body as it will be after this
+ * patch; asked without it, the state stays what it was and the rest of the
+ * patch lands. {@link verifyCause} is the way to verified with a sentence of
+ * evidence said at the time.
+ */
 export function updateCause(list: readonly Cause[], id: string, patch: CausePatch): Cause[] {
   return list.map((one) => {
     if (one.id !== id) return one
     const next = { ...one, ...patch }
     if (patch.title !== undefined) next.title = patch.title.trim()
+    if (patch.state === 'verified' && one.state !== 'verified' && !causeEvidence(next.body).complete) next.state = one.state
     return next
   })
 }
 
 export function setCauseState(list: readonly Cause[], id: string, state: CauseState): Cause[] {
   return updateCause(list, id, { state })
+}
+
+/**
+ * Every spelling a body heading has, in every language the tool speaks — read
+ * off this module's own string slices rather than the registry, the way the
+ * decision template is, so a rule that runs in the agent's process does not
+ * load every screen's words to find two headings.
+ */
+function headingsFor(key: 'observation.tplWhy' | 'observation.tplVerify'): Set<string> {
+  return new Set([EN, NL, DE].map((table) => table[key].trim().toLowerCase()))
+}
+
+/**
+ * What a cause's body says of its evidence (ADR-0021, amended 28 September
+ * 2026): whether the section under *Why we think so* and the one under *How
+ * to verify* — the two headings a new cause starts with, in any language the
+ * tool speaks — have something written in them. `complete` is both, and is
+ * what verifying asks for: a cause is verified by what the team checked, and
+ * a body that says nothing has nothing checked.
+ */
+export function causeEvidence(body: string): { why: boolean; verify: boolean; complete: boolean } {
+  const why = headingsFor('observation.tplWhy')
+  const verify = headingsFor('observation.tplVerify')
+  let section: 'why' | 'verify' | undefined
+  const filled = { why: false, verify: false }
+  for (const line of body.split('\n')) {
+    const heading = /^#{1,6}\s+(.*?)\s*#*\s*$/.exec(line)
+    if (heading) {
+      const text = heading[1].trim().toLowerCase()
+      section = why.has(text) ? 'why' : verify.has(text) ? 'verify' : undefined
+      continue
+    }
+    if (section && line.trim()) filled[section] = true
+  }
+  return { ...filled, complete: filled.why && filled.verify }
+}
+
+/**
+ * The body with `confirmed` added under *How to verify*, dated: the answer to
+ * "what confirmed it?" kept where the next reader looks for it. The section
+ * is found in any language and made, in `t`'s, where the body has none.
+ */
+export function withConfirmation(body: string, confirmed: string, date: string, t: Translate): string {
+  const line = `${date}: ${confirmed.trim()}`
+  const verify = headingsFor('observation.tplVerify')
+  const lines = body.split('\n')
+  const at = lines.findIndex((one) => {
+    const heading = /^#{1,6}\s+(.*?)\s*#*\s*$/.exec(one)
+    return heading !== null && verify.has(heading[1].trim().toLowerCase())
+  })
+  if (at < 0) return `${body.trimEnd()}${body.trim() ? '\n\n' : ''}## ${t('observation.tplVerify')}\n\n${line}\n`
+  let end = lines.findIndex((one, index) => index > at && /^#{1,6}\s/.test(one))
+  if (end < 0) end = lines.length
+  // After the last line with anything on it, so the answer follows what is there.
+  let last = end - 1
+  while (last > at && !lines[last].trim()) last -= 1
+  const before = lines.slice(0, last + 1)
+  const after = lines.slice(end)
+  return [...before, '', line, ...(after.length ? ['', ...after] : [''])].join('\n')
+}
+
+/**
+ * Mark a cause verified. Where the body already says why the team thinks so
+ * and how it was verified, that is the evidence; otherwise `confirmed` — what
+ * confirmed it, said now — is added under *How to verify* with the day, and
+ * is. Refused, by returning the list unchanged, with neither: verified is a
+ * claim about evidence, and the record is where the evidence goes.
+ */
+export function verifyCause(
+  list: readonly Cause[], id: string, args: { date: string; t: Translate; confirmed?: string },
+): Cause[] {
+  return list.map((one) => {
+    if (one.id !== id || one.state === 'verified') return one
+    if (causeEvidence(one.body).complete) return { ...one, state: 'verified' }
+    if (!args.confirmed?.trim()) return one
+    return { ...one, state: 'verified', body: withConfirmation(one.body, args.confirmed, args.date, args.t) }
+  })
 }
 
 /** The causes that explain this thing: an observation (of this scope, or of `scope` below) or a cause. */
