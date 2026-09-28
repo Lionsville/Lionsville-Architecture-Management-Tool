@@ -94,6 +94,22 @@ describe('the Solutions tab', () => {
     expect(gate.textContent).toContain('5 to go')
   })
 
+  it('says on the why-now line that one tick answers it while nothing earlier is listed, and each line its rule on hover', async () => {
+    mount({ ...base, solutions: [solution({})] }, { initialId: 'so:s1' })
+    const whyNow = screen.getByTestId('solution-gate-whyNow')
+    expect(whyNow.textContent).toContain('“None known” answers this too')
+    const line = whyNow.querySelector('[data-gate-line]')!
+    expect(line.getAttribute('tabindex')).toBe('0')
+    fireEvent.mouseOver(line)
+    const hint = await screen.findByRole('tooltip')
+    expect(hint.textContent).toContain('answers this line and the one above')
+    expect(line.getAttribute('aria-describedby')).toBe(hint.id)
+    cleanup()
+    // With an earlier attempt listed, the question is its own again.
+    mount({ ...base, solutions: [solution({ attempts: [{ when: '2024', what: 'A shared sheet', why: 'Nobody kept it' }] })] }, { initialId: 'so:s1' })
+    expect(screen.getByTestId('solution-gate-whyNow').textContent).not.toContain('None known')
+  })
+
   it('moves a vetted idea on to shaped, as a dated event', () => {
     const vetted = solution({ benefit: 'large', cost: 'small', validatedWith: ['Operations'], noneKnown: true })
     const { onChange } = mount({ ...base, solutions: [vetted] }, { initialId: 'so:s1' })

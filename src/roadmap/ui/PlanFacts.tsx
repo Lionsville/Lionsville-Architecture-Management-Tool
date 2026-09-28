@@ -18,6 +18,7 @@ import Button from '@mui/material/Button'
 import ListSubheader from '@mui/material/ListSubheader'
 import MenuItem from '@mui/material/MenuItem'
 import TextField from '@mui/material/TextField'
+import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import { TRANSITION_STATUSES, portsOf, transitionStatusesFrom, unplannedPorts } from '../../model'
 import type { DesignModel, Transition, TransitionRole, TransitionStatus } from '../../model'
@@ -29,6 +30,8 @@ import type { ElementKind } from '../../model/types'
 import { useStrings } from '../../i18n'
 import type { StringKey } from '../../i18n'
 import { PLAN_STATUS_LABEL as STATUS_LABEL } from '../labels'
+import { gateElement, planGateHint } from '../planGateHints'
+import type { DescribeElsewhere } from '../planGateHints'
 
 export const ROLES: readonly TransitionRole[] = ['introduces', 'retires', 'changes']
 
@@ -69,13 +72,16 @@ export function namedSelect(name: string) {
  * The gate on every move the select offers, by the status it leads to. Only
  * the forward moves have one; the rest are always open (ADR-0009).
  */
-function gatesFor(plan: Transition, model: DesignModel, decisions: readonly Adr[], today: string): Map<TransitionStatus, PlanGate> {
+function gatesFor(
+  plan: Transition, model: DesignModel, decisions: readonly Adr[], today: string, describe: DescribeElsewhere | undefined,
+): Map<TransitionStatus, PlanGate> {
   const byId = new Map(model.elements.map((element) => [element.id, element]))
   const gates = new Map<TransitionStatus, PlanGate>()
   for (const to of transitionStatusesFrom(plan.status)) {
     const gate = planGate(plan, to, {
       decisions,
-      element: (id) => byId.get(id),
+      // A stand-in is dated by the scope that defines it, through the tree.
+      element: (id) => gateElement(byId.get(id), describe),
       unported: () => unplannedPorts(portsOf(model, plan)).length,
       today,
     })
@@ -89,17 +95,20 @@ function gatesFor(plan: Transition, model: DesignModel, decisions: readonly Adr[
  * whose gate is not clear, with what each gate still waits for under it. The
  * day a plan is done is written with the move, and cleared when it is reopened.
  */
-export function StatusField({ plan, model, decisions, today, readOnly, set }: {
+export function StatusField({ plan, model, decisions, today, readOnly, describe, set }: {
   plan: Transition
   model: DesignModel
   /** Every record the plan may rest on: this scope's and those above. */
   decisions: readonly Adr[]
   today: string
   readOnly: boolean
+  /** What the tree says about a stand-in: where it is defined and when it goes. */
+  describe?: DescribeElsewhere
   set: (patch: Partial<Transition>) => void
 }) {
   const { t } = useStrings()
-  const gates = gatesFor(plan, model, decisions, today)
+  const gates = gatesFor(plan, model, decisions, today, describe)
+  const reading = { plan, elements: model.elements, decisions, describe, t }
   return (
     <>
       <TextField
@@ -121,15 +130,20 @@ export function StatusField({ plan, model, decisions, today, readOnly, set }: {
             {t('plan.gateTitle', { status: t(STATUS_LABEL[gate.to]) })}
           </Typography>
           {gate.items.map(({ item, ok }) => (
-            <Typography
-              key={item}
-              variant="caption"
-              data-gate-item={item}
-              data-ok={ok ? 'true' : 'false'}
-              sx={{ color: ok ? 'success.main' : 'text.secondary' }}
-            >
-              {ok ? '✓' : '○'} {t(GATE_LABEL[item])}
-            </Typography>
+            // As the decision gate does: the hint goes into aria-describedby,
+            // so the line keeps its own words as its name, and the line takes
+            // focus, so the hint is not for the mouse only.
+            <Tooltip key={item} describeChild title={planGateHint(item, ok, reading)}>
+              <Typography
+                variant="caption"
+                tabIndex={0}
+                data-gate-item={item}
+                data-ok={ok ? 'true' : 'false'}
+                sx={{ color: ok ? 'success.main' : 'text.secondary', cursor: 'help', alignSelf: 'flex-start' }}
+              >
+                {ok ? '✓' : '○'} {t(GATE_LABEL[item])}
+              </Typography>
+            </Tooltip>
           ))}
         </Box>
       ))}

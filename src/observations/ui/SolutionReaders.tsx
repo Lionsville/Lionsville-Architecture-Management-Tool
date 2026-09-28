@@ -31,6 +31,7 @@ import Link from '@mui/material/Link'
 import TextField from '@mui/material/TextField'
 import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
+import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
@@ -44,12 +45,12 @@ import {
   mayPlanExperiment, previousState,
 } from '../solution'
 import type {
-  EarlierAttempt, Experiment, ExperimentOutcome, ExperimentPatch, Gate, Solution, SolutionPatch, SolutionPhase,
+  EarlierAttempt, Experiment, ExperimentOutcome, ExperimentPatch, Gate, GateItem, Solution, SolutionPatch, SolutionPhase,
   SolutionQuestion, SolutionSize, SolutionState,
 } from '../solution'
 import type { CauseStrength } from '../observation'
 import {
-  GATE_LABEL, OUTCOME_COLOR, OUTCOME_LABEL, PHASE_COLOR, PHASE_LABEL, QUESTION_LABEL, SIZE_LABEL, STRENGTH_LABEL,
+  GATE_HINT, GATE_LABEL, OUTCOME_COLOR, OUTCOME_LABEL, PHASE_COLOR, PHASE_LABEL, QUESTION_LABEL, SIZE_LABEL, STRENGTH_LABEL,
 } from '../observationScope'
 import { LinkList, OverflowActions, READER_ROOT_SX, TITLE_SX, Term, Value, WIDE_ONLY_SX, useDraft } from './Readers'
 import type { Mode } from './Readers'
@@ -144,7 +145,6 @@ export function SolutionReader(props: SolutionReaderProps) {
   const rendered = text.trim() ? renderMarkdown(text) : <Typography color="text.secondary">{s('common.empty')}</Typography>
   const label = formatSolutionNumber(solution.number)
   const back = props.mayGoBack ? previousState(solution.state) : undefined
-  const open = gate ? gate.items.filter((one) => !one.ok) : []
   const { language } = useStrings()
   const day = (date: string) => formatDay(date, language)
   const occasional: MenuAction[] = canEdit ? [
@@ -154,7 +154,6 @@ export function SolutionReader(props: SolutionReaderProps) {
 
   const [name, setName] = useState('')
   const [attempt, setAttempt] = useState<EarlierAttempt>({ when: '', what: '', why: '' })
-  const [waiver, setWaiver] = useState('')
   const addName = () => {
     if (!name.trim()) return
     props.onUpdate({ validatedWith: [...solution.validatedWith, name] })
@@ -353,36 +352,10 @@ export function SolutionReader(props: SolutionReaderProps) {
             </Box>
 
             {gate && !dropped && (
-              <Section title={s('solution.gateTitle', { state: s(PHASE_LABEL[gate.to]).toLowerCase() })} testId="solution-gate">
-                <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0, fontSize: 14 }}>
-                  {gate.items.map((one) => (
-                    <Box component="li" key={one.item} data-testid={`solution-gate-${one.item}`} data-ok={one.ok ? 'true' : 'false'} sx={{ display: 'flex', gap: 1, py: 0.5, borderBottom: 1, borderColor: 'divider' }}>
-                      <Box component="span" aria-hidden sx={{ width: 16, fontWeight: 700, color: one.ok ? 'success.main' : 'text.secondary' }}>{one.ok ? '✓' : '○'}</Box>
-                      <Box component="span" sx={{ flex: 1 }}>{s(GATE_LABEL[one.item])}</Box>
-                      {!one.ok && canEdit && one.item === 'experimentPlanned' && <Button size="small" onClick={props.onPlanExperiment}>{s('solution.planExperiment')}</Button>}
-                      {!one.ok && canEdit && one.item === 'decisionAccepted' && !solution.decision && props.onDecide && (
-                        <Button size="small" onClick={props.onDecide} data-testid="solution-decide" data-guide="solution.decide">{s('solution.proposeDecision')}</Button>
-                      )}
-                    </Box>
-                  ))}
-                </Box>
-                {canEdit && gate.items.some((one) => one.item === 'experimentConfirmed' && !one.ok) && (
-                  <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-                    <TextField size="small" fullWidth label={s('solution.waiveField')} value={waiver} onChange={(event) => setWaiver(event.target.value)} slotProps={{ htmlInput: { 'data-testid': 'solution-waive-field' } }} />
-                    <Button size="small" disabled={!waiver.trim()} onClick={() => { props.onWaive(waiver); setWaiver('') }} data-testid="solution-waive">{s('solution.waive')}</Button>
-                  </Box>
-                )}
-                {canEdit && (
-                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 1.5 }}>
-                    <Button variant="contained" size="small" disabled={open.length > 0} onClick={() => props.onMove(gate.to)} data-testid="solution-move">
-                      {s('solution.moveOn', { state: s(PHASE_LABEL[gate.to]).toLowerCase() })}
-                    </Button>
-                    {open.length > 0 && <Typography variant="caption" color="text.secondary">{s('solution.toGo', { count: open.length })}</Typography>}
-                    <Box sx={{ flex: 1 }} />
-                    {back && <Button size="small" onClick={() => props.onMove(back)} data-testid="solution-back">{s('solution.moveBack', { state: s(PHASE_LABEL[back]).toLowerCase() })}</Button>}
-                  </Box>
-                )}
-              </Section>
+              <SolutionGate
+                gate={gate} solution={solution} canEdit={canEdit} back={back} s={s}
+                onPlanExperiment={props.onPlanExperiment} onDecide={props.onDecide} onWaive={props.onWaive} onMove={props.onMove}
+              />
             )}
             {!gate && solution.state === 'adopted' && canEdit && back && (
               <Box sx={{ mt: 2 }}>
@@ -437,6 +410,70 @@ export function SolutionReader(props: SolutionReaderProps) {
         )}
       </Box>
     </Box>
+  )
+}
+
+/**
+ * The gate to the next state, one line per thing it asks, each saying on
+ * hover and on focus where on the page it is answered (`GATE_HINT`).
+ *
+ * *Tried before* and *why now* are two lines answered by one tick while no
+ * earlier attempt is listed — "None known" says both that nothing was tried
+ * and that there is nothing to explain — and the *why now* field is not even
+ * on the page until an attempt is. So the second line says, in its own words
+ * and not only on hover, that the same tick answers it.
+ */
+function SolutionGate({ gate, solution, canEdit, back, s, onPlanExperiment, onDecide, onWaive, onMove }: {
+  gate: Gate
+  solution: Solution
+  canEdit: boolean
+  back: SolutionState | undefined
+  s: Translate
+  onPlanExperiment: () => void
+  onDecide?: () => void
+  onWaive: (reason: string) => void
+  onMove: (to: SolutionState) => void
+}) {
+  const [waiver, setWaiver] = useState('')
+  const open = gate.items.filter((one) => !one.ok)
+  const label = (item: GateItem) => (
+    item === 'whyNow' && solution.attempts.length === 0 ? s('solution.gateWhyNowNoneKnown') : s(GATE_LABEL[item])
+  )
+  return (
+    <Section title={s('solution.gateTitle', { state: s(PHASE_LABEL[gate.to]).toLowerCase() })} testId="solution-gate">
+      <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0, fontSize: 14 }}>
+        {gate.items.map((one) => (
+          <Box component="li" key={one.item} data-testid={`solution-gate-${one.item}`} data-ok={one.ok ? 'true' : 'false'} sx={{ display: 'flex', gap: 1, py: 0.5, borderBottom: 1, borderColor: 'divider' }}>
+            <Box component="span" aria-hidden sx={{ width: 16, fontWeight: 700, color: one.ok ? 'success.main' : 'text.secondary' }}>{one.ok ? '✓' : '○'}</Box>
+            {/* The hint describes the line rather than naming it, and the line
+                takes focus, so the hint is not for the mouse only. */}
+            <Tooltip describeChild title={s(GATE_HINT[one.item])}>
+              <Box component="span" tabIndex={0} data-gate-line sx={{ flex: 1, cursor: 'help' }}>{label(one.item)}</Box>
+            </Tooltip>
+            {!one.ok && canEdit && one.item === 'experimentPlanned' && <Button size="small" onClick={onPlanExperiment}>{s('solution.planExperiment')}</Button>}
+            {!one.ok && canEdit && one.item === 'decisionAccepted' && !solution.decision && onDecide && (
+              <Button size="small" onClick={onDecide} data-testid="solution-decide" data-guide="solution.decide">{s('solution.proposeDecision')}</Button>
+            )}
+          </Box>
+        ))}
+      </Box>
+      {canEdit && gate.items.some((one) => one.item === 'experimentConfirmed' && !one.ok) && (
+        <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+          <TextField size="small" fullWidth label={s('solution.waiveField')} value={waiver} onChange={(event) => setWaiver(event.target.value)} slotProps={{ htmlInput: { 'data-testid': 'solution-waive-field' } }} />
+          <Button size="small" disabled={!waiver.trim()} onClick={() => { onWaive(waiver); setWaiver('') }} data-testid="solution-waive">{s('solution.waive')}</Button>
+        </Box>
+      )}
+      {canEdit && (
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 1.5 }}>
+          <Button variant="contained" size="small" disabled={open.length > 0} onClick={() => onMove(gate.to)} data-testid="solution-move">
+            {s('solution.moveOn', { state: s(PHASE_LABEL[gate.to]).toLowerCase() })}
+          </Button>
+          {open.length > 0 && <Typography variant="caption" color="text.secondary">{s('solution.toGo', { count: open.length })}</Typography>}
+          <Box sx={{ flex: 1 }} />
+          {back && <Button size="small" onClick={() => onMove(back)} data-testid="solution-back">{s('solution.moveBack', { state: s(PHASE_LABEL[back]).toLowerCase() })}</Button>}
+        </Box>
+      )}
+    </Section>
   )
 }
 

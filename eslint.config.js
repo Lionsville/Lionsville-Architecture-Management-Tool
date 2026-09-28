@@ -432,11 +432,11 @@ export const GROWN = {
   'src/observations/ui/ObservationsPage.tsx': { complexity: 43, lines: 802 },
   'src/observations/ui/Readers.tsx': { complexity: 44, lines: 161 },
   'src/observations/ui/SolutionPicture.tsx': { complexity: 26, lines: 221 },
-  'src/observations/ui/SolutionReaders.tsx': { complexity: 63, lines: 297 },
+  'src/observations/ui/SolutionReaders.tsx': { complexity: 57, lines: 269 },
   'src/projects/documentSession.ts': { complexity: 34 },
   'src/projects/folderFormat.ts': { complexity: 35 },
   'src/projects/scopeIndex.ts': { complexity: 30 },
-  'src/roadmap/ui/PlanPage.tsx': { lines: 185 },
+  'src/roadmap/ui/PlanPage.tsx': { lines: 160 },
   'src/roadmap/ui/RoadmapPage.tsx': { lines: 398 },
   'src/technology/ui/TechnologyLandscapePage.tsx': { complexity: 63, lines: 351 },
 }

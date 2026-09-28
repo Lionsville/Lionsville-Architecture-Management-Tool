@@ -1073,6 +1073,21 @@ describe('a plan as a record an agent may write (ADR-0009)', () => {
     })
   })
 
+  it('plan.update dates a stand-in the plan retires by the day its own scope gives it, as the page does', () => {
+    const standing = fromArrays({
+      ...host,
+      elements: [...host.elements, element('ledger', 'Ledger', { ref: 'acme/finance' })],
+      transitions: [{ ...plan, status: 'running' as const, elements: [{ elementId: 'ledger', role: 'retires' as const }] }],
+    })
+    expect(commandFor('plan.update', { id: 'tr-1', status: 'done' }, view(standing))).toMatchObject({
+      refusal: 'agent.badArguments', detail: 'the gate to done still needs: retiredDated',
+    })
+    const lookup = (id: string) => (id === 'ledger' ? { retired: '2027-03-01' } : undefined)
+    const tree = { lookup, initiativesBelow: () => [], observationsBelow: () => [], rowsTo: () => [] } as unknown as WriteView['tree']
+    const done = roundTrip(standing, commandFor('plan.update', { id: 'tr-1', status: 'done' }, view(standing, { tree })))
+    expect(done.transitions?.['tr-1'].status).toBe('done')
+  })
+
   it('plan.update answers with what the body’s business case computes', () => {
     const body = [
       '## Business case', '', '```business-case', 'currency: EUR', 'discount rate: 10%', '',

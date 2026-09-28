@@ -281,7 +281,15 @@ function planMove(held: Transition, patch: Partial<Transition>, view: WriteView)
   const current = view.current()
   const gate = planGate(next, to, {
     decisions: [...decisionList(view.model), ...view.ancestorDecisions],
-    element: (id) => view.model.elements[id],
+    // As the page dates it (`roadmap/planGateHints`): a stand-in carries no
+    // dates of its own, and the day its master says it is gone is the one
+    // that reaches this scope through the tree (ADR-0012 §3).
+    element: (id) => {
+      const held = view.model.elements[id]
+      if (held?.ref === undefined) return held
+      const retired = view.tree?.lookup(id)?.retired
+      return retired ? { lifecycleDates: { retired } } : {}
+    },
     unported: () => unplannedPorts(portsOf(current, next)).length,
     today: view.today(),
   })

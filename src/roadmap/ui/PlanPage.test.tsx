@@ -253,6 +253,68 @@ describe('milestones and decisions', () => {
   })
 })
 
+/**
+ * A gate line that cannot clear says why on hover and on focus, and the row
+ * that holds it open says so too: a record or an element deleted since is
+ * *no longer here* beside the button that takes it off the plan, and a
+ * stand-in says where its dates are kept (ADR-0012 §3).
+ */
+describe('what holds a gate open', () => {
+  const lineOf = (to: string, item: string) => screen.getByTestId(`plan-gate-${to}`).querySelector(`[data-gate-item="${item}"]`)!
+
+  it('names on hover the record not yet accepted, and says a record deleted since is no longer here', async () => {
+    const { actions } = setup({ plan: { ...PLAN, status: 'draft', decisions: ['adr-2', 'adr-gone'] } })
+    const line = lineOf('agreed', 'decisions')
+    expect(line.getAttribute('data-ok')).toBe('false')
+    expect(line.getAttribute('tabindex')).toBe('0')
+    fireEvent.mouseOver(line)
+    const hint = await screen.findByRole('tooltip')
+    expect(hint.textContent).toContain('Not accepted yet: ADR-0002 Keep the old scanners (proposed).')
+    expect(hint.textContent).toContain('no longer here')
+    expect(line.getAttribute('aria-describedby')).toBe(hint.id)
+    expect(within(screen.getByTestId('plan-decision-adr-2')).getByText(/· proposed/)).toBeTruthy()
+    const gone = screen.getByTestId('plan-decision-adr-gone')
+    expect(gone.textContent).toContain('A decision record no longer here')
+    fireEvent.click(within(gone).getByRole('button', { name: 'Remove' }))
+    expect(actions.updateTransition).toHaveBeenCalledWith('tr-1', { decisions: ['adr-2'] })
+  })
+
+  it('says an element deleted since is no longer here, and offers no dates for it', () => {
+    setup({ plan: { ...PLAN, elements: [...PLAN.elements, { elementId: 'wms-gone', role: 'retires' }] } })
+    const row = screen.getByTestId('plan-element-wms-gone')
+    expect(row.textContent).toContain('An element no longer here')
+    expect(within(row).queryByLabelText(/Gone on/)).toBeNull()
+    expect(within(row).getByRole('button', { name: 'Remove' })).toBeTruthy()
+  })
+
+  it('dates a stand-in by the scope that defines it: the day gone counts, the go-live day is not ours', async () => {
+    const model = {
+      ...MODEL,
+      elements: [
+        ...MODEL.elements,
+        element('crm', 'Customer Hub', { ref: 'sales' }),
+        element('portal', 'Partner Portal', { ref: 'sales', lifecycle: 'planned' }),
+      ],
+    } as DesignModel
+    const running: Transition = {
+      ...PLAN, status: 'running',
+      elements: [{ elementId: 'crm', role: 'retires' }, { elementId: 'portal', role: 'introduces' }],
+    }
+    const describe = (id: string) => (id === 'crm' ? { where: 'Sales', retired: '2027-06-30' } : id === 'portal' ? { where: 'Sales' } : undefined)
+    setup({ plan: running, model, describe })
+    expect(screen.getByTestId('plan-standin-crm').textContent).toBe('Gone on 2027-06-30, as Sales says.')
+    expect(screen.getByTestId('plan-standin-portal').textContent).toBe('Its dates are kept in Sales, which defines it; set them there.')
+    expect(within(screen.getByTestId('plan-element-portal')).queryByLabelText(/Live from/)).toBeNull()
+    expect(lineOf('done', 'retiredDated').getAttribute('data-ok')).toBe('true')
+    const live = lineOf('done', 'introducedLive')
+    expect(live.getAttribute('data-ok')).toBe('false')
+    fireEvent.mouseOver(live)
+    const hint = await screen.findByRole('tooltip')
+    expect(hint.textContent).toContain('Kept in another scope: Partner Portal in Sales.')
+    expect(hint.textContent).toContain('name it here as changed')
+  })
+})
+
 describe('the interfaces', () => {
   it('lists every line on what the plan retires, with where it has gone', () => {
     setup()

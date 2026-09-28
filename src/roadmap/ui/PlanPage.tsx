@@ -33,12 +33,8 @@ import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
-import {
-  DATED_PHASES, elementsWithRole, portsOf, transitionLabel,
-} from '../../model'
-import type {
-  DesignElement, DesignModel, ElementId, LifecycleDates, Port, Transition, TransitionRole,
-} from '../../model'
+import { elementsWithRole, portsOf, transitionLabel } from '../../model'
+import type { DesignModel, ElementId, LifecycleDates, Port, Transition } from '../../model'
 import type { Adr } from '../../model/adr'
 import { formatAdrNumber } from '../../decisions'
 import { linkElementRefs } from '../../documentation/documentation'
@@ -47,14 +43,15 @@ import { DocumentSheet } from '../../documentation/ui/DocumentSheet'
 import { DocumentSource } from '../../documentation/ui/DocumentSource'
 import type { DocumentImages } from '../../documentation/ui/DocumentSource'
 import { useStrings } from '../../i18n'
-import type { StringKey } from '../../i18n'
 import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
 import { BackIcon } from '../../widgets/icons'
 import { PageDialog } from '../../widgets/PageDialog'
 import { SeamResizer } from '../../widgets/SeamResizer'
-import { AddElement, ROLES, StatusField, WindowFields, namedSelect } from './PlanFacts'
+import { AddElement, StatusField, WindowFields, namedSelect } from './PlanFacts'
+import { DecisionRow, ElementRow } from './PlanRows'
+import type { DescribeElsewhere } from '../planGateHints'
 
 export type PlanActions = {
   updateTransition(id: string, patch: Partial<Transition>): void
@@ -103,6 +100,13 @@ export type PlanPageProps = {
    * none, and the switch would promise a roadmap that is not there.
    */
   initiativeToggle?: boolean
+  /**
+   * What the tree says about an element this scope holds only a stand-in of
+   * (ADR-0012 §3): the scope that defines it, and the day that scope says it
+   * is gone. A stand-in's dates are kept there, and the gate and the rows
+   * say so. Absent in a shell with no tree.
+   */
+  describe?: DescribeElsewhere
 }
 
 export function PlanPage(props: PlanPageProps) {
@@ -181,6 +185,7 @@ export function PlanPage(props: PlanPageProps) {
             <Facts
               plan={plan} model={model} decisions={props.decisions ?? []} decidedAbove={props.ancestorDecisions ?? []}
               today={props.today} readOnly={readOnly} actions={actions} initiativeToggle={props.initiativeToggle === true}
+              describe={props.describe}
             />
           )}
           {/* The table scrolls inside a height of its own, dragged from the
@@ -239,7 +244,7 @@ function Heading({ children }: { children: ReactNode }) {
   )
 }
 
-function Facts({ plan, model, decisions, decidedAbove, today, readOnly, actions, initiativeToggle }: {
+function Facts({ plan, model, decisions, decidedAbove, today, readOnly, actions, initiativeToggle, describe }: {
   plan: Transition
   model: DesignModel
   decisions: readonly Adr[]
@@ -248,6 +253,7 @@ function Facts({ plan, model, decisions, decidedAbove, today, readOnly, actions,
   readOnly: boolean
   actions: PlanActions
   initiativeToggle: boolean
+  describe?: DescribeElsewhere
 }) {
   const { t } = useStrings()
   const set = (patch: Partial<Transition>) => actions.updateTransition(plan.id, patch)
@@ -268,7 +274,8 @@ function Facts({ plan, model, decisions, decidedAbove, today, readOnly, actions,
         onChange={(e) => set({ title: e.target.value })}
       />
       <StatusField
-        plan={plan} model={model} decisions={[...decisions, ...decidedAbove]} today={today} readOnly={readOnly} set={set}
+        plan={plan} model={model} decisions={[...decisions, ...decidedAbove]} today={today} readOnly={readOnly}
+        describe={describe} set={set}
       />
       <WindowFields plan={plan} readOnly={readOnly} set={set} />
       <TextField
@@ -298,38 +305,19 @@ function Facts({ plan, model, decisions, decidedAbove, today, readOnly, actions,
       {plan.elements.length === 0 && (
         <Typography variant="body2" color="text.secondary">{t('plan.noElements')}</Typography>
       )}
-      {plan.elements.map((one, index) => {
-        const element = byId.get(one.elementId)
-        return (
-          <Box key={one.elementId} data-testid={`plan-element-${one.elementId}`} sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 1, border: 1, borderColor: 'divider', borderRadius: 1 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <TextField
-                select size="small" value={one.role} disabled={readOnly} sx={{ width: 130 }}
-                slotProps={namedSelect(t('plan.role'))}
-                onChange={(e) => setElements(plan.elements.map((row, at) => (
-                  at === index ? { ...row, role: e.target.value as TransitionRole } : row
-                )))}
-              >
-                {ROLES.map((role) => <MenuItem key={role} value={role}>{t(`plan.${role}` as StringKey)}</MenuItem>)}
-              </TextField>
-              <Typography
-                sx={{ fontSize: 13, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'pointer' }}
-                onClick={() => actions.onOpenElement(one.elementId)}
-              >
-                {element?.name ?? one.elementId}
-              </Typography>
-              {!readOnly && (
-                <Button size="small" onClick={() => setElements(plan.elements.filter((_row, at) => at !== index))}>
-                  {t('plan.remove')}
-                </Button>
-              )}
-            </Box>
-            {element && one.role !== 'changes' && (
-              <ElementDates element={element} readOnly={readOnly} onChange={(dates) => actions.updateElementDates(element.id, dates)} />
-            )}
-          </Box>
-        )
-      })}
+      {plan.elements.map((one, index) => (
+        <ElementRow
+          key={one.elementId}
+          row={one}
+          element={byId.get(one.elementId)}
+          readOnly={readOnly}
+          describe={describe}
+          onRole={(role) => setElements(plan.elements.map((row, at) => (at === index ? { ...row, role } : row)))}
+          onRemove={() => setElements(plan.elements.filter((_row, at) => at !== index))}
+          onOpen={() => actions.onOpenElement(one.elementId)}
+          onDates={(dates) => actions.updateElementDates(one.elementId, dates)}
+        />
+      ))}
       {!readOnly && (
         <AddElement plan={plan} model={model} onAdd={(row) => setElements([...plan.elements, row])} />
       )}
@@ -372,24 +360,16 @@ function Facts({ plan, model, decisions, decidedAbove, today, readOnly, actions,
       {plan.decisions.length === 0 && (
         <Typography variant="body2" color="text.secondary">{t('plan.noDecisions')}</Typography>
       )}
-      {plan.decisions.map((id) => {
-        const adr = decisions.find((one) => one.id === id) ?? decidedAbove.find((one) => one.id === id)
-        return (
-          <Box key={id} sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-            <Typography
-              sx={{ fontSize: 13, flex: 1, cursor: actions.onOpenDecision ? 'pointer' : undefined }}
-              onClick={() => actions.onOpenDecision?.(id)}
-            >
-              {adr ? `${formatAdrNumber(adr.number)} ${adr.title}` : id}
-            </Typography>
-            {!readOnly && (
-              <Button size="small" onClick={() => set({ decisions: plan.decisions.filter((one) => one !== id) })}>
-                {t('plan.remove')}
-              </Button>
-            )}
-          </Box>
-        )
-      })}
+      {plan.decisions.map((id) => (
+        <DecisionRow
+          key={id}
+          id={id}
+          adr={decisions.find((one) => one.id === id) ?? decidedAbove.find((one) => one.id === id)}
+          readOnly={readOnly}
+          onOpen={actions.onOpenDecision ? () => actions.onOpenDecision?.(id) : undefined}
+          onRemove={() => set({ decisions: plan.decisions.filter((one) => one !== id) })}
+        />
+      ))}
       {!readOnly && decisionCandidates.length > 0 && (
         <Box data-testid="plan-add-decision" data-guide="plan.addDecision" sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
           <TextField
@@ -427,35 +407,6 @@ function Facts({ plan, model, decisions, decidedAbove, today, readOnly, actions,
           </Button>
         </Box>
       )}
-    </Box>
-  )
-}
-
-/** The three dates on an element the plan introduces or retires. */
-function ElementDates({ element, readOnly, onChange }: {
-  element: DesignElement
-  readOnly: boolean
-  onChange(dates: LifecycleDates | undefined): void
-}) {
-  const { t } = useStrings()
-  return (
-    <Box sx={{ display: 'flex', gap: 1 }}>
-      {DATED_PHASES.map((phase) => (
-        <TextField
-          key={phase}
-          type="date" size="small" fullWidth
-          label={t(`plan.date.${phase}` as StringKey)}
-          value={element.lifecycleDates?.[phase] ?? ''}
-          disabled={readOnly}
-          slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'aria-label': `${element.name}: ${t(`plan.date.${phase}` as StringKey)}` } }}
-          onChange={(e) => {
-            const next = { ...element.lifecycleDates }
-            if (e.target.value) next[phase] = e.target.value
-            else delete next[phase]
-            onChange(Object.keys(next).length ? next : undefined)
-          }}
-        />
-      ))}
     </Box>
   )
 }

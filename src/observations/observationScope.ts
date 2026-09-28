@@ -110,6 +110,23 @@ export const GATE_LABEL: Record<GateItem, StringKey> = {
   decisionAccepted: 'solution.gateDecisionAccepted',
 }
 
+/**
+ * What each line of a solution's gate asks, on hover and on focus: where on
+ * the page it is answered. A `Record` over every item, so a gate line added
+ * without words for its hint does not compile.
+ */
+export const GATE_HINT: Record<GateItem, StringKey> = {
+  addresses: 'solution.gateHint.addresses',
+  benefit: 'solution.gateHint.benefit',
+  cost: 'solution.gateHint.cost',
+  validatedWith: 'solution.gateHint.validatedWith',
+  triedBefore: 'solution.gateHint.triedBefore',
+  whyNow: 'solution.gateHint.whyNow',
+  experimentPlanned: 'solution.gateHint.experimentPlanned',
+  experimentConfirmed: 'solution.gateHint.experimentConfirmed',
+  decisionAccepted: 'solution.gateHint.decisionAccepted',
+}
+
 export const QUESTION_LABEL: Record<SolutionQuestion, StringKey> = {
   proofWithdrawn: 'solution.questionProofWithdrawn',
   worksAround: 'solution.questionWorksAround',

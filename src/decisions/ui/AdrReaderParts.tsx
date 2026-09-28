@@ -47,7 +47,7 @@ const GATE_LABEL: Record<AdrGateItem, StringKey> = {
 }
 
 /** What each line looks for, on hover: the rule a person would otherwise have to guess. */
-const GATE_HINT: Record<AdrGateItem, StringKey> = {
+export const GATE_HINT: Record<AdrGateItem, StringKey> = {
   context: 'adr.gateHint.context',
   options: 'adr.gateHint.options',
   outcome: 'adr.gateHint.outcome',

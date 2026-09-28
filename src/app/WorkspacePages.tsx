@@ -174,6 +174,7 @@ function PlanPages({ parts }: { parts: WorkspaceParts }) {
         onClose={plans.closePlan}
         windowChrome={pageChrome}
         initiativeToggle={props.project.path !== ''}
+        describe={readings.describeForMap}
       />
     </>
   )
