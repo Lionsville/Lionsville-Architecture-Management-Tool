@@ -23,9 +23,12 @@
  */
 import { transaction } from './commands'
 import type { Command } from './commands'
-import { applicationOf, isContainerLine } from './refines'
+import { applicationOf, isApplicationLine, isContainerLine } from './refines'
 import type { Held } from './refines'
-import type { ElementId, Relation } from './types'
+import { isDay } from './lifecycle'
+import { livenessOf } from './liveness'
+import type { Liveness } from './liveness'
+import type { DesignElement, ElementId, Relation } from './types'
 
 export type ImpliedInterface = {
   /** The two applications, in the direction the first container line runs. */
@@ -49,15 +52,35 @@ const pairKey = (a: ElementId, b: ElementId) => JSON.stringify([a, b].sort())
  * to carry to be true of all of them. A line inside one application implies
  * nothing: two containers of the same application talking to each other is
  * the container diagram's own business and never an interface.
+ *
+ * **A pair that already has an application interface implies nothing**,
+ * whichever way it runs: the landscape has heard about it, and *Accept* would
+ * write the same interface a second time. Its unrefined lines are landings
+ * nobody has made yet, which is the container diagram's to offer.
+ *
+ * Given a day, **what is over by then implies nothing either**: a container
+ * line whose window closed before it, or whose end is gone on it
+ * (`liveness.ts`), is history rather than work that never reached the
+ * landscape — and an application interface that is over no longer answers
+ * for the pair. Without one every line counts, which is what a caller
+ * finding the pair again from one of its lines wants.
  */
-export function impliedInterfaces(relations: readonly Relation[], held: Held): ImpliedInterface[] {
+export function impliedInterfaces(
+  relations: readonly Relation[],
+  held: Held,
+  on?: { day: string; live: Liveness },
+): ImpliedInterface[] {
+  const over = (relation: Relation) => on !== undefined && isOver(relation, on.day, on.live)
+  const drawn = new Set(relations
+    .filter((relation) => isApplicationLine(relation, held) && !over(relation))
+    .map((relation) => pairKey(relation.sourceId, relation.targetId)))
   const byPair = new Map<string, ImpliedInterface>()
   for (const relation of relations) {
     if (relation.refines !== undefined) continue
-    if (!isContainerLine(relation, held)) continue
+    if (!isContainerLine(relation, held) || over(relation)) continue
     const source = applicationOf(relation.sourceId, held)
     const target = applicationOf(relation.targetId, held)
-    if (source === target) continue
+    if (source === target || drawn.has(pairKey(source, target))) continue
     const found = byPair.get(pairKey(source, target))
     if (!found) {
       byPair.set(pairKey(source, target), {
@@ -77,6 +100,24 @@ export function impliedInterfaces(relations: readonly Relation[], held: Held): I
   return [...byPair.values()]
 }
 
+/**
+ * The same answer over a whole model on one day — what the finding is, and so
+ * what *Accept* must find its pair again in: a pair the finding named is the
+ * pair the accept lands, and one it left out is not accepted behind its back.
+ */
+export function impliedInterfacesOn(
+  model: { elements: readonly DesignElement[]; relations: readonly Relation[] },
+  day: string,
+): ImpliedInterface[] {
+  const byId = new Map(model.elements.map((element) => [element.id, element]))
+  return impliedInterfaces(model.relations, (id) => byId.get(id), { day, live: livenessOf(model) })
+}
+
+/** Over by this day: its window closed before it, or an end is gone on it. */
+function isOver(relation: Relation, day: string, live: Liveness): boolean {
+  const { validUntil } = live.windowOf(relation)
+  return (isDay(validUntil) && validUntil < day) || live.goneOn(relation.sourceId, day) || live.goneOn(relation.targetId, day)
+}
 
 /**
  * Accepting one: the application interface written, and every container line

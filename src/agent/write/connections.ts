@@ -12,7 +12,7 @@ import { transaction } from '../../model/commands'
 import { isDay } from '../../model/lifecycle'
 import { technologyEndsRefusal } from '../../model/relations'
 import { mayBeHosted } from '../../model/hosting'
-import { acceptImplied, impliedInterfaces } from '../../model/implied'
+import { acceptImplied, impliedInterfacesOn } from '../../model/implied'
 import type { EdgeLineStyle, ElementId, Relation, RelationType } from '../../model/types'
 import type { AgentAnswer } from '../tools'
 import { json, refused } from '../tools'
@@ -74,7 +74,8 @@ export const acceptInterface: Handler = (args, view) => {
   const id = args.id as string
   if (!model.relations[id]) return refused('agent.unknownId', `connection ${id}`)
   const relations = model.order.relations.map((held) => model.relations[held])
-  const implied = impliedInterfaces(relations, (held) => model.elements[held])
+  // On the day the finding was read, so the pair it named is the pair landed.
+  const implied = impliedInterfacesOn({ elements: Object.values(model.elements), relations }, view.today())
     .find((one) => one.relations.some((row) => row.id === id))
   if (!implied) {
     return refused('agent.badArguments', `${id} is not a container-level line without an application interface`)

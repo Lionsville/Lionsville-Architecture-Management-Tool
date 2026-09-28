@@ -171,20 +171,88 @@ describe('a retirement with things still plugged into it', () => {
 
   it('counts a container line by the interface it is part of, and a container with its application', () => {
     const elements = [
-      element('sts', { lifecycleDates: { retired: '2031-03-31' }, successorId: 'x' }), element('x'),
-      element('rtd', { lifecycleDates: { retired: '2028-12-31' }, successorId: 'x' }),
-      element('sam', { kind: 'component', parentId: 'rtd' }),
-      element('pay'), element('pay-api', { kind: 'component', parentId: 'pay' }),
+      element('wms', { lifecycleDates: { retired: '2031-03-31' }, successorId: 'x' }), element('x'),
+      element('billing', { lifecycleDates: { retired: '2028-12-31' }, successorId: 'x' }),
+      element('ledger', { kind: 'component', parentId: 'billing' }),
+      element('orders'), element('orders-api', { kind: 'component', parentId: 'orders' }),
     ]
-    const dated = connection('i1', 'sts', 'pay', { validUntil: '2028-12-30' })
+    const dated = connection('i1', 'wms', 'orders', { validUntil: '2028-12-30' })
     // The landing has no dates; the interface it is part of ends in time.
-    const landed = connection('r1', 'sts', 'pay-api', { refines: 'i1' })
+    const landed = connection('r1', 'wms', 'orders-api', { refines: 'i1' })
     // A container of an application that is gone by then goes with it.
-    const toGone = connection('r2', 'sts', 'sam')
-    expect(kinds(check(elements, [dated, landed, toGone]))).not.toContain('retiresWithDependants')
-    // Undated, the interface — and so its landing — is still live.
+    const toGone = connection('r2', 'wms', 'ledger')
+    const found = check(elements, [dated, landed, toGone]).filter((one) => one.kind === 'retiresWithDependants')
+    // Only the application that goes first: the line is plugged into ITS container.
+    expect(found.map((one) => one.id)).toEqual(['billing'])
+    // Undated, the interface — and so its landing — is still live, and it is
+    // one interface: the landing is where it arrives, not a second one.
     const open = check(elements, [{ ...dated, validUntil: undefined }, landed])
-    expect(open.find((one) => one.kind === 'retiresWithDependants' && one.id === 'sts')?.count).toBe(2)
+    expect(open.find((one) => one.kind === 'retiresWithDependants' && one.id === 'wms')?.count).toBe(1)
+  })
+
+  it('counts one interface once, however many landings it has', () => {
+    const elements = [
+      element('wms', { lifecycleDates: { retired: '2028-01-31' }, successorId: 'x' }), element('x'),
+      element('wms-api', { kind: 'component', parentId: 'wms' }), element('wms-events', { kind: 'component', parentId: 'wms' }),
+      element('orders'),
+    ]
+    const list = check(elements, [
+      connection('i1', 'orders', 'wms'),
+      connection('r1', 'orders', 'wms-api', { refines: 'i1' }),
+      connection('r2', 'orders', 'wms-events', { refines: 'i1' }),
+    ])
+    expect(list.find((one) => one.kind === 'retiresWithDependants')?.count).toBe(1)
+    // Two landings with the interface's own line closed in time are still one
+    // interface, and still plugged in by the landings that are not.
+    const landingsOnly = check(elements, [
+      connection('i1', 'orders', 'wms', { validUntil: '2027-12-31' }),
+      connection('r1', 'orders', 'wms-api', { refines: 'i1', validUntil: '2028-06-30' }),
+      connection('r2', 'orders', 'wms-events', { refines: 'i1', validUntil: '2028-06-30' }),
+    ])
+    expect(landingsOnly.find((one) => one.kind === 'retiresWithDependants')?.count).toBe(1)
+  })
+
+  it('counts a line into one of its containers that has landed nowhere', () => {
+    const list = check(
+      [
+        element('wms', { lifecycleDates: { retired: '2028-01-31' }, successorId: 'x' }), element('x'),
+        element('wms-api', { kind: 'component', parentId: 'wms' }), element('orders'),
+      ],
+      [connection('c1', 'orders', 'wms-api')],
+    )
+    expect(list.find((one) => one.kind === 'retiresWithDependants')).toMatchObject({ id: 'wms', count: 1 })
+  })
+
+  it('does not count a container of its own that was gone before it', () => {
+    const list = check(
+      [
+        element('wms', { lifecycleDates: { retired: '2028-01-31' }, successorId: 'x' }), element('x'),
+        element('wms-api', { kind: 'component', parentId: 'wms', lifecycleDates: { retired: '2027-01-01' } }),
+        element('orders'),
+      ],
+      [connection('c1', 'orders', 'wms-api')],
+    )
+    expect(list.find((one) => one.kind === 'retiresWithDependants' && one.id === 'wms')).toBeUndefined()
+  })
+
+  it('counts only rows that depend on it: not who answers for it, and not what it supports or is supported by', () => {
+    const row = (id: string, type: Relation['type'], sourceId: string, targetId: string): Relation =>
+      ({ id, type, sourceId, targetId })
+    const goes = { lifecycleDates: { retired: '2028-01-31' }, successorId: 'x' }
+    const elements = [
+      element('x'), element('team', { kind: 'actor' }), element('orders'),
+      element('broker', { kind: 'platformService', ...goes }),
+      element('picking', { kind: 'function', ...goes }),
+      element('cluster', { kind: 'platform', ...goes }),
+    ]
+    const list = check(elements, [
+      row('a1', 'assigned', 'team', 'broker'),
+      row('s1', 'supports', 'orders', 'picking'),
+    ])
+    expect(list.filter((one) => one.kind === 'retiresWithDependants')).toEqual([])
+    // Standing on it is depending on it.
+    const stood = check(elements, [row('u1', 'uses', 'orders', 'broker'), row('h1', 'hostedOn', 'orders', 'cluster')])
+    expect(stood.filter((one) => one.kind === 'retiresWithDependants').map((one) => one.id).sort()).toEqual(['broker', 'cluster'])
   })
 
   it('is not reported when the neighbour goes at the same time', () => {
@@ -238,6 +306,31 @@ describe('a successor', () => {
   })
 })
 
+describe('a successor named by a plan', () => {
+  const plan = (status: 'draft' | 'agreed' | 'abandoned', introduces = 'wms-new') => ({
+    id: `tr-${status}`, number: 1, title: 'Replace', status,
+    elements: [{ elementId: 'wms', role: 'retires' as const }, { elementId: introduces, role: 'introduces' as const }],
+    decisions: [], milestones: [], body: '',
+  })
+
+  it('is not named by a plan that was abandoned', () => {
+    const list = check([element('wms', { lifecycleDates: { retired: '2028-01-31' } }), element('wms-new')], [], [plan('abandoned')])
+    expect(kinds(list)).toContain('successorMissing')
+    // A draft still says what is meant to take over.
+    expect(kinds(check([element('wms', { lifecycleDates: { retired: '2028-01-31' } }), element('wms-new')], [], [plan('draft')])))
+      .not.toContain('successorMissing')
+  })
+
+  it('is too late when nothing the plan introduces is live by the day it goes', () => {
+    const late = element('wms-new', { lifecycle: 'planned', lifecycleDates: { live: '2028-06-01' } })
+    const list = check([element('wms', { lifecycleDates: { retired: '2028-01-31' } }), late], [], [plan('agreed')])
+    expect(list.find((one) => one.kind === 'successorTooLate')).toMatchObject({ id: 'wms', detail: 'wms-new' })
+    const onTime = { ...late, lifecycleDates: { live: '2028-01-31' } }
+    expect(kinds(check([element('wms', { lifecycleDates: { retired: '2028-01-31' } }), onTime], [], [plan('agreed')])))
+      .not.toContain('successorTooLate')
+  })
+})
+
 describe('a line that outlives one of its ends', () => {
   it('is reported', () => {
     const list = check(
@@ -251,6 +344,60 @@ describe('a line that outlives one of its ends', () => {
       // `relation`, and which kind of row it was, since ADR-0012 §5 — a row
       // between two things is not always a connection.
       .toMatchObject({ subject: 'relation', relationType: 'flow', id: 'c1', name: 'sync', detail: 'wms' })
+  })
+
+  it('is reported when it is valid until the day an end is gone: that is a day it is there and the end is not', () => {
+    const list = check(
+      [element('wms', { lifecycleDates: { retired: '2028-01-31' }, successorId: 'x' }), element('x')],
+      [connection('c1', 'wms', 'x', { validUntil: '2028-01-31' })],
+    )
+    expect(list.find((one) => one.kind === 'lineOutlivesEnd')).toMatchObject({ id: 'c1', detail: 'wms' })
+    const dayBefore = check(
+      [element('wms', { lifecycleDates: { retired: '2028-01-31' }, successorId: 'x' }), element('x')],
+      [connection('c1', 'wms', 'x', { validUntil: '2028-01-30' })],
+    )
+    expect(kinds(dayBefore)).not.toContain('lineOutlivesEnd')
+  })
+
+  it('is reported for a container whose application goes, and once for an interface and its landing', () => {
+    const elements = [
+      element('wms', { lifecycleDates: { retired: '2028-01-31' }, successorId: 'x' }), element('x'),
+      element('wms-api', { kind: 'component', parentId: 'wms' }), element('orders'),
+    ]
+    // The container carries no date; its application does.
+    const alone = check(elements, [connection('c1', 'orders', 'wms-api', { validUntil: '2028-06-30' })])
+    expect(alone.find((one) => one.kind === 'lineOutlivesEnd')).toMatchObject({ id: 'c1', detail: 'wms-api' })
+    // A landing with no window follows its interface: the interface is the
+    // one contradiction, and the landing is not a second.
+    const landed = check(elements, [
+      connection('i1', 'orders', 'wms', { validUntil: '2028-06-30' }),
+      connection('r1', 'orders', 'wms-api', { refines: 'i1' }),
+    ])
+    expect(landed.filter((one) => one.kind === 'lineOutlivesEnd').map((one) => one.id)).toEqual(['i1'])
+    // A landing whose container goes before its interface ends is its own.
+    const early = check(
+      [...elements.filter((one) => one.id !== 'wms-api'), element('wms-api', { kind: 'component', parentId: 'wms', lifecycleDates: { retired: '2027-06-30' } })],
+      [connection('i1', 'orders', 'wms', { validUntil: '2028-01-30' }), connection('r1', 'orders', 'wms-api', { refines: 'i1' })],
+    )
+    expect(early.filter((one) => one.kind === 'lineOutlivesEnd').map((one) => one.id)).toEqual(['r1'])
+  })
+
+  it('agrees with the retirement about every row: counted as still there on the day is reported as outliving it', () => {
+    const elements = [
+      element('wms', { lifecycleDates: { retired: '2028-01-31' }, successorId: 'x' }), element('x'),
+      element('wms-api', { kind: 'component', parentId: 'wms' }), element('orders'),
+    ]
+    for (const until of ['2028-01-29', '2028-01-30', '2028-01-31', '2028-02-01']) {
+      const rows = [
+        connection('i1', 'orders', 'wms', { validUntil: until }),
+        connection('r1', 'orders', 'wms-api', { refines: 'i1' }),
+      ]
+      const list = check(elements, rows)
+      const counted = list.some((one) => one.kind === 'retiresWithDependants' && one.id === 'wms')
+      const outlives = list.some((one) => one.kind === 'lineOutlivesEnd')
+      expect(outlives, `valid until ${until}`).toBe(counted)
+      expect(counted).toBe(until >= '2028-01-31')
+    }
   })
 
   it('is not reported for a line with no window of its own', () => {
@@ -340,6 +487,35 @@ describe('an interface the container lines imply', () => {
       connection('r2', 'wms-api', 'wms-events'),
     ])
     expect(kinds(list)).not.toContain('impliedInterface')
+  })
+
+  it('says nothing about a pair that already has an application interface, either way round', () => {
+    const list = check(held, [
+      connection('i1', 'wms', 'billing'),
+      connection('x1', 'billing-ledger', 'wms-api'),
+    ])
+    expect(kinds(list)).not.toContain('impliedInterface')
+    // One that is over by today answers for nothing.
+    const over = check(held, [
+      connection('i1', 'wms', 'billing', { validUntil: '2026-01-01' }),
+      connection('x1', 'billing-ledger', 'wms-api'),
+    ])
+    expect(kinds(over)).toContain('impliedInterface')
+  })
+
+  it('says nothing about container lines that are over by today', () => {
+    const list = check(held, [
+      connection('x1', 'billing-ledger', 'wms-api', { validUntil: '2026-09-07' }),
+    ])
+    expect(kinds(list)).not.toContain('impliedInterface')
+    const gone = check(
+      [...held, element('old', { lifecycleDates: { retired: '2026-01-01' } }), component('old-api', 'old')],
+      [connection('x1', 'old-api', 'wms-api')],
+    )
+    expect(kinds(gone)).not.toContain('impliedInterface')
+    // Still there today, it still counts.
+    const open = check(held, [connection('x1', 'billing-ledger', 'wms-api', { validUntil: '2026-09-08' })])
+    expect(kinds(open)).toContain('impliedInterface')
   })
 
   it('comes last: nothing is broken, a line is missing', () => {

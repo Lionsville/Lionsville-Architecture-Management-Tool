@@ -425,7 +425,6 @@ export const GROWN = {
   'src/editor/useEditorState.ts': { lines: 761 },
   'src/layout/tidy.ts': { complexity: 26, lines: 176 },
   'src/model/activity.ts': { complexity: 76 },
-  'src/model/checks.ts': { complexity: 41 },
   'src/model/platformReport.ts': { complexity: 28 },
   'src/model/relations.ts': { complexity: 26 },
   'src/model/restore.ts': { complexity: 45 },

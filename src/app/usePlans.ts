@@ -21,8 +21,8 @@
 import { useCallback, useMemo, useState } from 'react'
 import type { Translate } from '../i18n'
 import {
-  acceptImplied, addDays, impliedInterfaces, isDay, nextTransitionNumber, portCommands, portsOf,
-  replacementCommands, shiftDays, transaction, transitionList, transitionsOf, unplannedPorts,
+  acceptImplied, addDays, impliedInterfacesOn, isDay, nextTransitionNumber, portCommands, portsOf,
+  replacementCommands, shiftDays, today, transaction, transitionList, transitionsOf, unplannedPorts,
   unportCommands,
 } from '../model'
 import type { Command, DesignElement, ElementId, Transition } from '../model'
@@ -127,7 +127,7 @@ export function usePlans(deps: {
       const model = session.indexed()
       const elements = Object.values(model.elements)
       const relations = model.order.relations.map((id) => model.relations[id])
-      const implied = impliedInterfaces(relations, (id) => model.elements[id])
+      const implied = impliedInterfacesOn({ elements, relations }, today())
         .find((one) => one.relations.some((row) => row.id === relationId))
       if (!implied) return
       const nameOf = (id: ElementId) => elements.find((element) => element.id === id)?.name ?? id

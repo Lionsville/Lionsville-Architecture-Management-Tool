@@ -57,7 +57,9 @@ const host: HostModel = {
   relations: [
     { type: 'flow', id: 'c1', sourceId: 'crm', targetId: 'billing', isBidirectional: false },
     { type: 'flow', id: 'c2', sourceId: 'billing', targetId: 'who', isBidirectional: false, protocol: 'REST' },
-    { type: 'flow', id: 'x1', sourceId: 'crm', targetId: 'api', isBidirectional: false },
+    // From an application with no interface to billing yet: one that has one
+    // implies nothing to accept.
+    { type: 'flow', id: 'x1', sourceId: 'fax', targetId: 'api', isBidirectional: false },
   ],
   diagrams: [
     laidOut({

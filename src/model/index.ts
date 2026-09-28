@@ -86,7 +86,7 @@ export {
   refinementsOf,
 } from './refines'
 export type { Held, LandingGesture, RefinementRefusal } from './refines'
-export { acceptImplied, impliedInterfaces } from './implied'
+export { acceptImplied, impliedInterfaces, impliedInterfacesOn } from './implied'
 export type { ImpliedInterface } from './implied'
 
 /** What a platform is, and what stands on it (ADR-0013, ADR-0014). */
@@ -106,6 +106,10 @@ export {
   LIFECYCLE_ORDER, phaseAt, today,
 } from './lifecycle'
 export type { DatedPhase } from './lifecycle'
+
+/** Whether a thing, or a line, is there on a day: the rules, said once. */
+export { livenessOf } from './liveness'
+export type { DatesElsewhere, Liveness, Window } from './liveness'
 
 /** Which boards draw a thing, on their own day (ADR-0009, ADR-0010). */
 export { boardsDrawing } from './drawnOn'
