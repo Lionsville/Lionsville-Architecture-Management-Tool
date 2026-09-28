@@ -740,7 +740,29 @@ function overFolder(
   // it: the preferences stay where they were (see below), so what a provider in
   // its place would reuse is exactly what this line leaves alone.
   const kept = openSourceNow('folder', { handle, name, root }, { diagnostics: shell.diagnostics, shell })
-  return { ...shell, ...kept, scopes: keeper('folder', kept) }
+  return { ...withoutSourceParts(shell), ...kept, scopes: keeper('folder', kept) }
+}
+
+/**
+ * The shell with everything the source it was opened over said for itself taken
+ * off.
+ *
+ * A folder opened after another source (a registered provider, above all) is
+ * spread over the shell that source made, and every optional part the folder
+ * does not say again would otherwise be the previous source's: its status
+ * words, its failure sentence, its session hook, its read-only scopes, its
+ * landing, whether it publishes steps, its watcher and its history. A folder
+ * whose scopes are bound to a server's session, or which reports a server's
+ * failure, is the defect this closes. The folder's own parts, and the desktop's
+ * watcher and history added over them, are spread after.
+ */
+function withoutSourceParts(shell: Shell): Shell {
+  const {
+    sourceStatus: _status, onSourceWork: _work, sourceFailure: _failure, onScopeSession: _session,
+    publishesSteps: _publishes, readOnlyAt: _readOnly, opensAt: _opensAt, watchProject: _watch,
+    history: _history, ...rest
+  } = shell
+  return rest
 }
 
 /**

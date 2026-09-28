@@ -140,6 +140,21 @@ describe('inWorkingDirectory', () => {
     expect(await settings.readLocal()).toEqual(DEFAULT_LOCAL_SETTINGS)
     expect(await settings.readFolder()).toEqual({})
   })
+
+  /** A folder opened after a registered source was bound to that source's session and said its failures. */
+  it('keeps nothing the source before it said for itself', () => {
+    const before = {
+      source: { kind: 'registered', provider: 'server', key: 'https://example.test' },
+      sourceStatus: () => ({}), onSourceWork: () => {}, sourceFailure: {}, onScopeSession: () => {},
+      publishesSteps: true, readOnlyAt: () => true, opensAt: {},
+    } as unknown as Shell
+    const shell = inWorkingDirectory(before, channel(), { root: '/work', name: 'work' })
+
+    expect(shell.source.kind).toBe('folder')
+    for (const part of ['sourceStatus', 'onSourceWork', 'sourceFailure', 'onScopeSession', 'publishesSteps', 'readOnlyAt', 'opensAt'] as const) {
+      expect(shell[part], part).toBeUndefined()
+    }
+  })
 })
 
 /**
