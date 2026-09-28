@@ -24,15 +24,17 @@
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
+import Link from '@mui/material/Link'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import type { ReactNode } from 'react'
 import { plural } from '../../i18n/strings'
 import type { Translate } from '../../i18n'
 import { STATUS_LABEL as ADR_STATUS_LABEL, formatAdrNumber } from '../../decisions'
-import { CHECK_SENTENCE, PLAN_STATUS_LABEL } from '../../roadmap'
+import { FindingSentence, PLAN_STATUS_LABEL } from '../../roadmap'
+import type { FindingTarget } from '../../roadmap'
 import { STATE_LABEL as CAUSE_STATE_LABEL } from '../../observations/observationScope'
-import { RELATION_LABEL } from '../../model'
+import type { Finding } from '../../model/checks'
 import { DecisionIcon, DeploymentIcon, DocumentIcon, ObservationIcon, RegisterIcon, SheetIcon, TimelineIcon } from '../../widgets/icons'
 import type { OrganisationPages, StatusTally } from './organisationPages'
 import type { RegisterSummary } from './register'
@@ -71,11 +73,15 @@ export type OrganisationCardsProps = {
   /** The enterprise map: the business card's second door (ADR-0012 §9). */
   onOpenMap: () => void
   onOpenDecisions: () => void
+  /** One record on the decisions page: the newest, which the card names. */
+  onOpenDecision?: (id: string) => void
   /** The observations page (ADR-0021). */
   onOpenObservations: () => void
   /** How many observations the scopes below shared, off the index. */
   sharedObservations?: number
   onOpenRoadmap: () => void
+  /** What the roadmap card's finding is about, opened as the roadmap page opens it (`findingTarget`). */
+  onOpenFinding?: (target: FindingTarget) => void
   onOpenRegister: () => void
   onOpenTechnology: () => void
   /** The technology landscape: the technology card's second door (ADR-0015). */
@@ -98,7 +104,8 @@ function OnePage({ icon, title, description, count, finding, action }: {
   /** What you find behind *Open*, in the card's own voice, above the counts. */
   description: string
   count?: string
-  finding?: string
+  /** A sentence, or a link to what the sentence is about. */
+  finding?: ReactNode
   action?: ReactNode
 }) {
   return (
@@ -124,6 +131,28 @@ function OnePage({ icon, title, description, count, finding, action }: {
   )
 }
 
+/** A line on a card as a link to the one thing it names, where the home can open it. */
+function CardLink({ onOpen, testId, children }: { onOpen?: () => void; testId: string; children: string }) {
+  return onOpen
+    ? <Link component="button" type="button" onClick={onOpen} data-testid={testId} sx={{ fontSize: 'inherit', textAlign: 'left' }}>{children}</Link>
+    : <>{children}</>
+}
+
+/**
+ * The roadmap card's finding: the worst the dates disagree about, as the
+ * roadmap page says it and as a link to what it is about (`FindingSentence`),
+ * or that they agree.
+ */
+function RoadmapFinding({ finding, opens, onOpen, s }: {
+  finding: Finding | undefined
+  opens: FindingTarget | undefined
+  onOpen: ((target: FindingTarget) => void) | undefined
+  s: Translate
+}) {
+  if (!finding) return <>{s('org.noFindings')}</>
+  return <FindingSentence problem={finding} t={s} onOpen={() => { if (opens) onOpen?.(opens) }} />
+}
+
 /** "3 accepted · 1 proposed", in the vocabulary's own order and without zeroes. */
 function tallyLine<T extends string>(
   tally: StatusTally<T>, label: Record<T, Parameters<Translate>[0]>, s: Translate,
@@ -144,8 +173,8 @@ function Actions({ children }: { children: ReactNode }) {
 
 export function OrganisationCards({
   pages, ready, register, technology, initiatives = 0, sharedObservations = 0, shows, onOpenBusiness, onOpenMap, onOpenDecisions,
-  onOpenObservations, onOpenRoadmap, onOpenRegister, onOpenTechnology, onOpenTechnologyLandscape, onOpenDocumentation,
-  writable = true, s,
+  onOpenDecision, onOpenObservations, onOpenRoadmap, onOpenFinding, onOpenRegister, onOpenTechnology, onOpenTechnologyLandscape,
+  onOpenDocumentation, writable = true, s,
 }: OrganisationCardsProps) {
   // A fresh folder, and the shipped example's organisation until the sheet
   // moves up to it: one sentence on each card rather than four zeroes, which
@@ -165,8 +194,6 @@ export function OrganisationCards({
     : pages.business.unmapped > 0
       ? plural(s, { one: 'org.unmappedOne', other: 'org.unmappedOther' }, pages.business.unmapped)
       : s('org.allMapped')
-
-  const finding = pages.roadmap.finding
 
   return (
     // A grid rather than a wrapping row: equal columns, so six cards are two
@@ -228,11 +255,11 @@ export function OrganisationCards({
             tallyLine(pages.decisions.byStatus, ADR_STATUS_LABEL, s),
           ].filter(Boolean).join(' · ')
           : undefined}
-        finding={pages.decisions.latest
-          ? s('org.latest', {
-            name: `${formatAdrNumber(pages.decisions.latest.number)} ${pages.decisions.latest.title}`,
-          })
-          : undefined}
+        finding={pages.decisions.latest && (
+          <CardLink onOpen={onOpenDecision ? () => onOpenDecision(pages.decisions.latest!.id) : undefined} testId="open-latest-decision">
+            {s('org.latest', { name: `${formatAdrNumber(pages.decisions.latest.number)} ${pages.decisions.latest.title}` })}
+          </CardLink>
+        )}
         action={(
           <Button size="small" onClick={onOpenDecisions} sx={quiet} data-testid="open-decisions" data-guide="org.card.decisions">
             {s('picker.open')}
@@ -286,16 +313,9 @@ export function OrganisationCards({
             ? plural(s, { one: 'org.initiativesOne', other: 'org.initiativesOther' }, initiatives)
             : '',
         ].filter(Boolean).join(' · ') || undefined}
-        finding={nothing || !ready
-          ? undefined
-          : finding
-            ? s(CHECK_SENTENCE[finding.kind], {
-              name: finding.name,
-              detail: finding.detail ?? '',
-              count: finding.count ?? 0,
-              type: finding.relationType ? s(RELATION_LABEL[finding.relationType]) : '',
-            })
-            : s('org.noFindings')}
+        finding={nothing || !ready ? undefined : (
+          <RoadmapFinding finding={pages.roadmap.finding} opens={pages.roadmap.findingOpens} onOpen={onOpenFinding} s={s} />
+        )}
         action={(
           <Button size="small" onClick={onOpenRoadmap} sx={quiet} data-testid="open-roadmap" data-guide="org.card.roadmap">
             {s('picker.open')}

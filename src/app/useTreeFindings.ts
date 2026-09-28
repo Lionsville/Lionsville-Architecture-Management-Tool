@@ -22,6 +22,7 @@ import type { ScopePath } from '../projects/scopePath'
 import { technologyRows } from '../projects/technologyRegister'
 import type { ScopeLibrary } from './App'
 import { registerRows } from './organisation/register'
+import { platformTreeOf } from './platformTree'
 
 /**
  * The organisation's index (ADR-0012 §2), held by the shell rather than the
@@ -81,7 +82,9 @@ export function useTreeFindings(deps: {
   /** The technology register (ADR-0014 §2.6), the same fold over the same index. */
   const technology = useMemo(() => technologyRows(index, identity), [index, identity])
   const shellTree = useShellTree(tree, index, identity, projects)
-  return { initiatives, sharedObservations, treeFindings, register, technology, shellTree }
+  /** The platform tree, for the roadmap card's finding: the one the roadmap page reads (`platformTree.ts`). */
+  const platformTree = useMemo(() => platformTreeOf(index), [index])
+  return { initiatives, sharedObservations, treeFindings, register, technology, shellTree, platformTree }
 }
 
 /**

@@ -75,7 +75,8 @@ import { ArchiveDialog, LinkDialog, MergeDialog, NewCauseDialog, NewObservationD
 import { EmptyRegister, crumbTrail, experimentMoveActions, preselectedCause, useLifecycle } from './ObservationLifecycle'
 import { PictureMenu } from './PictureMenu'
 import type { MenuAction, PictureTarget } from './PictureMenu'
-import { CauseReader, ObservationReader, ReaderModeContext } from './Readers'
+import { CauseReader, MergedNote, ObservationReader, ReaderModeContext } from './Readers'
+import type { MergedInto } from './Readers'
 import {
   addressCause, alternatives, defaultStrength, dropSolution, experimentsFor,
   forgetCause, formatExperimentNumber, formatSolutionNumber, implementedOn, isLive, mayAddress,
@@ -126,8 +127,12 @@ export type ObservationsPageProps = {
   absorbedAbove?: ReadonlyMap<string, { by: string; into: string; intoTitle: string; date: string }>
   /** Whether there is a scope above to share with: the root has none. */
   canShare: boolean
-  /** Open the scope an observation from below lives in. */
-  onOpenScope?: (path: string) => void
+  /**
+   * Open the observations page of another scope: the one an observation from
+   * below lives in, or the one above that one of these was merged into — on
+   * that record, where an id is given.
+   */
+  onOpenScope?: (path: string, id?: string) => void
   onChange: (next: ObservationWork) => void
   /**
    * Propose the decision record for a solution (ADR-0026): the host writes
@@ -238,6 +243,30 @@ function useOpening(deps: {
   useEffect(() => {
     if (open) latest.current.onShown?.(shown, landed)
   }, [open, shown, landed])
+}
+
+/**
+ * Where an observation went when it was merged away, and the way there: the
+ * one it was merged into, selected here, or opened on the page of the scope
+ * above that keeps it.
+ */
+function mergedIntoOf(one: Observation, from: {
+  observations: readonly Observation[]
+  absorbedAbove: ObservationsPageProps['absorbedAbove']
+  nameOf: (id: string) => string
+  scopeLabel: (path: string) => string
+  select: (id: string) => void
+  openAbove?: (path: string, id: string) => void
+}): MergedInto | undefined {
+  const here = absorbedBy(from.observations, one.id)
+  if (here) return { label: from.nameOf(here.id), open: () => from.select(here.id) }
+  const above = from.absorbedAbove?.get(one.id)
+  if (!above) return undefined
+  const { openAbove } = from
+  return {
+    label: above.intoTitle, scope: from.scopeLabel(above.by), date: above.date,
+    ...(openAbove ? { open: () => openAbove(above.by, above.into) } : {}),
+  }
 }
 
 export function ObservationsPage(props: ObservationsPageProps) {
@@ -466,12 +495,11 @@ export function ObservationsPage(props: ObservationsPageProps) {
     .filter((one) => !trimmed || matchesQuery(trimmed, [one.title, one.body, one.hypothesis, formatExperimentNumber(one.number)]))
 
   const analysedInto = (id: string, scope?: string) => explainedBy(causes, id, scope)
-  const mergedLabel = (one: Observation): { label: string; scope?: string; date?: string } | undefined => {
-    const here = absorbedBy(observations, one.id)
-    if (here) return { label: nameOf(here.id) }
-    const above = absorbedAbove?.get(one.id)
-    return above ? { label: above.intoTitle, scope: scopeLabel(above.by), date: above.date } : undefined
-  }
+  const mergedLabel = (one: Observation) => mergedIntoOf(one, {
+    observations, absorbedAbove, nameOf, scopeLabel,
+    select: (id) => setSelectedKey(nodeKey(id)),
+    ...(props.onOpenScope ? { openAbove: (path: string, id: string) => { onClose(); props.onOpenScope?.(path, id) } } : {}),
+  })
 
   const observationRow = (one: Observation, scope?: string) => {
     const key = nodeKey(one.id, scope)
@@ -501,7 +529,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
         <TableCell sx={{ fontVariantNumeric: 'tabular-nums', fontSize: 12 }}>{s('observation.seenTimes', { count: one.seen })}</TableCell>
         <TableCell sx={{ fontSize: 12 }}>
           {merged
-            ? <Typography variant="caption" color="text.secondary">{merged.scope !== undefined ? s('observation.mergedAbove', { name: merged.label, scope: merged.scope, date: merged.date ? formatDay(merged.date, props.language) : '' }) : s('observation.mergedInto', { name: merged.label })}</Typography>
+            ? <Typography variant="caption" color="text.secondary"><MergedNote merged={merged} s={s} day={(date) => formatDay(date, props.language)} /></Typography>
             : into.length
               ? into.map((cause) => <Chip key={cause.id} size="small" variant="outlined" label={formatCauseNumber(cause.number)} sx={{ height: 18, fontSize: 10, mr: 0.5 }} onClick={(event) => { event.stopPropagation(); setSelectedKey(cause.id) }} />)
               : <Typography variant="caption" color="text.secondary">{s('observation.notAnalysed')}</Typography>}

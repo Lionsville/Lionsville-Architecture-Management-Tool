@@ -33,6 +33,7 @@ import ListSubheader from '@mui/material/ListSubheader';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Tooltip from '@mui/material/Tooltip';
+import Link from '@mui/material/Link';
 import Typography from '@mui/material/Typography';
 import type { DesignDiagram, DesignElement, DesignModel, ElementId } from '../../model/types';
 import { transitionLabel, transitionsForElement } from '../../model/transition';
@@ -462,24 +463,35 @@ export function DocumentationPage(props: DocumentationPageProps) {
           />
         )}
         <Box sx={{ borderLeft: props.fieldsWidth ? 0 : 1, borderColor: 'divider', bgcolor: 'background.paper', overflow: 'auto', p: 2, minWidth: 0 }}>
-          {plansHere.length > 0 && (
-            <Box data-testid="doc-plans" sx={{ mb: 2 }}>
-              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>{t('doc.plans')}</Typography>
-              {plansHere.map((plan) => (
-                <Typography
-                  key={plan.id}
-                  sx={{ fontSize: 13, cursor: 'pointer', '&:hover': { color: 'primary.main' } }}
-                  onClick={() => props.plans?.onOpen(plan.id)}
-                >
-                  {transitionLabel(plan)} {plan.title}
-                </Typography>
-              ))}
-            </Box>
-          )}
+          {props.plans && <PlansHere plans={plansHere} onOpen={props.plans.onOpen} />}
           {props.renderInspector?.(element, { readOnly })}
         </Box>
       </Box>
 
     </PageDialog>
+  );
+}
+
+/**
+ * The plans that name this element, each a link to its page — a button, so
+ * the keyboard reaches it as the pointer does.
+ */
+function PlansHere({ plans, onOpen }: { plans: readonly Transition[]; onOpen: (id: string) => void }) {
+  const { t } = useStrings();
+  if (plans.length === 0) return null;
+  return (
+    <Box data-testid="doc-plans" sx={{ mb: 2 }}>
+      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>{t('doc.plans')}</Typography>
+      {plans.map((plan) => (
+        <Link
+          key={plan.id}
+          component="button" type="button" color="inherit" underline="hover"
+          sx={{ display: 'block', fontSize: 13, textAlign: 'left' }}
+          onClick={() => onOpen(plan.id)}
+        >
+          {transitionLabel(plan)} {plan.title}
+        </Link>
+      ))}
+    </Box>
   );
 }

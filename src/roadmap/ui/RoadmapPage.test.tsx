@@ -172,6 +172,24 @@ describe('the axis', () => {
     expect(screen.getByText('Supports')).toBeTruthy()
   })
 
+  /**
+   * Every row's name is a button: the keyboard reaches what a pointer on the
+   * row's box used to be the only way to — an element, a dated line (at the
+   * element it starts from, whose inspector holds its dates), and a plan.
+   */
+  it('names each row with a button that opens it: an element, a line at the element it starts from, a plan', () => {
+    const { actions } = setup({
+      model: model({ relations: [{ id: 'r1', type: 'supports', sourceId: 'wms-new', targetId: 'billing', validFrom: '2027-04-01' }] }),
+    })
+    fireEvent.click(within(screen.getByTestId('row-wms-old')).getByRole('button', { name: 'Warehouse Management' }))
+    expect(actions.onOpenElement).toHaveBeenLastCalledWith('wms-old')
+    fireEvent.click(screen.getByRole('button', { name: '1 relations' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Warehouse Management (new) → Billing' }))
+    expect(actions.onOpenElement).toHaveBeenLastCalledWith('wms-new')
+    fireEvent.click(screen.getByRole('button', { name: 'TR-0001 Replace the warehouse system' }))
+    expect(actions.onOpenPlan).toHaveBeenLastCalledWith('tr-1')
+  })
+
   it('draws the initiatives from below under their scope, and opens one where it lives', () => {
     const onOpenInitiative = vi.fn()
     setup({

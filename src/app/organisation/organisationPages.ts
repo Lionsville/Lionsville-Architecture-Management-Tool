@@ -24,6 +24,9 @@ import type { Adr, AdrStatus } from '../../decisions'
 import { ADR_STATUSES } from '../../decisions'
 import { findings } from '../../model/checks'
 import type { Finding } from '../../model/checks'
+import type { PlatformTree } from '../../model/hosting'
+import { findingTarget } from '../../roadmap/findingTarget'
+import type { FindingTarget } from '../../roadmap/findingTarget'
 import { TRANSITION_STATUSES } from '../../model/transition'
 import type { TransitionStatus } from '../../model/transition'
 import type { ScopeSnapshot } from '../../projects/scope'
@@ -73,6 +76,8 @@ export type OrganisationPages = {
     byStatus: StatusTally<TransitionStatus>
     /** The first thing the dates disagree about — `findings` answers worst first. */
     finding?: Finding
+    /** What that finding opens (`findingTarget`): the card says it as a link, as the roadmap does. */
+    findingOpens?: FindingTarget
   }
   /** What was seen here and what lies behind it (ADR-0021). */
   observations: {
@@ -107,6 +112,12 @@ function tally<T extends string>(
 export function organisationPages(
   scope: ScopeSnapshot | undefined,
   today: string,
+  /**
+   * What the tree says about the platforms this scope holds as stand-ins
+   * (ADR-0014 §2.7) — the roadmap page reads its findings with it, and a
+   * card reading them without would name a different first one.
+   */
+  platformTree?: PlatformTree,
 ): OrganisationPages {
   const model = scope?.model
   const elements = model?.elements ?? []
@@ -168,7 +179,7 @@ export function organisationPages(
       // Over the scope's own model, which is what this card is about. The
       // checks read plans and elements together, so a root with plans and no
       // landscape can still be told its plan is overdue.
-      ...(model ? nextFinding(model, transitions, today) : {}),
+      ...(model ? nextFinding(model, transitions, today, platformTree) : {}),
     },
   }
 }
@@ -177,8 +188,11 @@ function nextFinding(
   model: NonNullable<ScopeSnapshot['model']>,
   transitions: readonly { status: TransitionStatus }[],
   today: string,
-): { finding?: Finding } {
+  platformTree: PlatformTree | undefined,
+): { finding?: Finding; findingOpens?: FindingTarget } {
   if (model.elements.length === 0 && transitions.length === 0) return {}
-  const first = findings({ model, today })[0]
-  return first ? { finding: first } : {}
+  const first = findings({ model, today, ...(platformTree ? { platformTree } : {}) })[0]
+  if (!first) return {}
+  const opens = findingTarget(first, model.relations)
+  return opens ? { finding: first, findingOpens: opens } : { finding: first }
 }

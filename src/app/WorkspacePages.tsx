@@ -106,7 +106,9 @@ function RecordPages({ parts }: { parts: WorkspaceParts }) {
         scopeLabel={readings.scopeLabel}
         absorbedAbove={readings.absorbedAbove}
         canShare={props.project.path !== ''}
-        {...(onOpenScope ? { onOpenScope: (path: string) => onOpenScope(path, { page: 'observations' }) } : {})}
+        {...(onOpenScope
+          ? { onOpenScope: (path: string, id?: string) => onOpenScope(path, { page: 'observations', ...(id !== undefined ? { id } : {}) }) }
+          : {})}
         onChange={analysis.onAnalysisChange}
         readOnly={readOnly}
         onDecide={readOnly ? undefined : analysis.onDecideSolution}

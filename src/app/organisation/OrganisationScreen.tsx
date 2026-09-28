@@ -49,6 +49,7 @@ import { countScopeKinds, flattenScopes, isOpenableScope, newestChange, sortScop
 
 import type { ProjectOrder, ScopeSummary } from '../../projects/scope'
 import type { ElementId } from '../../model'
+import type { PlatformTree } from '../../model/hosting'
 import type { Finding } from '../../projects/checks'
 import { isWithinScope, ROOT_SCOPE, scopePathLabel } from '../../projects/scopePath'
 import { scopeDisplayName } from '../../projects/scopeLabel'
@@ -75,10 +76,13 @@ import { lazyPart } from '../../widgets/lazyPart'
 import { technologySummary, technologyWithin } from '../../projects/technologyRegister'
 import type { TechnologyRow } from '../../projects/technologyRegister'
 import { OrganisationCards } from './OrganisationCards'
+import type { OrganisationCardsProps } from './OrganisationCards'
+import type { FindingTarget } from '../../roadmap'
 import { BoardsTable } from './BoardsTable'
 import { attentionItems } from './attention'
 import { NeedsAttention } from './NeedsAttention'
 import { organisationPages } from './organisationPages'
+import type { OrganisationPages } from './organisationPages'
 import { ScopeSettingsDialog, SCOPE_KIND_COUNT, SCOPE_KIND_LABEL } from './ScopeSettingsDialog'
 import { ScopeTree } from './ScopeTree'
 import type { Organisation } from './useOrganisation'
@@ -194,6 +198,11 @@ export type OrganisationScreenProps = {
   initiatives?: number
   /** How many observations the scopes below shared (ADR-0021), off the same index. */
   sharedObservations?: number
+  /**
+   * The platform tree off the same index (`platformTree.ts`), so the roadmap
+   * card's finding is the one the roadmap page puts first.
+   */
+  platformTree?: PlatformTree
   /** Open a row where it is answered for, with the element selected. */
   onOpenRegisterRow?: (scope: ScopePath, id: ElementId) => void
   /** Open a row's page — the record and its document — where it is answered for. */
@@ -221,10 +230,31 @@ export type OrganisationScreenProps = {
   windowChrome?: WindowChrome
 }
 
+/**
+ * Where each card's doors go: a page of the scope whose home this is, opened
+ * the way the workspace opens it — the sheet, the map and the technology
+ * landscape on the one the scope has, and the decisions page on the record a
+ * card names, the roadmap card's finding on what it is about.
+ */
+function cardDoors(open: Organisation['open'], at: ScopePath, pages: OrganisationPages) {
+  const withId = (id: string | undefined) => (id !== undefined ? { id } : {})
+  return {
+    onOpenBusiness: () => open(at, { page: 'sheet', ...withId(pages.business.sheetId) }),
+    onOpenMap: () => open(at, { page: 'map', ...withId(pages.business.mapId) }),
+    onOpenDecisions: () => open(at, { page: 'decisions' }),
+    onOpenDecision: (id: string) => open(at, { page: 'decisions', id }),
+    onOpenObservations: () => open(at, { page: 'observations' }),
+    onOpenRoadmap: () => open(at, { page: 'roadmap' }),
+    onOpenFinding: (target: FindingTarget) => open(at, target),
+    onOpenTechnologyLandscape: () => open(at, { page: 'technology', ...withId(pages.technology.landscapeId) }),
+    onOpenDocumentation: () => open(at, { page: 'documentation' }),
+  } satisfies Partial<OrganisationCardsProps>
+}
+
 export function OrganisationScreen({
   organisation, examples, order, onOrderChange, source, sourceDescription, sourceChip, chipPanel, chipFace,
   onChooseWorkingDirectory, waysIn,
-  overflow, agent, onGoHome, findings, register = [], technology = [], initiatives = 0, sharedObservations = 0,
+  overflow, agent, onGoHome, findings, register = [], technology = [], initiatives = 0, sharedObservations = 0, platformTree,
   onOpenRegisterRow, onOpenRegisterPage, onLinkFromRegister, pageRequest, onPageChange,
   writable = ANYWHERE, today, language, s, windowChrome = NO_WINDOW_CHROME,
 }: OrganisationScreenProps) {
@@ -286,7 +316,7 @@ export function OrganisationScreen({
     () => ({ ...tree, children: sortScopes(tree.children, order) }),
     [tree, order],
   )
-  const pages = useMemo(() => organisationPages(root, today), [root, today])
+  const pages = useMemo(() => organisationPages(root, today, platformTree), [root, today, platformTree])
   const registerHere = useMemo(() => registerWithin(register, at), [register, at])
   const registerCounts = useMemo(() => registerSummary(registerHere), [registerHere])
   const technologyHere = useMemo(() => technologyWithin(technology, at), [technology, at])
@@ -456,29 +486,14 @@ export function OrganisationScreen({
             {(atRoot || ready) && <OrganisationCards
               pages={pages}
               ready={ready}
-              onOpenBusiness={() => organisation.open(
-                at,
-                { page: 'sheet', ...(pages.business.sheetId ? { id: pages.business.sheetId } : {}) },
-              )}
-              onOpenMap={() => organisation.open(
-                at,
-                { page: 'map', ...(pages.business.mapId ? { id: pages.business.mapId } : {}) },
-              )}
-              onOpenDecisions={() => organisation.open(at, { page: 'decisions' })}
-              onOpenObservations={() => organisation.open(at, { page: 'observations' })}
+              {...cardDoors(organisation.open, at, pages)}
               sharedObservations={sharedObservations}
-              onOpenRoadmap={() => organisation.open(at, { page: 'roadmap' })}
               register={registerCounts}
               technology={technologyCounts}
               initiatives={initiatives}
               shows={shows}
               onOpenRegister={() => setRegisterOpen(true)}
               onOpenTechnology={() => setTechnologyOpen(true)}
-              onOpenTechnologyLandscape={() => organisation.open(
-                at,
-                { page: 'technology', ...(pages.technology.landscapeId ? { id: pages.technology.landscapeId } : {}) },
-              )}
-              onOpenDocumentation={() => organisation.open(at, { page: 'documentation' })}
               writable={mayWrite}
               s={s}
             />}

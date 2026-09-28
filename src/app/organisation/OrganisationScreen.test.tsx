@@ -238,6 +238,26 @@ describe('the organisation screen — its own pages', () => {
   })
 
   /**
+   * The card's two lines that name one thing each are links to it, as the
+   * roadmap's findings are: the finding opens its plan, the newest record
+   * opens on the decisions page.
+   */
+  it('opens what the roadmap card\u2019s finding is about, and the record the decisions card names', async () => {
+    renderApp({ scopes: new InMemoryScopeStore([organisation()]), today: TODAY })
+    const cards = await screen.findByTestId('organisation-cards')
+    const finding = await within(cards).findByRole('button', { name: /was due to finish on 2026-08-01/ })
+    fireEvent.click(finding)
+    expect(await screen.findByTestId('plan-topbar')).toBeTruthy()
+    expect(screen.getByTestId('plan-topbar').textContent).toContain('Retire the rater')
+    cleanup()
+    renderApp({ scopes: new InMemoryScopeStore([organisation()]), today: TODAY })
+    const again = await screen.findByTestId('organisation-cards')
+    fireEvent.click(await within(again).findByRole('button', { name: 'Latest: ADR-0002 Federate the model' }))
+    const reader = await screen.findByTestId('adr-reader')
+    expect(reader.textContent).toContain('Federate the model')
+  })
+
+  /**
    * The one card about the WHOLE tree (ADR-0012 §2). Its numbers come from the
    * index the shell already holds, not from a load of its own — which is why
    * it can count applications the root's own document has none of.

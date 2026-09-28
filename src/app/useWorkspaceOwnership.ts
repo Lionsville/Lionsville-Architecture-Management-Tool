@@ -12,6 +12,7 @@
 import { useMemo } from 'react'
 import type { Translate } from '../i18n'
 import type { EditorOwnership, StandInNote } from '../editor'
+import { platformTreeOf } from './platformTree'
 import type { Relation } from '../model'
 import { describeLeverage, leverageOf } from '../model'
 import { FIXED_ON_A_STANDIN, mayEdit } from '../projects/mayEdit'
@@ -63,12 +64,7 @@ export function useWorkspaceOwnership(deps: {
     // tree and draw a box only for a place, a landscape holds stand-ins of
     // the platforms it stands on, and the checks date a stand-in by its
     // master (ADR-0012 §3) — all facts of the scope that defines them.
-    platformTree: {
-      parentOf: (platformId) => index.lookup(platformId)?.parentId,
-      archetypeOf: (platformId) => index.lookup(platformId)?.platformArchetype,
-      outsideOf: (platformId) => index.lookup(platformId)?.outside,
-      retiredOf: (id) => index.lookup(id)?.retired,
-    },
+    platformTree: platformTreeOf(index),
     // Who uses a service from another team (ADR-0014), off the rows the whole
     // tree holds: what the *Shared* tick says beside itself.
     offeredBeyond: (serviceId) => (index.lookup(serviceId)?.kind === 'platformService'

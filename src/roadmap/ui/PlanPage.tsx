@@ -26,6 +26,7 @@ import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import IconButton from '@mui/material/IconButton'
+import Link from '@mui/material/Link'
 import Switch from '@mui/material/Switch'
 import MenuItem from '@mui/material/MenuItem'
 import TextField from '@mui/material/TextField'
@@ -520,7 +521,9 @@ function Interfaces({ plan, model, today, readOnly, actions, height }: {
         <tbody>
           {ports.map((port) => (
             <tr key={port.from.id} data-testid={`port-${port.from.id}`}>
-              <td>{rowName(port)}</td>
+              <td>
+                <ElementLink onOpen={() => actions.onOpenElement(port.counterpartId)}>{rowName(port)}</ElementLink>
+              </td>
               <td>{arrow(port)}</td>
               <td>{port.from.protocol ?? ''}</td>
               <td>
@@ -535,7 +538,9 @@ function Interfaces({ plan, model, today, readOnly, actions, height }: {
                   >
                     {targets.map((id) => <MenuItem key={id} value={id}>{name(id)}</MenuItem>)}
                   </TextField>
-                ) : name(targets[0])}
+                ) : targets[0] !== undefined && (
+                  <ElementLink onOpen={() => actions.onOpenElement(targets[0])}>{name(targets[0])}</ElementLink>
+                )}
               </td>
               <td>
                 <TextField
@@ -563,6 +568,15 @@ function Interfaces({ plan, model, today, readOnly, actions, height }: {
       </Box>
       </Box>
     </Box>
+  )
+}
+
+/** A name in the port table, as a link to the element on the board. */
+function ElementLink({ onOpen, children }: { onOpen(): void; children: ReactNode }) {
+  return (
+    <Link component="button" type="button" color="inherit" underline="hover" onClick={onOpen} sx={{ fontSize: 'inherit', textAlign: 'left' }}>
+      {children}
+    </Link>
   )
 }
 

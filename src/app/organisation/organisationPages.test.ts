@@ -144,5 +144,28 @@ describe('organisationPages', () => {
       expect(organisationPages(held3, TODAY).roadmap.finding).toBeUndefined()
     })
 
+    it('says what the finding opens, as the roadmap page opens it', () => {
+      const held = scope({ transitions: [plan({ to: '2026-08-01' })] })
+      expect(organisationPages(held, TODAY).roadmap.findingOpens).toEqual({ page: 'plan', id: 'p' })
+    })
+
+    /**
+     * The card reads the findings the roadmap page reads, with the tree: a
+     * cluster held here as a stand-in is dated by the scope that defines it,
+     * and without the tree the card would miss the finding the page puts first.
+     */
+    it('reads the findings through the platform tree, as the roadmap page does', () => {
+      const held = scope({
+        elements: [
+          element({ id: 'cluster', kind: 'platform', ref: 'platforms' }),
+          element({ id: 'orders', kind: 'application' }),
+        ],
+        relations: [{ id: 'h1', type: 'hostedOn', sourceId: 'orders', targetId: 'cluster' }],
+      })
+      expect(organisationPages(held, TODAY).roadmap.finding).toBeUndefined()
+      const told = organisationPages(held, TODAY, { retiredOf: (id) => (id === 'cluster' ? '2027-01-01' : undefined) })
+      expect(told.roadmap.finding).toMatchObject({ kind: 'platformRetiresFirst' })
+      expect(told.roadmap.findingOpens?.page).toBe('element')
+    })
   })
 })

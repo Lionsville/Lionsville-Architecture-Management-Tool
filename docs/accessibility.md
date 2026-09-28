@@ -144,6 +144,15 @@ app's language.
 - **Reflow.** At 320 CSS pixels every bar across the top of a screen drew its
   labels over each other, and the editor's toolbar ran 280 pixels off the
   side of the window. Every such bar now takes a second row.
+- **Names that answered the pointer only.** A row's name on the roadmap (an
+  element, a dated line, a plan, an initiative from below, and the scope's
+  chip beside it), an element and a record named on a plan's page, and the
+  plans on an element's page opened what they named on a click and were not
+  in the Tab order. Each is a button now, and so are the names in a plan's
+  port table, a service report's *Via* column, the line saying where a
+  merged observation went, and the finding and newest record on a home's
+  roadmap and decisions cards. The bands on the roadmap still answer a
+  click as well; the name beside each is its way in by the keyboard.
 
 ## Reflow and zoom
 

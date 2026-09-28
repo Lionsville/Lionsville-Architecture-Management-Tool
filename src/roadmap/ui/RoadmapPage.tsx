@@ -22,7 +22,7 @@
  * geometry, so the shell toolbar's drag strip stays live underneath and would
  * swallow every click on a control placed there.
  */
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Dialog from '@mui/material/Dialog'
@@ -40,7 +40,7 @@ import FormControlLabel from '@mui/material/FormControlLabel'
 import { RELATION_LABEL, addDays, daysBetween, isDay, portProgress, transitionLabel } from '../../model'
 import type { DesignElement, DesignModel, ElementId, Lifecycle, Relation, Transition } from '../../model'
 import { useStrings } from '../../i18n'
-import type { StringKey, Translate } from '../../i18n'
+import type { StringKey } from '../../i18n'
 import { BackIcon, CaretIcon } from '../../widgets/icons'
 import { PageDialog } from '../../widgets/PageDialog'
 import type { WindowChrome } from '../../platform/windowChrome'
@@ -48,8 +48,10 @@ import { barChromeFor } from '../../platform/windowChrome'
 import { findings } from '../../model/checks'
 import type { Finding } from '../../model/checks'
 import type { PlatformTree } from '../../model/hosting'
-import { CHECK_SENTENCE } from '../labels'
+import { findingTarget } from '../findingTarget'
+import { FindingSentence } from './FindingSentence'
 import { fractionOf, roadmapOf, shadowRunOf, within } from '../timeline'
+import type { RelationTrack } from '../timeline'
 
 /**
  * The colour each phase is drawn in: the same semantic mapping the canvas's
@@ -110,39 +112,11 @@ export type Initiative = {
   elements?: readonly DesignElement[]
 }
 
-/**
- * What a finding opens: the element or the plan it names, and for a line the
- * element it starts from, whose inspector holds the line's dates — the board
- * has no way yet to be asked to select a line.
- */
+/** Open what a finding is about (`findingTarget`) through the page's own actions. */
 function openFinding(problem: Finding, relations: readonly Relation[], actions: RoadmapActions): void {
-  if (problem.subject === 'transition') { actions.onOpenPlan(problem.id); return }
-  const id = problem.subject === 'relation'
-    ? relations.find((relation) => relation.id === problem.id)?.sourceId
-    : problem.id
-  if (id !== undefined) actions.onOpenElement(id)
-}
-
-/** One finding in words, as a link to what it is about: the place its dates are put right. */
-function FindingSentence({ problem, t, onOpen }: { problem: Finding; t: Translate; onOpen: () => void }) {
-  return (
-    <Link
-      component="button"
-      type="button"
-      data-testid={`finding-${problem.kind}-${problem.id}`}
-      onClick={onOpen}
-      sx={{ fontSize: 'inherit', textAlign: 'left', verticalAlign: 'baseline' }}
-    >
-      {t(CHECK_SENTENCE[problem.kind], {
-        name: problem.name,
-        detail: problem.detail ?? '',
-        count: String(problem.count ?? 0),
-        // Which kind of row it was (ADR-0012 §5), in words: *supports* where
-        // the finding means supports.
-        type: problem.relationType ? t(RELATION_LABEL[problem.relationType]) : '',
-      })}
-    </Link>
-  )
+  const target = findingTarget(problem, relations)
+  if (target?.page === 'plan') actions.onOpenPlan(target.id)
+  else if (target) actions.onOpenElement(target.id)
 }
 
 export type RoadmapPageProps = {
@@ -376,15 +350,11 @@ export function RoadmapPage(props: RoadmapPageProps) {
                   data-testid={`row-${track.element.id}`}
                   sx={{ display: 'grid', gridTemplateColumns: '180px minmax(0, 1fr)', alignItems: 'center', gap: 1, mb: 0.5 }}
                 >
-                  <Box sx={{ minWidth: 0, cursor: 'pointer' }} onClick={() => openBrought(track)}>
-                    <Typography
-                      sx={{ fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                    >
-                      {track.element.name}
-                    </Typography>
+                  <Box sx={{ minWidth: 0 }}>
+                    <RowName onOpen={() => openBrought(track)}>{track.element.name}</RowName>
                     {track.below && (
                       <Tooltip title={t('roadmap.openInitiative', { scope: labelOf(track.below.scope) })}>
-                        <Chip size="small" label={labelOf(track.below.scope)} sx={{ height: 16, fontSize: 10, mt: 0.25 }} />
+                        <Chip size="small" label={labelOf(track.below.scope)} onClick={() => openBrought(track)} sx={{ height: 16, fontSize: 10, mt: 0.25 }} />
                       </Tooltip>
                     )}
                   </Box>
@@ -435,42 +405,13 @@ export function RoadmapPage(props: RoadmapPageProps) {
                       {t('roadmap.relationsCount', { count: roadmap.relations.length })}
                     </Typography>
                   </Box>
-                  {showRelations && roadmap.relations.map(({ relation, sourceName, targetName }) => {
-                    // An end left open is drawn to the edge of the axis, which is
-                    // what "and onwards" looks like on a page with two edges.
-                    const opens = isDay(relation.validFrom) ? relation.validFrom! : roadmap.from
-                    const closes = isDay(relation.validUntil) ? relation.validUntil! : roadmap.to
-                    return (
-                      <Box key={relation.id} sx={{ display: 'grid', gridTemplateColumns: '180px minmax(0, 1fr)', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                        <Box sx={{ minWidth: 0 }}>
-                          <Typography sx={{ fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {relation.label || `${sourceName} → ${targetName}`}
-                          </Typography>
-                          <Typography sx={{ fontSize: 10, color: 'text.secondary', whiteSpace: 'nowrap' }}>
-                            {t(RELATION_LABEL[relation.type])}
-                          </Typography>
-                        </Box>
-                        <Box data-testid={`relation-${relation.id}`} sx={{ position: 'relative', height: 18, bgcolor: 'action.hover', borderRadius: 1 }}>
-                          <Tooltip title={`${sourceName} → ${targetName} · ${opens} – ${isDay(relation.validUntil) ? relation.validUntil : '…'}`}>
-                            <Box role="img"
-                              data-testid="relation-window"
-                              data-relation-type={relation.type}
-                              sx={{
-                                position: 'absolute', top: 3, bottom: 3,
-                                left: at(opens), right: `calc(100% - ${at(closes)})`,
-                                borderRadius: 1,
-                                // The same hatch a shadow run wears: a stretch
-                                // that is true for a while and then is not.
-                                backgroundImage: `repeating-linear-gradient(135deg, ${theme.palette.primary.main} 0 3px, transparent 3px 7px)`,
-                                opacity: 0.6,
-                              }}
-                            />
-                          </Tooltip>
-                          <Marker left={at(today)} colour={theme.palette.text.primary} label={t('roadmap.today')} />
-                        </Box>
-                      </Box>
-                    )
-                  })}
+                  {showRelations && roadmap.relations.map((track) => (
+                    <RelationRow
+                      key={track.relation.id} track={track} from={roadmap.from} to={roadmap.to} today={today} at={at}
+                      colour={theme.palette.primary.main} ink={theme.palette.text.primary}
+                      onOpen={() => actions.onOpenElement(track.relation.sourceId)}
+                    />
+                  ))}
                 </>
               )}
 
@@ -480,67 +421,13 @@ export function RoadmapPage(props: RoadmapPageProps) {
               {roadmap.transitions.length === 0 && (
                 <Typography variant="body2" color="text.secondary">{t('roadmap.noPlans')}</Typography>
               )}
-              {roadmap.transitions.map((plan) => {
-                const progress = portProgress(model, plan)
-                const shadow = shadowRunOf(model, plan)
-                return (
-                <Box key={plan.id} sx={{ display: 'grid', gridTemplateColumns: '180px minmax(0, 1fr)', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                  <Box sx={{ minWidth: 0, cursor: 'pointer' }} onClick={() => actions.onOpenPlan(plan.id)}>
-                    <Typography sx={{ fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {transitionLabel(plan)} {plan.title}
-                    </Typography>
-                    {progress.total > 0 && (
-                      <Typography sx={{ fontSize: 10, color: 'text.secondary', whiteSpace: 'nowrap' }}>
-                        {t('roadmap.planPorted', { done: String(progress.done), total: String(progress.total) })}
-                      </Typography>
-                    )}
-                  </Box>
-                  <Box
-                    data-testid={`plan-${plan.id}`}
-                    onClick={() => actions.onOpenPlan(plan.id)}
-                    sx={{ position: 'relative', height: 18, bgcolor: 'action.hover', borderRadius: 1, cursor: 'pointer' }}
-                  >
-                    {isDay(plan.from) && (
-                      <Box
-                        data-testid="plan-band"
-                        sx={{
-                          position: 'absolute', top: 3, bottom: 3,
-                          left: at(plan.from),
-                          right: isDay(plan.to) ? `calc(100% - ${at(plan.to)})` : 0,
-                          bgcolor: 'primary.main', opacity: 0.5, borderRadius: 1,
-                        }}
-                      />
-                    )}
-                    {shadow && (
-                      <Tooltip title={`${t('roadmap.shadowRun')} · ${shadow.from} – ${shadow.to}`}>
-                        <Box role="img"
-                          data-testid="shadow-run"
-                          sx={{
-                            position: 'absolute', top: 3, bottom: 3,
-                            left: at(shadow.from), right: `calc(100% - ${at(shadow.to)})`,
-                            borderRadius: 1,
-                            backgroundImage: `repeating-linear-gradient(135deg, ${theme.palette.primary.main} 0 3px, transparent 3px 7px)`,
-                            opacity: 0.6,
-                          }}
-                        />
-                      </Tooltip>
-                    )}
-                    {plan.milestones.filter((m) => isDay(m.date) && m.date >= roadmap.from && m.date <= roadmap.to).map((milestone, index) => (
-                      <Tooltip key={index} title={`${milestone.name} · ${milestone.date}`}>
-                        <Box role="img"
-                          data-testid="milestone"
-                          sx={{
-                            position: 'absolute', top: 4, left: at(milestone.date), width: 8, height: 10,
-                            ml: '-4px', bgcolor: 'primary.dark', transform: 'rotate(45deg)',
-                          }}
-                        />
-                      </Tooltip>
-                    ))}
-                    <Marker left={at(today)} colour={theme.palette.text.primary} label={t('roadmap.today')} />
-                  </Box>
-                </Box>
-                )
-              })}
+              {roadmap.transitions.map((plan) => (
+                <PlanRow
+                  key={plan.id} plan={plan} model={model} from={roadmap.from} to={roadmap.to} today={today} at={at}
+                  colour={theme.palette.primary.main} ink={theme.palette.text.primary}
+                  onOpen={() => actions.onOpenPlan(plan.id)}
+                />
+              ))}
 
               {below.length > 0 && (
                 <>
@@ -614,6 +501,143 @@ function Marker({ left, colour, label }: { left: string; colour: string; label: 
 }
 
 /**
+ * A row's name, as a link to what the row is: reached by the keyboard, where
+ * the box around the name used to answer a pointer only. Drawn in the ink of
+ * the text around it, underlined on hover, so a column of names still reads
+ * as a column of names. Plain text where there is nowhere to go.
+ */
+function RowName({ onOpen, children }: { onOpen?: () => void; children: ReactNode }) {
+  const sx = { display: 'block', maxWidth: '100%', fontSize: 12, textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } as const
+  return onOpen
+    ? <Link component="button" type="button" color="inherit" underline="hover" onClick={onOpen} sx={sx}>{children}</Link>
+    : <Typography sx={sx}>{children}</Typography>
+}
+
+/**
+ * A line with a window of its own, as a hatched band: its name opens the
+ * element it starts from, whose inspector holds the line's dates — the
+ * board cannot yet be asked to select a line.
+ */
+function RelationRow({ track, from, to, today, at, colour, ink, onOpen }: {
+  track: RelationTrack
+  from: string
+  to: string
+  today: string
+  at(day: string): string
+  colour: string
+  ink: string
+  onOpen(): void
+}) {
+  const { t } = useStrings()
+  const { relation, sourceName, targetName } = track
+  // An end left open is drawn to the edge of the axis, which is what "and
+  // onwards" looks like on a page with two edges.
+  const opens = isDay(relation.validFrom) ? relation.validFrom! : from
+  const closes = isDay(relation.validUntil) ? relation.validUntil! : to
+  return (
+    <Box sx={{ display: 'grid', gridTemplateColumns: '180px minmax(0, 1fr)', alignItems: 'center', gap: 1, mb: 0.5 }}>
+      <Box sx={{ minWidth: 0 }}>
+        <RowName onOpen={onOpen}>{relation.label || `${sourceName} → ${targetName}`}</RowName>
+        <Typography sx={{ fontSize: 10, color: 'text.secondary', whiteSpace: 'nowrap' }}>
+          {t(RELATION_LABEL[relation.type])}
+        </Typography>
+      </Box>
+      <Box data-testid={`relation-${relation.id}`} sx={{ position: 'relative', height: 18, bgcolor: 'action.hover', borderRadius: 1 }}>
+        <Tooltip title={`${sourceName} → ${targetName} · ${opens} – ${isDay(relation.validUntil) ? relation.validUntil : '…'}`}>
+          <Box role="img"
+            data-testid="relation-window"
+            data-relation-type={relation.type}
+            sx={{
+              position: 'absolute', top: 3, bottom: 3,
+              left: at(opens), right: `calc(100% - ${at(closes)})`,
+              borderRadius: 1,
+              // The same hatch a shadow run wears: a stretch that is true for
+              // a while and then is not.
+              backgroundImage: `repeating-linear-gradient(135deg, ${colour} 0 3px, transparent 3px 7px)`,
+              opacity: 0.6,
+            }}
+          />
+        </Tooltip>
+        <Marker left={at(today)} colour={ink} label={t('roadmap.today')} />
+      </Box>
+    </Box>
+  )
+}
+
+/** One of this scope's plans: its name, how far its interfaces have moved, and its band with the shadow run and milestones. */
+function PlanRow({ plan, model, from, to, today, at, colour, ink, onOpen }: {
+  plan: Transition
+  model: DesignModel
+  from: string
+  to: string
+  today: string
+  at(day: string): string
+  colour: string
+  ink: string
+  onOpen(): void
+}) {
+  const { t } = useStrings()
+  const progress = portProgress(model, plan)
+  const shadow = shadowRunOf(model, plan)
+  return (
+    <Box sx={{ display: 'grid', gridTemplateColumns: '180px minmax(0, 1fr)', alignItems: 'center', gap: 1, mb: 0.5 }}>
+      <Box sx={{ minWidth: 0 }}>
+        <RowName onOpen={onOpen}>{transitionLabel(plan)} {plan.title}</RowName>
+        {progress.total > 0 && (
+          <Typography sx={{ fontSize: 10, color: 'text.secondary', whiteSpace: 'nowrap' }}>
+            {t('roadmap.planPorted', { done: String(progress.done), total: String(progress.total) })}
+          </Typography>
+        )}
+      </Box>
+      {/* The band answers a pointer as well; the name above is its way in by the keyboard. */}
+      <Box
+        data-testid={`plan-${plan.id}`}
+        onClick={onOpen}
+        sx={{ position: 'relative', height: 18, bgcolor: 'action.hover', borderRadius: 1, cursor: 'pointer' }}
+      >
+        {isDay(plan.from) && (
+          <Box
+            data-testid="plan-band"
+            sx={{
+              position: 'absolute', top: 3, bottom: 3,
+              left: at(plan.from),
+              right: isDay(plan.to) ? `calc(100% - ${at(plan.to)})` : 0,
+              bgcolor: 'primary.main', opacity: 0.5, borderRadius: 1,
+            }}
+          />
+        )}
+        {shadow && (
+          <Tooltip title={`${t('roadmap.shadowRun')} · ${shadow.from} – ${shadow.to}`}>
+            <Box role="img"
+              data-testid="shadow-run"
+              sx={{
+                position: 'absolute', top: 3, bottom: 3,
+                left: at(shadow.from), right: `calc(100% - ${at(shadow.to)})`,
+                borderRadius: 1,
+                backgroundImage: `repeating-linear-gradient(135deg, ${colour} 0 3px, transparent 3px 7px)`,
+                opacity: 0.6,
+              }}
+            />
+          </Tooltip>
+        )}
+        {plan.milestones.filter((m) => isDay(m.date) && m.date >= from && m.date <= to).map((milestone, index) => (
+          <Tooltip key={index} title={`${milestone.name} · ${milestone.date}`}>
+            <Box role="img"
+              data-testid="milestone"
+              sx={{
+                position: 'absolute', top: 4, left: at(milestone.date), width: 8, height: 10,
+                ml: '-4px', bgcolor: 'primary.dark', transform: 'rotate(45deg)',
+              }}
+            />
+          </Tooltip>
+        ))}
+        <Marker left={at(today)} colour={ink} label={t('roadmap.today')} />
+      </Box>
+    </Box>
+  )
+}
+
+/**
  * A plan from a scope below, as a band under its scope's name (ADR-0012 §7).
  *
  * Simpler than the rows above it on purpose: what it introduces and retires
@@ -638,12 +662,10 @@ function InitiativeRow({ initiative, at, from, to, today, onOpen, t, colour }: {
       data-testid={`initiative-${scope}-${plan.id}`}
       sx={{ display: 'grid', gridTemplateColumns: '180px minmax(0, 1fr)', alignItems: 'center', gap: 1, mb: 0.5 }}
     >
-      <Box sx={{ minWidth: 0, cursor: open ? 'pointer' : 'default' }} onClick={open}>
-        <Typography sx={{ fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {transitionLabel(plan)} {plan.title}
-        </Typography>
+      <Box sx={{ minWidth: 0 }}>
+        <RowName onOpen={open}>{transitionLabel(plan)} {plan.title}</RowName>
         <Tooltip title={open ? t('roadmap.openInitiative', { scope: label }) : label}>
-          <Chip size="small" label={label} sx={{ height: 16, fontSize: 10, mt: 0.25 }} />
+          <Chip size="small" label={label} {...(open ? { onClick: open } : {})} sx={{ height: 16, fontSize: 10, mt: 0.25 }} />
         </Tooltip>
       </Box>
       <Box

@@ -211,7 +211,8 @@ const SERVICE: ReportConfig<ServiceReport> = {
       return report.consumers.map((consumer) => (
         <Box component="tr" key={consumer.id} data-testid={`service-consumer-${consumer.id}`}>
           <td>{name(consumer)}</td>
-          <Box component="td" sx={{ color: 'text.secondary' }}>{consumer.via?.name ?? ''}</Box>
+          {/* The container the row was written from, opened like any other name here. */}
+          <Box component="td" sx={{ color: 'text.secondary' }}>{consumer.via ? name({ ...consumer.via, known: true }) : ''}</Box>
           <Box component="td" sx={{ color: 'text.secondary' }}>{consumer.where ?? t('service.thisScope')}</Box>
           <Box component="td" sx={{ color: stranded.has(consumer.id) ? 'warning.main' : 'text.secondary' }}>
             {stranded.has(consumer.id) ? t('service.strandedYes') : t('service.strandedNo')}

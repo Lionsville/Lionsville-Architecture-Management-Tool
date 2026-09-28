@@ -89,12 +89,15 @@ describe('the report', () => {
 
   it('draws a row per consumer with the container, the scope and whether it would be stranded', () => {
     const elsewhere: Relation[] = [{ id: 'x1', type: 'uses', sourceId: 'crm', targetId: 'containers' } as Relation]
-    open({ elsewhere, describe: (id) => (id === 'crm' ? { name: 'CRM', kind: 'application', where: 'sales' } : undefined) })
+    const { onOpenDocumentation } = open({ elsewhere, describe: (id) => (id === 'crm' ? { name: 'CRM', kind: 'application', where: 'sales' } : undefined) })
     const grid = screen.getByTestId('service-grid')
     expect(within(grid).getByTestId('service-consumer-wms').textContent).toContain('WMS API')
     expect(within(grid).getByTestId('service-consumer-wms').textContent).toContain('This scope')
     expect(within(grid).getByTestId('service-consumer-crm').textContent).toContain('sales')
     expect(within(grid).getByTestId('service-consumer-crm').textContent).toContain('Stranded')
+    // The container a row was written from opens like any other name here.
+    fireEvent.click(within(within(grid).getByTestId('service-consumer-wms')).getByTestId('service-name-wms-api'))
+    expect(onOpenDocumentation).toHaveBeenLastCalledWith('wms-api')
     cleanup()
     open({ serviceId: 'brokering' })
     // The portal's row closes before the day it goes; the WMS is stranded.

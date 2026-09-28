@@ -14,6 +14,7 @@
  */
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
+import Link from '@mui/material/Link'
 import MenuItem from '@mui/material/MenuItem'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
@@ -60,12 +61,12 @@ export function ElementRow({ row, element, readOnly, describe, onRole, onRemove,
           {ROLES.map((role) => <MenuItem key={role} value={role}>{t(`plan.${role}` as StringKey)}</MenuItem>)}
         </TextField>
         {element ? (
-          <Typography
-            sx={{ fontSize: 13, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'pointer' }}
-            onClick={onOpen}
+          <Link
+            component="button" type="button" color="inherit" underline="hover" onClick={onOpen}
+            sx={{ fontSize: 13, flex: 1, minWidth: 0, textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
           >
             {element.name}
-          </Typography>
+          </Link>
         ) : <Gone>{t('plan.goneElement')}</Gone>}
         {!readOnly && <Button size="small" onClick={onRemove}>{t('plan.remove')}</Button>}
       </Box>
@@ -133,8 +134,12 @@ export function DecisionRow({ id, adr, readOnly, onOpen, onRemove }: {
   return (
     <Box data-testid={`plan-decision-${id}`} sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
       {adr ? (
-        <Typography sx={{ fontSize: 13, flex: 1, cursor: onOpen ? 'pointer' : undefined }} onClick={onOpen}>
-          {formatAdrNumber(adr.number)} {adr.title}
+        <Typography sx={{ fontSize: 13, flex: 1 }}>
+          {onOpen ? (
+            <Link component="button" type="button" color="inherit" underline="hover" onClick={onOpen} sx={{ fontSize: 'inherit', textAlign: 'left' }}>
+              {formatAdrNumber(adr.number)} {adr.title}
+            </Link>
+          ) : <>{formatAdrNumber(adr.number)} {adr.title}</>}
           {adr.status !== 'accepted' && (
             <Box component="span" sx={{ color: 'text.secondary' }}> · {t(ADR_STATUS_LABEL[adr.status]).toLowerCase()}</Box>
           )}

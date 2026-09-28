@@ -217,6 +217,13 @@ describe('ObservationsPage', () => {
     expect(screen.queryByTestId('observation-row-o2')).toBeNull()
     fireEvent.click(screen.getByLabelText('Show merged'))
     expect(screen.getByTestId('observation-row-o2').textContent).toContain('Merged into OB-0001')
+    // Where it went is a link to it, on the row and in the reader.
+    fireEvent.click(screen.getByTestId('observation-row-o2'))
+    // By test id: the merge dialog, still closing, hides the page from role queries.
+    const link = within(screen.getByTestId('observation-merged')).getByTestId('observation-merged-link')
+    expect(link.tagName).toBe('BUTTON')
+    fireEvent.click(link)
+    expect(screen.getByTestId('observation-row-o1').className).toContain('Mui-selected')
   })
 
   it('reads a shared observation from below, links it here, folds it in here, and opens its scope', async () => {

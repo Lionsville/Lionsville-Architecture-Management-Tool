@@ -336,6 +336,19 @@ describe('the interfaces', () => {
     expect(screen.getByTestId('port-c-stock').textContent).toContain('Moved')
   })
 
+  it('opens the counterpart and where a line moves to, and each element the plan names, by a button', () => {
+    const { actions } = setup()
+    const orders = screen.getByTestId('port-c-orders')
+    fireEvent.click(within(orders).getByRole('button', { name: 'Billing · orders' }))
+    expect(actions.onOpenElement).toHaveBeenLastCalledWith('billing')
+    fireEvent.click(within(orders).getByRole('button', { name: 'Warehouse Management (new)' }))
+    expect(actions.onOpenElement).toHaveBeenLastCalledWith('wms-new')
+    fireEvent.click(within(screen.getByTestId('plan-element-wms-old')).getByRole('button', { name: 'Warehouse Management' }))
+    expect(actions.onOpenElement).toHaveBeenLastCalledWith('wms-old')
+    fireEvent.click(screen.getByRole('button', { name: 'ADR-0001 One warehouse system' }))
+    expect(actions.onOpenDecision).toHaveBeenLastCalledWith('adr-1')
+  })
+
   it('ports one line on a day onto the only place it can go, takes it back, and says when there is none', () => {
     const { actions } = setup()
     fireEvent.change(screen.getByLabelText('Billing · orders: On'), { target: { value: '2027-03-01' } })

@@ -135,7 +135,7 @@ describe('DocumentationPage — the plans that name the element (ADR-0010)', () 
     const section = screen.getByTestId('doc-plans');
     expect(section.textContent).toContain('TR-0001 Replace it');
     expect(section.textContent).not.toContain('Elsewhere');
-    fireEvent.click(screen.getByText('TR-0001 Replace it'));
+    fireEvent.click(screen.getByRole('button', { name: 'TR-0001 Replace it' }));
     expect(onOpen).toHaveBeenCalledWith('tr-1');
   });
 

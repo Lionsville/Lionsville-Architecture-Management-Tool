@@ -185,6 +185,35 @@ export function LinkList({ links, onOpen }: {
 
 // --- one observation --------------------------------------------------------------------
 
+/**
+ * Where an observation went when it was merged away: into one here, or into
+ * one a scope above keeps (ADR-0021). `open` goes to it, where it can be
+ * opened from here.
+ */
+export type MergedInto = { label: string; scope?: string; date?: string; open?: () => void }
+
+/**
+ * "Merged into O-0003", as a link to O-0003 where there is a way to it — in
+ * the reader and on the row alike. On a row, the click is the link's and not
+ * the row's.
+ */
+export function MergedNote({ merged, s, day }: { merged: MergedInto; s: Translate; day: (date: string) => string }) {
+  const words = merged.scope !== undefined
+    ? s('observation.mergedAbove', { name: merged.label, scope: merged.scope, date: merged.date ? day(merged.date) : '' })
+    : s('observation.mergedInto', { name: merged.label })
+  const open = merged.open
+  if (!open) return <>{words}</>
+  return (
+    <Link
+      component="button" type="button" data-testid="observation-merged-link"
+      onClick={(event) => { event.stopPropagation(); open() }}
+      sx={{ fontSize: 'inherit', textAlign: 'left', verticalAlign: 'baseline' }}
+    >
+      {words}
+    </Link>
+  )
+}
+
 export type ObservationReaderProps = {
   observation: Observation
   /** Present for an observation a scope below shared: read here, changed there. */
@@ -192,7 +221,7 @@ export type ObservationReaderProps = {
   /** This scope's causes that explain it. */
   explainedBy: readonly { cause: Cause; link: CauseLink }[]
   /** Where it went, when it was merged away — here, or in a scope above. */
-  mergedInto?: { label: string; scope?: string; date?: string }
+  mergedInto?: MergedInto
   readOnly: boolean
   /** Sharing upward is offered where there is an upward: the root has none. */
   canShare: boolean
@@ -294,9 +323,7 @@ export function ObservationReader(props: ObservationReaderProps) {
       )}
       {mergedInto && (
         <Typography variant="caption" color="text.secondary" data-testid="observation-merged" sx={{ px: 2, py: 0.5, borderBottom: 1, borderColor: 'divider' }}>
-          {mergedInto.scope !== undefined
-            ? s('observation.mergedAbove', { name: mergedInto.label, scope: mergedInto.scope, date: mergedInto.date ? day(mergedInto.date) : '' })
-            : s('observation.mergedInto', { name: mergedInto.label })}
+          <MergedNote merged={mergedInto} s={s} day={day} />
         </Typography>
       )}
 
