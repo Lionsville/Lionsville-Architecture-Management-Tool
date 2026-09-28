@@ -20,7 +20,7 @@ const electron = vi.hoisted(() => ({
     isPackaged: true,
     getVersion: () => '1.0.0',
     getName: () => 'Lionsville Architect',
-    getPath: () => '',
+    getPath: (): string => '',
     on: vi.fn(),
     quit: vi.fn(),
   },
