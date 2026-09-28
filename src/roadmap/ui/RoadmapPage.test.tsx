@@ -295,6 +295,19 @@ describe('the checks', () => {
       expect(screen.queryByTestId('accept-interface-x1')).toBeNull()
     })
   })
+
+  it('opens what a finding is about: the element, or the element a line starts from', () => {
+    const onOpenElement = vi.fn()
+    const relations = [
+      { type: 'flow', id: 'c1', sourceId: 'billing', targetId: 'wms-old', isBidirectional: false },
+      { type: 'flow', id: 'c2', sourceId: 'billing', targetId: 'wms-old', isBidirectional: false, validUntil: '2029-01-01' },
+    ] as DesignModel['relations']
+    setup({ model: model({ relations }), actions: { onOpenElement } as never })
+    fireEvent.click(screen.getByTestId('finding-retiresWithDependants-wms-old'))
+    expect(onOpenElement).toHaveBeenLastCalledWith('wms-old')
+    fireEvent.click(screen.getByTestId('finding-lineOutlivesEnd-c2'))
+    expect(onOpenElement).toHaveBeenLastCalledWith('billing')
+  })
 })
 
 describe('a plan', () => {

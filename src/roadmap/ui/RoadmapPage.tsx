@@ -26,6 +26,7 @@ import { useMemo, useState } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Dialog from '@mui/material/Dialog'
+import Link from '@mui/material/Link'
 import IconButton from '@mui/material/IconButton'
 import Slider from '@mui/material/Slider'
 import TextField from '@mui/material/TextField'
@@ -37,14 +38,15 @@ import Chip from '@mui/material/Chip'
 import Switch from '@mui/material/Switch'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import { RELATION_LABEL, addDays, daysBetween, isDay, portProgress, transitionLabel } from '../../model'
-import type { DesignElement, DesignModel, ElementId, Lifecycle, Transition } from '../../model'
+import type { DesignElement, DesignModel, ElementId, Lifecycle, Relation, Transition } from '../../model'
 import { useStrings } from '../../i18n'
-import type { StringKey } from '../../i18n'
+import type { StringKey, Translate } from '../../i18n'
 import { BackIcon, CaretIcon } from '../../widgets/icons'
 import { PageDialog } from '../../widgets/PageDialog'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { barChromeFor } from '../../platform/windowChrome'
 import { findings } from '../../model/checks'
+import type { Finding } from '../../model/checks'
 import type { PlatformTree } from '../../model/hosting'
 import { CHECK_SENTENCE } from '../labels'
 import { fractionOf, roadmapOf, shadowRunOf, within } from '../timeline'
@@ -106,6 +108,41 @@ export type Initiative = {
    * the band alone.
    */
   elements?: readonly DesignElement[]
+}
+
+/**
+ * What a finding opens: the element or the plan it names, and for a line the
+ * element it starts from, whose inspector holds the line's dates — the board
+ * has no way yet to be asked to select a line.
+ */
+function openFinding(problem: Finding, relations: readonly Relation[], actions: RoadmapActions): void {
+  if (problem.subject === 'transition') { actions.onOpenPlan(problem.id); return }
+  const id = problem.subject === 'relation'
+    ? relations.find((relation) => relation.id === problem.id)?.sourceId
+    : problem.id
+  if (id !== undefined) actions.onOpenElement(id)
+}
+
+/** One finding in words, as a link to what it is about: the place its dates are put right. */
+function FindingSentence({ problem, t, onOpen }: { problem: Finding; t: Translate; onOpen: () => void }) {
+  return (
+    <Link
+      component="button"
+      type="button"
+      data-testid={`finding-${problem.kind}-${problem.id}`}
+      onClick={onOpen}
+      sx={{ fontSize: 'inherit', textAlign: 'left', verticalAlign: 'baseline' }}
+    >
+      {t(CHECK_SENTENCE[problem.kind], {
+        name: problem.name,
+        detail: problem.detail ?? '',
+        count: String(problem.count ?? 0),
+        // Which kind of row it was (ADR-0012 §5), in words: *supports* where
+        // the finding means supports.
+        type: problem.relationType ? t(RELATION_LABEL[problem.relationType]) : '',
+      })}
+    </Link>
+  )
 }
 
 export type RoadmapPageProps = {
@@ -203,16 +240,7 @@ export function RoadmapPage(props: RoadmapPageProps) {
         <Box component="ul" sx={{ pl: '1.2em', my: 0.5 }}>
           {problems.map((problem, index) => (
             <Box component="li" key={`${problem.kind}-${problem.id}-${index}`} sx={{ fontSize: 13, my: 0.25 }}>
-              {t(CHECK_SENTENCE[problem.kind], {
-                name: problem.name,
-                detail: problem.detail ?? '',
-                count: String(problem.count ?? 0),
-                // Which kind of row it was (ADR-0012 §5), in words:
-                // *supports* where the finding means supports.
-                type: problem.relationType
-                  ? t(RELATION_LABEL[problem.relationType])
-                  : '',
-              })}
+              <FindingSentence problem={problem} t={t} onOpen={() => openFinding(problem, model.relations, actions)} />
               {/* The one finding with something to do about it: the
                   application line nobody drew, written from the
                   container lines that imply it (ADR-0013). */}
