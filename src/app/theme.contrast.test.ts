@@ -129,7 +129,12 @@ function rowText(theme: Theme): Pair[] {
     add(`text error button under the pointer on ${ground}`, ratio(danger, fill, alpha(palette.error.main, palette.action.hoverOpacity)))
     add(`unselected toggle on ${ground}`, ratio(palette.text.secondary, fill))
     add(`unselected toggle under the pointer on ${ground}`, ratio(palette.text.secondary, fill, alpha(palette.text.primary, palette.action.hoverOpacity)))
+    // MUI's tooltip: its white on its grey, over whatever it floats above.
+    add(`tooltip over ${ground}`, ratio(palette.common.white, fill, alpha(palette.grey[700], 0.92)))
   }
+  // A sheet's *+*: on paper, and on an area's accent-tinted header.
+  add('sheet add button', ratio(palette.text.secondary, paper))
+  add('sheet add button on an area header', ratio(palette.text.secondary, paper, alpha(palette.primary.main, 0.16)))
   return out
 }
 
@@ -290,6 +295,7 @@ describe('the palette’s contrast', () => {
       'dark text error button under the pointer on paper', 'light unselected toggle under the pointer on ground',
       'dark seen count at 100 %', 'light seen count at 100 %',
       'light group label in #888888', 'dark group label in #1f2733',
+      'light tooltip over paper', 'light sheet add button',
     ]) {
       expect(measured.get(name), name).toBeGreaterThanOrEqual(4.5)
     }
@@ -306,6 +312,8 @@ describe('the palette’s contrast', () => {
 const DISABLED_INK: Record<string, [uses: number, what: string]> = {
   // The breadcrumb's separator glyph, hidden from the tree: a divider, not a word.
   'src/app/ShellToolbar.tsx': [1, 'separator'],
+  // A sheet's *+* that has nothing to add to: the − at one column, the + at the most.
+  'src/business/ui/SheetPage.tsx': [1, 'add button that is off'],
   // The same separator between a container diagram and its application.
   'src/editor/EditorToolbar.tsx': [1, 'separator'],
   // The chevron on a palette row, whose name says what it is, and the comment
@@ -319,6 +327,51 @@ const DISABLED_INK: Record<string, [uses: number, what: string]> = {
   'src/editor/nodes/LogoGrid.tsx': [1, 'unpicked border'],
   // What the none band of an overlay is tinted with, under a card that names it.
   'src/editor/theme/overlayColors.ts': [1, 'none band tint'],
+}
+
+/**
+ * Words dimmed by `opacity` are words in an ink nobody measured: the tooltip
+ * lines, an edge's protocol and the sheet's *+* were each at 3.7:1 that way,
+ * in a colour that passes on its own. Words are drawn in `text.secondary`, or
+ * in an ink measured above, and an `opacity` stays where it dims no word — or
+ * where the dim is the point, said below with its reason. A new one fails here
+ * until it is one of those, or is changed.
+ */
+const DIMMED: Record<string, [uses: number, what: string]> = {
+  // Lines, a group or a platform out of the focus, a domain chip switched off,
+  // the ▾ glyph, and a ghost that is not in this landscape: a dim that says
+  // "not this", where the words are there to be found, not read.
+  'src/technology/ui/TechnologyLandscapePage.tsx': [6, 'out-of-focus dims, switched-off chip, glyph'],
+  // Bars, bands, hatches and the today line: shapes whose words are in their tooltips.
+  'src/roadmap/ui/RoadmapPage.tsx': [6, 'bars, bands, markers'],
+  // The observations and causes not on the selected path, and a dropped solution, struck through as well.
+  'src/observations/ui/AnalysisPicture.tsx': [2, 'off-path dim'],
+  'src/observations/ui/SolutionPicture.tsx': [3, 'off-path dim, dropped solution'],
+  // A merged or archived observation and a solution no longer live: a design call, like the retired card.
+  'src/observations/ui/ObservationsPage.tsx': [2, 'merged, archived, not live'],
+  // The column editor while its switch is off: a control that is off (1.4.3).
+  'src/editor/AspectColumnsEditor.tsx': [1, 'switched off'],
+  // The drop-zone highlight fading in: a tint, no words.
+  'src/editor/canvas/ZoneLayer.tsx': [2, 'drop highlight and its transition'],
+  // A handle: a dot, no words.
+  'src/editor/nodes/NodeHandles.tsx': [1, 'handle'],
+  // The retired dim, and the comment that lists it: a design call, left as it is.
+  'src/editor/nodes/NodeShell.tsx': [2, 'retired dim, comment'],
+  // A card outside the overlay's band, faded so the band stands out: a design call.
+  'src/editor/nodes/ApplicationCardNode.tsx': [1, 'overlay fade'],
+  // A logo tile that cannot be picked: a control that is off.
+  'src/editor/nodes/LogoGrid.tsx': [1, 'disabled tile'],
+  // Shapes inside an icon.
+  'src/widgets/icons.tsx': [6, 'icon shapes'],
+}
+
+/** A text colour given as an alpha: `color: alpha(…)`, directly or from the theme. */
+const ALPHA_INK = /(?<![\w-])color['"]?\s*[:=]\s*\{?\s*(?:\(\w*\)\s*=>\s*)?alpha\(/g
+
+/** Colours that are an alpha on purpose, with the reason. */
+const ALPHA_INKS: Record<string, [uses: number, what: string]> = {
+  // A filled chip's delete cross at 70 % of the chip's ink, as MUI draws it: an icon, not a word.
+  'src/app/theme.ts': [1, 'chip delete icon'],
 }
 
 function sources(dir: string): string[] {
@@ -340,3 +393,19 @@ describe('the ink for a control that is off', () => {
   })
 })
 
+describe('words dimmed rather than inked', () => {
+  const root = join(__dirname, '..', '..')
+  const counted = (pattern: RegExp) => Object.fromEntries(sources(join(root, 'src'))
+    .map((path) => [relative(root, path), readFileSync(path, 'utf8').match(pattern)?.length ?? 0] as const)
+    .filter(([, count]) => count > 0))
+  const listed = (list: Record<string, [number, string]>) =>
+    Object.fromEntries(Object.entries(list).map(([path, [count]]) => [path, count]))
+
+  it('uses `opacity` only where it dims no word, or where the dim is the point', () => {
+    expect(counted(/\bopacity\b/g)).toEqual(listed(DIMMED))
+  })
+
+  it('gives no text a colour made translucent with `alpha(`', () => {
+    expect(counted(ALPHA_INK)).toEqual(listed(ALPHA_INKS))
+  })
+})

@@ -729,12 +729,14 @@ function Add({ label, title, onClick, disabled, sx }: {
       onClick={onClick}
       sx={{
         // The same `buttontext` trap the cards fell into: `font: inherit` does
-        // not bring the colour with it.
-        appearance: 'none', cursor: 'pointer', font: 'inherit', color: 'inherit',
+        // not bring the colour with it. Quiet in the page's second ink rather
+        // than the first at 55 %, which was 3.7:1 at 10 px; the full ink under
+        // the pointer, and the ink for a control that is off when it is.
+        appearance: 'none', cursor: 'pointer', font: 'inherit', color: 'text.secondary',
         bgcolor: 'transparent', border: '1px dashed', borderColor: 'divider', borderRadius: 0.75,
-        px: 0.75, py: 0.25, fontSize: 10, whiteSpace: 'nowrap', opacity: 0.55,
-        '&:hover': { opacity: 1, borderStyle: 'solid' },
-        '&:disabled': { opacity: 0.25, cursor: 'default', borderStyle: 'dashed' },
+        px: 0.75, py: 0.25, fontSize: 10, whiteSpace: 'nowrap',
+        '&:hover': { color: 'text.primary', borderStyle: 'solid' },
+        '&:disabled': { color: 'text.disabled', cursor: 'default', borderStyle: 'dashed' },
         ...sx,
       }}
     >

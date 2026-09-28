@@ -287,6 +287,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'node.hasContainer': 'Hat ein Container-Diagramm — Doppelklick zum Öffnen',
   'node.lifecycleAria': 'Lebenszyklus: {name}',
   'edge.labelPlaceholder': 'Beschreibung der Schnittstelle…',
+  'edge.labelHint': 'Doppelklick zum Beschriften…',
 
   'inspector.aside': 'Inspektor',
   'inspector.expand': 'Inspektor ausklappen',

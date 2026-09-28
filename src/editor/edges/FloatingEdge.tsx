@@ -682,23 +682,23 @@ export const FloatingEdge = memo(function FloatingEdge({
                     {data.label}
                   </span>
                 ) : (
+                  // The label's own second ink, set apart by its italic: at 55 %
+                  // of it the hint was 2.3:1, a sentence nobody could read.
                   <span
                     style={{
                       color: tokens.edge.labelFg,
-                      opacity: 0.55,
                       fontSize: 9,
                       fontStyle: 'italic',
                       whiteSpace: 'nowrap',
                     }}
                   >
-                    double-click to label…
+                    {t('edge.labelHint')}
                   </span>
                 )}
                 {data?.protocol && (
                   <span
                     style={{
                       color: tokens.edge.labelFg,
-                      opacity: 0.8,
                       fontSize: 9,
                       letterSpacing: 0.6,
                       textTransform: 'uppercase',

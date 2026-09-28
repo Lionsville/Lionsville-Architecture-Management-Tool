@@ -50,6 +50,9 @@ export const PALETTE_RAIL_WIDTH = PANEL_LIMITS.palette.rail;
 /** Glyph stroke in the panel. Nodes draw 2; see `glyphs.tsx`. */
 const GLYPH_STROKE = 1.5;
 
+/** A kind's name atop its tooltip, set apart by weight so the lines under it can keep the full white. */
+const TOOLTIP_NAME = { display: 'block', fontWeight: 600 } as const;
+
 /**
  * What a palette gesture asks for beyond the kind. Deliberately smaller than
  * `ElementSeedStyle`: accent colour and shape live in the inspector Appearance
@@ -460,13 +463,15 @@ export function ElementPalette({
             <Tooltip
               key={key}
               placement="right"
+              // The name in bold and what it is in the tooltip's own white: the
+              // lines under it were dimmed to 75 %, which on MUI's grey is 3.7:1.
               title={
                 <>
-                  {paletteLabel(key, t)}
-                  <Box component="span" sx={{ display: 'block', opacity: 0.75 }}>
+                  <Box component="span" sx={TOOLTIP_NAME}>{paletteLabel(key, t)}</Box>
+                  <Box component="span" sx={{ display: 'block' }}>
                     {paletteDescription(key, t)}
                   </Box>
-                  <Box component="span" sx={{ display: 'block', opacity: 0.75, mt: 0.5 }}>
+                  <Box component="span" sx={{ display: 'block', mt: 0.5 }}>
                     {t('palette.how')}
                   </Box>
                 </>
@@ -505,8 +510,8 @@ export function ElementPalette({
             placement="right"
             title={
               <>
-                {t('palette.existing')}
-                <Box component="span" sx={{ display: 'block', opacity: 0.75 }}>
+                <Box component="span" sx={TOOLTIP_NAME}>{t('palette.existing')}</Box>
+                <Box component="span" sx={{ display: 'block' }}>
                   {t('paletteDescription.existing')}
                 </Box>
               </>

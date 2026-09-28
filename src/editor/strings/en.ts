@@ -297,6 +297,7 @@ export const EN = {
   'node.hasContainer': 'Has a container diagram — double-click to open',
   'node.lifecycleAria': 'Lifecycle: {name}',
   'edge.labelPlaceholder': 'Interface description…',
+  'edge.labelHint': 'double-click to label…',
 
   // --- inspector -----------------------------------------------------------
   'inspector.aside': 'Inspector',

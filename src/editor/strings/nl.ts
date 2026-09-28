@@ -287,6 +287,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'node.hasContainer': 'Heeft een containeraanzicht — dubbelklik om te openen',
   'node.lifecycleAria': 'Levenscyclus: {name}',
   'edge.labelPlaceholder': 'Omschrijving van het koppelvlak…',
+  'edge.labelHint': 'dubbelklik voor een label…',
 
   'inspector.aside': 'Inspector',
   'inspector.expand': 'Inspector uitklappen',
