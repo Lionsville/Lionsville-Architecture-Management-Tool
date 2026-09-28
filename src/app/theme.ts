@@ -30,6 +30,7 @@
  */
 import { alpha, createTheme } from '@mui/material/styles'
 import type { Theme, ThemeOptions } from '@mui/material/styles'
+import type { AlertColor } from '@mui/material/Alert'
 import { deDE, nlNL } from '@mui/material/locale'
 import type { Language } from '../i18n'
 
@@ -54,6 +55,27 @@ function outlineOver(ink: string, mode: 'light' | 'dark'): string {
   return alpha(ink, mode === 'dark' ? 0.42 : 0.46)
 }
 
+/**
+ * The fill a filled alert — every toast — is drawn on in the dark mode, where
+ * MUI's is not the one to read. MUI draws it on the colour's `dark` step and
+ * picks the ink against `main`, so the letters were measured against a fill
+ * that is not there: black at 87 % on a bright red, which passes 4.5:1 and is
+ * still hard to read at 13 px. These are a step deeper, where white reaches
+ * 4.5:1. Warning keeps MUI's amber and its black: no amber takes white.
+ */
+const DARK_ALERT_FILL: Partial<Record<AlertColor, string>> = {
+  error: '#c62828', info: '#01579b', success: '#2e7d32',
+}
+
+/** What a filled alert is drawn with: its fill, and the ink measured against that fill. */
+export function filledAlert(theme: Theme, colour: AlertColor): { fill: string; ink: string } {
+  const { palette } = theme
+  const fill = palette.mode === 'dark'
+    ? DARK_ALERT_FILL[colour] ?? palette[colour].dark
+    : palette[colour].main
+  return { fill, ink: palette.getContrastText(fill) }
+}
+
 export function shellTheme(mode: 'light' | 'dark', language: Language = 'en'): Theme {
   const dark = mode === 'dark'
   // Material's ink in the light mode, said so the field outline can be read off it.
@@ -70,9 +92,9 @@ export function shellTheme(mode: 'light' | 'dark', language: Language = 'en'): T
       // The status colours MUI ships that are below 4.5:1 as text on these
       // grounds: orange and light blue on paper in the light mode, red on the
       // dark paper. Darker steps of the same hues in the light mode; in the
-      // dark, Material's red a step lighter all through — 400 for the text,
-      // 200 for a badge's letters on its own tint, 600 under a filled alert,
-      // which MUI letters in black because that is what the 400 takes.
+      // dark, Material's red a step lighter — 400 for the text, 200 for a
+      // badge's letters on its own tint. A filled alert is not drawn on
+      // either (`filledAlert`).
       ...(dark
         ? { error: { main: '#ef5350', light: '#ef9a9a', dark: '#e53935' } }
         : { warning: { main: '#b45309' }, info: { main: '#0271b3' } }),
@@ -91,6 +113,16 @@ export function shellTheme(mode: 'light' | 'dark', language: Language = 'en'): T
       // a panel's own left edge. −4 px keeps the alignment close without the
       // overhang.
       MuiFormControlLabel: { styleOverrides: { root: { marginLeft: -4 } } },
+      MuiAlert: {
+        styleOverrides: {
+          root: ({ ownerState, theme }) => {
+            if (ownerState.variant !== 'filled') return {}
+            // `success` is MUI's own default when neither is given.
+            const { fill, ink } = filledAlert(theme, ownerState.color ?? ownerState.severity ?? 'success')
+            return { backgroundColor: fill, color: ink }
+          },
+        },
+      },
     },
     // MUI's own keyboard ring on every control it draws — a 2px outline in the
     // accent, inset where a parent clips (a tab, a menu item) — in place of the

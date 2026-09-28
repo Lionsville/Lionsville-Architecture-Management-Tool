@@ -26,7 +26,7 @@ import { join, relative } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { decomposeColor, darken, lighten } from '@mui/material/styles'
 import type { Theme } from '@mui/material/styles'
-import { fieldOutline, shellTheme } from './theme'
+import { fieldOutline, filledAlert, shellTheme } from './theme'
 import { getNodeTokens } from '../editor/theme/tokens'
 import type { AspectToken } from '../editor/theme/tokens'
 
@@ -91,8 +91,8 @@ function textPairs(mode: 'light' | 'dark'): Pair[] {
     add(`contained ${colour} button`, ratio(tone.contrastText, tone.main))
   }
   for (const colour of SEVERITY) {
-    const tone = palette[colour]
-    add(`filled ${colour} alert`, ratio(palette.getContrastText(tone.main), mode === 'dark' ? tone.dark : tone.main))
+    const filled = filledAlert(theme, colour)
+    add(`filled ${colour} alert`, ratio(filled.ink, filled.fill))
     add(`standard ${colour} alert`, ratio(...standardAlert(theme, colour), palette.background.paper))
   }
   out.push(...boardText(theme))
@@ -186,6 +186,13 @@ describe('the palette’s contrast', () => {
 
   it('draws every focus ring, field outline and line at 3:1 or more beside it, in both modes', () => {
     expect(below([...nonTextPairs('light'), ...nonTextPairs('dark')], 3)).toEqual([])
+  })
+
+  it('letters a dark filled error, info or success alert in white, where it had black on a bright fill', () => {
+    const theme = shellTheme('dark')
+    for (const colour of ['error', 'info', 'success'] as const) {
+      expect(filledAlert(theme, colour).ink, colour).toBe(theme.palette.common.white)
+    }
   })
 
   it('measures the six badge states the audit found below 4.5:1, and they are not', () => {
