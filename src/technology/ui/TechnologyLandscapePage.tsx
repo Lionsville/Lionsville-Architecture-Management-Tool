@@ -118,6 +118,32 @@ const CHIPS_BEFORE_MENU = 8
 
 type Lines = 'focus' | 'all'
 
+/**
+ * Choose the card a door led to — once per door. The landscape and `held`
+ * are rebuilt on every change and the editor hands over a new `onSelect` on
+ * every render, so an effect that chose the door whenever those moved took
+ * the person back to it after each click and each edit. The door's key
+ * stays set until the view is opened another way, which is why a key
+ * already honoured is not honoured again until it has gone; it waits for
+ * the landscape, so a view that arrives late still lands.
+ */
+function useDoorFocus(
+  focusKey: NodeKey | undefined, landscape: TechnologyLandscape | undefined, held: ReadonlySet<ElementId>,
+  onSelect: ((elementId: ElementId | undefined) => void) | undefined, choose: (key: NodeKey) => void,
+) {
+  const honoured = useRef<NodeKey | undefined>(undefined)
+  const latest = useRef(onSelect)
+  latest.current = onSelect
+  useEffect(() => {
+    if (focusKey === undefined) { honoured.current = undefined; return }
+    if (!landscape || honoured.current === focusKey) return
+    honoured.current = focusKey
+    choose(focusKey)
+    const id = focusKey.slice(focusKey.indexOf(':') + 1)
+    latest.current?.(held.has(id) && !focusKey.startsWith('group:') ? id : undefined)
+  }, [focusKey, landscape, held, choose])
+}
+
 export function TechnologyLandscapePage(props: TechnologyLandscapePageProps) {
   const { model, diagram } = props
   const { t } = useStrings()
@@ -213,15 +239,7 @@ export function TechnologyLandscapePage(props: TechnologyLandscapePageProps) {
   }, [landscape, selectedId])
   // Where a door led: chosen as a click would choose it, so the editor's
   // panel edits an application this scope holds.
-  const focusKey = props.focus
-  useEffect(() => {
-    if (!landscape || focusKey === undefined) return
-    setSelected(focusKey)
-    if (onSelect) {
-      const id = focusKey.slice(focusKey.indexOf(':') + 1)
-      onSelect(held.has(id) && !focusKey.startsWith('group:') ? id : undefined)
-    }
-  }, [landscape, focusKey, onSelect, held])
+  useDoorFocus(props.focus, landscape, held, onSelect, setSelected)
   const add = props.readOnly ? undefined : props.onAdd
 
   // --- the one write gesture (ADR-0020) ----------------------------------------

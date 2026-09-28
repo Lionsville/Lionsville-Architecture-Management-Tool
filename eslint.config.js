@@ -440,7 +440,7 @@ export const GROWN = {
   'src/projects/scopeIndex.ts': { complexity: 44 },
   'src/roadmap/ui/PlanPage.tsx': { lines: 185 },
   'src/roadmap/ui/RoadmapPage.tsx': { lines: 398 },
-  'src/technology/ui/TechnologyLandscapePage.tsx': { complexity: 63, lines: 359 },
+  'src/technology/ui/TechnologyLandscapePage.tsx': { complexity: 63, lines: 351 },
 }
 
 const functionLines = (max) => ['error', { max, skipBlankLines: true, skipComments: true }]

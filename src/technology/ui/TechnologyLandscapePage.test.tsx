@@ -11,6 +11,7 @@
  * service band that folds and reroutes, the domains that fold above the
  * threshold and open under a filter, and the record on the right.
  */
+import { useState } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, within } from '@testing-library/react'
 import { TechnologyLandscapePage } from './TechnologyLandscapePage'
@@ -214,6 +215,42 @@ describe('in the tab (ADR-0016)', () => {
     expect(screen.getByTestId('landscape-application-portal').dataset.dimmed).toBe('true')
     // Not held here, so the page's own record shows and the editor is told nothing is its.
     expect(onSelect).toHaveBeenLastCalledWith(undefined)
+  })
+
+  /**
+   * The door is where the page starts, not where it stays. The editor hands
+   * the page a new `onSelect` on each of its renders and a new model on each
+   * change, and a door honoured on every one of those took the person back
+   * to the application after each click and each edit.
+   */
+  it('lands on a door’s application once, and leaves a later click and a later edit where they are', () => {
+    const held = (): DesignModel => {
+      const base = model()
+      return {
+        ...base,
+        elements: [...base.elements, element('billing', { name: 'Billing' })],
+        relations: [...base.relations, row('r3', 'uses', 'billing', 'brokering')],
+      }
+    }
+    const told = vi.fn()
+    function Editor({ current }: { current: DesignModel }) {
+      const [selectedId, setSelectedId] = useState<string | undefined>(undefined)
+      return (
+        <TechnologyLandscapePage
+          open inline model={current} diagram={VIEW} readOnly={false} onClose={() => {}} elsewhere={elsewhere} describe={describe_}
+          focus="application:billing" {...(selectedId !== undefined ? { selectedId } : {})}
+          // A fresh callback on every render, as the editor's slot hands it over.
+          onSelect={(id) => { told(id); setSelectedId(id) }}
+        />
+      )
+    }
+    const { rerender } = renderShell(<Editor current={held()} />)
+    expect(told.mock.calls).toEqual([['billing']])
+    fireEvent.click(screen.getByTestId('landscape-platform-kafka'))
+    expect(told).toHaveBeenLastCalledWith('kafka')
+    rerender(<Editor current={held()} />)
+    expect(told.mock.calls).toEqual([['billing'], ['kafka']])
+    expect(screen.getByTestId('landscape-application-portal').dataset.dimmed).toBe('true')
   })
 
   it('offers nothing to add when read only', () => {
