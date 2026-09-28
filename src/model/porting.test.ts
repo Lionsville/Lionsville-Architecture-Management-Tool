@@ -6,15 +6,24 @@
  *
  * The heuristic is the thing to pin: what counts as a twin, what is left out,
  * and that writing a port and taking it back are exact inverses in what they
- * touch.
+ * touch — and, since an interface that has landed moves with its landings
+ * (ADR-0013), that the landings go where the interface goes and nowhere the
+ * writer would refuse.
  */
 import { describe, expect, it } from 'vitest'
+import { livenessOf } from './liveness'
+import { applyAll } from './reducer'
+import { fromArrays, toArrays } from './normalised'
 import { portCommands, portProgress, portsOf, twinOf, unplannedPorts, unportCommands } from './porting'
+import { planGate } from './transition'
 import type { Transition } from './transition'
 import type { DesignElement, Relation } from './types'
 
 function element(id: string): DesignElement {
   return { id, kind: 'application', name: id, lifecycle: 'live', isManaged: true, aspects: {} }
+}
+function container(id: string, parentId: string): DesignElement {
+  return { ...element(id), kind: 'component', parentId }
 }
 function line(id: string, sourceId: string, targetId: string, over: Partial<Relation> = {}): Relation {
   return { id, type: 'flow', sourceId, targetId, isBidirectional: false, ...over }
@@ -159,5 +168,153 @@ describe('writing a port', () => {
       { type: 'relation.delete', id: 'a2' },
       { type: 'relation.update', id: 'a', patch: { validUntil: undefined } },
     ])
+  })
+})
+
+describe('the days a port writes, read by the liveness rules', () => {
+  it('hands over from one line to the other with no day on both and none on neither, landings included', () => {
+    // Ported on the day the old one is gone (a cutover): validUntil is the
+    // last day a line is there and retired the first day a thing is gone, so
+    // the original's last day is the old one's last, and nothing outlives it.
+    const elements = [
+      { ...element('old'), lifecycleDates: { retired: '2027-03-01' } }, element('new'), element('billing'),
+      container('billing-api', 'billing'),
+    ]
+    const held = { name: 'm', diagrams: [], elements, relations: [
+      line('i1', 'old', 'billing'), line('r1', 'old', 'billing-api', { refines: 'i1' }),
+    ] }
+    const [port] = portsOf(held, REPLACE)
+    const result = applyAll(fromArrays(held), portCommands(port, 'new', '2027-03-01', (() => { let n = 0; return () => `c${++n}` })()))
+    if (!result.ok) throw new Error(result.reason)
+    const after = toArrays(result.model)
+    const live = livenessOf({ elements, relations: after.relations })
+    const there = (day: string) => after.relations.filter((row) => live.thereOn(row, day)).map((row) => row.id)
+    expect(there('2027-02-28')).toEqual(['i1', 'r1'])
+    expect(there('2027-03-01')).toEqual(['c1', 'c2'])
+    expect(after.relations.map((row) => live.outlivedEnd(row))).toEqual([undefined, undefined, undefined, undefined])
+  })
+})
+
+describe('an interface that has landed', () => {
+  // The interface runs from the old application to billing; billing's end of
+  // it arrives on its API, and the old one's on a service of its own.
+  const LANDED = [
+    ...ELEMENTS, container('billing-api', 'billing'), container('billing-queue', 'billing'),
+    container('old-svc', 'old'), container('old-job', 'old'),
+  ]
+  const model = (relations: Relation[]) => ({ name: 'm', diagrams: [], elements: LANDED, relations })
+  const counter = () => { let n = 0; return () => `c${++n}` }
+
+  it('is one row however many landings it has, and a landing is never a row of its own', () => {
+    const ports = portsOf(model([
+      line('i1', 'old', 'billing'),
+      line('r1', 'old', 'billing-api', { refines: 'i1', protocol: 'REST' }),
+      line('r2', 'old-svc', 'billing-queue', { refines: 'i1', protocol: 'AMQP' }),
+    ]), REPLACE)
+    expect(ports.map((port) => port.from.id)).toEqual(['i1'])
+    expect(ports[0].landings.map((landing) => landing.row.id)).toEqual(['r1', 'r2'])
+  })
+
+  it('draws the counterpart\'s landings again on the twin, from the new application\'s boundary', () => {
+    const [port] = portsOf(model([
+      line('i1', 'old', 'billing', { label: 'invoices' }),
+      line('r1', 'old', 'billing-api', { refines: 'i1', protocol: 'REST', validFrom: '2026-01-01' }),
+      // The same arrival from one of the old one's own containers: once the
+      // old containers are out of the picture, it is the same landing.
+      line('r2', 'old-svc', 'billing-api', { refines: 'i1', protocol: 'REST' }),
+      // Arrives on billing's queue from the old job: follows, as billing's.
+      line('r3', 'old-job', 'billing-queue', { refines: 'i1', protocol: 'AMQP' }),
+      // Arrives only on the old one's side: goes with it.
+      line('r4', 'old-svc', 'billing', { refines: 'i1', protocol: 'SFTP' }),
+    ]), REPLACE)
+    expect(portCommands(port, 'new', '2027-03-01', counter())).toEqual([
+      { type: 'relation.create', relation: { id: 'c1', type: 'flow', sourceId: 'new', targetId: 'billing', isBidirectional: false, label: 'invoices', validFrom: '2027-03-01' } },
+      { type: 'relation.create', relation: { id: 'c2', type: 'flow', sourceId: 'new', targetId: 'billing-api', isBidirectional: false, refines: 'c1', protocol: 'REST' } },
+      { type: 'relation.create', relation: { id: 'c3', type: 'flow', sourceId: 'new', targetId: 'billing-queue', isBidirectional: false, refines: 'c1', protocol: 'AMQP' } },
+      { type: 'relation.update', id: 'i1', patch: { validUntil: '2027-02-28' } },
+    ])
+  })
+
+  it('moves a two-way interface\'s landing drawn the other way round, keeping its direction', () => {
+    const [port] = portsOf(model([
+      line('i1', 'billing', 'old', { isBidirectional: true }),
+      line('r1', 'old', 'billing-api', { refines: 'i1', isBidirectional: true }),
+    ]), REPLACE)
+    const commands = portCommands(port, 'new', '2027-03-01', counter())
+    expect(commands[1]).toMatchObject({ relation: { sourceId: 'new', targetId: 'billing-api', refines: 'c1' } })
+    const held = model([line('i1', 'billing', 'old', { isBidirectional: true }), line('r1', 'old', 'billing-api', { refines: 'i1', isBidirectional: true })])
+    expect(applyAll(fromArrays(held), commands).ok).toBe(true)
+  })
+
+  it('ports all of a plan in one step the writer accepts, and the plan\'s gate clears', () => {
+    const held = model([
+      line('i1', 'old', 'billing'),
+      line('r1', 'old', 'billing-api', { refines: 'i1', protocol: 'REST' }),
+      line('b', 'crm', 'old'),
+    ])
+    const next = counter()
+    const commands = unplannedPorts(portsOf(held, REPLACE)).flatMap((port) => portCommands(port, 'new', '2027-03-01', next))
+    const result = applyAll(fromArrays(held), commands)
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const after = toArrays(result.model)
+    const gate = planGate({ ...REPLACE, status: 'running' }, 'done', {
+      decisions: [], element: () => undefined, unported: () => unplannedPorts(portsOf({ elements: LANDED, relations: after.relations }, REPLACE)).length,
+    })
+    expect(gate?.items.find((one) => one.item === 'interfacesPorted')?.ok).toBe(true)
+  })
+
+  it('takes a port back with what landed on the twin, so nothing is left as an interface nobody drew', () => {
+    const held = model([line('i1', 'old', 'billing'), line('r1', 'old', 'billing-api', { refines: 'i1', protocol: 'REST' })])
+    const [port] = portsOf(held, REPLACE)
+    const ported = applyAll(fromArrays(held), portCommands(port, 'new', '2027-03-01', counter()))
+    if (!ported.ok) throw new Error(ported.reason)
+    const [again] = portsOf({ elements: LANDED, relations: toArrays(ported.model).relations }, REPLACE)
+    expect(unportCommands(again)).toEqual([
+      { type: 'relation.delete', id: 'c2' },
+      { type: 'relation.delete', id: 'c1' },
+      { type: 'relation.update', id: 'i1', patch: { validUntil: undefined } },
+    ])
+    const back = applyAll(ported.model, unportCommands(again))
+    if (!back.ok) throw new Error(back.reason)
+    expect(toArrays(back.model).relations).toEqual(held.relations)
+  })
+
+  it('never takes a landing for a twin', () => {
+    // A container line that is an interface of its own moves off the old
+    // application; the new one's landing on billing's API is part of another
+    // interface, and re-dating it would give a landing a window of its own.
+    const [port] = portsOf(model([
+      line('x', 'old', 'billing-api'),
+      line('i2', 'new', 'billing'),
+      line('r2', 'new', 'billing-api', { refines: 'i2' }),
+    ]), REPLACE)
+    expect(port.from.id).toBe('x')
+    expect(port.to).toBeUndefined()
+  })
+
+  it('carries a drawn twin\'s landings when the twin moves to another introduced application', () => {
+    const merge = plan([
+      { elementId: 'old', role: 'retires' }, { elementId: 'new', role: 'introduces' }, { elementId: 'other-old', role: 'introduces' },
+    ])
+    const held = {
+      name: 'm', diagrams: [],
+      elements: [...LANDED, container('new-svc', 'new')],
+      relations: [
+        line('i1', 'old', 'billing', { validUntil: '2027-02-28' }),
+        line('t1', 'new', 'billing', { validFrom: '2027-03-01' }),
+        line('t1a', 'new', 'billing-api', { refines: 't1' }),
+        line('t1b', 'new-svc', 'billing', { refines: 't1' }),
+      ],
+    }
+    const [port] = portsOf(held, merge)
+    const commands = portCommands(port, 'other-old', '2027-04-01', counter())
+    expect(commands).toEqual([
+      { type: 'relation.update', id: 't1', patch: { validFrom: '2027-04-01', sourceId: 'other-old' } },
+      { type: 'relation.update', id: 't1a', patch: { sourceId: 'other-old' } },
+      { type: 'relation.delete', id: 't1b' },
+      { type: 'relation.update', id: 'i1', patch: { validUntil: '2027-03-31' } },
+    ])
+    expect(applyAll(fromArrays(held), commands).ok).toBe(true)
   })
 })

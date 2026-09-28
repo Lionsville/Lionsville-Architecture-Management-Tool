@@ -36,6 +36,27 @@ departures from the text below:
   a real shape and worth keeping as the worked example; a second plan would
   say the same thing twice.
 
+**Amended 28 September 2026: a landing moves with its interface.** Once
+ADR-0013 let a container line say which interface it is part of, the port
+table listed each landing as an interface of its own and proposed a twin for
+it that the writer refuses, since a line from the new application cannot be
+part of an interface from the old one; *port all* is one transaction, so the
+whole step failed, and a plan with a landed interface could never be called
+done. `model/porting.ts` now reads it this way:
+
+* **A landing is never a row, and never a twin.** The table lists the
+  interface once; its landings close with it by the liveness rule (a landing
+  with no window takes its interface's), and one with a window of its own
+  keeps it.
+* **The counterpart's landings follow; the moving side's stay behind.** A
+  landing on a container of the application that stays is a fact about that
+  application, so the twin is drawn landing where the original did, from the
+  new application's boundary, in the same transaction. A landing on the old
+  application's containers is a fact about what is going: where the twin
+  arrives on the new one is its container diagram's question, asked there.
+* **Taking back a port takes what landed on the twin**, which would otherwise
+  be kept by the writer as an interface nobody drew.
+
 ## Context and Problem Statement
 
 ADR-0009 gave the landscape time and gave a plan a record, and the first
