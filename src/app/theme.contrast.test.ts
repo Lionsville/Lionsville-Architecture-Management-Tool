@@ -24,11 +24,12 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { decomposeColor, darken, lighten } from '@mui/material/styles'
-import type { Theme } from '@mui/material/styles'
-import { fieldOutline, filledAlert, shellTheme } from './theme'
+import { alpha, decomposeColor, darken, lighten } from '@mui/material/styles'
+import type { CSSObject, Theme } from '@mui/material/styles'
+import { FILLED_COLOURS, fieldOutline, filledAlert, filledControl, shellTheme } from './theme'
 import { getNodeTokens } from '../editor/theme/tokens'
 import type { AspectToken } from '../editor/theme/tokens'
+import { dangerInk } from '../widgets'
 
 type Rgb = { r: number; g: number; b: number }
 
@@ -70,9 +71,12 @@ const SEVERITY = ['error', 'warning', 'info', 'success'] as const
 
 /**
  * Text, by a name the statement can quote. Everything the shell draws in a
- * palette colour, on each ground it is drawn on; every contained button and
- * every alert MUI paints, computed the way MUI computes it; and every token
- * the board draws words in, over the layers it sits on.
+ * palette colour, on each ground it is drawn on; every contained button,
+ * filled chip and alert as the theme paints it, at rest and under the pointer,
+ * through the same functions the theme's overrides call — not MUI's rule
+ * restated, which measured a button's ink against a fill its hover never
+ * drew; words on rows that tint themselves; and every token the board draws
+ * words in, over the layers it sits on.
  */
 function textPairs(mode: 'light' | 'dark'): Pair[] {
   const theme = shellTheme(mode)
@@ -86,16 +90,44 @@ function textPairs(mode: 'light' | 'dark'): Pair[] {
     add(`secondary text on ${ground}`, ratio(palette.text.secondary, fill))
     for (const colour of STATUS) add(`${colour} text on ${ground}`, ratio(palette[colour].main, fill))
   }
-  for (const colour of STATUS) {
-    const tone = palette[colour]
-    add(`contained ${colour} button`, ratio(tone.contrastText, tone.main))
+  for (const colour of FILLED_COLOURS) {
+    const { rest, hover } = filledControl(theme, colour)
+    add(`contained ${colour} button`, ratio(rest.ink, rest.fill))
+    add(`contained ${colour} button under the pointer`, ratio(hover.ink, hover.fill))
+    add(`filled ${colour} chip`, ratio(rest.ink, rest.fill))
+    add(`pressable filled ${colour} chip under the pointer`, ratio(hover.ink, hover.fill))
   }
   for (const colour of SEVERITY) {
     const filled = filledAlert(theme, colour)
     add(`filled ${colour} alert`, ratio(filled.ink, filled.fill))
     add(`standard ${colour} alert`, ratio(...standardAlert(theme, colour), palette.background.paper))
   }
-  out.push(...boardText(theme))
+  out.push(...rowText(theme), ...boardText(theme))
+  return out
+}
+
+/**
+ * Words on a row or a control that tints itself under the pointer or the
+ * keyboard: the tint is part of the ground, and is where a red that passed on
+ * paper fell under the line.
+ */
+function rowText(theme: Theme): Pair[] {
+  const { palette } = theme
+  const out: Pair[] = []
+  const add = (name: string, value: number) => out.push({ name: `${palette.mode} ${name}`, value })
+  const paper = palette.background.paper
+  const danger = dangerInk(theme)
+  // A menu is paper; MUI tints a row with `action.hover` under the pointer and
+  // `action.focus` where the ring is not drawn instead.
+  add('danger menu item', ratio(danger, paper))
+  add('danger menu item under the pointer', ratio(danger, paper, palette.action.hover))
+  add('danger menu item with the focus tint', ratio(danger, paper, palette.action.focus))
+  for (const [ground, fill] of [['ground', palette.background.default], ['paper', paper]] as const) {
+    add(`text error button on ${ground}`, ratio(danger, fill))
+    add(`text error button under the pointer on ${ground}`, ratio(danger, fill, alpha(palette.error.main, palette.action.hoverOpacity)))
+    add(`unselected toggle on ${ground}`, ratio(palette.text.secondary, fill))
+    add(`unselected toggle under the pointer on ${ground}`, ratio(palette.text.secondary, fill, alpha(palette.text.primary, palette.action.hoverOpacity)))
+  }
   return out
 }
 
@@ -176,6 +208,8 @@ function nonTextPairs(mode: 'light' | 'dark'): Pair[] {
   return out
 }
 
+const luminanceOf = (colour: string) => luminance(over(colour, { r: 0, g: 0, b: 0 }))
+
 const below = (pairs: Pair[], floor: number) =>
   pairs.filter(({ value }) => value < floor).map(({ name, value }) => `${name}: ${value.toFixed(2)}`)
 
@@ -186,6 +220,31 @@ describe('the palette’s contrast', () => {
 
   it('draws every focus ring, field outline and line at 3:1 or more beside it, in both modes', () => {
     expect(below([...nonTextPairs('light'), ...nonTextPairs('dark')], 3)).toEqual([])
+  })
+
+  it('draws a contained button and a filled chip with the fill and ink it measures, at rest and under the pointer', () => {
+    for (const mode of ['light', 'dark'] as const) {
+      const theme = shellTheme(mode)
+      const button = theme.components?.MuiButton?.styleOverrides?.root as (props: object) => CSSObject
+      const chip = theme.components?.MuiChip?.styleOverrides?.root as (props: object) => CSSObject
+      for (const colour of FILLED_COLOURS) {
+        const { rest, hover } = filledControl(theme, colour)
+        expect(button({ ownerState: { variant: 'contained', color: colour }, theme }), `${mode} ${colour}`).toEqual({
+          '--variant-containedBg': rest.fill,
+          '--variant-containedColor': rest.ink,
+          '@media (hover: hover)': { '&:hover': { '--variant-containedBg': hover.fill, '--variant-containedColor': hover.ink } },
+        })
+        expect(chip({ ownerState: { variant: 'filled', color: colour }, theme }), `${mode} ${colour}`)
+          .toMatchObject({ backgroundColor: rest.fill, color: rest.ink, '&.MuiChip-clickable:hover': { backgroundColor: hover.fill, color: hover.ink } })
+      }
+    }
+  })
+
+  it('keeps a dark primary button’s black ink under the pointer, on a hover step lighter than the accent', () => {
+    const theme = shellTheme('dark')
+    const { rest, hover } = filledControl(theme, 'primary')
+    expect(hover.ink).toBe(rest.ink)
+    expect(luminanceOf(hover.fill)).toBeGreaterThan(luminanceOf(rest.fill))
   })
 
   it('letters a dark filled error, info or success alert in white, where it had black on a bright fill', () => {
@@ -201,6 +260,10 @@ describe('the palette’s contrast', () => {
       'light aspect badge partial', 'light aspect badge none', 'light lifecycle badge retiring',
       'light lifecycle badge retired', 'dark aspect badge atRisk', 'dark lifecycle badge retired',
       'dark error text on paper',
+      // And what the audit of 28 September found under the pointer and on colours worked out while drawing.
+      'dark contained primary button under the pointer', 'dark contained error button under the pointer',
+      'dark filled error chip', 'dark danger menu item with the focus tint', 'light danger menu item with the focus tint',
+      'dark text error button under the pointer on paper', 'light unselected toggle under the pointer on ground',
     ]) {
       expect(measured.get(name), name).toBeGreaterThanOrEqual(4.5)
     }
@@ -250,3 +313,4 @@ describe('the ink for a control that is off', () => {
     expect(uses).toEqual(allowed)
   })
 })
+

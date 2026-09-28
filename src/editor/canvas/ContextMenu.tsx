@@ -15,6 +15,7 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { useStrings } from '../../i18n/LanguageContext';
 import type { Point } from '../../model/types';
+import { dangerInk } from '../../widgets';
 import type { MenuItem as MenuItemModel } from './menuItems';
 
 export interface ContextMenuProps {
@@ -211,7 +212,9 @@ const disabledWithTooltipSx = { '&.Mui-disabled': { pointerEvents: 'auto' } } as
 function itemSx(item: MenuItemModel) {
   return {
     py: 0.5,
-    ...(item.danger ? { color: 'error.main' } : {}),
+    // Not `error.main`: that is measured on paper, and a row is paper with the
+    // hover or focus tint over it (`dangerInk`).
+    ...(item.danger ? { color: dangerInk } : {}),
     ...(item.disabled && item.disabledReason ? disabledWithTooltipSx : {}),
   };
 }

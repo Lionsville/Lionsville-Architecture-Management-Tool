@@ -28,11 +28,12 @@
  * on the palette production runs on rather than on a default that only
  * resembles it.
  */
-import { alpha, createTheme } from '@mui/material/styles'
-import type { Theme, ThemeOptions } from '@mui/material/styles'
+import { alpha, createTheme, darken, lighten } from '@mui/material/styles'
+import type { CSSObject, Theme, ThemeOptions } from '@mui/material/styles'
 import type { AlertColor } from '@mui/material/Alert'
 import { deDE, nlNL } from '@mui/material/locale'
 import type { Language } from '../i18n'
+import { dangerInk } from '../widgets'
 
 /**
  * MUI's own words — an autocomplete's clear, open and close buttons and what
@@ -41,6 +42,9 @@ import type { Language } from '../i18n'
  * English, which is MUI's default and needs none.
  */
 const MUI_LOCALE: Partial<Record<Language, ThemeOptions>> = { nl: nlNL, de: deDE }
+
+/** The dark mode's accent, the one value its steps derive from. */
+const DARK_ACCENT = '#8e96f2'
 
 /**
  * The outline of a field at rest (1.4.11). MUI draws it at 23 % of the ink,
@@ -67,13 +71,72 @@ const DARK_ALERT_FILL: Partial<Record<AlertColor, string>> = {
   error: '#c62828', info: '#01579b', success: '#2e7d32',
 }
 
+/** A fill, and the ink measured against that fill. */
+export type Filled = { fill: string; ink: string }
+
 /** What a filled alert is drawn with: its fill, and the ink measured against that fill. */
-export function filledAlert(theme: Theme, colour: AlertColor): { fill: string; ink: string } {
+export function filledAlert(theme: Theme, colour: AlertColor): Filled {
   const { palette } = theme
   const fill = palette.mode === 'dark'
     ? DARK_ALERT_FILL[colour] ?? palette[colour].dark
     : palette[colour].main
   return { fill, ink: palette.getContrastText(fill) }
+}
+
+/** The palette colours a contained button or a filled chip can be drawn in. */
+export const FILLED_COLOURS = ['primary', 'secondary', 'error', 'warning', 'info', 'success'] as const
+export type FilledColour = (typeof FILLED_COLOURS)[number]
+
+const isAlertColour = (colour: FilledColour): colour is AlertColor => colour !== 'primary' && colour !== 'secondary'
+const isFilledColour = (colour: unknown): colour is FilledColour => FILLED_COLOURS.includes(colour as FilledColour)
+
+/**
+ * What a contained button or a filled chip is drawn with, at rest and under
+ * the pointer. MUI paints the rest on `main` and the hover on `dark`, and
+ * letters both in the one ink it picked against `main` — so in the dark mode a
+ * primary button went from 6.8:1 to 3.8:1 under the pointer, and an error one
+ * was lettered in black on the bright red a toast had just been taken off.
+ *
+ * Here each state's ink is measured against that state's fill. In the dark
+ * mode error, info and success rest on the deeper fill a toast has
+ * (`DARK_ALERT_FILL`), so a red button, a red chip and a red toast are the one
+ * red, in white; under the pointer they go a step deeper still. Everything
+ * else keeps MUI's `main` and `dark`, and the dark mode's `primary.dark` is the
+ * lighter step (`shellTheme`), so the hover keeps its black ink rather than
+ * swapping it for white halfway through a click.
+ */
+export function filledControl(theme: Theme, colour: FilledColour): { rest: Filled; hover: Filled } {
+  const { palette } = theme
+  const deeper = palette.mode === 'dark' && isAlertColour(colour) ? DARK_ALERT_FILL[colour] : undefined
+  const restFill = deeper ?? palette[colour].main
+  const hoverFill = deeper !== undefined ? darken(deeper, 0.2) : palette[colour].dark
+  return {
+    rest: { fill: restFill, ink: palette.getContrastText(restFill) },
+    hover: { fill: hoverFill, ink: palette.getContrastText(hoverFill) },
+  }
+}
+
+/** The contained button's two states, said through the variables MUI's own rules read. */
+function containedButton(theme: Theme, colour: FilledColour): CSSObject {
+  const { rest, hover } = filledControl(theme, colour)
+  return {
+    '--variant-containedBg': rest.fill,
+    '--variant-containedColor': rest.ink,
+    '@media (hover: hover)': {
+      '&:hover': { '--variant-containedBg': hover.fill, '--variant-containedColor': hover.ink },
+    },
+  }
+}
+
+/** A filled chip in a status colour, and its hover when it can be pressed. */
+function filledChip(theme: Theme, colour: FilledColour): CSSObject {
+  const { rest, hover } = filledControl(theme, colour)
+  return {
+    backgroundColor: rest.fill,
+    color: rest.ink,
+    '&.MuiChip-clickable:hover': { backgroundColor: hover.fill, color: hover.ink },
+    '& .MuiChip-deleteIcon': { color: alpha(rest.ink, 0.7), '&:hover, &:active': { color: rest.ink } },
+  }
 }
 
 export function shellTheme(mode: 'light' | 'dark', language: Language = 'en'): Theme {
@@ -88,7 +151,10 @@ export function shellTheme(mode: 'light' | 'dark', language: Language = 'en'): T
       // and white reaches this against the fill; its default, 3, is the
       // threshold for large text, and a button's label is not large.
       contrastThreshold: 4.5,
-      primary: { main: dark ? '#8e96f2' : '#4f5bd5' },
+      // In the dark mode the hover step is lighter than the accent rather than
+      // darker: a darker indigo under the button's black ink fell to 3.8:1,
+      // and a lighter one keeps the ink and still says the pointer is there.
+      primary: dark ? { main: DARK_ACCENT, dark: lighten(DARK_ACCENT, 0.15) } : { main: '#4f5bd5' },
       // The status colours MUI ships that are below 4.5:1 as text on these
       // grounds: orange and light blue on paper in the light mode, red on the
       // dark paper. Darker steps of the same hues in the light mode; in the
@@ -113,6 +179,34 @@ export function shellTheme(mode: 'light' | 'dark', language: Language = 'en'): T
       // a panel's own left edge. −4 px keeps the alignment close without the
       // overhang.
       MuiFormControlLabel: { styleOverrides: { root: { marginLeft: -4 } } },
+      MuiButton: {
+        styleOverrides: {
+          root: ({ ownerState, theme }) => {
+            const colour = ownerState.color
+            if (!isFilledColour(colour)) return {}
+            if (ownerState.variant === 'contained') return containedButton(theme, colour)
+            // A red text or outlined button's hover tint is red too, and lifts
+            // the ground under the red words: 4.25:1 on the dark paper. The
+            // danger ink is the red that clears it (`dangerInk`).
+            if (colour !== 'error') return {}
+            const ink = dangerInk(theme)
+            return { '--variant-textColor': ink, '--variant-outlinedColor': ink }
+          },
+        },
+      },
+      MuiChip: {
+        styleOverrides: {
+          root: ({ ownerState, theme }) =>
+            ownerState.variant !== 'outlined' && isFilledColour(ownerState.color)
+              ? filledChip(theme, ownerState.color)
+              : {},
+        },
+      },
+      // An unselected toggle is lettered in `action.active`, 54 % of the ink,
+      // which is 4.496:1 on the light ground — under the line by a rounding,
+      // and further under once the hover tint is over it. `text.secondary` is
+      // the page's own second ink and clears both.
+      MuiToggleButton: { styleOverrides: { root: ({ theme }) => ({ color: theme.palette.text.secondary }) } },
       MuiAlert: {
         styleOverrides: {
           root: ({ ownerState, theme }) => {

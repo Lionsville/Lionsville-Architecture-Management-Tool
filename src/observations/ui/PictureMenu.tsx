@@ -16,6 +16,7 @@ import ListItemIcon from '@mui/material/ListItemIcon'
 import ListItemText from '@mui/material/ListItemText'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
+import { dangerInk } from '../../widgets'
 import type { CauseStrength } from '../observation'
 
 /** What a right-click landed on. */
@@ -67,7 +68,7 @@ export function PictureMenu({ at, actions, onClose }: PictureMenuProps) {
           disabled={one.disabled}
           onClick={() => { onClose(); one.onClick() }}
           data-testid={`picture-menu-${one.key}`}
-          sx={one.danger ? { color: 'error.main' } : undefined}
+          sx={one.danger ? { color: dangerInk } : undefined}
         >
           {anyChecked && <ListItemIcon sx={{ fontSize: 14 }}>{one.checked ? '✓' : ''}</ListItemIcon>}
           <ListItemText>{one.label}</ListItemText>
