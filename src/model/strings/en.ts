@@ -55,15 +55,15 @@ export const EN = {
 
   // --- what the one writer refuses (ADR-0002) ------------------------------
   'command.gone': 'That is no longer there',
-  'command.lastLandscape': 'This is the last landscape; it cannot be deleted.',
-  'command.datesOutOfOrder': 'These dates run backwards: an application cannot retire before it goes live.',
-  'command.refinesEnds': 'A container interface has to sit under the interface it is part of: its two ends under that interface\'s two ends, each under its own.',
-  'command.refinesLevel': 'That interface is itself part of another one. An interface lands once.',
+  'command.lastLandscape': 'This is the last landscape, and a scope keeps at least one. Add another landscape first, then delete this one.',
+  'command.datesOutOfOrder': 'Lifecycle dates run in order: live, then retiring, then gone, each on or after the one before. That day would run them backwards, so it was not written.',
+  'command.refinesEnds': 'A container interface has to sit under the interface it is part of: its source under that interface\u2019s source and its target under its target, each end the same element or one of its containers. Change its ends, or set \u201cPart of\u201d to nothing to detach it.',
+  'command.refinesLevel': 'That interface is itself part of another one, and an interface lands once. Choose the application interface it is part of instead.',
   'command.hostedOnContainers': 'An application with containers runs where its containers run. Say where on the container instead.',
   'command.technologyEnds': 'Hosted on runs from an application or a container to a platform. A platform inside another is filed under it, not hosted on it.',
   'command.taken': 'Something here already has that id — another author took it while this change was being made. Try again.',
   'command.notAField': 'That change carries a field this record does not have, so none of it was made.',
-  'command.ownedElsewhere': 'This is a stand-in: its lifecycle, dates, owner, vendor, name and description are written in the scope that defines it.',
+  'command.ownedElsewhere': 'This is a stand-in: its lifecycle, dates, owner, vendor, name and description are written in the scope that defines it. Open that scope to change them.',
   // A restore that cannot be (ADR-0008). A refusal, never an exception.
   'restore.absentThen': 'This was not in the project at that snapshot.',
   'restore.absentNow': 'The element is no longer in the project; restore the whole project to bring it back.',

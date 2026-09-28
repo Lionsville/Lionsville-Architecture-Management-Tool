@@ -610,7 +610,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'gesture.title': '{name} verplaatsen',
   'gesture.what': 'Wat er moet gebeuren',
   'gesture.link': 'Koppelen',
-  'gesture.linkWhat': 'Deze definitie opgeven en verwijzen naar die van een ander niveau. De eigen beschrijving blijft hier staan.',
+  'gesture.linkWhat': 'Deze definitie opgeven en verwijzen naar die van een ander niveau. Beschrijving, data en eigenaar zijn dan van dat niveau: hier getoond, daar gewijzigd.',
   'gesture.promote': 'Omhoog',
   'gesture.promoteWhat': 'De definitie naar een niveau hierboven verplaatsen en hier een verwijzing achterlaten.',
   'gesture.demote': 'Omlaag',

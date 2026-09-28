@@ -222,6 +222,16 @@ describe('what it changes', () => {
     expect(actions.updateTransition).not.toHaveBeenCalled()
   })
 
+  it('keeps a day that would run the dates backwards in its field, says why, and writes nothing', () => {
+    const { actions } = setup()
+    // Retiring from 1 April 2027: gone on 1 March would come first.
+    const gone = screen.getByLabelText('Warehouse Management: Gone on') as HTMLInputElement
+    fireEvent.change(gone, { target: { value: '2027-03-01' } })
+    expect(actions.updateElementDates).not.toHaveBeenCalled()
+    expect(gone.value).toBe('2027-03-01')
+    expect(gone.getAttribute('aria-invalid')).toBe('true')
+    expect(within(screen.getByTestId('plan-element-wms-old')).getByText(/live, then retiring, then gone/)).toBeTruthy()
+  })
 })
 
 describe('milestones and decisions', () => {

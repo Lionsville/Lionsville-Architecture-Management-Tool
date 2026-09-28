@@ -35,7 +35,7 @@ import MenuItem from '@mui/material/MenuItem'
 import TextField from '@mui/material/TextField'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
-import { DATED_PHASES, LIFECYCLE_ORDER } from '../../model'
+import { DATED_PHASES, LIFECYCLE_ORDER, datesInOrder } from '../../model'
 import type { DesignDiagram, DesignElement, DesignModel, ElementId, Lifecycle, Relation } from '../../model'
 import { MarkdownField } from '../../documentation/ui/MarkdownField'
 import type { MarkdownRenderOptions } from '../../documentation'
@@ -43,6 +43,7 @@ import { useStrings } from '../../i18n'
 import { plural } from '../../i18n/strings'
 import type { StringKey, Translate } from '../../i18n'
 import { CaretIcon } from '../../widgets/icons'
+import { OrderedDateFields } from '../../widgets/OrderedDateFields'
 import { mayRemove } from '../authoring'
 import { coverageFor, coverageOf } from '../coverage'
 import { childrenOf, wouldCycle } from '../tree'
@@ -333,29 +334,17 @@ export function FunctionInspector(props: FunctionInspectorProps) {
               has; `minWidth: 0` stops a fixed-width native date control from
               forcing the column itself wider than the panel. */}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-            {DATED_PHASES.map((phase) => (
-              <TextField
-                key={phase}
-                type="date" size="small" fullWidth
-                label={t(`sheet.date.${phase}` as StringKey)}
-                value={element.lifecycleDates?.[phase] ?? ''}
-                disabled={readOnly || owned('lifecycleDates')}
-                sx={{ minWidth: 0 }}
-                slotProps={{
-                  inputLabel: { shrink: true },
-                  htmlInput: { 'aria-label': `${element.name}: ${t(`sheet.date.${phase}` as StringKey)}` },
-                }}
-                onChange={(e) => {
-                  const next = { ...element.lifecycleDates }
-                  if (e.target.value) next[phase] = e.target.value
-                  else delete next[phase]
-                  actions.updateElement(
-                    element.id,
-                    { lifecycleDates: Object.keys(next).length ? next : undefined },
-                  )
-                }}
-              />
-            ))}
+            <OrderedDateFields
+              keys={DATED_PHASES}
+              values={element.lifecycleDates}
+              label={(phase) => t(`sheet.date.${phase}` as StringKey)}
+              ariaLabel={(phase) => `${element.name}: ${t(`sheet.date.${phase}` as StringKey)}`}
+              size="small" fullWidth sx={{ minWidth: 0 }}
+              disabled={readOnly || owned('lifecycleDates')}
+              accepts={datesInOrder}
+              refusal={t('command.datesOutOfOrder')}
+              onChange={(lifecycleDates) => actions.updateElement(element.id, { lifecycleDates })}
+            />
           </Box>
 
           {element.kind === 'function' && (

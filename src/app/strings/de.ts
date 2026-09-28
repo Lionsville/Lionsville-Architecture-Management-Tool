@@ -610,7 +610,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'gesture.title': '{name} verschieben',
   'gesture.what': 'Was geschehen soll',
   'gesture.link': 'Verkn\u00fcpfen',
-  'gesture.linkWhat': 'Diese Definition aufgeben und auf die eines anderen Bereichs verweisen. Die eigene Beschreibung bleibt hier.',
+  'gesture.linkWhat': 'Diese Definition aufgeben und auf die eines anderen Bereichs verweisen. Beschreibung, Daten und Verantwortliche geh\u00f6ren dann jenem Bereich: hier angezeigt, dort ge\u00e4ndert.',
   'gesture.promote': 'Hochziehen',
   'gesture.promoteWhat': 'Die Definition in einen Bereich dar\u00fcber verschieben und hier einen Platzhalter lassen.',
   'gesture.demote': 'Abgeben',

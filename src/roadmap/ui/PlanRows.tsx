@@ -17,12 +17,13 @@ import Button from '@mui/material/Button'
 import MenuItem from '@mui/material/MenuItem'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
-import { DATED_PHASES, isDay } from '../../model'
+import { DATED_PHASES, datesInOrder, isDay } from '../../model'
 import type { DesignElement, ElementId, LifecycleDates, Transition, TransitionRole } from '../../model'
 import type { Adr } from '../../model/adr'
 import { STATUS_LABEL as ADR_STATUS_LABEL, formatAdrNumber } from '../../decisions'
 import { useStrings } from '../../i18n'
 import type { StringKey } from '../../i18n'
+import { OrderedDateFields } from '../../widgets/OrderedDateFields'
 import type { DescribeElsewhere } from '../planGateHints'
 import { ROLES, namedSelect } from './PlanFacts'
 
@@ -92,7 +93,10 @@ function StandInDates({ id, role, describe }: { id: ElementId; role: TransitionR
   )
 }
 
-/** The three dates on an element the plan introduces or retires. */
+/**
+ * The three dates on an element the plan introduces or retires. A day that
+ * would run them backwards stays in its field, marked, and is not written.
+ */
 function ElementDates({ element, readOnly, onChange }: {
   element: DesignElement
   readOnly: boolean
@@ -101,22 +105,17 @@ function ElementDates({ element, readOnly, onChange }: {
   const { t } = useStrings()
   return (
     <Box sx={{ display: 'flex', gap: 1 }}>
-      {DATED_PHASES.map((phase) => (
-        <TextField
-          key={phase}
-          type="date" size="small" fullWidth
-          label={t(`plan.date.${phase}` as StringKey)}
-          value={element.lifecycleDates?.[phase] ?? ''}
-          disabled={readOnly}
-          slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'aria-label': `${element.name}: ${t(`plan.date.${phase}` as StringKey)}` } }}
-          onChange={(e) => {
-            const next = { ...element.lifecycleDates }
-            if (e.target.value) next[phase] = e.target.value
-            else delete next[phase]
-            onChange(Object.keys(next).length ? next : undefined)
-          }}
-        />
-      ))}
+      <OrderedDateFields
+        keys={DATED_PHASES}
+        values={element.lifecycleDates}
+        label={(phase) => t(`plan.date.${phase}` as StringKey)}
+        ariaLabel={(phase) => `${element.name}: ${t(`plan.date.${phase}` as StringKey)}`}
+        size="small" fullWidth
+        disabled={readOnly}
+        accepts={datesInOrder}
+        refusal={t('command.datesOutOfOrder')}
+        onChange={onChange}
+      />
     </Box>
   )
 }

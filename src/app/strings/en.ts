@@ -823,7 +823,7 @@ export const EN = {
   'gesture.title': 'Move {name}',
   'gesture.what': 'What to do',
   'gesture.link': 'Link',
-  'gesture.linkWhat': 'Give up this definition and stand in for the one another scope already holds. This scope keeps its own description of it.',
+  'gesture.linkWhat': 'Give up this definition and stand in for the one another scope already holds. Its description, dates and owner are then that scope\'s: shown here, and changed there.',
   'gesture.promote': 'Promote',
   'gesture.promoteWhat': 'Move the definition up to a scope this one is filed under, and stand in for it here.',
   'gesture.demote': 'Demote',

@@ -32,8 +32,8 @@ import MenuItem from '@mui/material/MenuItem';
 import Switch from '@mui/material/Switch';
 import TextField from '@mui/material/TextField';
 import type { DesignElement, DesignModel, ElementId } from '../model/types';
-import { DATED_PHASES } from '../model/lifecycle';
-import type { DatedPhase } from '../model/lifecycle';
+import { DATED_PHASES, datesInOrder } from '../model/lifecycle';
+import { OrderedDateFields } from '../widgets/OrderedDateFields';
 import { useStrings } from '../i18n/LanguageContext';
 import type { StringKey, Translate } from '../i18n/strings';
 import { fieldEdit } from '../model/commands';
@@ -62,24 +62,6 @@ export function showTechnology(kind: DesignElement['kind']): boolean {
  */
 export function showOutside(kind: DesignElement['kind']): boolean {
   return kind === 'application' || kind === 'actor';
-}
-
-/**
- * A patch for one phase's date, with the whole object rebuilt.
- *
- * Rebuilt rather than mutated because the reducer judges the dates the element
- * would END UP with, and it compares by value: clearing a field has to remove
- * the key, not leave it present and empty.
- */
-export function withDate(
-  held: DesignElement['lifecycleDates'],
-  phase: DatedPhase,
-  day: string | undefined,
-): DesignElement['lifecycleDates'] {
-  const next = { ...held };
-  if (day) next[phase] = day;
-  else delete next[phase];
-  return Object.keys(next).length ? next : undefined;
 }
 
 /** The choices under *Belongs to*, grouped by the scope that keeps them. */
@@ -256,20 +238,16 @@ export function ElementRecord(props: ElementRecordProps) {
         data-testid="element-lifecycle-dates"
         sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 1 }}
       >
-        {DATED_PHASES.map((phase) => (
-          <TextField
-            key={phase}
-            type="date"
-            label={t(`field.date.${phase}` as StringKey)}
-            value={element.lifecycleDates?.[phase] ?? ''}
-            sx={{ minWidth: 0 }}
-            disabled={readOnly || owned('lifecycleDates')}
-            slotProps={{ inputLabel: { shrink: true } }}
-            onChange={(e) => update({
-              lifecycleDates: withDate(element.lifecycleDates, phase, e.target.value || undefined),
-            })}
-          />
-        ))}
+        <OrderedDateFields
+          keys={DATED_PHASES}
+          values={element.lifecycleDates}
+          label={(phase) => t(`field.date.${phase}` as StringKey)}
+          sx={{ minWidth: 0 }}
+          disabled={readOnly || owned('lifecycleDates')}
+          accepts={datesInOrder}
+          refusal={t('command.datesOutOfOrder')}
+          onChange={(lifecycleDates) => update({ lifecycleDates })}
+        />
       </Box>
 
       <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
