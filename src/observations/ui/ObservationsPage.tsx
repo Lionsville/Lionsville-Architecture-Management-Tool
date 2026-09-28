@@ -982,7 +982,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
         {dialogs}
         <NewCauseDialog open={creatingCause} onCancel={() => setCreatingCause(false)} onCreate={addCause} s={s} />
         <ArchiveDialog
-          subject={archiving ? { label: nameOf(archiving.id) } : undefined}
+          subject={archiving ? { id: archiving.id, label: nameOf(archiving.id) } : undefined}
           onCancel={() => setArchiving(undefined)}
           onConfirm={(note) => { if (archiving) archive(archiving.id, note) }}
           s={s}
@@ -1001,7 +1001,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
           s={s}
         />
         <LinkDialog
-          subject={linking ? { label: linking.label } : undefined}
+          subject={linking ? { id: linking.key, label: linking.label } : undefined}
           candidates={causes.filter((one) => one.id !== linking?.key)}
           onCancel={() => setLinking(undefined)}
           onConfirm={link}
@@ -1016,7 +1016,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
           s={s}
         />
         <AddressDialog
-          subject={addressing ? { label: nameOf(addressing.id) } : undefined}
+          subject={addressing ? { id: addressing.id, label: nameOf(addressing.id) } : undefined}
           candidates={causesForProposal(causes).filter((one) => !addressing?.addresses.some((address) => address.id === one.id))}
           onCancel={() => setAddressing(undefined)}
           onConfirm={({ causeId, strength }) => {
@@ -1026,13 +1026,13 @@ export function ObservationsPage(props: ObservationsPageProps) {
           s={s}
         />
         <NewExperimentDialog
-          subject={planning ? { label: nameOf(planning.id) } : undefined}
+          subject={planning ? { id: planning.id, label: nameOf(planning.id) } : undefined}
           onCancel={() => setPlanning(undefined)}
           onCreate={(fields) => { if (planning) addExperiment(planning, fields) }}
           s={s}
         />
         <DropDialog
-          subject={dropping ? { label: nameOf(dropping.id) } : undefined}
+          subject={dropping ? { id: dropping.id, label: nameOf(dropping.id) } : undefined}
           onCancel={() => setDropping(undefined)}
           onConfirm={(note) => {
             if (dropping) commit({ solutions: dropSolution(solutions, dropping.id, note, today()) })

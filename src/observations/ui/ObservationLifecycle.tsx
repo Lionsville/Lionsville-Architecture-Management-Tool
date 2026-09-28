@@ -80,7 +80,7 @@ export function useLifecycle(args: {
   const dialogs = (
     <>
       <SeenDialog
-        subject={seeing ? { label: nameOf(seeing.id), firstSeen: seeing.date } : undefined}
+        subject={seeing ? { id: seeing.id, label: nameOf(seeing.id), firstSeen: seeing.date } : undefined}
         today={today()}
         onCancel={() => setSeeing(undefined)}
         onConfirm={({ date, note }) => {
@@ -90,7 +90,7 @@ export function useLifecycle(args: {
         s={s}
       />
       <VerifyDialog
-        subject={verifying ? { label: nameOf(verifying.id) } : undefined}
+        subject={verifying ? { id: verifying.id, label: nameOf(verifying.id) } : undefined}
         onCancel={() => setVerifying(undefined)}
         onConfirm={(confirmed) => {
           if (verifying) commit({ causes: verifyCause(lists.causes, verifying.id, { date: today(), t: s, confirmed }) })
@@ -125,10 +125,10 @@ export function useLifecycle(args: {
   return { seeAgain: setSeeing, verify, moveExperiment, dialogs }
 }
 
-/** What the conclude dialog is told: the name, the outcome, and what the record already holds. */
+/** What the conclude dialog is told: the id and the name, the outcome, and what the record already holds. */
 function concludeSubject(experiment: Experiment, outcome: ExperimentOutcome, nameOf: (id: string) => string) {
   return {
-    label: nameOf(experiment.id), outcome,
+    id: experiment.id, label: nameOf(experiment.id), outcome,
     ...(experiment.result ? { result: experiment.result } : {}),
     ...(experiment.from ? { from: experiment.from } : {}),
   }

@@ -402,7 +402,7 @@ export const GROWN = {
   'src/app/history/useProjectHistory.ts': { lines: 164 },
   'src/app/organisation/OrganisationCards.tsx': { complexity: 45, lines: 187 },
   'src/app/organisation/OrganisationScreen.tsx': { complexity: 56, lines: 366 },
-  'src/app/organisation/ScopeSettingsDialog.tsx': { lines: 160 },
+  'src/app/organisation/ScopeSettingsDialog.tsx': { lines: 159 },
   'src/app/organisation/organisationPages.ts': { complexity: 30 },
   'src/app/organisation/useOrganisation.ts': { lines: 292 },
   'src/app/useModelSession.ts': { lines: 340 },

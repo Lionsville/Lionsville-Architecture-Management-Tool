@@ -10,6 +10,7 @@
  * lists, the numbering and the date.
  */
 import { useEffect, useState } from 'react'
+import { useFreshFor } from '../../widgets/useFreshFor'
 import Button from '@mui/material/Button'
 import Dialog from '@mui/material/Dialog'
 import DialogActions from '@mui/material/DialogActions'
@@ -75,7 +76,13 @@ export type SupersedeDialogProps = {
 
 export function SupersedeDialog({ target, candidates, onCancel, onConfirm, s }: SupersedeDialogProps) {
   const [successor, setSuccessor] = useState('')
-  useEffect(() => { if (target) setSuccessor(candidates[0]?.id ?? '') }, [target, candidates])
+  // Afresh for each record superseded, not for each render: the page builds
+  // the candidates on every one, and following them sent the choice back to
+  // the first record a second after it was made. A choice the list no
+  // longer offers reads as the first one, so Confirm never names a record
+  // the picker does not show.
+  useFreshFor(target, (one) => one.id, () => setSuccessor(''))
+  const chosen = candidates.some((adr) => adr.id === successor) ? successor : candidates[0]?.id ?? ''
 
   return (
     <Dialog open={Boolean(target)} onClose={onCancel} maxWidth="sm" fullWidth>
@@ -90,7 +97,7 @@ export function SupersedeDialog({ target, candidates, onCancel, onConfirm, s }: 
             fullWidth
             size="small"
             label={s('adr.successor')}
-            value={successor}
+            value={chosen}
             onChange={(event) => setSuccessor(event.target.value)}
           >
             {candidates.map((adr) => (
@@ -103,7 +110,7 @@ export function SupersedeDialog({ target, candidates, onCancel, onConfirm, s }: 
       </DialogContent>
       <DialogActions>
         <Button onClick={onCancel}>{s('common.cancel')}</Button>
-        <Button variant="contained" disabled={!successor} onClick={() => onConfirm(successor)}>
+        <Button variant="contained" disabled={!chosen} onClick={() => onConfirm(chosen)}>
           {s('adr.statusSuperseded')}
         </Button>
       </DialogActions>
@@ -129,7 +136,7 @@ export type ReasonDialogProps = {
  */
 export function ReasonDialog({ target, withdraw, required, onCancel, onConfirm, s }: ReasonDialogProps) {
   const [reason, setReason] = useState('')
-  useEffect(() => { if (target) setReason('') }, [target])
+  useFreshFor(target, (one) => one.id, () => setReason(''))
   const ready = !required || reason.trim().length > 0
   const name = target ? `${formatAdrNumber(target.number)} ${target.title}` : ''
 

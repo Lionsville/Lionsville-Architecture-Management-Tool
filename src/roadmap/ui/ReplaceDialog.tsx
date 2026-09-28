@@ -14,7 +14,8 @@
  * The dialog answers with a request and writes nothing; the caller supplies
  * the words and dispatches the transaction.
  */
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useFreshFor } from '../../widgets/useFreshFor'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Dialog from '@mui/material/Dialog'
@@ -54,18 +55,19 @@ export function ReplaceDialog({ subject, model, onCancel, onConfirm }: ReplaceDi
   const [cutover, setCutover] = useState('')
 
   // Each opening starts afresh from the subject: its name suggests the new
-  // one's, and nothing from the last replacement carries over.
-  useEffect(() => {
-    if (!subject) return
+  // one's, and nothing from the last replacement carries over. Followed by
+  // its id, since the subject is read off the model on every render and a
+  // save would otherwise clear the dialog.
+  useFreshFor(subject, (one) => one.id, (one) => {
     setArrives('new')
-    setName(t('replace.newName', { name: subject.name }))
+    setName(t('replace.newName', { name: one.name }))
     setExistingId('')
     setShape('goes')
     setAlso([])
     setAdding('')
     setShadowFrom('')
     setCutover('')
-  }, [subject, t])
+  })
 
   if (!subject) return null
 

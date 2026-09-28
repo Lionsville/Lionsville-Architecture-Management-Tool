@@ -24,7 +24,7 @@
  * The dialog says what it wants; the caller performs it, because a save is a
  * store operation and not a field edit.
  */
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Dialog from '@mui/material/Dialog'
@@ -46,6 +46,7 @@ import { parentScope, ROOT_SCOPE } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
 import type { ScopeSettingsPatch } from '../App'
 import { ScopeField } from './ScopeField'
+import { useFreshFor } from '../../widgets/useFreshFor'
 
 /**
  * What each kind is called. A word for this dialog to offer and never a branch
@@ -98,16 +99,16 @@ export function ScopeSettingsDialog({
   const [kind, setKind] = useState<ScopeKind | ''>('')
   const [parent, setParent] = useState<ScopePath>(ROOT_SCOPE)
 
-  // Reopening on a different scope must not show the previous one's values.
-  useEffect(() => {
-    if (!target) return
-    setName(target.name)
-    setClient(target.client ?? '')
-    setDescription(target.description ?? '')
-    setLinks((target.links ?? []).map((link) => ({ ...link })))
-    setKind(target.kind ?? '')
-    setParent(parentScope(target.path) ?? ROOT_SCOPE)
-  }, [target])
+  // Reopening on a different scope must not show the previous one's values;
+  // a new listing of the same scope must not take back what is typed.
+  useFreshFor(target, (one) => one.path, (one) => {
+    setName(one.name)
+    setClient(one.client ?? '')
+    setDescription(one.description ?? '')
+    setLinks((one.links ?? []).map((link) => ({ ...link })))
+    setKind(one.kind ?? '')
+    setParent(parentScope(one.path) ?? ROOT_SCOPE)
+  })
 
   // The root has nowhere to go, and a listing is what the field is made of.
   const canMove = tree !== undefined && target !== undefined && target.path !== ROOT_SCOPE

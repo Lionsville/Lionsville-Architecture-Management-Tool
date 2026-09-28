@@ -12,6 +12,7 @@
  * lists, the numbering and the date.
  */
 import { useEffect, useState } from 'react'
+import { useFreshFor } from '../../widgets/useFreshFor'
 import Button from '@mui/material/Button'
 import Checkbox from '@mui/material/Checkbox'
 import Dialog from '@mui/material/Dialog'
@@ -109,8 +110,8 @@ export function NewObservationDialog({ open, canShare, onCancel, onCreate, s }: 
  * archiving itself is the record.
  */
 export type ArchiveDialogProps = {
-  /** The observation being archived, by the name the page shows; closed when absent. */
-  subject: { label: string } | undefined
+  /** The observation being archived, by its id and the name the page shows; closed when absent. */
+  subject: { id: string; label: string } | undefined
   onCancel: () => void
   onConfirm: (note: string) => void
   s: Translate
@@ -118,7 +119,7 @@ export type ArchiveDialogProps = {
 
 export function ArchiveDialog({ subject, onCancel, onConfirm, s }: ArchiveDialogProps) {
   const [note, setNote] = useState('')
-  useEffect(() => { if (subject) setNote('') }, [subject])
+  useFreshFor(subject, (one) => one.id, () => setNote(''))
   return (
     <Dialog open={Boolean(subject)} onClose={onCancel} maxWidth="sm" fullWidth>
       <DialogTitle>{s('observation.archiveTitle', { name: subject?.label ?? '' })}</DialogTitle>
@@ -148,8 +149,8 @@ export function ArchiveDialog({ subject, onCancel, onConfirm, s }: ArchiveDialog
  * The rules keep the day and the note in the observation's history.
  */
 export type SeenDialogProps = {
-  /** The observation, by the name the page shows, and the day it was first seen; closed when absent. */
-  subject: { label: string; firstSeen: string } | undefined
+  /** The observation, by its id and the name the page shows, and the day it was first seen; closed when absent. */
+  subject: { id: string; label: string; firstSeen: string } | undefined
   /** `yyyy-mm-dd`. */
   today: string
   onCancel: () => void
@@ -161,7 +162,7 @@ export function SeenDialog({ subject, today, onCancel, onConfirm, s }: SeenDialo
   const [date, setDate] = useState(today)
   const [note, setNote] = useState('')
   const { language } = useStrings()
-  useEffect(() => { if (subject) { setDate(today); setNote('') } }, [subject, today])
+  useFreshFor(subject, (one) => one.id, () => { setDate(today); setNote('') })
   const problem = subject ? seenDayProblem({ date: subject.firstSeen }, date, today) : undefined
   const help = problem === 'future'
     ? s('observation.seenFuture')
@@ -210,8 +211,8 @@ export function SeenDialog({ subject, today, onCancel, onConfirm, s }: SeenDialo
  * to verify; verifying without one is not offered.
  */
 export type VerifyDialogProps = {
-  /** The cause, by the name the page shows; closed when absent. */
-  subject: { label: string } | undefined
+  /** The cause, by its id and the name the page shows; closed when absent. */
+  subject: { id: string; label: string } | undefined
   onCancel: () => void
   onConfirm: (confirmed: string) => void
   s: Translate
@@ -219,7 +220,7 @@ export type VerifyDialogProps = {
 
 export function VerifyDialog({ subject, onCancel, onConfirm, s }: VerifyDialogProps) {
   const [answer, setAnswer] = useState('')
-  useEffect(() => { if (subject) setAnswer('') }, [subject])
+  useFreshFor(subject, (one) => one.id, () => setAnswer(''))
   const ready = answer.trim().length > 0
   return (
     <Dialog open={Boolean(subject)} onClose={onCancel} maxWidth="sm" fullWidth>
@@ -293,7 +294,7 @@ export type MergeDialogProps = {
 
 export function MergeDialog({ target, candidates, onCancel, onConfirm, s }: MergeDialogProps) {
   const [into, setInto] = useState('')
-  useEffect(() => { if (target) setInto('') }, [target])
+  useFreshFor(target, (one) => one.id, () => setInto(''))
   return (
     <Dialog open={Boolean(target)} onClose={onCancel} maxWidth="sm" fullWidth>
       <DialogTitle>
@@ -324,8 +325,8 @@ export function MergeDialog({ target, candidates, onCancel, onConfirm, s }: Merg
 }
 
 export type LinkDialogProps = {
-  /** What is being explained; the dialog is closed while undefined. */
-  subject?: { label: string }
+  /** What is being explained, by its id and its name; the dialog is closed while undefined. */
+  subject?: { id: string; label: string }
   /** The causes it may be linked to. */
   candidates: readonly Cause[]
   onCancel: () => void
@@ -339,7 +340,7 @@ export function LinkDialog({ subject, candidates, onCancel, onConfirm, s }: Link
   const [causeId, setCauseId] = useState(NEW)
   const [title, setTitle] = useState('')
   const [strength, setStrength] = useState<CauseStrength>('normal')
-  useEffect(() => { if (subject) { setCauseId(NEW); setTitle(''); setStrength('normal') } }, [subject])
+  useFreshFor(subject, (one) => one.id, () => { setCauseId(NEW); setTitle(''); setStrength('normal') })
   const ready = causeId !== NEW || title.trim().length > 0
   const submit = () => {
     if (!ready) return

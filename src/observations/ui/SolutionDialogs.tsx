@@ -11,6 +11,7 @@
  * dialogs do: the page owns the lists, the numbering and the date.
  */
 import { useEffect, useState } from 'react'
+import { useFreshFor } from '../../widgets/useFreshFor'
 import Button from '@mui/material/Button'
 import Dialog from '@mui/material/Dialog'
 import DialogActions from '@mui/material/DialogActions'
@@ -83,8 +84,8 @@ export function NewSolutionDialog({ open, causes, causeId, onCancel, onCreate, s
 }
 
 export type AddressDialogProps = {
-  /** What addresses; the dialog is closed while undefined. */
-  subject?: { label: string }
+  /** What addresses, by its id and its name; the dialog is closed while undefined. */
+  subject?: { id: string; label: string }
   candidates: readonly Cause[]
   onCancel: () => void
   onConfirm: (choice: { causeId: string; strength: CauseStrength }) => void
@@ -94,7 +95,7 @@ export type AddressDialogProps = {
 export function AddressDialog({ subject, candidates, onCancel, onConfirm, s }: AddressDialogProps) {
   const [causeId, setCauseId] = useState('')
   const [strength, setStrength] = useState<CauseStrength>('strong')
-  useEffect(() => { if (subject) { setCauseId(''); setStrength('strong') } }, [subject])
+  useFreshFor(subject, (one) => one.id, () => { setCauseId(''); setStrength('strong') })
   return (
     <Dialog open={Boolean(subject)} onClose={onCancel} maxWidth="sm" fullWidth>
       <DialogTitle>{subject ? s('solution.addressTitle', { name: subject.label }) : ''}</DialogTitle>
@@ -123,8 +124,8 @@ export function AddressDialog({ subject, candidates, onCancel, onConfirm, s }: A
 }
 
 export type NewExperimentDialogProps = {
-  /** What it tests; the dialog is closed while undefined. */
-  subject?: { label: string }
+  /** What it tests, by its id and its name; the dialog is closed while undefined. */
+  subject?: { id: string; label: string }
   onCancel: () => void
   onCreate: (fields: { title: string; hypothesis: string; measure: string }) => void
   s: Translate
@@ -134,7 +135,7 @@ export function NewExperimentDialog({ subject, onCancel, onCreate, s }: NewExper
   const [title, setTitle] = useState('')
   const [hypothesis, setHypothesis] = useState('')
   const [measure, setMeasure] = useState('')
-  useEffect(() => { if (subject) { setTitle(''); setHypothesis(''); setMeasure('') } }, [subject])
+  useFreshFor(subject, (one) => one.id, () => { setTitle(''); setHypothesis(''); setMeasure('') })
   const ready = title.trim().length > 0 && hypothesis.trim().length > 0
   return (
     <Dialog open={Boolean(subject)} onClose={onCancel} maxWidth="sm" fullWidth>
@@ -156,7 +157,8 @@ export function NewExperimentDialog({ subject, onCancel, onCreate, s }: NewExper
 }
 
 export type DropDialogProps = {
-  subject?: { label: string }
+  /** The solution being dropped, by its id and its name; the dialog is closed while undefined. */
+  subject?: { id: string; label: string }
   onCancel: () => void
   onConfirm: (note: string) => void
   s: Translate
@@ -164,7 +166,7 @@ export type DropDialogProps = {
 
 export function DropDialog({ subject, onCancel, onConfirm, s }: DropDialogProps) {
   const [note, setNote] = useState('')
-  useEffect(() => { if (subject) setNote('') }, [subject])
+  useFreshFor(subject, (one) => one.id, () => setNote(''))
   return (
     <Dialog open={Boolean(subject)} onClose={onCancel} maxWidth="sm" fullWidth>
       <DialogTitle>{subject ? s('solution.dropTitle', { name: subject.label }) : ''}</DialogTitle>
@@ -187,8 +189,8 @@ export function DropDialog({ subject, onCancel, onConfirm, s }: DropDialogProps)
  * make, so the button waits for one.
  */
 export type ConcludeDialogProps = {
-  /** The experiment, by the name the page shows, the outcome it is concluded as, and what it holds already; closed when absent. */
-  subject?: { label: string; outcome: ExperimentOutcome; result?: string; from?: string }
+  /** The experiment, by its id and the name the page shows, the outcome it is concluded as, and what it holds already; closed when absent. */
+  subject?: { id: string; label: string; outcome: ExperimentOutcome; result?: string; from?: string }
   /** `yyyy-mm-dd`. */
   today: string
   onCancel: () => void
@@ -200,7 +202,7 @@ export function ConcludeDialog({ subject, today, onCancel, onConfirm, s }: Concl
   const [result, setResult] = useState('')
   const [to, setTo] = useState(today)
   const { language } = useStrings()
-  useEffect(() => { if (subject) { setResult(subject.result ?? ''); setTo(today) } }, [subject, today])
+  useFreshFor(subject, (one) => one.id, (one) => { setResult(one.result ?? ''); setTo(today) })
   const early = Boolean(subject?.from && to && to < subject.from)
   const ready = result.trim().length > 0 && /^\d{4}-\d{2}-\d{2}$/.test(to) && !early
   return (
