@@ -9,7 +9,7 @@
 import { describe, expect, it } from 'vitest'
 import { translator } from '../i18n'
 import {
-  adrGate, adrOpenItems, adrsFor, formatAdrNumber, isAdr, isAdrDeletable, isAdrLocked, madrTemplate, newAdr,
+  adrGate, adrOpenItems, adrOptionNames, adrsFor, formatAdrNumber, isAdr, isAdrDeletable, isAdrLocked, madrTemplate, newAdr,
   nextAdrNumber, removeAdr, selfAccepted, setAdrStatus, sortAdrs, supersededByUnaccepted, transitionAdr,
   transitionsFrom, updateAdr,
 } from './adr'
@@ -208,6 +208,24 @@ describe('the gate', () => {
   it('wants an outcome that names one of the options', () => {
     const elsewhere = DECIDED.replace('“One queue”', '“A third way”')
     expect(adrOpenItems(adrGate(reviewing({ body: elsewhere }), 'accepted'))).toEqual(['outcome'])
+  })
+
+  it('names the options as the body writes them, up to a colon, a spaced dash or a bracket', () => {
+    const body = [
+      '## Considered Options', '',
+      '* Tender a replacement of the suite.', '* Build **in-house** on the platform: Java on AKS',
+      '* Keep it — and modernise around it', '* Option 4', '',
+    ].join('\n')
+    expect(adrOptionNames(body)).toEqual([
+      'Tender a replacement of the suite', 'Build in-house on the platform', 'Keep it',
+    ])
+  })
+
+  it('takes an option named without the full stop that ends its line', () => {
+    const body = DECIDED
+      .replace('* One queue', '* One queue for everything.')
+      .replace('“One queue”', 'One queue for everything')
+    expect(adrOpenItems(adrGate(reviewing({ body }), 'accepted'))).toEqual([])
   })
 
   it('wants an approval and no rejection', () => {

@@ -219,6 +219,21 @@ describe('AdrPage', () => {
     expect(gate.querySelector('[data-gate-item="context"]')?.getAttribute('data-ok')).toBe('true')
   })
 
+  it('says on hover what a line of the gate looks for, and which option names the outcome may use', async () => {
+    const body = '## Considered Options\n\n* Tender: buy it\n* Build in-house (on AKS)\n\n## Decision Outcome\n\nBuild it.'
+    const decisions = model.decisions!.map((one) => (one.id === 'c1' ? { ...one, body } : one))
+    mount({ model: { ...model, decisions }, initialAdrId: 'c1' })
+    const outcome = screen.getByTestId('adr-gate').querySelector('[data-gate-item="outcome"]')!
+    expect(outcome.getAttribute('data-ok')).toBe('false')
+    fireEvent.mouseOver(outcome)
+    const hint = await screen.findByRole('tooltip')
+    expect(hint.textContent).toContain('up to the first colon')
+    expect(hint.textContent).toContain('The names it looks for: “Tender”, “Build in-house”.')
+    // The line keeps its own words as its name; the hint describes it.
+    expect(outcome.textContent).toContain('The outcome names one of the options')
+    expect(outcome.getAttribute('aria-describedby')).toBe(hint.id)
+  })
+
   it('confirms before it accepts, and supersedes what the record names in the same step', () => {
     const decided = [
       '## Context', '', 'Two systems.', '', '## Considered Options', '', '* One system', '* Two systems', '',
@@ -304,6 +319,29 @@ describe('AdrPage', () => {
     mount({ initialAdrId: 'g1' })
     expect(within(screen.getByTestId('adr-reader')).getByRole('heading', { level: 1 }).textContent).toBe('One identity provider')
     expect(screen.getByTestId('adr-status').textContent).toBe('Proposed')
+  })
+
+  /**
+   * The record it was opened on is where it starts, not where it stays: every
+   * save hands the page a new list, and taking the person back to that record
+   * on each one closed the editor of the record they had moved to.
+   */
+  it('stays on the record chosen after opening, in edit, when the list comes back changed', () => {
+    const { rerender } = mount({ initialAdrId: 'l2' })
+    fireEvent.click(within(screen.getByTestId('adr-list')).getByText('Event-driven integration'))
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
+    const saved = model.decisions!.map((one) => (one.id === 'l1' ? { ...one, body: `${one.body}\n\nMore.` } : one))
+    rerender(
+      <AdrPage
+        open onClose={() => {}} model={{ ...model, decisions: saved }} groupName="Acme Logistics"
+        ancestors={[...ancestors]} onProjectDecisionsChange={() => {}}
+        initialAdrId="l2" s={translator('en')} language="en" makeId={(p) => p} today={() => 'd'}
+        renderMarkdown={(md) => <MarkdownView markdown={md} />}
+      />,
+    )
+    const reader = screen.getByTestId('adr-reader')
+    expect(within(reader).getByRole('button', { name: 'Edit' }).getAttribute('aria-pressed')).toBe('true')
+    expect(within(reader).getByDisplayValue('Event-driven integration')).toBeTruthy()
   })
 
   it('keeps its top bar clear of the window controls and draggable', () => {

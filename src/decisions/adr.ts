@@ -132,13 +132,17 @@ export type AdrGate = {
  */
 const TEMPLATES = [EN, NL, DE]
 
-/** Lower case, one space, no markdown emphasis or quotes: text as the gate compares it. */
-function plain(text: string): string {
+/** One space, no markdown emphasis or quotes: text as a person reads it back. */
+function bare(text: string): string {
   return text
     .replace(/[*_`"\u201c\u201d\u201e\u00ab\u00bb\u2018\u2019']/g, '')
     .replace(/\s+/g, ' ')
     .trim()
-    .toLowerCase()
+}
+
+/** Lower case, one space, no markdown emphasis or quotes: text as the gate compares it. */
+function plain(text: string): string {
+  return bare(text).toLowerCase()
 }
 
 const HEADINGS = {
@@ -211,18 +215,32 @@ function writtenLines(section: Section | undefined): string[] {
 
 /**
  * What an option is called, for finding it in the outcome: the text up to
- * the first dash, colon or bracket, where its pros and cons usually start.
+ * the first spaced dash, colon or bracket, where its pros and cons usually
+ * start, without the full stop that ends a one-line option.
  */
 function optionName(text: string): string {
-  return plain(text.split(/\s[\u2014\u2013-]\s|:|\(/)[0] ?? text)
+  return bare(text.split(/\s[\u2014\u2013-]\s|:|\(/)[0] ?? text).replace(/[.,;!?]+$/, '').trim()
+}
+
+function optionsOf(sections: readonly Section[]): string[] {
+  return bulletsOf(sectionFor(sections, HEADINGS.options)).filter((text) => !isPlaceholder(text))
+}
+
+/**
+ * The names the outcome has to say one of, as the body writes them — what
+ * the reader shows beside the gate, so the rule can be read off the record
+ * rather than guessed.
+ */
+export function adrOptionNames(body: string): string[] {
+  return optionsOf(sectionsOf(body)).map(optionName).filter((name) => name.length > 0)
 }
 
 /** The lines the body has to answer before a record can be accepted. */
 function bodyItems(body: string): { item: AdrGateItem; ok: boolean }[] {
   const sections = sectionsOf(body)
-  const options = bulletsOf(sectionFor(sections, HEADINGS.options)).filter((text) => !isPlaceholder(text))
+  const options = optionsOf(sections)
   const outcome = plain(writtenLines(sectionFor(sections, HEADINGS.outcome)).join(' '))
-  const named = options.map(optionName).filter((name) => name.length > 0)
+  const named = options.map((text) => optionName(text).toLowerCase()).filter((name) => name.length > 0)
   return [
     { item: 'context', ok: writtenLines(sectionFor(sections, HEADINGS.context)).length > 0 },
     { item: 'options', ok: options.length >= 2 },

@@ -408,7 +408,7 @@ export const GROWN = {
   'src/app/useModelSession.ts': { lines: 340 },
   'src/business/ui/FunctionInspector.tsx': { lines: 156 },
   'src/business/ui/SheetPage.tsx': { complexity: 68, lines: 365 },
-  'src/decisions/ui/AdrPage.tsx': { lines: 254 },
+  'src/decisions/ui/AdrPage.tsx': { lines: 251 },
   'src/documentation/bpmn.ts': { complexity: 31 },
   'src/documentation/ui/BpmnBlock.tsx': { complexity: 41 },
   'src/documentation/ui/DocumentSource.tsx': { lines: 198 },

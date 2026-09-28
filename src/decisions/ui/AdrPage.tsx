@@ -110,6 +110,28 @@ function movedFirst(list: readonly Adr[], id: string): Adr[] {
   return moved ? [moved, ...list.filter((adr) => adr.id !== id)] : [...list]
 }
 
+/**
+ * Go to the record the page was opened onto — once per opening. The records
+ * change with every save, and going back to that one on each would take a
+ * person off the record they moved to, closing its editor mid-sentence. It
+ * waits for the record to be there, so a list that arrives late still lands.
+ */
+function useOpenedOnto(
+  open: boolean, initialAdrId: string | undefined, records: readonly Adr[], onto: (target: Adr) => void,
+) {
+  const honoured = useRef<string | undefined>(undefined)
+  const latest = useRef(onto)
+  latest.current = onto
+  useEffect(() => {
+    if (!open) { honoured.current = undefined; return }
+    if (!initialAdrId || honoured.current === initialAdrId) return
+    const target = records.find((a) => a.id === initialAdrId)
+    if (!target) return
+    honoured.current = initialAdrId
+    latest.current(target)
+  }, [open, initialAdrId, records])
+}
+
 export function AdrPage(props: AdrPageProps) {
   const {
     open, onClose, model, groupName, ancestors = [], onOpenScope, onProjectDecisionsChange,
@@ -221,14 +243,11 @@ export function AdrPage(props: AdrPageProps) {
   }, [open, initialAdrId])
 
   // Opened onto a record: stand in its scope with it selected.
-  useEffect(() => {
-    if (!open || !initialAdrId) return
-    const target = allRecords.find((a) => a.id === initialAdrId)
-    if (!target) return
+  useOpenedOnto(open, initialAdrId, allRecords, (target) => {
     setScope(scopeOfRecord(target))
     setSelectedId(target.id)
     setQuery('')
-  }, [open, initialAdrId, allRecords, scopeOfRecord])
+  })
 
   const trimmed = query.trim()
   const shown: { adr: Adr; scope: ScopeKey }[] = useMemo(() => {

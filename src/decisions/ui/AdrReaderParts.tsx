@@ -19,10 +19,11 @@ import MenuItem from '@mui/material/MenuItem'
 import TextField from '@mui/material/TextField'
 import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
+import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import type { StringKey, Translate } from '../../i18n'
 import {
-  adrGate, formatAdrNumber, isAdrDeletable, isAdrLocked, selfAccepted, supersededByUnaccepted, transitionsFrom,
+  adrGate, adrOptionNames, formatAdrNumber, isAdrDeletable, isAdrLocked, selfAccepted, supersededByUnaccepted, transitionsFrom,
 } from '../adr'
 import type { Adr, AdrGateItem, AdrPatch, AdrStatus } from '../adr'
 import type { Solution } from '../../model/observation'
@@ -43,6 +44,33 @@ const GATE_LABEL: Record<AdrGateItem, StringKey> = {
   reason: 'adr.gate.reason',
   rejection: 'adr.gate.rejection',
   successor: 'adr.gate.successor',
+}
+
+/** What each line looks for, on hover: the rule a person would otherwise have to guess. */
+const GATE_HINT: Record<AdrGateItem, StringKey> = {
+  context: 'adr.gateHint.context',
+  options: 'adr.gateHint.options',
+  outcome: 'adr.gateHint.outcome',
+  consequence: 'adr.gateHint.consequence',
+  approved: 'adr.gateHint.approved',
+  predecessors: 'adr.gateHint.predecessors',
+  reason: 'adr.gateHint.reason',
+  rejection: 'adr.gateHint.rejection',
+  successor: 'adr.gateHint.successor',
+}
+
+/**
+ * The hint for one line. The outcome's also says which names it is looking
+ * for, read off this record's options: "names one of the options" is a rule
+ * about exact words, and the words are the part nobody can guess.
+ */
+function gateHint(item: AdrGateItem, body: string, s: Translate): string {
+  const rule = s(GATE_HINT[item])
+  if (item !== 'outcome') return rule
+  const names = adrOptionNames(body)
+  return `${rule} ${names.length === 0
+    ? s('adr.gateHint.outcomeNone')
+    : s('adr.gateHint.outcomeNames', { names: names.map((name) => s('adr.gateHint.quoted', { name })).join(', ') })}`
 }
 
 /**
@@ -146,7 +174,7 @@ export function ReaderNotices({ adr, list, readOnly, s }: { adr: Adr; list: read
   const ownApproval = (adr.status === 'reviewing' || adr.status === 'accepted') && selfAccepted(adr)
   return (
     <>
-      {gate && <GateChecklist items={gate.items} s={s} />}
+      {gate && <GateChecklist items={gate.items} body={adr.body} s={s} />}
       {isAdrLocked(adr) && <Notice>{s('adr.locked', { status: s(STATUS_LABEL[adr.status]).toLowerCase() })}</Notice>}
       {supersededByUnaccepted(adr, list) && <Notice testId="adr-broken-successor" warning>{s('adr.brokenSuccessor')}</Notice>}
       {ownApproval && <Notice testId="adr-self-accepted" warning>{s('adr.selfAccepted', { name: adr.proposedBy ?? '' })}</Notice>}
@@ -155,7 +183,11 @@ export function ReaderNotices({ adr, list, readOnly, s }: { adr: Adr; list: read
 }
 
 /** The gate to acceptance as a checklist: the one move that locks a record says what it waits for. */
-function GateChecklist({ items, s }: { items: readonly { item: AdrGateItem; ok: boolean }[]; s: Translate }) {
+function GateChecklist({ items, body, s }: {
+  items: readonly { item: AdrGateItem; ok: boolean }[]
+  body: string
+  s: Translate
+}) {
   return (
     <Box
       data-testid="adr-gate"
@@ -165,15 +197,20 @@ function GateChecklist({ items, s }: { items: readonly { item: AdrGateItem; ok: 
         {s('adr.gateTitle', { status: s(STATUS_LABEL.accepted) })}
       </Typography>
       {items.map(({ item, ok }) => (
-        <Typography
-          key={item}
-          variant="caption"
-          data-gate-item={item}
-          data-ok={ok ? 'true' : 'false'}
-          sx={{ color: ok ? 'success.main' : 'text.secondary' }}
-        >
-          {ok ? '✓' : '○'} {s(GATE_LABEL[item])}
-        </Typography>
+        // `describeChild`: the hint goes into aria-describedby, so the line
+        // keeps its own words as its name. Focusable, so the hint is not
+        // for the mouse only.
+        <Tooltip key={item} describeChild title={gateHint(item, body, s)}>
+          <Typography
+            variant="caption"
+            tabIndex={0}
+            data-gate-item={item}
+            data-ok={ok ? 'true' : 'false'}
+            sx={{ color: ok ? 'success.main' : 'text.secondary', cursor: 'help' }}
+          >
+            {ok ? '✓' : '○'} {s(GATE_LABEL[item])}
+          </Typography>
+        </Tooltip>
       ))}
     </Box>
   )
