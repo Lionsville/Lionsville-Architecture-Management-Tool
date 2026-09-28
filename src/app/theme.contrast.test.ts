@@ -29,6 +29,7 @@ import type { CSSObject, Theme } from '@mui/material/styles'
 import { FILLED_COLOURS, fieldOutline, filledAlert, filledControl, shellTheme } from './theme'
 import { getNodeTokens } from '../editor/theme/tokens'
 import type { AspectToken } from '../editor/theme/tokens'
+import { groupColors } from '../editor/canvas/DomainGroupLayer'
 import { seenTint } from '../observations/ui/AnalysisPicture'
 import { dangerInk, inkOn } from '../widgets'
 
@@ -134,8 +135,12 @@ function rowText(theme: Theme): Pair[] {
 
 /**
  * Words on a colour worked out while drawing: the count on an observation
- * tinted by how often it was seen, from the palest to the full accent.
+ * tinted by how often it was seen, from the palest to the full accent, and a
+ * group's name in a colour somebody picked — the picker's own grey, the two
+ * ends, and a spread of hues light and dark.
  */
+const PICKED = ['#888888', '#1f2733', '#000000', '#ffffff', '#ffeb3b', '#e53935', '#1e88e5', '#43a047', '#8e24aa', '#ff9800', '#00bcd4', '#795548']
+
 function drawnText(theme: Theme): Pair[] {
   const { palette } = theme
   const out: Pair[] = []
@@ -143,6 +148,9 @@ function drawnText(theme: Theme): Pair[] {
   for (const [share, seen, most] of [[25, 1, 4], [75, 3, 4], [100, 4, 4]] as const) {
     const fill = seenTint(theme, seen, most)
     add(`seen count at ${share} %`, ratio(inkOn(theme, fill), fill))
+  }
+  for (const picked of PICKED) {
+    add(`group label in ${picked}`, ratio(groupColors(theme, picked).label, palette.background.default))
   }
   return out
 }
@@ -281,6 +289,7 @@ describe('the palette’s contrast', () => {
       'dark filled error chip', 'dark danger menu item with the focus tint', 'light danger menu item with the focus tint',
       'dark text error button under the pointer on paper', 'light unselected toggle under the pointer on ground',
       'dark seen count at 100 %', 'light seen count at 100 %',
+      'light group label in #888888', 'dark group label in #1f2733',
     ]) {
       expect(measured.get(name), name).toBeGreaterThanOrEqual(4.5)
     }

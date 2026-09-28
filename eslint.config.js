@@ -416,7 +416,7 @@ export const GROWN = {
   'src/editor/ConnectionInspector.tsx': { complexity: 55, lines: 416 },
   'src/editor/EditorToolbar.tsx': { complexity: 57, lines: 431 },
   'src/editor/canvas/DiagramCanvas.tsx': { complexity: 29, lines: 1003 },
-  'src/editor/canvas/DomainGroupLayer.tsx': { lines: 202 },
+  'src/editor/canvas/DomainGroupLayer.tsx': { lines: 201 },
   'src/editor/canvas/ElementPalette.tsx': { lines: 479 },
   'src/editor/canvas/Layer7Canvas.tsx': { lines: 187 },
   'src/editor/canvas/ZoneLayer.tsx': { lines: 222 },
