@@ -7,8 +7,9 @@
  * Neither runs here, and a step deleted from a workflow is noticed on the run
  * that needed it — for a release, after the installers are out. So the
  * promises are asserted on the files: the check audits what the bundle is
- * built from, every installer is attested, and every action is pinned to a
- * commit rather than a tag somebody can move.
+ * built from, what a release publishes is attested, a release builds no
+ * installer, and every action is pinned to a commit rather than a tag
+ * somebody can move.
  */
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
@@ -24,14 +25,27 @@ describe('the workflows', () => {
     expect(check).not.toMatch(/npm audit[^\n]*--omit=dev/)
   })
 
-  it('attest every installer a build job made, with the sums it wrote, and may', () => {
+  it('attest what a release publishes, with the sums it wrote, and may', () => {
     const release = workflow('release.yml')
     expect(release).toMatch(/uses: actions\/attest-build-provenance@[0-9a-f]{40} # v\d/)
-    expect(release).toMatch(/subject-checksums: installers\.sha256/)
-    expect(release).toMatch(/cat \.\/\*\.sha256 > \.\.\/installers\.sha256/)
-    const build = release.slice(release.indexOf('\n  build:'), release.indexOf('\n  checksums:'))
-    expect(build).toMatch(/id-token: write/)
-    expect(build).toMatch(/attestations: write/)
+    expect(release).toMatch(/subject-checksums: SHA256SUMS/)
+    const web = release.slice(release.indexOf('\n  web:'), release.indexOf('\n  web-host:'))
+    expect(web).toMatch(/> SHA256SUMS/)
+    expect(web).toMatch(/id-token: write/)
+    expect(web).toMatch(/attestations: write/)
+  })
+
+  /**
+   * ADR-0030: the desktop app is built and signed where it is downloaded from,
+   * so a release here builds no installer and needs no signing credential. A
+   * step that reached for one would be a secret nothing configures any more,
+   * failing on the day of a release.
+   */
+  it('build no installer and read no secret but the run\'s own token', () => {
+    const release = workflow('release.yml')
+    expect(release).not.toMatch(/npx electron-builder|npm run (dist|pack):desktop/)
+    const secrets = [...release.matchAll(/secrets\.([A-Z_]+)/g)].map((m) => m[1])
+    expect(new Set(secrets)).toEqual(new Set(['GITHUB_TOKEN']))
   })
 
   it('pin every action to a commit', () => {

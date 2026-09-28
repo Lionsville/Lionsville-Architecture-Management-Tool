@@ -23,7 +23,8 @@ Two categories, both absolute:
 - **Credentials.** Tokens, API keys, certificates, `.p12`/`.p8`/`.pem`/`.pfx`,
   connection strings, `.env` files, anything from a password manager. They live
   in GitHub Actions secrets and variables and are referenced **by name only** —
-  `docs/release.md` lists all thirteen and carries not one value. If a
+  `docs/release.md` lists the five the release reads, all variables, and
+  carries not one value. If a
   credential ever does land here, it is burned: **rotate it first**, then clean
   the history. Cleaning history alone is not a remedy, it is a tidy-up.
 - **Customer data.** A real organisation's landscape, its application names,
@@ -132,19 +133,17 @@ it deliberately, not out of habit.
 ## Releasing
 
 A release is a GitHub release created from `main` with a `vX.Y.Z` tag; the
-workflow builds, signs and uploads the installers from it (`docs/release.md`).
-Run `npm run verify`, make sure everything is pushed, then create the release
-with `gh release create vX.Y.Z --target main`, titled `Version X.Y.Z - <what it
-brings>`, with notes covering everything since the previous stable release.
-
-**Never edit the README's download links by hand.** They name the installers
-by file, and those files exist only once the workflow has built and uploaded
-them. The workflow's last job points the README at the new version *after*
-the assets are published, and commits that to `main` itself. A hand edit made
-before then is not redundant, it is a README whose download buttons 404 for
-everyone who visits during the build — and the README is the first thing a
-visitor to a public repository sees. The same holds for any other document
-that names a release asset by version.
+workflow builds the web build and the bill of materials from it, puts them on
+the release with their sums and an attestation, and deploys the web build to
+app.architecture.lionsville.nl (`docs/release.md`). It builds **no installers**
+(ADR-0030): the desktop app is built, signed and published where it is
+downloaded from, architecture.lionsville.nl/download, which is where the
+README's Download section points. Run `npm run verify`, make sure everything is
+pushed, then create the release with `gh release create vX.Y.Z --target main`,
+titled `Version X.Y.Z - <what it brings>`, with notes covering everything since
+the previous stable release — and, near the top, where the desktop app is
+downloaded now, for the copies installed from older releases whose update
+notice still reads this repository's release page.
 
 ## The module map
 

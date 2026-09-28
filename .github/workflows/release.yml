@@ -1,20 +1,15 @@
-# Cut a release on GitHub; get signed installers on the release page.
+# Cut a release on GitHub; get the web build, its bill of materials and their
+# sums on the release page, and the web build on app.architecture.lionsville.nl.
 #
 # The trigger is a *published* release, not a pushed tag. The release is the
 # thing a human makes — with its notes, its tag and its title — and this
-# workflow fills it in. That ordering has one consequence worth knowing:
-# electron-builder's GitHub publisher defaults to creating *draft* releases and
-# will not upload into a published one unless `publish.releaseType` says
-# `release`. It fails by logging a warning and uploading nothing. See
-# electron-builder.cjs.
+# workflow fills it in.
 #
-# Everything is signed. macOS: Developer ID, hardened runtime, notarized through
-# notarytool and stapled. Windows: Azure Trusted Signing. Linux is unsigned
-# because there is nothing to sign against. If a credential is missing the run
-# stops in `preflight`, before a single byte is built — an unsigned release is
-# not a degraded release, it is a broken one.
-#
-# Secrets and variables are listed in docs/release.md.
+# No installers (ADR-0030). The desktop app is built, signed and published
+# where it is downloaded from, and anyone may build their own from this
+# source (`electron-builder.cjs`, `docs/release.md`). So nothing here signs,
+# notarizes or holds a secret: the deployment signs in by OIDC, and the five
+# values it reads are variables, listed in docs/release.md.
 
 name: Release
 
@@ -22,13 +17,7 @@ on:
   release:
     types: [published]
   workflow_dispatch:
-    inputs:
-      notarize:
-        description: Submit the macOS build to Apple (adds ~15 minutes of queue time)
-        type: boolean
-        default: true
 
-# electron-builder uploads the installers to the release itself.
 permissions:
   contents: read
 
@@ -40,11 +29,8 @@ env:
   NODE_VERSION: '26'
 
 jobs:
-  # Secrets cannot be read from a job-level `if:`, and a `${{ secrets.X }}` that
-  # resolves to nothing is indistinguishable from one that resolves to a value
-  # until something downstream fails confusingly. So the question "can this run
-  # produce a signed release" is answered once, here, in a step that can read
-  # them — and the version is settled in the same place.
+  # The version is settled once, here, and the tag's commit is held to the
+  # trunk gate before anything is built.
   preflight:
     name: Preflight
     runs-on: ubuntu-24.04
@@ -80,40 +66,6 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "Building $version"
 
-      - name: Every signing credential is present
-        shell: bash
-        env:
-          MAC_CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
-          MAC_CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
-          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
-          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
-          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-          AZURE_CODE_SIGNING_ENDPOINT: ${{ vars.AZURE_CODE_SIGNING_ENDPOINT }}
-          AZURE_CODE_SIGNING_ACCOUNT: ${{ vars.AZURE_CODE_SIGNING_ACCOUNT }}
-          AZURE_CODE_SIGNING_PROFILE: ${{ vars.AZURE_CODE_SIGNING_PROFILE }}
-          AZURE_CODE_SIGNING_PUBLISHER: ${{ vars.AZURE_CODE_SIGNING_PUBLISHER }}
-        run: |
-          set -uo pipefail
-          missing=()
-          for name in \
-            MAC_CSC_LINK MAC_CSC_KEY_PASSWORD \
-            APPLE_API_KEY APPLE_API_KEY_ID APPLE_API_ISSUER APPLE_TEAM_ID \
-            AZURE_TENANT_ID AZURE_CLIENT_ID AZURE_CLIENT_SECRET \
-            AZURE_CODE_SIGNING_ENDPOINT AZURE_CODE_SIGNING_ACCOUNT \
-            AZURE_CODE_SIGNING_PROFILE AZURE_CODE_SIGNING_PUBLISHER
-          do
-            [ -n "${!name:-}" ] || missing+=("$name")
-          done
-          if [ ${#missing[@]} -gt 0 ]; then
-            echo "::error::Not configured to sign. Missing: ${missing[*]}. See docs/release.md." >&2
-            exit 1
-          fi
-          echo "All 13 credentials present."
-
       # The trunk gate is what makes a release trustworthy, so a release may
       # not step around it: the commit the tag names must already carry a
       # green `check` run from check.yml.
@@ -136,9 +88,9 @@ jobs:
           fi
           echo "$COMMIT has a green check."
 
-  # Nothing gets signed, let alone published, on a red suite. This is the same
-  # `check:all` a human runs before handing work back — the shell's 274 tests,
-  # the package's 1428, both typechecks, both lints, and a production web build.
+  # Nothing is published on a red suite. This is the same `check:all` a human
+  # runs before handing work back: typecheck, lint, every test and a
+  # production web build.
   verify:
     name: Verify
     runs-on: ubuntu-24.04
@@ -152,343 +104,22 @@ jobs:
       - run: npm ci
       - run: npm run check:all
 
-  build:
-    name: Build ${{ matrix.platform }}
-    needs: [preflight, verify]
-    runs-on: ${{ matrix.os }}
-    permissions:
-      # electron-builder writes the installers, the blockmaps and the
-      # latest*.yml update manifests onto the release.
-      contents: write
-      # The provenance attestation below: a token from the runner's OIDC
-      # issuer to sign with, and somewhere in this repository to keep it.
-      id-token: write
-      attestations: write
-    strategy:
-      # One platform failing must not throw away the two that succeeded; the
-      # artifacts of the survivors are worth having, and a re-run of one job is
-      # cheaper than a re-run of three.
-      fail-fast: false
-      matrix:
-        include:
-          # macos-15 is an Apple Silicon runner, which is what the arm64-only
-          # mac target wants: no cross-build, and codesign runs natively.
-          - { os: macos-15, platform: mac }
-          # x64 Windows cross-builds the arm64 NSIS installer; signtool is
-          # architecture-agnostic, so both get signed here.
-          - { os: windows-2025, platform: win }
-          - { os: ubuntu-24.04, platform: linux }
-
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-          cache-dependency-path: package-lock.json
-
-      # The Electron binaries are ~200 MB per platform and do not change between
-      # releases; downloading them three times per run is the slowest thing here.
-      - name: Cache the Electron downloads
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: |
-            ~/.cache/electron
-            ~/.cache/electron-builder
-            ~/AppData/Local/electron/Cache
-            ~/AppData/Local/electron-builder/Cache
-            ~/Library/Caches/electron
-            ~/Library/Caches/electron-builder
-          key: ${{ runner.os }}-electron-${{ hashFiles('package-lock.json') }}
-          restore-keys: ${{ runner.os }}-electron-
-
-      - run: npm ci
-
-      # The tag is the single source of truth for the version. package.json
-      # carries 0.0.0 in the repository so nobody has to remember to bump it,
-      # and nobody can bump it to something the tag disagrees with.
-      - name: Stamp the version
-        shell: bash
-        env:
-          VERSION: ${{ needs.preflight.outputs.version }}
-        run: npm version --no-git-tag-version --allow-same-version "$VERSION"
-
-      # Two files and three variables, because @electron/notarize wants a *path*
-      # to the .p8 — not its contents, and not base64 of its contents. Passing
-      # the key itself in APPLE_API_KEY is the single most common way this fails.
-      - name: Arm the macOS credentials
-        if: matrix.platform == 'mac'
-        shell: bash
-        env:
-          MAC_CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
-          MAC_CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
-          APPLE_API_KEY_B64: ${{ secrets.APPLE_API_KEY }}
-          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
-          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: |
-          set -euo pipefail
-          dir="$RUNNER_TEMP/signing"
-          mkdir -p "$dir" && chmod 700 "$dir"
-          # openssl rather than base64(1): the BSD and GNU flags for decoding
-          # disagree, and this step runs on the one runner where that bites.
-          printf '%s' "$MAC_CSC_LINK"      | openssl base64 -d -A > "$dir/certificate.p12"
-          printf '%s' "$APPLE_API_KEY_B64" | openssl base64 -d -A > "$dir/AuthKey.p8"
-          chmod 600 "$dir"/*
-          {
-            echo "CSC_LINK=$dir/certificate.p12"
-            echo "APPLE_API_KEY=$dir/AuthKey.p8"
-            echo "APPLE_API_KEY_ID=$APPLE_API_KEY_ID"
-            echo "APPLE_API_ISSUER=$APPLE_API_ISSUER"
-            echo "APPLE_TEAM_ID=$APPLE_TEAM_ID"
-            echo "CSC_KEY_PASSWORD<<__EOF__"
-            printf '%s\n' "$MAC_CSC_KEY_PASSWORD"
-            echo "__EOF__"
-          } >> "$GITHUB_ENV"
-
-      # electron-builder shells out to the TrustedSigning PowerShell module and
-      # installs it on demand — which fails on a runner whose NuGet package
-      # provider has not been bootstrapped (electron-builder#8828). Doing it
-      # here turns an obscure mid-build failure into an obvious early one.
-      - name: Install the Trusted Signing module
-        if: matrix.platform == 'win'
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-
-          # Bootstrapping the NuGet *provider* is a convenience, not a
-          # requirement, and it is no longer always possible: PowerShell 7 on
-          # the current runner image answers `Install-PackageProvider -Name
-          # NuGet` with "No match was found for the specified search criteria",
-          # because PackageManagement there does not carry the provider the way
-          # Windows PowerShell 5.1 did. PSGallery is already registered and
-          # `Install-Module` works without it, so try and move on rather than
-          # failing the job over a step whose only purpose is to make the next
-          # one smoother.
-          try {
-            Install-PackageProvider -Name NuGet -Force -Scope CurrentUser -ErrorAction Stop | Out-Null
-          } catch {
-            Write-Host "NuGet provider bootstrap unavailable, continuing: $($_.Exception.Message)"
-          }
-
-          # Nor is PSGallery reliably registered any more: the windows-2025
-          # image that built v2.1.0 with it present answered the v2.2.0 build
-          # two days later with "No repository with the name 'PSGallery' was
-          # found". `Register-PSRepository -Default` puts the gallery back
-          # under its well-known name, and is the one form of the cmdlet that
-          # takes no URL to get wrong.
-          if (-not (Get-PSRepository -Name PSGallery -ErrorAction SilentlyContinue)) {
-            Write-Host 'PSGallery is not registered on this image; registering it.'
-            Register-PSRepository -Default -ErrorAction Stop
-          }
-          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
-          Install-Module -Name TrustedSigning -Force -Scope CurrentUser -AllowClobber
-
-          # The module is the thing that actually matters, so assert it rather
-          # than discovering its absence inside electron-builder's signing call.
-          if (-not (Get-Module -ListAvailable -Name TrustedSigning)) {
-            throw 'TrustedSigning module did not install; Windows signing would fail later.'
-          }
-          Write-Host 'TrustedSigning module present.'
-
-      # The AZURE_* trio is read by the Azure identity library inside that
-      # module, not by electron-builder; the four ..._CODE_SIGNING_* are read by
-      # electron-builder.cjs, and are repository *variables* because none of them
-      # is a secret. All seven together are what makes the config emit an
-      # azureSignOptions block at all.
-      - name: Arm the Windows credentials
-        if: matrix.platform == 'win'
-        shell: bash
-        env:
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-          AZURE_CODE_SIGNING_ENDPOINT: ${{ vars.AZURE_CODE_SIGNING_ENDPOINT }}
-          AZURE_CODE_SIGNING_ACCOUNT: ${{ vars.AZURE_CODE_SIGNING_ACCOUNT }}
-          AZURE_CODE_SIGNING_PROFILE: ${{ vars.AZURE_CODE_SIGNING_PROFILE }}
-          AZURE_CODE_SIGNING_PUBLISHER: ${{ vars.AZURE_CODE_SIGNING_PUBLISHER }}
-        run: |
-          set -euo pipefail
-          for name in AZURE_TENANT_ID AZURE_CLIENT_ID AZURE_CLIENT_SECRET \
-                      AZURE_CODE_SIGNING_ENDPOINT AZURE_CODE_SIGNING_ACCOUNT \
-                      AZURE_CODE_SIGNING_PROFILE AZURE_CODE_SIGNING_PUBLISHER
-          do
-            {
-              echo "$name<<__EOF__"
-              printf '%s\n' "${!name}"
-              echo "__EOF__"
-            } >> "$GITHUB_ENV"
-          done
-
-      - name: Build, sign and publish
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # electron-builder refuses to upload into a release published more
-          # than two hours ago. Notarization does not take two hours, but
-          # re-running one failed job the next morning does.
-          EP_GH_IGNORE_TIME: 'true'
-          NOTARIZE: ${{ (github.event_name == 'workflow_dispatch' && !inputs.notarize) && 'false' || 'true' }}
-          PLATFORM: ${{ matrix.platform }}
-          PUBLISH: ${{ github.event_name == 'release' && 'always' || 'never' }}
-        run: |
-          set -euo pipefail
-          npx electron-vite build
-          npx electron-builder "--$PLATFORM" --publish "$PUBLISH"
-
-      # A download nobody can check is a download nobody should run. One
-      # `.sha256` per installer, in sha256sum's own format so `sha256sum -c`
-      # reads it, and naming the file alone so it reads from the folder the
-      # download landed in. The `checksums` job gathers them into one
-      # SHA256SUMS at the end. macOS ships `shasum` and no `sha256sum`, so
-      # whichever of the two this runner has is the one used.
-      - name: A checksum per installer
-        if: success()
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PUBLISHING: ${{ github.event_name == 'release' && 'yes' || 'no' }}
-          TAG: ${{ github.event.release.tag_name }}
-        run: |
-          # No `-u`: an empty array under it is an error in the bash macOS ships.
-          set -eo pipefail
-          sum() { if command -v sha256sum >/dev/null; then sha256sum "$@"; else shasum -a 256 "$@"; fi; }
-          cd release
-          shopt -s nullglob
-          files=(*.dmg *.zip *.exe *.AppImage *.deb)
-          if [ ${#files[@]} -eq 0 ]; then echo "Nothing built to check."; exit 0; fi
-          for file in "${files[@]}"; do
-            sum "$file" > "$file.sha256"
-            cat "$file.sha256"
-          done
-          # The same lines, once more, as the subjects of the attestation
-          # below — outside release/, so neither the upload nor the SHA256SUMS
-          # job picks up a file three runners would each write.
-          cat ./*.sha256 > ../installers.sha256
-          if [ "$PUBLISHING" = 'yes' ]; then
-            gh release upload "$TAG" ./*.sha256 --clobber
-          fi
-
-      # Where an installer came from, signed by GitHub for this repository,
-      # this workflow and this commit, so a download can be checked against
-      # more than a checksum the same release carries: `gh attestation verify
-      # <installer> --repo Lionsville/Lionsville-Architecture-Management-Tool`.
-      # Public repositories keep attestations on any plan. Built on a manual
-      # run too, since its installers are downloadable from the run.
-      - name: Attest where the installers came from
-        if: success() && hashFiles('installers.sha256') != ''
-        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
-        with:
-          subject-checksums: installers.sha256
-
-      # Proof, and a safety net: if the upload to the release fails, the
-      # installers still exist and can be attached by hand.
-      - name: Keep the installers
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: ${{ matrix.platform }}-${{ needs.preflight.outputs.version }}
-          path: |
-            release/*.dmg
-            release/*.zip
-            release/*.exe
-            release/*.AppImage
-            release/*.deb
-            release/*.blockmap
-            release/*.sha256
-            release/latest*.yml
-          # A build that failed early has nothing to keep; that is not a second failure.
-          if-no-files-found: warn
-          retention-days: 14
-
-  # One file to check a download against, over everything on the release.
-  #
-  # It has to be a job of its own: the installers are built on three runners
-  # and the web build on a fourth, and no one of them has ever seen the other
-  # three's output. It stays cheap by gathering the `.sha256` files each of
-  # them already wrote rather than downloading the installers again — a few
-  # hundred bytes instead of a gigabyte.
-  checksums:
-    name: SHA256SUMS
-    needs: [preflight, build, web]
-    if: github.event_name == 'release'
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: write
-    steps:
-      - name: Gather them into one file
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPOSITORY: ${{ github.repository }}
-          TAG: ${{ github.event.release.tag_name }}
-        run: |
-          set -euo pipefail
-          mkdir sums && cd sums
-          gh release download "$TAG" --repo "$REPOSITORY" --pattern '*.sha256'
-          # The glob is sorted, so the same release always produces the same
-          # file — and `sha256sum -c SHA256SUMS` reads it from a folder of
-          # downloads as it stands.
-          cat -- *.sha256 > SHA256SUMS
-          cat SHA256SUMS
-          gh release upload "$TAG" SHA256SUMS --repo "$REPOSITORY" --clobber
-
-  # The README's Download section names the installers by file, and the file
-  # names carry the version. So a stable release ends by pointing the README at
-  # itself: only once all three builds have succeeded, since a link to an
-  # installer that never got uploaded is worse than a link one version behind;
-  # never for a beta, which the README does not offer; and on `main`, not on
-  # the tag, so the commit lands where the next release will build from.
-  readme:
-    name: Point the README at this release
-    needs: [preflight, build]
-    if: github.event_name == 'release' && !github.event.release.prerelease
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: main
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-      - name: Rewrite the download links
-        shell: bash
-        env:
-          VERSION: ${{ needs.preflight.outputs.version }}
-        run: node build/readmeDownloads.ts "$VERSION"
-      - name: Commit, if anything moved
-        shell: bash
-        env:
-          VERSION: ${{ needs.preflight.outputs.version }}
-        run: |
-          set -euo pipefail
-          if git diff --quiet -- README.md; then
-            echo "README already points at $VERSION."
-            exit 0
-          fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add README.md
-          git commit -m "readme: downloads point at $VERSION" \
-            -m "Made by the release workflow once every installer was on the release."
-          git push origin HEAD:main
-
-  # The same app, for a browser. `npm run build` is the web build the README's
+  # The app, for a browser. `npm run build` is the web build the README's
   # "Running from source" section serves on :5200; here it is zipped as
-  # `web-<version>.zip` and put on the release beside the installers, so a
-  # release carries every form the app takes. It is built on the tag, stamped
-  # like the installers are, after the same `verify`; a manual run keeps it as
-  # a run artifact and uploads nothing, the way the installers behave.
+  # `web-<version>.zip` and put on the release with the bill of materials, the
+  # sums over both and an attestation of where they came from. It is built on
+  # the tag and stamped with its version, after `verify`; a manual run keeps
+  # it all as a run artifact and uploads nothing.
   web:
     name: Build web
     needs: [preflight, verify]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
+      # The provenance attestation below: a token from the runner's OIDC
+      # issuer to sign with, and somewhere in this repository to keep it.
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -497,6 +128,9 @@ jobs:
           cache: npm
           cache-dependency-path: package-lock.json
       - run: npm ci
+      # The tag is the single source of truth for the version. package.json
+      # carries 0.0.0 in the repository so nobody has to remember to bump it,
+      # and nobody can bump it to something the tag disagrees with.
       - name: Stamp the version
         shell: bash
         env:
@@ -516,26 +150,42 @@ jobs:
         env:
           VERSION: ${{ needs.preflight.outputs.version }}
         run: (cd dist && zip -qr "../web-$VERSION.zip" .)
-      - name: A checksum for it
+      # The bill of materials, in CycloneDX: what the web build and the
+      # desktop main process are made of, for this release and for any build
+      # made from its source. Not `npm sbom --omit dev` as it stands —
+      # everything bundled is a dev dependency, so that document is empty;
+      # `build/sbom.ts` says how it narrows npm's own to what ships.
+      - name: The bill of materials
         shell: bash
         env:
           VERSION: ${{ needs.preflight.outputs.version }}
-        run: sha256sum "web-$VERSION.zip" > "web-$VERSION.zip.sha256"
-      # The bill of materials, in CycloneDX, for every form the release takes:
-      # the installers and this build are one bundle of the same packages, so
-      # one document describes them all, and this is the one job that runs
-      # once and has the tree installed. Not `npm sbom --omit dev` as it
-      # stands — everything bundled is a dev dependency, so that document is
-      # empty; `build/sbom.ts` says how it narrows npm's own to what ships.
-      # Its checksum lands in SHA256SUMS with the rest.
-      - name: The bill of materials
+        run: node build/sbom.ts "sbom-$VERSION.cdx.json" .=src,electron
+      # A download nobody can check is a download nobody should use. One
+      # `.sha256` per file, in sha256sum's own format so `sha256sum -c` reads
+      # it, naming the file alone so it reads from the folder the download
+      # landed in — and SHA256SUMS over both, the one file to check against.
+      - name: A checksum per file, and one file of them
         shell: bash
         env:
           VERSION: ${{ needs.preflight.outputs.version }}
         run: |
           set -euo pipefail
-          node build/sbom.ts "sbom-$VERSION.cdx.json" .=src,electron
-          sha256sum "sbom-$VERSION.cdx.json" > "sbom-$VERSION.cdx.json.sha256"
+          for file in "web-$VERSION.zip" "sbom-$VERSION.cdx.json"; do
+            sha256sum "$file" > "$file.sha256"
+          done
+          # Sorted, so the same release always produces the same file.
+          cat -- "sbom-$VERSION.cdx.json.sha256" "web-$VERSION.zip.sha256" > SHA256SUMS
+          cat SHA256SUMS
+      # Where the files came from, signed by GitHub for this repository, this
+      # workflow and this commit, so a download can be checked against more
+      # than a checksum the same release carries: `gh attestation verify
+      # <file> --repo Lionsville/Lionsville-Architecture-Management-Tool`.
+      # Public repositories keep attestations on any plan. Made on a manual
+      # run too, since its files are downloadable from the run.
+      - name: Attest where they came from
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-checksums: SHA256SUMS
       - name: Put it on the release
         if: github.event_name == 'release'
         shell: bash
@@ -545,7 +195,7 @@ jobs:
           VERSION: ${{ needs.preflight.outputs.version }}
         run: |
           gh release upload "$TAG" "web-$VERSION.zip" "web-$VERSION.zip.sha256" \
-            "sbom-$VERSION.cdx.json" "sbom-$VERSION.cdx.json.sha256" --clobber
+            "sbom-$VERSION.cdx.json" "sbom-$VERSION.cdx.json.sha256" SHA256SUMS --clobber
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: web-${{ needs.preflight.outputs.version }}
@@ -554,20 +204,20 @@ jobs:
             web-${{ needs.preflight.outputs.version }}.zip.sha256
             sbom-${{ needs.preflight.outputs.version }}.cdx.json
             sbom-${{ needs.preflight.outputs.version }}.cdx.json.sha256
+            SHA256SUMS
           retention-days: 14
 
   # app.architecture.lionsville.nl runs the newest stable release, and this is
   # where it gets it: the web build above, deployed once the release is whole —
-  # every installer on the release page and the README pointing at it. Never for
-  # a beta: the host runs what the README offers, and the README offers stable
-  # releases only. The host is a Static Web App; the workflow signs in by OIDC
-  # under the `app` environment with an identity that can read that one
-  # resource's deployment token and nothing else, and the token is fetched for
-  # the run and never stored. The five `WEB_HOST_*` values are variables, not
+  # the zip, its sums and the bill of materials on the release page. Never for
+  # a beta. The host is a Static Web App; the workflow signs in by OIDC under
+  # the `app` environment with an identity that can read that one resource's
+  # deployment token and nothing else, and the token is fetched for the run
+  # and never stored. The five `WEB_HOST_*` values are variables, not
   # secrets — docs/release.md lists them.
   web-host:
     name: Point app.architecture.lionsville.nl at this release
-    needs: [preflight, web, readme]
+    needs: [preflight, web]
     if: github.event_name == 'release' && !github.event.release.prerelease
     runs-on: ubuntu-24.04
     permissions:

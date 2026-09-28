@@ -7,13 +7,17 @@ C4-containerdiagrammen eronder. Dit is de handleiding voor het gebruik. Wat het 
 
 ## Beginnen
 
-**Desktop.** Download het installatiebestand voor je platform van de
-[releasepagina](https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/releases/latest).
-De app kijkt op de achtergrond of daar een nieuwere versie staat en zegt het als
-die er is — **Download…** opent het installatiebestand in je browser, **Skip
-This Version** zegt deze niet, en het vinkje in dat venster zet de automatische
-controle uit. Er installeert zichzelf niets. **Check for Updates…** in het
-Help-menu vraagt het op verzoek.
+**Desktop.** Download de app voor je platform van
+[architecture.lionsville.nl/download](https://architecture.lionsville.nl/download).
+De app kijkt op de achtergrond of er een nieuwere versie is en vraagt eerst
+voordat hij er iets mee doet — **Download and Install** haalt hem op
+terwijl je doorwerkt, **Skip This Version** zegt deze niet, en het vinkje in
+dat venster zet de automatische controle uit. Is de download klaar, dan vraagt
+de app je opnieuw te starten; **Later** installeert hem de volgende keer dat je
+de app afsluit. Waar de app zichzelf niet kan vervangen — rechtstreeks gestart
+vanaf de schijfkopie, of vanuit Downloads zonder naar Programma's verplaatst te
+zijn — zegt hij dat en opent hij in plaats daarvan de downloadpagina.
+**Check for Updates…** in het Help-menu vraagt het op verzoek.
 
 **De menu's** op de desktop zijn voorlopig Engels. **File** bevat de map, het
 werkbestand, momentopnamen en geschiedenis; de items over het geopende

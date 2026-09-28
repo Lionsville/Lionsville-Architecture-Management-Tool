@@ -6,13 +6,16 @@ this manual is also in [Dutch](manual.nl.md) and [German](manual.de.md).
 
 ## Starting
 
-**Desktop.** Download the installer for your platform from the
-[releases page](https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/releases/latest).
-The app checks that page for a newer version in the background and tells you
-when there is one — **Download…** opens the installer in your browser, **Skip
-This Version** says not this one, and the checkbox in that dialog turns the
-automatic check off. Nothing installs itself. **Check for Updates…** in the
-Help menu asks on request.
+**Desktop.** Download the app for your platform from
+[architecture.lionsville.nl/download](https://architecture.lionsville.nl/download).
+It checks for a newer version in the background and asks before it does
+anything about one — **Download and Install** fetches it while you work,
+**Skip This Version** says not this one, and the checkbox in that dialog turns
+the automatic check off. When the download is done it asks you to restart;
+**Later** installs it the next time you quit. Where the app cannot replace
+itself — run straight from the disk image, or from Downloads without being
+moved to Applications — it says so and opens the download page instead.
+**Check for Updates…** in the Help menu asks on request.
 
 **The menus** on the desktop are in English for now. **File** holds the
 folder, the working file, snapshots and history; its items about the open

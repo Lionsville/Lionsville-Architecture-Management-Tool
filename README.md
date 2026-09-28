@@ -27,27 +27,31 @@ marketplace partner's beside the common path, and the areas that serve it.*
 ## Download
 
 <p align="center">
-<a href="https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/releases/download/v3.0.4/lionsville-architecture-management-tool-3.0.4-mac-arm64.dmg"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/download/macos-dark.svg"><img src="docs/download/macos.svg" width="220" alt="macOS: Download .dmg"></picture></a>
+<a href="https://architecture.lionsville.nl/download"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/download/macos-dark.svg"><img src="docs/download/macos.svg" width="220" alt="macOS: Download .dmg"></picture></a>
 &nbsp;
-<a href="https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/releases/download/v3.0.4/lionsville-architecture-management-tool-3.0.4-win-x64.exe"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/download/windows-dark.svg"><img src="docs/download/windows.svg" width="220" alt="Windows: Download .exe"></picture></a>
+<a href="https://architecture.lionsville.nl/download"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/download/windows-dark.svg"><img src="docs/download/windows.svg" width="220" alt="Windows: Download .exe"></picture></a>
 &nbsp;
-<a href="https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/releases/download/v3.0.4/lionsville-architecture-management-tool-3.0.4-linux-amd64.deb"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/download/linux-dark.svg"><img src="docs/download/linux.svg" width="220" alt="Linux: Download .deb"></picture></a>
+<a href="https://architecture.lionsville.nl/download"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/download/linux-dark.svg"><img src="docs/download/linux.svg" width="220" alt="Linux: Download .deb"></picture></a>
 </p>
 
-<p align="center"><b><a href="https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/releases/latest">More details →</a></b><br>
-<sub>Version 3.0.4 · the release page also has a Windows ARM64 installer, a Linux AppImage and the notes.</sub></p>
+<p align="center"><b><a href="https://architecture.lionsville.nl/download">architecture.lionsville.nl/download →</a></b><br>
+<sub>macOS, Windows and Linux, from one page.</sub></p>
 
-The desktop app checks that release page for a newer version in the background —
-switchable off, and **Check for Updates…** in the Help menu asks on request. It
-tells you and hands you the installer; it never installs anything behind your
-back.
+The desktop app is downloaded from that page, and it asks before it updates
+itself: it offers a new version, downloads it only once you say so, and then
+asks you to restart. **Check for Updates…** in the Help menu asks on request.
+
+The source is here, under the [AGPL-3.0](LICENSE), and anyone may build the
+app from it — see [Running from source](#running-from-source) and
+[`docs/release.md`](docs/release.md). The releases on this repository carry the
+source and the web build, not installers.
 
 New here? The **[user manual](docs/manual.en.md)** (also in
 [Dutch](docs/manual.nl.md) and [German](docs/manual.de.md)) is the place to start.
 
 Prefer a browser? [app.architecture.lionsville.nl](https://app.architecture.lionsville.nl/)
-is this release, with nothing installed — your work stays in that browser, or in
-a folder it opens for you. Want to change something? See
+is the newest release, with nothing installed — your work stays in that browser,
+or in a folder it opens for you. Want to change something? See
 [Running from source](#running-from-source).
 
 ## What it does

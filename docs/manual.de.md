@@ -8,14 +8,17 @@ Benutzung. Was es ist und warum es existiert, steht in der
 
 ## Erste Schritte
 
-**Desktop.** Laden Sie das Installationsprogramm für Ihre Plattform von der
-[Release-Seite](https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/releases/latest).
-Die App sieht im Hintergrund auf dieser Seite nach, ob es eine neuere Version
-gibt, und sagt es Ihnen, wenn es eine gibt — **Download…** öffnet das
-Installationsprogramm in Ihrem Browser, **Skip This Version** sagt: diese
-nicht, und das Kontrollkästchen in diesem Dialog schaltet die automatische
-Prüfung aus. Nichts installiert sich von selbst. **Check for Updates…** im
-Hilfe-Menü fragt auf Wunsch nach.
+**Desktop.** Laden Sie die App für Ihre Plattform von
+[architecture.lionsville.nl/download](https://architecture.lionsville.nl/download).
+Sie sieht im Hintergrund nach, ob es eine neuere Version gibt, und fragt, bevor
+sie etwas damit tut — **Download and Install** lädt sie, während Sie
+weiterarbeiten, **Skip This Version** sagt: diese nicht, und das
+Kontrollkästchen in diesem Dialog schaltet die automatische Prüfung aus. Ist der
+Download fertig, bittet die App um einen Neustart; **Later** installiert die
+Version beim nächsten Beenden. Wo die App sich nicht selbst ersetzen kann —
+direkt vom Disk-Image gestartet oder aus „Downloads“, ohne in „Programme“
+verschoben zu sein — sagt sie das und öffnet stattdessen die Download-Seite.
+**Check for Updates…** im Hilfe-Menü fragt auf Wunsch nach.
 
 **Die Menüs** auf dem Desktop sind vorerst englisch. **File** hält den Ordner,
 die Arbeitsdatei, Schnappschüsse und den Verlauf; seine Einträge zum

@@ -14,6 +14,10 @@
  * means. Nothing here holds a secret — the Azure account names are not secret
  * and come from repository variables, the credentials never appear.
  *
+ * This repository's own release builds no installers any more (ADR-0030): the
+ * rule is kept for a build composed from this one, whose config starts from
+ * this file, and for anybody building their own signed copy of the source.
+ *
  * `.cjs` and not `.js` because the package is `"type": "module"` and
  * electron-builder loads a `.js` config as ESM. `.cjs` is in its search list
  * (after `.yml`, which is why that file is gone rather than kept alongside).
@@ -28,8 +32,8 @@ const signMac = Boolean(process.env.CSC_LINK)
 
 /**
  * Notarization is Apple's queue and it costs ~15 minutes. It is unconditional
- * for a release; `NOTARIZE=false` exists so a manual run of the workflow can
- * exercise everything else without the wait.
+ * for a release; `NOTARIZE=false` exists so a manual run of a release workflow
+ * can exercise everything else without the wait.
  */
 const notarizeMac = signMac && process.env.NOTARIZE !== 'false'
 
@@ -76,9 +80,9 @@ module.exports = {
   // `dependencies` is the list electron-builder copies into the app, and it is
   // now empty: nothing here reads anything from node_modules at runtime.
   // Everything the renderer uses is already bundled into `out/renderer` by Vite,
-  // and main and preload import nothing but `electron` and node builtins.
-  // (`electron-updater` used to be the one exception; the update notice in
-  // `electron/main/updates.ts` replaced it and needs no library.)
+  // and so is everything main uses: `electron-updater`, the one library main
+  // loads (ADR-0030), is a dev dependency like the rest and bundled into
+  // `out/main`, so it is in the asar without `node_modules` being there.
   //
   // This is not tidiness. With React, MUI and elk sitting in `dependencies` the
   // asar was 61 MB, of which 55 MB was never opened — paid for on every
@@ -123,17 +127,19 @@ module.exports = {
   // Only asserted when credentials were supplied, so a local build is unaffected.
   forceCodeSigning: signMac || signWin,
 
-  publish: {
-    provider: 'github',
-    owner: 'Lionsville',
-    repo: 'Lionsville-Architecture-Management-Tool',
-    // Load-bearing. The default is `draft`, and electron-builder refuses to
-    // upload into an *already published* release when it is publishing drafts —
-    // it logs "existing type not compatible with publishing type" and uploads
-    // nothing, successfully. This workflow is triggered by a published release,
-    // so the type has to say so.
-    releaseType: 'release',
-  },
+  // Nobody publishes from this config. This repository's releases carry the
+  // source, the web build and the bill of materials, and no installers
+  // (ADR-0030), so there is nowhere for electron-builder to upload to — and
+  // `null` rather than nothing, because with nothing it guesses a GitHub
+  // provider from package.json and, on a CI tag, tries.
+  //
+  // A build composed from this one that publishes a feed names it here in its
+  // own config, as a `generic` provider at the feed's URL. That block is not
+  // decoration: it is what makes electron-builder write the `latest*.yml`
+  // manifests the feed serves, and `app-update.yml` inside the app, which the
+  // updater reads for its download cache and, on Windows, for the publisher
+  // whose signature a downloaded installer must carry.
+  publish: null,
 
   mac: {
     category: 'public.app-category.business',
@@ -153,12 +159,11 @@ module.exports = {
       // architecture is a separate notarization submission; if Intel is ever
       // needed the answer is `universal`, not `[arm64, x64]`.
       { target: 'dmg', arch: ['arm64'] },
-      // The zip's original reason is gone — it existed because Squirrel.Mac,
-      // and therefore electron-updater, could only update from one, and the app
-      // no longer updates itself. It is kept because it costs one more upload
-      // and is the form that survives being emailed or unpacked without a
-      // mount; dropping it would also save a notarization submission, which is
-      // a call worth making deliberately rather than as a side effect.
+      // Squirrel.Mac, and therefore electron-updater, updates from the zip and
+      // from nothing else: a build that registers a feed (ADR-0030) replaces
+      // itself from this file, and without it `latest-mac.yml` names nothing
+      // the updater can use. It is also the form that survives being emailed
+      // or unpacked without a mount.
       { target: 'zip', arch: ['arm64'] },
     ],
     hardenedRuntime: true,

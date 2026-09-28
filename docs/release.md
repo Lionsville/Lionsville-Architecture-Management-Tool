@@ -3,70 +3,61 @@
 Draft a release on GitHub with a tag of the form `v1.2.3`, write the notes
 (`docs/release-notes/next.md` collects them between releases; paste it in and
 empty it),
-press **Publish release**. That is the whole procedure. About twenty minutes
-later the release page carries:
+press **Publish release**. That is the whole procedure. A few minutes later
+the release page carries:
 
-| File | Platform |
+| File | What it is |
 |---|---|
-| `…-mac-arm64.dmg` | macOS, Apple Silicon — signed, notarized, stapled |
-| `…-mac-arm64.zip` | the same app, unpacked rather than mounted |
-| `…-win-x64.exe`, `…-win-arm64.exe` | Windows NSIS installers — signed |
-| `…-linux-x86_64.AppImage`, `…-linux-amd64.deb` | Linux, unsigned |
-| `latest.yml`, `latest-mac.yml`, `latest-linux.yml`, `*.blockmap` | update manifests — written by electron-builder, read by nothing since the notice replaced the self-updater |
-| `SHA256SUMS`, `<file>.sha256` | a SHA-256 per file, and one file listing them all |
 | `web-<version>.zip` | the web build — `npm run build`'s `dist/`, with a `version.json` saying which release it is; what [app.architecture.lionsville.nl](https://app.architecture.lionsville.nl/) runs |
-| `sbom-<version>.cdx.json` | the bill of materials, in CycloneDX: every package the installers and the web build are made of, with its version, licence and hash — npm's own document, narrowed to what ships (`build/sbom.ts`) |
+| `sbom-<version>.cdx.json` | the bill of materials, in CycloneDX: every package the web build and the desktop main process are made of, with its version, licence and hash — npm's own document, narrowed to what ships (`build/sbom.ts`) |
+| `SHA256SUMS`, `<file>.sha256` | a SHA-256 per file, and one file listing them all |
 
-**Then the README, by itself.** Its Download section links three installers
-by full name, and the name carries the version (`…-1.1.0-mac-arm64.dmg`). The
-workflow's last job (`readme`) runs `build/readmeDownloads.ts` on `main` once
-all three builds have succeeded and commits the three moved links, so the
-README points at the newest stable release without anyone editing it. A beta
-skips that job: the README offers stable releases only. If one platform's
-build fails and is re-run, the job runs again after it.
+and, as on every GitHub release, the source at the tag.
+
+**No installers** (ADR-0030). The desktop app is downloaded from
+[architecture.lionsville.nl/download](https://architecture.lionsville.nl/download),
+where it is built, signed and published with the update feed it replaces
+itself from; this repository is its source, under the AGPL, and anyone may
+build their own copy from it (*Building the desktop app yourself*, below).
+Copies installed from releases of this repository before then keep asking its
+release page for the newest version, and a release with no installer on it
+sends their *Download…* to that page — so a release's notes say, near the top,
+where the app is downloaded now.
 
 **The tag is the version.** `package.json` says `0.0.0` and stays that way; the
 workflow stamps the number from the tag before it builds. A tag that is not
-`v<semver>` stops the run in its first job.
+`v<semver>` stops the run in its first job, and so does a tag whose commit has
+no successful `check` run.
 
 `.github/workflows/release.yml` also has a **Run workflow** button. That builds
-and signs exactly as a release does but publishes nothing, and its `notarize`
-input can be switched off to skip Apple's ~15-minute queue. Use it to test a
-change to the pipeline; the installers come back as run artifacts.
+exactly as a release does but publishes nothing and deploys nowhere; the files
+come back as run artifacts. Use it to test a change to the pipeline.
 
 **Then the browser.** A stable release ends with the web build deployed to
 [app.architecture.lionsville.nl](https://app.architecture.lionsville.nl/) —
-the `web-host` job, which waits for the README job, so the host never runs a
-release the README does not yet offer. A beta is never deployed there: the
-host runs what the README offers, and the README offers stable releases only.
-The job signs in to Azure by OIDC under the `app` environment, fetches the
-Static Web App's deployment token for the run, uploads the unpacked zip with
+the `web-host` job, which waits for the release to be whole: the zip, the bill
+of materials and their sums on the page. A beta is never deployed there. The
+job signs in to Azure by OIDC under the `app` environment, fetches the Static
+Web App's deployment token for the run, uploads the unpacked zip with
 `.github/staticwebapp.config.json` beside it, and polls `/version.json` until
 the host says the new version. The five values it reads are listed below.
 
 ## Verifying a download
 
-Every installer and the web zip arrive with a **`<file>.sha256`** beside them,
-and the release carries one **`SHA256SUMS`** over all of them — sha256sum's own
-format, file names only, so it reads from whatever folder the downloads landed
-in: `sha256sum -c SHA256SUMS` on Linux, `shasum -a 256 -c SHA256SUMS` on macOS,
-`certutil -hashfile <file> SHA256` on Windows compared by eye. Each build job
-writes the sums for what it built, because that is the only machine that has
-those files; the `checksums` job then gathers the small files into
-`SHA256SUMS`, which is why it downloads a few hundred bytes rather than a
-gigabyte. It runs for a beta too — a beta is downloaded like anything else.
-This is a check against a damaged or swapped download, not a signature: the
-macOS and Windows installers are signed, and that is what proves who built
-them.
+Every file arrives with a **`<file>.sha256`** beside it, and the release
+carries one **`SHA256SUMS`** over all of them — sha256sum's own format, file
+names only, so it reads from whatever folder the downloads landed in:
+`sha256sum -c SHA256SUMS` on Linux, `shasum -a 256 -c SHA256SUMS` on macOS,
+`certutil -hashfile <file> SHA256` on Windows compared by eye. It runs for a
+beta too. This is a check against a damaged or swapped download, not a
+signature.
 
-Every installer also has a **build-provenance attestation**: each build job
-hands the same sums to `actions/attest-build-provenance`, and GitHub signs a
-statement that this file came from this repository, this workflow and this
-commit. It is what the Linux installers, which nobody signs, have instead, and
-it is checked with the GitHub CLI:
+Every file also has a **build-provenance attestation**: the web job hands the
+same sums to `actions/attest-build-provenance`, and GitHub signs a statement
+that this file came from this repository, this workflow and this commit. It is
+checked with the GitHub CLI:
 `gh attestation verify <file> --repo Lionsville/Lionsville-Architecture-Management-Tool`.
-A public repository keeps attestations on any plan. The web zip has none: it
-is not installed but deployed, and this same workflow deploys it.
+A public repository keeps attestations on any plan.
 
 ## Rolling back
 
@@ -74,121 +65,44 @@ There is no rollback button and no separate procedure: **putting the previous
 release back is publishing it again.** Open the previous release on GitHub,
 press *Edit*, and publish it once more — that fires `release: published` on
 that tag, and the workflow does for it exactly what it did the first time:
-builds and signs the installers from the tag's commit, uploads them over the
-ones already there, points the README's Download section back at that version,
-and deploys its web build to
+builds the web build from the tag's commit, uploads it over the one already
+there, and deploys it to
 [app.architecture.lionsville.nl](https://app.architecture.lionsville.nl/),
 polling `/version.json` until the host says so. Re-running that release's own
 workflow run from the Actions page has the same effect, and is quicker when
 the run is still in the list.
 
 Two things to know before you press it. The **Run workflow** button is *not*
-this: a manual run builds and signs but publishes nothing and deploys nowhere,
-which makes it a rehearsal rather than a rollback. And `preflight` refuses a
-tag whose commit has no successful `check` run, so a tag older than that gate
-has to be checked first — push nothing, just let `check.yml` run on the
-commit, or the run stops in its first job.
+this: a manual run builds but publishes nothing and deploys nowhere, which
+makes it a rehearsal rather than a rollback. And `preflight` refuses a tag
+whose commit has no successful `check` run, so a tag older than that gate has
+to be checked first — push nothing, just let `check.yml` run on the commit, or
+the run stops in its first job.
 
 What this does **not** roll back:
 
-- **An installed desktop app.** Nothing is pushed to a machine and there is no
-  downgrade path; someone running the newer version keeps running it until
-  they install another. The update notice points at the newest release, so
-  while the bad one is on the releases page it is what they are pointed at —
-  delete it or mark it a pre-release, which is a separate act.
+- **An installed desktop app.** This repository publishes none. The app people
+  download updates from its own feed, and that feed is withdrawn where it is
+  published; a copy somebody built themselves keeps running until they build
+  or install another.
 - **Files already written.** A working file saved by the newer version is a
   file in that version's format; the previous build reads what its own format
   version can read and nothing more.
 - **The newer release itself.** Its page, its tag and its notes stay until
-  somebody removes them.
-- **Anything outside this repository.** The public site and the hosted
-  service are released on their own and roll back on their own.
-
-### A desktop release that should not be installed
-
-Publishing the previous release again puts the README and the browser back, and
-does nothing for the people the update notice is about to send to the bad one.
-The notice asks GitHub for the `latest` release, so while the bad release is
-the latest, every running copy offers it. In this order, the same hour:
-
-1. **Stop it being offered.** Edit the bad release and tick *Set as a
-   pre-release*. It is then not `latest` for the notice (a beta channel still
-   sees it — untick *Set as the latest release* too, and on the beta channel
-   say so in the notes), and the README job, which offers stable releases only,
-   no longer points at it. Deleting its installers from the release page is the
-   stronger form, for a build that must not run at all: a download link that
-   answers 404 is better than one that installs something broken. Keep the
-   `SHA256SUMS` and the notes, so what was published stays on record.
-2. **Put the previous one back** — *Rolling back*, above: publish it again, and
-   the README and the web build follow.
-3. **Say so.** Edit the bad release's notes to open with one line: what is
-   wrong with it, which release to install instead, and — for a file-format
-   change — what to do with files it saved. Then write the same in
-   `docs/release-notes/next.md`, so the release that fixes it says it too.
-4. **Fix forward.** The next release is the fix; a bad release is never
-   re-tagged or re-published under the same version, because an installer
-   somebody already downloaded has that version in its name.
-
-People who installed it keep it until they install another; nothing reaches
-into a machine. The notice will offer them the fix as soon as it is `latest`.
+  somebody removes them. Tick *Set as a pre-release* on it to take it out of
+  `latest`, which is what copies installed from older releases ask for.
+- **Anything outside this repository.** The public site, the desktop app's
+  downloads and the hosted service are released on their own and roll back on
+  their own.
 
 ## What has to be configured once
 
-Thirteen values. The workflow's `preflight` job checks all of them are present
-and fails the run before anything is built if any is not — an unsigned release
-is not a degraded release, it is a broken one.
+Five variables, all for the browser host. There is no secret: nothing here
+signs anything, and the deployment proves who it is by OIDC.
 
-### Secrets — macOS (Settings → Secrets and variables → Actions → Secrets)
+### Variables — the browser host (Settings → Secrets and variables → Actions → Variables)
 
-| Name | What it is |
-|---|---|
-| `MAC_CSC_LINK` | The **Developer ID Application** certificate exported from Keychain Access as `.p12`, then base64-encoded: `base64 -i cert.p12 \| pbcopy` |
-| `MAC_CSC_KEY_PASSWORD` | The password set on that `.p12` |
-| `APPLE_API_KEY` | The App Store Connect API key `.p8`, base64-encoded the same way |
-| `APPLE_API_KEY_ID` | The key's ID (the `XXXXXXXXXX` in `AuthKey_XXXXXXXXXX.p8`) |
-| `APPLE_API_ISSUER` | The issuer UUID shown above the key list in App Store Connect |
-| `APPLE_TEAM_ID` | The ten-character team ID |
-
-Create the API key in App Store Connect → Users and Access → Integrations →
-App Store Connect API, with the **Developer** role. Apple lets you download the
-`.p8` exactly once.
-
-An Apple ID plus an app-specific password works too, but the API key is the
-supported route for CI and is what the workflow is written for.
-
-### Secrets — Windows
-
-| Name | What it is |
-|---|---|
-| `AZURE_TENANT_ID` | Microsoft Entra ID → Overview → Tenant ID. **Not** the subscription ID |
-| `AZURE_CLIENT_ID` | The App Registration's **Application (client) ID**. Not its Object ID |
-| `AZURE_CLIENT_SECRET` | The secret's **Value**, which Azure shows once. Not the Secret ID |
-
-### Variables (same page → Variables)
-
-None of these is a secret; they are variables so they can be read and corrected
-without being re-entered blind.
-
-| Name | Example |
-|---|---|
-| `AZURE_CODE_SIGNING_ENDPOINT` | `https://neu.codesigning.azure.net/` — the region chosen when the account was created |
-| `AZURE_CODE_SIGNING_ACCOUNT` | the Trusted Signing **account** name |
-| `AZURE_CODE_SIGNING_PROFILE` | the certificate **profile** name inside that account |
-| `AZURE_CODE_SIGNING_PUBLISHER` | must equal the certificate's CommonName **exactly** — the legal entity from the identity validation form, not the product name |
-
-The service principal needs the **Artifact Signing Certificate Profile Signer**
-role on the signing account. Without it, signing fails with a bare `403` and no
-explanation of what is forbidden. Azure renamed that role from *Trusted Signing
-Certificate Profile Signer*, so the old name finds nothing in the portal.
-
-Every one of the four is readable from the signing account itself rather than
-remembered — `accountUri` is the endpoint, and the publisher is the `CN=` in the
-certificate profile's subject name. Read them; the publisher in particular is the
-legal entity and looks nothing like the product name.
-
-### Variables — the browser host
-
-None of these is a secret either; they name where the web build goes.
+None of these is a secret; they name where the web build goes.
 
 | Name | Example |
 |---|---|
@@ -204,54 +118,10 @@ App — enough to read its deployment token, nothing beyond it. There is no
 secret: the workflow proves who it is with the OIDC token GitHub mints for
 the run. The `web-host` job is skipped when the variables are absent only in
 the sense that it fails at sign-in; there is no preflight for them, because a
-release with its installers on the page and no browser deployment is a release
+release with its files on the page and no browser deployment is a release
 with one job to re-run, not a broken one.
 
-### The signing identity is this app's own
-
-`lionsville-architecture-tool-signing` is an app registration dedicated to this
-repository, holding that one role and nothing else. Signing here cannot be
-broken by, and cannot break, whatever else the organisation signs — which is the
-entire reason it is not shared.
-
-Its client secret is **stored nowhere**. It goes from `az` into the repository
-secret and is never written down, because a copy kept somewhere convenient is a
-copy that can leak; Azure will not show it again either. So if it is ever lost,
-do not go hunting for it — issue a new one. That costs nothing and invalidates
-nothing else, which is the whole advantage of a dedicated identity:
-
-```bash
-az ad app credential reset --id <the app registration> --append \
-  --display-name "github-actions-$(date +%Y%m%d)" --years 2 \
-  --query password -o tsv | gh secret set AZURE_CLIENT_SECRET
-```
-
-`--append` is not optional. Without it that same command **deletes every
-existing credential** on the registration before adding the new one.
-
-## Things that have already gone wrong elsewhere
-
-- **`APPLE_API_KEY` is a path, not a key.** `@electron/notarize` opens the value
-  as a file. The workflow decodes the secret to `$RUNNER_TEMP/signing/AuthKey.p8`
-  and sets the variable to that path. Passing the key material directly produces
-  a notarization failure that reads like an authentication problem.
-- **A published release rejects a draft upload.** electron-builder publishes
-  drafts by default and, finding a published release under the tag, logs
-  `existing type not compatible with publishing type` and uploads nothing — with
-  a green tick. `publish.releaseType: 'release'` in `electron-builder.cjs` is
-  what prevents that, and it is the whole reason this workflow can be triggered
-  by a release at all.
-- **A release older than two hours also rejects uploads**, unless
-  `EP_GH_IGNORE_TIME` is set. It is, so re-running one failed platform job the
-  next day still works.
-- **Azure signing needs NuGet bootstrapped.** electron-builder installs the
-  `TrustedSigning` PowerShell module on demand, which fails on a runner with no
-  NuGet package provider (electron-builder#8828). The workflow installs both up
-  front.
-- **Identity validation expires yearly.** Azure Trusted Signing stops signing
-  when it lapses, and the failure gives no hint that a renewal is what is wanted.
-
-## Local builds are unsigned, on purpose
+## Building the desktop app yourself
 
 ```bash
 npm run pack:desktop    # release/<platform>-unpacked, no installer
@@ -263,35 +133,101 @@ and nothing else, so a fresh clone builds with no setup at all. Gatekeeper and
 SmartScreen will warn about a locally built artifact; that is expected, not a
 defect.
 
+To sign, put the credentials in the environment and build on the platform
+you sign for. macOS: `CSC_LINK` (a Developer ID Application `.p12`, a path or
+base64), `CSC_KEY_PASSWORD`, and for notarization `APPLE_API_KEY`,
+`APPLE_API_KEY_ID`, `APPLE_API_ISSUER` and `APPLE_TEAM_ID`. Windows, through
+Azure Trusted Signing: `AZURE_TENANT_ID`, `AZURE_CLIENT_ID` and
+`AZURE_CLIENT_SECRET` for the identity, and `AZURE_CODE_SIGNING_ENDPOINT`,
+`AZURE_CODE_SIGNING_ACCOUNT`, `AZURE_CODE_SIGNING_PROFILE` and
+`AZURE_CODE_SIGNING_PUBLISHER` for the account — all four or none. Linux is
+not signed. Things that have gone wrong doing this:
+
+- **`APPLE_API_KEY` is a path, not a key.** `@electron/notarize` opens the value
+  as a file. Passing the key material directly produces a notarization failure
+  that reads like an authentication problem.
+- **Azure signing needs NuGet bootstrapped.** electron-builder installs the
+  `TrustedSigning` PowerShell module on demand, which fails on a machine with no
+  NuGet package provider (electron-builder#8828). Install the module first.
+- **The signer role.** The identity needs **Artifact Signing Certificate
+  Profile Signer** on the signing account; without it signing fails with a
+  bare `403`. Azure renamed the role from *Trusted Signing Certificate Profile
+  Signer*, so the old name finds nothing in the portal.
+- **`AZURE_CODE_SIGNING_PUBLISHER` must equal the certificate's CommonName
+  exactly** — the legal entity from the identity validation form, not the
+  product name. Read it from the certificate profile's subject rather than
+  remembering it.
+- **Identity validation expires yearly.** Azure Trusted Signing stops signing
+  when it lapses, and the failure gives no hint that a renewal is what is wanted.
+- **An AppImage on Ubuntu 24.04+** will not start until the kernel's
+  restriction on unprivileged user namespaces is addressed — the `.deb`
+  installs an AppArmor profile and does not have the problem
+  ([electron/electron#41066](https://github.com/electron/electron/issues/41066)).
+
+Nothing in this config publishes (`publish: null`). A copy that should update
+itself names its feed there as a `generic` provider — which is what makes
+electron-builder write the `latest*.yml` manifests and the app's
+`app-update.yml` — and registers the same address in main (*Updates*, below).
+
 ## Updates
 
-Installed copies **do not update themselves**. `electron/main/updates.ts` asks
-GitHub for the `latest` release on start and every six hours after; if its tag is
-a newer version than the running one it puts a dialog up —
+Which of two mechanisms an installed copy uses is decided by the build, not
+by the machine (ADR-0030).
+
+### With no feed: the notice
+
+A build from this source alone **does not update itself**.
+`electron/main/updates.ts` asks GitHub for the `latest` release on start and
+every six hours after; if its tag is a newer version than the running one it
+puts a dialog up —
 
 > **Version 1.2.3 is available.** … *Download… · Later · Skip This Version*
 > ☑ Check for updates automatically
 
-— and **Download…** opens this platform's installer in the browser. The user
-installs it the way they installed the one they are running. Pressing *Later*
-means the same dialog appears again on the way out, which on macOS is the moment
-that matters: closing the window is not quitting, and the version people run for
-weeks is the one they never quit.
+— and **Download…** opens this platform's installer in the browser, or the
+release page when the release carries none, which is every release since
+ADR-0030. Pressing *Later* means the same dialog appears again on the way out,
+which on macOS is the moment that matters: closing the window is not quitting,
+and the version people run for weeks is the one they never quit.
 
-That is a deliberate step back from `electron-updater`, which used to download in
-the background and swap the app out on quit. It could not work on the path most
-people take:
+It picks the `.dmg` on macOS, the `.exe` for this architecture on Windows and
+the `.AppImage` on Linux — never the `.deb`, which is the package manager's
+business — and falls back to the release page whenever it cannot tell which
+file is meant.
 
-| | Why it did not land |
-|---|---|
-| macOS | a DMG dragged into /Applications updates through Squirrel.Mac, which reads the `.zip`, verifies the running app's Developer ID signature, and needs a writable bundle. Any of the three missing and it fails on stderr with nothing on screen — and the install it staged happened on **quit**, which closing the window is not |
-| Everywhere | ~100 MB fetched before anyone was asked whether they wanted it, announced by an OS notification that is easy to miss |
+### With a feed: install in place, asking first
 
-The notice needs nothing from the release but the tag and the assets, so there is
-no manifest, blockmap, signature or writable bundle for it to trip over. It picks
-the `.dmg` on macOS, the `.exe` for this architecture on Windows and the
-`.AppImage` on Linux — never the `.deb`, which is the package manager's business
-— and falls back to the release page whenever it cannot tell which file is meant.
+A build composed from this one registers where its versions are published,
+before the app is ready:
+
+```ts
+import { registerUpdateFeed } from './electron/main/updates'
+registerUpdateFeed({
+  url: 'https://downloads.example.org/latest/',  // latest-mac.yml, latest.yml, latest-linux.yml and the files they name
+  page: 'https://example.org/download',          // where a person downloads it by hand
+})
+```
+
+Then the same checks, on the same schedule and under the same settings, read
+the feed through `electron-updater` as a `generic` provider, and a newer
+version is three steps, each asked:
+
+1. *Version 1.2.3 is available.* — **Download and Install** · Later · Skip This
+   Version, with the same checkbox.
+2. The download, in the background, with its progress on the window's
+   progress bar and the Dock or taskbar icon.
+3. *Version 1.2.3 is ready.* — **Restart Now** · Later. *Later* installs it at
+   the next quit, which the person agreed to by downloading it.
+
+Before step 1 the app decides whether it can replace itself where it runs
+(`selfReplacement`): not from the disk image, not translocated (run from
+Downloads without being moved to Applications), not in a folder this user
+cannot write, and on Linux only as an AppImage. Where it cannot, step 1 is the
+notice above, saying why and opening the feed's page. Any failure after the
+person said yes does the same, once. The feed has to be `https:`, and a stable
+install is never offered a prerelease the feed names.
+
+### The settings, for both
 
 Three settings, all in `update-settings.json` in the app's user-data folder,
 and the first two also in the **Updates** section of the preferences dialog:
@@ -306,25 +242,25 @@ and the first two also in the **Updates** section of the preferences dialog:
 
 A beta is a GitHub **prerelease**, and nothing else is different. Tag it
 `vX.Y.Z-beta.N`, title it as above, tick *Set as a pre-release*, publish; the
-workflow builds and signs it like any release. `releases/latest` never returns
-a prerelease, so installs on the stable channel never hear of it. Installs on
-the beta channel ask for the newest few releases and take the newest by
-version, prerelease or not — so the stable `vX.Y.Z` that follows reaches them
-too, and nobody is left on a beta. A folder written by a beta must open in the
-release that follows it; that is a rule for what goes into a beta, not a
-mechanism.
+workflow builds it like any release and does not deploy it. `releases/latest`
+never returns a prerelease, so installs on the stable channel never hear of
+it. Installs on the beta channel ask for the newest few releases and take the
+newest by version, prerelease or not — so the stable `vX.Y.Z` that follows
+reaches them too, and nobody is left on a beta. A folder written by a beta
+must open in the release that follows it; that is a rule for what goes into a
+beta, not a mechanism.
 
 **Check for Updates…** in the menu (the app menu on macOS, Help elsewhere) always
 checks, ignores a skipped version, and says so when there is nothing to report —
 so an unticked checkbox can always be re-ticked.
 
 `LVARCH_NO_UPDATE=1` turns the whole thing off for a machine that must not phone
-home, and a dev or `--smoke` run never checks.
+home, and a dev or `--smoke` run never checks by itself.
 
 **The repository has to be public**, or the release API needs a token the app has
 no way to get. That is the case today.
 
-The dialog's strings are English only. Every other string in the app comes from
+The dialogs' strings are English only. Every other string in the app comes from
 the i18n tables, but those belong to the renderer and this process cannot know
 which language it settled on without an IPC channel; when the file channel
 arrives, the notice should move into the shell with the rest of the UI.
@@ -339,17 +275,6 @@ kept in `mcp.json` under `userData` with mode 0600; they never reach a folder,
 a project, a log or this repository. The smoke run turns the server on,
 connects with the real SDK client, reads and draws through it, and checks the
 port is closed again once it is off.
-
-## Not yet done
-
-- **Linux is unsigned**, and on Ubuntu 24.04+ an AppImage of an Electron app
-  will not start until the kernel's restriction on unprivileged user namespaces
-  is addressed — the `.deb` installs an AppArmor profile and does not have the
-  problem, the AppImage has no install step and does
-  ([electron/electron#41066](https://github.com/electron/electron/issues/41066)).
-  Say so next to the download, or ship the `.deb` as the recommended file.
-- **No build provenance.** `actions/attest-build-provenance` would sign an
-  attestation for each installer; it needs `id-token: write` and one step.
 
 ## Two package.json fields the Linux build will not build without
 

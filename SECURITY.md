@@ -2,9 +2,10 @@
 
 ## Supported versions
 
-The latest stable release, and only that one. It is the release the README's
-download links point at and the one the web build at the hosted address runs.
-A fix ships as a new release; older releases are not patched.
+The latest stable release, and only that one. It is the release the web build
+at the hosted address runs, and the source of the desktop app on the download
+page the README links to. A fix ships as a new release; older releases are not
+patched.
 
 ## Reporting a vulnerability
 
@@ -32,7 +33,8 @@ is not theirs.
 
 ## Scope
 
-- The desktop app for macOS, Windows and Linux, as released.
+- The desktop app for macOS, Windows and Linux, as far as it is built from
+  this source — the copy on the download page, or one you built yourself.
 - The web build, as released and as deployed from a release.
 - The MCP server the desktop app runs on the loopback interface for a local
   agent, and its token and port handling.
