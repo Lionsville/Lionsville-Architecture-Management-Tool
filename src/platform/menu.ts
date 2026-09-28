@@ -123,6 +123,21 @@ export const HELP_MENU: readonly MenuEntry[] = [
 ]
 
 /**
+ * The way from the web build to the desktop app: a link under Help to the page
+ * it is downloaded from (ADR-0030).
+ *
+ * A link and not a command, because it goes somewhere outside this app and
+ * nothing here has anything to do about it. And the web's alone, which needs
+ * no rule of its own: the overflow that draws it is there only where the host
+ * has no menu bar, which is never the desktop — and the desktop is the app
+ * this would offer.
+ */
+export const DESKTOP_APP_LINK: { readonly label: StringKey; readonly href: string } = {
+  label: 'menu.getDesktopApp',
+  href: 'https://architecture.lionsville.nl/download',
+}
+
+/**
  * Preferences. On macOS it is **Settings… ⌘,** in the app menu; elsewhere
  * **Preferences…** above Quit in the File menu. Same command either way.
  */

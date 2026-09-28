@@ -30,7 +30,7 @@ import Tooltip from '@mui/material/Tooltip'
 import type { StringKey, Translate } from '../i18n'
 import type { HostCommand } from '../platform/hostCommands'
 import type { SourceMenuEntry, SourceWorkChanged } from '../platform/sourceProvider'
-import { FILE_MENU, HELP_MENU, PREFERENCES_ITEM, THEME_ITEMS, offered } from '../platform/menu'
+import { DESKTOP_APP_LINK, FILE_MENU, HELP_MENU, PREFERENCES_ITEM, THEME_ITEMS, offered } from '../platform/menu'
 import type { MenuCapabilities } from '../platform/menu'
 import type { ThemeMode } from '../platform/theme'
 
@@ -121,14 +121,26 @@ export function OverflowMenu({
         <MenuItem onClick={choose(PREFERENCES_ITEM.command)}>
           <ListItemText primary={s(PREFERENCES_ITEM.label)} slotProps={{ primary: { sx: { fontSize: 13 } } }} />
         </MenuItem>
-        {/* Help, under its own heading: the same two the desktop's Help menu carries. */}
-        {help.length > 0 && <Divider />}
-        {help.length > 0 && <ListSubheader role="presentation" sx={{ lineHeight: '28px', fontSize: 11 }}>{s('menu.help')}</ListSubheader>}
+        {/* Help, under its own heading: the same two the desktop's Help menu
+            carries, and then the way to the desktop app, which only a host
+            with no menu bar has any use for — this one. */}
+        <Divider />
+        <ListSubheader role="presentation" sx={{ lineHeight: '28px', fontSize: 11 }}>{s('menu.help')}</ListSubheader>
         {help.map((entry) => (entry.kind === 'item' ? (
           <MenuItem key={entry.label} onClick={choose(entry.command)}>
             <ListItemText primary={s(entry.label)} slotProps={{ primary: { sx: { fontSize: 13 } } }} />
           </MenuItem>
         ) : null))}
+        <MenuItem
+          component="a"
+          href={DESKTOP_APP_LINK.href}
+          target="_blank"
+          rel="noreferrer"
+          data-testid="overflow-desktop-app"
+          onClick={() => setAnchor(null)}
+        >
+          <ListItemText primary={s(DESKTOP_APP_LINK.label)} slotProps={{ primary: { sx: { fontSize: 13 } } }} />
+        </MenuItem>
         {/* The providers' own lines, last and under a rule. A rule and not a
             heading: a heading would be a word of ours about somewhere this shell
             has never heard of, and the lines say what they are. The label is the

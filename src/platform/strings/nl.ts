@@ -37,4 +37,5 @@ export const NL: Record<keyof typeof EN, string> = {
   'menu.help': 'Help',
   'menu.userManual': 'Handleiding',
   'menu.shortcuts': 'Sneltoetsen…',
+  'menu.getDesktopApp': 'Desktop-app downloaden',
 }

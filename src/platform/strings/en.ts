@@ -44,4 +44,6 @@ export const EN = {
   'menu.help': 'Help',
   'menu.userManual': 'User Manual',
   'menu.shortcuts': 'Keyboard Shortcuts…',
+  /** The web's link to the desktop app's download page; the desktop never shows it. */
+  'menu.getDesktopApp': 'Get the Desktop App',
 } as const

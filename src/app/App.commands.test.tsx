@@ -19,7 +19,7 @@ import { laidOut } from '../model/testFixtures';
 import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
 import type { HostCommand } from '../platform/hostCommands'
-import { FILE_MENU, HELP_MENU, PREFERENCES_ITEM, THEME_ITEMS, offered } from '../platform/menu'
+import { DESKTOP_APP_LINK, FILE_MENU, HELP_MENU, PREFERENCES_ITEM, THEME_ITEMS, offered } from '../platform/menu'
 import { translator } from '../i18n'
 import type { ProjectHistory } from '../ports/ProjectHistory'
 import type { ScopeSnapshot } from '../projects/scope'
@@ -359,6 +359,19 @@ describe('the overflow on the web', () => {
     await openOverflow()
     expect(screen.queryByText('Open Folder…')).toBeNull()
     expect(screen.queryByText('Snapshot…')).toBeNull()
+  })
+
+  /**
+   * The web build's way to the desktop app (ADR-0030): a link to the page it is
+   * downloaded from, beside a new tab rather than instead of this one.
+   */
+  it('offers the desktop app, as a link to where it is downloaded', async () => {
+    show()
+    await openOverflow()
+    const link = screen.getByTestId('overflow-desktop-app')
+    expect(link.textContent).toBe(s(DESKTOP_APP_LINK.label))
+    expect(link.getAttribute('href')).toBe('https://architecture.lionsville.nl/download')
+    expect(link.getAttribute('target')).toBe('_blank')
   })
 
   it('is absent on a host that has a menu bar of its own', () => {
