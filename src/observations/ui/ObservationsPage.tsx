@@ -141,6 +141,14 @@ export type ObservationsPageProps = {
   onOpenPlan?: (planId: string) => void
   /** Open straight onto this observation or cause. */
   initialId?: string
+  /** The request's own number: the same record asked for again is a new one, and lands again. */
+  initialNonce?: number
+  /**
+   * Which record is on show, by its id, whenever that changes, with the
+   * number of the request the page has landed on: what the agent is told
+   * the page is on.
+   */
+  onShown?: (key: string | undefined, nonce: number | undefined) => void
   readOnly?: boolean
   s: Translate
   language: Language
@@ -175,9 +183,66 @@ const DELETE_BODY = {
   solution: 'solution.deleteBody', experiment: 'solution.deleteExperimentBody',
 } as const
 
+/**
+ * The id a selection is told by: a record's own, as the lists and the agent
+ * know it, rather than the key the picture tells a solution or an experiment
+ * apart by. One shared from below keeps its key, which names its scope;
+ * a key that names nothing any more is nothing on show.
+ */
+function recordIdOf(
+  selected: { solution?: { id: string }; experiment?: { id: string } } | undefined, key: string | undefined,
+): string | undefined {
+  return selected && (selected.solution?.id ?? selected.experiment?.id ?? key)
+}
+
+/**
+ * Where an opening lands: on the newest standing observation — unless asked
+ * for a record, which the id names. A solution or an experiment opens on its
+ * own tab, by its key or its bare id (ADR-0026); an observation or a cause
+ * leaves the tab as it was.
+ */
+function landingFor(id: string | undefined, work: ObservationWork): { tab?: Tab; key: string | undefined } {
+  if (!id) return { tab: 'register', key: sortObservations(liveObservations(work.observations))[0]?.id }
+  const solution = work.solutions.find((one) => id === one.id || id === solutionKey(one.id))
+  if (solution) return { tab: 'solutions', key: solutionKey(solution.id) }
+  const experiment = work.experiments.find((one) => id === one.id || id === experimentKey(one.id))
+  return experiment ? { tab: 'solutions', key: experimentKey(experiment.id) } : { key: id }
+}
+
+/**
+ * Each opening lands once (`landingFor`), and each request again, by its
+ * number, so the same record asked for again after the person moved off it
+ * lands again. The records are read through a ref, so one changing while the
+ * page is up does not reset the selection. What is on show goes to
+ * `onShown` whenever it changes, with the number of the request it landed on
+ * — what the agent is told the page is on.
+ */
+function useOpening(deps: {
+  open: boolean
+  request: { id: string | undefined; nonce: number | undefined }
+  work: ObservationWork
+  shown: string | undefined
+  land: (at: { tab?: Tab; key: string | undefined }) => void
+  onShown: ((id: string | undefined, nonce: number | undefined) => void) | undefined
+}) {
+  const { open, shown } = deps
+  const { id, nonce } = deps.request
+  const [landed, setLanded] = useState<number | undefined>(undefined)
+  const latest = useRef(deps)
+  latest.current = deps
+  useEffect(() => {
+    if (!open) return
+    latest.current.land(landingFor(id, latest.current.work))
+    setLanded(nonce)
+  }, [open, id, nonce])
+  useEffect(() => {
+    if (open) latest.current.onShown?.(shown, landed)
+  }, [open, shown, landed])
+}
+
 export function ObservationsPage(props: ObservationsPageProps) {
   const {
-    open, onClose, model, groupName, shared = [], onChange, initialId, readOnly = false, s, today, makeId,
+    open, onClose, model, groupName, shared = [], onChange, initialId, initialNonce, readOnly = false, s, today, makeId,
     canShare, absorbedAbove,
   } = props
   const chrome = props.windowChrome ?? NO_WINDOW_CHROME
@@ -279,28 +344,11 @@ export function ObservationsPage(props: ObservationsPageProps) {
     setMode: (next: 'read' | 'edit') => setEditingKey(next === 'edit' ? selectedKey : undefined),
   }), [editing, selectedKey])
 
-  // Each opening starts on the newest standing observation — unless asked for
-  // one, which the id honours. Read through a ref so a record changing while
-  // the page is up does not reset the selection.
-  const latestObservations = useRef(observations)
-  latestObservations.current = observations
-  const latestWork = useRef({ solutions, experiments })
-  latestWork.current = { solutions, experiments }
-  useEffect(() => {
-    if (!open) return
-    setQuery('')
-    if (initialId) {
-      // A solution or an experiment opens on its own tab, by its key or its bare id (ADR-0026).
-      const solution = latestWork.current.solutions.find((one) => initialId === one.id || initialId === solutionKey(one.id))
-      const experiment = latestWork.current.experiments.find((one) => initialId === one.id || initialId === experimentKey(one.id))
-      const key = solution ? solutionKey(solution.id) : experiment ? experimentKey(experiment.id) : initialId
-      if (solution || experiment) setTab('solutions')
-      setSelectedKey(key)
-      return
-    }
-    setTab('register')
-    setSelectedKey(sortObservations(liveObservations(latestObservations.current))[0]?.id)
-  }, [open, initialId])
+  useOpening({
+    open, request: { id: initialId, nonce: initialNonce }, work, shown: recordIdOf(selected, selectedKey),
+    onShown: props.onShown,
+    land: ({ tab: to, key }) => { setQuery(''); if (to) setTab(to); setSelectedKey(key) },
+  })
 
   // --- changes ---------------------------------------------------------------------------
 

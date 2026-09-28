@@ -80,6 +80,8 @@ function RecordPages({ parts }: { parts: WorkspaceParts }) {
         {...(onOpenScope ? { onOpenScope } : {})}
         onProjectDecisionsChange={analysis.onDecisionsChange}
         initialAdrId={pages.adrPage.adrId}
+        initialNonce={pages.adrPage.nonce}
+        onShown={pages.decisionShown}
         readOnly={readOnly}
         s={s}
         language={language}
@@ -112,6 +114,8 @@ function RecordPages({ parts }: { parts: WorkspaceParts }) {
         onOpenDecision={(adrId) => { pages.closeObservations(); pages.openDecisions(adrId) }}
         onOpenPlan={(planId) => { pages.closeObservations(); plans.openPlan(planId) }}
         initialId={pages.obsPage.id}
+        initialNonce={pages.obsPage.nonce}
+        onShown={pages.observationShown}
         s={s}
         language={language}
         makeId={makeId}

@@ -97,6 +97,31 @@ describe('the pages beside the canvas', () => {
     expect(pages().platformReading.serviceId).toBeUndefined()
   })
 
+  /**
+   * The agent is told the record the page shows, not the one last asked
+   * for; and asking for that one again after the person moved is a new
+   * request, which the page honours (`initialNonce`).
+   */
+  it('say which record a page shows, and ask again for one asked for before', () => {
+    const { pages } = mount()
+    act(() => pages().openDecisions('adr-1'))
+    const first = pages().adrPage.nonce
+    expect(pages().page()).toEqual({ page: 'decisions', id: 'adr-1' })
+    act(() => pages().decisionShown('adr-2', first))
+    expect(pages().page()).toEqual({ page: 'decisions', id: 'adr-2' })
+    act(() => pages().openDecisions('adr-1'))
+    expect(pages().adrPage.nonce).toBeGreaterThan(first)
+    expect(pages().page()).toEqual({ page: 'decisions', id: 'adr-1' })
+    // A word from before the page landed on the new request is not the answer.
+    act(() => pages().decisionShown('adr-2', first))
+    expect(pages().page()).toEqual({ page: 'decisions', id: 'adr-1' })
+    act(() => pages().openObservations('ob-1'))
+    act(() => pages().observationShown('ob-2', pages().obsPage.nonce))
+    expect(pages().page()).toEqual({ page: 'observations', id: 'ob-2' })
+    act(() => pages().observationShown(undefined, pages().obsPage.nonce))
+    expect(pages().page()).toEqual({ page: 'observations' })
+  })
+
   it('close them all when a view is opened on its tab, which becomes the active one', () => {
     const { view, pages } = mount()
     act(() => pages().openRoadmap())

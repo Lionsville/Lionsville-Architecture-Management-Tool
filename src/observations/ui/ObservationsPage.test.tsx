@@ -93,6 +93,28 @@ describe('ObservationsPage', () => {
     expect(within(screen.getByTestId('cause-list')).getByText('CA-0001 Window sized for 2019')).toBeDefined()
   })
 
+  it('goes back to a record asked for again after another was chosen, and says which it shows', () => {
+    const onShown = vi.fn()
+    const { rerender } = mount({ initialId: 'o1', initialNonce: 1, onShown })
+    const reader = () => screen.getByTestId('observation-reader').textContent
+    expect(reader()).toContain('OB-0001')
+    expect(onShown).toHaveBeenLastCalledWith('o1', 1)
+    fireEvent.click(screen.getByTestId('observation-row-o2'))
+    expect(onShown).toHaveBeenLastCalledWith('o2', 1)
+    const again = (nonce: number) => (
+      <ObservationsPage
+        open onClose={() => {}} model={model} groupName="Acme" shared={shared} canShare onChange={() => {}}
+        initialId="o1" initialNonce={nonce} onShown={onShown} s={translator('en')} language="en"
+        makeId={(prefix) => prefix} today={() => '2026-09-20'} renderMarkdown={(md) => <MarkdownView markdown={md} />}
+      />
+    )
+    rerender(again(1))
+    expect(reader()).toContain('OB-0002')
+    rerender(again(2))
+    expect(reader()).toContain('OB-0001')
+    expect(onShown).toHaveBeenLastCalledWith('o1', 2)
+  })
+
   it('opens on the newest standing observation, with its fields, its causes and its history', () => {
     mount()
     const reader = screen.getByTestId('observation-reader')

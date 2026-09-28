@@ -395,7 +395,6 @@ export const LONGEST_FUNCTION = 150
 export const GROWN = {
   'src/agent/answer.ts': { complexity: 100, lines: 336 },
   'src/agent/handle.ts': { complexity: 39 },
-  'src/agent/screen.ts': { complexity: 27 },
   'src/agent/shell.ts': { complexity: 42 },
   'src/agent/tools.ts': { complexity: 33 },
   'src/app/history/HistoryPage.tsx': { lines: 218 },
@@ -431,7 +430,7 @@ export const GROWN = {
   'src/model/relations.ts': { complexity: 26 },
   'src/model/restore.ts': { complexity: 45 },
   'src/model/technologyLandscape.ts': { complexity: 41 },
-  'src/observations/ui/ObservationsPage.tsx': { complexity: 43, lines: 815 },
+  'src/observations/ui/ObservationsPage.tsx': { complexity: 43, lines: 802 },
   'src/observations/ui/Readers.tsx': { complexity: 44, lines: 161 },
   'src/observations/ui/SolutionPicture.tsx': { complexity: 26, lines: 221 },
   'src/observations/ui/SolutionReaders.tsx': { complexity: 63, lines: 297 },

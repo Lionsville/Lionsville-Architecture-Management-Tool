@@ -13,7 +13,7 @@
  * `session.start` puts the banner back with the reason on it.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { laidOut } from '../model/testFixtures'
 import type { AgentAnswer, AgentRequest } from '../agent/tools'
 import type { MovedBy, Screen } from '../agent/screen'
@@ -47,7 +47,10 @@ const root: ScopeSnapshot = {
     elements: [{ id: 'fulfilment', kind: 'function', name: 'Fulfilment', lifecycle: 'live', isManaged: false, aspects: {} }],
     relations: [],
     diagrams: [{ id: 'sheet-1', kind: 'sheet', name: 'Business architecture', members: [], geometry: { nodes: [] } }],
-    decisions: [{ id: 'adr-1', number: 1, title: 'One warehouse', status: 'proposed', date: '2026-09-01', body: 'One.', signers: [] }],
+    decisions: [
+      { id: 'adr-1', number: 1, title: 'One warehouse', status: 'proposed', date: '2026-09-01', body: 'One.', signers: [] },
+      { id: 'adr-2', number: 2, title: 'Two depots', status: 'proposed', date: '2026-09-02', body: 'Two.', signers: [] },
+    ],
   },
   activeDiagramId: 'sheet-1',
   logoLibrary: [],
@@ -146,6 +149,26 @@ describe('with the organisation screen up', () => {
     expect(home.arrived).toBe(true)
     expect(home.home).toEqual({ path: '', name: 'Acme Logistics' })
     expect(home.page).toBeUndefined()
+  })
+
+  /**
+   * The agent is told the record on show, not the one it last asked for; and
+   * asking for that one again after the person moved off it lands, where it
+   * used to leave the page where it was.
+   */
+  it('takes the page back to a record asked for again, and says which record is on show', async () => {
+    const { ask } = await organisationOnScreen()
+    await waitFor(async () => expect(parsed(await ask('app.current')).scopes).toBe(2))
+    await ask('app.open', { scope: '', page: 'decisions', id: 'adr-1' })
+    const title = () => within(screen.getByTestId('adr-reader')).getByRole('heading', { level: 1 }).textContent
+    await waitFor(() => expect(title()).toBe('One warehouse'))
+    fireEvent.click(within(screen.getByTestId('adr-list')).getByText('Two depots'))
+    expect(title()).toBe('Two depots')
+    expect(parsed(await ask('app.current')).page).toEqual({ page: 'decisions', id: 'adr-2' })
+    const back = parsed(await ask('app.open', { scope: '', page: 'decisions', id: 'adr-1' }))
+    expect(back.page).toEqual({ page: 'decisions', id: 'adr-1' })
+    await waitFor(() => expect(title()).toBe('One warehouse'))
+    expect(parsed(await ask('app.current')).page).toEqual({ page: 'decisions', id: 'adr-1' })
   })
 
   it('lets the person stop the agent, tells the agent so, and lets it ask to go on', async () => {

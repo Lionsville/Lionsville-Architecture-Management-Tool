@@ -64,8 +64,15 @@ export type AdrPageProps = {
   /** Open one of those scopes. Absent where the host cannot — a test, a page with nowhere to go. */
   onOpenScope?: (path: string) => void
   onProjectDecisionsChange: (next: Adr[]) => void
-  /** Open straight onto this record — from the search. */
+  /** Open straight onto this record — from the search, a link, or an agent. */
   initialAdrId?: string
+  /** The request's own number: the same record asked for again is a new one, and lands again. */
+  initialNonce?: number
+  /**
+   * Which record is on show, whenever that changes, with the number of the
+   * request the page has landed on: what the agent is told the page is on.
+   */
+  onShown?: (adrId: string | undefined, nonce: number | undefined) => void
   readOnly?: boolean
   s: Translate
   language: Language
@@ -111,31 +118,59 @@ function movedFirst(list: readonly Adr[], id: string): Adr[] {
 }
 
 /**
- * Go to the record the page was opened onto — once per opening. The records
+ * Where an opening lands, and what the host is told it shows.
+ *
+ * Each opening starts on the landscape's newest record (`start`) — unless
+ * it asked for one, which it goes to (`onto`) once per request. The records
  * change with every save, and going back to that one on each would take a
- * person off the record they moved to, closing its editor mid-sentence. It
+ * person off the record they moved to, closing its editor mid-sentence. A
+ * request is the record and its number (`nonce`): the same record asked for
+ * again, after the person has moved off it, is a new number and lands. It
  * waits for the record to be there, so a list that arrives late still lands.
+ *
+ * The record on show goes to `onShown` whenever it changes, with the number
+ * of the request it landed on — what the agent is told the page is on,
+ * rather than the record last asked for.
  */
-function useOpenedOnto(
-  open: boolean, initialAdrId: string | undefined, records: readonly Adr[], onto: (target: Adr) => void,
-) {
-  const honoured = useRef<string | undefined>(undefined)
-  const latest = useRef(onto)
-  latest.current = onto
+function useOpening(deps: {
+  open: boolean
+  request: { id: string | undefined; nonce: number | undefined }
+  records: readonly Adr[]
+  selectedId: string | undefined
+  start: () => void
+  onto: (target: Adr) => void
+  onShown: ((id: string | undefined, nonce: number | undefined) => void) | undefined
+}) {
+  const { open, records, selectedId } = deps
+  const { id, nonce } = deps.request
+  const [landed, setLanded] = useState<number | undefined>(undefined)
+  const honoured = useRef<{ id: string; nonce: number | undefined } | undefined>(undefined)
+  const latest = useRef(deps)
+  latest.current = deps
+  useEffect(() => {
+    if (!open || id) return
+    latest.current.start()
+    setLanded(nonce)
+  }, [open, id, nonce])
   useEffect(() => {
     if (!open) { honoured.current = undefined; return }
-    if (!initialAdrId || honoured.current === initialAdrId) return
-    const target = records.find((a) => a.id === initialAdrId)
+    if (!id || (honoured.current?.id === id && honoured.current.nonce === nonce)) return
+    const target = records.find((a) => a.id === id)
     if (!target) return
-    honoured.current = initialAdrId
-    latest.current(target)
-  }, [open, initialAdrId, records])
+    honoured.current = { id, nonce }
+    latest.current.onto(target)
+    setLanded(nonce)
+  }, [open, id, nonce, records])
+  const shown = records.some((a) => a.id === selectedId) ? selectedId : undefined
+  useEffect(() => {
+    if (open) latest.current.onShown?.(shown, landed)
+  }, [open, shown, landed])
 }
 
 export function AdrPage(props: AdrPageProps) {
   const {
     open, onClose, model, groupName, ancestors = [], onOpenScope, onProjectDecisionsChange,
-    initialAdrId, readOnly = false, s, today, makeId,
+    initialAdrId, initialNonce, readOnly = false, s, today, makeId,
   } = props
   const chrome = props.windowChrome ?? NO_WINDOW_CHROME
   const bar = barChromeFor(chrome)
@@ -231,22 +266,20 @@ export function AdrPage(props: AdrPageProps) {
   )
   const selected = selectedId ? allRecords.find((a) => a.id === selectedId) : undefined
 
-  // Each opening starts on the landscape's newest record — unless the search
-  // asked for a particular one, which the effect below honours instead.
-  const latestScoped = useRef(scopedList)
-  latestScoped.current = scopedList
-  useEffect(() => {
-    if (!open || initialAdrId) return
-    setScope('landscape')
-    setQuery('')
-    setSelectedId(sortAdrs(latestScoped.current('landscape'))[0]?.id)
-  }, [open, initialAdrId])
-
-  // Opened onto a record: stand in its scope with it selected.
-  useOpenedOnto(open, initialAdrId, allRecords, (target) => {
-    setScope(scopeOfRecord(target))
-    setSelectedId(target.id)
-    setQuery('')
+  // Each opening starts on the landscape's newest record, or stands in the
+  // scope of the one it asked for with it selected.
+  useOpening({
+    open, request: { id: initialAdrId, nonce: initialNonce }, records: allRecords, selectedId, onShown: props.onShown,
+    start: () => {
+      setScope('landscape')
+      setQuery('')
+      setSelectedId(sortAdrs(scopedList('landscape'))[0]?.id)
+    },
+    onto: (target) => {
+      setScope(scopeOfRecord(target))
+      setSelectedId(target.id)
+      setQuery('')
+    },
   })
 
   const trimmed = query.trim()

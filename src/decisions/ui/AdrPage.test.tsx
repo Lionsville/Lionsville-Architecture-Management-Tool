@@ -344,6 +344,34 @@ describe('AdrPage', () => {
     expect(within(reader).getByDisplayValue('Event-driven integration')).toBeTruthy()
   })
 
+  /**
+   * Once per opening was once per record: asked for a record, moved to
+   * another, and asked for the first again — from the search, or by an
+   * agent's app.open — the page stayed where it was. Each request carries a
+   * number of its own now, and the page says which record it shows.
+   */
+  it('goes back to a record asked for again after another was chosen, and says which it shows', () => {
+    const onShown = vi.fn()
+    const page = (nonce: number) => (
+      <AdrPage
+        open onClose={() => {}} model={model} groupName="Acme Logistics" ancestors={ancestors} onProjectDecisionsChange={() => {}}
+        initialAdrId="l2" initialNonce={nonce} onShown={onShown} s={translator('en')} language="en" makeId={(p) => p} today={() => 'd'}
+        renderMarkdown={(md) => <MarkdownView markdown={md} />}
+      />
+    )
+    const { rerender } = renderShell(page(1))
+    const title = () => within(screen.getByTestId('adr-reader')).getByRole('heading', { level: 1 }).textContent
+    expect(title()).toBe('One warehouse system')
+    expect(onShown).toHaveBeenLastCalledWith('l2', 1)
+    fireEvent.click(within(screen.getByTestId('adr-list')).getByText('Event-driven integration'))
+    expect(onShown).toHaveBeenLastCalledWith('l1', 1)
+    rerender(page(1))
+    expect(title()).toBe('Event-driven integration')
+    rerender(page(2))
+    expect(title()).toBe('One warehouse system')
+    expect(onShown).toHaveBeenLastCalledWith('l2', 2)
+  })
+
   it('keeps its top bar clear of the window controls and draggable', () => {
     mount({ windowChrome: { controlsInset: 78, draggable: true } })
     const bar = screen.getByTestId('adr-topbar')

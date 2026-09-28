@@ -62,38 +62,72 @@ export function useWorkspacePages(deps: {
     [drawsNothing, onGoHome, scope],
   )
 
-  const { adrPage, obsPage } = records
-  /** Which page is up over the canvas, as the agent is told it; nothing is the view itself. */
+  const { adrPage, obsPage, adrShown, obsShown } = records
+  /**
+   * Which page is up over the canvas, as the agent is told it; nothing is the
+   * view itself. A record page names the record it shows, which the person
+   * may have moved off the one asked for — once it has landed on the latest
+   * request; until then, the one asked for.
+   */
   const page = useCallback((): ScreenPage | undefined => {
-    if (adrPage.open) return { page: 'decisions', ...(adrPage.adrId !== undefined ? { id: adrPage.adrId } : {}) }
-    if (obsPage.open) return { page: 'observations', ...(obsPage.id !== undefined ? { id: obsPage.id } : {}) }
+    if (adrPage.open) return withId('decisions', adrShown?.nonce === adrPage.nonce ? adrShown.id : adrPage.adrId)
+    if (obsPage.open) return withId('observations', obsShown?.nonce === obsPage.nonce ? obsShown.id : obsPage.id)
     if (plans.planId !== undefined) return { page: 'plan', id: plans.planId }
     if (plans.roadmapOpen) return { page: 'roadmap' }
     if (platformReading.platformId !== undefined) return { page: 'platform', id: platformReading.platformId }
     if (platformReading.serviceId !== undefined) return { page: 'service', id: platformReading.serviceId }
     return undefined
-  }, [adrPage, obsPage, plans.planId, plans.roadmapOpen, platformReading.platformId, platformReading.serviceId])
+  }, [adrPage, obsPage, adrShown, obsShown, plans.planId, plans.roadmapOpen, platformReading.platformId, platformReading.serviceId])
 
   return {
     adrPage, obsPage, plans, platformReading, page, leaveIfNothingToDraw,
+    decisionShown: records.decisionShown, observationShown: records.observationShown,
     closeDecisions: records.closeRecords, closeObservations: records.closeObservations, ...openers,
   }
 }
 
-/** The decisions page and the observations page: which is up, and on what. */
+function withId(page: 'decisions' | 'observations', id: string | undefined): ScreenPage {
+  return { page, ...(id !== undefined ? { id } : {}) }
+}
+
+/**
+ * A record page's request carries a number of its own, as `FocusRequest`
+ * does: asking for the record asked for last time is a new request after
+ * the person has moved off it, and the page honours each number once. What
+ * the page says it shows (`id` absent: nothing selected) carries the number
+ * of the request it has landed on, so a word from before the landing — the
+ * last opening's record, a render ahead of the new one — is not taken for
+ * the answer.
+ */
+type Shown = { id?: string; nonce: number | undefined }
+const shownAs = (id: string | undefined, nonce: number | undefined): Shown => ({ ...(id !== undefined ? { id } : {}), nonce })
+
+/** The decisions page and the observations page: which is up, on what, and what each shows. */
 function useRecordPages() {
-  const [adrPage, setAdrPage] = useState<{ open: boolean; adrId?: string }>({ open: false })
+  const [adrPage, setAdrPage] = useState<{ open: boolean; adrId?: string; nonce: number }>({ open: false, nonce: 0 })
   /** The observations page (ADR-0021), on one observation or cause when an id is given. */
-  const [obsPage, setObsPage] = useState<{ open: boolean; id?: string }>({ open: false })
-  const showDecision = useCallback((adrId?: string) => setAdrPage({ open: true, adrId }), [])
-  const showObservations = useCallback((id?: string) => {
-    setAdrPage({ open: false })
-    setObsPage({ open: true, ...(id !== undefined ? { id } : {}) })
+  const [obsPage, setObsPage] = useState<{ open: boolean; id?: string; nonce: number }>({ open: false, nonce: 0 })
+  const [adrShown, setAdrShown] = useState<Shown | undefined>(undefined)
+  const [obsShown, setObsShown] = useState<Shown | undefined>(undefined)
+  const showDecision = useCallback((adrId?: string) => {
+    setAdrPage((was) => ({ open: true, ...(adrId !== undefined ? { adrId } : {}), nonce: was.nonce + 1 }))
   }, [])
+  const showObservations = useCallback((id?: string) => {
+    setAdrPage((was) => ({ open: false, nonce: was.nonce }))
+    setObsPage((was) => ({ open: true, ...(id !== undefined ? { id } : {}), nonce: was.nonce + 1 }))
+  }, [])
+  const decisionShown = useCallback((id: string | undefined, nonce: number | undefined) => setAdrShown(shownAs(id, nonce)), [])
+  const observationShown = useCallback((id: string | undefined, nonce: number | undefined) => setObsShown(shownAs(id, nonce)), [])
   /** Both shut: the decisions page closes the observations page it may have been opened over. */
-  const closeRecords = useCallback(() => { setAdrPage({ open: false }); setObsPage({ open: false }) }, [])
-  const closeObservations = useCallback(() => setObsPage({ open: false }), [])
-  return { adrPage, obsPage, showDecision, showObservations, closeRecords, closeObservations }
+  const closeRecords = useCallback(() => {
+    setAdrPage((was) => ({ open: false, nonce: was.nonce }))
+    setObsPage((was) => ({ open: false, nonce: was.nonce }))
+  }, [])
+  const closeObservations = useCallback(() => setObsPage((was) => ({ open: false, nonce: was.nonce })), [])
+  return {
+    adrPage, obsPage, adrShown, obsShown, showDecision, showObservations, decisionShown, observationShown,
+    closeRecords, closeObservations,
+  }
 }
 
 /** Every way onto a page or a view, each closing the pages it replaces. */

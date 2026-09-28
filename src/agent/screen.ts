@@ -97,6 +97,15 @@ export function scopeOf(screen: Screen): string | undefined {
 }
 
 /**
+ * A record page, on the record asked for where one was. A page already up
+ * says so at once, before the request for another record has reached it, so
+ * the page alone is no arrival: the record it names is.
+ */
+function onRecord(screen: Screen, page: 'decisions' | 'observations', id: string | undefined): boolean {
+  return screen.page?.page === page && (id === undefined || screen.page.id === id)
+}
+
+/**
  * Has the app arrived where it was asked to go? Judged on what the screen
  * can say: the scope, and the page or the view where the destination named
  * one. A page the shell cannot observe — the documentation page opens inside
@@ -113,8 +122,9 @@ export function arrived(screen: Screen, to: Destination, scope: string): boolean
   if (!screen.open || screen.open.path !== scope) return false
   if (VIEW_PAGES.includes(page)) return screen.page === undefined && (to.id === undefined || screen.open.view?.id === to.id)
   switch (page) {
-    case 'decisions': return screen.page?.page === 'decisions'
-    case 'observations': return screen.page?.page === 'observations'
+    case 'decisions':
+    case 'observations':
+      return onRecord(screen, page, to.id)
     case 'roadmap': return screen.page?.page === 'roadmap'
     case 'plan':
     case 'platform':
