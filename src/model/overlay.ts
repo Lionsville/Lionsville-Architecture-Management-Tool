@@ -105,7 +105,7 @@ export function overlayBands(
   if (one !== undefined) {
     const on: ElementId[] = []
     const off: ElementId[] = []
-    for (const element of drawn) (standsOn(model, element.id, one, tree) ? on : off).push(element.id)
+    for (const element of drawn) (standsOn(model, element.id, one, tree, today) ? on : off).push(element.id)
     return [
       { key: one, name: byId.get(one)?.name ?? one, slot: 0, memberIds: on },
       ...(off.length > 0 ? [{ key: 'none', slot: 1, faded: true as const, memberIds: off }] : []),
@@ -120,7 +120,9 @@ export function overlayBands(
   }
 
   for (const element of drawn) {
-    const platforms = hostingOf(model, element.id).platformIds
+    // Where it runs on the board's day: an application that moved stands on
+    // the new platform, not on the one it left (`hostingOf`).
+    const platforms = hostingOf(model, element.id, today).platformIds
       .map((id) => byId.get(id))
       .filter((held): held is DesignElement => held !== undefined)
     if (platforms.length === 0) { put('none', '\uffff', element.id); continue }
@@ -128,7 +130,7 @@ export function overlayBands(
       // The root, and the first: a card on two platforms during a migration
       // is drawn where it mostly is, and the second is a fact the record says
       // rather than a second colour on one card.
-      const root = byId.get(rootPlatformsOf(model, element.id, tree)[0]) ?? platforms[0]
+      const root = byId.get(rootPlatformsOf(model, element.id, tree, today)[0]) ?? platforms[0]
       put(root.id, root.name, element.id, { name: root.name })
       continue
     }
@@ -160,8 +162,9 @@ function standsOn(
   applicationId: ElementId,
   id: ElementId,
   tree: PlatformTree,
+  today?: string,
 ): boolean {
-  const hosted = hostingOf(model, applicationId).platformIds
+  const hosted = hostingOf(model, applicationId, today).platformIds
   if (hosted.some((platform) => platform === id || ancestorPlatforms(model.elements, platform, tree).some((above) => above.id === id))) return true
   const leverage = leverageOf(model, applicationId, { tree })
   return leverage.platformIds.includes(id)

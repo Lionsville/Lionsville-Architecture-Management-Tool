@@ -48,9 +48,9 @@ const landscape = (): DesignDiagram => laidOut({
   placements: [{ id: 'orders', zone: 'landscape', x: 0, y: 0 }, { id: 'wms', zone: 'landscape', x: 400, y: 0 }],
 });
 
-function edges(relations: Relation[], diagram: DesignDiagram, elements = ELEMENTS) {
+function edges(relations: Relation[], diagram: DesignDiagram, elements = ELEMENTS, asOfDay?: string) {
   const model: DesignModel = { name: 'Acme', elements, relations, diagrams: [diagram] };
-  return buildEdges({ model, diagram, readOnly: false, edgeColor: '#theme' });
+  return buildEdges({ model, diagram, readOnly: false, edgeColor: '#theme', ...(asOfDay ? { asOfDay } : {}) });
 }
 
 const ends = (relations: Relation[], diagram: DesignDiagram, elements = ELEMENTS) =>
@@ -153,4 +153,21 @@ describe('the end a drag may take hold of', () => {
     expect(grabbable([flow('c16', 'orders', 'wms')], 'c16', containers(), true)).toBe(false);
   });
 
+});
+
+describe('a landing on a dated board', () => {
+  const interfaceUntil = (validUntil: string) => flow('c16', 'orders', 'wms', { validUntil });
+  const landing = flow('r1', 'orders', 'wms-api', { refines: 'c16' });
+  const ids = (relations: Relation[], day: string) =>
+    edges(relations, containers(), ELEMENTS, day).map((edge) => edge.id);
+
+  it('follows its interface\'s window when it has none of its own', () => {
+    expect(ids([interfaceUntil('2027-06-30'), landing], '2027-06-30')).toEqual(['r1']);
+    expect(ids([interfaceUntil('2027-06-30'), landing], '2027-07-01')).toEqual([]);
+  });
+
+  it('keeps a window of its own', () => {
+    const own = { ...landing, validUntil: '2027-12-31' };
+    expect(ids([interfaceUntil('2027-06-30'), own], '2027-07-01')).toEqual(['r1']);
+  });
 });

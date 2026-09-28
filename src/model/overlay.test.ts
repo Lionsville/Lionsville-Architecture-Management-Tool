@@ -89,6 +89,19 @@ describe('colouring by technology lifecycle', () => {
     expect(after.get('wms')?.phase).toBe('retiring')
   })
 
+  it('stands a card on the platform it runs on that day, not on the one it left', () => {
+    const moved = [
+      { ...host('h3', 'billing', 'azure'), validUntil: '2027-06-30' },
+      { ...host('h4', 'billing', 'openshift'), validFrom: '2027-07-01' },
+    ]
+    const after = overlayBandOf(overlayBands({ elements, relations: moved }, board(), 'technologyLifecycle', '2027-09-01'))
+    expect(after.get('billing')?.phase).toBe('live')
+    const before = overlayBandOf(overlayBands({ elements, relations: moved }, board(), 'technologyLifecycle', '2027-01-01'))
+    expect(before.get('billing')?.phase).toBe('retiring')
+    const byPlatform = overlayBandOf(overlayBands({ elements, relations: moved }, board(), 'platform', '2027-09-01'))
+    expect(byPlatform.get('billing')?.key).toBe('openshift')
+  })
+
   it('lists the bands worst first', () => {
     const bands = overlayBands({ elements, relations }, board(), 'technologyLifecycle')
     expect(bands.map((band) => band.key)).toEqual(['retiring', 'live', 'none'])

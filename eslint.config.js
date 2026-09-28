@@ -420,7 +420,7 @@ export const GROWN = {
   'src/editor/canvas/Layer7Canvas.tsx': { lines: 187 },
   'src/editor/canvas/ZoneLayer.tsx': { lines: 222 },
   'src/editor/edges/FloatingEdge.tsx': { complexity: 61, lines: 518 },
-  'src/editor/graph.ts': { complexity: 38 },
+  'src/editor/graph.ts': { complexity: 37 },
   'src/editor/use-canvas-shortcuts.ts': { complexity: 35 },
   'src/editor/useEditorState.ts': { lines: 761 },
   'src/layout/tidy.ts': { complexity: 26, lines: 176 },

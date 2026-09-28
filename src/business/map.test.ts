@@ -128,6 +128,19 @@ describe('the day it shows', () => {
     expect(rowOf(mapPage(dated(), { asOf: '2027-03-01' }), 'invoice').coverage).toBe('covered')
   })
 
+  it('counts a row only while the application at its end is not gone, wherever that is said', () => {
+    const scope = shippingScope()
+    scope.elements = scope.elements.map((one) => (one.id === 'erp' ? { ...one, lifecycleDates: { retired: '2027-06-01' } } : one))
+    expect(rowOf(mapPage(scope, { asOf: '2027-05-31' }), 'invoice').coverage).toBe('covered')
+    expect(rowOf(mapPage(scope, { asOf: '2027-06-01' }), 'invoice').coverage).toBe('uncovered')
+    // Held here as a stand-in, it is dated by the scope that defines it.
+    const standIn = shippingScope()
+    standIn.elements = standIn.elements.map((one) => (one.id === 'erp' ? { ...one, ref: 'finance' } : one))
+    const describe = (id: string) => (id === 'erp' ? { name: 'Finance system', retired: '2027-06-01' } : undefined)
+    expect(rowOf(mapPage(standIn, { asOf: '2027-06-01' }, { describe }), 'invoice').coverage).toBe('uncovered')
+    expect(rowOf(mapPage(standIn, { asOf: '2027-06-01' }), 'invoice').coverage).toBe('covered')
+  })
+
 })
 
 describe('a tree that is not one', () => {

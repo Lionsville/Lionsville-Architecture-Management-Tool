@@ -40,13 +40,15 @@
  * and marked as unknown: a dangling end is a fact to draw, never one to drop.
  *
  * **Time is the day the map shows.** A row may carry a window (§5), and a map
- * with `asOf` counts the rows live on that day, so "supported by the WMS from
- * March" is a mark on the March map and a gap on February's. With no day
+ * with `asOf` counts the rows there on that day — inside their window, with
+ * neither end gone — so "supported by the WMS from March" is a mark on the
+ * March map and a gap on February's, and the WMS retired in June is a gap on
+ * July's. With no day
  * given, every row counts — which is what a sheet does, and what a map with
  * nothing dated should do.
  */
 import type { DesignDiagram, DesignElement, DesignModel, ElementId, ElementKind, Relation } from '../model'
-import { relationLiveAt } from '../model/lifecycle'
+import { livenessOf } from '../model/liveness'
 import { coverageOf, type Coverage, type FunctionCoverage } from './coverage'
 import { rootsOfKind } from './sheetDiagram'
 import { inOrder } from './tree'
@@ -61,6 +63,13 @@ export type MapDescription = {
    * same answer are grouped under it.
    */
   where?: string
+  /**
+   * The day the scope that defines it says it is gone, where this scope holds
+   * it only as a stand-in or not at all (ADR-0012 §3): a stand-in carries no
+   * dates of its own, so an application retired in its landscape stops
+   * covering anything on the map from that day.
+   */
+  retired?: string
 }
 
 export type MapDescribe = (id: ElementId) => MapDescription | undefined
@@ -117,6 +126,27 @@ export type MapOptions = {
   today?: string
 }
 
+/**
+ * The rows that count on the map's day, this scope's and the rest of the
+ * tree's: a row is there while its window holds the day and neither end is
+ * gone (`model/liveness.ts`) — an application retired in March covers
+ * nothing on April's map, whatever its row says. An end another scope
+ * defines is dated by what `describe` says for it. With no day, every row.
+ */
+function liveRows(
+  model: Pick<DesignModel, 'elements' | 'relations'>,
+  day: string | undefined,
+  { elsewhere = [], describe }: MapOptions,
+): [Relation[], Relation[]] {
+  if (day === undefined) return [[...model.relations], [...elsewhere]]
+  const live = livenessOf(
+    { elements: model.elements, relations: [...model.relations, ...elsewhere] },
+    { retiredOf: (id) => describe?.(id)?.retired },
+  )
+  const there = (row: Relation) => live.thereOn(row, day)
+  return [model.relations.filter(there), elsewhere.filter(there)]
+}
+
 const UNCOVERED: FunctionCoverage = { supportedBy: [], assignedTo: [], coverage: 'uncovered' }
 
 /**
@@ -133,11 +163,7 @@ export function mapPage(
 ): LaidOutMap {
   const { elements } = model
   const byId = new Map(elements.map((element) => [element.id, element]))
-  const day = map.asOf ?? options.today
-  const live = (rows: readonly Relation[]) => (day === undefined
-    ? rows
-    : rows.filter((row) => relationLiveAt(row, day)))
-  const coverage = coverageOf(live(model.relations), live(options.elsewhere ?? []))
+  const coverage = coverageOf(...liveRows(model, map.asOf ?? options.today, options))
 
   const functions = elements.filter((element) => element.kind === 'function')
   // The children of every function once, rather than a filter over the whole

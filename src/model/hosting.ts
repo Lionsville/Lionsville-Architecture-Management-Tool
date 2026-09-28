@@ -19,6 +19,7 @@
  * Pure, and the one answer three readers share: the badge on the card, the
  * retiring-platform finding, and the record's *Runs on* line.
  */
+import { relationLiveAt } from './lifecycle'
 import type { DesignElement, ElementId, PlatformArchetype, Relation } from './types'
 
 /** The containers filed under an application, in the order the model holds them. */
@@ -61,15 +62,23 @@ export type Hosting = {
  *
  * Answered for a container too, which is simply its own rows — so a caller
  * with an id and no interest in which of the two it has can just ask.
+ *
+ * `day` is the day a board shows, where it shows one: a row whose window does
+ * not hold it is not where the thing runs that day (`liveness.ts`), so an
+ * application moved from one platform to the next stands on the old one until
+ * the move and on the new one after it. Absent, every row counts — what a
+ * record with no day asks.
  */
 export function hostingOf(
   model: { elements: readonly DesignElement[]; relations: readonly Relation[] },
   elementId: ElementId,
+  day?: string,
 ): Hosting {
   const element = model.elements.find((held) => held.id === elementId)
-  const own = () => [...new Set(model.relations
-    .filter((row) => row.type === 'hostedOn' && row.sourceId === elementId)
-    .map((row) => row.targetId))]
+  // A hosting row refines nothing, so its window is its own and the rule is
+  // the row's alone — asked per row, with no model-wide lookup built per card.
+  const rows = model.relations.filter((row) => row.type === 'hostedOn' && (day === undefined || relationLiveAt(row, day)))
+  const own = () => [...new Set(rows.filter((row) => row.sourceId === elementId).map((row) => row.targetId))]
   if (element?.kind !== 'application') {
     return { platformIds: own(), from: 'itself', containers: 0 }
   }
@@ -80,8 +89,8 @@ export function hostingOf(
   const held = new Set(containers.map((container) => container.id))
   const ids: ElementId[] = []
   const standing = new Set<ElementId>()
-  for (const row of model.relations) {
-    if (row.type !== 'hostedOn' || !held.has(row.sourceId)) continue
+  for (const row of rows) {
+    if (!held.has(row.sourceId)) continue
     standing.add(row.sourceId)
     if (!ids.includes(row.targetId)) ids.push(row.targetId)
   }
@@ -163,17 +172,18 @@ export function descendantPlatforms(
  * record and the deployment boxes keep, and the account is somebody else's —
  * so the walk stops at the last platform that is not `outside`, and only a
  * chain that is outside throughout answers with its top. Once each, in the
- * order the precise places were in.
+ * order the precise places were in. `day` as {@link hostingOf} reads it.
  */
 export function rootPlatformsOf(
   model: { elements: readonly DesignElement[]; relations: readonly Relation[] },
   elementId: ElementId,
   tree: PlatformTree = {},
+  day?: string,
 ): ElementId[] {
   const byId = new Map(model.elements.map((element) => [element.id, element]))
   const outside = (platform: DesignElement) => platform.outside === true || tree.outsideOf?.(platform.id) === true
   const roots: ElementId[] = []
-  for (const id of hostingOf(model, elementId).platformIds) {
+  for (const id of hostingOf(model, elementId, day).platformIds) {
     const held = byId.get(id)
     if (!held) { if (!roots.includes(id)) roots.push(id); continue }
     const chain = [held, ...ancestorPlatforms(model.elements, id, tree)]

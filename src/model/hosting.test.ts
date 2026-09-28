@@ -75,6 +75,16 @@ describe('the roll-up', () => {
       .toEqual({ platformIds: [], from: 'itself', containers: 0 })
   })
 
+  it('reads on a day only the rows whose window holds it: a move leaves the old platform behind', () => {
+    const moved = [
+      { ...host('h1', 'wms-api', 'ns'), validUntil: '2027-06-30' },
+      { ...host('h2', 'wms-api', 'openshift'), validFrom: '2027-07-01' },
+    ]
+    expect(hostingOf({ elements, relations: moved }, 'wms', '2027-06-30').platformIds).toEqual(['ns'])
+    expect(hostingOf({ elements, relations: moved }, 'wms', '2027-07-01').platformIds).toEqual(['openshift'])
+    // With no day, every row: what the record lists.
+    expect(hostingOf({ elements, relations: moved }, 'wms').platformIds).toEqual(['ns', 'openshift'])
+  })
 })
 
 /**

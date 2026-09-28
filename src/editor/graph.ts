@@ -21,7 +21,8 @@ import { nodeFigure } from '../model/kinds';
 import { hoistedEnd, landedInterfaces } from '../model/containerDiagram';
 import { isFlow } from '../model/relations';
 import { edgeRoutesOf, isAutoRoute, routeSides, routeSource } from '../model/routes';
-import { relationLiveAt, isGoneOn, phaseAt } from '../model/lifecycle';
+import { isGoneOn, phaseAt } from '../model/lifecycle';
+import { livenessOf } from '../model/liveness';
 
 /**
  * Pure projection of (effective model + active diagram) onto React Flow
@@ -241,6 +242,9 @@ export function buildEdges(
   // that is not a container diagram they are empty and nothing changes.
   const landed = landedInterfaces(args.model.relations, (id) => elementsById.get(id), args.diagram, placed);
   const endOf = (id: ElementId) => hoistedEnd((held) => elementsById.get(held), args.diagram, id);
+  // Whose window a line has on a dated board: its own, or — a landing with
+  // none — its interface's (model/liveness.ts).
+  const inWindow = windowOnDay(args.model, args.asOfDay);
   // Resolve what each edge DRAWS first, because the slot fan below must only see
   // the edges that will use it.
   const drawn: {
@@ -269,9 +273,11 @@ export function buildEdges(
     if (!placed.has(sourceId) || !placed.has(targetId)) continue;
     // A line with a window of its own is drawn only inside it: the sync and the
     // façade of a hybrid run are there for the months they are there for, and
-    // gone on a board dated after the cutover (ADR-0009). A line with no window
-    // follows its ends, which the `placed` check above already does.
-    if (args.asOfDay && !relationLiveAt(connection, args.asOfDay)) continue;
+    // gone on a board dated after the cutover (ADR-0009). A landing with no
+    // window is drawn inside its interface's, so dating the application line
+    // dates where it lands (ADR-0013). A line with no window at all follows
+    // its ends, which the `placed` check above already does.
+    if (!inWindow(connection)) continue;
     const stored = routes.get(connection.id);
     // Suppressed only for router output, and only while its node moves.
     //
@@ -564,4 +570,15 @@ function sameMarker(held: FloatingEdgeModel['markerEnd'], next: FloatingEdgeMode
     held.height === next.height &&
     held.color === next.color
   );
+}
+
+/**
+ * Whether a line's window holds the board's day: every line on an undated
+ * board, and on a dated one the rules of `model/liveness.ts` — built once per
+ * pass, not once per line.
+ */
+function windowOnDay(model: DesignModel, day: string | undefined): (relation: DesignModel['relations'][number]) => boolean {
+  if (!day) return () => true;
+  const live = livenessOf(model);
+  return (relation) => live.windowHolds(relation, day);
 }
