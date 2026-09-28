@@ -29,7 +29,8 @@ import type { CSSObject, Theme } from '@mui/material/styles'
 import { FILLED_COLOURS, fieldOutline, filledAlert, filledControl, shellTheme } from './theme'
 import { getNodeTokens } from '../editor/theme/tokens'
 import type { AspectToken } from '../editor/theme/tokens'
-import { dangerInk } from '../widgets'
+import { seenTint } from '../observations/ui/AnalysisPicture'
+import { dangerInk, inkOn } from '../widgets'
 
 type Rgb = { r: number; g: number; b: number }
 
@@ -102,7 +103,7 @@ function textPairs(mode: 'light' | 'dark'): Pair[] {
     add(`filled ${colour} alert`, ratio(filled.ink, filled.fill))
     add(`standard ${colour} alert`, ratio(...standardAlert(theme, colour), palette.background.paper))
   }
-  out.push(...rowText(theme), ...boardText(theme))
+  out.push(...rowText(theme), ...drawnText(theme), ...boardText(theme))
   return out
 }
 
@@ -127,6 +128,21 @@ function rowText(theme: Theme): Pair[] {
     add(`text error button under the pointer on ${ground}`, ratio(danger, fill, alpha(palette.error.main, palette.action.hoverOpacity)))
     add(`unselected toggle on ${ground}`, ratio(palette.text.secondary, fill))
     add(`unselected toggle under the pointer on ${ground}`, ratio(palette.text.secondary, fill, alpha(palette.text.primary, palette.action.hoverOpacity)))
+  }
+  return out
+}
+
+/**
+ * Words on a colour worked out while drawing: the count on an observation
+ * tinted by how often it was seen, from the palest to the full accent.
+ */
+function drawnText(theme: Theme): Pair[] {
+  const { palette } = theme
+  const out: Pair[] = []
+  const add = (name: string, value: number) => out.push({ name: `${palette.mode} ${name}`, value })
+  for (const [share, seen, most] of [[25, 1, 4], [75, 3, 4], [100, 4, 4]] as const) {
+    const fill = seenTint(theme, seen, most)
+    add(`seen count at ${share} %`, ratio(inkOn(theme, fill), fill))
   }
   return out
 }
@@ -264,6 +280,7 @@ describe('the palette’s contrast', () => {
       'dark contained primary button under the pointer', 'dark contained error button under the pointer',
       'dark filled error chip', 'dark danger menu item with the focus tint', 'light danger menu item with the focus tint',
       'dark text error button under the pointer on paper', 'light unselected toggle under the pointer on ground',
+      'dark seen count at 100 %', 'light seen count at 100 %',
     ]) {
       expect(measured.get(name), name).toBeGreaterThanOrEqual(4.5)
     }

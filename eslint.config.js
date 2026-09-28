@@ -433,7 +433,7 @@ export const GROWN = {
   'src/model/technologyLandscape.ts': { complexity: 41 },
   'src/observations/ui/ObservationsPage.tsx': { complexity: 43, lines: 815 },
   'src/observations/ui/Readers.tsx': { complexity: 44, lines: 161 },
-  'src/observations/ui/SolutionPicture.tsx': { complexity: 26, lines: 224 },
+  'src/observations/ui/SolutionPicture.tsx': { complexity: 26, lines: 221 },
   'src/observations/ui/SolutionReaders.tsx': { complexity: 63, lines: 297 },
   'src/projects/documentSession.ts': { complexity: 34 },
   'src/projects/folderFormat.ts': { complexity: 35 },

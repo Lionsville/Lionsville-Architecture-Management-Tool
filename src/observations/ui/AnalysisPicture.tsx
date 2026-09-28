@@ -18,7 +18,9 @@ import { useMemo, type MouseEvent as ReactMouseEvent, type ReactNode } from 'rea
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import { useTheme } from '@mui/material/styles'
+import type { Theme } from '@mui/material/styles'
 import type { Translate } from '../../i18n'
+import { inkOn, mix } from '../../widgets'
 import { analysisGraph, placeGraph } from '../graph'
 import type { GraphNode } from '../graph'
 import { formatCauseNumber, formatObservationNumber } from '../observation'
@@ -58,11 +60,7 @@ export function AnalysisPicture({ analysis, shared, selectedKey, onSelect, onMen
   const width = graph.lanes * LANE_WIDTH
   const height = 36 + rows * ROW_HEIGHT + 16
   const maxSeen = Math.max(1, ...graph.nodes.map((node) => (node.kind === 'observation' ? node.observation.seen : 1)))
-  const tint = (seen: number) => {
-    // Once is the palest; the most-seen is the full colour.
-    const share = maxSeen === 1 ? 1 : (seen - 1) / (maxSeen - 1)
-    return `color-mix(in srgb, ${theme.palette.primary.main} ${Math.round(25 + share * 75)}%, ${theme.palette.background.paper})`
-  }
+  const tint = (seen: number) => seenTint(theme, seen, maxSeen)
   const laneTitle = (lane: number) => (
     lane === 0 ? s('observation.laneObservations') : lane === graph.lanes - 1 && graph.lanes > 1 ? s('observation.laneRoots') : s('observation.laneCauses')
   )
@@ -187,6 +185,21 @@ type MarkProps<N> = {
   dim?: boolean
 }
 
+/**
+ * How an observation seen `seen` times is tinted, among marks the most-seen of
+ * which was seen `maxSeen` times: once is the palest, a quarter of the accent
+ * over the paper, and the most-seen is the full accent.
+ *
+ * Worked out here rather than left to CSS's `color-mix`, because the count
+ * drawn on the circle has to be lettered against this colour: the page's ink
+ * on the full accent was 2.2:1 in the dark mode and 3.5:1 in the light
+ * (`inkOn`).
+ */
+export function seenTint(theme: Theme, seen: number, maxSeen: number): string {
+  const share = maxSeen <= 1 ? 1 : (seen - 1) / (maxSeen - 1)
+  return mix(theme.palette.primary.main, 0.25 + share * 0.75, theme.palette.background.paper)
+}
+
 /** An observation: a circle sized by its impact, tinted by how often it was seen. */
 export function ObservationMark(props: MarkProps<Extract<GraphNode, { kind: 'observation' }>> & { fill: string }) {
   const theme = useTheme()
@@ -206,7 +219,7 @@ export function ObservationMark(props: MarkProps<Extract<GraphNode, { kind: 'obs
           strokeWidth={selected ? 3 : 1.5}
         />
         {seen > 1 && (
-          <text textAnchor="middle" dy="0.35em" fontSize={11} fontWeight={600} fill={theme.palette.text.primary}>{seen}×</text>
+          <text textAnchor="middle" dy="0.35em" fontSize={11} fontWeight={600} fill={inkOn(theme, fill)}>{seen}×</text>
         )}
         <text textAnchor="middle" y={r + 13} fontSize={10} fill={theme.palette.text.secondary}>
           {formatObservationNumber(node.observation.number)}{node.scope !== undefined ? ' ↑' : ''}

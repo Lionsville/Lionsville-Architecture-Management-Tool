@@ -30,7 +30,7 @@ import type { CauseStrength } from '../observation'
 import { solutionKey } from '../solutionGraph'
 import type { SolutionGraph, SolutionGraphEdge, SolutionGraphNode, SolutionLane } from '../solutionGraph'
 import { OUTCOME_LABEL, PHASE_LABEL } from '../observationScope'
-import { BOX, CauseMark, Flag, LANE_WIDTH, LINE_HIT_WIDTH, ObservationMark, RADIUS, ROW_HEIGHT, STROKE, shorten } from './AnalysisPicture'
+import { BOX, CauseMark, Flag, LANE_WIDTH, LINE_HIT_WIDTH, ObservationMark, RADIUS, ROW_HEIGHT, STROKE, seenTint, shorten } from './AnalysisPicture'
 import type { PictureMenuHandler, PictureTarget } from './PictureMenu'
 
 const WIDTH: Record<SolutionSize | 'unset', number> = { unset: 160, small: 160, medium: 184, large: 212 }
@@ -132,10 +132,7 @@ export function SolutionPicture({ graph, selectedKey, onSelect, flags, onMenu, s
     refuted: theme.palette.error.main, inconclusive: theme.palette.text.secondary,
   }
   const maxSeen = Math.max(1, ...graph.nodes.map((node) => (node.kind === 'observation' ? node.observation.seen : 1)))
-  const tint = (seen: number) => {
-    const share = maxSeen === 1 ? 1 : (seen - 1) / (maxSeen - 1)
-    return `color-mix(in srgb, ${theme.palette.primary.main} ${Math.round(25 + share * 75)}%, ${theme.palette.background.paper})`
-  }
+  const tint = (seen: number) => seenTint(theme, seen, maxSeen)
   const halfWidth = (node: SolutionGraphNode | undefined): number => {
     if (!node) return BOX.width / 2
     if (node.kind === 'observation') return RADIUS[node.observation.impact]
