@@ -19,15 +19,16 @@
  * applications and not containers, with the container said beside it.
  *
  * **Stranded** is on the day it goes: with a retirement date, every consumer
- * whose row is still open on that day; without one, every consumer there is
- * — withdrawing it would strand all of them, which is what the question
- * asks. A row with its own window that closes in time is the correct answer
- * and not an instance.
+ * with a row still open on that day, from a container — and an application —
+ * not gone by then; without one, every consumer there is — withdrawing it
+ * would strand all of them, which is what the question asks. A row with its
+ * own window that closes in time is the correct answer and not an instance.
  */
 import type { HostModel } from './hostModel'
-import { isDay, isGoneOn, relationLiveAt } from './lifecycle'
+import { isDay } from './lifecycle'
+import { livenessOf } from './liveness'
 import type { PlatformDescribe, PlatformEnd } from './platformReport'
-import type { ElementId, Relation } from './types'
+import type { DesignElement, ElementId, Relation } from './types'
 
 export type ServiceConsumer = PlatformEnd & {
   /** The container the row was written from, where it was not the application itself. */
@@ -80,52 +81,49 @@ export function serviceReport(
       ...(told?.where !== undefined ? { where: told.where } : {}),
     }
   }
-  const gone = (id: ElementId) => {
-    const held = byId.get(id)
-    return day !== undefined && held !== undefined && isGoneOn(held, day)
-  }
-  const live = (relation: Relation) => (day === undefined || relationLiveAt(relation, day))
-    && !gone(relation.sourceId) && !gone(relation.targetId)
 
   const seen = new Set<string>()
-  const rows: Relation[] = []
+  const every: Relation[] = []
   for (const relation of [...model.relations, ...(options.elsewhere ?? [])]) {
     if (seen.has(relation.id)) continue
     seen.add(relation.id)
-    if (live(relation)) rows.push(relation)
+    every.push(relation)
   }
+  // What is there, by the rules every reader shares (`liveness.ts`): an end
+  // this scope holds as a stand-in, or not at all, is dated by what `describe`
+  // says for it — and with nobody saying, it is not gone.
+  const live = livenessOf({ elements: model.elements, relations: every }, { retiredOf: (id) => describe?.(id)?.retired })
+  const rows = day === undefined ? every : every.filter((relation) => live.thereOn(relation, day))
   const byName = (a: PlatformEnd, b: PlatformEnd) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id)
   const sources = (type: Relation['type']) =>
     [...new Set(rows.filter((r) => r.type === type && r.targetId === serviceId).map((r) => r.sourceId))]
       .map(end).sort(byName)
 
-  // One consumer per application, first row wins: a team owns applications,
+  const using = usesByApplication(rows, serviceId, byId, describe)
+  const consumerOf = (applicationId: ElementId, use: Use): ServiceConsumer => ({
+    ...end(applicationId),
+    relationId: use.relation.id,
+    ...(use.via ? { via: { id: use.via, name: describe?.(use.via)?.name ?? byId.get(use.via)?.name ?? use.via } } : {}),
+  })
+  // One consumer per application, by its first row: a team owns applications,
   // and the container the row was written from is said beside it.
-  const consumers: ServiceConsumer[] = []
-  const applications = new Set<ElementId>()
-  for (const relation of rows) {
-    if (relation.type !== 'uses' || relation.targetId !== serviceId) continue
-    const held = byId.get(relation.sourceId)
-    const via = held?.kind === 'component' && held.parentId !== undefined ? held : undefined
-    const applicationId = via?.parentId ?? relation.sourceId
-    if (applications.has(applicationId)) continue
-    applications.add(applicationId)
-    consumers.push({
-      ...end(applicationId),
-      relationId: relation.id,
-      ...(via ? { via: { id: via.id, name: describe?.(via.id)?.name ?? via.name } } : {}),
-    })
-  }
-  consumers.sort(byName)
+  const consumers = [...using].map(([applicationId, uses]) => consumerOf(applicationId, uses[0])).sort(byName)
 
   const retiredOn = service.lifecycleDates?.retired
   const goes = isDay(retiredOn) ? retiredOn : undefined
+  // Stranded is judged per row, not by the first: an application with one
+  // container that goes before the service and another still on it on the
+  // day is stranded, by the one still on it. A row is still on it when its
+  // window holds the day and neither the container it was written from nor
+  // its application is gone by then — the service itself is, by definition.
+  const stillOn = (applicationId: ElementId, use: Use) => live.windowHolds(use.relation, goes!)
+    && !live.goneOn(use.relation.sourceId, goes!) && !live.goneOn(applicationId, goes!)
   const stranded = goes === undefined
     ? consumers
-    : consumers.filter((consumer) => {
-      const row = rows.find((r) => r.id === consumer.relationId)
-      return row !== undefined && relationLiveAt(row, goes) && !isGoneOn(byId.get(consumer.id) ?? service, goes)
-    })
+    : [...using].flatMap(([applicationId, uses]) => {
+      const on = uses.find((use) => stillOn(applicationId, use))
+      return on ? [consumerOf(applicationId, on)] : []
+    }).sort(byName)
   const maintainers = sources('assigned')
   const realisedBy = sources('realises')
   const scopes = [...new Set(consumers.map((one) => one.where).filter((one): one is string => one !== undefined))].sort()
@@ -139,4 +137,32 @@ export function serviceReport(
     stranded,
     counts: { maintainers: maintainers.length, realisedBy: realisedBy.length, consumers: consumers.length, stranded: stranded.length },
   }
+}
+
+/** One `uses` row onto the service, and the container it was written from, where it was one. */
+type Use = { relation: Relation; via?: ElementId }
+
+/**
+ * The `uses` rows onto the service, by the application they belong to, in row
+ * order. A container is known by this scope's record or by what `describe`
+ * says for it, so a consumer another scope wrote is named by its application
+ * as one written here is.
+ */
+function usesByApplication(
+  rows: readonly Relation[],
+  serviceId: ElementId,
+  byId: ReadonlyMap<ElementId, Pick<DesignElement, 'kind' | 'parentId'>>,
+  describe: PlatformDescribe | undefined,
+): Map<ElementId, Use[]> {
+  const using = new Map<ElementId, Use[]>()
+  for (const relation of rows) {
+    if (relation.type !== 'uses' || relation.targetId !== serviceId) continue
+    const held = byId.get(relation.sourceId) ?? describe?.(relation.sourceId)
+    const parentId = held?.kind === 'component' ? held.parentId : undefined
+    const applicationId = parentId ?? relation.sourceId
+    const uses = using.get(applicationId) ?? []
+    uses.push({ relation, ...(parentId !== undefined ? { via: relation.sourceId } : {}) })
+    using.set(applicationId, uses)
+  }
+  return using
 }

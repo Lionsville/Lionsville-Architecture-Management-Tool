@@ -62,6 +62,12 @@ export type PlatformDescription = {
   platformArchetype?: PlatformArchetype
   parentId?: ElementId
   outside?: true
+  /**
+   * The day the scope that defines it says it is gone (ADR-0012 §3): a
+   * stand-in carries no dates of its own, and an id this scope does not hold
+   * has none here at all (`liveness.ts`).
+   */
+  retired?: string
 }
 
 export type PlatformDescribe = (id: ElementId) => PlatformDescription | undefined

@@ -74,4 +74,29 @@ describe('the report on a service', () => {
     const gone = elements.map((e) => (e.id === 'billing' ? { ...e, lifecycleDates: { retired: '2027-01-01' } } : e))
     expect(serviceReport({ elements: gone, relations }, 'containers', { today: '2027-02-01' })!.consumers.map((one) => one.id)).toEqual(['wms'])
   })
+
+  it('strands a consumer another scope wrote: what this scope does not hold is not gone', () => {
+    const elsewhere: Relation[] = [row('x1', 'uses', 'crm', 'brokering')]
+    const report = serviceReport({ elements, relations }, 'brokering', { elsewhere })!
+    expect(report.stranded.map((one) => one.id)).toEqual(['crm', 'wms'])
+    // Unless the scope that defines it says it is gone by then.
+    const describe = (id: string) => (id === 'crm' ? { name: 'CRM', retired: '2027-06-01' } : undefined)
+    const told = serviceReport({ elements, relations }, 'brokering', { elsewhere, describe })!
+    expect(told.stranded.map((one) => one.id)).toEqual(['wms'])
+  })
+
+  it('judges by the container the row was written from, and by every one of an application\'s rows', () => {
+    const retiring = (id: string, retired: string) =>
+      elements.map((e) => (e.id === id ? { ...e, lifecycleDates: { retired } } : e))
+    const containerRows = [row('u6', 'uses', 'wms-api', 'brokering'), row('u7', 'uses', 'wms-events', 'brokering')]
+    // The first container goes before the service; the second is still on it.
+    const one = serviceReport({ elements: retiring('wms-api', '2027-01-01'), relations: containerRows }, 'brokering')!
+    expect(one.stranded.map((consumer) => [consumer.id, consumer.via?.id])).toEqual([['wms', 'wms-events']])
+    // Both gone before it: nothing is stranded.
+    const both = retiring('wms-api', '2027-01-01').map((e) => (e.id === 'wms-events' ? { ...e, lifecycleDates: { retired: '2027-01-01' } } : e))
+    expect(serviceReport({ elements: both, relations: containerRows }, 'brokering')!.stranded).toEqual([])
+    // The application gone before it takes its containers with it.
+    const app = serviceReport({ elements: retiring('wms', '2027-01-01'), relations: containerRows }, 'brokering')!
+    expect(app.stranded).toEqual([])
+  })
 })
