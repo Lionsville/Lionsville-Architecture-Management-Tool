@@ -94,6 +94,32 @@ describe('portsOf', () => {
     expect(ports.map((p) => p.from.id)).toEqual(['a'])
   })
 
+  it('gives each line a twin of its own, and a ported line the twin its window meets', () => {
+    // Two lines alike: the second was ported, the first not. The twin is the
+    // second's, because it starts the day after the second's last.
+    const ports = portsOf({
+      elements: ELEMENTS,
+      relations: [
+        line('a', 'old', 'billing'),
+        line('b', 'old', 'billing', { validUntil: '2027-02-28' }),
+        line('b2', 'new', 'billing', { validFrom: '2027-03-01' }),
+      ],
+    }, REPLACE)
+    expect(ports.map((port) => [port.from.id, port.to?.id])).toEqual([['a', undefined], ['b', 'b2']])
+  })
+
+  it('does not compare the protocol of an interface that has landed, which its landings carry', () => {
+    const ports = portsOf({
+      elements: [...ELEMENTS, container('billing-api', 'billing')],
+      relations: [
+        line('a', 'old', 'billing', { protocol: 'REST' }),
+        line('a2', 'new', 'billing', { validFrom: '2027-03-01' }),
+        line('r2', 'new', 'billing-api', { refines: 'a2', protocol: 'REST' }),
+      ],
+    }, REPLACE)
+    expect(ports[0].to?.id).toBe('a2')
+  })
+
   it('says when a line was closed by something other than this plan, and leaves it out of the unplanned', () => {
     // Another plan ported this line onto `crm`; `new` has no twin of it, so
     // this plan did not date it — and "every interface not yet planned" must

@@ -56,6 +56,10 @@ done. `model/porting.ts` now reads it this way:
   arrives on the new one is its container diagram's question, asked there.
 * **Taking back a port takes what landed on the twin**, which would otherwise
   be kept by the writer as an interface nobody drew.
+* **The twin, refined twice.** A landed interface's own protocol is not
+  compared, because the writer handed it down to its landings; and a twin is
+  one line's, the one whose window it meets first, so two lines alike do not
+  both write it.
 
 ## Context and Problem Statement
 

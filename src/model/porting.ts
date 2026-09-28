@@ -22,6 +22,13 @@
  * so; the table shows what it matched, and a wrong match is corrected by
  * editing the twin.
  *
+ * Two refinements of it. An interface that has landed has handed its
+ * protocol down to its landings (ADR-0013; the writer takes it off), so its
+ * own says nothing and is not compared: a port that draws a twin with
+ * landings would otherwise not recognise the twin it just drew. And a twin is
+ * one line's: two lines alike enough to share one would both write it, and a
+ * *port all* would write it twice.
+ *
  * ## Who moves from where
  *
  * Lines leave the elements the plan **retires**, and — so that a split can be
@@ -64,6 +71,7 @@ import { livenessOf } from './liveness'
 import { applicationOf, refinementsOf } from './refines'
 import type { Held } from './refines'
 import { flowsOf } from './relations'
+import { isDay } from './lifecycle'
 import { addDays } from './transition'
 import type { Transition } from './transition'
 import type { DesignElement, ElementId, Relation } from './types'
@@ -128,12 +136,16 @@ function otherEnd(relation: Relation, id: ElementId): ElementId {
   return relation.sourceId === id ? relation.targetId : relation.sourceId
 }
 
-/** Whether `twin` is `line` moved onto `toId`: same counterpart, same end, same direction, same protocol. */
-function isTwin(line: Relation, fromId: ElementId, twin: Relation, toId: ElementId): boolean {
+/**
+ * Whether `twin` is `line` moved onto `toId`: same counterpart, same end, same
+ * direction, and the same protocol where neither has landed.
+ */
+function isTwin(line: Relation, fromId: ElementId, twin: Relation, toId: ElementId, landed: ReadonlySet<string>): boolean {
   const end = endOf(line, fromId)
   if (!end || endOf(twin, toId) !== end) return false
   if (otherEnd(twin, toId) !== otherEnd(line, fromId)) return false
   if (twin.isBidirectional !== line.isBidirectional) return false
+  if (landed.has(line.id) || landed.has(twin.id)) return true
   return (twin.protocol ?? '') === (line.protocol ?? '')
 }
 
@@ -183,7 +195,7 @@ export function portsOf(model: Landscape, plan: Transition): Port[] {
     moving.push({ line, fromElementId, counterpartId })
   }
 
-  const twins = pairTwins(moving, interfaces, arriving)
+  const twins = pairTwins(moving, interfaces, arriving, model.relations)
   return moving.map(({ line, fromElementId, counterpartId }) => {
     const to = twins.get(line.id)
     const on = to ? windowOf(to).validFrom : undefined
@@ -203,20 +215,41 @@ export function portsOf(model: Landscape, plan: Transition): Port[] {
 
 type Moving = { line: Relation; fromElementId: ElementId; counterpartId: ElementId }
 
-/** Each moving line's twin, where one has been drawn. */
+/**
+ * Each moving line's twin, one line's each.
+ *
+ * A twin whose window meets the line's — it starts the day after the line's
+ * last — is that line's before it is anybody else's, because that is what a
+ * port wrote; only then does a line take the first twin still free. Without
+ * the first pass, porting the second of two lines alike would hand its twin
+ * to the first on the next read, and taking it back would take back the
+ * wrong one.
+ */
 function pairTwins(
   moving: readonly Moving[],
   interfaces: readonly Relation[],
   arriving: ReadonlySet<ElementId>,
+  relations: readonly Relation[],
 ): Map<string, Relation> {
+  const landed = new Set(relations.flatMap((row) => (row.refines === undefined ? [] : [row.refines])))
+  const claimed = new Set<string>()
   const twins = new Map<string, Relation>()
-  for (const { line, fromElementId } of moving) {
-    const to = interfaces.find((candidate) => (
-      candidate.id !== line.id
-      && [...arriving].some((toId) => isTwin(line, fromElementId, candidate, toId))
-    ))
-    if (to) twins.set(line.id, to)
+  const pair = (meets: boolean) => {
+    for (const { line, fromElementId } of moving) {
+      if (twins.has(line.id)) continue
+      const to = interfaces.find((candidate) => (
+        candidate.id !== line.id
+        && !claimed.has(candidate.id)
+        && (!meets || (isDay(candidate.validFrom) && line.validUntil === lastDayBefore(candidate.validFrom)))
+        && [...arriving].some((toId) => isTwin(line, fromElementId, candidate, toId, landed))
+      ))
+      if (!to) continue
+      claimed.add(to.id)
+      twins.set(line.id, to)
+    }
   }
+  pair(true)
+  pair(false)
   return twins
 }
 
