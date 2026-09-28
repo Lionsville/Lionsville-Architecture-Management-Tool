@@ -158,6 +158,35 @@ describe('a retirement with things still plugged into it', () => {
     expect(kinds(list)).not.toContain('retiresWithDependants')
   })
 
+  it('does not count what it runs on or uses: that row goes with it', () => {
+    const list = check(
+      [
+        element('wms', { lifecycleDates: { retired: '2028-01-31' }, successorId: 'wms2' }),
+        element('wms2'), element('cloud', { kind: 'platform' }),
+      ],
+      [{ id: 'u1', type: 'uses', sourceId: 'wms', targetId: 'cloud' } as Relation],
+    )
+    expect(kinds(list)).not.toContain('retiresWithDependants')
+  })
+
+  it('counts a container line by the interface it is part of, and a container with its application', () => {
+    const elements = [
+      element('sts', { lifecycleDates: { retired: '2031-03-31' }, successorId: 'x' }), element('x'),
+      element('rtd', { lifecycleDates: { retired: '2028-12-31' }, successorId: 'x' }),
+      element('sam', { kind: 'component', parentId: 'rtd' }),
+      element('pay'), element('pay-api', { kind: 'component', parentId: 'pay' }),
+    ]
+    const dated = connection('i1', 'sts', 'pay', { validUntil: '2028-12-30' })
+    // The landing has no dates; the interface it is part of ends in time.
+    const landed = connection('r1', 'sts', 'pay-api', { refines: 'i1' })
+    // A container of an application that is gone by then goes with it.
+    const toGone = connection('r2', 'sts', 'sam')
+    expect(kinds(check(elements, [dated, landed, toGone]))).not.toContain('retiresWithDependants')
+    // Undated, the interface — and so its landing — is still live.
+    const open = check(elements, [{ ...dated, validUntil: undefined }, landed])
+    expect(open.find((one) => one.kind === 'retiresWithDependants' && one.id === 'sts')?.count).toBe(2)
+  })
+
   it('is not reported when the neighbour goes at the same time', () => {
     const list = check(
       [

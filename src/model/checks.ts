@@ -126,7 +126,22 @@ function liveOn(
  */
 export function findings({ model, today, platformTree = {} }: CheckContext): Finding[] {
   const byId = new Map(model.elements.map((element) => [element.id, element]))
+  const relationById = new Map(model.relations.map((relation) => [relation.id, relation]))
   const found: Finding[] = []
+
+  // A container line with no window of its own is part of the interface it
+  // refines (ADR-0013), and ends when that interface does: dating the
+  // application line dates every landing on it.
+  const windowOf = (relation: Relation): Pick<Relation, 'validFrom' | 'validUntil'> => {
+    if (isDay(relation.validFrom) || isDay(relation.validUntil) || relation.refines === undefined) return relation
+    return relationById.get(relation.refines) ?? relation
+  }
+  // Gone on this day, itself or — a container — with its application.
+  const goneBy = (element: DesignElement, day: string): boolean => {
+    if (phaseAt(element, day) === 'retired') return true
+    const parent = element.kind === 'component' && element.parentId !== undefined ? byId.get(element.parentId) : undefined
+    return parent !== undefined && phaseAt(parent, day) === 'retired'
+  }
 
   for (const element of model.elements) {
     const gone = retiredOn(element)
@@ -135,14 +150,18 @@ export function findings({ model, today, platformTree = {} }: CheckContext): Fin
     // Who is still talking to it the day after it goes. Counted on the day
     // itself plus one, because `retired` names the day it is gone.
     const dependants = model.relations.filter((relation) => {
+      // What it runs on or uses depends on it for nothing: that row goes
+      // with it. The other way round — a platform retiring under a thing
+      // still standing on it — is `platformRetiresFirst`'s.
+      if (isTechnologyRelation(relation) && relation.sourceId === element.id) return false
       const other = relation.sourceId === element.id ? relation.targetId
         : relation.targetId === element.id ? relation.sourceId : undefined
       if (other === undefined) return false
       // A row with its own window that closes in time is the correct answer to
       // this problem, not an instance of it.
-      if (!relationLiveAt(relation, gone)) return false
+      if (!relationLiveAt(windowOf(relation), gone)) return false
       const neighbour = byId.get(other)
-      return Boolean(neighbour) && phaseAt(neighbour!, gone) !== 'retired'
+      return Boolean(neighbour) && !goneBy(neighbour!, gone)
     })
     if (dependants.length) {
       found.push({
