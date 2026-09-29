@@ -207,3 +207,5 @@ keyboard.
 * **Should an agent's save be a snapshot?** `project.save` writes the folder;
   ADR-0008's snapshot is a commit. *Recommended: not yet; a snapshot is a
   person's judgement about a moment, and the File menu is where it is made.*
+  *Since ADR-0031 the folder and its git are the desktop's implementation of
+  the repositories; what is said here is true of that implementation.*

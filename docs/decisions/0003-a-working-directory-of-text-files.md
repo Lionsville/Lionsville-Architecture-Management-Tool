@@ -5,6 +5,10 @@
 * Deciders: Wouter Simons
 * Superseded-by: ADR-0018, in part, 2026-09-19 — the single file as the export
   container: it is the whole working directory now, not one scope out of it
+* Superseded-by: ADR-0031, in part, 2026-09-29 — *the seam does not move*:
+  `DirectoryHandleLike` is no longer the abstraction the app reads through;
+  and *history is layer two* as git inside the seam. The folder stays the
+  desktop's own implementation
 
 **Built, and the format turned once since. 12 September 2026:** the folder is
 version 4, and what that changed is that the file says what the model says —
@@ -98,6 +102,11 @@ the diff between two Tuesdays.
 user chose; the single-file `.lvarch` stays, as the thing you *hand to somebody*
 rather than the thing you work in.
 
+*Superseded in part by ADR-0031 (§2): a project kept as this folder is the
+desktop's implementation of the repositories, and the app reads through the
+repositories, not through the folder. The layout below is that
+implementation's.*
+
 ```
 <working directory>/
   <group>/                       group path segments as nested folders
@@ -150,6 +159,11 @@ the `type` / `version` envelope it was missing, so both `.lvarch` shapes agree;
 second implementation of it rather than a second store. Browser storage stays,
 demoted to what it always was — the fallback for a tab with no folder.
 
+*Superseded in part by ADR-0031 (§1, §2): the seam is the repositories, in the
+model's words. `DirectoryHandleLike` and the store over it are the folder
+implementation's, with the browser's and the Electron handles under it, and
+browser storage is an implementation of the repositories too.*
+
 The single file becomes **version 3: a zip of the folder**, which is what the
 header comment in `model/hostModel.ts` reserved when it refused to promise JSON
 in the extension. Versions 1 and 2 keep opening. The interchange format is
@@ -166,6 +180,11 @@ shell means a folder name cannot become an argument, and a git library is a
 dependency trusted with somebody's repository. A machine without git simply has
 no history, and nothing else changes — degrading is the requirement, not the
 fallback.
+
+*Superseded in part by ADR-0031 (§1, §2): history is the history repository,
+and git is how the folder implementation answers it — commits for entries,
+tags for labels. What this paragraph says of git stays true of that
+implementation.*
 
 The diff shown there is **semantic** (`model/diff.ts`). `git diff` answers
 "which lines changed" and this answers "what happened to the architecture", and

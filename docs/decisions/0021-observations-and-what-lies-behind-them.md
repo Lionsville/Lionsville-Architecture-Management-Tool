@@ -79,6 +79,10 @@ link, and it stops being a root that moment.
 
 ### 2. One folder on disk
 
+*Since ADR-0031 the folder is the desktop's implementation of the
+repositories; this layout, and the format number it turns, are true of that
+implementation.*
+
 `observations/NNNN-<slug>.md` for each observation and
 `observations/causes/NNNN-<slug>.md` for each cause, front matter for the
 fields and the history, a heading with the label, markdown below — the

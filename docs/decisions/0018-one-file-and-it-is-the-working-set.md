@@ -79,6 +79,10 @@ renamed for tidiness.
 
 ### 2. The working file is the working set
 
+*Since ADR-0031 the working file is an interchange format between sources:
+the folder format, zipped, with its codec in the folder implementation, which
+any source exports to and imports from through the repositories (ADR-0031 §2).*
+
 `workingFileBytes` takes scopes rather than a scope and files each one where
 it sits under the first, **relative to the first** — never the address it had
 in the tree it came from, the same reason `toWorkingFile` never wrote the

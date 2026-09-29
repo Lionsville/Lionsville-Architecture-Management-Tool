@@ -300,6 +300,10 @@ shared file the newer build may be a colleague's.
 
 ## Git push and pull
 
+*Since ADR-0031 the folder and its git are the desktop's implementation of the
+repositories; what is said here is true of that implementation. Pull, push and
+a remote are its own capability, offered through its provider's chrome.*
+
 `electron/main/git.ts` already runs the machine's own git through `execFile`,
 with no library. Sync extends that and nothing else.
 

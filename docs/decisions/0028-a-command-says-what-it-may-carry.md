@@ -105,6 +105,10 @@ the whole tree leaves such a scope out rather than counting it as defining
 nothing — and a walk of the tree that fails rejects rather than answering an
 empty tree.
 
+*Since ADR-0031 the rule for a `model.json` that does not parse belongs to the
+folder implementation (ADR-0031 §2), the desktop's implementation of the
+repositories; what is said here of the folder store is true of it.*
+
 > **Amended 26 September 2026: a save removes only what a read took in.** The
 > rule above was one case of a wider one. A save writes what the snapshot
 > holds and removes the format's files it no longer produces, so any file the

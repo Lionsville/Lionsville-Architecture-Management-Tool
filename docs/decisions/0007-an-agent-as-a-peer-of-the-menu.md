@@ -50,6 +50,9 @@ involves the app being open:
 * **point** at an element so the person sees which one it means, or be pointed
   at.
 
+*Since ADR-0031 the folder and its git are the desktop's implementation of the
+repositories; what is said here of reading it is true of that implementation.*
+
 Writing files behind a running app is also the one thing the watcher is built
 to notice. A change the app did not make arrives as *changed on disk*, it
 bypasses the reducer, the id policy and the activity log, and the person is

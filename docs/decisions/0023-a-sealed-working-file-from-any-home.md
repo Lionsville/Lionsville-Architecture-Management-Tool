@@ -100,6 +100,11 @@ about — the root on the organisation's home, `acme/retail` on that scope's
 then the tree is told. The desktop's `openDocument`, a double click on a
 `.lvarch`, lands here too; it used to fall on the floor.
 
+*Since ADR-0031 the working file is the folder format's interchange, which any
+source exports to and imports from through the repositories (ADR-0031 §2);
+what is said here of the store and the disk is true of the folder
+implementation.*
+
 ### 3. What this machine does about a folder is kept by the install
 
 `.lionsville-architecture/local.json` is not written any more. What this

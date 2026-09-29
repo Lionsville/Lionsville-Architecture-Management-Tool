@@ -3,6 +3,10 @@
 * Status: accepted
 * Date: 2026-09-08
 * Deciders: Wouter Simons
+* Superseded-by: ADR-0031, in part, 2026-09-29 — Q1's filtering by file path
+  in the adapter; Q2's revert as a new commit, while the command that makes
+  the present equal a past state stays; and Q3's labels as git tags, which
+  the folder implementation keeps
 
 **Accepted 8 September 2026 and built the same day**, in the seven steps of
 the last section, one commit each. Every *Open question* was decided as
@@ -141,6 +145,11 @@ folder format already knows, it just does not say it out loud. What changed
 *within* those snapshots is still `projectAt` and `diffModels`, filtered to
 one subject and id, which `ModelChange` already carries.
 
+*Superseded in part by ADR-0031 (§1, §2): a thing's history is asked of the
+history repository by record kind and id, never by path. Mapping a record to
+the paths that hold it is the folder implementation's work, behind that
+contract.*
+
 A is correct and unaffordable: a project read at a snapshot is one `ls-tree`
 plus one `show` per file, and a history of two hundred snapshots over a
 project of sixty files is twelve thousand process spawns to answer a click.
@@ -184,6 +193,11 @@ tree for that project equals the tree at the chosen one** — what a git user
 calls a revert — and the history has grown by one entry that says exactly
 what happened.
 
+*Superseded in part by ADR-0031 (§1): a way back is a step through the scope
+repository, and how the history then keeps it is the implementation's; a new
+commit is how the folder implementation keeps it. The command that makes the
+present equal a past state stays.*
+
 A is what "restore" first sounds like, and it is the one thing this record
 exists to refuse; see *Why that property is fragile*. B writes files the app
 did not save, and the app has one watcher whose whole job is to notice that.
@@ -196,6 +210,9 @@ history page shows it beside the drafted subject, and a tagged entry is what a
 restore most often points at. Tags travel with sync, so a colleague sees the
 same mark in the same place, in this app or in any git client.
 
+*Superseded in part by ADR-0031 (§1, §2): labels are the history
+repository's. The folder implementation keeps them as tags.*
+
 A rewrites; refused. B keeps the commit and rewrites nothing, but a note is
 kept on a ref no other tool shows and sync does not carry unless we push that
 ref by hand — a second subject only this app can read. D is the same
@@ -207,6 +224,10 @@ here is a mark a colleague's git client already understands.
 `label(entry, name)`, and a `labels` field on `HistoryEntry`. No `restore`
 method — a restore is two things the port already does, a read and a
 snapshot, with a command in between that is the session's business.
+
+*Superseded in part by ADR-0031 (§1): `ProjectHistory` is replaced by the
+history repository, which pages the entries of a scope or of one thing and
+keeps labels.*
 
 ## Consequences
 

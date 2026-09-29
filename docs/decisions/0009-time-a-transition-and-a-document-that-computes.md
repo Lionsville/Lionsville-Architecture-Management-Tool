@@ -6,6 +6,10 @@
 * Superseded-by: ADR-0027, in part, 2026-09-26 — *a diagram carries `asOf` and
   changing it is a command*, and the accepted cost *`asOf` dirties the
   document*
+* Superseded-by: ADR-0031, in part, 2026-09-29 — Q4's "images are files in
+  the folder", and the `../images/` reference inside the model: an image is
+  named by its file name in the scope's library, `image:<name>`, and loaded
+  when shown
 
 **Built, 8 September 2026**, in the order the last section gives, with four
 departures from the text below that are worth knowing before reading it:
@@ -378,6 +382,12 @@ measured cost of it is above. D is a screen, a store and a format for something
 that is four lines of arithmetic over a table.
 
 ### Q4: B. Images are files in the folder, and a fence name is a registry entry
+
+*Superseded in part by ADR-0031 (§3): an image is named by its file name in
+its scope's image library, and a document refers to it as `image:<name>`,
+not by a path; its bytes are asked for when it comes into view. The folder
+implementation keeps `images/` and writes `../images/` on disk, translating
+both ways.*
 
 **Images.** `images/<key>.png|.jpg|.svg` in the project folder, and in the
 group folder for a group's decisions — the same shape `logos/` already has, for

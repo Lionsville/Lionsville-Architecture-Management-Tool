@@ -8,6 +8,9 @@
 * Superseded-by: ADR-0018, in part, 2026-09-19 — §11 and its Decision Drivers
   and Consequences — "the interchange format is a contract with other tools
   and does not change"
+* Superseded-by: ADR-0031, in part, 2026-09-29 — Principle 1, "a scope is a
+  folder": a scope has an address and an identity; §1's layout as a rule of
+  the domain; and §7's history as a union of files
 
 *This is the 2.0.0 record. It decides what the model is built towards, not the
 order it is reached in; the last section sketches that order and is the least
@@ -194,9 +197,17 @@ Three sentences carry the whole thing:
    coordinates and nothing else, and may be deleted, regenerated, or ignored
    in a diff.
 
+*Superseded in part by ADR-0031 (§1): a scope has an address, its path in the
+tree, and an identity a move does not change. That it is a folder is true of
+the folder implementation.*
+
 The rest of this section is those three, worked out.
 
 ### 1. Scopes
+
+*Superseded in part by ADR-0031 (§2): the layout below is the folder
+implementation's, behind the repositories, and no longer a rule of the
+domain. The folder implementation keeps a scope's id in its `scope.json`.*
 
 ```
 <root>/                               the organisation — a scope
@@ -570,6 +581,10 @@ The four view kinds:
 | `map` | functions × applications (`supports`) | laid out | the enterprise map: which capability is supported by what, across domains, with the gaps |
 
 ### 7. Documents, decisions, plans: at every scope
+
+*Superseded in part by ADR-0031 (§1): the history of a thing is asked of the
+history repository by record kind and id, not as a union of files; the folder
+implementation answers it from the files that hold it.*
 
 Nothing changes in what they are. What changes is that they exist at every
 level, because every level is a scope:

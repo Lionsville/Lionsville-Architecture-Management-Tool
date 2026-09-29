@@ -5,6 +5,10 @@
 * Deciders: Wouter Simons
 * Extends: ADR-0002 (every change is a command through one reducer), ADR-0005
   (what you are working from, and the document session)
+* Superseded-by: ADR-0031, in part, 2026-09-29 — the amendments that made
+  `ports/DirectoryHandle.ts` and the folder store the base other providers
+  fill, and `FolderSettings` a port; and the file channel, *changed on disk*,
+  for work across scopes
 
 ## Context and Problem Statement
 
@@ -104,6 +108,10 @@ built against one model. What crosses scopes — *link*, a stand-in refresh,
 creating or moving a scope — does not come through it: those are barriers on
 the undo stack already (ADR-0012 §10) and *changed on disk* is the right shape
 for them.
+
+*Superseded in part by ADR-0031 (§1): work across scopes — steps on several
+scopes together, and creating, moving and removing a scope — goes to the
+scope repository, and does not arrive as a change on disk.*
 
 `CommandChannel.contract.ts` is what a filling has to show, written before the
 filling: two sessions converge on the same model after interleaved steps; a
@@ -286,6 +294,9 @@ nothing above them changed for any of them.
   has to show and could only be read out of `adapters/fileSystem/`, which is the
   one folder nothing but the composition root may name. The store re-exports all
   four names.
+  *Superseded in part by ADR-0031 (§1, §2): `DirectoryHandleLike` is the
+  folder implementation's, under `adapters/folder/`, and not a port another
+  provider fills; such a provider implements the repositories.*
 * **`i18n`'s `registerStrings(language, table)`.** `SourceConnect` always said a
   provider brings its own table and there was nowhere to put one, so its label
   rendered as its key. Additive only: a key this app owns is refused, loudly
@@ -312,6 +323,9 @@ that closes it.
   and the channel, scope-store and folder-settings makers may be async. A second
   run over the same in-memory channel with every answer put off a turn is what
   keeps the settles from quietly disappearing again.
+  *Superseded in part by ADR-0031 (§1): the scope store and `FolderSettings`
+  are replaced by the scope and settings repositories, whose suites every
+  implementation runs.*
 * **Which refusal wins.** A step whose `base` is behind the head and whose
   command the reducer refuses is answered with the reducer's key, so
   `command.taken` always means *mint another id and send it again*. A channel that
@@ -657,6 +671,10 @@ in the crumbs, a destination with no scope landing on the scope that is open,
 and a menu line told the same call sending the person to the scope it names.
 
 ## Amended — the two a build that fills the folder store needed
+
+*Superseded in part by ADR-0031 (§1, §2): a build that keeps work elsewhere
+implements the repositories rather than filling the folder store, and the
+directory handle and its contract are the folder implementation's.*
 
 *26 September 2026.* The same build keeps its scopes in this tree's folder store
 over a `DirectoryHandleLike` of its own, and had to reach past the seam twice to

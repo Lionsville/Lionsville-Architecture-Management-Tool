@@ -78,16 +78,16 @@ now, with their words unchanged.
 |---|---|---|---|
 | [0001](0001-dissolve-the-editor-package.md) | Dissolve the editor package into modules | 2026-09-06 | — |
 | [0002](0002-commands-as-the-unit-of-change.md) | Commands as the unit of change | 2026-09-06 | [0028](0028-a-command-says-what-it-may-carry.md) in part |
-| [0003](0003-a-working-directory-of-text-files.md) | A working directory of text files | 2026-09-06 | [0018](0018-one-file-and-it-is-the-working-set.md) in part |
+| [0003](0003-a-working-directory-of-text-files.md) | A working directory of text files | 2026-09-06 | [0018](0018-one-file-and-it-is-the-working-set.md) in part; [0031](0031-storage-behind-repositories.md) in part |
 | [0004](0004-what-a-large-landscape-costs.md) | What a large landscape costs | 2026-09-06 | — |
 | [0005](0005-preferences-and-what-you-are-working-from.md) | Preferences, in three scopes, and a top bar that says where you are | 2026-09-07 | [0023](0023-a-sealed-working-file-from-any-home.md) in part |
 | [0006](0006-release-channels.md) | Release channels: stable, and beta | 2026-09-07 | [0030](0030-a-build-with-a-feed-updates-itself.md) in part |
 | [0007](0007-an-agent-as-a-peer-of-the-menu.md) | An agent as a peer of the menu: an MCP server that speaks commands | 2026-09-07 | [0018](0018-one-file-and-it-is-the-working-set.md) in part |
-| [0008](0008-history-per-thing-and-a-way-back.md) | History per thing, and a way back that is itself history | 2026-09-08 | — |
-| [0009](0009-time-a-transition-and-a-document-that-computes.md) | Time on the facts, a transition as a record, and a document that computes | 2026-09-08 | [0027](0027-looking-at-another-day-is-not-an-edit.md) in part |
+| [0008](0008-history-per-thing-and-a-way-back.md) | History per thing, and a way back that is itself history | 2026-09-08 | [0031](0031-storage-behind-repositories.md) in part |
+| [0009](0009-time-a-transition-and-a-document-that-computes.md) | Time on the facts, a transition as a record, and a document that computes | 2026-09-08 | [0027](0027-looking-at-another-day-is-not-an-edit.md) in part; [0031](0031-storage-behind-repositories.md) in part |
 | [0010](0010-a-replacement-as-one-gesture.md) | A replacement as one gesture, and the interfaces as the plan | 2026-09-08 | — |
 | [0011](0011-an-agent-can-do-what-a-person-can.md) | An agent can do what a person can, and knows what stuck | 2026-09-08 | — |
-| [0012](0012-a-federated-model.md) | A federated model: scopes, one identity, and views apart from geometry | 2026-09-10 | [0016](0016-a-laid-out-view-is-a-tab.md) in part; [0018](0018-one-file-and-it-is-the-working-set.md) in part |
+| [0012](0012-a-federated-model.md) | A federated model: scopes, one identity, and views apart from geometry | 2026-09-10 | [0016](0016-a-laid-out-view-is-a-tab.md) in part; [0018](0018-one-file-and-it-is-the-working-set.md) in part; [0031](0031-storage-behind-repositories.md) in part |
 | [0013](0013-the-physical-view.md) | The physical view: a platform, what stands on it, and what it carries | 2026-09-15 | [0014](0014-the-technology-layer.md) in part; [0015](0015-the-technology-landscape.md) in part |
 | [0014](0014-the-technology-layer.md) | The technology layer: services offered, platforms that deliver them | 2026-09-15 | [0015](0015-the-technology-landscape.md) in part; [0017](0017-what-hosting-implies.md) in part |
 | [0015](0015-the-technology-landscape.md) | The technology landscape: one view over the layer | 2026-09-16 | [0016](0016-a-laid-out-view-is-a-tab.md) in part; [0020](0020-the-technology-landscape-is-where-technology-use-is-written.md) in part |
@@ -97,7 +97,7 @@ now, with their words unchanged.
 | [0019](0019-an-agent-drives-the-app.md) | An agent drives the app, and the person can stop it | 2026-09-19 | — |
 | [0020](0020-the-technology-landscape-is-where-technology-use-is-written.md) | The technology landscape is where technology use is written | 2026-09-20 | — |
 | [0021](0021-observations-and-what-lies-behind-them.md) | Observations, and what lies behind them | 2026-09-20 | — |
-| [0022](0022-a-source-is-a-provider.md) | A source is a provider, and a step can come from another author | 2026-09-21 | — |
+| [0022](0022-a-source-is-a-provider.md) | A source is a provider, and a step can come from another author | 2026-09-21 | [0031](0031-storage-behind-repositories.md) in part |
 | [0023](0023-a-sealed-working-file-from-any-home.md) | A sealed working file, from any home, and settings that stay with the install | 2026-09-21 | — |
 | [0024](0024-the-web-build-is-a-release.md) | The web build is a release, and it has an address | 2026-09-21 | [0030](0030-a-build-with-a-feed-updates-itself.md) in part |
 | [0025](0025-where-a-working-file-lands-is-asked.md) | Where a working file lands is asked | 2026-09-22 | — |
@@ -106,3 +106,4 @@ now, with their words unchanged.
 | [0028](0028-a-command-says-what-it-may-carry.md) | A command says what it may carry | 2026-09-26 | — |
 | [0029](0029-every-record-says-what-it-is-to-a-search.md) | Every record says what it is to a search | 2026-09-27 | — |
 | [0030](0030-a-build-with-a-feed-updates-itself.md) | A build with a feed updates itself, and the releases here carry no installers | 2026-09-28 | — |
+| [0031](0031-storage-behind-repositories.md) | Storage behind repositories: the domain speaks no storage language (not yet built) | 2026-09-29 | — |
