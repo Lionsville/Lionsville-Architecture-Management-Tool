@@ -921,7 +921,9 @@ one blob, with the app as its one writer, which a chrome writes through —
 `flush`, which writes what the open scope holds unwritten and is asked
 before a provider replaces what its source keeps — another version taken in,
 older work brought over, a copy made — so a moment-old edit is kept first
-and not written over what arrived; and `reread`, for a source that changed
+and not written over what arrived: it waits for a write already in flight,
+writes what is left, and refuses while which version stands is a person's
+to settle, when the provider replaces nothing; and `reread`, for a source that changed
 as a whole: the tree, the index and the open scope are read again. A provider may also draw a section of
 *Preferences* about its own source, as it may a panel in *Connect an agent*.
 
@@ -958,8 +960,11 @@ a change made elsewhere.
   the folder once it is open, where it used to be asked on a screen of its
   own just before, and where it used to close as soon as a person said yes:
   it stays open and busy until the copy is done, then says how many scopes
-  were copied and which could not be, or why nothing was. A copy has the
-  folder read again.
+  were copied and which could not be, or why nothing was. Scopes that could
+  not be written are offered again at once, and the folder is asked about
+  again at its next pick until they are; one this browser could not read is
+  said, and not asked about again. A copy has the folder read again, and
+  never writes over a scope somebody worked in after it was found empty.
 - **A folder in a browser tab keeps its history in this browser's
   database**, beside the folder's handle, and says so where a person starts
   one; only a tab with no database keeps it for as long as the tab is open,
@@ -975,8 +980,10 @@ database will not open at all — a browser without one, a private window that
 refuses the first open — memory answers in its place, and what the older
 storage kept is shown there: read, never moved. The preferences are still
 kept where they always were. Which it is is settled before anything is
-drawn, so the bar says in the warning colour, in memory's words, that nothing
-outlives the tab, as the subtitle and the history's note do, and the strip
+drawn — the first frame waits on the database for a few seconds at most,
+and where it has not answered by then, the page is drawn, the strip says so,
+and the work appears when it does — so the bar says in the warning colour,
+in memory's words, that nothing outlives the tab, as the subtitle and the history's note do, and the strip
 says where the work shown came from. A first open refused with the names a
 lost connection has is a database this page never had, not one it lost. The work its older
 storage kept is asked about one scope at a time — bring the older copy
@@ -991,7 +998,9 @@ where a step of this session cannot land on another author's version, when
 what is on screen lands whole over the state just read — and never for the
 session's ordinary saving, which a test holds; going back in the history
 stays the model's own restore. A content placed at an address makes the
-scopes above it that are not there, named by their address.
+scopes above it that are not there, named by their address, and expects what
+its caller found there: a write that landed since, or a scope made there
+since, refuses the whole rather than being replaced.
 
 **History on every source.** A snapshot is `record` over every scope, and
 the safeguard before a replace is `record` over the scope replaced and every
