@@ -13,7 +13,10 @@ import { defineConfig } from 'vitest/config'
  * upgrade, and — in Chromium, through a storage bucket of 1 MB — a quota the
  * browser enforces (`IndexedDbStore.browser.test.ts`). WebKit has no buckets
  * and cannot be given a small quota, so there the refusal is the node
- * suites' injected one.
+ * suites' injected one. And layout, which jsdom does not do: a document's
+ * pictures laid out from the library do not move when their bytes arrive,
+ * and one far below the window is never asked for
+ * (`documentation/ui/Pictures.browser.test.tsx`).
  *
  * Not in `npm run check`: it starts two browsers, which is seconds the fast
  * loop should not pay. Run it with `npm run test:browser`, a gate of its own,
@@ -21,7 +24,7 @@ import { defineConfig } from 'vitest/config'
  */
 export default defineConfig({
   test: {
-    include: ['src/**/*.browser.test.ts'],
+    include: ['src/**/*.browser.test.{ts,tsx}'],
     env: { TZ: 'UTC' },
     testTimeout: 60_000,
     // A failed test's screenshot, under `tmp/` with the rest of what a run leaves.
