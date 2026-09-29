@@ -43,7 +43,7 @@ import type { ImageEntry } from '../../model/imageName'
 import { fromArrays } from '../../model/normalised'
 import { recordsChanged, SCOPE_RECORD, sameRecord, sameValue } from '../../model/recordKey'
 import type { RecordKey, RecordKind } from '../../model/recordKey'
-import { isFormatPath } from '../../projects/folderFormat'
+import { descriptionPath, isFormatPath, modelListsFrom } from '../../projects/folderFormat'
 import type { FolderFile } from '../../projects/folderFormat'
 import { labelSlug } from '../../projects/label'
 import { isSupersededPath, openScopeFolder } from '../../projects/migrate4to5'
@@ -70,6 +70,9 @@ const PAGE = 50
 
 /** How many commits are read at a time while a page fills. */
 const CHUNK = 200
+
+/** How many messages are read at a time where only what commits say is asked. */
+const MESSAGES = 5000
 
 /** How many of each thing read of the history are kept. */
 const KEPT = 256
@@ -111,6 +114,25 @@ const COULD_HOLD: Record<RecordKind, (path: string) => boolean> = {
   experiment: (path) => path.startsWith('observations/experiments/'),
   image: (path) => path === 'scope.json' || path.startsWith(`${PICTURES}/`),
   scope: (path) => path === 'scope.json' || path === 'model.json',
+}
+
+/**
+ * Where one record is kept, where the folder says so exactly — an element in
+ * the model and its description's own file, a relation in the model — with
+ * the files that are its alone; `undefined` for a kind whose file a record's
+ * number or name decides, which is asked of the kind's paths instead.
+ */
+function recordFiles(record: RecordKey): { paths: string[]; own: string[] } | undefined {
+  if (record.kind === 'relation') return { paths: ['model.json'], own: [] }
+  if (record.kind !== 'element') return undefined
+  const page = descriptionPath(record.id)
+  return page ? { paths: ['model.json', page], own: [page] } : { paths: ['model.json'], own: [] }
+}
+
+/** Whether a path inside a scope's folder could hold the record. */
+function couldHold(record: RecordKey, path: string): boolean {
+  const exact = recordFiles(record)
+  return exact ? exact.paths.includes(path) : COULD_HOLD[record.kind](path)
 }
 
 /** The name a scope's labels are kept under: its identity, where a tag's name can hold it. */
@@ -160,6 +182,8 @@ export class FolderHistory implements HistoryRepository {
   private readonly trees = new Lru<string, TreeEntry[]>(KEPT)
   /** The identity a header said at a commit, by commit and address. */
   private readonly identities = new Lru<string, ScopeId>(KEPT * 4)
+  /** A model's records and rows, by the id of the file they were read from. */
+  private readonly models = new Lru<string, { elements: readonly unknown[]; relations: readonly unknown[] }>(KEPT)
   /** Where a scope was at a commit, found by walking its first parents. */
   private readonly places = new Lru<string, ScopeAddress | null>(KEPT * 4)
 
@@ -198,13 +222,13 @@ export class FolderHistory implements HistoryRepository {
     return { id: entryIdOf(commit.sha, id), scope: id, at: commit.at, by: commit.author, subject: commit.subject, labels }
   }
 
-  /** Every commit whose message holds a text, in chunks, to the first commit there is. */
+  /** Every commit whose message holds a text, its message alone, in chunks, to the first commit there is. */
   private async grep(text: string): Promise<FolderCommit[]> {
     const found: FolderCommit[] = []
-    for (let skip = 0; ; skip += CHUNK) {
-      const commits = await this.git.log({ grep: text, limit: CHUNK, skip })
+    for (let skip = 0; ; skip += MESSAGES) {
+      const commits = await this.git.log({ grep: text, limit: MESSAGES, skip, bare: true })
       found.push(...commits)
-      if (commits.length < CHUNK) return found
+      if (commits.length < MESSAGES) return found
     }
   }
 
@@ -282,7 +306,7 @@ export class FolderHistory implements HistoryRepository {
     const tip = cursor?.tip ?? await this.git.head()
     if (!tip || held.length === 0) return { entries: [] }
     const paths = record
-      ? held.flatMap((address) => KIND_PATHS[record.kind].map((path) => scopeFilePath(address, path)))
+      ? held.flatMap((address) => (recordFiles(record)?.paths ?? KIND_PATHS[record.kind]).map((path) => scopeFilePath(address, path)))
       : held.includes('') ? undefined : held
     const page: { found: Found; index: number; k: number }[] = []
     fill: for await (const { index, members } of this.listed(asked, addresses, paths, tip, cursor?.index ?? 0)) {
@@ -297,6 +321,42 @@ export class FolderHistory implements HistoryRepository {
     const entries = page.slice(0, size).map(({ found }) => this.entryOf(found, tags, spaces))
     const next = page[size]
     return next ? { entries, next: `${tip}:${next.index}:${next.k}` } : { entries }
+  }
+
+  /**
+   * One record's row in a scope's model, as the folder format reads it, from
+   * the file by its id — read once per version of the file — or `undefined`
+   * where there is no such file, or it holds no such row.
+   */
+  private async rowIn(blob: string | undefined, list: 'elements' | 'relations', id: string): Promise<unknown> {
+    if (!blob) return undefined
+    let lists = this.models.get(blob)
+    if (!lists) {
+      lists = modelListsFrom((await this.git.texts([blob]))[blob]) ?? { elements: [], relations: [] }
+      this.models.set(blob, lists)
+    }
+    return (lists[list] as readonly { id: string }[]).find((row) => row.id === id)
+  }
+
+  /**
+   * Whether a commit changed an element or a relation, from what the log said
+   * it changed alone — the ids of what each file held before and after — where
+   * that is enough: a scope that has been at one address, whose header the
+   * commit did not change. `undefined` where it is not enough.
+   */
+  private async touchesByLog(found: Found, record: RecordKey, one: Asked): Promise<boolean | undefined> {
+    const exact = recordFiles(record)
+    if (!exact || one.held.length !== 1 || !found.commit.blobs || found.commit.parents.length === 0) return undefined
+    const raw = new Map(Object.entries(found.commit.blobs).flatMap(([path, ids]) => {
+      const inside = within(found.address, path)
+      return inside === undefined ? [] : [[inside, ids] as const]
+    }))
+    if (raw.has('scope.json')) return undefined
+    if (exact.own.some((path) => raw.has(path))) return true
+    const model = raw.get('model.json')
+    if (!model) return false
+    const list = record.kind === 'element' ? 'elements' : 'relations'
+    return !sameValue(await this.rowIn(model[0], list, record.id), await this.rowIn(model[1], list, record.id))
   }
 
   /** A scope's own files at a commit, with the ids of what they held. */
@@ -339,29 +399,38 @@ export class FolderHistory implements HistoryRepository {
   }
 
   /**
-   * Whether an entry's steps changed a record: nothing where the files a
-   * record of its kind could be in are the same, by their ids, as at the
-   * commit before; otherwise the scope read at both, and the record compared.
+   * Whether an entry's steps changed a record: nothing where the files it
+   * could be in are the same, by their ids, as at the commit before; yes where
+   * a file that is the record's alone changed; otherwise the scope read at
+   * both, and the record compared.
    */
   private async touches(found: Found, record: RecordKey, asked: readonly Asked[], addresses: readonly ScopeAddress[]): Promise<boolean> {
     const could = found.commit.changed.some((path) => {
       const inside = within(found.address, path)
-      return inside !== undefined && COULD_HOLD[record.kind](inside)
+      return inside !== undefined && couldHold(record, inside)
     })
     if (!could) return false
     const one = asked.find((scope) => scope.id === found.id)!
+    const quick = await this.touchesByLog(found, record, one)
+    if (quick !== undefined) return quick
     const parent = found.commit.parents[0]
     const before = parent === undefined ? undefined : await this.placeAt(parent, one, addresses)
-    const blobs = async (at: At | undefined) => (at
-      ? (await this.ownTree(at.sha, at.address)).filter((file) => COULD_HOLD[record.kind](file.path))
-        .map((file) => `${file.path}\u0000${file.blob}`).sort().join('\n')
-      : '')
-    if (await blobs({ sha: found.commit.sha, address: found.address }) === await blobs(before)) return false
+    const blobs = async (at: At | undefined) => new Map(at
+      ? (await this.ownTree(at.sha, at.address)).filter((file) => couldHold(record, file.path)).map((file) => [file.path, file.blob])
+      : [])
+    const [now, was] = [await blobs({ sha: found.commit.sha, address: found.address }), await blobs(before)]
+    const keys = new Set([...now.keys(), ...was.keys()])
+    if ([...keys].every((path) => now.get(path) === was.get(path))) return false
+    if ((recordFiles(record)?.own ?? []).some((path) => now.get(path) !== was.get(path))) return true
+    if (record.kind === 'element' || record.kind === 'relation') {
+      const list = record.kind === 'element' ? 'elements' : 'relations'
+      return !sameValue(await this.rowIn(now.get('model.json'), list, record.id), await this.rowIn(was.get('model.json'), list, record.id))
+    }
     const pictures = record.kind === 'image'
-    const now = await this.stateOf(found.commit.sha, found.id, found.address, pictures)
-    if (!now) return false
-    const was = before ? await this.stateOf(before.sha, found.id, before.address, pictures) : undefined
-    return recordsBetween(was, now).some((changed) => sameRecord(changed, record))
+    const after = await this.stateOf(found.commit.sha, found.id, found.address, pictures)
+    if (!after) return false
+    const prior = before ? await this.stateOf(before.sha, found.id, before.address, pictures) : undefined
+    return recordsBetween(prior, after).some((changed) => sameRecord(changed, record))
   }
 
   /**

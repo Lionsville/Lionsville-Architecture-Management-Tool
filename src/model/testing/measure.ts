@@ -121,6 +121,20 @@ export const BUDGET = {
    * changed, and never on a keystroke.
    */
   index: 500,
+  /**
+   * A page of fifty entries of one scope's history in a folder whose history
+   * is ten thousand commits (`adapters/folder/history.perf.test.ts`): git asked
+   * for a chunk of commits, each read for whose it is. A page after a page is
+   * the same work again from where the last stopped.
+   */
+  folderHistoryPage: 1500,
+  /**
+   * A page of one element's history in that folder: the commits that changed
+   * where it is kept, answered from the ids of what the log says each changed,
+   * and the model they share read once per version. What it watches for is a
+   * history read whole, or every commit's tree read, to answer one page.
+   */
+  folderThingHistory: 6000,
   /** Megabytes the heap may grow over five hundred undo steps. */
   undoHeapMb: 50,
   /**
