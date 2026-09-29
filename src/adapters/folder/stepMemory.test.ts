@@ -33,4 +33,15 @@ describe('applied step ids', () => {
     await memory.remember([{ stepId: 'one', scope: 'acme' }])
     expect(await new StepMemory(store).where('one')).toEqual({ scope: 'acme' })
   })
+
+  it('remembers a pending step as landed once its scope is read at what it was to leave, and forgets one refused', async () => {
+    const memory = new StepMemory()
+    await memory.pend([{ stepId: 'one', scope: 'acme', expected: 'after' }, { stepId: 'two', scope: 'acme', expected: 'other' }])
+    await memory.promote('acme', 'after')
+    expect(await memory.where('one')).toEqual({ scope: 'acme' })
+    expect(await memory.where('two')).toEqual({ scope: 'acme', expected: 'other' })
+    await memory.forget(['one', 'two'])
+    expect(await memory.where('one')).toEqual({ scope: 'acme' })
+    expect(await memory.where('two')).toBeUndefined()
+  })
 })

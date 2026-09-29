@@ -91,6 +91,35 @@ export class StepMemory {
     await this.keep(held, now)
   }
 
+  /**
+   * A scope read at what its pending steps were to leave it at: they landed,
+   * and are remembered as landed — before anything writes the scope again, so
+   * a step sent again after a later change is not applied over it.
+   */
+  async promote(scope: ScopeId, stored: string | undefined): Promise<void> {
+    if (stored === undefined) return
+    const held = await this.load()
+    let changed = false
+    for (const [id, row] of held) {
+      if (row.scope !== scope || row.expected !== stored) continue
+      held.set(id, { scope, at: row.at })
+      changed = true
+    }
+    if (changed) await this.keep(held, this.now())
+  }
+
+  /** Pending steps of a write that was refused, which wrote nothing: none of them was applied. */
+  async forget(stepIds: readonly string[]): Promise<void> {
+    const held = await this.load()
+    let changed = false
+    for (const id of stepIds) {
+      if (held.get(id)?.expected === undefined) continue
+      held.delete(id)
+      changed = true
+    }
+    if (changed) await this.keep(held, this.now())
+  }
+
   /** Steps applied, each to its scope; what is older than the memory is let go of on the way. */
   async remember(applied: readonly { stepId: string; scope: ScopeId }[]): Promise<void> {
     if (applied.length === 0) return

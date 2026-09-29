@@ -156,9 +156,16 @@ export class FolderScopeRepository implements ScopeRepository {
         const snapshot = snapshotFor(read.node, result.content, read, library, this.waiting(read, library))
         planned.push({ read, content: result.content, library, snapshot, steps })
       }
-      await this.applied.pend(await this.expectations(planned))
+      const pending = await this.expectations(planned)
+      await this.applied.pend(pending)
+      // A write refused wrote nothing: none of its steps was applied. One that
+      // threw may have written some scopes, and its steps stay pending for a
+      // step sent again to find out which.
       const refused = await this.write(planned)
-      if (refused) return refused
+      if (refused) {
+        await this.applied.forget(pending.map((one) => one.stepId))
+        return refused
+      }
       await this.applied.remember(work.flatMap(({ scope, steps }) => steps.map((one) => ({ stepId: one.stepId, scope }))))
       const revisions = new Map<ScopeId, string>()
       for (const { scope } of work) {
@@ -166,6 +173,19 @@ export class FolderScopeRepository implements ScopeRepository {
       }
       return { revisions: work.map(({ scope }) => revisions.get(scope)!) }
     })
+  }
+
+  /**
+   * The scope a step landed on, where it did: one remembered as landed, or one
+   * whose write was begun and whose scope is now what that write was to leave
+   * it at. A step whose write was begun and did not land counts nowhere.
+   */
+  private async landedWhere(stepId: string): Promise<ScopeId | undefined> {
+    const place = await this.applied.where(stepId)
+    if (!place) return undefined
+    if (place.expected === undefined) return place.scope
+    const now = await this.folder.read(place.scope)
+    return now?.stored === place.expected ? place.scope : undefined
   }
 
   /**
@@ -180,15 +200,14 @@ export class FolderScopeRepository implements ScopeRepository {
     for (const { scope, steps, expects } of work) {
       const read = reads.get(scope) ?? await this.folder.read(scope)
       if (!read) return { refused: 'shell.scopeGone', scope }
+      if (!reads.has(scope)) await this.applied.promote(scope, read.stored)
       reads.set(scope, read)
       if (read.state.unreadable) return { refused: 'shell.unreadableNotSaved', scope }
       const fresh: ScopeStep[] = []
       for (const one of steps) {
-        const place = seen.has(one.stepId) ? { scope: seen.get(one.stepId)! } : await this.applied.where(one.stepId)
-        if (place !== undefined && place.scope !== scope) return { refused: STEP_ELSEWHERE, scope, stepId: one.stepId }
-        // A write begun and not known to have landed landed where the scope is what it was to be.
-        const landed = place !== undefined && (place.expected === undefined || place.expected === read.stored)
-        if (!landed) fresh.push(one)
+        const place = seen.has(one.stepId) ? seen.get(one.stepId) : await this.landedWhere(one.stepId)
+        if (place !== undefined && place !== scope) return { refused: STEP_ELSEWHERE, scope, stepId: one.stepId }
+        if (place === undefined) fresh.push(one)
         seen.set(one.stepId, scope)
       }
       if (fresh.length === 0) continue

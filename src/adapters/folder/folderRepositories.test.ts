@@ -12,7 +12,7 @@ import { dataUrl } from '../../projects/fileText'
 import { describeHistoryRepository } from '../../ports/HistoryRepository.contract'
 import { describeImageRepository } from '../../ports/ImageRepository.contract'
 import { describeOrganisationIndex } from '../../ports/OrganisationIndex.contract'
-import { addCrews, addDepot, ok, over, step } from '../../ports/Repositories.contract'
+import { addCrews, addDepot, ok, over, refusal, renameCrews, step } from '../../ports/Repositories.contract'
 import type { RepositoriesUnderTest } from '../../ports/Repositories.contract'
 import { describeScopeRepository } from '../../ports/ScopeRepository.contract'
 import { sampleScope } from '../../ports/ScopeStore.contract'
@@ -263,6 +263,37 @@ describe('a run across several scopes that stopped part way', () => {
     expect((await repositories.state(acme)).model.elements.map((one) => one.id)).toEqual(['crews'])
     expect((await repositories.state(globex)).model.elements.map((one) => one.id)).toEqual(['depot'])
     expect(again.revisions).toEqual([(await repositories.state(acme)).revision, (await repositories.state(globex)).revision])
+  })
+
+  it('never applies a step that landed again over work done since, when it is sent again after another run', async () => {
+    const root = new FakeDirectory('', { canMove: false })
+    const { handle, stopAt } = stoppable(root)
+    const repositories = over({ repositories: folderRepositories({ root: handle, git: memoryGit(root) }) })
+    const acme = await repositories.scope('acme', 'Acme Logistics')
+    const globex = await repositories.scope('globex', 'Globex')
+    const run = [{ scope: acme, steps: [step(addCrews)] }, { scope: globex, steps: [step(addDepot)] }]
+    stopAt('globex/model.json')
+    await expect(repositories.apply(run)).rejects.toThrow()
+    stopAt(undefined)
+    await repositories.steps(acme, renameCrews)
+    ok(await repositories.apply(run))
+    expect((await repositories.state(acme)).model.elements.map((one) => one.name)).toEqual(['Crew planning'])
+    expect((await repositories.state(globex)).model.elements.map((one) => one.id)).toEqual(['depot'])
+  })
+
+  it('counts a step whose write wrote nothing as applied nowhere: it may be sent to another scope', async () => {
+    const root = new FakeDirectory('', { canMove: false })
+    const { handle, stopAt } = stoppable(root)
+    const repositories = over({ repositories: folderRepositories({ root: handle, git: memoryGit(root) }) })
+    const acme = await repositories.scope('acme', 'Acme Logistics')
+    const globex = await repositories.scope('globex', 'Globex')
+    const once = step(addCrews)
+    stopAt('acme/model.json')
+    await expect(repositories.apply([{ scope: acme, steps: [once] }])).rejects.toThrow()
+    stopAt(undefined)
+    ok(await repositories.apply([{ scope: globex, steps: [once] }]))
+    expect(refusal(await repositories.apply([{ scope: acme, steps: [once] }]))).toBe('step.elsewhere')
+    expect((await repositories.state(acme)).model.elements).toEqual([])
   })
 })
 
