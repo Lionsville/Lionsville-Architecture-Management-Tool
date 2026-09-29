@@ -9,11 +9,11 @@ import { fakeIndexedDb } from './testing/fakeIndexedDb'
 describeKeyedStore('IndexedDB', () => new IndexedDbStore(fakeIndexedDb()))
 
 describe('IndexedDbStore', () => {
-  it('fails a transaction whose work awaits something else before it writes, and lands nothing', async () => {
+  it('fails a transaction whose work awaits a digest before it writes, and lands nothing', async () => {
     const store = new IndexedDbStore(fakeIndexedDb())
     await expect(store.transaction(['meta'], 'write', async (tx) => {
       await tx.get('meta', 'a')
-      await new Promise((resolve) => setTimeout(resolve, 5))
+      await crypto.subtle.digest('SHA-256', new Uint8Array([1]))
       tx.put('meta', 'a', 1)
     })).rejects.toThrow()
     expect(await store.transaction(['meta'], 'read', (tx) => tx.get('meta', 'a'))).toBeUndefined()

@@ -7,9 +7,13 @@
  *
  * It keeps the three behaviours the store is written around, because a fake
  * without them would pass a store that breaks in a browser:
- * - **a transaction commits once it has nothing left to do** — checked a task
- *   after its last request was answered — and a request made after that is
- *   refused, as a browser refuses one made after an await on anything else;
+ * - **a transaction is active only until the end of the task** it was made in,
+ *   or that delivered its last answer — once every microtask queued by then,
+ *   and every one they queue, has run — and a request made while it is not is
+ *   refused (`TransactionInactiveError`), as a browser refuses one made after
+ *   an await on anything else, a digest say;
+ * - **it commits once it has nothing left to do**, a task after its last
+ *   answer;
  * - **what a transaction writes lands only when it commits**, and nothing of it
  *   when it aborts;
  * - **transactions run one at a time**, in the order they were made.
@@ -62,6 +66,10 @@ const later = (run: () => void): void => {
 
 const GONE = Symbol('gone')
 
+function inOrder(keys: Key[], direction: 'next' | 'prev'): Key[] {
+  return direction === 'prev' ? keys.reverse() : keys
+}
+
 class FakeTransaction {
   oncomplete: (() => void) | null = null
   onabort: (() => void) | null = null
@@ -71,8 +79,22 @@ class FakeTransaction {
   private pending = 0
   private running = false
   private ended = false
+  private active = true
+  private turn = 0
 
-  constructor(private readonly database: FakeDatabase, private readonly names: readonly string[], private readonly mode: string) {}
+  constructor(private readonly database: FakeDatabase, private readonly names: readonly string[], private readonly mode: string) {
+    this.wake()
+  }
+
+  /** Active until the microtasks now queued, and those they queue, have run: node's `nextTick` from a microtask. */
+  private wake(): void {
+    this.active = true
+    this.turn += 1
+    const turn = this.turn
+    queueMicrotask(() => process.nextTick(() => {
+      if (this.turn === turn) this.active = false
+    }))
+  }
 
   objectStore(name: string) {
     if (!this.names.includes(name)) throw new DOMException(`no ${name} in this transaction`, 'NotFoundError')
@@ -109,10 +131,11 @@ class FakeTransaction {
         for (const key of keys()) write(key, GONE)
       }),
       openCursor: (range: FakeKeyRange | undefined, direction: 'next' | 'prev' = 'next') => {
-        const found = keys().filter((key) => !range || range.includes(key))
-        if (direction === 'prev') found.reverse()
+        // Read when the request runs, after the requests made before it, as a browser reads it.
+        let found: Key[] | undefined
         let at = 0
         const step = (): unknown => {
+          found ??= inOrder(keys().filter((key) => !range || range.includes(key)), direction)
           if (at >= found.length) return null
           const key = found[at]
           return { key, value: structuredClone(read(key)), continue: () => { at += 1; this.again(request, step) } }
@@ -149,12 +172,13 @@ class FakeTransaction {
 
   /** Answer `request` from `work` a task from now, once this transaction is the one running. */
   private again(request: Request, work: () => unknown): void {
-    if (this.ended) throw new DOMException('the transaction has finished', 'TransactionInactiveError')
+    if (this.ended || !this.active) throw new DOMException('the transaction is not active', 'TransactionInactiveError')
     this.pending += 1
     const run = () => later(() => {
       if (this.ended) return
       request.result = work()
       this.pending -= 1
+      this.wake()
       request.onsuccess?.()
       this.settleLater()
     })

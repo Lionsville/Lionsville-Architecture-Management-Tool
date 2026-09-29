@@ -11,7 +11,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { prefix } from './KeyedStore'
-import type { KeyedStore, RangeRead, Transaction } from './KeyedStore'
+import type { KeyRange, KeyedStore, RangeRead, Transaction } from './KeyedStore'
 
 export function describeKeyedStore(name: string, make: () => KeyedStore | Promise<KeyedStore>): void {
   describe(`KeyedStore contract — ${name}`, () => {
@@ -89,6 +89,99 @@ export function describeKeyedStore(name: string, make: () => KeyedStore | Promis
       })
       expect(await store.transaction(['library'], 'read', async (tx) => (await tx.range('library', {})).map(({ key }) => key)))
         .toEqual(['t\u0000a.png'])
+    })
+
+    it('lets a range see the transaction’s own puts, deletes and range deletes', async () => {
+      const store = await make()
+      await store.transaction(['library'], 'write', (tx) => {
+        for (const key of ['s\u0000a', 's\u0000b', 's\u0000c']) tx.put('library', key, key)
+        return Promise.resolve()
+      })
+      const seen = await store.transaction(['library'], 'write', async (tx) => {
+        tx.put('library', 's\u0000d', 'd')
+        tx.delete('library', 's\u0000a')
+        tx.deleteRange('library', { from: 's\u0000b', below: 's\u0000c' })
+        return (await tx.range('library', prefix('s\u0000'))).map(({ key }) => key)
+      })
+      expect(seen).toEqual(['s\u0000c', 's\u0000d'])
+    })
+
+    it('takes out a range open at either end, or everything', async () => {
+      const store = await make()
+      const fill = () => store.transaction(['meta'], 'write', (tx) => {
+        for (const key of ['a', 'b', 'c']) tx.put('meta', key, key)
+        return Promise.resolve()
+      })
+      const after = async (range: KeyRange) => {
+        await fill()
+        await store.transaction(['meta'], 'write', (tx) => {
+          tx.deleteRange('meta', range)
+          return Promise.resolve()
+        })
+        return store.transaction(['meta'], 'read', async (tx) => (await tx.range('meta', {})).map(({ key }) => key))
+      }
+      expect(await after({ from: 'b' })).toEqual(['a'])
+      expect(await after({ below: 'b' })).toEqual(['b', 'c'])
+      expect(await after({})).toEqual([])
+    })
+
+    it('orders keys by UTF-16 code unit, and keeps a name that holds U+FFFF inside its prefix', async () => {
+      const store = await make()
+      const keys = ['s\u0000�.png', 's\u0000😀.png', 's\u0000￿.png', 's\u0000z￿￿', 't\u0000a.png']
+      await store.transaction(['library'], 'write', (tx) => {
+        for (const key of keys) tx.put('library', key, key)
+        return Promise.resolve()
+      })
+      const found = await store.transaction(['library'], 'read', async (tx) => (await tx.range('library', prefix('s\u0000'))).map(({ key }) => key))
+      expect(found).toEqual(['s\u0000z￿￿', 's\u0000😀.png', 's\u0000�.png', 's\u0000￿.png'])
+    })
+
+    it('refuses a write in a read transaction', async () => {
+      const store = await make()
+      await expect(store.transaction(['meta'], 'read', (tx) => {
+        tx.put('meta', 'a', 1)
+        return Promise.resolve()
+      })).rejects.toThrow()
+      expect(await store.transaction(['meta'], 'read', (tx) => tx.get('meta', 'a'))).toBeUndefined()
+    })
+
+    it('refuses a shelf the transaction did not name', async () => {
+      const store = await make()
+      await expect(store.transaction(['meta'], 'write', (tx) => {
+        tx.put('scopes', 'a', 1)
+        return Promise.resolve()
+      })).rejects.toThrow()
+      await expect(store.transaction(['meta'], 'read', (tx) => tx.get('scopes', 'a'))).rejects.toThrow()
+    })
+
+    it('refuses a value that cannot be copied, and lands nothing of its transaction', async () => {
+      const store = await make()
+      await expect(store.transaction(['meta'], 'write', (tx) => {
+        tx.put('meta', 'a', 1)
+        tx.put('meta', 'b', { run: () => undefined })
+        return Promise.resolve()
+      })).rejects.toThrow()
+      expect(await store.transaction(['meta'], 'read', (tx) => tx.get('meta', 'a'))).toBeUndefined()
+    })
+
+    it('refuses a request after the work waited on something else, and lands nothing of it', async () => {
+      const store = await make()
+      await expect(store.transaction(['meta'], 'write', async (tx) => {
+        await tx.get('meta', 'a')
+        await crypto.subtle.digest('SHA-256', new Uint8Array([1, 2, 3]))
+        tx.put('meta', 'a', 1)
+      })).rejects.toThrow()
+      expect(await store.transaction(['meta'], 'read', (tx) => tx.get('meta', 'a'))).toBeUndefined()
+    })
+
+    it('refuses a request once the work has answered', async () => {
+      const store = await make()
+      let kept: Transaction | undefined
+      await store.transaction(['meta'], 'write', (tx) => {
+        kept = tx
+        return Promise.resolve()
+      })
+      expect(() => kept!.put('meta', 'a', 1)).toThrow()
     })
 
     it('hands out copies: changing a value read or written changes nothing kept', async () => {

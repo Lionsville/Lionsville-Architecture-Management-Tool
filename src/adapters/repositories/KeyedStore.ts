@@ -22,8 +22,10 @@
  * digest, a clock that is not `Date.now()` — is done before the transaction
  * opens.
  *
- * **Keys are text, ordered as text.** A range is every key from `from` up to,
- * not including, `below`; `prefix` gives the range of the keys that start with
+ * **Keys are text, ordered by UTF-16 code unit**, as a browser's database and
+ * JavaScript's `<` order them — a character outside the first plane, written
+ * as two code units, sorts before U+FFFD. A range is every key from `from` up
+ * to, not including, `below`; `prefix` gives the range of the keys that start with
  * it. Values are copied on the way in and on the way out, as a structured
  * clone copies them, so nothing handed out is anything the store keeps.
  */
@@ -81,18 +83,22 @@ export interface KeyedStore {
   transaction<T>(shelves: readonly Shelf[], mode: 'read' | 'write', work: (tx: Transaction) => Promise<T>): Promise<T>
 }
 
-/**
- * What sorts after every character a key here holds. The keys are made of
- * identities, names and digits, and none of them holds U+FFFF.
- */
-const HIGHEST = '￿'
-
 /** Between the parts of a key: sorts before every character a part holds. */
 export const SEPARATOR = '\u0000'
 
-/** The range of the keys that start with `prefix`. */
+/**
+ * The range of the keys that start with `start`: from it, up to the first
+ * text that sorts after every key that does — `start` with its last code unit
+ * one higher. Not `start` and a highest character after it: a picture's name
+ * may hold U+FFFF, and a key that went on past one would sort outside the
+ * range. Every prefix here ends in the separator or a `/`, so the last code
+ * unit is never the highest there is.
+ */
 export function prefix(start: string): KeyRange {
-  return { from: start, below: `${start}${HIGHEST}` }
+  if (start === '') return {}
+  const last = start.charCodeAt(start.length - 1)
+  if (last === 0xffff) throw new Error('a prefix may not end in U+FFFF')
+  return { from: start, below: `${start.slice(0, -1)}${String.fromCharCode(last + 1)}` }
 }
 
 /** A key of several parts, each one's keys kept together and apart from the next. */
