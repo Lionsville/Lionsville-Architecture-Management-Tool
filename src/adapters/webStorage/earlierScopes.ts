@@ -28,9 +28,10 @@
  * **Every start looks again, and never brings an older copy over newer
  * work.** The note kept with the repositories says, per address, the revision
  * and time of the text last looked at. A text an older page wrote since —
- * changed, new, or only saved again, as an older build saves every scope it
- * upgrades on opening — is brought again only where nothing was done here to
- * the scope it was brought to (`adapters/repositories/bring.ts`). Where
+ * changed or new — is brought again only where nothing was done here to the
+ * scope it was brought to (`adapters/repositories/bring.ts`). A text only
+ * saved again, as an older build saves every scope it upgrades on opening,
+ * holds the content last brought, and is no change at all. Where
  * something was — a step, a move, a removal — it has changed in both places:
  * nothing is written, and the standing lists the address for a person to
  * answer, one address at a time.
@@ -260,7 +261,7 @@ function answer(source: Source, storage: KeyValueStorage, bringOver: boolean) {
     }
     const asking = addresses !== undefined && note?.asking === true
     return {
-      scopes: bringOver ? reading.scopes.filter(({ address }) => wanted.has(address)) : [],
+      scopes: reading.scopes.filter(({ address }) => wanted.has(address)),
       subject: AGAIN_SUBJECT,
       safeguard: BEFORE_AGAIN_SUBJECT,
       note: { seen, left: reading.left, ...(asking ? { asking: true } : {}) } satisfies Note,

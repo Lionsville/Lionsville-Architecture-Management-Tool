@@ -13,16 +13,19 @@
  * the source keeps which scope it landed as and the revision it was left at
  * (`Placed`). A scope brought again lands only where that scope is still at
  * that address and still at that revision — nothing was done to it here since.
- * Anywhere else — a step applied here, the scope moved or removed, another
- * scope at the address — it has changed in both places, and nothing is
- * written: the address is listed (`Landed.diverged`) for a person to answer,
+ * A copy whose content is what the last bringing brought to that address —
+ * saved again where it was kept, and nothing more — brings nothing new, and
+ * is passed over. Anywhere else — a step applied here, the scope moved or
+ * removed, another scope at the address — it has changed in both places, and
+ * nothing is written: the address is listed (`Landed.diverged`) for a person to answer,
  * one address at a time, by bringing it over anyway (`Brought.force`) or
  * leaving what is here (`Brought.settle`). A scope brought over anyway is
  * never written without a way back: its open entry is closed first, with the
  * safeguard's subject, and the arrival is an entry of its own after it.
  */
 import type { ContentAddress } from '../../model/imageName'
-import { SCOPE_RECORD, sameRecord, sameValue } from '../../model/recordKey'
+import { SCOPE_RECORD, sameRecord, sameValue, stableText } from '../../model/recordKey'
+import { fingerprint } from '../../projects/revision'
 import { isSafeScopePath, ROOT_SCOPE } from '../../projects/scopePath'
 import { emptyContent, recordsBetween } from '../../projects/scopeState'
 import type { Revision, ScopeAddress, ScopeContent, ScopeId } from '../../projects/scopeState'
@@ -53,12 +56,25 @@ export type Brought = {
   note: unknown
   /** A person's answer: land over whatever is at each address, work done here or not. */
   force?: boolean
-  /** A person's answer: leave what is at each of these addresses, and bring over it only what changes from now. */
+  /**
+   * A person's answer: leave what is at each of these addresses, and bring
+   * over it only what changes from now. A scope in `scopes` at one of them is
+   * not written: it says what the copy held when it was left.
+   */
   settle?: readonly ScopeAddress[]
 }
 
-/** Per address, the scope a bringing last left there and the revision it left it at. */
-export type Placed = Record<ScopeAddress, { scope: ScopeId; revision: Revision }>
+/**
+ * Per address, what the last bringing left there: the scope and the revision
+ * it left it at — absent where it left nothing here — and a fingerprint of the
+ * content brought, so the same content saved again is no change.
+ */
+export type Placed = Record<ScopeAddress, { scope?: ScopeId; revision?: Revision; content?: string }>
+
+/** A fingerprint of a content, the same for the same content however its text was saved. */
+export function contentPrint(content: ScopeContent): string {
+  return fingerprint([stableText(content)])
+}
 
 /**
  * What a landing came to: the scopes it changed; the addresses it wrote or
@@ -99,7 +115,7 @@ async function isEmpty(tx: Transaction, held: KeptScope): Promise<boolean> {
  * there is nothing here but an empty scope.
  */
 async function untouched(tx: Transaction, held: KeptScope | undefined, placed: Placed[ScopeAddress] | undefined): Promise<boolean> {
-  if (placed) return held?.id === placed.scope && held.revision === placed.revision
+  if (placed?.scope !== undefined) return held?.id === placed.scope && held.revision === placed.revision
   return !held || isEmpty(tx, held)
 }
 
@@ -114,7 +130,11 @@ export async function landBrought(
   tx: Transaction, meta: Meta, scopes: KeptScope[], brought: Brought, by: string, placed: Placed,
 ): Promise<Landed> {
   const landed: Landed = { changed: [], treeMoved: false, landed: [], diverged: [], refused: [] }
+  const settled = new Set(brought.settle ?? [])
   for (const one of inTreeOrder(brought.scopes)) {
+    if (settled.has(one.address)) continue
+    const print = contentPrint(one.content)
+    if (!brought.force && placed[one.address]?.content === print) continue
     const held = scopeAt(scopes, one.address)
     if (!brought.force && !await untouched(tx, held, placed[one.address])) {
       landed.diverged.push(one.address)
@@ -124,15 +144,18 @@ export async function landBrought(
     if (kept === 'refused') continue
     landed.landed.push(one.address)
     const now = kept ?? held!
-    placed[one.address] = { scope: now.id, revision: now.revision }
+    placed[one.address] = { scope: now.id, revision: now.revision, content: print }
     if (!kept) continue
     for (const { contentAddress, bytes } of one.bytes) tx.put('bytes', bytesKey(kept.id, contentAddress), bytes)
     await closeEntry(tx, meta, kept, by, brought.subject)
   }
-  for (const address of brought.settle ?? []) {
+  for (const address of settled) {
     const held = scopeAt(scopes, address)
-    if (held) placed[address] = { scope: held.id, revision: held.revision }
-    else delete placed[address]
+    const left = brought.scopes.find((one) => one.address === address)
+    placed[address] = {
+      ...(held ? { scope: held.id, revision: held.revision } : {}),
+      ...(left ? { content: contentPrint(left.content) } : {}),
+    }
   }
   return landed
 }

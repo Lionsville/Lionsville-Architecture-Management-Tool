@@ -527,10 +527,13 @@ is written around.
   lists what was left, so a person can be told.
 - **Every start looks again, and an older copy never lands over newer
   work.** The note keeps, per address, the revision and time of the text last
-  looked at. The source keeps which scope each address was brought to and the
-  revision it was left at. A text an older page changed, added or only saved
-  again since is brought again only where that scope is still at that address
-  and at that revision: nothing was done to it here since. Anywhere else — a
+  looked at. The source keeps which scope each address was brought to, the
+  revision it was left at, and a fingerprint of the content brought. A text
+  only saved again with that same content — as an older build saves every
+  scope it upgrades on opening — is no change, and is passed over. One an
+  older page changed or added since is brought again only where that scope is
+  still at that address and at that revision: nothing was done to it here
+  since. Anywhere else — a
   step here, a move, a removal — it has changed in both places. Nothing is
   written, and the standing lists the address until a person answers it,
   one address at a time: `bringOver` writes the older copy after an entry

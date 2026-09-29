@@ -164,10 +164,22 @@ describe('the scopes a browser kept before its repositories', () => {
       expect((await earlier!.standing()).diverged).toEqual(['globex'])
     })
 
-    it('writes nothing where an older page only saved it again, and lists the address', async () => {
+    it('passes over a copy an older page only saved again, content unchanged: nothing written, nothing listed', async () => {
+      const { repositories, earlier, globex, before } = await divergedAfter(async (storage) => {
+        const store = new WebStorageScopeStore(storage)
+        for (const path of ['', 'acme/rail', 'globex']) await save(storage, (await store.load(path))!)
+      })
+      expect(await repositories.scopes.state(globex.id)).toEqual(before)
+      expect(await subjects(repositories, globex.id)).toEqual([EARLIER_SUBJECT])
+      const rail = (await scopeAt(repositories, 'acme/rail'))!
+      expect(await subjects(repositories, rail.id)).toEqual([EARLIER_SUBJECT])
+      expect((await earlier!.standing()).diverged).toEqual([])
+    })
+
+    it('lists a copy saved again with its content changed, where work was done here', async () => {
       const { repositories, earlier, globex, before } = await divergedAfter(async (storage) => {
         const kept = await new WebStorageScopeStore(storage).load('globex')
-        await save(storage, kept!)
+        await save(storage, { ...kept!, kind: 'domain' })
       })
       expect(await repositories.scopes.state(globex.id)).toEqual(before)
       expect((await earlier!.standing()).diverged).toEqual(['globex'])
