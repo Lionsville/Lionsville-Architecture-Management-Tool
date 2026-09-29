@@ -385,17 +385,36 @@ repositories, in `src/adapters/folder/`:
   through a restart.
 - **No `.git` is a path the file channel takes** — the folder's own or one at
   any depth under it, in any spelling, through a stream's name
-  (`.git::$INDEX_ALLOCATION`) or through a link — and no segment naming a
-  stream of a file is either; so a page can neither write into a history nor
-  give a folder one. No git the app runs starts a program the folder's own
-  configuration names: no hook, no file-system monitor, no `ext::` transport,
-  no signing program (the app's own commits and labels are not signed), and
-  no filter only the folder defines — a filter the person's own
-  configuration defines, git-lfs as it installs itself, runs as defined there.
-  The `ssh` git runs is the one the process names, which git takes before any
-  configuration's; a person's credential helper is theirs, and is kept for
-  fetching and pushing. A folder's history is git's, and nothing a page
-  writes there is a program the app runs.
+  (`.git::$INDEX_ALLOCATION`) or through a link — so a page can neither write
+  into a history nor give a folder one. No segment with a colon in it is taken
+  either, since Windows reads `name:stream` as a way into the file itself; no
+  name the app writes has one, and a file of a person's with one in its name
+  is not read through the channel.
+- **Only the person's own configuration names a program; a folder's never
+  does.** Every git the app runs has no hook (`core.hooksPath` is an empty
+  folder of the app's), no file-system monitor and no `ext::` transport. Where
+  a command could start a program, the folder's configuration (`.git/config`,
+  what it includes, a worktree's own) is read once, apart from the rest, and
+  every key it sets that names a program is set again, after it, to the
+  person's own value — the machine's or their global one — or to git's
+  default or no program where they have none. The keys: `commit.gpgsign`,
+  `tag.gpgsign`, `gpg.format`, `gpg.program`, `gpg.<format>.program`,
+  `gpg.ssh.defaultKeyCommand`; `credential.helper` and
+  `credential.<url>.helper`, a list that is emptied and filled with the
+  person's own again; `core.askPass`, `core.sshCommand`, `core.pager`,
+  `core.editor`, `diff.external`, `diff.<driver>.command` and `.textconv`,
+  `merge.<driver>.driver`, and a filter's `clean`, `smudge`, `process` and
+  `required`. Three git reads from the first value, so they are answered
+  otherwise: `remote.<name>.uploadpack` and `.receivepack` by telling the
+  command `--upload-pack` or `--receive-pack`, and `core.gitProxy` by refusing
+  the `git://` transport it serves. A key named with an `=`, which no
+  override can reach, stops the command. So a person who signs keeps signing
+  with their own signer, their credential helpers and a filter they define —
+  git-lfs as it installs itself — run as they always did, and a filter only
+  the folder defines runs nothing: the file is taken as it is, which for an
+  LFS set up for one folder alone (`git lfs install --local`) means its files
+  are committed whole. The `ssh` git runs is the one the process names, which
+  git takes before any configuration's.
 - **A move** takes the scope's folder and the scopes under it as they are —
   the format's files, the pictures, the settings, whatever a person keeps
   there, links and empty folders included. On the desktop it is one rename in
