@@ -70,11 +70,19 @@ export const REPOSITORY_SHELVES = [
 ] as const
 
 /**
- * Every shelf a store lays out: the repositories' and, after them, any kept
+ * Every shelf a store lays out: the repositories' and, after them, those kept
  * beside them in the same store by other work, whose transactions then never
- * wait on the repositories' own.
+ * wait on the repositories' own — a folder's that this browser keeps for it:
+ * which folders it has seen, by their handles, and each one's history, step
+ * ids, identities and pictures' stamps (`adapters/folder/browser/`).
  */
-export const SHELVES = [...REPOSITORY_SHELVES] as const
+export const SHELVES = [
+  ...REPOSITORY_SHELVES,
+  /** Each folder this browser has kept anything for: its handle, under a key of its own. */
+  'folders',
+  /** What is kept for each folder, under its key: one record per value. */
+  'folderData',
+] as const
 
 export type Shelf = (typeof SHELVES)[number]
 

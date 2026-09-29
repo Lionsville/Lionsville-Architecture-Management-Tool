@@ -54,9 +54,10 @@ export const DATABASE_NAME = 'lvarch.repositories'
 /**
  * The version the shelves were laid out at; a later layout is a later version
  * and an upgrade, which lays out every shelf the database does not have yet.
- * 2 added the shelves that count what names each picture's bytes.
+ * 2 added the shelves that count what names each picture's bytes; 3 adds a
+ * folder's own shelves (`folders`, `folderData`).
  */
-export const DATABASE_VERSION = 2
+export const DATABASE_VERSION = 3
 
 /** As much of the browser's storage manager as the store asks: each part may be missing. */
 export type StorageManagerLike = {
