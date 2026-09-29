@@ -162,6 +162,47 @@ describe('what the channel does with a folder', () => {
  * staged beside every target first, then moved into place, so the renderer
  * going away part way cannot leave half an organisation.
  */
+describe('the folder’s history', () => {
+  const spellings = ['.git', '.GIT', '.Git', '.git.', '.git ', 'GIT~1']
+
+  beforeEach(async () => {
+    await mkdir(join(root, '.git', 'hooks'), { recursive: true })
+    await writeFile(join(root, '.git', 'config'), '[core]\n')
+  })
+
+  it('is no path the channel takes, however it is spelled', () => {
+    for (const name of spellings) {
+      expect(safeRelativePath(name), name).toBeUndefined()
+      expect(safeRelativePath(`${name}/hooks/pre-commit`), name).toBeUndefined()
+    }
+    expect(safeRelativePath('acme/.git-notes.md')).toBeTruthy()
+    expect(safeRelativePath('.gitignore')).toBeTruthy()
+  })
+
+  it('is neither read, listed, written, made, fingerprinted nor removed', async () => {
+    for (const name of spellings) {
+      expect(await readInside(root, `${name}/config`), name).toBeUndefined()
+      expect(await listDirectory(root, name), name).toBeUndefined()
+      expect(await fingerprint(root, `${name}/config`), name).toBeUndefined()
+      await expect(writeInside(root, `${name}/hooks/pre-commit`, bytes('#!/bin/sh')), name).rejects.toThrow('shell.pathRefused')
+      await expect(makeDirectory(root, `${name}/objects`), name).rejects.toThrow('shell.pathRefused')
+      await expect(writeTogether(root, [{ path: `${name}/config`, bytes: bytes('x') }], []), name).rejects.toThrow('shell.pathRefused')
+      await expect(writeTogether(root, [], [`${name}/config`]), name).rejects.toThrow('shell.pathRefused')
+      await removeEntry(root, `${name}/config`)
+      await removeEntry(root, name, { recursive: true })
+    }
+    expect(await readFile(join(root, '.git', 'config'), 'utf8')).toBe('[core]\n')
+    expect(await readdir(join(root, '.git', 'hooks'))).toEqual([])
+  })
+
+  it('is refused through a link that leads into it', async () => {
+    await symlink(join(root, '.git'), join(root, 'history'))
+    expect(await readInside(root, 'history/config')).toBeUndefined()
+    await expect(writeInside(root, 'history/hooks/pre-commit', bytes('#!/bin/sh'))).rejects.toThrow('shell.pathRefused')
+    expect(await readdir(join(root, '.git', 'hooks'))).toEqual([])
+  })
+})
+
 describe('several files written as one', () => {
   /** Every file under the root, relative, sorted: what a person would find. */
   async function everything(at = root, within = ''): Promise<string[]> {

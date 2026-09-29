@@ -23,6 +23,9 @@
  * - And it must still be inside once symlinks are followed. A folder the user
  *   chose can contain a link to anywhere; without this, writing "a file in the
  *   project" can write over `~/.ssh/authorized_keys`.
+ * - And never in the folder's `.git`, however it is spelled or linked to. The
+ *   history is git's, and the main process runs git in this folder: a hook or
+ *   a config written there by a page is a program run by the next commit.
  */
 import { createHash } from 'node:crypto'
 import { constants } from 'node:fs'
@@ -34,6 +37,16 @@ import type { DesktopEntry, DesktopFileContents, DesktopStamp } from '../../src/
 
 /** One path segment that is only ever a name. */
 const BAD_SEGMENT = new Set(['', '.', '..'])
+
+/**
+ * Whether a name is the folder's history however a disk spells it: `.git` in
+ * any case (macOS and Windows do not tell `.GIT` from it), with the trailing
+ * dots and spaces Windows drops, or the short name Windows may give it.
+ */
+function isHistoryName(segment: string): boolean {
+  const name = segment.toLowerCase().replace(/[. ]+$/, '')
+  return name === '.git' || /^git~\d+$/.test(name)
+}
 
 /**
  * A relative path from the renderer, or `undefined` when it is not one.
@@ -48,6 +61,7 @@ export function safeRelativePath(path: string): string | undefined {
   if (isAbsolute(path) || /^[A-Za-z]:/.test(path)) return undefined
   const segments = path.split(/[/\\]/)
   if (segments.some((segment) => BAD_SEGMENT.has(segment))) return undefined
+  if (isHistoryName(segments[0])) return undefined
   return segments.join(sep)
 }
 
@@ -93,6 +107,9 @@ export async function resolveInside(root: string, path: string): Promise<string 
   try {
     const real = await realpath(existing)
     if (!within(realRoot, real)) return undefined
+    // A link inside the folder that leads into its history is refused as the history is.
+    const first = relative(realRoot, real).split(sep)[0]
+    if (first && isHistoryName(first)) return undefined
     return existing === target ? real : join(real, relative(existing, target))
   } catch {
     return undefined
