@@ -21,6 +21,8 @@ export default defineConfig({
     include: ['src/**/*.browser.test.ts'],
     env: { TZ: 'UTC' },
     testTimeout: 60_000,
+    // A failed test's screenshot, under `tmp/` with the rest of what a run leaves.
+    attachmentsDir: 'tmp/vitest-attachments',
     browser: {
       enabled: true,
       headless: true,
