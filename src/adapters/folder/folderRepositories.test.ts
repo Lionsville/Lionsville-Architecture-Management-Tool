@@ -8,7 +8,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { contentAddressOf } from '../../model/imageName'
-import { dataUrl } from '../../projects/fileText'
+import { dataUrl } from '../../projects/dataUrl'
 import { describeHistoryRepository } from '../../ports/HistoryRepository.contract'
 import { describeImageRepository } from '../../ports/ImageRepository.contract'
 import { describeOrganisationIndex } from '../../ports/OrganisationIndex.contract'

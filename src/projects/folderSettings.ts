@@ -38,7 +38,7 @@
  * Pure. Nothing here touches a disk; `ports/FolderSettings.ts` is the seam
  * that does.
  */
-import { parseJson, stableJson } from './fileText'
+import { parseJson, stableJson } from './text'
 
 export const SETTINGS_FOLDER = '.lionsville-architecture'
 export const FOLDER_SETTINGS_FILE = 'folder.json'

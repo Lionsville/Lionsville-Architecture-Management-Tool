@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { HostModel } from '../../model/hostModel'
-import { dataUrl } from '../../projects/fileText'
+import { dataUrl } from '../../projects/dataUrl'
 import type { ScopeSnapshot } from '../../projects/scope'
 import { imageEntryOf } from '../../model/imageEntry'
 import { browserRepositories } from './browserRepositories'

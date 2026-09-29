@@ -80,9 +80,9 @@ import {
   experimentFromFile, experimentPath, OBSERVATION_SUBFOLDERS, OBSERVATIONS_FOLDER, observationFileText,
   observationFromFile, observationPath, SOLUTIONS_SUBFOLDER, solutionFileText, solutionFromFile, solutionPath,
 } from './observationFile'
-import {
-  dataUrl, markdownBody, markdownFile, parseJson, readDataUrl, stableJson, textFromBytes,
-} from './fileText'
+import { dataUrl, readDataUrl } from './dataUrl'
+import { markdownBody, markdownFile } from './fileText'
+import { parseJson, stableJson, textFromBytes } from './text'
 import { isLinkList } from './links'
 import type { RecordLink } from './links'
 import { isScopeKind, resolveActive } from './scope'

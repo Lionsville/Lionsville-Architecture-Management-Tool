@@ -31,8 +31,7 @@ import type {
 } from '../model/observation'
 import { slug } from '../model/keys'
 import {
-  frontMatterNumber, frontMatterRows, frontMatterString, frontMatterText, markdownBody,
-  readFrontMatter,
+  frontMatterNumber, frontMatterRows, frontMatterString, frontMatterText, markdownBody, readFrontMatter,
 } from './fileText'
 import type { FrontMatterScalar } from './fileText'
 

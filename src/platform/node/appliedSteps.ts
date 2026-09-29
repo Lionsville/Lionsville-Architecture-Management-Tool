@@ -25,7 +25,7 @@
  * Pure: text in, text out. The main process finds the file.
  */
 import { createHash } from 'node:crypto'
-import { parseJson, stableJson } from '../../projects/fileText'
+import { parseJson, stableJson } from '../../projects/text'
 
 /** Where, under the app's own data folder, one folder's file is. */
 export function appliedStepsFile(root: string): string {

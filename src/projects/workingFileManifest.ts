@@ -34,7 +34,7 @@
  * Pure apart from the hash, which is the platform's (`crypto.subtle`), the way
  * the seal is.
  */
-import { bytesFromText, parseJson, stableJson } from './fileText'
+import { bytesFromText, parseJson, stableJson } from './text'
 import { scopeFiles } from './folderFormat'
 import type { FolderFile } from './folderFormat'
 import type { ScopeSnapshot } from './scope'

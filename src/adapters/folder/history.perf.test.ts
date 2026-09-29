@@ -30,7 +30,7 @@ import {
   createFile, fingerprint, listDirectory, makeDirectory, moveEntry, readFile as readInside, removeEntry, stampAt, writeFile, writeTogether,
 } from '../../../electron/main/fileStore'
 import { BUDGET } from '../../model/testing/measure'
-import { stableJson } from '../../projects/fileText'
+import { stableJson } from '../../projects/text'
 import { gitAvailable } from '../../platform/node/git'
 import { folderGitAt } from '../../platform/node/gitEntries'
 import { element, over } from '../../ports/Repositories.contract'

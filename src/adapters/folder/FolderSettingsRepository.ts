@@ -19,7 +19,7 @@
  * data folder (ADR-0023), and nothing of the person's is written beside the
  * work.
  */
-import { parseJson, stableJson } from '../../projects/fileText'
+import { parseJson, stableJson } from '../../projects/text'
 import { scopeFilePath } from '../../projects/scopePath'
 import { patchSettings } from '../../projects/settings'
 import type { Settings, SettingsPatch } from '../../projects/settings'

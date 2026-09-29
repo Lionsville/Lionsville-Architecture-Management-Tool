@@ -12,7 +12,7 @@ import type { Adr } from '../decisions/adr'
 import type { DesignElement } from '../model'
 import type { Transition } from '../model/transition'
 import type { HostModel } from '../model/hostModel'
-import { stableJson, textFromBytes } from './fileText'
+import { stableJson, textFromBytes } from './text'
 import {
   isFormatPath, MODEL_FILE, modelListsFrom, modelRowFrom, SCOPE_FILE, SCOPE_FORMAT_VERSION, scopeFiles, scopeFromFolder,
   scopeSummaryFrom,

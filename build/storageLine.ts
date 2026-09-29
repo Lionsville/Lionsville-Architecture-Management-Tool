@@ -290,7 +290,7 @@ export function importsAcross(graph: Graph): Record<string, string[]> {
  * written from `app/` and `projects/`, and the ports it replaces.
  */
 export const IMPORT_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {
-  'src/app/examples/copy.ts': ['src/projects/fileText.ts', 'src/projects/folderFormat.ts'],
+  'src/app/examples/copy.ts': ['src/projects/folderFormat.ts'],
   'src/app/shellParts.ts': ['src/projects/workingFileManifest.ts'],
   'src/app/useHomeFiles.ts': ['src/projects/workingFileManifest.ts'],
   'src/app/useHomeParts.ts': ['src/projects/workingFileManifest.ts'],
@@ -348,7 +348,7 @@ export const CEILINGS = {
   folderFormat: 13,
   /** Files importing across the line, and the imports between them. */
   importingFiles: 12,
-  imports: 22,
+  imports: 21,
   /** Files naming storage, and the words and patterns between them. */
   namingFiles: 29,
   words: 33,

@@ -25,8 +25,7 @@ import { ADR_STATUSES } from '../decisions/adr'
 import type { Adr, AdrSigner, AdrStatus, AdrVerdict } from '../decisions/adr'
 import { KEY_RE, slug } from '../model/keys'
 import {
-  frontMatterNumber, frontMatterRows, frontMatterString, frontMatterText, markdownBody,
-  readFrontMatter,
+  frontMatterNumber, frontMatterRows, frontMatterString, frontMatterText, markdownBody, readFrontMatter,
 } from './fileText'
 
 /** The folder a scope's records live in. */

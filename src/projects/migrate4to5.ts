@@ -35,7 +35,7 @@
  * another's. The pass over the whole tree is what gives a parent its
  * `scope.json` (`migration.ts`), and this is what it folds each folder with.
  */
-import { parseJson, stableJson, textFromBytes } from './fileText'
+import { parseJson, stableJson, textFromBytes } from './text'
 import { scopeFromFolder, SCOPE_FILE, SCOPE_FORMAT_VERSION } from './folderFormat'
 import type { FolderFile } from './folderFormat'
 import { foldFolderToFormat4 } from './migrate3to4'

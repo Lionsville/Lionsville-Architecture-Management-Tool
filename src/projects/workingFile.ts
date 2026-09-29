@@ -32,7 +32,7 @@
 import { unzipSync, zipSync } from 'fflate'
 import { slug } from '../model/keys'
 import { WORKING_FILE_EXTENSION } from '../model/hostModel'
-import { bytesFromText, parseJson, textFromBytes } from './fileText'
+import { bytesFromText, parseJson, textFromBytes } from './text'
 import { isBinaryPath, SCOPE_FILE, scopeFiles } from './folderFormat'
 import { migrateSnapshot } from './migrate3to4'
 import { openScopeFolder } from './migrate4to5'

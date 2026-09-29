@@ -16,7 +16,7 @@
  * opened, or further back than it keeps — is answered `undefined`, and the
  * reader reads the whole index again.
  */
-import { stableJson } from '../../projects/fileText'
+import { stableJson } from '../../projects/text'
 import { fingerprint } from '../../projects/revision'
 import type { Revision, ScopeId } from '../../projects/scopeState'
 import type { IndexChanges, IndexedScope, IndexRead, OrganisationIndex } from '../../ports/OrganisationIndex'

@@ -10,7 +10,7 @@
  * screen a person copies it from. The screen imports this; the catalogue
  * arrives when an example is copied (`offers.ts`).
  */
-import { stableJson } from '../../projects/fileText'
+import { stableJson } from '../../projects/text'
 import { SCOPE_FILE, scopeFromFolder } from '../../projects/folderFormat'
 import type { FolderFile } from '../../projects/folderFormat'
 import { namesUnder } from '../../projects/scope'

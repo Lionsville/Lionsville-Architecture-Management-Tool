@@ -23,7 +23,7 @@
  * Pure: text in, text out. The main process finds the file and puts the text
  * back; this decides what the text says.
  */
-import { parseJson, stableJson } from '../../projects/fileText'
+import { parseJson, stableJson } from '../../projects/text'
 import { localSettingsText, readLocalSettings } from '../../projects/folderSettings'
 import type { LocalSettings, LocalSettingsPatch } from '../../projects/folderSettings'
 

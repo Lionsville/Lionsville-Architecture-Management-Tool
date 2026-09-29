@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest'
 import { laidOut } from '../model/testFixtures';
 import { unzipSync, zipSync } from 'fflate'
 import { WORKING_FILE_TYPE } from '../model/hostModel'
-import { bytesFromText, stableJson, textFromBytes } from './fileText'
+import { bytesFromText, stableJson, textFromBytes } from './text'
 import { SCOPE_FORMAT_VERSION, scopeFiles } from './folderFormat'
 import { bareScope } from './scope'
 import type { ScopeSnapshot } from './scope'

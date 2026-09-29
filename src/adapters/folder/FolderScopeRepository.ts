@@ -34,7 +34,7 @@
  */
 import { contentAddressOf, imageName, imageNameKey } from '../../model/imageName'
 import type { ImageEntry } from '../../model/imageName'
-import { stableJson } from '../../projects/fileText'
+import { stableJson } from '../../projects/text'
 import type { ScopeSnapshot } from '../../projects/scope'
 import { fingerprint } from '../../projects/revision'
 import { ancestorScopes, isSafeScopePath, isWithinScope, ROOT_SCOPE, scopeFilePath, scopePathLabel } from '../../projects/scopePath'

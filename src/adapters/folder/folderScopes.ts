@@ -27,7 +27,7 @@
  */
 import { imageMediaType } from '../../model/documentImage'
 import type { ImageEntry, ImageName } from '../../model/imageName'
-import { parseJson } from '../../projects/fileText'
+import { parseJson } from '../../projects/text'
 import type { ScopeSnapshot, ScopeSummary } from '../../projects/scope'
 import { scopeSummaryFrom } from '../../projects/folderFormat'
 import { fingerprint } from '../../projects/revision'

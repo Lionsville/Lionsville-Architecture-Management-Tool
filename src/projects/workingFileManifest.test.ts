@@ -4,7 +4,7 @@
 import { unzipSync, zipSync } from 'fflate'
 import { describe, expect, it } from 'vitest'
 import { element, laidOut } from '../model/testFixtures'
-import { textFromBytes } from './fileText'
+import { textFromBytes } from './text'
 import { scopeFiles } from './folderFormat'
 import { bareScope } from './scope'
 import type { ScopeSnapshot } from './scope'

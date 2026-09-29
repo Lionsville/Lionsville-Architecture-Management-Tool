@@ -8,11 +8,11 @@
  * moving to.
  */
 import { describe, expect, it } from 'vitest'
+import { base64FromBytes, bytesFromBase64, dataUrl, readDataUrl } from './dataUrl'
 import {
-  base64FromBytes, bytesFromBase64, bytesFromText, dataUrl, frontMatterNumber, frontMatterRows,
-  frontMatterString, frontMatterText, markdownBody, markdownFile, parseJson, readDataUrl,
-  readFrontMatter, stableJson, textFromBytes,
+  frontMatterNumber, frontMatterRows, frontMatterString, frontMatterText, markdownBody, markdownFile, readFrontMatter,
 } from './fileText'
+import { bytesFromText, parseJson, stableJson, textFromBytes } from './text'
 
 describe('stableJson', () => {
   it('sorts keys at every level, so a rebuilt object is the same file', () => {
