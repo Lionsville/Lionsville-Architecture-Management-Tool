@@ -10,9 +10,10 @@
 import { describe, expect, it } from 'vitest'
 import { MemoryStore } from '../../memory/MemoryStore'
 import { FakeDirectory } from '../fakeDirectory'
-import { writeAt } from '../handles'
+import { removeAt, writeAt } from '../handles'
 import { BrowserFolder } from './browserFolder'
 import { browserFolderGit } from './browserFolderGit'
+import { CHECKPOINT } from './browserTrees'
 
 function history() {
   const root = new FakeDirectory()
@@ -133,5 +134,46 @@ describe('two tabs recording one folder’s history', () => {
     await expect(git.commit(['acme/model.json'], 'never')).rejects.toThrow('shell.historyFailed')
     store.transaction = write
     expect([await kept(store, 'commit'), await kept(store, 'seq'), await kept(store, 'object')]).toEqual([0, 0, 0])
+  })
+})
+
+describe('what a browser folder’s history keeps of each commit', () => {
+  it('keeps what each commit changed and the whole tree only now and then, and reads every commit’s tree back', async () => {
+    const { root, store, git } = history()
+    const files = ['acme/a.md', 'acme/b.md', 'globex/c.md']
+    const expected: Record<string, string>[] = []
+    const made: string[] = []
+    const now: Record<string, string> = {}
+    for (let at = 0; at < CHECKPOINT * 2 + 3; at += 1) {
+      const path = files[at % files.length]
+      const removing = at % 7 === 6 && path in now
+      if (removing) {
+        await removeAt(root, path)
+        delete now[path]
+      } else {
+        now[path] = `${path} at ${at}`
+        await writeAt(root, path, now[path])
+      }
+      made.push((await git.commit([path], `step ${at}`))!)
+      expected.push({ ...now })
+    }
+    expect(await kept(store, 'tree')).toBe(3)
+    for (const at of [0, 1, CHECKPOINT - 1, CHECKPOINT, CHECKPOINT + 1, CHECKPOINT * 2 + 2]) {
+      expect((await git.treeAt(made[at], '')).map((entry) => entry.path)).toEqual(Object.keys(expected[at]).sort())
+      const read = await git.readAt(made[at], files)
+      expect(Object.fromEntries(read.map((file) => [file.path, 'text' in file ? file.text : undefined]))).toEqual(expected[at])
+    }
+    expect(await git.blobsAt([{ sha: 'none', path: 'acme/a.md' }])).toEqual([undefined])
+    expect(await git.treeAt('none', '')).toEqual([])
+  })
+
+  it('reads a later commit of a stretch it read before that commit was made', async () => {
+    const { root, git } = history()
+    await writeAt(root, 'acme/model.json', '{}')
+    const first = await git.commit(['acme/model.json'], 'one')
+    expect((await git.treeAt(first!, '')).map((entry) => entry.path)).toEqual(['acme/model.json'])
+    await writeAt(root, 'globex/model.json', '{}')
+    const second = await git.commit(['globex/model.json'], 'two')
+    expect((await git.treeAt(second!, '')).map((entry) => entry.path)).toEqual(['acme/model.json', 'globex/model.json'])
   })
 })

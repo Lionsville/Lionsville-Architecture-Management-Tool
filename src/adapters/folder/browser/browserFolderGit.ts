@@ -14,11 +14,13 @@
  * is another history.
  *
  * **What it keeps.** File contents by their SHA-256, each once however many
- * commits hold it; each commit as the map of its paths to those contents, what
- * it changed from and to, and its message; the tags; and which commit the
- * folder is at. A commit costs the files it changed, and a folder is read to
- * record only where a file's size or time written says it changed since it
- * was last recorded.
+ * commits hold it; each commit as what it changed, from and to, and its
+ * message, with the whole tree at every so many commits (`browserTrees.ts`);
+ * the tags; which commit the folder is at; and, as git's index does, the
+ * folder's tree at that commit with the size and time written each file had
+ * when it was recorded. A commit costs the files it changed, and a folder is
+ * read to record only where a file's size or time written says it changed
+ * since it was last recorded.
  *
  * One line of history: a browser's folder has no branch and no merge.
  */
@@ -29,16 +31,15 @@ import type { DirectoryHandleLike } from '../DirectoryHandle'
 import type { CommitsWanted, CommittedFile, FolderChange, FolderCommit, FolderGit, FolderTag, TreeEntry } from '../folderGit'
 import { filesUnder, textAt } from '../handles'
 import type { BrowserFolder } from './browserFolder'
+import { browserTrees, checkpointOf, seqName } from './browserTrees'
+import type { CommitRow, LogRow, Tree } from './browserTrees'
 import { workingSetRule } from './workingSet'
 
-/** A file in a commit: what it held, and the size and time written it had when it was recorded. */
+/** A file at the folder's commit: what it held, and the size and time written it had when it was recorded. */
 type TreeRow = { blob: string; size: number; lastModified: number }
 
-/** A commit as a log lists it, kept under its place in the line. */
-type LogRow = Omit<FolderCommit, 'subject'> & { seq: number }
-
-/** A commit's tree, kept under its id. */
-type CommitRow = { seq: number; tree: Record<string, TreeRow> }
+/** The folder's commit, where it is in the line, and its tree with each file's stamp: git's index, as far as this needs one. */
+type IndexRow = { sha: string; seq: number; tree: Record<string, TreeRow> }
 
 /** Who a commit is by, where a browser knows nobody. */
 const AUTHOR = 'this browser'
@@ -48,10 +49,6 @@ const ATTEMPTS = 5
 
 /** How many commits are read at a time while a log fills. */
 const CHUNK = 200
-
-function seqName(seq: number): string {
-  return String(seq).padStart(12, '0')
-}
 
 function hex(bytes: ArrayBuffer): string {
   return Array.from(new Uint8Array(bytes), (byte) => byte.toString(16).padStart(2, '0')).join('')
@@ -127,15 +124,12 @@ export function browserFolderGit(folder: BrowserFolder, root: DirectoryHandleLik
     return store.transaction(['folderData'], 'read', (tx) => tx.get<string>('folderData', key))
   }
 
-  const commitRow = async (sha: string): Promise<CommitRow | undefined> => {
-    const key = await folder.keyOf('commit', sha)
-    return store.transaction(['folderData'], 'read', (tx) => tx.get<CommitRow>('folderData', key))
-  }
+  const trees = browserTrees(folder)
 
   const headTree = async (): Promise<{ sha?: string; seq: number; tree: Record<string, TreeRow> }> => {
-    const sha = await head()
-    const row = sha ? await commitRow(sha) : undefined
-    return { ...(sha ? { sha } : {}), seq: row?.seq ?? 0, tree: row?.tree ?? {} }
+    const key = await folder.keyOf('ref', 'index')
+    const row = await store.transaction(['folderData'], 'read', (tx) => tx.get<IndexRow>('folderData', key))
+    return row ?? { seq: 0, tree: {} }
   }
 
   const texts = async (ids: readonly string[]): Promise<Record<string, string>> => {
@@ -160,15 +154,20 @@ export function browserFolderGit(folder: BrowserFolder, root: DirectoryHandleLik
     const parents = was.sha ? [was.sha] : []
     const sha = await sha256(new TextEncoder().encode(JSON.stringify({ parents, seq, at, message, blobs })))
     const keys = {
-      commit: await folder.keyOf('commit', sha), seq: await folder.keyOf('seq', seqName(seq)), head: await folder.keyOf('ref', 'HEAD'),
+      commit: await folder.keyOf('commit', sha), seq: await folder.keyOf('seq', seqName(seq)),
+      head: await folder.keyOf('ref', 'HEAD'), index: await folder.keyOf('ref', 'index'), tree: await folder.keyOf('tree', seqName(seq)),
       objects: await Promise.all([...objects.keys()].map((blob) => folder.keyOf('object', blob))),
     }
     const row: LogRow = { sha, parents, seq, at, author: AUTHOR, message, changed, blobs }
     return store.transaction(['folderData'], 'write', async (tx) => {
       if (await tx.get<string>('folderData', keys.head) !== was.sha) return 'moved'
       ;[...objects.values()].forEach((bytes, index) => tx.put('folderData', keys.objects[index], bytes))
-      tx.put('folderData', keys.commit, { seq, tree } satisfies CommitRow)
+      tx.put('folderData', keys.commit, { seq } satisfies CommitRow)
       tx.put('folderData', keys.seq, row)
+      if (checkpointOf(seq) === seq) {
+        tx.put('folderData', keys.tree, Object.fromEntries(Object.entries(tree).map(([path, { blob }]) => [path, blob])) satisfies Tree)
+      }
+      tx.put('folderData', keys.index, { sha, seq, tree } satisfies IndexRow)
       tx.put('folderData', keys.head, sha)
       return sha
     })
@@ -201,10 +200,10 @@ export function browserFolderGit(folder: BrowserFolder, root: DirectoryHandleLik
 
     async log(wanted: CommitsWanted): Promise<FolderCommit[]> {
       const tip = wanted.tip ?? await head()
-      const tipRow = tip ? await commitRow(tip) : undefined
-      if (!tipRow) return []
+      const tipSeq = tip ? (await trees.seqsOf([tip])).get(tip) : undefined
+      if (tipSeq === undefined) return []
       const range = await folder.kind('seq')
-      let below = await folder.keyOf('seq', seqName(tipRow.seq + 1))
+      let below = await folder.keyOf('seq', seqName(tipSeq + 1))
       let skip = wanted.skip ?? 0
       const found: FolderCommit[] = []
       for (;;) {
@@ -231,19 +230,18 @@ export function browserFolderGit(folder: BrowserFolder, root: DirectoryHandleLik
     },
 
     async treeAt(sha, inside): Promise<TreeEntry[]> {
-      const row = await commitRow(sha)
-      return Object.entries(row?.tree ?? {})
+      return Object.entries(await trees.treeAt(sha))
         .filter(([path]) => isUnder(path, inside))
         .sort(([one], [other]) => (one < other ? -1 : 1))
-        .map(([path, { blob }]) => ({ path, blob }))
+        .map(([path, blob]) => ({ path, blob }))
     },
 
     async readAt(sha, paths): Promise<CommittedFile[]> {
-      const tree = (await commitRow(sha))?.tree ?? {}
-      const wanted = paths.filter((path) => tree[path])
-      const keys = await Promise.all(wanted.map((path) => folder.keyOf('object', tree[path].blob)))
+      const blobs = await trees.blobsAt(paths.map((path) => ({ sha, path })))
+      const wanted = paths.flatMap((path, at) => (blobs[at] ? [{ path, blob: blobs[at] }] : []))
+      const keys = await Promise.all(wanted.map(({ blob }) => folder.keyOf('object', blob)))
       const held = await store.transaction(['folderData'], 'read', (tx) => Promise.all(keys.map((key) => tx.get<Uint8Array>('folderData', key))))
-      return wanted.flatMap((path, at): CommittedFile[] => {
+      return wanted.flatMap(({ path }, at): CommittedFile[] => {
         const bytes = held[at]
         if (!bytes) return []
         return [isBinaryPath(path) ? { path, bytes } : { path, text: new TextDecoder().decode(bytes) }]
@@ -252,11 +250,7 @@ export function browserFolderGit(folder: BrowserFolder, root: DirectoryHandleLik
 
     texts,
 
-    async blobsAt(at) {
-      const rows = new Map<string, CommitRow | undefined>()
-      for (const { sha } of at) if (!rows.has(sha)) rows.set(sha, await commitRow(sha))
-      return at.map(({ sha, path }) => rows.get(sha)?.tree[path]?.blob)
-    },
+    blobsAt: trees.blobsAt,
 
     async tags(): Promise<FolderTag[]> {
       const range = await folder.kind('tag')
