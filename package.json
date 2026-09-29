@@ -29,6 +29,7 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:perf": "vitest run --config vitest.perf.config.ts",
+    "test:browser": "vitest run --config vitest.browser.config.ts",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.electron.json",
     "verify": "node scripts/verify.mjs"

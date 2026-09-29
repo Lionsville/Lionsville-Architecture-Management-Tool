@@ -34,7 +34,9 @@ export default defineConfig({
     // step of their own in the gate. They build landscapes of thousands of
     // elements, which is tens of seconds — the wrong thing to put in front of a
     // loop whose whole value is that it takes a few.
-    exclude: ['**/node_modules/**', '**/dist/**', 'src/**/*.perf.test.{ts,tsx}'],
+    // The real-browser tests likewise (`vitest.browser.config.ts`): they start
+    // Chromium and WebKit, and run as a gate of their own.
+    exclude: ['**/node_modules/**', '**/dist/**', 'src/**/*.perf.test.{ts,tsx}', 'src/**/*.browser.test.ts'],
     // The date tests were written against a fixed zone. Not optional, so it is
     // here rather than in front of a command someone has to remember.
     env: { TZ: 'UTC' },
