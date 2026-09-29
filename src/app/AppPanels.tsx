@@ -30,6 +30,7 @@ import type { ShellParts } from './shellParts'
 import type { SourceChromeProps } from '../ports/ProviderParts'
 import { sourceLabel } from './ShellToolbar'
 import type { ToolbarChip } from './ShellToolbar'
+import { reasonIn } from './messageFor'
 
 /** One of the three: nowhere to keep anything yet, a scope open, or a home. */
 export function AppScreen({ parts }: { parts: ShellParts }) {
@@ -336,7 +337,10 @@ function chromeProps(parts: ShellParts, kind: string): SourceChromeProps {
       parts.nav.reloadOpenProject()
       parts.writes.treeChanged()
     },
-    flush: async () => { await provider.openScope?.flush?.() },
+    // A refusal said in the person's words: a chrome says the reason as it is.
+    flush: () => (provider.openScope?.flush?.() ?? Promise.resolve()).catch((cause: unknown) => {
+      throw new Error(reasonIn(cause, parts.services.s))
+    }),
   }
 }
 

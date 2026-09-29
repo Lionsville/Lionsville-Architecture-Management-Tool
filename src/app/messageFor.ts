@@ -18,3 +18,12 @@ export function messageFor(error: unknown, s: Translate): string {
   if (error instanceof ShellError) return s(error.key, error.params)
   return s('shell.processFailed', { message: reasonOf(error) })
 }
+
+/**
+ * The reason alone, for a sentence that already says what failed around it:
+ * a refusal's own words where it has a key, and the message as it is where it
+ * has none.
+ */
+export function reasonIn(error: unknown, s: Translate): string {
+  return error instanceof ShellError ? s(error.key, error.params) : reasonOf(error)
+}

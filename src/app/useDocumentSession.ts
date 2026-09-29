@@ -194,12 +194,14 @@ export function useDocumentSession(deps: {
   const editedAt = useRef(0)
 
   const writes = useScopeWrites(session, writer, onAdopt)
+  /** The write in flight, where one is: what a flush waits for before it writes what is left. */
+  const running = useRef<Promise<void> | undefined>(undefined)
   const save = useCallback((trigger: SaveTrigger, failedTo?: (cause: unknown) => void): Promise<void> => {
     if (!shouldSaveNow(held.current, trigger, Date.now() - editedAt.current)) {
       return Promise.resolve()
     }
     apply({ type: 'saveRequested' })
-    return writes.write().then(
+    const writing = writes.write().then(
       () => {
         apply({ type: 'saveSucceeded' })
         onSaved(new Date())
@@ -217,6 +219,10 @@ export function useDocumentSession(deps: {
         onResult(false, cause)
       },
     )
+    running.current = writing
+    const done = () => { if (running.current === writing) running.current = undefined }
+    void writing.then(done, done)
+    return writing
   }, [apply, writes, onSaved, onResult])
 
   // Read by the timers, which are installed once and must not hold the save
@@ -353,6 +359,14 @@ export function useDocumentSession(deps: {
   // top of somebody else's change.
   const forceSave = useCallback(() => save('blur'), [save])
   const flush = useCallback(async () => {
+    // A write already in flight lands first, and whatever was done while it
+    // ran is written after it: a flush that answered at once while one was
+    // running let a replace go on beside a late write of ours.
+    while (running.current) await running.current
+    // Which version stands is a person's to settle, and nothing is written
+    // over theirs to make way for a replace: the caller replaces nothing.
+    const { status } = held.current
+    if (status === 'conflict' || status === 'external-changed') throw new ShellError('shell.unsettledFirst')
     if (writes.pending()) apply({ type: 'edited' })
     let failed: { cause: unknown } | undefined
     await save('blur', (cause) => { failed = { cause } })

@@ -30,6 +30,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.unreadableInTheWay': 'Er is niets geschreven: op dat adres staat al een scope die niet kon worden gelezen, en schrijven zou die hebben vervangen. Herstel de scope.json ervan, of haal die terug uit de geschiedenis, en probeer het opnieuw.',
   'shell.readOnlyRefused': 'Deze scope staat open om te lezen en niet om te wijzigen, dus er is niets gedaan.',
   'shell.conflictThere': 'Dit project is elders gewijzigd, en hier staan wijzigingen open.',
+  'shell.unsettledFirst': 'Deze scope is elders gewijzigd, en welke versie blijft staan is nog niet gekozen. Kies eerst op de balk; er is niets vervangen.',
   'shell.takeTheirs': 'Die van schijf',
   'shell.keepMine': 'Die van mij',
   'shell.saveACopy': 'Kopie bewaren…',

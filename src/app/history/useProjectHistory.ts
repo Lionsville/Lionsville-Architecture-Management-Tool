@@ -28,6 +28,7 @@ import { restoreCommand } from '../../model/restore'
 import type { StepSummary } from '../../model/activity'
 import type { Translate } from '../../i18n'
 import { reasonOf } from '../../platform/errors'
+import { reasonIn } from '../messageFor'
 import type { HistoryEntry, HistoryRepository } from '../../ports/HistoryRepository'
 import type { ScopeSnapshot } from '../../projects/scope'
 import { nodeAt, nodesOf } from '../../projects/scopeAccess'
@@ -111,7 +112,7 @@ async function beforeReplace(
     }
     return true
   } catch (cause) {
-    notify(s('history.failedBeforeReplace', { message: reasonOf(cause) }), 'error')
+    notify(s('history.failedBeforeReplace', { message: reasonIn(cause, s) }), 'error')
     return false
   }
 }
@@ -190,7 +191,7 @@ export function useProjectHistory(deps: {
       recorded.current = steps().length
       notify(s(written.length > 0 ? 'history.taken' : 'history.nothingToRecord'), written.length > 0 ? 'success' : 'info')
     })().catch((cause: unknown) => {
-      notify(s('history.failed', { message: reasonOf(cause) }), 'error')
+      notify(s('history.failed', { message: reasonIn(cause, s) }), 'error')
     })
   }, [history, save, steps, notify, s])
 

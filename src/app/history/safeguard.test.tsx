@@ -11,6 +11,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { translator } from '../../i18n'
+import { ShellError } from '../../platform/errors'
 import type { ScopeSnapshot } from '../../projects/scope'
 import { heldRepositories } from '../testing/heldRepositories'
 import { fakeHistory } from '../testing/fakeHistory'
@@ -88,6 +89,14 @@ describe('the snapshot before a replace', () => {
     expect(await result.current.safeguard()).toBe(false)
     expect(history.recorded).toEqual([])
     expect(notify).toHaveBeenCalledWith(expect.stringContaining('the scope was refused'), 'error')
+  })
+
+  it('stops the replace, in the person’s words, where which version stands is not settled', async () => {
+    const notify = vi.fn()
+    const { result, history } = hook('entries', notify, vi.fn(() => Promise.reject(new ShellError('shell.unsettledFirst'))))
+    expect(await result.current.safeguard()).toBe(false)
+    expect(history.recorded).toEqual([])
+    expect(notify).toHaveBeenCalledWith(expect.stringContaining(s('shell.unsettledFirst')), 'error')
   })
 
   it('stops the replace where it was due and could not be taken', async () => {

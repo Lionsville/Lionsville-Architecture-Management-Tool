@@ -30,6 +30,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.unreadableInTheWay': 'Es wurde nichts geschrieben: an dieser Adresse liegt bereits ein Bereich, der nicht gelesen werden konnte, und Schreiben hätte ihn ersetzt. Reparieren Sie seine scope.json oder holen Sie sie aus dem Verlauf zurück, und versuchen Sie es erneut.',
   'shell.readOnlyRefused': 'Dieser Bereich ist zum Lesen geöffnet und nicht zum Ändern, deshalb wurde nichts getan.',
   'shell.conflictThere': 'Dieses Projekt wurde anderswo geändert, und hier gibt es ungespeicherte Änderungen.',
+  'shell.unsettledFirst': 'Dieser Scope wurde anderswo geändert, und welche Fassung gilt, ist noch nicht entschieden. Entscheiden Sie zuerst in der Leiste; es wurde nichts ersetzt.',
   'shell.takeTheirs': 'Die von der Festplatte',
   'shell.keepMine': 'Meine behalten',
   'shell.saveACopy': 'Kopie speichern…',

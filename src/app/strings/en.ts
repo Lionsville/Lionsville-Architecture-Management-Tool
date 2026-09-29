@@ -68,6 +68,7 @@ export const EN = {
    */
   'shell.readOnlyRefused': 'This scope is open to be read and not changed, so nothing was done.',
   'shell.conflictThere': 'This project changed elsewhere, and there are unsaved changes here.',
+  'shell.unsettledFirst': 'This scope changed elsewhere, and which version stands is not settled yet. Choose on the bar first; nothing was replaced.',
   'shell.takeTheirs': 'Take theirs',
   'shell.keepMine': 'Keep mine',
   'shell.saveACopy': 'Save a copy…',

@@ -127,6 +127,8 @@ function mount(
     // the async form, which has to be awaited, and one that is not leaves React
     // unable to render anything afterwards.
     force: () => act(() => { void hook.forceSave() }),
+    /** What a provider asks before it replaces what is kept: the promise itself, to be awaited. */
+    flush: () => hook.flush(),
     /** What editing looks like from here: the model the session holds changes. */
     edit: (name: string) => act(() => {
       latest.current = project(name)
@@ -303,6 +305,76 @@ describe('forceSave', () => {
     expect(view2.writes).toHaveLength(0)
   })
 
+})
+
+/**
+ * A flush is what a provider asks for before it replaces what is kept —
+ * another version taken in, older work brought over, an entry recorded — so
+ * it answers only once everything done here is written, and refuses where
+ * which version stands is not settled.
+ */
+describe('a flush', () => {
+  /** A store whose first write waits until the test lets it land. */
+  function slowFirst(said: string[]) {
+    let release!: () => void
+    const gate = new Promise<void>((resolve) => { release = resolve })
+    let calls = 0
+    const save = (written: ScopeSnapshot) => {
+      calls += 1
+      const landing = calls === 1 ? gate : Promise.resolve()
+      return landing.then(() => { said.push(`wrote ${written.model.name}`) })
+    }
+    return { save, release }
+  }
+
+  it('waits for a write in flight, then writes an edit made while it ran', async () => {
+    const said: string[] = []
+    const store = slowFirst(said)
+    const view = mount(store.save)
+    view.edit('One')
+    await view.idle()
+    expect(view.status()).toBe('saving')
+    let flushed = false
+    const flushing = view.flush().then(() => { flushed = true })
+    view.edit('Two')
+    await act(async () => { await Promise.resolve() })
+    expect(flushed).toBe(false)
+    store.release()
+    await act(async () => { await flushing })
+    expect(said).toEqual(['wrote One', 'wrote Two'])
+    expect(view.status()).toBe('clean')
+  })
+
+  it('lets the remote’s version be taken only after an autosave in flight has landed', async () => {
+    const said: string[] = []
+    const store = slowFirst(said)
+    const view = mount(store.save)
+    view.edit('Mine')
+    await view.idle()
+    // What *Take theirs* does: flush, then resolve.
+    const taking = view.flush().then(() => { said.push('took theirs') })
+    await act(async () => { await Promise.resolve() })
+    store.release()
+    await act(async () => { await taking })
+    expect(said).toEqual(['wrote Mine', 'took theirs'])
+  })
+
+  it('refuses in a conflict, and writes nothing', async () => {
+    const view = mount(undefined, { current: project('Theirs') })
+    view.somebodyElseWrote()
+    view.edit('Mine')
+    expect(view.status()).toBe('conflict')
+    await expect(view.flush()).rejects.toMatchObject({ key: 'shell.unsettledFirst' })
+    expect(view.writes).toEqual([])
+  })
+
+  it('refuses where their version changed and nothing here did, and writes nothing', async () => {
+    const view = mount(undefined, { current: project('Theirs') })
+    view.somebodyElseWrote()
+    expect(view.status()).toBe('external-changed')
+    await expect(view.flush()).rejects.toMatchObject({ key: 'shell.unsettledFirst' })
+    expect(view.writes).toEqual([])
+  })
 })
 
 describe('when somebody else changes the folder', () => {
