@@ -26,19 +26,21 @@ the app's own undo stack and on the canvas, beside Cut, Copy and Paste.
 **Help** holds this manual, in the app's language, the keyboard shortcuts and
 the update check.
 
-**Browser.** From a clone of the repository, `npm run setup` once and then
-`npm run dev`; open <http://127.0.0.1:5200>. Where the browser offers it —
-Chromium does — a tab can work in a folder just as the desktop does. Where it
-does not, everything you make lives in that browser's storage until you save a
-file.
+**Browser.** [app.architecture.lionsville.nl](https://app.architecture.lionsville.nl/)
+is the newest release, with nothing installed. You can also run it from a
+clone of the repository: `npm run setup` once, then `npm run dev`, and open
+<http://127.0.0.1:5200>. Where the browser offers it (Chromium does), a tab
+can work in a folder just as the desktop does. Otherwise your work is kept in
+that browser, and in a private window only for as long as the tab is open.
+*Where your work is kept* says more.
 
 Nothing leaves your machine either way. There is no account, no backend and no
 telemetry.
 
 ## The organisation screen
 
-The app opens on the **organisation** — the working folder itself, which is a
-scope like any other and the one everything else is filed under. A **scope** is
+The app opens on the **organisation**: a scope like any other, and the one
+everything else you keep is filed under. A **scope** is
 one document: a name, a landscape, the container diagrams under it, the
 decisions, the plans, the business architecture, and everything placed on them.
 Scopes **nest**, and every one of them is the same document — the organisation
@@ -47,16 +49,17 @@ that, as deep as your work needs. A landscape scope is a scope; a landscape is
 also a kind of board, which is a drawing inside a scope.
 
 The screen is the organisation's home rather than a list of documents. A line
-under the name says what it is and where things live — as files in the folder
-named on the bar, or in this browser — and then it has five parts.
+under the name says what it is and where things live: as files in the folder,
+in this browser, or nowhere yet. Then it has five parts.
 
 ![The organisation screen: the name and links at the top, the organisation's own pages as cards, the scopes within it, and the examples last](screenshot-organisation.png)
 
 **Its identity**, at the top: the name, the client if the drawings are made out
 to somebody else, how many scopes are filed under it by what each says it is
 (*2 domains · 1 team*, in the words of the badges on their rows), when
-anything in it last changed, the description, and its links. A folder nobody has
-named yet asks for a name here instead of showing a heading.
+anything in it last changed, the description, and its links. An organisation
+nobody has named yet asks for a name here instead of showing a heading; a
+folder goes by its own name until you give it one.
 
 **Its own pages**, as cards. Each says in a sentence what is behind its
 **Open**, then counts: **Business architecture** the journeys, areas, functions
@@ -101,18 +104,20 @@ landscape.
 - **Delete** removes the scope and everything filed under it, and the
   confirmation says so: its folder on disk, or, in a browser without a folder,
   its records from this browser. A working file you saved elsewhere is not
-  touched. The organisation itself cannot be deleted — it is the folder you
-  opened.
+  touched. The organisation itself cannot be deleted: it is the root
+  everything else is filed under.
 
-The chip at the right of the bar names the folder your projects are files in;
-snapshots go into its history. **Work from another folder…** beside it points
-the app at a different one, and a browser that has no folder offers **Choose
-folder…** instead.
+The chip at the right of the bar says where your work is kept: the folder your
+projects are files in, **In this browser**, or **Not kept anywhere**.
+**Work from another folder…** beside it points the app at a different folder,
+and a browser that has no folder offers **Choose folder…** instead.
 
-**Examples**, last. Copying one into an empty, unnamed folder makes the example
-*the* organisation; copying it into a folder that is already something files it
-under a new scope of its own. Either way it is yours from that moment, and
-nothing you do runs against the example itself.
+**Examples**, last. Copying one into an organisation that is empty and unnamed
+makes the example *the* organisation. An organisation that is already something
+files it under a new scope of its own. That covers anything with a name, a
+scope under it, a board or records, and every folder, which goes by its own
+name. Either way the copy is yours from that moment, and nothing you do runs
+against the example itself.
 
 Renaming a scope relabels it and nothing else — where it is filed is its
 address, and renaming is not moving. Moving one changes the address of the
@@ -234,7 +239,19 @@ answers for the name, when a promotion names a scope this one is not filed
 under, and when removing the record would leave things filed under it with
 nothing to sit in.
 
-## Your working folder (desktop)
+## Where your work is kept
+
+Your work is kept in one of three places, and the organisation's home says
+which in the line under its name:
+
+- **a folder**: the desktop's, or a browser tab's where the browser offers one;
+- **this browser**: a tab with no folder;
+- **nowhere**: a tab where the browser keeps nothing.
+
+The working file (see *Saving, exporting, sharing*) carries your whole
+organisation from any one of them to any other.
+
+### A folder
 
 The first time the desktop app runs it asks for a **folder to work in**, and
 everything you make lives there as files you can read:
@@ -251,51 +268,115 @@ everything you make lives there as files you can read:
       diagrams/landscape.geometry.json     where its elements sit
       docs/warehouse.md               an element's description, as prose
       decisions/0007-one-writer.md    a decision record
+      images/floor-plan.png           a picture a description shows
       logos/own.svg                   a logo you uploaded
 ```
 
 A folder holding a `scope.json` is a scope, and the folders inside it that hold
 one are the scopes under it. Move a folder in your file manager and the scope is
-at its new address; nothing inside it says where it lives.
+at its new address. A folder you have not named yet goes by the folder's own
+name.
 
 **A folder from an older version opens.** The first time this version sees one
-it converts the whole tree — `project.json` and `group.json` become `scope.json`
-— and, where the folder is a git repository, it records what the folder looked
-like first. Running it again does nothing.
+it converts the whole tree (`project.json` and `group.json` become
+`scope.json`). Where the folder keeps a history, it records what the folder
+looked like first. Running it again does nothing.
 
 Nothing is hidden inside the app. Put the folder in OneDrive, in Dropbox, on a
 network share or in a git repository and it behaves the way anything else there
-does. **Change…** on the organisation screen moves you to a different folder; the folders you
-have used before are in **File ▸ Open Recent Folder**, each under the name its
-organisation gives itself.
+does. **Work from another folder…** on the organisation screen moves you to a
+different folder; the folders you have used before are in **File ▸ Open Recent
+Folder**, each under the name its organisation gives itself.
 
-Two things follow from your work being files.
+**Everything is written as it changes**: three seconds after you stop editing,
+when you leave the window, and when you close it. Only the files that actually
+changed are rewritten, so moving one element rewrites one small file and
+nothing else. Every window asks before it closes over unsaved work.
 
-- **Somebody else can change them.** If a file changes underneath you — a
-  colleague's checkout, a sync client, you on another machine — a strip appears
-  above the canvas. With nothing unsaved it offers to take their version; with
-  unsaved work it says both sides changed and asks which one survives. It never
-  overwrites their version without asking.
-- **Everything is written as it changes.** Three seconds after you stop
-  editing, when you leave the window, and when you close it. Only the files
-  that actually changed are rewritten, so moving one element rewrites one small
-  file and nothing else.
+**Bringing your browser's work along.** If this browser kept work before you
+chose a folder, choosing one asks **Bring your work into this folder?**:
+- **Copy my work in** copies every scope the browser kept into the folder. The
+  dialog stays open until the copy is done, then says how many scopes were
+  copied, which could not be, and which it left alone because somebody changed
+  them meanwhile. Scopes that could not be written are offered again with
+  **Try again**, and again the next time you choose that folder.
+- **Open the folder as it is** leaves both where they are.
 
-A browser tab can work in a folder too, where the browser offers it — but the
-permission rarely survives a restart and asking for it needs a click, so a tab
-only picks a remembered folder back up when the permission is still granted and
-otherwise starts in browser storage without a word. The desktop is the one that
-is made to choose.
+Nothing is deleted either way; the browser keeps its copy.
 
-## History (desktop)
+**A folder with a remote.** Where the folder is a git repository with a remote,
+*Preferences* has two switches for this folder on this machine: **Pull from the
+remote when this folder is opened** and **Push after every snapshot**. When the
+folder and its remote have both moved on, a strip offers:
+- **Take theirs**: the remote's version stands;
+- **Keep ours**: ours stands, recorded as a merge.
 
-If the machine has **git**, the app can keep a history of your folder.
-**Save… ▸ Snapshot…** offers a message already written from what you did —
-"Changed Warehouse Management, Moved 3 elements" — which you can edit before it
-is recorded. The first snapshot asks whether to start keeping history at all;
-nothing leaves the machine either way.
+Ours is kept on a branch either way, and what is open is written first.
 
-**Save… ▸ History…** lists every snapshot. Choosing one shows what has changed
+A browser tab can work in a folder too, where the browser offers it (Chromium
+does). The permission rarely survives a restart, and asking for it needs a
+click. So a tab only picks a remembered folder back up when the permission is
+still granted, and otherwise starts in this browser without a word. The
+desktop is the one that is made to choose.
+
+### This browser
+
+A tab with no folder keeps your work in this browser, for this site. The chip
+on the bar says **In this browser**, and your work stays there across
+restarts until you or the browser clear the site's data. The first save asks
+the browser to keep it. Browser storage is small, so the app says once when
+it is about four fifths full: a browser stops saving without asking. If
+another tab still has an older version of the app open, or the app was
+updated in another tab, a strip says what to close or reload before saving
+works again.
+
+**Work an older version kept.** Earlier versions kept a browser's work
+somewhere else in it. That work is brought over at every start: copied, never
+moved, and never over work done here since. Where a scope changed in both
+places, a strip asks about that scope: **Bring the older copy over** (what is
+here goes into the history first) or **Keep what is here**.
+
+**A tab that keeps nothing.** A private window, or a browser that will not keep
+anything for this site, cannot hold your work. The app still works, and the
+chip says **Not kept anywhere**. The bar says so in the warning colour, and so
+do the line on the organisation's home and the history. Work an older version
+kept in this browser is shown, and nothing you change is kept. Save a working
+file before you close the tab.
+
+If the browser's storage has not answered within a few seconds, the page is
+drawn anyway. A strip says so, and your work appears when the storage answers.
+
+### When it changed elsewhere
+
+A scope can change while you have it open: a colleague's checkout, a sync
+client, you on another machine or in another tab. The bar then says **Changed
+elsewhere**, or **Changed here and elsewhere** when you have unsaved changes
+too. A strip above the canvas asks which version stands:
+- **Take theirs** reads their version and puts it on screen.
+- **Keep mine** keeps what is on your screen and writes it over theirs, all of
+  it, even where one of your changes could not be laid over theirs.
+- **Save a copy…**, with unsaved changes here, puts yours in a working file
+  first and leaves the decision for later.
+
+There is no merge, and nothing is overwritten without asking.
+
+## History
+
+Every place keeps a history of your work. **Snapshot…** in the File menu (on
+the web, the **⋯** menu) offers a message already written from what you did,
+such as "Changed Warehouse Management, Moved 3 elements", which you can edit
+before it is recorded. The first snapshot asks you to **Start keeping
+history**, and says where it will be kept:
+- in the folder itself, using git;
+- in this browser, for a tab's folder (nothing is written into the folder for
+  it) and for a tab with no folder;
+- for as long as the tab is open, in a tab that keeps nothing.
+
+Nothing leaves your machine either way. On the desktop the history needs
+**git** on the machine: without it, a snapshot is refused with a sentence
+saying so, and everything else works as before.
+
+**History…** lists every snapshot. Choosing one shows what has changed
 since it — applications added, removed and altered, connections drawn and cut,
 decisions taken — with the geometry as a count rather than a list, because a
 tidy pass is one sentence and four hundred changed lines.
@@ -307,11 +388,12 @@ opens already narrowed from **History…** on a diagram's tab menu, on the
 documentation page, and on a decision's page.
 
 A description is the one subject that is not one scope's business: a name means
-the same thing everywhere in the folder, so an element's page is written where
-it is defined *and* wherever a scope draws it and says what it means there. The
-history of that element is the union of those pages, and a line under the picker
-names the scopes it is reading. Restoring one stays this scope's: it puts back
-what this scope's page said, and the others are theirs to restore.
+the same thing everywhere in the organisation, so an element's page is written
+where it is defined *and* wherever a scope draws it and says what it means
+there. The history of that element is the union of those pages, and a line
+under the picker names the scopes it is reading. Restoring one stays this
+scope's: it puts back what this scope's page said, and the others are theirs to
+restore.
 
 **Restore.** With a snapshot chosen, **Restore this version…** makes the
 diagram, description or decision what it was then; with the whole project
@@ -325,12 +407,14 @@ restored diagram leaves out elements that no longer exist, and says how many.
 
 **Labels.** **Label…** on a chosen snapshot gives it a word of your own —
 "Shown to the board" — shown beside its message, never instead of it. A label
-travels with the history, so a colleague sees the same mark in the same place,
-in this app or in any git client. Two labels with the same name in one folder
-are refused; pick another word.
+travels with the history, so a colleague sees the same mark in the same place;
+in a folder it is a git tag, which any git client shows. Two labels with the
+same name are refused; pick another word.
 
-Without git the app simply does not offer any of this, and everything else
-works as before.
+**Snapshots the app takes itself**, where a history is kept: before a working
+file replaces what is here, before a folder is pulled from its remote, and
+before a folder from an older version is converted. Each is named for what
+it came before, so what was there can be restored.
 
 ## The workspace
 
@@ -338,22 +422,20 @@ One open project: a bar at the top, the editor below it.
 
 | In the bar | What it does |
 |---|---|
-| **Projects…** | Back to the organisation screen |
+| **The crumbs** | The organisation, each scope between, and the open one in bold; each is a way to that scope's home, and the organisation's name is the way back to the first screen |
 | **Settings…** | This scope's name and where it is filed, and its defaults: the author named on an exported diagram, and the operational aspects a new landscape starts with. Moving a scope files it under another one and leaves its content untouched |
-| **Save…** | **Working file** (`.lvarch`) is everything: geometry, styling, your own logos, pinned routes — your whole working folder in one file, every scope of it. On the desktop the menu also offers **Snapshot…** and **History…** |
-| **Open…** | Loads either, and recognises which by what is in the file rather than by its name |
+| **⋯** | In a browser, the menu: **Open…**, **Save**, **Save a Copy of the Working File…**, **Snapshot…**, **History…**, the theme and Help. On the desktop the same items are in the menu bar |
 | **Activity** | What has changed in this project since you opened it — a list of named steps with the time each was taken. Read-only: ⌘Z is how you go back |
-| **Theme** | Light, dark or system. System follows your computer and switches with it |
-| **Saved · hh:mm** | Where the project stands: the time it was last written, or **Unsaved changes**, **Saving…**, **Changed on disk**, **Changed here and on disk** |
+| **Saved · hh:mm** | Where the project stands: the time it was last written, or **Unsaved changes**, **Saving…**, **Changed elsewhere**, **Changed here and elsewhere**, **Not saved — storage refused** |
 
 Everything is saved automatically as you work: three seconds after you stop, on
 leaving the window, and on closing it — and closing with unsaved work asks
 first. In a browser without a folder, the app says once when its storage is
-about four fifths full — that is the only warning you get, because a browser
-stops saving without asking. If storage refuses outright (full, or blocked in a
-private window) the bar at the bottom says so once and the editor keeps working;
-save a working file then, because without storage the project is gone when the
-tab closes.
+about four fifths full. That is the only warning you get, because a browser
+stops saving without asking. If a save is refused, the bar says **Not saved —
+storage refused** and the editor keeps working. In a tab that keeps nothing,
+the bar says so from the start. In either case, save a working file, because
+otherwise the work is gone when the tab closes.
 Every notice (saved, loaded, failed) appears in that bottom bar.
 
 **Language.** The language button at the right of the editor's toolbar
@@ -543,6 +625,16 @@ tasks, events, gateways, flows and messages, read-only. A process element's
 page is where one belongs (its `realises` line says which capability it is how
 of), and a file without a diagram section is shown as text under a line saying
 why.
+
+**Pictures.** Paste or drop a picture into the text to add it: PNG, JPEG,
+SVG or WebP. **Pictures** beside the source lists every picture the scope
+holds, with **Insert** to put one on this page and **Delete picture** to remove
+one. The text names a picture by its name, `![caption](image:floor-plan.png)`,
+wherever the scope is kept. A page lays every picture out at once, at its own
+size, and fetches it only when it scrolls into view, so a long page opens
+quickly and nothing on it moves when the pictures arrive. A picture that cannot
+be shown shows its caption. Only pictures kept with the scope are drawn: a web
+address shows as its caption, and the app never fetches anything.
 
 ## Decisions
 
@@ -1123,7 +1215,7 @@ Two ways out, for two purposes.
 
 - **The working file** (`.lvarch`, **File › Save a Copy of the Working
   File…**) is everything and is what you hand to someone who will edit
-  further. It is your **whole working folder** in one file, **sealed under a
+  further. It is your **whole organisation** in one file, **sealed under a
   password**: you are asked for one when you save the copy — twice, because
   a lost password cannot be recovered — and whoever opens the file is asked
   for it again. Nothing about what is inside can be read without it. It holds
@@ -1133,11 +1225,21 @@ Two ways out, for two purposes.
   landscape in it would open on someone else's machine full of names pointing
   at nothing. The file is named after your organisation. Working files from
   earlier versions still open, sealed or not, and one holding a single scope
-  still opens as that scope. **Opening one asks where it goes**: *A new
-  folder…* makes it a working folder of its own and takes you there, leaving
-  what you had open untouched; *Replace … here* writes it over the scope you
-  are on and everything filed under it, and says so before it does. A folder
-  that already holds something is only written over after a second yes.
+  still opens as that scope. It is also how work moves **between places**: a
+  file saved from the desktop's folder opens in this browser, or the other way
+  round, the same byte for byte, pictures and all. **Opening one asks where it
+  goes**:
+  - **A new folder…**, where a folder can be chosen, makes it a working folder
+    of its own and takes you there, leaving what you had open untouched. A
+    folder that already holds something is only written over after a second
+    yes.
+  - **Replace … here** writes it over the scope you are on and everything
+    filed under it, and says so before it does. Where a history is kept, a
+    snapshot is taken first, so what was there can be restored. Where none is
+    kept, it is gone.
+
+  Every scope in the file lands, or none does. Once it has landed, the app
+  checks what arrived against what the file says it holds, and says so.
 - **PNG export** (the download button) opens a dialog with a preview of the
   picture as it will leave: in the light or the dark theme regardless of the
   one on screen, with every line's label or only the bare lines, with or

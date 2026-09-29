@@ -27,19 +27,21 @@ op de eigen ongedaan-maak-stapel van de app en op het canvas, naast Cut, Copy
 en Paste. **Help** bevat deze handleiding, in de taal van de app, de
 sneltoetsen en de updatecontrole.
 
-**Browser.** Vanuit een kloon van de repository eenmalig `npm run setup`, daarna
-`npm run dev`; open <http://127.0.0.1:5200>. Waar de browser het aanbiedt —
-Chromium doet dat — kan een tabblad net als de desktop in een map werken. Waar
-dat niet kan, leeft alles wat je maakt in de opslag van die browser tot je een
-bestand bewaart.
+**Browser.** [app.architecture.lionsville.nl](https://app.architecture.lionsville.nl/)
+is de nieuwste release, zonder iets te installeren. Je kunt hem ook draaien
+vanuit een kloon van de repository: eenmalig `npm run setup`, daarna
+`npm run dev`, en open <http://127.0.0.1:5200>. Waar de browser het aanbiedt
+(Chromium doet dat), kan een tabblad net als de desktop in een map werken.
+Anders wordt je werk in die browser bewaard, en in een privévenster alleen
+zolang het tabblad open is. *Waar je werk wordt bewaard* zegt meer.
 
 In beide gevallen verlaat niets je computer. Er is geen account, geen backend
 en geen telemetrie.
 
 ## Het organisatiescherm
 
-De app opent op de **organisatie** — de werkmap zelf, die een onderdeel is als
-elk ander en waaronder al het andere valt. Een **onderdeel** is één document:
+De app opent op de **organisatie**: een onderdeel als elk ander, en het
+onderdeel waaronder al het andere valt dat je bewaart. Een **onderdeel** is één document:
 een naam, een landschap, de containerdiagrammen eronder, de besluiten, de
 plannen, de bedrijfsarchitectuur en alles wat erop staat. Onderdelen
 **nestelen**, en ze zijn allemaal hetzelfde document — de organisatie bovenaan,
@@ -50,15 +52,15 @@ landschap is ook een soort bord, en dat is een tekening binnen een onderdeel.
 ![Het organisatiescherm: de naam en koppelingen bovenaan, de eigen pagina's van de organisatie als kaarten, de scopes daarbinnen, en de voorbeelden onderaan](screenshot-organisation.png)
 
 Het scherm is het thuis van de organisatie en geen lijst met documenten. Een
-regel onder de naam zegt wat het is en waar alles staat — als bestanden in de
-map die de balk noemt, of in deze browser — en daarna bestaat het uit vijf
-delen.
+regel onder de naam zegt wat het is en waar alles staat: als bestanden in de
+map, in deze browser, of nog nergens. Daarna bestaat het uit vijf delen.
 
 **Wie het is**, bovenaan: de naam, de klant als de tekeningen voor iemand anders
 gemaakt zijn, hoeveel scopes eronder vallen naar wat elk zegt te zijn
 (*2 domeinen · 1 team*, in de woorden van de labels op hun regels), wanneer er voor
-het laatst iets veranderde, de omschrijving en de koppelingen. Een map die nog
-geen naam heeft vraagt er hier om in plaats van een lege kop te tonen.
+het laatst iets veranderde, de omschrijving en de koppelingen. Een organisatie
+die nog geen naam heeft vraagt er hier om in plaats van een lege kop te tonen;
+een map heet zoals de map zelf tot je haar een naam geeft.
 
 **De eigen pagina's**, als kaarten. Elke kaart zegt in één zin wat er achter
 **Openen** zit, en telt dan: **Bedrijfsarchitectuur** de klantreizen, gebieden,
@@ -107,18 +109,20 @@ technologielandschap.
 - **Verwijderen** haalt het onderdeel weg, met alles wat eronder valt, en de
   bevestiging zegt dat ook: zijn map op schijf, of, in een browser zonder map,
   zijn records uit deze browser. Een werkbestand dat je elders hebt bewaard
-  blijft staan. De organisatie zelf kun je niet verwijderen — dat is de map die
-  je hebt geopend.
+  blijft staan. De organisatie zelf kun je niet verwijderen: daar valt al het
+  andere onder.
 
-Het label rechts in de balk noemt de map waarin je projecten als bestanden
-staan; momentopnamen gaan in haar geschiedenis. **Vanuit een andere map
-werken…** ernaast wijst de app naar een andere map, en een browser zonder map
-biedt in plaats daarvan **Map kiezen…**.
+Het label rechts in de balk zegt waar je werk wordt bewaard: de map waarin je
+projecten als bestanden staan, **In deze browser**, of **Nergens bewaard**.
+**Vanuit een andere map werken…** ernaast wijst de app naar een andere map, en
+een browser zonder map biedt in plaats daarvan **Map kiezen…**.
 
-**Voorbeelden**, als laatste. Een voorbeeld in een lege map zonder naam
-kopiëren maakt het voorbeeld *de* organisatie; kopiëren in een map die al iets
-is zet het onder een eigen nieuw onderdeel. Hoe dan ook is het vanaf dat moment
-van jou, en niets wat je doet raakt het voorbeeld zelf.
+**Voorbeelden**, als laatste. Een voorbeeld kopiëren in een organisatie die
+leeg is en geen naam heeft, maakt het voorbeeld *de* organisatie. Een
+organisatie die al iets is, zet het onder een eigen nieuw onderdeel. Dat geldt
+voor alles met een naam, een onderdeel eronder, een bord of vastleggingen, en
+voor elke map, die zoals de map zelf heet. Hoe dan ook is de kopie vanaf dat
+moment van jou, en niets wat je doet raakt het voorbeeld zelf.
 
 Hernoemen hernoemt alleen het label — waar iets staat is zijn adres, en
 hernoemen is niet verplaatsen. Verplaatsen verandert het adres van het onderdeel
@@ -127,7 +131,7 @@ map die naar iets in die tak wees, gaat in dezelfde stap mee naar het nieuwe
 adres, zodat een verplaatsing geen spoor van verouderde kopieën achterlaat. Bij
 het starten opent de app het onderdeel dat je open had.
 
-Zes namen worden geweigerd, omdat de mappen van een onderdeel ze al gebruiken:
+Zeven namen worden geweigerd, omdat de mappen van een onderdeel ze al gebruiken:
 `diagrams`, `docs`, `decisions`, `transitions`, `observations`, `images` en `logos`.
 
 ## Eén naam in de hele organisatie
@@ -245,7 +249,20 @@ naartoe zou gaan de naam al beheert, als een verplaatsing omhoog een onderdeel
 noemt waar dit niet onder valt, en als het verwijderen van de vastlegging dingen
 die eronder vallen zonder ouder zou achterlaten.
 
-## Je werkmap (desktop)
+## Waar je werk wordt bewaard
+
+Je werk staat op een van drie plekken, en de regel onder de naam op het thuis
+van de organisatie zegt welke:
+
+- **in een map**: die van de desktop, of van een browsertabblad waar de
+  browser er een aanbiedt;
+- **in deze browser**: een tabblad zonder map;
+- **nergens**: een tabblad waarin de browser niets bewaart.
+
+Het werkbestand (zie *Bewaren, exporteren, delen*) brengt je hele organisatie
+van elk van die plekken naar elke andere.
+
+### Een map
 
 De eerste keer dat de desktop-app start vraagt hij om een **map om in te
 werken**, en alles wat je maakt staat daar als bestanden die je kunt lezen:
@@ -262,55 +279,126 @@ werken**, en alles wat je maakt staat daar als bestanden die je kunt lezen:
       diagrams/landscape.geometry.json     waar de elementen staan
       docs/warehouse.md               de omschrijving van een element, als tekst
       decisions/0007-one-writer.md    een besluit
+      images/floor-plan.png           een afbeelding die een omschrijving toont
       logos/own.svg                   een logo dat je hebt geüpload
 ```
 
 Een map met een `scope.json` erin is een onderdeel, en de mappen daarbinnen die
 er ook een hebben zijn de onderdelen eronder. Verplaats een map in je
-bestandsbeheer en het onderdeel staat op zijn nieuwe adres; niets erin zegt waar
-het thuishoort.
+bestandsbeheer en het onderdeel staat op zijn nieuwe adres. Een map die je nog
+geen naam gaf, heet zoals de map zelf.
 
 **Een map van een oudere versie opent gewoon.** De eerste keer dat deze versie
-er een ziet zet hij de hele boom om — `project.json` en `group.json` worden
-`scope.json` — en waar de map een git-repository is legt hij eerst vast hoe de
-map eruitzag. Nog een keer draaien doet niets.
+er een ziet, zet hij de hele boom om (`project.json` en `group.json` worden
+`scope.json`). Waar de map een geschiedenis bijhoudt, legt hij eerst vast hoe
+de map eruitzag. Nog een keer draaien doet niets.
 
 Er zit niets verstopt in de app. Zet de map in OneDrive, in Dropbox, op een
 netwerkschijf of in een git-repository en hij gedraagt zich zoals alles daar.
-**Wijzigen…** op het organisatiescherm brengt je naar een andere map; de mappen die je eerder
-gebruikte staan in **File ▸ Open Recent Folder**, elk onder de naam die hun
-organisatie zichzelf geeft.
+**Vanuit een andere map werken…** op het organisatiescherm brengt je naar een
+andere map; de mappen die je eerder gebruikte staan in **File ▸ Open Recent
+Folder**, elk onder de naam die hun organisatie zichzelf geeft.
 
-Dat je werk bestanden zijn heeft twee gevolgen.
+**Alles wordt geschreven zodra het verandert**: drie seconden nadat je stopt
+met bewerken, als je het venster verlaat, en als je het sluit. Alleen de
+bestanden die echt veranderden worden herschreven, dus één element verplaatsen
+herschrijft één klein bestand en verder niets. Elk venster vraagt eerst voor
+het sluit over wijzigingen die nog niet bewaard zijn.
 
-- **Iemand anders kan ze wijzigen.** Verandert een bestand onder je handen — een
-  collega, een synchronisatiedienst, jijzelf op een andere machine — dan
-  verschijnt een strook boven de plaat. Staat er niets open, dan biedt hij hun
-  versie aan; staan er wijzigingen open, dan zegt hij dat beide kanten zijn
-  veranderd en vraagt welke blijft. Hun versie wordt nooit ongevraagd
-  overschreven.
-- **Alles wordt geschreven zodra het verandert.** Drie seconden nadat je stopt
-  met bewerken, als je het venster verlaat, en als je het sluit. Alleen de
-  bestanden die echt veranderden worden herschreven, dus één element verplaatsen
-  herschrijft één klein bestand en verder niets.
+**Je werk uit de browser meenemen.** Bewaarde deze browser al werk voordat je
+een map koos, dan vraagt het kiezen **Je werk meenemen naar deze map?**:
+- **Mijn werk erin kopiëren** kopieert elk onderdeel dat de browser bewaarde
+  naar de map. De dialoog blijft open tot het kopiëren klaar is. Dan zegt hij
+  hoeveel onderdelen zijn gekopieerd, welke niet, en welke hij liet staan
+  omdat iemand ze intussen veranderde. Onderdelen die niet geschreven konden
+  worden, biedt hij opnieuw aan met **Opnieuw proberen**, en ook de volgende
+  keer dat je die map kiest.
+- **De map openen zoals hij is** laat allebei staan.
 
-Een browsertabblad kan ook in een map werken, waar de browser dat aanbiedt —
-maar de toestemming overleeft een herstart zelden en erom vragen vereist een
-klik, dus een tabblad pakt een onthouden map alleen weer op als de toestemming
-nog geldt en begint anders zonder iets te zeggen in de browseropslag. De desktop
-is degene die moet kiezen.
+In geen van beide gevallen wordt iets verwijderd; de browser houdt zijn kopie.
 
-## Geschiedenis (desktop)
+**Een map met een remote.** Is de map een git-repository met een remote, dan
+heeft *Voorkeuren* twee schakelaars voor deze map op deze machine: **Van de
+remote ophalen als deze map wordt geopend** en **Na elke momentopname
+pushen**. Zijn de map en haar remote allebei verder gegaan, dan biedt een
+strook:
+- **Die van de remote**: de versie van de remote blijft;
+- **Die van ons**: de onze blijft, vastgelegd als merge.
 
-Staat er **git** op de machine, dan kan de app een geschiedenis van je map
-bijhouden. **Bewaren… ▸ Momentopname…** komt met een tekst die al geschreven is
-uit wat je deed — "Warehouse Management gewijzigd, 3 elementen verplaatst" — en
-die je kunt aanpassen voor hij wordt vastgelegd. De eerste keer vraagt hij of
-je überhaupt geschiedenis wilt bijhouden; er gaat in geen van beide gevallen
-iets van je machine af.
+De onze blijft in beide gevallen op een branch bewaard, en wat open staat
+wordt eerst geschreven.
 
-**Bewaren… ▸ Geschiedenis…** toont elke momentopname. Kies er een en je ziet wat
-er sindsdien veranderde — applicaties erbij, weg en gewijzigd, koppelingen
+Een browsertabblad kan ook in een map werken, waar de browser dat aanbiedt
+(Chromium doet dat). De toestemming overleeft een herstart zelden, en erom
+vragen vereist een klik. Een tabblad pakt een onthouden map dus alleen weer op
+als de toestemming nog geldt, en begint anders zonder iets te zeggen in deze
+browser. De desktop is degene die moet kiezen.
+
+### Deze browser
+
+Een tabblad zonder map bewaart je werk in deze browser, voor deze site. Het
+label in de balk zegt **In deze browser**, en je werk blijft daar na een
+herstart staan tot jij of de browser de gegevens van de site wist. De eerste
+keer bewaren vraagt de browser om het te houden. Browseropslag is klein, dus
+de app zegt één keer dat hij voor ongeveer viervijfde vol zit: een browser
+stopt zonder te vragen met bewaren. Heeft een ander tabblad nog een oudere
+versie van de app open, of is de app in een ander tabblad bijgewerkt, dan zegt
+een strook wat je moet sluiten of herladen voordat bewaren weer werkt.
+
+**Werk dat een oudere versie bewaarde.** Eerdere versies bewaarden het werk
+van een browser op een andere plek erin. Dat werk wordt bij elke start
+overgenomen: gekopieerd, nooit verplaatst, en nooit over werk dat hier sinds
+die tijd is gedaan. Is een onderdeel op beide plekken veranderd, dan vraagt een
+strook naar dat onderdeel: **De oudere kopie overnemen** (wat hier staat gaat
+eerst de geschiedenis in) of **Houden wat hier staat**.
+
+**Een tabblad dat niets bewaart.** Een privévenster, of een browser die voor
+deze site niets bewaart, kan je werk niet houden. De app werkt gewoon, en het
+label zegt **Nergens bewaard**. De balk zegt dat in de waarschuwingskleur, en
+de regel op het thuis van de organisatie en de geschiedenis zeggen het ook.
+Werk dat een oudere versie in deze browser bewaarde, wordt getoond, en niets
+wat je verandert wordt bewaard. Bewaar een werkbestand voordat je het tabblad
+sluit.
+
+Heeft de opslag van de browser na een paar seconden nog niet geantwoord, dan
+wordt de pagina toch getekend. Een strook zegt dat, en je werk verschijnt
+zodra de opslag antwoordt.
+
+### Als het elders is gewijzigd
+
+Een onderdeel kan veranderen terwijl je het open hebt: een collega, een
+synchronisatiedienst, jijzelf op een andere machine of in een ander tabblad.
+De balk zegt dan **Elders gewijzigd**, of **Hier én elders gewijzigd** als er
+hier ook wijzigingen openstaan. Een strook boven de plaat vraagt welke versie
+blijft:
+- **Die van schijf** leest hun versie en zet die in beeld.
+- **Die van mij** houdt wat op je scherm staat en schrijft het over het hunne,
+  helemaal, ook waar een van jouw wijzigingen niet over de hunne te leggen
+  was.
+- **Kopie bewaren…**, met wijzigingen die hier openstaan, zet de jouwe eerst in
+  een werkbestand en laat de keuze voor later.
+
+Er is geen samenvoegen, en er wordt nooit iets ongevraagd overschreven.
+
+## Geschiedenis
+
+Elke plek houdt een geschiedenis van je werk bij. **Snapshot…** in het menu
+File (op het web **Momentopname…** in het menu **⋯**) komt met een tekst die al geschreven
+is uit wat je deed, zoals "Warehouse Management gewijzigd, 3 elementen
+verplaatst", en die je kunt aanpassen voor hij wordt vastgelegd. De eerste
+momentopname vraagt je om **Geschiedenis bijhouden**, en zegt waar die wordt
+bewaard:
+- in de map zelf, met git;
+- in deze browser, voor de map van een tabblad (daarvoor wordt niets in de
+  map geschreven) en voor een tabblad zonder map;
+- zolang het tabblad open is, in een tabblad dat niets bewaart.
+
+Er gaat in geen van alle gevallen iets van je machine af. Op de desktop heeft
+de geschiedenis **git** op de machine nodig: zonder git wordt een momentopname
+geweigerd met een zin die dat zegt, en werkt de rest precies zoals eerst.
+
+**Geschiedenis…** toont elke momentopname. Kies er een en je ziet wat er
+sindsdien veranderde — applicaties erbij, weg en gewijzigd, koppelingen
 getekend en doorgeknipt, besluiten genomen — met de geometrie als aantal in
 plaats van als lijst, want een Tidy-ronde is één zin en vierhonderd gewijzigde
 regels.
@@ -322,10 +410,10 @@ Dezelfde pagina opent al beperkt via **Geschiedenis…** in het menu van een
 aanzicht-tab, op de documentatiepagina en op de pagina van een besluit.
 
 Een beschrijving is het enige onderwerp dat niet van één onderdeel is: een naam
-betekent overal in de map hetzelfde, dus de pagina van een element staat waar
-het is vastgelegd én overal waar een onderdeel het tekent en zegt wat het daar
-betekent. De geschiedenis van dat element is de optelsom van die pagina's, en
-een regel onder de keuzelijst noemt de onderdelen die gelezen worden.
+betekent overal in de organisatie hetzelfde, dus de pagina van een element staat
+waar het is vastgelegd én overal waar een onderdeel het tekent en zegt wat het
+daar betekent. De geschiedenis van dat element is de optelsom van die pagina's,
+en een regel onder de keuzelijst noemt de onderdelen die gelezen worden.
 Terugzetten blijft van dit onderdeel: het zet terug wat de pagina van dit
 onderdeel zei, de andere horen bij die onderdelen.
 
@@ -343,11 +431,14 @@ teruggezet aanzicht laat elementen weg die niet meer bestaan, en zegt hoeveel.
 **Labels.** **Label…** bij een gekozen momentopname geeft haar een eigen woord
 — "Aan de directie getoond" — naast haar boodschap, nooit in plaats ervan. Een
 label reist mee met de geschiedenis, zodat een collega hetzelfde merkteken op
-dezelfde plek ziet, in deze app of in elke git-client. Twee labels met dezelfde
-naam in één map worden geweigerd; kies een ander woord.
+dezelfde plek ziet; in een map is het een git-tag, die elke git-client toont.
+Twee labels met dezelfde naam worden geweigerd; kies een ander woord.
 
-Zonder git biedt de app dit alles eenvoudigweg niet aan, en werkt de rest
-precies zoals eerst.
+**Momentopnamen die de app zelf maakt**, waar een geschiedenis wordt
+bijgehouden: voordat een werkbestand vervangt wat hier staat, voordat een map
+van haar remote wordt opgehaald, en voordat een map van een oudere versie wordt
+omgezet. Elk heet naar waar hij aan voorafging, zodat wat er stond kan worden
+teruggezet.
 
 ## De werkruimte
 
@@ -355,22 +446,21 @@ Eén open project: een balk bovenin, de editor eronder.
 
 | In de balk | Wat hij doet |
 |---|---|
-| **Projecten…** | Terug naar het organisatiescherm |
+| **Het kruimelpad** | De organisatie, elk onderdeel ertussen, en het open onderdeel vet; elk is een weg naar het thuis van dat onderdeel, en de naam van de organisatie is de weg terug naar het eerste scherm |
 | **Instellingen…** | Naam van dit onderdeel en waaronder het valt, en zijn standaarden: de auteur op een geëxporteerd diagram, en de operationele aspecten waar een nieuw landschap mee begint. Een onderdeel onder een ander zetten laat de inhoud met rust |
-| **Bewaren…** | **Werkbestand** (`.lvarch`) is alles: geometrie, opmaak, eigen logo's, vastgezette routes — je hele werkmap in één bestand, elke scope erin. Op de desktop biedt het menu ook **Momentopname…** en **Geschiedenis…** |
-| **Openen…** | Laadt allebei, en herkent aan de inhoud van het bestand welke van de twee het is — niet aan de naam |
+| **⋯** | In een browser het menu: **Openen…**, **Bewaren**, **Kopie van het werkbestand bewaren…**, **Momentopname…**, **Geschiedenis…**, het thema en Help. Op de desktop staan dezelfde onderdelen in de menubalk |
 | **Activiteit** | Wat er sinds het openen aan dit project is veranderd — een lijst met benoemde stappen en het tijdstip van elke. Alleen lezen: ⌘Z is hoe je teruggaat |
-| **Thema** | Licht, donker of systeem. Systeem volgt je computer en schakelt mee |
-| **Bewaard · uu:mm** | Hoe het project ervoor staat: het tijdstip van de laatste schrijfactie, of **Nog niet bewaarde wijzigingen**, **Bezig met bewaren…**, **Gewijzigd op schijf**, **Hier én op schijf gewijzigd** |
+| **Bewaard · uu:mm** | Hoe het project ervoor staat: het tijdstip van de laatste schrijfactie, of **Nog niet bewaarde wijzigingen**, **Bezig met bewaren…**, **Elders gewijzigd**, **Hier én elders gewijzigd**, **Niet bewaard — opslag weigert** |
 
 Alles wordt vanzelf bewaard terwijl je werkt: drie seconden nadat je stopt, als
 je het venster verlaat en als je het sluit — en sluiten met openstaande
 wijzigingen vraagt eerst. In een browser zonder map zegt de app één keer dat de
-opslag voor viervijfde vol zit — dat is de enige waarschuwing die je krijgt,
-want een browser stopt zonder te vragen met bewaren. Weigert de opslag helemaal
-(vol, of geblokkeerd in een privévenster) dan zegt de balk onderin dat één keer
-en werkt de editor gewoon door; bewaar dan een werkbestand, want zonder opslag
-is het project weg als het tabblad sluit. Elke melding (bewaard, geladen, mislukt) verschijnt in
+opslag voor viervijfde vol zit. Dat is de enige waarschuwing die je krijgt,
+want een browser stopt zonder te vragen met bewaren. Wordt bewaren geweigerd,
+dan zegt de balk **Niet bewaard — opslag weigert** en werkt de editor gewoon
+door. In een tabblad dat niets bewaart zegt de balk dat vanaf het begin. Bewaar
+in beide gevallen een werkbestand, want anders is het werk weg als het tabblad
+sluit. Elke melding (bewaard, geladen, mislukt) verschijnt in
 die balk onderin.
 
 **Taal.** De taalknop rechts in de werkbalk van de editor (hij toont de code
@@ -575,6 +665,18 @@ berichten, alleen-lezen. De pagina van een proces-element is waar zo'n blok
 hoort (zijn `realises`-lijn zegt van welke capability het de uitvoering is), en
 een bestand zonder diagramsectie wordt als tekst getoond onder een regel die
 zegt waarom.
+
+**Afbeeldingen.** Plak of sleep een afbeelding in de tekst om haar toe te
+voegen: PNG, JPEG, SVG of WebP. **Afbeeldingen** naast de bron toont elke
+afbeelding die het onderdeel heeft, met **Invoegen** om er een op deze pagina te
+zetten en **Afbeelding verwijderen** om er een weg te halen. De tekst noemt een
+afbeelding bij haar naam, `![bijschrift](image:floor-plan.png)`, waar het
+onderdeel ook wordt bewaard. Een pagina legt alle afbeeldingen meteen op hun
+eigen formaat neer, en haalt er een pas op als die in beeld schuift. Een lange
+pagina opent dus snel, en er verschuift niets als de afbeeldingen aankomen. Een
+afbeelding die niet getoond kan worden, toont haar bijschrift. Alleen
+afbeeldingen die bij het onderdeel bewaard zijn worden getekend: een webadres
+toont als bijschrift, en de app haalt nooit iets op.
 
 ## Besluiten
 
@@ -1187,7 +1289,7 @@ Rechtsklik een diagramtabblad, **Diagraminstellingen…**.
 Twee uitgangen, voor twee doelen.
 
 - **Het werkbestand** (`.lvarch`) is alles, en is wat je aan iemand geeft die
-  verder gaat bewerken. Het is je **hele werkmap** in één bestand, **verzegeld
+  verder gaat bewerken. Het is je **hele organisatie** in één bestand, **verzegeld
   met een wachtwoord**: je wordt erom gevraagd als je de kopie bewaart — twee
   keer, want een verloren wachtwoord is niet terug te halen — en wie het
   bestand opent wordt er opnieuw om gevraagd. Zonder wachtwoord is niets van
@@ -1198,11 +1300,21 @@ Twee uitgangen, voor twee doelen.
   erin zou op andermans machine opengaan vol namen die nergens heen wijzen.
   Het bestand heet naar je organisatie. Werkbestanden van eerdere versies
   openen gewoon, verzegeld of niet, en een bestand met één scope erin opent
-  nog steeds als die scope. **Bij het openen wordt gevraagd waar het heen
-  moet**: *Een nieuwe map…* maakt er een eigen werkmap van en brengt je
-  daarheen, wat je open had blijft onaangeroerd; *… hier vervangen* schrijft
-  het over de scope waar je staat en alles eronder heen, en zegt dat vooraf.
-  Een map die al iets bevat wordt pas na een tweede ja overschreven.
+  nog steeds als die scope. Het is ook hoe werk **tussen plekken** verhuist:
+  een bestand dat uit de map van de desktop is bewaard, opent in deze browser,
+  of andersom, byte voor byte hetzelfde, met afbeeldingen en al. **Bij het
+  openen wordt gevraagd waar het heen moet**:
+  - **Een nieuwe map…**, waar een map gekozen kan worden, maakt er een eigen
+    werkmap van en brengt je daarheen; wat je open had blijft onaangeroerd.
+    Een map die al iets bevat wordt pas na een tweede ja overschreven.
+  - **… hier vervangen** schrijft het over de scope waar je staat en alles
+    eronder heen, en zegt dat vooraf. Waar een geschiedenis wordt
+    bijgehouden, wordt eerst een momentopname gemaakt, zodat wat er stond
+    kan worden teruggezet. Waar er geen wordt bijgehouden, is het weg.
+
+  Elke scope in het bestand komt aan, of geen enkele. Is het aangekomen, dan
+  controleert de app wat er aankwam tegen wat het bestand zegt te bevatten,
+  en zegt dat.
 - **PNG-export** (de downloadknop) opent een dialoog met een voorbeeld van de
   plaat zoals die vertrekt: in het lichte of het donkere thema, los van wat er
   op het scherm staat, met elk lijnlabel of alleen de kale lijnen, met of

@@ -29,20 +29,22 @@ Select All, die auf den eigenen Rückgängig-Stapel der App und auf die
 Zeichenfläche wirken, neben Cut, Copy und Paste. **Help** hält dieses
 Handbuch, in der Sprache der App, die Tastenkürzel und die Update-Prüfung.
 
-**Browser.** Aus einem Klon des Repositorys einmal `npm run setup`, danach
-`npm run dev`; öffnen Sie <http://127.0.0.1:5200>. Wo der Browser es anbietet
-— Chromium tut das — kann ein Tab genau wie der Desktop in einem Ordner
-arbeiten. Wo nicht, lebt alles, was Sie anlegen, im Speicher dieses Browsers,
-bis Sie eine Datei speichern.
+**Browser.** [app.architecture.lionsville.nl](https://app.architecture.lionsville.nl/)
+ist die neueste Version, ohne etwas zu installieren. Sie können sie auch aus
+einem Klon des Repositorys starten: einmal `npm run setup`, danach
+`npm run dev`, und öffnen Sie <http://127.0.0.1:5200>. Wo der Browser es
+anbietet (Chromium tut das), kann ein Tab genau wie der Desktop in einem Ordner
+arbeiten. Sonst wird Ihre Arbeit in diesem Browser aufbewahrt, und in einem
+privaten Fenster nur, solange der Tab offen ist. *Wo Ihre Arbeit aufbewahrt
+wird* sagt mehr.
 
 In beiden Fällen verlässt nichts Ihren Rechner. Es gibt kein Konto, kein
 Backend und keine Telemetrie.
 
 ## Der Organisationsbildschirm
 
-Die App öffnet sich auf der **Organisation** — dem Arbeitsordner selbst, der ein
-Bereich wie jeder andere ist und derjenige, unter dem alles andere abgelegt
-ist. Ein **Bereich** ist ein Dokument: ein Name, eine Landschaft, die
+Die App öffnet sich auf der **Organisation**: einem Bereich wie jedem anderen,
+und dem, unter dem alles andere abgelegt ist, was Sie aufbewahren. Ein **Bereich** ist ein Dokument: ein Name, eine Landschaft, die
 Container-Diagramme darunter, die Entscheidungen, die Pläne, die
 Geschäftsarchitektur, und alles, was darauf platziert ist. Bereiche sind
 **geschachtelt**, und jeder von ihnen ist dasselbe Dokument — die Organisation
@@ -52,9 +54,9 @@ Landschaftsbereich ist ein Bereich; eine Landschaft ist auch eine Art Tafel,
 also eine Zeichnung in einem Bereich.
 
 Der Bildschirm ist das Zuhause der Organisation und keine Liste von
-Dokumenten. Eine Zeile unter dem Namen sagt, was er ist und wo alles liegt —
-als Dateien in dem Ordner, den die Leiste nennt, oder in diesem Browser — und
-dann hat er fünf Teile.
+Dokumenten. Eine Zeile unter dem Namen sagt, was er ist und wo alles liegt:
+als Dateien im Ordner, in diesem Browser, oder noch nirgends. Dann hat er fünf
+Teile.
 
 ![Der Organisationsbildschirm: der Name und die Links oben, die eigenen Seiten der Organisation als Karten, die Bereiche darin, und zuletzt die Beispiele](screenshot-organisation.png)
 
@@ -62,8 +64,9 @@ dann hat er fünf Teile.
 für jemand anderen angefertigt werden, wie viele Bereiche darunter abgelegt
 sind, nach dem, was jeder von sich sagt (*2 Domänen · 1 Team*, in den Worten
 der Etiketten auf ihren Zeilen), wann sich zuletzt etwas darin geändert hat, die
-Beschreibung und ihre Links. Ein Ordner, den noch niemand benannt hat, fragt
-hier nach einem Namen, statt eine Überschrift zu zeigen.
+Beschreibung und ihre Links. Eine Organisation, die noch niemand benannt hat,
+fragt hier nach einem Namen, statt eine Überschrift zu zeigen; ein Ordner heißt
+wie der Ordner selbst, bis Sie ihm einen Namen geben.
 
 **Ihre eigenen Seiten**, als Karten. Jede sagt in einem Satz, was hinter
 **Öffnen** liegt, und zählt dann: **Geschäftsarchitektur** die Kundenreisen,
@@ -114,17 +117,20 @@ Unternehmenskarte oder eine Technologielandschaft.
   die Bestätigung sagt das auch: seinen Ordner auf der Festplatte, oder, in
   einem Browser ohne Ordner, seine Einträge aus diesem Browser. Eine anderswo
   gespeicherte Arbeitsdatei bleibt unberührt. Die Organisation selbst kann nicht
-  gelöscht werden — sie ist der Ordner, den Sie geöffnet haben.
+  gelöscht werden: unter ihr ist alles andere abgelegt.
 
-Das Etikett rechts in der Leiste nennt den Ordner, in dem Ihre Projekte als
-Dateien liegen; Schnappschüsse gehen in seinen Verlauf. **Aus einem anderen
-Ordner arbeiten…** daneben richtet die App auf einen anderen aus, und ein
-Browser ohne Ordner bietet stattdessen **Ordner wählen…**.
+Das Etikett rechts in der Leiste sagt, wo Ihre Arbeit aufbewahrt wird: den
+Ordner, in dem Ihre Projekte als Dateien liegen, **In diesem Browser**, oder
+**Nirgends gespeichert**. **Aus einem anderen Ordner arbeiten…** daneben
+richtet die App auf einen anderen Ordner aus, und ein Browser ohne Ordner
+bietet stattdessen **Ordner wählen…**.
 
-**Beispiele**, zuletzt. Eines in einen leeren, unbenannten Ordner zu kopieren
-macht das Beispiel zu *der* Organisation; es in einen Ordner zu kopieren, der
-schon etwas ist, legt es unter einem eigenen neuen Bereich ab. So oder so gehört
-es von diesem Moment an Ihnen, und nichts, was Sie tun, wirkt auf das Beispiel
+**Beispiele**, zuletzt. Eines in eine Organisation zu kopieren, die leer und
+unbenannt ist, macht das Beispiel zu *der* Organisation. Eine Organisation, die
+schon etwas ist, legt es unter einem eigenen neuen Bereich ab. Das gilt für
+alles mit einem Namen, einem Bereich darunter, einer Tafel oder Einträgen, und
+für jeden Ordner, der wie der Ordner selbst heißt. So oder so gehört die Kopie
+von diesem Moment an Ihnen, und nichts, was Sie tun, wirkt auf das Beispiel
 selbst.
 
 Einen Bereich umzubenennen gibt ihm ein neues Label und sonst nichts — wo er
@@ -135,7 +141,7 @@ im selben Schritt an die neue Adresse mitgenommen, sodass ein Verschieben nie
 eine Spur veralteter Kopien hinterlässt. Beim Start öffnet die App den Bereich
 wieder, den Sie geöffnet hatten.
 
-Sechs Namen werden abgelehnt, weil die eigenen Ordner eines Bereichs sie schon
+Sieben Namen werden abgelehnt, weil die eigenen Ordner eines Bereichs sie schon
 verwenden: `diagrams`, `docs`, `decisions`, `transitions`, `observations`, `images` und
 `logos`.
 
@@ -262,7 +268,20 @@ den Namen bereits verantwortet, wenn ein Hochziehen einen Bereich nennt, unter
 dem dieser nicht abgelegt ist, und wenn das Entfernen des Datensatzes Dinge, die
 darunter abgelegt sind, ohne Halt ließe.
 
-## Ihr Arbeitsordner (Desktop)
+## Wo Ihre Arbeit aufbewahrt wird
+
+Ihre Arbeit liegt an einem von drei Orten, und die Zeile unter dem Namen auf
+dem Zuhause der Organisation sagt, an welchem:
+
+- **in einem Ordner**: dem des Desktops, oder dem eines Browser-Tabs, wo der
+  Browser einen anbietet;
+- **in diesem Browser**: ein Tab ohne Ordner;
+- **nirgends**: ein Tab, in dem der Browser nichts aufbewahrt.
+
+Die Arbeitsdatei (siehe *Speichern, Exportieren, Weitergeben*) bringt Ihre
+ganze Organisation von jedem dieser Orte an jeden anderen.
+
+### Ein Ordner
 
 Beim ersten Start fragt die Desktop-App nach einem **Ordner zum Arbeiten**, und
 alles, was Sie anlegen, lebt dort als Dateien, die Sie lesen können:
@@ -279,60 +298,133 @@ alles, was Sie anlegen, lebt dort als Dateien, die Sie lesen können:
       diagrams/landscape.geometry.json     wo seine Elemente sitzen
       docs/warehouse.md               die Beschreibung eines Elements, als Prosa
       decisions/0007-one-writer.md    ein Entscheidungseintrag
+      images/floor-plan.png           ein Bild, das eine Beschreibung zeigt
       logos/own.svg                   ein Logo, das Sie hochgeladen haben
 ```
 
 Ein Ordner, der eine `scope.json` hält, ist ein Bereich, und die Ordner darin,
 die eine halten, sind die Bereiche darunter. Verschieben Sie einen Ordner in
-Ihrem Dateimanager, und der Bereich ist an seiner neuen Adresse; nichts darin
-sagt, wo er liegt.
+Ihrem Dateimanager, und der Bereich ist an seiner neuen Adresse. Ein Ordner,
+dem Sie noch keinen Namen gegeben haben, heißt wie der Ordner selbst.
 
 **Ein Ordner aus einer älteren Version lässt sich öffnen.** Wenn diese Version
-zum ersten Mal einen sieht, wandelt sie den ganzen Baum um — `project.json` und
-`group.json` werden zu `scope.json` — und, wo der Ordner ein git-Repository ist,
-hält sie zuerst fest, wie der Ordner vorher aussah. Ein zweiter Durchlauf tut
+zum ersten Mal einen sieht, wandelt sie den ganzen Baum um (`project.json` und
+`group.json` werden zu `scope.json`). Wo der Ordner einen Verlauf führt, hält
+sie zuerst fest, wie der Ordner vorher aussah. Ein zweiter Durchlauf tut
 nichts.
 
 Nichts ist in der App versteckt. Legen Sie den Ordner in OneDrive, in Dropbox,
 auf eine Netzwerkfreigabe oder in ein git-Repository, und er verhält sich so,
-wie alles andere dort. **Ändern…** auf dem Organisationsbildschirm wechselt in
-einen anderen Ordner; die Ordner, die Sie vorher verwendet haben, stehen unter
-**File ▸ Open Recent Folder**, jeder unter dem Namen, den seine Organisation
-sich selbst gibt.
+wie alles andere dort. **Aus einem anderen Ordner arbeiten…** auf dem
+Organisationsbildschirm wechselt in einen anderen Ordner; die Ordner, die Sie
+vorher verwendet haben, stehen unter **File ▸ Open Recent Folder**, jeder unter
+dem Namen, den seine Organisation sich selbst gibt.
 
-Zwei Dinge folgen daraus, dass Ihre Arbeit Dateien sind.
+**Alles wird geschrieben, während es sich ändert**: drei Sekunden nachdem Sie
+aufgehört haben zu bearbeiten, wenn Sie das Fenster verlassen, und wenn Sie es
+schließen. Nur die Dateien, die sich tatsächlich geändert haben, werden neu
+geschrieben, sodass das Verschieben eines Elements eine kleine Datei neu
+schreibt und sonst nichts. Jedes Fenster fragt, bevor es über ungespeicherter
+Arbeit schließt.
 
-- **Jemand anderes kann sie ändern.** Ändert sich eine Datei unter Ihnen — der
-  Checkout eines Kollegen, ein Sync-Client, Sie selbst auf einem anderen Rechner
-  — erscheint ein Streifen über der Zeichenfläche. Ohne ungespeicherte Arbeit
-  bietet er an, deren Version zu übernehmen; mit ungespeicherter Arbeit sagt er,
-  dass sich beide Seiten geändert haben, und fragt, welche überlebt. Er
-  überschreibt deren Version nie ohne zu fragen.
-- **Alles wird geschrieben, während es sich ändert.** Drei Sekunden nachdem Sie
-  aufgehört haben zu bearbeiten, wenn Sie das Fenster verlassen, und wenn Sie
-  es schließen. Nur die Dateien, die sich tatsächlich geändert haben, werden neu
-  geschrieben, sodass das Verschieben eines Elements eine kleine Datei neu
-  schreibt und sonst nichts.
+**Die Arbeit aus dem Browser mitnehmen.** Hat dieser Browser schon Arbeit
+aufbewahrt, bevor Sie einen Ordner gewählt haben, fragt die Wahl **Ihre Arbeit
+in diesen Ordner mitnehmen?**:
+- **Meine Arbeit hineinkopieren** kopiert jeden Bereich, den der Browser
+  aufbewahrt hat, in den Ordner. Der Dialog bleibt offen, bis das Kopieren
+  fertig ist. Dann sagt er, wie viele Bereiche kopiert wurden, welche nicht,
+  und welche er stehen ließ, weil jemand sie inzwischen geändert hat. Bereiche,
+  die nicht geschrieben werden konnten, bietet er mit **Erneut versuchen**
+  wieder an, und auch beim nächsten Mal, wenn Sie diesen Ordner wählen.
+- **Ordner so öffnen, wie er ist** lässt beide, wo sie sind.
+
+So oder so wird nichts gelöscht; der Browser behält seine Kopie.
+
+**Ein Ordner mit einem Remote.** Ist der Ordner ein git-Repository mit einem
+Remote, hat *Einstellungen* zwei Schalter für diesen Ordner auf diesem Rechner:
+**Beim Öffnen dieses Ordners vom Remote holen** und **Nach jeder Momentaufnahme
+pushen**. Sind der Ordner und sein Remote beide weitergegangen, bietet ein
+Streifen:
+- **Die vom Remote**: die Version des Remotes gilt;
+- **Unsere behalten**: unsere gilt, festgehalten als Merge.
+
+Unsere bleibt so oder so auf einem Branch erhalten, und was offen ist, wird
+zuerst geschrieben.
 
 Auch ein Browser-Tab kann in einem Ordner arbeiten, wo der Browser es anbietet
-— aber die Berechtigung überlebt einen Neustart selten, und sie zu erfragen
-braucht einen Klick, deshalb nimmt ein Tab einen gemerkten Ordner nur wieder
-auf, wenn die Berechtigung noch erteilt ist, und startet sonst ohne ein Wort im
-Browser-Speicher. Der Desktop ist derjenige, der wählen muss.
+(Chromium tut das). Die Berechtigung überlebt einen Neustart selten, und sie zu
+erfragen braucht einen Klick. Deshalb nimmt ein Tab einen gemerkten Ordner nur
+wieder auf, wenn die Berechtigung noch erteilt ist, und startet sonst ohne ein
+Wort in diesem Browser. Der Desktop ist derjenige, der wählen muss.
 
-## Verlauf (Desktop)
+### Dieser Browser
 
-Wenn der Rechner **git** hat, kann die App einen Verlauf Ihres Ordners führen.
-**Speichern… ▸ Momentaufnahme…** bietet eine Nachricht an, die schon aus dem
-geschrieben ist, was Sie getan haben — „Lagerverwaltung geändert, 3 Elemente
-verschoben“ — und die Sie bearbeiten können, bevor sie festgehalten wird. Die
-erste Momentaufnahme fragt, ob überhaupt ein Verlauf geführt werden soll; so
-oder so verlässt nichts den Rechner.
+Ein Tab ohne Ordner bewahrt Ihre Arbeit in diesem Browser auf, für diese
+Website. Das Etikett in der Leiste sagt **In diesem Browser**, und Ihre Arbeit
+bleibt dort über Neustarts hinweg, bis Sie oder der Browser die Daten der
+Website löschen. Das erste Speichern bittet den Browser, sie zu behalten.
+Browser-Speicher ist klein, deshalb sagt die App einmal, wenn er zu etwa vier
+Fünfteln voll ist: ein Browser hört ohne Nachfrage auf zu speichern. Hat ein
+anderer Tab noch eine ältere Version der App offen, oder wurde die App in
+einem anderen Tab aktualisiert, sagt ein Streifen, was Sie schließen oder neu
+laden müssen, bevor das Speichern wieder geht.
 
-**Speichern… ▸ Verlauf…** listet jede Momentaufnahme auf. Eine auszuwählen
-zeigt, was sich seither geändert hat — Anwendungen hinzugefügt, entfernt und
-geändert, Verbindungen gezogen und gekappt, Entscheidungen getroffen — mit der
-Geometrie als Zahl statt als Liste, weil ein Aufräum-Durchlauf ein Satz ist und
+**Arbeit, die eine ältere Version aufbewahrt hat.** Frühere Versionen haben die
+Arbeit eines Browsers an einer anderen Stelle darin aufbewahrt. Diese Arbeit
+wird bei jedem Start übernommen: kopiert, nie verschoben, und nie über Arbeit,
+die hier seither getan wurde. Hat sich ein Bereich an beiden Stellen geändert,
+fragt ein Streifen nach diesem Bereich: **Die ältere Kopie übernehmen** (was
+hier ist, geht zuerst in den Verlauf) oder **Behalten, was hier ist**.
+
+**Ein Tab, der nichts aufbewahrt.** Ein privates Fenster, oder ein Browser, der
+für diese Website nichts aufbewahrt, kann Ihre Arbeit nicht halten. Die App
+funktioniert trotzdem, und das Etikett sagt **Nirgends gespeichert**. Die
+Leiste sagt es in der Warnfarbe, und die Zeile auf dem Zuhause der
+Organisation und der Verlauf sagen es auch. Arbeit, die eine ältere Version in
+diesem Browser aufbewahrt hat, wird angezeigt, und nichts, was Sie ändern,
+wird aufbewahrt. Speichern Sie eine Arbeitsdatei, bevor Sie den Tab schließen.
+
+Hat der Speicher des Browsers nach ein paar Sekunden noch nicht geantwortet,
+wird die Seite trotzdem gezeichnet. Ein Streifen sagt das, und Ihre Arbeit
+erscheint, sobald der Speicher antwortet.
+
+### Wenn es anderswo geändert wurde
+
+Ein Bereich kann sich ändern, während Sie ihn geöffnet haben: der Checkout
+eines Kollegen, ein Sync-Client, Sie selbst auf einem anderen Rechner oder in
+einem anderen Tab. Die Leiste sagt dann **Anderswo geändert**, oder **Hier und
+anderswo geändert**, wenn Sie hier auch ungespeicherte Änderungen haben. Ein
+Streifen über der Zeichenfläche fragt, welche Version gilt:
+- **Die von der Festplatte** liest deren Version und zeigt sie an.
+- **Meine behalten** behält, was auf Ihrem Bildschirm ist, und schreibt es über
+  deren Version, ganz, auch wo eine Ihrer Änderungen sich nicht über deren
+  legen ließ.
+- **Kopie speichern…**, mit ungespeicherten Änderungen hier, legt Ihre zuerst
+  in eine Arbeitsdatei und lässt die Entscheidung für später.
+
+Es gibt kein Zusammenführen, und nichts wird ohne Nachfrage überschrieben.
+
+## Verlauf
+
+Jeder Ort führt einen Verlauf Ihrer Arbeit. **Snapshot…** im Menü File (im
+Web im Menü **⋯**: **Snapshot erstellen…**) bietet eine Nachricht an, die schon
+aus dem geschrieben ist, was Sie getan haben, etwa „Lagerverwaltung geändert,
+3 Elemente verschoben“, und die Sie bearbeiten können, bevor sie festgehalten
+wird. Die erste Momentaufnahme bittet Sie, **Verlauf führen**, und sagt, wo er
+aufbewahrt wird:
+- im Ordner selbst, mit git;
+- in diesem Browser, für den Ordner eines Tabs (dafür wird nichts in den
+  Ordner geschrieben) und für einen Tab ohne Ordner;
+- solange der Tab offen ist, in einem Tab, der nichts aufbewahrt.
+
+So oder so verlässt nichts den Rechner. Auf dem Desktop braucht der Verlauf
+**git** auf dem Rechner: ohne git wird eine Momentaufnahme mit einem Satz
+abgelehnt, der das sagt, und alles andere funktioniert wie gewohnt.
+
+**Verlauf…** listet jede Momentaufnahme auf. Eine auszuwählen zeigt, was sich
+seither geändert hat — Anwendungen hinzugefügt, entfernt und geändert,
+Verbindungen gezogen und gekappt, Entscheidungen getroffen — mit der Geometrie
+als Zahl statt als Liste, weil ein Aufräum-Durchlauf ein Satz ist und
 vierhundert geänderte Zeilen.
 
 **Der Verlauf eines einzelnen Dings.** Die Auswahl oben auf der Verlaufsseite
@@ -343,13 +435,13 @@ den Zeilen darüber. Dieselbe Seite öffnet sich bereits eingegrenzt über
 der Seite einer Entscheidung.
 
 Eine Beschreibung ist das eine Thema, das nicht Sache eines einzigen Bereichs
-ist: ein Name bedeutet überall im Ordner dasselbe, also wird die Seite eines
-Elements dort geschrieben, wo es definiert ist, *und* überall, wo ein Bereich
-es zeichnet und sagt, was es dort bedeutet. Der Verlauf dieses Elements ist die
-Vereinigung dieser Seiten, und eine Zeile unter der Auswahl nennt die Bereiche,
-die sie liest. Eine wiederherzustellen bleibt Sache dieses Bereichs: es setzt
-zurück, was die Seite dieses Bereichs sagte, und die anderen gehören jenen zum
-Wiederherstellen.
+ist: ein Name bedeutet überall in der Organisation dasselbe, also wird die
+Seite eines Elements dort geschrieben, wo es definiert ist, *und* überall, wo
+ein Bereich es zeichnet und sagt, was es dort bedeutet. Der Verlauf dieses
+Elements ist die Vereinigung dieser Seiten, und eine Zeile unter der Auswahl
+nennt die Bereiche, die sie liest. Eine wiederherzustellen bleibt Sache dieses
+Bereichs: es setzt zurück, was die Seite dieses Bereichs sagte, und die anderen
+gehören jenen zum Wiederherstellen.
 
 **Wiederherstellen.** Mit einer gewählten Momentaufnahme macht **Diese Version
 wiederherstellen…** das Diagramm, die Beschreibung oder die Entscheidung wieder
@@ -366,12 +458,15 @@ lässt Elemente weg, die nicht mehr existieren, und sagt, wie viele.
 **Beschriftungen.** **Beschriften…** auf einer gewählten Momentaufnahme gibt ihr
 ein eigenes Wort — „Dem Vorstand gezeigt“ — das neben ihrer Nachricht steht, nie
 an ihrer Stelle. Eine Beschriftung reist mit dem Verlauf, sodass ein Kollege
-dieselbe Markierung an derselben Stelle sieht, in dieser App oder in jedem
-git-Client. Zwei Beschriftungen mit demselben Namen in einem Ordner werden
-abgelehnt; wählen Sie ein anderes Wort.
+dieselbe Markierung an derselben Stelle sieht; in einem Ordner ist sie ein
+git-Tag, den jeder git-Client zeigt. Zwei Beschriftungen mit demselben Namen
+werden abgelehnt; wählen Sie ein anderes Wort.
 
-Ohne git bietet die App nichts davon an, und alles andere funktioniert wie
-gewohnt.
+**Momentaufnahmen, die die App selbst macht**, wo ein Verlauf geführt wird:
+bevor eine Arbeitsdatei ersetzt, was hier ist, bevor ein Ordner von seinem
+Remote geholt wird, und bevor ein Ordner aus einer älteren Version umgewandelt
+wird. Jede ist nach dem benannt, dem sie voranging, sodass das, was da war,
+wiederhergestellt werden kann.
 
 ## Der Arbeitsbereich
 
@@ -379,23 +474,22 @@ Ein offenes Projekt: eine Leiste oben, der Editor darunter.
 
 | In der Leiste | Was es tut |
 |---|---|
-| **Projekte…** | Zurück zum Organisationsbildschirm |
+| **Die Brotkrumen** | Die Organisation, jeder Bereich dazwischen, und der offene fett; jeder ist ein Weg zum Zuhause dieses Bereichs, und der Name der Organisation ist der Weg zurück zum ersten Bildschirm |
 | **Einstellungen…** | Der Name dieses Bereichs und wo er abgelegt ist, und seine Standardwerte: der Autor, der auf einem exportierten Diagramm genannt wird, und die betrieblichen Aspekte, mit denen eine neue Landschaft beginnt. Einen Bereich zu verschieben legt ihn unter einem anderen ab und lässt seinen Inhalt unberührt |
-| **Speichern…** | **Arbeitsdatei** (`.lvarch`) ist alles: Geometrie, Gestaltung, Ihre eigenen Logos, fixierte Routen — Ihr ganzer Arbeitsordner in einer Datei, jeder Bereich darin. Auf dem Desktop bietet das Menü auch **Momentaufnahme…** und **Verlauf…** |
-| **Öffnen…** | Lädt beides und erkennt am Inhalt der Datei, welches von beiden es ist, nicht am Namen |
+| **⋯** | In einem Browser das Menü: **Öffnen…**, **Speichern**, **Kopie der Arbeitsdatei speichern…**, **Snapshot erstellen…**, **Verlauf…**, das Design und Help. Auf dem Desktop stehen dieselben Einträge in der Menüleiste |
 | **Aktivität** | Was sich an diesem Projekt seit dem Öffnen geändert hat — eine Liste benannter Schritte mit der Uhrzeit jedes einzelnen. Nur lesend: ⌘Z ist der Weg zurück |
-| **Design** | Hell, dunkel oder System. System folgt Ihrem Rechner und wechselt mit ihm |
-| **Gespeichert · hh:mm** | Wo das Projekt steht: die Uhrzeit, zu der es zuletzt geschrieben wurde, oder **Ungespeicherte Änderungen**, **Wird gespeichert…**, **Auf der Festplatte geändert**, **Hier und auf der Festplatte geändert** |
+| **Gespeichert · hh:mm** | Wo das Projekt steht: die Uhrzeit, zu der es zuletzt geschrieben wurde, oder **Ungespeicherte Änderungen**, **Wird gespeichert…**, **Anderswo geändert**, **Hier und anderswo geändert**, **Nicht gespeichert — Speicher verweigert** |
 
 Alles wird automatisch gespeichert, während Sie arbeiten: drei Sekunden nachdem
 Sie aufhören, beim Verlassen des Fensters und beim Schließen — und Schließen mit
 ungespeicherter Arbeit fragt zuerst. In einem Browser ohne Ordner sagt die App
-einmal, wenn ihr Speicher zu etwa vier Fünfteln voll ist — das ist die einzige
+einmal, wenn ihr Speicher zu etwa vier Fünfteln voll ist. Das ist die einzige
 Warnung, die Sie bekommen, weil ein Browser ohne Nachfrage aufhört zu speichern.
-Verweigert der Speicher rundweg (voll, oder in einem privaten Fenster
-blockiert), sagt die Leiste unten es einmal, und der Editor arbeitet weiter;
-speichern Sie dann eine Arbeitsdatei, denn ohne Speicher ist das Projekt weg,
-wenn der Tab geschlossen wird.
+Wird ein Speichern verweigert, sagt die Leiste **Nicht gespeichert — Speicher
+verweigert**, und der Editor arbeitet weiter. In einem Tab, der nichts
+aufbewahrt, sagt die Leiste es von Anfang an. Speichern Sie in beiden Fällen
+eine Arbeitsdatei, denn sonst ist die Arbeit weg, wenn der Tab geschlossen
+wird.
 Jede Meldung (gespeichert, geladen, fehlgeschlagen) erscheint in dieser unteren
 Leiste.
 
@@ -612,6 +706,19 @@ Lanes, Tasks, Ereignisse, Gateways, Flüsse und Nachrichten, schreibgeschützt.
 Die Seite eines Prozesselements ist der Ort, wo einer hingehört (seine
 `realises`-Zeile sagt, für welche Fähigkeit er das Wie ist), und eine Datei ohne
 Diagrammabschnitt wird als Text unter einer Zeile gezeigt, die sagt, warum.
+
+**Bilder.** Fügen Sie ein Bild in den Text ein oder ziehen Sie es hinein, um es
+hinzuzufügen: PNG, JPEG, SVG oder WebP. **Bilder** neben der Quelle listet jedes
+Bild, das der Bereich hält, mit **Einfügen**, um eines auf diese Seite zu
+setzen, und **Bild löschen**, um eines zu entfernen. Der Text nennt ein Bild
+bei seinem Namen, `![Bildunterschrift](image:floor-plan.png)`, wo auch immer
+der Bereich aufbewahrt wird. Eine Seite legt alle Bilder sofort in ihrer
+eigenen Größe an und holt eines erst, wenn es ins Bild scrollt. Eine lange
+Seite öffnet sich also schnell, und nichts auf ihr verschiebt sich, wenn die
+Bilder ankommen. Ein Bild, das nicht gezeigt werden kann, zeigt seine
+Bildunterschrift. Nur Bilder, die beim Bereich aufbewahrt sind, werden
+gezeichnet: eine Webadresse erscheint als Bildunterschrift, und die App holt
+nie etwas.
 
 ## Entscheidungen
 
@@ -1265,7 +1372,7 @@ Klicken Sie mit rechts auf einen Diagrammreiter, **Diagrammeinstellungen…**.
 Zwei Wege hinaus, für zwei Zwecke.
 
 - **Die Arbeitsdatei** (`.lvarch`) ist alles und ist das, was Sie jemandem
-  geben, der weiterbearbeiten wird. Sie ist Ihr **ganzer Arbeitsordner** in
+  geben, der weiterbearbeiten wird. Sie ist Ihre **ganze Organisation** in
   einer Datei, **mit einem Passwort versiegelt**: Sie werden beim Speichern
   der Kopie danach gefragt — zweimal, denn ein verlorenes Passwort lässt sich
   nicht wiederherstellen — und wer die Datei öffnet, wird erneut gefragt.
@@ -1277,12 +1384,23 @@ Zwei Wege hinaus, für zwei Zwecke.
   eines anderen voller Namen auf, die ins Leere zeigen. Die Datei heißt nach
   Ihrer Organisation. Arbeitsdateien aus früheren Versionen lassen sich
   weiterhin öffnen, versiegelt oder nicht, und eine Datei mit einem einzigen
-  Bereich öffnet weiterhin als dieser Bereich. **Beim Öffnen wird gefragt,
-  wohin sie soll**: *Ein neuer Ordner…* macht sie zu einem eigenen
-  Arbeitsordner und bringt Sie dorthin, was Sie geöffnet hatten bleibt
-  unberührt; *… hier ersetzen* schreibt sie über den Bereich, in dem Sie
-  stehen, und alles darunter, und sagt das vorher. Ein Ordner, der schon
-  etwas enthält, wird erst nach einem zweiten Ja überschrieben.
+  Bereich öffnet weiterhin als dieser Bereich. Sie ist auch der Weg, auf dem
+  Arbeit **zwischen Orten** wandert: eine aus dem Ordner des Desktops
+  gespeicherte Datei öffnet sich in diesem Browser, oder umgekehrt, Byte für
+  Byte gleich, mit allen Bildern. **Beim Öffnen wird gefragt, wohin sie
+  soll**:
+  - **Ein neuer Ordner…**, wo ein Ordner gewählt werden kann, macht sie zu
+    einem eigenen Arbeitsordner und bringt Sie dorthin; was Sie geöffnet
+    hatten, bleibt unberührt. Ein Ordner, der schon etwas enthält, wird erst
+    nach einem zweiten Ja überschrieben.
+  - **… hier ersetzen** schreibt sie über den Bereich, in dem Sie stehen, und
+    alles darunter, und sagt das vorher. Wo ein Verlauf geführt wird, wird
+    zuerst eine Momentaufnahme gemacht, sodass das, was da war,
+    wiederhergestellt werden kann. Wo keiner geführt wird, ist es weg.
+
+  Jeder Bereich in der Datei kommt an, oder keiner. Ist sie angekommen,
+  prüft die App, was ankam, gegen das, was die Datei zu halten sagt, und sagt
+  es.
 - **PNG-Export** (die Download-Schaltfläche) öffnet einen Dialog mit einer
   Vorschau des Bildes, wie es hinausgeht: im hellen oder im dunklen Design,
   unabhängig von dem auf dem Bildschirm, mit der Beschriftung jeder Linie oder
