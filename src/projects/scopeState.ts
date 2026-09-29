@@ -102,8 +102,9 @@ export type ImageCommand =
 export type DescribeCommand = { type: 'scope.describe'; patch: ScopeDescription }
 
 /**
- * A scope's content made equal to one that arrives whole, and used for that
- * alone: a working set landed on a scope, and a scope built from an example.
+ * A scope's content made equal to a content that arrives whole, and used for
+ * that alone: a set of scopes a person hands over, landed on one, and a scope
+ * built from an example.
  * Never the open scope's own writes, which are the commands its session
  * applied, and never a restore, which is the model's own command and keeps
  * what a restore keeps.

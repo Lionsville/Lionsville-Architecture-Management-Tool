@@ -172,8 +172,9 @@ names a source and its display name, not a kind of storage.
 
 **The rule, enforced:**
 - **No imports across the line.** Nothing outside `adapters/`,
-  `platform/node/`, `electron/` and the composition root imports an
-  implementation, or the folder format.
+  `platform/node/`, `electron/`, the providers built on them (`providers/`,
+  *As built: the app on the repositories*) and the composition root imports
+  an implementation, or the folder format.
 - **No storage words in logic.** A test fails when app, domain or UI code
   names a storage mechanism in code, and a list of known exceptions only
   shrinks.
@@ -870,3 +871,30 @@ The storage line lost one file and two words: 50 files naming storage, with
     store's own requests. The stores in node refuse a breach, so the fast
     loop catches it whichever browser would have forgiven it. The
     repositories compute every digest before the transaction opens.
+
+## As built, 29 September 2026: the app on the repositories
+
+**A provider is a layer of its own.** §4 says choosing a folder, recent
+folders and watching one become the folder provider's chrome and way in, and
+that a person may be told about their folder where that chrome speaks. No
+place in the tree could hold such a chrome: the app may name no storage, and
+an adapter fills one seam and draws nothing. So `src/providers/` holds each
+place work is kept, whole, in the shape a provider registered from outside
+has (ADR-0022): the adapters it is built on, its way in, and the chrome it
+draws.
+- **What it may know.** The adapters, the ports, the model and the projects'
+  words, the platform, the words and the widgets. It draws in the language
+  that is on, as any provider's chrome does.
+- **Who may know it.** The composition root registers the three that ship,
+  and nothing else imports one: not the app, which reaches a provider through
+  the registry, and not an adapter, which stays free of screens.
+- **The line.** The storage line reads it as an implementation: its chrome is
+  where the words about a folder are spoken. It holds composition and chrome,
+  and no logic of its own; what it computes goes to the adapter it is built on
+  or to the domain.
+
+**Where a folder in a browser tab keeps its history.** A tab has no git to
+run. Its folder's history is kept in memory (`adapters/folder/memoryGit.ts`,
+a product adapter now and no longer test support), for as long as the tab is
+open, and the folder's chrome says so. A history kept in the browser's
+database beside the folder is the next step for that folder.

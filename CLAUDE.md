@@ -520,6 +520,20 @@ src/adapters/     The outside world, one folder per flavour.
                                       (`earlierScopes`): copied, never moved
                     desktop/          the Electron channel's types, and what the
                                       desktop keeps that is not the folder
+src/providers/    A place work is kept, whole (ADR-0031 §4, as built): the
+                  adapters it is built on, its way in, and the chrome it draws
+                  — in the language that is on, and in the words of how it
+                  keeps work, which nothing else may say. Composition and
+                  chrome only: what it computes is its adapter's or the
+                  domain's. Registered by `app/composition.ts` and imported by
+                  nothing else; it may import the adapters, the ports, the
+                  projects, the model, the platform, the words and the widgets.
+                    folder/           the folder's source: the picker, a folder on
+                                      the desktop (its git, its step ids, the
+                                      person's sync settings) and in a tab
+                    browserStorage/   this browser's database, and the work its
+                                      key-value storage kept before
+                    memory/           nowhere at all
 src/app/          The shell around the editor.
                     main.tsx          composition root. Read its header first.
                     bootReads         what a first paint waits on besides the
@@ -615,7 +629,7 @@ narrowing costs nothing: no wrappers, just a smaller type.
 `eslint.config.js` and generated into one rule per module, each with its own
 sentence. `model` is the bottom and knows nobody; `app` is the top and knows
 everyone; nobody imports `app`, and nobody but `app/composition.ts` imports
-`adapters`. `model`, `layout`, `platform`, `ports`, `projects`, `i18n` and
+`adapters` or `providers`. `model`, `layout`, `platform`, `ports`, `projects`, `i18n` and
 `agent` may not import React, MUI, Emotion or React Flow at all — nor a `ui/`
 file, nor the barrel of a module that re-exports one, which is the same rule one
 step out: `agent/commandFor.ts` said `from '../business'` for six pure functions
@@ -632,8 +646,8 @@ imports that survive compilation and fails on a loop between two files or
 between two modules (the composed string table set aside, as the matrix sets
 it aside); the one loop of types between modules, `ports` ↔ `projects`, is
 listed there by name. **And the domain speaks no storage** (ADR-0031 §4):
-`build/storageLine.test.ts` fails when a file outside the implementations and
-the composition root imports an implementation or the folder format, or names
+`build/storageLine.test.ts` fails when a file outside the implementations, the
+providers built on them and the composition root imports an implementation or the folder format, or names
 a storage mechanism in an identifier or a string in its code — `kind ===
 'folder'` and `'scope.json'` included. `build/storageLine.ts` lists the words,
 with why each is on the list or off it, and the exceptions the tree had when
