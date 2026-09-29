@@ -40,7 +40,7 @@
  * the price of not building a channel for it.
  */
 import { Menu, MenuItem, webContents } from 'electron'
-import type { MenuItemConstructorOptions } from 'electron'
+import type { MenuItemConstructorOptions, WebContents } from 'electron'
 import type { DesktopDirectory } from '../../src/adapters/desktop/channel'
 import { fileMenuSlot, helpMenuTail, replacingSlot } from './menuLayout'
 import type { HostCommand } from '../../src/platform/hostCommands'
@@ -52,22 +52,53 @@ import type { ThemeMode } from '../../src/platform/theme'
 import { EN } from '../../src/platform/strings/en'
 
 /**
- * Commands sent before anything in the window listens: held, and sent the
- * moment something does (`app:listening`, from the preload), in the order
- * they were sent. The boot reads the preferences, opens where work is kept
- * and may pull a folder before the app is up to hear a menu item, and a
- * command sent then was one that silently did nothing.
+ * Commands sent while nothing in the window listens: held, and sent the moment
+ * something does (`app:listening`, from the preload), in the order they were
+ * sent. The boot reads the preferences, opens where work is kept and may pull
+ * a folder before the app is up to hear a menu item, and a command sent then
+ * was one that silently did nothing.
  *
- * A window that never says it listens — its renderer crashed before the app
- * was up — is never sent anything, so what waits for it is bounded: the first
- * {@link HELD_AT_MOST} are kept, and any sent after them are dropped, as every
- * early command was before. A person does not press a menu item that many
- * times into a window that shows nothing, and the documents the OS hands over
- * wait in main as paths, not here (`index.ts`).
+ * **When the window stops listening.** A window made, a navigation of its page
+ * begun — a reload, the crash dialog's *Reload* — and a renderer gone all mean
+ * the page that listened is gone, so commands are held again until the next
+ * one says it listens ({@link holdUntilHeard}).
+ *
+ * **Only a way somewhere is held.** A command about the scope that is open —
+ * undo, delete the selection, save, snapshot — was pressed at a page that is
+ * not there any more, and run into whatever the new one opens it would act on
+ * something nobody pressed it at. Those are dropped while held; opening,
+ * reopening, a document, the preferences, the theme and Help's pages are kept.
+ *
+ * **Before the documents.** The documents the OS handed over wait in main as
+ * paths (`index.ts`) and are read and sent once the window listens, after the
+ * held commands: a document is what was asked for last, and what it opens
+ * stays open.
+ *
+ * **Bounded.** A window that never says it listens — its renderer crashed
+ * before the app was up — is never sent anything, so what waits for it is at
+ * most {@link HELD_AT_MOST}; any sent after them are dropped, as every early
+ * command was before.
  */
 export const HELD_AT_MOST = 16
+const KEPT_WHILE_HELD: ReadonlySet<HostCommand['type']> = new Set<HostCommand['type']>([
+  'connect', 'reopen', 'open', 'openDocument', 'preferences', 'theme', 'connectAgent', 'manual', 'shortcuts',
+])
 const held: HostCommand[] = []
 let listening = false
+
+/** Hold commands for this window until its page says it listens, and again whenever that page goes. */
+export function holdUntilHeard(contents: Pick<WebContents, 'on'>): void {
+  listening = false
+  contents.on('did-start-navigation', (details) => {
+    if (details.isMainFrame && !details.isSameDocument) listening = false
+  })
+  contents.on('render-process-gone', () => { listening = false })
+}
+
+/** Does the window listen now? Main's documents wait on the same answer. */
+export function commandsListened(): boolean {
+  return listening
+}
 
 /**
  * To the focused window, and to the only window when none is focused.
@@ -78,7 +109,7 @@ let listening = false
  */
 export function sendCommand(command: HostCommand): void {
   if (!listening) {
-    if (held.length < HELD_AT_MOST) held.push(command)
+    if (held.length < HELD_AT_MOST && KEPT_WHILE_HELD.has(command.type)) held.push(command)
     return
   }
   const all = webContents.getAllWebContents().filter((open) => !open.isDestroyed())

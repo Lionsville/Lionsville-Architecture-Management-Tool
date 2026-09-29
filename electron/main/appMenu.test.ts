@@ -26,7 +26,20 @@ vi.mock('electron', () => ({
 }))
 
 const save: HostCommand = { type: 'save' }
+const undo: HostCommand = { type: 'undo' }
 const reopen: HostCommand = { type: 'reopen', key: '/work/architecture' }
+const connect: HostCommand = { type: 'connect' }
+
+/** A window's contents, as far as holding commands for it goes: its events, raised by the test. */
+function contents() {
+  const listeners = new Map<string, ((details: unknown) => void)[]>()
+  return {
+    on: (event: string, listener: (details: unknown) => void) => {
+      listeners.set(event, [...listeners.get(event) ?? [], listener])
+    },
+    raise: (event: string, details: unknown = {}) => { for (const listener of listeners.get(event) ?? []) listener(details) },
+  }
+}
 
 async function fresh() {
   vi.resetModules()
@@ -58,15 +71,61 @@ describe('the commands main sends the window', () => {
   it('keeps the order of the commands it held', async () => {
     const menu = await fresh()
     menu.sendCommand(reopen)
+    menu.sendCommand(connect)
+    menu.commandsHeard()
+    expect(commands()).toEqual([reopen, connect])
+  })
+
+  it('holds only a way somewhere: a command about the scope that was open is not run into the next one', async () => {
+    const menu = await fresh()
+    menu.sendCommand(undo)
+    menu.sendCommand(reopen)
     menu.sendCommand(save)
     menu.commandsHeard()
-    expect(commands()).toEqual([reopen, save])
+    expect(commands()).toEqual([reopen])
   })
 
   it('holds no more than a bounded few for a window that never listens', async () => {
     const menu = await fresh()
-    for (let pressed = 0; pressed < menu.HELD_AT_MOST + 10; pressed += 1) menu.sendCommand(save)
+    for (let pressed = 0; pressed < menu.HELD_AT_MOST + 10; pressed += 1) menu.sendCommand(connect)
     menu.commandsHeard()
     expect(commands()).toHaveLength(menu.HELD_AT_MOST)
+  })
+
+  it('holds again after the page reloads, until the reloaded page listens', async () => {
+    const menu = await fresh()
+    const window = contents()
+    menu.holdUntilHeard(window as never)
+    menu.commandsHeard()
+    window.raise('did-start-navigation', { isMainFrame: true, isSameDocument: false })
+    menu.sendCommand(reopen)
+    expect(sent).toEqual([])
+    expect(menu.commandsListened()).toBe(false)
+    menu.commandsHeard()
+    expect(commands()).toEqual([reopen])
+  })
+
+  it('holds again once the renderer is gone, and for a window made anew', async () => {
+    const menu = await fresh()
+    const window = contents()
+    menu.holdUntilHeard(window as never)
+    menu.commandsHeard()
+    window.raise('render-process-gone')
+    menu.sendCommand(connect)
+    expect(sent).toEqual([])
+    menu.commandsHeard()
+    menu.holdUntilHeard(contents() as never)
+    menu.sendCommand(reopen)
+    expect(commands()).toEqual([connect])
+  })
+
+  it('goes on sending where the page only moved within itself', async () => {
+    const menu = await fresh()
+    const window = contents()
+    menu.holdUntilHeard(window as never)
+    menu.commandsHeard()
+    window.raise('did-start-navigation', { isMainFrame: true, isSameDocument: true })
+    menu.sendCommand(save)
+    expect(commands()).toEqual([save])
   })
 })

@@ -26,7 +26,7 @@ import { extname, isAbsolute, join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { basename } from 'node:path'
 import { readFile } from 'node:fs/promises'
-import { commandsHeard, installAppMenu, reportScopeOpen, reportTheme, sendCommand } from './appMenu'
+import { commandsHeard, commandsListened, holdUntilHeard, installAppMenu, reportScopeOpen, reportTheme, sendCommand } from './appMenu'
 import { productName } from '../../package.json'
 import { isThemeMode } from '../../src/platform/theme'
 import { USER_DATA_NAME } from '../../src/platform/userData'
@@ -184,6 +184,8 @@ function createWindow(): BrowserWindow {
   })
 
   window.once('ready-to-show', () => window.show())
+  // Nothing in a new window listens yet, nor after its page navigates or its renderer goes.
+  holdUntilHeard(window.webContents)
   // A window made after the agent server came up inherits its rule (ADR-0007).
   keepPaintingForAgent(window.webContents)
 
@@ -288,10 +290,11 @@ if (UNATTENDED) {
  * Double-clicking a `.lvarch` in Finder starts the app and fires `open-file`
  * before there is a window, never mind a React tree with a subscription in it.
  * Sending the command then is sending it into the dark, so it waits here for
- * the renderer to say it is listening (`app:listening`, from the preload).
+ * the renderer to say it is listening (`app:listening`, from the preload) —
+ * the same answer the menu's commands wait on (`appMenu.ts`), which is also
+ * what says the window stopped listening.
  */
 const waiting: string[] = []
-let listening = false
 
 /**
  * Does the window have work in it that closing would lose?
@@ -319,7 +322,7 @@ function documentIn(argv: readonly string[]): string | undefined {
  * their project.
  */
 function openDocument(path: string): void {
-  if (!listening) { waiting.push(path); return }
+  if (!commandsListened()) { waiting.push(path); return }
   void readFile(path).then(
     (bytes) => {
       app.addRecentDocument(path)
@@ -421,8 +424,8 @@ void app.whenReady().then(() => {
   // And the third: whether a scope is open, so the items about one are enabled only while it is.
   ipcMain.handle('app:scopeOpen', (_event, held: unknown) => { reportScopeOpen(held === true) })
 
+  // The held commands first, then the documents: see `appMenu.ts`.
   ipcMain.handle('app:listening', () => {
-    listening = true
     commandsHeard()
     for (const path of waiting.splice(0)) openDocument(path)
   })
