@@ -99,8 +99,7 @@ const landscape: ScopeSnapshot = {
 const scopes = example.map((scope) => (scope.path === landscape.path ? landscape : scope))
 
 /** The memory repositories, with every picture asked of them written down. */
-function counted(): { repositories: HeldRepositories; asked: string[] } {
-  const held = heldRepositories(scopes)
+function counted(held: HeldRepositories = heldRepositories(scopes)): { repositories: HeldRepositories; asked: string[] } {
   const asked: string[] = []
   const images: ImageRepository = {
     id: held.images.id,
@@ -188,6 +187,17 @@ describe('pictures, through the app', () => {
     await waitFor(() => expect(onScreen('route.png').getAttribute('src')).toBeTruthy())
     await settled()
     expect(asked).toEqual(['route.png'])
+  })
+
+  it('the organisation\'s home, whose scope holds pictures too, asks for none of them', async () => {
+    const pictured = scopes.map((scope) => (scope.path === '' ? { ...scope, imageLibrary: [{ file: 'map.png', url: png(800, 600) }] } : scope))
+    const { repositories, asked } = counted(heldRepositories(pictured))
+    await repositories.ready
+    expect((await repositories.read(''))?.images?.map((entry) => entry.name)).toEqual(['map.png'])
+    renderApp({ repositories, boot: { initialProject: undefined } })
+    expect(await screen.findByTestId('organisation-name')).toBeDefined()
+    await settled()
+    expect(asked).toEqual([])
   })
 
   it('a report asks for what it prints, when it is produced, and for nothing before', async () => {
