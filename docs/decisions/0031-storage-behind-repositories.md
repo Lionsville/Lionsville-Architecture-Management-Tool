@@ -701,9 +701,16 @@ library down, with the source's image repository as the source.
   as the `img`'s, and the ratio between them as its box's. The box is the size
   it will be before a byte arrives, and only its paint changes when they do.
   An entry of zeros — an SVG with neither a size nor a view box — is laid
-  out 640 by 480, and its picture fitted inside. `Pictures.browser.test.tsx`
-  holds this in Chromium and WebKit: every picture and paragraph is where it
-  was, to the pixel, once the bytes are decoded and painted.
+  out 640 by 480. Such an SVG has no shape of its own: a browser draws it as
+  300 by 150 of its own units and cuts off whatever it draws outside them,
+  and that is what is fitted in the box. Fitting what it draws would need the
+  extent of its drawing, which only drawing it tells, and laying it out from
+  that would move the page when it arrived. `minHeight: 0` and `overflow:
+  hidden` let a box yield to a flex column shorter than it, its picture
+  fitted in the smaller box. `Pictures.browser.test.tsx` holds this in
+  Chromium and WebKit: every picture and paragraph is where it was, to the
+  pixel, once the bytes are decoded and painted, in a document and in a
+  flex column.
 - **Asked for when in view.** One `IntersectionObserver` per provider, a
   little ahead of the visible part. A picture far down a long document is
   never asked for. In a test the watch is handed in and driven by hand. The
@@ -718,10 +725,13 @@ library down, with the source's image repository as the source.
   first, and never drops bytes being shown, or bytes a place is waiting to
   show: asking and showing are one call, so a burst of more pictures than it
   keeps shows every one. The bound is a count of pictures, not of bytes: at
-  most 48 pictures nobody shows, each no larger than a picture may be (two
-  megabytes), so a hundred megabytes at worst beyond what is on screen, and
-  what is on screen is not bounded by the cache but by the page. One cache
-  per provider, gone with it. A picture whose bytes are kept is drawn before the
+  most 48 pictures nobody shows. A picture added through the app, by a
+  person or the agent, is at most two megabytes, so about a hundred megabytes
+  beyond what is on screen where every picture came that way. A source may
+  also hold pictures that came another way — a file put in a folder by hand,
+  or one that arrived through its history — which may be of any size, and
+  each counts as one picture all the same. What is on screen is bounded by
+  the page, not the cache. One cache per provider, gone with it. A picture whose bytes are kept is drawn before the
   browser paints, asking nothing. The address a browser draws from is made
   when a place first shows a picture and let go when the last one stops. A
   picture is the scope, its name and its content address, so bytes changed

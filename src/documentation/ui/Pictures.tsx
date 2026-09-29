@@ -205,8 +205,9 @@ const FAILED = { color: 'text.secondary', fontStyle: 'italic' } as const
 
 /**
  * The shape a picture that declares no size — an SVG with neither a size nor
- * a view box — is laid out in before it arrives, and shown fitted inside
- * after: a box that changed when the picture came would move the page.
+ * a view box — is laid out in before it arrives: a box that changed when the
+ * picture came would move the page. What is fitted inside is what a browser
+ * draws of such an SVG, 300 by 150 of its own units and nothing outside them.
  */
 const UNSIZED = { width: 640, height: 480 } as const
 
@@ -219,7 +220,7 @@ const UNSIZED = { width: 640, height: 480 } as const
  * arrives. The page shows it no taller than most of the window, so a tall
  * screenshot does not take the page with it; the picture is fitted inside the
  * box, not the box to the picture. An entry that declares no size is laid
- * out in {@link UNSIZED}'s shape, and its picture fitted inside that.
+ * out in {@link UNSIZED}'s shape.
  *
  * `minHeight: 0` and `overflow: hidden` let the box yield to a flex column
  * shorter than it, its picture fitted inside the smaller box, where a flex

@@ -39,7 +39,11 @@ async function drawn(width: number, height: number): Promise<Uint8Array> {
   return new Uint8Array(await blob.arrayBuffer())
 }
 
-/** An SVG that declares no size at all: laid out in the default shape, and drawn a tall strip inside it. */
+/**
+ * An SVG that declares no size at all: laid out in the default shape. A
+ * browser draws such an SVG as 300 by 150 of its own units, so its tall strip
+ * is cut off at 150, and that drawing is fitted in the box.
+ */
 const UNSIZED = new TextEncoder().encode('<svg xmlns="http://www.w3.org/2000/svg"><rect width="40" height="300" fill="#a37"/></svg>')
 
 const DOCUMENT = [
