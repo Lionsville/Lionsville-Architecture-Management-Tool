@@ -27,6 +27,12 @@ import type { KeyRange, Keyed, RangeRead, Shelf } from '../repositories/KeyedSto
 
 const GONE: unique symbol = Symbol('gone')
 
+/** Whether two spans share a key. */
+function overlaps(one: KeyRange, other: KeyRange): boolean {
+  const startsBefore = (a: KeyRange, b: KeyRange) => a.from === undefined || b.below === undefined || a.from < b.below
+  return startsBefore(one, other) && startsBefore(other, one)
+}
+
 type Held = unknown
 
 /** One write, in the order the work made it. */
@@ -60,9 +66,21 @@ export class HeldWrites {
     this.ranges.set(shelf, ranges)
   }
 
-  /** Whether anything is held for a shelf: a range over one that is not is the database's answer as it stands. */
-  touches(shelf: Shelf): boolean {
-    return this.keys.has(shelf) || this.ranges.has(shelf)
+  /**
+   * How many of the database's keys a range read needs, read through what is
+   * held, to answer as far as its limit: `untouched` where nothing held falls
+   * inside it, so the database answers as it stands; else the limit and one
+   * more for each key held gone inside it, since each can take one of the
+   * database's keys out; and no limit where a range taken out reaches into
+   * it, which may take out any number. A key held put only adds to the
+   * answer, so it asks for none more.
+   */
+  reach(shelf: Shelf, read: RangeRead): 'untouched' | { limit?: number } {
+    const inside = [...(this.keys.get(shelf) ?? [])].filter(([key]) => inRange(key, read))
+    const cut = (this.ranges.get(shelf) ?? []).some(({ range }) => overlaps(range, read))
+    if (inside.length === 0 && !cut) return 'untouched'
+    if (cut || read.limit === undefined) return {}
+    return { limit: read.limit + inside.filter(([, { value }]) => value === GONE).length }
   }
 
   /** What a get answers: what is held for the key, or else the database's answer. */

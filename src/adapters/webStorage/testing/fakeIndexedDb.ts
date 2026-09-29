@@ -39,6 +39,8 @@ export type FakeControls = {
   closeUnderPage(): void
   /** How many transactions have committed. */
   committed(): number
+  /** How many keys cursors have read, over every transaction: what a limit saves. */
+  read(): number
 }
 
 export class FakeKeyRange {
@@ -153,6 +155,7 @@ class FakeTransaction {
         const step = (): unknown => {
           found ??= inOrder(keys().filter((key) => !range || range.includes(key)), direction)
           if (at >= found.length) return null
+          this.database.read += 1
           const key = found[at]
           return { key, value: structuredClone(read(key)), continue: () => { at += 1; this.again(request, step) } }
         }
@@ -233,6 +236,7 @@ class FakeDatabase {
   private readonly queue: FakeTransaction[] = []
   readonly connections = new Set<FakeConnection>()
   commits = 0
+  read = 0
 
   /** `faults` is the whole fake's: asked for before a database exists, they wait for one. */
   constructor(readonly shelves: Shelves, private readonly faults: Fault[]) {}
@@ -330,6 +334,7 @@ export function controlledFakeIndexedDb(): { indexedDb: FakeIndexedDb; controls:
         for (const database of every()) for (const connection of [...database.connections]) connection.lose()
       },
       committed: () => every().reduce((sum, database) => sum + database.commits, 0),
+      read: () => every().reduce((sum, database) => sum + database.read, 0),
     },
   }
 }

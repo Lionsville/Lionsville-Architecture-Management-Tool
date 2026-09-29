@@ -5,7 +5,7 @@ import { IDBFactory, IDBKeyRange } from 'fake-indexeddb'
 import { describe, expect, it, vi } from 'vitest'
 import { ShellError } from '../../platform/errors'
 import { describeKeyedStore } from '../repositories/KeyedStore.contract'
-import { REPOSITORY_SHELVES } from '../repositories/KeyedStore'
+import { prefix, REPOSITORY_SHELVES } from '../repositories/KeyedStore'
 import type { Transaction } from '../repositories/KeyedStore'
 import { DATABASE_NAME, DATABASE_VERSION, IndexedDbStore } from './IndexedDbStore'
 import type { IndexedDb, Standing, StorageManagerLike } from './IndexedDbStore'
@@ -72,6 +72,62 @@ describe('IndexedDbStore', () => {
     const indexedDb = fakeIndexedDb()
     await new IndexedDbStore(indexedDb).transaction(['meta'], 'write', write(1))
     expect(await new IndexedDbStore(indexedDb).transaction(['meta'], 'read', read)).toBe(1)
+  })
+})
+
+describe('IndexedDbStore, a range read beside writes held', () => {
+  /** A store with a hundred keys under `s`, and the fake's count of keys read. */
+  async function filled() {
+    const { indexedDb, controls } = controlledFakeIndexedDb()
+    const store = new IndexedDbStore(indexedDb)
+    await store.transaction(['entries'], 'write', (tx) => {
+      for (let at = 1; at <= 100; at += 1) tx.put('entries', `s\u0000${String(at).padStart(3, '0')}`, at)
+      return Promise.resolve()
+    })
+    return { store, controls }
+  }
+
+  const newest = { ...prefix('s\u0000'), reverse: true, limit: 1 }
+
+  it('keeps its limit where the writes held fall outside it', async () => {
+    const { store, controls } = await filled()
+    const before = controls.read()
+    const found = await store.transaction(['entries'], 'write', async (tx) => {
+      tx.put('entries', 't\u0000001', 'another scope')
+      return tx.range('entries', newest)
+    })
+    expect(found).toEqual([{ key: 's\u0000100', value: 100 }])
+    expect(controls.read() - before).toBe(1)
+  })
+
+  it('reads one key more for each key held gone inside it, and answers through them', async () => {
+    const { store, controls } = await filled()
+    const before = controls.read()
+    const found = await store.transaction(['entries'], 'write', async (tx) => {
+      tx.delete('entries', 's\u0000100')
+      tx.put('entries', 's\u0000099', 'changed')
+      return tx.range('entries', newest)
+    })
+    expect(found).toEqual([{ key: 's\u0000099', value: 'changed' }])
+    expect(controls.read() - before).toBe(2)
+  })
+
+  it('answers a key held put past the newest one kept', async () => {
+    const { store } = await filled()
+    const found = await store.transaction(['entries'], 'write', async (tx) => {
+      tx.put('entries', 's\u0000101', 101)
+      return tx.range('entries', newest)
+    })
+    expect(found).toEqual([{ key: 's\u0000101', value: 101 }])
+  })
+
+  it('reads the whole span where a range held taken out reaches into it, and answers through it', async () => {
+    const { store } = await filled()
+    const found = await store.transaction(['entries'], 'write', async (tx) => {
+      tx.deleteRange('entries', { from: 's\u0000050' })
+      return tx.range('entries', newest)
+    })
+    expect(found).toEqual([{ key: 's\u0000049', value: 49 }])
   })
 })
 

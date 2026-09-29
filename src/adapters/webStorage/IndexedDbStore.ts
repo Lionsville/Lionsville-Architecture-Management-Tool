@@ -349,8 +349,9 @@ export class IndexedDbStore implements KeyedStore {
       range: async <V>(name: Shelf, read: RangeRead) => {
         const store = shelf(name)
         if (IndexedDbStore.empty(read)) return []
-        if (!writes.touches(name)) return this.cursor<V>(store, read)
-        return writes.range(name, read, await this.cursor<V>(store, { ...read, limit: undefined }))
+        const reach = writes.reach(name, read)
+        if (reach === 'untouched') return this.cursor<V>(store, read)
+        return writes.range(name, read, await this.cursor<V>(store, { ...read, limit: reach.limit }))
       },
       put: (name, key, value) => {
         shelf(name, true)
@@ -388,12 +389,14 @@ export class IndexedDbStore implements KeyedStore {
     return new Promise((resolve, reject) => {
       request.onsuccess = () => {
         const cursor = request.result
-        if (!cursor || (read.limit !== undefined && found.length >= read.limit)) {
+        if (read.limit === 0 || !cursor) {
           resolve(found)
           return
         }
         found.push({ key: String(cursor.key), value: cursor.value as V })
-        cursor.continue()
+        // Stopped at the limit rather than a key past it: a key read is a key copied out of the database.
+        if (read.limit !== undefined && found.length >= read.limit) resolve(found)
+        else cursor.continue()
       }
       request.onerror = () => reject(request.error ?? new Error('the database refused a range'))
     })
