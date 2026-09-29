@@ -212,9 +212,9 @@ implementing them yet, and the ports they replace are still there:
   - `projects/settings.ts`: settings, and the patch that changes them.
 - **A contract suite per repository**, `src/ports/*Repository.contract.ts` and
   `OrganisationIndex.contract.ts`, all taking one maker
-  (`Repositories.contract.ts`). They run against in-memory repositories
-  written for them, `src/ports/testing/memoryRepositories.ts`, which are test
-  support and not an implementation.
+  (`Repositories.contract.ts`). They ran against in-memory repositories
+  written for them as test support, which the next record replaced with the
+  memory implementation (*As built: browser storage and memory*).
 - **The rule** of §4 is `build/storageLine.test.ts`, over the data in
   `build/storageLine.ts`:
   - no imports across the line;
@@ -459,8 +459,19 @@ them are still what the app uses; nothing above the seam changed.
   little of one as they need. Memory is `MemoryStore`, and browser storage is
   `IndexedDbStore`; they differ only in where the values sit. Each store runs
   `KeyedStore.contract.ts`, the promises the repositories count on that the
-  suites cannot see: a transaction that fails lands nothing, two writing
-  transactions never interleave, and values are copies.
+  suites cannot see:
+  - a transaction that fails lands nothing, and two writing transactions
+    never interleave;
+  - a range sees its own transaction's writes, and keys sort by UTF-16 code
+    unit, as a browser's database sorts them;
+  - a read transaction, a shelf it did not name, and a value that cannot be
+    copied are refused;
+  - a request after the work has answered, or after it waited on anything but
+    the transaction's own answers, is refused, as a browser's database
+    refuses it. Memory refuses it too, rather than taking what a database
+    would not.
+  The lint refuses `indexedDB` and `IDBKeyRange` outside `adapters/`, as it
+  refuses the key-value storage.
 - **Memory is a product adapter** (`adapters/memory/memoryRepositories.ts`).
   The suites' own in-memory repositories in `ports/testing/` are gone, because
   `ports/` may not import an adapter and a second copy would only drift.
@@ -483,7 +494,9 @@ them are still what the app uses; nothing above the seam changed.
   from another source, is answered with nothing.
 - **Pictures' bytes** are kept under their scope and their content address. They
   go when the scope is removed, and not before, because an entry in the
-  scope's history may name them.
+  scope's history may name them. Bytes for a scope that is not there are
+  refused, `shell.scopeGone`: a clause in the image suite, and a key the port
+  now names.
 - **A scope that cannot be read whole** is one whose content has a later
   format than this build writes. It is shown and refuses every step.
 
@@ -499,15 +512,31 @@ IndexedDB, so its suites run over a fake of the part the store uses
 (`webStorage/testing/fakeIndexedDb.ts`), which keeps the behaviours the store
 is written around.
 
-**What a person kept before is copied once, never moved**
-(`webStorage/earlierScopes.ts`). When the database is new, every scope the
-key-value storage holds is read as its store reads it, and turned into the
-repositories' shape with the folder's own translation: a document's
-`../images/<file>` becomes `image:<name>`, and each data URL becomes bytes and a
-library entry. Each scope's first entry is the state it arrived in. Nothing is
-written to the key-value storage, so the old copy stays under its old key. A
-scope written there by an older page after the copy is not brought over
-again.
+**What a person kept before is copied, never moved**
+(`webStorage/earlierScopes.ts`, over `repositories/bring.ts`).
+- **The copy.** When the database is new, every scope the key-value storage
+  holds is read as its store reads it. It is turned into the repositories'
+  shape with the folder's own translation: a document's `../images/<file>`
+  becomes `image:<name>`, and each data URL becomes bytes and a library entry.
+  A picture whose file name says nothing, or the wrong thing, about its bytes
+  takes the extension its data URL says. Each scope keeps when it was last
+  saved, and its first entry is the state it arrived in.
+- **What will not read is left, and said.** Each scope and each picture is
+  read on its own. A text, a scope or a picture that will not read stays
+  where it was, the rest comes over, and the note kept with the repositories
+  lists what was left, so a person can be told.
+- **Every start looks again.** The note keeps, per address, the revision and
+  time of the text brought. A scope an older page changed or added there since
+  is brought again as an entry of its own. It comes after an entry that keeps
+  what was here, and a scope here that cannot be read whole is not written
+  over and is named.
+- **One key is written: a marker.** It sits outside every key a scope or a
+  preference is kept under, so an older build ignores it, and it says a copy
+  was made. Every other key stays byte for byte as it was. Where the marker is
+  there and the database is new, the database was lost after a copy, and what
+  the key-value storage holds may be long out of date. Nothing is brought:
+  the standing says a person must choose (`Earlier`: `standing`, `bringOver`,
+  `leave`), for the app to ask when it moves onto the repositories.
 
 **Where the build departed from the text.**
 - **Two implementations share one set of repositories.** §2 names browser

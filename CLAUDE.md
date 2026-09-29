@@ -499,9 +499,9 @@ src/adapters/     The outside world, one folder per flavour.
                                       `MemoryStore`
                     webStorage/       …and `browserRepositories`, the five over
                                       this browser's IndexedDB (`IndexedDbStore`),
-                                      started once with a copy of the scopes the
-                                      key-value storage kept (`earlierScopes`),
-                                      which it never writes
+                                      with the scopes the key-value storage kept
+                                      brought in at every start
+                                      (`earlierScopes`): copied, never moved
                     desktop/          the Electron channel's types, and what the
                                       desktop keeps that is not the folder
 src/app/          The shell around the editor.
