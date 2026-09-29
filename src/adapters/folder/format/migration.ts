@@ -2,162 +2,35 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * Two migrations, and they are not the same kind of thing.
- *
- * **Out of browser storage and into the folder** (ADR-0003). It copies, and
- * deletes nothing: three rules, on {@link copyScopesInto}.
- *
- * **Out of an older file format and into this one** (ADR-0012 §11). It rewrites
+ * Out of an older file format and into this one (ADR-0012 §11). It rewrites
  * in place, because a folder cannot hold two versions of itself. The fold is
  * `migrate3to4.ts`; what lives here is the pass over a whole store — ask which
  * scopes are old, record the folder before touching it, then read each one and
  * write it back ({@link upgradeProjects}).
  *
- * They share a file because they share the shape a caller wants: narrow
- * structural seams rather than a `ProjectStore`, a tally of counts and never
- * names, and a failure that is one project rather than the run.
+ * A narrow structural seam rather than a whole store, a tally of counts and
+ * never names, and a failure that is one scope rather than the run. Copying
+ * what a browser kept into a folder is the repositories' now
+ * (`projects/copyScopes.ts`).
  */
 import { bareScope, flattenScopes } from '../../../projects/scope'
 import type { ScopeKind, ScopeSnapshot, ScopeSummary } from '../../../projects/scope'
 import { ancestorScopes, ROOT_SCOPE, scopePathLabel } from '../../../projects/scopePath'
 import type { ScopePath } from '../../../projects/scopePath'
 
-/** Where the scopes are coming from: enough to see them and read them. */
-export type ScopeSource = {
-  list(): Promise<ScopeSummary>
-  load(path: ScopePath): Promise<ScopeSnapshot | undefined>
-}
-
-/** Where they are going: enough to see what is already there, and to write. */
-export type ScopeTarget = ScopeSource & {
-  save(scope: ScopeSnapshot): Promise<void>
-}
-
 /**
- * What happened. The trail gets counts and never names — a log is not a
- * document — so `unread` is for the caller to say, and its length for the log.
- */
-export type MigrationTally = {
-  scopes: number
-  /** Already in the folder, and therefore left exactly as they were. */
-  kept: number
-  failed: number
-  /**
-   * The paths the source's listing named as unreadable (ADR-0028, amended):
-   * nothing at or under each was copied, because the listing could not say
-   * what is there. Said rather than left out, so a copy that looks complete
-   * is one that is.
-   */
-  unread: readonly ScopePath[]
-}
-
-export const NOTHING_MIGRATED: MigrationTally = { scopes: 0, kept: 0, failed: 0, unread: [] }
-
-/**
- * The projects in browser storage, copied into the folder.
- *
- * The desktop app kept its user's documents in a leveldb inside `userData`
- * (ADR-0003). The moment somebody chooses a folder, those projects have to
- * follow them there — a migration that leaves the old work behind is not a
- * migration, it is a fresh start with a confusing name.
- *
- * **Nothing is deleted.** Not the old records, not on a later run either. This
- * copies; the browser's copy stays until somebody decides it may go, and until
- * then a folder that turns out to be on an unplugged drive costs nothing.
- *
- * **Nothing already in the folder is touched.** A project the folder already
- * holds under the same ref is the newer one by definition — it is where the
- * work has been happening — and a migration that overwrote it would be the
- * worst kind of data loss: silent, and triggered by choosing a folder.
- *
- * **A failure is one project, not the run.** A landscape that will not read is
- * skipped and counted; the other eleven still arrive. One the listing itself
- * could not read is not in the tree it answers, so it is named in `unread`
- * rather than skipped in silence.
- */
-export async function copyScopesInto(
-  from: ScopeSource, into: ScopeTarget,
-): Promise<MigrationTally> {
-  const tally = { ...NOTHING_MIGRATED }
-  let summaries: readonly ScopeSummary[]
-  try {
-    const listing = await from.list()
-    tally.unread = [...listing.unreadable ?? []]
-    // Parents before children, which `flattenScopes` already answers in: a
-    // child saved first would sit under a folder that is not a scope yet.
-    summaries = flattenScopes(listing)
-  } catch {
-    return tally
-  }
-
-  for (const summary of summaries) {
-    try {
-      if (await into.load(summary.path)) { tally.kept += 1; continue }
-      const scope = await from.load(summary.path)
-      // Listed but not there: the root of a store that has never had one saved
-      // is in every listing and in no store. Per the port, `undefined` is an
-      // ordinary answer and a genuine failure rejects — which is counted below.
-      if (!scope) continue
-      await into.save(scope)
-      tally.scopes += 1
-    } catch {
-      tally.failed += 1
-    }
-  }
-  return tally
-}
-
-/** Everything, in one call. */
-export async function migrateInto(
-  from: ScopeSource, into: ScopeTarget,
-): Promise<MigrationTally> {
-  return copyScopesInto(from, into)
-}
-
-export function migrated(tally: MigrationTally): boolean {
-  return tally.scopes > 0
-}
-
-/**
- * Whether this source holds a scope anybody has saved.
- *
- * Not `list()` on its own: the root of a store that has never had one saved is
- * in every listing and in no store, so a listing cannot tell an empty folder
- * from a full one. The answer is the first path that loads, and it stops there
- * — this is asked at a folder pick, with somebody waiting on it.
- *
- * A source that will not list holds nothing this caller can act on, which is
- * `false` rather than a throw: what hangs on the answer is whether to ask a
- * question, and a question raised by a failed read is one nobody can answer.
- */
-export async function holdsScopes(source: ScopeSource): Promise<boolean> {
-  let summaries: readonly ScopeSummary[]
-  try {
-    summaries = flattenScopes(await source.list())
-  } catch {
-    return false
-  }
-  for (const summary of summaries) {
-    try {
-      if (await source.load(summary.path)) return true
-    } catch {
-      // One scope that will not read says nothing about the rest of them.
-    }
-  }
-  return false
-}
-
-// --- out of an older format, and into this one ------------------------------
-
-/**
- * Where the pass reads and writes: a store that can also say which of its
- * projects an older version of this tool wrote ({@link ProjectStore.outdated}).
+ * Where the pass reads and writes: a store that can see its scopes, read and
+ * write one, and say which of them an older version of this tool wrote.
  *
  * A store that cannot say has nothing old in it, so the pass does nothing —
- * which is what an in-memory store and any backend written since the format
- * turned both want.
+ * which is what any store written since the format turned wants.
  */
-export type UpgradeTarget = ScopeTarget & { outdated?(): Promise<ScopePath[]> }
+export type UpgradeTarget = {
+  list(): Promise<ScopeSummary>
+  load(path: ScopePath): Promise<ScopeSnapshot | undefined>
+  save(scope: ScopeSnapshot): Promise<void>
+  outdated?(): Promise<ScopePath[]>
+}
 
 /**
  * Recording the folder before the pass rewrites it (ADR-0008), or saying it
