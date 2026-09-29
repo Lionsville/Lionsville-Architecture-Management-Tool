@@ -117,7 +117,7 @@ const container = document.getElementById('root')!
 const root = createRoot(container)
 
 /** The one line that chooses what the seams are filled with. */
-const browserShell = composeShell()
+let browserShell = composeShell(translator(detectBrowserLanguage(navigator.languages ?? navigator.language)))
 let shell = browserShell
 
 // Before anything is rendered: a part reached later is a script of its own,
@@ -382,6 +382,23 @@ function pageLocation(): SourceLocation {
 }
 
 /** Does work here have nowhere to be kept until a way in is taken? The first screen asks. */
+/**
+ * The parts the boot's own source settles on, where it only learns what it can
+ * keep by asking (`ProviderParts.settled`) — before anything is drawn, so the
+ * bar says what is so from the first frame. A source that could not say keeps
+ * the parts it opened with, and its strip says the rest.
+ */
+async function settled(): Promise<void> {
+  if (!shell.settled) return
+  const parts = await shell.settled().catch((cause: unknown) => {
+    shell.diagnostics.report({ level: 'warn', where: 'source', message: 'the source could not say what it keeps', cause })
+    return undefined
+  })
+  // Settled either way: a second boot step never asks again.
+  shell = overSource(shell, parts ?? { ...shell, settled: undefined })
+  browserShell = shell
+}
+
 function sourceNeeded(): boolean {
   return !sourced && connects.some((way) => way.connect.required?.())
 }
@@ -424,7 +441,7 @@ function renderApp(
         provider={{
           status: shell.sourceStatus,
           onWork: shell.onSourceWork,
-          description: sourceDescription(shell.source),
+          description: shell.sayings?.describeKey ?? sourceDescription(shell.source),
           chip: sourceChip(shell.source),
           keepFailure: shell.sourceFailure,
           agentPanel: sourceAgentPanel(shell.source),
@@ -442,7 +459,7 @@ function renderApp(
           own: shell.own,
           historyNoteKey: shell.historyNoteKey,
           historyKept: shell.historyKept,
-          sayings: sourceSayings(shell.source),
+          sayings: { ...sourceSayings(shell.source), ...shell.sayings },
           sourceNeeded: sourceNeeded(),
           changes: shell.changes,
           destination: chooseDestination,
@@ -474,7 +491,8 @@ function renderApp(
  * boot is read again at the start of the next one. The way out has to be a
  * button, not an instruction to clear browser storage by hand.
  */
-void shell.preferences.read()
+void settled()
+  .then(() => shell.preferences.read())
   .then(async (storedPreferences) => {
     stored = storedPreferences
     // An address the page was opened at wins over the place this machine last

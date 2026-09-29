@@ -79,8 +79,28 @@ export type ProviderParts<Own = unknown> = {
    * goes on as its question warned.
    */
   historyKept?: () => Promise<boolean>
+  /**
+   * What the bar, the subtitle and a removal say of this source, where it is
+   * not what its registration says: a source that opened as something less
+   * than it is registered as — somewhere that keeps nothing — says so.
+   */
+  sayings?: ProviderSayings
+  /**
+   * Where a source only learns what it can keep by asking: the parts it
+   * settles on. The boot asks before anything is drawn, so the bar, the
+   * subtitle and the history's note say what is so from the first frame.
+   */
+  settled?: () => Promise<ProviderParts<Own>>
   /** Handed back to this provider's own chrome and panels while its source is open. */
   own?: Own
+}
+
+/** A provider's sentences about its source, as keys of its own table. */
+export type ProviderSayings = {
+  readonly labelKey?: string
+  readonly describeKey?: string
+  readonly whereKey?: string
+  readonly removeKey?: string
 }
 
 /** How a provider's chrome says something in passing, as the app says its own. */

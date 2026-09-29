@@ -33,6 +33,8 @@ export type BrowserOwn = {
   keepsNothing(): boolean
   /** Hear when that becomes so. */
   onKeepsNothing(listener: () => void): () => void
+  /** What is shown in its place is what the key-value storage kept before the database: read, not moved. */
+  shownFromOlder(): boolean
 }
 
 /** The database's scopes, with what the provider does after each write that landed. */
@@ -68,11 +70,12 @@ export function afterWrites(
 export function browserOwn(database: BrowserDatabase, earlier: Earlier | undefined): {
   own: BrowserOwn
   heard: (fullness: Fullness) => void
-  fell: () => void
+  fell: (shown: boolean) => void
 } {
   const listeners = new Set<(fullness: Fullness) => void>()
   const falling = new Set<() => void>()
   let nothing = false
+  let older = false
   return {
     own: {
       database,
@@ -86,10 +89,12 @@ export function browserOwn(database: BrowserDatabase, earlier: Earlier | undefin
         falling.add(listener)
         return () => { falling.delete(listener) }
       },
+      shownFromOlder: () => older,
     },
     heard: (fullness) => { for (const listener of listeners) listener(fullness) },
-    fell: () => {
+    fell: (shown) => {
       nothing = true
+      older = shown
       for (const listener of falling) listener()
     },
   }

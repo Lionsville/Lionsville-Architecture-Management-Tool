@@ -524,21 +524,23 @@ export function registeredConnects(): readonly RegisteredConnect[] {
  * editor if one of them was missed.
  *
  * Which of the two it is used to be a ternary here; it is a lookup now, and the
- * two fallbacks are registrations like any other.
+ * two fallbacks are registrations like any other. `s` is the browser's
+ * language, for what they record before a preference has been read.
  */
-export function composeShell(): Shell {
+export function composeShell(s?: Translate): Shell {
   const storage = browserStorage()
   const database = browserDatabase()
-  // Both, or nowhere: the scopes are kept in the database and the preferences
-  // beside it, and a browser with one and not the other keeps nothing a
-  // person could come back to — which the bar then says.
-  const kind = storage && database ? 'browserStorage' : 'memory'
+  // The key-value storage is where the preferences are kept, and where the
+  // scopes were: a browser that has it and no database keeps the one and
+  // shows the other in memory (`browserStorageSource.ts`). Without it,
+  // nothing here is kept at all — which the bar then says.
+  const kind = storage ? 'browserStorage' : 'memory'
   const diagnostics = new ConsoleDiagnostics()
   // The one opening with no shell to hand over, and it cannot have one: the
   // shell a provider would be given here is the shell being built out of what
   // it answers. The trail is the half that does exist, and it is the half a
   // fallback source could conceivably have something to say to.
-  const kept = openSourceNow(kind, storage && database && { storage, database }, { diagnostics })
+  const kept = openSourceNow(kind, storage && { storage, ...(database ? { database } : {}) }, { diagnostics, ...(s ? { s } : {}) })
   return {
     ...kept,
     // Both fallbacks bring one, and the preferences are read before the first
@@ -606,7 +608,7 @@ export function overSource(shell: Shell, parts: SourceParts): Shell {
   const {
     sourceStatus: _status, onSourceWork: _work, sourceFailure: _failure, onScopeSession: _session,
     publishesSteps: _publishes, readOnlyAt: _readOnly, opensAt: _opensAt, changes: _changes,
-    own: _own, historyNoteKey: _historyNote, historyKept: _historyKept, ...rest
+    own: _own, historyNoteKey: _historyNote, historyKept: _historyKept, sayings: _sayings, settled: _settled, ...rest
   } = shell
   return { ...rest, ...parts, preferences: parts.preferences ?? shell.preferences }
 }

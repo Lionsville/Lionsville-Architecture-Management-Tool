@@ -109,7 +109,7 @@ describe('where the database would not open at all', () => {
   it('says, and keeps saying, that nothing here outlives the tab', () => {
     const { fell } = show()
     expect(screen.queryByTestId('storage-notice')).toBeNull()
-    act(() => fell())
+    act(() => fell(false))
     expect(screen.getByTestId('storage-notice').textContent).toContain('This browser could not save the design')
   })
 })

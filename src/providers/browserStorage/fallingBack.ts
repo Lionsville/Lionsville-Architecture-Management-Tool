@@ -6,11 +6,11 @@
  *
  * A browser that has a database can still refuse to open it: a private window
  * that allows the key-value storage and not the database, a policy. That is
- * only known once it is asked, which is the first thing anything reads, and
- * so it is asked then: where the database opens, every answer is its own;
- * where opening it fails, every answer from then on is memory's, and the
- * browser's chrome says that nothing will outlive the tab. The session works
- * in full and leaves nothing behind, which is the honest answer.
+ * only known once it is asked, which the boot does before anything is drawn
+ * (`browserStorageSource.ts`, `settled`); this is what answers where nothing
+ * asked first, from the first read on: where the database opens, every answer
+ * is its own; where opening it fails, every answer from then on is the
+ * fallback's, and the browser's chrome says that nothing will outlive the tab.
  *
  * A refusal the database gives once it is open — full, a later build in
  * another tab — is not this: it is said as the refusal it is, and nothing
@@ -20,18 +20,42 @@
 import { ShellError } from '../../platform/errors'
 import type { Repositories } from '../../ports/Repositories'
 
-export function fallingBack(primary: Repositories, fallback: () => Repositories, fell: (cause: unknown) => void): Repositories {
+/** Did the database open? Its first answer says, and a refusal from it is an answer. */
+export async function opens(repositories: Repositories): Promise<true | { cause: unknown }> {
+  try {
+    await repositories.scopes.tree()
+    return true
+  } catch (cause) {
+    return cause instanceof ShellError ? true : { cause }
+  }
+}
+
+export function fallingBack(
+  primary: Repositories, fallback: () => Repositories | Promise<Repositories>, fell: (cause: unknown) => void,
+): Repositories {
   let chosen: Promise<Repositories> | undefined
-  const choose = (): Promise<Repositories> => {
-    chosen ??= primary.scopes.tree().then(() => primary, (cause: unknown) => {
-      if (cause instanceof ShellError) return primary
-      fell(cause)
+  return answeredBy(primary, () => {
+    chosen ??= opens(primary).then((opened) => {
+      if (opened === true) return primary
+      fell(opened.cause)
       return fallback()
     })
     return chosen
-  }
-  /** One repository, each call answered by whichever of the two was chosen. */
-  const through = <K extends keyof Repositories>(name: K): Repositories[K] => new Proxy(primary[name], {
+  })
+}
+
+/** Repositories whose every answer is those `choose` settles on, made when first asked. */
+export function made(shape: Repositories, make: () => Promise<Repositories>): Repositories {
+  let chosen: Promise<Repositories> | undefined
+  return answeredBy(shape, () => {
+    chosen ??= make()
+    return chosen
+  })
+}
+
+function answeredBy(shape: Repositories, choose: () => Promise<Repositories>): Repositories {
+  /** One repository, each call answered by the one chosen. */
+  const through = <K extends keyof Repositories>(name: K): Repositories[K] => new Proxy(shape[name], {
     get(target, member) {
       const value = Reflect.get(target, member) as unknown
       if (typeof value !== 'function') return value
