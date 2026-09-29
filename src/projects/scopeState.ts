@@ -86,9 +86,18 @@ export type ScopeState = ScopeContent & {
   updatedAt?: string
   /**
    * What of this scope the repository could not read, in its own words, for a
-   * person to be told. A scope with any is there to be looked at: every step
-   * on it is refused, because a state that was not read whole is not a state
-   * a step can be applied to without losing what was not read.
+   * person to be told. A scope with any is there to be looked at: a step on
+   * it is refused (`shell.unreadableNotSaved`), because a state that was not
+   * read whole is not a state a step can be applied to without losing what
+   * was not read.
+   *
+   * **But one it can be put back by.** A run whose first step is
+   * `scope.replace` is accepted: it says what the whole scope is to be, so
+   * nothing it did not read is lost to it but what it replaces. It replaces
+   * the scope whole, the parts that could not be read included, and the scope
+   * reads whole after it — even where the content put back is what could be
+   * read. Without that, a scope in a source with nothing a person can mend by
+   * hand would be stuck as it is for good.
    */
   unreadable?: readonly string[]
 }
@@ -104,12 +113,14 @@ export type DescribeCommand = { type: 'scope.describe'; patch: ScopeDescription 
 /**
  * A scope's content made equal to a content that arrives whole, and used for
  * that alone: a set of scopes a person hands over, landed on one; a scope
- * built from an example; and what a person keeps over another author's
+ * built from an example; what a person keeps over another author's
  * version when a step of theirs cannot land on it (*keep mine*), which is
- * the scope as it stands on their screen.
+ * the scope as it stands on their screen; and a scope that could not be read
+ * whole, put back as an entry of its history held it
+ * (`ScopeState.unreadable`), which is the one step such a scope takes.
  * Never the open scope's ordinary writes, which are the commands its session
- * applied, and never a restore, which is the model's own command and keeps
- * what a restore keeps.
+ * applied, and never a restore of a scope that reads whole, which is the
+ * model's own command and keeps what a restore keeps.
  *
  * What was there and is not in the content goes; the records it touched are
  * read off the content before and after, as every step's are, so the history
@@ -156,7 +167,7 @@ export const SCOPE_REFUSALS = [
   'shell.scopeIntoItself',
   /** An address no scope may have. */
   'shell.badScopePath',
-  /** A step on a scope that was not read whole (`ScopeState.unreadable`). */
+  /** A step on a scope that was not read whole (`ScopeState.unreadable`), in a run that does not begin by replacing it. */
   'shell.unreadableNotSaved',
   /** A picture's name no picture may have, or an entry that does not describe its picture (`model/imageName.ts`). */
   'shell.imageBadName',
@@ -207,6 +218,15 @@ export type StepsRefused = { ok: false; refused: ScopeRefusal; stepId: string }
 type Working = { description: ScopeDescription; model: Model; images: readonly ImageEntry[] }
 
 type Outcome = { ok: true; working: Working } | { ok: false; refused: ScopeRefusal }
+
+/**
+ * Whether a run may land on a scope that was not read whole: only one whose
+ * first step replaces it (`ScopeState.unreadable`). The one rule every
+ * implementation asks, so none of them words it again.
+ */
+export function putsBackWhole(steps: readonly ScopeStep[]): boolean {
+  return steps[0]?.command.type === 'scope.replace'
+}
 
 /**
  * Apply steps to a scope's content, in order: every one of them, or — at the

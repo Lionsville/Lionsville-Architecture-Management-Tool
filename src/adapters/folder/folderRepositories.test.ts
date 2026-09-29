@@ -12,7 +12,7 @@ import { dataUrl } from '../../projects/dataUrl'
 import { describeHistoryRepository } from '../../ports/HistoryRepository.contract'
 import { describeImageRepository } from '../../ports/ImageRepository.contract'
 import { describeOrganisationIndex } from '../../ports/OrganisationIndex.contract'
-import { addCrews, addDepot, ok, over, refusal, renameCrews, step } from '../../ports/Repositories.contract'
+import { addCrews, addDepot, addLandscape, ok, over, refusal, renameCrews, replayed, step } from '../../ports/Repositories.contract'
 import type { RepositoriesUnderTest } from '../../ports/Repositories.contract'
 import { describeScopeRepository } from '../../ports/ScopeRepository.contract'
 import { sampleScope } from './ScopeStore.contract'
@@ -30,6 +30,7 @@ import { stampsInMemory } from './folderPictures'
 import { memoryGit } from './memoryGit'
 import { FileSystemScopeStore } from './FileSystemScopeStore'
 import { bytesAt, removeAt, textAt, writeAt } from './handles'
+import { emptyContent } from '../../projects/scopeState'
 import type { ScopeId } from '../../projects/scopeState'
 
 function overFakeFolder(): RepositoriesUnderTest {
@@ -652,5 +653,38 @@ describe('a folder nobody has named', () => {
     const repositories = folderRepositories({ root, git: memoryGit(root) })
     expect((await repositories.scopes.tree()).root.name).toBe('Architecture')
     expect(await textAt(root, 'scope.json')).toBeUndefined()
+  })
+})
+
+describe('a folder scope put back whole', () => {
+  it('writes over and removes the format’s files it could not read, and leaves every file that is not the format’s', async () => {
+    const root = new FakeDirectory()
+    const repositories = over({ repositories: folderRepositories({ root, git: memoryGit(root) }) })
+    const acme = await repositories.scope('acme', 'Acme Logistics')
+    await repositories.steps(acme, addCrews, addLandscape)
+    const diagrams = root.paths().filter((path) => path.startsWith('acme/diagrams/'))
+    expect(diagrams.length).toBeGreaterThan(0)
+    // A person's own files, beside the format's and inside its folders.
+    await writeAt(root, 'acme/README.md', 'Ours.')
+    await writeAt(root, 'acme/docs/notes.txt', 'Also ours.')
+    await writeAt(root, 'acme/diagrams/sketch.png', png(9))
+    // The format's: a description no element is named by, and a model that is not one.
+    await writeAt(root, 'acme/docs/ghost.md', 'Nobody.')
+    await writeAt(root, 'acme/model.json', '{ half a write')
+    const read = await repositories.state(acme)
+    expect(read.unreadable?.length).toBeGreaterThan(0)
+
+    const whole = { ...emptyContent('Acme Logistics'), model: replayed(emptyContent('Acme Logistics').model, [addDepot]) }
+    ok(await repositories.apply([{ scope: acme, steps: [step({ type: 'scope.replace', content: whole })], expects: read.revision }]))
+
+    const after = await repositories.state(acme)
+    expect(after.unreadable).toBeUndefined()
+    expect(after.model.elements.map((one) => one.id)).toEqual(['depot'])
+    expect(JSON.parse((await textAt(root, 'acme/model.json'))!)).toBeTruthy()
+    expect(root.paths()).not.toContain('acme/docs/ghost.md')
+    for (const path of diagrams) expect(root.paths()).not.toContain(path)
+    expect(await textAt(root, 'acme/README.md')).toBe('Ours.')
+    expect(await textAt(root, 'acme/docs/notes.txt')).toBe('Also ours.')
+    expect(await bytesAt(root, 'acme/diagrams/sketch.png')).toEqual(png(9))
   })
 })

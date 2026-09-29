@@ -487,8 +487,13 @@ export function describeScopeRepository(name: string, make: MakeRepositories): v
       })
     })
 
+    /**
+     * A scope some part of which would not read (`ScopeState.unreadable`) is
+     * looked at and not stepped on — but it is never stuck: a run that begins
+     * by replacing it whole puts it back, where nothing else can.
+     */
     describe('a scope that could not be read whole', () => {
-      it('is there to be looked at, and refuses every step', async (context) => {
+      it('is there to be looked at, and refuses every step but a run that begins by replacing it', async (context) => {
         const repositories = await fresh()
         const acme = await repositories.scope('acme', 'Acme Logistics')
         await repositories.steps(acme, addCrews)
@@ -496,7 +501,47 @@ export function describeScopeRepository(name: string, make: MakeRepositories): v
         const state = await repositories.state(acme)
         expect(state.unreadable?.length).toBeGreaterThan(0)
         expect(refusal(await repositories.apply([{ scope: acme, steps: [step(addDepot)] }]))).toBe('shell.unreadableNotSaved')
-        expect((await repositories.state(acme)).model).toEqual(state.model)
+        const whole = { ...emptyContent('Acme Logistics'), model: replayed(emptyContent('Acme Logistics').model, [addCrews]) }
+        expect(refusal(await repositories.apply([{ scope: acme, steps: [step(addDepot), step({ type: 'scope.replace', content: whole })] }])))
+          .toBe('shell.unreadableNotSaved')
+        const after = await repositories.state(acme)
+        expect(after.model).toEqual(state.model)
+        expect(after.revision).toBe(state.revision)
+      })
+
+      it('is put back whole by a run whose first step is `scope.replace`, and reads whole after it', async (context) => {
+        const repositories = await fresh()
+        const acme = await repositories.scope('acme', 'Acme Logistics')
+        await repositories.steps(acme, addCrews, addLandscape)
+        if (!await repositories.spoil(acme)) return context.skip()
+        const read = await repositories.state(acme)
+        const whole = {
+          ...emptyContent('Acme Logistics', { kind: 'domain' as const }),
+          model: replayed(emptyContent('Acme Logistics').model, [addCrews]),
+        }
+        const put = ok(await repositories.apply([{
+          scope: acme, steps: [step({ type: 'scope.replace', content: whole }), step(addDepot)], expects: read.revision,
+        }]))
+        const after = await repositories.state(acme)
+        expect(after.unreadable).toBeUndefined()
+        expect(after.revision).toBe(put.revisions[0])
+        expect(held(after)).toEqual({ id: acme, address: 'acme', ...whole, model: replayed(whole.model, [addDepot]) })
+        await repositories.steps(acme, renameCrews)
+        expect((await repositories.state(acme)).model.elements.find((one) => one.id === 'crews')?.name).toBe('Crew planning')
+      })
+
+      it('reads whole after it even where what is put back is what could be read', async (context) => {
+        const repositories = await fresh()
+        const acme = await repositories.scope('acme', 'Acme Logistics')
+        if (!await repositories.spoil(acme)) return context.skip()
+        const read = await repositories.state(acme)
+        const { id: _id, address: _address, revision: _revision, updatedAt: _updatedAt, unreadable: _unreadable, ...content } = read
+        ok(await repositories.apply([{ scope: acme, steps: [step({ type: 'scope.replace', content })], expects: read.revision }]))
+        const after = await repositories.state(acme)
+        expect(after.unreadable).toBeUndefined()
+        expect(after.revision).not.toBe(read.revision)
+        await repositories.steps(acme, addDepot)
+        expect((await repositories.state(acme)).model.elements.map((one) => one.id)).toEqual(['depot'])
       })
     })
 

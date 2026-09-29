@@ -38,7 +38,7 @@ import { stableJson } from '../../projects/text'
 import type { ScopeSnapshot } from '../../projects/scope'
 import { fingerprint } from '../../projects/revision'
 import { ancestorScopes, isSafeScopePath, isWithinScope, ROOT_SCOPE, scopeFilePath, scopePathLabel } from '../../projects/scopePath'
-import { applySteps, emptyContent, STEP_ELSEWHERE } from '../../projects/scopeState'
+import { applySteps, emptyContent, putsBackWhole, STEP_ELSEWHERE } from '../../projects/scopeState'
 import type { ScopeAddress, ScopeContent, ScopeId, ScopeState, ScopeStep } from '../../projects/scopeState'
 import { reasonOf, ShellError } from '../../platform/errors'
 import type {
@@ -54,9 +54,12 @@ import { filesInDocuments } from './format/imageLibrary'
 import type { StepMemory } from './stepMemory'
 import { SCOPE_FILE } from './format/folderFormat'
 
-type Run = { read: ReadScope; steps: ScopeStep[] }
+/** One scope's new steps; `whole` where it was not read whole and the run puts it back (`ScopeState.unreadable`). */
+type Run = { read: ReadScope; steps: ScopeStep[]; whole: boolean }
 
-type Planned = { read: ReadScope; content: ScopeContent; library: KeptPicture[]; snapshot: ScopeSnapshot; steps: ScopeStep[] }
+type Planned = {
+  read: ReadScope; content: ScopeContent; library: KeptPicture[]; snapshot: ScopeSnapshot; steps: ScopeStep[]; whole: boolean
+}
 
 /** A write of a picture, to be put back: the file as it was, or nothing where there was none. */
 type Undo = { path: string; before?: Uint8Array }
@@ -105,9 +108,14 @@ function nextLibrary(was: readonly KeptPicture[], entries: readonly ImageEntry[]
   })
 }
 
-/** A scope's state as the folder store writes it: the documents' pictures as files, the library and the identity in the header. */
+/**
+ * A scope's state as the folder store writes it: the documents' pictures as
+ * files, the library and the identity in the header. Put back `whole`, it
+ * says nothing of the files a read did not take in: the content is all the
+ * scope is to be, and those files are the format's to write over or remove.
+ */
 function snapshotFor(
-  node: FolderNode, content: ScopeContent, was: ReadScope | undefined, library: readonly KeptPicture[],
+  node: FolderNode, content: ScopeContent, was: ReadScope | undefined, library: readonly KeptPicture[], whole = false,
 ): ScopeSnapshot {
   const model = filesInDocuments(content.model, was?.snapshot?.model, pictureFiles(library, was?.library ?? []))
   const { [LIBRARY_KEY]: _rows, ...carried } = { ...was?.snapshot?.carried }
@@ -119,7 +127,7 @@ function snapshotFor(
     ...(content.kind !== undefined ? { kind: content.kind } : {}),
     ...(content.client !== undefined ? { client: content.client } : {}),
     ...(content.links !== undefined ? { links: content.links } : {}),
-    ...(was?.snapshot?.unread ? { unread: was.snapshot.unread } : {}),
+    ...(was?.snapshot?.unread && !whole ? { unread: was.snapshot.unread } : {}),
     carried: { ...carried, [ID_KEY]: node.id, ...(library.length ? { [LIBRARY_KEY]: rowsFor(library) } : {}) },
   }
 }
@@ -191,15 +199,15 @@ export class FolderScopeRepository implements ScopeRepository {
       const runs = await this.runs(work)
       if (!(runs instanceof Map)) return runs
       const planned: Planned[] = []
-      for (const { read, steps } of runs.values()) {
+      for (const { read, steps, whole } of runs.values()) {
         const result = applySteps(startOf(read, steps), steps)
         if (!result.ok) return { refused: result.refused, scope: read.node.id, stepId: result.stepId }
         const missing = this.bytesMissing(read, result.content.images, steps)
         if (missing) return { refused: 'shell.imageBytesGone', scope: read.node.id, ...(missing.stepId ? { stepId: missing.stepId } : {}) }
-        if (!result.changed) continue
+        if (!result.changed && !whole) continue
         const library = nextLibrary(read.library, result.content.images)
-        const snapshot = snapshotFor(read.node, result.content, read, library)
-        planned.push({ read, content: result.content, library, snapshot, steps })
+        const snapshot = snapshotFor(read.node, result.content, read, library, whole)
+        planned.push({ read, content: result.content, library, snapshot, steps, whole })
       }
       const pending = await this.expectations(planned)
       await this.applied.pend(pending)
@@ -235,8 +243,8 @@ export class FolderScopeRepository implements ScopeRepository {
 
   /**
    * Each scope's new steps, its runs one after the other, or the refusal met
-   * on the way: a scope gone or not read whole, a step id this folder applied
-   * to another scope, a revision moved on from.
+   * on the way: a scope gone, or not read whole and not put back by the run;
+   * a step id this folder applied to another scope; a revision moved on from.
    */
   private async runs(work: readonly StepsFor[]): Promise<Map<ScopeId, Run> | Refused> {
     const runs = new Map<ScopeId, Run>()
@@ -247,7 +255,6 @@ export class FolderScopeRepository implements ScopeRepository {
       if (!read) return { refused: 'shell.scopeGone', scope }
       if (!reads.has(scope)) await this.applied.promote(scope, read.stored)
       reads.set(scope, read)
-      if (read.state.unreadable) return { refused: 'shell.unreadableNotSaved', scope }
       const fresh: ScopeStep[] = []
       for (const one of steps) {
         const place = seen.has(one.stepId) ? seen.get(one.stepId) : await this.landedWhere(one.stepId)
@@ -255,9 +262,11 @@ export class FolderScopeRepository implements ScopeRepository {
         if (place === undefined) fresh.push(one)
         seen.set(one.stepId, scope)
       }
+      const partly = read.state.unreadable !== undefined
+      if (partly && !runs.has(scope) && !putsBackWhole(fresh)) return { refused: 'shell.unreadableNotSaved', scope }
       if (fresh.length === 0) continue
       if (expects !== undefined && expects !== read.state.revision) return { refused: 'shell.scopeMoved', scope }
-      const run = runs.get(scope) ?? { read, steps: [] }
+      const run = runs.get(scope) ?? { read, steps: [], whole: partly }
       run.steps.push(...fresh)
       runs.set(scope, run)
     }
@@ -284,8 +293,8 @@ export class FolderScopeRepository implements ScopeRepository {
   /** Each planned step, with what its scope's files are to be fingerprinted as once the write has landed. */
   private async expectations(planned: readonly Planned[]): Promise<{ stepId: string; scope: ScopeId; expected: string }[]> {
     const found: { stepId: string; scope: ScopeId; expected: string }[] = []
-    for (const { read, snapshot, steps } of planned) {
-      const expected = await this.folder.store.revisionAfter(snapshot)
+    for (const { read, snapshot, steps, whole } of planned) {
+      const expected = await this.folder.store.revisionAfter(snapshot, whole)
       for (const one of steps) found.push({ stepId: one.stepId, scope: read.node.id, expected })
     }
     return found
@@ -302,9 +311,10 @@ export class FolderScopeRepository implements ScopeRepository {
    */
   private async write(planned: readonly Planned[]): Promise<Refused | undefined> {
     if (planned.length === 0) return undefined
-    const entries = planned.map(({ read, snapshot }) => ({
+    const entries = planned.map(({ read, snapshot, whole }) => ({
       scope: snapshot,
       ...(read.stored !== undefined ? { expects: read.stored } : {}),
+      ...(whole ? { whole } : {}),
     }))
     const undo: Undo[] = []
     for (const { read, library } of planned) {

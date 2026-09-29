@@ -122,6 +122,12 @@ export interface ScopeStore {
    * `held.manifest` is what the file the scopes came from says it holds, for a
    * store that holds what it was handed to it before it writes anything.
    *
+   * An entry marked `whole` puts a scope back whole (`ScopeState.unreadable`):
+   * the snapshot is all the scope is to be, so it is written even where a file
+   * of the scope would not read, over the files of the format it names and in
+   * place of those it does not — and never over or in place of a file that is
+   * not the format's, which stays whoever's it is.
+   *
    * Optional, because a store that cannot promise the second half should not
    * pretend to; the caller then saves one scope at a time, as it always did.
    * A store that offers it and finds, once writing, that it cannot keep the
@@ -130,7 +136,7 @@ export interface ScopeStore {
    * landing back to say what arrived (ADR-0023, amendment 3).
    */
   saveTogether?(
-    entries: readonly { scope: ScopeSnapshot; expects?: string }[],
+    entries: readonly { scope: ScopeSnapshot; expects?: string; whole?: boolean }[],
     held?: { manifest?: WorkingFileManifest },
   ): Promise<void>
 

@@ -602,8 +602,8 @@ export class FileSystemScopeStore implements ScopeStore {
    * as they are and that read now. What a writer remembers before it writes,
    * so that after a stop it can tell a write that landed from one that did not.
    */
-  async revisionAfter(scope: ScopeSnapshot): Promise<string> {
-    const plan = await this.plan(scope)
+  async revisionAfter(scope: ScopeSnapshot, whole = false): Promise<string> {
+    const plan = await this.plan(scope, undefined, whole)
     const folder = await this.scopeFolder(scope.path, false)
     const written = new Set(plan.writes.map((file) => file.path))
     const removed = new Set(plan.removals.map((entry) => entry.path))
@@ -655,9 +655,9 @@ export class FileSystemScopeStore implements ScopeStore {
    * The folder holds no manifest check of its own: the caller reads the
    * landing back and holds it to the file (ADR-0023, amended).
    */
-  async saveTogether(entries: readonly { scope: ScopeSnapshot; expects?: string }[]): Promise<void> {
+  async saveTogether(entries: readonly { scope: ScopeSnapshot; expects?: string; whole?: boolean }[]): Promise<void> {
     const plans: Plan[] = []
-    for (const { scope, expects } of entries) plans.push(await this.plan(scope, expects))
+    for (const { scope, expects, whole } of entries) plans.push(await this.plan(scope, expects, whole))
     const together = this.root.writeTogether?.bind(this.root)
     if (together) {
       const writes: { path: string; data: string | Uint8Array }[] = []
@@ -721,15 +721,21 @@ export class FileSystemScopeStore implements ScopeStore {
    * disk shared with somebody else's machine the check narrows the window
    * rather than closing it — which is what a folder can promise, and a store
    * that serialises its writers closes it.
+   *
+   * **Put back `whole`, none of that holds back the write** (`ScopeStore.saveTogether`):
+   * the snapshot is all the scope is to be, so the format's files it names
+   * are written over, readable or not, and the format's files it does not
+   * name are removed, readable or not. What is not the format's is not among
+   * them at all, and stays.
    */
-  private async plan(scope: ScopeSnapshot, expects?: string): Promise<Plan> {
+  private async plan(scope: ScopeSnapshot, expects?: string, whole = false): Promise<Plan> {
     if (!usablePath(scope.path)) {
       throw new ShellError('shell.badScopePath', { path: String(scope.path) })
     }
     if (expects !== undefined && await this.revisionNow(scope.path) !== expects) {
       throw scopeMoved(scope.path)
     }
-    if (scope.unreadable?.length) throw new ShellError('shell.unreadableNotSaved')
+    if (scope.unreadable?.length && !whole) throw new ShellError('shell.unreadableNotSaved')
     // Not made yet: a plan writes nothing, and a scope that is new has no
     // folder to compare with until it is written.
     const folder = await this.scopeFolder(scope.path, false)
@@ -754,8 +760,8 @@ export class FileSystemScopeStore implements ScopeStore {
     // at its address would be written over it.
     const header = held[files.findIndex((file) => file.path === SCOPE_FILE)]
     const refused = files.some((file, n) => unread.has(file.path) || held[n] === UNREAD)
-    if (refused || (typeof model === 'string' && modelUnreadable(model))
-      || (typeof header === 'string' && headerUnreadable(header))) {
+    if (!whole && (refused || (typeof model === 'string' && modelUnreadable(model))
+      || (typeof header === 'string' && headerUnreadable(header)))) {
       throw new ShellError('shell.unreadableNotSaved')
     }
     const writes = files.filter((file, n) => {
@@ -765,9 +771,10 @@ export class FileSystemScopeStore implements ScopeStore {
     const wanted = new Set(files.map((file) => file.path))
     const removals: Entry[] = []
     for (const entry of present) {
-      if (wanted.has(entry.path) || unread.has(entry.path)) continue
+      if (wanted.has(entry.path)) continue
+      if (!whole && unread.has(entry.path)) continue
       // A file that will not read now is one no read of this scope took in.
-      if (await this.read(entry) === UNREAD) continue
+      if (!whole && await this.read(entry) === UNREAD) continue
       // Only what this format writes — a deleted diagram's two files, a
       // decision that was renamed. Everything else in the folder is somebody's,
       // and a scope filed inside this one is never among these at all.

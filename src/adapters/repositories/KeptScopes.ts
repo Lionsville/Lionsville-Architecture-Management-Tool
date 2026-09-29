@@ -13,7 +13,7 @@
 import type { RecordKey } from '../../model/recordKey'
 import { sameRecord, sameValue } from '../../model/recordKey'
 import { isSafeScopePath, isWithinScope, ROOT_SCOPE } from '../../projects/scopePath'
-import { applySteps, emptyContent, STEP_ELSEWHERE } from '../../projects/scopeState'
+import { applySteps, emptyContent, putsBackWhole, STEP_ELSEWHERE } from '../../projects/scopeState'
 import type { Revision, ScopeAddress, ScopeContent, ScopeId, ScopeState, ScopeStep } from '../../projects/scopeState'
 import type {
   Applied, Created, Moved, NewScope, Refused, Removed, ScopeNode, ScopeRepository, ScopeTree, StepsFor,
@@ -28,8 +28,12 @@ import type { Source } from './source'
 import { bytesMissing } from './imageNames'
 import { appliedTo, letGo, remember } from './stepIds'
 
-/** One scope's new steps in an apply, its runs one after the other. */
-type Run = { kept: KeptScope; steps: ScopeStep[] }
+/**
+ * One scope's new steps in an apply, its runs one after the other; `whole`
+ * where the scope was not read whole and the run puts it back, so it is
+ * written even where what it puts back is what could be read.
+ */
+type Run = { kept: KeptScope; steps: ScopeStep[]; whole: boolean }
 
 /** What one scope's run came to, before it is written. */
 type Planned = { kept: KeptScope; before: ScopeContent; content: ScopeContent; records: readonly RecordKey[]; at: number }
@@ -66,13 +70,13 @@ export class KeptScopes implements ScopeRepository {
       if ('refused' in found) return found
       const { runs, kept: read } = found
       const planned: Planned[] = []
-      for (const { kept, steps } of runs.values()) {
+      for (const { kept, steps, whole } of runs.values()) {
         const { content: before } = await readContent(tx, kept)
         const result = applySteps(before, steps)
         if (!result.ok) return { refused: result.refused, scope: kept.id, stepId: result.stepId }
         const missing = await bytesMissing(tx, kept.id, before.images, result.content.images, steps)
         if (missing) return { refused: 'shell.imageBytesGone', scope: kept.id, ...(missing.stepId ? { stepId: missing.stepId } : {}) }
-        if (result.changed) {
+        if (result.changed || whole) {
           planned.push({ kept, before, content: result.content, records: result.records, at: Math.max(...steps.map((one) => one.at)) })
         }
       }
@@ -152,18 +156,20 @@ function moveRefusal(
 
 /**
  * Each scope's new steps, its runs one after the other, or the refusal met on
- * the way: a scope gone or read in part, a step id applied to another scope,
- * a revision moved on from. A step already applied to its scope is left out,
- * and a run whose steps have all landed is not compared with what it expects.
+ * the way: a scope gone, or read in part by a run that does not begin by
+ * replacing it; a step id applied to another scope; a revision moved on from.
+ * A step already applied to its scope is left out, and a run whose steps have
+ * all landed is not compared with what it expects.
  */
 async function runsOf(tx: Transaction, work: readonly StepsFor[]): Promise<Runs | Refused> {
   const runs = new Map<ScopeId, Run>()
-  const read = new Map<ScopeId, KeptScope>()
+  const read = new Map<ScopeId, { kept: KeptScope; partly: boolean }>()
   const seen = new Map<string, ScopeId>()
   for (const { scope, steps, expects } of work) {
-    const kept = read.get(scope) ?? await readable(tx, scope)
-    if ('refused' in kept) return kept
-    read.set(scope, kept)
+    const found = read.get(scope) ?? await thereAt(tx, scope)
+    if ('refused' in found) return found
+    const { kept, partly } = found
+    read.set(scope, found)
     const fresh: ScopeStep[] = []
     for (const one of steps) {
       const where = seen.get(one.stepId) ?? await appliedTo(tx, one.stepId)
@@ -171,24 +177,24 @@ async function runsOf(tx: Transaction, work: readonly StepsFor[]): Promise<Runs 
       if (where === undefined) fresh.push(one)
       seen.set(one.stepId, scope)
     }
+    if (partly && !runs.has(scope) && !putsBackWhole(fresh)) return { refused: 'shell.unreadableNotSaved', scope }
     if (fresh.length === 0) continue
     if (expects !== undefined && expects !== kept.revision) return { refused: 'shell.scopeMoved', scope }
-    const run = runs.get(scope) ?? { kept, steps: [] }
+    const run = runs.get(scope) ?? { kept, steps: [], whole: partly }
     run.steps.push(...fresh)
     runs.set(scope, run)
   }
-  return { runs, kept: read }
+  return { runs, kept: new Map([...read].map(([id, { kept }]) => [id, kept])) }
 }
 
 /** Each scope an apply names, as it stands before the apply; and the runs of those with new steps. */
 type Runs = { runs: Map<ScopeId, Run>; kept: Map<ScopeId, KeptScope> }
 
-/** A scope a step may be applied to: there, and read whole. */
-async function readable(tx: Transaction, scope: ScopeId): Promise<KeptScope | Refused> {
+/** A scope a step names, and whether it was read in part; refused where it is not there. */
+async function thereAt(tx: Transaction, scope: ScopeId): Promise<{ kept: KeptScope; partly: boolean } | Refused> {
   const kept = await tx.get<KeptScope>('scopes', scope)
   if (!kept) return { refused: 'shell.scopeGone', scope }
-  if ((await readModel(tx, kept)).unreadable) return { refused: 'shell.unreadableNotSaved', scope }
-  return kept
+  return { kept, partly: (await readModel(tx, kept)).unreadable !== undefined }
 }
 
 function mergeRecords(held: readonly RecordKey[], more: readonly RecordKey[]): RecordKey[] {
