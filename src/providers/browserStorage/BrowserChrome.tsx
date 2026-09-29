@@ -38,19 +38,23 @@ import type { BrowserOwn } from './browserOwn'
 /** Above this share of what the browser lets this site keep, say so. */
 export const NEARLY_FULL = 0.8
 
-export function BrowserChrome({ own, notify, reread }: SourceChromeProps<BrowserOwn>) {
+export function BrowserChrome({ own, notify, reread, flush }: SourceChromeProps<BrowserOwn>) {
   if (!own) return null
   return (
     <>
       <KeepsNothing own={own} />
       <StandingStrip own={own} />
       <NearlyFull own={own} notify={notify} />
-      {own.earlier && <EarlierWork earlier={own.earlier} notify={notify} reread={reread} />}
+      {own.earlier && <EarlierWork earlier={own.earlier} notify={notify} reread={reread} flush={flush} />}
     </>
   )
 }
 
-/** The database would not open: memory took its place, and nothing done here outlives the tab. */
+/**
+ * The database would not open: memory took its place, and nothing done here
+ * outlives the tab — and where what memory shows is what the older storage
+ * kept, that is said too.
+ */
 function KeepsNothing({ own }: { own: BrowserOwn }) {
   const { t: s } = useStrings()
   const [nothing, setNothing] = useState(() => own.keepsNothing())
@@ -61,7 +65,7 @@ function KeepsNothing({ own }: { own: BrowserOwn }) {
   if (!nothing) return null
   return (
     <Alert severity="warning" square data-testid="storage-notice" sx={{ flex: '0 0 auto', borderRadius: 0, py: 0, fontSize: 12 }}>
-      {s('shell.keepFailed')}
+      {s(own.shownFromOlder() ? 'browser.shownFromOlder' : 'shell.keepFailed')}
     </Alert>
   )
 }
@@ -102,11 +106,11 @@ function NearlyFull({ own, notify }: Pick<SourceChromeProps<BrowserOwn>, 'notify
   return null
 }
 
-type EarlierProps = Pick<SourceChromeProps<BrowserOwn>, 'notify' | 'reread'> & {
+type EarlierProps = Pick<SourceChromeProps<BrowserOwn>, 'notify' | 'reread' | 'flush'> & {
   earlier: NonNullable<BrowserOwn['earlier']>
 }
 
-function EarlierWork({ earlier, notify, reread }: EarlierProps) {
+function EarlierWork({ earlier, notify, reread, flush }: EarlierProps) {
   const { t: s } = useStrings()
   const [standing, setStanding] = useState<EarlierStanding | undefined>(undefined)
   const read = useCallback(() => {
@@ -127,13 +131,16 @@ function EarlierWork({ earlier, notify, reread }: EarlierProps) {
   }, [standing, notify, s])
 
   const answer = useCallback((bring: boolean, addresses?: readonly string[]) => {
-    const asked = bring ? earlier.bringOver(addresses) : earlier.leave(addresses)
+    // What the open scope holds unwritten is written before the older copy
+    // is brought over it, so an edit made a moment ago is kept in the entry
+    // the bringing takes first, and not written over what arrived.
+    const asked = bring ? flush().then(() => earlier.bringOver(addresses)) : earlier.leave(addresses)
     void asked.then(() => {
       notify(s(bring ? 'browser.earlierBrought' : 'browser.earlierLeft'), 'info')
       if (bring) reread()
       read()
     }, (cause: unknown) => notify(reasonOf(cause), 'error'))
-  }, [earlier, notify, reread, read, s])
+  }, [earlier, notify, reread, flush, read, s])
 
   if (!standing) return null
   return (
@@ -144,6 +151,7 @@ function EarlierWork({ earlier, notify, reread }: EarlierProps) {
       {!standing.asking && standing.diverged.map((path) => (
         <Choice
           key={path}
+          path={path || '/'}
           text={s('browser.earlierDiverged', { path: path || '/' })}
           onBring={() => answer(true, [path])}
           onLeave={() => answer(false, [path])}
@@ -153,8 +161,12 @@ function EarlierWork({ earlier, notify, reread }: EarlierProps) {
   )
 }
 
-/** One question about the older copy, with its two answers. */
-function Choice({ text, onBring, onLeave }: { text: string; onBring: () => void; onLeave: () => void }) {
+/**
+ * One question about the older copy, with its two answers — each named for
+ * the scope it is about, where there is one, because a screen reader reads a
+ * button without the sentence beside it.
+ */
+function Choice({ text, path, onBring, onLeave }: { text: string; path?: string; onBring: () => void; onLeave: () => void }) {
   const { t: s } = useStrings()
   return (
     <Alert
@@ -163,8 +175,12 @@ function Choice({ text, onBring, onLeave }: { text: string; onBring: () => void;
       sx={{ borderRadius: 0, py: 0.25, fontSize: 13 }}
       action={(
         <Stack direction="row" spacing={1}>
-          <Button size="small" onClick={onBring}>{s('browser.earlierBring')}</Button>
-          <Button size="small" onClick={onLeave}>{s('browser.earlierLeave')}</Button>
+          <Button size="small" onClick={onBring} aria-label={path === undefined ? undefined : s('browser.earlierBringAt', { path })}>
+            {s('browser.earlierBring')}
+          </Button>
+          <Button size="small" onClick={onLeave} aria-label={path === undefined ? undefined : s('browser.earlierLeaveAt', { path })}>
+            {s('browser.earlierLeave')}
+          </Button>
         </Stack>
       )}
     >

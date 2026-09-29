@@ -112,6 +112,13 @@ describe('where the database would not open at all', () => {
     act(() => fell(false))
     expect(screen.getByTestId('storage-notice').textContent).toContain('This browser could not save the design')
   })
+
+  it('says where the work shown came from, where memory shows what the older storage kept', () => {
+    const { fell } = show()
+    act(() => fell(true))
+    expect(screen.getByTestId('storage-notice').textContent)
+      .toBe('Your work is shown from this browser’s older storage; changes here are not kept. Save a working file to keep them.')
+  })
 })
 
 describe('the work the older storage kept', () => {
@@ -145,6 +152,37 @@ describe('the work the older storage kept', () => {
     expect(notify).toHaveBeenCalledWith(expect.stringContaining('acme'), 'info')
     expect(notify).toHaveBeenCalledWith(expect.stringContaining('globex'), 'warning')
     expect(screen.queryByText('Bring the older copy over')).toBeNull()
+  })
+
+  it('names each answer for the scope it is about, for a screen reader', async () => {
+    show({ earlier: earlier({ diverged: ['acme'] }).held })
+    await settled()
+    expect(screen.getByRole('button', { name: 'Bring the older copy of “acme” over' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Keep “acme” as it is here' })).toBeDefined()
+  })
+
+  it('writes the open scope before it brings the older copy over it', async () => {
+    const older = earlier({ asking: true })
+    const order: string[] = []
+    const bring = older.held.bringOver
+    older.held.bringOver = (addresses) => { order.push('bring'); return bring(addresses) }
+    const { flush } = show({ earlier: older.held })
+    flush.mockImplementation(() => { order.push('flush'); return Promise.resolve() })
+    await settled()
+    fireEvent.click(screen.getByText('Bring the older copy over'))
+    await settled()
+    expect(order).toEqual(['flush', 'bring'])
+  })
+
+  it('brings nothing over where the open scope could not be written first, and says why', async () => {
+    const older = earlier({ asking: true })
+    const { notify, reread } = show({ earlier: older.held, flush: () => Promise.reject(new Error('the disk is full')) })
+    await settled()
+    fireEvent.click(screen.getByText('Bring the older copy over'))
+    await settled()
+    expect(older.asked).toEqual([])
+    expect(notify).toHaveBeenCalledWith('the disk is full', 'error')
+    expect(reread).not.toHaveBeenCalled()
   })
 
   it('names the organisation itself as the root, where it is the one that changed in both places', async () => {
