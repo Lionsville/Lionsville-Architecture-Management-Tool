@@ -102,12 +102,12 @@ describe('once work has somewhere to be', () => {
 })
 
 describe('a browser tab', () => {
-  it('never sees the question, because nothing needs it answered first', () => {
+  it('never sees the question, because nothing needs it answered first', async () => {
     renderApp({ repositories: heldRepositories([project()]) })
 
     expect(screen.queryByTestId('first-run')).toBeNull()
-    // The organisation's home, which is what a tab opens on.
-    expect(screen.getByTestId('organisation-cards')).toBeDefined()
+    // The organisation's home, which is what a tab opens on, once its listing has answered.
+    expect(await screen.findByTestId('organisation-cards')).toBeDefined()
   })
 
   it('is offered a way in where there is one, and never made to take it', () => {

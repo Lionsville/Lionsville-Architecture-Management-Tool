@@ -234,6 +234,15 @@ export type OrganisationScreenProps = {
 }
 
 /**
+ * Whether the row of cards is drawn: at the root once the listing has
+ * answered, which is where the root's name comes from; below it once the
+ * level's own document is read.
+ */
+function cardsDrawn(atRoot: boolean, listed: boolean, ready: boolean): boolean {
+  return atRoot ? listed : ready
+}
+
+/**
  * Where each card's doors go: a page of the scope whose home this is, opened
  * the way the workspace opens it — the sheet, the map and the technology
  * landscape on the one the scope has, and the decisions page on the record a
@@ -484,9 +493,12 @@ export function OrganisationScreen({
 
           {/* Not before the document is read at a level below the root: the
               row of cards is the level's shape, and drawing a domain's row and
-              then a landscape's is a flicker on every step down. */}
+              then a landscape's is a flicker on every step down. At the root,
+              not before the listing has answered: the root's name is the
+              listing's, and cards under a nameless root are a folder that
+              looks empty when it has not been read yet. */}
           <Box sx={{ mt: 3, minHeight: 120 }}>
-            {(atRoot || ready) && <OrganisationCards
+            {cardsDrawn(atRoot, organisation.listed, ready) && <OrganisationCards
               pages={pages}
               ready={ready}
               {...cardDoors(organisation.open, at, pages)}

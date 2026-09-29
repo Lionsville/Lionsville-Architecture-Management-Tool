@@ -554,7 +554,10 @@ export function useOrganisation({
   const copyExample = useCallback((offer: ExampleOffer) => {
     void (async () => {
       const example = await exampleOf(offer)
-      const copy = copyExampleInto(example, tree)
+      // Where it lands is decided on the tree as it is kept now, and not on
+      // the one on screen: a listing that has not answered yet reads as an
+      // empty, nameless root, which the example would take over.
+      const copy = copyExampleInto(example, summaryOf(await scopes.tree()))
       // A shipped example this build cannot read is a bug the example tests
       // exist to prevent, so it reaches here as nothing rather than as a crash.
       if (copy.length === 0) {
@@ -586,7 +589,7 @@ export function useOrganisation({
       onFailure('organisation.copyExample', cause)
       onKeptResult(false)
     })
-  }, [tree, scopes, repositories, onEnter, entered, onFailure, onKeptResult, s])
+  }, [scopes, repositories, onEnter, entered, onFailure, onKeptResult, s])
 
   /**
    * The root's name, from the field a fresh folder shows instead of a heading.
