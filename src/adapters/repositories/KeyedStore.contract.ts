@@ -164,14 +164,20 @@ export function describeKeyedStore(name: string, make: () => KeyedStore | Promis
       expect(await store.transaction(['meta'], 'read', (tx) => tx.get('meta', 'a'))).toBeUndefined()
     })
 
-    it('refuses a request after the work waited on something else, and lands nothing of it', async () => {
+    // A timer, because it outlasts the task in every browser; a digest does in
+    // some and not in others, and each store's own tests say what it does with one.
+    it('refuses a request after the work waited on something else, and lands nothing of it, what it wrote before included', async () => {
       const store = await make()
       await expect(store.transaction(['meta'], 'write', async (tx) => {
+        tx.put('meta', 'b', 'before the wait')
         await tx.get('meta', 'a')
-        await crypto.subtle.digest('SHA-256', new Uint8Array([1, 2, 3]))
+        await new Promise((resolve) => {
+          setTimeout(resolve, 0)
+        })
         tx.put('meta', 'a', 1)
       })).rejects.toThrow()
-      expect(await store.transaction(['meta'], 'read', (tx) => tx.get('meta', 'a'))).toBeUndefined()
+      expect(await store.transaction(['meta'], 'read', async (tx) => [await tx.get('meta', 'a'), await tx.get('meta', 'b')]))
+        .toEqual([undefined, undefined])
     })
 
     it('refuses a request once the work has answered', async () => {

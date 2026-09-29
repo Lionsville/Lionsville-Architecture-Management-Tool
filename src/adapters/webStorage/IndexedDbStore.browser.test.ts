@@ -6,7 +6,7 @@
  * and WebKit (`vitest.browser.config.ts`, `npm run test:browser`).
  *
  * The same contract and suites node runs over a fake, and what only a browser
- * can show: a transaction left waiting on a digest, a page that goes away
+ * can show: a digest awaited inside a transaction, a page that goes away
  * half-way through a write, a second tab on either side of an upgrade, and a
  * quota the browser enforces. A second tab is a frame of this page's origin,
  * which opens the same database as a tab does and goes when it is removed.
@@ -100,7 +100,20 @@ describeImageRepository(`browser storage in ${server.browser}`, repositories)
 describeSettingsRepository(`browser storage in ${server.browser}`, repositories)
 
 describe(`IndexedDbStore in ${server.browser}`, () => {
-  it('fails a transaction whose work awaits a digest, and lands nothing of it', async () => {
+  it('lands a transaction whose work awaits a digest whole or not at all', async () => {
+    const store = new IndexedDbStore(thisPage(), unique())
+    const outcome = await store.transaction(['meta'], 'write', async (tx) => {
+      tx.put('meta', 'b', 'before the digest')
+      await tx.get('meta', 'a')
+      await crypto.subtle.digest('SHA-256', new Uint8Array([1, 2, 3]))
+      tx.put('meta', 'a', 'after the digest')
+    }).then(() => 'landed', () => 'refused')
+    const held = await store.transaction(['meta'], 'read', async (tx) => [await tx.get('meta', 'a'), await tx.get('meta', 'b')])
+    expect(held).toEqual(outcome === 'landed' ? ['after the digest', 'before the digest'] : [undefined, undefined])
+  })
+
+  // WebKit's digest outlasts the task, and so ends the transaction; a small one in Chromium settles inside it.
+  it.runIf(server.browser === 'webkit')('refuses a transaction whose work awaits a digest, and lands nothing of it', async () => {
     const store = new IndexedDbStore(thisPage(), unique())
     await expect(store.transaction(['meta'], 'write', async (tx) => {
       tx.put('meta', 'b', 'before the digest')

@@ -670,3 +670,113 @@ a page still draws the pictures a scope was opened with, as before.
 
 The storage line lost one file and two words: 50 files naming storage, with
 80 words.
+
+## As built, 29 September 2026: browser storage, robust
+
+**What was built.** Browser storage, made to hold up once people use it.
+
+- **A connection is not forever** (`webStorage/IndexedDbStore.ts`).
+  - A connection the browser closes under the page is forgotten, and the
+    next transaction opens another.
+  - A transaction lost with its connection landed nothing. That covers
+    `UnknownError` (iOS Safari's lost database server), `InvalidStateError`,
+    and an abort nobody asked for. The work runs once more on a new
+    connection, so `KeyedStore` now says the work may run twice and must
+    change nothing outside its transaction.
+  - The store stands at `reload`, and refuses every transaction
+    `shell.storageReload`, in three cases: a later build asks to upgrade
+    (`versionchange`), the database is already past this build
+    (`VersionError`), or a second loss comes in a row.
+  - It stands at `blocked` while an upgrade waits on an older tab.
+  - The standing is the app's to show: `BrowserSource.database` adds it to
+    what `browserRepositories` answers.
+- **Full is a refusal.** A write the browser has no room for is refused
+  `shell.storageFull` and lands nothing. It is never a raw
+  `QuotaExceededError`.
+- **Landed means on disk.** Writes ask for `strict` durability.
+- **Kept, and measured.** After the database first opens, the store asks
+  the browser to keep the site's storage through a clear-out (`persist`) and
+  keeps the answer. How full the storage is comes from the browser's
+  estimate, in the `used` and `budget` the nearly-full notice reads. It
+  replaces the character count the key-value storage was measured by. Both
+  come from the storage manager handed in beside the database
+  (`IndexedDb.manager`), and answer nothing without one.
+- **A transaction's writes are held until its work answers**
+  (`webStorage/heldWrites.ts`). A browser commits a transaction as soon as
+  it has nothing left to do. In WebKit a digest is such a wait, so the writes
+  made before it landed and the rest were refused: half a transaction. The
+  writes are now made, in the work's order, only once the work has answered.
+  Reads are still asked of the database and read through what is held. The
+  WebKit run of the tests below found the half-landing.
+- **History is bounded by what changed, not by how long it is**
+  (`repositories/entryStates.ts`).
+  - Each entry kept its whole state before, marks' data URLs included.
+  - Now an entry keeps the changes from the entry before it: parts set or
+    gone, and for a list of records the records set, those gone, and the
+    order where it is not implied.
+  - Every 32nd entry is a checkpoint. A part unchanged since the last
+    checkpoint is a pointer to the checkpoint that holds it, so marks nobody
+    touched are kept once.
+  - Changes are applied before they are kept and compared with the state
+    they must reach. Where they differ, a checkpoint is kept instead, so
+    every entry answers exactly the state read when it closed.
+  - Measured: 1,000 entries of small edits to a scope of about 230 kB take
+    4 MB, against 230 MB kept whole. The test holds them under 8 MB, and
+    checks every entry's state.
+- **Pictures' bytes nothing names are reclaimed**
+  (`repositories/imageNames.ts`).
+  - Bytes stay while the scope's library or any entry of its history names
+    their content address.
+  - Bytes named by neither go at the first record a day after they were last
+    put.
+  - What names each address is counted where the library is written and
+    where an entry closes, in the same transaction: how many library names,
+    whether an entry ever named it, and when the bytes were put. Addresses
+    named by nothing wait on a shelf of their own, so the sweep reads only
+    those.
+  - The database moves to layout 2 for the two shelves.
+- **Other work may keep shelves in the same database.** The repositories'
+  transactions span their own shelves (`REPOSITORY_SHELVES`), not every
+  shelf the database lays out (`SHELVES`), so such work never waits on them.
+- **Real browsers.** `npm run test:browser` runs the keyed store's contract
+  and the five repository suites over the real IndexedDB in Chromium and
+  WebKit, in Vitest's browser mode over Playwright. It also covers what a
+  fake cannot show:
+  - a digest awaited in a transaction;
+  - a tab closed half-way through a write;
+  - a later build upgrading past an open tab;
+  - an older tab blocking an upgrade;
+  - a database already past this build;
+  - a quota the browser enforces, met through a storage bucket where the
+    browser has buckets.
+
+  The run is not part of `npm run check`: it starts two browsers. The node
+  suites also run over fake-indexeddb, beside the hand-written fake. The
+  hand-written fake can now fail a transaction as it starts or commits, and
+  close its connections under the page.
+
+**Where the build departed from the text.**
+- **Changes, not a pointer per unchanged part.** A small edit nearly always
+  touches the elements or one view. A pointer per part would keep that whole
+  list again at every entry.
+- **Reclamation needs a count kept from the start.** A store made before the
+  counting keeps counting but is never swept on it, because an entry kept
+  then may name bytes nobody counted.
+- **The keyed store's contract does not run over fake-indexeddb.** It keeps a
+  transaction active until its next task finds nothing asked of it. So work
+  that awaits a digest in between is not refused there, as a browser that
+  ends the task refuses it. The repository suites run over it.
+- **A digest is not a wait in Chromium.**
+  - A small digest settles inside the task that asked for it. The
+    transaction is still active, the work's writes are legal, and they land
+    whole. In WebKit, memory and the node fakes the same work is refused and
+    lands nothing.
+  - So the contract's clause waits on a timer, which outlasts the task in
+    every browser, and writes before it. It promises the work is refused
+    after a real wait and nothing of it lands.
+  - Each store's own tests say what a digest does: refused in memory, the
+    node fakes and WebKit, and whole or nothing in both browsers.
+  - The rule for code over a store stays strict: await nothing but the
+    store's own requests. The stores in node refuse a breach, so the fast
+    loop catches it whichever browser would have forgiven it. The
+    repositories compute every digest before the transaction opens.

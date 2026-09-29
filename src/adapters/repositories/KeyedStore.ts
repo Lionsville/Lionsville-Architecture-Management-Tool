@@ -16,11 +16,15 @@
  * away, or the store refuses a write — nothing does. Two transactions that
  * write never interleave: each reads what the one before it left.
  *
- * **The work awaits nothing but the transaction's own requests.** A browser's
- * database ends a transaction that is left waiting on anything else, and a
- * write issued after that is refused. Whatever needs another wait — a
- * digest, a clock that is not `Date.now()` — is done before the transaction
- * opens.
+ * **The work awaits nothing but the transaction's own requests.** That is the
+ * rule for code over a store, and the stores in node refuse a work that
+ * breaks it, so a breach fails in the fast loop whichever browser would have
+ * forgiven it. A browser's database ends a transaction left waiting on
+ * anything that outlasts the task — a timer, a message — and refuses what
+ * comes after; a digest may or may not outlast it (WebKit's does, a small one
+ * in Chromium does not). Either way the transaction lands whole or not at
+ * all. Whatever needs another wait — a digest, a clock that is not
+ * `Date.now()` — is done before the transaction opens.
  *
  * **The work may be run twice.** A store whose connection can go — a
  * browser's database — runs the work once more, on a new connection, when the
