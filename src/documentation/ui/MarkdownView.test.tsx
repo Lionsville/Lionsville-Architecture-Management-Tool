@@ -132,6 +132,11 @@ describe('MarkdownView', () => {
     expect(container.querySelector('img')?.getAttribute('src')).toBe('data:image/png;base64,AQI=')
   })
 
+  it('lets a picture\'s name through as a picture\'s source, never as a link', () => {
+    const { container } = renderShell(<MarkdownView markdown={'[open it](image:cutover.png)'} />)
+    expect(container.querySelector('a')?.getAttribute('href') ?? '').not.toContain('image:')
+  })
+
   it('opens the same picture full size on a click, and closes it on the next', async () => {
     renderShell(
       <MarkdownView

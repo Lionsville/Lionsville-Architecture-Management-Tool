@@ -78,10 +78,13 @@ function isDrawnFence(children: ReactNode): boolean {
  * right instinct — a `javascript:` href must never survive — but it would also
  * drop the two schemes the model writes: a link to an element, and a picture
  * by its name in the library. Let those through untouched and leave
- * everything else to the default.
+ * everything else to the default. A picture's name passes as a picture's
+ * source and nowhere else: a link to `image:…` is nothing this app opens.
  */
-function urlTransform(url: string): string {
-  return url.startsWith(ELEMENT_LINK_SCHEME) || url.startsWith(IMAGE_REFERENCE) ? url : defaultUrlTransform(url)
+function urlTransform(url: string, key: string): string {
+  if (url.startsWith(ELEMENT_LINK_SCHEME)) return url
+  if (key === 'src' && url.startsWith(IMAGE_REFERENCE)) return url
+  return defaultUrlTransform(url)
 }
 
 /**

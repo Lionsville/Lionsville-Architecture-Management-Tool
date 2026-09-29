@@ -108,17 +108,30 @@ export function pictureDataAddress(picture: PictureBytes): string {
   return `data:${picture.mediaType};base64,${base64Of(picture.bytes)}`
 }
 
+/** The one media type whose bytes can hold a script, and so never get an address in the page's own origin. */
+const SCRIPTABLE = 'image/svg+xml'
+
 /**
  * An object address where the platform makes one — the bytes stay bytes and
  * nothing is copied into text — and a data address where it does not, which
  * is a process with no browser.
+ *
+ * **Never an object address for an SVG.** An object address belongs to the
+ * page's origin: an SVG opened from one in a tab of its own — *Open image in
+ * new tab*, or dragged to the address bar — runs any script it holds as the
+ * app, and anybody who can add a picture could plant one. A data address has
+ * an opaque origin, and an `img` runs no script either way.
  */
 export function defaultPictureAddresses(): PictureAddresses {
   const objects = typeof URL.createObjectURL === 'function' && typeof URL.revokeObjectURL === 'function'
   if (!objects) return { make: pictureDataAddress, release: () => undefined }
   return {
-    make: (picture) => URL.createObjectURL(new Blob([new Uint8Array(picture.bytes)], { type: picture.mediaType })),
-    release: (address) => URL.revokeObjectURL(address),
+    make: (picture) => (picture.mediaType === SCRIPTABLE
+      ? pictureDataAddress(picture)
+      : URL.createObjectURL(new Blob([new Uint8Array(picture.bytes)], { type: picture.mediaType }))),
+    release: (address) => {
+      if (address.startsWith('blob:')) URL.revokeObjectURL(address)
+    },
   }
 }
 

@@ -186,6 +186,19 @@ describe('the addresses a picture is drawn from', () => {
     expect(released).toEqual(['blob:one'])
   })
 
+  it('are never object addresses for an SVG, which would run its script as the app if opened on its own', () => {
+    const made: Blob[] = []
+    const released: string[] = []
+    URL.createObjectURL = (blob: Blob) => { made.push(blob); return 'blob:one' }
+    URL.revokeObjectURL = (address: string) => { released.push(address) }
+    const addresses = defaultPictureAddresses()
+    const address = addresses.make(SVG)
+    expect(address.startsWith('data:image/svg+xml;base64,')).toBe(true)
+    expect(made).toEqual([])
+    addresses.release(address)
+    expect(released).toEqual([])
+  })
+
   it('are data addresses where it does not, with nothing to let go of', () => {
     ;(URL as { createObjectURL?: unknown }).createObjectURL = undefined
     const addresses = defaultPictureAddresses()
