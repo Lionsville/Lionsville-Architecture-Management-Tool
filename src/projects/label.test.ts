@@ -2,16 +2,16 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { describe, expect, it } from 'vitest'
-import { labelSlug } from './history'
+import { labelSlug } from './label'
 
 describe('labelSlug', () => {
-  it('turns a label into a name a ref may have', () => {
+  it('turns a label into a name any source may keep it under', () => {
     expect(labelSlug('Shown to the board')).toBe('shown-to-the-board')
     expect(labelSlug('  Release 1.2 — final  ')).toBe('release-1-2-final')
     expect(labelSlug('Réunion/été')).toBe('reunion-ete')
   })
 
-  it('keeps nothing git would refuse, including a leading hyphen', () => {
+  it('keeps nothing but letters, digits and inner hyphens', () => {
     expect(labelSlug('--delete-all')).toBe('delete-all')
     expect(labelSlug('a..b @{ c.lock')).toBe('a-b-c-lock')
   })

@@ -16,7 +16,7 @@ import type { ScopeSnapshot } from '../../../projects/scope'
 import { scopeFilePath } from '../../../projects/scopePath'
 import type { ScopePath } from '../../../projects/scopePath'
 import type { HistoryEntry, HistoryScope, ProjectHistory, ProjectSync } from '../../../ports/ProjectHistory'
-import type { LabelOutcome } from '../../../platform/history'
+import type { LabelOutcome } from '../../../projects/label'
 import type { SyncSide } from '../../../platform/sync'
 import type { DesktopHistory } from '../../desktop/channel'
 

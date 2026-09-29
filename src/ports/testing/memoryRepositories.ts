@@ -19,7 +19,7 @@
  * accidentally-shared-object bug through, and the suites check for exactly
  * that.
  */
-import { labelSlug } from '../../platform/history'
+import { labelSlug } from '../../projects/label'
 import { contentAddressOf, imageFolderOf, imageFoldersUnder, imageNameRefusal } from '../../model/imageName'
 import type { ContentAddress, ImageEntry, ImageFolder, ImageName } from '../../model/imageName'
 import { SCOPE_RECORD, sameRecord } from '../../model/recordKey'

@@ -16,8 +16,8 @@ import type { ScopeSnapshot } from '../../projects/scope'
 import { scopeFilePath } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
 import type { HistoryEntry, HistoryScope, ProjectHistory } from '../../ports/ProjectHistory'
-import { labelSlug } from '../../platform/history'
-import type { LabelOutcome } from '../../platform/history'
+import { labelSlug } from '../../projects/label'
+import type { LabelOutcome } from '../../projects/label'
 
 export type MemorySnapshot = Omit<HistoryEntry, 'labels'> & {
   labels?: string[]

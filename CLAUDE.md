@@ -384,6 +384,9 @@ src/projects/     A scope: open, save, order, summarise, address, remember.
                                       writer every repository shares (ADR-0031 §1)
                     settings          settings as a repository keeps them, and
                                       the patch that changes them
+                    label             what a label on a version is compared by,
+                                      in every source: a label travels with its
+                                      history (ADR-0008, ADR-0031)
 src/platform/     What the app runs inside, and what a failure looks like.
                     errors            ShellError: a refusal as a key, never a sentence
                     diagnostics       what a failure entry is, and how a trail reads

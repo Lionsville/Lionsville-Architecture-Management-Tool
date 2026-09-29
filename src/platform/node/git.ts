@@ -58,8 +58,8 @@ import { access, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
 import { LOCAL_SETTINGS_PATH } from '../../projects/folderSettings'
-import { labelSlug } from '../history'
-import type { LabelOutcome } from '../history'
+import { labelSlug } from '../../projects/label'
+import type { LabelOutcome } from '../../projects/label'
 import { BEFORE_SYNC_BRANCH_PREFIX } from '../sync'
 import type {
   PullOutcome, PushOutcome, ResolveOutcome, SyncRefusal, SyncRemote, SyncSide,

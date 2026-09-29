@@ -26,7 +26,7 @@
  */
 import type { AgentAnswer, AgentRequest } from '../../agent/tools'
 import type { AgentServerPatch, AgentServerStatus } from '../../platform/agentServer'
-import type { LabelOutcome } from '../../platform/history'
+import type { LabelOutcome } from '../../projects/label'
 import type { HostCommands } from '../../platform/hostCommands'
 import type { UpdateSettings, UpdateSettingsPatch } from '../../platform/updateSettings'
 import type { LocalSettings, LocalSettingsPatch } from '../../projects/folderSettings'

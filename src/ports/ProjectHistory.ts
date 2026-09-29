@@ -27,7 +27,7 @@ import type { ScopePath } from '../projects/scopePath'
  * be kept agreeing about.
  */
 export type { HistoryPlace }
-import type { LabelOutcome } from '../platform/history'
+import type { LabelOutcome } from '../projects/label'
 import type { PullOutcome, PushOutcome, ResolveOutcome, SyncRemote, SyncSide } from '../platform/sync'
 
 /** One snapshot, as a person reads a list of them. */

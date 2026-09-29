@@ -31,7 +31,7 @@
  * `HistoryRepository.contract.ts`, beside this seam, is the behaviour every
  * implementation must show.
  */
-import type { LabelOutcome } from '../platform/history'
+import type { LabelOutcome } from '../projects/label'
 import type { RecordKey } from '../model/recordKey'
 import type { ScopeId, ScopeState } from '../projects/scopeState'
 
