@@ -525,11 +525,18 @@ is written around.
   read on its own. A text, a scope or a picture that will not read stays
   where it was, the rest comes over, and the note kept with the repositories
   lists what was left, so a person can be told.
-- **Every start looks again.** The note keeps, per address, the revision and
-  time of the text brought. A scope an older page changed or added there since
-  is brought again as an entry of its own. It comes after an entry that keeps
-  what was here, and a scope here that cannot be read whole is not written
-  over and is named.
+- **Every start looks again, and an older copy never lands over newer
+  work.** The note keeps, per address, the revision and time of the text last
+  looked at. The source keeps which scope each address was brought to and the
+  revision it was left at. A text an older page changed, added or only saved
+  again since is brought again only where that scope is still at that address
+  and at that revision: nothing was done to it here since. Anywhere else — a
+  step here, a move, a removal — it has changed in both places. Nothing is
+  written, and the standing lists the address until a person answers it,
+  one address at a time: `bringOver` writes the older copy after an entry
+  that keeps what was here, `leave` keeps what is here and brings the older
+  copy only once it changes again with nothing done here since. A scope here
+  that cannot be read whole is not written over, and is named.
 - **One key is written: a marker.** It sits outside every key a scope or a
   preference is kept under, so an older build ignores it, and it says a copy
   was made. Every other key stays byte for byte as it was. Where the marker is

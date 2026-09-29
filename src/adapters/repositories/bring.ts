@@ -7,16 +7,25 @@
  *
  * A scope brought over is not a step — whatever kept it kept no steps — so it
  * lands as a content written whole, with the records it changed read off the
- * content before and after (`recordsBetween`), exactly as a step's are. It is
- * never written over what a person did here without a way back: where the
- * scope has an open entry, that entry is closed first, with the safeguard's
- * subject, and the arrival is an entry of its own after it.
+ * content before and after (`recordsBetween`), exactly as a step's are.
+ *
+ * **It never lands over work done here.** Where a scope was brought before,
+ * the source keeps which scope it landed as and the revision it was left at
+ * (`Placed`). A scope brought again lands only where that scope is still at
+ * that address and still at that revision — nothing was done to it here since.
+ * Anywhere else — a step applied here, the scope moved or removed, another
+ * scope at the address — it has changed in both places, and nothing is
+ * written: the address is listed (`Landed.diverged`) for a person to answer,
+ * one address at a time, by bringing it over anyway (`Brought.force`) or
+ * leaving what is here (`Brought.settle`). A scope brought over anyway is
+ * never written without a way back: its open entry is closed first, with the
+ * safeguard's subject, and the arrival is an entry of its own after it.
  */
 import type { ContentAddress } from '../../model/imageName'
 import { SCOPE_RECORD, sameRecord, sameValue } from '../../model/recordKey'
 import { isSafeScopePath, ROOT_SCOPE } from '../../projects/scopePath'
 import { emptyContent, recordsBetween } from '../../projects/scopeState'
-import type { ScopeAddress, ScopeContent, ScopeId } from '../../projects/scopeState'
+import type { Revision, ScopeAddress, ScopeContent, ScopeId } from '../../projects/scopeState'
 import type { Transaction } from './KeyedStore'
 import {
   bytesKey, closeEntry, makeAncestors, makeScope, mintId, readContent, says, scopeAt, writeContent,
@@ -42,10 +51,27 @@ export type Brought = {
   safeguard: string
   /** Kept with the source for the next bringing to read, as the bringing wrote it. */
   note: unknown
+  /** A person's answer: land over whatever is at each address, work done here or not. */
+  force?: boolean
+  /** A person's answer: leave what is at each of these addresses, and bring over it only what changes from now. */
+  settle?: readonly ScopeAddress[]
 }
 
-/** What was brought: the scopes that changed, and the addresses that could not be written, with why. */
-export type Landed = { changed: ScopeId[]; treeMoved: boolean; refused: ScopeAddress[] }
+/** Per address, the scope a bringing last left there and the revision it left it at. */
+export type Placed = Record<ScopeAddress, { scope: ScopeId; revision: Revision }>
+
+/**
+ * What a landing came to: the scopes it changed; the addresses it wrote or
+ * found already holding what was brought; those changed in both places, and
+ * those whose scope here could not be read whole — neither written.
+ */
+export type Landed = {
+  changed: ScopeId[]
+  treeMoved: boolean
+  landed: ScopeAddress[]
+  diverged: ScopeAddress[]
+  refused: ScopeAddress[]
+}
 
 function timeOf(updatedAt: string | undefined): number {
   const at = updatedAt === undefined ? Number.NaN : Date.parse(updatedAt)
@@ -61,22 +87,52 @@ export function inTreeOrder(scopes: readonly BroughtScope[]): BroughtScope[] {
   return [...scopes].filter((one) => isSafeScopePath(one.address)).sort((one, other) => depth(one.address) - depth(other.address))
 }
 
+/** A scope with nothing in it yet — the organisation of a store just made — which holds no work to keep. */
+async function isEmpty(tx: Transaction, held: KeptScope): Promise<boolean> {
+  const { content, unreadable } = await readContent(tx, held)
+  return !unreadable && recordsBetween(emptyContent(content.model.name), content).length === 0
+}
+
+/**
+ * Whether a scope may be brought to its address without a person's answer:
+ * nothing was done here since the last bringing left it — or, where none did,
+ * there is nothing here but an empty scope.
+ */
+async function untouched(tx: Transaction, held: KeptScope | undefined, placed: Placed[ScopeAddress] | undefined): Promise<boolean> {
+  if (placed) return held?.id === placed.scope && held.revision === placed.revision
+  return !held || isEmpty(tx, held)
+}
+
 /**
  * Land brought scopes in a transaction: each over the scope at its address,
- * or as a new scope where there is none. `scopes` is every scope the source
- * holds, and gains the ones made. The caller writes `meta` back, and the
- * index's line for what changed.
+ * or as a new scope where there is none — where nothing was done here since,
+ * or a person said to. `scopes` is every scope the source holds, and gains the
+ * ones made; `placed` is what the last bringings left, and is kept up to date.
+ * The caller writes `meta` back, and the index's line for what changed.
  */
 export async function landBrought(
-  tx: Transaction, meta: Meta, scopes: KeptScope[], brought: Brought, by: string,
+  tx: Transaction, meta: Meta, scopes: KeptScope[], brought: Brought, by: string, placed: Placed,
 ): Promise<Landed> {
-  const landed: Landed = { changed: [], treeMoved: false, refused: [] }
+  const landed: Landed = { changed: [], treeMoved: false, landed: [], diverged: [], refused: [] }
   for (const one of inTreeOrder(brought.scopes)) {
     const held = scopeAt(scopes, one.address)
+    if (!brought.force && !await untouched(tx, held, placed[one.address])) {
+      landed.diverged.push(one.address)
+      continue
+    }
     const kept = held ? await over(tx, meta, held, one, brought, by, landed) : made(tx, scopes, one, landed)
+    if (kept === 'refused') continue
+    landed.landed.push(one.address)
+    const now = kept ?? held!
+    placed[one.address] = { scope: now.id, revision: now.revision }
     if (!kept) continue
     for (const { contentAddress, bytes } of one.bytes) tx.put('bytes', bytesKey(kept.id, contentAddress), bytes)
     await closeEntry(tx, meta, kept, by, brought.subject)
+  }
+  for (const address of brought.settle ?? []) {
+    const held = scopeAt(scopes, address)
+    if (held) placed[address] = { scope: held.id, revision: held.revision }
+    else delete placed[address]
   }
   return landed
 }
@@ -98,16 +154,17 @@ function made(tx: Transaction, scopes: KeptScope[], one: BroughtScope, landed: L
 /**
  * A brought scope over the scope at its address: its open entry closed first,
  * then its content written whole. `undefined` where there is nothing to write
- * — the scope holds that content already — or it may not be written: a scope
- * read in part is not written over, as no step is applied to one.
+ * — the scope holds that content already — and `refused` where it may not be
+ * written: a scope read in part is not written over, as no step is applied to
+ * one.
  */
 async function over(
   tx: Transaction, meta: Meta, held: KeptScope, one: BroughtScope, brought: Brought, by: string, landed: Landed,
-): Promise<KeptScope | undefined> {
+): Promise<KeptScope | undefined | 'refused'> {
   const { content: before, unreadable } = await readContent(tx, held)
   if (unreadable) {
     landed.refused.push(one.address)
-    return undefined
+    return 'refused'
   }
   const records = recordsBetween(before, one.content)
   if (records.length === 0) return undefined

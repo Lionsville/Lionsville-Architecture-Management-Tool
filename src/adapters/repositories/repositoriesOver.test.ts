@@ -79,7 +79,40 @@ describe('work brought from somewhere else', () => {
     expect([second.notes, second.fresh]).toEqual([[{ first: true }], [false]])
   })
 
-  it('lands over a scope that is there, after an entry that keeps what it held', async () => {
+  it('writes nothing over work done here, and lists the address; lands where nothing was done since', async () => {
+    const store = new MemoryStore()
+    const arrival = (name: string, note: number): Brought => ({
+      subject: 'Brought', safeguard: 'Before', note, scopes: [{ address: 'acme', content: emptyContent(name), bytes: [] }],
+    })
+    const source = (brought: Brought | undefined) => new Source(store, { id: 'brought', by: 'test', ...bringing(brought) })
+    const first = source(arrival('Acme', 1))
+    const repositories = repositoriesOn(first)
+    const acme = (await repositories.scopes.tree()).root.children[0]
+
+    // Nothing done here since: the next copy lands.
+    const second = source(arrival('Acme, later', 2))
+    expect((await repositoriesOn(second).scopes.state(acme.id))?.model.name).toBe('Acme, later')
+    expect((await second.lastBrought())?.diverged).toEqual([])
+
+    // A step here since: the next copy is not written, and the address waits for a person.
+    await repositories.scopes.apply([{ scope: acme.id, steps: [step(addCrews)] }])
+    const third = source(arrival('Acme, older page', 3))
+    const state = await repositoriesOn(third).scopes.state(acme.id)
+    expect([state?.model.name, state?.model.elements.map((one) => one.id)]).toEqual(['Acme, later', ['crews']])
+    expect(await third.lastBrought()).toEqual({ note: 3, refused: [], diverged: ['acme'] })
+
+    // Moved here: the address it left is not filled with the copy either.
+    await repositories.scopes.move(acme.id, 'globex/acme')
+    const fourth = source(arrival('Acme, older page again', 4))
+    expect((await repositoriesOn(fourth).scopes.tree()).root.children.map((node) => node.address)).toEqual(['globex'])
+    expect((await fourth.lastBrought())?.diverged).toEqual(['acme'])
+
+    // Left as it is: the address waits no longer.
+    await fourth.bring(() => Promise.resolve({ scopes: [], subject: 'Brought', safeguard: 'Before', note: 5, settle: ['acme'] }))
+    expect((await fourth.lastBrought())?.diverged).toEqual([])
+  })
+
+  it('lands over a scope that is there when a person says so, after an entry that keeps what it held', async () => {
     const store = new MemoryStore()
     const repositories = repositoriesOver(store, { id: 'brought', by: 'test' })
     const made = await repositories.scopes.create('acme', { name: 'Acme Logistics' })
@@ -87,7 +120,7 @@ describe('work brought from somewhere else', () => {
     await repositories.history.record({})
     await repositories.scopes.apply([{ scope: made.id, steps: [step(addCrews)] }])
     const later = bringing({
-      subject: 'Again', safeguard: 'Before again', note: 2,
+      subject: 'Again', safeguard: 'Before again', note: 2, force: true,
       scopes: [{ address: 'acme', content: emptyContent('Acme again'), bytes: [] }],
     })
     const reopened = repositoriesOver(store, { id: 'brought', by: 'test', ...later })
@@ -110,11 +143,11 @@ describe('work brought from somewhere else', () => {
     })
     const source = new Source(store, {
       id: 'brought', by: 'test',
-      bring: { prepare: () => Promise.resolve({ subject: 'Again', safeguard: 'Before', note: 1, scopes: [{ address: 'acme', content: emptyContent('Other'), bytes: [] }] }) },
+      bring: { prepare: () => Promise.resolve({ subject: 'Again', safeguard: 'Before', note: 1, force: true, scopes: [{ address: 'acme', content: emptyContent('Other'), bytes: [] }] }) },
     })
     const reopened = repositoriesOn(source)
     expect((await reopened.scopes.state(made.id))?.model.name).toBe('Acme Logistics')
-    expect(await source.lastBrought()).toEqual({ note: 1, refused: ['acme'] })
+    expect(await source.lastBrought()).toEqual({ note: 1, refused: ['acme'], diverged: [] })
   })
 
   it('is brought once where two pages start on one new store together', async () => {

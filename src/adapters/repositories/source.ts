@@ -27,7 +27,7 @@ import { ROOT_SCOPE } from '../../projects/scopePath'
 import { emptyContent } from '../../projects/scopeState'
 import type { ScopeAddress } from '../../projects/scopeState'
 import { landBrought } from './bring'
-import type { Brought } from './bring'
+import type { Brought, Placed } from './bring'
 import { SHELVES } from './KeyedStore'
 import type { KeyedStore, Transaction } from './KeyedStore'
 import { allScopes, indexChanged, META_KEY, makeScope, mintId } from './kept'
@@ -38,10 +38,18 @@ import type { Meta } from './kept'
  * many bringings there have been: a page that finds the count moved brings
  * nothing.
  */
-type BroughtNote = { count: number; note: unknown; refused: ScopeAddress[] }
+type BroughtNote = {
+  count: number
+  note: unknown
+  refused: ScopeAddress[]
+  /** Where each address was last brought to, and at what revision it was left (`bring.ts`). */
+  placed: Placed
+  /** Addresses changed in both places since: nothing written, until a person answers. */
+  diverged: ScopeAddress[]
+}
 
-/** What the last bringing left: its note, and the addresses it could not write. */
-export type LastBrought = { note: unknown; refused: readonly ScopeAddress[] }
+/** What the bringings left: the last note, the addresses it could not write, and those waiting for a person. */
+export type LastBrought = { note: unknown; refused: readonly ScopeAddress[]; diverged: readonly ScopeAddress[] }
 
 const BROUGHT_KEY = 'brought'
 
@@ -65,8 +73,8 @@ export type SourceOptions = {
   bring?: Bringing
 }
 
-/** A bringing's answer: the addresses it could not write, where there were any. */
-export type BroughtAnswer = { refused: ScopeAddress[] }
+/** A bringing's answer: the addresses it could not write, and those still waiting for a person. */
+export type BroughtAnswer = { refused: ScopeAddress[]; diverged: ScopeAddress[] }
 
 export class Source {
   readonly id: string
@@ -90,7 +98,7 @@ export class Source {
   lastBrought(): Promise<LastBrought | undefined> {
     return this.read(async (tx) => {
       const held = await tx.get<BroughtNote>('meta', BROUGHT_KEY)
-      return held && { note: held.note, refused: held.refused }
+      return held && { note: held.note, refused: held.refused, diverged: held.diverged ?? [] }
     })
   }
 
@@ -98,11 +106,10 @@ export class Source {
    * Bring work in now, prepared from the note as it stands — for a person who
    * has answered what a start could not decide for them.
    */
-  async bring(prepare: (note: unknown) => Promise<Brought | undefined>): Promise<BroughtAnswer> {
-    await this.ready()
-    const seen = await this.store.transaction(SHELVES, 'read', (tx) => tx.get<BroughtNote>('meta', BROUGHT_KEY))
-    const brought = await prepare(seen?.note)
-    if (!brought) return { refused: [] }
+  async bring(prepare: (last: LastBrought | undefined) => Promise<Brought | undefined>): Promise<BroughtAnswer> {
+    const last = await this.lastBrought()
+    const brought = await prepare(last)
+    if (!brought) return { refused: [], diverged: [...(last?.diverged ?? [])] }
     return this.store.transaction(SHELVES, 'write', (tx) => this.land(tx, brought))
   }
 
@@ -138,12 +145,17 @@ export class Source {
 
   private async land(tx: Transaction, brought: Brought): Promise<BroughtAnswer> {
     const meta = (await tx.get<Meta>('meta', META_KEY))!
-    const landed = await landBrought(tx, meta, await allScopes(tx), brought, this.by)
+    const last = await tx.get<BroughtNote>('meta', BROUGHT_KEY)
+    const placed: Placed = { ...last?.placed }
+    const landed = await landBrought(tx, meta, await allScopes(tx), brought, this.by, placed)
     if (landed.treeMoved) meta.treeRevision = mintId()
     if (landed.changed.length > 0) indexChanged(tx, meta, landed.changed)
     tx.put('meta', META_KEY, meta)
-    const count = ((await tx.get<BroughtNote>('meta', BROUGHT_KEY))?.count ?? 0) + 1
-    tx.put('meta', BROUGHT_KEY, { count, note: brought.note, refused: landed.refused } satisfies BroughtNote)
-    return { refused: landed.refused }
+    const answered = new Set([...landed.landed, ...(brought.settle ?? [])])
+    const diverged = [...new Set([...(last?.diverged ?? []).filter((address) => !answered.has(address)), ...landed.diverged])].sort()
+    tx.put('meta', BROUGHT_KEY, {
+      count: (last?.count ?? 0) + 1, note: brought.note, refused: landed.refused, placed, diverged,
+    } satisfies BroughtNote)
+    return { refused: landed.refused, diverged }
   }
 }

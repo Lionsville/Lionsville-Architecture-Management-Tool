@@ -125,27 +125,86 @@ describe('the scopes a browser kept before its repositories', () => {
     expect(after).toEqual(before)
   })
 
-  it('arrive again where an older page changed or added one since, after an entry that keeps what was here', async () => {
+  it('arrive again where an older page changed or added one since and nothing was done here', async () => {
     const storage = await keptBefore()
     const indexedDb = fakeIndexedDb()
-    const { repositories } = browserRepositories(indexedDb, storage)
-    const globex = (await scopeAt(repositories, 'globex'))!
-    await repositories.scopes.apply([{ scope: globex.id, steps: [{ stepId: 'rename', at: Date.now(), command: { type: 'element.update', id: 'crews', patch: { name: 'Crew planning' } } }] }])
+    const globex = (await scopeAt(browserRepositories(indexedDb, storage).repositories, 'globex'))!
 
     await save(storage, snapshot('globex', model('Globex, older page')))
     await save(storage, snapshot('globex/depot', model('Depot')))
-    const again = browserRepositories(indexedDb, storage).repositories
+    const { repositories: again, earlier } = browserRepositories(indexedDb, storage)
     expect((await again.scopes.state(globex.id))?.model.name).toBe('Globex, older page')
-    expect(await subjects(again, globex.id)).toEqual([AGAIN_SUBJECT, BEFORE_AGAIN_SUBJECT, EARLIER_SUBJECT])
-    const [, safeguard] = (await again.history.entries({ scopes: [globex.id] })).entries
-    expect((await again.history.stateAt(globex.id, safeguard.id))?.model.elements[0].name).toBe('Crew planning')
-    const depot = (await scopeAt(again, 'globex/depot'))!
-    expect(await subjects(again, depot.id)).toEqual([AGAIN_SUBJECT])
+    expect(await subjects(again, globex.id)).toEqual([AGAIN_SUBJECT, EARLIER_SUBJECT])
+    expect(await subjects(again, (await scopeAt(again, 'globex/depot'))!.id)).toEqual([AGAIN_SUBJECT])
+    expect(await subjects(again, (await scopeAt(again, 'acme/rail'))!.id)).toEqual([EARLIER_SUBJECT])
+    expect((await earlier!.standing()).diverged).toEqual([])
 
-    const rail = (await scopeAt(again, 'acme/rail'))!
-    expect(await subjects(again, rail.id)).toEqual([EARLIER_SUBJECT])
     const tree = await again.scopes.tree()
     expect(await browserRepositories(indexedDb, storage).repositories.scopes.tree()).toEqual(tree)
+  })
+
+  describe('where work was done here since', () => {
+    /** A store with the copy in it, a step applied here to Globex, and the store opened again after `meanwhile`. */
+    async function divergedAfter(meanwhile: (storage: Held) => Promise<void>) {
+      const storage = await keptBefore()
+      const indexedDb = fakeIndexedDb()
+      const { repositories } = browserRepositories(indexedDb, storage)
+      const globex = (await scopeAt(repositories, 'globex'))!
+      const rename = { type: 'element.update', id: 'crews', patch: { name: 'Crew planning' } } as const
+      await repositories.scopes.apply([{ scope: globex.id, steps: [{ stepId: crypto.randomUUID(), at: Date.now(), command: rename }] }])
+      const before = await repositories.scopes.state(globex.id)
+      await meanwhile(storage)
+      return { storage, indexedDb, globex, before, ...browserRepositories(indexedDb, storage) }
+    }
+
+    it('writes nothing where the older copy changed, and lists the address', async () => {
+      const { repositories, earlier, globex, before } = await divergedAfter((storage) => save(storage, snapshot('globex', model('Globex, older page'))))
+      expect(await repositories.scopes.state(globex.id)).toEqual(before)
+      expect(await subjects(repositories, globex.id)).toEqual([EARLIER_SUBJECT])
+      expect((await earlier!.standing()).diverged).toEqual(['globex'])
+    })
+
+    it('writes nothing where an older page only saved it again, and lists the address', async () => {
+      const { repositories, earlier, globex, before } = await divergedAfter(async (storage) => {
+        const kept = await new WebStorageScopeStore(storage).load('globex')
+        await save(storage, kept!)
+      })
+      expect(await repositories.scopes.state(globex.id)).toEqual(before)
+      expect((await earlier!.standing()).diverged).toEqual(['globex'])
+    })
+
+    it('writes nothing where the scope was moved here, and brings nothing to the address it left', async () => {
+      const storage = await keptBefore()
+      const indexedDb = fakeIndexedDb()
+      const { repositories } = browserRepositories(indexedDb, storage)
+      const globex = (await scopeAt(repositories, 'globex'))!
+      await repositories.scopes.move(globex.id, 'acme/globex')
+      await save(storage, snapshot('globex', model('Globex, older page')))
+      const reopened = browserRepositories(indexedDb, storage)
+      expect(await scopeAt(reopened.repositories, 'globex')).toBeUndefined()
+      expect((await reopened.repositories.scopes.state(globex.id))?.model.name).toBe('Globex')
+      expect((await reopened.earlier!.standing()).diverged).toEqual(['globex'])
+    })
+
+    it('brings the older copy over when a person says so, after an entry that keeps what was here', async () => {
+      const { repositories, earlier, globex } = await divergedAfter((storage) => save(storage, snapshot('globex', model('Globex, older page'))))
+      expect((await earlier!.bringOver(['globex'])).diverged).toEqual([])
+      expect((await repositories.scopes.state(globex.id))?.model.name).toBe('Globex, older page')
+      expect(await subjects(repositories, globex.id)).toEqual([AGAIN_SUBJECT, BEFORE_AGAIN_SUBJECT, EARLIER_SUBJECT])
+      const [, safeguard] = (await repositories.history.entries({ scopes: [globex.id] })).entries
+      expect((await repositories.history.stateAt(globex.id, safeguard.id))?.model.elements[0].name).toBe('Crew planning')
+    })
+
+    it('leaves what is here when a person says so, and brings a later change only where nothing was done since', async () => {
+      const { storage, indexedDb, repositories, earlier, globex, before } = await divergedAfter((held) => save(held, snapshot('globex', model('Globex, older page'))))
+      expect((await earlier!.leave(['globex'])).diverged).toEqual([])
+      expect(await repositories.scopes.state(globex.id)).toEqual(before)
+
+      await save(storage, snapshot('globex', model('Globex, older page again')))
+      const reopened = browserRepositories(indexedDb, storage)
+      expect((await reopened.repositories.scopes.state(globex.id))?.model.name).toBe('Globex, older page again')
+      expect((await reopened.earlier!.standing()).diverged).toEqual([])
+    })
   })
 
   it('are not brought into a database made anew after a copy: a person is asked, and answers', async () => {
@@ -173,7 +232,7 @@ describe('the scopes a browser kept before its repositories', () => {
     const { repositories, earlier } = browserRepositories(fakeIndexedDb(), storage)
     const tree = await repositories.scopes.tree()
     expect([tree.root.name, tree.root.children]).toEqual(['', []])
-    expect(await browserRepositories(fakeIndexedDb(), storage).earlier!.standing()).toEqual({ asking: false, left: [], refused: [] })
+    expect(await browserRepositories(fakeIndexedDb(), storage).earlier!.standing()).toEqual({ asking: false, left: [], refused: [], diverged: [] })
     expect((await earlier!.standing()).asking).toBe(false)
   })
 })

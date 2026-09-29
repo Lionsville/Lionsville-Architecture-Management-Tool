@@ -25,10 +25,15 @@
  * marker outside every key a scope or a preference is kept under, which an
  * older build does not read: it says a copy was made.
  *
- * **Every start looks again.** The note kept with the repositories says, per
- * address, the revision and time of the text that was brought. A scope an
- * older page wrote there since — changed, or new — is brought again, as an
- * entry of its own, after an entry that keeps what was here before it.
+ * **Every start looks again, and never brings an older copy over newer
+ * work.** The note kept with the repositories says, per address, the revision
+ * and time of the text last looked at. A text an older page wrote since —
+ * changed, new, or only saved again, as an older build saves every scope it
+ * upgrades on opening — is brought again only where nothing was done here to
+ * the scope it was brought to (`adapters/repositories/bring.ts`). Where
+ * something was — a step, a move, a removal — it has changed in both places:
+ * nothing is written, and the standing lists the address for a person to
+ * answer, one address at a time.
  *
  * **A lost database is asked about, never refilled on the quiet.** Where the
  * marker says a copy was made and the database is new, what the key-value
@@ -83,15 +88,22 @@ export type EarlierStanding = {
   left: readonly Left[]
   /** Addresses whose scope here could not be read whole, so nothing was brought over it. */
   refused: readonly string[]
+  /** Addresses changed in both places: nothing was written, and a person chooses which copy stands. */
+  diverged: readonly ScopePath[]
 }
 
-/** What step 4's composition answers for a person about the scopes kept before. */
+/**
+ * What the composition answers for a person about the scopes kept before. Each
+ * answer takes the addresses it is about; without them, every address the
+ * standing is waiting on — the diverged ones, or all of them where the
+ * database was lost.
+ */
 export type Earlier = {
   standing(): Promise<EarlierStanding>
-  /** Bring every scope kept before over again, as entries of their own. */
-  bringOver(): Promise<BroughtAnswer>
-  /** Leave them where they are: noted as seen, brought only once they change. */
-  leave(): Promise<void>
+  /** Bring the older copy over what is here, each after an entry that keeps what is here. */
+  bringOver(addresses?: readonly ScopePath[]): Promise<BroughtAnswer>
+  /** Leave what is here: the older copy is brought over it only once it changes again. */
+  leave(addresses?: readonly ScopePath[]): Promise<BroughtAnswer>
 }
 
 type Reading = { scopes: BroughtScope[]; seen: Seen; left: Left[] }
@@ -231,20 +243,43 @@ export function bringingEarlier(storage: KeyValueStorage): Bringing {
   }
 }
 
+/**
+ * A person's answer for some addresses: bring the older copy over what is
+ * here (`force`), or leave what is here (`settle`). Only those addresses are
+ * marked as looked at, so a change at another is still found at the next start.
+ */
+function answer(source: Source, storage: KeyValueStorage, bringOver: boolean) {
+  return (addresses?: readonly ScopePath[]) => source.bring(async (last) => {
+    const note = asNote(last?.note)
+    const reading = await readEarlier(storage)
+    const wanted = new Set(addresses ?? (note?.asking ? Object.keys(reading.seen) : last?.diverged ?? []))
+    const seen: Seen = { ...note?.seen }
+    for (const address of wanted) {
+      if (reading.seen[address]) seen[address] = reading.seen[address]
+      else delete seen[address]
+    }
+    const asking = addresses !== undefined && note?.asking === true
+    return {
+      scopes: bringOver ? reading.scopes.filter(({ address }) => wanted.has(address)) : [],
+      subject: AGAIN_SUBJECT,
+      safeguard: BEFORE_AGAIN_SUBJECT,
+      note: { seen, left: reading.left, ...(asking ? { asking: true } : {}) } satisfies Note,
+      ...(bringOver ? { force: true } : { settle: [...wanted] }),
+    }
+  })
+}
+
 /** The answers a person gives about the scopes kept before, over the source that brings them. */
 export function earlierOf(source: Source, storage: KeyValueStorage): Earlier {
   return {
     standing: async () => {
       const last = await source.lastBrought()
       const note = asNote(last?.note)
-      return { asking: note?.asking === true, left: note?.left ?? [], refused: last?.refused ?? [] }
+      return {
+        asking: note?.asking === true, left: note?.left ?? [], refused: last?.refused ?? [], diverged: last?.diverged ?? [],
+      }
     },
-    bringOver: () => source.bring(async () => {
-      const reading = await readEarlier(storage)
-      return broughtFrom(reading, reading.scopes, AGAIN_SUBJECT)
-    }),
-    leave: async () => {
-      await source.bring(async () => broughtFrom(await readEarlier(storage), [], AGAIN_SUBJECT))
-    },
+    bringOver: answer(source, storage, true),
+    leave: answer(source, storage, false),
   }
 }
