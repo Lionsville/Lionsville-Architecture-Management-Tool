@@ -31,6 +31,12 @@ export const sameEntry: SameFolder = (kept, mine) => {
   return held.isSameEntry ? held.isSameEntry(mine) : Promise.resolve(false)
 }
 
+/** A folder's record: its handle, and its place among the records made. */
+type FolderRecord = { handle: FolderHandle; seq?: number }
+
+/** Where the number of the last record made is kept, among the records: no key made at random looks like it. */
+const SEQ_KEY = '#seq'
+
 export class BrowserFolder {
   private key: Promise<string> | undefined
 
@@ -50,27 +56,32 @@ export class BrowserFolder {
   }
 
   /**
-   * The key of the records whose handle is this folder — the lowest, where
-   * two tabs each made one for it at once — or a new one, made and then
-   * looked for again among all of them, so both tabs settle on one key and
+   * The key of the first record made whose handle is this folder, or a new
+   * one, made and then looked for again among all of them. Each record is
+   * numbered in the transaction that writes it, so the first one made for a
+   * folder is the first one every tab that makes one after it finds: two tabs
+   * opening a folder at once settle on one key whichever finishes first, and
    * neither's steps or history are kept where the other never looks.
    */
   private async find(): Promise<string> {
     const found = await this.matching()
     if (found) return found
     const key = crypto.randomUUID()
-    await this.store.transaction(['folders'], 'write', (tx) => {
-      tx.put('folders', key, { handle: this.handle })
-      return Promise.resolve()
+    await this.store.transaction(['folders'], 'write', async (tx) => {
+      const seq = ((await tx.get<number>('folders', SEQ_KEY)) ?? 0) + 1
+      tx.put('folders', SEQ_KEY, seq)
+      tx.put('folders', key, { handle: this.handle, seq } satisfies FolderRecord)
     })
     return await this.matching() ?? key
   }
 
-  /** The lowest key whose handle is this folder, asked outside any transaction. */
+  /** The key of the first record made whose handle is this folder, asked outside any transaction. */
   private async matching(): Promise<string | undefined> {
-    const kept = await this.store.transaction(['folders'], 'read', (tx) => tx.range<{ handle: FolderHandle }>('folders', {}))
-    for (const { key, value } of kept) {
-      if (await this.same(value.handle, this.handle).catch(() => false)) return key
+    const kept = await this.store.transaction(['folders'], 'read', (tx) => tx.range<FolderRecord | number>('folders', {}))
+    const records = kept.flatMap(({ key, value }) => (typeof value === 'object' ? [{ key, ...value }] : []))
+      .sort((one, other) => (one.seq ?? 0) - (other.seq ?? 0) || (one.key < other.key ? -1 : 1))
+    for (const { key, handle } of records) {
+      if (await this.same(handle, this.handle).catch(() => false)) return key
     }
     return undefined
   }

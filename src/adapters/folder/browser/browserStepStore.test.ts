@@ -11,8 +11,9 @@
  * object with methods drops them; so the handles here are plain objects the
  * clone keeps, and whether two are one folder is asked by what they say.
  */
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { MemoryStore } from '../../memory/MemoryStore'
+import type { KeyedStore } from '../../repositories/KeyedStore'
 import { IndexedDbStore } from '../../webStorage/IndexedDbStore'
 import { fakeIndexedDb } from '../../webStorage/testing/fakeIndexedDb'
 import { StepMemory } from '../stepMemory'
@@ -65,5 +66,27 @@ describe('what a browser keeps for a folder', () => {
     expect(first).toBe(second)
     await new StepMemory(browserStepStore(one)).remember([{ stepId: 'from-one', scope: 's-1' }])
     expect(await new StepMemory(browserStepStore(other)).where('from-one')).toEqual({ scope: 's-1' })
+  })
+
+  it('settles them on one key where one has settled before the other writes, whichever key sorts first', async () => {
+    const store = new MemoryStore()
+    // The second tab looks, finds nothing, and is slow to write its record.
+    let open = () => {}
+    const gate = new Promise<void>((resolve) => { open = resolve })
+    const slow: KeyedStore = {
+      transaction: async (shelves, mode, work) => {
+        if (mode === 'write') await gate
+        return store.transaction(shelves, mode, work)
+      },
+    }
+    const keys = vi.spyOn(crypto, 'randomUUID')
+      .mockReturnValueOnce('00000000-0000-4000-8000-000000000000')
+      .mockReturnValueOnce('ffffffff-ffff-4fff-8fff-ffffffffffff')
+    const late = new BrowserFolder(slow, { folder: 'acme' }, same).folderKey()
+    await vi.waitFor(() => expect(keys).toHaveBeenCalledTimes(1))
+    const first = await new BrowserFolder(store, { folder: 'acme' }, same).folderKey()
+    open()
+    expect(await late).toBe(first)
+    keys.mockRestore()
   })
 })

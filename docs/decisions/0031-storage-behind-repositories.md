@@ -479,9 +479,11 @@ repositories, in `src/adapters/folder/`:
   144 MB. A commit reads the head again in the transaction that writes it:
   where another tab moved it on, it writes nothing and is planned again on
   what that tab recorded, and it is given up (`shell.historyFailed`) after
-  five tries. Two tabs opening a folder new to the browser at once each look
-  again after making its record and take the lowest key whose handle is the
-  folder, so both keep its steps and history under one key. Its history is
+  five tries. A folder's record is numbered in the transaction that writes
+  it, and a tab takes the first record made whose handle is the folder,
+  looking again after making its own: two tabs opening a folder new to the
+  browser at once settle on one key whichever finishes first, and keep its
+  steps and history under it. Its history is
   kept of what a desktop repository would hold (`workingSet.ts`): not the
   operating systems' litter (`.DS_Store`, `Thumbs.db`, `desktop.ini`), a
   `.git` or a `node_modules` folder, or what the top-level `.gitignore`'s
