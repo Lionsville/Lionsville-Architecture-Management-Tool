@@ -11,6 +11,10 @@
 export const EN = {
   'shell.workingFileNoDiagrams': 'This working file has no diagrams.',
   'shell.unknownFile': 'This file is not a working file.',
+  // --- what a repository refuses about a scope (ADR-0031 §1) ----------------
+  'shell.scopeGone': 'That scope is not there any more: somebody removed it. Nothing was written.',
+  'shell.scopeTaken': 'Another scope is already at that address, so nothing was written. Choose another name or place.',
+  'shell.scopeIntoItself': 'A scope cannot be moved under itself, so nothing was moved.',
   /**
    * The tail of a drafted commit subject, when there were more steps than a
    * subject line should name. The body below it lists every one.

@@ -96,6 +96,8 @@ export const EN = {
   'shell.logoUnreadable': 'This file could not be read.',
   /** The same three, for a picture in a document (ADR-0009). */
   'shell.imageBadType': 'Only PNG, JPEG, SVG and WebP files can be added to a document.',
+  /** A picture's name a document cannot refer to (ADR-0031 §3). */
+  'shell.imageBadName': 'A picture cannot be called that: a name has no empty parts, no spaces and no brackets, and ends in its type, such as diagrams/context.png.',
   'shell.imageTooBig': 'This image is too big ({size} kB). The limit is {max} kB.',
   'shell.imageUnreadable': 'This file could not be read.',
 

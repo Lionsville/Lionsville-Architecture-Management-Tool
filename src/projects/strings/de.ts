@@ -69,4 +69,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'standIn.open': '{scope} öffnen',
   'standIn.from': 'aus {scope}',
   'shell.unknownFile': 'Diese Datei ist keine Arbeitsdatei.',
+  'shell.scopeGone': 'Dieser Bereich ist nicht mehr da: Jemand hat ihn entfernt. Es wurde nichts geschrieben.',
+  'shell.scopeTaken': 'An dieser Adresse steht schon ein anderer Bereich, deshalb wurde nichts geschrieben. Wählen Sie einen anderen Namen oder Ort.',
+  'shell.scopeIntoItself': 'Ein Bereich kann nicht unter sich selbst verschoben werden, deshalb wurde nichts verschoben.',
 }

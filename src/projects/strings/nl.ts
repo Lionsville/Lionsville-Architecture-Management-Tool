@@ -69,4 +69,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'standIn.open': '{scope} openen',
   'standIn.from': 'uit {scope}',
   'shell.unknownFile': 'Dit bestand is geen werkbestand.',
+  'shell.scopeGone': 'Dat onderdeel is er niet meer: iemand heeft het verwijderd. Er is niets weggeschreven.',
+  'shell.scopeTaken': 'Op dat adres staat al een ander onderdeel, dus er is niets weggeschreven. Kies een andere naam of plek.',
+  'shell.scopeIntoItself': 'Een onderdeel kan niet onder zichzelf worden geplaatst, dus er is niets verplaatst.',
 }
