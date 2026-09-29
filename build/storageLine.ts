@@ -310,7 +310,6 @@ export const IMPORT_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {
 
 /** Each domain file's storage words, and the folder format's patterns in its strings, as they stood when the rule arrived. */
 export const WORD_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {
-  'src/agent/handle.ts': ['../', 'images/'],
   'src/agent/mcpProtocol.ts': ['disk'],
   'src/agent/shell.ts': ['disk'],
   'src/agent/tools.ts': ['disk', 'folder'],
@@ -376,6 +375,6 @@ export const CEILINGS = {
   importingFiles: 21,
   imports: 31,
   /** Files naming storage, and the words and patterns between them. */
-  namingFiles: 51,
-  words: 82,
+  namingFiles: 50,
+  words: 80,
 } as const

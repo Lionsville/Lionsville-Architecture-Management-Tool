@@ -79,11 +79,14 @@ export function imageReference(file: string, alt: string, depth = 1): string {
   return `![${alt.replace(/[[\]]/g, '')}](${src})`
 }
 
-/** Every image file a document refers to, in the order it refers to them. */
+/**
+ * Every picture a document refers to, in the order it refers to them: by its
+ * name in the library (`image:<name>`), or by a relative path to it.
+ */
 export function imagesUsedIn(markdown: string): string[] {
   const found: string[] = []
   for (const match of markdown.matchAll(/!\[[^\]]*\]\(([^)\s]+)/g)) {
-    const file = imageSrcFile(match[1])
+    const file = imageNameOfSource(match[1]) ?? imageSrcFile(match[1])
     if (file && !found.includes(file)) found.push(file)
   }
   return found

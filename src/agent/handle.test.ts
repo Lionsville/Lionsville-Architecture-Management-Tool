@@ -320,13 +320,13 @@ describe('the session’s own: revision, the log, undo, save', () => {
     const held = session()
     const out = parsed(await handle({ id: '1', tool: 'image.upload', args: { name: 'Target state.png', data: PNG, type: 'image/png' } }, held)) as { file: string; markdown: string; bytes: number }
     expect(out.file).toMatch(/^target-state-[a-z0-9]+\.png$/)
-    expect(out.markdown).toBe(`![Target state.png](../images/${out.file})`)
+    expect(out.markdown).toBe(`![Target state.png](image:${out.file})`)
     expect(out.bytes).toBe(70)
     expect(held.images()[0]).toMatchObject({ file: out.file, url: `data:image/png;base64,${PNG}` })
     const asUrl = parsed(await handle({ id: '2', tool: 'image.upload', args: { name: 'deck', data: `data:image/webp;base64,${PNG}` } }, held)) as { file: string }
     expect(asUrl.file).toMatch(/^deck-[a-z0-9]+\.webp$/)
     // Shown by a description, once one refers to it.
-    await handle({ id: '3', tool: 'element.update', args: { id: 'billing', description: `See ![](../images/${out.file})` } }, held)
+    await handle({ id: '3', tool: 'element.update', args: { id: 'billing', description: `See ![](image:${out.file})` } }, held)
     const listed = parsed(await handle({ id: '4', tool: 'images.list', args: {} }, held)) as { images: { file: string; usedBy: string[] }[] }
     expect(listed.images.map((i) => [i.file, i.usedBy])).toEqual([[out.file, ['Billing']], [asUrl.file, []]])
   })

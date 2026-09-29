@@ -646,8 +646,8 @@ const SPECS = [
     name: 'images.list',
     tier: 'read',
     description:
-      'The pictures the project holds for its documents (ADR-0009): the file name to refer to each by, '
-      + 'its size, and which documents show it.',
+      'The pictures the scope holds for its documents (ADR-0009, ADR-0031): the name each is in its library, '
+      + 'the reference a document shows it by (`image:<name>`), its size, and which documents show it.',
     inputSchema: NO_ARGUMENTS,
   },
   {
@@ -1677,9 +1677,10 @@ const SPECS = [
     tier: 'write',
     description:
       'Put a picture into the project for its documents to show (ADR-0009): a PNG, JPEG, SVG or WebP '
-      + 'under two megabytes, as base64 or a data URL. Answers with the file name and the markdown line '
-      + 'that shows it from a description, a decision or a plan. Not an undo step: the picture is a '
-      + 'file beside the model, and a document that stops referring to it is what removes it from view.',
+      + 'under two megabytes, as base64 or a data URL. Answers with its name and the markdown line that '
+      + 'shows it from a description, a decision or a plan: `![alt](image:<name>)`. Not an undo step: the '
+      + 'picture is in the scope\'s library beside the model, and a document that stops referring to it is '
+      + 'what removes it from view.',
     inputSchema: {
       type: 'object',
       properties: {

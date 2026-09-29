@@ -31,7 +31,8 @@ import { decisionsOf, fromArrays, toArrays, transitionList, placedOn } from '../
 import { transitionLabel } from '../model/transition'
 import type { DesignElement, DocumentImage, ElementId } from '../model/types'
 import { ShellError } from '../platform/errors'
-import { documentsUsing, imageReference } from '../documentation/images'
+import { documentsUsing } from '../documentation/images'
+import { imageReference } from '../model/imageName'
 import type { NamedDocument } from '../documentation/images'
 import { expandRect, placementRect, unionRects } from '../model/placement'
 import { apply } from '../model/reducer'
@@ -497,7 +498,7 @@ function listImages(model: Model, session: SessionView): AgentAnswer {
   return json({
     images: session.images().map((image) => ({
       file: image.file,
-      reference: `../images/${image.file}`,
+      reference: imageReference(image.file),
       bytes: dataUrlBytes(image.url),
       usedBy: documentsUsing(image.file, documents),
     })),
@@ -536,7 +537,8 @@ async function uploadImage(args: Record<string, unknown>, session: SessionView):
       () => Promise.resolve(url),
     )
     addImage(image)
-    return json({ file: image.file, reference: `../images/${image.file}`, markdown: imageReference(image.file, name), bytes: dataUrlBytes(url) })
+    const reference = imageReference(image.file)
+    return json({ file: image.file, reference, markdown: `![${name.replace(/[[\]]/g, '')}](${reference})`, bytes: dataUrlBytes(url) })
   } catch (error) {
     if (error instanceof ShellError) {
       if (error.key === 'shell.imageTooBig') return refused('agent.tooLarge', `${dataUrlBytes(url)} bytes; the most is ${MAX_IMAGE_BYTES}`)

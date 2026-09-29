@@ -118,3 +118,12 @@ describe('a picture named by its name in the library', () => {
     expect(imageNamesIn('![a](image:b.png) ![c](image:a.png) ![again](image:b.png) ![old](../images/x.png)')).toEqual(['b.png', 'a.png'])
   })
 })
+
+describe('who shows a picture named by its name', () => {
+  it('counts a document that names it image:, as one that refers to its path', () => {
+    expect(documentsUsing('depot.png', [
+      { label: 'Crews', text: '![](image:depot.png)' },
+      { label: 'Yard', text: '![](image:yard.png)' },
+    ])).toEqual(['Crews'])
+  })
+})
