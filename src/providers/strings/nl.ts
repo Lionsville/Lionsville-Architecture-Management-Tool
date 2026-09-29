@@ -74,7 +74,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'browser.earlierBrought': 'De oudere kopie is overgenomen; wat hier stond, staat in de geschiedenis.',
   'browser.earlierLeft': 'Wat hier staat blijft. De oudere kopie wordt pas overgenomen als die weer verandert.',
   'browser.earlierLeftBehind': 'Een deel van wat deze browser eerder bewaarde kon niet worden gelezen en blijft waar het was: {paths}.',
-  'browser.earlierRefused': '{paths} is niet overschreven met de oudere kopie: wat hier staat kon niet in zijn geheel worden gelezen.',
+  'browser.earlierRefused': 'Niet overschreven met de oudere kopie: {paths}. Wat hier staat kon niet in zijn geheel worden gelezen.',
   'browser.historyAuthor': 'deze browser',
   'memory.historyAuthor': 'dit tabblad',
   'browser.broughtOver': 'Overgenomen uit de eerdere opslag van deze browser',

@@ -357,7 +357,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'field.protocol': 'Protokoll',
   'field.protocolPlaceholder': 'z. B. EDI, Kafka, REST',
   'field.partOf': 'Teil von',
-  'field.partOfHelp': 'Zu welcher Anwendungsschnittstelle diese Linie gehört; diese zeichnet die Landschaft',
+  'field.partOfHelp': 'Zu welcher Anwendungsschnittstelle diese Linie gehört; die Landschaft zeichnet diese',
   'field.partOfOption': '„{label}“ von {name}',
   'field.partOfUnlabelled': 'Von {name}',
   'field.detailOne': 'Detail: 1 Schnittstelle im Containerdiagramm · {protocols}',

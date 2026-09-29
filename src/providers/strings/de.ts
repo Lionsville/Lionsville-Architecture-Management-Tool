@@ -74,7 +74,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'browser.earlierBrought': 'Die ältere Kopie wurde übernommen; was hier war, steht im Verlauf.',
   'browser.earlierLeft': 'Was hier ist, gilt. Die ältere Kopie wird erst übernommen, wenn sie sich wieder ändert.',
   'browser.earlierLeftBehind': 'Einiges von dem, was dieser Browser früher aufbewahrt hat, war nicht lesbar und bleibt, wo es war: {paths}.',
-  'browser.earlierRefused': '{paths} wurde nicht mit der älteren Kopie überschrieben: Was hier ist, war nicht vollständig lesbar.',
+  'browser.earlierRefused': 'Nicht mit der älteren Kopie überschrieben: {paths}. Was hier ist, war nicht vollständig lesbar.',
   'browser.historyAuthor': 'dieser Browser',
   'memory.historyAuthor': 'dieser Tab',
   'browser.broughtOver': 'Aus dem früheren Speicher dieses Browsers übernommen',
