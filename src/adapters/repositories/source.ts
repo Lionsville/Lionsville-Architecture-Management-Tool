@@ -129,7 +129,7 @@ export class Source {
     const brought = await this.options.bring?.prepare(seen.brought?.note, !seen.meta)
     await this.store.transaction(SHELVES, 'write', async (tx) => {
       const fresh = !await tx.get<Meta>('meta', META_KEY)
-      if (fresh) this.plant(tx)
+      if (fresh) await this.plant(tx)
       const now = await tx.get<BroughtNote>('meta', BROUGHT_KEY)
       const moved = fresh !== !seen.meta || now?.count !== seen.brought?.count
       if (brought && !moved) await this.land(tx, brought)
@@ -138,9 +138,9 @@ export class Source {
   }
 
   /** The organisation and the source's marks. */
-  private plant(tx: Transaction): void {
-    makeScope(tx, ROOT_SCOPE, emptyContent(''))
-    tx.put('meta', META_KEY, { nonce: mintId(), indexSeq: 0, treeRevision: mintId(), entrySeq: 0 } satisfies Meta)
+  private async plant(tx: Transaction): Promise<void> {
+    await makeScope(tx, ROOT_SCOPE, emptyContent(''))
+    tx.put('meta', META_KEY, { nonce: mintId(), indexSeq: 0, treeRevision: mintId(), entrySeq: 0, namesCounted: true } satisfies Meta)
   }
 
   private async land(tx: Transaction, brought: Brought): Promise<BroughtAnswer> {

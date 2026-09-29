@@ -42,9 +42,13 @@ export const SHELVES = [
   'library',
   /** Pictures' bytes, by scope identity and content address. */
   'bytes',
+  /** What names each picture's bytes — the library, the history — and when they were put, keyed as the bytes are (`imageNames.ts`). */
+  'bytesNamed',
+  /** The bytes nothing names, keyed as the bytes are, with when they were last put: what the sweep reads. */
+  'bytesUnnamed',
   /** History entries, by scope identity and sequence. */
   'entries',
-  /** The state at each entry, keyed as the entry is. */
+  /** The state at each entry, keyed as the entry is: a checkpoint or the changes since the entry before (`entryStates.ts`). */
   'entryStates',
   /** Step ids applied, by id; and the same ids by the day they were applied, to let go of old ones. */
   'steps',

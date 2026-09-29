@@ -22,6 +22,7 @@ import type {
   Revision, ScopeAddress, ScopeContent, ScopeDescription, ScopeId, ScopeState,
 } from '../../projects/scopeState'
 import { entryKey, keepEntryState, sequenceKey } from './entryStates'
+import { historyNamed, libraryNamed } from './imageNames'
 import { keyOf, prefix } from './KeyedStore'
 import type { Transaction } from './KeyedStore'
 
@@ -66,6 +67,11 @@ export type Meta = {
   treeRevision: Revision
   /** How many history entries have been made; each entry's number. */
   entrySeq: number
+  /**
+   * Whether every picture's bytes have been counted since the store was made
+   * (`imageNames.ts`): only then are bytes nothing names taken out.
+   */
+  namesCounted?: true
 }
 
 export const META_KEY = 'source'
@@ -165,9 +171,10 @@ export async function readState(tx: Transaction, kept: KeptScope): Promise<Scope
 /**
  * Write a scope's content, the library as the difference from what it held:
  * a picture taken out is deleted, one added or changed is written, and the
- * rest are not touched.
+ * rest are not touched. The names each picture's bytes have are counted again
+ * in the same transaction (`imageNames.ts`).
  */
-export function writeContent(tx: Transaction, id: ScopeId, before: readonly ImageEntry[], after: ScopeContent): void {
+export async function writeContent(tx: Transaction, id: ScopeId, before: readonly ImageEntry[], after: ScopeContent): Promise<void> {
   const { model, images, ...description } = after
   tx.put('contents', id, { format: CONTENT_FORMAT, model, description } satisfies KeptContent)
   const was = new Map(before.map((image) => [image.name, image]))
@@ -176,6 +183,7 @@ export function writeContent(tx: Transaction, id: ScopeId, before: readonly Imag
   for (const image of images) {
     if (!sameValue(was.get(image.name), image)) tx.put('library', libraryKey(id, image.name), image)
   }
+  await libraryNamed(tx, id, before, images)
 }
 
 /** Everything kept about one scope, gone: its parts, its pictures, its settings and its history. */
@@ -184,6 +192,8 @@ export function forget(tx: Transaction, id: ScopeId): void {
   tx.delete('contents', id)
   tx.deleteRange('library', libraryRange(id))
   tx.deleteRange('bytes', libraryRange(id))
+  tx.deleteRange('bytesNamed', libraryRange(id))
+  tx.deleteRange('bytesUnnamed', libraryRange(id))
   tx.deleteRange('entries', libraryRange(id))
   tx.deleteRange('entryStates', libraryRange(id))
   tx.delete('settings', keyOf('scope', id))
@@ -213,22 +223,22 @@ export function indexRevision(meta: Meta): Revision {
  * Make a scope, at an address, with an empty model: its open entry says the
  * scope was made, so the first record after it is an entry.
  */
-export function makeScope(tx: Transaction, address: ScopeAddress, content: ScopeContent, at = Date.now()): KeptScope {
+export async function makeScope(tx: Transaction, address: ScopeAddress, content: ScopeContent, at = Date.now()): Promise<KeptScope> {
   const kept: KeptScope = {
     id: mintId(), address, revision: mintId(), says: says(content),
     pending: { records: [SCOPE_RECORD], at },
   }
   tx.put('scopes', kept.id, kept)
-  writeContent(tx, kept.id, [], content)
+  await writeContent(tx, kept.id, [], content)
   return kept
 }
 
 /** The scopes above an address that are not there, made root side first, each named after its own last segment. */
-export function makeAncestors(tx: Transaction, scopes: KeptScope[], address: ScopeAddress): KeptScope[] {
+export async function makeAncestors(tx: Transaction, scopes: KeptScope[], address: ScopeAddress): Promise<KeptScope[]> {
   const made: KeptScope[] = []
   for (const above of ancestorScopes(address).reverse()) {
     if (scopeAt(scopes, above)) continue
-    const kept = makeScope(tx, above, emptyContent(scopePathLabel(above)))
+    const kept = await makeScope(tx, above, emptyContent(scopePathLabel(above)))
     scopes.push(kept)
     made.push(kept)
   }
@@ -248,8 +258,9 @@ export type KeptEntry = {
 
 /**
  * Close a scope's open entry: the entry, numbered next in the source, and the
- * scope's state as it stands (`entryStates.ts`). The scope must have one
- * open; the caller writes `meta` back.
+ * scope's state as it stands (`entryStates.ts`) — whose pictures' bytes then
+ * stay as long as the history does. The scope must have one open; the caller
+ * writes `meta` back.
  */
 export async function closeEntry(
   tx: Transaction, meta: Meta, kept: KeptScope, by: string, subject?: string,
@@ -262,7 +273,9 @@ export async function closeEntry(
     ...(subject !== undefined ? { subject } : {}), labels: [], records: pending.records,
   }
   tx.put('entries', entryKey(kept.id, entry.seq), entry)
-  await keepEntryState(tx, kept.id, entry.seq, await readState(tx, kept))
+  const state = await readState(tx, kept)
+  const { imagesMoved } = await keepEntryState(tx, kept.id, entry.seq, state)
+  if (imagesMoved) await historyNamed(tx, kept.id, state.images)
   tx.put('scopes', kept.id, closed satisfies KeptScope)
   return entry
 }

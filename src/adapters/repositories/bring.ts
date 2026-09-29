@@ -30,6 +30,7 @@ import { isSafeScopePath, ROOT_SCOPE } from '../../projects/scopePath'
 import { emptyContent, recordsBetween } from '../../projects/scopeState'
 import type { Revision, ScopeAddress, ScopeContent, ScopeId } from '../../projects/scopeState'
 import type { Transaction } from './KeyedStore'
+import { bytesPut } from './imageNames'
 import {
   bytesKey, closeEntry, makeAncestors, makeScope, mintId, readContent, says, scopeAt, writeContent,
 } from './kept'
@@ -140,13 +141,16 @@ export async function landBrought(
       landed.diverged.push(one.address)
       continue
     }
-    const kept = held ? await over(tx, meta, held, one, brought, by, landed) : made(tx, scopes, one, landed)
+    const kept = held ? await over(tx, meta, held, one, brought, by, landed) : await made(tx, scopes, one, landed)
     if (kept === 'refused') continue
     landed.landed.push(one.address)
     const now = kept ?? held!
     placed[one.address] = { scope: now.id, revision: now.revision, content: print }
     if (!kept) continue
-    for (const { contentAddress, bytes } of one.bytes) tx.put('bytes', bytesKey(kept.id, contentAddress), bytes)
+    for (const { contentAddress, bytes } of one.bytes) {
+      tx.put('bytes', bytesKey(kept.id, contentAddress), bytes)
+      await bytesPut(tx, kept.id, contentAddress, Date.now())
+    }
     await closeEntry(tx, meta, kept, by, brought.subject)
   }
   for (const address of settled) {
@@ -160,9 +164,9 @@ export async function landBrought(
   return landed
 }
 
-function made(tx: Transaction, scopes: KeptScope[], one: BroughtScope, landed: Landed): KeptScope {
-  const above = makeAncestors(tx, scopes, one.address)
-  const kept = makeScope(tx, one.address, one.content, timeOf(one.updatedAt))
+async function made(tx: Transaction, scopes: KeptScope[], one: BroughtScope, landed: Landed): Promise<KeptScope> {
+  const above = await makeAncestors(tx, scopes, one.address)
+  const kept = await makeScope(tx, one.address, one.content, timeOf(one.updatedAt))
   // Every record it arrives with, so a thing's history finds the arrival.
   const records = recordsBetween(emptyContent(''), one.content).filter((record) => record.kind !== 'scope')
   kept.pending = { records: [SCOPE_RECORD, ...records], at: timeOf(one.updatedAt) }
@@ -198,7 +202,7 @@ async function over(
   const open = held.pending && empty ? held.pending.records : []
   const said = says(one.content)
   landed.treeMoved ||= !sameValue(held.says, said)
-  writeContent(tx, held.id, before.images, one.content)
+  await writeContent(tx, held.id, before.images, one.content)
   const kept: KeptScope = {
     id: held.id, address: held.address, revision: mintId(), says: said,
     updatedAt: one.updatedAt ?? new Date().toISOString(),

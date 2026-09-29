@@ -27,8 +27,12 @@ import type { KeyRange, Keyed, KeyedStore, RangeRead, Shelf, Transaction } from 
 
 export const DATABASE_NAME = 'lvarch.repositories'
 
-/** The version the shelves were laid out at; a later layout is a later version and an upgrade. */
-export const DATABASE_VERSION = 1
+/**
+ * The version the shelves were laid out at; a later layout is a later version
+ * and an upgrade, which lays out every shelf the database does not have yet.
+ * 2 added the shelves that count what names each picture's bytes.
+ */
+export const DATABASE_VERSION = 2
 
 /** The database's two globals, named rather than assumed, so a suite can hand in its own. */
 export type IndexedDb = { factory: IDBFactory; keyRange: typeof IDBKeyRange }

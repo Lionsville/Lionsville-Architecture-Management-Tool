@@ -25,6 +25,7 @@ import type {
 import { keyOf, prefix } from './KeyedStore'
 import type { Transaction } from './KeyedStore'
 import { stateAtEntry } from './entryStates'
+import { sweepUnnamed } from './imageNames'
 import { allScopes, closeEntry, entryKey, META_KEY, readMeta } from './kept'
 import type { KeptEntry } from './kept'
 import type { Source } from './source'
@@ -48,7 +49,9 @@ export class KeptHistory implements HistoryRepository {
     this.id = source.id
   }
 
+  /** Closes the open entries asked for, and takes out the pictures' bytes nothing names any more (`imageNames.ts`). */
   record({ scopes, subject }: RecordWanted): Promise<readonly HistoryEntry[]> {
+    const now = Date.now()
     return this.source.write(async (tx) => {
       const meta = await readMeta(tx)
       const made: KeptEntry[] = []
@@ -56,6 +59,7 @@ export class KeptHistory implements HistoryRepository {
         if (!kept.pending || (scopes && !scopes.includes(kept.id))) continue
         made.push(await closeEntry(tx, meta, kept, this.source.by, subject))
       }
+      if (meta.namesCounted) await sweepUnnamed(tx, now)
       tx.put('meta', META_KEY, meta)
       return made.reverse().map(listed)
     })

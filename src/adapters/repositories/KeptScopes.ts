@@ -72,7 +72,7 @@ export class KeptScopes implements ScopeRepository {
       }
       for (const [scope, { steps }] of runs) for (const one of steps) remember(tx, one.stepId, scope, now)
       await letGo(tx, now)
-      if (planned.length > 0) commit(tx, await readMeta(tx), planned, now)
+      if (planned.length > 0) await commit(tx, await readMeta(tx), planned, now)
       return { revisions: work.map(({ scope }) => read.get(scope)!.revision) }
     })
   }
@@ -83,7 +83,7 @@ export class KeptScopes implements ScopeRepository {
       const scopes = await allScopes(tx)
       if (scopeAt(scopes, at)) return { refused: 'shell.scopeTaken' }
       const { name, ...description } = scope
-      const made = [...makeAncestors(tx, scopes, at), makeScope(tx, at, emptyContent(name, description))]
+      const made = [...await makeAncestors(tx, scopes, at), await makeScope(tx, at, emptyContent(name, description))]
       const meta = await readMeta(tx)
       meta.treeRevision = mintId()
       indexChanged(tx, meta, made.map((kept) => kept.id))
@@ -101,7 +101,7 @@ export class KeptScopes implements ScopeRepository {
       if (refused) return { refused, scope }
       const from = kept!.address
       const moving = scopes.filter((one) => isWithinScope(one.address, from))
-      const made = makeAncestors(tx, scopes, to)
+      const made = await makeAncestors(tx, scopes, to)
       for (const one of moving) {
         one.address = `${to}${one.address.slice(from.length)}`
         one.revision = mintId()
@@ -190,13 +190,13 @@ function mergeRecords(held: readonly RecordKey[], more: readonly RecordKey[]): R
 }
 
 /** Write what the runs came to: each scope's content and revision, the tree's revision where a node changed, the index's log. */
-function commit(tx: Transaction, meta: Meta, planned: readonly Planned[], now: number): void {
+async function commit(tx: Transaction, meta: Meta, planned: readonly Planned[], now: number): Promise<void> {
   const updatedAt = new Date(now).toISOString()
   let treeMoved = false
   for (const { kept, before, content, records, at } of planned) {
     const said = says(content)
     treeMoved ||= !sameValue(kept.says, said)
-    writeContent(tx, kept.id, before.images, content)
+    await writeContent(tx, kept.id, before.images, content)
     kept.says = said
     kept.revision = mintId()
     kept.updatedAt = updatedAt
