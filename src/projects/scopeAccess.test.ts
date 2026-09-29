@@ -6,7 +6,8 @@ import { memoryRepositories } from '../adapters/memory/memoryRepositories'
 import { ShellError } from '../platform/errors'
 import type { Repositories } from '../ports/Repositories'
 import {
-  changeScope, contentOf, ensureScope, landed, modelsOf, moveScope, placeTogether, placeWhole, readScope, stepOf, summaryOf,
+  changeScope, contentOf, ensureScope, everyScope, keptAt, landed, modelsOf, moveScope, placeTogether, placeWhole, readScope,
+  readWhole, stepOf, summaryOf,
 } from './scopeAccess'
 import type { ScopeSnapshot } from './scope'
 
@@ -200,6 +201,79 @@ describe('contents that arrive together', () => {
     await expect(placeTogether(repositories, [{ address: 'globex', content: content('Globex, arriving'), checked: {} }]))
       .rejects.toMatchObject({ key: 'shell.scopeMoved' })
     expect((await readScope(repositories.scopes, 'globex'))?.model.name).toBe('Globex, made meanwhile')
+  })
+})
+
+/**
+ * Every scope in full, pictures and all: what a working set is made of, read
+ * out of the repositories — the organisation, or one scope and those under it.
+ */
+describe('a working set, read whole', () => {
+  const png = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 1, 0, 0, 0, 1, 8, 6, 0, 0, 0])
+  const scope = (path: string, name: string): ScopeSnapshot => ({
+    path, model: { name, elements: [], relations: [], diagrams: [] }, activeDiagramId: '', logoLibrary: [],
+  })
+
+  async function tree(): Promise<Repositories> {
+    const repositories = memoryRepositories()
+    await placeTogether(repositories, [
+      { address: '', content: contentOf(scope('', 'Acme'), []) },
+      { address: 'retail', content: contentOf(scope('retail', 'Retail'), []), pictures: [{ name: 'shop.png', bytes: png }] },
+      { address: 'retail/tills', content: contentOf(scope('retail/tills', 'Tills'), []) },
+      { address: 'fleet', content: contentOf(scope('fleet', 'Fleet'), []) },
+    ])
+    return repositories
+  }
+
+  it('reads one scope and every scope under it, and no other, when asked from an address', async () => {
+    const held = await everyScope(await tree(), 'retail')
+    expect(held.map((one) => one.path)).toEqual(['retail', 'retail/tills'])
+    expect(held[0].imageLibrary?.map((image) => image.file)).toEqual(['shop.png'])
+  })
+
+  it('refuses an address that holds no scope as a scope gone', async () => {
+    await expect(everyScope(await tree(), 'nowhere')).rejects.toMatchObject({ key: 'shell.scopeGone' })
+  })
+
+  it('refuses, naming it, a scope the tree lists that then does not read', async () => {
+    const repositories = await tree()
+    const tills = nodesAt(summaryOf(await repositories.scopes.tree()), 'retail')
+    const scopes = new Proxy(repositories.scopes, {
+      get: (target, member) => (member === 'state'
+        ? async (id: string) => (id === tills ? undefined : target.state(id))
+        : Reflect.get(target, member)),
+    })
+    await expect(everyScope({ ...repositories, scopes })).rejects.toMatchObject({ key: 'shell.exportUnreadable', params: { paths: 'retail' } })
+  })
+
+  it('reads one scope by its address with its pictures\' bytes, and nothing where none is', async () => {
+    const repositories = await tree()
+    expect((await readWhole(repositories, 'retail'))?.imageLibrary?.map((image) => image.file)).toEqual(['shop.png'])
+    expect(await readWhole(repositories, 'nowhere')).toBeUndefined()
+  })
+
+  it('throws the key a picture\'s bytes were refused with', () => {
+    expect(() => keptAt({ refused: 'shell.imageBadName' })).toThrow(new ShellError('shell.imageBadName'))
+    expect(keptAt({ contentAddress: 'sha256:x' })).toBe('sha256:x')
+  })
+
+  it('takes the scope somebody made at the address between the look and the making', async () => {
+    const repositories = await tree()
+    let theirs: string | undefined
+    const scopes = new Proxy(repositories.scopes, {
+      get: (target, member) => (member === 'create'
+        ? async (at: string, made: { name: string }) => {
+          theirs = landed(await target.create(at, { name: `${made.name}, made meanwhile` })).id
+          return { refused: 'shell.scopeTaken' }
+        }
+        : Reflect.get(target, member)),
+    })
+    expect(await ensureScope(scopes, 'globex', { name: 'Globex' })).toBe(theirs)
+  })
+
+  it('moves nothing, and answers nothing, from an address that holds no scope', async () => {
+    const repositories = await tree()
+    expect(await moveScope(repositories.scopes, repositories.index, 'nowhere', 'elsewhere')).toBeUndefined()
   })
 })
 

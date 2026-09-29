@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { describe, expect, it } from 'vitest'
-import { organisationLabel, scopeClient } from './scopeLabel'
+import { organisationLabel, scopeClient, scopeDisplayName } from './scopeLabel'
 import type { ScopeSummary } from './scope'
 
 const at = (path: string, name: string, client?: string): ScopeSummary => ({
@@ -64,5 +64,14 @@ describe('scopeClient', () => {
   it('falls all the way back to the scope’s own name', () => {
     expect(scopeClient('acme', [at('acme', 'Acme')])).toBe('Acme')
     expect(scopeClient('nowhere', [])).toBe('')
+  })
+})
+
+describe('scopeDisplayName', () => {
+  it('is a scope\'s own name, with the nearest named scope above it where asked', () => {
+    expect(scopeDisplayName('retail/warehouse', tree, 'the organisation')).toBe('Warehouse landscape')
+    expect(scopeDisplayName('retail/warehouse', tree, 'the organisation', { withParent: true })).toBe('Retail › Warehouse landscape')
+    expect(scopeDisplayName('retail', tree, 'the organisation', { withParent: true })).toBe('Retail')
+    expect(scopeDisplayName('', [at('', '')], 'the organisation', { withParent: true })).toBe('the organisation')
   })
 })
