@@ -76,3 +76,29 @@ describe('a browser folder’s history', () => {
     expect(await git.texts([blob, 'none'])).toEqual({ [blob]: '{"at":2}' })
   })
 })
+
+describe('what a browser folder’s history is kept of', () => {
+  it('leaves out what no desktop repository would hold, and what the folder’s .gitignore names', async () => {
+    const { root, git } = history()
+    for (const path of [
+      'acme/model.json', 'acme/.DS_Store', 'Thumbs.db', 'acme/desktop.ini', 'acme/.git/HEAD', '.git/config',
+      'tools/node_modules/left/index.js', 'acme/build/out.txt', 'acme/notes.tmp', 'drafts/a.md', 'acme/drafts/b.md',
+      'acme/docs/crews.md', 'acme/keep.log',
+    ]) await writeAt(root, path, 'x')
+    await writeAt(root, '.gitignore', '# what is built\nbuild/\n*.tmp\n/drafts\n!keep.log\n*.log\ndocs/**\n')
+    expect((await git.changes()).map((change) => change.path)).toEqual([
+      '.gitignore', 'acme/docs/crews.md', 'acme/drafts/b.md', 'acme/model.json',
+    ])
+  })
+
+  it('keeps a file a commit names, or the history holds, whatever would leave it out', async () => {
+    const { root, git } = history()
+    await writeAt(root, 'tools/node_modules/kept/index.js', 'one')
+    await writeAt(root, '.gitignore', 'tools/\n')
+    expect(await git.changes()).toEqual([{ path: '.gitignore', deleted: false }])
+    await git.commit(['tools/node_modules/kept/index.js'], 'named')
+    await writeAt(root, 'tools/node_modules/kept/index.js', 'two')
+    await writeAt(root, 'tools/node_modules/kept/other.js', 'new')
+    expect((await git.changes()).map((change) => change.path)).toEqual(['.gitignore', 'tools/node_modules/kept/index.js'])
+  })
+})
