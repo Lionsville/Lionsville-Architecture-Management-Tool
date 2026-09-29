@@ -35,7 +35,7 @@ import type { ImageEntry, ImageName } from '../model/imageName'
 import { fromArrays, toArrays } from '../model/normalised'
 import type { Model } from '../model/normalised'
 import { recordsOf, SCOPE_RECORD, sameRecord } from '../model/recordKey'
-import type { RecordKey } from '../model/recordKey'
+import type { RecordKey, RecordKind } from '../model/recordKey'
 import { apply } from '../model/reducer'
 import type { CommandRefusal } from '../model/reducer'
 import type { RecordLink } from './links'
@@ -225,9 +225,56 @@ function applyOne(working: Working, command: ScopeCommand): Outcome {
     default: {
       const result = apply(working.model, command)
       if (!result.ok) return { ok: false, refused: result.reason }
-      return { ok: true, working: { ...working, model: result.model }, changed: result.model !== working.model }
+      return sameModel(working.model, result.model, recordsOf(command))
+        ? { ok: true, working, changed: false }
+        : { ok: true, working: { ...working, model: result.model }, changed: true }
     }
   }
+}
+
+/** Where each kind of record the model holds is kept in it. */
+const LISTS: Record<Exclude<RecordKind, 'image' | 'scope'>, keyof Model> = {
+  element: 'elements', relation: 'relations', diagram: 'diagrams', decision: 'decisions',
+  transition: 'transitions', observation: 'observations', cause: 'causes', solution: 'solutions',
+  experiment: 'experiments',
+}
+
+/** The model's own fields — its name, its description, its defaults — without the lists it holds. */
+function ownFields(model: Model): Record<string, unknown> {
+  const own: Record<string, unknown> = { ...model }
+  for (const list of [...Object.values(LISTS), 'order']) delete own[list]
+  return own
+}
+
+function recordIn(model: Model, record: RecordKey): unknown {
+  if (record.kind === 'scope') return ownFields(model)
+  if (record.kind === 'image') return undefined
+  return (model[LISTS[record.kind]] as Record<string, unknown> | undefined)?.[record.id]
+}
+
+/**
+ * Whether a command left the model as it found it.
+ *
+ * The reducer hands back the model it was given for most commands that change
+ * nothing, and a new one for some — an update that sets a field to the value
+ * it has. So what counts is the value of every record the command writes,
+ * compared before and after; and, for a command that may write anything, the
+ * whole model. A step that changes nothing must not move a revision, or every
+ * reader of it re-reads a scope for nothing.
+ */
+function sameModel(before: Model, after: Model, records: readonly RecordKey[] | undefined): boolean {
+  if (before === after) return true
+  if (records === undefined) return stableText(before) === stableText(after)
+  return records.every((record) => stableText(recordIn(before, record)) === stableText(recordIn(after, record)))
+}
+
+/** A value as text with every object's keys in order, so two equal values are one text. */
+function stableText(value: unknown): string {
+  return JSON.stringify(value, (_key, held: unknown) => (
+    held && typeof held === 'object' && !Array.isArray(held)
+      ? Object.fromEntries(Object.keys(held).sort().map((key) => [key, (held as Record<string, unknown>)[key]]))
+      : held
+  ))
 }
 
 /** A name is one picture: a second under the same name is refused, the way a create on a taken id is. */
@@ -258,12 +305,8 @@ function describe(working: Working, patch: ScopeDescription): Outcome {
     if (value === undefined) delete next[key]
     else next[key] = structuredClone(value)
   }
-  const changed = JSON.stringify(sorted(next)) !== JSON.stringify(sorted(working.description))
+  const changed = stableText(next) !== stableText(working.description)
   return changed
     ? { ok: true, working: { ...working, description: next as ScopeDescription }, changed }
     : { ok: true, working, changed }
-}
-
-function sorted(value: Record<string, unknown>): Record<string, unknown> {
-  return Object.fromEntries(Object.keys(value).sort().map((key) => [key, value[key]]))
 }

@@ -59,6 +59,29 @@ describe('applying steps', () => {
     expect(result).toEqual({ ok: true, content: before, changed: false, records: [{ kind: 'diagram', id: 'l7' }] })
   })
 
+  it('says an update to the value a record already has changed nothing, whatever the reducer hands back', () => {
+    const before = content()
+    for (const command of [
+      { type: 'element.update', id: 'crews', patch: { name: 'Crews' } },
+      { type: 'project.settings', patch: { name: 'Rail' } },
+      { type: 'transaction', commands: [{ type: 'element.update', id: 'crews', patch: { lifecycle: 'live' } }] },
+    ] as Command[]) {
+      const result = applySteps(before, steps(command))
+      expect(result.ok && result.changed, command.type).toBe(false)
+      expect(result.ok && result.content).toBe(before)
+    }
+  })
+
+  it('says a change to the scope’s own fields, or to a list it keeps, changed something', () => {
+    for (const command of [
+      { type: 'project.settings', patch: { description: 'Rolling stock and crews.' } },
+      { type: 'decision.add', decision: { id: 'adr-1', number: 1, title: 'One', status: 'proposed', date: '2026-09-29', body: '', signers: [] } },
+    ] as Command[]) {
+      const result = applySteps(content(), steps(command))
+      expect(result.ok && result.changed, command.type).toBe(true)
+    }
+  })
+
   it('applies all or none, and names the step that was refused', () => {
     const run = steps(
       { type: 'element.create', element: element('depot', 'Depot') },
