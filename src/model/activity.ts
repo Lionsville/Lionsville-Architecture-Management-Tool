@@ -43,6 +43,13 @@ export type StepSummary = {
    * made, and read in whatever language is on screen much later.
    */
   typeKey?: StringKey
+  /**
+   * A move of the scope (`activity.scopeMoved`): the address it was at, and
+   * the one it went to. Not a step of the model's — a move changes no record
+   * — but a line of a scope's Activity all the same, read off its history.
+   */
+  from?: string
+  to?: string
 }
 
 /**

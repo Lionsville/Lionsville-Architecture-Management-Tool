@@ -513,6 +513,13 @@ export type ShellToolbarProps = {
    * scope). Absent where the source keeps none, and the list is the session's.
    */
   recentActivity?: ActivityMenuProps['recent']
+  /**
+   * Whether the source keeps a log of its own, which the tooltip says: the
+   * list is then what was lately done and by whom, and otherwise what was
+   * done since the scope was opened. Absent, it is whether there is a list
+   * to ask at all.
+   */
+  activityKept?: boolean
   /** The menu, for a host that has no menu bar. */
   overflow?: ToolbarOverflow
   /** The agent glyph. Present on every host: on the web it opens the explanation. */
@@ -548,7 +555,7 @@ export const WRAPS = { flexWrap: 'wrap', rowGap: 0.5 } as const
 export function ShellToolbar({
   designName, crumbs, scopePath, savedAt, status = 'clean', saveFailed = false,
   publishesSteps, sourceStatus, alsoHere = [], language, onGoHome, onOpenSettings, onOpenDocumentation, onOpenDecisions, onOpenObservations, onOpenRoadmap,
-  onOpenSearch, activity, recentActivity,
+  onOpenSearch, activity, recentActivity, activityKept = recentActivity !== undefined,
   overflow, agent, sourceChip, s, windowChrome = NO_WINDOW_CHROME,
 }: ShellToolbarProps) {
   const [activityMenu, setActivityMenu] = useState<HTMLElement | null>(null)
@@ -615,7 +622,7 @@ export function ShellToolbar({
       ))}
       {/* Since it was opened, or lately and by whom: which one the list is
           depends on whether the source keeps a log of its own. */}
-      <Tooltip title={s(recentActivity ? 'shell.activityTipKept' : 'shell.activityTip')}>
+      <Tooltip title={s(activityKept ? 'shell.activityTipKept' : 'shell.activityTip')}>
         <Button size="small" color="inherit" onClick={(e) => setActivityMenu(e.currentTarget)} sx={quiet} data-guide="shell.activity">
           {s('shell.activity')}
         </Button>

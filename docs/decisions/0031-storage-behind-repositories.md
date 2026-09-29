@@ -1198,3 +1198,33 @@ format, read by its reader; a process with no screen reaches them through
 `platform/node/examples.ts` — an example's scopes, the example as a working
 file, and an example seeded into repositories of its own where the page would
 copy it — over the one narrow edge that folder already had.
+
+## As built, 29 September 2026: a move in a scope's history
+
+**What was built.** A move is an entry in the history of every scope it
+moved (`HistoryEntry.moved`): who moved it, when, and from which address to
+which, read by the scope's identity with the rest of its entries. It closes
+the scope's open entry, whatever steps were open going with it, and the state
+at it is the scope's once moved. The history's suite has it as a clause, run by
+every implementation.
+- **Memory and browser storage** close a move's entry for each scope moved, in
+  the transaction that moves it.
+- **The folder** commits the move as one commit of everything under the old
+  address and the new, with each scope's trailer at its new address and one
+  more saying where it was (`Lionsville-Moved-From`). Only where a history is
+  kept and can take a record; otherwise the move is in the next record, as it
+  was.
+- **Activity follows the identity.** The list asks the source's log by the
+  scope's identity (`SourceRecentActivity`), and reads the moves off the
+  history where one is kept: *Moved from X to Y*, with who moved it. The
+  history's page calls a move's entry the same.
+
+**Why an entry and not a step.** A move changes no record the model holds,
+only where the scope is, so it is no command for the reducer and nothing
+`summarise` can name from commands; a step with an activity key of its own
+would have been a step no `apply` applies, kept in a log none of the three
+implementations keeps. The history already follows the identity, every
+implementation keeps one, and the entry needed one field. The Activity line
+is `activity.scopeMoved` with `from` and `to` beside the keys a step's
+summary already has, so a source that keeps a log of its own says a move the
+same way.

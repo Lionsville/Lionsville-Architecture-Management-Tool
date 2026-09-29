@@ -123,6 +123,7 @@ export const EN = {
   'activity.removedMany': 'Took {count} elements off the diagram',
   'activity.routeChanged': 'Changed a route',
   'activity.layoutChanged': 'Changed the layout',
+  'activity.scopeMoved': 'Moved from {from} to {to}',
   'activity.groupChanged': 'Changed the group {name}',
   'activity.groupRemoved': 'Removed the group {name}',
   'activity.diagramAdded': 'Added the diagram {name}',

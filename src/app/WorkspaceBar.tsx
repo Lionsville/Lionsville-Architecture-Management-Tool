@@ -12,6 +12,7 @@ import Button from '@mui/material/Button'
 import type { StringKey } from '../i18n'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
 import type { WindowChrome } from '../platform/windowChrome'
+import { scopeActivity } from './activityMoves'
 import { ChangedElsewhereNotice } from './ChangedElsewhereNotice'
 import { ShellToolbar } from './ShellToolbar'
 import type { WorkspaceParts } from './workspaceParts'
@@ -52,11 +53,11 @@ export function WorkspaceBar({ parts, toolbarRef }: {
    * Nothing where the source keeps no log, and the list is the session's.
    */
   const keptLog = props.source.recentActivity
-  const scope = props.project.path
-  const recentActivity = useMemo(
-    () => (keptLog ? () => keptLog(scope) : undefined),
-    [keptLog, scope],
-  )
+  const scope = props.project.id
+  const history = props.snapshots.history
+  // By the scope's identity, so the list follows it through a move and says
+  // the move (`activityMoves.ts`).
+  const recentActivity = useMemo(() => scopeActivity(scope, keptLog, history), [scope, keptLog, history])
   return (
     <>
       <Box ref={toolbarRef} sx={{ flex: '0 0 auto' }}>
@@ -79,6 +80,7 @@ export function WorkspaceBar({ parts, toolbarRef }: {
         onOpenSearch={() => dialogs.setSearchOpen(true)}
         activity={session.history}
         {...(recentActivity ? { recentActivity } : {})}
+        activityKept={keptLog !== undefined}
         agent={props.agent.bar}
         sourceChip={props.source.chip}
         {...(props.source.publishesSteps !== undefined ? { publishesSteps: props.source.publishesSteps } : {})}

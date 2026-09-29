@@ -511,6 +511,12 @@ export type SourceProvider<Parts, Opening = void, Base = unknown> = {
  *
  * A rejection is a source that could not be asked, and the list shows what the
  * session holds, as it would have with no answer at all.
+ *
+ * **Asked by the scope's identity, not its address** (ADR-0031 §1): a scope's
+ * Activity follows it through a move as its history does, reaching back past
+ * it, and a move is a line of it (`activity.scopeMoved`, with `from` and `to`)
+ * — as the history says it is (`HistoryEntry.moved`), which the list also
+ * reads where a history is kept.
  */
 export type SourceRecentActivity = (scope: string) => Promise<readonly SourceActivityLine[] | undefined>
 
@@ -530,6 +536,9 @@ export type SourceActivityLine = {
     readonly count?: number
     readonly asOf?: string
     readonly typeKey?: StringKey
+    /** A move of the scope, `activity.scopeMoved`: the address it was at, and the one it went to. */
+    readonly from?: string
+    readonly to?: string
   }
   /** Epoch milliseconds. */
   readonly at: number

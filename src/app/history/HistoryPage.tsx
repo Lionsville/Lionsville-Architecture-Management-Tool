@@ -246,7 +246,7 @@ export function HistoryPage(props: HistoryPageProps) {
                   onClick={() => onChoose(entry.id)}
                   sx={{ display: 'block', py: 1 }}
                 >
-                  <Typography sx={{ fontSize: 13, fontWeight: 600 }}>{entry.subject ?? ''}</Typography>
+                  <Typography sx={{ fontSize: 13, fontWeight: 600 }}>{titleOf(entry, s)}</Typography>
                   {entry.labels.length > 0 && (
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, my: 0.5 }}>
                       {entry.labels.map((held) => (
@@ -266,7 +266,7 @@ export function HistoryPage(props: HistoryPageProps) {
         <Box sx={{ overflowY: 'auto', p: 3 }} data-testid="history-diff">
           {chosenEntry && (
             <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, mb: 2 }}>
-              <Typography sx={{ fontSize: 15, fontWeight: 600, minWidth: 0 }}>{chosenEntry.subject}</Typography>
+              <Typography sx={{ fontSize: 15, fontWeight: 600, minWidth: 0 }}>{titleOf(chosenEntry, s)}</Typography>
               <Box sx={{ flex: 1 }} />
               <Button size="small" onClick={() => setLabelling(true)}>{s('history.label')}</Button>
             </Box>
@@ -348,4 +348,13 @@ function GoBackButton({ one, whole, changed, onPress, s }: {
       {s(label)}
     </Button>
   )
+}
+
+/**
+ * What an entry is called on the page: what it says it was, or — for a move
+ * (`HistoryEntry.moved`) — the move, in the language on screen, whatever a
+ * source wrote beside it.
+ */
+function titleOf(entry: HistoryEntry, s: Translate): string {
+  return entry.moved ? s('activity.scopeMoved', { from: entry.moved.from, to: entry.moved.to }) : entry.subject ?? ''
 }

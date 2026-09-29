@@ -195,6 +195,9 @@ export function ActivityMenu({ anchorEl, onClose, entries, recent, language, s }
                   // What kind of row it was, in today's language rather than
                   // the one it was drawn in (ADR-0012 §5).
                   type: entry.summary.typeKey ? s(entry.summary.typeKey) : '',
+                  // Where a move took the scope from, and to.
+                  from: entry.summary.from ?? '',
+                  to: entry.summary.to ?? '',
                 })}
               </Typography>
               {(entry.origin !== undefined || entry.you || entry.unattended) && (
