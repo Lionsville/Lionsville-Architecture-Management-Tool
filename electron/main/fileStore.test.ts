@@ -173,6 +173,21 @@ describe('a folder moved as one rename', () => {
     expect(await readdir(root)).toEqual(['globex'])
   })
 
+  it('refuses to move a link, and moves neither it nor what it leads to', async () => {
+    await mkdir(join(root, 'acme'), { recursive: true })
+    await symlink(join(root, 'acme'), join(root, 'alias'))
+    await expect(moveEntry(root, 'alias', 'moved')).rejects.toThrow('shell.pathRefused')
+    expect((await readdir(root)).sort()).toEqual(['acme', 'alias'])
+  })
+
+  it('changes only the case of a name, where the disk does not tell case apart', async () => {
+    await mkdir(join(root, 'acme'), { recursive: true })
+    const blind = await readdir(join(root, 'ACME')).then(() => true, () => false)
+    if (!blind) return
+    await moveEntry(root, 'acme', 'Acme')
+    expect(await readdir(root)).toEqual(['Acme'])
+  })
+
   it('refuses a place that is taken, the root, a place inside itself, a way out and the history, and moves nothing', async () => {
     await mkdir(join(root, 'acme'), { recursive: true })
     await mkdir(join(root, 'globex'), { recursive: true })

@@ -290,10 +290,11 @@ export async function textsOf(root: string, ids: readonly string[]): Promise<Rec
   for (const id of wanted) {
     const end = out.indexOf(0x0a, at)
     if (end < 0) break
-    const size = /^[0-9a-f]+ blob (\d+)$/.exec(out.subarray(at, end).toString('utf8'))?.[1]
+    // `<id> <type> <size>` and the object, of whatever type; `<id> missing` and nothing.
+    const [, type, size] = /^[0-9a-f]+ (\w+) (\d+)$/.exec(out.subarray(at, end).toString('utf8')) ?? []
     at = end + 1
     if (size === undefined) continue
-    found[id] = new TextDecoder().decode(out.subarray(at, at + Number(size)))
+    if (type === 'blob') found[id] = new TextDecoder().decode(out.subarray(at, at + Number(size)))
     at += Number(size) + 1
   }
   return found

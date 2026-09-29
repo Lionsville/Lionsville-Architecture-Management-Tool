@@ -303,6 +303,8 @@ describe.skipIf(!available)('what changed, and what a file held', () => {
     const [before, after] = commit.blobs!['model.json']
     expect(await textsOf(root, [before, after, 'not-an-id'])).toEqual({ [before]: '{"at":0}', [after]: '{"at":1}' })
     expect(await textsOf(root, [])).toEqual({})
+    const tree = (await run('git', ['rev-parse', `${sha}^{tree}`], { cwd: root })).stdout.trim()
+    expect(await textsOf(root, [tree, after])).toEqual({ [after]: '{"at":1}' })
     const [bare] = await commitLog(root, { limit: 1, bare: true })
     expect([bare.changed, bare.blobs]).toEqual([[], undefined])
     const held = folderGitAt(root)

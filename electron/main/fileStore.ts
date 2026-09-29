@@ -257,18 +257,32 @@ export async function writeTogether(
  * A file or a folder renamed to another place inside the root — a scope moved
  * with everything in it, links and empty folders included, and its bytes
  * never read. Refused, with nothing moved, where either path leads out or into
- * the history, where the root itself is asked for, and where something is at
- * the new place already. The folders on the way to it are made.
+ * the history, where the root itself is asked for, where the thing moved is a
+ * link (a rename would move the link and not what the page asked about), and
+ * where something is at the new place already — but for the thing itself on
+ * a disk that does not tell case apart, which a change of case only renames.
+ * The folders on the way to it are made.
  */
 export async function moveEntry(root: string, from: string, to: string): Promise<void> {
   const source = await resolveInside(root, from)
   const target = await resolveInside(root, to)
-  if (!source || !target || !safeRelativePath(from) || !safeRelativePath(to)) throw new Error('shell.pathRefused')
-  if (within(source, target)) throw new Error('shell.pathRefused')
-  const taken = await lstat(target).then(() => true, () => false)
-  if (taken) throw new Error('shell.pathRefused')
+  const fromPath = safeRelativePath(from)
+  const toPath = safeRelativePath(to)
+  if (!source || !target || !fromPath || !toPath) throw new Error('shell.pathRefused')
+  const realRoot = await realpath(root)
+  const [named, naming] = [join(realRoot, fromPath), join(realRoot, toPath)]
+  const held = await lstat(named).catch(() => undefined)
+  if (!held || held.isSymbolicLink()) throw new Error('shell.pathRefused')
+  const there = await lstat(naming).catch(() => undefined)
+  const recased = there !== undefined && named !== naming && named.toLowerCase() === naming.toLowerCase()
+    && there.ino === held.ino && there.dev === held.dev
+  if (recased) {
+    await rename(named, naming)
+    return
+  }
+  if (there || within(source, target)) throw new Error('shell.pathRefused')
   await mkdir(dirname(target), { recursive: true })
-  await rename(source, target)
+  await rename(named, target)
 }
 
 export async function removeEntry(

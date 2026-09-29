@@ -201,7 +201,7 @@ export function registerFileChannel(options: { onRecentsChanged?: () => void } =
   ipcMain.handle('files:list', async (_event, root: unknown, path: unknown) =>
     isGranted(root) && isPath(path) ? listDirectory(root, path) : undefined)
 
-  ipcMain.handle('files:makeDirectory', async (_event, root: unknown, path: unknown) => {
+  answer('files:makeDirectory', async (_event, root: unknown, path: unknown) => {
     if (!isGranted(root) || !isPath(path)) throw new Error('shell.pathRefused')
     await makeDirectory(root, path)
   })
@@ -209,12 +209,12 @@ export function registerFileChannel(options: { onRecentsChanged?: () => void } =
   ipcMain.handle('files:read', async (_event, root: unknown, path: unknown) =>
     isGranted(root) && isPath(path) ? readInside(root, path) : undefined)
 
-  ipcMain.handle('files:write', async (_event, root: unknown, path: unknown, bytes: unknown) => {
+  answer('files:write', async (_event, root: unknown, path: unknown, bytes: unknown) => {
     if (!isGranted(root) || !isPath(path) || !isBytes(bytes)) throw new Error('shell.pathRefused')
     return writeInside(root, path, bytes)
   })
 
-  ipcMain.handle('files:writeTogether', async (_event, root: unknown, writes: unknown, removals: unknown) => {
+  answer('files:writeTogether', async (_event, root: unknown, writes: unknown, removals: unknown) => {
     const shaped = Array.isArray(writes) && writes.every((write: unknown) => {
       const held = write as { path?: unknown; bytes?: unknown } | undefined
       return isPath(held?.path) && isBytes(held?.bytes)
@@ -225,7 +225,7 @@ export function registerFileChannel(options: { onRecentsChanged?: () => void } =
     return writeTogetherInside(root, writes as { path: string; bytes: Uint8Array }[], removals as string[])
   })
 
-  ipcMain.handle('files:remove', async (_event, root: unknown, path: unknown, options: unknown) => {
+  answer('files:remove', async (_event, root: unknown, path: unknown, options: unknown) => {
     if (!isGranted(root) || !isPath(path)) return
     const recursive = (options as { recursive?: unknown } | undefined)?.recursive === true
     await removeEntry(root, path, { recursive })

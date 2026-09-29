@@ -232,24 +232,24 @@ export class FolderHistory implements HistoryRepository {
   }
 
   /** Every commit whose message holds a text, its message alone, in chunks, to the first commit there is. */
-  private async grep(text: string): Promise<FolderCommit[]> {
+  private async grep(text: string, tip: string | undefined): Promise<FolderCommit[]> {
     const found: FolderCommit[] = []
     for (let skip = 0; ; skip += MESSAGES) {
-      const commits = await this.git.log({ grep: text, limit: MESSAGES, skip, bare: true })
+      const commits = await this.git.log({ grep: text, limit: MESSAGES, skip, bare: true, ...(tip ? { tip } : {}) })
       found.push(...commits)
       if (commits.length < MESSAGES) return found
     }
   }
 
   /** The scopes asked about, each with every address it has been at: where it is, and where its entries say it was. */
-  private async asked(ids: readonly ScopeId[]): Promise<{ asked: Asked[]; addresses: ScopeAddress[] }> {
+  private async asked(ids: readonly ScopeId[], tip: string | undefined): Promise<{ asked: Asked[]; addresses: ScopeAddress[] }> {
     const { nodes } = await this.folder.walk()
     const asked: Asked[] = []
     for (const id of [...new Set(ids)]) {
       const held = new Set<ScopeAddress>()
       const here = nodes.find((node) => node.id === id)
       if (here) held.add(here.address)
-      for (const commit of await this.grep(`${SCOPE_TRAILER}: ${id} `)) {
+      for (const commit of await this.grep(`${SCOPE_TRAILER}: ${id} `, tip)) {
         const address = trailersOf(commit.message).get(id)
         if (address !== undefined) held.add(address)
       }
@@ -310,10 +310,13 @@ export class FolderHistory implements HistoryRepository {
     const size = Math.max(1, limit)
     const cursor = after === undefined ? undefined : cursorOf(after)
     if (after !== undefined && !cursor) return { entries: [] }
-    const { asked, addresses } = await this.asked(scopes)
-    const held = [...new Set(asked.flatMap((one) => one.held))]
     const tip = cursor?.tip ?? await this.git.head()
-    if (!tip || held.length === 0) return { entries: [] }
+    if (!tip) return { entries: [] }
+    // The addresses a scope has been at, as the history from that tip says: a
+    // page after a page asks the same history the first page asked.
+    const { asked, addresses } = await this.asked(scopes, tip)
+    const held = [...new Set(asked.flatMap((one) => one.held))]
+    if (held.length === 0) return { entries: [] }
     const paths = record
       ? held.flatMap((address) => (recordFiles(record)?.paths ?? KIND_PATHS[record.kind]).map((path) => scopeFilePath(address, path)))
       : held.includes('') ? undefined : held
@@ -486,7 +489,7 @@ export class FolderHistory implements HistoryRepository {
     if (sha === undefined) return undefined
     const [commit] = await this.git.log({ tip: sha, limit: 1 }).catch(() => [])
     if (!commit || commit.sha !== sha) return undefined
-    const { asked, addresses } = await this.asked([scope])
+    const { asked, addresses } = await this.asked([scope], sha)
     const [found] = await this.membersOf(commit, asked, addresses)
     return found
   }
