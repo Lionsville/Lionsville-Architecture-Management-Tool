@@ -19,8 +19,8 @@
  *
  * **What the files say wins over the rows.** A row whose file has gone —
  * removed by hand, or never written — leaves the library, and its name is
- * free again; but for a row a step added whose bytes were not put yet, which
- * says so (`pending`) and waits for them. A file replaced under a row's name
+ * free again. No row waits for bytes still to come: a step naming bytes that
+ * are not here is refused (`shell.imageBytesGone`). A file replaced under a row's name
  * is described afresh, under the row's name: one whose size is not the row's,
  * and one whose stamp — size, time written and, on the desktop, the file's
  * own number on its disk — is not the stamp it had when this machine last
@@ -84,31 +84,27 @@ export function sameStamp(one: PictureStamp, other: PictureStamp): boolean {
 /** The key `scope.json` keeps the library under. */
 export const LIBRARY_KEY = 'images'
 
-/** One row of the library in the header: the entry, its file where that is not its name, and whether its bytes are still to come. */
-type Row = ImageEntry & { file?: string; pending?: true }
-
-/** A picture in a library, as the header keeps it: `pending` while its bytes are still to come. */
-export type RowPicture = KeptPicture & { pending?: true }
+/** One row of the library in the header: the entry, and its file where that is not its name. */
+type Row = ImageEntry & { file?: string }
 
 /** The rows a header's library holds that describe a picture; any other is left to be found as a file. */
-export function rowsOf(held: unknown): RowPicture[] {
+export function rowsOf(held: unknown): KeptPicture[] {
   if (!Array.isArray(held)) return []
   return held.flatMap((row: unknown) => {
     if (!row || typeof row !== 'object') return []
-    const { file, pending, ...entry } = row as Row
+    const { file, ...entry } = row as Row
     if (imageEntryRefusal(entry) !== undefined) return []
     const kept = typeof file === 'string' && isImageFile(file) ? file : entry.name
-    return [{ entry: { ...entry }, file: kept, ...(pending === true ? { pending } : {}) }]
+    return [{ entry: { ...entry }, file: kept }]
   })
 }
 
-/** The library as the header keeps it; `waiting` are the files whose bytes are still to come. */
-export function rowsFor(library: readonly KeptPicture[], waiting: ReadonlySet<string> = new Set()): Row[] {
+/** The library as the header keeps it. */
+export function rowsFor(library: readonly KeptPicture[]): Row[] {
   return library.map(({ entry, file }) => ({
     name: entry.name, mediaType: entry.mediaType, size: entry.size, width: entry.width, height: entry.height,
     contentAddress: entry.contentAddress,
     ...(file === entry.name ? {} : { file }),
-    ...(waiting.has(file) ? { pending: true as const } : {}),
   }))
 }
 
@@ -154,21 +150,17 @@ async function rowAsFile(row: KeptPicture, file: PictureFile, source: PictureSou
 
 /**
  * A scope's library: every row of its header whose file is there, in its
- * order — described afresh where the file is not what the row says — and the
- * rows still waiting for their bytes; then every file no row names, by file.
+ * order — described afresh where the file is not what the row says; then
+ * every file no row names, by file.
  */
-export async function libraryOf(rows: readonly RowPicture[], source: PictureSource): Promise<KeptPicture[]> {
+export async function libraryOf(rows: readonly KeptPicture[], source: PictureSource): Promise<KeptPicture[]> {
   const onDisk = new Map(source.files.map((file) => [imageName(file.file), file]))
-  const kept = rows.filter((row) => row.pending || onDisk.has(imageName(row.file)))
+  const kept = rows.filter((row) => onDisk.has(imageName(row.file)))
   const taken = new Set(kept.map((row) => imageNameKey(row.entry.name)))
   const named = new Set<string>()
   const library: KeptPicture[] = []
   for (const row of kept) {
-    const found = onDisk.get(imageName(row.file))
-    if (!found) {
-      library.push({ entry: row.entry, file: row.file })
-      continue
-    }
+    const found = onDisk.get(imageName(row.file))!
     named.add(imageName(row.file))
     library.push({ entry: await rowAsFile(row, found, source), file: found.file })
   }

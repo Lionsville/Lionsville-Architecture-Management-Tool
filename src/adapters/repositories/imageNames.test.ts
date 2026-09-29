@@ -130,13 +130,6 @@ describe('pictures’ bytes nothing names', () => {
     expect((await repositories.images.bytes(acme, 'undone.png'))?.bytes).toEqual(new Uint8Array([4, 4]))
   })
 
-  it('are never named by an entry for bytes that were never put', async () => {
-    const { repositories, acme } = await made()
-    const image: ImageEntry = { name: 'never.png', mediaType: 'image/png', size: 1, width: 1, height: 1, contentAddress: `sha256:${'0'.repeat(64)}` }
-    const answer = await repositories.scopes.apply([{ scope: acme, steps: [{ stepId: 'x', command: { type: 'image.add', image }, at: Date.now() }] }])
-    expect('refused' in answer && answer.refused).toBe('shell.imageBytesGone')
-  })
-
   it('stay while a second name in the library points at the same bytes', async () => {
     const { store, repositories, acme } = await made()
     await repositories.history.record({})

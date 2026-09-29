@@ -39,7 +39,7 @@ import type { DirectoryHandleLike } from './DirectoryHandle'
 import { FileSystemScopeStore } from './FileSystemScopeStore'
 import type { ScopeHeader } from './FileSystemScopeStore'
 import { libraryOf, LIBRARY_KEY, pictureFiles, pictureStamps, rowsOf, sameStamp, stampsInMemory } from './folderPictures'
-import type { Described, KeptPicture, PictureFile, PictureStamp, RowPicture, StampCache } from './folderPictures'
+import type { Described, KeptPicture, PictureFile, PictureStamp, StampCache } from './folderPictures'
 import { bytesAt, fileAt, filesUnder, folderAt, textAt } from './handles'
 import type { FileHandleLike } from './DirectoryHandle'
 import { imageEntryOf } from '../../model/imageEntry'
@@ -312,7 +312,7 @@ export class FolderScopes {
   }
 
   /** A scope's library from its rows and the files in its pictures folder, as this machine knows them. */
-  private async libraryFrom(address: ScopeAddress, rows: RowPicture[], files: PictureFile[]): Promise<KeptPicture[]> {
+  private async libraryFrom(address: ScopeAddress, rows: KeptPicture[], files: PictureFile[]): Promise<KeptPicture[]> {
     const described = await this.stamped()
     const library = await libraryOf(rows, {
       files,

@@ -411,20 +411,30 @@ describe('what a scope’s pictures folder says, over what its rows say', () => 
     expect((await repositories.images.bytes(acme, 'map.png'))?.bytes).toEqual(again)
   })
 
-  it('keeps a picture added before its bytes were put, and writes them with the next step once they are', async () => {
+  it('refuses a step naming a picture before its bytes were put, and writes nothing of it', async () => {
     const root = new FakeDirectory()
     const repositories = over({ repositories: folderRepositories({ root, git: memoryGit(root) }) })
     const acme = await repositories.scope('acme', 'Acme Logistics')
     const bytes = picture(8, 8)
     const entry = { name: 'later.png', mediaType: 'image/png', size: bytes.length, width: 8, height: 8, contentAddress: await contentAddressOf(bytes) }
-    await repositories.steps(acme, { type: 'image.add', image: entry })
-    expect((await repositories.state(acme)).images).toEqual([entry])
-    expect(root.paths()).not.toContain('acme/images/later.png')
-    ok(await repositories.images.put(acme, 'later.png', bytes))
-    expect((await repositories.images.bytes(acme, 'later.png'))?.bytes).toEqual(bytes)
-    await repositories.steps(acme, addCrews)
-    expect(root.paths()).toContain('acme/images/later.png')
-    expect((await repositories.state(acme)).images).toEqual([entry])
+    const naming = step({ type: 'image.add', image: entry })
+    expect(await repositories.apply([{ scope: acme, steps: [naming] }])).toEqual({ refused: 'shell.imageBytesGone', scope: acme, stepId: naming.stepId })
+    expect((await repositories.state(acme)).images).toEqual([])
+    expect(root.paths().filter((path) => path.startsWith('acme/images/'))).toEqual([])
+  })
+
+  it('names bytes a second time only while a file holds them, or they are put again', async () => {
+    const { root, repositories: first, acme } = await withPicture()
+    const [entry] = (await first.state(acme)).images
+    // Another run over the folder: the bytes the first was handed are not held here.
+    const repositories = over({ repositories: folderRepositories({ root, git: memoryGit(root) }) })
+    await removeAt(root, 'acme/images/map.png')
+    const again = step({ type: 'image.add', image: { ...entry, name: 'again.png' } })
+    expect(await repositories.apply([{ scope: acme, steps: [again] }])).toEqual({ refused: 'shell.imageBytesGone', scope: acme, stepId: again.stepId })
+    expect(root.paths().filter((path) => path.startsWith('acme/images/'))).toEqual([])
+    ok(await repositories.images.put(acme, 'again.png', picture(64, 32)))
+    ok(await repositories.apply([{ scope: acme, steps: [again] }]))
+    expect(root.paths()).toContain('acme/images/again.png')
   })
 
   it('describes a picture replaced by hand with other bytes of the same size, by the stamp it had when last described', async () => {

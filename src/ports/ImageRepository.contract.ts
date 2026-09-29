@@ -106,6 +106,24 @@ export function describeImageRepository(name: string, make: MakeRepositories): v
       expect((await repositories.images.list(acme, '')).images).toEqual([entry])
     })
 
+    it('refuses an entry whose bytes it does not keep for the scope, and a second name for bytes it does is added', async () => {
+      const { repositories, acme } = await fresh()
+      const kept = await add(repositories, acme, 'kept.png', bytes(1, 2, 3))
+      const elsewhere = await repositories.scope('globex', 'Globex')
+      const put = ok(await repositories.images.put(elsewhere, 'other.png', bytes(9, 9)))
+      const unput = await contentAddressOf(bytes(7, 7))
+      for (const contentAddress of [put.contentAddress, unput]) {
+        const never: ImageEntry = { name: 'never.png', mediaType: 'image/png', size: 2, width: 1, height: 1, contentAddress }
+        const naming = step({ type: 'image.add', image: never })
+        const answer = await repositories.apply([{ scope: acme, steps: [step({ type: 'image.remove', name: 'kept.png' }), naming] }])
+        expect(answer).toEqual({ refused: 'shell.imageBytesGone', scope: acme, stepId: naming.stepId })
+      }
+      expect((await repositories.images.list(acme, '')).images).toEqual([kept])
+      const again = { ...kept, name: 'again.png' }
+      await repositories.steps(acme, { type: 'image.add', image: again })
+      expect(await repositories.images.bytes(acme, 'again.png')).toEqual({ mediaType: 'image/png', bytes: bytes(1, 2, 3) })
+    })
+
     it('hands out bytes nobody else holds: changing them changes nothing it keeps', async () => {
       const { repositories, acme } = await fresh()
       await add(repositories, acme, 'context.png', bytes(1, 2, 3))

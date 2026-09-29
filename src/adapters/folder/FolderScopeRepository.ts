@@ -72,7 +72,7 @@ function nextLibrary(was: readonly KeptPicture[], entries: readonly ImageEntry[]
 
 /** A scope's state as the folder store writes it: the documents' pictures as files, the library and the identity in the header. */
 function snapshotFor(
-  node: FolderNode, content: ScopeContent, was: ReadScope | undefined, library: readonly KeptPicture[], waiting: ReadonlySet<string> = new Set(),
+  node: FolderNode, content: ScopeContent, was: ReadScope | undefined, library: readonly KeptPicture[],
 ): ScopeSnapshot {
   const model = filesInDocuments(content.model, was?.snapshot?.model, pictureFiles(library, was?.library ?? []))
   const { [LIBRARY_KEY]: _rows, ...carried } = { ...was?.snapshot?.carried }
@@ -85,7 +85,7 @@ function snapshotFor(
     ...(content.client !== undefined ? { client: content.client } : {}),
     ...(content.links !== undefined ? { links: content.links } : {}),
     ...(was?.snapshot?.unread ? { unread: was.snapshot.unread } : {}),
-    carried: { ...carried, [ID_KEY]: node.id, ...(library.length ? { [LIBRARY_KEY]: rowsFor(library, waiting) } : {}) },
+    carried: { ...carried, [ID_KEY]: node.id, ...(library.length ? { [LIBRARY_KEY]: rowsFor(library) } : {}) },
   }
 }
 
@@ -151,9 +151,11 @@ export class FolderScopeRepository implements ScopeRepository {
       for (const { read, steps } of runs.values()) {
         const result = applySteps(contentOf(read.state), steps)
         if (!result.ok) return { refused: result.refused, scope: read.node.id, stepId: result.stepId }
+        const missing = this.bytesMissing(read, result.content.images, steps)
+        if (missing) return { refused: 'shell.imageBytesGone', scope: read.node.id, ...(missing.stepId ? { stepId: missing.stepId } : {}) }
         if (!result.changed) continue
         const library = nextLibrary(read.library, result.content.images)
-        const snapshot = snapshotFor(read.node, result.content, read, library, this.waiting(read, library))
+        const snapshot = snapshotFor(read.node, result.content, read, library)
         planned.push({ read, content: result.content, library, snapshot, steps })
       }
       const pending = await this.expectations(planned)
@@ -220,16 +222,20 @@ export class FolderScopeRepository implements ScopeRepository {
   }
 
   /**
-   * The files of a library that no bytes will be written for: not there, not
-   * put, and no other picture of the scope the same bytes. Their rows say so,
-   * and wait for them.
+   * The first content address the library newly names whose bytes are not
+   * put for the scope, and the step that named it: a step never names bytes
+   * that are not here (`shell.imageBytesGone`), so no row ever waits for its
+   * bytes. One the library named already is there: its file is (`libraryOf`).
    */
-  private waiting(read: ReadScope, library: readonly KeptPicture[]): Set<string> {
-    const there = new Set(read.files.map((file) => file.file))
-    const held = new Set(read.library.filter((kept) => there.has(kept.file)).map((kept) => kept.entry.contentAddress))
-    return new Set(library
-      .filter(({ entry, file }) => !there.has(file) && !held.has(entry.contentAddress) && !this.staging.get(read.node.id, entry.contentAddress))
-      .map(({ file }) => file))
+  private bytesMissing(
+    read: ReadScope, images: readonly ImageEntry[], steps: readonly ScopeStep[],
+  ): { address: string; stepId?: string } | undefined {
+    const named = new Set(read.library.map(({ entry }) => entry.contentAddress))
+    const address = images.map((image) => image.contentAddress)
+      .find((one) => !named.has(one) && !this.staging.get(read.node.id, one))
+    if (address === undefined) return undefined
+    const naming = steps.find(({ command }) => command.type === 'image.add' && command.image.contentAddress === address)
+    return { address, ...(naming ? { stepId: naming.stepId } : {}) }
   }
 
   /** Each planned step, with what its scope's files are to be fingerprinted as once the write has landed. */
