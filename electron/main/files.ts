@@ -149,7 +149,8 @@ export async function grantDirectory(
   return directory
 }
 
-function isGranted(root: unknown): root is string {
+/** Whether the renderer may reach this folder, or anything the app keeps about it: one the user granted. */
+export function isGranted(root: unknown): root is string {
   return typeof root === 'string' && granted.has(root)
 }
 

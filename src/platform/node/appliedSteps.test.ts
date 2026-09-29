@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from 'vitest'
 import {
-  appliedStepsText, pictureStampsText, readAppliedSteps, readPictureStamps, readScopePlaces, scopePlacesText,
+  appliedStepsFile, appliedStepsText, pictureStampsText, readAppliedSteps, readPictureStamps, readScopePlaces, scopePlacesText,
 } from './appliedSteps'
 
 describe('applied step ids, kept by the app', () => {
@@ -14,14 +14,23 @@ describe('applied step ids, kept by the app', () => {
     expect(readAppliedSteps(text, '/work/globex')).toBeUndefined()
   })
 
-  it('carries every other folder through, and lets a row that says no step go', () => {
-    const one = appliedStepsText(undefined, '/work/acme', { a: ['s', 1] })
-    const two = appliedStepsText(one, '/work/globex', { b: ['t', 2], c: ['bad'] as unknown as [string, number] })
-    expect(readAppliedSteps(two, '/work/acme')).toEqual({ a: ['s', 1] })
-    expect(readAppliedSteps(two, '/work/globex')).toEqual({ b: ['t', 2] })
+  it('lets a row that says no step go, and keeps what a step was to leave its scope at', () => {
+    const text = appliedStepsText(undefined, '/work/acme', { b: ['t', 2], c: ['bad'] as unknown as [string, number] })
+    expect(readAppliedSteps(text, '/work/acme')).toEqual({ b: ['t', 2] })
     expect(readAppliedSteps('{ not json', '/work/acme')).toBeUndefined()
     const pending = appliedStepsText(undefined, '/work/acme', { a: ['s', 1, 'expected'] })
     expect(readAppliedSteps(pending, '/work/acme')).toEqual({ a: ['s', 1, 'expected'] })
+  })
+
+  it('keeps one file per folder, and reads one that names another folder as nothing', () => {
+    expect(appliedStepsFile('/work/acme')).toMatch(/^folders\/[0-9a-f]{64}\.json$/)
+    expect(appliedStepsFile('/work/acme')).toBe(appliedStepsFile('/work/acme'))
+    expect(appliedStepsFile('/work/globex')).not.toBe(appliedStepsFile('/work/acme'))
+    const globex = scopePlacesText(appliedStepsText(undefined, '/work/globex', { b: ['t', 2] }), '/work/globex', { 's-2': 'globex' })
+    expect(readAppliedSteps(globex, '/work/acme')).toBeUndefined()
+    const acme = appliedStepsText(globex, '/work/acme', { a: ['s', 1] })
+    expect(readAppliedSteps(acme, '/work/acme')).toEqual({ a: ['s', 1] })
+    expect(readScopePlaces(acme, '/work/acme')).toBeUndefined()
   })
 
   it('keeps where each folder’s scopes were found beside the steps, neither writing over the other', () => {

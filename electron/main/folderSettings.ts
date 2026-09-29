@@ -13,22 +13,23 @@
  * text back, and answers the renderer's two calls.
  */
 import { app, ipcMain } from 'electron'
-import { readFile, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
 import type { LocalSettings, LocalSettingsPatch } from '../../src/projects/folderSettings'
 import { readLocalSettings } from '../../src/projects/folderSettings'
 import {
   MACHINE_FOLDER_SETTINGS_FILE, machineFolderSettingsText, readMachineFolderSettings,
 } from '../../src/platform/node/machineFolderSettings'
 import {
-  APPLIED_STEPS_FILE, appliedStepsOf, appliedStepsText, pictureStampsText, readAppliedSteps, readPictureStamps, readScopePlaces,
+  appliedStepsFile, appliedStepsOf, appliedStepsText, pictureStampsText, readAppliedSteps, readPictureStamps, readScopePlaces,
   scopePlacesText,
 } from '../../src/platform/node/appliedSteps'
-import type { AppliedSteps, PictureStamps, ScopePlaces } from '../../src/platform/node/appliedSteps'
+import type { PictureStamps, ScopePlaces } from '../../src/platform/node/appliedSteps'
+import { isGranted } from './files'
 import { log } from './log'
 
 const settingsPath = (): string => join(app.getPath('userData'), MACHINE_FOLDER_SETTINGS_FILE)
-const stepsPath = (): string => join(app.getPath('userData'), APPLIED_STEPS_FILE)
+const stepsPath = (root: string): string => join(app.getPath('userData'), appliedStepsFile(root))
 
 async function text(path = settingsPath()): Promise<string | undefined> {
   try {
@@ -38,9 +39,6 @@ async function text(path = settingsPath()): Promise<string | undefined> {
     return undefined
   }
 }
-
-/** One write of the steps file at a time: two windows remembering steps must not lose each other's. */
-let stepsQueue: Promise<unknown> = Promise.resolve()
 
 export function registerFolderSettingsChannel(): void {
   ipcMain.handle('settings:readFolderLocal', async (_event, root: unknown): Promise<LocalSettings | undefined> => {
@@ -59,53 +57,46 @@ export function registerFolderSettingsChannel(): void {
     }
     return readMachineFolderSettings(next, root) ?? readLocalSettings(undefined)
   })
-  // The step ids a folder's repositories applied (ADR-0031): kept here, keyed
-  // by the folder, so the person never sees them and a copy never carries them.
-  ipcMain.handle('settings:readFolderSteps', async (_event, root: unknown): Promise<AppliedSteps | undefined> => {
-    if (typeof root !== 'string') return undefined
-    return readAppliedSteps(await text(stepsPath()), root)
-  })
-  ipcMain.handle('settings:writeFolderSteps', (_event, root: unknown, steps: unknown): Promise<void> => {
-    if (typeof root !== 'string') throw new Error('a folder is named by its path')
-    const write = async () => {
-      const next = appliedStepsText(await text(stepsPath()), root, appliedStepsOf(steps))
+  // The step ids a folder's repositories applied (ADR-0031): kept here, one
+  // file per folder, so the person never sees them and a copy never carries
+  // them; with where its scopes were last found and what its pictures were.
+  // Like the file channels, only for a folder the user granted.
+  kept('Steps', readAppliedSteps, (text, root, value) => appliedStepsText(text, root, appliedStepsOf(value)))
+  kept('Places', readScopePlaces, (text, root, value) => scopePlacesText(text, root, (value ?? {}) as ScopePlaces))
+  kept('Stamps', readPictureStamps, (text, root, value) => pictureStampsText(text, root, (value ?? {}) as PictureStamps))
+}
+
+/** One part of a folder's own file: a read, and a write in that file's turn. */
+function kept(
+  part: 'Steps' | 'Places' | 'Stamps',
+  read: (text: string | undefined, root: string) => unknown,
+  written: (text: string | undefined, root: string, value: unknown) => string,
+): void {
+  ipcMain.handle(`settings:readFolder${part}`, async (_event, root: unknown) =>
+    isGranted(root) ? read(await text(stepsPath(root)), root) : undefined)
+  ipcMain.handle(`settings:writeFolder${part}`, (_event, root: unknown, value: unknown): Promise<void> => {
+    if (!isGranted(root)) return Promise.reject(new Error('shell.pathRefused'))
+    return inTurn(root, async () => {
+      const path = stepsPath(root)
       try {
-        await writeFile(stepsPath(), `${next}\n`, 'utf8')
+        await mkdir(dirname(path), { recursive: true })
+        await writeFile(path, `${written(await text(path), root, value)}\n`, 'utf8')
       } catch (cause) {
-        log('settings', `could not write ${APPLIED_STEPS_FILE}: ${String(cause)}`)
+        log('settings', `could not write a folder's ${part.toLowerCase()}: ${String(cause)}`)
         throw cause
       }
-    }
-    const next = stepsQueue.then(write, write)
-    stepsQueue = next.catch(() => undefined)
-    return next
+    })
   })
-  // Where a folder's scopes were last found, in the same file and the same turn.
-  ipcMain.handle('settings:readFolderPlaces', async (_event, root: unknown): Promise<ScopePlaces | undefined> => {
-    if (typeof root !== 'string') return undefined
-    return readScopePlaces(await text(stepsPath()), root)
-  })
-  ipcMain.handle('settings:writeFolderPlaces', (_event, root: unknown, places: unknown): Promise<void> => {
-    if (typeof root !== 'string') throw new Error('a folder is named by its path')
-    const write = async () => {
-      await writeFile(stepsPath(), `${scopePlacesText(await text(stepsPath()), root, (places ?? {}) as ScopePlaces)}\n`, 'utf8')
-    }
-    const next = stepsQueue.then(write, write)
-    stepsQueue = next.catch(() => undefined)
-    return next
-  })
-  // What this machine found a folder's pictures to be, by stamp: a cache, in the same file and the same turn.
-  ipcMain.handle('settings:readFolderStamps', async (_event, root: unknown): Promise<PictureStamps | undefined> => {
-    if (typeof root !== 'string') return undefined
-    return readPictureStamps(await text(stepsPath()), root)
-  })
-  ipcMain.handle('settings:writeFolderStamps', (_event, root: unknown, stamps: unknown): Promise<void> => {
-    if (typeof root !== 'string') throw new Error('a folder is named by its path')
-    const write = async () => {
-      await writeFile(stepsPath(), `${pictureStampsText(await text(stepsPath()), root, (stamps ?? {}) as PictureStamps)}\n`, 'utf8')
-    }
-    const next = stepsQueue.then(write, write)
-    stepsQueue = next.catch(() => undefined)
-    return next
-  })
+}
+
+/**
+ * One write of a folder's file at a time: two windows remembering steps must
+ * not lose each other's. Another folder's file is another turn.
+ */
+const turns = new Map<string, Promise<unknown>>()
+
+function inTurn(root: string, write: () => Promise<void>): Promise<void> {
+  const next = (turns.get(root) ?? Promise.resolve()).then(write, write)
+  turns.set(root, next.catch(() => undefined))
+  return next
 }

@@ -9,22 +9,28 @@
  * that the ids a folder applied are remembered for at least a day, through a
  * restart. Not in the folder, where a person would see them and a copy of the
  * folder would carry them to where they mean nothing; beside the machine's
- * other settings about each folder, keyed by its path:
+ * other settings, one file per folder, named by a hash of its path, so what
+ * one folder writes never reads or rewrites another's:
  *
- *   <userData>/applied-steps.json
- *   { "version": 1, "folders": { "<root>": { "<step id>": ["<scope id>", <at>] } } }
+ *   <userData>/folders/<sha-256 of the root>.json
+ *   { "version": 1, "root": "<root>", "steps": { "<step id>": ["<scope id>", <at>] } }
  *
- * Beside them, where each of a folder's scopes' identities was last found
+ * Beside them, where each of the folder's scopes' identities was last found
  * (`places`), so a folder copied by hand leaves an identity where it was
- * through a restart; and what this machine found each of a folder's pictures to
- * be at the stamp it had (`stamps`), so reading a scope reads no picture that
- * has not changed since.
+ * through a restart; and what this machine found each of its pictures to be at
+ * the stamp it had (`stamps`), so reading a scope reads no picture that has
+ * not changed since. The file says whose it is: one that names another root
+ * is read as nothing and written over.
  *
  * Pure: text in, text out. The main process finds the file.
  */
+import { createHash } from 'node:crypto'
 import { parseJson, stableJson } from '../../projects/fileText'
 
-export const APPLIED_STEPS_FILE = 'applied-steps.json'
+/** Where, under the app's own data folder, one folder's file is. */
+export function appliedStepsFile(root: string): string {
+  return `folders/${createHash('sha256').update(root, 'utf8').digest('hex')}.json`
+}
 
 /**
  * One folder's applied steps: each id, the scope it went to, and when, in
@@ -37,6 +43,22 @@ function record(value: unknown): Record<string, unknown> | undefined {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : undefined
 }
 
+/** The file, where it is this folder's; nothing where it is missing, unreadable or another's. */
+function mine(text: string | undefined, root: string): Record<string, unknown> | undefined {
+  const top = record(text === undefined ? undefined : parseJson(text))
+  return top?.['root'] === root ? top : undefined
+}
+
+/** One part of the folder's file, or `undefined` where it was never written. */
+function part(text: string | undefined, root: string, name: string): unknown {
+  return mine(text, root)?.[name]
+}
+
+/** The file's text with one part replaced and every other part carried through. */
+function withPart(text: string | undefined, root: string, name: string, value: unknown): string {
+  return stableJson({ ...mine(text, root), version: 1, root, [name]: value })
+}
+
 /** The rows of an entry that say a step: a scope and a time. Anything else is let go of. */
 export function appliedStepsOf(value: unknown): AppliedSteps {
   const found: AppliedSteps = {}
@@ -47,17 +69,15 @@ export function appliedStepsOf(value: unknown): AppliedSteps {
   return found
 }
 
-/** One folder's steps out of the file, or `undefined` where none were written for it. */
+/** The folder's steps out of its file, or `undefined` where none were written. */
 export function readAppliedSteps(text: string | undefined, root: string): AppliedSteps | undefined {
-  const folders = record(record(text === undefined ? undefined : parseJson(text))?.['folders'])
-  return folders && root in folders ? appliedStepsOf(folders[root]) : undefined
+  const held = part(text, root, 'steps')
+  return held === undefined ? undefined : appliedStepsOf(held)
 }
 
-/** The file's text with one folder's steps replaced; every other folder's carried through. */
+/** The folder's file with its steps replaced. */
 export function appliedStepsText(text: string | undefined, root: string, steps: AppliedSteps): string {
-  const top = record(text === undefined ? undefined : parseJson(text)) ?? {}
-  const folders = record(top['folders']) ?? {}
-  return stableJson({ ...top, version: 1, folders: { ...folders, [root]: appliedStepsOf(steps) } })
+  return withPart(text, root, 'steps', appliedStepsOf(steps))
 }
 
 /** One folder's scopes' identities, each with the address it was last found at. */
@@ -67,17 +87,15 @@ function placesOf(value: unknown): ScopePlaces {
   return Object.fromEntries(Object.entries(record(value) ?? {}).filter((row): row is [string, string] => typeof row[1] === 'string'))
 }
 
-/** Where one folder's scopes were last found, out of the same file; `undefined` where none were written for it. */
+/** Where the folder's scopes were last found, out of the same file; `undefined` where none were written. */
 export function readScopePlaces(text: string | undefined, root: string): ScopePlaces | undefined {
-  const places = record(record(text === undefined ? undefined : parseJson(text))?.['places'])
-  return places && root in places ? placesOf(places[root]) : undefined
+  const held = part(text, root, 'places')
+  return held === undefined ? undefined : placesOf(held)
 }
 
-/** The file's text with one folder's places replaced; every other folder's, and every step, carried through. */
+/** The folder's file with its places replaced; its steps and stamps carried through. */
 export function scopePlacesText(text: string | undefined, root: string, places: ScopePlaces): string {
-  const top = record(text === undefined ? undefined : parseJson(text)) ?? {}
-  const held = record(top['places']) ?? {}
-  return stableJson({ ...top, version: 1, places: { ...held, [root]: placesOf(places) } })
+  return withPart(text, root, 'places', placesOf(places))
 }
 
 /** What a machine found each of a folder's pictures to be, by scope folder and file, at the stamp it had. */
@@ -99,15 +117,13 @@ function stampsOf(value: unknown): PictureStamps {
   return found
 }
 
-/** What was found of one folder's pictures, out of the same file; `undefined` where nothing was written for it. */
+/** What was found of the folder's pictures, out of the same file; `undefined` where nothing was written. */
 export function readPictureStamps(text: string | undefined, root: string): PictureStamps | undefined {
-  const stamps = record(record(text === undefined ? undefined : parseJson(text))?.['stamps'])
-  return stamps && root in stamps ? stampsOf(stamps[root]) : undefined
+  const held = part(text, root, 'stamps')
+  return held === undefined ? undefined : stampsOf(held)
 }
 
-/** The file's text with what was found of one folder's pictures replaced; everything else carried through. */
+/** The folder's file with what was found of its pictures replaced; everything else carried through. */
 export function pictureStampsText(text: string | undefined, root: string, stamps: PictureStamps): string {
-  const top = record(text === undefined ? undefined : parseJson(text)) ?? {}
-  const held = record(top['stamps']) ?? {}
-  return stableJson({ ...top, version: 1, stamps: { ...held, [root]: stampsOf(stamps) } })
+  return withPart(text, root, 'stamps', stampsOf(stamps))
 }

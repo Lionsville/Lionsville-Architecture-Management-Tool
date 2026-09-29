@@ -364,7 +364,9 @@ repositories, in `src/adapters/folder/`:
   of ours there is one a person sees and a copy carries, and `.git` is git's.
   Whoever composes the folder says where they are kept (`StepStore`): on the
   desktop, in its own data folder beside what it does about each folder
-  (`applied-steps.json`, keyed by the folder); in a browser, in the database
+  (`folders/<hash of the path>.json`, one file per folder, which the main
+  process reads and writes only for a folder the user granted, as it does
+  the folder's files); in a browser, in the database
   its repositories keep their own work in, under a key of the folder's own —
   a handle has no identity storage can be keyed by, so each folder has a
   record holding its handle, found by asking each kept handle whether it is
