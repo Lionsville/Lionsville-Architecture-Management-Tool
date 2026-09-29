@@ -1207,6 +1207,18 @@ hand.
   - An example lands under a scope of its own where the root could not be
     read whole, or the listing could not read a scope: what could not be
     read may be anything.
+  - What an entry kept that could not be read is had back: an entry says
+    it kept some (`HistoryEntry.unread`), `HistoryRepository.unreadAt`
+    answers it as text, and the history's page offers *Save what could not
+    be read…*, a JSON file of the person's own. Memory and browser storage
+    implement it; the folder sets its files aside where a person finds them.
+  - Any working file opened onto such a scope puts it back, the notice's
+    button or *File › Open* alike, and the question before it says so.
+  - **Left as they are.** A folder's put back is not one write: the files set
+    aside are copied before the scope is written, so a stop between leaves
+    the copies and the scope as it was — harmless, and a person sees them.
+    And a folder whose header a later format wrote is not opened at all, so
+    it is never offered a put back; the listing says it could not read it.
 
 ## As built, 29 September 2026: the examples in the domain
 
