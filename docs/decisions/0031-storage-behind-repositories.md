@@ -332,12 +332,14 @@ repositories, in `src/adapters/folder/`:
   same every time the folder is read; it is written into the header the first
   time anything writes that scope, a move included. Nothing writes a folder
   only to add identities. Two headers claiming one id — a scope's folder
-  copied by hand — are read the first, by address, with it, and the other as
-  a folder with none. The folder format carries a header key it does not
+  copied by hand — are read with it at the address it was last found at (the
+  first by address, where it was found at neither), and the other as a folder
+  with none. An address is answered composed (NFC), and an identity made from
+  it is made from it composed, whatever the disk spells; no folder is renamed. The folder format carries a header key it does not
   write through a save (`ScopeSnapshot.carried`), so the app's store keeps an
   identity, and the library below, where it finds them.
 - **Revision.** A fingerprint of the scope's address, every file of the
-  format it holds, and which pictures there are. Content, so two reads of an
+  format it holds, and each picture of its library by name and bytes. Content, so two reads of an
   unchanged scope agree and a step that changes nothing moves nothing.
 - **Steps, all or none.** Every scope's steps are applied and every refusal
   made before anything is written; then the folder store writes every scope's
@@ -346,45 +348,65 @@ repositories, in `src/adapters/folder/`:
   stop part way leaves is what that write leaves: on the desktop some files
   in place and the rest staged beside them; over a handle that cannot rename,
   some scopes written and some not. The pictures are written after the
-  scopes' files and a step's id is remembered after both, so a stop between
-  leaves an entry whose bytes answer nothing until they are put again, and
-  steps that landed and are not remembered as landed. Sent again, such a
-  step is applied again. For one scope, that is a create refused as taken,
-  which the sender reads as the state it asked for. For a run across several
-  scopes that stopped part way, the whole run sent again is refused at the
-  first scope whose steps had landed, and the scopes that were not written
-  stay as they were: the sender reads each scope, and sends again what did
-  not land.
+  scopes' files, so a stop between leaves an entry whose bytes answer
+  nothing until they are put again. Before the write begins, each step is
+  remembered with what its scope's files are to be fingerprinted as once it
+  has landed, worked out with nothing written; a step sent again whose scope
+  is now that counts as landed, and one whose scope is not is applied. So a
+  run across several scopes that a stop cut short, sent again, lands on the
+  scopes it had not reached and leaves the ones it had.
 - **Step ids** are remembered for two days, and never in the folder: a file
   of ours there is one a person sees and a copy carries, and `.git` is git's.
   Whoever composes the folder says where they are kept (`StepStore`): on the
   desktop, in its own data folder beside what it does about each folder
-  (`applied-steps.json`, keyed by the folder), which keeps them through a
-  restart.
+  (`applied-steps.json`, keyed by the folder); in a browser, in its
+  IndexedDB beside the folder's handle — a handle has no identity storage can
+  be keyed by, so each kept handle is asked whether it is the same folder.
+  Both keep them through a restart.
 - **The folder's `.git` is no path the file channel takes**, in any spelling
   and through no link, and no git the app runs starts a hook or a file-system
   monitor: a folder's history is git's, and nothing a page writes there is a
   program the app runs.
-- **A move** copies every file of the scope's folder and of the scopes under
-  it — the format's, the pictures, the settings, whatever a person keeps
-  there — to the new address, writes each scope's identity into its header
-  where it was not yet, and only then removes the old folder: a stop part way
-  leaves two copies, which a person can see and settle, never none.
+- **A move** takes the scope's folder and the scopes under it as they are —
+  the format's files, the pictures, the settings, whatever a person keeps
+  there, links and empty folders included. On the desktop it is one rename in
+  the main process, and no byte passes through the page; where the handles
+  cannot rename, every file is copied to the new address and the old folder
+  removed only after, so a stop part way leaves two copies, which a person can
+  see and settle, never none. Each scope's identity is written into its header
+  where it was not yet.
 - **History.** A `record` is one commit of the scopes it closes, each scope's
   own files — everything in its folder but the scopes filed under it, and
   never the machine's settings file an older build left — with a trailer per
-  scope (`Lionsville-Scope: <id> <address>`). A commit is an entry of each
-  scope it names, and a commit without a trailer — an older build's snapshot,
-  a person's own — is an entry of each scope whose own files it changed where
-  the scope has been. A thing's history is read off the scope's state at
-  each entry and at the one before it, where the files a commit changed could
-  hold that record. `record` starts a history where the folder keeps none, as
-  a snapshot always has.
+  scope (`Lionsville-Scope: <id> <address>`), read from the trailer block
+  alone; a subject is written as one line. A commit is an entry of each scope
+  it names, and a commit without a trailer — an older build's snapshot, a
+  person's own — is an entry of a scope whose own files it changed where the
+  scope has been, while the header there said the scope's identity (or none,
+  and the address makes it), so a scope made where a removed one was is not
+  handed its past. A page after a page is counted from the commit the first
+  started at, so a history that grows or merges meanwhile neither repeats nor
+  skips an entry; a merge is no entry of its own. A thing's history asks git
+  only for the commits that changed where a record of its kind is kept; an
+  element's or a relation's is answered from the ids of what each commit
+  changed, its own file's changing being enough and the model they share
+  read once per version; any other is read off the scope at the commit and at
+  its parent. It stops at the entry after the page, and what it read is kept
+  to a size; a perf budget holds it on ten thousand commits
+  (`adapters/folder/history.perf.test.ts`). `record` starts a history where
+  the folder keeps none, as a snapshot always has, and refuses, with a key a
+  person can act on, part way through a merge, a rebase, a cherry-pick or a
+  revert, with a file unmerged, or on no branch. The paths it commits go to
+  git on its standard input; git older than 2.25 is refused once, with a
+  sentence that says so; a failure crosses to the page as a key, never as
+  git's words, which name paths.
 - **Labels** are tags named `<scope id>/<slug>`, so two scopes may each use
-  one label. A tag named otherwise — every label an older build made, which
-  was the whole folder's, and any tag a person made — stays the whole
+  one label; a tag so named is that scope's wherever it is found, even once
+  the scope is gone. A tag named otherwise — every label an older build made,
+  which was the whole folder's, and any tag a person made — stays the whole
   folder's: it is read as a label of every scope's entry at its commit, and
-  its slug is taken in every scope. No tag is renamed. `LabelOutcome` and
+  its slug is taken in every scope. The older snapshot's label refuses a word
+  a scope already holds. No tag is renamed. `LabelOutcome` and
   `labelSlug` moved to `projects/label.ts`: a label travels with its history
   from one source to another, so every source compares labels by one rule.
 - **Pictures.** Each is `images/<file>` as before; the library's rows —
@@ -400,7 +422,11 @@ repositories, in `src/adapters/folder/`:
   depend on whether the disk tells case apart. Bytes put are held in memory
   until a step adds them, so bytes never added write nothing; a step adding
   an entry whose bytes were never put is not refused — the suites apply one —
-  and the entry answers no bytes until they are.
+  and its row says it waits for them (`pending`) until a later step writes
+  them. A row whose file has gone otherwise leaves the library, and its name
+  is free again; a file replaced under a row's name — another size, or on the
+  desktop other bytes, which main fingerprints where the file is — is
+  described afresh.
 - **Documents** say `../images/<file>` on disk, as before, and `image:<name>`
   in the state; a document nobody changed is written back byte for byte, and
   a changed one at the depth its file is kept at (`imageLibrary.ts`, shared
@@ -430,15 +456,10 @@ repositories, in `src/adapters/folder/`:
   the folder format (from 14), 21 files importing across the line (from 22)
   with 31 imports (from 32), and 51 files naming storage (from 52) with 82
   words (from 83).
-- **A scope's pictures folder is read by name.** The desktop's handle reads a
-  whole file to say its size, so a read of a scope lists `images/` and reads
-  no picture but one no row names. A file replaced under a name a row already
-  has keeps that row's entry.
-- **A browser's folder** remembers applied step ids for as long as the
-  repositories are open, not for a day: a folder handle has no identity that
-  storage can be keyed by — two handles can only be asked whether they are
-  the same folder — so there is nowhere to keep them for that folder and no
-  other.
+- **A picture replaced in a browser's folder by other bytes of the same
+  size keeps its row's entry.** A browser answers a file's size without
+  reading it and no digest without reading it, and reading a scope reads no
+  picture; the desktop's main process fingerprints the file where it is.
 - **An entry's id is its commit and its scope together**, because one commit
   is an entry of every scope it records and each must be one of its own.
 - **The index leaves out a scope whose `model.json` is missing or will not

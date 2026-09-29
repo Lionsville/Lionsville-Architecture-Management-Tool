@@ -434,8 +434,9 @@ src/platform/     What the app runs inside, and what a failure looks like.
                       node/gitEntries   what the history over a folder's
                                       repositories asks of that git: the
                                       changes, a commit of some paths, the
-                                      commits with what each changed, the files
-                                      at one, and the tags (ADR-0031 §2)
+                                      commits with what each changed from and to,
+                                      the files at one, the tags, and whether the
+                                      history can take a record now (ADR-0031 §2)
 src/widgets/      Presentation with no opinions: icons, one confirm dialog,
                   a laid-out page rasterised (`capturePage`), and a part that
                   is not in the first download (`lazyPart`): a page behind a
@@ -485,8 +486,14 @@ src/adapters/     The outside world, one folder per flavour.
                                       library in the header (`folderPictures`),
                                       documents' `../images/` read as `image:`
                                       (`imageLibrary`, which browser storage
-                                      shares). Every suite runs over the fake and
-                                      over a real folder with real git
+                                      shares), the step ids a folder applied
+                                      kept by the app and never in the folder
+                                      (`StepStore`: the desktop's data folder,
+                                      or this browser's IndexedDB matched by the
+                                      folder's handle). Every suite runs over the
+                                      fake and over a real folder with real git;
+                                      `history.perf.test.ts` holds the history
+                                      to a budget on ten thousand commits
                     repositories/     the five repositories over a keyed store
                                       (`KeyedStore`: transactions, all or
                                       nothing), written once for memory and this
