@@ -505,7 +505,19 @@ repositories, in `src/adapters/folder/`:
   runs here, so where the folder's attributes hand files to `lfs` and the
   person's own configuration defines that filter, the person's git-lfs is
   asked to push them (`git lfs push <remote> HEAD`); where it does not, the
-  push is refused, saying large files would not be uploaded.
+  push is refused, saying large files would not be uploaded. Where they go
+  is git-lfs's to say, and git-lfs also reads `.lfsconfig`, a file in the work
+  tree that a page can write and git's configuration never shows: so the
+  push is refused where `.lfsconfig` — in the work tree, the index or the last
+  commit — names an address, a push address or an access mode, and the
+  endpoint git-lfs says it will push to (`git lfs env`) is held to the rule a
+  remote's address is. A folder's own `lfs.url` and `remote.<name>.lfsUrl`
+  are trusted as its remote's address is, and refused likewise; how git-lfs
+  asks to be let in (`lfs.<url>.access`) is the person's. The attributes the
+  person keeps (`core.attributesFile`) count as well as the folder's.
+
+  **An address over ssh to this machine** — `localhost`, a loopback address,
+  the machine's own name — is the path it names, and held to the same rule.
 
   So a person who signs keeps signing with their own signer and key, their
   credential helpers and a filter they define — git-lfs as it installs
