@@ -58,10 +58,16 @@ import { EN } from '../../src/platform/strings/en'
  * a folder before the app is up to hear a menu item, and a command sent then
  * was one that silently did nothing.
  *
- * **When the window stops listening.** A window made, a navigation of its page
- * begun — a reload, the crash dialog's *Reload* — and a renderer gone all mean
- * the page that listened is gone, so commands are held again until the next
- * one says it listens ({@link holdUntilHeard}).
+ * **When the window stops listening.** A window made, a new page committed in
+ * it — a reload, the crash dialog's *Reload* — a renderer gone and a window
+ * destroyed all mean the page that listened is gone, so commands are held
+ * again until the next one says it listens ({@link holdUntilHeard}). A page
+ * committed, and not one begun: Electron starts a navigation
+ * (`did-start-navigation`) before it asks whether it may go ahead
+ * (`will-navigate`), and `index.ts` refuses every one out of the app — a file
+ * dropped beside a drop zone, a plain link — so the page that listened stays,
+ * and goes on being sent what is pressed. `did-navigate` fires only for a main
+ * frame's new document, never for a move within the page.
  *
  * **Only a way somewhere is held.** A command about the scope that is open —
  * undo, delete the selection, save, snapshot — was pressed at a page that is
@@ -89,10 +95,9 @@ let listening = false
 /** Hold commands for this window until its page says it listens, and again whenever that page goes. */
 export function holdUntilHeard(contents: Pick<WebContents, 'on'>): void {
   listening = false
-  contents.on('did-start-navigation', (details) => {
-    if (details.isMainFrame && !details.isSameDocument) listening = false
-  })
+  contents.on('did-navigate', () => { listening = false })
   contents.on('render-process-gone', () => { listening = false })
+  contents.on('destroyed', () => { listening = false })
 }
 
 /** Does the window listen now? Main's documents wait on the same answer. */

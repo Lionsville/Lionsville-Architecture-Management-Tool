@@ -97,7 +97,9 @@ describe('the commands main sends the window', () => {
     const window = contents()
     menu.holdUntilHeard(window as never)
     menu.commandsHeard()
+    // What a reload is heard as: begun, then a new document committed.
     window.raise('did-start-navigation', { isMainFrame: true, isSameDocument: false })
+    window.raise('did-navigate')
     menu.sendCommand(reopen)
     expect(sent).toEqual([])
     expect(menu.commandsListened()).toBe(false)
@@ -125,7 +127,32 @@ describe('the commands main sends the window', () => {
     menu.holdUntilHeard(window as never)
     menu.commandsHeard()
     window.raise('did-start-navigation', { isMainFrame: true, isSameDocument: true })
+    window.raise('did-navigate-in-page')
     menu.sendCommand(save)
     expect(commands()).toEqual([save])
+  })
+
+  it('goes on sending after a navigation out of the app that was refused, as the page that listened stays', async () => {
+    const menu = await fresh()
+    const window = contents()
+    menu.holdUntilHeard(window as never)
+    menu.commandsHeard()
+    // A file dropped beside a drop zone: begun, then refused at will-navigate, so nothing commits.
+    window.raise('did-start-navigation', { isMainFrame: true, isSameDocument: false })
+    window.raise('will-navigate', { preventDefault: () => undefined })
+    menu.sendCommand(undo)
+    expect(commands()).toEqual([undo])
+    expect(menu.commandsListened()).toBe(true)
+  })
+
+  it('holds again once the window is destroyed', async () => {
+    const menu = await fresh()
+    const window = contents()
+    menu.holdUntilHeard(window as never)
+    menu.commandsHeard()
+    window.raise('destroyed')
+    expect(menu.commandsListened()).toBe(false)
+    menu.sendCommand(reopen)
+    expect(sent).toEqual([])
   })
 })
