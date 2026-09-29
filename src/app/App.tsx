@@ -614,7 +614,10 @@ function useShellBase(props: AppProps) {
     openPreferences: machine.setOpen, openAgent: agentServer.openDialog, hostControls,
   })
   useOpeningFailures({ failure: boot.sourceFailure, failureKey: boot.sourceFailureKey, notify: toasts.notify, s })
-  useHostFacts({ project, onScopeOpen: host.onScopeOpen, themeMode: prefs.themeMode, onThemeMode: host.onThemeMode })
+  useHostFacts({
+    project, onScopeOpen: host.onScopeOpen, themeMode: prefs.themeMode, onThemeMode: host.onThemeMode,
+    language: prefs.language, onLanguage: host.onLanguage,
+  })
   const order = useProjectOrder(prefs)
 
   /**

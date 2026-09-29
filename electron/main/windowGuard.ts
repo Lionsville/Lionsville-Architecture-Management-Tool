@@ -44,6 +44,9 @@
  * and it is indistinguishable from success without it.
  */
 import type { BrowserWindow, Dialog } from 'electron'
+import { DE } from '../../src/platform/strings/de'
+import { EN } from '../../src/platform/strings/en'
+import { NL } from '../../src/platform/strings/nl'
 
 /** How long a close waits for the save it asked for before asking the person. */
 export const SAVE_BEFORE_CLOSE_MS = 5_000
@@ -83,6 +86,16 @@ export type WindowGuardDeps = {
   logFile: () => string
   /** Where a smoke run says what the page said that the log file leaves out. */
   echo: (line: string) => void
+  /** The platform's words in the app's language, as main last heard it; English where it has heard nothing. */
+  words?: () => PlatformWords
+}
+
+/** The platform's words, in one language. */
+export type PlatformWords = Record<keyof typeof EN, string>
+
+/** The platform's words in a language the app reports (`app:language`); English for any other. */
+export function platformWords(language: unknown): PlatformWords {
+  return language === 'nl' ? NL : language === 'de' ? DE : EN
 }
 
 export function guardWindow(window: GuardedWindow, deps: WindowGuardDeps): void {
@@ -151,11 +164,13 @@ function guardUnsavedWork(window: GuardedWindow, unsaved: () => boolean, deps: W
       if (Date.now() <= deadline) return
       clearInterval(poll)
       waiting = false
+      const say = deps.words?.() ?? EN
       const choice = deps.dialog.showMessageBoxSync(window as BrowserWindow, {
         type: 'warning',
-        message: 'This project could not be saved.',
-        detail: 'Closing now loses the changes that are still only in this window.',
-        buttons: ['Close anyway', 'Keep the window open'],
+        title: say['window.unsavedTitle'],
+        message: say['window.unsavedMessage'],
+        detail: say['window.unsavedDetail'],
+        buttons: [say['window.closeAnyway'], say['window.keepOpen']],
         defaultId: 1,
         cancelId: 1,
       })

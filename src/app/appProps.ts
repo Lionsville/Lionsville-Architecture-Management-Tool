@@ -295,6 +295,8 @@ export type AppHost = {
   onThemeMode?: (mode: ThemeMode) => void
   /** Whether a scope is open, for the menu bar's items that act on one (ADR-0005, amended). */
   onScopeOpen?: (open: boolean) => void
+  /** Tell the host which language the app is in, so what it asks itself is asked in it. */
+  onLanguage?: (language: string) => void
   /**
    * What the window around the app leaves to us. On the desktop the title bar
    * is hidden, so our own top bar has to keep clear of the window controls and

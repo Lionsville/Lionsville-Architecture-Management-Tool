@@ -492,6 +492,7 @@ function renderApp(
             commands?.reportUnsaved(held)
           },
           onThemeMode: commands?.reportTheme,
+          onLanguage: commands?.reportLanguage,
           onScopeOpen: commands?.reportScopeOpen,
           windowChrome: shell.windowChrome,
           onTitle: shell.showTitle,

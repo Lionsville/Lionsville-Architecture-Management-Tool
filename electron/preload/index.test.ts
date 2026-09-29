@@ -128,3 +128,13 @@ describe('the folder’s history and its applied steps', () => {
     }
   })
 })
+
+describe('what the page tells main', () => {
+  it('says the app’s language, for the questions main asks itself', async () => {
+    await bridge()
+    const commands = (electron.exposed as { commands: import('../../src/platform/hostCommands').HostCommands }).commands
+    commands.reportLanguage('de')
+    expect(electron.invoked.at(-1)).toEqual({ channel: 'app:language', args: ['de'] })
+  })
+})
+

@@ -8,7 +8,7 @@
  * what its page says reaches the log.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { guardWindow, liveWindows, reportUnsaved, SAVE_BEFORE_CLOSE_MS, windowsOf } from './windowGuard'
+import { guardWindow, liveWindows, platformWords, reportUnsaved, SAVE_BEFORE_CLOSE_MS, windowsOf } from './windowGuard'
 import type { WindowGuardDeps } from './windowGuard'
 
 vi.mock('electron', () => ({}))
@@ -37,18 +37,19 @@ function window() {
 
 type Window = ReturnType<typeof window>
 
-function app(options: { answer?: number; unattended?: boolean } = {}) {
-  const state = { saves: 0, asked: 0, logged: [] as string[], echoed: [] as string[] }
+function app(options: { answer?: number; unattended?: boolean; language?: string } = {}) {
+  const state = { saves: 0, asked: 0, logged: [] as string[], echoed: [] as string[], question: undefined as unknown }
   const deps: WindowGuardDeps = {
     save: () => { state.saves += 1 },
     unattended: options.unattended ?? false,
     dialog: {
-      showMessageBoxSync: () => { state.asked += 1; return options.answer ?? 1 },
+      showMessageBoxSync: (_window: unknown, question: unknown) => { state.asked += 1; state.question = question; return options.answer ?? 1 },
       showMessageBox: () => Promise.resolve({ response: 0, checkboxChecked: false }),
     } as unknown as WindowGuardDeps['dialog'],
     log: (where, line) => { state.logged.push(`${where} ${line}`) },
     logFile: () => 'main.log',
     echo: (line) => { state.echoed.push(line) },
+    ...(options.language ? { words: () => platformWords(options.language) } : {}),
   }
   const made: Window[] = []
   let open = 0
@@ -230,3 +231,28 @@ describe('the windows that can still answer', () => {
     expect(liveWindows([live, dead, gone] as never)).toBe(1)
   })
 })
+
+describe('the question closing asks', () => {
+  /** A window closed with work that will not save, and the question it then asks. */
+  async function asked(language?: string) {
+    const held = app(language ? { language } : {})
+    const first = held.windows.first()
+    reportUnsaved(first.webContents, true)
+    held.closing(first)
+    await vi.advanceTimersByTimeAsync(SAVE_BEFORE_CLOSE_MS + 200)
+    return held.state.question as { title: string; message: string; detail: string; buttons: string[] }
+  }
+
+  it('is asked in the app’s language', async () => {
+    expect(await asked('nl')).toMatchObject({
+      title: 'Niet-bewaarde wijzigingen', message: 'Dit project kon niet worden bewaard.', buttons: ['Toch sluiten', 'Venster open laten'],
+    })
+    expect((await asked('de')).buttons).toEqual(['Trotzdem schließen', 'Fenster geöffnet lassen'])
+  })
+
+  it('is asked in English where main has heard no language, or one it does not know', async () => {
+    expect((await asked()).buttons).toEqual(['Close anyway', 'Keep the window open'])
+    expect((await asked('fr')).message).toBe('This project could not be saved.')
+  })
+})
+

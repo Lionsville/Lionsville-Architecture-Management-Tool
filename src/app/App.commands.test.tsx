@@ -174,6 +174,12 @@ describe('commands from the host', () => {
     await waitFor(() => expect(reported.at(-1)).toBe('light'))
   })
 
+  it('reports the app’s language to the host, so what it asks itself is asked in it', () => {
+    const reported: string[] = []
+    show({ boot: { initialPreferences: { language: 'nl' } }, host: { onLanguage: (language) => reported.push(language) } })
+    expect(reported).toEqual(['nl'])
+  })
+
   it('reports whether a scope is open, so the items about one can be enabled only then', async () => {
     // The third fact main is told (ADR-0005, amended): true with the project
     // open, false once the person is back on the organisation's home.

@@ -46,4 +46,10 @@ export const EN = {
   'menu.shortcuts': 'Keyboard Shortcuts…',
   /** The web's link to the desktop app's download page; the desktop never shows it. */
   'menu.getDesktopApp': 'Get the Desktop App',
+  // The question the desktop asks where closing would lose what could not be saved.
+  'window.unsavedTitle': 'Unsaved changes',
+  'window.unsavedMessage': 'This project could not be saved.',
+  'window.unsavedDetail': 'Closing now loses the changes that are still only in this window.',
+  'window.closeAnyway': 'Close anyway',
+  'window.keepOpen': 'Keep the window open',
 } as const

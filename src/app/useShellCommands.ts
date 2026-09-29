@@ -86,10 +86,13 @@ export function useHostFacts(deps: {
   onScopeOpen: ((open: boolean) => void) | undefined
   themeMode: ThemeMode
   onThemeMode: ((mode: ThemeMode) => void) | undefined
+  language?: string
+  onLanguage?: ((language: string) => void) | undefined
 }): void {
-  const { project, onScopeOpen, themeMode, onThemeMode } = deps
+  const { project, onScopeOpen, themeMode, onThemeMode, language, onLanguage } = deps
   useEffect(() => { onScopeOpen?.(project !== undefined) }, [onScopeOpen, project])
   useEffect(() => { onThemeMode?.(themeMode) }, [onThemeMode, themeMode])
+  useEffect(() => { if (language) onLanguage?.(language) }, [onLanguage, language])
 }
 
 /**

@@ -86,4 +86,6 @@ export type HostCommands = {
   reportTheme(mode: ThemeMode): void
   /** Is a scope open, so the items about one can be enabled only while it is. */
   reportScopeOpen(open: boolean): void
+  /** Which language the app is in, so what the host asks itself is asked in it. */
+  reportLanguage(language: string): void
 }

@@ -27,7 +27,7 @@ import { pathToFileURL } from 'node:url'
 import { basename } from 'node:path'
 import { readFile } from 'node:fs/promises'
 import { openedDocuments } from './openedDocuments'
-import { guardWindow, liveWindows, reportUnsaved, windowsOf } from './windowGuard'
+import { guardWindow, liveWindows, platformWords, reportUnsaved, windowsOf } from './windowGuard'
 import { commandsHeard, commandsListened, holdUntilHeard, installAppMenu, reportScopeOpen, reportTheme, sendCommand } from './appMenu'
 import { productName } from '../../package.json'
 import { isThemeMode } from '../../src/platform/theme'
@@ -418,6 +418,8 @@ void app.whenReady().then(() => {
 
   // The second fact the renderer reports, so the View menu's radio is right.
   ipcMain.handle('app:theme', (_event, held: unknown) => { if (isThemeMode(held)) reportTheme(held) })
+  // And the app's language, so the question closing asks is asked in it.
+  ipcMain.handle('app:language', (_event, held: unknown) => { language = held })
   // And the third: whether a scope is open, so the items about one are enabled only while it is.
   ipcMain.handle('app:scopeOpen', (_event, held: unknown) => { reportScopeOpen(held === true) })
 
@@ -468,6 +470,9 @@ function fatal(during: string, error: unknown): void {
   )
 }
 
+/** The app's language as the page last said it (`app:language`); nothing until it has. */
+let language: unknown
+
 /**
  * Every window, made through one door and guarded there (`windowGuard.ts`):
  * the first at the start, and one again where the app runs with none — the
@@ -478,6 +483,7 @@ const windows = windowsOf({
   guard: (window) => guardWindow(window, {
     save: () => sendCommand({ type: 'save' }), unattended: UNATTENDED,
     dialog, log, logFile: logFilePath, echo: (line) => { process.stderr.write(`${line}\n`) },
+    words: () => platformWords(language),
   }),
   load: (window) => window.loadURL(RENDERER_URL),
   open: () => liveWindows(BrowserWindow.getAllWindows()),
