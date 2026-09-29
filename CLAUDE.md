@@ -6,7 +6,7 @@ Layer-7 application landscape and the C4 container diagrams under it. **There is
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **6964 tests** and one of every config. The
+One codebase, in modules, with **7103 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -56,7 +56,7 @@ the two categories above.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 6964 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 7103 tests. Run it
 after every change. The tests run with coverage on, and `build/coverage.ts`
 prints one line per module of the import matrix and fails below that module's
 floor — the level it was measured at, written down so it can only go up.
@@ -376,6 +376,14 @@ src/projects/     A scope: open, save, order, summarise, address, remember.
                                       another that keeps what it has — nothing
                                       there written over, nothing taken away
                     sealedFile        a working file under a password (ADR-0023)
+                    putBack           a scope that could not be read whole, put
+                                      back as an entry of its history held it:
+                                      a `scope.replace` with `putBack`, never a
+                                      restore (ADR-0031, as built)
+                    examples/         what an example is called (`catalogue`),
+                                      where a copy lands and the copy written
+                                      (`copy`: `copyExampleInto`,
+                                      `exampleCopyOver`, `placeCopy`)
                     revision          what a save expects to overwrite: the
                                       fingerprint a store stamps, and the refusal
                     scopeState        a scope's address, identity, revision and
@@ -442,6 +450,17 @@ src/platform/     What the app runs inside, and what a failure looks like.
                                       screen: written from and read into
                                       repositories of its own, unsealed
                                       (ADR-0031, as built)
+                      node/examples   the examples for a process with no
+                                      screen: an example's scopes, as a working
+                                      file, or seeded into repositories of its
+                                      own, over the one narrow edge
+                      node/gitGuard   what every git the app runs in a folder
+                                      is run with: the folder's own
+                                      configuration read apart and each key
+                                      allowed, set again to the person's own,
+                                      or refused by name; no hook, no
+                                      file-system monitor, no remote inside
+                                      the folder; git 2.26 or newer
 src/widgets/      Presentation with no opinions: icons, one confirm dialog,
                   a laid-out page rasterised (`capturePage`), and a part that
                   is not in the first download (`lazyPart`): a page behind a
@@ -638,7 +657,7 @@ src/app/          The shell around the editor.
                     useLibrary · dialogs/AddFromLibraryDialog   the palette's
                                       *Existing application…*: the picker over
                                       the register, and the one question it asks
-                    dialogs/ · examples/ · iconPacks/ · history/
+                    dialogs/ · iconPacks/ · history/
                     OverflowMenu      the menu, on a host that has no menu bar —
                                       and the section a source provider's own
                                       lines are drawn in, after all of ours
@@ -850,9 +869,10 @@ derived over the whole tree and arrives in beta 3.
 The tree lists **alphabetically by default**, with recency as a toggle
 (`sortScopes`, persisted as `projectOrder`); a scope with children folds shut,
 per session rather than as a preference. Examples ship in the folder's format
-(`src/adapters/folder/format/examples/`), are named by the app's catalogue
-(`src/app/examples/`), and are **copied** into scopes of your own — into an unnamed, empty root the
-example *becomes* the organisation; into a root that is already something it is
+(`src/adapters/folder/format/examples/`), are named by the domain's catalogue
+(`src/projects/examples/`), and are **copied** into scopes of your own — into
+an unnamed, empty root the example *becomes* the organisation; into a root
+that is already something, or holds records, or could not be read whole, it is
 filed under a child of its own (`copyExampleInto`).
 
 ## Adding a place to keep work (the worked example)
@@ -1773,5 +1793,10 @@ is the only place that knows which one it is.
   domain.
 - **The storage line** (`build/storageLine.test.ts`) has no exceptions left.
 
-On the way the desktop's file channel stopped taking any path into `.git`,
-and every git the app runs starts no hook and no file-system monitor.
+A scope that cannot be read whole is put back from its history or from a
+working file (`projects/putBack.ts`), and a move is an entry in the history of
+every scope it moved, which the Activity list reads too. On the way the
+desktop's file channel stopped taking any path into a `.git`, at any depth and
+in any spelling, and every git the app runs takes a folder's own configuration
+only for what a folder needs (`platform/node/gitGuard.ts`): no hook, no
+file-system monitor, and nothing a folder names run as a program.
