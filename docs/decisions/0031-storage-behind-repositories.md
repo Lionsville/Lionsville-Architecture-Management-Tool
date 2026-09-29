@@ -685,8 +685,8 @@ then, is the composition's.
 
 **What was built.** What rendering needs to lay a picture out from the
 library and ask for its bytes only when it is shown, and the vocabulary that
-goes with it. The workspace does not hand a library down yet: until it does,
-a page still draws the pictures a scope was opened with, as before.
+goes with it. The workspace and the organisation's home hand their scope's
+library down, with the source's image repository as the source.
 - **The seam.** `documentation/pictureSource.ts` has `ImageSource`, which
   answers a picture's bytes by the scope's identity and its name. Its shape
   is the image repository's `bytes`, so the composition hands that in as it
@@ -700,7 +700,10 @@ a page still draws the pictures a scope was opened with, as before.
 - **Laid out at once.** `LibraryPicture` takes the entry's width and height
   as the `img`'s, and the ratio between them as its box's. The box is the size
   it will be before a byte arrives, and only its paint changes when they do.
-  An entry of zeros reserves nothing, as the entry says.
+  An entry of zeros — an SVG with neither a size nor a view box — is laid
+  out 640 by 480, and its picture fitted inside. `Pictures.browser.test.tsx`
+  holds this in Chromium and WebKit: every picture and paragraph is where it
+  was, to the pixel, once the bytes are decoded and painted.
 - **Asked for when in view.** One `IntersectionObserver` per provider, a
   little ahead of the visible part. A picture far down a long document is
   never asked for. In a test the watch is handed in and driven by hand. The
@@ -711,10 +714,14 @@ a page still draws the pictures a scope was opened with, as before.
   the composition says. It asks again once it has left the view and come
   back, never over and over while it sits there.
 - **Kept, a little.** `PictureCache` asks once however many places want one
-  picture. It keeps the bytes of the last pictures nobody shows, oldest out
+  picture. It keeps the bytes of the last 48 pictures nobody shows, oldest out
   first, and never drops bytes being shown, or bytes a place is waiting to
   show: asking and showing are one call, so a burst of more pictures than it
-  keeps shows every one. A picture whose bytes are kept is drawn before the
+  keeps shows every one. The bound is a count of pictures, not of bytes: at
+  most 48 pictures nobody shows, each no larger than a picture may be (two
+  megabytes), so a hundred megabytes at worst beyond what is on screen, and
+  what is on screen is not bounded by the cache but by the page. One cache
+  per provider, gone with it. A picture whose bytes are kept is drawn before the
   browser paints, asking nothing. The address a browser draws from is made
   when a place first shows a picture and let go when the last one stops. A
   picture is the scope, its name and its content address, so bytes changed
@@ -727,10 +734,17 @@ a page still draws the pictures a scope was opened with, as before.
 - **Keyed.** Every picture in a document is keyed by its name, so a
   document that names another picture in the same place gets a new `img`,
   never the last one's with its source still on it.
-- **A report asks when it is produced.** `picturesForReport` asks for every
-  picture a report's documents name, once each, and nothing earlier.
-  `pictureDataAddress` gives the self-contained form a report that draws
-  without asking again takes.
+- **A report asks when it is produced, for what it prints.** A report renders
+  its documents as a page does, inside `CollectPictures`
+  (`ui/PictureCollector.tsx`), and every picture the renderer draws from the
+  library is written down — from the parse that prints it, so a picture named
+  in a code block is not asked for, and two spellings of one name are one
+  picture. `picturesForReport` (`pictureReport.ts`) then asks for those, once
+  each by the library's rule for a name, four at a time, waits for every
+  answer, and leaves out a picture whose bytes did not come, saying a failure
+  where the caller says. A page with no collector above it writes nothing
+  down. `pictureDataAddress` gives the self-contained form a report that
+  draws without asking again takes.
 - **Entries from bytes, by one rule.** The reader of what bytes say about
   themselves (media type, size, declared dimensions, content address) moved
   from the folder's implementation to `model/imageEntry.ts`. Everything that
@@ -738,13 +752,19 @@ a page still draws the pictures a scope was opened with, as before.
   dimensions are read the way up its Exif orientation says it is seen, as a
   browser draws it.
 - **Names, not paths.** A document names a picture `image:<name>`.
-  `imageNamesIn` reads those, undoing the percent-encoding a markdown
+  `imageNameOfSource` reads one, undoing the percent-encoding a markdown
   renderer applies to a source. The agent answers `image:<name>` from
   `image.upload` and `images.list`, and no longer names a path of the folder
-  format. Who shows a picture counts a document that names it either way.
+  format.
 - **A snapshot's pictures are its own type.** The working file and a scope's
   snapshot carry each picture whole, with its bytes (`CarriedImage`), apart
   from the model's picture. The working file's codec is untouched.
+- **Through the whole app** (`app/App.pictures.test.tsx`): the shipped
+  example with pictures, opened over the memory repositories. Opening the
+  scope asks for no picture; a card's description on the board and a
+  decision's page each ask for the picture scrolled into view, once; a
+  picture seen before is shown without asking; a report of those documents
+  asks for exactly what it drew, when it is produced.
 
 **Where the build departed from the text.**
 - **The report is a call, not a screen.** Core prints and exports no document
@@ -754,9 +774,6 @@ a page still draws the pictures a scope was opened with, as before.
   browser is not a report: it prints what is shown, and a picture whose
   bytes have not arrived prints as its alt text. A report goes through
   `picturesForReport` and `pictureDataAddress`.
-- **A name the library does not hold goes to the host's resolver.** Until the
-  workspace hands a library down, it resolves `image:<name>` against the
-  pictures the scope was opened with, as it resolves a relative path.
 
 The storage line lost one file and two words: 50 files naming storage, with
 80 words.
