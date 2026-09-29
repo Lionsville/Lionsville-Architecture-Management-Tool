@@ -2,17 +2,31 @@
 
 What this repository decided, one record each, numbered in the order they were
 written. A change that alters behaviour, adds a seam or settles a name gets a
-record, or amends the one it extends (`CONTRIBUTING.md`). What is not built has
-no record.
+record, or amends the one it extends (`CONTRIBUTING.md`). A record may decide
+what is built next as well as record what was built; the manuals and the
+READMEs say only what is built.
 
 ## The shape of a record
 
 A title, `# ADR-NNNN — <what was decided>`, then the header, then *Context and
 Problem Statement*, *Decision Drivers*, *Considered Options*, *Decision
 Outcome* and *Consequences*: the same headings as the record before it. A
-record is written **as built**: where the build departed from the text, the
-record says so near the top, and a later change to its own decision is a dated
-amendment in the record itself, never a silent edit.
+later change to its own decision is a dated amendment in the record itself,
+never a silent edit.
+
+## Before the build, and after
+
+A record may be accepted before what it decides is built. Its status says
+where the build stands:
+- **`accepted, <date>; not yet built`:** decided, and being built.
+- **`as built, <date>, <part>`:** added as each part lands. A section says
+  what was built, and where the build departed from the text and why.
+- **`implemented, <date>`:** added when the build is done.
+
+**Unbuilt records do not pile up.** A record accepted ahead of its build is
+one somebody is building. One that nobody is building any more is superseded
+by the record that replaces it, or marked `withdrawn, <date>: <why>`. It is
+not left standing as if it were still the plan.
 
 The header is a list of fields, one per line, continued with two spaces:
 

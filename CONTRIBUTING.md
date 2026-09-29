@@ -58,7 +58,10 @@ and the rules are the same for a person. Read it before changing anything.
   name gets a record, or amends the one it extends: the next number, the same
   headings as the last one, and a line in the index of
   `docs/decisions/README.md`, which also says how a record that replaces part
-  of another says so in both headers. What is not built has no record.
+  of another says so in both headers. A record may decide what is built
+  next, with a status that says it is not built yet, and gains *as built* and
+  `implemented` as the build lands; one nobody is building any more is
+  superseded or withdrawn. The manuals and READMEs say only what is built.
 - **This tree is public.** No credentials, ever, not even for a minute. No
   real organisation's landscape, names, hostnames or vocabulary. Fixtures are
   fictional; Acme Logistics and Globex are the house names.
