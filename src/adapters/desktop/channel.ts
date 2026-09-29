@@ -86,6 +86,8 @@ export type DesktopHistory = {
 
   /** Keep a history where there is none; nothing where there is one. */
   startHistory(root: string): Promise<void>
+  /** Whether the history can take a record now, or is part way through a change of its own, or on no branch. */
+  readiness(root: string): Promise<'ready' | 'midway' | 'detached'>
   /** Every path that differs from the last commit, files never committed included. */
   changes(root: string): Promise<DesktopChangedPath[]>
   /** Those paths, and no others, as one commit; `undefined` where none of them changed. */

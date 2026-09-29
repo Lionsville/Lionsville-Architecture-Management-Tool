@@ -85,6 +85,12 @@ export interface FolderGit {
   keeping(): Promise<boolean>
   /** Keep one where there is none, as a first snapshot always has. */
   start(): Promise<void>
+  /**
+   * Whether the history can take a record now: `midway` part way through a
+   * merge, a rebase, a cherry-pick or a revert, or with a file unmerged;
+   * `detached` on no branch.
+   */
+  readiness(): Promise<'ready' | 'midway' | 'detached'>
   /** Everything that differs from the last commit, files nobody has committed included. */
   changes(): Promise<FolderChange[]>
   /** Those paths as they are now, and no others, as one commit; `undefined` where none of them changed. */

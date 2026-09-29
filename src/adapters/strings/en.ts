@@ -35,4 +35,16 @@ export const EN = {
    * sentence says so, and what to do about it.
    */
   'shell.scopeMoved': 'Somebody changed this scope while this was being done, so nothing was written. Open it again and redo the change.',
+  /**
+   * A record of the history the folder's git is in no state to take: part way
+   * through a merge, a rebase, a cherry-pick or a revert, or with a file left
+   * unmerged. Nothing was recorded; the person finishes or abandons that first.
+   */
+  'shell.historyMidway': 'Nothing was recorded: the history of this folder is part way through a merge, a rebase or another change of its own. Finish or abandon that first, then record again.',
+  /** A record on a history that is on no branch, where a version would belong to none. Nothing was recorded. */
+  'shell.historyDetached': 'Nothing was recorded: the history of this folder is not on a branch, so a version recorded now would belong to none. Switch to a branch first, then record again.',
+  /** The git on this machine is older than the history needs (2.25). */
+  'shell.gitTooOld': 'The history needs git 2.25 or newer on this machine. Update git, then try again.',
+  /** The history could not be read or written for a reason the trail holds and a person cannot act on here. */
+  'shell.historyFailed': 'The history of this folder could not be read or written. The diagnostics say why.',
 } as const

@@ -32,7 +32,7 @@ import {
   resolve, snapshot,
 } from '../../src/platform/node/git'
 import {
-  allTags, changes, commitLog, commitPaths, headOf, isScopeTagName, readAt, startHistory, tagCommit, textsOf, treeAt,
+  allTags, changes, commitLog, commitPaths, headOf, isScopeTagName, readAt, readiness, startHistory, tagCommit, textsOf, treeAt,
 } from '../../src/platform/node/gitEntries'
 import { log } from './log'
 import { watchFolder } from './watch'
@@ -367,6 +367,11 @@ function registerRepositoryHistory(): void {
   ipcMain.handle('git:startHistory', async (_event, root: unknown) => {
     if (!isGranted(root)) throw new Error('shell.pathRefused')
     await startHistory(root)
+  })
+
+  ipcMain.handle('git:readiness', (_event, root: unknown) => {
+    if (!isGranted(root)) throw new Error('shell.pathRefused')
+    return readiness(root)
   })
 
   ipcMain.handle('git:changes', (_event, root: unknown) => (isGranted(root) ? changes(root) : []))

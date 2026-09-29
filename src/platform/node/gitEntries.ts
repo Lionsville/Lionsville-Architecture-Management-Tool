@@ -9,16 +9,16 @@
  * The same rules as `git.ts`, whose runner this uses: the system binary
  * without a shell, nothing that can ask a question, no hook and no file-system
  * monitor, and this folder and never one above it. Paths travel as literal pathspecs — a file a person
- * named `:(glob)*` is that file — and a list of them is handed to git in a
- * file rather than on the command line, which a folder of any size would
- * outgrow. The shape answered is the folder implementation's `FolderGit`
+ * named `:(glob)*` is that file — and a list of them is handed to git on its
+ * standard input rather than on the command line, which a folder of any size
+ * would outgrow; nothing of ours is written into `.git`. The shape answered is the folder implementation's `FolderGit`
  * (`adapters/folder/folderGit.ts`), which this cannot import and meets as it
  * is written.
  */
 import { execFile } from 'node:child_process'
-import { randomUUID } from 'node:crypto'
-import { rm, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { access } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { isAbsolute, join } from 'node:path'
 import { LOCAL_SETTINGS_PATH } from '../../projects/folderSettings'
 import { git, gitEnvironment, identityArgs, initRepository, isRepository, quietConfig } from './git'
 
@@ -67,37 +67,81 @@ export async function changes(root: string): Promise<GitChange[]> {
 
 /** Keep a history here, where there is none. */
 export async function startHistory(root: string): Promise<void> {
+  await checkGitVersion()
   if (!await isRepository(root)) await initRepository(root)
+}
+
+/** The oldest git whose `--pathspec-from-file` this history uses. */
+const OLDEST_GIT: readonly [number, number] = [2, 25]
+
+let versionChecked: Promise<void> | undefined
+
+/** Refuses, once for the process, with a key a person can act on, where the machine's git is older than this history needs. */
+export function checkGitVersion(): Promise<void> {
+  versionChecked ??= git(tmpdir(), ['--version']).then((out) => {
+    const [, major, minor] = /(\d+)\.(\d+)/.exec(out) ?? []
+    const [least, next] = OLDEST_GIT
+    if (Number(major) < least || (Number(major) === least && Number(minor) < next)) throw new Error('shell.gitTooOld')
+  })
+  return versionChecked
+}
+
+/** Two letters of `git status --porcelain` that say a path is left unmerged. */
+const UNMERGED = new Set(['DD', 'AU', 'UD', 'UA', 'DU', 'AA', 'UU'])
+
+/** What git keeps while a merge, a rebase, a cherry-pick or a revert is part way. */
+const MIDWAY = ['MERGE_HEAD', 'CHERRY_PICK_HEAD', 'REVERT_HEAD', 'REBASE_HEAD', 'rebase-merge', 'rebase-apply']
+
+export type HistoryReadiness = 'ready' | 'midway' | 'detached'
+
+/**
+ * Whether the folder's history can take a record now: not part way through
+ * a merge, a rebase, a cherry-pick or a revert, with nothing left unmerged,
+ * and on a branch. A folder that keeps no history is ready: a record starts one.
+ */
+export async function readiness(root: string): Promise<HistoryReadiness> {
+  await checkGitVersion()
+  if (!await isRepository(root)) return 'ready'
+  const places = (await git(root, ['rev-parse', ...MIDWAY.flatMap((name) => ['--git-path', name])])).split('\n').filter(Boolean)
+  for (const place of places) {
+    if (await access(isAbsolute(place) ? place : join(root, place)).then(() => true, () => false)) return 'midway'
+  }
+  const status = await git(root, ['status', '--porcelain=v1', '-z', '--untracked-files=no'])
+  if (status.split('\0').some((row) => UNMERGED.has(row.slice(0, 2)))) return 'midway'
+  return await git(root, ['symbolic-ref', '-q', 'HEAD']).then(() => 'ready' as const, () => 'detached' as const)
 }
 
 /**
  * Those paths as they are now, and no others, as one commit — `undefined`
  * where none of them differs from the last. Whatever else a person has
- * staged stays staged and out of it.
+ * staged stays staged and out of it. Refused, with a key, where the history
+ * is in no state to take it ({@link readiness}). The paths go to git over its
+ * standard input, and nothing of ours is written into `.git`.
  */
 export async function commitPaths(root: string, paths: readonly string[], message: string): Promise<string | undefined> {
   const wanted = paths.filter(isInside).filter((path) => path !== LOCAL_SETTINGS_PATH)
   if (wanted.length === 0) return undefined
   await startHistory(root)
-  const list = join(root, '.git', `lionsville-paths-${randomUUID()}`)
-  await writeFile(list, `${wanted.map(literal).join('\0')}\0`)
+  const ready = await readiness(root)
+  if (ready !== 'ready') throw new Error(ready === 'midway' ? 'shell.historyMidway' : 'shell.historyDetached')
+  // A path already gone from the index is committed as gone; `add` would refuse it as matching nothing.
+  const status = await git(root, ['status', '--porcelain=v1', '-z', '--untracked-files=no', '--no-renames'])
+  const goneFromIndex = new Set(status.split('\0').filter((row) => row[0] === 'D').map((row) => row.slice(3)))
+  const list = (held: readonly string[]) => `${held.map(literal).join('\0')}\0`
+  const fromInput = ['--pathspec-from-file=-', '--pathspec-file-nul']
+  const adding = wanted.filter((path) => !goneFromIndex.has(path))
+  if (adding.length) await gitWithInput(root, ['add', '-A', ...fromInput], list(adding))
+  const before = await git(root, ['rev-parse', '--verify', '--quiet', 'HEAD']).catch(() => '')
   try {
-    const from = ['--pathspec-from-file', list, '--pathspec-file-nul']
-    await git(root, ['add', '-A', ...from])
-    const before = await git(root, ['rev-parse', '--verify', '--quiet', 'HEAD']).catch(() => '')
-    try {
-      await git(root, [...await identityArgs(root), 'commit', '--no-verify', '-q', '-m', message, ...from])
-    } catch (cause) {
-      // Nothing of these to commit is an answer; anything else is a failure.
-      const still = new Set((await changes(root)).map((change) => change.path))
-      if (wanted.some((path) => still.has(path))) throw cause
-      return undefined
-    }
-    const after = (await git(root, ['rev-parse', 'HEAD'])).trim()
-    return after === before.trim() ? undefined : after
-  } finally {
-    await rm(list, { force: true })
+    await gitWithInput(root, [...await identityArgs(root), 'commit', '--no-verify', '-q', '-m', message, ...fromInput], list(wanted))
+  } catch (cause) {
+    // Nothing of these to commit is an answer; anything else is a failure.
+    const still = new Set((await changes(root)).map((change) => change.path))
+    if (wanted.some((path) => still.has(path))) throw cause
+    return undefined
   }
+  const after = (await git(root, ['rev-parse', 'HEAD'])).trim()
+  return after === before.trim() ? undefined : after
 }
 
 export type GitLogged = {
@@ -285,6 +329,7 @@ export function folderGitAt(root: string) {
   return {
     keeping: () => isRepository(root),
     start: () => startHistory(root),
+    readiness: () => readiness(root),
     changes: () => changes(root),
     commit: (paths: readonly string[], message: string) => commitPaths(root, paths, message),
     head: () => headOf(root),

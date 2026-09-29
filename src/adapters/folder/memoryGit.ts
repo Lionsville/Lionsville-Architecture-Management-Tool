@@ -74,6 +74,7 @@ export function memoryGit(root: DirectoryHandleLike, author = 'memory'): FolderG
       started = true
       return Promise.resolve()
     },
+    readiness: () => Promise.resolve('ready'),
     changes,
     async commit(paths, message) {
       const now = await walk(root)

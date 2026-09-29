@@ -17,7 +17,8 @@ import { gitAvailable, isRepository, snapshot, useHooksFolder } from './git'
 
 const run = promisify(execFile)
 import {
-  allTags, changes, commitLog, commitPaths, folderGitAt, headOf, isScopeTagName, readAt, startHistory, tagCommit, treeAt,
+  allTags, changes, commitLog, commitPaths, folderGitAt, headOf, isScopeTagName, readAt, readiness, startHistory,
+  tagCommit, treeAt,
 } from './gitEntries'
 
 const available = await gitAvailable()
@@ -232,5 +233,46 @@ describe.skipIf(!available)('a folder that keeps no history, and what is not ask
     expect(await commitPaths(root, ['model.json'], 'one')).toMatch(/^[0-9a-f]+$/)
     expect(await readdir(hooks)).toEqual([])
     await rm(hooks, { recursive: true, force: true })
+  })
+})
+
+describe.skipIf(!available)('a history in no state to take a record', () => {
+  it('is refused part way through a merge, with a file unmerged, and on no branch; and taken again after', async () => {
+    await startHistory(root)
+    await put('model.json', '{"at":0}')
+    await commitPaths(root, ['model.json'], 'base')
+    const sh = (...args: string[]) => run('git', ['-c', 'user.name=A', '-c', 'user.email=a@example.org', ...args], { cwd: root })
+    const main = (await sh('symbolic-ref', '--short', 'HEAD')).stdout.trim()
+    await sh('checkout', '-q', '-b', 'side')
+    await put('model.json', '{"at":"side"}')
+    await commitPaths(root, ['model.json'], 'side')
+    await sh('checkout', '-q', main)
+    await put('model.json', '{"at":"main"}')
+    await commitPaths(root, ['model.json'], 'main')
+    await sh('merge', '-q', 'side').catch(() => undefined)
+    expect(await readiness(root)).toBe('midway')
+    await put('other.md', 'x')
+    await expect(commitPaths(root, ['other.md'], 'during the merge')).rejects.toThrow('shell.historyMidway')
+    await sh('merge', '--abort')
+    expect(await readiness(root)).toBe('ready')
+    await sh('checkout', '-q', '--detach')
+    expect(await readiness(root)).toBe('detached')
+    await expect(commitPaths(root, ['other.md'], 'detached')).rejects.toThrow('shell.historyDetached')
+    await sh('checkout', '-q', main)
+    expect(await commitPaths(root, ['other.md'], 'back on a branch')).toMatch(/^[0-9a-f]+$/)
+  })
+
+  it('commits a path already gone from the index as gone, beside one added, and writes nothing into .git', async () => {
+    await startHistory(root)
+    await put('a.md', 'a')
+    await put('b.md', 'b')
+    await commitPaths(root, ['a.md', 'b.md'], 'both')
+    await run('git', ['rm', '-q', 'a.md'], { cwd: root })
+    await put('c.md', 'c')
+    const before = await readdir(join(root, '.git'))
+    await commitPaths(root, ['a.md', 'c.md'], 'one gone, one new')
+    const [commit] = await commitLog(root, { limit: 1 })
+    expect(commit.changed.sort()).toEqual(['a.md', 'c.md'])
+    expect((await readdir(join(root, '.git'))).filter((name) => !before.includes(name) && name.startsWith('lionsville'))).toEqual([])
   })
 })

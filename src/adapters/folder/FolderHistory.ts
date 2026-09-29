@@ -7,7 +7,9 @@
  * **An entry is a commit.** A scope's open entry is what its folder holds and
  * its last commit does not; `record` commits it — the scope's own files and
  * none of the scopes filed under it — under the subject given, with a trailer
- * naming the scope (`folderGit.ts`). One record is one commit, however many
+ * naming the scope (`folderGit.ts`). Never part way through a merge, a
+ * rebase, a cherry-pick or a revert, and never on no branch: those it refuses
+ * with a key a person can act on. One record is one commit, however many
  * scopes it closes an entry of, which is what a snapshot of the folder has
  * always been; each of them has the commit as an entry.
  *
@@ -40,6 +42,7 @@
  */
 import { imageMediaType } from '../../model/documentImage'
 import type { ImageEntry } from '../../model/imageName'
+import { ShellError } from '../../platform/errors'
 import { fromArrays } from '../../model/normalised'
 import { recordsChanged, SCOPE_RECORD, sameRecord, sameValue } from '../../model/recordKey'
 import type { RecordKey, RecordKind } from '../../model/recordKey'
@@ -192,6 +195,8 @@ export class FolderHistory implements HistoryRepository {
   record({ scopes, subject }: RecordWanted): Promise<readonly HistoryEntry[]> {
     return this.folder.serial(async () => {
       await this.git.start()
+      const ready = await this.git.readiness()
+      if (ready !== 'ready') throw new ShellError(ready === 'midway' ? 'shell.historyMidway' : 'shell.historyDetached')
       const { nodes } = await this.folder.walk()
       const addresses = nodes.map((node) => node.address)
       const owned = new Map<ScopeAddress, string[]>()

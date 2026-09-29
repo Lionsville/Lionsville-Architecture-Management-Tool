@@ -107,6 +107,7 @@ const history: DesktopHistory = {
   resolve: (root, side) => ipcRenderer.invoke('git:resolve', root, side),
   excludeLocal: (root) => ipcRenderer.invoke('git:excludeLocal', root),
   startHistory: (root) => ipcRenderer.invoke('git:startHistory', root),
+  readiness: (root) => ipcRenderer.invoke('git:readiness', root),
   changes: (root) => ipcRenderer.invoke('git:changes', root),
   commitPaths: (root, paths, message) => ipcRenderer.invoke('git:commitPaths', root, paths, message),
   head: (root) => ipcRenderer.invoke('git:head', root),

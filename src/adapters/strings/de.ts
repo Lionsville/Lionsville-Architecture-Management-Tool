@@ -16,4 +16,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.folderUnavailable': 'Dieser Ordner ist nicht verfügbar. Wählen Sie ihn erneut aus, oder verbinden Sie das Laufwerk wieder, auf dem er liegt.',
   'shell.unreadableNotSaved': 'Dieser Bereich wurde nicht gespeichert: eine seiner Dateien konnte nicht gelesen werden, und Speichern hätte sie überschrieben oder verloren, was sie enthält. Reparieren Sie die Datei oder holen Sie sie aus dem Verlauf zurück, und öffnen Sie den Bereich erneut.',
   'shell.scopeMoved': 'Jemand hat diesen Bereich geändert, während dies lief, deshalb wurde nichts geschrieben. Öffnen Sie es erneut und nehmen Sie die Änderung noch einmal vor.',
+  'shell.historyMidway': 'Es wurde nichts festgehalten: der Verlauf dieses Ordners steckt mitten in einem Zusammenführen, einem Rebase oder einer anderen eigenen Änderung. Schließen Sie diese zuerst ab oder brechen Sie sie ab, und halten Sie dann erneut fest.',
+  'shell.historyDetached': 'Es wurde nichts festgehalten: der Verlauf dieses Ordners steht auf keinem Zweig, eine jetzt festgehaltene Version gehörte also zu keinem. Wechseln Sie zuerst auf einen Zweig, und halten Sie dann erneut fest.',
+  'shell.gitTooOld': 'Der Verlauf braucht git 2.25 oder neuer auf diesem Rechner. Aktualisieren Sie git und versuchen Sie es erneut.',
+  'shell.historyFailed': 'Der Verlauf dieses Ordners konnte nicht gelesen oder geschrieben werden. Die Diagnose nennt den Grund.',
 }

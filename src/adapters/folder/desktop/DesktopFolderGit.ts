@@ -20,6 +20,10 @@ export class DesktopFolderGit implements FolderGit {
     return this.git.startHistory(this.root)
   }
 
+  readiness(): Promise<'ready' | 'midway' | 'detached'> {
+    return this.git.readiness(this.root)
+  }
+
   changes(): Promise<FolderChange[]> {
     return this.git.changes(this.root)
   }

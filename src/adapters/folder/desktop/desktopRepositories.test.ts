@@ -22,7 +22,7 @@ import {
 import { appliedStepsText, readAppliedSteps } from '../../../platform/node/appliedSteps'
 import { gitAvailable, isRepository } from '../../../platform/node/git'
 import {
-  allTags, changes, commitLog, commitPaths, headOf, readAt, startHistory, tagCommit, textsOf, treeAt,
+  allTags, changes, commitLog, commitPaths, headOf, readAt, readiness, startHistory, tagCommit, textsOf, treeAt,
 } from '../../../platform/node/gitEntries'
 import { describeHistoryRepository } from '../../../ports/HistoryRepository.contract'
 import { describeImageRepository } from '../../../ports/ImageRepository.contract'
@@ -80,6 +80,7 @@ function historyOver(): DesktopHistory {
     init: unused, snapshot: unused, history: unused, filesAt: unused, label: unused,
     remote: unused, pull: unused, push: unused, resolve: unused, excludeLocal: unused,
     startHistory: (root) => startHistory(root),
+    readiness: (root) => readiness(root),
     changes: (root) => changes(root),
     commitPaths: (root, paths, message) => commitPaths(root, paths, message),
     head: (root) => headOf(root),
@@ -190,6 +191,18 @@ describe.skipIf(!available)('the folder’s repositories on the desktop, with gi
       (await repositories.history.entries({ scopes: [acme], record })).entries.map((entry) => entry.subject)
     expect(await subjects({ kind: 'element', id: 'crews' })).toEqual(['renamed on the main line', 'base'])
     expect(await subjects({ kind: 'decision', id: 'adr-1' })).toEqual(['decided on the side'])
+  })
+
+
+  it('refuses a record on no branch, with the key a person reads, and records nothing', async () => {
+    const folder = freshFolder()
+    const repositories = over(onTheDesktop(folder))
+    const acme = await repositories.scope('acme', 'Acme Logistics')
+    await repositories.record('start')
+    await run('git', ['checkout', '-q', '--detach'], { cwd: folder })
+    await repositories.steps(acme, addCrews)
+    await expect(repositories.record('detached')).rejects.toMatchObject({ key: 'shell.historyDetached' })
+    expect((await changes(folder)).map((change) => change.path)).toContain('acme/model.json')
   })
 
 })
