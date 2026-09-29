@@ -18,6 +18,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.scopeMoved': 'Iemand heeft dit onderdeel gewijzigd terwijl dit bezig was, dus er is niets weggeschreven. Open het opnieuw en voer de wijziging nog eens uit.',
   'shell.historyMidway': 'Er is niets vastgelegd: de geschiedenis van deze map is halverwege een samenvoeging, een rebase of een andere eigen wijziging. Rond die eerst af of breek hem af, en leg daarna opnieuw vast.',
   'shell.historyDetached': 'Er is niets vastgelegd: de geschiedenis van deze map staat op geen enkele tak, dus een versie die nu wordt vastgelegd zou bij geen tak horen. Ga eerst naar een tak, en leg daarna opnieuw vast.',
+  'shell.gitMissing': 'De geschiedenis heeft git op deze computer nodig. Installeer git en probeer het opnieuw.',
   'shell.gitTooOld': 'De geschiedenis heeft git 2.25 of nieuwer op deze computer nodig. Werk git bij en probeer het opnieuw.',
   'shell.historyFailed': 'De geschiedenis van deze map kon niet worden gelezen of geschreven. De diagnose zegt waarom.',
   'shell.storageFull': 'Deze browser heeft geen ruimte meer voor deze app, dus er is niets bewaard. Bewaar een werkbestand en maak daarna ruimte vrij voor deze site in de instellingen van de browser.',

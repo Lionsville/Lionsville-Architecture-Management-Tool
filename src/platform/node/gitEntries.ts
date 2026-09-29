@@ -21,7 +21,7 @@ import { tmpdir } from 'node:os'
 import { isAbsolute, join } from 'node:path'
 import { LOCAL_SETTINGS_PATH } from '../../projects/folderSettings'
 import { isSpacedLabel } from '../../projects/label'
-import { git, gitEnvironment, identityArgs, initRepository, isRepository, quietConfig } from './git'
+import { git, gitEnvironment, gitFailure, identityArgs, initRepository, isRepository, quietConfig } from './git'
 
 const UNIT = '\x1f'
 const RECORD = '\x1e'
@@ -77,12 +77,21 @@ const OLDEST_GIT: readonly [number, number] = [2, 25]
 
 let versionChecked: Promise<void> | undefined
 
-/** Refuses, once for the process, with a key a person can act on, where the machine's git is older than this history needs. */
+/**
+ * Refuses, with a key a person can act on, where the machine has no git
+ * (`shell.gitMissing`) or one older than this history needs
+ * (`shell.gitTooOld`). A git found good is checked once for the process; one
+ * found wanting is looked for again next time, so installing or updating git
+ * and trying again works.
+ */
 export function checkGitVersion(): Promise<void> {
   versionChecked ??= git(tmpdir(), ['--version']).then((out) => {
     const [, major, minor] = /(\d+)\.(\d+)/.exec(out) ?? []
     const [least, next] = OLDEST_GIT
     if (Number(major) < least || (Number(major) === least && Number(minor) < next)) throw new Error('shell.gitTooOld')
+  }).catch((cause: unknown) => {
+    versionChecked = undefined
+    throw cause
   })
   return versionChecked
 }
@@ -240,7 +249,10 @@ async function gitWithInput(root: string, args: readonly string[], input: string
   return new Promise((resolve, reject) => {
     const child = execFile('git', [...quiet, ...args], {
       cwd: root, encoding: 'buffer', maxBuffer: 256 * 1024 * 1024, windowsHide: true, env: gitEnvironment(), timeout: 60_000,
-    }, (failure, stdout) => (failure ? reject(failure) : resolve(stdout)))
+    }, (failure, stdout) => {
+      if (failure) void gitFailure(failure, root).then(reject)
+      else resolve(stdout)
+    })
     child.stdin?.end(input)
   })
 }

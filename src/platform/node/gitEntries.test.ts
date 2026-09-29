@@ -6,14 +6,14 @@
  * temporary folder — for the reason `git.test.ts` gives: what is tested is
  * the conversation with git, which only the real one answers.
  */
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { chmod, mkdir, mkdtemp, readdir, realpath, rm, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { tmpdir } from 'node:os'
 import { basename, dirname, join } from 'node:path'
-import { gitAvailable, isRepository, snapshot, useHooksFolder } from './git'
+import { git, gitAvailable, isRepository, snapshot, useHooksFolder } from './git'
 
 const run = promisify(execFile)
 import {
@@ -335,5 +335,43 @@ describe.skipIf(!available)('what changed, and what a file held', () => {
     await sh('merge', '-q', 'side').catch(() => undefined)
     await rm(join(root, '.git', 'MERGE_HEAD'))
     expect(await readiness(root)).toBe('midway')
+  })
+})
+
+describe.skipIf(!available)('a machine with no git', () => {
+  let nothing = ''
+
+  beforeEach(async () => {
+    nothing = await mkdtemp(join(tmpdir(), 'lvarch-no-git-'))
+  })
+
+  afterEach(async () => {
+    vi.unstubAllEnvs()
+    await rm(nothing, { recursive: true, force: true })
+  })
+
+  it('is said with a key a person can act on, by every way git is run, and not for a folder that is not there', async () => {
+    await startHistory(root)
+    await put('model.json', '{}')
+    await commitPaths(root, ['model.json'], 'one')
+    const [commit] = await commitLog(root, { limit: 1 })
+    const [, blob] = commit.blobs!['model.json']
+    vi.stubEnv('PATH', nothing)
+    await expect(changes(root)).rejects.toThrow('shell.gitMissing')
+    await expect(sizesOf(root, [blob])).rejects.toThrow('shell.gitMissing')
+    const elsewhere = await git(join(root, 'not-there'), ['status']).then(() => undefined, (cause: unknown) => cause)
+    expect(elsewhere).toBeInstanceOf(Error)
+    expect((elsewhere as Error).message).not.toBe('shell.gitMissing')
+    vi.unstubAllEnvs()
+    expect(await sizesOf(root, [blob])).toEqual({ [blob]: 2 })
+  })
+
+  it('is looked for again once git is there, without a restart', async () => {
+    vi.resetModules()
+    const { checkGitVersion } = await import('./gitEntries')
+    vi.stubEnv('PATH', nothing)
+    await expect(checkGitVersion()).rejects.toThrow('shell.gitMissing')
+    vi.unstubAllEnvs()
+    await expect(checkGitVersion()).resolves.toBeUndefined()
   })
 })

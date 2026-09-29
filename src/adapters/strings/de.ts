@@ -18,6 +18,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.scopeMoved': 'Jemand hat diesen Bereich geändert, während dies lief, deshalb wurde nichts geschrieben. Öffnen Sie es erneut und nehmen Sie die Änderung noch einmal vor.',
   'shell.historyMidway': 'Es wurde nichts festgehalten: der Verlauf dieses Ordners steckt mitten in einem Zusammenführen, einem Rebase oder einer anderen eigenen Änderung. Schließen Sie diese zuerst ab oder brechen Sie sie ab, und halten Sie dann erneut fest.',
   'shell.historyDetached': 'Es wurde nichts festgehalten: der Verlauf dieses Ordners steht auf keinem Zweig, eine jetzt festgehaltene Version gehörte also zu keinem. Wechseln Sie zuerst auf einen Zweig, und halten Sie dann erneut fest.',
+  'shell.gitMissing': 'Der Verlauf braucht git auf diesem Rechner. Installieren Sie git und versuchen Sie es erneut.',
   'shell.gitTooOld': 'Der Verlauf braucht git 2.25 oder neuer auf diesem Rechner. Aktualisieren Sie git und versuchen Sie es erneut.',
   'shell.historyFailed': 'Der Verlauf dieses Ordners konnte nicht gelesen oder geschrieben werden. Die Diagnose nennt den Grund.',
   'shell.storageFull': 'Dieser Browser hat keinen Platz mehr für diese App, deshalb wurde nichts gespeichert. Speichern Sie eine Arbeitsdatei und geben Sie dann in den Einstellungen des Browsers Platz für diese Seite frei.',

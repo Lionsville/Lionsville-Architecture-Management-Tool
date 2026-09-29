@@ -43,6 +43,8 @@ export const EN = {
   'shell.historyMidway': 'Nothing was recorded: the history of this folder is part way through a merge, a rebase or another change of its own. Finish or abandon that first, then record again.',
   /** A record on a history that is on no branch, where a version would belong to none. Nothing was recorded. */
   'shell.historyDetached': 'Nothing was recorded: the history of this folder is not on a branch, so a version recorded now would belong to none. Switch to a branch first, then record again.',
+  /** There is no git on this machine, where the folder's history is kept in git. */
+  'shell.gitMissing': 'The history needs git on this machine. Install git, then try again.',
   /** The git on this machine is older than the history needs (2.25). */
   'shell.gitTooOld': 'The history needs git 2.25 or newer on this machine. Update git, then try again.',
   /** The history could not be read or written for a reason the trail holds and a person cannot act on here. */

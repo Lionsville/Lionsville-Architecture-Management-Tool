@@ -417,9 +417,11 @@ repositories, in `src/adapters/folder/`:
   the folder keeps none, as a snapshot always has, and refuses, with a key a
   person can act on, part way through a merge, a rebase, a cherry-pick or a
   revert, with a file unmerged, or on no branch. The paths it commits go to
-  git on its standard input; git older than 2.25 is refused once, with a
-  sentence that says so; a failure crosses to the page as a key, never as
-  git's words, which name paths.
+  git on its standard input; a machine with no git (`shell.gitMissing`) or
+  one older than 2.25 (`shell.gitTooOld`) is refused with a sentence that
+  says so, and looked at again on the next try, so installing git and trying
+  again works; a failure crosses to the page as a key, never as git's words,
+  which name paths.
 - **Labels** are tags named `<scope id>/<slug>`, so two scopes may each use
   one label; a tag so named, its space shaped as a scope's identity (a UUID,
   or `f-` and base-36 digits), is that scope's wherever it is found, even once

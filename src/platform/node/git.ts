@@ -158,14 +158,29 @@ export async function quietConfig(): Promise<string[]> {
 }
 
 export async function git(root: string, args: readonly string[], timeout = TIMEOUT_MS): Promise<string> {
-  const { stdout } = await run('git', [...await quietConfig(), ...args], {
-    cwd: root,
-    timeout,
-    maxBuffer: MAX_OUTPUT,
-    windowsHide: true,
-    env: gitEnvironment(),
-  })
-  return stdout
+  try {
+    const { stdout } = await run('git', [...await quietConfig(), ...args], {
+      cwd: root,
+      timeout,
+      maxBuffer: MAX_OUTPUT,
+      windowsHide: true,
+      env: gitEnvironment(),
+    })
+    return stdout
+  } catch (cause) {
+    throw await gitFailure(cause, root)
+  }
+}
+
+/**
+ * A failure to run git, said as a key a person can act on where there is no
+ * git to run (`shell.gitMissing`); any other as it came. A folder that is not
+ * there fails to start git the same way, so the folder is looked at first.
+ */
+export async function gitFailure(cause: unknown, cwd: string): Promise<unknown> {
+  const { code, syscall } = (cause ?? {}) as { code?: unknown; syscall?: unknown }
+  const unstarted = code === 'ENOENT' && typeof syscall === 'string' && syscall.startsWith('spawn')
+  return unstarted && await access(cwd).then(() => true, () => false) ? new Error('shell.gitMissing') : cause
 }
 
 /** Is there a git on this machine at all? */
