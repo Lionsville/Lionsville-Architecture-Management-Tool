@@ -49,7 +49,7 @@ function chrome(held: FolderOwn | undefined) {
   const notify = vi.fn()
   const reread = vi.fn()
   const props: SourceChromeProps<FolderOwn> = {
-    own: held, notify, reread, open: () => {}, screen: {} as never, movedBy: 'person' as never,
+    current: true, own: held, notify, reread, open: () => {}, screen: {} as never, movedBy: 'person' as never,
     preferences: { read: () => ({}), write: () => {} },
   }
   render(<FolderChrome {...props} />)

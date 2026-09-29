@@ -16,7 +16,6 @@ import type { KeyValueStorage } from '../../adapters/webStorage/KeyValueStorage'
 import { WebStoragePreferencesStore } from '../../adapters/webStorage/WebStoragePreferencesStore'
 import { WebStorageScopeStore } from '../../adapters/webStorage/WebStorageScopeStore'
 import type { SourceProvider } from '../../platform/sourceProvider'
-import { BROWSER_STORAGE } from '../../platform/workingSource'
 import type { WorkingSource } from '../../platform/workingSource'
 import type { PreferencesStore } from '../../ports/PreferencesStore'
 import type { Repositories } from '../../ports/Repositories'
@@ -40,8 +39,15 @@ export type BrowserParts = {
   earlier?: Earlier
 }
 
+/** This browser, which is one place: there is nothing to tell apart. */
+export const BROWSER_STORAGE: WorkingSource = { provider: 'browserStorage', name: '', key: '' }
+
 export const BROWSER_STORAGE_SOURCE: SourceProvider<BrowserParts, BrowserOpening> = {
   kind: 'browserStorage',
+  labelKey: 'shell.sourceBrowser',
+  describeKey: 'shell.sourceTipBrowser',
+  whereKey: 'browser.where',
+  removeKey: 'picker.deleteBodyBrowser',
   open: ({ storage, database }) => {
     const { repositories, earlier } = browserRepositories(database, storage)
     return {

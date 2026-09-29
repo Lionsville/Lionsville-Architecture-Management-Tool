@@ -314,7 +314,7 @@ export const WORD_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {
   'src/app/AppPanels.tsx': ['storage'],
   'src/app/DiskChangeNotice.tsx': ['disk'],
   'src/app/ProjectWorkspace.tsx': ['storage'],
-  'src/app/ShellToolbar.tsx': ['disk', 'folder', 'storage'],
+  'src/app/ShellToolbar.tsx': ['disk'],
   'src/app/WorkspaceBar.tsx': ['disk'],
   'src/app/appProps.ts': ['storage'],
   'src/app/dialogs/OpenIntoDialog.tsx': ['folder'],
@@ -333,7 +333,6 @@ export const WORD_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {
   'src/app/useWorkspaceDocument.ts': ['storage'],
   'src/app/useWorkspaceFiles.ts': ['.json'],
   'src/app/workspaceProps.ts': ['storage'],
-  'src/platform/workingSource.ts': ['folder', 'storage'],
   'src/ports/FolderSettings.ts': ['folder'],
   'src/ports/ScopeStore.ts': ['storage'],
   'src/projects/commitMessage.ts': ['commit message', 'git'],
@@ -352,6 +351,6 @@ export const CEILINGS = {
   importingFiles: 13,
   imports: 23,
   /** Files naming storage, and the words and patterns between them. */
-  namingFiles: 30,
-  words: 37,
+  namingFiles: 29,
+  words: 33,
 } as const

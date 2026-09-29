@@ -55,6 +55,7 @@ import { chooseFolderDestination, FOLDER_SOURCE } from '../providers/folder/fold
 import { FolderChrome } from '../providers/folder/FolderChrome'
 import { FolderPreferences } from '../providers/folder/FolderPreferences'
 import { MEMORY_SOURCE } from '../providers/memory/memorySource'
+import { MemoryNotice } from '../providers/memory/MemoryNotice'
 import type { HookInvoke } from '../platform/desktopHook'
 import type {
   SourceChip as ProviderChip,
@@ -392,6 +393,39 @@ export function sourceProvider<Opening = void>(
 }
 
 /**
+ * The sentence a provider gives for where it keeps work, or nothing.
+ *
+ * The chip that names the source says it when it is hovered, in the
+ * provider's own words (`describeKey`, in its own table) — the three that ship
+ * as surely as any other, because only the provider knows what kind of place
+ * it is. Read here because the registry is here: the screen that draws the
+ * chip may not name a filling, and the boot is the one place that can ask.
+ * Nothing for a provider that gives none — which the chip then says by saying
+ * nothing, rather than by guessing on its behalf.
+ */
+export function sourceDescription(
+  source: WorkingSource,
+): StringKey | (string & {}) | undefined {
+  return sourceProvider(source.provider)?.describeKey
+}
+
+/**
+ * What the chip calls the source, the organisation's subtitle says of where
+ * everything is kept, and removing a scope says it takes: the provider's own
+ * sentences, read here for the reason {@link sourceDescription} is.
+ */
+export function sourceSayings(source: WorkingSource): {
+  labelKey?: StringKey | (string & {}); whereKey?: StringKey | (string & {}); removeKey?: StringKey | (string & {})
+} {
+  const provider = sourceProvider(source.provider)
+  return {
+    ...(provider?.labelKey ? { labelKey: provider.labelKey } : {}),
+    ...(provider?.whereKey ? { whereKey: provider.whereKey } : {}),
+    ...(provider?.removeKey ? { removeKey: provider.removeKey } : {}),
+  }
+}
+
+/**
  * What every registered provider draws for itself, in the order they
  * registered: one entry per registration, and none for a provider that draws
  * nothing.
@@ -404,26 +438,6 @@ export function sourceProvider<Opening = void>(
  * happens to answer for the source that is open decides what it is HANDED
  * ({@link SourceChrome}), and never whether it is drawn.
  */
-/**
- * The sentence a provider gives for where it keeps work, or nothing.
- *
- * The organisation's home says one about the chip that names the source, and it
- * has a sentence per built-in kind because this tree knows what a folder and a
- * browser's storage are. A registered source's is the provider's own
- * (`describeKey`, in the provider's own table), and it is read here because the
- * registry is here: the screen that draws the chip may not name a filling, and
- * the boot is the one place that can ask.
- *
- * Nothing for the three that ship, whose sentences this tree holds already, and
- * nothing for a registered provider that gives none — which the chip then says
- * by saying nothing, rather than by guessing on its behalf.
- */
-export function sourceDescription(
-  source: WorkingSource,
-): StringKey | (string & {}) | undefined {
-  return source.kind === 'registered' ? sourceProvider(source.provider)?.describeKey : undefined
-}
-
 export function registeredChrome(): readonly RegisteredChrome[] {
   const found: RegisteredChrome[] = []
   for (const provider of SOURCE_PROVIDERS.values()) {
@@ -472,7 +486,7 @@ export function registeredMenus(): readonly RegisteredMenu[] {
 export function sourceChip(
   source: WorkingSource,
 ): ((work?: SourceWork) => ProviderChip) | undefined {
-  return source.kind === 'registered' ? sourceProvider(source.provider)?.chip : undefined
+  return sourceProvider(source.provider)?.chip
 }
 
 /**
@@ -489,7 +503,7 @@ export function sourceChip(
  * on this machine that this shell already draws.
  */
 export function sourceAgentPanel(source: WorkingSource): SourceAgentPanel | undefined {
-  return source.kind === 'registered' ? sourceProvider(source.provider)?.agentPanel : undefined
+  return sourceProvider(source.provider)?.agentPanel
 }
 
 /**
@@ -500,7 +514,7 @@ export function sourceAgentPanel(source: WorkingSource): SourceAgentPanel | unde
  * somebody else's name. Nothing for the three that ship.
  */
 export function sourceChipPanel(source: WorkingSource): SourceChipPanel | undefined {
-  return source.kind === 'registered' ? sourceProvider(source.provider)?.chipPanel : undefined
+  return sourceProvider(source.provider)?.chipPanel
 }
 
 /**
@@ -518,7 +532,7 @@ export function sourcePreferencesPanel(source: WorkingSource): SourcePreferences
  * for the three that ship.
  */
 export function sourceRecentActivity(source: WorkingSource): SourceRecentActivity | undefined {
-  return source.kind === 'registered' ? sourceProvider(source.provider)?.recentActivity : undefined
+  return sourceProvider(source.provider)?.recentActivity
 }
 
 /**
@@ -527,7 +541,7 @@ export function sourceRecentActivity(source: WorkingSource): SourceRecentActivit
  * and a read is then never held back.
  */
 export function sourceConnected(source: WorkingSource): (() => boolean) | undefined {
-  return source.kind === 'registered' ? sourceProvider(source.provider)?.connected : undefined
+  return sourceProvider(source.provider)?.connected
 }
 
 /**
@@ -537,7 +551,7 @@ export function sourceConnected(source: WorkingSource): (() => boolean) | undefi
  * The open source's alone, for the reason {@link sourceChipPanel} is.
  */
 export function sourceChipFace(source: WorkingSource): SourceChipFace | undefined {
-  return source.kind === 'registered' ? sourceProvider(source.provider)?.chipFace : undefined
+  return sourceProvider(source.provider)?.chipFace
 }
 
 /**
@@ -771,7 +785,7 @@ registerSourceProvider({
   ...FOLDER_SOURCE, chrome: FolderChrome, preferencesPanel: FolderPreferences, destination: chooseFolderDestination,
 })
 registerSourceProvider(BROWSER_STORAGE_SOURCE)
-registerSourceProvider(MEMORY_SOURCE)
+registerSourceProvider({ ...MEMORY_SOURCE, chrome: MemoryNotice })
 
 /**
  * A tab left open over a deploy asks for a script that is gone, the first time

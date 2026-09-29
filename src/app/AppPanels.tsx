@@ -10,7 +10,6 @@ import type { ImageEntry } from '../model/imageName'
 import { PicturesProvider } from '../documentation/ui/Pictures'
 import { useCallback, useRef } from 'react'
 import type { ReactNode } from 'react'
-import Alert from '@mui/material/Alert'
 import { LanguageProvider } from '../i18n'
 import { sourceIsReadOnly } from '../platform/workingSource'
 import { ConnectAgentDialog } from './dialogs/ConnectAgentDialog'
@@ -184,6 +183,7 @@ function Home({ parts }: { parts: ShellParts }) {
         onOrderChange={parts.order.chooseOrder}
         source={parts.source}
         sourceDescription={props.provider?.description}
+        sourceSayings={props.provider?.sayings}
         sourceChip={parts.provider.chip}
         chipPanel={chipPanelFor(parts)}
         chipFace={chipFaceFor(parts)}
@@ -286,7 +286,7 @@ function chipFaceFor(parts: ShellParts): ((open: boolean, fallback: ReactNode) =
       where="sourceChipFace" diagnostics={props.diagnostics} controls={props.hostControls} s={s} fallback={fallback}
     >
       <LanguageProvider language={prefs.language}>
-        <Face label={sourceLabel(parts.source, s, provider.chip)} open={open} />
+        <Face label={sourceLabel(parts.source, s, provider.chip, props.provider?.sayings?.labelKey)} open={open} />
       </LanguageProvider>
     </ErrorBoundary>
   )
@@ -301,7 +301,7 @@ function workspaceChip(parts: ShellParts): ToolbarChip | undefined {
   const { chip, ChipPanel, ChipFace } = parts.provider
   if (!chip && !ChipPanel && !ChipFace) return undefined
   return {
-    source: parts.source, describeKey: parts.props.provider?.description, chip,
+    source: parts.source, describeKey: parts.props.provider?.description, labelKey: parts.props.provider?.sayings?.labelKey, chip,
     panel: chipPanelFor(parts), face: chipFaceFor(parts),
   }
 }
@@ -316,6 +316,7 @@ function chromeProps(parts: ShellParts, kind: string): SourceChromeProps {
   const { services: { prefs, toasts }, agent, provider } = parts
   const opened = kind === provider.openProvider
   return {
+    current: opened,
     session: opened ? provider.openScope : undefined,
     own: opened ? provider.own : undefined,
     open: agent.openSomewhere,
@@ -336,20 +337,6 @@ export function AppNotices({ parts }: { parts: ShellParts }) {
   return (
     <>
       <AgentDrivingBanner driving={agent.driving} onStop={agent.stop} s={s} />
-      {parts.source.kind === 'memory' && (
-        /* Along the bottom rather than above the toolbar: on the desktop that
-           bar is the title bar, and anything pushed above it lands under the
-           traffic lights. A standing strip is as visible and owes the window
-           nothing. */
-        <Alert
-          severity="warning"
-          square
-          data-testid="storage-notice"
-          sx={{ flex: '0 0 auto', borderRadius: 0, py: 0, fontSize: 12 }}
-        >
-          {s('shell.storageFailed')}
-        </Alert>
-      )}
       {provider.chromes.map(({ kind, chrome: Chrome }) => (
         /* Inside the theme and inside the language, so a provider's strip is
            in this person's dark mode and this person's German; beside the

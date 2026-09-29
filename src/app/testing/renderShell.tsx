@@ -41,6 +41,7 @@ import { RecordingDiagnostics } from '../../adapters/memory/RecordingDiagnostics
 import type { ScopeSnapshot } from '../../projects/scope'
 import type { AppBoot, AppProps } from '../App'
 import { App } from '../App'
+import type { WorkingSource } from '../../platform/workingSource'
 import type { SavedDocument } from '../../ports/DocumentGateway'
 import { heldRepositories } from './heldRepositories'
 import type { HeldRepositories } from './heldRepositories'
@@ -163,6 +164,10 @@ export type AppRender = ShellRender & ShellHarness
 /** What a test says about the app: any prop, and what the boot read one field at a time. */
 export type AppOverrides = Omit<Partial<AppProps>, 'boot'> & { boot?: Partial<AppBoot> }
 
+/** This browser's storage, as its provider says it: what a tab with nothing else to say works from. */
+export const THIS_BROWSER: WorkingSource = { provider: 'here', name: '', key: '' }
+const THIS_BROWSER_SAYS = { labelKey: 'shell.sourceBrowser', whereKey: 'browser.where', removeKey: 'picker.deleteBodyBrowser' }
+
 /**
  * The whole shell, opened where you say.
  *
@@ -194,7 +199,11 @@ export function renderApp(
     },
     examples: [],
     makeId: (prefix) => `${prefix}-new`,
+    // This browser, which is what a tab with nothing else to say works from.
+    source: THIS_BROWSER,
     ...rest,
+    // And what its provider says of it, where the test named no source of its own.
+    ...(rest.source ? {} : { provider: { sayings: THIS_BROWSER_SAYS, ...rest.provider } }),
   }
   return { ...renderShell(<App {...props} />, options), ...harness }
 }

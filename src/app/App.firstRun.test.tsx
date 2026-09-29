@@ -92,7 +92,7 @@ describe('once work has somewhere to be', () => {
   it('goes back to being the app', () => {
     renderApp({
       repositories: heldRepositories([project()]),
-      source: { kind: 'folder', name: 'Architecture', root: '/Users/someone/Architecture' },
+      source: { provider: 'folder', name: 'Architecture', key: '/Users/someone/Architecture' },
       provider: { waysIn: [wayIn()] },
     })
 

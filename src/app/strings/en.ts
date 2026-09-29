@@ -71,7 +71,7 @@ export const EN = {
   'shell.takeTheirs': 'Take theirs',
   'shell.keepMine': 'Keep mine',
   'shell.saveACopy': 'Save a copy…',
-  'shell.storageFailed':
+  'shell.keepFailed':
     'This browser could not save the design (storage full or blocked). Save a working file, or it is gone when you close the tab.',
   'shell.storageRecovered': 'Saving in this browser works again.',
   /**
@@ -207,12 +207,6 @@ export const EN = {
    * the one thing the bar did not say (ADR-0005). A folder by its name: the
    * name is what the person called it in their file manager.
    */
-  'shell.sourceFolder': 'Folder · {name}',
-  'shell.sourceBrowser': 'In this browser',
-  'shell.sourceMemory': 'Not kept anywhere',
-  'shell.sourceTipFolder': 'Your projects are files in this folder. Snapshots go into its history.',
-  'shell.sourceTipBrowser': 'Your projects are kept in this browser\'s storage. Save a working file to keep them anywhere else.',
-  'shell.sourceTipMemory': 'Nothing is being kept: storage refused. Save a working file before you close this tab.',
   /**
    * The bar's way back. Each scope above the open one is a crumb, and the
    * organisation is the first: pressing one lands on that scope's home.
@@ -358,8 +352,7 @@ export const EN = {
   'picker.changed': 'Changed {when}',
   'picker.delete': 'Delete',
   'picker.deleteTitle': 'Delete \u201c{name}\u201d?',
-  'picker.deleteBodyFolder': 'This deletes {name}, everything filed under it, and its folder on disk. A working file you saved elsewhere is not touched.',
-  'picker.deleteBodyBrowser': 'This deletes {name} and everything filed under it from this browser. A working file you saved elsewhere is not touched.',
+  'picker.deleteBody': 'This deletes {name} and everything filed under it. A working file you saved elsewhere is not touched.',
   'shell.scopeCreated': '\u201c{name}\u201d created.',
   'picker.newScope': 'New domain or team\u2026',
   'picker.newScopeTitle': 'New domain or team',
@@ -567,11 +560,7 @@ export const EN = {
   'org.nameThis': 'Name this organisation',
   'org.forClient': 'For {name}',
   'org.lastChanged': 'Last changed {when}',
-  'org.subtitleWhere': 'Everything here is kept {where}.',
   'org.subtitle': 'Each scope below \u2014 a domain, a team, a landscape scope \u2014 has its own boards, pages and decisions.',
-  'org.whereFolder': 'as files in the folder above',
-  'org.whereBrowser': 'in this browser',
-  'org.whereMemory': 'nowhere yet \u2014 save a working file to keep it',
   /**
    * The line under a home's name counts the scopes filed under it by what
    * each says it is (`countScopeKinds`), in the words its tree's badges use;

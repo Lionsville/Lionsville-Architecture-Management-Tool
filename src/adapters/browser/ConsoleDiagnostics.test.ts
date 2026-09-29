@@ -14,7 +14,7 @@ describe('ConsoleDiagnostics', () => {
     const diagnostics = new ConsoleDiagnostics(200, () => '2026-09-06T10:00:00.000Z')
 
     diagnostics.report({ level: 'error', where: 'boot', message: 'shell.crashed' })
-    diagnostics.report({ level: 'warn', where: 'autosave', message: 'shell.storageFailed' })
+    diagnostics.report({ level: 'warn', where: 'autosave', message: 'shell.keepFailed' })
 
     expect(error).toHaveBeenCalledWith(
       `${LOG_PREFIX} 2026-09-06T10:00:00.000Z ERROR boot: shell.crashed`, '')

@@ -90,14 +90,14 @@ describe('ErrorBoundary', () => {
 
   it('hands the whole trail over, not just this crash', async () => {
     const diagnostics = new RecordingDiagnostics()
-    diagnostics.report({ level: 'warn', where: 'autosave', message: 'shell.storageFailed' })
+    diagnostics.report({ level: 'warn', where: 'autosave', message: 'shell.keepFailed' })
     const { host } = mount({ diagnostics })
 
     fireEvent.click(screen.getByText('Copy diagnostics'))
     await waitFor(() => expect(screen.getByText('Copied')).toBeTruthy())
 
     const copied = host.copyText.mock.calls[0][0]
-    expect(copied).toContain('shell.storageFailed')
+    expect(copied).toContain('shell.keepFailed')
     expect(copied).toContain('render threw')
   })
 

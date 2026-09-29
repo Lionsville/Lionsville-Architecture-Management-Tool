@@ -57,6 +57,7 @@ import type { ScopePath } from '../../projects/scopePath'
 import { NO_WINDOW_CHROME } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import type { WorkingSource } from '../../platform/workingSource'
+import type { SourceSayings } from '../appProps'
 import type { SourceChip, SourceWayIn } from '../../platform/sourceProvider'
 import { AgentIcon } from '../../widgets/icons'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
@@ -124,6 +125,8 @@ export type OrganisationScreenProps = {
    * has never heard of.
    */
   sourceDescription?: StringKey | (string & {})
+  /** The source's provider's sentences: what the chip calls it, where everything is kept, what removing takes. */
+  sourceSayings?: SourceSayings
   /**
    * What that provider calls the chip right now, and what pressing it does
    * (`platform/sourceProvider.ts`'s `chip`).
@@ -252,7 +255,7 @@ function cardDoors(open: Organisation['open'], at: ScopePath, pages: Organisatio
 }
 
 export function OrganisationScreen({
-  organisation, examples, order, onOrderChange, source, sourceDescription, sourceChip, chipPanel, chipFace,
+  organisation, examples, order, onOrderChange, source, sourceDescription, sourceSayings = {}, sourceChip, chipPanel, chipFace,
   waysIn,
   overflow, agent, onGoHome, findings, register = [], technology = [], initiatives = 0, sharedObservations = 0, platformTree,
   onOpenRegisterRow, onOpenRegisterPage, onLinkFromRegister, pageRequest, onPageChange,
@@ -399,6 +402,7 @@ export function OrganisationScreen({
         level={level}
         source={chipHere(atRoot, sourceChip, chipPanel, chipFace) ? source : undefined}
         sourceDescription={sourceDescription}
+        sourceLabelKey={sourceSayings.labelKey}
         sourceChip={sourceChip} chipPanel={chipPanel} chipFace={chipFace}
         waysIn={atRoot ? waysIn : undefined}
         onGoHome={onGoHome}
@@ -447,7 +451,7 @@ export function OrganisationScreen({
               explanation. */}
           {atRoot && (
             <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 1, maxWidth: 720 }} data-testid="organisation-subtitle">
-              {[whereSaid(source, sourceDescription, s), s('org.subtitle')].filter(Boolean).join(' ')}
+              {[whereSaid(sourceSayings, sourceDescription, s), s('org.subtitle')].filter(Boolean).join(' ')}
             </Typography>
           )}
 
@@ -678,12 +682,8 @@ export function OrganisationScreen({
       <ConfirmDialog
         open={dialog.kind === 'delete'}
         title={s('picker.deleteTitle', { name: dialog.kind === 'delete' ? dialog.target.name : '' })}
-        // What goes, said in full: the scope, everything filed under it, and
-        // its folder — and "from this browser" only where that is where it is.
-        body={s(
-          source?.kind === 'folder' ? 'picker.deleteBodyFolder' : 'picker.deleteBodyBrowser',
-          { name: dialog.kind === 'delete' ? dialog.target.name : '' },
-        )}
+        // What goes, said in full, in the words of where it is kept.
+        body={s(removeKeyOf(sourceSayings), { name: dialog.kind === 'delete' ? dialog.target.name : '' })}
         confirmLabel={s('common.delete')}
         cancelLabel={s('common.cancel')}
         onCancel={organisation.closeDialog}
@@ -754,31 +754,21 @@ function chipHere(atRoot: boolean, chip: SourceChip | undefined, ...more: unknow
 }
 
 /**
- * The subtitle's first sentence: where work is kept, or nothing.
- *
- * The second place on this screen that says it, the chip's tooltip being the
- * first, and it follows the same rule for the same reason. A clause per
- * built-in kind, because this tree knows what a folder and a browser's storage
- * are; for a registered source the provider's own sentence (`describeKey`, from
- * its own table), whole rather than folded into a clause of ours, because a
- * sentence about somewhere this shell has never heard of is the provider's to
- * write. Where it gave none the clause is dropped and the subtitle says what it
- * can say truthfully: what a domain and a landscape below are.
- *
- * A source that is not there yet reads as the browser's storage, which is what
- * a tab with no source is working from.
+ * The subtitle's first sentence: where work is kept, in the source's
+ * provider's own sentence — the one it gave for here, or its sentence about
+ * the chip — whole rather than folded into a clause of ours —
+ * a sentence about somewhere this shell has never heard of is the provider's
+ * to write. Where it gave none the sentence is dropped and the subtitle says
+ * what it can say truthfully: what a domain and a landscape below are.
  */
-function whereSaid(
-  source: WorkingSource | undefined, describeKey: StringKey | (string & {}) | undefined, s: Translate,
-): string {
-  if (source?.kind === 'registered') {
-    return describeKey === undefined ? '' : s(describeKey as StringKey)
-  }
-  return s('org.subtitleWhere', {
-    where: s(source?.kind === 'folder'
-      ? 'org.whereFolder'
-      : source?.kind === 'memory' ? 'org.whereMemory' : 'org.whereBrowser'),
-  })
+function whereSaid(sayings: SourceSayings, describeKey: StringKey | (string & {}) | undefined, s: Translate): string {
+  const whereKey = sayings.whereKey ?? describeKey
+  return whereKey === undefined ? '' : s(whereKey as StringKey)
+}
+
+/** What removing a scope takes with it here: the provider's sentence, or ours, which names no place. */
+function removeKeyOf(sayings: SourceSayings): StringKey {
+  return (sayings.removeKey ?? 'picker.deleteBody') as StringKey
 }
 
 /**
@@ -816,7 +806,7 @@ function UnreadableScopes({ tree, at, s }: { tree: ScopeSummary; at: ScopePath; 
  * traffic lights, and be the surface the window is dragged by.
  */
 function OrganisationBar({
-  barRef, tree, home, heading, level, source, sourceDescription, sourceChip, chipPanel, chipFace,
+  barRef, tree, home, heading, level, source, sourceDescription, sourceLabelKey, sourceChip, chipPanel, chipFace,
   waysIn = [],
   onGoHome, onSettings, overflow, agent, s, windowChrome,
 }: {
@@ -829,6 +819,7 @@ function OrganisationBar({
   level: 'organisation' | 'domain' | 'landscape'
   source?: WorkingSource
   sourceDescription?: StringKey | (string & {})
+  sourceLabelKey?: StringKey | (string & {})
   sourceChip?: SourceChip
   chipPanel?: (close: () => void) => ReactNode
   /**
@@ -856,7 +847,7 @@ function OrganisationBar({
   const atTheEnd = sourceChip !== undefined || chipPanel !== undefined || chipFace !== undefined
   const chip = source && (
     <SourceChipView
-      source={source} describeKey={sourceDescription} chip={sourceChip} panel={chipPanel} face={chipFace} s={s}
+      source={source} describeKey={sourceDescription} labelKey={sourceLabelKey} chip={sourceChip} panel={chipPanel} face={chipFace} s={s}
     />
   )
   return (

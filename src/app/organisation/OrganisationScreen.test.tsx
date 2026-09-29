@@ -466,7 +466,7 @@ describe('the organisation screen — a fresh folder', () => {
     renderApp({
       repositories: heldRepositories([scope('', 'Acme Logistics')]),
       today: TODAY,
-      source: { kind: 'registered', provider: 'elsewhere', name: 'Elsewhere', key: 'one' },
+      source: { provider: 'elsewhere', name: 'Elsewhere', key: 'one' },
       provider: { description: 'elsewhere.kept' },
     })
     const subtitle = await screen.findByTestId('organisation-subtitle')
@@ -485,7 +485,7 @@ describe('the organisation screen — a fresh folder', () => {
     renderApp({
       repositories: heldRepositories([scope('', 'Acme Logistics')]),
       today: TODAY,
-      source: { kind: 'registered', provider: 'nowords', name: 'Elsewhere', key: 'one' },
+      source: { provider: 'nowords', name: 'Elsewhere', key: 'one' },
     })
     const subtitle = await screen.findByTestId('organisation-subtitle')
     expect(subtitle.textContent).toBe('Each scope below \u2014 a domain, a team, a landscape scope \u2014 has its own boards, pages and decisions.')

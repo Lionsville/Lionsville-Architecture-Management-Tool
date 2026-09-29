@@ -105,6 +105,6 @@ describe('what a scope in a desktop folder hears about', () => {
 
   it('is the folder it was opened on, root and all', async () => {
     const { parts } = await listening()
-    expect(parts.source).toEqual({ kind: 'folder', name: 'work', root: '/work' })
+    expect(parts.source).toEqual({ provider: 'folder', name: 'work', key: '/work' })
   })
 })

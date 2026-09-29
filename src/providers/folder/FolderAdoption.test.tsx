@@ -45,7 +45,7 @@ async function ask(options: { from?: Repositories; preferences?: ReturnType<type
   render(
     <LanguageProvider language={options.language ?? 'en'}>
       <FolderChrome
-        own={own} preferences={preferences} reread={reread} notify={vi.fn()}
+        current own={own} preferences={preferences} reread={reread} notify={vi.fn()}
         open={() => {}} screen={{} as never} movedBy={'person' as never}
       />
     </LanguageProvider>,

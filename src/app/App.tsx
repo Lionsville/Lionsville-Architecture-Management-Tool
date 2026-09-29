@@ -34,7 +34,7 @@ import type { Repositories } from '../ports/Repositories'
 import { parentScope, ROOT_SCOPE, scopePathFor, scopePathLabel } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
-import { BROWSER_STORAGE, sourceIsReadOnly } from '../platform/workingSource'
+import { sourceIsReadOnly } from '../platform/workingSource'
 import type { SourceMenuEntry } from '../platform/sourceProvider'
 import type {
   SourceAgentPanelProps, SourceChipFaceProps, SourceChipPanelProps, SourceChromeProps, SourceMenuContext, SourceOpen,
@@ -558,7 +558,7 @@ function useProjectSettings({ base, repositories }: { base: ReturnType<typeof us
 /** The services, where the shell is, the tree, the host's doors and the organisation screen. */
 function useShellBase(props: AppProps) {
   const { repositories, diagnostics, hostControls, boot, agent, today = localToday } = props
-  const source = props.source ?? BROWSER_STORAGE
+  const source = props.source
   const changes = props.provider?.changes
   // The way in the host names: *Open…* in its menu, and its Recent list.
   const hostWay = props.provider?.waysIn?.find((way) => way.hostMenu)

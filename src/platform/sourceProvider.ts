@@ -395,28 +395,40 @@ export type SourceProvider<Parts, Opening = void, Base = unknown> = {
   /** How a person reaches it, where there is a way in. */
   readonly connect?: SourceConnect<Opening>
   /**
-   * The sentence that says where work is kept here, as the key of the
-   * provider's own string.
+   * The sentence that says where work is kept here and what that costs, as
+   * the key of the provider's own string: what the chip that names the
+   * source says when a person hovers it — *your projects are files in this
+   * folder*, *nothing is being kept*.
    *
-   * The organisation's home says it about the chip that names the source: *your
-   * projects are files in this folder*, *nothing is being kept*. There is a
-   * sentence per built-in kind because this tree knows what a folder and a
-   * browser's storage are, and there can be none for a registered source: only
-   * the provider knows what kind of place it is, whether anything outlives the
-   * window and what a person should do about it, exactly as with
-   * {@link SourceProvider} and the name on the bar.
-   *
-   * A key, and `string` beside `StringKey` for the reason
-   * {@link SourceConnect.labelKey} is: a provider brings its own table through
-   * `i18n`'s `registerStrings`, so the sentence is in every language
-   * without this tree holding a word of it.
+   * Only the provider knows what kind of place it is, whether anything
+   * outlives the window and what a person should do about it. A key, and
+   * `string` beside `StringKey` for the reason {@link SourceConnect.labelKey}
+   * is: a provider brings its own table through `i18n`'s `registerStrings`,
+   * so the sentence is in every language without this tree holding a word of
+   * it.
    *
    * Absent means the chip says nothing at all — no tooltip rather than a
    * sentence of ours. A guess about somewhere this shell has never heard of
-   * would be worse than silence: it might promise a copy that cannot be made,
-   * or a folder that does not exist.
+   * would be worse than silence: it might promise a copy that cannot be made.
    */
   readonly describeKey?: StringKey | (string & {})
+  /**
+   * What the chip calls a source of this kind, where the source's own name is
+   * not the whole of it: the provider's string, with `{name}` for that name —
+   * *Folder · {name}*, *In this browser*. Absent, the chip says the name.
+   */
+  readonly labelKey?: StringKey | (string & {})
+  /**
+   * The organisation's subtitle's first sentence: where everything here is
+   * kept. Absent, {@link SourceProvider.describeKey} is said there instead.
+   */
+  readonly whereKey?: StringKey | (string & {})
+  /**
+   * What removing a scope takes with it here, with `{name}`: its files, what
+   * this browser kept of it. Absent, the app says what removing takes in
+   * words of its own, which name no place.
+   */
+  readonly removeKey?: StringKey | (string & {})
   /**
    * What this source means by the five words. Absent where it means what a
    * file means, which is what all three that ship mean.

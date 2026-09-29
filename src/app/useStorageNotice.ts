@@ -46,7 +46,7 @@ export function useStorageNotice(
     // the three sources that ship and the wrong one everywhere else: it names
     // the wrong place and recommends a working file to somebody whose work is
     // kept where a working file is not the copy that matters.
-    const said = sourceFailure ? sourceFailure(cause) : s('shell.storageFailed')
+    const said = sourceFailure ? sourceFailure(cause) : s('shell.keepFailed')
     // Nothing from the source is the source saying it has this one covered
     // somewhere of its own. The latch stays open on purpose: nothing was said,
     // so there is nothing to take back with "saving works again", and the next

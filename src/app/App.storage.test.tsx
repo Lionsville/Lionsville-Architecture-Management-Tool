@@ -52,24 +52,6 @@ function asksAgain() {
   }
 }
 
-describe('App and the storage it was given', () => {
-  it('shows the notice from the first render when nothing will be kept', () => {
-    renderApp({ source: { kind: 'memory' } })
-    expect(screen.getByTestId('storage-notice').textContent)
-      .toContain('This browser could not save the design')
-  })
-
-  it('says nothing when storage works, which is the ordinary case', () => {
-    renderApp({ source: { kind: 'browserStorage' } })
-    expect(screen.queryByTestId('storage-notice')).toBeNull()
-  })
-
-  it('assumes storage works when nobody said otherwise', () => {
-    renderApp()
-    expect(screen.queryByTestId('storage-notice')).toBeNull()
-  })
-})
-
 describe('what the root’s home says you are working from', () => {
   // The source is a fact about the folder, and the folder is the root: the
   // root's home says it, and the workspace's bar — which has crumbs where
@@ -86,32 +68,37 @@ describe('what the root’s home says you are working from', () => {
     logoLibrary: [],
   }
 
-  it('names the folder', () => {
-    renderApp({ source: { kind: 'folder', name: 'Architecture', root: '/Users/someone/Architecture' } })
+  const folder = { provider: 'folder', name: 'Architecture', key: '/Users/someone/Architecture' }
+  const folderSays = {
+    description: 'shell.sourceTipFolder',
+    sayings: { labelKey: 'shell.sourceFolder', whereKey: 'folder.where' },
+  }
+
+  it('calls it what its provider calls a source of its kind, with its name in it', () => {
+    renderApp({ source: folder, provider: folderSays })
     expect(screen.getByTestId('working-source').textContent).toBe('Folder · Architecture')
   })
 
-  /** The sentence per built-in kind, which this tree holds and always has. */
-  it('says what a folder costs you when you hover the chip', async () => {
-    renderApp({ source: { kind: 'folder', name: 'Architecture', root: '/Users/someone/Architecture' } })
+  it('says what it costs you when you hover the chip, in its provider\'s sentence', async () => {
+    renderApp({ source: folder, provider: folderSays })
     fireEvent.mouseOver(screen.getByTestId('working-source'))
     expect((await screen.findByRole('tooltip')).textContent)
       .toBe('Your projects are files in this folder. Snapshots go into its history.')
   })
 
-  it('says when it is the browser, and when it is nowhere', () => {
-    renderApp({ source: { kind: 'browserStorage' } })
-    expect(screen.getByTestId('working-source').textContent).toBe('In this browser')
-    cleanup()
-    renderApp({ source: { kind: 'memory' } })
+  it('says where everything is kept under the organisation\'s name, in its provider\'s sentence', () => {
+    renderApp({ source: folder, provider: folderSays })
+    expect(screen.getByText(/Everything here is kept as files in the folder above\./)).toBeDefined()
+  })
+
+  it('draws the source that keeps nothing in the warning colour', () => {
+    renderApp({ source: { provider: 'memory', name: '', key: '', transient: true }, provider: { sayings: { labelKey: 'shell.sourceMemory' } } })
     expect(screen.getByTestId('working-source').textContent).toBe('Not kept anywhere')
-    expect(screen.getByTestId('storage-notice')).toBeDefined()
   })
 
   it('keeps it off the bar over an open scope, where the crumbs are', () => {
-    renderApp({ source: { kind: 'memory' }, boot: { initialProject: project } })
+    renderApp({ source: { provider: 'memory', name: '', key: '', transient: true }, boot: { initialProject: project } })
     expect(screen.queryByTestId('working-source')).toBeNull()
-    expect(screen.getByTestId('storage-notice')).toBeDefined()
   })
 })
 
@@ -125,7 +112,7 @@ describe('what the root’s home says you are working from', () => {
  */
 describe('a source a provider answers for', () => {
   const elsewhere = {
-    kind: 'registered' as const, provider: 'elsewhere', name: 'Elsewhere', key: 'one',
+    provider: 'elsewhere', name: 'Elsewhere', key: 'one',
   }
   const scope = {
     path: 'acme/landscape',
@@ -226,7 +213,7 @@ describe('a source a provider answers for', () => {
  */
 describe('the chrome a registered provider brought', () => {
   const elsewhere = {
-    kind: 'registered' as const, provider: 'elsewhere', name: 'Elsewhere', key: 'one',
+    provider: 'elsewhere', name: 'Elsewhere', key: 'one',
   }
   const scope = {
     path: 'acme/landscape',
@@ -344,11 +331,11 @@ describe('the chrome a registered provider brought', () => {
    */
   it('is drawn for a provider that answers for nothing here', () => {
     renderApp({
-      source: { kind: 'folder', name: 'Architecture', root: '/work' },
+      source: { provider: 'folder', name: 'Architecture', key: '/work' },
       provider: { chrome: [{ kind: 'elsewhere', chrome: Strip }] },
     })
     expect(screen.getByTestId('provider-strip').textContent).toBe('en: nothing open')
-    expect(screen.getByTestId('working-source').textContent).toBe('Folder \u00b7 Architecture')
+    expect(screen.getByTestId('working-source').textContent).toBe('Architecture')
   })
 
   /**
@@ -584,7 +571,7 @@ describe('a way in a registered provider brought', () => {
    */
   it('leaves the first-run screen behind once a source is open', () => {
     renderApp({
-      source: { kind: 'registered', provider: 'elsewhere', name: 'Elsewhere', key: 'one' },
+      source: { provider: 'elsewhere', name: 'Elsewhere', key: 'one' },
       provider: { waysIn: [{ ...chooser, required: true }, ...waysIn], sourceNeeded: false },
     })
     expect(screen.queryByTestId('first-run')).toBeNull()
@@ -606,7 +593,7 @@ describe('a way in a registered provider brought', () => {
    * they are already working from, and pressing it shakes the same hand again to
    * arrive where they already are. Only the provider can tell those apart.
    */
-  const open = { kind: 'registered' as const, provider: 'elsewhere', name: 'Elsewhere', key: 'one' }
+  const open = { provider: 'elsewhere', name: 'Elsewhere', key: 'one' }
 
   it('is not drawn at all where its provider says not here', () => {
     renderApp({
@@ -692,7 +679,7 @@ describe('a way in a registered provider brought', () => {
  */
 describe('a refusal where the source keeps work', () => {
   const elsewhere = {
-    kind: 'registered' as const, provider: 'elsewhere', name: 'Elsewhere', key: 'one',
+    provider: 'elsewhere', name: 'Elsewhere', key: 'one',
   }
 
   /**
@@ -748,7 +735,7 @@ describe('a refusal where the source keeps work', () => {
 
   /** And the three that ship say what they have always said, byte for byte. */
   it('says what it has always said where the source gives no sentence', async () => {
-    refuse({ source: { kind: 'browserStorage' } })
+    refuse({ source: { provider: 'browserStorage', name: '', key: '' } })
     await copy()
     await waitFor(() => expect(screen.getByRole('alert').textContent)
       .toContain('could not save the design'))
@@ -865,7 +852,7 @@ describe('a scope whose model did not read', () => {
  */
 describe('the lines a registered provider puts in the menu', () => {
   const elsewhere = {
-    kind: 'registered' as const, provider: 'elsewhere', name: 'Elsewhere', key: 'one',
+    provider: 'elsewhere', name: 'Elsewhere', key: 'one',
   }
   const scope = {
     path: 'acme/landscape',
@@ -945,7 +932,7 @@ describe('the lines a registered provider puts in the menu', () => {
 
   /** Core's three register none, and the menu is then character for character the menu. */
   it('adds nothing at all for the sources that ship', () => {
-    renderApp({ source: { kind: 'browserStorage' } })
+    renderApp({ source: { provider: 'browserStorage', name: '', key: '' } })
     open()
     expect(provided()).toEqual([])
   })
@@ -1040,7 +1027,7 @@ describe('the lines a registered provider puts in the menu', () => {
  */
 describe('the chip a registered provider names', () => {
   const elsewhere = {
-    kind: 'registered' as const, provider: 'elsewhere', name: 'Elsewhere', key: 'one',
+    provider: 'elsewhere', name: 'Elsewhere', key: 'one',
   }
 
   it('says the provider’s word rather than the name the source was opened under', async () => {

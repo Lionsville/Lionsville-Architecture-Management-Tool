@@ -18,7 +18,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, screen } from '@testing-library/react'
 import { translator } from '../i18n'
-import { crumbsFor, ShellToolbar, sourceLabel, sourceTipKey } from './ShellToolbar'
+import { crumbsFor, ShellToolbar, sourceIsAlarming, sourceLabel, sourceTipKey } from './ShellToolbar'
 import { renderShell } from './testing/renderShell'
 
 afterEach(() => cleanup())
@@ -240,31 +240,31 @@ describe('what the chip says about the source', () => {
   const s = translator('en')
   const chip = { label: 'Anna Berg', tipKey: 'elsewhere.signedIn' }
 
-  it('says exactly what it always said about the three that ship, chip or no chip', () => {
-    const folder = { kind: 'folder' as const, name: 'Architecture', root: '/w' }
-    for (const given of [undefined, chip]) {
-      expect(sourceLabel(folder, s, given)).toBe('Folder · Architecture')
-      expect(sourceLabel({ kind: 'browserStorage' }, s, given)).toBe('In this browser')
-      expect(sourceLabel({ kind: 'memory' }, s, given)).toBe('Not kept anywhere')
-      expect(sourceTipKey(folder, undefined, given)).toBe('shell.sourceTipFolder')
-      expect(sourceTipKey({ kind: 'browserStorage' }, undefined, given)).toBe('shell.sourceTipBrowser')
-      expect(sourceTipKey({ kind: 'memory' }, undefined, given)).toBe('shell.sourceTipMemory')
-    }
+  it('says what the provider calls a source of its kind, with the source\'s name in it', () => {
+    const folder = { provider: 'folder', name: 'Architecture', key: '/w' }
+    expect(sourceLabel(folder, s, undefined, 'shell.sourceFolder')).toBe('Folder · Architecture')
+    expect(sourceLabel({ provider: 'browserStorage', name: '', key: '' }, s, undefined, 'shell.sourceBrowser')).toBe('In this browser')
+    expect(sourceTipKey('shell.sourceTipFolder')).toBe('shell.sourceTipFolder')
+  })
+
+  it('draws the source that keeps nothing in the warning colour, and no other', () => {
+    expect(sourceIsAlarming({ provider: 'memory', name: '', key: '', transient: true })).toBe(true)
+    expect(sourceIsAlarming({ provider: 'folder', name: 'Architecture', key: '/w' })).toBe(false)
   })
 
   it('calls a registered source what its provider calls it now, not what it was opened as', () => {
     const elsewhere = {
-      kind: 'registered' as const, provider: 'elsewhere', name: 'Elsewhere', key: 'one',
+      provider: 'elsewhere', name: 'Elsewhere', key: 'one',
     }
     // No chip: the name the source was opened under, exactly as before.
     expect(sourceLabel(elsewhere, s)).toBe('Elsewhere')
-    expect(sourceTipKey(elsewhere, 'elsewhere.kept')).toBe('elsewhere.kept')
+    expect(sourceTipKey('elsewhere.kept')).toBe('elsewhere.kept')
     // A chip: the provider's word about this moment, and its sentence about this
     // moment where it gave one.
     expect(sourceLabel(elsewhere, s, chip)).toBe('Anna Berg')
-    expect(sourceTipKey(elsewhere, 'elsewhere.kept', chip)).toBe('elsewhere.signedIn')
+    expect(sourceTipKey('elsewhere.kept', chip)).toBe('elsewhere.signedIn')
     // A provider that only renamed the chip keeps the standing sentence it
     // registered: nothing new was said, so nothing is taken away.
-    expect(sourceTipKey(elsewhere, 'elsewhere.kept', { label: 'Anna Berg' })).toBe('elsewhere.kept')
+    expect(sourceTipKey('elsewhere.kept', { label: 'Anna Berg' })).toBe('elsewhere.kept')
   })
 })

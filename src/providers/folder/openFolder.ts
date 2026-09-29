@@ -201,7 +201,7 @@ export async function openFolder(opening: FolderOpening, base: FolderBase): Prom
     scopes: new FileSystemScopeStore(handle, diagnostics),
     repositories: { ...repositories, history: pushingAfterRecord(repositories.history, own) },
     folderSettings: new FileSystemFolderSettings(handle),
-    source: { kind: 'folder', name, root },
+    source: { provider: 'folder', name, key: root },
     own,
     ...(channel ? { changes: watching(channel, root, diagnostics) } : {}),
   }

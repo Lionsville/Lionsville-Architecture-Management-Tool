@@ -115,6 +115,8 @@ export type SourceOpen = (to: Destination) => void
  * something and of keeping a preference.
  */
 export type SourceChromeProps<Own = unknown> = {
+  /** Does this provider answer for the source that is open? */
+  current: boolean
   session?: ScopeSession
   /** What this provider handed with its parts, where its source is the one open. */
   own?: Own

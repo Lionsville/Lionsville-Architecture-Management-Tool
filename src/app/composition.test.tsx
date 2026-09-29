@@ -18,11 +18,12 @@ import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
 import { RecordingDiagnostics } from '../adapters/memory/RecordingDiagnostics'
 import { FakeDirectory } from '../adapters/folder/fakeDirectory'
 import { sampleScope, SAMPLE_PATH } from '../ports/ScopeStore.contract'
-import { IN_MEMORY } from '../platform/workingSource'
+const IN_MEMORY = { provider: 'memory', name: '', key: '', transient: true } as const
 import type { SourceProvider } from '../platform/sourceProvider'
 import {
   openSource, registerSourceProvider, registeredChrome, registeredConnects,
   registeredMenus, sourceAgentPanel, sourceChip, sourceChipFace, sourceChipPanel, sourceDescription, sourceProvider,
+  sourceSayings,
   type Shell, type SourceBase, type SourceParts,
 } from './composition'
 
@@ -70,7 +71,7 @@ describe('registerSourceProvider', () => {
       statusOf: (work) => (work.editedWhileSaving ? 'dirty' : work.status),
       open: ({ name }) => ({
         scopes: new InMemoryScopeStore(),
-        source: { kind: 'registered', provider: 'elsewhere', name, key: name, readOnly: true },
+        source: { provider: 'elsewhere', name, key: name, readOnly: true },
       }),
     }
     registerSourceProvider(provider)
@@ -80,7 +81,7 @@ describe('registerSourceProvider', () => {
     expect(found?.statusOf?.({ status: 'clean', editedWhileSaving: true })).toBe('dirty')
     expect(found?.statusOf?.({ status: 'saving', editedWhileSaving: false })).toBe('saving')
     expect((await found?.open({ name: 'Elsewhere' }, opening()))?.source)
-      .toEqual({ kind: 'registered', provider: 'elsewhere', name: 'Elsewhere', key: 'Elsewhere', readOnly: true })
+      .toEqual({ provider: 'elsewhere', name: 'Elsewhere', key: 'Elsewhere', readOnly: true })
   })
 
   /**
@@ -109,13 +110,13 @@ describe('openSource', () => {
       statusOf: (work) => (work.editedWhileSaving ? 'dirty' : work.status),
       open: ({ name }) => ({
         scopes: new InMemoryScopeStore(),
-        source: { kind: 'registered', provider: 'measured', name, key: name },
+        source: { provider: 'measured', name, key: name },
       }),
     })
 
     const parts = await openSource('measured', { name: 'Measured' }, opening())
 
-    expect(parts.source).toEqual({ kind: 'registered', provider: 'measured', name: 'Measured', key: 'Measured' })
+    expect(parts.source).toEqual({ provider: 'measured', name: 'Measured', key: 'Measured' })
     expect(parts.sourceStatus?.({ status: 'clean', editedWhileSaving: true })).toBe('dirty')
   })
 
@@ -138,7 +139,7 @@ describe('openSource', () => {
       kind: 'refusing',
       open: ({ name }) => ({
         scopes: new InMemoryScopeStore(),
-        source: { kind: 'registered', provider: 'refusing', name, key: name },
+        source: { provider: 'refusing', name, key: name },
         sourceFailure: (cause) => `${name} would not take it: ${String(cause)}.`,
       }),
     })
@@ -195,7 +196,7 @@ describe('what a provider is handed besides its own opening', () => {
         // The whole point of being handed the shell: the language, the theme
         // and which folder this machine uses stay where they were.
         preferences: base.shell?.preferences,
-        source: { kind: 'registered', provider: 'handed', name: 'Handed', key: 'one' },
+        source: { provider: 'handed', name: 'Handed', key: 'one' },
       }
     },
   }
@@ -241,7 +242,7 @@ describe('a provider that opens asynchronously', () => {
       await Promise.resolve()
       return {
         scopes: new InMemoryScopeStore(),
-        source: { kind: 'registered', provider: 'awaited', name, key: name, readOnly: true },
+        source: { provider: 'awaited', name, key: name, readOnly: true },
       }
     },
   })
@@ -249,7 +250,7 @@ describe('a provider that opens asynchronously', () => {
   it('is waited for, and what travels with its parts travels anyway', async () => {
     const parts = await openSource('awaited', { name: 'Awaited' }, opening())
     expect(parts.source).toEqual({
-      kind: 'registered', provider: 'awaited', name: 'Awaited', key: 'Awaited', readOnly: true,
+      provider: 'awaited', name: 'Awaited', key: 'Awaited', readOnly: true,
     })
     expect(parts.sourceStatus?.({ status: 'clean', editedWhileSaving: true })).toBe('dirty')
   })
@@ -289,7 +290,7 @@ describe('a source opened with a filling of the caller\u2019s own', () => {
     await parts.scopes!.save(sampleScope())
     expect(await parts.scopes!.models!()).toEqual([])
     expect((await parts.scopes!.load(SAMPLE_PATH))?.model.name).toBe('Application landscape')
-    expect(parts.source).toEqual({ kind: 'folder', name: 'Folder', root: 'folder' })
+    expect(parts.source).toEqual({ provider: 'folder', name: 'Folder', key: 'folder' })
   })
 
   it('hands the filling the store it fills, so an answer can fall back on the source\u2019s', async () => {
@@ -313,7 +314,7 @@ describe('a source opened with a filling of the caller\u2019s own', () => {
   it('refuses to fill a store the source did not bring', () => {
     registerSourceProvider({
       kind: 'storeless',
-      open: () => ({ source: { kind: 'registered', provider: 'storeless', name: 'Storeless', key: 'one' } }),
+      open: () => ({ source: { provider: 'storeless', name: 'Storeless', key: 'one' } }),
     })
     expect(() => openSource('storeless', undefined, opening(), { scopes: () => ({}) }))
       .toThrow(/nowhere to keep a scope/)
@@ -384,7 +385,7 @@ describe('registeredConnects', () => {
   it('has the folder offer another folder where one is already open', () => {
     const offer = registeredConnects().find((way) => way.kind === 'folder')?.connect.offer
     const location = { href: 'https://example.test/', search: '', hash: '' }
-    expect(offer?.({ source: { kind: 'folder', name: 'work', root: '/work' }, location }))
+    expect(offer?.({ source: { provider: 'folder', name: 'work', key: '/work' }, location }))
       .toEqual({ labelKey: 'picker.changeFolder' })
     expect(offer?.({ source: IN_MEMORY, location })).toBeUndefined()
   })
@@ -395,21 +396,21 @@ describe('registeredConnects', () => {
       connect: {
         labelKey: 'offering.connect',
         open: () => Promise.resolve(undefined),
-        offer: ({ source }) => (source.kind === 'registered' && source.provider === 'offering'
+        offer: ({ source }) => (source.provider === 'offering'
           ? null
           : { labelKey: 'offering.connectInstead' }),
       },
       open: () => ({
         scopes: new InMemoryScopeStore(),
-        source: { kind: 'registered', provider: 'offering', name: 'Offering', key: 'one' },
+        source: { provider: 'offering', name: 'Offering', key: 'one' },
       }),
     })
 
     const offer = registeredConnects().find((way) => way.kind === 'offering')?.connect.offer
     const location = { href: 'https://example.test/', search: '', hash: '' }
-    expect(offer?.({ source: { kind: 'registered', provider: 'offering', name: 'O', key: 'one' }, location }))
+    expect(offer?.({ source: { provider: 'offering', name: 'O', key: 'one' }, location }))
       .toBeNull()
-    expect(offer?.({ source: { kind: 'folder', name: 'work', root: '/work' }, location }))
+    expect(offer?.({ source: { provider: 'folder', name: 'work', key: '/work' }, location }))
       .toEqual({ labelKey: 'offering.connectInstead' })
   })
 })
@@ -434,16 +435,16 @@ describe('registeredChrome', () => {
       chrome: Strip,
       open: () => ({
         scopes: new InMemoryScopeStore(),
-        source: { kind: 'registered', provider: 'drawing', name: 'Drawing', key: 'one' },
+        source: { provider: 'drawing', name: 'Drawing', key: 'one' },
       }),
     })
 
     const drawn = registeredChrome()
     expect(drawn.find((entry) => entry.kind === 'drawing')?.chrome).toBe(Strip)
-    // The folder says what its remote answered; memory has nothing to say
-    // that the bar does not say for it.
+    // The folder says what its remote answered, and memory that nothing is kept.
     expect(drawn.map((entry) => entry.kind)).toContain('folder')
-    expect(drawn.map((entry) => entry.kind)).not.toContain('memory')
+    expect(drawn.map((entry) => entry.kind)).toContain('memory')
+    expect(drawn.map((entry) => entry.kind)).not.toContain('browserStorage')
   })
 
   /**
@@ -467,28 +468,36 @@ describe('sourceDescription', () => {
       describeKey: 'described.kept',
       open: () => ({
         scopes: new InMemoryScopeStore(),
-        source: { kind: 'registered', provider: 'described', name: 'Described', key: 'one' },
+        source: { provider: 'described', name: 'Described', key: 'one' },
       }),
     })
     expect(sourceDescription({
-      kind: 'registered', provider: 'described', name: 'Described', key: 'one',
+      provider: 'described', name: 'Described', key: 'one',
     })).toBe('described.kept')
   })
 
   /** Nothing to guess with, so nothing said: the chip then says only the name. */
   it('is nothing where the provider gave none, and nothing for a kind nobody registered', () => {
     expect(sourceDescription({
-      kind: 'registered', provider: 'handed', name: 'Handed', key: 'one',
+      provider: 'handed', name: 'Handed', key: 'one',
     })).toBeUndefined()
     expect(sourceDescription({
-      kind: 'registered', provider: 'nobody', name: 'Nobody', key: 'one',
+      provider: 'nobody', name: 'Nobody', key: 'one',
     })).toBeUndefined()
   })
 
   /** The three that ship have their sentences in this tree's own tables. */
-  it('says nothing about a built-in kind, whose sentence this tree holds', () => {
-    expect(sourceDescription(IN_MEMORY)).toBeUndefined()
-    expect(sourceDescription({ kind: 'folder', name: 'work', root: '/work' })).toBeUndefined()
+  it('is the provider\'s own sentence for the three that ship too, with what the chip and the home say', () => {
+    expect(sourceDescription(IN_MEMORY)).toBe('shell.sourceTipMemory')
+    expect(sourceDescription({ provider: 'folder', name: 'work', key: '/work' })).toBe('shell.sourceTipFolder')
+    expect(sourceSayings({ provider: 'folder', name: 'work', key: '/work' })).toEqual({
+      labelKey: 'shell.sourceFolder', whereKey: 'folder.where', removeKey: 'picker.deleteBodyFolder',
+    })
+    expect(sourceSayings({ provider: 'browserStorage', name: '', key: '' })).toEqual({
+      labelKey: 'shell.sourceBrowser', whereKey: 'browser.where', removeKey: 'picker.deleteBodyBrowser',
+    })
+    expect(sourceSayings(IN_MEMORY).labelKey).toBe('shell.sourceMemory')
+    expect(sourceSayings({ provider: 'nobody', name: 'x', key: 'x' })).toEqual({})
   })
 })
 
@@ -506,7 +515,7 @@ describe('registeredMenus', () => {
       menu: lines,
       open: () => ({
         scopes: new InMemoryScopeStore(),
-        source: { kind: 'registered', provider: 'lined', name: 'Lined', key: 'one' },
+        source: { provider: 'lined', name: 'Lined', key: 'one' },
       }),
     })
 
@@ -535,27 +544,27 @@ describe('sourceChip', () => {
       chip: named,
       open: () => ({
         scopes: new InMemoryScopeStore(),
-        source: { kind: 'registered', provider: 'named', name: 'Named', key: 'one' },
+        source: { provider: 'named', name: 'Named', key: 'one' },
       }),
     })
     expect(sourceChip({
-      kind: 'registered', provider: 'named', name: 'Named', key: 'one',
+      provider: 'named', name: 'Named', key: 'one',
     })).toBe(named)
   })
 
   /** Then the chip says the name the source was opened under, as it always has. */
   it('is nothing where the provider gave none, and nothing for a kind nobody registered', () => {
     expect(sourceChip({
-      kind: 'registered', provider: 'lined', name: 'Lined', key: 'one',
+      provider: 'lined', name: 'Lined', key: 'one',
     })).toBeUndefined()
     expect(sourceChip({
-      kind: 'registered', provider: 'nobody', name: 'Nobody', key: 'one',
+      provider: 'nobody', name: 'Nobody', key: 'one',
     })).toBeUndefined()
   })
 
   it('says nothing about a built-in kind, whose chip this tree has always said', () => {
     expect(sourceChip(IN_MEMORY)).toBeUndefined()
-    expect(sourceChip({ kind: 'folder', name: 'work', root: '/work' })).toBeUndefined()
+    expect(sourceChip({ provider: 'folder', name: 'work', key: '/work' })).toBeUndefined()
   })
 })
 
@@ -579,11 +588,11 @@ describe('sourceAgentPanel', () => {
       agentPanel: Panel,
       open: () => ({
         scopes: new InMemoryScopeStore(),
-        source: { kind: 'registered', provider: 'reachable', name: 'Reachable', key: 'one' },
+        source: { provider: 'reachable', name: 'Reachable', key: 'one' },
       }),
     })
     expect(sourceAgentPanel({
-      kind: 'registered', provider: 'reachable', name: 'Reachable', key: 'one',
+      provider: 'reachable', name: 'Reachable', key: 'one',
     })).toBe(Panel)
   })
 
@@ -594,9 +603,9 @@ describe('sourceAgentPanel', () => {
    */
   it('is nothing for a built-in kind, or a provider that gave none', () => {
     expect(sourceAgentPanel(IN_MEMORY)).toBeUndefined()
-    expect(sourceAgentPanel({ kind: 'folder', name: 'work', root: '/work' })).toBeUndefined()
+    expect(sourceAgentPanel({ provider: 'folder', name: 'work', key: '/work' })).toBeUndefined()
     expect(sourceAgentPanel({
-      kind: 'registered', provider: 'lined', name: 'Lined', key: 'one',
+      provider: 'lined', name: 'Lined', key: 'one',
     })).toBeUndefined()
   })
 })
@@ -617,13 +626,13 @@ describe('sourceChipPanel', () => {
       chipPanel: Panel,
       open: () => ({
         scopes: new InMemoryScopeStore(),
-        source: { kind: 'registered', provider: 'pressable', name: 'Pressable', key: 'one' },
+        source: { provider: 'pressable', name: 'Pressable', key: 'one' },
       }),
     })
-    expect(sourceChipPanel({ kind: 'registered', provider: 'pressable', name: 'Pressable', key: 'one' })).toBe(Panel)
+    expect(sourceChipPanel({ provider: 'pressable', name: 'Pressable', key: 'one' })).toBe(Panel)
     expect(sourceChipPanel(IN_MEMORY)).toBeUndefined()
-    expect(sourceChipPanel({ kind: 'folder', name: 'work', root: '/work' })).toBeUndefined()
-    expect(sourceChipPanel({ kind: 'registered', provider: 'lined', name: 'Lined', key: 'one' })).toBeUndefined()
+    expect(sourceChipPanel({ provider: 'folder', name: 'work', key: '/work' })).toBeUndefined()
+    expect(sourceChipPanel({ provider: 'lined', name: 'Lined', key: 'one' })).toBeUndefined()
   })
 })
 
@@ -639,13 +648,13 @@ describe('sourceChipFace', () => {
       chipFace: Face,
       open: () => ({
         scopes: new InMemoryScopeStore(),
-        source: { kind: 'registered', provider: 'faced', name: 'Faced', key: 'one' },
+        source: { provider: 'faced', name: 'Faced', key: 'one' },
       }),
     })
-    expect(sourceChipFace({ kind: 'registered', provider: 'faced', name: 'Faced', key: 'one' })).toBe(Face)
+    expect(sourceChipFace({ provider: 'faced', name: 'Faced', key: 'one' })).toBe(Face)
     expect(sourceChipFace(IN_MEMORY)).toBeUndefined()
-    expect(sourceChipFace({ kind: 'folder', name: 'work', root: '/work' })).toBeUndefined()
-    expect(sourceChipFace({ kind: 'registered', provider: 'lined', name: 'Lined', key: 'one' })).toBeUndefined()
+    expect(sourceChipFace({ provider: 'folder', name: 'work', key: '/work' })).toBeUndefined()
+    expect(sourceChipFace({ provider: 'lined', name: 'Lined', key: 'one' })).toBeUndefined()
   })
 })
 

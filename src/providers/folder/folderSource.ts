@@ -175,6 +175,10 @@ export async function chooseFolderDestination(): Promise<SourceDestination<Folde
 
 export const FOLDER_SOURCE: SourceProvider<FolderParts, FolderOpening, FolderBase> = {
   kind: 'folder',
+  labelKey: 'shell.sourceFolder',
+  describeKey: 'shell.sourceTipFolder',
+  whereKey: 'folder.where',
+  removeKey: 'picker.deleteBodyFolder',
   connect: {
     labelKey: 'picker.chooseFolder',
     firstLabelKey: 'folder.choose',
@@ -187,7 +191,7 @@ export const FOLDER_SOURCE: SourceProvider<FolderParts, FolderOpening, FolderBas
     // itself, and merely may be given one.
     required: () => desktopFiles() !== undefined,
     // Where a folder is already the source, what this offers is another one.
-    offer: ({ source }) => (source.kind === 'folder' ? { labelKey: 'picker.changeFolder' } : undefined),
+    offer: ({ source }) => (source.provider === 'folder' ? { labelKey: 'picker.changeFolder' } : undefined),
     resume: resumeFolder,
     remember: (preferences, opening) => withWorkingDirectory(preferences, opening.root),
     recent: async () => {

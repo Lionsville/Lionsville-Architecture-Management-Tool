@@ -51,7 +51,7 @@ import { detectBrowserLanguage, translator } from '../i18n'
 import {
   composeShell, desktopCommandChannel, openSource, overSource, registeredChrome, registeredConnects,
   registeredMenus, reloadWhenScriptsAreGone, sourceAgentPanel, sourceChip, sourceChipFace, sourceChipPanel,
-  sourceConnected, sourceDescription, sourceDestination, sourcePreferencesPanel, sourceRecentActivity,
+  sourceConnected, sourceDescription, sourceDestination, sourcePreferencesPanel, sourceRecentActivity, sourceSayings,
 } from './composition'
 import type { RegisteredConnect, Shell } from './composition'
 import type { SourceLocation, SourceRecent, SourceWayIn } from '../platform/sourceProvider'
@@ -448,6 +448,7 @@ function renderApp(
           preferencesPanel: sourcePreferencesPanel(shell.source),
           own: shell.own,
           historyNoteKey: shell.historyNoteKey,
+          sayings: sourceSayings(shell.source),
           sourceNeeded: sourceNeeded(),
           changes: shell.changes,
           destination: chooseDestination,

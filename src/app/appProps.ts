@@ -38,6 +38,13 @@ import type { PreferencesWriter } from './useShellPreferences'
 import type { ChooseDestination } from './workingFileFlows'
 import type { SourceChanges } from '../ports/ProviderParts'
 
+/** A provider's sentences about its source, as keys of its own table. */
+export type SourceSayings = {
+  readonly labelKey?: StringKey | (string & {})
+  readonly whereKey?: StringKey | (string & {})
+  readonly removeKey?: StringKey | (string & {})
+}
+
 /** What the composition root read before the first render, and what went wrong on the way. */
 export type AppBoot = {
   /** Read by the composition root before the first render, so this can be sync. */
@@ -239,6 +246,13 @@ export type AppProvider = {
   /** Where the open source keeps its history, in the provider's sentence (`ProviderParts.historyNoteKey`). */
   historyNoteKey?: string
   /**
+   * What the open source's provider calls a source of its kind, says of where
+   * everything is kept, and says removing a scope takes with it
+   * (`SourceProvider.labelKey`, `whereKey`, `removeKey`). Read from the
+   * registration by the boot.
+   */
+  sayings?: SourceSayings
+  /**
    * Work has nowhere to be kept here until a way in is taken (`SourceConnect.required`):
    * the first screen asks where it should live, and nothing else is drawn
    * until it is answered.
@@ -306,13 +320,12 @@ export type AppProps = {
   hostControls: HostControls
   boot: AppBoot
   /**
-   * What you are working from (ADR-0005): a folder by name, the browser's
-   * storage, or memory. `memory` means storage refused at boot — a private
-   * window, a strict policy — and nothing typed here will be there tomorrow.
-   * That is worth a standing notice rather than a toast, because it is true
-   * for the whole session and not an event within it; the top bar says it too.
+   * What you are working from (ADR-0005): which provider answers for it, what
+   * it is called, and whether it may be written and outlives the tab. What
+   * kind of place it is, the app never asks; the provider's own sentences
+   * about it arrive with `provider`.
    */
-  source?: WorkingSource
+  source: WorkingSource
   provider?: AppProvider
   host?: AppHost
   /**

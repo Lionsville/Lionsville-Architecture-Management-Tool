@@ -69,4 +69,16 @@ export const EN = {
   'picker.chooseFolder': 'Choose folder…',
   'picker.changeFolder': 'Work from another folder…',
   'shell.folderNotOpened': 'The folder could not be opened: {message}',
+  'shell.sourceFolder': 'Folder · {name}',
+  'shell.sourceBrowser': 'In this browser',
+  'shell.sourceMemory': 'Not kept anywhere',
+  'shell.sourceTipFolder': 'Your projects are files in this folder. Snapshots go into its history.',
+  'shell.sourceTipBrowser': 'Your projects are kept in this browser\'s storage. Save a working file to keep them anywhere else.',
+  'shell.sourceTipMemory': 'Nothing is being kept: storage refused. Save a working file before you close this tab.',
+  'picker.deleteBodyFolder': 'This deletes {name}, everything filed under it, and its folder on disk. A working file you saved elsewhere is not touched.',
+  'picker.deleteBodyBrowser': 'This deletes {name} and everything filed under it from this browser. A working file you saved elsewhere is not touched.',
+  /** The organisation's subtitle, first sentence: where everything here is kept. */
+  'folder.where': 'Everything here is kept as files in the folder above.',
+  'browser.where': 'Everything here is kept in this browser.',
+  'memory.where': 'Everything here is kept nowhere yet \u2014 save a working file to keep it.',
 } as const

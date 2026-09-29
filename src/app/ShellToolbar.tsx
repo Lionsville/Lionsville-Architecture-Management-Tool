@@ -95,68 +95,47 @@ function alarming(status: DocumentStatus, saveFailed: boolean): boolean {
 }
 
 /**
- * What the source is called on the bar. A folder by its name — the name is
- * what the person called it in their file manager, and the path is long.
- *
- * A registered source is called what its provider called it, with no word of
- * ours in front of it: only the provider knows what kind of place it is, and a
- * label invented here would be this shell guessing about somewhere it has
- * never heard of.
+ * What the source is called on the bar: its provider's word for a source of
+ * its kind (`SourceProvider.labelKey`) with the source's name in it — *Folder ·
+ * Architecture*, *In this browser* — or, where it gave none, the name alone.
+ * No word of ours in front of it: only the provider knows what kind of place
+ * it is, and a label invented here would be this shell guessing about
+ * somewhere it has never heard of.
  *
  * `chip` is that provider's word for it *now* (`platform/sourceProvider.ts`),
  * which is not always the word the source was opened under: a source somebody
- * has to be known to before it answers anything is called the name it was given
- * at the handshake, and the person can sign out of it without the source
- * changing. So the chip wins where a provider gave one, and `name` is what is
- * left where it did not. A built-in kind reads neither.
+ * has to be known to before it answers anything is called the name it was
+ * given at the handshake, and the person can sign out of it without the source
+ * changing. So the chip wins where a provider gave one.
  */
-export function sourceLabel(source: WorkingSource, s: Translate, chip?: SourceChip): string {
-  switch (source.kind) {
-    case 'folder': return s('shell.sourceFolder', { name: source.name })
-    case 'browserStorage': return s('shell.sourceBrowser')
-    case 'memory': return s('shell.sourceMemory')
-    case 'registered': return chip?.label ?? source.name
-  }
+export function sourceLabel(
+  source: WorkingSource, s: Translate, chip?: SourceChip, labelKey?: StringKey | (string & {}),
+): string {
+  if (chip) return chip.label
+  return labelKey ? s(labelKey as StringKey, { name: source.name }) : source.name
 }
 
 /**
  * What the chip says when you hover it: where this actually keeps things, and
- * what that costs you.
- *
- * Beside {@link sourceLabel} because the two answer one question between them,
- * and the organisation's bar and the workspace's must not drift on it.
- *
- * A sentence per built-in kind, because this tree knows what a folder and a
- * browser's storage are and what each of them costs. For a registered source it
- * is the provider's own sentence or nothing at all: `describeKey`, from the
- * registration (`platform/sourceProvider.ts`), in the provider's own table.
- * Nothing rather than a sentence of ours for the reason the LABEL is the
- * provider's — a guess about somewhere this shell has never heard of could
- * promise a copy that cannot be made or a folder that does not exist, and a chip
- * that only says where work is kept is already true.
+ * what that costs you — the provider's word about this moment first, then its
+ * standing sentence (`describeKey`). A chip that has just been renamed to
+ * somebody's name has something else to say on hover than the registration
+ * does, and a provider that only renamed it said nothing new and keeps the
+ * sentence. Nothing rather than a sentence of ours: a guess about somewhere
+ * this shell has never heard of could promise a copy that cannot be made.
  */
 export function sourceTipKey(
-  source: WorkingSource, describeKey?: StringKey | (string & {}), chip?: SourceChip,
+  describeKey?: StringKey | (string & {}), chip?: SourceChip,
 ): StringKey | (string & {}) | undefined {
-  switch (source.kind) {
-    case 'folder': return 'shell.sourceTipFolder'
-    case 'memory': return 'shell.sourceTipMemory'
-    case 'browserStorage': return 'shell.sourceTipBrowser'
-    // The provider's word about this moment first, then its standing sentence
-    // about where work is kept: a chip that has just been renamed to somebody's
-    // name has something else to say on hover than the registration does, and a
-    // provider that only renamed it said nothing new and keeps the sentence.
-    case 'registered': return chip?.tipKey ?? describeKey
-  }
+  return chip?.tipKey ?? describeKey
 }
 
 /**
  * The one source that says *nothing here will outlive this tab*, and is drawn
- * in the warning colour for it. A registered source that cannot keep anything
- * would be a provider nobody would register.
+ * in the warning colour for it.
  */
 export function sourceIsAlarming(source: WorkingSource): boolean {
-  return source.kind === 'memory'
+  return source.transient === true
 }
 
 /**
@@ -166,6 +145,8 @@ export function sourceIsAlarming(source: WorkingSource): boolean {
 export type ToolbarChip = {
   source: WorkingSource
   describeKey?: StringKey | (string & {})
+  /** The provider's word for a source of its kind (`sourceLabel`). */
+  labelKey?: StringKey | (string & {})
   chip?: SourceChip
   /**
    * The provider's panel (`App`'s `SourceChipPanel`), already inside its
@@ -191,15 +172,15 @@ export type ToolbarChip = {
  * happens to have a handler. A span with an `onClick` here would be dead
  * surface that drags the window instead.
  */
-export function SourceChipView({ source, describeKey, chip, panel, face, s }: ToolbarChip & { s: Translate }) {
+export function SourceChipView({ source, describeKey, labelKey, chip, panel, face, s }: ToolbarChip & { s: Translate }) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
   const presses = chip?.onClick !== undefined || panel !== undefined
   const press = (event: MouseEvent<HTMLElement>) => {
     chip?.onClick?.()
     if (panel) setAnchor(event.currentTarget)
   }
-  const tip = sourceTipKey(source, describeKey, chip)
-  const label = sourceLabel(source, s, chip)
+  const tip = sourceTipKey(describeKey, chip)
+  const label = sourceLabel(source, s, chip, labelKey)
   if (face) {
     return (
       <>
@@ -232,7 +213,7 @@ export function SourceChipView({ source, describeKey, chip, panel, face, s }: To
             cursor: presses ? 'pointer' : undefined,
           }}
         >
-          {sourceLabel(source, s, chip)}
+          {label}
         </Typography>
       </Tooltip>
       {panel && <ChipPanelPopover anchor={anchor} onClose={() => setAnchor(null)} panel={panel} />}

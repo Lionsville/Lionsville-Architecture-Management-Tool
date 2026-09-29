@@ -130,7 +130,7 @@ describe('the ways in a provider offers', () => {
           way({ kind: 'throws', offer: () => { throw new Error('no') } }),
         ],
       },
-      source: { kind: 'browserStorage' },
+      source: { provider: 'browserStorage', name: '', key: '' },
       diagnostics: { report, recent: () => [] },
       openSomewhere: vi.fn(),
     }))
