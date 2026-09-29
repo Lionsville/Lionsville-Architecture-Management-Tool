@@ -91,13 +91,27 @@ const KEPT_WHILE_HELD: ReadonlySet<HostCommand['type']> = new Set<HostCommand['t
 ])
 const held: HostCommand[] = []
 let listening = false
+/**
+ * The page that said it listens, where it said who it is: only its going
+ * holds commands again, so a window left behind with a dead renderer, closed
+ * after another was made, does not deafen the one that listens.
+ */
+let listener: Listener | undefined
+
+type Listener = Pick<WebContents, 'send' | 'isDestroyed'>
 
 /** Hold commands for this window until its page says it listens, and again whenever that page goes. */
 export function holdUntilHeard(contents: Pick<WebContents, 'on'>): void {
   listening = false
-  contents.on('did-navigate', () => { listening = false })
-  contents.on('render-process-gone', () => { listening = false })
-  contents.on('destroyed', () => { listening = false })
+  listener = undefined
+  const gone = () => {
+    if (listener !== undefined && listener !== (contents as unknown)) return
+    listening = false
+    listener = undefined
+  }
+  contents.on('did-navigate', gone)
+  contents.on('render-process-gone', gone)
+  contents.on('destroyed', gone)
 }
 
 /** Does the window listen now? Main's documents wait on the same answer. */
@@ -117,14 +131,19 @@ export function sendCommand(command: HostCommand): void {
     if (held.length < HELD_AT_MOST && KEPT_WHILE_HELD.has(command.type)) held.push(command)
     return
   }
+  if (listener && !listener.isDestroyed()) {
+    listener.send('app:command', command)
+    return
+  }
   const all = webContents.getAllWebContents().filter((open) => !open.isDestroyed())
   const target = all.find((open) => open.isFocused()) ?? all[0]
   target?.send('app:command', command)
 }
 
-/** Something in the window listens now: what was held goes to it, in the order it was sent. */
-export function commandsHeard(): void {
+/** Something in a window listens now — `by`, where it says which: what was held goes to it, in the order it was sent. */
+export function commandsHeard(by?: Listener): void {
   listening = true
+  listener = by
   for (const command of held.splice(0)) sendCommand(command)
 }
 

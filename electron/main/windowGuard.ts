@@ -21,20 +21,56 @@
  * **A dead renderer is a window that will never paint again.** Without a word
  * it stays on screen showing the last frame it managed, and the only way to
  * tell it apart from a very slow app is to wait indefinitely.
+ *
+ * **What it holds unsaved is its own.** Each window's page says so over
+ * `app:unsaved` ({@link reportUnsaved}), and it is forgotten when the page is
+ * replaced or the window goes: a flag left from a window closed anyway, or a
+ * renderer that died, would hold the next window's close for a save nobody
+ * owes and then say it failed.
+ *
+ * **What its page says reaches the log.** The desktop half of the diagnostics
+ * port: the shell reports through `ConsoleDiagnostics`, which writes a
+ * `[lvarch]` line, and that line lands in the log file without an IPC channel
+ * having to exist for it. Filtered, for two reasons: `info` and `debug` from
+ * libraries we do not own is noise that would push the crash off the end of
+ * the file, and it is the one place model content could reach the log, since
+ * a third-party `console.log` may carry anything it likes. Our own lines and
+ * anything at warning or above get through — see the note at the top of
+ * `log.ts`. Under `--smoke`, everything else is said on stderr too: a blank
+ * window with a passing process is the failure mode the smoke exists to catch,
+ * and it is indistinguishable from success without it.
  */
 import type { BrowserWindow, Dialog } from 'electron'
 
 /** How long a close waits for the save it asked for before asking the person. */
 export const SAVE_BEFORE_CLOSE_MS = 5_000
 
+/**
+ * What the renderer's own diagnostics lines start with
+ * (`adapters/browser/ConsoleDiagnostics.ts`). Spelled out rather than imported:
+ * this bundle compiles against Node and the DOM adapter it lives in does not.
+ */
+export const RENDERER_LOG_PREFIX = '[lvarch]'
+
 /** As much of a window as its guards use. */
 export type GuardedWindow = Pick<BrowserWindow, 'on' | 'close' | 'isDestroyed'> & {
   webContents: Pick<BrowserWindow['webContents'], 'on' | 'reload'>
 }
 
+/** Per page, whether it holds work closing would lose; a page not heard from holds none. */
+const unsavedIn = new WeakMap<object, boolean>()
+
+/** A page said whether it holds work that closing would lose (`app:unsaved`). */
+export function reportUnsaved(contents: object, unsaved: boolean): void {
+  unsavedIn.set(contents, unsaved)
+}
+
+/** Windows that can still answer: neither gone, nor showing a renderer that died. */
+export function liveWindows(windows: readonly Pick<BrowserWindow, 'isDestroyed' | 'webContents'>[]): number {
+  return windows.filter((one) => !one.isDestroyed() && !one.webContents.isCrashed()).length
+}
+
 export type WindowGuardDeps = {
-  /** Does the window hold work that closing would lose? The renderer says, over `app:unsaved`. */
-  unsaved: () => boolean
   /** Ask the window to write now. */
   save: () => void
   /** Under `--smoke`, where nobody is there to answer. */
@@ -42,10 +78,20 @@ export type WindowGuardDeps = {
   dialog: Pick<Dialog, 'showMessageBox' | 'showMessageBoxSync'>
   log: (where: string, line: string) => void
   logFile: () => string
+  /** Where a smoke run says what the page said that the log file leaves out. */
+  echo: (line: string) => void
 }
 
 export function guardWindow(window: GuardedWindow, deps: WindowGuardDeps): void {
-  guardUnsavedWork(window, deps)
+  const { webContents: page } = window
+  const unsaved = () => unsavedIn.get(page) === true
+  // A page replaced, or a renderer gone, holds nothing any more.
+  const forget = () => { unsavedIn.delete(page) }
+  page.on('did-navigate', forget)
+  page.on('render-process-gone', forget)
+  page.on('destroyed', forget)
+  guardUnsavedWork(window, unsaved, deps)
+  relayConsole(window, deps)
   // A load that neither finishes nor fails is the hardest thing to read from
   // outside the process: no window, no error, no exit. Say what went wrong.
   window.webContents.on('did-fail-load', (_event, code, description, url) => {
@@ -67,16 +113,27 @@ export function guardWindow(window: GuardedWindow, deps: WindowGuardDeps): void 
   })
 }
 
-function guardUnsavedWork(window: GuardedWindow, deps: WindowGuardDeps): void {
+function relayConsole(window: GuardedWindow, deps: WindowGuardDeps): void {
+  window.webContents.on('console-message', (event) => {
+    const ours = event.message.startsWith(RENDERER_LOG_PREFIX)
+    if (ours || event.level === 'warning' || event.level === 'error') {
+      deps.log(`renderer[${event.level}]`, event.message)
+      return
+    }
+    if (deps.unattended) deps.echo(`renderer[${event.level}] ${event.message}`)
+  })
+}
+
+function guardUnsavedWork(window: GuardedWindow, unsaved: () => boolean, deps: WindowGuardDeps): void {
   let letting = false
   window.on('close', (event) => {
-    if (letting || !deps.unsaved() || deps.unattended) return
+    if (letting || !unsaved() || deps.unattended) return
     event.preventDefault()
     deps.save()
 
     const deadline = Date.now() + SAVE_BEFORE_CLOSE_MS
     const poll = setInterval(() => {
-      if (!deps.unsaved()) {
+      if (!unsaved()) {
         clearInterval(poll)
         letting = true
         window.close()

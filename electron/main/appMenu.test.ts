@@ -155,4 +155,19 @@ describe('the commands main sends the window', () => {
     menu.sendCommand(reopen)
     expect(sent).toEqual([])
   })
+
+  it('stays with the window that listens when one left behind with a dead renderer goes', async () => {
+    const menu = await fresh()
+    const dead = contents()
+    menu.holdUntilHeard(dead as never)
+    dead.raise('render-process-gone')
+    const again = contents()
+    const toAgain: HostCommand[] = []
+    menu.holdUntilHeard(again as never)
+    menu.commandsHeard({ send: (_channel: string, command: HostCommand) => { toAgain.push(command) }, isDestroyed: () => false } as never)
+    dead.raise('destroyed')
+    expect(menu.commandsListened()).toBe(true)
+    menu.sendCommand(save)
+    expect(toAgain).toEqual([save])
+  })
 })

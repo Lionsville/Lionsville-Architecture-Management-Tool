@@ -27,7 +27,7 @@ import { pathToFileURL } from 'node:url'
 import { basename } from 'node:path'
 import { readFile } from 'node:fs/promises'
 import { openedDocuments } from './openedDocuments'
-import { guardWindow, windowsOf } from './windowGuard'
+import { guardWindow, liveWindows, reportUnsaved, windowsOf } from './windowGuard'
 import { commandsHeard, commandsListened, holdUntilHeard, installAppMenu, reportScopeOpen, reportTheme, sendCommand } from './appMenu'
 import { productName } from '../../package.json'
 import { isThemeMode } from '../../src/platform/theme'
@@ -213,13 +213,6 @@ function createWindow(): BrowserWindow {
 const RENDERER_URL = process.env['ELECTRON_RENDERER_URL'] ?? `${APP_ORIGIN}/`
 
 /**
- * What the renderer's own diagnostics lines start with
- * (`adapters/browser/ConsoleDiagnostics.ts`). Spelled out rather than imported:
- * this bundle compiles against Node and the DOM adapter it lives in does not.
- */
-const RENDERER_LOG_PREFIX = '[lvarch]'
-
-/**
  * The smoke run has nobody in front of it. A modal dialog there is not a
  * message, it is a hang — the run waits for a click that never comes and the
  * gate reports a timeout instead of the failure it actually found.
@@ -294,15 +287,6 @@ if (UNATTENDED) {
 }
 
 
-/**
- * Does the window have work in it that closing would lose?
- *
- * Told by the renderer whenever it changes, because only the renderer knows —
- * and asking at close time would be a round trip inside an event that has to
- * decide synchronously whether to let the window go.
- */
-let unsaved = false
-
 /** A `.lvarch` among the arguments — how Windows and Linux say "open this". */
 function documentIn(argv: readonly string[]): string | undefined {
   return argv.slice(1).find((held) => held.toLowerCase().endsWith('.lvarch'))
@@ -333,7 +317,7 @@ function sendDocument(path: string): void {
 const documents = openedDocuments({
   listening: commandsListened,
   ready: () => app.isReady(),
-  windowOpen: () => BrowserWindow.getAllWindows().length > 0,
+  windowOpen: () => liveWindows(BrowserWindow.getAllWindows()) > 0,
   makeWindow: () => windowAgain(),
   send: sendDocument,
 })
@@ -427,7 +411,10 @@ void app.whenReady().then(() => {
 
   // Said by the preload the moment anything subscribes. Everything the OS
   // handed us before that has been waiting.
-  ipcMain.handle('app:unsaved', (_event, held: unknown) => { unsaved = held === true })
+  // Whether a window holds work closing would lose, told by its page whenever
+  // that changes — only the page knows, and asking at close time would be a
+  // round trip inside an event that has to decide at once (`windowGuard.ts`).
+  ipcMain.handle('app:unsaved', (event, held: unknown) => { reportUnsaved(event.sender, held === true) })
 
   // The second fact the renderer reports, so the View menu's radio is right.
   ipcMain.handle('app:theme', (_event, held: unknown) => { if (isThemeMode(held)) reportTheme(held) })
@@ -435,8 +422,8 @@ void app.whenReady().then(() => {
   ipcMain.handle('app:scopeOpen', (_event, held: unknown) => { reportScopeOpen(held === true) })
 
   // The held commands first, then the documents: see `appMenu.ts`.
-  ipcMain.handle('app:listening', () => {
-    commandsHeard()
+  ipcMain.handle('app:listening', (event) => {
+    commandsHeard(event.sender)
     documents.heard()
   })
 
@@ -446,31 +433,10 @@ void app.whenReady().then(() => {
 
   const mainWindow = windows.first()
 
-  // The renderer's console, relayed. This is the desktop half of the
-  // diagnostics port: the shell reports through `ConsoleDiagnostics`, which
-  // writes a `[lvarch]` line, and that line lands in the log file without an
-  // IPC channel having to exist for it.
-  //
-  // Filtered, for two reasons. `info` and `debug` from libraries we do not own
-  // is noise that would push the crash off the end of the file; and it is the
-  // one place model content could reach the log, since a third-party
-  // `console.log` may carry anything it likes. Our own lines and anything at
-  // warning or above get through — see the note at the top of `log.ts`.
-  mainWindow.webContents.on('console-message', (event) => {
-    const ours = event.message.startsWith(RENDERER_LOG_PREFIX)
-    if (!ours && event.level !== 'warning' && event.level !== 'error') return
-    log(`renderer[${event.level}]`, event.message)
-  })
-
-  // Under --smoke, say everything the renderer said, filter or no filter. A
-  // blank window with a passing process is the failure mode this whole phase
-  // exists to catch, and it is indistinguishable from success without this.
+  // Every request that failed, in the log: the session is the app's one, so
+  // this hears every window's (the console relay is each window's own, in
+  // `windowGuard.ts`).
   if (UNATTENDED) {
-    mainWindow.webContents.on('console-message', (event) => {
-      if (event.message.startsWith(RENDERER_LOG_PREFIX)) return // already logged above
-      if (event.level === 'warning' || event.level === 'error') return
-      process.stderr.write(`renderer[${event.level}] ${event.message}\n`)
-    })
     mainWindow.webContents.session.webRequest.onErrorOccurred(({ url, error }) => {
       log('renderer', `request failed ${error} ${url}`)
     })
@@ -510,11 +476,11 @@ function fatal(during: string, error: unknown): void {
 const windows = windowsOf({
   make: createWindow,
   guard: (window) => guardWindow(window, {
-    unsaved: () => unsaved, save: () => sendCommand({ type: 'save' }), unattended: UNATTENDED,
-    dialog, log, logFile: logFilePath,
+    save: () => sendCommand({ type: 'save' }), unattended: UNATTENDED,
+    dialog, log, logFile: logFilePath, echo: (line) => { process.stderr.write(`${line}\n`) },
   }),
   load: (window) => window.loadURL(RENDERER_URL),
-  open: () => BrowserWindow.getAllWindows().length,
+  open: () => liveWindows(BrowserWindow.getAllWindows()),
   failed: fatal,
 })
 
