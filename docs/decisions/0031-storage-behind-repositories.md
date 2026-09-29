@@ -1185,6 +1185,28 @@ hand.
 - **A source with more to say says it.** A provider may give the notice's
   sentence (`SourceProvider.unreadableKey`); the folder's names the file a
   person can mend.
+- **Only when asked, never over newer work, and never losing what was
+  there** (the same day, after review):
+  - A put back is a replace that says a person asked for it
+    (`scope.replace` with `putBack`). Any other replace — a working file
+    landed, an example copied, *keep mine* — is refused on such a scope like
+    any step, so nothing lands there that nobody asked to put there.
+  - A scope a later version wrote (`ScopeState.later`) takes no step at all,
+    a put back included (`shell.laterNotReplaced`): what this version cannot
+    read is somebody's newer work. The notice says to update the app and
+    offers no way back. The folder does not open such a scope at all.
+  - Before a put back lands, the implementation keeps what was there, the
+    parts it could not read included, or refuses. Memory and browser storage
+    close an entry of the scope as it stood, its content kept beside the
+    entry as it was stored. The folder sets every file of the format it would
+    write over or remove that did not read aside beside itself
+    (`<name>.unread`), with or without a history, and says where
+    (`Applied.setAside`); a file whose bytes will not come refuses the write.
+    So *Bring in a working file* on a folder with no history no longer loses
+    the file the same notice says can be mended.
+  - An example lands under a scope of its own where the root could not be
+    read whole, or the listing could not read a scope: what could not be
+    read may be anything.
 
 ## As built, 29 September 2026: the examples in the domain
 
