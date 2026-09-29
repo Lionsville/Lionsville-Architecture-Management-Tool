@@ -276,13 +276,14 @@ export class FolderScopeRepository implements ScopeRepository {
         const same = read.library.find((kept) => kept.entry.contentAddress === entry.contentAddress && there.has(kept.file))
         const bytes = this.staging.get(id, entry.contentAddress)
           ?? (same ? await bytesAt(this.folder.root, picturePath(address, same.file)) : undefined)
-        if (bytes) await writeAt(this.folder.root, picturePath(address, file), bytes)
+        if (!bytes) continue
+        await writeAt(this.folder.root, picturePath(address, file), bytes)
+        await this.folder.written(address, file, entry)
       }
       for (const file of there) if (!wanted.has(file)) await removeAt(this.folder.root, picturePath(address, file))
     } catch (cause) {
       this.folder.diagnostics?.report({ level: 'warn', where: 'folder', message: `a picture could not be kept: ${reasonOf(cause)}`, cause })
     }
-    this.folder.forget(address)
   }
 
   create(at: ScopeAddress, scope: NewScope): Promise<Created | Refused> {

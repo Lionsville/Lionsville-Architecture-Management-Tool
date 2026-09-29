@@ -46,6 +46,7 @@ function channel(): DesktopFiles {
     write: vi.fn(() => Promise.resolve({ mtimeMs: 1, size: 1, sha256: 'x' })),
     writeTogether: () => Promise.resolve([]),
     remove: () => Promise.resolve(),
+    stamp: () => Promise.resolve(undefined),
     move: () => Promise.resolve(),
     fingerprint: () => Promise.resolve(undefined),
     revealInFolder: () => Promise.resolve(),

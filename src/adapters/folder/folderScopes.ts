@@ -38,9 +38,10 @@ import type { Diagnostics } from '../../ports/Diagnostics'
 import type { DirectoryHandleLike } from './DirectoryHandle'
 import { FileSystemScopeStore } from './FileSystemScopeStore'
 import type { ScopeHeader } from './FileSystemScopeStore'
-import { libraryOf, LIBRARY_KEY, pictureFiles, pictureStamps, rowsOf } from './folderPictures'
-import type { KeptPicture, PictureFile } from './folderPictures'
-import { bytesAt, filesUnder, folderAt, textAt } from './handles'
+import { libraryOf, LIBRARY_KEY, pictureFiles, pictureStamps, rowsOf, sameStamp, stampsInMemory } from './folderPictures'
+import type { Described, KeptPicture, PictureFile, PictureStamp, RowPicture, StampCache } from './folderPictures'
+import { bytesAt, fileAt, filesUnder, folderAt, textAt } from './handles'
+import type { FileHandleLike } from './DirectoryHandle'
 import { imageEntryOf } from '../../model/imageEntry'
 import { namesInDocuments, PICTURES } from './imageLibrary'
 import { SCOPE_FILE } from '../../projects/folderFormat'
@@ -72,6 +73,13 @@ export type ReadScope = {
   files: PictureFile[]
   /** The format's own revision, which a save by the folder store expects. */
   stored?: string
+}
+
+/** What a file is, as its handle says without its bytes being read. */
+async function stampOf(handle: FileHandleLike): Promise<PictureStamp | undefined> {
+  if (handle.stamp) return handle.stamp()
+  const file = await handle.getFile().catch(() => undefined)
+  return file ? { size: file.size, lastModified: file.lastModified } : undefined
 }
 
 /** A header parsed as the object it is, or nothing. */
@@ -134,8 +142,10 @@ export function placesInMemory(): PlaceStore {
 
 export class FolderScopes {
   readonly store: FileSystemScopeStore
-  /** Entries made from a file's bytes, by where the file is: a file is read once for its entry. */
-  private readonly described = new Map<string, ImageEntry>()
+  /** What this machine found each picture to be, by scope folder and file, at the stamp it had: read from `stamps` once. */
+  private described: Map<string, Described> | undefined
+  /** Whether `described` changed since it was last kept. */
+  private unkept = false
   /** Where each identity was last found, so reading one scope does not walk the tree. */
   private readonly found = new Map<ScopeId, ScopeAddress>()
   private queue: Promise<unknown> = Promise.resolve()
@@ -146,6 +156,7 @@ export class FolderScopes {
     readonly root: DirectoryHandleLike,
     readonly diagnostics?: Pick<Diagnostics, 'report'>,
     private readonly places: PlaceStore = placesInMemory(),
+    private readonly stamps: StampCache = stampsInMemory(),
   ) {
     this.store = new FileSystemScopeStore(root, diagnostics, 'apart')
   }
@@ -256,21 +267,16 @@ export class FolderScopes {
     const files = (await filesUnder(folder, (name) => name.startsWith('.')))
       .filter(({ path }) => !path.split('/').some((segment) => segment.startsWith('.')))
       .filter(({ path }) => imageMediaType(path) !== undefined)
-    // What each file is, as the handle says it without handing its bytes over:
-    // the desktop's fingerprint where main reads it, a browser's lazy `File`.
+    // What each file is, as the handle says it without its bytes being read:
+    // main's look at the file on the desktop, a browser's lazy `File`.
     return Promise.all(files.map(async ({ path, handle }): Promise<PictureFile> => {
-      const stamp: { size: number; sha256?: string } | undefined = handle.stamp
-        ? await handle.stamp()
-        : await handle.getFile().then((file) => ({ size: file.size }))
-      return { file: path, ...(stamp ? { size: stamp.size } : {}), ...(stamp?.sha256 ? { sha256: stamp.sha256 } : {}) }
+      const stamp = await stampOf(handle)
+      return { file: path, ...(stamp ? { stamp, size: stamp.size } : {}) }
     }))
   }
 
   /** The entry for a file no row names, from its bytes — read once, and remembered by where the file is. */
   private async describe(address: ScopeAddress, file: PictureFile, name: ImageName): Promise<ImageEntry | undefined> {
-    const key = `${address}\u0000${file.file}\u0000${name}`
-    const known = this.described.get(key)
-    if (known) return known
     // One picture that will not read is left out of the library and said; the rest of the scope reads.
     const bytes = await bytesAt(this.root, scopeFilePath(address, `${PICTURES}/${file.file}`)).catch((cause: unknown) => {
       this.diagnostics?.report({ level: 'warn', where: 'folder', message: 'a picture could not be read', cause })
@@ -278,16 +284,65 @@ export class FolderScopes {
     })
     if (!bytes) return undefined
     const entry = await imageEntryOf(name, bytes)
-    this.described.set(key, entry)
+    if (file.stamp) this.note(address, file.file, file.stamp, entry)
     return entry
+  }
+
+  /** What this machine has described, read once from where it is kept. */
+  private async stamped(): Promise<Map<string, Described>> {
+    this.described ??= new Map(Object.entries(await this.stamps.read().catch(() => undefined) ?? {}))
+    return this.described
+  }
+
+  /** A picture found to be an entry at a stamp, remembered on this machine. */
+  private note(address: ScopeAddress, file: string, stamp: PictureStamp, entry: ImageEntry): void {
+    this.described?.set(`${address}\u0000${file}`, {
+      ...stamp, contentAddress: entry.contentAddress, width: entry.width, height: entry.height,
+    })
+    this.unkept = true
+  }
+
+  /** What this machine has described, kept where it is kept, where it changed. */
+  private async keepStamps(): Promise<void> {
+    if (!this.unkept || !this.described) return
+    this.unkept = false
+    await this.stamps.write(Object.fromEntries(this.described)).catch((cause: unknown) => {
+      this.diagnostics?.report({ level: 'warn', where: 'folder', message: 'what was found of the pictures could not be kept', cause })
+    })
+  }
+
+  /** A scope's library from its rows and the files in its pictures folder, as this machine knows them. */
+  private async libraryFrom(address: ScopeAddress, rows: RowPicture[], files: PictureFile[]): Promise<KeptPicture[]> {
+    const described = await this.stamped()
+    const library = await libraryOf(rows, {
+      files,
+      describe: (file, name) => this.describe(address, file, name),
+      seen: (file) => {
+        const held = described.get(`${address}\u0000${file.file}`)
+        if (!held || !file.stamp) return undefined
+        return sameStamp(held, file.stamp) ? { unchanged: held } : { changed: true }
+      },
+      trust: (file, entry) => {
+        if (file.stamp) this.note(address, file.file, file.stamp, entry)
+      },
+    })
+    await this.keepStamps()
+    return library
+  }
+
+  /** A picture just written, remembered at the stamp it has now, so the next read need not read it. */
+  async written(address: ScopeAddress, file: string, entry: ImageEntry): Promise<void> {
+    const handle = await fileAt(this.root, scopeFilePath(address, `${PICTURES}/${file}`))
+    const stamp = handle ? await stampOf(handle) : undefined
+    await this.stamped()
+    if (stamp) this.note(address, file, stamp, entry)
+    await this.keepStamps()
   }
 
   /** A scope's picture library as its folder holds it now. */
   async libraryOf(address: ScopeAddress, snapshot: ScopeSnapshot | undefined): Promise<{ library: KeptPicture[]; files: PictureFile[] }> {
     const files = await this.pictureFilesOf(address)
-    const library = await libraryOf(rowsOf(snapshot?.carried?.[LIBRARY_KEY]), {
-      files, describe: (file, name) => this.describe(address, file, name),
-    })
+    const library = await this.libraryFrom(address, rowsOf(snapshot?.carried?.[LIBRARY_KEY]), files)
     return { library, files }
   }
 
@@ -296,9 +351,7 @@ export class FolderScopes {
     const node = await this.resolve(id)
     if (!node) return undefined
     const files = await this.pictureFilesOf(node.address)
-    const library = await libraryOf(rowsOf(node.header[LIBRARY_KEY]), {
-      files, describe: (file, name) => this.describe(node.address, file, name),
-    })
+    const library = await this.libraryFrom(node.address, rowsOf(node.header[LIBRARY_KEY]), files)
     return { node, library }
   }
 
@@ -315,9 +368,14 @@ export class FolderScopes {
     return { node, state, snapshot, library, files, ...(snapshot?.revision !== undefined ? { stored } : {}) }
   }
 
-  /** Forget what was described of a scope's pictures: its folder has been written. */
+  /** Forget what was described of a scope's pictures: its folder has moved or gone. */
   forget(address: ScopeAddress): void {
-    for (const key of this.described.keys()) if (key.startsWith(`${address}\u0000`)) this.described.delete(key)
+    for (const key of this.described?.keys() ?? []) {
+      if (key.startsWith(`${address}\u0000`) || key.startsWith(`${address}/`)) {
+        this.described!.delete(key)
+        this.unkept = true
+      }
+    }
   }
 }
 

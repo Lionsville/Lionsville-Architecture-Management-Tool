@@ -16,7 +16,7 @@ import { chmod, mkdir, mkdtemp, readdir, readFile, realpath, rm, symlink, writeF
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
-  fingerprint, listDirectory, makeDirectory, moveEntry, readFile as readInside, removeEntry, resolveInside,
+  fingerprint, listDirectory, makeDirectory, moveEntry, readFile as readInside, removeEntry, resolveInside, stampAt,
   safeRelativePath, writeFile as writeInside, writeTogether,
 } from './fileStore'
 
@@ -162,6 +162,20 @@ describe('what the channel does with a folder', () => {
  * staged beside every target first, then moved into place, so the renderer
  * going away part way cannot leave half an organisation.
  */
+describe('a file looked at without reading it', () => {
+  it('says its size, when it was written and its number on the disk, and nothing for a folder or what is not there', async () => {
+    await writeFile(join(root, 'map.png'), 'abc')
+    const stamp = await stampAt(root, 'map.png')
+    expect(stamp?.size).toBe(3)
+    expect(stamp?.inode).toBeGreaterThan(0)
+    expect(stamp?.lastModified).toBeGreaterThan(0)
+    await mkdir(join(root, 'acme'))
+    expect(await stampAt(root, 'acme')).toBeUndefined()
+    expect(await stampAt(root, 'none.png')).toBeUndefined()
+    expect(await stampAt(root, '../escape')).toBeUndefined()
+  })
+})
+
 describe('a folder moved as one rename', () => {
   it('moves everything in it, links and empty folders included, the folders on the way made', async () => {
     await mkdir(join(root, 'acme', 'empty'), { recursive: true })

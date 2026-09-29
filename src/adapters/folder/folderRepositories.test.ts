@@ -17,10 +17,11 @@ import type { RepositoriesUnderTest } from '../../ports/Repositories.contract'
 import { describeScopeRepository } from '../../ports/ScopeRepository.contract'
 import { sampleScope } from '../../ports/ScopeStore.contract'
 import { describeSettingsRepository } from '../../ports/SettingsRepository.contract'
-import type { DirectoryHandleLike } from './DirectoryHandle'
+import type { DirectoryHandleLike, FileHandleLike } from './DirectoryHandle'
 import { FakeDirectory } from './fakeDirectory'
 import { folderRepositories } from './folderRepositories'
 import { composed, identityAt, placesInMemory } from './folderScopes'
+import { stampsInMemory } from './folderPictures'
 import { memoryGit } from './memoryGit'
 import { FileSystemScopeStore } from './FileSystemScopeStore'
 import { removeAt, textAt, writeAt } from './handles'
@@ -395,6 +396,30 @@ describe('what a scope’s pictures folder says, over what its rows say', () => 
     expect((await repositories.state(acme)).images).toEqual([entry])
   })
 
+  it('describes a picture replaced by hand with other bytes of the same size, by the stamp it had when last described', async () => {
+    const { root, repositories, acme } = await withPicture()
+    const before = (await repositories.state(acme)).images[0]
+    const replaced = picture(64, 32, 1, 9)
+    expect(replaced.length).toBe(before.size)
+    await writeAt(root, 'acme/images/map.png', replaced)
+    const [after] = (await repositories.state(acme)).images
+    expect(after.contentAddress).toBe(await contentAddressOf(replaced))
+  })
+
+  it('reads no picture it has described, or trusted a row for, until its stamp changes — through a restart where the stamps are kept', async () => {
+    const root = await folderOfToday()
+    const stamps = stampsInMemory()
+    const { handle, reads } = counting(root)
+    const first = folderRepositories({ root: handle, git: memoryGit(root), stamps })
+    const acme = (await first.scopes.tree()).root.children[0].id
+    await first.scopes.state(acme)
+    const unlisted = reads()
+    expect(unlisted).toBe(3)
+    await first.scopes.state(acme)
+    await folderRepositories({ root: handle, git: memoryGit(root), stamps }).scopes.state(acme)
+    expect(reads()).toBe(unlisted)
+  })
+
   it('describes a picture replaced by hand under its name afresh: its size, its dimensions and its bytes', async () => {
     const { root, repositories, acme } = await withPicture()
     const before = await repositories.state(acme)
@@ -407,3 +432,28 @@ describe('what a scope’s pictures folder says, over what its rows say', () => 
     expect(after.revision).not.toBe(before.revision)
   })
 })
+
+/** A folder that counts the pictures read out of it: what reading a scope must not do. */
+function counting(folder: DirectoryHandleLike): { handle: DirectoryHandleLike; reads(): number } {
+  let reads = 0
+  const wrap = (held: DirectoryHandleLike, inside: string): DirectoryHandleLike => {
+    const at = (name: string) => (inside ? `${inside}/${name}` : name)
+    const file = (one: FileHandleLike, path: string): FileHandleLike => ({
+      kind: 'file', name: one.name, createWritable: () => one.createWritable(),
+      getFile: async () => {
+        const got = await one.getFile()
+        return { ...got, text: got.text, arrayBuffer: () => { if (path.includes('/images/')) reads += 1; return got.arrayBuffer() } }
+      },
+    })
+    return {
+      kind: 'directory', name: held.name,
+      getDirectoryHandle: async (name, options) => wrap(await held.getDirectoryHandle(name, options), at(name)),
+      getFileHandle: async (name, options) => file(await held.getFileHandle(name, options), at(name)),
+      removeEntry: (name, options) => held.removeEntry(name, options),
+      values: async function* () {
+        for await (const entry of held.values()) yield entry.kind === 'directory' ? wrap(entry, at(entry.name)) : file(entry, at(entry.name))
+      },
+    }
+  }
+  return { handle: wrap(folder, ''), reads: () => reads }
+}

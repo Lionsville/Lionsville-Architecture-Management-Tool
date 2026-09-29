@@ -20,10 +20,13 @@
  * **What the files say wins over the rows.** A row whose file has gone —
  * removed by hand, or never written — leaves the library, and its name is
  * free again; but for a row a step added whose bytes were not put yet, which
- * says so (`pending`) and waits for them. A file replaced under a row's name —
- * another size, or other bytes where the handle can say so without handing
- * them over (the desktop's main process fingerprints a file where it is) — is
- * described afresh, under the row's name.
+ * says so (`pending`) and waits for them. A file replaced under a row's name
+ * is described afresh, under the row's name: one whose size is not the row's,
+ * and one whose stamp — size, time written and, on the desktop, the file's
+ * own number on its disk — is not the stamp it had when this machine last
+ * described it. What this machine has described is kept on it, by stamp
+ * (`StampCache`), never in the folder, so reading a scope reads no picture it
+ * has seen before and has not changed since.
  *
  * **Names and files.** A row says its file where the file's name is not the
  * picture's: a file an older macOS gave back decomposed, a name made for a
@@ -33,7 +36,7 @@
  * they would be one folder, so the second is kept in the first's folder
  * ({@link fileFor}) whatever the disk is.
  */
-import { isImageFile } from '../../model/documentImage'
+import { imageMediaType, isImageFile } from '../../model/documentImage'
 import { imageEntryRefusal, imageName, imageNameKey } from '../../model/imageName'
 import type { ImageEntry, ImageName } from '../../model/imageName'
 import { imageNameOfFile, PICTURES } from './imageLibrary'
@@ -42,11 +45,41 @@ import type { PictureFiles } from './imageLibrary'
 /** A picture in a library, and the file inside the pictures folder it is kept as. */
 export type KeptPicture = { entry: ImageEntry; file: string }
 
+/** What a file is, as a handle says it without reading it: its size, when it was written, and its number on its disk where known. */
+export type PictureStamp = { size: number; lastModified: number; inode?: number }
+
+/** A file the pictures folder holds, by its path inside it; with its stamp where the handle gave one. */
+export type PictureFile = { file: string; size?: number; stamp?: PictureStamp }
+
+/** What this machine found a file to be, at a stamp: the bytes it is, and the size it declares. */
+export type Described = PictureStamp & { contentAddress: string; width: number; height: number }
+
 /**
- * A file the pictures folder holds, by its path inside it; with its size, and
- * the digest of its bytes, where the handle says them without reading it here.
+ * What this machine has described of a folder's pictures, by scope folder and
+ * file, kept on the machine and never in the folder: the desktop's own data
+ * folder, a browser's database. A cache: a write lost costs a read of a
+ * picture, never a wrong answer, because a stamp that differs is read again.
  */
-export type PictureFile = { file: string; size?: number; sha256?: string }
+export type StampCache = {
+  read(): Promise<Record<string, Described> | undefined>
+  write(described: Record<string, Described>): Promise<void>
+}
+
+export function stampsInMemory(): StampCache {
+  let held: Record<string, Described> | undefined
+  return {
+    read: () => Promise.resolve(held && { ...held }),
+    write: (described) => {
+      held = { ...described }
+      return Promise.resolve()
+    },
+  }
+}
+
+/** Whether two stamps say one file, unchanged. */
+export function sameStamp(one: PictureStamp, other: PictureStamp): boolean {
+  return one.size === other.size && one.lastModified === other.lastModified && one.inode === other.inode
+}
 
 /** The key `scope.json` keeps the library under. */
 export const LIBRARY_KEY = 'images'
@@ -84,12 +117,39 @@ export type PictureSource = {
   files: readonly PictureFile[]
   /** The entry for a file under a name, from its bytes; `undefined` where it will not read. */
   describe(file: PictureFile, name: ImageName): Promise<ImageEntry | undefined>
+  /**
+   * What this machine found a file to be: `unchanged`, with what it was, where
+   * its stamp is the one it was described at; `changed` where it was described
+   * at another; nothing where it never was.
+   */
+  seen?(file: PictureFile): { unchanged: Described } | { changed: true } | undefined
+  /** A file found to be what a row says, remembered at its stamp without reading it. */
+  trust?(file: PictureFile, entry: ImageEntry): void
 }
 
 /** Whether a file is not what its row describes, by what the handle says of it without reading it. */
-function replaced(row: KeptPicture, file: PictureFile): boolean {
-  if (file.sha256 !== undefined && `sha256:${file.sha256}` !== row.entry.contentAddress) return true
-  return file.size !== undefined && file.size !== row.entry.size
+/** An entry under a name, from what this machine found the file to be — no byte read. */
+function entryFrom(name: ImageName, mediaType: string, described: Described): ImageEntry {
+  return { name, mediaType, size: described.size, width: described.width, height: described.height, contentAddress: described.contentAddress }
+}
+
+/**
+ * A row's picture as its file is now: the row, where the file is what the
+ * machine last found it to be — or, never seen here, where its size is the
+ * row's, and it is trusted; what the machine found, where that is other bytes;
+ * and read afresh where the file changed since, or its size is not the row's.
+ */
+async function rowAsFile(row: KeptPicture, file: PictureFile, source: PictureSource): Promise<ImageEntry> {
+  const seen = source.seen?.(file)
+  if (seen && 'unchanged' in seen) {
+    return seen.unchanged.contentAddress === row.entry.contentAddress ? row.entry : entryFrom(row.entry.name, row.entry.mediaType, seen.unchanged)
+  }
+  const sized = file.stamp?.size ?? file.size
+  if (!seen && (sized === undefined || sized === row.entry.size)) {
+    source.trust?.(file, row.entry)
+    return row.entry
+  }
+  return await source.describe(file, row.entry.name) ?? row.entry
 }
 
 /**
@@ -110,13 +170,16 @@ export async function libraryOf(rows: readonly RowPicture[], source: PictureSour
       continue
     }
     named.add(imageName(row.file))
-    const entry = replaced(row, found) ? await source.describe(found, row.entry.name) : row.entry
-    library.push({ entry: entry ?? row.entry, file: found.file })
+    library.push({ entry: await rowAsFile(row, found, source), file: found.file })
   }
   const unlisted = source.files.filter((file) => !named.has(imageName(file.file)))
     .sort((one, other) => (one.file < other.file ? -1 : 1))
   for (const file of unlisted) {
-    const entry = await source.describe(file, imageNameOfFile(file.file, taken))
+    const name = imageNameOfFile(file.file, taken)
+    const seen = source.seen?.(file)
+    const entry = seen && 'unchanged' in seen
+      ? entryFrom(name, imageMediaType(name) ?? '', seen.unchanged)
+      : await source.describe(file, name)
     if (entry) library.push({ entry, file: file.file })
   }
   return library

@@ -38,7 +38,7 @@ import { log } from './log'
 import { sayable } from './sayable'
 import { watchFolder } from './watch'
 import {
-  fingerprint, listDirectory, makeDirectory, moveEntry, readFile as readInside, removeEntry, resolveInside,
+  fingerprint, listDirectory, makeDirectory, moveEntry, readFile as readInside, removeEntry, resolveInside, stampAt,
   writeFile as writeInside, writeTogether as writeTogetherInside,
 } from './fileStore'
 
@@ -375,6 +375,9 @@ function answer(channel: string, handler: (event: unknown, ...args: never[]) => 
 }
 
 function registerRepositoryChannels(): void {
+  answer('files:stamp', (_event, root: unknown, path: unknown) =>
+    (isGranted(root) && isPath(path) ? stampAt(root, path) : undefined))
+
   answer('files:move', async (_event, root: unknown, from: unknown, to: unknown) => {
     if (!isGranted(root) || !isPath(from) || !isPath(to)) throw new Error('shell.pathRefused')
     await moveEntry(root, from, to)

@@ -16,7 +16,9 @@
  *
  * Beside them, where each of a folder's scopes' identities was last found
  * (`places`), so a folder copied by hand leaves an identity where it was
- * through a restart.
+ * through a restart; and what this machine found each of a folder's pictures to
+ * be at the stamp it had (`stamps`), so reading a scope reads no picture that
+ * has not changed since.
  *
  * Pure: text in, text out. The main process finds the file.
  */
@@ -76,4 +78,36 @@ export function scopePlacesText(text: string | undefined, root: string, places: 
   const top = record(text === undefined ? undefined : parseJson(text)) ?? {}
   const held = record(top['places']) ?? {}
   return stableJson({ ...top, version: 1, places: { ...held, [root]: placesOf(places) } })
+}
+
+/** What a machine found each of a folder's pictures to be, by scope folder and file, at the stamp it had. */
+export type PictureStamps = Record<string, { size: number; lastModified: number; inode?: number; contentAddress: string; width: number; height: number }>
+
+function stampsOf(value: unknown): PictureStamps {
+  const found: PictureStamps = {}
+  for (const [key, row] of Object.entries(record(value) ?? {})) {
+    const held = record(row)
+    if (!held) continue
+    const { size, lastModified, inode, contentAddress, width, height } = held
+    if ([size, lastModified, width, height].every((one) => typeof one === 'number') && typeof contentAddress === 'string') {
+      found[key] = {
+        size: size as number, lastModified: lastModified as number, contentAddress, width: width as number, height: height as number,
+        ...(typeof inode === 'number' ? { inode } : {}),
+      }
+    }
+  }
+  return found
+}
+
+/** What was found of one folder's pictures, out of the same file; `undefined` where nothing was written for it. */
+export function readPictureStamps(text: string | undefined, root: string): PictureStamps | undefined {
+  const stamps = record(record(text === undefined ? undefined : parseJson(text))?.['stamps'])
+  return stamps && root in stamps ? stampsOf(stamps[root]) : undefined
+}
+
+/** The file's text with what was found of one folder's pictures replaced; everything else carried through. */
+export function pictureStampsText(text: string | undefined, root: string, stamps: PictureStamps): string {
+  const top = record(text === undefined ? undefined : parseJson(text)) ?? {}
+  const held = record(top['stamps']) ?? {}
+  return stableJson({ ...top, version: 1, stamps: { ...held, [root]: stampsOf(stamps) } })
 }

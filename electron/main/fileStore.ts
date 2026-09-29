@@ -295,6 +295,14 @@ export async function removeEntry(
   await rm(target, { recursive: options?.recursive === true, force: true })
 }
 
+/** What a file is without reading it: its size, when it was last written, and its number on its disk; nothing for what is not a file. */
+export async function stampAt(root: string, path: string): Promise<{ size: number; lastModified: number; inode: number } | undefined> {
+  const target = await resolveInside(root, path)
+  if (!target) return undefined
+  const held = await stat(target).catch(() => undefined)
+  return held?.isFile() ? { size: held.size, lastModified: held.mtimeMs, inode: held.ino } : undefined
+}
+
 export async function fingerprint(root: string, path: string): Promise<DesktopStamp | undefined> {
   const held = await readFile(root, path)
   if (!held) return undefined

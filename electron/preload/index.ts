@@ -63,6 +63,7 @@ const files: DesktopFiles = {
   remove: (root, path, options) => ipcRenderer.invoke('files:remove', root, path, options),
   move: (root, from, to) => ipcRenderer.invoke('files:move', root, from, to),
   fingerprint: (root, path) => ipcRenderer.invoke('files:fingerprint', root, path),
+  stamp: (root, path) => ipcRenderer.invoke('files:stamp', root, path),
   revealInFolder: (root, path) => ipcRenderer.invoke('files:revealInFolder', root, path),
   saveDocument: (name, bytes, mediaType) =>
     ipcRenderer.invoke('files:saveDocument', name, bytes, mediaType),
@@ -129,6 +130,8 @@ const settings: DesktopSettings = {
   writeFolderSteps: (root, steps) => ipcRenderer.invoke('settings:writeFolderSteps', root, steps),
   readFolderPlaces: (root) => ipcRenderer.invoke('settings:readFolderPlaces', root),
   writeFolderPlaces: (root, places) => ipcRenderer.invoke('settings:writeFolderPlaces', root, places),
+  readFolderStamps: (root) => ipcRenderer.invoke('settings:readFolderStamps', root),
+  writeFolderStamps: (root, stamps) => ipcRenderer.invoke('settings:writeFolderStamps', root, stamps),
 }
 
 const agent: DesktopAgent = {

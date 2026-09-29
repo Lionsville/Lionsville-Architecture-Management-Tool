@@ -114,6 +114,9 @@ describe('the folder’s history and its applied steps', () => {
       [() => settings.readFolderSteps('/work'), 'settings:readFolderSteps', ['/work']],
       [() => settings.writeFolderSteps('/work', steps), 'settings:writeFolderSteps', ['/work', steps]],
       [() => settings.readFolderPlaces('/work'), 'settings:readFolderPlaces', ['/work']],
+      [() => settings.readFolderStamps('/work'), 'settings:readFolderStamps', ['/work']],
+      [() => settings.writeFolderStamps('/work', {}), 'settings:writeFolderStamps', ['/work', {}]],
+      [() => files.stamp('/work', 'images/map.png'), 'files:stamp', ['/work', 'images/map.png']],
       [() => settings.writeFolderPlaces('/work', { 's-1': 'acme' }), 'settings:writeFolderPlaces', ['/work', { 's-1': 'acme' }]],
     ]
     for (const [call, channel, args] of calls) {

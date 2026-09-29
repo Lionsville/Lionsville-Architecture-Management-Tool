@@ -46,12 +46,12 @@ export type FileHandleLike = {
    */
   move?(name: string): Promise<void>
   /**
-   * What the file is without handing its bytes over — its size, and the
-   * SHA-256 of its bytes in hex where the handle works it out where the file
-   * is. The desktop's main process does; a browser's `getFile()` is lazy and
-   * answers the size alone. Absent, `getFile()` is asked.
+   * What the file is without its bytes being read: its size, when it was
+   * last written, and its number on its disk where the handle knows it. The
+   * desktop's main process looks at the file where it is; absent, `getFile()`
+   * is asked, which a browser answers without reading the file.
    */
-  stamp?(): Promise<{ size: number; sha256?: string } | undefined>
+  stamp?(): Promise<{ size: number; lastModified: number; inode?: number } | undefined>
 }
 
 export type DirectoryHandleLike = {

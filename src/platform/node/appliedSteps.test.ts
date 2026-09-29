@@ -2,7 +2,9 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { describe, expect, it } from 'vitest'
-import { appliedStepsText, readAppliedSteps, readScopePlaces, scopePlacesText } from './appliedSteps'
+import {
+  appliedStepsText, pictureStampsText, readAppliedSteps, readPictureStamps, readScopePlaces, scopePlacesText,
+} from './appliedSteps'
 
 describe('applied step ids, kept by the app', () => {
   it('answers nothing for a folder nobody wrote steps for, and one folder’s steps back', () => {
@@ -30,5 +32,15 @@ describe('applied step ids, kept by the app', () => {
     expect(readScopePlaces(both, '/work/globex')).toBeUndefined()
     expect(readAppliedSteps(appliedStepsText(both, '/work/acme', {}), '/work/acme')).toEqual({})
     expect(readScopePlaces(appliedStepsText(both, '/work/acme', {}), '/work/acme')).toEqual({ 's-1': 'acme' })
+  })
+
+  it('keeps what was found of each folder’s pictures beside the rest, and lets a row that says nothing go', () => {
+    const found = { size: 3, lastModified: 5, inode: 7, contentAddress: 'sha256:ab', width: 1, height: 2 }
+    const text = pictureStampsText(appliedStepsText(undefined, '/work/acme', { a: ['s', 1] }), '/work/acme', {
+      'acme\u0000map.png': found, broken: { size: 'x' } as never,
+    })
+    expect(readPictureStamps(text, '/work/acme')).toEqual({ 'acme\u0000map.png': found })
+    expect(readAppliedSteps(text, '/work/acme')).toEqual({ a: ['s', 1] })
+    expect(readPictureStamps(text, '/work/globex')).toBeUndefined()
   })
 })

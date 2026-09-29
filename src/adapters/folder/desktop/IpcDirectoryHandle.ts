@@ -51,11 +51,8 @@ function fileHandle(
         ) as ArrayBuffer,
       }
     },
-    // Fingerprinted in main, where the file is: its bytes never cross to the page.
-    async stamp() {
-      const held = await files.fingerprint(root, path)
-      return held ? { size: held.size, sha256: held.sha256 } : undefined
-    },
+    // Looked at in main, where the file is: nothing is read, and nothing crosses to the page but the stamp.
+    stamp: () => files.stamp(root, path),
     async createWritable(): Promise<WritableLike> {
       const chunks: Uint8Array[] = []
       return {

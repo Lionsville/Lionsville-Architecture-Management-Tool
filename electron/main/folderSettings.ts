@@ -21,9 +21,10 @@ import {
   MACHINE_FOLDER_SETTINGS_FILE, machineFolderSettingsText, readMachineFolderSettings,
 } from '../../src/platform/node/machineFolderSettings'
 import {
-  APPLIED_STEPS_FILE, appliedStepsOf, appliedStepsText, readAppliedSteps, readScopePlaces, scopePlacesText,
+  APPLIED_STEPS_FILE, appliedStepsOf, appliedStepsText, pictureStampsText, readAppliedSteps, readPictureStamps, readScopePlaces,
+  scopePlacesText,
 } from '../../src/platform/node/appliedSteps'
-import type { AppliedSteps, ScopePlaces } from '../../src/platform/node/appliedSteps'
+import type { AppliedSteps, PictureStamps, ScopePlaces } from '../../src/platform/node/appliedSteps'
 import { log } from './log'
 
 const settingsPath = (): string => join(app.getPath('userData'), MACHINE_FOLDER_SETTINGS_FILE)
@@ -88,6 +89,20 @@ export function registerFolderSettingsChannel(): void {
     if (typeof root !== 'string') throw new Error('a folder is named by its path')
     const write = async () => {
       await writeFile(stepsPath(), `${scopePlacesText(await text(stepsPath()), root, (places ?? {}) as ScopePlaces)}\n`, 'utf8')
+    }
+    const next = stepsQueue.then(write, write)
+    stepsQueue = next.catch(() => undefined)
+    return next
+  })
+  // What this machine found a folder's pictures to be, by stamp: a cache, in the same file and the same turn.
+  ipcMain.handle('settings:readFolderStamps', async (_event, root: unknown): Promise<PictureStamps | undefined> => {
+    if (typeof root !== 'string') return undefined
+    return readPictureStamps(await text(stepsPath()), root)
+  })
+  ipcMain.handle('settings:writeFolderStamps', (_event, root: unknown, stamps: unknown): Promise<void> => {
+    if (typeof root !== 'string') throw new Error('a folder is named by its path')
+    const write = async () => {
+      await writeFile(stepsPath(), `${pictureStampsText(await text(stepsPath()), root, (stamps ?? {}) as PictureStamps)}\n`, 'utf8')
     }
     const next = stepsQueue.then(write, write)
     stepsQueue = next.catch(() => undefined)

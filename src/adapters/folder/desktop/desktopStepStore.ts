@@ -8,6 +8,7 @@
  * not carried by a copy of the folder.
  */
 import type { DesktopSettings } from '../../desktop/channel'
+import type { StampCache } from '../folderPictures'
 import type { PlaceStore } from '../folderScopes'
 import type { StepStore } from '../stepMemory'
 
@@ -23,5 +24,13 @@ export function desktopPlaceStore(settings: Pick<DesktopSettings, 'readFolderPla
   return {
     read: () => settings.readFolderPlaces(root),
     write: (places) => settings.writeFolderPlaces(root, places),
+  }
+}
+
+/** What this machine found a folder's pictures to be, on the desktop: in its own data folder, beside the rest. */
+export function desktopStampCache(settings: Pick<DesktopSettings, 'readFolderStamps' | 'writeFolderStamps'>, root: string): StampCache {
+  return {
+    read: () => settings.readFolderStamps(root),
+    write: (stamps) => settings.writeFolderStamps(root, stamps),
   }
 }

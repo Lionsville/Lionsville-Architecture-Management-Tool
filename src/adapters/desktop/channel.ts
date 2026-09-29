@@ -108,6 +108,7 @@ export type DesktopHistory = {
   tag(root: string, sha: string, name: string, message: string): Promise<'done' | 'exists'>
 }
 
+export type DesktopPictureStamp = { size: number; lastModified: number; inode?: number; contentAddress: string; width: number; height: number }
 export type DesktopChangedPath = { path: string; deleted: boolean }
 export type DesktopLogWanted = {
   paths?: string[]; grep?: string; limit: number; tip?: string; skip?: number; firstParent?: boolean; bare?: boolean
@@ -150,6 +151,10 @@ export type DesktopSettings = {
   readFolderPlaces(root: string): Promise<Record<string, string> | undefined>
   /** Replace where a folder's scopes' identities were last found. */
   writeFolderPlaces(root: string, places: Record<string, string>): Promise<void>
+  /** What this machine found a folder's pictures to be, by the stamp each had (ADR-0031); `undefined` where never written. */
+  readFolderStamps(root: string): Promise<Record<string, DesktopPictureStamp> | undefined>
+  /** Replace what this machine found a folder's pictures to be. */
+  writeFolderStamps(root: string, stamps: Record<string, DesktopPictureStamp>): Promise<void>
 }
 
 /**
@@ -228,6 +233,8 @@ export type DesktopFiles = {
   move(root: string, from: string, to: string): Promise<void>
   /** What is on disk right now, without reading the whole file back. */
   fingerprint(root: string, path: string): Promise<DesktopStamp | undefined>
+  /** What a file is without reading it: its size, when it was last written, and its number on its disk. */
+  stamp(root: string, path: string): Promise<{ size: number; lastModified: number; inode: number } | undefined>
   /** Show it to the user in their file manager. */
   revealInFolder(root: string, path: string): Promise<void>
   /**
