@@ -1157,3 +1157,44 @@ names no format.
   manifest is held to the documents as read.
 - **An organisation that holds nothing yet** is carried out as its root,
   named as the tree names it.
+
+## As built, 29 September 2026: a scope put back whole
+
+**What was built.** A scope a part of which does not read
+(`ScopeState.unreadable`) is no longer stuck where nothing can be mended by
+hand.
+- **A rule of the port.** A step on such a scope is refused
+  (`shell.unreadableNotSaved`), but a run whose first step is `scope.replace`
+  is accepted: it says what the whole scope is to be, replaces it, the parts
+  that did not read included, and the scope reads whole after it — even where
+  what is put back is what could be read. `putsBackWhole` in
+  `projects/scopeState.ts` is the rule, and the scope repository's suite has
+  it as a clause, run by memory, browser storage and the folder, and by each
+  through its own provider.
+- **The folder** writes over and removes the format's files it could not read,
+  and never touches a file that is not the format's: a person's notes beside
+  the scope, a picture filed in a folder the format does not read.
+- **The app offers it.** The notice over such a scope names the two ways every
+  source has, as buttons where the source may be written: *Put back from the
+  history* and *Bring in a working file*. The history's page puts the whole
+  scope back as the chosen entry held it (`projects/putBack.ts`), the entry
+  before it first where a history is kept, and never as a restore, which such
+  a scope refuses. A working file landed there puts it back the same way.
+  Either way the scope is opened again, reading whole. A picture whose bytes
+  the source no longer keeps is left out, and said.
+- **A source with more to say says it.** A provider may give the notice's
+  sentence (`SourceProvider.unreadableKey`); the folder's names the file a
+  person can mend.
+
+## As built, 29 September 2026: the examples in the domain
+
+**What was built.** What an example is called, where a copy lands and the
+copy written are the domain's (`projects/examples/`): the catalogue, and
+`copyExampleInto` with its rule — the organisation itself at a truly blank
+root, a scope of its own under a root that holds work — beside the root read
+as it is kept (`exampleCopyOver`) and the copy landed whole (`placeCopy`). The
+organisation's page keeps only its hook. The examples stay in the folder's
+format, read by its reader; a process with no screen reaches them through
+`platform/node/examples.ts` — an example's scopes, the example as a working
+file, and an example seeded into repositories of its own where the page would
+copy it — over the one narrow edge that folder already had.
