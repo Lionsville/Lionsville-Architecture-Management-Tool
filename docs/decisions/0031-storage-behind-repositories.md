@@ -334,7 +334,9 @@ repositories, in `src/adapters/folder/`:
   only to add identities. Two headers claiming one id — a scope's folder
   copied by hand — are read with it at the address it was last found at (the
   first by address, where it was found at neither), and the other as a folder
-  with none. An address is answered composed (NFC), and an identity made from
+  with none; where each identity was last found is kept outside the folder
+  (`PlaceStore`: the desktop's data folder, a browser's database), so a
+  restart does not hand it back to the first address. An address is answered composed (NFC), and an identity made from
   it is made from it composed, whatever the disk spells; no folder is renamed. The folder format carries a header key it does not
   write through a save (`ScopeSnapshot.carried`), so the app's store keeps an
   identity, and the library below, where it finds them.
@@ -354,15 +356,21 @@ repositories, in `src/adapters/folder/`:
   has landed, worked out with nothing written; a step sent again whose scope
   is now that counts as landed, and one whose scope is not is applied. So a
   run across several scopes that a stop cut short, sent again, lands on the
-  scopes it had not reached and leaves the ones it had.
+  scopes it had not reached and leaves the ones it had. A scope read at what
+  its pending steps were to leave it at has them remembered as landed before
+  anything writes it again, so a step sent again after a later run is never
+  applied over it; a write refused wrote nothing, and its steps are forgotten.
 - **Step ids** are remembered for two days, and never in the folder: a file
   of ours there is one a person sees and a copy carries, and `.git` is git's.
   Whoever composes the folder says where they are kept (`StepStore`): on the
   desktop, in its own data folder beside what it does about each folder
-  (`applied-steps.json`, keyed by the folder); in a browser, in its
-  IndexedDB beside the folder's handle — a handle has no identity storage can
-  be keyed by, so each kept handle is asked whether it is the same folder.
-  Both keep them through a restart.
+  (`applied-steps.json`, keyed by the folder); in a browser, in the database
+  its repositories keep their own work in, under a key of the folder's own —
+  a handle has no identity storage can be keyed by, so each folder has a
+  record holding its handle, found by asking each kept handle whether it is
+  the same folder, and everything kept for it is under that record's key, one
+  record per value, so two tabs never write over each other's. Both keep them
+  through a restart.
 - **The folder's `.git` is no path the file channel takes**, in any spelling
   and through no link, and no git the app runs starts a hook or a file-system
   monitor: a folder's history is git's, and nothing a page writes there is a
@@ -384,16 +392,22 @@ repositories, in `src/adapters/folder/`:
   person's own — is an entry of a scope whose own files it changed where the
   scope has been, while the header there said the scope's identity (or none,
   and the address makes it), so a scope made where a removed one was is not
-  handed its past. A page after a page is counted from the commit the first
+  handed its past. Paths and addresses are compared composed, so a folder
+  whose name git or a disk gives back decomposed still commits, and a
+  trailer says its address composed. A page after a page is counted from the commit the first
   started at, so a history that grows or merges meanwhile neither repeats nor
   skips an entry; a merge is no entry of its own. A thing's history asks git
   only for the commits that changed where a record of its kind is kept; an
   element's or a relation's is answered from the ids of what each commit
   changed, its own file's changing being enough and the model they share
   read once per version; any other is read off the scope at the commit and at
-  its parent. It stops at the entry after the page, and what it read is kept
-  to a size; a perf budget holds it on ten thousand commits
-  (`adapters/folder/history.perf.test.ts`). `record` starts a history where
+  its parent. Each chunk of commits is read in as few looks at git as there
+  are — the headers of the unmarked ones, every version of a model — and of a
+  model only the row asked about is kept. It stops at the entry after the
+  page, and what it read is kept to a size; a perf budget holds it on ten
+  thousand commits, half of them unmarked, with a model of fifteen hundred
+  elements, an element whose page never fills and a page nine thousand commits
+  down (`adapters/folder/history.perf.test.ts`). `record` starts a history where
   the folder keeps none, as a snapshot always has, and refuses, with a key a
   person can act on, part way through a merge, a rebase, a cherry-pick or a
   revert, with a file unmerged, or on no branch. The paths it commits go to
@@ -401,8 +415,9 @@ repositories, in `src/adapters/folder/`:
   sentence that says so; a failure crosses to the page as a key, never as
   git's words, which name paths.
 - **Labels** are tags named `<scope id>/<slug>`, so two scopes may each use
-  one label; a tag so named is that scope's wherever it is found, even once
-  the scope is gone. A tag named otherwise — every label an older build made,
+  one label; a tag so named, its space shaped as a scope's identity (a UUID,
+  or `f-` and base-36 digits), is that scope's wherever it is found, even once
+  the scope is gone — and `release/final`, a tag a person made, is not. A tag named otherwise — every label an older build made,
   which was the whole folder's, and any tag a person made — stays the whole
   folder's: it is read as a label of every scope's entry at its commit, and
   its slug is taken in every scope. The older snapshot's label refuses a word
@@ -424,9 +439,14 @@ repositories, in `src/adapters/folder/`:
   an entry whose bytes were never put is not refused — the suites apply one —
   and its row says it waits for them (`pending`) until a later step writes
   them. A row whose file has gone otherwise leaves the library, and its name
-  is free again; a file replaced under a row's name — another size, or on the
-  desktop other bytes, which main fingerprints where the file is — is
-  described afresh.
+  is free again. A picture is looked at, not read: its size, when it was
+  written and, on the desktop, its number on its disk (a stamp, which main
+  takes where the file is). What this machine found each picture to be is
+  kept on the machine by that stamp (`StampCache`: the desktop's data folder,
+  a browser's database), never in the folder's header, so a picture whose
+  stamp is unchanged is known without a read, one whose stamp changed —
+  replaced by hand, at any size — is read and described afresh, and one never
+  seen here is trusted where its size is its row's.
 - **Documents** say `../images/<file>` on disk, as before, and `image:<name>`
   in the state; a document nobody changed is written back byte for byte, and
   a changed one at the depth its file is kept at (`imageLibrary.ts`, shared
@@ -437,6 +457,13 @@ repositories, in `src/adapters/folder/`:
   person's are wherever the composer says (`PersonSettings`), in memory where
   nobody does; the desktop's own data folder is wired when the app moves onto
   the repositories.
+- **A folder opened in a browser** keeps its history in this browser: the
+  folder's history seam over the browser's database (`browserFolderGit`), with
+  file contents kept once each by their SHA-256 and each commit the map of its
+  paths to them, so a commit costs what it changed; the history repository
+  over it is the folder's own, and every suite runs over it too. **That
+  history is this browser's, not the folder's**: the folder holds none of it,
+  and the desktop's git history of the same folder is another.
 - **Pull, push and the remote** are in no repository. They stay on
   `ProjectHistory.sync` until the app moves onto the repositories and they
   become the folder provider's chrome.
@@ -456,10 +483,10 @@ repositories, in `src/adapters/folder/`:
   the folder format (from 14), 21 files importing across the line (from 22)
   with 31 imports (from 32), and 51 files naming storage (from 52) with 82
   words (from 83).
-- **A picture replaced in a browser's folder by other bytes of the same
-  size keeps its row's entry.** A browser answers a file's size without
-  reading it and no digest without reading it, and reading a scope reads no
-  picture; the desktop's main process fingerprints the file where it is.
+- **A picture replaced by hand before this machine ever read its scope, at
+  the size its row says, keeps its row's entry**, until its stamp changes
+  again: a picture never seen here is trusted where its size is its row's,
+  because reading every picture to be sure is what a scope's read must not do.
 - **An entry's id is its commit and its scope together**, because one commit
   is an entry of every scope it records and each must be one of its own.
 - **The index leaves out a scope whose `model.json` is missing or will not

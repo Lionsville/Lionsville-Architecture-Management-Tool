@@ -489,9 +489,14 @@ src/adapters/     The outside world, one folder per flavour.
                                       shares), the step ids a folder applied
                                       kept by the app and never in the folder
                                       (`StepStore`: the desktop's data folder,
-                                      or this browser's IndexedDB matched by the
-                                      folder's handle). Every suite runs over the
-                                      fake and over a real folder with real git;
+                                      or this browser's database matched by the
+                                      folder's handle), where identities were
+                                      last found, and pictures known by stamp
+                                      (`StampCache`). In a browser, a folder's
+                                      history is kept in this browser
+                                      (`browser/browserFolderGit`). Every suite
+                                      runs over the fake, over the fake with that
+                                      history, and over a real folder with git;
                                       `history.perf.test.ts` holds the history
                                       to a budget on ten thousand commits
                     repositories/     the five repositories over a keyed store
