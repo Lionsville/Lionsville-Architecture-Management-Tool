@@ -38,11 +38,23 @@ export function labelSlug(label: string): string {
 }
 
 /**
- * Whether a name is a label kept in one space of a source's own —
- * `<space>/<slug>`, the space letters, digits, hyphens and underscores, the
- * slug as {@link labelSlug} makes one. A name so shaped is that space's
- * wherever it is found, whether or not anything answers to the space now.
+ * Whether a space is shaped as the identity of a scope, and nothing a person
+ * would call a tag: a UUID, as a scope is given when it is made, or `f-` and
+ * base-36 digits, as one is made from an address or an identity of another
+ * shape. `release` and `v2` are not.
+ */
+export function isLabelSpace(space: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(space) || /^f-[0-9a-z]+$/.test(space)
+}
+
+/**
+ * Whether a name is a label kept in one scope's own space — `<space>/<slug>`,
+ * the space shaped as an identity ({@link isLabelSpace}), the slug as
+ * {@link labelSlug} makes one. A name so shaped is that space's wherever it is
+ * found, whether or not anything answers to the space now; `release/final`,
+ * which a person may well have made, is not one.
  */
 export function isSpacedLabel(name: string): boolean {
-  return /^[A-Za-z0-9][A-Za-z0-9_-]*\/[a-z0-9]+(-[a-z0-9]+)*$/.test(name)
+  const at = name.indexOf('/')
+  return at > 0 && isLabelSpace(name.slice(0, at)) && /^[a-z0-9]+(-[a-z0-9]+)*$/.test(name.slice(at + 1))
 }

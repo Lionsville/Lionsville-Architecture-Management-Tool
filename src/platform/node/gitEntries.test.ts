@@ -161,10 +161,10 @@ describe.skipIf(!available)('the history a folder’s repositories read', () => 
     await startHistory(root)
     await put('model.json', '{}')
     const sha = await commitPaths(root, ['model.json'], 'one')
-    expect(await tagCommit(root, sha!, 's-1/board', 'Shown to the board')).toBe('done')
-    expect(await tagCommit(root, sha!, 's-1/board', 'Again')).toBe('exists')
+    expect(await tagCommit(root, sha!, 'f-s1/board', 'Shown to the board')).toBe('done')
+    expect(await tagCommit(root, sha!, 'f-s1/board', 'Again')).toBe('exists')
     await expect(tagCommit(root, sha!, 'bad..name', 'No')).rejects.toThrow()
-    expect(await allTags(root)).toEqual([{ name: 's-1/board', sha, message: 'Shown to the board' }])
+    expect(await allTags(root)).toEqual([{ name: 'f-s1/board', sha, message: 'Shown to the board' }])
   })
 
   it('tags by a scope’s label name and nothing else: never an option, never a name of a person’s', async () => {
@@ -175,7 +175,7 @@ describe.skipIf(!available)('the history a folder’s repositories read', () => 
       expect(isScopeTagName(name), name).toBe(false)
       await expect(tagCommit(root, sha!, name, 'No'), name).rejects.toThrow('shell.pathRefused')
     }
-    expect(isScopeTagName('3f2a-9c/shown-to-the-board')).toBe(true)
+    expect(isScopeTagName('3f2a9c1e-0b4d-4e8a-9f6b-1c2d3e4f5a6b/shown-to-the-board')).toBe(true)
     expect(await allTags(root)).toEqual([])
   })
 })
@@ -232,8 +232,8 @@ describe.skipIf(!available)('a folder that keeps no history, and what is not ask
     expect(await held.head()).toBe(sha)
     expect((await held.treeAt(sha!, '')).map((file) => file.path)).toContain('model.json')
     expect(await held.readAt(sha!, ['model.json'])).toEqual([{ path: 'model.json', text: '{}' }])
-    expect(await held.tag(sha!, 's-1/one', 'One')).toBe('done')
-    expect((await held.tags()).map((tag) => tag.name)).toEqual(['s-1/one'])
+    expect(await held.tag(sha!, 'f-s1/one', 'One')).toBe('done')
+    expect((await held.tags()).map((tag) => tag.name)).toEqual(['f-s1/one'])
   })
 
   it('runs every git with its hooks in the folder main names, made where it is not', async () => {

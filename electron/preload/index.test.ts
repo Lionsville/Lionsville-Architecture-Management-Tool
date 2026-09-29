@@ -110,7 +110,7 @@ describe('the folder’s history and its applied steps', () => {
       [() => history.treeAt('/work', 'abc1234', 'acme'), 'git:treeAt', ['/work', 'abc1234', 'acme']],
       [() => history.readAt('/work', 'abc1234', ['model.json']), 'git:readAt', ['/work', 'abc1234', ['model.json']]],
       [() => history.tags('/work'), 'git:tags', ['/work']],
-      [() => history.tag('/work', 'abc1234', 's-1/board', 'Board'), 'git:tag', ['/work', 'abc1234', 's-1/board', 'Board']],
+      [() => history.tag('/work', 'abc1234', 'f-s1/board', 'Board'), 'git:tag', ['/work', 'abc1234', 'f-s1/board', 'Board']],
       [() => settings.readFolderSteps('/work'), 'settings:readFolderSteps', ['/work']],
       [() => settings.writeFolderSteps('/work', steps), 'settings:writeFolderSteps', ['/work', steps]],
     ]

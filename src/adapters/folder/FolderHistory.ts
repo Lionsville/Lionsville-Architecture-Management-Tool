@@ -49,7 +49,7 @@ import { recordsChanged, SCOPE_RECORD, sameRecord, sameValue } from '../../model
 import type { RecordKey, RecordKind } from '../../model/recordKey'
 import { descriptionPath, isFormatPath, modelListsFrom } from '../../projects/folderFormat'
 import type { FolderFile } from '../../projects/folderFormat'
-import { isSpacedLabel, labelSlug } from '../../projects/label'
+import { isLabelSpace, isSpacedLabel, labelSlug } from '../../projects/label'
 import { isSupersededPath, openScopeFolder } from '../../projects/migrate4to5'
 import { fingerprint } from '../../projects/revision'
 import { scopeFilePath } from '../../projects/scopePath'
@@ -142,7 +142,7 @@ function couldHold(record: RecordKey, path: string): boolean {
 
 /** The name a scope's labels are kept under: its identity, where a tag's name can hold it. */
 function labelSpace(id: ScopeId): string {
-  return /^[A-Za-z0-9][A-Za-z0-9_-]*$/.test(id) ? id : `f-${fingerprint(['labels', id])}`
+  return isLabelSpace(id) ? id : `f-${fingerprint(['labels', id])}`
 }
 
 /**

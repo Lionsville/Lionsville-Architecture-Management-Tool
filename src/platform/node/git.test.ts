@@ -476,7 +476,7 @@ describe.skipIf(!available)('this machine\'s settings file', () => {
   it('refuses a label a scope of the folder already holds under its own name', async () => {
     await project('model.json', '{}')
     const sha = (await snapshot(root, 'one'))!
-    await run('git', ['-c', 'user.name=A', '-c', 'user.email=a@example.org', 'tag', '-a', '-m', 'Board review', 's-1/board-review', sha], { cwd: root })
+    await run('git', ['-c', 'user.name=A', '-c', 'user.email=a@example.org', 'tag', '-a', '-m', 'Board review', 'f-s1/board-review', sha], { cwd: root })
     expect(await label(root, sha, 'Board review')).toBe('exists')
     expect(await label(root, sha, 'Another word')).toBe('done')
   })

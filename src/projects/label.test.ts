@@ -23,9 +23,10 @@ describe('labelSlug', () => {
 })
 
 describe('isSpacedLabel', () => {
-  it('is a space and a slug, and nothing else', () => {
-    expect(isSpacedLabel('3f2a-9c/shown-to-the-board')).toBe(true)
-    for (const name of ['board', 'release/1.0', '--force', 's-1/--force', 's-1/Board', 'a/b/c', '/x']) {
+  it('is an identity’s space and a slug, and nothing a person would name a tag', () => {
+    expect(isSpacedLabel('3f2a9c1e-0b4d-4e8a-9f6b-1c2d3e4f5a6b/shown-to-the-board')).toBe(true)
+    expect(isSpacedLabel('f-1x9kz0/board')).toBe(true)
+    for (const name of ['board', 'release/final', 'v2/rc-1', 'release/1.0', '--force', 'f-1x9kz0/--force', 'f-1x9kz0/Board', 'a/b/c', '/x', 's-1/board']) {
       expect(isSpacedLabel(name), name).toBe(false)
     }
   })

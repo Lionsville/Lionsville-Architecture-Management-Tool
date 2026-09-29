@@ -169,10 +169,25 @@ describe('the folder, beyond what the suites say', () => {
     const repositories = over({ repositories: folderRepositories({ root, git }) })
     const acme = await repositories.scope('acme', 'Acme Logistics')
     const [made] = await repositories.record('one')
-    await git.tag(made.id.split('.')[0], 'a-removed-scope/board-review', 'Board review')
+    await git.tag(made.id.split('.')[0], 'f-removed1/board-review', 'Board review')
     const [entry] = (await repositories.history.entries({ scopes: [acme], limit: 1 })).entries
     expect(entry.labels).toEqual([])
     expect(await repositories.history.label(acme, entry.id, 'Board review')).toBe('done')
+  })
+
+  it('reads a person’s own tags with a slash in them as the whole folder’s, and labels beside them', async () => {
+    const root = new FakeDirectory()
+    const git = memoryGit(root)
+    const repositories = over({ repositories: folderRepositories({ root, git }) })
+    const acme = await repositories.scope('acme', 'Acme Logistics')
+    const [made] = await repositories.record('one')
+    const sha = made.id.split('.')[0]
+    await git.tag(sha, 'release/final', 'Release, final')
+    await git.tag(sha, 'v2/rc-1', '')
+    const [entry] = (await repositories.history.entries({ scopes: [acme], limit: 1 })).entries
+    expect(entry.labels).toEqual(['Release, final', 'v2/rc-1'])
+    expect(await repositories.history.label(acme, entry.id, 'Board review')).toBe('done')
+    expect(await repositories.history.label(acme, entry.id, 'Release final')).toBe('exists')
   })
 
   it('reads a label an older build put on the whole folder as a label of every scope’s entry there, and takes its word', async () => {
