@@ -405,11 +405,15 @@ repositories, in `src/adapters/folder/`:
   read once per version; any other is read off the scope at the commit and at
   its parent. Each chunk of commits is read in as few looks at git as there
   are — the headers of the unmarked ones, every version of a model — and of a
-  model only the row asked about is kept. It stops at the entry after the
-  page, and what it read is kept to a size; a perf budget holds it on ten
-  thousand commits, half of them unmarked, with a model of fifteen hundred
-  elements, an element whose page never fills and a page nine thousand commits
-  down (`adapters/folder/history.perf.test.ts`). `record` starts a history where
+  model only the row asked about is kept. Those versions are asked for by
+  their sizes, which git answers without reading them (`sizes`), in batches
+  of at most 32 MB, each let go of before the next is read: two hundred
+  versions of a large model are more than one reply may carry. It stops at
+  the entry after the page, and what it read is kept to a size; a perf budget
+  holds it on ten thousand commits, half of them unmarked, with a model of
+  fifteen hundred elements, an element whose page never fills and a page nine
+  thousand commits down, and on a model of two megabytes that each of 220
+  commits changes (`adapters/folder/history.perf.test.ts`). `record` starts a history where
   the folder keeps none, as a snapshot always has, and refuses, with a key a
   person can act on, part way through a merge, a rebase, a cherry-pick or a
   revert, with a file unmerged, or on no branch. The paths it commits go to
@@ -437,11 +441,13 @@ repositories, in `src/adapters/folder/`:
   filed in an image folder whose name differs only in case from one there is
   kept in that folder, whatever the disk, so `A/x.png` and `a/y.png` never
   depend on whether the disk tells case apart. Bytes put are held in memory
-  until a step adds them, so bytes never added write nothing; a step adding
-  an entry whose bytes were never put is not refused — the suites apply one —
-  and its row says it waits for them (`pending`) until a later step writes
-  them. A row whose file has gone otherwise leaves the library, and its name
-  is free again. A picture is looked at, not read: its size, when it was
+  until a step adds them, so bytes never added write nothing. **Bytes
+  first**, as in every implementation: a step naming a content address the
+  library does not already hold, whose bytes were not put for the scope, is
+  refused (`shell.imageBytesGone`, with the step that named it), and the
+  image suite holds each implementation to it. So no row ever waits for its
+  bytes, and a row whose file has gone leaves the library, and its name is
+  free again. A picture is looked at, not read: its size, when it was
   written and, on the desktop, its number on its disk (a stamp, which main
   takes where the file is). What this machine found each picture to be is
   kept on the machine by that stamp (`StampCache`: the desktop's data folder,
@@ -461,11 +467,29 @@ repositories, in `src/adapters/folder/`:
   the repositories.
 - **A folder opened in a browser** keeps its history in this browser: the
   folder's history seam over the browser's database (`browserFolderGit`), with
-  file contents kept once each by their SHA-256 and each commit the map of its
-  paths to them, so a commit costs what it changed; the history repository
-  over it is the folder's own, and every suite runs over it too. **That
-  history is this browser's, not the folder's**: the folder holds none of it,
-  and the desktop's git history of the same folder is another.
+  file contents kept once each by their SHA-256, each commit as what it
+  changed, from and to, and the whole tree at every 64th commit, so a
+  commit's tree is the checkpoint before it with at most 63 commits' changes
+  laid over it (`browserTrees.ts`), and the folder's own tree with each
+  file's stamp kept once, as git's index is. A thousand commits of a folder
+  of a thousand files, each changing one file, keep about 2.7 MB, of which
+  about 1.5 MB are checkpoints; kept as one tree per commit they were about
+  144 MB. A commit reads the head again in the transaction that writes it:
+  where another tab moved it on, it writes nothing and is planned again on
+  what that tab recorded, and it is given up (`shell.historyFailed`) after
+  five tries. Two tabs opening a folder new to the browser at once each look
+  again after making its record and take the lowest key whose handle is the
+  folder, so both keep its steps and history under one key. Its history is
+  kept of what a desktop repository would hold (`workingSet.ts`): not the
+  operating systems' litter (`.DS_Store`, `Thumbs.db`, `desktop.ini`), a
+  `.git` or a `node_modules` folder, or what the top-level `.gitignore`'s
+  simple lines name — a name, `*` and `?` inside a name, a `/` that anchors,
+  a trailing `/` for folders. Not honoured: `!`, `**`, `\` escapes,
+  character classes and a `.gitignore` below the top. A file the history
+  holds, or a commit names, is kept whatever those say. The history
+  repository over it is the folder's own, and every suite runs over it too.
+  **That history is this browser's, not the folder's**: the folder holds none
+  of it, and the desktop's git history of the same folder is another.
 - **Pull, push and the remote** are in no repository. They stay on
   `ProjectHistory.sync` until the app moves onto the repositories and they
   become the folder provider's chrome.

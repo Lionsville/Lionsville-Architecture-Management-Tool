@@ -435,7 +435,8 @@ src/platform/     What the app runs inside, and what a failure looks like.
                                       repositories asks of that git: the
                                       changes, a commit of some paths, the
                                       commits with what each changed from and to,
-                                      the files at one, the tags, and whether the
+                                      the files at one, what a content holds and
+                                      how large it is, the tags, and whether the
                                       history can take a record now (ADR-0031 §2)
 src/widgets/      Presentation with no opinions: icons, one confirm dialog,
                   a laid-out page rasterised (`capturePage`), and a part that
@@ -494,7 +495,10 @@ src/adapters/     The outside world, one folder per flavour.
                                       last found, and pictures known by stamp
                                       (`StampCache`). In a browser, a folder's
                                       history is kept in this browser
-                                      (`browser/browserFolderGit`). Every suite
+                                      (`browser/browserFolderGit`: each commit as
+                                      what it changed, the whole tree now and
+                                      then, of what a desktop repository would
+                                      hold). Every suite
                                       runs over the fake, over the fake with that
                                       history, and over a real folder with git;
                                       `history.perf.test.ts` holds the history
