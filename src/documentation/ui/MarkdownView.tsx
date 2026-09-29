@@ -40,9 +40,12 @@ import Markdown, { defaultUrlTransform } from 'react-markdown'
 import type { Components, ExtraProps } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useStrings } from '../../i18n/LanguageContext'
+import { imageNameOfSource } from '../images'
+import { IMAGE_REFERENCE } from '../../model/imageName'
 import { blockFor } from './blocks'
 import type { BlockContext } from './blocks'
 import type { MermaidRenderer } from './MermaidBlock'
+import { LibraryPicture, usePictureEntry } from './Pictures'
 
 export const ELEMENT_LINK_SCHEME = 'element:'
 
@@ -73,11 +76,12 @@ function isDrawnFence(children: ReactNode): boolean {
 /**
  * The default transform drops every scheme it does not know, which is the
  * right instinct — a `javascript:` href must never survive — but it would also
- * drop the one scheme the package writes. Let that one through untouched and
- * leave everything else to the default.
+ * drop the two schemes the model writes: a link to an element, and a picture
+ * by its name in the library. Let those through untouched and leave
+ * everything else to the default.
  */
 function urlTransform(url: string): string {
-  return url.startsWith(ELEMENT_LINK_SCHEME) ? url : defaultUrlTransform(url)
+  return url.startsWith(ELEMENT_LINK_SCHEME) || url.startsWith(IMAGE_REFERENCE) ? url : defaultUrlTransform(url)
 }
 
 /**
@@ -107,13 +111,36 @@ function isPictureParagraph(node: ExtraProps['node']): boolean {
 /** A head row tinted with the accent rather than the hover grey, in both modes. */
 const HEAD_TINT = (theme: Theme) => alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.14 : 0.07)
 
+/** What a document draws where a picture it names is not one it can show: its alt text. */
+function MissingPicture({ src, alt }: { src: string | undefined; alt: string }) {
+  return (
+    <Box component="span" data-testid="image-missing" data-src={src} sx={{ color: 'text.secondary', fontStyle: 'italic' }}>
+      {alt}
+    </Box>
+  )
+}
+
 /**
- * A picture in the page, and the same picture at full size on a click.
+ * A picture named by its name in the library (ADR-0031 §3): laid out from its
+ * entry at once, its bytes asked for when it comes into view (`Pictures.tsx`).
+ * Keyed by the name, so a document that names another picture in the same
+ * place — switching from one document to the next — gets a new `img`, never
+ * the last one's with its source still on it.
+ */
+function NamedPicture({ name, src, alt }: { name: string; src: string; alt: string }) {
+  const entry = usePictureEntry(name)
+  if (!entry) return <MissingPicture src={src} alt={alt} />
+  return <LibraryPicture key={`${entry.name}\u0000${entry.contentAddress}`} entry={entry} alt={alt} />
+}
+
+/**
+ * A picture in the page from a source the host resolved, and the same picture
+ * at full size on a click.
  *
  * The page shows it at the width it has and no taller than most of the
  * window, so a tall screenshot does not take the page with it; the lightbox
- * shows the same source, which is already the file from disk, as large as the
- * window allows. Nothing is resized on the way.
+ * shows the same source as large as the window allows. Nothing is resized on
+ * the way.
  */
 function Picture({ url, alt }: { url: string; alt: string }) {
   const [open, setOpen] = useState(false)
@@ -283,24 +310,21 @@ function components(
       </Box>
     ),
     /**
-     * A picture, and only ever one this project holds (ADR-0009).
+     * A picture, and only ever one this scope holds (ADR-0009, ADR-0031 §3).
      *
-     * The resolver is the allowlist: it answers for a file in the project's
-     * `images/` folder and for nothing else, so an `http(s)` source in a
-     * description — a tracking pixel, or a picture that stops existing —
-     * is never fetched by a tool that promises no network. What is left is the
-     * alt text, which is what a reader of the markdown would have seen anyway.
+     * An `image:` name is looked up in the library the page was handed, and
+     * any other source goes to the host's resolver. Both are the allowlist:
+     * an `http(s)` source in a description — a tracking pixel, or a picture
+     * that stops existing — is never fetched by a tool that promises no
+     * network. What is left is the alt text, which is what a reader of the
+     * markdown would have seen anyway.
      */
     img: ({ src, alt }) => {
+      const name = imageNameOfSource(src)
+      if (name !== undefined && src) return <NamedPicture key={name} name={name} src={src} alt={alt ?? ''} />
       const url = src ? resolveImage?.(src) : undefined
-      if (!url) {
-        return (
-          <Box component="span" data-testid="image-missing" data-src={src} sx={{ color: 'text.secondary', fontStyle: 'italic' }}>
-            {alt || ''}
-          </Box>
-        )
-      }
-      return <Picture url={url} alt={alt ?? ''} />
+      if (!url) return <MissingPicture src={src} alt={alt ?? ''} />
+      return <Picture key={url} url={url} alt={alt ?? ''} />
     },
     table: ({ children }) => (
       <TableContainer {...WIDE} sx={{ my: '0.7em', overflowX: 'auto', borderRadius: 1, border: 1, borderColor: 'divider' }}>
