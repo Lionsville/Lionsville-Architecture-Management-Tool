@@ -22,7 +22,13 @@
  * and every scope that draws it (ADR-0012 §7).
  *
  * **A history follows the identity.** A scope moved keeps its entries; a scope
- * created where a removed one was starts with none.
+ * created where a removed one was starts with none. **And a move is an entry
+ * of its own** (`HistoryEntry.moved`, `ScopeRepository.move`): who moved the
+ * scope, when, from where to where — so the history of a scope read by its
+ * identity says where it has been as well as what was done to it, and an
+ * Activity list that reads it says so too. A move is not a step: it changes
+ * no record the model holds, only where the scope is, which no command
+ * says.
  *
  * **Going back is a step.** The state at an entry is read here; making the
  * present equal it is the model's own `restore` command, applied through
@@ -33,7 +39,7 @@
  */
 import type { LabelOutcome } from '../projects/label'
 import type { RecordKey } from '../model/recordKey'
-import type { ScopeId, ScopeState } from '../projects/scopeState'
+import type { ScopeAddress, ScopeId, ScopeState } from '../projects/scopeState'
 
 /** An entry's identity: opaque, and handed back to read that entry. */
 export type EntryId = string
@@ -53,7 +59,16 @@ export type HistoryEntry = {
   subject?: string
   /** What people have called this version since (ADR-0008); usually none. */
   labels: readonly string[]
+  /**
+   * The entry is a move of this scope, and says from which address to which:
+   * this scope's own, where the move was of a scope above it. The state at it
+   * is the scope's once moved. Absent on every other entry.
+   */
+  moved?: EntryMoved
 }
+
+/** Where a scope was, and where a move took it. */
+export type EntryMoved = { from: ScopeAddress; to: ScopeAddress }
 
 /** Which entries: of which scopes, about what, and from where. */
 export type EntriesWanted = {

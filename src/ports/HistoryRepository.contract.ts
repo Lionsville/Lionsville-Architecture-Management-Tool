@@ -200,7 +200,7 @@ export function describeHistoryRepository(name: string, make: MakeRepositories):
       await repositories.steps(acme, addDepot)
       await repositories.record()
       const after = await everyEntry(repositories.history, { scopes: [acme] })
-      expect(after.slice(1).map((entry) => entry.id)).toEqual(before.map((entry) => entry.id))
+      expect(after.filter((entry) => !entry.moved).slice(1).map((entry) => entry.id)).toEqual(before.map((entry) => entry.id))
       expect((await repositories.history.stateAt(acme, before[0].id))?.model.elements.map((element) => element.id)).toEqual(['crews'])
     })
 
@@ -216,6 +216,41 @@ export function describeHistoryRepository(name: string, make: MakeRepositories):
       expect(after.map((entry) => entry.id)).toEqual(expect.arrayContaining(before.map((entry) => entry.id)))
       const [newest] = before
       expect((await repositories.history.stateAt(stock, newest.id))?.model.elements.map((element) => element.id)).toEqual(['crews'])
+    })
+
+    /**
+     * A move is an entry of its own, read by the scope's identity with the
+     * rest: its Activity reaches back across the move, and says it.
+     */
+    it('lists a move among the entries of every scope it moved: who, when, and from where to where', async () => {
+      const repositories = await fresh()
+      const rail = await repositories.scope('acme/rail', 'Rail')
+      const stock = await repositories.scope('acme/rail/rolling-stock', 'Rolling stock')
+      await repositories.steps(rail, addCrews)
+      await repositories.record('before the move')
+      const before = await everyEntry(repositories.history, { scopes: [rail] })
+      ok(await repositories.move(rail, 'globex/rail'))
+      const after = await everyEntry(repositories.history, { scopes: [rail] })
+      expect(after.slice(1).map((entry) => entry.id)).toEqual(before.map((entry) => entry.id))
+      expect(before.some((entry) => entry.moved)).toBe(false)
+      const [move] = after
+      expect(move).toMatchObject({ scope: rail, moved: { from: 'acme/rail', to: 'globex/rail' } })
+      expect(move.by).toMatch(/\S/)
+      expect(move.at).toBeGreaterThan(0)
+      expect((await repositories.history.stateAt(rail, move.id))?.address).toBe('globex/rail')
+      const [under] = await everyEntry(repositories.history, { scopes: [stock] })
+      expect(under.moved).toEqual({ from: 'acme/rail/rolling-stock', to: 'globex/rail/rolling-stock' })
+    })
+
+    it('closes the open entry with the move: what was open goes with it', async () => {
+      const { repositories, acme } = await withEntries(addCrews)
+      await repositories.steps(acme, addDepot)
+      ok(await repositories.move(acme, 'globex'))
+      expect(await repositories.record('after the move')).toEqual([])
+      const [move] = await everyEntry(repositories.history, { scopes: [acme] })
+      expect(move.moved).toEqual({ from: 'acme', to: 'globex' })
+      expect((await repositories.history.stateAt(acme, move.id))?.model.elements.map((element) => element.id).sort()).toEqual(['crews', 'depot'])
+      expect((await everyEntry(repositories.history, { scopes: [acme], record: { kind: 'element', id: 'depot' } }))[0]?.id).toBe(move.id)
     })
 
     it('starts a scope created where a removed one was with a history of its own', async () => {

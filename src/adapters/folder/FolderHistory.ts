@@ -57,7 +57,9 @@ import type { ScopeAddress, ScopeId, ScopeState } from '../../projects/scopeStat
 import type {
   EntriesWanted, EntryId, EntryLabelled, HistoryEntry, HistoryPage, HistoryRepository, RecordWanted,
 } from '../../ports/HistoryRepository'
-import { SCOPE_TRAILER, ownFilesAt, ownerOf, scopeTrailer, subjectLine, trailersOf, within } from './folderGit'
+import {
+  SCOPE_TRAILER, movedTrailer, movesOf, ownFilesAt, ownerOf, scopeTrailer, subjectLine, trailersOf, within,
+} from './folderGit'
 import type { FolderCommit, FolderGit, FolderTag, TreeEntry } from './folderGit'
 import { libraryOf, LIBRARY_KEY, rowsOf } from './folderPictures'
 import { folderRevision } from './revision'
@@ -257,12 +259,38 @@ export class FolderHistory implements HistoryRepository {
     })
   }
 
-  private entryOf({ commit, id }: Found, tags: readonly FolderTag[]): HistoryEntry {
+  /**
+   * A move, as the entry of every scope it moved (`HistoryEntry.moved`): one
+   * commit of everything under the old address and the new — the scopes' own
+   * files and whatever a person keeps beside them, as a record commits them —
+   * with the trailer of each scope at its new address and one saying where it
+   * was. Only where a history is kept and can take a record now; otherwise
+   * the move is in the next record, at the new address, as it always was.
+   * Called by the scopes' repository while it holds the folder, so it does
+   * not wait for the folder itself.
+   */
+  async recordMoves(moves: readonly { id: ScopeId; from: ScopeAddress; to: ScopeAddress }[]): Promise<void> {
+    const [top] = moves
+    if (!top || !await this.git.keeping() || await this.git.readiness() !== 'ready') return
+    const moved = (path: string) => within(top.from, path) !== undefined || within(top.to, path) !== undefined
+    const paths = (await this.git.changes()).map((change) => change.path).filter(moved)
+    const message = [
+      subjectLine(`Moved from ${top.from} to ${top.to}`), '',
+      ...moves.flatMap((one) => [scopeTrailer(one.id, composed(one.to)), movedTrailer(one.id, composed(one.from))]),
+    ].join('\n')
+    await this.git.commit(paths, message)
+  }
+
+  private entryOf({ commit, id, address }: Found, tags: readonly FolderTag[]): HistoryEntry {
     const mine = `${labelSpace(id)}/`
     const labels = tags
       .filter((tag) => tag.sha === commit.sha && (tag.name.startsWith(mine) || isFolderWide(tag)))
       .map((tag) => tag.message || tag.name)
-    return { id: entryIdOf(commit.sha, id), scope: id, at: commit.at, by: commit.author, subject: commit.subject, labels }
+    const from = movesOf(commit.message).get(id)
+    return {
+      id: entryIdOf(commit.sha, id), scope: id, at: commit.at, by: commit.author, subject: commit.subject, labels,
+      ...(from !== undefined ? { moved: { from, to: address } } : {}),
+    }
   }
 
   /** Every commit whose message holds a text, its message alone, in chunks, to the first commit there is. */
@@ -286,6 +314,8 @@ export class FolderHistory implements HistoryRepository {
       for (const commit of await this.grep(`${SCOPE_TRAILER}: ${id} `, tip)) {
         const address = trailersOf(commit.message).get(id)
         if (address !== undefined) held.add(address)
+        const from = movesOf(commit.message).get(id)
+        if (from !== undefined) held.add(from)
       }
       asked.push({ id, held: [...held] })
     }

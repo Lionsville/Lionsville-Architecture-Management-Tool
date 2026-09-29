@@ -189,6 +189,13 @@ export interface ScopeRepository {
    * it**, because an address is part of a state: a step made against one of
    * them before the move, and expecting that, is refused. No other scope's
    * revision moves. The answer is the moved scope's revision after the move.
+   *
+   * **A move is an entry in the history of every scope it moved**
+   * (`HistoryEntry.moved`): who moved it, when, and from which address to
+   * which, read by the scope's identity like any other of its entries. It
+   * closes the scope's open entry, whatever steps were open going with it.
+   * Recorded wherever the source keeps a history; one it has not started
+   * yet is not started for a move.
    */
   move(scope: ScopeId, to: ScopeAddress, expects?: Revision): Promise<Moved | Refused>
 

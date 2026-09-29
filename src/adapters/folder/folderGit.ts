@@ -132,17 +132,39 @@ export function scopeTrailer(id: ScopeId, address: ScopeAddress): string {
  * subject or a body that looks like one is not one.
  */
 export function trailersOf(message: string): Map<ScopeId, ScopeAddress> {
+  return addressTrailers(message, SCOPE_TRAILER)
+}
+
+/** Every trailer of one name in a commit's trailer block, each an identity and an address. */
+function addressTrailers(message: string, name: string): Map<ScopeId, ScopeAddress> {
   const found = new Map<ScopeId, ScopeAddress>()
   const paragraphs = message.replace(/\s+$/, '').split(/\n[ \t]*\n/)
   if (paragraphs.length < 2) return found
   const block = paragraphs[paragraphs.length - 1].split('\n')
   if (!block.every((line) => /^[A-Za-z0-9-]+: \S/.test(line))) return found
-  const pattern = new RegExp(`^${SCOPE_TRAILER}: (\\S+) (\\S+)$`)
+  const pattern = new RegExp(`^${name}: (\\S+) (\\S+)$`)
   for (const line of block) {
     const [, id, address] = pattern.exec(line) ?? []
     if (id) found.set(id, address === ROOT_IN_TRAILER ? ROOT_SCOPE : address)
   }
   return found
+}
+
+/** The trailer a move's commit says where one scope it moved was before, beside the scope's own. */
+export const MOVED_TRAILER = 'Lionsville-Moved-From'
+
+/** The trailer for where one scope a commit moved was before it. */
+export function movedTrailer(id: ScopeId, from: ScopeAddress): string {
+  return `${MOVED_TRAILER}: ${id} ${from === ROOT_SCOPE ? ROOT_IN_TRAILER : from}`
+}
+
+/**
+ * Where each scope a commit moved was before it, by identity; empty for a
+ * commit that moved none. Read from the trailer block as the scopes are
+ * ({@link trailersOf}).
+ */
+export function movesOf(message: string): Map<ScopeId, ScopeAddress> {
+  return addressTrailers(message, MOVED_TRAILER)
 }
 
 /** A record's subject as a commit's first line: one line, however it was typed. */

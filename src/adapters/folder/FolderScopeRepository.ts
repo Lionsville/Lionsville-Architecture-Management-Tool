@@ -146,21 +146,28 @@ function refusalOf(cause: unknown, scope: ScopeId): Refused | undefined {
   return undefined
 }
 
+/** Each scope a move took somewhere else: which, from where, and to where. */
+export type ScopesMoved = readonly { id: ScopeId; from: ScopeAddress; to: ScopeAddress }[]
+
 export class FolderScopeRepository implements ScopeRepository {
   readonly id = 'folder'
 
   private readonly folder: FolderScopes
   private readonly applied: StepMemory
   private readonly staging: PictureStaging
+  private readonly moved: (moves: ScopesMoved) => Promise<void>
 
+  /** `moved` records a move in the history, while the folder is held (`FolderHistory.recordMoves`). */
   constructor(
     folder: FolderScopes,
     applied: StepMemory,
     staging: PictureStaging,
+    moved: (moves: ScopesMoved) => Promise<void> = () => Promise.resolve(),
   ) {
     this.folder = folder
     this.applied = applied
     this.staging = staging
+    this.moved = moved
   }
 
   async tree(): Promise<ScopeTree> {
@@ -443,7 +450,12 @@ export class FolderScopeRepository implements ScopeRepository {
       const made = ancestorScopes(to).reverse().filter((above) => above !== ROOT_SCOPE && !taken.has(above))
         .map((above) => ({ scope: newSnapshot(above, newIdentity(), { name: scopePathLabel(above) }) }))
       if (made.length) await this.folder.store.saveTogether(made)
-      await this.carry(node.address, to, nodes.filter((held) => isWithinScope(held.address, node.address)))
+      const moving = nodes.filter((held) => isWithinScope(held.address, node.address))
+      await this.carry(node.address, to, moving)
+      // Moved whatever the history says: a history that could not take the
+      // entry has the move in its next record, at the new address.
+      await this.moved(moving.map((held) => ({ id: held.id, from: held.address, to: `${to}${held.address.slice(node.address.length)}` })))
+        .catch((cause: unknown) => this.folder.diagnostics?.report({ level: 'warn', where: 'folder', message: 'a move was not recorded in the history', cause }))
       return { revision: (await this.folder.read(scope))!.state.revision }
     })
   }

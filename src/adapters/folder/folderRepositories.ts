@@ -56,10 +56,12 @@ export type FolderOpening = {
 export function folderRepositories(opening: FolderOpening): Repositories {
   const folder = new FolderScopes(opening.root, opening.diagnostics, opening.places, opening.stamps)
   const staging = new PictureStaging()
+  const history = new FolderHistory(folder, opening.git)
   return {
-    scopes: new FolderScopeRepository(folder, new StepMemory(opening.steps, opening.now), staging),
+    // A move is an entry of the history of every scope it moved (`ScopeRepository.move`).
+    scopes: new FolderScopeRepository(folder, new StepMemory(opening.steps, opening.now), staging, (moves) => history.recordMoves(moves)),
     index: new FolderIndex(folder),
-    history: new FolderHistory(folder, opening.git),
+    history,
     images: new FolderImageRepository(folder, staging),
     settings: new FolderSettingsRepository(folder, opening.person ?? personSettingsInMemory()),
   }

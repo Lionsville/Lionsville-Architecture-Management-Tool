@@ -184,7 +184,9 @@ describe('a scope under a moved scope', () => {
     const state = await repositories.scopes.state(stock)
     expect(state?.address).toBe('globex/rail/rolling-stock')
     expect(state?.model.elements.map((one) => one.id)).toEqual(['crews'])
-    expect((await repositories.history.entries({ scopes: [stock] })).entries.map((one) => one.id)).toEqual([entry.id])
+    const [move, before] = (await repositories.history.entries({ scopes: [stock] })).entries
+    expect(move.moved).toEqual({ from: 'acme/rail/rolling-stock', to: 'globex/rail/rolling-stock' })
+    expect(before.id).toBe(entry.id)
     expect((await repositories.history.stateAt(stock, entry.id))?.address).toBe('acme/rail/rolling-stock')
     expect(await repositories.images.bytes(stock, 'wagon.png')).toEqual({ mediaType: 'image/png', bytes })
     expect(await repositories.settings.read({ of: 'scope', scope: stock })).toEqual({ review: true })

@@ -14,6 +14,7 @@
 import type { ImageEntry } from '../../model/imageName'
 import { SCOPE_RECORD, sameValue } from '../../model/recordKey'
 import type { RecordKey } from '../../model/recordKey'
+import type { EntryMoved } from '../../ports/HistoryRepository'
 import type { ScopeKind } from '../../projects/scope'
 import type { RecordLink } from '../../projects/links'
 import { ancestorScopes, scopePathLabel } from '../../projects/scopePath'
@@ -254,16 +255,18 @@ export type KeptEntry = {
   subject?: string
   labels: string[]
   records: readonly RecordKey[]
+  /** A move's entry: from which address to which (`HistoryEntry.moved`). */
+  moved?: EntryMoved
 }
 
 /**
  * Close a scope's open entry: the entry, numbered next in the source, and the
  * scope's state as it stands (`entryStates.ts`) — whose pictures' bytes then
  * stay as long as the history does. The scope must have one open; the caller
- * writes `meta` back.
+ * writes `meta` back. `moved` makes it a move's entry.
  */
 export async function closeEntry(
-  tx: Transaction, meta: Meta, kept: KeptScope, by: string, subject?: string,
+  tx: Transaction, meta: Meta, kept: KeptScope, by: string, subject?: string, moved?: EntryMoved,
 ): Promise<KeptEntry> {
   const { pending, ...closed } = kept
   if (!pending) throw new Error('an entry was closed on a scope with none open')
@@ -271,6 +274,7 @@ export async function closeEntry(
   const entry: KeptEntry = {
     seq: meta.entrySeq, scope: kept.id, at: pending.at, by,
     ...(subject !== undefined ? { subject } : {}), labels: [], records: pending.records,
+    ...(moved ? { moved } : {}),
   }
   tx.put('entries', entryKey(kept.id, entry.seq), entry)
   const state = await readState(tx, kept)

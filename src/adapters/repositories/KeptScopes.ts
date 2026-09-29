@@ -11,7 +11,7 @@
  * store as it was before the apply began.
  */
 import type { RecordKey } from '../../model/recordKey'
-import { sameRecord, sameValue } from '../../model/recordKey'
+import { SCOPE_RECORD, sameRecord, sameValue } from '../../model/recordKey'
 import { isSafeScopePath, isWithinScope, ROOT_SCOPE } from '../../projects/scopePath'
 import { applySteps, emptyContent, putsBackWhole, STEP_ELSEWHERE } from '../../projects/scopeState'
 import type { Revision, ScopeAddress, ScopeContent, ScopeId, ScopeState, ScopeStep } from '../../projects/scopeState'
@@ -20,8 +20,8 @@ import type {
 } from '../../ports/ScopeRepository'
 import type { Transaction } from './KeyedStore'
 import {
-  allScopes, forget, indexChanged, makeAncestors, makeScope, META_KEY, mintId, parentOf, readContent, readMeta, readModel, readState, says, scopeAt,
-  writeContent,
+  allScopes, closeEntry, forget, indexChanged, makeAncestors, makeScope, META_KEY, mintId, parentOf, readContent, readMeta, readModel, readState,
+  says, scopeAt, writeContent,
 } from './kept'
 import type { KeptScope, Meta } from './kept'
 import type { Source } from './source'
@@ -103,7 +103,12 @@ export class KeptScopes implements ScopeRepository {
     })
   }
 
+  /**
+   * Every scope under the one moved goes with it, and each closes its open
+   * entry as the entry that says it moved (`HistoryEntry.moved`).
+   */
   move(scope: ScopeId, to: ScopeAddress, expects?: Revision): Promise<Moved | Refused> {
+    const now = Date.now()
     return this.source.write(async (tx) => {
       const scopes = await allScopes(tx)
       const kept = scopes.find((one) => one.id === scope)
@@ -112,12 +117,15 @@ export class KeptScopes implements ScopeRepository {
       const from = kept!.address
       const moving = scopes.filter((one) => isWithinScope(one.address, from))
       const made = await makeAncestors(tx, scopes, to)
+      const meta = await readMeta(tx)
       for (const one of moving) {
+        const was = one.address
         one.address = `${to}${one.address.slice(from.length)}`
         one.revision = mintId()
-        tx.put('scopes', one.id, one)
+        one.pending = { records: mergeRecords(one.pending?.records ?? [], [SCOPE_RECORD]), at: Math.max(now, one.pending?.at ?? 0) }
+        // Written by the closing, at its new address and with no entry open.
+        await closeEntry(tx, meta, one, this.source.by, undefined, { from: was, to: one.address })
       }
-      const meta = await readMeta(tx)
       meta.treeRevision = mintId()
       indexChanged(tx, meta, [...made, ...moving].map((one) => one.id))
       tx.put('meta', META_KEY, meta)

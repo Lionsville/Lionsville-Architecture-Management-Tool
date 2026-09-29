@@ -38,8 +38,8 @@ function seqOf(entry: EntryId): number | undefined {
   return /^[1-9]\d*$/.test(String(entry)) ? Number(entry) : undefined
 }
 
-function listed({ seq, scope, at, by, subject, labels }: KeptEntry): HistoryEntry {
-  return { id: String(seq), scope, at, by, labels, ...(subject !== undefined ? { subject } : {}) }
+function listed({ seq, scope, at, by, subject, labels, moved }: KeptEntry): HistoryEntry {
+  return { id: String(seq), scope, at, by, labels, ...(subject !== undefined ? { subject } : {}), ...(moved ? { moved } : {}) }
 }
 
 export class KeptHistory implements HistoryRepository {
