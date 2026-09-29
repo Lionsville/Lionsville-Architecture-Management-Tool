@@ -195,6 +195,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'history.labelField': 'Beschriftung',
   'history.labelConfirm': 'Beschriften',
   'history.labelled': 'Beschriftet.',
+  'history.labelFailed': 'Die Beschriftung konnte nicht hinzugefügt werden: {reason}',
   'history.labelExists': 'Hier gibt es bereits eine Beschriftung mit diesem Namen. Wählen Sie ein anderes Wort.',
   'history.labelUnnamed': 'Eine Beschriftung braucht ein Wort.',
 

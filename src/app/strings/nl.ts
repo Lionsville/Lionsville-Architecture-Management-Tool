@@ -194,6 +194,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'history.labelField': 'Label',
   'history.labelConfirm': 'Label',
   'history.labelled': 'Label gegeven.',
+  'history.labelFailed': 'Het label kon niet worden toegevoegd: {reason}',
   'history.labelExists': 'Er is hier al een label met die naam. Kies een ander woord.',
   'history.labelUnnamed': 'Een label heeft een woord nodig.',
 

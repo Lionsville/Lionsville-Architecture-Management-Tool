@@ -339,7 +339,7 @@ export function useProjectHistory(deps: {
         case 'gone': notify(s('history.readFailed', { message: outcome }), 'warning'); break
       }
     }, (cause: unknown) => {
-      notify(s('history.failed', { message: reasonIn(cause, s) }), 'error')
+      notify(s('history.labelFailed', { reason: reasonIn(cause, s) }), 'error')
     })
   }, [history, entries, chosen, subject, list, notify, s])
 

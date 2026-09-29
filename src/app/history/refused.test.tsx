@@ -37,4 +37,23 @@ describe('a snapshot git was not run for', () => {
       `The snapshot could not be taken: git was not run in this folder: ${REFUSED}`, 'error',
     ))
   })
+
+  it('says a label git was not run for as a label that could not be added, not as a snapshot', async () => {
+    const notify = vi.fn()
+    const scopes = heldRepositories([project()])
+    const held = fakeHistory(scopes.scopes, [{ id: 'e1', address: 'acme', at: 1 }])
+    const history = { ...held, label: () => Promise.reject(new ShellError('shell.gitRefused', { reason: REFUSED })) }
+    const { result } = renderHook(() => useProjectHistory({
+      history, scopes: scopes.scopes, project, steps: () => [], save: () => Promise.resolve(), indexed: () => ({}) as never,
+      dispatch: () => undefined, notify, s,
+    }))
+    act(() => { result.current.openPage() })
+    await waitFor(() => expect(result.current.entries).toHaveLength(1))
+    act(() => { result.current.choose('e1') })
+    act(() => { result.current.label('Shown to the board') })
+    await waitFor(() => expect(notify).toHaveBeenCalledWith(
+      `The label could not be added: git was not run in this folder: ${REFUSED}`, 'error',
+    ))
+    expect(notify).not.toHaveBeenCalledWith(expect.stringContaining('snapshot'), 'error')
+  })
 })

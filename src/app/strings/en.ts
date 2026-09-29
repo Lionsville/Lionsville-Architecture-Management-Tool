@@ -321,6 +321,7 @@ export const EN = {
   'history.labelField': 'Label',
   'history.labelConfirm': 'Label',
   'history.labelled': 'Labelled.',
+  'history.labelFailed': 'The label could not be added: {reason}',
   'history.labelExists': 'A label with that name is already here. Pick another word.',
   'history.labelUnnamed': 'A label needs a word in it.',
 
