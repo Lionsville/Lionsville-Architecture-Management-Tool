@@ -395,9 +395,34 @@ describe('ElementInspector — a selection writes nothing', () => {
       </ThemeProvider>
     );
     const { rerender } = render(inspect(first));
+    expect((screen.getByLabelText('Domain group') as HTMLInputElement).value).toBe('Sales');
     rerender(inspect(second));
+    expect((screen.getByLabelText('Domain group') as HTMLInputElement).value).toBe('Finance');
     rerender(inspect(first));
     expect(fileUnder).not.toHaveBeenCalled();
+  });
+
+  it('a domain group typed still files the element under it', () => {
+    const { actions } = makeActions();
+    const fileUnder = vi.fn();
+    const withFiling = new Proxy(actions as unknown as Record<string | symbol, unknown>, {
+      get: (target, prop) => (prop === 'fileUnderGroupNamed' ? fileUnder : target[prop]),
+    }) as unknown as EditorActions;
+    const dia = diagram({ placements: [{ id: 'e1', zone: 'landscape', x: 0, y: 0 }], groups: [{ id: 'g1', name: 'Sales' }] });
+    render(
+      <ThemeProvider theme={testTheme}>
+        <ElementInspector
+          element={element()}
+          model={model(element(), dia)}
+          diagram={dia}
+          readOnly={false}
+          actions={withFiling}
+          onRequestDelete={vi.fn()}
+        />
+      </ThemeProvider>,
+    );
+    fireEvent.change(screen.getByLabelText('Domain group'), { target: { value: 'Sales' } });
+    expect(fileUnder).toHaveBeenCalledWith(['e1'], 'Sales');
   });
 
   it('a category typed is still written', () => {
