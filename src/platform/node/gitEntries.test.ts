@@ -18,7 +18,7 @@ import { gitAvailable, isRepository, snapshot, useHooksFolder } from './git'
 const run = promisify(execFile)
 import {
   allTags, changes, commitLog, commitPaths, folderGitAt, headOf, isScopeTagName, readAt, readiness, startHistory,
-  tagCommit, treeAt,
+  tagCommit, textsOf, treeAt,
 } from './gitEntries'
 
 const available = await gitAvailable()
@@ -274,5 +274,46 @@ describe.skipIf(!available)('a history in no state to take a record', () => {
     const [commit] = await commitLog(root, { limit: 1 })
     expect(commit.changed.sort()).toEqual(['a.md', 'c.md'])
     expect((await readdir(join(root, '.git'))).filter((name) => !before.includes(name) && name.startsWith('lionsville'))).toEqual([])
+  })
+})
+
+describe.skipIf(!available)('what changed, and what a file held', () => {
+  it('says what each commit changed from and to, and reads what a file held by that id', async () => {
+    expect(await headOf(root)).toBeUndefined()
+    expect(await readiness(root)).toBe('ready')
+    await startHistory(root)
+    expect(await headOf(root)).toBeUndefined()
+    await put('model.json', '{"at":0}')
+    await commitPaths(root, ['model.json'], 'one')
+    await put('model.json', '{"at":1}')
+    const sha = await commitPaths(root, ['model.json'], 'two')
+    expect(await headOf(root)).toBe(sha)
+    const [commit] = await commitLog(root, { limit: 1 })
+    const [before, after] = commit.blobs!['model.json']
+    expect(await textsOf(root, [before, after, 'not-an-id'])).toEqual({ [before]: '{"at":0}', [after]: '{"at":1}' })
+    expect(await textsOf(root, [])).toEqual({})
+    const [bare] = await commitLog(root, { limit: 1, bare: true })
+    expect([bare.changed, bare.blobs]).toEqual([[], undefined])
+    const held = folderGitAt(root)
+    expect(await held.head()).toBe(sha)
+    expect(await held.readiness()).toBe('ready')
+    expect(await held.texts([after])).toEqual({ [after]: '{"at":1}' })
+  })
+
+  it('is part way while a file is left unmerged, whatever else git keeps', async () => {
+    await startHistory(root)
+    await put('model.json', '{"at":0}')
+    await commitPaths(root, ['model.json'], 'base')
+    const sh = (...args: string[]) => run('git', ['-c', 'user.name=A', '-c', 'user.email=a@example.org', ...args], { cwd: root })
+    const main = (await sh('symbolic-ref', '--short', 'HEAD')).stdout.trim()
+    await sh('checkout', '-q', '-b', 'side')
+    await put('model.json', '{"at":"side"}')
+    await commitPaths(root, ['model.json'], 'side')
+    await sh('checkout', '-q', main)
+    await put('model.json', '{"at":"main"}')
+    await commitPaths(root, ['model.json'], 'main')
+    await sh('merge', '-q', 'side').catch(() => undefined)
+    await rm(join(root, '.git', 'MERGE_HEAD'))
+    expect(await readiness(root)).toBe('midway')
   })
 })
