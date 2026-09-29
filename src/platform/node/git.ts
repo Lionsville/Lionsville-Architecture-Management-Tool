@@ -66,7 +66,7 @@ import { execFile } from 'node:child_process'
 import { access, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
-import { GitRefused, gitEnvironment, guardedFlags } from './gitGuard'
+import { GitRefused, gitEnvironment, guardedFlags, personDefinesFilter, refuseAddressInside } from './gitGuard'
 import { LOCAL_SETTINGS_PATH } from '../../adapters/folder/format/folderSettings'
 import { isSpacedLabel, labelSlug } from '../../projects/label'
 import type { LabelOutcome } from '../../projects/label'
@@ -453,6 +453,7 @@ type Fetched = 'fetched' | 'absent' | SyncRefusal | SyncRefused
 /** Bring the remote's branch to `FETCH_HEAD`, or say why not. */
 async function fetch(root: string, target: SyncRemote): Promise<Fetched> {
   try {
+    await refuseTargetInside(root, target)
     await git(root, ['fetch', '--no-write-fetch-head', target.name, target.branch], SYNC_TIMEOUT_MS)
     // A second, explicit ref: FETCH_HEAD is per-fetch and easy to confuse.
     await git(root, ['fetch', target.name, `+refs/heads/${target.branch}:refs/remotes/${target.name}/${target.branch}`], SYNC_TIMEOUT_MS)
@@ -464,6 +465,42 @@ async function fetch(root: string, target: SyncRemote): Promise<Fetched> {
     if (/couldn't find remote ref|Couldn't find remote ref/.test(text)) return 'absent'
     return classify(error)
   }
+}
+
+/**
+ * Every address git would reach the remote by, as git says it once
+ * everything that rewrites one has had its say, held to the rule the
+ * configuration's own are: none inside the folder.
+ */
+async function refuseTargetInside(root: string, target: SyncRemote): Promise<void> {
+  for (const push of [[], ['--push']]) {
+    const said = await git(root, ['remote', 'get-url', '--all', ...push, target.name])
+    for (const address of said.split('\n').filter(Boolean)) await refuseAddressInside(root, address, `remote ${target.name}`)
+  }
+}
+
+/**
+ * Where the folder keeps files with git-lfs, they go up before the commits
+ * that point at them: git-lfs uploads them from the hook git runs before a
+ * push, and no hook of a folder's runs here. So the person's own git-lfs —
+ * the filter their configuration defines, from `git lfs install` — is asked
+ * to push them; where they have none, the push is refused rather than
+ * sending pointers to files the remote will never have.
+ */
+async function largeFilesFirst(root: string, target: SyncRemote): Promise<void> {
+  if (!await keepsLargeFiles(root)) return
+  if (!await personDefinesFilter(root, 'lfs')) {
+    throw new GitRefused('its files are kept with git-lfs, which your own configuration does not set up, so large files would not be uploaded; run git lfs install, then push again')
+  }
+  await git(root, ['lfs', 'push', target.name, 'HEAD'], SYNC_TIMEOUT_MS)
+}
+
+/** Does a `.gitattributes` the folder keeps — or its repository's own attributes — hand any file to git-lfs? */
+async function keepsLargeFiles(root: string): Promise<boolean> {
+  const listed = (await git(root, ['ls-files', '-z', '--', ':(glob)**/.gitattributes'])).split('\0').filter(Boolean)
+  const texts = await Promise.all([...listed.map((path) => join(root, path)), join(root, '.git', 'info', 'attributes')]
+    .map((path) => readFile(path, 'utf8').catch(() => '')))
+  return texts.some((text) => /(^|\s)filter=lfs(\s|$)/m.test(text))
 }
 
 const remoteRef = (target: SyncRemote): string => `refs/remotes/${target.name}/${target.branch}`
@@ -500,6 +537,8 @@ async function pushHere(root: string): Promise<PushOutcome> {
   if (!target) return 'no-remote'
   if (!await hasCommits(root)) return 'done'
   try {
+    await refuseTargetInside(root, target)
+    await largeFilesFirst(root, target)
     // `--follow-tags`: the annotated tags reachable from what is pushed — every
     // label this app makes — travel with the branch, so a mark made here is a
     // mark a colleague sees (ADR-0008). Lightweight tags stay behind, which is

@@ -37,7 +37,7 @@ beforeEach(async () => {
   await mkdir(root)
   // The person's own configuration, and nothing of the machine's that could ask anything.
   for (const name of [
-    'GIT_CONFIG_GLOBAL', 'GIT_CONFIG_NOSYSTEM', 'GIT_ASKPASS', 'SSH_ASKPASS', 'GIT_CONFIG_PARAMETERS', 'GIT_CONFIG',
+    'GIT_CONFIG_GLOBAL', 'GIT_CONFIG_NOSYSTEM', 'GIT_ASKPASS', 'SSH_ASKPASS', 'GIT_CONFIG_PARAMETERS', 'GIT_CONFIG', 'PATH',
     'https_proxy', 'HTTPS_PROXY', 'http_proxy', 'HTTP_PROXY', 'all_proxy', 'ALL_PROXY', 'no_proxy', 'NO_PROXY',
   ]) kept[name] = process.env[name]
   process.env.GIT_CONFIG_GLOBAL = join(place, 'own.gitconfig')
@@ -775,6 +775,93 @@ describe.skipIf(!available)('the last review', () => {
       await git(root, ['ls-remote', url]).catch(() => undefined)
       expect(heard.join('\n')).not.toContain('x-folder')
       expect(heard.join('\n')).toContain('x-own')
+    })
+  })
+})
+
+describe.skipIf(!available)('the remote a push goes to, and what goes with it', () => {
+  /** A bare repository inside the folder, with a hook that leaves a mark where it runs. */
+  async function innerRemote(): Promise<void> {
+    const inner = join(root, 'inner.git')
+    await raw(['init', '-q', '--bare', inner])
+    await writeFile(join(inner, 'hooks', 'pre-receive'), `#!/bin/sh\ntouch "${join(place, 'inner-hook.ran')}"\n`, { mode: 0o755 })
+  }
+
+  async function firstCommit(): Promise<void> {
+    await raw(['init', '-q', '-b', 'main'])
+    await put('model.json', '{}')
+    await raw(['add', 'model.json'])
+    await raw(['commit', '-q', '-m', 'first'])
+  }
+
+  it('refuses a branch whose remote is no configured remote but an address inside the folder', async () => {
+    await firstCommit()
+    await innerRemote()
+    await folderSets('branch.main.remote', './inner.git')
+    await folderSets('branch.main.merge', 'refs/heads/main')
+    expect(await push(root)).toMatchObject({ refused: expect.stringMatching(/branch\.main\.remote/) })
+    await expect(git(root, ['push', './inner.git', 'HEAD:refs/heads/main'])).rejects.toThrow(REFUSED)
+    expect(await ran('inner-hook')).toBe(false)
+  })
+
+  it('refuses a remote named the old way, in .git/remotes', async () => {
+    await firstCommit()
+    await innerRemote()
+    await mkdir(join(root, '.git', 'remotes'), { recursive: true })
+    await writeFile(join(root, '.git', 'remotes', 'origin'), 'URL: ./inner.git\nPush: refs/heads/main:refs/heads/main\n')
+    expect(await push(root)).toMatchObject({ refused: expect.stringMatching(/\.git\/remotes/) })
+    expect(await ran('inner-hook')).toBe(false)
+  })
+
+  it('refuses a configured remote whose address, once git has rewritten it, is inside the folder', async () => {
+    await firstCommit()
+    await innerRemote()
+    // An address outside the folder, which the person's own rewrite turns into one inside it.
+    await personSets(`url.${join(root, 'inner.git')}.insteadOf`, join(place, 'nowhere-remote'))
+    await raw(['remote', 'add', 'origin', join(place, 'nowhere-remote')])
+    expect(await push(root)).toMatchObject({ refused: expect.stringMatching(/inside the folder/) })
+    expect(await ran('inner-hook')).toBe(false)
+  })
+
+  describe('large files kept with git-lfs', () => {
+    /** A stand-in git-lfs first on the path: a filter that passes files through, and a push that leaves a mark. */
+    async function standInLfs(): Promise<void> {
+      const bin = join(place, 'bin')
+      await mkdir(bin)
+      await writeFile(join(bin, 'git-lfs'), [
+        '#!/bin/sh',
+        'case "$1" in',
+        '  clean|smudge) cat ;;',
+        `  push) echo "$@" > "${join(place, 'lfs-push.ran')}" ;;`,
+        'esac',
+      ].join('\n'), { mode: 0o755 })
+      process.env.PATH = `${bin}:${process.env.PATH ?? ''}`
+    }
+
+    it('go up with the person’s own git-lfs before the push', async () => {
+      await standInLfs()
+      await personSets('filter.lfs.clean', 'git-lfs clean -- %f')
+      await personSets('filter.lfs.smudge', 'git-lfs smudge -- %f')
+      const bare = await remoteWithCommit('remote')
+      await cloneOf(bare)
+      await put('.gitattributes', '*.png filter=lfs diff=lfs merge=lfs -text\n')
+      await put('picture.png', 'large bytes')
+      await snapshot(root, 'a large file')
+      expect(await push(root)).toBe('done')
+      expect(await readFile(join(place, 'lfs-push.ran'), 'utf8')).toMatch(/^push origin HEAD/)
+    })
+
+    it('refuse the push where the person’s own configuration does not set git-lfs up', async () => {
+      await standInLfs()
+      const bare = await remoteWithCommit('remote')
+      await cloneOf(bare)
+      await put('.gitattributes', '*.png filter=lfs diff=lfs merge=lfs -text\n')
+      await put('picture.png', 'large bytes')
+      await snapshot(root, 'a large file')
+      expect(await push(root)).toMatchObject({ refused: expect.stringMatching(/large files would not be uploaded/) })
+      expect(await ran('lfs-push')).toBe(false)
+      const remoteLog = await run('git', ['log', '--oneline', 'main'], { cwd: bare })
+      expect(remoteLog.stdout).not.toContain('a large file')
     })
   })
 })

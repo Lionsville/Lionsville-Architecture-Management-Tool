@@ -44,7 +44,7 @@
 import { execFile } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import type { BigIntStats } from 'node:fs'
-import { mkdir, mkdtemp, readFile, realpath, stat } from 'node:fs/promises'
+import { mkdir, mkdtemp, readdir, readFile, realpath, stat } from 'node:fs/promises'
 import { homedir, tmpdir } from 'node:os'
 import { isAbsolute, join, relative, resolve } from 'node:path'
 import { promisify } from 'node:util'
@@ -422,14 +422,20 @@ async function configurationsOf(root: string): Promise<Configurations> {
 
 /** The repository's own files that git reads its configuration by, found as git finds them. */
 async function repositoryFiles(root: string): Promise<string[]> {
-  const dotGit = join(root, '.git')
-  const pointer = await readFile(dotGit, 'utf8').catch(() => undefined)
-  const gitDir = pointer?.startsWith('gitdir:') ? resolve(root, pointer.slice('gitdir:'.length).trim()) : dotGit
-  const common = await readFile(join(gitDir, 'commondir'), 'utf8').then((named) => resolve(gitDir, named.trim()), () => gitDir)
+  const { dotGit, gitDir, common } = await repositoryDirs(root)
   return [
     dotGit, join(gitDir, 'commondir'), join(common, 'config'), join(gitDir, 'config.worktree'),
     join(gitDir, 'HEAD'), join(gitDir, 'reftable', 'tables.list'), join(common, 'reftable', 'tables.list'),
   ]
+}
+
+/** Where the repository is, found as git finds it: a `.git` that points elsewhere followed, and a worktree's common directory. */
+async function repositoryDirs(root: string): Promise<{ dotGit: string; gitDir: string; common: string }> {
+  const dotGit = join(root, '.git')
+  const pointer = await readFile(dotGit, 'utf8').catch(() => undefined)
+  const gitDir = pointer?.startsWith('gitdir:') ? resolve(root, pointer.slice('gitdir:'.length).trim()) : dotGit
+  const common = await readFile(join(gitDir, 'commondir'), 'utf8').then((named) => resolve(gitDir, named.trim()), () => gitDir)
+  return { dotGit, gitDir, common }
 }
 
 /** The person's own configuration files, where git would look for them. */
@@ -476,6 +482,15 @@ function fileOf(root: string, origin: string): string | undefined {
   if (!origin.startsWith('file:')) return undefined
   const path = origin.slice('file:'.length)
   return isAbsolute(path) ? path : resolve(root, path)
+}
+
+/**
+ * Does the person's own configuration define this filter — a program for it,
+ * the machine's or their global one? `git lfs install` defines `lfs` there.
+ */
+export async function personDefinesFilter(root: string, name: string): Promise<boolean> {
+  const { own } = await configurationsOf(root)
+  return ['clean', 'smudge', 'process'].some((variable) => own.some((entry) => sameKey(entry.key, `filter.${name}.${variable}`)))
 }
 
 /** Where the command is among a git's arguments: the first word that is not an option, or the value of one. */
@@ -633,8 +648,66 @@ async function folderFlags(root: string, folder: Entry[], own: Entry[], args: re
     }
   }
   await refuseIncludesInWorkTree(root, folder)
-  if (REMOTE_COMMANDS.has(command)) await refuseRemotesInside(root, folder)
+  if (REMOTE_COMMANDS.has(command)) {
+    await refuseRemotesInside(root, folder)
+    refuseRemotesNotConfigured([...folder, ...own])
+    await refuseRemotesOfOld(root)
+    await refuseAddressGiven(root, args, [...folder, ...own])
+  }
   return flags
+}
+
+/** The remotes a configuration names: those with an address of their own. */
+function configuredRemotes(entries: readonly Entry[]): Set<string> {
+  return new Set(entries.flatMap((entry) => /^remote\.(.+)\.url$/i.exec(entry.key)?.[1] ?? []))
+}
+
+/**
+ * The app talks only to a remote the configuration names, never to what a
+ * branch says its remote is where that is no remote: git reads such a name as
+ * an address — `./inner` a repository inside the folder, `.` the folder's
+ * own — and runs the hooks of one it pushes to on this machine.
+ */
+function refuseRemotesNotConfigured(entries: readonly Entry[]): void {
+  const remotes = configuredRemotes(entries)
+  for (const entry of entries) {
+    if (!/^(branch\..+\.(remote|pushremote)|remote\.pushdefault)$/i.test(entry.key)) continue
+    if (!remotes.has(entry.value)) throw new GitRefused(`its configuration names as a remote something that is none (${entry.key} = ${entry.value})`)
+  }
+}
+
+/**
+ * A remote named the way git did before it kept remotes in its
+ * configuration — a file in `.git/remotes` or `.git/branches` — is out of
+ * sight of every check here, and refused.
+ */
+async function refuseRemotesOfOld(root: string): Promise<void> {
+  const { common } = await repositoryDirs(root)
+  for (const folder of ['remotes', 'branches']) {
+    const named = await readdir(join(common, folder)).catch(() => [] as string[])
+    if (named.length > 0) throw new GitRefused(`its repository names a remote the old way, in .git/${folder}; remove it, or name the remote in its configuration`)
+  }
+}
+
+/**
+ * The repository a fetch, a pull, a push or a listing is given, where it is
+ * given one that is no configured remote: an address, held to the same rule
+ * as a remote's.
+ */
+async function refuseAddressGiven(root: string, args: readonly string[], entries: readonly Entry[]): Promise<void> {
+  const at = commandAt(args)
+  if (!['fetch', 'pull', 'push', 'ls-remote'].includes(args[at])) return
+  const given = args.slice(at + 1).find((arg) => !arg.startsWith('-'))
+  if (given === undefined || configuredRemotes(entries).has(given)) return
+  await refuseAddressInside(root, given, 'the repository it was given')
+}
+
+/** An address that is a path inside this folder is refused, as a remote's is. */
+export async function refuseAddressInside(root: string, address: string, what: string): Promise<void> {
+  const path = localPathOf(root, address)
+  if (path !== undefined && await inside(root, path)) {
+    throw new GitRefused(`its remote is a repository inside the folder itself (${what})`)
+  }
 }
 
 /**
@@ -664,10 +737,6 @@ async function sameFolder(one: string, other: string): Promise<boolean> {
  */
 async function refuseRemotesInside(root: string, folder: Entry[]): Promise<void> {
   for (const entry of folder) {
-    if (!/^remote\..+\.(url|pushurl)$/i.test(entry.key)) continue
-    const path = localPathOf(root, entry.value)
-    if (path !== undefined && await inside(root, path)) {
-      throw new GitRefused(`its remote is a repository inside the folder itself (${entry.key})`)
-    }
+    if (/^remote\..+\.(url|pushurl)$/i.test(entry.key)) await refuseAddressInside(root, entry.value, entry.key)
   }
 }
