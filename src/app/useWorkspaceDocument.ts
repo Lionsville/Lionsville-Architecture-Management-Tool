@@ -13,14 +13,12 @@ import type { ImageRepository } from '../ports/ImageRepository'
 import type { ScopeRepository } from '../ports/ScopeRepository'
 import { landed, nodeAt, snapshotOf } from '../projects/scopeAccess'
 import type { ScopeReader } from '../projects/scopeAccess'
-import type { Translate } from '../i18n'
 import type { ScopeSnapshot } from '../projects/scope'
 import type { SourceStatus, SourceWork, SourceWorkChanged } from '../platform/sourceProvider'
 import { useDocumentSession } from './useDocumentSession'
 import type { DocumentSessionHook, ScopeWriter } from './useDocumentSession'
 import type { ModelSession, ScopeSession } from './useModelSession'
 import type { KeepNotice } from './useKeepNotice'
-import type { Notify } from './useToasts'
 
 export type WorkspaceDocument = {
   document: DocumentSessionHook
@@ -39,10 +37,8 @@ export function useWorkspaceDocument(deps: {
   onUnsavedWork: ((unsaved: boolean) => void) | undefined
   onKeptResult: KeepNotice
   onTreeChanged: () => void
-  notify: Notify
-  s: Translate
 }): WorkspaceDocument {
-  const { session, writer, watch, sourceStatus, onSourceWork, onUnsavedWork, onKeptResult, onTreeChanged, notify, s } = deps
+  const { session, writer, watch, sourceStatus, onSourceWork, onUnsavedWork, onKeptResult, onTreeChanged } = deps
   /**
    * What the bar says about saving. Two pieces of state, not one: the last
    * accepted time is worth keeping through a failure — it is the honest answer

@@ -893,8 +893,108 @@ draws.
   and no logic of its own; what it computes goes to the adapter it is built on
   or to the domain.
 
-**Where a folder in a browser tab keeps its history.** A tab has no git to
-run. Its folder's history is kept in memory (`adapters/folder/memoryGit.ts`,
-a product adapter now and no longer test support), for as long as the tab is
-open, and the folder's chrome says so. A history kept in the browser's
-database beside the folder is the next step for that folder.
+**What a provider hands the app** is one type, `ports/ProviderParts.ts`,
+for the three that ship and for any composed from outside: the source's
+repositories, required, and the only way the app reaches where work is
+kept; what the source is and what it is called; its word about the five
+statuses and its sentence for a refusal; where its history is kept, as a
+sentence of its own; what it hears of a change made elsewhere; and `own`,
+typed by the provider, which the app hands back to that provider's chrome
+and panels and to nobody else. A provider composed from outside implements
+the same parts and runs core's five suites over its repositories; the three
+that ship run them over what their own `open` answers
+(`providers/builtIns.test.ts`). Nothing of the host's is among them: the
+window, the documents a person saves and the agent's door are the host's,
+whatever the source.
+
+**What the app hands a chrome**: whether its provider answers for the
+source that is open, the open scope's session and its own parts where it
+does, the way about, the app's way of saying something, the preferences —
+one blob, with the app as its one writer, which a chrome writes through —
+and `reread`, for a source that changed as a whole: the tree, the index and
+the open scope are read again. A provider may also draw a section of
+*Preferences* about its own source, as it may a panel in *Connect an agent*.
+
+**The way in.** A provider's way in says whether it can be taken here at
+all, whether the host needs it taken first, whether the host's own *Open…*
+line and its Recent list are it, what the first screen says for it, and
+what the app says where it did not open. It resumes the place this machine
+worked from last, remembers a choice in the preferences, lists the places
+worked from lately and opens one of them again. The boot opens every source
+through the registry and nothing else; the host's commands say *connect*
+and *reopen*, and the first screen asks in the words of the way in it asks
+for.
+
+**A working source is the same shape for every source**: which provider
+answers for it, its name, its key, and whether it may be written and
+outlives the tab. What the chip calls it, what the chip says on hover,
+where the organisation's subtitle says everything is kept and what removing
+a scope takes with it are its provider's sentences.
+
+**The folder's provider** opens a folder the way the boot used to, and
+before anything in it is read: pulled, where this person said to, and
+brought up to its format, each with an entry first. What its remote
+answered, the push after every entry — the folder's history, wrapped by
+the provider — and the two answers to a folder and a remote that both moved
+on are its chrome; *take theirs* has what is open read again. Pull when it
+opens and push after an entry are its section of *Preferences*, kept by the
+person's settings of its repositories. Its watcher is what the app hears of
+a change made elsewhere.
+- **Bringing the browser's work along** is its chrome's question, asked
+  after a folder is picked, and never when the folder is merely reopened at
+  a boot: the same answers, remembered in the same preferences, and the same
+  copy — every scope the browser kept, into a folder that keeps what it
+  holds, over the repositories (`projects/copyScopes.ts`). It is asked over
+  the folder once it is open, where it used to be asked on a screen of its
+  own just before; a copy has the folder read again.
+- **A folder in a browser tab keeps its history in this browser's
+  database**, beside the folder's handle, and says so where a person starts
+  one; only a tab with no database keeps it for as long as the tab is open,
+  and that sentence is the history's own.
+- **A desktop with no git** refuses a record with `shell.gitMissing`, said as
+  any refusal is.
+
+**This browser's provider** says whether its database can be written now —
+another tab holds it at an older layout, or the page must be reloaded — and
+that its storage is nearly full, asked after every write that landed; the
+first write that landed asks the browser to keep this site. Where the
+database will not open at all, memory answers in its place from the first
+read on, and the chrome says nothing outlives the tab. The work its older
+storage kept is asked about one scope at a time — bring the older copy
+over, or keep what is here — and what was left behind is said once.
+Memory's chrome says that nothing is kept.
+
+**Every change is a step, and a whole content arrives as one.** The session
+keeps every change, undo and redo included, for the writer, which lands them
+as steps expecting what was read. `scope.replace` is for a content that
+arrives whole — a working set landing, an example copied in — and never for
+the session's own saving, which a test holds; going back in the history
+stays the model's own restore. A content placed at an address makes the
+scopes above it that are not there, named by their address.
+
+**History on every source.** A snapshot is `record` over every scope, and
+the safeguard before a replace is `record` over the scope replaced. Every
+source keeps one — this browser's storage and memory as well as a folder —
+and where it is kept is its provider's sentence.
+
+**What went.** The ports the app read through before the repositories —
+`ScopeStore`, `ProjectHistory` and `FolderSettings` — are the folder's own
+now, or gone with their last user: the history over the desktop's channel
+and the folder's settings over the desktop's, the read-ahead and the store a
+caller could fill with answers of its own (ADR-0022's ninth amendment). A
+build composed from this one answers for its source through its provider's
+repositories.
+
+**The folder's format** moves into `adapters/folder/format/` as its users
+leave the domain: the settings file, the pass that brings an older folder up
+to date, the paths a history was asked by, and the examples as they ship,
+which the app is now handed as the scopes they hold. The node side reads
+that folder and nothing else of the implementations — one edge narrower than
+a module, in the import matrix, with a test each way.
+
+**What is left, and first.** The working-file codec and the eight files of
+the format it reads — the format itself, its text, a scope's header, the
+decision, plan and observation files, and the two readers of the formats
+before this one — are the last of the format in the domain. They move into
+`adapters/folder/format/` together, and `FOLDER_FORMAT` goes to zero; until
+then the storage line lists the codec's users and nothing else.

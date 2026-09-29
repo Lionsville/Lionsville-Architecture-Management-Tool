@@ -444,37 +444,40 @@ src/widgets/      Presentation with no opinions: icons, one confirm dialog,
                   card, fetched when it is opened, and every part preloaded
                   before a suite's first test (`app/testing/lazyParts.ts`).
 src/ports/        The seams. Interfaces only, no implementations.
-                    ScopeStore        …and `models?()`, the tree's `model.json`
-                                      files and nothing else — what the index is
-                                      built from, one file per scope
                     PreferencesStore · DocumentGateway
-                    ProjectHistory · Diagnostics · HostControls
-                    FolderSettings · UpdateSettings   the two other scopes
+                    Diagnostics · HostControls · UpdateSettings
                     AgentGateway      where an agent's calls arrive, and the switch
                     CommandChannel    where a step goes when this session is not
                                       the only author of a scope (ADR-0022): one
                                       scope, one order, a sequenced step back
-                    ScopeStore.contract.ts · CommandChannel.contract.ts —
-                                      behaviour every filling must show. Makers
-                                      may be async and the channel suite settles
-                                      after every subscribe and publish, so a
-                                      filling that answers over a network passes
-                                      the same clauses an in-memory one does
+                    CommandChannel.contract.ts — behaviour every
+                                      filling must show. Makers may be async and
+                                      the suite settles after every subscribe
+                                      and publish, so a filling that answers
+                                      over a network passes the same clauses an
+                                      in-memory one does
                     ScopeRepository · OrganisationIndex · HistoryRepository ·
                     ImageRepository · SettingsRepository · Repositories
                                       where work is kept, in the domain's words
-                                      (ADR-0031). The folder (`adapters/folder/`),
-                                      memory and browser storage
-                                      (`adapters/repositories/`) implement them;
-                                      the ports they replace, above, are still
-                                      what the app uses. A `*.contract.ts` each,
+                                      (ADR-0031), and the app's only way to it.
+                                      The folder (`adapters/folder/`), memory and
+                                      browser storage (`adapters/repositories/`)
+                                      implement them. A `*.contract.ts` each,
                                       one maker for all five, run by every
-                                      implementation
+                                      implementation and by every provider that
+                                      ships, over what its `open` answers
+                    ProviderParts · ScopeSession   what a provider hands the app
+                                      when its source opens, and what the app
+                                      hands the chrome and panels it draws —
+                                      types only
 src/adapters/     The outside world, one folder per flavour.
                     webStorage/ · memory/ · browser/ · folder/ · desktop/
                     folder/           the folder implementation (ADR-0031 §2): the
-                                      folder store, its revision, the settings
-                                      file, and DirectoryHandle — as little of a
+                                      folder store (`FileSystemScopeStore`,
+                                      with the `ScopeStore` and
+                                      `FolderSettingsStore` it was written
+                                      against), its revision, and
+                                      DirectoryHandle — as little of a
                                       folder as the store asks for, the shape a
                                       browser's handle (`browser/`), the
                                       desktop's over IPC (`desktop/`) and the
@@ -503,6 +506,13 @@ src/adapters/     The outside world, one folder per flavour.
                                       history, and over a real folder with git;
                                       `history.perf.test.ts` holds the history
                                       to a budget on ten thousand commits
+                                      …and `format/`: the folder's own format as
+                                      it leaves the domain — the settings file,
+                                      the pass that brings an older folder up to
+                                      date, the paths a history was asked by and
+                                      the examples as they ship. The node side
+                                      may read this folder and nothing else of
+                                      the implementations
                     repositories/     the five repositories over a keyed store
                                       (`KeyedStore`: transactions, all or
                                       nothing), written once for memory and this
@@ -528,21 +538,30 @@ src/providers/    A place work is kept, whole (ADR-0031 §4, as built): the
                   domain's. Registered by `app/composition.ts` and imported by
                   nothing else; it may import the adapters, the ports, the
                   projects, the model, the platform, the words and the widgets.
-                    folder/           the folder's source: the picker, a folder on
-                                      the desktop (its git, its step ids, the
-                                      person's sync settings) and in a tab
-                    browserStorage/   this browser's database, and the work its
-                                      key-value storage kept before
-                    memory/           nowhere at all
+                    folder/           the folder's source: its way in (the
+                                      picker, the folder worked in last, the
+                                      Recent list), a folder opened — pulled and
+                                      brought up to its format first — on the
+                                      desktop and in a tab, and its chrome: what
+                                      the remote said, the question of bringing
+                                      the browser's work along, and its part of
+                                      Preferences
+                    browserStorage/   this browser's database: whether it can be
+                                      written, how full it is, memory in its
+                                      place where it will not open, and the
+                                      questions about the work its key-value
+                                      storage kept before
+                    memory/           nowhere at all, and a notice that says so
+                    strings/          what they say, in three languages
 src/app/          The shell around the editor.
-                    main.tsx          composition root. Read its header first.
-                    bootReads         what a first paint waits on besides the
-                                      scope it reopens — the pull, the format
-                                      pass — each asked only where it can
-                                      learn something
-                    composition.ts    which adapter, which icon packs, and which
-                                      source providers (ADR-0022) — with
-                                      `openSource`, `SourceBase`,
+                    main.tsx          the boot: every source opened through the
+                                      registry — an address, the place worked
+                                      from last, a way in pressed — and the app
+                                      drawn over it. Read its header first.
+                    composition.ts    which adapter, which icon packs, which
+                                      examples, and which source providers
+                                      (ADR-0022) — with `openSource`,
+                                      `SourceBase`, `overSource`,
                                       `registeredConnects`, `registeredMenus`
                                       and `sourceChip` for whoever composes
                                       over this one
@@ -553,9 +572,9 @@ src/app/          The shell around the editor.
                                       is answered for one fold at a time
                     App · ProjectWorkspace · ShellToolbar · SaveMenu · ToastBar
                     appProps · shellParts   what the composition root hands
-                                      `App` — the five seams, and one object
-                                      each for the boot, the provider, the
-                                      folder and the window — and what its
+                                      `App` — the repositories and the host's
+                                      seams, and one object each for the boot,
+                                      the provider and the window — and what its
                                       hooks hand the panels that draw it
                                       (AppPanels)
                     workspaceProps · workspaceParts   what the workspace is
@@ -619,9 +638,9 @@ electron/         The desktop main process and preload.
 ```
 
 **Components declare the interface they need**, not the widest one available.
-`useDocumentSession` asks for `{ save(scope), load?(path) }`, not for a
-`ScopeStore`, so it cannot reach `list()` or `remove()` and a reader does not
-have to check whether it did. `DocumentationPage` asks for one `updateElement`, not the editor's whole
+`useDocumentSession` asks for a writer of steps, not for a
+`ScopeRepository`, so it cannot reach `move()` or `remove()` and a reader does
+not have to check whether it did. `DocumentationPage` asks for one `updateElement`, not the editor's whole
 action set. The concrete implementations satisfy those shapes structurally, so
 narrowing costs nothing: no wrappers, just a smaller type.
 
@@ -650,8 +669,9 @@ listed there by name. **And the domain speaks no storage** (ADR-0031 §4):
 providers built on them and the composition root imports an implementation or the folder format, or names
 a storage mechanism in an identifier or a string in its code — `kind ===
 'folder'` and `'scope.json'` included. `build/storageLine.ts` lists the words,
-with why each is on the list or off it, and the exceptions the tree had when
-the rule arrived, each held to exactly what its file does. **Each list has a
+with why each is on the list or off it, and the exceptions left — the
+working-file codec's users, until the codec moves into the folder's format —
+each held to exactly what its file does. **Each list has a
 ceiling** (`CEILINGS`), held to exactly its length: an entry added fails the
 test unless its ceiling is raised in the same diff, where a reader sees it,
 and an entry taken off fails until its ceiling comes down with it. Taking an
@@ -668,7 +688,11 @@ module is tested in node with a plain object in that slot.
 
 And one row is a folder inside a module: **`platform/node/` is the only place in
 `src/` that may say `node:`**, and no module may import it — not even `app`,
-which may import everything else. It is where code moves when it turns out to be
+which may import everything else. It may read one folder of the
+implementations and no other: the folder's own format
+(`adapters/folder/format/`), which the desktop's main process writes a
+setting of — the one edge in the matrix narrower than a module
+(`NARROW_EDGES`), held both ways by `build/layering.test.ts`. It is where code moves when it turns out to be
 pure node rather than Electron's (`platform/node/git.ts`, whose caller was
 `electron/main` and is now also a build composed from this one that keeps a
 folder in a node process). Nothing puts it on a barrel, the way
@@ -683,7 +707,7 @@ it there.
 | what a landscape is, or arithmetic over it | `src/model/` | node, no mocks needed |
 | where something ends up on the board | `src/layout/` | node |
 | talking to a browser/OS/network API | `src/adapters/<flavour>/` | its own suite |
-| a new kind of place to keep things | new adapter + a `registerSourceProvider` in `composition.ts` | the contract |
+| a new kind of place to keep things | its repositories under `src/adapters/`, a provider under `src/providers/`, and a `registerSourceProvider` in `composition.ts` | the five repository suites |
 | inside the canvas/palette/inspector | `src/editor/` | jsdom (`// @vitest-environment jsdom`) |
 | a screen that is not the canvas | that module's `ui/` | jsdom |
 | the shell around it all | `src/app/` | jsdom |
@@ -793,47 +817,43 @@ derived over the whole tree and arrives in beta 3.
 
 The tree lists **alphabetically by default**, with recency as a toggle
 (`sortScopes`, persisted as `projectOrder`); a scope with children folds shut,
-per session rather than as a preference. Examples live in `src/app/examples/`
-and are **copied** into scopes of your own — into an unnamed, empty root the
+per session rather than as a preference. Examples ship in the folder's format
+(`src/adapters/folder/format/examples/`), are named by the app's catalogue
+(`src/app/examples/`), and are **copied** into scopes of your own — into an unnamed, empty root the
 example *becomes* the organisation; into a root that is already something it is
 filed under a child of its own (`copyExampleInto`).
 
-## Adding a storage backend (the worked example)
+## Adding a place to keep work (the worked example)
 
-The point of the seams. Say you want to save to disk via the File System Access
-API. You write one file, run one suite, change one line:
+The point of the seams. Say you want to keep work in a service of your own. You
+write its repositories, run five suites, and register one provider:
 
 ```ts
-// src/adapters/folder/FileSystemScopeStore.ts
-export class FileSystemScopeStore implements ScopeStore { /* … */ }
+// src/adapters/somewhere/somewhereRepositories.ts
+export function somewhereRepositories(/* … */): Repositories { /* … */ }
 ```
 
 ```ts
-// src/adapters/folder/FileSystemScopeStore.test.ts
-describeScopeStore('schijf', () => new FileSystemScopeStore(fakeHandle()))
+// src/adapters/somewhere/somewhereRepositories.test.ts
+describeScopeRepository('somewhere', makeSomewhere)
+describeOrganisationIndex('somewhere', makeSomewhere)
+describeHistoryRepository('somewhere', makeSomewhere)
+describeImageRepository('somewhere', makeSomewhere)
+describeSettingsRepository('somewhere', makeSomewhere)
 ```
 
-`describeScopeStore` (in `src/ports/ScopeStore.contract.ts`) is the shared
-behaviour suite: the root exists on an empty store and can be saved, a child is
-listed under its parent, a nested scope is kept apart from it, a reserved name
-is refused, a scope with no views still loads, a save-then-remove move keeps the
-children, `updatedAt` is stamped, a path that could escape the folder is
-refused, a scope survives a round trip unchanged, and a save that says what it
-expects to overwrite (the `revision` a load stamped) is refused once somebody
-else saved over it — and, for a store that keeps a scope in pieces, that a
-piece that would not read is still there after the next save, and a header
-that would not read is named by the listing and never saved over (ADR-0028,
-amended). Passing it is the whole admission test. Then one `registerSourceProvider` in `composition.ts` — a kind,
-what opening it gives the shell (from its own opening and from the `SourceBase`
-the shell hands over, and it may answer a promise), and what it means by the
-words on the bar (ADR-0022). **Nothing above the seam changes** — not `main.tsx`, not a
-component, not a test.
+The five suites (`src/ports/*.contract.ts`, one maker for all five) are the
+whole admission test: steps applied in order and refused as values, a scope
+moved with what is under it, the index following the steps, an entry per
+scope recorded and read back, pictures by name, settings at three levels.
+Then a provider (`src/providers/`, ADR-0031 §4) that opens them and hands the
+app its parts (`ports/ProviderParts.ts`) — the repositories among them,
+required — with a way in for a person and whatever it has to say in a chrome
+of its own, and one `registerSourceProvider` in `composition.ts`. **Nothing
+above the seam changes** — not `main.tsx`, not a component, not a test.
 
 The same holds for `PreferencesStore`, `DocumentGateway` and `CommandChannel`,
 whose contract is `ports/CommandChannel.contract.ts`.
-A store over a folder of your own starts one level down: the handle passes
-`describeDirectoryHandle` (`adapters/folder/DirectoryHandle.contract.ts`) — two writes to
-one writable both land, among others — and then the store's suite runs over it.
 
 ## Conventions
 
@@ -961,7 +981,7 @@ identifiers is still a list of a customer's identifiers.
 | npm package name | `lionsville-architecture-management-tool` |
 | Desktop bundle id | `nl.lionsville.architecture` |
 | Working-directory layout | `<scope>/scope.json`, nested as deep as the work needs |
-| Folder settings (ADR-0005, amended by ADR-0023) | what this machine does about a folder: `<userData>/folder-settings.json`, keyed by the folder's path (`platform/node/machineFolderSettings.ts`), over `DesktopSettings.readFolderLocal` · `writeFolderLocal`; `<root>/.lionsville-architecture/local.json` is read where an older build left it and never written by the desktop, `folder.json` beside it read for the legacy `organisation` key and never written by anybody. A browser tab or the hosted plugin still keeps the machine file in the folder it serves |
+| Folder settings (ADR-0005, amended by ADR-0023) | what this machine does about a folder: `<userData>/folder-settings.json`, keyed by the folder's path (`platform/node/machineFolderSettings.ts`), over `DesktopSettings.readFolderLocal` · `writeFolderLocal`, read and written as the person's settings of the folder's repositories (`providers/folder/desktopPerson.ts`); `<root>/.lionsville-architecture/local.json` is read where an older build left it and never written by the desktop, `folder.json` beside it read for the legacy `organisation` key and never written by anybody. A browser tab keeps what this person does about a folder in memory, for as long as the tab is open |
 | Browser storage prefix (the fallback) | `lvarch.scope.<path>`; the root is the bare prefix |
 | Preferences key | `lvarch.preferences`; the scope you had open is `lastScope` |
 | Agent server settings (ADR-0007) | `mcp.json` in `userData`, mode 0600: `enabled`, the kept `port` and `token` |
@@ -978,10 +998,9 @@ identifiers is still a list of a customer's identifiers.
 | Offered beyond its team (ADR-0014) | `shared` on a service, typed and left as typed; where nobody typed it, a service `assigned` to one actor and used by another team's application is `check.offeredNotShared`, a finding and never a value |
 | What a decision is about (ADR-0012 §7) | `subjectId` — any element the scope knows, or the scope itself; `decisions.list` and `decision.propose` take it, and `applicationId` is accepted as an alias for one beta |
 | The four gestures that cross scopes (ADR-0012 §10) | *link* · *promote* · *demote* · *transfer*; the other scope is written first, and three of them leave a **barrier** the stack will not undo past |
-| Where work is kept, as something that can be registered (ADR-0022) | a **source provider**: a `kind`, an `open` that builds the parts of a shell from whatever that kind needs to be given, a way in for a person as a label rather than a screen, and what it means by the five words the bar says — with `onSourceWork` to say *ask me again*, for an answer that moved without the document's own machine moving. A folder, this browser's storage and memory are three registrations in `composition.ts`, made at module load |
+| Where work is kept, as something that can be registered (ADR-0022) | a **source provider**: a `kind`, an `open` that builds its parts (`ports/ProviderParts.ts`: its repositories, required, and what else it says) from whatever that kind needs to be given, a way in for a person as a label rather than a screen, and what it means by the five words the bar says — with `onSourceWork` to say *ask me again*, for an answer that moved without the document's own machine moving. A folder, this browser's storage and memory are three registrations in `composition.ts`, made at module load |
 | How a person, or a link, reaches one (ADR-0022, amended) | a **way in**: `connect.labelKey` for what the button says, `connect.open()` for the dialog behind it — the provider's, because what it has to ask for is its business — and `connect.fromLocation(location)` for an address a link carries, read before the first render. The boot draws one button per registered provider on the root's home and on the first-run screen (`registeredConnects`); `openSource(kind, opening, base)` is the one call that opens what a dialog answered. The folder's button is the one that was already there, because choosing a folder is also remembered, adopted into and upgraded |
 | What the shell hands a provider at `open` (ADR-0022, amended) | **`SourceBase`**: the `Diagnostics` the app already keeps — the trail "Copy diagnostics" hands over, and never the console — and the `Shell` as it stands *before* this provider's parts are spread over it, so a provider reuses the preferences store, the document gateway and the browser store instead of composing a second set. Required on `openSource`; no shell in one place only, the first compose, whose shell is the one that source is bringing the stores for |
-| What a caller answers for itself when it opens a source (ADR-0022, amended) | a **filling**: `openSource(kind, opening, base, filling)` with `filling.scopes` handed the store the source built and answering the members the caller answers for itself; the rest are the source's, called as the source (`projects/filledStore.ts`). Never a copy derived from a live store by its prototype, which breaks on the first private field |
 | When a source is only itself after it has asked (ADR-0022, amended) | `open` may answer **a promise**, and the boot waits for it before the first render, so `readOnly` is right at the first paint. A rejection is a source that could not be opened: from an address, the boot's own failure screen with the provider's sentence; from a button, the notice a way in already has. The three that ship answer without waiting, and the two shells `composition.ts` composes itself cannot wait |
 | What a provider draws for itself (ADR-0022, amended) | a **chrome**, declared on the registration and listed by `registeredChrome()`: a component the app renders inside its theme and inside the language that is on, beside its own notices and on every screen, in a boundary each — for **every** registered provider and not only the open source's, because the press that opens a source happens while that provider answers for nothing. The one whose kind the working source names is handed that scope's `ScopeSession`, the rest nothing, and every one of them is handed `open(to)` — ADR-0019's `Destination`, bound to what the agent's `app.open` moves the app with, so the scope a notice names is the pressable part of it — and `screen`, ADR-0019's `Screen` as `app.current` says it, the same value while nothing moved (ADR-0022, amended a twelfth time), with `movedBy` — `agent` where an agent's `app.open` or a move during its driving session produced it, else `person` (amended again). A chrome is therefore mounted more than once over a session: it must be idempotent about its own state. For a strip, a badge, a connect dialog of the provider's own; core's three supply none |
 | The sentence for where work is kept (ADR-0005, ADR-0022, amended) | `sourceTipKey`: one per built-in kind, and for a registered source the provider's own **`describeKey`** — its key, from its own table — or nothing at all. Nothing rather than a sentence of ours, for the reason the name on the bar is the provider's: a guess about somewhere this shell has never heard of could promise a copy that cannot be made |
