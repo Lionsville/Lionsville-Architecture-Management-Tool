@@ -661,14 +661,17 @@ function keeper(kind: string, parts: SourceParts): ScopeStore {
  */
 export function composeShell(): Shell {
   const storage = browserStorage()
-  const kind = storage ? 'browserStorage' : 'memory'
-  const diagnostics = new ConsoleDiagnostics()
   const database = browserDatabase()
+  // Both, or nowhere: the scopes are kept in the database and the preferences
+  // beside it, and a browser with one and not the other keeps nothing a
+  // person could come back to — which the bar then says.
+  const kind = storage && database ? 'browserStorage' : 'memory'
+  const diagnostics = new ConsoleDiagnostics()
   // The one opening with no shell to hand over, and it cannot have one: the
   // shell a provider would be given here is the shell being built out of what
   // it answers. The trail is the half that does exist, and it is the half a
   // fallback source could conceivably have something to say to.
-  const kept = openSourceNow(kind, storage && { storage, ...(database ? { database } : {}) }, { diagnostics })
+  const kept = openSourceNow(kind, storage && database && { storage, database }, { diagnostics })
   return {
     ...kept,
     scopes: keeper(kind, kept),

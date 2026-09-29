@@ -2,13 +2,15 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * A history kept in memory, over any folder handle — for the suites that run
- * the folder's repositories over the fake folder, where there is no git.
+ * A history kept in memory, over any folder handle: for a folder a browser tab
+ * was given, where there is no git to run, and for the suites that run the
+ * folder's repositories over the fake folder.
  *
- * Test support, as `fakeDirectory.ts` is: it does what the seam says and
- * nothing git does beyond it. Every commit keeps the whole folder as it was,
- * which is what makes reading one back, and what a commit changed, a lookup.
- * The suites over a real folder run the machine's own git instead.
+ * It does what the seam says and nothing git does beyond it, and it lasts for
+ * as long as whoever holds it: a tab's history goes with the tab. Every commit
+ * keeps the whole folder as it was, which is what makes reading one back, and
+ * what a commit changed, a lookup. The suites over a real folder run the
+ * machine's own git instead.
  */
 import { isBinaryPath } from '../../projects/folderFormat'
 import type { DirectoryHandleLike } from './DirectoryHandle'

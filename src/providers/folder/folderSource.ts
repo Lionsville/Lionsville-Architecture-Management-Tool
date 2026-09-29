@@ -26,6 +26,7 @@ import { FileSystemFolderSettings } from '../../adapters/folder/FileSystemFolder
 import { FileSystemScopeStore } from '../../adapters/folder/FileSystemScopeStore'
 import type { FolderGit } from '../../adapters/folder/folderGit'
 import { folderRepositories } from '../../adapters/folder/folderRepositories'
+import { memoryGit } from '../../adapters/folder/memoryGit'
 import type { PersonSettings } from '../../adapters/folder/FolderSettingsRepository'
 import type { StepStore } from '../../adapters/folder/stepMemory'
 import type { SourceProvider } from '../../platform/sourceProvider'
@@ -37,7 +38,6 @@ import type { ScopeStore } from '../../ports/ScopeStore'
 import type { ScopeSnapshot } from '../../projects/scope'
 import type { ScopePath } from '../../projects/scopePath'
 import { desktopPerson } from './desktopPerson'
-import { unkeptHistory } from './unkeptHistory'
 
 /**
  * What a folder source needs to be given: the handle to work through, and what
@@ -47,7 +47,8 @@ import { unkeptHistory } from './unkeptHistory'
  *
  * A browser's handle has no path to give, so `root` falls back to the name —
  * which is all a tab knows about where it is, and enough to tell two folders
- * apart within one tab. It has no git either, so its history keeps nothing.
+ * apart within one tab. It has no git either, so its history is kept for as
+ * long as the tab is open.
  */
 export type FolderOpening = {
   handle: DirectoryHandleLike
@@ -159,7 +160,7 @@ export const FOLDER_SOURCE: SourceProvider<FolderParts, FolderOpening, { readonl
   open: ({ handle, name, root, git, steps, person }, { diagnostics }) => ({
     scopes: new FileSystemScopeStore(handle, diagnostics),
     repositories: folderRepositories({
-      root: handle, git: git ?? unkeptHistory(), diagnostics,
+      root: handle, git: git ?? memoryGit(handle, 'this tab'), diagnostics,
       ...(steps ? { steps } : {}), ...(person ? { person } : {}),
     }),
     folderSettings: new FileSystemFolderSettings(handle),

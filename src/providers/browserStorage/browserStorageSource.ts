@@ -9,7 +9,6 @@
  * at every start (`adapters/webStorage/earlierScopes.ts`) — copied, never
  * moved. The key-value storage stays where the preferences are kept.
  */
-import { memoryRepositories } from '../../adapters/memory/memoryRepositories'
 import { browserRepositories } from '../../adapters/webStorage/browserRepositories'
 import type { Earlier } from '../../adapters/webStorage/earlierScopes'
 import type { IndexedDb } from '../../adapters/webStorage/IndexedDbStore'
@@ -23,10 +22,13 @@ import type { PreferencesStore } from '../../ports/PreferencesStore'
 import type { Repositories } from '../../ports/Repositories'
 import type { ScopeStore } from '../../ports/ScopeStore'
 
-/** What this browser keeps: the key-value storage, and its database where it has one. */
+/**
+ * What this browser keeps: its database, where the scopes are, and the
+ * key-value storage, where the preferences are and where the scopes were.
+ */
 export type BrowserOpening = {
   storage: KeyValueStorage
-  database?: IndexedDb
+  database: IndexedDb
 }
 
 export type BrowserParts = {
@@ -34,29 +36,20 @@ export type BrowserParts = {
   repositories: Repositories
   preferences: PreferencesStore
   source: WorkingSource
-}
-
-/**
- * What the key-value storage kept before the database, for the questions a
- * person answers about it: the opening's, since there is one browser.
- */
-let earlierWork: Earlier | undefined
-
-/** The answers about work kept before, for this browser's chrome; nothing where there is nothing to ask. */
-export function earlier(): Earlier | undefined {
-  return earlierWork
+  /** What the key-value storage kept before the database, for the questions a person answers about it. */
+  earlier?: Earlier
 }
 
 export const BROWSER_STORAGE_SOURCE: SourceProvider<BrowserParts, BrowserOpening> = {
   kind: 'browserStorage',
   open: ({ storage, database }) => {
-    const kept = database ? browserRepositories(database, storage) : undefined
-    earlierWork = kept?.earlier
+    const { repositories, earlier } = browserRepositories(database, storage)
     return {
       scopes: new WebStorageScopeStore(storage),
-      repositories: kept?.repositories ?? memoryRepositories(),
+      repositories,
       preferences: new WebStoragePreferencesStore(storage),
       source: BROWSER_STORAGE,
+      ...(earlier ? { earlier } : {}),
     }
   },
 }
