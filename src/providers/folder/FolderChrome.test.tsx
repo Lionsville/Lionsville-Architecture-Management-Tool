@@ -155,6 +155,16 @@ describe('the two answers', () => {
     expect(held.calls.pushes).toBe(1)
   })
 
+  it('a remote that fell over is said as an error, and the question stands', async () => {
+    const held = remote()
+    held.sync.resolve = () => Promise.reject(new Error('the channel closed'))
+    const { notify } = chrome((await own(held.sync, false, 'diverged')).held)
+    fireEvent.click(screen.getByText('Keep ours'))
+    await settled()
+    expect(notify).toHaveBeenCalledWith(expect.stringContaining('the channel closed'), 'error')
+    expect(screen.getByTestId('sync-notice')).toBeDefined()
+  })
+
   it('a refusal leaves the folder as it was, and the question standing', async () => {
     const held = remote({ resolve: 'unreachable' })
     const { notify } = chrome((await own(held.sync, false, 'diverged')).held)
@@ -187,6 +197,22 @@ describe('what this machine does, in Preferences', () => {
     fireEvent.click(screen.getByLabelText(/Push after every snapshot/))
     await settled()
     expect(await repositories.settings.read({ of: 'person' })).toEqual({ git: { pullOnOpen: false, pushAfterSnapshot: true } })
+  })
+
+  it('writes pull when the folder opens, too', async () => {
+    const { held, repositories } = await own(remote().sync, false)
+    render(<FolderPreferences own={held} notify={vi.fn()} />)
+    fireEvent.click(await screen.findByLabelText(/Pull from the remote/))
+    await settled()
+    expect(await repositories.settings.read({ of: 'person' })).toEqual({ git: { pullOnOpen: true, pushAfterSnapshot: false } })
+  })
+
+  it('is absent, and the trail says why, where the desktop could not say whether it has git', async () => {
+    const held = remote()
+    held.sync.available = () => Promise.reject(new Error('the channel closed'))
+    render(<FolderPreferences own={(await own(held.sync, false)).held} notify={vi.fn()} />)
+    await settled()
+    expect(screen.queryByText('THIS FOLDER, ON THIS MACHINE')).toBeNull()
   })
 
   it('puts a setting back, and says so, where it could not be kept', async () => {

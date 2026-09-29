@@ -146,6 +146,23 @@ describe('the work the older storage kept', () => {
     expect(screen.queryByText('Bring the older copy over')).toBeNull()
   })
 
+  it('names the organisation itself as the root, where it is the one that changed in both places', async () => {
+    show({ earlier: earlier({ diverged: [''] }).held })
+    await settled()
+    expect(screen.getByText(/“\/” changed both here/)).toBeDefined()
+  })
+
+  it('says it where an answer could not be carried out, and asks again', async () => {
+    const older = earlier({ asking: true })
+    older.held.bringOver = () => Promise.reject(new Error('this browser refused'))
+    const { notify, reread } = show({ earlier: older.held })
+    await settled()
+    fireEvent.click(screen.getByText('Bring the older copy over'))
+    await settled()
+    expect(notify).toHaveBeenCalledWith('this browser refused', 'error')
+    expect(reread).not.toHaveBeenCalled()
+  })
+
   it('asks nothing where nothing is waiting', async () => {
     const { notify } = show({ earlier: earlier().held })
     await settled()

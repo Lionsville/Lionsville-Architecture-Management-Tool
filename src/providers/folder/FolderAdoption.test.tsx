@@ -82,6 +82,23 @@ describe('the question a folder pick asks', () => {
     expect(diagnostics.messages()).toEqual(['copied 1 scopes, kept 0, failed 0, unread 0'])
   })
 
+  it('says in the trail a copy that fell over, and remembers nothing, so it is asked again', async () => {
+    const from = await kept()
+    let asked = 0
+    // The tree answers the question, and refuses the copy.
+    const scopes = new Proxy(from.scopes, {
+      get: (target, member) => (member === 'tree'
+        ? () => (asked++ === 0 ? target.tree() : Promise.reject(new Error('this browser refused')))
+        : Reflect.get(target, member)),
+    })
+    const { preferences, reread, diagnostics } = await ask({ from: { ...from, scopes } })
+    fireEvent.click(screen.getByTestId('adopt-copy'))
+    await settled()
+    expect(preferences.read()).toEqual({})
+    expect(reread).not.toHaveBeenCalled()
+    expect(diagnostics.messages()).toEqual(['rejected'])
+  })
+
   it('copies nothing on a no, and remembers the no for this folder', async () => {
     const { into, preferences } = await ask()
     fireEvent.click(screen.getByTestId('adopt-skip'))
