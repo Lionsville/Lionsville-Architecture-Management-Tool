@@ -37,9 +37,6 @@ export const DE: Record<keyof typeof EN, string> = {
     'Dieser Browser konnte den Entwurf nicht speichern (Speicher voll oder blockiert). Speichern Sie eine Arbeitsdatei, sonst ist er beim Schließen des Tabs verloren.',
   'shell.storageRecovered': 'Speichern in diesem Browser funktioniert wieder.',
   'shell.sourceNotOpened': 'Diese Quelle konnte nicht geöffnet werden: {message}',
-  'shell.storageNearlyFull':
-    'Dieser Browser ist für diese App zu etwa {percent}% voll. Speichern Sie Ihre Arbeit in einem Ordner '
-    + 'oder einer Datei, bevor der Platz ausgeht — ein Browser hört ohne Nachfrage auf zu speichern.',
   'shell.crashed': 'Auf diesem Bildschirm ist etwas schiefgegangen.',
   'shell.crashedNote':
     'Ihre Arbeit bis zum letzten Speichern ist noch da. Laden Sie neu, um weiterzumachen; die Diagnose sagt, was passiert ist.',
@@ -130,13 +127,9 @@ export const DE: Record<keyof typeof EN, string> = {
   'picker.orderUpdated': 'Zuletzt geändert',
   'history.title': 'Verlauf',
   'history.snapshot': 'Momentaufnahme…',
-  'history.snapshotNote': 'Das Projekt so festhalten, wie es jetzt ist, im Verlauf des Ordners selbst',
   'history.open': 'Verlauf…',
-  'history.openNote': 'Jede Momentaufnahme dieses Ordners, und was sich geändert hat',
   'history.start': 'Verlauf führen',
-  'history.startBody':
-    'Dieser Ordner führt noch keinen Verlauf. Ab jetzt wird jede Momentaufnahme im Ordner selbst '
-    + 'festgehalten, mit git — nichts verlässt diesen Rechner.',
+  'history.startBody': 'Hier wird noch kein Verlauf geführt. Die erste Momentaufnahme beginnt einen.',
   'history.message': 'Was sich geändert hat',
   'history.defaultMessage': 'Momentaufnahme',
   'history.take': 'Festhalten',
@@ -148,11 +141,10 @@ export const DE: Record<keyof typeof EN, string> = {
   'history.failed': 'Die Momentaufnahme ist nicht gelungen: {message}',
   'history.readFailed': 'Der Verlauf konnte nicht gelesen werden: {message}',
   'history.none': 'Noch keine Momentaufnahmen.',
-  'history.unavailable':
-    'Auf diesem Rechner gibt es kein git, daher kann die App keinen Verlauf führen. Alles andere funktioniert wie gewohnt.',
+  'history.unavailable': 'Hier kann kein Verlauf geführt werden. Alles andere funktioniert wie gewohnt.',
   'history.compare': 'Verglichen mit dem Projekt, wie es jetzt ist',
   'history.unchanged': 'Seit dieser Momentaufnahme hat sich nichts geändert.',
-  'history.gone': 'Dieses Projekt war bei jener Momentaufnahme nicht im Ordner.',
+  'history.gone': 'Diesen Bereich gab es bei jener Momentaufnahme noch nicht.',
   'history.by': '{author}',
   'history.subject': 'Verlauf anzeigen von',
   'history.everything': 'Das ganze Projekt',

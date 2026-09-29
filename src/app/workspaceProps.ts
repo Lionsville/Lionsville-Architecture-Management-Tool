@@ -269,6 +269,8 @@ export type WorkspaceFiles = {
 export type WorkspaceSnapshots = {
   /** The history of the scopes where this one is kept; the menu offers nothing where there is none. */
   history?: HistoryRepository
+  /** Where that history is kept, in the source's provider's sentence (`SnapshotDialog`'s `note`). */
+  note?: string
 }
 
 /** The agent (ADR-0007, ADR-0019): the session handed up, and the glyph on the bar. */

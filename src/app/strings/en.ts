@@ -81,9 +81,6 @@ export const EN = {
    * knows and this is the shell talking.
    */
   'shell.sourceNotOpened': 'That source could not be opened: {message}',
-  'shell.storageNearlyFull':
-    'This browser is about {percent}% full for this app. Save your work to a folder or a '
-    + 'file before it runs out — a browser stops saving without asking.',
   /**
    * The crash fallback. One key for both boundaries — the one around the whole
    * app and the one around the canvas — because what the reader can do about it
@@ -241,13 +238,9 @@ export const EN = {
    */
   'history.title': 'History',
   'history.snapshot': 'Snapshot…',
-  'history.snapshotNote': 'Record the project as it stands, in the folder\u2019s own history',
   'history.open': 'History…',
-  'history.openNote': 'Every snapshot of this folder, and what changed',
   'history.start': 'Start keeping history',
-  'history.startBody':
-    'This folder does not keep a history yet. Starting one records every snapshot you take in '
-    + 'the folder itself, using git — nothing leaves this machine.',
+  'history.startBody': 'Nothing here keeps a history yet. The first snapshot starts one.',
   'history.message': 'What changed',
   /** When this session's log has nothing in it; the folder may still have. */
   'history.defaultMessage': 'Snapshot',
@@ -260,11 +253,10 @@ export const EN = {
   'history.failed': 'The snapshot could not be taken: {message}',
   'history.readFailed': 'The history could not be read: {message}',
   'history.none': 'No snapshots yet.',
-  'history.unavailable':
-    'This machine has no git, so the app cannot keep a history. Everything else works as before.',
+  'history.unavailable': 'No history can be kept here. Everything else works as before.',
   'history.compare': 'Compared with the project as it is now',
   'history.unchanged': 'Nothing has changed since this snapshot.',
-  'history.gone': 'This project was not in the folder at that snapshot.',
+  'history.gone': 'This scope did not exist yet at that snapshot.',
   'history.by': '{author}',
   'history.subject': 'Show the history of',
   'history.everything': 'The whole project',

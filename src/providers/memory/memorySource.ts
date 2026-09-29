@@ -32,5 +32,6 @@ export const MEMORY_SOURCE: SourceProvider<MemoryParts, unknown> = {
     repositories: memoryRepositories(),
     preferences: new InMemoryPreferencesStore(),
     source: IN_MEMORY,
+    historyNoteKey: 'memory.historyNote',
   }),
 }

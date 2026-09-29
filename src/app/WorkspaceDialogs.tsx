@@ -16,7 +16,6 @@ import { treeSources } from '../search/search'
 import type { SearchHit } from '../search/search'
 import { flattenScopes } from '../projects/scope'
 import type { ScopePath } from '../projects/scopePath'
-import type { ScopeSnapshot } from '../projects/scope'
 import { HistoryPage } from './history/lazyHistoryPage'
 import { SnapshotDialog } from './history/SnapshotDialog'
 import { AddFromLibraryDialog } from './dialogs/AddFromLibraryDialog'
@@ -127,6 +126,7 @@ export function HistoryDialogs({ parts }: { parts: WorkspaceParts }) {
         draft={snapshots.draft}
         onCancel={snapshots.closeDialog}
         onTake={snapshots.take}
+        note={props.snapshots.note}
         s={s}
       />
       <HistoryPage

@@ -12,7 +12,6 @@
 import { useCallback, useRef } from 'react'
 import type { Translate } from '../i18n'
 import type { SourceFailure } from '../platform/sourceProvider'
-import type { StoragePressure } from '../ports/ScopeStore'
 import type { Notify } from './useToasts'
 
 /**
@@ -56,37 +55,4 @@ export function useStorageNotice(
     failed.current = true
     notify(said, 'error')
   }, [notify, s, sourceFailure])
-}
-
-/**
- * Say once that the place things are kept is nearly full.
- *
- * A browser's quota is small, fixed, shared with everything else on the origin,
- * and reached in silence: the first anybody hears of it is a save that did not
- * happen, at which point the afternoon's work is only in the tab. So it is worth
- * saying early — and exactly once, because a warning on every autosave is a
- * warning nobody reads, and because the number moves by a hair each time.
- *
- * Said again if it drops back under and climbs a second time, which is a
- * different situation from the first and worth hearing about.
- */
-export type PressureNotice = (pressure: StoragePressure) => void
-
-/** Above this share of what a store will hold, say so. */
-export const NEARLY_FULL = 0.8
-
-export function useNearlyFullNotice(notify: Notify, s: Translate): PressureNotice {
-  const said = useRef(false)
-  return useCallback((pressure: StoragePressure) => {
-    const full = pressure.budget > 0 && pressure.used / pressure.budget >= NEARLY_FULL
-    if (!full) {
-      said.current = false
-      return
-    }
-    if (said.current) return
-    said.current = true
-    notify(s('shell.storageNearlyFull', {
-      percent: Math.round((pressure.used / pressure.budget) * 100),
-    }), 'warning')
-  }, [notify, s])
 }

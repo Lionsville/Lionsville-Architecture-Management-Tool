@@ -31,10 +31,16 @@ export type SnapshotDialogProps = {
   draft: string
   onCancel: () => void
   onTake: (message: string) => void
+  /**
+   * Where the history is kept, in the source's provider's sentence: said
+   * where a person starts one, because *in this browser* and *for as long as
+   * this tab is open* are facts they should know first.
+   */
+  note?: string
   s: Translate
 }
 
-export function SnapshotDialog({ open, keeping, draft, onCancel, onTake, s }: SnapshotDialogProps) {
+export function SnapshotDialog({ open, keeping, draft, onCancel, onTake, note, s }: SnapshotDialogProps) {
   const [message, setMessage] = useState(draft)
 
   // The draft is worked out when the dialog opens, not when it was declared.
@@ -48,7 +54,7 @@ export function SnapshotDialog({ open, keeping, draft, onCancel, onTake, s }: Sn
       <DialogContent>
         {!keeping && (
           <DialogContentText sx={{ fontSize: 13, mb: 2 }}>
-            {s('history.startBody')}
+            {note ? `${s('history.startBody')} ${note}` : s('history.startBody')}
           </DialogContentText>
         )}
         <TextField

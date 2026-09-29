@@ -11,6 +11,7 @@ import { PicturesProvider } from '../documentation/ui/Pictures'
 import { useCallback, useRef } from 'react'
 import type { ReactNode } from 'react'
 import { LanguageProvider } from '../i18n'
+import type { StringKey } from '../i18n'
 import { sourceIsReadOnly } from '../platform/workingSource'
 import { ConnectAgentDialog } from './dialogs/ConnectAgentDialog'
 import { PreferencesDialog } from './dialogs/PreferencesDialog'
@@ -156,7 +157,7 @@ function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSn
         landing: prompts.openInto.prompts,
         chooseDestination: props.provider?.destination,
       }}
-      snapshots={{ history: props.repositories.history }}
+      snapshots={{ history: props.repositories.history, note: historyNote(parts) }}
       agent={{ onSession: parts.agent.registerAgentSession, bar: parts.agentServer.bar }}
       shell={{ s, language: prefs.language, notify: toasts.notify, makeId: props.makeId }}
       preferences={{ initial: prefs.preferences, onChange: prefs.savePreferences }}
@@ -219,6 +220,12 @@ function Home({ parts }: { parts: ShellParts }) {
 /** A home with no document has no pictures: the same empty library every time. */
 const NO_PICTURES: readonly ImageEntry[] = []
 
+/** Where the source keeps its history, in its provider's sentence, where it gave one. */
+function historyNote(parts: ShellParts): string | undefined {
+  const key = parts.props.provider?.historyNoteKey
+  return key === undefined ? undefined : parts.services.s(key as StringKey)
+}
+
 /** The home's snapshot and history, while nothing is open (`useHomeParts`). */
 export function HomeHistoryDialogs({ parts }: { parts: ShellParts }) {
   const { services: { prefs, s }, home } = parts
@@ -231,6 +238,7 @@ export function HomeHistoryDialogs({ parts }: { parts: ShellParts }) {
         draft={history.draft}
         onCancel={history.closeDialog}
         onTake={history.take}
+        note={historyNote(parts)}
         s={s}
       />
       <HistoryPage

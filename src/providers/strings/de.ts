@@ -59,4 +59,19 @@ export const DE: Record<keyof typeof EN, string> = {
   'folder.where': 'Alles hier wird als Dateien im Ordner oben aufbewahrt.',
   'browser.where': 'Alles hier wird in diesem Browser aufbewahrt.',
   'memory.where': 'Alles hier wird noch nirgends \u2014 speichern Sie eine Arbeitsdatei, um es zu behalten aufbewahrt.',
+  'shell.storageNearlyFull':
+    'Dieser Browser ist für diese App zu etwa {percent}% voll. Speichern Sie Ihre Arbeit in einem Ordner '
+    + 'oder einer Datei, bevor der Platz ausgeht — ein Browser hört ohne Nachfrage auf zu speichern.',
+  'folder.historyNote': 'Jede Momentaufnahme wird im Ordner selbst festgehalten, mit git \u2014 nichts verlässt diesen Rechner.',
+  'folder.historyNoteBrowser': 'Jede Momentaufnahme wird in diesem Browser festgehalten, neben dem Ordner \u2014 dafür wird nichts in den Ordner geschrieben.',
+  'browser.historyNote': 'Jede Momentaufnahme wird in diesem Browser festgehalten \u2014 nichts verlässt diesen Rechner.',
+  'memory.historyNote': 'Momentaufnahmen bleiben erhalten, solange dieser Tab offen ist, und gehen mit ihm.',
+  'browser.earlierAsking': 'Dieser Browser hat die Arbeit verloren, die er aufbewahrt hat, und eine ältere Kopie ist noch da. Die ältere Kopie zurückholen oder mit dem weitermachen, was jetzt hier ist?',
+  'browser.earlierDiverged': '\u201e{path}\u201c hat sich hier und in der älteren Kopie dieses Browsers geändert. Welche gilt?',
+  'browser.earlierBring': 'Die ältere Kopie übernehmen',
+  'browser.earlierLeave': 'Behalten, was hier ist',
+  'browser.earlierBrought': 'Die ältere Kopie wurde übernommen; was hier war, steht im Verlauf.',
+  'browser.earlierLeft': 'Was hier ist, gilt. Die ältere Kopie wird erst übernommen, wenn sie sich wieder ändert.',
+  'browser.earlierLeftBehind': 'Einiges von dem, was dieser Browser früher aufbewahrt hat, war nicht lesbar und bleibt, wo es war: {paths}.',
+  'browser.earlierRefused': 'Über {paths} wurde nichts übernommen: Was hier ist, war nicht vollständig lesbar.',
 }

@@ -48,6 +48,7 @@ import type { WindowChrome } from '../platform/windowChrome'
 import { sourceProviderKind } from '../platform/workingSource'
 import type { WorkingSource } from '../platform/workingSource'
 import { BROWSER_STORAGE_SOURCE } from '../providers/browserStorage/browserStorageSource'
+import { BrowserChrome } from '../providers/browserStorage/BrowserChrome'
 import { chooseFolderDestination, FOLDER_SOURCE } from '../providers/folder/folderSource'
 import { FolderChrome } from '../providers/folder/FolderChrome'
 import { FolderPreferences } from '../providers/folder/FolderPreferences'
@@ -627,7 +628,7 @@ registerLogoPack(RAIL_PACK)
 registerSourceProvider({
   ...FOLDER_SOURCE, chrome: FolderChrome, preferencesPanel: FolderPreferences, destination: chooseFolderDestination,
 })
-registerSourceProvider(BROWSER_STORAGE_SOURCE)
+registerSourceProvider({ ...BROWSER_STORAGE_SOURCE, chrome: BrowserChrome })
 registerSourceProvider({ ...MEMORY_SOURCE, chrome: MemoryNotice })
 
 /**

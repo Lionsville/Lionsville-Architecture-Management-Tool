@@ -54,6 +54,7 @@ export function desktopOpening(files: DesktopFiles, directory: DesktopDirectory)
     name: directory.name,
     root: directory.root,
     ...(git ? { git: new DesktopFolderGit(git, directory.root), sync: desktopSync(git, directory.root) } : {}),
+    historyNoteKey: 'folder.historyNote',
     ...(settings
       ? {
         steps: desktopStepStore(settings, directory.root),
@@ -78,6 +79,7 @@ export function browserOpening(handle: DirectoryHandleLike): FolderOpening {
   return {
     ...opening,
     git: browserFolderGit(folder, handle),
+    historyNoteKey: 'folder.historyNoteBrowser',
     steps: browserStepStore(folder),
     places: browserPlaceStore(folder),
     stamps: browserStampCache(folder),

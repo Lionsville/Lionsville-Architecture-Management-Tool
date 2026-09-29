@@ -81,4 +81,28 @@ export const EN = {
   'folder.where': 'Everything here is kept as files in the folder above.',
   'browser.where': 'Everything here is kept in this browser.',
   'memory.where': 'Everything here is kept nowhere yet \u2014 save a working file to keep it.',
+  'shell.storageNearlyFull':
+    'This browser is about {percent}% full for this app. Save your work to a folder or a '
+    + 'file before it runs out — a browser stops saving without asking.',
+  // --- where a history is kept -----------------------------------------------
+  /** Said where a person takes the first snapshot: where the history they are starting is kept. */
+  'folder.historyNote': 'Every snapshot you take is recorded in the folder itself, using git \u2014 nothing leaves this machine.',
+  'folder.historyNoteBrowser': 'Every snapshot you take is recorded in this browser, beside the folder \u2014 nothing is written into the folder for it.',
+  'browser.historyNote': 'Every snapshot you take is recorded in this browser \u2014 nothing leaves this machine.',
+  'memory.historyNote': 'Snapshots are kept for as long as this tab is open, and go with it.',
+
+  // --- the work this browser kept before -------------------------------------
+  /**
+   * The work the older storage kept, and what could not be brought over from
+   * it. Both answers keep everything: bringing the older copy over records
+   * what is here first, and leaving it brings it over only once it changes.
+   */
+  'browser.earlierAsking': 'This browser lost the work it kept, and an older copy of it is still here. Bring the older copy back, or carry on from what is here now?',
+  'browser.earlierDiverged': '\u201c{path}\u201d changed both here and in this browser\u2019s older copy. Which one stands?',
+  'browser.earlierBring': 'Bring the older copy over',
+  'browser.earlierLeave': 'Keep what is here',
+  'browser.earlierBrought': 'The older copy was brought over; what was here is in the history.',
+  'browser.earlierLeft': 'What is here stands. The older copy is brought over only once it changes again.',
+  'browser.earlierLeftBehind': 'Some of what this browser kept before could not be read, and is left where it was: {paths}.',
+  'browser.earlierRefused': 'Nothing was brought over {paths}: what is here could not be read whole.',
 } as const

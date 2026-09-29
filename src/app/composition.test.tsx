@@ -392,10 +392,11 @@ describe('registeredChrome', () => {
 
     const drawn = registeredChrome()
     expect(drawn.find((entry) => entry.kind === 'drawing')?.chrome).toBe(Strip)
-    // The folder says what its remote answered, and memory that nothing is kept.
+    // The folder says what its remote answered, this browser whether it can be
+    // written, and memory that nothing is kept.
     expect(drawn.map((entry) => entry.kind)).toContain('folder')
     expect(drawn.map((entry) => entry.kind)).toContain('memory')
-    expect(drawn.map((entry) => entry.kind)).not.toContain('browserStorage')
+    expect(drawn.map((entry) => entry.kind)).toContain('browserStorage')
   })
 
   /**

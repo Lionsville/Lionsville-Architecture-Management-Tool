@@ -37,9 +37,6 @@ export const NL: Record<keyof typeof EN, string> = {
     'Deze browser kon het ontwerp niet bewaren (opslag vol of geblokkeerd). Bewaar een werkbestand, anders is het bij het sluiten van het tabblad weg.',
   'shell.storageRecovered': 'Bewaren in deze browser lukt weer.',
   'shell.sourceNotOpened': 'Die bron kon niet worden geopend: {message}',
-  'shell.storageNearlyFull':
-    'Deze browser zit voor ongeveer {percent}% vol voor deze app. Bewaar je werk in een map '
-    + 'of een bestand voordat de ruimte op is — een browser stopt zonder te vragen met bewaren.',
   'shell.crashed': 'Er ging iets mis op dit scherm.',
   'shell.crashedNote':
     'Je werk tot het laatste bewaarmoment staat er nog. Herlaad om verder te gaan; de diagnostiek zegt wat er gebeurde.',
@@ -130,13 +127,9 @@ export const NL: Record<keyof typeof EN, string> = {
   'picker.orderUpdated': 'Onlangs gewijzigd',
   'history.title': 'Geschiedenis',
   'history.snapshot': 'Momentopname…',
-  'history.snapshotNote': 'Leg het project vast zoals het nu is, in de geschiedenis van de map',
   'history.open': 'Geschiedenis…',
-  'history.openNote': 'Elke momentopname van deze map, en wat er veranderde',
   'history.start': 'Geschiedenis bijhouden',
-  'history.startBody':
-    'Deze map houdt nog geen geschiedenis bij. Vanaf nu wordt elke momentopname in de map zelf '
-    + 'vastgelegd, met git — er gaat niets van deze machine af.',
+  'history.startBody': 'Hier wordt nog geen geschiedenis bijgehouden. De eerste momentopname begint er een.',
   'history.message': 'Wat er veranderde',
   'history.defaultMessage': 'Momentopname',
   'history.take': 'Vastleggen',
@@ -148,11 +141,10 @@ export const NL: Record<keyof typeof EN, string> = {
   'history.failed': 'De momentopname is niet gelukt: {message}',
   'history.readFailed': 'De geschiedenis kon niet worden gelezen: {message}',
   'history.none': 'Nog geen momentopnames.',
-  'history.unavailable':
-    'Op deze machine staat geen git, dus de app kan geen geschiedenis bijhouden. De rest werkt gewoon.',
+  'history.unavailable': 'Hier kan geen geschiedenis worden bijgehouden. De rest werkt gewoon.',
   'history.compare': 'Vergeleken met het project zoals het nu is',
   'history.unchanged': 'Er is niets veranderd sinds deze momentopname.',
-  'history.gone': 'Dit project stond bij die momentopname niet in de map.',
+  'history.gone': 'Dit onderdeel bestond bij die momentopname nog niet.',
   'history.by': '{author}',
   'history.subject': 'Toon de geschiedenis van',
   'history.everything': 'Het hele project',

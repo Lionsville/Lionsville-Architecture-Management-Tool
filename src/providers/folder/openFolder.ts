@@ -76,6 +76,8 @@ export type FolderOpening = {
    * folder may offer to bring along the work this browser kept.
    */
   chosen?: boolean
+  /** Where its history is kept, in the provider's sentence, where it has a history of its own to keep. */
+  historyNoteKey?: string
 }
 
 export type FolderParts = ProviderParts<FolderOwn> & { own: FolderOwn }
@@ -191,6 +193,9 @@ export async function openFolder(opening: FolderOpening, base: FolderBase): Prom
     repositories: { ...repositories, history: pushingAfterRecord(repositories.history, own) },
     source: { provider: 'folder', name, key: root },
     own,
+    // Where the history is kept: the opening's own place, or — where there is
+    // none to keep it in — for as long as the tab is open.
+    historyNoteKey: git ? opening.historyNoteKey ?? 'folder.historyNote' : 'memory.historyNote',
     ...(channel ? { changes: watching(channel, root, diagnostics) } : {}),
   }
 }

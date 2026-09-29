@@ -188,6 +188,18 @@ describe('taking a snapshot', () => {
     expect(await screen.findByText('Start keeping history')).toBeDefined()
   })
 
+  it('says where the history is kept, in the source\'s own sentence', async () => {
+    const { repositories } = kept()
+    renderApp({
+      repositories, boot: { initialProject: project() },
+      provider: { historyNoteKey: 'browser.historyNote' },
+    })
+    await openSaveMenu()
+    await waitFor(() => expect(screen.getByText('Snapshot…')).toBeDefined())
+    fireEvent.click(screen.getByText('Snapshot…'))
+    expect(await screen.findByText(/The first snapshot starts one\. Every snapshot you take is recorded in this browser/)).toBeDefined()
+  })
+
   it('does not explain itself again once the scope has a history', async () => {
     await takeOne([earlier])
     await waitFor(() => expect(screen.queryByText('Start keeping history')).toBeNull())
@@ -259,7 +271,7 @@ describe('reading one back', () => {
   it('says so when the scope was not there then', async () => {
     show([entry()])
     await openIt()
-    expect(await screen.findByText('This project was not in the folder at that snapshot.')).toBeDefined()
+    expect(await screen.findByText('This scope did not exist yet at that snapshot.')).toBeDefined()
   })
 
   it('says when there is nothing to show yet', async () => {
