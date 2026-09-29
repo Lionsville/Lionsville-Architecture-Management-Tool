@@ -12,8 +12,8 @@
  * Named `.contract.ts` so the runner does not pick it up on its own.
  */
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_LOCAL_SETTINGS, FOLDER_SETTINGS_PATH, LOCAL_SETTINGS_PATH } from '../projects/folderSettings'
-import type { FolderSettingsStore } from './FolderSettings'
+import { DEFAULT_LOCAL_SETTINGS, FOLDER_SETTINGS_PATH, LOCAL_SETTINGS_PATH } from './format/folderSettings'
+import type { FolderSettingsStore } from './FolderSettingsStore'
 
 export type SeededStore = {
   store: FolderSettingsStore

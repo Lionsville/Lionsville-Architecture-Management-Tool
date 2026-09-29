@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_LOCAL_SETTINGS } from '../../projects/folderSettings'
+import { DEFAULT_LOCAL_SETTINGS } from '../../adapters/folder/format/folderSettings'
 import {
   MACHINE_FOLDER_SETTINGS_VERSION, machineFolderSettingsText, readMachineFolderSettings,
 } from './machineFolderSettings'

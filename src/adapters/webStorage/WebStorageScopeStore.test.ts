@@ -2,9 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { describe, expect, it } from 'vitest'
-import {
-  SAMPLE_PATH, describeScopeStore, scopeAt, sampleScope,
-} from '../../ports/ScopeStore.contract'
+import { SAMPLE_PATH, describeScopeStore, scopeAt, sampleScope } from '../folder/ScopeStore.contract'
 import { flattenScopes } from '../../projects/scope'
 import type { KeyValueStorage } from './KeyValueStorage'
 import {

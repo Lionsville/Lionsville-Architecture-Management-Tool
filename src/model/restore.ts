@@ -38,7 +38,7 @@ import { edgeRoutesOf, splitRoutes } from './routes'
 import { FIXED_ON_A_STANDIN } from './standIn'
 import type { DesignElement, DiagramSettings, Relation } from './types'
 
-/** The same shape `projects/historyPath.ts` asks a history by; the model's own word for it. */
+/** The same shape `adapters/folder/format/historyPath.ts` asks a history by; the model's own word for it. */
 export type RestoreSubject = { what: 'diagram' | 'description' | 'decision'; id: string }
 
 export type RestoreRefusal = 'restore.absentThen' | 'restore.absentNow' | 'restore.locked'

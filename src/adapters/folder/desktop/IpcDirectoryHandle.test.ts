@@ -19,7 +19,7 @@ import {
   createFile, fingerprint, listDirectory, makeDirectory, moveEntry, readFile, removeEntry, stampAt, writeFile, writeTogether,
 } from '../../../../electron/main/fileStore'
 import { describeDirectoryHandle } from '../DirectoryHandle.contract'
-import { describeScopeStore, sampleScope } from '../../../ports/ScopeStore.contract'
+import { describeScopeStore, sampleScope } from '../ScopeStore.contract'
 import { SCOPE_FORMAT_VERSION } from '../../../projects/folderFormat'
 import { flattenScopes } from '../../../projects/scope'
 import { FileSystemScopeStore } from '../FileSystemScopeStore'

@@ -14,10 +14,10 @@
  * nothing to be about is not drawn.
  *
  * Reading never fails: an absent, malformed or newer file reads as its safe
- * default (`projects/folderSettings.ts` decides what that is). Writing patches
+ * default (`adapters/folder/format/folderSettings.ts` decides what that is). Writing patches
  * what is there and may reject, the way every other write may.
  */
-import type { FolderSettings, LocalSettings, LocalSettingsPatch } from '../projects/folderSettings'
+import type { FolderSettings, LocalSettings, LocalSettingsPatch } from './format/folderSettings'
 
 export interface FolderSettingsStore {
   /** Where this one keeps things, in plain words. For messages and the trail. */

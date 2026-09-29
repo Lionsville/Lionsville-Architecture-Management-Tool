@@ -15,7 +15,7 @@
  * files, and about the fact that a folder has other inhabitants.
  */
 import { describe, expect, it } from 'vitest'
-import { describeScopeStore, SAMPLE_PATH, sampleScope, scopeAt } from '../../ports/ScopeStore.contract'
+import { describeScopeStore, SAMPLE_PATH, sampleScope, scopeAt } from './ScopeStore.contract'
 import { flattenScopes } from '../../projects/scope'
 import { RecordingDiagnostics } from '../memory/RecordingDiagnostics'
 import { FakeDirectory, refusingReads } from './fakeDirectory'

@@ -24,8 +24,8 @@
  * back; this decides what the text says.
  */
 import { parseJson, stableJson } from '../../projects/text'
-import { localSettingsText, readLocalSettings } from '../../projects/folderSettings'
-import type { LocalSettings, LocalSettingsPatch } from '../../projects/folderSettings'
+import { localSettingsText, readLocalSettings } from '../../adapters/folder/format/folderSettings'
+import type { LocalSettings, LocalSettingsPatch } from '../../adapters/folder/format/folderSettings'
 
 export const MACHINE_FOLDER_SETTINGS_FILE = 'folder-settings.json'
 export const MACHINE_FOLDER_SETTINGS_VERSION = 1

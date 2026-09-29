@@ -35,10 +35,10 @@
  * this build does not recognise are carried through unchanged, because an
  * older build must not prune a newer one's settings.
  *
- * Pure. Nothing here touches a disk; `ports/FolderSettings.ts` is the seam
+ * Pure. Nothing here touches a disk; `adapters/folder/FolderSettingsStore.ts` is the seam
  * that does.
  */
-import { parseJson, stableJson } from './text'
+import { parseJson, stableJson } from '../../../projects/text'
 
 export const SETTINGS_FOLDER = '.lionsville-architecture'
 export const FOLDER_SETTINGS_FILE = 'folder.json'

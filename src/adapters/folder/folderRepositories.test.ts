@@ -15,7 +15,7 @@ import { describeOrganisationIndex } from '../../ports/OrganisationIndex.contrac
 import { addCrews, addDepot, ok, over, refusal, renameCrews, step } from '../../ports/Repositories.contract'
 import type { RepositoriesUnderTest } from '../../ports/Repositories.contract'
 import { describeScopeRepository } from '../../ports/ScopeRepository.contract'
-import { sampleScope } from '../../ports/ScopeStore.contract'
+import { sampleScope } from './ScopeStore.contract'
 import { describeSettingsRepository } from '../../ports/SettingsRepository.contract'
 import type { DirectoryHandleLike, FileHandleLike } from './DirectoryHandle'
 import { FakeDirectory } from './fakeDirectory'

@@ -9,13 +9,13 @@
  * silently emptying every per-thing history.
  */
 import { describe, expect, it } from 'vitest'
-import { laidOut } from '../model/testFixtures';
-import type { Adr } from '../decisions/adr'
-import type { HostModel } from '../model/hostModel'
-import { scopeFiles } from './folderFormat'
+import { laidOut } from '../../../model/testFixtures';
+import type { Adr } from '../../../decisions/adr'
+import type { HostModel } from '../../../model/hostModel'
+import { scopeFiles } from '../../../projects/folderFormat'
 import { historyPaths, historyPlaces, historyScopes } from './historyPath'
-import { indexScopes } from './scopeIndex'
-import type { ScopeSnapshot } from './scope'
+import { indexScopes } from '../../../projects/scopeIndex'
+import type { ScopeSnapshot } from '../../../projects/scope'
 
 const decision = (over: Partial<Adr> = {}): Adr => ({
   id: 'adr-7', number: 7, title: 'One writer', status: 'proposed', date: '2026-09-06',

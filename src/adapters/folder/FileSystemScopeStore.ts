@@ -71,7 +71,7 @@ import {
 } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
 import { ShellError, reasonOf } from '../../platform/errors'
-import type { ScopeStore } from '../../ports/ScopeStore'
+import type { ScopeStore } from './ScopeStore'
 import type { Diagnostics } from '../../ports/Diagnostics'
 import type { DirectoryHandleLike, FileHandleLike } from './DirectoryHandle'
 import { folderRevision } from './revision'

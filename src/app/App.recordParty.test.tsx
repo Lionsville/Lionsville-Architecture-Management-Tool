@@ -15,7 +15,7 @@ import { cleanup, configure, fireEvent, screen, waitFor, within } from '@testing
 import { heldRepositories } from './testing/heldRepositories'
 import { installReactFlowMocks } from '../editor/reactFlowTestSetup'
 import type { ScopeSnapshot } from '../projects/scope'
-import { EXAMPLES, exampleScopes } from './examples'
+import { EXAMPLES, exampleScopes } from './testing/examples'
 import { renderApp } from './testing/renderShell'
 
 configure({ asyncUtilTimeout: 5_000 })

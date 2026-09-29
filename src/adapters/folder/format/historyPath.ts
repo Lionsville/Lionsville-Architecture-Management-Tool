@@ -28,14 +28,14 @@
  * organisation-wide and the scopes that draw it each keep a perspective of
  * their own.
  */
-import type { ElementId } from '../model'
-import type { HostModel } from '../model/hostModel'
-import { adrPathPattern } from './adrFile'
+import type { ElementId } from '../../../model'
+import type { HostModel } from '../../../model/hostModel'
+import { adrPathPattern } from '../../../projects/adrFile'
 import {
   descriptionPath, diagramStems, DIAGRAMS_FOLDER, GEOMETRY_SUFFIX, MODEL_FILE,
-} from './folderFormat'
-import type { ScopeIndex } from './scopeIndex'
-import type { ScopePath } from './scopePath'
+} from '../../../projects/folderFormat'
+import type { ScopeIndex } from '../../../projects/scopeIndex'
+import type { ScopePath } from '../../../projects/scopePath'
 
 /** One thing a person can ask the history of. */
 export type HistorySubject =

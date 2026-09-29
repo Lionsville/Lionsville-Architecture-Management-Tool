@@ -17,10 +17,10 @@
  * structural seams rather than a `ProjectStore`, a tally of counts and never
  * names, and a failure that is one project rather than the run.
  */
-import { bareScope, flattenScopes } from './scope'
-import type { ScopeKind, ScopeSnapshot, ScopeSummary } from './scope'
-import { ancestorScopes, ROOT_SCOPE, scopePathLabel } from './scopePath'
-import type { ScopePath } from './scopePath'
+import { bareScope, flattenScopes } from '../../../projects/scope'
+import type { ScopeKind, ScopeSnapshot, ScopeSummary } from '../../../projects/scope'
+import { ancestorScopes, ROOT_SCOPE, scopePathLabel } from '../../../projects/scopePath'
+import type { ScopePath } from '../../../projects/scopePath'
 
 /** Where the scopes are coming from: enough to see them and read them. */
 export type ScopeSource = {

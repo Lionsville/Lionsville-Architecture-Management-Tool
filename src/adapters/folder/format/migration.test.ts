@@ -10,13 +10,13 @@
  * choosing a folder, and both would be discovered days later.
  */
 import { describe, expect, it, vi } from 'vitest'
-import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
-import { sampleScope, scopeAt } from '../ports/ScopeStore.contract'
+import { InMemoryScopeStore } from '../../memory/InMemoryScopeStore'
+import { sampleScope, scopeAt } from '../ScopeStore.contract'
 import { copyScopesInto, holdsScopes, migrated, migrateInto, upgradeProjects } from './migration'
 import type { UpgradeTarget } from './migration'
-import { bareScope, flattenScopes } from './scope'
-import type { ScopeSnapshot } from './scope'
-import type { ScopePath } from './scopePath'
+import { bareScope, flattenScopes } from '../../../projects/scope'
+import type { ScopeSnapshot } from '../../../projects/scope'
+import type { ScopePath } from '../../../projects/scopePath'
 
 const named = (group: string, project: string, name: string): ScopeSnapshot =>
   scopeAt(`${group}/${project}`, name)

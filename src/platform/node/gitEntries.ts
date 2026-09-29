@@ -19,7 +19,7 @@ import { execFile } from 'node:child_process'
 import { access } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { isAbsolute, join } from 'node:path'
-import { LOCAL_SETTINGS_PATH } from '../../projects/folderSettings'
+import { LOCAL_SETTINGS_PATH } from '../../adapters/folder/format/folderSettings'
 import { isSpacedLabel } from '../../projects/label'
 import { git, gitEnvironment, gitFailure, identityArgs, initRepository, isRepository, quietConfig } from './git'
 

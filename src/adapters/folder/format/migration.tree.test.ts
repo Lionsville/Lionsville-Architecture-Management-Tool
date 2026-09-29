@@ -17,13 +17,13 @@
  * it twice is running it once.
  */
 import { describe, expect, it } from 'vitest'
-import { FakeDirectory } from '../adapters/folder/fakeDirectory'
-import { FileSystemFolderSettings } from '../adapters/folder/FileSystemFolderSettings'
-import { FileSystemScopeStore } from '../adapters/folder/FileSystemScopeStore'
-import type { DirectoryHandleLike } from '../adapters/folder/FileSystemScopeStore'
+import { FakeDirectory } from '../fakeDirectory'
+import { FileSystemFolderSettings } from '../FileSystemFolderSettings'
+import { FileSystemScopeStore } from '../FileSystemScopeStore'
+import type { DirectoryHandleLike } from '../FileSystemScopeStore'
 import { FOLDER_SETTINGS_PATH } from './folderSettings'
 import { upgradeProjects } from './migration'
-import { flattenScopes } from './scope'
+import { flattenScopes } from '../../../projects/scope'
 
 /** A format-4 header for a project folder. */
 const project = (name: string, group: string, diagrams: string[] = ['l7']) => JSON.stringify({

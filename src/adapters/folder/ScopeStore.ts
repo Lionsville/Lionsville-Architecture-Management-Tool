@@ -35,9 +35,9 @@
  * than a flat list because the nesting IS the structure — flattening it only to
  * group it again is how two orderings come to disagree.
  */
-import type { ScopeModel, ScopeSnapshot, ScopeSummary } from '../projects/scope'
-import type { ScopePath } from '../projects/scopePath'
-import type { WorkingFileManifest } from '../projects/workingFileManifest'
+import type { ScopeModel, ScopeSnapshot, ScopeSummary } from '../../projects/scope'
+import type { ScopePath } from '../../projects/scopePath'
+import type { WorkingFileManifest } from '../../projects/workingFileManifest'
 
 
 export interface ScopeStore {

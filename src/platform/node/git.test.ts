@@ -238,7 +238,7 @@ describe.skipIf(!available)('git in a working directory', () => {
 import {
   excludeLocalSettings, gitEnvironment, pull, push, remote, resolve,
 } from './git'
-import { LOCAL_SETTINGS_PATH } from '../../projects/folderSettings'
+import { LOCAL_SETTINGS_PATH } from '../../adapters/folder/format/folderSettings'
 
 const sh = (cwd: string, args: string[]) => run('git', args, {
   cwd, env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },

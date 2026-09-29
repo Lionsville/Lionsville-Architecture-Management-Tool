@@ -29,7 +29,7 @@ import type { AgentServerPatch, AgentServerStatus } from '../../platform/agentSe
 import type { LabelOutcome } from '../../projects/label'
 import type { HostCommands } from '../../platform/hostCommands'
 import type { UpdateSettings, UpdateSettingsPatch } from '../../platform/updateSettings'
-import type { LocalSettings, LocalSettingsPatch } from '../../projects/folderSettings'
+import type { LocalSettings, LocalSettingsPatch } from '../folder/format/folderSettings'
 import type {
   PullOutcome, PushOutcome, ResolveOutcome, SyncRemote, SyncSide,
 } from '../../platform/sync'

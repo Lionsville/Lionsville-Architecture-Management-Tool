@@ -21,7 +21,7 @@ import { installReactFlowMocks } from '../editor/reactFlowTestSetup'
 import { FILE_MENU, HELP_MENU, PREFERENCES_ITEM, THEME_ITEMS, offered } from '../platform/menu'
 import type { MenuItemSpec } from '../platform/menu'
 import { translator } from '../i18n'
-import { EXAMPLES, exampleScopes } from './examples'
+import { EXAMPLES, exampleScopes } from './testing/examples'
 import { renderApp } from './testing/renderShell'
 
 // The whole app over the whole example, under coverage beside every other

@@ -26,6 +26,7 @@ import { answering, heldRepositories } from './testing/heldRepositories'
 import { contentOf, placeWhole } from '../projects/scopeAccess'
 import { renderApp } from './testing/renderShell'
 import { installReactFlowMocks } from '../editor/reactFlowTestSetup'
+import { exampleScopes } from '../adapters/folder/format/exampleFolder'
 
 afterEach(() => cleanup())
 // Some of these open a scope, and the board it draws needs what jsdom lacks;
@@ -696,7 +697,7 @@ describe('a refusal where the source keeps work', () => {
         path: 'acme/landscape',
         label: 'Acme Logistics',
         description: 'an example',
-        folder: {
+        scopes: exampleScopes({
           'scope.json': {
             type: 'lionsville-architecture', version: 5, name: 'Warehouse landscape',
             activeDiagramId: 'l7', diagrams: ['l7'],
@@ -704,7 +705,7 @@ describe('a refusal where the source keeps work', () => {
           'model.json': { elements: [], relations: [] },
           'diagrams/l7.json': { id: 'l7', kind: 'layer7', name: 'Landscape', members: [] },
           'diagrams/l7.geometry.json': { nodes: [] },
-        },
+        }, 'acme/landscape'),
       }],
       ...over,
     })

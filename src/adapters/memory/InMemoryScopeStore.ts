@@ -17,7 +17,7 @@ import type { ScopeModel, ScopeSnapshot, ScopeSummary } from '../../projects/sco
 import { scopeMoved } from '../../projects/revision'
 import { isSafeScopePath, isWithinScope, ROOT_SCOPE } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
-import type { ScopeStore } from '../../ports/ScopeStore'
+import type { ScopeStore } from '../folder/ScopeStore'
 
 export class InMemoryScopeStore implements ScopeStore {
   readonly id = 'memory'

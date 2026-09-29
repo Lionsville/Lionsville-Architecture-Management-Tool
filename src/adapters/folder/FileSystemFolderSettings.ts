@@ -9,7 +9,7 @@
  * plugin's folder over HTTP both satisfy it. The desktop reads through it for
  * what an older build left in the folder and keeps the machine's own settings
  * elsewhere (`DesktopFolderSettings`, ADR-0023). Everything about what the
- * files mean is in `projects/folderSettings.ts`; this only finds them and
+ * files mean is in `adapters/folder/format/folderSettings.ts`; this only finds them and
  * puts the text back. The shared file is read and never written.
  *
  * The dot-folder is outside the project format — `isFormatPath` does not
@@ -19,11 +19,10 @@
  * change notice: folder settings are read on open, not live.
  */
 import {
-  FOLDER_SETTINGS_FILE, LOCAL_SETTINGS_FILE, SETTINGS_FOLDER, localSettingsText,
-  readFolderSettings, readLocalSettings,
-} from '../../projects/folderSettings'
-import type { FolderSettings, LocalSettings, LocalSettingsPatch } from '../../projects/folderSettings'
-import type { FolderSettingsStore } from '../../ports/FolderSettings'
+  FOLDER_SETTINGS_FILE, LOCAL_SETTINGS_FILE, SETTINGS_FOLDER, localSettingsText, readFolderSettings, readLocalSettings,
+} from './format/folderSettings'
+import type { FolderSettings, LocalSettings, LocalSettingsPatch } from './format/folderSettings'
+import type { FolderSettingsStore } from './FolderSettingsStore'
 import type { DirectoryHandleLike } from './FileSystemScopeStore'
 
 export class FileSystemFolderSettings implements FolderSettingsStore {

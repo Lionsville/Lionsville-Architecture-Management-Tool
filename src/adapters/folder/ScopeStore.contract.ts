@@ -31,13 +31,13 @@
  * it up on its own, because without an adapter there is nothing to run.
  */
 import { describe, expect, it } from 'vitest'
-import type { DesignElement } from '../model'
-import type { HostModel } from '../model/hostModel'
-import { isScopeMoved } from '../projects/revision'
-import { bareScope, flattenScopes } from '../projects/scope'
-import type { ScopeSnapshot } from '../projects/scope'
-import { ROOT_SCOPE, scopePathLabel } from '../projects/scopePath'
-import type { ScopePath } from '../projects/scopePath'
+import type { DesignElement } from '../../model'
+import type { HostModel } from '../../model/hostModel'
+import { isScopeMoved } from '../../projects/revision'
+import { bareScope, flattenScopes } from '../../projects/scope'
+import type { ScopeSnapshot } from '../../projects/scope'
+import { ROOT_SCOPE, scopePathLabel } from '../../projects/scopePath'
+import type { ScopePath } from '../../projects/scopePath'
 import type { ScopeStore } from './ScopeStore'
 
 function element(id: string, name: string): DesignElement {

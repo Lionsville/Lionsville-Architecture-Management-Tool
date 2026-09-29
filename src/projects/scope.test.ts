@@ -16,7 +16,7 @@ import {
   sortScopes, subtreeTotals, summarise, toWorkingFile,
 } from './scope'
 import type { ScopeSummary } from './scope'
-import { sampleScope } from '../ports/ScopeStore.contract'
+import { sampleScope } from '../adapters/folder/ScopeStore.contract'
 
 const REF = 'acme-logistics/landscape'
 

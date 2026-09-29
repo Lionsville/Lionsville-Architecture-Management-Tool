@@ -13,8 +13,8 @@
  */
 import type { DesktopSettings } from '../../adapters/desktop/channel'
 import type { PersonSettings } from '../../adapters/folder/FolderSettingsRepository'
-import type { FolderSettingsStore } from '../../ports/FolderSettings'
-import type { LocalSettings, LocalSettingsPatch } from '../../projects/folderSettings'
+import type { FolderSettingsStore } from '../../adapters/folder/FolderSettingsStore'
+import type { LocalSettings, LocalSettingsPatch } from '../../adapters/folder/format/folderSettings'
 import type { Settings } from '../../projects/settings'
 
 export function desktopPerson(

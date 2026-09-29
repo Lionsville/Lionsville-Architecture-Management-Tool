@@ -20,9 +20,10 @@ import type { ScopeSnapshot } from '../../projects/scope'
 import type { InitialPage } from '../App'
 import type { HeldRepositories } from '../testing/heldRepositories'
 import type { ScopeRepository } from '../../ports/ScopeRepository'
-import type { ExampleProject } from '../examples'
+import type { ExampleProject } from '../examples/copy'
 import { useOrganisation } from './useOrganisation'
 import type { Organisation } from './useOrganisation'
+import { exampleScopes } from '../../adapters/folder/format/exampleFolder'
 
 afterEach(() => cleanup())
 
@@ -33,7 +34,7 @@ const EXAMPLE: ExampleProject = {
   path: 'acme-logistics',
   label: 'Acme Logistics',
   description: 'an example',
-  folder: {
+  scopes: exampleScopes({
     'scope.json': {
       type: 'lionsville-architecture', version: 5, name: 'Acme Logistics',
       kind: 'organisation', activeDiagramId: '', diagrams: [],
@@ -62,7 +63,7 @@ const EXAMPLE: ExampleProject = {
     },
     'platforms/diagrams/p7.json': { id: 'p7', kind: 'layer7', name: 'Platforms', members: [{ id: 'openshift', zone: 'management' }] },
     'platforms/diagrams/p7.geometry.json': { nodes: [] },
-  },
+  }, 'acme-logistics'),
 }
 
 type Harness = {

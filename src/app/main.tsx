@@ -49,7 +49,7 @@ import { configureElkWorker, configureLibavoidWasm, configureLibavoidWorker } fr
 import ElkWorker from 'elkjs/lib/elk-worker.min.js?worker'
 import { detectBrowserLanguage, translator } from '../i18n'
 import {
-  composeShell, desktopCommandChannel, openSource, overSource, registeredChrome, registeredConnects,
+  composeShell, desktopCommandChannel, EXAMPLE_OFFERS, openSource, overSource, registeredChrome, registeredConnects,
   registeredMenus, reloadWhenScriptsAreGone, sourceAgentPanel, sourceChip, sourceChipFace, sourceChipPanel,
   sourceConnected, sourceDescription, sourceDestination, sourcePreferencesPanel, sourceRecentActivity, sourceSayings,
 } from './composition'
@@ -60,7 +60,6 @@ import { readScope } from '../projects/scopeAccess'
 import { sourceKey } from '../platform/workingSource'
 import { dialogAsked, landingOf, scopeToRead, withoutDialog } from './bootLanding'
 import type { BootDialog, BootLanding } from './bootLanding'
-import { EXAMPLE_OFFERS } from './examples/offers'
 import { App } from './App'
 import { BootFailure } from './BootFailure'
 import type { ChooseDestination } from './workingFileFlows'

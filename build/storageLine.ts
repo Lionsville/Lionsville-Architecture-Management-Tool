@@ -88,11 +88,8 @@ export const FOLDER_FORMAT: readonly string[] = [
   'src/projects/adrFile.ts',
   'src/projects/fileText.ts',
   'src/projects/folderFormat.ts',
-  'src/projects/folderSettings.ts',
-  'src/projects/historyPath.ts',
   'src/projects/migrate3to4.ts',
   'src/projects/migrate4to5.ts',
-  'src/projects/migration.ts',
   'src/projects/observationFile.ts',
   'src/projects/transitionFile.ts',
   'src/projects/workingFile.ts',
@@ -290,7 +287,6 @@ export function importsAcross(graph: Graph): Record<string, string[]> {
  * written from `app/` and `projects/`, and the ports it replaces.
  */
 export const IMPORT_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {
-  'src/app/examples/copy.ts': ['src/projects/folderFormat.ts'],
   'src/app/shellParts.ts': ['src/projects/workingFileManifest.ts'],
   'src/app/useHomeFiles.ts': ['src/projects/workingFileManifest.ts'],
   'src/app/useHomeParts.ts': ['src/projects/workingFileManifest.ts'],
@@ -298,9 +294,7 @@ export const IMPORT_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {
   'src/app/useWorkspaceFiles.ts': ['src/projects/workingFileManifest.ts'],
   'src/app/workingFileFlows.ts': ['src/projects/workingFile.ts', 'src/projects/workingFileManifest.ts'],
   'src/app/workspaceProps.ts': ['src/projects/workingFileManifest.ts'],
-  'src/ports/FolderSettings.ts': ['src/projects/folderSettings.ts'],
-  'src/ports/ScopeStore.ts': ['src/projects/workingFileManifest.ts'],
-  'src/projects/index.ts': ['src/projects/adrFile.ts', 'src/projects/fileText.ts', 'src/projects/folderFormat.ts', 'src/projects/folderSettings.ts', 'src/projects/historyPath.ts', 'src/projects/migrate3to4.ts', 'src/projects/migrate4to5.ts', 'src/projects/migration.ts', 'src/projects/workingFile.ts'],
+  'src/projects/index.ts': ['src/projects/adrFile.ts', 'src/projects/fileText.ts', 'src/projects/folderFormat.ts', 'src/projects/migrate3to4.ts', 'src/projects/migrate4to5.ts', 'src/projects/workingFile.ts'],
   'src/projects/scope.ts': ['src/projects/workingFileManifest.ts'],
 }
 
@@ -317,9 +311,6 @@ export const WORD_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {
   'src/app/WorkspaceBar.tsx': ['disk'],
   'src/app/appProps.ts': ['storage'],
   'src/app/dialogs/OpenIntoDialog.tsx': ['folder'],
-  'src/app/examples/copy.ts': ['folder'],
-  'src/app/examples/index.ts': ['folder', 'folders'],
-  'src/app/examples/offers.ts': ['folder'],
   'src/app/history/useProjectHistory.ts': ['commit message'],
   'src/app/main.tsx': ['../', 'storage'],
   'src/app/organisation/OrganisationScreen.tsx': ['folder'],
@@ -332,8 +323,6 @@ export const WORD_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {
   'src/app/useWorkspaceDocument.ts': ['storage'],
   'src/app/useWorkspaceFiles.ts': ['.json'],
   'src/app/workspaceProps.ts': ['storage'],
-  'src/ports/FolderSettings.ts': ['folder'],
-  'src/ports/ScopeStore.ts': ['storage'],
   'src/projects/commitMessage.ts': ['commit message', 'git'],
 }
 
@@ -345,11 +334,11 @@ export const WORD_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {
  */
 export const CEILINGS = {
   /** Files of the folder format still in the domain. */
-  folderFormat: 13,
+  folderFormat: 10,
   /** Files importing across the line, and the imports between them. */
-  importingFiles: 12,
-  imports: 21,
+  importingFiles: 9,
+  imports: 15,
   /** Files naming storage, and the words and patterns between them. */
-  namingFiles: 29,
-  words: 33,
+  namingFiles: 24,
+  words: 27,
 } as const

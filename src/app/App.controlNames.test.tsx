@@ -17,7 +17,7 @@ import { installReactFlowMocks } from '../editor/reactFlowTestSetup'
 import { CONTROL_NAMES, controlSelector } from '../platform/controlNames'
 import type { ControlName } from '../platform/controlNames'
 import type { ScopeSnapshot } from '../projects/scope'
-import { EXAMPLES, exampleScopes } from './examples'
+import { EXAMPLES, exampleScopes } from './testing/examples'
 import { ShellToolbar } from './ShellToolbar'
 import { renderApp, renderShell } from './testing/renderShell'
 

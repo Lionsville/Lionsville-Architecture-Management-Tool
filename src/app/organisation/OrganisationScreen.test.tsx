@@ -23,9 +23,10 @@ import type { HeldRepositories } from '../testing/heldRepositories'
 import { registerStrings } from '../../i18n'
 import { laidOut } from '../../model/testFixtures'
 import type { ScopeSnapshot } from '../../projects/scope'
-import { EXAMPLES } from '../examples'
+import { EXAMPLES } from '../testing/examples'
 import { renderApp } from '../testing/renderShell'
 import { installReactFlowMocks } from '../../editor/reactFlowTestSetup'
+import { exampleScopes } from '../../adapters/folder/format/exampleFolder'
 
 afterEach(() => cleanup())
 
@@ -414,13 +415,13 @@ describe('the organisation screen — a fresh folder', () => {
       today: TODAY,
       examples: [{
         key: 'acme', path: 'acme-logistics', label: 'Acme Logistics', description: 'an example',
-        folder: {
+        scopes: exampleScopes({
           'scope.json': {
             type: 'lionsville-architecture', version: 5, name: 'Acme Logistics',
             kind: 'organisation', activeDiagramId: '', diagrams: [],
           },
           'model.json': { elements: [], relations: [] },
-        },
+        }, 'acme-logistics'),
       }],
     })
     expect(await screen.findByText('Examples')).toBeDefined()

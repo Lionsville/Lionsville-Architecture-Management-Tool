@@ -113,3 +113,31 @@ describe('a translation slice', () => {
     expect(await layeringAt('src/i18n/strings.ts', 'export const here = window.location.href\n')).toHaveLength(1)
   })
 })
+
+/**
+ * The one edge narrower than a module (`NARROW_EDGES` in `eslint.config.js`):
+ * the node side reads the folder's own format and nothing else of the
+ * implementations, and the format does not read the node side back.
+ */
+describe('the node side and the folder\'s format', () => {
+  it('lets the node side read the folder\'s format', async () => {
+    const reading = "import { LOCAL_SETTINGS_PATH } from '../../adapters/folder/format/folderSettings'\nexport const one = LOCAL_SETTINGS_PATH\n"
+    expect(await layeringAt('src/platform/node/one.ts', reading)).toEqual([])
+  })
+
+  it('refuses the node side every other part of the implementations', async () => {
+    for (const source of [
+      "import { memoryRepositories } from '../../adapters/memory/memoryRepositories'\nexport const one = memoryRepositories\n",
+      "import { folderRepositories } from '../../adapters/folder/folderRepositories'\nexport const one = folderRepositories\n",
+      "import * as all from '../../adapters'\nexport const one = all\n",
+    ]) {
+      expect((await layeringAt('src/platform/node/one.ts', source)).join('\n'), source).toMatch(/Node and nothing else/)
+    }
+  })
+
+  it('refuses the folder\'s format the node side', async () => {
+    const reading = "import { gitStatus } from '../../../platform/node/git'\nexport const one = gitStatus\n"
+    expect((await layeringAt('src/adapters/folder/format/one.ts', reading)).length).toBeGreaterThan(0)
+  })
+})
+

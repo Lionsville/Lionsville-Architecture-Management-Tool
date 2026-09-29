@@ -18,7 +18,7 @@ import { act, cleanup, configure, fireEvent, screen, waitFor, within } from '@te
 import type { HostCommand } from '../platform/hostCommands'
 import { heldRepositories } from './testing/heldRepositories'
 import { installReactFlowMocks } from '../editor/reactFlowTestSetup'
-import { EXAMPLES, exampleScopes } from './examples'
+import { EXAMPLES, exampleScopes } from './testing/examples'
 import { renderApp } from './testing/renderShell'
 import { axeFindings } from './testing/axe'
 

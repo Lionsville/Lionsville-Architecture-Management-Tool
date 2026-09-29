@@ -10,20 +10,10 @@
  * screen a person copies it from. The screen imports this; the catalogue
  * arrives when an example is copied (`offers.ts`).
  */
-import { stableJson } from '../../projects/text'
-import { SCOPE_FILE, scopeFromFolder } from '../../projects/folderFormat'
-import type { FolderFile } from '../../projects/folderFormat'
 import { namesUnder } from '../../projects/scope'
 import type { ScopeSnapshot, ScopeSummary } from '../../projects/scope'
-import { joinScope, ROOT_SCOPE, scopePathFor, scopePathLabel } from '../../projects/scopePath'
+import { ROOT_SCOPE, scopePathFor, scopePathLabel } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
-
-/**
- * A scope's folder, as JSON: an object for each `.json` file it holds, and the
- * lines of each `.md` file — and, since format 5, the scopes filed under it,
- * whose files are simply deeper paths in the same map.
- */
-export type ExampleFolder = Record<string, unknown>
 
 export type ExampleProject = {
   /** Stable key, for the picker and for tests. */
@@ -34,55 +24,8 @@ export type ExampleProject = {
   label: string
   /** One line on what it shows. */
   description: string
-  /** The project, as the files the format writes. */
-  folder: ExampleFolder
-}
-
-/**
- * The example's folder, as the files a reader of the format expects.
- *
- * Through {@link stableJson}, which is what the format writes with, so an
- * example edited by hand is read exactly as one saved by the app — the key
- * order in the shipped file is nobody's business but the reviewer's.
- */
-export function exampleFiles(example: ExampleProject): FolderFile[] {
-  return Object.entries(example.folder).map(([path, held]) => ({
-    path,
-    text: Array.isArray(held) ? (held as string[]).join('\n') : stableJson(held),
-  }))
-}
-
-/**
- * The scopes the example holds, parents first, filed under where the entry
- * says.
- *
- * A tree rather than one document since format 5: an example is a folder like
- * any other, and a folder inside it that has a `scope.json` is a scope inside
- * it. Parents first so a copy that is interrupted leaves a tree that is whole
- * as far as it got.
- *
- * An empty answer would mean a shipped example this build cannot read, which
- * `examples.test.ts` is there to make impossible.
- */
-export function exampleScopes(example: ExampleProject): ScopeSnapshot[] {
-  const files = exampleFiles(example)
-  const within = [...new Set(files
-    .filter((file) => file.path.endsWith(SCOPE_FILE))
-    .map((file) => file.path.slice(0, -SCOPE_FILE.length).replace(/\/$/, '')))]
-    .sort()
-  return within.flatMap((prefix) => {
-    const inside = files
-      .filter((file) => (prefix === '' ? true : file.path.startsWith(`${prefix}/`)))
-      .filter((file) => !within.some((other) =>
-        other !== prefix && other.length > prefix.length
-        && file.path.startsWith(`${other}/`)))
-      .map((file) => ({
-        ...file,
-        path: prefix === '' ? file.path : file.path.slice(prefix.length + 1),
-      }))
-    const scope = scopeFromFolder(inside, prefix === '' ? example.path : joinScope(example.path, prefix))
-    return scope ? [scope] : []
-  })
+  /** The scopes it holds, parents first, at their own paths under `path`. */
+  scopes: readonly ScopeSnapshot[]
 }
 
 /**
@@ -120,7 +63,7 @@ export function copyExampleInto(
     const below = path.slice(example.path.length + 1)
     return base === ROOT_SCOPE ? below : `${base}/${below}`
   }
-  return exampleScopes(example).map((scope) => ({
+  return example.scopes.map((scope) => ({
     ...scope,
     path: readdress(scope.path),
     // A stand-in's `ref` is an address too (ADR-0012 §3), and an address that

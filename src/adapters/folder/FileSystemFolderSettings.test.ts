@@ -6,7 +6,7 @@
  * to the same `DirectoryHandleLike` shape, so this is the admission test for
  * both.
  */
-import { describeFolderSettings } from '../../ports/FolderSettings.contract'
+import { describeFolderSettings } from './FolderSettingsStore.contract'
 import { FakeDirectory } from './fakeDirectory'
 import { FileSystemFolderSettings } from './FileSystemFolderSettings'
 

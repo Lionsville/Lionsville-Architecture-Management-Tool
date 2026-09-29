@@ -41,7 +41,7 @@ import type { Diagnostics } from '../../ports/Diagnostics'
 import type { ProviderParts, SourceChanges } from '../../ports/ProviderParts'
 import type { Repositories } from '../../ports/Repositories'
 import { isFormatPath } from '../../projects/folderFormat'
-import { upgradeProjects } from '../../projects/migration'
+import { upgradeProjects } from '../../adapters/folder/format/migration'
 import { folderOwn, pushingAfterRecord, syncSettingsOf } from './folderOwn'
 import type { FolderOwn, FolderSync } from './folderOwn'
 

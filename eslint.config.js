@@ -93,7 +93,7 @@ const WHY = {
   layout: 'Layout computes geometry over the model. It draws nothing and stores nothing.',
   i18n: 'The words know nobody — every module hands its own slice to the registry.',
   platform: 'A refusal, a diagnostic, the window. Everything may read it, so it may read almost nothing.',
-  'platform/node': 'Node and nothing else: `node:` lives here, so this folder may read the pure modules and is imported by no module at all — only by a process that has a node under it (electron/main, or a build composed from this one).',
+  'platform/node': 'Node and nothing else: `node:` lives here, so this folder may read the pure modules — and, of the implementations, only the folder\'s own format (`adapters/folder/format/`, ADR-0031 §4) — and is imported by no module at all: only by a process that has a node under it (electron/main, or a build composed from this one).',
   widgets: 'An icon does not know what an element is. Anything model-shaped belongs in the module that draws it.',
   documentation: 'documentation renders a description: the model, the words and the widgets.',
   decisions: 'A decision is markdown about the model. It does not know how the model is drawn or where it is saved.',
@@ -288,6 +288,28 @@ const knownModule = {
   },
 }
 
+/**
+ * AN EDGE NARROWER THAN A MODULE.
+ *
+ * The matrix grants whole modules, and once in this tree that is too much:
+ * `platform/node` reads the folder's own format — the settings file a folder
+ * keeps, which the desktop's main process writes and keeps out of the folder's
+ * history — and the folder's format is an implementation's, in
+ * `adapters/folder/format/` (ADR-0031 §4: nothing outside `adapters/`,
+ * `platform/node/`, `electron/` and the composition root imports the folder
+ * format). Granting it `adapters` would let the node side reach every store and
+ * seam there is; so it is granted that one folder, and the rest of `adapters`
+ * stays refused. Nothing under `adapters/folder/format/` may import
+ * `platform/node` in return — the adapters row already says so — and
+ * `build/layering.test.ts` holds both.
+ */
+const NARROW_EDGES = {
+  'platform/node': [{ to: 'adapters', within: 'folder/format' }],
+}
+
+/** A specifier into `to` that is not under `within`: what a narrow edge still refuses. */
+const outside = ({ to, within }) => `(^|/)${to}(/(?!${within}/).*)?$`
+
 const IMPORT_MATRIX = MODULES.map((from) => ({
   files: [`src/${from}/**/*.{ts,tsx}`],
   // Tests are exempt: a test reaching across the tree for a fixture is not the
@@ -305,9 +327,11 @@ const IMPORT_MATRIX = MODULES.map((from) => ({
         {
           group: MODULES
             .filter((to) => to !== from && !MAY_IMPORT[from].includes(to))
+            .filter((to) => !(NARROW_EDGES[from] ?? []).some((edge) => edge.to === to))
             .flatMap((to) => [`**/${to}/**`, `**/${to}`]),
           message: WHY[from],
         },
+        ...(NARROW_EDGES[from] ?? []).map((edge) => ({ regex: outside(edge), message: WHY[from] })),
         ...(PURE.includes(from) ? [{
           group: SCREEN_PACKAGES,
           message: 'This module computes; screen work belongs in a ui/ folder, in editor/ or in app/.',

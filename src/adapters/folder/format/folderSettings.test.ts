@@ -11,8 +11,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
-  DEFAULT_LOCAL_SETTINGS, FOLDER_SETTINGS_PATH, LOCAL_SETTINGS_PATH,
-  LOCAL_SETTINGS_VERSION, localSettingsText, readFolderSettings, readLocalSettings,
+  DEFAULT_LOCAL_SETTINGS, FOLDER_SETTINGS_PATH, LOCAL_SETTINGS_PATH, LOCAL_SETTINGS_VERSION, localSettingsText, readFolderSettings, readLocalSettings,
 } from './folderSettings'
 
 describe('where the files are', () => {

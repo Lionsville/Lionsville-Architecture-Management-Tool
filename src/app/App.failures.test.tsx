@@ -17,6 +17,7 @@ import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { answering, heldRepositories } from './testing/heldRepositories'
 import type { ScopeRepository } from '../ports/ScopeRepository'
 import { renderApp } from './testing/renderShell'
+import { exampleScopes } from '../adapters/folder/format/exampleFolder'
 
 afterEach(() => cleanup())
 
@@ -43,7 +44,7 @@ function show(over: Partial<ScopeRepository>) {
       path: 'acme/landscape',
       label: 'Acme Logistics',
       description: 'an example',
-      folder: {
+      scopes: exampleScopes({
         'scope.json': {
           type: 'lionsville-architecture', version: 5, name: 'Warehouse landscape',
           activeDiagramId: 'l7', diagrams: ['l7'],
@@ -51,7 +52,7 @@ function show(over: Partial<ScopeRepository>) {
         'model.json': { elements: [], relations: [] },
         'diagrams/l7.json': { id: 'l7', kind: 'layer7', name: 'Landscape', members: [] },
         'diagrams/l7.geometry.json': { nodes: [] },
-      },
+      }, 'acme/landscape'),
     }],
   })
 }

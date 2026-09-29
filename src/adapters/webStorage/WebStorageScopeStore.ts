@@ -28,7 +28,7 @@ import { isStoredScope, scopeTree, sortScopes, summarise } from '../../projects/
 import type { ScopeModel, ScopeSnapshot, ScopeSummary } from '../../projects/scope'
 import { isSafeScopePath, isWithinScope, pathOfOldRef, ROOT_SCOPE } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
-import type { ScopeStore, StoragePressure } from '../../ports/ScopeStore'
+import type { ScopeStore, StoragePressure } from '../folder/ScopeStore'
 import type { KeyValueStorage } from './KeyValueStorage'
 
 /**

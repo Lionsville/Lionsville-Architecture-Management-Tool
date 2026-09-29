@@ -11,26 +11,32 @@
  * download it for nothing, so it is its own script, fetched by the press that
  * copies it.
  */
-import type { ExampleFolder, ExampleProject } from './copy'
+import type { ScopeSnapshot } from '../../projects/scope'
+import type { ExampleProject } from './copy'
 
-/** An example on offer: one in hand, or one that is fetched when it is copied. */
-export type ExampleOffer =
-  | ExampleProject
-  | (Omit<ExampleProject, 'folder'> & { load(): Promise<ExampleFolder> })
+/** What an example is called, where it lands, and what it shows: everything but what it holds. */
+export type ExampleEntry = Omit<ExampleProject, 'scopes'>
+
+/** An example on offer: one in hand, or one whose scopes are fetched when it is copied. */
+export type ExampleOffer = ExampleProject | (ExampleEntry & { load(): Promise<readonly ScopeSnapshot[]> })
 
 /** The example itself, fetched where it was not in hand. */
 export async function exampleOf(offer: ExampleOffer): Promise<ExampleProject> {
-  if ('folder' in offer) return offer
+  if ('scopes' in offer) return offer
   const { load, ...rest } = offer
-  return { ...rest, folder: await load() }
+  return { ...rest, scopes: await load() }
 }
 
-export const EXAMPLE_OFFERS: readonly ExampleOffer[] = [
+/**
+ * The examples that ship, as the organisation's page names them. What each
+ * holds is fetched by the composition root when one is copied, from where the
+ * shipped examples are kept.
+ */
+export const EXAMPLE_CATALOGUE: readonly ExampleEntry[] = [
   {
     key: 'acme-logistics',
     path: 'acme-logistics',
     label: 'Acme Logistics · application landscape',
     description: 'A parcel and pallet operator: order to delivery, the warehouse under it, and what it bills.',
-    load: () => import('./acme-logistics.json').then((held) => held.default as ExampleFolder),
   },
 ]

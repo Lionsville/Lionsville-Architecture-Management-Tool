@@ -26,7 +26,7 @@
  */
 import { ShellError } from '../../../platform/errors'
 import { isBinaryPath } from '../../../projects/folderFormat'
-import { LOCAL_SETTINGS_PATH } from '../../../projects/folderSettings'
+import { LOCAL_SETTINGS_PATH } from '../format/folderSettings'
 import type { DirectoryHandleLike } from '../DirectoryHandle'
 import type { CommitsWanted, CommittedFile, FolderChange, FolderCommit, FolderGit, FolderTag, TreeEntry } from '../folderGit'
 import { filesUnder, textAt } from '../handles'

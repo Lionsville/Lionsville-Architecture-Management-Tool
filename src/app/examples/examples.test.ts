@@ -17,7 +17,8 @@
  */
 import { describe, expect, it } from 'vitest'
 import { placedNodes } from '../../model/placement';
-import { copyExampleInto, EXAMPLES, exampleFiles, exampleScopes } from '.'
+import { copyExampleInto } from './copy'
+import { EXAMPLES, exampleFiles, exampleScopes } from '../testing/examples'
 import { fromArrays, toArrays } from '../../model/normalised'
 import { derivedPlatformAspect } from '../../model/aspects'
 import { deploymentBoxes } from '../../model/deployment'

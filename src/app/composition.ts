@@ -5,17 +5,18 @@
  * The composition: which outside world this shell gets.
  *
  * Deliberately the only file that knows both a seam and a filling. Everything
- * above this line talks to `ScopeStore`, `PreferencesStore` and
- * `DocumentGateway` and does not know what sits underneath; everything below it
- * does not know who calls. The moment somewhere else also decides which store it
- * is, that property is gone — and there is a lint rule for it
- * (`eslint.config.js`), because an agreement that lives only in a comment wears
- * off.
+ * above this line talks to the repositories (`ports/Repositories.ts`), the
+ * `PreferencesStore` and the `DocumentGateway` and does not know what sits
+ * underneath; everything below it does not know who calls. The moment
+ * somewhere else also decides where work is kept, that property is gone — and
+ * there is a lint rule for it (`eslint.config.js`), because an agreement that
+ * lives only in a comment wears off.
  *
- * Another place to keep things (disk via the File System Access API, Electron
- * over IPC, a server) is: a class under `src/adapters/`, the contract run over
- * it (`ports/ScopeStore.contract.ts`), and one branch here. Not a single file
- * above it changes.
+ * Another place to keep things (a server, a drive shared by a team) is: its
+ * repositories, with core's contract suites run over them
+ * (`ports/Repositories.contract.ts`), a provider that opens them and draws
+ * what it has to say (`src/providers/`), and one registration here. Not a
+ * single file above it changes.
  *
  * It also decides what this build KNOWS, not only where it keeps things. The
  * icon packs are the first of those: a general-purpose architecture tool has no
@@ -38,6 +39,9 @@ import { DesktopUpdateSettings } from '../adapters/desktop/DesktopUpdateSettings
 import { DesktopDocumentGateway } from '../adapters/desktop/DesktopDocumentGateway'
 import type { DesktopCommands, DesktopFiles } from '../adapters/desktop/channel'
 import { RAIL_PACK } from './iconPacks/rail'
+import { EXAMPLE_CATALOGUE } from './examples/offers'
+import type { ExampleOffer } from './examples/offers'
+import { EXAMPLE_FOLDERS, exampleScopes } from '../adapters/folder/format/exampleFolder'
 import { BrowserDocumentGateway } from '../adapters/browser/BrowserDocumentGateway'
 import { browserHostControls } from '../adapters/browser/browserHostControls'
 import { reloadOnStaleScripts } from '../adapters/browser/staleScripts'
@@ -614,6 +618,17 @@ export function overSource(shell: Shell, parts: SourceParts): Shell {
 export function sourceDestination(kind: string): (() => Promise<SourceDestination<unknown> | undefined>) | undefined {
   return sourceProvider<unknown>(kind)?.destination
 }
+
+/**
+ * The examples that ship, as the organisation's page offers them: what each is
+ * called from the app's catalogue, and what each holds fetched, when one is
+ * copied, from where the shipped examples are kept — in the folder format,
+ * read by its own reader.
+ */
+export const EXAMPLE_OFFERS: readonly ExampleOffer[] = EXAMPLE_CATALOGUE.flatMap((entry) => {
+  const folder = EXAMPLE_FOLDERS[entry.key]
+  return folder ? [{ ...entry, load: async () => exampleScopes(await folder(), entry.path) }] : []
+})
 
 /**
  * At module load, which is before the first render and long before an export
