@@ -1176,12 +1176,13 @@ which the app is now handed as the scopes they hold. The node side reads
 that folder and nothing else of the implementations — one edge narrower than
 a module, in the import matrix, with a test each way.
 
-**What is left, and first.** The working-file codec and the eight files of
-the format it reads — the format itself, its text, a scope's header, the
+**What was left, at this part.** The working-file codec and the eight files
+of the format it reads — the format itself, its text, a scope's header, the
 decision, plan and observation files, and the two readers of the formats
-before this one — are the last of the format in the domain. They move into
-`adapters/folder/format/` together, and `FOLDER_FORMAT` goes to zero; until
-then the storage line lists the codec's users and nothing else.
+before this one — were the last of the format in the domain, and the storage
+line listed the codec's users and nothing else. They moved into
+`adapters/folder/format/` together and `FOLDER_FORMAT` is at zero: *As built:
+the working file as an interchange*, below.
 
 ## As built, 29 September 2026: the working file as an interchange
 

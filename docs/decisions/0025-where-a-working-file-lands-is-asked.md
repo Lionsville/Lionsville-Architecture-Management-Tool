@@ -53,9 +53,11 @@ the dialog is `app/dialogs/OpenIntoDialog.tsx`):
 * **Cancel** — nothing, silently.
 
 *Since ADR-0031 the working file is the folder format's interchange, which any
-source imports through the repositories (ADR-0031 §2); a new folder and a
-snapshot before a replace are the folder implementation's, and what is said of
-them here is true of it.*
+source imports through the repositories (`ports/Interchange.ts`, ADR-0031 §2).
+A new folder is the folder implementation's, and what is said of it here is
+true of it. The snapshot before a replace is an entry in whatever history the
+source keeps, where it keeps one (ADR-0031, As built: the app on the
+repositories).*
 
 Where no folder can be chosen — a browser tab without a directory picker —
 the folder button is absent and the dialog is the confirmation before an
