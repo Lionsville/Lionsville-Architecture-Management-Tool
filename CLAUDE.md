@@ -114,6 +114,12 @@ ordinary work — that is the same reasoning as the fast loop above: the cost of
 being wrong here is one revert, and the cost of ceremony is paid on every change
 whether it needed it or not.
 
+**`main` here means GitHub's `main`.** Nothing reaches the remote but `main`:
+no branch and no pull request is pushed there. Locally, work may be done in
+worktrees and local branches, landed on the local `main` by fast-forward, and
+pushed as `main`. Several changes meant to ship together may be built and
+tested on the local `main` and pushed when they are done.
+
 ```bash
 npm run check && git add -A && git commit && git push
 ```
