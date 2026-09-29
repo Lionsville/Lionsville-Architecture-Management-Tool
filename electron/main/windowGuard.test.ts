@@ -145,12 +145,17 @@ describe('closing anyway, and what the page says about it', () => {
     expect(unloading(first).preventDefault).toHaveBeenCalled()
   })
 
-  it('saves first where the page knows of work main did not, then closes', async () => {
+  it('saves first where the page knows of work main did not, and closes once the page says it is saved', async () => {
     const held = app()
     const first = held.windows.first()
+    reportUnsaved(first.webContents, false)
     expect(held.closing(first).preventDefault).not.toHaveBeenCalled()
     expect(unloading(first).preventDefault).not.toHaveBeenCalled()
     expect(held.state.saves).toBe(1)
+    // The saved flag from before the page held the close is not trusted.
+    await vi.advanceTimersByTimeAsync(500)
+    expect(first.closed).toBe(0)
+    reportUnsaved(first.webContents, false)
     await vi.advanceTimersByTimeAsync(200)
     expect(first.closed).toBe(1)
   })

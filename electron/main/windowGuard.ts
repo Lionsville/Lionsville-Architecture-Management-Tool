@@ -189,6 +189,9 @@ function guardUnsavedWork(window: GuardedWindow, unsaved: () => boolean, deps: W
     }
     if (!closing) return
     closing = false
+    // The page knows of work main's flag did not: it stays unsaved until the
+    // page itself says otherwise again, and a flag from before is not trusted.
+    unsavedIn.set(window.webContents, true)
     closeWhenSaved()
   })
 }
