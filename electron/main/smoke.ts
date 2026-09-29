@@ -777,21 +777,24 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
 
   results.push(await checkHere('switching back reads the first folder again, with what was saved there', async () => {
     await openFolder(first)
-    // Its home, not its canvas: nothing is open until a person opens it. The
-    // landscape's row is in the tree; its Open is the one button on the row
-    // with neither an aria-label (the icon buttons carry one, in three
-    // languages) nor a test id (the way to its home carries one).
+    // Its home, not its canvas: nothing is open until a person opens it, and
+    // they open it the way the screen offers. A row of the tree goes to that
+    // scope's home, where its boards are listed by name; the board is opened
+    // from there. Each press is on something scrolled into view first, as a
+    // person would have to: the tree starts below the fold of a laptop window.
     await page(`
       (async () => {
-        await ${waitFor(`document.querySelector('[data-testid="scope-${EXAMPLE.landscape}"]') && 'row'`, 'the landscape row')}
-        const row = document.querySelector('[data-testid="scope-${EXAMPLE.landscape}"]')
-        const open = [...row.querySelectorAll('button')].find((b) => !b.getAttribute('aria-label') && !b.dataset.testid)
-        if (!open) throw new Error('no Open on the landscape row')
-        open.click()
+        const press = (element) => { element.scrollIntoView({ block: 'center' }); element.click() }
+        await ${waitFor(`document.querySelector('[data-testid="home-${EXAMPLE.landscape}"]') && 'row'`, 'the landscape row')}
+        press(document.querySelector('[data-testid="home-${EXAMPLE.landscape}"]'))
+        await ${waitFor(`(document.querySelector('[data-testid="organisation-name"]') || {}).textContent === ${JSON.stringify(EXAMPLE.landscapeName)}
+          && document.querySelector('[data-testid="board-name-${EXAMPLE.activeDiagram}"]') && 'its home'`, 'the landscape home with its board')}
+        press(document.querySelector('[data-testid="board-name-${EXAMPLE.activeDiagram}"]'))
         return await ${waitFor("document.querySelector('.react-flow') && 'canvas mounted'", 'the canvas to mount')}
       })()`)
-    const current = await agent<{ path?: string; elements?: number }>('project.current')
+    const current = await agent<{ path?: string; activeDiagramId?: string }>('project.current')
     if (current.path !== EXAMPLE.landscape) throw new Error(`open is ${current.path}`)
+    if (current.activeDiagramId !== EXAMPLE.activeDiagram) throw new Error(`the board on screen is ${current.activeDiagramId}`)
     const register = await until('the register back in the first folder', () => registerTotal(), (held) => held.total === EXAMPLE.applications + 1)
     const mine = await registerTotal(ADDED)
     if (mine.total !== 1) throw new Error(`"${ADDED}" answered ${mine.total} times in its own folder`)
