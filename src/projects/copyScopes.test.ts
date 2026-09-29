@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { memoryRepositories } from '../adapters/memory/memoryRepositories'
 import type { Repositories } from '../ports/Repositories'
 import { copyScopes, holdsWork } from './copyScopes'
-import { contentOf, placeTogether, readScope } from './scopeAccess'
+import { contentOf, landed, placeTogether, readScope, stepOf } from './scopeAccess'
 import type { ScopeSnapshot } from './scope'
 
 const scope = (path: string, name: string): ScopeSnapshot => ({
@@ -78,5 +78,37 @@ describe('work brought from one place into another', () => {
     }
     expect(await copyScopes(from, refusing)).toMatchObject({ scopes: 1, failed: 1 })
     expect((await readScope(into.scopes, 'globex'))?.model.name).toBe('Globex')
+  })
+
+  /** The destination, with `meanwhile` run as the copy goes to place what it checked — somebody working in the folder. */
+  function workedOnMeanwhile(into: Repositories, meanwhile: () => Promise<void>): Repositories {
+    let asked = 0
+    const scopes = new Proxy(into.scopes, {
+      get: (target, member) => (member === 'tree'
+        ? async () => { asked += 1; if (asked === 2) await meanwhile(); return target.tree() }
+        : Reflect.get(target, member)),
+    })
+    return { ...into, scopes }
+  }
+
+  it('never writes over a scope somebody wrote to after the copy found it empty', async () => {
+    const from = await holding(scope('acme', 'Acme Logistics'))
+    const into = memoryRepositories()
+    const acme = landed(await into.scopes.create('acme', { name: '' })).id
+    const tally = await copyScopes(from, workedOnMeanwhile(into, async () => {
+      landed(await into.scopes.apply([{ scope: acme, steps: [stepOf({ type: 'project.settings', patch: { name: 'Acme, worked on' } })] }]))
+    }))
+    expect(tally).toMatchObject({ scopes: 0, kept: 1, failed: 0 })
+    expect((await readScope(into.scopes, 'acme'))?.model.name).toBe('Acme, worked on')
+  })
+
+  it('never writes over a scope somebody made after the copy found nothing there', async () => {
+    const from = await holding(scope('acme', 'Acme Logistics'))
+    const into = memoryRepositories()
+    const tally = await copyScopes(from, workedOnMeanwhile(into, async () => {
+      landed(await into.scopes.create('acme', { name: 'Acme, made meanwhile' }))
+    }))
+    expect(tally).toMatchObject({ scopes: 0, kept: 1 })
+    expect((await readScope(into.scopes, 'acme'))?.model.name).toBe('Acme, made meanwhile')
   })
 })

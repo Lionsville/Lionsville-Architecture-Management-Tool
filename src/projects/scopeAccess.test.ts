@@ -165,6 +165,42 @@ describe('contents that arrive together', () => {
     await expect(placeTogether(placing, [{ address: 'globex', content: content('Globex') }])).rejects.toEqual(new ShellError('shell.scopeMoved'))
     expect((await readScope(repositories.scopes, 'globex'))?.model.name).toBe('Globex, as somebody named it')
   })
+
+  it('keeps a picture where the repository says it put it, not where its bytes would say', async () => {
+    const repositories = memoryRepositories()
+    const png = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 1, 0, 0, 0, 1, 8, 6, 0, 0, 0])
+    const images = { put: () => Promise.resolve({ contentAddress: 'where-the-repository-keeps-it' }) }
+    // What the landing would write, heard and refused.
+    const landing: unknown[] = []
+    const scopes = new Proxy(repositories.scopes, {
+      get: (target, member) => (member === 'apply'
+        ? (work: unknown) => { landing.push(work); return Promise.resolve({ refused: 'shell.scopeMoved' }) }
+        : Reflect.get(target, member)),
+    })
+    await expect(placeTogether({ scopes, images }, [
+      { address: 'globex', content: content('Globex'), pictures: [{ name: 'logo.png', bytes: png }] },
+    ])).rejects.toMatchObject({ key: 'shell.scopeMoved' })
+    const [[{ steps: [{ command }] }]] = landing as { steps: { command: { type: string; content: { images: { contentAddress: string }[] } } }[] }[][]
+    expect(command.content.images.map((image) => image.contentAddress)).toEqual(['where-the-repository-keeps-it'])
+  })
+
+  it('expects what the caller checked, so a write since it looked is refused rather than replaced', async () => {
+    const repositories = memoryRepositories()
+    const globex = landed(await repositories.scopes.create('globex', { name: 'Globex' })).id
+    const checked = (await readScope(repositories.scopes, 'globex'))!.revision!
+    await repositories.scopes.apply([{ scope: globex, steps: [stepOf({ type: 'project.settings', patch: { name: 'Globex, worked on' } })] }])
+    await expect(placeTogether(repositories, [{ address: 'globex', content: content('Globex, arriving'), checked: { revision: checked } }]))
+      .rejects.toMatchObject({ key: 'shell.scopeMoved' })
+    expect((await readScope(repositories.scopes, 'globex'))?.model.name).toBe('Globex, worked on')
+  })
+
+  it('refuses where the caller found nothing and somebody has made a scope there since', async () => {
+    const repositories = memoryRepositories()
+    await repositories.scopes.create('globex', { name: 'Globex, made meanwhile' })
+    await expect(placeTogether(repositories, [{ address: 'globex', content: content('Globex, arriving'), checked: {} }]))
+      .rejects.toMatchObject({ key: 'shell.scopeMoved' })
+    expect((await readScope(repositories.scopes, 'globex'))?.model.name).toBe('Globex, made meanwhile')
+  })
 })
 
 function nodesAt(tree: ReturnType<typeof summaryOf>, path: string): string {

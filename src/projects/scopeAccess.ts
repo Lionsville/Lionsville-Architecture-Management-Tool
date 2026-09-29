@@ -26,7 +26,7 @@ import type { IndexedScope, IndexRead, OrganisationIndex } from '../ports/Organi
 import type { Created, Refused, ScopeNode, ScopeRepository, ScopeTree } from '../ports/ScopeRepository'
 import { dataUrl, readDataUrl } from './dataUrl'
 import { readdressRef, readdressRefs } from './readdress'
-import { SCOPE_MOVED } from './revision'
+import { SCOPE_MOVED, scopeMoved } from './revision'
 import { resolveActive } from './scope'
 import { isWithinScope } from './scopePath'
 import type { CarriedImage, ScopeModel, ScopeSnapshot, ScopeSummary } from './scope'
@@ -284,6 +284,14 @@ export type Arriving = {
   /** What it holds; its library is made from `pictures`. */
   content: ScopeContent
   pictures?: readonly CarriedPicture[]
+  /**
+   * What the caller read at the address when it decided to place this there:
+   * the revision it saw, or none where nothing was there. Given, the landing
+   * expects exactly that, so a write that landed since — or a scope made
+   * there since — refuses the whole rather than being replaced. Absent, the
+   * landing expects what is read of the scope just before it lands.
+   */
+  checked?: { revision?: Revision }
 }
 
 /**
@@ -310,7 +318,7 @@ export async function placeTogether(
     places.push(await madeAt(scopes, one.address, { name: one.content.model.name, ...(one.content.kind ? { kind: one.content.kind } : {}) }))
   }
   try {
-    await landEach(repositories, ordered, places.map((place) => place.id))
+    await landEach(repositories, ordered, places)
   } catch (cause) {
     // Nothing of the contents landed, so the scopes made only to hold them go
     // again — deepest first, and each only where nothing has been done to it
@@ -327,7 +335,7 @@ export async function placeTogether(
 async function landEach(
   repositories: { scopes: ScopeReader & Pick<ScopeRepository, 'apply'>; images: Pick<ImageRepository, 'put'> },
   ordered: readonly Arriving[],
-  ids: readonly ScopeId[],
+  places: readonly { id: ScopeId; made?: Revision }[],
 ): Promise<void> {
   const { scopes, images } = repositories
   const libraries: ImageEntry[][] = []
@@ -336,17 +344,31 @@ async function landEach(
     for (const picture of one.pictures ?? []) {
       // Kept under the address the repository gave the bytes, which is the
       // one a picture is found by.
-      const contentAddress = keptAt(await images.put(ids[at], picture.name, picture.bytes))
+      const contentAddress = keptAt(await images.put(places[at].id, picture.name, picture.bytes))
       library.push({ ...await imageEntryOf(picture.name, picture.bytes), contentAddress })
     }
     libraries.push(library)
   }
-  const reads = await Promise.all(ids.map((id) => scopes.state(id)))
+  const expects = await Promise.all(ordered.map((one, at) => expectedOf(scopes, one, places[at])))
   landed(await scopes.apply(ordered.map((one, at) => ({
-    scope: ids[at],
+    scope: places[at].id,
     steps: [stepOf({ type: 'scope.replace', content: { ...one.content, images: libraries[at] } })],
-    ...(reads[at] ? { expects: reads[at].revision } : {}),
+    ...(expects[at] !== undefined ? { expects: expects[at] } : {}),
   }))))
+}
+
+/**
+ * What a landing expects of its scope: what the caller checked, where it
+ * did — the scope made to hold it, where nothing was there, and a refusal
+ * where somebody made one there since — or else what is read of it now.
+ */
+async function expectedOf(
+  scopes: ScopeReader, one: Arriving, place: { id: ScopeId; made?: Revision },
+): Promise<Revision | undefined> {
+  if (!one.checked) return (await scopes.state(place.id))?.revision
+  if (one.checked.revision !== undefined) return one.checked.revision
+  if (place.made !== undefined) return place.made
+  throw scopeMoved(one.address)
 }
 
 function depthOf(address: ScopeAddress): number {

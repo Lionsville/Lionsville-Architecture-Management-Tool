@@ -26,6 +26,8 @@ import {
 } from './scopeAccess'
 import type { ScopeReader } from './scopeAccess'
 import type { ScopeAddress } from './scopeState'
+import { isScopeMoved } from './revision'
+import type { ScopeSnapshot } from './scope'
 
 /** What a copy did: brought, kept as the destination had it, would not land, would not read. */
 export type CopyTally = {
@@ -62,6 +64,12 @@ export async function holdsWork(from: { scopes: ScopeReader }): Promise<boolean>
   return false
 }
 
+/** What was checked at an address: nothing there, or the revision read — and nothing to say where the read had none. */
+function checkedOf(there: ScopeSnapshot | undefined): { checked?: { revision?: string } } {
+  if (!there) return { checked: {} }
+  return there.revision !== undefined ? { checked: { revision: there.revision } } : {}
+}
+
 export async function copyScopes(from: From, into: Into): Promise<CopyTally> {
   const tally: CopyTally = { scopes: 0, kept: 0, failed: 0, unread: 0, missed: [] }
   const tree = await from.scopes.tree()
@@ -75,9 +83,15 @@ export async function copyScopes(from: From, into: Into): Promise<CopyTally> {
       const there = await readScope(into.scopes, node.address)
       if (there && !blank(there)) { tally.kept += 1; continue }
       const carried = await carriedOf(from.images, state.id, state.images)
-      await placeTogether(into, [{ address: node.address, content: contentOf(snapshotOf(state), []), pictures: picturesOf(carried) }])
+      // Expecting what was checked: a write that lands there in between is
+      // somebody working in the folder, and theirs stands.
+      await placeTogether(into, [{
+        address: node.address, content: contentOf(snapshotOf(state), []), pictures: picturesOf(carried),
+        ...checkedOf(there),
+      }])
       tally.scopes += 1
-    } catch {
+    } catch (cause) {
+      if (isScopeMoved(cause)) { tally.kept += 1; continue }
       tally.failed += 1
       tally.missed.push(node.address)
     }
