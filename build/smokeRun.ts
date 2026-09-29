@@ -14,7 +14,13 @@
  * its profile as it quits, after anything the app itself can still run, and a
  * removal from inside the dying app lost that race. Removed whether the run
  * passed or failed, unless `LVARCH_SMOKE_KEEP=1` asks to keep a failing run's,
- * when its path and what it holds are printed instead.
+ * when its path and what it holds are printed instead. A removal that could
+ * not finish — a helper still writing — is said, and does not fail a run
+ * that passed.
+ *
+ * An app that never exits is stopped after `LVARCH_SMOKE_DEADLINE_MS`
+ * ({@link SMOKE_DEADLINE_MS} by default), and the run fails saying so: a gate
+ * that waits forever is a gate nobody hears from.
  *
  *   node build/smokeRun.ts [electron arguments...]
  */
@@ -28,6 +34,12 @@ import { join } from 'node:path'
 export const SMOKE_ROOT = 'LVARCH_SMOKE_ROOT'
 /** What keeps a failing run's directory for a look. */
 export const SMOKE_KEEP = 'LVARCH_SMOKE_KEEP'
+/** What moves the deadline, in milliseconds. */
+export const SMOKE_DEADLINE = 'LVARCH_SMOKE_DEADLINE_MS'
+/** How long a run may take before the app is stopped: a run takes two minutes or so. */
+export const SMOKE_DEADLINE_MS = 5 * 60_000
+/** How long a stopped app is given to go before it is killed. */
+const STOP_GRACE_MS = 5_000
 
 export type SmokeLaunch = {
   /** The program run, and its arguments. */
@@ -39,6 +51,28 @@ export type SmokeLaunch = {
   under?: string
   /** Said instead of printed, for a test. */
   say?: (line: string) => void
+  /** How the directory is removed; `rmSync`, retried, by default. For a test. */
+  remove?: (root: string) => void
+}
+
+/** The deadline this run keeps: the environment's, where it names a positive number. */
+function deadlineOf(env: NodeJS.ProcessEnv): number {
+  const asked = Number(env[SMOKE_DEADLINE])
+  return Number.isFinite(asked) && asked > 0 ? asked : SMOKE_DEADLINE_MS
+}
+
+/** Removed, and retried while something lets go of it; what was left is said, never thrown. */
+function removeRun(root: string, remove: (root: string) => void, say: (line: string) => void): void {
+  try {
+    remove(root)
+  } catch (cause) {
+    say(`smoke: ${root} could not be removed entirely (${cause instanceof Error ? cause.message : String(cause)}); left:`)
+    try {
+      for (const entry of readdirSync(root)) say(`  ${join(root, entry)}`)
+    } catch {
+      // Gone after all, or unreadable: said above either way.
+    }
+  }
 }
 
 /** Run it in a directory of its own, and remove the directory once it has exited. Answers its exit code. */
@@ -51,17 +85,29 @@ export async function smokeRun(launch: SmokeLaunch): Promise<number> {
   const forward = (signal: NodeJS.Signals) => { child.kill(signal) }
   process.on('SIGINT', forward)
   process.on('SIGTERM', forward)
-  const code = await new Promise<number>((resolve) => {
+  const deadline = deadlineOf(env)
+  let late = false
+  let killer: ReturnType<typeof setTimeout> | undefined
+  const stopper = setTimeout(() => {
+    late = true
+    say(`smoke: the app had not exited after ${Math.round(deadline / 1000)} s; stopping it`)
+    child.kill('SIGTERM')
+    killer = setTimeout(() => { child.kill('SIGKILL') }, STOP_GRACE_MS)
+  }, deadline)
+  const exited = await new Promise<number>((resolve) => {
     child.once('error', (cause) => { say(`smoke: could not start ${launch.command}: ${cause.message}`); resolve(1) })
-    child.once('exit', (exited, signal) => { resolve(exited ?? (signal ? 1 : 0)) })
+    child.once('exit', (code, signal) => { resolve(code ?? (signal ? 1 : 0)) })
   })
+  clearTimeout(stopper)
+  clearTimeout(killer)
   process.off('SIGINT', forward)
   process.off('SIGTERM', forward)
+  const code = late ? 1 : exited
   if (code !== 0 && env[SMOKE_KEEP] === '1') {
     say(`smoke: kept this run's directory, ${root}:`)
     for (const entry of readdirSync(root)) say(`  ${join(root, entry)}`)
   } else {
-    rmSync(root, { recursive: true, force: true })
+    removeRun(root, launch.remove ?? ((at) => { rmSync(at, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }) }), say)
   }
   return code
 }

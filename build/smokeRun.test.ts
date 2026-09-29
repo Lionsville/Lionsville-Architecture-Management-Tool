@@ -10,7 +10,7 @@ import { existsSync, mkdtempSync, readdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { SMOKE_KEEP, smokeRun } from './smokeRun'
+import { SMOKE_DEADLINE, SMOKE_KEEP, smokeRun } from './smokeRun'
 
 let under = ''
 beforeEach(() => { under = mkdtempSync(join(tmpdir(), 'lv-smoke-run-')) })
@@ -35,10 +35,11 @@ const app = (exitCode: number) => `
   process.exit(${exitCode})
 `
 
-const run = (exitCode: number, env: NodeJS.ProcessEnv = {}) => {
+const run = (exitCode: number, env: NodeJS.ProcessEnv = {}, script = app(exitCode), remove?: (root: string) => void) => {
   const said: string[] = []
   const done = smokeRun({
-    command: process.execPath, args: ['-e', app(exitCode)], env: { ...process.env, ...env }, under, say: (line) => said.push(line),
+    command: process.execPath, args: ['-e', script], env: { ...process.env, ...env }, under, say: (line) => said.push(line),
+    ...(remove ? { remove } : {}),
   })
   return { done, said }
 }
@@ -78,5 +79,24 @@ describe('a smoke run’s own directory', () => {
     const second = run(1, { [SMOKE_KEEP]: '1' })
     await Promise.all([first.done, second.done])
     expect(readdirSync(under)).toHaveLength(2)
+  })
+
+  it('stops an app that never exits after the deadline, fails the run saying so, and leaves nothing behind', async () => {
+    const hangs = `
+      require('node:fs').mkdirSync(require('node:path').join(process.env.LVARCH_SMOKE_ROOT, 'userdata'))
+      setInterval(() => undefined, 1000)
+    `
+    const { done, said } = run(0, { [SMOKE_DEADLINE]: '300' }, hangs)
+    expect(await done).toBe(1)
+    expect(said.join('\n')).toContain('had not exited after')
+    expect(readdirSync(under)).toEqual([])
+  }, 15_000)
+
+  it('keeps a passing run passing where its directory could not be removed, and says what was left', async () => {
+    const { done, said } = run(0, {}, app(0), () => { throw new Error('ENOTEMPTY: a helper is still writing') })
+    expect(await done).toBe(0)
+    expect(said[0]).toContain('could not be removed entirely')
+    expect(said[0]).toContain('ENOTEMPTY')
+    expect(said.slice(1).length).toBeGreaterThan(0)
   })
 })
