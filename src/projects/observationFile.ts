@@ -84,6 +84,14 @@ function numberFromName(path: string): number | undefined {
   return match ? Number(match[1]) : undefined
 }
 
+/**
+ * What an observation's file says for a history with nothing in it, which a
+ * record made in this tool never has but a record handed to a store may: a
+ * file that says nothing is a hand-written one, and is given the event it
+ * must have had.
+ */
+const NO_HISTORY = 'none'
+
 function historyRows(history: readonly ObservationEvent[]): Record<string, FrontMatterScalar>[] {
   return history
     .filter((one) => one.date)
@@ -108,7 +116,8 @@ export function observationFileText(observation: Observation): string {
     seen: observation.seen,
     shared: observation.shared,
     archived: observation.archived,
-    history: historyRows(observation.history),
+    // None at all is said, so it reads back as none rather than as the one a hand-written file is given.
+    history: observation.history.length ? historyRows(observation.history) : NO_HISTORY,
   })
   const heading = `# OB-${numberPrefix(observation.number)} — ${observation.title}`
   return `${fields}\n${heading}\n\n${observation.body}\n`
@@ -212,7 +221,7 @@ export function observationFromFile(text: string, path: string): Observation | u
     ...(frontMatterString(fields, 'shared') === 'true' ? { shared: true as const } : {}),
     ...(frontMatterString(fields, 'archived') === 'true' ? { archived: true as const } : {}),
     body,
-    history: history.length ? history : [{ date, kind: 'recorded' }],
+    history: history.length || frontMatterString(fields, 'history') === NO_HISTORY ? history : [{ date, kind: 'recorded' }],
   }
 }
 

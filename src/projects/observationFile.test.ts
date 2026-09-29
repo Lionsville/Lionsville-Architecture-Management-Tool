@@ -53,6 +53,12 @@ describe('an observation as a file', () => {
     expect(observationFromFile(observationFileText(local), observationPath(local))).toEqual(local)
   })
 
+  it('round-trips a history with nothing in it as nothing, and not as the event a hand-written file is given', () => {
+    const bare: Observation = { ...observation, history: [] }
+    expect(observationFileText(bare)).toContain('history: none\n')
+    expect(observationFromFile(observationFileText(bare), observationPath(bare))).toEqual(bare)
+  })
+
   it('reads a hand-written file: number from the name, defaults for the rest, one recorded event', () => {
     const read = observationFromFile('# Seen it\n\nA note.\n', 'observations/0007-seen-it.md')
     expect(read).toEqual({
