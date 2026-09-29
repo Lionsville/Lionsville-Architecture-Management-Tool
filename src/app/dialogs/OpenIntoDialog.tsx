@@ -57,8 +57,8 @@ export function OpenIntoDialog({
           {s('openInto.here', { scope: here })}
         </Button>
         {canGoElsewhere && (
-          <Button variant="contained" onClick={onElsewhere} data-testid="open-into-folder">
-            {s('openInto.newFolder')}
+          <Button variant="contained" onClick={onElsewhere} data-testid="open-into-elsewhere">
+            {s('openInto.elsewhere')}
           </Button>
         )}
       </DialogActions>

@@ -15,8 +15,8 @@
 import { app, ipcMain } from 'electron'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { LocalSettings, LocalSettingsPatch } from '../../src/projects/folderSettings'
-import { readLocalSettings } from '../../src/projects/folderSettings'
+import type { LocalSettings, LocalSettingsPatch } from '../../src/adapters/folder/format/folderSettings'
+import { readLocalSettings } from '../../src/adapters/folder/format/folderSettings'
 import {
   MACHINE_FOLDER_SETTINGS_FILE, machineFolderSettingsText, readMachineFolderSettings,
 } from '../../src/platform/node/machineFolderSettings'

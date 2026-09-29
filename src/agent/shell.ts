@@ -73,7 +73,7 @@ export function currentApp(session: OpenScope | undefined, shell: ShellView | un
       ...(state?.stopped ? { stopped: state.stopped } : {}),
     },
     ...(screen.open === undefined
-      ? { hint: 'Nothing is open: reads with `scope` set are answered from disk; app.open opens a scope for everything else.' }
+      ? { hint: 'Nothing is open: reads with `scope` set are answered from where the work is kept; app.open opens a scope for everything else.' }
       : {}),
     ...over,
   })

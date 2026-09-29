@@ -84,7 +84,7 @@ export const INSTRUCTIONS =
   + 'home screen is up with nothing open. Start with app.current to see where the app is, scopes.list and '
   + 'views.list for what there is, and app.open to move it — to a scope, a view or a page — the way a '
   + 'person would with the tree and the tabs. A write, a picture or undo needs its scope open; a read with '
-  + 'scope set is answered from disk without opening anything. '
+  + 'scope set is answered from where the work is kept, without opening anything. '
   + 'Read the landscape with the read tools, and prefer ids from elements.list over guessing. '
   + 'Every change you make shows in the app\'s Activity list and is undone with ⌘Z, or with undo while the '
   + 'newest steps are yours. Every mutation answers with the project\'s revision; pass it as ifRevision '

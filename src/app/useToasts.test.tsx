@@ -7,7 +7,7 @@
  *
  * One slot, deliberately. A queue would mean the news from ten seconds ago is
  * still arriving while the user is trying to read the thing that just went
- * wrong; the whole design of `useStorageNotice`'s latch depends on the newest
+ * wrong; the whole design of `useKeepNotice`'s latch depends on the newest
  * message winning.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'

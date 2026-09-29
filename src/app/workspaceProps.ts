@@ -33,7 +33,7 @@ import type { MakeId } from './useDiagramActions'
 import type { ScopeSession } from './useModelSession'
 import type { ProjectFileChannel } from './useProjectFiles'
 import type { AskPassword } from './usePasswordPrompt'
-import type { StorageNotice } from './useStorageNotice'
+import type { KeepNotice } from './useKeepNotice'
 import type { Notify } from './useToasts'
 import type { ChooseDestination, LandingPrompts } from './workingFileFlows'
 import type { WorkingFileManifest } from '../projects/workingFileManifest'
@@ -94,8 +94,8 @@ export type WorkspaceSource = {
    * all three sources that ship, whose Activity list is the session's.
    */
   recentActivity?: SourceRecentActivity
-  /** How a save went: the shell's notice says what a refusal means (`useStorageNotice`). */
-  onResult: StorageNotice
+  /** How a save went: the shell's notice says what a refusal means (`useKeepNotice`). */
+  onResult: KeepNotice
 }
 
 /** The organisation around this scope, as the shell holds it. */

@@ -7,7 +7,7 @@
  *
  * When browser storage refuses at boot the composition swaps in memory stores.
  * Everything then works — and nothing survives the tab. Because those stores
- * never fail, `useStorageNotice` is never called and the user was told
+ * never fail, `useKeepNotice` is never called and the user was told
  * precisely nothing; they would find out on the next morning's first coffee.
  *
  * A standing notice rather than a toast: it is true for the whole session, not
@@ -714,7 +714,7 @@ describe('a refusal where the source keeps work', () => {
   const copy = async () => fireEvent.click(await screen.findByText('Copy into this folder\u2026'))
 
   it('says the provider\u2019s sentence instead of ours', async () => {
-    refuse({ provider: { storageFailure: () => 'Elsewhere is not taking changes: sign in again.' } })
+    refuse({ provider: { keepFailure: () => 'Elsewhere is not taking changes: sign in again.' } })
     await copy()
     await waitFor(() => expect(screen.getByRole('alert').textContent)
       .toContain('Elsewhere is not taking changes'))
@@ -726,7 +726,7 @@ describe('a refusal where the source keeps work', () => {
    * its own, and two sentences for one refusal read as two failures.
    */
   it('says nothing where the provider answered nothing', async () => {
-    const { diagnostics } = refuse({ provider: { storageFailure: () => undefined } })
+    const { diagnostics } = refuse({ provider: { keepFailure: () => undefined } })
     await copy()
     // The failure still reached the trail, which is where a failure always goes.
     await waitFor(() => expect(diagnostics.recent()

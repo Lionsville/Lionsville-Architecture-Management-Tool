@@ -12,7 +12,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen } from '@testing-library/react'
 import { translator } from '../i18n'
-import { DiskChangeNotice } from './DiskChangeNotice'
+import { ChangedElsewhereNotice } from './ChangedElsewhereNotice'
 import { renderShell } from './testing/renderShell'
 
 afterEach(() => cleanup())
@@ -22,7 +22,7 @@ const s = translator('en')
 function show(status: 'clean' | 'dirty' | 'external-changed' | 'conflict') {
   const actions = { takeTheirs: vi.fn(), keepMine: vi.fn(), saveCopy: vi.fn() }
   renderShell(
-    <DiskChangeNotice
+    <ChangedElsewhereNotice
       status={status}
       onTakeTheirs={actions.takeTheirs}
       onKeepMine={actions.keepMine}
@@ -33,18 +33,18 @@ function show(status: 'clean' | 'dirty' | 'external-changed' | 'conflict') {
   return actions
 }
 
-describe('DiskChangeNotice', () => {
+describe('ChangedElsewhereNotice', () => {
   it('says nothing while the document is this session’s alone', () => {
     show('clean')
-    expect(screen.queryByTestId('disk-change-notice')).toBeNull()
+    expect(screen.queryByTestId('changed-elsewhere-notice')).toBeNull()
     cleanup()
     show('dirty')
-    expect(screen.queryByTestId('disk-change-notice')).toBeNull()
+    expect(screen.queryByTestId('changed-elsewhere-notice')).toBeNull()
   })
 
   it('offers their version first when nothing here is unsaved', () => {
     show('external-changed')
-    expect(screen.getByTestId('disk-change-notice').textContent).toContain('changed on disk')
+    expect(screen.getByTestId('changed-elsewhere-notice').textContent).toContain('changed elsewhere')
     expect(screen.getByText('Take theirs')).toBeDefined()
     expect(screen.queryByText('Save a copy…')).toBeNull()
   })

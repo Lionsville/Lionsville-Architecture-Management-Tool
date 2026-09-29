@@ -76,12 +76,11 @@ export function mayKnowStorage(file: string): boolean {
 }
 
 /**
- * The folder format, still in the domain: a scope as files, the files'
- * text, what a scope's header file is called, the history subjects by path,
- * the settings file, the working file's codec, the
- * readers of the formats before this one and the pass that upgrades a
- * folder to this one. They are the folder implementation's, and move into it; each leaves
- * this list as it does.
+ * The folder format, still in the domain: the working file's codec and the
+ * files of the format it reads — a scope as files, the files' text, what a
+ * scope's header file is called, and the readers of the formats before this
+ * one. They are the folder implementation's, and move into its format
+ * (`adapters/folder/format/`) together; each leaves this list as it does.
  */
 export const FOLDER_FORMAT: readonly string[] = [
   'src/platform/scopeHeader.ts',
@@ -282,9 +281,10 @@ export function importsAcross(graph: Graph): Record<string, string[]> {
 }
 
 /**
- * Each domain file's imports across the line as they stood when the rule
- * arrived: the folder's way in and its chrome, the folder format read and
- * written from `app/` and `projects/`, and the ports it replaces.
+ * Each domain file's imports across the line: the working-file codec's, and
+ * its users'. The codec reads the folder's format, and moves into it with the
+ * files of the format it reads; until then it is the one part of the format
+ * the domain still holds.
  */
 export const IMPORT_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {
   'src/app/shellParts.ts': ['src/projects/workingFileManifest.ts'],
@@ -294,36 +294,13 @@ export const IMPORT_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {
   'src/app/useWorkspaceFiles.ts': ['src/projects/workingFileManifest.ts'],
   'src/app/workingFileFlows.ts': ['src/projects/workingFile.ts', 'src/projects/workingFileManifest.ts'],
   'src/app/workspaceProps.ts': ['src/projects/workingFileManifest.ts'],
-  'src/projects/index.ts': ['src/projects/adrFile.ts', 'src/projects/fileText.ts', 'src/projects/folderFormat.ts', 'src/projects/migrate3to4.ts', 'src/projects/migrate4to5.ts', 'src/projects/workingFile.ts'],
+  'src/projects/index.ts': ['src/projects/workingFile.ts'],
   'src/projects/scope.ts': ['src/projects/workingFileManifest.ts'],
 }
 
-/** Each domain file's storage words, and the folder format's patterns in its strings, as they stood when the rule arrived. */
+/** Each domain file's storage words, and the folder format's patterns in its strings: the working file's own types, which the codec's user offers a picker. */
 export const WORD_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {
-  'src/agent/mcpProtocol.ts': ['disk'],
-  'src/agent/shell.ts': ['disk'],
-  'src/agent/tools.ts': ['disk', 'folder'],
-  'src/app/App.tsx': ['storage'],
-  'src/app/AppPanels.tsx': ['storage'],
-  'src/app/DiskChangeNotice.tsx': ['disk'],
-  'src/app/ProjectWorkspace.tsx': ['storage'],
-  'src/app/ShellToolbar.tsx': ['disk'],
-  'src/app/WorkspaceBar.tsx': ['disk'],
-  'src/app/appProps.ts': ['storage'],
-  'src/app/dialogs/OpenIntoDialog.tsx': ['folder'],
-  'src/app/history/useProjectHistory.ts': ['commit message'],
-  'src/app/main.tsx': ['../', 'storage'],
-  'src/app/organisation/OrganisationScreen.tsx': ['folder'],
-  'src/app/organisation/useOrganisation.ts': ['storage'],
-  'src/app/useDocumentSession.ts': ['storage'],
-  'src/app/useHomeParts.ts': ['.json'],
-  'src/app/useShellPreferences.ts': ['storage'],
-  'src/app/useShellServices.ts': ['storage'],
-  'src/app/useStorageNotice.ts': ['storage'],
-  'src/app/useWorkspaceDocument.ts': ['storage'],
-  'src/app/useWorkspaceFiles.ts': ['.json'],
-  'src/app/workspaceProps.ts': ['storage'],
-  'src/projects/commitMessage.ts': ['commit message', 'git'],
+  'src/app/workingFileFlows.ts': ['.json'],
 }
 
 /**
@@ -337,8 +314,8 @@ export const CEILINGS = {
   folderFormat: 10,
   /** Files importing across the line, and the imports between them. */
   importingFiles: 9,
-  imports: 15,
+  imports: 10,
   /** Files naming storage, and the words and patterns between them. */
-  namingFiles: 24,
-  words: 27,
+  namingFiles: 1,
+  words: 1,
 } as const

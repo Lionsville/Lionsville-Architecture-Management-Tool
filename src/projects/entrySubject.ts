@@ -24,9 +24,9 @@
  * wrong for a build composed from this one that runs the reducer and the folder
  * format in a node process and wants a snapshot's message. A drafted message
  * says what a step is called and how many more there were: two slices, no
- * screens. {@link translateFrom} and {@link draftCommitMessageInEnglish} are
+ * screens. {@link translateFrom} and {@link draftEntrySubjectInEnglish} are
  * those two slices and nothing else, so `projects/` can be reached from a
- * process that never touches `app/` — which `commitMessage.test.ts` pins by
+ * process that never touches `app/` — which `entrySubject.test.ts` pins by
  * walking the imports.
  */
 import type { StepSummary } from '../model/activity'
@@ -47,15 +47,15 @@ export { translateFrom } from '../i18n/interpolate'
  *
  * The two slices whole, rather than the dozen keys this file happens to reach
  * today: a step summary names any `activity.` key and any `relation.` one
- * (`model/activity.ts`), the tail is `git.andMore`, and a key added to either
+ * (`model/activity.ts`), the tail is `entry.andMore`, and a key added to either
  * slice is one a drafted message should have. Both slices import nothing at all,
  * which is what makes this cheap — they are the two `as const` objects and no
  * graph behind them.
  */
-export const COMMIT_MESSAGE_WORDS: Readonly<Record<string, string>> = { ...MODEL_WORDS, ...PROJECT_WORDS }
+export const ENTRY_SUBJECT_WORDS: Readonly<Record<string, string>> = { ...MODEL_WORDS, ...PROJECT_WORDS }
 
 /** English, for a caller that has no language to be in. */
-export const ENGLISH_DRAFT: Translate = translateFrom(COMMIT_MESSAGE_WORDS)
+export const ENGLISH_DRAFT: Translate = translateFrom(ENTRY_SUBJECT_WORDS)
 
 /** How many steps the subject line names before it gives up and counts. */
 const NAMED_IN_SUBJECT = 3
@@ -96,14 +96,14 @@ function collapsed(steps: readonly StepSummary[], t: Translate): string[] {
  * nothing, because "nothing changed since the last one" and "this is the first
  * one" are different situations and only the caller can tell them apart.
  */
-export function draftCommitMessage(steps: readonly StepSummary[], t: Translate): string {
+export function draftEntrySubject(steps: readonly StepSummary[], t: Translate): string {
   const lines = collapsed(steps, t)
   if (lines.length === 0) return ''
 
   const named = lines.slice(0, NAMED_IN_SUBJECT)
   const rest = lines.length - named.length
   let subject = named.join(', ')
-  if (rest > 0) subject += t('git.andMore', { count: rest })
+  if (rest > 0) subject += t('entry.andMore', { count: rest })
   if (subject.length > SUBJECT_LIMIT) {
     subject = `${subject.slice(0, SUBJECT_LIMIT - 1).trimEnd()}…`
   }
@@ -118,6 +118,6 @@ export function draftCommitMessage(steps: readonly StepSummary[], t: Translate):
  * The same message with no language chosen and no registry imported: what a
  * process with no screen drafts with.
  */
-export function draftCommitMessageInEnglish(steps: readonly StepSummary[]): string {
-  return draftCommitMessage(steps, ENGLISH_DRAFT)
+export function draftEntrySubjectInEnglish(steps: readonly StepSummary[]): string {
+  return draftEntrySubject(steps, ENGLISH_DRAFT)
 }

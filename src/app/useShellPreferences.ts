@@ -19,7 +19,7 @@ import type { EditorPreferences } from '../editor'
 import type { Language } from '../i18n'
 import { readLanguage, readThemeMode } from '../projects/preferences'
 import type { ThemeMode } from '../platform/theme'
-import type { StorageNotice } from './useStorageNotice'
+import type { KeepNotice } from './useKeepNotice'
 
 /**
  * What this hook needs from a store: writing. Nothing else.
@@ -69,7 +69,7 @@ export type ShellPreferences = {
 export function useShellPreferences(deps: {
   store: PreferencesWriter
   initial: unknown
-  onWriteFailed: StorageNotice
+  onWriteFailed: KeepNotice
   /** The languages the browser reports; passed in so a test can pin it. */
   browserLanguages?: readonly string[] | string
 }): ShellPreferences {

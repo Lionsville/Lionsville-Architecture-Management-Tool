@@ -177,7 +177,7 @@ const ELEMENT_FIELDS = {
   shared: { type: 'boolean', description: 'A platformService only: offered for use beyond the team that maintains it (ADR-0014). False or null takes it off. Where unsaid, a service assigned to one actor and used by an application of another team is reported as check.offeredNotShared rather than assumed.' },
   lifecycle: { type: 'string', description: 'Where it is in its life.', enum: LIFECYCLES },
   isManaged: { type: 'boolean', description: 'Whether the organisation manages it itself.' },
-  owner: { type: 'string', description: 'Who answers for it — a person or a team. Which scope owns it is the folder.' },
+  owner: { type: 'string', description: 'Who answers for it — a person or a team. Which scope owns it is the scope it is kept in.' },
   outside: { type: 'boolean', description: 'True when nobody in this organisation owns it. What the externalSystem kind used to say, as the fact it always was.' },
   partyId: { type: 'string', description: 'The id of the actor it belongs to, where that has been said: one this scope keeps or one a scope above it keeps. Only meaningful with outside.' },
   order: { type: 'number', description: 'Where it sits among its siblings, low first. Only say it where the order is a decision — a journey reads left to right.' },
@@ -1739,7 +1739,7 @@ const SPECS = [
     tier: 'write',
     description:
       'Write the project to wherever it is kept, now, rather than at the next idle moment. The app '
-      + 'autosaves; call this before a step that could take the app down, or when what you did has to be on disk.',
+      + 'autosaves; call this before a step that could take the app down, or when what you did has to be kept.',
     inputSchema: NO_ARGUMENTS,
   },
 
@@ -2091,7 +2091,7 @@ const SCOPE_ARGUMENT: ArgumentSchema = {
   description:
     'Which scope to answer for, as its path: "" is the organisation, "acme/retail" a scope filed under '
     + 'another — a domain, a team, a landscape scope (see scopes.list). Default: the scope open in the app. A read over another scope is answered from its '
-    + 'document on disk; a change, a picture, undo and the session\'s own lists need that scope open in the '
+    + 'document as it is kept; a change, a picture, undo and the session\'s own lists need that scope open in the '
     + 'app, and are refused otherwise.',
 }
 
@@ -2211,7 +2211,7 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
     'The person pressed Stop on the agent banner and ended the session. Do not carry on by yourself: tell '
     + 'them where you got to, and call session.start only when they ask you to continue. Reads still answer.',
   'agent.readOnly': 'The project is read-only; nothing can be changed.',
-  'agent.conflict': 'The project changed on disk and the person is deciding which version stands. Try again afterwards.',
+  'agent.conflict': 'The project changed elsewhere and the person is deciding which version stands. Try again afterwards.',
   'agent.unknownTool': 'No such tool.',
   'agent.badArguments': 'The arguments do not match the tool\'s schema.',
   'agent.unknownId': 'Nothing in the project has that id.',

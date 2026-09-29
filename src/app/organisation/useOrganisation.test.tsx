@@ -108,7 +108,7 @@ function mountWith(
       onEnter: entered,
       notify: () => {},
       onFailure: (where) => { failures.push(where) },
-      onStorageResult: () => {},
+      onKeptResult: () => {},
       s,
       onTreeChanged: treeChanged,
       ...(writable ? { writable } : {}),
@@ -181,7 +181,7 @@ describe('useOrganisation', () => {
         onEnter: () => {},
         notify: () => {},
         onFailure: () => {},
-        onStorageResult: () => {},
+        onKeptResult: () => {},
         s,
         onTreeChanged: () => {},
       })

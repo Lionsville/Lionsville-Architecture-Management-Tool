@@ -104,7 +104,7 @@ export type UseOrganisationInput = {
   notify: (message: string, severity: 'success' | 'error' | 'warning') => void
   onFailure: (where: string, cause: unknown, key?: StringKey) => void
   /** Latched storage notice: a store that refuses says so once, standing. */
-  onStorageResult: (ok: boolean) => void
+  onKeptResult: (ok: boolean) => void
   /**
    * May this person change the scope at this path? What `open` asks before it
    * gives a scope with no document one (R2 below). Every scope may be written
@@ -256,7 +256,7 @@ function useHomeReads({ scopes, active, at, revision, onFailure }: {
 const ANYWHERE = () => true
 
 export function useOrganisation({
-  repositories, active, at, onEnter, notify, onFailure, onStorageResult, s, onTreeChanged, writable = ANYWHERE,
+  repositories, active, at, onEnter, notify, onFailure, onKeptResult, s, onTreeChanged, writable = ANYWHERE,
 }: UseOrganisationInput): Organisation {
   const { scopes } = repositories
   const [dialog, setDialog] = useState<OrganisationDialog>({ kind: 'none' })
@@ -347,9 +347,9 @@ export function useOrganisation({
       // Where work is kept refusing is what the standing notice says, and it
       // is latched, so a burst says it once.
       onFailure('organisation.create', cause)
-      onStorageResult(false)
+      onKeptResult(false)
     })
-  }, [dialog, scopes, entered, onFailure, onStorageResult, s])
+  }, [dialog, scopes, entered, onFailure, onKeptResult, s])
 
   /**
    * Add a board to a scope that is already there, and land on it.
@@ -390,9 +390,9 @@ export function useOrganisation({
       notify(s('shell.scopeCreated', { name: wanted.name }), 'success')
     })().catch((cause: unknown) => {
       onFailure('organisation.board', cause)
-      onStorageResult(false)
+      onKeptResult(false)
     })
-  }, [dialog, scopes, onEnter, refresh, notify, onFailure, onStorageResult, s, onTreeChanged])
+  }, [dialog, scopes, onEnter, refresh, notify, onFailure, onKeptResult, s, onTreeChanged])
 
   const askDeleteBoard = useCallback((path: ScopePath, board: { id: string; name: string }) => {
     setDialog({ kind: 'deleteBoard', path, board })
@@ -432,9 +432,9 @@ export function useOrganisation({
       // work is kept not answering.
       if (cause instanceof ShellError) { notify(s(cause.key), 'error'); return }
       onFailure('organisation.deleteBoard', cause)
-      onStorageResult(false)
+      onKeptResult(false)
     })
-  }, [dialog, scopes, refresh, notify, onFailure, onStorageResult, s])
+  }, [dialog, scopes, refresh, notify, onFailure, onKeptResult, s])
 
   /**
    * Apply a scope's edited record: what it is called, what it is, who its
@@ -584,9 +584,9 @@ export function useOrganisation({
       await entered(landing.path, s('shell.exampleCopied', { name: example.label }))
     })().catch((cause: unknown) => {
       onFailure('organisation.copyExample', cause)
-      onStorageResult(false)
+      onKeptResult(false)
     })
-  }, [tree, scopes, repositories, onEnter, entered, onFailure, onStorageResult, s])
+  }, [tree, scopes, repositories, onEnter, entered, onFailure, onKeptResult, s])
 
   /**
    * The root's name, from the field a fresh folder shows instead of a heading.

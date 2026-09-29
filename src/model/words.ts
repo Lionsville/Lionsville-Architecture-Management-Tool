@@ -16,7 +16,7 @@
  *
  * So the model reads its own slice: `strings/en.ts` is an `as const` object with
  * no graph behind it, and `translateFrom` is the eight lines that look a key up
- * in it. `projects/commitMessage.ts` did this first and says the same thing
+ * in it. `projects/entrySubject.ts` did this first and says the same thing
  * about a snapshot's message.
  *
  * The slice whole, rather than the two dozen keys these files reach today: a key

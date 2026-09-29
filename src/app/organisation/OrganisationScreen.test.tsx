@@ -200,7 +200,7 @@ describe('the organisation screen — what the listing could not read', () => {
   it('says so when the folder itself could not be read', async () => {
     renderApp({ repositories: listingWithout(['']), today: TODAY })
     expect((await screen.findByTestId('organisation-unreadable')).textContent)
-      .toContain('This folder could not be read')
+      .toContain('Nothing here could be read')
   })
 
   it('says nothing when everything read', async () => {

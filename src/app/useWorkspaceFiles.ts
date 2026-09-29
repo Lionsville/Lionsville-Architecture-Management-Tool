@@ -5,6 +5,7 @@
  * The working file from an open scope (ADR-0018, ADR-0023, ADR-0025), and the
  * two invisible inputs the menu and the icon picker open.
  */
+import { WORKING_FILE_TYPES } from './workingFileFlows'
 import { useCallback, useRef } from 'react'
 import type { RefObject } from 'react'
 import type { Translate } from '../i18n'
@@ -68,9 +69,7 @@ export function useWorkspaceFiles(deps: {
     s,
   })
   const document = useFilePicker({
-    // A working file is a zip now; the JSON entries are versions 1 and 2, which
-    // still open.
-    accept: '.lvarch,.json,application/json,application/zip',
+    accept: WORKING_FILE_TYPES,
     onPick: files.openFile,
     testId: 'document-input',
   })

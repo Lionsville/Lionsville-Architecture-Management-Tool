@@ -79,6 +79,15 @@ export async function unsealedBytes(
 }
 
 /**
+ * What a picker offers for a working file: a zip now, and the JSON documents
+ * of versions 1 and 2, which still open. The home's picker takes whatever a
+ * browser calls an unknown file too, because the home is where a file handed
+ * over by somebody else is opened first.
+ */
+export const WORKING_FILE_TYPES = '.lvarch,.json,application/json,application/zip'
+export const ANY_WORKING_FILE_TYPES = `${WORKING_FILE_TYPES},application/octet-stream`
+
+/**
  * A folder a working file may become (ADR-0025): what it is called, whether
  * it already holds something, and how to write the file's scopes into it —
  * after which the app moves there. The boot provides one; a host that cannot

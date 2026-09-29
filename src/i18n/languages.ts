@@ -7,7 +7,7 @@
  * `strings.ts` is the registry, and importing it imports every module's slice —
  * `app/strings` and `editor/strings` among them. That is right for anything that
  * draws a screen and wrong for a process that has none, which is why
- * `interpolate.ts` sits on its own and why `commitMessage.ts` composes two
+ * `interpolate.ts` sits on its own and why `entrySubject.ts` composes two
  * slices rather than asking for a translator.
  *
  * Recognising a language code has the same shape as filling a placeholder: it

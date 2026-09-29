@@ -13,15 +13,15 @@
 import { describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { translator } from '../i18n'
-import { useStorageNotice } from './useStorageNotice'
+import { useKeepNotice } from './useKeepNotice'
 
 function mount(sourceFailure?: (cause: unknown) => string | undefined) {
   const notify = vi.fn()
-  const { result } = renderHook(() => useStorageNotice(notify, translator('en'), sourceFailure))
+  const { result } = renderHook(() => useKeepNotice(notify, translator('en'), sourceFailure))
   return { notify, report: (ok: boolean, cause?: unknown) => result.current(ok, cause) }
 }
 
-describe('useStorageNotice', () => {
+describe('useKeepNotice', () => {
   it('says nothing at all while writes are being accepted', () => {
     const { notify, report } = mount()
     report(true)
@@ -64,7 +64,7 @@ describe('useStorageNotice', () => {
  * that keeps work somewhere else says it itself, and may say nothing at all
  * because it has already said it somewhere of its own.
  */
-describe('useStorageNotice, where the source has its own word for a refusal', () => {
+describe('useKeepNotice, where the source has its own word for a refusal', () => {
   it('says the source\u2019s sentence instead of ours, and says it once', () => {
     const { notify, report } = mount((cause) => `Elsewhere would not take it: ${String(cause)}.`)
     report(false, 'signed out')

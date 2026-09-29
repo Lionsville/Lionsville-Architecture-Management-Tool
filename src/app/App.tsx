@@ -524,7 +524,7 @@ function useShellParts(props: AppProps): ShellParts {
  */
 function useProjectSettings({ base, repositories }: { base: ReturnType<typeof useShellBase>; repositories: Repositories }) {
   const { services, nav, tree } = base
-  const { toasts, s, failed, reportStorage } = services
+  const { toasts, s, failed, reportKept } = services
   const { enter } = nav
   return useCallback(async (settings: ProjectSettings, current: ScopeSnapshot): Promise<void> => {
     const from = parentScope(current.path) ?? ROOT_SCOPE
@@ -550,9 +550,9 @@ function useProjectSettings({ base, repositories }: { base: ReturnType<typeof us
       // else is the place work is kept not answering, which the notice says.
       if (cause instanceof ShellError) { failed('applyProjectSettings.move', cause, cause.key); return }
       failed('applyProjectSettings.move', cause)
-      reportStorage(false)
+      reportKept(false)
     }
-  }, [repositories, enter, tree, toasts, failed, reportStorage, s])
+  }, [repositories, enter, tree, toasts, failed, reportKept, s])
 }
 
 /** The services, where the shell is, the tree, the host's doors and the organisation screen. */
@@ -565,9 +565,9 @@ function useShellBase(props: AppProps) {
   const host: AppHost = props.host ?? NOTHING
   const services = useShellServices({
     preferences: props.preferences, initialPreferences: boot.initialPreferences, browserLanguages: boot.browserLanguages,
-    storageFailure: props.provider?.storageFailure, diagnostics,
+    keepFailure: props.provider?.keepFailure, diagnostics,
   })
-  const { toasts, prefs, s, reportStorage, failed, failedRef } = services
+  const { toasts, prefs, s, reportKept, failed, failedRef } = services
   // Read once per render rather than per card: a finding re-derived because a
   // millisecond passed is a model walked again for nothing.
   const todayDay = useMemo(() => today(), [today])
@@ -622,7 +622,7 @@ function useShellBase(props: AppProps) {
     onTreeChanged: tree.refresh,
     notify: toasts.notify,
     onFailure: failed,
-    onStorageResult: reportStorage,
+    onKeptResult: reportKept,
     writable,
     s,
   })

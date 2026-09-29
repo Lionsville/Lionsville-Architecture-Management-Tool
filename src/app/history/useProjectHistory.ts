@@ -16,7 +16,7 @@
  * rather than fired.
  */
 import { useCallback, useRef, useState } from 'react'
-import { draftCommitMessage } from '../../projects/commitMessage'
+import { draftEntrySubject } from '../../projects/entrySubject'
 import type { ScopeIndex } from '../../projects/scopeIndex'
 import type { Command } from '../../model/commands'
 import type { HostModel } from '../../model/hostModel'
@@ -126,7 +126,7 @@ export function useProjectHistory(deps: {
     if (refused() || !history) return
     // Drafted now rather than held: the log has grown since the dialog was last
     // open, and a stale draft is worse than none.
-    const drafted = draftCommitMessage(steps().slice(recorded.current).map((held) => held.summary), s)
+    const drafted = draftEntrySubject(steps().slice(recorded.current).map((held) => held.summary), s)
     // An empty log is not an empty snapshot. The scope can have changed
     // elsewhere, or the last snapshot may have covered everything this session
     // did — and a message field that cannot be submitted because nothing

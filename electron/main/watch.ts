@@ -64,7 +64,7 @@ function isNoise(path: string): boolean {
  * what is in it arrives as events of its own — and it has no content to
  * fingerprint, so reported it would always read as somebody else's write.
  * The app's own saves create a scope's `docs/` and `diagrams/` folders, and
- * that is exactly how a save came back as "changed on disk" over its own
+ * that is exactly how a save came back as "changed elsewhere" over its own
  * unsaved work.
  */
 async function describe(root: string, path: string): Promise<FolderChange | undefined> {

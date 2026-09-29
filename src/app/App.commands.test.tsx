@@ -265,8 +265,8 @@ describe('commands from the host', () => {
       name: 'theirs.lvarch',
       bytes: workingFileBytes([{ ...project('From a colleague'), path: 'org' }, { ...project('Under it'), path: 'org/retail' }]),
     })
-    await waitFor(() => expect(screen.getByTestId('open-into-folder')).toBeDefined())
-    fireEvent.click(screen.getByTestId('open-into-folder'))
+    await waitFor(() => expect(screen.getByTestId('open-into-elsewhere')).toBeDefined())
+    fireEvent.click(screen.getByTestId('open-into-elsewhere'))
 
     // Not empty: a second yes before anything is written there.
     await waitFor(() => expect(screen.getByText(/already holds “Elsewhere”/)).toBeDefined())
@@ -282,7 +282,7 @@ describe('commands from the host', () => {
       type: 'openDocument', name: 'theirs.lvarch', bytes: workingFileBytes([project('From a colleague')]),
     })
     await waitFor(() => expect(screen.getByTestId('open-into-here')).toBeDefined())
-    expect(screen.queryByTestId('open-into-folder')).toBeNull()
+    expect(screen.queryByTestId('open-into-elsewhere')).toBeNull()
   })
 
   it('Open… takes the way in the host names, which the boot answers for', () => {

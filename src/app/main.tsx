@@ -35,9 +35,9 @@
  * are kept apart, and ESLint enforces it (`eslint.config.js`): `core` and
  * `ports` may not import React or an adapter, `ui` may not import an adapter,
  * and browser globals are an error outside `adapters/`. That is the whole reason
- * a second target — a desktop build with files on disk instead of localStorage —
- * is a new folder under `adapters/` and one changed line here, rather than a
- * hunt through the tree for every place that assumed a browser.
+ * another place to keep work is a provider registered in the composition
+ * (`composition.ts`), rather than a hunt through the tree for every place that
+ * assumed a browser.
  *
  * So what belongs in this file is: environment setup that must happen before
  * anything renders, the choice of adapters, and the wiring. Anything that makes
@@ -47,6 +47,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { configureElkWorker, configureLibavoidWasm, configureLibavoidWorker } from '../layout'
 import ElkWorker from 'elkjs/lib/elk-worker.min.js?worker'
+import RouterWorker from '../layout/routerWorker.ts?worker'
 import { detectBrowserLanguage, translator } from '../i18n'
 import {
   composeShell, desktopCommandChannel, EXAMPLE_OFFERS, openSource, overSource, registeredChrome, registeredConnects,
@@ -82,13 +83,12 @@ configureLibavoidWasm(new URL('/libavoid.wasm', window.location.origin).href)
  * is neither, and a wasm `abort()` only takes the worker down — which the
  * package replaces on the next request (`terminateLibavoidWorker`).
  *
- * The URL must sit literally in the call: Vite recognises this pattern and
- * bundles the worker; a computed URL builds cleanly and then 404s.
+ * Vite's `?worker` import, as for the placement engine below: the build
+ * bundles the worker and hands back its constructor, an ES module worker
+ * (`worker.format` in `vite.config.ts`), where a computed URL would build
+ * cleanly and then 404.
  */
-configureLibavoidWorker(() => new Worker(
-  new URL('../layout/routerWorker.ts', import.meta.url),
-  { type: 'module' },
-))
+configureLibavoidWorker(() => new RouterWorker())
 
 /**
  * And the same for the placement engine, for the same reason. ELK's layered
@@ -426,7 +426,7 @@ function renderApp(
           onWork: shell.onSourceWork,
           description: sourceDescription(shell.source),
           chip: sourceChip(shell.source),
-          storageFailure: shell.sourceFailure,
+          keepFailure: shell.sourceFailure,
           agentPanel: sourceAgentPanel(shell.source),
           chipPanel: sourceChipPanel(shell.source),
           chipFace: sourceChipFace(shell.source),

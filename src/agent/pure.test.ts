@@ -18,7 +18,7 @@
  *     `from '../business'` is React, MUI and three dialogs, because the barrel
  *     re-exports `business/ui/SheetPage.tsx` for the screens that want it. That
  *     is how it got in. So the graph is walked here rather than reasoned about,
- *     the way `projects/commitMessage.test.ts` walks its own.
+ *     the way `projects/entrySubject.test.ts` walks its own.
  *   - **Nothing around it draws either.** The same walk over `model/`,
  *     `projects/`, `platform/node` and `agent/` whole, asserting that none of
  *     them reaches `app/` or `editor/` — not even a string table. The registry
@@ -174,7 +174,7 @@ async function fileFor(from: string, specifier: string): Promise<string | undefi
  * `import type` is struck out first, because the compiler strikes it out too: a
  * type crossing a boundary costs nothing at run time, which is the whole reason
  * a module with no screen may name a screen's shapes. The technique is
- * `projects/commitMessage.test.ts`'s, which walks its own graph for the same
+ * `projects/entrySubject.test.ts`'s, which walks its own graph for the same
  * reason — a promise about what a chain does not contain is not readable in any
  * one of the files that make it.
  */

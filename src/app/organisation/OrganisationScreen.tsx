@@ -791,7 +791,7 @@ function UnreadableScopes({ tree, at, s }: { tree: ScopeSummary; at: ScopePath; 
   return (
     <Typography sx={{ fontSize: 13, color: 'warning.main', mb: 2, maxWidth: 720 }} data-testid="organisation-unreadable">
       {here.includes(ROOT_SCOPE)
-        ? s('org.unreadableFolder')
+        ? s('org.unreadableRoot')
         : plural(s, { one: 'org.unreadableOne', other: 'org.unreadableOther' }, here.length, { paths: here.join(', ') })}
     </Typography>
   )

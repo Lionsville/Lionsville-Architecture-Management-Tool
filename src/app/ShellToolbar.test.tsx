@@ -82,8 +82,8 @@ describe('the saved indicator', () => {
     for (const [status, expected] of [
       ['dirty', 'Unsaved changes'],
       ['saving', 'Saving…'],
-      ['external-changed', 'Changed on disk'],
-      ['conflict', 'Changed here and on disk'],
+      ['external-changed', 'Changed elsewhere'],
+      ['conflict', 'Changed here and elsewhere'],
     ] as const) {
       cleanup()
       renderShell(<ShellToolbar {...props} savedAt={at} status={status} />)
@@ -105,7 +105,7 @@ describe('the saved indicator', () => {
       ['clean', 'All changes sent'],
       ['dirty', 'Sending…'],
       ['saving', 'Sending…'],
-      ['conflict', 'Changed here and on disk'],
+      ['conflict', 'Changed here and elsewhere'],
     ] as const) {
       cleanup()
       renderShell(<ShellToolbar {...props} savedAt={new Date(2026, 8, 6, 14, 2)} status={status} publishesSteps sourceStatus />)

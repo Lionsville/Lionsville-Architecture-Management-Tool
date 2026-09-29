@@ -27,6 +27,7 @@ import type { useOpenIntoPrompt } from './useOpenIntoPrompt'
 import type { usePasswordPrompt } from './usePasswordPrompt'
 import type { ProjectFileChannel } from './useProjectFiles'
 import type { Notify } from './useToasts'
+import { ANY_WORKING_FILE_TYPES } from './workingFileFlows'
 import type { ChooseDestination } from './workingFileFlows'
 import type { WorkingFileManifest } from '../projects/workingFileManifest'
 
@@ -144,7 +145,7 @@ function useHomeFileDoors(deps: Parameters<typeof useHomeParts>[0] & {
     s,
   })
   const picker = useFilePicker({
-    accept: '.lvarch,.json,application/json,application/zip,application/octet-stream',
+    accept: ANY_WORKING_FILE_TYPES,
     onPick: files.openFile,
     testId: 'home-document-input',
   })

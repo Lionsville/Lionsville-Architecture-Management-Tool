@@ -23,21 +23,21 @@ import type { Notify } from './useToasts'
  * report one have only the fact — a read that came back empty, a preference that
  * would not write — and a source is asked either way.
  */
-export type StorageNotice = (ok: boolean, cause?: unknown) => void
+export type KeepNotice = (ok: boolean, cause?: unknown) => void
 
 /**
  * @param sourceFailure What the source this work is kept in says a refusal there
  * means ({@link SourceFailure}). Absent for the three sources that ship, and the
  * sentence is then this tree's own, exactly as it always was.
  */
-export function useStorageNotice(
+export function useKeepNotice(
   notify: Notify, s: Translate, sourceFailure?: SourceFailure,
-): StorageNotice {
+): KeepNotice {
   const failed = useRef(false)
   return useCallback((ok: boolean, cause?: unknown) => {
     if (ok && failed.current) {
       failed.current = false
-      notify(s('shell.storageRecovered'), 'success')
+      notify(s('shell.keptAgain'), 'success')
       return
     }
     if (ok || failed.current) return

@@ -19,7 +19,7 @@ import type { SourceStatus, SourceWork, SourceWorkChanged } from '../platform/so
 import { useDocumentSession } from './useDocumentSession'
 import type { DocumentSessionHook, ScopeWriter } from './useDocumentSession'
 import type { ModelSession, ScopeSession } from './useModelSession'
-import type { StorageNotice } from './useStorageNotice'
+import type { KeepNotice } from './useKeepNotice'
 import type { Notify } from './useToasts'
 
 export type WorkspaceDocument = {
@@ -37,12 +37,12 @@ export function useWorkspaceDocument(deps: {
   sourceStatus: ((work: SourceWork) => SourceStatus) | undefined
   onSourceWork: SourceWorkChanged | undefined
   onUnsavedWork: ((unsaved: boolean) => void) | undefined
-  onStorageResult: StorageNotice
+  onKeptResult: KeepNotice
   onTreeChanged: () => void
   notify: Notify
   s: Translate
 }): WorkspaceDocument {
-  const { session, writer, watch, sourceStatus, onSourceWork, onUnsavedWork, onStorageResult, onTreeChanged, notify, s } = deps
+  const { session, writer, watch, sourceStatus, onSourceWork, onUnsavedWork, onKeptResult, onTreeChanged, notify, s } = deps
   /**
    * What the bar says about saving. Two pieces of state, not one: the last
    * accepted time is worth keeping through a failure — it is the honest answer
@@ -53,11 +53,11 @@ export function useWorkspaceDocument(deps: {
   const [saveFailed, setSaveFailed] = useState(false)
   // The cause is passed on rather than read here: the bar says the same thing
   // about a refused save whatever refused it, and what the notice SAYS is the
-  // source's business (`useStorageNotice`).
+  // source's business (`useKeepNotice`).
   const onSaveResult = useCallback((ok: boolean, cause?: unknown) => {
     setSaveFailed(!ok)
-    onStorageResult(ok, cause)
-  }, [onStorageResult])
+    onKeptResult(ok, cause)
+  }, [onKeptResult])
 
   const document = useDocumentSession({
     session,

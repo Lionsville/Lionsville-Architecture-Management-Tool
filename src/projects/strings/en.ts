@@ -20,7 +20,7 @@ export const EN = {
    * The tail of a drafted commit subject, when there were more steps than a
    * subject line should name. The body below it lists every one.
    */
-  'git.andMore': ' and {count} more',
+  'entry.andMore': ' and {count} more',
 
   // --- one identity across the organisation (ADR-0012 §2, §3, §9) ----------
   /**

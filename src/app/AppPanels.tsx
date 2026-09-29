@@ -103,7 +103,7 @@ function useScopeSessionTaker(parts: ShellParts): ((session: ScopeSession) => ((
 }
 
 function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSnapshot }) {
-  const { props, services: { toasts, prefs, s, reportStorage }, nav, writes, ancestry, prompts, host } = parts
+  const { props, services: { toasts, prefs, s, reportKept }, nav, writes, ancestry, prompts, host } = parts
   const onSession = useScopeSessionTaker(parts)
   return (
     <ProjectWorkspace
@@ -125,7 +125,7 @@ function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSn
         chip: workspaceChip(parts),
         publishesSteps: props.provider?.publishesSteps ?? false,
         recentActivity: props.provider?.recentActivity,
-        onResult: reportStorage,
+        onResult: reportKept,
       }}
       tree={{
         index: parts.tree.index,

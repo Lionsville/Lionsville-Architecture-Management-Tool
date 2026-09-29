@@ -166,7 +166,7 @@ function useSessionParts(props: ProjectWorkspaceProps) {
   const pictures = useDocumentPictures(session)
   const document = useWorkspaceDocument({
     session, writer, watch: source.watch, sourceStatus: source.status, onSourceWork: source.onWork,
-    onUnsavedWork: host.onUnsavedWork, onStorageResult: source.onResult, onTreeChanged, notify, s,
+    onUnsavedWork: host.onUnsavedWork, onKeptResult: source.onResult, onTreeChanged, notify, s,
   })
   const alsoHere = useScopeSessionSeam(project, session, source.onSession)
   const renderer = useRendererView(session, requests.focusElement)

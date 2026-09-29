@@ -44,7 +44,7 @@ import type { ScopeSnapshot } from '../projects/scope'
 import { stepOf } from '../projects/scopeAccess'
 import type { Revision, ScopeCommand, ScopeDescription, ScopeStep } from '../projects/scopeState'
 import type { SessionJournal } from './useModelSession'
-import type { StorageNotice } from './useStorageNotice'
+import type { KeepNotice } from './useKeepNotice'
 
 /**
  * Where the open scope is written: steps applied to it, and a read of it as it
@@ -87,7 +87,7 @@ export type DocumentSessionHook = {
   /** What the bar says, and what a close prompt asks about. */
   state: DocumentSession
   /**
-   * Take what is on disk. Answers the "changed on disk" notice and the "take
+   * Take what is on disk. Answers the "changed elsewhere" notice and the "take
    * theirs" half of a conflict — the same act in both, which is why it is one
    * function.
    */
@@ -122,7 +122,7 @@ export function useDocumentSession(deps: {
   session: SavableSession
   writer: ScopeWriter
   onSaved: (at: Date) => void
-  onResult: StorageNotice
+  onResult: KeepNotice
   /**
    * Somebody else changed this project's files. Absent where nothing can
    * watch — a browser tab — and the document then simply never leaves the

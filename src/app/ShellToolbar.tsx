@@ -60,7 +60,7 @@ import { clockTime } from './clockTime'
 const STATUS_LABEL: Partial<Record<DocumentStatus, StringKey>> = {
   dirty: 'shell.unsaved',
   saving: 'shell.saving',
-  'external-changed': 'shell.changedOnDisk',
+  'external-changed': 'shell.changedElsewhere',
   conflict: 'shell.conflict',
 }
 

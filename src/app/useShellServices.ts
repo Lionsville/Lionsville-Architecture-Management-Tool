@@ -18,8 +18,8 @@ import type { ShellDiagnostics } from './App'
 import { useGlobalErrors } from './useGlobalErrors'
 import { useShellPreferences } from './useShellPreferences'
 import type { PreferencesWriter, ShellPreferences } from './useShellPreferences'
-import { useStorageNotice } from './useStorageNotice'
-import type { StorageNotice } from './useStorageNotice'
+import { useKeepNotice } from './useKeepNotice'
+import type { KeepNotice } from './useKeepNotice'
 import { useToasts } from './useToasts'
 import type { Notify, Toasts } from './useToasts'
 
@@ -31,7 +31,7 @@ export type ShellServices = {
   prefs: ShellPreferences
   s: Translate
   /** Whether a write was taken, for the notice the source words. */
-  reportStorage: StorageNotice
+  reportKept: KeepNotice
   failed: Failed
   /**
    * `failed` by reference, so an effect can report without depending on its
@@ -45,10 +45,10 @@ export function useShellServices(deps: {
   preferences: PreferencesWriter
   initialPreferences: unknown
   browserLanguages: readonly string[] | string | undefined
-  storageFailure: SourceFailure | undefined
+  keepFailure: SourceFailure | undefined
   diagnostics: ShellDiagnostics
 }): ShellServices {
-  const { preferences, initialPreferences, browserLanguages, storageFailure, diagnostics } = deps
+  const { preferences, initialPreferences, browserLanguages, keepFailure, diagnostics } = deps
   const toasts = useToasts()
   /**
    * Preferences and the storage notice need each other: writing a preference can
@@ -56,18 +56,18 @@ export function useShellServices(deps: {
    * hop breaks the knot — the notice is looked up when it fires, not when the
    * writer is built.
    */
-  const noticeRef = useRef<StorageNotice>(() => {})
-  const reportStorage = useCallback<StorageNotice>(
+  const noticeRef = useRef<KeepNotice>(() => {})
+  const reportKept = useCallback<KeepNotice>(
     (ok, cause) => noticeRef.current(ok, cause), [])
 
   const prefs = useShellPreferences({
     store: preferences,
     initial: initialPreferences,
-    onWriteFailed: reportStorage,
+    onWriteFailed: reportKept,
     browserLanguages,
   })
   const s = useMemo(() => translator(prefs.language), [prefs.language])
-  noticeRef.current = useStorageNotice(toasts.notify, s, storageFailure)
+  noticeRef.current = useKeepNotice(toasts.notify, s, keepFailure)
 
   // The half a boundary cannot see: a throw in a listener, a timer or a promise.
   useGlobalErrors({ diagnostics, notify: toasts.notify, s })
@@ -90,7 +90,7 @@ export function useShellServices(deps: {
   }, [diagnostics, toasts, s])
   const failedRef = useRef(failed)
   failedRef.current = failed
-  return { toasts, prefs, s, reportStorage, failed, failedRef }
+  return { toasts, prefs, s, reportKept, failed, failedRef }
 }
 
 /**

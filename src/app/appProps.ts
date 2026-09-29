@@ -133,7 +133,7 @@ export type AppProvider = {
    * none, and a refused save then says what it has always said: that this
    * browser could not save the design.
    */
-  storageFailure?: SourceFailure
+  keepFailure?: SourceFailure
   /**
    * The lines the source providers put in the app's own menu, one entry per
    * registration (`SourceMenu`).

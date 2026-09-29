@@ -19,7 +19,7 @@
  * come through here: it stays on the file channel and the tree feed, the way
  * `useIndex` and `useOrganisation` already read it. That is not a gap. Those
  * gestures are barriers on the undo stack already (ADR-0012 §10), and they are
- * rare enough that *changed on disk* is the right shape for them.
+ * rare enough that *changed elsewhere* is the right shape for them.
  *
  * Interfaces only. `CommandChannel.contract.ts` beside this file is what a
  * filling has to show, and `adapters/memory/InMemoryCommandChannel.ts` is the

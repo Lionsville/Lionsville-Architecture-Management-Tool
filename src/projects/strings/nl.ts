@@ -13,7 +13,7 @@ import type { EN } from './en'
 
 export const NL: Record<keyof typeof EN, string> = {
   'shell.workingFileNoDiagrams': 'Dit werkbestand heeft geen aanzichten.',
-  'git.andMore': ' en nog {count}',
+  'entry.andMore': ' en nog {count}',
 
   'check.conflict': '{name} is zowel hier als in {scope} gedefinieerd — houd één definitie en maak van de andere een plaatsvervanger met Koppelen…',
   'check.drift': 'De kopie van {name} hier komt niet meer overeen met {scope} — ververs haar, of wijzig het daar',

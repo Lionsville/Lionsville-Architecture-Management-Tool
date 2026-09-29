@@ -33,7 +33,7 @@ describe('OpenIntoDialog', () => {
     />)
     expect(screen.getByText('Where should “theirs.lvarch” go?')).toBeDefined()
     expect(screen.getByText(/writes over “Acme Logistics” and every scope filed under it/)).toBeDefined()
-    fireEvent.click(screen.getByTestId('open-into-folder'))
+    fireEvent.click(screen.getByTestId('open-into-elsewhere'))
     expect(onElsewhere).toHaveBeenCalled()
     fireEvent.click(screen.getByTestId('open-into-here'))
     expect(onHere).toHaveBeenCalled()
@@ -44,7 +44,7 @@ describe('OpenIntoDialog', () => {
       open file="x.lvarch" here="Acme" canGoElsewhere={false}
       onCancel={() => {}} onHere={() => {}} onElsewhere={() => {}} s={s}
     />)
-    expect(screen.queryByTestId('open-into-folder')).toBeNull()
+    expect(screen.queryByTestId('open-into-elsewhere')).toBeNull()
     expect(screen.getByText(/writes over “Acme”/)).toBeDefined()
   })
 })

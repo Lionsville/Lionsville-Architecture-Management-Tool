@@ -10,7 +10,7 @@ import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
 import type { WindowChrome } from '../platform/windowChrome'
-import { DiskChangeNotice } from './DiskChangeNotice'
+import { ChangedElsewhereNotice } from './ChangedElsewhereNotice'
 import { ShellToolbar } from './ShellToolbar'
 import type { WorkspaceParts } from './workspaceParts'
 
@@ -95,7 +95,7 @@ export function WorkspaceBar({ parts, toolbarRef }: {
           {s('shell.unreadableScope', { files: parts.unreadable.join(', ') })}
         </Alert>
       )}
-      <DiskChangeNotice
+      <ChangedElsewhereNotice
         status={document.state.status}
         onTakeTheirs={document.takeTheirs}
         onKeepMine={document.keepMine}

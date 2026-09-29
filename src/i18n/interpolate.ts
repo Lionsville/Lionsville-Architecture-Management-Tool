@@ -10,7 +10,7 @@
  * which imports every module's slice, which reaches `app/strings` and
  * `editor/strings`. That is right for anything drawing a screen and wrong for a
  * process that has none — a build composed from this one that runs the reducer
- * and the folder format in node reaches for `projects/commitMessage.ts`, whose
+ * and the folder format in node reaches for `projects/entrySubject.ts`, whose
  * words are two slices and whose only other need is this function. So this sits
  * where it can be had on its own; `strings.ts` re-exports it, so nobody has to
  * know that.
@@ -43,7 +43,7 @@ export function interpolate(template: string, params?: StringParams): string {
  *
  * Here rather than in `strings.ts` for the reason `interpolate` is: this is the
  * whole of what a module needs to read its OWN slice, and a module that reads
- * its own slice — `model/words.ts`, `projects/commitMessage.ts` — must not have
+ * its own slice — `model/words.ts`, `projects/entrySubject.ts` — must not have
  * to import every other module's to do it.
  */
 export function translateFrom(

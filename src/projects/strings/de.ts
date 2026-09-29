@@ -13,7 +13,7 @@ import type { EN } from './en'
 
 export const DE: Record<keyof typeof EN, string> = {
   'shell.workingFileNoDiagrams': 'Diese Arbeitsdatei enthält keine Ansichten.',
-  'git.andMore': ' und {count} weitere',
+  'entry.andMore': ' und {count} weitere',
 
   'check.conflict': '{name} ist sowohl hier als auch in {scope} definiert — behalten Sie eine Definition und machen Sie die andere mit Verknüpfen… zu einem Platzhalter',
   'check.drift': 'Die Kopie von {name} hier stimmt nicht mehr mit {scope} überein — aktualisieren Sie sie, oder ändern Sie es dort',

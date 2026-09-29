@@ -29,8 +29,8 @@ export const EN = {
    */
   'shell.unsaved': 'Unsaved changes',
   'shell.saving': 'Saving…',
-  'shell.changedOnDisk': 'Changed on disk',
-  'shell.conflict': 'Changed here and on disk',
+  'shell.changedElsewhere': 'Changed elsewhere',
+  'shell.conflict': 'Changed here and elsewhere',
   /**
    * The same indicator for a source whose changes travel as steps: there is
    * no save, so no time — what is still on its way, and when it has all gone.
@@ -42,7 +42,7 @@ export const EN = {
    * sentences and three buttons, because the app genuinely cannot choose: there
    * is no merge, only which version survives.
    */
-  'shell.diskChanged': 'This project changed on disk. Nothing here is unsaved.',
+  'shell.changedThere': 'This project changed elsewhere. Nothing here is unsaved.',
   /**
    * A scope with a file it cannot be understood without that did not read —
    * a `model.json` that did not parse, a mark the header names
@@ -67,13 +67,13 @@ export const EN = {
    * came in, so a control that forgot to hide itself still changes nothing.
    */
   'shell.readOnlyRefused': 'This scope is open to be read and not changed, so nothing was done.',
-  'shell.diskConflict': 'This project changed on disk, and there are unsaved changes here.',
+  'shell.conflictThere': 'This project changed elsewhere, and there are unsaved changes here.',
   'shell.takeTheirs': 'Take theirs',
   'shell.keepMine': 'Keep mine',
   'shell.saveACopy': 'Save a copy…',
   'shell.keepFailed':
     'This browser could not save the design (storage full or blocked). Save a working file, or it is gone when you close the tab.',
-  'shell.storageRecovered': 'Saving in this browser works again.',
+  'shell.keptAgain': 'Saving in this browser works again.',
   /**
    * The same sentence for a source that is not a folder: a way in a
    * registered provider offered, pressed, and gone nowhere. It says nothing
@@ -142,7 +142,7 @@ export const EN = {
   'openInto.body': 'A working file is a whole organisation. It can become a working folder of its own, or replace what is open here.',
   'openInto.hereWarning': 'Replacing writes over “{scope}” and every scope filed under it. Where the folder keeps a history, a snapshot is taken first and what is there now can be restored from it; where it does not, what is there now is gone.',
   'openInto.here': 'Replace “{scope}” here',
-  'openInto.newFolder': 'A new folder…',
+  'openInto.elsewhere': 'A new folder…',
   'openInto.unnamedHere': 'the working folder',
   'openInto.occupiedTitle': 'This folder is not empty',
   'openInto.occupiedBody': 'The folder already holds “{name}”. Opening the file there writes over it.',
@@ -579,7 +579,7 @@ export const EN = {
    */
   'org.unreadableOne': 'One scope could not be read and is not shown: {paths}. Its folder is left as it is, and nothing is created in its place.',
   'org.unreadableOther': '{count} scopes could not be read and are not shown: {paths}. Their folders are left as they are, and nothing is created in their place.',
-  'org.unreadableFolder': 'This folder could not be read, so what it holds is not shown. Nothing in it has been changed, and nothing is created in it until it reads again.',
+  'org.unreadableRoot': 'Nothing here could be read, so what it holds is not shown. Nothing in it has been changed, and nothing is created in it until it reads again.',
   'org.diagramsOne': '{count} diagram',
   'org.diagramsOther': '{count} diagrams',
 

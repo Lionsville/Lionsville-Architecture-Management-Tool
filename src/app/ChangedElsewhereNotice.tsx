@@ -26,7 +26,7 @@ import Stack from '@mui/material/Stack'
 import type { Translate } from '../i18n'
 import type { DocumentStatus } from '../projects/documentSession'
 
-export type DiskChangeNoticeProps = {
+export type ChangedElsewhereNoticeProps = {
   status: DocumentStatus
   /** Read what is on disk and put it on screen. */
   onTakeTheirs: () => void
@@ -41,9 +41,9 @@ export type DiskChangeNoticeProps = {
   s: Translate
 }
 
-export function DiskChangeNotice({
+export function ChangedElsewhereNotice({
   status, onTakeTheirs, onKeepMine, onSaveCopy, s,
-}: DiskChangeNoticeProps) {
+}: ChangedElsewhereNoticeProps) {
   if (status !== 'external-changed' && status !== 'conflict') return null
   const conflict = status === 'conflict'
 
@@ -52,7 +52,7 @@ export function DiskChangeNotice({
       severity={conflict ? 'warning' : 'info'}
       square
       sx={{ py: 0.25, fontSize: 13, borderRadius: 0 }}
-      data-testid="disk-change-notice"
+      data-testid="changed-elsewhere-notice"
       action={(
         <Stack direction="row" spacing={1}>
           <Button size="small" onClick={onTakeTheirs}>{s('shell.takeTheirs')}</Button>
@@ -63,7 +63,7 @@ export function DiskChangeNotice({
         </Stack>
       )}
     >
-      {s(conflict ? 'shell.diskConflict' : 'shell.diskChanged')}
+      {s(conflict ? 'shell.conflictThere' : 'shell.changedThere')}
     </Alert>
   )
 }
