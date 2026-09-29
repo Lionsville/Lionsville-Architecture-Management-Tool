@@ -6,7 +6,7 @@ import { memoryRepositories } from '../adapters/memory/memoryRepositories'
 import { ShellError } from '../platform/errors'
 import type { Repositories } from '../ports/Repositories'
 import {
-  changeScope, contentOf, ensureScope, landed, modelsOf, moveScope, placeWhole, readScope, stepOf, summaryOf,
+  changeScope, contentOf, ensureScope, landed, modelsOf, moveScope, placeTogether, placeWhole, readScope, stepOf, summaryOf,
 } from './scopeAccess'
 import type { ScopeSnapshot } from './scope'
 
@@ -124,10 +124,50 @@ describe('a content that arrives whole, and a scope moved', () => {
     expect(await readScope(repositories.scopes, 'acme')).toBeUndefined()
   })
 
-  it('says a move the repository refuses with its key, and moves nothing', async () => {
+  it('says a move the repository refuses with its key, and moves nothing — not a stand-in either', async () => {
     const { repositories } = await withAcme()
-    await repositories.scopes.create('globex', { name: 'Globex' })
+    await placeWhole(repositories.scopes, 'acme/crews', contentOf(example('acme/crews')))
+    const standIn = { ...crews.element, ref: 'acme/crews' }
+    await placeWhole(repositories.scopes, 'globex', { ...contentOf(example('globex')), model: { name: 'Globex', elements: [standIn], relations: [], diagrams: [] } })
     await expect(moveScope(repositories.scopes, repositories.index, 'acme', 'globex')).rejects.toEqual(new ShellError('shell.scopeTaken'))
     expect((await readScope(repositories.scopes, 'acme'))?.model.name).toBe('Acme Logistics')
+    expect((await readScope(repositories.scopes, 'globex'))?.model.elements[0].ref).toBe('acme/crews')
   })
 })
+
+describe('contents that arrive together', () => {
+  const content = (name: string) => contentOf({
+    path: '', model: { name, elements: [], relations: [], diagrams: [] }, activeDiagramId: '', logoLibrary: [],
+  }, [])
+
+  /** The repositories, with the apply that lands the contents refused — after `meanwhile` has run. */
+  function refusing(meanwhile: (repositories: Repositories) => Promise<void> = () => Promise.resolve()) {
+    const repositories = memoryRepositories()
+    const scopes = new Proxy(repositories.scopes, {
+      get: (target, member) => (member === 'apply'
+        ? async () => { await meanwhile(repositories); return { refused: 'shell.scopeMoved' } }
+        : Reflect.get(target, member)),
+    })
+    return { repositories, placing: { ...repositories, scopes } }
+  }
+
+  it('takes away again the scopes made to hold contents that did not land', async () => {
+    const { repositories, placing } = refusing()
+    await expect(placeTogether(placing, [{ address: 'globex', content: content('Globex') }])).rejects.toEqual(new ShellError('shell.scopeMoved'))
+    expect(await readScope(repositories.scopes, 'globex')).toBeUndefined()
+  })
+
+  it('leaves a scope made for them that somebody wrote to in between', async () => {
+    const { repositories, placing } = refusing(async (held) => {
+      const globex = nodesAt(summaryOf(await held.scopes.tree()), 'globex')
+      await held.scopes.apply([{ scope: globex, steps: [stepOf({ type: 'project.settings', patch: { name: 'Globex, as somebody named it' } })] }])
+    })
+    await expect(placeTogether(placing, [{ address: 'globex', content: content('Globex') }])).rejects.toEqual(new ShellError('shell.scopeMoved'))
+    expect((await readScope(repositories.scopes, 'globex'))?.model.name).toBe('Globex, as somebody named it')
+  })
+})
+
+function nodesAt(tree: ReturnType<typeof summaryOf>, path: string): string {
+  return tree.children.find((one) => one.path === path)!.id!
+}
+

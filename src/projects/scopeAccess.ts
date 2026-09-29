@@ -19,8 +19,8 @@
 import type { UploadedLogo } from '../model'
 import { imageEntryOf } from '../model/imageEntry'
 import { isImageName } from '../model/imageName'
-import type { ImageEntry, ImageName } from '../model/imageName'
-import type { ImageRepository } from '../ports/ImageRepository'
+import type { ContentAddress, ImageEntry, ImageName } from '../model/imageName'
+import type { ImageRepository, Put } from '../ports/ImageRepository'
 import { ShellError } from '../platform/errors'
 import type { IndexedScope, IndexRead, OrganisationIndex } from '../ports/OrganisationIndex'
 import type { Created, Refused, ScopeNode, ScopeRepository, ScopeTree } from '../ports/ScopeRepository'
@@ -139,6 +139,12 @@ export function landed<T extends object>(answer: T | Refused): T {
   return answer
 }
 
+/** Where a picture's bytes were kept, or the refusal they met, thrown. */
+export function keptAt(put: Put): ContentAddress {
+  if ('refused' in put) throw new ShellError(put.refused)
+  return put.contentAddress
+}
+
 /** How many times a change is made again over a scope that moved before it lands. */
 export const CHANGE_TRIES = 3
 
@@ -178,15 +184,25 @@ export async function ensureScope(
   address: ScopeAddress,
   scope: { name: string; kind?: ScopeSnapshot['kind'] },
 ): Promise<ScopeId> {
+  return (await madeAt(scopes, address, scope)).id
+}
+
+/** The scope at an address, and — where it was made just now — the revision it was made at. */
+async function madeAt(
+  scopes: Pick<ScopeRepository, 'tree' | 'create'>,
+  address: ScopeAddress,
+  scope: { name: string; kind?: ScopeSnapshot['kind'] },
+): Promise<{ id: ScopeId; made?: Revision }> {
   const held = nodeAt(await scopes.tree(), address)
-  if (held) return held.id
+  if (held) return { id: held.id }
   const answer: Created | Refused = await scopes.create(address, scope)
   // Somebody made one there in between: theirs is the one.
   if ('refused' in answer && answer.refused === 'shell.scopeTaken') {
     const theirs = nodeAt(await scopes.tree(), address)
-    if (theirs) return theirs.id
+    if (theirs) return { id: theirs.id }
   }
-  return landed(answer).id
+  const created = landed(answer)
+  return { id: created.id, made: created.revision }
 }
 
 
@@ -231,8 +247,10 @@ export async function placeWhole(
  * The repository moves the subtree whole, identities and all; what it cannot
  * know is who else points into it, which the index says. Those stand-ins are
  * written as the refresh they are (`standin.refresh`), each expecting what
- * was read of its scope: the ones outside the subtree before the move, the
- * ones inside it after, at their new addresses.
+ * was read of its scope, once the move has landed: a move refused — the
+ * address taken, a scope into itself, a scope gone — leaves every stand-in
+ * naming the scope where it still is. The ones inside the subtree are
+ * written at their new addresses.
  */
 export async function moveScope(
   scopes: ScopeReader & Pick<ScopeRepository, 'apply' | 'move'>,
@@ -252,9 +270,8 @@ export async function moveScope(
       return entries.length ? [{ type: 'standin.refresh', entries }] : undefined
     })
   }
-  for (const patch of patches) if (!inside(patch.path)) await carry(patch.path, patch.refs)
   landed(await scopes.move(node.id, to, expects))
-  for (const patch of patches) if (inside(patch.path)) await carry(readdressRef(patch.path, from, to), patch.refs)
+  for (const patch of patches) await carry(inside(patch.path) ? readdressRef(patch.path, from, to) : patch.path, patch.refs)
   return readScope(scopes, to)
 }
 
@@ -270,12 +287,14 @@ export type Arriving = {
 }
 
 /**
- * Several contents that arrive whole, landed together: every scope or none
- * (ADR-0023, amendment 2). The scopes that are not there are made first,
+ * Several contents that arrive whole, landed together: every content or
+ * none (ADR-0023, amendment 2). The scopes that are not there are made first,
  * shallowest first, and the pictures' bytes are put; then one apply lands a
  * `scope.replace` on each, expecting what was read of it — so a scope
  * somebody changed in between refuses the whole, no content is written, and
- * the scopes made to hold them are taken away again.
+ * the scopes made to hold them are taken away again, each only where nothing
+ * was done to it since. A page that dies between the making and the landing
+ * may leave a scope it made there, empty.
  */
 export async function placeTogether(
   repositories: {
@@ -286,17 +305,20 @@ export async function placeTogether(
 ): Promise<void> {
   const { scopes } = repositories
   const ordered = [...arriving].sort((one, other) => depthOf(one.address) - depthOf(other.address))
-  const before = new Set(nodesOf((await scopes.tree()).root).map((node) => node.id))
-  const ids: ScopeId[] = []
+  const places: { id: ScopeId; made?: Revision }[] = []
   for (const one of ordered) {
-    ids.push(await ensureScope(scopes, one.address, { name: one.content.model.name, ...(one.content.kind ? { kind: one.content.kind } : {}) }))
+    places.push(await madeAt(scopes, one.address, { name: one.content.model.name, ...(one.content.kind ? { kind: one.content.kind } : {}) }))
   }
   try {
-    await landEach(repositories, ordered, ids)
+    await landEach(repositories, ordered, places.map((place) => place.id))
   } catch (cause) {
     // Nothing of the contents landed, so the scopes made only to hold them go
-    // again — deepest first, and each only where nothing has been done to it.
-    for (const id of [...ids].reverse()) if (!before.has(id)) await scopes.remove(id).catch(() => undefined)
+    // again — deepest first, and each only where nothing has been done to it
+    // since it was made: the revision it was made at is what the removal
+    // expects, and a scope somebody has written to since stays.
+    for (const { id, made } of [...places].reverse()) {
+      if (made !== undefined) await scopes.remove(id, made).catch(() => undefined)
+    }
     throw cause
   }
 }
@@ -312,8 +334,10 @@ async function landEach(
   for (const [at, one] of ordered.entries()) {
     const library: ImageEntry[] = []
     for (const picture of one.pictures ?? []) {
-      landed(await images.put(ids[at], picture.name, picture.bytes))
-      library.push(await imageEntryOf(picture.name, picture.bytes))
+      // Kept under the address the repository gave the bytes, which is the
+      // one a picture is found by.
+      const contentAddress = keptAt(await images.put(ids[at], picture.name, picture.bytes))
+      library.push({ ...await imageEntryOf(picture.name, picture.bytes), contentAddress })
     }
     libraries.push(library)
   }

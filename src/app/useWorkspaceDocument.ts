@@ -11,7 +11,7 @@ import { ShellError } from '../platform/errors'
 import { imageEntryOf } from '../model/imageEntry'
 import type { ImageRepository } from '../ports/ImageRepository'
 import type { ScopeRepository } from '../ports/ScopeRepository'
-import { landed, nodeAt, snapshotOf } from '../projects/scopeAccess'
+import { keptAt, landed, nodeAt, snapshotOf } from '../projects/scopeAccess'
 import type { ScopeReader } from '../projects/scopeAccess'
 import type { ScopeSnapshot } from '../projects/scope'
 import type { SourceStatus, SourceWork, SourceWorkChanged } from '../platform/sourceProvider'
@@ -145,8 +145,10 @@ export function useScopeWriter(
         return state && snapshotOf(state)
       },
       put: async (name, bytes) => {
-        landed(await images.put(await identity(), name, bytes))
-        return imageEntryOf(name, bytes)
+        // Under the address the repository kept the bytes at: the one a
+        // picture is found by.
+        const contentAddress = keptAt(await images.put(await identity(), name, bytes))
+        return { ...await imageEntryOf(name, bytes), contentAddress }
       },
     }
   }, [scopes, images, id, path])

@@ -446,12 +446,13 @@ function useShellParts(props: AppProps): ShellParts {
   /**
    * The scopes an opened working file brought with it, written where they say
    * they belong (ADR-0018): each a content that arrives whole, landed as one
-   * apply over every scope it names — every scope or none, so a page that
-   * reloads, a window that closes or a connection that drops part way leaves
-   * the organisation as it was rather than half of the file in it (ADR-0023,
-   * amendment 2). The scopes that were not there are made first, shallowest
-   * first; each landing expects what was read of its scope, so one somebody
-   * changed in between refuses the whole, and nothing of the file is written.
+   * apply over every scope it names — every content or none, so a refusal
+   * part way leaves no scope holding half of the file (ADR-0023, amendment 2).
+   * The scopes that were not there are made first, shallowest first, and
+   * taken away again where the contents are refused; a page that dies between
+   * the two may leave one of them there, empty. Each landing expects what was
+   * read of its scope, so one somebody changed in between refuses the whole,
+   * and nothing of the file's contents is written.
    */
   const adoptScopes = useCallback(async (held: readonly ScopeSnapshot[]) => {
     try {
