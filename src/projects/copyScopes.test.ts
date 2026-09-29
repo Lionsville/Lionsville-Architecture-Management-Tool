@@ -98,7 +98,7 @@ describe('work brought from one place into another', () => {
     const tally = await copyScopes(from, workedOnMeanwhile(into, async () => {
       landed(await into.scopes.apply([{ scope: acme, steps: [stepOf({ type: 'project.settings', patch: { name: 'Acme, worked on' } })] }]))
     }))
-    expect(tally).toMatchObject({ scopes: 0, kept: 1, failed: 0 })
+    expect(tally).toMatchObject({ scopes: 0, kept: 1, failed: 0, meanwhile: ['acme'] })
     expect((await readScope(into.scopes, 'acme'))?.model.name).toBe('Acme, worked on')
   })
 

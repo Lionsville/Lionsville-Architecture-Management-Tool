@@ -51,6 +51,9 @@ import type { SourceChromeProps } from '../../ports/ProviderParts'
 import type { FolderAdoption, FolderOwn } from './folderOwn'
 import { mayOfferAdoption, readDeclinedFolders, readMigratedFolders } from './remembered'
 
+/** Addresses as a person reads them, the organisation's included. */
+const pathsOf = (paths: readonly string[]) => paths.map((path) => path || '/').join(', ')
+
 type AdoptionProps = Pick<SourceChromeProps<FolderOwn>, 'preferences' | 'reread' | 'flush'> & {
   own: FolderOwn
   adoption: FolderAdoption
@@ -89,13 +92,16 @@ export function FolderAdoptionQuestion({ own, adoption, preferences, reread, flu
     }
     reread()
     const missed = tally.missed.length
-    setStage(missed === 0
-      ? { at: 'said', severity: 'success', text: s('folder.adoptDone', { copied: tally.scopes, name: adoption.name }) }
-      : {
-          at: 'said', severity: 'warning',
-          text: s('folder.adoptPartly', { copied: tally.scopes, failed: missed, paths: tally.missed.map((path) => path || '/').join(', ') }),
-          ...(tally.failed > 0 ? { again: true as const } : {}),
-        })
+    const said = missed === 0
+      ? s('folder.adoptDone', { copied: tally.scopes, name: adoption.name })
+      : s('folder.adoptPartly', { copied: tally.scopes, failed: missed, paths: pathsOf(tally.missed) })
+    // Scopes somebody worked in while they were being copied are theirs, and
+    // said by name: the outcome is not a plain success.
+    const meanwhile = tally.meanwhile.length > 0 ? ` ${s('folder.adoptMeanwhile', { paths: pathsOf(tally.meanwhile) })}` : ''
+    setStage({
+      at: 'said', severity: missed === 0 && !meanwhile ? 'success' : 'warning', text: said + meanwhile,
+      ...(tally.failed > 0 ? { again: true as const } : {}),
+    })
   }, [own, adoption, preferences, reread, s])
 
   const copy = useCallback(() => {

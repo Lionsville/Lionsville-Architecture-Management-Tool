@@ -14,7 +14,7 @@ import { memoryRepositories } from '../../adapters/memory/memoryRepositories'
 import { RecordingDiagnostics } from '../../adapters/memory/RecordingDiagnostics'
 import { LanguageProvider } from '../../i18n'
 import type { Language } from '../../i18n'
-import { contentOf, placeTogether, readScope } from '../../projects/scopeAccess'
+import { contentOf, landed, placeTogether, readScope, stepOf } from '../../projects/scopeAccess'
 import type { Repositories } from '../../ports/Repositories'
 import { FolderChrome } from './FolderChrome'
 import { folderOwn } from './folderOwn'
@@ -163,6 +163,30 @@ describe('the question a folder pick asks', () => {
     expect((await readScope(folder.scopes, 'globex'))?.model.name).toBe('Globex')
     expect(preferences.read()).toMatchObject({ migratedFolders: ['/test2'] })
     expect(screen.queryByTestId('adopt-again')).toBeNull()
+  })
+
+  it('names the scopes left as they were because somebody worked in them while they were copied', async () => {
+    const folder = memoryRepositories()
+    const acme = landed(await folder.scopes.create('acme', { name: '' })).id
+    let asked = 0
+    const scopes = new Proxy(folder.scopes, {
+      get: (target, member) => (member === 'tree'
+        ? async () => {
+          asked += 1
+          // The copy found it empty; somebody writes to it before the copy lands.
+          if (asked === 2) {
+            landed(await target.apply([{ scope: acme, steps: [stepOf({ type: 'project.settings', patch: { name: 'Acme, worked on' } })] }]))
+          }
+          return target.tree()
+        }
+        : Reflect.get(target, member)),
+    })
+    await ask({ into: { ...folder, scopes } })
+    fireEvent.click(screen.getByTestId('adopt-copy'))
+    await settled()
+    expect(screen.getByTestId('adopt-outcome').textContent)
+      .toBe('0 copied into “test2”. Left as they were, because they changed meanwhile: acme.')
+    expect((await readScope(folder.scopes, 'acme'))?.model.name).toBe('Acme, worked on')
   })
 
   it('offers no second try for a scope this browser could not read, and does not ask about it again', async () => {

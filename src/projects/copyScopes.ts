@@ -37,6 +37,8 @@ export type CopyTally = {
   unread: number
   /** Where a scope was left behind, failed or unread: for the person, who is looking for it. */
   missed: ScopeAddress[]
+  /** Where somebody worked in the destination's scope while it was being copied, so theirs was left as it was. */
+  meanwhile: ScopeAddress[]
 }
 
 type From = { scopes: ScopeReader; images: Pick<ImageRepository, 'bytes'> }
@@ -71,7 +73,7 @@ function checkedOf(there: ScopeSnapshot | undefined): { checked?: { revision?: s
 }
 
 export async function copyScopes(from: From, into: Into): Promise<CopyTally> {
-  const tally: CopyTally = { scopes: 0, kept: 0, failed: 0, unread: 0, missed: [] }
+  const tally: CopyTally = { scopes: 0, kept: 0, failed: 0, unread: 0, missed: [], meanwhile: [] }
   const tree = await from.scopes.tree()
   tally.unread += tree.unreadable?.length ?? 0
   tally.missed.push(...tree.unreadable ?? [])
@@ -91,7 +93,7 @@ export async function copyScopes(from: From, into: Into): Promise<CopyTally> {
       }])
       tally.scopes += 1
     } catch (cause) {
-      if (isScopeMoved(cause)) { tally.kept += 1; continue }
+      if (isScopeMoved(cause)) { tally.kept += 1; tally.meanwhile.push(node.address); continue }
       tally.failed += 1
       tally.missed.push(node.address)
     }
