@@ -21,11 +21,10 @@
  * preview and on a full page at reading size, and it should scale with the
  * container rather than fight it.
  */
-import { isValidElement, memo, useMemo, useState } from 'react'
+import { isValidElement, memo, useMemo } from 'react'
 import type { ComponentProps, MouseEvent, ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Checkbox from '@mui/material/Checkbox'
-import Dialog from '@mui/material/Dialog'
 import Link from '@mui/material/Link'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
