@@ -148,6 +148,8 @@ export const EN = {
   'openInto.title': 'Where should “{name}” go?',
   'openInto.body': 'A working file is a whole organisation. It can become a working folder of its own, or replace what is open here.',
   'openInto.hereWarning': 'Replacing writes over “{scope}” and every scope filed under it. Where the folder keeps a history, a snapshot is taken first and what is there now can be restored from it; where it does not, what is there now is gone.',
+  /** Over a scope that could not be read whole: replacing it is putting it back (`ScopeState.unreadable`). */
+  'openInto.herePutsBack': '“{scope}” could not be read whole; this puts it back from the file, and keeps what could not be read.',
   'openInto.here': 'Replace “{scope}” here',
   'openInto.elsewhere': 'A new folder…',
   'openInto.unnamedHere': 'the working folder',
@@ -306,6 +308,9 @@ export const EN = {
   'history.putBackDone': 'The scope is back as it was on {date}, and reads whole again.',
   'history.putBackSetAside': ' What could not be read was set aside first, beside the scope: {files}.',
   'history.putBackKept': ' An entry of the scope as it stood, what could not be read included, was recorded first.',
+  /** An entry that kept what could not be read of its scope (`HistoryEntry.unread`), saved as a file of the person's own. */
+  'history.saveUnread': 'Save what could not be read…',
+  'history.savedUnread': 'Saved what could not be read.',
   'history.putBackWithout': ' {count} pictures it held then are no longer kept, and were left out.',
   'history.putBackFailed': 'The scope was not put back: {message}',
   'history.snapshotNow': 'Snapshot',

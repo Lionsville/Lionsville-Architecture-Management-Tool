@@ -103,7 +103,12 @@ export type ChooseDestination = () => Promise<WorkingFileDestination | undefined
 
 /** The two questions, as the shell's dialogs answer them. */
 export type LandingPrompts = {
-  askDestination(ask: { file: string; here: string; canGoElsewhere: boolean }): Promise<'here' | 'elsewhere' | undefined>
+  /**
+   * `puttingBack` where what is here could not be read whole, and replacing
+   * it is putting it back from the file, keeping what could not be read
+   * (`ScopeState.unreadable`).
+   */
+  askDestination(ask: { file: string; here: string; canGoElsewhere: boolean; puttingBack?: boolean }): Promise<'here' | 'elsewhere' | undefined>
   confirmReplace(name: string): Promise<boolean>
 }
 
@@ -157,6 +162,8 @@ export async function landWorkingFile(args: {
    * this dialog exists to prevent.
    */
   beforeReplace?: () => Promise<boolean>
+  /** What is here could not be read whole, and landing the file here puts it back, as the question says. */
+  puttingBack?: boolean
   notify: Notify
   s: Translate
 }): Promise<void> {
@@ -168,6 +175,7 @@ export async function landWorkingFile(args: {
     file: name,
     here: into.model.name.trim() || s('openInto.unnamedHere'),
     canGoElsewhere: chooseDestination !== undefined,
+    ...(args.puttingBack ? { puttingBack: true } : {}),
   })
   if (choice === undefined) return
   if (choice === 'here' || !chooseDestination) {

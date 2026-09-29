@@ -239,12 +239,13 @@ export function useProjectFiles(deps: ProjectFilesDeps): ProjectFiles {
         here: landHere,
         ...(readScope ? { read: readScope } : {}),
         ...(beforeReplace ? { beforeReplace } : {}),
+        ...(onPutBack && adoptWorkingSet ? { puttingBack: true } : {}),
         notify, s,
       })
     }).catch((err: unknown) => notify(err instanceof ShellError
       ? messageFor(err, s)
       : s('shell.processFailed', { message: reasonOf(err) }), 'error'))
-  }, [session, interchange, landHere, readScope, askPassword, landing, chooseDestination, beforeReplace, notify, s])
+  }, [session, interchange, landHere, readScope, askPassword, landing, chooseDestination, beforeReplace, onPutBack, adoptWorkingSet, notify, s])
 
   const openFile = useCallback((file: File) => {
     documents.readBytes(file).then(

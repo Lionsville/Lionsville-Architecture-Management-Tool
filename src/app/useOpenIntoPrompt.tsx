@@ -17,7 +17,7 @@ import { OpenIntoDialog } from './dialogs/OpenIntoDialog'
 import type { LandingPrompts } from './workingFileFlows'
 
 type Asking =
-  | { kind: 'destination'; file: string; here: string; canGoElsewhere: boolean }
+  | { kind: 'destination'; file: string; here: string; canGoElsewhere: boolean; puttingBack?: boolean }
   | { kind: 'replace'; name: string }
 
 export function useOpenIntoPrompt(s: Translate): { prompts: LandingPrompts; dialogs: React.ReactElement } {
@@ -40,8 +40,8 @@ export function useOpenIntoPrompt(s: Translate): { prompts: LandingPrompts; dial
   }, [])
 
   const prompts = useMemo<LandingPrompts>(() => ({
-    askDestination: ({ file, here, canGoElsewhere }) =>
-      ask<'here' | 'elsewhere' | undefined>({ kind: 'destination', file, here, canGoElsewhere }),
+    askDestination: ({ file, here, canGoElsewhere, puttingBack }) =>
+      ask<'here' | 'elsewhere' | undefined>({ kind: 'destination', file, here, canGoElsewhere, ...(puttingBack ? { puttingBack } : {}) }),
     confirmReplace: (name) => ask<boolean | undefined>({ kind: 'replace', name }).then(Boolean),
   }), [ask])
 
@@ -52,6 +52,7 @@ export function useOpenIntoPrompt(s: Translate): { prompts: LandingPrompts; dial
         file={asking?.kind === 'destination' ? asking.file : ''}
         here={asking?.kind === 'destination' ? asking.here : ''}
         canGoElsewhere={asking?.kind === 'destination' ? asking.canGoElsewhere : false}
+        puttingBack={asking?.kind === 'destination' && asking.puttingBack === true}
         onCancel={() => settle(undefined)}
         onHere={() => settle('here')}
         onElsewhere={() => settle('elsewhere')}

@@ -33,6 +33,11 @@ export type OpenIntoDialogProps = {
   here: string
   /** Can a folder be chosen on this host? */
   canGoElsewhere: boolean
+  /**
+   * What is here could not be read whole: replacing it puts it back from the
+   * file, and keeps what could not be read first (`ScopeState.unreadable`).
+   */
+  puttingBack?: boolean
   onCancel: () => void
   onElsewhere: () => void
   onHere: () => void
@@ -40,7 +45,7 @@ export type OpenIntoDialogProps = {
 }
 
 export function OpenIntoDialog({
-  open, file, here, canGoElsewhere, onCancel, onElsewhere, onHere, s,
+  open, file, here, canGoElsewhere, puttingBack = false, onCancel, onElsewhere, onHere, s,
 }: OpenIntoDialogProps) {
   return (
     <Dialog open={open} onClose={onCancel} fullWidth maxWidth="sm">
@@ -48,7 +53,7 @@ export function OpenIntoDialog({
       <DialogContent>
         <DialogContentText sx={{ fontSize: 13, mb: 1.5 }}>{s('openInto.body')}</DialogContentText>
         <DialogContentText sx={{ fontSize: 13, color: 'warning.main' }}>
-          {s('openInto.hereWarning', { scope: here })}
+          {s(puttingBack ? 'openInto.herePutsBack' : 'openInto.hereWarning', { scope: here })}
         </DialogContentText>
       </DialogContent>
       <DialogActions>
