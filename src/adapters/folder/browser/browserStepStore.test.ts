@@ -57,4 +57,13 @@ describe('what a browser keeps for a folder', () => {
     expect(await browserStampCache(again).read()).toEqual({ 'acme\u0000map.png': found })
     expect(await browserStepStore(again).read()).toBeUndefined()
   })
+
+  it('settles two tabs opening a new folder at once on one key, so neither’s steps are kept where the other never looks', async () => {
+    const store = new MemoryStore()
+    const [one, other] = [new BrowserFolder(store, { folder: 'acme' }, same), new BrowserFolder(store, { folder: 'acme' }, same)]
+    const [first, second] = await Promise.all([one.folderKey(), other.folderKey()])
+    expect(first).toBe(second)
+    await new StepMemory(browserStepStore(one)).remember([{ stepId: 'from-one', scope: 's-1' }])
+    expect(await new StepMemory(browserStepStore(other)).where('from-one')).toEqual({ scope: 's-1' })
+  })
 })

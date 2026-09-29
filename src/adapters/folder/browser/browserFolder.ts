@@ -49,17 +49,30 @@ export class BrowserFolder {
     return this.key
   }
 
+  /**
+   * The key of the records whose handle is this folder — the lowest, where
+   * two tabs each made one for it at once — or a new one, made and then
+   * looked for again among all of them, so both tabs settle on one key and
+   * neither's steps or history are kept where the other never looks.
+   */
   private async find(): Promise<string> {
-    const kept = await this.store.transaction(['folders'], 'read', (tx) => tx.range<{ handle: FolderHandle }>('folders', {}))
-    for (const { key, value } of kept) {
-      if (await this.same(value.handle, this.handle).catch(() => false)) return key
-    }
+    const found = await this.matching()
+    if (found) return found
     const key = crypto.randomUUID()
     await this.store.transaction(['folders'], 'write', (tx) => {
       tx.put('folders', key, { handle: this.handle })
       return Promise.resolve()
     })
-    return key
+    return await this.matching() ?? key
+  }
+
+  /** The lowest key whose handle is this folder, asked outside any transaction. */
+  private async matching(): Promise<string | undefined> {
+    const kept = await this.store.transaction(['folders'], 'read', (tx) => tx.range<{ handle: FolderHandle }>('folders', {}))
+    for (const { key, value } of kept) {
+      if (await this.same(value.handle, this.handle).catch(() => false)) return key
+    }
+    return undefined
   }
 
   /** The key of one value of one kind kept for this folder. */
