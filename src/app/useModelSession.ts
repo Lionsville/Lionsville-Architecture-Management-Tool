@@ -382,6 +382,35 @@ export type SessionSteps = {
   settled: (changeIds: readonly string[]) => void
 }
 
+/**
+ * A change of this session's to the model, waiting to be written where the
+ * scope is kept: the command that made it, as one step, under a name nobody
+ * else will give one.
+ */
+export type PendingStep = { stepId: string; command: Command; at: number }
+
+/**
+ * What the open scope's writer takes from the session: every change made here
+ * to the model, in the order it was made, until it says they are written.
+ *
+ * Every change and not only the steps the stack keeps: a change that is not a
+ * step (`undoable: false` — a view's setting, the flag a layout clears) is
+ * still a change to the scope, and a writer that left it out would lose it.
+ * An undo and a redo are written as what they applied. A step another author
+ * made is not here: it came from wherever it would be written. And a document
+ * adopted in place of this one empties it — what was pending belonged to a
+ * model that is no longer on screen — and moves `adopted`, so a writer knows
+ * that what it last wrote is not what the session holds.
+ */
+export type SessionJournal = {
+  /** Every change not yet written, oldest first. */
+  pending: () => readonly PendingStep[]
+  /** The first `count` of them are written. */
+  written: (count: number) => void
+  /** How many documents have been adopted in place of the one opened. */
+  adopted: () => number
+}
+
 export type ModelSession = {
   // --- what the editor receives as props -----------------------------------
   /** The model in the shape the file has. See the note at the top. */
@@ -472,6 +501,8 @@ export type ModelSession = {
   currentImages: () => DocumentImage[]
   /** The project as it stands now, ready to be saved. */
   snapshot: () => ScopeSnapshot
+  /** The changes made here that are still to be written (`SessionJournal`). */
+  journal: SessionJournal
   /** Take on an entirely different document: an opened file, or the shipped one. */
   adopt: (project: ScopeSnapshot, relayout: boolean) => void
 }
@@ -620,8 +651,14 @@ export function useModelSession(deps: {
   takenInTree?: () => Iterable<string>
   /** Nothing may be changed here (`ModelSession.readOnly`). Absent is `false`. */
   readOnly?: boolean
+  /**
+   * Keep the changes made here for a writer to take (`SessionJournal`). Absent
+   * where nothing writes them — a source whose steps travel elsewhere, a test
+   * — and then nothing is kept, rather than a list that only grows.
+   */
+  journaling?: boolean
 }): ModelSession {
-  const { initialProject, notify, s, takenInTree, readOnly = false } = deps
+  const { initialProject, notify, s, takenInTree, readOnly = false, journaling = false } = deps
 
   const [model, setModel]
  = useState<Model>(() => fromArrays(initialProject.model))
@@ -678,34 +715,7 @@ export function useModelSession(deps: {
   }, [])
   const arrays = asArrays(model)
 
-  // Read through a ref for the same reason the model is: the policy is minted
-  // once for the life of the session, and it has to see the index as it stands
-  // when an id is asked for rather than as it stood when the hook first ran.
-  const treeIds = useRef(takenInTree)
-  treeIds.current = takenInTree
-
-  const spokenFor = useCallback(() => [
-    ...(treeIds.current?.() ?? []),
-    ...modelRef.current.order.elements,
-    ...modelRef.current.order.relations,
-    ...modelRef.current.order.diagrams,
-  ], [])
-
-  const ids = useRef<IdPolicy | null>(null)
-  ids.current ??= idPolicy(spokenFor)
-
-  /**
-   * Read what is spoken for again, after a step from elsewhere landed.
-   *
-   * The policy remembers what it has handed out for the life of the session,
-   * so an id another author took in the meantime is not one it knows about —
-   * and a create here would mint the name they just used. It is told to look
-   * again, which keeps what it handed out and has not yet put on the model.
-   */
-  const refreshIds = useCallback(() => {
-    ids.current?.refresh()
-  }, [])
-
+  const { ids, refreshIds } = useIdPolicy(takenInTree, modelRef)
 
   // The stacks are refs, because a caller has to be able to read and move them
   // inside an event handler. Nothing renders from them directly, so a counter
@@ -719,6 +729,7 @@ export function useModelSession(deps: {
    * there is nothing outstanding about it and a floor at one would never lift.
    */
   const unsettled = useRef(new Set<string>())
+  const { journal, keep, adopted } = useSessionJournal(journaling)
 
   /**
    * Bring the log back to its cap, stopping at the oldest fold nobody has
@@ -785,11 +796,15 @@ export function useModelSession(deps: {
     modelRef.current = next
     setModel(next)
     revision.current += 1
+    const changeId = mintStepId()
+    // Written where the scope is kept whatever the stack does with it, and
+    // under the name it is announced by; another author's is written already.
+    if (meta.origin !== 'remote') keep(changeId, commands, meta.at)
     // Not recorded, so not announced: it has no inverse, and a change nothing
     // can take back is not a step (`SessionSteps.onChange`).
     if (meta.undoable === false) return
     // The fold: this announcement's own name, and exactly what it applied.
-    const fold: StepFold = { changeId: mintStepId(), commands, inverses }
+    const fold: StepFold = { changeId, commands, inverses }
     const top = past.current[past.current.length - 1]
     let landed: HistoryStep
     if (meta.coalesce !== undefined && top?.coalesce === meta.coalesce) {
@@ -844,7 +859,7 @@ export function useModelSession(deps: {
       ...(landed.by !== undefined ? { by: landed.by } : {}),
       ...(landed.unattended === true ? { unattended: true as const } : {}),
     })
-  }, [announce, trim])
+  }, [announce, trim, keep])
 
   /**
    * Removing an application from the model takes its container diagram with it.
@@ -929,9 +944,11 @@ export function useModelSession(deps: {
     // a listener carrying this somewhere else applies exactly these, and does
     // not have to know that an undo is a step's inverses.
     const applied = from === 'past' ? entry.inverses : entry.commands
+    const changeId = mintStepId()
+    keep(changeId, applied)
     announce({
       kind: from === 'past' ? 'undo' : 'redo',
-      changeId: mintStepId(),
+      changeId,
       stepId: entry.stepId,
       commands: [...applied],
       at: Date.now(),
@@ -939,7 +956,7 @@ export function useModelSession(deps: {
       ...(entry.origin !== undefined ? { origin: entry.origin } : {}),
       ...(entry.by !== undefined ? { by: entry.by } : {}),
     })
-  }, [notify, s, announce])
+  }, [notify, s, announce, keep])
 
   const undo = useCallback(() => { if (mayChange()) step('past') }, [step, mayChange])
   const redo = useCallback(() => { if (mayChange()) step('future') }, [step, mayChange])
@@ -1113,6 +1130,7 @@ export function useModelSession(deps: {
     past.current = []
     future.current = []
     unsettled.current.clear()
+    adopted()
     setHistoryVersion((v) => v + 1)
     // Measured before the swap: `needsRemount` compares the old with the new.
     const remount = needsRemount(asArrays(modelRef.current), project.model, relayout)
@@ -1136,8 +1154,10 @@ export function useModelSession(deps: {
    * project's edits onto another.
    */
   const path = initialProject.path
+  const id = initialProject.id
   const snapshot = useCallback((): ScopeSnapshot => ({
     path,
+    ...(id !== undefined ? { id } : {}),
     ...headerRef.current,
     model: toArrays(modelRef.current),
     activeDiagramId: activeRef.current,
@@ -1145,7 +1165,7 @@ export function useModelSession(deps: {
     // Absent rather than empty, so a project with no pictures is written back
     // as the project it was read as — see `ScopeSnapshot.imageLibrary`.
     ...(imageRef.current.length ? { imageLibrary: imageRef.current } : {}),
-  }), [path])
+  }), [path, id])
 
   /**
    * The model as it stands, in both shapes, and the same function every render.
@@ -1161,7 +1181,7 @@ export function useModelSession(deps: {
 
   return {
     model: arrays, activeDiagramId: activeId, setActiveDiagramId,
-    ids: ids.current,
+    ids,
     editorKey, logoLibrary, setLogoLibrary: guardedLogos, imageLibrary, setImageLibrary: guardedImages,
     readOnly, mayChange, dispatch, undo, redo,
     steps,
@@ -1175,8 +1195,69 @@ export function useModelSession(deps: {
     currentActiveId: () => activeRef.current,
     currentLibrary: () => logoRef.current,
     currentImages: () => imageRef.current,
-    snapshot, adopt,
+    snapshot, adopt, journal,
   }
+}
+
+/**
+ * Where a new id comes from, and the way to make it look again (see
+ * `refreshIds` below): minted once for the life of the session.
+ */
+function useIdPolicy(takenInTree: (() => Iterable<string>) | undefined, modelRef: { current: Model }) {
+  // Read through a ref for the same reason the model is: the policy is minted
+  // once for the life of the session, and it has to see the index as it stands
+  // when an id is asked for rather than as it stood when the hook first ran.
+  const treeIds = useRef(takenInTree)
+  treeIds.current = takenInTree
+
+  const spokenFor = useCallback(() => [
+    ...(treeIds.current?.() ?? []),
+    ...modelRef.current.order.elements,
+    ...modelRef.current.order.relations,
+    ...modelRef.current.order.diagrams,
+  ], [])
+
+  const ids = useRef<IdPolicy | null>(null)
+  ids.current ??= idPolicy(spokenFor)
+
+  /**
+   * Read what is spoken for again, after a step from elsewhere landed.
+   *
+   * The policy remembers what it has handed out for the life of the session,
+   * so an id another author took in the meantime is not one it knows about —
+   * and a create here would mint the name they just used. It is told to look
+   * again, which keeps what it handed out and has not yet put on the model.
+   */
+  const refreshIds = useCallback(() => {
+    ids.current?.refresh()
+  }, [])
+  return { ids: ids.current, refreshIds }
+}
+
+/**
+ * The changes made here and not yet written (`SessionJournal`), kept only
+ * where something writes them.
+ */
+function useSessionJournal(journaling: boolean) {
+  const pending = useRef<PendingStep[]>([])
+  const adoptions = useRef(0)
+  const journal = useMemo<SessionJournal>(() => ({
+    pending: () => pending.current,
+    written: (count) => { pending.current = pending.current.slice(count) },
+    adopted: () => adoptions.current,
+  }), [])
+  /** One change, as one step: most are one command, and a run of them is a transaction. */
+  const keep = useCallback((stepId: string, commands: readonly Command[], at = Date.now()) => {
+    if (!journaling) return
+    const command = commands.length === 1 ? commands[0] : transaction([...commands])
+    pending.current = [...pending.current, { stepId, command, at }]
+  }, [journaling])
+  /** A document adopted in place of this one: nothing pending is this one's any more. */
+  const adopted = useCallback(() => {
+    pending.current = []
+    adoptions.current += 1
+  }, [])
+  return { journal, keep, adopted }
 }
 
 /**

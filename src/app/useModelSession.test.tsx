@@ -53,13 +53,14 @@ const project = (over: Partial<ScopeSnapshot> = {}): ScopeSnapshot => ({
   ...over,
 })
 
-function mount(initial = project(), takenInTree?: () => Iterable<string>, readOnly?: boolean) {
+function mount(initial = project(), takenInTree?: () => Iterable<string>, readOnly?: boolean, journaling?: boolean) {
   const notify = vi.fn()
   let session!: ModelSession
   function Host() {
     session = useModelSession({
       initialProject: initial, notify, s: translator('en'), takenInTree,
       ...(readOnly !== undefined ? { readOnly } : {}),
+      ...(journaling !== undefined ? { journaling } : {}),
     })
     return null
   }
@@ -1062,5 +1063,69 @@ describe('useModelSession — a scope that is only read', () => {
     act(() => { may = session().mayChange() })
     expect(may).toBe(true)
     expect(notify).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * What the open scope's writer takes: every change made here, in order, as
+ * steps — the ones the stack keeps and the ones it does not — until it says
+ * they are written.
+ */
+describe('useModelSession — the changes still to be written', () => {
+  const journaled = () => mount(project(), undefined, undefined, true)
+  const commands = (session: ModelSession) => session.journal.pending().map((one) => one.command)
+
+  it('keeps every change made here, under the name it is announced by', () => {
+    const { session } = journaled()
+    const heard: SessionChange[] = []
+    session().steps.onChange((change) => heard.push(change))
+    act(() => { session().dispatch(rename('Renamed')) })
+    expect(commands(session())).toEqual([rename('Renamed')])
+    expect(session().journal.pending()[0].stepId).toBe(heard[0].changeId)
+  })
+
+  it('keeps a change the stack does not, and an undo and a redo as what they applied', () => {
+    const { session } = journaled()
+    const quiet = { type: 'diagram.update', id: 'd1', patch: { autoRoute: true }, undoable: false } as const
+    act(() => { session().dispatch(quiet) })
+    act(() => { session().dispatch(rename('Renamed')) })
+    act(() => { session().undo() })
+    act(() => { session().redo() })
+    expect(commands(session())).toEqual([
+      { type: 'diagram.update', id: 'd1', patch: { autoRoute: true }, undoable: false },
+      rename('Renamed'),
+      rename('Billing'),
+      rename('Renamed'),
+    ])
+    expect(new Set(session().journal.pending().map((one) => one.stepId)).size).toBe(4)
+  })
+
+  it('keeps nothing another author made', () => {
+    const { session } = journaled()
+    act(() => { session().steps.applyExternal(rename('Theirs'), { by: 'Ann' }) })
+    expect(session().journal.pending()).toEqual([])
+  })
+
+  it('takes off what is written, and keeps what came after', () => {
+    const { session } = journaled()
+    act(() => { session().dispatch(rename('One')) })
+    act(() => { session().dispatch(rename('Two')) })
+    session().journal.written(1)
+    expect(commands(session())).toEqual([rename('Two')])
+  })
+
+  it('empties, and says so, when a document is adopted in its place', () => {
+    const { session } = journaled()
+    act(() => { session().dispatch(rename('Renamed')) })
+    const before = session().journal.adopted()
+    act(() => { session().adopt(project(), false) })
+    expect(session().journal.pending()).toEqual([])
+    expect(session().journal.adopted()).toBe(before + 1)
+  })
+
+  it('keeps nothing where nothing writes it', () => {
+    const { session } = mount()
+    act(() => { session().dispatch(rename('Renamed')) })
+    expect(session().journal.pending()).toEqual([])
   })
 })
