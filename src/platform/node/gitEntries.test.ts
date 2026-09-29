@@ -146,6 +146,17 @@ describe.skipIf(!available)('the history a folder’s repositories read', () => 
     ])
   })
 
+  it('reads a file whose name has a space in it, in a folder of its own', async () => {
+    await startHistory(root)
+    await put('acme/images/my rota.png', new Uint8Array([1, 2, 3]))
+    await put('acme/docs/crews.md', 'Crews.\n')
+    const sha = await commitPaths(root, ['acme/images/my rota.png', 'acme/docs/crews.md'], 'spaced')
+    expect(await readAt(root, sha!, ['acme/images/my rota.png', 'acme/docs/crews.md'])).toEqual([
+      { path: 'acme/images/my rota.png', bytes: new Uint8Array([1, 2, 3]) },
+      { path: 'acme/docs/crews.md', text: 'Crews.\n' },
+    ])
+  })
+
   it('tags a commit once by a name, with its words, and never one git would refuse', async () => {
     await startHistory(root)
     await put('model.json', '{}')

@@ -245,14 +245,28 @@ async function gitWithInput(root: string, args: readonly string[], input: string
   })
 }
 
+/** The deepest folder every one of the paths is in; the empty string for the root. */
+function commonFolder(paths: readonly string[]): string {
+  const folders = paths.map((path) => path.split('/').slice(0, -1))
+  const shared: string[] = []
+  for (let at = 0; folders.every((one) => one.length > at && one[at] === folders[0][at]); at += 1) shared.push(folders[0][at])
+  return shared.join('/')
+}
+
 /** Those files as they were at a commit, in one read of git's objects; one that is not there is left out. */
 export async function readAt(root: string, sha: string, paths: readonly string[]): Promise<GitFileAt[]> {
   const wanted = paths.filter((path) => isInside(path) && !path.includes('\n'))
   if (!isSha(sha) || wanted.length === 0 || !await isRepository(root)) return []
-  const out = await gitWithInput(root, ['cat-file', '--batch'], wanted.map((path) => `${sha}:${path}\n`).join(''))
+  // Each file by the id of what it held, and its path beside it: `--filters`
+  // reads a file kept as a pointer — a large picture in LFS — as what it
+  // points at, as a checkout would, and a filter is chosen by a path.
+  const blobs = new Map((await treeAt(root, sha, commonFolder(wanted))).map((file) => [file.path, file.blob]))
+  const present = wanted.filter((path) => blobs.has(path))
+  if (present.length === 0) return []
+  const out = await gitWithInput(root, ['cat-file', '--batch', '--filters'], present.map((path) => `${blobs.get(path)} ${path}\n`).join(''))
   const found: GitFileAt[] = []
   let at = 0
-  for (const path of wanted) {
+  for (const path of present) {
     const end = out.indexOf(0x0a, at)
     if (end < 0) break
     const header = out.subarray(at, end).toString('utf8')

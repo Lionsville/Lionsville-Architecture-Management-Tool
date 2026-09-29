@@ -311,8 +311,12 @@ export class FolderScopeRepository implements ScopeRepository {
    */
   private async carry(from: ScopeAddress, to: ScopeAddress, moving: readonly FolderNode[]): Promise<void> {
     const { root } = this.folder
-    if (root.moveEntry) {
-      await root.moveEntry(from, to)
+    const renamed = root.moveEntry ? await root.moveEntry(from, to).then(() => true, (cause: unknown) => {
+      // A rename the disk will not make — across two volumes — is a copy instead.
+      this.folder.diagnostics?.report({ level: 'warn', where: 'folder', message: 'a scope could not be moved as one rename', cause })
+      return false
+    }) : false
+    if (renamed) {
       for (const node of moving) {
         if (node.header[ID_KEY] === node.id) continue
         const path = scopeFilePath(`${to}${node.address.slice(from.length)}`, SCOPE_FILE)

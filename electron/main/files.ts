@@ -35,6 +35,7 @@ import {
   allTags, changes, commitLog, commitPaths, headOf, isScopeTagName, readAt, readiness, startHistory, tagCommit, textsOf, treeAt,
 } from '../../src/platform/node/gitEntries'
 import { log } from './log'
+import { sayable } from './sayable'
 import { watchFolder } from './watch'
 import {
   fingerprint, listDirectory, makeDirectory, moveEntry, readFile as readInside, removeEntry, resolveInside,
@@ -362,8 +363,19 @@ export function stopWatching(): void {
  * with the same rule as every handler of the file channel: a root the person
  * granted, or nothing.
  */
+/** A handler of the repositories' channels, whose failures cross as {@link sayable} makes them. */
+function answer(channel: string, handler: (event: unknown, ...args: never[]) => unknown): void {
+  ipcMain.handle(channel, async (event, ...args: unknown[]) => {
+    try {
+      return await (handler as (event: unknown, ...args: unknown[]) => unknown)(event, ...args)
+    } catch (cause) {
+      throw sayable(channel, cause, (said) => log('git', said))
+    }
+  })
+}
+
 function registerRepositoryChannels(): void {
-  ipcMain.handle('files:move', async (_event, root: unknown, from: unknown, to: unknown) => {
+  answer('files:move', async (_event, root: unknown, from: unknown, to: unknown) => {
     if (!isGranted(root) || !isPath(from) || !isPath(to)) throw new Error('shell.pathRefused')
     await moveEntry(root, from, to)
   })
@@ -371,26 +383,26 @@ function registerRepositoryChannels(): void {
   // Every path a string inside the folder: `gitEntries.ts` hands
   // git each one as a literal, and refuses an escape before git sees it.
 
-  ipcMain.handle('git:startHistory', async (_event, root: unknown) => {
+  answer('git:startHistory', async (_event, root: unknown) => {
     if (!isGranted(root)) throw new Error('shell.pathRefused')
     await startHistory(root)
   })
 
-  ipcMain.handle('git:readiness', (_event, root: unknown) => {
+  answer('git:readiness', (_event, root: unknown) => {
     if (!isGranted(root)) throw new Error('shell.pathRefused')
     return readiness(root)
   })
 
-  ipcMain.handle('git:changes', (_event, root: unknown) => (isGranted(root) ? changes(root) : []))
+  answer('git:changes', (_event, root: unknown) => (isGranted(root) ? changes(root) : []))
 
-  ipcMain.handle('git:commitPaths', (_event, root: unknown, paths: unknown, message: unknown) => {
+  answer('git:commitPaths', (_event, root: unknown, paths: unknown, message: unknown) => {
     if (!isGranted(root) || !isStrings(paths) || typeof message !== 'string') throw new Error('shell.pathRefused')
     return commitPaths(root, paths, message)
   })
 
-  ipcMain.handle('git:head', (_event, root: unknown) => (isGranted(root) ? headOf(root) : undefined))
+  answer('git:head', (_event, root: unknown) => (isGranted(root) ? headOf(root) : undefined))
 
-  ipcMain.handle('git:log', (_event, root: unknown, wanted: unknown) => {
+  answer('git:log', (_event, root: unknown, wanted: unknown) => {
     const held = wanted as { paths?: unknown; grep?: unknown; limit?: unknown; tip?: unknown; skip?: unknown; firstParent?: unknown } | null
     if (!isGranted(root) || !held || typeof held !== 'object' || typeof held.limit !== 'number') return []
     if (held.paths !== undefined && !isStrings(held.paths)) return []
@@ -407,18 +419,18 @@ function registerRepositoryChannels(): void {
     })
   })
 
-  ipcMain.handle('git:treeAt', (_event, root: unknown, sha: unknown, within: unknown) =>
+  answer('git:treeAt', (_event, root: unknown, sha: unknown, within: unknown) =>
     (isGranted(root) && typeof sha === 'string' && typeof within === 'string' ? treeAt(root, sha, within) : []))
 
-  ipcMain.handle('git:readAt', (_event, root: unknown, sha: unknown, paths: unknown) =>
+  answer('git:readAt', (_event, root: unknown, sha: unknown, paths: unknown) =>
     (isGranted(root) && typeof sha === 'string' && isStrings(paths) ? readAt(root, sha, paths) : []))
 
-  ipcMain.handle('git:texts', (_event, root: unknown, ids: unknown) =>
+  answer('git:texts', (_event, root: unknown, ids: unknown) =>
     (isGranted(root) && isStrings(ids) ? textsOf(root, ids) : {}))
 
-  ipcMain.handle('git:tags', (_event, root: unknown) => (isGranted(root) ? allTags(root) : []))
+  answer('git:tags', (_event, root: unknown) => (isGranted(root) ? allTags(root) : []))
 
-  ipcMain.handle('git:tag', (_event, root: unknown, sha: unknown, name: unknown, message: unknown) => {
+  answer('git:tag', (_event, root: unknown, sha: unknown, name: unknown, message: unknown) => {
     // A scope's label and nothing else: `<space>/<slug>`, which no option and
     // no name of a person's can be.
     if (!isGranted(root) || typeof sha !== 'string' || typeof name !== 'string' || !isScopeTagName(name)
