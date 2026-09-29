@@ -245,7 +245,8 @@ export type GitFileAt = { path: string; text: string } | { path: string; bytes: 
 
 /** Git fed on its standard input, answered in bytes. */
 async function gitWithInput(root: string, args: readonly string[], input: string): Promise<Buffer> {
-  const all = await gitArgs(root, args)
+  // The read of the folder's configuration is a git too: no git is said as that.
+  const all = await gitArgs(root, args).catch(async (cause: unknown) => { throw await gitFailure(cause, root) })
   return new Promise((resolve, reject) => {
     const child = execFile('git', all, {
       cwd: root, encoding: 'buffer', maxBuffer: 256 * 1024 * 1024, windowsHide: true, env: gitEnvironment(), timeout: 60_000,

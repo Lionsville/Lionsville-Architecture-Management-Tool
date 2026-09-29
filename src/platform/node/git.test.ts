@@ -425,7 +425,7 @@ describe.skipIf(!available)('the remote', () => {
 
   it('asks nothing of an ssh the process does not name', () => {
     expect(gitEnvironment({ PATH: '/bin' })).toEqual({
-      PATH: '/bin', GIT_TERMINAL_PROMPT: '0', GIT_OPTIONAL_LOCKS: '0', GIT_SSH_COMMAND: 'ssh -o BatchMode=yes',
+      PATH: '/bin', GIT_TERMINAL_PROMPT: '0', GIT_OPTIONAL_LOCKS: '0', GIT_NO_LAZY_FETCH: '1', GIT_SSH_COMMAND: 'ssh -o BatchMode=yes',
     })
     expect(gitEnvironment({ GIT_SSH_COMMAND: ' ' }).GIT_SSH_COMMAND).toBe('ssh -o BatchMode=yes')
     expect(gitEnvironment({ GIT_SSH_COMMAND: 'ssh -i key' }).GIT_SSH_COMMAND).toBe('ssh -i key')

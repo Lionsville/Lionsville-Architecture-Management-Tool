@@ -21,7 +21,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { git, gitAvailable, history, initRepository, label, pull, push, snapshot } from './git'
 import { commitLog, commitPaths, readAt } from './gitEntries'
-import { forgetConfigurations } from './gitGuard'
+import { gitEnvironment } from './gitGuard'
 
 const run = promisify(execFile)
 const available = await gitAvailable()
@@ -36,13 +36,16 @@ beforeEach(async () => {
   root = join(place, 'folder')
   await mkdir(root)
   // The person's own configuration, and nothing of the machine's that could ask anything.
-  for (const name of ['GIT_CONFIG_GLOBAL', 'GIT_CONFIG_NOSYSTEM', 'GIT_ASKPASS', 'SSH_ASKPASS']) kept[name] = process.env[name]
+  for (const name of [
+    'GIT_CONFIG_GLOBAL', 'GIT_CONFIG_NOSYSTEM', 'GIT_ASKPASS', 'SSH_ASKPASS',
+    'https_proxy', 'HTTPS_PROXY', 'http_proxy', 'HTTP_PROXY', 'all_proxy', 'ALL_PROXY', 'no_proxy', 'NO_PROXY',
+  ]) kept[name] = process.env[name]
   process.env.GIT_CONFIG_GLOBAL = join(place, 'own.gitconfig')
   process.env.GIT_CONFIG_NOSYSTEM = '1'
-  delete process.env.GIT_ASKPASS
-  delete process.env.SSH_ASKPASS
+  for (const name of ['GIT_ASKPASS', 'SSH_ASKPASS', 'https_proxy', 'HTTPS_PROXY', 'http_proxy', 'HTTP_PROXY', 'all_proxy', 'ALL_PROXY', 'no_proxy', 'NO_PROXY']) {
+    delete process.env[name]
+  }
   await writeFile(process.env.GIT_CONFIG_GLOBAL, '[user]\n\tname = Acme\n\temail = acme@example.com\n')
-  forgetConfigurations()
 })
 
 afterEach(async () => {
@@ -213,9 +216,9 @@ describe.skipIf(!available)('what a folder’s configuration may say', () => {
 
   it('refuses a key it does not know, and names it', async () => {
     await initRepository(root)
-    await folderSets('sendemail.smtpServer', await program('folder-smtp'))
+    await folderSets('http.cookieFile', join(place, 'cookies.txt'))
     await put('model.json', '{}')
-    await expect(snapshot(root, 'refused')).rejects.toThrow(/sendemail\.smtpserver/)
+    await expect(snapshot(root, 'refused')).rejects.toThrow(/http\.cookiefile/)
   })
 
   it('refuses a repository extension git may not know', async () => {
@@ -234,13 +237,20 @@ describe.skipIf(!available)('what a folder’s configuration may say', () => {
     expect(await ran('folder-proxy')).toBe(false)
   })
 
-  it('holds what the folder includes to the same rules, and sees a change to it', async () => {
+  it('refuses to include a file in the folder itself, where a page can write it', async () => {
     await initRepository(root)
     await folderSets('include.path', '../more.gitconfig')
+    await expect(git(root, ['status'])).rejects.toThrow(/includes a file in the folder itself/)
+  })
+
+  it('holds what the folder includes from elsewhere to the same rules, and sees a change to it at the next git', async () => {
+    await initRepository(root)
+    const more = join(place, 'more.gitconfig')
+    await folderSets('include.path', more)
+    await put('.gitattributes', '*.json filter=evil\n')
     await put('model.json', '{}')
     expect(await snapshot(root, 'nothing included yet')).toMatch(/^[0-9a-f]+$/)
-    await put('more.gitconfig', `[filter "evil"]\n\tclean = ${await program('included-clean', 'cat')}\n`)
-    await put('.gitattributes', '*.json filter=evil\n')
+    await writeFile(more, `[filter "evil"]\n\tclean = ${await program('included-clean', 'cat')}\n`)
     await put('model.json', '{"changed":true}')
     await snapshot(root, 'the include says more now')
     expect(await ran('included-clean')).toBe(false)
@@ -374,3 +384,182 @@ describe.skipIf(!available)('a program the folder names, and the person’s own'
     expect((await raw(['show', `${sha}:notes.md`])).stdout).toBe('PLAIN WORDS')
   })
 })
+
+describe.skipIf(!available)('what the second review found', () => {
+  it('reads a configuration of any size whole, and runs nothing it names', async () => {
+    await initRepository(root)
+    const padding = Array.from({ length: 40_000 }, (_, at) => `\tpad${at} = ${'x'.repeat(40)}`).join('\n')
+    await writeFile(join(root, '.git', 'config'), `${await readFile(join(root, '.git', 'config'), 'utf8')}[color]\n${padding}\n`)
+    await folderSets('filter.evil.clean', await program('folder-clean', 'cat'))
+    await put('.gitattributes', '*.md filter=evil\n')
+    await put('notes.md', 'plain words')
+    await snapshot(root, 'a large configuration')
+    expect(await ran('folder-clean')).toBe(false)
+  }, 20_000)
+
+  it('refuses where the configuration cannot be read at all', async () => {
+    await initRepository(root)
+    await writeFile(join(root, '.git', 'config'), '[core\n\tthis is not a configuration\n')
+    await expect(git(root, ['status'])).rejects.toThrow(/could not be read/)
+  })
+
+  it('counts a worktree’s own configuration as the folder’s, however its extension is written', async () => {
+    for (const written of ['\tworktreeConfig\n', '\tworktreeConfig = 2\n']) {
+      await rm(root, { recursive: true, force: true })
+      await mkdir(root)
+      await initRepository(root)
+      await writeFile(join(root, '.git', 'config'), `${await readFile(join(root, '.git', 'config'), 'utf8')}[extensions]\n${written}`)
+      await raw(['config', 'core.repositoryFormatVersion', '1'])
+      await writeFile(join(root, '.git', 'config.worktree'), `[filter "evil"]\n\tclean = ${await program('worktree-clean', 'cat')}\n`)
+      await put('.gitattributes', '*.md filter=evil\n')
+      await put('notes.md', 'plain words')
+      await snapshot(root, 'the worktree’s own')
+      expect(await ran('worktree-clean'), written).toBe(false)
+    }
+  })
+
+  it('counts a file the folder includes on the person’s condition as the folder’s', async () => {
+    await personSets('remote.origin.url', 'https://example.com/landscape.git')
+    await initRepository(root)
+    const evil = join(place, 'evil.gitconfig')
+    await writeFile(evil, `[filter "evil"]\n\tclean = ${await program('conditional-clean', 'cat')}\n`)
+    await folderSets('includeIf.hasconfig:remote.*.url:https://example.com/**.path', evil)
+    await put('.gitattributes', '*.md filter=evil\n')
+    await put('notes.md', 'plain words')
+    await snapshot(root, 'on the person’s condition')
+    expect(await ran('conditional-clean')).toBe(false)
+  })
+
+  it('sees an include that a branch switch makes active, in a repository whose HEAD file never changes', async () => {
+    await raw(['init', '-q', '--ref-format=reftable', '-b', 'main'])
+    const evil = join(place, 'branch.gitconfig')
+    await writeFile(evil, `[filter "evil"]\n\tclean = ${await program('branch-clean', 'cat')}\n`)
+    await folderSets('includeIf.onbranch:feature.path', evil)
+    await put('.gitattributes', '*.md filter=evil\n')
+    await put('notes.md', 'plain words')
+    await snapshot(root, 'on main')
+    await raw(['switch', '-q', '-c', 'feature'])
+    await put('notes.md', 'more words')
+    await snapshot(root, 'on the feature branch')
+    expect(await ran('branch-clean')).toBe(false)
+  })
+
+  it('matches every rule without regard to case, as git and git-lfs read keys', async () => {
+    await initRepository(root)
+    await writeFile(join(root, '.git', 'config'),
+      `${await readFile(join(root, '.git', 'config'), 'utf8')}[lfs "CustomTransfer.evil"]\n\tpath = ${await program('lfs-transfer')}\n`)
+    await expect(git(root, ['status'])).rejects.toThrow(/lfs\.CustomTransfer\.evil\.path/)
+  })
+
+  it('signs no label and no push because the folder says to, and signs with the person’s key only', async () => {
+    const args = join(place, 'signer-args')
+    await personSets('gpg.program', await program('own-signer', [
+      `echo "$@" >> "${args}"`,
+      'echo "[GNUPG:] SIG_CREATED D 1 8 00 1 X" >&2',
+      'printf -- "-----BEGIN PGP SIGNATURE-----\\nstand-in\\n-----END PGP SIGNATURE-----\\n"',
+    ].join('\n')))
+    await initRepository(root)
+    await folderSets('tag.forceSignAnnotated', 'true')
+    await folderSets('push.gpgSign', 'true')
+    await put('model.json', '{}')
+    const sha = await snapshot(root, 'first')
+    expect(await label(root, sha!, 'Monday')).toBe('done')
+    expect(await ran('own-signer')).toBe(false)
+    await personSets('commit.gpgsign', 'true')
+    await folderSets('user.signingKey', 'the-folders-key')
+    await put('model.json', '{"signed":true}')
+    await snapshot(root, 'signed by the person')
+    expect(await ran('own-signer')).toBe(true)
+    expect(await readFile(args, 'utf8')).not.toContain('the-folders-key')
+  })
+
+  it('refuses a rewrite of remote addresses, which no setting can take back', async () => {
+    await initRepository(root)
+    await folderSets('url.https://evil.example/.insteadOf', 'https://example.com/')
+    await expect(git(root, ['status'])).rejects.toThrow(/url\.https:\/\/evil\.example\/\.insteadof/i)
+  })
+
+  describe('what is sent with a request', () => {
+    let server: Server
+    let heard: string[] = []
+    let url = ''
+    beforeEach(async () => {
+      heard = []
+      server = createServer((request, response) => {
+        heard.push(JSON.stringify(request.headers))
+        response.writeHead(404)
+        response.end()
+      })
+      await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+      url = `http://127.0.0.1:${(server.address() as AddressInfo).port}/landscape.git`
+    })
+    afterEach(async () => { await new Promise((resolve) => server.close(resolve)) })
+
+    it('is never a header the folder adds, and is the person’s own', async () => {
+      await personSets('http.extraHeader', 'X-Own: acme')
+      await initRepository(root)
+      await folderSets('http.extraHeader', 'X-Folder: evil')
+      await git(root, ['ls-remote', url]).catch(() => undefined)
+      expect(heard.join('\n')).not.toContain('x-folder')
+      expect(heard.join('\n')).toContain('x-own')
+    })
+  })
+
+  describe('a proxy', () => {
+    let own: TcpServer
+    let folders: TcpServer
+    const reached = { own: 0, folders: 0 }
+    const listening = async (which: 'own' | 'folders') => {
+      const server = createTcpServer((socket) => { reached[which] += 1; socket.destroy() })
+      await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+      return server
+    }
+    beforeEach(async () => {
+      reached.own = 0
+      reached.folders = 0
+      own = await listening('own')
+      folders = await listening('folders')
+    })
+    afterEach(async () => {
+      await new Promise((resolve) => own.close(resolve))
+      await new Promise((resolve) => folders.close(resolve))
+    })
+
+    it('is the person’s own from their environment, never the folder’s, and not turned off', async () => {
+      process.env.https_proxy = `http://127.0.0.1:${(own.address() as AddressInfo).port}`
+      await initRepository(root)
+      await folderSets('http.proxy', `http://127.0.0.1:${(folders.address() as AddressInfo).port}`)
+      await raw(['remote', 'add', 'origin', 'https://example.invalid/landscape.git'])
+      await git(root, ['fetch', 'origin']).catch(() => undefined)
+      expect(reached.folders).toBe(0)
+      expect(reached.own).toBeGreaterThan(0)
+    })
+  })
+
+  it('asks no remote for what a partial clone lacks, but on a fetch', () => {
+    expect(gitEnvironment({}).GIT_NO_LAZY_FETCH).toBe('1')
+  })
+
+  it('runs with what only commands it never runs read', async () => {
+    await initRepository(root)
+    for (const [key, value] of [
+      ['difftool.mine.cmd', 'echo'], ['mergetool.mine.cmd', 'echo'], ['diff.tool', 'mine'], ['merge.tool', 'mine'],
+      ['sendemail.smtpServer', '/usr/sbin/sendmail'], ['svn-remote.svn.url', 'https://example.com/svn'],
+      ['remote.pushDefault', 'origin'], ['branch.sort', '-committerdate'], ['diff.md.xfuncname', '^#'],
+      ['commit.verbose', 'false'], ['commit.template', join(place, 'template.txt')], ['http.postBuffer', '1048576'],
+      ['core.sharedRepository', 'group'], ['credential.useHttpPath', 'true'],
+    ]) await folderSets(key, value)
+    await put('model.json', '{}')
+    expect(await snapshot(root, 'with what a person keeps')).toMatch(/^[0-9a-f]+$/)
+  })
+
+  it('says a refused sync as the refusal it is, with its words', async () => {
+    const bare = await remoteWithCommit('remote')
+    await cloneOf(bare)
+    await folderSets('http.sslCAInfo', join(place, 'ca.pem'))
+    const outcome = await push(root)
+    expect(outcome).toMatchObject({ refused: expect.stringMatching(/http\.sslcainfo/i) })
+    expect(await pull(root)).toMatchObject({ refused: expect.stringMatching(/http\.sslcainfo/i) })
+  })
+})
+
