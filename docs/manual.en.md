@@ -291,7 +291,8 @@ Folder**, each under the name its organisation gives itself.
 **Everything is written as it changes**: three seconds after you stop editing,
 when you leave the window, and when you close it. Only the files that actually
 changed are rewritten, so moving one element rewrites one small file and
-nothing else. Every window asks before it closes over unsaved work.
+nothing else. Closing a window with unsaved work saves it first, in every
+window; the app asks only if that save did not work.
 
 **Bringing your browser's work along.** If this browser kept work before you
 chose a folder, choosing one asks **Bring your work into this folder?**:
@@ -322,9 +323,11 @@ desktop is the one that is made to choose.
 ### This browser
 
 A tab with no folder keeps your work in this browser, for this site. The chip
-on the bar says **In this browser**, and your work stays there across
-restarts until you or the browser clear the site's data. The first save asks
-the browser to keep it. Browser storage is small, so the app says once when
+on the organisation's home says **In this browser**, and your work stays there
+across restarts until you or the browser clear the site's data. After the
+first save, the app asks the browser to keep it through a clear-out; some
+browsers, Firefox among them, put that question to you. Browser storage is
+small, so the app says once when
 it is about four fifths full: a browser stops saving without asking. If
 another tab still has an older version of the app open, or the app was
 updated in another tab, a strip says what to close or reload before saving
@@ -337,9 +340,10 @@ places, a strip asks about that scope: **Bring the older copy over** (what is
 here goes into the history first) or **Keep what is here**.
 
 **A tab that keeps nothing.** A private window, or a browser that will not keep
-anything for this site, cannot hold your work. The app still works, and the
-chip says **Not kept anywhere**. The bar says so in the warning colour, and so
-do the line on the organisation's home and the history. Work an older version
+anything for this site, cannot hold your work. The app still works, and a strip
+says so on every screen. The chip on the
+organisation's home says **Not kept anywhere** in the warning colour, and so
+do the line under its name and the history. Work an older version
 kept in this browser is shown, and nothing you change is kept. Save a working
 file before you close the tab.
 
@@ -429,12 +433,14 @@ One open project: a bar at the top, the editor below it.
 | **Saved · hh:mm** | Where the project stands: the time it was last written, or **Unsaved changes**, **Saving…**, **Changed elsewhere**, **Changed here and elsewhere**, **Not saved — storage refused** |
 
 Everything is saved automatically as you work: three seconds after you stop, on
-leaving the window, and on closing it — and closing with unsaved work asks
-first. In a browser without a folder, the app says once when its storage is
+leaving the window, and on closing it. Closing with unsaved work saves it
+first: the desktop asks only if that save did not work, and a browser tab asks
+before it closes. In a browser without a folder, the app says once when its
+storage is
 about four fifths full. That is the only warning you get, because a browser
 stops saving without asking. If a save is refused, the bar says **Not saved —
-storage refused** and the editor keeps working. In a tab that keeps nothing,
-the bar says so from the start. In either case, save a working file, because
+storage refused** and the editor keeps working. In a tab that keeps nothing, a
+strip says so from the start. In either case, save a working file, because
 otherwise the work is gone when the tab closes.
 Every notice (saved, loaded, failed) appears in that bottom bar.
 

@@ -254,7 +254,8 @@ In one of three places, and the app always says which:
 ```
 
 Everything is written three seconds after you stop editing, when you leave the
-window and when you close it, and closing with unsaved work asks first. If the
+window and when you close it. Closing with unsaved work saves it first, and
+asks only if that did not work. If the
 work changes underneath you (a colleague, a sync client, another tab), the app
 says so. It never overwrites the other version without asking.
 

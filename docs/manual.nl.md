@@ -302,8 +302,9 @@ Folder**, elk onder de naam die hun organisatie zichzelf geeft.
 **Alles wordt geschreven zodra het verandert**: drie seconden nadat je stopt
 met bewerken, als je het venster verlaat, en als je het sluit. Alleen de
 bestanden die echt veranderden worden herschreven, dus één element verplaatsen
-herschrijft één klein bestand en verder niets. Elk venster vraagt eerst voor
-het sluit over wijzigingen die nog niet bewaard zijn.
+herschrijft één klein bestand en verder niets. Een venster sluiten met
+wijzigingen die nog niet bewaard zijn, bewaart ze eerst, in elk venster; de
+app vraagt alleen iets als dat bewaren niet lukte.
 
 **Je werk uit de browser meenemen.** Bewaarde deze browser al werk voordat je
 een map koos, dan vraagt het kiezen **Je werk meenemen naar deze map?**:
@@ -337,9 +338,11 @@ browser. De desktop is degene die moet kiezen.
 ### Deze browser
 
 Een tabblad zonder map bewaart je werk in deze browser, voor deze site. Het
-label in de balk zegt **In deze browser**, en je werk blijft daar na een
-herstart staan tot jij of de browser de gegevens van de site wist. De eerste
-keer bewaren vraagt de browser om het te houden. Browseropslag is klein, dus
+label op het thuis van de organisatie zegt **In deze browser**, en je werk
+blijft daar na een herstart staan tot jij of de browser de gegevens van de
+site wist. Na de eerste keer bewaren vraagt de app de browser om het ook bij
+een opruimbeurt te houden; sommige browsers, Firefox bijvoorbeeld, leggen die
+vraag aan jou voor. Browseropslag is klein, dus
 de app zegt één keer dat hij voor ongeveer viervijfde vol zit: een browser
 stopt zonder te vragen met bewaren. Heeft een ander tabblad nog een oudere
 versie van de app open, of is de app in een ander tabblad bijgewerkt, dan zegt
@@ -353,9 +356,10 @@ strook naar dat onderdeel: **De oudere kopie overnemen** (wat hier staat gaat
 eerst de geschiedenis in) of **Houden wat hier staat**.
 
 **Een tabblad dat niets bewaart.** Een privévenster, of een browser die voor
-deze site niets bewaart, kan je werk niet houden. De app werkt gewoon, en het
-label zegt **Nergens bewaard**. De balk zegt dat in de waarschuwingskleur, en
-de regel op het thuis van de organisatie en de geschiedenis zeggen het ook.
+deze site niets bewaart, kan je werk niet houden. De app werkt gewoon, en een
+strook zegt dat op elk scherm. Het label op het
+thuis van de organisatie zegt **Nergens bewaard** in de waarschuwingskleur, en
+de regel onder de naam en de geschiedenis zeggen het ook.
 Werk dat een oudere versie in deze browser bewaarde, wordt getoond, en niets
 wat je verandert wordt bewaard. Bewaar een werkbestand voordat je het tabblad
 sluit.
@@ -371,7 +375,7 @@ synchronisatiedienst, jijzelf op een andere machine of in een ander tabblad.
 De balk zegt dan **Elders gewijzigd**, of **Hier én elders gewijzigd** als er
 hier ook wijzigingen openstaan. Een strook boven de plaat vraagt welke versie
 blijft:
-- **Die van schijf** leest hun versie en zet die in beeld.
+- **Die van elders** leest hun versie en zet die in beeld.
 - **Die van mij** houdt wat op je scherm staat en schrijft het over het hunne,
   helemaal, ook waar een van jouw wijzigingen niet over de hunne te leggen
   was.
@@ -453,12 +457,15 @@ Eén open project: een balk bovenin, de editor eronder.
 | **Bewaard · uu:mm** | Hoe het project ervoor staat: het tijdstip van de laatste schrijfactie, of **Nog niet bewaarde wijzigingen**, **Bezig met bewaren…**, **Elders gewijzigd**, **Hier én elders gewijzigd**, **Niet bewaard — opslag weigert** |
 
 Alles wordt vanzelf bewaard terwijl je werkt: drie seconden nadat je stopt, als
-je het venster verlaat en als je het sluit — en sluiten met openstaande
-wijzigingen vraagt eerst. In een browser zonder map zegt de app één keer dat de
+je het venster verlaat en als je het sluit. Sluiten met openstaande
+wijzigingen bewaart ze eerst: de desktop vraagt alleen iets als dat niet
+lukte, en een browsertabblad vraagt voor het sluit. In een browser zonder map
+zegt de app één keer dat de
 opslag voor viervijfde vol zit. Dat is de enige waarschuwing die je krijgt,
 want een browser stopt zonder te vragen met bewaren. Wordt bewaren geweigerd,
 dan zegt de balk **Niet bewaard — opslag weigert** en werkt de editor gewoon
-door. In een tabblad dat niets bewaart zegt de balk dat vanaf het begin. Bewaar
+door. In een tabblad dat niets bewaart zegt een strook dat vanaf het begin.
+Bewaar
 in beide gevallen een werkbestand, want anders is het werk weg als het tabblad
 sluit. Elke melding (bewaard, geladen, mislukt) verschijnt in
 die balk onderin.

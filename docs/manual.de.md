@@ -324,8 +324,9 @@ dem Namen, den seine Organisation sich selbst gibt.
 aufgehört haben zu bearbeiten, wenn Sie das Fenster verlassen, und wenn Sie es
 schließen. Nur die Dateien, die sich tatsächlich geändert haben, werden neu
 geschrieben, sodass das Verschieben eines Elements eine kleine Datei neu
-schreibt und sonst nichts. Jedes Fenster fragt, bevor es über ungespeicherter
-Arbeit schließt.
+schreibt und sonst nichts. Ein Fenster mit ungespeicherter Arbeit zu schließen
+speichert sie zuerst, in jedem Fenster; die App fragt nur, wenn dieses
+Speichern nicht geklappt hat.
 
 **Die Arbeit aus dem Browser mitnehmen.** Hat dieser Browser schon Arbeit
 aufbewahrt, bevor Sie einen Ordner gewählt haben, fragt die Wahl **Ihre Arbeit
@@ -360,9 +361,11 @@ Wort in diesem Browser. Der Desktop ist derjenige, der wählen muss.
 ### Dieser Browser
 
 Ein Tab ohne Ordner bewahrt Ihre Arbeit in diesem Browser auf, für diese
-Website. Das Etikett in der Leiste sagt **In diesem Browser**, und Ihre Arbeit
-bleibt dort über Neustarts hinweg, bis Sie oder der Browser die Daten der
-Website löschen. Das erste Speichern bittet den Browser, sie zu behalten.
+Website. Das Etikett auf dem Zuhause der
+Organisation sagt **In diesem Browser**, und Ihre Arbeit bleibt dort über
+Neustarts hinweg, bis Sie oder der Browser die Daten der Website löschen. Nach
+dem ersten Speichern bittet die App den Browser, sie auch beim Aufräumen zu
+behalten; manche Browser, etwa Firefox, stellen Ihnen diese Frage.
 Browser-Speicher ist klein, deshalb sagt die App einmal, wenn er zu etwa vier
 Fünfteln voll ist: ein Browser hört ohne Nachfrage auf zu speichern. Hat ein
 anderer Tab noch eine ältere Version der App offen, oder wurde die App in
@@ -378,9 +381,10 @@ hier ist, geht zuerst in den Verlauf) oder **Behalten, was hier ist**.
 
 **Ein Tab, der nichts aufbewahrt.** Ein privates Fenster, oder ein Browser, der
 für diese Website nichts aufbewahrt, kann Ihre Arbeit nicht halten. Die App
-funktioniert trotzdem, und das Etikett sagt **Nirgends gespeichert**. Die
-Leiste sagt es in der Warnfarbe, und die Zeile auf dem Zuhause der
-Organisation und der Verlauf sagen es auch. Arbeit, die eine ältere Version in
+funktioniert trotzdem, und ein Streifen sagt es auf jedem Bildschirm. Das
+Etikett auf dem Zuhause der Organisation sagt **Nirgends gespeichert** in der
+Warnfarbe, und die Zeile unter dem Namen und der Verlauf sagen es auch. Arbeit,
+die eine ältere Version in
 diesem Browser aufbewahrt hat, wird angezeigt, und nichts, was Sie ändern,
 wird aufbewahrt. Speichern Sie eine Arbeitsdatei, bevor Sie den Tab schließen.
 
@@ -395,7 +399,7 @@ eines Kollegen, ein Sync-Client, Sie selbst auf einem anderen Rechner oder in
 einem anderen Tab. Die Leiste sagt dann **Anderswo geändert**, oder **Hier und
 anderswo geändert**, wenn Sie hier auch ungespeicherte Änderungen haben. Ein
 Streifen über der Zeichenfläche fragt, welche Version gilt:
-- **Die von der Festplatte** liest deren Version und zeigt sie an.
+- **Die von anderswo** liest deren Version und zeigt sie an.
 - **Meine behalten** behält, was auf Ihrem Bildschirm ist, und schreibt es über
   deren Version, ganz, auch wo eine Ihrer Änderungen sich nicht über deren
   legen ließ.
@@ -481,13 +485,15 @@ Ein offenes Projekt: eine Leiste oben, der Editor darunter.
 | **Gespeichert · hh:mm** | Wo das Projekt steht: die Uhrzeit, zu der es zuletzt geschrieben wurde, oder **Ungespeicherte Änderungen**, **Wird gespeichert…**, **Anderswo geändert**, **Hier und anderswo geändert**, **Nicht gespeichert — Speicher verweigert** |
 
 Alles wird automatisch gespeichert, während Sie arbeiten: drei Sekunden nachdem
-Sie aufhören, beim Verlassen des Fensters und beim Schließen — und Schließen mit
-ungespeicherter Arbeit fragt zuerst. In einem Browser ohne Ordner sagt die App
+Sie aufhören, beim Verlassen des Fensters und beim Schließen. Schließen mit
+ungespeicherter Arbeit speichert sie zuerst: der Desktop fragt nur, wenn das
+nicht geklappt hat, und ein Browser-Tab fragt, bevor er schließt. In einem
+Browser ohne Ordner sagt die App
 einmal, wenn ihr Speicher zu etwa vier Fünfteln voll ist. Das ist die einzige
 Warnung, die Sie bekommen, weil ein Browser ohne Nachfrage aufhört zu speichern.
 Wird ein Speichern verweigert, sagt die Leiste **Nicht gespeichert — Speicher
 verweigert**, und der Editor arbeitet weiter. In einem Tab, der nichts
-aufbewahrt, sagt die Leiste es von Anfang an. Speichern Sie in beiden Fällen
+aufbewahrt, sagt ein Streifen es von Anfang an. Speichern Sie in beiden Fällen
 eine Arbeitsdatei, denn sonst ist die Arbeit weg, wenn der Tab geschlossen
 wird.
 Jede Meldung (gespeichert, geladen, fehlgeschlagen) erscheint in dieser unteren

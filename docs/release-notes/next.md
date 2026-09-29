@@ -71,8 +71,9 @@ told and nothing changes, and the page is never reloaded over unsaved work.
 - A File-menu command sent while the desktop window was still starting (a
   recent folder, a document opened from Finder) was dropped. It is now held
   until the window is ready.
-- Every desktop window now asks before it closes over unsaved work, not only
-  the first one. A document opened from Finder with every window closed gets
+- Every desktop window now saves before it closes over unsaved work, and asks
+  only if that save did not work. This used to hold for the first window only. A
+  document opened from Finder with every window closed gets
   a window.
 - Copying an example never takes over an organisation that holds work, such
   as an application or a decision with no board and no name. The example is
