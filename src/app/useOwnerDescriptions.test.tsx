@@ -12,7 +12,7 @@ import type { DesignElement } from '../model'
 import type { ScopeSnapshot } from '../projects/scope'
 import { indexScopes } from '../projects/scopeIndex'
 import { heldRepositories } from './testing/heldRepositories'
-import { useOwnerDescriptions } from './useOwnerDescriptions'
+import { describedIn, useOwnerDescriptions } from './useOwnerDescriptions'
 
 afterEach(() => cleanup())
 
@@ -64,5 +64,31 @@ describe('useOwnerDescriptions', () => {
     function Host() { held = useOwnerDescriptions({ scope: '', index }); return null }
     render(<Host />)
     expect(held.size).toBe(0)
+  })
+})
+
+describe('describedIn', () => {
+  it('answers for the ids asked about and nothing else the owner holds', () => {
+    const owner = [
+      element('erp', { description: 'the ERP' }),
+      element('crm', { description: 'not asked for' }),
+      element('pos'),
+      element('wms', { description: 'Stock and docks' }),
+    ]
+    expect(describedIn(owner, ['wms', 'erp', 'pos', 'gone'])).toEqual([['erp', 'the ERP'], ['wms', 'Stock and docks']])
+    expect(describedIn(owner, [])).toEqual([])
+  })
+
+  it('stops reading once every id asked about is found', () => {
+    let read = 0
+    const owner = Array.from({ length: 1000 }, (_, n) => element(`e${n}`, { description: `${n}` }))
+    const counted = new Proxy(owner, {
+      get: (target, key, receiver) => {
+        if (typeof key === 'string' && /^\d+$/.test(key)) read += 1
+        return Reflect.get(target, key, receiver) as unknown
+      },
+    })
+    expect(describedIn(counted, ['e2', 'e0'])).toEqual([['e0', '0'], ['e2', '2']])
+    expect(read).toBe(3)
   })
 })

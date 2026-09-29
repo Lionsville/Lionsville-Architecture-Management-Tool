@@ -21,7 +21,7 @@
  * than going blank.
  */
 import { useEffect, useState } from 'react'
-import type { ElementId } from '../model'
+import type { DesignElement, ElementId } from '../model'
 import { readScopes } from '../projects/scopeAccess'
 import type { ScopeReader } from '../projects/scopeAccess'
 import type { ScopeIndex } from '../projects/scopeIndex'
@@ -44,22 +44,36 @@ export function useOwnerDescriptions(deps: {
       wanted.set(entry.master, [...(wanted.get(entry.master) ?? []), entry.id])
     }
     let stale = false
-    const read = async (path: ScopePath): Promise<Record<string, string> | undefined> => {
+    const read = async (path: ScopePath, ids: readonly ElementId[]): Promise<(readonly [ElementId, string])[]> => {
       const [held] = await readScopes(scopes, [path]).catch(() => [undefined])
-      if (!held) return undefined
-      return Object.fromEntries(held.model.elements.flatMap((element) => (
-        element.description !== undefined ? [[element.id, element.description]] : []
-      )))
+      return held ? describedIn(held.model.elements, ids) : []
     }
-    void Promise.all([...wanted].map(async ([path, ids]) => {
-      const held = await read(path)
-      if (!held) return []
-      return ids.flatMap((id) => (held[id] !== undefined ? [[id, held[id]] as const] : []))
-    })).then((pairs) => {
+    void Promise.all([...wanted].map(([path, ids]) => read(path, ids))).then((pairs) => {
       if (!stale) setFound(new Map(pairs.flat()))
     })
     return () => { stale = true }
   }, [scope, index, scopes])
 
+  return found
+}
+
+/**
+ * The descriptions of `ids` among an owner's elements, and of nothing else.
+ *
+ * An owner is often a landscape of thousands, and a scope draws a handful of
+ * them: one pass that stops once every id is found, keeping only those, rather
+ * than a table of every description the owner holds to look a dozen up in.
+ */
+export function describedIn(
+  elements: readonly DesignElement[], ids: readonly ElementId[],
+): (readonly [ElementId, string])[] {
+  const wanted = new Set(ids)
+  const found: (readonly [ElementId, string])[] = []
+  if (wanted.size === 0) return found
+  for (const element of elements) {
+    if (!wanted.delete(element.id)) continue
+    if (element.description !== undefined) found.push([element.id, element.description])
+    if (wanted.size === 0) break
+  }
   return found
 }
