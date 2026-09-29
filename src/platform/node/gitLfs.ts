@@ -26,8 +26,11 @@ import { GitRefused, personDefinesFilter, refuseAddressInside } from './gitGuard
 /** A git in a folder, as `git.ts` runs one: guarded, and answering what it wrote. */
 export type GitIn = (root: string, args: readonly string[], timeout?: number) => Promise<string>
 
-/** What in `.lfsconfig` would say where large files go, or how git-lfs asks to be let in. */
-const LFSCONFIG_ADDRESS = /^(lfs\.(.+\.)?(url|pushurl|access)|remote\..+\.(lfsurl|lfspushurl))$/i
+/**
+ * What in `.lfsconfig` would say where large files go, how git-lfs asks to
+ * be let in, or which protocol an address it works out is reached by.
+ */
+const LFSCONFIG_ADDRESS = /^(lfs\.(.+\.)?(url|pushurl|access)|lfs\.gitprotocol|remote\..+\.(lfsurl|lfspushurl))$/i
 
 /** Push the folder's large files with the person's own git-lfs, where it keeps any; refused where that cannot be done safely. */
 export async function largeFilesFirst(root: string, target: SyncRemote, git: GitIn, timeout?: number): Promise<void> {
@@ -40,8 +43,12 @@ export async function largeFilesFirst(root: string, target: SyncRemote, git: Git
     throw new GitRefused(`its .lfsconfig says where large files go or how to be let in (${named.join(', ')}); remove that from .lfsconfig, or push with git yourself`)
   }
   const endpoint = endpointOf(await git(root, ['lfs', 'env']), target.name)
-  if (endpoint !== undefined) await refuseAddressInside(root, endpoint, 'the address git-lfs pushes large files to')
-  await git(root, ['lfs', 'push', target.name, 'HEAD'], timeout)
+  if (endpoint === undefined) throw new GitRefused('git-lfs did not say where it would push large files, so they were not pushed')
+  await refuseAddressInside(root, endpoint, 'the address git-lfs pushes large files to')
+  // The address checked is the address pushed to: git's own configuration
+  // comes before `.lfsconfig`, which a page could rewrite in between.
+  const pinned = ['lfspushurl', 'lfsurl'].flatMap((key) => ['-c', `remote.${target.name}.${key}=${endpoint}`])
+  await git(root, [...pinned, 'lfs', 'push', target.name, 'HEAD'], timeout)
 }
 
 /**

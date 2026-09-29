@@ -509,15 +509,21 @@ repositories, in `src/adapters/folder/`:
   is git-lfs's to say, and git-lfs also reads `.lfsconfig`, a file in the work
   tree that a page can write and git's configuration never shows: so the
   push is refused where `.lfsconfig` — in the work tree, the index or the last
-  commit — names an address, a push address or an access mode, and the
-  endpoint git-lfs says it will push to (`git lfs env`) is held to the rule a
-  remote's address is. A folder's own `lfs.url` and `remote.<name>.lfsUrl`
+  commit — names an address, a push address, an access mode or the protocol
+  a worked-out address is reached by (`lfs.gitProtocol`), and the endpoint
+  git-lfs says it will push to (`git lfs env`) is held to the rule a remote's
+  address is, and pinned on the push itself, since git's own configuration
+  comes before a `.lfsconfig` a page could rewrite in between. A folder's own `lfs.url` and `remote.<name>.lfsUrl`
   are trusted as its remote's address is, and refused likewise; how git-lfs
   asks to be let in (`lfs.<url>.access`) is the person's. The attributes the
   person keeps (`core.attributesFile`) count as well as the folder's.
 
-  **An address over ssh to this machine** — `localhost`, a loopback address,
-  the machine's own name — is the path it names, and held to the same rule.
+  **An address over ssh to this machine** is the path it names, and held to
+  the same rule: its host as the ssh git runs resolves it (an alias in the
+  person's ssh configuration included), then as the name service does,
+  compared with every address this machine answers on — its interfaces, the
+  loopback range and the any-address — and `/~user/` read from that user's
+  home.
 
   So a person who signs keeps signing with their own signer and key, their
   credential helpers and a filter they define — git-lfs as it installs

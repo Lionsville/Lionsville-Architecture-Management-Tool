@@ -31,7 +31,8 @@ The app pulls from and pushes to only a remote named in the folder's
 configuration. A remote that is a folder inside the working folder is refused,
 however it is reached: named as a remote, given as a branch's remote or push
 remote, arrived at through an address rewrite, reached over ssh to this machine
-(`localhost`, a loopback address or the machine's own name), or named the old
+(by any of its names or addresses, an alias in your ssh configuration
+included), or named the old
 way in `.git/remotes` or `.git/branches`. A remote elsewhere on your machine,
 such as a shared drive, works, and its own hooks run as git runs them.
 
@@ -42,7 +43,8 @@ configuration sets git-lfs up (`git lfs install`), the app now runs
 `git lfs push` before each push, to the address your git-lfs names for the
 remote. Where it does not, the push is refused with a sentence saying large
 files would not be uploaded. A push is also refused where the folder's
-`.lfsconfig` says where large files go or how to sign in, or where they would
+`.lfsconfig` says where large files go, how to sign in or by which protocol,
+or where they would
 go to a repository inside the working folder. Git-lfs set up for one
 folder only (`git lfs install --local`) is refused, naming the filter, rather
 than committing large files whole; `git lfs install` sets it up for you and it

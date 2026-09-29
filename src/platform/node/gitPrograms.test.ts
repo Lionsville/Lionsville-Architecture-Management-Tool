@@ -38,6 +38,7 @@ beforeEach(async () => {
   // The person's own configuration, and nothing of the machine's that could ask anything.
   for (const name of [
     'GIT_CONFIG_GLOBAL', 'GIT_CONFIG_NOSYSTEM', 'GIT_ASKPASS', 'SSH_ASKPASS', 'GIT_CONFIG_PARAMETERS', 'GIT_CONFIG', 'PATH',
+    'GIT_SSH_COMMAND',
     'https_proxy', 'HTTPS_PROXY', 'http_proxy', 'HTTP_PROXY', 'all_proxy', 'ALL_PROXY', 'no_proxy', 'NO_PROXY',
   ]) kept[name] = process.env[name]
   process.env.GIT_CONFIG_GLOBAL = join(place, 'own.gitconfig')
@@ -888,6 +889,34 @@ describe.skipIf(!available)('the remote a push goes to, and what goes with it', 
       expect(await ran('lfs-push')).toBe(false)
     })
 
+    it('are pushed to the address checked, whatever .lfsconfig says by the time they are', async () => {
+      const bin = join(place, 'bin')
+      await mkdir(bin, { recursive: true })
+      const checked = 'https://example.com/landscape.git/info/lfs'
+      await writeFile(join(bin, 'git-lfs'), [
+        '#!/bin/sh',
+        'case "$1" in',
+        '  clean|smudge) cat ;;',
+        // Answers the address, then rewrites .lfsconfig before the push, as a page could.
+        `  env) echo "Endpoint=${checked} (auth=none)"; printf '[lfs]\\n\\tpushurl = https://evil.example/lfs\\n' > .lfsconfig ;;`,
+        `  push) git config --get remote.origin.lfspushurl > "${join(place, 'lfs-push.ran')}" ;;`,
+        'esac',
+      ].join('\n'), { mode: 0o755 })
+      process.env.PATH = `${bin}:${process.env.PATH ?? ''}`
+      await withLargeFile()
+      expect(await push(root)).toBe('done')
+      expect((await readFile(join(place, 'lfs-push.ran'), 'utf8')).trim()).toBe(checked)
+      expect(await readFile(join(root, '.lfsconfig'), 'utf8')).toContain('evil.example')
+    })
+
+    it('are refused where .lfsconfig says which protocol a worked-out address is reached by', async () => {
+      await standInLfs()
+      await withLargeFile()
+      await put('.lfsconfig', '[lfs]\n\tgitprotocol = http\n')
+      expect(await push(root)).toMatchObject({ refused: expect.stringMatching(/lfs\.gitprotocol/) })
+      expect(await ran('lfs-push')).toBe(false)
+    })
+
     it('are pushed where only the person’s own attributes hand them to git-lfs', async () => {
       await standInLfs()
       const attributes = join(place, 'own-attributes')
@@ -960,7 +989,8 @@ describe.skipIf(!available)('what else names a remote, and what counts as this m
     const inner = join(root, 'inner.git')
     for (const address of [
       `ssh://localhost${inner}`, `ssh://acme@127.0.0.1:22${inner}`, `ssh://[::1]${inner}`, `localhost:${inner}`,
-      `${hostname()}:${inner}`, `git+ssh://${hostname().split('.')[0]}${inner}`,
+      `${hostname()}:${inner}`, `git+ssh://${hostname().split('.')[0]}${inner}`, `ssh://0.0.0.0${inner}`,
+      `ssh://localhost.${inner}`,
     ]) {
       await rm(root, { recursive: true, force: true })
       await mkdir(root)
@@ -968,6 +998,15 @@ describe.skipIf(!available)('what else names a remote, and what counts as this m
       await raw(['remote', 'add', 'origin', address])
       await expect(git(root, ['remote']), address).rejects.toThrow(/inside the folder/)
     }
+  })
+
+  it('counts a host the person’s ssh configuration names for this machine as this machine', async () => {
+    const config = join(place, 'ssh-config')
+    await writeFile(config, 'Host acme-alias\n  HostName 127.0.0.1\n')
+    process.env.GIT_SSH_COMMAND = `ssh -F ${config}`
+    await raw(['init', '-q', '-b', 'main'])
+    await raw(['remote', 'add', 'origin', `acme-alias:${join(root, 'inner.git')}`])
+    await expect(git(root, ['remote'])).rejects.toThrow(/inside the folder/)
   })
 
   it('does not count a repository on another machine as one inside the folder', async () => {

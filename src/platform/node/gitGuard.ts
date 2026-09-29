@@ -45,9 +45,10 @@ import { execFile } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import type { BigIntStats } from 'node:fs'
 import { mkdir, mkdtemp, readdir, readFile, realpath, stat } from 'node:fs/promises'
-import { homedir, hostname, tmpdir } from 'node:os'
+import { homedir, tmpdir } from 'node:os'
 import { isAbsolute, join, relative, resolve } from 'node:path'
 import { promisify } from 'node:util'
+import { localPathOf } from './thisMachine'
 
 const run = promisify(execFile)
 
@@ -514,41 +515,6 @@ export function commandOf(args: readonly string[]): string {
 /** The commands that talk to a remote. */
 const REMOTE_COMMANDS = new Set(['fetch', 'pull', 'push', 'ls-remote', 'clone', 'remote', 'lfs'])
 
-/**
- * The path a remote's address names on this machine, or nothing for one that
- * is a host: a `file://` address, or one that is neither a URL nor
- * `host:path`, as git reads them.
- */
-function localPathOf(root: string, address: string): string | undefined {
-  const url = /^([a-z][a-z0-9+.-]*):\/\/([^/]*)(\/.*)?$/i.exec(address)
-  if (url) {
-    const scheme = url[1].toLowerCase()
-    if (scheme === 'file') return decodeURIComponent(address.slice('file://'.length).replace(/^localhost\//, '/'))
-    if (!SSH_SCHEMES.has(scheme) || !isThisMachine(url[2].replace(/^[^@]*@/, '').replace(/:\d+$/, ''))) return undefined
-    return fromHome(decodeURIComponent(url[3] ?? '/'))
-  }
-  if (/^[a-z]:[\\/]/i.test(address)) return address
-  // `host:path`, as ssh reads it: a path on this machine where the host is this machine.
-  const scp = /^(?:[^@/]*@)?(\[[^\]]+\]|[^:/\\]+):(.*)$/.exec(address)
-  if (scp) return isThisMachine(scp[1]) ? fromHome(scp[2].startsWith('/') ? scp[2] : `/~/${scp[2]}`) : undefined
-  return resolve(root, address)
-}
-
-/** The schemes git reaches a repository over ssh by. */
-const SSH_SCHEMES = new Set(['ssh', 'git+ssh', 'ssh+git'])
-
-/** Is this host this machine: its loopback addresses, `localhost`, or its own name? */
-function isThisMachine(host: string): boolean {
-  const name = host.toLowerCase().replace(/^\[(.*)\]$/, '$1')
-  const own = hostname().toLowerCase()
-  return ['localhost', '::1', own, own.split('.')[0]].includes(name) || /^127\./.test(name)
-}
-
-/** A path as ssh reads it on this machine: `/~/…` from the home folder. */
-function fromHome(path: string): string {
-  return path.startsWith('/~/') ? join(homedir(), path.slice(3)) : path
-}
-
 /** The real path of something that may not be there, as far as it is. */
 async function realOf(path: string): Promise<string> {
   let tail = ''
@@ -729,7 +695,7 @@ async function refuseAddressGiven(root: string, args: readonly string[], entries
 
 /** An address that is a path inside this folder is refused, as a remote's is. */
 export async function refuseAddressInside(root: string, address: string, what: string): Promise<void> {
-  const path = localPathOf(root, address)
+  const path = await localPathOf(root, address)
   if (path !== undefined && await inside(root, path)) {
     throw new GitRefused(`its remote is a repository inside the folder itself (${what})`)
   }
