@@ -24,6 +24,7 @@ import type {
 } from '../../ports/HistoryRepository'
 import { keyOf, prefix } from './KeyedStore'
 import type { Transaction } from './KeyedStore'
+import { stateAtEntry } from './entryStates'
 import { allScopes, closeEntry, entryKey, META_KEY, readMeta } from './kept'
 import type { KeptEntry } from './kept'
 import type { Source } from './source'
@@ -82,7 +83,7 @@ export class KeptHistory implements HistoryRepository {
   stateAt(scope: ScopeId, entry: EntryId): Promise<ScopeState | undefined> {
     const seq = seqOf(entry)
     if (seq === undefined) return Promise.resolve(undefined)
-    return this.source.read((tx) => tx.get<ScopeState>('entryStates', entryKey(scope, seq)))
+    return this.source.read((tx) => stateAtEntry(tx, scope, seq))
   }
 
   label(scope: ScopeId, entry: EntryId, name: string): Promise<EntryLabelled> {

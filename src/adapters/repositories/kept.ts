@@ -21,8 +21,11 @@ import { emptyContent } from '../../projects/scopeState'
 import type {
   Revision, ScopeAddress, ScopeContent, ScopeDescription, ScopeId, ScopeState,
 } from '../../projects/scopeState'
+import { entryKey, keepEntryState, sequenceKey } from './entryStates'
 import { keyOf, prefix } from './KeyedStore'
 import type { Transaction } from './KeyedStore'
+
+export { entryKey, sequenceKey }
 
 /** What the tree says of a scope, kept so the tree is read without reading a model. */
 export type NodeSays = {
@@ -71,11 +74,6 @@ export const META_KEY = 'source'
 export function mintId(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(16))
   return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
-}
-
-/** A number as a key part that sorts as the number does. */
-export function sequenceKey(seq: number): string {
-  return String(seq).padStart(15, '0')
 }
 
 export async function readMeta(tx: Transaction): Promise<Meta> {
@@ -248,14 +246,10 @@ export type KeptEntry = {
   records: readonly RecordKey[]
 }
 
-export function entryKey(scope: ScopeId, seq: number): string {
-  return keyOf(scope, sequenceKey(seq))
-}
-
 /**
  * Close a scope's open entry: the entry, numbered next in the source, and the
- * scope's state as it stands. The scope must have one open; the caller writes
- * `meta` back.
+ * scope's state as it stands (`entryStates.ts`). The scope must have one
+ * open; the caller writes `meta` back.
  */
 export async function closeEntry(
   tx: Transaction, meta: Meta, kept: KeptScope, by: string, subject?: string,
@@ -268,7 +262,7 @@ export async function closeEntry(
     ...(subject !== undefined ? { subject } : {}), labels: [], records: pending.records,
   }
   tx.put('entries', entryKey(kept.id, entry.seq), entry)
-  tx.put('entryStates', entryKey(kept.id, entry.seq), await readState(tx, kept))
+  await keepEntryState(tx, kept.id, entry.seq, await readState(tx, kept))
   tx.put('scopes', kept.id, closed satisfies KeptScope)
   return entry
 }
