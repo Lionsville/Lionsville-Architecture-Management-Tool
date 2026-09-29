@@ -32,7 +32,7 @@ import {
   resolve, snapshot,
 } from '../../src/platform/node/git'
 import {
-  allTags, changes, commitLog, commitPaths, readAt, startHistory, tagCommit, treeAt,
+  allTags, changes, commitLog, commitPaths, isScopeTagName, readAt, startHistory, tagCommit, treeAt,
 } from '../../src/platform/node/gitEntries'
 import { log } from './log'
 import { watchFolder } from './watch'
@@ -367,7 +367,10 @@ export function registerFileChannel(options: { onRecentsChanged?: () => void } =
   ipcMain.handle('git:tags', (_event, root: unknown) => (isGranted(root) ? allTags(root) : []))
 
   ipcMain.handle('git:tag', (_event, root: unknown, sha: unknown, name: unknown, message: unknown) => {
-    if (!isGranted(root) || typeof sha !== 'string' || typeof name !== 'string' || typeof message !== 'string') {
+    // A scope's label and nothing else: `<space>/<slug>`, which no option and
+    // no name of a person's can be.
+    if (!isGranted(root) || typeof sha !== 'string' || typeof name !== 'string' || !isScopeTagName(name)
+      || typeof message !== 'string') {
       throw new Error('shell.pathRefused')
     }
     return tagCommit(root, sha, name, message)

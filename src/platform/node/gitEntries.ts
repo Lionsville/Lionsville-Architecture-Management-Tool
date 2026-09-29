@@ -192,9 +192,18 @@ export async function allTags(root: string): Promise<GitTag[]> {
   })
 }
 
-/** An annotated tag on a commit, never over one that is there, and never one git would refuse the name of. */
+/**
+ * The only tag name this history makes: a scope's label space and a label's
+ * slug, `<space>/<slug>`. Nothing else is a name it tags with — not an option
+ * (`--force` is a name git's own check lets through), not a name of a person's.
+ */
+export function isScopeTagName(name: string): boolean {
+  return /^[A-Za-z0-9][A-Za-z0-9_-]*\/[a-z0-9]+(-[a-z0-9]+)*$/.test(name)
+}
+
+/** An annotated tag on a commit, never over one that is there, and only by a name {@link isScopeTagName} allows. */
 export async function tagCommit(root: string, sha: string, name: string, message: string): Promise<'done' | 'exists'> {
-  if (!isSha(sha) || !await isRepository(root)) throw new Error('shell.pathRefused')
+  if (!isSha(sha) || !isScopeTagName(name) || !await isRepository(root)) throw new Error('shell.pathRefused')
   await git(root, ['check-ref-format', `refs/tags/${name}`])
   try {
     await git(root, ['rev-parse', '--verify', '--quiet', `refs/tags/${name}`])
@@ -202,7 +211,8 @@ export async function tagCommit(root: string, sha: string, name: string, message
   } catch {
     // No such tag, which is the ordinary case.
   }
-  await git(root, [...await identityArgs(root), 'tag', '-a', name, '-m', message, sha])
+  // After `--`, the name is a name whatever it says.
+  await git(root, [...await identityArgs(root), 'tag', '-a', '-m', message, '--', name, sha])
   return 'done'
 }
 

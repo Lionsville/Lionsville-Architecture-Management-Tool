@@ -11,7 +11,7 @@ import { mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { gitAvailable, isRepository } from './git'
-import { allTags, changes, commitLog, commitPaths, readAt, startHistory, tagCommit, treeAt } from './gitEntries'
+import { allTags, changes, commitLog, commitPaths, isScopeTagName, readAt, startHistory, tagCommit, treeAt } from './gitEntries'
 
 const available = await gitAvailable()
 
@@ -100,5 +100,17 @@ describe.skipIf(!available)('the history a folder’s repositories read', () => 
     expect(await tagCommit(root, sha!, 's-1/board', 'Again')).toBe('exists')
     await expect(tagCommit(root, sha!, 'bad..name', 'No')).rejects.toThrow()
     expect(await allTags(root)).toEqual([{ name: 's-1/board', sha, message: 'Shown to the board' }])
+  })
+
+  it('tags by a scope’s label name and nothing else: never an option, never a name of a person’s', async () => {
+    await startHistory(root)
+    await put('model.json', '{}')
+    const sha = await commitPaths(root, ['model.json'], 'one')
+    for (const name of ['--force', '-f', 'refs/tags/x', 'release', 'a/B', 's-1/--force', '/x', 's-1/x/y']) {
+      expect(isScopeTagName(name), name).toBe(false)
+      await expect(tagCommit(root, sha!, name, 'No'), name).rejects.toThrow('shell.pathRefused')
+    }
+    expect(isScopeTagName('3f2a-9c/shown-to-the-board')).toBe(true)
+    expect(await allTags(root)).toEqual([])
   })
 })
