@@ -102,3 +102,36 @@ describe('what a browser folder’s history is kept of', () => {
     expect((await git.changes()).map((change) => change.path)).toEqual(['.gitignore', 'tools/node_modules/kept/index.js'])
   })
 })
+
+describe('two tabs recording one folder’s history', () => {
+  it('lands both commits, one after the other, when both start from the same one', async () => {
+    const { root, store, git } = history()
+    const other = browserFolderGit(new BrowserFolder(store, { folder: 'acme' }, (kept, mine) =>
+      Promise.resolve((kept as { folder: string }).folder === (mine as { folder: string }).folder)), root)
+    await writeAt(root, 'acme/model.json', '{}')
+    const first = await git.commit(['acme/model.json'], 'start')
+    await writeAt(root, 'acme/model.json', '{"at":1}')
+    await writeAt(root, 'globex/model.json', '{}')
+    const both = await Promise.all([git.commit(['acme/model.json'], 'one'), other.commit(['globex/model.json'], 'two')])
+    const log = await git.log({ limit: 5 })
+    expect(log).toHaveLength(3)
+    expect(new Set(log.slice(0, 2).map((commit) => commit.sha))).toEqual(new Set(both))
+    expect(log.map((commit) => commit.parents)).toEqual([[log[1].sha], [first], []])
+    expect(await other.head()).toBe(log[0].sha)
+    expect((await git.treeAt(log[0].sha, '')).map((entry) => entry.path)).toEqual(['acme/model.json', 'globex/model.json'])
+  })
+
+  it('gives up, writing nothing, where the head moves on every time it is written', async () => {
+    const { root, store, folder, git } = history()
+    await writeAt(root, 'acme/model.json', '{}')
+    const head = await folder.keyOf('ref', 'HEAD')
+    const write = store.transaction.bind(store)
+    store.transaction = (async (shelves, mode, work) => {
+      if (mode === 'write') await write(['folderData'], 'write', (tx) => Promise.resolve(tx.put('folderData', head, crypto.randomUUID())))
+      return write(shelves, mode, work)
+    }) as typeof store.transaction
+    await expect(git.commit(['acme/model.json'], 'never')).rejects.toThrow('shell.historyFailed')
+    store.transaction = write
+    expect([await kept(store, 'commit'), await kept(store, 'seq'), await kept(store, 'object')]).toEqual([0, 0, 0])
+  })
+})

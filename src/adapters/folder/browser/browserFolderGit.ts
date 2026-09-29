@@ -22,6 +22,7 @@
  *
  * One line of history: a browser's folder has no branch and no merge.
  */
+import { ShellError } from '../../../platform/errors'
 import { isBinaryPath } from '../../../projects/folderFormat'
 import { LOCAL_SETTINGS_PATH } from '../../../projects/folderSettings'
 import type { DirectoryHandleLike } from '../DirectoryHandle'
@@ -41,6 +42,9 @@ type CommitRow = { seq: number; tree: Record<string, TreeRow> }
 
 /** Who a commit is by, where a browser knows nobody. */
 const AUTHOR = 'this browser'
+
+/** How many times a commit is planned again on a head another tab moved on, before it is given up. */
+const ATTEMPTS = 5
 
 /** How many commits are read at a time while a log fills. */
 const CHUNK = 200
@@ -140,6 +144,36 @@ export function browserFolderGit(folder: BrowserFolder, root: DirectoryHandleLik
     return Object.fromEntries(ids.flatMap((id, at) => (held[at] ? [[id, new TextDecoder().decode(held[at])]] : [])))
   }
 
+  /**
+   * One try at a commit, planned on the head as it was read: `moved` where,
+   * by the time it is written, another tab has moved the head on, and then
+   * nothing is written — two tabs recording at once never both write the
+   * commit after the same one.
+   */
+  const commitOnce = async (paths: readonly string[], message: string): Promise<string | undefined | 'moved'> => {
+    const was = await headTree()
+    const now = await working([...Object.keys(was.tree), ...paths])
+    const { tree, objects, changed, blobs } = await planned(was.tree, now, paths)
+    if (changed.length === 0) return undefined
+    const seq = was.seq + 1
+    const at = Date.now()
+    const parents = was.sha ? [was.sha] : []
+    const sha = await sha256(new TextEncoder().encode(JSON.stringify({ parents, seq, at, message, blobs })))
+    const keys = {
+      commit: await folder.keyOf('commit', sha), seq: await folder.keyOf('seq', seqName(seq)), head: await folder.keyOf('ref', 'HEAD'),
+      objects: await Promise.all([...objects.keys()].map((blob) => folder.keyOf('object', blob))),
+    }
+    const row: LogRow = { sha, parents, seq, at, author: AUTHOR, message, changed, blobs }
+    return store.transaction(['folderData'], 'write', async (tx) => {
+      if (await tx.get<string>('folderData', keys.head) !== was.sha) return 'moved'
+      ;[...objects.values()].forEach((bytes, index) => tx.put('folderData', keys.objects[index], bytes))
+      tx.put('folderData', keys.commit, { seq, tree } satisfies CommitRow)
+      tx.put('folderData', keys.seq, row)
+      tx.put('folderData', keys.head, sha)
+      return sha
+    })
+  }
+
   return {
     keeping: async () => (await head()) !== undefined,
     start: () => Promise.resolve(),
@@ -155,27 +189,12 @@ export function browserFolderGit(folder: BrowserFolder, root: DirectoryHandleLik
     },
 
     async commit(paths, message): Promise<string | undefined> {
-      const was = await headTree()
-      const now = await working([...Object.keys(was.tree), ...paths])
-      const { tree, objects, changed, blobs } = await planned(was.tree, now, paths)
-      if (changed.length === 0) return undefined
-      const seq = was.seq + 1
-      const at = Date.now()
-      const parents = was.sha ? [was.sha] : []
-      const sha = await sha256(new TextEncoder().encode(JSON.stringify({ parents, seq, at, message, blobs })))
-      const keys = {
-        commit: await folder.keyOf('commit', sha), seq: await folder.keyOf('seq', seqName(seq)), head: await folder.keyOf('ref', 'HEAD'),
-        objects: await Promise.all([...objects.keys()].map((blob) => folder.keyOf('object', blob))),
+      for (let attempt = 1; ; attempt += 1) {
+        const landed = await commitOnce(paths, message)
+        if (landed !== 'moved') return landed
+        // Another tab recorded first: plan again on what it recorded.
+        if (attempt === ATTEMPTS) throw new ShellError('shell.historyFailed')
       }
-      const row: LogRow = { sha, parents, seq, at, author: AUTHOR, message, changed, blobs }
-      await store.transaction(['folderData'], 'write', (tx) => {
-        ;[...objects.values()].forEach((bytes, index) => tx.put('folderData', keys.objects[index], bytes))
-        tx.put('folderData', keys.commit, { seq, tree } satisfies CommitRow)
-        tx.put('folderData', keys.seq, row)
-        tx.put('folderData', keys.head, sha)
-        return Promise.resolve()
-      })
-      return sha
     },
 
     head,
