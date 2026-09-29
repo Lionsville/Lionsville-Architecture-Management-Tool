@@ -39,8 +39,8 @@
 import { imageMediaType, isImageFile } from '../../model/documentImage'
 import { imageEntryRefusal, imageName, imageNameKey } from '../../model/imageName'
 import type { ImageEntry, ImageName } from '../../model/imageName'
-import { imageNameOfFile, PICTURES } from './imageLibrary'
-import type { PictureFiles } from './imageLibrary'
+import { imageNameOfFile, PICTURES } from './format/imageLibrary'
+import type { PictureFiles } from './format/imageLibrary'
 
 /** A picture in a library, and the file inside the pictures folder it is kept as. */
 export type KeptPicture = { entry: ImageEntry; file: string }

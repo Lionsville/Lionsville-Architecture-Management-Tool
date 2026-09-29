@@ -2,8 +2,8 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { describe, expect, it } from 'vitest'
-import type { HostModel } from '../../model/hostModel'
-import { imageNameRefusal } from '../../model/imageName'
+import type { HostModel } from '../../../model/hostModel'
+import { imageNameRefusal } from '../../../model/imageName'
 import {
   filesInDocuments, imageNameOfFile, namesInDocuments, pictureFileOf,
 } from './imageLibrary'

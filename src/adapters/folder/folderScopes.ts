@@ -43,7 +43,7 @@ import type { Described, KeptPicture, PictureFile, PictureStamp, StampCache } fr
 import { bytesAt, fileAt, filesUnder, folderAt, textAt } from './handles'
 import type { FileHandleLike } from './DirectoryHandle'
 import { imageEntryOf } from '../../model/imageEntry'
-import { namesInDocuments, PICTURES } from './imageLibrary'
+import { namesInDocuments, PICTURES } from './format/imageLibrary'
 import { SCOPE_FILE } from './format/folderFormat'
 
 /** The key `scope.json` keeps a scope's identity under. */

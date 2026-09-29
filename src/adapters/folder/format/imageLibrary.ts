@@ -20,10 +20,10 @@
  * Pure, so browser storage — which keeps the same references in what people
  * already have — reads them with the same rule.
  */
-import type { HostModel } from '../../model/hostModel'
-import { IMAGE_REFERENCE, imageName, imageNameKey, imageNameOfReference } from '../../model/imageName'
-import type { ImageName } from '../../model/imageName'
-import { adrPath } from './format/adrFile'
+import type { HostModel } from '../../../model/hostModel'
+import { IMAGE_REFERENCE, imageName, imageNameKey, imageNameOfReference } from '../../../model/imageName'
+import type { ImageName } from '../../../model/imageName'
+import { adrPath } from './adrFile'
 
 /** The folder, inside a scope's own, that its pictures are kept in. */
 export const PICTURES = 'images'

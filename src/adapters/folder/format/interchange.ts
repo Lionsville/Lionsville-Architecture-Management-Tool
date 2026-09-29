@@ -25,7 +25,10 @@ import { openDocumentBytes, WORKING_FILE_MEDIA_TYPE, workingFileBytes, workingFi
 import {
   compareManifests, manifestOf, manifestTotals, MANIFEST_TYPE,
 } from './workingFileManifest'
-import type { ManifestDifference, WorkingFileManifest } from './workingFileManifest'
+import type { ManifestDifference, ManifestFile, WorkingFileManifest } from './workingFileManifest'
+import { imageNameOfFile, namesInDocuments } from './imageLibrary'
+import { imageNameKey, isImageName } from '../../../model/imageName'
+import type { ImageName } from '../../../model/imageName'
 import { WORKING_FILE_ACCEPTS } from './workingFileKinds'
 
 /** What a working file is read out of: a source's scopes, and its pictures' bytes. */
@@ -110,16 +113,85 @@ function byAddress(one: ScopeAddress, other: ScopeAddress): number {
   return one < other ? -1 : 1
 }
 
-/** A working file's scopes, the top placed at `at`; or why it did not open. */
-export function open(bytes: Uint8Array, at: ScopeAddress): Promise<Opened | { refused: OpenRefusal }> {
+/**
+ * A working file's scopes, the top placed at `at`; or why it did not open.
+ *
+ * A document an older build wrote names its pictures by where they were kept
+ * (`../images/<file>`); the state names them `image:<name>` (ADR-0031 §3),
+ * and so every scope is read here as the folder reads one — whatever source
+ * it lands in, a picture is drawn from its name.
+ */
+export async function open(bytes: Uint8Array, at: ScopeAddress): Promise<Opened | { refused: OpenRefusal }> {
   const opened = openDocumentBytes(bytes, bareScope(at, ''))
-  if (!opened.ok) return Promise.resolve({ refused: opened.messageKey })
-  return Promise.resolve({
-    top: opened.scope,
-    rest: opened.rest ?? [],
+  if (!opened.ok) return { refused: opened.messageKey }
+  const was = [opened.scope, ...(opened.rest ?? [])]
+  const named = was.map(withNames)
+  const account = opened.manifest && named.some((scope, index) => scope !== was[index])
+    ? await accountOfNamed(opened.manifest, was, named, opened.scope.path)
+    : opened.manifest
+  return {
+    top: named[0],
+    rest: named.slice(1),
     unopened: opened.unopened ?? [],
-    ...(opened.manifest ? { account: opened.manifest } : {}),
-  })
+    ...(account ? { account } : {}),
+  }
+}
+
+/**
+ * A scope's pictures by their names, and its documents naming them so: a
+ * file whose name the library would refuse is given one that passes, as the
+ * folder gives it one. The scope itself where nothing names a picture by a
+ * file.
+ */
+function withNames(scope: ScopeSnapshot): ScopeSnapshot {
+  const taken = new Set<string>()
+  const names = new Map<string, ImageName>()
+  for (const image of scope.imageLibrary ?? []) names.set(image.file, nameOfFile(image.file, taken))
+  const model = namesInDocuments(scope.model, (file) => names.get(file))
+  const renamed = [...names].some(([file, name]) => file !== name)
+  if (!renamed && !rewroteAny(scope.model, model)) return scope
+  return {
+    ...scope,
+    model,
+    ...(scope.imageLibrary ? { imageLibrary: scope.imageLibrary.map((image) => ({ ...image, file: names.get(image.file) ?? image.file })) } : {}),
+  }
+}
+
+/** A file's own name where the library takes it, and one made from it where not. */
+function nameOfFile(file: string, taken: Set<string>): ImageName {
+  if (!isImageName(file) || taken.has(imageNameKey(file))) return imageNameOfFile(file, taken)
+  taken.add(imageNameKey(file))
+  return file
+}
+
+/** Whether a rewrite of the documents changed one: it keeps every record it did not change as it was. */
+function rewroteAny(was: ScopeSnapshot['model'], now: ScopeSnapshot['model']): boolean {
+  const lists = ['decisions', 'transitions', 'observations', 'causes', 'solutions', 'experiments'] as const
+  return now.elements.some((element, at) => element !== was.elements[at])
+    || lists.some((key) => (now[key] ?? []).some((record, at) => record !== was[key]?.[at]))
+}
+
+/**
+ * The file's manifest, held to the scopes as they are read: each part the
+ * reading rewrote is what the rewrite made of it — but only where the part
+ * the file holds is the one its manifest lists, so a part that arrived
+ * damaged in the file still reads as damaged.
+ */
+async function accountOfNamed(
+  account: WorkingFileManifest, was: readonly ScopeSnapshot[], named: readonly ScopeSnapshot[], top: ScopeAddress,
+): Promise<WorkingFileManifest> {
+  const [before, after] = await Promise.all([manifestOf(was, top), manifestOf(named, top)])
+  const same = (one: ManifestFile | undefined, other: ManifestFile) => one?.sha256 === other.sha256 && one.bytes === other.bytes
+  return {
+    ...account,
+    scopes: account.scopes.map((scope) => {
+      const read = before.scopes.find((one) => one.path === scope.path)
+      const made = after.scopes.find((one) => one.path === scope.path)
+      if (!read || !made) return scope
+      const intact = scope.files.every((file) => same(read.files.find((one) => one.path === file.path), file))
+      return intact ? { ...scope, files: made.files } : scope
+    }),
+  }
 }
 
 /**

@@ -50,7 +50,7 @@ import type { KeptPicture, PictureStaging } from './folderPictures'
 import { composed, headerOf, ID_KEY, newIdentity } from './folderScopes'
 import type { FolderNode, FolderScopes, ReadScope } from './folderScopes'
 import { bytesAt, createAt, filesUnder, folderAt, removeAt, textAt, writeAt } from './handles'
-import { filesInDocuments } from './imageLibrary'
+import { filesInDocuments } from './format/imageLibrary'
 import type { StepMemory } from './stepMemory'
 import { SCOPE_FILE } from './format/folderFormat'
 

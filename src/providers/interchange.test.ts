@@ -13,7 +13,10 @@ import { describe, expect, it } from 'vitest'
 import { RecordingDiagnostics } from '../adapters/memory/RecordingDiagnostics'
 import { FakeDirectory } from '../adapters/folder/fakeDirectory'
 import { WORKING_FILE_INTERCHANGE as interchange } from '../adapters/folder/format/interchange'
-import { seed } from '../adapters/folder/format/testing/organisation'
+import { png, seed } from '../adapters/folder/format/testing/organisation'
+import { carryScopes } from '../adapters/folder/format/interchange'
+import { laidOut } from '../model/testFixtures'
+import { dataUrl } from '../projects/dataUrl'
 import type { KeyValueStorage } from '../adapters/webStorage/KeyValueStorage'
 import { fakeIndexedDb } from '../adapters/webStorage/testing/fakeIndexedDb'
 import type { Repositories } from '../ports/Repositories'
@@ -73,4 +76,54 @@ describe('the working file between sources', () => {
       expect(arrival.totals.scopes).toBe(3)
     })
   }
+})
+
+/**
+ * A file an older build wrote names its pictures by where they were kept,
+ * and a picture's file by a name the library would refuse. Wherever it lands,
+ * it lands as the same scope: its documents naming its pictures by name.
+ */
+describe('a working file an older build wrote', () => {
+  const older = () => carryScopes([{
+    path: '',
+    model: {
+      name: 'Older',
+      elements: [{
+        id: 'depot', kind: 'application', name: 'Depot', lifecycle: 'live', isManaged: true, aspects: {},
+        description: 'The yard.\n\n![The depot](../images/depot.png)\n\n![A photo](../images/old%20photo.png)\n',
+      }],
+      relations: [],
+      diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [] })],
+    },
+    activeDiagramId: 'd1',
+    logoLibrary: [],
+    imageLibrary: [
+      { file: 'depot.png', url: dataUrl('image/png', png(1)) },
+      { file: 'old photo.png', url: dataUrl('image/png', png(2)) },
+    ],
+  }])
+
+  it('lands the same in every source, its pictures named', async () => {
+    const { bytes } = await older()
+    const landed = await Promise.all(SOURCES.map(async ([, openOne]) => {
+      const repositories = await openOne()
+      const opened = await interchange.open(bytes, '')
+      if ('refused' in opened) throw new Error(opened.refused)
+      await interchange.bringIn(repositories, opened)
+      const arrival = await interchange.check(opened, (address) => readWhole(repositories, address))
+      const scope = await readWhole(repositories, '')
+      return {
+        short: arrival.short,
+        description: scope?.model.elements[0].description,
+        pictures: scope?.images?.map((entry) => entry.name),
+        carried: Buffer.from((await interchange.carryOut(repositories)).bytes),
+      }
+    }))
+    for (const one of landed) {
+      expect(one.short).toBeUndefined()
+      expect(one.description).toBe('The yard.\n\n![The depot](image:depot.png)\n\n![A photo](image:old-photo.png)\n')
+      expect(one.pictures?.sort()).toEqual(['depot.png', 'old-photo.png'])
+      expect(one.carried.equals(landed[0].carried)).toBe(true)
+    }
+  })
 })

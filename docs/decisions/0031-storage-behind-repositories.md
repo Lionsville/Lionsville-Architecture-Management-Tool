@@ -1145,8 +1145,11 @@ names no format.
   any repositories, so every source gets the same one, and a provider composed
   from outside exports and imports with nothing of its own to write.
 - **A document in a working file names a picture `image:<name>`**, as the
-  state does; the folder writes `../images/<file>` on disk, and the codec does
-  not translate. A file an older build wrote, with `../images/` in its
-  documents, is brought in with them as they are.
+  state does, where the folder writes `../images/<file>` on disk. A file an
+  older build wrote, with `../images/` in its documents, is read as the folder
+  reads one (`format/imageLibrary.ts`, moved beside the codec): its documents
+  name each picture by its name, and a file whose name the library refuses is
+  given one that passes. So it lands the same in every source, and its
+  manifest is held to the documents as read.
 - **An organisation that holds nothing yet** is carried out as its root,
   named as the tree names it.

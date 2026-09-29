@@ -482,8 +482,9 @@ src/adapters/     The outside world, one folder per flavour.
                                       `memoryGit` for the fake), the pictures'
                                       library in the header (`folderPictures`),
                                       documents' `../images/` read as `image:`
-                                      (`imageLibrary`, which browser storage
-                                      shares), the step ids a folder applied
+                                      (`format/imageLibrary`, which browser
+                                      storage and the working file share), the
+                                      step ids a folder applied
                                       kept by the app and never in the folder
                                       (`StepStore`: the desktop's data folder,
                                       or this browser's database matched by the

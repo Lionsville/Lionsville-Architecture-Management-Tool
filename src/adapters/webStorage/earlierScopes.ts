@@ -12,7 +12,7 @@
  * document naming its pictures (`image:<name>`), the library as entries, and
  * the bytes by content address. So each scope is read the way the store it
  * was kept by reads it, and turned into that shape with the folder's own
- * translation (`adapters/folder/imageLibrary.ts`): the same pictures, under
+ * translation (`adapters/folder/format/imageLibrary.ts`): the same pictures, under
  * the same names wherever the rule allows them, and the documents pointing at
  * them. A picture whose file name says nothing, or the wrong thing, about what
  * its bytes are takes the extension its data URL says, so its name is one the
@@ -56,7 +56,7 @@ import type { ScopeSnapshot } from '../../projects/scope'
 import type { ScopePath } from '../../projects/scopePath'
 import type { ScopeContent } from '../../projects/scopeState'
 import { imageEntryOf } from '../../model/imageEntry'
-import { imageNameOfFile, namesInDocuments } from '../folder/imageLibrary'
+import { imageNameOfFile, namesInDocuments } from '../folder/format/imageLibrary'
 import type { Brought, BroughtScope } from '../repositories/bring'
 import type { Bringing, BroughtAnswer, Source } from '../repositories/source'
 import type { KeyValueStorage } from './KeyValueStorage'
