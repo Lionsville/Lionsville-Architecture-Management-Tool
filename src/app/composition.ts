@@ -606,7 +606,7 @@ export function overSource(shell: Shell, parts: SourceParts): Shell {
   const {
     sourceStatus: _status, onSourceWork: _work, sourceFailure: _failure, onScopeSession: _session,
     publishesSteps: _publishes, readOnlyAt: _readOnly, opensAt: _opensAt, changes: _changes,
-    own: _own, historyNoteKey: _historyNote, ...rest
+    own: _own, historyNoteKey: _historyNote, historyKept: _historyKept, ...rest
   } = shell
   return { ...rest, ...parts, preferences: parts.preferences ?? shell.preferences }
 }

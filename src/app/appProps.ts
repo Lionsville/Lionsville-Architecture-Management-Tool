@@ -245,6 +245,8 @@ export type AppProvider = {
   own?: unknown
   /** Where the open source keeps its history, in the provider's sentence (`ProviderParts.historyNoteKey`). */
   historyNoteKey?: string
+  /** Whether a history is kept here already (`ProviderParts.historyKept`). */
+  historyKept?: () => Promise<boolean>
   /**
    * What the open source's provider calls a source of its kind, says of where
    * everything is kept, and says removing a scope takes with it

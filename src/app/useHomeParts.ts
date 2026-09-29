@@ -48,6 +48,8 @@ export function useHomeParts(deps: {
   scopeOpen: boolean
   /** Where the home's history is read and recorded, and its tree for which scope is which. */
   repositories: Pick<Repositories, 'scopes' | 'history'>
+  /** Whether a history is kept here already (`ProviderParts.historyKept`). */
+  historyKept?: () => Promise<boolean>
   index: ScopeIndex
   /** A restore on the history page: one write of the home's document. */
   restore: (command: Command) => void
@@ -83,6 +85,7 @@ export function useHomeParts(deps: {
   )
   const history = useProjectHistory({
     history: scopeOpen ? undefined : deps.repositories.history,
+    kept: deps.historyKept,
     scopes: deps.repositories.scopes,
     index,
     project: homeDocument,

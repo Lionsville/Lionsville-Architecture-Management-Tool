@@ -480,6 +480,7 @@ function useShellParts(props: AppProps): ShellParts {
   const prompts = { password: usePasswordPrompt(s), openInto: useOpenIntoPrompt(s) }
   const home = useHomeParts({
     organisation, home: nav.home, setHome: nav.setHome, scopeOpen: project !== undefined, repositories,
+    historyKept: props.provider?.historyKept,
     index: tree.index, restore: restoreIntoHome, documents: props.documents,
     workingSet: readWorkingSet,
     readScope: readScopeAt,

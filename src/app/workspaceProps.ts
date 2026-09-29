@@ -271,6 +271,8 @@ export type WorkspaceSnapshots = {
   history?: HistoryRepository
   /** Where that history is kept, in the source's provider's sentence (`SnapshotDialog`'s `note`). */
   note?: string
+  /** Whether one is kept here already (`ProviderParts.historyKept`). */
+  kept?: () => Promise<boolean>
 }
 
 /** The agent (ADR-0007, ADR-0019): the session handed up, and the glyph on the bar. */

@@ -71,6 +71,14 @@ export type ProviderParts<Own = unknown> = {
    * this tab is open* are facts about the source a person should know first.
    */
   historyNoteKey?: string
+  /**
+   * Whether a history is kept here already — one somebody started, and one
+   * that can take an entry on this machine. Absent where one always is. The
+   * entry a replace takes first is recorded only where one is: it never
+   * starts a history nobody asked for, and where none can be kept the replace
+   * goes on as its question warned.
+   */
+  historyKept?: () => Promise<boolean>
   /** Handed back to this provider's own chrome and panels while its source is open. */
   own?: Own
 }

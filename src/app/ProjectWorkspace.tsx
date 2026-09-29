@@ -239,6 +239,7 @@ function useScreenParts(
   const forceSave = base.document.document.forceSave
   const snapshots = useProjectHistory({
     history: props.snapshots.history,
+    kept: props.snapshots.kept,
     scopes: source.repositories.scopes,
     index: props.tree.index,
     project: session.snapshot,

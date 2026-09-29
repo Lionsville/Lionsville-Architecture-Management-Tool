@@ -6,7 +6,9 @@
  * (ADR-0008, ADR-0031 §1).
  *
  * A snapshot is `record` over every scope, with the person's words; the
- * safeguard before a replace is `record` over the scope being replaced. A
+ * safeguard before a replace is `record` over the scope being replaced and
+ * everything filed under it, which the replace writes too — and only where a
+ * history is kept already, so it never starts one nobody asked for. A
  * history is read in the domain's words — the entries of the scopes that hold
  * a thing, about the record it is — and going back is the model's own restore,
  * dispatched like any step, so the history only grows.
@@ -28,7 +30,7 @@ import type { Translate } from '../../i18n'
 import { reasonOf } from '../../platform/errors'
 import type { HistoryEntry, HistoryRepository } from '../../ports/HistoryRepository'
 import type { ScopeSnapshot } from '../../projects/scope'
-import { nodeAt } from '../../projects/scopeAccess'
+import { nodeAt, nodesOf } from '../../projects/scopeAccess'
 import type { ScopeReader } from '../../projects/scopeAccess'
 import type { ScopePath } from '../../projects/scopePath'
 import type { Notify } from '../useToasts'
@@ -80,8 +82,44 @@ export type ProjectHistoryState = {
   label: (name: string) => void
 }
 
+/**
+ * The entry a replace takes first: what is on screen written, then the scope
+ * and everything filed under it recorded — a replace writes them all. `false`
+ * only where the entry was due and could not be taken.
+ */
+async function beforeReplace(
+  deps: {
+    history?: HistoryRepository; kept?: () => Promise<boolean>; save: () => Promise<void>
+    scopes: ScopeReader; project: () => ScopeSnapshot; notify: Notify; s: Translate
+  },
+  onRecorded: () => void,
+): Promise<boolean> {
+  const { history, kept, save, scopes, project, notify, s } = deps
+  if (!history) return true
+  try {
+    await save()
+    // Where no history is kept, none is started for this: the replace goes
+    // on as its question warned.
+    if (kept && !await kept()) return true
+    const node = nodeAt(await scopes.tree(), project().path)
+    // A scope with no document yet has nothing to lose.
+    if (!node) return true
+    const written = await history.record({ scopes: nodesOf(node).map((held) => held.id), subject: s('history.beforeReplace') })
+    if (written.length > 0) {
+      onRecorded()
+      notify(s('history.takenBeforeReplace'), 'info')
+    }
+    return true
+  } catch (cause) {
+    notify(s('history.failedBeforeReplace', { message: reasonOf(cause) }), 'error')
+    return false
+  }
+}
+
 export function useProjectHistory(deps: {
   history?: HistoryRepository
+  /** Whether one is kept here already: the entry before a replace never starts one. Absent where one always is. */
+  kept?: () => Promise<boolean>
   /** The tree, for which scopes a history is asked about by address. */
   scopes: ScopeReader
   index?: ScopeIndex
@@ -94,7 +132,7 @@ export function useProjectHistory(deps: {
   notify: Notify
   s: Translate
 }): ProjectHistoryState {
-  const { history, scopes, index, project, steps, save, indexed, dispatch, notify, s } = deps
+  const { history, kept, scopes, index, project, steps, save, indexed, dispatch, notify, s } = deps
 
   const [keeping, setKeeping] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -156,24 +194,9 @@ export function useProjectHistory(deps: {
     })
   }, [history, save, steps, notify, s])
 
-  const safeguard = useCallback(async (): Promise<boolean> => {
-    if (!history) return true
-    try {
-      await save()
-      const scope = await idsAt([project().path])
-      // A scope with no document yet has nothing to lose.
-      if (scope.length === 0) return true
-      const written = await history.record({ scopes: scope, subject: s('history.beforeReplace') })
-      if (written.length > 0) {
-        recorded.current = steps().length
-        notify(s('history.takenBeforeReplace'), 'info')
-      }
-      return true
-    } catch (cause) {
-      notify(s('history.failedBeforeReplace', { message: reasonOf(cause) }), 'error')
-      return false
-    }
-  }, [history, save, idsAt, project, steps, notify, s])
+  const safeguard = useCallback(() => beforeReplace({ history, kept, save, scopes, project, notify, s }, () => {
+    recorded.current = steps().length
+  }), [history, kept, save, scopes, project, steps, notify, s])
 
   const choose = useCallback((id: string) => {
     const entry = entries.find((held) => held.id === id)

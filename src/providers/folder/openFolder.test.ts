@@ -13,6 +13,7 @@ import type { PersonSettings } from '../../adapters/folder/FolderSettingsReposit
 import { RecordingDiagnostics } from '../../adapters/memory/RecordingDiagnostics'
 import type { PullOutcome } from '../../platform/sync'
 import { readScope, summaryOf } from '../../projects/scopeAccess'
+import type { FolderGit } from '../../adapters/folder/folderGit'
 import type { FolderSync } from './folderOwn'
 import { openFolder } from './openFolder'
 
@@ -130,5 +131,37 @@ describe('the format pass as a folder opens', () => {
       base(),
     )
     expect(held.asked).toEqual([])
+  })
+})
+
+describe('whether the folder keeps a history an entry can go into', () => {
+  /** A git that answers the two questions as the case says, and is never asked anything else. */
+  function git(keeping: boolean, readiness: () => Promise<'ready'>): FolderGit & { started: boolean } {
+    const held = {
+      started: false,
+      keeping: () => Promise.resolve(keeping),
+      readiness,
+      start: () => { held.started = true; return Promise.resolve() },
+    }
+    return held as unknown as FolderGit & { started: boolean }
+  }
+
+  const opened = (history: FolderGit) => openFolder({ handle: new FakeDirectory('Architecture'), name: 'Architecture', root: '/work', git: history }, base())
+
+  it('does where the folder keeps one and git can write to it', async () => {
+    const parts = await opened(git(true, () => Promise.resolve('ready')))
+    expect(await parts.historyKept?.()).toBe(true)
+  })
+
+  it('does not where the folder keeps none, and starts none by asking', async () => {
+    const history = git(false, () => Promise.resolve('ready'))
+    const parts = await opened(history)
+    expect(await parts.historyKept?.()).toBe(false)
+    expect(history.started).toBe(false)
+  })
+
+  it('does not where git is missing on this machine, or too old', async () => {
+    const parts = await opened(git(true, () => Promise.reject(new Error('gitMissing'))))
+    expect(await parts.historyKept?.()).toBe(false)
   })
 })

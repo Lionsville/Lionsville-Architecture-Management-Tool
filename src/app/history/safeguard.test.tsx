@@ -22,12 +22,19 @@ const project = (): ScopeSnapshot => ({
   path: 'acme', model: { name: 'Acme', elements: [], relations: [], diagrams: [] }, activeDiagramId: '', logoLibrary: [],
 })
 
-function hook(made: 'entries' | 'nothing' | Error = 'entries', notify = vi.fn(), save = vi.fn(() => Promise.resolve())) {
-  const scopes = heldRepositories([project()])
+const rail = (): ScopeSnapshot => ({
+  path: 'acme/rail', model: { name: 'Rail', elements: [], relations: [], diagrams: [] }, activeDiagramId: '', logoLibrary: [],
+})
+
+function hook(
+  made: 'entries' | 'nothing' | Error = 'entries', notify = vi.fn(), save = vi.fn(() => Promise.resolve()),
+  kept?: () => Promise<boolean>,
+) {
+  const scopes = heldRepositories([project(), rail()])
   const history: FakeHistory = fakeHistory(scopes.scopes, [], made)
   const { result } = renderHook(() => useProjectHistory({
     history, scopes: scopes.scopes, project, steps: () => [], save, indexed: () => ({}) as never,
-    dispatch: () => undefined, notify, s,
+    dispatch: () => undefined, notify, s, ...(kept ? { kept } : {}),
   }))
   return { result, history, scopes }
 }
@@ -39,8 +46,33 @@ describe('the snapshot before a replace', () => {
     const { result, history, scopes } = hook('entries', notify, save)
     expect(await result.current.safeguard()).toBe(true)
     expect(save).toHaveBeenCalled()
-    expect(history.recorded).toEqual([{ scopes: [(await scopes.read('acme'))?.id], subject: 'Before a working file replaced this' }])
+    expect(history.recorded).toEqual([{
+      scopes: [(await scopes.read('acme'))?.id, (await scopes.read('acme/rail'))?.id],
+      subject: 'Before a working file replaced this',
+    }])
     expect(notify).toHaveBeenCalledWith(s('history.takenBeforeReplace'), 'info')
+  })
+
+  it('records every scope under the one being replaced, because a replace reaches them all', async () => {
+    const { result, history, scopes } = hook()
+    await result.current.safeguard()
+    expect(history.recorded[0].scopes).toContain((await scopes.read('acme/rail'))?.id)
+  })
+
+  it('records nothing where no history is kept here, and the replace goes on', async () => {
+    const notify = vi.fn()
+    const save = vi.fn(() => Promise.resolve())
+    const { result, history } = hook('entries', notify, save, () => Promise.resolve(false))
+    expect(await result.current.safeguard()).toBe(true)
+    expect(save).toHaveBeenCalled()
+    expect(history.recorded).toEqual([])
+    expect(notify).not.toHaveBeenCalled()
+  })
+
+  it('records where a history is kept here', async () => {
+    const { result, history } = hook('entries', vi.fn(), undefined, () => Promise.resolve(true))
+    expect(await result.current.safeguard()).toBe(true)
+    expect(history.recorded).toHaveLength(1)
   })
 
   it('says nothing where there was nothing to record, and the replace goes on', async () => {

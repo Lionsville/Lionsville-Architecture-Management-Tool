@@ -441,6 +441,7 @@ function renderApp(
           preferencesPanel: sourcePreferencesPanel(shell.source),
           own: shell.own,
           historyNoteKey: shell.historyNoteKey,
+          historyKept: shell.historyKept,
           sayings: sourceSayings(shell.source),
           sourceNeeded: sourceNeeded(),
           changes: shell.changes,

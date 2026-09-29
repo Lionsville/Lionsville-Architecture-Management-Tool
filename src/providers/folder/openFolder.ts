@@ -169,6 +169,21 @@ function watching(channel: FolderChannel, root: string, diagnostics: Diagnostics
   }
 }
 
+/**
+ * Whether the folder keeps a history already, and one this machine can take
+ * an entry into: a repository there, and a git that can write to it. A git
+ * missing, or too old, is no history here.
+ */
+async function historyKeptIn(git: FolderGit): Promise<boolean> {
+  try {
+    if (!await git.keeping()) return false
+    await git.readiness()
+    return true
+  } catch {
+    return false
+  }
+}
+
 /** The folder, pulled and brought up to date, and its repositories over it. */
 export async function openFolder(opening: FolderOpening, base: FolderBase): Promise<FolderParts> {
   const { handle, name, root, git, steps, places, stamps, person, sync, channel } = opening
@@ -176,10 +191,11 @@ export async function openFolder(opening: FolderOpening, base: FolderBase): Prom
   const s = base.s ?? translator('en')
   const pulled = await pullOnOpen(opening, base, s)
   await upgradeFormat(opening, base, s)
+  // A tab's folder with no database to keep a history in keeps one for as
+  // long as the tab is open.
+  const history = git ?? memoryGit(handle, s('memory.historyAuthor'))
   const repositories = folderRepositories({
-    // A tab's folder with no database to keep a history in keeps one for as
-    // long as the tab is open.
-    root: handle, git: git ?? memoryGit(handle, 'this tab'), diagnostics,
+    root: handle, git: history, diagnostics,
     ...(steps ? { steps } : {}), ...(places ? { places } : {}), ...(stamps ? { stamps } : {}),
     ...(person ? { person } : {}),
   })
@@ -196,6 +212,7 @@ export async function openFolder(opening: FolderOpening, base: FolderBase): Prom
     // Where the history is kept: the opening's own place, or — where there is
     // none to keep it in — for as long as the tab is open.
     historyNoteKey: git ? opening.historyNoteKey ?? 'folder.historyNote' : 'memory.historyNote',
+    historyKept: () => historyKeptIn(history),
     ...(channel ? { changes: watching(channel, root, diagnostics) } : {}),
   }
 }
