@@ -219,10 +219,10 @@ implementing them yet, and the ports they replace are still there:
   `build/storageLine.ts`:
   - no imports across the line;
   - no storage words in identifiers, nor in the strings of code: the words,
-    and the folder format's own spellings (`.json`, `../`, `images/`, `.git`).
-    A comment, the words tables, a module name imported, the marks' strings,
-    and *database* and *SQL* in a string, which are what a landscape holds,
-    are not read.
+    and the folder format's own spellings (`.json`, `.md`, `../`, `images/`,
+    `docs/`, `.git`). A comment, the words tables, a module name imported, the
+    marks' strings, the manual's web address, and *database* and *SQL* in a
+    string, which are what a landscape holds, are not read.
 
   The tree's violations when the rule arrived are its exceptions, each held
   to exactly what its file does: 22 files importing the folder format (32
@@ -246,10 +246,14 @@ implementing them yet, and the ports they replace are still there:
   what its command says it writes (ADR-0028): a delete reaches relations,
   views and children its command does not name, and a relation's history
   ends with the step that removed it.
-- **A step id is the source's, not a scope's.** A step applied, to whichever
-  scope, is not applied again; a run whose steps have all landed answers the
-  revisions as they stand, whatever it expected; a refused apply counts no
-  step as applied and moves no revision anywhere.
+- **A step id is the source's, not a scope's.** A step applied is not applied
+  again, and one sent to a scope other than the one it was applied to is
+  refused (`step.elsewhere`, a caller's fault with no sentence of its own). A
+  repository remembers the ids it applied for at least 24 hours, and for good
+  where it keeps a log of its steps. A run whose steps have all landed answers
+  the revisions as they stand, whatever it expected; a refused apply counts no
+  step as applied and moves no revision anywhere; a scope named twice in one
+  apply is its runs as one change.
 - **The history records an entry when asked.** Steps collect in each scope's
   open entry, and `HistoryRepository.record` closes it with a subject; an
   implementation may also close one when it judges a run has ended. When the

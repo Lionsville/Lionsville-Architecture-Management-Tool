@@ -135,8 +135,9 @@ describe('reading words out of code', () => {
       'const picture = (file: string) => `../images/${file}`',
       "const kept = source.kind === 'folder' ? 1 : 2",
       "const history = '.git/info/exclude'",
+      "const prose = `docs/${id}.md`",
     ].join('\n')
-    expect(storageWords('a.ts', text, ['folder'])).toEqual(['../', '.git', '.json', 'folder', 'images/'])
+    expect(storageWords('a.ts', text, ['folder'])).toEqual(['../', '.git', '.json', '.md', 'docs/', 'folder', 'images/'])
   })
 
   it('leaves alone what is not code deciding storage: a module imported, a landscape’s words, the marks', () => {

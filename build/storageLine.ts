@@ -188,8 +188,9 @@ export function listedIn(words: readonly string[], listed: readonly string[]): s
 
 /**
  * What names a place in the folder format when a string says it: a file of
- * its (`.json`), a step up out of a scope (`../`), its pictures (`images/`),
- * and the history kept beside it (`.git`). Read in strings only; an identifier
+ * its (`.json`, `.md`), a step up out of a scope (`../`), its pictures
+ * (`images/`), its descriptions (`docs/`), and the history kept beside it
+ * (`.git`). Read in strings only; an identifier
  * says the same things in words.
  */
 export const FORMAT_PATTERNS: Readonly<Record<string, RegExp>> = {
@@ -197,6 +198,8 @@ export const FORMAT_PATTERNS: Readonly<Record<string, RegExp>> = {
   '../': /\.\.\//,
   'images/': /(^|\/)images\//,
   '.git': /\.git\b/,
+  'docs/': /(^|\/)docs\//,
+  '.md': /\.md\b/i,
 }
 
 /**
@@ -212,9 +215,10 @@ export const CONTENT_WORDS: Readonly<Record<string, string>> = {
 /**
  * The files whose strings are content rather than code: the marks, which are
  * the icons a landscape draws, named as their makers name them — a git host
- * is a thing a landscape holds.
+ * is a thing a landscape holds; and the manual's address, a page on the web
+ * whose path happens to say `docs/` and `.md`.
  */
-export const CONTENT_FILES: readonly string[] = ['src/model/marks/']
+export const CONTENT_FILES: readonly string[] = ['src/model/marks/', 'src/platform/manual.ts']
 
 /** The listed words, and the folder format's patterns, a string's text says. */
 function storageInText(text: string, listed: readonly string[]): string[] {
