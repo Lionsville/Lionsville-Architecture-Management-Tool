@@ -32,7 +32,7 @@ import { constants } from 'node:fs'
 import {
   access, link, lstat, mkdir, open, readdir, readFile as read, realpath, rename, rm, stat, unlink,
 } from 'node:fs/promises'
-import { dirname, isAbsolute, join, relative, sep } from 'node:path'
+import { basename, dirname, isAbsolute, join, relative, sep } from 'node:path'
 import type { DesktopEntry, DesktopFileContents, DesktopStamp } from '../../src/adapters/desktop/channel'
 
 /** One path segment that is only ever a name. */
@@ -207,19 +207,24 @@ export async function writeWhole(target: string, data: Uint8Array | string, mode
     throw cause
   }
   await syncFolder(dirname(real))
+  await sweepStale([real])
 }
+
+/** How long, in all, a rename is tried again on Windows while the file is held. */
+export const HELD_FOR_MS = 10_000
 
 /** What Windows answers a rename while something else — a virus scanner, the indexer, a sync client — holds the file a moment. */
 const HELD = new Set(['EPERM', 'EACCES', 'EBUSY'])
 
 /**
  * A rename over a file, tried again on Windows while the file is held a
- * moment, waiting a little longer each time, for at most `forMs` in all; any
- * other failure, and one that outlasts that, as it came.
+ * moment, waiting a little longer each time, for at most `forMs` in all — a
+ * virus scanner may look at a large file for seconds; any other failure, and
+ * one that outlasts that, as it came.
  */
 export async function renameOver(
   from: string, to: string,
-  { platform = process.platform, attempt = rename, forMs = 2_000 }: {
+  { platform = process.platform, attempt = rename, forMs = HELD_FOR_MS }: {
     platform?: NodeJS.Platform; attempt?: (from: string, to: string) => Promise<void>; forMs?: number
   } = {},
 ): Promise<void> {
@@ -232,6 +237,35 @@ export async function renameOver(
       if (platform !== 'win32' || !HELD.has(codeOf(cause)) || waited >= forMs) throw cause
       await new Promise((resolve) => { setTimeout(resolve, wait) })
       waited += wait
+    }
+  }
+}
+
+/** A name of ours beside a file being written: the file's, a mark of time and chance, and what it was for. */
+const STALE = /^(.+)\.[0-9a-z]{9,14}\.(tmp|landing)$/
+
+/** How old a name of ours must be before it is taken for what a stopped write left, not one still being written. */
+const STALE_AFTER_MS = 60_000
+
+/**
+ * What a write that stopped part way left beside the files just written, taken
+ * away: a name of ours (`STALE`) beside a file that is there, a minute old or
+ * more — a file staged and never renamed, or the second name a made file had
+ * for a moment (`createFile`). Left, it would be one more file in the folder,
+ * and in its history. Nothing else is touched, and a sweep that fails is let be.
+ */
+async function sweepStale(targets: readonly string[]): Promise<void> {
+  const byFolder = new Map<string, Set<string>>()
+  for (const target of targets) byFolder.set(dirname(target), (byFolder.get(dirname(target)) ?? new Set()).add(basename(target)))
+  for (const [folder, written] of byFolder) {
+    const names = await readdir(folder).catch(() => [] as string[])
+    const present = new Set(names)
+    for (const name of names) {
+      const base = STALE.exec(name)?.[1]
+      if (base === undefined || !written.has(base) || !present.has(base)) continue
+      const at = join(folder, name)
+      const since = await stat(at).then((found) => Date.now() - found.mtimeMs, () => 0)
+      if (since >= STALE_AFTER_MS) await unlink(at).catch(() => undefined)
     }
   }
 }
@@ -257,29 +291,34 @@ async function syncFolder(folder: string, platform = process.platform): Promise<
  * whole, and at once: written under a name of its own, flushed, then linked
  * to its path, which the disk refuses where anything is there (in any case,
  * on a disk that does not tell case apart). `false`, and nothing written,
- * where something is. On a disk that has no links the path is opened to be
- * made (`wx`), as exclusive and not whole.
+ * where something is. Where the link fails any other way — FAT and exFAT,
+ * on a memory stick, keep no links, and say so in more than one way — the
+ * path is opened to be made (`wx`), as exclusive and not whole.
  */
-export async function createFile(root: string, path: string, bytes: Uint8Array): Promise<boolean> {
+export async function createFile(
+  root: string, path: string, bytes: Uint8Array, linkTo: (from: string, to: string) => Promise<void> = link,
+): Promise<boolean> {
   const target = await resolveInside(root, path)
   if (!target) throw new Error('shell.pathRefused')
   await mkdir(dirname(target), { recursive: true })
   const temporary = `${target}.${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}.tmp`
   try {
     await writeWhole(temporary, bytes)
-    await link(temporary, target)
+    await linkTo(temporary, target)
     return true
   } catch (cause) {
     if (codeOf(cause) === 'EEXIST') return false
-    if (!LINKLESS.has(codeOf(cause))) throw cause
+    if (!await exists(temporary)) throw cause
     return createOpen(target, bytes)
   } finally {
     await unlink(temporary).catch(() => undefined)
+    await sweepStale([target])
   }
 }
 
-/** What a disk that keeps no links says when asked for one. */
-const LINKLESS = new Set(['EPERM', 'ENOTSUP', 'EOPNOTSUPP', 'ENOSYS', 'EXDEV'])
+async function exists(path: string): Promise<boolean> {
+  return access(path, constants.F_OK).then(() => true, () => false)
+}
 
 async function createOpen(target: string, bytes: Uint8Array): Promise<boolean> {
   const handle = await open(target, 'wx').catch((cause: unknown) => {
@@ -351,6 +390,8 @@ export async function writeTogether(
   }
   for (const [at, temporary] of staged.entries()) await renameOver(temporary, targets[at]!)
   for (const target of gone) await rm(target!, { force: true })
+  for (const folder of new Set([...targets, ...gone].map((target) => dirname(target!)))) await syncFolder(folder)
+  await sweepStale(targets.map((target) => target!))
   return Promise.all(writes.map(async (write, at) => stampOf(write.bytes, await stat(targets[at]!))))
 }
 

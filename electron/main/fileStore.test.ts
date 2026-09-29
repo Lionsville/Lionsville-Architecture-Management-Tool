@@ -12,12 +12,12 @@
  * half of the new one.
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { chmod, lstat, mkdir, mkdtemp, readdir, readFile, realpath, rm, stat, symlink, writeFile } from 'node:fs/promises'
+import { chmod, lstat, mkdir, mkdtemp, readdir, readFile, realpath, rm, stat, symlink, utimes, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
   fingerprint, listDirectory, makeDirectory, moveEntry, readFile as readInside, removeEntry, resolveInside, stampAt,
-  createFile, renameOver, safeRelativePath, writeFile as writeInside, writeTogether, writeWhole,
+  createFile, HELD_FOR_MS, renameOver, safeRelativePath, writeFile as writeInside, writeTogether, writeWhole,
 } from './fileStore'
 
 let root = ''
@@ -180,6 +180,10 @@ describe('a rename over a file something else holds a moment', () => {
     }
   })
 
+  it('is tried again for ten seconds in all, as long as a virus scanner may look at a large file', () => {
+    expect(HELD_FOR_MS).toBe(10_000)
+  })
+
   it('is not tried again elsewhere, for any other failure, or past its time', async () => {
     const elsewhere = held('EPERM', 1)
     await expect(renameOver('a', 'b', { platform: 'darwin', attempt: elsewhere.attempt })).rejects.toThrow('EPERM')
@@ -204,6 +208,30 @@ describe('a file made only where nothing is', () => {
     if (blind) expect(await createFile(root, 'images/MAP.png', bytes('three'))).toBe(false)
     expect(await readdir(join(root, 'images'))).toEqual(['map.png'])
     await expect(createFile(root, '../outside.png', bytes('x'))).rejects.toThrow('shell.pathRefused')
+  })
+
+  it('makes it where the disk keeps no links, as a memory stick’s does not, and still never over a file', async () => {
+    const linkless = (code: string) => () => Promise.reject(Object.assign(new Error(code), { code }))
+    for (const code of ['EISDIR', 'EPERM', 'ENOTSUP', 'UNKNOWN']) {
+      expect(await createFile(root, `images/${code}.png`, bytes('one'), linkless(code))).toBe(true)
+      expect(text((await readInside(root, `images/${code}.png`))?.bytes)).toBe('one')
+      expect(await createFile(root, `images/${code}.png`, bytes('two'), linkless(code))).toBe(false)
+      expect(text((await readInside(root, `images/${code}.png`))?.bytes)).toBe('one')
+    }
+    expect((await readdir(join(root, 'images'))).filter((name) => name.endsWith('.tmp'))).toEqual([])
+  })
+
+  it('takes away what a write that stopped part way left beside a file it writes, a minute on, and nothing else', async () => {
+    await mkdir(join(root, 'images'))
+    const old = new Date(Date.now() - 120_000)
+    for (const name of ['map.png.mg1abcdefgh.tmp', 'map.png.mg1abcdefgi.landing', 'other.png.mg1abcdefgh.tmp', 'map.png.mg1abcdefgj.tmp']) {
+      await writeFile(join(root, 'images', name), 'left')
+      if (name !== 'map.png.mg1abcdefgj.tmp') await utimes(join(root, 'images', name), old, old)
+    }
+    await writeFile(join(root, 'images', 'notes.tmp'), 'a person’s')
+    await utimes(join(root, 'images', 'notes.tmp'), old, old)
+    expect(await createFile(root, 'images/map.png', bytes('one'))).toBe(true)
+    expect((await readdir(join(root, 'images'))).sort()).toEqual(['map.png', 'map.png.mg1abcdefgj.tmp', 'notes.tmp', 'other.png.mg1abcdefgh.tmp'])
   })
 })
 
