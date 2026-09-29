@@ -90,6 +90,32 @@ describe('the working file, from node', () => {
     }
   })
 
+  it('writes no content where the landing is refused, and keeps the entry recorded before it', async () => {
+    const source = memoryRepositories()
+    await seed(source)
+    const { bytes } = await writeWorkingFile(source)
+    const target = memoryRepositories()
+    await readWorkingFile(target, bytes)
+    const later = memoryRepositories()
+    await seed(later, organisation().map((scope) => ({ ...scope, model: { ...scope.model, description: 'Later.' } })))
+    const refusing: Repositories = {
+      ...target,
+      scopes: new Proxy(target.scopes, {
+        get: (held, key) => (key === 'apply'
+          ? () => Promise.resolve({ refused: 'shell.scopeMoved' })
+          : (Reflect.get(held, key, held) as (...args: unknown[]) => unknown).bind(held)),
+      }),
+    }
+
+    await expect(readWorkingFile(refusing, (await writeWorkingFile(later)).bytes, { before: 'Before the file came in' }))
+      .rejects.toMatchObject({ key: 'shell.scopeMoved' })
+
+    const tree = await target.scopes.tree()
+    const root = nodeAt(tree, '')!
+    expect((await target.scopes.state(root.id))?.model.description).not.toBe('Later.')
+    expect((await target.history.entries({ scopes: [root.id] })).entries.map((entry) => entry.subject)).toEqual(['Before the file came in'])
+  })
+
   it('writes one scope and those under it, when asked from an address', async () => {
     const source = memoryRepositories()
     const [, landscape, depots] = organisation()

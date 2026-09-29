@@ -54,9 +54,11 @@ export type ReadIn = { landed: readonly ScopePath[]; arrival: Arrival }
  * as one `scope.replace` step each, all in one apply — every scope or none —
  * with each picture's bytes put before the step that names it, then read back
  * and held to what the file says it holds. Bytes that are not a working file
- * are refused with the key that says why, and nothing is written; a landing
+ * are refused with the key that says why, and nothing is written. A landing
  * the repositories refuse (a scope somebody changed meanwhile) rejects with
- * the `ShellError` they refused it with, and nothing of it is written either.
+ * the `ShellError` they refused it with, and no scope's content is written —
+ * but the entry `before` asked for was recorded first, and stays: it is the
+ * history of what was there, and says nothing that did not happen.
  */
 export async function readWorkingFile(
   repositories: BroughtInto, bytes: Uint8Array, options: ReadOptions = {},
