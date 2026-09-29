@@ -82,7 +82,7 @@ export function useIndex(deps: {
   const { index, watch, onFailure } = deps
   const [held, setHeld] = useState<{ index: ScopeIndex; models: readonly ScopeModel[] }>(NOTHING_READ)
   /** What was read last, by identity, and the revision it was read at: what `since` is asked from. */
-  const kept = useRef<{ revision: Revision; scopes: ReadonlyMap<string, IndexedScope> } | undefined>(undefined)
+  const kept = useRef<Held | undefined>(undefined)
 
   // Read through refs so `refresh` keeps one identity for the life of the
   // hook: it is handed to the watcher, and a new function per render would be
@@ -102,13 +102,17 @@ export function useIndex(deps: {
     // Built inside the chain, so a fold that throws is the failure below and
     // not an exception out of a callback nobody awaits.
     void readIndex(source.current, kept.current).then((read) => {
+      if ('unchanged' in read) {
+        if (kept.current) kept.current = { ...kept.current, revision: read.unchanged }
+        return undefined
+      }
       kept.current = { revision: read.revision, scopes: new Map(read.scopes.map((one) => [one.id, one])) }
       const models = read.scopes.map(modelOf)
       return { index: indexScopes(models), models }
     }).then(
       (built) => {
         reading.current = false
-        if (live.current) setHeld(built)
+        if (built && live.current) setHeld(built)
         if (again.current) { again.current = false; read() }
       },
       (cause: unknown) => {
@@ -142,16 +146,24 @@ export function useIndex(deps: {
 
 const NOTHING_READ = { index: EMPTY_INDEX, models: [] }
 
+type Held = { revision: Revision; scopes: ReadonlyMap<string, IndexedScope> }
+
 /**
  * The index as it now stands: what changed since the one held, folded over
  * it, where the repository can say — and the whole of it where it cannot, or
  * where nothing is held yet.
+ *
+ * Nothing changed is its own answer. The index held then stands as it is, the
+ * same object and not an equal one rebuilt: a rebuild is a pass over every
+ * scope's records, and a new identity would have every reader memoised on the
+ * index — the checks, the search's folds, the owners' descriptions — work it
+ * all out again for a tree that did not move.
  */
-async function readIndex(
-  index: OrganisationIndex, held: { revision: Revision; scopes: ReadonlyMap<string, IndexedScope> } | undefined,
-): Promise<IndexRead> {
+async function readIndex(index: OrganisationIndex, held: Held | undefined): Promise<IndexRead | { unchanged: Revision }> {
   const changes = held && await index.since(held.revision)
-  return changes ? { revision: changes.revision, scopes: folded(held.scopes, changes) } : index.read()
+  if (!changes) return index.read()
+  if (changes.changed.length === 0 && changes.removed.length === 0) return { unchanged: changes.revision }
+  return { revision: changes.revision, scopes: folded(held.scopes, changes) }
 }
 
 function folded(held: ReadonlyMap<string, IndexedScope>, changes: IndexChanges): IndexedScope[] {

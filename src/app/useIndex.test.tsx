@@ -196,6 +196,33 @@ describe('useIndex', () => {
     expect(models).toHaveBeenCalledTimes(1)
   })
 
+  /**
+   * A tree that did not move keeps the index it had — the same object, not an
+   * equal one rebuilt — so nothing memoised on it works anything out again,
+   * and the next question is asked from the revision the source last gave.
+   */
+  it('keeps the same index when nothing changed since the one it holds', async () => {
+    const models = vi.fn(() => Promise.resolve<ScopeModel[]>([
+      { path: 'retail', model: { elements: [element('erp')], relations: [] } },
+    ]))
+    let revision = 1
+    const since = vi.fn(() => Promise.resolve({ revision: `quiet ${revision += 1}`, changed: [], removed: [] }))
+    let tell = () => {}
+    const hook = mount({ models, since, watch: (onChanged) => { tell = onChanged; return () => {} } })
+    await waitFor(() => expect(hook().index.lookup('erp')?.master).toBe('retail'))
+    const first = hook()
+
+    await act(async () => { tell() })
+    await waitFor(() => expect(since).toHaveBeenCalledTimes(1))
+    await act(async () => { tell() })
+    await waitFor(() => expect(since).toHaveBeenCalledTimes(2))
+
+    expect(hook().index).toBe(first.index)
+    expect(hook().models).toBe(first.models)
+    expect(since.mock.calls).toEqual([['read 1'], ['quiet 2']])
+    expect(models).toHaveBeenCalledTimes(1)
+  })
+
   it('stops watching when it goes away', async () => {
     const off = vi.fn()
     mount({ watch: () => off })
