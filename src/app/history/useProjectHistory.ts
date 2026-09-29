@@ -87,6 +87,7 @@ export function useProjectHistory(deps: {
   index?: ScopeIndex
   project: () => ScopeSnapshot
   steps: () => readonly { summary: StepSummary }[]
+  /** Write what is on screen, rejecting where it did not land: no entry is recorded over a refused save. */
   save: () => Promise<void>
   indexed: () => Model
   dispatch: (command: Command) => unknown

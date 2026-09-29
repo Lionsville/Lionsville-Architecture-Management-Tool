@@ -243,7 +243,9 @@ function useScreenParts(
     index: props.tree.index,
     project: session.snapshot,
     steps: session.history,
-    save: forceSave,
+    // `flush` and not `forceSave`: a save that was refused rejects, and an
+    // entry of a scope that does not hold what is on screen is never recorded.
+    save: base.document.document.flush,
     indexed: session.indexed,
     dispatch: session.dispatch,
     notify,

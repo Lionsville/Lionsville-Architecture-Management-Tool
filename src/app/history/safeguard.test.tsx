@@ -9,7 +9,7 @@
  * and a refusal to go on where it was due and could not be taken.
  */
 import { describe, expect, it, vi } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { translator } from '../../i18n'
 import type { ScopeSnapshot } from '../../projects/scope'
 import { heldRepositories } from '../testing/heldRepositories'
@@ -50,6 +50,14 @@ describe('the snapshot before a replace', () => {
     expect(notify).not.toHaveBeenCalled()
   })
 
+  it('records nothing, and stops the replace, where what is on screen could not be written first', async () => {
+    const notify = vi.fn()
+    const { result, history } = hook('entries', notify, vi.fn(() => Promise.reject(new Error('the scope was refused'))))
+    expect(await result.current.safeguard()).toBe(false)
+    expect(history.recorded).toEqual([])
+    expect(notify).toHaveBeenCalledWith(expect.stringContaining('the scope was refused'), 'error')
+  })
+
   it('stops the replace where it was due and could not be taken', async () => {
     const notify = vi.fn()
     const { result } = hook(new Error('no room left'), notify)
@@ -57,3 +65,14 @@ describe('the snapshot before a replace', () => {
     expect(notify).toHaveBeenCalledWith(expect.stringContaining('Nothing was replaced'), 'error')
   })
 })
+
+describe('a snapshot', () => {
+  it('records nothing, and says why, where what is on screen could not be written first', async () => {
+    const notify = vi.fn()
+    const { result, history } = hook('entries', notify, vi.fn(() => Promise.reject(new Error('the scope was refused'))))
+    await act(async () => { result.current.take('Monday') })
+    await waitFor(() => expect(notify).toHaveBeenCalledWith(expect.stringContaining('the scope was refused'), 'error'))
+    expect(history.recorded).toEqual([])
+  })
+})
+
