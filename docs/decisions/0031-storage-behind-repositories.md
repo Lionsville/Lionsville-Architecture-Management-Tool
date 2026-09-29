@@ -613,14 +613,27 @@ a page still draws the pictures a scope was opened with, as before.
   An entry of zeros reserves nothing, as the entry says.
 - **Asked for when in view.** One `IntersectionObserver` per provider, a
   little ahead of the visible part. A picture far down a long document is
-  never asked for. In a test the watch is handed in and driven by hand.
+  never asked for. In a test the watch is handed in and driven by hand. The
+  margin ahead is the window's: a document scrolling inside a sheet of its
+  own has its pictures seen as they appear in the sheet, with none ahead.
+- **Bytes that do not come.** Where the source answers nothing, or fails, the
+  picture keeps its place and shows its alt text, and the failure goes where
+  the composition says. It asks again once it has left the view and come
+  back, never over and over while it sits there.
 - **Kept, a little.** `PictureCache` asks once however many places want one
   picture. It keeps the bytes of the last pictures nobody shows, oldest out
-  first, and never drops bytes being shown. A picture whose bytes are kept
-  is drawn before the browser paints, asking nothing. The address a browser
-  draws from is made when a place first shows a picture and let go when the
-  last one stops. A picture is the scope, its name and its content address,
-  so bytes changed under a name are another picture.
+  first, and never drops bytes being shown, or bytes a place is waiting to
+  show: asking and showing are one call, so a burst of more pictures than it
+  keeps shows every one. A picture whose bytes are kept is drawn before the
+  browser paints, asking nothing. The address a browser draws from is made
+  when a place first shows a picture and let go when the last one stops. A
+  picture is the scope, its name and its content address, so bytes changed
+  under a name are another picture.
+- **An SVG is drawn from a data address.** An object address belongs to the
+  app's origin, and an SVG opened from one in a tab of its own would run its
+  script as the app. A data address's origin is opaque. Raster pictures keep
+  object addresses. `image:` passes the markdown view as a picture's source
+  and never as a link.
 - **Keyed.** Every picture in a document is keyed by its name, so a
   document that names another picture in the same place gets a new `img`,
   never the last one's with its source still on it.
@@ -631,7 +644,9 @@ a page still draws the pictures a scope was opened with, as before.
 - **Entries from bytes, by one rule.** The reader of what bytes say about
   themselves (media type, size, declared dimensions, content address) moved
   from the folder's implementation to `model/imageEntry.ts`. Everything that
-  adds a picture describes it the same way, once, when it is added.
+  adds a picture describes it the same way, once, when it is added. A JPEG's
+  dimensions are read the way up its Exif orientation says it is seen, as a
+  browser draws it.
 - **Names, not paths.** A document names a picture `image:<name>`.
   `imageNamesIn` reads those, undoing the percent-encoding a markdown
   renderer applies to a source. The agent answers `image:<name>` from
@@ -645,7 +660,10 @@ a page still draws the pictures a scope was opened with, as before.
 - **The report is a call, not a screen.** Core prints and exports no document
   with pictures in it yet. What a report must do is written down here, so a
   report written later cannot do otherwise: ask for every picture when it is
-  produced, and not when the scope is opened.
+  produced, and not when the scope is opened. A page printed from the
+  browser is not a report: it prints what is shown, and a picture whose
+  bytes have not arrived prints as its alt text. A report goes through
+  `picturesForReport` and `pictureDataAddress`.
 - **A name the library does not hold goes to the host's resolver.** Until the
   workspace hands a library down, it resolves `image:<name>` against the
   pictures the scope was opened with, as it resolves a relative path.
