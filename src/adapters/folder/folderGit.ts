@@ -87,14 +87,29 @@ export function scopeTrailer(id: ScopeId, address: ScopeAddress): string {
   return `${SCOPE_TRAILER}: ${id} ${address === ROOT_SCOPE ? ROOT_IN_TRAILER : address}`
 }
 
-/** The scopes a commit says it records, by identity, with the address each had; empty for a commit that says none. */
+/**
+ * The scopes a commit says it records, by identity, with the address each
+ * had; empty for a commit that says none. Read from the trailer block alone —
+ * the message's last paragraph, every line of it a trailer — so a line in a
+ * subject or a body that looks like one is not one.
+ */
 export function trailersOf(message: string): Map<ScopeId, ScopeAddress> {
   const found = new Map<ScopeId, ScopeAddress>()
-  const pattern = new RegExp(`^${SCOPE_TRAILER}: (\\S+) (.+)$`, 'gm')
-  for (const [, id, address] of message.matchAll(pattern)) {
-    found.set(id, address === ROOT_IN_TRAILER ? ROOT_SCOPE : address)
+  const paragraphs = message.replace(/\s+$/, '').split(/\n[ \t]*\n/)
+  if (paragraphs.length < 2) return found
+  const block = paragraphs[paragraphs.length - 1].split('\n')
+  if (!block.every((line) => /^[A-Za-z0-9-]+: \S/.test(line))) return found
+  const pattern = new RegExp(`^${SCOPE_TRAILER}: (\\S+) (\\S+)$`)
+  for (const line of block) {
+    const [, id, address] = pattern.exec(line) ?? []
+    if (id) found.set(id, address === ROOT_IN_TRAILER ? ROOT_SCOPE : address)
   }
   return found
+}
+
+/** A record's subject as a commit's first line: one line, however it was typed. */
+export function subjectLine(subject: string): string {
+  return subject.replace(/\s+/g, ' ').trim()
 }
 
 /** A path inside an address's folder, relative to it; `undefined` for one outside it. */

@@ -38,7 +38,7 @@ import type { ScopeAddress, ScopeId, ScopeState } from '../../projects/scopeStat
 import type {
   EntriesWanted, EntryId, EntryLabelled, HistoryEntry, HistoryPage, HistoryRepository, RecordWanted,
 } from '../../ports/HistoryRepository'
-import { SCOPE_TRAILER, ownFilesAt, ownerOf, scopeTrailer, trailersOf, within } from './folderGit'
+import { SCOPE_TRAILER, ownFilesAt, ownerOf, scopeTrailer, subjectLine, trailersOf, within } from './folderGit'
 import type { FolderCommit, FolderGit, FolderTag } from './folderGit'
 import { libraryOf, LIBRARY_KEY, rowsOf } from './folderPictures'
 import { folderRevision } from './revision'
@@ -136,7 +136,7 @@ export class FolderHistory implements HistoryRepository {
       const closing = nodes.filter((node) => (!wanted || wanted.has(node.id)) && owned.has(node.address))
       if (closing.length === 0) return []
       const message = [
-        subject?.trim() || DEFAULT_SUBJECT, '', ...closing.map((node) => scopeTrailer(node.id, node.address)),
+        subjectLine(subject ?? '') || DEFAULT_SUBJECT, '', ...closing.map((node) => scopeTrailer(node.id, node.address)),
       ].join('\n')
       const sha = await this.git.commit(closing.flatMap((node) => owned.get(node.address)!), message)
       if (!sha) return []
