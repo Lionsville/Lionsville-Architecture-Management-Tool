@@ -127,6 +127,19 @@ export function describeHistoryRepository(name: string, make: MakeRepositories):
       expect(await names(all[3])).toEqual(['Crews'])
     })
 
+    it('keeps a content that arrived whole in the history of each thing it changed, and of no other', async () => {
+      const { repositories, acme } = await withEntries(addCrews, addDepot)
+      const read = await repositories.state(acme)
+      const content = { ...read, model: { ...read.model, elements: read.model.elements.map((one) => (one.id === 'depot' ? { ...one, name: 'Depot planning' } : one)) } }
+      const { id: _id, address: _address, revision: _revision, updatedAt: _updatedAt, ...arriving } = content
+      await repositories.steps(acme, { type: 'scope.replace', content: arriving })
+      await repositories.record('Replaced with the working file')
+      const depot = await everyEntry(repositories.history, { scopes: [acme], record: { kind: 'element', id: 'depot' } })
+      expect(depot.map((entry) => entry.subject)).toEqual(['Replaced with the working file', 'step 2'])
+      const crews = await everyEntry(repositories.history, { scopes: [acme], record: { kind: 'element', id: 'crews' } })
+      expect(crews.map((entry) => entry.subject)).toEqual(['step 1'])
+    })
+
     it('answers a thing’s history: the entries with a step that wrote it, and no others', async () => {
       const { repositories, acme } = await withEntries(addCrews, addDepot, renameCrews,
         { type: 'element.update', id: 'depot', patch: { name: 'Depot planning' } })

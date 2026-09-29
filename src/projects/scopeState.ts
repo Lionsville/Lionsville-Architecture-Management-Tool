@@ -101,8 +101,23 @@ export type ImageCommand =
 /** A change to what a scope says about itself. A key present with `undefined` clears it, as a model patch does. */
 export type DescribeCommand = { type: 'scope.describe'; patch: ScopeDescription }
 
+/**
+ * A scope's content made equal to one that arrives whole, and used for that
+ * alone: a working set landed on a scope, and a scope built from an example.
+ * Never the open scope's own writes, which are the commands its session
+ * applied, and never a restore, which is the model's own command and keeps
+ * what a restore keeps.
+ *
+ * What was there and is not in the content goes; the records it touched are
+ * read off the content before and after, as every step's are, so the history
+ * of each thing it changed shows it. The pictures' bytes go through
+ * `ImageRepository` first, as for `image.add`. Like any step it may say what
+ * it expects the scope to be, so it never lands over a state nobody read.
+ */
+export type ReplaceCommand = { type: 'scope.replace'; content: ScopeContent }
+
 /** Everything a step may carry. */
-export type ScopeCommand = Command | ImageCommand | DescribeCommand
+export type ScopeCommand = Command | ImageCommand | DescribeCommand | ReplaceCommand
 
 /**
  * One step, on its way to a scope.
@@ -259,6 +274,7 @@ function applyOne(working: Working, command: ScopeCommand): Outcome {
     case 'image.add': return addImage(working, command.image)
     case 'image.remove': return removeImage(working, command.name)
     case 'scope.describe': return describe(working, command.patch)
+    case 'scope.replace': return replace(command.content)
     default: {
       const result = apply(working.model, command)
       if (!result.ok) return { ok: false, refused: result.reason }
@@ -285,6 +301,27 @@ function removeImage(working: Working, name: ImageName): Outcome {
   const images = working.images.filter((held) => held.name !== name)
   if (images.length === working.images.length) return { ok: false, refused: 'command.gone' }
   return { ok: true, working: { ...working, images } }
+}
+
+/**
+ * A content taken whole, held to what a step building it would be held to:
+ * a description with only the keys a description has, and a library whose
+ * every entry describes its picture under a name no other entry has.
+ */
+function replace(content: ScopeContent): Outcome {
+  if (typeof content !== 'object' || content === null || !Array.isArray(content.images)) {
+    return { ok: false, refused: 'command.notAField' }
+  }
+  const { model, images, ...description } = content
+  const described = describe({ description: {}, model: fromArrays(model), images: [] }, description)
+  if (!described.ok) return described
+  let working = described.working
+  for (const image of images) {
+    const added = addImage(working, image)
+    if (!added.ok) return added
+    working = added.working
+  }
+  return { ok: true, working }
 }
 
 /** The keys a description may carry. */

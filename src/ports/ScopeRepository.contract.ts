@@ -421,6 +421,72 @@ export function describeScopeRepository(name: string, make: MakeRepositories): v
       })
     })
 
+    /**
+     * A content that arrives whole — a working file landed on a scope, a scope
+     * built from an example — is one step (`scope.replace`), held to what any
+     * step is held to.
+     */
+    describe('a content that arrives whole', () => {
+      const arriving = () => ({
+        ...emptyContent('Acme Logistics', { kind: 'domain' as const, activeDiagramId: 'l7' }),
+        model: replayed(emptyContent('Acme Logistics').model, [addDepot, addLandscape]),
+      })
+
+      it('makes the scope hold exactly that content, what was there and is not in it gone', async () => {
+        const repositories = await fresh()
+        const acme = await repositories.scope('acme', 'Acme Logistics')
+        await repositories.steps(acme, addCrews, { type: 'scope.describe', patch: { client: 'Acme' } })
+        const read = await repositories.state(acme)
+        ok(await repositories.apply([{ scope: acme, steps: [step({ type: 'scope.replace', content: arriving() })], expects: read.revision }]))
+        const after = await repositories.state(acme)
+        expect(held(after)).toEqual({ id: acme, address: 'acme', ...arriving() })
+        expect(after.revision).not.toBe(read.revision)
+      })
+
+      it('is refused over a revision somebody has moved on from, and keeps theirs', async () => {
+        const repositories = await fresh()
+        const acme = await repositories.scope('acme', 'Acme Logistics')
+        const read = await repositories.state(acme)
+        await repositories.steps(acme, addCrews)
+        const answer = await repositories.apply([{ scope: acme, steps: [step({ type: 'scope.replace', content: arriving() })], expects: read.revision }])
+        expect(answer).toEqual({ refused: 'shell.scopeMoved', scope: acme })
+        expect((await repositories.state(acme)).model.elements.map((one) => one.id)).toEqual(['crews'])
+      })
+
+      it('lands once when it is sent twice', async () => {
+        const repositories = await fresh()
+        const acme = await repositories.scope('acme', 'Acme Logistics')
+        const once = step({ type: 'scope.replace', content: arriving() })
+        const first = ok(await repositories.apply([{ scope: acme, steps: [once] }])).revisions[0]
+        await repositories.steps(acme, addCrews)
+        const now = (await repositories.state(acme)).revision
+        expect(ok(await repositories.apply([{ scope: acme, steps: [once] }])).revisions).toEqual([now])
+        expect(now).not.toBe(first)
+        expect((await repositories.state(acme)).model.elements.map((one) => one.id).sort()).toEqual(['crews', 'depot'])
+      })
+
+      it('changes no revision where the content is the one held', async () => {
+        const repositories = await fresh()
+        const acme = await repositories.scope('acme', 'Acme Logistics')
+        await repositories.steps(acme, { type: 'scope.replace', content: arriving() })
+        const read = (await repositories.state(acme)).revision
+        await repositories.steps(acme, { type: 'scope.replace', content: arriving() })
+        expect((await repositories.state(acme)).revision).toBe(read)
+      })
+
+      it('refuses a library entry no picture may have, and a description key there is not', async () => {
+        const repositories = await fresh()
+        const acme = await repositories.scope('acme', 'Acme Logistics')
+        const bad = { name: 'a b.png', mediaType: 'image/png', size: 3, width: 1, height: 1, contentAddress: `sha256:${'0'.repeat(64)}` }
+        expect(refusal(await repositories.apply([{ scope: acme, steps: [step({ type: 'scope.replace', content: { ...arriving(), images: [bad] } })] }])))
+          .toBe('shell.imageBadName')
+        const odd = { ...arriving(), shelf: 'nowhere' } as ReturnType<typeof arriving>
+        expect(refusal(await repositories.apply([{ scope: acme, steps: [step({ type: 'scope.replace', content: odd })] }])))
+          .toBe('command.notAField')
+        expect((await repositories.state(acme)).model.elements).toEqual([])
+      })
+    })
+
     describe('a scope that could not be read whole', () => {
       it('is there to be looked at, and refuses every step', async (context) => {
         const repositories = await fresh()
