@@ -16,7 +16,10 @@
  * you meant it is a window that trains you to dismiss the question. What it
  * does ask about is the case where saving did not work — a folder that has
  * gone, a permission withdrawn — because closing then really does lose
- * something.
+ * something. The page's own `beforeunload` holds while work is unsaved, and
+ * a close it holds is cancelled without a word unless main says otherwise
+ * (`will-prevent-unload`): so *Close anyway* destroys the window, and a close
+ * main has let go is not held by the page.
  *
  * **A dead renderer is a window that will never paint again.** Without a word
  * it stays on screen showing the last frame it managed, and the only way to
@@ -53,7 +56,7 @@ export const SAVE_BEFORE_CLOSE_MS = 5_000
 export const RENDERER_LOG_PREFIX = '[lvarch]'
 
 /** As much of a window as its guards use. */
-export type GuardedWindow = Pick<BrowserWindow, 'on' | 'close' | 'isDestroyed'> & {
+export type GuardedWindow = Pick<BrowserWindow, 'on' | 'close' | 'destroy' | 'isDestroyed'> & {
   webContents: Pick<BrowserWindow['webContents'], 'on' | 'reload'>
 }
 
@@ -125,22 +128,29 @@ function relayConsole(window: GuardedWindow, deps: WindowGuardDeps): void {
 }
 
 function guardUnsavedWork(window: GuardedWindow, unsaved: () => boolean, deps: WindowGuardDeps): void {
+  /** The close goes ahead: the work is saved, or the person said to close anyway. */
   let letting = false
-  window.on('close', (event) => {
-    if (letting || !unsaved() || deps.unattended) return
-    event.preventDefault()
-    deps.save()
+  /** A close main let through, which the page may still object to. */
+  let closing = false
+  let waiting = false
 
+  /** Save, then close once saved — or ask, where saving did not work in time. */
+  const closeWhenSaved = () => {
+    if (waiting) return
+    waiting = true
+    deps.save()
     const deadline = Date.now() + SAVE_BEFORE_CLOSE_MS
     const poll = setInterval(() => {
       if (!unsaved()) {
         clearInterval(poll)
+        waiting = false
         letting = true
         window.close()
         return
       }
       if (Date.now() <= deadline) return
       clearInterval(poll)
+      waiting = false
       const choice = deps.dialog.showMessageBoxSync(window as BrowserWindow, {
         type: 'warning',
         message: 'This project could not be saved.',
@@ -150,9 +160,36 @@ function guardUnsavedWork(window: GuardedWindow, unsaved: () => boolean, deps: W
         cancelId: 1,
       })
       if (choice !== 0) return
+      // Closed as the person said, and not asked of the page: its own
+      // `beforeunload` holds while work is unsaved, and would cancel a close
+      // without a word.
       letting = true
-      window.close()
+      window.destroy()
     }, 100)
+  }
+
+  window.on('close', (event) => {
+    if (letting || deps.unattended) return
+    if (!unsaved()) {
+      closing = true
+      return
+    }
+    event.preventDefault()
+    closeWhenSaved()
+  })
+  // The page's own `beforeunload` holds the unload while it has work unsaved,
+  // and Electron then cancels the close without a word. A close main has let
+  // go — saved, or closed anyway — goes on; one the page knows more about
+  // than main did is saved first, as any close with work unsaved is. A reload
+  // the page holds stays held, as it always was.
+  window.webContents.on('will-prevent-unload', (event) => {
+    if (letting || deps.unattended) {
+      event.preventDefault()
+      return
+    }
+    if (!closing) return
+    closing = false
+    closeWhenSaved()
   })
 }
 

@@ -26,6 +26,8 @@ function window() {
     destroyed: false,
     on,
     close: () => { held.closed += 1 },
+    forced: 0,
+    destroy: () => { held.forced += 1; held.destroyed = true },
     isDestroyed: () => held.destroyed,
     webContents: { on, reload: () => { held.reloaded += 1 }, isCrashed: () => held.crashed },
     raise: (event: string, ...args: unknown[]) => { for (const listener of listeners.get(event) ?? []) listener(...args) },
@@ -110,6 +112,54 @@ describe('a window made again, where the app ran with none', () => {
     held.windows.first()
     held.windows.again()
     expect(held.made).toHaveLength(1)
+  })
+})
+
+describe('closing anyway, and what the page says about it', () => {
+  const unloading = (one: Window) => {
+    const event = { preventDefault: vi.fn() }
+    one.raise('will-prevent-unload', event)
+    return event
+  }
+
+  it('closes anyway without asking the page, whose own unload handler would cancel it', async () => {
+    const held = app({ answer: 0 })
+    const first = held.windows.first()
+    reportUnsaved(first.webContents, true)
+    held.closing(first)
+    await vi.advanceTimersByTimeAsync(SAVE_BEFORE_CLOSE_MS + 200)
+    expect(held.state.asked).toBe(1)
+    expect(first.forced).toBe(1)
+    expect(first.closed).toBe(0)
+  })
+
+  it('does not let the page hold a close once the work is saved', async () => {
+    const held = app()
+    const first = held.windows.first()
+    reportUnsaved(first.webContents, true)
+    held.closing(first)
+    reportUnsaved(first.webContents, false)
+    await vi.advanceTimersByTimeAsync(200)
+    expect(first.closed).toBe(1)
+    // The page had not heard yet, and holds the unload.
+    expect(unloading(first).preventDefault).toHaveBeenCalled()
+  })
+
+  it('saves first where the page knows of work main did not, then closes', async () => {
+    const held = app()
+    const first = held.windows.first()
+    expect(held.closing(first).preventDefault).not.toHaveBeenCalled()
+    expect(unloading(first).preventDefault).not.toHaveBeenCalled()
+    expect(held.state.saves).toBe(1)
+    await vi.advanceTimersByTimeAsync(200)
+    expect(first.closed).toBe(1)
+  })
+
+  it('leaves a reload the page holds held, as it always was', () => {
+    const held = app()
+    const first = held.windows.first()
+    expect(unloading(first).preventDefault).not.toHaveBeenCalled()
+    expect(held.state.saves).toBe(0)
   })
 })
 
