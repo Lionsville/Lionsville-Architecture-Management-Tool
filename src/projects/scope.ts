@@ -112,6 +112,14 @@ export type ScopeSnapshot = {
    */
   unread?: readonly string[]
   /**
+   * What the scope's header held that this build does not read — written by
+   * a newer build, or by a reader of the same scope that keeps more about it
+   * than a snapshot does — handed back on a save so that it survives one.
+   * Absent where there was none. What this build reads is never taken from
+   * here: a key it knows is written from the snapshot's own fields.
+   */
+  carried?: Readonly<Record<string, unknown>>
+  /**
    * What the store that read this scope calls the state it read it in.
    *
    * Stamped by a store on `load`, like `updatedAt`, and never written: it is

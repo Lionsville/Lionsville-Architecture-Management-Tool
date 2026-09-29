@@ -429,6 +429,7 @@ function header(scope: ScopeSnapshot, files: FolderFile[]): ScopeFile {
   })
 
   return {
+    ...scope.carried,
     type: WORKING_FILE_TYPE,
     version: SCOPE_FORMAT_VERSION,
     name: model.name,
@@ -1005,10 +1006,29 @@ export function scopeFromFolder(
       ? held.activeDiagramId : undefined),
     logoLibrary: readLogos(folder, held),
     ...(images.length ? { imageLibrary: images } : {}),
+    ...carriedOf(held),
     // Read as far as it reads, so it can be looked at; said, so nothing writes
     // the empty model — or the header without a mark — it would be saved as.
     ...leftOut(folder, held, byName, elements, failed),
   }
+}
+
+/** The keys of `scope.json` the header itself writes; any other is carried through a save. */
+const HEADER_KEYS: ReadonlySet<string> = new Set<keyof ScopeFile>([
+  'type', 'version', 'name', 'kind', 'client', 'description', 'links', 'activeDiagramId', 'diagrams',
+  'defaults', 'logos', 'interchange',
+])
+
+/**
+ * What a header holds that this build does not write, for a save to hand
+ * back (`ScopeSnapshot.carried`): a key a newer build added, or one a reader
+ * that keeps more about a scope than a snapshot does wrote there. Dropping it
+ * on the next save would be this build deciding what somebody else's key
+ * was worth.
+ */
+function carriedOf(held: ScopeFile): Pick<ScopeSnapshot, 'carried'> {
+  const carried = Object.fromEntries(Object.entries(held).filter(([key]) => !HEADER_KEYS.has(key)))
+  return Object.keys(carried).length ? { carried } : {}
 }
 
 /** What a reading left out, and what of that the scope cannot do without — see {@link scopeFromFolder}. */

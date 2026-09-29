@@ -494,6 +494,20 @@ describe('projectFromFolder', () => {
     const files = scopeFiles(project({ activeDiagramId: 'deleted' }))
     expect(scopeFromFolder(files, REF)?.activeDiagramId).toBe('l7')
   })
+
+  it('carries a header key it does not write through a save, and never over one it does', () => {
+    const files = scopeFiles(project()).map((file) => (file.path !== SCOPE_FILE || !('text' in file) ? file : {
+      ...file,
+      text: stableJson({ ...JSON.parse(file.text) as object, id: 'scope-1', fromANewerBuild: { level: 3 } }),
+    }))
+    const read = scopeFromFolder(files, REF)
+    expect(read?.carried).toEqual({ id: 'scope-1', fromANewerBuild: { level: 3 } })
+    const header = (again: FolderFile[]) => JSON.parse((again.find((file) => file.path === SCOPE_FILE) as { text: string }).text) as Record<string, unknown>
+    expect(header(scopeFiles(read!))).toMatchObject({ id: 'scope-1', fromANewerBuild: { level: 3 } })
+    const renamed = { ...read!, carried: { ...read!.carried, name: 'Not the name' }, model: { ...read!.model, name: 'Renamed' } }
+    expect(header(scopeFiles(renamed)).name).toBe('Renamed')
+    expect(scopeFromFolder(scopeFiles(project()), REF)?.carried).toBeUndefined()
+  })
 })
 
 describe('scopeSummaryFrom', () => {
