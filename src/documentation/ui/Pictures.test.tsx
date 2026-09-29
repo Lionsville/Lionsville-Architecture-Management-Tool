@@ -221,15 +221,16 @@ describe('pictures in a document', () => {
     expect(source.asked.map((one) => one.name).sort()).toEqual(['depot.png', 'yard.png'])
   })
 
-  it('reserves nothing for an entry that declares no size', () => {
+  it('lays out an entry that declares no size in the default shape, which its picture is fitted inside', () => {
     const { container } = renderShell(
       <PicturesProvider source={SOURCE()} scope="crews" library={[entry('plan.svg', 0, 0, 4)]} watch={scrolling()}>
         <MarkdownView markdown={'![Plan](image:plan.svg)'} />
       </PicturesProvider>,
     )
     const plan = picture(container, 'plan.svg')
-    expect(plan.hasAttribute('width')).toBe(false)
-    expect(plan.style.aspectRatio).toBe('')
+    expect([plan.getAttribute('width'), plan.getAttribute('height')]).toEqual(['640', '480'])
+    expect(getComputedStyle(plan).aspectRatio.replace(/\s/g, '')).toBe('640/480')
+    expect(getComputedStyle(plan).objectFit).toBe('contain')
   })
 
   it('opens a shown picture full size on a click, and closes it on the next; an empty box opens nothing', async () => {

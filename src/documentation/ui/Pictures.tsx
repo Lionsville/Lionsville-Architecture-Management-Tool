@@ -199,6 +199,13 @@ const WAITING = {
 const FAILED = { color: 'text.secondary', fontStyle: 'italic' } as const
 
 /**
+ * The shape a picture that declares no size — an SVG with neither a size nor
+ * a view box — is laid out in before it arrives, and shown fitted inside
+ * after: a box that changed when the picture came would move the page.
+ */
+const UNSIZED = { width: 640, height: 480 } as const
+
+/**
  * A picture in the page, and the same picture at full size on a click.
  *
  * Its box is the entry's: `width` and `height` are the dimensions the picture
@@ -206,13 +213,17 @@ const FAILED = { color: 'text.secondary', fontStyle: 'italic' } as const
  * the page has scales it — so the box is the size it will be before a byte
  * arrives. The page shows it no taller than most of the window, so a tall
  * screenshot does not take the page with it; the picture is fitted inside the
- * box, not the box to the picture. An entry with no dimensions reserves none.
+ * box, not the box to the picture. An entry that declares no size is laid
+ * out in {@link UNSIZED}'s shape, and its picture fitted inside that.
+ *
+ * `minHeight: 0` and `overflow: hidden` keep the box its own size wherever it
+ * sits — a flex column otherwise lets it grow to what arrived.
  */
 export function LibraryPicture({ entry, alt }: { entry: ImageEntry; alt: string }) {
   const element = useRef<HTMLImageElement>(null)
   const { address, failed } = usePicture(entry, element)
   const [open, setOpen] = useState(false)
-  const sized = entry.width > 0 && entry.height > 0
+  const { width, height } = entry.width > 0 && entry.height > 0 ? entry : UNSIZED
   return (
     <>
       <Box
@@ -222,16 +233,19 @@ export function LibraryPicture({ entry, alt }: { entry: ImageEntry; alt: string 
         alt={alt}
         data-picture={entry.name}
         {...(failed ? { 'data-failed': '' } : {})}
-        {...(sized ? { width: entry.width, height: entry.height } : {})}
+        width={width}
+        height={height}
         onClick={address ? () => setOpen(true) : undefined}
         sx={{
           display: 'block',
           maxWidth: '100%',
           height: 'auto',
           maxHeight: '70vh',
+          minHeight: 0,
+          overflow: 'hidden',
           objectFit: 'contain',
           borderRadius: 1,
-          ...(sized ? { aspectRatio: `${entry.width} / ${entry.height}` } : {}),
+          aspectRatio: `${width} / ${height}`,
           ...(address ? { cursor: 'zoom-in' } : failed ? FAILED : WAITING),
         }}
       />
