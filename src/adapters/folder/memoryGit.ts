@@ -13,7 +13,7 @@
  * what a commit changed, a lookup. The suites over a real folder run the
  * machine's own git instead.
  */
-import { isBinaryPath } from '../../projects/folderFormat'
+import { isBinaryPath } from './format/folderFormat'
 import type { DirectoryHandleLike } from './DirectoryHandle'
 import { fingerprint } from '../../projects/revision'
 import type { CommitsWanted, CommittedFile, FolderChange, FolderCommit, FolderGit, FolderTag, TreeEntry } from './folderGit'

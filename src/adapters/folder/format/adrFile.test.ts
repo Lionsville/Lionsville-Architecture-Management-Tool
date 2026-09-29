@@ -7,7 +7,7 @@
  * way to disk is worse than one that was never written out.
  */
 import { describe, expect, it } from 'vitest'
-import type { Adr } from '../decisions/adr'
+import type { Adr } from '../../../decisions/adr'
 import { adrFileText, adrFromFile, adrPath } from './adrFile'
 
 function record(over: Partial<Adr> = {}): Adr {

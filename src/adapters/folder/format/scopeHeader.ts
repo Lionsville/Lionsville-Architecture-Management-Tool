@@ -5,7 +5,7 @@
  * What a scope's header file is called, and the one thing outside the renderer
  * that ever reads it.
  *
- * The format lives in `projects/folderFormat.ts` and is the only place that
+ * The format lives in `folderFormat.ts` beside it and is the only place that
  * knows what a scope's files mean. This is smaller than that on purpose: the
  * desktop's main process needs the organisation's name — for the window title,
  * and for the Recent menu, where a working directory IS the root scope
@@ -13,8 +13,8 @@
  * decisions and the plans into a compile that has no DOM in it and no business
  * with any of them.
  *
- * So the name of the file and the name in it live here, in `platform`, which is
- * what main reads; the format imports the constant from here rather than
+ * So the name of the file and the name in it live here, a file of their own in
+ * the folder's format, which is what main reads; the format imports the constant from here rather than
  * declaring a second one, because two spellings of `scope.json` is one spelling
  * and one oversight.
  *
@@ -30,8 +30,7 @@ export const SCOPE_FILE = 'scope.json'
 /**
  * The version that file carries — here for the same reason `SCOPE_FILE` is.
  *
- * `projects/folderFormat.ts` owns what the number MEANS and re-exports this
- * one; main only ever needs to say it, and a second spelling of it is one
+ * `folderFormat.ts` owns what the number MEANS and re-exports this one; main only ever needs to say it, and a second spelling of it is one
  * spelling and one oversight. The smoke test is what asks: it reads a header
  * off the disk to prove the format wrote what it says it writes, and it had
  * the number typed into it until ADR-0018 turned it.

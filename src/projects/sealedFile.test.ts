@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { isSealed, MAX_ITERATIONS, sealBytes, SEAL_ITERATIONS, unsealBytes } from './sealedFile'
-import { isZip } from './workingFile'
+import { isZip } from '../adapters/folder/format/workingFile'
 
 /** Enough rounds to be a real derivation, few enough for a fast loop. */
 const QUICK = { iterations: 1_000 }

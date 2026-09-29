@@ -23,7 +23,7 @@
 import type { HostModel } from '../../model/hostModel'
 import { IMAGE_REFERENCE, imageName, imageNameKey, imageNameOfReference } from '../../model/imageName'
 import type { ImageName } from '../../model/imageName'
-import { adrPath } from '../../projects/adrFile'
+import { adrPath } from './format/adrFile'
 
 /** The folder, inside a scope's own, that its pictures are kept in. */
 export const PICTURES = 'images'

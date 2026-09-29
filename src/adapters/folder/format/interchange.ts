@@ -21,11 +21,11 @@ import type {
   Arrival, BringOptions, CarriedOut, CarryOptions, Interchange, Opened, ReadBack,
 } from '../../../ports/Interchange'
 import type { Repositories } from '../../../ports/Repositories'
-import { openDocumentBytes, WORKING_FILE_MEDIA_TYPE, workingFileBytes, workingFileName } from '../../../projects/workingFile'
+import { openDocumentBytes, WORKING_FILE_MEDIA_TYPE, workingFileBytes, workingFileName } from './workingFile'
 import {
   compareManifests, manifestOf, manifestTotals, MANIFEST_TYPE,
-} from '../../../projects/workingFileManifest'
-import type { ManifestDifference, WorkingFileManifest } from '../../../projects/workingFileManifest'
+} from './workingFileManifest'
+import type { ManifestDifference, WorkingFileManifest } from './workingFileManifest'
 import { WORKING_FILE_ACCEPTS } from './workingFileKinds'
 
 /** What a working file is read out of: a source's scopes, and its pictures' bytes. */

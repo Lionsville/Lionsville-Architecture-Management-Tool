@@ -39,15 +39,15 @@
 import type {
   DesignDiagram, DiagramGroup, DiagramMember, DomainGroupRect, EdgeRoute, Geometry, NodeGeometry,
   Relation,
-} from '../model'
-import type { HostModel } from '../model/hostModel'
-import { FIGURE_MEANS, isNodeFigure } from '../model/kinds'
-import { claimKey } from '../model/keys'
-import { splitRoutes } from '../model/routes'
-import { parseJson, stableJson, textFromBytes } from './text'
+} from '../../../model'
+import type { HostModel } from '../../../model/hostModel'
+import { FIGURE_MEANS, isNodeFigure } from '../../../model/kinds'
+import { claimKey } from '../../../model/keys'
+import { splitRoutes } from '../../../model/routes'
+import { parseJson, stableJson, textFromBytes } from '../../../projects/text'
 import { diagramFiles, DIAGRAMS_FOLDER, MODEL_FILE } from './folderFormat'
 import type { FolderFile } from './folderFormat'
-import type { ScopeSnapshot } from './scope'
+import type { ScopeSnapshot } from '../../../projects/scope'
 
 /** The version this file reads. There is no 1 or 2: the folder began at 3. */
 const FORMAT_3 = 3

@@ -10,9 +10,10 @@
  * them (`src/providers/`) and the composition root imports an implementation,
  * or the folder format. The import matrix in
  * `eslint.config.js` already keeps `adapters` out of every module but the
- * composition root; what it cannot say is that a handful of files *inside*
- * the domain's own modules are the folder format and belong with the folder's
- * implementation. {@link FOLDER_FORMAT} names them, and the test reads the
+ * composition root; what it cannot say is that a file *inside* the domain's
+ * own modules is the folder format and belongs with the folder's
+ * implementation. {@link FOLDER_FORMAT} names any such file (there are none
+ * left), and the test reads the
  * import graph `cycles.ts` builds — types included, because a type names what
  * it knows as surely as a value does.
  *
@@ -31,9 +32,9 @@
  * the other half reads; a word a landscape is made of ({@link CONTENT_WORDS});
  * and the strings of the marks ({@link CONTENT_FILES}).
  *
- * **Today's exceptions, and they only shrink.** {@link IMPORT_EXCEPTIONS} and
- * {@link WORD_EXCEPTIONS} are the tree as it stood when the rule arrived, each
- * entry exactly what that file does. The test fails on anything not listed,
+ * **The exceptions, and they only shrank.** {@link IMPORT_EXCEPTIONS} and
+ * {@link WORD_EXCEPTIONS} were the tree as it stood when the rule arrived, each
+ * entry exactly what that file did; both are empty now, and stay so. The test fails on anything not listed,
  * and on an entry that no longer holds — so a file that stops crossing the
  * line takes its entry with it. {@link FOLDER_FORMAT} is held the same way:
  * every file on it must exist and still sit in the domain, and leaves the list
@@ -76,24 +77,15 @@ export function mayKnowStorage(file: string): boolean {
 }
 
 /**
- * The folder format, still in the domain: the working file's codec and the
- * files of the format it reads — a scope as files, the files' text, what a
- * scope's header file is called, and the readers of the formats before this
- * one. They are the folder implementation's, and move into its format
- * (`adapters/folder/format/`) together; each leaves this list as it does.
+ * The folder format, still in the domain: none. The working file's codec and
+ * the files of the format it reads — a scope as files, the files' text, what
+ * a scope's header file is called, and the readers of the formats before this
+ * one — moved into the folder's implementation (`adapters/folder/format/`)
+ * together, and the app reaches them through `ports/Interchange.ts`. The list
+ * stays, held to its ceiling of none, so a file of the format written back
+ * into the domain is a decision a diff shows.
  */
-export const FOLDER_FORMAT: readonly string[] = [
-  'src/platform/scopeHeader.ts',
-  'src/projects/adrFile.ts',
-  'src/projects/fileText.ts',
-  'src/projects/folderFormat.ts',
-  'src/projects/migrate3to4.ts',
-  'src/projects/migrate4to5.ts',
-  'src/projects/observationFile.ts',
-  'src/projects/transitionFile.ts',
-  'src/projects/workingFile.ts',
-  'src/projects/workingFileManifest.ts',
-]
+export const FOLDER_FORMAT: readonly string[] = []
 
 /**
  * The words that name a storage mechanism, and why each is one. A phrase of
@@ -282,17 +274,12 @@ export function importsAcross(graph: Graph): Record<string, string[]> {
 }
 
 /**
- * Each domain file's imports across the line: the working-file codec's, and
- * its users'. The codec reads the folder's format, and moves into it with the
- * files of the format it reads; until then it is the one part of the format
- * the domain still holds.
+ * Each domain file's imports across the line: none. The last were the
+ * working-file codec's users, which ask `ports/Interchange.ts` now.
  */
-export const IMPORT_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {
-  'src/projects/index.ts': ['src/projects/workingFile.ts'],
-  'src/projects/scope.ts': ['src/projects/workingFileManifest.ts'],
-}
+export const IMPORT_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {}
 
-/** Each domain file's storage words, and the folder format's patterns in its strings. */
+/** Each domain file's storage words, and the folder format's patterns in its strings: none. */
 export const WORD_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {}
 
 /**
@@ -303,10 +290,10 @@ export const WORD_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {}
  */
 export const CEILINGS = {
   /** Files of the folder format still in the domain. */
-  folderFormat: 10,
+  folderFormat: 0,
   /** Files importing across the line, and the imports between them. */
-  importingFiles: 2,
-  imports: 2,
+  importingFiles: 0,
+  imports: 0,
   /** Files naming storage, and the words and patterns between them. */
   namingFiles: 0,
   words: 0,

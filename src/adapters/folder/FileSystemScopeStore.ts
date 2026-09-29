@@ -5,7 +5,7 @@
  * Scopes as folders in a working directory the user chose.
  *
  * A scope is a folder of text files (ADR-0003 for why, and
- * `projects/folderFormat.ts` for the format itself): a real thing the person
+ * `adapters/folder/format/folderFormat.ts` for the format itself): a real thing the person
  * owns, that can sit in OneDrive, be committed, be read by a version of this
  * tool that does not exist yet. That is a different promise from browser
  * storage, which is a per-browser cache the user cannot see and a "clear site
@@ -54,17 +54,17 @@ import {
   SCOPE_FILE,
   TRANSITIONS_FOLDER, OBSERVATIONS_FOLDER,
   SCOPE_FOLDERS, SCOPE_FORMAT_VERSION, scopeFiles, scopeSummaryFrom, isBinaryPath,
-} from '../../projects/folderFormat'
-import type { FolderFile } from '../../projects/folderFormat'
-import { markdownBody } from '../../projects/fileText'
-import { OBSERVATION_SUBFOLDERS, observationFromFile } from '../../projects/observationFile'
+} from './format/folderFormat'
+import type { FolderFile } from './format/folderFormat'
+import { markdownBody } from './format/fileText'
+import { OBSERVATION_SUBFOLDERS, observationFromFile } from './format/observationFile'
 import type { Observation } from '../../model/observation'
-import { isSupersededPath, openScopeFolder } from '../../projects/migrate4to5'
+import { isSupersededPath, openScopeFolder } from './format/migrate4to5'
 import { scopeMoved } from '../../projects/revision'
 import { scopeTree, sortScopes } from '../../projects/scope'
 import type { ScopeModel, ScopeSnapshot, ScopeSummary } from '../../projects/scope'
 import type { Transition } from '../../model/transition'
-import { transitionFromFile } from '../../projects/transitionFile'
+import { transitionFromFile } from './format/transitionFile'
 
 import {
   isSafeScopePath, parentScope, ROOT_SCOPE, scopePathLabel, scopeSegments,

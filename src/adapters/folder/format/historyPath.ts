@@ -30,10 +30,10 @@
  */
 import type { ElementId } from '../../../model'
 import type { HostModel } from '../../../model/hostModel'
-import { adrPathPattern } from '../../../projects/adrFile'
+import { adrPathPattern } from './adrFile'
 import {
   descriptionPath, diagramStems, DIAGRAMS_FOLDER, GEOMETRY_SUFFIX, MODEL_FILE,
-} from '../../../projects/folderFormat'
+} from './folderFormat'
 import type { ScopeIndex } from '../../../projects/scopeIndex'
 import type { ScopePath } from '../../../projects/scopePath'
 

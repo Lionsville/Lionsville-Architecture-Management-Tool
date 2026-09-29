@@ -8,7 +8,7 @@
  * and in what order, is the folder's.
  */
 import { fingerprint } from '../../projects/revision'
-import type { FolderFile } from '../../projects/folderFormat'
+import type { FolderFile } from './format/folderFormat'
 
 /**
  * A scope's revision, from the files it is kept as: every path and what is in

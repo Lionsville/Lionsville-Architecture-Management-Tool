@@ -81,7 +81,7 @@ const MAY_IMPORT = {
   editor: ['model', 'layout', 'i18n', 'platform', 'widgets', 'documentation', 'search'],
   agent: ['model', 'layout', 'i18n', 'platform', 'documentation', 'decisions', 'observations', 'business', 'search'],
   ports: ['model', 'platform', 'projects', 'agent'],
-  adapters: ['model', 'platform', 'projects', 'ports', 'agent'],
+  adapters: ['model', 'platform', 'projects', 'ports', 'agent', 'decisions'],
   providers: ['model', 'i18n', 'platform', 'widgets', 'projects', 'ports', 'adapters'],
   // `platform/node` is the one thing the top of the tree may not have either:
   // `app` is the renderer, and code that says `node:` cannot be in it.
@@ -106,7 +106,7 @@ const WHY = {
   editor: 'The editor takes a model and emits batches. Decisions and projects reach it as props.',
   agent: 'An agent asks about the landscape in the landscape\'s own terms — including a laid-out page, which is arithmetic like any other. It does not know how the model is drawn or where it is saved.',
   ports: 'A seam names what crosses it: a project, a model, a diagnostic, an agent\'s request.',
-  adapters: 'An adapter fills one seam: the model, projects, ports, platform and the agent\'s vocabulary are all it may know.',
+  adapters: 'An adapter fills one seam: the model, projects, ports, platform and the agent\'s vocabulary are all it may know — and what a decision record is, which the folder\'s format writes as a file of its own (ADR-0031 §2).',
   providers: 'A provider is a place work is kept, whole: its implementation, its way in and its chrome (ADR-0022, ADR-0031 §4). It may draw, in the language that is on, and name how it keeps work; only the composition root registers one, and it knows no screen of the app\'s.',
   app: 'Ask for a ProjectStore / PreferencesStore / DocumentGateway; src/app/composition.ts picks which.',
 }
@@ -464,7 +464,7 @@ export const GROWN = {
   'src/observations/ui/SolutionPicture.tsx': { complexity: 26, lines: 221 },
   'src/observations/ui/SolutionReaders.tsx': { complexity: 57, lines: 269 },
   'src/projects/documentSession.ts': { complexity: 34 },
-  'src/projects/folderFormat.ts': { complexity: 35 },
+  'src/adapters/folder/format/folderFormat.ts': { complexity: 35 },
   'src/projects/scopeIndex.ts': { complexity: 30 },
   'src/roadmap/ui/PlanPage.tsx': { lines: 160 },
   'src/roadmap/ui/RoadmapPage.tsx': { lines: 315 },

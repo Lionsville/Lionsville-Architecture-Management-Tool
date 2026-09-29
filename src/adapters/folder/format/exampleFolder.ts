@@ -46,8 +46,8 @@
  * should be the most readable thing in this directory. One `import` of one JSON
  * file, no build-tool features, and the reader is the format's own.
  */
-import { SCOPE_FILE, scopeFromFolder } from '../../../projects/folderFormat'
-import type { FolderFile } from '../../../projects/folderFormat'
+import { SCOPE_FILE, scopeFromFolder } from './folderFormat'
+import type { FolderFile } from './folderFormat'
 import type { ScopeSnapshot } from '../../../projects/scope'
 import { joinScope } from '../../../projects/scopePath'
 import type { ScopePath } from '../../../projects/scopePath'

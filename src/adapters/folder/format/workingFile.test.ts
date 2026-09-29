@@ -9,14 +9,15 @@
  * tool, and the file that is none of those.
  */
 import { describe, expect, it } from 'vitest'
-import { laidOut } from '../model/testFixtures';
+import { laidOut } from '../../../model/testFixtures';
 import { unzipSync, zipSync } from 'fflate'
-import { WORKING_FILE_TYPE } from '../model/hostModel'
-import { bytesFromText, stableJson, textFromBytes } from './text'
+import { WORKING_FILE_TYPE } from '../../../model/hostModel'
+import { bytesFromText, stableJson, textFromBytes } from '../../../projects/text'
 import { SCOPE_FORMAT_VERSION, scopeFiles } from './folderFormat'
-import { bareScope } from './scope'
-import type { ScopeSnapshot } from './scope'
-import { isZip, openDocumentBytes, workingFileBytes, workingFileName } from './workingFile'
+import { bareScope } from '../../../projects/scope'
+import type { ScopeSnapshot } from '../../../projects/scope'
+import { isZip, openDocumentBytes, openScopeDocument, toWorkingFile, workingFileBytes, workingFileName } from './workingFile'
+import { sampleScope } from '../ScopeStore.contract'
 
 function project(over: Partial<ScopeSnapshot> = {}): ScopeSnapshot {
   return {
@@ -346,5 +347,75 @@ describe('a picture that is not a PNG', () => {
     const opened = openDocumentBytes(workingFileBytes([withPicture]), bareScope('', ''))
     if (!opened.ok) throw new Error('did not open')
     expect(opened.scope.imageLibrary?.[0].url).toBe(url)
+  })
+})
+
+describe('toWorkingFile', () => {
+  it('carries model, diagram and version, and nothing the reader has no business with', () => {
+    const file = toWorkingFile(sampleScope())
+    expect(file.type).toBe('lionsville-architecture')
+    expect(file.version).toBe(2)
+    expect(file.activeDiagramId).toBe('l7')
+    // Where you filed it is not the reader's business.
+    expect('path' in file).toBe(false)
+    expect(file.logoLibrary).toHaveLength(1)
+    // An empty library is left out entirely, which keeps a file without
+    // uploaded marks textually identical to a v1 file apart from the version
+    // number — which saves noise in a diff.
+    expect('logoLibrary' in toWorkingFile(sampleScope({ logoLibrary: [] }))).toBe(false)
+  })
+
+  it('passes its own recognition check', async () => {
+    const { isWorkingFile } = await import('../../../model/hostModel')
+    expect(isWorkingFile(JSON.parse(JSON.stringify(toWorkingFile(sampleScope()))))).toBe(true)
+  })
+})
+
+describe('openScopeDocument — working file', () => {
+  const into = sampleScope()
+
+  it('takes over model, diagram and marks, and lands in the project it was opened from', () => {
+    const parsed = JSON.parse(JSON.stringify(toWorkingFile(sampleScope())))
+    const result = openScopeDocument(parsed, into)
+    expect(result.ok && result.kind).toBe('workingFile')
+    expect(result.ok && result.scope.logoLibrary).toHaveLength(1)
+    // A file says what the design is; it does not get to say where you filed it.
+    const elsewhere = openScopeDocument(parsed, { ...into, path: 'acme/landscape' })
+    expect(elsewhere.ok && elsewhere.scope.path).toEqual('acme/landscape')
+    // And it carries its own geometry, so there is nothing to lay out again.
+    expect(result).toMatchObject({ relayout: false })
+  })
+
+  it('falls back to the first diagram when the stored one is gone, and to no marks for a v1 file', () => {
+    const gone = JSON.parse(JSON.stringify(toWorkingFile(sampleScope({ activeDiagramId: 'gone' }))))
+    const result = openScopeDocument(gone, into)
+    expect(result.ok && result.scope.activeDiagramId).toBe('l7')
+    const v1 = openScopeDocument(
+      { type: 'lionsville-architecture', version: 1, model: sampleScope().model }, into)
+    expect(v1.ok && v1.scope.logoLibrary).toEqual([])
+  })
+
+  it('refuses a working file without diagrams, with its own key', () => {
+    const empty = { ...toWorkingFile(into), model: { ...into.model, diagrams: [] } }
+    expect(openScopeDocument(empty, into))
+      .toEqual({ ok: false, messageKey: 'shell.workingFileNoDiagrams' })
+  })
+})
+
+describe('openScopeDocument — the rest', () => {
+  const into = sampleScope()
+
+  it.each([
+    ['an arbitrary object', { something: 'else' }],
+    ['a string', 'just text'],
+    ['nothing', null],
+    ['a list', []],
+  ])('refuses %s as an unknown file', (_name, input) => {
+    expect(openScopeDocument(input, into)).toEqual({ ok: false, messageKey: 'shell.unknownFile' })
+  })
+
+  it('refuses a working file from a later version rather than half-reading it', () => {
+    expect(openScopeDocument({ ...toWorkingFile(into), version: 99 }, into))
+      .toEqual({ ok: false, messageKey: 'shell.unknownFile' })
   })
 })

@@ -21,9 +21,9 @@
  * shape and reads several, because a file in the user's folder can be edited by
  * anything, and a record that half-parses is worth more than a refusal.
  */
-import { ADR_STATUSES } from '../decisions/adr'
-import type { Adr, AdrSigner, AdrStatus, AdrVerdict } from '../decisions/adr'
-import { KEY_RE, slug } from '../model/keys'
+import { ADR_STATUSES } from '../../../decisions/adr'
+import type { Adr, AdrSigner, AdrStatus, AdrVerdict } from '../../../decisions/adr'
+import { KEY_RE, slug } from '../../../model/keys'
 import {
   frontMatterNumber, frontMatterRows, frontMatterString, frontMatterText, markdownBody, readFrontMatter,
 } from './fileText'

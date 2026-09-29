@@ -6,7 +6,7 @@
  *
  * This file used to also pin the boundary between what the model could say and
  * what format 3 could hold. The file says what the model says since format 4,
- * so that pair is gone; `projects/migrate3to4.test.ts` is where the old
+ * so that pair is gone; `adapters/folder/format/migrate3to4.test.ts` is where the old
  * spelling is pinned now.
  */
 import { describe, expect, it } from 'vitest'

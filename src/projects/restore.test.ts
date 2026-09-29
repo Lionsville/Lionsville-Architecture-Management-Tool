@@ -11,7 +11,7 @@ import { describe, expect, it } from 'vitest'
 import { laidOut } from '../model/testFixtures';
 import { apply, fromArrays, restoreCommand, toArrays } from '../model'
 import type { HostModel } from '../model/hostModel'
-import { scopeFiles } from './folderFormat'
+import { scopeFiles } from '../adapters/folder/format/folderFormat'
 import type { ScopeSnapshot } from './scope'
 
 const element = (id: string, name: string, description?: string) => ({

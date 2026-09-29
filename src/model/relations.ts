@@ -14,7 +14,7 @@
  * What used to live here as well was the pair that folded the model's list into
  * the one called `connections` that format 3 wrote, and the refusal that guarded
  * it. Format 4 writes `relations` with the type on every row, so there is
- * nothing left to fold and nothing left to refuse; `projects/migrate3to4.ts`
+ * nothing left to fold and nothing left to refuse; `adapters/folder/format/migrate3to4.ts`
  * reads the old spelling, and the interchange export — which is a contract with
  * other tools and does not change — takes its flows through `flowsOf`.
  */

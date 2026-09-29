@@ -10,7 +10,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { transitionFileText, transitionFromFile, transitionPath } from './transitionFile'
-import type { Transition } from '../model/transition'
+import type { Transition } from '../../../model/transition'
 
 function plan(over: Partial<Transition> = {}): Transition {
   return {

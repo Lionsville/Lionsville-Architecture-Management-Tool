@@ -17,17 +17,17 @@
  * that comes out, the files that go, and a round trip that does not move.
  */
 import { describe, expect, it } from 'vitest'
-import type { Adr } from '../decisions/adr'
-import type { HostModel } from '../model/hostModel'
-import type { Transition } from '../model/transition'
+import type { Adr } from '../../../decisions/adr'
+import type { HostModel } from '../../../model/hostModel'
+import type { Transition } from '../../../model/transition'
 import { adrFileText, adrPath } from './adrFile'
-import { stableJson, textFromBytes } from './text'
+import { stableJson, textFromBytes } from '../../../projects/text'
 import { isFormatPath, scopeFiles } from './folderFormat'
 import type { FolderFile } from './folderFormat'
 import { foldFolderToFormat4, migrateModel } from './migrate3to4'
 import { openScopeFolder } from './migrate4to5'
 import { transitionFileText, transitionPath } from './transitionFile'
-import type { ScopePath } from './scopePath'
+import type { ScopePath } from '../../../projects/scopePath'
 
 const REF: ScopePath = 'acme-logistics/landscape'
 

@@ -23,7 +23,7 @@ import { DESKTOP_APP_LINK, FILE_MENU, HELP_MENU, PREFERENCES_ITEM, THEME_ITEMS, 
 import { translator } from '../i18n'
 import type { ScopeSnapshot } from '../projects/scope'
 import { sealBytes, unsealBytes } from '../projects/sealedFile'
-import { workingFileBytes } from '../projects/workingFile'
+import { workingFileBytes } from '../adapters/folder/format/workingFile'
 import { renderApp } from './testing/renderShell'
 
 vi.mock('../editor', async (importOriginal) => {

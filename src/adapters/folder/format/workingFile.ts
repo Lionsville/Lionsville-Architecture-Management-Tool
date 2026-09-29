@@ -30,16 +30,20 @@
  * the question rather than the zipping.
  */
 import { unzipSync, zipSync } from 'fflate'
-import { slug } from '../model/keys'
-import { WORKING_FILE_EXTENSION } from '../model/hostModel'
-import { bytesFromText, parseJson, textFromBytes } from './text'
+import { slug } from '../../../model/keys'
+import {
+  WORKING_FILE_EXTENSION, WORKING_FILE_TYPE, WORKING_FILE_VERSION, isWorkingFile, workingFileLogoLibrary,
+} from '../../../model/hostModel'
+import type { WorkingFile } from '../../../model/hostModel'
+import { bytesFromText, parseJson, textFromBytes } from '../../../projects/text'
 import { isBinaryPath, SCOPE_FILE, scopeFiles } from './folderFormat'
 import { migrateSnapshot } from './migrate3to4'
 import { openScopeFolder } from './migrate4to5'
 import type { FolderFile } from './folderFormat'
-import { openScopeDocument } from './scope'
-import { joinScopePath } from './scopePath'
-import type { OpenResult, ScopeSnapshot } from './scope'
+import { resolveActive } from '../../../projects/scope'
+import { joinScopePath } from '../../../projects/scopePath'
+import type { OpenRefusal, ScopeSnapshot } from '../../../projects/scope'
+import type { ScopePath } from '../../../projects/scopePath'
 import { MANIFEST_FILE, manifestText, readManifest } from './workingFileManifest'
 import type { WorkingFileManifest } from './workingFileManifest'
 
@@ -47,6 +51,93 @@ export { WORKING_FILE_EXTENSION }
 
 /** What a `.lvarch` is, now that it is a zip and not a JSON document. */
 export const WORKING_FILE_MEDIA_TYPE = 'application/zip'
+
+/**
+ * The scope as a working file, ready to be written out.
+ *
+ * `logoLibrary` is left out when empty: a file without uploaded marks then stays
+ * textually identical to a v1 file apart from the version number, which saves
+ * noise in a diff or a version control system.
+ *
+ * The path does not go in. A working file is something you hand to somebody
+ * else, and where it was filed in your store is none of their business — they
+ * open it into a scope of their own.
+ */
+export function toWorkingFile(scope: ScopeSnapshot): WorkingFile {
+  return {
+    type: WORKING_FILE_TYPE,
+    version: WORKING_FILE_VERSION,
+    model: scope.model,
+    activeDiagramId: scope.activeDiagramId,
+    ...(scope.logoLibrary.length ? { logoLibrary: scope.logoLibrary } : {}),
+  }
+}
+
+/**
+ * What comes back from an opened file.
+ *
+ * `relayout` belongs to the outcome and not to the caller: a working file
+ * carries its own geometry and must be left alone. It is a property of what you
+ * opened, and it stays on the outcome because a file that carries no geometry
+ * is a shape this reader may have to know again.
+ *
+ * A refusal carries a KEY and not a sentence. This layer does not know the
+ * shell's language; the shell turns it into words at the moment of showing it.
+ */
+export type OpenResult =
+  | {
+    ok: true
+    /** The scope at the top of the file — the one that becomes the open one. */
+    scope: ScopeSnapshot
+    /**
+     * The scopes filed under it, if the file carried any (ADR-0018), already
+     * addressed relative to where {@link OpenResult.scope} landed.
+     *
+     * Absent rather than empty for a file that holds one scope, which is every
+     * `.lvarch` written before format 6 and every one written from a scope with
+     * nothing under it. A caller that only knows how to replace one scope is
+     * then not quietly dropping anything — there is nothing to drop — and one
+     * that does know is told plainly that there is.
+     */
+    rest?: readonly ScopeSnapshot[]
+    /**
+     * What the file says it holds (ADR-0023, amended), where it carries a
+     * manifest; absent for every file written before there was one.
+     */
+    manifest?: WorkingFileManifest
+    /** Scopes in the file, relative to its top, whose folders would not open. */
+    unopened?: readonly ScopePath[]
+    relayout: boolean
+    kind: 'workingFile'
+  }
+  | { ok: false; messageKey: OpenRefusal }
+
+/**
+ * A read and parsed file, landed into the scope it was opened from.
+ *
+ * `into` is the scope being replaced: the file supplies the content, the open
+ * scope supplies where it is filed.
+ */
+export function openScopeDocument(
+  parsed: unknown,
+  into: ScopeSnapshot,
+): OpenResult {
+  if (isWorkingFile(parsed)) {
+    if (!parsed.model?.diagrams?.length) return { ok: false, messageKey: 'shell.workingFileNoDiagrams' }
+    return {
+      ok: true,
+      kind: 'workingFile',
+      relayout: false,
+      scope: {
+        path: into.path,
+        model: parsed.model,
+        activeDiagramId: resolveActive(parsed.model, parsed.activeDiagramId),
+        logoLibrary: workingFileLogoLibrary(parsed),
+      },
+    }
+  }
+  return { ok: false, messageKey: 'shell.unknownFile' }
+}
 
 /**
  * The whole point of a fixed timestamp: an export is reproducible.

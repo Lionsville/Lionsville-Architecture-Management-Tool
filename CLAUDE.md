@@ -360,23 +360,11 @@ src/projects/     A scope: open, save, order, summarise, address, remember.
                     scopePath · scopeLabel   the address, and what to call the
                                       organisation a scope sits in
                     links             the one rule about what may become an anchor
-                    folderFormat      a scope as files (ADR-0003); adrFile ·
-                                      transitionFile · fileText
-                    migrate3to4 · migrate4to5   the last readers of the two
-                                      formats before this one (ADR-0012 §11)
-                    workingFile       the .lvarch container: v5 is the folder, zipped
-                    workingFileManifest   what a working file says it holds, and a
-                                      landing held to it (ADR-0023, amended)
-                    historyPath       where one thing is filed, for its history —
-                                      and, for an element's page, everywhere in
-                                      the tree it is filed (§7)
                     documentSession   dirty / saving / changed on disk / conflict
                     commitMessage     what a snapshot is called, drafted from the
                                       log — `translateFrom(table)` and an English
                                       drafter beside it, so a process with no
                                       screen drafts without the registry
-                    migration         out of browser storage into the folder, and
-                                      out of an older format into this one
                     revision          what a save expects to overwrite: the
                                       fingerprint a store stamps, and the refusal
                     scopeState        a scope's address, identity, revision and
@@ -396,9 +384,8 @@ src/platform/     What the app runs inside, and what a failure looks like.
                                       the File and View items said once as data
                     theme · workingSource · updateSettings · sync   facts two
                                       processes share (ADR-0005)
-                    scopeHeader · windowTitle   what a scope's header file is
-                                      called and what it is called on screen —
-                                      the two things main reads about a folder
+                    windowTitle       what a scope is called on screen, which
+                                      main reads about a folder
                     updates           is this newer, which file is mine, can this
                                       copy replace itself where it runs — the
                                       desktop's update check, without its fetch
@@ -466,6 +453,12 @@ src/ports/        The seams. Interfaces only, no implementations.
                                       one maker for all five, run by every
                                       implementation and by every provider that
                                       ships, over what its `open` answers
+                    Interchange       the organisation carried out as one parcel
+                                      and brought in as `scope.replace` steps,
+                                      pictures' bytes first, and what landed
+                                      held to what it says it holds (ADR-0031
+                                      §2); the working file fills it, and the
+                                      app names no format
                     ProviderParts · ScopeSession   what a provider hands the app
                                       when its source opens, and what the app
                                       hands the chrome and panels it draws —
@@ -506,13 +499,26 @@ src/adapters/     The outside world, one folder per flavour.
                                       history, and over a real folder with git;
                                       `history.perf.test.ts` holds the history
                                       to a budget on ten thousand commits
-                                      …and `format/`: the folder's own format as
-                                      it leaves the domain — the settings file,
-                                      the pass that brings an older folder up to
-                                      date, the paths a history was asked by and
-                                      the examples as they ship. The node side
-                                      may read this folder and nothing else of
-                                      the implementations
+                                      …and `format/`: the folder's own format,
+                                      all of it — a scope as files
+                                      (`folderFormat`, with `adrFile`,
+                                      `transitionFile`, `observationFile`,
+                                      `fileText` and `scopeHeader`), the last
+                                      readers of the formats before this one
+                                      (`migrate3to4`, `migrate4to5`), the pass
+                                      that brings an older folder up to date
+                                      (`migration`), the settings file, the
+                                      paths a history was asked by
+                                      (`historyPath`), the examples as they
+                                      ship, and the working file: the folder
+                                      zipped (`workingFile`), what it says it
+                                      holds (`workingFileManifest`), and the
+                                      interchange every source exports and
+                                      imports through (`interchange`). The
+                                      node side may read this folder and
+                                      nothing else of the implementations —
+                                      `platform/node/workingFile.ts` is a
+                                      server's way to the working file
                     repositories/     the five repositories over a keyed store
                                       (`KeyedStore`: transactions, all or
                                       nothing), written once for memory and this
@@ -722,7 +728,7 @@ If you find yourself writing `localStorage`, `fetch`, `FileReader` or
 the record). A scope's records live on its own `model.decisions`, and each is
 about whatever its **`subjectId`** names — any element the scope knows, or, with
 none, the scope itself (ADR-0012 §7). That field was `applicationId` while an
-application was the only thing a record could be about; `projects/adrFile.ts`
+application was the only thing a record could be about; `adapters/folder/format/adrFile.ts`
 reads the old spelling and writes only the new one, and **format 6 drops the
 alias**. The agent takes `subjectId` and accepts `applicationId` for one beta,
 which `agent/tools.ts` says out loud.
@@ -737,7 +743,7 @@ status is a state machine — proposed → reviewing → accepted | rejected,
 accepted → superseded (with the successor's id) — and the three end states lock
 the record: `updateAdr` and `removeAdr` refuse them. Numbers are per scope's
 list and never reused. A record is one markdown file with front matter
-(`projects/adrFile.ts`), and a record about one element goes in a folder of its
+(`adapters/folder/format/adrFile.ts`), and a record about one element goes in a folder of its
 own because numbers are per list.
 
 ## Scopes
@@ -1072,8 +1078,8 @@ older version opens and migrates (`docs/plan-2.0.0.md`). A 1.x build meeting a
 2.x file sees no project in it, which is the honest answer and the same one
 `isWorkingFile` gives a file it does not know. No shim is kept for an older
 build's sake: a shim exists only until the format that makes it unnecessary is
-written, and then the read half of it moves into `projects/migrate3to4.ts` or
-`projects/migrate4to5.ts` and the write half goes.
+written, and then the read half of it moves into `adapters/folder/format/migrate3to4.ts` or
+`adapters/folder/format/migrate4to5.ts` and the write half goes.
 
 ## State of play
 
@@ -1245,7 +1251,7 @@ and shows the recipe per client with the real port and token filled in.
 Then the history became **history a person can use** (`docs/decisions/0008`),
 on one property: it only ever grows, and every entry keeps meaning what it
 meant. `entries()` takes a scope — a project and the paths one thing is filed
-at, which `projects/historyPath.ts` says out loud from the format's own naming,
+at, which `adapters/folder/format/historyPath.ts` says out loud from the format's own naming,
 a decision by its number prefix because its title is in the file name — and
 the desktop answers it with one `git log`. The page has a subject picker and
 opens prefiltered from a diagram's tab, the documentation page and a decision's
@@ -1320,7 +1326,7 @@ file saying what the model says**: `model.json` holds `elements` and
 `diagrams/<id>.geometry.json` holds numbers. The rule that made it cheap is
 written at the top of the plan — 2.x breaks the format as often as the model
 needs, as long as every older version opens and migrates — so the three folds
-did not disappear, their read halves moved into `projects/migrate3to4.ts`, the
+did not disappear, their read halves moved into `adapters/folder/format/migrate3to4.ts`, the
 one file that still knows the old spelling. Opening an older folder transforms
 it: a snapshot first where there is git, then every project rewritten, and the
 superseded placement files leave under the store's own removal rule. Which
@@ -1354,7 +1360,7 @@ shell's question. And a scope's **name is one write**, where a group's rename
 was a sweep over its projects that could half-finish and had a message for when
 it did.
 
-`projects/migrate4to5.ts` is the last reader of format 4 and the one door every
+`adapters/folder/format/migrate4to5.ts` is the last reader of format 4 and the one door every
 folder comes through — a 1.x folder goes 3 → 4 → 5. The pass over a whole tree
 (`upgradeProjects`) also gives a `scope.json` to the two folders format 4 had
 that were not records: a group nobody wrote a `group.json` for, and the root,

@@ -17,11 +17,11 @@
  * What may happen to a plan — the status machine, the numbering — is
  * `model/transition.ts` and is none of this file's business. This is the codec.
  */
-import { TRANSITION_STATUSES } from '../model/transition'
+import { TRANSITION_STATUSES } from '../../../model/transition'
 import type {
   Transition, TransitionElement, TransitionMilestone, TransitionRole, TransitionStatus,
-} from '../model/transition'
-import { slug } from '../model/keys'
+} from '../../../model/transition'
+import { slug } from '../../../model/keys'
 import {
   frontMatterNumber, frontMatterRows, frontMatterString, frontMatterText, markdownBody, readFrontMatter,
 } from './fileText'

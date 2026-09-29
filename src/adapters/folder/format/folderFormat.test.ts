@@ -7,19 +7,19 @@
  * change to one thing changes one file.
  */
 import { describe, expect, it } from 'vitest'
-import { laidOut } from '../model/testFixtures';
-import type { Adr } from '../decisions/adr'
-import type { DesignElement } from '../model'
-import type { Transition } from '../model/transition'
-import type { HostModel } from '../model/hostModel'
-import { stableJson, textFromBytes } from './text'
+import { laidOut } from '../../../model/testFixtures';
+import type { Adr } from '../../../decisions/adr'
+import type { DesignElement } from '../../../model'
+import type { Transition } from '../../../model/transition'
+import type { HostModel } from '../../../model/hostModel'
+import { stableJson, textFromBytes } from '../../../projects/text'
 import {
   isFormatPath, MODEL_FILE, modelListsFrom, modelRowFrom, SCOPE_FILE, SCOPE_FORMAT_VERSION, scopeFiles, scopeFromFolder,
   scopeSummaryFrom,
 } from './folderFormat'
 import type { FolderFile } from './folderFormat'
-import type { ScopeSnapshot } from './scope'
-import type { ScopePath } from './scopePath'
+import type { ScopeSnapshot } from '../../../projects/scope'
+import type { ScopePath } from '../../../projects/scopePath'
 
 const REF: ScopePath = 'acme-logistics/landscape'
 

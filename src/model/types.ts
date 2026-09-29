@@ -193,7 +193,7 @@ export interface DesignElement {
    * say a function's area, a step's phase and an actor's group of actors, and
    * one parent is what a tree wants — so the field lost the word that named
    * only one of its uses. Format 3 still writes the old spelling
-   * (`projects/folderFormat.ts`), and stops at format 4.
+   * (`adapters/folder/format/folderFormat.ts`), and stops at format 4.
    */
   parentId?: ElementId;
   /**
@@ -812,7 +812,7 @@ export interface DesignModel {
   /**
    * Every row that joins two elements, of whatever type (ADR-0012 §5). The
    * file still calls the flows among them `connections`, and does so until
-   * format 4 — `projects/folderFormat.ts` is where the two names meet.
+   * format 4 — `adapters/folder/format/folderFormat.ts` is where the two names meet.
    */
   relations: Relation[];
 }

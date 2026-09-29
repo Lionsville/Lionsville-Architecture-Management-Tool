@@ -65,7 +65,7 @@ export type Adr = {
    * It was `applicationId` while an application was the only thing a record
    * could be about and a group's records were a list of their own. The three
    * lists are one list now, and the field says what it always meant: which
-   * subject. `projects/adrFile.ts` still READS the old spelling, and format 6
+   * subject. `adapters/folder/format/adrFile.ts` still READS the old spelling, and format 6
    * drops that alias.
    */
   subjectId?: string

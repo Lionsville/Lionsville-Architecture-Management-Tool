@@ -23,13 +23,13 @@
 import {
   CAUSE_STATES, CAUSE_STRENGTHS, EXPERIMENT_OUTCOMES, OBSERVATION_EVENT_KINDS, OBSERVATION_IMPACTS,
   SOLUTION_EVENT_KINDS, SOLUTION_SIZES, SOLUTION_STATES,
-} from '../model/observation'
+} from '../../../model/observation'
 import type {
   Cause, CauseLink, CauseState, CauseStrength, EarlierAttempt, Experiment, ExperimentOutcome, Observation,
   ObservationEvent, ObservationEventKind, ObservationImpact, Solution, SolutionEvent, SolutionEventKind,
   SolutionLink, SolutionSize, SolutionState,
-} from '../model/observation'
-import { slug } from '../model/keys'
+} from '../../../model/observation'
+import { slug } from '../../../model/keys'
 import {
   frontMatterNumber, frontMatterRows, frontMatterString, frontMatterText, markdownBody, readFrontMatter,
 } from './fileText'

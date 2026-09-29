@@ -20,7 +20,7 @@ import {
 } from '../../../../electron/main/fileStore'
 import { describeDirectoryHandle } from '../DirectoryHandle.contract'
 import { describeScopeStore, sampleScope } from '../ScopeStore.contract'
-import { SCOPE_FORMAT_VERSION } from '../../../projects/folderFormat'
+import { SCOPE_FORMAT_VERSION } from '../format/folderFormat'
 import { flattenScopes } from '../../../projects/scope'
 import { FileSystemScopeStore } from '../FileSystemScopeStore'
 import type { DesktopFiles } from '../../desktop/channel'

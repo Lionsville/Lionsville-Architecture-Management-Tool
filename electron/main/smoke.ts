@@ -43,7 +43,7 @@ import { productName } from '../../package.json'
 import { sendCommand } from './appMenu'
 import { grantDirectory } from './files'
 import { logFilePath } from './log'
-import { SCOPE_FORMAT_VERSION } from '../../src/platform/scopeHeader'
+import { SCOPE_FORMAT_VERSION } from '../../src/adapters/folder/format/scopeHeader'
 import { USER_DATA_NAME } from '../../src/platform/userData'
 import type { DesktopDirectory } from '../../src/adapters/desktop/channel'
 
@@ -710,7 +710,7 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
     const plan = await agent<{ id: string; label: string }>('plan.create', { title: 'Smoke plan' })
     await agent('project.save')
     // A record about one element goes in a folder of its own, because numbers
-    // are per list (`projects/adrFile.ts`); a plan is flat under transitions/.
+    // are per list (`adapters/folder/format/adrFile.ts`); a plan is flat under transitions/.
     const decisions = await readdir(join(first.root, EXAMPLE.landscape, 'decisions', addedId))
     const plans = await readdir(join(first.root, EXAMPLE.landscape, 'transitions'))
     const decisionFile = decisions.find((name) => /^\d{4}-smoke-decision\.md$/.test(name))

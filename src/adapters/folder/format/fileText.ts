@@ -18,7 +18,7 @@
  *
  * Nothing here knows what a scope is. That is `folderFormat.ts`.
  */
-import { parseJson } from './text'
+import { parseJson } from '../../../projects/text'
 
 /**
  * A markdown body as a file, and back.

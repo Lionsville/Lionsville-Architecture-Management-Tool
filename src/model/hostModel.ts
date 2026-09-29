@@ -120,7 +120,7 @@ export const WORKING_FILE_EXTENSION = '.lvarch'
  * There are versions 3 to 6, and they are deliberately not in this union: they
  * are a folder in a zip (ADR-0003), so there is no JSON document to carry a
  * version field at all. The number lives inside, on the folder's `scope.json` —
- * one number for one shape. `projects/workingFile.ts` reads it, and reaches the
+ * one number for one shape. `adapters/folder/format/workingFile.ts` reads it, and reaches the
  * two below by asking whether the bytes are a zip.
  */
 export type WorkingFileVersion = 1 | 2

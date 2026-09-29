@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { describe, expect, it } from 'vitest'
-import type { Cause, Experiment, Observation, Solution } from '../model/observation'
+import type { Cause, Experiment, Observation, Solution } from '../../../model/observation'
 import {
   causeFileText, causeFromFile, causePath, experimentFileText, experimentFromFile, experimentPath,
   observationFileText, observationFromFile, observationPath, solutionFileText, solutionFromFile, solutionPath,

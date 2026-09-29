@@ -25,7 +25,7 @@
  * One line of history: a browser's folder has no branch and no merge.
  */
 import { ShellError } from '../../../platform/errors'
-import { isBinaryPath } from '../../../projects/folderFormat'
+import { isBinaryPath } from '../format/folderFormat'
 import { LOCAL_SETTINGS_PATH } from '../format/folderSettings'
 import type { DirectoryHandleLike } from '../DirectoryHandle'
 import type { CommitsWanted, CommittedFile, FolderChange, FolderCommit, FolderGit, FolderTag, TreeEntry } from '../folderGit'

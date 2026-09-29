@@ -3,11 +3,11 @@
 
 import { unzipSync, zipSync } from 'fflate'
 import { describe, expect, it } from 'vitest'
-import { element, laidOut } from '../model/testFixtures'
-import { textFromBytes } from './text'
+import { element, laidOut } from '../../../model/testFixtures'
+import { textFromBytes } from '../../../projects/text'
 import { scopeFiles } from './folderFormat'
-import { bareScope } from './scope'
-import type { ScopeSnapshot } from './scope'
+import { bareScope } from '../../../projects/scope'
+import type { ScopeSnapshot } from '../../../projects/scope'
 import { openDocumentBytes, workingFileBytes } from './workingFile'
 import { compareManifests, MANIFEST_FILE, manifestOf, manifestTotals, readManifest } from './workingFileManifest'
 

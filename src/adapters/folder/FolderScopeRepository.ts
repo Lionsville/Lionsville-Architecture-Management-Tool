@@ -52,7 +52,7 @@ import type { FolderNode, FolderScopes, ReadScope } from './folderScopes'
 import { bytesAt, createAt, filesUnder, folderAt, removeAt, textAt, writeAt } from './handles'
 import { filesInDocuments } from './imageLibrary'
 import type { StepMemory } from './stepMemory'
-import { SCOPE_FILE } from '../../projects/folderFormat'
+import { SCOPE_FILE } from './format/folderFormat'
 
 type Run = { read: ReadScope; steps: ScopeStep[] }
 

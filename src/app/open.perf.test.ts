@@ -6,7 +6,7 @@ import { fromArrays } from '../model'
 import { BUDGET, measure } from '../model/testing/measure'
 import { syntheticModel } from '../model/testing/synthetic'
 import { buildEdges, buildNodes } from '../editor/graph'
-import { scopeFiles, scopeFromFolder } from '../projects/folderFormat'
+import { scopeFiles, scopeFromFolder } from '../adapters/folder/format/folderFormat'
 import type { ScopePath } from '../projects/scopePath'
 import type { ScopeSnapshot } from '../projects/scope'
 

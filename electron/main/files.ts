@@ -26,7 +26,7 @@ import { readFile, writeFile } from 'node:fs/promises'
 import { basename, join } from 'node:path'
 import { realpath } from 'node:fs/promises'
 import type { DesktopChange, DesktopDirectory } from '../../src/adapters/desktop/channel'
-import { SCOPE_FILE, scopeNameIn } from '../../src/platform/scopeHeader'
+import { SCOPE_FILE, scopeNameIn } from '../../src/adapters/folder/format/scopeHeader'
 import {
   excludeLocalSettings, filesAt, gitAvailable, history, initRepository, isRepository, label, pull, push, remote,
   resolve, snapshot,

@@ -37,7 +37,7 @@
  */
 import type { ScopeModel, ScopeSnapshot, ScopeSummary } from '../../projects/scope'
 import type { ScopePath } from '../../projects/scopePath'
-import type { WorkingFileManifest } from '../../projects/workingFileManifest'
+import type { WorkingFileManifest } from './format/workingFileManifest'
 
 
 export interface ScopeStore {
@@ -178,7 +178,7 @@ export interface ScopeStore {
    *
    * The storage format is the store's business and nobody else's, so this is
    * the one question the migration cannot answer for itself (ADR-0012 §11 and
-   * `projects/migrate4to5.ts`). It is asked on every open and is almost always
+   * `adapters/folder/format/migrate4to5.ts`). It is asked on every open and is almost always
    * empty, so it is written to be cheap: one header per scope, no content.
    *
    * Optional because a store need not have a past. An in-memory one has none,

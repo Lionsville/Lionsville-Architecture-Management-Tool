@@ -3,9 +3,9 @@
 
 import { describe, expect, it } from 'vitest'
 import { diagramFiles, scopeFiles } from './folderFormat'
-import type { ScopeSnapshot } from './scope'
-import { BUDGET, measure } from '../model/testing/measure'
-import { syntheticModel } from '../model/testing/synthetic'
+import type { ScopeSnapshot } from '../../../projects/scope'
+import { BUDGET, measure } from '../../../model/testing/measure'
+import { syntheticModel } from '../../../model/testing/synthetic'
 
 /**
  * What a save costs, on a landscape of two thousand elements.

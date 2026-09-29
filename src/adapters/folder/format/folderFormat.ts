@@ -37,7 +37,7 @@
  * **The file says what the model says**, which is what format 4 brought and
  * format 5 keeps: a writer and a reader that name the same fields the model
  * does, so a person reading `model.json` is reading the model.
- * `projects/migrate3to4.ts` and `projects/migrate4to5.ts` are the last readers
+ * `adapters/folder/format/migrate3to4.ts` and `adapters/folder/format/migrate4to5.ts` are the last readers
  * of the formats before it, and the only places that still know those
  * spellings.
  *
@@ -58,19 +58,19 @@
  * there is nowhere to write the difference. Everything else round-trips
  * exactly, including the absent-versus-empty distinction on a diagram's routes.
  */
-import { ADR_STATUSES } from '../decisions/adr'
-import type { Adr } from '../decisions/adr'
+import { ADR_STATUSES } from '../../../decisions/adr'
+import type { Adr } from '../../../decisions/adr'
 import type {
   AspectConfigEntry, DesignDiagram, DesignElement, DiagramGroup, DiagramLine, DiagramMember,
   DomainGroupRect, Geometry, NodeGeometry, PlatformArchetype, Relation, RouteGeometry, UploadedLogo,
-} from '../model'
-import { imageMediaType, isImageFile } from '../model/documentImage'
-import type { HostModel } from '../model/hostModel'
-import type { Transition } from '../model/transition'
-import type { Cause, Experiment, Observation, Solution } from '../model/observation'
-import { WORKING_FILE_TYPE } from '../model/hostModel'
-import { SCOPE_FILE, SCOPE_FORMAT_VERSION } from '../platform/scopeHeader'
-import { slug } from '../model/keys'
+} from '../../../model'
+import { imageMediaType, isImageFile } from '../../../model/documentImage'
+import type { HostModel } from '../../../model/hostModel'
+import type { Transition } from '../../../model/transition'
+import type { Cause, Experiment, Observation, Solution } from '../../../model/observation'
+import { WORKING_FILE_TYPE } from '../../../model/hostModel'
+import { SCOPE_FILE, SCOPE_FORMAT_VERSION } from './scopeHeader'
+import { slug } from '../../../model/keys'
 import { adrFileText, adrFromFile, adrPath, DECISIONS_FOLDER } from './adrFile'
 import {
   TRANSITIONS_FOLDER, transitionFileText, transitionFromFile, transitionPath,
@@ -80,15 +80,15 @@ import {
   experimentFromFile, experimentPath, OBSERVATION_SUBFOLDERS, OBSERVATIONS_FOLDER, observationFileText,
   observationFromFile, observationPath, SOLUTIONS_SUBFOLDER, solutionFileText, solutionFromFile, solutionPath,
 } from './observationFile'
-import { dataUrl, readDataUrl } from './dataUrl'
+import { dataUrl, readDataUrl } from '../../../projects/dataUrl'
 import { markdownBody, markdownFile } from './fileText'
-import { parseJson, stableJson, textFromBytes } from './text'
-import { isLinkList } from './links'
-import type { RecordLink } from './links'
-import { isScopeKind, resolveActive } from './scope'
-import type { CarriedImage, ScopeKind, ScopeSnapshot, ScopeSummary } from './scope'
-import { scopePathLabel } from './scopePath'
-import type { ScopePath } from './scopePath'
+import { parseJson, stableJson, textFromBytes } from '../../../projects/text'
+import { isLinkList } from '../../../projects/links'
+import type { RecordLink } from '../../../projects/links'
+import { isScopeKind, resolveActive } from '../../../projects/scope'
+import type { CarriedImage, ScopeKind, ScopeSnapshot, ScopeSummary } from '../../../projects/scope'
+import { scopePathLabel } from '../../../projects/scopePath'
+import type { ScopePath } from '../../../projects/scopePath'
 
 /**
  * One file in the folder. Text unless it is a bitmap — a PNG has no honest

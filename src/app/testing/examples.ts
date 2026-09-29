@@ -9,7 +9,7 @@
 import acmeLogistics from '../../adapters/folder/format/examples/acme-logistics.json'
 import { exampleFiles as filesOf, exampleScopes as scopesOf } from '../../adapters/folder/format/exampleFolder'
 import type { ExampleFolder } from '../../adapters/folder/format/exampleFolder'
-import type { FolderFile } from '../../projects/folderFormat'
+import type { FolderFile } from '../../adapters/folder/format/folderFormat'
 import type { ScopeSnapshot } from '../../projects/scope'
 import type { ExampleProject } from '../examples/copy'
 import { EXAMPLE_CATALOGUE } from '../examples/offers'

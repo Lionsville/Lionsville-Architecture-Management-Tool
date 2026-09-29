@@ -19,7 +19,7 @@
  * how a scope made where a removed one was starts with none. A commit without
  * one is an entry of each scope whose own files it changed, where they are.
  */
-import { SCOPE_FILE, SCOPE_FOLDERS } from '../../projects/folderFormat'
+import { SCOPE_FILE, SCOPE_FOLDERS } from './format/folderFormat'
 import { SETTINGS_FOLDER, LOCAL_SETTINGS_PATH } from './format/folderSettings'
 import { ROOT_SCOPE } from '../../projects/scopePath'
 import type { ScopeAddress, ScopeId } from '../../projects/scopeState'

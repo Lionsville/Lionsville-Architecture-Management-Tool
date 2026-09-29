@@ -22,7 +22,7 @@ import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { laidOut } from '../model/testFixtures'
 import type { ScopeSnapshot } from '../projects/scope'
 import { sealBytes } from '../projects/sealedFile'
-import { workingFileBytes } from '../projects/workingFile'
+import { workingFileBytes } from '../adapters/folder/format/workingFile'
 import { renderApp } from './testing/renderShell'
 
 vi.mock('../editor', async (importOriginal) => {

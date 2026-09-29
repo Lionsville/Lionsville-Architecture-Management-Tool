@@ -14,7 +14,7 @@
  * migrated project is called — is `migration.ts`'s. This is one folder.
  */
 import { describe, expect, it } from 'vitest'
-import { parseJson } from './text'
+import { parseJson } from '../../../projects/text'
 import { isFormatPath, SCOPE_FILE, SCOPE_FORMAT_VERSION, scopeFiles } from './folderFormat'
 import type { FolderFile } from './folderFormat'
 import { foldFolderToFormat5, GROUP_FILE, isSupersededPath, openScopeFolder, PROJECT_FILE } from './migrate4to5'

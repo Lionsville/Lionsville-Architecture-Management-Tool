@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest'
 import { laidOut } from '../../../model/testFixtures';
 import type { Adr } from '../../../decisions/adr'
 import type { HostModel } from '../../../model/hostModel'
-import { scopeFiles } from '../../../projects/folderFormat'
+import { scopeFiles } from './folderFormat'
 import { historyPaths, historyPlaces, historyScopes } from './historyPath'
 import { indexScopes } from '../../../projects/scopeIndex'
 import type { ScopeSnapshot } from '../../../projects/scope'

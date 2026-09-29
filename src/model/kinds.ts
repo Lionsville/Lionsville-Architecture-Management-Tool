@@ -111,7 +111,7 @@ export function nodeFigure(
  * writes it back.
  *
  * The document is gone (ADR-0018) and this stays, because it is what a
- * format-3 working file on somebody's disk says: `projects/migrate3to4.ts` is
+ * format-3 working file on somebody's disk says: `adapters/folder/format/migrate3to4.ts` is
  * the reader that still needs it, and a fold is not allowed to forget.
  */
 export const FIGURE_MEANS: Record<NodeFigure, { kind: ElementKind; outside?: true }> = {

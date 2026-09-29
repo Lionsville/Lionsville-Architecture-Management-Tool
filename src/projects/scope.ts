@@ -22,10 +22,7 @@
 import type {
   AspectConfigEntry, DesignElement, Relation, Transition, UploadedLogo,
 } from '../model'
-import {
-  WORKING_FILE_TYPE, WORKING_FILE_VERSION, isWorkingFile, workingFileLogoLibrary,
-} from '../model/hostModel'
-import type { HostModel, WorkingFile } from '../model/hostModel'
+import type { HostModel } from '../model/hostModel'
 import type { ImageEntry } from '../model/imageName'
 import type { Observation } from '../model/observation'
 import { isBoardKind } from '../model/placement'
@@ -33,7 +30,6 @@ import type { RecordLink } from './links'
 import { ancestorScopes, isWithinScope, ROOT_SCOPE } from './scopePath'
 import type { ScopePath } from './scopePath'
 import type { ScopeId } from './scopeState'
-import type { WorkingFileManifest } from './workingFileManifest'
 
 /**
  * What a scope is called in the picker — a **label**, not a type.
@@ -398,95 +394,8 @@ export function bareScope(path: ScopePath, name: string, kind?: ScopeKind): Scop
   }
 }
 
-/**
- * The scope as a working file, ready to be written out.
- *
- * `logoLibrary` is left out when empty: a file without uploaded marks then stays
- * textually identical to a v1 file apart from the version number, which saves
- * noise in a diff or a version control system.
- *
- * The path does not go in. A working file is something you hand to somebody
- * else, and where it was filed in your store is none of their business — they
- * open it into a scope of their own.
- */
-export function toWorkingFile(scope: ScopeSnapshot): WorkingFile {
-  return {
-    type: WORKING_FILE_TYPE,
-    version: WORKING_FILE_VERSION,
-    model: scope.model,
-    activeDiagramId: scope.activeDiagramId,
-    ...(scope.logoLibrary.length ? { logoLibrary: scope.logoLibrary } : {}),
-  }
-}
-
-/**
- * What comes back from an opened file.
- *
- * `relayout` belongs to the outcome and not to the caller: a working file
- * carries its own geometry and must be left alone. It is a property of what you
- * opened, and it stays on the outcome because a file that carries no geometry
- * is a shape this reader may have to know again.
- *
- * A refusal carries a KEY and not a sentence. This layer does not know the
- * shell's language; the shell turns it into words at the moment of showing it.
- */
-export type OpenResult =
-  | {
-    ok: true
-    /** The scope at the top of the file — the one that becomes the open one. */
-    scope: ScopeSnapshot
-    /**
-     * The scopes filed under it, if the file carried any (ADR-0018), already
-     * addressed relative to where {@link OpenResult.scope} landed.
-     *
-     * Absent rather than empty for a file that holds one scope, which is every
-     * `.lvarch` written before format 6 and every one written from a scope with
-     * nothing under it. A caller that only knows how to replace one scope is
-     * then not quietly dropping anything — there is nothing to drop — and one
-     * that does know is told plainly that there is.
-     */
-    rest?: readonly ScopeSnapshot[]
-    /**
-     * What the file says it holds (ADR-0023, amended), where it carries a
-     * manifest; absent for every file written before there was one.
-     */
-    manifest?: WorkingFileManifest
-    /** Scopes in the file, relative to its top, whose folders would not open. */
-    unopened?: readonly ScopePath[]
-    relayout: boolean
-    kind: 'workingFile'
-  }
-  | { ok: false; messageKey: OpenRefusal }
-
 /** Why bytes handed over did not open: they hold no view to open on, or are nothing this reads. */
 export type OpenRefusal = 'shell.workingFileNoDiagrams' | 'shell.unknownFile'
-
-/**
- * A read and parsed file, landed into the scope it was opened from.
- *
- * `into` is the scope being replaced: the file supplies the content, the open
- * scope supplies where it is filed.
- */
-export function openScopeDocument(
-  parsed: unknown,
-  into: ScopeSnapshot,
-): OpenResult {
-  if (isWorkingFile(parsed)) {
-    if (!parsed.model?.diagrams?.length) return { ok: false, messageKey: 'shell.workingFileNoDiagrams' }
-    return {
-      ok: true,
-      kind: 'workingFile',
-      relayout: false,
-      scope: {
-        path: into.path,
-        model: parsed.model,
-        activeDiagramId: resolveActive(parsed.model, parsed.activeDiagramId),
-        logoLibrary: workingFileLogoLibrary(parsed),
-      },
-    }
-  }
-  return { ok: false, messageKey: 'shell.unknownFile' }
-}
 
 /**
  * How a list of scopes is ordered.
