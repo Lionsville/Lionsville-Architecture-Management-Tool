@@ -20,7 +20,7 @@
  * no `File`. What arrives has already been read and already `JSON.parse`d.
  */
 import type {
-  AspectConfigEntry, DesignElement, DocumentImage, Relation, Transition, UploadedLogo,
+  AspectConfigEntry, DesignElement, Relation, Transition, UploadedLogo,
 } from '../model'
 import {
   WORKING_FILE_TYPE, WORKING_FILE_VERSION, isWorkingFile, workingFileLogoLibrary,
@@ -52,6 +52,19 @@ export function isScopeKind(value: unknown): value is ScopeKind {
 }
 
 /**
+ * A picture as a snapshot carries it whole: the name the documents give it,
+ * and its bytes as a data URL. What the working file packs and a scope's
+ * snapshot is read and written with. The model's own library is another
+ * thing — an entry per picture, with its dimensions and never its bytes
+ * (`model/imageName.ts`) — and a page asks for the bytes of one only when it
+ * shows it.
+ */
+export type CarriedImage = {
+  file: string
+  url: string
+}
+
+/**
  * One scope, complete.
  *
  * `logoLibrary` belongs here and not with the preferences: the marks sit in the
@@ -75,13 +88,13 @@ export type ScopeSnapshot = {
   /** A ticket queue, a wiki space, a dashboard. */
   links?: RecordLink[]
   /**
-   * The pictures the documents show (ADR-0009).
+   * The pictures the documents show, with their bytes (ADR-0009).
    *
    * Optional, and absent rather than empty: a scope with no pictures has no
    * `images/` folder, and there is nowhere to write the difference between the
    * two — the same reasoning as a model carrying no decisions.
    */
-  imageLibrary?: DocumentImage[]
+  imageLibrary?: CarriedImage[]
   /** ISO timestamp of the last save. Absent until a store has written it once. */
   updatedAt?: string
   /**

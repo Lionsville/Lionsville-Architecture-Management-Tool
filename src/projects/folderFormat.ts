@@ -62,7 +62,7 @@ import { ADR_STATUSES } from '../decisions/adr'
 import type { Adr } from '../decisions/adr'
 import type {
   AspectConfigEntry, DesignDiagram, DesignElement, DiagramGroup, DiagramLine, DiagramMember,
-  DocumentImage, DomainGroupRect, Geometry, NodeGeometry, PlatformArchetype, Relation, RouteGeometry, UploadedLogo,
+  DomainGroupRect, Geometry, NodeGeometry, PlatformArchetype, Relation, RouteGeometry, UploadedLogo,
 } from '../model'
 import { imageMediaType, isImageFile } from '../model/documentImage'
 import type { HostModel } from '../model/hostModel'
@@ -86,7 +86,7 @@ import {
 import { isLinkList } from './links'
 import type { RecordLink } from './links'
 import { isScopeKind, resolveActive } from './scope'
-import type { ScopeKind, ScopeSnapshot, ScopeSummary } from './scope'
+import type { CarriedImage, ScopeKind, ScopeSnapshot, ScopeSummary } from './scope'
 import { scopePathLabel } from './scopePath'
 import type { ScopePath } from './scopePath'
 
@@ -368,7 +368,7 @@ export function scopeFiles(scope: ScopeSnapshot): FolderFile[] {
  * An SVG is written as text and everything else as bytes, which is the rule the
  * marks already follow: an SVG is XML and should diff as XML.
  */
-function imageFiles(library: readonly DocumentImage[]): FolderFile[] {
+function imageFiles(library: readonly CarriedImage[]): FolderFile[] {
   const files: FolderFile[] = []
   const written = new Set<string>()
   for (const image of library) {
@@ -387,8 +387,8 @@ function imageFiles(library: readonly DocumentImage[]): FolderFile[] {
 }
 
 /** Every picture in the folder, by name. The folder is the whole index. */
-function readImages(folder: Folder): DocumentImage[] {
-  const images: DocumentImage[] = []
+function readImages(folder: Folder): CarriedImage[] {
+  const images: CarriedImage[] = []
   for (const path of [...folder.keys()].sort()) {
     if (!path.startsWith(`${IMAGES_FOLDER}/`)) continue
     const file = path.slice(IMAGES_FOLDER.length + 1)
