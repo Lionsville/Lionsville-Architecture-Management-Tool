@@ -21,7 +21,7 @@ import { tmpdir } from 'node:os'
 import { isAbsolute, join } from 'node:path'
 import { LOCAL_SETTINGS_PATH } from '../../adapters/folder/format/folderSettings'
 import { isSpacedLabel } from '../../projects/label'
-import { git, gitEnvironment, gitFailure, identityArgs, initRepository, isRepository, quietConfig } from './git'
+import { git, gitArgs, gitEnvironment, gitFailure, identityArgs, initRepository, isRepository } from './git'
 
 const UNIT = '\x1f'
 const RECORD = '\x1e'
@@ -245,9 +245,9 @@ export type GitFileAt = { path: string; text: string } | { path: string; bytes: 
 
 /** Git fed on its standard input, answered in bytes. */
 async function gitWithInput(root: string, args: readonly string[], input: string): Promise<Buffer> {
-  const quiet = await quietConfig(root, args)
+  const all = await gitArgs(root, args)
   return new Promise((resolve, reject) => {
-    const child = execFile('git', [...quiet, ...args], {
+    const child = execFile('git', all, {
       cwd: root, encoding: 'buffer', maxBuffer: 256 * 1024 * 1024, windowsHide: true, env: gitEnvironment(), timeout: 60_000,
     }, (failure, stdout) => {
       if (failure) void gitFailure(failure, root).then(reject)

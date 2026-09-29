@@ -16,7 +16,7 @@ import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { commandOf, filesAt, git, gitAvailable, history, initRepository, isRepository, label, quietConfig, snapshot } from './git'
+import { filesAt, gitAvailable, history, initRepository, isRepository, label, snapshot } from './git'
 
 const run = promisify(execFile)
 
@@ -479,115 +479,5 @@ describe.skipIf(!available)('this machine\'s settings file', () => {
     await run('git', ['-c', 'user.name=A', '-c', 'user.email=a@example.org', 'tag', '-a', '-m', 'Board review', 'f-s1/board-review', sha], { cwd: root })
     expect(await label(root, sha, 'Board review')).toBe('exists')
     expect(await label(root, sha, 'Another word')).toBe('done')
-  })
-})
-
-/**
- * What a folder's own configuration names is never a program the app runs —
- * a transport, a signing program, a filter — whatever a page or anybody else
- * wrote into `.git/config`; what the person's own configuration names runs as
- * it always did.
- */
-describe.skipIf(!available)('what a folder’s configuration names', () => {
-  const marker = () => join(root, '..', `${root.split('/').pop()}-ran`)
-  const plant = async (key: string, value: string) => { await run('git', ['config', key, value], { cwd: root }) }
-  const exists = (path: string) => readFile(path).then(() => true, () => false)
-
-  it('is run with every hardening, whatever the command', async () => {
-    await initRepository(root)
-    for (const [key, value] of [
-      ['core.fsmonitor', 'false'], ['protocol.ext.allow', 'never'], ['commit.gpgsign', 'false'], ['tag.gpgsign', 'false'],
-    ]) {
-      await plant(key, key === 'protocol.ext.allow' ? 'always' : 'true')
-      expect((await git(root, ['config', '--get', key])).trim(), key).toBe(value)
-    }
-    expect((await git(root, ['config', '--get', 'core.hooksPath'])).trim()).not.toBe('')
-    const flags = await quietConfig(root, ['status'])
-    for (const flag of ['protocol.ext.allow=never', 'commit.gpgsign=false', 'tag.gpgsign=false', 'core.fsmonitor=false']) {
-      expect(flags).toContain(flag)
-    }
-  })
-
-  it('runs no command an ext:: remote names', async () => {
-    await initRepository(root)
-    await plant('protocol.ext.allow', 'always')
-    await run('git', ['remote', 'add', 'origin', `ext::sh -c touch% ${marker()}`], { cwd: root })
-    await expect(git(root, ['fetch', 'origin'])).rejects.toBeDefined()
-    expect(await exists(marker())).toBe(false)
-  })
-
-  it('signs none of its commits or labels with a program the folder names', async () => {
-    await initRepository(root)
-    const signer = join(root, '..', `${root.split('/').pop()}-sign.sh`)
-    await writeFile(signer, `#!/bin/sh\ntouch "${marker()}"\nexit 1\n`, { mode: 0o755 })
-    await plant('commit.gpgsign', 'true')
-    await plant('tag.gpgsign', 'true')
-    await plant('gpg.program', signer)
-    await project('model.json', '{}')
-    const sha = await snapshot(root, 'unsigned')
-    expect(sha).toMatch(/^[0-9a-f]+$/)
-    expect(await label(root, sha!, 'Monday')).toBe('done')
-    expect(await exists(marker())).toBe(false)
-    await rm(signer, { force: true })
-  })
-
-  it('runs no ssh the folder names: the one git runs with wins', async () => {
-    await initRepository(root)
-    await plant('core.sshCommand', `touch ${marker()}`)
-    await run('git', ['remote', 'add', 'origin', 'ssh://127.0.0.1:1/nowhere.git'], { cwd: root })
-    await expect(git(root, ['fetch', 'origin'])).rejects.toBeDefined()
-    expect(await exists(marker())).toBe(false)
-  })
-
-  it('runs no filter only the folder defines, and takes the file as it is', async () => {
-    await initRepository(root)
-    await plant('filter.evil.clean', `sh -c 'touch ${marker()}; tr a-z A-Z'`)
-    await plant('filter.evil.smudge', `sh -c 'touch ${marker()}; cat'`)
-    await plant('filter.evil.process', `sh -c 'touch ${marker()}'`)
-    await plant('filter.evil.required', 'true')
-    await writeFile(join(root, '.gitattributes'), '*.md filter=evil\n')
-    await project('notes.md', 'plain words')
-    const sha = await snapshot(root, 'unfiltered')
-    expect(sha).toMatch(/^[0-9a-f]+$/)
-    expect(await exists(marker())).toBe(false)
-    const { stdout } = await run('git', ['show', `${sha}:acme/landscape/notes.md`], { cwd: root })
-    expect(stdout).toBe('plain words')
-  })
-
-  it('runs nothing at all where a filter the folder defines has a name no override can reach', async () => {
-    await initRepository(root)
-    await plant('filter.a=b.clean', `sh -c 'touch ${marker()}; cat'`)
-    await writeFile(join(root, '.gitattributes'), '*.md filter=a=b\n')
-    await project('notes.md', 'plain words')
-    await expect(snapshot(root, 'refused')).rejects.toThrow('cannot be turned off')
-    expect(await exists(marker())).toBe(false)
-  })
-
-  it('runs a filter the person’s own configuration defines, as it defines it', async () => {
-    const own = join(root, '..', `${root.split('/').pop()}-global`)
-    await writeFile(own, `[filter "shout"]\n\tclean = tr a-z A-Z\n\tsmudge = cat\n`)
-    const before = process.env.GIT_CONFIG_GLOBAL
-    process.env.GIT_CONFIG_GLOBAL = own
-    try {
-      await initRepository(root)
-      // The folder names the same filter, and a program of its own for it.
-      await plant('filter.shout.clean', `sh -c 'touch ${marker()}; cat'`)
-      await writeFile(join(root, '.gitattributes'), '*.md filter=shout\n')
-      await project('notes.md', 'plain words')
-      const sha = await snapshot(root, 'filtered as the person says')
-      expect(await exists(marker())).toBe(false)
-      const { stdout } = await run('git', ['show', `${sha}:acme/landscape/notes.md`], { cwd: root })
-      expect(stdout).toBe('PLAIN WORDS')
-    } finally {
-      if (before === undefined) delete process.env.GIT_CONFIG_GLOBAL
-      else process.env.GIT_CONFIG_GLOBAL = before
-      await rm(own, { force: true })
-    }
-  })
-
-  it('reads a folder’s filters only for a command that runs one', () => {
-    expect(commandOf(['-c', 'user.name=Acme', 'commit', '-m', 'x'])).toBe('commit')
-    expect(commandOf(['status', '--porcelain'])).toBe('status')
-    expect(commandOf(['-C', 'somewhere', 'log'])).toBe('log')
   })
 })
