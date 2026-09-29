@@ -461,11 +461,13 @@ src/ports/        The seams. Interfaces only, no implementations.
                     ScopeRepository · OrganisationIndex · HistoryRepository ·
                     ImageRepository · SettingsRepository · Repositories
                                       where work is kept, in the domain's words
-                                      (ADR-0031). The folder implements them
-                                      (`adapters/folder/`); the ports they
-                                      replace, above, are still what the app uses.
-                                      A `*.contract.ts` each, one maker for all
-                                      five, run against `testing/memoryRepositories`
+                                      (ADR-0031). The folder (`adapters/folder/`),
+                                      memory and browser storage
+                                      (`adapters/repositories/`) implement them;
+                                      the ports they replace, above, are still
+                                      what the app uses. A `*.contract.ts` each,
+                                      one maker for all five, run by every
+                                      implementation
 src/adapters/     The outside world, one folder per flavour.
                     webStorage/ · memory/ · browser/ · folder/ · desktop/
                     folder/           the folder implementation (ADR-0031 §2): the
@@ -485,9 +487,16 @@ src/adapters/     The outside world, one folder per flavour.
                                       (`imageLibrary`, which browser storage
                                       shares). Every suite runs over the fake and
                                       over a real folder with real git
+                    repositories/     the five repositories over a keyed store
+                                      (`KeyedStore`: transactions, all or
+                                      nothing), written once for memory and this
+                                      browser's storage, which differ only in
+                                      where the values sit
                     memory/           …and InMemoryCommandChannel: a head model, a
                                       bounded log and the subscribers, for two
-                                      sessions put in one order without a process
+                                      sessions put in one order without a process;
+                                      and `memoryRepositories`, the five over
+                                      `MemoryStore`
                     desktop/          the Electron channel's types, and what the
                                       desktop keeps that is not the folder
 src/app/          The shell around the editor.
