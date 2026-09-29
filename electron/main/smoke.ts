@@ -219,9 +219,9 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
   process.stdout.write('\n--- smoke ---\n')
   const complaints = await listenTo(window)
 
-  const { mkdtemp, readdir, readFile, stat } = await import('node:fs/promises')
+  const { mkdtemp, readdir, readFile, realpath, stat } = await import('node:fs/promises')
   const { tmpdir } = await import('node:os')
-  const { join, basename } = await import('node:path')
+  const { join, basename, dirname } = await import('node:path')
 
   const page = (script: string) => window.webContents.executeJavaScript(script, true) as Promise<string>
 
@@ -936,6 +936,10 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
   // — so the line goes in from the renderer and comes back off the disk.
   results.push(await checkHere("the renderer's diagnostics reach the log file", async () => {
     const path = logFilePath()
+    // This run's own, like the rest of what it keeps: not the installed app's.
+    // Both resolved, because macOS names the temporary folder two ways.
+    const own = await realpath(app.getPath('userData'))
+    if (!(await realpath(dirname(path))).startsWith(own)) throw new Error(`${path} is outside this run's own folder`)
     const marker = `${RELAY_MARKER} ${Date.now()}`
     await page(`console.error(${JSON.stringify(`[lvarch] ${marker}`)})`)
     const deadline = Date.now() + 5_000
