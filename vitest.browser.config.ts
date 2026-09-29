@@ -10,7 +10,10 @@ import { defineConfig } from 'vitest/config'
  * the same contract and suites over the real thing, in Chromium and in
  * WebKit — the engine of every browser on iOS — with what a fake cannot
  * show: a page closed half-way through a write, a second tab across an
- * upgrade, a quota the browser enforces.
+ * upgrade, and — in Chromium, through a storage bucket of 1 MB — a quota the
+ * browser enforces (`IndexedDbStore.browser.test.ts`). WebKit has no buckets
+ * and cannot be given a small quota, so there the refusal is the node
+ * suites' injected one.
  *
  * Not in `npm run check`: it starts two browsers, which is seconds the fast
  * loop should not pay. Run it with `npm run test:browser`, a gate of its own,

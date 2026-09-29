@@ -186,7 +186,8 @@ describe(`IndexedDbStore in ${server.browser}`, () => {
   // does not, and its quota is a share of the disk, far past what a test should
   // write — so there this refusal is the node suites' alone.
   const buckets = (navigator as Navigator & { storageBuckets?: Buckets }).storageBuckets
-  it.runIf(buckets !== undefined)('refuses a write past the quota as full, and lands nothing of it', async () => {
+  it.runIf(server.browser === 'chromium')('refuses a write past the quota as full, and lands nothing of it', async () => {
+    expect(buckets, 'Chromium’s storage buckets').toBeDefined()
     const bucket = await buckets!.open(`quota-${crypto.randomUUID()}`, { quota: 1024 * 1024 })
     const store = new IndexedDbStore({ factory: bucket.indexedDB, keyRange: IDBKeyRange }, unique())
     await store.transaction(['meta'], 'write', write('small'))
