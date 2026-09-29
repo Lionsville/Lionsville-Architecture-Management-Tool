@@ -51,8 +51,18 @@ export const EN = {
   'shell.historyDetached': 'Nothing was recorded: the history of this folder is not on a branch, so a version recorded now would belong to none. Switch to a branch first, then record again.',
   /** There is no git on this machine, where the folder's history is kept in git. */
   'shell.gitMissing': 'The history needs git on this machine. Install git, then try again.',
-  /** The git on this machine is older than the history needs (2.25). */
-  'shell.gitTooOld': 'The history needs git 2.25 or newer on this machine. Update git, then try again.',
+  /**
+   * The git on this machine is older than the history needs (2.26): the one
+   * minimum the history and the guard over a folder's configuration both say.
+   */
+  'shell.gitTooOld': 'The history needs git 2.26 or newer on this machine. Update git, then try again.',
+  /**
+   * A git the app would not run in the folder at all, with the refusal's own
+   * words, which name the setting in the folder's configuration
+   * (`platform/node/gitGuard.ts`). Set after a sentence that says what did not
+   * happen, as the sync's refusals are.
+   */
+  'shell.gitRefused': 'git was not run in this folder: {reason}',
   /** The history could not be read or written for a reason the trail holds and a person cannot act on here. */
   'shell.historyFailed': 'The history of this folder could not be read or written. The diagnostics say why.',
   /**

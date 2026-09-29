@@ -391,3 +391,46 @@ describe.skipIf(!available)('a machine with no git', () => {
     await expect(checkGitVersion()).resolves.toBeUndefined()
   })
 })
+
+/**
+ * One minimum, said one way: a git older than the history needs is
+ * `shell.gitTooOld`, whether the version check finds it or the guard over a
+ * folder's configuration, which needs `config --show-scope` (2.26), does.
+ */
+describe.skipIf(process.platform === 'win32')('a machine with too old a git', () => {
+  let bin = ''
+  let folder = ''
+
+  beforeEach(async () => {
+    bin = await mkdtemp(join(tmpdir(), 'lvarch-old-git-'))
+    folder = await mkdtemp(join(tmpdir(), 'lvarch-old-git-folder-'))
+    // A stand-in for git 2.25: it says its version, and knows no `--show-scope`.
+    await writeFile(join(bin, 'git'), [
+      '#!/bin/sh',
+      'case "$*" in',
+      '  *--version*) echo "git version 2.25.1" ;;',
+      '  *show-scope*) echo "error: unknown option \\`show-scope\'" >&2; exit 129 ;;',
+      '  *) exit 0 ;;',
+      'esac',
+      '',
+    ].join('\n'))
+    await chmod(join(bin, 'git'), 0o755)
+    vi.stubEnv('PATH', bin)
+  })
+
+  afterEach(async () => {
+    vi.unstubAllEnvs()
+    await rm(bin, { recursive: true, force: true })
+    await rm(folder, { recursive: true, force: true })
+  })
+
+  it('is refused shell.gitTooOld at 2.25, by the version check', async () => {
+    vi.resetModules()
+    const { checkGitVersion } = await import('./gitEntries')
+    await expect(checkGitVersion()).rejects.toThrow(/^shell\.gitTooOld$/)
+  })
+
+  it('is refused shell.gitTooOld by the guard over a folder, with no sentence of its own', async () => {
+    await expect(git(folder, ['status'])).rejects.toThrow(/^shell\.gitTooOld$/)
+  })
+})

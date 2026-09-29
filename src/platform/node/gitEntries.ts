@@ -72,8 +72,12 @@ export async function startHistory(root: string): Promise<void> {
   if (!await isRepository(root)) await initRepository(root)
 }
 
-/** The oldest git whose `--pathspec-from-file` this history uses. */
-const OLDEST_GIT: readonly [number, number] = [2, 25]
+/**
+ * The oldest git this history runs: 2.25 for `--pathspec-from-file`, and 2.26
+ * for `config --show-scope`, by which a folder's own configuration is told
+ * apart from the person's (`gitGuard.ts`) — the one minimum both say.
+ */
+const OLDEST_GIT: readonly [number, number] = [2, 26]
 
 let versionChecked: Promise<void> | undefined
 

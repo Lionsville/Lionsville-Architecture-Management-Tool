@@ -43,7 +43,10 @@ export const SYNC_REFUSAL_LABEL: Record<SyncRefusal, StringKey> = {
  * it will not run with — or the sentence for the refusal it is.
  */
 function reasonFor(outcome: SyncRefusal | SyncRefused, s: (key: StringKey) => string): string {
-  return refusedIn(outcome) ?? s(SYNC_REFUSAL_LABEL[outcome as SyncRefusal])
+  const refused = refusedIn(outcome)
+  // A refusal the app has a sentence for is said as its key (`GitRefused.keyed`).
+  if (refused !== undefined) return /^shell\.[A-Za-z]+$/.test(refused) ? s(refused as StringKey) : refused
+  return s(SYNC_REFUSAL_LABEL[outcome as SyncRefusal])
 }
 
 /** Drawn whatever the source; about the folder only while a folder is the source. */

@@ -117,11 +117,30 @@ function noHooks(): Promise<string> {
   return hooksFolder
 }
 
-/** Said where a git is not run; the message names the key, for a person to find. */
+/**
+ * Said where a git is not run; the message names the key, for a person to find.
+ * `reason` is the refusal without the sentence around it, which the desktop
+ * hands the page for a sentence of the page's own (`electron/main/sayable.ts`).
+ */
 export class GitRefused extends Error {
+  readonly reason: string
+
   constructor(reason: string) {
     super(`git was not run in this folder: ${reason}`)
     this.name = 'GitRefused'
+    this.reason = reason
+  }
+
+  /**
+   * A refusal the app already has a sentence for, said as its key and nothing
+   * else: a git too old to read a folder's configuration apart from the
+   * person's is the history's own `shell.gitTooOld`, so there is one minimum
+   * and one message.
+   */
+  static keyed(key: 'shell.gitTooOld'): GitRefused {
+    const refused = new GitRefused(key)
+    refused.message = key
+    return refused
   }
 }
 
@@ -351,7 +370,7 @@ async function readConfigurations(root: string): Promise<Configurations> {
     // No git to run is said as that, by whoever runs git (`gitFailure`).
     if ((cause as { code?: unknown }).code === 'ENOENT') throw cause
     const said = String((cause as { stderr?: unknown }).stderr ?? '')
-    if (/unknown option|show-scope/.test(said)) throw new GitRefused('its configuration can be read apart from yours only by git 2.26 or newer; update git')
+    if (/unknown option|show-scope/.test(said)) throw GitRefused.keyed('shell.gitTooOld')
     throw new GitRefused('its configuration could not be read')
   }
   // A scope, an origin, then a key and its value apart by the first line

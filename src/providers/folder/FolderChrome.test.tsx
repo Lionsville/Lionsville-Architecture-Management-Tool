@@ -104,6 +104,11 @@ describe('the push after an entry', () => {
     expect(notify).toHaveBeenCalledWith(expect.stringContaining('http.sslcainfo'), 'warning')
   })
 
+  it('says a pull refused for too old a git in the sentence the history has for it', async () => {
+    const { notify } = chrome((await own(remote().sync, false, { refused: 'shell.gitTooOld' })).held)
+    expect(notify).toHaveBeenCalledWith(expect.stringContaining('git 2.26 or newer'), 'warning')
+  })
+
   it('says a pull git was not run for as the folder opens, in its own words', async () => {
     const { notify } = chrome((await own(remote().sync, false, { refused: 'git was not run in this folder: its configuration works in another folder' })).held)
     expect(notify).toHaveBeenCalledWith(expect.stringContaining('works in another folder'), 'warning')
