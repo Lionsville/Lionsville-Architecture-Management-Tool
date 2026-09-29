@@ -9,7 +9,7 @@
  * repositories through the domain's own landing, so a test of the working
  * file does not start from the working file.
  */
-import acmeLogistics from '../examples/acme-logistics.json'
+import acmeLogistics from '../examples/acme-logistics.json' with { type: 'json' }
 import { exampleScopes } from '../exampleFolder'
 import type { ExampleFolder } from '../exampleFolder'
 import { dataUrl } from '../../../../projects/dataUrl'

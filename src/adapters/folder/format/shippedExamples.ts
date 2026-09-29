@@ -21,5 +21,7 @@ async function shipped(folder: () => Promise<{ default: unknown }>, path: ScopeP
 }
 
 export const SHIPPED_EXAMPLES: Readonly<Record<string, (path: ScopePath) => Promise<ScopeSnapshot[]>>> = {
-  'acme-logistics': (path) => shipped(() => import('./examples/acme-logistics.json'), path),
+  // With its attribute: node reads a JSON module only when it is told it is one
+  // (`build/jsonImports.test.ts`), and a server seeds from this path.
+  'acme-logistics': (path) => shipped(() => import('./examples/acme-logistics.json', { with: { type: 'json' } }), path),
 }

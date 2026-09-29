@@ -7,7 +7,7 @@
  * over the example as it ships, and over repositories in memory.
  */
 import { describe, expect, it } from 'vitest'
-import acmeLogistics from '../../adapters/folder/format/examples/acme-logistics.json'
+import acmeLogistics from '../../adapters/folder/format/examples/acme-logistics.json' with { type: 'json' }
 import { exampleScopes } from '../../adapters/folder/format/exampleFolder'
 import type { ExampleFolder } from '../../adapters/folder/format/exampleFolder'
 import { memoryRepositories } from '../../adapters/memory/memoryRepositories'

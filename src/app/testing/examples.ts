@@ -6,7 +6,7 @@
  * holds without waiting for it to be fetched, and read its folder too where
  * what is under test is the folder it is.
  */
-import acmeLogistics from '../../adapters/folder/format/examples/acme-logistics.json'
+import acmeLogistics from '../../adapters/folder/format/examples/acme-logistics.json' with { type: 'json' }
 import { exampleFiles as filesOf, exampleScopes as scopesOf } from '../../adapters/folder/format/exampleFolder'
 import type { ExampleFolder } from '../../adapters/folder/format/exampleFolder'
 import type { FolderFile } from '../../adapters/folder/format/folderFormat'

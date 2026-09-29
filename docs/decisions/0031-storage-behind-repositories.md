@@ -1231,7 +1231,10 @@ organisation's page keeps only its hook. The examples stay in the folder's
 format, read by its reader; a process with no screen reaches them through
 `platform/node/examples.ts` — an example's scopes, the example as a working
 file, and an example seeded into repositories of its own where the page would
-copy it — over the one narrow edge that folder already had.
+copy it — over the one narrow edge that folder already had. Every JSON module
+that folder reaches says it is one (`with { type: 'json' }`), which node
+requires and a bundler accepts; `build/jsonImports.test.ts` walks what it
+reaches, dynamic imports included, and names any that does not.
 
 ## As built, 29 September 2026: a move in a scope's history
 
