@@ -7,16 +7,18 @@
  * the conversation with git, which only the real one answers.
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { chmod, mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
+import { chmod, mkdir, mkdtemp, readdir, realpath, rm, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { tmpdir } from 'node:os'
 import { basename, dirname, join } from 'node:path'
-import { gitAvailable, isRepository, snapshot } from './git'
+import { gitAvailable, isRepository, snapshot, useHooksFolder } from './git'
 
 const run = promisify(execFile)
-import { allTags, changes, commitLog, commitPaths, isScopeTagName, readAt, startHistory, tagCommit, treeAt } from './gitEntries'
+import {
+  allTags, changes, commitLog, commitPaths, folderGitAt, isScopeTagName, readAt, startHistory, tagCommit, treeAt,
+} from './gitEntries'
 
 const available = await gitAvailable()
 
@@ -135,5 +137,71 @@ describe.skipIf(!available)('the history a folder’s repositories read', () => 
     }
     expect(isScopeTagName('3f2a-9c/shown-to-the-board')).toBe(true)
     expect(await allTags(root)).toEqual([])
+  })
+})
+
+describe.skipIf(!available)('a folder that keeps no history, and what is not asked right', () => {
+  it('answers nothing, and starts nothing, where the folder keeps no history', async () => {
+    expect(await changes(root)).toEqual([])
+    expect(await commitLog(root, { limit: 5 })).toEqual([])
+    expect(await treeAt(root, 'abc1234', '')).toEqual([])
+    expect(await readAt(root, 'abc1234', ['model.json'])).toEqual([])
+    expect(await allTags(root)).toEqual([])
+    expect(await isRepository(root)).toBe(false)
+  })
+
+  it('answers nothing for a history with no commit, and for paths or commits it would not hand git', async () => {
+    await startHistory(root)
+    expect(await commitLog(root, { limit: 5 })).toEqual([])
+    await put('model.json', '{}')
+    const sha = await commitPaths(root, ['model.json'], 'one')
+    expect(await commitPaths(root, ['../escape', '/etc/passwd', ''], 'nothing')).toBeUndefined()
+    expect(await commitLog(root, { limit: 5, paths: ['../escape'] })).toEqual([])
+    expect(await treeAt(root, sha!, '../escape')).toEqual([])
+    expect(await treeAt(root, 'HEAD', '')).toEqual([])
+    expect(await readAt(root, 'not-a-sha', ['model.json'])).toEqual([])
+    expect(await readAt(root, sha!, ['../escape', 'line\nbreak'])).toEqual([])
+  })
+
+  it('never commits the machine’s own settings file an older build left', async () => {
+    await startHistory(root)
+    await put('.lionsville-architecture/local.json', '{}')
+    await put('model.json', '{}')
+    expect((await changes(root)).map((change) => change.path)).not.toContain('.lionsville-architecture/local.json')
+    expect(await commitPaths(root, ['.lionsville-architecture/local.json'], 'settings')).toBeUndefined()
+  })
+
+  it('reads a tag a person made without words as its name alone', async () => {
+    await startHistory(root)
+    await put('model.json', '{}')
+    const sha = await commitPaths(root, ['model.json'], 'one')
+    await run('git', ['tag', 'by-hand', sha!], { cwd: root })
+    expect(await allTags(root)).toEqual([{ name: 'by-hand', sha, message: '' }])
+  })
+
+  it('is the history over one folder, every member bound to it', async () => {
+    const held = folderGitAt(root)
+    expect(await held.keeping()).toBe(false)
+    await held.start()
+    expect(await held.keeping()).toBe(true)
+    await put('model.json', '{}')
+    expect((await held.changes()).map((change) => change.path)).toContain('model.json')
+    const sha = await held.commit(['model.json'], 'one')
+    const [commit] = await held.log({ limit: 1 })
+    expect(commit.sha).toBe(sha)
+    expect(await held.treeAt(sha!, '')).toContain('model.json')
+    expect(await held.readAt(sha!, ['model.json'])).toEqual([{ path: 'model.json', text: '{}' }])
+    expect(await held.tag(sha!, 's-1/one', 'One')).toBe('done')
+    expect((await held.tags()).map((tag) => tag.name)).toEqual(['s-1/one'])
+  })
+
+  it('runs every git with its hooks in the folder main names, made where it is not', async () => {
+    const hooks = join(root, '..', `${basename(root)}-no-hooks`)
+    useHooksFolder(hooks)
+    await startHistory(root)
+    await put('model.json', '{}')
+    expect(await commitPaths(root, ['model.json'], 'one')).toMatch(/^[0-9a-f]+$/)
+    expect(await readdir(hooks)).toEqual([])
+    await rm(hooks, { recursive: true, force: true })
   })
 })

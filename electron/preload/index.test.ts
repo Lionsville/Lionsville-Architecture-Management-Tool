@@ -83,3 +83,35 @@ describe('several files written as one', () => {
     expect(electron.invoked.at(-1)).toEqual({ channel: 'files:writeTogether', args: ['/work', writes, ['diagrams/old.json']] })
   })
 })
+
+/**
+ * The history the folder's repositories read, and where the app keeps the
+ * step ids a folder applied (ADR-0031): each a channel of main's, handed its
+ * arguments as they were given — main checks them, and this side does not.
+ */
+describe('the folder’s history and its applied steps', () => {
+  it('asks main on the channel each is, with the arguments as given', async () => {
+    await bridge()
+    const { history, settings } = electron.exposed as {
+      history: import('../../src/adapters/desktop/channel').DesktopHistory
+      settings: import('../../src/adapters/desktop/channel').DesktopSettings
+    }
+    const steps = { one: ['scope', 1] as [string, number] }
+    const calls: [() => Promise<unknown>, string, unknown[]][] = [
+      [() => history.startHistory('/work'), 'git:startHistory', ['/work']],
+      [() => history.changes('/work'), 'git:changes', ['/work']],
+      [() => history.commitPaths('/work', ['model.json'], 'Snapshot'), 'git:commitPaths', ['/work', ['model.json'], 'Snapshot']],
+      [() => history.log('/work', { limit: 5, paths: ['acme'] }), 'git:log', ['/work', { limit: 5, paths: ['acme'] }]],
+      [() => history.treeAt('/work', 'abc1234', 'acme'), 'git:treeAt', ['/work', 'abc1234', 'acme']],
+      [() => history.readAt('/work', 'abc1234', ['model.json']), 'git:readAt', ['/work', 'abc1234', ['model.json']]],
+      [() => history.tags('/work'), 'git:tags', ['/work']],
+      [() => history.tag('/work', 'abc1234', 's-1/board', 'Board'), 'git:tag', ['/work', 'abc1234', 's-1/board', 'Board']],
+      [() => settings.readFolderSteps('/work'), 'settings:readFolderSteps', ['/work']],
+      [() => settings.writeFolderSteps('/work', steps), 'settings:writeFolderSteps', ['/work', steps]],
+    ]
+    for (const [call, channel, args] of calls) {
+      await call()
+      expect(electron.invoked.at(-1), channel).toEqual({ channel, args })
+    }
+  })
+})
