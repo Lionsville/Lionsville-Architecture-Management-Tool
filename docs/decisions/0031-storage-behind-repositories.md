@@ -1,7 +1,6 @@
 # ADR-0031 — Storage behind repositories: the domain speaks no storage language
 
-* Status: accepted, 29 September 2026; built but for the working-file codec's
-  move into the folder's format
+* Status: accepted, 29 September 2026; implemented, 29 September 2026
 * Date: 2026-09-29
 * Deciders: Wouter Simons
 * Supersedes:
@@ -1070,3 +1069,84 @@ decision, plan and observation files, and the two readers of the formats
 before this one — are the last of the format in the domain. They move into
 `adapters/folder/format/` together, and `FOLDER_FORMAT` goes to zero; until
 then the storage line lists the codec's users and nothing else.
+
+## As built, 29 September 2026: the working file as an interchange
+
+**What was built.** §2's interchange format: any source carries its work out
+as a working file and takes one in, through the repositories, and the app
+names no format.
+- **The seam** is `ports/Interchange.ts`, in the stricter words of the other
+  seams (it is on `SPEAKS_NO_STORAGE`):
+  - `carryOut`: the organisation, or a scope and every scope under it, read
+    out of the repositories with its pictures' bytes, as one parcel — bytes,
+    a name and a media type — and what it was made without. The caller may
+    hand in scopes that stand in for what is read at their addresses: the
+    open scope, with the edits it has not written yet.
+  - `open`: what bytes hold, placed at an address, or the key for bytes that
+    are not a working file.
+  - `bringIn`: what was opened, landed as one `scope.replace` step per scope in
+    one apply, every scope or none, each picture's bytes put before the step
+    that names it (`placeTogether`, *As built: the app on the repositories*).
+    It may record an entry of the scopes about to be replaced first, and one
+    of each landed scope after, each with a subject the caller gives.
+  - `check`: what landed, read back, held to what the file says it holds
+    (ADR-0023, amended), in the seam's words: which scopes and views are not
+    there, and how many of a scope's parts are missing or changed.
+  - `accepts`: what a picker offers.
+- **The working file fills it** (`adapters/folder/format/interchange.ts`).
+  The codec and the files of the format it reads moved there with their
+  tests, history following: the format itself, its text, a scope's header,
+  the decision, plan and observation files, the two readers of the formats
+  before this one, the working file and its manifest. The reader of a version
+  1 or 2 document moved with them out of `projects/scope.ts`, which keeps only
+  why bytes did not open.
+- **The composition root hands it to the app** (`AppProps.interchange`), and
+  loads it the first time a person exports, imports or opens a working file.
+  The password around a file stays the app's (ADR-0023).
+- **A process with no screen** writes and reads one with repositories of its
+  own through `platform/node/workingFile.ts`: `writeWorkingFile` for the
+  organisation or a scope and those under it, and `readWorkingFile` to land one
+  and read it back. It needs no browser, Electron, React or file system, and
+  its suite runs in node over the memory repositories. It writes a file
+  unsealed and reads only one that is not sealed; `projects/sealedFile.ts`
+  seals and opens one.
+- **One organisation is one file, whatever holds it.** The scopes are written
+  the top first and then by address, so the order a source lists its tree in
+  is not in the bytes. An organisation carried out of memory, into this
+  browser, out again, into a folder, out again and into memory is the same
+  file each time, byte for byte, pictures included, each source opened
+  through its own provider (`providers/interchange.test.ts`).
+- **A landing is read back with its pictures.** The scope a check reads now
+  carries its pictures' bytes (`readWhole`), so a file with pictures in it is
+  no longer said to have arrived without them.
+- **The storage line holds no exceptions.** `FOLDER_FORMAT` is empty (from
+  10 files), nothing in the domain imports across the line (from 9 files and
+  10 imports), and nothing names storage (from 1 file and 1 spelling), each
+  ceiling at 0.
+- **The first download lost the format.** Besides the codec, the shipped
+  examples' reader is fetched with the example it reads, and format 3's folds
+  over a model are a file of their own (`model3to4.ts`), which this browser's
+  older storage reads without the folder's fold over files. The web build's
+  largest file went from 2,547 kB to 2,507 kB, and the desktop renderer's
+  from 4,881 kB to 4,803 kB.
+- **What went.** The copy out of browser storage into a folder that the
+  repositories' copy replaced (`copyScopesInto`, `migrateInto`,
+  `holdsScopes`), and the in-memory scope store only its tests used. The pass
+  that brings an older folder up to date is tested through the folder's own
+  store over the fake folder.
+
+**Where the build departed from the text.**
+- **The interchange is the composition's, not a provider's.** It works over
+  any repositories, so every source gets the same one, and a provider composed
+  from outside exports and imports with nothing of its own to write.
+- **An adapter may read what a decision record is.** The format writes one as
+  a file of its own, so the import matrix lets `adapters` import `decisions`.
+- **A picture filed in an image folder is not carried**, as it was not
+  before: the working file keeps `images/` flat, and a name with a `/` in it
+  is left out.
+- **A document in a working file names a picture `image:<name>`**, as the
+  state does; the folder writes `../images/<file>` on disk, and the codec does
+  not translate. A file an older build wrote, with `../images/` in its
+  documents, is brought in with them as they are.
+- **An organisation that holds nothing yet** is carried out as its root,
+  named as the tree names it.

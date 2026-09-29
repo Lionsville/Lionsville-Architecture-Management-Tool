@@ -106,4 +106,4 @@ now, with their words unchanged.
 | [0028](0028-a-command-says-what-it-may-carry.md) | A command says what it may carry | 2026-09-26 | — |
 | [0029](0029-every-record-says-what-it-is-to-a-search.md) | Every record says what it is to a search | 2026-09-27 | — |
 | [0030](0030-a-build-with-a-feed-updates-itself.md) | A build with a feed updates itself, and the releases here carry no installers | 2026-09-28 | — |
-| [0031](0031-storage-behind-repositories.md) | Storage behind repositories: the domain speaks no storage language (not yet built) | 2026-09-29 | — |
+| [0031](0031-storage-behind-repositories.md) | Storage behind repositories: the domain speaks no storage language | 2026-09-29 | — |
