@@ -20,8 +20,12 @@ import { parseJson, stableJson } from '../../projects/fileText'
 
 export const APPLIED_STEPS_FILE = 'applied-steps.json'
 
-/** One folder's applied steps: each id, the scope it went to, and when, in epoch milliseconds. */
-export type AppliedSteps = Record<string, [string, number]>
+/**
+ * One folder's applied steps: each id, the scope it went to, and when, in
+ * epoch milliseconds — and, while its write is not known to have landed, what
+ * the scope was to be after it.
+ */
+export type AppliedSteps = Record<string, [string, number] | [string, number, string]>
 
 function record(value: unknown): Record<string, unknown> | undefined {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : undefined
@@ -31,7 +35,8 @@ function record(value: unknown): Record<string, unknown> | undefined {
 export function appliedStepsOf(value: unknown): AppliedSteps {
   const found: AppliedSteps = {}
   for (const [id, row] of Object.entries(record(value) ?? {})) {
-    if (Array.isArray(row) && typeof row[0] === 'string' && typeof row[1] === 'number') found[id] = [row[0], row[1]]
+    if (!Array.isArray(row) || typeof row[0] !== 'string' || typeof row[1] !== 'number') continue
+    found[id] = typeof row[2] === 'string' ? [row[0], row[1], row[2]] : [row[0], row[1]]
   }
   return found
 }

@@ -18,5 +18,7 @@ describe('applied step ids, kept by the app', () => {
     expect(readAppliedSteps(two, '/work/acme')).toEqual({ a: ['s', 1] })
     expect(readAppliedSteps(two, '/work/globex')).toEqual({ b: ['t', 2] })
     expect(readAppliedSteps('{ not json', '/work/acme')).toBeUndefined()
+    const pending = appliedStepsText(undefined, '/work/acme', { a: ['s', 1, 'expected'] })
+    expect(readAppliedSteps(pending, '/work/acme')).toEqual({ a: ['s', 1, 'expected'] })
   })
 })

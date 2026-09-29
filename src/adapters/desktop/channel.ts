@@ -143,9 +143,9 @@ export type DesktopSettings = {
    * The step ids a folder's repositories applied (ADR-0031), kept here and
    * not in the folder; `undefined` where none were written for it.
    */
-  readFolderSteps(root: string): Promise<Record<string, [string, number]> | undefined>
+  readFolderSteps(root: string): Promise<Record<string, [string, number] | [string, number, string]> | undefined>
   /** Replace a folder's applied step ids. */
-  writeFolderSteps(root: string, steps: Record<string, [string, number]>): Promise<void>
+  writeFolderSteps(root: string, steps: Record<string, [string, number] | [string, number, string]>): Promise<void>
 }
 
 /**

@@ -8,7 +8,7 @@ describe('applied step ids', () => {
   it('remembers where a step went, through a store another opening reads', async () => {
     const store = stepsInMemory()
     await new StepMemory(store).remember([{ stepId: 'one', scope: 'acme' }])
-    expect(await new StepMemory(store).where('one')).toBe('acme')
+    expect(await new StepMemory(store).where('one')).toEqual({ scope: 'acme' })
     expect(await new StepMemory(store).where('two')).toBeUndefined()
   })
 
@@ -18,10 +18,19 @@ describe('applied step ids', () => {
     const memory = new StepMemory(store, () => now)
     await memory.remember([{ stepId: 'one', scope: 'acme' }])
     now += 24 * 60 * 60 * 1000
-    expect(await memory.where('one')).toBe('acme')
+    expect(await memory.where('one')).toEqual({ scope: 'acme' })
     now += 24 * 60 * 60 * 1000
     expect(await memory.where('one')).toBeUndefined()
     await memory.remember([{ stepId: 'two', scope: 'acme' }])
     expect(Object.keys(await store.read() ?? {})).toEqual(['two'])
+  })
+
+  it('remembers a step whose write was begun with what it was to leave, until it is known to have landed', async () => {
+    const store = stepsInMemory()
+    const memory = new StepMemory(store)
+    await memory.pend([{ stepId: 'one', scope: 'acme', expected: 'after' }])
+    expect(await new StepMemory(store).where('one')).toEqual({ scope: 'acme', expected: 'after' })
+    await memory.remember([{ stepId: 'one', scope: 'acme' }])
+    expect(await new StepMemory(store).where('one')).toEqual({ scope: 'acme' })
   })
 })

@@ -586,6 +586,26 @@ export class FileSystemScopeStore implements ScopeStore {
     )
   }
 
+  /**
+   * What `load` would stamp on this scope once `scope` is saved, worked out
+   * with nothing written: the files the save writes, and the files it leaves
+   * as they are and that read now. What a writer remembers before it writes,
+   * so that after a stop it can tell a write that landed from one that did not.
+   */
+  async revisionAfter(scope: ScopeSnapshot): Promise<string> {
+    const plan = await this.plan(scope)
+    const folder = await this.scopeFolder(scope.path, false)
+    const written = new Set(plan.writes.map((file) => file.path))
+    const removed = new Set(plan.removals.map((entry) => entry.path))
+    const files: FolderFile[] = [...plan.writes]
+    for (const entry of folder ? await this.entries(folder) : []) {
+      if (written.has(entry.path) || removed.has(entry.path)) continue
+      const held = await this.read(entry)
+      if (held && held !== UNREAD) files.push(held)
+    }
+    return folderRevision(files)
+  }
+
   private async write(folder: DirectoryHandleLike, file: FolderFile): Promise<void> {
     const parts = file.path.split('/')
     const parent = await this.folderInside(folder, parts.slice(0, -1))

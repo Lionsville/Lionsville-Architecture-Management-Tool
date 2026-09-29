@@ -11,11 +11,12 @@ import { dataUrl } from '../../projects/fileText'
 import { describeHistoryRepository } from '../../ports/HistoryRepository.contract'
 import { describeImageRepository } from '../../ports/ImageRepository.contract'
 import { describeOrganisationIndex } from '../../ports/OrganisationIndex.contract'
-import { ok, over } from '../../ports/Repositories.contract'
+import { addCrews, addDepot, ok, over, step } from '../../ports/Repositories.contract'
 import type { RepositoriesUnderTest } from '../../ports/Repositories.contract'
 import { describeScopeRepository } from '../../ports/ScopeRepository.contract'
 import { sampleScope } from '../../ports/ScopeStore.contract'
 import { describeSettingsRepository } from '../../ports/SettingsRepository.contract'
+import type { DirectoryHandleLike } from './DirectoryHandle'
 import { FakeDirectory } from './fakeDirectory'
 import { folderRepositories } from './folderRepositories'
 import { memoryGit } from './memoryGit'
@@ -200,5 +201,53 @@ describe('the folder’s history of commits nobody marked', () => {
     await commitByHand(root, git, 'By hand, after')
     expect((await repositories.history.entries({ scopes: [again] })).entries.map((entry) => entry.subject)).toEqual(['By hand, after'])
     expect(await repositories.history.stateAt(again, theirs[0].id)).toBeUndefined()
+  })
+})
+
+/** A folder a stop cuts short: while `stopAt` names a file, writing it fails, as a page going away would. */
+function stoppable(folder: DirectoryHandleLike): { handle: DirectoryHandleLike; stopAt(path: string | undefined): void } {
+  let stopAt: string | undefined
+  const wrap = (held: DirectoryHandleLike, inside: string): DirectoryHandleLike => {
+    const at = (name: string) => (inside ? `${inside}/${name}` : name)
+    return {
+      kind: 'directory',
+      name: held.name,
+      getDirectoryHandle: async (name, options) => wrap(await held.getDirectoryHandle(name, options), at(name)),
+      getFileHandle: async (name, options) => {
+        const file = await held.getFileHandle(name, options)
+        return {
+          kind: 'file', name: file.name, getFile: () => file.getFile(),
+          createWritable: () => (at(name) === stopAt ? Promise.reject(new Error('AbortError: the page went away')) : file.createWritable()),
+        }
+      },
+      removeEntry: (name, options) => held.removeEntry(name, options),
+      values: async function* () {
+        for await (const entry of held.values()) {
+          if (entry.kind === 'directory') yield wrap(entry, at(entry.name))
+          else yield entry
+        }
+      },
+    }
+  }
+  return { handle: wrap(folder, ''), stopAt: (path) => { stopAt = path } }
+}
+
+describe('a run across several scopes that stopped part way', () => {
+  it('lands what did not land when it is sent again, and counts what did as landed', async () => {
+    const root = new FakeDirectory('', { canMove: false })
+    const { handle, stopAt } = stoppable(root)
+    const repositories = over({ repositories: folderRepositories({ root: handle, git: memoryGit(root) }) })
+    const acme = await repositories.scope('acme', 'Acme Logistics')
+    const globex = await repositories.scope('globex', 'Globex')
+    const run = [{ scope: acme, steps: [step(addCrews)] }, { scope: globex, steps: [step(addDepot)] }]
+    stopAt('globex/model.json')
+    await expect(repositories.apply(run)).rejects.toThrow()
+    stopAt(undefined)
+    expect((await repositories.state(acme)).model.elements.map((one) => one.id)).toEqual(['crews'])
+    expect((await repositories.state(globex)).model.elements).toEqual([])
+    const again = ok(await repositories.apply(run))
+    expect((await repositories.state(acme)).model.elements.map((one) => one.id)).toEqual(['crews'])
+    expect((await repositories.state(globex)).model.elements.map((one) => one.id)).toEqual(['depot'])
+    expect(again.revisions).toEqual([(await repositories.state(acme)).revision, (await repositories.state(globex)).revision])
   })
 })

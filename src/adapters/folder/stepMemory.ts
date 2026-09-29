@@ -21,8 +21,15 @@
  */
 import type { ScopeId } from '../../projects/scopeState'
 
-/** Each applied step id, the scope it went to, and when, in epoch milliseconds. */
-export type AppliedSteps = Record<string, [ScopeId, number]>
+/**
+ * Each applied step id, the scope it went to, and when, in epoch milliseconds;
+ * and, for a step whose write was begun and is not known to have landed, what
+ * the scope's files were to be fingerprinted as once it had.
+ */
+export type AppliedSteps = Record<string, [ScopeId, number] | [ScopeId, number, string]>
+
+/** Where a step went, and — while its write is not known to have landed — what the scope was to be after it. */
+export type StepPlace = { scope: ScopeId; expected?: string }
 
 /** Where a folder's applied step ids are kept between one opening of it and the next. */
 export type StepStore = {
@@ -45,7 +52,7 @@ export function stepsInMemory(): StepStore {
 /** How long an id is remembered: twice the day the contract promises. */
 const REMEMBERED_MS = 2 * 24 * 60 * 60 * 1000
 
-type Held = Map<string, { scope: ScopeId; at: number }>
+type Held = Map<string, { scope: ScopeId; at: number; expected?: string }>
 
 export class StepMemory {
   private held: Held | undefined
@@ -55,15 +62,32 @@ export class StepMemory {
   private async load(): Promise<Held> {
     if (this.held) return this.held
     const held: Held = new Map()
-    for (const [id, [scope, at]] of Object.entries(await this.store.read() ?? {})) held.set(id, { scope, at })
+    for (const [id, [scope, at, expected]] of Object.entries(await this.store.read() ?? {})) {
+      held.set(id, { scope, at, ...(typeof expected === 'string' ? { expected } : {}) })
+    }
     this.held = held
     return held
   }
 
-  /** The scope a step id was applied to, where it was, within the time it is remembered. */
-  async where(stepId: string): Promise<ScopeId | undefined> {
+  /** Where a step id went, within the time it is remembered; with what was expected, where its write was begun and not known to have landed. */
+  async where(stepId: string): Promise<StepPlace | undefined> {
     const found = (await this.load()).get(stepId)
-    return found && this.now() - found.at < REMEMBERED_MS ? found.scope : undefined
+    if (!found || this.now() - found.at >= REMEMBERED_MS) return undefined
+    return { scope: found.scope, ...(found.expected !== undefined ? { expected: found.expected } : {}) }
+  }
+
+  /**
+   * Steps whose write is about to begin, each with what its scope's files are
+   * to be fingerprinted as once it has: remembered before the write, so that a
+   * step sent again after a stop part way lands where its scope did not change,
+   * and is known as landed where it did.
+   */
+  async pend(steps: readonly { stepId: string; scope: ScopeId; expected: string }[]): Promise<void> {
+    if (steps.length === 0) return
+    const held = await this.load()
+    const now = this.now()
+    for (const { stepId, scope, expected } of steps) held.set(stepId, { scope, at: now, expected })
+    await this.keep(held, now)
   }
 
   /** Steps applied, each to its scope; what is older than the memory is let go of on the way. */
@@ -72,7 +96,12 @@ export class StepMemory {
     const held = await this.load()
     const now = this.now()
     for (const { stepId, scope } of applied) held.set(stepId, { scope, at: now })
+    await this.keep(held, now)
+  }
+
+  private async keep(held: Held, now: number): Promise<void> {
     for (const [id, { at }] of held) if (now - at >= REMEMBERED_MS) held.delete(id)
-    await this.store.write(Object.fromEntries([...held].map(([id, { scope, at }]) => [id, [scope, at]])))
+    await this.store.write(Object.fromEntries([...held].map(([id, { scope, at, expected }]) =>
+      [id, expected === undefined ? [scope, at] : [scope, at, expected]])))
   }
 }

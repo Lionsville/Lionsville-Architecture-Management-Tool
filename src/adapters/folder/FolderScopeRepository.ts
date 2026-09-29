@@ -53,7 +53,7 @@ import { SCOPE_FILE } from '../../projects/folderFormat'
 
 type Run = { read: ReadScope; steps: ScopeStep[] }
 
-type Planned = { read: ReadScope; content: ScopeContent }
+type Planned = { read: ReadScope; content: ScopeContent; library: KeptPicture[]; snapshot: ScopeSnapshot; steps: ScopeStep[] }
 
 /** What a state holds that its steps change. */
 function contentOf(state: ScopeState): ScopeContent {
@@ -147,8 +147,11 @@ export class FolderScopeRepository implements ScopeRepository {
       for (const { read, steps } of runs.values()) {
         const result = applySteps(contentOf(read.state), steps)
         if (!result.ok) return { refused: result.refused, scope: read.node.id, stepId: result.stepId }
-        if (result.changed) planned.push({ read, content: result.content })
+        if (!result.changed) continue
+        const library = nextLibrary(read.library, result.content.images)
+        planned.push({ read, content: result.content, library, snapshot: snapshotFor(read.node, result.content, read, library), steps })
       }
+      await this.applied.pend(await this.expectations(planned))
       const refused = await this.write(planned)
       if (refused) return refused
       await this.applied.remember(work.flatMap(({ scope, steps }) => steps.map((one) => ({ stepId: one.stepId, scope }))))
@@ -176,9 +179,11 @@ export class FolderScopeRepository implements ScopeRepository {
       if (read.state.unreadable) return { refused: 'shell.unreadableNotSaved', scope }
       const fresh: ScopeStep[] = []
       for (const one of steps) {
-        const where = await this.applied.where(one.stepId) ?? seen.get(one.stepId)
-        if (where !== undefined && where !== scope) return { refused: STEP_ELSEWHERE, scope, stepId: one.stepId }
-        if (where === undefined) fresh.push(one)
+        const place = seen.has(one.stepId) ? { scope: seen.get(one.stepId)! } : await this.applied.where(one.stepId)
+        if (place !== undefined && place.scope !== scope) return { refused: STEP_ELSEWHERE, scope, stepId: one.stepId }
+        // A write begun and not known to have landed landed where the scope is what it was to be.
+        const landed = place !== undefined && (place.expected === undefined || place.expected === read.stored)
+        if (!landed) fresh.push(one)
         seen.set(one.stepId, scope)
       }
       if (fresh.length === 0) continue
@@ -190,12 +195,21 @@ export class FolderScopeRepository implements ScopeRepository {
     return runs
   }
 
+  /** Each planned step, with what its scope's files are to be fingerprinted as once the write has landed. */
+  private async expectations(planned: readonly Planned[]): Promise<{ stepId: string; scope: ScopeId; expected: string }[]> {
+    const found: { stepId: string; scope: ScopeId; expected: string }[] = []
+    for (const { read, snapshot, steps } of planned) {
+      const expected = await this.folder.store.revisionAfter(snapshot)
+      for (const one of steps) found.push({ stepId: one.stepId, scope: read.node.id, expected })
+    }
+    return found
+  }
+
   /** Every planned scope written together, then its pictures; a refusal the folder store met, said as one. */
   private async write(planned: readonly Planned[]): Promise<Refused | undefined> {
     if (planned.length === 0) return undefined
-    const libraries = planned.map(({ read, content }) => nextLibrary(read.library, content.images))
-    const entries = planned.map(({ read, content }, at) => ({
-      scope: snapshotFor(read.node, content, read, libraries[at]),
+    const entries = planned.map(({ read, snapshot }) => ({
+      scope: snapshot,
       ...(read.stored !== undefined ? { expects: read.stored } : {}),
     }))
     try {
@@ -205,7 +219,7 @@ export class FolderScopeRepository implements ScopeRepository {
       if (refused) return refused
       throw cause
     }
-    for (const [at, { read }] of planned.entries()) await this.pictures(read, libraries[at])
+    for (const { read, library } of planned) await this.pictures(read, library)
     return undefined
   }
 
