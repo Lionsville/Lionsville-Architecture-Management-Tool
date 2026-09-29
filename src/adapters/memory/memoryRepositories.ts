@@ -18,6 +18,6 @@ import { MemoryStore } from './MemoryStore'
 
 export const MEMORY_REPOSITORIES = 'memory'
 
-export function memoryRepositories(store: MemoryStore = new MemoryStore()): Repositories {
-  return repositoriesOver(store, { id: MEMORY_REPOSITORIES, by: 'this session' })
+export function memoryRepositories(store: MemoryStore = new MemoryStore(), by = 'this session'): Repositories {
+  return repositoriesOver(store, { id: MEMORY_REPOSITORIES, by })
 }

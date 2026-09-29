@@ -105,4 +105,24 @@ export const EN = {
   'browser.earlierLeft': 'What is here stands. The older copy is brought over only once it changes again.',
   'browser.earlierLeftBehind': 'Some of what this browser kept before could not be read, and is left where it was: {paths}.',
   'browser.earlierRefused': 'Nothing was brought over {paths}: what is here could not be read whole.',
+
+  // --- who made an entry, and what a bringing's entries say -------------------
+  /** Kept in a history: the entry's author where no person is named, and its subject. */
+  'browser.historyAuthor': 'this browser',
+  'memory.historyAuthor': 'this tab',
+  'browser.broughtOver': 'Brought over from this browser\u2019s earlier storage',
+  'browser.broughtOverAgain': 'Brought over again from this browser\u2019s earlier storage',
+  'browser.beforeBringingAgain': 'Before bringing this over again from this browser\u2019s earlier storage',
+  /** The work shown from the older storage, where this browser\u2019s database will not open. */
+  'browser.shownFromOlder': 'Your work is shown from this browser\u2019s older storage; changes here are not kept. Save a working file to keep them.',
+  /** A button of the earlier-work strip, named for the scope it answers about. */
+  'browser.earlierBringAt': 'Bring the older copy of \u201c{path}\u201d over',
+  'browser.earlierLeaveAt': 'Keep \u201c{path}\u201d as it is here',
+
+  // --- bringing the browser\u2019s work into a folder, as it happens ------------
+  'folder.adoptCopying': 'Copying your work into \u201c{name}\u201d\u2026',
+  'folder.adoptDone': '{copied} copied into \u201c{name}\u201d.',
+  'folder.adoptPartly': '{copied} copied; {failed} could not be copied: {paths}.',
+  'folder.adoptFailed': 'Nothing was copied: {message}',
+  'folder.adoptClose': 'Close',
 } as const

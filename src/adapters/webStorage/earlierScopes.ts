@@ -71,6 +71,14 @@ export const AGAIN_SUBJECT = 'Brought over again from this browser’s earlier s
 /** What the entry that keeps what was here, before a scope is brought over again, says it was. */
 export const BEFORE_AGAIN_SUBJECT = 'Before bringing this over again from this browser’s earlier storage'
 
+/**
+ * What the entries a bringing makes say they were, in the person's language
+ * where the composer knows it; English where it does not.
+ */
+export type EarlierWords = { earlier: string; again: string; beforeAgain: string }
+
+export const EARLIER_WORDS: EarlierWords = { earlier: EARLIER_SUBJECT, again: AGAIN_SUBJECT, beforeAgain: BEFORE_AGAIN_SUBJECT }
+
 /** The one key written: a copy was made into this browser's repositories. Under no scope or preference prefix. */
 export const EARLIER_MARKER = 'lvarch.repositories'
 
@@ -207,9 +215,11 @@ export async function readEarlier(storage: KeyValueStorage): Promise<Reading> {
   return reading
 }
 
-function broughtFrom(reading: Reading, scopes: readonly BroughtScope[], subject: string, asking = false): Brought {
+function broughtFrom(
+  reading: Reading, scopes: readonly BroughtScope[], subject: string, safeguard: string, asking = false,
+): Brought {
   const note: Note = { seen: reading.seen, left: reading.left, ...(asking ? { asking: true } : {}) }
-  return { scopes, subject, safeguard: BEFORE_AGAIN_SUBJECT, note }
+  return { scopes, subject, safeguard, note }
 }
 
 function markerOn(storage: KeyValueStorage): boolean {
@@ -221,7 +231,7 @@ function markerOn(storage: KeyValueStorage): boolean {
 }
 
 /** The way this browser's repositories bring in what the key-value storage kept. */
-export function bringingEarlier(storage: KeyValueStorage): Bringing {
+export function bringingEarlier(storage: KeyValueStorage, words: EarlierWords = EARLIER_WORDS): Bringing {
   return {
     prepare: async (value, fresh) => {
       const note = asNote(value)
@@ -229,11 +239,13 @@ export function bringingEarlier(storage: KeyValueStorage): Bringing {
       const reading = await readEarlier(storage)
       if (fresh) {
         const lost = markerOn(storage) && reading.scopes.length > 0
-        return lost ? broughtFrom(reading, [], EARLIER_SUBJECT, true) : broughtFrom(reading, reading.scopes, EARLIER_SUBJECT)
+        return lost
+          ? broughtFrom(reading, [], words.earlier, words.beforeAgain, true)
+          : broughtFrom(reading, reading.scopes, words.earlier, words.beforeAgain)
       }
       const changed = reading.scopes.filter(({ address }) => !sameValue(note?.seen[address], reading.seen[address]))
       if (changed.length === 0 && sameValue(note?.left, reading.left)) return undefined
-      return broughtFrom(reading, changed, AGAIN_SUBJECT)
+      return broughtFrom(reading, changed, words.again, words.beforeAgain)
     },
     started: () => {
       try {
@@ -250,7 +262,7 @@ export function bringingEarlier(storage: KeyValueStorage): Bringing {
  * here (`force`), or leave what is here (`settle`). Only those addresses are
  * marked as looked at, so a change at another is still found at the next start.
  */
-function answer(source: Source, storage: KeyValueStorage, bringOver: boolean) {
+function answer(source: Source, storage: KeyValueStorage, bringOver: boolean, words: EarlierWords) {
   return (addresses?: readonly ScopePath[]) => source.bring(async (last) => {
     const note = asNote(last?.note)
     const reading = await readEarlier(storage)
@@ -263,8 +275,8 @@ function answer(source: Source, storage: KeyValueStorage, bringOver: boolean) {
     const asking = addresses !== undefined && note?.asking === true
     return {
       scopes: reading.scopes.filter(({ address }) => wanted.has(address)),
-      subject: AGAIN_SUBJECT,
-      safeguard: BEFORE_AGAIN_SUBJECT,
+      subject: words.again,
+      safeguard: words.beforeAgain,
       note: { seen, left: reading.left, ...(asking ? { asking: true } : {}) } satisfies Note,
       ...(bringOver ? { force: true } : { settle: [...wanted] }),
     }
@@ -272,7 +284,7 @@ function answer(source: Source, storage: KeyValueStorage, bringOver: boolean) {
 }
 
 /** The answers a person gives about the scopes kept before, over the source that brings them. */
-export function earlierOf(source: Source, storage: KeyValueStorage): Earlier {
+export function earlierOf(source: Source, storage: KeyValueStorage, words: EarlierWords = EARLIER_WORDS): Earlier {
   return {
     standing: async () => {
       const last = await source.lastBrought()
@@ -281,7 +293,7 @@ export function earlierOf(source: Source, storage: KeyValueStorage): Earlier {
         asking: note?.asking === true, left: note?.left ?? [], refused: last?.refused ?? [], diverged: last?.diverged ?? [],
       }
     },
-    bringOver: answer(source, storage, true),
-    leave: answer(source, storage, false),
+    bringOver: answer(source, storage, true, words),
+    leave: answer(source, storage, false, words),
   }
 }

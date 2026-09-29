@@ -11,7 +11,7 @@ import type { Repositories } from '../../ports/Repositories'
 import { repositoriesOn } from '../repositories/repositoriesOver'
 import { Source } from '../repositories/source'
 import { bringingEarlier, earlierOf } from './earlierScopes'
-import type { Earlier } from './earlierScopes'
+import type { Earlier, EarlierWords } from './earlierScopes'
 import { IndexedDbStore } from './IndexedDbStore'
 import type { IndexedDb, Pressure, Standing } from './IndexedDbStore'
 import type { KeyValueStorage } from './KeyValueStorage'
@@ -52,12 +52,16 @@ export type BrowserSource = { repositories: Repositories; database: BrowserDatab
  * to be kept through a clear-out and says how full it is; without one, both
  * answer nothing.
  */
-export function browserRepositories(indexedDb: IndexedDb, earlier?: KeyValueStorage, name?: string): BrowserSource {
+export function browserRepositories(
+  indexedDb: IndexedDb, earlier?: KeyValueStorage, name?: string,
+  /** Who the entries say made them, and what a bringing's entries say, in the person's language. */
+  words: { by?: string; earlier?: EarlierWords } = {},
+): BrowserSource {
   const store = new IndexedDbStore(indexedDb, name)
   const source = new Source(store, {
     id: BROWSER_REPOSITORIES,
-    by: 'this browser',
-    ...(earlier ? { bring: bringingEarlier(earlier) } : {}),
+    by: words.by ?? 'this browser',
+    ...(earlier ? { bring: bringingEarlier(earlier, words.earlier) } : {}),
   })
   const database: BrowserDatabase = {
     standing: () => store.standing(),
@@ -66,5 +70,8 @@ export function browserRepositories(indexedDb: IndexedDb, earlier?: KeyValueStor
     persisted: () => store.persisted(),
     keep: () => store.keep(),
   }
-  return { repositories: repositoriesOn(source), database, ...(earlier ? { earlier: earlierOf(source, earlier) } : {}) }
+  return {
+    repositories: repositoriesOn(source), database,
+    ...(earlier ? { earlier: earlierOf(source, earlier, words.earlier) } : {}),
+  }
 }

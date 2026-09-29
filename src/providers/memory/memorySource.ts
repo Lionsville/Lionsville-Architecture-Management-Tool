@@ -7,6 +7,7 @@
  */
 import { InMemoryPreferencesStore } from '../../adapters/memory/InMemoryPreferencesStore'
 import { memoryRepositories } from '../../adapters/memory/memoryRepositories'
+import type { Translate } from '../../i18n'
 import type { SourceProvider } from '../../platform/sourceProvider'
 import type { WorkingSource } from '../../platform/workingSource'
 import type { PreferencesStore } from '../../ports/PreferencesStore'
@@ -21,15 +22,15 @@ export type MemoryParts = ProviderParts & {
 /** Nothing kept here outlives this tab, and the bar says it in the warning colour. */
 export const IN_MEMORY: WorkingSource = { provider: 'memory', name: '', key: '', transient: true }
 
-export const MEMORY_SOURCE: SourceProvider<MemoryParts, unknown> = {
+export const MEMORY_SOURCE: SourceProvider<MemoryParts, unknown, { readonly s?: Translate }> = {
   kind: 'memory',
   labelKey: 'shell.sourceMemory',
   describeKey: 'shell.sourceTipMemory',
   whereKey: 'memory.where',
   // What removing takes is what the chip's neighbours always said of it.
   removeKey: 'picker.deleteBodyBrowser',
-  open: () => ({
-    repositories: memoryRepositories(),
+  open: (_opening, { s }) => ({
+    repositories: memoryRepositories(undefined, s?.('memory.historyAuthor')),
     preferences: new InMemoryPreferencesStore(),
     source: IN_MEMORY,
     historyNoteKey: 'memory.historyNote',
