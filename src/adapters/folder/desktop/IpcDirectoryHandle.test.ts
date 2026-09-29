@@ -16,7 +16,7 @@ import { chmodSync, existsSync, mkdtempSync, realpathSync, rmSync } from 'node:f
 import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
 import {
-  fingerprint, listDirectory, makeDirectory, readFile, removeEntry, writeFile, writeTogether,
+  fingerprint, listDirectory, makeDirectory, moveEntry, readFile, removeEntry, writeFile, writeTogether,
 } from '../../../../electron/main/fileStore'
 import { describeDirectoryHandle } from '../DirectoryHandle.contract'
 import { describeScopeStore, sampleScope } from '../../../ports/ScopeStore.contract'
@@ -49,6 +49,7 @@ function channelOver(root: string): DesktopFiles {
     write: (held, path, bytes) => writeFile(held, path, bytes),
     writeTogether: (held, writes, removals) => writeTogether(held, writes, removals),
     remove: (held, path, options) => removeEntry(held, path, options),
+    move: (held, from, to) => moveEntry(held, from, to),
     fingerprint: (held, path) => fingerprint(held, path),
     revealInFolder: () => Promise.resolve(),
     saveDocument: () => Promise.resolve(true),

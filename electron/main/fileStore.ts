@@ -30,7 +30,7 @@
 import { createHash } from 'node:crypto'
 import { constants } from 'node:fs'
 import {
-  access, mkdir, open, readdir, readFile as read, realpath, rename, rm, stat, unlink,
+  access, lstat, mkdir, open, readdir, readFile as read, realpath, rename, rm, stat, unlink,
 } from 'node:fs/promises'
 import { dirname, isAbsolute, join, relative, sep } from 'node:path'
 import type { DesktopEntry, DesktopFileContents, DesktopStamp } from '../../src/adapters/desktop/channel'
@@ -251,6 +251,24 @@ export async function writeTogether(
   for (const [at, temporary] of staged.entries()) await rename(temporary, targets[at]!)
   for (const target of gone) await rm(target!, { force: true })
   return Promise.all(writes.map(async (write, at) => stampOf(write.bytes, await stat(targets[at]!))))
+}
+
+/**
+ * A file or a folder renamed to another place inside the root — a scope moved
+ * with everything in it, links and empty folders included, and its bytes
+ * never read. Refused, with nothing moved, where either path leads out or into
+ * the history, where the root itself is asked for, and where something is at
+ * the new place already. The folders on the way to it are made.
+ */
+export async function moveEntry(root: string, from: string, to: string): Promise<void> {
+  const source = await resolveInside(root, from)
+  const target = await resolveInside(root, to)
+  if (!source || !target || !safeRelativePath(from) || !safeRelativePath(to)) throw new Error('shell.pathRefused')
+  if (within(source, target)) throw new Error('shell.pathRefused')
+  const taken = await lstat(target).then(() => true, () => false)
+  if (taken) throw new Error('shell.pathRefused')
+  await mkdir(dirname(target), { recursive: true })
+  await rename(source, target)
 }
 
 export async function removeEntry(

@@ -23,12 +23,14 @@
  * applied again — a create refused as taken, which the sender reads as the
  * state it asked for.
  *
- * **A move moves everything**: every file of the scope's folder and of the
- * scopes under it — the format's, the pictures, the settings and whatever a
- * person keeps there — copied to the new address and then removed from the
- * old, so a stop part way leaves two copies, which a person can see and
- * settle, and never none. Each scope's identity goes with it, written into its
- * header where it was not yet.
+ * **A move moves everything**: the scope's folder and the scopes under it —
+ * the format's files, the pictures, the settings and whatever a person keeps
+ * there, links and empty folders included. Where the folder can rename one
+ * (the desktop's main process), it is one rename, and no byte passes through
+ * the page; where it cannot, every file is copied to the new address and then
+ * removed from the old, so a stop part way leaves two copies, which a person
+ * can see and settle, and never none. Each scope's identity goes with it,
+ * written into its header where it was not yet.
  */
 import type { ImageEntry } from '../../model/imageName'
 import { stableJson } from '../../projects/fileText'
@@ -46,7 +48,7 @@ import { fileFor, foldersOf, LIBRARY_KEY, pictureFiles, picturePath, rowsFor } f
 import type { KeptPicture, PictureStaging } from './folderPictures'
 import { composed, headerOf, ID_KEY, newIdentity } from './folderScopes'
 import type { FolderNode, FolderScopes, ReadScope } from './folderScopes'
-import { bytesAt, filesUnder, folderAt, removeAt, writeAt } from './handles'
+import { bytesAt, filesUnder, folderAt, removeAt, textAt, writeAt } from './handles'
 import { filesInDocuments } from './imageLibrary'
 import type { StepMemory } from './stepMemory'
 import { SCOPE_FILE } from '../../projects/folderFormat'
@@ -309,6 +311,17 @@ export class FolderScopeRepository implements ScopeRepository {
    */
   private async carry(from: ScopeAddress, to: ScopeAddress, moving: readonly FolderNode[]): Promise<void> {
     const { root } = this.folder
+    if (root.moveEntry) {
+      await root.moveEntry(from, to)
+      for (const node of moving) {
+        if (node.header[ID_KEY] === node.id) continue
+        const path = scopeFilePath(`${to}${node.address.slice(from.length)}`, SCOPE_FILE)
+        const header = headerOf(await textAt(root, path))
+        if (header) await writeAt(root, path, stableJson({ ...header, [ID_KEY]: node.id }))
+      }
+      for (const node of moving) this.folder.forget(node.address)
+      return
+    }
     const source = await folderAt(root, from)
     const files = source ? await filesUnder(source, (name, within) => name === '.git' && within === '') : []
     const headers = new Map(moving.map((node) => [scopeFilePath(node.address.slice(from.length + 1), SCOPE_FILE), node]))

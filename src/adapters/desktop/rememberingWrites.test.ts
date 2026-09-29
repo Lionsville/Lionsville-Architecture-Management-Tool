@@ -25,6 +25,7 @@ function channel(): DesktopFiles {
     write: vi.fn(() => Promise.resolve(stamp('abc'))),
     writeTogether: vi.fn((_root: string, writes: readonly unknown[]) => Promise.resolve(writes.map((_, at) => stamp(`w${at}`)))),
     remove: vi.fn(() => Promise.resolve()),
+    move: () => Promise.resolve(),
     fingerprint: () => Promise.resolve(undefined),
     revealInFolder: () => Promise.resolve(),
     saveDocument: () => Promise.resolve(true),

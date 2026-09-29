@@ -135,6 +135,34 @@ export class FakeDirectory implements DirectoryHandleLike {
     }
   }
 
+  /**
+   * A folder moved by its path inside this one to another, as one rename —
+   * what the desktop's main process does. Offered unless the double is a
+   * browser (`canMove: false`).
+   */
+  get moveEntry(): ((from: string, to: string) => Promise<void>) | undefined {
+    if (this.options.canMove === false) return undefined
+    return async (from, to) => {
+      const parentOf = async (path: string, create: boolean) => {
+        const segments = path.split('/').slice(0, -1)
+        let folder: DirectoryHandleLike | undefined
+        for (const segment of segments) folder = await (folder ?? this).getDirectoryHandle(segment, { create })
+        return (folder ?? this) as FakeDirectory
+      }
+      const source = await parentOf(from, false)
+      const name = from.split('/').pop()!
+      const moved = source.folders.get(name)
+      if (!moved) throw new Error(`NotFoundError: no directory ${from}`)
+      const target = await parentOf(to, true)
+      const as = to.split('/').pop()!
+      if (target.folders.has(as) || target.files.has(as)) throw new Error(`InvalidModificationError: ${to} is taken`)
+      source.folders.delete(name)
+      // Renamed as it moves: a folder answers to the name it is kept under.
+      ;(moved as { name: string }).name = as
+      target.folders.set(as, moved)
+    }
+  }
+
   /** Put a file there without going through the store, for the awkward cases. */
   writeRaw(name: string, contents: string | Uint8Array): void {
     this.files.set(name, { contents, lastModified: (tick += 1) })

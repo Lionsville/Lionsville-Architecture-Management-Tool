@@ -16,7 +16,7 @@ import { chmod, mkdir, mkdtemp, readdir, readFile, realpath, rm, symlink, writeF
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
-  fingerprint, listDirectory, makeDirectory, readFile as readInside, removeEntry, resolveInside,
+  fingerprint, listDirectory, makeDirectory, moveEntry, readFile as readInside, removeEntry, resolveInside,
   safeRelativePath, writeFile as writeInside, writeTogether,
 } from './fileStore'
 
@@ -162,6 +162,28 @@ describe('what the channel does with a folder', () => {
  * staged beside every target first, then moved into place, so the renderer
  * going away part way cannot leave half an organisation.
  */
+describe('a folder moved as one rename', () => {
+  it('moves everything in it, links and empty folders included, the folders on the way made', async () => {
+    await mkdir(join(root, 'acme', 'empty'), { recursive: true })
+    await writeFile(join(root, 'acme', 'model.json'), '{}')
+    await symlink('model.json', join(root, 'acme', 'link.json'))
+    await moveEntry(root, 'acme', 'globex/acme')
+    expect((await readdir(join(root, 'globex', 'acme'))).sort()).toEqual(['empty', 'link.json', 'model.json'])
+    expect(await readFile(join(root, 'globex', 'acme', 'link.json'), 'utf8')).toBe('{}')
+    expect(await readdir(root)).toEqual(['globex'])
+  })
+
+  it('refuses a place that is taken, the root, a place inside itself, a way out and the history, and moves nothing', async () => {
+    await mkdir(join(root, 'acme'), { recursive: true })
+    await mkdir(join(root, 'globex'), { recursive: true })
+    await mkdir(join(root, '.git'), { recursive: true })
+    for (const [from, to] of [['acme', 'globex'], ['', 'elsewhere'], ['acme', 'acme/inside'], ['acme', '../out'], ['acme', '.git/acme'], ['.git', 'history']]) {
+      await expect(moveEntry(root, from, to), `${from} → ${to}`).rejects.toThrow('shell.pathRefused')
+    }
+    expect((await readdir(root)).sort()).toEqual(['.git', 'acme', 'globex'])
+  })
+})
+
 describe('the folder’s history', () => {
   const spellings = ['.git', '.GIT', '.Git', '.git.', '.git ', 'GIT~1']
 

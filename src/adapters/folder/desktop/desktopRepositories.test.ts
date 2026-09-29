@@ -11,13 +11,13 @@
  */
 import { afterAll, describe, expect, it } from 'vitest'
 import { existsSync, mkdtempSync, realpathSync, rmSync } from 'node:fs'
-import { writeFile as writeOnDisk } from 'node:fs/promises'
+import { lstat, mkdir, readdir, symlink, writeFile as writeOnDisk } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { basename, join } from 'node:path'
 import {
-  fingerprint, listDirectory, makeDirectory, readFile, removeEntry, writeFile, writeTogether,
+  fingerprint, listDirectory, makeDirectory, moveEntry, readFile, removeEntry, writeFile, writeTogether,
 } from '../../../../electron/main/fileStore'
 import { appliedStepsText, readAppliedSteps } from '../../../platform/node/appliedSteps'
 import { gitAvailable, isRepository } from '../../../platform/node/git'
@@ -62,6 +62,7 @@ function filesOver(root: string): DesktopFiles {
     write: (held, path, bytes) => writeFile(held, path, bytes),
     writeTogether: (held, writes, removals) => writeTogether(held, writes, removals),
     remove: (held, path, options) => removeEntry(held, path, options),
+    move: (held, from, to) => moveEntry(held, from, to),
     fingerprint: (held, path) => fingerprint(held, path),
     revealInFolder: () => Promise.resolve(),
     saveDocument: () => Promise.resolve(true),
@@ -217,6 +218,21 @@ describe.skipIf(!available)('the folder’s repositories on the desktop, with gi
     const [image] = (await repositories.state(acme)).images
     expect(image.size).toBe(4)
     expect(image.contentAddress).not.toBe(contentAddress)
+  })
+
+
+  it('moves a scope as one rename in main: its links, its empty folders and its person’s files go with it', async () => {
+    const folder = freshFolder()
+    const repositories = over(onTheDesktop(folder))
+    const acme = await repositories.scope('acme', 'Acme Logistics')
+    await repositories.steps(acme, addCrews)
+    await mkdir(join(folder, 'acme', 'notes', 'empty'), { recursive: true })
+    await symlink('../model.json', join(folder, 'acme', 'notes', 'model-link.json'))
+    ok(await repositories.move(acme, 'globex/acme'))
+    expect((await readdir(join(folder, 'globex', 'acme', 'notes'))).sort()).toEqual(['empty', 'model-link.json'])
+    expect((await lstat(join(folder, 'globex', 'acme', 'notes', 'model-link.json'))).isSymbolicLink()).toBe(true)
+    expect(existsSync(join(folder, 'acme'))).toBe(false)
+    expect((await repositories.state(acme)).model.elements.map((one) => one.id)).toEqual(['crews'])
   })
 
 })

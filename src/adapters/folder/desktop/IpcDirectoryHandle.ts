@@ -136,6 +136,11 @@ export class IpcDirectoryHandle implements DirectoryHandleLike {
     )
   }
 
+  /** Renamed in main: the folder moves as it is, and its bytes never cross to the page. */
+  async moveEntry(from: string, to: string): Promise<void> {
+    await this.files.move(this.root, this.within(from), this.within(to))
+  }
+
   async *values(): AsyncIterableIterator<FileHandleLike | DirectoryHandleLike> {
     // A folder that has gone away — unplugged, deleted, permission withdrawn —
     // reads as empty rather than throwing, and the store turns that into an

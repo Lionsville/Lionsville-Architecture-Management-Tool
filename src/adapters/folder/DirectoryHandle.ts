@@ -78,4 +78,12 @@ export type DirectoryHandleLike = {
     writes: readonly { path: string; data: string | Uint8Array }[],
     removals: readonly string[],
   ): Promise<void>
+  /**
+   * A file or a folder, by its path inside this one, renamed to another path
+   * inside it — everything in it moved as it is, links and empty folders
+   * included, and no byte read. Refused where something is at the new path.
+   * Offered where something outside the page can do it — the desktop's main
+   * process; absent, a folder's files are copied and the old folder removed.
+   */
+  moveEntry?(from: string, to: string): Promise<void>
 }

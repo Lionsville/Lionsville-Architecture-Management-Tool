@@ -37,7 +37,7 @@ import {
 import { log } from './log'
 import { watchFolder } from './watch'
 import {
-  fingerprint, listDirectory, makeDirectory, readFile as readInside, removeEntry, resolveInside,
+  fingerprint, listDirectory, makeDirectory, moveEntry, readFile as readInside, removeEntry, resolveInside,
   writeFile as writeInside, writeTogether as writeTogetherInside,
 } from './fileStore'
 
@@ -329,7 +329,7 @@ export function registerFileChannel(options: { onRecentsChanged?: () => void } =
     if (isGranted(root)) await excludeLocalSettings(root)
   })
 
-  registerRepositoryHistory()
+  registerRepositoryChannels()
 
   ipcMain.handle('files:watch', (_event, root: unknown) => {
     if (!isGranted(root) || watching.has(root)) return
@@ -357,10 +357,17 @@ export function stopWatching(): void {
 }
 
 /**
- * The history the folder's repositories read (ADR-0031 §2): the same rule as
- * every handler of the file channel, a root the person granted or nothing.
+ * What the folder's repositories ask of main beyond the file channel
+ * (ADR-0031 §2) — a scope moved as one rename, and the history they read —
+ * with the same rule as every handler of the file channel: a root the person
+ * granted, or nothing.
  */
-function registerRepositoryHistory(): void {
+function registerRepositoryChannels(): void {
+  ipcMain.handle('files:move', async (_event, root: unknown, from: unknown, to: unknown) => {
+    if (!isGranted(root) || !isPath(from) || !isPath(to)) throw new Error('shell.pathRefused')
+    await moveEntry(root, from, to)
+  })
+
   // Every path a string inside the folder: `gitEntries.ts` hands
   // git each one as a literal, and refuses an escape before git sees it.
 

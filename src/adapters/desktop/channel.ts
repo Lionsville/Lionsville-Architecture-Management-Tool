@@ -220,6 +220,8 @@ export type DesktopFiles = {
   ): Promise<DesktopStamp[]>
   /** A file, or a directory with `recursive`. Removing what is not there is fine. */
   remove(root: string, path: string, options?: { recursive?: boolean }): Promise<void>
+  /** A file or a directory renamed to another place in the folder, the folders on the way made; refused where something is there. */
+  move(root: string, from: string, to: string): Promise<void>
   /** What is on disk right now, without reading the whole file back. */
   fingerprint(root: string, path: string): Promise<DesktopStamp | undefined>
   /** Show it to the user in their file manager. */

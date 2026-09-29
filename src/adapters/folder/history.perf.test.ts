@@ -20,7 +20,7 @@ import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
 import { promisify } from 'node:util'
 import {
-  fingerprint, listDirectory, makeDirectory, readFile as readInside, removeEntry, writeFile, writeTogether,
+  fingerprint, listDirectory, makeDirectory, moveEntry, readFile as readInside, removeEntry, writeFile, writeTogether,
 } from '../../../electron/main/fileStore'
 import { BUDGET } from '../../model/testing/measure'
 import { stableJson } from '../../projects/fileText'
@@ -54,6 +54,7 @@ function filesOver(): DesktopFiles {
     write: (held, path, bytes) => writeFile(held, path, bytes),
     writeTogether: (held, writes, removals) => writeTogether(held, writes, removals),
     remove: (held, path, options) => removeEntry(held, path, options),
+    move: (held, from, to) => moveEntry(held, from, to),
     fingerprint: (held, path) => fingerprint(held, path),
   }
 }

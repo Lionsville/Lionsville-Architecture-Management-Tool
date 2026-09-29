@@ -92,12 +92,14 @@ describe('several files written as one', () => {
 describe('the folder’s history and its applied steps', () => {
   it('asks main on the channel each is, with the arguments as given', async () => {
     await bridge()
-    const { history, settings } = electron.exposed as {
+    const { history, settings, files } = electron.exposed as {
+      files: import('../../src/adapters/desktop/channel').DesktopFiles
       history: import('../../src/adapters/desktop/channel').DesktopHistory
       settings: import('../../src/adapters/desktop/channel').DesktopSettings
     }
     const steps = { one: ['scope', 1] as [string, number] }
     const calls: [() => Promise<unknown>, string, unknown[]][] = [
+      [() => files.move('/work', 'acme', 'globex/acme'), 'files:move', ['/work', 'acme', 'globex/acme']],
       [() => history.startHistory('/work'), 'git:startHistory', ['/work']],
       [() => history.changes('/work'), 'git:changes', ['/work']],
       [() => history.readiness('/work'), 'git:readiness', ['/work']],
