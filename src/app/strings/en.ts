@@ -68,7 +68,7 @@ export const EN = {
    */
   'shell.readOnlyRefused': 'This scope is open to be read and not changed, so nothing was done.',
   'shell.conflictThere': 'This project changed elsewhere, and there are unsaved changes here.',
-  'shell.unsettledFirst': 'This scope changed elsewhere, and which version stands is not settled yet. Choose on the bar first; nothing was replaced.',
+  'shell.unsettledFirst': 'This scope changed elsewhere while changes here are unsaved. Choose which version stands on the bar first.',
   'shell.takeTheirs': 'Take theirs',
   'shell.keepMine': 'Keep mine',
   'shell.saveACopy': 'Save a copy…',
@@ -768,7 +768,7 @@ export const EN = {
   'gesture.moved': '{scope} answers for {name} now',
   'gesture.linked': '{name} stands in for the record in {scope} now',
   'gesture.writeFailed': 'That scope could not be written: {message}',
-  'gesture.leftCopy': '{scope} has it now, but this scope could not be written: {message}. The record is in both places.',
+  'gesture.leftCopy': '{scope} has it now, but this scope could not be written, so the record is in both places. {message}',
 
   /**
    * Adding an application the organisation already has to a board — the

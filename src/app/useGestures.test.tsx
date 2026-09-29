@@ -13,6 +13,7 @@
  */
 import { afterEach, describe, expect, it } from 'vitest'
 import { act, cleanup, render } from '@testing-library/react'
+import { ShellError } from '../platform/errors'
 import { answering, heldRepositories } from './testing/heldRepositories'
 import type { HeldRepositories } from './testing/heldRepositories'
 import { modelsOf, nodesOf, stepOf } from '../projects/scopeAccess'
@@ -78,6 +79,8 @@ type Options = {
   meanwhile?: (store: HeldRepositories, path: string) => Promise<void>
   /** The open scope is only read (`ModelSession.readOnly`). */
   readOnly?: boolean
+  /** What the open scope's write is refused with, where it is. */
+  saveRefuses?: unknown
 }
 
 function mount(open: string, initial = tree(), failOnWrite?: number, options: Options = {}): Harness {
@@ -105,6 +108,7 @@ function mount(open: string, initial = tree(), failOnWrite?: number, options: Op
   }).scopes
   /** The open scope's write: what the session did, as the steps it was. */
   const save = async () => {
+    if (options.saveRefuses) throw options.saveRefuses
     await writing(open)
     const id = (await store.read(open))!.id!
     const pending = session.journal.pending()
@@ -226,6 +230,19 @@ describe('promote', () => {
     expect(held.failures).toContain('gesture.save')
     expect(held.notices.some(([message, severity]) => severity === 'warning' && message.includes('both places')))
       .toBe(true)
+  })
+})
+
+describe('a refusal said in the person’s words', () => {
+  it('says why the open scope could not be written, and never as a key', async () => {
+    const held = mount('retail', tree(), undefined, { saveRefuses: new ShellError('shell.unsettledFirst') })
+    await act(async () => { held.gestures().ask({ gesture: 'promote', id: 'wms', to: '' }) })
+    await settle()
+    await act(async () => { held.gestures().confirm() })
+    await settle()
+    const [said] = held.notices.filter(([, severity]) => severity === 'warning').map(([message]) => message)
+    expect(said).toContain(s('shell.unsettledFirst'))
+    expect(said).not.toContain('shell.unsettledFirst')
   })
 })
 

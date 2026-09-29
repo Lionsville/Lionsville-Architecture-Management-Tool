@@ -30,7 +30,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.unreadableInTheWay': 'Es wurde nichts geschrieben: an dieser Adresse liegt bereits ein Bereich, der nicht gelesen werden konnte, und Schreiben hätte ihn ersetzt. Reparieren Sie seine scope.json oder holen Sie sie aus dem Verlauf zurück, und versuchen Sie es erneut.',
   'shell.readOnlyRefused': 'Dieser Bereich ist zum Lesen geöffnet und nicht zum Ändern, deshalb wurde nichts getan.',
   'shell.conflictThere': 'Dieses Projekt wurde anderswo geändert, und hier gibt es ungespeicherte Änderungen.',
-  'shell.unsettledFirst': 'Dieser Scope wurde anderswo geändert, und welche Fassung gilt, ist noch nicht entschieden. Entscheiden Sie zuerst in der Leiste; es wurde nichts ersetzt.',
+  'shell.unsettledFirst': 'Dieser Scope wurde anderswo geändert, während Änderungen hier ungespeichert sind. Wählen Sie zuerst in der Leiste, welche Fassung gilt.',
   'shell.takeTheirs': 'Die von der Festplatte',
   'shell.keepMine': 'Meine behalten',
   'shell.saveACopy': 'Kopie speichern…',
@@ -569,7 +569,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'gesture.moved': '{scope} verantwortet {name} jetzt',
   'gesture.linked': '{name} verweist jetzt auf den Datensatz in {scope}',
   'gesture.writeFailed': 'Dieser Bereich konnte nicht geschrieben werden: {message}',
-  'gesture.leftCopy': '{scope} hat es jetzt, aber dieser Bereich konnte nicht geschrieben werden: {message}. Der Datensatz liegt an zwei Stellen.',
+  'gesture.leftCopy': '{scope} hat es jetzt, aber dieser Bereich konnte nicht geschrieben werden, daher liegt der Datensatz an zwei Stellen. {message}',
 
   'library.title': 'Vorhandene Anwendung hinzufügen',
   'library.hint': 'Jede Anwendung der Organisation, die noch nicht auf diesem Board ist.',

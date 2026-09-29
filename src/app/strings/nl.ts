@@ -30,7 +30,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.unreadableInTheWay': 'Er is niets geschreven: op dat adres staat al een scope die niet kon worden gelezen, en schrijven zou die hebben vervangen. Herstel de scope.json ervan, of haal die terug uit de geschiedenis, en probeer het opnieuw.',
   'shell.readOnlyRefused': 'Deze scope staat open om te lezen en niet om te wijzigen, dus er is niets gedaan.',
   'shell.conflictThere': 'Dit project is elders gewijzigd, en hier staan wijzigingen open.',
-  'shell.unsettledFirst': 'Deze scope is elders gewijzigd, en welke versie blijft staan is nog niet gekozen. Kies eerst op de balk; er is niets vervangen.',
+  'shell.unsettledFirst': 'Deze scope is elders gewijzigd terwijl wijzigingen hier niet bewaard zijn. Kies eerst op de balk welke versie blijft.',
   'shell.takeTheirs': 'Die van schijf',
   'shell.keepMine': 'Die van mij',
   'shell.saveACopy': 'Kopie bewaren…',
@@ -569,7 +569,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'gesture.moved': '{scope} beheert {name} nu',
   'gesture.linked': '{name} verwijst nu naar het record in {scope}',
   'gesture.writeFailed': 'Dat niveau kon niet worden geschreven: {message}',
-  'gesture.leftCopy': '{scope} heeft het nu, maar dit niveau kon niet worden geschreven: {message}. Het record staat op twee plaatsen.',
+  'gesture.leftCopy': '{scope} heeft het nu, maar dit niveau kon niet worden geschreven, dus het record staat op twee plaatsen. {message}',
 
   'library.title': 'Bestaande applicatie toevoegen',
   'library.hint': 'Elke applicatie in de organisatie die nog niet op dit bord staat.',

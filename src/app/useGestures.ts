@@ -30,6 +30,7 @@ import { useCallback, useMemo, useState } from 'react'
 import type { StringKey, Translate } from '../i18n'
 import type { Command, DesignElement, ElementId } from '../model'
 import { reasonOf } from '../platform/errors'
+import { reasonIn } from './messageFor'
 import {
   definitionCommand, GESTURE_BARRIER, GESTURE_REFUSAL, isGestureRefusal, planGesture,
 } from '../projects/gestures'
@@ -212,7 +213,7 @@ export function useGestures(deps: {
         await save()
       } catch (cause) {
         onFailure('gesture.save', cause)
-        notify(s('gesture.leftCopy', { scope: scopeName, message: reasonOf(cause) }), 'warning')
+        notify(s('gesture.leftCopy', { scope: scopeName, message: reasonIn(cause, s) }), 'warning')
       }
     }
     onTreeChanged()
