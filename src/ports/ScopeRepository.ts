@@ -30,7 +30,7 @@
  * is written. A promise rejects only where the implementation itself could not
  * answer.
  *
- * `ScopeRepository.contract.ts` beside this file is the behaviour every
+ * `ScopeRepository.contract.ts`, beside this seam, is the behaviour every
  * implementation must show.
  */
 import type { ScopeKind } from '../projects/scope'

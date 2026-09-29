@@ -16,7 +16,7 @@
  * patch, so a key a newer build wrote survives an older build changing one of
  * its own.
  *
- * `SettingsRepository.contract.ts` beside this file is the behaviour every
+ * `SettingsRepository.contract.ts`, beside this seam, is the behaviour every
  * implementation must show.
  */
 import type { ScopeId } from '../projects/scopeState'

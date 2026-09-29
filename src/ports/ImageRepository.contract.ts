@@ -6,8 +6,8 @@
  *
  * The bytes and the library are two acts, and these clauses hold them apart:
  * bytes put are named by what they are and belong to no library, the step
- * that adds an entry is what makes a name answer, and a folder is listed and
- * a name found without the library being handed over whole.
+ * that adds an entry is what makes a name answer, and an image folder is
+ * listed and a name found without the library being handed over whole.
  *
  * Named `.contract.ts` so the runner does not pick it up on its own.
  */
@@ -84,17 +84,17 @@ export function describeImageRepository(name: string, make: MakeRepositories): v
       expect((await repositories.images.bytes(acme, 'context.png'))?.bytes).toEqual(bytes(1, 2, 3))
     })
 
-    it('lists one folder: the pictures directly in it and the folders directly under it, by name', async () => {
+    it('lists one image folder: the pictures directly in it and the image folders directly under it, by name', async () => {
       const { repositories, acme } = await fresh()
       const top = await add(repositories, acme, 'top.png', bytes(1))
       const b = await add(repositories, acme, 'diagrams/b.png', bytes(2))
       const a = await add(repositories, acme, 'diagrams/a.jpg', bytes(3))
       await add(repositories, acme, 'diagrams/2025/old.png', bytes(4))
       await add(repositories, acme, 'photos/2026/whiteboard.webp', bytes(5))
-      expect(await repositories.images.folder(acme, '')).toEqual({ images: [top], folders: ['diagrams', 'photos'] })
-      expect(await repositories.images.folder(acme, 'diagrams')).toEqual({ images: [a, b], folders: ['diagrams/2025'] })
-      expect(await repositories.images.folder(acme, 'photos')).toEqual({ images: [], folders: ['photos/2026'] })
-      expect(await repositories.images.folder(acme, 'nowhere')).toEqual({ images: [], folders: [] })
+      expect(await repositories.images.list(acme, '')).toEqual({ images: [top], imageFolders: ['diagrams', 'photos'] })
+      expect(await repositories.images.list(acme, 'diagrams')).toEqual({ images: [a, b], imageFolders: ['diagrams/2025'] })
+      expect(await repositories.images.list(acme, 'photos')).toEqual({ images: [], imageFolders: ['photos/2026'] })
+      expect(await repositories.images.list(acme, 'nowhere')).toEqual({ images: [], imageFolders: [] })
     })
 
     it('takes a picture out of the library by a step, after which its name answers nothing', async () => {
@@ -103,7 +103,7 @@ export function describeImageRepository(name: string, make: MakeRepositories): v
       await repositories.steps(acme, { type: 'image.remove', name: 'context.png' })
       expect(await repositories.images.find(acme, 'context.png')).toBeUndefined()
       expect(await repositories.images.bytes(acme, 'context.png')).toBeUndefined()
-      expect(await repositories.images.folder(acme, '')).toEqual({ images: [], folders: [] })
+      expect(await repositories.images.list(acme, '')).toEqual({ images: [], imageFolders: [] })
     })
 
     it('keeps a name to one picture: a second under it is refused and the first stays', async () => {

@@ -21,7 +21,7 @@
  * scope and a question about every scope, asked after every step anybody
  * makes.
  *
- * `OrganisationIndex.contract.ts` beside this file is the behaviour every
+ * `OrganisationIndex.contract.ts`, beside this seam, is the behaviour every
  * implementation must show.
  */
 import type { ScopeModel } from '../projects/scope'

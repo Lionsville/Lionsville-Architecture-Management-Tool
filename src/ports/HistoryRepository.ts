@@ -25,7 +25,7 @@
  * present equal it is the model's own `restore` command, applied through
  * `ScopeRepository` like any other step, so the history only ever grows.
  *
- * `HistoryRepository.contract.ts` beside this file is the behaviour every
+ * `HistoryRepository.contract.ts`, beside this seam, is the behaviour every
  * implementation must show.
  */
 import type { LabelOutcome } from '../platform/history'

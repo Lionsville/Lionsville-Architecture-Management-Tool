@@ -9,7 +9,7 @@
  * — is read with the scope, and a picture is added to the library or taken
  * out of it by a step through `ScopeRepository`. What this seam adds is the
  * bytes, and the two questions a library of any size has to answer without
- * being read whole: what is in one folder, and what one name is.
+ * being read whole: what is in one image folder, and what one name is.
  *
  * **Bytes are asked for when a picture is shown.** A page lays every picture
  * out from the library's entries at once, and asks for one picture's bytes
@@ -22,16 +22,16 @@
  * put and never added are in no library, are not answered by name, and are
  * the implementation's to let go of.
  *
- * `ImageRepository.contract.ts` beside this file is the behaviour every
+ * `ImageRepository.contract.ts`, beside this seam, is the behaviour every
  * implementation must show.
  */
 import type { ContentAddress, ImageEntry, ImageFolder, ImageName } from '../model/imageName'
 import type { ScopeId } from '../projects/scopeState'
 
-/** One folder of a library: the pictures directly in it, and the folders directly under it. */
+/** One image folder of a library: the pictures directly in it, and the image folders directly under it. */
 export type ImageListing = {
   images: readonly ImageEntry[]
-  folders: readonly ImageFolder[]
+  imageFolders: readonly ImageFolder[]
 }
 
 /** A picture's bytes, and what they are. */
@@ -54,11 +54,11 @@ export interface ImageRepository {
   put(scope: ScopeId, name: ImageName, bytes: Uint8Array): Promise<Put>
 
   /**
-   * The pictures directly in one folder of a scope's library, and the folders
-   * directly under it, each sorted by name. `''` is the top. A folder with
-   * nothing in it answers empty.
+   * The pictures directly in one image folder of a scope's library, and the
+   * image folders directly under it, each sorted by name. `''` is the top. An
+   * image folder with nothing in it answers empty.
    */
-  folder(scope: ScopeId, folder: ImageFolder): Promise<ImageListing>
+  list(scope: ScopeId, within: ImageFolder): Promise<ImageListing>
 
   /** One picture's entry by its name, or `undefined` where the library has none by it. */
   find(scope: ScopeId, name: ImageName): Promise<ImageEntry | undefined>

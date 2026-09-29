@@ -5,10 +5,11 @@
  * A picture in a scope's image library, as the domain names it (ADR-0031 §3).
  *
  * **An image is named by its name**, extension included, unique in its
- * scope's library: `context.png`. The library may have folders, and they are
- * carried in the name — `diagrams/context.png` is the picture `context.png` in
- * the folder `diagrams` — so a folder is nothing but the names that start with
- * it, and there is no second thing to keep in step with the names.
+ * scope's library: `context.png`. The library may have image folders, and they
+ * are carried in the name — `diagrams/context.png` is the picture
+ * `context.png` in the image folder `diagrams` — so an image folder is nothing
+ * but the names that start with it, and there is no second thing to keep in
+ * step with the names.
  *
  * **A document refers to one by name**: `![alt](image:diagrams/context.png)`.
  * A name and not a place: how an implementation keeps the bytes, and what it
@@ -28,10 +29,10 @@
  */
 import { imageMediaType } from './documentImage'
 
-/** What a picture is called in its scope's library, folders included: `diagrams/context.png`. */
+/** What a picture is called in its scope's library, image folders included: `diagrams/context.png`. */
 export type ImageName = string
 
-/** A folder of the library, as the names in it start: `diagrams`, or `''` for the top. */
+/** An image folder of the library, as the names in it start: `diagrams`, or `''` for the top. */
 export type ImageFolder = string
 
 /** The bytes' own name: `sha256:` and the digest in lower-case hex. */
@@ -75,8 +76,8 @@ function isSegment(segment: string): boolean {
  * Why a name cannot be a picture's name, as a refusal key — or `undefined`
  * where it can.
  *
- * `shell.imageBadName` for a name that is not one: empty, a folder with no
- * name in it, a segment that is `.` or `..`, or a character a reference
+ * `shell.imageBadName` for a name that is not one: empty, an image folder
+ * with no name in it, a segment that is `.` or `..`, or a character a reference
  * cannot carry. `shell.imageBadType` for a name whose extension is not a
  * picture this tool writes and reads back.
  */
@@ -90,19 +91,19 @@ export function isImageName(name: unknown): name is ImageName {
   return imageNameRefusal(name) === undefined
 }
 
-/** The folder a name is in: everything before its last `/`, and `''` at the top. */
+/** The image folder a name is in: everything before its last `/`, and `''` at the top. */
 export function imageFolderOf(name: ImageName): ImageFolder {
   const at = name.lastIndexOf('/')
   return at < 0 ? '' : name.slice(0, at)
 }
 
 /**
- * The folders directly under `folder` that `names` hold pictures in, at any
- * depth below them, sorted. What a listing of one folder shows beside the
- * pictures in it.
+ * The image folders directly under `within` that `names` hold pictures in, at
+ * any depth below them, sorted. What a listing of one image folder shows
+ * beside the pictures in it.
  */
-export function foldersUnder(folder: ImageFolder, names: Iterable<ImageName>): ImageFolder[] {
-  const prefix = folder === '' ? '' : `${folder}/`
+export function imageFoldersUnder(within: ImageFolder, names: Iterable<ImageName>): ImageFolder[] {
+  const prefix = within === '' ? '' : `${within}/`
   const found = new Set<ImageFolder>()
   for (const name of names) {
     if (!name.startsWith(prefix)) continue

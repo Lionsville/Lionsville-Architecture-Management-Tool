@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from 'vitest'
 import {
-  contentAddressOf, foldersUnder, imageFolderOf, imageNameOfReference, imageNameRefusal, imageReference, isImageName,
+  contentAddressOf, imageFoldersUnder, imageFolderOf, imageNameOfReference, imageNameRefusal, imageReference, isImageName,
 } from './imageName'
 
 describe('an image name', () => {
@@ -27,18 +27,18 @@ describe('an image name', () => {
     expect(imageNameRefusal('diagrams/notes')).toBe('shell.imageBadType')
   })
 
-  it('is in the folder its name starts with', () => {
+  it('is in the image folder its name starts with', () => {
     expect(imageFolderOf('context.png')).toBe('')
     expect(imageFolderOf('diagrams/context.png')).toBe('diagrams')
     expect(imageFolderOf('diagrams/2026/context.png')).toBe('diagrams/2026')
   })
 
-  it('lists the folders directly under a folder, once each and sorted', () => {
+  it('lists the image folders directly under an image folder, once each and sorted', () => {
     const names = ['top.png', 'diagrams/a.png', 'diagrams/old/b.png', 'diagrams/old/deeper/c.png', 'photos/d.jpg', 'diagramsx/e.png']
-    expect(foldersUnder('', names)).toEqual(['diagrams', 'diagramsx', 'photos'])
-    expect(foldersUnder('diagrams', names)).toEqual(['diagrams/old'])
-    expect(foldersUnder('diagrams/old', names)).toEqual(['diagrams/old/deeper'])
-    expect(foldersUnder('photos', names)).toEqual([])
+    expect(imageFoldersUnder('', names)).toEqual(['diagrams', 'diagramsx', 'photos'])
+    expect(imageFoldersUnder('diagrams', names)).toEqual(['diagrams/old'])
+    expect(imageFoldersUnder('diagrams/old', names)).toEqual(['diagrams/old/deeper'])
+    expect(imageFoldersUnder('photos', names)).toEqual([])
   })
 })
 

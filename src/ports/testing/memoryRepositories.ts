@@ -21,7 +21,7 @@
  */
 import { labelSlug } from '../../platform/history'
 import { imageMediaType } from '../../model/documentImage'
-import { contentAddressOf, foldersUnder, imageFolderOf, imageNameRefusal } from '../../model/imageName'
+import { contentAddressOf, imageFolderOf, imageFoldersUnder, imageNameRefusal } from '../../model/imageName'
 import type { ContentAddress, ImageEntry, ImageFolder, ImageName } from '../../model/imageName'
 import { SCOPE_RECORD, sameRecord } from '../../model/recordKey'
 import type { RecordKey } from '../../model/recordKey'
@@ -348,7 +348,7 @@ class Memory {
   readonly images: ImageRepository = {
     id: 'memory (contract)',
     put: (scope, name, bytes) => this.put(scope, name, bytes),
-    folder: (scope, folder) => Promise.resolve(this.folder(scope, folder)),
+    list: (scope, within) => Promise.resolve(this.listing(scope, within)),
     find: (scope, name) => Promise.resolve(this.entryOf(scope, name)),
     bytes: (scope, name) => {
       const entry = this.entryOf(scope, name)
@@ -372,12 +372,12 @@ class Memory {
     return found ? structuredClone(found) : undefined
   }
 
-  private folder(scope: ScopeId, folder: ImageFolder): ImageListing {
+  private listing(scope: ScopeId, within: ImageFolder): ImageListing {
     const images = this.kept.get(scope)?.content.images ?? []
     return structuredClone({
-      images: images.filter((image) => imageFolderOf(image.name) === folder)
+      images: images.filter((image) => imageFolderOf(image.name) === within)
         .sort((one, other) => (one.name < other.name ? -1 : 1)),
-      folders: foldersUnder(folder, images.map((image) => image.name)),
+      imageFolders: imageFoldersUnder(within, images.map((image) => image.name)),
     })
   }
 
