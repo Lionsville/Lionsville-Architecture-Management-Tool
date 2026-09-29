@@ -299,3 +299,136 @@ implementing them yet, and the ports they replace are still there:
   `shell.scopeTaken`, `shell.scopeIntoItself`, and `shell.imageBadName` and
   `shell.imageBadEntry` for a picture. An address the repository refuses is
   one `isSafeScopePath` refuses today.
+
+## As built, 29 September 2026: the folder implementation
+
+**What was built.** The folder is an implementation of the five
+repositories, in `src/adapters/folder/`:
+- **What moved there**: the folder store, its settings file, its staged
+  writes and the fake folder the suites run on (from `adapters/fileSystem/`);
+  `DirectoryHandle` and its contract (from `ports/`); the browser's and the
+  desktop's handles and the desktop's git history (from `adapters/browser/`
+  and `adapters/desktop/`); and the fingerprint of a scope's files, out of
+  `projects/revision.ts`, which keeps the refusal and the fingerprint every
+  store shares.
+- **`folderRepositories(opening)`** builds the five over a folder handle, its
+  history (`FolderGit`) and a place for the person's own settings.
+- **The history over git** is `platform/node/gitEntries.ts` — the changes, a
+  commit of some paths, the commits with what each changed, the files at one,
+  the tags — behind eight new channels of the desktop's history, and
+  `DesktopFolderGit` over them. A history kept in memory (`memoryGit.ts`) is
+  test support for the fake folder.
+- **Every suite runs twice**: over the fake folder with the history in
+  memory, and over a real temporary folder with the machine's own git,
+  through the desktop's handle and history with each channel minus the wire.
+- **The suites gained clauses for a move and a removal**, binding every
+  implementation: the scopes under a moved one keep their history, pictures
+  and settings; a scope made where a removed one was, or under its address,
+  starts empty in all four.
+
+**How the folder meets each contract.**
+- **Identity.** `scope.json` carries `id`. A folder written before scopes had
+  one reads as having one all the same, made from its address, so it is the
+  same every time the folder is read; it is written into the header the first
+  time anything writes that scope, a move included. Nothing writes a folder
+  only to add identities. Two headers claiming one id — a scope's folder
+  copied by hand — are read the first, by address, with it, and the other as
+  a folder with none. The folder format carries a header key it does not
+  write through a save (`ScopeSnapshot.carried`), so the app's store keeps an
+  identity, and the library below, where it finds them.
+- **Revision.** A fingerprint of the scope's address, every file of the
+  format it holds, and which pictures there are. Content, so two reads of an
+  unchanged scope agree and a step that changes nothing moves nothing.
+- **Steps, all or none.** Every scope's steps are applied and every refusal
+  made before anything is written; then the folder store writes every scope's
+  files together, staged before any is moved into place where the folder can
+  (the desktop's main process; a browser's handles that can rename). What a
+  stop part way leaves is what that write leaves: on the desktop some files
+  in place and the rest staged beside them; over a handle that cannot rename,
+  some scopes written and some not. The pictures are written after the
+  scopes' files and a step's id is remembered after both, so a stop between
+  leaves an entry whose bytes answer nothing until they are put again, or a
+  step that, sent again, is applied again — a create refused as taken.
+- **Step ids** are remembered for two days in
+  `.git/lionsville-architect/applied-steps.json`: inside the history's own
+  folder, which no file manager, `git status` or copy of the work shows.
+- **A move** copies every file of the scope's folder and of the scopes under
+  it — the format's, the pictures, the settings, whatever a person keeps
+  there — to the new address, writes each scope's identity into its header
+  where it was not yet, and only then removes the old folder: a stop part way
+  leaves two copies, which a person can see and settle, never none.
+- **History.** A `record` is one commit of the scopes it closes, each scope's
+  own files — everything in its folder but the scopes filed under it, and
+  never the machine's settings file an older build left — with a trailer per
+  scope (`Lionsville-Scope: <id> <address>`). A commit is an entry of each
+  scope it names, and a commit without a trailer — an older build's snapshot,
+  a person's own — is an entry of each scope whose own files it changed where
+  the scope has been. A thing's history is read off the scope's state at
+  each entry and at the one before it, where the files a commit changed could
+  hold that record. `record` starts a history where the folder keeps none, as
+  a snapshot always has.
+- **Labels** are tags named `<scope id>/<slug>`, so two scopes may each use
+  one label. A tag named otherwise — every label an older build made, which
+  was the whole folder's, and any tag a person made — stays the whole
+  folder's: it is read as a label of every scope's entry at its commit, and
+  its slug is taken in every scope. No tag is renamed. `LabelOutcome` and
+  `labelSlug` moved to `projects/label.ts`: a label travels with its history
+  from one source to another, so every source compares labels by one rule.
+- **Pictures.** Each is `images/<file>` as before; the library's rows —
+  name, media type, size, width, height, content address, and the file where
+  it is not the name — are `images` in `scope.json`, so a scope is read
+  without reading a picture. A file no row names is in the library too: its
+  entry is made from its bytes, read once, and it is listed the next time
+  the scope is written. Its name is its file's where that passes the domain's
+  rule, composed (a decomposed name from an older macOS reads composed), and
+  one made from it where it does not; the file is never renamed. A picture
+  filed in an image folder whose name differs only in case from one there is
+  kept in that folder, whatever the disk, so `A/x.png` and `a/y.png` never
+  depend on whether the disk tells case apart. Bytes put are held in memory
+  until a step adds them, so bytes never added write nothing; a step adding
+  an entry whose bytes were never put is not refused — the suites apply one —
+  and the entry answers no bytes until they are.
+- **Documents** say `../images/<file>` on disk, as before, and `image:<name>`
+  in the state; a document nobody changed is written back byte for byte, and
+  a changed one at the depth its file is kept at (`imageLibrary.ts`, shared
+  with browser storage, which keeps the same references).
+- **Settings.** The organisation's are `.lionsville-architecture/organisation.json`
+  at the root, and a scope's `.lionsville-architecture/settings.json` in its
+  own folder, where they move and go with it and write no revision. The
+  person's are wherever the composer says (`PersonSettings`), in memory where
+  nobody does; the desktop's own data folder is wired when the app moves onto
+  the repositories.
+- **Pull, push and the remote** are in no repository. They stay on
+  `ProjectHistory.sync` until the app moves onto the repositories and they
+  become the folder provider's chrome.
+- **No migration touches a person's folder**: reading a folder writes nothing
+  to it, and a write writes only the files it changed, the identity and the
+  library in the header among them.
+
+**Where the build departed from the text.**
+- **The folder format has not moved yet.** `projects/folderFormat.ts`, the
+  readers it is made of, the history subjects by path, the working file and
+  its manifest, the migrations and the settings file stay in `projects/` (and
+  `platform/scopeHeader.ts` in `platform/`) until the app stops importing them:
+  step 4 of the plan for the history and the examples, step 5 for the working
+  file. Moved now, `app/` and `projects/` would import `adapters/`, which the
+  import matrix refuses. The folder's repositories import them from
+  `projects/` meanwhile, and the storage line still lists them: 13 files of
+  the folder format (from 14), 21 files importing across the line (from 22)
+  with 31 imports (from 32), and 51 files naming storage (from 52) with 82
+  words (from 83).
+- **A scope's pictures folder is read by name.** The desktop's handle reads a
+  whole file to say its size, so a read of a scope lists `images/` and reads
+  no picture but one no row names. A file replaced under a name a row already
+  has keeps that row's entry.
+- **A folder that keeps no history** remembers applied step ids for as long
+  as the repositories are open, not for a day: it has nowhere a person does
+  not look.
+- **An entry's id is its commit and its scope together**, because one commit
+  is an entry of every scope it records and each must be one of its own.
+- **The index leaves out a scope whose `model.json` is missing or will not
+  read**, as the folder store's reading for the index always has: unknown,
+  not empty.
+- **An observation with no history** is written `history: none`, so it reads
+  back as none; a file that says nothing is still a hand-written one, given
+  the recorded event it must have had.

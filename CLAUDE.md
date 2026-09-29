@@ -461,8 +461,9 @@ src/ports/        The seams. Interfaces only, no implementations.
                     ScopeRepository · OrganisationIndex · HistoryRepository ·
                     ImageRepository · SettingsRepository · Repositories
                                       where work is kept, in the domain's words
-                                      (ADR-0031). Nothing implements them yet;
-                                      the ports they replace, above, are still here.
+                                      (ADR-0031). The folder implements them
+                                      (`adapters/folder/`); the ports they
+                                      replace, above, are still what the app uses.
                                       A `*.contract.ts` each, one maker for all
                                       five, run against `testing/memoryRepositories`
 src/adapters/     The outside world, one folder per flavour.
@@ -475,6 +476,15 @@ src/adapters/     The outside world, one folder per flavour.
                                       desktop's over IPC (`desktop/`) and the
                                       suites' fake are all held to; and the
                                       desktop's git history
+                                      …and `folderRepositories`: the five
+                                      repositories over a folder, its history in
+                                      git (`FolderGit`: the machine's, or
+                                      `memoryGit` for the fake), the pictures'
+                                      library in the header (`folderPictures`),
+                                      documents' `../images/` read as `image:`
+                                      (`imageLibrary`, which browser storage
+                                      shares). Every suite runs over the fake and
+                                      over a real folder with real git
                     memory/           …and InMemoryCommandChannel: a head model, a
                                       bounded log and the subscribers, for two
                                       sessions put in one order without a process
