@@ -200,10 +200,14 @@ export function useProjectFiles(deps: ProjectFilesDeps): ProjectFiles {
       return false
     }
     if (adoptWorkingSet) await adoptWorkingSet(result)
-    // A working file carries its own geometry, and is left as it is.
-    session.adopt(result.top, false)
+    // What landed, as it is kept now: the file carries its pictures' bytes,
+    // and the library's entries — which the session draws them from — are
+    // made where they were put. A working file carries its own geometry, and
+    // is left as it is.
+    const landed = adoptWorkingSet && readScope ? await readScope(result.top.path).catch(() => undefined) : undefined
+    session.adopt(landed ?? result.top, false)
     return true
-  }, [session, adoptWorkingSet, notify, s])
+  }, [session, adoptWorkingSet, readScope, notify, s])
 
   const openDocument = useCallback((name: string, held: Uint8Array) => {
     // A sealed file asks for its password first (ADR-0023), and everything

@@ -14,8 +14,8 @@
  */
 import { bareScope } from '../../../projects/scope'
 import type { OpenRefusal, ScopeSnapshot } from '../../../projects/scope'
-import { contentOf, everyScope, nodeAt, picturesOf, placeTogether } from '../../../projects/scopeAccess'
-import { joinScopePath, ROOT_SCOPE } from '../../../projects/scopePath'
+import { carriedOf, contentOf, everyScope, nodeAt, picturesOf, placeTogether } from '../../../projects/scopeAccess'
+import { isWithinScope, joinScopePath, ROOT_SCOPE } from '../../../projects/scopePath'
 import type { ScopeAddress, ScopeId } from '../../../projects/scopeState'
 import type {
   Arrival, BringOptions, CarriedOut, CarryOptions, Interchange, Opened, ReadBack,
@@ -46,7 +46,10 @@ export async function carryOut(
 ): Promise<CarriedOut> {
   const at = options.from ?? ROOT_SCOPE
   const read = await everyScope(from, at)
-  const scopes = withHeld(read, options.held ?? [])
+  const held = await Promise.all((options.held ?? [])
+    .filter((scope) => isWithinScope(scope.path, at))
+    .map((scope) => pictured(from, scope, read.find((one) => one.path === scope.path))))
+  const scopes = withHeld(read, held).map(saysWhatItLacks)
   if (scopes.length) return carryScopes(scopes)
   const tree = await from.scopes.tree()
   return carryScopes([bareScope(ROOT_SCOPE, tree.root.name)])
@@ -66,6 +69,31 @@ export async function carryScopes(scopes: readonly ScopeSnapshot[]): Promise<Car
     mediaType: WORKING_FILE_MEDIA_TYPE,
     without: ordered.flatMap((scope) => (scope.unread ?? []).map((file) => (scope.path ? `${scope.path}/${file}` : file))),
   }
+}
+
+/**
+ * A scope the caller holds, with its pictures' bytes: a session holds its
+ * library's entries and never the bytes, which are read here from where the
+ * source keeps them, under the scope's identity — the held one's, or the one
+ * read at its address.
+ */
+async function pictured(from: CarriedFrom, scope: ScopeSnapshot, read: ScopeSnapshot | undefined): Promise<ScopeSnapshot> {
+  if (scope.imageLibrary !== undefined || !scope.images?.length) return scope
+  const id = scope.id ?? read?.id
+  if (!id) return scope
+  const carried = await carriedOf(from.images, id, scope.images)
+  return carried.length ? { ...scope, imageLibrary: carried } : scope
+}
+
+/**
+ * A scope whose library names a picture whose bytes did not come with it,
+ * saying so: the file is made without it, and the person is told, as for a
+ * part of a scope that would not read.
+ */
+function saysWhatItLacks(scope: ScopeSnapshot): ScopeSnapshot {
+  const carried = new Set((scope.imageLibrary ?? []).map((image) => image.file))
+  const lacking = (scope.images ?? []).filter((entry) => !carried.has(entry.name)).map((entry) => `images/${entry.name}`)
+  return lacking.length ? { ...scope, unread: [...(scope.unread ?? []), ...lacking] } : scope
 }
 
 /** Each scope held in place of the one read at its address; one read nowhere, added. */
