@@ -21,11 +21,13 @@
  *
  * Deliberate hardenings, all of them about not hanging or surprising:
  *
- * - No hook runs, ever: every git here is told `core.hooksPath` is an empty
- *   folder of the app's own ({@link useHooksFolder}), so no hook in `.git` —
- *   the repository owner's, or one written there by anybody — is a program
- *   this app runs; and `core.fsmonitor` is off, which is the other way a
- *   folder's configuration names a program git starts. `--no-verify` as well,
+ * - No program a folder's own configuration names runs ({@link quietConfig}):
+ *   every git here is told `core.hooksPath` is an empty folder of the app's
+ *   own ({@link useHooksFolder}), so no hook in `.git` — the repository
+ *   owner's, or one written there by anybody — is a program this app runs;
+ *   `core.fsmonitor` is off; the `ext::` transport is refused; the app's own
+ *   commits and tags are not signed; and a filter only the folder defines
+ *   runs nothing. `--no-verify` as well,
  *   where a command takes it, because a pre-commit hook belongs to the
  *   repository's owner and their linter must not decide whether this app can
  *   save a snapshot.
@@ -152,14 +154,128 @@ function noHooks(): Promise<string> {
   return hooksFolder
 }
 
-/** What every git here is run with, before its command: no hook, and no file-system monitor. */
-export async function quietConfig(): Promise<string[]> {
-  return ['-c', `core.hooksPath=${await noHooks()}`, '-c', 'core.fsmonitor=false']
+/**
+ * What every git here is run with, before its command, so that nothing a
+ * folder's own configuration names is a program the app starts:
+ *
+ * - no hook, and no file-system monitor;
+ * - no `ext::` transport, which runs whatever command a remote's address says;
+ * - no signing of the app's own commits and tags, so no signing program of the
+ *   folder's is started for them;
+ * - where `root` is given, no filter a folder's own configuration defines
+ *   ({@link localFilters}).
+ *
+ * `core.sshCommand` needs nothing: git takes `GIT_SSH_COMMAND` first, and
+ * every git here runs with one ({@link gitEnvironment}). A credential helper is
+ * left alone: fetching and pushing need the person's own.
+ */
+export async function quietConfig(root?: string, args: readonly string[] = []): Promise<string[]> {
+  const base = [
+    '-c', `core.hooksPath=${await noHooks()}`, '-c', 'core.fsmonitor=false', '-c', 'protocol.ext.allow=never',
+    '-c', 'commit.gpgsign=false', '-c', 'tag.gpgsign=false',
+  ]
+  return root === undefined || !FILTERING.has(commandOf(args)) ? base : [...base, ...await localFilters(root, base)]
 }
+
+/**
+ * The commands that run a file through a filter: those that take a file from
+ * the folder into git, or put one from git into the folder. Only they read
+ * the folder's filters first — a read of git's own objects runs none, and a
+ * second git for each of those would be one for nothing.
+ */
+const FILTERING: ReadonlySet<string> = new Set([
+  'add', 'commit', 'status', 'diff', 'merge', 'reset', 'checkout', 'restore', 'switch', 'stash', 'pull', 'rm', 'mv',
+  'apply', 'cherry-pick', 'revert', 'rebase',
+])
+
+/** The command a git is run with: the first word that is not an option, or the value of one. */
+export function commandOf(args: readonly string[]): string {
+  for (let at = 0; at < args.length; at += 1) {
+    if (args[at] === '-c' || args[at] === '-C') { at += 1; continue }
+    if (!args[at].startsWith('-')) return args[at]
+  }
+  return ''
+}
+
+/** A config read as `name → variable → value`, for the filters it defines. */
+type Filters = Map<string, Map<string, string>>
+
+/** The filters one scope of configuration defines, and whether it keeps a worktree's own; nothing where git says nothing. */
+async function filtersIn(root: string, base: readonly string[], scope: string): Promise<{ filters: Filters; worktree: boolean }> {
+  const filters: Filters = new Map()
+  let worktree = false
+  try {
+    const { stdout } = await run('git', [
+      ...base, 'config', '-z', scope, '--includes', '--get-regexp', '^(filter\\.|extensions\\.worktreeconfig$)',
+    ], { cwd: root, timeout: TIMEOUT_MS, windowsHide: true, env: gitEnvironment() })
+    // One entry per NUL, its key and value apart by the first line break: a
+    // value is a command, with dots and spaces of its own, and a filter's name
+    // may have spaces in it too.
+    for (const entry of stdout.split('\0')) {
+      const brk = entry.indexOf('\n')
+      const key = brk < 0 ? entry : entry.slice(0, brk)
+      const value = brk < 0 ? '' : entry.slice(brk + 1)
+      if (key.toLowerCase() === 'extensions.worktreeconfig' && /^(true|yes|on|1)$/i.test(value)) worktree = true
+      const match = /^filter\.(.+)\.([^.]+)$/.exec(key)
+      if (!match) continue
+      const [, name, variable] = match
+      filters.set(name, new Map([...filters.get(name) ?? [], [variable.toLowerCase(), value]]))
+    }
+  } catch {
+    // No repository, no such file, or nothing in it: no filters.
+  }
+  return { filters, worktree }
+}
+
+/** The filters the person's own configuration defines: the machine's, then their global one over it. */
+async function personalFilters(root: string, base: readonly string[]): Promise<Filters> {
+  const [system, global] = await Promise.all([filtersIn(root, base, '--system'), filtersIn(root, base, '--global')])
+  const merged: Filters = new Map(system.filters)
+  for (const [name, variables] of global.filters) merged.set(name, new Map([...merged.get(name) ?? [], ...variables]))
+  return merged
+}
+
+/**
+ * Every filter the folder's own configuration defines, made harmless: a
+ * `.gitattributes` in the folder names a filter by name, and the program it
+ * runs is the configuration's to say. Each program the folder names — its
+ * `clean`, `smudge` or `process` — is the one the person's own configuration
+ * names for that filter instead, the machine's or their global one, git-lfs as
+ * it installs itself; where theirs names none, none runs, the filter is not
+ * required, and the file is taken as it is. A folder that names a `process`
+ * their configuration does not therefore turns the whole filter off: git
+ * reads an empty `process` as no filter at all, and a filter that did less
+ * than its owner meant is the safe way to be wrong.
+ */
+async function localFilters(root: string, base: readonly string[]): Promise<string[]> {
+  const local = await filtersIn(root, base, '--local')
+  const worktree = local.worktree ? (await filtersIn(root, base, '--worktree')).filters : new Map<string, Map<string, string>>()
+  const folders: Filters = new Map(local.filters)
+  for (const [name, variables] of worktree) folders.set(name, new Map([...folders.get(name) ?? [], ...variables]))
+  if (folders.size === 0) return []
+  // `-c` reads its key up to the first `=`, so a filter named with one could
+  // not be overridden, and whatever it runs would run: nothing is done instead.
+  if ([...folders.keys()].some((name) => name.includes('='))) {
+    throw new Error('a filter this folder defines has a name that cannot be turned off; nothing was run')
+  }
+  const own = await personalFilters(root, base)
+  return [...folders].flatMap(([name, variables]) => {
+    const theirs = own.get(name) ?? new Map<string, string>()
+    const programs = PROGRAMS.filter((variable) => variables.has(variable))
+    const emptied = programs.some((variable) => !theirs.has(variable))
+    return [
+      ...programs.flatMap((variable) => ['-c', `filter.${name}.${variable}=${theirs.get(variable) ?? ''}`]),
+      ...(emptied || variables.has('required') ? ['-c', `filter.${name}.required=${emptied ? 'false' : theirs.get('required') ?? 'false'}`] : []),
+    ]
+  })
+}
+
+/** What a filter runs. */
+const PROGRAMS = ['clean', 'smudge', 'process'] as const
 
 export async function git(root: string, args: readonly string[], timeout = TIMEOUT_MS): Promise<string> {
   try {
-    const { stdout } = await run('git', [...await quietConfig(), ...args], {
+    const { stdout } = await run('git', [...await quietConfig(root, args), ...args], {
       cwd: root,
       timeout,
       maxBuffer: MAX_OUTPUT,
@@ -293,7 +409,7 @@ export async function snapshot(root: string, message: string): Promise<string | 
   await git(root, ['add', '-A'])
   await git(root, ['reset', '-q', '--', LOCAL_SETTINGS_PATH])
   try {
-    await git(root, ['diff', '--cached', '--quiet'])
+    await git(root, ['diff', '--cached', '--quiet', '--no-ext-diff'])
     return undefined // exit 0 from --quiet means no staged changes
   } catch {
     // Exit 1 is "there are changes", which is what we are here for.

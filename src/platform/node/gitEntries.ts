@@ -245,7 +245,7 @@ export type GitFileAt = { path: string; text: string } | { path: string; bytes: 
 
 /** Git fed on its standard input, answered in bytes. */
 async function gitWithInput(root: string, args: readonly string[], input: string): Promise<Buffer> {
-  const quiet = await quietConfig()
+  const quiet = await quietConfig(root, args)
   return new Promise((resolve, reject) => {
     const child = execFile('git', [...quiet, ...args], {
       cwd: root, encoding: 'buffer', maxBuffer: 256 * 1024 * 1024, windowsHide: true, env: gitEnvironment(), timeout: 60_000,

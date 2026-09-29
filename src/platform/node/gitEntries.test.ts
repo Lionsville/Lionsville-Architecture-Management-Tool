@@ -57,6 +57,22 @@ describe.skipIf(!available)('the history a folder’s repositories read', () => 
     expect(existsSync(marker)).toBe(false)
   })
 
+  it('signs nothing and filters nothing with a program the folder’s configuration names', async () => {
+    await startHistory(root)
+    const marker = join(root, '..', `${basename(root)}-program-ran`)
+    const program = join(root, '..', `${basename(root)}-program.sh`)
+    await writeFile(program, `#!/bin/sh\ntouch "${marker}"\nexit 1\n`, { mode: 0o755 })
+    for (const [key, value] of [
+      ['commit.gpgsign', 'true'], ['gpg.program', program],
+      ['filter.evil.clean', program], ['filter.evil.process', program], ['filter.evil.required', 'true'],
+    ]) await run('git', ['config', key, value], { cwd: root })
+    await put('.gitattributes', '*.json filter=evil\n')
+    await put('model.json', '{}')
+    expect(await commitPaths(root, ['model.json', '.gitattributes'], 'plain')).toMatch(/^[0-9a-f]+$/)
+    expect(existsSync(marker)).toBe(false)
+    await rm(program, { force: true })
+  })
+
   it('starts keeping one only where there is none, and says what differs from it', async () => {
     expect(await changes(root)).toEqual([])
     await startHistory(root)
