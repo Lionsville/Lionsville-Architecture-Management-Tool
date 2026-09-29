@@ -410,7 +410,9 @@ repositories, in `src/adapters/folder/`:
   include, the repository's configuration files found as git finds them (a
   `.git` that points elsewhere followed, a worktree's common directory), the
   branch by `HEAD` and a reftable's `tables.list`, the person's files and the
-  environment git reads them by — all looked at before the read. A read that
+  environment git reads them by — all looked at before the read, each file by
+  its whole contents as well as its times, which a disk that keeps them
+  coarsely could leave as they were. A read that
   fails refuses the command, and git older than 2.26, which cannot say whose
   a key is, is asked to be updated. Keys are matched as git matches them, without
   regard to case. Each key the folder sets is one of three things.
@@ -445,15 +447,21 @@ repositories, in `src/adapters/folder/`:
     none to git's default or to no program: signing (`commit.gpgSign`,
     `tag.gpgSign`, `tag.forceSignAnnotated`, `push.gpgSign`, `gpg.format`,
     `gpg.program`, `gpg.<format>.program`, `gpg.ssh.defaultKeyCommand`, and
-    `user.signingKey`, whose default is who commits), `core.askPass`,
+    `user.signingKey`, whose default for gpg and x509 is who commits; for
+    ssh git's default is the person's own key command, which no named key
+    can give way to, so where the person signs with ssh and names no key
+    the command is refused rather than signed with a guess), `core.askPass`,
     `core.sshCommand`, `core.pager`, `core.editor`, `sequence.editor`,
     `diff.external`, `diff.<driver>.command` and `.textconv`,
-    `merge.<driver>.driver`, a filter's `clean`, `smudge`, `process` and
-    `required`, `branch.<name>.mergeOptions`, `submodule.<name>.update`,
+    `merge.<driver>.driver`, a filter's `clean`, `smudge` and `process`,
+    and its `required` — refused, naming the filter, where the folder
+    requires one only it defines — `branch.<name>.mergeOptions`, `submodule.<name>.update`,
     `commit.template`, `core.attributesFile` and `core.excludesFile`. A proxy
     (`http.proxy`, `remote.<name>.proxy`) is the person's own or the one the
-    process's environment names, never turned off. A list an empty value
-    empties — a credential helper, `http.extraHeader` — is emptied, and the
+    process's environment names for the address the command talks to —
+    `https_proxy` for a secure one, `http_proxy` for a plain one — never
+    turned off. A list an empty value empties — a credential helper,
+    `http.extraHeader`, each also for one address — is emptied, and the
     person's own are named again in their order.
   - **Refused**, the command not run and the key named: a key git takes from
     its first value, so nothing set after it wins (`core.gitProxy`,
@@ -472,8 +480,9 @@ repositories, in `src/adapters/folder/`:
   command for alternate references, no signature shown in a log, no
   submodule entered (`submodule.recurse`, `fetch.recurseSubmodules`,
   `push.recurseSubmodules`), TLS checked as the person checks it (`true`
-  where they say nothing), and this folder the work tree. The `GIT_DIR` and
-  the like the process may have been started with are not passed on, a
+  where they say nothing), and this folder the work tree. The `GIT_DIR`,
+  `GIT_CONFIG` and the like the process may have been started with are not
+  passed on, a
   partial clone fetches nothing it lacks but on a fetch
   (`GIT_NO_LAZY_FETCH`), and the `ssh` git runs is the one the process
   names, which git takes before any configuration's.
@@ -487,8 +496,10 @@ repositories, in `src/adapters/folder/`:
   So a person who signs keeps signing with their own signer and key, their
   credential helpers and a filter they define — git-lfs as it installs
   itself — run as they always did, and a filter only the folder defines runs
-  nothing: the file is taken as it is, which for an LFS set up for one folder
-  alone (`git lfs install --local`) means its files are committed whole.
+  nothing: the file is taken as it is. Where the folder requires such a
+  filter — an LFS set up for that folder alone (`git lfs install --local`) —
+  the command is refused, naming the filter, rather than committing its
+  files whole; installing it in the person's own configuration lets it run.
 - **A move** takes the scope's folder and the scopes under it as they are —
   the format's files, the pictures, the settings, whatever a person keeps
   there, links and empty folders included. On the desktop it is one rename in
