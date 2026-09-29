@@ -113,6 +113,7 @@ const history: DesktopHistory = {
   log: (root, wanted) => ipcRenderer.invoke('git:log', root, wanted),
   treeAt: (root, sha, within) => ipcRenderer.invoke('git:treeAt', root, sha, within),
   readAt: (root, sha, paths) => ipcRenderer.invoke('git:readAt', root, sha, paths),
+  texts: (root, ids) => ipcRenderer.invoke('git:texts', root, ids),
   tags: (root) => ipcRenderer.invoke('git:tags', root),
   tag: (root, sha, name, message) => ipcRenderer.invoke('git:tag', root, sha, name, message),
 }

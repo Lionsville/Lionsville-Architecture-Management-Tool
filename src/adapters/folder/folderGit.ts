@@ -42,6 +42,12 @@ export type FolderCommit = {
    * merges, which are listed as themselves.
    */
   changed: readonly string[]
+  /**
+   * Each path changed, with the id of what it held before and after — against
+   * the first parent, empty where there was nothing; what a question about one
+   * file is answered from without reading a tree.
+   */
+  blobs?: Readonly<Record<string, readonly [string, string]>>
 }
 
 /** One file in a commit's tree, and the id of what it held. */
@@ -70,6 +76,8 @@ export type CommitsWanted = {
   tip?: string
   skip?: number
   firstParent?: boolean
+  /** The messages alone, without the paths each commit changed: cheaper, where only what a commit says is asked. */
+  bare?: boolean
 }
 
 export interface FolderGit {
@@ -89,6 +97,8 @@ export interface FolderGit {
   treeAt(sha: string, within: string): Promise<TreeEntry[]>
   /** Those files as they were at a commit; one that is not there is left out. */
   readAt(sha: string, paths: readonly string[]): Promise<CommittedFile[]>
+  /** What files held, as text, by the ids a tree or a log gave; an id that is not there is left out. */
+  texts(ids: readonly string[]): Promise<Record<string, string>>
   tags(): Promise<FolderTag[]>
   /** An annotated tag on a commit, never over one that is there. */
   tag(sha: string, name: string, message: string): Promise<'done' | 'exists'>

@@ -45,6 +45,10 @@ export class DesktopFolderGit implements FolderGit {
     return this.git.readAt(this.root, sha, [...paths])
   }
 
+  texts(ids: readonly string[]): Promise<Record<string, string>> {
+    return this.git.texts(this.root, [...ids])
+  }
+
   tags(): Promise<FolderTag[]> {
     return this.git.tags(this.root)
   }

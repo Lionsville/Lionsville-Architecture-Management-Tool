@@ -102,9 +102,31 @@ export async function commitPaths(root: string, paths: readonly string[], messag
 
 export type GitLogged = {
   sha: string; parents: string[]; at: number; author: string; subject: string; message: string; changed: string[]
+  blobs?: Record<string, [string, string]>
 }
 
-export type LogWanted = { paths?: readonly string[]; grep?: string; limit: number; tip?: string; skip?: number; firstParent?: boolean }
+/** An id git gives for nothing. */
+const NO_BLOB = /^0+$/
+
+/** What `--raw -z` says a commit changed: each path, with the id of what it held before and after. */
+function rawChanges(rest: string): { changed: string[]; blobs: Record<string, [string, string]> } {
+  const changed: string[] = []
+  const blobs: Record<string, [string, string]> = {}
+  const tokens = rest.split('\0')
+  for (let at = 0; at < tokens.length; at += 1) {
+    const header = /^\n?:\d+ \d+ ([0-9a-f]+) ([0-9a-f]+) [A-Z]\d*$/.exec(tokens[at])
+    if (!header || at + 1 >= tokens.length) continue
+    const path = tokens[at + 1]
+    at += 1
+    changed.push(path)
+    blobs[path] = [NO_BLOB.test(header[1]) ? '' : header[1], NO_BLOB.test(header[2]) ? '' : header[2]]
+  }
+  return { changed, blobs }
+}
+
+export type LogWanted = {
+  paths?: readonly string[]; grep?: string; limit: number; tip?: string; skip?: number; firstParent?: boolean; bare?: boolean
+}
 
 /** The commit the folder is at, or `undefined` where it keeps no history or has no commit. */
 export async function headOf(root: string): Promise<string | undefined> {
@@ -128,7 +150,7 @@ export async function commitLog(root: string, wanted: LogWanted): Promise<GitLog
   try {
     out = await git(root, [
       'log', '-z', `-n${Math.max(1, Math.trunc(wanted.limit))}`, `--skip=${Math.max(0, Math.trunc(wanted.skip ?? 0))}`,
-      '--no-renames', '--name-only', `--format=${RECORD}%H${UNIT}%P${UNIT}%at${UNIT}%an${UNIT}%B${UNIT}`,
+      '--no-renames', ...(wanted.bare ? [] : ['--raw', '--no-abbrev']), `--format=${RECORD}%H${UNIT}%P${UNIT}%at${UNIT}%an${UNIT}%B${UNIT}`,
       ...(paths.length ? ['--full-history'] : []),
       ...(wanted.firstParent ? ['--first-parent'] : []),
       ...(wanted.grep !== undefined ? ['--fixed-strings', `--grep=${wanted.grep}`] : []),
@@ -146,7 +168,7 @@ export async function commitLog(root: string, wanted: LogWanted): Promise<GitLog
     return [{
       sha, parents: (parents ?? '').split(' ').filter(Boolean), at: Number(at) * 1000, author: author ?? '',
       subject: body.split('\n')[0] ?? '', message: body,
-      changed: (rest ?? '').split('\0').map((path) => path.replace(/^\n/, '')).filter((path) => path.length > 0),
+      ...(wanted.bare ? { changed: [] } : rawChanges(rest ?? '')),
     }]
   })
 }
@@ -195,6 +217,25 @@ export async function readAt(root: string, sha: string, paths: readonly string[]
     const bytes = new Uint8Array(out.subarray(at, at + Number(size)))
     at += Number(size) + 1
     found.push(isBinary(path) ? { path, bytes } : { path, text: new TextDecoder().decode(bytes) })
+  }
+  return found
+}
+
+/** What files held, as text, by the ids a tree or a log gave, in one read of git's objects. */
+export async function textsOf(root: string, ids: readonly string[]): Promise<Record<string, string>> {
+  const wanted = [...new Set(ids.filter(isSha))]
+  if (wanted.length === 0 || !await isRepository(root)) return {}
+  const out = await gitWithInput(root, ['cat-file', '--batch'], wanted.map((id) => `${id}\n`).join(''))
+  const found: Record<string, string> = {}
+  let at = 0
+  for (const id of wanted) {
+    const end = out.indexOf(0x0a, at)
+    if (end < 0) break
+    const size = /^[0-9a-f]+ blob (\d+)$/.exec(out.subarray(at, end).toString('utf8'))?.[1]
+    at = end + 1
+    if (size === undefined) continue
+    found[id] = new TextDecoder().decode(out.subarray(at, at + Number(size)))
+    at += Number(size) + 1
   }
   return found
 }
@@ -250,6 +291,7 @@ export function folderGitAt(root: string) {
     log: (wanted: LogWanted) => commitLog(root, wanted),
     treeAt: (sha: string, within: string) => treeAt(root, sha, within),
     readAt: (sha: string, paths: readonly string[]) => readAt(root, sha, paths),
+    texts: (ids: readonly string[]) => textsOf(root, ids),
     tags: () => allTags(root),
     tag: (sha: string, name: string, message: string) => tagCommit(root, sha, name, message),
   }

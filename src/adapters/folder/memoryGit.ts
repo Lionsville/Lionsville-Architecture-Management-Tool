@@ -17,7 +17,7 @@ import type { CommitsWanted, CommittedFile, FolderChange, FolderCommit, FolderGi
 
 type Tree = Map<string, string>
 
-type Kept = { sha: string; parents: string[]; at: number; message: string; tree: Tree; changed: string[] }
+type Kept = { sha: string; parents: string[]; at: number; message: string; tree: Tree; changed: string[]; blobs: Record<string, [string, string]> }
 
 /** What a file holds, as one comparable text: its bytes, whatever they are. */
 async function contentsOf(handle: { getFile(): Promise<{ arrayBuffer(): Promise<ArrayBuffer> }> }): Promise<string> {
@@ -46,8 +46,14 @@ function asFile(path: string, held: string): CommittedFile {
   return isBinaryPath(path) ? { path, bytes } : { path, text: new TextDecoder().decode(bytes) }
 }
 
+/** What a file held, named as git names it: by what it held. */
+function blobOf(held: string | undefined): string {
+  return held === undefined ? '' : fingerprint(['blob', held])
+}
+
 export function memoryGit(root: DirectoryHandleLike, author = 'memory'): FolderGit {
   const commits: Kept[] = []
+  const texts = new Map<string, string>()
   const tags: FolderTag[] = []
   let started = false
   let clock = 0
@@ -73,10 +79,13 @@ export function memoryGit(root: DirectoryHandleLike, author = 'memory'): FolderG
       const now = await walk(root)
       const tree = new Map(head())
       const changed: string[] = []
+      const blobs: Record<string, [string, string]> = {}
       for (const path of paths) {
         const held = now.get(path)
         if (held === tree.get(path)) continue
         changed.push(path)
+        blobs[path] = [blobOf(tree.get(path)), blobOf(held)]
+        if (held !== undefined) texts.set(blobOf(held), held)
         if (held === undefined) tree.delete(path)
         else tree.set(path, held)
       }
@@ -86,7 +95,7 @@ export function memoryGit(root: DirectoryHandleLike, author = 'memory'): FolderG
       clock = Math.max(Date.now(), clock + 1)
       const sha = `commit-${commits.length + 1}`
       const parents = commits.length ? [commits[commits.length - 1].sha] : []
-      commits.push({ sha, parents, at: clock, message, tree, changed: changed.sort() })
+      commits.push({ sha, parents, at: clock, message, tree, changed: changed.sort(), blobs })
       return sha
     },
     head: () => Promise.resolve(commits[commits.length - 1]?.sha),
@@ -108,7 +117,9 @@ export function memoryGit(root: DirectoryHandleLike, author = 'memory'): FolderG
           continue
         }
         found.push({
-          sha: kept.sha, parents: kept.parents, at: kept.at, author, subject: kept.message.split('\n')[0], message: kept.message, changed,
+          sha: kept.sha, parents: kept.parents, at: kept.at, author, subject: kept.message.split('\n')[0], message: kept.message,
+          changed: wanted.bare ? [] : changed,
+          ...(wanted.bare ? {} : { blobs: Object.fromEntries(changed.map((path) => [path, kept.blobs[path]])) }),
         })
       }
       return Promise.resolve(found)
@@ -117,7 +128,7 @@ export function memoryGit(root: DirectoryHandleLike, author = 'memory'): FolderG
       const kept = commits.find((one) => one.sha === sha)
       return Promise.resolve(kept
         ? [...kept.tree].filter(([path]) => isUnder(path, inside)).sort(([one], [other]) => (one < other ? -1 : 1))
-          .map(([path, held]) => ({ path, blob: fingerprint(['blob', held]) }))
+          .map(([path, held]) => ({ path, blob: blobOf(held) }))
         : [])
     },
     readAt(sha, paths) {
@@ -126,6 +137,12 @@ export function memoryGit(root: DirectoryHandleLike, author = 'memory'): FolderG
         const held = kept?.tree.get(path)
         return held === undefined ? [] : [asFile(path, held)]
       }))
+    },
+    texts(ids) {
+      return Promise.resolve(Object.fromEntries(ids.flatMap((id) => {
+        const held = texts.get(id)
+        return held === undefined ? [] : [[id, new TextDecoder().decode(Uint8Array.from(held, (character) => character.charCodeAt(0)))]]
+      })))
     },
     tags: () => Promise.resolve(tags.map((tag) => ({ ...tag }))),
     tag(sha, name, message) {

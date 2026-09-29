@@ -98,6 +98,8 @@ export type DesktopHistory = {
   treeAt(root: string, sha: string, within: string): Promise<DesktopTreeEntry[]>
   /** Those files as they were at a commit: text, and bytes for a picture that is not an SVG. */
   readAt(root: string, sha: string, paths: string[]): Promise<DesktopFileAt[]>
+  /** What files held, as text, by their ids. */
+  texts(root: string, ids: string[]): Promise<Record<string, string>>
   /** Every tag, on the commit it marks, with its words. */
   tags(root: string): Promise<DesktopTag[]>
   /** An annotated tag on a commit, never over one that is there. */
@@ -105,9 +107,12 @@ export type DesktopHistory = {
 }
 
 export type DesktopChangedPath = { path: string; deleted: boolean }
-export type DesktopLogWanted = { paths?: string[]; grep?: string; limit: number; tip?: string; skip?: number; firstParent?: boolean }
+export type DesktopLogWanted = {
+  paths?: string[]; grep?: string; limit: number; tip?: string; skip?: number; firstParent?: boolean; bare?: boolean
+}
 export type DesktopLogged = {
   sha: string; parents: string[]; at: number; author: string; subject: string; message: string; changed: string[]
+  blobs?: Record<string, [string, string]>
 }
 export type DesktopTreeEntry = { path: string; blob: string }
 export type DesktopFileAt = { path: string; text: string } | { path: string; bytes: Uint8Array }

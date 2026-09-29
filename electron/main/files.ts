@@ -32,7 +32,7 @@ import {
   resolve, snapshot,
 } from '../../src/platform/node/git'
 import {
-  allTags, changes, commitLog, commitPaths, headOf, isScopeTagName, readAt, startHistory, tagCommit, treeAt,
+  allTags, changes, commitLog, commitPaths, headOf, isScopeTagName, readAt, startHistory, tagCommit, textsOf, treeAt,
 } from '../../src/platform/node/gitEntries'
 import { log } from './log'
 import { watchFolder } from './watch'
@@ -329,8 +329,39 @@ export function registerFileChannel(options: { onRecentsChanged?: () => void } =
     if (isGranted(root)) await excludeLocalSettings(root)
   })
 
-  // The history the folder's repositories read (ADR-0031 §2). The same rule
-  // again, and every path a string inside the folder: `gitEntries.ts` hands
+  registerRepositoryHistory()
+
+  ipcMain.handle('files:watch', (_event, root: unknown) => {
+    if (!isGranted(root) || watching.has(root)) return
+    watching.set(root, watchFolder(root, (changes) => {
+      // To every window there is, because there is one, and because a renderer
+      // that has been replaced (a reload, a crash) simply has no listener.
+      const events: DesktopChange[] = changes.map((change) => ({ root, ...change }))
+      for (const contents of webContents.getAllWebContents()) {
+        if (!contents.isDestroyed()) contents.send('files:changed', events)
+      }
+    }))
+  })
+
+  ipcMain.handle('files:unwatch', (_event, root: unknown) => {
+    if (typeof root !== 'string') return
+    watching.get(root)?.()
+    watching.delete(root)
+  })
+}
+
+/** Stop every watcher. Called on the way out, so nothing holds the process. */
+export function stopWatching(): void {
+  for (const stop of watching.values()) stop()
+  watching.clear()
+}
+
+/**
+ * The history the folder's repositories read (ADR-0031 §2): the same rule as
+ * every handler of the file channel, a root the person granted or nothing.
+ */
+function registerRepositoryHistory(): void {
+  // Every path a string inside the folder: `gitEntries.ts` hands
   // git each one as a literal, and refuses an escape before git sees it.
 
   ipcMain.handle('git:startHistory', async (_event, root: unknown) => {
@@ -360,6 +391,7 @@ export function registerFileChannel(options: { onRecentsChanged?: () => void } =
       ...(held.tip !== undefined ? { tip: held.tip as string } : {}),
       ...(held.skip !== undefined ? { skip: held.skip as number } : {}),
       ...(held.firstParent === true ? { firstParent: true } : {}),
+      ...((held as { bare?: unknown }).bare === true ? { bare: true } : {}),
     })
   })
 
@@ -368,6 +400,9 @@ export function registerFileChannel(options: { onRecentsChanged?: () => void } =
 
   ipcMain.handle('git:readAt', (_event, root: unknown, sha: unknown, paths: unknown) =>
     (isGranted(root) && typeof sha === 'string' && isStrings(paths) ? readAt(root, sha, paths) : []))
+
+  ipcMain.handle('git:texts', (_event, root: unknown, ids: unknown) =>
+    (isGranted(root) && isStrings(ids) ? textsOf(root, ids) : {}))
 
   ipcMain.handle('git:tags', (_event, root: unknown) => (isGranted(root) ? allTags(root) : []))
 
@@ -380,28 +415,4 @@ export function registerFileChannel(options: { onRecentsChanged?: () => void } =
     }
     return tagCommit(root, sha, name, message)
   })
-
-  ipcMain.handle('files:watch', (_event, root: unknown) => {
-    if (!isGranted(root) || watching.has(root)) return
-    watching.set(root, watchFolder(root, (changes) => {
-      // To every window there is, because there is one, and because a renderer
-      // that has been replaced (a reload, a crash) simply has no listener.
-      const events: DesktopChange[] = changes.map((change) => ({ root, ...change }))
-      for (const contents of webContents.getAllWebContents()) {
-        if (!contents.isDestroyed()) contents.send('files:changed', events)
-      }
-    }))
-  })
-
-  ipcMain.handle('files:unwatch', (_event, root: unknown) => {
-    if (typeof root !== 'string') return
-    watching.get(root)?.()
-    watching.delete(root)
-  })
-}
-
-/** Stop every watcher. Called on the way out, so nothing holds the process. */
-export function stopWatching(): void {
-  for (const stop of watching.values()) stop()
-  watching.clear()
 }

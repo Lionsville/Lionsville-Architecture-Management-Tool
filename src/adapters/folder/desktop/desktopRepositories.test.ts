@@ -22,7 +22,7 @@ import {
 import { appliedStepsText, readAppliedSteps } from '../../../platform/node/appliedSteps'
 import { gitAvailable, isRepository } from '../../../platform/node/git'
 import {
-  allTags, changes, commitLog, commitPaths, headOf, readAt, startHistory, tagCommit, treeAt,
+  allTags, changes, commitLog, commitPaths, headOf, readAt, startHistory, tagCommit, textsOf, treeAt,
 } from '../../../platform/node/gitEntries'
 import { describeHistoryRepository } from '../../../ports/HistoryRepository.contract'
 import { describeImageRepository } from '../../../ports/ImageRepository.contract'
@@ -86,6 +86,7 @@ function historyOver(): DesktopHistory {
     log: (root, wanted) => commitLog(root, wanted),
     treeAt: (root, sha, within) => treeAt(root, sha, within),
     readAt: (root, sha, paths) => readAt(root, sha, paths),
+    texts: (root, ids) => textsOf(root, ids),
     tags: (root) => allTags(root),
     tag: (root, sha, name, message) => tagCommit(root, sha, name, message),
   }
