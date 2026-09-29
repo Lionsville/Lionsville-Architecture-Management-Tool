@@ -86,8 +86,10 @@ export async function destinationIn(opening: FolderOpening): Promise<SourceDesti
   const store = new FileSystemScopeStore(opening.handle)
   const listed = await store.list()
   // A folder holding a scope the listing could not read is not an empty one.
-  const occupied = listed.name.trim() !== '' || listed.children.length > 0 || listed.diagrams > 0
-    || (listed.unreadable?.length ?? 0) > 0
+  // Its root is listed under the folder's own name whether or not anybody
+  // named it, so what says the root is something is a document of its own.
+  const occupied = listed.children.length > 0 || listed.diagrams > 0 || (listed.unreadable?.length ?? 0) > 0
+    || await store.load('') !== undefined
   return {
     name: opening.name,
     opening,
