@@ -18,6 +18,8 @@ import { relative } from 'node:path'
  *   model/ layout/ platform/   arithmetic. No React, no browser, no storage.
  *   ports/                     the seams: interfaces, no implementations.
  *   adapters/                  the outside world, one per flavour.
+ *   providers/                 a place work is kept, whole: the adapters it
+ *                              is built on, its way in and the chrome it draws.
  *   ui/ in each module,
  *   editor/, app/              React.
  *   app/composition.ts         who gets which adapter — the only place that
@@ -57,7 +59,8 @@ import { relative } from 'node:path'
  */
 const MODULES = [
   'model', 'layout', 'i18n', 'platform', 'platform/node', 'widgets', 'documentation', 'decisions', 'observations',
-  'roadmap', 'business', 'technology', 'search', 'projects', 'editor', 'agent', 'ports', 'adapters', 'app',
+  'roadmap', 'business', 'technology', 'search', 'projects', 'editor', 'agent', 'ports', 'adapters', 'providers',
+  'app',
 ]
 
 const MAY_IMPORT = {
@@ -79,9 +82,10 @@ const MAY_IMPORT = {
   agent: ['model', 'layout', 'i18n', 'platform', 'documentation', 'decisions', 'observations', 'business', 'search'],
   ports: ['model', 'platform', 'projects', 'agent'],
   adapters: ['model', 'platform', 'projects', 'ports', 'agent'],
+  providers: ['model', 'i18n', 'platform', 'widgets', 'projects', 'ports', 'adapters'],
   // `platform/node` is the one thing the top of the tree may not have either:
   // `app` is the renderer, and code that says `node:` cannot be in it.
-  app: MODULES.filter((m) => m !== 'adapters' && m !== 'app' && m !== 'platform/node'),
+  app: MODULES.filter((m) => m !== 'adapters' && m !== 'providers' && m !== 'app' && m !== 'platform/node'),
 }
 
 const WHY = {
@@ -103,6 +107,7 @@ const WHY = {
   agent: 'An agent asks about the landscape in the landscape\'s own terms — including a laid-out page, which is arithmetic like any other. It does not know how the model is drawn or where it is saved.',
   ports: 'A seam names what crosses it: a project, a model, a diagnostic, an agent\'s request.',
   adapters: 'An adapter fills one seam: the model, projects, ports, platform and the agent\'s vocabulary are all it may know.',
+  providers: 'A provider is a place work is kept, whole: its implementation, its way in and its chrome (ADR-0022, ADR-0031 §4). It may draw, in the language that is on, and name how it keeps work; only the composition root registers one, and it knows no screen of the app\'s.',
   app: 'Ask for a ProjectStore / PreferencesStore / DocumentGateway; src/app/composition.ts picks which.',
 }
 

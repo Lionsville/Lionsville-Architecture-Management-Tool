@@ -6,8 +6,9 @@
  * test holds the tree to.
  *
  * **No imports across the line.** Nothing outside the implementations
- * (`src/adapters/`, `src/platform/node/`, `electron/`) and the composition
- * root imports an implementation, or the folder format. The import matrix in
+ * (`src/adapters/`, `src/platform/node/`, `electron/`), the providers built on
+ * them (`src/providers/`) and the composition root imports an implementation,
+ * or the folder format. The import matrix in
  * `eslint.config.js` already keeps `adapters` out of every module but the
  * composition root; what it cannot say is that a handful of files *inside*
  * the domain's own modules are the folder format and belong with the folder's
@@ -49,8 +50,12 @@
 import ts from 'typescript'
 import type { Graph } from './cycles'
 
-/** What may know how work is kept: the implementations, and the composition root that chooses them. */
-export const IMPLEMENTATIONS: readonly string[] = ['src/adapters/', 'src/platform/node/', 'electron/']
+/**
+ * What may know how work is kept: the implementations, the providers built on
+ * them — whose chrome is where a person is told about their folder (ADR-0031
+ * §4) — and the composition root that chooses them.
+ */
+export const IMPLEMENTATIONS: readonly string[] = ['src/adapters/', 'src/providers/', 'src/platform/node/', 'electron/']
 export const COMPOSITION_ROOT = 'src/app/composition.ts'
 
 export function isImplementation(file: string): boolean {

@@ -66,6 +66,32 @@ describe('the import matrix', () => {
 })
 
 /**
+ * A provider is registered by the composition root and by nothing else: the
+ * app asks for a source's parts and draws its chrome where the registration
+ * says, and an adapter fills one seam without a screen. Either reaching into
+ * `providers/` would be a second place that chooses where work is kept.
+ */
+describe('the providers', () => {
+  const importing = "import { FOLDER } from '../providers/folder/folderSource'\nexport const one = FOLDER\n"
+
+  it('are imported by the composition root and nothing else of the app', async () => {
+    expect(await layeringAt('src/app/composition.ts', importing)).toEqual([])
+    expect((await layeringAt('src/app/one.ts', importing)).join('\n')).toMatch(/ProjectStore/)
+  })
+
+  it('are not imported by an adapter', async () => {
+    expect((await layeringAt('src/adapters/one.ts', importing)).join('\n')).toMatch(/An adapter fills one seam/)
+  })
+
+  it('may import an adapter, the words and the widgets, and no screen of the app', async () => {
+    const reaching = "import { browserStorage } from '../../adapters/webStorage/available'\nimport { useStrings } from '../../i18n'\nimport { TidyIcon } from '../../widgets/icons'\nexport const one = [browserStorage, useStrings, TidyIcon]\n"
+    expect(await layeringAt('src/providers/folder/one.tsx', reaching)).toEqual([])
+    const app = "import { App } from '../../app/App'\nexport const one = App\n"
+    expect((await layeringAt('src/providers/folder/one.tsx', app)).join('\n')).toMatch(/A provider is a place work is kept/)
+  })
+})
+
+/**
  * The registry imports every slice, so a process that wants one sentence in
  * English loads all of them; a slice that imported a helper or read a global
  * would be that process failing at its first import.

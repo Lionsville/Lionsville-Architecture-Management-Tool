@@ -29,14 +29,8 @@
  * a fourth by registering it, and nothing above this line is edited for it.
  */
 import { registerLogoPack } from '../model/logoRegistry'
-import { FileSystemFolderSettings } from '../adapters/folder/FileSystemFolderSettings'
-import { FileSystemScopeStore } from '../adapters/folder/FileSystemScopeStore'
-import type { ScopeSnapshot } from '../projects/scope'
 import { filledStore } from '../projects/filledStore'
 import type { ScopeStoreFilling } from '../projects/filledStore'
-import {
-  canChooseDirectory, chooseDirectory as chooseBrowserDirectory, rememberedDirectory,
-} from '../adapters/folder/browser/workingDirectory'
 import { DesktopAgentGateway } from '../adapters/desktop/DesktopAgentGateway'
 import { DesktopProjectHistory } from '../adapters/folder/desktop/DesktopProjectHistory'
 import {
@@ -45,9 +39,7 @@ import {
 } from '../adapters/desktop/desktopFiles'
 import { DesktopUpdateSettings } from '../adapters/desktop/DesktopUpdateSettings'
 import { DesktopFolderSettings } from '../adapters/folder/desktop/DesktopFolderSettings'
-import { IpcDirectoryHandle } from '../adapters/folder/desktop/IpcDirectoryHandle'
 import { DesktopDocumentGateway } from '../adapters/desktop/DesktopDocumentGateway'
-import { rememberingWrites } from '../adapters/desktop/rememberingWrites'
 import type { DesktopCommands, DesktopDirectory, DesktopFiles } from '../adapters/desktop/channel'
 
 /**
@@ -62,16 +54,15 @@ import { browserHostControls } from '../adapters/browser/browserHostControls'
 import { reloadOnStaleScripts } from '../adapters/browser/staleScripts'
 import { ConsoleDiagnostics } from '../adapters/browser/ConsoleDiagnostics'
 import { hostWindowChrome, showWindowTitle } from '../adapters/browser/hostWindow'
-import { InMemoryPreferencesStore } from '../adapters/memory/InMemoryPreferencesStore'
-import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
-import { browserStorage } from '../adapters/webStorage/available'
-import { WebStoragePreferencesStore } from '../adapters/webStorage/WebStoragePreferencesStore'
-import { WebStorageScopeStore } from '../adapters/webStorage/WebStorageScopeStore'
+import { browserDatabase, browserStorage } from '../adapters/webStorage/available'
 import type { ScopePath } from '../projects/scopePath'
 import { isFormatPath } from '../projects/folderFormat'
 import type { WindowChrome } from '../platform/windowChrome'
-import { BROWSER_STORAGE, IN_MEMORY } from '../platform/workingSource'
 import type { WorkingSource } from '../platform/workingSource'
+import { BROWSER_STORAGE_SOURCE } from '../providers/browserStorage/browserStorageSource'
+import { desktopOpening, FOLDER_SOURCE } from '../providers/folder/folderSource'
+import type { FolderOpening } from '../providers/folder/folderSource'
+import { MEMORY_SOURCE } from '../providers/memory/memorySource'
 import type { HookInvoke } from '../platform/desktopHook'
 import type {
   SourceChip as ProviderChip,
@@ -83,7 +74,6 @@ import type {
   RegisteredChrome, RegisteredMenu, SourceAgentPanel, SourceChipFace, SourceChipPanel, SourceChrome, SourceMenu,
 } from './App'
 import type { ScopeSession } from './useModelSession'
-import type { KeyValueStorage } from '../adapters/webStorage/KeyValueStorage'
 import type { AgentGateway } from '../ports/AgentGateway'
 import type { Diagnostics } from '../ports/Diagnostics'
 import type { ProjectHistory } from '../ports/ProjectHistory'
@@ -92,8 +82,12 @@ import type { FolderSettingsStore } from '../ports/FolderSettings'
 import type { UpdateSettingsStore } from '../ports/UpdateSettings'
 import type { HostControls } from '../ports/HostControls'
 import type { PreferencesStore } from '../ports/PreferencesStore'
+import type { Repositories } from '../ports/Repositories'
 import type { ScopeStore } from '../ports/ScopeStore'
 import type { DirectoryHandleLike } from '../adapters/folder/DirectoryHandle'
+
+export type { FolderDestination, FolderOpening } from '../providers/folder/folderSource'
+export { browserFolders, chooseFolderDestination } from '../providers/folder/folderSource'
 
 /**
  * A subscription to one scope's folder. Returns the way to stop it — the
@@ -109,6 +103,11 @@ export type WatchProject = (path: ScopePath, onChanged: () => void, wholeTree?: 
 /** Everything the shell needs from outside, in one grip. */
 export type Shell = {
   scopes: ScopeStore
+  /**
+   * Where the source keeps work, in the domain's words (ADR-0031 §4): its five
+   * repositories, built by its provider and handed to the app as one value.
+   */
+  repositories?: Repositories
   preferences: PreferencesStore
   documents: DocumentGateway
   /**
@@ -664,11 +663,12 @@ export function composeShell(): Shell {
   const storage = browserStorage()
   const kind = storage ? 'browserStorage' : 'memory'
   const diagnostics = new ConsoleDiagnostics()
+  const database = browserDatabase()
   // The one opening with no shell to hand over, and it cannot have one: the
   // shell a provider would be given here is the shell being built out of what
   // it answers. The trail is the half that does exist, and it is the half a
   // fallback source could conceivably have something to say to.
-  const kept = openSourceNow(kind, storage, { diagnostics })
+  const kept = openSourceNow(kind, storage && { storage, ...(database ? { database } : {}) }, { diagnostics })
   return {
     ...kept,
     scopes: keeper(kind, kept),
@@ -724,19 +724,6 @@ export function desktopCommandChannel(): DesktopCommands | undefined {
 }
 
 /**
- * A folder in a browser tab, where the browser can give one.
- *
- * Re-exported through the composition for the same reason as the file channel:
- * this is the only file that may name an adapter, and the boot needs to know
- * whether the offer can be made.
- */
-export const browserFolders = {
-  possible: canChooseDirectory,
-  choose: chooseBrowserDirectory,
-  remembered: rememberedDirectory,
-}
-
-/**
  * The same shell, keeping its projects in a folder the user chose.
  *
  * The whole of the desktop's storage, and it is two lines: the folder store
@@ -753,13 +740,11 @@ export const browserFolders = {
  * the stores. Shared by the desktop and by a browser tab that has been given a
  * directory handle, which is the whole reason `DirectoryHandleLike` exists.
  */
-function overFolder(
-  shell: Shell, handle: DirectoryHandleLike, name: string, root = name,
-): Shell {
+function overFolder(shell: Shell, opening: FolderOpening): Shell {
   // The shell this folder is opening into, before its own parts are spread over
   // it: the preferences stay where they were (see below), so what a provider in
   // its place would reuse is exactly what this line leaves alone.
-  const kept = openSourceNow('folder', { handle, name, root }, { diagnostics: shell.diagnostics, shell })
+  const kept = openSourceNow('folder', opening, { diagnostics: shell.diagnostics, shell })
   return { ...withoutSourceParts(shell), ...kept, scopes: keeper('folder', kept) }
 }
 
@@ -794,7 +779,7 @@ function withoutSourceParts(shell: Shell): Shell {
  * rather than stubbed, and the app offers what is present.
  */
 export function inBrowserFolder(shell: Shell, handle: DirectoryHandleLike, name: string): Shell {
-  return overFolder(shell, handle, name)
+  return overFolder(shell, { handle, name, root: name })
 }
 
 export function inWorkingDirectory(
@@ -802,8 +787,8 @@ export function inWorkingDirectory(
 ): Shell {
   // Everything goes through the remembering wrapper, including the stores:
   // a write that went round it would come back as somebody else's change.
-  const channel = rememberingWrites(files)
-  const handle = new IpcDirectoryHandle(channel.files, directory.root, directory.name)
+  const opening = desktopOpening(files, directory)
+  const { channel } = opening
 
   const watchProject: WatchProject = (scope, onChanged, wholeTree = false) => {
     // Watching the whole folder rather than one scope: it is one watcher for
@@ -838,7 +823,7 @@ export function inWorkingDirectory(
     })
   }
 
-  const folder = overFolder(shell, handle, directory.name, directory.root)
+  const folder = overFolder(shell, opening)
   const settings = folder.folderSettings
   const git = desktopHistory()
   return {
@@ -860,129 +845,6 @@ export function inWorkingDirectory(
 }
 
 /**
- * What a folder source needs to be given: the handle to work through, and what
- * the folder is called and where it is.
- *
- * A browser's handle has no path to give, so `root` falls back to the name —
- * which is all a tab knows about where it is, and enough to tell two folders
- * apart within one tab.
- */
-export type FolderOpening = {
-  handle: DirectoryHandleLike
-  name: string
-  root: string
-}
-
-/**
- * A folder a working file may become (ADR-0025): chosen with the same picker
- * as *Open Folder…*, looked at before anything is written — a name, a scope
- * or a board in it is "occupied", and the shell asks again before writing
- * over one — and written as one where the folder can take it (ADR-0023,
- * amendments 2 and 3), shallowest first, the way a file's scopes are
- * answered. Moving the app there is the boot's, which owns the
- * shell; this only knows the store.
- */
-export type FolderDestination = {
-  opening: FolderOpening
-  occupied: boolean
-  place(scopes: readonly ScopeSnapshot[]): Promise<void>
-  /** One scope of the folder as it now reads: what the landing is checked against (ADR-0023, amended). */
-  read(path: ScopePath): Promise<ScopeSnapshot | undefined>
-}
-
-export async function chooseFolderDestination(): Promise<FolderDestination | undefined> {
-  const opening = await chooseFolderOpening()
-  if (!opening) return undefined
-  const store = new FileSystemScopeStore(opening.handle)
-  const listed = await store.list()
-  // A folder holding a scope the listing could not read is not an empty one.
-  const occupied = listed.name.trim() !== '' || listed.children.length > 0 || listed.diagrams > 0
-    || (listed.unreadable?.length ?? 0) > 0
-  return {
-    opening,
-    occupied,
-    // As one, the way *Replace here* lands (ADR-0023, amendments 2 and 3).
-    place: (scopes) => store.saveTogether(scopes.map((scope) => ({ scope }))),
-    read: (path) => store.load(path),
-  }
-}
-
-/**
- * The folder's own way in: the picker this app has always had.
- *
- * Whichever picker there is — the desktop's dialog through the file channel, or
- * the browser's where the browser has one — and nothing at all where there is
- * neither, which is a tab that cannot be given a folder. The words on the
- * button are unchanged; this is only the answer to "what does pressing it ask
- * for", said in the shape every other provider says it in.
- *
- * The writes go through the remembering wrapper on the desktop for the reason
- * `inWorkingDirectory` does it: a write that went round it comes back from the
- * watcher as somebody else's change, and the app interrupts itself.
- */
-async function chooseFolderOpening(): Promise<FolderOpening | undefined> {
-  const files = desktopFiles()
-  if (files) {
-    const chosen = await files.chooseDirectory()
-    if (!chosen) return undefined
-    const channel = rememberingWrites(files)
-    return {
-      handle: new IpcDirectoryHandle(channel.files, chosen.root, chosen.name),
-      name: chosen.name,
-      root: chosen.root,
-    }
-  }
-  if (!canChooseDirectory()) return undefined
-  const handle = await chooseBrowserDirectory()
-  // A browser's handle has no path to give, so the name is all there is to tell
-  // two folders apart within one tab — which is what `FolderOpening` says.
-  return handle && { handle, name: handle.name, root: handle.name }
-}
-
-/**
- * A folder of text files (ADR-0003), which is what the desktop works from and
- * what a browser tab works from when it has been given one.
- *
- * It brings the store and the folder's own settings and nothing else. The
- * preferences stay where they were on purpose: they describe this machine — its
- * language, its theme, which folder it uses — so putting them in the folder
- * would carry one machine's settings to every other machine that opens it.
- */
-const FOLDER_SOURCE: SourceProvider<SourceParts, FolderOpening> = {
-  kind: 'folder',
-  connect: { labelKey: 'picker.chooseFolder', open: chooseFolderOpening },
-  // The trail the app keeps is where a file that will not read is said.
-  open: ({ handle, name, root }, { diagnostics }) => ({
-    scopes: new FileSystemScopeStore(handle, diagnostics),
-    folderSettings: new FileSystemFolderSettings(handle),
-    source: { kind: 'folder', name, root },
-  }),
-}
-
-/** This browser's own storage: the fallback, and it says so on the bar. */
-const BROWSER_STORAGE_SOURCE: SourceProvider<SourceParts, KeyValueStorage> = {
-  kind: 'browserStorage',
-  open: (storage) => ({
-    scopes: new WebStorageScopeStore(storage),
-    preferences: new WebStoragePreferencesStore(storage),
-    source: BROWSER_STORAGE,
-  }),
-}
-
-/**
- * Nowhere at all, which is the honest answer when storage refuses. It never
- * fails, so the session works in full and simply leaves nothing behind.
- */
-const IN_MEMORY_SOURCE: SourceProvider<SourceParts, unknown> = {
-  kind: 'memory',
-  open: () => ({
-    scopes: new InMemoryScopeStore(),
-    preferences: new InMemoryPreferencesStore(),
-    source: IN_MEMORY,
-  }),
-}
-
-/**
  * At module load, which is before the first render and long before an export
  * asks whether an icon key is one this build knows. Registering later would
  * mean a window in which a saved `rail-*` key does not resolve.
@@ -994,7 +856,7 @@ const IN_MEMORY_SOURCE: SourceProvider<SourceParts, unknown> = {
 registerLogoPack(RAIL_PACK)
 registerSourceProvider(FOLDER_SOURCE)
 registerSourceProvider(BROWSER_STORAGE_SOURCE)
-registerSourceProvider(IN_MEMORY_SOURCE)
+registerSourceProvider(MEMORY_SOURCE)
 
 /**
  * A tab left open over a deploy asks for a script that is gone, the first time

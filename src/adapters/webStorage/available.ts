@@ -9,6 +9,7 @@
  * *write* — sometimes even on reading the property. Hence a real probe write,
  * and hence this being the only place in the shell that says the word.
  */
+import type { IndexedDb } from './IndexedDbStore'
 import type { KeyValueStorage } from './KeyValueStorage'
 
 const PROBE = '__lvarch-probe__'
@@ -26,6 +27,22 @@ export function browserStorage(): KeyValueStorage | undefined {
       // order to delete would do.
       keys: () => Object.keys(localStorage),
     }
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * This browser's database, where there is one to ask (ADR-0031, *browser
+ * storage is IndexedDB*). Only that it exists: whether it opens is answered by
+ * the first call the repositories make over it, which rejects where it will
+ * not, and what to do then is the composition's.
+ */
+export function browserDatabase(): IndexedDb | undefined {
+  try {
+    return typeof indexedDB === 'undefined' || typeof IDBKeyRange === 'undefined'
+      ? undefined
+      : { factory: indexedDB, keyRange: IDBKeyRange }
   } catch {
     return undefined
   }

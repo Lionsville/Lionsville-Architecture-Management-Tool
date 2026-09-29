@@ -1,0 +1,62 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
+/**
+ * This browser's own storage: the fallback, and it says so on the bar.
+ *
+ * The scopes are kept in this browser's database (ADR-0031, *browser storage
+ * is IndexedDB*), and what the key-value storage kept before it is brought in
+ * at every start (`adapters/webStorage/earlierScopes.ts`) — copied, never
+ * moved. The key-value storage stays where the preferences are kept.
+ */
+import { memoryRepositories } from '../../adapters/memory/memoryRepositories'
+import { browserRepositories } from '../../adapters/webStorage/browserRepositories'
+import type { Earlier } from '../../adapters/webStorage/earlierScopes'
+import type { IndexedDb } from '../../adapters/webStorage/IndexedDbStore'
+import type { KeyValueStorage } from '../../adapters/webStorage/KeyValueStorage'
+import { WebStoragePreferencesStore } from '../../adapters/webStorage/WebStoragePreferencesStore'
+import { WebStorageScopeStore } from '../../adapters/webStorage/WebStorageScopeStore'
+import type { SourceProvider } from '../../platform/sourceProvider'
+import { BROWSER_STORAGE } from '../../platform/workingSource'
+import type { WorkingSource } from '../../platform/workingSource'
+import type { PreferencesStore } from '../../ports/PreferencesStore'
+import type { Repositories } from '../../ports/Repositories'
+import type { ScopeStore } from '../../ports/ScopeStore'
+
+/** What this browser keeps: the key-value storage, and its database where it has one. */
+export type BrowserOpening = {
+  storage: KeyValueStorage
+  database?: IndexedDb
+}
+
+export type BrowserParts = {
+  scopes: ScopeStore
+  repositories: Repositories
+  preferences: PreferencesStore
+  source: WorkingSource
+}
+
+/**
+ * What the key-value storage kept before the database, for the questions a
+ * person answers about it: the opening's, since there is one browser.
+ */
+let earlierWork: Earlier | undefined
+
+/** The answers about work kept before, for this browser's chrome; nothing where there is nothing to ask. */
+export function earlier(): Earlier | undefined {
+  return earlierWork
+}
+
+export const BROWSER_STORAGE_SOURCE: SourceProvider<BrowserParts, BrowserOpening> = {
+  kind: 'browserStorage',
+  open: ({ storage, database }) => {
+    const kept = database ? browserRepositories(database, storage) : undefined
+    earlierWork = kept?.earlier
+    return {
+      scopes: new WebStorageScopeStore(storage),
+      repositories: kept?.repositories ?? memoryRepositories(),
+      preferences: new WebStoragePreferencesStore(storage),
+      source: BROWSER_STORAGE,
+    }
+  },
+}

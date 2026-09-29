@@ -1,0 +1,33 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
+/**
+ * Nowhere at all, which is the honest answer when this browser keeps nothing.
+ * It never fails, so a session works in full and simply leaves nothing behind.
+ */
+import { InMemoryPreferencesStore } from '../../adapters/memory/InMemoryPreferencesStore'
+import { InMemoryScopeStore } from '../../adapters/memory/InMemoryScopeStore'
+import { memoryRepositories } from '../../adapters/memory/memoryRepositories'
+import type { SourceProvider } from '../../platform/sourceProvider'
+import { IN_MEMORY } from '../../platform/workingSource'
+import type { WorkingSource } from '../../platform/workingSource'
+import type { PreferencesStore } from '../../ports/PreferencesStore'
+import type { Repositories } from '../../ports/Repositories'
+import type { ScopeStore } from '../../ports/ScopeStore'
+
+export type MemoryParts = {
+  scopes: ScopeStore
+  repositories: Repositories
+  preferences: PreferencesStore
+  source: WorkingSource
+}
+
+export const MEMORY_SOURCE: SourceProvider<MemoryParts, unknown> = {
+  kind: 'memory',
+  open: () => ({
+    scopes: new InMemoryScopeStore(),
+    repositories: memoryRepositories(),
+    preferences: new InMemoryPreferencesStore(),
+    source: IN_MEMORY,
+  }),
+}

@@ -66,6 +66,7 @@ export const FLOORS: ReadonlyArray<readonly [component: string, floor: Floor]> =
   ['src/agent', { lines: 94, branches: 80 }],
   ['src/ports', { lines: 100, branches: 100 }],
   ['src/adapters', { lines: 88, branches: 81 }],
+  ['src/providers', { lines: 0, branches: 0 }],
   ['src/app', { lines: 84, branches: 76 }],
   ['electron/main', { lines: 24, branches: 20 }],
   ['electron/preload', { lines: 14, branches: 100 }],
