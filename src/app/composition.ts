@@ -29,23 +29,23 @@
  * a fourth by registering it, and nothing above this line is edited for it.
  */
 import { registerLogoPack } from '../model/logoRegistry'
-import { FileSystemFolderSettings } from '../adapters/fileSystem/FileSystemFolderSettings'
-import { FileSystemScopeStore } from '../adapters/fileSystem/FileSystemScopeStore'
+import { FileSystemFolderSettings } from '../adapters/folder/FileSystemFolderSettings'
+import { FileSystemScopeStore } from '../adapters/folder/FileSystemScopeStore'
 import type { ScopeSnapshot } from '../projects/scope'
 import { filledStore } from '../projects/filledStore'
 import type { ScopeStoreFilling } from '../projects/filledStore'
 import {
   canChooseDirectory, chooseDirectory as chooseBrowserDirectory, rememberedDirectory,
-} from '../adapters/browser/workingDirectory'
+} from '../adapters/folder/browser/workingDirectory'
 import { DesktopAgentGateway } from '../adapters/desktop/DesktopAgentGateway'
-import { DesktopProjectHistory } from '../adapters/desktop/DesktopProjectHistory'
+import { DesktopProjectHistory } from '../adapters/folder/desktop/DesktopProjectHistory'
 import {
   desktopAgent, desktopCommands, desktopFiles, desktopHistory,
   desktopHookChannel as hookChannel, desktopSettings,
 } from '../adapters/desktop/desktopFiles'
 import { DesktopUpdateSettings } from '../adapters/desktop/DesktopUpdateSettings'
-import { DesktopFolderSettings } from '../adapters/desktop/DesktopFolderSettings'
-import { IpcDirectoryHandle } from '../adapters/desktop/IpcDirectoryHandle'
+import { DesktopFolderSettings } from '../adapters/folder/desktop/DesktopFolderSettings'
+import { IpcDirectoryHandle } from '../adapters/folder/desktop/IpcDirectoryHandle'
 import { DesktopDocumentGateway } from '../adapters/desktop/DesktopDocumentGateway'
 import { rememberingWrites } from '../adapters/desktop/rememberingWrites'
 import type { DesktopCommands, DesktopDirectory, DesktopFiles } from '../adapters/desktop/channel'
@@ -93,7 +93,7 @@ import type { UpdateSettingsStore } from '../ports/UpdateSettings'
 import type { HostControls } from '../ports/HostControls'
 import type { PreferencesStore } from '../ports/PreferencesStore'
 import type { ScopeStore } from '../ports/ScopeStore'
-import type { DirectoryHandleLike } from '../ports/DirectoryHandle'
+import type { DirectoryHandleLike } from '../adapters/folder/DirectoryHandle'
 
 /**
  * A subscription to one scope's folder. Returns the way to stop it — the

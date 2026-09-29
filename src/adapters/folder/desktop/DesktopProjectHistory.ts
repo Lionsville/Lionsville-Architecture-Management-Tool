@@ -11,14 +11,14 @@
  * This binds the folder, turns a ref into the path the project sits at, and
  * turns the files at a commit back into a project.
  */
-import { openScopeFolder } from '../../projects/migrate4to5'
-import type { ScopeSnapshot } from '../../projects/scope'
-import { scopeFilePath } from '../../projects/scopePath'
-import type { ScopePath } from '../../projects/scopePath'
-import type { HistoryEntry, HistoryScope, ProjectHistory, ProjectSync } from '../../ports/ProjectHistory'
-import type { LabelOutcome } from '../../platform/history'
-import type { SyncSide } from '../../platform/sync'
-import type { DesktopHistory } from './channel'
+import { openScopeFolder } from '../../../projects/migrate4to5'
+import type { ScopeSnapshot } from '../../../projects/scope'
+import { scopeFilePath } from '../../../projects/scopePath'
+import type { ScopePath } from '../../../projects/scopePath'
+import type { HistoryEntry, HistoryScope, ProjectHistory, ProjectSync } from '../../../ports/ProjectHistory'
+import type { LabelOutcome } from '../../../platform/history'
+import type { SyncSide } from '../../../platform/sync'
+import type { DesktopHistory } from '../../desktop/channel'
 
 export class DesktopProjectHistory implements ProjectHistory {
   /** The remote, bound to the same folder. Always present on the desktop. */

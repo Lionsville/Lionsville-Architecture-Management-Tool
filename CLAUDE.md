@@ -434,11 +434,6 @@ src/widgets/      Presentation with no opinions: icons, one confirm dialog,
                   card, fetched when it is opened, and every part preloaded
                   before a suite's first test (`app/testing/lazyParts.ts`).
 src/ports/        The seams. Interfaces only, no implementations.
-                    DirectoryHandle   as little of a folder as the folder store
-                                      asks for — the shape a browser's handle,
-                                      the desktop's over IPC and the suites'
-                                      fake are all held to (re-exported by
-                                      `adapters/fileSystem/`, so nothing moved)
                     ScopeStore        …and `models?()`, the tree's `model.json`
                                       files and nothing else — what the index is
                                       built from, one file per scope
@@ -463,11 +458,20 @@ src/ports/        The seams. Interfaces only, no implementations.
                                       A `*.contract.ts` each, one maker for all
                                       five, run against `testing/memoryRepositories`
 src/adapters/     The outside world, one folder per flavour.
-                    webStorage/ · memory/ · browser/ · fileSystem/ · desktop/
+                    webStorage/ · memory/ · browser/ · folder/ · desktop/
+                    folder/           the folder implementation (ADR-0031 §2): the
+                                      folder store, its revision, the settings
+                                      file, and DirectoryHandle — as little of a
+                                      folder as the store asks for, the shape a
+                                      browser's handle (`browser/`), the
+                                      desktop's over IPC (`desktop/`) and the
+                                      suites' fake are all held to; and the
+                                      desktop's git history
                     memory/           …and InMemoryCommandChannel: a head model, a
                                       bounded log and the subscribers, for two
                                       sessions put in one order without a process
-                    desktop/          the Electron file channel, as a folder handle
+                    desktop/          the Electron channel's types, and what the
+                                      desktop keeps that is not the folder
 src/app/          The shell around the editor.
                     main.tsx          composition root. Read its header first.
                     bootReads         what a first paint waits on besides the
@@ -738,12 +742,12 @@ The point of the seams. Say you want to save to disk via the File System Access
 API. You write one file, run one suite, change one line:
 
 ```ts
-// src/adapters/fileSystem/FileSystemScopeStore.ts
+// src/adapters/folder/FileSystemScopeStore.ts
 export class FileSystemScopeStore implements ScopeStore { /* … */ }
 ```
 
 ```ts
-// src/adapters/fileSystem/FileSystemScopeStore.test.ts
+// src/adapters/folder/FileSystemScopeStore.test.ts
 describeScopeStore('schijf', () => new FileSystemScopeStore(fakeHandle()))
 ```
 
@@ -766,7 +770,7 @@ component, not a test.
 The same holds for `PreferencesStore`, `DocumentGateway` and `CommandChannel`,
 whose contract is `ports/CommandChannel.contract.ts`.
 A store over a folder of your own starts one level down: the handle passes
-`describeDirectoryHandle` (`ports/DirectoryHandle.contract.ts`) — two writes to
+`describeDirectoryHandle` (`adapters/folder/DirectoryHandle.contract.ts`) — two writes to
 one writable both land, among others — and then the store's suite runs over it.
 
 ## Conventions

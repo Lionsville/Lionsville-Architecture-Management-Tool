@@ -22,9 +22,9 @@
  */
 import type {
   FolderSettings, LocalSettings, LocalSettingsPatch,
-} from '../../projects/folderSettings'
-import type { FolderSettingsStore } from '../../ports/FolderSettings'
-import type { DesktopSettings } from './channel'
+} from '../../../projects/folderSettings'
+import type { FolderSettingsStore } from '../../../ports/FolderSettings'
+import type { DesktopSettings } from '../../desktop/channel'
 
 export class DesktopFolderSettings implements FolderSettingsStore {
   readonly id = 'desktop'

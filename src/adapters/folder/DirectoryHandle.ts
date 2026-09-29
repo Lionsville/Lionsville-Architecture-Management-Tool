@@ -11,15 +11,11 @@
  * used makes the store testable against a small in-memory double instead of a
  * browser.
  *
- * It sits in `ports/` because it is a seam and not an adapter's private
- * business. Three things already satisfy it — a browser's own handle, the
- * desktop's over an IPC channel, and the fake the suites run on — and a build
- * composed from this one that wants the folder store over a folder of its own
- * is the fourth. Reaching it through `adapters/fileSystem/` is what that build
- * had to do while it lived there, and only `app/composition.ts` may name an
- * adapter at all, so the shape a filling has to show had nowhere to be read
- * from. `FileSystemScopeStore` re-exports all four names, so nothing that
- * already imports them moves.
+ * It is the folder implementation's own (ADR-0031 §2), and sits beside the
+ * store that reads through it. Three things satisfy it — a browser's own
+ * handle, the desktop's over an IPC channel, and the fake the suites run on —
+ * and a build composed from this one that wants the folder store over a folder
+ * of its own is the fourth. `FileSystemScopeStore` re-exports all four names.
  */
 
 /** One file's contents, either way of reading them. */

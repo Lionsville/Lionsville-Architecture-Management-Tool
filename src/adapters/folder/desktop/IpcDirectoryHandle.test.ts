@@ -17,13 +17,13 @@ import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
 import {
   fingerprint, listDirectory, makeDirectory, readFile, removeEntry, writeFile, writeTogether,
-} from '../../../electron/main/fileStore'
-import { describeDirectoryHandle } from '../../ports/DirectoryHandle.contract'
-import { describeScopeStore, sampleScope } from '../../ports/ScopeStore.contract'
-import { SCOPE_FORMAT_VERSION } from '../../projects/folderFormat'
-import { flattenScopes } from '../../projects/scope'
-import { FileSystemScopeStore } from '../fileSystem/FileSystemScopeStore'
-import type { DesktopFiles } from './channel'
+} from '../../../../electron/main/fileStore'
+import { describeDirectoryHandle } from '../DirectoryHandle.contract'
+import { describeScopeStore, sampleScope } from '../../../ports/ScopeStore.contract'
+import { SCOPE_FORMAT_VERSION } from '../../../projects/folderFormat'
+import { flattenScopes } from '../../../projects/scope'
+import { FileSystemScopeStore } from '../FileSystemScopeStore'
+import type { DesktopFiles } from '../../desktop/channel'
 import { IpcDirectoryHandle } from './IpcDirectoryHandle'
 
 const folders: string[] = []

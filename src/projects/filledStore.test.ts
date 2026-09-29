@@ -10,8 +10,8 @@
  * one calls them as the store.
  */
 import { describe, expect, it } from 'vitest'
-import { FakeDirectory, refusingReads } from '../adapters/fileSystem/fakeDirectory'
-import { FileSystemScopeStore } from '../adapters/fileSystem/FileSystemScopeStore'
+import { FakeDirectory, refusingReads } from '../adapters/folder/fakeDirectory'
+import { FileSystemScopeStore } from '../adapters/folder/FileSystemScopeStore'
 import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
 import { describeScopeStore, sampleScope, SAMPLE_PATH } from '../ports/ScopeStore.contract'
 import type { ScopeStore } from '../ports/ScopeStore'

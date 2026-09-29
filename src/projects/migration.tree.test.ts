@@ -17,10 +17,10 @@
  * it twice is running it once.
  */
 import { describe, expect, it } from 'vitest'
-import { FakeDirectory } from '../adapters/fileSystem/fakeDirectory'
-import { FileSystemFolderSettings } from '../adapters/fileSystem/FileSystemFolderSettings'
-import { FileSystemScopeStore } from '../adapters/fileSystem/FileSystemScopeStore'
-import type { DirectoryHandleLike } from '../adapters/fileSystem/FileSystemScopeStore'
+import { FakeDirectory } from '../adapters/folder/fakeDirectory'
+import { FileSystemFolderSettings } from '../adapters/folder/FileSystemFolderSettings'
+import { FileSystemScopeStore } from '../adapters/folder/FileSystemScopeStore'
+import type { DirectoryHandleLike } from '../adapters/folder/FileSystemScopeStore'
 import { FOLDER_SETTINGS_PATH } from './folderSettings'
 import { upgradeProjects } from './migration'
 import { flattenScopes } from './scope'

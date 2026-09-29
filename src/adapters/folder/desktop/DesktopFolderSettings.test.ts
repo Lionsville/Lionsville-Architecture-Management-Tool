@@ -7,13 +7,13 @@
  * and as the `local.json` an older build left in the folder (ADR-0023).
  */
 import { describe, expect, it } from 'vitest'
-import { describeFolderSettings } from '../../ports/FolderSettings.contract'
-import { LOCAL_SETTINGS_PATH, readLocalSettings } from '../../projects/folderSettings'
-import type { LocalSettings, LocalSettingsPatch } from '../../projects/folderSettings'
-import { machineFolderSettingsText, readMachineFolderSettings } from '../../platform/node/machineFolderSettings'
-import { FakeDirectory } from '../fileSystem/fakeDirectory'
-import { FileSystemFolderSettings } from '../fileSystem/FileSystemFolderSettings'
-import type { DesktopSettings } from './channel'
+import { describeFolderSettings } from '../../../ports/FolderSettings.contract'
+import { LOCAL_SETTINGS_PATH, readLocalSettings } from '../../../projects/folderSettings'
+import type { LocalSettings, LocalSettingsPatch } from '../../../projects/folderSettings'
+import { machineFolderSettingsText, readMachineFolderSettings } from '../../../platform/node/machineFolderSettings'
+import { FakeDirectory } from '../fakeDirectory'
+import { FileSystemFolderSettings } from '../FileSystemFolderSettings'
+import type { DesktopSettings } from '../../desktop/channel'
 import { DesktopFolderSettings } from './DesktopFolderSettings'
 
 const ROOT = '/Users/someone/Architecture'

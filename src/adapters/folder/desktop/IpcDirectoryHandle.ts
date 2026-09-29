@@ -24,8 +24,8 @@
  */
 import type {
   DirectoryHandleLike, FileHandleLike, FileLike, WritableLike,
-} from '../fileSystem/FileSystemScopeStore'
-import type { DesktopFiles } from './channel'
+} from '../FileSystemScopeStore'
+import type { DesktopFiles } from '../../desktop/channel'
 
 function missing(what: string, name: string): Error {
   // The browser throws `NotFoundError`; the store reads the failure and not the

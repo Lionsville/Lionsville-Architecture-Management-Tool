@@ -22,7 +22,7 @@
  * be: a directory handle is structured-cloneable and not serialisable, so
  * `localStorage` cannot hold one.
  */
-import type { DirectoryHandleLike } from '../fileSystem/FileSystemScopeStore'
+import type { DirectoryHandleLike } from '../FileSystemScopeStore'
 
 /** The slice of the File System Access API this file uses, named rather than assumed. */
 type PermissionState = 'granted' | 'denied' | 'prompt'

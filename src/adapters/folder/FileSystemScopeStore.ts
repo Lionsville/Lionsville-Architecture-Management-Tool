@@ -60,7 +60,7 @@ import { markdownBody } from '../../projects/fileText'
 import { OBSERVATION_SUBFOLDERS, observationFromFile } from '../../projects/observationFile'
 import type { Observation } from '../../model/observation'
 import { isSupersededPath, openScopeFolder } from '../../projects/migrate4to5'
-import { folderRevision, scopeMoved } from '../../projects/revision'
+import { scopeMoved } from '../../projects/revision'
 import { scopeTree, sortScopes } from '../../projects/scope'
 import type { ScopeModel, ScopeSnapshot, ScopeSummary } from '../../projects/scope'
 import type { Transition } from '../../model/transition'
@@ -73,7 +73,8 @@ import type { ScopePath } from '../../projects/scopePath'
 import { ShellError, reasonOf } from '../../platform/errors'
 import type { ScopeStore } from '../../ports/ScopeStore'
 import type { Diagnostics } from '../../ports/Diagnostics'
-import type { DirectoryHandleLike, FileHandleLike } from '../../ports/DirectoryHandle'
+import type { DirectoryHandleLike, FileHandleLike } from './DirectoryHandle'
+import { folderRevision } from './revision'
 import { writeStaged } from './stagedWrites'
 import type { StagedWrite } from './stagedWrites'
 
@@ -88,7 +89,7 @@ import type { StagedWrite } from './stagedWrites'
  */
 export type {
   DirectoryHandleLike, FileHandleLike, FileLike, WritableLike,
-} from '../../ports/DirectoryHandle'
+} from './DirectoryHandle'
 
 /** Text unless the extension says otherwise: every picture but an SVG is bytes (`isBinaryPath`). */
 function isBinary(path: string): boolean {

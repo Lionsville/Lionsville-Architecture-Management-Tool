@@ -17,10 +17,11 @@
  * The revision is the store's own word, and opaque. The ones this tree keeps
  * are a fingerprint of what is stored, because content is the one thing every
  * store can compare without keeping anything beside it: a counter would have to
- * be written somewhere, and a time is the same for two writes in one tick.
+ * be written somewhere, and a time is the same for two writes in one tick. How
+ * the folder takes its fingerprint is the folder implementation's
+ * (`adapters/folder/revision.ts`).
  */
 import { ShellError } from '../platform/errors'
-import type { FolderFile } from './folderFormat'
 
 /** What a store refuses a save with when the scope moved since it was read. */
 export const SCOPE_MOVED = 'shell.scopeMoved' as const
@@ -63,14 +64,4 @@ export function fingerprint(parts: Iterable<string | Uint8Array>): string {
   one = Math.imul(one ^ (one >>> 16), 2246822507) ^ Math.imul(two ^ (two >>> 13), 3266489909)
   two = Math.imul(two ^ (two >>> 16), 2246822507) ^ Math.imul(one ^ (one >>> 13), 3266489909)
   return (4294967296 * (2097151 & two) + (one >>> 0)).toString(36)
-}
-
-/**
- * A scope's revision, from the files it is kept as: every path and what is in
- * it, in path order, so the order a folder happened to list them in does not
- * make two revisions of one state.
- */
-export function folderRevision(files: readonly FolderFile[]): string {
-  const sorted = [...files].sort((one, other) => (one.path < other.path ? -1 : one.path > other.path ? 1 : 0))
-  return fingerprint(sorted.flatMap((file) => [file.path, 'text' in file ? file.text : file.bytes]))
 }

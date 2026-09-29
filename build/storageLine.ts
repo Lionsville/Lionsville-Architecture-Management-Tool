@@ -73,14 +73,13 @@ export function mayKnowStorage(file: string): boolean {
 /**
  * The folder format, still in the domain: a scope as files, the files'
  * text, what a scope's header file is called, the history subjects by path,
- * the directory handles, the settings file, the working file's codec, the
+ * the settings file, the working file's codec, the
  * readers of the formats before this one and the pass that upgrades a
  * folder to this one. They are the folder implementation's, and move into it; each leaves
  * this list as it does.
  */
 export const FOLDER_FORMAT: readonly string[] = [
   'src/platform/scopeHeader.ts',
-  'src/ports/DirectoryHandle.ts',
   'src/projects/adrFile.ts',
   'src/projects/fileText.ts',
   'src/projects/folderFormat.ts',
@@ -305,7 +304,6 @@ export const IMPORT_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {
   'src/ports/ProjectHistory.ts': ['src/projects/historyPath.ts'],
   'src/ports/ScopeStore.ts': ['src/projects/workingFileManifest.ts'],
   'src/projects/index.ts': ['src/projects/adrFile.ts', 'src/projects/fileText.ts', 'src/projects/folderFormat.ts', 'src/projects/folderSettings.ts', 'src/projects/historyPath.ts', 'src/projects/migrate3to4.ts', 'src/projects/migrate4to5.ts', 'src/projects/migration.ts', 'src/projects/workingFile.ts'],
-  'src/projects/revision.ts': ['src/projects/folderFormat.ts'],
   'src/projects/scope.ts': ['src/projects/workingFileManifest.ts'],
 }
 
@@ -362,7 +360,6 @@ export const WORD_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {
   'src/ports/ScopeStore.ts': ['storage'],
   'src/projects/commitMessage.ts': ['commit message', 'git'],
   'src/projects/preferences.ts': ['directory', 'folder', 'folders'],
-  'src/projects/revision.ts': ['folder'],
 }
 
 /**
@@ -373,11 +370,11 @@ export const WORD_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {
  */
 export const CEILINGS = {
   /** Files of the folder format still in the domain. */
-  folderFormat: 14,
+  folderFormat: 13,
   /** Files importing across the line, and the imports between them. */
-  importingFiles: 22,
-  imports: 32,
+  importingFiles: 21,
+  imports: 31,
   /** Files naming storage, and the words and patterns between them. */
-  namingFiles: 52,
-  words: 83,
+  namingFiles: 51,
+  words: 82,
 } as const

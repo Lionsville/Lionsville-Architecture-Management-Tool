@@ -7,7 +7,7 @@
  * A double that drifted from the port would make every suite built on it
  * prove the wrong thing, so it passes the same contract the real handles do.
  */
-import { describeDirectoryHandle } from '../../ports/DirectoryHandle.contract'
+import { describeDirectoryHandle } from './DirectoryHandle.contract'
 import { FakeDirectory } from './fakeDirectory'
 
 describeDirectoryHandle('in memory', () => new FakeDirectory())

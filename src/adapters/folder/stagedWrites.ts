@@ -24,7 +24,7 @@
  * another went through is a landing written in part, and says so.
  */
 import { ShellError, reasonOf } from '../../platform/errors'
-import type { DirectoryHandleLike } from '../../ports/DirectoryHandle'
+import type { DirectoryHandleLike } from './DirectoryHandle'
 
 /** One file to write: the folder it goes in, its name there, and what it holds. */
 export type StagedWrite = { folder: DirectoryHandleLike; name: string; data: string | Uint8Array }
