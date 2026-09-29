@@ -32,6 +32,7 @@
  * can see and settle, and never none. Each scope's identity goes with it,
  * written into its header where it was not yet.
  */
+import { imageName, imageNameKey } from '../../model/imageName'
 import type { ImageEntry } from '../../model/imageName'
 import { stableJson } from '../../projects/fileText'
 import type { ScopeSnapshot } from '../../projects/scope'
@@ -44,7 +45,7 @@ import type {
   Applied, Created, Moved, NewScope, Refused, Removed, ScopeNode, ScopeRepository, ScopeTree, StepsFor,
 } from '../../ports/ScopeRepository'
 import { usablePath } from './FileSystemScopeStore'
-import { fileFor, foldersOf, LIBRARY_KEY, pictureFiles, picturePath, rowsFor } from './folderPictures'
+import { fileFor, foldersOf, LIBRARY_KEY, pictureFiles, picturePath, rowsFor, rowsOf } from './folderPictures'
 import type { KeptPicture, PictureStaging } from './folderPictures'
 import { composed, headerOf, ID_KEY, newIdentity } from './folderScopes'
 import type { FolderNode, FolderScopes, ReadScope } from './folderScopes'
@@ -61,6 +62,22 @@ type Planned = { read: ReadScope; content: ScopeContent; library: KeptPicture[];
 function contentOf(state: ScopeState): ScopeContent {
   const { id: _id, address: _address, revision: _revision, updatedAt: _updatedAt, unreadable: _unreadable, ...content } = state
   return content
+}
+
+/**
+ * What a run starts from: the scope, less a picture no row names that one of
+ * the run's steps adds as it is — the same name, the same bytes. A write that
+ * stopped after a picture's bytes and before the rows naming them leaves one
+ * (`write`), and the step sent again adds what is already there.
+ */
+function startOf(read: ReadScope, steps: readonly ScopeStep[]): ScopeContent {
+  const content = contentOf(read.state)
+  const keyOf = (entry: ImageEntry) => `${imageNameKey(entry.name)}\u0000${entry.contentAddress}`
+  const added = new Set(steps.flatMap(({ command }) => (command.type === 'image.add' ? [keyOf(command.image)] : [])))
+  if (added.size === 0) return content
+  const rows = new Set(rowsOf(read.snapshot?.carried?.[LIBRARY_KEY]).map((row) => imageName(row.file)))
+  const left = new Set(read.library.filter((kept) => !rows.has(imageName(kept.file)) && added.has(keyOf(kept.entry))).map((kept) => keyOf(kept.entry)))
+  return left.size === 0 ? content : { ...content, images: content.images.filter((image) => !left.has(keyOf(image))) }
 }
 
 /** The library after a step: each entry kept as the file it was, and a new one filed where a case-blind disk would put it. */
@@ -149,7 +166,7 @@ export class FolderScopeRepository implements ScopeRepository {
       if (!(runs instanceof Map)) return runs
       const planned: Planned[] = []
       for (const { read, steps } of runs.values()) {
-        const result = applySteps(contentOf(read.state), steps)
+        const result = applySteps(startOf(read, steps), steps)
         if (!result.ok) return { refused: result.refused, scope: read.node.id, stepId: result.stepId }
         const missing = this.bytesMissing(read, result.content.images, steps)
         if (missing) return { refused: 'shell.imageBytesGone', scope: read.node.id, ...(missing.stepId ? { stepId: missing.stepId } : {}) }
@@ -248,45 +265,68 @@ export class FolderScopeRepository implements ScopeRepository {
     return found
   }
 
-  /** Every planned scope written together, then its pictures; a refusal the folder store met, said as one. */
+  /**
+   * Every planned scope's new pictures, then the scopes written together, then
+   * the pictures no entry keeps any more removed; a refusal the folder store
+   * met, said as one. Bytes before the rows that name them: a write that
+   * stops in between leaves a picture no row names, which the library reads
+   * as a file of its own, and never a row whose file is not there, which it
+   * would drop without a word. A refused write takes back the pictures it
+   * wrote, and so wrote nothing.
+   */
   private async write(planned: readonly Planned[]): Promise<Refused | undefined> {
     if (planned.length === 0) return undefined
     const entries = planned.map(({ read, snapshot }) => ({
       scope: snapshot,
       ...(read.stored !== undefined ? { expects: read.stored } : {}),
     }))
+    const added: { address: ScopeAddress; file: string }[] = []
+    for (const { read, library } of planned) added.push(...await this.picturesIn(read, library))
     try {
       await this.folder.store.saveTogether(entries)
     } catch (cause) {
       const refused = refusalOf(cause, planned[0].read.node.id)
-      if (refused) return refused
-      throw cause
+      if (!refused) throw cause
+      for (const { address, file } of added) await removeAt(this.folder.root, picturePath(address, file)).catch(() => undefined)
+      return refused
     }
-    for (const { read, library } of planned) await this.pictures(read, library)
+    for (const { read, library } of planned) await this.picturesOut(read, library)
     return undefined
   }
 
   /**
-   * The pictures of a library just written: a new entry's file from the bytes
-   * put for it, or from another file with the same bytes; and a file no entry
-   * keeps any more removed. One that will not go is said, and the scope's
-   * files are already right.
+   * The files of a library about to be written that are not there yet: each
+   * from the bytes put for it, or from another file with the same bytes. The
+   * files written, each by its scope's address.
    */
-  private async pictures(read: ReadScope, library: readonly KeptPicture[]): Promise<void> {
+  private async picturesIn(read: ReadScope, library: readonly KeptPicture[]): Promise<{ address: ScopeAddress; file: string }[]> {
     const { address, id } = read.node
     const there = new Set(read.files.map((file) => file.file))
+    const written: { address: ScopeAddress; file: string }[] = []
+    for (const { entry, file } of library) {
+      if (there.has(file)) continue
+      const same = read.library.find((kept) => kept.entry.contentAddress === entry.contentAddress && there.has(kept.file))
+      const bytes = this.staging.get(id, entry.contentAddress)
+        ?? (same ? await bytesAt(this.folder.root, picturePath(address, same.file)) : undefined)
+      if (!bytes) continue
+      await writeAt(this.folder.root, picturePath(address, file), bytes)
+      written.push({ address, file })
+      await this.folder.written(address, file, entry)
+    }
+    return written
+  }
+
+  /**
+   * The files of a library just written that no entry keeps any more,
+   * removed. One that will not go is said, and the scope's files are already
+   * right.
+   */
+  private async picturesOut(read: ReadScope, library: readonly KeptPicture[]): Promise<void> {
     const wanted = new Set(library.map((kept) => kept.file))
     try {
-      for (const { entry, file } of library) {
-        if (there.has(file)) continue
-        const same = read.library.find((kept) => kept.entry.contentAddress === entry.contentAddress && there.has(kept.file))
-        const bytes = this.staging.get(id, entry.contentAddress)
-          ?? (same ? await bytesAt(this.folder.root, picturePath(address, same.file)) : undefined)
-        if (!bytes) continue
-        await writeAt(this.folder.root, picturePath(address, file), bytes)
-        await this.folder.written(address, file, entry)
+      for (const { file } of read.files) {
+        if (!wanted.has(file)) await removeAt(this.folder.root, picturePath(read.node.address, file))
       }
-      for (const file of there) if (!wanted.has(file)) await removeAt(this.folder.root, picturePath(address, file))
     } catch (cause) {
       this.folder.diagnostics?.report({ level: 'warn', where: 'folder', message: `a picture could not be kept: ${reasonOf(cause)}`, cause })
     }

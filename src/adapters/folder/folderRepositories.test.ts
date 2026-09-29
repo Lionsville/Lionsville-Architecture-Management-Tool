@@ -266,8 +266,18 @@ describe('the folder’s history of commits nobody marked', () => {
 })
 
 /** A folder a stop cuts short: while `stopAt` names a file, writing it fails, as a page going away would. */
-function stoppable(folder: DirectoryHandleLike): { handle: DirectoryHandleLike; stopAt(path: string | undefined): void } {
+/**
+ * A folder whose writes can be stopped at one file, as a page that goes away
+ * stops them; or, once, have something else done to the folder as one file is
+ * written, as another writer would.
+ */
+function stoppable(folder: DirectoryHandleLike): {
+  handle: DirectoryHandleLike
+  stopAt(path: string | undefined): void
+  meanwhile(path: string, then: () => Promise<void>): void
+} {
   let stopAt: string | undefined
+  let then: { path: string; run: () => Promise<void> } | undefined
   const wrap = (held: DirectoryHandleLike, inside: string): DirectoryHandleLike => {
     const at = (name: string) => (inside ? `${inside}/${name}` : name)
     return {
@@ -278,7 +288,15 @@ function stoppable(folder: DirectoryHandleLike): { handle: DirectoryHandleLike; 
         const file = await held.getFileHandle(name, options)
         return {
           kind: 'file', name: file.name, getFile: () => file.getFile(),
-          createWritable: () => (at(name) === stopAt ? Promise.reject(new Error('AbortError: the page went away')) : file.createWritable()),
+          createWritable: async () => {
+            if (at(name) === stopAt) throw new Error('AbortError: the page went away')
+            if (at(name) === then?.path) {
+              const run = then.run
+              then = undefined
+              await run()
+            }
+            return file.createWritable()
+          },
         }
       },
       removeEntry: (name, options) => held.removeEntry(name, options),
@@ -290,7 +308,11 @@ function stoppable(folder: DirectoryHandleLike): { handle: DirectoryHandleLike; 
       },
     }
   }
-  return { handle: wrap(folder, ''), stopAt: (path) => { stopAt = path } }
+  return {
+    handle: wrap(folder, ''),
+    stopAt: (path) => { stopAt = path },
+    meanwhile: (path, run) => { then = { path, run } },
+  }
 }
 
 describe('a run across several scopes that stopped part way', () => {
@@ -409,6 +431,43 @@ describe('what a scope’s pictures folder says, over what its rows say', () => 
     const { contentAddress } = ok(await repositories.images.put(acme, 'map.png', again))
     await repositories.steps(acme, { type: 'image.add', image: { name: 'map.png', mediaType: 'image/png', size: again.length, width: 10, height: 10, contentAddress } })
     expect((await repositories.images.bytes(acme, 'map.png'))?.bytes).toEqual(again)
+  })
+
+  it('writes a picture’s bytes before the rows that name it, so a write that stops in between loses no picture', async () => {
+    const root = new FakeDirectory()
+    const { handle, stopAt } = stoppable(root)
+    const repositories = over({ repositories: folderRepositories({ root: handle, git: memoryGit(root) }) })
+    const acme = await repositories.scope('acme', 'Acme Logistics')
+    const bytes = picture(8, 8)
+    const { contentAddress } = ok(await repositories.images.put(acme, 'map.png', bytes))
+    const entry = { name: 'map.png', mediaType: 'image/png', size: bytes.length, width: 8, height: 8, contentAddress }
+    const adding = step({ type: 'image.add', image: entry })
+    stopAt('acme/scope.json')
+    await expect(repositories.apply([{ scope: acme, steps: [adding] }])).rejects.toThrow()
+    stopAt(undefined)
+    expect(root.paths()).toContain('acme/images/map.png')
+    expect((await repositories.images.bytes(acme, 'map.png'))?.bytes).toEqual(bytes)
+    ok(await repositories.apply([{ scope: acme, steps: [adding] }]))
+    expect((await repositories.state(acme)).images).toEqual([entry])
+    expect((await repositories.images.bytes(acme, 'map.png'))?.bytes).toEqual(bytes)
+  })
+
+  it('takes back the pictures a refused write wrote, so it wrote nothing', async () => {
+    const root = new FakeDirectory()
+    const { handle, stopAt, meanwhile } = stoppable(root)
+    const repositories = over({ repositories: folderRepositories({ root: handle, git: memoryGit(root) }) })
+    const acme = await repositories.scope('acme', 'Acme Logistics')
+    await repositories.steps(acme, addCrews)
+    const bytes = picture(8, 8)
+    const { contentAddress } = ok(await repositories.images.put(acme, 'map.png', bytes))
+    const entry = { name: 'map.png', mediaType: 'image/png', size: bytes.length, width: 8, height: 8, contentAddress }
+    // Another writer changes the scope between the picture and the scope's own files.
+    meanwhile('acme/images/map.png', () => writeAt(root, 'acme/docs/crews.md', 'Changed by hand.\n'))
+    const answer = await repositories.apply([{ scope: acme, steps: [step({ type: 'image.add', image: entry })] }])
+    stopAt(undefined)
+    expect(refusal(answer)).toBe('shell.scopeMoved')
+    expect(root.paths().filter((path) => path.startsWith('acme/images/'))).toEqual([])
+    expect((await repositories.state(acme)).images).toEqual([])
   })
 
   it('refuses a step naming a picture before its bytes were put, and writes nothing of it', async () => {
