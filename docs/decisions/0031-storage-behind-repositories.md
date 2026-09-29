@@ -366,7 +366,9 @@ repositories, in `src/adapters/folder/`:
   desktop, in its own data folder beside what it does about each folder
   (`folders/<hash of the path>.json`, one file per folder, which the main
   process reads and writes only for a folder the user granted, as it does
-  the folder's files); in a browser, in the database
+  the folder's files, and writes whole or not at all — to a file beside it,
+  flushed and renamed over it, as every file of the app's own is); in a
+  browser, in the database
   its repositories keep their own work in, under a key of the folder's own —
   a handle has no identity storage can be keyed by, so each folder has a
   record holding its handle, found by asking each kept handle whether it is
@@ -449,7 +451,12 @@ repositories, in `src/adapters/folder/`:
   refused (`shell.imageBytesGone`, with the step that named it), and the
   image suite holds each implementation to it. So no row ever waits for its
   bytes, and a row whose file has gone leaves the library, and its name is
-  free again. A picture is looked at, not read: its size, when it was
+  free again. **Bytes before rows**: a step's new pictures are written before
+  the scope's files, and the pictures no entry keeps are removed after them,
+  so a write that stops in between leaves a picture no row names — read as a
+  file of its own, and adopted by the step sent again — and never a row whose
+  file is not there, which would leave the library without a word. A refused
+  write takes back the pictures it wrote. A picture is looked at, not read: its size, when it was
   written and, on the desktop, its number on its disk (a stamp, which main
   takes where the file is). What this machine found each picture to be is
   kept on the machine by that stamp (`StampCache`: the desktop's data folder,
