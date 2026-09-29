@@ -26,6 +26,7 @@ import { extname, isAbsolute, join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { basename } from 'node:path'
 import { readFile } from 'node:fs/promises'
+import { openedDocuments } from './openedDocuments'
 import { commandsHeard, commandsListened, holdUntilHeard, installAppMenu, reportScopeOpen, reportTheme, sendCommand } from './appMenu'
 import { productName } from '../../package.json'
 import { isThemeMode } from '../../src/platform/theme'
@@ -291,17 +292,6 @@ if (UNATTENDED) {
   app.setAppLogsPath(join(own, 'logs'))
 }
 
-/**
- * Documents the OS handed us, until something in the window is listening.
- *
- * Double-clicking a `.lvarch` in Finder starts the app and fires `open-file`
- * before there is a window, never mind a React tree with a subscription in it.
- * Sending the command then is sending it into the dark, so it waits here for
- * the renderer to say it is listening (`app:listening`, from the preload) —
- * the same answer the menu's commands wait on (`appMenu.ts`), which is also
- * what says the window stopped listening.
- */
-const waiting: string[] = []
 
 /**
  * Does the window have work in it that closing would lose?
@@ -328,8 +318,7 @@ function documentIn(argv: readonly string[]): string | undefined {
  * to hand over, and a path names a person's disk, their customer and often
  * their project.
  */
-function openDocument(path: string): void {
-  if (!commandsListened()) { waiting.push(path); return }
+function sendDocument(path: string): void {
   void readFile(path).then(
     (bytes) => {
       app.addRecentDocument(path)
@@ -337,6 +326,19 @@ function openDocument(path: string): void {
     },
     (cause: unknown) => log('files', `a document from the OS could not be read: ${String(cause)}`),
   )
+}
+
+/** Held until a window listens, and given one where the app has none (`openedDocuments.ts`). */
+const documents = openedDocuments({
+  listening: commandsListened,
+  ready: () => app.isReady(),
+  windowOpen: () => BrowserWindow.getAllWindows().length > 0,
+  makeWindow: () => windowAgain(),
+  send: sendDocument,
+})
+
+function openDocument(path: string): void {
+  documents.arrived(path)
 }
 
 // macOS: fired before `ready` on a cold start, so it is registered out here
@@ -434,7 +436,7 @@ void app.whenReady().then(() => {
   // The held commands first, then the documents: see `appMenu.ts`.
   ipcMain.handle('app:listening', () => {
     commandsHeard()
-    for (const path of waiting.splice(0)) openDocument(path)
+    documents.heard()
   })
 
   // Windows and Linux pass the document as an argument instead of an event.
@@ -569,10 +571,13 @@ function fatal(during: string, error: unknown): void {
   )
 }
 
-app.on('activate', () => {
+/** A window again, where the app runs with none: the Dock's click, or a document opened from Finder. */
+function windowAgain(): void {
   if (BrowserWindow.getAllWindows().length !== 0) return
   createWindow().loadURL(RENDERER_URL).catch((error: unknown) => fatal('reopening the window', error))
-})
+}
+
+app.on('activate', windowAgain)
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
