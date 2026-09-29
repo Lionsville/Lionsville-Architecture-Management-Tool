@@ -17,7 +17,7 @@ import type { AddressInfo, Server as TcpServer } from 'node:net'
 import { mkdir, mkdtemp, readFile, realpath, rm, stat, writeFile } from 'node:fs/promises'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
-import { tmpdir } from 'node:os'
+import { hostname, tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { git, gitAvailable, history, initRepository, label, pull, push, snapshot } from './git'
 import { commitLog, commitPaths, readAt } from './gitEntries'
@@ -825,18 +825,78 @@ describe.skipIf(!available)('the remote a push goes to, and what goes with it', 
 
   describe('large files kept with git-lfs', () => {
     /** A stand-in git-lfs first on the path: a filter that passes files through, and a push that leaves a mark. */
-    async function standInLfs(): Promise<void> {
+    /** A stand-in git-lfs first on the path: a filter that passes files through, an endpoint it names, and a push that leaves a mark. */
+    async function standInLfs(endpoint = 'https://example.com/landscape.git/info/lfs'): Promise<void> {
       const bin = join(place, 'bin')
-      await mkdir(bin)
+      await mkdir(bin, { recursive: true })
       await writeFile(join(bin, 'git-lfs'), [
         '#!/bin/sh',
         'case "$1" in',
         '  clean|smudge) cat ;;',
+        `  env) echo "Endpoint=${endpoint} (auth=none)" ;;`,
         `  push) echo "$@" > "${join(place, 'lfs-push.ran')}" ;;`,
         'esac',
       ].join('\n'), { mode: 0o755 })
       process.env.PATH = `${bin}:${process.env.PATH ?? ''}`
     }
+
+    /** The folder as a clone with a large file kept with git-lfs, where the person has git-lfs set up. */
+    async function withLargeFile(attributes = true): Promise<string> {
+      await personSets('filter.lfs.clean', 'git-lfs clean -- %f')
+      await personSets('filter.lfs.smudge', 'git-lfs smudge -- %f')
+      const bare = await remoteWithCommit('remote')
+      await cloneOf(bare)
+      if (attributes) await put('.gitattributes', '*.png filter=lfs diff=lfs merge=lfs -text\n')
+      await put('picture.png', 'large bytes')
+      await snapshot(root, 'a large file')
+      return bare
+    }
+
+    it('are refused where git-lfs says it would push them to a repository inside the folder', async () => {
+      await standInLfs(`file://${join(root, 'inner.git')}`)
+      await withLargeFile()
+      expect(await push(root)).toMatchObject({ refused: expect.stringMatching(/the address git-lfs pushes large files to/) })
+      expect(await ran('lfs-push')).toBe(false)
+    })
+
+    it('are refused where .lfsconfig says where they go or how to be let in', async () => {
+      await standInLfs()
+      await withLargeFile()
+      await put('.lfsconfig', '[lfs]\n\turl = https://evil.example/landscape.git/info/lfs\n[lfs "https://example.com/"]\n\taccess = basic\n')
+      const outcome = await push(root)
+      expect(outcome).toMatchObject({ refused: expect.stringMatching(/\.lfsconfig/) })
+      expect(JSON.stringify(outcome)).toMatch(/lfs\.url/)
+      expect(await ran('lfs-push')).toBe(false)
+    })
+
+    it('are refused where a .lfsconfig the last commit keeps says so, though the work tree has none', async () => {
+      await standInLfs()
+      await withLargeFile()
+      await put('.lfsconfig', '[remote "origin"]\n\tlfsurl = https://evil.example/lfs\n')
+      await raw(['add', '.lfsconfig'])
+      await raw(['commit', '-q', '-m', 'where large files go'])
+      await rm(join(root, '.lfsconfig'))
+      expect(await push(root)).toMatchObject({ refused: expect.stringMatching(/remote\.origin\.lfsurl/) })
+      expect(await ran('lfs-push')).toBe(false)
+    })
+
+    it('are refused where the folder’s own configuration sends them to a repository inside it', async () => {
+      await standInLfs()
+      await withLargeFile()
+      await folderSets('lfs.url', `file://${join(root, 'inner.git')}`)
+      expect(await push(root)).toMatchObject({ refused: expect.stringMatching(/lfs\.url/) })
+      expect(await ran('lfs-push')).toBe(false)
+    })
+
+    it('are pushed where only the person’s own attributes hand them to git-lfs', async () => {
+      await standInLfs()
+      const attributes = join(place, 'own-attributes')
+      await writeFile(attributes, '*.png filter=lfs diff=lfs merge=lfs -text\n')
+      await personSets('core.attributesFile', attributes)
+      await withLargeFile(false)
+      expect(await push(root)).toBe('done')
+      expect(await ran('lfs-push')).toBe(true)
+    })
 
     it('go up with the person’s own git-lfs before the push', async () => {
       await standInLfs()
@@ -863,6 +923,57 @@ describe.skipIf(!available)('the remote a push goes to, and what goes with it', 
       const remoteLog = await run('git', ['log', '--oneline', 'main'], { cwd: bare })
       expect(remoteLog.stdout).not.toContain('a large file')
     })
+  })
+})
+
+describe.skipIf(!available)('what else names a remote, and what counts as this machine', () => {
+  it('holds how git-lfs asks to be let in to the person’s own value', async () => {
+    await initRepository(root)
+    await folderSets('lfs.https://example.com/.access', 'basic')
+    expect((await git(root, ['config', '--get', 'lfs.https://example.com/.access'])).trim()).toBe('')
+  })
+
+  it('refuses a push remote and a default remote that are no configured remote', async () => {
+    for (const [key, value] of [['branch.main.pushRemote', './inner.git'], ['remote.pushDefault', '.']]) {
+      await rm(root, { recursive: true, force: true })
+      await mkdir(root)
+      await raw(['init', '-q', '-b', 'main'])
+      await folderSets(key, value)
+      await expect(git(root, ['remote'])).rejects.toThrow(new RegExp(key.replace('.', '\\.'), 'i'))
+    }
+  })
+
+  it('refuses a remote named the old way, in .git/branches', async () => {
+    await raw(['init', '-q', '-b', 'main'])
+    await mkdir(join(root, '.git', 'branches'), { recursive: true })
+    await writeFile(join(root, '.git', 'branches', 'origin'), './inner.git\n')
+    await expect(git(root, ['remote'])).rejects.toThrow(/\.git\/branches/)
+  })
+
+  it('refuses an address rewrite for pushing that the folder sets', async () => {
+    await raw(['init', '-q', '-b', 'main'])
+    await folderSets(`url.${join(root, 'inner.git')}.pushInsteadOf`, 'https://example.com/')
+    await expect(git(root, ['remote'])).rejects.toThrow(/pushinsteadof/i)
+  })
+
+  it('counts a repository reached over ssh on this machine as the path it is', async () => {
+    const inner = join(root, 'inner.git')
+    for (const address of [
+      `ssh://localhost${inner}`, `ssh://acme@127.0.0.1:22${inner}`, `ssh://[::1]${inner}`, `localhost:${inner}`,
+      `${hostname()}:${inner}`, `git+ssh://${hostname().split('.')[0]}${inner}`,
+    ]) {
+      await rm(root, { recursive: true, force: true })
+      await mkdir(root)
+      await raw(['init', '-q', '-b', 'main'])
+      await raw(['remote', 'add', 'origin', address])
+      await expect(git(root, ['remote']), address).rejects.toThrow(/inside the folder/)
+    }
+  })
+
+  it('does not count a repository on another machine as one inside the folder', async () => {
+    await raw(['init', '-q', '-b', 'main'])
+    await raw(['remote', 'add', 'origin', `example.com:${join(root, 'inner.git')}`])
+    await expect(git(root, ['remote'])).resolves.toContain('origin')
   })
 })
 

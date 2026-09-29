@@ -45,7 +45,7 @@ import { execFile } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import type { BigIntStats } from 'node:fs'
 import { mkdir, mkdtemp, readdir, readFile, realpath, stat } from 'node:fs/promises'
-import { homedir, tmpdir } from 'node:os'
+import { homedir, hostname, tmpdir } from 'node:os'
 import { isAbsolute, join, relative, resolve } from 'node:path'
 import { promisify } from 'node:util'
 
@@ -229,6 +229,7 @@ const NOT_ALLOWED: readonly RegExp[] = [
   /^fetch\.bundleuri$/i,
   /^blame\.ignorerevsfile$/i,
   /^lfs\.(customtransfer\..+|extension\..+|standalonetransferagent)$/i,
+  /^lfs\..+\.access$/i,
 ]
 
 /** The repository extensions git knows and a folder may carry. */
@@ -272,6 +273,8 @@ const NEUTRAL: readonly [RegExp, string | ((context: Context, key: string) => st
   [/^branch\.[^=]+\.mergeoptions$/i, ''],
   [/^submodule\.[^=]+\.update$/i, 'none'],
   [/^core\.attributesfile$/i, ''],
+  // How git-lfs asks to be let in is the person's to say.
+  [/^lfs\..+\.access$/i, ''],
   [/^core\.excludesfile$/i, ''],
 ]
 
@@ -509,7 +512,7 @@ export function commandOf(args: readonly string[]): string {
 }
 
 /** The commands that talk to a remote. */
-const REMOTE_COMMANDS = new Set(['fetch', 'pull', 'push', 'ls-remote', 'clone', 'remote'])
+const REMOTE_COMMANDS = new Set(['fetch', 'pull', 'push', 'ls-remote', 'clone', 'remote', 'lfs'])
 
 /**
  * The path a remote's address names on this machine, or nothing for one that
@@ -517,11 +520,33 @@ const REMOTE_COMMANDS = new Set(['fetch', 'pull', 'push', 'ls-remote', 'clone', 
  * `host:path`, as git reads them.
  */
 function localPathOf(root: string, address: string): string | undefined {
-  const url = /^([a-z][a-z0-9+.-]*):\/\//i.exec(address)
-  if (url) return url[1].toLowerCase() === 'file' ? decodeURIComponent(address.slice(url[0].length).replace(/^localhost\//, '/')) : undefined
+  const url = /^([a-z][a-z0-9+.-]*):\/\/([^/]*)(\/.*)?$/i.exec(address)
+  if (url) {
+    const scheme = url[1].toLowerCase()
+    if (scheme === 'file') return decodeURIComponent(address.slice('file://'.length).replace(/^localhost\//, '/'))
+    if (!SSH_SCHEMES.has(scheme) || !isThisMachine(url[2].replace(/^[^@]*@/, '').replace(/:\d+$/, ''))) return undefined
+    return fromHome(decodeURIComponent(url[3] ?? '/'))
+  }
   if (/^[a-z]:[\\/]/i.test(address)) return address
-  if (/^[^/\\]+:/.test(address)) return undefined
+  // `host:path`, as ssh reads it: a path on this machine where the host is this machine.
+  const scp = /^(?:[^@/]*@)?(\[[^\]]+\]|[^:/\\]+):(.*)$/.exec(address)
+  if (scp) return isThisMachine(scp[1]) ? fromHome(scp[2].startsWith('/') ? scp[2] : `/~/${scp[2]}`) : undefined
   return resolve(root, address)
+}
+
+/** The schemes git reaches a repository over ssh by. */
+const SSH_SCHEMES = new Set(['ssh', 'git+ssh', 'ssh+git'])
+
+/** Is this host this machine: its loopback addresses, `localhost`, or its own name? */
+function isThisMachine(host: string): boolean {
+  const name = host.toLowerCase().replace(/^\[(.*)\]$/, '$1')
+  const own = hostname().toLowerCase()
+  return ['localhost', '::1', own, own.split('.')[0]].includes(name) || /^127\./.test(name)
+}
+
+/** A path as ssh reads it on this machine: `/~/…` from the home folder. */
+function fromHome(path: string): string {
+  return path.startsWith('/~/') ? join(homedir(), path.slice(3)) : path
 }
 
 /** The real path of something that may not be there, as far as it is. */
@@ -737,6 +762,6 @@ async function sameFolder(one: string, other: string): Promise<boolean> {
  */
 async function refuseRemotesInside(root: string, folder: Entry[]): Promise<void> {
   for (const entry of folder) {
-    if (/^remote\..+\.(url|pushurl)$/i.test(entry.key)) await refuseAddressInside(root, entry.value, entry.key)
+    if (/^(remote\..+\.(url|pushurl|lfsurl|lfspushurl)|lfs\.(.+\.)?(url|pushurl))$/i.test(entry.key)) await refuseAddressInside(root, entry.value, entry.key)
   }
 }

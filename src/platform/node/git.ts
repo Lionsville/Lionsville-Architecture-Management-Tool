@@ -66,7 +66,8 @@ import { execFile } from 'node:child_process'
 import { access, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
-import { GitRefused, gitEnvironment, guardedFlags, personDefinesFilter, refuseAddressInside } from './gitGuard'
+import { GitRefused, gitEnvironment, guardedFlags, refuseAddressInside } from './gitGuard'
+import { largeFilesFirst } from './gitLfs'
 import { LOCAL_SETTINGS_PATH } from '../../adapters/folder/format/folderSettings'
 import { isSpacedLabel, labelSlug } from '../../projects/label'
 import type { LabelOutcome } from '../../projects/label'
@@ -479,30 +480,6 @@ async function refuseTargetInside(root: string, target: SyncRemote): Promise<voi
   }
 }
 
-/**
- * Where the folder keeps files with git-lfs, they go up before the commits
- * that point at them: git-lfs uploads them from the hook git runs before a
- * push, and no hook of a folder's runs here. So the person's own git-lfs —
- * the filter their configuration defines, from `git lfs install` — is asked
- * to push them; where they have none, the push is refused rather than
- * sending pointers to files the remote will never have.
- */
-async function largeFilesFirst(root: string, target: SyncRemote): Promise<void> {
-  if (!await keepsLargeFiles(root)) return
-  if (!await personDefinesFilter(root, 'lfs')) {
-    throw new GitRefused('its files are kept with git-lfs, which your own configuration does not set up, so large files would not be uploaded; run git lfs install, then push again')
-  }
-  await git(root, ['lfs', 'push', target.name, 'HEAD'], SYNC_TIMEOUT_MS)
-}
-
-/** Does a `.gitattributes` the folder keeps — or its repository's own attributes — hand any file to git-lfs? */
-async function keepsLargeFiles(root: string): Promise<boolean> {
-  const listed = (await git(root, ['ls-files', '-z', '--', ':(glob)**/.gitattributes'])).split('\0').filter(Boolean)
-  const texts = await Promise.all([...listed.map((path) => join(root, path)), join(root, '.git', 'info', 'attributes')]
-    .map((path) => readFile(path, 'utf8').catch(() => '')))
-  return texts.some((text) => /(^|\s)filter=lfs(\s|$)/m.test(text))
-}
-
 const remoteRef = (target: SyncRemote): string => `refs/remotes/${target.name}/${target.branch}`
 
 /**
@@ -538,7 +515,7 @@ async function pushHere(root: string): Promise<PushOutcome> {
   if (!await hasCommits(root)) return 'done'
   try {
     await refuseTargetInside(root, target)
-    await largeFilesFirst(root, target)
+    await largeFilesFirst(root, target, git, SYNC_TIMEOUT_MS)
     // `--follow-tags`: the annotated tags reachable from what is pushed — every
     // label this app makes — travel with the branch, so a mark made here is a
     // mark a colleague sees (ADR-0008). Lightweight tags stay behind, which is
