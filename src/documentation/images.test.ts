@@ -9,7 +9,7 @@
  * that slips through here is a network call in a tool that promises none.
  */
 import { describe, expect, it } from 'vitest'
-import { documentsUsing, imageReference, imageSrcFile, imagesUsedIn } from './images'
+import { documentsUsing, imageNameOfSource, imageNamesIn, imageReference, imageSrcFile, imagesUsedIn } from './images'
 
 describe('imageSrcFile', () => {
   it('reads the file off a reference, at any depth', () => {
@@ -96,5 +96,25 @@ describe('documentsUsing', () => {
 
   it('answers nothing for a picture nobody shows', () => {
     expect(documentsUsing('unused-k3.png', documents)).toEqual([])
+  })
+})
+
+describe('a picture named by its name in the library', () => {
+  it('reads the name an image: source gives, as a renderer hands it over', () => {
+    expect(imageNameOfSource('image:diagrams/context.png')).toBe('diagrams/context.png')
+    expect(imageNameOfSource('image:Kaart-%C3%BC.png')).toBe('Kaart-ü.png')
+    expect(imageNameOfSource('<image:depot.png>')).toBe('depot.png')
+  })
+
+  it('is no name for any other source, or a name no picture may have', () => {
+    expect(imageNameOfSource('../images/depot.png')).toBeUndefined()
+    expect(imageNameOfSource('https://example.org/depot.png')).toBeUndefined()
+    expect(imageNameOfSource('image:../depot.png')).toBeUndefined()
+    expect(imageNameOfSource('image:depot.exe')).toBeUndefined()
+    expect(imageNameOfSource(undefined)).toBeUndefined()
+  })
+
+  it('lists every picture a document names, once each, in order', () => {
+    expect(imageNamesIn('![a](image:b.png) ![c](image:a.png) ![again](image:b.png) ![old](../images/x.png)')).toEqual(['b.png', 'a.png'])
   })
 })

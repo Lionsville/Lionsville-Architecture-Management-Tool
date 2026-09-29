@@ -25,6 +25,8 @@
  * `../..` to reach. Resolving properly would need every caller to know its own
  * depth, to arrive at the same answer.
  */
+import { imageNameOfReference } from '../model/imageName'
+import type { ImageName } from '../model/imageName'
 
 /** The folder, relative to the project, that a document's pictures live in. */
 export const IMAGES_FOLDER = 'images'
@@ -83,6 +85,34 @@ export function imagesUsedIn(markdown: string): string[] {
   for (const match of markdown.matchAll(/!\[[^\]]*\]\(([^)\s]+)/g)) {
     const file = imageSrcFile(match[1])
     if (file && !found.includes(file)) found.push(file)
+  }
+  return found
+}
+
+/**
+ * The picture an image source names by its name in the library —
+ * `image:diagrams/context.png` — or `undefined` for any other source. Read
+ * after undoing the percent-encoding a markdown renderer applies to a source,
+ * so a name with an accent in it is the name it was written as.
+ */
+export function imageNameOfSource(src: string | undefined): ImageName | undefined {
+  if (!src) return undefined
+  const bare = src.startsWith('<') && src.endsWith('>') ? src.slice(1, -1) : src
+  let target = bare
+  try {
+    target = decodeURIComponent(bare)
+  } catch {
+    // Not percent-encoding anybody wrote on purpose: read as it stands.
+  }
+  return imageNameOfReference(target.normalize('NFC'))
+}
+
+/** Every picture a document names by `image:<name>`, once each, in the order it names them. */
+export function imageNamesIn(markdown: string): ImageName[] {
+  const found: ImageName[] = []
+  for (const match of markdown.matchAll(/!\[[^\]]*\]\((<[^>\n]*>|[^)\s]+)/g)) {
+    const name = imageNameOfSource(match[1])
+    if (name !== undefined && !found.includes(name)) found.push(name)
   }
   return found
 }
