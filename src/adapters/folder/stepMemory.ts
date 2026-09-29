@@ -11,10 +11,11 @@
  * nothing; and the folder's `.git` is git's, which nothing but git writes. So
  * the ids are kept wherever whoever composes the folder says (`StepStore`):
  * on the desktop, in its own data folder beside what it does about each
- * folder, keyed by the folder (`desktop/desktopStepStore.ts`), which keeps them
- * through a restart. Where nobody says — a browser's folder, whose handle has
- * no identity storage can be keyed by — they are kept for as long as the
- * repositories are open, and ADR-0031's record of the build says so.
+ * folder, keyed by the folder (`desktop/desktopStepStore.ts`); in a browser, in
+ * its IndexedDB beside the folder's handle, found again by asking each handle
+ * kept there whether it is the same folder (`browser/browserStepStore.ts`).
+ * Both keep them through a restart. Where nobody says — the suites — they are
+ * kept for as long as the repositories are open.
  *
  * Remembered for two days and then forgotten: the promise is one, and a step
  * sent again after that is a new step.
