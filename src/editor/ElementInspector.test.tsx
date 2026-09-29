@@ -343,6 +343,71 @@ describe('ElementInspector — active tab resets on selection change', () => {
 });
 
 /**
+ * Selecting an element is looking at it, and writes nothing. The category
+ * field is a free-text autocomplete, and MUI answers a new value handed to it
+ * — a selection moving from one application to another — with an input change
+ * of its own; taken as a person's typing, that was an `element.update` setting
+ * the category on every selection, and a step published for each.
+ */
+describe('ElementInspector — a selection writes nothing', () => {
+  it('selecting an application, and moving to another with a category, updates nothing', () => {
+    const { actions, updateElement } = makeActions();
+    const first = element({ id: 'e1' });
+    const second = element({ id: 'e2', name: 'Billing', category: 'Finance' });
+    const both: DesignModel = { name: 'SD', diagrams: [diagram()], elements: [first, second], relations: [] };
+    const inspect = (el: DesignElement) => (
+      <ThemeProvider theme={testTheme}>
+        <ElementInspector
+          element={el}
+          model={both}
+          diagram={diagram()}
+          readOnly={false}
+          actions={actions}
+          onRequestDelete={vi.fn()}
+        />
+      </ThemeProvider>
+    );
+    const { rerender } = render(inspect(first));
+    rerender(inspect(second));
+    rerender(inspect(first));
+    expect(updateElement).not.toHaveBeenCalled();
+  });
+
+  it('moving between two elements filed under different groups files neither', () => {
+    const { actions } = makeActions();
+    const fileUnder = vi.fn();
+    const withFiling = new Proxy(actions as unknown as Record<string | symbol, unknown>, {
+      get: (target, prop) => (prop === 'fileUnderGroupNamed' ? fileUnder : target[prop]),
+    }) as unknown as EditorActions;
+    const first = element({ id: 'e1' });
+    const second = element({ id: 'e2', name: 'Billing' });
+    const dia = diagram({
+      placements: [
+        { id: 'e1', zone: 'landscape', group: 'g1', x: 0, y: 0 },
+        { id: 'e2', zone: 'landscape', group: 'g2', x: 0, y: 0 },
+      ],
+      groups: [{ id: 'g1', name: 'Sales' }, { id: 'g2', name: 'Finance' }],
+    });
+    const both: DesignModel = { name: 'SD', diagrams: [dia], elements: [first, second], relations: [] };
+    const inspect = (el: DesignElement) => (
+      <ThemeProvider theme={testTheme}>
+        <ElementInspector element={el} model={both} diagram={dia} readOnly={false} actions={withFiling} onRequestDelete={vi.fn()} />
+      </ThemeProvider>
+    );
+    const { rerender } = render(inspect(first));
+    rerender(inspect(second));
+    rerender(inspect(first));
+    expect(fileUnder).not.toHaveBeenCalled();
+  });
+
+  it('a category typed is still written', () => {
+    const { updateElement } = renderInspector(element());
+    fireEvent.change(screen.getByLabelText('Category'), { target: { value: 'Finance' } });
+    expect(updateElement).toHaveBeenCalledWith('e1', { category: 'Finance' });
+  });
+});
+
+/**
  * The tabs used to carry a dot meaning "has values", explained nowhere. The
  * Data tab carries the `n/m` its section already shows — tried against the
  * dot, the counter is the one a person can read without being told — and

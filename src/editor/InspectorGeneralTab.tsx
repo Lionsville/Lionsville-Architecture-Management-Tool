@@ -75,7 +75,13 @@ function CategoryField({ field }: { field: InspectorField }) {
       options={knownCategories}
       value={field.element.category ?? ''}
       disabled={field.readOnly || field.owned('category')}
-      onInputChange={(_e, value) => field.update({ category: value || undefined })}
+      // A new element handed in is the field catching up with the selection
+      // (`reset`), not a person typing: written, it was an `element.update` on
+      // every selection. And a value the element already holds is no change.
+      onInputChange={(_e, value, reason) => {
+        const category = value || undefined;
+        if (reason !== 'reset' && category !== field.element.category) field.update({ category });
+      }}
       renderInput={(params) => <TextField {...params} label={t('field.category')} />}
     />
   );
@@ -126,6 +132,7 @@ function PlacementField({ field, diagram }: { field: InspectorField; diagram: De
   const placement = placedNodes(diagram).find((p) => p.id === element.id);
   if (!placement || diagram.kind !== 'layer7') return null;
   const groups = diagram.groups ?? [];
+  const current = groups.find((group) => group.id === placement.group)?.name ?? '';
   return (
     <Box>
       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
@@ -138,11 +145,12 @@ function PlacementField({ field, diagram }: { field: InspectorField; diagram: De
         <Autocomplete
           freeSolo
           options={groups.map((group) => group.name)}
-          value={groups.find((group) => group.id === placement.group)?.name ?? ''}
+          value={current}
           disabled={field.readOnly}
-          onInputChange={(_e, value) =>
-            field.actions.fileUnderGroupNamed([element.id], value || undefined)
-          }
+          // As the category's: a selection moving is not a person filing it.
+          onInputChange={(_e, value, reason) => {
+            if (reason !== 'reset' && value !== current) field.actions.fileUnderGroupNamed([element.id], value || undefined)
+          }}
           renderInput={(params) => (
             <TextField
               {...params}
