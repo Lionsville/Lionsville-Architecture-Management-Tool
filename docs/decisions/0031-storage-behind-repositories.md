@@ -347,11 +347,24 @@ repositories, in `src/adapters/folder/`:
   in place and the rest staged beside them; over a handle that cannot rename,
   some scopes written and some not. The pictures are written after the
   scopes' files and a step's id is remembered after both, so a stop between
-  leaves an entry whose bytes answer nothing until they are put again, or a
-  step that, sent again, is applied again — a create refused as taken.
-- **Step ids** are remembered for two days in
-  `.git/lionsville-architect/applied-steps.json`: inside the history's own
-  folder, which no file manager, `git status` or copy of the work shows.
+  leaves an entry whose bytes answer nothing until they are put again, and
+  steps that landed and are not remembered as landed. Sent again, such a
+  step is applied again. For one scope, that is a create refused as taken,
+  which the sender reads as the state it asked for. For a run across several
+  scopes that stopped part way, the whole run sent again is refused at the
+  first scope whose steps had landed, and the scopes that were not written
+  stay as they were: the sender reads each scope, and sends again what did
+  not land.
+- **Step ids** are remembered for two days, and never in the folder: a file
+  of ours there is one a person sees and a copy carries, and `.git` is git's.
+  Whoever composes the folder says where they are kept (`StepStore`): on the
+  desktop, in its own data folder beside what it does about each folder
+  (`applied-steps.json`, keyed by the folder), which keeps them through a
+  restart.
+- **The folder's `.git` is no path the file channel takes**, in any spelling
+  and through no link, and no git the app runs starts a hook or a file-system
+  monitor: a folder's history is git's, and nothing a page writes there is a
+  program the app runs.
 - **A move** copies every file of the scope's folder and of the scopes under
   it — the format's, the pictures, the settings, whatever a person keeps
   there — to the new address, writes each scope's identity into its header
@@ -409,9 +422,9 @@ repositories, in `src/adapters/folder/`:
 - **The folder format has not moved yet.** `projects/folderFormat.ts`, the
   readers it is made of, the history subjects by path, the working file and
   its manifest, the migrations and the settings file stay in `projects/` (and
-  `platform/scopeHeader.ts` in `platform/`) until the app stops importing them:
-  step 4 of the plan for the history and the examples, step 5 for the working
-  file. Moved now, `app/` and `projects/` would import `adapters/`, which the
+  `platform/scopeHeader.ts` in `platform/`) until the app no longer imports
+  them: the history and the examples first, then the working file's codec.
+  Moved now, `app/` and `projects/` would import `adapters/`, which the
   import matrix refuses. The folder's repositories import them from
   `projects/` meanwhile, and the storage line still lists them: 13 files of
   the folder format (from 14), 21 files importing across the line (from 22)
@@ -421,9 +434,11 @@ repositories, in `src/adapters/folder/`:
   whole file to say its size, so a read of a scope lists `images/` and reads
   no picture but one no row names. A file replaced under a name a row already
   has keeps that row's entry.
-- **A folder that keeps no history** remembers applied step ids for as long
-  as the repositories are open, not for a day: it has nowhere a person does
-  not look.
+- **A browser's folder** remembers applied step ids for as long as the
+  repositories are open, not for a day: a folder handle has no identity that
+  storage can be keyed by — two handles can only be asked whether they are
+  the same folder — so there is nowhere to keep them for that folder and no
+  other.
 - **An entry's id is its commit and its scope together**, because one commit
   is an entry of every scope it records and each must be one of its own.
 - **The index leaves out a scope whose `model.json` is missing or will not
