@@ -20,7 +20,6 @@
  * that.
  */
 import { labelSlug } from '../../platform/history'
-import { imageMediaType } from '../../model/documentImage'
 import { contentAddressOf, imageFolderOf, imageFoldersUnder, imageNameRefusal } from '../../model/imageName'
 import type { ContentAddress, ImageEntry, ImageFolder, ImageName } from '../../model/imageName'
 import { SCOPE_RECORD, sameRecord } from '../../model/recordKey'
@@ -30,8 +29,10 @@ import { applySteps, emptyContent } from '../../projects/scopeState'
 import type { Revision, ScopeAddress, ScopeContent, ScopeId, ScopeState } from '../../projects/scopeState'
 import { patchSettings } from '../../projects/settings'
 import type { Settings, SettingsPatch } from '../../projects/settings'
-import type { EntriesWanted, EntryId, EntryLabelled, HistoryPage, HistoryRepository } from '../HistoryRepository'
-import type { ImageBytes, ImageListing, ImageRepository, Put } from '../ImageRepository'
+import type {
+  EntriesWanted, EntryId, EntryLabelled, HistoryEntry, HistoryPage, HistoryRepository, RecordWanted,
+} from '../HistoryRepository'
+import type { ImageListing, ImageRepository, Put } from '../ImageRepository'
 import type { IndexChanges, IndexedScope, IndexRead, OrganisationIndex } from '../OrganisationIndex'
 import type { RepositoriesUnderTest } from '../Repositories.contract'
 import type {
@@ -45,11 +46,9 @@ type Kept = {
   content: ScopeContent
   revision: Revision
   updatedAt?: string
-  /** Every step id this scope has applied, so one sent twice lands once. */
-  applied: Set<string>
   unreadable?: string[]
-  /** What changed since the last entry: the records written, and when the last change was made. */
-  pending?: { records: RecordKey[] | undefined; at: number }
+  /** The open entry: the records changed since the last entry closed, and when the last change was made. */
+  pending?: { records: RecordKey[]; at: number }
 }
 
 type Entry = {
@@ -59,12 +58,14 @@ type Entry = {
   at: number
   subject?: string
   labels: string[]
-  records: readonly RecordKey[] | undefined
+  records: readonly RecordKey[]
   state: ScopeState
 }
 
 /** The index's log: each revision it answered, and what changed to get there. */
 type IndexStep = { revision: Revision; changed: Set<ScopeId>; removed: Set<ScopeId> }
+
+type Planned = { kept: Kept; content: ScopeContent; changed: boolean; records: RecordKey[] }
 
 const PAGE = 50
 
@@ -75,7 +76,10 @@ class Memory {
   private readonly indexLog: IndexStep[] = []
   private readonly entries: Entry[] = []
   private entrySeq = 0
-  private readonly stored = new Map<ScopeId, Map<ContentAddress, ImageBytes>>()
+  /** Every step id the source has applied, to whichever scope: one sent twice lands once. */
+  private readonly applied = new Set<string>()
+  /** Bytes by content address, per scope; the media type is the entry's, never the bytes'. */
+  private readonly stored = new Map<ScopeId, Map<ContentAddress, Uint8Array>>()
   private readonly settingsHeld = new Map<string, Settings>()
 
   constructor() {
@@ -92,7 +96,7 @@ class Memory {
   private make(address: ScopeAddress, content: ScopeContent): Kept {
     const kept: Kept = {
       id: this.mint('scope'), address, content: structuredClone(content), revision: this.mint('revision'),
-      applied: new Set(), pending: { records: [SCOPE_RECORD], at: Date.now() },
+      pending: { records: [SCOPE_RECORD], at: Date.now() },
     }
     this.kept.set(kept.id, kept)
     return kept
@@ -171,12 +175,17 @@ class Memory {
   }
 
   private apply(work: readonly StepsFor[]): Applied | Refused {
-    const planned = new Map<ScopeId, { kept: Kept; content: ScopeContent; changed: boolean; records: RecordKey[] | undefined }>()
+    const planned = new Map<ScopeId, Planned>()
+    const seen = new Set<string>()
     for (const { scope, steps, expects } of work) {
       const kept = this.kept.get(scope)
       if (!kept) return { refused: 'shell.scopeGone', scope }
       if (kept.unreadable) return { refused: 'shell.unreadableNotSaved', scope }
-      const fresh = steps.filter((one) => !kept.applied.has(one.stepId))
+      const fresh = steps.filter((one) => {
+        const known = this.applied.has(one.stepId) || seen.has(one.stepId)
+        seen.add(one.stepId)
+        return !known
+      })
       if (fresh.length === 0) continue
       if (expects !== undefined && expects !== kept.revision) return { refused: 'shell.scopeMoved', scope }
       const before = planned.get(scope)
@@ -193,9 +202,9 @@ class Memory {
 
   private commit(
     work: readonly StepsFor[],
-    planned: Map<ScopeId, { kept: Kept; content: ScopeContent; changed: boolean; records: RecordKey[] | undefined }>,
+    planned: Map<ScopeId, Planned>,
   ): void {
-    for (const { scope, steps } of work) for (const one of steps) this.kept.get(scope)!.applied.add(one.stepId)
+    for (const { steps } of work) for (const one of steps) this.applied.add(one.stepId)
     const changed = [...planned.values()].filter((plan) => plan.changed)
     if (changed.length === 0) return
     let treeMoved = false
@@ -294,21 +303,26 @@ class Memory {
 
   // --- the history -------------------------------------------------------------
 
-  cut(subject?: string): void {
+  private record({ scopes, subject }: RecordWanted): HistoryEntry[] {
+    const made: Entry[] = []
     for (const kept of this.kept.values()) {
-      if (!kept.pending) continue
+      if (!kept.pending || (scopes && !scopes.includes(kept.id))) continue
       this.entrySeq += 1
-      this.entries.push({
+      const entry: Entry = {
         seq: this.entrySeq, id: `entry-${this.entrySeq}`, scope: kept.id, at: kept.pending.at,
         ...(subject !== undefined ? { subject } : {}),
         labels: [], records: kept.pending.records, state: this.stateOf(kept),
-      })
+      }
+      this.entries.push(entry)
+      made.push(entry)
       kept.pending = undefined
     }
+    return made.reverse().map(listed)
   }
 
   readonly history: HistoryRepository = {
     id: 'memory (contract)',
+    record: (wanted) => Promise.resolve(this.record(wanted)),
     entries: (wanted) => Promise.resolve(this.page(wanted)),
     stateAt: (scope, entry) => {
       const found = this.entries.find((one) => one.id === entry && one.scope === scope)
@@ -321,15 +335,12 @@ class Memory {
     const below = after === undefined ? Infinity : Number(after)
     const matching = this.entries
       .filter((entry) => scopes.includes(entry.scope) && entry.seq < below)
-      .filter((entry) => !record || !entry.records || entry.records.some((one) => sameRecord(one, record)))
+      .filter((entry) => !record || entry.records.some((one) => sameRecord(one, record)))
       .sort((one, other) => other.seq - one.seq)
     const page = matching.slice(0, Math.max(1, limit))
-    const listed = page.map(({ id, scope, at, subject, labels }) => structuredClone({
-      id, scope, at, by: 'memory', labels, ...(subject !== undefined ? { subject } : {}),
-    }))
     return matching.length > page.length
-      ? { entries: listed, next: String(page[page.length - 1].seq) }
-      : { entries: listed }
+      ? { entries: page.map(listed), next: String(page[page.length - 1].seq) }
+      : { entries: page.map(listed) }
   }
 
   private label(scope: ScopeId, entry: EntryId, name: string): EntryLabelled {
@@ -353,7 +364,7 @@ class Memory {
     bytes: (scope, name) => {
       const entry = this.entryOf(scope, name)
       const found = entry && this.stored.get(scope)?.get(entry.contentAddress)
-      return Promise.resolve(found ? structuredClone(found) : undefined)
+      return Promise.resolve(entry && found ? { mediaType: entry.mediaType, bytes: new Uint8Array(found) } : undefined)
     },
   }
 
@@ -361,8 +372,8 @@ class Memory {
     const refused = imageNameRefusal(name)
     if (refused) return { refused }
     const contentAddress = await contentAddressOf(bytes)
-    const held = this.stored.get(scope) ?? new Map<ContentAddress, ImageBytes>()
-    held.set(contentAddress, { mediaType: imageMediaType(name)!, bytes: new Uint8Array(bytes) })
+    const held = this.stored.get(scope) ?? new Map<ContentAddress, Uint8Array>()
+    held.set(contentAddress, new Uint8Array(bytes))
     this.stored.set(scope, held)
     return { contentAddress }
   }
@@ -399,9 +410,13 @@ class Memory {
   }
 }
 
-function merge(held: readonly RecordKey[] | undefined, more: readonly RecordKey[] | undefined): RecordKey[] | undefined {
-  if (held === undefined || more === undefined) return undefined
+function merge(held: readonly RecordKey[], more: readonly RecordKey[]): RecordKey[] {
   return [...held, ...more.filter((record) => !held.some((one) => sameRecord(one, record)))]
+}
+
+/** An entry as a list shows it. */
+function listed({ id, scope, at, subject, labels }: Entry): HistoryEntry {
+  return structuredClone({ id, scope, at, by: 'memory', labels, ...(subject !== undefined ? { subject } : {}) })
 }
 
 function settingsKey(of: SettingsOf): string {
@@ -414,10 +429,6 @@ export function memoryRepositories(): RepositoriesUnderTest {
   return {
     repositories: {
       scopes: memory.scopes, index: memory.index, history: memory.history, images: memory.images, settings: memory.settings,
-    },
-    cut: (subject) => {
-      memory.cut(subject)
-      return Promise.resolve()
     },
     spoil: (scope) => memory.spoil(scope),
   }

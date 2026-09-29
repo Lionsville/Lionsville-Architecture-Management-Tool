@@ -8,9 +8,12 @@
  * who wants the Tuesday afternoon somebody reworked the landscape as one line
  * and not as four hundred. An entry is a run of steps on one scope that the
  * implementation took together — what it recorded as one version, or what one
- * author did before a quiet moment — and when an entry is closed is its
- * business. Nothing here records one: the history follows the steps that
- * `ScopeRepository` applies.
+ * author did before a quiet moment. The steps `ScopeRepository` applies to a
+ * scope collect in its **open entry**, and an implementation may close one
+ * when it judges a run has ended; a person closes it when they say so —
+ * *Snapshot*, with what it is called — and the app closes it before a change
+ * it wants to be able to go back from, such as a replace. `record` is that
+ * act. A step that changes nothing opens no entry.
  *
  * **A history is asked in pages**, newest first, of one scope or of several,
  * and of everything or of one thing — a record, by its kind and id
@@ -73,8 +76,24 @@ export type HistoryPage = {
 /** A label's outcome, or `gone` for an entry the scope does not have. */
 export type EntryLabelled = LabelOutcome | 'gone'
 
+/** Which open entries to close, and what the entries they become say they are. */
+export type RecordWanted = {
+  /** The scopes whose open entry to close; absent for every scope that has one. */
+  scopes?: readonly ScopeId[]
+  /** What each entry says it was: a person's words, or the app's for a safeguard. */
+  subject?: string
+}
+
 export interface HistoryRepository {
   readonly id: string
+
+  /**
+   * Close the open entry of each scope wanted, now, with the subject given,
+   * and answer the entries that became — newest first, one per scope that had
+   * one open, and none for a scope that had nothing open: a record with
+   * nothing to record is ordinary, not a failure.
+   */
+  record(wanted: RecordWanted): Promise<readonly HistoryEntry[]>
 
   /** A page of entries, newest first. */
   entries(wanted: EntriesWanted): Promise<HistoryPage>

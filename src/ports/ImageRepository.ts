@@ -64,8 +64,10 @@ export interface ImageRepository {
   find(scope: ScopeId, name: ImageName): Promise<ImageEntry | undefined>
 
   /**
-   * One picture's bytes, by its name in the scope's library; `undefined` where
-   * the library has no picture by that name, or its bytes are not there.
+   * One picture's bytes, by its name in the scope's library, with the media
+   * type its entry says; `undefined` where the library has no picture by that
+   * name, or its bytes are not there. Two names may hold the same bytes, and
+   * each answers its own media type.
    */
   bytes(scope: ScopeId, name: ImageName): Promise<ImageBytes | undefined>
 }

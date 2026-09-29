@@ -57,7 +57,12 @@ export type ScopeNode = {
   links?: RecordLink[]
   /** How many views it holds. Zero is ordinary: a domain need draw nothing. */
   diagrams: number
-  /** ISO time of the last step applied to it, where the repository keeps one. */
+  /**
+   * ISO time of the last step applied to it, where the repository keeps one.
+   * The one field the tree's revision does not cover: it moves with every
+   * step, and a tree whose revision did too would be read again after every
+   * step anybody makes. A reader that wants it fresh reads the tree again.
+   */
   updatedAt?: string
   /** The scopes directly under it, by address. */
   children: ScopeNode[]
@@ -66,9 +71,11 @@ export type ScopeNode = {
 /** The whole tree, and the revision it was answered at. */
 export type ScopeTree = {
   /**
-   * Changes whenever what a node says changes: a scope created, moved or
-   * removed, or a step that changes its name, description or what it says
-   * about itself. Equal for two reads with none of those between them.
+   * Changes whenever what a node says changes — a scope created, moved or
+   * removed, or a step that changes its name, description, what it says about
+   * itself or how many views it holds — and at no other time: not for a step
+   * that changes none of those, and not for `updatedAt`. Equal for two reads
+   * with none of those between them.
    */
   revision: Revision
   /** The organisation. It is always there, and has no parent. */
@@ -128,13 +135,26 @@ export interface ScopeRepository {
    * Apply steps to one scope, or to several together: every step of every
    * scope, or — where anything is refused — none of them, and the answer says
    * which scope and which step. The steps of one scope are applied in the order
-   * given, as one change of its state.
+   * given, as one change of its state. A refused apply changes nothing
+   * anywhere: no state, no revision of a scope, the tree or the index, and no
+   * step counts as applied — sent again, it is new.
    *
-   * **A step lands once.** One whose `stepId` this scope has already applied
-   * is not applied again — it was sent twice because the answer to the first
-   * was lost — and the answer is the revision as it stands.
+   * **A step lands once.** A `stepId` names one step in the whole source. One
+   * this repository has already applied, to whichever scope, is not applied
+   * again: it was sent twice because the answer to the first was lost. A run
+   * whose steps have all landed answers each scope's revision as it stands,
+   * whatever it `expects`, because what it expected was the state it was made
+   * against, and it has been applied to that. A run that mixes steps already
+   * landed with new ones applies the new ones, and its `expects` is compared
+   * with the state now. The same `stepId` twice in one run is the same step
+   * sent twice, and lands once.
    *
-   * **A step that changes nothing changes no revision.**
+   * **One scope named twice in one apply** is its runs one after the other,
+   * as one change: each `expects` is compared with the revision the scope had
+   * before the apply, and each answers the revision after it.
+   *
+   * **A step that changes nothing changes no revision**, and makes no history
+   * entry.
    */
   apply(work: readonly StepsFor[]): Promise<Applied | Refused>
 
@@ -157,7 +177,11 @@ export interface ScopeRepository {
    * `expects` is the revision of the moved scope the move was decided against,
    * as for a step. Refused: the organisation, which is the root and stays
    * there; an address under the scope itself; an address taken or unusable.
-   * The answer is the moved scope's revision after the move.
+   *
+   * **A move changes the revision of the moved scope and of every scope under
+   * it**, because an address is part of a state: a step made against one of
+   * them before the move, and expecting that, is refused. No other scope's
+   * revision moves. The answer is the moved scope's revision after the move.
    */
   move(scope: ScopeId, to: ScopeAddress, expects?: Revision): Promise<Moved | Refused>
 

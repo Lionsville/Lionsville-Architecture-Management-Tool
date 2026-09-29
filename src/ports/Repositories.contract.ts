@@ -36,20 +36,26 @@ import { fromArrays, toArrays } from '../model/normalised'
 import { apply } from '../model/reducer'
 import type { DesignElement } from '../model/types'
 import type { Revision, ScopeAddress, ScopeCommand, ScopeId, ScopeState, ScopeStep } from '../projects/scopeState'
+import type { HistoryRepository } from './HistoryRepository'
+import type { ImageRepository } from './ImageRepository'
 import type { Repositories } from './Repositories'
-import type { Applied, Created, Moved, NewScope, Refused, Removed, StepsFor } from './ScopeRepository'
+import type {
+  Applied, Created, Moved, NewScope, Refused, Removed, ScopeRepository, StepsFor,
+} from './ScopeRepository'
+import type { SettingsRepository } from './SettingsRepository'
 
-/** One implementation under test, and what the suites need of it that the seams do not carry. */
+/**
+ * One implementation under test, and what the suites need of it that the
+ * seams do not carry.
+ *
+ * **The maker configures the implementation so that an entry closes only at
+ * `record`** while the suites run: no quiet window closing one on a timer, no
+ * implementation deciding a run has ended. The history clauses count entries,
+ * and an entry closed by anything but the clause's own `record` is one they
+ * did not ask for.
+ */
 export type RepositoriesUnderTest = {
   repositories: Repositories
-  /**
-   * Close an entry on every scope a step has changed since the last one:
-   * whatever this implementation does to make applied steps into a history
-   * entry — record a version, let a quiet moment pass. The subject is what
-   * the entry says it was, where the implementation keeps one. A scope that
-   * nothing changed since gets no entry.
-   */
-  cut(subject?: string): Promise<void>
   /**
    * Resolves when everything these repositories were asked to do has reached
    * everything that follows it — the index, the history. Optional: an
@@ -74,18 +80,16 @@ export function element(id: string, name: string, description?: string): DesignE
   }
 }
 
-let minted = 0
 let lastAt = 0
 
 /**
- * A step, the way a session makes one: predictable ids, so a failure reads,
- * and the time it was made — never before the last one, so a history read
- * newest first is also read latest first.
+ * A step, the way a session makes one: an id nobody else will mint, and the
+ * time it was made — never before the last one, so a history read newest
+ * first is also read latest first.
  */
 export function step(command: ScopeCommand): ScopeStep {
-  minted += 1
   lastAt = Math.max(Date.now(), lastAt + 1)
-  return { stepId: `contract-step-${minted}`, command, at: lastAt }
+  return { stepId: crypto.randomUUID(), command, at: lastAt }
 }
 
 export const addCrews: Command = { type: 'element.create', element: element('crews', 'Crews', 'Plans the crews.') }
@@ -127,8 +131,11 @@ export function held(state: ScopeState | undefined): Omit<ScopeState, 'revision'
 }
 
 /**
- * The repositories under test with a settle folded into every write, so that
- * a clause looks only once the write has reached everything that follows it.
+ * The repositories under test with a settle folded into every write — a step,
+ * a change to the tree, a record, a label, bytes put, settings written, a
+ * scope spoiled — so that a clause looks only once the write has reached
+ * everything that follows it. Every clause reaches the repositories through
+ * this, and never through `under.repositories`.
  */
 export function over(under: RepositoriesUnderTest) {
   const { scopes, index, history, images, settings } = under.repositories
@@ -138,21 +145,56 @@ export function over(under: RepositoriesUnderTest) {
     await settle()
     return value
   }
+  const written = {
+    scopes: {
+      id: scopes.id,
+      tree: () => scopes.tree(),
+      state: (scope) => scopes.state(scope),
+      apply: (work) => settled(scopes.apply(work)),
+      create: (at, scope) => settled(scopes.create(at, scope)),
+      move: (scope, to, expects) => settled(scopes.move(scope, to, expects)),
+      remove: (scope, expects) => settled(scopes.remove(scope, expects)),
+    } satisfies ScopeRepository,
+    history: {
+      id: history.id,
+      record: (wanted) => settled(history.record(wanted)),
+      entries: (wanted) => history.entries(wanted),
+      stateAt: (scope, entry) => history.stateAt(scope, entry),
+      label: (scope, entry, name) => settled(history.label(scope, entry, name)),
+    } satisfies HistoryRepository,
+    images: {
+      id: images.id,
+      put: (scope, name, bytes) => settled(images.put(scope, name, bytes)),
+      list: (scope, within) => images.list(scope, within),
+      find: (scope, name) => images.find(scope, name),
+      bytes: (scope, name) => images.bytes(scope, name),
+    } satisfies ImageRepository,
+    settings: {
+      id: settings.id,
+      read: (of) => settings.read(of),
+      write: (of, patch) => settled(settings.write(of, patch)),
+    } satisfies SettingsRepository,
+  }
   return {
-    scopes, index, history, images, settings, settle,
-    apply: (work: readonly StepsFor[]): Promise<Applied | Refused> => settled(scopes.apply(work)),
-    create: (at: ScopeAddress, scope: NewScope): Promise<Created | Refused> => settled(scopes.create(at, scope)),
+    ...written, index, settle,
+    apply: (work: readonly StepsFor[]): Promise<Applied | Refused> => written.scopes.apply(work),
+    create: (at: ScopeAddress, scope: NewScope): Promise<Created | Refused> => written.scopes.create(at, scope),
     move: (scope: ScopeId, to: ScopeAddress, expects?: Revision): Promise<Moved | Refused> =>
-      settled(scopes.move(scope, to, expects)),
-    remove: (scope: ScopeId, expects?: Revision): Promise<Removed | Refused> => settled(scopes.remove(scope, expects)),
+      written.scopes.move(scope, to, expects),
+    remove: (scope: ScopeId, expects?: Revision): Promise<Removed | Refused> => written.scopes.remove(scope, expects),
     /** Steps on one scope, which must land. */
     steps: async (scope: ScopeId, ...commands: ScopeCommand[]): Promise<Revision> =>
-      ok(await settled(scopes.apply([{ scope, steps: commands.map(step) }]))).revisions[0],
+      ok(await written.scopes.apply([{ scope, steps: commands.map(step) }])).revisions[0],
     /** A new scope, which must be created. */
-    scope: async (at: ScopeAddress, name: string): Promise<ScopeId> => ok(await settled(scopes.create(at, { name }))).id,
-    cut: async (subject?: string): Promise<void> => {
-      await under.cut(subject)
+    scope: async (at: ScopeAddress, name: string): Promise<ScopeId> => ok(await written.scopes.create(at, { name })).id,
+    /** Close every open entry, as a person's *Snapshot* does. */
+    record: (subject?: string) => written.history.record(subject === undefined ? {} : { subject }),
+    /** Spoil a scope, where the implementation can; `false` where it cannot. */
+    spoil: async (scope: ScopeId): Promise<boolean> => {
+      if (!under.spoil) return false
+      await under.spoil(scope)
       await settle()
+      return true
     },
     /** The organisation's identity. */
     root: async (): Promise<ScopeId> => (await scopes.tree()).root.id,

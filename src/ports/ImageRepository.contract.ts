@@ -76,6 +76,29 @@ export function describeImageRepository(name: string, make: MakeRepositories): v
       expect((await repositories.state(acme)).images).toEqual([entry])
     })
 
+    it('answers each name the media type of its own entry, where two names hold the same bytes', async () => {
+      const { repositories, acme } = await fresh()
+      await add(repositories, acme, 'a.png', bytes(1, 2, 3))
+      await add(repositories, acme, 'b.jpg', bytes(1, 2, 3))
+      expect(await repositories.images.bytes(acme, 'a.png')).toEqual({ mediaType: 'image/png', bytes: bytes(1, 2, 3) })
+      expect(await repositories.images.bytes(acme, 'b.jpg')).toEqual({ mediaType: 'image/jpeg', bytes: bytes(1, 2, 3) })
+    })
+
+    it('refuses an entry that does not describe its picture, and one named like another in another case', async () => {
+      const { repositories, acme } = await fresh()
+      const entry = await add(repositories, acme, 'Context.png', bytes(1, 2, 3))
+      for (const [image, key] of [
+        [{ ...entry, name: 'other.png', mediaType: 'image/webp' }, 'shell.imageBadEntry'],
+        [{ ...entry, name: 'other.png', contentAddress: 'sha256:nothex' }, 'shell.imageBadEntry'],
+        [{ ...entry, name: 'other.png', width: -1 }, 'shell.imageBadEntry'],
+        [{ ...entry, name: 'context.PNG' }, 'command.taken'],
+      ] as const) {
+        expect(refusal(await repositories.apply([{ scope: acme, steps: [step({ type: 'image.add', image })] }])), image.name)
+          .toBe(key)
+      }
+      expect((await repositories.images.list(acme, '')).images).toEqual([entry])
+    })
+
     it('hands out bytes nobody else holds: changing them changes nothing it keeps', async () => {
       const { repositories, acme } = await fresh()
       await add(repositories, acme, 'context.png', bytes(1, 2, 3))

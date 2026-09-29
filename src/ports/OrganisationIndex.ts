@@ -42,10 +42,11 @@ export type IndexRead = {
 }
 
 /**
- * What changed since a revision: every scope whose part may have changed —
- * created, moved, or changed by a step — as it is now, and every scope removed.
- * It may name a scope whose part is as it was; it never leaves out one whose
- * part is not.
+ * What changed since a revision: every scope created, moved or changed by a
+ * step since then, as it is now, and every scope removed — and no scope
+ * nothing happened to. A scope a step changed only where the index does not
+ * read, a description say, may be named; one nothing happened to is not, so
+ * a reader can trust an empty answer and a short one alike.
  */
 export type IndexChanges = {
   revision: Revision

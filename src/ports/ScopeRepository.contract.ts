@@ -216,6 +216,62 @@ export function describeScopeRepository(name: string, make: MakeRepositories): v
         expect((await repositories.state(acme)).model.elements).toHaveLength(1)
       })
 
+      /** The answer to the first was lost; the second is the same step again, and it is not new. */
+      it('keeps a deleted element deleted when the step that created it is sent again', async () => {
+        const repositories = await fresh()
+        const acme = await repositories.scope('acme', 'Acme Logistics')
+        const create = step(addCrews)
+        ok(await repositories.apply([{ scope: acme, steps: [create] }]))
+        await repositories.steps(acme, { type: 'element.delete', id: 'crews' })
+        const now = (await repositories.state(acme)).revision
+        expect(ok(await repositories.apply([{ scope: acme, steps: [create] }])).revisions).toEqual([now])
+        expect((await repositories.state(acme)).model.elements).toEqual([])
+      })
+
+      it('answers a run sent again as it stands, whatever revision the run expected', async () => {
+        const repositories = await fresh()
+        const acme = await repositories.scope('acme', 'Acme Logistics')
+        const read = (await repositories.state(acme)).revision
+        const run = { scope: acme, steps: [step(addCrews)], expects: read }
+        const landed = ok(await repositories.apply([run])).revisions[0]
+        await repositories.steps(acme, addDepot)
+        const now = (await repositories.state(acme)).revision
+        expect(landed).not.toBe(read)
+        expect(ok(await repositories.apply([run])).revisions).toEqual([now])
+      })
+
+      it('applies the new steps of a run that mixes them with one already landed, once each', async () => {
+        const repositories = await fresh()
+        const acme = await repositories.scope('acme', 'Acme Logistics')
+        const first = step(addCrews)
+        const revision = ok(await repositories.apply([{ scope: acme, steps: [first] }])).revisions[0]
+        ok(await repositories.apply([{ scope: acme, steps: [first, step(addDepot), first], expects: revision }]))
+        expect((await repositories.state(acme)).model.elements.map((one) => one.id)).toEqual(['crews', 'depot'])
+      })
+
+      it('knows a step by its id across the source: applied on one scope, it is not applied on another', async () => {
+        const repositories = await fresh()
+        const acme = await repositories.scope('acme', 'Acme Logistics')
+        const globex = await repositories.scope('globex', 'Globex')
+        const once = step(addCrews)
+        ok(await repositories.apply([{ scope: acme, steps: [once] }]))
+        ok(await repositories.apply([{ scope: globex, steps: [once] }]))
+        expect((await repositories.state(globex)).model.elements).toEqual([])
+      })
+
+      it('applies a scope named twice in one apply as its runs one after the other', async () => {
+        const repositories = await fresh()
+        const acme = await repositories.scope('acme', 'Acme Logistics')
+        const read = (await repositories.state(acme)).revision
+        const answer = ok(await repositories.apply([
+          { scope: acme, steps: [step(addCrews)], expects: read },
+          { scope: acme, steps: [step(renameCrews)], expects: read },
+        ]))
+        const now = await repositories.state(acme)
+        expect(now.model.elements.map((one) => one.name)).toEqual(['Crew planning'])
+        expect(answer.revisions).toEqual([now.revision, now.revision])
+      })
+
       it('lands steps that expect the revision they were made against', async () => {
         const repositories = await fresh()
         const acme = await repositories.scope('acme', 'Acme Logistics')
@@ -272,6 +328,40 @@ export function describeScopeRepository(name: string, make: MakeRepositories): v
         expect([await repositories.state(acme), await repositories.state(globex)]).toEqual(before)
       })
 
+      it('counts no step of a refused apply as applied: the valid part, sent again, lands', async () => {
+        const repositories = await fresh()
+        const acme = await repositories.scope('acme', 'Acme Logistics')
+        const globex = await repositories.scope('globex', 'Globex')
+        const valid = step(addCrews)
+        expect(refusal(await repositories.apply([
+          { scope: acme, steps: [valid] },
+          { scope: globex, steps: [step(renameCrews)] },
+        ]))).toBe('command.gone')
+        ok(await repositories.apply([{ scope: acme, steps: [valid] }]))
+        expect((await repositories.state(acme)).model.elements.map((one) => one.id)).toEqual(['crews'])
+      })
+
+      it('moves neither the tree’s revision nor the index’s for a refused apply', async () => {
+        const repositories = await fresh()
+        const acme = await repositories.scope('acme', 'Acme Logistics')
+        const tree = (await repositories.scopes.tree()).revision
+        const index = (await repositories.index.read()).revision
+        expect(refusal(await repositories.apply([{ scope: acme, steps: [
+          step({ type: 'project.settings', patch: { name: 'Acme' } }), step(renameCrews),
+        ] }]))).toBe('command.gone')
+        expect((await repositories.scopes.tree()).revision).toBe(tree)
+        expect((await repositories.index.read()).revision).toBe(index)
+      })
+
+      it('moves no tree revision for a step that changes nothing a node says', async () => {
+        const repositories = await fresh()
+        const acme = await repositories.scope('acme', 'Acme Logistics')
+        await repositories.steps(acme, addLandscape)
+        const tree = (await repositories.scopes.tree()).revision
+        await repositories.steps(acme, addCrews, renameCrews)
+        expect((await repositories.scopes.tree()).revision).toBe(tree)
+      })
+
       it('keeps the image library and what a scope says about itself as steps change them', async () => {
         const repositories = await fresh()
         const acme = await repositories.scope('acme', 'Acme Logistics')
@@ -301,12 +391,10 @@ export function describeScopeRepository(name: string, make: MakeRepositories): v
 
     describe('a scope that could not be read whole', () => {
       it('is there to be looked at, and refuses every step', async (context) => {
-        const under = await make()
-        if (!under.spoil) return context.skip()
-        const repositories = over(under)
+        const repositories = await fresh()
         const acme = await repositories.scope('acme', 'Acme Logistics')
         await repositories.steps(acme, addCrews)
-        await under.spoil(acme)
+        if (!await repositories.spoil(acme)) return context.skip()
         const state = await repositories.state(acme)
         expect(state.unreadable?.length).toBeGreaterThan(0)
         expect(refusal(await repositories.apply([{ scope: acme, steps: [step(addDepot)] }]))).toBe('shell.unreadableNotSaved')
@@ -346,6 +434,21 @@ export function describeScopeRepository(name: string, make: MakeRepositories): v
         const acme = await repositories.scope('acme', 'Acme Logistics')
         const moved = ok(await repositories.move(acme, 'globex'))
         expect((await repositories.state(acme)).revision).toBe(moved.revision)
+      })
+
+      it('moves the revision of the moved scope and of every scope under it, and of no other', async () => {
+        const repositories = await fresh()
+        const rail = await repositories.scope('acme/rail', 'Rail')
+        const stock = await repositories.scope('acme/rail/rolling-stock', 'Rolling stock')
+        const road = await repositories.scope('acme/road', 'Road')
+        const before = await Promise.all([rail, stock, road].map(async (id) => (await repositories.state(id)).revision))
+        ok(await repositories.move(rail, 'globex/rail'))
+        const after = await Promise.all([rail, stock, road].map(async (id) => (await repositories.state(id)).revision))
+        expect(after[0]).not.toBe(before[0])
+        expect(after[1]).not.toBe(before[1])
+        expect(after[2]).toBe(before[2])
+        expect(refusal(await repositories.apply([{ scope: stock, steps: [step(addCrews)], expects: before[1] }])))
+          .toBe('shell.scopeMoved')
       })
 
       it('refuses the organisation, an address under itself, and one that is taken or unusable', async () => {
