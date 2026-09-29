@@ -191,8 +191,14 @@ function isAbsence(cause: unknown): boolean {
  */
 export async function writeWhole(target: string, data: Uint8Array | string, mode?: number): Promise<void> {
   const real = (await lstat(target).catch(() => undefined))?.isSymbolicLink() ? await realpath(target) : target
+  await landWhole(real, data, mode)
+  await sweepStale([real])
+}
+
+/** A file written whole at a real path, and nothing swept: `writeWhole`'s work, and `createFile`'s first step. */
+async function landWhole(real: string, data: Uint8Array | string, mode?: number): Promise<void> {
   await mkdir(dirname(real), { recursive: true })
-  const temporary = `${real}.${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}.tmp`
+  const temporary = `${real}.${ourMark()}.tmp`
   try {
     const handle = await open(temporary, 'w', mode)
     try {
@@ -204,10 +210,10 @@ export async function writeWhole(target: string, data: Uint8Array | string, mode
     await renameOver(temporary, real)
   } catch (cause) {
     await unlink(temporary).catch(() => undefined)
+    sweptAt.delete(dirname(real))
     throw cause
   }
   await syncFolder(dirname(real))
-  await sweepStale([real])
 }
 
 /** How long, in all, a rename is tried again on Windows while the file is held. */
@@ -241,30 +247,50 @@ export async function renameOver(
   }
 }
 
-/** A name of ours beside a file being written: the file's, a mark of time and chance, and what it was for. */
-const STALE = /^(.+)\.[0-9a-z]{9,14}\.(tmp|landing)$/
+/** The mark of a name of ours beside a file being written: this app's, then time and chance. */
+function ourMark(): string {
+  return `lvarch-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`
+}
+
+/**
+ * A name of ours beside a file being written: the file's, a mark, and what
+ * it was for. With `lvarch-` in the mark it is only ever ours; without it,
+ * it is the shape older builds left, which another tool's name could have.
+ */
+const STALE = /^(.+)\.(lvarch-)?[0-9a-z]{9,14}\.(tmp|landing)$/
 
 /** How old a name of ours must be before it is taken for what a stopped write left, not one still being written. */
 const STALE_AFTER_MS = 60_000
 
+/** How long after a folder was swept it is not listed for another: a folder autosaved into is written again and again. */
+export const SWEEP_EVERY_MS = 10 * 60_000
+
+/** When each folder was last swept, this run; a write that failed there leaves it to be swept at the next. */
+const sweptAt = new Map<string, number>()
+
 /**
- * What a write that stopped part way left beside the files just written, taken
- * away: a name of ours (`STALE`) beside a file that is there, a minute old or
- * more — a file staged and never renamed, or the second name a made file had
- * for a moment (`createFile`). Left, it would be one more file in the folder,
- * and in its history. Nothing else is touched, and a sweep that fails is let be.
+ * What a write that stopped part way left beside the files in a folder,
+ * taken away, the folder listed at most once every `SWEEP_EVERY_MS` (and
+ * again after a write in it failed): a name of ours (`STALE`) beside a file
+ * that is there, a minute old or more — a file staged and never renamed, or
+ * the second name a made file had for a moment (`createFile`). Left, it would
+ * be one more file in the folder, and in its history. A name with our mark
+ * is taken beside any file; one in the older shape only beside a file just
+ * written. Nothing else is touched, and a sweep that fails is let be.
  */
-async function sweepStale(targets: readonly string[]): Promise<void> {
+async function sweepStale(targets: readonly string[], now = Date.now()): Promise<void> {
   const byFolder = new Map<string, Set<string>>()
   for (const target of targets) byFolder.set(dirname(target), (byFolder.get(dirname(target)) ?? new Set()).add(basename(target)))
   for (const [folder, written] of byFolder) {
+    if (now - (sweptAt.get(folder) ?? Number.NEGATIVE_INFINITY) < SWEEP_EVERY_MS) continue
+    sweptAt.set(folder, now)
     const names = await readdir(folder).catch(() => [] as string[])
     const present = new Set(names)
     for (const name of names) {
-      const base = STALE.exec(name)?.[1]
-      if (base === undefined || !written.has(base) || !present.has(base)) continue
+      const [, base, marked] = STALE.exec(name) ?? []
+      if (base === undefined || !present.has(base) || (!marked && !written.has(base))) continue
       const at = join(folder, name)
-      const since = await stat(at).then((found) => Date.now() - found.mtimeMs, () => 0)
+      const since = await stat(at).then((found) => now - found.mtimeMs, () => 0)
       if (since >= STALE_AFTER_MS) await unlink(at).catch(() => undefined)
     }
   }
@@ -301,9 +327,9 @@ export async function createFile(
   const target = await resolveInside(root, path)
   if (!target) throw new Error('shell.pathRefused')
   await mkdir(dirname(target), { recursive: true })
-  const temporary = `${target}.${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}.tmp`
+  const temporary = `${target}.${ourMark()}.tmp`
   try {
-    await writeWhole(temporary, bytes)
+    await landWhole(temporary, bytes)
     await linkTo(temporary, target)
     return true
   } catch (cause) {
@@ -368,7 +394,7 @@ export async function writeTogether(
   const targets = await Promise.all(writes.map((write) => resolveInside(root, write.path)))
   const gone = await Promise.all(removals.map(async (path) => (safeRelativePath(path) ? resolveInside(root, path) : undefined)))
   if (targets.some((target) => !target) || gone.some((target) => !target)) throw new Error('shell.pathRefused')
-  const suffix = `.${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}.landing`
+  const suffix = `.${ourMark()}.landing`
   const staged: string[] = []
   try {
     for (const [at, write] of writes.entries()) {
@@ -386,6 +412,7 @@ export async function writeTogether(
     }
   } catch (cause) {
     await Promise.all(staged.map((temporary) => unlink(temporary).catch(() => undefined)))
+    for (const target of targets) sweptAt.delete(dirname(target!))
     throw cause
   }
   for (const [at, temporary] of staged.entries()) await renameOver(temporary, targets[at]!)

@@ -13,11 +13,12 @@
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { chmod, lstat, mkdir, mkdtemp, readdir, readFile, realpath, rm, stat, symlink, utimes, writeFile } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
 import {
   fingerprint, listDirectory, makeDirectory, moveEntry, readFile as readInside, removeEntry, resolveInside, stampAt,
-  createFile, HELD_FOR_MS, renameOver, safeRelativePath, writeFile as writeInside, writeTogether, writeWhole,
+  createFile, HELD_FOR_MS, renameOver, safeRelativePath, SWEEP_EVERY_MS, writeFile as writeInside, writeTogether, writeWhole,
 } from './fileStore'
 
 let root = ''
@@ -221,17 +222,51 @@ describe('a file made only where nothing is', () => {
     expect((await readdir(join(root, 'images'))).filter((name) => name.endsWith('.tmp'))).toEqual([])
   })
 
-  it('takes away what a write that stopped part way left beside a file it writes, a minute on, and nothing else', async () => {
+  it('takes away what a write that stopped part way left beside a file, in the shape it has and older builds had, a minute on, and nothing else', async () => {
     await mkdir(join(root, 'images'))
+    await writeFile(join(root, 'images', 'other.png'), 'a picture')
     const old = new Date(Date.now() - 120_000)
-    for (const name of ['map.png.mg1abcdefgh.tmp', 'map.png.mg1abcdefgi.landing', 'other.png.mg1abcdefgh.tmp', 'map.png.mg1abcdefgj.tmp']) {
+    const left = [
+      'map.png.lvarch-mg1abcdefgh.tmp', 'map.png.lvarch-mg1abcdefgi.landing', 'map.png.mg1abcdefgh.tmp', 'map.png.mg1abcdefgi.landing',
+      'other.png.lvarch-mg1abcdefgh.tmp', 'other.png.mg1abcdefgh.tmp', 'gone.png.lvarch-mg1abcdefgh.tmp', 'notes.tmp',
+    ]
+    for (const name of left) {
       await writeFile(join(root, 'images', name), 'left')
-      if (name !== 'map.png.mg1abcdefgj.tmp') await utimes(join(root, 'images', name), old, old)
+      await utimes(join(root, 'images', name), old, old)
     }
-    await writeFile(join(root, 'images', 'notes.tmp'), 'a person’s')
-    await utimes(join(root, 'images', 'notes.tmp'), old, old)
+    await writeFile(join(root, 'images', 'map.png.lvarch-mg1abcdefgj.tmp'), 'still being written')
     expect(await createFile(root, 'images/map.png', bytes('one'))).toBe(true)
-    expect((await readdir(join(root, 'images'))).sort()).toEqual(['map.png', 'map.png.mg1abcdefgj.tmp', 'notes.tmp', 'other.png.mg1abcdefgh.tmp'])
+    expect((await readdir(join(root, 'images'))).sort()).toEqual([
+      'gone.png.lvarch-mg1abcdefgh.tmp', 'map.png', 'map.png.lvarch-mg1abcdefgj.tmp', 'notes.tmp', 'other.png', 'other.png.mg1abcdefgh.tmp',
+    ])
+  })
+
+  it('lists a folder for what was left at most once a while, and again after a write in it failed', async () => {
+    const stale = join(root, 'model.json.lvarch-mg1abcdefgh.tmp')
+    const leave = async () => {
+      await writeFile(stale, 'left')
+      const old = new Date(Date.now() - 120_000)
+      await utimes(stale, old, old)
+    }
+    await writeInside(root, 'model.json', bytes('one'))
+    await leave()
+    await writeInside(root, 'model.json', bytes('two'))
+    expect(existsSync(stale)).toBe(true)
+    await makeDirectory(root, 'blocked.json')
+    await expect(writeInside(root, 'blocked.json', bytes('x'))).rejects.toThrow()
+    await writeInside(root, 'model.json', bytes('three'))
+    expect(existsSync(stale)).toBe(false)
+    expect(SWEEP_EVERY_MS).toBe(600_000)
+  })
+
+  it('marks the names it writes beside a file as its own', async () => {
+    const named: string[] = []
+    await createFile(root, 'images/map.png', bytes('one'), (from) => {
+      named.push(from)
+      return Promise.reject(Object.assign(new Error('EISDIR'), { code: 'EISDIR' }))
+    })
+    expect(named).toHaveLength(1)
+    expect(basename(named[0])).toMatch(/^map\.png\.lvarch-[0-9a-z]{9,14}\.tmp$/)
   })
 })
 

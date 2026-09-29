@@ -371,8 +371,11 @@ repositories, in `src/adapters/folder/`:
   tried again on Windows for up to ten seconds while something else holds
   the file, the directory flushed after it elsewhere, and a file linked
   there written where the link leads; a name of ours that a stopped write
-  left beside a file is taken away when that file is next written, a minute
-  on); in a browser, in the database
+  left beside a file, a minute old, is taken away when its folder is next
+  written — the folder listed for it at most once every ten minutes, and
+  again after a write in it failed; the names it writes now carry an
+  `lvarch-` mark, and the older shape is taken only beside a file just
+  written); in a browser, in the database
   its repositories keep their own work in, under a key of the folder's own —
   a handle has no identity storage can be keyed by, so each folder has a
   record holding its handle, found by asking each kept handle whether it is
