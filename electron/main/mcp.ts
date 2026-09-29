@@ -26,7 +26,7 @@
  */
 import { app, ipcMain, webContents } from 'electron'
 import { randomBytes, randomUUID } from 'node:crypto'
-import { chmod, readFile, writeFile } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { AgentAnswer, AgentRequest } from '../../src/agent/tools'
 import { refused } from '../../src/agent/tools'
@@ -34,6 +34,7 @@ import type {
   AgentClient, AgentServerPatch, AgentServerSettings, AgentServerStatus,
 } from '../../src/platform/agentServer'
 import { AGENT_OFF, DEFAULT_AGENT_SETTINGS, readAgentSettings } from '../../src/platform/agentServer'
+import { writeWhole } from './fileStore'
 import { log } from './log'
 import { listen } from './mcpServer'
 import type { AgentListener } from './mcpServer'
@@ -79,10 +80,8 @@ async function saveSettings(next: AgentServerSettings): Promise<void> {
   settings = next
   const path = settingsPath()
   try {
-    await writeFile(path, `${JSON.stringify(next, undefined, 2)}\n`, { encoding: 'utf8', mode: 0o600 })
-    // `mode` applies only when the file is created; a file that already
-    // existed keeps whatever it had, so say it again.
-    await chmod(path, 0o600)
+    // A new file each time, renamed over the old: it has this mode whatever the old one had.
+    await writeWhole(path, `${JSON.stringify(next, undefined, 2)}\n`, 0o600)
   } catch (error) {
     log('agent', `could not save ${SETTINGS_FILE}: ${String(error)}`)
   }

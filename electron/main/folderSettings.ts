@@ -13,8 +13,8 @@
  * text back, and answers the renderer's two calls.
  */
 import { app, ipcMain } from 'electron'
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
+import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import type { LocalSettings, LocalSettingsPatch } from '../../src/projects/folderSettings'
 import { readLocalSettings } from '../../src/projects/folderSettings'
 import {
@@ -25,6 +25,7 @@ import {
   scopePlacesText,
 } from '../../src/platform/node/appliedSteps'
 import type { PictureStamps, ScopePlaces } from '../../src/platform/node/appliedSteps'
+import { writeWhole } from './fileStore'
 import { isGranted } from './files'
 import { log } from './log'
 
@@ -50,7 +51,7 @@ export function registerFolderSettingsChannel(): void {
     const held = (patch ?? {}) as LocalSettingsPatch
     const next = machineFolderSettingsText(await text(), root, held)
     try {
-      await writeFile(settingsPath(), `${next}\n`, 'utf8')
+      await writeWhole(settingsPath(), `${next}\n`)
     } catch (cause) {
       log('settings', `could not write ${MACHINE_FOLDER_SETTINGS_FILE}: ${String(cause)}`)
       throw cause
@@ -79,8 +80,9 @@ function kept(
     return inTurn(root, async () => {
       const path = stepsPath(root)
       try {
-        await mkdir(dirname(path), { recursive: true })
-        await writeFile(path, `${written(await text(path), root, value)}\n`, 'utf8')
+        // Whole or not at all: a file cut short reads as nothing, and the next
+        // write would keep only what it adds.
+        await writeWhole(path, `${written(await text(path), root, value)}\n`)
       } catch (cause) {
         log('settings', `could not write a folder's ${part.toLowerCase()}: ${String(cause)}`)
         throw cause

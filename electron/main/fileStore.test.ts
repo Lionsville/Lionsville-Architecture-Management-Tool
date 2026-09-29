@@ -12,12 +12,12 @@
  * half of the new one.
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { chmod, mkdir, mkdtemp, readdir, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises'
+import { chmod, mkdir, mkdtemp, readdir, readFile, realpath, rm, stat, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
   fingerprint, listDirectory, makeDirectory, moveEntry, readFile as readInside, removeEntry, resolveInside, stampAt,
-  safeRelativePath, writeFile as writeInside, writeTogether,
+  safeRelativePath, writeFile as writeInside, writeTogether, writeWhole,
 } from './fileStore'
 
 let root = ''
@@ -162,6 +162,26 @@ describe('what the channel does with a folder', () => {
  * staged beside every target first, then moved into place, so the renderer
  * going away part way cannot leave half an organisation.
  */
+describe('a file of the app’s own, written whole', () => {
+  it('writes text into folders it makes, with the mode asked for whatever the old file had', async () => {
+    const target = join(outside, 'folders', 'one.json')
+    await writeWhole(target, '{"a":1}\n')
+    await chmod(target, 0o644)
+    await writeWhole(target, '{"a":2}\n', 0o600)
+    expect(await readFile(target, 'utf8')).toBe('{"a":2}\n')
+    expect((await stat(target)).mode & 0o777).toBe(0o600)
+    expect(await readdir(join(outside, 'folders'))).toEqual(['one.json'])
+  })
+
+  it('leaves the file it was to replace, whole, and nothing beside it, when the write fails', async () => {
+    const target = join(outside, 'kept.json')
+    await writeWhole(target, 'before')
+    await expect(writeWhole(target, { toString: () => 'never' } as unknown as string)).rejects.toThrow()
+    expect(await readFile(target, 'utf8')).toBe('before')
+    expect(await readdir(outside)).toEqual(['kept.json'])
+  })
+})
+
 describe('a file looked at without reading it', () => {
   it('says its size, when it was written and its number on the disk, and nothing for a folder or what is not there', async () => {
     await writeFile(join(root, 'map.png'), 'abc')

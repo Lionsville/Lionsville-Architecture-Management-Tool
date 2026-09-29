@@ -39,7 +39,7 @@ import { sayable } from './sayable'
 import { watchFolder } from './watch'
 import {
   fingerprint, listDirectory, makeDirectory, moveEntry, readFile as readInside, removeEntry, resolveInside, stampAt,
-  writeFile as writeInside, writeTogether as writeTogetherInside,
+  writeFile as writeInside, writeTogether as writeTogetherInside, writeWhole,
 } from './fileStore'
 
 /** Where the list of folders the user has chosen is kept, between runs. */
@@ -120,7 +120,7 @@ async function rememberRecent(directory: DesktopDirectory): Promise<void> {
   recents = [directory, ...recents.filter((held) => held.root !== directory.root)].slice(0, RECENTS_KEPT)
   onRecentsChanged?.()
   try {
-    await writeFile(recentsPath(), `${JSON.stringify(recents, null, 2)}\n`, 'utf8')
+    await writeWhole(recentsPath(), `${JSON.stringify(recents, null, 2)}\n`)
   } catch (cause) {
     // Not fatal: the folder still works this run, it is only forgotten by the
     // next one. Worth a line in the log, not worth a dialog.

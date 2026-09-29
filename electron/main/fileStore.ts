@@ -173,24 +173,23 @@ function isAbsence(cause: unknown): boolean {
 }
 
 /**
- * Written whole, or not at all.
+ * A file written whole, or not at all: what every file of the app's own and
+ * every file in a granted folder is written with.
  *
  * Temporary name in the same directory (a rename across filesystems is not
  * atomic), flushed to the platter before the rename (a rename is atomic in the
  * directory, which says nothing about whether the bytes arrived), then renamed
  * over. The temporary file is removed on any failure, so an interrupted save
- * leaves the previous file and nothing else.
+ * leaves the previous file and nothing else, and a read meanwhile reads the
+ * previous file whole. `mode` is the new file's, whatever the old one had.
  */
-export async function writeFile(root: string, path: string, bytes: Uint8Array): Promise<DesktopStamp> {
-  const target = await resolveInside(root, path)
-  if (!target) throw new Error('shell.pathRefused')
+export async function writeWhole(target: string, data: Uint8Array | string, mode?: number): Promise<void> {
   await mkdir(dirname(target), { recursive: true })
-
   const temporary = `${target}.${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}.tmp`
   try {
-    const handle = await open(temporary, 'w')
+    const handle = await open(temporary, 'w', mode)
     try {
-      await handle.write(bytes)
+      await handle.writeFile(data)
       await handle.sync()
     } finally {
       await handle.close()
@@ -200,6 +199,13 @@ export async function writeFile(root: string, path: string, bytes: Uint8Array): 
     await unlink(temporary).catch(() => undefined)
     throw cause
   }
+}
+
+/** A file inside a granted folder, written whole or not at all (`writeWhole`), and its stamp. */
+export async function writeFile(root: string, path: string, bytes: Uint8Array): Promise<DesktopStamp> {
+  const target = await resolveInside(root, path)
+  if (!target) throw new Error('shell.pathRefused')
+  await writeWhole(target, bytes)
   return stampOf(bytes, await stat(target))
 }
 

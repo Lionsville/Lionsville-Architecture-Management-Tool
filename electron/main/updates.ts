@@ -51,7 +51,7 @@ import { app, BrowserWindow, dialog, ipcMain, net, shell } from 'electron'
 import type { MessageBoxOptions, MessageBoxReturnValue } from 'electron'
 import type { AppUpdater, ProgressInfo } from 'electron-updater'
 import { constants } from 'node:fs'
-import { access, readFile, writeFile } from 'node:fs/promises'
+import { access, readFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import {
   DEFAULT_UPDATE_SETTINGS,
@@ -68,6 +68,7 @@ import {
 } from '../../src/platform/updates'
 import type { Installation, NotInPlace, Release, UpdateSettings } from '../../src/platform/updates'
 import type { UpdateSettingsPatch } from '../../src/platform/updateSettings'
+import { writeWhole } from './fileStore'
 
 /**
  * Where a build composed from this one publishes its own versions (ADR-0030).
@@ -172,7 +173,7 @@ async function loadSettings(): Promise<void> {
 async function saveSettings(next: UpdateSettings): Promise<void> {
   settings = next
   try {
-    await writeFile(settingsPath(), `${JSON.stringify(next, undefined, 2)}\n`, 'utf8')
+    await writeWhole(settingsPath(), `${JSON.stringify(next, undefined, 2)}\n`)
   } catch (error) {
     log(`could not save settings: ${String(error)}`)
   }
