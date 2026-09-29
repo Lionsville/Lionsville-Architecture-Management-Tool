@@ -177,8 +177,8 @@ disabling it.
 
 ### The organisation, and the scopes in it
 
-The app opens on the **organisation** — the working folder itself. Everything
-in it is a **scope**: one document with a name, its boards, decisions, plans and
+The app opens on the **organisation**, the root of everything you keep.
+Everything in it is a **scope**: one document with a name, its boards, decisions, plans and
 business architecture — and scopes nest, the organisation at the top, a
 **domain** or a **team** under it, a **landscape scope** under that, as deep as
 the work needs. The first screen is the organisation's home: its name and
@@ -186,17 +186,18 @@ links, its own pages, its boards, the scopes within it, sorted by name or by
 what changed most recently, and the examples last. A scope's name, its kind and where it is filed
 can all be changed afterwards.
 
-Examples are **copied** in when you open one — into an empty organisation as
-the organisation itself, otherwise under a scope of their own. Nothing you do
+Examples are **copied** in when you open one — into an empty, unnamed
+organisation as the organisation itself, otherwise under a scope of their own. Nothing you do
 runs against an example in place.
 
 ### Saving, exporting, sharing
 
 Three ways out, for three different purposes:
 
-- **The working file (`.lvarch`)** — everything: topology, geometry, styling,
-  uploaded logos, pinned routes and attach sides. This is what you save to keep
-  working, and the file to hand to someone who will edit it.
+- **The working file (`.lvarch`)** — everything: every scope, topology,
+  geometry, styling, pictures, uploaded logos, pinned routes and attach sides,
+  sealed under a password. This is the file to hand to someone who will edit
+  it, and the way to move your work between the desktop and a browser.
 - **The interchange document** — topology and semantics only, no geometry and no
   styling. This is the form for review and for version control: a diff shows
   what changed about the architecture rather than what moved on the canvas.
@@ -232,40 +233,43 @@ translation. Light, dark and system themes.
 
 ## Where your work is kept
 
-**On the desktop, in a folder you choose**, as text files you can read
-(`docs/decisions/0003`):
+In one of three places, and the app always says which:
+
+- **In a folder, on the desktop**, as text files you can read
+  (`docs/decisions/0003`). Nothing is hidden inside the app: the folder syncs,
+  backs up and commits like anything else you own. A moved element rewrites
+  one small file, and a rewritten paragraph one markdown file.
+- **In the browser**, in that browser's own storage for the site, where it
+  stays across restarts. Chromium can also open a folder for a tab, and then
+  the tab works in it the way the desktop does.
+- **Nowhere**, in a private window or anywhere the browser will keep nothing.
+  Everything works, and the app says plainly that nothing outlives the tab.
 
 ```
-<your folder>/<group>/<project>/project.json · model.json
-                                diagrams/<id>.json · <id>.placements.json
-                                docs/<element>.md · decisions/NNNN-<slug>.md
-                                observations/NNNN-<slug>.md · observations/causes/NNNN-<slug>.md
-                                logos/<key>.svg
+<your folder>/scope.json · model.json           the organisation
+              <scope>/scope.json · model.json   a scope under it, and so on down
+                      diagrams/<id>.json · <id>.geometry.json
+                      docs/<element>.md · decisions/NNNN-<slug>.md
+                      transitions/ · observations/ · images/ · logos/
 ```
 
-Nothing is hidden inside the app. The folder syncs, backs up and commits like
-anything else you own; a moved element rewrites one small file, a rewritten
-paragraph one markdown file, and `git diff` says what changed in words you
-recognise. Everything is written three seconds after you stop editing, when you
-leave the window and when you close it — and closing with unsaved work asks
-first. If a file changes underneath you, the app says so and never overwrites
-the other version without asking.
+Everything is written three seconds after you stop editing, when you leave the
+window and when you close it, and closing with unsaved work asks first. If the
+work changes underneath you (a colleague, a sync client, another tab), the app
+says so. It never overwrites the other version without asking.
 
-With git on the machine, **Save… ▸ Snapshot…** records the folder under a
-message drafted from what you actually did, and **History…** shows what has
-changed since any snapshot — as architecture, not as lines.
+**Every place keeps a history.** **Snapshot…** records the work under a
+message drafted from what you actually did. **History…** shows what has
+changed since any snapshot, as architecture rather than as lines, restores a
+diagram, a page or the whole scope, and labels a version. A folder keeps its
+history in git on your machine, and a browser keeps it in the browser.
+Pictures in a description are fetched only when they scroll into view.
 
-**In a browser tab**, a folder too where the browser offers one (Chromium's File
-System Access API); otherwise projects live in that browser's storage and the
-working file is the durable artefact. Browser storage is small and fixed, so the
-app says once when it is about four fifths full — a browser stops saving without
-asking, and that is the only warning there is. If storage refuses outright — a
-private window, a strict policy — the session falls back to memory: everything
-works and nothing is left behind, which is what opening such a window asked for.
-The status bar says so once.
-
-The working file (`.lvarch`) is the same folder in one file — a zip — for
-handing to somebody else. Files written by older builds keep opening.
+**The working file (`.lvarch`)** is the whole organisation in one file, sealed
+under a password. It opens in any of the three places, so it is how work moves
+from a browser to the desktop and back. A file saved from one opens byte for
+byte the same in another, pictures included. Files written by older builds
+keep opening, and a browser's work from older builds is brought along.
 
 On boot the app reopens the scope you had open, or shows the organisation
 screen.
@@ -294,7 +298,7 @@ locally).
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 5739 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 6964 tests. Run it
 after every change; it is fast on purpose.
 
 ```bash
@@ -336,13 +340,16 @@ src/documentation/  descriptions as documents, and the page that reads them
 src/decisions/      architecture decision records, and the page that reads them
 src/search/         one search over elements, documentation and decisions
 src/i18n/           the registry; each module keeps its own strings/ slice
-src/projects/       what a project is, where it is filed, what is remembered
+src/projects/       what a scope is, where it is filed, the tree and its index
 src/platform/       a refusal, a diagnostic, the log's name, the window's chrome
 src/widgets/        icons and one dialog — presentation with no opinions
-src/ports/          the seams: ScopeStore · PreferencesStore · DocumentGateway
-                    ProjectHistory · Diagnostics · HostControls · AgentGateway
-                    CommandChannel
-src/adapters/       the outside world, one folder per flavour
+src/ports/          the seams: ScopeRepository · OrganisationIndex
+                    HistoryRepository · ImageRepository · SettingsRepository
+                    Interchange · CommandChannel · PreferencesStore
+                    DocumentGateway · Diagnostics · HostControls · AgentGateway
+src/adapters/       the outside world: the folder and its format, this
+                    browser's database, memory, the desktop's channel
+src/providers/      each place work is kept, whole: its way in and its chrome
 src/app/            the shell: the organisation screen, workspace, toolbar, dialogs
 electron/           the desktop main process and preload
 ```
@@ -355,8 +362,10 @@ and knows everyone; nobody imports `app`. `model`, `layout`, `platform`,
 React Flow at all — nor a `ui/` file, nor the barrel of a module that
 re-exports one; those modules name the file they want. `platform/node/` is the
 only folder in `src/` that may say `node:`, and no module may import it, `app`
-included. `localStorage` and `sessionStorage` are an error outside
-`src/adapters/`, along with the file pickers on `window`. Every source file
+included. `localStorage`, `sessionStorage` and IndexedDB are an error outside
+`src/adapters/`, along with the file pickers on `window`. Nothing outside the
+adapters, the providers and the composition root may import an
+implementation or name a storage mechanism (`build/storageLine.ts`). Every source file
 carries its SPDX licence header, which is a rule here too. If a rule blocks
 you, the design is telling you something — move the code, do not route around
 it.
@@ -366,30 +375,31 @@ Until September 2026 the editor was a separate package under
 keys for screens it could not render. `docs/decisions/0001` records why that
 boundary went and what replaced it.
 
-Adding a different place to keep things is a class under `src/adapters/`, the
-shared behaviour suite (`src/ports/ScopeStore.contract.ts`) run over it, and
-one `registerSourceProvider` in `composition.ts`. Nothing above the seam changes.
+Adding a different place to keep things is its five repositories under
+`src/adapters/`, the five contract suites (`src/ports/*.contract.ts`) run over
+them, a provider under `src/providers/`, and one `registerSourceProvider` in
+`composition.ts`. Nothing above the seam changes.
 
 `CLAUDE.md` carries the full map, including a "where does my change go" table
 and the names that are settled.
 
-**There is no customer in this codebase** — an organisation is a *group*, which
+**There is no customer in this codebase** — an organisation is a *scope*, which
 is data a user creates, not a name compiled into the code. If you find one in an
 identifier, a storage key or a default filename, that is a bug.
 
-## Groups and projects, in the store
+## Scopes, and their addresses
 
-A project is addressed by a **group path** plus a key, and the store holds many:
+A scope is addressed by its **path** in the tree, the organisation's being
+empty, and has an identity a move does not change:
 
 ```
-lvarch.project.acme-logistics/warehouse-landscape
-lvarch.project.acme/rail/rolling-stock
+acme
+acme/rail/rolling-stock
 ```
 
-Groups are derived from the projects filed under them — there is nowhere to keep
-an empty one — so creating a group and creating a project are separate actions.
-A rename edits the model and leaves the ref alone; a move changes the ref, and
-is save-then-remove in that order.
+A rename edits the scope and leaves its address alone. A move changes the
+address of the scope and of everything under it, and carries every reference
+pointing into it.
 
 ## The user manual
 
@@ -404,13 +414,13 @@ map, diagram settings, saving and sharing, and the shortcuts worth knowing.
 | Path | What it is |
 |---|---|
 | `CLAUDE.md` | How to work in this repo: the layer map, the loop, the conventions, the settled names |
-| `docs/release.md` | Cutting a release: the procedure, the thirteen secrets, what has gone wrong before |
+| `docs/release.md` | Cutting a release: the procedure, the five variables, what has gone wrong before |
 | `docs/decisions/` | The architecture decision records for this repository |
 | `eslint.config.js` | The import matrix: who may know about whom, and why |
 | `src/app/main.tsx` | The composition root; its header states the pattern |
-| `src/app/composition.ts` | Which adapter the shell gets, and which icon packs |
-| `src/projects/project.ts` | What a project is: open, save, order, summarise |
-| `src/ports/ProjectStore.contract.ts` | The behaviour every store must show |
+| `src/app/composition.ts` | Which providers the shell registers, and which icon packs |
+| `src/projects/scope.ts` | What a scope is, and the arithmetic over a tree of them |
+| `src/ports/*.contract.ts` | The behaviour every place that keeps work must show |
 | `electron/main/index.ts` | The desktop main process; its header states what is load-bearing |
 | `build/libavoidWasm.ts` | Publishes the router's wasm; fails a build, not a shipped app |
 | `docs/manual.{en,nl,de}.md` | The user manual, in English, Dutch and German |
