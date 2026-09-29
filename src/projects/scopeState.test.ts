@@ -6,7 +6,7 @@ import { EN } from '../i18n/strings.en'
 import type { Command } from '../model/commands'
 import type { DesignElement } from '../model/types'
 import type { ImageEntry } from '../model/imageName'
-import { applySteps, emptyContent, recordsOfCommand, SCOPE_REFUSALS } from './scopeState'
+import { applySteps, emptyContent, SCOPE_REFUSALS } from './scopeState'
 import type { ScopeCommand, ScopeContent, ScopeStep } from './scopeState'
 
 function element(id: string, name: string): DesignElement {
@@ -56,7 +56,7 @@ describe('applying steps', () => {
   it('says a run that changes nothing changed nothing, and answers what it was given', () => {
     const before = content()
     const result = applySteps(before, steps({ type: 'diagram.rename', id: 'l7', name: 'Landscape' }))
-    expect(result).toEqual({ ok: true, content: before, changed: false, records: [{ kind: 'diagram', id: 'l7' }] })
+    expect(result).toEqual({ ok: true, content: before, changed: false, records: [] })
   })
 
   it('says an update to the value a record already has changed nothing, whatever the reducer hands back', () => {
@@ -107,9 +107,23 @@ describe('applying steps', () => {
     expect(result.ok && result.records).toEqual([])
   })
 
-  it('says a command may have written anything where the model cannot say what it writes', () => {
-    expect(recordsOfCommand({ type: 'nobody.knows' } as unknown as Command)).toBeUndefined()
-    expect(recordsOfCommand({ type: 'image.remove', name: 'a.png' })).toEqual([{ kind: 'image', id: 'a.png' }])
+  it('names what a delete reached beyond its own record', () => {
+    const before = applySteps(content(), steps(
+      { type: 'element.create', element: element('depot', 'Depot') },
+      { type: 'relation.create', relation: { id: 'r1', type: 'flow', sourceId: 'crews', targetId: 'depot', isBidirectional: false } },
+    ))
+    if (!before.ok) throw new Error('not set up')
+    const deleted = applySteps(before.content, steps({ type: 'element.delete', id: 'depot' }))
+    expect(deleted.ok && deleted.records).toEqual([{ kind: 'element', id: 'depot' }, { kind: 'relation', id: 'r1' }])
+  })
+
+  it('says a run that puts back what it changed changed nothing', () => {
+    const before = content()
+    const result = applySteps(before, steps(
+      { type: 'element.create', element: element('depot', 'Depot') },
+      { type: 'element.delete', id: 'depot' },
+    ))
+    expect(result).toEqual({ ok: true, content: before, changed: false, records: [] })
   })
 })
 
@@ -137,6 +151,30 @@ describe('the image library, as steps', () => {
   it('refuses a name no picture may have', () => {
     const result = applySteps(content(), steps({ type: 'image.add', image: { ...picture, name: '../escape.png' } }))
     expect(result.ok ? undefined : result.refused).toBe('shell.imageBadName')
+  })
+
+  it('refuses a name another picture has in another case, or composed another way', () => {
+    const added = applySteps(content(), steps({ type: 'image.add', image: { ...picture, name: 'Übersicht.png' } }))
+    if (!added.ok) throw new Error('not added')
+    for (const name of ['übersicht.png', 'ÜBERSICHT.PNG']) {
+      const again = applySteps(added.content, steps({ type: 'image.add', image: { ...picture, name } }))
+      expect(again.ok ? undefined : again.refused, name).toBe('command.taken')
+    }
+  })
+
+  it('refuses an entry that does not describe its picture', () => {
+    for (const image of [
+      { ...picture, mediaType: 'image/jpeg' },
+      { ...picture, contentAddress: 'sha256:ABC' },
+      { ...picture, contentAddress: `md5:${'0'.repeat(64)}` },
+      { ...picture, size: -1 },
+      { ...picture, width: 1.5 },
+      { ...picture, height: Number.NaN },
+      { ...picture, size: Number.POSITIVE_INFINITY },
+    ]) {
+      const result = applySteps(content(), steps({ type: 'image.add', image }))
+      expect(result.ok ? undefined : result.refused, JSON.stringify(image)).toBe('shell.imageBadEntry')
+    }
   })
 })
 

@@ -30,12 +30,12 @@ import type { StringKey } from '../i18n/strings'
 import type { UploadedLogo } from '../model'
 import type { Command } from '../model/commands'
 import type { HostModel } from '../model/hostModel'
-import { imageNameRefusal } from '../model/imageName'
+import { imageEntryRefusal, imageNameKey } from '../model/imageName'
 import type { ImageEntry, ImageName } from '../model/imageName'
 import { fromArrays, toArrays } from '../model/normalised'
 import type { Model } from '../model/normalised'
-import { recordsOf, SCOPE_RECORD, sameRecord } from '../model/recordKey'
-import type { RecordKey, RecordKind } from '../model/recordKey'
+import { recordsChanged, SCOPE_RECORD, sameValue } from '../model/recordKey'
+import type { RecordKey } from '../model/recordKey'
 import { apply } from '../model/reducer'
 import type { CommandRefusal } from '../model/reducer'
 import type { RecordLink } from './links'
@@ -67,10 +67,6 @@ export type ScopeDescription = {
   activeDiagramId?: string
   /** The marks uploaded here, for the cards that carry them. */
   logoLibrary?: UploadedLogo[]
-}
-
-const DESCRIPTION_KEYS: Record<keyof ScopeDescription, true> = {
-  kind: true, client: true, links: true, activeDiagramId: true, logoLibrary: true,
 }
 
 /** The part of a scope's state its steps change. */
@@ -113,7 +109,10 @@ export type ScopeCommand = Command | ImageCommand | DescribeCommand
  *
  * The same `stepId` and `at` a session gives a step it publishes
  * (`ports/CommandChannel.ts`): minted by whoever made it, so a step sent twice
- * — the answer lost on the way back — lands once.
+ * — the answer lost on the way back — lands once. A step id names one step in
+ * the whole source, not in one scope: a session mints one that nobody else
+ * will (a random UUID), and a repository that has applied a step by that id,
+ * to whichever scope, does not apply it again.
  */
 export type ScopeStep = {
   stepId: string
@@ -139,9 +138,10 @@ export const SCOPE_REFUSALS = [
   'shell.badScopePath',
   /** A step on a scope that was not read whole (`ScopeState.unreadable`). */
   'shell.unreadableNotSaved',
-  /** A picture's name no picture may have (`model/imageName.ts`). */
+  /** A picture's name no picture may have, or an entry that does not describe its picture (`model/imageName.ts`). */
   'shell.imageBadName',
   'shell.imageBadType',
+  'shell.imageBadEntry',
 ] as const satisfies readonly StringKey[]
 
 export type ScopeRefusal = CommandRefusal | (typeof SCOPE_REFUSALS)[number]
@@ -151,27 +151,18 @@ export function emptyContent(name: string, description: ScopeDescription = {}): 
   return { ...description, model: { name, elements: [], relations: [], diagrams: [] }, images: [] }
 }
 
-/**
- * The records a step's command writes, or `undefined` where it may write any
- * of them (`model/recordKey.ts`).
- */
-export function recordsOfCommand(command: ScopeCommand): readonly RecordKey[] | undefined {
-  switch (command.type) {
-    case 'image.add': return [{ kind: 'image', id: command.image.name }]
-    case 'image.remove': return [{ kind: 'image', id: command.name }]
-    case 'scope.describe': return [SCOPE_RECORD]
-    default: return recordsOf(command)
-  }
-}
-
 /** What applying a run of steps came to. */
 export type StepsApplied = {
   ok: true
   content: ScopeContent
   /** Whether anything is different: a run that changed nothing leaves a revision where it was. */
   changed: boolean
-  /** Every record the run wrote, once each; `undefined` where it may have written any. */
-  records: readonly RecordKey[] | undefined
+  /**
+   * Every record whose value differs between the content before the run and
+   * after it, once each (`model/recordKey.ts`): what the run touched, side
+   * effects included. Empty exactly where nothing changed.
+   */
+  records: readonly RecordKey[]
 }
 
 export type StepsRefused = { ok: false; refused: ScopeRefusal; stepId: string }
@@ -179,7 +170,7 @@ export type StepsRefused = { ok: false; refused: ScopeRefusal; stepId: string }
 /** The content being worked on, with the model indexed for the reducer while it is. */
 type Working = { description: ScopeDescription; model: Model; images: readonly ImageEntry[] }
 
-type Outcome = { ok: true; working: Working; changed: boolean } | { ok: false; refused: ScopeRefusal }
+type Outcome = { ok: true; working: Working } | { ok: false; refused: ScopeRefusal }
 
 /**
  * Apply steps to a scope's content, in order: every one of them, or — at the
@@ -190,31 +181,44 @@ type Outcome = { ok: true; working: Working; changed: boolean } | { ok: false; r
  * it, so a state kept by a repository and a model held by a session that
  * applied the same steps are the same model. Pure: what comes back is new,
  * and what went in is untouched.
+ *
+ * What changed is read off the content before and after, never off what a
+ * command says it writes: the reducer hands back a new model for some steps
+ * that change nothing, and a delete reaches records its command does not name.
  */
 export function applySteps(content: ScopeContent, steps: readonly ScopeStep[]): StepsApplied | StepsRefused {
   const { model, images, ...description } = content
-  let working: Working = { description, model: fromArrays(model), images }
-  let changed = false
-  let records: RecordKey[] | undefined = []
+  const before: Working = { description, model: fromArrays(model), images }
+  let working = before
   for (const step of steps) {
     const outcome = applyOne(working, step.command)
     if (!outcome.ok) return { ok: false, refused: outcome.refused, stepId: step.stepId }
     working = outcome.working
-    changed ||= outcome.changed
-    records = merged(records, recordsOfCommand(step.command))
   }
-  if (!changed) return { ok: true, content, changed, records }
+  const inModel = recordsChanged(before.model, working.model)
+  const scope = inModel.some((record) => record.kind === 'scope') || !sameValue(before.description, working.description)
+  const records = [
+    ...inModel.filter((record) => record.kind !== 'scope'),
+    ...imagesChanged(before.images, working.images),
+    ...(scope ? [SCOPE_RECORD] : []),
+  ]
+  if (records.length === 0) return { ok: true, content, changed: false, records }
   return {
     ok: true,
     content: { ...working.description, model: toArrays(working.model), images: working.images },
-    changed,
+    changed: true,
     records,
   }
 }
 
-function merged(held: RecordKey[] | undefined, more: readonly RecordKey[] | undefined): RecordKey[] | undefined {
-  if (held === undefined || more === undefined) return undefined
-  return [...held, ...more.filter((record) => !held.some((one) => sameRecord(one, record)))]
+/** The pictures whose entry was added, taken out or changed, by name. */
+function imagesChanged(before: readonly ImageEntry[], after: readonly ImageEntry[]): RecordKey[] {
+  if (before === after) return []
+  const was = new Map(before.map((image) => [image.name, image]))
+  const is = new Map(after.map((image) => [image.name, image]))
+  return [...new Set([...is.keys(), ...was.keys()])]
+    .filter((name) => !sameValue(was.get(name), is.get(name)))
+    .map((name) => ({ kind: 'image', id: name }))
 }
 
 function applyOne(working: Working, command: ScopeCommand): Outcome {
@@ -225,70 +229,34 @@ function applyOne(working: Working, command: ScopeCommand): Outcome {
     default: {
       const result = apply(working.model, command)
       if (!result.ok) return { ok: false, refused: result.reason }
-      return sameModel(working.model, result.model, recordsOf(command))
-        ? { ok: true, working, changed: false }
-        : { ok: true, working: { ...working, model: result.model }, changed: true }
+      return { ok: true, working: { ...working, model: result.model } }
     }
   }
 }
 
-/** Where each kind of record the model holds is kept in it. */
-const LISTS: Record<Exclude<RecordKind, 'image' | 'scope'>, keyof Model> = {
-  element: 'elements', relation: 'relations', diagram: 'diagrams', decision: 'decisions',
-  transition: 'transitions', observation: 'observations', cause: 'causes', solution: 'solutions',
-  experiment: 'experiments',
-}
-
-/** The model's own fields — its name, its description, its defaults — without the lists it holds. */
-function ownFields(model: Model): Record<string, unknown> {
-  const own: Record<string, unknown> = { ...model }
-  for (const list of [...Object.values(LISTS), 'order']) delete own[list]
-  return own
-}
-
-function recordIn(model: Model, record: RecordKey): unknown {
-  if (record.kind === 'scope') return ownFields(model)
-  if (record.kind === 'image') return undefined
-  return (model[LISTS[record.kind]] as Record<string, unknown> | undefined)?.[record.id]
-}
-
 /**
- * Whether a command left the model as it found it.
- *
- * The reducer hands back the model it was given for most commands that change
- * nothing, and a new one for some — an update that sets a field to the value
- * it has. So what counts is the value of every record the command writes,
- * compared before and after; and, for a command that may write anything, the
- * whole model. A step that changes nothing must not move a revision, or every
- * reader of it re-reads a scope for nothing.
+ * An entry that describes its picture, under a name no picture in the library
+ * has — compared composed and in lower case (`imageNameKey`), because a
+ * desktop that does not tell the two apart would keep one of them. A second
+ * is refused the way a create on a taken id is.
  */
-function sameModel(before: Model, after: Model, records: readonly RecordKey[] | undefined): boolean {
-  if (before === after) return true
-  if (records === undefined) return stableText(before) === stableText(after)
-  return records.every((record) => stableText(recordIn(before, record)) === stableText(recordIn(after, record)))
-}
-
-/** A value as text with every object's keys in order, so two equal values are one text. */
-function stableText(value: unknown): string {
-  return JSON.stringify(value, (_key, held: unknown) => (
-    held && typeof held === 'object' && !Array.isArray(held)
-      ? Object.fromEntries(Object.keys(held).sort().map((key) => [key, (held as Record<string, unknown>)[key]]))
-      : held
-  ))
-}
-
-/** A name is one picture: a second under the same name is refused, the way a create on a taken id is. */
 function addImage(working: Working, image: ImageEntry): Outcome {
-  const refused = imageNameRefusal(image.name)
+  const refused = imageEntryRefusal(image)
   if (refused) return { ok: false, refused }
-  if (working.images.some((held) => held.name === image.name)) return { ok: false, refused: 'command.taken' }
-  return { ok: true, working: { ...working, images: [...working.images, { ...image }] }, changed: true }
+  const key = imageNameKey(image.name)
+  if (working.images.some((held) => imageNameKey(held.name) === key)) return { ok: false, refused: 'command.taken' }
+  return { ok: true, working: { ...working, images: [...working.images, { ...image }] } }
 }
 
 function removeImage(working: Working, name: ImageName): Outcome {
   const images = working.images.filter((held) => held.name !== name)
   if (images.length === working.images.length) return { ok: false, refused: 'command.gone' }
-  return { ok: true, working: { ...working, images }, changed: true }
+  return { ok: true, working: { ...working, images } }
+}
+
+/** The keys a description may carry. */
+const DESCRIPTION_KEYS: Record<keyof ScopeDescription, true> = {
+  kind: true, client: true, links: true, activeDiagramId: true, logoLibrary: true,
 }
 
 /**
@@ -305,8 +273,5 @@ function describe(working: Working, patch: ScopeDescription): Outcome {
     if (value === undefined) delete next[key]
     else next[key] = structuredClone(value)
   }
-  const changed = stableText(next) !== stableText(working.description)
-  return changed
-    ? { ok: true, working: { ...working, description: next as ScopeDescription }, changed }
-    : { ok: true, working, changed }
+  return { ok: true, working: { ...working, description: next as ScopeDescription } }
 }
