@@ -50,7 +50,7 @@
  */
 import {
   DECISIONS_FOLDER, DOCS_FOLDER, folderFormatVersion, headerUnreadable, isFormatPath, MODEL_FILE, modelListsFrom,
-  modelUnreadable,
+  modelUnreadable, IMAGES_FOLDER,
   SCOPE_FILE,
   TRANSITIONS_FOLDER, OBSERVATIONS_FOLDER,
   SCOPE_FOLDERS, SCOPE_FORMAT_VERSION, scopeFiles, scopeSummaryFrom, isBinaryPath,
@@ -105,7 +105,7 @@ function isBinary(path: string): boolean {
  * that knows what an address may look like, rather than relying on each backend
  * to be strict on its own.
  */
-function usablePath(path: ScopePath): boolean {
+export function usablePath(path: ScopePath): boolean {
   if (!isSafeScopePath(path)) return false
   return scopeSegments(path).every((part) =>
     part.length > 0 && part !== '.' && part !== '..' && !/[/\\]/.test(part))
@@ -139,7 +139,7 @@ function ownFolder(name: string, within: string): boolean {
  * a file where a folder was asked for); the desktop's handle and the suites'
  * double say it in the message, because an `Error` over IPC loses its name.
  */
-function isAbsent(cause: unknown): boolean {
+export function isAbsent(cause: unknown): boolean {
   if (typeof cause !== 'object' || cause === null) return false
   const { name, message } = cause as { name?: unknown; message?: unknown }
   const said = (word: string) => name === word || (typeof message === 'string' && message.startsWith(`${word}:`))
@@ -148,6 +148,18 @@ function isAbsent(cause: unknown): boolean {
 
 /** What {@link FileSystemScopeStore.read} answers for a file that is there and will not read. */
 const UNREAD = Symbol('unread')
+
+/** One scope's header as a walk of the tree found it: where, what it says, and when the scope last changed. */
+export type ScopeHeader = { path: ScopePath; text: string; current: boolean; updatedAt?: string }
+
+/**
+ * How a store keeps a scope's pictures. `with` — the default, and what the
+ * app's store does — reads them as the rest of the scope and writes them from
+ * its library. `apart` leaves `images/` alone in every read and every save,
+ * for a reader of the folder that keeps the pictures itself and asks for
+ * their bytes only when one is shown (ADR-0031 §3).
+ */
+export type PicturesKept = 'with' | 'apart'
 
 /** One file in a scope's folder, with enough to read it, replace it or remove it. */
 type Entry = { path: string; name: string; parent: DirectoryHandleLike; handle: FileHandleLike }
@@ -168,6 +180,7 @@ export class FileSystemScopeStore implements ScopeStore {
   constructor(
     private readonly root: DirectoryHandleLike,
     private readonly diagnostics?: Pick<Diagnostics, 'report'>,
+    private readonly pictures: PicturesKept = 'with',
   ) {}
 
   /**
@@ -234,7 +247,8 @@ export class FileSystemScopeStore implements ScopeStore {
     for await (const entry of folder.values()) {
       const path = within ? `${within}/${entry.name}` : entry.name
       if (entry.kind === 'directory') {
-        if (ownFolder(entry.name, within)) found.push(...await this.entries(entry, path))
+        const apart = this.pictures === 'apart' && within === '' && entry.name === IMAGES_FOLDER
+        if (ownFolder(entry.name, within) && !apart) found.push(...await this.entries(entry, path))
         continue
       }
       // A header an older format wrote is read so it can be folded, and
@@ -439,6 +453,35 @@ export class FileSystemScopeStore implements ScopeStore {
    */
   async list(): Promise<ScopeSummary> {
     const found: ScopeSummary[] = []
+    const { headers, unreadable } = await this.headers()
+    for (const { path, text, current, updatedAt } of headers) {
+      const summary = scopeSummaryFrom(text, path, updatedAt)
+      if (summary) found.push(summary)
+      // A header an older format wrote is folded when the scope is opened, and
+      // this listing has always passed over one it could not summarise.
+      else if (current) {
+        this.fault(path === ROOT_SCOPE ? 'the folder\'s listing' : 'a folder of the tree', new Error('a scope header this build cannot read'))
+        unreadable.push(path)
+      }
+    }
+    const root = scopeTree(found, this.root.name)
+    return {
+      ...root,
+      children: sortScopes(root.children),
+      ...(unreadable.length ? { unreadable: unreadable.sort() } : {}),
+    }
+  }
+
+  /**
+   * Every scope's header as the walk finds it — its text, whether it is this
+   * format's or one an older format wrote, and when anything of the scope was
+   * last written — and every folder whose listing or header would not read.
+   * What {@link list} is made from, for a reader that wants more of a header
+   * than a summary holds. `dated: false` leaves the dates out, which spares a
+   * read of every file of every scope.
+   */
+  async headers(dated = true): Promise<{ headers: ScopeHeader[]; unreadable: ScopePath[] }> {
+    const headers: ScopeHeader[] = []
     const unreadable: ScopePath[] = []
     const unlisted = (path: ScopePath, cause: unknown) => {
       this.fault(path === ROOT_SCOPE ? 'the folder\'s listing' : 'a folder of the tree', cause)
@@ -451,18 +494,10 @@ export class FileSystemScopeStore implements ScopeStore {
         return undefined
       })
       if (text === undefined) return
-      const summary = scopeSummaryFrom(text, path, await this.latestIn(folder))
-      if (summary) found.push(summary)
-      // A header an older format wrote is folded when the scope is opened, and
-      // this listing has always passed over one it could not summarise.
-      else if (current) unlisted(path, new Error('a scope header this build cannot read'))
+      const updatedAt = dated ? await this.latestIn(folder) : undefined
+      headers.push({ path, text, current, ...(updatedAt ? { updatedAt } : {}) })
     }, unlisted)
-    const root = scopeTree(found, this.root.name)
-    return {
-      ...root,
-      children: sortScopes(root.children),
-      ...(unreadable.length ? { unreadable: unreadable.sort() } : {}),
-    }
+    return { headers, unreadable }
   }
 
   /**
