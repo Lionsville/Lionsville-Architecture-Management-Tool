@@ -81,7 +81,32 @@ export type DesktopHistory = {
   resolve(root: string, side: SyncSide): Promise<ResolveOutcome>
   /** Keep this machine's settings file out of the folder's history. */
   excludeLocal(root: string): Promise<void>
+
+  // --- the history the folder's repositories read (ADR-0031 §2) ---
+
+  /** Keep a history where there is none; nothing where there is one. */
+  startHistory(root: string): Promise<void>
+  /** Every path that differs from the last commit, files never committed included. */
+  changes(root: string): Promise<DesktopChangedPath[]>
+  /** Those paths, and no others, as one commit; `undefined` where none of them changed. */
+  commitPaths(root: string, paths: string[], message: string): Promise<string | undefined>
+  /** Commits, newest first, with every path each changed. */
+  log(root: string, wanted: DesktopLogWanted): Promise<DesktopLogged[]>
+  /** Every file under a path at a commit, from the root. */
+  treeAt(root: string, sha: string, within: string): Promise<string[]>
+  /** Those files as they were at a commit: text, and bytes for a picture that is not an SVG. */
+  readAt(root: string, sha: string, paths: string[]): Promise<DesktopFileAt[]>
+  /** Every tag, on the commit it marks, with its words. */
+  tags(root: string): Promise<DesktopTag[]>
+  /** An annotated tag on a commit, never over one that is there. */
+  tag(root: string, sha: string, name: string, message: string): Promise<'done' | 'exists'>
 }
+
+export type DesktopChangedPath = { path: string; deleted: boolean }
+export type DesktopLogWanted = { paths?: string[]; grep?: string; limit: number; from?: string }
+export type DesktopLogged = { sha: string; at: number; author: string; subject: string; message: string; changed: string[] }
+export type DesktopFileAt = { path: string; text: string } | { path: string; bytes: Uint8Array }
+export type DesktopTag = { name: string; sha: string; message: string }
 
 /**
  * The settings main keeps for itself (ADR-0005): what it must read before any

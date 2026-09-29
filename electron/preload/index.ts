@@ -106,6 +106,14 @@ const history: DesktopHistory = {
   push: (root) => ipcRenderer.invoke('git:push', root),
   resolve: (root, side) => ipcRenderer.invoke('git:resolve', root, side),
   excludeLocal: (root) => ipcRenderer.invoke('git:excludeLocal', root),
+  startHistory: (root) => ipcRenderer.invoke('git:startHistory', root),
+  changes: (root) => ipcRenderer.invoke('git:changes', root),
+  commitPaths: (root, paths, message) => ipcRenderer.invoke('git:commitPaths', root, paths, message),
+  log: (root, wanted) => ipcRenderer.invoke('git:log', root, wanted),
+  treeAt: (root, sha, within) => ipcRenderer.invoke('git:treeAt', root, sha, within),
+  readAt: (root, sha, paths) => ipcRenderer.invoke('git:readAt', root, sha, paths),
+  tags: (root) => ipcRenderer.invoke('git:tags', root),
+  tag: (root, sha, name, message) => ipcRenderer.invoke('git:tag', root, sha, name, message),
 }
 
 const settings: DesktopSettings = {

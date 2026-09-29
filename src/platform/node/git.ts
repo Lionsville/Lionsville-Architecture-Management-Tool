@@ -128,7 +128,7 @@ export function gitEnvironment(from: NodeJS.ProcessEnv = process.env): NodeJS.Pr
 
 type GitError = Error & { stderr?: string; killed?: boolean; signal?: string; code?: number | string }
 
-async function git(root: string, args: readonly string[], timeout = TIMEOUT_MS): Promise<string> {
+export async function git(root: string, args: readonly string[], timeout = TIMEOUT_MS): Promise<string> {
   const { stdout } = await run('git', args, {
     cwd: root,
     timeout,
@@ -213,7 +213,7 @@ async function hasIdentity(root: string): Promise<boolean> {
   }
 }
 
-async function identityArgs(root: string): Promise<string[]> {
+export async function identityArgs(root: string): Promise<string[]> {
   return await hasIdentity(root)
     ? []
     : ['-c', `user.name=${FALLBACK_NAME}`, '-c', `user.email=${FALLBACK_EMAIL}`]

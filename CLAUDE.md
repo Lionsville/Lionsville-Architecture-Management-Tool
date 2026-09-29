@@ -431,6 +431,11 @@ src/platform/     What the app runs inside, and what a failure looks like.
                                       files at one, and `.git/info/exclude` —
                                       `electron/main` was its first caller and
                                       is no longer its only one
+                      node/gitEntries   what the history over a folder's
+                                      repositories asks of that git: the
+                                      changes, a commit of some paths, the
+                                      commits with what each changed, the files
+                                      at one, and the tags (ADR-0031 §2)
 src/widgets/      Presentation with no opinions: icons, one confirm dialog,
                   a laid-out page rasterised (`capturePage`), and a part that
                   is not in the first download (`lazyPart`): a page behind a

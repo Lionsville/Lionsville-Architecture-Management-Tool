@@ -31,6 +31,9 @@ import {
   excludeLocalSettings, filesAt, gitAvailable, history, initRepository, isRepository, label, pull, push, remote,
   resolve, snapshot,
 } from '../../src/platform/node/git'
+import {
+  allTags, changes, commitLog, commitPaths, readAt, startHistory, tagCommit, treeAt,
+} from '../../src/platform/node/gitEntries'
 import { log } from './log'
 import { watchFolder } from './watch'
 import {
@@ -160,6 +163,11 @@ function isPath(path: unknown): path is string {
  */
 function isHistoryPath(path: string): boolean {
   return /^[A-Za-z0-9_][A-Za-z0-9_\-./*]*$/.test(path) && !path.includes('..')
+}
+
+/** A list of strings, and nothing else in it. */
+function isStrings(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((one) => typeof one === 'string')
 }
 
 /**
@@ -319,6 +327,50 @@ export function registerFileChannel(options: { onRecentsChanged?: () => void } =
 
   ipcMain.handle('git:excludeLocal', async (_event, root: unknown) => {
     if (isGranted(root)) await excludeLocalSettings(root)
+  })
+
+  // The history the folder's repositories read (ADR-0031 §2). The same rule
+  // again, and every path a string inside the folder: `gitEntries.ts` hands
+  // git each one as a literal, and refuses an escape before git sees it.
+
+  ipcMain.handle('git:startHistory', async (_event, root: unknown) => {
+    if (!isGranted(root)) throw new Error('shell.pathRefused')
+    await startHistory(root)
+  })
+
+  ipcMain.handle('git:changes', (_event, root: unknown) => (isGranted(root) ? changes(root) : []))
+
+  ipcMain.handle('git:commitPaths', (_event, root: unknown, paths: unknown, message: unknown) => {
+    if (!isGranted(root) || !isStrings(paths) || typeof message !== 'string') throw new Error('shell.pathRefused')
+    return commitPaths(root, paths, message)
+  })
+
+  ipcMain.handle('git:log', (_event, root: unknown, wanted: unknown) => {
+    const held = wanted as { paths?: unknown; grep?: unknown; limit?: unknown; from?: unknown } | null
+    if (!isGranted(root) || !held || typeof held !== 'object' || typeof held.limit !== 'number') return []
+    if (held.paths !== undefined && !isStrings(held.paths)) return []
+    if ((held.grep !== undefined && typeof held.grep !== 'string') || (held.from !== undefined && typeof held.from !== 'string')) return []
+    return commitLog(root, {
+      limit: held.limit,
+      ...(held.paths !== undefined ? { paths: held.paths as string[] } : {}),
+      ...(held.grep !== undefined ? { grep: held.grep as string } : {}),
+      ...(held.from !== undefined ? { from: held.from as string } : {}),
+    })
+  })
+
+  ipcMain.handle('git:treeAt', (_event, root: unknown, sha: unknown, within: unknown) =>
+    (isGranted(root) && typeof sha === 'string' && typeof within === 'string' ? treeAt(root, sha, within) : []))
+
+  ipcMain.handle('git:readAt', (_event, root: unknown, sha: unknown, paths: unknown) =>
+    (isGranted(root) && typeof sha === 'string' && isStrings(paths) ? readAt(root, sha, paths) : []))
+
+  ipcMain.handle('git:tags', (_event, root: unknown) => (isGranted(root) ? allTags(root) : []))
+
+  ipcMain.handle('git:tag', (_event, root: unknown, sha: unknown, name: unknown, message: unknown) => {
+    if (!isGranted(root) || typeof sha !== 'string' || typeof name !== 'string' || typeof message !== 'string') {
+      throw new Error('shell.pathRefused')
+    }
+    return tagCommit(root, sha, name, message)
   })
 
   ipcMain.handle('files:watch', (_event, root: unknown) => {
