@@ -94,6 +94,21 @@ describe('the push after an entry', () => {
     expect(notify).toHaveBeenCalledWith('Pushed to the remote.', 'success')
   })
 
+  it('says a push git was not run for in the refusal’s own words, which name the key', async () => {
+    const refused = { refused: 'git was not run in this folder: its configuration sets http.sslcainfo, which this app does not run git with' }
+    const held = remote({ push: refused })
+    const { held: parts, history } = await own(held.sync, true)
+    const { notify } = chrome(parts)
+    await act(async () => { await history.record({ subject: 'Monday' }) })
+    await settled()
+    expect(notify).toHaveBeenCalledWith(expect.stringContaining('http.sslcainfo'), 'warning')
+  })
+
+  it('says a pull git was not run for as the folder opens, in its own words', async () => {
+    const { notify } = chrome((await own(remote().sync, false, { refused: 'git was not run in this folder: its configuration works in another folder' })).held)
+    expect(notify).toHaveBeenCalledWith(expect.stringContaining('works in another folder'), 'warning')
+  })
+
   it('does not happen when this person does not say so', async () => {
     const held = remote()
     const { history } = await own(held.sync, false)

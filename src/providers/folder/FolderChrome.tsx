@@ -24,8 +24,8 @@ import Stack from '@mui/material/Stack'
 import { useStrings } from '../../i18n'
 import type { StringKey } from '../../i18n'
 import { reasonOf } from '../../platform/errors'
-import { isSyncRefusal } from '../../platform/sync'
-import type { SyncRefusal, SyncSide } from '../../platform/sync'
+import { isSyncRefusal, refusedIn } from '../../platform/sync'
+import type { SyncRefusal, SyncRefused, SyncSide } from '../../platform/sync'
 import type { SourceChromeProps } from '../../ports/ProviderParts'
 import { FolderAdoptionQuestion } from './FolderAdoption'
 import type { FolderOwn } from './folderOwn'
@@ -35,6 +35,15 @@ export const SYNC_REFUSAL_LABEL: Record<SyncRefusal, StringKey> = {
   unreachable: 'sync.unreachable',
   credentials: 'sync.credentials',
   timeout: 'sync.timeout',
+}
+
+/**
+ * Why a sync did not happen, as a person reads it: the refusal's own words
+ * where git was not run at all — they name what in the folder's configuration
+ * it will not run with — or the sentence for the refusal it is.
+ */
+function reasonFor(outcome: SyncRefusal | SyncRefused, s: (key: StringKey) => string): string {
+  return refusedIn(outcome) ?? s(SYNC_REFUSAL_LABEL[outcome as SyncRefusal])
 }
 
 /** Drawn whatever the source; about the folder only while a folder is the source. */
@@ -58,15 +67,15 @@ function SyncStrip({ own, notify, reread, flush }: Pick<SourceChromeProps<Folder
   const said = useRef(false)
   useEffect(() => {
     const pulled = own.pulled
-    if (said.current || !pulled || !isSyncRefusal(pulled)) return
+    if (said.current || !pulled || (!isSyncRefusal(pulled) && refusedIn(pulled) === undefined)) return
     said.current = true
-    notify(s('sync.pullRefused', { reason: s(SYNC_REFUSAL_LABEL[pulled]) }), 'warning')
+    notify(s('sync.pullRefused', { reason: reasonFor(pulled as SyncRefusal | SyncRefused, s) }), 'warning')
   }, [own, notify, s])
 
   useEffect(() => own.onPushed((outcome) => {
     if (outcome === 'done') { notify(s('sync.pushed'), 'success'); return }
     if (outcome === 'rejected') { setDiverged(true); return }
-    notify(s('sync.pushRefused', { reason: s(SYNC_REFUSAL_LABEL[outcome]) }), 'warning')
+    notify(s('sync.pushRefused', { reason: reasonFor(outcome, s) }), 'warning')
   }), [own, notify, s])
 
   const resolve = useCallback((side: SyncSide) => {
@@ -76,7 +85,7 @@ function SyncStrip({ own, notify, reread, flush }: Pick<SourceChromeProps<Folder
     // merge on *mine*, and not written over their version on *theirs*.
     void flush().then(() => sync.resolve(side)).then((outcome) => {
       if (outcome !== 'done') {
-        notify(s('sync.resolveRefused', { reason: s(SYNC_REFUSAL_LABEL[outcome]) }), 'warning')
+        notify(s('sync.resolveRefused', { reason: reasonFor(outcome, s) }), 'warning')
         return
       }
       setDiverged(false)

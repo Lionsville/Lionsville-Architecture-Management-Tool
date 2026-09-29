@@ -66,13 +66,13 @@ import { execFile } from 'node:child_process'
 import { access, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
-import { gitEnvironment, guardedFlags } from './gitGuard'
+import { GitRefused, gitEnvironment, guardedFlags } from './gitGuard'
 import { LOCAL_SETTINGS_PATH } from '../../adapters/folder/format/folderSettings'
 import { isSpacedLabel, labelSlug } from '../../projects/label'
 import type { LabelOutcome } from '../../projects/label'
 import { BEFORE_SYNC_BRANCH_PREFIX } from '../sync'
 import type {
-  PullOutcome, PushOutcome, ResolveOutcome, SyncRefusal, SyncRemote, SyncSide,
+  PullOutcome, PushOutcome, ResolveOutcome, SyncRefusal, SyncRefused, SyncRemote, SyncSide,
 } from '../sync'
 
 const run = promisify(execFile)
@@ -389,7 +389,8 @@ async function configured(root: string, key: string): Promise<string | undefined
   try {
     const value = (await git(root, ['config', '--get', key])).trim()
     return value.length > 0 ? value : undefined
-  } catch {
+  } catch (cause) {
+    if (cause instanceof GitRefused) throw cause
     return undefined
   }
 }
@@ -407,11 +408,16 @@ export async function remote(root: string): Promise<SyncRemote | undefined> {
   let branch: string
   try {
     branch = (await git(root, ['symbolic-ref', '--short', 'HEAD'])).trim()
-  } catch {
+  } catch (cause) {
+    // Not run at all is no detached HEAD: said as the refusal it is.
+    if (cause instanceof GitRefused) throw cause
     // Detached: there is no branch to push, and nothing to say about it.
     return undefined
   }
-  const remotes = (await git(root, ['remote']).catch(() => '')).split('\n').filter(Boolean)
+  const remotes = (await git(root, ['remote']).catch((cause: unknown) => {
+    if (cause instanceof GitRefused) throw cause
+    return ''
+  })).split('\n').filter(Boolean)
   if (remotes.length === 0) return undefined
   const name = await configured(root, `branch.${branch}.remote`)
     ?? (remotes.includes('origin') ? 'origin' : remotes.length === 1 ? remotes[0] : undefined)
@@ -431,7 +437,8 @@ export async function remote(root: string): Promise<SyncRemote | undefined> {
  * the timeout is a timeout. Anything unrecognised is unreachable, which is
  * the least specific and therefore the least wrong.
  */
-function classify(error: unknown): SyncRefusal {
+function classify(error: unknown): SyncRefusal | SyncRefused {
+  if (error instanceof GitRefused) return { refused: error.message }
   const held = error as GitError
   if (held?.killed || held?.signal === 'SIGTERM') return 'timeout'
   const text = `${held?.stderr ?? ''}\n${held?.message ?? ''}`
@@ -441,7 +448,7 @@ function classify(error: unknown): SyncRefusal {
   return 'unreachable'
 }
 
-type Fetched = 'fetched' | 'absent' | SyncRefusal
+type Fetched = 'fetched' | 'absent' | SyncRefusal | SyncRefused
 
 /** Bring the remote's branch to `FETCH_HEAD`, or say why not. */
 async function fetch(root: string, target: SyncRemote): Promise<Fetched> {
@@ -469,7 +476,7 @@ const remoteRef = (target: SyncRemote): string => `refs/remotes/${target.name}/$
  * merge that would not fast-forward — or one that would touch work the
  * caller did not record — answers *diverged*, and a person decides.
  */
-export async function pull(root: string): Promise<PullOutcome> {
+async function pullHere(root: string): Promise<PullOutcome> {
   const target = await remote(root)
   if (!target) return 'no-remote'
   const fetched = await fetch(root, target)
@@ -488,7 +495,7 @@ export async function pull(root: string): Promise<PullOutcome> {
  * success. A rejection is *diverged* seen from this end: the remote is
  * fetched so the notice has both sides to offer, and the answer says so.
  */
-export async function push(root: string): Promise<PushOutcome> {
+async function pushHere(root: string): Promise<PushOutcome> {
   const target = await remote(root)
   if (!target) return 'no-remote'
   if (!await hasCommits(root)) return 'done'
@@ -523,7 +530,7 @@ export async function push(root: string): Promise<PushOutcome> {
  * is lost by the reset in one or left out of the commit in the other. A
  * refusal leaves the folder as it was.
  */
-export async function resolve(root: string, side: SyncSide): Promise<ResolveOutcome> {
+async function resolveHere(root: string, side: SyncSide): Promise<ResolveOutcome> {
   const target = await remote(root)
   if (!target) return 'no-remote'
   const fetched = await fetch(root, target)
@@ -550,4 +557,29 @@ export async function resolve(root: string, side: SyncSide): Promise<ResolveOutc
     '-m', KEEP_OURS_MESSAGE, remoteRef(target),
   ])
   return 'done'
+}
+
+/** A sync's answer, where git was not run at all: the refusal, with its words, rather than an exception. */
+async function answered<T>(work: () => Promise<T>): Promise<T | SyncRefused> {
+  try {
+    return await work()
+  } catch (cause) {
+    if (cause instanceof GitRefused) return { refused: cause.message }
+    throw cause
+  }
+}
+
+/** Bring the folder up to date with its remote: `pullHere`, with a refusal said as one. */
+export function pull(root: string): Promise<PullOutcome> {
+  return answered(() => pullHere(root))
+}
+
+/** Send the folder's commits to its remote: `pushHere`, with a refusal said as one. */
+export function push(root: string): Promise<PushOutcome> {
+  return answered(() => pushHere(root))
+}
+
+/** Settle a divergence one way or the other: `resolveHere`, with a refusal said as one. */
+export function resolve(root: string, side: SyncSide): Promise<ResolveOutcome> {
+  return answered(() => resolveHere(root, side))
 }

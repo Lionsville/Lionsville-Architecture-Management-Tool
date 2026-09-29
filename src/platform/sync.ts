@@ -18,9 +18,15 @@
  */
 export type SyncRefusal = 'no-remote' | 'unreachable' | 'credentials' | 'timeout'
 
-export type PullOutcome = 'done' | SyncRefusal | 'diverged'
-export type PushOutcome = 'done' | SyncRefusal | 'rejected'
-export type ResolveOutcome = 'done' | SyncRefusal
+/**
+ * A git the app would not run in the folder at all, and why: the words name
+ * what in the folder's configuration it will not run with, for a person to find.
+ */
+export type SyncRefused = { readonly refused: string }
+
+export type PullOutcome = 'done' | SyncRefusal | 'diverged' | SyncRefused
+export type PushOutcome = 'done' | SyncRefusal | 'rejected' | SyncRefused
+export type ResolveOutcome = 'done' | SyncRefusal | SyncRefused
 
 /** Which version stands when the two sides disagree. */
 export type SyncSide = 'theirs' | 'ours'
@@ -32,8 +38,14 @@ export type SyncRemote = {
   readonly url?: string
 }
 
-export function isSyncRefusal(value: string): value is SyncRefusal {
+export function isSyncRefusal(value: unknown): value is SyncRefusal {
   return value === 'no-remote' || value === 'unreachable' || value === 'credentials' || value === 'timeout'
+}
+
+/** Why git was not run at all, where that is the answer. */
+export function refusedIn(value: unknown): string | undefined {
+  const held = value as Partial<SyncRefused> | undefined
+  return typeof value === 'object' && value !== null && typeof held?.refused === 'string' ? held.refused : undefined
 }
 
 /**
