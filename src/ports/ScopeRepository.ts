@@ -140,8 +140,13 @@ export interface ScopeRepository {
    * step counts as applied — sent again, it is new.
    *
    * **A step lands once.** A `stepId` names one step in the whole source. One
-   * this repository has already applied, to whichever scope, is not applied
-   * again: it was sent twice because the answer to the first was lost. A run
+   * this repository has already applied to this scope is not applied again: it
+   * was sent twice because the answer to the first was lost. One it applied to
+   * another scope is refused, `step.elsewhere` with the step named, and nothing
+   * is applied: a caller told its step landed would believe a scope changed
+   * that did not. **Applied ids are remembered for at least 24 hours**; a
+   * repository that keeps a log of its steps remembers them for as long as the
+   * log. Past that, a step sent again is a new step. A run
    * whose steps have all landed answers each scope's revision as it stands,
    * whatever it `expects`, because what it expected was the state it was made
    * against, and it has been applied to that. A run that mixes steps already
@@ -151,7 +156,9 @@ export interface ScopeRepository {
    *
    * **One scope named twice in one apply** is its runs one after the other,
    * as one change: each `expects` is compared with the revision the scope had
-   * before the apply, and each answers the revision after it.
+   * before the apply, both answer the revision after the whole apply, and a
+   * second run that undoes the first leaves the scope, and its revision, as
+   * they were.
    *
    * **A step that changes nothing changes no revision**, and makes no history
    * entry.

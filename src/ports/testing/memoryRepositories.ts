@@ -25,8 +25,8 @@ import type { ContentAddress, ImageEntry, ImageFolder, ImageName } from '../../m
 import { SCOPE_RECORD, sameRecord } from '../../model/recordKey'
 import type { RecordKey } from '../../model/recordKey'
 import { ancestorScopes, isSafeScopePath, isWithinScope, ROOT_SCOPE, scopePathLabel } from '../../projects/scopePath'
-import { applySteps, emptyContent } from '../../projects/scopeState'
-import type { Revision, ScopeAddress, ScopeContent, ScopeId, ScopeState } from '../../projects/scopeState'
+import { applySteps, emptyContent, STEP_ELSEWHERE } from '../../projects/scopeState'
+import type { Revision, ScopeAddress, ScopeContent, ScopeId, ScopeState, ScopeStep } from '../../projects/scopeState'
 import { patchSettings } from '../../projects/settings'
 import type { Settings, SettingsPatch } from '../../projects/settings'
 import type {
@@ -65,7 +65,9 @@ type Entry = {
 /** The index's log: each revision it answered, and what changed to get there. */
 type IndexStep = { revision: Revision; changed: Set<ScopeId>; removed: Set<ScopeId> }
 
-type Planned = { kept: Kept; content: ScopeContent; changed: boolean; records: RecordKey[] }
+type Run = { kept: Kept; steps: ScopeStep[] }
+
+type Planned = { kept: Kept; content: ScopeContent; records: RecordKey[]; at: number }
 
 const PAGE = 50
 
@@ -76,8 +78,12 @@ class Memory {
   private readonly indexLog: IndexStep[] = []
   private readonly entries: Entry[] = []
   private entrySeq = 0
-  /** Every step id the source has applied, to whichever scope: one sent twice lands once. */
-  private readonly applied = new Set<string>()
+  /**
+   * Every step id the source has applied, and the scope it was applied to: one
+   * sent twice lands once, and one sent to another scope is refused. Kept for
+   * the repositories' lifetime, which is longer than the contract's day.
+   */
+  private readonly applied = new Map<string, ScopeId>()
   /** Bytes by content address, per scope; the media type is the entry's, never the bytes'. */
   private readonly stored = new Map<ScopeId, Map<ContentAddress, Uint8Array>>()
   private readonly settingsHeld = new Map<string, Settings>()
@@ -174,50 +180,60 @@ class Memory {
     return JSON.stringify([model.name, model.description, model.diagrams.length, kind, client, links])
   }
 
-  private apply(work: readonly StepsFor[]): Applied | Refused {
-    const planned = new Map<ScopeId, Planned>()
-    const seen = new Set<string>()
+  /**
+   * Each scope's new steps, its runs one after the other, or the refusal met
+   * on the way: a scope gone or unreadable, a step id this source applied to
+   * another scope, a revision moved on from.
+   */
+  private runs(work: readonly StepsFor[]): Map<ScopeId, Run> | Refused {
+    const runs = new Map<ScopeId, Run>()
+    const seen = new Map<string, ScopeId>()
     for (const { scope, steps, expects } of work) {
       const kept = this.kept.get(scope)
       if (!kept) return { refused: 'shell.scopeGone', scope }
       if (kept.unreadable) return { refused: 'shell.unreadableNotSaved', scope }
-      const fresh = steps.filter((one) => {
-        const known = this.applied.has(one.stepId) || seen.has(one.stepId)
-        seen.add(one.stepId)
-        return !known
-      })
+      const fresh: ScopeStep[] = []
+      for (const one of steps) {
+        const where = this.applied.get(one.stepId) ?? seen.get(one.stepId)
+        if (where !== undefined && where !== scope) return { refused: STEP_ELSEWHERE, scope, stepId: one.stepId }
+        if (where === undefined) fresh.push(one)
+        seen.set(one.stepId, scope)
+      }
       if (fresh.length === 0) continue
       if (expects !== undefined && expects !== kept.revision) return { refused: 'shell.scopeMoved', scope }
-      const before = planned.get(scope)
-      const result = applySteps(before?.content ?? kept.content, fresh)
-      if (!result.ok) return { refused: result.refused, scope, stepId: result.stepId }
-      planned.set(scope, {
-        kept, content: result.content, changed: (before?.changed ?? false) || result.changed,
-        records: merge(before ? before.records : [], result.records),
-      })
+      const run = runs.get(scope) ?? { kept, steps: [] }
+      run.steps.push(...fresh)
+      runs.set(scope, run)
+    }
+    return runs
+  }
+
+  private apply(work: readonly StepsFor[]): Applied | Refused {
+    const runs = this.runs(work)
+    if (!(runs instanceof Map)) return runs
+    const planned: Planned[] = []
+    for (const { kept, steps } of runs.values()) {
+      const result = applySteps(kept.content, steps)
+      if (!result.ok) return { refused: result.refused, scope: kept.id, stepId: result.stepId }
+      if (result.changed) planned.push({ kept, content: result.content, records: [...result.records], at: Math.max(...steps.map((one) => one.at)) })
     }
     this.commit(work, planned)
     return { revisions: work.map(({ scope }) => this.kept.get(scope)!.revision) }
   }
 
-  private commit(
-    work: readonly StepsFor[],
-    planned: Map<ScopeId, Planned>,
-  ): void {
-    for (const { steps } of work) for (const one of steps) this.applied.add(one.stepId)
-    const changed = [...planned.values()].filter((plan) => plan.changed)
-    if (changed.length === 0) return
+  private commit(work: readonly StepsFor[], planned: readonly Planned[]): void {
+    for (const { scope, steps } of work) for (const one of steps) this.applied.set(one.stepId, scope)
+    if (planned.length === 0) return
     let treeMoved = false
-    for (const { kept, content, records } of changed) {
+    for (const { kept, content, records, at } of planned) {
       treeMoved ||= this.summary(kept.content) !== this.summary(content)
       kept.content = structuredClone(content)
       kept.revision = this.mint('revision')
       kept.updatedAt = new Date().toISOString()
-      const last = Math.max(...work.filter((one) => one.scope === kept.id).flatMap((one) => one.steps.map((s) => s.at)))
-      kept.pending = { records: merge(kept.pending ? kept.pending.records : [], records), at: last }
+      kept.pending = { records: merge(kept.pending ? kept.pending.records : [], records), at }
     }
     if (treeMoved) this.treeRevision = this.mint('tree')
-    this.indexChanged(changed.map((plan) => plan.kept.id))
+    this.indexChanged(planned.map((plan) => plan.kept.id))
   }
 
   private create(at: ScopeAddress, scope: NewScope): Created | Refused {

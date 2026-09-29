@@ -249,14 +249,32 @@ export function describeScopeRepository(name: string, make: MakeRepositories): v
         expect((await repositories.state(acme)).model.elements.map((one) => one.id)).toEqual(['crews', 'depot'])
       })
 
-      it('knows a step by its id across the source: applied on one scope, it is not applied on another', async () => {
+      /** A caller that sends one step object to two scopes is told, rather than told it landed. */
+      it('refuses a step id applied on another scope, and applies nothing of the run', async () => {
         const repositories = await fresh()
         const acme = await repositories.scope('acme', 'Acme Logistics')
         const globex = await repositories.scope('globex', 'Globex')
         const once = step(addCrews)
         ok(await repositories.apply([{ scope: acme, steps: [once] }]))
-        ok(await repositories.apply([{ scope: globex, steps: [once] }]))
-        expect((await repositories.state(globex)).model.elements).toEqual([])
+        const before = await repositories.state(globex)
+        expect(await repositories.apply([{ scope: globex, steps: [step(addDepot), once] }]))
+          .toEqual({ refused: 'step.elsewhere', scope: globex, stepId: once.stepId })
+        expect(await repositories.state(globex)).toEqual(before)
+        expect(refusal(await repositories.apply([
+          { scope: acme, steps: [step(renameCrews)] },
+          { scope: globex, steps: [once] },
+        ]))).toBe('step.elsewhere')
+        expect((await repositories.state(acme)).model.elements.map((one) => one.name)).toEqual(['Crews'])
+      })
+
+      it('refuses one step id sent to two scopes in one apply', async () => {
+        const repositories = await fresh()
+        const acme = await repositories.scope('acme', 'Acme Logistics')
+        const globex = await repositories.scope('globex', 'Globex')
+        const twice = step(addCrews)
+        expect(refusal(await repositories.apply([{ scope: acme, steps: [twice] }, { scope: globex, steps: [twice] }])))
+          .toBe('step.elsewhere')
+        expect((await repositories.state(acme)).model.elements).toEqual([])
       })
 
       it('applies a scope named twice in one apply as its runs one after the other', async () => {
@@ -270,6 +288,18 @@ export function describeScopeRepository(name: string, make: MakeRepositories): v
         const now = await repositories.state(acme)
         expect(now.model.elements.map((one) => one.name)).toEqual(['Crew planning'])
         expect(answer.revisions).toEqual([now.revision, now.revision])
+      })
+
+      it('leaves the revision where it was when a scope’s second run in one apply undoes its first', async () => {
+        const repositories = await fresh()
+        const acme = await repositories.scope('acme', 'Acme Logistics')
+        const read = (await repositories.state(acme)).revision
+        const answer = ok(await repositories.apply([
+          { scope: acme, steps: [step(addCrews)] },
+          { scope: acme, steps: [step({ type: 'element.delete', id: 'crews' })] },
+        ]))
+        expect(answer.revisions).toEqual([read, read])
+        expect((await repositories.state(acme)).revision).toBe(read)
       })
 
       it('lands steps that expect the revision they were made against', async () => {

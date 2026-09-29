@@ -111,8 +111,10 @@ export type ScopeCommand = Command | ImageCommand | DescribeCommand
  * (`ports/CommandChannel.ts`): minted by whoever made it, so a step sent twice
  * — the answer lost on the way back — lands once. A step id names one step in
  * the whole source, not in one scope: a session mints one that nobody else
- * will (a random UUID), and a repository that has applied a step by that id,
- * to whichever scope, does not apply it again.
+ * will (a random UUID). A repository that has applied a step by that id does
+ * not apply it again, and refuses it for any other scope (`STEP_ELSEWHERE`).
+ * It remembers the ids it applied for at least a day; one that keeps a log of
+ * its steps remembers them for as long as it keeps the log.
  */
 export type ScopeStep = {
   stepId: string
@@ -144,7 +146,16 @@ export const SCOPE_REFUSALS = [
   'shell.imageBadEntry',
 ] as const satisfies readonly StringKey[]
 
-export type ScopeRefusal = CommandRefusal | (typeof SCOPE_REFUSALS)[number]
+/**
+ * A step id this source has already applied to another scope: a caller that
+ * made a step for one scope and sent it to another. Refused rather than
+ * answered as landed, because the caller would be told its step was applied
+ * when nothing happened to the scope it named. A fault in the caller, never a
+ * person's to read, so it has no sentence of its own: it goes to the trail.
+ */
+export const STEP_ELSEWHERE = 'step.elsewhere' as const
+
+export type ScopeRefusal = CommandRefusal | (typeof SCOPE_REFUSALS)[number] | typeof STEP_ELSEWHERE
 
 /** A new scope's content: a model with its name and nothing in it. */
 export function emptyContent(name: string, description: ScopeDescription = {}): ScopeContent {
