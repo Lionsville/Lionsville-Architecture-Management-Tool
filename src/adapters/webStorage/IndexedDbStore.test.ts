@@ -37,14 +37,29 @@ function keyOf(error: unknown): string | undefined {
 }
 
 describe('IndexedDbStore', () => {
-  it('fails a transaction whose work awaits a digest before it writes, and lands nothing', async () => {
+  it('fails a transaction whose work awaits a digest, and lands nothing of it, the writes before the digest included', async () => {
     const store = new IndexedDbStore(fakeIndexedDb())
     await expect(store.transaction(['meta'], 'write', async (tx) => {
+      tx.put('meta', 'b', 'before the digest')
       await tx.get('meta', 'a')
       await crypto.subtle.digest('SHA-256', new Uint8Array([1]))
       tx.put('meta', 'a', 1)
     })).rejects.toThrow()
-    expect(await store.transaction(['meta'], 'read', read)).toBeUndefined()
+    expect(await store.transaction(['meta'], 'read', async (tx) => [await tx.get('meta', 'a'), await tx.get('meta', 'b')]))
+      .toEqual([undefined, undefined])
+  })
+
+  it('refuses a request made once the work has answered, rather than dropping it', async () => {
+    const store = new IndexedDbStore(fakeIndexedDb())
+    let kept: Transaction | undefined
+    await store.transaction(['meta'], 'write', (tx) => {
+      kept = tx
+      tx.put('meta', 'a', 1)
+      return Promise.resolve()
+    })
+    expect(() => kept!.put('meta', 'a', 2)).toThrow()
+    await expect(kept!.get('meta', 'a')).rejects.toThrow()
+    expect(await store.transaction(['meta'], 'read', read)).toBe(1)
   })
 
   it('answers an empty range for a span that holds no key', async () => {

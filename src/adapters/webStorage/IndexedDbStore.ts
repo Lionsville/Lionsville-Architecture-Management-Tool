@@ -20,7 +20,9 @@
  * of keys is a key range and a scope's entries, library or bytes are one
  * cursor. A transaction's work may await only the requests it makes
  * (`KeyedStore`): the database commits a transaction the moment it has
- * nothing left to do, and a request made after that is refused.
+ * nothing left to do, and a request made after that is refused. So the
+ * work's writes are held in the page and made only once it has answered
+ * (`heldWrites.ts`): a transaction the database ended early has none of them.
  *
  * **A connection is not forever.** The browser may close it — storage cleared,
  * the disk gone, iOS Safari losing its database server between two visits to
@@ -45,6 +47,7 @@
 import { ShellError } from '../../platform/errors'
 import { SHELVES } from '../repositories/KeyedStore'
 import type { KeyRange, Keyed, KeyedStore, RangeRead, Shelf, Transaction } from '../repositories/KeyedStore'
+import { HeldWrites } from './heldWrites'
 
 export const DATABASE_NAME = 'lvarch.repositories'
 
@@ -292,9 +295,13 @@ export class IndexedDbStore implements KeyedStore {
       held.oncomplete = () => resolve()
       held.onabort = () => reject(this.abortRefusal(held, database, abandoned))
     })
+    const writes = new HeldWrites()
+    const { tx, done } = this.wrap(held, mode, writes)
     let answered: T
     try {
-      answered = await work(this.wrap(held))
+      answered = await work(tx)
+      done()
+      this.write(held, writes)
     } catch (error) {
       try {
         abandoned = true
@@ -323,25 +330,54 @@ export class IndexedDbStore implements KeyedStore {
     return from !== undefined && below !== undefined && from >= below
   }
 
-  private wrap(held: IDBTransaction): Transaction {
-    const shelf = (name: Shelf) => held.objectStore(name)
-    return {
-      get: <V>(name: Shelf, key: string) => answer(shelf(name).get(key)) as Promise<V | undefined>,
-      range: <V>(name: Shelf, read: RangeRead) => (
-        IndexedDbStore.empty(read) ? Promise.resolve([]) : this.cursor<V>(shelf(name), read)
-      ),
+  /**
+   * The work's view of a transaction: reads asked of the database and read
+   * through the writes held, writes held until the work has answered, and
+   * nothing at all once it has.
+   */
+  private wrap(held: IDBTransaction, mode: 'read' | 'write', writes: HeldWrites): { tx: Transaction; done: () => void } {
+    let answered = false
+    const shelf = (name: Shelf, writing = false) => {
+      if (answered) throw new DOMException('the work has answered', 'TransactionInactiveError')
+      const store = held.objectStore(name)
+      if (writing && mode === 'read') throw new DOMException('a read transaction writes nothing', 'ReadOnlyError')
+      return store
+    }
+    const tx: Transaction = {
+      get: async <V>(name: Shelf, key: string) => writes.get(name, key, await answer(shelf(name).get(key))) as V | undefined,
+      range: async <V>(name: Shelf, read: RangeRead) => {
+        const store = shelf(name)
+        if (IndexedDbStore.empty(read)) return []
+        if (!writes.touches(name)) return this.cursor<V>(store, read)
+        return writes.range(name, read, await this.cursor<V>(store, { ...read, limit: undefined }))
+      },
       put: (name, key, value) => {
-        shelf(name).put(value, key)
+        shelf(name, true)
+        writes.put(name, key, value)
       },
       delete: (name, key) => {
-        shelf(name).delete(key)
+        shelf(name, true)
+        writes.delete(name, key)
       },
       deleteRange: (name, range) => {
-        if (IndexedDbStore.empty(range)) return
-        const within = this.range(range)
-        if (within) shelf(name).delete(within)
-        else shelf(name).clear()
+        shelf(name, true)
+        if (!IndexedDbStore.empty(range)) writes.deleteRange(name, range)
       },
+    }
+    return { tx, done: () => { answered = true } }
+  }
+
+  /** The writes the work made, in its order, as the transaction's last requests. */
+  private write(held: IDBTransaction, writes: HeldWrites): void {
+    for (const one of writes.writes) {
+      const store = held.objectStore(one.shelf)
+      if ('put' in one) store.put(one.value, one.put)
+      else if ('delete' in one) store.delete(one.delete)
+      else {
+        const within = this.range(one.deleteRange)
+        if (within) store.delete(within)
+        else store.clear()
+      }
     }
   }
 
