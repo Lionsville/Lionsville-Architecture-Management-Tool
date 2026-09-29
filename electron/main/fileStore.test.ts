@@ -12,12 +12,12 @@
  * half of the new one.
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { chmod, mkdir, mkdtemp, readdir, readFile, realpath, rm, stat, symlink, writeFile } from 'node:fs/promises'
+import { chmod, lstat, mkdir, mkdtemp, readdir, readFile, realpath, rm, stat, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
   fingerprint, listDirectory, makeDirectory, moveEntry, readFile as readInside, removeEntry, resolveInside, stampAt,
-  createFile, safeRelativePath, writeFile as writeInside, writeTogether, writeWhole,
+  createFile, renameOver, safeRelativePath, writeFile as writeInside, writeTogether, writeWhole,
 } from './fileStore'
 
 let root = ''
@@ -162,6 +162,38 @@ describe('what the channel does with a folder', () => {
  * staged beside every target first, then moved into place, so the renderer
  * going away part way cannot leave half an organisation.
  */
+describe('a rename over a file something else holds a moment', () => {
+  const held = (code: string, times: number) => {
+    const calls = { count: 0 }
+    const attempt = () => {
+      calls.count += 1
+      return calls.count <= times ? Promise.reject(Object.assign(new Error(code), { code })) : Promise.resolve()
+    }
+    return { calls, attempt }
+  }
+
+  it('is tried again on Windows while the file is held, and lands', async () => {
+    for (const code of ['EPERM', 'EACCES', 'EBUSY']) {
+      const { calls, attempt } = held(code, 2)
+      await renameOver('a', 'b', { platform: 'win32', attempt })
+      expect(calls.count).toBe(3)
+    }
+  })
+
+  it('is not tried again elsewhere, for any other failure, or past its time', async () => {
+    const elsewhere = held('EPERM', 1)
+    await expect(renameOver('a', 'b', { platform: 'darwin', attempt: elsewhere.attempt })).rejects.toThrow('EPERM')
+    expect(elsewhere.calls.count).toBe(1)
+    const other = held('ENOENT', 1)
+    await expect(renameOver('a', 'b', { platform: 'win32', attempt: other.attempt })).rejects.toThrow('ENOENT')
+    expect(other.calls.count).toBe(1)
+    const always = held('EBUSY', Number.POSITIVE_INFINITY)
+    await expect(renameOver('a', 'b', { platform: 'win32', attempt: always.attempt, forMs: 50 })).rejects.toThrow('EBUSY')
+    expect(always.calls.count).toBeGreaterThan(1)
+    expect(always.calls.count).toBeLessThan(10)
+  })
+})
+
 describe('a file made only where nothing is', () => {
   it('makes it whole, and writes nothing where anything is at its path, in any case the disk takes for it', async () => {
     expect(await createFile(root, 'images/map.png', bytes('one'))).toBe(true)
@@ -184,6 +216,20 @@ describe('a file of the app’s own, written whole', () => {
     expect(await readFile(target, 'utf8')).toBe('{"a":2}\n')
     expect((await stat(target)).mode & 0o777).toBe(0o600)
     expect(await readdir(join(outside, 'folders'))).toEqual(['one.json'])
+  })
+
+  it('writes the file a link at its path leads to, and keeps the link; refuses a link that leads nowhere', async () => {
+    const kept = join(root, 'kept-elsewhere.json')
+    await writeFile(kept, 'before')
+    const linked = join(outside, 'settings.json')
+    await symlink(kept, linked)
+    await writeWhole(linked, 'after')
+    expect((await lstat(linked)).isSymbolicLink()).toBe(true)
+    expect(await readFile(kept, 'utf8')).toBe('after')
+    const dangling = join(outside, 'gone.json')
+    await symlink(join(root, 'not-there.json'), dangling)
+    await expect(writeWhole(dangling, 'never')).rejects.toThrow()
+    expect((await lstat(dangling)).isSymbolicLink()).toBe(true)
   })
 
   it('leaves the file it was to replace, whole, and nothing beside it, when the write fails', async () => {

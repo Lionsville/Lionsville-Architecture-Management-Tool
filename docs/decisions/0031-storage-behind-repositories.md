@@ -367,8 +367,10 @@ repositories, in `src/adapters/folder/`:
   (`folders/<hash of the path>.json`, one file per folder, which the main
   process reads and writes only for a folder the user granted, as it does
   the folder's files, and writes whole or not at all — to a file beside it,
-  flushed and renamed over it, as every file of the app's own is); in a
-  browser, in the database
+  flushed and renamed over it, as every file of the app's own is, the rename
+  tried again for a moment on Windows while something else holds the file,
+  the directory flushed after it elsewhere, and a file linked there written
+  where the link leads); in a browser, in the database
   its repositories keep their own work in, under a key of the folder's own —
   a handle has no identity storage can be keyed by, so each folder has a
   record holding its handle, found by asking each kept handle whether it is

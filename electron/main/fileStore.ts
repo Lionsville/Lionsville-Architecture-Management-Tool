@@ -179,13 +179,20 @@ function isAbsence(cause: unknown): boolean {
  * Temporary name in the same directory (a rename across filesystems is not
  * atomic), flushed to the platter before the rename (a rename is atomic in the
  * directory, which says nothing about whether the bytes arrived), then renamed
- * over. The temporary file is removed on any failure, so an interrupted save
- * leaves the previous file and nothing else, and a read meanwhile reads the
- * previous file whole. `mode` is the new file's, whatever the old one had.
+ * over, and the directory flushed so the rename is on the platter too (not on
+ * Windows, which flushes no directory). The temporary file is removed on any
+ * failure, so an interrupted save leaves the previous file and nothing else,
+ * and a read meanwhile reads the previous file whole. `mode` is the new
+ * file's, whatever the old one had.
+ *
+ * A link at the path is followed, and the file it leads to is written: a
+ * person who keeps a settings file elsewhere and links it here keeps it
+ * there. A link that leads nowhere is refused rather than replaced.
  */
 export async function writeWhole(target: string, data: Uint8Array | string, mode?: number): Promise<void> {
-  await mkdir(dirname(target), { recursive: true })
-  const temporary = `${target}.${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}.tmp`
+  const real = (await lstat(target).catch(() => undefined))?.isSymbolicLink() ? await realpath(target) : target
+  await mkdir(dirname(real), { recursive: true })
+  const temporary = `${real}.${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}.tmp`
   try {
     const handle = await open(temporary, 'w', mode)
     try {
@@ -194,10 +201,54 @@ export async function writeWhole(target: string, data: Uint8Array | string, mode
     } finally {
       await handle.close()
     }
-    await rename(temporary, target)
+    await renameOver(temporary, real)
   } catch (cause) {
     await unlink(temporary).catch(() => undefined)
     throw cause
+  }
+  await syncFolder(dirname(real))
+}
+
+/** What Windows answers a rename while something else — a virus scanner, the indexer, a sync client — holds the file a moment. */
+const HELD = new Set(['EPERM', 'EACCES', 'EBUSY'])
+
+/**
+ * A rename over a file, tried again on Windows while the file is held a
+ * moment, waiting a little longer each time, for at most `forMs` in all; any
+ * other failure, and one that outlasts that, as it came.
+ */
+export async function renameOver(
+  from: string, to: string,
+  { platform = process.platform, attempt = rename, forMs = 2_000 }: {
+    platform?: NodeJS.Platform; attempt?: (from: string, to: string) => Promise<void>; forMs?: number
+  } = {},
+): Promise<void> {
+  let waited = 0
+  for (let wait = 10; ; wait = Math.min(wait * 2, 200)) {
+    try {
+      await attempt(from, to)
+      return
+    } catch (cause) {
+      if (platform !== 'win32' || !HELD.has(codeOf(cause)) || waited >= forMs) throw cause
+      await new Promise((resolve) => { setTimeout(resolve, wait) })
+      waited += wait
+    }
+  }
+}
+
+/**
+ * A directory flushed, so a rename in it is on the platter. Not on Windows,
+ * which opens no directory to flush; and a disk that will not flush one is
+ * let be — the file itself was flushed before the rename.
+ */
+async function syncFolder(folder: string, platform = process.platform): Promise<void> {
+  if (platform === 'win32') return
+  const handle = await open(folder, 'r').catch(() => undefined)
+  if (!handle) return
+  try {
+    await handle.sync().catch(() => undefined)
+  } finally {
+    await handle.close()
   }
 }
 
@@ -298,7 +349,7 @@ export async function writeTogether(
     await Promise.all(staged.map((temporary) => unlink(temporary).catch(() => undefined)))
     throw cause
   }
-  for (const [at, temporary] of staged.entries()) await rename(temporary, targets[at]!)
+  for (const [at, temporary] of staged.entries()) await renameOver(temporary, targets[at]!)
   for (const target of gone) await rm(target!, { force: true })
   return Promise.all(writes.map(async (write, at) => stampOf(write.bytes, await stat(targets[at]!))))
 }
