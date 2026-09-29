@@ -8,14 +8,14 @@
  * for when it comes into view and never before, and a picture seen before
  * shown without asking again.
  */
-import { afterEach, describe, expect, it } from 'vitest'
-import { act, cleanup, waitFor } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import type { ImageEntry } from '../../model/imageName'
 import { renderShell } from '../../app/testing/renderShell'
 import { memoryImageSource } from '../pictureSource'
 import type { ImageSource, PictureAddresses } from '../pictureSource'
 import { MarkdownView } from './MarkdownView'
-import { PicturesProvider } from './Pictures'
+import { AHEAD, LibraryPicture, PicturesProvider, watchInView } from './Pictures'
 import type { PictureWatch } from './Pictures'
 
 afterEach(() => cleanup())
@@ -31,15 +31,22 @@ const LIBRARY = [entry('depot.png'), entry('yard.png', 1200, 300, 2), entry('Kaa
 const SOURCE = () => memoryImageSource({ crews: { 'depot.png': PNG, 'yard.png': PNG, 'Kaart-ü.png': PNG } })
 
 /** A watch a test drives: nothing is in view until the test scrolls it there. */
-function scrolling(): PictureWatch & { into(name: string): void; watched(): string[] } {
-  const waiting = new Map<Element, () => void>()
-  const watch = ((element: Element, seen: () => void) => {
-    waiting.set(element, seen)
+type Scrolling = PictureWatch & { into(name: string): void; watched(): string[]; afresh(): string[] }
+
+function scrolling(): Scrolling {
+  const waiting = new Map<Element, { seen: () => void; afresh: boolean }>()
+  const watch = ((element: Element, seen: () => void, afresh = false) => {
+    waiting.set(element, { seen, afresh })
     return () => { waiting.delete(element) }
-  }) as PictureWatch & { into(name: string): void; watched(): string[] }
+  }) as Scrolling
   watch.into = (name) => {
-    for (const [element, seen] of waiting) if (element.getAttribute('data-picture') === name) seen()
+    for (const [element, { seen }] of [...waiting]) {
+      if (element.getAttribute('data-picture') !== name) continue
+      waiting.delete(element)
+      seen()
+    }
   }
+  watch.afresh = () => [...waiting].filter(([, one]) => one.afresh).map(([element]) => element.getAttribute('data-picture') ?? '')
   watch.watched = () => [...waiting.keys()].map((element) => element.getAttribute('data-picture') ?? '')
   return watch
 }
@@ -158,5 +165,169 @@ describe('pictures in a document', () => {
   it('without a provider, draws every picture as its alt text', () => {
     const { getByTestId } = renderShell(<MarkdownView markdown={'![Depot](image:depot.png)'} />)
     expect(getByTestId('image-missing').textContent).toBe('Depot')
+  })
+
+  it('a picture whose bytes did not come shows its alt text, keeps its place, and asks again when seen afresh', async () => {
+    let fail = true
+    const failures: unknown[] = []
+    const asked: string[] = []
+    const source: ImageSource = {
+      bytes: (_scope, name) => {
+        asked.push(name)
+        return fail ? Promise.reject(new Error('offline')) : Promise.resolve(PNG)
+      },
+    }
+    const watch = scrolling()
+    const { container } = renderShell(
+      <PicturesProvider source={source} scope="crews" library={LIBRARY} watch={watch} addresses={addresses()} onFailure={(error) => failures.push(error)}>
+        <MarkdownView markdown={'![The depot](image:depot.png)'} />
+      </PicturesProvider>,
+    )
+    act(() => watch.into('depot.png'))
+    await waitFor(() => expect(picture(container, 'depot.png').hasAttribute('data-failed')).toBe(true))
+    const depot = picture(container, 'depot.png')
+    expect(getComputedStyle(depot).color).not.toBe('transparent')
+    expect(depot.getAttribute('alt')).toBe('The depot')
+    expect(depot.getAttribute('width')).toBe('640')
+    expect(failures).toHaveLength(1)
+    expect(watch.afresh()).toEqual(['depot.png'])
+    fail = false
+    act(() => watch.into('depot.png'))
+    await waitFor(() => expect(picture(container, 'depot.png').getAttribute('src')).toBe('blob:picture-1'))
+    expect(picture(container, 'depot.png').hasAttribute('data-failed')).toBe(false)
+    expect(asked).toEqual(['depot.png', 'depot.png'])
+  })
+
+  it('a picture gone before its bytes arrive lets their address go', async () => {
+    const source = SOURCE()
+    source.hold()
+    const watch = scrolling()
+    const made = addresses()
+    const view = renderShell(page(DOCUMENT, source, watch, made))
+    act(() => watch.into('depot.png'))
+    view.unmount()
+    await act(async () => { source.answer(); await Promise.resolve() })
+    await waitFor(() => expect(made.released).toEqual(['blob:picture-1']))
+  })
+
+  it('with no watch handed in, and no observer to be had, asks for every picture at once', async () => {
+    const source = SOURCE()
+    const { container } = renderShell(
+      <PicturesProvider source={source} scope="crews" library={LIBRARY} addresses={addresses()}>
+        <MarkdownView markdown={DOCUMENT} />
+      </PicturesProvider>,
+    )
+    await waitFor(() => expect(picture(container, 'yard.png').getAttribute('src')).toBeTruthy())
+    expect(source.asked.map((one) => one.name).sort()).toEqual(['depot.png', 'yard.png'])
+  })
+
+  it('reserves nothing for an entry that declares no size', () => {
+    const { container } = renderShell(
+      <PicturesProvider source={SOURCE()} scope="crews" library={[entry('plan.svg', 0, 0, 4)]} watch={scrolling()}>
+        <MarkdownView markdown={'![Plan](image:plan.svg)'} />
+      </PicturesProvider>,
+    )
+    const plan = picture(container, 'plan.svg')
+    expect(plan.hasAttribute('width')).toBe(false)
+    expect(plan.style.aspectRatio).toBe('')
+  })
+
+  it('opens a shown picture full size on a click, and closes it on the next; an empty box opens nothing', async () => {
+    const watch = scrolling()
+    const { container } = renderShell(page('![The depot](image:depot.png)', SOURCE(), watch))
+    fireEvent.click(picture(container, 'depot.png'))
+    expect(screen.queryByTestId('lightbox')).toBeNull()
+    act(() => watch.into('depot.png'))
+    await waitFor(() => expect(picture(container, 'depot.png').getAttribute('src')).toBeTruthy())
+    fireEvent.click(picture(container, 'depot.png'))
+    const large = screen.getByTestId('lightbox')
+    expect(large.getAttribute('src')).toBe('blob:picture-1')
+    fireEvent.click(large)
+    await waitFor(() => expect(screen.queryByTestId('lightbox')).toBeNull())
+  })
+
+  it('outside any provider, a picture keeps its place and asks nothing anybody answers', async () => {
+    const { container } = renderShell(<LibraryPicture entry={entry('depot.png')} alt="The depot" />)
+    await waitFor(() => expect(picture(container, 'depot.png').hasAttribute('data-failed')).toBe(true))
+    expect(picture(container, 'depot.png').getAttribute('width')).toBe('640')
+  })
+})
+
+describe('watching for a picture coming into view', () => {
+  type Observed = { callback: IntersectionObserverCallback; options?: IntersectionObserverInit; observed: Element[]; unobserved: Element[] }
+  let made: Observed[] = []
+
+  function stubObserver() {
+    made = []
+    vi.stubGlobal('IntersectionObserver', class {
+      private readonly held: Observed
+      constructor(callback: IntersectionObserverCallback, options?: IntersectionObserverInit) {
+        this.held = { callback, options, observed: [], unobserved: [] }
+        made.push(this.held)
+      }
+      observe(element: Element) { this.held.observed.push(element) }
+      unobserve(element: Element) { this.held.unobserved.push(element) }
+      disconnect() {}
+    })
+  }
+
+  function report(element: Element, isIntersecting: boolean) {
+    const observed = made[0]
+    observed.callback([{ target: element, isIntersecting } as IntersectionObserverEntry], {} as IntersectionObserver)
+  }
+
+  afterEach(() => { vi.unstubAllGlobals() })
+
+  it('shares one observer, a little ahead of the window, and tells seen only when the element is in view', () => {
+    stubObserver()
+    const watch = watchInView()
+    const [one, two] = [document.createElement('img'), document.createElement('img')]
+    const seen: string[] = []
+    watch(one, () => seen.push('one'))
+    watch(two, () => seen.push('two'))
+    expect(made).toHaveLength(1)
+    expect(made[0].options?.rootMargin).toBe(AHEAD)
+    expect(made[0].observed).toEqual([one, two])
+    report(one, false)
+    expect(seen).toEqual([])
+    report(one, true)
+    expect(seen).toEqual(['one'])
+    expect(made[0].unobserved).toEqual([one])
+    report(one, true)
+    expect(seen).toEqual(['one'])
+  })
+
+  it('stops watching when told, and then tells nothing', () => {
+    stubObserver()
+    const watch = watchInView()
+    const element = document.createElement('img')
+    const seen: string[] = []
+    const stop = watch(element, () => seen.push('seen'))
+    stop()
+    expect(made[0].unobserved).toEqual([element])
+    report(element, true)
+    expect(seen).toEqual([])
+  })
+
+  it('afresh, waits for the element to leave the view and come back', () => {
+    stubObserver()
+    const watch = watchInView()
+    const element = document.createElement('img')
+    const seen: string[] = []
+    watch(element, () => seen.push('seen'), true)
+    report(element, true)
+    expect(seen).toEqual([])
+    report(element, false)
+    report(element, true)
+    expect(seen).toEqual(['seen'])
+  })
+
+  it('with no observer to be had, is seen at once, and never afresh', () => {
+    vi.stubGlobal('IntersectionObserver', undefined)
+    const watch = watchInView()
+    const seen: string[] = []
+    watch(document.createElement('img'), () => seen.push('at once'))
+    watch(document.createElement('img'), () => seen.push('afresh'), true)
+    expect(seen).toEqual(['at once'])
   })
 })

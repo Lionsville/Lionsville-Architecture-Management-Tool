@@ -26,17 +26,30 @@ import { NO_PICTURES, PictureCache } from '../pictureSource'
 import type { ImageSource, PictureAddresses } from '../pictureSource'
 
 /**
- * Tell `seen` once, when `element` first comes into view, and answer how to
- * stop watching. A watch that cannot tell treats the element as seen.
+ * Tell `seen` once, when `element` comes into view, and answer how to stop
+ * watching. `afresh` counts only a coming into view after the element has
+ * been out of it: what a picture whose bytes did not arrive waits for before
+ * it asks again, rather than asking again and again while it sits in view. A
+ * watch that cannot tell treats the element as seen, and as never seen afresh.
  */
-export type PictureWatch = (element: Element, seen: () => void) => () => void
+export type PictureWatch = (element: Element, seen: () => void, afresh?: boolean) => () => void
 
 /**
  * How far outside the visible part a picture counts as coming into view: a
  * little, so a picture scrolled towards is on its way before it is there, and
- * one a long document keeps far below is never asked for.
+ * one a long document keeps far below is never asked for. The margin is the
+ * window's: a document scrolling inside a sheet of its own has its pictures
+ * seen as they appear in the sheet, with no margin at the sheet's edge.
  */
-const AHEAD = '200px 0px'
+export const AHEAD = '200px 0px'
+
+/** What a watch that cannot tell does: every picture is seen at once, and never afresh. */
+function seenAtOnce(): PictureWatch {
+  return (_element, seen, afresh) => {
+    if (!afresh) seen()
+    return () => undefined
+  }
+}
 
 /**
  * One observer for every picture under a provider, rather than one each: a
@@ -44,28 +57,28 @@ const AHEAD = '200px 0px'
  * make.
  */
 export function watchInView(): PictureWatch {
-  if (typeof IntersectionObserver !== 'function') {
-    return (_element, seen) => {
-      seen()
-      return () => undefined
-    }
-  }
-  const waiting = new Map<Element, () => void>()
+  if (typeof IntersectionObserver !== 'function') return seenAtOnce()
+  const waiting = new Map<Element, { seen: () => void; ready: boolean }>()
   let observer: IntersectionObserver | undefined
   const observe = () => {
     observer ??= new IntersectionObserver((entries) => {
       for (const entry of entries) {
-        if (!entry.isIntersecting) continue
-        const seen = waiting.get(entry.target)
+        const watching = waiting.get(entry.target)
+        if (!watching) continue
+        if (!entry.isIntersecting) {
+          watching.ready = true
+          continue
+        }
+        if (!watching.ready) continue
         waiting.delete(entry.target)
         observer?.unobserve(entry.target)
-        seen?.()
+        watching.seen()
       }
     }, { rootMargin: AHEAD })
     return observer
   }
-  return (element, seen) => {
-    waiting.set(element, seen)
+  return (element, seen, afresh = false) => {
+    waiting.set(element, { seen, ready: !afresh })
     observe().observe(element)
     return () => {
       waiting.delete(element)
@@ -85,10 +98,7 @@ const NONE: Pictures = {
   scope: '',
   entries: new Map(),
   cache: new PictureCache(NO_PICTURES),
-  watch: (_element, seen) => {
-    seen()
-    return () => undefined
-  },
+  watch: seenAtOnce(),
 }
 
 const PicturesContext = createContext<Pictures>(NONE)
@@ -127,33 +137,42 @@ export function usePictureEntry(name: ImageName): ImageEntry | undefined {
   return useContext(PicturesContext).entries.get(imageNameKey(name))
 }
 
+/** Where a picture is: waiting for its bytes, drawn from an address, or without bytes after asking. */
+type PictureState = { address?: string; failed?: true }
+
 /**
  * The address to draw a picture from once its bytes are here, and nothing
  * before: shown at once where the page kept them, else asked for when
- * `element` first comes into view.
+ * `element` first comes into view. Where the bytes do not arrive — none
+ * there, or the source failed — the picture is `failed`, and asks again the
+ * next time it comes into view.
  */
-function usePictureAddress(entry: ImageEntry, element: RefObject<Element | null>): string | undefined {
+function usePicture(entry: ImageEntry, element: RefObject<Element | null>): PictureState {
   const { scope, cache, watch } = useContext(PicturesContext)
   const { name, contentAddress } = entry
-  const [address, setAddress] = useState<string | undefined>(undefined)
+  const [state, setState] = useState<PictureState>({})
   // Before the browser paints: a picture seen before is drawn in the frame it
   // comes back in, from bytes the page kept, without a frame of empty box.
   useLayoutEffect(() => {
     const picture = { name, contentAddress }
     let live = true
     let showing = false
+    let unwatch: (() => void) | undefined
     const present = (shown: string) => {
       showing = true
-      setAddress(shown)
+      setState({ address: shown })
     }
     const seen = () => {
       void cache.request(scope, picture).then((shown) => {
-        if (shown === undefined) return
-        if (live) present(shown)
-        else cache.hide(scope, picture)
+        if (!live) {
+          if (shown !== undefined) cache.hide(scope, picture)
+        } else if (shown !== undefined) present(shown)
+        else {
+          setState({ failed: true })
+          if (element.current) unwatch = watch(element.current, seen, true)
+        }
       })
     }
-    let unwatch: (() => void) | undefined
     const kept = cache.show(scope, picture)
     if (kept !== undefined) present(kept)
     else if (element.current) unwatch = watch(element.current, seen)
@@ -161,11 +180,23 @@ function usePictureAddress(entry: ImageEntry, element: RefObject<Element | null>
       live = false
       unwatch?.()
       if (showing) cache.hide(scope, picture)
-      setAddress(undefined)
+      setState({})
     }
   }, [scope, name, contentAddress, cache, watch, element])
-  return address
+  return state
 }
+
+/**
+ * What an empty box looks like: a tint while its bytes are on their way, and
+ * the alt text once they did not come. On paper, the alt text either way and
+ * no tint, since a page printed from the browser has no bytes to wait for.
+ */
+const WAITING = {
+  bgcolor: 'action.hover',
+  color: 'transparent',
+  '@media print': { bgcolor: 'transparent', color: 'text.secondary' },
+} as const
+const FAILED = { color: 'text.secondary', fontStyle: 'italic' } as const
 
 /**
  * A picture in the page, and the same picture at full size on a click.
@@ -179,7 +210,7 @@ function usePictureAddress(entry: ImageEntry, element: RefObject<Element | null>
  */
 export function LibraryPicture({ entry, alt }: { entry: ImageEntry; alt: string }) {
   const element = useRef<HTMLImageElement>(null)
-  const address = usePictureAddress(entry, element)
+  const { address, failed } = usePicture(entry, element)
   const [open, setOpen] = useState(false)
   const sized = entry.width > 0 && entry.height > 0
   return (
@@ -190,6 +221,7 @@ export function LibraryPicture({ entry, alt }: { entry: ImageEntry; alt: string 
         src={address}
         alt={alt}
         data-picture={entry.name}
+        {...(failed ? { 'data-failed': '' } : {})}
         {...(sized ? { width: entry.width, height: entry.height } : {})}
         onClick={address ? () => setOpen(true) : undefined}
         sx={{
@@ -200,7 +232,7 @@ export function LibraryPicture({ entry, alt }: { entry: ImageEntry; alt: string 
           objectFit: 'contain',
           borderRadius: 1,
           ...(sized ? { aspectRatio: `${entry.width} / ${entry.height}` } : {}),
-          ...(address ? { cursor: 'zoom-in' } : { bgcolor: 'action.hover', color: 'transparent' }),
+          ...(address ? { cursor: 'zoom-in' } : failed ? FAILED : WAITING),
         }}
       />
       {address && (
