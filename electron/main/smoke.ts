@@ -221,6 +221,9 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
 
   const { mkdtemp, readdir, readFile, realpath, stat } = await import('node:fs/promises')
   const { tmpdir } = await import('node:os')
+  // Everything this run makes goes in its own directory, which the launcher
+  // removes once the app has exited (`build/smokeRun.ts`).
+  const workIn = process.env.LVARCH_SMOKE_ROOT ?? tmpdir()
   const { join, basename, dirname } = await import('node:path')
 
   const page = (script: string) => window.webContents.executeJavaScript(script, true) as Promise<string>
@@ -236,7 +239,7 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
    * about; it is granted now so a grant failure is one clear line at the top.
    */
   const grant = async (label: string): Promise<DesktopDirectory> => {
-    const granted = await grantDirectory(await mkdtemp(join(tmpdir(), `lvarch-smoke-${label}-`)), { remember: false })
+    const granted = await grantDirectory(await mkdtemp(join(workIn, `lvarch-smoke-${label}-`)), { remember: false })
     if (!granted) throw new Error(`no ${label} folder could be granted`)
     return granted
   }
@@ -892,7 +895,7 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
     } catch {
       return 'no git on this machine; nothing to exercise'
     }
-    const bare = await mkdtemp(join(tmpdir(), 'lvarch-smoke-remote-'))
+    const bare = await mkdtemp(join(workIn, 'lvarch-smoke-remote-'))
     await git(bare, ['init', '--bare'])
 
     const ask = (script: string) => page(`

@@ -20,7 +20,7 @@
  */
 import { app, BrowserWindow, dialog, ipcMain, protocol, net, shell } from 'electron'
 import { access } from 'node:fs/promises'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdirSync, mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { extname, isAbsolute, join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -247,6 +247,14 @@ const UNATTENDED = process.argv.includes('--smoke')
  */
 if (app.isPackaged) app.setPath('userData', join(app.getPath('appData'), USER_DATA_NAME))
 
+/** A run's directory where no launcher made one: said, because nothing will remove it. */
+function madeForThisRun(): string {
+  const made = mkdtempSync(join(tmpdir(), 'lvarch-smoke-'))
+  process.env.LVARCH_SMOKE_ROOT = made
+  process.stderr.write(`smoke: this run keeps everything in ${made}; run it with npm run smoke:run to have it removed\n`)
+  return made
+}
+
 /**
  * The smoke run keeps its own `userData`, and therefore its own preferences.
  *
@@ -262,8 +270,10 @@ if (app.isPackaged) app.setPath('userData', join(app.getPath('appData'), USER_DA
  * run: the migration step counts what it copied, and a run after a run has
  * nothing left to copy. And fresh rather than emptied: two runs at once — two
  * checkouts on one machine — shared one directory, and each emptied it under
- * the other. It is removed as the run ends; everything its log says went to
- * stderr as well.
+ * the other. It sits in the run's own directory, which the launcher makes and
+ * removes once the app has exited (`build/smokeRun.ts`) — never the app
+ * itself, which Chromium outlives by the profile it writes as it quits. A run
+ * started without the launcher makes a directory of its own and says where.
  *
  * Its log goes there too. On Windows and Linux the logs folder is inside
  * `userData` and follows it; on macOS it is `~/Library/Logs/<product>`, which
@@ -274,12 +284,9 @@ if (app.isPackaged) app.setPath('userData', join(app.getPath('appData'), USER_DA
  * the pin above, which it deliberately overrides.
  */
 if (UNATTENDED) {
-  const own = mkdtempSync(join(tmpdir(), 'lvarch-smoke-userdata-'))
-  // Synchronous, because the run ends in `process.exit` and nothing after it
-  // is awaited; the quit is for a run that ends any other way.
-  const removeOwn = () => rmSync(own, { recursive: true, force: true })
-  process.once('exit', removeOwn)
-  app.once('quit', removeOwn)
+  const root = process.env.LVARCH_SMOKE_ROOT ?? madeForThisRun()
+  const own = join(root, 'userdata')
+  mkdirSync(own, { recursive: true })
   app.setPath('userData', own)
   app.setAppLogsPath(join(own, 'logs'))
 }
