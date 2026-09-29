@@ -87,5 +87,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'folder.adoptDone': '{copied} nach \u201e{name}\u201c kopiert.',
   'folder.adoptPartly': '{copied} kopiert; {failed} konnte nicht kopiert werden: {paths}.',
   'folder.adoptFailed': 'Es wurde nichts kopiert: {message}',
+  'folder.adoptAgain': 'Erneut versuchen',
   'folder.adoptClose': 'Schließen',
 }

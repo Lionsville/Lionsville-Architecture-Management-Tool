@@ -125,5 +125,6 @@ export const EN = {
   'folder.adoptDone': '{copied} copied into \u201c{name}\u201d.',
   'folder.adoptPartly': '{copied} copied; {failed} could not be copied: {paths}.',
   'folder.adoptFailed': 'Nothing was copied: {message}',
+  'folder.adoptAgain': 'Try again',
   'folder.adoptClose': 'Close',
 } as const

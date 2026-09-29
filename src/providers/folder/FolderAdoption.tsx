@@ -22,7 +22,11 @@
  * is remembered per folder, because a browser hands out a folder permission
  * that rarely survives a restart: the same folder is picked again on the next
  * boot, and a question already answered must not be asked twice. A copy that
- * did not finish is recorded as neither, and asked again.
+ * did not finish is recorded as neither, and asked again — and so is one where
+ * a scope could not be written: the outcome offers to try those again at
+ * once, and the next pick of the folder asks again, when a second copy writes
+ * only what is not there yet. A scope this browser could not read is said,
+ * and not asked about again: no second try reads it.
  *
  * A yes stays on screen until the copy is done, busy while it runs — a copy
  * of a large landscape takes a while, and a dialog that closed at once said
@@ -57,7 +61,7 @@ type Stage =
   | { at: 'closed' }
   | { at: 'asking' }
   | { at: 'copying' }
-  | { at: 'said'; severity: 'success' | 'warning' | 'error'; text: string }
+  | { at: 'said'; severity: 'success' | 'warning' | 'error'; text: string; again?: true }
 
 export function FolderAdoptionQuestion({ own, adoption, preferences, reread, flush }: AdoptionProps) {
   const { t: s } = useStrings()
@@ -78,8 +82,9 @@ export function FolderAdoptionQuestion({ own, adoption, preferences, reread, flu
     own.note(tally.unread > 0 ? 'warn' : 'info', 'migration',
       `copied ${tally.scopes} scopes, kept ${tally.kept}, failed ${tally.failed}, unread ${tally.unread}`)
     // A copy that wrote nothing because the folder already held it all has
-    // rescued the work as surely as one that wrote every scope.
-    if (tally.scopes > 0 || tally.failed === 0) {
+    // rescued the work as surely as one that wrote every scope; one where a
+    // scope could not be written has not, and is asked again.
+    if (tally.failed === 0) {
       preferences.write({ migratedFolders: [...new Set([...readMigratedFolders(preferences.read()), adoption.root])] })
     }
     reread()
@@ -89,6 +94,7 @@ export function FolderAdoptionQuestion({ own, adoption, preferences, reread, flu
       : {
           at: 'said', severity: 'warning',
           text: s('folder.adoptPartly', { copied: tally.scopes, failed: missed, paths: tally.missed.map((path) => path || '/').join(', ') }),
+          ...(tally.failed > 0 ? { again: true as const } : {}),
         })
   }, [own, adoption, preferences, reread, s])
 
@@ -132,6 +138,9 @@ export function FolderAdoptionQuestion({ own, adoption, preferences, reread, flu
             <Button size="small" onClick={skip} data-testid="adopt-skip">{s('folder.adoptSkip')}</Button>
             <Button size="small" variant="contained" onClick={copy} data-testid="adopt-copy">{s('folder.adoptCopy')}</Button>
           </>
+        )}
+        {stage.at === 'said' && stage.again && (
+          <Button size="small" onClick={copy} data-testid="adopt-again">{s('folder.adoptAgain')}</Button>
         )}
         {stage.at === 'said' && (
           <Button size="small" variant="contained" onClick={close} data-testid="adopt-close">{s('folder.adoptClose')}</Button>

@@ -36,10 +36,10 @@ function blob(initial: Record<string, unknown> = {}) {
 }
 
 async function ask(options: {
-  from?: Repositories; preferences?: ReturnType<typeof blob>; language?: Language; flush?: () => Promise<void>
+  from?: Repositories; into?: Repositories; preferences?: ReturnType<typeof blob>; language?: Language; flush?: () => Promise<void>
 } = {}) {
   const from = options.from ?? await kept()
-  const into = memoryRepositories()
+  const into = options.into ?? memoryRepositories()
   const preferences = options.preferences ?? blob()
   const reread = vi.fn()
   const flush = vi.fn(options.flush ?? (() => Promise.resolve()))
@@ -134,6 +134,43 @@ describe('the question a folder pick asks', () => {
     fireEvent.click(screen.getByTestId('adopt-copy'))
     await settled()
     expect(screen.getByTestId('adopt-outcome').textContent).toBe('1 copied; 1 could not be copied: globex.')
+  })
+
+  it('offers to try again the scopes that could not be written, and asks again at the next pick until they are', async () => {
+    const from = await kept()
+    await placeTogether(from, [{
+      address: 'globex',
+      content: contentOf({ path: 'globex', model: { name: 'Globex', elements: [], relations: [], diagrams: [] }, activeDiagramId: '', logoLibrary: [] }, []),
+    }])
+    const folder = memoryRepositories()
+    let refusing = true
+    const scopes = new Proxy(folder.scopes, {
+      get: (target, member) => (member === 'create'
+        ? (...args: Parameters<typeof target.create>) => (refusing && args[0] === 'globex'
+          ? Promise.reject(new Error('the disk said no')) : target.create(...args))
+        : Reflect.get(target, member)),
+    })
+    const { preferences } = await ask({ from, into: { ...folder, scopes } })
+    fireEvent.click(screen.getByTestId('adopt-copy'))
+    await settled()
+    expect(screen.getByTestId('adopt-outcome').textContent).toBe('1 copied; 1 could not be copied: globex.')
+    // Not done: the next pick of this folder asks again.
+    expect(preferences.read()).toEqual({})
+    refusing = false
+    fireEvent.click(screen.getByTestId('adopt-again'))
+    await settled()
+    expect(screen.getByTestId('adopt-outcome').textContent).toBe('1 copied into “test2”.')
+    expect((await readScope(folder.scopes, 'globex'))?.model.name).toBe('Globex')
+    expect(preferences.read()).toMatchObject({ migratedFolders: ['/test2'] })
+    expect(screen.queryByTestId('adopt-again')).toBeNull()
+  })
+
+  it('offers no second try for a scope this browser could not read, and does not ask about it again', async () => {
+    const { preferences } = await ask({ from: await keptWithOneUnread() })
+    fireEvent.click(screen.getByTestId('adopt-copy'))
+    await settled()
+    expect(screen.queryByTestId('adopt-again')).toBeNull()
+    expect(preferences.read()).toMatchObject({ migratedFolders: ['/test2'] })
   })
 
   it('says on screen and in the trail a copy that fell over, and remembers nothing, so it is asked again', async () => {
