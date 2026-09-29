@@ -69,7 +69,9 @@ function nextLibrary(was: readonly KeptPicture[], entries: readonly ImageEntry[]
 }
 
 /** A scope's state as the folder store writes it: the documents' pictures as files, the library and the identity in the header. */
-function snapshotFor(node: FolderNode, content: ScopeContent, was: ReadScope | undefined, library: readonly KeptPicture[]): ScopeSnapshot {
+function snapshotFor(
+  node: FolderNode, content: ScopeContent, was: ReadScope | undefined, library: readonly KeptPicture[], waiting: ReadonlySet<string> = new Set(),
+): ScopeSnapshot {
   const model = filesInDocuments(content.model, was?.snapshot?.model, pictureFiles(library, was?.library ?? []))
   const { [LIBRARY_KEY]: _rows, ...carried } = { ...was?.snapshot?.carried }
   return {
@@ -81,7 +83,7 @@ function snapshotFor(node: FolderNode, content: ScopeContent, was: ReadScope | u
     ...(content.client !== undefined ? { client: content.client } : {}),
     ...(content.links !== undefined ? { links: content.links } : {}),
     ...(was?.snapshot?.unread ? { unread: was.snapshot.unread } : {}),
-    carried: { ...carried, [ID_KEY]: node.id, ...(library.length ? { [LIBRARY_KEY]: rowsFor(library) } : {}) },
+    carried: { ...carried, [ID_KEY]: node.id, ...(library.length ? { [LIBRARY_KEY]: rowsFor(library, waiting) } : {}) },
   }
 }
 
@@ -149,7 +151,8 @@ export class FolderScopeRepository implements ScopeRepository {
         if (!result.ok) return { refused: result.refused, scope: read.node.id, stepId: result.stepId }
         if (!result.changed) continue
         const library = nextLibrary(read.library, result.content.images)
-        planned.push({ read, content: result.content, library, snapshot: snapshotFor(read.node, result.content, read, library), steps })
+        const snapshot = snapshotFor(read.node, result.content, read, library, this.waiting(read, library))
+        planned.push({ read, content: result.content, library, snapshot, steps })
       }
       await this.applied.pend(await this.expectations(planned))
       const refused = await this.write(planned)
@@ -193,6 +196,19 @@ export class FolderScopeRepository implements ScopeRepository {
       runs.set(scope, run)
     }
     return runs
+  }
+
+  /**
+   * The files of a library that no bytes will be written for: not there, not
+   * put, and no other picture of the scope the same bytes. Their rows say so,
+   * and wait for them.
+   */
+  private waiting(read: ReadScope, library: readonly KeptPicture[]): Set<string> {
+    const there = new Set(read.files.map((file) => file.file))
+    const held = new Set(read.library.filter((kept) => there.has(kept.file)).map((kept) => kept.entry.contentAddress))
+    return new Set(library
+      .filter(({ entry, file }) => !there.has(file) && !held.has(entry.contentAddress) && !this.staging.get(read.node.id, entry.contentAddress))
+      .map(({ file }) => file))
   }
 
   /** Each planned step, with what its scope's files are to be fingerprinted as once the write has landed. */

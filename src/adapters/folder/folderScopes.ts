@@ -103,9 +103,9 @@ export function newIdentity(): ScopeId {
   return crypto.randomUUID()
 }
 
-/** What a revision is made from: the address, the format's revision, and which pictures there are. */
-export function revisionOf(address: ScopeAddress, stored: string, pictures: readonly PictureFile[]): Revision {
-  return fingerprint(['scope', address, stored, ...pictureStamps(pictures)])
+/** What a revision is made from: the address, the format's revision, and the pictures the library holds. */
+export function revisionOf(address: ScopeAddress, stored: string, library: readonly KeptPicture[]): Revision {
+  return fingerprint(['scope', address, stored, ...pictureStamps(library)])
 }
 
 export class FolderScopes {
@@ -205,11 +205,17 @@ export class FolderScopes {
   async pictureFilesOf(address: ScopeAddress): Promise<PictureFile[]> {
     const folder = await folderAt(this.root, scopeFilePath(address, PICTURES))
     if (!folder) return []
-    const files = await filesUnder(folder, (name) => name.startsWith('.'))
-    return files
+    const files = (await filesUnder(folder, (name) => name.startsWith('.')))
       .filter(({ path }) => !path.split('/').some((segment) => segment.startsWith('.')))
       .filter(({ path }) => imageMediaType(path) !== undefined)
-      .map(({ path }) => ({ file: path }))
+    // What each file is, as the handle says it without handing its bytes over:
+    // the desktop's fingerprint where main reads it, a browser's lazy `File`.
+    return Promise.all(files.map(async ({ path, handle }): Promise<PictureFile> => {
+      const stamp: { size: number; sha256?: string } | undefined = handle.stamp
+        ? await handle.stamp()
+        : await handle.getFile().then((file) => ({ size: file.size }))
+      return { file: path, ...(stamp ? { size: stamp.size } : {}), ...(stamp?.sha256 ? { sha256: stamp.sha256 } : {}) }
+    }))
   }
 
   /** The entry for a file no row names, from its bytes — read once, and remembered by where the file is. */
@@ -257,7 +263,7 @@ export class FolderScopes {
     if (!bare && !snapshot) return undefined
     const { library, files } = await this.libraryOf(node.address, snapshot)
     const stored = snapshot?.revision ?? ''
-    const state = stateFrom(node, snapshot, library, revisionOf(node.address, stored, files))
+    const state = stateFrom(node, snapshot, library, revisionOf(node.address, stored, library))
     return { node, state, snapshot, library, files, ...(snapshot?.revision !== undefined ? { stored } : {}) }
   }
 

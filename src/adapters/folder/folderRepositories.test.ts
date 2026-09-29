@@ -7,6 +7,7 @@
  * machine's own git beside the desktop's handle (`desktop/`).
  */
 import { describe, expect, it } from 'vitest'
+import { contentAddressOf } from '../../model/imageName'
 import { dataUrl } from '../../projects/fileText'
 import { describeHistoryRepository } from '../../ports/HistoryRepository.contract'
 import { describeImageRepository } from '../../ports/ImageRepository.contract'
@@ -22,7 +23,7 @@ import { folderRepositories } from './folderRepositories'
 import { composed, identityAt } from './folderScopes'
 import { memoryGit } from './memoryGit'
 import { FileSystemScopeStore } from './FileSystemScopeStore'
-import { textAt, writeAt } from './handles'
+import { removeAt, textAt, writeAt } from './handles'
 import type { ScopeId } from '../../projects/scopeState'
 
 function overFakeFolder(): RepositoriesUnderTest {
@@ -286,5 +287,63 @@ describe('an address as the domain is answered it', () => {
   it('is composed, and one identity, however the disk spells the folder back', () => {
     expect(composed('café/rail')).toBe('café/rail')
     expect(identityAt('café/rail')).toBe(identityAt('café/rail'))
+  })
+})
+
+describe('what a scope’s pictures folder says, over what its rows say', () => {
+  /** A PNG's header saying its size, and a tail of `length` bytes. */
+  function picture(width: number, height: number, length = 1, fill = 7): Uint8Array {
+    const bytes = new Uint8Array(24 + length).fill(fill)
+    bytes.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52, 0, 0, 0, width, 0, 0, 0, height])
+    return bytes
+  }
+
+  async function withPicture() {
+    const root = new FakeDirectory()
+    const repositories = over({ repositories: folderRepositories({ root, git: memoryGit(root) }) })
+    const acme = await repositories.scope('acme', 'Acme Logistics')
+    const bytes = picture(64, 32)
+    const { contentAddress } = ok(await repositories.images.put(acme, 'map.png', bytes))
+    await repositories.steps(acme, { type: 'image.add', image: { name: 'map.png', mediaType: 'image/png', size: bytes.length, width: 64, height: 32, contentAddress } })
+    return { root, repositories, acme }
+  }
+
+  it('lets a picture whose file was removed by hand leave the library, and its name be taken again', async () => {
+    const { root, repositories, acme } = await withPicture()
+    await removeAt(root, 'acme/images/map.png')
+    expect((await repositories.state(acme)).images).toEqual([])
+    expect(await repositories.images.find(acme, 'map.png')).toBeUndefined()
+    const again = picture(10, 10)
+    const { contentAddress } = ok(await repositories.images.put(acme, 'map.png', again))
+    await repositories.steps(acme, { type: 'image.add', image: { name: 'map.png', mediaType: 'image/png', size: again.length, width: 10, height: 10, contentAddress } })
+    expect((await repositories.images.bytes(acme, 'map.png'))?.bytes).toEqual(again)
+  })
+
+  it('keeps a picture added before its bytes were put, and writes them with the next step once they are', async () => {
+    const root = new FakeDirectory()
+    const repositories = over({ repositories: folderRepositories({ root, git: memoryGit(root) }) })
+    const acme = await repositories.scope('acme', 'Acme Logistics')
+    const bytes = picture(8, 8)
+    const entry = { name: 'later.png', mediaType: 'image/png', size: bytes.length, width: 8, height: 8, contentAddress: await contentAddressOf(bytes) }
+    await repositories.steps(acme, { type: 'image.add', image: entry })
+    expect((await repositories.state(acme)).images).toEqual([entry])
+    expect(root.paths()).not.toContain('acme/images/later.png')
+    ok(await repositories.images.put(acme, 'later.png', bytes))
+    expect((await repositories.images.bytes(acme, 'later.png'))?.bytes).toEqual(bytes)
+    await repositories.steps(acme, addCrews)
+    expect(root.paths()).toContain('acme/images/later.png')
+    expect((await repositories.state(acme)).images).toEqual([entry])
+  })
+
+  it('describes a picture replaced by hand under its name afresh: its size, its dimensions and its bytes', async () => {
+    const { root, repositories, acme } = await withPicture()
+    const before = await repositories.state(acme)
+    const replaced = picture(200, 100, 5)
+    await writeAt(root, 'acme/images/map.png', replaced)
+    const after = await repositories.state(acme)
+    expect(after.images).toEqual([{
+      name: 'map.png', mediaType: 'image/png', size: replaced.length, width: 200, height: 100, contentAddress: await contentAddressOf(replaced),
+    }])
+    expect(after.revision).not.toBe(before.revision)
   })
 })

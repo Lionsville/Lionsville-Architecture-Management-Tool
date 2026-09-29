@@ -15,9 +15,15 @@
  * header named it. Its entry is made from its bytes, which are read once for
  * that, and it is listed the next time the scope is written. Its name is its
  * file's where that name passes the domain's rule, and one made from it where
- * it does not (`imageNameOfFile`); the file is never renamed. Reading a scope
- * lists the pictures folder by name and reads no file in it but those, so a
- * file replaced under a name a row already has keeps that row's entry.
+ * it does not (`imageNameOfFile`); the file is never renamed.
+ *
+ * **What the files say wins over the rows.** A row whose file has gone —
+ * removed by hand, or never written — leaves the library, and its name is
+ * free again; but for a row a step added whose bytes were not put yet, which
+ * says so (`pending`) and waits for them. A file replaced under a row's name —
+ * another size, or other bytes where the handle can say so without handing
+ * them over (the desktop's main process fingerprints a file where it is) — is
+ * described afresh, under the row's name.
  *
  * **Names and files.** A row says its file where the file's name is not the
  * picture's: a file an older macOS gave back decomposed, a name made for a
@@ -36,33 +42,40 @@ import type { PictureFiles } from './imageLibrary'
 /** A picture in a library, and the file inside the pictures folder it is kept as. */
 export type KeptPicture = { entry: ImageEntry; file: string }
 
-/** A file the pictures folder holds, by its path inside it. */
-export type PictureFile = { file: string }
+/**
+ * A file the pictures folder holds, by its path inside it; with its size, and
+ * the digest of its bytes, where the handle says them without reading it here.
+ */
+export type PictureFile = { file: string; size?: number; sha256?: string }
 
 /** The key `scope.json` keeps the library under. */
 export const LIBRARY_KEY = 'images'
 
-/** One row of the library in the header: the entry, and its file where that is not its name. */
-type Row = ImageEntry & { file?: string }
+/** One row of the library in the header: the entry, its file where that is not its name, and whether its bytes are still to come. */
+type Row = ImageEntry & { file?: string; pending?: true }
+
+/** A picture in a library, as the header keeps it: `pending` while its bytes are still to come. */
+export type RowPicture = KeptPicture & { pending?: true }
 
 /** The rows a header's library holds that describe a picture; any other is left to be found as a file. */
-export function rowsOf(held: unknown): KeptPicture[] {
+export function rowsOf(held: unknown): RowPicture[] {
   if (!Array.isArray(held)) return []
   return held.flatMap((row: unknown) => {
     if (!row || typeof row !== 'object') return []
-    const { file, ...entry } = row as Row
+    const { file, pending, ...entry } = row as Row
     if (imageEntryRefusal(entry) !== undefined) return []
     const kept = typeof file === 'string' && isImageFile(file) ? file : entry.name
-    return [{ entry: { ...entry }, file: kept }]
+    return [{ entry: { ...entry }, file: kept, ...(pending === true ? { pending } : {}) }]
   })
 }
 
-/** The library as the header keeps it. */
-export function rowsFor(library: readonly KeptPicture[]): Row[] {
+/** The library as the header keeps it; `waiting` are the files whose bytes are still to come. */
+export function rowsFor(library: readonly KeptPicture[], waiting: ReadonlySet<string> = new Set()): Row[] {
   return library.map(({ entry, file }) => ({
     name: entry.name, mediaType: entry.mediaType, size: entry.size, width: entry.width, height: entry.height,
     contentAddress: entry.contentAddress,
     ...(file === entry.name ? {} : { file }),
+    ...(waiting.has(file) ? { pending: true as const } : {}),
   }))
 }
 
@@ -73,20 +86,32 @@ export type PictureSource = {
   describe(file: PictureFile, name: ImageName): Promise<ImageEntry | undefined>
 }
 
+/** Whether a file is not what its row describes, by what the handle says of it without reading it. */
+function replaced(row: KeptPicture, file: PictureFile): boolean {
+  if (file.sha256 !== undefined && `sha256:${file.sha256}` !== row.entry.contentAddress) return true
+  return file.size !== undefined && file.size !== row.entry.size
+}
+
 /**
- * A scope's library: every row of its header, in its order, and then every
- * file no row names, by file. A row whose file is not there stays, its bytes
- * answering nothing until they are put again.
+ * A scope's library: every row of its header whose file is there, in its
+ * order — described afresh where the file is not what the row says — and the
+ * rows still waiting for their bytes; then every file no row names, by file.
  */
-export async function libraryOf(rows: readonly KeptPicture[], source: PictureSource): Promise<KeptPicture[]> {
+export async function libraryOf(rows: readonly RowPicture[], source: PictureSource): Promise<KeptPicture[]> {
   const onDisk = new Map(source.files.map((file) => [imageName(file.file), file]))
-  const taken = new Set(rows.map((row) => imageNameKey(row.entry.name)))
+  const kept = rows.filter((row) => row.pending || onDisk.has(imageName(row.file)))
+  const taken = new Set(kept.map((row) => imageNameKey(row.entry.name)))
   const named = new Set<string>()
   const library: KeptPicture[] = []
-  for (const row of rows) {
+  for (const row of kept) {
     const found = onDisk.get(imageName(row.file))
-    if (found) named.add(imageName(row.file))
-    library.push(found ? { entry: row.entry, file: found.file } : row)
+    if (!found) {
+      library.push({ entry: row.entry, file: row.file })
+      continue
+    }
+    named.add(imageName(row.file))
+    const entry = replaced(row, found) ? await source.describe(found, row.entry.name) : row.entry
+    library.push({ entry: entry ?? row.entry, file: found.file })
   }
   const unlisted = source.files.filter((file) => !named.has(imageName(file.file)))
     .sort((one, other) => (one.file < other.file ? -1 : 1))
@@ -97,9 +122,9 @@ export async function libraryOf(rows: readonly KeptPicture[], source: PictureSou
   return library
 }
 
-/** What the library's files say about its state without being read: which there are. */
-export function pictureStamps(files: readonly PictureFile[]): string[] {
-  return files.map((file) => imageName(file.file)).sort()
+/** What a library says about a scope's state: each picture's name and the bytes it is. */
+export function pictureStamps(library: readonly KeptPicture[]): string[] {
+  return library.map(({ entry }) => `${entry.name}\u0000${entry.contentAddress}`).sort()
 }
 
 /** Documents' pictures, both ways, over a library (and, reading, the one it replaces). */

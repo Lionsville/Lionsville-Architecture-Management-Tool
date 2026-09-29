@@ -473,7 +473,7 @@ export class FolderHistory implements HistoryRepository {
       const scopeText = files.find((file) => file.path === 'scope.json')
       const header = headerOf(scopeText && 'text' in scopeText ? scopeText.text : undefined) ?? {}
       const node = { id, address, header, summary: { path: address, name: snapshot.model.name, diagrams: 0, children: [] } }
-      state = stateFrom(node, snapshot, library, revisionOf(address, folderRevision(files), kept))
+      state = stateFrom(node, snapshot, library, revisionOf(address, folderRevision(files), library))
     }
     this.states.set(key, state)
     return structuredClone(state)

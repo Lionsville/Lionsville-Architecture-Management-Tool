@@ -205,4 +205,18 @@ describe.skipIf(!available)('the folder’s repositories on the desktop, with gi
     expect((await changes(folder)).map((change) => change.path)).toContain('acme/model.json')
   })
 
+
+  it('knows a picture replaced by hand with other bytes of the same size, by its fingerprint where it is', async () => {
+    const folder = freshFolder()
+    const repositories = over(onTheDesktop(folder))
+    const acme = await repositories.scope('acme', 'Acme Logistics')
+    const bytes = new Uint8Array([1, 2, 3, 4])
+    const { contentAddress } = ok(await repositories.images.put(acme, 'map.png', bytes))
+    await repositories.steps(acme, { type: 'image.add', image: { name: 'map.png', mediaType: 'image/png', size: 4, width: 0, height: 0, contentAddress } })
+    await writeOnDisk(join(folder, 'acme/images/map.png'), new Uint8Array([4, 3, 2, 1]))
+    const [image] = (await repositories.state(acme)).images
+    expect(image.size).toBe(4)
+    expect(image.contentAddress).not.toBe(contentAddress)
+  })
+
 })
