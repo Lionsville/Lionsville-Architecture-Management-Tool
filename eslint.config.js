@@ -307,8 +307,11 @@ const NARROW_EDGES = {
   'platform/node': [{ to: 'adapters', within: 'folder/format' }],
 }
 
-/** A specifier into `to` that is not under `within`: what a narrow edge still refuses. */
-const outside = ({ to, within }) => `(^|/)${to}(/(?!${within}/).*)?$`
+/**
+ * A specifier into `to` that is not under `within`, or that climbs back out of
+ * it with `..`: what a narrow edge still refuses.
+ */
+const outside = ({ to, within }) => `(^|/)${to}(/(?!${within}/).*|/${within}/(.*/)?\\.\\.(/.*)?)?$`
 
 const IMPORT_MATRIX = MODULES.map((from) => ({
   files: [`src/${from}/**/*.{ts,tsx}`],

@@ -130,6 +130,8 @@ describe('the node side and the folder\'s format', () => {
       "import { memoryRepositories } from '../../adapters/memory/memoryRepositories'\nexport const one = memoryRepositories\n",
       "import { folderRepositories } from '../../adapters/folder/folderRepositories'\nexport const one = folderRepositories\n",
       "import * as all from '../../adapters'\nexport const one = all\n",
+      "import { folderRepositories } from '../../adapters/folder/format/../folderRepositories'\nexport const one = folderRepositories\n",
+      "import { memoryGit } from '../../adapters/folder/format/examples/../../memoryGit'\nexport const one = memoryGit\n",
     ]) {
       expect((await layeringAt('src/platform/node/one.ts', source)).join('\n'), source).toMatch(/Node and nothing else/)
     }
