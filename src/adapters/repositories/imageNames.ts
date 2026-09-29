@@ -25,7 +25,7 @@
  * still kept, and nothing is taken out on their word (`Meta.namesCounted`).
  */
 import type { ContentAddress, ImageEntry } from '../../model/imageName'
-import type { ScopeId } from '../../projects/scopeState'
+import type { ScopeId, ScopeStep } from '../../projects/scopeState'
 import { keyOf } from './KeyedStore'
 import type { Transaction } from './KeyedStore'
 
@@ -84,6 +84,25 @@ export async function historyNamed(tx: Transaction, scope: ScopeId, images: read
     if (held?.history) continue
     keep(tx, key, { library: held?.library ?? 0, history: true, put: held?.put ?? 0 })
   }
+}
+
+/**
+ * The first content address a library newly names whose bytes are not kept
+ * for the scope — never put, or swept since — and the step that named it;
+ * `undefined` where every one is there. A library never names bytes that are
+ * not there: an undo that adds back a picture swept a day after it was taken
+ * out is refused, and the editor puts the bytes again or tells the person.
+ */
+export async function bytesMissing(
+  tx: Transaction, scope: ScopeId, before: readonly ImageEntry[], after: readonly ImageEntry[], steps: readonly ScopeStep[],
+): Promise<{ address: ContentAddress; stepId?: string } | undefined> {
+  const named = new Set(before.map((image) => image.contentAddress))
+  for (const address of new Set(after.map((image) => image.contentAddress))) {
+    if (named.has(address) || await tx.get('bytes', namedKey(scope, address)) !== undefined) continue
+    const naming = steps.find(({ command }) => command.type === 'image.add' && command.image.contentAddress === address)
+    return { address, ...(naming ? { stepId: naming.stepId } : {}) }
+  }
+  return undefined
 }
 
 /** Take out the bytes nothing names that were last put a day or more before `now`; how many went. */

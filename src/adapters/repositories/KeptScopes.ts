@@ -25,6 +25,7 @@ import {
 } from './kept'
 import type { KeptScope, Meta } from './kept'
 import type { Source } from './source'
+import { bytesMissing } from './imageNames'
 import { appliedTo, letGo, remember } from './stepIds'
 
 /** One scope's new steps in an apply, its runs one after the other. */
@@ -66,6 +67,8 @@ export class KeptScopes implements ScopeRepository {
         const { content: before } = await readContent(tx, kept)
         const result = applySteps(before, steps)
         if (!result.ok) return { refused: result.refused, scope: kept.id, stepId: result.stepId }
+        const missing = await bytesMissing(tx, kept.id, before.images, result.content.images, steps)
+        if (missing) return { refused: 'shell.imageBytesGone', scope: kept.id, ...(missing.stepId ? { stepId: missing.stepId } : {}) }
         if (result.changed) {
           planned.push({ kept, before, content: result.content, records: result.records, at: Math.max(...steps.map((one) => one.at)) })
         }

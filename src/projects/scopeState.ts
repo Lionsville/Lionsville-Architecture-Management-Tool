@@ -144,6 +144,13 @@ export const SCOPE_REFUSALS = [
   'shell.imageBadName',
   'shell.imageBadType',
   'shell.imageBadEntry',
+  /**
+   * A library entry that names bytes this source does not keep for the scope:
+   * never put, or put, named by nothing, and let go of since — an undo of a
+   * picture taken out long enough ago. The library never names bytes that are
+   * not there; the editor puts them again, or tells the person.
+   */
+  'shell.imageBytesGone',
 ] as const satisfies readonly StringKey[]
 
 /**

@@ -15,6 +15,7 @@ export const EN = {
   'shell.scopeGone': 'That scope is not there any more: somebody removed it. Nothing was written.',
   'shell.scopeTaken': 'Another scope is already at that address, so nothing was written. Choose another name or place.',
   'shell.scopeIntoItself': 'A scope cannot be moved under itself, so nothing was moved.',
+  'shell.imageBytesGone': 'This picture was not added: it is no longer kept here. Add the picture again from where you have it.',
   /**
    * The tail of a drafted commit subject, when there were more steps than a
    * subject line should name. The body below it lists every one.

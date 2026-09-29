@@ -70,6 +70,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'standIn.from': 'uit {scope}',
   'shell.unknownFile': 'Dit bestand is geen werkbestand.',
   'shell.scopeGone': 'Dat onderdeel is er niet meer: iemand heeft het verwijderd. Er is niets weggeschreven.',
+  'shell.imageBytesGone': 'Deze afbeelding is niet toegevoegd: ze wordt hier niet meer bewaard. Voeg de afbeelding opnieuw toe vanaf waar je haar hebt.',
   'shell.scopeTaken': 'Op dat adres staat al een ander onderdeel, dus er is niets weggeschreven. Kies een andere naam of plek.',
   'shell.scopeIntoItself': 'Een onderdeel kan niet onder zichzelf worden geplaatst, dus er is niets verplaatst.',
 }

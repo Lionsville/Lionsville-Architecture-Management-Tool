@@ -399,6 +399,8 @@ export function describeScopeRepository(name: string, make: MakeRepositories): v
           name: 'diagrams/context.png', mediaType: 'image/png', size: 3, width: 640, height: 480,
           contentAddress: 'sha256:039058c6f2c0cb492c533b0a4d14ef77cc0f78abccced5287d84a1a2011cfb81',
         }
+        // Its bytes first, as a page adding a picture puts them: a library names no bytes that are not kept.
+        ok(await repositories.images.put(acme, picture.name, new Uint8Array([1, 2, 3])))
         await repositories.steps(acme,
           { type: 'image.add', image: picture },
           { type: 'scope.describe', patch: { kind: 'landscape', activeDiagramId: 'l7' } })
