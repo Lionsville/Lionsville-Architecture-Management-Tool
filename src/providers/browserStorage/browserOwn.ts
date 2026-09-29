@@ -35,6 +35,10 @@ export type BrowserOwn = {
   onKeepsNothing(listener: () => void): () => void
   /** What is shown in its place is what the key-value storage kept before the database: read, not moved. */
   shownFromOlder(): boolean
+  /** The database has not answered yet, and the app was drawn without waiting for it any longer. */
+  stillAnswering(): boolean
+  /** Hear when that moves. */
+  onStillAnswering(listener: (still: boolean) => void): () => void
 }
 
 /** The database's scopes, with what the provider does after each write that landed. */
@@ -71,11 +75,14 @@ export function browserOwn(database: BrowserDatabase, earlier: Earlier | undefin
   own: BrowserOwn
   heard: (fullness: Fullness) => void
   fell: (shown: boolean) => void
+  answering: (still: boolean) => void
 } {
   const listeners = new Set<(fullness: Fullness) => void>()
   const falling = new Set<() => void>()
   let nothing = false
   let older = false
+  let still = false
+  const waiting = new Set<(still: boolean) => void>()
   return {
     own: {
       database,
@@ -90,12 +97,22 @@ export function browserOwn(database: BrowserDatabase, earlier: Earlier | undefin
         return () => { falling.delete(listener) }
       },
       shownFromOlder: () => older,
+      stillAnswering: () => still,
+      onStillAnswering(listener) {
+        waiting.add(listener)
+        return () => { waiting.delete(listener) }
+      },
     },
     heard: (fullness) => { for (const listener of listeners) listener(fullness) },
     fell: (shown) => {
       nothing = true
       older = shown
       for (const listener of falling) listener()
+    },
+    answering: (now) => {
+      if (still === now) return
+      still = now
+      for (const listener of waiting) listener(now)
     },
   }
 }

@@ -114,6 +114,7 @@ export const EN = {
   'browser.broughtOverAgain': 'Brought over again from this browser\u2019s earlier storage',
   'browser.beforeBringingAgain': 'Before bringing this over again from this browser\u2019s earlier storage',
   /** The work shown from the older storage, where this browser\u2019s database will not open. */
+  'browser.stillAnswering': 'This browser\u2019s storage has not answered yet. Your work appears here as soon as it does.',
   'browser.shownFromOlder': 'Your work is shown from this browser\u2019s older storage; changes here are not kept. Save a working file to keep them.',
   /** A button of the earlier-work strip, named for the scope it answers about. */
   'browser.earlierBringAt': 'Bring the older copy of \u201c{path}\u201d over',

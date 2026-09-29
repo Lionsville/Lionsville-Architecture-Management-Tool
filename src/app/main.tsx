@@ -59,7 +59,7 @@ import type { SourceLocation, SourceRecent, SourceWayIn } from '../platform/sour
 import { readLanguage, readLastScope, withoutLastScope } from '../projects/preferences'
 import { readScope } from '../projects/scopeAccess'
 import { sourceKey } from '../platform/workingSource'
-import { dialogAsked, landingOf, scopeToRead, withoutDialog } from './bootLanding'
+import { dialogAsked, landingOf, reopened, scopeToRead, withoutDialog } from './bootLanding'
 import type { BootDialog, BootLanding } from './bootLanding'
 import { App } from './App'
 import { BootFailure } from './BootFailure'
@@ -509,11 +509,14 @@ void settled()
     // here at all — it reads its own document once it is up (`scopeToRead`).
     const lastScope = scopeToRead(shell.opensAt, sourceNeeded() ? undefined : readLastScope(storedPreferences))
     // After the source opened, so what is read is what it holds now.
-    const held = lastScope === undefined ? undefined : await readScope(shell.repositories.scopes, lastScope)
     // A scope with no views is a domain (ADR-0012 §1): there is nothing for the
     // canvas to show, so its home opens instead of an empty editor — and a
-    // scope an address named opens on its home unless it named a view.
-    renderApp(storedPreferences, { ...landingOf(held, shell.opensAt), dialog: askedDialog })
+    // scope an address named opens on its home unless it named a view. A read
+    // that keeps the first paint waiting too long lands on the scope's home.
+    const landing = lastScope === undefined
+      ? landingOf(undefined, shell.opensAt)
+      : await reopened(readScope(shell.repositories.scopes, lastScope), lastScope, shell.opensAt)
+    renderApp(storedPreferences, { ...landing, dialog: askedDialog })
   })
   .catch((error: unknown) => {
     shell.diagnostics.report({

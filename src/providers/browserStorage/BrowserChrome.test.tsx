@@ -77,6 +77,17 @@ describe('whether the database can be written now', () => {
   })
 })
 
+describe('a database that has not answered yet', () => {
+  it('says so until it answers', () => {
+    const { answering } = show()
+    expect(screen.queryByTestId('browser-still-answering')).toBeNull()
+    act(() => answering(true))
+    expect(screen.getByTestId('browser-still-answering').textContent).toContain('has not answered yet')
+    act(() => answering(false))
+    expect(screen.queryByTestId('browser-still-answering')).toBeNull()
+  })
+})
+
 describe('how full it is getting', () => {
   it('says nothing while there is room', () => {
     const { heard, notify } = show()

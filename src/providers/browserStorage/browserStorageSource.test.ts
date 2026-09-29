@@ -6,7 +6,7 @@
  * waits on another tab, and memory where it will not — showing what the older
  * storage kept, read and never moved, and saying that nothing here is kept.
  */
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { RecordingDiagnostics } from '../../adapters/memory/RecordingDiagnostics'
 import type { IndexedDb } from '../../adapters/webStorage/IndexedDbStore'
 import type { KeyValueStorage } from '../../adapters/webStorage/KeyValueStorage'
@@ -14,7 +14,7 @@ import { fakeIndexedDb } from '../../adapters/webStorage/testing/fakeIndexedDb'
 import { WebStorageScopeStore } from '../../adapters/webStorage/WebStorageScopeStore'
 import { translator } from '../../i18n'
 import type { HostModel } from '../../model/hostModel'
-import { BROWSER_KEEPING_NOTHING, BROWSER_STORAGE, BROWSER_STORAGE_SOURCE } from './browserStorageSource'
+import { BROWSER_KEEPING_NOTHING, BROWSER_STORAGE, BROWSER_STORAGE_SOURCE, STILL_ANSWERING_MS } from './browserStorageSource'
 import type { BrowserParts } from './browserStorageSource'
 
 function fakeStorage(): KeyValueStorage & { held: Map<string, string> } {
@@ -59,6 +59,27 @@ function held(): IndexedDb {
       },
     } as unknown as IDBFactory,
   }
+}
+
+/** A database whose open answers nothing until the test says so — or ever. */
+function silent(): IndexedDb & { answer: () => void } {
+  const real = fakeIndexedDb()
+  let answer!: () => void
+  const asked = new Promise<void>((resolve) => { answer = resolve })
+  type Request = { result?: unknown; error: null; onsuccess: (() => void) | null; onerror: (() => void) | null; onupgradeneeded: (() => void) | null; onblocked: (() => void) | null }
+  const factory = {
+    open: (name: string, version: number) => {
+      const outer: Request = { error: null, onsuccess: null, onerror: null, onupgradeneeded: null, onblocked: null }
+      void asked.then(() => {
+        const inner = real.factory.open(name, version) as unknown as Request
+        inner.onupgradeneeded = () => { outer.result = inner.result; outer.onupgradeneeded?.() }
+        inner.onsuccess = () => { outer.result = inner.result; outer.onsuccess?.() }
+        inner.onerror = () => outer.onerror?.()
+      })
+      return outer
+    },
+  }
+  return { ...real, factory: factory as unknown as IDBFactory, answer }
 }
 
 async function settle(opening: Parameters<typeof BROWSER_STORAGE_SOURCE.open>[0], s = translator('en')) {
@@ -150,3 +171,34 @@ describe('a browser whose database opens', () => {
     expect(parts.own?.database.standing()).toBe('blocked')
   })
 })
+
+describe('a browser whose database does not answer', () => {
+  afterEach(() => { vi.useRealTimers() })
+
+  it('draws without it after a while, says it is still answering, and shows the work once it does', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const database = silent()
+    const opened = await BROWSER_STORAGE_SOURCE.open({ storage: await keptBefore(), database }, { diagnostics: new RecordingDiagnostics() })
+    let parts: BrowserParts | undefined
+    void opened.settled!().then((settled) => { parts = settled as BrowserParts })
+    await vi.advanceTimersByTimeAsync(STILL_ANSWERING_MS - 1)
+    expect(parts).toBeUndefined()
+    await vi.advanceTimersByTimeAsync(1)
+    expect(parts?.source).toEqual(BROWSER_STORAGE)
+    expect(parts?.own?.stillAnswering()).toBe(true)
+    const heard: boolean[] = []
+    parts?.own?.onStillAnswering((still) => heard.push(still))
+    vi.useRealTimers()
+    database.answer()
+    expect(await names(parts!)).toEqual(['Acme Group', 'Acme Logistics'])
+    await new Promise((resolve) => { setTimeout(resolve, 0) })
+    expect(parts?.own?.stillAnswering()).toBe(false)
+    expect(heard).toEqual([false])
+  })
+
+  it('says nothing of it where the database answers in time', async () => {
+    const { parts } = await settle({ storage: await keptBefore(), database: fakeIndexedDb() })
+    expect(parts.own?.stillAnswering()).toBe(false)
+  })
+})
+

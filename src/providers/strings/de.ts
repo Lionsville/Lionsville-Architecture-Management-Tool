@@ -79,6 +79,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'browser.broughtOver': 'Aus dem früheren Speicher dieses Browsers übernommen',
   'browser.broughtOverAgain': 'Erneut aus dem früheren Speicher dieses Browsers übernommen',
   'browser.beforeBringingAgain': 'Vor der erneuten Übernahme aus dem früheren Speicher dieses Browsers',
+  'browser.stillAnswering': 'Der Speicher dieses Browsers hat noch nicht geantwortet. Ihre Arbeit erscheint hier, sobald er es tut.',
   'browser.shownFromOlder': 'Ihre Arbeit wird aus dem älteren Speicher dieses Browsers angezeigt; Änderungen hier werden nicht aufbewahrt. Speichern Sie eine Arbeitsdatei, um sie zu behalten.',
   'browser.earlierBringAt': 'Die ältere Kopie von \u201e{path}\u201c übernehmen',
   'browser.earlierLeaveAt': '\u201e{path}\u201c so behalten, wie es hier ist',

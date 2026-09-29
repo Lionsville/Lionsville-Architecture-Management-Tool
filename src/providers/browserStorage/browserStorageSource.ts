@@ -96,7 +96,7 @@ export const BROWSER_STORAGE_SOURCE: SourceProvider<BrowserParts, BrowserOpening
     const { repositories, database: kept, earlier } = browserRepositories(database, storage, undefined, {
       ...(by ? { by } : {}), ...(s ? { earlier: earlierWords(s) } : {}),
     })
-    const { own, heard, fell } = browserOwn(kept, earlier)
+    const { own, heard, fell, answering } = browserOwn(kept, earlier)
     const writing = { ...repositories, scopes: afterWrites(repositories.scopes, kept, heard, diagnostics) }
     let fallen: Promise<BrowserParts> | undefined
     const fallback = () => fallen ??= inMemory().then(({ repositories: held, shown }) => {
@@ -109,33 +109,56 @@ export const BROWSER_STORAGE_SOURCE: SourceProvider<BrowserParts, BrowserOpening
       }),
       preferences, source: BROWSER_STORAGE, own, historyNoteKey: 'browser.historyNote',
     }
-    return { ...parts, settled: () => settle(parts, kept, () => fallen) }
+    return { ...parts, settled: () => settle(parts, kept, () => fallen, answering) }
   },
 }
 
 /**
- * The parts this browser settles on: its database's, once it opens or waits
- * on another tab — the strip says why it waits, and waiting is no reason not
- * to draw — or, where it would not open, those of what memory holds instead.
+ * How long the first frame waits on this browser's database. Before it, the
+ * page waited on the database only where a last scope was to be reopened; a
+ * database that never answers must not leave it blank.
+ */
+export const STILL_ANSWERING_MS = 4000
+
+/**
+ * The parts this browser settles on: its database's, once it opens, once it
+ * waits on another tab — the strip says why it waits, and waiting is no
+ * reason not to draw — or once it has kept the first frame waiting for
+ * {@link STILL_ANSWERING_MS}, when the strip says it is still answering and
+ * the work appears as soon as it does. Where it would not open, those of what
+ * memory holds instead.
  */
 async function settle(
   parts: BrowserParts, database: Pick<BrowserDatabase, 'standing' | 'onStanding'>,
-  fallen: () => Promise<BrowserParts> | undefined,
+  fallen: () => Promise<BrowserParts> | undefined, answering: (still: boolean) => void,
 ): Promise<BrowserParts> {
-  await Promise.race([parts.repositories.scopes.tree().catch(() => undefined), blocked(database)])
+  let timer: ReturnType<typeof setTimeout> | undefined
+  let stop: (() => void) | undefined
+  const answered = parts.repositories.scopes.tree().then(() => true, () => true)
+  const late = new Promise<false>((resolve) => { timer = setTimeout(() => resolve(false), STILL_ANSWERING_MS) })
+  const waits = new Promise<true>((resolve) => { stop = blocked(database, () => resolve(true)) })
+  const inTime = await Promise.race([answered, late, waits])
+  clearTimeout(timer)
+  stop?.()
+  if (!inTime) {
+    answering(true)
+    void answered.then(() => answering(false))
+  }
   return await fallen() ?? parts
 }
 
-/** Settles once the database waits on another tab, and never where it does not. */
-function blocked(database: Pick<BrowserDatabase, 'standing' | 'onStanding'>): Promise<void> {
-  return new Promise((resolve) => {
-    if (database.standing() === 'blocked') return resolve()
-    const stop = database.onStanding((standing) => {
-      if (standing !== 'blocked') return
-      stop()
-      resolve()
-    })
+/** Tells once the database waits on another tab; answers the way to stop listening. */
+function blocked(database: Pick<BrowserDatabase, 'standing' | 'onStanding'>, then: () => void): () => void {
+  if (database.standing() === 'blocked') {
+    then()
+    return () => undefined
+  }
+  const stop = database.onStanding((standing) => {
+    if (standing !== 'blocked') return
+    stop()
+    then()
   })
+  return stop
 }
 
 /** The parts of a browser whose database would not open: memory, and what it shows. */
@@ -146,6 +169,8 @@ function keepingNothing(repositories: Repositories, shown: boolean, preferences:
     keepsNothing: () => true,
     onKeepsNothing: () => () => undefined,
     shownFromOlder: () => shown,
+    stillAnswering: () => false,
+    onStillAnswering: () => () => undefined,
   }
   return {
     repositories, preferences, source: BROWSER_KEEPING_NOTHING, own,

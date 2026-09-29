@@ -43,6 +43,29 @@ export function landingOf(held: ScopeSnapshot | undefined, opensAt: SourceLandin
   return isOpenableScope(held) ? { initialProject: onView(held, opensAt.view) } : { initialHome: path }
 }
 
+/** How long the first paint waits on the read of the scope it reopens. */
+export const BOOT_READ_MS = 4000
+
+/**
+ * The scope the boot reopens, read in time for the first paint — or where
+ * that read keeps it waiting past {@link BOOT_READ_MS}, the scope's home,
+ * which reads its own document once it is up and so picks the scope up
+ * whenever where it is kept answers. A page left blank on a store that never
+ * answers is one nobody can do anything with. A read that fails in time
+ * fails the boot, as it always did.
+ */
+export async function reopened(
+  reading: Promise<ScopeSnapshot | undefined>, path: ScopePath, opensAt: SourceLanding | undefined, ms = BOOT_READ_MS,
+): Promise<BootLanding> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const late = new Promise<'late'>((resolve) => { timer = setTimeout(() => resolve('late'), ms) })
+  const read = await Promise.race([reading.then((held) => ({ held })), late]).finally(() => clearTimeout(timer))
+  if (read !== 'late') return landingOf(read.held, opensAt)
+  // Answered after all, or never: nothing waits on it now.
+  reading.catch(() => undefined)
+  return path === ROOT_SCOPE ? {} : { initialHome: path }
+}
+
 /**
  * Which scope the boot must read before the first paint: none for a home,
  * because a home reads its own document once it is up and the first paint

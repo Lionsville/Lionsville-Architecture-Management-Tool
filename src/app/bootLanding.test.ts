@@ -4,10 +4,10 @@
 /**
  * Where the first paint lands, and which dialog an address may open over it.
  */
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { laidOut } from '../model/testFixtures'
 import type { ScopeSnapshot } from '../projects/scope'
-import { dialogAsked, landingOf, scopeToRead, withoutDialog } from './bootLanding'
+import { BOOT_READ_MS, dialogAsked, landingOf, reopened, scopeToRead, withoutDialog } from './bootLanding'
 
 const board = (id: string) => laidOut({ id, kind: 'layer7' as const, name: id, placements: [] })
 
@@ -70,3 +70,31 @@ describe('a dialog an address asks for', () => {
     expect(withoutDialog('https://example.test/?scope=a')).toBeUndefined()
   })
 })
+
+describe('the scope the boot reopens', () => {
+  afterEach(() => { vi.useRealTimers() })
+
+  it('opens as it was where it is read in time', async () => {
+    const held = scope('acme/rail', ['d1'])
+    expect(await reopened(Promise.resolve(held), 'acme/rail', undefined)).toEqual({ initialProject: held })
+  })
+
+  it('lands on its home where the read keeps the first paint waiting, which picks it up once it answers', async () => {
+    vi.useFakeTimers()
+    const landing = reopened(new Promise<never>(() => undefined), 'acme/rail', undefined)
+    await vi.advanceTimersByTimeAsync(BOOT_READ_MS)
+    expect(await landing).toEqual({ initialHome: 'acme/rail' })
+  })
+
+  it('lands on the organisation where the organisation was what was waited on', async () => {
+    vi.useFakeTimers()
+    const landing = reopened(new Promise<never>(() => undefined), '', undefined)
+    await vi.advanceTimersByTimeAsync(BOOT_READ_MS)
+    expect(await landing).toEqual({})
+  })
+
+  it('fails the boot where the read fails in time, as it always did', async () => {
+    await expect(reopened(Promise.reject(new Error('torn')), 'acme/rail', undefined)).rejects.toThrow('torn')
+  })
+})
+

@@ -43,6 +43,7 @@ export function BrowserChrome({ own, notify, reread, flush }: SourceChromeProps<
   return (
     <>
       <KeepsNothing own={own} />
+      <StillAnswering own={own} />
       <StandingStrip own={own} />
       <NearlyFull own={own} notify={notify} />
       {own.earlier && <EarlierWork earlier={own.earlier} notify={notify} reread={reread} flush={flush} />}
@@ -66,6 +67,22 @@ function KeepsNothing({ own }: { own: BrowserOwn }) {
   return (
     <Alert severity="warning" square data-testid="storage-notice" sx={{ flex: '0 0 auto', borderRadius: 0, py: 0, fontSize: 12 }}>
       {s(own.shownFromOlder() ? 'browser.shownFromOlder' : 'shell.keepFailed')}
+    </Alert>
+  )
+}
+
+/** The database kept the first frame waiting too long: said until it answers, and the work appears then. */
+function StillAnswering({ own }: { own: BrowserOwn }) {
+  const { t: s } = useStrings()
+  const [still, setStill] = useState(() => own.stillAnswering())
+  useEffect(() => {
+    setStill(own.stillAnswering())
+    return own.onStillAnswering(setStill)
+  }, [own])
+  if (!still) return null
+  return (
+    <Alert severity="info" square data-testid="browser-still-answering" sx={{ flex: '0 0 auto', borderRadius: 0, py: 0, fontSize: 12 }}>
+      {s('browser.stillAnswering')}
     </Alert>
   )
 }

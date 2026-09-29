@@ -79,6 +79,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'browser.broughtOver': 'Overgenomen uit de eerdere opslag van deze browser',
   'browser.broughtOverAgain': 'Opnieuw overgenomen uit de eerdere opslag van deze browser',
   'browser.beforeBringingAgain': 'Voor het opnieuw overnemen uit de eerdere opslag van deze browser',
+  'browser.stillAnswering': 'De opslag van deze browser heeft nog niet geantwoord. Je werk verschijnt hier zodra dat gebeurt.',
   'browser.shownFromOlder': 'Je werk wordt getoond uit de oudere opslag van deze browser; wijzigingen hier worden niet bewaard. Bewaar een werkbestand om ze te houden.',
   'browser.earlierBringAt': 'De oudere kopie van \u201c{path}\u201d overnemen',
   'browser.earlierLeaveAt': '\u201c{path}\u201d houden zoals het hier staat',
