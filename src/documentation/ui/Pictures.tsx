@@ -132,6 +132,11 @@ export function PicturesProvider({ source, scope, library, watch, addresses, onF
   return <PicturesContext.Provider value={value}>{children}</PicturesContext.Provider>
 }
 
+/** The identity of the scope whose library the nearest provider hands down. */
+export function usePictureScope(): string {
+  return useContext(PicturesContext).scope
+}
+
 /** The library entry a name is, under the nearest provider; `undefined` where it holds none. */
 export function usePictureEntry(name: ImageName): ImageEntry | undefined {
   return useContext(PicturesContext).entries.get(imageNameKey(name))

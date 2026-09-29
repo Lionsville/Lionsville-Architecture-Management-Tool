@@ -16,7 +16,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, configure, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { installReactFlowMocks } from '../editor/reactFlowTestSetup'
-import { imageNameKey } from '../model/imageName'
 import type { ImageEntry } from '../model/imageName'
 import type { ImageRepository } from '../ports/ImageRepository'
 import type { ScopeSnapshot } from '../projects/scope'
@@ -212,9 +211,10 @@ describe('pictures, through the app', () => {
     await settled()
     expect(asked).toEqual([])
 
-    const pictures = await picturesForReport(repositories.images, scope.id!, drawn.entries())
+    const report = await picturesForReport(repositories.images, drawn.pictures())
     expect([...asked].sort()).toEqual([...printed].sort())
-    expect([...pictures.keys()].map(imageNameKey).sort()).toEqual([...PICTURES].sort())
-    expect(pictures.get('depot.png')?.mediaType).toBe('image/png')
+    expect(report.pictures.map((one) => one.entry.name)).toEqual(printed)
+    expect(report.pictures.map((one) => one.scope)).toEqual(printed.map(() => scope.id))
+    expect(report.of(scope.id!, 'depot.png')?.mediaType).toBe('image/png')
   })
 })

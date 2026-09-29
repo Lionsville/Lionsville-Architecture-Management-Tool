@@ -9,6 +9,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
+import { renderToStaticMarkup } from 'react-dom/server'
 import type { ImageEntry } from '../../model/imageName'
 import { imageNameKey } from '../../model/imageName'
 import { renderShell } from '../../app/testing/renderShell'
@@ -22,6 +23,7 @@ import type { PictureWatch } from './Pictures'
 afterEach(() => cleanup())
 
 const PNG = { mediaType: 'image/png', bytes: new Uint8Array([1, 2, 3]) }
+const OTHER = { mediaType: 'image/png', bytes: new Uint8Array([9]) }
 
 function entry(name: string, n: number): ImageEntry {
   return { name, mediaType: 'image/png', size: 3, width: 640, height: 480, contentAddress: `sha256:${String(n).repeat(64)}` }
@@ -56,12 +58,44 @@ describe('a report\'s pictures', () => {
     const onPage = [...new Set([...container.querySelectorAll('img[data-picture]')]
       .map((img) => imageNameKey(img.getAttribute('data-picture') ?? '')))].sort()
     expect(onPage).toEqual(['crews.png', 'depot.png', 'kaart-ü.png'])
-    expect(drawn.entries().map((one) => imageNameKey(one.name)).sort()).toEqual(onPage)
+    expect(drawn.pictures().map((one) => imageNameKey(one.entry.name)).sort()).toEqual(onPage)
     expect(source.asked).toEqual([])
 
-    const printed = await picturesForReport(source, 'crews', drawn.entries())
+    const printed = await picturesForReport(source, drawn.pictures())
     expect(source.asked.map((one) => one.name).sort()).toEqual(['Kaart-ü.png', 'crews.png', 'depot.png'])
-    expect([...printed.keys()].sort()).toEqual(['Kaart-ü.png', 'crews.png', 'depot.png'])
+    expect(printed.pictures.map((one) => one.entry.name)).toEqual(['depot.png', 'Kaart-ü.png', 'crews.png'])
+  })
+
+  it('are all written down by the time a render that runs no effects returns', () => {
+    const drawn = drawnPictures()
+    const markup = renderToStaticMarkup(
+      <PicturesProvider source={memoryImageSource({})} scope="crews" library={LIBRARY} watch={NEVER}>
+        <CollectPictures onDrawn={drawn.add}>
+          {DOCUMENTS.map((markdown) => <MarkdownView key={markdown} markdown={markdown} />)}
+        </CollectPictures>
+      </PicturesProvider>,
+    )
+    expect(markup).toContain('data-picture="depot.png"')
+    expect(drawn.pictures().map((one) => one.entry.name)).toEqual(['depot.png', 'Kaart-ü.png', 'crews.png'])
+  })
+
+  it('keep two scopes\' pictures of one name apart, each asked of its own scope', async () => {
+    const source = memoryImageSource({ crews: { 'depot.png': PNG }, depots: { 'depot.png': OTHER } })
+    const drawn = drawnPictures()
+    renderToStaticMarkup(
+      <CollectPictures onDrawn={drawn.add}>
+        <PicturesProvider source={source} scope="crews" library={LIBRARY} watch={NEVER}>
+          <MarkdownView markdown="![Crews' depot](image:depot.png)" />
+        </PicturesProvider>
+        <PicturesProvider source={source} scope="depots" library={[entry('depot.png', 5)]} watch={NEVER}>
+          <MarkdownView markdown="![The depots' depot](image:depot.png)" />
+        </PicturesProvider>
+      </CollectPictures>,
+    )
+    expect(drawn.pictures().map((one) => `${one.scope}:${one.entry.name}`)).toEqual(['crews:depot.png', 'depots:depot.png'])
+    const printed = await picturesForReport(source, drawn.pictures())
+    expect(printed.of('crews', 'depot.png')).toBe(PNG)
+    expect(printed.of('depots', 'depot.png')).toBe(OTHER)
   })
 
   it('are written down only inside a report: a page with no collector above it writes down nothing', () => {
