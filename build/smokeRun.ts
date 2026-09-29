@@ -39,7 +39,7 @@ export const SMOKE_DEADLINE = 'LVARCH_SMOKE_DEADLINE_MS'
 /** How long a run may take before the app is stopped: a run takes two minutes or so. */
 export const SMOKE_DEADLINE_MS = 5 * 60_000
 /** How long a stopped app is given to go before it is killed. */
-const STOP_GRACE_MS = 5_000
+export const STOP_GRACE_MS = 5_000
 
 export type SmokeLaunch = {
   /** The program run, and its arguments. */
@@ -53,6 +53,8 @@ export type SmokeLaunch = {
   say?: (line: string) => void
   /** How the directory is removed; `rmSync`, retried, by default. For a test. */
   remove?: (root: string) => void
+  /** How long a stopped app is given before it is killed; {@link STOP_GRACE_MS} by default. For a test. */
+  grace?: number
 }
 
 /** The deadline this run keeps: the environment's, where it names a positive number. */
@@ -80,28 +82,47 @@ export async function smokeRun(launch: SmokeLaunch): Promise<number> {
   const say = launch.say ?? ((line: string) => { process.stderr.write(`${line}\n`) })
   const env = launch.env ?? process.env
   const root = mkdtempSync(join(launch.under ?? tmpdir(), 'lvarch-smoke-'))
-  const child = spawn(launch.command, launch.args, { stdio: 'inherit', env: { ...env, [SMOKE_ROOT]: root } })
-  // A run stopped from the keyboard stops the app, and is cleaned up after the same way.
-  const forward = (signal: NodeJS.Signals) => { child.kill(signal) }
-  process.on('SIGINT', forward)
-  process.on('SIGTERM', forward)
+  // The app leads a process group of its own, so a signal reaches Chromium's
+  // helpers too and none outlives a stuck run. Windows has no process groups:
+  // there the app alone is signalled, as a child is.
+  const grouped = process.platform !== 'win32'
+  const child = spawn(launch.command, launch.args, { stdio: 'inherit', env: { ...env, [SMOKE_ROOT]: root }, detached: grouped })
+  const signal = (sent: NodeJS.Signals) => {
+    if (!grouped || child.pid === undefined) { child.kill(sent); return }
+    try {
+      process.kill(-child.pid, sent)
+    } catch {
+      // Nothing left in the group to signal.
+    }
+  }
+  // A run stopped from the keyboard stops the app — which, in a group of its
+  // own, the terminal no longer signals itself — and is cleaned up after the same way.
+  process.on('SIGINT', signal)
+  process.on('SIGTERM', signal)
   const deadline = deadlineOf(env)
+  const grace = launch.grace ?? STOP_GRACE_MS
   let late = false
   let killer: ReturnType<typeof setTimeout> | undefined
   const stopper = setTimeout(() => {
     late = true
     say(`smoke: the app had not exited after ${Math.round(deadline / 1000)} s; stopping it`)
-    child.kill('SIGTERM')
-    killer = setTimeout(() => { child.kill('SIGKILL') }, STOP_GRACE_MS)
+    signal('SIGTERM')
+    killer = setTimeout(() => {
+      say(`smoke: the app did not stop within ${Math.round(grace / 1000)} s; killing it`)
+      signal('SIGKILL')
+    }, grace)
   }, deadline)
   const exited = await new Promise<number>((resolve) => {
     child.once('error', (cause) => { say(`smoke: could not start ${launch.command}: ${cause.message}`); resolve(1) })
-    child.once('exit', (code, signal) => { resolve(code ?? (signal ? 1 : 0)) })
+    child.once('exit', (code, stopped) => { resolve(code ?? (stopped ? 1 : 0)) })
   })
   clearTimeout(stopper)
   clearTimeout(killer)
-  process.off('SIGINT', forward)
-  process.off('SIGTERM', forward)
+  // Whatever of its group is still there — a helper that ignored the stop, or
+  // outlived the app — goes with it.
+  if (grouped) signal('SIGKILL')
+  process.off('SIGINT', signal)
+  process.off('SIGTERM', signal)
   const code = late ? 1 : exited
   if (code !== 0 && env[SMOKE_KEEP] === '1') {
     say(`smoke: kept this run's directory, ${root}:`)

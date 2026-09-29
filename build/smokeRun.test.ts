@@ -6,7 +6,7 @@
  * the app has exited — including what it wrote on its way out, which is what a
  * removal from inside the app lost — unless a failing run asked to keep it.
  */
-import { existsSync, mkdtempSync, readdirSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -35,13 +35,28 @@ const app = (exitCode: number) => `
   process.exit(${exitCode})
 `
 
-const run = (exitCode: number, env: NodeJS.ProcessEnv = {}, script = app(exitCode), remove?: (root: string) => void) => {
+const run = (
+  exitCode: number, env: NodeJS.ProcessEnv = {}, script = app(exitCode), remove?: (root: string) => void, grace?: number,
+) => {
   const said: string[] = []
   const done = smokeRun({
     command: process.execPath, args: ['-e', script], env: { ...process.env, ...env }, under, say: (line) => said.push(line),
-    ...(remove ? { remove } : {}),
+    ...(remove ? { remove } : {}), ...(grace !== undefined ? { grace } : {}),
   })
   return { done, said }
+}
+
+/** Whether a process is gone, asked for a while: one just killed may take a moment to be reaped. */
+async function goneSoon(pid: number): Promise<boolean> {
+  for (let tries = 0; tries < 40; tries += 1) {
+    try {
+      process.kill(pid, 0)
+    } catch {
+      return true
+    }
+    await new Promise((resolve) => { setTimeout(resolve, 50) })
+  }
+  return false
 }
 
 describe('a smoke run’s own directory', () => {
@@ -89,7 +104,40 @@ describe('a smoke run’s own directory', () => {
     const { done, said } = run(0, { [SMOKE_DEADLINE]: '300' }, hangs)
     expect(await done).toBe(1)
     expect(said.join('\n')).toContain('had not exited after')
+    // A well-behaved app goes on the stop alone.
+    expect(said.join('\n')).not.toContain('killing it')
     expect(readdirSync(under)).toEqual([])
+  }, 15_000)
+
+  it('kills an app that ignores the stop, once the grace has passed', async () => {
+    const stubborn = `
+      process.on('SIGTERM', () => undefined)
+      setInterval(() => undefined, 1000)
+    `
+    const { done, said } = run(0, { [SMOKE_DEADLINE]: '300' }, stubborn, undefined, 300)
+    expect(await done).toBe(1)
+    expect(said.join('\n')).toContain('killing it')
+    expect(readdirSync(under)).toEqual([])
+  }, 15_000)
+
+  it.skipIf(process.platform === 'win32')('leaves nothing of the app’s process tree behind, a helper that ignores the stop included', async () => {
+    const pidFile = join(under, '..', `${under.split('/').pop()}.helper-pid`)
+    const helper = "process.on('SIGTERM', () => undefined); setInterval(() => undefined, 1000)"
+    const withHelper = `
+      const { spawn } = require('node:child_process')
+      const helper = spawn(process.execPath, ['-e', ${JSON.stringify(helper)}], { stdio: 'ignore' })
+      require('node:fs').writeFileSync(${JSON.stringify(pidFile)}, String(helper.pid))
+      setInterval(() => undefined, 1000)
+    `
+    try {
+      const { done } = run(0, { [SMOKE_DEADLINE]: '500' }, withHelper, undefined, 300)
+      expect(await done).toBe(1)
+      const pid = Number(readFileSync(pidFile, 'utf8'))
+      expect(pid).toBeGreaterThan(0)
+      expect(await goneSoon(pid)).toBe(true)
+    } finally {
+      rmSync(pidFile, { force: true })
+    }
   }, 15_000)
 
   it('keeps a passing run passing where its directory could not be removed, and says what was left', async () => {
