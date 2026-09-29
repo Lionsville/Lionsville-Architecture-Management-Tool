@@ -17,7 +17,7 @@ import { gitAvailable, isRepository, snapshot, useHooksFolder } from './git'
 
 const run = promisify(execFile)
 import {
-  allTags, changes, commitLog, commitPaths, folderGitAt, headOf, isScopeTagName, readAt, readiness, startHistory,
+  allTags, blobsAt, changes, commitLog, commitPaths, folderGitAt, headOf, isScopeTagName, readAt, readiness, startHistory,
   tagCommit, textsOf, treeAt,
 } from './gitEntries'
 
@@ -307,8 +307,12 @@ describe.skipIf(!available)('what changed, and what a file held', () => {
     expect(await textsOf(root, [tree, after])).toEqual({ [after]: '{"at":1}' })
     const [bare] = await commitLog(root, { limit: 1, bare: true })
     expect([bare.changed, bare.blobs]).toEqual([[], undefined])
+    expect(await blobsAt(root, [{ sha: sha!, path: 'model.json' }, { sha: sha!, path: 'none.json' }, { sha: 'nope', path: 'model.json' }]))
+      .toEqual([after, undefined, undefined])
+    expect(await blobsAt(root, [{ sha: 'nope', path: 'model.json' }])).toEqual([undefined])
     const held = folderGitAt(root)
     expect(await held.head()).toBe(sha)
+    expect(await held.blobsAt([{ sha: sha!, path: 'model.json' }])).toEqual([after])
     expect(await held.readiness()).toBe('ready')
     expect(await held.texts([after])).toEqual({ [after]: '{"at":1}' })
   })
