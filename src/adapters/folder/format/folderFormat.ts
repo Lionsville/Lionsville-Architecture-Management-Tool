@@ -58,8 +58,8 @@
  * there is nowhere to write the difference. Everything else round-trips
  * exactly, including the absent-versus-empty distinction on a diagram's routes.
  */
-import { ADR_STATUSES } from '../../../decisions/adr'
-import type { Adr } from '../../../decisions/adr'
+import { ADR_STATUSES } from '../../../model/adr'
+import type { Adr } from '../../../model/adr'
 import type {
   AspectConfigEntry, DesignDiagram, DesignElement, DiagramGroup, DiagramLine, DiagramMember,
   DomainGroupRect, Geometry, NodeGeometry, PlatformArchetype, Relation, RouteGeometry, UploadedLogo,

@@ -1139,8 +1139,6 @@ names no format.
 - **The interchange is the composition's, not a provider's.** It works over
   any repositories, so every source gets the same one, and a provider composed
   from outside exports and imports with nothing of its own to write.
-- **An adapter may read what a decision record is.** The format writes one as
-  a file of its own, so the import matrix lets `adapters` import `decisions`.
 - **A picture filed in an image folder is not carried**, as it was not
   before: the working file keeps `images/` flat, and a name with a `/` in it
   is left out.

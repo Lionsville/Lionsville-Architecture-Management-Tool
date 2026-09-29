@@ -143,3 +143,20 @@ describe('the node side and the folder\'s format', () => {
   })
 })
 
+/**
+ * The folder's format writes a decision record as a file of its own, and
+ * reads what one is from the model (`model/adr.ts`): the decisions module
+ * carries its words and its page, which a process with no screen that loads
+ * the format has no use for.
+ */
+describe('an adapter and the decisions module', () => {
+  it('may read what a decision record is from the model', async () => {
+    const reading = "import { ADR_STATUSES } from '../../../model/adr'\nexport const one = ADR_STATUSES\n"
+    expect(await layeringAt('src/adapters/folder/format/one.ts', reading)).toEqual([])
+  })
+
+  it('may not import the decisions module', async () => {
+    const reading = "import { ADR_STATUSES } from '../../../decisions/adr'\nexport const one = ADR_STATUSES\n"
+    expect((await layeringAt('src/adapters/folder/format/one.ts', reading)).join('\n')).toMatch(/An adapter fills one seam/)
+  })
+})
