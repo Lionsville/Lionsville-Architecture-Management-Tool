@@ -31,6 +31,7 @@ import { isBoardKind } from '../model/placement'
 import type { RecordLink } from './links'
 import { ancestorScopes, isWithinScope, ROOT_SCOPE } from './scopePath'
 import type { ScopePath } from './scopePath'
+import type { ScopeId } from './scopeState'
 import type { WorkingFileManifest } from './workingFileManifest'
 
 /**
@@ -73,6 +74,12 @@ export type CarriedImage = {
  */
 export type ScopeSnapshot = {
   path: ScopePath
+  /**
+   * What the scope is whatever its address: the identity its repository
+   * answers for it, which a move does not change (ADR-0031 §1). Absent on a
+   * scope made here and not yet written anywhere.
+   */
+  id?: ScopeId
   /** The document. `model.name` is what this scope is called — there is one name. */
   model: HostModel
   activeDiagramId: string
@@ -161,6 +168,8 @@ export type ScopeSnapshot = {
  */
 export type ScopeSummary = {
   path: ScopePath
+  /** Its identity, where the listing came from a repository that keeps one. */
+  id?: ScopeId
   /** What it is called. Its own name, never an ancestor's. */
   name: string
   kind?: ScopeKind
