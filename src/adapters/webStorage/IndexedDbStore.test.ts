@@ -303,26 +303,33 @@ describe('IndexedDbStore, kept and measured', () => {
     return { held, asked }
   }
 
-  it('asks the browser once, after the first open, to keep this site’s storage', async () => {
+  it('asks nothing at start-up, and asks the browser once, when told, to keep this site’s storage', async () => {
     const { held, asked } = manager(false, true)
     const store = new IndexedDbStore(fullFake(held))
-    expect(await store.persisted()).toBeUndefined()
     await store.transaction(['meta'], 'write', write(1))
-    await store.transaction(['meta'], 'write', write(2))
-    expect(await store.persisted()).toBe(true)
+    expect(asked.persist).toBe(0)
+    expect(await store.persisted()).toBe(false)
+    expect(await store.keep()).toBe(true)
+    expect(await store.keep()).toBe(true)
     expect(asked.persist).toBe(1)
+    expect(await store.persisted()).toBe(true)
   })
 
   it('does not ask where the storage is kept already, and says a refusal as it was', async () => {
     const kept = manager(true, false)
     const keptStore = new IndexedDbStore(fullFake(kept.held))
-    await keptStore.transaction(['meta'], 'read', read)
-    expect(await keptStore.persisted()).toBe(true)
+    expect(await keptStore.keep()).toBe(true)
     expect(kept.asked.persist).toBe(0)
     const refusedToKeep = manager(false, false)
-    const store = new IndexedDbStore(fullFake(refusedToKeep.held))
-    await store.transaction(['meta'], 'read', read)
-    expect(await store.persisted()).toBe(false)
+    expect(await new IndexedDbStore(fullFake(refusedToKeep.held)).keep()).toBe(false)
+  })
+
+  it('answers nothing where the browser cannot say, or fails to', async () => {
+    expect(await new IndexedDbStore(fullFake()).persisted()).toBeUndefined()
+    expect(await new IndexedDbStore(fullFake()).keep()).toBeUndefined()
+    const failing: StorageManagerLike = { persisted: () => Promise.reject(new Error('no')), persist: () => Promise.reject(new Error('no')) }
+    expect(await new IndexedDbStore(fullFake(failing)).persisted()).toBeUndefined()
+    expect(await new IndexedDbStore(fullFake(failing)).keep()).toBeUndefined()
   })
 
   it('answers how full the storage is from the browser’s estimate, and nothing where it has none', async () => {

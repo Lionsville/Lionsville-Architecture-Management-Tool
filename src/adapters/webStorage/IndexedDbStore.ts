@@ -174,12 +174,32 @@ export class IndexedDbStore implements KeyedStore {
   }
 
   /**
-   * Whether the browser agreed to keep this site's storage until a person
-   * clears it, rather than evicting it under pressure: asked once, after the
-   * database first opens. `undefined` where the browser cannot say.
+   * Whether the browser keeps this site's storage until a person clears it,
+   * rather than evicting it under pressure: the answer {@link keep} had, or
+   * else what the browser says now, which asks nobody anything. `undefined`
+   * where the browser cannot say.
    */
-  persisted(): Promise<boolean | undefined> {
-    return this.asked ?? Promise.resolve(undefined)
+  async persisted(): Promise<boolean | undefined> {
+    if (this.asked) return this.asked
+    try {
+      return await this.indexedDb.manager?.persisted?.()
+    } catch {
+      return undefined
+    }
+  }
+
+  /**
+   * Ask the browser to keep this site's storage through a clear-out, once:
+   * later calls answer what the first was answered. Not at start-up, because
+   * a browser may put the question to the person (Firefox does), and a
+   * question before anything was kept is one nobody can answer — the app asks
+   * after the first save that landed, or when a person asks for it. A browser
+   * that says no, or cannot be asked, keeps the storage as best it can; a
+   * failure to ask is no answer.
+   */
+  keep(): Promise<boolean | undefined> {
+    this.asked ??= this.keepThrough()
+    return this.asked
   }
 
   /** How full this site's storage is, as the browser estimates it; `undefined` where it will not say. */
@@ -231,7 +251,6 @@ export class IndexedDbStore implements KeyedStore {
       },
     }).then((database) => {
       if (this.now === 'blocked') this.become('open')
-      this.asked ??= this.keepThrough()
       return database
     }, (error: unknown) => {
       forget()
@@ -248,11 +267,6 @@ export class IndexedDbStore implements KeyedStore {
     return workRefusal(error)
   }
 
-  /**
-   * Ask the browser to keep this site's storage through a clear-out. A
-   * browser that says no, or cannot be asked, keeps it as best it can — so
-   * the answer is kept for the app to show, and a failure to ask is no answer.
-   */
   private async keepThrough(): Promise<boolean | undefined> {
     const manager = this.indexedDb.manager
     try {

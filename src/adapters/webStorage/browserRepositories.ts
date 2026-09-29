@@ -32,8 +32,14 @@ export type BrowserDatabase = {
   onStanding(listener: (standing: Standing) => void): () => void
   /** How full this site's storage is, in bytes, where the browser says: for the nearly-full notice. */
   pressure(): Promise<Pressure | undefined>
-  /** Whether the browser agreed to keep this site's storage through a clear-out; asked once, at the first open. */
+  /** Whether the browser keeps this site's storage through a clear-out; asks the person nothing. */
   persisted(): Promise<boolean | undefined>
+  /**
+   * Ask the browser, once, to keep this site's storage through a clear-out.
+   * Call it after the first save that landed, or from a person's gesture —
+   * never at start-up: Firefox puts the question to the person.
+   */
+  keep(): Promise<boolean | undefined>
 }
 
 /** The repositories, what may be shown about the database, and — where there is a key-value storage — the answers about what it kept before. */
@@ -58,6 +64,7 @@ export function browserRepositories(indexedDb: IndexedDb, earlier?: KeyValueStor
     onStanding: (listener) => store.onStanding(listener),
     pressure: () => store.pressure(),
     persisted: () => store.persisted(),
+    keep: () => store.keep(),
   }
   return { repositories: repositoriesOn(source), database, ...(earlier ? { earlier: earlierOf(source, earlier) } : {}) }
 }

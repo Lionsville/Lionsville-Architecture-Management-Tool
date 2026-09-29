@@ -721,9 +721,11 @@ The storage line lost one file and two words: 50 files naming storage, with
   `shell.storageFull` and lands nothing. It is never a raw
   `QuotaExceededError`.
 - **Landed means on disk.** Writes ask for `strict` durability.
-- **Kept, and measured.** After the database first opens, the store asks
-  the browser to keep the site's storage through a clear-out (`persist`) and
-  keeps the answer. How full the storage is comes from the browser's
+- **Kept, and measured.** `keep()` asks the browser, once, to keep the
+  site's storage through a clear-out (`persist`), and keeps the answer. The
+  app calls it after the first save that landed, or from a person's gesture,
+  and never at start-up, because Firefox puts the question to the person.
+  `persisted()` says whether the storage is kept and asks nobody. How full the storage is comes from the browser's
   estimate, in the `used` and `budget` the nearly-full notice reads. It
   replaces the character count the key-value storage was measured by. Both
   come from the storage manager handed in beside the database
