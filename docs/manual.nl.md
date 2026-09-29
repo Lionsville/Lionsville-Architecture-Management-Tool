@@ -332,15 +332,20 @@ In beide gevallen wordt wat open staat eerst geschreven.
 
 **De eigen git-instellingen van de map.** De app draait git met je eigen
 git-configuratie. De `.git/config` van een map mag instellen wat een repository
-nodig heeft, zoals haar remotes, haar branches en wie er commit, maar geen
-programma, proxy, credential helper of adresherschrijving: die komen alleen uit
-je eigen configuratie. In een map die iets anders instelt, worden een
-momentopname, een label, ophalen en pushen geweigerd, en de melding noemt de
-instelling, zoals in *De momentopname is niet gelukt: git is in deze map niet
-uitgevoerd: its configuration sets http.cookiefile, …* (het laatste deel is in
-het Engels). Hetzelfde geldt voor git-lfs dat alleen voor die map is ingesteld
-(`git lfs install` stelt het voor jou in, en dan draait het), en voor een remote
-die een map binnen de werkmap is.
+nodig heeft, zoals haar remotes, haar branches en wie er commit. Een programma
+dat ze noemt, zoals een editor, een pager, een ondertekenprogramma of een
+filter, wordt vervangen door je eigen waarde of die van git, en instellingen
+alleen voor commando's die de app nooit draait, zoals een merge- of difftool,
+blijven staan. Een paar instellingen kunnen niet worden vervangen en worden
+geweigerd: git's eigen proxycommando, de programma's voor upload-pack en
+receive-pack, een pager voor één commando, een adresherschrijving en een
+cookiebestand. In een map die er een instelt, worden een momentopname, een
+label, ophalen en pushen geweigerd, en de melding noemt de instelling, in het
+Engels aangehaald zoals git haar meldt, zoals in *De momentopname is niet
+gelukt: git is in deze map niet uitgevoerd: its configuration sets
+http.cookiefile, …*. Hetzelfde geldt voor git-lfs dat alleen voor die map is
+ingesteld (`git lfs install` stelt het voor jou in, en dan draait het), en voor
+een remote die een map binnen de werkmap is.
 
 Een browsertabblad kan ook in een map werken, waar de browser dat aanbiedt
 (Chromium doet dat). De toestemming overleeft een herstart zelden, en erom
@@ -408,10 +413,11 @@ Er wordt nooit iets ongevraagd overschreven.
 
 Is een deel van een onderdeel niet te lezen, omdat een bestand ervan beschadigd
 is of met de hand is veranderd, dan opent het onderdeel om te bekijken en niet
-om te wijzigen, en een melding noemt wat niet te lezen was. Die biedt
-**Terugzetten uit de geschiedenis…** en **Een werkbestand binnenhalen…**; in een
-map zegt hij ook dat je het bestand kunt herstellen en het onderdeel opnieuw
-kunt openen.
+om te wijzigen, en een melding noemt wat niet te lezen was. Waar je mag
+schrijven waar het onderdeel bewaard wordt, biedt die **Een werkbestand
+binnenhalen…**, en **Terugzetten uit de geschiedenis…** waar een geschiedenis
+wordt bijgehouden; in een map zegt hij ook dat je het bestand kunt herstellen en
+het onderdeel opnieuw kunt openen.
 - **Terugzetten uit de geschiedenis…** opent de pagina Geschiedenis, waar **De
   hele scope terugzetten…** het hele onderdeel maakt wat het was bij de
   momentopname die je kiest. Wat niet te lezen was, wordt eerst bewaard, als
@@ -498,8 +504,8 @@ Eén open project: een balk bovenin, de editor eronder.
 |---|---|
 | **Het kruimelpad** | De organisatie, elk onderdeel ertussen, en het open onderdeel vet; elk is een weg naar het thuis van dat onderdeel, en de naam van de organisatie is de weg terug naar het eerste scherm |
 | **Instellingen…** | Naam van dit onderdeel en waaronder het valt, en zijn standaarden: de auteur op een geëxporteerd diagram, en de operationele aspecten waar een nieuw landschap mee begint. Een onderdeel onder een ander zetten laat de inhoud met rust |
-| **⋯** | In een browser het menu: **Map openen…** waar de browser er een aanbiedt, **Openen…**, **Bewaren**, **Kopie van het werkbestand bewaren…**, **Momentopname…**, **Geschiedenis…**, **Agent koppelen…**, het thema, **Voorkeuren…**, en onder Help **Handleiding**, **Sneltoetsen…** en **Desktop-app downloaden**. Op de desktop staan dezelfde onderdelen, op de laatste na, in de menubalk |
-| **Activiteit** | Wat er sinds het openen aan dit project is veranderd — een lijst met benoemde stappen en het tijdstip van elke, en de verplaatsingen, *Verplaatst van X naar Y*, en wie het verplaatste. Hij blijft bij het onderdeel, waar het ook heen gaat. Alleen lezen: ⌘Z is hoe je teruggaat |
+| **⋯** | In een browser het menu: **Map openen…** waar de browser er een aanbiedt, **Openen…**, **Bewaren**, **Kopie van het werkbestand bewaren…**, **Momentopname…**, **Geschiedenis…**, **Agent koppelen…**, het thema, **Voorkeuren…**, en onder Help **Handleiding**, **Sneltoetsen…** en **Desktop-app downloaden**. Op de desktop staan dezelfde onderdelen, op de laatste na, in de menubalk, met **Preferences…** als **Settings…** in het app-menu op macOS |
+| **Activiteit** | Wat er sinds het openen aan dit project is veranderd — een lijst met benoemde stappen en het tijdstip van elke, en de verplaatsingen, *Verplaatst van X naar Y*, en wie het verplaatste, gelezen uit de geschiedenis, dus ook die van voor het openen. Hij blijft bij het onderdeel, waar het ook heen gaat. Alleen lezen: ⌘Z is hoe je teruggaat |
 | **Bewaard · uu:mm** | Hoe het project ervoor staat: het tijdstip van de laatste schrijfactie, of **Nog niet bewaarde wijzigingen**, **Bezig met bewaren…**, **Elders gewijzigd**, **Hier én elders gewijzigd**, **Niet bewaard — opslag weigert** |
 
 Alles wordt vanzelf bewaard terwijl je werkt: drie seconden nadat je stopt, als

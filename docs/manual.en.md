@@ -317,14 +317,18 @@ Either way, what is open is written first.
 
 **The folder's own git settings.** The app runs git with your own git
 configuration. A folder's `.git/config` may set what a repository needs, such as
-its remotes, its branches and who commits, but not a program, a proxy, a
-credential helper or an address rewrite: those come from your own configuration
-only. In a folder that sets anything else, a snapshot, a label, a pull or a push
-is refused, and the notice names the setting, as in *The snapshot could not be
-taken: git was not run in this folder: its configuration sets http.cookiefile,
-…*. The same goes for git-lfs set up for that folder alone (`git lfs install`
-sets it up for you, and then it runs), and for a remote that is a folder inside
-the working folder.
+its remotes, its branches and who commits. A program it names, such as an
+editor, a pager, a signing program or a filter, is replaced by your own value or
+git's default, and settings only for commands the app never runs, such as a
+merge or diff tool, are left alone. A few settings cannot be replaced and are
+refused: git's own proxy command, the upload-pack and receive-pack programs, a
+pager for one command, an address rewrite and a cookie file. In a folder that
+sets one, a snapshot, a label, a pull or a push is refused, and the notice names
+the setting, quoted in English as git reports it, as in *The snapshot could not
+be taken: git was not run in this folder: its configuration sets
+http.cookiefile, …*. The same goes for git-lfs set up for that folder alone
+(`git lfs install` sets it up for you, and then it runs), and for a remote that
+is a folder inside the working folder.
 
 A browser tab can work in a folder too, where the browser offers it (Chromium
 does). The permission rarely survives a restart, and asking for it needs a
@@ -386,9 +390,10 @@ Nothing is overwritten without asking.
 
 If part of a scope cannot be read, because a file of it is damaged or was
 changed by hand, the scope opens to be looked at and not changed, and a notice
-names what could not be read. It offers **Put back from the history…** and
-**Bring in a working file…**; in a folder it also says you can mend the file
-and open the scope again.
+names what could not be read. Where you may write where the scope is kept, it
+offers **Bring in a working file…**, and **Put back from the history…** where a
+history is kept; in a folder it also says you can mend the file and open the
+scope again.
 - **Put back from the history…** opens the History page, where **Put back the
   whole scope…** makes all of it what it was at the snapshot you chose. What
   could not be read is kept first, as an entry of the history or set aside
@@ -469,8 +474,8 @@ One open project: a bar at the top, the editor below it.
 |---|---|
 | **The crumbs** | The organisation, each scope between, and the open one in bold; each is a way to that scope's home, and the organisation's name is the way back to the first screen |
 | **Settings…** | This scope's name and where it is filed, and its defaults: the author named on an exported diagram, and the operational aspects a new landscape starts with. Moving a scope files it under another one and leaves its content untouched |
-| **⋯** | In a browser, the menu: **Open Folder…** where the browser offers one, **Open…**, **Save**, **Save a Copy of the Working File…**, **Snapshot…**, **History…**, **Connect an Agent…**, the theme, **Preferences…**, and under Help **User Manual**, **Keyboard Shortcuts…** and **Get the Desktop App**. On the desktop the same items, but the last, are in the menu bar |
-| **Activity** | What has changed in this project since you opened it — a list of named steps with the time each was taken, and the moves, *Moved from X to Y*, with who moved it. It stays with the scope wherever it moves. Read-only: ⌘Z is how you go back |
+| **⋯** | In a browser, the menu: **Open Folder…** where the browser offers one, **Open…**, **Save**, **Save a Copy of the Working File…**, **Snapshot…**, **History…**, **Connect an Agent…**, the theme, **Preferences…**, and under Help **User Manual**, **Keyboard Shortcuts…** and **Get the Desktop App**. On the desktop the same items, but the last, are in the menu bar, with **Preferences…** as **Settings…** in the app menu on macOS |
+| **Activity** | What has changed in this project since you opened it — a list of named steps with the time each was taken, and the moves, *Moved from X to Y*, with who moved it, read from the history, so they include moves from before you opened it. It stays with the scope wherever it moves. Read-only: ⌘Z is how you go back |
 | **Saved · hh:mm** | Where the project stands: the time it was last written, or **Unsaved changes**, **Saving…**, **Changed elsewhere**, **Changed here and elsewhere**, **Not saved — storage refused** |
 
 Everything is saved automatically as you work: three seconds after you stop, on

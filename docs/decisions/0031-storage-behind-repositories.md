@@ -541,7 +541,7 @@ repositories, in `src/adapters/folder/`:
   person can act on, part way through a merge, a rebase, a cherry-pick or a
   revert, with a file unmerged, or on no branch. The paths it commits go to
   git on its standard input; a machine with no git (`shell.gitMissing`) or
-  one older than 2.25 (`shell.gitTooOld`) is refused with a sentence that
+  one older than 2.26 (`shell.gitTooOld`) is refused with a sentence that
   says so, and looked at again on the next try, so installing git and trying
   again works; a failure crosses to the page as a key, never as git's words,
   which name paths.

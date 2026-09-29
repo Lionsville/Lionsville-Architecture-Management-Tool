@@ -15,16 +15,18 @@ plant a setting there that git would act on. Two things are now true:
   neither moved nor removed.
 - **Only your own git configuration names a program.** Git runs with your
   configuration for signing, proxies and credential helpers. A folder's own
-  `.git/config` may set only harmless things: what a repository needs, such as
-  its remotes, branches and who commits, and display and housekeeping
-  settings. Anything else it sets is either replaced by your own value or
-  refused, with the setting named. Git always runs with no hooks and no
-  file-system monitor.
+  `.git/config` may set what a repository needs, such as its remotes,
+  branches and who commits, and display and housekeeping settings. A program
+  it names (an editor, a pager, a signing program, a filter, an askpass) is
+  replaced by your own value or git's default. Settings only for commands the
+  app never runs, such as a merge or diff tool, mail or svn, are left alone.
+  Git always runs with no hooks and no file-system monitor.
 
-**What this can refuse, and why.** In a folder whose configuration sets
-something the app will not run git with (a program, an address rewrite,
-`http.cookieFile`, say), a snapshot, a label, a pull or a push is refused, and
-the message names that setting: remove it, or use git yourself in that folder.
+**What this can refuse, and why.** A few settings cannot be replaced, only
+refused: git's own proxy command, the upload-pack and receive-pack programs, a
+pager for one command, an address rewrite and a cookie file. In a folder that
+sets one, a snapshot, a label, a pull or a push is refused, and the message
+names that setting: remove it, or use git yourself in that folder.
 Git-lfs set up for one folder only (`git lfs install --local`) is refused,
 naming the filter, rather than committing large files whole; `git lfs install`
 sets it up for you and it runs again. A remote that is a folder inside the
@@ -81,8 +83,9 @@ files now loads in the background; if a deploy made it unreachable, you are
 told and nothing changes, and the page is never reloaded over unsaved work.
 
 **A scope that cannot be read whole can be put back.** If part of a scope
-cannot be read, the scope opens to be looked at, and its notice now offers
-**Put back from the history…** and **Bring in a working file…**. **Put back the
+cannot be read, the scope opens to be looked at. Where the scope may be
+written, its notice now offers **Bring in a working file…**, and **Put back
+from the history…** where a history is kept. **Put back the
 whole scope…** on the History page makes all of it what a snapshot held; what
 could not be read is kept first, as an entry of the history or set aside beside
 the scope, and nothing is put back where it cannot be kept. An entry that kept
@@ -143,9 +146,10 @@ a path, wherever the work is kept.
 as they are. A snapshot is now a commit with a `Lionsville-Scope:` trailer
 naming each scope it covers, and a scope's `scope.json` gains an `id` the first
 time the app writes it. Where the folder keeps a history, a move is one commit
-with a `Lionsville-Moved-From:` trailer beside the new address. A file that
-could not be read is set aside as
-`<name>.unread` beside it before a put back writes over it. What the app
+whose `Lionsville-Moved-From:` trailer names where each scope was, beside the
+`Lionsville-Scope:` trailer that names where it is now. A file that could not
+be read is set aside as `<name>.unread` beside it before a put back writes over
+it. What the app
 remembers about a folder's steps is kept in its own data folder, never in
 yours.
 
