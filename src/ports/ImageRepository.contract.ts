@@ -1,0 +1,135 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
+/**
+ * What every image repository must do — written once, run by all of them.
+ *
+ * The bytes and the library are two acts, and these clauses hold them apart:
+ * bytes put are named by what they are and belong to no library, the step
+ * that adds an entry is what makes a name answer, and a folder is listed and
+ * a name found without the library being handed over whole.
+ *
+ * Named `.contract.ts` so the runner does not pick it up on its own.
+ */
+import { describe, expect, it } from 'vitest'
+import { imageMediaType } from '../model/documentImage'
+import { contentAddressOf } from '../model/imageName'
+import type { ImageEntry, ImageName } from '../model/imageName'
+import type { ScopeId } from '../projects/scopeState'
+import { ok, over, refusal, step } from './Repositories.contract'
+import type { MakeRepositories, Over } from './Repositories.contract'
+
+/** A few bytes that stand for a picture: what is kept is the bytes, not whether they draw. */
+function bytes(...values: number[]): Uint8Array {
+  return new Uint8Array(values)
+}
+
+/** Put a picture's bytes and add it to the library under its name, as a page adding one does. */
+async function add(repositories: Over, scope: ScopeId, name: ImageName, held: Uint8Array): Promise<ImageEntry> {
+  const put = await repositories.images.put(scope, name, held)
+  if ('refused' in put) throw new Error(`refused: ${put.refused}`)
+  const entry: ImageEntry = {
+    name, mediaType: imageMediaType(name) ?? '', size: held.length, width: 640, height: 480, contentAddress: put.contentAddress,
+  }
+  await repositories.steps(scope, { type: 'image.add', image: entry })
+  return entry
+}
+
+export function describeImageRepository(name: string, make: MakeRepositories): void {
+  describe(`ImageRepository contract — ${name}`, () => {
+    const fresh = async () => {
+      const repositories = over(await make())
+      return { repositories, acme: await repositories.scope('acme', 'Acme Logistics') }
+    }
+
+    it('names itself', async () => {
+      const { repositories } = await fresh()
+      expect(repositories.images.id).toMatch(/\S/)
+    })
+
+    it('keeps bytes under their content address: the same bytes one address, other bytes another', async () => {
+      const { repositories, acme } = await fresh()
+      const one = ok(await repositories.images.put(acme, 'context.png', bytes(1, 2, 3)))
+      expect(one.contentAddress).toBe(await contentAddressOf(bytes(1, 2, 3)))
+      expect(ok(await repositories.images.put(acme, 'again.png', bytes(1, 2, 3)))).toEqual(one)
+      expect(ok(await repositories.images.put(acme, 'other.png', bytes(1, 2, 4))).contentAddress).not.toBe(one.contentAddress)
+    })
+
+    it('refuses bytes under a name no picture may have', async () => {
+      const { repositories, acme } = await fresh()
+      expect(refusal(await repositories.images.put(acme, '../escape.png', bytes(1)))).toBe('shell.imageBadName')
+      expect(refusal(await repositories.images.put(acme, 'animation.gif', bytes(1)))).toBe('shell.imageBadType')
+    })
+
+    it('answers nothing by name for bytes put and never added to the library', async () => {
+      const { repositories, acme } = await fresh()
+      ok(await repositories.images.put(acme, 'context.png', bytes(1, 2, 3)))
+      expect(await repositories.images.bytes(acme, 'context.png')).toBeUndefined()
+      expect(await repositories.images.find(acme, 'context.png')).toBeUndefined()
+    })
+
+    it('answers a picture added to the library: its entry, its bytes and its media type, by name', async () => {
+      const { repositories, acme } = await fresh()
+      const entry = await add(repositories, acme, 'diagrams/context.png', bytes(1, 2, 3))
+      expect(await repositories.images.find(acme, 'diagrams/context.png')).toEqual(entry)
+      expect(await repositories.images.bytes(acme, 'diagrams/context.png')).toEqual({ mediaType: 'image/png', bytes: bytes(1, 2, 3) })
+      expect((await repositories.state(acme)).images).toEqual([entry])
+    })
+
+    it('hands out bytes nobody else holds: changing them changes nothing it keeps', async () => {
+      const { repositories, acme } = await fresh()
+      await add(repositories, acme, 'context.png', bytes(1, 2, 3))
+      const answered = await repositories.images.bytes(acme, 'context.png')
+      answered!.bytes[0] = 9
+      expect((await repositories.images.bytes(acme, 'context.png'))?.bytes).toEqual(bytes(1, 2, 3))
+    })
+
+    it('lists one folder: the pictures directly in it and the folders directly under it, by name', async () => {
+      const { repositories, acme } = await fresh()
+      const top = await add(repositories, acme, 'top.png', bytes(1))
+      const b = await add(repositories, acme, 'diagrams/b.png', bytes(2))
+      const a = await add(repositories, acme, 'diagrams/a.jpg', bytes(3))
+      await add(repositories, acme, 'diagrams/2025/old.png', bytes(4))
+      await add(repositories, acme, 'photos/2026/whiteboard.webp', bytes(5))
+      expect(await repositories.images.folder(acme, '')).toEqual({ images: [top], folders: ['diagrams', 'photos'] })
+      expect(await repositories.images.folder(acme, 'diagrams')).toEqual({ images: [a, b], folders: ['diagrams/2025'] })
+      expect(await repositories.images.folder(acme, 'photos')).toEqual({ images: [], folders: ['photos/2026'] })
+      expect(await repositories.images.folder(acme, 'nowhere')).toEqual({ images: [], folders: [] })
+    })
+
+    it('takes a picture out of the library by a step, after which its name answers nothing', async () => {
+      const { repositories, acme } = await fresh()
+      await add(repositories, acme, 'context.png', bytes(1, 2, 3))
+      await repositories.steps(acme, { type: 'image.remove', name: 'context.png' })
+      expect(await repositories.images.find(acme, 'context.png')).toBeUndefined()
+      expect(await repositories.images.bytes(acme, 'context.png')).toBeUndefined()
+      expect(await repositories.images.folder(acme, '')).toEqual({ images: [], folders: [] })
+    })
+
+    it('keeps a name to one picture: a second under it is refused and the first stays', async () => {
+      const { repositories, acme } = await fresh()
+      const first = await add(repositories, acme, 'context.png', bytes(1, 2, 3))
+      const put = ok(await repositories.images.put(acme, 'context.png', bytes(7, 7)))
+      const second: ImageEntry = { ...first, size: 2, contentAddress: put.contentAddress }
+      expect(refusal(await repositories.apply([{ scope: acme, steps: [step({ type: 'image.add', image: second })] }]))).toBe('command.taken')
+      expect(await repositories.images.bytes(acme, 'context.png')).toEqual({ mediaType: 'image/png', bytes: bytes(1, 2, 3) })
+    })
+
+    it('keeps two scopes’ libraries apart, one name in each', async () => {
+      const { repositories, acme } = await fresh()
+      const globex = await repositories.scope('globex', 'Globex')
+      await add(repositories, acme, 'context.png', bytes(1))
+      await add(repositories, globex, 'context.png', bytes(2))
+      expect((await repositories.images.bytes(acme, 'context.png'))?.bytes).toEqual(bytes(1))
+      expect((await repositories.images.bytes(globex, 'context.png'))?.bytes).toEqual(bytes(2))
+    })
+
+    it('keeps a scope’s library through a move, because it follows the identity', async () => {
+      const { repositories, acme } = await fresh()
+      const entry = await add(repositories, acme, 'diagrams/context.png', bytes(1, 2, 3))
+      ok(await repositories.move(acme, 'globex/acme'))
+      expect(await repositories.images.find(acme, 'diagrams/context.png')).toEqual(entry)
+      expect((await repositories.images.bytes(acme, 'diagrams/context.png'))?.bytes).toEqual(bytes(1, 2, 3))
+    })
+  })
+}
