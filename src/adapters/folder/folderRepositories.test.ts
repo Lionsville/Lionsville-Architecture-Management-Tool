@@ -20,6 +20,11 @@ import { describeSettingsRepository } from '../../ports/SettingsRepository.contr
 import type { DirectoryHandleLike, FileHandleLike } from './DirectoryHandle'
 import { FakeDirectory } from './fakeDirectory'
 import { folderRepositories } from './folderRepositories'
+import { BrowserFolder } from './browser/browserFolder'
+import { browserFolderGit } from './browser/browserFolderGit'
+import { browserPlaceStore, browserStampCache, browserStepStore } from './browser/browserStepStore'
+import { IndexedDbStore } from '../webStorage/IndexedDbStore'
+import { fakeIndexedDb } from '../webStorage/testing/fakeIndexedDb'
 import { composed, identityAt, placesInMemory } from './folderScopes'
 import { stampsInMemory } from './folderPictures'
 import { memoryGit } from './memoryGit'
@@ -40,11 +45,37 @@ function overFakeFolder(): RepositoriesUnderTest {
   }
 }
 
+/**
+ * The same folder as a browser keeps it: its history, step ids, identities and
+ * pictures' stamps in this browser's database, over the suites' own.
+ */
+function overBrowserFolder(): RepositoriesUnderTest {
+  const root = new FakeDirectory()
+  const folder = new BrowserFolder(new IndexedDbStore(fakeIndexedDb()), { folder: 'acme' },
+    (kept, mine) => Promise.resolve((kept as { folder: string }).folder === (mine as { folder: string }).folder))
+  const repositories = folderRepositories({
+    root, git: browserFolderGit(folder, root),
+    steps: browserStepStore(folder), places: browserPlaceStore(folder), stamps: browserStampCache(folder),
+  })
+  return {
+    repositories,
+    spoil: async (scope: ScopeId) => {
+      const state = await repositories.scopes.state(scope)
+      if (state) await writeAt(root, state.address ? `${state.address}/model.json` : 'model.json', '{ half a write')
+    },
+  }
+}
+
 describeScopeRepository('folder', overFakeFolder)
 describeOrganisationIndex('folder', overFakeFolder)
 describeHistoryRepository('folder', overFakeFolder)
 describeImageRepository('folder', overFakeFolder)
 describeSettingsRepository('folder', overFakeFolder)
+describeScopeRepository('folder in a browser', overBrowserFolder)
+describeOrganisationIndex('folder in a browser', overBrowserFolder)
+describeHistoryRepository('folder in a browser', overBrowserFolder)
+describeImageRepository('folder in a browser', overBrowserFolder)
+describeSettingsRepository('folder in a browser', overBrowserFolder)
 
 /** A picture's bytes: a PNG's header, 64 by 32, and a tail that tells two apart. */
 function png(tail: number): Uint8Array {
