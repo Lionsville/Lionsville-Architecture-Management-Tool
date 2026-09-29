@@ -404,11 +404,15 @@ repositories, in `src/adapters/folder/`:
   is (`--show-scope`): the folder's are those of `.git/config` and a
   worktree's own, and of any file either includes, however it came to be
   included; the rest — the machine's, the person's global one, what the
-  process was started with — is the person's. It is read at every git and
-  never kept, since nothing kept can say what git will read after a branch
-  switch or through a `.git` that points elsewhere; a read that fails
-  refuses the command, and git older than 2.26, which cannot say whose a key
-  is, is asked to be updated. Keys are matched as git matches them, without
+  process was started with — is the person's. A read is kept for the next
+  git with the folder, and read again the moment anything git reads the
+  configuration by could have changed — every file it came from or names to
+  include, the repository's configuration files found as git finds them (a
+  `.git` that points elsewhere followed, a worktree's common directory), the
+  branch by `HEAD` and a reftable's `tables.list`, the person's files and the
+  environment git reads them by — all looked at before the read. A read that
+  fails refuses the command, and git older than 2.26, which cannot say whose
+  a key is, is asked to be updated. Keys are matched as git matches them, without
   regard to case. Each key the folder sets is one of three things.
   - **Allowed**, as the folder says it — what a repository needs to be one,
     and settings that start no program, send nothing anywhere and read no
