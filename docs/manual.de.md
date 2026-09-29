@@ -361,13 +361,13 @@ eigenen git-Konfiguration aus. Die `.git/config` eines Ordners darf festlegen,
 was ein Repository braucht, etwa seine Remotes, seine Branches und wer
 committet, aber kein Programm, keinen Proxy, keinen Credential Helper und keine
 Adressumschreibung: die kommen nur aus Ihrer eigenen Konfiguration. In einem
-Ordner, der etwas anderes festlegt, wird Holen oder Pushen abgelehnt, und die
-Meldung nennt die Einstellung, etwa *Der Ordner wurde nicht geholt: its
-configuration sets http.cookieFile, …* (dieser Teil ist englisch); auch eine
-Momentaufnahme wird dort abgelehnt, und die Diagnose nennt die Einstellung.
-Dasselbe gilt für git-lfs, das nur für diesen Ordner eingerichtet ist (`git lfs
-install` richtet es für Sie ein, und dann läuft es), und für einen Remote, der
-ein Ordner innerhalb des Arbeitsordners ist.
+Ordner, der etwas anderes festlegt, werden eine Momentaufnahme, eine
+Beschriftung, Holen und Pushen abgelehnt, und die Meldung nennt die Einstellung,
+etwa *Die Momentaufnahme ist nicht gelungen: git wurde in diesem Ordner nicht
+ausgeführt: its configuration sets http.cookiefile, …* (der letzte Teil ist
+englisch). Dasselbe gilt für git-lfs, das nur für diesen Ordner eingerichtet ist
+(`git lfs install` richtet es für Sie ein, und dann läuft es), und für einen
+Remote, der ein Ordner innerhalb des Arbeitsordners ist.
 
 Auch ein Browser-Tab kann in einem Ordner arbeiten, wo der Browser es anbietet
 (Chromium tut das). Die Berechtigung überlebt einen Neustart selten, und sie zu

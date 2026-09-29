@@ -6,7 +6,7 @@ Layer-7 application landscape and the C4 container diagrams under it. **There is
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **7103 tests** and one of every config. The
+One codebase, in modules, with **7114 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -56,7 +56,7 @@ the two categories above.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 7103 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 7114 tests. Run it
 after every change. The tests run with coverage on, and `build/coverage.ts`
 prints one line per module of the import matrix and fails below that module's
 floor — the level it was measured at, written down so it can only go up.
@@ -576,8 +576,12 @@ src/adapters/     The outside world, one folder per flavour.
                                       start (`earlierScopes`): copied, never
                                       moved, and shown read-only in memory where
                                       the database will not open
-                    desktop/          the Electron channel's types, and what the
-                                      desktop keeps that is not the folder
+                    desktop/          the Electron channel's types, what the
+                                      desktop keeps that is not the folder, and
+                                      a failure from main taken back out of the
+                                      channel's wrapping as the key it was, a
+                                      git refused in the folder with its words
+                                      (`crossedFromMain`)
 src/providers/    A place work is kept, whole (ADR-0031 §4, as built): the
                   adapters it is built on, its way in, and the chrome it draws
                   — in the language that is on, and in the words of how it

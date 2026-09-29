@@ -334,11 +334,11 @@ In beide gevallen wordt wat open staat eerst geschreven.
 git-configuratie. De `.git/config` van een map mag instellen wat een repository
 nodig heeft, zoals haar remotes, haar branches en wie er commit, maar geen
 programma, proxy, credential helper of adresherschrijving: die komen alleen uit
-je eigen configuratie. In een map die iets anders instelt, wordt ophalen of
-pushen geweigerd en noemt de melding de instelling, zoals in *De map is niet
-opgehaald: its configuration sets http.cookieFile, …* (dat deel is in het
-Engels); een momentopname wordt daar ook geweigerd, en de diagnose noemt de
-instelling. Hetzelfde geldt voor git-lfs dat alleen voor die map is ingesteld
+je eigen configuratie. In een map die iets anders instelt, worden een
+momentopname, een label, ophalen en pushen geweigerd, en de melding noemt de
+instelling, zoals in *De momentopname is niet gelukt: git is in deze map niet
+uitgevoerd: its configuration sets http.cookiefile, …* (het laatste deel is in
+het Engels). Hetzelfde geldt voor git-lfs dat alleen voor die map is ingesteld
 (`git lfs install` stelt het voor jou in, en dan draait het), en voor een remote
 die een map binnen de werkmap is.
 

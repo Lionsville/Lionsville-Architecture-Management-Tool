@@ -319,12 +319,12 @@ Either way, what is open is written first.
 configuration. A folder's `.git/config` may set what a repository needs, such as
 its remotes, its branches and who commits, but not a program, a proxy, a
 credential helper or an address rewrite: those come from your own configuration
-only. In a folder that sets anything else, a pull or push is refused and the
-notice names the setting, as in *The folder was not pulled: its configuration
-sets http.cookieFile, …*; a snapshot there is refused too, and the diagnostics
-name the setting. The same goes for git-lfs set up for that folder alone (`git
-lfs install` sets it up for you, and then it runs), and for a remote that is a
-folder inside the working folder.
+only. In a folder that sets anything else, a snapshot, a label, a pull or a push
+is refused, and the notice names the setting, as in *The snapshot could not be
+taken: git was not run in this folder: its configuration sets http.cookiefile,
+…*. The same goes for git-lfs set up for that folder alone (`git lfs install`
+sets it up for you, and then it runs), and for a remote that is a folder inside
+the working folder.
 
 A browser tab can work in a folder too, where the browser offers it (Chromium
 does). The permission rarely survives a restart, and asking for it needs a

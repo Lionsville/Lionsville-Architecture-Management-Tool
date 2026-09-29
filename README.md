@@ -303,7 +303,7 @@ locally).
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 7103 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 7114 tests. Run it
 after every change; it is fast on purpose.
 
 ```bash

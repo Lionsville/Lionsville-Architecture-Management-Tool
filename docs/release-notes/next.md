@@ -23,14 +23,14 @@ plant a setting there that git would act on. Two things are now true:
 
 **What this can refuse, and why.** In a folder whose configuration sets
 something the app will not run git with (a program, an address rewrite,
-`http.cookieFile`, say), a pull or push is refused with that setting named, and
-a snapshot is refused with the setting in the diagnostics: remove it, or use
-git yourself in that folder. Git-lfs set up for one folder
-only (`git lfs install --local`) is refused, naming the filter, rather than
-committing large files whole; `git lfs install` sets it up for you and it runs
-again. A remote that is a folder inside the working folder is refused. The
-desktop now needs **git 2.26 or newer**, to tell a folder's settings from
-yours.
+`http.cookieFile`, say), a snapshot, a label, a pull or a push is refused, and
+the message names that setting: remove it, or use git yourself in that folder.
+Git-lfs set up for one folder only (`git lfs install --local`) is refused,
+naming the filter, rather than committing large files whole; `git lfs install`
+sets it up for you and it runs again. A remote that is a folder inside the
+working folder is refused. The desktop now needs **git 2.26 or newer**, to tell
+a folder's settings from yours; an older git is told so, in the one sentence the
+history has for it.
 
 The hole predates this release. **Update the desktop app**, and check
 `.git/config` in every folder you opened with the previous version: a setting
@@ -131,6 +131,9 @@ with who moved it. Activity stays with the scope wherever it moves.
   references and pictures stay where they were, and scopes made for it are
   removed only where nothing was done to them since.
 - A snapshot is never recorded over a save that was refused.
+- On the desktop, a history that could not be read or written, git missing
+  or too old, and a git refused in the folder are said in a sentence of their
+  own, instead of an error message from the app's internals.
 
 **For an agent:** `image.upload` answers `![alt](image:<name>)`, and
 `images.list` names each picture the same way: a picture is named, not given
