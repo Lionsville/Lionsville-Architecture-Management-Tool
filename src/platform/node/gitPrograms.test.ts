@@ -37,7 +37,7 @@ beforeEach(async () => {
   await mkdir(root)
   // The person's own configuration, and nothing of the machine's that could ask anything.
   for (const name of [
-    'GIT_CONFIG_GLOBAL', 'GIT_CONFIG_NOSYSTEM', 'GIT_ASKPASS', 'SSH_ASKPASS',
+    'GIT_CONFIG_GLOBAL', 'GIT_CONFIG_NOSYSTEM', 'GIT_ASKPASS', 'SSH_ASKPASS', 'GIT_CONFIG_PARAMETERS',
     'https_proxy', 'HTTPS_PROXY', 'http_proxy', 'HTTP_PROXY', 'all_proxy', 'ALL_PROXY', 'no_proxy', 'NO_PROXY',
   ]) kept[name] = process.env[name]
   process.env.GIT_CONFIG_GLOBAL = join(place, 'own.gitconfig')
@@ -560,6 +560,82 @@ describe.skipIf(!available)('what the second review found', () => {
     const outcome = await push(root)
     expect(outcome).toMatchObject({ refused: expect.stringMatching(/http\.sslcainfo/i) })
     expect(await pull(root)).toMatchObject({ refused: expect.stringMatching(/http\.sslcainfo/i) })
+  })
+})
+
+/**
+ * A read of the folder's configuration is kept between gits, and each of
+ * these is a change the next git must see: each test reads once, changes one
+ * thing, and asks again.
+ */
+describe.skipIf(!available)('a kept read of the configuration', () => {
+  it('is read again after a branch switch makes a conditional include active', async () => {
+    await raw(['init', '-q', '-b', 'main'])
+    const evil = join(place, 'branch.gitconfig')
+    await writeFile(evil, `[filter "evil"]\n\tclean = ${await program('branch-clean', 'cat')}\n`)
+    await folderSets('includeIf.onbranch:feature.path', evil)
+    await put('.gitattributes', '*.md filter=evil\n')
+    await put('notes.md', 'plain words')
+    await snapshot(root, 'on main')
+    await raw(['switch', '-q', '-c', 'feature'])
+    await put('notes.md', 'more words')
+    await snapshot(root, 'on the feature branch')
+    expect(await ran('branch-clean')).toBe(false)
+  })
+
+  it('is read again after a branch switch where the repository is elsewhere, behind a .git that points to it', async () => {
+    const elsewhere = join(place, 'elsewhere.git')
+    await raw(['init', '-q', '-b', 'main', `--separate-git-dir=${elsewhere}`])
+    const evil = join(place, 'branch.gitconfig')
+    await writeFile(evil, `[filter "evil"]\n\tclean = ${await program('pointer-clean', 'cat')}\n`)
+    await raw(['config', 'includeIf.onbranch:feature.path', evil])
+    await put('.gitattributes', '*.md filter=evil\n')
+    await put('notes.md', 'plain words')
+    await snapshot(root, 'on main')
+    await raw(['switch', '-q', '-c', 'feature'])
+    await put('notes.md', 'more words')
+    await snapshot(root, 'on the feature branch')
+    expect(await ran('pointer-clean')).toBe(false)
+  })
+
+  it('is read again when a worktree’s own configuration changes', async () => {
+    await initRepository(root)
+    await raw(['config', 'core.repositoryFormatVersion', '1'])
+    await raw(['config', 'extensions.worktreeConfig', 'true'])
+    await put('.gitattributes', '*.md filter=evil\n')
+    await put('notes.md', 'plain words')
+    await snapshot(root, 'first')
+    await writeFile(join(root, '.git', 'config.worktree'), `[filter "evil"]\n\tclean = ${await program('worktree-clean', 'cat')}\n`)
+    await put('notes.md', 'more words')
+    await snapshot(root, 'second')
+    expect(await ran('worktree-clean')).toBe(false)
+  })
+
+  it('is read again when the person’s own configuration changes, or which one it is', async () => {
+    await initRepository(root)
+    await folderSets('http.cookieFile', join(place, 'cookies.txt'))
+    await expect(git(root, ['status'])).rejects.toThrow(/http\.cookiefile/)
+    await personSets('http.cookieFile', join(place, 'own-cookies.txt'))
+    await expect(git(root, ['status'])).resolves.toBeDefined()
+    const other = join(place, 'other.gitconfig')
+    await writeFile(other, '')
+    process.env.GIT_CONFIG_GLOBAL = other
+    await expect(git(root, ['status'])).rejects.toThrow(/http\.cookiefile/)
+  })
+
+  it('is read again when the process is started with configuration of the person’s own', async () => {
+    await initRepository(root)
+    await folderSets('http.cookieFile', join(place, 'cookies.txt'))
+    await expect(git(root, ['status'])).rejects.toThrow(/http\.cookiefile/)
+    process.env.GIT_CONFIG_PARAMETERS = `'http.cookiefile'='${join(place, 'own-cookies.txt')}'`
+    await expect(git(root, ['status'])).resolves.toBeDefined()
+  })
+
+  it('is read again when the folder’s own configuration changes', async () => {
+    await initRepository(root)
+    await expect(git(root, ['status'])).resolves.toBeDefined()
+    await folderSets('http.cookieFile', join(place, 'cookies.txt'))
+    await expect(git(root, ['status'])).rejects.toThrow(/http\.cookiefile/)
   })
 })
 

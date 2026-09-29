@@ -35,13 +35,14 @@
  * repository there as plain files, and git runs the hooks of a repository it
  * pushes to on this machine as that repository's own.
  *
- * The folder's configuration is read at every git, in one read that says of
- * each key which configuration it came from (`--show-scope`, git 2.26 and
- * newer): nothing read before can say what git will read now, and a read
- * that fails refuses the command rather than letting it run unread.
+ * The folder's configuration is read in one read that says of each key which
+ * configuration it came from (`--show-scope`, git 2.26 and newer), and read
+ * again whenever anything git reads it by could have changed
+ * ({@link configurationsOf}); a read that fails refuses the command rather
+ * than letting it run unread.
  */
 import { execFile } from 'node:child_process'
-import { mkdir, mkdtemp, realpath } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, realpath, stat } from 'node:fs/promises'
 import { homedir, tmpdir } from 'node:os'
 import { isAbsolute, join, relative, resolve } from 'node:path'
 import { promisify } from 'node:util'
@@ -292,11 +293,9 @@ const FOLDER_SCOPES = new Set(['local', 'worktree'])
  * A folder's configuration, apart from the person's, in one read: each key
  * with the scope of the file it came from — a file one includes carries the
  * includer's — so that a folder's key counts as the folder's however it was
- * brought in. Read at every git, and never kept: a branch switched, a file
- * included on a condition, a `.git` that is a pointer — nothing read before
- * can say what git will read now. A read that fails refuses the command.
+ * brought in. A read that fails refuses the command.
  */
-async function configurationsOf(root: string): Promise<Configurations> {
+async function readConfigurations(root: string): Promise<Configurations> {
   let stdout: string
   try {
     stdout = (await run('git', ['config', '-z', '--show-scope', '--show-origin', '--includes', '--list'], {
@@ -325,6 +324,79 @@ async function configurationsOf(root: string): Promise<Configurations> {
     ;(FOLDER_SCOPES.has(entry.scope) ? folder : own).push(entry)
   }
   return { folder, own }
+}
+
+/**
+ * A read is kept for the next git with the folder, and read again the moment
+ * anything git reads its configuration by could have changed: every file it
+ * came from and every file it names to include, whether there yet or not; the
+ * configuration files of the repository, found as git finds them — a `.git`
+ * that is a pointer followed to the real one, and a worktree's common one —
+ * with what a conditional include looks at, the branch (`HEAD` and a
+ * reftable's `tables.list`, by their contents, since a switch in a reftable
+ * repository changes nothing else); the person's own files; and the
+ * environment git reads them by. Everything is looked at before the read, so
+ * that a change during it is a change the next git sees; a read that names a
+ * file the last did not is kept under the files it knew, and read once more.
+ */
+const kept = new Map<string, { fingerprint: string; configurations: Configurations; files: string[] }>()
+
+async function configurationsOf(root: string): Promise<Configurations> {
+  const held = kept.get(root)
+  const files = [...new Set([...await repositoryFiles(root), ...personalFiles(), ...held?.files ?? []])]
+  const fingerprint = await fingerprintOf(files)
+  if (held && held.fingerprint === fingerprint) return held.configurations
+  const configurations = await readConfigurations(root)
+  const named = [...configurations.folder, ...configurations.own].flatMap((entry) => {
+    const from = fileOf(root, entry.origin)
+    return [...from ? [from] : [], ...includedFile(root, entry) ?? []]
+  })
+  kept.set(root, { fingerprint, configurations, files: [...new Set([...files, ...named])] })
+  return configurations
+}
+
+/** The repository's own files that git reads its configuration by, found as git finds them. */
+async function repositoryFiles(root: string): Promise<string[]> {
+  const dotGit = join(root, '.git')
+  const pointer = await readFile(dotGit, 'utf8').catch(() => undefined)
+  const gitDir = pointer?.startsWith('gitdir:') ? resolve(root, pointer.slice('gitdir:'.length).trim()) : dotGit
+  const common = await readFile(join(gitDir, 'commondir'), 'utf8').then((named) => resolve(gitDir, named.trim()), () => gitDir)
+  return [
+    dotGit, join(gitDir, 'commondir'), join(common, 'config'), join(gitDir, 'config.worktree'),
+    join(gitDir, 'HEAD'), join(gitDir, 'reftable', 'tables.list'), join(common, 'reftable', 'tables.list'),
+  ]
+}
+
+/** The person's own configuration files, where git would look for them. */
+function personalFiles(): string[] {
+  const home = homedir()
+  const xdg = process.env.XDG_CONFIG_HOME || join(home, '.config')
+  return [
+    process.env.GIT_CONFIG_GLOBAL || join(home, '.gitconfig'), join(xdg, 'git', 'config'),
+    ...process.env.GIT_CONFIG_SYSTEM ? [process.env.GIT_CONFIG_SYSTEM] : [],
+  ]
+}
+
+/** What changes what git reads: each file, by its contents where it is small, and the environment git reads them by. */
+async function fingerprintOf(files: readonly string[]): Promise<string> {
+  const each = await Promise.all([...files].sort().map(async (path) => {
+    const held = await stat(path, { bigint: true }).catch(() => undefined)
+    if (!held) return `${path}\u0000-`
+    const contents = held.isFile() && held.size <= 64n * 1024n ? await readFile(path, 'utf8').catch(() => '') : ''
+    return `${path}\u0000${held.ino}:${held.size}:${held.mtimeNs}:${held.ctimeNs}\u0000${contents}`
+  }))
+  const env = process.env
+  const said = ['GIT_CONFIG_PARAMETERS', 'GIT_CONFIG_COUNT', 'GIT_CONFIG_GLOBAL', 'GIT_CONFIG_SYSTEM', 'GIT_CONFIG_NOSYSTEM',
+    'XDG_CONFIG_HOME', 'HOME', ...Object.keys(env).filter((name) => /^GIT_CONFIG_(KEY|VALUE)_\d+$/.test(name)).sort()]
+  return [...each, ...said.map((name) => `${name}=${env[name] ?? ''}`)].join('\u0001')
+}
+
+/** The file an include names, where the entry is one. A relative one is relative to the file that includes it. */
+function includedFile(root: string, entry: Entry): string[] | undefined {
+  if (!/^(include\.path|includeif\..+\.path)$/i.test(entry.key)) return undefined
+  const from = fileOf(root, entry.origin)
+  const named = entry.value.startsWith('~/') ? join(homedir(), entry.value.slice(2)) : entry.value
+  return [isAbsolute(named) ? named : resolve(from ? join(from, '..') : root, named)]
 }
 
 /** The path of the file an entry came from, or nothing for one that is no file (the command line). */
@@ -457,9 +529,7 @@ async function folderFlags(root: string, folder: Entry[], own: Entry[], command:
 async function refuseIncludesInWorkTree(root: string, folder: Entry[]): Promise<void> {
   for (const entry of folder) {
     if (!/^(include\.path|includeif\..+\.path)$/i.test(entry.key)) continue
-    const from = fileOf(root, entry.origin)
-    const named = entry.value.startsWith('~/') ? join(homedir(), entry.value.slice(2)) : entry.value
-    const path = isAbsolute(named) ? named : resolve(from ? join(from, '..') : root, named)
+    const [path] = includedFile(root, entry)!
     if (await inside(root, path) && !await inside(join(root, '.git'), path)) {
       throw new GitRefused(`its configuration includes a file in the folder itself, where anything can write it (${entry.key})`)
     }
