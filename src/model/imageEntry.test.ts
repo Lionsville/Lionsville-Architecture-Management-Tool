@@ -23,6 +23,33 @@ describe('what bytes say about themselves', () => {
     expect(pictureSize(new Uint8Array([1, 2, 3]), 'image/png')).toBeUndefined()
   })
 
+  /** A JPEG of 160 × 120 stored, with an Exif segment saying which way up, in either byte order. */
+  function turned(orientation: number, order: 'II' | 'MM'): Uint8Array {
+    const two = (value: number) => (order === 'MM' ? [value >> 8, value & 0xff] : [value & 0xff, value >> 8])
+    const four = (value: number) => (order === 'MM' ? [0, 0, ...two(value)] : [...two(value), 0, 0])
+    const tiff = [
+      ...[...order].map((c) => c.charCodeAt(0)), ...two(42), ...four(8),
+      ...two(1), ...two(0x0112), ...two(3), ...four(1), ...two(orientation), 0, 0, ...four(0),
+    ]
+    const app1 = [...[...'Exif'].map((c) => c.charCodeAt(0)), 0, 0, ...tiff]
+    return new Uint8Array([0xff, 0xd8, 0xff, 0xe1, 0, app1.length + 2, ...app1, ...jpeg.slice(8)])
+  }
+
+  it('reads a JPEG the way up its Exif says it is seen', () => {
+    expect(pictureSize(turned(6, 'MM'), 'image/jpeg')).toEqual({ width: 120, height: 160 })
+    expect(pictureSize(turned(8, 'II'), 'image/jpeg')).toEqual({ width: 120, height: 160 })
+    expect(pictureSize(turned(3, 'II'), 'image/jpeg')).toEqual({ width: 160, height: 120 })
+    expect(pictureSize(turned(1, 'MM'), 'image/jpeg')).toEqual({ width: 160, height: 120 })
+  })
+
+  it('reads a JPEG whose APP1 is not Exif, or is Exif in no byte order, as it is stored', () => {
+    const other = new Uint8Array([0xff, 0xd8, 0xff, 0xe1, 0, 8, ...[...'XMP\0\0\0'].map((c) => c.charCodeAt(0)), ...jpeg.slice(8)])
+    expect(pictureSize(other, 'image/jpeg')).toEqual({ width: 160, height: 120 })
+    const bent = turned(6, 'MM')
+    bent.set([0x58, 0x58], 12)
+    expect(pictureSize(bent, 'image/jpeg')).toEqual({ width: 160, height: 120 })
+  })
+
   it('describes bytes as a library entry, with zeros where they declare no size', async () => {
     expect(await imageEntryOf('diagrams/context.png', png)).toEqual({
       name: 'diagrams/context.png', mediaType: 'image/png', size: png.length, width: 640, height: 480,

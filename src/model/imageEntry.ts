@@ -38,16 +38,53 @@ function pngSize(bytes: Uint8Array): PictureSize | undefined {
   return { width: big(bytes, 16, 4), height: big(bytes, 20, 4) }
 }
 
-/** The first frame header's size: SOF0 to SOF15, but for the three markers that are not frames. */
+/** The Exif tag that says which way up the stored pixels are meant to be seen. */
+const ORIENTATION = 0x0112
+
+/**
+ * The orientation an APP1 segment starting at `at` states, or `undefined`
+ * where it is not Exif or says none. Exif is a TIFF header — its byte order,
+ * then where its first list of tags is — and a list of tags is a count and
+ * twelve bytes per tag.
+ */
+function exifOrientation(bytes: Uint8Array, at: number, end: number): number | undefined {
+  const start = at + 4
+  if (String.fromCharCode(...bytes.slice(start, start + 6)) !== 'Exif\0\0') return undefined
+  const tiff = start + 6
+  const order = String.fromCharCode(bytes[tiff] ?? 0, bytes[tiff + 1] ?? 0)
+  const read = order === 'II' ? little : order === 'MM' ? big : undefined
+  if (!read) return undefined
+  const tags = tiff + read(bytes, tiff + 4, 4)
+  const count = read(bytes, tags, 2)
+  for (let n = 0; n < count; n += 1) {
+    const tag = tags + 2 + n * 12
+    if (tag + 12 > end) return undefined
+    if (read(bytes, tag, 2) === ORIENTATION) return read(bytes, tag + 8, 2)
+  }
+  return undefined
+}
+
+/**
+ * The first frame header's size — SOF0 to SOF15, but for the three markers
+ * that are not frames — as the picture is meant to be seen. A camera keeps
+ * the pixels as the sensor read them and says in Exif which way up they go;
+ * orientations 5 to 8 are turned a quarter, so the width a page lays out is
+ * the stored height. An entry keeps its dimensions, so they are read the way
+ * a browser draws the picture.
+ */
 function jpegSize(bytes: Uint8Array): PictureSize | undefined {
   if (bytes[0] !== 0xff || bytes[1] !== 0xd8) return undefined
   let at = 2
+  let orientation: number | undefined
   while (at + 9 < bytes.length) {
     if (bytes[at] !== 0xff) return undefined
     const marker = bytes[at + 1]
     const length = big(bytes, at + 2, 2)
+    if (marker === 0xe1) orientation ??= exifOrientation(bytes, at, at + 2 + length)
     if (marker >= 0xc0 && marker <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(marker)) {
-      return { width: big(bytes, at + 7, 2), height: big(bytes, at + 5, 2) }
+      const stored = { width: big(bytes, at + 7, 2), height: big(bytes, at + 5, 2) }
+      const turned = orientation !== undefined && orientation >= 5 && orientation <= 8
+      return turned ? { width: stored.height, height: stored.width } : stored
     }
     at += 2 + length
   }
