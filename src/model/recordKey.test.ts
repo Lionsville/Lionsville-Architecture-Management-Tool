@@ -6,7 +6,7 @@ import type { Command } from './commands'
 import { fromArrays } from './normalised'
 import type { Model } from './normalised'
 import { apply } from './reducer'
-import { isRecordKind, recordsChanged, sameRecord, sameValue, SCOPE_RECORD, stableText } from './recordKey'
+import { isRecordKind, RECORD_LISTS, recordsChanged, sameRecord, sameValue, SCOPE_RECORD, stableText } from './recordKey'
 import type { DesignElement } from './types'
 
 function element(id: string, name: string, parentId?: string): DesignElement {
@@ -16,7 +16,11 @@ function element(id: string, name: string, parentId?: string): DesignElement {
 function model(): Model {
   return fromArrays({
     name: 'Rail',
-    elements: [element('crews', 'Crews'), element('depot', 'Depot'), element('rota', 'Rota', 'crews')],
+    elements: [
+      element('crews', 'Crews'), element('depot', 'Depot'),
+      { id: 'cluster', kind: 'platform', name: 'Cluster', lifecycle: 'live', isManaged: true, aspects: {} },
+      { id: 'namespace', kind: 'platform', name: 'Namespace', lifecycle: 'live', isManaged: true, aspects: {}, parentId: 'cluster' },
+    ],
     relations: [{ id: 'r1', type: 'flow', sourceId: 'crews', targetId: 'depot', isBidirectional: false }],
     diagrams: [
       { id: 'l7', kind: 'layer7', name: 'Landscape', members: [{ id: 'crews' }, { id: 'depot' }], geometry: { nodes: [{ id: 'crews', x: 1, y: 2 }] } },
@@ -58,7 +62,7 @@ describe('what changed between two models', () => {
       .toEqual([{ kind: 'element', id: 'crews' }])
   })
 
-  it('is everything a delete reached: the record, its relations, the views it was on and its children', () => {
+  it('is everything a delete reached: the record, its relations and the views it was on', () => {
     const before = model()
     const changed = recordsChanged(before, after(before, { type: 'element.delete', id: 'crews' }))
     expect(changed).toEqual(expect.arrayContaining([
@@ -66,6 +70,25 @@ describe('what changed between two models', () => {
     ]))
     expect(changed).not.toContainEqual({ kind: 'diagram', id: 'other' })
     expect(changed).not.toContainEqual({ kind: 'element', id: 'depot' })
+  })
+
+  /** A platform's delete takes what was filed under it out from under it (ADR-0014 §2.7). */
+  it('is the children a delete re-parented', () => {
+    const before = model()
+    const changed = recordsChanged(before, after(before, { type: 'element.delete', id: 'cluster' }))
+    expect(changed).toHaveLength(2)
+    expect(changed).toEqual(expect.arrayContaining([{ kind: 'element', id: 'cluster' }, { kind: 'element', id: 'namespace' }]))
+  })
+
+  it('reads every list the model keeps, so a list added later is read too', () => {
+    const empty = fromArrays({ name: '', elements: [], relations: [], diagrams: [] })
+    expect(Object.values(RECORD_LISTS).sort()).toEqual(Object.keys(empty.order).sort())
+  })
+
+  it('names the scope for any own field, one it did not have before included', () => {
+    const before = model()
+    expect(recordsChanged(before, { ...before, defaultAuthor: 'Ada' })).toEqual([SCOPE_RECORD])
+    expect(recordsChanged(before, { ...before, name: 'Rail' })).toEqual([])
   })
 
   it('names a record created, and a record in a list the model did not hold before', () => {
@@ -82,7 +105,7 @@ describe('what changed between two models', () => {
     const before = model()
     expect(recordsChanged(before, after(before, { type: 'project.settings', patch: { description: 'Trains.' } })))
       .toEqual([SCOPE_RECORD])
-    const moved = { ...before, order: { ...before.order, elements: ['depot', 'crews', 'rota'] } }
+    const moved = { ...before, order: { ...before.order, elements: ['depot', 'crews', 'cluster', 'namespace'] } }
     expect(recordsChanged(before, moved)).toEqual([SCOPE_RECORD])
   })
 })

@@ -59,14 +59,14 @@ export function sameRecord(one: RecordKey, other: RecordKey): boolean {
   return one.kind === other.kind && one.id === other.id
 }
 
-/** Each kind of record the model holds, and the list it is kept in. */
-const LISTS = {
+/** Each kind of record the model holds, and the list it is kept in: one per key of `ModelOrder`. */
+export const RECORD_LISTS = {
   element: 'elements', relation: 'relations', diagram: 'diagrams', decision: 'decisions',
   transition: 'transitions', observation: 'observations', cause: 'causes', solution: 'solutions',
   experiment: 'experiments',
 } as const satisfies Partial<Record<RecordKind, keyof Model>>
 
-type Listed = keyof typeof LISTS
+type Listed = keyof typeof RECORD_LISTS
 
 /** A value as text with every object's keys in order, so two equal values are one text. */
 export function stableText(value: unknown): string {
@@ -82,16 +82,28 @@ export function sameValue(one: unknown, other: unknown): boolean {
   return one === other || stableText(one) === stableText(other)
 }
 
-/** The model's own fields — its name, its description, its defaults — without the lists it holds. */
-function ownFields(model: Model): Record<string, unknown> {
-  const own: Record<string, unknown> = { ...model }
-  for (const list of [...Object.values(LISTS), 'order']) delete own[list]
-  return own
+const NOT_OWN = new Set<string>([...Object.values(RECORD_LISTS), 'order'])
+
+/**
+ * Whether the model's own fields — its name, its description, its defaults,
+ * every field that is not a list it holds — are the same in two models: key by
+ * key, the same object first, and the same written value only where not. It
+ * runs on every step, so it writes down no more than differs.
+ */
+function sameOwnFields(before: Model, after: Model): boolean {
+  const was = before as unknown as Record<string, unknown>
+  const is = after as unknown as Record<string, unknown>
+  const keys = new Set([...Object.keys(was), ...Object.keys(is)])
+  for (const key of keys) {
+    if (NOT_OWN.has(key) || was[key] === is[key]) continue
+    if (!sameValue(was[key], is[key])) return false
+  }
+  return true
 }
 
 /** The records of one kind whose value differs between two models, in the order the later one keeps them. */
 function changedIn(kind: Listed, before: Model, after: Model): RecordKey[] {
-  const list = LISTS[kind]
+  const list = RECORD_LISTS[kind]
   const was = before[list] as Record<string, unknown> | undefined
   const is = after[list] as Record<string, unknown> | undefined
   if (was === is) return []
@@ -117,8 +129,8 @@ function reordered(before: Model, after: Model): boolean {
  */
 export function recordsChanged(before: Model, after: Model): RecordKey[] {
   if (before === after) return []
-  const found = (Object.keys(LISTS) as Listed[]).flatMap((kind) => changedIn(kind, before, after))
-  const own = !sameValue(ownFields(before), ownFields(after))
+  const found = (Object.keys(RECORD_LISTS) as Listed[]).flatMap((kind) => changedIn(kind, before, after))
+  const own = !sameOwnFields(before, after)
   if (own || (found.length === 0 && reordered(before, after))) found.push(SCOPE_RECORD)
   return found
 }
