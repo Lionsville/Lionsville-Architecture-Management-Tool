@@ -194,3 +194,67 @@ names a source and its display name, not a kind of storage.
   history on a large folder costs a scan. That is accepted.
 * **Scopes gain identities.** The folder implementation keeps a scope's id in
   its `scope.json`, adding one where a folder has none.
+
+## As built, 29 September 2026: the repository contracts
+
+**What was built.** The five repositories of §1 are ports, with nothing
+implementing them yet, and the ports they replace are still there:
+- `src/ports/ScopeRepository.ts`, `OrganisationIndex.ts`,
+  `HistoryRepository.ts`, `ImageRepository.ts` and `SettingsRepository.ts`,
+  and `Repositories.ts`, the one value a source hands the app (§4).
+- **Their words**, where the domain's pure code can share them:
+  - `projects/scopeState.ts`: address, identity, revision, a scope's state,
+    the step, and `applySteps`, the one writer every implementation shares.
+  - `model/recordKey.ts`: a record by kind and id, worked out from what a
+    command writes (ADR-0028).
+  - `model/imageName.ts`: an image's name, its image folder, the `image:`
+    reference, and the content address.
+  - `projects/settings.ts`: settings, and the patch that changes them.
+- **A contract suite per repository**, `src/ports/*Repository.contract.ts` and
+  `OrganisationIndex.contract.ts`, all taking one maker
+  (`Repositories.contract.ts`). They run against in-memory repositories
+  written for them, `src/ports/testing/memoryRepositories.ts`, which are test
+  support and not an implementation.
+- **The rule** of §4 is `build/storageLine.test.ts`, over the data in
+  `build/storageLine.ts`: no imports across the line, and no storage words in
+  identifiers. The tree's violations when it arrived are its exceptions, each
+  held to exactly what its file does, so the list only shrinks: 20 files
+  importing the folder format, and 47 naming storage. The twelve files that
+  are the folder format and still sit in `projects/` and `ports/` are listed,
+  and leave the list as they move. The new seams and their words are held to
+  the stricter list of the decision drivers, comments included, with no
+  exceptions.
+
+**Where the build departed from the text.**
+- **The domain types live in `projects/` and `model/`, not in `ports/`.**
+  `applySteps` needs them, and the pure modules may not import a port.
+- **Two kinds of step the model does not hold yet.** Adding a picture to the
+  library, or taking one out (`image.add`, `image.remove`), and changing what
+  a scope says about itself (`scope.describe`: its kind, client, links, first
+  view and marks) are steps. They are shaped as the model's commands are,
+  with the model's refusals (`command.taken`, `command.gone`,
+  `command.notAField`), so they can join the command vocabulary unchanged.
+- **The history has no member that records an entry.** When a run of steps
+  becomes an entry is each implementation's own business. The suites make
+  one through the maker's `cut`.
+- **Labels are a scope's own.** Two scopes may each use one label.
+- **A content address is the SHA-256 of the bytes**, fixed rather than left
+  to each implementation, so an address means one thing in every source.
+  `ImageRepository` answers a listing of one image folder and a lookup by
+  name beside the bytes.
+- **The library's folders are called image folders** in code, so the rule can
+  read *folder* as the storage word everywhere else.
+- **A settings patch takes a key out with `null`**, not `undefined`, because
+  a patch may travel as text.
+- **The tree carries a revision** of its own, beside each scope's and the
+  index's.
+- **A step that changes nothing moves no revision.** The reducer hands back a
+  new model for some such steps, so `applySteps` compares the records a step
+  writes, before and after.
+- **Refusals are values with keys.** Three are new: `shell.scopeGone`,
+  `shell.scopeTaken`, `shell.scopeIntoItself`; and `shell.imageBadName` for
+  a name a picture may not have. An address the repository refuses is one
+  `isSafeScopePath` refuses today.
+- **The rule reads identifiers only.** A comment may say what a folder does,
+  and the words tables are not checked by it: *strings stay free of storage*
+  is still a matter for review.
