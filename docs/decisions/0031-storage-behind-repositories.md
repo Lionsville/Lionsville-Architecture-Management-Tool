@@ -745,16 +745,22 @@ library down, with the source's image repository as the source.
   document that names another picture in the same place gets a new `img`,
   never the last one's with its source still on it.
 - **A report asks when it is produced, for what it prints.** A report renders
-  its documents as a page does, inside `CollectPictures`
-  (`ui/PictureCollector.tsx`), and every picture the renderer draws from the
-  library is written down — from the parse that prints it, so a picture named
-  in a code block is not asked for, and two spellings of one name are one
-  picture. `picturesForReport` (`pictureReport.ts`) then asks for those, once
-  each by the library's rule for a name, four at a time, waits for every
-  answer, and leaves out a picture whose bytes did not come, saying a failure
-  where the caller says. A page with no collector above it writes nothing
-  down. `pictureDataAddress` gives the self-contained form a report that
-  draws without asking again takes.
+  its documents with `MarkdownView` itself — not the one `renderMarkdown`
+  loads on first use, which draws nothing until its script arrives — inside
+  `CollectPictures` (`ui/PictureCollector.tsx`). Every picture the renderer
+  draws from a library is written down as it is drawn, in the render itself,
+  with the scope whose library it is: from the parse that prints it, so a
+  picture named in a code block is not asked for, two spellings of one name
+  are one picture, and one name in two scopes is two. The list is whole when
+  the render returns — `renderToStaticMarkup`, or a root rendered inside
+  `flushSync` — and that is when a report calls `picturesForReport`
+  (`pictureReport.ts`). It asks for each once, four at a time and never
+  fewer than one, waits for every answer, and answers the pictures whose
+  bytes came in the order drawn, with a lookup by scope and name. A picture
+  whose ask failed, or threw before it answered, is left out and said where
+  the caller says; a report is never refused for one. A page with no
+  collector above it writes nothing down. `pictureDataAddress` gives the
+  self-contained form a report that draws without asking again takes.
 - **Entries from bytes, by one rule.** The reader of what bytes say about
   themselves (media type, size, declared dimensions, content address) moved
   from the folder's implementation to `model/imageEntry.ts`. Everything that
