@@ -356,7 +356,11 @@ describe('a folder moved as one rename', () => {
 })
 
 describe('the folder’s history', () => {
-  const spellings = ['.git', '.GIT', '.Git', '.git.', '.git ', 'GIT~1']
+  const spellings = [
+    '.git', '.GIT', '.Git', '.git.', '.git ', 'GIT~1',
+    // Windows opens a folder through its index stream as the folder itself.
+    '.git::$INDEX_ALLOCATION', '.git:$I30:$INDEX_ALLOCATION', '.GIT. ::$INDEX_ALLOCATION',
+  ]
 
   beforeEach(async () => {
     await mkdir(join(root, '.git', 'hooks'), { recursive: true })
@@ -370,6 +374,35 @@ describe('the folder’s history', () => {
     }
     expect(safeRelativePath('acme/.git-notes.md')).toBeTruthy()
     expect(safeRelativePath('.gitignore')).toBeTruthy()
+  })
+
+  it('is no path the channel takes at any depth, nor is a stream of any file', () => {
+    for (const name of spellings) {
+      expect(safeRelativePath(`acme/${name}/config`), name).toBeUndefined()
+      expect(safeRelativePath(`acme/rail/${name}`), name).toBeUndefined()
+    }
+    for (const path of ['acme/scope.json:hidden', 'acme/scope.json::$DATA', 'acme:stream/scope.json']) {
+      expect(safeRelativePath(path), path).toBeUndefined()
+    }
+    expect(safeRelativePath('acme/rail/.gitkeep')).toBeTruthy()
+  })
+
+  it('is never given to a folder filed under this one, nor to one that has none yet', async () => {
+    await mkdir(join(root, 'acme'), { recursive: true })
+    for (const path of ['acme/.git/config', 'acme/.git/hooks/post-commit', 'fresh/.git/HEAD']) {
+      await expect(createFile(root, path, bytes('x')), path).rejects.toThrow('shell.pathRefused')
+      await expect(writeInside(root, path, bytes('x')), path).rejects.toThrow('shell.pathRefused')
+      await expect(makeDirectory(root, path), path).rejects.toThrow('shell.pathRefused')
+    }
+    expect(await readdir(join(root, 'acme'))).toEqual([])
+    await expect(readdir(join(root, 'fresh'))).rejects.toThrow()
+  })
+
+  it('is refused through a link that leads into one filed deeper', async () => {
+    await mkdir(join(root, 'acme', '.git', 'hooks'), { recursive: true })
+    await symlink(join(root, 'acme', '.git'), join(root, 'history'))
+    await expect(writeInside(root, 'history/hooks/pre-commit', bytes('#!/bin/sh'))).rejects.toThrow('shell.pathRefused')
+    expect(await readdir(join(root, 'acme', '.git', 'hooks'))).toEqual([])
   })
 
   it('is neither read, listed, written, made, fingerprinted nor removed', async () => {

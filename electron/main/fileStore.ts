@@ -39,13 +39,24 @@ import type { DesktopEntry, DesktopFileContents, DesktopStamp } from '../../src/
 const BAD_SEGMENT = new Set(['', '.', '..'])
 
 /**
- * Whether a name is the folder's history however a disk spells it: `.git` in
- * any case (macOS and Windows do not tell `.GIT` from it), with the trailing
- * dots and spaces Windows drops, or the short name Windows may give it.
+ * Whether a name is a history however a disk spells it: `.git` in any case
+ * (macOS and Windows do not tell `.GIT` from it), with the trailing dots and
+ * spaces Windows drops, the short name Windows may give it, or named through
+ * one of its streams (`.git::$INDEX_ALLOCATION`, `.git:$I30:$INDEX_ALLOCATION`),
+ * which Windows opens as the folder itself.
  */
-function isHistoryName(segment: string): boolean {
-  const name = segment.toLowerCase().replace(/[. ]+$/, '')
+export function isHistoryName(segment: string): boolean {
+  const name = segment.split(':')[0].toLowerCase().replace(/[. ]+$/, '')
   return name === '.git' || /^git~\d+$/.test(name)
+}
+
+/**
+ * A segment that names a stream of a file rather than the file: Windows reads
+ * `name:stream` and `name::$TYPE` as a way into something the name alone is
+ * not. No name the app writes has a colon in it, so a segment with one is refused.
+ */
+function isStreamName(segment: string): boolean {
+  return segment.includes(':')
 }
 
 /**
@@ -61,7 +72,10 @@ export function safeRelativePath(path: string): string | undefined {
   if (isAbsolute(path) || /^[A-Za-z]:/.test(path)) return undefined
   const segments = path.split(/[/\\]/)
   if (segments.some((segment) => BAD_SEGMENT.has(segment))) return undefined
-  if (isHistoryName(segments[0])) return undefined
+  // A history anywhere in the path, not only the folder's own: git runs in a
+  // folder filed under this one as surely as in this one, and a folder with no
+  // history yet must not be given one by a page.
+  if (segments.some((segment) => isHistoryName(segment) || isStreamName(segment))) return undefined
   return segments.join(sep)
 }
 
@@ -107,9 +121,8 @@ export async function resolveInside(root: string, path: string): Promise<string 
   try {
     const real = await realpath(existing)
     if (!within(realRoot, real)) return undefined
-    // A link inside the folder that leads into its history is refused as the history is.
-    const first = relative(realRoot, real).split(sep)[0]
-    if (first && isHistoryName(first)) return undefined
+    // A link inside the folder that leads into a history is refused as the history is.
+    if (relative(realRoot, real).split(sep).some(isHistoryName)) return undefined
     return existing === target ? real : join(real, relative(existing, target))
   } catch {
     return undefined
