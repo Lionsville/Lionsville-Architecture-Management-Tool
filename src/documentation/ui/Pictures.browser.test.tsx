@@ -23,7 +23,7 @@ import type { ImageEntry } from '../../model/imageName'
 import { memoryImageSource } from '../pictureSource'
 import type { PictureBytes } from '../pictureSource'
 import { MarkdownView } from './MarkdownView'
-import { PicturesProvider } from './Pictures'
+import { LibraryPicture, PicturesProvider } from './Pictures'
 
 /** A picture of the given size, as a browser encodes one. */
 async function drawn(width: number, height: number): Promise<Uint8Array> {
@@ -133,4 +133,41 @@ describe('pictures in a real browser', () => {
     expect(layout()).toEqual(before)
     expect(source.asked.map((one) => one.name).sort()).toEqual([...shown].sort())
   })
+
+  it('yield to a flex column shorter than they are, fitted inside, and do not move when their bytes arrive', async () => {
+    const bytes: Record<string, PictureBytes> = {
+      'plan.svg': { mediaType: 'image/svg+xml', bytes: UNSIZED },
+      'tall.png': { mediaType: 'image/png', bytes: await drawn(300, 900) },
+    }
+    const library: ImageEntry[] = await Promise.all(Object.entries(bytes).map(([name, held]) => imageEntryOf(name, held.bytes)))
+    const source = memoryImageSource({ crews: bytes })
+    source.hold()
+
+    host = document.createElement('div')
+    host.style.cssText = 'width: 600px; height: 240px; display: flex; flex-direction: column'
+    document.body.append(host)
+    root = createRoot(host)
+    flushSync(() => {
+      root!.render(
+        <PicturesProvider source={source} scope="crews" library={library}>
+          {library.map((entry) => <LibraryPicture key={entry.name} entry={entry} alt={entry.name} />)}
+          <p>After the pictures.</p>
+        </PicturesProvider>,
+      )
+    })
+    await nextFrame()
+    const before = layout()
+    // Every box, and what follows them, inside the column rather than past its end.
+    expect(Math.max(...Object.values(before).map(([, y, , height]) => y + height))).toBeLessThanOrEqual(240)
+
+    await expect.poll(() => source.asked.length).toBe(2)
+    source.answer()
+    await expect.poll(() => library.every((entry) => host!.querySelector(`img[data-picture="${entry.name}"]`)?.getAttribute('src'))).toBe(true)
+    await Promise.all(library.map((entry) => host!.querySelector<HTMLImageElement>(`img[data-picture="${entry.name}"]`)!.decode()))
+    await nextFrame()
+    await nextFrame()
+
+    expect(layout()).toEqual(before)
+  })
 })
+

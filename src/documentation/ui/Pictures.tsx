@@ -221,8 +221,9 @@ const UNSIZED = { width: 640, height: 480 } as const
  * box, not the box to the picture. An entry that declares no size is laid
  * out in {@link UNSIZED}'s shape, and its picture fitted inside that.
  *
- * `minHeight: 0` and `overflow: hidden` keep the box its own size wherever it
- * sits — a flex column otherwise lets it grow to what arrived.
+ * `minHeight: 0` and `overflow: hidden` let the box yield to a flex column
+ * shorter than it, its picture fitted inside the smaller box, where a flex
+ * item would otherwise keep its full height and run past the column's end.
  */
 export function LibraryPicture({ entry, alt }: { entry: ImageEntry; alt: string }) {
   const element = useRef<HTMLImageElement>(null)
