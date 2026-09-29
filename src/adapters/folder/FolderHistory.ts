@@ -63,7 +63,8 @@ import { libraryOf, LIBRARY_KEY, rowsOf } from './folderPictures'
 import { folderRevision } from './revision'
 import { headerOf, identityAt, isScopeId, revisionOf, stateFrom } from './folderScopes'
 import type { FolderScopes } from './folderScopes'
-import { imageEntryOf, PICTURES } from './imageLibrary'
+import { imageEntryOf } from '../../model/imageEntry'
+import { PICTURES } from './imageLibrary'
 import { Lru } from './lru'
 
 /** What a record without a subject is called in the commit. English: it is a git message. */

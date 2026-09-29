@@ -41,7 +41,8 @@ import type { ScopeHeader } from './FileSystemScopeStore'
 import { libraryOf, LIBRARY_KEY, pictureFiles, pictureStamps, rowsOf } from './folderPictures'
 import type { KeptPicture, PictureFile } from './folderPictures'
 import { bytesAt, filesUnder, folderAt, textAt } from './handles'
-import { imageEntryOf, namesInDocuments, PICTURES } from './imageLibrary'
+import { imageEntryOf } from '../../model/imageEntry'
+import { namesInDocuments, PICTURES } from './imageLibrary'
 import { SCOPE_FILE } from '../../projects/folderFormat'
 
 /** The key `scope.json` keeps a scope's identity under. */

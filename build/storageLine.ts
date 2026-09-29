@@ -141,6 +141,7 @@ export const ORDINARY_PHRASES: readonly string[] = ['image folder', 'image folde
  * — in comments as in code.
  */
 export const SPEAKS_NO_STORAGE: readonly string[] = [
+  'src/model/imageEntry.ts',
   'src/model/imageName.ts',
   'src/model/recordKey.ts',
   'src/ports/HistoryRepository.ts',
