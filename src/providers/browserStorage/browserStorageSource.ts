@@ -14,12 +14,11 @@ import type { Earlier } from '../../adapters/webStorage/earlierScopes'
 import type { IndexedDb } from '../../adapters/webStorage/IndexedDbStore'
 import type { KeyValueStorage } from '../../adapters/webStorage/KeyValueStorage'
 import { WebStoragePreferencesStore } from '../../adapters/webStorage/WebStoragePreferencesStore'
-import { WebStorageScopeStore } from '../../adapters/webStorage/WebStorageScopeStore'
 import type { SourceProvider } from '../../platform/sourceProvider'
 import type { WorkingSource } from '../../platform/workingSource'
 import type { PreferencesStore } from '../../ports/PreferencesStore'
+import type { ProviderParts } from '../../ports/ProviderParts'
 import type { Repositories } from '../../ports/Repositories'
-import type { ScopeStore } from '../../ports/ScopeStore'
 
 /**
  * What this browser keeps: its database, where the scopes are, and the
@@ -30,13 +29,15 @@ export type BrowserOpening = {
   database: IndexedDb
 }
 
-export type BrowserParts = {
-  scopes: ScopeStore
+/** What this browser's chrome is handed back while it is the source. */
+export type BrowserOwn = {
+  /** What the key-value storage kept before the database, for the questions a person answers about it. */
+  readonly earlier?: Earlier
+}
+
+export type BrowserParts = ProviderParts<BrowserOwn> & {
   repositories: Repositories
   preferences: PreferencesStore
-  source: WorkingSource
-  /** What the key-value storage kept before the database, for the questions a person answers about it. */
-  earlier?: Earlier
 }
 
 /** This browser, which is one place: there is nothing to tell apart. */
@@ -51,11 +52,10 @@ export const BROWSER_STORAGE_SOURCE: SourceProvider<BrowserParts, BrowserOpening
   open: ({ storage, database }) => {
     const { repositories, earlier } = browserRepositories(database, storage)
     return {
-      scopes: new WebStorageScopeStore(storage),
       repositories,
       preferences: new WebStoragePreferencesStore(storage),
       source: BROWSER_STORAGE,
-      ...(earlier ? { earlier } : {}),
+      own: { ...(earlier ? { earlier } : {}) },
     }
   },
 }

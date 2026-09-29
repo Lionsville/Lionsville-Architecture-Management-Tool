@@ -29,8 +29,6 @@
  * a fourth by registering it, and nothing above this line is edited for it.
  */
 import { registerLogoPack } from '../model/logoRegistry'
-import { filledStore } from '../projects/filledStore'
-import type { ScopeStoreFilling } from '../projects/filledStore'
 import { DesktopAgentGateway } from '../adapters/desktop/DesktopAgentGateway'
 import {
   desktopAgent, desktopCommands, desktopFiles,
@@ -46,7 +44,6 @@ import { reloadOnStaleScripts } from '../adapters/browser/staleScripts'
 import { ConsoleDiagnostics } from '../adapters/browser/ConsoleDiagnostics'
 import { hostWindowChrome, showWindowTitle } from '../adapters/browser/hostWindow'
 import { browserDatabase, browserStorage } from '../adapters/webStorage/available'
-import type { ScopePath } from '../projects/scopePath'
 import type { WindowChrome } from '../platform/windowChrome'
 import { sourceProviderKind } from '../platform/workingSource'
 import type { WorkingSource } from '../platform/workingSource'
@@ -58,9 +55,7 @@ import { MEMORY_SOURCE } from '../providers/memory/memorySource'
 import { MemoryNotice } from '../providers/memory/MemoryNotice'
 import type { HookInvoke } from '../platform/desktopHook'
 import type {
-  SourceChip as ProviderChip,
-  SourceConnect, SourceFailure, SourceLanding, SourceProvider, SourceRecentActivity, SourceStatus, SourceWork,
-  SourceWorkChanged,
+  SourceChip as ProviderChip, SourceConnect, SourceProvider, SourceRecentActivity, SourceWork,
 } from '../platform/sourceProvider'
 import type { StringKey } from '../i18n/strings'
 import type { ComponentType } from 'react'
@@ -69,28 +64,30 @@ import type {
   SourcePreferencesPanel,
 } from './App'
 import type {
-  SourceChanges, SourceChipPanelProps, SourceChromeProps, SourceDestination, SourcePreferencesPanelProps,
+  ProviderParts, SourceChipPanelProps, SourceChromeProps, SourceDestination, SourcePreferencesPanelProps,
 } from '../ports/ProviderParts'
+import type { Repositories } from '../ports/Repositories'
 import type { Translate } from '../i18n'
-import type { ScopeSession } from './useModelSession'
 import type { AgentGateway } from '../ports/AgentGateway'
 import type { Diagnostics } from '../ports/Diagnostics'
 import type { DocumentGateway } from '../ports/DocumentGateway'
 import type { UpdateSettingsStore } from '../ports/UpdateSettings'
 import type { HostControls } from '../ports/HostControls'
 import type { PreferencesStore } from '../ports/PreferencesStore'
-import type { Repositories } from '../ports/Repositories'
-import type { ScopeStore } from '../ports/ScopeStore'
 
 
-/** Everything the shell needs from outside, in one grip. */
-export type Shell = {
-  scopes: ScopeStore
+/**
+ * Everything the shell needs from outside, in one grip: the parts the source's
+ * provider brought (`ports/ProviderParts.ts`, ADR-0031 §4) — its repositories
+ * among them, the app's one way to where work is kept — and the host's own,
+ * which are the same whatever the source.
+ */
+export type Shell = ProviderParts & {
   /**
-   * Where the source keeps work, in the domain's words (ADR-0031 §4): its five
-   * repositories, built by its provider and handed to the app as one value.
+   * Where this install's preferences go: the source's where it keeps them,
+   * the host's otherwise. Required here, because they are read before the
+   * first render.
    */
-  repositories?: Repositories
   preferences: PreferencesStore
   documents: DocumentGateway
   /**
@@ -101,119 +98,6 @@ export type Shell = {
   diagnostics: Diagnostics
   /** What the crash fallback can do about it: reload, and copy the trail. */
   hostControls: HostControls
-  /**
-   * What this composition settled on: a folder, the browser's storage, or
-   * memory (ADR-0005).
-   *
-   * The memory stores never fail, which is the point of them and also the
-   * problem: without this the shell cannot tell "everything is being saved"
-   * from "nothing will outlive this tab", and the user is told neither. A
-   * desktop that has not been given a folder yet is not on a folder, and the
-   * first-run screen asks.
-   */
-  source: WorkingSource
-  /**
-   * What this source means by the five words the bar says (`dirty`, `saving`,
-   * `clean`, `external-changed`, `conflict`).
-   *
-   * Absent where the document's own machine is the whole answer, which is what
-   * a file is and what all three sources that ship are. A source that keeps
-   * work somewhere else may mean something else by *dirty* than "a file not
-   * yet written", and this is where it says so —
-   * `platform/sourceProvider.ts` has the reasoning.
-   */
-  sourceStatus?: (work: SourceWork) => SourceStatus
-  /**
-   * The source says its own answer to {@link Shell.sourceStatus} has moved.
-   *
-   * Without it that function is only ever asked again when the document's own
-   * machine moves — which is every answer there is for a file, and half of the
-   * answer for anywhere else. Absent with `sourceStatus`, and then the bar
-   * behaves exactly as it always has.
-   */
-  onSourceWork?: SourceWorkChanged
-  /**
-   * What this source says a refusal where it keeps work means
-   * (`platform/sourceProvider.ts`).
-   *
-   * The sentence a refused save shows is this tree's — *this browser could not
-   * save the design* — and it is right for the three that ship and wrong for
-   * anywhere else. Absent, and it is said exactly as it always was.
-   *
-   * Brought with a source's parts rather than declared on the registration,
-   * which is where its word about the five statuses is: what the five words mean
-   * is a fact about the KIND of place, and what a refusal from it means is a
-   * fact about the store this opening just made — which host answered, who is
-   * signed in, what it would say about either. A provider answering from the
-   * registration would have to keep the last opening in a variable to say it.
-   */
-  sourceFailure?: SourceFailure
-  /**
-   * A scope has been opened: the session over it, for whoever answers for the
-   * source it is kept in.
-   *
-   * The one thing a registered provider could not reach. Everything else it
-   * brings is a store or a setting, handed over at `open` and read from above;
-   * a scope's session is made inside the workspace, remounted with it, and
-   * lives a whole level below the boot — so a source that has to carry a change
-   * somewhere, or take one from somewhere, had no way in. This is that way in,
-   * and the answer is how to stop: the workspace is remounted per scope, and a
-   * subscription per scope ever opened is a leak with a slow fuse.
-   *
-   * Absent for all three sources that ship, because a folder, this browser's
-   * storage and memory have nobody to tell.
-   */
-  onScopeSession?: (session: ScopeSession) => (() => void) | void
-  /**
-   * Every change of the open scope travels as a step through whoever took its
-   * session (ADR-0022: *a step is published, not saved*).
-   *
-   * Then a whole write of the open scope made by this shell after a command
-   * is a second copy of what the step already carried — one taken of this
-   * window's model, which lands over every step somebody else made to that
-   * scope in the meantime. The shell makes none of its own where this is
-   * true. Absent for all three sources that ship, whose changes are written.
-   */
-  publishesSteps?: boolean
-  /**
-   * Which scopes of this source may be read and not written, where that is an
-   * answer per scope rather than one for the whole source.
-   *
-   * `WorkingSource.readOnly` says it of everything, which is right for a
-   * source that nobody here may write. A source that keeps a tree of scopes
-   * for several people may let the same person write one subtree and only
-   * read another, and the workspace has to draw the one as it draws a
-   * read-only source and the other as it draws a writable one. Asked with the
-   * path of the scope a workspace opens, and again for each scope opened:
-   * `true` makes that workspace read-only exactly as a read-only source does
-   * (`ModelSession.readOnly` refuses, and every mutating affordance hides).
-   *
-   * The source is still the authority on a write — this only stops the shell
-   * offering what would be refused. Absent for all three sources that ship,
-   * and then a scope is as writable as its source.
-   */
-  readOnlyAt?: (scope: ScopePath) => boolean
-  /**
-   * Where the address this source was reached at asked to land
-   * (`SourceLanding`): read by the boot in place of the scope this machine last
-   * had open. Absent for all three sources that ship, which are not reached by
-   * an address, and for a registered source opened by a way in rather than a
-   * link.
-   */
-  opensAt?: SourceLanding
-  /** What the source's provider hands its own chrome and panels (`ProviderParts.own`). */
-  own?: unknown
-  /** Where the source keeps its history, in its provider's sentence (`ProviderParts.historyNoteKey`). */
-  historyNoteKey?: string
-  /**
-   * Hear when a scope changed other than through this window — or, with
-   * `wholeTree`, anything under it (`ProviderParts.changes`).
-   *
-   * Absent when nothing can watch — a browser tab, or a folder the platform
-   * will not report on. The shell then simply never hears about a second
-   * author, which is what it did before any of this existed.
-   */
-  changes?: SourceChanges
   /**
    * The settings the desktop's main process keeps for itself — whether to
    * check for updates. Absent in a browser tab, which has no host to ask.
@@ -238,15 +122,8 @@ export type Shell = {
   showTitle: (organisation: string, scope?: string) => void
 }
 
-/**
- * What opening a source gives the shell.
- *
- * The parts of one, not a whole: a folder brings a store and the folder's own
- * settings and deliberately leaves the preferences where they were, while the
- * two fallbacks bring both stores and nothing else. Only `source` is required,
- * because a source that cannot say what it is has nothing to put on the bar.
- */
-export type SourceParts = Partial<Omit<Shell, 'source'>> & Pick<Shell, 'source'>
+/** What opening a source gives the shell: its provider's parts (`ports/ProviderParts.ts`). */
+export type SourceParts = ProviderParts
 
 /**
  * The shell's own side of opening a source: what a provider is handed besides
@@ -298,7 +175,7 @@ export type SourceBase = {
  * what being drawn while its provider is nobody's source asks of it in return.
  */
 export type RegisteredSourceProvider<Opening = never, Own = unknown> =
-  SourceProvider<SourceParts & { own?: Own }, Opening, SourceBase> & {
+  SourceProvider<ProviderParts<Own>, Opening, SourceBase> & {
     readonly chrome?: ComponentType<SourceChromeProps<Own>>
     /**
      * What this provider wants in the app's own menu, asked for afresh
@@ -555,22 +432,6 @@ export function sourceChipFace(source: WorkingSource): SourceChipFace | undefine
 }
 
 /**
- * What the caller opening a source answers for itself, over the parts the
- * source builds (ADR-0022, the ninth amendment).
- *
- * The store only, because the store is what a build composed from this one has
- * had to answer for so far: an index in one round trip where the source's own
- * store would walk the tree for it, and a save that the build's own channel has
- * already carried. Handed at the open rather than laid over the parts after it,
- * so the store a caller gets back is one this file built — with the source's
- * own answers called as the source, which is what a copy made from the live
- * store by its prototype could not promise ({@link filledStore}).
- */
-export type SourceFilling = {
-  readonly scopes?: ScopeStoreFilling
-}
-
-/**
  * Open a source by its kind, with what it asked to be given.
  *
  * The provider's word about the five statuses travels with its parts, so the
@@ -587,25 +448,16 @@ export type SourceFilling = {
  * out would be handing a provider a source with nowhere to report and nothing
  * of this shell to reuse, and it would find that out the first time something
  * went wrong there. {@link SourceBase} says what belongs in it.
- *
- * `filling` is the caller's own answers for the store the source brings
- * ({@link SourceFilling}). A filling for a source that brought no store is the
- * same wiring mistake as a source with nowhere to keep a scope, and is said the
- * same way.
  */
 export function openSource<Opening>(
-  kind: string, opening: Opening, base: SourceBase, filling: SourceFilling = {},
+  kind: string, opening: Opening, base: SourceBase,
 ): SourceParts | Promise<SourceParts> {
   const provider = sourceProvider<Opening>(kind)
   // The boot, in the one file that chose the kind. A wiring mistake found here
   // is a wiring mistake; found at the first save it is a lost document.
   if (!provider) throw new Error(`no source provider is registered for '${kind}'`)
   const built = provider.open(opening, base)
-  const carrying = (parts: SourceParts): SourceParts => ({
-    ...parts,
-    ...(filling.scopes ? { scopes: filledStore(keeper(kind, parts), filling.scopes) } : {}),
-    sourceStatus: provider.statusOf,
-  })
+  const carrying = (parts: SourceParts): SourceParts => ({ ...parts, sourceStatus: provider.statusOf })
   // Awaited rather than handed on as a promise of parts: what travels with them
   // travels either way, and a caller that had to know which of the two it was
   // holding would be every caller writing the same `await` differently.
@@ -620,13 +472,11 @@ function promised(parts: SourceParts | Promise<SourceParts>): parts is Promise<S
 /**
  * The same, where there is nowhere to wait.
  *
- * The two shells this file composes itself are composed synchronously —
- * `composeShell` runs before the boot's first line and answers a shell, and a
- * folder is opened in the middle of building one — so the three that ship must
- * open without waiting, and they do. A provider that answered a promise to one
- * of these would be a wiring mistake in this file and never a build's, which is
- * why it is said out loud rather than awaited somewhere a folder would then have
- * to be awaited too.
+ * The shell this file composes itself is composed synchronously —
+ * `composeShell` runs before the boot's first line and answers a shell — so
+ * the two sources it may open there must open without waiting, and they do. A
+ * provider that answered a promise here would be a wiring mistake in this file
+ * and never a build's, which is why it is said out loud rather than awaited.
  */
 function openSourceNow<Opening>(
   kind: string, opening: Opening, base: SourceBase,
@@ -659,12 +509,6 @@ export function registeredConnects(): readonly RegisteredConnect[] {
   return found
 }
 
-/** Somewhere to keep a scope, which is the one part no source may leave out. */
-function keeper(kind: string, parts: SourceParts): ScopeStore {
-  if (!parts.scopes) throw new Error(`the '${kind}' source brought nowhere to keep a scope`)
-  return parts.scopes
-}
-
 /**
  * The shell as it stands in a browser.
  *
@@ -692,7 +536,6 @@ export function composeShell(): Shell {
   const kept = openSourceNow(kind, storage && database && { storage, database }, { diagnostics })
   return {
     ...kept,
-    scopes: keeper(kind, kept),
     // Both fallbacks bring one, and the preferences are read before the first
     // render — so a source that brought none is not a shell this boot can use.
     preferences: kept.preferences ?? failNoPreferences(kind),
@@ -760,7 +603,7 @@ export function overSource(shell: Shell, parts: SourceParts): Shell {
     publishesSteps: _publishes, readOnlyAt: _readOnly, opensAt: _opensAt, changes: _changes,
     own: _own, historyNoteKey: _historyNote, ...rest
   } = shell
-  return { ...rest, ...parts, scopes: parts.scopes ?? shell.scopes }
+  return { ...rest, ...parts, preferences: parts.preferences ?? shell.preferences }
 }
 
 /**

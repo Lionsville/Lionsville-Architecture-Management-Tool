@@ -299,7 +299,6 @@ export const IMPORT_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {
   'src/app/workingFileFlows.ts': ['src/projects/workingFile.ts', 'src/projects/workingFileManifest.ts'],
   'src/app/workspaceProps.ts': ['src/projects/workingFileManifest.ts'],
   'src/ports/FolderSettings.ts': ['src/projects/folderSettings.ts'],
-  'src/ports/ProjectHistory.ts': ['src/projects/historyPath.ts'],
   'src/ports/ScopeStore.ts': ['src/projects/workingFileManifest.ts'],
   'src/projects/index.ts': ['src/projects/adrFile.ts', 'src/projects/fileText.ts', 'src/projects/folderFormat.ts', 'src/projects/folderSettings.ts', 'src/projects/historyPath.ts', 'src/projects/migrate3to4.ts', 'src/projects/migrate4to5.ts', 'src/projects/migration.ts', 'src/projects/workingFile.ts'],
   'src/projects/scope.ts': ['src/projects/workingFileManifest.ts'],
@@ -348,8 +347,8 @@ export const CEILINGS = {
   /** Files of the folder format still in the domain. */
   folderFormat: 13,
   /** Files importing across the line, and the imports between them. */
-  importingFiles: 13,
-  imports: 23,
+  importingFiles: 12,
+  imports: 22,
   /** Files naming storage, and the words and patterns between them. */
   namingFiles: 29,
   words: 33,

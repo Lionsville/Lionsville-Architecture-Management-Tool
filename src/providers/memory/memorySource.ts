@@ -6,19 +6,16 @@
  * It never fails, so a session works in full and simply leaves nothing behind.
  */
 import { InMemoryPreferencesStore } from '../../adapters/memory/InMemoryPreferencesStore'
-import { InMemoryScopeStore } from '../../adapters/memory/InMemoryScopeStore'
 import { memoryRepositories } from '../../adapters/memory/memoryRepositories'
 import type { SourceProvider } from '../../platform/sourceProvider'
 import type { WorkingSource } from '../../platform/workingSource'
 import type { PreferencesStore } from '../../ports/PreferencesStore'
+import type { ProviderParts } from '../../ports/ProviderParts'
 import type { Repositories } from '../../ports/Repositories'
-import type { ScopeStore } from '../../ports/ScopeStore'
 
-export type MemoryParts = {
-  scopes: ScopeStore
+export type MemoryParts = ProviderParts & {
   repositories: Repositories
   preferences: PreferencesStore
-  source: WorkingSource
 }
 
 /** Nothing kept here outlives this tab, and the bar says it in the warning colour. */
@@ -32,7 +29,6 @@ export const MEMORY_SOURCE: SourceProvider<MemoryParts, unknown> = {
   // What removing takes is what the chip's neighbours always said of it.
   removeKey: 'picker.deleteBodyBrowser',
   open: () => ({
-    scopes: new InMemoryScopeStore(),
     repositories: memoryRepositories(),
     preferences: new InMemoryPreferencesStore(),
     source: IN_MEMORY,

@@ -53,7 +53,7 @@ import {
   registeredMenus, reloadWhenScriptsAreGone, sourceAgentPanel, sourceChip, sourceChipFace, sourceChipPanel,
   sourceConnected, sourceDescription, sourceDestination, sourcePreferencesPanel, sourceRecentActivity, sourceSayings,
 } from './composition'
-import type { RegisteredConnect, Shell } from './composition'
+import type { RegisteredConnect } from './composition'
 import type { SourceLocation, SourceRecent, SourceWayIn } from '../platform/sourceProvider'
 import { readLanguage, readLastScope, withoutLastScope } from '../projects/preferences'
 import { readScope } from '../projects/scopeAccess'
@@ -147,12 +147,6 @@ function bootWords() {
   return translator(readLanguage(stored) ?? detectBrowserLanguage(navigator.languages ?? navigator.language))
 }
 
-/** The source's repositories: what every source brings, and a wiring mistake where one did not. */
-function repositoriesOf(held: Shell): NonNullable<Shell['repositories']> {
-  if (!held.repositories) throw new Error('the source brought no repositories')
-  return held.repositories
-}
-
 /**
  * Every registered provider that offers a way in, in the order they
  * registered — the folder among them — and the one the host names: its *Open…*
@@ -208,9 +202,9 @@ async function workFrom(kind: string, opening: unknown): Promise<boolean> {
     ...(browserShell.repositories ? { beneath: browserShell.repositories } : {}),
   })
   // The scopes are read right after the first render, so a source that brought
-  // nowhere to keep them is not one this boot can use — said here rather than
-  // discovered as an empty screen.
-  if (!parts.repositories) {
+  // nowhere to keep them — a provider written without the types — is not one
+  // this boot can use: said here rather than discovered as an empty screen.
+  if (!(parts as Partial<typeof parts>).repositories) {
     shell.diagnostics.report({ level: 'error', where: 'source', message: `the '${kind}' source brought no repositories` })
     return false
   }
@@ -414,7 +408,7 @@ function renderApp(
         // A change of source is a fresh mount, not a swap in place: see
         // `workFrom` and `sourceKey`.
         key={sourceKey(shell.source)}
-        repositories={repositoriesOf(shell)}
+        repositories={shell.repositories}
         preferences={shell.preferences}
         documents={shell.documents}
         diagnostics={shell.diagnostics}
@@ -497,7 +491,7 @@ void shell.preferences.read()
     // here at all — it reads its own document once it is up (`scopeToRead`).
     const lastScope = scopeToRead(shell.opensAt, sourceNeeded() ? undefined : readLastScope(storedPreferences))
     // After the source opened, so what is read is what it holds now.
-    const held = lastScope === undefined ? undefined : await readScope(repositoriesOf(shell).scopes, lastScope)
+    const held = lastScope === undefined ? undefined : await readScope(shell.repositories.scopes, lastScope)
     // A scope with no views is a domain (ADR-0012 §1): there is nothing for the
     // canvas to show, so its home opens instead of an empty editor — and a
     // scope an address named opens on its home unless it named a view.

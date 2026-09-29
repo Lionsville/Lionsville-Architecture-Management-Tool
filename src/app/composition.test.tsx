@@ -14,10 +14,8 @@
  */
 import { describe, expect, it } from 'vitest'
 import { InMemoryPreferencesStore } from '../adapters/memory/InMemoryPreferencesStore'
-import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
+import { memoryRepositories } from '../adapters/memory/memoryRepositories'
 import { RecordingDiagnostics } from '../adapters/memory/RecordingDiagnostics'
-import { FakeDirectory } from '../adapters/folder/fakeDirectory'
-import { sampleScope, SAMPLE_PATH } from '../ports/ScopeStore.contract'
 const IN_MEMORY = { provider: 'memory', name: '', key: '', transient: true } as const
 import type { SourceProvider } from '../platform/sourceProvider'
 import {
@@ -26,9 +24,6 @@ import {
   sourceSayings,
   type Shell, type SourceBase, type SourceParts,
 } from './composition'
-
-/** What a folder is opened with, as much of it as a test here gives. */
-type FolderOpening = { handle: FakeDirectory; name: string; root: string }
 
 /**
  * The shell's own side of opening a source, as little of it as a test needs:
@@ -70,7 +65,7 @@ describe('registerSourceProvider', () => {
       // that has not left this machine, whatever the document's machine says.
       statusOf: (work) => (work.editedWhileSaving ? 'dirty' : work.status),
       open: ({ name }) => ({
-        scopes: new InMemoryScopeStore(),
+        repositories: memoryRepositories(),
         source: { provider: 'elsewhere', name, key: name, readOnly: true },
       }),
     }
@@ -90,7 +85,7 @@ describe('registerSourceProvider', () => {
    * quietly take over the folder every desktop boot depends on.
    */
   it('keeps the first registration for a kind', () => {
-    registerSourceProvider({ kind: 'folder', open: () => ({ source: IN_MEMORY }) })
+    registerSourceProvider({ kind: 'folder', open: () => ({ source: IN_MEMORY, repositories: memoryRepositories() }) })
     expect(sourceProvider('folder')?.open).not.toBe(undefined)
     expect(sourceProvider('folder')?.connect?.labelKey).toBe('picker.chooseFolder')
   })
@@ -109,7 +104,7 @@ describe('openSource', () => {
       kind: 'measured',
       statusOf: (work) => (work.editedWhileSaving ? 'dirty' : work.status),
       open: ({ name }) => ({
-        scopes: new InMemoryScopeStore(),
+        repositories: memoryRepositories(),
         source: { provider: 'measured', name, key: name },
       }),
     })
@@ -138,7 +133,7 @@ describe('openSource', () => {
     registerSourceProvider<{ name: string }>({
       kind: 'refusing',
       open: ({ name }) => ({
-        scopes: new InMemoryScopeStore(),
+        repositories: memoryRepositories(),
         source: { provider: 'refusing', name, key: name },
         sourceFailure: (cause) => `${name} would not take it: ${String(cause)}.`,
       }),
@@ -192,7 +187,7 @@ describe('what a provider is handed besides its own opening', () => {
     open: (_nothing, base) => {
       base.diagnostics.report({ level: 'info', where: 'source', message: 'shook hands' })
       return {
-        scopes: new InMemoryScopeStore(),
+        repositories: memoryRepositories(),
         // The whole point of being handed the shell: the language, the theme
         // and which folder this machine uses stay where they were.
         preferences: base.shell?.preferences,
@@ -241,7 +236,7 @@ describe('a provider that opens asynchronously', () => {
     open: async ({ name }) => {
       await Promise.resolve()
       return {
-        scopes: new InMemoryScopeStore(),
+        repositories: memoryRepositories(),
         source: { provider: 'awaited', name, key: name, readOnly: true },
       }
     },
@@ -271,58 +266,14 @@ describe('a provider that opens asynchronously', () => {
 })
 
 /**
- * A caller's own answers for the store a source brings (ADR-0022, the ninth
- * amendment).
- *
- * A build composed from this one opens the folder source over a handle of its
- * own and wants one or two answers of its own on top. It used to take the store
- * out of the parts and derive a copy from it by prototype; now it says what it
- * answers for when it opens the source, and the store it gets back is one this
- * file built.
+ * Every source brings its repositories: the app's one way to where work is
+ * kept (ADR-0031 §4), and so the part no provider may leave out.
  */
-describe('a source opened with a filling of the caller\u2019s own', () => {
-  const folder = (): FolderOpening => ({ handle: new FakeDirectory(), name: 'Folder', root: 'folder' })
-
-  it('answers with the filling where it gave one and with the source everywhere else', async () => {
-    const parts = await openSource('folder', folder(), opening(), {
-      scopes: () => ({ models: () => Promise.resolve([]) }),
-    })
-    await parts.scopes!.save(sampleScope())
-    expect(await parts.scopes!.models!()).toEqual([])
-    expect((await parts.scopes!.load(SAMPLE_PATH))?.model.name).toBe('Application landscape')
-    expect(parts.source).toEqual({ provider: 'folder', name: 'Folder', key: 'folder' })
-  })
-
-  it('hands the filling the store it fills, so an answer can fall back on the source\u2019s', async () => {
-    const saved: string[] = []
-    const parts = await openSource('folder', folder(), opening(), {
-      scopes: (built) => ({ save: (scope) => { saved.push(scope.path); return built.save(scope) } }),
-    })
-    await parts.scopes!.save(sampleScope())
-    expect(saved).toEqual([SAMPLE_PATH])
-    expect(await parts.scopes!.load(SAMPLE_PATH)).toBeDefined()
-  })
-
-  it('fills the store of a source that answered a promise, too', async () => {
-    const parts = await openSource('awaited', { name: 'Awaited' }, opening(), {
-      scopes: () => ({ id: 'filled' }),
-    })
-    expect(parts.scopes?.id).toBe('filled')
-    expect(parts.sourceStatus).toBeDefined()
-  })
-
-  it('refuses to fill a store the source did not bring', () => {
-    registerSourceProvider({
-      kind: 'storeless',
-      open: () => ({ source: { provider: 'storeless', name: 'Storeless', key: 'one' } }),
-    })
-    expect(() => openSource('storeless', undefined, opening(), { scopes: () => ({}) }))
-      .toThrow(/nowhere to keep a scope/)
-  })
-
-  it('leaves the parts exactly as the source built them where no filling is given', async () => {
+describe('a source\u2019s parts', () => {
+  it('are its repositories, as the source built them', async () => {
     const parts = await openSource('memory', undefined, opening())
-    expect(parts.scopes?.constructor.name).toBe('InMemoryScopeStore')
+    expect(await parts.repositories.scopes.tree()).toBeDefined()
+    expect(parts.source.provider).toBe('memory')
   })
 })
 
@@ -401,7 +352,7 @@ describe('registeredConnects', () => {
           : { labelKey: 'offering.connectInstead' }),
       },
       open: () => ({
-        scopes: new InMemoryScopeStore(),
+        repositories: memoryRepositories(),
         source: { provider: 'offering', name: 'Offering', key: 'one' },
       }),
     })
@@ -434,7 +385,7 @@ describe('registeredChrome', () => {
       kind: 'drawing',
       chrome: Strip,
       open: () => ({
-        scopes: new InMemoryScopeStore(),
+        repositories: memoryRepositories(),
         source: { provider: 'drawing', name: 'Drawing', key: 'one' },
       }),
     })
@@ -467,7 +418,7 @@ describe('sourceDescription', () => {
       kind: 'described',
       describeKey: 'described.kept',
       open: () => ({
-        scopes: new InMemoryScopeStore(),
+        repositories: memoryRepositories(),
         source: { provider: 'described', name: 'Described', key: 'one' },
       }),
     })
@@ -514,7 +465,7 @@ describe('registeredMenus', () => {
       kind: 'lined',
       menu: lines,
       open: () => ({
-        scopes: new InMemoryScopeStore(),
+        repositories: memoryRepositories(),
         source: { provider: 'lined', name: 'Lined', key: 'one' },
       }),
     })
@@ -543,7 +494,7 @@ describe('sourceChip', () => {
       kind: 'named',
       chip: named,
       open: () => ({
-        scopes: new InMemoryScopeStore(),
+        repositories: memoryRepositories(),
         source: { provider: 'named', name: 'Named', key: 'one' },
       }),
     })
@@ -587,7 +538,7 @@ describe('sourceAgentPanel', () => {
       kind: 'reachable',
       agentPanel: Panel,
       open: () => ({
-        scopes: new InMemoryScopeStore(),
+        repositories: memoryRepositories(),
         source: { provider: 'reachable', name: 'Reachable', key: 'one' },
       }),
     })
@@ -625,7 +576,7 @@ describe('sourceChipPanel', () => {
       kind: 'pressable',
       chipPanel: Panel,
       open: () => ({
-        scopes: new InMemoryScopeStore(),
+        repositories: memoryRepositories(),
         source: { provider: 'pressable', name: 'Pressable', key: 'one' },
       }),
     })
@@ -647,7 +598,7 @@ describe('sourceChipFace', () => {
       kind: 'faced',
       chipFace: Face,
       open: () => ({
-        scopes: new InMemoryScopeStore(),
+        repositories: memoryRepositories(),
         source: { provider: 'faced', name: 'Faced', key: 'one' },
       }),
     })

@@ -37,12 +37,9 @@ import type { StepStore } from '../../adapters/folder/stepMemory'
 import { translator } from '../../i18n'
 import type { Translate } from '../../i18n'
 import type { PullOutcome } from '../../platform/sync'
-import type { WorkingSource } from '../../platform/workingSource'
 import type { Diagnostics } from '../../ports/Diagnostics'
-import type { FolderSettingsStore } from '../../ports/FolderSettings'
-import type { SourceChanges } from '../../ports/ProviderParts'
+import type { ProviderParts, SourceChanges } from '../../ports/ProviderParts'
 import type { Repositories } from '../../ports/Repositories'
-import type { ScopeStore } from '../../ports/ScopeStore'
 import { isFormatPath } from '../../projects/folderFormat'
 import { upgradeProjects } from '../../projects/migration'
 import { folderOwn, pushingAfterRecord, syncSettingsOf } from './folderOwn'
@@ -81,14 +78,7 @@ export type FolderOpening = {
   chosen?: boolean
 }
 
-export type FolderParts = {
-  scopes: ScopeStore
-  repositories: Repositories
-  folderSettings: FolderSettingsStore
-  source: WorkingSource
-  own: FolderOwn
-  changes?: SourceChanges
-}
+export type FolderParts = ProviderParts<FolderOwn> & { own: FolderOwn }
 
 /** What the folder is handed from the shell's side: the trail, and the person's language for what it records. */
 export type FolderBase = {
@@ -198,9 +188,7 @@ export async function openFolder(opening: FolderOpening, base: FolderBase): Prom
     ...(opening.chosen && base.beneath ? { adoption: { from: base.beneath, into: repositories, root, name } } : {}),
   })
   return {
-    scopes: new FileSystemScopeStore(handle, diagnostics),
     repositories: { ...repositories, history: pushingAfterRecord(repositories.history, own) },
-    folderSettings: new FileSystemFolderSettings(handle),
     source: { provider: 'folder', name, key: root },
     own,
     ...(channel ? { changes: watching(channel, root, diagnostics) } : {}),
