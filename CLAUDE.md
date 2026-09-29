@@ -6,7 +6,7 @@ Layer-7 application landscape and the C4 container diagrams under it. **There is
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **5739 tests** and one of every config. The
+One codebase, in modules, with **6964 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -56,7 +56,7 @@ the two categories above.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 5739 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 6964 tests. Run it
 after every change. The tests run with coverage on, and `build/coverage.ts`
 prints one line per module of the import matrix and fails below that module's
 floor — the level it was measured at, written down so it can only go up.
@@ -361,10 +361,19 @@ src/projects/     A scope: open, save, order, summarise, address, remember.
                                       organisation a scope sits in
                     links             the one rule about what may become an anchor
                     documentSession   dirty / saving / changed on disk / conflict
-                    commitMessage     what a snapshot is called, drafted from the
+                    entrySubject      what a snapshot is called, drafted from the
                                       log — `translateFrom(table)` and an English
                                       drafter beside it, so a process with no
                                       screen drafts without the registry
+                    scopeAccess       the app's questions about scopes, asked of
+                                      the repositories in the screens' words: the
+                                      tree as summaries, a scope by its address,
+                                      a change as steps expecting what was read,
+                                      and a content placed whole (ADR-0031)
+                    copyScopes        every scope one place keeps, copied into
+                                      another that keeps what it has — nothing
+                                      there written over, nothing taken away
+                    sealedFile        a working file under a password (ADR-0023)
                     revision          what a save expects to overwrite: the
                                       fingerprint a store stamps, and the refusal
                     scopeState        a scope's address, identity, revision and
@@ -424,7 +433,13 @@ src/platform/     What the app runs inside, and what a failure looks like.
                                       commits with what each changed from and to,
                                       the files at one, what a content holds and
                                       how large it is, the tags, and whether the
-                                      history can take a record now (ADR-0031 §2)
+                                      history can take a record now (ADR-0031 §2).
+                                      Every git the app runs starts no hook and
+                                      no file-system monitor
+                      node/workingFile   the working file for a process with no
+                                      screen: written from and read into
+                                      repositories of its own, unsealed
+                                      (ADR-0031, as built)
 src/widgets/      Presentation with no opinions: icons, one confirm dialog,
                   a laid-out page rasterised (`capturePage`), and a part that
                   is not in the first download (`lazyPart`): a page behind a
@@ -464,7 +479,7 @@ src/ports/        The seams. Interfaces only, no implementations.
                                       hands the chrome and panels it draws —
                                       types only
 src/adapters/     The outside world, one folder per flavour.
-                    webStorage/ · memory/ · browser/ · folder/ · desktop/
+                    webStorage/ · memory/ · repositories/ · browser/ · folder/ · desktop/
                     folder/           the folder implementation (ADR-0031 §2): the
                                       folder store (`FileSystemScopeStore`,
                                       with the `ScopeStore` and
@@ -515,7 +530,8 @@ src/adapters/     The outside world, one folder per flavour.
                                       zipped (`workingFile`), what it says it
                                       holds (`workingFileManifest`), and the
                                       interchange every source exports and
-                                      imports through (`interchange`). The
+                                      imports through (`interchange`, which
+                                      fills `ports/Interchange.ts`). The
                                       node side may read this folder and
                                       nothing else of the implementations —
                                       `platform/node/workingFile.ts` is a
@@ -524,17 +540,21 @@ src/adapters/     The outside world, one folder per flavour.
                                       (`KeyedStore`: transactions, all or
                                       nothing), written once for memory and this
                                       browser's storage, which differ only in
-                                      where the values sit
+                                      where the values sit; a history kept as
+                                      checkpoints and changes, and pictures'
+                                      bytes nothing names taken away a day on
                     memory/           …and InMemoryCommandChannel: a head model, a
                                       bounded log and the subscribers, for two
                                       sessions put in one order without a process;
                                       and `memoryRepositories`, the five over
                                       `MemoryStore`
                     webStorage/       …and `browserRepositories`, the five over
-                                      this browser's IndexedDB (`IndexedDbStore`),
-                                      with the scopes the key-value storage kept
-                                      brought in at every start
-                                      (`earlierScopes`): copied, never moved
+                                      this browser's IndexedDB (`IndexedDbStore`,
+                                      `lvarch.repositories`), with the scopes the
+                                      key-value storage kept brought in at every
+                                      start (`earlierScopes`): copied, never
+                                      moved, and shown read-only in memory where
+                                      the database will not open
                     desktop/          the Electron channel's types, and what the
                                       desktop keeps that is not the folder
 src/providers/    A place work is kept, whole (ADR-0031 §4, as built): the
@@ -677,9 +697,8 @@ listed there by name. **And the domain speaks no storage** (ADR-0031 §4):
 providers built on them and the composition root imports an implementation or the folder format, or names
 a storage mechanism in an identifier or a string in its code — `kind ===
 'folder'` and `'scope.json'` included. `build/storageLine.ts` lists the words,
-with why each is on the list or off it, and the exceptions left — the
-working-file codec's users, until the codec moves into the folder's format —
-each held to exactly what its file does. **Each list has a
+with why each is on the list or off it, and the exceptions, of which there
+are none left: the rule holds without one. **Each list has a
 ceiling** (`CEILINGS`), held to exactly its length: an entry added fails the
 test unless its ceiling is raised in the same diff, where a reader sees it,
 and an entry taken off fails until its ceiling comes down with it. Taking an
@@ -763,8 +782,11 @@ is the root, and not by anything written in it:
   .lionsville-architecture/     settings only (ADR-0005); never a scope
 ```
 
-In a browser tab, which has no folder, the same paths are keys — and the root's
-key is the bare prefix, because a tab has one working tree:
+In a browser tab, which has no folder, the same addresses name the scopes in
+this browser's database (`lvarch.repositories`), through the same five
+repositories memory runs. The key-value storage earlier builds kept them in
+said the path as a key, the root's being the bare prefix, and is read at every
+start and copied in, never moved:
 
 ```
 lvarch.scope.
@@ -923,6 +945,9 @@ whose contract is `ports/CommandChannel.contract.ts`.
   undefined)`, which answers a locked file as a missing one. Never toast a success you did not wait
   for. Log messages and keys, never model content — the desktop writes the
   trail to a file the user is invited to hand over.
+- **Only syntax that erases.** Both tsconfigs set `erasableSyntaxOnly`: no
+  parameter properties, enums, namespaces or `import =`, because a server loads
+  core's files by path under Node's type stripping.
 - **A unit stays small enough to read.** A function's complexity is at most 25
   and its length at most 150 lines (`MOST_COMPLEX`, `LONGEST_FUNCTION` in
   `eslint.config.js`); the files already over either are listed in `GROWN` at
@@ -990,7 +1015,7 @@ identifiers is still a list of a customer's identifiers.
 | Desktop bundle id | `nl.lionsville.architecture` |
 | Working-directory layout | `<scope>/scope.json`, nested as deep as the work needs |
 | Folder settings (ADR-0005, amended by ADR-0023) | what this machine does about a folder: `<userData>/folder-settings.json`, keyed by the folder's path (`platform/node/machineFolderSettings.ts`), over `DesktopSettings.readFolderLocal` · `writeFolderLocal`, read and written as the person's settings of the folder's repositories (`providers/folder/desktopPerson.ts`); `<root>/.lionsville-architecture/local.json` is read where an older build left it and never written by the desktop, `folder.json` beside it read for the legacy `organisation` key and never written by anybody. A browser tab keeps what this person does about a folder in memory, for as long as the tab is open |
-| Browser storage prefix (the fallback) | `lvarch.scope.<path>`; the root is the bare prefix |
+| Browser storage (a tab with no folder) | the IndexedDB database `lvarch.repositories`; `lvarch.scope.<path>` in key-value storage is what earlier builds kept, the root the bare prefix — read at every start, copied in, never moved |
 | Preferences key | `lvarch.preferences`; the scope you had open is `lastScope` |
 | Agent server settings (ADR-0007) | `mcp.json` in `userData`, mode 0600: `enabled`, the kept `port` and `token` |
 | Agent endpoint | `http://127.0.0.1:<port>/mcp`, bearer token, streamable HTTP |
@@ -1625,7 +1650,8 @@ provider's own (`connect.open`), and `connect.fromLocation` is read before the
 first render so a link can carry the address — the folder's button stays the one
 that was always there, because choosing a folder is also remembered, adopted
 into and upgraded. `openSource` is exported, so nobody restates what travels
-with a provider's parts. `DirectoryHandleLike` moved to `ports/`, where the
+with a provider's parts. `DirectoryHandleLike` moved to `ports/` (ADR-0031 took
+it back into the folder's implementation), where the
 shape a filling has to show can be read without naming an adapter. `i18n`'s
 `registerStrings` makes a provider's own label real — additive, and a key this
 app owns is refused. And the session handed over can be asked what the model
@@ -1647,7 +1673,7 @@ over the same channel with every answer put off a turn is what keeps the suite
 honest about a transport it cannot see. **Which refusal wins** is written down:
 the reducer's, before any staleness a channel decides for itself. And a **commit
 message can be drafted from two slices** rather than from the registry
-(`translateFrom`, `draftCommitMessageInEnglish`), which a walk of the imports
+(`translateFrom`, `draftEntrySubjectInEnglish`), which a walk of the imports
 pins — a process with no screen has no business loading `app/strings` to write
 one subject line.
 
@@ -1721,3 +1747,27 @@ them and not a seam at all: *Check for Updates…* and the switch behind it are
 drawn only where updates are this build's to check (`offersUpdateCheck`), since
 an item reaching a release page that is not its own answers a question nobody
 asked.
+
+Then where work is kept went **behind repositories** (`docs/decisions/0031`,
+implemented). The seam had been a file system: a scope store over a directory
+handle, a history that was git, settings read from a folder, and the folder's
+format in `projects/`. It is five ports in the domain's words now:
+`ScopeRepository`, `OrganisationIndex`, `HistoryRepository`, `ImageRepository`
+and `SettingsRepository`, each with a contract suite. The folder, memory and
+this browser's IndexedDB implement them, and a provider under `src/providers/`
+is the only place that knows which one it is.
+- **The desktop's folder** keeps its history in git: an entry is a commit
+  with a trailer per scope, a label a tag.
+- **This browser** keeps its history as checkpoints and changes. What the
+  key-value storage kept before is copied in at every start, and shown
+  read-only in memory where the database will not open.
+- **Pictures** are named `image:<name>` in the state, laid out from the
+  library and fetched when they come into view.
+- **The working file** is an interchange any source carries out and brings
+  in through `ports/Interchange.ts`, byte for byte the same whichever source
+  it passed through. Its codec is the folder's format, which has left the
+  domain.
+- **The storage line** (`build/storageLine.test.ts`) has no exceptions left.
+
+On the way the desktop's file channel stopped taking any path into `.git`,
+and every git the app runs starts no hook and no file-system monitor.
