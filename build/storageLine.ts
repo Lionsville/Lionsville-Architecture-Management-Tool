@@ -1,0 +1,292 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
+/**
+ * The line between the domain and where work is kept (ADR-0031 §4), as data a
+ * test holds the tree to.
+ *
+ * **No imports across the line.** Nothing outside the implementations
+ * (`src/adapters/`, `src/platform/node/`, `electron/`) and the composition
+ * root imports an implementation, or the folder format. The import matrix in
+ * `eslint.config.js` already keeps `adapters` out of every module but the
+ * composition root; what it cannot say is that a handful of files *inside*
+ * the domain's own modules are the folder format and belong with the folder's
+ * implementation. {@link FOLDER_FORMAT} names them, and the test reads the
+ * import graph `cycles.ts` builds — types included, because a type names what
+ * it knows as surely as a value does.
+ *
+ * **No storage words in logic.** An identifier in the domain, the app or a
+ * screen that names a storage mechanism is the domain deciding how work is
+ * kept. {@link STORAGE_WORDS} is the list, each with why it is on it, and
+ * {@link NOT_STORAGE_WORDS} the words considered and left off, each with why:
+ * a word that is also ordinary in this tree would fail on a board's SVG path or
+ * a search query, and a test that cries wolf is switched off. Identifiers only,
+ * not comments or the words tables: a comment may say what a folder does, and
+ * a person may be told about their folder where the folder's own chrome speaks.
+ *
+ * **Today's exceptions, and they only shrink.** {@link IMPORT_EXCEPTIONS} and
+ * {@link WORD_EXCEPTIONS} are the tree as it stood when the rule arrived, each
+ * entry exactly what that file does. The test fails on anything not listed,
+ * and on an entry that no longer holds — so a file that stops crossing the
+ * line takes its entry with it, and nothing can grow back into the room.
+ * {@link FOLDER_FORMAT} is held the same way: every file on it must exist and
+ * still sit in the domain, and leaves the list when it moves.
+ *
+ * **The repositories speak no storage at all.** {@link SPEAKS_NO_STORAGE} are
+ * the new seams and the words they are written in, held to the stricter list
+ * ADR-0031 gives — file, folder, commit, table, URL, query — in their comments
+ * as well as their code, with no exceptions.
+ */
+import ts from 'typescript'
+import type { Graph } from './cycles'
+
+/** What may know how work is kept: the implementations, and the composition root that chooses them. */
+export const IMPLEMENTATIONS: readonly string[] = ['src/adapters/', 'src/platform/node/', 'electron/']
+export const COMPOSITION_ROOT = 'src/app/composition.ts'
+
+export function isImplementation(file: string): boolean {
+  return IMPLEMENTATIONS.some((prefix) => file.startsWith(prefix))
+}
+
+/**
+ * A module's words are not its implementation: the composed string table
+ * imports every module's slice, `adapters`' included (`COMPOSES_THE_TABLE` in
+ * `eslint.config.js`), and a slice is a table and nothing else.
+ */
+export function isWordsTable(file: string): boolean {
+  return /^src\/[^/]+\/strings\/[^/]+\.ts$/.test(file)
+}
+
+export function mayKnowStorage(file: string): boolean {
+  return isImplementation(file) || file === COMPOSITION_ROOT
+}
+
+/**
+ * The folder format, still in the domain: a scope as files, the files'
+ * text, the history subjects by path, the directory handles, the settings
+ * file, the working file's codec and the readers of the formats before this
+ * one. They are the folder implementation's, and move into it; each leaves
+ * this list as it does.
+ */
+export const FOLDER_FORMAT: readonly string[] = [
+  'src/ports/DirectoryHandle.ts',
+  'src/projects/adrFile.ts',
+  'src/projects/fileText.ts',
+  'src/projects/folderFormat.ts',
+  'src/projects/folderSettings.ts',
+  'src/projects/historyPath.ts',
+  'src/projects/migrate3to4.ts',
+  'src/projects/migrate4to5.ts',
+  'src/projects/observationFile.ts',
+  'src/projects/transitionFile.ts',
+  'src/projects/workingFile.ts',
+  'src/projects/workingFileManifest.ts',
+]
+
+/**
+ * The words that name a storage mechanism, and why each is one. A phrase of
+ * two words matches two words side by side in one identifier.
+ */
+export const STORAGE_WORDS: Readonly<Record<string, string>> = {
+  folder: 'How the desktop keeps work. The domain says scope; a folder is the folder implementation\'s word.',
+  folders: 'The same, more than once.',
+  directory: 'The platform\'s word for a folder.',
+  directories: 'The same, more than once.',
+  git: 'How the desktop keeps a history. The domain says history, entry and label.',
+  'commit message': 'What git calls an entry\'s subject. (A commit on its own is also an edit a text field commits, so the word alone is not listed.)',
+  disk: 'Where the desktop\'s folder is. Where work is kept is not the domain\'s to say.',
+  storage: 'The word for where work is kept, which only an implementation, and its provider\'s own chrome, speaks.',
+  'file system': 'The mechanism under the folder, in the platform\'s words.',
+  'indexed db': 'A browser\'s database, a place an implementation may keep work.',
+  database: 'A place an implementation may keep work.',
+  sql: 'How an implementation may ask a database.',
+}
+
+/**
+ * The words considered and left off, and why: each is also an ordinary word
+ * in this tree, and what it would catch the rule catches another way.
+ */
+export const NOT_STORAGE_WORDS: Readonly<Record<string, string>> = {
+  file: 'The working file is an interchange format a person holds (ADR-0018, 0023), a `File` is what a person hands over from their own machine, and File is a menu. A file of the folder format arrives through the format\'s imports, which the other half of the rule refuses.',
+  path: 'A scope\'s address is its path in the tree (`ScopePath`), and a board draws SVG paths. A path inside a scope is the folder format\'s, and arrives through its imports.',
+  url: 'A link a person typed, and a mark\'s data URL, are content.',
+  table: 'A table on a screen, and the command table.',
+  query: 'A search, and a media query.',
+  commit: 'An edit a text field commits; git\'s commit is caught as git and as a commit message.',
+  blob: 'The bytes of an exported picture, handed to the browser to save.',
+  json: 'How anything is written down, and the agent\'s protocol.',
+  snapshot: 'A scope\'s state as read (`ScopeSnapshot`).',
+  remote: 'A step another author made (`origin: \'remote\'`).',
+}
+
+/**
+ * The phrases a storage word is ordinary in: the image library's folders are
+ * a way of naming pictures (ADR-0031 §3), not a place.
+ */
+export const ORDINARY_PHRASES: readonly string[] = ['image folder', 'image folders']
+
+/**
+ * The seams, and the words they are written in, that speak no storage at all
+ * — in comments as in code.
+ */
+export const SPEAKS_NO_STORAGE: readonly string[] = [
+  'src/model/imageName.ts',
+  'src/model/recordKey.ts',
+  'src/ports/HistoryRepository.ts',
+  'src/ports/ImageRepository.ts',
+  'src/ports/OrganisationIndex.ts',
+  'src/ports/Repositories.ts',
+  'src/ports/ScopeRepository.ts',
+  'src/ports/SettingsRepository.ts',
+  'src/projects/scopeState.ts',
+  'src/projects/settings.ts',
+]
+
+/** ADR-0031's own list, for the seams: every storage word, and the ordinary ones too. */
+export const STRICT_WORDS: readonly string[] = [
+  ...Object.keys(STORAGE_WORDS),
+  'file', 'files', 'commit', 'commits', 'table', 'tables', 'url', 'urls', 'query', 'queries',
+]
+
+/** An identifier or a stretch of prose as its words, lower case: `FolderSettingsStore` is folder, settings, store. */
+export function wordsOf(text: string): string[] {
+  return text
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((word) => word.length > 0)
+}
+
+/**
+ * The listed words and phrases one run of words says, once each, sorted — a
+ * phrase in {@link ORDINARY_PHRASES} said instead of a word is not the word.
+ */
+export function listedIn(words: readonly string[], listed: readonly string[]): string[] {
+  const found = new Set<string>()
+  for (let at = 0; at < words.length; at += 1) {
+    const pair = at + 1 < words.length ? `${words[at]} ${words[at + 1]}` : undefined
+    if (pair !== undefined && listed.includes(pair)) found.add(pair)
+    if (!listed.includes(words[at])) continue
+    const ordinary = at > 0 && ORDINARY_PHRASES.includes(`${words[at - 1]} ${words[at]}`)
+    if (!ordinary) found.add(words[at])
+  }
+  return [...found].sort()
+}
+
+/**
+ * The storage words a file's code names: its identifiers, read off the syntax
+ * tree so a comment or a string is never taken for code — or, `withProse`,
+ * every word the file says, comments and strings included.
+ */
+export function storageWords(path: string, text: string, listed: readonly string[], withProse = false): string[] {
+  // The licence header is the same two lines on every file, and says what
+  // the licence says about a file of source; it is nobody's storage.
+  const code = text.replace(/^\/\/ SPDX-.*$/gm, '')
+  if (withProse) return listedIn(wordsOf(code), listed)
+  const kind = path.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS
+  const source = ts.createSourceFile(path, code, ts.ScriptTarget.Latest, false, kind)
+  const found = new Set<string>()
+  const visit = (node: ts.Node): void => {
+    if (ts.isIdentifier(node) || ts.isPrivateIdentifier(node)) {
+      for (const word of listedIn(wordsOf(node.text), listed)) found.add(word)
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(source)
+  return [...found].sort()
+}
+
+/**
+ * Every file of the domain that imports an implementation or the folder
+ * format, with what it imports, sorted. A file of the folder format may import
+ * the rest of it: they move together.
+ */
+export function importsAcross(graph: Graph): Record<string, string[]> {
+  const found: Record<string, string[]> = {}
+  for (const [file, targets] of graph) {
+    if (mayKnowStorage(file) || FOLDER_FORMAT.includes(file)) continue
+    const across = targets.filter((target) => (isImplementation(target) && !isWordsTable(target)) || FOLDER_FORMAT.includes(target))
+    if (across.length > 0) found[file] = [...across].sort()
+  }
+  return found
+}
+
+/**
+ * Each domain file's imports across the line as they stood when the rule
+ * arrived: the folder's way in and its chrome, the folder format read and
+ * written from `app/` and `projects/`, and the ports it replaces.
+ */
+export const IMPORT_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {
+  'src/app/App.tsx': ['src/projects/workingFileManifest.ts'],
+  'src/app/dialogs/PreferencesDialog.tsx': ['src/projects/folderSettings.ts'],
+  'src/app/examples/copy.ts': ['src/projects/fileText.ts', 'src/projects/folderFormat.ts'],
+  'src/app/history/HistoryPage.tsx': ['src/projects/historyPath.ts'],
+  'src/app/history/changesFor.ts': ['src/projects/historyPath.ts'],
+  'src/app/history/useProjectHistory.ts': ['src/projects/historyPath.ts'],
+  'src/app/shellParts.ts': ['src/projects/workingFileManifest.ts'],
+  'src/app/useHomeFiles.ts': ['src/projects/workingFileManifest.ts'],
+  'src/app/useHomeParts.ts': ['src/projects/workingFileManifest.ts'],
+  'src/app/useMachineSettings.ts': ['src/projects/folderSettings.ts'],
+  'src/app/useProjectFiles.ts': ['src/projects/workingFileManifest.ts'],
+  'src/app/useWorkspaceFiles.ts': ['src/projects/workingFileManifest.ts'],
+  'src/app/workingFileFlows.ts': ['src/projects/workingFile.ts', 'src/projects/workingFileManifest.ts'],
+  'src/app/workspaceProps.ts': ['src/projects/workingFileManifest.ts'],
+  'src/ports/FolderSettings.ts': ['src/projects/folderSettings.ts'],
+  'src/ports/ProjectHistory.ts': ['src/projects/historyPath.ts'],
+  'src/ports/ScopeStore.ts': ['src/projects/workingFileManifest.ts'],
+  'src/projects/index.ts': ['src/projects/adrFile.ts', 'src/projects/fileText.ts', 'src/projects/folderFormat.ts', 'src/projects/folderSettings.ts', 'src/projects/historyPath.ts', 'src/projects/migrate3to4.ts', 'src/projects/migrate4to5.ts', 'src/projects/workingFile.ts'],
+  'src/projects/revision.ts': ['src/projects/folderFormat.ts'],
+  'src/projects/scope.ts': ['src/projects/workingFileManifest.ts'],
+}
+
+/** Each domain file's storage words as they stood when the rule arrived. */
+export const WORD_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {
+  'src/app/AdoptFolder.tsx': ['folder'],
+  'src/app/App.tsx': ['folder', 'storage'],
+  'src/app/AppPanels.tsx': ['directory', 'folder', 'folders', 'git', 'storage'],
+  'src/app/DiskChangeNotice.tsx': ['disk'],
+  'src/app/ProjectWorkspace.tsx': ['storage'],
+  'src/app/WorkspaceBar.tsx': ['disk'],
+  'src/app/appProps.ts': ['folder', 'storage'],
+  'src/app/bootReads.ts': ['folder', 'git'],
+  'src/app/dialogs/OpenIntoDialog.tsx': ['folder'],
+  'src/app/dialogs/PreferencesDialog.tsx': ['git'],
+  'src/app/examples/copy.ts': ['folder'],
+  'src/app/examples/index.ts': ['folder', 'folders'],
+  'src/app/examples/offers.ts': ['folder'],
+  'src/app/history/useProjectHistory.ts': ['commit message'],
+  'src/app/main.tsx': ['directories', 'directory', 'folder', 'folders', 'storage'],
+  'src/app/organisation/ChooseFolder.tsx': ['folder'],
+  'src/app/organisation/OrganisationScreen.tsx': ['directory'],
+  'src/app/organisation/useOrganisation.ts': ['storage'],
+  'src/app/shellParts.ts': ['folder'],
+  'src/app/useDocumentSession.ts': ['storage'],
+  'src/app/useHomeFiles.ts': ['folder'],
+  'src/app/useHomeParts.ts': ['folder'],
+  'src/app/useMachineSettings.ts': ['folder', 'git'],
+  'src/app/useOpenIntoPrompt.tsx': ['folder'],
+  'src/app/useProjectFiles.ts': ['folder'],
+  'src/app/useShellCommands.ts': ['folder'],
+  'src/app/useShellNavigation.ts': ['folder'],
+  'src/app/useShellPreferences.ts': ['storage'],
+  'src/app/useShellServices.ts': ['folder', 'storage'],
+  'src/app/useStorageNotice.ts': ['storage'],
+  'src/app/useSync.ts': ['folder', 'git'],
+  'src/app/useTreeFindings.ts': ['folder'],
+  'src/app/useWorkspaceDocument.ts': ['storage'],
+  'src/app/useWorkspaceFiles.ts': ['folder'],
+  'src/app/workingFileFlows.ts': ['folder'],
+  'src/app/workspaceProps.ts': ['folder', 'storage'],
+  'src/documentation/images.ts': ['folder'],
+  'src/documentation/index.ts': ['folder'],
+  'src/platform/menu.ts': ['folders'],
+  'src/platform/updates.ts': ['folder'],
+  'src/platform/workingSource.ts': ['storage'],
+  'src/ports/FolderSettings.ts': ['folder'],
+  'src/ports/ScopeStore.ts': ['storage'],
+  'src/projects/commitMessage.ts': ['commit message'],
+  'src/projects/migration.ts': ['folders'],
+  'src/projects/preferences.ts': ['directory', 'folder', 'folders'],
+  'src/projects/revision.ts': ['folder'],
+}
