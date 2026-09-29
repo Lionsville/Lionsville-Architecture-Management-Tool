@@ -46,9 +46,16 @@ const BAD_SEGMENT = new Set(['', '.', '..'])
  * which Windows opens as the folder itself.
  */
 export function isHistoryName(segment: string): boolean {
-  const name = segment.split(':')[0].toLowerCase().replace(/[. ]+$/, '')
+  const name = segment.replace(HFS_IGNORED, '').split(':')[0].toLowerCase().replace(/[. ]+$/, '')
   return name === '.git' || /^git~\d+$/.test(name)
 }
+
+/**
+ * The code points HFS+ leaves out of a name when it compares two, so that
+ * `.g\u200Cit` is the folder `.git` there: the ones git's own check strips
+ * (`is_hfs_dotgit`).
+ */
+const HFS_IGNORED = /[\u200C-\u200F\u202A-\u202E\u206A-\u206F\uFEFF]/g
 
 /**
  * A segment that names a stream of a file rather than the file: Windows reads
@@ -71,7 +78,9 @@ export function safeRelativePath(path: string): string | undefined {
   if (path === '') return ''
   if (isAbsolute(path) || /^[A-Za-z]:/.test(path)) return undefined
   const segments = path.split(/[/\\]/)
-  if (segments.some((segment) => BAD_SEGMENT.has(segment))) return undefined
+  // As Windows reads a name, too: it drops trailing dots and spaces, so `.. `
+  // is `..` there and `. .` nothing at all.
+  if (segments.some((segment) => BAD_SEGMENT.has(segment) || BAD_SEGMENT.has(segment.replace(/[. ]+$/, '')))) return undefined
   // A history anywhere in the path, not only the folder's own: git runs in a
   // folder filed under this one as surely as in this one, and a folder with no
   // history yet must not be given one by a page.
@@ -127,6 +136,31 @@ export async function resolveInside(root: string, path: string): Promise<string 
   } catch {
     return undefined
   }
+}
+
+/**
+ * The folder a write or a move lands in, checked again just before it lands:
+ * still inside the root, still no history, and not become a link since the
+ * path was resolved. A link put in the way between the two is refused rather
+ * than followed.
+ */
+export async function stillInside(root: string, target: string): Promise<void> {
+  const realRoot = await realpath(root)
+  const folder = dirname(target)
+  const real = await realpath(folder).catch(() => undefined)
+  const same = (path: string) => path.normalize('NFC').toLowerCase()
+  const inside = real !== undefined && within(realRoot, real) && same(real) === same(folder)
+  if (!inside || relative(realRoot, real).split(sep).some(isHistoryName)) throw new Error('shell.pathRefused')
+}
+
+/** Does this folder hold a history anywhere under it? Links are not followed. */
+async function holdsHistory(folder: string): Promise<boolean> {
+  const entries = await readdir(folder, { withFileTypes: true }).catch(() => [])
+  for (const entry of entries) {
+    if (isHistoryName(entry.name)) return true
+    if (entry.isDirectory() && await holdsHistory(join(folder, entry.name))) return true
+  }
+  return false
 }
 
 export async function listDirectory(root: string, path: string): Promise<DesktopEntry[] | undefined> {
@@ -202,15 +236,18 @@ function isAbsence(cause: unknown): boolean {
  * person who keeps a settings file elsewhere and links it here keeps it
  * there. A link that leads nowhere is refused rather than replaced.
  */
-export async function writeWhole(target: string, data: Uint8Array | string, mode?: number): Promise<void> {
+export async function writeWhole(
+  target: string, data: Uint8Array | string, mode?: number, check?: () => Promise<void>,
+): Promise<void> {
   const real = (await lstat(target).catch(() => undefined))?.isSymbolicLink() ? await realpath(target) : target
-  await landWhole(real, data, mode)
+  await landWhole(real, data, mode, check)
   await sweepStale([real])
 }
 
 /** A file written whole at a real path, and nothing swept: `writeWhole`'s work, and `createFile`'s first step. */
-async function landWhole(real: string, data: Uint8Array | string, mode?: number): Promise<void> {
+async function landWhole(real: string, data: Uint8Array | string, mode?: number, check?: () => Promise<void>): Promise<void> {
   await mkdir(dirname(real), { recursive: true })
+  await check?.()
   const temporary = `${real}.${ourMark()}.tmp`
   try {
     const handle = await open(temporary, 'w', mode)
@@ -220,6 +257,7 @@ async function landWhole(real: string, data: Uint8Array | string, mode?: number)
     } finally {
       await handle.close()
     }
+    await check?.()
     await renameOver(temporary, real)
   } catch (cause) {
     await unlink(temporary).catch(() => undefined)
@@ -341,13 +379,16 @@ export async function createFile(
   if (!target) throw new Error('shell.pathRefused')
   await mkdir(dirname(target), { recursive: true })
   const temporary = `${target}.${ourMark()}.tmp`
+  const check = () => stillInside(root, target)
   try {
-    await landWhole(temporary, bytes)
+    await landWhole(temporary, bytes, undefined, check)
+    await check()
     await linkTo(temporary, target)
     return true
   } catch (cause) {
     if (codeOf(cause) === 'EEXIST') return false
-    if (!await exists(temporary)) throw cause
+    if ((cause as Error).message === 'shell.pathRefused' || !await exists(temporary)) throw cause
+    await check()
     return createOpen(target, bytes)
   } finally {
     await unlink(temporary).catch(() => undefined)
@@ -378,7 +419,7 @@ async function createOpen(target: string, bytes: Uint8Array): Promise<boolean> {
 export async function writeFile(root: string, path: string, bytes: Uint8Array): Promise<DesktopStamp> {
   const target = await resolveInside(root, path)
   if (!target) throw new Error('shell.pathRefused')
-  await writeWhole(target, bytes)
+  await writeWhole(target, bytes, undefined, () => stillInside(root, target))
   return stampOf(bytes, await stat(target))
 }
 
@@ -413,6 +454,7 @@ export async function writeTogether(
     for (const [at, write] of writes.entries()) {
       const target = targets[at]!
       await mkdir(dirname(target), { recursive: true })
+      await stillInside(root, target)
       const temporary = `${target}${suffix}`
       staged.push(temporary)
       const handle = await open(temporary, 'w')
@@ -428,6 +470,7 @@ export async function writeTogether(
     for (const target of targets) sweptAt.delete(dirname(target!))
     throw cause
   }
+  for (const target of [...targets, ...gone]) await stillInside(root, target!)
   for (const [at, temporary] of staged.entries()) await renameOver(temporary, targets[at]!)
   for (const target of gone) await rm(target!, { force: true })
   for (const folder of new Set([...targets, ...gone].map((target) => dirname(target!)))) await syncFolder(folder)
@@ -458,12 +501,17 @@ export async function moveEntry(root: string, from: string, to: string): Promise
   const there = await lstat(naming).catch(() => undefined)
   const recased = there !== undefined && named !== naming && named.toLowerCase() === naming.toLowerCase()
     && there.ino === held.ino && there.dev === held.dev
+  // A folder with a history somewhere under it is not moved: no history, at any depth, is the channel's to touch.
+  if (held.isDirectory() && await holdsHistory(named)) throw new Error('shell.pathRefused')
   if (recased) {
+    await stillInside(root, named)
     await rename(named, naming)
     return
   }
   if (there || within(source, target)) throw new Error('shell.pathRefused')
   await mkdir(dirname(target), { recursive: true })
+  await stillInside(root, named)
+  await stillInside(root, target)
   await rename(named, target)
 }
 
@@ -474,6 +522,8 @@ export async function removeEntry(
   // Never the root itself: "remove everything the user chose" is not something
   // this channel offers, whatever the renderer asks for.
   if (!target || !safeRelativePath(path)) return
+  // Nor a folder with a history somewhere under it: no history, at any depth, is the channel's to touch.
+  if (options?.recursive === true && await holdsHistory(target)) return
   await rm(target, { recursive: options?.recursive === true, force: true })
 }
 

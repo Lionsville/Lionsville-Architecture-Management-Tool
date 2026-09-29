@@ -18,7 +18,7 @@ import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
 import {
   fingerprint, listDirectory, makeDirectory, moveEntry, readFile as readInside, removeEntry, resolveInside, stampAt,
-  createFile, HELD_FOR_MS, renameOver, safeRelativePath, SWEEP_EVERY_MS, writeFile as writeInside, writeTogether, writeWhole,
+  createFile, HELD_FOR_MS, renameOver, safeRelativePath, stillInside, SWEEP_EVERY_MS, writeFile as writeInside, writeTogether, writeWhole,
 } from './fileStore'
 
 let root = ''
@@ -385,6 +385,30 @@ describe('the folder’s history', () => {
       expect(safeRelativePath(path), path).toBeUndefined()
     }
     expect(safeRelativePath('acme/rail/.gitkeep')).toBeTruthy()
+  })
+
+  it('is no path however HFS+ or Windows would read the name', () => {
+    for (const path of ['.g\u200cit/config', 'acme/.\ufeffgit/hooks/x', 'acme/\u200e.git/config', 'acme/.. /escape', 'acme/. ./x', 'acme/ ./x']) {
+      expect(safeRelativePath(path), JSON.stringify(path)).toBeUndefined()
+    }
+  })
+
+  it('is not removed with, nor moved with, a folder it is filed under', async () => {
+    await mkdir(join(root, 'acme', 'rail', '.git'), { recursive: true })
+    await removeEntry(root, 'acme', { recursive: true })
+    expect(await readdir(join(root, 'acme', 'rail'))).toEqual(['.git'])
+    await expect(moveEntry(root, 'acme', 'globex')).rejects.toThrow('shell.pathRefused')
+    expect(await readdir(root)).toContain('acme')
+  })
+
+  it('is refused where a folder on the way became a link after the path was resolved', async () => {
+    await mkdir(join(root, 'acme'), { recursive: true })
+    const target = await resolveInside(root, 'acme/model.json')
+    await rm(join(root, 'acme'), { recursive: true })
+    await symlink(outside, join(root, 'acme'))
+    await expect(stillInside(root, target!)).rejects.toThrow('shell.pathRefused')
+    await mkdir(join(root, 'globex'))
+    await expect(stillInside(root, join(await realpath(root), 'globex', 'model.json'))).resolves.toBeUndefined()
   })
 
   it('is never given to a folder filed under this one, nor to one that has none yet', async () => {
