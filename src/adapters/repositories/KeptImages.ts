@@ -36,11 +36,11 @@ export class KeptImages implements ImageRepository {
     // Before the transaction: a digest is a wait the store's transaction would not survive.
     const contentAddress = await contentAddressOf(bytes)
     const kept = new Uint8Array(bytes)
-    await this.source.write((tx) => {
+    return this.source.write(async (tx): Promise<Put> => {
+      if (!await tx.get('scopes', scope)) return { refused: 'shell.scopeGone' }
       tx.put('bytes', bytesKey(scope, contentAddress), kept)
-      return Promise.resolve()
+      return { contentAddress }
     })
-    return { contentAddress }
   }
 
   list(scope: ScopeId, within: ImageFolder): Promise<ImageListing> {
