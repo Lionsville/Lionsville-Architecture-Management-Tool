@@ -23,6 +23,7 @@ import { FolderIndex } from './FolderIndex'
 import { PictureStaging } from './folderPictures'
 import { FolderScopeRepository } from './FolderScopeRepository'
 import { FolderScopes } from './folderScopes'
+import type { PlaceStore } from './folderScopes'
 import { FolderSettingsRepository, personSettingsInMemory } from './FolderSettingsRepository'
 import type { PersonSettings } from './FolderSettingsRepository'
 import type { FolderGit } from './folderGit'
@@ -43,12 +44,14 @@ export type FolderOpening = {
    * outside the folder (`desktop/desktopStepStore.ts`); in memory where not said.
    */
   steps?: StepStore
+  /** Where the scopes' identities were last found is kept, outside the folder; in memory where not said. */
+  places?: PlaceStore
   /** The clock step ids are remembered by. */
   now?: () => number
 }
 
 export function folderRepositories(opening: FolderOpening): Repositories {
-  const folder = new FolderScopes(opening.root, opening.diagnostics)
+  const folder = new FolderScopes(opening.root, opening.diagnostics, opening.places)
   const staging = new PictureStaging()
   return {
     scopes: new FolderScopeRepository(folder, new StepMemory(opening.steps, opening.now), staging),

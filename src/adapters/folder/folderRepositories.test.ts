@@ -20,7 +20,7 @@ import { describeSettingsRepository } from '../../ports/SettingsRepository.contr
 import type { DirectoryHandleLike } from './DirectoryHandle'
 import { FakeDirectory } from './fakeDirectory'
 import { folderRepositories } from './folderRepositories'
-import { composed, identityAt } from './folderScopes'
+import { composed, identityAt, placesInMemory } from './folderScopes'
 import { memoryGit } from './memoryGit'
 import { FileSystemScopeStore } from './FileSystemScopeStore'
 import { removeAt, textAt, writeAt } from './handles'
@@ -313,6 +313,20 @@ describe('a run across several scopes that stopped part way', () => {
 })
 
 describe('a scope’s identity, when a folder is copied by hand', () => {
+  it('stays where it was last found through a restart, where it is kept outside the folder', async () => {
+    const root = new FakeDirectory()
+    const places = placesInMemory()
+    const first = over({ repositories: folderRepositories({ root, git: memoryGit(root), places }) })
+    const globex = await first.scope('globex', 'Globex')
+    for (const path of root.paths().filter((one) => one.startsWith('globex/'))) {
+      await writeAt(root, `acme/${path.slice('globex/'.length)}`, (await textAt(root, path))!)
+    }
+    const again = over({ repositories: folderRepositories({ root, git: memoryGit(root), places }) })
+    const byAddress = new Map((await again.scopes.tree()).root.children.map((node) => [node.address, node.id]))
+    expect(byAddress.get('globex')).toBe(globex)
+    expect(byAddress.get('acme')).not.toBe(globex)
+  })
+
   it('stays with the folder it was last found at, and the copy is another scope', async () => {
     const root = new FakeDirectory()
     const repositories = over({ repositories: folderRepositories({ root, git: memoryGit(root) }) })

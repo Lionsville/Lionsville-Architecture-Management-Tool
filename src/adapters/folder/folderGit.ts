@@ -149,7 +149,13 @@ export function subjectLine(subject: string): string {
 /** A path inside an address's folder, relative to it; `undefined` for one outside it. */
 export function within(address: ScopeAddress, path: string): string | undefined {
   if (address === ROOT_SCOPE) return path
-  return path.startsWith(`${address}/`) ? path.slice(address.length + 1) : undefined
+  // Compared composed, segment by segment: git and a disk may each give a
+  // folder's name back decomposed, and neither is renamed for it.
+  const folder = address.split('/')
+  const segments = path.split('/')
+  if (segments.length <= folder.length) return undefined
+  if (!folder.every((segment, at) => segment.normalize('NFC') === segments[at].normalize('NFC'))) return undefined
+  return segments.slice(folder.length).join('/')
 }
 
 /**
@@ -159,12 +165,17 @@ export function within(address: ScopeAddress, path: string): string | undefined 
  * whatever a person keeps beside them. The machine's settings file an older
  * build left at the root is nobody's: it never travels.
  */
+/** How many folders down an address is: none for the organisation. */
+function depth(address: ScopeAddress): number {
+  return address === ROOT_SCOPE ? 0 : address.split('/').length
+}
+
 export function ownerOf(path: string, addresses: Iterable<ScopeAddress>): ScopeAddress | undefined {
   if (path === LOCAL_SETTINGS_PATH) return undefined
   let found: ScopeAddress | undefined
   for (const address of addresses) {
     if (within(address, path) === undefined) continue
-    if (found === undefined || address.length > found.length) found = address
+    if (found === undefined || depth(address) > depth(found)) found = address
   }
   return found
 }

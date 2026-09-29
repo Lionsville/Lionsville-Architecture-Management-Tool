@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { describe, expect, it } from 'vitest'
-import { appliedStepsText, readAppliedSteps } from './appliedSteps'
+import { appliedStepsText, readAppliedSteps, readScopePlaces, scopePlacesText } from './appliedSteps'
 
 describe('applied step ids, kept by the app', () => {
   it('answers nothing for a folder nobody wrote steps for, and one folder’s steps back', () => {
@@ -20,5 +20,15 @@ describe('applied step ids, kept by the app', () => {
     expect(readAppliedSteps('{ not json', '/work/acme')).toBeUndefined()
     const pending = appliedStepsText(undefined, '/work/acme', { a: ['s', 1, 'expected'] })
     expect(readAppliedSteps(pending, '/work/acme')).toEqual({ a: ['s', 1, 'expected'] })
+  })
+
+  it('keeps where each folder’s scopes were found beside the steps, neither writing over the other', () => {
+    const steps = appliedStepsText(undefined, '/work/acme', { a: ['s', 1] })
+    const both = scopePlacesText(steps, '/work/acme', { 's-1': 'acme', bad: 1 as unknown as string })
+    expect(readScopePlaces(both, '/work/acme')).toEqual({ 's-1': 'acme' })
+    expect(readAppliedSteps(both, '/work/acme')).toEqual({ a: ['s', 1] })
+    expect(readScopePlaces(both, '/work/globex')).toBeUndefined()
+    expect(readAppliedSteps(appliedStepsText(both, '/work/acme', {}), '/work/acme')).toEqual({})
+    expect(readScopePlaces(appliedStepsText(both, '/work/acme', {}), '/work/acme')).toEqual({ 's-1': 'acme' })
   })
 })

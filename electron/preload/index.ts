@@ -127,6 +127,8 @@ const settings: DesktopSettings = {
   writeFolderLocal: (root, patch) => ipcRenderer.invoke('settings:writeFolderLocal', root, patch),
   readFolderSteps: (root) => ipcRenderer.invoke('settings:readFolderSteps', root),
   writeFolderSteps: (root, steps) => ipcRenderer.invoke('settings:writeFolderSteps', root, steps),
+  readFolderPlaces: (root) => ipcRenderer.invoke('settings:readFolderPlaces', root),
+  writeFolderPlaces: (root, places) => ipcRenderer.invoke('settings:writeFolderPlaces', root, places),
 }
 
 const agent: DesktopAgent = {

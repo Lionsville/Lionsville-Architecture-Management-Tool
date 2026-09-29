@@ -32,6 +32,8 @@ function fakeChannel(initial?: string): DesktopSettings & { text(): string | und
     },
     readFolderSteps: () => Promise.reject(new Error('not here')),
     writeFolderSteps: () => Promise.reject(new Error('not here')),
+    readFolderPlaces: () => Promise.reject(new Error('not here')),
+    writeFolderPlaces: () => Promise.reject(new Error('not here')),
   }
 }
 

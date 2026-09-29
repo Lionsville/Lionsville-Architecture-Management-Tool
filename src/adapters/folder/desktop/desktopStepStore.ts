@@ -8,11 +8,20 @@
  * not carried by a copy of the folder.
  */
 import type { DesktopSettings } from '../../desktop/channel'
+import type { PlaceStore } from '../folderScopes'
 import type { StepStore } from '../stepMemory'
 
 export function desktopStepStore(settings: Pick<DesktopSettings, 'readFolderSteps' | 'writeFolderSteps'>, root: string): StepStore {
   return {
     read: () => settings.readFolderSteps(root),
     write: (steps) => settings.writeFolderSteps(root, steps),
+  }
+}
+
+/** Where a folder's scopes were last found, on the desktop: beside its applied step ids, in the app's own data folder. */
+export function desktopPlaceStore(settings: Pick<DesktopSettings, 'readFolderPlaces' | 'writeFolderPlaces'>, root: string): PlaceStore {
+  return {
+    read: () => settings.readFolderPlaces(root),
+    write: (places) => settings.writeFolderPlaces(root, places),
   }
 }

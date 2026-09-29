@@ -14,6 +14,10 @@
  *   <userData>/applied-steps.json
  *   { "version": 1, "folders": { "<root>": { "<step id>": ["<scope id>", <at>] } } }
  *
+ * Beside them, where each of a folder's scopes' identities was last found
+ * (`places`), so a folder copied by hand leaves an identity where it was
+ * through a restart.
+ *
  * Pure: text in, text out. The main process finds the file.
  */
 import { parseJson, stableJson } from '../../projects/fileText'
@@ -52,4 +56,24 @@ export function appliedStepsText(text: string | undefined, root: string, steps: 
   const top = record(text === undefined ? undefined : parseJson(text)) ?? {}
   const folders = record(top['folders']) ?? {}
   return stableJson({ ...top, version: 1, folders: { ...folders, [root]: appliedStepsOf(steps) } })
+}
+
+/** One folder's scopes' identities, each with the address it was last found at. */
+export type ScopePlaces = Record<string, string>
+
+function placesOf(value: unknown): ScopePlaces {
+  return Object.fromEntries(Object.entries(record(value) ?? {}).filter((row): row is [string, string] => typeof row[1] === 'string'))
+}
+
+/** Where one folder's scopes were last found, out of the same file; `undefined` where none were written for it. */
+export function readScopePlaces(text: string | undefined, root: string): ScopePlaces | undefined {
+  const places = record(record(text === undefined ? undefined : parseJson(text))?.['places'])
+  return places && root in places ? placesOf(places[root]) : undefined
+}
+
+/** The file's text with one folder's places replaced; every other folder's, and every step, carried through. */
+export function scopePlacesText(text: string | undefined, root: string, places: ScopePlaces): string {
+  const top = record(text === undefined ? undefined : parseJson(text)) ?? {}
+  const held = record(top['places']) ?? {}
+  return stableJson({ ...top, version: 1, places: { ...held, [root]: placesOf(places) } })
 }

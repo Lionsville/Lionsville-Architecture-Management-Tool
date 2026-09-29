@@ -109,6 +109,29 @@ export function revisionOf(address: ScopeAddress, stored: string, library: reado
   return fingerprint(['scope', address, stored, ...pictureStamps(library)])
 }
 
+/**
+ * Where a folder's scopes' identities were last found, kept between one
+ * opening of the folder and the next and never in it — so two headers that
+ * claim one identity leave it where it was, through a restart
+ * (`desktop/desktopStepStore.ts` on the desktop). Where nobody says, for as
+ * long as the repositories are open.
+ */
+export type PlaceStore = {
+  read(): Promise<Record<ScopeId, ScopeAddress> | undefined>
+  write(places: Record<ScopeId, ScopeAddress>): Promise<void>
+}
+
+export function placesInMemory(): PlaceStore {
+  let held: Record<ScopeId, ScopeAddress> | undefined
+  return {
+    read: () => Promise.resolve(held && { ...held }),
+    write: (places) => {
+      held = { ...places }
+      return Promise.resolve()
+    },
+  }
+}
+
 export class FolderScopes {
   readonly store: FileSystemScopeStore
   /** Entries made from a file's bytes, by where the file is: a file is read once for its entry. */
@@ -116,10 +139,13 @@ export class FolderScopes {
   /** Where each identity was last found, so reading one scope does not walk the tree. */
   private readonly found = new Map<ScopeId, ScopeAddress>()
   private queue: Promise<unknown> = Promise.resolve()
+  /** The places as they were last kept, to write them only when they moved. */
+  private kept: string | undefined
 
   constructor(
     readonly root: DirectoryHandleLike,
     readonly diagnostics?: Pick<Diagnostics, 'report'>,
+    private readonly places: PlaceStore = placesInMemory(),
   ) {
     this.store = new FileSystemScopeStore(root, diagnostics, 'apart')
   }
@@ -154,6 +180,7 @@ export class FolderScopes {
       const declared = found.current && isScopeId(header[ID_KEY]) ? header[ID_KEY] : undefined
       read.push({ found, summary, header, ...(declared !== undefined ? { declared } : {}) })
     }
+    await this.recall()
     const keeper = new Map<ScopeId, string>()
     for (const { found, declared } of read) {
       if (declared === undefined) continue
@@ -165,7 +192,27 @@ export class FolderScopes {
     }))
     if (!nodes.some((node) => node.address === ROOT_SCOPE)) nodes.unshift(this.bareRoot())
     for (const node of nodes) this.found.set(node.id, node.address)
+    await this.keepPlaces()
     return { nodes, unreadable: [...new Set(unreadable)].sort() }
+  }
+
+  /** Where the identities were found when the folder was last open, the first time they are asked for. */
+  private async recall(): Promise<void> {
+    if (this.kept !== undefined) return
+    const held = await this.places.read().catch(() => undefined) ?? {}
+    for (const [id, address] of Object.entries(held)) if (!this.found.has(id)) this.found.set(id, address)
+    this.kept = JSON.stringify(held)
+  }
+
+  /** Where the identities were found, kept where they are kept, when that moved. */
+  private async keepPlaces(): Promise<void> {
+    const places = Object.fromEntries([...this.found].sort(([one], [other]) => (one < other ? -1 : 1)))
+    const text = JSON.stringify(places)
+    if (text === this.kept) return
+    this.kept = text
+    await this.places.write(places).catch((cause: unknown) => {
+      this.diagnostics?.report({ level: 'warn', where: 'folder', message: 'where the scopes were found could not be kept', cause })
+    })
   }
 
   /** The organisation of a folder nobody has written a header into: there, empty, and named nothing. */

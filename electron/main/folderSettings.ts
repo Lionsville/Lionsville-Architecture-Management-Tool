@@ -21,9 +21,9 @@ import {
   MACHINE_FOLDER_SETTINGS_FILE, machineFolderSettingsText, readMachineFolderSettings,
 } from '../../src/platform/node/machineFolderSettings'
 import {
-  APPLIED_STEPS_FILE, appliedStepsOf, appliedStepsText, readAppliedSteps,
+  APPLIED_STEPS_FILE, appliedStepsOf, appliedStepsText, readAppliedSteps, readScopePlaces, scopePlacesText,
 } from '../../src/platform/node/appliedSteps'
-import type { AppliedSteps } from '../../src/platform/node/appliedSteps'
+import type { AppliedSteps, ScopePlaces } from '../../src/platform/node/appliedSteps'
 import { log } from './log'
 
 const settingsPath = (): string => join(app.getPath('userData'), MACHINE_FOLDER_SETTINGS_FILE)
@@ -74,6 +74,20 @@ export function registerFolderSettingsChannel(): void {
         log('settings', `could not write ${APPLIED_STEPS_FILE}: ${String(cause)}`)
         throw cause
       }
+    }
+    const next = stepsQueue.then(write, write)
+    stepsQueue = next.catch(() => undefined)
+    return next
+  })
+  // Where a folder's scopes were last found, in the same file and the same turn.
+  ipcMain.handle('settings:readFolderPlaces', async (_event, root: unknown): Promise<ScopePlaces | undefined> => {
+    if (typeof root !== 'string') return undefined
+    return readScopePlaces(await text(stepsPath()), root)
+  })
+  ipcMain.handle('settings:writeFolderPlaces', (_event, root: unknown, places: unknown): Promise<void> => {
+    if (typeof root !== 'string') throw new Error('a folder is named by its path')
+    const write = async () => {
+      await writeFile(stepsPath(), `${scopePlacesText(await text(stepsPath()), root, (places ?? {}) as ScopePlaces)}\n`, 'utf8')
     }
     const next = stepsQueue.then(write, write)
     stepsQueue = next.catch(() => undefined)

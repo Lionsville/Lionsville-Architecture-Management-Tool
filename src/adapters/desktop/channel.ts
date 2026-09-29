@@ -146,6 +146,10 @@ export type DesktopSettings = {
   readFolderSteps(root: string): Promise<Record<string, [string, number] | [string, number, string]> | undefined>
   /** Replace a folder's applied step ids. */
   writeFolderSteps(root: string, steps: Record<string, [string, number] | [string, number, string]>): Promise<void>
+  /** Where a folder's scopes' identities were last found (ADR-0031), kept here; `undefined` where never written. */
+  readFolderPlaces(root: string): Promise<Record<string, string> | undefined>
+  /** Replace where a folder's scopes' identities were last found. */
+  writeFolderPlaces(root: string, places: Record<string, string>): Promise<void>
 }
 
 /**

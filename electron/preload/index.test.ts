@@ -113,6 +113,8 @@ describe('the folder’s history and its applied steps', () => {
       [() => history.tag('/work', 'abc1234', 'f-s1/board', 'Board'), 'git:tag', ['/work', 'abc1234', 'f-s1/board', 'Board']],
       [() => settings.readFolderSteps('/work'), 'settings:readFolderSteps', ['/work']],
       [() => settings.writeFolderSteps('/work', steps), 'settings:writeFolderSteps', ['/work', steps]],
+      [() => settings.readFolderPlaces('/work'), 'settings:readFolderPlaces', ['/work']],
+      [() => settings.writeFolderPlaces('/work', { 's-1': 'acme' }), 'settings:writeFolderPlaces', ['/work', { 's-1': 'acme' }]],
     ]
     for (const [call, channel, args] of calls) {
       await call()
