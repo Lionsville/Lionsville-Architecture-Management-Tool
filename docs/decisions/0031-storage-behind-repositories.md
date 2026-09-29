@@ -447,3 +447,86 @@ repositories, in `src/adapters/folder/`:
 - **An observation with no history** is written `history: none`, so it reads
   back as none; a file that says nothing is still a hand-written one, given
   the recorded event it must have had.
+
+## As built, 29 September 2026: browser storage and memory
+
+**What was built.** Browser storage and memory implement the five
+repositories, and both run every suite. The ports they replace
+(`ScopeStore`, `ProjectHistory`, `FolderSettings`) and the stores behind
+them are still what the app uses; nothing above the seam changed.
+- **One set of repositories, two stores.** `adapters/repositories/` holds the
+  five, written once over `KeyedStore`: a transactional key-value store, as
+  little of one as they need. Memory is `MemoryStore`, and browser storage is
+  `IndexedDbStore`; they differ only in where the values sit. Each store runs
+  `KeyedStore.contract.ts`, the promises the repositories count on that the
+  suites cannot see: a transaction that fails lands nothing, two writing
+  transactions never interleave, and values are copies.
+- **Memory is a product adapter** (`adapters/memory/memoryRepositories.ts`).
+  The suites' own in-memory repositories in `ports/testing/` are gone, because
+  `ports/` may not import an adapter and a second copy would only drift.
+- **A scope is kept in three parts:** what the tree says of it, its content,
+  and its library one entry per picture. The tree reads no model. A picture is
+  found by name, and an image folder listed, from the entries under that name
+  alone.
+- **An apply is one transaction** over every scope it names, their libraries,
+  the step ids and the index's log. It lands whole or not at all, and a page
+  closed half-way leaves the store as it was.
+- **History** keeps each entry's list line apart from the state at it, both
+  filed under the scope's identity, so a page of entries reads no state and a
+  history follows its scope through a move. Entries are numbered across the
+  source, so several scopes' entries merge newest first and no number is
+  given twice. An entry closes only at `record`: no timer closes one.
+- **Step ids are kept a week**, where the contract asks for a day, filed also
+  by the day they landed so the old ones go without a scan.
+- **The index's revision** is the source's own mark and the number of its
+  log. Its log keeps the last thousand changes; a revision further back, or
+  from another source, is answered with nothing.
+- **Pictures' bytes** are kept under their scope and their content address. They
+  go when the scope is removed, and not before, because an entry in the
+  scope's history may name them.
+- **A scope that cannot be read whole** is one whose content has a later
+  format than this build writes. It is shown and refuses every step.
+
+**Browser storage is IndexedDB.** The key-value storage the scopes were kept in
+holds a few megabytes of text for the whole origin, one key at a time. A history
+with the state at every entry, and pictures kept as bytes, do not fit it
+without being cut to fit, and an apply to several scopes there would be several
+writes. An IndexedDB transaction spans every object store it names and lands
+whole or not at all. It keeps bytes as bytes, and its quota is a share of the
+disk. The key-value storage stays what the preferences are kept in and how
+`available.ts` asks whether this browser keeps anything at all. Node has no
+IndexedDB, so its suites run over a fake of the part the store uses
+(`webStorage/testing/fakeIndexedDb.ts`), which keeps the behaviours the store
+is written around.
+
+**What a person kept before is copied once, never moved**
+(`webStorage/earlierScopes.ts`). When the database is new, every scope the
+key-value storage holds is read as its store reads it, and turned into the
+repositories' shape with the folder's own translation: a document's
+`../images/<file>` becomes `image:<name>`, and each data URL becomes bytes and a
+library entry. Each scope's first entry is the state it arrived in. Nothing is
+written to the key-value storage, so the old copy stays under its old key. A
+scope written there by an older page after the copy is not brought over
+again.
+
+**Where the build departed from the text.**
+- **Two implementations share one set of repositories.** §2 names browser
+  storage and memory as implementations. They are one implementation over two
+  stores, because what differs between them is where values sit, not how a
+  step lands.
+- **The suites' own in-memory repositories are gone**, where the contracts'
+  record kept them as test support. Memory is now the product adapter every
+  suite runs against first.
+- **No entry closes by itself.** An implementation may close an entry when it
+  judges a run has ended. Neither does: an entry closes at `record` and at
+  nothing else, until the app says when a run has ended.
+- **An entry's `by` is the source's word for itself**, *this browser* or *this
+  session*: neither keeps a person's name.
+- **The subject of an entry a scope arrived as is English.** A history keeps a
+  sentence, not a key, and a sentence written once cannot follow the language
+  a later reader picks.
+
+**Left for when the app moves onto the repositories.** The database opens on
+the first call, and every repository answers a promise anyway. Where IndexedDB
+will not open, the first call rejects. Choosing browser storage, and what to do
+then, is the composition's.
