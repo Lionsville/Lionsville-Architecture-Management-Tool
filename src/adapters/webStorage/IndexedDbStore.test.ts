@@ -156,6 +156,17 @@ describe('IndexedDbStore, when the connection goes', () => {
     expect(await store.transaction(['meta'], 'read', read)).toBe(1)
   })
 
+  it('says a database it never had would not open, as the browser said it, rather than that it was lost', async () => {
+    const store = new IndexedDbStore({
+      ...fakeIndexedDb(),
+      factory: { open: () => { throw new DOMException('not in this window', 'InvalidStateError') } } as unknown as IDBFactory,
+    })
+    const cause = await refused(store.transaction(['meta'], 'read', read))
+    expect(cause).not.toBeInstanceOf(ShellError)
+    expect((cause as DOMException).name).toBe('InvalidStateError')
+    expect(store.standing()).toBe('open')
+  })
+
   it('forgets a connection the browser closed, and opens another', async () => {
     const { indexedDb, controls } = controlledFakeIndexedDb()
     const store = new IndexedDbStore(indexedDb)

@@ -157,6 +157,8 @@ export class IndexedDbStore implements KeyedStore {
   /** Connections the browser closed under the page: a transaction of theirs that aborted went with them. */
   private readonly closed = new WeakSet<IDBDatabase>()
   private asked: Promise<boolean | undefined> | undefined
+  /** Has a connection ever opened here? Until one has, a refusal to open is no database, not a lost one. */
+  private everOpened = false
 
   constructor(private readonly indexedDb: IndexedDb, private readonly name = DATABASE_NAME) {}
 
@@ -250,6 +252,7 @@ export class IndexedDbStore implements KeyedStore {
         forget()
       },
     }).then((database) => {
+      this.everOpened = true
       if (this.now === 'blocked') this.become('open')
       return database
     }, (error: unknown) => {
@@ -263,7 +266,10 @@ export class IndexedDbStore implements KeyedStore {
   private openRefusal(error: unknown): unknown {
     const name = nameOf(error)
     if (name === 'VersionError') return this.mustReload()
-    if (name !== undefined && LOST.has(name)) return new ConnectionLost(error)
+    // A database this page never had is not one it lost: a private window
+    // refuses the first open with the same names a lost connection has, and
+    // what that means is that there is no database here — said as it was.
+    if (name !== undefined && LOST.has(name)) return this.everOpened ? new ConnectionLost(error) : error
     return workRefusal(error)
   }
 
