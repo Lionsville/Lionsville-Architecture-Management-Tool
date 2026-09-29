@@ -26,6 +26,7 @@ import type { AgentGateway } from '../ports/AgentGateway'
 import type { FolderSettingsStore } from '../ports/FolderSettings'
 import type { HostControls } from '../ports/HostControls'
 import type { ProjectHistory } from '../ports/ProjectHistory'
+import type { Repositories } from '../ports/Repositories'
 import type { UpdateSettingsStore } from '../ports/UpdateSettings'
 import type {
   RegisteredChrome, RegisteredMenu, ScopeLibrary, ShellDiagnostics, SourceAgentPanel, SourceChipFace,
@@ -316,6 +317,11 @@ export type AppHost = {
 
 export type AppProps = {
   scopes: ScopeLibrary
+  /**
+   * Where the source keeps work, in the domain's words (ADR-0031 §4): the one
+   * value its provider built, handed in by the composition root.
+   */
+  repositories?: Repositories
   preferences: PreferencesWriter
   documents: ProjectFileChannel
   diagnostics: ShellDiagnostics

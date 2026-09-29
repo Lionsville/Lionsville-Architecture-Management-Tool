@@ -651,6 +651,7 @@ function renderApp(
         // `chooseWorkingDirectory` and `sourceKey`.
         key={sourceKey(shell.source)}
         scopes={shell.scopes}
+        {...(shell.repositories ? { repositories: shell.repositories } : {})}
         preferences={shell.preferences}
         documents={shell.documents}
         diagnostics={shell.diagnostics}
