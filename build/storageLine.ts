@@ -16,21 +16,30 @@
  * it knows as surely as a value does.
  *
  * **No storage words in logic.** An identifier in the domain, the app or a
- * screen that names a storage mechanism is the domain deciding how work is
- * kept. {@link STORAGE_WORDS} is the list, each with why it is on it, and
- * {@link NOT_STORAGE_WORDS} the words considered and left off, each with why:
- * a word that is also ordinary in this tree would fail on a board's SVG path or
- * a search query, and a test that cries wolf is switched off. Identifiers only,
- * not comments or the words tables: a comment may say what a folder does, and
- * a person may be told about their folder where the folder's own chrome speaks.
+ * screen that names a storage mechanism, or a string in its code that does,
+ * is the domain deciding how work is kept. {@link STORAGE_WORDS} is the list,
+ * each with why it is on it, and {@link NOT_STORAGE_WORDS} the words
+ * considered and left off, each with why: a word that is also ordinary in this
+ * tree would fail on a board's SVG path or a search query, and a test that
+ * cries wolf is switched off. A string is read for the words and for the
+ * folder format's own spellings ({@link FORMAT_PATTERNS}: `.json`, `../`,
+ * `images/`, `.git`) — `kind === 'folder'` is the app branching on a storage
+ * mechanism as surely as a name is. Not read: comments, which may say what a
+ * folder does; the words tables, where a person may be told about their folder
+ * where the folder's own chrome speaks; the name of a module imported, which
+ * the other half reads; a word a landscape is made of ({@link CONTENT_WORDS});
+ * and the strings of the marks ({@link CONTENT_FILES}).
  *
  * **Today's exceptions, and they only shrink.** {@link IMPORT_EXCEPTIONS} and
  * {@link WORD_EXCEPTIONS} are the tree as it stood when the rule arrived, each
  * entry exactly what that file does. The test fails on anything not listed,
  * and on an entry that no longer holds — so a file that stops crossing the
- * line takes its entry with it, and nothing can grow back into the room.
- * {@link FOLDER_FORMAT} is held the same way: every file on it must exist and
- * still sit in the domain, and leaves the list when it moves.
+ * line takes its entry with it. {@link FOLDER_FORMAT} is held the same way:
+ * every file on it must exist and still sit in the domain, and leaves the list
+ * when it moves. And each list has a ceiling ({@link CEILINGS}) held to exactly
+ * its length: a new entry fails unless the ceiling is raised in the same
+ * change, where the diff shows it, and one taken off fails until the ceiling
+ * comes down, so nothing grows back into the room.
  *
  * **The repositories speak no storage at all.** {@link SPEAKS_NO_STORAGE} are
  * the new seams and the words they are written in, held to the stricter list
@@ -63,12 +72,14 @@ export function mayKnowStorage(file: string): boolean {
 
 /**
  * The folder format, still in the domain: a scope as files, the files'
- * text, the history subjects by path, the directory handles, the settings
- * file, the working file's codec and the readers of the formats before this
- * one. They are the folder implementation's, and move into it; each leaves
+ * text, what a scope's header file is called, the history subjects by path,
+ * the directory handles, the settings file, the working file's codec, the
+ * readers of the formats before this one and the pass that upgrades a
+ * folder to this one. They are the folder implementation's, and move into it; each leaves
  * this list as it does.
  */
 export const FOLDER_FORMAT: readonly string[] = [
+  'src/platform/scopeHeader.ts',
   'src/ports/DirectoryHandle.ts',
   'src/projects/adrFile.ts',
   'src/projects/fileText.ts',
@@ -77,6 +88,7 @@ export const FOLDER_FORMAT: readonly string[] = [
   'src/projects/historyPath.ts',
   'src/projects/migrate3to4.ts',
   'src/projects/migrate4to5.ts',
+  'src/projects/migration.ts',
   'src/projects/observationFile.ts',
   'src/projects/transitionFile.ts',
   'src/projects/workingFile.ts',
@@ -175,21 +187,72 @@ export function listedIn(words: readonly string[], listed: readonly string[]): s
 }
 
 /**
- * The storage words a file's code names: its identifiers, read off the syntax
- * tree so a comment or a string is never taken for code — or, `withProse`,
- * every word the file says, comments and strings included.
+ * What names a place in the folder format when a string says it: a file of
+ * its (`.json`), a step up out of a scope (`../`), its pictures (`images/`),
+ * and the history kept beside it (`.git`). Read in strings only; an identifier
+ * says the same things in words.
+ */
+export const FORMAT_PATTERNS: Readonly<Record<string, RegExp>> = {
+  '.json': /\.json\b/i,
+  '../': /\.\.\//,
+  'images/': /(^|\/)images\//,
+  '.git': /\.git\b/,
+}
+
+/**
+ * The storage words that are also what a landscape is made of: a string may
+ * name a database a team runs, or the SQL it speaks, as the thing it is. In an
+ * identifier they are how the code keeps something, and are read there.
+ */
+export const CONTENT_WORDS: Readonly<Record<string, string>> = {
+  database: 'A platform service a landscape draws: a managed database is an element, not where work is kept.',
+  sql: 'What such a database speaks, in a service\'s description.',
+}
+
+/**
+ * The files whose strings are content rather than code: the marks, which are
+ * the icons a landscape draws, named as their makers name them — a git host
+ * is a thing a landscape holds.
+ */
+export const CONTENT_FILES: readonly string[] = ['src/model/marks/']
+
+/** The listed words, and the folder format's patterns, a string's text says. */
+function storageInText(text: string, listed: readonly string[]): string[] {
+  const patterns = Object.entries(FORMAT_PATTERNS).filter(([, pattern]) => pattern.test(text)).map(([said]) => said)
+  const words = listedIn(wordsOf(text), listed).filter((word) => !(word in CONTENT_WORDS))
+  return [...words, ...patterns]
+}
+
+/** Where a string names a module to import, which the import half of the rule reads instead. */
+function isModuleName(node: ts.Node): boolean {
+  const parent = node.parent as ts.Node | undefined
+  if (!parent) return false
+  if ((ts.isImportDeclaration(parent) || ts.isExportDeclaration(parent)) && parent.moduleSpecifier === node) return true
+  if (ts.isExternalModuleReference(parent) || ts.isLiteralTypeNode(parent) && ts.isImportTypeNode(parent.parent)) return true
+  return ts.isCallExpression(parent) && parent.expression.kind === ts.SyntaxKind.ImportKeyword
+}
+
+/**
+ * The storage words a file's code names — its identifiers, and the text of
+ * its strings and of the fixed parts of its template strings, where the
+ * folder format's patterns count too — read off the syntax tree, so a comment
+ * is never taken for code. Or, `withProse`, every word the file says,
+ * comments included.
  */
 export function storageWords(path: string, text: string, listed: readonly string[], withProse = false): string[] {
   // The licence header is the same two lines on every file, and says what
   // the licence says about a file of source; it is nobody's storage.
   const code = text.replace(/^\/\/ SPDX-.*$/gm, '')
   if (withProse) return listedIn(wordsOf(code), listed)
+  const content = CONTENT_FILES.some((prefix) => path.startsWith(prefix))
   const kind = path.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS
-  const source = ts.createSourceFile(path, code, ts.ScriptTarget.Latest, false, kind)
+  const source = ts.createSourceFile(path, code, ts.ScriptTarget.Latest, true, kind)
   const found = new Set<string>()
   const visit = (node: ts.Node): void => {
     if (ts.isIdentifier(node) || ts.isPrivateIdentifier(node)) {
       for (const word of listedIn(wordsOf(node.text), listed)) found.add(word)
+    } else if (ts.isStringLiteralLike(node) || ts.isTemplateLiteralToken(node)) {
+      if (!content && !isModuleName(node)) for (const said of storageInText(node.text, listed)) found.add(said)
     }
     ts.forEachChild(node, visit)
   }
@@ -219,11 +282,13 @@ export function importsAcross(graph: Graph): Record<string, string[]> {
  */
 export const IMPORT_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {
   'src/app/App.tsx': ['src/projects/workingFileManifest.ts'],
+  'src/app/bootReads.ts': ['src/projects/migration.ts'],
   'src/app/dialogs/PreferencesDialog.tsx': ['src/projects/folderSettings.ts'],
   'src/app/examples/copy.ts': ['src/projects/fileText.ts', 'src/projects/folderFormat.ts'],
   'src/app/history/HistoryPage.tsx': ['src/projects/historyPath.ts'],
   'src/app/history/changesFor.ts': ['src/projects/historyPath.ts'],
   'src/app/history/useProjectHistory.ts': ['src/projects/historyPath.ts'],
+  'src/app/main.tsx': ['src/projects/migration.ts'],
   'src/app/shellParts.ts': ['src/projects/workingFileManifest.ts'],
   'src/app/useHomeFiles.ts': ['src/projects/workingFileManifest.ts'],
   'src/app/useHomeParts.ts': ['src/projects/workingFileManifest.ts'],
@@ -235,18 +300,23 @@ export const IMPORT_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {
   'src/ports/FolderSettings.ts': ['src/projects/folderSettings.ts'],
   'src/ports/ProjectHistory.ts': ['src/projects/historyPath.ts'],
   'src/ports/ScopeStore.ts': ['src/projects/workingFileManifest.ts'],
-  'src/projects/index.ts': ['src/projects/adrFile.ts', 'src/projects/fileText.ts', 'src/projects/folderFormat.ts', 'src/projects/folderSettings.ts', 'src/projects/historyPath.ts', 'src/projects/migrate3to4.ts', 'src/projects/migrate4to5.ts', 'src/projects/workingFile.ts'],
+  'src/projects/index.ts': ['src/projects/adrFile.ts', 'src/projects/fileText.ts', 'src/projects/folderFormat.ts', 'src/projects/folderSettings.ts', 'src/projects/historyPath.ts', 'src/projects/migrate3to4.ts', 'src/projects/migrate4to5.ts', 'src/projects/migration.ts', 'src/projects/workingFile.ts'],
   'src/projects/revision.ts': ['src/projects/folderFormat.ts'],
   'src/projects/scope.ts': ['src/projects/workingFileManifest.ts'],
 }
 
-/** Each domain file's storage words as they stood when the rule arrived. */
+/** Each domain file's storage words, and the folder format's patterns in its strings, as they stood when the rule arrived. */
 export const WORD_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {
+  'src/agent/handle.ts': ['../', 'images/'],
+  'src/agent/mcpProtocol.ts': ['disk'],
+  'src/agent/shell.ts': ['disk'],
+  'src/agent/tools.ts': ['disk', 'folder'],
   'src/app/AdoptFolder.tsx': ['folder'],
   'src/app/App.tsx': ['folder', 'storage'],
   'src/app/AppPanels.tsx': ['directory', 'folder', 'folders', 'git', 'storage'],
   'src/app/DiskChangeNotice.tsx': ['disk'],
   'src/app/ProjectWorkspace.tsx': ['storage'],
+  'src/app/ShellToolbar.tsx': ['disk', 'folder', 'storage'],
   'src/app/WorkspaceBar.tsx': ['disk'],
   'src/app/appProps.ts': ['folder', 'storage'],
   'src/app/bootReads.ts': ['folder', 'git'],
@@ -256,14 +326,14 @@ export const WORD_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {
   'src/app/examples/index.ts': ['folder', 'folders'],
   'src/app/examples/offers.ts': ['folder'],
   'src/app/history/useProjectHistory.ts': ['commit message'],
-  'src/app/main.tsx': ['directories', 'directory', 'folder', 'folders', 'storage'],
+  'src/app/main.tsx': ['../', 'directories', 'directory', 'folder', 'folders', 'storage'],
   'src/app/organisation/ChooseFolder.tsx': ['folder'],
-  'src/app/organisation/OrganisationScreen.tsx': ['directory'],
+  'src/app/organisation/OrganisationScreen.tsx': ['directory', 'folder'],
   'src/app/organisation/useOrganisation.ts': ['storage'],
   'src/app/shellParts.ts': ['folder'],
   'src/app/useDocumentSession.ts': ['storage'],
   'src/app/useHomeFiles.ts': ['folder'],
-  'src/app/useHomeParts.ts': ['folder'],
+  'src/app/useHomeParts.ts': ['.json', 'folder'],
   'src/app/useMachineSettings.ts': ['folder', 'git'],
   'src/app/useOpenIntoPrompt.tsx': ['folder'],
   'src/app/useProjectFiles.ts': ['folder'],
@@ -275,18 +345,35 @@ export const WORD_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {
   'src/app/useSync.ts': ['folder', 'git'],
   'src/app/useTreeFindings.ts': ['folder'],
   'src/app/useWorkspaceDocument.ts': ['storage'],
-  'src/app/useWorkspaceFiles.ts': ['folder'],
+  'src/app/useWorkspaceFiles.ts': ['.json', 'folder'],
   'src/app/workingFileFlows.ts': ['folder'],
   'src/app/workspaceProps.ts': ['folder', 'storage'],
-  'src/documentation/images.ts': ['folder'],
+  'src/documentation/images.ts': ['../', 'folder'],
   'src/documentation/index.ts': ['folder'],
-  'src/platform/menu.ts': ['folders'],
-  'src/platform/updates.ts': ['folder'],
-  'src/platform/workingSource.ts': ['storage'],
+  'src/documentation/ui/MarkdownHelp.tsx': ['../', 'images/'],
+  'src/platform/hostCommands.ts': ['folder'],
+  'src/platform/menu.ts': ['folder', 'folders'],
+  'src/platform/workingSource.ts': ['folder', 'storage'],
   'src/ports/FolderSettings.ts': ['folder'],
   'src/ports/ScopeStore.ts': ['storage'],
-  'src/projects/commitMessage.ts': ['commit message'],
-  'src/projects/migration.ts': ['folders'],
+  'src/projects/commitMessage.ts': ['commit message', 'git'],
   'src/projects/preferences.ts': ['directory', 'folder', 'folders'],
   'src/projects/revision.ts': ['folder'],
 }
+
+/**
+ * How long each list may be, written down beside it: an entry added fails the
+ * test unless the ceiling is raised in the same change, where a reader of the
+ * diff sees it; an entry taken off fails it until the ceiling comes down with
+ * it, so the room it leaves cannot be taken again.
+ */
+export const CEILINGS = {
+  /** Files of the folder format still in the domain. */
+  folderFormat: 14,
+  /** Files importing across the line, and the imports between them. */
+  importingFiles: 22,
+  imports: 32,
+  /** Files naming storage, and the words and patterns between them. */
+  namingFiles: 52,
+  words: 83,
+} as const

@@ -12,8 +12,8 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { importGraph, programFiles } from './cycles'
 import {
-  FOLDER_FORMAT, IMPORT_EXCEPTIONS, importsAcross, listedIn, mayKnowStorage, NOT_STORAGE_WORDS, SPEAKS_NO_STORAGE,
-  STORAGE_WORDS, storageWords, STRICT_WORDS, WORD_EXCEPTIONS, wordsOf,
+  CEILINGS, CONTENT_WORDS, FOLDER_FORMAT, IMPORT_EXCEPTIONS, importsAcross, isWordsTable, listedIn, mayKnowStorage,
+  NOT_STORAGE_WORDS, SPEAKS_NO_STORAGE, STORAGE_WORDS, storageWords, STRICT_WORDS, WORD_EXCEPTIONS, wordsOf,
 } from './storageLine'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
@@ -56,7 +56,7 @@ describe('the line between the domain and where work is kept', { timeout: 60_000
   it('has nothing in the domain name a storage mechanism in its code, but the exceptions', () => {
     const found: Record<string, string[]> = {}
     for (const file of programFiles(root, 'src')) {
-      if (mayKnowStorage(file) || FOLDER_FORMAT.includes(file)) continue
+      if (mayKnowStorage(file) || FOLDER_FORMAT.includes(file) || isWordsTable(file)) continue
       const words = storageWords(file, readFileSync(`${root}/${file}`, 'utf8'), Object.keys(STORAGE_WORDS))
       if (words.length > 0) found[file] = words
     }
@@ -71,9 +71,29 @@ describe('the line between the domain and where work is kept', { timeout: 60_000
     expect(wrong).toEqual([])
   })
 
+  it('holds every list to its ceiling, exactly', () => {
+    const lengths = {
+      folderFormat: FOLDER_FORMAT.length,
+      importingFiles: Object.keys(IMPORT_EXCEPTIONS).length,
+      imports: Object.values(IMPORT_EXCEPTIONS).flat().length,
+      namingFiles: Object.keys(WORD_EXCEPTIONS).length,
+      words: Object.values(WORD_EXCEPTIONS).flat().length,
+    }
+    const wrong = Object.entries(lengths).flatMap(([list, length]) => {
+      const ceiling = CEILINGS[list as keyof typeof CEILINGS]
+      if (length > ceiling) return [`${list} holds ${length}, over its ceiling of ${ceiling}: raising the ceiling is a decision the change says`]
+      if (length < ceiling) return [`${list} holds ${length}: bring its ceiling down from ${ceiling} to ${length}`]
+      return []
+    })
+    expect(wrong).toEqual([])
+  })
+
   it('says why each word is on the list or off it, and no word is both', () => {
-    for (const reason of [...Object.values(STORAGE_WORDS), ...Object.values(NOT_STORAGE_WORDS)]) expect(reason).toMatch(/\w{3}/)
+    for (const reason of [
+      ...Object.values(STORAGE_WORDS), ...Object.values(NOT_STORAGE_WORDS), ...Object.values(CONTENT_WORDS),
+    ]) expect(reason).toMatch(/\w{3}/)
     expect(Object.keys(STORAGE_WORDS).filter((word) => word in NOT_STORAGE_WORDS)).toEqual([])
+    expect(Object.keys(CONTENT_WORDS).filter((word) => !(word in STORAGE_WORDS))).toEqual([])
   })
 })
 
@@ -99,14 +119,37 @@ describe('reading words out of code', () => {
     expect(listedIn(wordsOf('folderOfImage'), ['folder'])).toEqual(['folder'])
   })
 
-  it('reads identifiers only, unless asked for the prose too', () => {
+  it('reads identifiers and strings, and comments only when asked for the prose too', () => {
     const text = [
       '// The folder a scope is kept in.',
       "const label = 'git'",
       'const diskUsage = 1',
     ].join('\n')
-    expect(storageWords('a.ts', text, ['folder', 'git', 'disk'])).toEqual(['disk'])
+    expect(storageWords('a.ts', text, ['folder', 'git', 'disk'])).toEqual(['disk', 'git'])
     expect(storageWords('a.ts', text, ['folder', 'git', 'disk'], true)).toEqual(['disk', 'folder', 'git'])
+  })
+
+  it('reads the folder format’s own spellings in a string and in the fixed parts of a template', () => {
+    const text = [
+      "const header = 'scope.json'",
+      'const picture = (file: string) => `../images/${file}`',
+      "const kept = source.kind === 'folder' ? 1 : 2",
+      "const history = '.git/info/exclude'",
+    ].join('\n')
+    expect(storageWords('a.ts', text, ['folder'])).toEqual(['../', '.git', '.json', 'folder', 'images/'])
+  })
+
+  it('leaves alone what is not code deciding storage: a module imported, a landscape’s words, the marks', () => {
+    const imports = [
+      "import { SCOPE_FILE } from '../projects/folderFormat'",
+      "export { fold } from '../../images/folder.json'",
+      "type Held = import('../folder/x').Held",
+      "const later = import('../folder/y')",
+    ].join('\n')
+    expect(storageWords('a.ts', imports, ['folder'])).toEqual([])
+    expect(storageWords('a.ts', "const service = 'a managed database'", ['database'])).toEqual([])
+    expect(storageWords('a.ts', 'const managedDatabase = 1', ['database'])).toEqual(['database'])
+    expect(storageWords('src/model/marks/vendors.ts', "const mark = 'GitLab'", ['git'])).toEqual([])
   })
 
   it('reads a screen as well as a module', () => {
