@@ -219,6 +219,8 @@ describe('verifying a cause', () => {
     expect(causeEvidence(evidenced)).toEqual({ why: true, verify: true, complete: true })
     expect(causeEvidence('## Waarom we dat denken\n\nVolumes.\n\n## Hoe te verifiëren\n\nHet log.\n').complete).toBe(true)
     expect(causeEvidence('## Why we think so\n\nVolumes.\n\n## How to verify\n\n').complete).toBe(false)
+    // The German heading before its wording was mended, in a body written then.
+    expect(causeEvidence('## Warum wir das annehmen\n\nVolumen.\n\n## Wie zu verifizieren\n\nDas Log.\n').complete).toBe(true)
     expect(causeEvidence('Just a note.').complete).toBe(false)
   })
   it('keeps a cause assumed when verified is asked of a body with no evidence', () => {

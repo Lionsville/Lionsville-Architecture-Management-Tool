@@ -357,7 +357,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'field.protocol': 'Protokoll',
   'field.protocolPlaceholder': 'z. B. EDI, Kafka, REST',
   'field.partOf': 'Teil von',
-  'field.partOfHelp': 'Zu welcher Anwendungsschnittstelle diese Linie gehört; die zeichnet die Landkarte',
+  'field.partOfHelp': 'Zu welcher Anwendungsschnittstelle diese Linie gehört; diese zeichnet die Landschaft',
   'field.partOfOption': '„{label}“ von {name}',
   'field.partOfUnlabelled': 'Von {name}',
   'field.detailOne': 'Detail: 1 Schnittstelle im Containerdiagramm · {protocols}',
@@ -405,10 +405,10 @@ export const DE: Record<keyof typeof EN, string> = {
   'field.edgeColour': 'Linienfarbe',
   'field.lineStyle': 'Linienstil',
   'field.routing': 'Leitungsführung',
-  'field.routingHelp': 'Manuelle Wegpunkte gehen, wenn vorhanden, hierüber',
+  'field.routingHelp': 'Manuelle Wegpunkte haben, wenn vorhanden, Vorrang',
   'field.source': 'Quelle',
   'field.target': 'Ziel',
-  'field.leavesFrom': 'Verlässt bei',
+  'field.leavesFrom': 'Beginnt an',
   'field.arrivesAt': 'Kommt an bei',
   'field.resetDefault': 'Auf Standard zurücksetzen',
   'field.clear': '{name} leeren',
@@ -437,8 +437,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'section.route': 'Route',
 
   'element.noData': 'Keine Betriebsdaten für dieses Element.',
-  'aspect.derivedFrom': 'Plattform liest {status}, abgeleitet davon, worauf es läuft: {name}. Ein hier gesetzter Status gewinnt.',
-  'aspect.derivedNone': 'Plattform liest keine: es läuft noch auf nichts. Ein hier gesetzter Status gewinnt.',
+  'aspect.derivedFrom': 'Plattform: {status} (abgeleitet von {name}, worauf es läuft). Ein hier gesetzter Status gewinnt.',
+  'aspect.derivedNone': 'Plattform: keine (es läuft noch auf nichts). Ein hier gesetzter Status gewinnt.',
   'element.deleteApplication': 'Anwendung löschen…',
   'element.removeDelete': 'Entfernen / löschen…',
 
@@ -462,7 +462,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'route.pin': 'Fixieren',
   'route.unpin': 'Lösen',
   'route.resetToAutomatic': 'Zurück auf automatisch',
-  'route.leavesFromSide': 'Verlässt bei {name}',
+  'route.leavesFromSide': 'Beginnt an {name}',
   'route.arrivesAtSide': 'Kommt an bei {name}',
   'route.deleteConnection': 'Verbindung löschen',
 
@@ -545,8 +545,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'diagramSettings.allStandardUsed': 'Jede Standardspalte ist bereits vorhanden',
 
   'help.title': 'Tastenkürzel',
-  'help.intro':
-    'Klicken Sie mit rechts auf ein Element, eine Linie, eine Domänengruppe, einen Diagrammreiter oder die leere Zeichenfläche für ein Menü mit allem, was dort möglich ist. Die Tastenkürzel unten stehen neben den passenden Menüeinträgen. Ziehen Sie vom Rand eines Elements zu einem anderen, um sie zu verbinden, oder klicken Sie mit rechts und wählen Sie Verbindung beginnen nach…',
+  'help.intro': 'Klicken Sie mit rechts auf ein Element, eine Linie, eine Domänengruppe, einen Diagrammreiter oder die leere Zeichenfläche für ein Menü mit allem, was dort möglich ist. Die Tastenkürzel unten stehen neben den passenden Menüeinträgen. Ziehen Sie vom Rand eines Elements zu einem anderen, um sie zu verbinden, oder klicken Sie mit rechts und wählen Sie „Verbindung beginnen zu…“',
   'shortcutGroup.selection': 'Auswahl',
   'shortcutGroup.edit': 'Bearbeiten',
   'shortcutGroup.view': 'Ansicht',

@@ -100,7 +100,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'adr.accept': 'Aanvaarden',
   'adr.withdraw': 'Intrekken',
   'adr.withdrawTitle': '{name} intrekken?',
-  'adr.withdrawBody': 'Het besluit houdt zijn nummer en eindigt als afgewezen, met uw reden. Het kan daarna niet meer worden gewijzigd.',
+  'adr.withdrawBody': 'Het besluit houdt zijn nummer en eindigt als afgewezen, met je reden. Het kan daarna niet meer worden gewijzigd.',
   'adr.rejectTitle': '{name} afwijzen?',
   'adr.rejectBody': 'Het besluit houdt zijn nummer en wordt vergrendeld. Geef een reden, tenzij de afwijzing van een beoordelaar die al geeft.',
   'adr.reject': 'Afwijzen',

@@ -17,7 +17,7 @@ export const DE: Record<keyof typeof EN, string> = {
 
   'check.conflict': '{name} ist sowohl hier als auch in {scope} definiert — behalten Sie eine Definition und machen Sie die andere mit Verknüpfen… zu einem Platzhalter',
   'check.drift': 'Die Kopie von {name} hier stimmt nicht mehr mit {scope} überein — aktualisieren Sie sie, oder ändern Sie es dort',
-  'check.dangling': '{name} steht für etwas, das nichts in der Organisation definiert — definieren Sie es hier, oder löschen Sie den Platzhalter',
+  'check.dangling': '{name} steht für etwas, das nirgends in der Organisation definiert ist — definieren Sie es hier, oder löschen Sie den Platzhalter',
   'check.danglingEnd': 'Eine Zeile an {name} endet an etwas, das dieser Bereich nicht hält — löschen Sie die Zeile, oder zeichnen Sie, worauf sie zeigt',
   'check.proposal': '{name} ist eine Fähigkeit, die diese Domäne vorschlägt und die Organisation nicht benannt hat — fügen Sie sie der Geschäftsarchitektur der Organisation hinzu, oder benennen Sie sie in eine vorhandene um',
   'check.ownedElsewhere': 'Dies wird in {scope} geführt — ändern Sie es dort',

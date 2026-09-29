@@ -7,7 +7,7 @@ import type { EN } from './en'
 export const DE: Record<keyof typeof EN, string> = {
   'technology.page': 'Plattformbericht',
   'technology.close': 'Plattformbericht schließen',
-  'technology.summary': '{hosted} gehostet · {users} nutzen es · {landings} Schnittstellen darüber',
+  'technology.summary': '{hosted} gehostet · {users} Nutzer · {landings} Schnittstellen darüber',
   'technology.standsOn': 'Steht auf',
   'technology.children': 'Darunter',
   'technology.hosted': 'Läuft hier',
@@ -26,7 +26,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'technology.on': 'auf {name}',
   'service.page': 'Dienstbericht',
   'service.close': 'Dienstbericht schließen',
-  'service.summary': '{consumers} nutzen ihn · {scopes} Bereiche · {stranded} gestrandet, wenn er geht',
+  'service.summary': '{consumers} Abnehmer · {scopes} Bereiche · {stranded} gestrandet, wenn er geht',
   'service.shared': 'Geteilt',
   'service.ownTeam': 'Eigenes Team',
   'service.goesOn': 'Zurückgezogen am {day}',

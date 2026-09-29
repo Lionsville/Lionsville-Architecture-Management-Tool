@@ -7,7 +7,7 @@ import type { EN } from './en'
 export const NL: Record<keyof typeof EN, string> = {
   'technology.page': 'Platformrapport',
   'technology.close': 'Platformrapport sluiten',
-  'technology.summary': '{hosted} gehost · {users} gebruiken het · {landings} koppelvlakken eroverheen',
+  'technology.summary': '{hosted} gehost · {users} gebruikers · {landings} koppelvlakken eroverheen',
   'technology.standsOn': 'Staat op',
   'technology.children': 'Eronder',
   'technology.hosted': 'Draait hier',
@@ -26,7 +26,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'technology.on': 'op {name}',
   'service.page': 'Dienstrapport',
   'service.close': 'Dienstrapport sluiten',
-  'service.summary': '{consumers} gebruiken het · {scopes} scopes · {stranded} gestrand als het verdwijnt',
+  'service.summary': '{consumers} afnemers · {scopes} scopes · {stranded} gestrand als het verdwijnt',
   'service.shared': 'Gedeeld',
   'service.ownTeam': 'Eigen team',
   'service.goesOn': 'Ingetrokken op {day}',

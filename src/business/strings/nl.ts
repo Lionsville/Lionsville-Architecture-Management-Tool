@@ -50,7 +50,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'sheet.addStepTo': 'Stap toevoegen in {phase}, {lane}',
   'sheet.addLane': '+ baan…',
   'sheet.addArea': '+ gebied',
-  'sheet.addGrouping': '+ groep',
+  'sheet.addGrouping': '+ groepering',
   'sheet.addGroupingTo': 'Groep toevoegen aan {name}',
   'sheet.addCapability': '+ capability',
   'sheet.addCapabilityTo': 'Capability toevoegen aan {name}',
@@ -64,7 +64,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'sheet.namePhase': 'Nieuwe fase',
   'sheet.nameStep': 'Nieuwe stap',
   'sheet.nameArea': 'Nieuw gebied',
-  'sheet.nameGrouping': 'Nieuwe groep',
+  'sheet.nameGrouping': 'Nieuwe groepering',
   'sheet.nameCapability': 'Nieuwe capability',
   'sheet.nameStakeholder': 'Nieuwe belanghebbende',
   'sheet.nameGroup': 'Nieuwe groep',
@@ -111,7 +111,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'sheet.switchedBoard': '{name} wordt getoond; daar staat het op',
 
   'sheet.unmapped': 'Nog niet aan een domein toegewezen',
-  'sheet.unmappedCount': '{count} wachten',
+  'sheet.unmappedCount': '{count} open',
 
   'sheet.details': 'Details',
   'sheet.openPage': 'De pagina van {name} openen',

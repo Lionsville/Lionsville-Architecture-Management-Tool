@@ -395,13 +395,23 @@ export function setCauseState(list: readonly Cause[], id: string, state: CauseSt
 }
 
 /**
+ * A heading a new cause started with before its wording was mended, still read
+ * in the bodies written then: the heading is in the person's text, and a
+ * translation corrected later must not make their evidence unreadable.
+ */
+const FORMER_HEADINGS: Record<'observation.tplWhy' | 'observation.tplVerify', readonly string[]> = {
+  'observation.tplWhy': [],
+  'observation.tplVerify': ['wie zu verifizieren'],
+}
+
+/**
  * Every spelling a body heading has, in every language the tool speaks — read
  * off this module's own string slices rather than the registry, the way the
  * decision template is, so a rule that runs in the agent's process does not
  * load every screen's words to find two headings.
  */
 function headingsFor(key: 'observation.tplWhy' | 'observation.tplVerify'): Set<string> {
-  return new Set([EN, NL, DE].map((table) => table[key].trim().toLowerCase()))
+  return new Set([...[EN, NL, DE].map((table) => table[key].trim().toLowerCase()), ...FORMER_HEADINGS[key]])
 }
 
 /**

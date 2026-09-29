@@ -357,7 +357,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'field.protocol': 'Protocol',
   'field.protocolPlaceholder': 'bijv. EDI, Kafka, REST',
   'field.partOf': 'Onderdeel van',
-  'field.partOfHelp': 'Van welk applicatiekoppelvlak deze lijn deel is; dat koppelvlak tekent het landschap',
+  'field.partOfHelp': 'Van welk applicatiekoppelvlak deze lijn deel is; het landschap tekent dat koppelvlak',
   'field.partOfOption': '“{label}” van {name}',
   'field.partOfUnlabelled': 'Van {name}',
   'field.detailOne': 'Detail: 1 koppelvlak op het containerdiagram · {protocols}',
@@ -368,7 +368,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'field.detachFrom': 'Losmaken van “{label}”',
   'field.technologyHelp': 'Waar het van gemaakt is: OpenAPI 3, een Kafka-topic, een SFTP-drop',
   'field.platformArchetype': 'Wat het is',
-  'field.platformArchetypeHelp': 'Een plek waar iets op draait, een dienst die iets gebruikt, of een netwerk',
+  'field.platformArchetypeHelp': 'Een plek waar iets op draait, een dienst die door iets gebruikt wordt, of een netwerk',
   'field.hostedOn': 'Draait op',
   'field.hostedOnHelp': 'Waar deze draait; een applicatie draait waar haar containers draaien',
   'field.hostedOnElsewhere': 'Elders in de organisatie',
@@ -437,8 +437,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'section.route': 'Route',
 
   'element.noData': 'Geen operationele gegevens voor dit element.',
-  'aspect.derivedFrom': 'Platform leest {status}, afgeleid van waar het op draait: {name}. Een hier gezette status wint.',
-  'aspect.derivedNone': 'Platform leest geen: het draait nog nergens op. Een hier gezette status wint.',
+  'aspect.derivedFrom': 'Platform: {status} (afgeleid van {name}, waar het op draait). Een hier gezette status wint.',
+  'aspect.derivedNone': 'Platform: geen (het draait nog nergens op). Een hier gezette status wint.',
   'element.deleteApplication': 'Applicatie verwijderen…',
   'element.removeDelete': 'Weghalen / verwijderen…',
 
