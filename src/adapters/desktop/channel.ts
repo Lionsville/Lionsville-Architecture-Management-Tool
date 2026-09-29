@@ -221,6 +221,8 @@ export type DesktopFiles = {
    * difference between an interrupted save and a lost project.
    */
   write(root: string, path: string, bytes: Uint8Array): Promise<DesktopStamp>
+  /** A file made whole where nothing is at its path: `false`, and nothing written, where something is. */
+  create(root: string, path: string, bytes: Uint8Array): Promise<boolean>
   /**
    * Several files written and removed as one: every write staged beside its
    * target and flushed before any is renamed into place, then the removals.

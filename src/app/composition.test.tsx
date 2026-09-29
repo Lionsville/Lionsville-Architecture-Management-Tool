@@ -44,6 +44,7 @@ function channel(): DesktopFiles {
     makeDirectory: () => Promise.resolve(),
     read: () => Promise.resolve(undefined),
     write: vi.fn(() => Promise.resolve({ mtimeMs: 1, size: 1, sha256: 'x' })),
+    create: vi.fn(() => Promise.resolve(true)),
     writeTogether: () => Promise.resolve([]),
     remove: () => Promise.resolve(),
     stamp: () => Promise.resolve(undefined),

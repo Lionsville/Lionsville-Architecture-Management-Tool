@@ -100,6 +100,7 @@ describe('the folder’s history and its applied steps', () => {
     const steps = { one: ['scope', 1] as [string, number] }
     const calls: [() => Promise<unknown>, string, unknown[]][] = [
       [() => files.move('/work', 'acme', 'globex/acme'), 'files:move', ['/work', 'acme', 'globex/acme']],
+      [() => files.create('/work', 'images/map.png', new Uint8Array([1])), 'files:create', ['/work', 'images/map.png', new Uint8Array([1])]],
       [() => history.startHistory('/work'), 'git:startHistory', ['/work']],
       [() => history.changes('/work'), 'git:changes', ['/work']],
       [() => history.readiness('/work'), 'git:readiness', ['/work']],

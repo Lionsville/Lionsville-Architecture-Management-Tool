@@ -59,6 +59,7 @@ const files: DesktopFiles = {
   makeDirectory: (root, path) => ipcRenderer.invoke('files:makeDirectory', root, path),
   read: (root, path) => ipcRenderer.invoke('files:read', root, path),
   write: (root, path, bytes) => ipcRenderer.invoke('files:write', root, path, bytes),
+  create: (root, path, bytes) => ipcRenderer.invoke('files:create', root, path, bytes),
   writeTogether: (root, writes, removals) => ipcRenderer.invoke('files:writeTogether', root, writes, removals),
   remove: (root, path, options) => ipcRenderer.invoke('files:remove', root, path, options),
   move: (root, from, to) => ipcRenderer.invoke('files:move', root, from, to),

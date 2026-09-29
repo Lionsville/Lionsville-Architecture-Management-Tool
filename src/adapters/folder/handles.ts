@@ -70,6 +70,18 @@ export async function writeAt(root: DirectoryHandleLike, path: string, data: str
   }
 }
 
+/**
+ * A file made whole at a path where nothing is: `false`, and nothing written,
+ * where something is. At once where the folder can (`createFile`); where it
+ * cannot, as a browser's cannot, the path is looked at and then written.
+ */
+export async function createAt(root: DirectoryHandleLike, path: string, data: Uint8Array): Promise<boolean> {
+  if (root.createFile) return root.createFile(path, data)
+  if (await fileAt(root, path)) return false
+  await writeAt(root, path, data)
+  return true
+}
+
 /** A file or a folder removed by its path; one that is not there is not an error. */
 export async function removeAt(root: DirectoryHandleLike, path: string, recursive = false): Promise<void> {
   const segments = segmentsOf(path)

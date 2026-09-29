@@ -86,4 +86,11 @@ export type DirectoryHandleLike = {
    * process; absent, a folder's files are copied and the old folder removed.
    */
   moveEntry?(from: string, to: string): Promise<void>
+  /**
+   * A file made at a path inside this folder only where nothing is there,
+   * whole: `false`, and nothing written, where something is. Offered where
+   * something outside the page can make it so at once — the desktop's main
+   * process; absent, the path is looked at and then written.
+   */
+  createFile?(path: string, data: Uint8Array): Promise<boolean>
 }

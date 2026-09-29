@@ -133,6 +133,11 @@ export class IpcDirectoryHandle implements DirectoryHandleLike {
     )
   }
 
+  /** Made in main, where nothing else can come between looking at the path and writing it. */
+  createFile(path: string, data: Uint8Array): Promise<boolean> {
+    return this.files.create(this.root, this.within(path), data)
+  }
+
   /** Renamed in main: the folder moves as it is, and its bytes never cross to the page. */
   async moveEntry(from: string, to: string): Promise<void> {
     await this.files.move(this.root, this.within(from), this.within(to))

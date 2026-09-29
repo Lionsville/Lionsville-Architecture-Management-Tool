@@ -444,7 +444,11 @@ repositories, in `src/adapters/folder/`:
   one made from it where it does not; the file is never renamed. A picture
   filed in an image folder whose name differs only in case from one there is
   kept in that folder, whatever the disk, so `A/x.png` and `a/y.png` never
-  depend on whether the disk tells case apart. Bytes put are held in memory
+  depend on whether the disk tells case apart. The same holds for a file's
+  own name: a picture taken out and added in one run under a name that
+  differs only in case keeps the file it had (its row says the file), and no
+  file is removed whose name differs only in case from one kept — on a disk
+  that does not tell case apart they are one file. Bytes put are held in memory
   until a step adds them, so bytes never added write nothing. **Bytes
   first**, as in every implementation: a step naming a content address the
   library does not already hold, whose bytes were not put for the scope, is
@@ -455,8 +459,14 @@ repositories, in `src/adapters/folder/`:
   the scope's files, and the pictures no entry keeps are removed after them,
   so a write that stops in between leaves a picture no row names — read as a
   file of its own, and adopted by the step sent again — and never a row whose
-  file is not there, which would leave the library without a word. A refused
-  write takes back the pictures it wrote. A picture is looked at, not read: its size, when it was
+  file is not there, which would leave the library without a word; the step
+  sent again adopts only a file of its very name and bytes. A new picture's
+  file is made only where nothing is at its path (at once in the desktop's
+  main process, which links a flushed file to the path; looked at and then
+  written in a browser): a file somebody dropped there meanwhile is never
+  written over — the same bytes are taken as the picture's, other bytes
+  refuse the write as a scope changed meanwhile does. A refused write puts
+  back what it wrote. A picture is looked at, not read: its size, when it was
   written and, on the desktop, its number on its disk (a stamp, which main
   takes where the file is). What this machine found each picture to be is
   kept on the machine by that stamp (`StampCache`: the desktop's data folder,

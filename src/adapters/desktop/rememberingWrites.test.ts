@@ -23,6 +23,7 @@ function channel(): DesktopFiles {
     makeDirectory: () => Promise.resolve(),
     read: () => Promise.resolve(undefined),
     write: vi.fn(() => Promise.resolve(stamp('abc'))),
+    create: vi.fn(() => Promise.resolve(true)),
     writeTogether: vi.fn((_root: string, writes: readonly unknown[]) => Promise.resolve(writes.map((_, at) => stamp(`w${at}`)))),
     remove: vi.fn(() => Promise.resolve()),
     move: () => Promise.resolve(),

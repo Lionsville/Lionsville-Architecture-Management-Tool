@@ -39,7 +39,7 @@ import { sayable } from './sayable'
 import { watchFolder } from './watch'
 import {
   fingerprint, listDirectory, makeDirectory, moveEntry, readFile as readInside, removeEntry, resolveInside, stampAt,
-  writeFile as writeInside, writeTogether as writeTogetherInside, writeWhole,
+  createFile as createInside, writeFile as writeInside, writeTogether as writeTogetherInside, writeWhole,
 } from './fileStore'
 
 /** Where the list of folders the user has chosen is kept, between runs. */
@@ -213,6 +213,11 @@ export function registerFileChannel(options: { onRecentsChanged?: () => void } =
   answer('files:write', async (_event, root: unknown, path: unknown, bytes: unknown) => {
     if (!isGranted(root) || !isPath(path) || !isBytes(bytes)) throw new Error('shell.pathRefused')
     return writeInside(root, path, bytes)
+  })
+
+  answer('files:create', async (_event, root: unknown, path: unknown, bytes: unknown) => {
+    if (!isGranted(root) || !isPath(path) || !isBytes(bytes)) throw new Error('shell.pathRefused')
+    return createInside(root, path, bytes)
   })
 
   answer('files:writeTogether', async (_event, root: unknown, writes: unknown, removals: unknown) => {

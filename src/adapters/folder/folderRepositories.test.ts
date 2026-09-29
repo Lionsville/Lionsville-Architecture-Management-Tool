@@ -29,7 +29,7 @@ import { composed, identityAt, placesInMemory } from './folderScopes'
 import { stampsInMemory } from './folderPictures'
 import { memoryGit } from './memoryGit'
 import { FileSystemScopeStore } from './FileSystemScopeStore'
-import { removeAt, textAt, writeAt } from './handles'
+import { bytesAt, removeAt, textAt, writeAt } from './handles'
 import type { ScopeId } from '../../projects/scopeState'
 
 function overFakeFolder(): RepositoriesUnderTest {
@@ -468,6 +468,52 @@ describe('what a scope’s pictures folder says, over what its rows say', () => 
     expect(refusal(answer)).toBe('shell.scopeMoved')
     expect(root.paths().filter((path) => path.startsWith('acme/images/'))).toEqual([])
     expect((await repositories.state(acme)).images).toEqual([])
+  })
+
+  it('never writes over a picture somebody dropped at its path meanwhile: other bytes refuse the write, the same bytes are taken as it', async () => {
+    for (const [dropped, landed] of [[picture(9, 9), false], [picture(8, 8), true]] as const) {
+      const root = new FakeDirectory()
+      const { handle, meanwhile } = stoppable(root)
+      const repositories = over({ repositories: folderRepositories({ root: handle, git: memoryGit(root) }) })
+      const [acme, globex] = [await repositories.scope('acme', 'Acme Logistics'), await repositories.scope('globex', 'Globex')]
+      const bytes = picture(8, 8)
+      const { contentAddress } = ok(await repositories.images.put(acme, 'map.png', bytes))
+      ok(await repositories.images.put(globex, 'map.png', bytes))
+      const entry = { name: 'map.png', mediaType: 'image/png', size: bytes.length, width: 8, height: 8, contentAddress }
+      meanwhile('acme/images/map.png', () => writeAt(root, 'globex/images/map.png', dropped))
+      const answer = await repositories.apply([
+        { scope: acme, steps: [step({ type: 'image.add', image: entry })] }, { scope: globex, steps: [step({ type: 'image.add', image: entry })] },
+      ])
+      expect(await bytesAt(root, 'globex/images/map.png')).toEqual(dropped)
+      if (landed) {
+        ok(answer)
+        expect((await repositories.state(globex)).images).toEqual([entry])
+      } else {
+        expect(answer).toEqual({ refused: 'shell.scopeMoved', scope: globex })
+        expect(root.paths()).not.toContain('acme/images/map.png')
+        expect((await repositories.state(acme)).images).toEqual([])
+      }
+    }
+  })
+
+  it('writes the new bytes of a picture taken out and added again under its name in one run', async () => {
+    const { root, repositories, acme } = await withPicture()
+    const [entry] = (await repositories.state(acme)).images
+    const again = picture(16, 16)
+    const { contentAddress } = ok(await repositories.images.put(acme, 'map.png', again))
+    await repositories.steps(acme, { type: 'image.remove', name: 'map.png' },
+      { type: 'image.add', image: { ...entry, size: again.length, width: 16, height: 16, contentAddress } })
+    expect(await bytesAt(root, 'acme/images/map.png')).toEqual(again)
+    expect((await repositories.state(acme)).images.map((image) => image.contentAddress)).toEqual([contentAddress])
+  })
+
+  it('keeps the file of a picture whose name changes only in case, whatever the disk', async () => {
+    const { root, repositories, acme } = await withPicture()
+    const [entry] = (await repositories.state(acme)).images
+    await repositories.steps(acme, { type: 'image.remove', name: 'map.png' }, { type: 'image.add', image: { ...entry, name: 'Map.png' } })
+    expect(root.paths().filter((path) => path.startsWith('acme/images/'))).toEqual(['acme/images/map.png'])
+    expect((await repositories.state(acme)).images).toEqual([{ ...entry, name: 'Map.png' }])
+    expect((await repositories.images.bytes(acme, 'Map.png'))?.bytes).toEqual(picture(64, 32))
   })
 
   it('refuses a step naming a picture before its bytes were put, and writes nothing of it', async () => {

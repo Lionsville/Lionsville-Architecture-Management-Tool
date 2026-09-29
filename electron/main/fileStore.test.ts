@@ -17,7 +17,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
   fingerprint, listDirectory, makeDirectory, moveEntry, readFile as readInside, removeEntry, resolveInside, stampAt,
-  safeRelativePath, writeFile as writeInside, writeTogether, writeWhole,
+  createFile, safeRelativePath, writeFile as writeInside, writeTogether, writeWhole,
 } from './fileStore'
 
 let root = ''
@@ -162,6 +162,19 @@ describe('what the channel does with a folder', () => {
  * staged beside every target first, then moved into place, so the renderer
  * going away part way cannot leave half an organisation.
  */
+describe('a file made only where nothing is', () => {
+  it('makes it whole, and writes nothing where anything is at its path, in any case the disk takes for it', async () => {
+    expect(await createFile(root, 'images/map.png', bytes('one'))).toBe(true)
+    expect(text((await readInside(root, 'images/map.png'))?.bytes)).toBe('one')
+    expect(await createFile(root, 'images/map.png', bytes('two'))).toBe(false)
+    expect(text((await readInside(root, 'images/map.png'))?.bytes)).toBe('one')
+    const blind = await readdir(join(root, 'IMAGES')).then(() => true, () => false)
+    if (blind) expect(await createFile(root, 'images/MAP.png', bytes('three'))).toBe(false)
+    expect(await readdir(join(root, 'images'))).toEqual(['map.png'])
+    await expect(createFile(root, '../outside.png', bytes('x'))).rejects.toThrow('shell.pathRefused')
+  })
+})
+
 describe('a file of the app’s own, written whole', () => {
   it('writes text into folders it makes, with the mode asked for whatever the old file had', async () => {
     const target = join(outside, 'folders', 'one.json')

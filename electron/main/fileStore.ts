@@ -30,7 +30,7 @@
 import { createHash } from 'node:crypto'
 import { constants } from 'node:fs'
 import {
-  access, lstat, mkdir, open, readdir, readFile as read, realpath, rename, rm, stat, unlink,
+  access, link, lstat, mkdir, open, readdir, readFile as read, realpath, rename, rm, stat, unlink,
 } from 'node:fs/promises'
 import { dirname, isAbsolute, join, relative, sep } from 'node:path'
 import type { DesktopEntry, DesktopFileContents, DesktopStamp } from '../../src/adapters/desktop/channel'
@@ -199,6 +199,50 @@ export async function writeWhole(target: string, data: Uint8Array | string, mode
     await unlink(temporary).catch(() => undefined)
     throw cause
   }
+}
+
+/**
+ * A file inside a granted folder made only where nothing is at its path —
+ * whole, and at once: written under a name of its own, flushed, then linked
+ * to its path, which the disk refuses where anything is there (in any case,
+ * on a disk that does not tell case apart). `false`, and nothing written,
+ * where something is. On a disk that has no links the path is opened to be
+ * made (`wx`), as exclusive and not whole.
+ */
+export async function createFile(root: string, path: string, bytes: Uint8Array): Promise<boolean> {
+  const target = await resolveInside(root, path)
+  if (!target) throw new Error('shell.pathRefused')
+  await mkdir(dirname(target), { recursive: true })
+  const temporary = `${target}.${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}.tmp`
+  try {
+    await writeWhole(temporary, bytes)
+    await link(temporary, target)
+    return true
+  } catch (cause) {
+    if (codeOf(cause) === 'EEXIST') return false
+    if (!LINKLESS.has(codeOf(cause))) throw cause
+    return createOpen(target, bytes)
+  } finally {
+    await unlink(temporary).catch(() => undefined)
+  }
+}
+
+/** What a disk that keeps no links says when asked for one. */
+const LINKLESS = new Set(['EPERM', 'ENOTSUP', 'EOPNOTSUPP', 'ENOSYS', 'EXDEV'])
+
+async function createOpen(target: string, bytes: Uint8Array): Promise<boolean> {
+  const handle = await open(target, 'wx').catch((cause: unknown) => {
+    if (codeOf(cause) === 'EEXIST') return undefined
+    throw cause
+  })
+  if (!handle) return false
+  try {
+    await handle.writeFile(bytes)
+    await handle.sync()
+  } finally {
+    await handle.close()
+  }
+  return true
 }
 
 /** A file inside a granted folder, written whole or not at all (`writeWhole`), and its stamp. */

@@ -32,7 +32,7 @@
  * can see and settle, and never none. Each scope's identity goes with it,
  * written into its header where it was not yet.
  */
-import { imageName, imageNameKey } from '../../model/imageName'
+import { contentAddressOf, imageName, imageNameKey } from '../../model/imageName'
 import type { ImageEntry } from '../../model/imageName'
 import { stableJson } from '../../projects/fileText'
 import type { ScopeSnapshot } from '../../projects/scope'
@@ -49,7 +49,7 @@ import { fileFor, foldersOf, LIBRARY_KEY, pictureFiles, picturePath, rowsFor, ro
 import type { KeptPicture, PictureStaging } from './folderPictures'
 import { composed, headerOf, ID_KEY, newIdentity } from './folderScopes'
 import type { FolderNode, FolderScopes, ReadScope } from './folderScopes'
-import { bytesAt, filesUnder, folderAt, removeAt, textAt, writeAt } from './handles'
+import { bytesAt, createAt, filesUnder, folderAt, removeAt, textAt, writeAt } from './handles'
 import { filesInDocuments } from './imageLibrary'
 import type { StepMemory } from './stepMemory'
 import { SCOPE_FILE } from '../../projects/folderFormat'
@@ -57,6 +57,9 @@ import { SCOPE_FILE } from '../../projects/folderFormat'
 type Run = { read: ReadScope; steps: ScopeStep[] }
 
 type Planned = { read: ReadScope; content: ScopeContent; library: KeptPicture[]; snapshot: ScopeSnapshot; steps: ScopeStep[] }
+
+/** A write of a picture, to be put back: the file as it was, or nothing where there was none. */
+type Undo = { path: string; before?: Uint8Array }
 
 /** What a state holds that its steps change. */
 function contentOf(state: ScopeState): ScopeContent {
@@ -66,13 +69,14 @@ function contentOf(state: ScopeState): ScopeContent {
 
 /**
  * What a run starts from: the scope, less a picture no row names that one of
- * the run's steps adds as it is — the same name, the same bytes. A write that
- * stopped after a picture's bytes and before the rows naming them leaves one
- * (`write`), and the step sent again adds what is already there.
+ * the run's steps adds as it is — the very same name, not one that differs
+ * only in case, and the same bytes. A write that stopped after a picture's
+ * bytes and before the rows naming them leaves one (`write`), and the step
+ * sent again adds what is already there.
  */
 function startOf(read: ReadScope, steps: readonly ScopeStep[]): ScopeContent {
   const content = contentOf(read.state)
-  const keyOf = (entry: ImageEntry) => `${imageNameKey(entry.name)}\u0000${entry.contentAddress}`
+  const keyOf = (entry: ImageEntry) => `${entry.name}\u0000${entry.contentAddress}`
   const added = new Set(steps.flatMap(({ command }) => (command.type === 'image.add' ? [keyOf(command.image)] : [])))
   if (added.size === 0) return content
   const rows = new Set(rowsOf(read.snapshot?.carried?.[LIBRARY_KEY]).map((row) => imageName(row.file)))
@@ -80,11 +84,25 @@ function startOf(read: ReadScope, steps: readonly ScopeStep[]): ScopeContent {
   return left.size === 0 ? content : { ...content, images: content.images.filter((image) => !left.has(keyOf(image))) }
 }
 
-/** The library after a step: each entry kept as the file it was, and a new one filed where a case-blind disk would put it. */
+/**
+ * The library after a run: each entry kept as the file it was, and a new one
+ * filed where a case-blind disk would put it — in the very file of an entry
+ * the run took out whose file differs from it only in case. There is no step
+ * that renames a picture: a change of case alone is one taken out and one
+ * added, and on a disk that does not tell case apart the two are one file,
+ * which is kept, and never written as one name and removed as the other.
+ */
 function nextLibrary(was: readonly KeptPicture[], entries: readonly ImageEntry[]): KeptPicture[] {
   const files = new Map(was.map((kept) => [kept.entry.name, kept.file]))
+  const staying = new Set(entries.map((entry) => entry.name))
+  const freed = new Map(was.filter((kept) => !staying.has(kept.entry.name)).map((kept) => [imageNameKey(kept.file), kept.file]))
   const folders = foldersOf(was.map((kept) => kept.file))
-  return entries.map((entry) => ({ entry, file: files.get(entry.name) ?? fileFor(entry.name, folders) }))
+  return entries.map((entry) => {
+    const held = files.get(entry.name)
+    if (held !== undefined) return { entry, file: held }
+    const filed = fileFor(entry.name, folders)
+    return { entry, file: freed.get(imageNameKey(filed)) ?? filed }
+  })
 }
 
 /** A scope's state as the folder store writes it: the documents' pictures as files, the library and the identity in the header. */
@@ -271,8 +289,8 @@ export class FolderScopeRepository implements ScopeRepository {
    * met, said as one. Bytes before the rows that name them: a write that
    * stops in between leaves a picture no row names, which the library reads
    * as a file of its own, and never a row whose file is not there, which it
-   * would drop without a word. A refused write takes back the pictures it
-   * wrote, and so wrote nothing.
+   * would drop without a word. A refused write puts back what it wrote, and so
+   * wrote nothing.
    */
   private async write(planned: readonly Planned[]): Promise<Refused | undefined> {
     if (planned.length === 0) return undefined
@@ -280,14 +298,20 @@ export class FolderScopeRepository implements ScopeRepository {
       scope: snapshot,
       ...(read.stored !== undefined ? { expects: read.stored } : {}),
     }))
-    const added: { address: ScopeAddress; file: string }[] = []
-    for (const { read, library } of planned) added.push(...await this.picturesIn(read, library))
+    const undo: Undo[] = []
+    for (const { read, library } of planned) {
+      const refused = await this.picturesIn(read, library, undo)
+      if (refused) {
+        await this.undo(undo)
+        return refused
+      }
+    }
     try {
       await this.folder.store.saveTogether(entries)
     } catch (cause) {
       const refused = refusalOf(cause, planned[0].read.node.id)
       if (!refused) throw cause
-      for (const { address, file } of added) await removeAt(this.folder.root, picturePath(address, file)).catch(() => undefined)
+      await this.undo(undo)
       return refused
     }
     for (const { read, library } of planned) await this.picturesOut(read, library)
@@ -295,37 +319,56 @@ export class FolderScopeRepository implements ScopeRepository {
   }
 
   /**
-   * The files of a library about to be written that are not there yet: each
-   * from the bytes put for it, or from another file with the same bytes. The
-   * files written, each by its scope's address.
+   * The files of a library about to be written whose bytes are not there yet:
+   * each from the bytes put for it, or from another file with the same bytes.
+   * One not there is made only where nothing is at its path — a file somebody
+   * dropped there meanwhile is never written over: one holding these very
+   * bytes is taken as this picture's, and any other refuses the write, as a
+   * scope changed meanwhile does. One there, which the run gave other bytes,
+   * is written over. What each write did is noted, to be put back.
    */
-  private async picturesIn(read: ReadScope, library: readonly KeptPicture[]): Promise<{ address: ScopeAddress; file: string }[]> {
+  private async picturesIn(read: ReadScope, library: readonly KeptPicture[], undo: Undo[]): Promise<Refused | undefined> {
     const { address, id } = read.node
     const there = new Set(read.files.map((file) => file.file))
-    const written: { address: ScopeAddress; file: string }[] = []
+    const held = new Map(read.library.filter((kept) => there.has(kept.file)).map((kept) => [kept.file, kept.entry.contentAddress]))
     for (const { entry, file } of library) {
-      if (there.has(file)) continue
+      if (held.get(file) === entry.contentAddress) continue
       const same = read.library.find((kept) => kept.entry.contentAddress === entry.contentAddress && there.has(kept.file))
       const bytes = this.staging.get(id, entry.contentAddress)
         ?? (same ? await bytesAt(this.folder.root, picturePath(address, same.file)) : undefined)
       if (!bytes) continue
-      await writeAt(this.folder.root, picturePath(address, file), bytes)
-      written.push({ address, file })
+      const path = picturePath(address, file)
+      if (there.has(file)) {
+        undo.push({ path, before: await bytesAt(this.folder.root, path) })
+        await writeAt(this.folder.root, path, bytes)
+      } else if (await createAt(this.folder.root, path, bytes)) {
+        undo.push({ path })
+      } else if (await contentAddressOf((await bytesAt(this.folder.root, path)) ?? new Uint8Array()) !== entry.contentAddress) {
+        return { refused: 'shell.scopeMoved', scope: id }
+      }
       await this.folder.written(address, file, entry)
     }
-    return written
+    return undefined
+  }
+
+  /** What a refused write wrote, put back: a file it made removed, one it wrote over as it was. */
+  private async undo(undo: readonly Undo[]): Promise<void> {
+    for (const { path, before } of [...undo].reverse()) {
+      await (before ? writeAt(this.folder.root, path, before) : removeAt(this.folder.root, path)).catch(() => undefined)
+    }
   }
 
   /**
    * The files of a library just written that no entry keeps any more,
-   * removed. One that will not go is said, and the scope's files are already
-   * right.
+   * removed — never one that differs only in case from a file kept, which on
+   * a disk that does not tell case apart is that file. One that will not go
+   * is said, and the scope's files are already right.
    */
   private async picturesOut(read: ReadScope, library: readonly KeptPicture[]): Promise<void> {
-    const wanted = new Set(library.map((kept) => kept.file))
+    const wanted = new Set(library.map((kept) => imageNameKey(kept.file)))
     try {
       for (const { file } of read.files) {
-        if (!wanted.has(file)) await removeAt(this.folder.root, picturePath(read.node.address, file))
+        if (!wanted.has(imageNameKey(file))) await removeAt(this.folder.root, picturePath(read.node.address, file))
       }
     } catch (cause) {
       this.folder.diagnostics?.report({ level: 'warn', where: 'folder', message: `a picture could not be kept: ${reasonOf(cause)}`, cause })

@@ -17,7 +17,7 @@ import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { basename, join } from 'node:path'
 import {
-  fingerprint, listDirectory, makeDirectory, moveEntry, readFile, removeEntry, stampAt, writeFile, writeTogether,
+  createFile, fingerprint, listDirectory, makeDirectory, moveEntry, readFile, removeEntry, stampAt, writeFile, writeTogether,
 } from '../../../../electron/main/fileStore'
 import { appliedStepsText, readAppliedSteps } from '../../../platform/node/appliedSteps'
 import { gitAvailable, isRepository } from '../../../platform/node/git'
@@ -60,6 +60,7 @@ function filesOver(root: string): DesktopFiles {
     makeDirectory: (held, path) => makeDirectory(held, path),
     read: (held, path) => readFile(held, path),
     write: (held, path, bytes) => writeFile(held, path, bytes),
+    create: (held, path, bytes) => createFile(held, path, bytes),
     writeTogether: (held, writes, removals) => writeTogether(held, writes, removals),
     remove: (held, path, options) => removeEntry(held, path, options),
     move: (held, from, to) => moveEntry(held, from, to),
@@ -238,4 +239,52 @@ describe.skipIf(!available)('the folder’s repositories on the desktop, with gi
     expect((await repositories.state(acme)).model.elements.map((one) => one.id)).toEqual(['crews'])
   })
 
+})
+
+/** Whether this machine's temporary folder is on a disk that does not tell case apart, as APFS and NTFS do not by default. */
+const caseBlind = await (async () => {
+  const folder = freshFolder()
+  await mkdir(join(folder, 'probe'))
+  return existsSync(join(folder, 'PROBE'))
+})()
+
+/** A few bytes a picture reader takes for a PNG of a size. */
+function png(width: number, height: number, fill = 7): Uint8Array {
+  const bytes = new Uint8Array(25).fill(fill)
+  bytes.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52, 0, 0, 0, width, 0, 0, 0, height])
+  return bytes
+}
+
+describe.runIf(caseBlind)('pictures on a disk that does not tell case apart', () => {
+  it('keeps a picture whose name changes only in case, as the one file it is, through a restart', async () => {
+    const folder = freshFolder()
+    const repositories = over(onTheDesktop(folder))
+    const acme = await repositories.scope('acme', 'Acme Logistics')
+    const bytes = png(8, 8)
+    const { contentAddress } = ok(await repositories.images.put(acme, 'Map.png', bytes))
+    const entry = { name: 'Map.png', mediaType: 'image/png', size: bytes.length, width: 8, height: 8, contentAddress }
+    await repositories.steps(acme, { type: 'image.add', image: entry })
+    await repositories.steps(acme, { type: 'image.remove', name: 'Map.png' }, { type: 'image.add', image: { ...entry, name: 'map.png' } })
+    expect(await readdir(join(folder, 'acme/images'))).toEqual(['Map.png'])
+    for (const held of [repositories, over(onTheDesktop(folder))]) {
+      expect((await held.state(acme)).images).toEqual([{ ...entry, name: 'map.png' }])
+      expect((await held.images.bytes(acme, 'map.png'))?.bytes).toEqual(bytes)
+    }
+  })
+
+  it('takes a picture a person dropped in no more as the one a step adds under a name that differs only in case', async () => {
+    const folder = freshFolder()
+    const repositories = over(onTheDesktop(folder))
+    const acme = await repositories.scope('acme', 'Acme Logistics')
+    await repositories.steps(acme, addCrews)
+    const bytes = png(8, 8)
+    await mkdir(join(folder, 'acme/images'), { recursive: true })
+    await writeOnDisk(join(folder, 'acme/images/Diagram.PNG'), bytes)
+    const { contentAddress } = ok(await repositories.images.put(acme, 'diagram.png', bytes))
+    const adding = step({ type: 'image.add', image: { name: 'diagram.png', mediaType: 'image/png', size: bytes.length, width: 8, height: 8, contentAddress } })
+    expect(refusal(await repositories.apply([{ scope: acme, steps: [adding] }]))).toBe('command.taken')
+    expect(await readdir(join(folder, 'acme/images'))).toEqual(['Diagram.PNG'])
+    expect((await repositories.state(acme)).images.map((image) => image.name)).toEqual(['Diagram.PNG'])
+    expect((await repositories.images.bytes(acme, 'Diagram.PNG'))?.bytes).toEqual(bytes)
+  })
 })
