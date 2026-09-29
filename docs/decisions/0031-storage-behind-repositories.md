@@ -383,10 +383,19 @@ repositories, in `src/adapters/folder/`:
   the same folder, and everything kept for it is under that record's key, one
   record per value, so two tabs never write over each other's. Both keep them
   through a restart.
-- **The folder's `.git` is no path the file channel takes**, in any spelling
-  and through no link, and no git the app runs starts a hook or a file-system
-  monitor: a folder's history is git's, and nothing a page writes there is a
-  program the app runs.
+- **No `.git` is a path the file channel takes** — the folder's own or one at
+  any depth under it, in any spelling, through a stream's name
+  (`.git::$INDEX_ALLOCATION`) or through a link — and no segment naming a
+  stream of a file is either; so a page can neither write into a history nor
+  give a folder one. No git the app runs starts a program the folder's own
+  configuration names: no hook, no file-system monitor, no `ext::` transport,
+  no signing program (the app's own commits and labels are not signed), and
+  no filter only the folder defines — a filter the person's own
+  configuration defines, git-lfs as it installs itself, runs as defined there.
+  The `ssh` git runs is the one the process names, which git takes before any
+  configuration's; a person's credential helper is theirs, and is kept for
+  fetching and pushing. A folder's history is git's, and nothing a page
+  writes there is a program the app runs.
 - **A move** takes the scope's folder and the scopes under it as they are —
   the format's files, the pictures, the settings, whatever a person keeps
   there, links and empty folders included. On the desktop it is one rename in
