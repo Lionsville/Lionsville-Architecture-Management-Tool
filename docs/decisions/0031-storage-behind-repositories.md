@@ -902,7 +902,10 @@ for the three that ship and for any composed from outside: the source's
 repositories, required, and the only way the app reaches where work is
 kept; what the source is and what it is called; its word about the five
 statuses and its sentence for a refusal; where its history is kept, as a
-sentence of its own; what it hears of a change made elsewhere; and `own`,
+sentence of its own, and whether one is kept there already; what it hears
+of a change made elsewhere; what the bar says of it, where it opened as less
+than it is registered as; the parts it settles on, where it only learns what
+it can keep by asking, which the boot asks before anything is drawn; and `own`,
 typed by the provider, which the app hands back to that provider's chrome
 and panels and to nobody else. A provider composed from outside implements
 the same parts and runs core's five suites over its repositories; the three
@@ -915,8 +918,11 @@ whatever the source.
 source that is open, the open scope's session and its own parts where it
 does, the way about, the app's way of saying something, the preferences —
 one blob, with the app as its one writer, which a chrome writes through —
-and `reread`, for a source that changed as a whole: the tree, the index and
-the open scope are read again. A provider may also draw a section of
+`flush`, which writes what the open scope holds unwritten and is asked
+before a provider replaces what its source keeps — another version taken in,
+older work brought over, a copy made — so a moment-old edit is kept first
+and not written over what arrived; and `reread`, for a source that changed
+as a whole: the tree, the index and the open scope are read again. A provider may also draw a section of
 *Preferences* about its own source, as it may a panel in *Connect an agent*.
 
 **The way in.** A provider's way in says whether it can be taken here at
@@ -950,7 +956,10 @@ a change made elsewhere.
   copy — every scope the browser kept, into a folder that keeps what it
   holds, over the repositories (`projects/copyScopes.ts`). It is asked over
   the folder once it is open, where it used to be asked on a screen of its
-  own just before; a copy has the folder read again.
+  own just before, and where it used to close as soon as a person said yes:
+  it stays open and busy until the copy is done, then says how many scopes
+  were copied and which could not be, or why nothing was. A copy has the
+  folder read again.
 - **A folder in a browser tab keeps its history in this browser's
   database**, beside the folder's handle, and says so where a person starts
   one; only a tab with no database keeps it for as long as the tab is open,
@@ -962,8 +971,14 @@ a change made elsewhere.
 another tab holds it at an older layout, or the page must be reloaded — and
 that its storage is nearly full, asked after every write that landed; the
 first write that landed asks the browser to keep this site. Where the
-database will not open at all, memory answers in its place from the first
-read on, and the chrome says nothing outlives the tab. The work its older
+database will not open at all — a browser without one, a private window that
+refuses the first open — memory answers in its place, and what the older
+storage kept is shown there: read, never moved. The preferences are still
+kept where they always were. Which it is is settled before anything is
+drawn, so the bar says in the warning colour, in memory's words, that nothing
+outlives the tab, as the subtitle and the history's note do, and the strip
+says where the work shown came from. A first open refused with the names a
+lost connection has is a database this page never had, not one it lost. The work its older
 storage kept is asked about one scope at a time — bring the older copy
 over, or keep what is here — and what was left behind is said once.
 Memory's chrome says that nothing is kept.
@@ -979,9 +994,13 @@ stays the model's own restore. A content placed at an address makes the
 scopes above it that are not there, named by their address.
 
 **History on every source.** A snapshot is `record` over every scope, and
-the safeguard before a replace is `record` over the scope replaced. Every
+the safeguard before a replace is `record` over the scope replaced and every
+scope filed under it, all of which the replace writes — only where a history is
+kept already (`ProviderParts.historyKept`): it never starts one nobody asked
+for, and where none can be kept, the replace goes on as its question warned. Every
 source keeps one — this browser's storage and memory as well as a folder —
-and where it is kept is its provider's sentence.
+and where it is kept is its provider's sentence. Who an entry says made it,
+and what the entries of a bringing say, are in the person's language.
 
 **What went.** The ports the app read through before the repositories —
 `ScopeStore`, `ProjectHistory` and `FolderSettings` — are the folder's own
