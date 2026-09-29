@@ -20,6 +20,8 @@ describe('which of a browser folder’s files its history is kept of', () => {
     expect(rule.skipsFile('report-1.pdf')).toBe(true)
     expect(rule.skipsFile('report-10.pdf')).toBe(false)
     expect(rule.skipsFile('a.md')).toBe(false)
+    const takenBack = workingSetRule('images/*\n!images/keep.png\n', [])
+    expect(takenBack.skipsFile('images/keep.png')).toBe(true)
   })
 
   it('leaves out litter, .git and node_modules without any .gitignore, but not what is kept', () => {

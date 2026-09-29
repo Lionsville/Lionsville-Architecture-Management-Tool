@@ -13,9 +13,15 @@
  *
  * Of `.gitignore`, the simple patterns are honoured — a name, a `*` or `?`
  * inside a name, a leading or inner `/` to anchor a pattern at the top, and a
- * trailing `/` for folders only. Not honoured: `!` to take a path back, `**`,
- * a `\` escape, character classes (`[…]`), and a `.gitignore` anywhere but at
- * the top; such a line leaves the files it would have left out in the history.
+ * trailing `/` for folders only. Not honoured, each the other way round from
+ * git:
+ *
+ * - `!`, which takes a path back: the line is let go, so what it would take
+ *   back stays left out — `images/*` with `!images/keep.png` leaves
+ *   `keep.png` out, where git keeps it;
+ * - `**`, a `\` escape, character classes (`[…]`) and a `.gitignore` anywhere
+ *   but at the top: the line is let go, so what it would leave out is kept in
+ *   the history, where git leaves it out.
  */
 
 /** Files no desktop repository would hold: what an operating system leaves in a folder. */

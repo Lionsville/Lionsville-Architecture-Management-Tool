@@ -484,9 +484,12 @@ repositories, in `src/adapters/folder/`:
   operating systems' litter (`.DS_Store`, `Thumbs.db`, `desktop.ini`), a
   `.git` or a `node_modules` folder, or what the top-level `.gitignore`'s
   simple lines name — a name, `*` and `?` inside a name, a `/` that anchors,
-  a trailing `/` for folders. Not honoured: `!`, `**`, `\` escapes,
-  character classes and a `.gitignore` below the top. A file the history
-  holds, or a commit names, is kept whatever those say. The history
+  a trailing `/` for folders. Not honoured, each the other way round from
+  git: `!` is let go, so what it would take back stays out (`images/*` with
+  `!images/keep.png` leaves `keep.png` out, where git keeps it); `**`, `\`
+  escapes, character classes and a `.gitignore` below the top are let go, so
+  what they would leave out is kept, where git leaves it out. A file the
+  history holds, or a commit names, is kept whatever those say. The history
   repository over it is the folder's own, and every suite runs over it too.
   **That history is this browser's, not the folder's**: the folder holds none
   of it, and the desktop's git history of the same folder is another.
