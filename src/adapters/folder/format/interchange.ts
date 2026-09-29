@@ -144,9 +144,18 @@ export async function open(bytes: Uint8Array, at: ScopeAddress): Promise<Opened 
  * file.
  */
 function withNames(scope: ScopeSnapshot): ScopeSnapshot {
+  // Every name the library already takes is kept first, so a name made for
+  // another file never takes one a document already says.
   const taken = new Set<string>()
   const names = new Map<string, ImageName>()
-  for (const image of scope.imageLibrary ?? []) names.set(image.file, nameOfFile(image.file, taken))
+  const files = (scope.imageLibrary ?? []).map((image) => image.file)
+  for (const file of files) {
+    if (isImageName(file) && !taken.has(imageNameKey(file))) {
+      taken.add(imageNameKey(file))
+      names.set(file, file)
+    }
+  }
+  for (const file of files) if (!names.has(file)) names.set(file, imageNameOfFile(file, taken))
   const model = namesInDocuments(scope.model, (file) => names.get(file))
   const renamed = [...names].some(([file, name]) => file !== name)
   if (!renamed && !rewroteAny(scope.model, model)) return scope
@@ -155,13 +164,6 @@ function withNames(scope: ScopeSnapshot): ScopeSnapshot {
     model,
     ...(scope.imageLibrary ? { imageLibrary: scope.imageLibrary.map((image) => ({ ...image, file: names.get(image.file) ?? image.file })) } : {}),
   }
-}
-
-/** A file's own name where the library takes it, and one made from it where not. */
-function nameOfFile(file: string, taken: Set<string>): ImageName {
-  if (!isImageName(file) || taken.has(imageNameKey(file))) return imageNameOfFile(file, taken)
-  taken.add(imageNameKey(file))
-  return file
 }
 
 /** Whether a rewrite of the documents changed one: it keeps every record it did not change as it was. */

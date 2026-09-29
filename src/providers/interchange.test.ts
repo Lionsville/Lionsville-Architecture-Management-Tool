@@ -126,4 +126,46 @@ describe('a working file an older build wrote', () => {
       expect(one.carried.equals(landed[0].carried)).toBe(true)
     }
   })
+
+  /**
+   * A name the library already takes is kept for its own picture: a name made
+   * for a file the library refuses never takes it, so a document that says
+   * `image:old-photo.png` still shows that picture.
+   */
+  it('keeps every picture on its own bytes where a made name would meet a name already taken', async () => {
+    const element = (id: string, description: string) => ({
+      id, kind: 'application' as const, name: id, lifecycle: 'live' as const, isManaged: true, aspects: {}, description,
+    })
+    const { bytes } = await carryScopes([{
+      path: '',
+      model: {
+        name: 'Older',
+        elements: [
+          element('spaced', '![Spaced](../images/old%20photo.png)\n'),
+          element('named', '![Named](image:old-photo.png)\n'),
+        ],
+        relations: [],
+        diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [] })],
+      },
+      activeDiagramId: 'd1',
+      logoLibrary: [],
+      imageLibrary: [
+        { file: 'old photo.png', url: dataUrl('image/png', png(2)) },
+        { file: 'old-photo.png', url: dataUrl('image/png', png(3)) },
+      ],
+    }])
+    for (const [, openOne] of SOURCES) {
+      const repositories = await openOne()
+      const opened = await interchange.open(bytes, '')
+      if ('refused' in opened) throw new Error(opened.refused)
+      await interchange.bringIn(repositories, opened)
+      const scope = await readWhole(repositories, '')
+      const shown = (id: string) => /image:([^)]+)\)/.exec(scope!.model.elements.find((one) => one.id === id)!.description!)![1]
+      const bytesOf = (name: string) => scope!.imageLibrary!.find((image) => image.file === name)!.url
+      expect(shown('named')).toBe('old-photo.png')
+      expect(bytesOf(shown('named'))).toBe(dataUrl('image/png', png(3)))
+      expect(shown('spaced')).not.toBe('old-photo.png')
+      expect(bytesOf(shown('spaced'))).toBe(dataUrl('image/png', png(2)))
+    }
+  })
 })
