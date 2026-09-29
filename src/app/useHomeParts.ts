@@ -17,6 +17,7 @@ import type { ScopeIndex } from '../projects/scopeIndex'
 import { ROOT_SCOPE } from '../projects/scopePath'
 import { scopeDisplayName } from '../projects/scopeLabel'
 import type { ScopePath } from '../projects/scopePath'
+import type { CarriedOut, Interchange } from '../ports/Interchange'
 import type { Repositories } from '../ports/Repositories'
 import { useProjectHistory } from './history/useProjectHistory'
 import type { Organisation } from './organisation/useOrganisation'
@@ -27,9 +28,8 @@ import type { useOpenIntoPrompt } from './useOpenIntoPrompt'
 import type { usePasswordPrompt } from './usePasswordPrompt'
 import type { ProjectFileChannel } from './useProjectFiles'
 import type { Notify } from './useToasts'
-import { ANY_WORKING_FILE_TYPES } from './workingFileFlows'
-import type { ChooseDestination } from './workingFileFlows'
-import type { WorkingFileManifest } from '../projects/workingFileManifest'
+import { anyWorkingFile } from './workingFileFlows'
+import type { ChooseDestination, OpenedWorkingFile } from './workingFileFlows'
 
 /** The organisation screen has no command log: the history drafts its default message. */
 const NO_STEPS = (): readonly { summary: StepSummary }[] => []
@@ -54,8 +54,11 @@ export function useHomeParts(deps: {
   /** A restore on the history page: one write of the home's document. */
   restore: (command: Command) => void
   documents: ProjectFileChannel
-  workingSet: () => Promise<ScopeSnapshot[]>
-  adopt: (held: readonly ScopeSnapshot[], manifest?: WorkingFileManifest) => Promise<void>
+  /** The organisation, carried out as one working file on the gesture. */
+  carryOut: () => Promise<CarriedOut>
+  /** What reads a working file, and holds a landing to it. */
+  interchange: Pick<Interchange, 'accepts' | 'open' | 'check'>
+  adopt: (opened: OpenedWorkingFile) => Promise<void>
   /** One scope as the store holds it now: an opened working file is read back through it (ADR-0023, amended). */
   readScope: (path: ScopePath) => Promise<ScopeSnapshot | undefined>
   password: ReturnType<typeof usePasswordPrompt>
@@ -136,7 +139,8 @@ function useHomeFileDoors(deps: Parameters<typeof useHomeParts>[0] & {
   const { password, openInto, notify, s } = deps
   const files = useHomeFiles({
     documents: deps.documents,
-    workingSet: deps.workingSet,
+    carryOut: deps.carryOut,
+    interchange: deps.interchange,
     into: deps.homeDocument,
     adopt: deps.adopt,
     readScope: deps.readScope,
@@ -148,7 +152,7 @@ function useHomeFileDoors(deps: Parameters<typeof useHomeParts>[0] & {
     s,
   })
   const picker = useFilePicker({
-    accept: ANY_WORKING_FILE_TYPES,
+    accept: anyWorkingFile(deps.interchange.accepts),
     onPick: files.openFile,
     testId: 'home-document-input',
   })

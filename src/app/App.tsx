@@ -26,7 +26,7 @@ import { messageFor } from './messageFor'
 import { flattenScopes, namesUnder } from '../projects/scope'
 import type { ScopeKind, ScopeSnapshot } from '../projects/scope'
 import {
-  contentOf, everyScope, modelsOf, moveScope, picturesOf, placeTogether, readScope, refusedError, stepOf, summaryOf,
+  modelsOf, moveScope, readWhole, refusedError, stepOf, summaryOf,
 } from '../projects/scopeAccess'
 import type { RecordLink } from '../projects/links'
 import { SCOPE_MOVED } from '../projects/revision'
@@ -49,6 +49,7 @@ import { useOpenIntoPrompt } from './useOpenIntoPrompt'
 import { useAgentServer } from './useAgentServer'
 import { AppDialogs, AppNotices, AppScreen, HomeHistoryDialogs } from './AppPanels'
 import type { AppHost, AppProps } from './appProps'
+import type { OpenedWorkingFile } from './workingFileFlows'
 import { useHomeParts } from './useHomeParts'
 import { useMachineSettings } from './useMachineSettings'
 import { useProviderParts } from './useProviderParts'
@@ -441,8 +442,15 @@ function useShellParts(props: AppProps): ShellParts {
    * the index everything below it decides ownership by.
    */
   const readTreeModels = useCallback(async () => modelsOf(await repositories.index.read()), [repositories])
-  /** Every scope in full, for the working file (ADR-0018). Read on the gesture, never held. */
-  const readWorkingSet = useCallback(() => everyScope(repositories), [repositories])
+  /**
+   * Every scope in full, for the working file (ADR-0018), with the ones handed
+   * in standing in for what is read: read on the gesture, never held, and
+   * carried out by the interchange (`ports/Interchange.ts`).
+   */
+  const carryOut = useCallback(
+    (held: readonly ScopeSnapshot[] = []) => props.interchange.carryOut(repositories, { held }),
+    [props.interchange, repositories],
+  )
   /**
    * The scopes an opened working file brought with it, written where they say
    * they belong (ADR-0018): each a content that arrives whole, landed as one
@@ -454,19 +462,20 @@ function useShellParts(props: AppProps): ShellParts {
    * read of its scope, so one somebody changed in between refuses the whole,
    * and nothing of the file's contents is written.
    */
-  const adoptScopes = useCallback(async (held: readonly ScopeSnapshot[]) => {
+  const adoptScopes = useCallback(async (opened: OpenedWorkingFile) => {
     try {
-      await placeTogether(repositories, held.map((scope) => ({
-        address: scope.path, content: contentOf(scope, []), pictures: picturesOf(scope.imageLibrary),
-      })))
+      await props.interchange.bringIn(repositories, opened)
     } catch (cause) {
       throw new ShellError('shell.workingFileNotLanded', {
         reason: cause instanceof ShellError ? messageFor(cause, s) : reasonOf(cause),
       })
     }
-  }, [repositories, s])
-  /** One scope as it is kept now: what an opened working file is read back through (ADR-0023, amended). */
-  const readScopeAt = useCallback((path: ScopePath) => readScope(repositories.scopes, path), [repositories])
+  }, [props.interchange, repositories, s])
+  /**
+   * One scope as it is kept now, pictures and all: what an opened working
+   * file is read back through and held to (ADR-0023, amended).
+   */
+  const readScopeAt = useCallback((path: ScopePath) => readWhole(repositories, path), [repositories])
   const treeChanged = useCallback(() => {
     refreshTree.current()
     tree.refresh()
@@ -482,10 +491,11 @@ function useShellParts(props: AppProps): ShellParts {
     organisation, home: nav.home, setHome: nav.setHome, scopeOpen: project !== undefined, repositories,
     historyKept: props.provider?.historyKept,
     index: tree.index, restore: restoreIntoHome, documents: props.documents,
-    workingSet: readWorkingSet,
+    carryOut,
+    interchange: props.interchange,
     readScope: readScopeAt,
-    adopt: async (held) => {
-      await adoptScopes(held)
+    adopt: async (opened) => {
+      await adoptScopes(opened)
       treeChanged()
     },
     ...prompts, chooseDestination: props.provider?.destination,
@@ -513,7 +523,7 @@ function useShellParts(props: AppProps): ShellParts {
     props, source, host, hostMenu: host.hostMenu ?? false, windowChrome: host.windowChrome ?? NO_WINDOW_CHROME,
     services, nav, tree, organisation, findings, home, ancestry, agentServer, agent: shellAgent, machine,
     commands, provider, order, prompts, todayDay,
-    writes: { readTreeModels, readWorkingSet, adoptScopes, readScope: readScopeAt, treeChanged, applyProjectSettings },
+    writes: { readTreeModels, carryOut, adoptScopes, readScope: readScopeAt, treeChanged, applyProjectSettings },
   }
 }
 

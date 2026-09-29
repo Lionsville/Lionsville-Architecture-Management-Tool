@@ -33,6 +33,7 @@ import type { ProjectFileChannel, ProjectFiles } from './useProjectFiles'
 import type { ModelSession } from './useModelSession'
 import type { AskPassword } from './usePasswordPrompt'
 import type { LandingPrompts } from './workingFileFlows'
+import { carryScopes, WORKING_FILE_INTERCHANGE } from '../adapters/folder/format/interchange'
 
 afterEach(() => cleanup())
 
@@ -94,8 +95,15 @@ function mount(
       session,
       putPicture: (name, held) => imageEntryOf(name, held),
       documents: channel,
-      ...(workingSet ? { workingSet } : {}),
-      ...(adoptWorkingSet ? { adoptWorkingSet } : {}),
+      // What the shell carries out: the store's scopes, with the ones handed
+      // in standing in for what the store holds at their addresses.
+      carryOut: async (held) => {
+        const stored = workingSet ? await workingSet() : []
+        const kept = stored.map((scope) => held.find((one) => one.path === scope.path) ?? scope)
+        return carryScopes([...held.filter((one) => !stored.some((scope) => scope.path === one.path)), ...kept])
+      },
+      interchange: WORKING_FILE_INTERCHANGE,
+      ...(adoptWorkingSet ? { adoptWorkingSet: (opened) => adoptWorkingSet([opened.top, ...opened.rest]) } : {}),
       askPassword,
       landing: here,
       notify,

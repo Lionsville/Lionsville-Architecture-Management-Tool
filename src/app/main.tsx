@@ -50,7 +50,7 @@ import ElkWorker from 'elkjs/lib/elk-worker.min.js?worker'
 import RouterWorker from '../layout/routerWorker.ts?worker'
 import { detectBrowserLanguage, translator } from '../i18n'
 import {
-  composeShell, desktopCommandChannel, EXAMPLE_OFFERS, openSource, overSource, registeredChrome, registeredConnects,
+  composeShell, desktopCommandChannel, EXAMPLE_OFFERS, INTERCHANGE, openSource, overSource, registeredChrome, registeredConnects,
   registeredMenus, reloadWhenScriptsAreGone, sourceAgentPanel, sourceChip, sourceChipFace, sourceChipPanel,
   sourceConnected, sourceDescription, sourceDestination, sourcePreferencesPanel, sourceRecentActivity, sourceSayings,
 } from './composition'
@@ -427,6 +427,7 @@ function renderApp(
         repositories={shell.repositories}
         preferences={shell.preferences}
         documents={shell.documents}
+        interchange={INTERCHANGE}
         diagnostics={shell.diagnostics}
         hostControls={shell.hostControls}
         boot={{

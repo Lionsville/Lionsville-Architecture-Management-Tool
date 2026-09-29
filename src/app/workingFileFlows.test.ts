@@ -8,8 +8,13 @@ import { ShellError } from '../platform/errors'
 import type { ScopeSnapshot } from '../projects/scope'
 import { workingFileBytes } from '../projects/workingFile'
 import { manifestOf } from '../projects/workingFileManifest'
-import { landWorkingFile } from './workingFileFlows'
+import { WORKING_FILE_INTERCHANGE } from '../adapters/folder/format/interchange'
+import { landWorkingFile as landThrough } from './workingFileFlows'
 import type { LandingPrompts, WorkingFileDestination } from './workingFileFlows'
+
+/** A landing through the working file's own interchange, as the composition hands the app one. */
+const landWorkingFile = (args: Omit<Parameters<typeof landThrough>[0], 'interchange'>) =>
+  landThrough({ ...args, interchange: WORKING_FILE_INTERCHANGE })
 
 const s = translator('en')
 
@@ -57,8 +62,8 @@ describe('landWorkingFile', () => {
     await landWorkingFile({ name: 'x', bytes: set(), into, prompts: prompts('here'), here, notify: vi.fn(), s })
     expect(here).toHaveBeenCalledTimes(1)
     const opened = here.mock.calls[0][0]
-    expect(opened.scope.path).toBe('acme/landscape')
-    expect(opened.rest?.map((held: ScopeSnapshot) => held.path)).toEqual(['acme/landscape/retail'])
+    expect(opened.top.path).toBe('acme/landscape')
+    expect(opened.rest.map((held: ScopeSnapshot) => held.path)).toEqual(['acme/landscape/retail'])
   })
 
   it('a folder is written with the file\'s top scope as its root, and "here" is left alone', async () => {
@@ -157,7 +162,7 @@ describe('a landing, read back and held to the file (ADR-0023, amended)', () => 
     const notify = vi.fn()
     await landWorkingFile({
       name: 'org.lvarch', bytes: await sealedSet(), into: scope('Here', ''), prompts: prompts('here'),
-      here: (opened) => kept.write([opened.scope, ...(opened.rest ?? [])]), read: kept.read, notify, s,
+      here: (opened) => kept.write([opened.top, ...opened.rest]), read: kept.read, notify, s,
     })
     expect(notify).toHaveBeenCalledTimes(1)
     expect(notify.mock.calls[0]).toEqual([
@@ -171,7 +176,7 @@ describe('a landing, read back and held to the file (ADR-0023, amended)', () => 
     const notify = vi.fn()
     await landWorkingFile({
       name: 'org.lvarch', bytes: await sealedSet(), into: scope('Here', ''), prompts: prompts('here'),
-      here: (opened) => lossy.write([opened.scope, ...(opened.rest ?? [])]), read: lossy.read, notify, s,
+      here: (opened) => lossy.write([opened.top, ...opened.rest]), read: lossy.read, notify, s,
     })
     expect(notify).toHaveBeenCalledWith(
       'Working file “org.lvarch” did not arrive whole. Not there after loading: the scope “Fleet” (depots/fleet).', 'error')
@@ -182,7 +187,7 @@ describe('a landing, read back and held to the file (ADR-0023, amended)', () => 
     const notify = vi.fn()
     await landWorkingFile({
       name: 'old.lvarch', bytes: workingFileBytes(organisation()), into: scope('Here', ''), prompts: prompts('here'),
-      here: (opened) => lossy.write([opened.scope, ...(opened.rest ?? [])]), read: lossy.read, notify, s,
+      here: (opened) => lossy.write([opened.top, ...opened.rest]), read: lossy.read, notify, s,
     })
     expect(notify.mock.calls[0][0]).toContain('It has no manifest, because an older version saved it')
     expect(notify.mock.calls[0][0]).toContain('the scope “Fleet” (depots/fleet)')

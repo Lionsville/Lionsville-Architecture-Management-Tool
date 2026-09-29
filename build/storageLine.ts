@@ -147,6 +147,7 @@ export const SPEAKS_NO_STORAGE: readonly string[] = [
   'src/model/recordKey.ts',
   'src/ports/HistoryRepository.ts',
   'src/ports/ImageRepository.ts',
+  'src/ports/Interchange.ts',
   'src/ports/OrganisationIndex.ts',
   'src/ports/Repositories.ts',
   'src/ports/ScopeRepository.ts',
@@ -287,21 +288,12 @@ export function importsAcross(graph: Graph): Record<string, string[]> {
  * the domain still holds.
  */
 export const IMPORT_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {
-  'src/app/shellParts.ts': ['src/projects/workingFileManifest.ts'],
-  'src/app/useHomeFiles.ts': ['src/projects/workingFileManifest.ts'],
-  'src/app/useHomeParts.ts': ['src/projects/workingFileManifest.ts'],
-  'src/app/useProjectFiles.ts': ['src/projects/workingFileManifest.ts'],
-  'src/app/useWorkspaceFiles.ts': ['src/projects/workingFileManifest.ts'],
-  'src/app/workingFileFlows.ts': ['src/projects/workingFile.ts', 'src/projects/workingFileManifest.ts'],
-  'src/app/workspaceProps.ts': ['src/projects/workingFileManifest.ts'],
   'src/projects/index.ts': ['src/projects/workingFile.ts'],
   'src/projects/scope.ts': ['src/projects/workingFileManifest.ts'],
 }
 
-/** Each domain file's storage words, and the folder format's patterns in its strings: the working file's own types, which the codec's user offers a picker. */
-export const WORD_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {
-  'src/app/workingFileFlows.ts': ['.json'],
-}
+/** Each domain file's storage words, and the folder format's patterns in its strings. */
+export const WORD_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {}
 
 /**
  * How long each list may be, written down beside it: an entry added fails the
@@ -313,9 +305,9 @@ export const CEILINGS = {
   /** Files of the folder format still in the domain. */
   folderFormat: 10,
   /** Files importing across the line, and the imports between them. */
-  importingFiles: 9,
-  imports: 10,
+  importingFiles: 2,
+  imports: 2,
   /** Files naming storage, and the words and patterns between them. */
-  namingFiles: 1,
-  words: 1,
+  namingFiles: 0,
+  words: 0,
 } as const

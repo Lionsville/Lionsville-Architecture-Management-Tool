@@ -23,6 +23,7 @@ import type {
 } from '../platform/sourceProvider'
 import type { AgentGateway } from '../ports/AgentGateway'
 import type { HostControls } from '../ports/HostControls'
+import type { Interchange } from '../ports/Interchange'
 import type { Repositories } from '../ports/Repositories'
 import type { UpdateSettingsStore } from '../ports/UpdateSettings'
 import type {
@@ -317,6 +318,12 @@ export type AppProps = {
   repositories: Repositories
   preferences: PreferencesWriter
   documents: ProjectFileChannel
+  /**
+   * What carries the organisation out as a working file and takes one in
+   * (`ports/Interchange.ts`), through `repositories` whatever the source:
+   * chosen by the composition root, which loads it when it is first asked.
+   */
+  interchange: Interchange
   diagnostics: ShellDiagnostics
   /** The host's three: reload and the clipboard for the crash page, and a way out to the manual. */
   hostControls: HostControls

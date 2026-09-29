@@ -11,14 +11,11 @@
  */
 import type { Translate } from '../i18n'
 import type { SavedDocument } from '../ports/DocumentGateway'
-import { bareScope } from '../projects/scope'
-import type { OpenResult, ScopeSnapshot } from '../projects/scope'
-import { joinScopePath, ROOT_SCOPE } from '../projects/scopePath'
+import type { Arrival, CarriedOut, Interchange, Opened } from '../ports/Interchange'
+import type { ScopeSnapshot } from '../projects/scope'
+import { ROOT_SCOPE } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
 import { isSealed, sealBytes, SEALED_FILE_MEDIA_TYPE, unsealBytes } from '../projects/sealedFile'
-import { openDocumentBytes, workingFileBytes, workingFileName } from '../projects/workingFile'
-import { compareManifests, manifestOf, manifestTotals, MANIFEST_TYPE } from '../projects/workingFileManifest'
-import type { ManifestDifference, WorkingFileManifest } from '../projects/workingFileManifest'
 import { ShellError } from '../platform/errors'
 import type { AskPassword } from './usePasswordPrompt'
 import type { Notify } from './useToasts'
@@ -26,19 +23,18 @@ import type { Notify } from './useToasts'
 /**
  * The working set as a sealed file, under a password the person is asked for
  * now. Nothing leaves unsealed: the whole organisation is what this holds,
- * and the save dialog is the last moment anybody is looking.
+ * and the save dialog is the last moment anybody is looking. What it holds,
+ * and what it says it holds (ADR-0023, amended), is the interchange's
+ * (`ports/Interchange.ts`); the seal is the app's.
  */
 export async function sealedWorkingFile(
-  scopes: readonly ScopeSnapshot[], askPassword: AskPassword,
+  carried: CarriedOut, askPassword: AskPassword,
 ): Promise<SavedDocument | undefined> {
   const password = await askPassword('set')
   if (password === undefined) return undefined
-  // What the file holds, said inside it (ADR-0023, amended), so opening it
-  // anywhere can be held to it.
-  const manifest = await manifestOf(scopes)
   return {
-    name: workingFileName(scopes[0]),
-    bytes: await sealBytes(workingFileBytes(scopes, manifest), password),
+    name: carried.name,
+    bytes: await sealBytes(carried.bytes, password),
     mediaType: SEALED_FILE_MEDIA_TYPE,
   }
 }
@@ -48,10 +44,9 @@ export async function sealedWorkingFile(
  * every scope read whole. The file says the same in its manifest; this is
  * the person being told at the moment they have it in hand.
  */
-export function savedWithout(scopes: readonly ScopeSnapshot[], s: Translate): string | undefined {
-  const left = scopes.flatMap((scope) => (scope.unread ?? []).map((file) => (scope.path ? `${scope.path}/${file}` : file)))
-  if (!left.length) return undefined
-  return s('shell.savedWorkingFileWithout', { count: String(left.length), files: listed(left, s) })
+export function savedWithout(without: readonly string[], s: Translate): string | undefined {
+  if (!without.length) return undefined
+  return s('shell.savedWorkingFileWithout', { count: String(without.length), files: listed(without, s) })
 }
 
 /**
@@ -79,13 +74,13 @@ export async function unsealedBytes(
 }
 
 /**
- * What a picker offers for a working file: a zip now, and the JSON documents
- * of versions 1 and 2, which still open. The home's picker takes whatever a
- * browser calls an unknown file too, because the home is where a file handed
- * over by somebody else is opened first.
+ * What the home's picker offers: whatever the interchange reads, and whatever
+ * a browser calls an unknown file too, because the home is where a file
+ * handed over by somebody else is opened first.
  */
-export const WORKING_FILE_TYPES = '.lvarch,.json,application/json,application/zip'
-export const ANY_WORKING_FILE_TYPES = `${WORKING_FILE_TYPES},application/octet-stream`
+export function anyWorkingFile(accepts: string): string {
+  return `${accepts},application/octet-stream`
+}
 
 /**
  * A folder a working file may become (ADR-0025): what it is called, whether
@@ -112,7 +107,7 @@ export type LandingPrompts = {
   confirmReplace(name: string): Promise<boolean>
 }
 
-export type OpenedWorkingFile = Extract<OpenResult, { ok: true }>
+export type OpenedWorkingFile = Opened
 
 /**
  * Where a working file lands (ADR-0025), asked every time.
@@ -122,14 +117,16 @@ export type OpenedWorkingFile = Extract<OpenResult, { ok: true }>
  * back to the caller because the workspace and the home land a scope
  * differently; a *new folder* is chosen, checked for what it holds — and
  * written over only after a second yes — and then written with the file's
- * top scope as its root, which is what `openDocumentBytes` answers when it is
- * handed a bare root to land on. Every `undefined` and `false` on the way is
- * a cancel, and a cancel is silent.
+ * top scope as its root, which is what the interchange opens it as when it
+ * is asked to place it at the root. Every `undefined` and `false` on the way
+ * is a cancel, and a cancel is silent.
  */
 export async function landWorkingFile(args: {
   name: string
   bytes: Uint8Array
   into: ScopeSnapshot
+  /** What reads the file, and holds a landing to it. */
+  interchange: Pick<Interchange, 'open' | 'check'>
   prompts: LandingPrompts
   chooseDestination?: ChooseDestination
   /**
@@ -155,10 +152,10 @@ export async function landWorkingFile(args: {
   notify: Notify
   s: Translate
 }): Promise<void> {
-  const { name, bytes, into, prompts, chooseDestination, here, read, beforeReplace, notify, s } = args
-  const opened = openDocumentBytes(bytes, into)
-  if (!opened.ok) { notify(s(opened.messageKey), 'error'); return }
-  const said = (landed: OpenedWorkingFile, from?: ReadScope) => sayLanding(name, landed, from, notify, s)
+  const { name, bytes, into, interchange, prompts, chooseDestination, here, read, beforeReplace, notify, s } = args
+  const opened = await interchange.open(bytes, into.path)
+  if ('refused' in opened) { notify(s(opened.refused), 'error'); return }
+  const said = (landed: OpenedWorkingFile, from?: ReadScope) => sayLanding(name, landed, from, interchange, notify, s)
   const choice = await prompts.askDestination({
     file: name,
     here: into.model.name.trim() || s('openInto.unnamedHere'),
@@ -174,9 +171,9 @@ export async function landWorkingFile(args: {
   const destination = await chooseDestination()
   if (!destination) return
   if (destination.occupied && !(await prompts.confirmReplace(destination.name))) return
-  const rooted = openDocumentBytes(bytes, bareScope(ROOT_SCOPE, ''))
-  if (!rooted.ok) { notify(s(rooted.messageKey), 'error'); return }
-  await inPart(() => destination.place([rooted.scope, ...(rooted.rest ?? [])]), destination.read)
+  const rooted = await interchange.open(bytes, ROOT_SCOPE)
+  if ('refused' in rooted) { notify(s(rooted.refused), 'error'); return }
+  await inPart(() => destination.place([rooted.top, ...rooted.rest]), destination.read)
   if (destination.read) await said(rooted, destination.read)
 }
 
@@ -197,101 +194,51 @@ async function inPart<T>(land: () => T | Promise<T>, read: ReadScope | undefined
   }
 }
 
-/** What a landing is held to, and whether the file said it or it was made from the file's contents. */
-export type LandingCheck = {
-  expected: WorkingFileManifest
-  /** The file carried a manifest of its own. */
-  carried: boolean
-  /** `undefined` when everything the file holds arrived. */
-  difference?: ManifestDifference
-}
-
-/**
- * Read back what a working file landed as, and hold it to the file
- * (ADR-0023, amended).
- *
- * Held to the file's own manifest where it carries one; otherwise — a file
- * saved before there was one — to a manifest made from the scopes the file
- * opened to, with any scope in it that would not open counted as missing.
- * Each scope is read through `read` at the address it was landed at, and a
- * read that fails is a scope that is not there: the question is whether a
- * person can open what they were handed, and a scope that will not read is
- * the answer *no*.
- */
-export async function checkLanding(opened: OpenedWorkingFile, read: ReadScope): Promise<LandingCheck> {
-  const top = opened.scope.path
-  const expected = opened.manifest ?? await ownManifest(opened)
-  const landed = (await Promise.all(expected.scopes.map(async (want) => {
-    const at = joinScopePath(top, want.path)
-    const held = await read(at).catch(() => undefined)
-    return held ? [{ ...held, path: at }] : []
-  }))).flat()
-  const difference = compareManifests(expected, await manifestOf(landed, top))
-  return { expected, carried: opened.manifest !== undefined, ...(difference ? { difference } : {}) }
-}
-
-/** The manifest a file with none of its own is held to: what it opened to, and what it would not. */
-async function ownManifest(opened: OpenedWorkingFile): Promise<WorkingFileManifest> {
-  const made = await manifestOf([opened.scope, ...(opened.rest ?? [])])
-  const unopened = (opened.unopened ?? []).map((path) => ({
-    path, name: path, files: [], views: [],
-    counts: {
-      elements: 0, relations: 0, views: 0, decisions: 0, plans: 0, observations: 0,
-      causes: 0, solutions: 0, experiments: 0, pictures: 0, marks: 0,
-    },
-  }))
-  return { type: MANIFEST_TYPE, version: 1, scopes: [...made.scopes, ...unopened] }
-}
-
 /**
  * The toast after a landing: checked and whole, checked and not, or — with
  * nothing to read back — what was always said.
  */
 async function sayLanding(
-  name: string, opened: OpenedWorkingFile, read: ReadScope | undefined, notify: Notify, s: Translate,
+  name: string, opened: OpenedWorkingFile, read: ReadScope | undefined,
+  interchange: Pick<Interchange, 'check'>, notify: Notify, s: Translate,
 ): Promise<void> {
   if (!read) {
-    const count = opened.rest?.length ?? 0
+    const count = opened.rest.length
     notify(count
       ? s('shell.workingSetLoaded', { name, count: String(count) })
       : s('shell.workingFileLoaded', { name }), 'success')
     return
   }
-  const check = await checkLanding(opened, read)
-  notify(landingSentence(name, check, s), check.difference ? 'error' : 'success')
+  const arrival = await interchange.check(opened, read)
+  notify(landingSentence(name, arrival, s), arrival.short ? 'error' : 'success')
 }
 
 /** How many of the things that did not arrive are named before *and N more*. */
 const NAMED_AT_MOST = 6
 
 /** A check, said: the totals when whole, and what is not there, by name, when not. */
-export function landingSentence(name: string, check: LandingCheck, s: Translate): string {
-  if (!check.difference) {
-    const totals = manifestTotals(check.expected)
-    return s(check.carried ? 'shell.workingFileArrived' : 'shell.workingFileArrivedOwn', {
-      name, scopes: String(totals.scopes), views: String(totals.views), files: String(totals.files),
+export function landingSentence(name: string, arrival: Arrival, s: Translate): string {
+  if (!arrival.short) {
+    const { totals } = arrival
+    return s(arrival.accounted ? 'shell.workingFileArrived' : 'shell.workingFileArrivedOwn', {
+      name, scopes: String(totals.scopes), views: String(totals.views), files: String(totals.parts),
     })
   }
-  const named = check.expected.scopes
-  const scopeName = (path: ScopePath) => named.find((scope) => scope.path === path)?.name ?? path
+  const scopeName = (address: ScopePath) => arrival.scopes.find((scope) => scope.address === address)?.name ?? address
   const what: string[] = []
-  for (const scope of check.difference.scopes) {
+  for (const scope of arrival.short.scopes) {
     if (scope.absent) {
-      what.push(s('shell.shortScope', { name: scope.name, path: scope.path || '/' }))
+      what.push(s('shell.shortScope', { name: scope.name, path: scope.address || '/' }))
       continue
     }
     for (const view of scope.views) what.push(s('shell.shortView', { view: view.name, scope: scope.name }))
-    if (scope.missingFiles.length) {
-      what.push(s('shell.shortFiles', { count: String(scope.missingFiles.length), scope: scope.name }))
-    }
-    if (scope.changedFiles.length) {
-      what.push(s('shell.changedFiles', { count: String(scope.changedFiles.length), scope: scope.name }))
-    }
+    if (scope.missing) what.push(s('shell.shortFiles', { count: String(scope.missing), scope: scope.name }))
+    if (scope.changed) what.push(s('shell.changedFiles', { count: String(scope.changed), scope: scope.name }))
   }
-  for (const left of check.difference.omitted) {
-    what.push(s('shell.shortOmitted', { count: String(left.files.length), scope: scopeName(left.path) }))
+  for (const left of arrival.short.omitted) {
+    what.push(s('shell.shortOmitted', { count: String(left.parts), scope: scopeName(left.address) }))
   }
-  return s(check.carried ? 'shell.workingFileShort' : 'shell.workingFileShortOwn', { name, what: listed(what, s) })
+  return s(arrival.accounted ? 'shell.workingFileShort' : 'shell.workingFileShortOwn', { name, what: listed(what, s) })
 }
 
 /** A list of things for a sentence, cut after {@link NAMED_AT_MOST} with a count of the rest. */

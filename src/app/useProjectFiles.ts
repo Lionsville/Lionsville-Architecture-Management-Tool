@@ -21,6 +21,7 @@ import { readImageFile } from '../model/documentImage'
 import type { ImageEntry, ImageName } from '../model/imageName'
 import { readDataUrl } from '../projects/dataUrl'
 import type { SavedDocument } from '../ports/DocumentGateway'
+import type { CarriedOut, Interchange } from '../ports/Interchange'
 import { messageFor } from './messageFor'
 import type { ScopeSnapshot } from '../projects/scope'
 import type { ModelSession } from './useModelSession'
@@ -28,7 +29,6 @@ import type { AskPassword } from './usePasswordPrompt'
 import type { Notify } from './useToasts'
 import { landWorkingFile, savedWithout, sealedWorkingFile, unsealedBytes } from './workingFileFlows'
 import type { ChooseDestination, LandingPrompts, OpenedWorkingFile, ReadScope } from './workingFileFlows'
-import type { WorkingFileManifest } from '../projects/workingFileManifest'
 
 /**
  * What this hook needs from a document channel.
@@ -78,14 +78,16 @@ export type ProjectFilesDeps = {
   documents: ProjectFileChannel
   /**
    * Every scope in the working set, read when an export asks for it
-   * (ADR-0018).
+   * (ADR-0018), with the ones handed in standing in for what is read at
+   * their addresses, and carried out as one file by the interchange.
    *
    * Read on the gesture rather than held, like `models` beside it: the whole
    * tree in memory is what ADR-0004 keeps catching, and an export is a decision
-   * rather than a keystroke. Absent in a test and where there is no store, and
-   * the file then holds the open scope alone — which is what it held before.
+   * rather than a keystroke.
    */
-  workingSet?: () => Promise<ScopeSnapshot[]>
+  carryOut: (held: readonly ScopeSnapshot[]) => Promise<CarriedOut>
+  /** What reads a working file, and holds a landing to it (`ports/Interchange.ts`). */
+  interchange: Pick<Interchange, 'open' | 'check'>
   /**
    * Write the scopes a file brought with it, and say the tree changed
    * (ADR-0018).
@@ -97,7 +99,7 @@ export type ProjectFilesDeps = {
    * than opened for its top scope alone. Half a working set is the loss this
    * whole arrangement exists to prevent.
    */
-  adoptWorkingSet?: (scopes: readonly ScopeSnapshot[], manifest?: WorkingFileManifest) => Promise<void>
+  adoptWorkingSet?: (opened: OpenedWorkingFile) => Promise<void>
   /**
    * One scope as the store now holds it: what a landing is read back through
    * and held to the file's manifest (ADR-0023, amended). Absent where there
@@ -121,8 +123,8 @@ export type ProjectFilesDeps = {
 
 export function useProjectFiles(deps: ProjectFilesDeps): ProjectFiles {
   const {
-    session, putPicture, documents, workingSet, adoptWorkingSet, readScope, askPassword, landing, chooseDestination, beforeReplace,
-    notify, s,
+    session, putPicture, documents, carryOut, interchange, adoptWorkingSet, readScope, askPassword, landing, chooseDestination,
+    beforeReplace, notify, s,
   } = deps
 
   /**
@@ -163,20 +165,15 @@ export function useProjectFiles(deps: ProjectFilesDeps): ProjectFiles {
    * cancelled dialog is no file and no toast.
    */
   const saveWorkingFile = useCallback(() => {
-    const live = session.snapshot()
-    const set = workingSet ? workingSet() : Promise.resolve([])
-    void set.then(
-      async (stored) => {
-        const scopes = stored.some((scope) => scope.path === live.path)
-          ? stored.map((scope) => (scope.path === live.path ? live : scope))
-          : [live, ...stored]
-        const doc = await sealedWorkingFile(scopes, askPassword)
-        if (doc) handOver(doc, s('shell.savedWorkingFile'), savedWithout(scopes, s))
+    void carryOut([session.snapshot()]).then(
+      async (carried) => {
+        const doc = await sealedWorkingFile(carried, askPassword)
+        if (doc) handOver(doc, s('shell.savedWorkingFile'), savedWithout(carried.without, s))
       },
     ).catch((err: unknown) => notify(err instanceof ShellError
       ? messageFor(err, s)
       : s('shell.saveFileFailed', { message: reasonOf(err) }), 'error'))
-  }, [session, workingSet, askPassword, handOver, notify, s])
+  }, [session, carryOut, askPassword, handOver, notify, s])
 
   /**
    * Open a chosen file into the project you are in.
@@ -198,13 +195,13 @@ export function useProjectFiles(deps: ProjectFilesDeps): ProjectFiles {
     // Replacing the open scope is a change to it like any other, and the
     // scopes under it are written first, so it is asked before anything is.
     if (!session.mayChange()) return false
-    const rest = result.rest ?? []
-    if (rest.length && !adoptWorkingSet) {
+    if (result.rest.length && !adoptWorkingSet) {
       notify(s('shell.workingSetNotHere'), 'error')
       return false
     }
-    if (adoptWorkingSet) await adoptWorkingSet([result.scope, ...rest], result.manifest)
-    session.adopt(result.scope, result.relayout)
+    if (adoptWorkingSet) await adoptWorkingSet(result)
+    // A working file carries its own geometry, and is left as it is.
+    session.adopt(result.top, false)
     return true
   }, [session, adoptWorkingSet, notify, s])
 
@@ -216,7 +213,7 @@ export function useProjectFiles(deps: ProjectFilesDeps): ProjectFiles {
     void unsealedBytes(held, askPassword, s('seal.wrong')).then(async (bytes) => {
       if (!bytes) return
       await landWorkingFile({
-        name, bytes, into: session.snapshot(), prompts: landing, chooseDestination,
+        name, bytes, into: session.snapshot(), interchange, prompts: landing, chooseDestination,
         here: landHere,
         ...(readScope ? { read: readScope } : {}),
         ...(beforeReplace ? { beforeReplace } : {}),
@@ -225,7 +222,7 @@ export function useProjectFiles(deps: ProjectFilesDeps): ProjectFiles {
     }).catch((err: unknown) => notify(err instanceof ShellError
       ? messageFor(err, s)
       : s('shell.processFailed', { message: reasonOf(err) }), 'error'))
-  }, [session, landHere, readScope, askPassword, landing, chooseDestination, beforeReplace, notify, s])
+  }, [session, interchange, landHere, readScope, askPassword, landing, chooseDestination, beforeReplace, notify, s])
 
   const openFile = useCallback((file: File) => {
     documents.readBytes(file).then(

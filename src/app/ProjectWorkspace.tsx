@@ -140,7 +140,7 @@ function useSessionParts(props: ProjectWorkspaceProps) {
   const diagrams = useDiagramActions({ session, notify, s, makeId })
   const writer = useScopeWriter(source.repositories.scopes, source.repositories.images, project)
   const { files, pickers, safeguardRef } = useWorkspaceFiles({
-    session, putPicture: writer.put, seams: props.files, workingSet: tree.workingSet, onAdoptScopes: tree.onAdoptScopes, readScope: tree.readScope, onTreeChanged, notify, s,
+    session, putPicture: writer.put, seams: props.files, carryOut: tree.carryOut, onAdoptScopes: tree.onAdoptScopes, readScope: tree.readScope, onTreeChanged, notify, s,
   })
   const requests = useWorkspaceRequests({ session, scope: project.path, indexRef, onOpenScope, notify, s })
   /**

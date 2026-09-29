@@ -456,7 +456,10 @@ export type OpenResult =
     relayout: boolean
     kind: 'workingFile'
   }
-  | { ok: false; messageKey: 'shell.workingFileNoDiagrams' | 'shell.unknownFile' }
+  | { ok: false; messageKey: OpenRefusal }
+
+/** Why bytes handed over did not open: they hold no view to open on, or are nothing this reads. */
+export type OpenRefusal = 'shell.workingFileNoDiagrams' | 'shell.unknownFile'
 
 /**
  * A read and parsed file, landed into the scope it was opened from.

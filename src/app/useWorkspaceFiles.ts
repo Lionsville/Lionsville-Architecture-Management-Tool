@@ -5,19 +5,17 @@
  * The working file from an open scope (ADR-0018, ADR-0023, ADR-0025), and the
  * two invisible inputs the menu and the icon picker open.
  */
-import { WORKING_FILE_TYPES } from './workingFileFlows'
 import { useCallback, useRef } from 'react'
 import type { RefObject } from 'react'
 import type { Translate } from '../i18n'
-import type { ScopeSnapshot } from '../projects/scope'
 import { useFilePicker } from './useFilePicker'
 import type { FilePicker } from './useFilePicker'
 import type { ModelSession } from './useModelSession'
 import { useProjectFiles } from './useProjectFiles'
 import type { ProjectFiles, ProjectFilesDeps } from './useProjectFiles'
 import type { Notify } from './useToasts'
+import type { OpenedWorkingFile } from './workingFileFlows'
 import type { WorkspaceFiles, WorkspaceTree } from './workspaceProps'
-import type { WorkingFileManifest } from '../projects/workingFileManifest'
 
 export type WorkspaceFileParts = {
   files: ProjectFiles
@@ -35,19 +33,19 @@ export function useWorkspaceFiles(deps: {
   /** Put a picture's bytes where the scope is kept, and answer its library entry (`ScopeWriter.put`). */
   putPicture: ProjectFilesDeps['putPicture']
   seams: WorkspaceFiles
-  workingSet: WorkspaceTree['workingSet']
+  carryOut: WorkspaceTree['carryOut']
   onAdoptScopes: WorkspaceTree['onAdoptScopes']
   readScope?: WorkspaceTree['readScope']
   onTreeChanged: () => void
   notify: Notify
   s: Translate
 }): WorkspaceFileParts {
-  const { session, putPicture, workingSet, onAdoptScopes, readScope, onTreeChanged, notify, s } = deps
-  const { documents, askPassword, landing, chooseDestination } = deps.seams
+  const { session, putPicture, carryOut, onAdoptScopes, readScope, onTreeChanged, notify, s } = deps
+  const { documents, interchange, askPassword, landing, chooseDestination } = deps.seams
   /** The store write, and then the two reads a changed tree needs (ADR-0012 §10). */
   const adoptWorkingSet = useCallback(
-    async (held: readonly ScopeSnapshot[], manifest?: WorkingFileManifest) => {
-      await onAdoptScopes!(held, manifest)
+    async (opened: OpenedWorkingFile) => {
+      await onAdoptScopes!(opened)
       onTreeChanged()
     },
     [onAdoptScopes, onTreeChanged],
@@ -59,7 +57,8 @@ export function useWorkspaceFiles(deps: {
     putPicture,
     documents,
     beforeReplace,
-    ...(workingSet ? { workingSet } : {}),
+    carryOut,
+    interchange,
     ...(onAdoptScopes ? { adoptWorkingSet } : {}),
     ...(readScope ? { readScope } : {}),
     askPassword,
@@ -69,7 +68,7 @@ export function useWorkspaceFiles(deps: {
     s,
   })
   const document = useFilePicker({
-    accept: WORKING_FILE_TYPES,
+    accept: interchange.accepts,
     onPick: files.openFile,
     testId: 'document-input',
   })

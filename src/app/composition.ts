@@ -72,6 +72,8 @@ import type {
   ProviderParts, SourceChipPanelProps, SourceChromeProps, SourceDestination, SourcePreferencesPanelProps,
 } from '../ports/ProviderParts'
 import type { Repositories } from '../ports/Repositories'
+import type { Interchange } from '../ports/Interchange'
+import { WORKING_FILE_ACCEPTS } from '../adapters/folder/format/workingFileKinds'
 import type { Translate } from '../i18n'
 import type { AgentGateway } from '../ports/AgentGateway'
 import type { Diagnostics } from '../ports/Diagnostics'
@@ -620,6 +622,24 @@ export function overSource(shell: Shell, parts: SourceParts): Shell {
 export function sourceDestination(kind: string): (() => Promise<SourceDestination<unknown> | undefined>) | undefined {
   return sourceProvider<unknown>(kind)?.destination
 }
+
+/**
+ * The working file, as every source carries work out in and takes it in from
+ * (ADR-0031 §2): the folder format, zipped, over whichever repositories are
+ * open. Loaded the first time a person exports, imports or opens a working
+ * file — the codec, the readers of the older formats and the zip are nothing a
+ * first screen needs, and the first download is where the room is short.
+ */
+export const INTERCHANGE: Interchange = (() => {
+  const codec = () => import('../adapters/folder/format/interchange').then((held) => held.WORKING_FILE_INTERCHANGE)
+  return {
+    accepts: WORKING_FILE_ACCEPTS,
+    carryOut: async (from, options) => (await codec()).carryOut(from, options),
+    open: async (bytes, at) => (await codec()).open(bytes, at),
+    bringIn: async (into, opened, options) => (await codec()).bringIn(into, opened, options),
+    check: async (opened, read) => (await codec()).check(opened, read),
+  }
+})()
 
 /**
  * The examples that ship, as the organisation's page offers them: what each is

@@ -136,7 +136,7 @@ function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSn
         groupName: ancestry.groupName,
         groupClient: ancestry.groupClient,
         models: writes.readTreeModels,
-        workingSet: writes.readWorkingSet,
+        carryOut: writes.carryOut,
         onAdoptScopes: writes.adoptScopes,
         readScope: writes.readScope,
         onChanged: writes.treeChanged,
@@ -154,6 +154,7 @@ function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSn
       }}
       files={{
         documents: props.documents,
+        interchange: props.interchange,
         askPassword: prompts.password.askPassword,
         landing: prompts.openInto.prompts,
         chooseDestination: props.provider?.destination,

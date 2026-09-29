@@ -21,7 +21,8 @@ import type { ShellCommands } from './useShellCommands'
 import type { ShellNavigation } from './useShellNavigation'
 import type { ShellServices, useProjectOrder } from './useShellServices'
 import type { TreeFindings } from './useTreeFindings'
-import type { WorkingFileManifest } from '../projects/workingFileManifest'
+import type { CarriedOut } from '../ports/Interchange'
+import type { OpenedWorkingFile } from './workingFileFlows'
 
 /**
  * The shell's state, as the hooks that hold it hand it out: one object per
@@ -55,8 +56,8 @@ export interface ShellParts {
   /** What the open workspace is handed to write through: the shell's side of each write it asks for. */
   writes: {
     readTreeModels: () => Promise<ScopeModel[]>
-    readWorkingSet: () => Promise<ScopeSnapshot[]>
-    adoptScopes: (held: readonly ScopeSnapshot[], manifest?: WorkingFileManifest) => Promise<void>
+    carryOut: (held: readonly ScopeSnapshot[]) => Promise<CarriedOut>
+    adoptScopes: (opened: OpenedWorkingFile) => Promise<void>
     readScope: (path: ScopePath) => Promise<ScopeSnapshot | undefined>
     treeChanged: () => void
     applyProjectSettings: (settings: ProjectSettings, current: ScopeSnapshot) => Promise<void>

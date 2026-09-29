@@ -18,14 +18,14 @@
 import { useCallback } from 'react'
 import type { Translate } from '../i18n'
 import { reasonOf, ShellError } from '../platform/errors'
+import type { CarriedOut, Interchange } from '../ports/Interchange'
 import type { ScopeSnapshot } from '../projects/scope'
-import type { WorkingFileManifest } from '../projects/workingFileManifest'
 import { messageFor } from './messageFor'
 import type { ProjectFileChannel } from './useProjectFiles'
 import type { AskPassword } from './usePasswordPrompt'
 import type { Notify } from './useToasts'
 import { landWorkingFile, savedWithout, sealedWorkingFile, unsealedBytes } from './workingFileFlows'
-import type { ChooseDestination, LandingPrompts, ReadScope } from './workingFileFlows'
+import type { ChooseDestination, LandingPrompts, OpenedWorkingFile, ReadScope } from './workingFileFlows'
 
 export type HomeFiles = {
   exportWorkingFile: () => void
@@ -35,15 +35,17 @@ export type HomeFiles = {
 
 export function useHomeFiles(deps: {
   documents: ProjectFileChannel
-  /** Every scope in the store, tree order, read on the gesture. */
-  workingSet: () => Promise<ScopeSnapshot[]>
+  /** Every scope in the store, read on the gesture and carried out as one file. */
+  carryOut: () => Promise<CarriedOut>
+  /** What reads a working file, and holds a landing to it (`ports/Interchange.ts`). */
+  interchange: Pick<Interchange, 'open' | 'check'>
   /** The scope this home is about, as it stands — bare where nothing is written yet. */
   into: () => ScopeSnapshot
   /**
    * Write what a file brought, shallowest first, and tell the tree — as one,
    * where the store can, held to what the file says it holds.
    */
-  adopt: (scopes: readonly ScopeSnapshot[], manifest?: WorkingFileManifest) => Promise<void>
+  adopt: (opened: OpenedWorkingFile) => Promise<void>
   /** One scope as the store now holds it, to check a landing against the file (ADR-0023, amended). */
   readScope?: ReadScope
   askPassword: AskPassword
@@ -56,28 +58,26 @@ export function useHomeFiles(deps: {
   notify: Notify
   s: Translate
 }): HomeFiles {
-  const { documents, workingSet, into, adopt, readScope, askPassword, landing, chooseDestination, beforeReplace, notify, s } = deps
+  const { documents, carryOut, interchange, into, adopt, readScope, askPassword, landing, chooseDestination, beforeReplace, notify, s } = deps
 
   const exportWorkingFile = useCallback(() => {
-    void workingSet().then(async (stored) => {
-      // A store with nothing in it yet is still an organisation with a name.
-      const scopes = stored.length ? stored : [into()]
-      const doc = await sealedWorkingFile(scopes, askPassword)
+    void carryOut().then(async (carried) => {
+      const doc = await sealedWorkingFile(carried, askPassword)
       if (!doc) return
       await documents.save(doc)
-      const without = savedWithout(scopes, s)
+      const without = savedWithout(carried.without, s)
       notify(without ?? s('shell.savedWorkingFile'), without ? 'warning' : 'success')
     }).catch((err: unknown) => notify(err instanceof ShellError
       ? messageFor(err, s)
       : s('shell.saveFileFailed', { message: reasonOf(err) }), 'error'))
-  }, [workingSet, into, askPassword, documents, notify, s])
+  }, [carryOut, askPassword, documents, notify, s])
 
   const openDocument = useCallback((name: string, held: Uint8Array) => {
     void unsealedBytes(held, askPassword, s('seal.wrong')).then(async (bytes) => {
       if (!bytes) return
       await landWorkingFile({
-        name, bytes, into: into(), prompts: landing, chooseDestination,
-        here: (result) => adopt([result.scope, ...(result.rest ?? [])], result.manifest),
+        name, bytes, into: into(), interchange, prompts: landing, chooseDestination,
+        here: adopt,
         ...(readScope ? { read: readScope } : {}),
         ...(beforeReplace ? { beforeReplace } : {}),
         notify, s,
@@ -85,7 +85,7 @@ export function useHomeFiles(deps: {
     }).catch((err: unknown) => notify(err instanceof ShellError
       ? messageFor(err, s)
       : s('shell.processFailed', { message: reasonOf(err) }), 'error'))
-  }, [askPassword, landing, chooseDestination, beforeReplace, into, adopt, readScope, notify, s])
+  }, [askPassword, interchange, landing, chooseDestination, beforeReplace, into, adopt, readScope, notify, s])
 
   const openFile = useCallback((file: File) => {
     documents.readBytes(file).then(

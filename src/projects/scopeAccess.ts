@@ -401,19 +401,24 @@ export async function carriedOf(
 
 /**
  * Every scope the source holds, in full, pictures and all, and in tree order:
- * what a working set is made of (ADR-0018). Refused, naming them, where a
- * scope could not be read — one the tree names as unreadable, or one it lists
- * that then does not read (ADR-0023, amended): a working set without one of
- * its scopes, handed over as the organisation, is the loss this refuses.
+ * what a working set is made of (ADR-0018) — or, `from` an address, the scope
+ * there and every scope under it. Refused, naming them, where a scope could
+ * not be read — one the tree names as unreadable, or one it lists that then
+ * does not read (ADR-0023, amended): a working set without one of its scopes,
+ * handed over as the organisation, is the loss this refuses. A `from` that
+ * names no scope is refused as a scope gone.
  */
 export async function everyScope(
   repositories: { scopes: ScopeReader; images: Pick<ImageRepository, 'bytes'> },
+  from: ScopeAddress = '',
 ): Promise<ScopeSnapshot[]> {
   const tree = await repositories.scopes.tree()
-  const nodes = nodesOf(tree.root)
+  const top = nodeAt(tree, from)
+  if (!top) throw new ShellError('shell.scopeGone')
+  const nodes = nodesOf(top)
   const states = await Promise.all(nodes.map((node) => repositories.scopes.state(node.id)))
   const unreadable = [
-    ...(tree.unreadable ?? []),
+    ...(tree.unreadable ?? []).filter((address) => isWithinScope(address, from)),
     ...nodes.filter((node, at) => states[at] === undefined).map((node) => node.address),
   ]
   if (unreadable.length) {
@@ -423,11 +428,24 @@ export async function everyScope(
   // in it; one with no name and nothing in it is nothing yet, and a working
   // set does not carry it.
   const held = states.filter((state) => !(state!.address === '' && blank(state!)))
-  return Promise.all(held.map(async (state) => {
-    const snapshot = snapshotOf(state!)
-    const carried = await carriedOf(repositories.images, state!.id, state!.images)
-    return carried.length ? { ...snapshot, imageLibrary: carried } : snapshot
-  }))
+  return Promise.all(held.map((state) => wholeOf(repositories.images, state!)))
+}
+
+/** One scope, by its address, with its pictures' bytes: what a landing is read back and held to. */
+export async function readWhole(
+  repositories: { scopes: ScopeReader; images: Pick<ImageRepository, 'bytes'> },
+  address: ScopeAddress,
+): Promise<ScopeSnapshot | undefined> {
+  const node = nodeAt(await repositories.scopes.tree(), address)
+  const state = node && await repositories.scopes.state(node.id)
+  return state && wholeOf(repositories.images, state)
+}
+
+/** A scope's state as the app holds one, with its pictures carried whole. */
+async function wholeOf(images: Pick<ImageRepository, 'bytes'>, state: ScopeState): Promise<ScopeSnapshot> {
+  const snapshot = snapshotOf(state)
+  const carried = await carriedOf(images, state.id, state.images)
+  return carried.length ? { ...snapshot, imageLibrary: carried } : snapshot
 }
 
 /**

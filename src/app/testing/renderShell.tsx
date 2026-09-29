@@ -24,6 +24,7 @@
  * they validate refs, they run the same contract) and spies for the seams that
  * would otherwise reach the outside world.
  */
+import { WORKING_FILE_INTERCHANGE } from '../../adapters/folder/format/interchange'
 import type { ReactElement, ReactNode } from 'react'
 import { vi } from 'vitest'
 import type { Mock } from 'vitest'
@@ -189,6 +190,7 @@ export function renderApp(
     repositories: harness.repositories,
     preferences: harness.preferences,
     documents: harness.documents,
+    interchange: WORKING_FILE_INTERCHANGE,
     diagnostics: harness.diagnostics,
     hostControls: harness.hostControls,
     boot: {

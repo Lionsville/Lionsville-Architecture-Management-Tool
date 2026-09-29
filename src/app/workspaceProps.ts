@@ -35,8 +35,8 @@ import type { ProjectFileChannel } from './useProjectFiles'
 import type { AskPassword } from './usePasswordPrompt'
 import type { KeepNotice } from './useKeepNotice'
 import type { Notify } from './useToasts'
-import type { ChooseDestination, LandingPrompts } from './workingFileFlows'
-import type { WorkingFileManifest } from '../projects/workingFileManifest'
+import type { ChooseDestination, LandingPrompts, OpenedWorkingFile } from './workingFileFlows'
+import type { CarriedOut, Interchange } from '../ports/Interchange'
 
 /** Where this scope is kept, and what the source it is kept in says about it. */
 export type WorkspaceSource = {
@@ -148,17 +148,19 @@ export type WorkspaceTree = {
    */
   models?: () => Promise<ScopeModel[]>
   /**
-   * Every scope in full, read when an export asks (ADR-0018). Beside `models`
-   * and for the opposite reason: that one is the thin read the index wants,
-   * this is the whole thing the working file is made of.
+   * Every scope in full, read when an export asks (ADR-0018) and carried out
+   * as one working file, with the ones handed in standing in for what is
+   * read at their addresses. Beside `models` and for the opposite reason:
+   * that one is the thin read the index wants, this is the whole thing the
+   * working file is made of.
    */
-  workingSet?: () => Promise<ScopeSnapshot[]>
+  carryOut: (held: readonly ScopeSnapshot[]) => Promise<CarriedOut>
   /**
    * Write the scopes an opened working file brought with it (ADR-0018). The
    * shell's, because it owns the store; absent where there is none, and such a
    * file is then refused rather than half-opened.
    */
-  onAdoptScopes?: (scopes: readonly ScopeSnapshot[], manifest?: WorkingFileManifest) => Promise<void>
+  onAdoptScopes?: (opened: OpenedWorkingFile) => Promise<void>
   /**
    * One scope as the store holds it now, to read an opened working file back
    * and hold it to the file (ADR-0023, amended).
@@ -257,6 +259,8 @@ export type WorkspaceHost = {
 /** The working file (ADR-0023, ADR-0025): the channel, and the three questions it asks. */
 export type WorkspaceFiles = {
   documents: ProjectFileChannel
+  /** What writes and reads a working file (`ports/Interchange.ts`). */
+  interchange: Pick<Interchange, 'accepts' | 'open' | 'check'>
   /** The shell's one password dialog, behind a promise (ADR-0023). */
   askPassword: AskPassword
   /** Where a working file goes, asked before it lands (ADR-0025). */
