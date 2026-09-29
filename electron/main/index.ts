@@ -26,7 +26,7 @@ import { extname, isAbsolute, join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { basename } from 'node:path'
 import { readFile } from 'node:fs/promises'
-import { installAppMenu, reportScopeOpen, reportTheme, sendCommand } from './appMenu'
+import { commandsHeard, installAppMenu, reportScopeOpen, reportTheme, sendCommand } from './appMenu'
 import { productName } from '../../package.json'
 import { isThemeMode } from '../../src/platform/theme'
 import { USER_DATA_NAME } from '../../src/platform/userData'
@@ -415,6 +415,7 @@ void app.whenReady().then(() => {
 
   ipcMain.handle('app:listening', () => {
     listening = true
+    commandsHeard()
     for (const path of waiting.splice(0)) openDocument(path)
   })
 

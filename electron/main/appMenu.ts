@@ -52,6 +52,16 @@ import type { ThemeMode } from '../../src/platform/theme'
 import { EN } from '../../src/platform/strings/en'
 
 /**
+ * Commands sent before anything in the window listens: held, and sent the
+ * moment something does (`app:listening`, from the preload). The boot reads
+ * the preferences, opens where work is kept and may pull a folder before the
+ * app is up to hear a menu item, and a command sent then was one that
+ * silently did nothing.
+ */
+const held: HostCommand[] = []
+let listening = false
+
+/**
  * To the focused window, and to the only window when none is focused.
  *
  * A menu item can fire with no focused window (the Dock menu, a keyboard
@@ -59,9 +69,19 @@ import { EN } from '../../src/platform/strings/en'
  * menu item that silently does nothing every so often.
  */
 export function sendCommand(command: HostCommand): void {
-  const all = webContents.getAllWebContents().filter((held) => !held.isDestroyed())
-  const target = all.find((held) => held.isFocused()) ?? all[0]
+  if (!listening) {
+    held.push(command)
+    return
+  }
+  const all = webContents.getAllWebContents().filter((open) => !open.isDestroyed())
+  const target = all.find((open) => open.isFocused()) ?? all[0]
   target?.send('app:command', command)
+}
+
+/** Something in the window listens now: what was held goes to it, in the order it was sent. */
+export function commandsHeard(): void {
+  listening = true
+  for (const command of held.splice(0)) sendCommand(command)
 }
 
 const label = (key: keyof typeof EN): string => EN[key]
