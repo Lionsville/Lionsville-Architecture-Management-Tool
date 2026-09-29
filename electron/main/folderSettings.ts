@@ -20,18 +20,26 @@ import { readLocalSettings } from '../../src/projects/folderSettings'
 import {
   MACHINE_FOLDER_SETTINGS_FILE, machineFolderSettingsText, readMachineFolderSettings,
 } from '../../src/platform/node/machineFolderSettings'
+import {
+  APPLIED_STEPS_FILE, appliedStepsOf, appliedStepsText, readAppliedSteps,
+} from '../../src/platform/node/appliedSteps'
+import type { AppliedSteps } from '../../src/platform/node/appliedSteps'
 import { log } from './log'
 
 const settingsPath = (): string => join(app.getPath('userData'), MACHINE_FOLDER_SETTINGS_FILE)
+const stepsPath = (): string => join(app.getPath('userData'), APPLIED_STEPS_FILE)
 
-async function text(): Promise<string | undefined> {
+async function text(path = settingsPath()): Promise<string | undefined> {
   try {
-    return await readFile(settingsPath(), 'utf8')
+    return await readFile(path, 'utf8')
   } catch {
     // No file yet. The reader answers "never written" for every folder.
     return undefined
   }
 }
+
+/** One write of the steps file at a time: two windows remembering steps must not lose each other's. */
+let stepsQueue: Promise<unknown> = Promise.resolve()
 
 export function registerFolderSettingsChannel(): void {
   ipcMain.handle('settings:readFolderLocal', async (_event, root: unknown): Promise<LocalSettings | undefined> => {
@@ -49,5 +57,26 @@ export function registerFolderSettingsChannel(): void {
       throw cause
     }
     return readMachineFolderSettings(next, root) ?? readLocalSettings(undefined)
+  })
+  // The step ids a folder's repositories applied (ADR-0031): kept here, keyed
+  // by the folder, so the person never sees them and a copy never carries them.
+  ipcMain.handle('settings:readFolderSteps', async (_event, root: unknown): Promise<AppliedSteps | undefined> => {
+    if (typeof root !== 'string') return undefined
+    return readAppliedSteps(await text(stepsPath()), root)
+  })
+  ipcMain.handle('settings:writeFolderSteps', (_event, root: unknown, steps: unknown): Promise<void> => {
+    if (typeof root !== 'string') throw new Error('a folder is named by its path')
+    const write = async () => {
+      const next = appliedStepsText(await text(stepsPath()), root, appliedStepsOf(steps))
+      try {
+        await writeFile(stepsPath(), `${next}\n`, 'utf8')
+      } catch (cause) {
+        log('settings', `could not write ${APPLIED_STEPS_FILE}: ${String(cause)}`)
+        throw cause
+      }
+    }
+    const next = stepsQueue.then(write, write)
+    stepsQueue = next.catch(() => undefined)
+    return next
   })
 }

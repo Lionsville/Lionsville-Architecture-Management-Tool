@@ -30,6 +30,8 @@ function fakeChannel(initial?: string): DesktopSettings & { text(): string | und
       held = machineFolderSettingsText(held, root, patch)
       return Promise.resolve(readMachineFolderSettings(held, root) ?? readLocalSettings(undefined))
     },
+    readFolderSteps: () => Promise.reject(new Error('not here')),
+    writeFolderSteps: () => Promise.reject(new Error('not here')),
   }
 }
 

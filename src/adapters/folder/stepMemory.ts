@@ -6,24 +6,41 @@
  * (`ScopeRepository.apply`: a step lands once, and is refused for any other
  * scope; the ids are remembered for at least a day).
  *
- * **Kept where a person does not look.** A folder that keeps a history has a
- * `.git` folder, which is the history's own and which no file manager, no
- * `git status` and no copy of the work shows; the ids are a small file in it.
- * A folder that keeps none has nowhere of the kind, and a file of ours beside
- * a person's work is what ADR-0023 took out of it — so there the ids are
- * remembered for as long as the repositories are open, and that is said in
- * ADR-0031's record of the build.
+ * **Never in the folder.** A file of ours in a person's folder is one they see,
+ * one git shows, and one a copy of the folder carries to where the ids mean
+ * nothing; and the folder's `.git` is git's, which nothing but git writes. So
+ * the ids are kept wherever whoever composes the folder says (`StepStore`):
+ * on the desktop, in its own data folder beside what it does about each
+ * folder, keyed by the folder (`desktop/desktopStepStore.ts`), which keeps them
+ * through a restart. Where nobody says — a browser's folder, whose handle has
+ * no identity storage can be keyed by — they are kept for as long as the
+ * repositories are open, and ADR-0031's record of the build says so.
  *
  * Remembered for two days and then forgotten: the promise is one, and a step
  * sent again after that is a new step.
  */
-import { parseJson, stableJson } from '../../projects/fileText'
 import type { ScopeId } from '../../projects/scopeState'
-import type { DirectoryHandleLike } from './DirectoryHandle'
-import { folderAt, textAt, writeAt } from './handles'
 
-/** Where in `.git` the ids are kept. */
-const KEPT_AT = '.git/lionsville-architect/applied-steps.json'
+/** Each applied step id, the scope it went to, and when, in epoch milliseconds. */
+export type AppliedSteps = Record<string, [ScopeId, number]>
+
+/** Where a folder's applied step ids are kept between one opening of it and the next. */
+export type StepStore = {
+  read(): Promise<AppliedSteps | undefined>
+  write(steps: AppliedSteps): Promise<void>
+}
+
+/** Kept for as long as the repositories are open, and no longer. */
+export function stepsInMemory(): StepStore {
+  let held: AppliedSteps | undefined
+  return {
+    read: () => Promise.resolve(held && structuredClone(held)),
+    write: (steps) => {
+      held = structuredClone(steps)
+      return Promise.resolve()
+    },
+  }
+}
 
 /** How long an id is remembered: twice the day the contract promises. */
 const REMEMBERED_MS = 2 * 24 * 60 * 60 * 1000
@@ -33,25 +50,12 @@ type Held = Map<string, { scope: ScopeId; at: number }>
 export class StepMemory {
   private held: Held | undefined
 
-  constructor(private readonly root: DirectoryHandleLike, private readonly now: () => number = Date.now) {}
-
-  /** Whether the folder has somewhere to keep the ids that a person does not see. */
-  private async kept(): Promise<boolean> {
-    return (await folderAt(this.root, '.git').catch(() => undefined)) !== undefined
-  }
+  constructor(private readonly store: StepStore = stepsInMemory(), private readonly now: () => number = Date.now) {}
 
   private async load(): Promise<Held> {
     if (this.held) return this.held
     const held: Held = new Map()
-    const text = await this.kept() ? await textAt(this.root, KEPT_AT).catch(() => undefined) : undefined
-    const read = text === undefined ? undefined : parseJson(text)
-    const steps = read && typeof read === 'object' ? (read as { steps?: unknown }).steps : undefined
-    if (steps && typeof steps === 'object') {
-      for (const [id, row] of Object.entries(steps as Record<string, unknown>)) {
-        const [scope, at] = Array.isArray(row) ? row as unknown[] : []
-        if (typeof scope === 'string' && typeof at === 'number') held.set(id, { scope, at })
-      }
-    }
+    for (const [id, [scope, at]] of Object.entries(await this.store.read() ?? {})) held.set(id, { scope, at })
     this.held = held
     return held
   }
@@ -69,8 +73,6 @@ export class StepMemory {
     const now = this.now()
     for (const { stepId, scope } of applied) held.set(stepId, { scope, at: now })
     for (const [id, { at }] of held) if (now - at >= REMEMBERED_MS) held.delete(id)
-    if (!await this.kept()) return
-    const steps = Object.fromEntries([...held].map(([id, { scope, at }]) => [id, [scope, at]]))
-    await writeAt(this.root, KEPT_AT, stableJson({ version: 1, steps }))
+    await this.store.write(Object.fromEntries([...held].map(([id, { scope, at }]) => [id, [scope, at]])))
   }
 }

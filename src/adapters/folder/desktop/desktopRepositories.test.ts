@@ -10,13 +10,14 @@
  * does for the files. What is left untested is `ipcRenderer.invoke`.
  */
 import { afterAll, describe, expect, it } from 'vitest'
-import { mkdtempSync, realpathSync, rmSync } from 'node:fs'
-import { readFile as readOnDisk, writeFile as writeOnDisk } from 'node:fs/promises'
+import { existsSync, mkdtempSync, realpathSync, rmSync } from 'node:fs'
+import { writeFile as writeOnDisk } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
 import {
   fingerprint, listDirectory, makeDirectory, readFile, removeEntry, writeFile, writeTogether,
 } from '../../../../electron/main/fileStore'
+import { appliedStepsText, readAppliedSteps } from '../../../platform/node/appliedSteps'
 import { gitAvailable, isRepository } from '../../../platform/node/git'
 import {
   allTags, changes, commitLog, commitPaths, readAt, startHistory, tagCommit, treeAt,
@@ -24,13 +25,14 @@ import {
 import { describeHistoryRepository } from '../../../ports/HistoryRepository.contract'
 import { describeImageRepository } from '../../../ports/ImageRepository.contract'
 import { describeOrganisationIndex } from '../../../ports/OrganisationIndex.contract'
-import { addCrews, over } from '../../../ports/Repositories.contract'
+import { addCrews, ok, over, refusal, step } from '../../../ports/Repositories.contract'
 import type { RepositoriesUnderTest } from '../../../ports/Repositories.contract'
 import { describeScopeRepository } from '../../../ports/ScopeRepository.contract'
 import { describeSettingsRepository } from '../../../ports/SettingsRepository.contract'
 import type { DesktopFiles, DesktopHistory } from '../../desktop/channel'
 import { folderRepositories } from '../folderRepositories'
 import { DesktopFolderGit } from './DesktopFolderGit'
+import { desktopStepStore } from './desktopStepStore'
 import { IpcDirectoryHandle } from './IpcDirectoryHandle'
 
 const available = await gitAvailable()
@@ -120,14 +122,33 @@ describe.skipIf(!available)('the folder’s repositories on the desktop, with gi
     expect((await changes(folder)).map((change) => change.path)).toContain('acme/rail/model.json')
   })
 
-  it('keeps applied step ids inside the history’s own folder, where a person does not see them', async () => {
+  it('keeps applied step ids in the app’s own data, keyed by the folder, through a restart and never in the folder', async () => {
     const folder = freshFolder()
-    const repositories = over(onTheDesktop(folder))
-    const acme = await repositories.scope('acme', 'Acme Logistics')
-    await repositories.record('start')
-    await repositories.steps(acme, addCrews)
-    const kept = JSON.parse(await readOnDisk(join(folder, '.git/lionsville-architect/applied-steps.json'), 'utf8')) as { steps: object }
-    expect(Object.keys(kept.steps)).toHaveLength(1)
+    let kept: string | undefined
+    const settings = {
+      readFolderSteps: (root: string) => Promise.resolve(readAppliedSteps(kept, root)),
+      writeFolderSteps: (root: string, steps: Record<string, [string, number]>) => {
+        kept = appliedStepsText(kept, root, steps)
+        return Promise.resolve()
+      },
+    }
+    const open = () => {
+      const root = new IpcDirectoryHandle(filesOver(folder), folder, basename(folder))
+      return over({ repositories: folderRepositories({
+        root, git: new DesktopFolderGit(historyOver(), folder), steps: desktopStepStore(settings, folder),
+      }) })
+    }
+    const first = open()
+    const acme = await first.scope('acme', 'Acme Logistics')
+    const globex = await first.scope('globex', 'Globex')
+    await first.record('start')
+    const once = step(addCrews)
+    const landed = ok(await first.apply([{ scope: acme, steps: [once] }])).revisions[0]
+    const again = open()
+    expect(ok(await again.apply([{ scope: acme, steps: [once] }])).revisions).toEqual([landed])
+    expect(refusal(await again.apply([{ scope: globex, steps: [once] }]))).toBe('step.elsewhere')
+    expect(Object.keys(readAppliedSteps(kept, folder) ?? {})).toEqual([once.stepId])
     expect((await changes(folder)).map((change) => change.path).sort()).toEqual(['acme/docs/crews.md', 'acme/model.json'])
+    expect(existsSync(join(folder, '.git/lionsville-architect'))).toBe(false)
   })
 })

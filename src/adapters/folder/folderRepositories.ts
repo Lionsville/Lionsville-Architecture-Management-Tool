@@ -27,6 +27,7 @@ import { FolderSettingsRepository, personSettingsInMemory } from './FolderSettin
 import type { PersonSettings } from './FolderSettingsRepository'
 import type { FolderGit } from './folderGit'
 import { StepMemory } from './stepMemory'
+import type { StepStore } from './stepMemory'
 
 export type FolderOpening = {
   /** The folder. */
@@ -37,6 +38,11 @@ export type FolderOpening = {
   person?: PersonSettings
   /** Where a file that will not read, and a picture that could not be kept, are said. */
   diagnostics?: Pick<Diagnostics, 'report'>
+  /**
+   * Where the step ids it applied are kept between one opening and the next,
+   * outside the folder (`desktop/desktopStepStore.ts`); in memory where not said.
+   */
+  steps?: StepStore
   /** The clock step ids are remembered by. */
   now?: () => number
 }
@@ -45,7 +51,7 @@ export function folderRepositories(opening: FolderOpening): Repositories {
   const folder = new FolderScopes(opening.root, opening.diagnostics)
   const staging = new PictureStaging()
   return {
-    scopes: new FolderScopeRepository(folder, new StepMemory(opening.root, opening.now), staging),
+    scopes: new FolderScopeRepository(folder, new StepMemory(opening.steps, opening.now), staging),
     index: new FolderIndex(folder),
     history: new FolderHistory(folder, opening.git),
     images: new FolderImageRepository(folder, staging),

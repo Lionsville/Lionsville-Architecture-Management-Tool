@@ -127,6 +127,13 @@ export type DesktopSettings = {
   readFolderLocal(root: string): Promise<LocalSettings | undefined>
   /** Patch the folder's entry, and answer with what is now in force. */
   writeFolderLocal(root: string, patch: LocalSettingsPatch): Promise<LocalSettings>
+  /**
+   * The step ids a folder's repositories applied (ADR-0031), kept here and
+   * not in the folder; `undefined` where none were written for it.
+   */
+  readFolderSteps(root: string): Promise<Record<string, [string, number]> | undefined>
+  /** Replace a folder's applied step ids. */
+  writeFolderSteps(root: string, steps: Record<string, [string, number]>): Promise<void>
 }
 
 /**
