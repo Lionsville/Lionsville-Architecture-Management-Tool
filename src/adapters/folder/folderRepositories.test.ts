@@ -645,3 +645,12 @@ function counting(folder: DirectoryHandleLike): { handle: DirectoryHandleLike; r
   }
   return { handle: wrap(folder, ''), reads: () => reads }
 }
+
+describe('a folder nobody has named', () => {
+  it('is listed under the folder\'s own name until it names itself', async () => {
+    const root = new FakeDirectory('Architecture')
+    const repositories = folderRepositories({ root, git: memoryGit(root) })
+    expect((await repositories.scopes.tree()).root.name).toBe('Architecture')
+    expect(await textAt(root, 'scope.json')).toBeUndefined()
+  })
+})
