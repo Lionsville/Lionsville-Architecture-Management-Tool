@@ -105,7 +105,7 @@ export async function picturesForReport(
     for (let at = next++; at < order.length; at = next++) {
       const { scope, entry } = order[at]
       try {
-        answers[at] = await Promise.resolve().then(() => source.bytes(scope, entry.name))
+        answers[at] = await source.bytes(scope, entry.name)
       } catch (error) {
         failed(error)
       }

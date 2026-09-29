@@ -753,7 +753,12 @@ library down, with the source's image repository as the source.
   picture named in a code block is not asked for, two spellings of one name
   are one picture, and one name in two scopes is two. The list is whole when
   the render returns — `renderToStaticMarkup`, or a root rendered inside
-  `flushSync` — and that is when a report calls `picturesForReport`
+  `flushSync` — and may name more than is printed: a picture inside a
+  Suspense boundary whose sibling suspends is written down while the
+  boundary puts out its fallback, so a report renders with nothing that
+  suspends, or accepts asking for a picture it will not print. Written down
+  during the render, `onDrawn` only records and sets no React state. Once
+  the render has returned, a report calls `picturesForReport`
   (`pictureReport.ts`). It asks for each once, four at a time and never
   fewer than one, waits for every answer, and answers the pictures whose
   bytes came in the order drawn, with a lookup by scope and name. A picture

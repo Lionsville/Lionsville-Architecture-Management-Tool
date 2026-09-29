@@ -8,6 +8,8 @@
  * them, and asked for when the report is produced and not before.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { Suspense, use } from 'react'
+import type { ReactNode } from 'react'
 import { cleanup } from '@testing-library/react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import type { ImageEntry } from '../../model/imageName'
@@ -77,6 +79,30 @@ describe('a report\'s pictures', () => {
     )
     expect(markup).toContain('data-picture="depot.png"')
     expect(drawn.pictures().map((one) => one.entry.name)).toEqual(['depot.png', 'Kaart-ü.png', 'crews.png'])
+  })
+
+  it('name a picture drawn beside something that suspends, though only the fallback is put out', () => {
+    const never = new Promise<never>(() => undefined)
+    function Suspends(): ReactNode {
+      use(never)
+      return null
+    }
+    const drawn = drawnPictures()
+    const markup = renderToStaticMarkup(
+      <PicturesProvider source={memoryImageSource({})} scope="crews" library={LIBRARY} watch={NEVER}>
+        <CollectPictures onDrawn={drawn.add}>
+          <Suspense fallback={<p>Waiting</p>}>
+            <MarkdownView markdown={DOCUMENTS[0]} />
+            <Suspends />
+          </Suspense>
+        </CollectPictures>
+      </PicturesProvider>,
+    )
+    expect(markup).toContain('Waiting')
+    expect(markup).not.toContain('data-picture')
+    // The list is whole, and names more than was printed: a report renders
+    // with nothing that suspends, or accepts asking for this one.
+    expect(drawn.pictures().map((one) => one.entry.name)).toEqual(['depot.png'])
   })
 
   it('keep two scopes\' pictures of one name apart, each asked of its own scope', async () => {
