@@ -117,6 +117,13 @@ export type ProjectFilesDeps = {
   chooseDestination?: ChooseDestination
   /** A snapshot of what is here before *Replace here* writes over it (ADR-0025, amended). */
   beforeReplace?: () => Promise<boolean>
+  /**
+   * The open scope could not be read whole (`ScopeState.unreadable`), and
+   * this opens it again. It takes no change, but a working file landed here
+   * puts it back whole — which is the one thing it may be done to — and it is
+   * then read again rather than adopted into a session that may not change.
+   */
+  onPutBack?: () => void
   notify: Notify
   s: Translate
 }
@@ -124,7 +131,7 @@ export type ProjectFilesDeps = {
 export function useProjectFiles(deps: ProjectFilesDeps): ProjectFiles {
   const {
     session, putPicture, documents, carryOut, interchange, adoptWorkingSet, readScope, askPassword, landing, chooseDestination,
-    beforeReplace, notify, s,
+    beforeReplace, onPutBack, notify, s,
   } = deps
 
   /**
@@ -193,13 +200,16 @@ export function useProjectFiles(deps: ProjectFilesDeps): ProjectFiles {
    */
   const landHere = useCallback(async (result: OpenedWorkingFile): Promise<boolean> => {
     // Replacing the open scope is a change to it like any other, and the
-    // scopes under it are written first, so it is asked before anything is.
-    if (!session.mayChange()) return false
+    // scopes under it are written first, so it is asked before anything is —
+    // but for one that could not be read whole, which a replace puts back.
+    const puttingBack = onPutBack !== undefined && adoptWorkingSet !== undefined
+    if (!puttingBack && !session.mayChange()) return false
     if (result.rest.length && !adoptWorkingSet) {
       notify(s('shell.workingSetNotHere'), 'error')
       return false
     }
     if (adoptWorkingSet) await adoptWorkingSet(result)
+    if (puttingBack) { onPutBack(); return true }
     // What landed, as it is kept now: the file carries its pictures' bytes,
     // and the library's entries — which the session draws them from — are
     // made where they were put. A working file carries its own geometry, and
@@ -207,7 +217,7 @@ export function useProjectFiles(deps: ProjectFilesDeps): ProjectFiles {
     const landed = adoptWorkingSet && readScope ? await readScope(result.top.path).catch(() => undefined) : undefined
     session.adopt(landed ?? result.top, false)
     return true
-  }, [session, adoptWorkingSet, readScope, notify, s])
+  }, [session, adoptWorkingSet, readScope, onPutBack, notify, s])
 
   const openDocument = useCallback((name: string, held: Uint8Array) => {
     // A sealed file asks for its password first (ADR-0023), and everything

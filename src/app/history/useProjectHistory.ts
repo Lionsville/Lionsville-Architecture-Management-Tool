@@ -13,6 +13,11 @@
  * a thing, about the record it is — and going back is the model's own restore,
  * dispatched like any step, so the history only grows.
  *
+ * **But not on a scope that could not be read whole** (`ScopeState.unreadable`),
+ * which takes no model command: there going back is putting the whole scope
+ * back as the entry held it (`projects/putBack.ts`), with the safeguard's
+ * entry first, and the scope is opened again once it reads whole.
+ *
  * The one ordering that matters: a snapshot is of what is kept, so what is on
  * screen has to be written before one is taken. That is why `save` is awaited
  * rather than fired.
@@ -26,14 +31,17 @@ import { fromArrays } from '../../model/normalised'
 import type { Model } from '../../model/normalised'
 import { restoreCommand } from '../../model/restore'
 import type { StepSummary } from '../../model/activity'
-import type { Translate } from '../../i18n'
+import type { StringKey, Translate } from '../../i18n'
 import { reasonOf } from '../../platform/errors'
 import { reasonIn } from '../messageFor'
 import type { HistoryEntry, HistoryRepository } from '../../ports/HistoryRepository'
+import type { ScopeRepository } from '../../ports/ScopeRepository'
+import { putBackWhole } from '../../projects/putBack'
 import type { ScopeSnapshot } from '../../projects/scope'
 import { nodeAt, nodesOf } from '../../projects/scopeAccess'
 import type { ScopeReader } from '../../projects/scopeAccess'
 import type { ScopePath } from '../../projects/scopePath'
+import type { ScopeId } from '../../projects/scopeState'
 import type { Notify } from '../useToasts'
 import { recordOf, scopesOf } from './subjects'
 import type { HistorySubject } from './subjects'
@@ -46,6 +54,16 @@ function dayOf(at: number): string {
   const held = new Date(at)
   const pad = (n: number) => String(n).padStart(2, '0')
   return `${held.getFullYear()}-${pad(held.getMonth() + 1)}-${pad(held.getDate())}`
+}
+
+/**
+ * Where the open scope could not be read whole and may be written: the
+ * scope, what puts it back, and what opens it again once it reads whole.
+ */
+export type PutBack = {
+  scopes: Pick<ScopeRepository, 'state' | 'apply'>
+  scope: ScopeId
+  done: () => void
 }
 
 export type ProjectHistoryState = {
@@ -63,6 +81,8 @@ export type ProjectHistoryState = {
   chosen?: { id: string; model?: HostModel }
   /** Whose history the page is showing; absent is the whole scope's (ADR-0008). */
   subject?: HistorySubject
+  /** Whether going back puts the whole scope back, because it could not be read whole. */
+  whole: boolean
   /**
    * Every scope the open subject's history is read over, this one first
    * (ADR-0012 §7): what the page says under the picker — *everywhere this is
@@ -94,6 +114,7 @@ async function beforeReplace(
     scopes: ScopeReader; project: () => ScopeSnapshot; notify: Notify; s: Translate
   },
   onRecorded: () => void,
+  subject: StringKey = 'history.beforeReplace',
 ): Promise<boolean> {
   const { history, kept, save, scopes, project, notify, s } = deps
   if (!history) return true
@@ -105,7 +126,7 @@ async function beforeReplace(
     const node = nodeAt(await scopes.tree(), project().path)
     // A scope with no document yet has nothing to lose.
     if (!node) return true
-    const written = await history.record({ scopes: nodesOf(node).map((held) => held.id), subject: s('history.beforeReplace') })
+    const written = await history.record({ scopes: nodesOf(node).map((held) => held.id), subject: s(subject) })
     if (written.length > 0) {
       onRecorded()
       notify(s('history.takenBeforeReplace'), 'info')
@@ -115,6 +136,50 @@ async function beforeReplace(
     notify(s('history.failedBeforeReplace', { message: reasonIn(cause, s) }), 'error')
     return false
   }
+}
+
+/**
+ * A scope that could not be read whole, put back as an entry held it: the
+ * entry before it where a history is kept, then the whole scope, then the
+ * scope opened again (`PutBack.done`). Said as it went, whichever way.
+ */
+async function putBack(
+  deps: Parameters<typeof beforeReplace>[0] & { history: HistoryRepository },
+  entry: HistoryEntry,
+  into: PutBack,
+  onPut: () => void,
+): Promise<void> {
+  const { history, notify, s } = deps
+  try {
+    if (!await beforeReplace(deps, () => undefined, 'history.beforePutBack')) return
+    const outcome = await putBackWhole({ scopes: into.scopes, history }, into.scope, entry)
+    if (!outcome) { notify(s('history.gone'), 'warning'); return }
+    onPut()
+    const without = outcome.left ? s('history.putBackWithout', { count: outcome.left }) : ''
+    notify(s('history.putBackDone', { date: dayOf(entry.at) }) + without, 'success')
+    into.done()
+  } catch (cause) {
+    notify(s('history.putBackFailed', { message: reasonIn(cause, s) }), 'error')
+  }
+}
+
+/** Putting back the open scope, where it could not be read whole; `undefined` where it reads whole. */
+function usePutBack(
+  deps: Parameters<typeof beforeReplace>[0],
+  recover: PutBack | undefined,
+  page: { recorded: { current: number }; steps: () => readonly unknown[]; setPageOpen: (open: boolean) => void },
+): ((entry: HistoryEntry) => void) | undefined {
+  const { history, kept, save, scopes, project, notify, s } = deps
+  const { recorded, steps, setPageOpen } = page
+  const put = useCallback((entry: HistoryEntry) => {
+    if (!history || !recover) return
+    void putBack({ history, kept, save, scopes, project, notify, s }, entry, recover, () => {
+      // The entry before it covered what the session did: the next draft starts after it.
+      recorded.current = steps().length
+      setPageOpen(false)
+    })
+  }, [history, kept, save, scopes, project, notify, s, recover, recorded, steps, setPageOpen])
+  return recover ? put : undefined
 }
 
 export function useProjectHistory(deps: {
@@ -130,10 +195,12 @@ export function useProjectHistory(deps: {
   save: () => Promise<void>
   indexed: () => Model
   dispatch: (command: Command) => unknown
+  /** Where the open scope could not be read whole and may be written ({@link PutBack}). */
+  recover?: PutBack
   notify: Notify
   s: Translate
 }): ProjectHistoryState {
-  const { history, kept, scopes, index, project, steps, save, indexed, dispatch, notify, s } = deps
+  const { history, kept, scopes, index, project, steps, save, indexed, dispatch, recover, notify, s } = deps
 
   const [keeping, setKeeping] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -195,10 +262,6 @@ export function useProjectHistory(deps: {
     })
   }, [history, save, steps, notify, s])
 
-  const safeguard = useCallback(() => beforeReplace({ history, kept, save, scopes, project, notify, s }, () => {
-    recorded.current = steps().length
-  }), [history, kept, save, scopes, project, steps, notify, s])
-
   const choose = useCallback((id: string) => {
     const entry = entries.find((held) => held.id === id)
     if (!history || !entry) return
@@ -234,9 +297,16 @@ export function useProjectHistory(deps: {
     list(of)
   }, [refused, list])
 
+  const safeguard = useCallback(() => beforeReplace({ history, kept, save, scopes, project, notify, s }, () => {
+    recorded.current = steps().length
+  }), [history, kept, save, scopes, project, steps, notify, s])
+
+  const putBackAt = usePutBack({ history, kept, save, scopes, project, notify, s }, recover, { recorded, steps, setPageOpen })
+
   const restore = useCallback(() => {
     if (!chosen?.model) return
     const entry = entries.find((held) => held.id === chosen.id)
+    if (putBackAt) { if (entry) putBackAt(entry); return }
     const asOf = entry ? dayOf(entry.at) : ''
     const result = restoreCommand(fromArrays(chosen.model), indexed(), subject, asOf)
     if (!result.ok) { notify(s(result.reason), 'warning'); return }
@@ -249,7 +319,7 @@ export function useProjectHistory(deps: {
     if (result.dropped) message += s('history.restoredDropped', { count: result.dropped })
     if (result.kept) message += s('history.restoredKept', { count: result.kept })
     notify(message, 'success', { label: s('history.snapshotNow'), onClick: openDialog })
-  }, [chosen, entries, subject, indexed, dispatch, notify, s, openDialog])
+  }, [chosen, entries, putBackAt, subject, indexed, dispatch, notify, s, openDialog])
 
   const label = useCallback((name: string) => {
     const entry = entries.find((held) => held.id === chosen?.id)
@@ -283,6 +353,7 @@ export function useProjectHistory(deps: {
     entries,
     chosen,
     subject,
+    whole: recover !== undefined,
     places,
     openDialog,
     closeDialog: useCallback(() => setDialogOpen(false), []),

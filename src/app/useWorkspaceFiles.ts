@@ -37,10 +37,12 @@ export function useWorkspaceFiles(deps: {
   onAdoptScopes: WorkspaceTree['onAdoptScopes']
   readScope?: WorkspaceTree['readScope']
   onTreeChanged: () => void
+  /** Where the open scope could not be read whole: what opens it again once a working file has put it back. */
+  onPutBack?: () => void
   notify: Notify
   s: Translate
 }): WorkspaceFileParts {
-  const { session, putPicture, carryOut, onAdoptScopes, readScope, onTreeChanged, notify, s } = deps
+  const { session, putPicture, carryOut, onAdoptScopes, readScope, onTreeChanged, onPutBack, notify, s } = deps
   const { documents, interchange, askPassword, landing, chooseDestination } = deps.seams
   /** The store write, and then the two reads a changed tree needs (ADR-0012 §10). */
   const adoptWorkingSet = useCallback(
@@ -61,6 +63,7 @@ export function useWorkspaceFiles(deps: {
     interchange,
     ...(onAdoptScopes ? { adoptWorkingSet } : {}),
     ...(readScope ? { readScope } : {}),
+    ...(onPutBack ? { onPutBack } : {}),
     askPassword,
     landing,
     ...(chooseDestination ? { chooseDestination } : {}),

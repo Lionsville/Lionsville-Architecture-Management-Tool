@@ -102,6 +102,7 @@ export const FOLDER_SOURCE: SourceProvider<FolderParts, FolderOpening, FolderBas
   describeKey: 'shell.sourceTipFolder',
   whereKey: 'folder.where',
   removeKey: 'picker.deleteBodyFolder',
+  unreadableKey: 'folder.unreadableScope',
   connect: {
     labelKey: 'picker.chooseFolder',
     firstLabelKey: 'folder.choose',

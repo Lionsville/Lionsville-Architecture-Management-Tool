@@ -44,12 +44,16 @@ export const EN = {
    */
   'shell.changedThere': 'This project changed elsewhere. Nothing here is unsaved.',
   /**
-   * A scope with a file it cannot be understood without that did not read —
-   * a `model.json` that did not parse, a mark the header names
+   * A scope a part of which did not read — its model, a mark its header names
    * (`ScopeSnapshot.unreadable`, ADR-0028). What was read is shown and nothing
-   * may be changed, because a save would write the scope without it.
+   * may be changed, because a change would write the scope without that part;
+   * but it can be put back whole (`ScopeState.unreadable`), and the notice
+   * says the two ways, which are its buttons. A source that has more to say —
+   * a file a person can mend — says it in its own words (`unreadableKey`).
    */
-  'shell.unreadableScope': '{files} in this scope could not be read, so it is open to be looked at and not changed: saving without it would lose what it holds. Mend the file, or take it back from the history, and open the scope again.',
+  'shell.unreadableScope': '{files} in this scope could not be read, so it is open to be looked at and not changed: a change would lose what it holds. Put it back from the history, or bring in a working file.',
+  'shell.putBackFromHistory': 'Put back from the history…',
+  'shell.bringInWorkingFile': 'Bring in a working file…',
   /**
    * A move refused because a file of a scope in it could not be read: the
    * old folder is removed after the move, and that file would go with it.
@@ -287,6 +291,19 @@ export const EN = {
   'history.restoredProject': 'Restored the whole project as of {date}.',
   'history.restoredDropped': ' {count} placed elements no longer exist and were left out.',
   'history.restoredKept': ' {count} locked decisions were left as they are.',
+  /**
+   * Going back on a scope that could not be read whole: the whole scope put
+   * back as the snapshot held it (`projects/putBack.ts`), not a restore.
+   */
+  'history.beforePutBack': 'Before it was put back from the history',
+  'history.putBack': 'Put back the whole scope…',
+  'history.putBackTitle': 'Put the whole scope back as it was on {date}?',
+  'history.putBackBody':
+    'Part of this scope could not be read. This makes all of it what it was at that snapshot, the part that could not be read included, and it can be changed again afterwards. The history keeps everything, and where one is kept the scope as it stands now is recorded first.',
+  'history.putBackConfirm': 'Put back',
+  'history.putBackDone': 'The scope is back as it was on {date}, and reads whole again.',
+  'history.putBackWithout': ' {count} pictures it held then are no longer kept, and were left out.',
+  'history.putBackFailed': 'The scope was not put back: {message}',
   'history.snapshotNow': 'Snapshot',
   'history.label': 'Label…',
   'history.labelTitle': 'Label this snapshot',

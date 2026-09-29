@@ -430,6 +430,14 @@ export type SourceProvider<Parts, Opening = void, Base = unknown> = {
    */
   readonly removeKey?: StringKey | (string & {})
   /**
+   * What the notice over a scope that could not be read whole says here, with
+   * `{files}`, where this source has more to say than the app's own sentence
+   * — a file a person can mend by hand. Absent, the app names the two ways
+   * every source has: put it back from the history, or bring in a working
+   * file.
+   */
+  readonly unreadableKey?: StringKey | (string & {})
+  /**
    * What this source means by the five words. Absent where it means what a
    * file means, which is what all three that ship mean.
    */

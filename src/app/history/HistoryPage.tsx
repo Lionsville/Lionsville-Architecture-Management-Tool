@@ -70,6 +70,12 @@ export type HistoryPageProps = {
   scopes?: readonly string[]
   /** Make the subject, or the whole project, what the chosen snapshot held (ADR-0008). */
   onRestore: () => void
+  /**
+   * The scope could not be read whole: going back puts all of it back
+   * (`projects/putBack.ts`), and is offered even where what could be read
+   * is what the snapshot held — the part that could not is not.
+   */
+  whole?: boolean
   /** Call the chosen snapshot something (ADR-0008). */
   onLabel: (name: string) => void
   language: Language
@@ -96,7 +102,7 @@ function when(at: number, language: Language): string {
 export function HistoryPage(props: HistoryPageProps) {
   const {
     open, onClose, entries, chosen, onChoose, current, subject, onSubjectChange,
-    scopes = [], onRestore, onLabel, language, s,
+    scopes = [], onRestore, whole = false, onLabel, language, s,
   } = props
   const chrome = props.windowChrome ?? NO_WINDOW_CHROME
   const bar = barChromeFor(chrome)
@@ -275,15 +281,7 @@ export function HistoryPage(props: HistoryPageProps) {
                   {s('history.compare')}
                 </Typography>
                 <Box sx={{ flex: 1 }} />
-                <Button
-                  size="small"
-                  variant="outlined"
-                  color={subject ? 'primary' : 'warning'}
-                  disabled={changes.length === 0}
-                  onClick={() => setConfirming(true)}
-                >
-                  {s(subject ? 'history.restore' : 'history.restoreProject')}
-                </Button>
+                <GoBackButton one={subject !== undefined} whole={whole} changed={changes.length > 0} onPress={() => setConfirming(true)} s={s} />
               </Box>
               {changes.length === 0 ? (
                 <Typography sx={{ fontSize: 13 }}>{s(subject ? 'history.unchangedFor' : 'history.unchanged')}</Typography>
@@ -319,10 +317,35 @@ export function HistoryPage(props: HistoryPageProps) {
         open={confirming}
         name={subjectName}
         date={chosenEntry ? when(chosenEntry.at, language) : ''}
+        whole={whole}
         onCancel={() => setConfirming(false)}
         onRestore={() => { setConfirming(false); onRestore() }}
         s={s}
       />
     </PageDialog>
+  )
+}
+
+/**
+ * What going back to the chosen snapshot is called, and whether it is
+ * offered: a restore of one thing or of the whole project where anything
+ * changed, and — on a scope that could not be read whole — putting all of it
+ * back, whatever what could be read says.
+ */
+function GoBackButton({ one, whole, changed, onPress, s }: {
+  one: boolean; whole: boolean; changed: boolean; onPress: () => void; s: Translate
+}) {
+  const label = whole ? 'history.putBack' : one ? 'history.restore' : 'history.restoreProject'
+  return (
+    <Button
+      size="small"
+      variant="outlined"
+      color={one && !whole ? 'primary' : 'warning'}
+      disabled={!changed && !whole}
+      onClick={onPress}
+      data-testid="history-restore"
+    >
+      {s(label)}
+    </Button>
   )
 }

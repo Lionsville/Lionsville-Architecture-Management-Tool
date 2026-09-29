@@ -301,12 +301,14 @@ export function sourceDescription(
  */
 export function sourceSayings(source: WorkingSource): {
   labelKey?: StringKey | (string & {}); whereKey?: StringKey | (string & {}); removeKey?: StringKey | (string & {})
+  unreadableKey?: StringKey | (string & {})
 } {
   const provider = sourceProvider(source.provider)
   return {
     ...(provider?.labelKey ? { labelKey: provider.labelKey } : {}),
     ...(provider?.whereKey ? { whereKey: provider.whereKey } : {}),
     ...(provider?.removeKey ? { removeKey: provider.removeKey } : {}),
+    ...(provider?.unreadableKey ? { unreadableKey: provider.unreadableKey } : {}),
   }
 }
 

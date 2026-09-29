@@ -444,7 +444,7 @@ describe('sourceDescription', () => {
     expect(sourceDescription(IN_MEMORY)).toBe('shell.sourceTipMemory')
     expect(sourceDescription({ provider: 'folder', name: 'work', key: '/work' })).toBe('shell.sourceTipFolder')
     expect(sourceSayings({ provider: 'folder', name: 'work', key: '/work' })).toEqual({
-      labelKey: 'shell.sourceFolder', whereKey: 'folder.where', removeKey: 'picker.deleteBodyFolder',
+      labelKey: 'shell.sourceFolder', whereKey: 'folder.where', removeKey: 'picker.deleteBodyFolder', unreadableKey: 'folder.unreadableScope',
     })
     expect(sourceSayings({ provider: 'browserStorage', name: '', key: '' })).toEqual({
       labelKey: 'shell.sourceBrowser', whereKey: 'browser.where', removeKey: 'picker.deleteBodyBrowser',

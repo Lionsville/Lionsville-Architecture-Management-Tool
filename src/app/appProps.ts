@@ -44,6 +44,7 @@ export type SourceSayings = {
   readonly labelKey?: StringKey | (string & {})
   readonly whereKey?: StringKey | (string & {})
   readonly removeKey?: StringKey | (string & {})
+  readonly unreadableKey?: StringKey | (string & {})
 }
 
 /** What the composition root read before the first render, and what went wrong on the way. */
@@ -250,9 +251,9 @@ export type AppProvider = {
   historyKept?: () => Promise<boolean>
   /**
    * What the open source's provider calls a source of its kind, says of where
-   * everything is kept, and says removing a scope takes with it
-   * (`SourceProvider.labelKey`, `whereKey`, `removeKey`). Read from the
-   * registration by the boot.
+   * everything is kept, says removing a scope takes with it, and says of a
+   * scope that could not be read whole (`SourceProvider.labelKey`, `whereKey`,
+   * `removeKey`, `unreadableKey`). Read from the registration by the boot.
    */
   sayings?: SourceSayings
   /**

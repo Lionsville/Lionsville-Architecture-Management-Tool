@@ -57,6 +57,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'picker.deleteBodyFolder': 'Dit verwijdert {name}, alles wat eronder is ondergebracht, en haar map op schijf. Een werkbestand dat je elders bewaarde blijft staan.',
   'picker.deleteBodyBrowser': 'Dit verwijdert {name} en alles wat eronder is ondergebracht uit deze browser. Een werkbestand dat je elders bewaarde blijft staan.',
   'folder.where': 'Alles hier wordt als bestanden in de map hierboven bewaard.',
+  'folder.unreadableScope': '{files} in deze scope kon niet worden gelezen, dus hij staat open om te bekijken en niet om te wijzigen: een wijziging zou verliezen wat erin staat. Herstel het bestand en open de scope opnieuw, zet hem terug uit de geschiedenis, of haal een werkbestand binnen.',
   'browser.where': 'Alles hier wordt in deze browser bewaard.',
   'memory.where': 'Alles hier wordt nog nergens \u2014 bewaar een werkbestand om het te houden bewaard.',
   'shell.storageNearlyFull':

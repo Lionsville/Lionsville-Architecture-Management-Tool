@@ -8,6 +8,8 @@
 import { useCallback, useMemo, useState } from 'react'
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
+import Button from '@mui/material/Button'
+import type { StringKey } from '../i18n'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
 import type { WindowChrome } from '../platform/windowChrome'
 import { ChangedElsewhereNotice } from './ChangedElsewhereNotice'
@@ -85,16 +87,7 @@ export function WorkspaceBar({ parts, toolbarRef }: {
         windowChrome={windowChrome}
       />
       </Box>
-      {parts.unreadable.length > 0 && (
-        <Alert
-          severity="warning"
-          square
-          sx={{ py: 0.25, fontSize: 13, borderRadius: 0 }}
-          data-testid="unreadable-notice"
-        >
-          {s('shell.unreadableScope', { files: parts.unreadable.join(', ') })}
-        </Alert>
-      )}
+      {parts.unreadable.length > 0 && <UnreadableNotice parts={parts} />}
       <ChangedElsewhereNotice
         status={document.state.status}
         onTakeTheirs={document.takeTheirs}
@@ -103,5 +96,40 @@ export function WorkspaceBar({ parts, toolbarRef }: {
         s={s}
       />
     </>
+  )
+}
+
+/**
+ * A scope that could not be read whole: what could not, and — where the
+ * source may be written — the two ways to put it back whole
+ * (`ScopeState.unreadable`), from the history where one is kept and from a
+ * working file brought in. In the source's own words where it has more to
+ * say (`WorkspaceSource.unreadableKey`).
+ */
+function UnreadableNotice({ parts }: { parts: WorkspaceParts }) {
+  const { props, snapshots, pickers, recovering } = parts
+  const { s } = props.shell
+  const key = (props.source.unreadableKey ?? 'shell.unreadableScope') as StringKey
+  return (
+    <Alert
+      severity="warning"
+      square
+      sx={{ py: 0.25, fontSize: 13, borderRadius: 0, '& .MuiAlert-action': { alignItems: 'center', pt: 0 } }}
+      data-testid="unreadable-notice"
+      action={recovering ? (
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          {snapshots.available && (
+            <Button size="small" color="inherit" onClick={() => snapshots.openPage()} data-testid="unreadable-put-back">
+              {s('shell.putBackFromHistory')}
+            </Button>
+          )}
+          <Button size="small" color="inherit" onClick={pickers.document.open} data-testid="unreadable-bring-in">
+            {s('shell.bringInWorkingFile')}
+          </Button>
+        </Box>
+      ) : undefined}
+    >
+      {s(key, { files: parts.unreadable.join(', ') })}
+    </Alert>
   )
 }

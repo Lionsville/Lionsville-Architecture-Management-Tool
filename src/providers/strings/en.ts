@@ -79,6 +79,11 @@ export const EN = {
   'picker.deleteBodyBrowser': 'This deletes {name} and everything filed under it from this browser. A working file you saved elsewhere is not touched.',
   /** The organisation's subtitle, first sentence: where everything here is kept. */
   'folder.where': 'Everything here is kept as files in the folder above.',
+  /**
+   * The notice over a scope a file of which did not read, in a folder: the
+   * file is there to be mended by hand, beside the two ways every source has.
+   */
+  'folder.unreadableScope': '{files} in this scope could not be read, so it is open to be looked at and not changed: a change would lose what it holds. Mend the file and open the scope again, put it back from the history, or bring in a working file.',
   'browser.where': 'Everything here is kept in this browser.',
   'memory.where': 'Everything here is kept nowhere yet \u2014 save a working file to keep it.',
   'shell.storageNearlyFull':

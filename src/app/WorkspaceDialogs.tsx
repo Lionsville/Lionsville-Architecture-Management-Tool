@@ -140,6 +140,7 @@ export function HistoryDialogs({ parts }: { parts: WorkspaceParts }) {
         onSubjectChange={snapshots.setSubject}
         scopes={snapshots.places.map((place) => readings.scopeLabel(place))}
         onRestore={snapshots.restore}
+        whole={snapshots.whole}
         onLabel={snapshots.label}
         language={language}
         s={s}

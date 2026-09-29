@@ -23,12 +23,12 @@ export const EN = {
    */
   'shell.folderUnavailable': 'That folder is not available. Choose it again, or reconnect the drive it is on.',
   /**
-   * A save refused because of a file of the scope that did not read: a
-   * `model.json` that did not parse, which writing would put an empty model in
-   * place of; or a file the read left out, which the save would write over
-   * (ADR-0028, amended).
+   * A step refused on a scope a part of which did not read
+   * (`ScopeState.unreadable`): a change would have written the scope without
+   * that part. Putting it back whole is the step it takes, and the sentence
+   * names the two ways to one.
    */
-  'shell.unreadableNotSaved': 'This scope was not saved: a file of it could not be read, and saving would have written over it or lost what it holds. Mend the file, or take it back from the history, and open the scope again.',
+  'shell.unreadableNotSaved': 'This scope was not saved: part of it could not be read, and a change would have lost what it holds. Put it back from the history, or bring in a working file.',
   /**
    * A whole write of a scope that somebody else wrote since it was read
    * (`projects/revision.ts`). Nothing was written, which is the point: the

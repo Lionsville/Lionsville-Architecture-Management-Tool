@@ -22,27 +22,32 @@ export type RestoreDialogProps = {
   name?: string
   /** The snapshot's day, as the person reads it. */
   date: string
+  /** The whole scope put back, because it could not be read whole (`projects/putBack.ts`). */
+  whole?: boolean
   onCancel: () => void
   onRestore: () => void
   s: Translate
 }
 
-export function RestoreDialog({ open, name, date, onCancel, onRestore, s }: RestoreDialogProps) {
-  const project = name === undefined
+export function RestoreDialog({ open, name, date, whole = false, onCancel, onRestore, s }: RestoreDialogProps) {
+  const project = name === undefined || whole
+  const said = whole
+    ? { title: s('history.putBackTitle', { date }), body: s('history.putBackBody'), confirm: s('history.putBackConfirm') }
+    : {
+        title: project ? s('history.restoreProjectTitle', { date }) : s('history.restoreTitle', { name: name ?? '', date }),
+        body: project ? s('history.restoreProjectBody') : s('history.restoreBody', { name: name ?? '' }),
+        confirm: s('history.restoreConfirm'),
+      }
   return (
     <Dialog open={open} onClose={onCancel} fullWidth maxWidth="sm" aria-labelledby="restore-title">
-      <DialogTitle id="restore-title" sx={{ fontSize: 16 }}>
-        {project ? s('history.restoreProjectTitle', { date }) : s('history.restoreTitle', { name: name ?? '', date })}
-      </DialogTitle>
+      <DialogTitle id="restore-title" sx={{ fontSize: 16 }}>{said.title}</DialogTitle>
       <DialogContent>
-        <DialogContentText sx={{ fontSize: 13 }}>
-          {project ? s('history.restoreProjectBody') : s('history.restoreBody', { name: name ?? '' })}
-        </DialogContentText>
+        <DialogContentText sx={{ fontSize: 13 }}>{said.body}</DialogContentText>
       </DialogContent>
       <DialogActions>
         <Button onClick={onCancel}>{s('common.cancel')}</Button>
         <Button variant="contained" color={project ? 'warning' : 'primary'} onClick={onRestore}>
-          {s('history.restoreConfirm')}
+          {said.confirm}
         </Button>
       </DialogActions>
     </Dialog>

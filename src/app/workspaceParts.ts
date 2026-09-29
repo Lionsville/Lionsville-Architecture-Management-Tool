@@ -43,6 +43,12 @@ export interface WorkspaceParts {
   readOnly: boolean
   /** The files of this scope that did not read, for the notice under the bar. */
   unreadable: readonly string[]
+  /**
+   * The scope did not read whole and the source may be written: it may be
+   * put back whole, from the history or a working file, where nothing else
+   * may be done to it (`ScopeState.unreadable`).
+   */
+  recovering: boolean
   session: ModelSession
   document: WorkspaceDocument
   /** Who else has this scope open, as whoever answers for the source last said. */

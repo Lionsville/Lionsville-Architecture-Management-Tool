@@ -126,6 +126,7 @@ function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSn
         chip: workspaceChip(parts),
         publishesSteps: props.provider?.publishesSteps ?? false,
         recentActivity: props.provider?.recentActivity,
+        unreadableKey: props.provider?.sayings?.unreadableKey,
         onResult: reportKept,
       }}
       tree={{
@@ -141,7 +142,9 @@ function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSn
         readScope: writes.readScope,
         onChanged: writes.treeChanged,
       }}
-      navigation={{ crumbs: ancestry.crumbs, onGoHome: nav.goHome, onOpenScope: nav.openScopeAt, initialPage: nav.initialPage }}
+      navigation={{
+        crumbs: ancestry.crumbs, onGoHome: nav.goHome, onOpenScope: nav.openScopeAt, onReload: nav.reloadOpenProject, initialPage: nav.initialPage,
+      }}
       settings={{ onOpen: parts.organisation.refresh, onApply: writes.applyProjectSettings }}
       host={{
         commands: parts.commands.bus.on,

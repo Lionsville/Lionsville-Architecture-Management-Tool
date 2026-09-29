@@ -94,6 +94,12 @@ export type WorkspaceSource = {
    * all three sources that ship, whose Activity list is the session's.
    */
   recentActivity?: SourceRecentActivity
+  /**
+   * What the notice over a scope that could not be read whole says here, where
+   * the source's provider has more to say than the app's own sentence — a
+   * file a person can mend (`SourceProvider.unreadableKey`). With `{files}`.
+   */
+  unreadableKey?: string
   /** How a save went: the shell's notice says what a refusal means (`useKeepNotice`). */
   onResult: KeepNotice
 }
@@ -194,6 +200,12 @@ export type WorkspaceNavigation = {
    * drawn rather than drawn and dead.
    */
   onOpenScope?: (path: ScopePath, page?: InitialPage) => void
+  /**
+   * Read this scope again and start over from what is kept, nothing carried
+   * over: what a scope that could not be read whole is opened with once it
+   * has been put back. Absent where there is nothing to read again.
+   */
+  onReload?: () => void
   /**
    * Which page to show the moment this appears, when it was opened for one.
    *

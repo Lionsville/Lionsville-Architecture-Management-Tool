@@ -57,6 +57,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'picker.deleteBodyFolder': 'Dies löscht {name}, alles darunter Abgelegte und seinen Ordner auf der Festplatte. Eine anderswo gespeicherte Arbeitsdatei bleibt unberührt.',
   'picker.deleteBodyBrowser': 'Dies löscht {name} und alles darunter Abgelegte aus diesem Browser. Eine anderswo gespeicherte Arbeitsdatei bleibt unberührt.',
   'folder.where': 'Alles hier wird als Dateien im Ordner oben aufbewahrt.',
+  'folder.unreadableScope': '{files} in diesem Bereich konnte nicht gelesen werden, deshalb ist er zum Ansehen geöffnet und nicht zum Ändern: eine Änderung würde verlieren, was er enthält. Reparieren Sie die Datei und öffnen Sie den Bereich erneut, holen Sie ihn aus dem Verlauf zurück, oder bringen Sie eine Arbeitsdatei ein.',
   'browser.where': 'Alles hier wird in diesem Browser aufbewahrt.',
   'memory.where': 'Alles hier wird noch nirgends \u2014 speichern Sie eine Arbeitsdatei, um es zu behalten aufbewahrt.',
   'shell.storageNearlyFull':

@@ -108,6 +108,13 @@ function useSessionParts(props: ProjectWorkspaceProps) {
   const unreadable = project.unreadable ?? []
   const readOnly = (source.readOnly ?? false) || unreadable.length > 0
   /**
+   * A scope that could not be read whole, where the source may be written: it
+   * takes no change, but it may be put back whole (`ScopeState.unreadable`) —
+   * from the history, or from a working file brought in — and is read again
+   * once it has been.
+   */
+  const recovering = unreadable.length > 0 && !(source.readOnly ?? false)
+  /**
    * Every ancestor's records as one list — what the search and the agent read.
    *
    * Flat, because neither of them asks WHICH scope above: the search says a
@@ -140,7 +147,9 @@ function useSessionParts(props: ProjectWorkspaceProps) {
   const diagrams = useDiagramActions({ session, notify, s, makeId })
   const writer = useScopeWriter(source.repositories.scopes, source.repositories.images, project)
   const { files, pickers, safeguardRef } = useWorkspaceFiles({
-    session, putPicture: writer.put, seams: props.files, carryOut: tree.carryOut, onAdoptScopes: tree.onAdoptScopes, readScope: tree.readScope, onTreeChanged, notify, s,
+    session, putPicture: writer.put, seams: props.files, carryOut: tree.carryOut, onAdoptScopes: tree.onAdoptScopes, readScope: tree.readScope, onTreeChanged,
+    ...(recovering && navigation.onReload ? { onPutBack: navigation.onReload } : {}),
+    notify, s,
   })
   const requests = useWorkspaceRequests({ session, scope: project.path, indexRef, onOpenScope, notify, s })
   /**
@@ -171,7 +180,7 @@ function useSessionParts(props: ProjectWorkspaceProps) {
   const alsoHere = useScopeSessionSeam(project, session, source.onSession, document.document.flush)
   const renderer = useRendererView(session, requests.focusElement)
   return {
-    readOnly, unreadable, ancestorRecords, indexRef, session, writer, diagrams, files, pickers, safeguardRef, requests,
+    readOnly, unreadable, recovering, ancestorRecords, indexRef, session, writer, diagrams, files, pickers, safeguardRef, requests,
     showElement, sheets, maps, landscapes, pictures, document, alsoHere, renderer,
   }
 }
@@ -249,6 +258,9 @@ function useScreenParts(
     save: base.document.document.flush,
     indexed: session.indexed,
     dispatch: session.dispatch,
+    ...(base.recovering && project.id !== undefined ? {
+      recover: { scopes: source.repositories.scopes, scope: project.id, done: navigation.onReload ?? NOTHING_TO_READ },
+    } : {}),
     notify,
     s,
   })
