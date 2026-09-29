@@ -65,7 +65,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
 import { LOCAL_SETTINGS_PATH } from '../../projects/folderSettings'
-import { labelSlug } from '../../projects/label'
+import { isSpacedLabel, labelSlug } from '../../projects/label'
 import type { LabelOutcome } from '../../projects/label'
 import { BEFORE_SYNC_BRANCH_PREFIX } from '../sync'
 import type {
@@ -370,7 +370,11 @@ export async function label(root: string, sha: string, name: string): Promise<La
   } catch {
     // No such tag, which is the ordinary case.
   }
-  await git(root, [...await identityArgs(root), 'tag', '-a', tag, '-m', name.trim(), sha])
+  // A scope of the folder's repositories holding the same label is holding
+  // this one: one word for two versions is what the rule refuses.
+  const names = (await git(root, ['for-each-ref', '--format=%(refname:short)', 'refs/tags/']).catch(() => '')).split('\n')
+  if (names.some((held) => isSpacedLabel(held) && held.slice(held.indexOf('/') + 1) === tag)) return 'exists'
+  await git(root, [...await identityArgs(root), 'tag', '-a', '-m', name.trim(), '--', tag, sha])
   return 'done'
 }
 

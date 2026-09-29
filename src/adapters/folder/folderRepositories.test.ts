@@ -161,6 +161,18 @@ describe('the folder, beyond what the suites say', () => {
     expect(await contents(root)).toEqual(before)
   })
 
+  it('keeps a label named in another scope’s space that scope’s, even once the scope is gone', async () => {
+    const root = new FakeDirectory()
+    const git = memoryGit(root)
+    const repositories = over({ repositories: folderRepositories({ root, git }) })
+    const acme = await repositories.scope('acme', 'Acme Logistics')
+    const [made] = await repositories.record('one')
+    await git.tag(made.id.split('.')[0], 'a-removed-scope/board-review', 'Board review')
+    const [entry] = (await repositories.history.entries({ scopes: [acme], limit: 1 })).entries
+    expect(entry.labels).toEqual([])
+    expect(await repositories.history.label(acme, entry.id, 'Board review')).toBe('done')
+  })
+
   it('reads a label an older build put on the whole folder as a label of every scope’s entry there, and takes its word', async () => {
     const root = new FakeDirectory()
     const git = memoryGit(root)

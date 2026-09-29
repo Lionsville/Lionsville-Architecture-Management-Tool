@@ -20,6 +20,7 @@ import { access } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { isAbsolute, join } from 'node:path'
 import { LOCAL_SETTINGS_PATH } from '../../projects/folderSettings'
+import { isSpacedLabel } from '../../projects/label'
 import { git, gitEnvironment, identityArgs, initRepository, isRepository, quietConfig } from './git'
 
 const UNIT = '\x1f'
@@ -306,7 +307,7 @@ export async function allTags(root: string): Promise<GitTag[]> {
  * (`--force` is a name git's own check lets through), not a name of a person's.
  */
 export function isScopeTagName(name: string): boolean {
-  return /^[A-Za-z0-9][A-Za-z0-9_-]*\/[a-z0-9]+(-[a-z0-9]+)*$/.test(name)
+  return isSpacedLabel(name)
 }
 
 /** An annotated tag on a commit, never over one that is there, and only by a name {@link isScopeTagName} allows. */

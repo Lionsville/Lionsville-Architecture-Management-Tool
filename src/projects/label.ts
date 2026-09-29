@@ -36,3 +36,13 @@ export function labelSlug(label: string): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
 }
+
+/**
+ * Whether a name is a label kept in one space of a source's own —
+ * `<space>/<slug>`, the space letters, digits, hyphens and underscores, the
+ * slug as {@link labelSlug} makes one. A name so shaped is that space's
+ * wherever it is found, whether or not anything answers to the space now.
+ */
+export function isSpacedLabel(name: string): boolean {
+  return /^[A-Za-z0-9][A-Za-z0-9_-]*\/[a-z0-9]+(-[a-z0-9]+)*$/.test(name)
+}

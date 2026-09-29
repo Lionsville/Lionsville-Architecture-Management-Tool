@@ -35,9 +35,10 @@
  * by a lookup; the folder reads, and that is its cost to carry.
  *
  * **A label is a tag**, named after the scope's identity and the label's
- * slug, so two scopes may each use one label. A tag named otherwise — one an
- * older build made for the whole folder, one a person made in a terminal — is
- * the whole folder's: it is read as a label of every scope's entry at its
+ * slug, so two scopes may each use one label; a tag so named is that scope's
+ * even once the scope is gone. A tag named otherwise — one an older build
+ * made for the whole folder, one a person made in a terminal — is the whole
+ * folder's: it is read as a label of every scope's entry at its
  * commit, and its slug is taken in every scope. None is ever renamed.
  */
 import { imageMediaType } from '../../model/documentImage'
@@ -48,7 +49,7 @@ import { recordsChanged, SCOPE_RECORD, sameRecord, sameValue } from '../../model
 import type { RecordKey, RecordKind } from '../../model/recordKey'
 import { descriptionPath, isFormatPath, modelListsFrom } from '../../projects/folderFormat'
 import type { FolderFile } from '../../projects/folderFormat'
-import { labelSlug } from '../../projects/label'
+import { isSpacedLabel, labelSlug } from '../../projects/label'
 import { isSupersededPath, openScopeFolder } from '../../projects/migrate4to5'
 import { fingerprint } from '../../projects/revision'
 import { scopeFilePath } from '../../projects/scopePath'
@@ -143,10 +144,13 @@ function labelSpace(id: ScopeId): string {
   return /^[A-Za-z0-9][A-Za-z0-9_-]*$/.test(id) ? id : `f-${fingerprint(['labels', id])}`
 }
 
-/** Whether a tag is the whole folder's rather than one scope's. */
-function isFolderWide(tag: FolderTag, spaces: ReadonlySet<string>): boolean {
-  const at = tag.name.indexOf('/')
-  return at < 0 || !spaces.has(tag.name.slice(0, at))
+/**
+ * Whether a tag is the whole folder's rather than one scope's: one named
+ * `<space>/<slug>` is that space's, whether or not a scope answers to it now —
+ * a removed scope's labels are nobody else's — and any other is the folder's.
+ */
+function isFolderWide(tag: FolderTag): boolean {
+  return !isSpacedLabel(tag.name)
 }
 
 /**
@@ -214,15 +218,14 @@ export class FolderHistory implements HistoryRepository {
       if (!sha) return []
       const [commit] = await this.git.log({ tip: sha, limit: 1 })
       const tags = await this.git.tags()
-      const spaces = new Set(nodes.map((node) => labelSpace(node.id)))
-      return closing.map((node) => this.entryOf({ commit, id: node.id, address: node.address }, tags, spaces))
+      return closing.map((node) => this.entryOf({ commit, id: node.id, address: node.address }, tags))
     })
   }
 
-  private entryOf({ commit, id }: Found, tags: readonly FolderTag[], spaces: ReadonlySet<string>): HistoryEntry {
+  private entryOf({ commit, id }: Found, tags: readonly FolderTag[]): HistoryEntry {
     const mine = `${labelSpace(id)}/`
     const labels = tags
-      .filter((tag) => tag.sha === commit.sha && (tag.name.startsWith(mine) || isFolderWide(tag, spaces)))
+      .filter((tag) => tag.sha === commit.sha && (tag.name.startsWith(mine) || isFolderWide(tag)))
       .map((tag) => tag.message || tag.name)
     return { id: entryIdOf(commit.sha, id), scope: id, at: commit.at, by: commit.author, subject: commit.subject, labels }
   }
@@ -238,7 +241,7 @@ export class FolderHistory implements HistoryRepository {
   }
 
   /** The scopes asked about, each with every address it has been at: where it is, and where its entries say it was. */
-  private async asked(ids: readonly ScopeId[]): Promise<{ asked: Asked[]; addresses: ScopeAddress[]; spaces: Set<string> }> {
+  private async asked(ids: readonly ScopeId[]): Promise<{ asked: Asked[]; addresses: ScopeAddress[] }> {
     const { nodes } = await this.folder.walk()
     const asked: Asked[] = []
     for (const id of [...new Set(ids)]) {
@@ -251,7 +254,7 @@ export class FolderHistory implements HistoryRepository {
       }
       asked.push({ id, held: [...held] })
     }
-    return { asked, addresses: nodes.map((node) => node.address), spaces: new Set(nodes.map((node) => labelSpace(node.id))) }
+    return { asked, addresses: nodes.map((node) => node.address) }
   }
 
   /** The identity the header at an address said at a commit: its own where it had one, and the one its address makes where not. */
@@ -306,7 +309,7 @@ export class FolderHistory implements HistoryRepository {
     const size = Math.max(1, limit)
     const cursor = after === undefined ? undefined : cursorOf(after)
     if (after !== undefined && !cursor) return { entries: [] }
-    const { asked, addresses, spaces } = await this.asked(scopes)
+    const { asked, addresses } = await this.asked(scopes)
     const held = [...new Set(asked.flatMap((one) => one.held))]
     const tip = cursor?.tip ?? await this.git.head()
     if (!tip || held.length === 0) return { entries: [] }
@@ -323,7 +326,7 @@ export class FolderHistory implements HistoryRepository {
       }
     }
     const tags = await this.git.tags()
-    const entries = page.slice(0, size).map(({ found }) => this.entryOf(found, tags, spaces))
+    const entries = page.slice(0, size).map(({ found }) => this.entryOf(found, tags))
     const next = page[size]
     return next ? { entries, next: `${tip}:${next.index}:${next.k}` } : { entries }
   }
@@ -477,19 +480,19 @@ export class FolderHistory implements HistoryRepository {
   }
 
   /** An entry of a scope, found by its id; `undefined` where the scope has no such entry. */
-  private async entry(scope: ScopeId, entry: EntryId): Promise<{ found: Found; spaces: Set<string> } | undefined> {
+  private async entry(scope: ScopeId, entry: EntryId): Promise<Found | undefined> {
     const sha = commitOf(entry, scope)
     if (sha === undefined) return undefined
     const [commit] = await this.git.log({ tip: sha, limit: 1 }).catch(() => [])
     if (!commit || commit.sha !== sha) return undefined
-    const { asked, addresses, spaces } = await this.asked([scope])
+    const { asked, addresses } = await this.asked([scope])
     const [found] = await this.membersOf(commit, asked, addresses)
-    return found ? { found, spaces } : undefined
+    return found
   }
 
   async stateAt(scope: ScopeId, entry: EntryId): Promise<ScopeState | undefined> {
     const held = await this.entry(scope, entry)
-    return held ? this.stateOf(held.found.commit.sha, scope, held.found.address, true) : undefined
+    return held ? this.stateOf(held.commit.sha, scope, held.address, true) : undefined
   }
 
   label(scope: ScopeId, entry: EntryId, name: string): Promise<EntryLabelled> {
@@ -501,9 +504,9 @@ export class FolderHistory implements HistoryRepository {
       const mine = `${labelSpace(scope)}/${slug}`
       const tags = await this.git.tags()
       const taken = tags.some((tag) => tag.name === mine
-        || (isFolderWide(tag, held.spaces) && labelSlug(tag.name) === slug))
+        || (isFolderWide(tag) && labelSlug(tag.name) === slug))
       if (taken) return 'exists'
-      return this.git.tag(held.found.commit.sha, mine, name.trim())
+      return this.git.tag(held.commit.sha, mine, name.trim())
     })
   }
 }
