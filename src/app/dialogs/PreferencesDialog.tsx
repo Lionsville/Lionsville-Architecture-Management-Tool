@@ -71,7 +71,12 @@ export type PreferencesDialogProps = {
     pushAfterSnapshot: boolean
     onChange: (patch: LocalSettingsPatch) => void
   }
-
+  /**
+   * What the open source's provider draws here about its own source, already
+   * inside its boundary: under the app's own sections, and absent where it
+   * draws nothing.
+   */
+  sourcePanel?: ReactNode
   s: Translate
 }
 
@@ -98,7 +103,7 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
 
 export function PreferencesDialog({
   open, onClose, language, onLanguageChange, themeMode, onThemeChange, order, onOrderChange,
-  updates, machine, s,
+  updates, machine, sourcePanel, s,
 }: PreferencesDialogProps) {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth data-testid="preferences-dialog">
@@ -209,6 +214,12 @@ export function PreferencesDialog({
                   label={<Typography sx={{ fontSize: 13 }}>{s('prefs.pushAfterSnapshot')}</Typography>}
                 />
               </Section>
+            </>
+          )}
+          {sourcePanel && (
+            <>
+              <Divider />
+              {sourcePanel}
             </>
           )}
         </Stack>

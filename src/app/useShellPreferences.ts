@@ -62,6 +62,8 @@ export type ShellPreferences = {
    * would only be a second place to add a field to.
    */
   writePreference: (patch: Record<string, unknown>) => void
+  /** The blob as it stands now, everything anybody has written into it included. */
+  readPreferences: () => Record<string, unknown>
 }
 
 export function useShellPreferences(deps: {
@@ -121,5 +123,6 @@ export function useShellPreferences(deps: {
   return {
     preferences, language, themeMode, theme,
     savePreferences, chooseLanguage, chooseTheme, writePreference: writePrefs,
+    readPreferences: useCallback(() => blob.current, []),
   }
 }

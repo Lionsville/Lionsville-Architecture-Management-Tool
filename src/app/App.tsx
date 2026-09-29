@@ -39,6 +39,7 @@ import { BROWSER_STORAGE, sourceIsReadOnly } from '../platform/workingSource'
 import type { SourceMenuEntry } from '../platform/sourceProvider'
 import type {
   SourceAgentPanelProps, SourceChipFaceProps, SourceChipPanelProps, SourceChromeProps, SourceMenuContext, SourceOpen,
+  SourcePreferencesPanelProps,
 } from '../ports/ProviderParts'
 import { ErrorBoundary } from './ErrorBoundary'
 import { useOrganisation } from './organisation/useOrganisation'
@@ -192,6 +193,20 @@ export type RegisteredChrome = {
  * registration, beside `chrome` and `menu`, and core's three register none.
  */
 export type SourceAgentPanel = ComponentType<SourceAgentPanelProps>
+
+/**
+ * What a provider puts inside *Preferences* about its own source: what this
+ * person does about it on this machine — pull when it opens, push after an
+ * entry is recorded, where a source has somewhere to push to.
+ *
+ * The analogue of {@link SourceAgentPanel} in the other dialog, and for the
+ * same reasons: asked of the open source's provider alone, because the
+ * dialog is about this window and the source it works from; drawn under the
+ * app's own sections in a boundary of its own. Handed what the provider
+ * handed with its parts (`own`), which is where it finds the source it is
+ * about.
+ */
+export type SourcePreferencesPanel = ComponentType<SourcePreferencesPanelProps>
 
 /**
  * What pressing the chip that names a registered source opens: a panel of the

@@ -52,7 +52,7 @@ import {
   browserFolders, chooseFolderDestination, composeShell, desktopCommandChannel, desktopFileChannel,
   inBrowserFolder, inWorkingDirectory, openSource, registeredChrome, registeredConnects,
   registeredMenus, reloadWhenScriptsAreGone, sourceAgentPanel, sourceChip, sourceChipFace, sourceChipPanel,
-  sourceConnected, sourceDescription, sourceRecentActivity,
+  sourceConnected, sourceDescription, sourcePreferencesPanel, sourceRecentActivity,
 } from './composition'
 import type { WorkingFileDestination } from './workingFileFlows'
 import type { DesktopDirectory, RegisteredConnect, Shell } from './composition'
@@ -689,6 +689,9 @@ function renderApp(
           readOnlyAt: shell.readOnlyAt,
           chrome: chromes,
           waysIn,
+          preferencesPanel: sourcePreferencesPanel(shell.source),
+          own: shell.own,
+          historyNoteKey: shell.historyNoteKey,
         }}
         folder={{
           needed: Boolean(files),

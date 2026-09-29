@@ -30,7 +30,7 @@ import type { Repositories } from '../ports/Repositories'
 import type { UpdateSettingsStore } from '../ports/UpdateSettings'
 import type {
   RegisteredChrome, RegisteredMenu, ShellDiagnostics, SourceAgentPanel, SourceChipFace,
-  SourceChipPanel,
+  SourceChipPanel, SourcePreferencesPanel,
 } from './App'
 import type { ExampleOffer } from './examples/offers'
 import type { MakeId } from './useDiagramActions'
@@ -239,6 +239,19 @@ export type AppProvider = {
    * below them is about work that already has somewhere to be.
    */
   waysIn?: readonly SourceWayIn[]
+  /**
+   * What the open source's provider put inside *Preferences*
+   * (`SourcePreferencesPanel`). Read from the registration by the boot.
+   */
+  preferencesPanel?: SourcePreferencesPanel
+  /**
+   * What the open source's provider handed with its parts for its own chrome
+   * and panels (`ProviderParts.own`): handed back to them, and read by nobody
+   * else.
+   */
+  own?: unknown
+  /** Where the open source keeps its history, in the provider's sentence (`ProviderParts.historyNoteKey`). */
+  historyNoteKey?: string
 }
 
 /** The folder work is kept in, where there is one, and the machine's own folders. */

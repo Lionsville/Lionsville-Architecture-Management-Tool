@@ -34,7 +34,13 @@ import type { ScopeSession } from './ScopeSession'
  */
 export type SourceChanges = (scope: ScopePath, onChanged: () => void, wholeTree?: boolean) => () => void
 
-export type ProviderParts = {
+/**
+ * The parts a provider hands the app, and `Own`: what its own chrome and
+ * panels are handed back while its source is open — the state of a
+ * conversation with the source that only the provider understands, typed by
+ * the provider so its own code never has to guess at it.
+ */
+export type ProviderParts<Own = unknown> = {
   /** Where the source keeps work, in the domain's words. */
   repositories: Repositories
   /** What it is, and what it is called on the bar. */
@@ -57,27 +63,62 @@ export type ProviderParts = {
   opensAt?: SourceLanding
   /** A change made other than through this window, where the source can hear of one. */
   changes?: SourceChanges
+  /**
+   * Where this source keeps the history of what is recorded, in a sentence of
+   * the provider's own (a key of its table): said where a person records an
+   * entry or reads the entries, because *in this browser* and *for as long as
+   * this tab is open* are facts about the source a person should know first.
+   */
+  historyNoteKey?: string
+  /** Handed back to this provider's own chrome and panels while its source is open. */
+  own?: Own
+}
+
+/** How a provider's chrome says something in passing, as the app says its own. */
+export type SourceNotify = (message: string, severity: 'success' | 'info' | 'warning' | 'error') => void
+
+/**
+ * The person's preferences, as a provider's chrome may keep something in
+ * them: one blob with one writer, which is the app's, so a chrome writes
+ * through it and never beside it.
+ */
+export type SourcePreferences = {
+  /** The preferences as the app holds them now. */
+  read(): unknown
+  /** Merge these keys in, and write the blob. */
+  write(patch: Record<string, unknown>): void
 }
 
 /** Sending the person to a scope, as a provider's chrome or menu line may (ADR-0019's destination). */
 export type SourceOpen = (to: Destination) => void
 
-/** What a provider's chrome is handed: the open scope's session where it is its source, and the way about. */
-export type SourceChromeProps = {
+/**
+ * What a provider's chrome is handed: the open scope's session and its own
+ * parts where it is the source, the way about, and the app's ways of saying
+ * something and of keeping a preference.
+ */
+export type SourceChromeProps<Own = unknown> = {
   session?: ScopeSession
+  /** What this provider handed with its parts, where its source is the one open. */
+  own?: Own
   open: SourceOpen
   screen: Screen
   movedBy: MovedBy
+  notify: SourceNotify
+  preferences: SourcePreferences
 }
 
 /** What a panel opened from the chip that names a source is handed: a chrome's, and the way to close it. */
-export type SourceChipPanelProps = SourceChromeProps & { close: () => void }
+export type SourceChipPanelProps<Own = unknown> = SourceChromeProps<Own> & { close: () => void }
 
 /** What the chip's own face is handed: the word it goes by now, and whether its panel is open. */
 export type SourceChipFaceProps = { label: string; open: boolean }
 
 /** What a provider's part of *Connect an agent* is handed. */
 export type SourceAgentPanelProps = { session?: ScopeSession }
+
+/** What a provider's part of *Preferences* is handed: its own parts, and the app's way of saying something. */
+export type SourcePreferencesPanelProps<Own = unknown> = { own?: Own; notify: SourceNotify }
 
 /** What a provider is told when it is asked for its lines in the app's own menu. */
 export type SourceMenuContext = {

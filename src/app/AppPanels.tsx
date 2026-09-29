@@ -28,6 +28,7 @@ import { watchTreeShape } from './treeShape'
 import { SyncNotice } from './SyncNotice'
 import { AgentDrivingBanner } from './AgentDrivingBanner'
 import type { ShellParts } from './shellParts'
+import type { SourceChromeProps } from '../ports/ProviderParts'
 import { sourceLabel } from './ShellToolbar'
 import type { ToolbarChip } from './ShellToolbar'
 
@@ -272,13 +273,13 @@ export function HomeHistoryDialogs({ parts }: { parts: ShellParts }) {
  * and handed what a chrome is handed.
  */
 function chipPanelFor(parts: ShellParts): ((close: () => void) => ReactNode) | undefined {
-  const { props, services: { prefs, s }, agent, provider } = parts
+  const { props, services: { prefs, s }, provider } = parts
   const Panel = provider.ChipPanel
   if (!Panel) return undefined
   return (close) => (
     <ErrorBoundary where="sourceChipPanel" diagnostics={props.diagnostics} controls={props.hostControls} s={s}>
       <LanguageProvider language={prefs.language}>
-        <Panel session={provider.openScope} open={agent.openSomewhere} screen={agent.screen ?? agent.screenNow()} movedBy={agent.movedBy} close={close} />
+        <Panel {...chromeProps(parts, provider.openProvider)} close={close} />
       </LanguageProvider>
     </ErrorBoundary>
   )
@@ -316,6 +317,26 @@ function workspaceChip(parts: ShellParts): ToolbarChip | undefined {
   return {
     source: parts.source, describeKey: parts.props.provider?.description, chip,
     panel: chipPanelFor(parts), face: chipFaceFor(parts),
+  }
+}
+
+/**
+ * What one provider's chrome, or a panel of its own, is handed: the open
+ * scope's session and the provider's own parts where it answers for the
+ * source that is open, and to nobody else; the way about; and the app's ways
+ * of saying something and of keeping a preference.
+ */
+function chromeProps(parts: ShellParts, kind: string): SourceChromeProps {
+  const { services: { prefs, toasts }, agent, provider } = parts
+  const opened = kind === provider.openProvider
+  return {
+    session: opened ? provider.openScope : undefined,
+    own: opened ? provider.own : undefined,
+    open: agent.openSomewhere,
+    screen: agent.screen ?? agent.screenNow(),
+    movedBy: agent.movedBy,
+    notify: toasts.notify,
+    preferences: { read: prefs.readPreferences, write: prefs.writePreference },
   }
 }
 
@@ -366,12 +387,7 @@ export function AppNotices({ parts }: { parts: ShellParts }) {
           s={s}
         >
           <LanguageProvider language={prefs.language}>
-            <Chrome
-              session={kind === provider.openProvider ? provider.openScope : undefined}
-              open={agent.openSomewhere}
-              screen={agent.screen ?? agent.screenNow()}
-              movedBy={agent.movedBy}
-            />
+            <Chrome {...chromeProps(parts, kind)} />
           </LanguageProvider>
         </ErrorBoundary>
       ))}
@@ -384,6 +400,7 @@ export function AppDialogs({ parts }: { parts: ShellParts }) {
   const { props, services: { prefs, s }, machine, agentServer, provider, folder, prompts } = parts
   const { updates, local } = machine
   const AgentPanel = provider.AgentPanel
+  const PreferencesPanel = provider.PreferencesPanel
   return (
     <>
       {prompts.password.dialog}
@@ -404,6 +421,16 @@ export function AppDialogs({ parts }: { parts: ShellParts }) {
           checkAutomatically: updates.checkAutomatically, channel: updates.channel, onChange: machine.changeUpdates,
         }}
         machine={folder.settings && folder.history && local && { ...local.git, onChange: machine.changeLocal }}
+        sourcePanel={PreferencesPanel && (
+          <ErrorBoundary
+            where="sourcePreferencesPanel"
+            diagnostics={props.diagnostics}
+            controls={props.hostControls}
+            s={s}
+          >
+            <PreferencesPanel own={provider.own} notify={parts.services.toasts.notify} />
+          </ErrorBoundary>
+        )}
         s={s}
       />
       <ConnectAgentDialog

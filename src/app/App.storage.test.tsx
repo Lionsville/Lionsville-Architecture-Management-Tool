@@ -374,6 +374,50 @@ describe('the chrome a registered provider brought', () => {
   })
 
   /**
+   * What a provider handed with its parts goes back to its own chrome and to
+   * nobody else's: the state of a conversation only it understands.
+   */
+  it('hands the provider\'s own parts back to its chrome, and to no other', () => {
+    function Own({ own }: { own?: unknown }) {
+      return <p data-testid="own-strip">{typeof own === 'string' ? own : 'nothing of mine'}</p>
+    }
+    function Other({ own }: { own?: unknown }) {
+      return <p data-testid="other-own">{own === undefined ? 'nothing of mine' : 'somebody else\'s'}</p>
+    }
+    renderApp({
+      source: elsewhere,
+      provider: {
+        own: 'the handshake',
+        chrome: [{ kind: 'elsewhere', chrome: Own }, { kind: 'other', chrome: Other }],
+      },
+    })
+    expect(screen.getByTestId('own-strip').textContent).toBe('the handshake')
+    expect(screen.getByTestId('other-own').textContent).toBe('nothing of mine')
+  })
+
+  /** Says something the way the app does, and keeps a preference in the app's one blob. */
+  it('may say something, and keep a preference in the app\'s own blob', async () => {
+    function Keeper({ notify, preferences }: { notify: (message: string, severity: 'info') => void; preferences: { read(): unknown; write(patch: Record<string, unknown>): void } }) {
+      return (
+        <button
+          type="button"
+          data-testid="keeper"
+          onClick={() => {
+            preferences.write({ asked: true })
+            notify(`kept ${String((preferences.read() as { asked?: boolean }).asked)}`, 'info')
+          }}
+        >
+          keep
+        </button>
+      )
+    }
+    const view = renderApp({ source: elsewhere, provider: { chrome: [{ kind: 'elsewhere', chrome: Keeper }] } })
+    fireEvent.click(screen.getByTestId('keeper'))
+    expect(await screen.findByText('kept true')).toBeDefined()
+    await waitFor(async () => expect(await view.preferences.read()).toMatchObject({ asked: true, language: 'en' }))
+  })
+
+  /**
    * A boundary of its own, for the reason the canvas has one: a strip somebody
    * else wrote falling over costs the strip and not the window.
    */

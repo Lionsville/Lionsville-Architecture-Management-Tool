@@ -182,6 +182,58 @@ export type SourceConnect<Opening = void> = {
    * own button the label it asked for and nobody else's anything.
    */
   offer?(context: SourceOfferContext): SourceOffer | null | undefined
+  /**
+   * Can this way in be taken here at all? A host that cannot give what it asks
+   * for — a picker the browser does not have — draws no button for it, and
+   * offers no line in its menu. Absent is *yes*.
+   */
+  possible?(): boolean
+  /**
+   * Where work has nowhere to be kept until this way in is taken: the first
+   * screen asks for it, and nothing else is drawn until it is answered. Asked
+   * at the boot, because it is a fact about the host. Absent is *no*.
+   */
+  required?(): boolean
+  /**
+   * This way in is the host's own: the *Open…* line in its menu, and its list
+   * of the places worked from lately, are this provider's
+   * ({@link SourceConnect.recent}, {@link SourceConnect.reopen}). One
+   * registration says so, and the first that does is the one the menu names.
+   */
+  readonly hostMenu?: boolean
+  /**
+   * The sentence the first screen says under its question, where this way in
+   * is the one it asks for ({@link SourceConnect.required}).
+   */
+  readonly introKey?: StringKey | (string & {})
+  /**
+   * The place this machine last worked from, where the preferences remember
+   * one and it may still be opened — worked out at the boot, before anything
+   * is drawn, so the app opens where it was left. Nothing where there is none,
+   * or where it may no longer be reached; a boot is not a gesture, and a
+   * permission that needs one is not asked for here.
+   */
+  resume?(preferences: unknown): Promise<Opening | undefined>
+  /**
+   * What the preferences keep about an opening a person just chose, so that
+   * {@link SourceConnect.resume} finds it at the next boot: the blob with this
+   * provider's own keys set. The boot writes it, because the blob has one
+   * writer.
+   */
+  remember?(preferences: unknown, opening: Opening): Record<string, unknown>
+  /** The places this machine has worked from lately, most recent first: one click away rather than one dialog. */
+  recent?(): Promise<readonly SourceRecent[]>
+  /**
+   * Open one of those again, by its key — the host's Recent list, or the
+   * first screen's. Nothing where it cannot be.
+   */
+  reopen?(key: string): Promise<Opening | undefined>
+}
+
+/** A place worked from lately: what tells it apart, and what it is called. */
+export type SourceRecent = {
+  readonly key: string
+  readonly label: string
 }
 
 /**

@@ -196,3 +196,28 @@ describe('the machine scope', () => {
     expect(JSON.stringify(await view.preferences.read() ?? {})).not.toContain('pushAfterSnapshot')
   })
 })
+
+describe('what the open source\'s provider puts here', () => {
+  it('is drawn under the app\'s own sections, handed what the provider handed with its parts', async () => {
+    const view = show({
+      provider: {
+        own: 'this folder',
+        preferencesPanel: ({ own }) => <p data-testid="source-preferences">{`about ${String(own)}`}</p>,
+      },
+    })
+    await opened(view)
+    expect(screen.getByTestId('source-preferences').textContent).toBe('about this folder')
+  })
+
+  it('falls over on its own, with the dialog still standing', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      const view = show({ provider: { preferencesPanel: () => { throw new Error('the panel fell over') } } })
+      await opened(view)
+      expect(screen.getByTestId('crash-fallback')).toBeDefined()
+      expect(screen.getByTestId('preferences-dialog')).toBeDefined()
+    } finally {
+      spy.mockRestore()
+    }
+  })
+})

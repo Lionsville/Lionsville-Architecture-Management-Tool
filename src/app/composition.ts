@@ -58,6 +58,7 @@ import { browserDatabase, browserStorage } from '../adapters/webStorage/availabl
 import type { ScopePath } from '../projects/scopePath'
 import { isFormatPath } from '../projects/folderFormat'
 import type { WindowChrome } from '../platform/windowChrome'
+import { sourceProviderKind } from '../platform/workingSource'
 import type { WorkingSource } from '../platform/workingSource'
 import { BROWSER_STORAGE_SOURCE } from '../providers/browserStorage/browserStorageSource'
 import { browserOpening, desktopOpening, FOLDER_SOURCE } from '../providers/folder/folderSource'
@@ -70,9 +71,12 @@ import type {
   SourceWorkChanged,
 } from '../platform/sourceProvider'
 import type { StringKey } from '../i18n/strings'
+import type { ComponentType } from 'react'
 import type {
-  RegisteredChrome, RegisteredMenu, SourceAgentPanel, SourceChipFace, SourceChipPanel, SourceChrome, SourceMenu,
+  RegisteredChrome, RegisteredMenu, SourceAgentPanel, SourceChipFace, SourceChipPanel, SourceMenu,
+  SourcePreferencesPanel,
 } from './App'
+import type { SourceChipPanelProps, SourceChromeProps, SourcePreferencesPanelProps } from '../ports/ProviderParts'
 import type { ScopeSession } from './useModelSession'
 import type { AgentGateway } from '../ports/AgentGateway'
 import type { Diagnostics } from '../ports/Diagnostics'
@@ -218,8 +222,11 @@ export type Shell = {
    * link.
    */
   opensAt?: SourceLanding
+  /** What the source's provider hands its own chrome and panels (`ProviderParts.own`). */
+  own?: unknown
+  /** Where the source keeps its history, in its provider's sentence (`ProviderParts.historyNoteKey`). */
+  historyNoteKey?: string
   /**
-   * Tell me when this project's folder changed under us, other than by us.  /**
    * Tell me when this project's folder changed under us, other than by us.
    *
    * Absent when nothing can watch — a browser tab, or a folder the platform
@@ -315,9 +322,9 @@ export type SourceBase = {
  * not the source yet. {@link SourceChrome} says what the shell then owes it, and
  * what being drawn while its provider is nobody's source asks of it in return.
  */
-export type RegisteredSourceProvider<Opening = never> =
-  SourceProvider<SourceParts, Opening, SourceBase> & {
-    readonly chrome?: SourceChrome
+export type RegisteredSourceProvider<Opening = never, Own = unknown> =
+  SourceProvider<SourceParts & { own?: Own }, Opening, SourceBase> & {
+    readonly chrome?: ComponentType<SourceChromeProps<Own>>
     /**
      * What this provider wants in the app's own menu, asked for afresh
      * ({@link SourceMenu}).
@@ -352,7 +359,7 @@ export type RegisteredSourceProvider<Opening = never> =
      * ({@link SourceChipPanel}). Here rather than in `platform/` for the
      * reason `chrome` is: it is a component. Core's three register none.
      */
-    readonly chipPanel?: SourceChipPanel
+    readonly chipPanel?: ComponentType<SourceChipPanelProps<Own>>
     /**
      * What the chip that names this provider's source looks like, where a
      * word is not enough ({@link SourceChipFace}): drawn inside the chip in
@@ -360,6 +367,12 @@ export type RegisteredSourceProvider<Opening = never> =
      * three register none.
      */
     readonly chipFace?: SourceChipFace
+    /**
+     * What this provider puts inside *Preferences* about its own source
+     * (`App`'s `SourcePreferencesPanel`), handed what it handed with its
+     * parts. Asked for the open source's provider only, as `agentPanel` is.
+     */
+    readonly preferencesPanel?: ComponentType<SourcePreferencesPanelProps<Own>>
   }
 
 /**
@@ -377,15 +390,17 @@ const SOURCE_PROVIDERS = new Map<string, RegisteredSourceProvider>()
  * than replaced, the way a logo pack is: a test that registers per case is then
  * safe, and a build cannot quietly take over the folder.
  */
-export function registerSourceProvider<Opening>(
-  provider: RegisteredSourceProvider<Opening>,
+export function registerSourceProvider<Opening, Own = unknown>(
+  provider: RegisteredSourceProvider<Opening, Own>,
 ): void {
   if (SOURCE_PROVIDERS.has(provider.kind)) return
   // The one cast in this registry, and it is where the type is genuinely lost:
   // what a provider needs to be given is its own, the map holds every kind at
   // once, and only the caller that asks for a kind knows which. `sourceProvider`
   // below hands the knowledge back, which is why nothing else has to.
-  SOURCE_PROVIDERS.set(provider.kind, provider as RegisteredSourceProvider)
+  // And what it hands its own chrome is its own too: the chrome is only ever
+  // handed the parts this same provider built (`App`'s `chromeProps`).
+  SOURCE_PROVIDERS.set(provider.kind, provider as unknown as RegisteredSourceProvider)
 }
 
 /** Who answers for a kind of source, or nobody. */
@@ -505,6 +520,14 @@ export function sourceAgentPanel(source: WorkingSource): SourceAgentPanel | unde
  */
 export function sourceChipPanel(source: WorkingSource): SourceChipPanel | undefined {
   return source.kind === 'registered' ? sourceProvider(source.provider)?.chipPanel : undefined
+}
+
+/**
+ * What the open source's provider puts inside *Preferences*, or nothing. The
+ * open source's alone, for the reason {@link sourceAgentPanel} is.
+ */
+export function sourcePreferencesPanel(source: WorkingSource): SourcePreferencesPanel | undefined {
+  return sourceProvider(sourceProviderKind(source))?.preferencesPanel
 }
 
 /**
@@ -768,7 +791,7 @@ function withoutSourceParts(shell: Shell): Shell {
   const {
     sourceStatus: _status, onSourceWork: _work, sourceFailure: _failure, onScopeSession: _session,
     publishesSteps: _publishes, readOnlyAt: _readOnly, opensAt: _opensAt, watchProject: _watch,
-    history: _history, ...rest
+    history: _history, own: _own, historyNoteKey: _historyNote, ...rest
   } = shell
   return rest
 }
