@@ -14,14 +14,14 @@ import { createServer } from 'node:http'
 import type { Server } from 'node:http'
 import { createServer as createTcpServer } from 'node:net'
 import type { AddressInfo, Server as TcpServer } from 'node:net'
-import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, realpath, rm, stat, writeFile } from 'node:fs/promises'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { git, gitAvailable, history, initRepository, label, pull, push, snapshot } from './git'
 import { commitLog, commitPaths, readAt } from './gitEntries'
-import { gitEnvironment } from './gitGuard'
+import { fingerprintOf, gitEnvironment } from './gitGuard'
 
 const run = promisify(execFile)
 const available = await gitAvailable()
@@ -37,7 +37,7 @@ beforeEach(async () => {
   await mkdir(root)
   // The person's own configuration, and nothing of the machine's that could ask anything.
   for (const name of [
-    'GIT_CONFIG_GLOBAL', 'GIT_CONFIG_NOSYSTEM', 'GIT_ASKPASS', 'SSH_ASKPASS', 'GIT_CONFIG_PARAMETERS',
+    'GIT_CONFIG_GLOBAL', 'GIT_CONFIG_NOSYSTEM', 'GIT_ASKPASS', 'SSH_ASKPASS', 'GIT_CONFIG_PARAMETERS', 'GIT_CONFIG',
     'https_proxy', 'HTTPS_PROXY', 'http_proxy', 'HTTP_PROXY', 'all_proxy', 'ALL_PROXY', 'no_proxy', 'NO_PROXY',
   ]) kept[name] = process.env[name]
   process.env.GIT_CONFIG_GLOBAL = join(place, 'own.gitconfig')
@@ -365,7 +365,6 @@ describe.skipIf(!available)('a program the folder names, and the person’s own'
     await folderSets('filter.evil.clean', await program('folder-clean'))
     await folderSets('filter.evil.smudge', await program('folder-smudge'))
     await folderSets('filter.evil.process', await program('folder-process'))
-    await folderSets('filter.evil.required', 'true')
     await put('.gitattributes', '*.md filter=evil\n')
     await put('notes.md', 'plain words')
     const sha = await snapshot(root, 'unfiltered')
@@ -636,6 +635,147 @@ describe.skipIf(!available)('a kept read of the configuration', () => {
     await expect(git(root, ['status'])).resolves.toBeDefined()
     await folderSets('http.cookieFile', join(place, 'cookies.txt'))
     await expect(git(root, ['status'])).rejects.toThrow(/http\.cookiefile/)
+  })
+})
+
+describe.skipIf(!available)('the last review', () => {
+  /** An ssh signer git takes: it writes a signature beside the file it is handed, and says with what key. */
+  async function sshSigner(name: string): Promise<{ path: string; args: string }> {
+    const args = join(place, `${name}-args`)
+    const path = await program(name, [
+      `echo "$@" >> "${args}"`,
+      'for last; do true; done',
+      'printf -- "-----BEGIN SSH SIGNATURE-----\\nstand-in\\n-----END SSH SIGNATURE-----\\n" > "$last.sig"',
+    ].join('\n'))
+    return { path, args }
+  }
+
+  it('refuses to sign with ssh where the folder names a key and the person names none', async () => {
+    const signer = await sshSigner('own-ssh-signer')
+    await personSets('gpg.format', 'ssh')
+    await personSets('gpg.ssh.program', signer.path)
+    await personSets('commit.gpgsign', 'true')
+    await initRepository(root)
+    await folderSets('user.signingKey', 'key-the-folder-wrote')
+    await put('model.json', '{}')
+    await expect(snapshot(root, 'refused')).rejects.toThrow(/user\.signingKey in your own configuration/)
+    expect(await ran('own-ssh-signer')).toBe(false)
+  })
+
+  it('signs with ssh with the person’s own key, whatever key the folder names', async () => {
+    const signer = await sshSigner('own-ssh-signer')
+    const key = join(place, 'own-key.pub')
+    await writeFile(key, 'ssh-ed25519 AAAA acme\n')
+    await personSets('gpg.format', 'ssh')
+    await personSets('gpg.ssh.program', signer.path)
+    await personSets('commit.gpgsign', 'true')
+    await personSets('user.signingKey', key)
+    await initRepository(root)
+    await folderSets('user.signingKey', 'key-the-folder-wrote')
+    await put('model.json', '{}')
+    await snapshot(root, 'signed')
+    const said = await readFile(signer.args, 'utf8')
+    expect(said).toContain(key)
+    expect(said).not.toContain('key-the-folder-wrote')
+  })
+
+  it('reads the folder’s configuration however the process names another file for it', async () => {
+    await initRepository(root)
+    await folderSets('filter.evil.clean', await program('folder-clean', 'cat'))
+    await put('.gitattributes', '*.md filter=evil\n')
+    await put('notes.md', 'plain words')
+    process.env.GIT_CONFIG = '/dev/null'
+    expect(gitEnvironment().GIT_CONFIG).toBeUndefined()
+    await snapshot(root, 'read whole')
+    expect(await ran('folder-clean')).toBe(false)
+  })
+
+  it('refuses a filter the folder requires and only the folder defines, naming it', async () => {
+    await initRepository(root)
+    await folderSets('filter.lfs.clean', await program('folder-lfs', 'cat'))
+    await folderSets('filter.lfs.required', 'true')
+    await put('.gitattributes', '*.png filter=lfs\n')
+    await put('model.json', '{}')
+    await expect(snapshot(root, 'refused')).rejects.toThrow(/requires the filter lfs/)
+    expect(await ran('folder-lfs')).toBe(false)
+  })
+
+  it('keeps a filter the folder requires where the person defines it', async () => {
+    await personSets('filter.shout.clean', 'tr a-z A-Z')
+    await personSets('filter.shout.required', 'true')
+    await initRepository(root)
+    await folderSets('filter.shout.required', 'true')
+    await put('.gitattributes', '*.md filter=shout\n')
+    await put('notes.md', 'plain words')
+    const sha = await snapshot(root, 'filtered')
+    expect((await raw(['show', `${sha}:notes.md`])).stdout).toBe('PLAIN WORDS')
+  })
+
+  it('sees a rewrite of the same size that leaves every time as it was, in a file of any size', async () => {
+    const large = join(place, 'large.gitconfig')
+    await writeFile(large, `[color]\n\tui = ${'a'.repeat(100_000)}\n`)
+    const held = await stat(large, { bigint: true })
+    const frozen = () => Promise.resolve(held)
+    const before = await fingerprintOf([large], frozen)
+    await writeFile(large, `[color]\n\tui = ${'b'.repeat(100_000)}\n`)
+    expect(await fingerprintOf([large], frozen)).not.toBe(before)
+  })
+
+  describe('a proxy for the address the command talks to', () => {
+    const reached: Record<string, number> = {}
+    const servers: TcpServer[] = []
+    const listening = async (which: string) => {
+      reached[which] = 0
+      const server = createTcpServer((socket) => { reached[which] += 1; socket.destroy() })
+      await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+      servers.push(server)
+      return `http://127.0.0.1:${(server.address() as AddressInfo).port}`
+    }
+    afterEach(async () => {
+      await Promise.all(servers.splice(0).map((server) => new Promise((resolve) => server.close(resolve))))
+    })
+
+    it('is the environment’s plain one for a plain address, and its secure one for a secure address', async () => {
+      process.env.http_proxy = await listening('plain')
+      process.env.https_proxy = await listening('secure')
+      const folders = await listening('folders')
+      await initRepository(root)
+      await folderSets('http.proxy', folders)
+      await raw(['remote', 'add', 'plain', 'http://example.invalid/landscape.git'])
+      await raw(['remote', 'add', 'secure', 'https://example.invalid/landscape.git'])
+      await git(root, ['fetch', 'plain']).catch(() => undefined)
+      expect(reached.plain).toBeGreaterThan(0)
+      expect(reached.secure).toBe(0)
+      await git(root, ['fetch', 'secure']).catch(() => undefined)
+      expect(reached.secure).toBeGreaterThan(0)
+      expect(reached.folders).toBe(0)
+    })
+  })
+
+  describe('a header for one address', () => {
+    let server: Server
+    let heard: string[] = []
+    let url = ''
+    beforeEach(async () => {
+      heard = []
+      server = createServer((request, response) => {
+        heard.push(JSON.stringify(request.headers))
+        response.writeHead(404)
+        response.end()
+      })
+      await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+      url = `http://127.0.0.1:${(server.address() as AddressInfo).port}/landscape.git`
+    })
+    afterEach(async () => { await new Promise((resolve) => server.close(resolve)) })
+
+    it('is never one the folder names for that address, and is the person’s own', async () => {
+      await personSets('http.extraHeader', 'X-Own: acme')
+      await initRepository(root)
+      await folderSets(`http.${url}.extraHeader`, 'X-Folder: evil')
+      await git(root, ['ls-remote', url]).catch(() => undefined)
+      expect(heard.join('\n')).not.toContain('x-folder')
+      expect(heard.join('\n')).toContain('x-own')
+    })
   })
 })
 

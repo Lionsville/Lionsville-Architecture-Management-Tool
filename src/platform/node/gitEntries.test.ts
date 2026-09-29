@@ -64,7 +64,7 @@ describe.skipIf(!available)('the history a folder’s repositories read', () => 
     await writeFile(program, `#!/bin/sh\ntouch "${marker}"\nexit 1\n`, { mode: 0o755 })
     for (const [key, value] of [
       ['commit.gpgsign', 'true'], ['gpg.program', program],
-      ['filter.evil.clean', program], ['filter.evil.process', program], ['filter.evil.required', 'true'],
+      ['filter.evil.clean', program], ['filter.evil.process', program],
     ]) await run('git', ['config', key, value], { cwd: root })
     await put('.gitattributes', '*.json filter=evil\n')
     await put('model.json', '{}')

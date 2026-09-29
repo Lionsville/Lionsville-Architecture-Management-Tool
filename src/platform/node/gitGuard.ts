@@ -42,6 +42,8 @@
  * than letting it run unread.
  */
 import { execFile } from 'node:child_process'
+import { createHash } from 'node:crypto'
+import type { BigIntStats } from 'node:fs'
 import { mkdir, mkdtemp, readFile, realpath, stat } from 'node:fs/promises'
 import { homedir, tmpdir } from 'node:os'
 import { isAbsolute, join, relative, resolve } from 'node:path'
@@ -80,6 +82,8 @@ const QUIET_SSH = 'ssh -o BatchMode=yes'
 const ELSEWHERE_ENV = [
   'GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_OBJECT_DIRECTORY', 'GIT_ALTERNATE_OBJECT_DIRECTORIES',
   'GIT_COMMON_DIR', 'GIT_NAMESPACE', 'GIT_CEILING_DIRECTORIES',
+  // `git config` reads this file instead of every other: a read of nothing.
+  'GIT_CONFIG',
 ]
 
 /**
@@ -211,20 +215,24 @@ const NOT_ALLOWED: readonly RegExp[] = [
 /** The repository extensions git knows and a folder may carry. */
 const EXTENSIONS = new Set(['objectformat', 'worktreeconfig', 'preciousobjects', 'refstorage', 'noop', 'noop-v1', 'partialclone'])
 
-/** What a neutral value is worked out from: the folder's and the person's configuration, and the process's environment. */
-type Context = { theirs: (key: string) => string[]; folder: (key: string) => string[] }
+/**
+ * What a neutral value is worked out from: the folder's and the person's
+ * configuration, and the scheme of the address the command talks to, where
+ * it talks to one.
+ */
+type Context = { theirs: (key: string) => string[]; folder: (key: string) => string[]; scheme?: string }
 
 /**
  * What a key is set to where the person's own configuration says nothing:
  * git's default, or no program. A key here is not allowed, and is set again
  * rather than refused.
  */
-const NEUTRAL: readonly [RegExp, string | ((context: Context) => string)][] = [
+const NEUTRAL: readonly [RegExp, string | ((context: Context, key: string) => string)][] = [
   [/^(commit|tag)\.gpgsign$/i, 'false'],
   [/^tag\.forcesignannotated$/i, 'false'],
   [/^push\.gpgsign$/i, 'false'],
-  // The key git signs with where none is named: who commits.
-  [/^user\.signingkey$/i, identity],
+  // The person's key, or git's own default where they name none.
+  [/^user\.signingkey$/i, signingKey],
   [/^gpg\.format$/i, 'openpgp'],
   [/^gpg\.program$/i, 'gpg'],
   [/^gpg\.openpgp\.program$/i, 'gpg'],
@@ -238,28 +246,66 @@ const NEUTRAL: readonly [RegExp, string | ((context: Context) => string)][] = [
   [/^diff\.[^=]+\.(command|textconv)$/i, ''],
   [/^merge\.[^=]+\.driver$/i, ''],
   [/^filter\.[^=]+\.(clean|smudge|process)$/i, ''],
-  [/^filter\.[^=]+\.required$/i, 'false'],
+  [/^filter\.[^=]+\.required$/i, requiredFilter],
   // No proxy from the folder, and none of the person's turned off either:
   // theirs, or the one the process's environment names.
-  [/^(http|remote\.[^=]+)\.proxy$/i, (context) => context.theirs('http.proxy').at(-1) ?? environmentProxy()],
+  [/^(http|remote\.[^=]+)\.proxy$/i, (context) => context.theirs('http.proxy').at(-1) ?? environmentProxy(context.scheme)],
   [/^branch\.[^=]+\.mergeoptions$/i, ''],
   [/^submodule\.[^=]+\.update$/i, 'none'],
   [/^core\.attributesfile$/i, ''],
   [/^core\.excludesfile$/i, ''],
 ]
 
-/** Who commits, as git names the key it signs with where none is named. */
-function identity(context: Context): string {
+/**
+ * The key git signs with where the folder names one and the person does not.
+ * For a key of gpg's or x509's, git's own default: who commits. For an ssh
+ * key there is no default that a setting can bring back — git's is the
+ * person's `gpg.ssh.defaultKeyCommand`, which a named key, even an empty
+ * one, stands in front of — so where the person signs, the command is
+ * refused rather than signed with a key guessed at; where they do not, no
+ * key is named.
+ */
+function signingKey(context: Context): string {
+  const format = (context.theirs('gpg.format').at(-1) ?? 'openpgp').toLowerCase()
+  if (format === 'ssh') {
+    const signs = ['commit.gpgsign', 'tag.gpgsign'].some((key) => /^(true|yes|on|1)$/i.test(context.theirs(key).at(-1) ?? ''))
+    if (signs) throw new GitRefused('its configuration names a signing key, and you sign with ssh and name none of your own; set user.signingKey in your own configuration')
+    return ''
+  }
   const last = (key: string) => context.folder(key).at(-1) ?? context.theirs(key).at(-1)
   const name = last('user.name')
   const email = last('user.email')
   return name && email ? `${name} <${email}>` : ''
 }
 
-/** The proxy the process's environment names, as curl would take it for a secure address. */
-function environmentProxy(): string {
+/**
+ * Whether a filter the folder requires is required: as the person has it,
+ * where they define that filter; where they do not, the folder requires a
+ * filter only it could run — an LFS installed in the folder alone — and
+ * the command is refused, naming the filter, rather than committing its
+ * files whole.
+ */
+function requiredFilter(context: Context, key: string): string {
+  const name = /^filter\.(.+)\.required$/i.exec(key)![1]
+  const defined = ['clean', 'smudge', 'process'].some((variable) => context.theirs(`filter.${name}.${variable}`).length > 0)
+  const folderRequires = /^(true|yes|on|1)$/i.test(context.folder(key).at(-1) ?? '')
+  if (!defined && folderRequires) {
+    throw new GitRefused(`it requires the filter ${name}, which only its own configuration defines; install it in your own configuration (for git-lfs: git lfs install)`)
+  }
+  return context.theirs(key).at(-1) ?? 'false'
+}
+
+/**
+ * The proxy the process's environment names for the address the command
+ * talks to, as curl would take it: `https_proxy` for a secure one,
+ * `http_proxy` for a plain one, `all_proxy` for either.
+ */
+function environmentProxy(scheme?: string): string {
   const env = process.env
-  return env.https_proxy ?? env.HTTPS_PROXY ?? env.http_proxy ?? env.HTTP_PROXY ?? env.all_proxy ?? env.ALL_PROXY ?? ''
+  const secure = env.https_proxy ?? env.HTTPS_PROXY
+  const plain = env.http_proxy ?? env.HTTP_PROXY
+  const either = env.all_proxy ?? env.ALL_PROXY
+  return (scheme === 'http' ? plain : secure) ?? either ?? ''
 }
 
 /** A key git takes from its first value, so a later one cannot set it again. */
@@ -279,7 +325,7 @@ const NO_TAKING_BACK: readonly RegExp[] = [/^url\..+\.(insteadof|pushinsteadof)$
  * own again, in their order. A credential helper, and a header sent with
  * every request.
  */
-const LISTS: readonly RegExp[] = [/^credential\.(.+\.)?helper$/i, /^http\.extraheader$/i]
+const LISTS: readonly RegExp[] = [/^credential\.(.+\.)?helper$/i, /^http\.(.+\.)?extraheader$/i]
 
 type Entry = { scope: string; origin: string; key: string; value: string }
 
@@ -378,11 +424,18 @@ function personalFiles(): string[] {
 }
 
 /** What changes what git reads: each file, by its contents where it is small, and the environment git reads them by. */
-async function fingerprintOf(files: readonly string[]): Promise<string> {
+export async function fingerprintOf(
+  files: readonly string[], look: (path: string) => Promise<BigIntStats> = (path) => stat(path, { bigint: true }),
+): Promise<string> {
   const each = await Promise.all([...files].sort().map(async (path) => {
-    const held = await stat(path, { bigint: true }).catch(() => undefined)
+    const held = await look(path).catch(() => undefined)
     if (!held) return `${path}\u0000-`
-    const contents = held.isFile() && held.size <= 64n * 1024n ? await readFile(path, 'utf8').catch(() => '') : ''
+    // Its contents too, and not only when it was written: a disk that keeps
+    // times coarsely — FAT, exFAT — or a change time Windows does not keep can
+    // let a rewrite of the same size look like no change.
+    const contents = held.isFile() && held.size <= BigInt(READ_MAX)
+      ? await readFile(path).then((bytes) => createHash('sha256').update(bytes).digest('hex'), () => '')
+      : ''
     return `${path}\u0000${held.ino}:${held.size}:${held.mtimeNs}:${held.ctimeNs}\u0000${contents}`
   }))
   const env = process.env
@@ -472,10 +525,24 @@ export async function guardedFlags(root: string, args: readonly string[]): Promi
   // given to it would be written into what it makes.
   if (command === 'init') return flags
   const { folder, own } = await configurationsOf(root)
-  flags.push(...await folderFlags(root, folder, own, command))
+  flags.push(...await folderFlags(root, folder, own, args))
   // TLS is checked as the person checks it, and never less because the folder says so.
   const verify = own.filter((entry) => sameKey(entry.key, 'http.sslverify')).at(-1)?.value ?? 'true'
   return [...flags, '-c', `http.sslVerify=${verify}`, `--work-tree=${root}`]
+}
+
+/**
+ * The scheme of the address a command talks to: one given among its
+ * arguments, or the address of a remote named there. Nothing where it names
+ * neither.
+ */
+function schemeOf(args: readonly string[], folder: (key: string) => string[]): string | undefined {
+  for (const arg of args.slice(commandAt(args) + 1)) {
+    const address = /^[a-z][a-z0-9+.-]*:\/\//i.test(arg) ? arg : folder(`remote.${arg}.url`).at(-1)
+    const scheme = address && /^([a-z][a-z0-9+.-]*):\/\//i.exec(address)?.[1]
+    if (scheme) return scheme.toLowerCase()
+  }
+  return undefined
 }
 
 /** Two keys as git compares them: section and variable without regard to case. */
@@ -483,39 +550,68 @@ function sameKey(one: string, other: string): boolean {
   return one.toLowerCase() === other.toLowerCase()
 }
 
-async function folderFlags(root: string, folder: Entry[], own: Entry[], command: string): Promise<string[]> {
+/**
+ * A key that is refused outright, or that needs nothing set after it: one
+ * {@link always} sets, or a work tree that is this folder. Answers whether
+ * the key is settled; throws where it is refused.
+ */
+async function settledApart(root: string, key: string, context: Context): Promise<boolean> {
+  const lower = key.toLowerCase()
+  if (key.includes('=')) throw new GitRefused(`its configuration names a key no setting can reach (${key})`)
+  if (ALWAYS_SET.has(lower)) return true
+  if (lower === 'core.worktree') {
+    const named = context.folder(key).at(-1) ?? ''
+    if (!await sameFolder(root, resolve(root, '.git', named))) throw new GitRefused(`its configuration works in another folder (core.worktree = ${named})`)
+    return true
+  }
+  const extension = /^extensions\.(.+)$/i.exec(key)
+  if (extension && !EXTENSIONS.has(extension[1].toLowerCase())) throw new GitRefused(`its configuration names a repository extension this app does not know (${key})`)
+  if (FIRST_VALUE.some((pattern) => pattern.test(key))) throw new GitRefused(`its configuration names a program no setting can override (${key})`)
+  if (NO_TAKING_BACK.some((pattern) => pattern.test(key))) throw new GitRefused(`its configuration rewrites remote addresses in a way no setting can take back (${key})`)
+  return false
+}
+
+async function folderFlags(root: string, folder: Entry[], own: Entry[], args: readonly string[]): Promise<string[]> {
   const flags: string[] = []
+  const command = commandOf(args)
   const valuesIn = (entries: Entry[]) => (key: string) => entries.filter((entry) => sameKey(entry.key, key)).map((entry) => entry.value)
-  const context: Context = { theirs: valuesIn(own), folder: valuesIn(folder) }
+  const context: Context = { theirs: valuesIn(own), folder: valuesIn(folder), scheme: schemeOf(args, valuesIn(folder)) }
   const keys = [...new Map(folder.map((entry) => [entry.key.toLowerCase(), entry.key])).values()]
   const lists = new Set<RegExp>()
+  const emptied: string[] = []
   for (const key of keys) {
-    const lower = key.toLowerCase()
-    if (key.includes('=')) throw new GitRefused(`its configuration names a key no setting can reach (${key})`)
-    if (ALWAYS_SET.has(lower)) continue
-    if (lower === 'core.worktree') {
-      const named = context.folder(key).at(-1) ?? ''
-      if (!await sameFolder(root, resolve(root, '.git', named))) throw new GitRefused(`its configuration works in another folder (core.worktree = ${named})`)
+    if (await settledApart(root, key, context)) continue
+    const list = LISTS.find((pattern) => pattern.test(key))
+    if (list) {
+      lists.add(list)
+      emptied.push(key)
       continue
     }
-    const extension = /^extensions\.(.+)$/i.exec(key)
-    if (extension && !EXTENSIONS.has(extension[1].toLowerCase())) throw new GitRefused(`its configuration names a repository extension this app does not know (${key})`)
-    if (FIRST_VALUE.some((pattern) => pattern.test(key))) throw new GitRefused(`its configuration names a program no setting can override (${key})`)
-    if (NO_TAKING_BACK.some((pattern) => pattern.test(key))) throw new GitRefused(`its configuration rewrites remote addresses in a way no setting can take back (${key})`)
-    const list = LISTS.find((pattern) => pattern.test(key))
-    if (list) { lists.add(list); continue }
     if (ALLOWED.some((pattern) => pattern.test(key)) && !NOT_ALLOWED.some((pattern) => pattern.test(key))) continue
     const person = context.theirs(key).at(-1)
     const neutral = NEUTRAL.find(([pattern]) => pattern.test(key))?.[1]
     if (person === undefined && neutral === undefined) {
       throw new GitRefused(`its configuration sets ${key}, which this app does not run git with; remove it, or use git yourself in this folder`)
     }
-    flags.push('-c', `${key}=${person ?? (typeof neutral === 'function' ? neutral(context) : neutral)}`)
+    // A required filter is decided even where the person has a value, since
+    // theirs may be for a filter they do not define.
+    const value = /^filter\..+\.required$/i.test(key) ? requiredFilter(context, key) : person ?? (typeof neutral === 'function' ? neutral(context, key) : neutral)
+    flags.push('-c', `${key}=${value}`)
   }
   for (const list of lists) {
-    // Emptied, then the person's own again, in their order.
-    flags.push('-c', `${list === LISTS[0] ? 'credential.helper' : 'http.extraHeader'}=`)
+    // Emptied — the list as a whole, and each key of the folder's for one
+    // address — then the person's own again, in their order.
+    const whole = list === LISTS[0] ? 'credential.helper' : 'http.extraHeader'
+    const forOne = [...new Set(emptied.filter((one) => list.test(one) && !sameKey(one, whole)))]
+    for (const key of [whole, ...forOne]) flags.push('-c', `${key}=`)
     for (const entry of own) if (list.test(entry.key)) flags.push('-c', `${entry.key}=${entry.value}`)
+    // A header for one address outranks every one for all of them, so that
+    // one is kept by the person's own named again for that address.
+    if (list === LISTS[1]) {
+      for (const key of forOne) {
+        for (const entry of own) if (sameKey(entry.key, whole) || sameKey(entry.key, key)) flags.push('-c', `${key}=${entry.value}`)
+      }
+    }
   }
   await refuseIncludesInWorkTree(root, folder)
   if (REMOTE_COMMANDS.has(command)) await refuseRemotesInside(root, folder)
