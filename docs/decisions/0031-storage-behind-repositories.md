@@ -384,37 +384,90 @@ repositories, in `src/adapters/folder/`:
   record per value, so two tabs never write over each other's. Both keep them
   through a restart.
 - **No `.git` is a path the file channel takes** — the folder's own or one at
-  any depth under it, in any spelling, through a stream's name
-  (`.git::$INDEX_ALLOCATION`) or through a link — so a page can neither write
-  into a history nor give a folder one. No segment with a colon in it is taken
-  either, since Windows reads `name:stream` as a way into the file itself; no
-  name the app writes has one, and a file of a person's with one in its name
-  is not read through the channel.
-- **Only the person's own configuration names a program; a folder's never
-  does.** Every git the app runs has no hook (`core.hooksPath` is an empty
-  folder of the app's), no file-system monitor and no `ext::` transport. Where
-  a command could start a program, the folder's configuration (`.git/config`,
-  what it includes, a worktree's own) is read once, apart from the rest, and
-  every key it sets that names a program is set again, after it, to the
-  person's own value — the machine's or their global one — or to git's
-  default or no program where they have none. The keys: `commit.gpgsign`,
-  `tag.gpgsign`, `gpg.format`, `gpg.program`, `gpg.<format>.program`,
-  `gpg.ssh.defaultKeyCommand`; `credential.helper` and
-  `credential.<url>.helper`, a list that is emptied and filled with the
-  person's own again; `core.askPass`, `core.sshCommand`, `core.pager`,
-  `core.editor`, `diff.external`, `diff.<driver>.command` and `.textconv`,
-  `merge.<driver>.driver`, and a filter's `clean`, `smudge`, `process` and
-  `required`. Three git reads from the first value, so they are answered
-  otherwise: `remote.<name>.uploadpack` and `.receivepack` by telling the
-  command `--upload-pack` or `--receive-pack`, and `core.gitProxy` by refusing
-  the `git://` transport it serves. A key named with an `=`, which no
-  override can reach, stops the command. So a person who signs keeps signing
-  with their own signer, their credential helpers and a filter they define —
-  git-lfs as it installs itself — run as they always did, and a filter only
-  the folder defines runs nothing: the file is taken as it is, which for an
-  LFS set up for one folder alone (`git lfs install --local`) means its files
-  are committed whole. The `ssh` git runs is the one the process names, which
-  git takes before any configuration's.
+  any depth under it, in any spelling: in any case, with the trailing dots and
+  spaces Windows drops, as Windows' short name, through a stream's name
+  (`.git::$INDEX_ALLOCATION`), with the code points HFS+ leaves out of a name
+  (as git's own check strips them), or through a link. A folder with a history
+  somewhere under it is neither moved nor removed, and a segment that is
+  empty, `.` or `..` once Windows has trimmed it is refused. So a page can
+  neither write into a history nor give a folder one. No segment with a colon
+  in it is taken either, since Windows reads `name:stream` as a way into the
+  file itself: no name the app writes has one, and a file of a person's with
+  one in its name is not read through the channel. The folder a write or a
+  move lands in is checked again just before it lands, so a link put in the
+  way after the path was resolved is refused.
+- **A folder's own configuration is taken for what a folder needs, and for
+  nothing else** (`platform/node/gitGuard.ts`). A folder arrives from anywhere
+  — a zip, a shared drive, a clone — and git reads its `.git/config` on every
+  command. So before every git the app runs with a folder, reads included,
+  that configuration — `.git/config`, a worktree's own and what they include —
+  is read apart from the person's (the machine's, their global one, what the
+  process was started with), and each key it sets is one of three things.
+  - **Allowed**, as the folder says it — what a repository needs to be one,
+    and settings that start no program, send nothing anywhere and read no file
+    outside it: `core.` format and disk keys (`repositoryformatversion`,
+    `bare`, `filemode`, `ignorecase`, `precomposeunicode`, `symlinks`,
+    `logallrefupdates`, `autocrlf`, `eol`, `safecrlf`, `sparsecheckout` and
+    the like), because a repository is not one without them and each only
+    says how git sees the disk; `user.`, `author.` and `committer.` names,
+    emails and signing key, because who commits is the folder's to say and a
+    signing key names a key, never a program; `remote.<name>` addresses,
+    refspecs and pruning, and `branch.<name>` tracking, because syncing needs
+    them; `submodule.<name>` addresses and state, since nothing enters a
+    submodule; `extensions.` git knows (`objectFormat`, `worktreeConfig`,
+    `preciousObjects`, `refStorage`, `partialClone`, `noop`); `init.defaultBranch`;
+    `include.path` and `includeIf.<condition>.path`, whose files are read and
+    held to the same rules; `lfs.` settings but its custom transfers and
+    extensions, since git-lfs's filter is the person's; and display,
+    housekeeping and default settings (`color.`, `gc.`, `pack.`, `index.`,
+    `status.`, `gui.`, `pull.`, `push.`, `fetch.`, `merge.` and `diff.` of
+    one level, and the like) but those that name a program or a file
+    (`diff.external`, `diff.orderFile`, `merge.tool`, `fetch.bundleUri`,
+    `gc.recentObjectsHook`, `blame.ignoreRevsFile`).
+  - **Set again, after it**, to the person's own value, or where they have
+    none to git's default or to no program: signing (`commit.gpgSign`,
+    `tag.gpgSign`, `gpg.format`, `gpg.program`, `gpg.<format>.program`,
+    `gpg.ssh.defaultKeyCommand`), `core.askPass`, `core.sshCommand`,
+    `core.pager`, `core.editor`, `sequence.editor`, `diff.external`,
+    `diff.<driver>.command` and `.textconv`, `merge.<driver>.driver`, a
+    filter's `clean`, `smudge`, `process` and `required`, `http.proxy` and
+    `remote.<name>.proxy`, `http.extraHeader`,
+    `branch.<name>.mergeOptions`, `submodule.<name>.update`,
+    `core.attributesFile` and `core.excludesFile`. A credential helper is a
+    list: it is emptied, and the person's own are named again in their order.
+  - **Refused**, the command not run and the key named: a key git takes from
+    its first value, so nothing set after it wins (`core.gitProxy`,
+    `remote.<name>.uploadPack` and `.receivePack`); a key named with an `=`,
+    which `-c` cannot reach; an extension git may not know; a `core.worktree`
+    other than the folder itself; and any other key the folder sets that is
+    not allowed and has no value to set in its place — `http.sslCAInfo`, say,
+    or `url.<base>.insteadOf`. A person can remove it, or use git themselves.
+
+  The read is kept per folder, and read again only when a file it came from
+  or might come from — the configuration files, what they include, `HEAD` for
+  a conditional include — has changed.
+
+  **Always**, whatever the folder says: no hook (`core.hooksPath` is an empty
+  folder of the app's), no file-system monitor, no `ext::` transport, no
+  command for alternate references, no signature shown in a log, no
+  submodule entered (`submodule.recurse`, `fetch.recurseSubmodules`,
+  `push.recurseSubmodules`), TLS checked as the person checks it (`true`
+  where they say nothing), and this folder the work tree. The `GIT_DIR` and
+  the like the process may have been started with are not passed on, and the
+  `ssh` git runs is the one the process names, which git takes before any
+  configuration's.
+
+  **A remote that is a path on this machine** is refused where it lies inside
+  the folder: a page can write a repository there as plain files, and git
+  runs the hooks of a repository it pushes to on this machine as that
+  repository's own. One outside the folder — a shared drive, a disk — is the
+  person's, and its hooks run as git runs them for any local remote.
+
+  So a person who signs keeps signing with their own signer, their
+  credential helpers and a filter they define — git-lfs as it installs
+  itself — run as they always did, and a filter only the folder defines runs
+  nothing: the file is taken as it is, which for an LFS set up for one folder
+  alone (`git lfs install --local`) means its files are committed whole.
 - **A move** takes the scope's folder and the scopes under it as they are —
   the format's files, the pictures, the settings, whatever a person keeps
   there, links and empty folders included. On the desktop it is one rename in
