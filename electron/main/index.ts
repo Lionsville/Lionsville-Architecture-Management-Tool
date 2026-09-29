@@ -20,7 +20,7 @@
  */
 import { app, BrowserWindow, dialog, ipcMain, protocol, net, shell } from 'electron'
 import { access } from 'node:fs/promises'
-import { rmSync } from 'node:fs'
+import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { extname, isAbsolute, join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -255,9 +255,13 @@ if (app.isPackaged) app.setPath('userData', join(app.getPath('appData'), USER_DA
  * gate run silently repoints somebody's real app at a folder that is deleted an
  * hour later, and they are asked to choose one again on their next launch.
  *
- * Emptied rather than reused, because a gate that inherits the last run's state
- * is a gate that reports something different on the second run: the migration
- * step counts what it copied, and a run after a run has nothing left to copy.
+ * A fresh one per run rather than one reused, because a gate that inherits the
+ * last run's state is a gate that reports something different on the second
+ * run: the migration step counts what it copied, and a run after a run has
+ * nothing left to copy. And fresh rather than emptied: two runs at once — two
+ * checkouts on one machine — shared one directory, and each emptied it under
+ * the other. It is removed as the run ends; everything its log says went to
+ * stderr as well.
  *
  * Its log goes there too. On Windows and Linux the logs folder is inside
  * `userData` and follows it; on macOS it is `~/Library/Logs/<product>`, which
@@ -268,8 +272,12 @@ if (app.isPackaged) app.setPath('userData', join(app.getPath('appData'), USER_DA
  * the pin above, which it deliberately overrides.
  */
 if (UNATTENDED) {
-  const own = join(tmpdir(), 'lvarch-smoke-userdata')
-  rmSync(own, { recursive: true, force: true })
+  const own = mkdtempSync(join(tmpdir(), 'lvarch-smoke-userdata-'))
+  // Synchronous, because the run ends in `process.exit` and nothing after it
+  // is awaited; the quit is for a run that ends any other way.
+  const removeOwn = () => rmSync(own, { recursive: true, force: true })
+  process.once('exit', removeOwn)
+  app.once('quit', removeOwn)
   app.setPath('userData', own)
   app.setAppLogsPath(join(own, 'logs'))
 }
