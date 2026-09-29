@@ -18,13 +18,17 @@
  */
 import type { UploadedLogo } from '../model'
 import { ShellError } from '../platform/errors'
-import type { IndexedScope, IndexRead } from '../ports/OrganisationIndex'
+import type { IndexedScope, IndexRead, OrganisationIndex } from '../ports/OrganisationIndex'
 import type { Created, Refused, ScopeNode, ScopeRepository, ScopeTree } from '../ports/ScopeRepository'
+import { readdressRef, readdressRefs } from './readdress'
 import { SCOPE_MOVED } from './revision'
 import { resolveActive } from './scope'
+import { isWithinScope } from './scopePath'
 import type { ScopeModel, ScopeSnapshot, ScopeSummary } from './scope'
 import { STEP_ELSEWHERE } from './scopeState'
-import type { ScopeAddress, ScopeCommand, ScopeId, ScopeRefusal, ScopeState, ScopeStep } from './scopeState'
+import type {
+  Revision, ScopeAddress, ScopeCommand, ScopeContent, ScopeId, ScopeRefusal, ScopeState, ScopeStep,
+} from './scopeState'
 
 /** The tree as the screens draw it: one summary per node, the root first. */
 export function summaryOf(tree: ScopeTree): ScopeSummary {
@@ -167,3 +171,71 @@ export async function ensureScope(
   return landed(answer).id
 }
 
+
+/**
+ * What of a scope the app holds is its content, as a step carries it: the
+ * model, and what it says about itself. The pictures' entries are the
+ * library's (`images`), handed in by whoever put their bytes.
+ */
+export function contentOf(scope: ScopeSnapshot, images: ScopeContent['images'] = []): ScopeContent {
+  return {
+    model: scope.model,
+    ...(scope.activeDiagramId ? { activeDiagramId: scope.activeDiagramId } : {}),
+    ...(scope.logoLibrary.length ? { logoLibrary: scope.logoLibrary } : {}),
+    ...(scope.kind !== undefined ? { kind: scope.kind } : {}),
+    ...(scope.client !== undefined ? { client: scope.client } : {}),
+    ...(scope.links !== undefined ? { links: scope.links } : {}),
+    images,
+  }
+}
+
+/**
+ * A content that arrives whole, put at an address (`scope.replace`): a scope
+ * made there where there is none, and the content landed on it expecting what
+ * was read — so a scope somebody changed in between is refused, not written
+ * over. Answers the identity it landed on.
+ */
+export async function placeWhole(
+  scopes: ScopeReader & Pick<ScopeRepository, 'create' | 'apply'>,
+  address: ScopeAddress,
+  content: ScopeContent,
+): Promise<ScopeId> {
+  const id = await ensureScope(scopes, address, { name: content.model.name, ...(content.kind ? { kind: content.kind } : {}) })
+  const read = await scopes.state(id)
+  landed(await scopes.apply([{ scope: id, steps: [stepOf({ type: 'scope.replace', content })], ...(read ? { expects: read.revision } : {}) }]))
+  return id
+}
+
+/**
+ * A scope, and everything filed under it, to another address — and the
+ * stand-ins elsewhere that named it by its old one, named by its new.
+ *
+ * The repository moves the subtree whole, identities and all; what it cannot
+ * know is who else points into it, which the index says. Those stand-ins are
+ * written as the refresh they are (`standin.refresh`), each expecting what
+ * was read of its scope: the ones outside the subtree before the move, the
+ * ones inside it after, at their new addresses.
+ */
+export async function moveScope(
+  scopes: ScopeReader & Pick<ScopeRepository, 'apply' | 'move'>,
+  index: Pick<OrganisationIndex, 'read'>,
+  from: ScopeAddress,
+  to: ScopeAddress,
+  expects?: Revision,
+): Promise<ScopeSnapshot | undefined> {
+  const node = nodeAt(await scopes.tree(), from)
+  if (!node) return undefined
+  const patches = readdressRefs(modelsOf(await index.read()), from, to)
+  const inside = (address: ScopeAddress) => isWithinScope(address, from)
+  const carry = async (address: ScopeAddress, refs: readonly { id: string; ref: string }[]) => {
+    await changeScope(scopes, address, (held) => {
+      const names = new Map(held.model.elements.map((element) => [element.id, element.name]))
+      const entries = refs.filter((one) => names.has(one.id)).map((one) => ({ ...one, name: names.get(one.id)! }))
+      return entries.length ? [{ type: 'standin.refresh', entries }] : undefined
+    })
+  }
+  for (const patch of patches) if (!inside(patch.path)) await carry(patch.path, patch.refs)
+  landed(await scopes.move(node.id, to, expects))
+  for (const patch of patches) if (inside(patch.path)) await carry(readdressRef(patch.path, from, to), patch.refs)
+  return readScope(scopes, to)
+}

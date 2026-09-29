@@ -6,8 +6,9 @@ import { memoryRepositories } from '../adapters/memory/memoryRepositories'
 import { ShellError } from '../platform/errors'
 import type { Repositories } from '../ports/Repositories'
 import {
-  changeScope, ensureScope, landed, modelsOf, readScope, stepOf, summaryOf,
+  changeScope, contentOf, ensureScope, landed, modelsOf, moveScope, placeWhole, readScope, stepOf, summaryOf,
 } from './scopeAccess'
+import type { ScopeSnapshot } from './scope'
 
 async function withAcme(): Promise<{ repositories: Repositories; acme: string }> {
   const repositories = memoryRepositories()
@@ -81,5 +82,52 @@ describe('the app’s questions about scopes, asked of the repositories', () => 
     await changeScope(repositories.scopes, 'acme', () => [crews])
     const models = modelsOf(await repositories.index.read())
     expect(models.map((one) => [one.path, one.model.elements.map((element) => element.id)]).sort()).toEqual([['', []], ['acme', ['crews']]])
+  })
+})
+
+describe('a content that arrives whole, and a scope moved', () => {
+  const example = (path: string): ScopeSnapshot => ({
+    path,
+    model: { name: 'Crews', elements: [crews.element], relations: [], diagrams: [] },
+    activeDiagramId: '',
+    logoLibrary: [],
+    kind: 'landscape',
+    client: 'Acme',
+  })
+
+  it('places a content at an address, making the scope and those above it', async () => {
+    const repositories = memoryRepositories()
+    const id = await placeWhole(repositories.scopes, 'acme/crews', contentOf(example('acme/crews')))
+    const held = await readScope(repositories.scopes, 'acme/crews')
+    expect([held?.id, held?.model.elements.map((one) => one.id), held?.kind, held?.client]).toEqual([id, ['crews'], 'landscape', 'Acme'])
+    expect((await readScope(repositories.scopes, 'acme'))?.model.name).toBe('acme')
+  })
+
+  it('places a content over a scope that is there, taking what was there away', async () => {
+    const { repositories, acme } = await withAcme()
+    await changeScope(repositories.scopes, 'acme', () => [{ ...crews, element: { ...crews.element, id: 'depot' } }])
+    expect(await placeWhole(repositories.scopes, 'acme', contentOf(example('acme')))).toBe(acme)
+    expect((await readScope(repositories.scopes, 'acme'))?.model.elements.map((one) => one.id)).toEqual(['crews'])
+  })
+
+  it('moves a scope with what is under it, and names it anew in the stand-ins that point into it', async () => {
+    const { repositories, acme } = await withAcme()
+    await placeWhole(repositories.scopes, 'acme/crews', contentOf(example('acme/crews')))
+    const standIn = { ...crews.element, ref: 'acme/crews' }
+    await placeWhole(repositories.scopes, 'globex', { ...contentOf(example('globex')), model: { name: 'Globex', elements: [standIn], relations: [], diagrams: [] } })
+    await placeWhole(repositories.scopes, 'acme/rail', { ...contentOf(example('acme/rail')), model: { name: 'Rail', elements: [standIn], relations: [], diagrams: [] } })
+    const moved = await moveScope(repositories.scopes, repositories.index, 'acme', 'group/acme')
+    expect([moved?.id, moved?.path]).toEqual([acme, 'group/acme'])
+    expect((await readScope(repositories.scopes, 'group/acme/crews'))?.model.elements.map((one) => one.id)).toEqual(['crews'])
+    expect((await readScope(repositories.scopes, 'globex'))?.model.elements[0].ref).toBe('group/acme/crews')
+    expect((await readScope(repositories.scopes, 'group/acme/rail'))?.model.elements[0].ref).toBe('group/acme/crews')
+    expect(await readScope(repositories.scopes, 'acme')).toBeUndefined()
+  })
+
+  it('says a move the repository refuses with its key, and moves nothing', async () => {
+    const { repositories } = await withAcme()
+    await repositories.scopes.create('globex', { name: 'Globex' })
+    await expect(moveScope(repositories.scopes, repositories.index, 'acme', 'globex')).rejects.toEqual(new ShellError('shell.scopeTaken'))
+    expect((await readScope(repositories.scopes, 'acme'))?.model.name).toBe('Acme Logistics')
   })
 })
