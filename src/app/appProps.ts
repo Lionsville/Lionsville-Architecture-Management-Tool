@@ -30,7 +30,7 @@ import type {
   RegisteredChrome, RegisteredMenu, ShellDiagnostics, SourceAgentPanel, SourceChipFace,
   SourceChipPanel, SourcePreferencesPanel,
 } from './App'
-import type { ExampleOffer } from './examples/offers'
+import type { ExampleOffer } from '../projects/examples/catalogue'
 import type { MakeId } from './useDiagramActions'
 import type { ScopeSession } from './useModelSession'
 import type { CommandStream } from './useHostCommands'

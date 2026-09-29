@@ -43,14 +43,14 @@ import {
 } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
 import {
-  blank, changeScope, contentOf, ensureScope, landed, moveScope, nodeAt, picturesOf, placeTogether, readScope, summaryOf,
+  blank, changeScope, ensureScope, landed, moveScope, nodeAt, readScope, summaryOf,
 } from '../../projects/scopeAccess'
 import type { ScopeCommand } from '../../projects/scopeState'
 import type { Repositories } from '../../ports/Repositories'
-import { copyExampleInto } from '../examples/copy'
 import { opensOnNothing } from '../useShellNavigation'
-import { exampleOf } from '../examples/offers'
-import type { ExampleOffer } from '../examples/offers'
+import { exampleOf } from '../../projects/examples/catalogue'
+import type { ExampleOffer } from '../../projects/examples/catalogue'
+import { exampleCopyOver, placeCopy } from '../../projects/examples/copy'
 import type { InitialPage, ScopeSettingsPatch } from '../App'
 
 /** Which dialog is up. One at a time, because they all ask about one scope. */
@@ -250,18 +250,6 @@ function useHomeReads({ scopes, active, at, revision, onFailure }: {
   }, [scopes, active, at, revision])
 
   return { tree, root, ready, listed }
-}
-
-/**
- * The root as a copy decides where to land by, read at the press: the tree as
- * it is kept now, not the one on screen — a listing that has not answered yet
- * reads as an empty, nameless root — and whether the root holds records, which
- * no listing says: a root with records in it and no name or board is
- * somebody's work.
- */
-async function rootAsKept(scopes: Repositories['scopes']): Promise<[ScopeSummary, boolean]> {
-  const [tree, kept] = await Promise.all([scopes.tree(), readScope(scopes, ROOT_SCOPE)])
-  return [summaryOf(tree), kept !== undefined && !blank(kept)]
 }
 
 /** Every scope may be written: what the hook is told by every source that ships. */
@@ -559,14 +547,14 @@ export function useOrganisation({
 
   /**
    * An example is a starting point, not a document you keep opening. Where the
-   * copy lands is `copyExampleInto`'s answer; what is here is the writing of
+   * copy lands is `exampleCopyOver`'s answer; what is here is the writing of
    * it, parents first, and landing the person in the scope that has the work in
    * it rather than in the name above it.
    */
   const copyExample = useCallback((offer: ExampleOffer) => {
     void (async () => {
       const example = await exampleOf(offer)
-      const copy = copyExampleInto(example, ...await rootAsKept(scopes))
+      const copy = await exampleCopyOver(scopes, example)
       // A shipped example this build cannot read is a bug the example tests
       // exist to prevent, so it reaches here as nothing rather than as a crash.
       if (copy.length === 0) {
@@ -590,9 +578,7 @@ export function useOrganisation({
       const existing = await readScope(scopes, landing.path)
       if (existing && !blank(existing)) { onEnter(existing); return }
       // Each scope a content that arrives whole, all of them landed together.
-      await placeTogether(repositories, copy.map((scope) => ({
-        address: scope.path, content: contentOf(scope, []), pictures: picturesOf(scope.imageLibrary),
-      })))
+      await placeCopy(repositories, copy)
       await entered(landing.path, s('shell.exampleCopied', { name: example.label }))
     })().catch((cause: unknown) => {
       onFailure('organisation.copyExample', cause)

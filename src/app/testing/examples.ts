@@ -11,8 +11,8 @@ import { exampleFiles as filesOf, exampleScopes as scopesOf } from '../../adapte
 import type { ExampleFolder } from '../../adapters/folder/format/exampleFolder'
 import type { FolderFile } from '../../adapters/folder/format/folderFormat'
 import type { ScopeSnapshot } from '../../projects/scope'
-import type { ExampleProject } from '../examples/copy'
-import { EXAMPLE_CATALOGUE } from '../examples/offers'
+import type { ExampleProject } from '../../projects/examples/copy'
+import { EXAMPLE_CATALOGUE } from '../../projects/examples/catalogue'
 
 /** An example as it ships: its scopes, and the folder they were read from. */
 export type ShippedExample = ExampleProject & { folder: ExampleFolder }

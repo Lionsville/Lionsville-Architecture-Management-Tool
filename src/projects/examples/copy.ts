@@ -5,15 +5,20 @@
  * What an example is, and copying one in: everything about the examples but
  * the examples themselves.
  *
- * Apart from `index.ts` because that file imports the shipped organisation,
- * which is the largest single thing in the app and wanted only on the one
- * screen a person copies it from. The screen imports this; the catalogue
- * arrives when an example is copied (`offers.ts`).
+ * The domain's, not a screen's: where a copy lands is a rule about the tree
+ * it lands in, and whoever copies one — the organisation's page, or a
+ * process with no screen seeding an organisation — asks the same rule and
+ * writes the copy the same way. What each example holds is kept apart and
+ * fetched when one is copied (`catalogue.ts`).
  */
-import { namesUnder } from '../../projects/scope'
-import type { ScopeSnapshot, ScopeSummary } from '../../projects/scope'
-import { ROOT_SCOPE, scopePathFor, scopePathLabel } from '../../projects/scopePath'
-import type { ScopePath } from '../../projects/scopePath'
+import type { ImageRepository } from '../../ports/ImageRepository'
+import type { ScopeRepository } from '../../ports/ScopeRepository'
+import { namesUnder } from '../scope'
+import type { ScopeSnapshot, ScopeSummary } from '../scope'
+import { blank, contentOf, picturesOf, placeTogether, readScope, summaryOf } from '../scopeAccess'
+import type { ScopeReader } from '../scopeAccess'
+import { ROOT_SCOPE, scopePathFor, scopePathLabel } from '../scopePath'
+import type { ScopePath } from '../scopePath'
 
 export type ExampleProject = {
   /** Stable key, for the picker and for tests. */
@@ -79,6 +84,32 @@ export function copyExampleInto(
     // the moment it existed.
     model: { ...scope.model, elements: scope.model.elements.map(withRef(readdress)) },
   }))
+}
+
+/**
+ * Where a copy lands on the tree as it is kept now: {@link copyExampleInto}
+ * over the root's listing, and over what the root holds, read — a listing
+ * does not say that. Decided at the moment of copying, never on a tree read
+ * earlier: a root read before its listing answered is nameless and empty,
+ * and would be taken over whatever it holds.
+ */
+export async function exampleCopyOver(scopes: ScopeReader, example: ExampleProject): Promise<ScopeSnapshot[]> {
+  const [tree, root] = await Promise.all([scopes.tree(), readScope(scopes, ROOT_SCOPE)])
+  return copyExampleInto(example, summaryOf(tree), root !== undefined && !blank(root))
+}
+
+/**
+ * A copy written: each scope a content that arrives whole, the pictures'
+ * bytes first, every one of them landed together or none
+ * (`placeTogether`).
+ */
+export function placeCopy(
+  repositories: { scopes: ScopeReader & Pick<ScopeRepository, 'create' | 'apply' | 'remove'>; images: Pick<ImageRepository, 'put'> },
+  copy: readonly ScopeSnapshot[],
+): Promise<void> {
+  return placeTogether(repositories, copy.map((scope) => ({
+    address: scope.path, content: contentOf(scope, []), pictures: picturesOf(scope.imageLibrary),
+  })))
 }
 
 /** One element's `ref`, re-addressed. Untouched where there is none. */

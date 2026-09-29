@@ -13,7 +13,7 @@
  * An example is one entry in a catalogue. Opening one copies it into scopes of
  * the person's own, under the path the entry names; from that moment they are
  * theirs and nothing here is involved again. Adding one is a JSON file, an
- * entry in the app's `examples/offers.ts` and a line in `SHIPPED_EXAMPLES`
+ * entry in `projects/examples/catalogue.ts` and a line in `SHIPPED_EXAMPLES`
  * (`shippedExamples.ts`).
  *
  * It has to be *good*, too. It is the first thing anyone opens, and a thin

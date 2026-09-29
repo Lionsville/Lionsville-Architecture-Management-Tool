@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { describe, expect, it } from 'vitest'
-import { EXAMPLE_CATALOGUE } from '../../../app/examples/offers'
+import { EXAMPLE_CATALOGUE } from '../../../projects/examples/catalogue'
 import { SHIPPED_EXAMPLES } from './shippedExamples'
 
 describe('the examples that ship', () => {

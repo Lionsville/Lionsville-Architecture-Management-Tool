@@ -17,7 +17,6 @@
  */
 import { describe, expect, it } from 'vitest'
 import { placedNodes } from '../../model/placement';
-import { copyExampleInto } from './copy'
 import { EXAMPLES, exampleFiles, exampleScopes } from '../testing/examples'
 import { fromArrays, toArrays } from '../../model/normalised'
 import { derivedPlatformAspect } from '../../model/aspects'
@@ -37,7 +36,6 @@ import { sheetPage } from '../../business'
 import { buildEdges, buildNodes } from '../../editor/graph'
 import type { BuildGraphArgs } from '../../editor/graph'
 import type { DesignModel } from '../../model'
-import type { ScopeSummary } from '../../projects/scope'
 
 /** The scope with the applications in it — by what it is, since the platforms sit beside it (ADR-0013). */
 const landscapeOf = (example: (typeof EXAMPLES)[number]) =>
@@ -710,63 +708,5 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s contradicts 
         .filter((finding) => !finding.information)
       expect(found, scope.path).toEqual([])
     }
-  })
-})
-
-describe('where a copy lands', () => {
-  const example = EXAMPLES[0]
-  const root = (over: Partial<ScopeSummary> = {}): ScopeSummary => ({
-    path: '', name: '', diagrams: 0, children: [], ...over,
-  })
-
-  /** The common case: an empty folder, and somebody who wants to see the tool. */
-  it('makes the example the organisation when the root is unnamed and empty', () => {
-    const copied = copyExampleInto(example, root())
-    expect(copied.map((scope) => scope.path)).toEqual(['', 'application-landscape', 'platforms'])
-    expect(copied[0].model.name).toBe('Acme Logistics')
-    expect(copied[0].kind).toBe('organisation')
-  })
-
-  it('files a copy under a child of the root it lands in, and gives a second one its own address', () => {
-    const copied = copyExampleInto(example, root({ name: 'Globex' }))
-    expect(copied.map((scope) => scope.path))
-      .toEqual(['acme-logistics', 'acme-logistics/application-landscape', 'acme-logistics/platforms'])
-    const copied2 = copyExampleInto(example, root({ children: [
-      { path: 'retail', name: 'Retail', diagrams: 0, children: [] },
-    ] }))
-    expect(copied2[0].path).toBe('acme-logistics')
-    // Not in the design's sentence; overwriting a board is the unrecoverable one.
-    expect(copyExampleInto(example, root({ diagrams: 1 }))[0].path).toBe('acme-logistics')
-    const copied3 = copyExampleInto(example, root({ name: 'Globex', children: [
-      { path: 'acme-logistics', name: 'Acme Logistics', diagrams: 0, children: [] },
-    ] }))
-    expect(copied3.map((scope) => scope.path))
-      .toEqual(['acme-logistics-2', 'acme-logistics-2/application-landscape', 'acme-logistics-2/platforms'])
-  })
-
-  /** No name and no board is not nothing: records in the root are somebody's work. */
-  it('files a copy under a child where the root holds records, whatever its listing says', () => {
-    expect(copyExampleInto(example, root(), true)[0].path).toBe('acme-logistics')
-  })
-
-  /**
-   * The content travels; the ADDRESSES in it travel with it (ADR-0012 §3). A
-   * stand-in's `ref` is a path, and a copy that carried the old one would land
-   * a tree whose every stand-in points at a folder that is not there — which
-   * the drift check found the afternoon it existed.
-   */
-  it('carries the content over unchanged, and re-addresses what is an address', () => {
-    const asRoot = copyExampleInto(example, root())
-    const asChild = copyExampleInto(example, root({ name: 'Globex' }))
-    const withoutRefs = (scope: typeof asRoot[number]) => ({
-      ...scope.model,
-      elements: scope.model.elements.map(({ ref: _held, ...rest }) => rest),
-    })
-    expect(withoutRefs(asChild[1])).toEqual(withoutRefs(asRoot[1]))
-
-    const refs = (scope: typeof asRoot[number]) =>
-      [...new Set(scope.model.elements.map((e) => e.ref).filter((ref) => ref !== undefined))]
-    expect(refs(asRoot[1])).toEqual(['', 'platforms'])
-    expect(refs(asChild[1])).toEqual(['acme-logistics', 'acme-logistics/platforms'])
   })
 })

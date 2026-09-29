@@ -2,16 +2,18 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * The examples as the organisation's page offers them: what each is called,
- * and the organisation itself only when somebody copies it.
+ * The examples that ship, as they are offered: what each is called, and the
+ * organisation itself only when somebody copies it.
  *
  * The shipped organisation is the largest single file in the app, and it is
- * wanted on one screen, by a folder with nothing in it yet, once. Everybody
- * else — every reload of every environment that already holds work — would
- * download it for nothing, so it is its own script, fetched by the press that
- * copies it.
+ * wanted on one screen, by an organisation with nothing in it yet, once.
+ * Everybody else — every reload of every environment that already holds work
+ * — would download it for nothing, so it is its own script, fetched by the
+ * press that copies it. What each holds is read where the shipped examples
+ * are kept, by whoever composes the offers: the app's composition root, and
+ * a process with no screen through `platform/node/examples.ts`.
  */
-import type { ScopeSnapshot } from '../../projects/scope'
+import type { ScopeSnapshot } from '../scope'
 import type { ExampleProject } from './copy'
 
 /** What an example is called, where it lands, and what it shows: everything but what it holds. */
@@ -28,9 +30,8 @@ export async function exampleOf(offer: ExampleOffer): Promise<ExampleProject> {
 }
 
 /**
- * The examples that ship, as the organisation's page names them. What each
- * holds is fetched by the composition root when one is copied, from where the
- * shipped examples are kept.
+ * The examples that ship, as they are named. What each holds is fetched when
+ * one is copied, from where the shipped examples are kept.
  */
 export const EXAMPLE_CATALOGUE: readonly ExampleEntry[] = [
   {
