@@ -37,7 +37,7 @@ import Dialog from '@mui/material/Dialog'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
-import LinearProgress from '@mui/material/LinearProgress'
+import CircularProgress from '@mui/material/CircularProgress'
 import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n'
 import { reasonOf } from '../../platform/errors'
@@ -117,7 +117,7 @@ export function FolderAdoptionQuestion({ own, adoption, preferences, reread, flu
         {stage.at === 'copying' && (
           <>
             <Typography sx={{ fontSize: 13, mb: 1.5 }} role="status">{s('folder.adoptCopying', { name: adoption.name })}</Typography>
-            <LinearProgress data-testid="adopt-busy" />
+            <CircularProgress size={20} data-testid="adopt-busy" />
           </>
         )}
         {stage.at === 'said' && (
