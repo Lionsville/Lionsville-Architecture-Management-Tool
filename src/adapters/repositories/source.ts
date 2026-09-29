@@ -19,7 +19,7 @@
  * note it leaves for the next start. A page that finds another page brought
  * the same work first, while it was preparing, brings nothing.
  *
- * Every transaction spans every shelf. The repositories cross them freely —
+ * Every transaction spans every shelf of the repositories'. They cross them freely —
  * a step writes a scope, its library, the index's log and its step ids — and
  * a transaction that forgot one would fail only where that path is taken.
  */
@@ -28,7 +28,7 @@ import { emptyContent } from '../../projects/scopeState'
 import type { ScopeAddress } from '../../projects/scopeState'
 import { landBrought } from './bring'
 import type { Brought, Placed } from './bring'
-import { SHELVES } from './KeyedStore'
+import { REPOSITORY_SHELVES } from './KeyedStore'
 import type { KeyedStore, Transaction } from './KeyedStore'
 import { allScopes, indexChanged, META_KEY, makeScope, mintId } from './kept'
 import type { Meta } from './kept'
@@ -87,11 +87,11 @@ export class Source {
   }
 
   read<T>(work: (tx: Transaction) => Promise<T>): Promise<T> {
-    return this.ready().then(() => this.store.transaction(SHELVES, 'read', work))
+    return this.ready().then(() => this.store.transaction(REPOSITORY_SHELVES, 'read', work))
   }
 
   write<T>(work: (tx: Transaction) => Promise<T>): Promise<T> {
-    return this.ready().then(() => this.store.transaction(SHELVES, 'write', work))
+    return this.ready().then(() => this.store.transaction(REPOSITORY_SHELVES, 'write', work))
   }
 
   /** What the last bringing left, or `undefined` before the first. */
@@ -110,7 +110,7 @@ export class Source {
     const last = await this.lastBrought()
     const brought = await prepare(last)
     if (!brought) return { refused: [], diverged: [...(last?.diverged ?? [])] }
-    return this.store.transaction(SHELVES, 'write', (tx) => this.land(tx, brought))
+    return this.store.transaction(REPOSITORY_SHELVES, 'write', (tx) => this.land(tx, brought))
   }
 
   /** Made once per instance; a failure is tried again on the next call rather than kept. */
@@ -123,11 +123,11 @@ export class Source {
   }
 
   private async start(): Promise<void> {
-    const seen = await this.store.transaction(SHELVES, 'read', async (tx) => ({
+    const seen = await this.store.transaction(REPOSITORY_SHELVES, 'read', async (tx) => ({
       meta: await tx.get<Meta>('meta', META_KEY), brought: await tx.get<BroughtNote>('meta', BROUGHT_KEY),
     }))
     const brought = await this.options.bring?.prepare(seen.brought?.note, !seen.meta)
-    await this.store.transaction(SHELVES, 'write', async (tx) => {
+    await this.store.transaction(REPOSITORY_SHELVES, 'write', async (tx) => {
       const fresh = !await tx.get<Meta>('meta', META_KEY)
       if (fresh) await this.plant(tx)
       const now = await tx.get<BroughtNote>('meta', BROUGHT_KEY)

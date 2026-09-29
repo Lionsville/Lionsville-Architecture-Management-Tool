@@ -20,4 +20,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.historyDetached': 'Er is niets vastgelegd: de geschiedenis van deze map staat op geen enkele tak, dus een versie die nu wordt vastgelegd zou bij geen tak horen. Ga eerst naar een tak, en leg daarna opnieuw vast.',
   'shell.gitTooOld': 'De geschiedenis heeft git 2.25 of nieuwer op deze computer nodig. Werk git bij en probeer het opnieuw.',
   'shell.historyFailed': 'De geschiedenis van deze map kon niet worden gelezen of geschreven. De diagnose zegt waarom.',
+  'shell.storageFull': 'Deze browser heeft geen ruimte meer voor deze app, dus er is niets bewaard. Bewaar een werkbestand en maak daarna ruimte vrij voor deze site in de instellingen van de browser.',
+  'shell.storageReload': 'Deze pagina kan niet meer bewaren in deze browser: de app is in een ander tabblad bijgewerkt, of de browser is het bewaarde werk kwijtgeraakt. Herlaad de pagina om verder te gaan.',
+  'shell.storageBlocked': 'Een ander tabblad heeft nog een oudere versie van deze app open. Sluit of herlaad dat tabblad, dan gaat dit verder.',
 }

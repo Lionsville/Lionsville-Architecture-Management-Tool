@@ -21,7 +21,28 @@
  * cursor. A transaction's work may await only the requests it makes
  * (`KeyedStore`): the database commits a transaction the moment it has
  * nothing left to do, and a request made after that is refused.
+ *
+ * **A connection is not forever.** The browser may close it — storage cleared,
+ * the disk gone, iOS Safari losing its database server between two visits to
+ * a tab — and a later build asks for it to upgrade the layout. So:
+ * - a connection closed under the page is forgotten, and the next transaction
+ *   opens another;
+ * - a transaction that fails because the connection went (`UnknownError`,
+ *   `InvalidStateError`, or aborted without a cause by a closing connection)
+ *   landed nothing, and is run once more on a new connection;
+ * - a later build asking to upgrade (`versionchange`), a database already at a
+ *   later layout (`VersionError`), or a second loss in a row leaves this page
+ *   unable to write: the store's standing is `reload`, and every transaction
+ *   is refused `shell.storageReload` until the page is loaded again;
+ * - an upgrade waiting on another tab that holds an older layout open is
+ *   standing `blocked` until that tab lets go.
+ *
+ * **Full is a refusal, never a raw exception.** A write the browser refuses
+ * for want of room (`QuotaExceededError`) lands nothing and is refused
+ * `shell.storageFull`, for the app to say. Writes ask for `strict` durability,
+ * so a transaction answered is on disk, not in a cache a power cut empties.
  */
+import { ShellError } from '../../platform/errors'
 import { SHELVES } from '../repositories/KeyedStore'
 import type { KeyRange, Keyed, KeyedStore, RangeRead, Shelf, Transaction } from '../repositories/KeyedStore'
 
@@ -34,15 +55,46 @@ export const DATABASE_NAME = 'lvarch.repositories'
  */
 export const DATABASE_VERSION = 2
 
-/** The database's two globals, named rather than assumed, so a suite can hand in its own. */
-export type IndexedDb = { factory: IDBFactory; keyRange: typeof IDBKeyRange }
+/** As much of the browser's storage manager as the store asks: each part may be missing. */
+export type StorageManagerLike = {
+  persist?(): Promise<boolean>
+  persisted?(): Promise<boolean>
+  estimate?(): Promise<{ usage?: number; quota?: number }>
+}
+
+/**
+ * The database's two globals, named rather than assumed, so a suite can hand
+ * in its own — and the storage manager, where the browser has one, for
+ * keeping the database through a clear-out and saying how full it is.
+ */
+export type IndexedDb = { factory: IDBFactory; keyRange: typeof IDBKeyRange; manager?: StorageManagerLike }
+
+/**
+ * Whether this page may use the database: `open` (or not asked yet),
+ * `blocked` while an older tab holds it, or `reload` once only loading the
+ * page again lets it write.
+ */
+export type Standing = 'open' | 'blocked' | 'reload'
+
+/** How much of what the browser lets this site keep is kept, in bytes: the notice's `used` and `budget`. */
+export type Pressure = { used: number; budget: number }
+
+/** What a connection tells whoever opened it, after it opened. */
+export type ConnectionEvents = {
+  /** An upgrade waits on another tab that holds the database open at an older layout. */
+  blocked?(): void
+  /** A later build asked for the database; this connection has let go of it. */
+  versionChange?(): void
+  /** The browser closed this connection under the page. */
+  closed?(database: IDBDatabase): void
+}
 
 /**
  * Open the database, laying out its shelves the first time. Another page that
  * holds it open at an older layout is asked to let go (`onversionchange`), and
  * this page lets go the same way when a later build asks.
  */
-export function openDatabase({ factory }: IndexedDb, name = DATABASE_NAME): Promise<IDBDatabase> {
+export function openDatabase({ factory }: IndexedDb, name = DATABASE_NAME, events: ConnectionEvents = {}): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = factory.open(name, DATABASE_VERSION)
     request.onupgradeneeded = () => {
@@ -51,9 +103,14 @@ export function openDatabase({ factory }: IndexedDb, name = DATABASE_NAME): Prom
         if (!database.objectStoreNames.contains(shelf)) database.createObjectStore(shelf)
       }
     }
+    request.onblocked = () => events.blocked?.()
     request.onsuccess = () => {
       const database = request.result
-      database.onversionchange = () => database.close()
+      database.onversionchange = () => {
+        database.close()
+        events.versionChange?.()
+      }
+      database.onclose = () => events.closed?.(database)
       resolve(database)
     }
     request.onerror = () => reject(request.error ?? new Error('the database would not open'))
@@ -67,38 +124,186 @@ function answer<T>(request: IDBRequest<T>): Promise<T> {
   })
 }
 
+/** A transaction that landed nothing because its connection went: worth one more try on a new one. */
+class ConnectionLost extends Error {
+  constructor(readonly cause: unknown) {
+    super('the connection to the database was lost')
+  }
+}
+
+function nameOf(error: unknown): string | undefined {
+  const name = (error as { name?: unknown } | null | undefined)?.name
+  return typeof name === 'string' ? name : undefined
+}
+
+/** The names a browser gives a transaction or an open that failed because the connection went. */
+const LOST = new Set(['UnknownError', 'InvalidStateError'])
+
+const full = (): ShellError => new ShellError('shell.storageFull')
+
+/** What the work's own failure is refused as: full where the browser ran out of room, else as it was. */
+function workRefusal(error: unknown): unknown {
+  return nameOf(error) === 'QuotaExceededError' ? full() : error
+}
+
 export class IndexedDbStore implements KeyedStore {
-  private database: Promise<IDBDatabase> | undefined
+  private connection: Promise<IDBDatabase> | undefined
+  private now: Standing = 'open'
+  private readonly listeners = new Set<(standing: Standing) => void>()
+  /** Connections the browser closed under the page: a transaction of theirs that aborted went with them. */
+  private readonly closed = new WeakSet<IDBDatabase>()
+  private asked: Promise<boolean | undefined> | undefined
 
   constructor(private readonly indexedDb: IndexedDb, private readonly name = DATABASE_NAME) {}
 
-  /** Opened on first use and kept; a failure to open is tried again on the next transaction. */
-  private opened(): Promise<IDBDatabase> {
-    this.database ??= openDatabase(this.indexedDb, this.name).catch((error: unknown) => {
-      this.database = undefined
-      throw error
-    })
-    return this.database
+  /** Whether this page may use the database now. */
+  standing(): Standing {
+    return this.now
+  }
+
+  /** Told each time the standing moves; answers the way to stop being told. */
+  onStanding(listener: (standing: Standing) => void): () => void {
+    this.listeners.add(listener)
+    return () => {
+      this.listeners.delete(listener)
+    }
+  }
+
+  /**
+   * Whether the browser agreed to keep this site's storage until a person
+   * clears it, rather than evicting it under pressure: asked once, after the
+   * database first opens. `undefined` where the browser cannot say.
+   */
+  persisted(): Promise<boolean | undefined> {
+    return this.asked ?? Promise.resolve(undefined)
+  }
+
+  /** How full this site's storage is, as the browser estimates it; `undefined` where it will not say. */
+  async pressure(): Promise<Pressure | undefined> {
+    const estimate = await this.indexedDb.manager?.estimate?.().catch(() => undefined)
+    const { usage, quota } = estimate ?? {}
+    return typeof usage === 'number' && typeof quota === 'number' && quota > 0 ? { used: usage, budget: quota } : undefined
   }
 
   async transaction<T>(shelves: readonly Shelf[], mode: 'read' | 'write', work: (tx: Transaction) => Promise<T>): Promise<T> {
+    for (let tries = 1; ; tries += 1) {
+      try {
+        return await this.attempt(shelves, mode, work)
+      } catch (error) {
+        if (!(error instanceof ConnectionLost)) throw error
+        if (tries >= 2) throw this.mustReload()
+      }
+    }
+  }
+
+  private become(standing: Standing): void {
+    if (this.now === standing) return
+    this.now = standing
+    for (const listener of this.listeners) listener(standing)
+  }
+
+  private mustReload(): ShellError {
+    this.connection = undefined
+    this.become('reload')
+    return new ShellError('shell.storageReload')
+  }
+
+  /** Opened on first use and kept until the browser closes it; a failure to open is tried again on the next transaction. */
+  private opened(): Promise<IDBDatabase> {
+    if (this.now === 'reload') return Promise.reject(new ShellError('shell.storageReload'))
+    if (this.connection) return this.connection
+    const forget = () => {
+      if (this.connection === opening) this.connection = undefined
+    }
+    const opening: Promise<IDBDatabase> = openDatabase(this.indexedDb, this.name, {
+      blocked: () => this.become('blocked'),
+      versionChange: () => {
+        forget()
+        this.become('reload')
+      },
+      closed: (database) => {
+        this.closed.add(database)
+        forget()
+      },
+    }).then((database) => {
+      if (this.now === 'blocked') this.become('open')
+      this.asked ??= this.keepThrough()
+      return database
+    }, (error: unknown) => {
+      forget()
+      throw this.openRefusal(error)
+    })
+    this.connection = opening
+    return opening
+  }
+
+  private openRefusal(error: unknown): unknown {
+    const name = nameOf(error)
+    if (name === 'VersionError') return this.mustReload()
+    if (name !== undefined && LOST.has(name)) return new ConnectionLost(error)
+    return workRefusal(error)
+  }
+
+  /**
+   * Ask the browser to keep this site's storage through a clear-out. A
+   * browser that says no, or cannot be asked, keeps it as best it can — so
+   * the answer is kept for the app to show, and a failure to ask is no answer.
+   */
+  private async keepThrough(): Promise<boolean | undefined> {
+    const manager = this.indexedDb.manager
+    try {
+      if (await manager?.persisted?.()) return true
+      return await manager?.persist?.()
+    } catch {
+      return undefined
+    }
+  }
+
+  /** What a transaction that ended without completing is refused as. */
+  private abortRefusal(held: IDBTransaction, database: IDBDatabase, abandoned: boolean): unknown {
+    const name = nameOf(held.error)
+    if (name === 'QuotaExceededError') return full()
+    if ((name !== undefined && LOST.has(name)) || this.closed.has(database)) return new ConnectionLost(held.error)
+    // Aborted with no cause of its own and not by us: a connection closing under it.
+    if (!abandoned && (held.error === null || name === 'AbortError')) return new ConnectionLost(held.error)
+    return held.error ?? new Error('the transaction was abandoned')
+  }
+
+  private begin(database: IDBDatabase, shelves: readonly Shelf[], mode: 'read' | 'write'): IDBTransaction {
+    try {
+      return mode === 'write'
+        ? database.transaction([...shelves], 'readwrite', { durability: 'strict' })
+        : database.transaction([...shelves], 'readonly')
+    } catch (error) {
+      // A connection closing, or closed, refuses a new transaction this way.
+      if (nameOf(error) === 'InvalidStateError') {
+        if (this.connection) this.connection = undefined
+        throw new ConnectionLost(error)
+      }
+      throw error
+    }
+  }
+
+  private async attempt<T>(shelves: readonly Shelf[], mode: 'read' | 'write', work: (tx: Transaction) => Promise<T>): Promise<T> {
     const database = await this.opened()
-    const held = database.transaction([...shelves], mode === 'write' ? 'readwrite' : 'readonly')
+    const held = this.begin(database, shelves, mode)
+    let abandoned = false
     const ended = new Promise<void>((resolve, reject) => {
       held.oncomplete = () => resolve()
-      held.onabort = () => reject(held.error ?? new Error('the transaction was abandoned'))
+      held.onabort = () => reject(this.abortRefusal(held, database, abandoned))
     })
     let answered: T
     try {
       answered = await work(this.wrap(held))
     } catch (error) {
       try {
+        abandoned = true
         held.abort()
       } catch {
         // Ended already, by the database's own abort: nothing of it landed either way.
       }
-      await ended.catch(() => undefined)
-      throw error
+      const why = await ended.then(() => undefined, (cause: unknown) => cause)
+      throw why instanceof ConnectionLost || why instanceof ShellError ? why : workRefusal(error)
     }
     await ended
     return answered

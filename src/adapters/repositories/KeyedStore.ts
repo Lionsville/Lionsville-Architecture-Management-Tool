@@ -22,6 +22,12 @@
  * digest, a clock that is not `Date.now()` — is done before the transaction
  * opens.
  *
+ * **The work may be run twice.** A store whose connection can go — a
+ * browser's database — runs the work once more, on a new connection, when the
+ * first run landed nothing because the connection went. So the work changes
+ * nothing outside its transaction: what it read and decided, it reads and
+ * decides again.
+ *
  * **Keys are text, ordered by UTF-16 code unit**, as a browser's database and
  * JavaScript's `<` order them — a character outside the first plane, written
  * as two code units, sorts before U+FFFD. A range is every key from `from` up
@@ -30,8 +36,8 @@
  * clone copies them, so nothing handed out is anything the store keeps.
  */
 
-/** The shelves the repositories keep, each a key-value map of its own. */
-export const SHELVES = [
+/** The shelves the repositories keep, each a key-value map of its own: every transaction of theirs spans them all (`source.ts`). */
+export const REPOSITORY_SHELVES = [
   /** The source's own counters and marks: one value per key. */
   'meta',
   /** Each scope's identity, address, revision and what the tree says of it, by identity. */
@@ -58,6 +64,13 @@ export const SHELVES = [
   /** Settings, by whose they are. */
   'settings',
 ] as const
+
+/**
+ * Every shelf a store lays out: the repositories' and, after them, any kept
+ * beside them in the same store by other work, whose transactions then never
+ * wait on the repositories' own.
+ */
+export const SHELVES = [...REPOSITORY_SHELVES] as const
 
 export type Shelf = (typeof SHELVES)[number]
 

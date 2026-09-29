@@ -19,11 +19,27 @@
  * - **transactions run one at a time**, in the order they were made.
  *
  * Answers arrive a task later, as a browser's do. Values are copied on the way
- * in and out. Nothing else is modelled: no indexes, no versions past the
- * first upgrade, no blocking between pages.
+ * in and out. And a browser's failures can be asked for (`FakeControls`): a
+ * transaction refused as it starts, one aborted as it commits, and every
+ * connection closed under the page. Nothing else is modelled: no indexes, no
+ * versions past the first upgrade, no blocking between pages — the
+ * `fake-indexeddb` runs have those.
  */
 
 type Key = string
+
+/** A failure the next transaction meets: as it starts, or as it commits; a `DOMException` of that name. */
+export type Fault = { at: 'transaction' | 'commit'; name: string }
+
+/** What a suite may ask of the fake beyond what a page may. */
+export type FakeControls = {
+  /** The next transaction to reach that point fails there. */
+  fail(fault: Fault): void
+  /** Every open connection closed under its page, as a browser that lost its database closes them. */
+  closeUnderPage(): void
+  /** How many transactions have committed. */
+  committed(): number
+}
 
 export class FakeKeyRange {
   private constructor(
@@ -191,6 +207,14 @@ class FakeTransaction {
     later(() => {
       if (this.ended || this.pending > 0 || this.waiting.length > 0) return
       this.ended = true
+      const fault = this.database.fault('commit')
+      if (fault) {
+        this.error = fault
+        this.onabort?.()
+        this.database.next()
+        return
+      }
+      this.database.commits += 1
       for (const [name, written] of this.writes) {
         const shelf = this.database.shelves.get(name)!
         for (const [key, value] of written) {
@@ -204,28 +228,29 @@ class FakeTransaction {
   }
 }
 
+/** The database behind every connection to it: its shelves, and the transactions waiting their turn. */
 class FakeDatabase {
-  onversionchange: (() => void) | null = null
   private readonly queue: FakeTransaction[] = []
+  readonly connections = new Set<FakeConnection>()
+  commits = 0
 
-  constructor(readonly shelves: Shelves) {}
+  /** `faults` is the whole fake's: asked for before a database exists, they wait for one. */
+  constructor(readonly shelves: Shelves, private readonly faults: Fault[]) {}
 
-  get objectStoreNames() {
-    return { contains: (name: string) => this.shelves.has(name) }
+  /** The first fault asked for at this point, taken, as the exception a browser would give. */
+  fault(at: Fault['at']): DOMException | undefined {
+    const found = this.faults.findIndex((fault) => fault.at === at)
+    if (found === -1) return undefined
+    const [{ name }] = this.faults.splice(found, 1)
+    return new DOMException(`a ${name} the suite asked for`, name)
   }
 
-  createObjectStore(name: string): void {
-    this.shelves.set(name, new Map())
-  }
-
-  transaction(names: string | readonly string[], mode = 'readonly'): FakeTransaction {
-    const held = new FakeTransaction(this, typeof names === 'string' ? [names] : names, mode)
+  begin(names: readonly string[], mode: string): FakeTransaction {
+    const held = new FakeTransaction(this, names, mode)
     this.queue.push(held)
     if (this.queue.length === 1) held.start()
     return held
   }
-
-  close(): void {}
 
   /** The running transaction has ended: start the next. */
   next(): void {
@@ -234,27 +259,82 @@ class FakeDatabase {
   }
 }
 
-/** A fresh IndexedDB with no database in it, and the key range that goes with it. */
-export function fakeIndexedDb(): { factory: IDBFactory; keyRange: typeof IDBKeyRange } {
+/** One page's connection to a database: closed by the page, or under it. */
+class FakeConnection {
+  onversionchange: (() => void) | null = null
+  onclose: (() => void) | null = null
+  private closed = false
+
+  constructor(private readonly database: FakeDatabase) {
+    database.connections.add(this)
+  }
+
+  get objectStoreNames() {
+    return { contains: (name: string) => this.database.shelves.has(name) }
+  }
+
+  createObjectStore(name: string): void {
+    this.database.shelves.set(name, new Map())
+  }
+
+  transaction(names: string | readonly string[], mode = 'readonly'): FakeTransaction {
+    if (this.closed) throw new DOMException('the connection is closed', 'InvalidStateError')
+    const fault = this.database.fault('transaction')
+    if (fault) throw fault
+    return this.database.begin(typeof names === 'string' ? [names] : names, mode)
+  }
+
+  close(): void {
+    this.closed = true
+    this.database.connections.delete(this)
+  }
+
+  /** Closed by the browser rather than the page, which is told. */
+  lose(): void {
+    this.close()
+    this.onclose?.()
+  }
+}
+
+type FakeIndexedDb = { factory: IDBFactory; keyRange: typeof IDBKeyRange }
+
+/** A fresh IndexedDB with no database in it, the key range that goes with it, and the suite's controls over it. */
+export function controlledFakeIndexedDb(): { indexedDb: FakeIndexedDb; controls: FakeControls } {
   const databases = new Map<string, FakeDatabase>()
+  const faults: Fault[] = []
+  const every = () => [...databases.values()]
   const factory = {
     open: (name: string) => {
-      const request: Request & { onupgradeneeded: (() => void) | null } = {
-        result: undefined, error: null, onsuccess: null, onerror: null, onupgradeneeded: null,
+      const request: Request & { onupgradeneeded: (() => void) | null; onblocked: (() => void) | null } = {
+        result: undefined, error: null, onsuccess: null, onerror: null, onupgradeneeded: null, onblocked: null,
       }
       later(() => {
         let database = databases.get(name)
-        if (!database) {
-          database = new FakeDatabase(new Map())
-          databases.set(name, database)
-          request.result = database
-          request.onupgradeneeded?.()
-        }
-        request.result = database
+        const fresh = !database
+        database ??= new FakeDatabase(new Map(), faults)
+        databases.set(name, database)
+        request.result = new FakeConnection(database)
+        if (fresh) request.onupgradeneeded?.()
         request.onsuccess?.()
       })
       return request
     },
   }
-  return { factory: factory as unknown as IDBFactory, keyRange: FakeKeyRange as unknown as typeof IDBKeyRange }
+  return {
+    indexedDb: { factory: factory as unknown as IDBFactory, keyRange: FakeKeyRange as unknown as typeof IDBKeyRange },
+    controls: {
+      fail: (fault) => {
+        faults.push(fault)
+      },
+      closeUnderPage: () => {
+        for (const database of every()) for (const connection of [...database.connections]) connection.lose()
+      },
+      committed: () => every().reduce((sum, database) => sum + database.commits, 0),
+    },
+  }
+}
+
+/** A fresh IndexedDB with no database in it, and the key range that goes with it. */
+export function fakeIndexedDb(): FakeIndexedDb {
+  return controlledFakeIndexedDb().indexedDb
 }
