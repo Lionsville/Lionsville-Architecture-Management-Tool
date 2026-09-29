@@ -320,8 +320,10 @@ src/agent/        An agent as a peer of the menu (ADR-0007). Pure; the first
                     screen · shell · driving   the app as a screen and a
                                       destination, moving it, and the session
                                       the person can stop (ADR-0019)
-src/i18n/         The registry. Each module owns `strings/en.ts` + `strings/nl.ts`;
-                  `strings.en.ts` composes them and is the schema.
+src/i18n/         The registry. Each module owns `strings/en.ts`,
+`strings/nl.ts`
+                  and `strings/de.ts`; `strings.en.ts` composes them and is the
+                  schema.
                     registerStrings   words a build composed from this one brought,
                                       kept beside the schema and never merged into
                                       it: keys added, none replaced (ADR-0022)
@@ -893,10 +895,11 @@ whose contract is `ports/CommandChannel.contract.ts`.
   Dutch survives only where it is domain data (a design's own content, a
   diacritics fixture) or a value already written into saved files.
 - **UI strings are never inline, and every module owns its own.** A module keeps
-  `strings/en.ts` (`as const`, the schema for its keys) and `strings/nl.ts`
-  (typed from it, so a missing translation is a compile error where the word
-  lives). `i18n/strings.en.ts` composes the slices; that file and its Dutch twin
-  are the only ones that name every module. **Three languages: English, Dutch
+  `strings/en.ts` (`as const`, the schema for its keys), `strings/nl.ts` and
+  `strings/de.ts` (typed from it, so a missing translation is a compile error
+  where the word lives). `i18n/strings.en.ts` composes the slices; that file and
+  its Dutch and German twins are the only ones that name every module. **Three
+  languages: English, Dutch
   and German** (`LANGUAGE_CODES`). Adding a language is a new
   `strings/<lang>.ts` per module plus one line in `TABLES`. Withdrawing one is
   deleting those and moving its code to `RETIRED` in `i18n/languages.ts` with the
@@ -946,8 +949,9 @@ whose contract is `ports/CommandChannel.contract.ts`.
   for. Log messages and keys, never model content — the desktop writes the
   trail to a file the user is invited to hand over.
 - **Only syntax that erases.** Both tsconfigs set `erasableSyntaxOnly`: no
-  parameter properties, enums, namespaces or `import =`, because a server loads
-  core's files by path under Node's type stripping.
+  parameter properties, enums, namespaces or `import =`, because a build
+  composed from this one loads core's files by path under Node's type
+  stripping.
 - **A unit stays small enough to read.** A function's complexity is at most 25
   and its length at most 150 lines (`MOST_COMPLEX`, `LONGEST_FUNCTION` in
   `eslint.config.js`); the files already over either are listed in `GROWN` at

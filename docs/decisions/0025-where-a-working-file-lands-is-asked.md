@@ -1,6 +1,8 @@
 # ADR-0025 — Where a working file lands is asked
 
-* Status: accepted; amended 24 September 2026 (a snapshot before a replace)
+* Status: accepted; amended 24 September 2026 (a snapshot before a replace);
+  amended by ADR-0031, 29 September 2026 (the snapshot before a replace is an
+  entry in whatever history the source keeps)
 * Date: 2026-09-22
 * Deciders: Wouter Simons
 * Closes: the question ADR-0018 and ADR-0023 left open — whether opening a
