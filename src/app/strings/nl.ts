@@ -75,7 +75,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'seal.confirmEnter': 'Openen',
   'openInto.title': 'Waar moet “{name}” heen?',
   'openInto.body': 'Een WorkingFile is een hele organisatie. Het kan een eigen werkmap worden, of vervangen wat hier open staat.',
-  'openInto.hereWarning': 'Vervangen schrijft over “{scope}” en elke scope eronder heen. Waar de map een geschiedenis bijhoudt, wordt eerst een momentopname gemaakt en kan wat er nu staat daaruit teruggezet worden; waar niet, is wat er nu staat weg.',
+  'openInto.hereWarning': 'Vervangen schrijft over “{scope}” en elke scope eronder heen. Waar hier een geschiedenis wordt bijgehouden, wordt eerst een momentopname gemaakt en kan wat er nu staat daaruit teruggezet worden; waar niet, is wat er nu staat weg.',
   'openInto.herePutsBack': '“{scope}” kon niet helemaal worden gelezen; dit zet hem terug uit het bestand, en bewaart wat niet gelezen kon worden.',
   'openInto.here': '“{scope}” hier vervangen',
   'openInto.elsewhere': 'Een nieuwe map…',
@@ -195,7 +195,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'history.labelField': 'Label',
   'history.labelConfirm': 'Label',
   'history.labelled': 'Label gegeven.',
-  'history.labelExists': 'Deze map heeft al een label met die naam. Kies een ander woord.',
+  'history.labelExists': 'Er is hier al een label met die naam. Kies een ander woord.',
   'history.labelUnnamed': 'Een label heeft een woord nodig.',
 
   'change.elementAdded': '{name} toegevoegd',

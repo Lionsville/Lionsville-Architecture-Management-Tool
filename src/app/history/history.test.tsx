@@ -573,6 +573,6 @@ describe('a label on a snapshot (ADR-0008)', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Label…' }))
     fireEvent.change(await screen.findByLabelText('Label'), { target: { value: 'shown to the BOARD' } })
     fireEvent.click(screen.getByRole('button', { name: 'Label' }))
-    expect((await screen.findByRole('alert', { hidden: true })).textContent).toContain('already has a label with that name')
+    expect((await screen.findByRole('alert', { hidden: true })).textContent).toContain('A label with that name is already here')
   })
 })

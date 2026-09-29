@@ -147,7 +147,7 @@ export const EN = {
    */
   'openInto.title': 'Where should “{name}” go?',
   'openInto.body': 'A working file is a whole organisation. It can become a working folder of its own, or replace what is open here.',
-  'openInto.hereWarning': 'Replacing writes over “{scope}” and every scope filed under it. Where the folder keeps a history, a snapshot is taken first and what is there now can be restored from it; where it does not, what is there now is gone.',
+  'openInto.hereWarning': 'Replacing writes over “{scope}” and every scope filed under it. Where a history is kept here, a snapshot is taken first and what is there now can be restored from it; where none is, what is there now is gone.',
   /** Over a scope that could not be read whole: replacing it is putting it back (`ScopeState.unreadable`). */
   'openInto.herePutsBack': '“{scope}” could not be read whole; this puts it back from the file, and keeps what could not be read.',
   'openInto.here': 'Replace “{scope}” here',
@@ -321,7 +321,7 @@ export const EN = {
   'history.labelField': 'Label',
   'history.labelConfirm': 'Label',
   'history.labelled': 'Labelled.',
-  'history.labelExists': 'This folder already has a label with that name. Pick another word.',
+  'history.labelExists': 'A label with that name is already here. Pick another word.',
   'history.labelUnnamed': 'A label needs a word in it.',
 
   // The sentences a change becomes. One per kind and subject, because "Added"

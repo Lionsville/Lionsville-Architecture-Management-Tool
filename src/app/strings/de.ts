@@ -75,7 +75,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'seal.confirmEnter': 'Öffnen',
   'openInto.title': 'Wohin soll „{name}“?',
   'openInto.body': 'Eine Arbeitsdatei ist eine ganze Organisation. Sie kann ein eigener Arbeitsordner werden oder ersetzen, was hier geöffnet ist.',
-  'openInto.hereWarning': 'Ersetzen überschreibt „{scope}“ und jeden Bereich darunter. Wo der Ordner einen Verlauf führt, wird zuerst eine Momentaufnahme festgehalten, aus der sich das Jetzige wiederherstellen lässt; wo nicht, ist das Jetzige verloren.',
+  'openInto.hereWarning': 'Ersetzen überschreibt „{scope}“ und jeden Bereich darunter. Wo hier ein Verlauf geführt wird, wird zuerst eine Momentaufnahme festgehalten, aus der sich das Jetzige wiederherstellen lässt; wo nicht, ist das Jetzige verloren.',
   'openInto.herePutsBack': '„{scope}“ konnte nicht ganz gelesen werden; dies holt ihn aus der Datei zurück und bewahrt auf, was nicht gelesen werden konnte.',
   'openInto.here': '„{scope}“ hier ersetzen',
   'openInto.elsewhere': 'Ein neuer Ordner…',
@@ -195,7 +195,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'history.labelField': 'Beschriftung',
   'history.labelConfirm': 'Beschriften',
   'history.labelled': 'Beschriftet.',
-  'history.labelExists': 'Dieser Ordner hat bereits eine Beschriftung mit diesem Namen. Wählen Sie ein anderes Wort.',
+  'history.labelExists': 'Hier gibt es bereits eine Beschriftung mit diesem Namen. Wählen Sie ein anderes Wort.',
   'history.labelUnnamed': 'Eine Beschriftung braucht ein Wort.',
 
   'change.elementAdded': '{name} hinzugefügt',
@@ -275,7 +275,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'settings.defaultAuthorHelp': 'Wird auf einem exportierten Diagramm ohne eigenen Autor genannt.',
   'settings.defaultColumns': 'Die betrieblichen Aspekte, mit denen eine neue Landschaft beginnt.',
 
-  'prefs.title': 'Einstellungen',
+  'prefs.title': 'Voreinstellungen',
   'prefs.general': 'ALLGEMEIN',
   'prefs.language': 'Sprache',
   'prefs.theme': 'Design',

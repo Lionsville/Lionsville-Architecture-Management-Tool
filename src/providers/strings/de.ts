@@ -59,7 +59,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'folder.where': 'Alles hier wird als Dateien im Ordner oben aufbewahrt.',
   'folder.unreadableScope': '{files} in diesem Bereich konnte nicht gelesen werden, deshalb ist er zum Ansehen geöffnet und nicht zum Ändern: eine Änderung würde verlieren, was er enthält. Reparieren Sie die Datei und öffnen Sie den Bereich erneut, holen Sie ihn aus dem Verlauf zurück, oder bringen Sie eine Arbeitsdatei ein.',
   'browser.where': 'Alles hier wird in diesem Browser aufbewahrt.',
-  'memory.where': 'Alles hier wird noch nirgends \u2014 speichern Sie eine Arbeitsdatei, um es zu behalten aufbewahrt.',
+  'memory.where': 'Alles hier wird noch nirgends aufbewahrt \u2014 speichern Sie eine Arbeitsdatei, um es zu behalten.',
   'shell.storageNearlyFull':
     'Dieser Browser ist für diese App zu etwa {percent}% voll. Speichern Sie Ihre Arbeit in einem Ordner '
     + 'oder einer Datei, bevor der Platz ausgeht — ein Browser hört ohne Nachfrage auf zu speichern.',

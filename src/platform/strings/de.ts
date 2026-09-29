@@ -21,7 +21,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'menu.snapshot': 'Snapshot erstellen…',
   'menu.history': 'Verlauf…',
   'menu.connectAgent': 'Agent verbinden…',
-  'menu.preferences': 'Einstellungen…',
+  'menu.preferences': 'Voreinstellungen…',
   'menu.settings': 'Einstellungen…',
   'menu.theme': 'Design',
   'menu.themeLight': 'Hell',
