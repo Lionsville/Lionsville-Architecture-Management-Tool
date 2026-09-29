@@ -34,8 +34,9 @@ ist die neueste Version, ohne etwas zu installieren. Sie können sie auch aus
 einem Klon des Repositorys starten: einmal `npm run setup`, danach
 `npm run dev`, und öffnen Sie <http://127.0.0.1:5200>. Wo der Browser es
 anbietet (Chromium tut das), kann ein Tab genau wie der Desktop in einem Ordner
-arbeiten. Sonst wird Ihre Arbeit in diesem Browser aufbewahrt, und in einem
-privaten Fenster nur, solange der Tab offen ist. *Wo Ihre Arbeit aufbewahrt
+arbeiten. Sonst wird Ihre Arbeit in diesem Browser aufbewahrt; ein privates
+Fenster
+hält sie nur so lange, wie der Browser es tut. *Wo Ihre Arbeit aufbewahrt
 wird* sagt mehr.
 
 In beiden Fällen verlässt nichts Ihren Rechner. Es gibt kein Konto, kein
@@ -119,7 +120,7 @@ Unternehmenskarte oder eine Technologielandschaft.
   gespeicherte Arbeitsdatei bleibt unberührt. Die Organisation selbst kann nicht
   gelöscht werden: unter ihr ist alles andere abgelegt.
 
-Das Etikett rechts in der Leiste sagt, wo Ihre Arbeit aufbewahrt wird: den
+Das Etikett rechts in der Leiste sagt, wo Ihre Arbeit aufbewahrt wird: der
 Ordner, in dem Ihre Projekte als Dateien liegen, **In diesem Browser**, oder
 **Nirgends gespeichert**. **Aus einem anderen Ordner arbeiten…** daneben
 richtet die App auf einen anderen Ordner aus, und ein Browser ohne Ordner
@@ -276,7 +277,7 @@ dem Zuhause der Organisation sagt, an welchem:
 - **in einem Ordner**: dem des Desktops, oder dem eines Browser-Tabs, wo der
   Browser einen anbietet;
 - **in diesem Browser**: ein Tab ohne Ordner;
-- **nirgends**: ein Tab, in dem der Browser nichts aufbewahrt.
+- **nirgends**: ein Tab, in dem sich der Speicher des Browsers nicht öffnet.
 
 Die Arbeitsdatei (siehe *Speichern, Exportieren, Weitergeben*) bringt Ihre
 ganze Organisation von jedem dieser Orte an jeden anderen.
@@ -309,8 +310,9 @@ dem Sie noch keinen Namen gegeben haben, heißt wie der Ordner selbst.
 
 **Ein Ordner aus einer älteren Version lässt sich öffnen.** Wenn diese Version
 zum ersten Mal einen sieht, wandelt sie den ganzen Baum um (`project.json` und
-`group.json` werden zu `scope.json`). Wo der Ordner einen Verlauf führt, hält
-sie zuerst fest, wie der Ordner vorher aussah. Ein zweiter Durchlauf tut
+`group.json` werden zu `scope.json`). Auf dem Desktop, wo der Ordner ein
+git-Repository ist, hält sie zuerst fest, wie der Ordner vorher aussah. Ein
+zweiter Durchlauf tut
 nichts.
 
 Nichts ist in der App versteckt. Legen Sie den Ordner in OneDrive, in Dropbox,
@@ -342,15 +344,17 @@ in diesen Ordner mitnehmen?**:
 So oder so wird nichts gelöscht; der Browser behält seine Kopie.
 
 **Ein Ordner mit einem Remote.** Ist der Ordner ein git-Repository mit einem
-Remote, hat *Einstellungen* zwei Schalter für diesen Ordner auf diesem Rechner:
+Remote, hat *Voreinstellungen* zwei Schalter für diesen Ordner auf diesem
+Rechner:
 **Beim Öffnen dieses Ordners vom Remote holen** und **Nach jeder Momentaufnahme
 pushen**. Sind der Ordner und sein Remote beide weitergegangen, bietet ein
 Streifen:
-- **Die vom Remote**: die Version des Remotes gilt;
-- **Unsere behalten**: unsere gilt, festgehalten als Merge.
+- **Die vom Remote**: die Version des Remotes gilt, und unsere bleibt auf
+  einem eigenen Branch erhalten;
+- **Unsere behalten**: unsere gilt, festgehalten als Merge auf dem Branch, auf
+  dem Sie stehen.
 
-Unsere bleibt so oder so auf einem Branch erhalten, und was offen ist, wird
-zuerst geschrieben.
+So oder so wird zuerst geschrieben, was offen ist.
 
 Auch ein Browser-Tab kann in einem Ordner arbeiten, wo der Browser es anbietet
 (Chromium tut das). Die Berechtigung überlebt einen Neustart selten, und sie zu
@@ -379,14 +383,21 @@ die hier seither getan wurde. Hat sich ein Bereich an beiden Stellen geändert,
 fragt ein Streifen nach diesem Bereich: **Die ältere Kopie übernehmen** (was
 hier ist, geht zuerst in den Verlauf) oder **Behalten, was hier ist**.
 
-**Ein Tab, der nichts aufbewahrt.** Ein privates Fenster, oder ein Browser, der
-für diese Website nichts aufbewahrt, kann Ihre Arbeit nicht halten. Die App
-funktioniert trotzdem, und ein Streifen sagt es auf jedem Bildschirm. Das
-Etikett auf dem Zuhause der Organisation sagt **Nirgends gespeichert** in der
-Warnfarbe, und die Zeile unter dem Namen und der Verlauf sagen es auch. Arbeit,
-die eine ältere Version in
-diesem Browser aufbewahrt hat, wird angezeigt, und nichts, was Sie ändern,
-wird aufbewahrt. Speichern Sie eine Arbeitsdatei, bevor Sie den Tab schließen.
+**Ein privates Fenster** hält Ihre Arbeit nur so lange, wie der Browser es
+tut. Die meisten Browser öffnen ihren Speicher auch dort, also sagt das
+Etikett **In diesem Browser**, und alles geht, wenn das Fenster schließt. Die
+App kann nicht erkennen, dass das Fenster privat ist: speichern Sie eine
+Arbeitsdatei, um Ihre Arbeit zu behalten.
+
+**Wo sich der Speicher des Browsers nicht öffnet**, arbeitet die App aus dem
+Arbeitsspeicher, und nichts, was Sie ändern, wird aufbewahrt. Ein Streifen auf
+jedem Bildschirm sagt das. Das Etikett auf dem Zuhause der Organisation sagt
+**Nirgends gespeichert**, in der Warnfarbe. Die Zeile unter dem Namen sagt
+*Alles hier wird noch nirgends aufbewahrt — speichern Sie eine Arbeitsdatei, um
+es zu behalten.*, und die erste Momentaufnahme sagt *Momentaufnahmen bleiben
+erhalten, solange dieser Tab offen ist, und gehen mit ihm.* Arbeit, die eine
+ältere Version in diesem Browser aufbewahrt hat, wird angezeigt. Speichern Sie
+eine Arbeitsdatei, bevor Sie den Tab schließen.
 
 Hat der Speicher des Browsers nach ein paar Sekunden noch nicht geantwortet,
 wird die Seite trotzdem gezeichnet. Ein Streifen sagt das, und Ihre Arbeit
@@ -400,13 +411,14 @@ einem anderen Tab. Die Leiste sagt dann **Anderswo geändert**, oder **Hier und
 anderswo geändert**, wenn Sie hier auch ungespeicherte Änderungen haben. Ein
 Streifen über der Zeichenfläche fragt, welche Version gilt:
 - **Die von anderswo** liest deren Version und zeigt sie an.
-- **Meine behalten** behält, was auf Ihrem Bildschirm ist, und schreibt es über
-  deren Version, ganz, auch wo eine Ihrer Änderungen sich nicht über deren
-  legen ließ.
+- **Meine behalten** spielt Ihre Änderungen auf deren Version nach, sodass
+  deren Änderungen an dem, was Sie nicht berührt haben, bleiben. Nur wo das
+  abgelehnt wird, schreibt es den ganzen Bereich, wie er auf Ihrem Bildschirm
+  ist, über deren Version.
 - **Kopie speichern…**, mit ungespeicherten Änderungen hier, legt Ihre zuerst
   in eine Arbeitsdatei und lässt die Entscheidung für später.
 
-Es gibt kein Zusammenführen, und nichts wird ohne Nachfrage überschrieben.
+Nichts wird ohne Nachfrage überschrieben.
 
 ## Verlauf
 
@@ -414,14 +426,16 @@ Jeder Ort führt einen Verlauf Ihrer Arbeit. **Snapshot…** im Menü File (im
 Web im Menü **⋯**: **Snapshot erstellen…**) bietet eine Nachricht an, die schon
 aus dem geschrieben ist, was Sie getan haben, etwa „Lagerverwaltung geändert,
 3 Elemente verschoben“, und die Sie bearbeiten können, bevor sie festgehalten
-wird. Die erste Momentaufnahme bittet Sie, **Verlauf führen**, und sagt, wo er
+wird. Die erste Momentaufnahme bietet **Verlauf führen** an und sagt, wo er
 aufbewahrt wird:
 - im Ordner selbst, mit git;
 - in diesem Browser, für den Ordner eines Tabs (dafür wird nichts in den
   Ordner geschrieben) und für einen Tab ohne Ordner;
-- solange der Tab offen ist, in einem Tab, der nichts aufbewahrt.
+- solange der Tab offen ist, wo sich der Speicher des Browsers nicht öffnet.
 
-So oder so verlässt nichts den Rechner. Auf dem Desktop braucht der Verlauf
+Nichts verlässt den Rechner, es sei denn, Sie haben für einen Ordner mit
+einem Remote **Nach jeder Momentaufnahme pushen** eingeschaltet. Auf dem Desktop
+braucht der Verlauf
 **git** auf dem Rechner: ohne git wird eine Momentaufnahme mit einem Satz
 abgelehnt, der das sagt, und alles andere funktioniert wie gewohnt.
 
@@ -462,14 +476,16 @@ lässt Elemente weg, die nicht mehr existieren, und sagt, wie viele.
 **Beschriftungen.** **Beschriften…** auf einer gewählten Momentaufnahme gibt ihr
 ein eigenes Wort — „Dem Vorstand gezeigt“ — das neben ihrer Nachricht steht, nie
 an ihrer Stelle. Eine Beschriftung reist mit dem Verlauf, sodass ein Kollege
-dieselbe Markierung an derselben Stelle sieht; in einem Ordner ist sie ein
-git-Tag, den jeder git-Client zeigt. Zwei Beschriftungen mit demselben Namen
-werden abgelehnt; wählen Sie ein anderes Wort.
+dieselbe Markierung an derselben Stelle sieht; im Ordner des Desktops ist sie
+ein git-Tag, den jeder git-Client zeigt. Zwei Beschriftungen mit demselben
+Namen werden abgelehnt, überall in einem Ordner und innerhalb eines Bereichs in
+einem Browser; wählen Sie ein anderes Wort.
 
 **Momentaufnahmen, die die App selbst macht**, wo ein Verlauf geführt wird:
-bevor eine Arbeitsdatei ersetzt, was hier ist, bevor ein Ordner von seinem
-Remote geholt wird, und bevor ein Ordner aus einer älteren Version umgewandelt
-wird. Jede ist nach dem benannt, dem sie voranging, sodass das, was da war,
+bevor eine Arbeitsdatei ersetzt, was hier ist, und, auf dem Desktop, bevor
+ein Ordner von seinem Remote geholt wird und bevor ein Ordner aus einer älteren
+Version umgewandelt wird. Jede ist nach dem benannt, dem sie voranging, sodass
+das, was da war,
 wiederhergestellt werden kann.
 
 ## Der Arbeitsbereich
@@ -480,7 +496,7 @@ Ein offenes Projekt: eine Leiste oben, der Editor darunter.
 |---|---|
 | **Die Brotkrumen** | Die Organisation, jeder Bereich dazwischen, und der offene fett; jeder ist ein Weg zum Zuhause dieses Bereichs, und der Name der Organisation ist der Weg zurück zum ersten Bildschirm |
 | **Einstellungen…** | Der Name dieses Bereichs und wo er abgelegt ist, und seine Standardwerte: der Autor, der auf einem exportierten Diagramm genannt wird, und die betrieblichen Aspekte, mit denen eine neue Landschaft beginnt. Einen Bereich zu verschieben legt ihn unter einem anderen ab und lässt seinen Inhalt unberührt |
-| **⋯** | In einem Browser das Menü: **Öffnen…**, **Speichern**, **Kopie der Arbeitsdatei speichern…**, **Snapshot erstellen…**, **Verlauf…**, das Design und Help. Auf dem Desktop stehen dieselben Einträge in der Menüleiste |
+| **⋯** | In einem Browser das Menü: **Ordner öffnen…**, wo der Browser einen anbietet, **Öffnen…**, **Speichern**, **Kopie der Arbeitsdatei speichern…**, **Snapshot erstellen…**, **Verlauf…**, **Agent verbinden…**, das Design, **Voreinstellungen…**, und unter Hilfe **Handbuch**, **Tastenkürzel…** und **Desktop-App herunterladen**. Auf dem Desktop stehen dieselben Einträge, bis auf den letzten, in der Menüleiste |
 | **Aktivität** | Was sich an diesem Projekt seit dem Öffnen geändert hat — eine Liste benannter Schritte mit der Uhrzeit jedes einzelnen. Nur lesend: ⌘Z ist der Weg zurück |
 | **Gespeichert · hh:mm** | Wo das Projekt steht: die Uhrzeit, zu der es zuletzt geschrieben wurde, oder **Ungespeicherte Änderungen**, **Wird gespeichert…**, **Anderswo geändert**, **Hier und anderswo geändert**, **Nicht gespeichert — Speicher verweigert** |
 
@@ -492,8 +508,8 @@ Browser ohne Ordner sagt die App
 einmal, wenn ihr Speicher zu etwa vier Fünfteln voll ist. Das ist die einzige
 Warnung, die Sie bekommen, weil ein Browser ohne Nachfrage aufhört zu speichern.
 Wird ein Speichern verweigert, sagt die Leiste **Nicht gespeichert — Speicher
-verweigert**, und der Editor arbeitet weiter. In einem Tab, der nichts
-aufbewahrt, sagt ein Streifen es von Anfang an. Speichern Sie in beiden Fällen
+verweigert**, und der Editor arbeitet weiter. Wo sich der Speicher des Browsers
+nicht öffnet, sagt ein Streifen es von Anfang an. Speichern Sie in beiden Fällen
 eine Arbeitsdatei, denn sonst ist die Arbeit weg, wenn der Tab geschlossen
 wird.
 Jede Meldung (gespeichert, geladen, fehlgeschlagen) erscheint in dieser unteren
@@ -1443,7 +1459,7 @@ eine neue Sitzung und der Streifen ist wieder da.
 Alles, was ein Agent ändert, steht unter seinem Namen in der Aktivität und
 wird wie bisher mit ⌘Z rückgängig gemacht.
 
-## Einstellungen
+## Voreinstellungen
 
 Raster, Einrasten, Lebenszyklus-Abzeichen, eingeklappte Panels und ihre Breiten,
 die Übersichtskarte, die Aufräum-Einstellungen, die Sprache und das Design

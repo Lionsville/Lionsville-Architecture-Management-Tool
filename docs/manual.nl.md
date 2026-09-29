@@ -32,8 +32,8 @@ is de nieuwste release, zonder iets te installeren. Je kunt hem ook draaien
 vanuit een kloon van de repository: eenmalig `npm run setup`, daarna
 `npm run dev`, en open <http://127.0.0.1:5200>. Waar de browser het aanbiedt
 (Chromium doet dat), kan een tabblad net als de desktop in een map werken.
-Anders wordt je werk in die browser bewaard, en in een privévenster alleen
-zolang het tabblad open is. *Waar je werk wordt bewaard* zegt meer.
+Anders wordt je werk in die browser bewaard; een privévenster houdt het maar
+zo lang als de browser dat doet. *Waar je werk wordt bewaard* zegt meer.
 
 In beide gevallen verlaat niets je computer. Er is geen account, geen backend
 en geen telemetrie.
@@ -257,7 +257,7 @@ van de organisatie zegt welke:
 - **in een map**: die van de desktop, of van een browsertabblad waar de
   browser er een aanbiedt;
 - **in deze browser**: een tabblad zonder map;
-- **nergens**: een tabblad waarin de browser niets bewaart.
+- **nergens**: een tabblad waarin de opslag van de browser niet opengaat.
 
 Het werkbestand (zie *Bewaren, exporteren, delen*) brengt je hele organisatie
 van elk van die plekken naar elke andere.
@@ -290,8 +290,8 @@ geen naam gaf, heet zoals de map zelf.
 
 **Een map van een oudere versie opent gewoon.** De eerste keer dat deze versie
 er een ziet, zet hij de hele boom om (`project.json` en `group.json` worden
-`scope.json`). Waar de map een geschiedenis bijhoudt, legt hij eerst vast hoe
-de map eruitzag. Nog een keer draaien doet niets.
+`scope.json`). Op de desktop, waar de map een git-repository is, legt hij
+eerst vast hoe de map eruitzag. Nog een keer draaien doet niets.
 
 Er zit niets verstopt in de app. Zet de map in OneDrive, in Dropbox, op een
 netwerkschijf of in een git-repository en hij gedraagt zich zoals alles daar.
@@ -323,11 +323,12 @@ heeft *Voorkeuren* twee schakelaars voor deze map op deze machine: **Van de
 remote ophalen als deze map wordt geopend** en **Na elke momentopname
 pushen**. Zijn de map en haar remote allebei verder gegaan, dan biedt een
 strook:
-- **Die van de remote**: de versie van de remote blijft;
-- **Die van ons**: de onze blijft, vastgelegd als merge.
+- **Die van de remote**: de versie van de remote blijft, en de onze wordt op
+  een eigen branch bewaard;
+- **Die van ons**: de onze blijft, vastgelegd als merge op de branch waarop
+  je staat.
 
-De onze blijft in beide gevallen op een branch bewaard, en wat open staat
-wordt eerst geschreven.
+In beide gevallen wordt wat open staat eerst geschreven.
 
 Een browsertabblad kan ook in een map werken, waar de browser dat aanbiedt
 (Chromium doet dat). De toestemming overleeft een herstart zelden, en erom
@@ -355,14 +356,19 @@ die tijd is gedaan. Is een onderdeel op beide plekken veranderd, dan vraagt een
 strook naar dat onderdeel: **De oudere kopie overnemen** (wat hier staat gaat
 eerst de geschiedenis in) of **Houden wat hier staat**.
 
-**Een tabblad dat niets bewaart.** Een privévenster, of een browser die voor
-deze site niets bewaart, kan je werk niet houden. De app werkt gewoon, en een
-strook zegt dat op elk scherm. Het label op het
-thuis van de organisatie zegt **Nergens bewaard** in de waarschuwingskleur, en
-de regel onder de naam en de geschiedenis zeggen het ook.
-Werk dat een oudere versie in deze browser bewaarde, wordt getoond, en niets
-wat je verandert wordt bewaard. Bewaar een werkbestand voordat je het tabblad
-sluit.
+**Een privévenster** houdt je werk maar zo lang als de browser dat doet. De
+meeste browsers openen hun opslag daar ook, dus het label zegt **In deze
+browser**, en alles verdwijnt als het venster sluit. De app kan niet zien dat
+het venster privé is: bewaar een werkbestand om je werk te houden.
+
+**Waar de opslag van de browser niet opengaat**, werkt de app vanuit het
+geheugen en wordt niets wat je verandert bewaard. Een strook op elk scherm zegt
+dat. Het label op het thuis van de organisatie zegt **Nergens bewaard**, in de
+waarschuwingskleur. De regel onder de naam zegt *Alles hier wordt nog nergens
+bewaard — bewaar een werkbestand om het te houden.*, en de eerste momentopname
+zegt *Momentopnamen blijven bewaard zolang dit tabblad open is, en gaan ermee
+weg.* Werk dat een oudere versie in deze browser bewaarde, wordt getoond. Bewaar
+een werkbestand voordat je het tabblad sluit.
 
 Heeft de opslag van de browser na een paar seconden nog niet geantwoord, dan
 wordt de pagina toch getekend. Een strook zegt dat, en je werk verschijnt
@@ -370,19 +376,21 @@ zodra de opslag antwoordt.
 
 ### Als het elders is gewijzigd
 
-Een onderdeel kan veranderen terwijl je het open hebt: een collega, een
-synchronisatiedienst, jijzelf op een andere machine of in een ander tabblad.
+Een onderdeel kan veranderen terwijl je het open hebt: de checkout van een
+collega, een synchronisatiedienst, jijzelf op een andere machine of in een ander
+tabblad.
 De balk zegt dan **Elders gewijzigd**, of **Hier én elders gewijzigd** als er
 hier ook wijzigingen openstaan. Een strook boven de plaat vraagt welke versie
 blijft:
 - **Die van elders** leest hun versie en zet die in beeld.
-- **Die van mij** houdt wat op je scherm staat en schrijft het over het hunne,
-  helemaal, ook waar een van jouw wijzigingen niet over de hunne te leggen
-  was.
+- **Die van mij** speelt jouw wijzigingen opnieuw af op hun versie, zodat hun
+  wijzigingen aan wat jij niet aanraakte blijven staan. Alleen waar dat wordt
+  geweigerd, schrijft het het hele onderdeel zoals het op je scherm staat over
+  het hunne.
 - **Kopie bewaren…**, met wijzigingen die hier openstaan, zet de jouwe eerst in
   een werkbestand en laat de keuze voor later.
 
-Er is geen samenvoegen, en er wordt nooit iets ongevraagd overschreven.
+Er wordt nooit iets ongevraagd overschreven.
 
 ## Geschiedenis
 
@@ -395,9 +403,10 @@ bewaard:
 - in de map zelf, met git;
 - in deze browser, voor de map van een tabblad (daarvoor wordt niets in de
   map geschreven) en voor een tabblad zonder map;
-- zolang het tabblad open is, in een tabblad dat niets bewaart.
+- zolang het tabblad open is, waar de opslag van de browser niet opengaat.
 
-Er gaat in geen van alle gevallen iets van je machine af. Op de desktop heeft
+Er gaat niets van je machine af, tenzij je voor een map met een remote **Na elke
+momentopname pushen** hebt aangezet. Op de desktop heeft
 de geschiedenis **git** op de machine nodig: zonder git wordt een momentopname
 geweigerd met een zin die dat zegt, en werkt de rest precies zoals eerst.
 
@@ -435,13 +444,15 @@ teruggezet aanzicht laat elementen weg die niet meer bestaan, en zegt hoeveel.
 **Labels.** **Label…** bij een gekozen momentopname geeft haar een eigen woord
 — "Aan de directie getoond" — naast haar boodschap, nooit in plaats ervan. Een
 label reist mee met de geschiedenis, zodat een collega hetzelfde merkteken op
-dezelfde plek ziet; in een map is het een git-tag, die elke git-client toont.
-Twee labels met dezelfde naam worden geweigerd; kies een ander woord.
+dezelfde plek ziet; in de map van de desktop is het een git-tag, die elke
+git-client toont. Twee labels met dezelfde naam worden geweigerd, overal in een
+map en binnen één onderdeel in een browser; kies een ander woord.
 
 **Momentopnamen die de app zelf maakt**, waar een geschiedenis wordt
-bijgehouden: voordat een werkbestand vervangt wat hier staat, voordat een map
-van haar remote wordt opgehaald, en voordat een map van een oudere versie wordt
-omgezet. Elk heet naar waar hij aan voorafging, zodat wat er stond kan worden
+bijgehouden: voordat een werkbestand vervangt wat hier staat, en, op de
+desktop, voordat een map van haar remote wordt opgehaald en voordat een map van
+een oudere versie wordt omgezet. Elk heet naar waar hij aan voorafging, zodat
+wat er stond kan worden
 teruggezet.
 
 ## De werkruimte
@@ -452,7 +463,7 @@ Eén open project: een balk bovenin, de editor eronder.
 |---|---|
 | **Het kruimelpad** | De organisatie, elk onderdeel ertussen, en het open onderdeel vet; elk is een weg naar het thuis van dat onderdeel, en de naam van de organisatie is de weg terug naar het eerste scherm |
 | **Instellingen…** | Naam van dit onderdeel en waaronder het valt, en zijn standaarden: de auteur op een geëxporteerd diagram, en de operationele aspecten waar een nieuw landschap mee begint. Een onderdeel onder een ander zetten laat de inhoud met rust |
-| **⋯** | In een browser het menu: **Openen…**, **Bewaren**, **Kopie van het werkbestand bewaren…**, **Momentopname…**, **Geschiedenis…**, het thema en Help. Op de desktop staan dezelfde onderdelen in de menubalk |
+| **⋯** | In een browser het menu: **Map openen…** waar de browser er een aanbiedt, **Openen…**, **Bewaren**, **Kopie van het werkbestand bewaren…**, **Momentopname…**, **Geschiedenis…**, **Agent koppelen…**, het thema, **Voorkeuren…**, en onder Help **Handleiding**, **Sneltoetsen…** en **Desktop-app downloaden**. Op de desktop staan dezelfde onderdelen, op de laatste na, in de menubalk |
 | **Activiteit** | Wat er sinds het openen aan dit project is veranderd — een lijst met benoemde stappen en het tijdstip van elke. Alleen lezen: ⌘Z is hoe je teruggaat |
 | **Bewaard · uu:mm** | Hoe het project ervoor staat: het tijdstip van de laatste schrijfactie, of **Nog niet bewaarde wijzigingen**, **Bezig met bewaren…**, **Elders gewijzigd**, **Hier én elders gewijzigd**, **Niet bewaard — opslag weigert** |
 
@@ -464,7 +475,8 @@ zegt de app één keer dat de
 opslag voor viervijfde vol zit. Dat is de enige waarschuwing die je krijgt,
 want een browser stopt zonder te vragen met bewaren. Wordt bewaren geweigerd,
 dan zegt de balk **Niet bewaard — opslag weigert** en werkt de editor gewoon
-door. In een tabblad dat niets bewaart zegt een strook dat vanaf het begin.
+door. Waar de opslag van de browser niet opengaat, zegt een strook dat vanaf het
+begin.
 Bewaar
 in beide gevallen een werkbestand, want anders is het werk weg als het tabblad
 sluit. Elke melding (bewaard, geladen, mislukt) verschijnt in

@@ -31,8 +31,8 @@ is the newest release, with nothing installed. You can also run it from a
 clone of the repository: `npm run setup` once, then `npm run dev`, and open
 <http://127.0.0.1:5200>. Where the browser offers it (Chromium does), a tab
 can work in a folder just as the desktop does. Otherwise your work is kept in
-that browser, and in a private window only for as long as the tab is open.
-*Where your work is kept* says more.
+that browser; a private window keeps it only as
+long as the browser does. *Where your work is kept* says more.
 
 Nothing leaves your machine either way. There is no account, no backend and no
 telemetry.
@@ -246,7 +246,7 @@ which in the line under its name:
 
 - **a folder**: the desktop's, or a browser tab's where the browser offers one;
 - **this browser**: a tab with no folder;
-- **nowhere**: a tab where the browser keeps nothing.
+- **nowhere**: a tab where the browser's storage will not open.
 
 The working file (see *Saving, exporting, sharing*) carries your whole
 organisation from any one of them to any other.
@@ -279,8 +279,8 @@ name.
 
 **A folder from an older version opens.** The first time this version sees one
 it converts the whole tree (`project.json` and `group.json` become
-`scope.json`). Where the folder keeps a history, it records what the folder
-looked like first. Running it again does nothing.
+`scope.json`). On the desktop, where the folder is a git repository, it
+records what the folder looked like first. Running it again does nothing.
 
 Nothing is hidden inside the app. Put the folder in OneDrive, in Dropbox, on a
 network share or in a git repository and it behaves the way anything else there
@@ -309,10 +309,11 @@ Nothing is deleted either way; the browser keeps its copy.
 *Preferences* has two switches for this folder on this machine: **Pull from the
 remote when this folder is opened** and **Push after every snapshot**. When the
 folder and its remote have both moved on, a strip offers:
-- **Take theirs**: the remote's version stands;
-- **Keep ours**: ours stands, recorded as a merge.
+- **Take theirs**: the remote's version stands, and ours is kept on a branch
+  of its own;
+- **Keep ours**: ours stands, recorded as a merge on the branch you are on.
 
-Ours is kept on a branch either way, and what is open is written first.
+Either way, what is open is written first.
 
 A browser tab can work in a folder too, where the browser offers it (Chromium
 does). The permission rarely survives a restart, and asking for it needs a
@@ -339,13 +340,18 @@ moved, and never over work done here since. Where a scope changed in both
 places, a strip asks about that scope: **Bring the older copy over** (what is
 here goes into the history first) or **Keep what is here**.
 
-**A tab that keeps nothing.** A private window, or a browser that will not keep
-anything for this site, cannot hold your work. The app still works, and a strip
-says so on every screen. The chip on the
-organisation's home says **Not kept anywhere** in the warning colour, and so
-do the line under its name and the history. Work an older version
-kept in this browser is shown, and nothing you change is kept. Save a working
-file before you close the tab.
+**A private window** keeps your work only as long as the browser does. Most
+browsers open their storage there too, so the chip says **In this browser**,
+and everything goes when the window closes. The app cannot tell that the
+window is private: save a working file to keep your work.
+
+**Where the browser's storage will not open**, the app works from memory and
+nothing you change is kept. A strip on every screen says so. The chip on the
+organisation's home says **Not kept anywhere**, in the warning colour. The line
+under the name says *Everything here is kept nowhere yet — save a working file
+to keep it.*, and the first snapshot says *Snapshots are kept for as long as
+this tab is open, and go with it.* Work an older version kept in this browser
+is shown. Save a working file before you close the tab.
 
 If the browser's storage has not answered within a few seconds, the page is
 drawn anyway. A strip says so, and your work appears when the storage answers.
@@ -357,12 +363,13 @@ client, you on another machine or in another tab. The bar then says **Changed
 elsewhere**, or **Changed here and elsewhere** when you have unsaved changes
 too. A strip above the canvas asks which version stands:
 - **Take theirs** reads their version and puts it on screen.
-- **Keep mine** keeps what is on your screen and writes it over theirs, all of
-  it, even where one of your changes could not be laid over theirs.
+- **Keep mine** replays your changes onto their version, so their edits to
+  things you did not touch survive. Only where that is refused does it write
+  the whole scope as it is on your screen over theirs.
 - **Save a copy…**, with unsaved changes here, puts yours in a working file
   first and leaves the decision for later.
 
-There is no merge, and nothing is overwritten without asking.
+Nothing is overwritten without asking.
 
 ## History
 
@@ -374,9 +381,10 @@ history**, and says where it will be kept:
 - in the folder itself, using git;
 - in this browser, for a tab's folder (nothing is written into the folder for
   it) and for a tab with no folder;
-- for as long as the tab is open, in a tab that keeps nothing.
+- for as long as the tab is open, where the browser's storage will not open.
 
-Nothing leaves your machine either way. On the desktop the history needs
+Nothing leaves your machine, unless you turned on **Push after every
+snapshot** for a folder with a remote. On the desktop the history needs
 **git** on the machine: without it, a snapshot is refused with a sentence
 saying so, and everything else works as before.
 
@@ -412,12 +420,14 @@ restored diagram leaves out elements that no longer exist, and says how many.
 **Labels.** **Label…** on a chosen snapshot gives it a word of your own —
 "Shown to the board" — shown beside its message, never instead of it. A label
 travels with the history, so a colleague sees the same mark in the same place;
-in a folder it is a git tag, which any git client shows. Two labels with the
-same name are refused; pick another word.
+in the desktop's folder it is a git tag, which any git client shows. Two labels
+with the same name are refused, anywhere in a folder and within one scope in
+a browser; pick another word.
 
 **Snapshots the app takes itself**, where a history is kept: before a working
-file replaces what is here, before a folder is pulled from its remote, and
-before a folder from an older version is converted. Each is named for what
+file replaces what is here, and, on the desktop, before a folder is pulled from
+its remote and before a folder from an older version is converted. Each is named
+for what
 it came before, so what was there can be restored.
 
 ## The workspace
@@ -428,7 +438,7 @@ One open project: a bar at the top, the editor below it.
 |---|---|
 | **The crumbs** | The organisation, each scope between, and the open one in bold; each is a way to that scope's home, and the organisation's name is the way back to the first screen |
 | **Settings…** | This scope's name and where it is filed, and its defaults: the author named on an exported diagram, and the operational aspects a new landscape starts with. Moving a scope files it under another one and leaves its content untouched |
-| **⋯** | In a browser, the menu: **Open…**, **Save**, **Save a Copy of the Working File…**, **Snapshot…**, **History…**, the theme and Help. On the desktop the same items are in the menu bar |
+| **⋯** | In a browser, the menu: **Open Folder…** where the browser offers one, **Open…**, **Save**, **Save a Copy of the Working File…**, **Snapshot…**, **History…**, **Connect an Agent…**, the theme, **Preferences…**, and under Help **User Manual**, **Keyboard Shortcuts…** and **Get the Desktop App**. On the desktop the same items, but the last, are in the menu bar |
 | **Activity** | What has changed in this project since you opened it — a list of named steps with the time each was taken. Read-only: ⌘Z is how you go back |
 | **Saved · hh:mm** | Where the project stands: the time it was last written, or **Unsaved changes**, **Saving…**, **Changed elsewhere**, **Changed here and elsewhere**, **Not saved — storage refused** |
 
@@ -439,8 +449,9 @@ before it closes. In a browser without a folder, the app says once when its
 storage is
 about four fifths full. That is the only warning you get, because a browser
 stops saving without asking. If a save is refused, the bar says **Not saved —
-storage refused** and the editor keeps working. In a tab that keeps nothing, a
-strip says so from the start. In either case, save a working file, because
+storage refused** and the editor keeps working. Where the browser's storage will
+not open, a strip says so from the start. In either case, save a working file,
+because
 otherwise the work is gone when the tab closes.
 Every notice (saved, loaded, failed) appears in that bottom bar.
 

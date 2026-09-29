@@ -242,8 +242,12 @@ In one of three places, and the app always says which:
 - **In the browser**, in that browser's own storage for the site, where it
   stays across restarts. Chromium can also open a folder for a tab, and then
   the tab works in it the way the desktop does.
-- **Nowhere**, in a private window or anywhere the browser will keep nothing.
-  Everything works, and the app says plainly that nothing outlives the tab.
+- **Nowhere**, where the browser's storage will not open. Everything works,
+  and the app says plainly that nothing outlives the tab.
+
+A private window usually does open the browser's storage, and then keeps your
+work only as long as the browser does: the app cannot tell the window is
+private, so save a working file there to keep your work.
 
 ```
 <your folder>/scope.json · model.json           the organisation
@@ -254,10 +258,10 @@ In one of three places, and the app always says which:
 ```
 
 Everything is written three seconds after you stop editing, when you leave the
-window and when you close it. Closing with unsaved work saves it first, and
-asks only if that did not work. If the
-work changes underneath you (a colleague, a sync client, another tab), the app
-says so. It never overwrites the other version without asking.
+window and when you close it. On the desktop, closing with unsaved work saves
+it first and asks only if that did not work; in a browser tab it always asks.
+If the work changes underneath you (a colleague, a sync client, another tab),
+the app says so. It never overwrites the other version without asking.
 
 **Every place keeps a history.** **Snapshot…** records the work under a
 message drafted from what you actually did. **History…** shows what has
