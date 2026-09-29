@@ -7,8 +7,8 @@
  * what each changed, the files at one, and the tags.
  *
  * The same rules as `git.ts`, whose runner this uses: the system binary
- * without a shell, nothing that can ask a question, no hook, and this folder
- * and never one above it. Paths travel as literal pathspecs — a file a person
+ * without a shell, nothing that can ask a question, no hook and no file-system
+ * monitor, and this folder and never one above it. Paths travel as literal pathspecs — a file a person
  * named `:(glob)*` is that file — and a list of them is handed to git in a
  * file rather than on the command line, which a folder of any size would
  * outgrow. The shape answered is the folder implementation's `FolderGit`
@@ -20,7 +20,7 @@ import { randomUUID } from 'node:crypto'
 import { rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { LOCAL_SETTINGS_PATH } from '../../projects/folderSettings'
-import { git, gitEnvironment, identityArgs, initRepository, isRepository } from './git'
+import { git, gitEnvironment, identityArgs, initRepository, isRepository, quietConfig } from './git'
 
 const UNIT = '\x1f'
 const RECORD = '\x1e'
@@ -146,9 +146,10 @@ export async function treeAt(root: string, sha: string, within: string): Promise
 export type GitFileAt = { path: string; text: string } | { path: string; bytes: Uint8Array }
 
 /** Git fed on its standard input, answered in bytes. */
-function gitWithInput(root: string, args: readonly string[], input: string): Promise<Buffer> {
+async function gitWithInput(root: string, args: readonly string[], input: string): Promise<Buffer> {
+  const quiet = await quietConfig()
   return new Promise((resolve, reject) => {
-    const child = execFile('git', args, {
+    const child = execFile('git', [...quiet, ...args], {
       cwd: root, encoding: 'buffer', maxBuffer: 256 * 1024 * 1024, windowsHide: true, env: gitEnvironment(), timeout: 60_000,
     }, (failure, stdout) => (failure ? reject(failure) : resolve(stdout)))
     child.stdin?.end(input)

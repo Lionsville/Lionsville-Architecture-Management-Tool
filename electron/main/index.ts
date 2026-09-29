@@ -38,6 +38,7 @@ import { log, logFilePath } from './log'
 import { checkForUpdatesNow, registerSettingsChannel, startUpdates } from './updates'
 import { offersUpdateCheck } from '../../src/platform/updates'
 import { registerFolderSettingsChannel } from './folderSettings'
+import { useHooksFolder } from '../../src/platform/node/git'
 import { keepPaintingForAgent, registerAgentChannel, startAgent, stopAgent } from './mcp'
 
 /**
@@ -371,6 +372,9 @@ void app.whenReady().then(() => {
   // What this machine does about each folder, kept here and not in the folder
   // (ADR-0023). Before the window, like every channel a boot may ask of.
   registerFolderSettingsChannel()
+  // Every git main runs is told its hooks are in this empty folder of ours, so
+  // no hook in a person's `.git` is a program this app runs.
+  useHooksFolder(join(app.getPath('userData'), 'no-git-hooks'))
 
   // The agent server (ADR-0007): its channel before the window, like the
   // files', and the listener only if `mcp.json` says so. Off by default.

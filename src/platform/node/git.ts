@@ -21,8 +21,14 @@
  *
  * Deliberate hardenings, all of them about not hanging or surprising:
  *
- * - `--no-verify`, because a pre-commit hook belongs to the repository's owner
- *   and their linter must not decide whether this app can save a snapshot.
+ * - No hook runs, ever: every git here is told `core.hooksPath` is an empty
+ *   folder of the app's own ({@link useHooksFolder}), so no hook in `.git` —
+ *   the repository owner's, or one written there by anybody — is a program
+ *   this app runs; and `core.fsmonitor` is off, which is the other way a
+ *   folder's configuration names a program git starts. `--no-verify` as well,
+ *   where a command takes it, because a pre-commit hook belongs to the
+ *   repository's owner and their linter must not decide whether this app can
+ *   save a snapshot.
  * - `GIT_TERMINAL_PROMPT=0`, `ssh -o BatchMode=yes` and a timeout, because a
  *   git that wants a password waits forever and there is nobody at this
  *   terminal to answer it. **The app never handles a credential**: push and
@@ -54,7 +60,8 @@
  * Tested in node against a real repository, which is what it always was.
  */
 import { execFile } from 'node:child_process'
-import { access, mkdir, readFile, writeFile } from 'node:fs/promises'
+import { access, mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
 import { LOCAL_SETTINGS_PATH } from '../../projects/folderSettings'
@@ -128,8 +135,30 @@ export function gitEnvironment(from: NodeJS.ProcessEnv = process.env): NodeJS.Pr
 
 type GitError = Error & { stderr?: string; killed?: boolean; signal?: string; code?: number | string }
 
+/** Where the empty hooks folder is: the app's own, where main says; a temporary one of this process's where nobody does. */
+let hooksFolder: Promise<string> | undefined
+
+/**
+ * The empty folder every git here is told its hooks are in. Main names one
+ * in its own data folder at start; made where it is not there, and emptied of
+ * nothing — it is the app's, which no page reaches.
+ */
+export function useHooksFolder(path: string): void {
+  hooksFolder = mkdir(path, { recursive: true }).then(() => path)
+}
+
+function noHooks(): Promise<string> {
+  hooksFolder ??= mkdtemp(join(tmpdir(), 'lvarch-no-hooks-'))
+  return hooksFolder
+}
+
+/** What every git here is run with, before its command: no hook, and no file-system monitor. */
+export async function quietConfig(): Promise<string[]> {
+  return ['-c', `core.hooksPath=${await noHooks()}`, '-c', 'core.fsmonitor=false']
+}
+
 export async function git(root: string, args: readonly string[], timeout = TIMEOUT_MS): Promise<string> {
-  const { stdout } = await run('git', args, {
+  const { stdout } = await run('git', [...await quietConfig(), ...args], {
     cwd: root,
     timeout,
     maxBuffer: MAX_OUTPUT,

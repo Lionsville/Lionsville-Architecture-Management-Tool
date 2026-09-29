@@ -7,10 +7,15 @@
  * the conversation with git, which only the real one answers.
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
+import { chmod, mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
 import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
-import { gitAvailable, isRepository } from './git'
+import { basename, dirname, join } from 'node:path'
+import { gitAvailable, isRepository, snapshot } from './git'
+
+const run = promisify(execFile)
 import { allTags, changes, commitLog, commitPaths, isScopeTagName, readAt, startHistory, tagCommit, treeAt } from './gitEntries'
 
 const available = await gitAvailable()
@@ -31,6 +36,24 @@ async function put(path: string, contents: string | Uint8Array): Promise<void> {
 }
 
 describe.skipIf(!available)('the history a folder’s repositories read', () => {
+  it('runs no hook of the folder’s, wherever its configuration says hooks are', async () => {
+    await startHistory(root)
+    const marker = join(root, '..', `${basename(root)}-hook-ran`)
+    const hook = `#!/bin/sh\ntouch "${marker}"\nexit 1\n`
+    for (const folder of ['.git/hooks', 'own-hooks']) {
+      for (const name of ['pre-commit', 'commit-msg', 'post-commit', 'post-index-change']) {
+        await put(`${folder}/${name}`, hook)
+        await chmod(join(root, folder, name), 0o755)
+      }
+    }
+    await run('git', ['config', 'core.hooksPath', 'own-hooks'], { cwd: root })
+    await put('model.json', '{}')
+    expect(await commitPaths(root, ['model.json'], 'no hook')).toMatch(/^[0-9a-f]+$/)
+    await put('model.json', '{"again":true}')
+    expect(await snapshot(root, 'no hook either')).toMatch(/^[0-9a-f]+$/)
+    expect(existsSync(marker)).toBe(false)
+  })
+
   it('starts keeping one only where there is none, and says what differs from it', async () => {
     expect(await changes(root)).toEqual([])
     await startHistory(root)
