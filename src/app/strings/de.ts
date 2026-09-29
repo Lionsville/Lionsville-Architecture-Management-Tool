@@ -36,7 +36,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.storageFailed':
     'Dieser Browser konnte den Entwurf nicht speichern (Speicher voll oder blockiert). Speichern Sie eine Arbeitsdatei, sonst ist er beim Schließen des Tabs verloren.',
   'shell.storageRecovered': 'Speichern in diesem Browser funktioniert wieder.',
-  'shell.folderNotOpened': 'Der Ordner konnte nicht geöffnet werden: {message}',
   'shell.sourceNotOpened': 'Diese Quelle konnte nicht geöffnet werden: {message}',
   'shell.storageNearlyFull':
     'Dieser Browser ist für diese App zu etwa {percent}% voll. Speichern Sie Ihre Arbeit in einem Ordner '
@@ -231,21 +230,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'change.becameStandIn': '{name} ist jetzt ein Platzhalter für {scope}',
   'change.becameDefinition': '{name} wird jetzt hier definiert',
 
-  'folder.title': 'Wo sollen Ihre Projekte liegen?',
-  'folder.body':
-    'Wählen Sie einen Ordner; diese App bewahrt Ihre Projekte darin als Dateien auf, die Sie lesen, '
-    + 'sichern, synchronisieren und committen können. In der App selbst bleibt nichts.',
-  'folder.choose': 'Ordner wählen…',
-  'folder.recent': 'Zuletzt verwendet',
-  'folder.adoptTitle': 'Ihre Arbeit in diesen Ordner mitnehmen?',
-  'folder.adoptBody':
-    'Ihre Projekte liegen zurzeit in der App selbst. „{name}“ kann eine Kopie davon '
-    + 'bekommen oder so geöffnet werden, wie er ist. Gelöscht wird in beiden Fällen '
-    + 'nichts — die App behält ihre eigene Kopie, bis Sie sie absichtlich verschieben.',
-  'folder.adoptCopy': 'Meine Arbeit hineinkopieren',
-  'folder.adoptSkip': 'Ordner so öffnen, wie er ist',
-  'picker.chooseFolder': 'Ordner wählen…',
-  'picker.changeFolder': 'Aus einem anderen Ordner arbeiten…',
+  'source.firstTitle': 'Wo sollen Ihre Projekte liegen?',
+  'source.recent': 'Zuletzt verwendet',
   'picker.never': 'Noch nicht gespeichert',
   'picker.changed': 'Geändert {when}',
   'picker.delete': 'Löschen',
@@ -299,32 +285,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'prefs.channelBeta': 'Beta',
   'prefs.channelNote':
     'Betas sind Builds vor einem Release, auf dieselbe Weise signiert und veröffentlicht. Wer den Beta-Kanal verlässt, behält, was installiert ist.',
-  'prefs.thisMachine': 'DIESER ORDNER, AUF DIESEM RECHNER',
-  'prefs.thisMachineNote':
-    'Von dieser Installation verwahrt und nicht geteilt — in den Ordner wird nichts geschrieben, und ein anderer Rechner, der ihn öffnet, entscheidet selbst.',
-  'prefs.pullOnOpen': 'Beim Öffnen dieses Ordners vom Remote holen',
-  'prefs.pushAfterSnapshot': 'Nach jeder Momentaufnahme pushen',
   'prefs.writeFailed': 'Diese Einstellung konnte nicht gespeichert werden: {message}',
-  'history.beforeSync': 'Vor dem Synchronisieren',
-  'history.beforeUpgrade': 'Vor der Aktualisierung des Dateiformats',
-  'sync.diverged':
-    'Dieser Ordner und sein Remote sind beide weitergegangen. Es wird nichts zusammengeführt: wählen Sie, welche Version gilt. '
-    + 'Unsere bleibt in jedem Fall auf einem Branch erhalten.',
-  'sync.takeTheirs': 'Die vom Remote',
-  'sync.keepOurs': 'Unsere behalten',
-  'sync.pulled': 'Auf dem Stand des Remotes.',
-  'sync.pushed': 'Zum Remote gepusht.',
-  'sync.tookTheirs': 'Die Version des Remotes gilt; unsere liegt auf einem Branch.',
-  'sync.keptOurs': 'Unsere Version gilt, festgehalten als Merge.',
-  'sync.noRemote': 'Dieser Ordner hat kein Remote zum Synchronisieren.',
-  'sync.unreachable': 'Das Remote ist nicht erreichbar.',
-  'sync.credentials':
-    'Das Remote hat die Zugangsdaten dieses Rechners abgelehnt. Die App fragt nach keinen; melden Sie sich mit Ihrem git-Client an.',
-  'sync.timeout': 'Das Remote hat nicht rechtzeitig geantwortet.',
-  'sync.pullRefused': 'Der Ordner wurde nicht geholt: {reason}',
-  'sync.pushRefused': 'Die Momentaufnahme wurde nicht gepusht: {reason}',
-  'sync.resolveRefused': 'Es wurde nichts geändert: {reason}',
-
   'group.title': 'Bereichseinstellungen',
   'group.open': 'Einstellungen…',
   'group.openFor': 'Einstellungen für {name}',

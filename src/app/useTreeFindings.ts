@@ -9,7 +9,7 @@
  * it — nothing here commits anything, and nothing loads for it.
  */
 import { useMemo, useRef } from 'react'
-import type { AppFolder } from './appProps'
+import type { SourceChanges } from '../ports/ProviderParts'
 import { useIndex } from './useIndex'
 import type { Failed } from './useShellServices'
 import type { TreeView } from '../agent/tree'
@@ -39,7 +39,7 @@ import { platformTreeOf } from './platformTree'
  * Watching the root is one subscription on the same watcher the workspace
  * uses — main watches a root once, whoever asks.
  */
-export function useTreeIndex(index: OrganisationIndex, watchProject: AppFolder['watch'], failed: Failed) {
+export function useTreeIndex(index: OrganisationIndex, watchProject: SourceChanges | undefined, failed: Failed) {
   const watchTree = useMemo(() => {
     if (!watchProject) return undefined
     return (onChanged: () => void) => watchProject(ROOT_SCOPE, onChanged, true)

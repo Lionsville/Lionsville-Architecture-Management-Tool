@@ -40,14 +40,15 @@ export type ShellCommands = {
 
 export function useShellCommands(deps: {
   commands: CommandStream | undefined
-  onChooseFolder: (() => void) | undefined
-  onOpenFolder: ((root: string) => void) | undefined
+  /** The host's own way in (`SourceWayIn.hostMenu`): *Open…* in its menu, and its Recent list. */
+  onConnect: (() => void) | undefined
+  onReopen: ((key: string) => void) | undefined
   prefs: ShellPreferences
   openPreferences: (open: true) => void
   openAgent: () => void
   hostControls: HostControls
 }): ShellCommands {
-  const { commands, onChooseFolder, onOpenFolder, prefs, openPreferences, openAgent, hostControls } = deps
+  const { commands, onConnect, onReopen, prefs, openPreferences, openAgent, hostControls } = deps
   const bus = useHostCommands(commands)
   const homeHistory = useRef<HomeHistoryDoors | undefined>(undefined)
   /**
@@ -56,8 +57,8 @@ export function useShellCommands(deps: {
    */
   const homeFiles = useRef<HomeFileDoors | undefined>(undefined)
   useEffect(() => bus.on((command) => {
-    if (command.type === 'chooseFolder') onChooseFolder?.()
-    if (command.type === 'openFolder') onOpenFolder?.(command.root)
+    if (command.type === 'connect') onConnect?.()
+    if (command.type === 'reopen') onReopen?.(command.key)
     if (command.type === 'theme') prefs.chooseTheme(command.mode)
     if (command.type === 'preferences') openPreferences(true)
     if (command.type === 'connectAgent') openAgent()
@@ -69,7 +70,7 @@ export function useShellCommands(deps: {
     // In the app's language, which is why it is answered here and not by the
     // menu bar: main does not know which one is on.
     if (command.type === 'manual') hostControls.openExternal(manualUrl(prefs.language))
-  }), [bus, onChooseFolder, onOpenFolder, prefs, openPreferences, openAgent, hostControls])
+  }), [bus, onConnect, onReopen, prefs, openPreferences, openAgent, hostControls])
   return { bus, homeHistory, homeFiles }
 }
 

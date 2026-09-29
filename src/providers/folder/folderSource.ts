@@ -14,7 +14,6 @@
 import type { DesktopDirectory, DesktopFiles } from '../../adapters/desktop/channel'
 import { desktopFiles, desktopHistory, desktopSettings } from '../../adapters/desktop/desktopFiles'
 import { rememberingWrites } from '../../adapters/desktop/rememberingWrites'
-import type { FolderChannel } from '../../adapters/desktop/rememberingWrites'
 import {
   canChooseDirectory, chooseDirectory as chooseBrowserDirectory, rememberedDirectory,
 } from '../../adapters/folder/browser/workingDirectory'
@@ -27,54 +26,15 @@ import { IpcDirectoryHandle } from '../../adapters/folder/desktop/IpcDirectoryHa
 import type { DirectoryHandleLike } from '../../adapters/folder/DirectoryHandle'
 import { FileSystemFolderSettings } from '../../adapters/folder/FileSystemFolderSettings'
 import { FileSystemScopeStore } from '../../adapters/folder/FileSystemScopeStore'
-import type { FolderGit } from '../../adapters/folder/folderGit'
-import { folderRepositories } from '../../adapters/folder/folderRepositories'
-import { memoryGit } from '../../adapters/folder/memoryGit'
-import type { PersonSettings } from '../../adapters/folder/FolderSettingsRepository'
-import type { StampCache } from '../../adapters/folder/folderPictures'
-import type { PlaceStore } from '../../adapters/folder/folderScopes'
-import type { StepStore } from '../../adapters/folder/stepMemory'
 import { browserDatabase } from '../../adapters/webStorage/available'
 import { IndexedDbStore } from '../../adapters/webStorage/IndexedDbStore'
 import type { SourceProvider } from '../../platform/sourceProvider'
-import type { WorkingSource } from '../../platform/workingSource'
-import type { Diagnostics } from '../../ports/Diagnostics'
-import type { FolderSettingsStore } from '../../ports/FolderSettings'
-import type { Repositories } from '../../ports/Repositories'
-import type { ScopeStore } from '../../ports/ScopeStore'
-import type { ScopeSnapshot } from '../../projects/scope'
-import type { ScopePath } from '../../projects/scopePath'
+import type { SourceDestination } from '../../ports/ProviderParts'
 import { desktopPerson } from './desktopPerson'
-
-/**
- * What a folder source needs to be given: the handle to work through, and what
- * the folder is called and where it is — and, where the host keeps them, its
- * history, the step ids its repositories applied, and what this person does
- * about it.
- *
- * A browser's handle has no path to give, so `root` falls back to the name —
- * which is all a tab knows about where it is, and enough to tell two folders
- * apart within one tab. It has no git either: its history, and what it keeps
- * about the folder, are kept in the browser's database beside the folder's
- * handle; where there is no database, for as long as the tab is open.
- */
-export type FolderOpening = {
-  handle: DirectoryHandleLike
-  name: string
-  root: string
-  git?: FolderGit
-  steps?: StepStore
-  places?: PlaceStore
-  stamps?: StampCache
-  person?: PersonSettings
-}
-
-export type FolderParts = {
-  scopes: ScopeStore
-  repositories: Repositories
-  folderSettings: FolderSettingsStore
-  source: WorkingSource
-}
+import { openFolder } from './openFolder'
+import type { FolderBase, FolderOpening, FolderParts } from './openFolder'
+import { desktopSync } from './folderOwn'
+import { readWorkingDirectory, withWorkingDirectory } from './remembered'
 
 /**
  * A folder on the desktop: the handle over the file channel, bound to the
@@ -83,9 +43,7 @@ export type FolderParts = {
  * included: a write that went round it would come back from the watcher as
  * somebody else's change, and the app would interrupt itself.
  */
-export function desktopOpening(
-  files: DesktopFiles, directory: DesktopDirectory,
-): FolderOpening & { channel: FolderChannel } {
+export function desktopOpening(files: DesktopFiles, directory: DesktopDirectory): FolderOpening {
   const channel = rememberingWrites(files)
   const handle = new IpcDirectoryHandle(channel.files, directory.root, directory.name)
   const git = desktopHistory()
@@ -95,7 +53,7 @@ export function desktopOpening(
     handle,
     name: directory.name,
     root: directory.root,
-    ...(git ? { git: new DesktopFolderGit(git, directory.root) } : {}),
+    ...(git ? { git: new DesktopFolderGit(git, directory.root), sync: desktopSync(git, directory.root) } : {}),
     ...(settings
       ? {
         steps: desktopStepStore(settings, directory.root),
@@ -131,24 +89,62 @@ export function browserOpening(handle: DirectoryHandleLike): FolderOpening {
  *
  * Whichever picker there is — the desktop's dialog through the file channel, or
  * the browser's where the browser has one — and nothing at all where there is
- * neither, which is a tab that cannot be given a folder.
+ * neither, which is a tab that cannot be given a folder. A folder chosen is one
+ * the person just pointed the app at, which is when it may offer to bring the
+ * work this browser kept along.
  */
 export async function chooseFolderOpening(): Promise<FolderOpening | undefined> {
   const files = desktopFiles()
   if (files) {
     const chosen = await files.chooseDirectory()
-    return chosen && desktopOpening(files, chosen)
+    return chosen && { ...desktopOpening(files, chosen), chosen: true }
   }
   if (!canChooseDirectory()) return undefined
   const handle = await chooseBrowserDirectory()
-  return handle && browserOpening(handle)
+  return handle && { ...browserOpening(handle), chosen: true }
 }
 
-/** A folder in a browser tab, where the browser can give one. */
-export const browserFolders = {
-  possible: canChooseDirectory,
-  choose: chooseBrowserDirectory,
-  remembered: rememberedDirectory,
+/** The last segment of a path: what a folder the host names but never listed is called. */
+function nameOf(root: string): string {
+  return root.split(/[/\\]/).filter(Boolean).pop() ?? root
+}
+
+/**
+ * The folder this machine worked in last, where it may still be opened.
+ *
+ * The preference says which folder; the desktop's main process says which
+ * folders the person has actually granted. The intersection is what may be
+ * opened, checked this way round on purpose: a path in a preferences blob is a
+ * wish, and a blob can be edited by anybody with a text editor. A browser tab
+ * reopens its folder only if this browser can give one, gave one before, and
+ * the permission still stands — asking again needs a click, and a boot is not
+ * one.
+ */
+async function resumeFolder(preferences: unknown): Promise<FolderOpening | undefined> {
+  const files = desktopFiles()
+  if (!files) {
+    const handle = canChooseDirectory() ? await rememberedDirectory() : undefined
+    return handle && browserOpening(handle)
+  }
+  const wanted = readWorkingDirectory(preferences)
+  if (!wanted) return undefined
+  const directory = (await files.recentDirectories()).find((held) => held.root === wanted)
+  return directory && desktopOpening(files, directory)
+}
+
+/**
+ * A folder named by the host — the Recent submenu, the first screen's list, the
+ * smoke run. Only ever one main has granted, and main checks that on every call
+ * it receives. The recents are asked for the folder's NAME and nothing else; a
+ * folder not on that list (the smoke run grants one it deliberately does not
+ * remember) is opened under the last segment of its path.
+ */
+async function reopenFolder(root: string): Promise<FolderOpening | undefined> {
+  const files = desktopFiles()
+  if (!files) return undefined
+  const granted = await files.recentDirectories()
+  const directory = granted.find((held) => held.root === root) ?? { root, name: nameOf(root) }
+  return { ...desktopOpening(files, directory), chosen: true }
 }
 
 /**
@@ -157,17 +153,9 @@ export const browserFolders = {
  * or a board in it is "occupied", and the shell asks again before writing
  * over one — and written as one where the folder can take it (ADR-0023,
  * amendments 2 and 3). Moving the app there is the boot's, which owns the
- * shell; this only knows the store.
+ * shell; this only knows the folder.
  */
-export type FolderDestination = {
-  opening: FolderOpening
-  occupied: boolean
-  place(scopes: readonly ScopeSnapshot[]): Promise<void>
-  /** One scope of the folder as it now reads: what the landing is checked against (ADR-0023, amended). */
-  read(path: ScopePath): Promise<ScopeSnapshot | undefined>
-}
-
-export async function chooseFolderDestination(): Promise<FolderDestination | undefined> {
+export async function chooseFolderDestination(): Promise<SourceDestination<FolderOpening> | undefined> {
   const opening = await chooseFolderOpening()
   if (!opening) return undefined
   const store = new FileSystemScopeStore(opening.handle)
@@ -176,6 +164,7 @@ export async function chooseFolderDestination(): Promise<FolderDestination | und
   const occupied = listed.name.trim() !== '' || listed.children.length > 0 || listed.diagrams > 0
     || (listed.unreadable?.length ?? 0) > 0
   return {
+    name: opening.name,
     opening,
     occupied,
     // As one, the way *Replace here* lands (ADR-0023, amendments 2 and 3).
@@ -184,18 +173,29 @@ export async function chooseFolderDestination(): Promise<FolderDestination | und
   }
 }
 
-export const FOLDER_SOURCE: SourceProvider<FolderParts, FolderOpening, { readonly diagnostics: Diagnostics }> = {
+export const FOLDER_SOURCE: SourceProvider<FolderParts, FolderOpening, FolderBase> = {
   kind: 'folder',
-  connect: { labelKey: 'picker.chooseFolder', open: chooseFolderOpening },
-  // The trail the app keeps is where a file that will not read is said.
-  open: ({ handle, name, root, git, steps, places, stamps, person }, { diagnostics }) => ({
-    scopes: new FileSystemScopeStore(handle, diagnostics),
-    repositories: folderRepositories({
-      root: handle, git: git ?? memoryGit(handle, 'this tab'), diagnostics,
-      ...(steps ? { steps } : {}), ...(places ? { places } : {}), ...(stamps ? { stamps } : {}),
-      ...(person ? { person } : {}),
-    }),
-    folderSettings: new FileSystemFolderSettings(handle),
-    source: { kind: 'folder', name, root },
-  }),
+  connect: {
+    labelKey: 'picker.chooseFolder',
+    firstLabelKey: 'folder.choose',
+    introKey: 'folder.body',
+    failedKey: 'shell.folderNotOpened',
+    hostMenu: true,
+    open: chooseFolderOpening,
+    possible: () => desktopFiles() !== undefined || canChooseDirectory(),
+    // The desktop keeps work in a folder or nowhere (ADR-0003); a tab keeps it
+    // itself, and merely may be given one.
+    required: () => desktopFiles() !== undefined,
+    // Where a folder is already the source, what this offers is another one.
+    offer: ({ source }) => (source.kind === 'folder' ? { labelKey: 'picker.changeFolder' } : undefined),
+    resume: resumeFolder,
+    remember: (preferences, opening) => withWorkingDirectory(preferences, opening.root),
+    recent: async () => {
+      const files = desktopFiles()
+      if (!files) return []
+      return (await files.recentDirectories()).map((held) => ({ key: held.root, label: held.name }))
+    },
+    reopen: reopenFolder,
+  },
+  open: openFolder,
 }

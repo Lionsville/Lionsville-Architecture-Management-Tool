@@ -65,16 +65,9 @@ describe('PreferencesDialog', () => {
     expect(onChange).toHaveBeenCalledWith({ channel: 'beta' })
   })
 
-  it('says the machine settings stay with this install, and writes them as a patch', () => {
-    const onChange = vi.fn()
-    renderShell(<PreferencesDialog {...base} machine={{
-      pullOnOpen: false, pushAfterSnapshot: false, onChange,
-    }} />)
-    expect(screen.getByText(/not shared/)).toBeDefined()
-    fireEvent.click(screen.getByLabelText(/Pull from the remote/))
-    expect(onChange).toHaveBeenCalledWith({ git: { pullOnOpen: true } })
-    fireEvent.click(screen.getByLabelText(/Push after every snapshot/))
-    expect(onChange).toHaveBeenCalledWith({ git: { pushAfterSnapshot: true } })
+  it('draws what the source\'s provider put here under its own sections', () => {
+    renderShell(<PreferencesDialog {...base} sourcePanel={<p data-testid="panel">about the source</p>} />)
+    expect(screen.getByTestId('panel').textContent).toBe('about the source')
   })
 
   it('has a Close and no Cancel, because there is nothing to cancel', () => {

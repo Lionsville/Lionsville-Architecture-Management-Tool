@@ -16,16 +16,13 @@ import type { ScopeSnapshot } from '../projects/scope'
 import type { ScopePath } from '../projects/scopePath'
 import type { BootDialog } from './bootLanding'
 import type { ThemeMode } from '../platform/theme'
-import type { PullOutcome } from '../platform/sync'
 import type { WindowChrome } from '../platform/windowChrome'
 import type { WorkingSource } from '../platform/workingSource'
 import type {
   SourceChip, SourceFailure, SourceRecentActivity, SourceStatus, SourceWayIn, SourceWork, SourceWorkChanged,
 } from '../platform/sourceProvider'
 import type { AgentGateway } from '../ports/AgentGateway'
-import type { FolderSettingsStore } from '../ports/FolderSettings'
 import type { HostControls } from '../ports/HostControls'
-import type { ProjectHistory } from '../ports/ProjectHistory'
 import type { Repositories } from '../ports/Repositories'
 import type { UpdateSettingsStore } from '../ports/UpdateSettings'
 import type {
@@ -38,7 +35,8 @@ import type { ScopeSession } from './useModelSession'
 import type { CommandStream } from './useHostCommands'
 import type { ProjectFileChannel } from './useProjectFiles'
 import type { PreferencesWriter } from './useShellPreferences'
-import type { ChooseFolderForWorkingFile } from './workingFileFlows'
+import type { ChooseDestination } from './workingFileFlows'
+import type { SourceChanges } from '../ports/ProviderParts'
 
 /** What the composition root read before the first render, and what went wrong on the way. */
 export type AppBoot = {
@@ -60,26 +58,14 @@ export type AppBoot = {
   /** What the browser reports; injected so a test can pin the starting language. */
   browserLanguages?: readonly string[] | string
   /**
-   * What the boot's pull answered, when the machine asked for one. Made at
-   * the edge of the app, before the project was read and before the watcher
-   * started, so a fast-forward's writes are never reported as somebody
-   * else's change; what is left for the shell is to say so.
-   */
-  initialSync?: PullOutcome
-  /**
-   * A folder that was picked and did not open, from the shell's attempt just
+   * A way in that was taken and did not open, from the shell's attempt just
    * before this render. Said once on the toast bar, because the shell has no
-   * bar of its own and a pick that ends in nothing looks like a button that
+   * bar of its own and a press that ends in nothing looks like a button that
    * does nothing.
    */
-  folderFailure?: unknown
-  /**
-   * The same, for a way in a registered provider offered: pressed, and gone
-   * nowhere. Its own field rather than a second meaning for the one above,
-   * because the two say different sentences — this one cannot say *folder*, and
-   * the boot cannot say what a provider's own dialog was asking for.
-   */
   sourceFailure?: unknown
+  /** What that way in's provider says about it (`SourceConnect.failedKey`), where it says anything. */
+  sourceFailureKey?: StringKey | (string & {})
 }
 
 /**
@@ -252,46 +238,24 @@ export type AppProvider = {
   own?: unknown
   /** Where the open source keeps its history, in the provider's sentence (`ProviderParts.historyNoteKey`). */
   historyNoteKey?: string
-}
-
-/** The folder work is kept in, where there is one, and the machine's own folders. */
-export type AppFolder = {
   /**
-   * Does this host keep projects ONLY in folders?
-   *
-   * True on the desktop, where keeping them anywhere else means a leveldb
-   * inside `userData` (ADR-0003) and the app therefore asks for a folder before
-   * it shows anything. A browser tab keeps them itself and merely *may* have a
-   * folder, so it is offered one and never made to choose.
+   * Work has nowhere to be kept here until a way in is taken (`SourceConnect.required`):
+   * the first screen asks where it should live, and nothing else is drawn
+   * until it is answered.
    */
-  needed?: boolean
+  sourceNeeded?: boolean
   /**
-   * How to change the folder. Absent in a browser tab whose browser cannot
-   * give one: an app that showed the button anyway would be offering what it
-   * cannot do.
+   * Hear when a scope changed other than through this window
+   * (`ProviderParts.changes`). Absent where nothing can hear it, and the
+   * workspace then never leaves the states it can reach alone.
    */
-  onChoose?: () => void
-  /** Work in a folder the user has already granted. The Recent submenu. */
-  onOpen?: (root: string) => void
+  changes?: SourceChanges
   /**
-   * A folder a working file may become (ADR-0025). Absent where no folder
-   * can be chosen, and the dialog then offers only to replace what is open.
+   * Somewhere new a working file may become (ADR-0025), by the host's own way
+   * in. Absent where there is none, and the dialog then offers only to
+   * replace what is open.
    */
-  onChooseForWorkingFile?: ChooseFolderForWorkingFile
-  /** Folders this machine has worked in before, for the first-run screen. */
-  recent?: readonly { root: string; name: string }[]
-  /**
-   * Tell me when a project's folder changed under us. Absent where nothing can
-   * watch, and the workspace then never leaves the states it can reach alone.
-   */
-  watch?: (path: ScopePath, onChanged: () => void, wholeTree?: boolean) => () => void
-  /** The snapshots of the working directory. Absent where there can be none. */
-  history?: ProjectHistory
-  /**
-   * The two folder scopes of ADR-0005. Absent where there is no folder; the
-   * machine section of the preferences dialog needs this AND a history.
-   */
-  settings?: FolderSettingsStore
+  destination?: ChooseDestination
 }
 
 /** The window around the app: its menu bar, its title, and what it is told. */
@@ -350,7 +314,6 @@ export type AppProps = {
    */
   source?: WorkingSource
   provider?: AppProvider
-  folder?: AppFolder
   host?: AppHost
   /**
    * Where an agent's tool calls arrive (ADR-0007). Absent in a browser tab.

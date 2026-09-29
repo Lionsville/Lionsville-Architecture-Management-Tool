@@ -153,7 +153,7 @@ describe('the preferences dialog\'s machine settings', () => {
     const failed = vi.fn()
     const notify = vi.fn()
     const { result } = renderHook(() => useMachineSettings({
-      updateSettings: store as never, folderSettings: undefined, history: undefined,
+      updateSettings: store as never,
       failedRef: { current: failed }, notify, s,
     }))
     expect(store.read).not.toHaveBeenCalled()

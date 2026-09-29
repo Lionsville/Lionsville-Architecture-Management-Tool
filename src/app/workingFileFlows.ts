@@ -95,11 +95,11 @@ export type WorkingFileDestination = {
 /** One scope as the store now holds it: what a landing is read back through. */
 export type ReadScope = (path: ScopePath) => Promise<ScopeSnapshot | undefined>
 
-export type ChooseFolderForWorkingFile = () => Promise<WorkingFileDestination | undefined>
+export type ChooseDestination = () => Promise<WorkingFileDestination | undefined>
 
 /** The two questions, as the shell's dialogs answer them. */
 export type LandingPrompts = {
-  askDestination(ask: { file: string; here: string; canChooseFolder: boolean }): Promise<'here' | 'folder' | undefined>
+  askDestination(ask: { file: string; here: string; canGoElsewhere: boolean }): Promise<'here' | 'elsewhere' | undefined>
   confirmReplace(name: string): Promise<boolean>
 }
 
@@ -122,7 +122,7 @@ export async function landWorkingFile(args: {
   bytes: Uint8Array
   into: ScopeSnapshot
   prompts: LandingPrompts
-  chooseFolder?: ChooseFolderForWorkingFile
+  chooseDestination?: ChooseDestination
   /**
    * Land the file on the scope here. `false` is *nothing was landed*, and the
    * caller has said why; anything else is landed, and then checked.
@@ -146,23 +146,23 @@ export async function landWorkingFile(args: {
   notify: Notify
   s: Translate
 }): Promise<void> {
-  const { name, bytes, into, prompts, chooseFolder, here, read, beforeReplace, notify, s } = args
+  const { name, bytes, into, prompts, chooseDestination, here, read, beforeReplace, notify, s } = args
   const opened = openDocumentBytes(bytes, into)
   if (!opened.ok) { notify(s(opened.messageKey), 'error'); return }
   const said = (landed: OpenedWorkingFile, from?: ReadScope) => sayLanding(name, landed, from, notify, s)
   const choice = await prompts.askDestination({
     file: name,
     here: into.model.name.trim() || s('openInto.unnamedHere'),
-    canChooseFolder: chooseFolder !== undefined,
+    canGoElsewhere: chooseDestination !== undefined,
   })
   if (choice === undefined) return
-  if (choice === 'here' || !chooseFolder) {
+  if (choice === 'here' || !chooseDestination) {
     if (beforeReplace && !(await beforeReplace())) return
     if ((await inPart(() => here(opened), read)) === false) return
     await said(opened, read)
     return
   }
-  const destination = await chooseFolder()
+  const destination = await chooseDestination()
   if (!destination) return
   if (destination.occupied && !(await prompts.confirmReplace(destination.name))) return
   const rooted = openDocumentBytes(bytes, bareScope(ROOT_SCOPE, ''))

@@ -1,0 +1,72 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
+/**
+ * English, for what the providers that ship say for themselves: where each
+ * keeps work, what it asks a person, and what it answers when that place
+ * says no. The app's own words say none of it (ADR-0031 §4); a provider's
+ * chrome is where a person is told about their folder, their browser and
+ * what either costs them.
+ *
+ * `as const`, so this slice is the schema for its own keys: `nl.ts` beside it
+ * cannot be missing one and cannot invent one. The registry composes every
+ * module's slice into the table `t()` reads (`i18n/strings.ts`).
+ */
+export const EN = {
+  // --- a folder's remote (ADR-0005) ------------------------------------------
+  /**
+   * The folder and its remote have both moved on. The same two answers the
+   * changed-elsewhere notice offers for one scope, scaled up; both keep
+   * everything.
+   */
+  'sync.diverged':
+    'This folder and its remote have both moved on. Nothing is merged: choose which version stands. '
+    + 'Ours is kept on a branch either way.',
+  'sync.takeTheirs': 'Take theirs',
+  'sync.keepOurs': 'Keep ours',
+  'sync.pulled': 'Up to date with the remote.',
+  'sync.pushed': 'Pushed to the remote.',
+  'sync.tookTheirs': 'The remote\u2019s version stands; ours is on a branch.',
+  'sync.keptOurs': 'Our version stands, recorded as a merge.',
+  'sync.noRemote': 'This folder has no remote to sync with.',
+  'sync.unreachable': 'The remote could not be reached.',
+  'sync.credentials':
+    'The remote refused this machine\u2019s credentials. The app asks for none; sign in with your git client.',
+  'sync.timeout': 'The remote did not answer in time.',
+  'sync.pullRefused': 'The folder was not pulled: {reason}',
+  'sync.pushRefused': 'The snapshot was not pushed: {reason}',
+  'sync.resolveRefused': 'Nothing was changed: {reason}',
+
+  /**
+   * The machine-local scope says out loud that it is not shared: the file
+   * sits in the folder, and everything else in the folder travels.
+   */
+  'prefs.thisMachine': 'THIS FOLDER, ON THIS MACHINE',
+  'prefs.thisMachineNote':
+    'Kept by this install and not shared \u2014 nothing is written into the folder, and another machine that opens it decides for itself.',
+  'prefs.pullOnOpen': 'Pull from the remote when this folder is opened',
+  'prefs.pushAfterSnapshot': 'Push after every snapshot',
+  /** The entries a folder records before it is pulled, and before its format is brought up to date. */
+  'history.beforeSync': 'Before syncing',
+  'history.beforeUpgrade': 'Before upgrading the file format',
+
+  // --- the way into a folder -------------------------------------------------
+  'folder.body':
+    'Pick a folder and this app keeps your projects in it as files you can read, back up, '
+    + 'sync and commit. Nothing is kept inside the app itself.',
+  'folder.choose': 'Choose a folder…',
+  /**
+   * The folder pick asks before it copies. Both answers are safe and the body
+   * says so: the app keeps its own copy until somebody moves it on purpose.
+   */
+  'folder.adoptTitle': 'Bring your work into this folder?',
+  'folder.adoptBody':
+    'Your projects are kept inside the app at the moment. “{name}” can take a copy of '
+    + 'them, or open as it is. Nothing is deleted either way — the app keeps its copy until '
+    + 'you move it on purpose.',
+  'folder.adoptCopy': 'Copy my work in',
+  'folder.adoptSkip': 'Open the folder as it is',
+  'picker.chooseFolder': 'Choose folder…',
+  'picker.changeFolder': 'Work from another folder…',
+  'shell.folderNotOpened': 'The folder could not be opened: {message}',
+} as const

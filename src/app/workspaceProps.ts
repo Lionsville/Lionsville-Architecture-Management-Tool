@@ -35,7 +35,7 @@ import type { ProjectFileChannel } from './useProjectFiles'
 import type { AskPassword } from './usePasswordPrompt'
 import type { StorageNotice } from './useStorageNotice'
 import type { Notify } from './useToasts'
-import type { ChooseFolderForWorkingFile, LandingPrompts } from './workingFileFlows'
+import type { ChooseDestination, LandingPrompts } from './workingFileFlows'
 import type { WorkingFileManifest } from '../projects/workingFileManifest'
 
 /** Where this scope is kept, and what the source it is kept in says about it. */
@@ -262,15 +262,13 @@ export type WorkspaceFiles = {
   /** Where a working file goes, asked before it lands (ADR-0025). */
   landing: LandingPrompts
   /** A folder it may become; absent where none can be chosen. */
-  chooseFolder?: ChooseFolderForWorkingFile
+  chooseDestination?: ChooseDestination
 }
 
 /** The scope's snapshots (ADR-0008). */
 export type WorkspaceSnapshots = {
   /** The history of the scopes where this one is kept; the menu offers nothing where there is none. */
   history?: HistoryRepository
-  /** A snapshot succeeded. The shell decides whether that means a push. */
-  onTaken?: () => void
 }
 
 /** The agent (ADR-0007, ADR-0019): the session handed up, and the glyph on the bar. */

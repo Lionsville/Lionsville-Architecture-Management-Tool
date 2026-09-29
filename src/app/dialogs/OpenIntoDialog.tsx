@@ -32,15 +32,15 @@ export type OpenIntoDialogProps = {
   /** What replacing writes over: the open scope, or the home's. */
   here: string
   /** Can a folder be chosen on this host? */
-  canChooseFolder: boolean
+  canGoElsewhere: boolean
   onCancel: () => void
-  onFolder: () => void
+  onElsewhere: () => void
   onHere: () => void
   s: Translate
 }
 
 export function OpenIntoDialog({
-  open, file, here, canChooseFolder, onCancel, onFolder, onHere, s,
+  open, file, here, canGoElsewhere, onCancel, onElsewhere, onHere, s,
 }: OpenIntoDialogProps) {
   return (
     <Dialog open={open} onClose={onCancel} fullWidth maxWidth="sm">
@@ -56,8 +56,8 @@ export function OpenIntoDialog({
         <Button color="warning" onClick={onHere} data-testid="open-into-here">
           {s('openInto.here', { scope: here })}
         </Button>
-        {canChooseFolder && (
-          <Button variant="contained" onClick={onFolder} data-testid="open-into-folder">
+        {canGoElsewhere && (
+          <Button variant="contained" onClick={onElsewhere} data-testid="open-into-folder">
             {s('openInto.newFolder')}
           </Button>
         )}

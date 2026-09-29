@@ -11,9 +11,9 @@
  * so that where a setting is *kept* is on the screen beside it.
  *
  * A section for a scope that does not exist is **absent, not disabled** — a
- * disabled control implies one is coming. So Updates is absent on the web,
- * "this folder" is absent until `folder.json` has a key, and "this folder, on
- * this machine" is absent without a folder and a history.
+ * disabled control implies one is coming. So Updates is absent on the web, and
+ * what this machine does about the source that is open is its provider's own
+ * section, absent where it has nothing to say.
  *
  * It writes on change, not on an OK button. There is no Cancel, because there
  * is nothing to cancel — every one of these is reversible by setting it back,
@@ -21,6 +21,7 @@
  * the wrong way. An ordinary MUI dialog, not fullscreen, so it needs no
  * `windowChrome`.
  */
+import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Checkbox from '@mui/material/Checkbox'
 import Dialog from '@mui/material/Dialog'
@@ -39,7 +40,6 @@ import type { Language, Translate } from '../../i18n'
 import { THEME_ITEMS } from '../../platform/menu'
 import type { ThemeMode } from '../../platform/theme'
 import type { UpdateChannel, UpdateSettingsPatch } from '../../platform/updateSettings'
-import type { LocalSettingsPatch } from '../../projects/folderSettings'
 import type { ProjectOrder } from '../../projects/scope'
 
 export type PreferencesDialogProps = {
@@ -60,17 +60,6 @@ export type PreferencesDialogProps = {
     onChange: (patch: UpdateSettingsPatch) => void
   }
 
-  /**
-   * What this machine does about the folder's remote. Present only where
-   * there is a folder AND a history: a browser tab with a directory handle
-   * has a folder and no git, and offering it sync settings would be offering
-   * something that cannot happen.
-   */
-  machine?: {
-    pullOnOpen: boolean
-    pushAfterSnapshot: boolean
-    onChange: (patch: LocalSettingsPatch) => void
-  }
   /**
    * What the open source's provider draws here about its own source, already
    * inside its boundary: under the app's own sections, and absent where it
@@ -103,7 +92,7 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
 
 export function PreferencesDialog({
   open, onClose, language, onLanguageChange, themeMode, onThemeChange, order, onOrderChange,
-  updates, machine, sourcePanel, s,
+  updates, sourcePanel, s,
 }: PreferencesDialogProps) {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth data-testid="preferences-dialog">
@@ -186,41 +175,12 @@ export function PreferencesDialog({
             </>
           )}
 
-          {machine && (
-            <>
-              <Divider />
-              <Section
-                title={s('prefs.thisMachine')}
-                note={s('prefs.thisMachineNote')}
-              >
-                <FormControlLabel
-                  control={(
-                    <Checkbox
-                      size="small"
-                      checked={machine.pullOnOpen}
-                      onChange={(e) => machine.onChange({ git: { pullOnOpen: e.target.checked } })}
-                    />
-                  )}
-                  label={<Typography sx={{ fontSize: 13 }}>{s('prefs.pullOnOpen')}</Typography>}
-                />
-                <FormControlLabel
-                  control={(
-                    <Checkbox
-                      size="small"
-                      checked={machine.pushAfterSnapshot}
-                      onChange={(e) => machine.onChange({ git: { pushAfterSnapshot: e.target.checked } })}
-                    />
-                  )}
-                  label={<Typography sx={{ fontSize: 13 }}>{s('prefs.pushAfterSnapshot')}</Typography>}
-                />
-              </Section>
-            </>
-          )}
           {sourcePanel && (
-            <>
-              <Divider />
+            /* Ruled off like the sections above it, and not there at all where
+               the panel had nothing to say this time. */
+            <Box sx={{ borderTop: 1, borderColor: 'divider', pt: 2.5, '&:empty': { display: 'none' } }}>
               {sourcePanel}
-            </>
+            </Box>
           )}
         </Stack>
       </DialogContent>

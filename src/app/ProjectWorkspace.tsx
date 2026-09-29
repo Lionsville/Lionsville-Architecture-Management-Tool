@@ -248,7 +248,6 @@ function useScreenParts(
     dispatch: session.dispatch,
     notify,
     s,
-    onTaken: props.snapshots.onTaken,
   })
   const { safeguardRef } = base
   useEffect(() => { safeguardRef.current = snapshots.safeguard }, [safeguardRef, snapshots.safeguard])

@@ -42,7 +42,7 @@ export function useWorkspaceFiles(deps: {
   s: Translate
 }): WorkspaceFileParts {
   const { session, putPicture, workingSet, onAdoptScopes, readScope, onTreeChanged, notify, s } = deps
-  const { documents, askPassword, landing, chooseFolder } = deps.seams
+  const { documents, askPassword, landing, chooseDestination } = deps.seams
   /** The store write, and then the two reads a changed tree needs (ADR-0012 §10). */
   const adoptWorkingSet = useCallback(
     async (held: readonly ScopeSnapshot[], manifest?: WorkingFileManifest) => {
@@ -63,7 +63,7 @@ export function useWorkspaceFiles(deps: {
     ...(readScope ? { readScope } : {}),
     askPassword,
     landing,
-    ...(chooseFolder ? { chooseFolder } : {}),
+    ...(chooseDestination ? { chooseDestination } : {}),
     notify,
     s,
   })

@@ -12,9 +12,7 @@
  * pull-on-open and the preferences dialog rejected. Nothing above the seam
  * could have caught that — the tests hand `App` plain objects.
  */
-import { describe, expect, it, vi } from 'vitest'
-import type { DesktopFiles } from '../adapters/desktop/channel'
-import { DEFAULT_LOCAL_SETTINGS } from '../projects/folderSettings'
+import { describe, expect, it } from 'vitest'
 import { InMemoryPreferencesStore } from '../adapters/memory/InMemoryPreferencesStore'
 import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
 import { RecordingDiagnostics } from '../adapters/memory/RecordingDiagnostics'
@@ -23,10 +21,13 @@ import { sampleScope, SAMPLE_PATH } from '../ports/ScopeStore.contract'
 import { IN_MEMORY } from '../platform/workingSource'
 import type { SourceProvider } from '../platform/sourceProvider'
 import {
-  inWorkingDirectory, openSource, registerSourceProvider, registeredChrome, registeredConnects,
+  openSource, registerSourceProvider, registeredChrome, registeredConnects,
   registeredMenus, sourceAgentPanel, sourceChip, sourceChipFace, sourceChipPanel, sourceDescription, sourceProvider,
-  type FolderOpening, type Shell, type SourceBase, type SourceParts,
+  type Shell, type SourceBase, type SourceParts,
 } from './composition'
+
+/** What a folder is opened with, as much of it as a test here gives. */
+type FolderOpening = { handle: FakeDirectory; name: string; root: string }
 
 /**
  * The shell's own side of opening a source, as little of it as a test needs:
@@ -35,130 +36,6 @@ import {
 function opening(shell?: Shell): SourceBase & { diagnostics: RecordingDiagnostics } {
   return { diagnostics: new RecordingDiagnostics(), shell }
 }
-
-function channel(): DesktopFiles {
-  return {
-    chooseDirectory: () => Promise.resolve(undefined),
-    recentDirectories: () => Promise.resolve([]),
-    list: () => Promise.resolve(undefined),
-    makeDirectory: () => Promise.resolve(),
-    read: () => Promise.resolve(undefined),
-    write: vi.fn(() => Promise.resolve({ mtimeMs: 1, size: 1, sha256: 'x' })),
-    create: vi.fn(() => Promise.resolve(true)),
-    writeTogether: () => Promise.resolve([]),
-    remove: () => Promise.resolve(),
-    stamp: () => Promise.resolve(undefined),
-    move: () => Promise.resolve(),
-    fingerprint: () => Promise.resolve(undefined),
-    revealInFolder: () => Promise.resolve(),
-    saveDocument: () => Promise.resolve(true),
-    watch: () => Promise.resolve(),
-    unwatch: () => Promise.resolve(),
-    onChanged: () => () => {},
-  }
-}
-
-describe('inWorkingDirectory — what a scope hears about', () => {
-  function listening() {
-    let listener: ((change: { root: string; path: string; stamp?: { mtimeMs: number; size: number; sha256: string } }) => void) | undefined
-    const files = { ...channel(), onChanged: (held: typeof listener) => { listener = held; return () => {} } }
-    const shell = inWorkingDirectory({} as Shell, files as never, { root: '/work', name: 'work' })
-    const heard: string[] = []
-    const report = (path: string) => listener?.({ root: '/work', path, stamp: { mtimeMs: 1, size: 1, sha256: 'x' } })
-    return { shell, heard, report }
-  }
-
-  it('tells the open scope about its own files and nothing else', () => {
-    const { shell, heard, report } = listening()
-    shell.watchProject!('acme', () => heard.push('acme'))
-    report('acme/model.json')
-    report('acme/docs/erp.md')
-    // A landscape filed under the domain, a README beside scope.json, an
-    // export saved into the folder, another domain: none of them this scope's.
-    report('acme/rail/model.json')
-    report('acme/README.md')
-    report('acme/landscape.lvarch')
-    report('finance/model.json')
-    report('scope.json')
-    expect(heard).toHaveLength(2)
-  })
-
-  it('tells the tree about everything under it', () => {
-    const { shell, heard, report } = listening()
-    shell.watchProject!('', () => heard.push('tree'), true)
-    report('acme/rail/model.json')
-    report('scope.json')
-    report('acme/README.md')
-    expect(heard).toHaveLength(3)
-  })
-
-  /**
-   * A write of ours comes back from the watcher with the fingerprint we
-   * remembered. The open scope must not hear it — that would be the app
-   * interrupting itself — and the tree must, because the index is built from
-   * what this app writes as much as from what anyone else does: the example
-   * copied in, a scope created, a landscape saved with one more application.
-   */
-  it('tells the tree about our own writes, and the open scope not', async () => {
-    const { shell, heard, report } = listening()
-    shell.watchProject!('acme', () => heard.push('acme'))
-    shell.watchProject!('', () => heard.push('tree'), true)
-    // Through the store, so the remembering wrapper sees the write; the fake
-    // channel stamps every write 'x', and the report carries the same stamp.
-    await shell.scopes.save({
-      path: 'acme', model: { name: 'Acme', elements: [], relations: [], diagrams: [] },
-      activeDiagramId: '', logoLibrary: [],
-    })
-    report('acme/model.json')
-    expect(heard).toEqual(['tree'])
-  })
-
-  it('tells the organisation, opened on a page, about its own files only', () => {
-    const { shell, heard, report } = listening()
-    shell.watchProject!('', () => heard.push('root'))
-    report('acme/rail/model.json')
-    report('scope.json')
-    report('diagrams/l7.json')
-    expect(heard).toHaveLength(2)
-  })
-})
-
-describe('inWorkingDirectory', () => {
-  /** A watcher that could not be set up is a window deaf to the folder, and was said nowhere. */
-  it('says on the trail a folder that cannot be watched', async () => {
-    const diagnostics = new RecordingDiagnostics()
-    const files = { ...channel(), watch: () => Promise.reject(new Error('EMFILE: too many open files')) }
-    const shell = inWorkingDirectory({ diagnostics } as unknown as Shell, files, { root: '/work', name: 'work' })
-    shell.watchProject!('acme', () => {})
-    await new Promise((settled) => setTimeout(settled, 0))
-    expect(diagnostics.messages()).toEqual(['the folder cannot be watched'])
-  })
-
-  it('keeps every method of the folder settings store, not only the one it wraps', async () => {
-    const shell = inWorkingDirectory({} as Shell, channel(), { root: '/work', name: 'work' })
-    const settings = shell.folderSettings!
-
-    expect(typeof settings.readLocal).toBe('function')
-    expect(typeof settings.readFolder).toBe('function')
-    expect(await settings.readLocal()).toEqual(DEFAULT_LOCAL_SETTINGS)
-    expect(await settings.readFolder()).toEqual({})
-  })
-
-  /** A folder opened after a registered source was bound to that source's session and said its failures. */
-  it('keeps nothing the source before it said for itself', () => {
-    const before = {
-      source: { kind: 'registered', provider: 'server', key: 'https://example.test' },
-      sourceStatus: () => ({}), onSourceWork: () => {}, sourceFailure: {}, onScopeSession: () => {},
-      publishesSteps: true, readOnlyAt: () => true, opensAt: {},
-    } as unknown as Shell
-    const shell = inWorkingDirectory(before, channel(), { root: '/work', name: 'work' })
-
-    expect(shell.source.kind).toBe('folder')
-    for (const part of ['sourceStatus', 'onSourceWork', 'sourceFailure', 'onScopeSession', 'publishesSteps', 'readOnlyAt', 'opensAt'] as const) {
-      expect(shell[part], part).toBeUndefined()
-    }
-  })
-})
 
 /**
  * The registry that replaced the switch.
@@ -214,7 +91,7 @@ describe('registerSourceProvider', () => {
   it('keeps the first registration for a kind', () => {
     registerSourceProvider({ kind: 'folder', open: () => ({ source: IN_MEMORY }) })
     expect(sourceProvider('folder')?.open).not.toBe(undefined)
-    expect(sourceProvider<FolderOpening>('folder')?.connect?.labelKey).toBe('picker.chooseFolder')
+    expect(sourceProvider('folder')?.connect?.labelKey).toBe('picker.chooseFolder')
   })
 })
 
@@ -501,13 +378,15 @@ describe('registeredConnects', () => {
    * standing, and standing is wrong for the provider that already answers for
    * the open source — *connect to…* then offers a person where they already are.
    *
-   * The folder defines none, which is *always offered*: a folder is offered
-   * wherever a folder can be chosen, and the picker is how you change to another
-   * one.
+   * The folder's is offered wherever a folder can be chosen, and says, where
+   * a folder is already the source, that it offers another one.
    */
-  it('leaves the question to the shell where the folder is concerned', () => {
-    expect(registeredConnects().find((way) => way.kind === 'folder')?.connect.offer)
-      .toBeUndefined()
+  it('has the folder offer another folder where one is already open', () => {
+    const offer = registeredConnects().find((way) => way.kind === 'folder')?.connect.offer
+    const location = { href: 'https://example.test/', search: '', hash: '' }
+    expect(offer?.({ source: { kind: 'folder', name: 'work', root: '/work' }, location }))
+      .toEqual({ labelKey: 'picker.changeFolder' })
+    expect(offer?.({ source: IN_MEMORY, location })).toBeUndefined()
   })
 
   it('lets a provider hide its own way in, or say something else on it', () => {
@@ -561,9 +440,9 @@ describe('registeredChrome', () => {
 
     const drawn = registeredChrome()
     expect(drawn.find((entry) => entry.kind === 'drawing')?.chrome).toBe(Strip)
-    // The three that ship have nothing to say that the bar does not say for them.
-    expect(drawn.map((entry) => entry.kind))
-      .not.toContain('folder')
+    // The folder says what its remote answered; memory has nothing to say
+    // that the bar does not say for it.
+    expect(drawn.map((entry) => entry.kind)).toContain('folder')
     expect(drawn.map((entry) => entry.kind)).not.toContain('memory')
   })
 
@@ -770,36 +649,3 @@ describe('sourceChipFace', () => {
   })
 })
 
-describe('the folder source', () => {
-  it('is what a desktop shell is composed from, root and all', () => {
-    const shell = inWorkingDirectory({} as Shell, channel(), { root: '/work', name: 'work' })
-    expect(shell.source).toEqual({ kind: 'folder', name: 'work', root: '/work' })
-  })
-
-  /**
-   * Nothing to say about the five words: a folder means by them exactly what
-   * `documentSession` means, which is what all three that ship mean.
-   */
-  /** The store is handed the trail the shell keeps, so a folder that will not read is said where *Copy diagnostics* can reach it. */
-  it('hands its store the trail the shell keeps', async () => {
-    const base = opening()
-    const unreadable = {
-      kind: 'directory' as const,
-      name: 'work',
-      getDirectoryHandle: () => Promise.reject(new Error('NotAllowedError: withdrawn')),
-      getFileHandle: () => Promise.reject(new Error('NotAllowedError: withdrawn')),
-      removeEntry: () => Promise.reject(new Error('NotAllowedError: withdrawn')),
-      // eslint-disable-next-line require-yield
-      values: async function* () { throw new Error('NotAllowedError: withdrawn') },
-    }
-    const parts = await openSource('folder', { handle: unreadable, name: 'work', root: '/work' }, base)
-    await parts.scopes!.list()
-    expect(base.diagnostics.messages()).toEqual(['the folder\'s listing could not be read'])
-  })
-
-  it('leaves the document\'s own machine to say what dirty means', () => {
-    const shell = inWorkingDirectory({} as Shell, channel(), { root: '/work', name: 'work' })
-    expect(shell.sourceStatus).toBeUndefined()
-    expect(sourceProvider('folder')?.statusOf).toBeUndefined()
-  })
-})

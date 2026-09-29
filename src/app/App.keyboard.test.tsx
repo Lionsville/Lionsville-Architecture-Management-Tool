@@ -57,7 +57,7 @@ describe('the shell without a mouse', { timeout: 20_000 }, () => {
   it('carries every command the web offers as a menu item in the ⋯, walked with the arrows', async () => {
     show()
     const menu = await overflow()
-    const can = { history: false, folders: false, scope: true }
+    const can = { history: false, connect: false, scope: true }
     const items = [...offered(FILE_MENU, 'web', can), ...offered(HELP_MENU, 'web', can)]
       .filter((entry): entry is MenuItemSpec => entry.kind === 'item')
     const labels = [...items.map((item) => s(item.label)), s(PREFERENCES_ITEM.label), ...THEME_ITEMS.map((one) => s(one.label))]

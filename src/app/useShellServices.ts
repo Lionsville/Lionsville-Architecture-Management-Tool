@@ -102,22 +102,20 @@ export function useShellServices(deps: {
  * consequences never stops.
  */
 export function useOpeningFailures(deps: {
-  folderFailure: unknown
-  sourceFailure: unknown
+  failure: unknown
+  /** The way in's own sentence for it (`SourceConnect.failedKey`), where it has one. */
+  failureKey: StringKey | (string & {}) | undefined
   notify: Notify
   s: Translate
 }): void {
-  const { folderFailure, sourceFailure, notify, s } = deps
-  const say = useRef({ notify, s })
-  say.current = { notify, s }
+  const { failure, failureKey, notify, s } = deps
+  const say = useRef({ notify, s, failureKey })
+  say.current = { notify, s, failureKey }
   useEffect(() => {
-    if (folderFailure === undefined) return
-    say.current.notify(say.current.s('shell.folderNotOpened', { message: reasonOf(folderFailure) }), 'error')
-  }, [folderFailure])
-  useEffect(() => {
-    if (sourceFailure === undefined) return
-    say.current.notify(say.current.s('shell.sourceNotOpened', { message: reasonOf(sourceFailure) }), 'error')
-  }, [sourceFailure])
+    if (failure === undefined) return
+    const { notify: tell, s: words, failureKey: key } = say.current
+    tell(words((key ?? 'shell.sourceNotOpened') as StringKey, { message: reasonOf(failure) }), 'error')
+  }, [failure])
 }
 
 /** How the organisation's lists are ordered: a preference, remembered with the rest. */

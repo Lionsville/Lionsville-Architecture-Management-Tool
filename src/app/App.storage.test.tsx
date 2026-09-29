@@ -23,6 +23,7 @@ import type { AgentGateway } from '../ports/AgentGateway'
 import type { ScopeSession } from './useModelSession'
 import type { Destination, Screen } from '../agent/screen'
 import { answering, heldRepositories } from './testing/heldRepositories'
+import { contentOf, placeWhole } from '../projects/scopeAccess'
 import { renderApp } from './testing/renderShell'
 import { installReactFlowMocks } from '../editor/reactFlowTestSetup'
 
@@ -395,6 +396,26 @@ describe('the chrome a registered provider brought', () => {
     expect(screen.getByTestId('other-own').textContent).toBe('nothing of mine')
   })
 
+  /**
+   * Another version taken in as a whole — *take theirs*, work brought in from
+   * elsewhere — is the source's to say: what is open, and the tree, are read
+   * again, with nothing carried over.
+   */
+  it('may have what is open read again, when the source changed as a whole', async () => {
+    const held = heldRepositories([scope])
+    function Rereads({ reread }: { reread: () => void }) {
+      return <button type="button" data-testid="reread" onClick={reread}>read again</button>
+    }
+    renderApp({
+      repositories: held, source: elsewhere, boot: { initialProject: scope },
+      provider: { chrome: [{ kind: 'elsewhere', chrome: Rereads }] },
+    })
+    await screen.findByText('Landscape')
+    await placeWhole(held.scopes, 'acme/landscape', contentOf({ ...scope, model: { ...scope.model, name: 'From elsewhere' } }))
+    fireEvent.click(screen.getByTestId('reread'))
+    expect(await screen.findByText('From elsewhere')).toBeDefined()
+  })
+
   /** Says something the way the app does, and keeps a preference in the app's one blob. */
   it('may say something, and keep a preference in the app\'s own blob', async () => {
     function Keeper({ notify, preferences }: { notify: (message: string, severity: 'info') => void; preferences: { read(): unknown; write(patch: Record<string, unknown>): void } }) {
@@ -529,9 +550,11 @@ describe('a way in a registered provider brought', () => {
     { kind: 'elsewhere', labelKey: 'Connect to elsewhere\u2026', onConnect: () => {} },
     { kind: 'somewhere', labelKey: 'Connect to somewhere\u2026', onConnect: () => {} },
   ]
+  /** The way in the host names: the folder's, in every build here. */
+  const chooser = { kind: 'chooser', labelKey: 'picker.chooseFolder', onConnect: () => {}, hostMenu: true }
 
   it('is a button each on the root\u2019s home, beside the one that chooses a folder', () => {
-    renderApp({ provider: { waysIn }, folder: { onChoose: () => {} } })
+    renderApp({ provider: { waysIn: [chooser, ...waysIn] } })
     expect(screen.getByTestId('connect-source-elsewhere').textContent).toBe('Connect to elsewhere\u2026')
     expect(screen.getByTestId('connect-source-somewhere').textContent).toBe('Connect to somewhere\u2026')
     expect(screen.getByText('Choose folder\u2026')).toBeDefined()
@@ -550,8 +573,8 @@ describe('a way in a registered provider brought', () => {
    * thing that build exists not to use.
    */
   it('is offered on the first-run screen too', () => {
-    renderApp({ provider: { waysIn }, folder: { needed: true, onChoose: () => {} } })
-    expect(screen.getByTestId('choose-folder')).toBeDefined()
+    renderApp({ provider: { waysIn: [{ ...chooser, required: true }, ...waysIn], sourceNeeded: true } })
+    expect(screen.getByTestId('first-run')).toBeDefined()
     expect(screen.getByTestId('connect-source-elsewhere')).toBeDefined()
   })
 
@@ -562,16 +585,15 @@ describe('a way in a registered provider brought', () => {
   it('leaves the first-run screen behind once a source is open', () => {
     renderApp({
       source: { kind: 'registered', provider: 'elsewhere', name: 'Elsewhere', key: 'one' },
-      provider: { waysIn },
-      folder: { needed: true, onChoose: () => {} },
+      provider: { waysIn: [{ ...chooser, required: true }, ...waysIn], sourceNeeded: false },
     })
-    expect(screen.queryByTestId('choose-folder')).toBeNull()
+    expect(screen.queryByTestId('first-run')).toBeNull()
     expect(screen.getByTestId('working-source').textContent).toBe('Elsewhere')
   })
 
   /** Nothing registered, nothing drawn: every build in this repository. */
   it('draws nothing where a build registered none', () => {
-    renderApp({ folder: { onChoose: () => {} } })
+    renderApp({ provider: { waysIn: [chooser] } })
     expect(screen.queryByTestId('connect-source-elsewhere')).toBeNull()
   })
 
@@ -589,8 +611,7 @@ describe('a way in a registered provider brought', () => {
   it('is not drawn at all where its provider says not here', () => {
     renderApp({
       source: open,
-      provider: { waysIn: [{ ...waysIn[0], offer: () => null }, waysIn[1]] },
-      folder: { onChoose: () => {} },
+      provider: { waysIn: [chooser, { ...waysIn[0], offer: () => null }, waysIn[1]] },
     })
     expect(screen.queryByTestId('connect-source-elsewhere')).toBeNull()
     // Its own button and nobody else's: the other provider's stands, and so does
@@ -605,7 +626,6 @@ describe('a way in a registered provider brought', () => {
       provider: {
         waysIn: [{ ...waysIn[0], offer: () => ({ labelKey: 'Sign in to elsewhere\u2026' }) }],
       },
-      folder: { onChoose: () => {} },
     })
     expect(screen.getByTestId('connect-source-elsewhere').textContent).toBe('Sign in to elsewhere\u2026')
   })
@@ -635,7 +655,6 @@ describe('a way in a registered provider brought', () => {
         waysIn: [{ ...waysIn[0], offer: () => said }],
         onWork: asked.onSourceWork,
       },
-      folder: { onChoose: () => {} },
     })
     expect(screen.queryByTestId('connect-source-elsewhere')).toBeNull()
 
@@ -655,7 +674,6 @@ describe('a way in a registered provider brought', () => {
       provider: {
         waysIn: [{ ...waysIn[0], offer: () => { throw new Error('asked too soon') } }, waysIn[1]],
       },
-      folder: { onChoose: () => {} },
     })
     expect(screen.getByTestId('connect-source-elsewhere').textContent).toBe('Connect to elsewhere\u2026')
     expect(screen.getByTestId('connect-source-somewhere')).toBeDefined()

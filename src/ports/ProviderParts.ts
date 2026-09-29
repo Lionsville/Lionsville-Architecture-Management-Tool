@@ -22,6 +22,7 @@ import type {
   SourceFailure, SourceLanding, SourceStatus, SourceWork, SourceWorkChanged,
 } from '../platform/sourceProvider'
 import type { WorkingSource } from '../platform/workingSource'
+import type { ScopeSnapshot } from '../projects/scope'
 import type { ScopePath } from '../projects/scopePath'
 import type { PreferencesStore } from './PreferencesStore'
 import type { Repositories } from './Repositories'
@@ -89,6 +90,22 @@ export type SourcePreferences = {
   write(patch: Record<string, unknown>): void
 }
 
+/**
+ * Somewhere new a working file may become (ADR-0025), chosen by a way in:
+ * what it is called, whether it already holds something — a scope, a board —
+ * so the person is asked before anything is written over, the scopes written
+ * into it as one, and one of them read back as it now stands. Moving the app
+ * there afterwards is the boot's, which owns the source; `opening` is what it
+ * opens it with.
+ */
+export type SourceDestination<Opening = unknown> = {
+  name: string
+  occupied: boolean
+  place(scopes: readonly ScopeSnapshot[]): Promise<void>
+  read(path: ScopePath): Promise<ScopeSnapshot | undefined>
+  opening: Opening
+}
+
 /** Sending the person to a scope, as a provider's chrome or menu line may (ADR-0019's destination). */
 export type SourceOpen = (to: Destination) => void
 
@@ -106,6 +123,12 @@ export type SourceChromeProps<Own = unknown> = {
   movedBy: MovedBy
   notify: SourceNotify
   preferences: SourcePreferences
+  /**
+   * What the source holds changed as a whole, other than through this window
+   * — another version taken in, work brought in from elsewhere: the tree, the
+   * index and the open scope are read again, with nothing carried over.
+   */
+  reread: () => void
 }
 
 /** What a panel opened from the chip that names a source is handed: a chrome's, and the way to close it. */

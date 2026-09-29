@@ -17,7 +17,7 @@ import { OpenIntoDialog } from './dialogs/OpenIntoDialog'
 import type { LandingPrompts } from './workingFileFlows'
 
 type Asking =
-  | { kind: 'destination'; file: string; here: string; canChooseFolder: boolean }
+  | { kind: 'destination'; file: string; here: string; canGoElsewhere: boolean }
   | { kind: 'replace'; name: string }
 
 export function useOpenIntoPrompt(s: Translate): { prompts: LandingPrompts; dialogs: React.ReactElement } {
@@ -40,8 +40,8 @@ export function useOpenIntoPrompt(s: Translate): { prompts: LandingPrompts; dial
   }, [])
 
   const prompts = useMemo<LandingPrompts>(() => ({
-    askDestination: ({ file, here, canChooseFolder }) =>
-      ask<'here' | 'folder' | undefined>({ kind: 'destination', file, here, canChooseFolder }),
+    askDestination: ({ file, here, canGoElsewhere }) =>
+      ask<'here' | 'elsewhere' | undefined>({ kind: 'destination', file, here, canGoElsewhere }),
     confirmReplace: (name) => ask<boolean | undefined>({ kind: 'replace', name }).then(Boolean),
   }), [ask])
 
@@ -51,10 +51,10 @@ export function useOpenIntoPrompt(s: Translate): { prompts: LandingPrompts; dial
         open={asking?.kind === 'destination'}
         file={asking?.kind === 'destination' ? asking.file : ''}
         here={asking?.kind === 'destination' ? asking.here : ''}
-        canChooseFolder={asking?.kind === 'destination' ? asking.canChooseFolder : false}
+        canGoElsewhere={asking?.kind === 'destination' ? asking.canGoElsewhere : false}
         onCancel={() => settle(undefined)}
         onHere={() => settle('here')}
-        onFolder={() => settle('folder')}
+        onElsewhere={() => settle('elsewhere')}
         s={s}
       />
       <ConfirmDialog

@@ -206,6 +206,10 @@ export type SourceConnect<Opening = void> = {
    * is the one it asks for ({@link SourceConnect.required}).
    */
   readonly introKey?: StringKey | (string & {})
+  /** What its button says on that screen, where that is not {@link SourceConnect.labelKey}. */
+  readonly firstLabelKey?: StringKey | (string & {})
+  /** What the app says where this way in was taken and did not open, with `{message}`. */
+  readonly failedKey?: StringKey | (string & {})
   /**
    * The place this machine last worked from, where the preferences remember
    * one and it may still be opened — worked out at the boot, before anything
@@ -327,6 +331,18 @@ export type SourceWayIn = {
    * unconditionally, which is every one in this repository.
    */
   readonly offer?: (source: WorkingSource) => SourceOffer | null | undefined
+  /** {@link SourceConnect.hostMenu}: the host's *Open…* line and Recent list are this way in. */
+  readonly hostMenu?: boolean
+  /** {@link SourceConnect.required}, as the boot found it: the first screen asks for this way in. */
+  readonly required?: boolean
+  /** {@link SourceConnect.introKey}. */
+  readonly introKey?: StringKey | (string & {})
+  /** {@link SourceConnect.firstLabelKey}. */
+  readonly firstLabelKey?: StringKey | (string & {})
+  /** The places this way in worked from lately, as the boot last read them: one click away. */
+  readonly recent?: readonly SourceRecent[]
+  /** Work again in one of those, by its key. */
+  readonly onReopen?: (key: string) => void
 }
 
 /**

@@ -25,7 +25,7 @@ import type { ProjectFileChannel } from './useProjectFiles'
 import type { AskPassword } from './usePasswordPrompt'
 import type { Notify } from './useToasts'
 import { landWorkingFile, savedWithout, sealedWorkingFile, unsealedBytes } from './workingFileFlows'
-import type { ChooseFolderForWorkingFile, LandingPrompts, ReadScope } from './workingFileFlows'
+import type { ChooseDestination, LandingPrompts, ReadScope } from './workingFileFlows'
 
 export type HomeFiles = {
   exportWorkingFile: () => void
@@ -50,13 +50,13 @@ export function useHomeFiles(deps: {
   /** Where a working file goes, asked before it lands (ADR-0025). */
   landing: LandingPrompts
   /** A folder it may become; absent where none can be chosen. */
-  chooseFolder?: ChooseFolderForWorkingFile
+  chooseDestination?: ChooseDestination
   /** A snapshot of what is here before *Replace here* writes over it (ADR-0025, amended). */
   beforeReplace?: () => Promise<boolean>
   notify: Notify
   s: Translate
 }): HomeFiles {
-  const { documents, workingSet, into, adopt, readScope, askPassword, landing, chooseFolder, beforeReplace, notify, s } = deps
+  const { documents, workingSet, into, adopt, readScope, askPassword, landing, chooseDestination, beforeReplace, notify, s } = deps
 
   const exportWorkingFile = useCallback(() => {
     void workingSet().then(async (stored) => {
@@ -76,7 +76,7 @@ export function useHomeFiles(deps: {
     void unsealedBytes(held, askPassword, s('seal.wrong')).then(async (bytes) => {
       if (!bytes) return
       await landWorkingFile({
-        name, bytes, into: into(), prompts: landing, chooseFolder,
+        name, bytes, into: into(), prompts: landing, chooseDestination,
         here: (result) => adopt([result.scope, ...(result.rest ?? [])], result.manifest),
         ...(readScope ? { read: readScope } : {}),
         ...(beforeReplace ? { beforeReplace } : {}),
@@ -85,7 +85,7 @@ export function useHomeFiles(deps: {
     }).catch((err: unknown) => notify(err instanceof ShellError
       ? messageFor(err, s)
       : s('shell.processFailed', { message: reasonOf(err) }), 'error'))
-  }, [askPassword, landing, chooseFolder, beforeReplace, into, adopt, readScope, notify, s])
+  }, [askPassword, landing, chooseDestination, beforeReplace, into, adopt, readScope, notify, s])
 
   const openFile = useCallback((file: File) => {
     documents.readBytes(file).then(

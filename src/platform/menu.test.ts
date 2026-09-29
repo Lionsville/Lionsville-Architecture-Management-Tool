@@ -18,8 +18,8 @@ const labels = (entries: ReturnType<typeof offered>) =>
 
 describe('offered', () => {
   it('carries the whole list on a desktop that can do everything', () => {
-    expect(labels(offered(FILE_MENU, 'desktop', { history: true, folders: true, scope: true }))).toEqual([
-      'menu.openFolder', '<recentFolders>', '<separator>',
+    expect(labels(offered(FILE_MENU, 'desktop', { history: true, connect: true, scope: true }))).toEqual([
+      'menu.connect', '<recent>', '<separator>',
       'menu.open', 'menu.save', 'menu.exportWorkingFile', '<separator>',
       'menu.snapshot', 'menu.history', '<separator>',
       'menu.connectAgent',
@@ -27,16 +27,16 @@ describe('offered', () => {
   })
 
   it('gives the web the same items, minus the submenu only main can fill', () => {
-    const web = labels(offered(FILE_MENU, 'web', { history: true, folders: true, scope: true }))
-    expect(web).not.toContain('<recentFolders>')
+    const web = labels(offered(FILE_MENU, 'web', { history: true, connect: true, scope: true }))
+    expect(web).not.toContain('<recent>')
     expect(web).toEqual(
-      labels(offered(FILE_MENU, 'desktop', { history: true, folders: true, scope: true }))
-        .filter((label) => label !== '<recentFolders>'),
+      labels(offered(FILE_MENU, 'desktop', { history: true, connect: true, scope: true }))
+        .filter((label) => label !== '<recent>'),
     )
   })
 
   it('offers nothing about history on a machine that cannot keep one', () => {
-    const entries = labels(offered(FILE_MENU, 'web', { history: false, folders: true, scope: true }))
+    const entries = labels(offered(FILE_MENU, 'web', { history: false, connect: true, scope: true }))
     expect(entries).not.toContain('menu.snapshot')
     expect(entries).not.toContain('menu.history')
     // The section that emptied leaves no rule behind, and no doubled one
@@ -46,12 +46,12 @@ describe('offered', () => {
   })
 
   it('offers no folder to a tab whose browser cannot give one', () => {
-    const entries = labels(offered(FILE_MENU, 'web', { history: false, folders: false, scope: true }))
+    const entries = labels(offered(FILE_MENU, 'web', { history: false, connect: false, scope: true }))
     expect(entries[0]).toBe('menu.open')
   })
 
   it('never doubles a separator', () => {
-    const entries = labels(offered(FILE_MENU, 'web', { history: false, folders: false, scope: true }))
+    const entries = labels(offered(FILE_MENU, 'web', { history: false, connect: false, scope: true }))
     for (let at = 1; at < entries.length; at += 1) {
       expect(entries[at] === '<separator>' && entries[at - 1] === '<separator>').toBe(false)
     }
@@ -83,7 +83,7 @@ describe('the vocabulary', () => {
  * nothing in silence before, which reads as broken.
  */
 describe('with no scope open', () => {
-  const nothing = { history: true, folders: true, scope: false }
+  const nothing = { history: true, connect: true, scope: false }
 
   it('leaves out Save, and keeps Open…, Save a Copy…, the folder and its history', () => {
     // Save is the open scope's. Open… and Save a Copy… are the working set's
@@ -92,7 +92,7 @@ describe('with no scope open', () => {
     const entries = labels(offered(FILE_MENU, 'web', nothing))
     expect(entries).not.toContain('menu.save')
     expect(entries).toEqual([
-      'menu.openFolder', '<separator>', 'menu.open', 'menu.exportWorkingFile', '<separator>',
+      'menu.connect', '<separator>', 'menu.open', 'menu.exportWorkingFile', '<separator>',
       'menu.snapshot', 'menu.history', '<separator>', 'menu.connectAgent',
     ])
   })

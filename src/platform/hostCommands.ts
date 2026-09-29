@@ -23,10 +23,10 @@
 import type { ThemeMode } from './theme'
 
 export type HostCommand =
-  /** Ask for a folder, then work in it. */
-  | { type: 'chooseFolder' }
-  /** Work in one the user has already granted — the Recent submenu. */
-  | { type: 'openFolder'; root: string }
+  /** Take the host's own way in (`SourceConnect.hostMenu`): ask where, then work there. */
+  | { type: 'connect' }
+  /** Work again where this machine worked lately, by the key that way in gave it — the Recent submenu. */
+  | { type: 'reopen'; key: string }
   /** Write now, without waiting for the idle timer. */
   | { type: 'save' }
   /** Hand the project over as a working file. */

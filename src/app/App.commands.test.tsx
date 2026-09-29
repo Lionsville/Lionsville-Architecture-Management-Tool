@@ -252,8 +252,8 @@ describe('commands from the host', () => {
   it('a new folder is offered where one can be chosen, checked for what it holds, and written with the file at its root', async () => {
     const placed: string[][] = []
     const view = show({
-      folder: {
-        onChooseForWorkingFile: () => Promise.resolve({
+      provider: {
+        destination: () => Promise.resolve({
           name: 'Elsewhere',
           occupied: true,
           place: (scopes) => { placed.push(scopes.map((scope) => scope.path)); return Promise.resolve() },
@@ -285,20 +285,31 @@ describe('commands from the host', () => {
     expect(screen.queryByTestId('open-into-folder')).toBeNull()
   })
 
-  it('Open Folder… asks the shell, which is the only layer that can', () => {
-    const choose = vi.fn()
-    const view = show({ folder: { onChoose: choose } })
-    view.send({ type: 'chooseFolder' })
+  it('Open… takes the way in the host names, which the boot answers for', () => {
+    const connect = vi.fn()
+    const other = vi.fn()
+    const view = show({
+      provider: {
+        waysIn: [
+          { kind: 'other', labelKey: 'Other', onConnect: other },
+          { kind: 'elsewhere', labelKey: 'Elsewhere', onConnect: connect, hostMenu: true },
+        ],
+      },
+    })
+    view.send({ type: 'connect' })
 
-    expect(choose).toHaveBeenCalled()
+    expect(connect).toHaveBeenCalled()
+    expect(other).not.toHaveBeenCalled()
   })
 
-  it('a folder from the Recent menu is opened by its root', () => {
-    const open = vi.fn()
-    const view = show({ folder: { onOpen: open } })
-    view.send({ type: 'openFolder', root: '/Users/someone/Architecture' })
+  it('a place from the Recent menu is opened again by its key', () => {
+    const reopen = vi.fn()
+    const view = show({
+      provider: { waysIn: [{ kind: 'elsewhere', labelKey: 'Elsewhere', onConnect: () => {}, hostMenu: true, onReopen: reopen }] },
+    })
+    view.send({ type: 'reopen', key: '/Users/someone/Architecture' })
 
-    expect(open).toHaveBeenCalledWith('/Users/someone/Architecture')
+    expect(reopen).toHaveBeenCalledWith('/Users/someone/Architecture')
   })
 
   it('lets go when the app does', () => {
@@ -322,12 +333,12 @@ describe('the overflow on the web', () => {
   }
 
   it('reaches every item the desktop menu bar carries', async () => {
-    show({ folder: { onChoose: () => {} } })
+    show({ provider: { waysIn: [{ kind: 'elsewhere', labelKey: 'menu.connect', onConnect: () => {}, hostMenu: true }] } })
     await openOverflow()
     // Wait for the history to have answered, so its two items are offered.
     await waitFor(() => expect(screen.getByText('Snapshot…')).toBeDefined())
 
-    const can = { history: true, folders: true, scope: true }
+    const can = { history: true, connect: true, scope: true }
     const expected = [...offered(FILE_MENU, 'web', can), ...offered(HELP_MENU, 'web', can)]
       .flatMap((entry) => (entry.kind === 'item' ? [s(entry.label)] : []))
     for (const label of expected) expect(screen.getByText(label), label).toBeDefined()

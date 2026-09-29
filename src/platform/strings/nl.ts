@@ -12,7 +12,7 @@ import type { EN } from './en'
 
 export const NL: Record<keyof typeof EN, string> = {
   'menu.file': 'Bestand',
-  'menu.openFolder': 'Map openen…',
+  'menu.connect': 'Map openen…',
   'menu.openRecent': 'Recente map openen',
   'menu.noRecent': 'Geen recente mappen',
   'menu.open': 'Openen…',

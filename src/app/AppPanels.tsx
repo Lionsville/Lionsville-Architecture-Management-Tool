@@ -18,14 +18,13 @@ import { PreferencesDialog } from './dialogs/PreferencesDialog'
 import { ErrorBoundary } from './ErrorBoundary'
 import { HistoryPage } from './history/lazyHistoryPage'
 import { SnapshotDialog } from './history/SnapshotDialog'
-import { ChooseFolder } from './organisation/ChooseFolder'
+import { FirstRun } from './organisation/FirstRun'
 import { OrganisationScreen } from './organisation/OrganisationScreen'
 import { ProjectWorkspace } from './ProjectWorkspace'
 import type { ScopeSnapshot } from '../projects/scope'
 import type { ScopePath } from '../projects/scopePath'
 import type { ScopeSession } from './useModelSession'
 import { watchTreeShape } from './treeShape'
-import { SyncNotice } from './SyncNotice'
 import { AgentDrivingBanner } from './AgentDrivingBanner'
 import type { ShellParts } from './shellParts'
 import type { SourceChromeProps } from '../ports/ProviderParts'
@@ -34,25 +33,13 @@ import type { ToolbarChip } from './ShellToolbar'
 
 /** One of the three: nowhere to keep anything yet, a scope open, or a home. */
 export function AppScreen({ parts }: { parts: ShellParts }) {
-  const { source, folder, nav } = parts
-  if (folder.needed && folder.onChoose && source.kind !== 'folder' && source.kind !== 'registered') {
-    /* The desktop, with nowhere to keep anything yet. Not the picker:
-       there is nowhere for a project to be until this is answered, and
-       offering a list of projects kept inside the app is offering the
-       thing ADR-0003 removed. A source a provider answers for is an
-       answer to the same question — this screen asks where work should
-       live, not which folder it is in, and a build that has connected to
-       one and is still being asked has been asked twice. */
-    return (
-      <ChooseFolder
-        recent={folder.recent}
-        onChoose={folder.onChoose}
-        onOpen={folder.onOpen ?? (() => {})}
-        waysIn={parts.provider.offered}
-        s={parts.services.s}
-        windowChrome={parts.windowChrome}
-      />
-    )
+  const { props, nav } = parts
+  if (props.provider?.sourceNeeded) {
+    /* Nowhere to keep anything yet, where the host needs a way in taken
+       first. Not the picker: there is nowhere for a scope to be until this is
+       answered, and offering a list of scopes kept inside the app is offering
+       the thing ADR-0003 removed. */
+    return <FirstRun waysIn={parts.provider.offered ?? []} s={parts.services.s} windowChrome={parts.windowChrome} />
   }
   if (nav.project) return <OpenWorkspace parts={parts} project={nav.project} />
   return <Home parts={parts} />
@@ -60,12 +47,12 @@ export function AppScreen({ parts }: { parts: ShellParts }) {
 
 /** The menu on a host that has none of its own (ADR-0005): the same on both screens. */
 function overflowFor<Can extends { history?: boolean; scope: boolean }>(parts: ShellParts, can: Can) {
-  const { services: { prefs }, commands: { bus }, folder } = parts
+  const { services: { prefs }, commands: { bus } } = parts
   if (parts.hostMenu) return undefined
   return {
     ...parts.provider.overflowSource,
     themeMode: prefs.themeMode,
-    can: { folders: Boolean(folder.onChoose), ...can },
+    can: { connect: Boolean(parts.provider.offered?.some((way) => way.hostMenu)), ...can },
     onCommand: bus.send,
   }
 }
@@ -116,7 +103,7 @@ function useScopeSessionTaker(parts: ShellParts): ((session: ScopeSession) => ((
 }
 
 function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSnapshot }) {
-  const { props, services: { toasts, prefs, s, reportStorage }, nav, writes, ancestry, prompts, folder, host } = parts
+  const { props, services: { toasts, prefs, s, reportStorage }, nav, writes, ancestry, prompts, host } = parts
   const onSession = useScopeSessionTaker(parts)
   return (
     <ProjectWorkspace
@@ -168,9 +155,9 @@ function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSn
         documents: props.documents,
         askPassword: prompts.password.askPassword,
         landing: prompts.openInto.prompts,
-        chooseFolder: folder.onChooseForWorkingFile,
+        chooseDestination: props.provider?.destination,
       }}
-      snapshots={{ history: props.repositories.history, onTaken: parts.sync.afterSnapshot }}
+      snapshots={{ history: props.repositories.history }}
       agent={{ onSession: parts.agent.registerAgentSession, bar: parts.agentServer.bar }}
       shell={{ s, language: prefs.language, notify: toasts.notify, makeId: props.makeId }}
       preferences={{ initial: prefs.preferences, onChange: prefs.savePreferences }}
@@ -179,7 +166,7 @@ function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSn
 }
 
 function Home({ parts }: { parts: ShellParts }) {
-  const { props, services: { prefs, s }, nav, findings, folder, organisation } = parts
+  const { props, services: { prefs, s }, nav, findings, organisation } = parts
   const { openScopeAt } = nav
   // The home's own document shows the home scope's pictures, as a workspace
   // shows its scope's.
@@ -200,7 +187,6 @@ function Home({ parts }: { parts: ShellParts }) {
         sourceChip={parts.provider.chip}
         chipPanel={chipPanelFor(parts)}
         chipFace={chipFaceFor(parts)}
-        onChooseWorkingDirectory={folder.onChoose}
         waysIn={parts.provider.offered}
         // The same two the workspace's bar carries: the menu on a host
         // that has none of its own, and the agent glyph, which has to be
@@ -337,20 +323,18 @@ function chromeProps(parts: ShellParts, kind: string): SourceChromeProps {
     movedBy: agent.movedBy,
     notify: toasts.notify,
     preferences: { read: prefs.readPreferences, write: prefs.writePreference },
+    reread: () => {
+      parts.nav.reloadOpenProject()
+      parts.writes.treeChanged()
+    },
   }
 }
 
 /** The standing notices, and every registered provider's own strip. */
 export function AppNotices({ parts }: { parts: ShellParts }) {
-  const { props, services: { prefs, s }, sync, agent, provider } = parts
+  const { props, services: { prefs, s }, agent, provider } = parts
   return (
     <>
-      <SyncNotice
-        open={sync.diverged}
-        onTakeTheirs={() => sync.resolve('theirs')}
-        onKeepOurs={() => sync.resolve('ours')}
-        s={s}
-      />
       <AgentDrivingBanner driving={agent.driving} onStop={agent.stop} s={s} />
       {parts.source.kind === 'memory' && (
         /* Along the bottom rather than above the toolbar: on the desktop that
@@ -397,8 +381,8 @@ export function AppNotices({ parts }: { parts: ShellParts }) {
 
 /** The dialogs that outlive a scope: the two file prompts, the preferences and *Connect an agent*. */
 export function AppDialogs({ parts }: { parts: ShellParts }) {
-  const { props, services: { prefs, s }, machine, agentServer, provider, folder, prompts } = parts
-  const { updates, local } = machine
+  const { props, services: { prefs, s }, machine, agentServer, provider, prompts } = parts
+  const { updates } = machine
   const AgentPanel = provider.AgentPanel
   const PreferencesPanel = provider.PreferencesPanel
   return (
@@ -420,7 +404,6 @@ export function AppDialogs({ parts }: { parts: ShellParts }) {
         updates={parts.host.updateSettings && updates && {
           checkAutomatically: updates.checkAutomatically, channel: updates.channel, onChange: machine.changeUpdates,
         }}
-        machine={folder.settings && folder.history && local && { ...local.git, onChange: machine.changeLocal }}
         sourcePanel={PreferencesPanel && (
           <ErrorBoundary
             where="sourcePreferencesPanel"

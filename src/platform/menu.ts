@@ -20,7 +20,7 @@
  *   unless something is put in its place, and this is that something.
  *
  * An item is offered on a host only while the shell says it can be done —
- * a folder to choose, a history to keep. That is {@link offered}, and it is
+ * a way in to take, a history to keep. That is {@link offered}, and it is
  * the one decision this file makes: an item that cannot work is worse than an
  * item that is missing. The desktop's menu bar shows everything regardless,
  * because main cannot see the screen; the renderer ignores what it cannot do.
@@ -35,9 +35,9 @@ export type MenuHost = 'desktop' | 'web'
 
 /**
  * What an item needs the shell to have before it is worth offering: a history
- * to keep, a folder to choose, a scope open to act on.
+ * to keep, a way in the host names to take, a scope open to act on.
  */
-export type MenuNeed = 'history' | 'folders' | 'scope'
+export type MenuNeed = 'history' | 'connect' | 'scope'
 
 export type MenuItemSpec = {
   readonly kind: 'item'
@@ -54,10 +54,11 @@ export type MenuEntry =
   | { readonly kind: 'separator' }
   /**
    * The Recent submenu. Main's exception to "the menu decides nothing", and
-   * only because main is where the list of granted folders lives — a renderer
-   * cannot be trusted to name one. The web has no such list and skips it.
+   * only because main is where the list of places this machine was granted
+   * lives — a renderer cannot be trusted to name one. The web has no such
+   * list and skips it.
    */
-  | { readonly kind: 'recentFolders' }
+  | { readonly kind: 'recent' }
 
 const BOTH: readonly MenuHost[] = ['desktop', 'web']
 
@@ -68,8 +69,8 @@ function item(
 }
 
 export const FILE_MENU: readonly MenuEntry[] = [
-  item('menu.openFolder', { type: 'chooseFolder' }, 'CmdOrCtrl+Shift+O', ['folders']),
-  { kind: 'recentFolders' },
+  item('menu.connect', { type: 'connect' }, 'CmdOrCtrl+Shift+O', ['connect']),
+  { kind: 'recent' },
   { kind: 'separator' },
   // Save is the open scope's: with nothing open there is nothing it could
   // write. Open… and Save a Copy… are the working set's and work from a home
@@ -159,8 +160,8 @@ export const THEME_ITEMS: readonly { readonly mode: ThemeMode; readonly label: S
 export type MenuCapabilities = {
   /** Can this machine keep a history of the folder? */
   readonly history: boolean
-  /** Can a folder be chosen here at all? */
-  readonly folders: boolean
+  /** Is there a way in the host names, and can it be taken here at all? */
+  readonly connect: boolean
   /** Is a scope open, for the items that act on one? */
   readonly scope: boolean
 }
@@ -177,7 +178,7 @@ export function offered(
 ): MenuEntry[] {
   const kept: MenuEntry[] = []
   for (const entry of entries) {
-    if (entry.kind === 'recentFolders') {
+    if (entry.kind === 'recent') {
       if (host === 'desktop') kept.push(entry)
       continue
     }

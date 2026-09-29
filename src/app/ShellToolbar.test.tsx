@@ -212,7 +212,7 @@ describe('ShellToolbar and the window around it', () => {
     expect(screen.queryByTestId('overflow-button')).toBeNull()
     cleanup()
     renderShell(<ShellToolbar {...props} overflow={{
-      themeMode: 'dark', can: { history: false, folders: false, scope: true }, onCommand: () => {},
+      themeMode: 'dark', can: { history: false, connect: false, scope: true }, onCommand: () => {},
     }} />)
     expect(screen.getByTestId('overflow-button')).toBeDefined()
   })

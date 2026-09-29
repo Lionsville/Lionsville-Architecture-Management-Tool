@@ -5,7 +5,7 @@ import type { WindowChrome } from '../platform/windowChrome'
 import type { WorkingSource } from '../platform/workingSource'
 import type { ScopeModel, ScopeSnapshot } from '../projects/scope'
 import type { ScopePath } from '../projects/scopePath'
-import type { AppFolder, AppHost, AppProps } from './appProps'
+import type { AppHost, AppProps } from './appProps'
 import type { IndexHook } from './useIndex'
 import type { Organisation } from './organisation/useOrganisation'
 import type { ProjectSettings } from './ProjectSettingsDialog'
@@ -20,7 +20,6 @@ import type { ShellAgent } from './useShellAgent'
 import type { ShellCommands } from './useShellCommands'
 import type { ShellNavigation } from './useShellNavigation'
 import type { ShellServices, useProjectOrder } from './useShellServices'
-import type { SyncState } from './useSync'
 import type { TreeFindings } from './useTreeFindings'
 import type { WorkingFileManifest } from '../projects/workingFileManifest'
 
@@ -34,13 +33,11 @@ export interface ShellParts {
   props: AppProps
   /** The groups the props left out, filled in: what `App` reads is never absent. */
   source: WorkingSource
-  folder: AppFolder
   host: AppHost
   hostMenu: boolean
   windowChrome: WindowChrome
   services: ShellServices
   nav: ShellNavigation
-  sync: SyncState
   /** The organisation's index (ADR-0012 §2), for both screens. */
   tree: IndexHook
   organisation: Organisation

@@ -33,6 +33,7 @@ import {
 } from './strings';
 import { CANVAS_SHORTCUTS } from '../editor/keymap';
 import { EN as adaptersEn } from '../adapters/strings/en';
+import { EN as providersEn } from '../providers/strings/en';
 import { EN as appEn } from '../app/strings/en';
 import { EN as decisionsEn } from '../decisions/strings/en';
 import { EN as observationsEn } from '../observations/strings/en';
@@ -52,7 +53,7 @@ const SLICES: Record<string, Record<string, string>> = {
   adapters: adaptersEn, app: appEn, common: commonEn, decisions: decisionsEn,
   documentation: documentationEn, editor: editorEn, model: modelEn, platform: platformEn,
   scopes: projectsEn, roadmap: roadmapEn, search: searchEn, business: businessEn,
-  technology: technologyEn, observations: observationsEn,
+  technology: technologyEn, observations: observationsEn, providers: providersEn,
 };
 
 /** English is the schema, so its keys are THE keys. */

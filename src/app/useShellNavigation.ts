@@ -15,7 +15,7 @@ import type { InitialPage } from './App'
 import { ensureScope, readScope } from '../projects/scopeAccess'
 import type { ScopeReader } from '../projects/scopeAccess'
 import type { ScopeRepository } from '../ports/ScopeRepository'
-import type { AppFolder } from './appProps'
+import type { SourceChanges } from '../ports/ProviderParts'
 import type { Failed } from './useShellServices'
 import type { ShellPreferences } from './useShellPreferences'
 
@@ -51,7 +51,7 @@ export function useShellNavigation(deps: {
   /** Whose home is up at the first paint where nothing is open; the root's where absent. */
   initialHome?: ScopePath
   scopes: ScopeReader & Pick<ScopeRepository, 'create'>
-  watchProject: AppFolder['watch']
+  watchProject: SourceChanges | undefined
   prefs: ShellPreferences
   failedRef: RefObject<Failed>
   /**

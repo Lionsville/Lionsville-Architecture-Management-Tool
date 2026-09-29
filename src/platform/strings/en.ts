@@ -15,7 +15,7 @@
  */
 export const EN = {
   'menu.file': 'File',
-  'menu.openFolder': 'Open Folder…',
+  'menu.connect': 'Open Folder…',
   'menu.openRecent': 'Open Recent Folder',
   'menu.noRecent': 'No Recent Folders',
   'menu.open': 'Open…',

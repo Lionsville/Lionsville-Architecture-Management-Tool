@@ -16,6 +16,7 @@
  * will actually read.
  */
 import { EN as adapters } from '../adapters/strings/en'
+import { EN as providers } from '../providers/strings/en'
 import { EN as app } from '../app/strings/en'
 import { EN as decisions } from '../decisions/strings/en'
 import { EN as observations } from '../observations/strings/en'
@@ -32,6 +33,7 @@ import { EN as technology } from '../technology/strings/en'
 
 export const EN = {
   ...adapters,
+  ...providers,
   ...app,
   ...decisions,
   ...observations,

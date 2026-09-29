@@ -92,9 +92,8 @@ export function useProjectHistory(deps: {
   dispatch: (command: Command) => unknown
   notify: Notify
   s: Translate
-  onTaken?: () => void
 }): ProjectHistoryState {
-  const { history, scopes, index, project, steps, save, indexed, dispatch, notify, s, onTaken } = deps
+  const { history, scopes, index, project, steps, save, indexed, dispatch, notify, s } = deps
 
   const [keeping, setKeeping] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -151,13 +150,10 @@ export function useProjectHistory(deps: {
       setKeeping(true)
       recorded.current = steps().length
       notify(s(written.length > 0 ? 'history.taken' : 'history.nothingToRecord'), written.length > 0 ? 'success' : 'info')
-      // Whether or not anything was recorded: what follows a snapshot (a push
-      // that was refused before, say) is the moment to try again.
-      onTaken?.()
     })().catch((cause: unknown) => {
       notify(s('history.failed', { message: reasonOf(cause) }), 'error')
     })
-  }, [history, save, steps, notify, s, onTaken])
+  }, [history, save, steps, notify, s])
 
   const safeguard = useCallback(async (): Promise<boolean> => {
     if (!history) return true
@@ -170,14 +166,13 @@ export function useProjectHistory(deps: {
       if (written.length > 0) {
         recorded.current = steps().length
         notify(s('history.takenBeforeReplace'), 'info')
-        onTaken?.()
       }
       return true
     } catch (cause) {
       notify(s('history.failedBeforeReplace', { message: reasonOf(cause) }), 'error')
       return false
     }
-  }, [history, save, idsAt, project, steps, notify, s, onTaken])
+  }, [history, save, idsAt, project, steps, notify, s])
 
   const choose = useCallback((id: string) => {
     const entry = entries.find((held) => held.id === id)

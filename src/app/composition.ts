@@ -32,22 +32,13 @@ import { registerLogoPack } from '../model/logoRegistry'
 import { filledStore } from '../projects/filledStore'
 import type { ScopeStoreFilling } from '../projects/filledStore'
 import { DesktopAgentGateway } from '../adapters/desktop/DesktopAgentGateway'
-import { DesktopProjectHistory } from '../adapters/folder/desktop/DesktopProjectHistory'
 import {
-  desktopAgent, desktopCommands, desktopFiles, desktopHistory,
+  desktopAgent, desktopCommands, desktopFiles,
   desktopHookChannel as hookChannel, desktopSettings,
 } from '../adapters/desktop/desktopFiles'
 import { DesktopUpdateSettings } from '../adapters/desktop/DesktopUpdateSettings'
-import { DesktopFolderSettings } from '../adapters/folder/desktop/DesktopFolderSettings'
 import { DesktopDocumentGateway } from '../adapters/desktop/DesktopDocumentGateway'
-import type { DesktopCommands, DesktopDirectory, DesktopFiles } from '../adapters/desktop/channel'
-
-/**
- * Re-exported, because the boot has to name a folder and the lint rule says
- * only this file may name an adapter. A type is not a filling — but a second
- * import path into `adapters/` is exactly the crack the rule exists to close.
- */
-export type { DesktopDirectory }
+import type { DesktopCommands, DesktopFiles } from '../adapters/desktop/channel'
 import { RAIL_PACK } from './iconPacks/rail'
 import { BrowserDocumentGateway } from '../adapters/browser/BrowserDocumentGateway'
 import { browserHostControls } from '../adapters/browser/browserHostControls'
@@ -56,13 +47,13 @@ import { ConsoleDiagnostics } from '../adapters/browser/ConsoleDiagnostics'
 import { hostWindowChrome, showWindowTitle } from '../adapters/browser/hostWindow'
 import { browserDatabase, browserStorage } from '../adapters/webStorage/available'
 import type { ScopePath } from '../projects/scopePath'
-import { isFormatPath } from '../projects/folderFormat'
 import type { WindowChrome } from '../platform/windowChrome'
 import { sourceProviderKind } from '../platform/workingSource'
 import type { WorkingSource } from '../platform/workingSource'
 import { BROWSER_STORAGE_SOURCE } from '../providers/browserStorage/browserStorageSource'
-import { browserOpening, desktopOpening, FOLDER_SOURCE } from '../providers/folder/folderSource'
-import type { FolderOpening } from '../providers/folder/folderSource'
+import { chooseFolderDestination, FOLDER_SOURCE } from '../providers/folder/folderSource'
+import { FolderChrome } from '../providers/folder/FolderChrome'
+import { FolderPreferences } from '../providers/folder/FolderPreferences'
 import { MEMORY_SOURCE } from '../providers/memory/memorySource'
 import type { HookInvoke } from '../platform/desktopHook'
 import type {
@@ -76,33 +67,20 @@ import type {
   RegisteredChrome, RegisteredMenu, SourceAgentPanel, SourceChipFace, SourceChipPanel, SourceMenu,
   SourcePreferencesPanel,
 } from './App'
-import type { SourceChipPanelProps, SourceChromeProps, SourcePreferencesPanelProps } from '../ports/ProviderParts'
+import type {
+  SourceChanges, SourceChipPanelProps, SourceChromeProps, SourceDestination, SourcePreferencesPanelProps,
+} from '../ports/ProviderParts'
+import type { Translate } from '../i18n'
 import type { ScopeSession } from './useModelSession'
 import type { AgentGateway } from '../ports/AgentGateway'
 import type { Diagnostics } from '../ports/Diagnostics'
-import type { ProjectHistory } from '../ports/ProjectHistory'
 import type { DocumentGateway } from '../ports/DocumentGateway'
-import type { FolderSettingsStore } from '../ports/FolderSettings'
 import type { UpdateSettingsStore } from '../ports/UpdateSettings'
 import type { HostControls } from '../ports/HostControls'
 import type { PreferencesStore } from '../ports/PreferencesStore'
 import type { Repositories } from '../ports/Repositories'
 import type { ScopeStore } from '../ports/ScopeStore'
-import type { DirectoryHandleLike } from '../adapters/folder/DirectoryHandle'
 
-export type { FolderDestination, FolderOpening } from '../providers/folder/folderSource'
-export { browserFolders, chooseFolderDestination } from '../providers/folder/folderSource'
-
-/**
- * A subscription to one scope's folder. Returns the way to stop it — the
- * workspace is remounted per scope, and a listener per scope ever opened is a
- * leak with a slow fuse.
- */
-/**
- * Hear about changes to one scope's own files — or, with `wholeTree`, to
- * anything under it, which is what the index over the tree asks for.
- */
-export type WatchProject = (path: ScopePath, onChanged: () => void, wholeTree?: boolean) => () => void
 
 /** Everything the shell needs from outside, in one grip. */
 export type Shell = {
@@ -227,25 +205,14 @@ export type Shell = {
   /** Where the source keeps its history, in its provider's sentence (`ProviderParts.historyNoteKey`). */
   historyNoteKey?: string
   /**
-   * Tell me when this project's folder changed under us, other than by us.
+   * Hear when a scope changed other than through this window — or, with
+   * `wholeTree`, anything under it (`ProviderParts.changes`).
    *
    * Absent when nothing can watch — a browser tab, or a folder the platform
    * will not report on. The shell then simply never hears about a second
    * author, which is what it did before any of this existed.
    */
-  watchProject?: WatchProject
-  /**
-   * The snapshots of this working directory. Absent in a browser tab and until
-   * a folder is chosen — there is nothing for a history to be a history OF.
-   */
-  history?: ProjectHistory
-  /**
-   * The folder's own settings — what everyone who opens it agrees on, and what
-   * this machine does about it (ADR-0005). Absent where there is no folder,
-   * rather than a null object: a dialog section with nothing to be about is
-   * not drawn.
-   */
-  folderSettings?: FolderSettingsStore
+  changes?: SourceChanges
   /**
    * The settings the desktop's main process keeps for itself — whether to
    * check for updates. Absent in a browser tab, which has no host to ask.
@@ -304,6 +271,13 @@ export type SourceBase = {
   readonly diagnostics: Diagnostics
   /** What this source is opening into, where there is one. */
   readonly shell?: Shell
+  /** The person's language, for what a source records or says before there is an app to say it. */
+  readonly s?: Translate
+  /**
+   * Where this boot kept work before any source was chosen — this browser's
+   * own storage, or memory — for a source that may offer to bring it along.
+   */
+  readonly beneath?: Repositories
 }
 
 /**
@@ -373,6 +347,13 @@ export type RegisteredSourceProvider<Opening = never, Own = unknown> =
      * parts. Asked for the open source's provider only, as `agentPanel` is.
      */
     readonly preferencesPanel?: ComponentType<SourcePreferencesPanelProps<Own>>
+    /**
+     * Somewhere new a working file may become (ADR-0025), by this provider's
+     * way in: asked where, and looked at before anything is written. Asked
+     * of the way in the host names (`SourceConnect.hostMenu`); the boot opens
+     * the source there once the file has landed.
+     */
+    readonly destination?: () => Promise<SourceDestination<Opening> | undefined>
   }
 
 /**
@@ -701,7 +682,9 @@ export function composeShell(): Shell {
     // Both fallbacks bring one, and the preferences are read before the first
     // render — so a source that brought none is not a shell this boot can use.
     preferences: kept.preferences ?? failNoPreferences(kind),
-    documents: new BrowserDocumentGateway(),
+    // On the desktop a file goes where the person says, whatever the source;
+    // in a tab a download is what a file does.
+    documents: desktopFiles() ? new DesktopDocumentGateway(desktopFiles()!) : new BrowserDocumentGateway(),
     diagnostics,
     hostControls: browserHostControls(),
     // The one desktop seam that does not wait for a folder: it is about this
@@ -750,124 +733,28 @@ export function desktopCommandChannel(): DesktopCommands | undefined {
 }
 
 /**
- * The same shell, keeping its projects in a folder the user chose.
- *
- * The whole of the desktop's storage, and it is two lines: the folder store
- * over an IPC handle instead of over a browser's. Nothing above this file
- * changes — not `App`, not a component, not a test — which is what the seam was
- * for and what `ScopeStore.contract.ts` checks on both.
- *
- * Preferences stay where they were. They describe this machine (its language,
- * its theme, which folder it uses), so putting them in the folder would carry
- * one machine's settings to every other machine that opens it.
+ * The shell over what a source just opened: its parts spread over the shell it
+ * opened into, with everything the source before it said for itself taken off
+ * first — its status words, its failure sentence, its session hook, its
+ * read-only scopes, its landing, whether it publishes steps, what it hears of
+ * changes and its own parts. A folder whose scopes are bound to a server's
+ * session, or which reports a server's failure, is the defect this closes.
  */
-/**
- * The half of a folder shell that has nothing to do with which folder it is:
- * the stores. Shared by the desktop and by a browser tab that has been given a
- * directory handle, which is the whole reason `DirectoryHandleLike` exists.
- */
-function overFolder(shell: Shell, opening: FolderOpening): Shell {
-  // The shell this folder is opening into, before its own parts are spread over
-  // it: the preferences stay where they were (see below), so what a provider in
-  // its place would reuse is exactly what this line leaves alone.
-  const kept = openSourceNow('folder', opening, { diagnostics: shell.diagnostics, shell })
-  return { ...withoutSourceParts(shell), ...kept, scopes: keeper('folder', kept) }
-}
-
-/**
- * The shell with everything the source it was opened over said for itself taken
- * off.
- *
- * A folder opened after another source (a registered provider, above all) is
- * spread over the shell that source made, and every optional part the folder
- * does not say again would otherwise be the previous source's: its status
- * words, its failure sentence, its session hook, its read-only scopes, its
- * landing, whether it publishes steps, its watcher and its history. A folder
- * whose scopes are bound to a server's session, or which reports a server's
- * failure, is the defect this closes. The folder's own parts, and the desktop's
- * watcher and history added over them, are spread after.
- */
-function withoutSourceParts(shell: Shell): Shell {
+export function overSource(shell: Shell, parts: SourceParts): Shell {
   const {
     sourceStatus: _status, onSourceWork: _work, sourceFailure: _failure, onScopeSession: _session,
-    publishesSteps: _publishes, readOnlyAt: _readOnly, opensAt: _opensAt, watchProject: _watch,
-    history: _history, own: _own, historyNoteKey: _historyNote, ...rest
+    publishesSteps: _publishes, readOnlyAt: _readOnly, opensAt: _opensAt, changes: _changes,
+    own: _own, historyNoteKey: _historyNote, ...rest
   } = shell
-  return rest
+  return { ...rest, ...parts, scopes: parts.scopes ?? shell.scopes }
 }
 
 /**
- * A browser tab, working in a folder the user picked.
- *
- * Everything the desktop gets except the parts a tab cannot have: no save
- * dialog (a download is what a tab does), no watcher (nothing tells a page that
- * a file changed) and no history (there is no git in a tab). Those are absent
- * rather than stubbed, and the app offers what is present.
+ * Where a working file may become somewhere new (ADR-0025), by the way in the
+ * host names, or nowhere.
  */
-export function inBrowserFolder(shell: Shell, handle: DirectoryHandleLike): Shell {
-  return overFolder(shell, browserOpening(handle))
-}
-
-export function inWorkingDirectory(
-  shell: Shell, files: DesktopFiles, directory: DesktopDirectory,
-): Shell {
-  // Everything goes through the remembering wrapper, including the stores:
-  // a write that went round it would come back as somebody else's change.
-  const opening = desktopOpening(files, directory)
-  const { channel } = opening
-
-  const watchProject: WatchProject = (scope, onChanged, wholeTree = false) => {
-    // Watching the whole folder rather than one scope: it is one watcher for
-    // the window, and watching the same root twice is a no-op in main. Nothing
-    // unwatches it — another scope may be opened a second later, and the
-    // watcher costs one handle. One that could not be set up is a folder whose
-    // outside changes this window will not hear about, so the trail says so.
-    void channel.files.watch(directory.root).catch((cause: unknown) => {
-      shell.diagnostics.report({ level: 'warn', where: 'workingDirectory', message: 'the folder cannot be watched', cause })
-    })
-    // The scope's OWN files: what is on screen is this scope's document, and
-    // a landscape filed under a domain being edited elsewhere, a README
-    // dropped beside `scope.json`, an export saved into the folder are none of
-    // them a change to it. `isFormatPath` is the one rule for which paths a
-    // scope's folder holds, and it excludes a nested scope by construction.
-    // The index asks for the whole tree instead, because a scope three levels
-    // down renaming its ERP is exactly what it exists to notice.
-    const prefix = scope === '' ? '' : `${scope}/`
-    return channel.files.onChanged((change) => {
-      if (change.root !== directory.root || !change.path.startsWith(prefix)) return
-      if (!wholeTree && !isFormatPath(change.path.slice(prefix.length))) return
-      // Our own writes come back as news, and whether that is news depends on
-      // who asks. The open scope must not hear them: it just wrote them, and
-      // "changed on disk" would be the app interrupting itself. The tree
-      // MUST: the index is derived from every scope's records, this app's
-      // own writes included — an example copied in, a scope created, a
-      // landscape saved with one more application — and an index that only
-      // heard about other people's changes stood empty on the desktop until
-      // a restart, while every register, map and stand-in read from it.
-      if (!wholeTree && channel.ours(change)) return
-      onChanged()
-    })
-  }
-
-  const folder = overFolder(shell, opening)
-  const settings = folder.folderSettings
-  const git = desktopHistory()
-  return {
-    ...folder,
-    // A real save dialog rather than a download. Swapped here rather than in
-    // `composeShell` because it is the same decision as the store: this is the
-    // desktop, and on the desktop a file goes where the user says.
-    documents: new DesktopDocumentGateway(files),
-    watchProject,
-    history: git && new DesktopProjectHistory(git, directory.root),
-    // What this machine does about the folder is the desktop's to keep, in its
-    // own data folder and not in the folder (ADR-0023); the folder's store is
-    // read through for what an older build left there. A renderer without the
-    // settings channel is a test, and keeps the folder's store as it is.
-    folderSettings: settings && (
-      desktopSettings() ? new DesktopFolderSettings(desktopSettings()!, directory.root, settings) : settings
-    ),
-  }
+export function sourceDestination(kind: string): (() => Promise<SourceDestination<unknown> | undefined>) | undefined {
+  return sourceProvider<unknown>(kind)?.destination
 }
 
 /**
@@ -880,7 +767,9 @@ export function inWorkingDirectory(
  * that is a provider nothing can be opened from.
  */
 registerLogoPack(RAIL_PACK)
-registerSourceProvider(FOLDER_SOURCE)
+registerSourceProvider({
+  ...FOLDER_SOURCE, chrome: FolderChrome, preferencesPanel: FolderPreferences, destination: chooseFolderDestination,
+})
 registerSourceProvider(BROWSER_STORAGE_SOURCE)
 registerSourceProvider(MEMORY_SOURCE)
 

@@ -27,7 +27,7 @@ import type { useOpenIntoPrompt } from './useOpenIntoPrompt'
 import type { usePasswordPrompt } from './usePasswordPrompt'
 import type { ProjectFileChannel } from './useProjectFiles'
 import type { Notify } from './useToasts'
-import type { ChooseFolderForWorkingFile } from './workingFileFlows'
+import type { ChooseDestination } from './workingFileFlows'
 import type { WorkingFileManifest } from '../projects/workingFileManifest'
 
 /** The organisation screen has no command log: the history drafts its default message. */
@@ -50,7 +50,6 @@ export function useHomeParts(deps: {
   index: ScopeIndex
   /** A restore on the history page: one write of the home's document. */
   restore: (command: Command) => void
-  onSnapshotTaken: () => void
   documents: ProjectFileChannel
   workingSet: () => Promise<ScopeSnapshot[]>
   adopt: (held: readonly ScopeSnapshot[], manifest?: WorkingFileManifest) => Promise<void>
@@ -58,7 +57,7 @@ export function useHomeParts(deps: {
   readScope: (path: ScopePath) => Promise<ScopeSnapshot | undefined>
   password: ReturnType<typeof usePasswordPrompt>
   openInto: ReturnType<typeof useOpenIntoPrompt>
-  chooseFolder: ChooseFolderForWorkingFile | undefined
+  chooseDestination: ChooseDestination | undefined
   doors: { history: RefObject<HomeHistoryDoors | undefined>; files: RefObject<HomeFileDoors | undefined> }
   notify: Notify
   s: Translate
@@ -92,7 +91,6 @@ export function useHomeParts(deps: {
     dispatch: restore,
     notify,
     s,
-    onTaken: deps.onSnapshotTaken,
   })
   deps.doors.history.current = scopeOpen ? undefined : history
   const model: HostModel = organisation.root?.model ?? EMPTY_MODEL
@@ -140,7 +138,7 @@ function useHomeFileDoors(deps: Parameters<typeof useHomeParts>[0] & {
     readScope: deps.readScope,
     askPassword: password.askPassword,
     landing: openInto.prompts,
-    chooseFolder: deps.chooseFolder,
+    chooseDestination: deps.chooseDestination,
     beforeReplace: deps.beforeReplace,
     notify,
     s,

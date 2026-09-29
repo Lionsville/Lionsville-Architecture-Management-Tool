@@ -36,7 +36,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.storageFailed':
     'Deze browser kon het ontwerp niet bewaren (opslag vol of geblokkeerd). Bewaar een werkbestand, anders is het bij het sluiten van het tabblad weg.',
   'shell.storageRecovered': 'Bewaren in deze browser lukt weer.',
-  'shell.folderNotOpened': 'De map kon niet worden geopend: {message}',
   'shell.sourceNotOpened': 'Die bron kon niet worden geopend: {message}',
   'shell.storageNearlyFull':
     'Deze browser zit voor ongeveer {percent}% vol voor deze app. Bewaar je werk in een map '
@@ -231,21 +230,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'change.becameStandIn': '{name} verwijst nu naar {scope}',
   'change.becameDefinition': '{name} wordt nu hier gedefinieerd',
 
-  'folder.title': 'Waar horen je projecten te staan?',
-  'folder.body':
-    'Kies een map; deze app bewaart je projecten daarin als bestanden die je kunt lezen, '
-    + 'back-uppen, synchroniseren en committen. In de app zelf blijft niets staan.',
-  'folder.choose': 'Map kiezen…',
-  'folder.recent': 'Onlangs gebruikt',
-  'folder.adoptTitle': 'Je werk meenemen naar deze map?',
-  'folder.adoptBody':
-    'Je projecten worden nu in de app zelf bewaard. “{name}” kan er een kopie van '
-    + 'krijgen, of openen zoals hij is. Er wordt in geen van beide gevallen iets verwijderd — '
-    + 'de app houdt zijn eigen kopie tot je die zelf verplaatst.',
-  'folder.adoptCopy': 'Mijn werk erin kopiëren',
-  'folder.adoptSkip': 'De map openen zoals hij is',
-  'picker.chooseFolder': 'Map kiezen…',
-  'picker.changeFolder': 'Vanuit een andere map werken…',
+  'source.firstTitle': 'Waar horen je projecten te staan?',
+  'source.recent': 'Onlangs gebruikt',
   'picker.never': 'Nog niet bewaard',
   'picker.changed': 'Gewijzigd {when}',
   'picker.delete': 'Verwijderen',
@@ -299,32 +285,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'prefs.channelBeta': 'Bèta',
   'prefs.channelNote':
     'Bèta’s zijn builds die vooruitlopen op een release, op dezelfde manier ondertekend en gepubliceerd. Wie het bètakanaal verlaat, houdt wat er geïnstalleerd is.',
-  'prefs.thisMachine': 'DEZE MAP, OP DEZE MACHINE',
-  'prefs.thisMachineNote':
-    'Bewaard door deze installatie en niet gedeeld \u2014 er wordt niets in de map geschreven, en een andere machine die deze map opent beslist zelf.',
-  'prefs.pullOnOpen': 'Van de remote ophalen als deze map wordt geopend',
-  'prefs.pushAfterSnapshot': 'Na elke momentopname pushen',
   'prefs.writeFailed': 'Die instelling kon niet worden bewaard: {message}',
-  'history.beforeSync': 'Voor het synchroniseren',
-  'history.beforeUpgrade': 'Voor het bijwerken van het bestandsformaat',
-  'sync.diverged':
-    'Deze map en de remote zijn allebei verdergegaan. Er wordt niets samengevoegd: kies welke versie blijft. '
-    + 'De onze blijft hoe dan ook op een branch bewaard.',
-  'sync.takeTheirs': 'Die van de remote',
-  'sync.keepOurs': 'Die van ons',
-  'sync.pulled': 'Gelijk met de remote.',
-  'sync.pushed': 'Naar de remote gepusht.',
-  'sync.tookTheirs': 'De versie van de remote blijft; de onze staat op een branch.',
-  'sync.keptOurs': 'Onze versie blijft, vastgelegd als merge.',
-  'sync.noRemote': 'Deze map heeft geen remote om mee te synchroniseren.',
-  'sync.unreachable': 'De remote is niet bereikbaar.',
-  'sync.credentials':
-    'De remote weigert de inloggegevens van deze machine. De app vraagt er niet om; meld je aan met je git-client.',
-  'sync.timeout': 'De remote antwoordde niet op tijd.',
-  'sync.pullRefused': 'De map is niet opgehaald: {reason}',
-  'sync.pushRefused': 'De momentopname is niet gepusht: {reason}',
-  'sync.resolveRefused': 'Er is niets veranderd: {reason}',
-
   'group.title': 'Onderdeelinstellingen',
   'group.open': 'Instellingen…',
   'group.openFor': 'Instellingen voor {name}',

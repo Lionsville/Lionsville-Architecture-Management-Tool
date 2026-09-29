@@ -12,7 +12,7 @@ import type { EN } from './en'
 
 export const DE: Record<keyof typeof EN, string> = {
   'menu.file': 'Datei',
-  'menu.openFolder': 'Ordner öffnen…',
+  'menu.connect': 'Ordner öffnen…',
   'menu.openRecent': 'Zuletzt verwendeten Ordner öffnen',
   'menu.noRecent': 'Keine zuletzt verwendeten Ordner',
   'menu.open': 'Öffnen…',

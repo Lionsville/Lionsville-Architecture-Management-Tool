@@ -27,7 +27,7 @@ import type { ModelSession } from './useModelSession'
 import type { AskPassword } from './usePasswordPrompt'
 import type { Notify } from './useToasts'
 import { landWorkingFile, savedWithout, sealedWorkingFile, unsealedBytes } from './workingFileFlows'
-import type { ChooseFolderForWorkingFile, LandingPrompts, OpenedWorkingFile, ReadScope } from './workingFileFlows'
+import type { ChooseDestination, LandingPrompts, OpenedWorkingFile, ReadScope } from './workingFileFlows'
 import type { WorkingFileManifest } from '../projects/workingFileManifest'
 
 /**
@@ -112,7 +112,7 @@ export type ProjectFilesDeps = {
   /** Where a working file goes, asked before it lands (ADR-0025). */
   landing: LandingPrompts
   /** A folder it may become; absent where none can be chosen. */
-  chooseFolder?: ChooseFolderForWorkingFile
+  chooseDestination?: ChooseDestination
   /** A snapshot of what is here before *Replace here* writes over it (ADR-0025, amended). */
   beforeReplace?: () => Promise<boolean>
   notify: Notify
@@ -121,7 +121,7 @@ export type ProjectFilesDeps = {
 
 export function useProjectFiles(deps: ProjectFilesDeps): ProjectFiles {
   const {
-    session, putPicture, documents, workingSet, adoptWorkingSet, readScope, askPassword, landing, chooseFolder, beforeReplace,
+    session, putPicture, documents, workingSet, adoptWorkingSet, readScope, askPassword, landing, chooseDestination, beforeReplace,
     notify, s,
   } = deps
 
@@ -216,7 +216,7 @@ export function useProjectFiles(deps: ProjectFilesDeps): ProjectFiles {
     void unsealedBytes(held, askPassword, s('seal.wrong')).then(async (bytes) => {
       if (!bytes) return
       await landWorkingFile({
-        name, bytes, into: session.snapshot(), prompts: landing, chooseFolder,
+        name, bytes, into: session.snapshot(), prompts: landing, chooseDestination,
         here: landHere,
         ...(readScope ? { read: readScope } : {}),
         ...(beforeReplace ? { beforeReplace } : {}),
@@ -225,7 +225,7 @@ export function useProjectFiles(deps: ProjectFilesDeps): ProjectFiles {
     }).catch((err: unknown) => notify(err instanceof ShellError
       ? messageFor(err, s)
       : s('shell.processFailed', { message: reasonOf(err) }), 'error'))
-  }, [session, landHere, readScope, askPassword, landing, chooseFolder, beforeReplace, notify, s])
+  }, [session, landHere, readScope, askPassword, landing, chooseDestination, beforeReplace, notify, s])
 
   const openFile = useCallback((file: File) => {
     documents.readBytes(file).then(

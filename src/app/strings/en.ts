@@ -74,7 +74,6 @@ export const EN = {
   'shell.storageFailed':
     'This browser could not save the design (storage full or blocked). Save a working file, or it is gone when you close the tab.',
   'shell.storageRecovered': 'Saving in this browser works again.',
-  'shell.folderNotOpened': 'The folder could not be opened: {message}',
   /**
    * The same sentence for a source that is not a folder: a way in a
    * registered provider offered, pressed, and gone nowhere. It says nothing
@@ -353,25 +352,8 @@ export const EN = {
   'change.becameStandIn': '{name} is now a stand-in of {scope}',
   'change.becameDefinition': '{name} is now defined here',
 
-  'folder.title': 'Where should your projects live?',
-  'folder.body':
-    'Pick a folder and this app keeps your projects in it as files you can read, back up, '
-    + 'sync and commit. Nothing is kept inside the app itself.',
-  'folder.choose': 'Choose a folder…',
-  'folder.recent': 'Recently used',
-  /**
-   * The folder pick asks before it copies. Both answers are safe and the body
-   * says so: the app keeps its own copy until somebody moves it on purpose.
-   */
-  'folder.adoptTitle': 'Bring your work into this folder?',
-  'folder.adoptBody':
-    'Your projects are kept inside the app at the moment. “{name}” can take a copy of '
-    + 'them, or open as it is. Nothing is deleted either way — the app keeps its copy until '
-    + 'you move it on purpose.',
-  'folder.adoptCopy': 'Copy my work in',
-  'folder.adoptSkip': 'Open the folder as it is',
-  'picker.chooseFolder': 'Choose folder…',
-  'picker.changeFolder': 'Work from another folder…',
+  'source.firstTitle': 'Where should your projects live?',
+  'source.recent': 'Recently used',
   'picker.never': 'Not saved yet',
   'picker.changed': 'Changed {when}',
   'picker.delete': 'Delete',
@@ -428,42 +410,7 @@ export const EN = {
   'prefs.channelBeta': 'Beta',
   'prefs.channelNote':
     'Betas are builds ahead of a release, signed and published the same way. Leaving the beta channel keeps whatever is installed.',
-  /**
-   * The machine-local scope says out loud that it is not shared: the file
-   * sits in the folder, and everything else in the folder travels.
-   */
-  'prefs.thisMachine': 'THIS FOLDER, ON THIS MACHINE',
-  'prefs.thisMachineNote':
-    'Kept by this install and not shared \u2014 nothing is written into the folder, and another machine that opens it decides for itself.',
-  'prefs.pullOnOpen': 'Pull from the remote when this folder is opened',
-  'prefs.pushAfterSnapshot': 'Push after every snapshot',
   'prefs.writeFailed': 'That setting could not be saved: {message}',
-
-  // --- git sync (ADR-0005) --------------------------------------------------
-  /** The snapshot a sync begins with, when this session has no log to draft from. */
-  'history.beforeSync': 'Before syncing',
-  'history.beforeUpgrade': 'Before upgrading the file format',
-  /**
-   * The folder and its remote have both moved on. The same two answers the
-   * disk-change notice offers for one file, scaled up; both keep everything.
-   */
-  'sync.diverged':
-    'This folder and its remote have both moved on. Nothing is merged: choose which version stands. '
-    + 'Ours is kept on a branch either way.',
-  'sync.takeTheirs': 'Take theirs',
-  'sync.keepOurs': 'Keep ours',
-  'sync.pulled': 'Up to date with the remote.',
-  'sync.pushed': 'Pushed to the remote.',
-  'sync.tookTheirs': 'The remote\u2019s version stands; ours is on a branch.',
-  'sync.keptOurs': 'Our version stands, recorded as a merge.',
-  'sync.noRemote': 'This folder has no remote to sync with.',
-  'sync.unreachable': 'The remote could not be reached.',
-  'sync.credentials':
-    'The remote refused this machine\u2019s credentials. The app asks for none; sign in with your git client.',
-  'sync.timeout': 'The remote did not answer in time.',
-  'sync.pullRefused': 'The folder was not pulled: {reason}',
-  'sync.pushRefused': 'The snapshot was not pushed: {reason}',
-  'sync.resolveRefused': 'Nothing was changed: {reason}',
 
   'group.title': 'Scope settings',
   'group.open': 'Settings…',

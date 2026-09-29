@@ -34,7 +34,6 @@ import type { Repositories } from '../ports/Repositories'
 import { parentScope, ROOT_SCOPE, scopePathFor, scopePathLabel } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
-import { useSync } from './useSync'
 import { BROWSER_STORAGE, sourceIsReadOnly } from '../platform/workingSource'
 import type { SourceMenuEntry } from '../platform/sourceProvider'
 import type {
@@ -49,7 +48,7 @@ import { usePasswordPrompt } from './usePasswordPrompt'
 import { useOpenIntoPrompt } from './useOpenIntoPrompt'
 import { useAgentServer } from './useAgentServer'
 import { AppDialogs, AppNotices, AppScreen, HomeHistoryDialogs } from './AppPanels'
-import type { AppFolder, AppHost, AppProps } from './appProps'
+import type { AppHost, AppProps } from './appProps'
 import { useHomeParts } from './useHomeParts'
 import { useMachineSettings } from './useMachineSettings'
 import { useProviderParts } from './useProviderParts'
@@ -360,7 +359,7 @@ export type ScopeSettingsPatch = {
   parent?: ScopePath
 }
 
-export type { AppBoot, AppFolder, AppHost, AppProps, AppProvider } from './appProps'
+export type { AppBoot, AppHost, AppProps, AppProvider } from './appProps'
 
 /** A group nobody filled in: every field in it is optional. */
 const NOTHING = {} as const
@@ -412,7 +411,7 @@ export function App(props: AppProps) {
 function useShellParts(props: AppProps): ShellParts {
   const { agent, diagnostics, repositories } = props
   const base = useShellBase(props)
-  const { source, folder, host, services, nav, sync, tree, agentServer, commands, organisation, refreshTree } = base
+  const { source, host, services, nav, tree, agentServer, commands, organisation, refreshTree } = base
   const { toasts, s, failedRef } = services
   const { project } = nav
 
@@ -480,14 +479,14 @@ function useShellParts(props: AppProps): ShellParts {
   const prompts = { password: usePasswordPrompt(s), openInto: useOpenIntoPrompt(s) }
   const home = useHomeParts({
     organisation, home: nav.home, setHome: nav.setHome, scopeOpen: project !== undefined, repositories,
-    index: tree.index, restore: restoreIntoHome, onSnapshotTaken: sync.afterSnapshot, documents: props.documents,
+    index: tree.index, restore: restoreIntoHome, documents: props.documents,
     workingSet: readWorkingSet,
     readScope: readScopeAt,
     adopt: async (held) => {
       await adoptScopes(held)
       treeChanged()
     },
-    ...prompts, chooseFolder: folder.onChooseForWorkingFile,
+    ...prompts, chooseDestination: props.provider?.destination,
     doors: { history: commands.homeHistory, files: commands.homeFiles }, notify: toasts.notify, s,
   })
   const findings = useTreeFindings({ index: tree.index, tree: organisation.tree, home: nav.home, scopes: repositories.scopes })
@@ -509,8 +508,8 @@ function useShellParts(props: AppProps): ShellParts {
   })
   const { machine, order, todayDay } = base
   return {
-    props, source, folder, host, hostMenu: host.hostMenu ?? false, windowChrome: host.windowChrome ?? NO_WINDOW_CHROME,
-    services, nav, sync, tree, organisation, findings, home, ancestry, agentServer, agent: shellAgent, machine,
+    props, source, host, hostMenu: host.hostMenu ?? false, windowChrome: host.windowChrome ?? NO_WINDOW_CHROME,
+    services, nav, tree, organisation, findings, home, ancestry, agentServer, agent: shellAgent, machine,
     commands, provider, order, prompts, todayDay,
     writes: { readTreeModels, readWorkingSet, adoptScopes, readScope: readScopeAt, treeChanged, applyProjectSettings },
   }
@@ -560,7 +559,9 @@ function useProjectSettings({ base, repositories }: { base: ReturnType<typeof us
 function useShellBase(props: AppProps) {
   const { repositories, diagnostics, hostControls, boot, agent, today = localToday } = props
   const source = props.source ?? BROWSER_STORAGE
-  const folder: AppFolder = props.folder ?? NOTHING
+  const changes = props.provider?.changes
+  // The way in the host names: *Open…* in its menu, and its Recent list.
+  const hostWay = props.provider?.waysIn?.find((way) => way.hostMenu)
   const host: AppHost = props.host ?? NOTHING
   const services = useShellServices({
     preferences: props.preferences, initialPreferences: boot.initialPreferences, browserLanguages: boot.browserLanguages,
@@ -586,25 +587,21 @@ function useShellBase(props: AppProps) {
   )
   const nav = useShellNavigation({
     initialProject: boot.initialProject, initialHome: boot.initialHome, scopes: repositories.scopes,
-    watchProject: folder.watch, prefs, failedRef, refreshTree, refreshIndex, writable,
+    watchProject: changes, prefs, failedRef, refreshTree, refreshIndex, writable,
   })
   const { project, enter } = nav
-  const sync = useSync({
-    history: folder.history, folderSettings: folder.settings, initial: boot.initialSync,
-    onTheirs: nav.reloadOpenProject, notify: toasts.notify, s, diagnostics,
-  })
-  const tree = useTreeIndex(repositories.index, folder.watch, failed)
+  const tree = useTreeIndex(repositories.index, changes, failed)
   refreshIndex.current = tree.refresh
   const agentServer = useAgentServer({ agent, failedRef, notify: toasts.notify, s })
   const machine = useMachineSettings({
-    updateSettings: host.updateSettings, folderSettings: folder.settings, history: folder.history,
-    failedRef, notify: toasts.notify, s, initiallyOpen: boot.opensDialog === 'preferences',
+    updateSettings: host.updateSettings, failedRef, notify: toasts.notify, s,
+    initiallyOpen: boot.opensDialog === 'preferences',
   })
   const commands = useShellCommands({
-    commands: host.commands, onChooseFolder: folder.onChoose, onOpenFolder: folder.onOpen, prefs,
+    commands: host.commands, onConnect: hostWay?.onConnect, onReopen: hostWay?.onReopen, prefs,
     openPreferences: machine.setOpen, openAgent: agentServer.openDialog, hostControls,
   })
-  useOpeningFailures({ folderFailure: boot.folderFailure, sourceFailure: boot.sourceFailure, notify: toasts.notify, s })
+  useOpeningFailures({ failure: boot.sourceFailure, failureKey: boot.sourceFailureKey, notify: toasts.notify, s })
   useHostFacts({ project, onScopeOpen: host.onScopeOpen, themeMode: prefs.themeMode, onThemeMode: host.onThemeMode })
   const order = useProjectOrder(prefs)
 
@@ -631,7 +628,7 @@ function useShellBase(props: AppProps) {
   })
   refreshTree.current = organisation.refresh
   return {
-    source, folder, host, services, todayDay, nav, sync, tree, agentServer, machine, commands, order,
+    source, host, services, todayDay, nav, tree, agentServer, machine, commands, order,
     organisation, refreshTree,
   }
 }

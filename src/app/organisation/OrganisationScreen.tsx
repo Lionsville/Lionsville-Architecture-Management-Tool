@@ -149,15 +149,15 @@ export type OrganisationScreenProps = {
    * every scope's home.
    */
   chipFace?: (open: boolean, fallback: ReactNode) => ReactNode
-  onChooseWorkingDirectory?: () => void
   /**
-   * The other places this build can work from, one button each, beside the one
-   * that chooses a folder.
+   * The places this build can work from, one button each, as each provider
+   * says it here: where one answers for the source that is open, what it
+   * offers from there — another of its kind — rather than where the person
+   * already is.
    *
-   * Empty for every build in this repository, and the bar then reads exactly as
-   * it always has. On the root's home only, for the same reason the source chip
-   * is: where work is kept is a fact about the whole tree and is said once,
-   * where the tree begins.
+   * On the root's home only, for the same reason the source chip is: where
+   * work is kept is a fact about the whole tree and is said once, where the
+   * tree begins.
    */
   waysIn?: readonly SourceWayIn[]
   /** The menu, for a host that has no menu bar — where theme and language are. */
@@ -253,7 +253,7 @@ function cardDoors(open: Organisation['open'], at: ScopePath, pages: Organisatio
 
 export function OrganisationScreen({
   organisation, examples, order, onOrderChange, source, sourceDescription, sourceChip, chipPanel, chipFace,
-  onChooseWorkingDirectory, waysIn,
+  waysIn,
   overflow, agent, onGoHome, findings, register = [], technology = [], initiatives = 0, sharedObservations = 0, platformTree,
   onOpenRegisterRow, onOpenRegisterPage, onLinkFromRegister, pageRequest, onPageChange,
   writable = ANYWHERE, today, language, s, windowChrome = NO_WINDOW_CHROME,
@@ -400,7 +400,6 @@ export function OrganisationScreen({
         source={chipHere(atRoot, sourceChip, chipPanel, chipFace) ? source : undefined}
         sourceDescription={sourceDescription}
         sourceChip={sourceChip} chipPanel={chipPanel} chipFace={chipFace}
-        onChooseWorkingDirectory={atRoot ? onChooseWorkingDirectory : undefined}
         waysIn={atRoot ? waysIn : undefined}
         onGoHome={onGoHome}
         onSettings={writable(home.path) ? () => organisation.editScope(home) : undefined}
@@ -818,7 +817,7 @@ function UnreadableScopes({ tree, at, s }: { tree: ScopeSummary; at: ScopePath; 
  */
 function OrganisationBar({
   barRef, tree, home, heading, level, source, sourceDescription, sourceChip, chipPanel, chipFace,
-  onChooseWorkingDirectory, waysIn = [],
+  waysIn = [],
   onGoHome, onSettings, overflow, agent, s, windowChrome,
 }: {
   /** Measured, so the pages that open under it know how far down to start. */
@@ -838,7 +837,6 @@ function OrganisationBar({
    * every scope's home.
    */
   chipFace?: (open: boolean, fallback: ReactNode) => ReactNode
-  onChooseWorkingDirectory?: () => void
   waysIn?: readonly SourceWayIn[]
   onGoHome: (path: ScopePath) => void
   /** Absent for somebody who may only read this scope: its record is not theirs to change. */
@@ -886,11 +884,6 @@ function OrganisationBar({
       <Box sx={{ flex: 1 }} />
 
       {source && !atTheEnd && chip}
-      {onChooseWorkingDirectory && (
-        <Button size="small" color="inherit" onClick={onChooseWorkingDirectory} sx={quiet}>
-          {s(source?.kind === 'folder' ? 'picker.changeFolder' : 'picker.chooseFolder')}
-        </Button>
-      )}
       {waysIn.map((way) => (
         <Button
           key={way.kind}

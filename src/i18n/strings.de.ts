@@ -8,6 +8,7 @@
  * compile error in the module that owns the word rather than a surprise here.
  */
 import { DE as adapters } from '../adapters/strings/de'
+import { DE as providers } from '../providers/strings/de'
 import { DE as app } from '../app/strings/de'
 import { DE as decisions } from '../decisions/strings/de'
 import { DE as observations } from '../observations/strings/de'
@@ -24,6 +25,7 @@ import { DE as technology } from '../technology/strings/de'
 
 export const DE = {
   ...adapters,
+  ...providers,
   ...app,
   ...decisions,
   ...observations,

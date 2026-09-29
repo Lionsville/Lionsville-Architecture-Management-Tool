@@ -49,29 +49,21 @@ import { configureElkWorker, configureLibavoidWasm, configureLibavoidWorker } fr
 import ElkWorker from 'elkjs/lib/elk-worker.min.js?worker'
 import { detectBrowserLanguage, translator } from '../i18n'
 import {
-  browserFolders, chooseFolderDestination, composeShell, desktopCommandChannel, desktopFileChannel,
-  inBrowserFolder, inWorkingDirectory, openSource, registeredChrome, registeredConnects,
+  composeShell, desktopCommandChannel, openSource, overSource, registeredChrome, registeredConnects,
   registeredMenus, reloadWhenScriptsAreGone, sourceAgentPanel, sourceChip, sourceChipFace, sourceChipPanel,
-  sourceConnected, sourceDescription, sourcePreferencesPanel, sourceRecentActivity,
+  sourceConnected, sourceDescription, sourceDestination, sourcePreferencesPanel, sourceRecentActivity,
 } from './composition'
-import type { WorkingFileDestination } from './workingFileFlows'
-import type { DesktopDirectory, RegisteredConnect, Shell } from './composition'
-import type { SourceLocation, SourceWayIn } from '../platform/sourceProvider'
-import {
-  mayOfferAdoption, readLanguage, readLastScope, readWorkingDirectory, withDeclinedFolder,
-  withMigratedFolder, withoutLastScope, withWorkingDirectory,
-} from '../projects/preferences'
-import { holdsScopes, migrated, migrateInto } from '../projects/migration'
+import type { RegisteredConnect, Shell } from './composition'
+import type { SourceLocation, SourceRecent, SourceWayIn } from '../platform/sourceProvider'
+import { readLanguage, readLastScope, withoutLastScope } from '../projects/preferences'
 import { readScope } from '../projects/scopeAccess'
-import { pullOnOpen as pullBeforeOpening, upgradeFormat as upgradeFormatOf } from './bootReads'
-import type { PullOutcome } from '../platform/sync'
 import { sourceKey } from '../platform/workingSource'
 import { dialogAsked, landingOf, scopeToRead, withoutDialog } from './bootLanding'
 import type { BootDialog, BootLanding } from './bootLanding'
 import { EXAMPLE_OFFERS } from './examples/offers'
 import { App } from './App'
-import { AdoptFolder } from './AdoptFolder'
 import { BootFailure } from './BootFailure'
+import type { ChooseDestination } from './workingFileFlows'
 
 /**
  * The edge router runs on WebAssembly, and not on this thread.
@@ -133,52 +125,26 @@ let shell = browserShell
 // and a deploy while this tab was open is a script that is gone.
 reloadWhenScriptsAreGone(browserShell)
 
-/**
- * The desktop's file channel, or nothing at all in a browser tab.
- *
- * Asked once, here, because it is the answer to "can this build keep projects
- * in a folder" — and everything below phrases itself as "if we can".
- */
-const files = desktopFileChannel()
-
-/** The File menu, and the documents the OS opens us with. */
+/** The menu bar, and the documents the OS opens us with. Nothing in a browser tab. */
 const commands = desktopCommandChannel()
 
 /**
- * The folder this machine works in, if it has one it may still use.
+ * What the boot read, kept where the failure handler can still see it.
  *
- * The preference says which folder; the main process says which folders the
- * user has actually granted. The intersection is what may be opened, and it is
- * checked this way round on purpose: a path in a preferences blob is a wish,
- * and a blob can be edited by anybody with a text editor.
+ * The two steps fail differently. If the *preferences* would not read there is
+ * nothing to carry forward; if the *scope* would not load, the language and
+ * the theme are perfectly good and only the address has to go.
  */
+let stored: unknown = undefined
+
 /** A preference that could not be written: nothing is lost now, and the next start asks again. */
 function reportPreferences(cause: unknown): void {
   shell.diagnostics.report({ level: 'warn', where: 'preferences', message: 'the preferences could not be written', cause })
 }
 
-async function rememberedDirectory(stored: unknown): Promise<void> {
-  if (!files) {
-    // A browser tab, where a folder is best effort: only if this browser can
-    // give one, only if it gave one before, and only if the permission is still
-    // granted — asking again needs a click, and a boot is not one.
-    const handle = browserFolders.possible() ? await browserFolders.remembered() : undefined
-    if (handle) shell = inBrowserFolder(shell, handle)
-    return
-  }
-  // None is an answer the first-run screen can give; a channel that failed to
-  // say is one the trail should have.
-  const granted = await files.recentDirectories().catch((cause: unknown) => {
-    shell.diagnostics.report({ level: 'warn', where: 'workingDirectory', message: 'the recent folders could not be read', cause })
-    return []
-  })
-  // Kept for the first-run screen: a machine that has worked in a folder before
-  // should be one click away from it, not one dialog.
-  recentFolders = granted
-  const wanted = readWorkingDirectory(stored)
-  if (!wanted) return
-  const directory = granted.find((held) => held.root === wanted)
-  if (directory) shell = inWorkingDirectory(shell, files, directory)
+/** The boot's language, for what a source records before there is an app to ask. */
+function bootWords() {
+  return translator(readLanguage(stored) ?? detectBrowserLanguage(navigator.languages ?? navigator.language))
 }
 
 /** The source's repositories: what every source brings, and a wiring mistake where one did not. */
@@ -187,135 +153,161 @@ function repositoriesOf(held: Shell): NonNullable<Shell['repositories']> {
   return held.repositories
 }
 
-/** What the first-run screen offers. Empty until the boot has asked. */
-let recentFolders: readonly DesktopDirectory[] = []
-
 /**
- * Work from a source a registered provider answers for.
- *
- * `openSource` is the one call: the parts a provider builds and its word about
- * the five words the bar says travel together, and this file is not the place
- * to restate that. Everything else is the reasoning `chooseWorkingDirectory`
- * writes out below — `App` is keyed on the working source, so this is a fresh
- * mount and not a swap in place, because the open scope, the session's stack,
- * the index and every watcher belong to one source.
- *
- * Nothing is remembered about it. Where the work was is the provider's own
- * business, which is why `connect.fromLocation` exists: the address a build
- * reopens with is one it can read for itself, and a preference written from
- * here would be this file keeping a fact it cannot check.
- *
- * A rejection is not caught here. It is a source that could not be opened, which
- * each of the two callers below answers in the way that suits where it is: the
- * boot's own failure screen, or the notice a way in already has.
+ * Every registered provider that offers a way in, in the order they
+ * registered — the folder among them — and the one the host names: its *Open…*
+ * line and its Recent list (`SourceConnect.hostMenu`). A way in that cannot be
+ * taken here — a picker this browser does not have — is not offered at all.
  */
-async function workFrom(kind: string, opening: unknown): Promise<boolean> {
-  // The shell as it stands, before this source's parts are spread over it: the
-  // trail to report on, and the seams already filled — a provider that replaces
-  // the store has no business composing a second preferences store or a second
-  // *Save as…* dialog, and this is what it reuses instead.
-  //
-  // Awaited, because a source may have to shake hands before it can say what it
-  // is: what it is called, which scopes it holds and whether this person may
-  // write to it are answers over a wire, and `readOnly` has to be right at the
-  // first paint rather than a moment after it. A folder answers before the
-  // `await` has anything to do.
-  const parts = await openSource(kind, opening, { diagnostics: shell.diagnostics, shell })
-  // The preferences are read before the first render and the scopes right after
-  // it, so a source that brought neither is not one this boot can use — said
-  // here rather than discovered as an empty screen.
-  if (!parts.scopes) {
-    shell.diagnostics.report({
-      level: 'error',
-      where: 'source',
-      message: `the '${kind}' source brought nowhere to keep a scope`,
-    })
-    return false
-  }
-  shell = { ...shell, ...parts, scopes: parts.scopes }
-  return true
-}
+const connects: readonly RegisteredConnect[] = registeredConnects()
+  .filter((way) => way.connect.possible?.() ?? true)
+const hostWay = connects.find((way) => way.connect.hostMenu)
 
-/**
- * The folder's way in is the button that has always been there.
- *
- * Every registered provider says how a person reaches it, the folder included —
- * but choosing a folder is more than opening a source: it is remembered as this
- * machine's preference, offered whatever is in browser storage, pulled and
- * walked through the format pass. That is `chooseWorkingDirectory`, which is
- * what the *Choose folder…* button already calls. A second button for the same
- * kind would be two buttons that do different amounts of the same thing.
- */
-const FOLDER_ASKS_FOR_MORE = 'folder'
+/** Has a way in been taken, or a source resumed? Until then work is where the boot composed it. */
+let sourced = false
 
-/**
- * The provider's own dialog, and then the shell over what it answered.
- *
- * Nothing back is a person who closed the dialog: they have said what they
- * meant, and a screen that reported an error would be arguing with them. A
- * rejection is a failure, and is both reported and said on screen — a way in
- * that ends in nothing looks like a button that does nothing.
- */
-function connectTo(way: RegisteredConnect): void {
-  void way.connect.open().then(async (opening) => {
-    if (opening === undefined) {
-      shell.diagnostics.report({ level: 'info', where: 'source', message: 'no source was chosen' })
-      return
-    }
-    // A source that has to shake hands does it here, with the app that is
-    // already on screen behind the press: this is the one way in where there is
-    // something to look at while it happens, and the `catch` below is what says
-    // so when it comes to nothing.
-    if (!await workFrom(way.kind, opening)) return
-    shell.diagnostics.report({ level: 'info', where: 'source', message: 'the source is open' })
-    renderApp(stored, undefined)
-  }).catch((cause: unknown) => {
-    shell.diagnostics.report({
-      level: 'error', where: 'source', message: 'the source was not opened', cause,
-    })
-    renderApp(stored, undefined, undefined, undefined, cause)
+/** The places the host's way in worked from lately: the first screen's list. Empty until the boot has asked. */
+let recents: readonly SourceRecent[] = []
+
+async function readRecents(): Promise<void> {
+  const recent = hostWay?.connect.recent
+  if (!recent) return
+  // None is an answer the first screen can give; a channel that failed to say
+  // is one the trail should have.
+  recents = await recent().catch((cause: unknown) => {
+    shell.diagnostics.report({ level: 'warn', where: 'source', message: 'the recent places could not be read', cause })
+    return recents
   })
 }
 
 /**
- * One button per registered provider that offers a way in, in the order they
- * registered. Empty in every build in this repository.
+ * Work from a source a registered provider answers for, the folder included.
+ *
+ * `openSource` is the one call: the parts a provider builds and its word about
+ * the five words the bar says travel together, and this file is not the place
+ * to restate that. `App` is keyed on the working source, so what follows is a
+ * fresh mount and not a swap in place — the open scope, the session's stack,
+ * the index and every watcher belong to one source.
+ *
+ * Awaited, because a source may have to do something before it can be read: a
+ * folder is pulled and brought up to date, and a source somewhere else shakes
+ * hands and says what it is. `readOnly` has to be right at the first paint
+ * rather than a moment after it.
+ *
+ * A rejection is not caught here. It is a source that could not be opened, which
+ * each caller answers in the way that suits where it is: the boot's own failure
+ * screen, or the notice a way in already has.
  */
-const waysIn: readonly SourceWayIn[] = registeredConnects()
-  .filter((way) => way.kind !== FOLDER_ASKS_FOR_MORE)
-  .map((way) => ({
+async function workFrom(kind: string, opening: unknown): Promise<boolean> {
+  // The shell as it stands, before this source's parts are spread over it: the
+  // trail to report on, the seams already filled, the person's language for
+  // what a source records as it opens, and where work was kept before any
+  // source was chosen.
+  const parts = await openSource(kind, opening, {
+    diagnostics: shell.diagnostics, shell, s: bootWords(),
+    ...(browserShell.repositories ? { beneath: browserShell.repositories } : {}),
+  })
+  // The scopes are read right after the first render, so a source that brought
+  // nowhere to keep them is not one this boot can use — said here rather than
+  // discovered as an empty screen.
+  if (!parts.repositories) {
+    shell.diagnostics.report({ level: 'error', where: 'source', message: `the '${kind}' source brought no repositories` })
+    return false
+  }
+  shell = overSource(shell, parts)
+  sourced = true
+  return true
+}
+
+/**
+ * A place a person just chose, by a way in: opened, remembered as this
+ * machine's for the next boot where its provider keeps one, and the app drawn
+ * over it. Nothing back is a person who closed the dialog: they have said
+ * what they meant, and a screen that reported an error would be arguing with
+ * them. A rejection is a failure, and is both reported and said on screen — a
+ * way in that ends in nothing looks like a button that does nothing.
+ */
+function take(way: RegisteredConnect, chose: () => Promise<unknown>): Promise<void> {
+  return chose().then(async (opening) => {
+    if (opening === undefined) {
+      shell.diagnostics.report({ level: 'info', where: 'source', message: 'nothing was chosen' })
+      return
+    }
+    // The trail says where a pick got to, because "nothing happened" has been
+    // reported and where it was is not what it holds.
+    shell.diagnostics.report({ level: 'info', where: 'source', message: 'a place was chosen' })
+    if (!await workFrom(way.kind, opening)) return
+    const remember = way.connect.remember
+    if (remember) {
+      stored = remember(stored, opening)
+      // The source opens either way; one that could not be remembered is asked
+      // for again at the next start, and the trail says why.
+      await shell.preferences.write(stored as Record<string, unknown>).catch(reportPreferences)
+    }
+    // The first screen and the Recent menu read this list; a place granted
+    // just now belongs on it without a restart.
+    if (way === hostWay) await readRecents()
+    shell.diagnostics.report({ level: 'info', where: 'source', message: 'the source is open' })
+    renderApp(stored, undefined)
+  }).catch((cause: unknown) => {
+    shell.diagnostics.report({ level: 'error', where: 'source', message: 'the source was not opened', cause })
+    renderApp(stored, undefined, { cause, key: way.connect.failedKey })
+  })
+}
+
+/**
+ * Somewhere new a working file may become (ADR-0025), by the host's way in:
+ * chosen and looked at by its provider, written by the file's flow, and moved
+ * into here the way *Open…* moves.
+ */
+const chooseDestination: ChooseDestination | undefined = (() => {
+  const destination = hostWay && sourceDestination(hostWay.kind)
+  if (!hostWay || !destination) return undefined
+  return async () => {
+    const found = await destination()
+    if (!found) return undefined
+    return {
+      name: found.name,
+      occupied: found.occupied,
+      place: async (scopes) => {
+        await found.place(scopes)
+        await take(hostWay, () => Promise.resolve(found.opening))
+      },
+      read: (path) => found.read(path),
+    }
+  }
+})()
+
+/** One button per way in, in the order they registered, as the screens draw them. */
+function waysIn(): readonly SourceWayIn[] {
+  return connects.map((way) => ({
     kind: way.kind,
     labelKey: way.connect.labelKey,
-    onConnect: () => connectTo(way),
+    onConnect: () => { void take(way, () => way.connect.open()) },
     // The location bound here and the source asked for there: an address may be
     // read where the page is (`pageLocation`), and what is open moves while the
     // window is open, so the shell asks the rest of the question every time it
-    // draws the button. Read at the ask rather than closed over, so a provider
-    // reached by a link that changed sees the address it was reached at.
-    offer: way.connect.offer
-      ? (source) => way.connect.offer?.({ source, location: pageLocation() })
-      : undefined,
-  }))
+    // draws the button.
+    ...(way.connect.offer
+      ? { offer: (source) => way.connect.offer?.({ source, location: pageLocation() }) }
+      : {}),
+    ...(way.connect.hostMenu ? { hostMenu: true } : {}),
+    ...(way.connect.required?.() ? { required: true } : {}),
+    ...(way.connect.introKey ? { introKey: way.connect.introKey } : {}),
+    ...(way.connect.firstLabelKey ? { firstLabelKey: way.connect.firstLabelKey } : {}),
+    ...(way === hostWay ? { recent: recents } : {}),
+    ...(way.connect.reopen ? { onReopen: (key: string) => { void take(way, () => way.connect.reopen!(key)) } } : {}),
+  } satisfies SourceWayIn))
+}
 
 /**
- * What every registered provider draws for itself, whichever source this boot
- * ends up working from. Empty in every build in this repository.
- *
- * Read once, out here, for the same reason the ways in are: registration
- * happens at module load, and a list read per render would be a fresh array
- * every render and the same entries every time. Every registration and not the
- * open source's own, because the press that opens a source happens on a screen
- * where that provider is not the source yet — and its dialog has to be
- * somewhere by then.
+ * What every registered provider draws for itself, and what they want in the
+ * app's own menu, whichever source this boot ends up working from — read once,
+ * because registration happens at module load, and every registration's rather
+ * than the open source's: the press that opens a source happens on a screen
+ * where that provider is not the source yet.
  */
 const chromes = registeredChrome()
-
-/**
- * And what they want in the app's own menu, read once for the same reason: the
- * registrations are made at module load, and every registration's lines rather
- * than the open source's, because the line a provider needs most is the one that
- * is pressed while it answers for nothing.
- */
 const menus = registeredMenus()
 
 /**
@@ -331,7 +323,7 @@ const menus = registeredMenus()
  */
 async function sourceFromLocation(): Promise<boolean> {
   const location = pageLocation()
-  for (const way of registeredConnects()) {
+  for (const way of connects) {
     let opening: unknown
     try {
       opening = way.connect.fromLocation?.(location)
@@ -345,12 +337,27 @@ async function sourceFromLocation(): Promise<boolean> {
     // Opening what the address named is deliberately NOT caught: reading a URL
     // is a guess and the next provider may recognise it, while a source that
     // recognised it and then could not be opened is the boot failing — and the
-    // boot has a screen for that, which says the provider's own sentence and
-    // offers a way back in. Swallowing it here would leave the fallback store
-    // open under an address that says otherwise.
+    // boot has a screen for that.
     if (await workFrom(way.kind, opening)) return true
   }
   return false
+}
+
+/**
+ * The place this machine worked from last, where a way in keeps one and it may
+ * still be opened: the first that answers wins. One that could not say is a
+ * boot that opens where the fallback keeps work, and the trail says why.
+ */
+async function resumed(): Promise<void> {
+  for (const way of connects) {
+    const resume = way.connect.resume
+    if (!resume) continue
+    const opening = await resume(stored).catch((cause: unknown) => {
+      shell.diagnostics.report({ level: 'warn', where: 'source', message: 'the last place could not be reopened', cause })
+      return undefined
+    })
+    if (opening !== undefined && await workFrom(way.kind, opening)) return
+  }
 }
 
 /**
@@ -381,280 +388,31 @@ function pageLocation(): SourceLocation {
   }
 }
 
-/**
- * Choosing a folder, which starts the app again.
- *
- * Deliberately a fresh mount rather than a swap in place, and `renderApp`
- * is what makes it one: `App` is keyed on the working source, so a new
- * folder is a new tree under it. The store is handed to `App` as a prop and
- * everything under it — the picker's list, the open project, the session's
- * undo stack, the index — belongs to the projects in one folder; switching
- * folders is exactly the moment none of that should carry over. It is the
- * same reasoning as remounting the workspace when the project changes, one
- * level up. This comment said "fresh boot" for a while with nothing behind
- * it, and the open organisation stayed open over the new folder's store.
- */
-function chooseWorkingDirectory(): void {
-  // One catch around the whole of it, and not only around the picker: a throw
-  // after the pick — copying in, the format pass — used to be an unhandled
-  // rejection, which is a folder chosen and a screen that does not change.
-  const failed = (cause: unknown) => {
-    shell.diagnostics.report({
-      level: 'error', where: 'workingDirectory', message: 'the folder was not opened', cause,
-    })
-    // Said on screen as well as in the trail: a pick that ends in nothing looks
-    // like a button that does nothing.
-    renderApp(stored, undefined, undefined, cause)
-  }
-  if (!files) {
-    void openBrowserFolder().catch(failed)
-    return
-  }
-  void files.chooseDirectory().then(async (chosen) => {
-    if (!chosen) return
-    await workIn(chosen)
-  }).catch(failed)
-}
-
-async function openBrowserFolder(): Promise<void> {
-  const handle = await browserFolders.choose()
-  if (!handle) {
-    shell.diagnostics.report({ level: 'info', where: 'workingDirectory', message: 'no folder was chosen' })
-    return
-  }
-  await openBrowserFolderWith(handle)
-}
-
-/**
- * A folder a working file just became (ADR-0025): chosen and written by the
- * composition, moved into here the way *Open Folder…* moves — the desktop's
- * route and the browser's, whichever this host has.
- */
-async function chooseFolderForWorkingFile(): Promise<WorkingFileDestination | undefined> {
-  const found = await chooseFolderDestination()
-  if (!found) return undefined
-  return {
-    name: found.opening.name,
-    occupied: found.occupied,
-    place: async (scopes) => {
-      await found.place(scopes)
-      if (files) await workIn({ root: found.opening.root, name: found.opening.name })
-      else await openBrowserFolderWith(found.opening.handle)
-    },
-    read: (path) => found.read(path),
-  }
-}
-
-async function openBrowserFolderWith(handle: Parameters<typeof inBrowserFolder>[1] & { name: string }): Promise<void> {
-  // The trail says where a pick got to, because "nothing happened" has been
-  // reported and a folder's name is not the folder's content.
-  shell.diagnostics.report({ level: 'info', where: 'workingDirectory', message: 'a folder was chosen' })
-  const inFolder = inBrowserFolder(shell, handle)
-  // The same offer as the desktop's, and the same rule: asked at most once per
-  // folder, copied at most once anywhere, nothing deleted. Keyed on the
-  // folder's name, which is all a tab knows about where it is.
-  let kept = withWorkingDirectory(stored, handle.name)
-  kept = withAdoption(kept, handle.name, await adoptInto(inFolder, handle.name, handle.name))
-  stored = kept
-  // The folder opens either way; one that could not be remembered is asked
-  // for again at the next start, and the trail says why.
-  await shell.preferences.write(kept).catch(reportPreferences)
-  shell = inFolder
-  await upgradeFormat()
-  shell.diagnostics.report({ level: 'info', where: 'workingDirectory', message: 'the folder is open' })
-  renderApp(kept, undefined)
-}
-
-/**
- * A folder named by the host — the Recent menu, and the smoke run.
- *
- * Only ever one main has granted, and main checks that on every call it
- * receives, so there is nothing to verify here. The recents are consulted for
- * the folder's NAME and nothing else; a folder that is not in that list (the
- * smoke run grants one it deliberately does not remember) is opened under the
- * last segment of its path.
- */
-function nameOf(root: string): string {
-  return root.split(/[/\\]/).filter(Boolean).pop() ?? root
-}
-
-function openWorkingDirectory(root: string): void {
-  if (!files) return
-  void files.recentDirectories().then(
-    async (granted) => {
-      await workIn(granted.find((held) => held.root === root) ?? { root, name: nameOf(root) })
-    },
-    (cause: unknown) => {
-      shell.diagnostics.report({
-        level: 'error', where: 'workingDirectory', message: 'the folder was not opened', cause,
-      })
-    },
-  )
-}
-
-async function workIn(chosen: DesktopDirectory): Promise<void> {
-    if (!files) return
-    const inFolder = inWorkingDirectory(shell, files, chosen)
-    let kept = withWorkingDirectory(stored, chosen.root)
-    kept = withAdoption(kept, chosen.root, await adoptInto(inFolder, chosen.root, chosen.name))
-    stored = kept
-    // Best effort, and the app still opens the folder if it fails: this run
-    // works, the next one asks again.
-    await shell.preferences.write(kept).catch((cause: unknown) => {
-      shell.diagnostics.report({
-        level: 'warn', where: 'workingDirectory', message: 'preference not written', cause,
-      })
-    })
-    shell = inFolder
-    // The first-run screen and the Recent menu read this list; a folder
-    // granted just now belongs on it without a restart.
-    recentFolders = await files.recentDirectories().catch(() => recentFolders)
-    // After the pull, so what is migrated is what the remote just handed over.
-    const initialSync = await pullOnOpen()
-    await upgradeFormat()
-    renderApp(kept, undefined, initialSync)
-}
-
-/**
- * What the pick should remember about this folder.
- *
- * `nothing to record` covers both "there was nothing to bring" and "the copy
- * did not finish". Neither is an answer, and neither should stop the offer
- * being made again.
- */
-type Adoption = 'copied' | 'declined' | 'nothing to record'
-
-/** The pick's answer, folded into the blob the next boot reads. */
-function withAdoption(
-  kept: Record<string, unknown>, root: string, adoption: Adoption,
-): Record<string, unknown> {
-  if (adoption === 'copied') return withMigratedFolder(kept, root)
-  if (adoption === 'declined') return withDeclinedFolder(kept, root)
-  return kept
-}
-
-/**
- * The scopes that were in browser storage, copied into the folder — once, and
- * only when the person picking it says so.
- *
- * **Both halves of the old rule were wrong.** It copied as a side effect of
- * choosing a folder, and it did so once *per folder*. A folder nobody has
- * migrated into is every folder somebody has just made, so a folder chosen to
- * start something new arrived with an organisation already in it — and the
- * next empty folder got one too, being equally unmigrated. One folder per
- * customer is exactly the case that must not carry the first customer's
- * landscape into the second's.
- *
- * So: only while nothing has been rescued anywhere yet, only when there is
- * something to rescue, and only when asked. The list of folders stays, because
- * it is still the record of where the work went.
- *
- * **A no is remembered per folder**, because a browser hands out a folder
- * permission that rarely survives a restart: the same folder is picked again on
- * the next boot, and a question already answered must not be asked twice.
- *
- * Nothing is deleted from browser storage, here or later. Until somebody has
- * opened the migrated folder and seen their work in it, the old copy is the
- * only one that has certainly survived, and a drive can be unplugged.
- */
-async function adoptInto(folder: Shell, root: string, label: string): Promise<Adoption> {
-  if (!mayOfferAdoption(stored, root)) return 'nothing to record'
-  // From the boot's browser storage and never from `shell`: once a folder is
-  // open, `shell` IS that folder, and *Change…* to an empty one copied the
-  // open organisation into it — five scopes of somebody's landscape, in a
-  // folder chosen to start something else.
-  if (!await holdsScopes(browserShell.scopes)) return 'nothing to record'
-  if (!await askAdoption(label)) return 'declined'
-  const tally = await migrateInto(browserShell.scopes, folder.scopes).catch((cause: unknown) => {
-    shell.diagnostics.report({
-      level: 'error', where: 'migration', message: 'copying into the folder failed', cause,
-    })
-    return undefined
-  })
-  // Recorded as neither: a copy that did not finish is one to offer again.
-  if (!tally) return 'nothing to record'
-  // Counts, never names: this line goes to a log file the user is invited to
-  // hand over.
-  // A scope the old storage could not read is left behind, and the line says
-  // so at the level a person looking for lost work reads.
-  shell.diagnostics.report({
-    level: tally.unread.length > 0 ? 'warn' : 'info',
-    where: 'migration',
-    message: `copied ${tally.scopes} scopes, kept ${tally.kept}, failed ${tally.failed}, unread ${tally.unread.length}`,
-  })
-  // A run that wrote nothing because the folder already held it all has rescued
-  // the work as surely as one that wrote every file.
-  return migrated(tally) || tally.failed === 0 ? 'copied' : 'nothing to record'
-}
-
-/**
- * The question, on a screen of its own.
- *
- * Rendered where `BootFailure` is and for its reasons: this is the composition
- * root, no app is mounted that would survive the answer — the store beneath it
- * is the thing being decided — and a question behind a backdrop is a question
- * that gets clicked away. The app mounts once, after the answer, against
- * whichever store it chose.
- */
-function askAdoption(label: string): Promise<boolean> {
-  const s = translator(readLanguage(stored)
-    ?? detectBrowserLanguage(navigator.languages ?? navigator.language))
-  return new Promise<boolean>((resolve) => {
-    root.render(
-      <AdoptFolder
-        s={s}
-        folderName={label}
-        onCopy={() => resolve(true)}
-        onSkip={() => resolve(false)}
-      />,
-    )
-  })
-}
-
-/** The boot's language, for the two lines it drafts before there is an app to ask. */
-function bootWords() {
-  return translator(readLanguage(stored) ?? detectBrowserLanguage(navigator.languages ?? navigator.language))
-}
-
-/** See `bootReads.ts`: both are asked of the shell as it stands now. */
-function pullOnOpen(): Promise<PullOutcome | undefined> {
-  return pullBeforeOpening(shell, () => bootWords()('history.beforeSync'))
-}
-
-function upgradeFormat(): Promise<void> {
-  return upgradeFormatOf(shell, () => bootWords()('history.beforeUpgrade'))
+/** Does work here have nowhere to be kept until a way in is taken? The first screen asks. */
+function sourceNeeded(): boolean {
+  return !sourced && connects.some((way) => way.connect.required?.())
 }
 
 /**
  * Read first, then render — and with `.then` rather than a top-level `await`.
  *
- * Reading has to happen out here. `ProjectStore.load()` returns a promise, as it
- * must (every backend after browser storage — disk, IPC, a server — is async),
- * but the shell underneath wants to start synchronously: no `null` case threaded
- * through every `useState` of an open project, and no flash of an empty editor.
- * Waiting at the edge of the app buys both.
+ * Reading has to happen out here: every source is asynchronous, but the shell
+ * underneath wants to start synchronously — no `null` case threaded through
+ * every `useState` of an open scope, and no flash of an empty editor.
  *
  * Not a top-level await because Vite builds to a target that has none
  * (chrome87 / safari14), and raising that target is a statement about which
- * browsers this tool still serves. That statement should not arrive as a side
- * effect of a refactor; these two lines cost nothing.
- *
- * **Which project, and what if there is none.** The last one you had open, if it
- * is still there — that is a preference, and the reason a refresh lands you back
- * in your work rather than on a menu. If there is no last project, or it has
- * since been deleted, or storage refuses entirely, `initialProject` is
- * `undefined` and the app opens on the picker. That is a normal first visit, not
- * an error, so nothing here reports it.
+ * browsers this tool still serves.
  */
 function renderApp(
-  storedPreferences: unknown, landing: BootLanding & { dialog?: BootDialog } | undefined, initialSync?: PullOutcome,
-  folderFailure?: unknown, sourceFailure?: unknown,
+  storedPreferences: unknown, landing: BootLanding & { dialog?: BootDialog } | undefined,
+  failed?: { cause: unknown; key?: string },
 ): void {
   root.render(
     <StrictMode>
       <App
-        // A folder change is a fresh mount, not a swap in place: see
-        // `chooseWorkingDirectory` and `sourceKey`.
+        // A change of source is a fresh mount, not a swap in place: see
+        // `workFrom` and `sourceKey`.
         key={sourceKey(shell.source)}
         repositories={repositoriesOf(shell)}
         preferences={shell.preferences}
@@ -667,9 +425,7 @@ function renderApp(
           ...(landing?.dialog ? { opensDialog: landing.dialog } : {}),
           initialPreferences: storedPreferences,
           browserLanguages: navigator.languages ?? navigator.language,
-          initialSync,
-          folderFailure,
-          sourceFailure,
+          ...(failed ? { sourceFailure: failed.cause, ...(failed.key ? { sourceFailureKey: failed.key } : {}) } : {}),
         }}
         source={shell.source}
         provider={{
@@ -688,20 +444,13 @@ function renderApp(
           connected: sourceConnected(shell.source),
           readOnlyAt: shell.readOnlyAt,
           chrome: chromes,
-          waysIn,
+          waysIn: waysIn(),
           preferencesPanel: sourcePreferencesPanel(shell.source),
           own: shell.own,
           historyNoteKey: shell.historyNoteKey,
-        }}
-        folder={{
-          needed: Boolean(files),
-          onChoose: files || browserFolders.possible() ? chooseWorkingDirectory : undefined,
-          onOpen: files ? openWorkingDirectory : undefined,
-          onChooseForWorkingFile: files || browserFolders.possible() ? chooseFolderForWorkingFile : undefined,
-          recent: recentFolders,
-          watch: shell.watchProject,
-          history: shell.history,
-          settings: shell.folderSettings,
+          sourceNeeded: sourceNeeded(),
+          changes: shell.changes,
+          destination: chooseDestination,
         }}
         host={{
           commands: commands?.on,
@@ -722,58 +471,36 @@ function renderApp(
 }
 
 /**
- * What the boot read, kept where the failure handler can still see it.
- *
- * The two steps fail differently. If the *preferences* would not read there is
- * nothing to carry forward; if the *project* would not load, the language and
- * the theme are perfectly good and only the ref has to go.
- */
-let stored: unknown = undefined
-
-/**
  * A boot that fails is an app nobody can get back into.
  *
- * This chain had no `.catch`. A preferences blob a browser would not hand back,
- * or a last project too damaged to load, meant `root.render` was never reached:
- * a white page, on this reload and on every reload after it, because the thing
- * that broke the boot is read again at the start of the next one. The way out
- * has to be a button, not an instruction to clear browser storage by hand.
+ * A preferences blob a browser would not hand back, or a last scope too
+ * damaged to load, meant `root.render` was never reached: a white page, on
+ * this reload and on every reload after it, because the thing that broke the
+ * boot is read again at the start of the next one. The way out has to be a
+ * button, not an instruction to clear browser storage by hand.
  */
 void shell.preferences.read()
   .then(async (storedPreferences) => {
     stored = storedPreferences
-    // An address the page was opened at wins over the folder this machine last
-    // worked in: it is what was asked for just now, and the preference is what
-    // was asked for last time.
-    // Before the project is read, because it decides which store reads it.
-    if (!await sourceFromLocation()) await rememberedDirectory(storedPreferences)
-    // After the folder, before the project: see `pullOnOpen`.
-    const initialSync = await pullOnOpen()
-    // And before the project is read, so what opens is already this format.
-    await upgradeFormat()
-    // Not on a desktop with no folder yet: there is nothing to reopen, because
-    // the only place a project could be is the app's own storage, which is
-    // exactly what ADR-0003 retired. The first-run screen asks instead.
-    // A source a provider answers for keeps scopes somewhere as surely as a
-    // folder does, so the last one reopens from it too; what does not reopen is
-    // a desktop with nowhere to keep anything, where the only place a project
-    // could be is the app's own storage, which is exactly what ADR-0003 retired.
-    const hasSource = shell.source.kind === 'folder' || shell.source.kind === 'registered'
-    // An address that named a place wins over the scope this machine last had
-    // open, for the reason the address wins over the folder above.
-    // A home an address named is not read here at all: it reads its own
-    // document once it is up (`scopeToRead`).
-    const lastScope = scopeToRead(shell.opensAt, files && !hasSource
-      ? undefined
-      : readLastScope(storedPreferences))
-    // The tree's models and the scope it reopens, asked for together: the index
-    // is read the moment the app mounts, and nothing about it waits on which
-    // scope is open. After the format pass, so what is read is this format.
+    // An address the page was opened at wins over the place this machine last
+    // worked from: it is what was asked for just now, and the preference is
+    // what was asked for last time. Before the scope is read, because it
+    // decides which source reads it.
+    if (!await sourceFromLocation()) await resumed()
+    await readRecents()
+    // Where a way in is needed first, there is nothing to reopen: the only
+    // place a scope could be is where the boot composed, which is exactly what
+    // ADR-0003 retired. The first screen asks instead. An address that named a
+    // place wins over the scope this machine last had open, for the reason the
+    // address wins over the source above; a home an address named is not read
+    // here at all — it reads its own document once it is up (`scopeToRead`).
+    const lastScope = scopeToRead(shell.opensAt, sourceNeeded() ? undefined : readLastScope(storedPreferences))
+    // After the source opened, so what is read is what it holds now.
     const held = lastScope === undefined ? undefined : await readScope(repositoriesOf(shell).scopes, lastScope)
     // A scope with no views is a domain (ADR-0012 §1): there is nothing for the
     // canvas to show, so its home opens instead of an empty editor — and a
     // scope an address named opens on its home unless it named a view.
-    renderApp(storedPreferences, { ...landingOf(held, shell.opensAt), dialog: askedDialog }, initialSync)
+    renderApp(storedPreferences, { ...landingOf(held, shell.opensAt), dialog: askedDialog })
   })
   .catch((error: unknown) => {
     shell.diagnostics.report({

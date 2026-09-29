@@ -23,7 +23,7 @@ const scope = (name: string, path: string): ScopeSnapshot => ({
 const set = () => workingFileBytes([scope('Theirs', 'org'), scope('Under', 'org/retail')])
 const into = scope('Mine', 'acme/landscape')
 
-function prompts(destination: 'here' | 'folder' | undefined, replace = true) {
+function prompts(destination: 'here' | 'elsewhere' | undefined, replace = true) {
   return {
     askDestination: vi.fn(() => Promise.resolve(destination)),
     confirmReplace: vi.fn(() => Promise.resolve(replace)),
@@ -47,8 +47,8 @@ describe('landWorkingFile', () => {
   it('asks where the file goes, naming the file and what "here" would replace', async () => {
     const asked = prompts(undefined)
     const here = vi.fn()
-    await landWorkingFile({ name: 'theirs.lvarch', bytes: set(), into, prompts: asked, chooseFolder: () => Promise.resolve(undefined), here, notify: vi.fn(), s })
-    expect(asked.askDestination).toHaveBeenCalledWith({ file: 'theirs.lvarch', here: 'Mine', canChooseFolder: true })
+    await landWorkingFile({ name: 'theirs.lvarch', bytes: set(), into, prompts: asked, chooseDestination: () => Promise.resolve(undefined), here, notify: vi.fn(), s })
+    expect(asked.askDestination).toHaveBeenCalledWith({ file: 'theirs.lvarch', here: 'Mine', canGoElsewhere: true })
     expect(here).not.toHaveBeenCalled()
   })
 
@@ -63,9 +63,9 @@ describe('landWorkingFile', () => {
 
   it('a folder is written with the file\'s top scope as its root, and "here" is left alone', async () => {
     const chosen = folder(false)
-    const asked = prompts('folder')
+    const asked = prompts('elsewhere')
     const here = vi.fn()
-    await landWorkingFile({ name: 'x', bytes: set(), into, prompts: asked, chooseFolder: () => Promise.resolve(chosen), here, notify: vi.fn(), s })
+    await landWorkingFile({ name: 'x', bytes: set(), into, prompts: asked, chooseDestination: () => Promise.resolve(chosen), here, notify: vi.fn(), s })
     expect(chosen.placed).toHaveLength(1)
     expect(chosen.placed[0].map((held) => held.path)).toEqual(['', 'retail'])
     expect(chosen.placed[0][0].model.name).toBe('Theirs')
@@ -75,12 +75,12 @@ describe('landWorkingFile', () => {
 
   it('a folder that holds something is written only after a second yes', async () => {
     const refused = folder(true)
-    await landWorkingFile({ name: 'x', bytes: set(), into, prompts: prompts('folder', false), chooseFolder: () => Promise.resolve(refused), here: vi.fn(), notify: vi.fn(), s })
+    await landWorkingFile({ name: 'x', bytes: set(), into, prompts: prompts('elsewhere', false), chooseDestination: () => Promise.resolve(refused), here: vi.fn(), notify: vi.fn(), s })
     expect(refused.placed).toEqual([])
 
     const allowed = folder(true)
-    const asked = prompts('folder', true)
-    await landWorkingFile({ name: 'x', bytes: set(), into, prompts: asked, chooseFolder: () => Promise.resolve(allowed), here: vi.fn(), notify: vi.fn(), s })
+    const asked = prompts('elsewhere', true)
+    await landWorkingFile({ name: 'x', bytes: set(), into, prompts: asked, chooseDestination: () => Promise.resolve(allowed), here: vi.fn(), notify: vi.fn(), s })
     expect(asked.confirmReplace).toHaveBeenCalledWith('Elsewhere')
     expect(allowed.placed).toHaveLength(1)
   })
@@ -88,7 +88,7 @@ describe('landWorkingFile', () => {
   it('a cancelled folder picker lands nowhere, silently', async () => {
     const here = vi.fn()
     const notify = vi.fn()
-    await landWorkingFile({ name: 'x', bytes: set(), into, prompts: prompts('folder'), chooseFolder: () => Promise.resolve(undefined), here, notify, s })
+    await landWorkingFile({ name: 'x', bytes: set(), into, prompts: prompts('elsewhere'), chooseDestination: () => Promise.resolve(undefined), here, notify, s })
     expect(here).not.toHaveBeenCalled()
     expect(notify).not.toHaveBeenCalled()
   })
@@ -96,7 +96,7 @@ describe('landWorkingFile', () => {
   it('says "the working folder" for a home that has no name yet', async () => {
     const asked = prompts(undefined)
     await landWorkingFile({ name: 'x', bytes: set(), into: scope('   ', ''), prompts: asked, here: vi.fn(), notify: vi.fn(), s })
-    expect(asked.askDestination).toHaveBeenCalledWith({ file: 'x', here: 'the working folder', canChooseFolder: false })
+    expect(asked.askDestination).toHaveBeenCalledWith({ file: 'x', here: 'the working folder', canGoElsewhere: false })
   })
 
   it('"here" asks for a snapshot first, and replaces only once it answers yes', async () => {
@@ -120,7 +120,7 @@ describe('landWorkingFile', () => {
     const beforeReplace = vi.fn(() => Promise.resolve(true))
     const chosen = folder(false)
     await landWorkingFile({
-      name: 'x', bytes: set(), into, prompts: prompts('folder'), chooseFolder: () => Promise.resolve(chosen),
+      name: 'x', bytes: set(), into, prompts: prompts('elsewhere'), chooseDestination: () => Promise.resolve(chosen),
       here: vi.fn(), beforeReplace, notify: vi.fn(), s,
     })
     expect(beforeReplace).not.toHaveBeenCalled()
@@ -192,8 +192,8 @@ describe('a landing, read back and held to the file (ADR-0023, amended)', () => 
     const lossy = store(['depots'])
     const notify = vi.fn()
     await landWorkingFile({
-      name: 'org.lvarch', bytes: await sealedSet(), into, prompts: prompts('folder'),
-      chooseFolder: () => Promise.resolve({ name: 'New', occupied: false, place: lossy.write, read: lossy.read }),
+      name: 'org.lvarch', bytes: await sealedSet(), into, prompts: prompts('elsewhere'),
+      chooseDestination: () => Promise.resolve({ name: 'New', occupied: false, place: lossy.write, read: lossy.read }),
       here: vi.fn(), notify, s,
     })
     expect(notify).toHaveBeenCalledWith(
@@ -208,8 +208,8 @@ describe('a landing, read back and held to the file (ADR-0023, amended)', () => 
       throw new ShellError('shell.workingFileLandedInPart', { reason: 'held open' })
     }
     await landWorkingFile({
-      name: 'org.lvarch', bytes: await sealedSet(), into, prompts: prompts('folder'),
-      chooseFolder: () => Promise.resolve({ name: 'New', occupied: false, place, read: kept.read }),
+      name: 'org.lvarch', bytes: await sealedSet(), into, prompts: prompts('elsewhere'),
+      chooseDestination: () => Promise.resolve({ name: 'New', occupied: false, place, read: kept.read }),
       here: vi.fn(), notify, s,
     })
     expect(notify).toHaveBeenCalledTimes(1)

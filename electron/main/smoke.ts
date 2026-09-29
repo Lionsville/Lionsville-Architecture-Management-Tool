@@ -245,7 +245,7 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
 
   /** Tell the renderer to work in a folder, and wait for that folder's home. */
   const openFolder = async (directory: DesktopDirectory): Promise<string> => {
-    sendCommand({ type: 'openFolder', root: directory.root })
+    sendCommand({ type: 'reopen', key: directory.root })
     return page(waitFor(`(() => {
       const chip = document.querySelector('[data-testid="working-source"]')
       const cards = document.querySelector('[data-testid="organisation-cards"]')

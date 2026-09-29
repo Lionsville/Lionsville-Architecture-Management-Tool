@@ -17,11 +17,7 @@ import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react
 import { heldRepositories } from './testing/heldRepositories'
 import type { HostCommand } from '../platform/hostCommands'
 import type { UpdateSettings, UpdateSettingsPatch } from '../platform/updateSettings'
-import { DEFAULT_LOCAL_SETTINGS } from '../projects/folderSettings'
-import type { LocalSettings, LocalSettingsPatch } from '../projects/folderSettings'
 import type { ScopeSnapshot } from '../projects/scope'
-import type { FolderSettingsStore } from '../ports/FolderSettings'
-import type { ProjectHistory } from '../ports/ProjectHistory'
 import type { UpdateSettingsStore } from '../ports/UpdateSettings'
 import { renderApp } from './testing/renderShell'
 
@@ -52,32 +48,6 @@ function fakeUpdates(initial: UpdateSettings = { checkAutomatically: true, chann
   }
   return { store, writes }
 }
-
-function fakeFolderSettings(initial: LocalSettings = DEFAULT_LOCAL_SETTINGS) {
-  let held = initial
-  const writes: LocalSettingsPatch[] = []
-  const store: FolderSettingsStore = {
-    id: 'fake',
-    readFolder: () => Promise.resolve({}),
-    readLocal: () => Promise.resolve(held),
-    writeLocal: (patch) => {
-      writes.push(patch)
-      held = { git: { ...held.git, ...patch.git } }
-      return Promise.resolve()
-    },
-  }
-  return { store, writes }
-}
-
-const history = (available: boolean): ProjectHistory => ({
-  available: () => Promise.resolve(available),
-  keeping: () => Promise.resolve(true),
-  start: () => Promise.resolve(),
-  snapshot: () => Promise.resolve(true),
-  entries: () => Promise.resolve([]),
-  projectAt: () => Promise.resolve(undefined),
-  label: () => Promise.resolve('done'),
-})
 
 function show(over: Parameters<typeof renderApp>[0] = {}) {
   const listeners: ((command: HostCommand) => void)[] = []
@@ -157,43 +127,6 @@ describe('the update check', () => {
     await opened(view)
     fireEvent.click(await screen.findByText('Beta'))
     await waitFor(() => expect(updates.writes).toEqual([{ channel: 'beta' }]))
-  })
-})
-
-describe('the machine scope', () => {
-  it('is absent without a folder', async () => {
-    const view = show({ folder: { history: history(true) } })
-    await opened(view)
-    expect(screen.queryByText(/ON THIS MACHINE/)).toBeNull()
-  })
-
-  it('is absent with a folder but no history — a tab with a directory handle', async () => {
-    const view = show({ folder: { settings: fakeFolderSettings().store } })
-    await opened(view)
-    await act(() => Promise.resolve())
-    expect(screen.queryByText(/ON THIS MACHINE/)).toBeNull()
-  })
-
-  it('is absent when the history says this machine cannot keep one', async () => {
-    const view = show({ folder: { settings: fakeFolderSettings().store, history: history(false) } })
-    await opened(view)
-    await act(() => Promise.resolve())
-    expect(screen.queryByText(/ON THIS MACHINE/)).toBeNull()
-  })
-
-  it('writes through the store, as a patch, and says it stays with this install', async () => {
-    const folder = fakeFolderSettings()
-    const view = show({ folder: { settings: folder.store, history: history(true) } })
-    await opened(view)
-    expect(await screen.findByText('THIS FOLDER, ON THIS MACHINE')).toBeDefined()
-    expect(screen.getByText(/nothing is written into the folder/)).toBeDefined()
-
-    fireEvent.click(screen.getByLabelText(/Push after every snapshot/))
-    await waitFor(() => expect(folder.writes).toEqual([{ git: { pushAfterSnapshot: true } }]))
-    // Not a project change: the document's dirty state does not move.
-    expect(screen.getByTestId('saved-indicator').textContent).toBe('Not saved yet')
-    // And nothing of it in the blob either.
-    expect(JSON.stringify(await view.preferences.read() ?? {})).not.toContain('pushAfterSnapshot')
   })
 })
 

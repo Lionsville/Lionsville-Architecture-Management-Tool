@@ -122,14 +122,14 @@ function fileMenuFor(recents: readonly DesktopDirectory[]): MenuItemConstructorO
     ? [{ label: label('menu.noRecent'), enabled: false }]
     : recents.map((held) => ({
         label: held.name,
-        click: () => sendCommand({ type: 'openFolder', root: held.root }),
+        click: () => sendCommand({ type: 'reopen', key: held.root }),
       }))
 
   const items = FILE_MENU.map((entry: MenuEntry): MenuItemConstructorOptions => {
     switch (entry.kind) {
       case 'item': return itemFor(entry)
       case 'separator': return { type: 'separator' }
-      case 'recentFolders': return { label: label('menu.openRecent'), submenu: recent }
+      case 'recent': return { label: label('menu.openRecent'), submenu: recent }
     }
   })
 
