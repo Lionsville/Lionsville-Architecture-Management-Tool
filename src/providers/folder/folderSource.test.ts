@@ -8,7 +8,8 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { DesktopDirectory, DesktopFiles } from '../../adapters/desktop/channel'
-import { chooseFolderDestination, desktopOpening, FOLDER_SOURCE } from './folderSource'
+import { chooseFolderDestination, FOLDER_SOURCE } from './folderSource'
+import { desktopOpening } from './openings'
 
 const location = { href: 'https://example.test/', search: '', hash: '' }
 const work: DesktopDirectory = { root: '/work', name: 'work' }

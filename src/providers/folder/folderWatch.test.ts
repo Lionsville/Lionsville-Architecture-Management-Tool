@@ -11,7 +11,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { DesktopChange, DesktopFiles } from '../../adapters/desktop/channel'
 import { RecordingDiagnostics } from '../../adapters/memory/RecordingDiagnostics'
-import { desktopOpening } from './folderSource'
+import { desktopOpening } from './openings'
 import { openFolder } from './openFolder'
 
 function channel(): DesktopFiles {
