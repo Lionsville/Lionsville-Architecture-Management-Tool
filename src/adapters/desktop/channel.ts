@@ -90,10 +90,12 @@ export type DesktopHistory = {
   changes(root: string): Promise<DesktopChangedPath[]>
   /** Those paths, and no others, as one commit; `undefined` where none of them changed. */
   commitPaths(root: string, paths: string[], message: string): Promise<string | undefined>
+  /** The commit the folder is at, or `undefined` for a history with none. */
+  head(root: string): Promise<string | undefined>
   /** Commits, newest first, with every path each changed. */
   log(root: string, wanted: DesktopLogWanted): Promise<DesktopLogged[]>
-  /** Every file under a path at a commit, from the root. */
-  treeAt(root: string, sha: string, within: string): Promise<string[]>
+  /** Every file under a path at a commit, from the root, with the id of what it held. */
+  treeAt(root: string, sha: string, within: string): Promise<DesktopTreeEntry[]>
   /** Those files as they were at a commit: text, and bytes for a picture that is not an SVG. */
   readAt(root: string, sha: string, paths: string[]): Promise<DesktopFileAt[]>
   /** Every tag, on the commit it marks, with its words. */
@@ -103,8 +105,11 @@ export type DesktopHistory = {
 }
 
 export type DesktopChangedPath = { path: string; deleted: boolean }
-export type DesktopLogWanted = { paths?: string[]; grep?: string; limit: number; from?: string }
-export type DesktopLogged = { sha: string; at: number; author: string; subject: string; message: string; changed: string[] }
+export type DesktopLogWanted = { paths?: string[]; grep?: string; limit: number; tip?: string; skip?: number; firstParent?: boolean }
+export type DesktopLogged = {
+  sha: string; parents: string[]; at: number; author: string; subject: string; message: string; changed: string[]
+}
+export type DesktopTreeEntry = { path: string; blob: string }
 export type DesktopFileAt = { path: string; text: string } | { path: string; bytes: Uint8Array }
 export type DesktopTag = { name: string; sha: string; message: string }
 

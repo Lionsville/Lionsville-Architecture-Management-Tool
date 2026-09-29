@@ -109,6 +109,7 @@ const history: DesktopHistory = {
   startHistory: (root) => ipcRenderer.invoke('git:startHistory', root),
   changes: (root) => ipcRenderer.invoke('git:changes', root),
   commitPaths: (root, paths, message) => ipcRenderer.invoke('git:commitPaths', root, paths, message),
+  head: (root) => ipcRenderer.invoke('git:head', root),
   log: (root, wanted) => ipcRenderer.invoke('git:log', root, wanted),
   treeAt: (root, sha, within) => ipcRenderer.invoke('git:treeAt', root, sha, within),
   readAt: (root, sha, paths) => ipcRenderer.invoke('git:readAt', root, sha, paths),

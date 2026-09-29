@@ -100,23 +100,39 @@ export async function commitPaths(root: string, paths: readonly string[], messag
   }
 }
 
-export type GitLogged = { sha: string; at: number; author: string; subject: string; message: string; changed: string[] }
+export type GitLogged = {
+  sha: string; parents: string[]; at: number; author: string; subject: string; message: string; changed: string[]
+}
 
-export type LogWanted = { paths?: readonly string[]; grep?: string; limit: number; from?: string }
+export type LogWanted = { paths?: readonly string[]; grep?: string; limit: number; tip?: string; skip?: number; firstParent?: boolean }
 
-/** Commits, newest first, with every path each changed; none for a folder that keeps no history or has no commit. */
+/** The commit the folder is at, or `undefined` where it keeps no history or has no commit. */
+export async function headOf(root: string): Promise<string | undefined> {
+  if (!await isRepository(root)) return undefined
+  const sha = (await git(root, ['rev-parse', '--verify', '--quiet', 'HEAD']).catch(() => '')).trim()
+  return isSha(sha) ? sha : undefined
+}
+
+/**
+ * Commits, newest first, with every path each changed; none for a folder that
+ * keeps no history or has no commit. Paths are a filter on the full history —
+ * no side of a merge is simplified away — and a merge lists no path of its own.
+ * Every path comes back as it is, never quoted.
+ */
 export async function commitLog(root: string, wanted: LogWanted): Promise<GitLogged[]> {
   if (!await isRepository(root)) return []
-  if (wanted.from !== undefined && !isSha(wanted.from)) return []
+  if (wanted.tip !== undefined && !isSha(wanted.tip)) return []
   const paths = (wanted.paths ?? []).filter(isInside)
   if (wanted.paths && wanted.paths.length > 0 && paths.length === 0) return []
   let out: string
   try {
     out = await git(root, [
-      '-c', 'core.quotePath=false', 'log', `-n${Math.max(1, Math.trunc(wanted.limit))}`, '--no-renames', '--name-only',
-      `--format=${RECORD}%H${UNIT}%at${UNIT}%an${UNIT}%B${UNIT}`,
+      'log', '-z', `-n${Math.max(1, Math.trunc(wanted.limit))}`, `--skip=${Math.max(0, Math.trunc(wanted.skip ?? 0))}`,
+      '--no-renames', '--name-only', `--format=${RECORD}%H${UNIT}%P${UNIT}%at${UNIT}%an${UNIT}%B${UNIT}`,
+      ...(paths.length ? ['--full-history'] : []),
+      ...(wanted.firstParent ? ['--first-parent'] : []),
       ...(wanted.grep !== undefined ? ['--fixed-strings', `--grep=${wanted.grep}`] : []),
-      ...(wanted.from !== undefined ? [wanted.from] : []),
+      wanted.tip ?? 'HEAD',
       '--', ...paths.map(literal),
     ])
   } catch {
@@ -124,23 +140,29 @@ export async function commitLog(root: string, wanted: LogWanted): Promise<GitLog
     return []
   }
   return out.split(RECORD).flatMap((row) => {
-    const [sha, at, author, message, rest] = row.split(UNIT)
+    const [sha, parents, at, author, message, rest] = row.split(UNIT)
     if (!sha || message === undefined) return []
     const body = message.replace(/\n+$/, '')
     return [{
-      sha, at: Number(at) * 1000, author: author ?? '', subject: body.split('\n')[0] ?? '', message: body,
-      changed: (rest ?? '').split('\n').filter((path) => path.length > 0),
+      sha, parents: (parents ?? '').split(' ').filter(Boolean), at: Number(at) * 1000, author: author ?? '',
+      subject: body.split('\n')[0] ?? '', message: body,
+      changed: (rest ?? '').split('\0').map((path) => path.replace(/^\n/, '')).filter((path) => path.length > 0),
     }]
   })
 }
 
-/** Every file under `within` at a commit, paths from the root. */
-export async function treeAt(root: string, sha: string, within: string): Promise<string[]> {
+export type GitTreeEntry = { path: string; blob: string }
+
+/** Every file under `within` at a commit, paths from the root, with the id of what each held. */
+export async function treeAt(root: string, sha: string, within: string): Promise<GitTreeEntry[]> {
   if (!isSha(sha) || !await isRepository(root)) return []
   if (within !== '' && !isInside(within)) return []
-  const out = await git(root, ['ls-tree', '-r', '--name-only', '-z', sha, ...(within ? ['--', literal(within)] : [])])
+  const out = await git(root, ['ls-tree', '-r', '-z', sha, ...(within ? ['--', literal(within)] : [])])
     .catch(() => '')
-  return out.split('\0').filter((path) => path.length > 0)
+  return out.split('\0').flatMap((row) => {
+    const match = /^\d+ blob ([0-9a-f]+)\t([\s\S]+)$/.exec(row)
+    return match ? [{ path: match[2], blob: match[1] }] : []
+  })
 }
 
 export type GitFileAt = { path: string; text: string } | { path: string; bytes: Uint8Array }
@@ -224,6 +246,7 @@ export function folderGitAt(root: string) {
     start: () => startHistory(root),
     changes: () => changes(root),
     commit: (paths: readonly string[], message: string) => commitPaths(root, paths, message),
+    head: () => headOf(root),
     log: (wanted: LogWanted) => commitLog(root, wanted),
     treeAt: (sha: string, within: string) => treeAt(root, sha, within),
     readAt: (sha: string, paths: readonly string[]) => readAt(root, sha, paths),

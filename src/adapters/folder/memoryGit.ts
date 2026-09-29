@@ -12,11 +12,12 @@
  */
 import { isBinaryPath } from '../../projects/folderFormat'
 import type { DirectoryHandleLike } from './DirectoryHandle'
-import type { CommitsWanted, CommittedFile, FolderChange, FolderCommit, FolderGit, FolderTag } from './folderGit'
+import { fingerprint } from '../../projects/revision'
+import type { CommitsWanted, CommittedFile, FolderChange, FolderCommit, FolderGit, FolderTag, TreeEntry } from './folderGit'
 
 type Tree = Map<string, string>
 
-type Kept = { sha: string; at: number; message: string; tree: Tree; changed: string[] }
+type Kept = { sha: string; parents: string[]; at: number; message: string; tree: Tree; changed: string[] }
 
 /** What a file holds, as one comparable text: its bytes, whatever they are. */
 async function contentsOf(handle: { getFile(): Promise<{ arrayBuffer(): Promise<ArrayBuffer> }> }): Promise<string> {
@@ -84,26 +85,40 @@ export function memoryGit(root: DirectoryHandleLike, author = 'memory'): FolderG
       // A clock of its own, so two commits in one millisecond are still in order.
       clock = Math.max(Date.now(), clock + 1)
       const sha = `commit-${commits.length + 1}`
-      commits.push({ sha, at: clock, message, tree, changed: changed.sort() })
+      const parents = commits.length ? [commits[commits.length - 1].sha] : []
+      commits.push({ sha, parents, at: clock, message, tree, changed: changed.sort() })
       return sha
     },
+    head: () => Promise.resolve(commits[commits.length - 1]?.sha),
+    // One line of history, so first parents are every parent and a tip is where it starts.
     log(wanted: CommitsWanted): Promise<FolderCommit[]> {
       let from = commits.length - 1
-      if (wanted.from !== undefined) from = commits.findIndex((kept) => kept.sha === wanted.from)
+      if (wanted.tip !== undefined) from = commits.findIndex((kept) => kept.sha === wanted.tip)
       const found: FolderCommit[] = []
+      let skip = wanted.skip ?? 0
       for (let at = from; at >= 0 && found.length < wanted.limit; at -= 1) {
         const kept = commits[at]
         if (wanted.grep !== undefined && !kept.message.includes(wanted.grep)) continue
-        if (wanted.paths && !kept.changed.some((path) => wanted.paths!.some((spec) => isUnder(path, spec)))) continue
+        const changed = wanted.paths
+          ? kept.changed.filter((path) => wanted.paths!.some((spec) => isUnder(path, spec)))
+          : kept.changed
+        if (wanted.paths && changed.length === 0) continue
+        if (skip > 0) {
+          skip -= 1
+          continue
+        }
         found.push({
-          sha: kept.sha, at: kept.at, author, subject: kept.message.split('\n')[0], message: kept.message, changed: kept.changed,
+          sha: kept.sha, parents: kept.parents, at: kept.at, author, subject: kept.message.split('\n')[0], message: kept.message, changed,
         })
       }
       return Promise.resolve(found)
     },
-    treeAt(sha, inside) {
+    treeAt(sha, inside): Promise<TreeEntry[]> {
       const kept = commits.find((one) => one.sha === sha)
-      return Promise.resolve(kept ? [...kept.tree.keys()].filter((path) => isUnder(path, inside)).sort() : [])
+      return Promise.resolve(kept
+        ? [...kept.tree].filter(([path]) => isUnder(path, inside)).sort(([one], [other]) => (one < other ? -1 : 1))
+          .map(([path, held]) => ({ path, blob: fingerprint(['blob', held]) }))
+        : [])
     },
     readAt(sha, paths) {
       const kept = commits.find((one) => one.sha === sha)

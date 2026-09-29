@@ -27,6 +27,8 @@ import type { ScopeAddress, ScopeId } from '../../projects/scopeState'
 /** One commit, as the history reads it. */
 export type FolderCommit = {
   sha: string
+  /** The commits it was made on, first parent first; two or more for a merge. */
+  parents: readonly string[]
   /** Epoch milliseconds. */
   at: number
   author: string
@@ -34,9 +36,16 @@ export type FolderCommit = {
   subject: string
   /** The whole message, trailers included. */
   message: string
-  /** Every path it changed, from the folder's root. */
+  /**
+   * Every path it changed, from the folder's root — of those asked for, where
+   * paths were. A merge lists none: what it brings in is in the commits it
+   * merges, which are listed as themselves.
+   */
   changed: readonly string[]
 }
+
+/** One file in a commit's tree, and the id of what it held. */
+export type TreeEntry = { path: string; blob: string }
 
 /** A file as it was at a commit: text, or bytes for a picture that is not an SVG. */
 export type CommittedFile = { path: string; text: string } | { path: string; bytes: Uint8Array }
@@ -47,13 +56,20 @@ export type FolderTag = { name: string; sha: string; message: string }
 /** A path whose contents differ from the last commit, and whether it is gone. */
 export type FolderChange = { path: string; deleted: boolean }
 
-/** Which commits: those that changed one of `paths` (every one without), whose message holds `grep`, from `from` back. */
+/**
+ * Which commits: those that changed one of `paths` (every one without), whose
+ * message holds `grep`, as `git log` lists them back from `tip` — the newest
+ * without — after the first `skip`, and along first parents only where asked.
+ * The same tip and the same question list the same commits in the same order,
+ * merges and all, which is what a page after a page is counted in.
+ */
 export type CommitsWanted = {
   paths?: readonly string[]
   grep?: string
   limit: number
-  /** The commit to start at, itself included; the newest without. */
-  from?: string
+  tip?: string
+  skip?: number
+  firstParent?: boolean
 }
 
 export interface FolderGit {
@@ -65,10 +81,12 @@ export interface FolderGit {
   changes(): Promise<FolderChange[]>
   /** Those paths as they are now, and no others, as one commit; `undefined` where none of them changed. */
   commit(paths: readonly string[], message: string): Promise<string | undefined>
+  /** The commit the folder is at, or `undefined` for a history with none. */
+  head(): Promise<string | undefined>
   /** Commits, newest first. */
   log(wanted: CommitsWanted): Promise<FolderCommit[]>
-  /** Every file under `within` at a commit, from the root. */
-  treeAt(sha: string, within: string): Promise<string[]>
+  /** Every file under `within` at a commit, from the root, with the id of what it held. */
+  treeAt(sha: string, within: string): Promise<TreeEntry[]>
   /** Those files as they were at a commit; one that is not there is left out. */
   readAt(sha: string, paths: readonly string[]): Promise<CommittedFile[]>
   tags(): Promise<FolderTag[]>
@@ -140,16 +158,16 @@ export function ownerOf(path: string, addresses: Iterable<ScopeAddress>): ScopeA
  * that no scope filed inside it holds — a folder with a header of its own at
  * that commit is a scope, and its files are its own.
  */
-export function ownFilesAt(address: ScopeAddress, tree: readonly string[]): string[] {
-  const relative = tree.flatMap((path) => {
+export function ownFilesAt(address: ScopeAddress, tree: readonly TreeEntry[]): TreeEntry[] {
+  const relative = tree.flatMap(({ path, blob }) => {
     const inside = within(address, path)
-    return inside === undefined ? [] : [inside]
+    return inside === undefined ? [] : [{ path: inside, blob }]
   })
   const nested = relative
-    .filter((path) => path.endsWith(`/${SCOPE_FILE}`))
-    .map((path) => path.slice(0, -SCOPE_FILE.length))
+    .filter(({ path }) => path.endsWith(`/${SCOPE_FILE}`))
+    .map(({ path }) => path.slice(0, -SCOPE_FILE.length))
     .filter((prefix) => !SCOPE_FOLDERS.includes(prefix.split('/')[0]) && !prefix.startsWith('.'))
-  return relative.filter((path) => !nested.some((prefix) => path.startsWith(prefix)))
+  return relative.filter(({ path }) => !nested.some((prefix) => path.startsWith(prefix)))
 }
 
 /** The folder a scope keeps its settings in: the one the organisation's settings have always been in. */

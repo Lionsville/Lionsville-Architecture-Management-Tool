@@ -17,7 +17,7 @@ import { gitAvailable, isRepository, snapshot, useHooksFolder } from './git'
 
 const run = promisify(execFile)
 import {
-  allTags, changes, commitLog, commitPaths, folderGitAt, isScopeTagName, readAt, startHistory, tagCommit, treeAt,
+  allTags, changes, commitLog, commitPaths, folderGitAt, headOf, isScopeTagName, readAt, startHistory, tagCommit, treeAt,
 } from './gitEntries'
 
 const available = await gitAvailable()
@@ -86,8 +86,10 @@ describe.skipIf(!available)('the history a folder’s repositories read', () => 
     await rm(join(root, 'acme/model.json'))
     expect(await changes(root)).toContainEqual({ path: 'acme/model.json', deleted: true })
     await commitPaths(root, ['acme/model.json'], 'gone')
-    expect(await treeAt(root, (await commitLog(root, { limit: 1 }))[0].sha, '')).toEqual([':(glob)odd *name.md'])
-    expect(await treeAt(root, sha!, 'acme')).toEqual(['acme/model.json'])
+    expect((await treeAt(root, (await commitLog(root, { limit: 1 }))[0].sha, '')).map((file) => file.path)).toEqual([':(glob)odd *name.md'])
+    const [held] = await treeAt(root, sha!, 'acme')
+    expect(held.path).toBe('acme/model.json')
+    expect(held.blob).toMatch(/^[0-9a-f]{40,64}$/)
   })
 
   it('lists commits by the paths they changed, by what their messages say, and from one on', async () => {
@@ -101,8 +103,34 @@ describe.skipIf(!available)('the history a folder’s repositories read', () => 
     expect((await commitLog(root, { limit: 10, paths: ['globex'] })).map((commit) => commit.subject)).toEqual(['step 1'])
     expect((await commitLog(root, { limit: 10, grep: 'Lionsville-Scope: id-acme ' })).map((commit) => commit.subject))
       .toEqual(['step 2', 'step 0'])
-    expect((await commitLog(root, { limit: 10, from: all[1].sha })).map((commit) => commit.subject)).toEqual(['step 1', 'step 0'])
-    expect(await commitLog(root, { limit: 10, from: '--output=x' })).toEqual([])
+    expect((await commitLog(root, { limit: 10, tip: all[1].sha })).map((commit) => commit.subject)).toEqual(['step 1', 'step 0'])
+    expect(await commitLog(root, { limit: 10, tip: '--output=x' })).toEqual([])
+  })
+
+  it('lists a history with a merge from one tip, page after page, the merge with no path of its own', async () => {
+    await startHistory(root)
+    await put('model.json', '{"at":0}')
+    await commitPaths(root, ['model.json'], 'base')
+    const main = (await run('git', ['symbolic-ref', '--short', 'HEAD'], { cwd: root })).stdout.trim()
+    await run('git', ['checkout', '-q', '-b', 'side'], { cwd: root })
+    await put('side.md', 'side')
+    await commitPaths(root, ['side.md'], 'on the side')
+    await run('git', ['checkout', '-q', main], { cwd: root })
+    await put('model.json', '{"at":1}')
+    await commitPaths(root, ['model.json'], 'on the main line')
+    await run('git', ['-c', 'user.name=A', '-c', 'user.email=a@example.org', 'merge', '-q', '--no-ff', '-m', 'merged', 'side'], { cwd: root })
+    const tip = await headOf(root)
+    const all = await commitLog(root, { limit: 10, tip })
+    expect(all.map((commit) => commit.subject)).toContain('on the side')
+    const merge = all.find((commit) => commit.subject === 'merged')!
+    expect(merge.parents).toHaveLength(2)
+    expect(merge.changed).toEqual([])
+    const paged = [...await commitLog(root, { limit: 2, tip }), ...await commitLog(root, { limit: 2, tip, skip: 2 })]
+    expect(paged.map((commit) => commit.sha)).toEqual(all.map((commit) => commit.sha))
+    expect((await commitLog(root, { limit: 10, tip, firstParent: true })).map((commit) => commit.subject)).not.toContain('on the side')
+    // A merge may be listed for a path, and lists none of its own.
+    expect((await commitLog(root, { limit: 10, tip, paths: ['side.md'] })).filter((commit) => commit.changed.length).map((commit) => commit.subject))
+      .toEqual(['on the side'])
   })
 
   it('reads files as they were at a commit: a picture as bytes, the rest as text, a missing one left out', async () => {
@@ -189,7 +217,8 @@ describe.skipIf(!available)('a folder that keeps no history, and what is not ask
     const sha = await held.commit(['model.json'], 'one')
     const [commit] = await held.log({ limit: 1 })
     expect(commit.sha).toBe(sha)
-    expect(await held.treeAt(sha!, '')).toContain('model.json')
+    expect(await held.head()).toBe(sha)
+    expect((await held.treeAt(sha!, '')).map((file) => file.path)).toContain('model.json')
     expect(await held.readAt(sha!, ['model.json'])).toEqual([{ path: 'model.json', text: '{}' }])
     expect(await held.tag(sha!, 's-1/one', 'One')).toBe('done')
     expect((await held.tags()).map((tag) => tag.name)).toEqual(['s-1/one'])

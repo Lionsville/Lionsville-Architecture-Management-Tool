@@ -32,7 +32,7 @@ import {
   resolve, snapshot,
 } from '../../src/platform/node/git'
 import {
-  allTags, changes, commitLog, commitPaths, isScopeTagName, readAt, startHistory, tagCommit, treeAt,
+  allTags, changes, commitLog, commitPaths, headOf, isScopeTagName, readAt, startHistory, tagCommit, treeAt,
 } from '../../src/platform/node/gitEntries'
 import { log } from './log'
 import { watchFolder } from './watch'
@@ -345,16 +345,21 @@ export function registerFileChannel(options: { onRecentsChanged?: () => void } =
     return commitPaths(root, paths, message)
   })
 
+  ipcMain.handle('git:head', (_event, root: unknown) => (isGranted(root) ? headOf(root) : undefined))
+
   ipcMain.handle('git:log', (_event, root: unknown, wanted: unknown) => {
-    const held = wanted as { paths?: unknown; grep?: unknown; limit?: unknown; from?: unknown } | null
+    const held = wanted as { paths?: unknown; grep?: unknown; limit?: unknown; tip?: unknown; skip?: unknown; firstParent?: unknown } | null
     if (!isGranted(root) || !held || typeof held !== 'object' || typeof held.limit !== 'number') return []
     if (held.paths !== undefined && !isStrings(held.paths)) return []
-    if ((held.grep !== undefined && typeof held.grep !== 'string') || (held.from !== undefined && typeof held.from !== 'string')) return []
+    if ((held.grep !== undefined && typeof held.grep !== 'string') || (held.tip !== undefined && typeof held.tip !== 'string')) return []
+    if (held.skip !== undefined && typeof held.skip !== 'number') return []
     return commitLog(root, {
       limit: held.limit,
       ...(held.paths !== undefined ? { paths: held.paths as string[] } : {}),
       ...(held.grep !== undefined ? { grep: held.grep as string } : {}),
-      ...(held.from !== undefined ? { from: held.from as string } : {}),
+      ...(held.tip !== undefined ? { tip: held.tip as string } : {}),
+      ...(held.skip !== undefined ? { skip: held.skip as number } : {}),
+      ...(held.firstParent === true ? { firstParent: true } : {}),
     })
   })
 

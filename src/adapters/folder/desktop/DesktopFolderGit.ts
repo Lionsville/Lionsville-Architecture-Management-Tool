@@ -7,7 +7,7 @@
  * side), bound to the folder the person chose.
  */
 import type { DesktopHistory } from '../../desktop/channel'
-import type { CommitsWanted, CommittedFile, FolderChange, FolderCommit, FolderGit, FolderTag } from '../folderGit'
+import type { CommitsWanted, CommittedFile, FolderChange, FolderCommit, FolderGit, FolderTag, TreeEntry } from '../folderGit'
 
 export class DesktopFolderGit implements FolderGit {
   constructor(private readonly git: DesktopHistory, private readonly root: string) {}
@@ -28,12 +28,16 @@ export class DesktopFolderGit implements FolderGit {
     return this.git.commitPaths(this.root, [...paths], message)
   }
 
+  head(): Promise<string | undefined> {
+    return this.git.head(this.root)
+  }
+
   log(wanted: CommitsWanted): Promise<FolderCommit[]> {
     const { paths, ...rest } = wanted
     return this.git.log(this.root, { ...rest, ...(paths ? { paths: [...paths] } : {}) })
   }
 
-  treeAt(sha: string, within: string): Promise<string[]> {
+  treeAt(sha: string, within: string): Promise<TreeEntry[]> {
     return this.git.treeAt(this.root, sha, within)
   }
 
