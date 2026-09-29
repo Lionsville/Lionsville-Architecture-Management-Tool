@@ -92,10 +92,16 @@ export function copyExampleInto(
  * does not say that. Decided at the moment of copying, never on a tree read
  * earlier: a root read before its listing answered is nameless and empty,
  * and would be taken over whatever it holds.
+ *
+ * **A root that could not be read whole holds work**, whatever could be read
+ * of it: what could not may be anything — a later version's organisation
+ * reads as nameless and empty here — and so may a scope the listing could not
+ * read.
  */
 export async function exampleCopyOver(scopes: ScopeReader, example: ExampleProject): Promise<ScopeSnapshot[]> {
   const [tree, root] = await Promise.all([scopes.tree(), readScope(scopes, ROOT_SCOPE)])
-  return copyExampleInto(example, summaryOf(tree), root !== undefined && !blank(root))
+  const unread = (root?.unreadable?.length ?? 0) > 0 || (tree.unreadable?.length ?? 0) > 0
+  return copyExampleInto(example, summaryOf(tree), unread || (root !== undefined && !blank(root)))
 }
 
 /**
@@ -103,11 +109,11 @@ export async function exampleCopyOver(scopes: ScopeReader, example: ExampleProje
  * bytes first, every one of them landed together or none
  * (`placeTogether`).
  */
-export function placeCopy(
+export async function placeCopy(
   repositories: { scopes: ScopeReader & Pick<ScopeRepository, 'create' | 'apply' | 'remove'>; images: Pick<ImageRepository, 'put'> },
   copy: readonly ScopeSnapshot[],
 ): Promise<void> {
-  return placeTogether(repositories, copy.map((scope) => ({
+  await placeTogether(repositories, copy.map((scope) => ({
     address: scope.path, content: contentOf(scope, []), pictures: picturesOf(scope.imageLibrary),
   })))
 }

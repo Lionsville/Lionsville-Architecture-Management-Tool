@@ -11,6 +11,8 @@ import acmeLogistics from '../../adapters/folder/format/examples/acme-logistics.
 import { exampleScopes } from '../../adapters/folder/format/exampleFolder'
 import type { ExampleFolder } from '../../adapters/folder/format/exampleFolder'
 import { memoryRepositories } from '../../adapters/memory/memoryRepositories'
+import { MemoryStore } from '../../adapters/memory/MemoryStore'
+import { spoilKept } from '../../adapters/repositories/testing/spoil'
 import type { ScopeSummary } from '../scope'
 import { placeWhole, readScope } from '../scopeAccess'
 import { emptyContent } from '../scopeState'
@@ -101,5 +103,38 @@ describe('a copy over the tree as it is kept', () => {
     })
     const copy = await exampleCopyOver(repositories.scopes, example)
     expect(copy[0].path).toBe('acme-logistics')
+  })
+
+  /** What could not be read of a root may be anything: a later version's organisation reads as nameless and empty here. */
+  for (const how of ['later', 'damaged'] as const) {
+    it(`is filed under a scope of its own where the root could not be read whole (${how}), and lands nothing over it`, async () => {
+      const store = new MemoryStore()
+      const repositories = memoryRepositories(store)
+      // A root this build knows as nameless and empty, whose content somebody else's build then wrote.
+      const root = (await repositories.scopes.tree()).root.id
+      await store.transaction(['contents'], 'write', async (tx) => {
+        tx.put('contents', root, how === 'later'
+          ? { format: 2, model: { name: 'Precious', records: ['NEWER WORK'] }, description: {} }
+          : { format: 1, model: 'torn', description: {} })
+      })
+      expect((await repositories.scopes.tree()).root.name).toBe('')
+      const raw = await store.transaction(['contents'], 'read', (tx) => tx.get('contents', root))
+      const copy = await exampleCopyOver(repositories.scopes, example)
+      expect(copy[0].path).toBe('acme-logistics')
+      await placeCopy(repositories, copy)
+      expect(await store.transaction(['contents'], 'read', (tx) => tx.get('contents', root))).toEqual(raw)
+      expect((await readScope(repositories.scopes, 'acme-logistics'))?.model.name).toBe('Acme Logistics')
+    })
+  }
+
+  it('lands nothing over a scope that could not be read whole where a copy is filed', async () => {
+    const store = new MemoryStore()
+    const repositories = memoryRepositories(store)
+    await placeWhole(repositories.scopes, '', { ...emptyContent('Globex') })
+    const there = await placeWhole(repositories.scopes, 'acme-logistics/application-landscape', emptyContent('Ours'))
+    await spoilKept(store, there, 'damaged')
+    const copy = await exampleCopyOver(repositories.scopes, example)
+    await expect(placeCopy(repositories, copy.map((scope) => ({ ...scope, path: scope.path.replace(/^acme-logistics-2/, 'acme-logistics') }))))
+      .rejects.toMatchObject({ key: 'shell.unreadableNotSaved' })
   })
 })
