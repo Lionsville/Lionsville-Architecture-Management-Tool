@@ -5,6 +5,7 @@ import { IDBFactory, IDBKeyRange } from 'fake-indexeddb'
 import { describe, expect, it, vi } from 'vitest'
 import { ShellError } from '../../platform/errors'
 import { describeKeyedStore } from '../repositories/KeyedStore.contract'
+import { REPOSITORY_SHELVES } from '../repositories/KeyedStore'
 import type { Transaction } from '../repositories/KeyedStore'
 import { DATABASE_NAME, DATABASE_VERSION, IndexedDbStore } from './IndexedDbStore'
 import type { IndexedDb, Standing, StorageManagerLike } from './IndexedDbStore'
@@ -202,6 +203,33 @@ describe('IndexedDbStore, beside another tab', () => {
     const store = new IndexedDbStore(indexedDb)
     expect(keyOf(await refused(store.transaction(['meta'], 'read', read)))).toBe('shell.storageReload')
     expect(store.standing()).toBe('reload')
+  })
+})
+
+describe('IndexedDbStore, a database laid out by an earlier build', () => {
+  it('lays out a folder’s shelves over one at version 2, and keeps what the repositories held there', async () => {
+    const indexedDb = fullFake()
+    await new Promise<void>((resolve, reject) => {
+      const request = indexedDb.factory.open(DATABASE_NAME, 2)
+      request.onupgradeneeded = () => {
+        for (const shelf of REPOSITORY_SHELVES) request.result.createObjectStore(shelf)
+        request.transaction!.objectStore('meta').put('before', 'a')
+      }
+      request.onsuccess = () => {
+        request.result.close()
+        resolve()
+      }
+      request.onerror = () => reject(request.error ?? new Error('would not open'))
+    })
+    const store = new IndexedDbStore(indexedDb)
+    expect(DATABASE_VERSION).toBe(3)
+    expect(await store.transaction(['meta'], 'read', read)).toBe('before')
+    await store.transaction(['folders', 'folderData'], 'write', (tx) => {
+      tx.put('folders', 'k', { handle: {} })
+      tx.put('folderData', 'k\u0000step\u0000one', ['s', 1])
+      return Promise.resolve()
+    })
+    expect(await store.transaction(['folderData'], 'read', (tx) => tx.get('folderData', 'k\u0000step\u0000one'))).toEqual(['s', 1])
   })
 })
 
