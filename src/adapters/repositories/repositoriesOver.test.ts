@@ -12,8 +12,10 @@ import { step } from '../../ports/Repositories.contract'
 import { emptyContent } from '../../projects/scopeState'
 import type { ScopeId } from '../../projects/scopeState'
 import { MemoryStore } from '../memory/MemoryStore'
-import { repositoriesOver } from './repositoriesOver'
-import type { Seed } from './source'
+import { repositoriesOn, repositoriesOver } from './repositoriesOver'
+import type { Brought } from './bring'
+import { SHELVES } from './KeyedStore'
+import { Source } from './source'
 
 const addCrews = {
   type: 'element.create', element: { id: 'crews', kind: 'application', name: 'Crews', lifecycle: 'live', isManaged: true, aspects: {} },
@@ -23,36 +25,106 @@ async function picture(name: string, bytes: Uint8Array): Promise<ImageEntry> {
   return { name, mediaType: 'image/png', size: bytes.length, width: 1, height: 1, contentAddress: await contentAddressOf(bytes) }
 }
 
-describe('a new store', () => {
-  it('starts with the scopes a seed brings, each arriving as an entry that says so', async () => {
+/** A bringing that brings what it is handed at each start, and remembers the notes it was given. */
+function bringing(...starts: (Brought | undefined)[]) {
+  const notes: unknown[] = []
+  const fresh: boolean[] = []
+  return {
+    notes, fresh,
+    bring: {
+      prepare: (note: unknown, isFresh: boolean) => {
+        notes.push(note)
+        fresh.push(isFresh)
+        return Promise.resolve(starts.shift())
+      },
+    },
+  }
+}
+
+describe('work brought from somewhere else', () => {
+  it('lands in a new store, each scope arriving as an entry that says so, keeping when it was last changed', async () => {
     const bytes = new Uint8Array([1, 2, 3])
     const image = await picture('context.png', bytes)
-    const seed: Seed = {
-      subject: 'Brought over',
+    const brought: Brought = {
+      subject: 'Brought over', safeguard: 'Before', note: { first: true },
       scopes: [
-        { address: 'acme/rail', content: { ...emptyContent('Rail'), images: [image] }, bytes: [{ contentAddress: image.contentAddress, bytes }], at: 1000 },
+        {
+          address: 'acme/rail', content: { ...emptyContent('Rail'), model: { ...emptyContent('Rail').model, elements: [addCrews.element] }, images: [image] },
+          bytes: [{ contentAddress: image.contentAddress, bytes }], updatedAt: '2026-09-01T10:00:00.000Z',
+        },
         { address: '', content: emptyContent('Acme Group'), bytes: [] },
       ],
     }
-    let asked = 0
     const store = new MemoryStore()
-    const repositories = repositoriesOver(store, { id: 'seeded', by: 'test', seed: () => Promise.resolve((asked += 1, seed)) })
+    const first = bringing(brought)
+    const repositories = repositoriesOver(store, { id: 'brought', by: 'test', ...first })
     const tree = await repositories.scopes.tree()
+    expect(first.fresh).toEqual([true])
     expect(tree.root.name).toBe('Acme Group')
+    expect((await repositories.history.entries({ scopes: [tree.root.id] })).entries.map((one) => one.subject)).toEqual(['Brought over'])
     const acme = tree.root.children[0]
     expect([acme.address, acme.name]).toEqual(['acme', 'acme'])
     const rail = acme.children[0]
-    expect([rail.address, rail.name]).toEqual(['acme/rail', 'Rail'])
+    expect([rail.address, rail.name, rail.updatedAt]).toEqual(['acme/rail', 'Rail', '2026-09-01T10:00:00.000Z'])
     expect(await repositories.images.bytes(rail.id, 'context.png')).toEqual({ mediaType: 'image/png', bytes })
-    const [arrived] = (await repositories.history.entries({ scopes: [rail.id] })).entries
-    expect([arrived.subject, arrived.at]).toEqual(['Brought over', 1000])
+    const [arrived] = (await repositories.history.entries({ scopes: [rail.id], record: { kind: 'element', id: 'crews' } })).entries
+    expect([arrived.subject, arrived.at]).toEqual(['Brought over', Date.parse('2026-09-01T10:00:00.000Z')])
     expect((await repositories.history.stateAt(rail.id, arrived.id))?.images).toEqual([image])
     // The scope made to file it under has its first entry open still, as any made scope does.
     expect((await repositories.history.entries({ scopes: [acme.id] })).entries).toEqual([])
 
-    const again = repositoriesOver(store, { id: 'seeded', by: 'test', seed: () => Promise.resolve((asked += 1, seed)) })
+    const second = bringing(undefined)
+    const again = repositoriesOver(store, { id: 'brought', by: 'test', ...second })
     expect((await again.scopes.tree()).revision).toBe(tree.revision)
-    expect(asked).toBe(1)
+    expect([second.notes, second.fresh]).toEqual([[{ first: true }], [false]])
+  })
+
+  it('lands over a scope that is there, after an entry that keeps what it held', async () => {
+    const store = new MemoryStore()
+    const repositories = repositoriesOver(store, { id: 'brought', by: 'test' })
+    const made = await repositories.scopes.create('acme', { name: 'Acme Logistics' })
+    if ('refused' in made) throw new Error(made.refused)
+    await repositories.history.record({})
+    await repositories.scopes.apply([{ scope: made.id, steps: [step(addCrews)] }])
+    const later = bringing({
+      subject: 'Again', safeguard: 'Before again', note: 2,
+      scopes: [{ address: 'acme', content: emptyContent('Acme again'), bytes: [] }],
+    })
+    const reopened = repositoriesOver(store, { id: 'brought', by: 'test', ...later })
+    const state = await reopened.scopes.state(made.id)
+    expect([state?.model.name, state?.model.elements]).toEqual(['Acme again', []])
+    const entries = (await reopened.history.entries({ scopes: [made.id] })).entries
+    expect(entries.map((one) => one.subject)).toEqual(['Again', 'Before again', undefined])
+    expect((await reopened.history.stateAt(made.id, entries[1].id))?.model.elements.map((one) => one.id)).toEqual(['crews'])
+    expect((await reopened.history.entries({ scopes: [made.id], record: { kind: 'element', id: 'crews' } })).entries.map((one) => one.subject))
+      .toEqual(['Again', 'Before again'])
+  })
+
+  it('writes nothing over a scope it cannot read whole, and says which', async () => {
+    const store = new MemoryStore()
+    const repositories = repositoriesOver(store, { id: 'brought', by: 'test' })
+    const made = await repositories.scopes.create('acme', { name: 'Acme Logistics' })
+    if ('refused' in made) throw new Error(made.refused)
+    await store.transaction(SHELVES, 'write', async (tx) => {
+      tx.put('contents', made.id, { ...await tx.get<object>('contents', made.id), format: 2 })
+    })
+    const source = new Source(store, {
+      id: 'brought', by: 'test',
+      bring: { prepare: () => Promise.resolve({ subject: 'Again', safeguard: 'Before', note: 1, scopes: [{ address: 'acme', content: emptyContent('Other'), bytes: [] }] }) },
+    })
+    const reopened = repositoriesOn(source)
+    expect((await reopened.scopes.state(made.id))?.model.name).toBe('Acme Logistics')
+    expect(await source.lastBrought()).toEqual({ note: 1, refused: ['acme'] })
+  })
+
+  it('is brought once where two pages start on one new store together', async () => {
+    const store = new MemoryStore()
+    const brought = (): Brought => ({ subject: 'Brought over', safeguard: 'Before', note: 1, scopes: [{ address: 'acme', content: emptyContent('Acme'), bytes: [] }] })
+    const one = repositoriesOver(store, { id: 'brought', by: 'test', ...bringing(brought()) })
+    const other = repositoriesOver(store, { id: 'brought', by: 'test', ...bringing(brought()) })
+    const [tree] = await Promise.all([one.scopes.tree(), other.scopes.tree()])
+    expect(tree.root.children.map((node) => node.address)).toEqual(['acme'])
+    expect((await one.history.entries({ scopes: [tree.root.children[0].id] })).entries).toHaveLength(1)
   })
 })
 

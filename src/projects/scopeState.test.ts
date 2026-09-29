@@ -6,7 +6,7 @@ import { EN } from '../i18n/strings.en'
 import type { Command } from '../model/commands'
 import type { DesignElement } from '../model/types'
 import type { ImageEntry } from '../model/imageName'
-import { applySteps, emptyContent, SCOPE_REFUSALS } from './scopeState'
+import { applySteps, emptyContent, recordsBetween, SCOPE_REFUSALS } from './scopeState'
 import type { ScopeCommand, ScopeContent, ScopeStep } from './scopeState'
 
 function element(id: string, name: string): DesignElement {
@@ -206,5 +206,20 @@ describe('what a scope says about itself, as steps', () => {
 describe('the refusals', () => {
   it('are keys the shell has words for', () => {
     for (const key of SCOPE_REFUSALS) expect(EN).toHaveProperty([key])
+  })
+})
+
+describe('the records between two contents', () => {
+  it('are the records a run of steps between them would name', () => {
+    const before = content()
+    const steps: ScopeStep[] = [
+      { stepId: 'a', at: 1, command: { type: 'element.update', id: 'crews', patch: { name: 'Crew planning' } } },
+      { stepId: 'b', at: 2, command: { type: 'image.add', image: picture } },
+      { stepId: 'c', at: 3, command: { type: 'scope.describe', patch: { client: 'Acme' } } },
+    ]
+    const applied = applySteps(before, steps)
+    if (!applied.ok) throw new Error(applied.refused)
+    expect(recordsBetween(before, applied.content)).toEqual(applied.records)
+    expect(recordsBetween(before, before)).toEqual([])
   })
 })

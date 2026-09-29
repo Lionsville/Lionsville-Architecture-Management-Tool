@@ -206,13 +206,7 @@ export function applySteps(content: ScopeContent, steps: readonly ScopeStep[]): 
     if (!outcome.ok) return { ok: false, refused: outcome.refused, stepId: step.stepId }
     working = outcome.working
   }
-  const inModel = recordsChanged(before.model, working.model)
-  const scope = inModel.some((record) => record.kind === 'scope') || !sameValue(before.description, working.description)
-  const records = [
-    ...inModel.filter((record) => record.kind !== 'scope'),
-    ...imagesChanged(before.images, working.images),
-    ...(scope ? [SCOPE_RECORD] : []),
-  ]
+  const records = changedBetween(before, working)
   if (records.length === 0) return { ok: true, content, changed: false, records }
   return {
     ok: true,
@@ -220,6 +214,27 @@ export function applySteps(content: ScopeContent, steps: readonly ScopeStep[]): 
     changed: true,
     records,
   }
+}
+
+/** Every record that differs between two contents, once each: the model's, the pictures', and the scope's own. */
+function changedBetween(before: Working, after: Working): RecordKey[] {
+  const inModel = recordsChanged(before.model, after.model)
+  const scope = inModel.some((record) => record.kind === 'scope') || !sameValue(before.description, after.description)
+  return [
+    ...inModel.filter((record) => record.kind !== 'scope'),
+    ...imagesChanged(before.images, after.images),
+    ...(scope ? [SCOPE_RECORD] : []),
+  ]
+}
+
+/**
+ * Every record that differs between two contents of one scope, as a run of
+ * steps between them would name it (`StepsApplied.records`): for a content
+ * that arrives whole, from somewhere steps were not kept.
+ */
+export function recordsBetween(before: ScopeContent, after: ScopeContent): RecordKey[] {
+  const working = ({ model, images, ...description }: ScopeContent): Working => ({ description, model: fromArrays(model), images })
+  return changedBetween(working(before), working(after))
 }
 
 /** The pictures whose entry was added, taken out or changed, by name. */
