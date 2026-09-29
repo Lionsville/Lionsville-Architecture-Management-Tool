@@ -17,7 +17,9 @@ import { useCallback } from 'react'
 import type { Translate } from '../i18n'
 import { reasonOf, ShellError } from '../platform/errors'
 import { readLogoFile, takenLogoKeys } from '../model/logo'
-import { readImageFile, takenImageFiles } from '../model/documentImage'
+import { readImageFile } from '../model/documentImage'
+import type { ImageEntry, ImageName } from '../model/imageName'
+import { readDataUrl } from '../projects/dataUrl'
 import type { SavedDocument } from '../ports/DocumentGateway'
 import { messageFor } from './messageFor'
 import type { ScopeSnapshot } from '../projects/scope'
@@ -62,15 +64,17 @@ export type ProjectFiles = {
    */
   addImage: (file: File) => Promise<string | undefined>
   /**
-   * A picture out of the project. The file goes on the next save, because the
-   * store removes what the format no longer writes; the references to it stay
-   * where they are and render as their captions. Not undoable, like adding one.
+   * A picture out of the library. Its entry goes with the next write; the
+   * references to it stay where they are and render as their captions. Not
+   * undoable, like adding one.
    */
-  removeImage: (file: string) => void
+  removeImage: (name: string) => void
 }
 
-export function useProjectFiles(deps: {
+export type ProjectFilesDeps = {
   session: ModelSession
+  /** Put a picture's bytes where the scope is kept, and answer its library entry. */
+  putPicture: (name: ImageName, bytes: Uint8Array) => Promise<ImageEntry>
   documents: ProjectFileChannel
   /**
    * Every scope in the working set, read when an export asks for it
@@ -113,9 +117,12 @@ export function useProjectFiles(deps: {
   beforeReplace?: () => Promise<boolean>
   notify: Notify
   s: Translate
-}): ProjectFiles {
+}
+
+export function useProjectFiles(deps: ProjectFilesDeps): ProjectFiles {
   const {
-    session, documents, workingSet, adoptWorkingSet, readScope, askPassword, landing, chooseFolder, beforeReplace, notify, s,
+    session, putPicture, documents, workingSet, adoptWorkingSet, readScope, askPassword, landing, chooseFolder, beforeReplace,
+    notify, s,
   } = deps
 
   /**
@@ -247,19 +254,26 @@ export function useProjectFiles(deps: {
    * a textarea, and it wants to know whether to write a line — the reason has
    * already been shown as a toast, here where the language is known.
    */
-  const addImage = useCallback((file: File): Promise<string | undefined> =>
-    readImageFile(file, takenImageFiles(session.currentImages()), () => documents.readDataUrl(file))
-      .then((image) => {
-        session.setImageLibrary((library) => [...library, image])
-        return image.file
+  const addImage = useCallback((file: File): Promise<string | undefined> => {
+    const taken = new Set(session.currentImages().map((image) => image.name))
+    return readImageFile(file, taken, () => documents.readDataUrl(file))
+      .then(async (image) => {
+        const read = readDataUrl(image.url)
+        if (!read) throw new ShellError('shell.imageUnreadable')
+        // The bytes first, where the scope is kept; the entry then joins the
+        // library, and is written as the step that adds it.
+        const entry = await putPicture(image.file, read.bytes)
+        session.setImageLibrary((library) => [...library, entry])
+        return entry.name
       })
       .catch((err: unknown) => {
         notify(messageFor(err, s), 'error')
         return undefined
-      }), [documents, session, notify, s])
+      })
+  }, [documents, session, putPicture, notify, s])
 
-  const removeImage = useCallback((file: string) => {
-    session.setImageLibrary((library) => library.filter((image) => image.file !== file))
+  const removeImage = useCallback((name: string) => {
+    session.setImageLibrary((library) => library.filter((image) => image.name !== name))
   }, [session])
 
   const savePicture = useCallback((doc: { name: string; bytes: Uint8Array; mediaType: 'image/png' }) => {

@@ -33,22 +33,25 @@ import {
 } from '../../projects/scope'
 import type { ScopeSnapshot, ScopeSummary } from '../../projects/scope'
 import { claimKey, idsIn } from '../../model/keys'
-import { apply, fromArrays, removeContainerDiagram, toArrays } from '../../model'
-import type { DesignDiagram } from '../../model'
+import { removeContainerDiagram, toDiagram } from '../../model'
+import type { Command, DesignDiagram } from '../../model'
 import { isBoardKind } from '../../model/placement'
 import { normaliseLinks } from '../../projects/links'
-import { reasonOf } from '../../platform/errors'
+import { ShellError } from '../../platform/errors'
 import {
   ancestorScopes, parentScope, ROOT_SCOPE, scopePathFor, scopePathLabel,
 } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
-import { moveRefusal, moveSubtree } from '../moveSubtree'
-import { rewriteScope } from '../rewriteScope'
+import {
+  blank, changeScope, contentOf, ensureScope, landed, moveScope, nodeAt, picturesOf, placeTogether, readScope, summaryOf,
+} from '../../projects/scopeAccess'
+import type { ScopeCommand } from '../../projects/scopeState'
+import type { Repositories } from '../../ports/Repositories'
 import { copyExampleInto } from '../examples/copy'
 import { opensOnNothing } from '../useShellNavigation'
 import { exampleOf } from '../examples/offers'
 import type { ExampleOffer } from '../examples/offers'
-import type { InitialPage, ScopeLibrary, ScopeSettingsPatch } from '../App'
+import type { InitialPage, ScopeSettingsPatch } from '../App'
 
 /** Which dialog is up. One at a time, because they all ask about one scope. */
 export type OrganisationDialog =
@@ -63,7 +66,8 @@ export type OrganisationDialog =
   | { kind: 'deleteBoard'; path: ScopePath; board: { id: string; name: string } }
 
 export type UseOrganisationInput = {
-  scopes: ScopeLibrary
+  /** Where the scopes are kept: the tree, each one's state, and the steps and moves that change them. */
+  repositories: Pick<Repositories, 'scopes' | 'index' | 'images'>
   /**
    * A scope was written that was not there before — the example copied in,
    * a scope or a board created. The shell reads the index again on it: a
@@ -180,7 +184,7 @@ function refuseInTheWay(onFailure: UseOrganisationInput['onFailure']): void {
  * document.
  */
 function useHomeReads({ scopes, active, at, revision, onFailure }: {
-  scopes: Pick<ScopeLibrary, 'list' | 'load'>
+  scopes: Repositories['scopes']
   active: boolean
   at: ScopePath
   revision: number
@@ -213,8 +217,8 @@ function useHomeReads({ scopes, active, at, revision, onFailure }: {
    */
   useEffect(() => {
     let live = true
-    void scopes.list().then(
-      (held) => { if (live) { setTree(held); setListed(true) } },
+    void scopes.tree().then(
+      (held) => { if (live) { setTree(summaryOf(held)); setListed(true) } },
       (cause: unknown) => {
         if (!live) return
         setTree(scopeTree([]))
@@ -231,7 +235,7 @@ function useHomeReads({ scopes, active, at, revision, onFailure }: {
     let live = true
     if (!active) return () => { live = false }
     setReady(false)
-    void scopes.load(at).then(
+    void readScope(scopes, at).then(
       (held) => { if (live) { setRoot(held); setReady(true) } },
       (cause: unknown) => {
         if (!live) return
@@ -252,8 +256,9 @@ function useHomeReads({ scopes, active, at, revision, onFailure }: {
 const ANYWHERE = () => true
 
 export function useOrganisation({
-  scopes, active, at, onEnter, notify, onFailure, onStorageResult, s, onTreeChanged, writable = ANYWHERE,
+  repositories, active, at, onEnter, notify, onFailure, onStorageResult, s, onTreeChanged, writable = ANYWHERE,
 }: UseOrganisationInput): Organisation {
+  const { scopes } = repositories
   const [dialog, setDialog] = useState<OrganisationDialog>({ kind: 'none' })
   const [collapsed, setCollapsed] = useState<ReadonlySet<ScopePath>>(() => new Set())
   const [revision, setRevision] = useState(0)
@@ -292,61 +297,59 @@ export function useOrganisation({
     setDialog((held) => (held.kind === 'newBoard' ? { ...held, name } : held))
   }, [])
 
-  /** A new scope exists as soon as it is saved; otherwise a refresh loses it. */
-  const createAndEnter = useCallback((fresh: ScopeSnapshot, message: string) => {
-    void scopes.save(fresh).then(
-      () => { onEnter(fresh); refresh(); onTreeChanged?.(); notify(message, 'success') },
-      (cause: unknown) => { onFailure('organisation.create', cause); onStorageResult(false) },
-    )
-  }, [scopes, onEnter, refresh, onTreeChanged, notify, onFailure, onStorageResult])
+  /** A scope made, entered, and said: the tree read again, and the index with it. */
+  const entered = useCallback(async (path: ScopePath, message: string) => {
+    const made = await readScope(scopes, path)
+    if (!made) return
+    onEnter(made)
+    refresh()
+    onTreeChanged?.()
+    notify(message, 'success')
+  }, [scopes, onEnter, refresh, onTreeChanged, notify])
 
   /**
    * Create a scope under another one.
    *
-   * **The ancestors are created too** when they are not there: a folder with no
-   * `scope.json` is not a scope, so a child filed under one would be filed
-   * under nothing and nothing would list it. Written from the top down and
-   * before the new scope itself, so an interrupted run leaves a tree that is
-   * whole as far as it got.
+   * **The ancestors are created too** when they are not there, as domains named
+   * after their addresses, from the top down and before the new scope itself,
+   * so an interrupted run leaves a tree that is whole as far as it got. A scope
+   * that draws is made with its first board, as the step that adds it.
    */
   const create = useCallback(() => {
     if (dialog.kind !== 'newScope') return
     const wanted = { parent: dialog.parent, name: dialog.name.trim(), withBoard: dialog.withBoard }
     if (!wanted.name) return
     setDialog({ kind: 'none' })
-    void scopes.list().then(async (held) => {
+    void (async () => {
+      const held = summaryOf(await scopes.tree())
       const all = flattenScopes(held)
       const path = scopePathFor(wanted.parent, wanted.name, namesUnder(all.find((scope) => scope.path === wanted.parent)))
-      // Free by the listing, and not by the folder: a scope the listing could
-      // not read is still there, and a new one — or a missing ancestor made on
-      // the way — saved at its address would replace it.
+      // Free by the listing: a scope the listing could not read is still there,
+      // and the repository refuses to make one where it is.
       if (unreadableAt(held, path) !== undefined) return refuseInTheWay(onFailure)
-      try {
-        for (const missing of ancestorScopes(path).reverse()) {
-          if (missing === ROOT_SCOPE || all.some((scope) => scope.path === missing)) continue
-          await scopes.save(bareScope(missing, scopePathLabel(missing), 'domain'))
-        }
-      } catch (cause) {
-        onFailure('organisation.ancestors', cause)
-        onStorageResult(false)
-        return
+      for (const missing of ancestorScopes(path).reverse()) {
+        if (missing === ROOT_SCOPE || all.some((scope) => scope.path === missing)) continue
+        await ensureScope(scopes, missing, { name: scopePathLabel(missing), kind: 'domain' })
       }
       // A scope that draws is a landscape and one that does not is a domain
       // (§1) — labels for a screen, said here from what the person asked for
       // rather than read back later from the shape.
-      createAndEnter(
-        wanted.withBoard
-          ? emptyScope(path, { design: wanted.name, diagram: s('shell.newDiagram') }, 'landscape')
-          : bareScope(path, wanted.name, 'domain'),
-        s('shell.scopeCreated', { name: wanted.name }),
-      )
-    }, (cause: unknown) => {
-      // A list that will not read is a store refusing, so the standing storage
-      // notice is the honest message — and it is latched, so a burst says it once.
-      onFailure('organisation.create.list', cause)
+      const fresh = wanted.withBoard
+        ? emptyScope(path, { design: wanted.name, diagram: s('shell.newDiagram') }, 'landscape')
+        : bareScope(path, wanted.name, 'domain')
+      const id = await ensureScope(scopes, path, { name: wanted.name, ...(fresh.kind ? { kind: fresh.kind } : {}) })
+      const boards: ScopeCommand[] = fresh.model.diagrams.map((diagram) => ({ type: 'diagram.create', diagram: toDiagram(diagram) }))
+      if (boards.length) {
+        await changeScope(scopes, path, () => [...boards, { type: 'scope.describe', patch: { activeDiagramId: fresh.activeDiagramId } }])
+      }
+      if (id) await entered(path, s('shell.scopeCreated', { name: wanted.name }))
+    })().catch((cause: unknown) => {
+      // Where work is kept refusing is what the standing notice says, and it
+      // is latched, so a burst says it once.
+      onFailure('organisation.create', cause)
       onStorageResult(false)
     })
-  }, [dialog, scopes, createAndEnter, onFailure, onStorageResult, s])
+  }, [dialog, scopes, entered, onFailure, onStorageResult, s])
 
   /**
    * Add a board to a scope that is already there, and land on it.
@@ -365,24 +368,23 @@ export function useOrganisation({
     if (!wanted.name) return
     setDialog({ kind: 'none' })
     void (async () => {
-      // Expecting what was read, and made again over a scope that moved in
-      // between (`rewriteScope.ts`): the board is added to the scope as it
-      // stands, and its id claimed against that.
-      const next = await rewriteScope(scopes, wanted.path, (read) => {
-        const held = read ?? bareScope(wanted.path, scopePathLabel(wanted.path))
+      // A scope the tree no longer has is made on the spot. The board is added
+      // to the scope as it stands, expecting what was read and worked out
+      // again over a scope that moved in between, and its id claimed against
+      // what it holds.
+      await ensureScope(scopes, wanted.path, { name: scopePathLabel(wanted.path) })
+      let board = ''
+      const next = await changeScope(scopes, wanted.path, (held) => {
         const diagram: DesignDiagram = {
           id: claimKey(s('shell.newDiagram'), new Set(idsIn(held.model))),
           kind: 'layer7', name: wanted.name, members: [], geometry: { nodes: [] },
           ...(held.model.defaultAspectConfig ? { aspectConfig: [...held.model.defaultAspectConfig] } : {}),
         }
-        return {
-          ...held,
-          model: { ...held.model, diagrams: [...held.model.diagrams, diagram] },
-          activeDiagramId: diagram.id,
-        }
+        board = diagram.id
+        return [{ type: 'diagram.create', diagram: toDiagram(diagram) }, { type: 'scope.describe', patch: { activeDiagramId: diagram.id } }]
       })
       if (!next) return
-      onEnter(next, { page: 'board', id: next.activeDiagramId })
+      onEnter(next, { page: 'board', id: board })
       refresh()
       onTreeChanged?.()
       notify(s('shell.scopeCreated', { name: wanted.name }), 'success')
@@ -406,43 +408,29 @@ export function useOrganisation({
     const { path, board } = dialog
     setDialog({ kind: 'none' })
     void (async () => {
-      let refused: StringKey | undefined
       // Expecting what was read, and taken off again over a scope that moved
-      // in between (`rewriteScope.ts`), so a board somebody drew meanwhile is
-      // not taken with it.
-      const next = await rewriteScope(scopes, path, (held) => {
-        refused = undefined
-        if (!held) return undefined
-        // A container view is the DETAIL of an application, not the
-        // application: the containers go, the interfaces they were carrying are
-        // written on the landscape first, and the application stays where it
-        // was drawn (`model/containerDiagram.ts`). A landscape has no such
-        // insides, so it is the plain drop it always was.
+      // in between, so a board somebody drew meanwhile is not taken with it.
+      // A container view is the DETAIL of an application, not the
+      // application: the containers go, the interfaces they were carrying are
+      // written on the landscape first, and the application stays where it
+      // was drawn (`model/containerDiagram.ts`). A landscape has no such
+      // insides, so it is the plain drop it always was.
+      const next = await changeScope(scopes, path, (held) => {
         const taken = new Set(idsIn(held.model))
-        const command = removeContainerDiagram(held.model, board.id, () => claimKey('interface', taken))
-          ?? { type: 'diagram.delete' as const, id: board.id }
-        const result = apply(fromArrays(held.model), command)
-        if (!result.ok) {
-          refused = result.reason
-          return undefined
-        }
-        const model = toArrays(result.model)
-        return {
-          ...held,
-          model,
-          activeDiagramId: held.activeDiagramId === board.id
-            ? model.diagrams[0]?.id ?? ''
-            : held.activeDiagramId,
-        }
+        const command: Command = removeContainerDiagram(held.model, board.id, () => claimKey('interface', taken))
+          ?? { type: 'diagram.delete', id: board.id }
+        const moving = held.activeDiagramId === board.id
+          ? held.model.diagrams.find((diagram) => diagram.id !== board.id)?.id ?? ''
+          : undefined
+        return [command, ...(moving !== undefined ? [{ type: 'scope.describe', patch: { activeDiagramId: moving } } as const] : [])]
       })
-      if (refused) {
-        notify(s(refused), 'error')
-        return
-      }
       if (!next) return
       refresh()
       notify(s('shell.deleted', { name: board.name }), 'success')
     })().catch((cause: unknown) => {
+      // The reducer's own refusal is said in its words; anything else is where
+      // work is kept not answering.
+      if (cause instanceof ShellError) { notify(s(cause.key), 'error'); return }
       onFailure('organisation.deleteBoard', cause)
       onStorageResult(false)
     })
@@ -452,96 +440,38 @@ export function useOrganisation({
    * Apply a scope's edited record: what it is called, what it is, who its
    * drawings are made out to, where its material lives — and where it is filed.
    *
-   * Read-patch-write, so a scope's model, decisions and plans survive a save
-   * this dialog cannot see. A **move** is the one part that is not one write:
-   * the address changes, `ScopeStore.remove` takes a scope AND everything under
-   * it, so every scope in the subtree is written at its new address first and
-   * the old folder removed after. Removing first and failing to save would lose
-   * the lot.
+   * As the steps they are, over the scope as it stands, so its model,
+   * decisions and plans survive a change this dialog cannot see; a scope with
+   * no document yet is made first. A **move** is the repository's: the scope
+   * and everything under it go to the new address together, identities and
+   * all, and the stand-ins elsewhere that named it follow (`moveScope`).
    */
   const applySettings = useCallback((path: ScopePath, patch: ScopeSettingsPatch) => {
     void (async () => {
-      const listing = await scopes.list()
-      const all = flattenScopes(listing)
+      const listing = summaryOf(await scopes.tree())
       const from = parentScope(path) ?? ROOT_SCOPE
       const moving = patch.parent !== undefined && patch.parent !== from && path !== ROOT_SCOPE
-      const to = moving
-        ? scopePathFor(
-          patch.parent!,
-          scopePathLabel(path),
-          namesUnder(all.find((scope) => scope.path === patch.parent)),
-        )
-        : path
-
-      let held: ScopeSnapshot | undefined
+      const name = patch.name.trim() || scopePathLabel(path)
+      const was = flattenScopes(listing).find((scope) => scope.path === path)?.name
       try {
-        held = await scopes.load(path)
+        await ensureScope(scopes, path, { name })
+        await changeScope(scopes, path, () => settingsCommands(name, patch))
+        if (moving) {
+          const siblings = namesUnder(flattenScopes(listing).find((scope) => scope.path === patch.parent))
+          await moveScope(scopes, repositories.index, path, scopePathFor(patch.parent!, scopePathLabel(path), siblings))
+        }
       } catch (cause) {
-        onFailure('organisation.settings.load', cause, 'group.saveFailed')
+        // A refusal is the repository's answer, said in its words.
+        onFailure('organisation.settings', cause, cause instanceof ShellError ? cause.key : 'group.saveFailed')
         return
       }
-      const links = normaliseLinks(patch.links)
-      /** The record, patched over the scope as it stands — whichever read that is. */
-      const patched = (read: ScopeSnapshot | undefined): ScopeSnapshot => {
-        const next: ScopeSnapshot = {
-          ...(read ?? bareScope(path, patch.name)),
-          path: to,
-          model: {
-            ...(read?.model ?? bareScope(path, patch.name).model),
-            name: patch.name.trim() || scopePathLabel(path),
-            ...(patch.description?.trim()
-              ? { description: patch.description.trim() }
-              : { description: undefined }),
-          },
-          ...(patch.client?.trim() ? { client: patch.client.trim() } : { client: undefined }),
-          ...(links.length ? { links } : { links: undefined }),
-          ...(patch.kind ? { kind: patch.kind } : {}),
-        }
-        // Absent rather than set to `undefined`, so the file has the shape a
-        // hand-written one would.
-        if (next.model.description === undefined) delete next.model.description
-        if (next.client === undefined) delete next.client
-        if (next.links === undefined) delete next.links
-        return next
-      }
-      const next = patched(held)
-
-      if (moving) {
-        // The one move (`moveSubtree.ts`): the refs pointing into it carried,
-        // the subtree written at its new address, and the old one removed
-        // deepest first, each scope expecting what was read of it.
-        const outcome = await moveSubtree(scopes, { from: path, next, held, listing })
-        if (outcome.stage === 'notStarted') {
-          onFailure('organisation.settings.readdress', outcome.cause, moveRefusal(outcome.cause) ?? 'group.saveFailed')
-          return
-        }
-        if (outcome.stage === 'notSaved') {
-          onFailure('organisation.settings.save', outcome.cause, 'group.saveFailed')
-          return
-        }
-        if (outcome.leftCopy !== undefined) {
-          onFailure('organisation.settings.remove', outcome.leftCopy)
-          notify(s('shell.moveLeftCopy', { message: reasonOf(outcome.leftCopy) }), 'warning')
-        }
-      } else {
-        try {
-          // In place: expecting what was read, and patched again over a scope
-          // that moved in between, so a step somebody made to it survives a
-          // rename (`rewriteScope.ts`).
-          await rewriteScope(scopes, path, patched)
-        } catch (cause) {
-          onFailure('organisation.settings.save', cause, 'group.saveFailed')
-          return
-        }
-      }
-
       refresh()
       notify(
         moving
-          ? s('settings.moved', { name: next.model.name })
-          : held && held.model.name !== next.model.name
-            ? s('group.renamed', { name: next.model.name })
-            : s('group.saved', { name: next.model.name }),
+          ? s('settings.moved', { name })
+          : was !== undefined && was !== name
+            ? s('group.renamed', { name })
+            : s('group.saved', { name }),
         'success',
       )
     })().catch((cause: unknown) => {
@@ -550,13 +480,16 @@ export function useOrganisation({
       // which no boundary can see from inside an async function.
       onFailure('organisation.settings', cause, 'group.saveFailed')
     })
-  }, [scopes, refresh, notify, onFailure, s])
+  }, [scopes, repositories, refresh, notify, onFailure, s])
 
   const confirmDelete = useCallback(() => {
     if (dialog.kind !== 'delete') return
     const target = dialog.target
     setDialog({ kind: 'none' })
-    void scopes.remove(target.path).then(
+    void (async () => {
+      const node = nodeAt(await scopes.tree(), target.path)
+      if (node) landed(await scopes.remove(node.id))
+    })().then(
       refresh,
       (cause: unknown) => onFailure('organisation.remove', cause, 'picker.deleteFailed'),
     )
@@ -586,7 +519,7 @@ export function useOrganisation({
    */
   const open = useCallback((path: ScopePath, page?: InitialPage) => {
     void (async () => {
-      const found = await scopes.load(path)
+      const found = await readScope(scopes, path)
       if (found) { onEnter(found, page); return }
       if (!opensOnNothing(page)) {
         // Nothing there, and nothing asked for that a scope has before it is
@@ -598,10 +531,10 @@ export function useOrganisation({
       }
       const bare = bareScope(path, nameOf(tree, path))
       if (!writable(path)) { onEnter(bare, page); return }
-      // Expecting nothing to be there, and written only if nothing is: a scope
-      // somebody else wrote in between is theirs and is the one entered.
-      await rewriteScope(scopes, path, (read) => (read ? undefined : bare))
-      const written = await scopes.load(path)
+      // Made only where nothing is: a scope somebody made in between is
+      // theirs and is the one entered.
+      await ensureScope(scopes, path, { name: bare.model.name })
+      const written = await readScope(scopes, path)
       if (!written) {
         onFailure('organisation.open.unwritten', undefined, 'picker.loadFailed')
         return
@@ -640,15 +573,20 @@ export function useOrganisation({
         (best, scope) => (best === undefined || applications(scope) > applications(best) ? scope : best),
         undefined,
       ) ?? copy[copy.length - 1]
-      const existing = await scopes.load(landing.path)
-      if (existing) { onEnter(existing); return }
-      for (const scope of copy) if (scope !== landing) await scopes.save(scope)
-      createAndEnter(landing, s('shell.exampleCopied', { name: example.label }))
+      // Copied before: entered, not copied again. The organisation is always
+      // there, and one nothing was ever put in is where a copy lands.
+      const existing = await readScope(scopes, landing.path)
+      if (existing && !blank(existing)) { onEnter(existing); return }
+      // Each scope a content that arrives whole, all of them landed together.
+      await placeTogether(repositories, copy.map((scope) => ({
+        address: scope.path, content: contentOf(scope, []), pictures: picturesOf(scope.imageLibrary),
+      })))
+      await entered(landing.path, s('shell.exampleCopied', { name: example.label }))
     })().catch((cause: unknown) => {
       onFailure('organisation.copyExample', cause)
       onStorageResult(false)
     })
-  }, [tree, scopes, onEnter, createAndEnter, onFailure, onStorageResult, s])
+  }, [tree, scopes, repositories, onEnter, entered, onFailure, onStorageResult, s])
 
   /**
    * The root's name, from the field a fresh folder shows instead of a heading.
@@ -676,3 +614,20 @@ export function useOrganisation({
     applySettings, confirmDelete, open, copyExample, nameOrganisation,
   ])
 }
+
+/** What the settings dialog says about a scope, as the steps that say it. */
+function settingsCommands(name: string, patch: ScopeSettingsPatch): ScopeCommand[] {
+  const links = normaliseLinks(patch.links)
+  return [
+    { type: 'project.settings', patch: { name, description: patch.description?.trim() || undefined } },
+    {
+      type: 'scope.describe',
+      patch: {
+        client: patch.client?.trim() || undefined,
+        links: links.length ? links : undefined,
+        ...(patch.kind ? { kind: patch.kind } : {}),
+      },
+    },
+  ]
+}
+

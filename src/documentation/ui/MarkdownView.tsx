@@ -55,11 +55,6 @@ export type MarkdownViewProps = {
   onElementLink?: (elementId: string) => void
   /** How a ```mermaid fence is drawn. The default loads mermaid on first use; a test hands in a fake. */
   renderMermaid?: MermaidRenderer
-  /**
-   * The picture behind an image source. Anything it declines — and everything,
-   * without it — is drawn as its alt text instead. See the note on `img` below.
-   */
-  resolveImage?: (src: string) => string | undefined
 }
 
 /**
@@ -130,60 +125,10 @@ function MissingPicture({ src, alt }: { src: string | undefined; alt: string }) 
  * place — switching from one document to the next — gets a new `img`, never
  * the last one's with its source still on it.
  */
-function NamedPicture({ name, src, alt, resolveImage }: {
-  name: string
-  src: string
-  alt: string
-  resolveImage: ((src: string) => string | undefined) | undefined
-}) {
+function NamedPicture({ name, src, alt }: { name: string; src: string; alt: string }) {
   const entry = usePictureEntry(name)
   if (entry) return <LibraryPicture key={`${entry.name}\u0000${entry.contentAddress}`} entry={entry} alt={alt} />
-  // A host that hands no library may still resolve the name itself.
-  const url = resolveImage?.(src)
-  return url ? <Picture key={url} url={url} alt={alt} /> : <MissingPicture src={src} alt={alt} />
-}
-
-/**
- * A picture in the page from a source the host resolved, and the same picture
- * at full size on a click.
- *
- * The page shows it at the width it has and no taller than most of the
- * window, so a tall screenshot does not take the page with it; the lightbox
- * shows the same source as large as the window allows. Nothing is resized on
- * the way.
- */
-function Picture({ url, alt }: { url: string; alt: string }) {
-  const [open, setOpen] = useState(false)
-  return (
-    <>
-      <Box
-        component="img"
-        src={url}
-        alt={alt}
-        onClick={() => setOpen(true)}
-        sx={{ display: 'block', maxWidth: '100%', maxHeight: '70vh', objectFit: 'contain', borderRadius: 1, cursor: 'zoom-in' }}
-      />
-      <Dialog
-        open={open}
-        onClose={() => setOpen(false)}
-        maxWidth={false}
-        aria-label={alt}
-        slotProps={{
-          backdrop: { sx: { bgcolor: 'rgba(0, 0, 0, 0.85)' } },
-          paper: { sx: { m: 0, bgcolor: 'transparent', boxShadow: 'none', maxWidth: '100vw', maxHeight: '100vh' } },
-        }}
-      >
-        <Box
-          component="img"
-          src={url}
-          alt={alt}
-          data-testid="lightbox"
-          onClick={() => setOpen(false)}
-          sx={{ display: 'block', maxWidth: '100vw', maxHeight: '100vh', objectFit: 'contain', cursor: 'zoom-out' }}
-        />
-      </Dialog>
-    </>
-  )
+  return <MissingPicture src={src} alt={alt} />
 }
 
 type HeadingProps = ComponentProps<'h1'>
@@ -230,7 +175,6 @@ const CODE_FONT = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace'
 function components(
   onElementLink: ((elementId: string) => void) | undefined,
   context: BlockContext,
-  resolveImage: ((src: string) => string | undefined) | undefined,
 ): Components {
   return {
     h1: heading(1, '1.6em'),
@@ -332,11 +276,9 @@ function components(
     img: ({ src, alt }) => {
       const name = imageNameOfSource(src)
       if (name !== undefined && src) {
-        return <NamedPicture key={name} name={name} src={src} alt={alt ?? ''} resolveImage={resolveImage} />
+        return <NamedPicture key={name} name={name} src={src} alt={alt ?? ''} />
       }
-      const url = src ? resolveImage?.(src) : undefined
-      if (!url) return <MissingPicture src={src} alt={alt ?? ''} />
-      return <Picture key={url} url={url} alt={alt ?? ''} />
+      return <MissingPicture src={src} alt={alt ?? ''} />
     },
     table: ({ children }) => (
       <TableContainer {...WIDE} sx={{ my: '0.7em', overflowX: 'auto', borderRadius: 1, border: 1, borderColor: 'divider' }}>
@@ -368,14 +310,14 @@ function alignOf(style: { textAlign?: string | number } | undefined): 'left' | '
  * thing: React sees the identical element and leaves the subtree alone.
  */
 export const MarkdownView = memo(function MarkdownView(
-  { markdown, onElementLink, renderMermaid, resolveImage }: MarkdownViewProps,
+  { markdown, onElementLink, renderMermaid }: MarkdownViewProps,
 ) {
   // Memoised, because these are component TYPES: a fresh set on every render
   // would remount every block, and a mermaid block that remounts draws again.
   const context = useMemo<BlockContext>(() => ({ renderMermaid }), [renderMermaid])
   const comps = useMemo(
-    () => components(onElementLink, context, resolveImage),
-    [onElementLink, context, resolveImage],
+    () => components(onElementLink, context),
+    [onElementLink, context],
   )
   const document = useMemo(() => (
     <Markdown remarkPlugins={[remarkGfm]} urlTransform={urlTransform} components={comps}>

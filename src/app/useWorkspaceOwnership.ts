@@ -22,7 +22,7 @@ import type { ScopeIndex } from '../projects/scopeIndex'
 import type { ScopePath } from '../projects/scopePath'
 import { ancestorScopes } from '../projects/scopePath'
 import type { InitialPage } from './App'
-import type { ProjectSaver } from './useDocumentSession'
+import type { ScopeReader } from '../projects/scopeAccess'
 import type { Gestures } from './useGestures'
 import type { Library } from './useLibrary'
 import type { ModelSession } from './useModelSession'
@@ -32,7 +32,7 @@ export function useWorkspaceOwnership(deps: {
   session: ModelSession
   scope: ScopePath
   index: ScopeIndex
-  projects: ProjectSaver
+  scopes: ScopeReader
   onOpenScope: ((path: ScopePath, page?: InitialPage) => void) | undefined
   rowsThrough: Relation[]
   scopeLabel: (path: ScopePath) => string
@@ -42,17 +42,13 @@ export function useWorkspaceOwnership(deps: {
   s: Translate
 }): EditorOwnership {
   const {
-    session, scope, index, projects, onOpenScope, rowsThrough, scopeLabel, gestureOffers, gestureChoose, addExisting, s,
+    session, scope, index, scopes, onOpenScope, rowsThrough, scopeLabel, gestureOffers, gestureChoose, addExisting, s,
   } = deps
   /**
    * What the owners say about the stand-ins drawn here (ADR-0012 §3): read
    * from the owning scopes, shown on the card and in the panel, never kept.
    */
-  const ownerDescriptions = useOwnerDescriptions({
-    scope, index,
-    ...(projects.load ? { load: projects.load } : {}),
-    ...(projects.descriptions ? { descriptions: projects.descriptions } : {}),
-  })
+  const ownerDescriptions = useOwnerDescriptions({ scope, index, scopes })
 
   const notes = useStandInNotes(index, scope, s, ownerDescriptions)
 

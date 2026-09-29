@@ -12,7 +12,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
+import { heldRepositories } from './testing/heldRepositories'
 import { laidOut } from '../model/testFixtures'
 import type { ScopeSnapshot } from '../projects/scope'
 import { renderApp } from './testing/renderShell'
@@ -62,7 +62,7 @@ const landscape = (): ScopeSnapshot => ({
 
 describe('a decision from the scope above', () => {
   const open = () => renderApp({
-    scopes: new InMemoryScopeStore([root(), landscape()]),
+    repositories: heldRepositories([root(), landscape()]),
     boot: { initialProject: landscape() },
   })
 

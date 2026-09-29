@@ -4,15 +4,17 @@
 // @vitest-environment jsdom
 
 /**
- * The snapshot *Replace here* takes first (ADR-0025, amended): taken where the
- * folder keeps a history, skipped where it keeps none, and a refusal to go on
- * where it was due and could not be taken.
+ * The snapshot *Replace here* takes first (ADR-0025, amended; ADR-0031 §1):
+ * `record` over the scope being replaced, once what is on screen is written,
+ * and a refusal to go on where it was due and could not be taken.
  */
 import { describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { translator } from '../../i18n'
-import type { ProjectHistory } from '../../ports/ProjectHistory'
 import type { ScopeSnapshot } from '../../projects/scope'
+import { heldRepositories } from '../testing/heldRepositories'
+import { fakeHistory } from '../testing/fakeHistory'
+import type { FakeHistory } from '../testing/fakeHistory'
 import { useProjectHistory } from './useProjectHistory'
 
 const s = translator('en')
@@ -20,48 +22,37 @@ const project = (): ScopeSnapshot => ({
   path: 'acme', model: { name: 'Acme', elements: [], relations: [], diagrams: [] }, activeDiagramId: '', logoLibrary: [],
 })
 
-function history(over: Partial<ProjectHistory>): ProjectHistory {
-  return {
-    available: () => Promise.resolve(true),
-    keeping: () => Promise.resolve(true),
-    start: () => Promise.resolve(),
-    snapshot: () => Promise.resolve(true),
-    entries: () => Promise.resolve([]),
-    projectAt: () => Promise.resolve(undefined),
-    label: () => Promise.resolve('labelled'),
-    ...over,
-  } as ProjectHistory
-}
-
-function hook(held: ProjectHistory, notify = vi.fn(), save = vi.fn(() => Promise.resolve())) {
-  return renderHook(() => useProjectHistory({
-    history: held, project, steps: () => [], save, indexed: () => ({}) as never,
+function hook(made: 'entries' | 'nothing' | Error = 'entries', notify = vi.fn(), save = vi.fn(() => Promise.resolve())) {
+  const scopes = heldRepositories([project()])
+  const history: FakeHistory = fakeHistory(scopes.scopes, [], made)
+  const { result } = renderHook(() => useProjectHistory({
+    history, scopes: scopes.scopes, project, steps: () => [], save, indexed: () => ({}) as never,
     dispatch: () => undefined, notify, s,
-  })).result
+  }))
+  return { result, history, scopes }
 }
 
 describe('the snapshot before a replace', () => {
-  it('is taken where the folder keeps a history, after the folder is written out, and says so', async () => {
-    const snapshot = vi.fn(() => Promise.resolve(true))
+  it('records the scope being replaced, after what is on screen is written, and says so', async () => {
     const save = vi.fn(() => Promise.resolve())
     const notify = vi.fn()
-    const result = hook(history({ snapshot }), notify, save)
+    const { result, history, scopes } = hook('entries', notify, save)
     expect(await result.current.safeguard()).toBe(true)
     expect(save).toHaveBeenCalled()
-    expect(snapshot).toHaveBeenCalledWith('Before a working file replaced this')
+    expect(history.recorded).toEqual([{ scopes: [(await scopes.read('acme'))?.id], subject: 'Before a working file replaced this' }])
     expect(notify).toHaveBeenCalledWith(s('history.takenBeforeReplace'), 'info')
   })
 
-  it('is not taken where the folder keeps no history, and the replace goes on as the dialog warned', async () => {
-    const snapshot = vi.fn(() => Promise.resolve(true))
-    const result = hook(history({ keeping: () => Promise.resolve(false), snapshot }))
+  it('says nothing where there was nothing to record, and the replace goes on', async () => {
+    const notify = vi.fn()
+    const { result } = hook('nothing', notify)
     expect(await result.current.safeguard()).toBe(true)
-    expect(snapshot).not.toHaveBeenCalled()
+    expect(notify).not.toHaveBeenCalled()
   })
 
   it('stops the replace where it was due and could not be taken', async () => {
     const notify = vi.fn()
-    const result = hook(history({ snapshot: () => Promise.reject(new Error('disk full')) }), notify)
+    const { result } = hook(new Error('no room left'), notify)
     expect(await result.current.safeguard()).toBe(false)
     expect(notify).toHaveBeenCalledWith(expect.stringContaining('Nothing was replaced'), 'error')
   })

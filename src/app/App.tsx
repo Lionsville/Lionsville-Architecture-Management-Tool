@@ -20,30 +20,30 @@ import Box from '@mui/material/Box'
 import CssBaseline from '@mui/material/CssBaseline'
 import { ThemeProvider } from '@mui/material/styles'
 import type { Command, ElementId } from '../model'
-import type { StringKey, Translate } from '../i18n'
-import { apply, fromArrays, toArrays } from '../model'
 import type { Diagnostic, DiagnosticEntry } from '../platform/diagnostics'
 import { reasonOf, ShellError } from '../platform/errors'
-import type { WorkingFileManifest } from '../projects/workingFileManifest'
 import { messageFor } from './messageFor'
-import { flattenScopes, moveScope, namesUnder, renameScope, setScopeDefaults } from '../projects/scope'
-import type { ScopeKind, ScopeModel, ScopeSnapshot, ScopeSummary } from '../projects/scope'
-import { treeModels, treeScopes } from '../projects/scopeIndex'
+import { flattenScopes, namesUnder } from '../projects/scope'
+import type { ScopeKind, ScopeSnapshot } from '../projects/scope'
+import {
+  contentOf, everyScope, modelsOf, moveScope, picturesOf, placeTogether, readScope, refusedError, stepOf, summaryOf,
+} from '../projects/scopeAccess'
 import type { RecordLink } from '../projects/links'
-import { isScopeMoved, SCOPE_MOVED } from '../projects/revision'
+import { SCOPE_MOVED } from '../projects/revision'
+import type { Repositories } from '../ports/Repositories'
 import { parentScope, ROOT_SCOPE, scopePathFor, scopePathLabel } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
 import { useSync } from './useSync'
 import { BROWSER_STORAGE, sourceIsReadOnly } from '../platform/workingSource'
 import type { SourceMenuEntry } from '../platform/sourceProvider'
+import type {
+  SourceAgentPanelProps, SourceChipFaceProps, SourceChipPanelProps, SourceChromeProps, SourceMenuContext, SourceOpen,
+} from '../ports/ProviderParts'
 import { ErrorBoundary } from './ErrorBoundary'
-import { moveRefusal, moveSubtree } from './moveSubtree'
 import { useOrganisation } from './organisation/useOrganisation'
-import type { ScopeSession } from './useModelSession'
 import type { ProjectSettings } from './ProjectSettingsDialog'
 import { ToastBar } from './ToastBar'
-import type { Destination, MovedBy, Screen } from '../agent/screen'
 import { usePasswordPrompt } from './usePasswordPrompt'
 import { useOpenIntoPrompt } from './useOpenIntoPrompt'
 import { useAgentServer } from './useAgentServer'
@@ -57,9 +57,6 @@ import { useShellAgent } from './useShellAgent'
 import { useHostFacts, useShellCommands, useWindowTitle } from './useShellCommands'
 import { useShellNavigation } from './useShellNavigation'
 import { useOpeningFailures, useProjectOrder, useShellServices } from './useShellServices'
-import type { Failed } from './useShellServices'
-import type { Notify } from './useToasts'
-import type { StorageNotice } from './useStorageNotice'
 import { useTreeFindings, useTreeIndex } from './useTreeFindings'
 import type { ShellParts } from './shellParts'
 
@@ -136,7 +133,7 @@ export type ShellDiagnostics = {
  * somewhere may care which of them did. Said of the move that produced
  * `screen`, and handed with it.
  */
-export type SourceChrome = ComponentType<{ session?: ScopeSession; open: SourceOpen; screen: Screen; movedBy: MovedBy }>
+export type SourceChrome = ComponentType<SourceChromeProps>
 
 /**
  * Sending the person to a scope, as a provider's chrome or a menu line may.
@@ -154,7 +151,7 @@ export type SourceChrome = ComponentType<{ session?: ScopeSession; open: SourceO
  * scope is read before it is entered and a path that names nothing is a refreshed
  * tree, which is the same answer *Open …* gives a person.
  */
-export type SourceOpen = (to: Destination) => void
+export type { SourceOpen }
 
 /**
  * One provider's chrome, and which provider's it is.
@@ -194,7 +191,7 @@ export type RegisteredChrome = {
  * wrote falling over must cost the panel and not the window. On the
  * registration, beside `chrome` and `menu`, and core's three register none.
  */
-export type SourceAgentPanel = ComponentType<{ session?: ScopeSession }>
+export type SourceAgentPanel = ComponentType<SourceAgentPanelProps>
 
 /**
  * What pressing the chip that names a registered source opens: a panel of the
@@ -214,13 +211,7 @@ export type SourceAgentPanel = ComponentType<{ session?: ScopeSession }>
  * press outside shut it too. Asked of the open source's provider alone, as the
  * chip is. On the registration beside `chrome`, and core's three register none.
  */
-export type SourceChipPanel = ComponentType<{
-  session?: ScopeSession
-  open: SourceOpen
-  screen: Screen
-  movedBy: MovedBy
-  close: () => void
-}>
+export type SourceChipPanel = ComponentType<SourceChipPanelProps>
 
 /**
  * What the chip that names a registered source looks like, where a word is not
@@ -245,7 +236,7 @@ export type SourceChipPanel = ComponentType<{
  * registration beside `chipPanel`, and core's three register none, so their
  * chip is the word it always was.
  */
-export type SourceChipFace = ComponentType<{ label: string; open: boolean }>
+export type SourceChipFace = ComponentType<SourceChipFaceProps>
 
 /**
  * What a provider is told when it is asked what it wants in the menu.
@@ -263,17 +254,7 @@ export type SourceChipFace = ComponentType<{ label: string; open: boolean }>
  * a line IS is a `SourceMenuEntry` and lives down there, where a test with no
  * DOM can read it.
  */
-export type SourceMenuContext = {
-  readonly session?: ScopeSession
-  readonly readOnly: boolean
-  /**
-   * Sending the person to a scope ({@link SourceOpen}), for a line that is a
-   * way somewhere rather than something done here — the same call a chrome is
-   * given, because a line and a strip are two shapes of the one thing a
-   * provider has to say.
-   */
-  readonly open: SourceOpen
-}
+export type { SourceMenuContext }
 
 /**
  * The lines one provider wants in the app's own menu, asked for afresh.
@@ -346,27 +327,6 @@ export type InitialPage =
    */
   | { page: 'link'; id: ElementId; to: ScopePath }
 
-export type ScopeLibrary = {
-  list(): Promise<ScopeSummary>
-  load(path: ScopePath): Promise<ScopeSnapshot | undefined>
-  /** See `ScopeStore.save`: a save may say what it expects to overwrite. */
-  save(scope: ScopeSnapshot, expects?: string): Promise<void>
-  /** See `ScopeStore.saveTogether`: several scopes as one, where the store can. */
-  saveTogether?(
-    entries: readonly { scope: ScopeSnapshot; expects?: string }[], held?: { manifest?: WorkingFileManifest },
-  ): Promise<void>
-  /** See `ScopeStore.remove`: a removal may say what it expects to remove. */
-  remove(path: ScopePath, expects?: string): Promise<void>
-  /**
-   * Every scope's records and rows, for the index (ADR-0012 §2). Optional on
-   * the seam and optional here; `indexOf` loads each scope where a store
-   * cannot answer it.
-   */
-  models?(): Promise<ScopeModel[]>
-  /** One scope's prose, for the stand-ins an overview draws (ADR-0012 §3). Optional the same way. */
-  descriptions?(path: ScopePath): Promise<Record<string, string> | undefined>
-}
-
 /** What the settings dialogs may change about a scope, whatever level it is. */
 export type ScopeSettingsPatch = {
   name: string
@@ -378,9 +338,9 @@ export type ScopeSettingsPatch = {
    * Where it is filed, when that is what changed.
    *
    * Absent means "leave the address alone", which is what a rename does and
-   * what every field above does. Present and different is a move: save the
-   * subtree at its new addresses, then remove the old folder — never the other
-   * way round.
+   * what every field above does. Present and different is a move: the scope
+   * and everything under it go to their new addresses together, identities and
+   * all (`ScopeRepository.move`).
    */
   parent?: ScopePath
 }
@@ -435,117 +395,63 @@ export function App(props: AppProps) {
  * and stay here, where the store is.
  */
 function useShellParts(props: AppProps): ShellParts {
-  const { agent, diagnostics } = props
+  const { agent, diagnostics, repositories } = props
   const base = useShellBase(props)
-  const { projects, source, folder, host, services, nav, sync, tree, agentServer, commands, organisation, refreshTree } = base
-  const { toasts, s, reportStorage, failed, failedRef } = services
-  const { project, enter } = nav
+  const { source, folder, host, services, nav, sync, tree, agentServer, commands, organisation, refreshTree } = base
+  const { toasts, s, failedRef } = services
+  const { project } = nav
 
-  /**
-   * An address this app has just moved a project away from.
-   *
-   * A move is save-here, remove-there, and the workspace showing the project is
-   * still mounted in between — with an autosave that could land on the old
-   * address a millisecond after it was removed and put the project back. Two
-   * copies, and the one the user goes on editing is the one that will disappear
-   * next time.
-   *
-   * A ref and not state: closing this window needs the guard to be true NOW,
-   * not after React has rendered. Cleared once the workspace has been given the
-   * new address, which remounts it.
-   */
-  const movedAway = useRef<ScopePath | undefined>(undefined)
-  const workspaceStore = useMemo(() => ({
-    save: (held: ScopeSnapshot) => (
-      movedAway.current === held.path ? Promise.resolve() : projects.save(held)
-    ),
-    load: (path: ScopePath) => projects.load(path),
-    ...(projects.descriptions ? { descriptions: (path: ScopePath) => projects.descriptions!(path) } : {}),
-  }), [projects])
   const restoreIntoHome = useCallback((command: Command) => {
     const held = organisation.root
-    if (!held) return
-    const result = apply(fromArrays(held.model), command)
-    if (!result.ok) { toasts.notify(s(result.reason), 'error'); return }
+    if (!held?.id) return
     // Expecting what the screen read. A restore is not made again over a scope
     // that moved: it was worked out from what the page showed, and putting back
     // a version over changes the person never saw is not what they chose — so
     // the refusal is said, and the page reads the scope as it stands now.
-    void projects.save({ ...held, model: toArrays(result.model) }, held.revision).then(
-      () => { organisation.refresh(); tree.refresh() },
-      (cause: unknown) => {
-        if (isScopeMoved(cause)) {
+    void repositories.scopes.apply([{ scope: held.id, steps: [stepOf(command)], expects: held.revision }]).then(
+      (answer) => {
+        if (!('refused' in answer)) { organisation.refresh(); tree.refresh(); return }
+        if (answer.refused === SCOPE_MOVED) {
           toasts.notify(s(SCOPE_MOVED), 'warning')
           organisation.refresh()
           return
         }
-        failedRef.current('organisation.restore', cause, 'group.saveFailed')
+        failedRef.current('organisation.restore', refusedError(answer.refused), 'group.saveFailed')
       },
+      (cause: unknown) => failedRef.current('organisation.restore', cause, 'group.saveFailed'),
     )
-  }, [organisation, projects, tree, toasts, s])
+  }, [organisation, repositories, tree, toasts, s, failedRef])
   /**
    * The tree's records, read when a gesture asks (ADR-0012 §10), and the two
    * things to do again once one has landed: the listing this screen shows, and
    * the index everything below it decides ownership by.
    */
-  const readTreeModels = useCallback(() => treeModels(projects), [projects])
+  const readTreeModels = useCallback(async () => modelsOf(await repositories.index.read()), [repositories])
   /** Every scope in full, for the working file (ADR-0018). Read on the gesture, never held. */
-  const readWorkingSet = useCallback(() => treeScopes(projects), [projects])
+  const readWorkingSet = useCallback(() => everyScope(repositories), [repositories])
   /**
    * The scopes an opened working file brought with it, written where they say
-   * they belong (ADR-0018).
-   *
-   * Shallowest first, which is the order `openDocumentBytes` answers in: a
-   * child written before its parent would be filed under a folder that is not a
-   * scope yet.
-   *
-   * Each saying what it expects to write over — the revision a read of it
-   * answers now — because this is a whole write made on purpose from outside
-   * any session, and a source whose open scope's changes travel as steps
-   * writes such a save rather than taking it for the session's own
-   * (`ScopeStore.save`). Without it, the scope that was open was the one scope
-   * of the file never written.
-   *
-   * **As one, where the store can** (`ScopeStore.saveTogether`, ADR-0023,
-   * amendment 2): every scope or none, so a page that reloads, a window that
-   * closes or a connection that drops part way leaves the organisation as it
-   * was rather than half of the file in it. A refusal is then said as what it
-   * is — nothing of the file was written — with the store's reason. A store
-   * that cannot write several scopes as one is written a scope at a time, as
-   * before, and the read-back after the landing says what did not arrive —
-   * which is also what follows a landing a store says it wrote in part
-   * (`shell.workingFileLandedInPart`, ADR-0023, amendment 3), rather than a
-   * sentence saying nothing was written.
+   * they belong (ADR-0018): each a content that arrives whole, landed as one
+   * apply over every scope it names — every scope or none, so a page that
+   * reloads, a window that closes or a connection that drops part way leaves
+   * the organisation as it was rather than half of the file in it (ADR-0023,
+   * amendment 2). The scopes that were not there are made first, shallowest
+   * first; each landing expects what was read of its scope, so one somebody
+   * changed in between refuses the whole, and nothing of the file is written.
    */
-  const adoptScopes = useCallback(async (held: readonly ScopeSnapshot[], manifest?: WorkingFileManifest) => {
-    const entries: { scope: ScopeSnapshot; expects?: string }[] = []
-    for (const scope of held) {
-      const was = await projects.load(scope.path)
-      entries.push({ scope, ...(was?.revision !== undefined ? { expects: was.revision } : {}) })
-    }
-    if (!projects.saveTogether) {
-      let saved = 0
-      try {
-        for (const { scope, expects } of entries) { await projects.save(scope, expects); saved += 1 }
-      } catch (cause) {
-        if (saved === 0) throw cause
-        throw new ShellError('shell.workingFileLandedInPart', { reason: reasonOf(cause) })
-      }
-      return
-    }
+  const adoptScopes = useCallback(async (held: readonly ScopeSnapshot[]) => {
     try {
-      await projects.saveTogether(entries, manifest ? { manifest } : {})
+      await placeTogether(repositories, held.map((scope) => ({
+        address: scope.path, content: contentOf(scope, []), pictures: picturesOf(scope.imageLibrary),
+      })))
     } catch (cause) {
-      // Written in part, which a store that could not stage says: the
-      // read-back is what says which scopes, not a sentence about none.
-      if (cause instanceof ShellError && cause.key === 'shell.workingFileLandedInPart') throw cause
       throw new ShellError('shell.workingFileNotLanded', {
         reason: cause instanceof ShellError ? messageFor(cause, s) : reasonOf(cause),
       })
     }
-  }, [projects, s])
-  /** One scope as the store holds it now: what an opened working file is read back through (ADR-0023, amended). */
-  const readScope = useCallback((path: ScopePath) => projects.load(path), [projects])
+  }, [repositories, s])
+  /** One scope as it is kept now: what an opened working file is read back through (ADR-0023, amended). */
+  const readScopeAt = useCallback((path: ScopePath) => readScope(repositories.scopes, path), [repositories])
   const treeChanged = useCallback(() => {
     refreshTree.current()
     tree.refresh()
@@ -558,92 +464,21 @@ function useShellParts(props: AppProps): ShellParts {
    */
   const prompts = { password: usePasswordPrompt(s), openInto: useOpenIntoPrompt(s) }
   const home = useHomeParts({
-    organisation, home: nav.home, setHome: nav.setHome, scopeOpen: project !== undefined, history: folder.history,
+    organisation, home: nav.home, setHome: nav.setHome, scopeOpen: project !== undefined, repositories,
     index: tree.index, restore: restoreIntoHome, onSnapshotTaken: sync.afterSnapshot, documents: props.documents,
     workingSet: readWorkingSet,
-    readScope,
-    adopt: async (held, manifest) => {
-      await adoptScopes(held, manifest)
+    readScope: readScopeAt,
+    adopt: async (held) => {
+      await adoptScopes(held)
       treeChanged()
     },
     ...prompts, chooseFolder: folder.onChooseForWorkingFile,
     doors: { history: commands.homeHistory, files: commands.homeFiles }, notify: toasts.notify, s,
   })
-  const findings = useTreeFindings({ index: tree.index, tree: organisation.tree, home: nav.home, projects })
+  const findings = useTreeFindings({ index: tree.index, tree: organisation.tree, home: nav.home, scopes: repositories.scopes })
+  const applyProjectSettings = useProjectSettings({ base, repositories })
 
-  /**
-   * Change a scope's name, where it is filed, or both.
-   *
-   * A rename edits the model in place. A move changes the address, so the store
-   * has to take the new one before it forgets the old — that order matters:
-   * removing first and then failing to save would lose the scope outright.
-   *
-   * The edit is made on `current` — the scope as the open session has it, not
-   * as this component last saw it. Those two drift apart with every stroke of
-   * editing, and applying settings to the stale one would write a model without
-   * this afternoon's work over the model with it.
-   *
-   * What comes back is the saved scope when the workspace stays mounted, so the
-   * session can take it on: without that, the session keeps a model that knows
-   * nothing of the new defaults and the next autosave puts it back. Nothing
-   * comes back from a move, because a move changes the address and the
-   * workspace remounts on it anyway.
-   */
-  const applyProjectSettings = useCallback((
-    settings: ProjectSettings,
-    current: ScopeSnapshot,
-  ): Promise<ScopeSnapshot | undefined> => {
-    return projects.list().then(async (held) => {
-      const targetGroup = settings.group
-      const moving = targetGroup !== (parentScope(current.path) ?? ROOT_SCOPE)
-      const named = setScopeDefaults(renameScope(current, settings.name), {
-        author: settings.defaultAuthor,
-        aspectConfig: settings.defaultAspectConfig,
-      })
-      let next = named
-
-      if (moving) {
-        // A name free under the old parent can be taken under the new one.
-        const parent = flattenScopes(held).find((scope) => scope.path === targetGroup)
-        const taken = namesUnder(parent)
-        next = moveScope(named, taken.includes(scopePathLabel(current.path))
-          ? scopePathFor(targetGroup, settings.name, taken)
-          : scopePathFor(targetGroup, scopePathLabel(current.path)))
-      }
-
-      const moved = moving && current.path !== next.path
-      if (moved) {
-        const landed = await moveOpenScope(
-          { projects, movedAway, failed, reportStorage, notify: toasts.notify, s }, current, next, held,
-        )
-        if (!landed) return undefined
-        next = landed
-      } else {
-        try {
-          await projects.save(next)
-        } catch (cause) {
-          failed('applyProjectSettings.save', cause)
-          reportStorage(false)
-          return undefined
-        }
-      }
-      enter(next)
-      movedAway.current = undefined
-      toasts.notify(
-        moving
-          ? s('settings.moved', { name: settings.name })
-          : s('settings.renamed', { name: settings.name }),
-        'success',
-      )
-      return moved ? undefined : next
-    }, (cause: unknown) => {
-      failed('applyProjectSettings.list', cause)
-      reportStorage(false)
-      return undefined
-    })
-  }, [projects, enter, toasts, failed, reportStorage, s])
-
-  const ancestry = useScopeAncestry({ project, projects, tree: organisation.tree, failedRef, s })
+  const ancestry = useScopeAncestry({ project, scopes: repositories.scopes, tree: organisation.tree, failedRef, s })
   const shellAgent = useShellAgent({
     gateway: agent, status: agentServer.status, tree: findings.shellTree, project, home: nav.home,
     homeName: home.name, organisationName: organisation.tree.name, goHome: nav.goHome,
@@ -662,67 +497,53 @@ function useShellParts(props: AppProps): ShellParts {
     props, source, folder, host, hostMenu: host.hostMenu ?? false, windowChrome: host.windowChrome ?? NO_WINDOW_CHROME,
     services, nav, sync, tree, organisation, findings, home, ancestry, agentServer, agent: shellAgent, machine,
     commands, provider, order, prompts, todayDay,
-    writes: { store: workspaceStore, readTreeModels, readWorkingSet, adoptScopes, readScope, treeChanged, applyProjectSettings },
+    writes: { readTreeModels, readWorkingSet, adoptScopes, readScope: readScopeAt, treeChanged, applyProjectSettings },
   }
 }
 
 /**
- * The organisation screen's move (`moveSubtree.ts`), with what the open
- * workspace adds: the session's own snapshot is what lands, and nothing may
- * write to the old address from the moment this app stops considering it
- * ours. The old address is read here for the revision its removal expects;
- * the session's autosaves do not carry one back.
+ * The open scope's own settings (`ProjectSettingsDialog`): the name and the
+ * defaults are the session's to change, as the commands they are, and the
+ * workspace has made them by the time this is asked; what is left here is
+ * where it is filed. A move takes the scope and everything under it to the
+ * new address, identities and all, and the workspace is entered again there.
  */
-async function moveOpenScope(
-  deps: {
-    projects: ScopeLibrary
-    movedAway: { current: ScopePath | undefined }
-    failed: Failed
-    reportStorage: StorageNotice
-    notify: Notify
-    s: Translate
-  },
-  open: ScopeSnapshot, next: ScopeSnapshot, listing: ScopeSummary,
-): Promise<ScopeSnapshot | undefined> {
-  const { projects, movedAway, failed, reportStorage, notify, s } = deps
-  movedAway.current = open.path
-  const stop = (where: string, cause: unknown, key?: StringKey) => {
-    failed(where, cause, key)
-    if (key === undefined) reportStorage(false)
-    movedAway.current = undefined
-    return undefined
-  }
-  let read: ScopeSnapshot | undefined
-  try {
-    read = await projects.load(open.path)
-  } catch (cause) {
-    return stop('applyProjectSettings.load', cause)
-  }
-  // A file the session's read left out refuses the move as surely as one
-  // this read left out: either would go with the old folder.
-  const unread = open.unread?.length ? open.unread : read?.unread
-  const outcome = await moveSubtree(projects, {
-    from: open.path, next, held: { ...(read ?? open), ...(unread?.length ? { unread } : {}) }, listing,
-  })
-  if (outcome.stage === 'notStarted') {
-    const refusal = moveRefusal(outcome.cause)
-    return refusal
-      ? stop('applyProjectSettings.refused', undefined, refusal)
-      : stop('applyProjectSettings.readdress', outcome.cause)
-  }
-  if (outcome.stage === 'notSaved') return stop('applyProjectSettings.save', outcome.cause)
-  // Moved, and the old address possibly still there: two copies rather than
-  // a loss, and the person is told.
-  if (outcome.leftCopy !== undefined) {
-    failed('applyProjectSettings.remove', outcome.leftCopy)
-    notify(s('shell.moveLeftCopy', { message: reasonOf(outcome.leftCopy) }), 'warning')
-  }
-  return outcome.scope
+function useProjectSettings({ base, repositories }: { base: ReturnType<typeof useShellBase>; repositories: Repositories }) {
+  const { services, nav, tree } = base
+  const { toasts, s, failed, reportStorage } = services
+  const { enter } = nav
+  return useCallback(async (settings: ProjectSettings, current: ScopeSnapshot): Promise<void> => {
+    const from = parentScope(current.path) ?? ROOT_SCOPE
+    if (settings.group === from) {
+      toasts.notify(s('settings.renamed', { name: settings.name }), 'success')
+      return
+    }
+    try {
+      const listing = summaryOf(await repositories.scopes.tree())
+      // A name free under the old parent can be taken under the new one.
+      const parent = flattenScopes(listing).find((scope) => scope.path === settings.group)
+      const taken = namesUnder(parent)
+      const to = taken.includes(scopePathLabel(current.path))
+        ? scopePathFor(settings.group, settings.name, taken)
+        : scopePathFor(settings.group, scopePathLabel(current.path))
+      const moved = await moveScope(repositories.scopes, repositories.index, current.path, to)
+      if (!moved) return
+      enter(moved)
+      tree.refresh()
+      toasts.notify(s('settings.moved', { name: settings.name }), 'success')
+    } catch (cause) {
+      // A refusal is the repository's answer, said in its words; anything
+      // else is the place work is kept not answering, which the notice says.
+      if (cause instanceof ShellError) { failed('applyProjectSettings.move', cause, cause.key); return }
+      failed('applyProjectSettings.move', cause)
+      reportStorage(false)
+    }
+  }, [repositories, enter, tree, toasts, failed, reportStorage, s])
 }
 
 /** The services, where the shell is, the tree, the host's doors and the organisation screen. */
 function useShellBase(props: AppProps) {
-  const { scopes: projects, diagnostics, hostControls, boot, agent, today = localToday } = props
+  const { repositories, diagnostics, hostControls, boot, agent, today = localToday } = props
   const source = props.source ?? BROWSER_STORAGE
   const folder: AppFolder = props.folder ?? NOTHING
   const host: AppHost = props.host ?? NOTHING
@@ -749,15 +570,15 @@ function useShellBase(props: AppProps) {
     [source, readOnlyAt],
   )
   const nav = useShellNavigation({
-    initialProject: boot.initialProject, initialHome: boot.initialHome, projects, watchProject: folder.watch, prefs, failedRef, refreshTree,
-    refreshIndex, writable,
+    initialProject: boot.initialProject, initialHome: boot.initialHome, scopes: repositories.scopes,
+    watchProject: folder.watch, prefs, failedRef, refreshTree, refreshIndex, writable,
   })
   const { project, enter } = nav
   const sync = useSync({
     history: folder.history, folderSettings: folder.settings, initial: boot.initialSync,
     onTheirs: nav.reloadOpenProject, notify: toasts.notify, s, diagnostics,
   })
-  const tree = useTreeIndex(projects, folder.watch, failed)
+  const tree = useTreeIndex(repositories.index, folder.watch, failed)
   refreshIndex.current = tree.refresh
   const agentServer = useAgentServer({ agent, failedRef, notify: toasts.notify, s })
   const machine = useMachineSettings({
@@ -782,7 +603,7 @@ function useShellBase(props: AppProps) {
    * anything.
    */
   const organisation = useOrganisation({
-    scopes: projects,
+    repositories,
     active: project === undefined,
     at: nav.home,
     onEnter: enter,
@@ -795,7 +616,7 @@ function useShellBase(props: AppProps) {
   })
   refreshTree.current = organisation.refresh
   return {
-    projects, source, folder, host, services, todayDay, nav, sync, tree, agentServer, machine, commands, order,
+    source, folder, host, services, todayDay, nav, sync, tree, agentServer, machine, commands, order,
     organisation, refreshTree,
   }
 }

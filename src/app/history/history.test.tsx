@@ -5,23 +5,25 @@
 /**
  * Snapshots, from the menu that offers them to the page that reads them back.
  *
- * Layer two of ADR-0003 is opt-in, degradable and desktop-only, and every one
- * of those is a way for it to be wrong in public: an item that cannot work, a
- * consent step that never appears, a snapshot taken of a folder that does not
- * yet hold what is on screen. Those are the tests.
+ * Every source keeps a history (ADR-0031 §1), and the ways for it to be wrong
+ * in public are the same wherever it is kept: an explanation that never
+ * appears the first time, a snapshot taken of a scope that does not yet hold
+ * what is on screen, a history of one thing that lists what never touched it.
+ * Those are the tests.
  *
  * The editor is stubbed — what is under test is the conversation between the
- * workspace, the history seam and the store.
+ * workspace, the history and the scopes.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { laidOut } from '../../model/testFixtures';
 import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { InMemoryProjectHistory } from '../../adapters/memory/InMemoryProjectHistory'
-import { InMemoryScopeStore } from '../../adapters/memory/InMemoryScopeStore'
+import { heldRepositories } from '../testing/heldRepositories'
+import type { HeldRepositories } from '../testing/heldRepositories'
+import { fakeHistory } from '../testing/fakeHistory'
+import type { FakeEntry, FakeHistory } from '../testing/fakeHistory'
 import type { HostModel } from '../../model/hostModel'
 import type { HostCommand } from '../../platform/hostCommands'
 import type { ScopeSnapshot } from '../../projects/scope'
-import type { HistoryEntry, ProjectHistory } from '../../ports/ProjectHistory'
 import { renderApp } from '../testing/renderShell'
 
 vi.mock('../../editor', async (importOriginal) => {
@@ -66,43 +68,31 @@ const project = (): ScopeSnapshot => ({
   logoLibrary: [],
 })
 
-/** A history that says yes, and remembers what it was asked. */
-function fakeHistory(over: Omit<Partial<ProjectHistory>, 'entries'> & { entries?: HistoryEntry[] } = {}) {
-  const calls = { started: 0, snapshots: [] as string[] }
-  // Pulled out of the overrides: `entries` is a method here and a list there,
-  // and spreading one over the other replaces the method with an array.
-  const { entries: listed = [], ...rest } = over
-  const history: ProjectHistory = {
-    available: () => Promise.resolve(true),
-    keeping: () => Promise.resolve(false),
-    start: () => { calls.started += 1; return Promise.resolve() },
-    snapshot: (message) => { calls.snapshots.push(message); return Promise.resolve(true) },
-    entries: () => Promise.resolve(listed),
-    projectAt: () => Promise.resolve(undefined),
-    label: () => Promise.resolve('done'),
-    ...rest,
-  }
-  return { history, calls }
+/** The scopes a test starts from, and a history over them written by hand. */
+function kept(
+  scopes: readonly ScopeSnapshot[] = [project()], entries: FakeEntry[] = [], made?: 'entries' | 'nothing' | Error,
+): { repositories: HeldRepositories; history: FakeHistory } {
+  const held = heldRepositories(scopes)
+  const history = fakeHistory(held.scopes, entries, made)
+  return { repositories: { ...held, history }, history }
 }
 
-function show(history?: ProjectHistory) {
-  const projects = new InMemoryScopeStore([project()])
-  return { ...renderApp({ scopes: projects, boot: { initialProject: project() }, folder: { history } }), projects }
+function show(entries: FakeEntry[] = [], made?: 'entries' | 'nothing' | Error) {
+  const { repositories, history } = kept([project()], entries, made)
+  return { ...renderApp({ repositories, boot: { initialProject: project() } }), projects: repositories, history }
 }
 
 /**
  * The desktop: a menu bar of its own, whose items arrive as commands on the
- * stream — and which offers *Snapshot…* whatever the shell can do, because the
- * menu decides nothing (`platform/menu.ts`). With `open: false` the
- * organisation screen is up rather than a landscape.
+ * stream. With `open: false` the organisation screen is up rather than a
+ * landscape.
  */
-function showDesktop(history: ProjectHistory, options: { open?: boolean } = {}) {
+function showDesktop(entries: FakeEntry[] = [], options: { open?: boolean } = {}) {
   const listeners: ((command: HostCommand) => void)[] = []
-  const projects = new InMemoryScopeStore([project()])
+  const { repositories, history } = kept([project()], entries)
   const view = renderApp({
-    scopes: projects,
+    repositories,
     boot: { initialProject: options.open === false ? undefined : project() },
-    folder: { history },
     host: {
       hostMenu: true,
       commands: (listener) => {
@@ -112,9 +102,8 @@ function showDesktop(history: ProjectHistory, options: { open?: boolean } = {}) 
     },
   })
   const send = (command: HostCommand) => act(() => { for (const held of [...listeners]) held(command) })
-  /** The machine has answered whether it has a git: one microtask after the mount. */
   const settled = () => act(async () => { await Promise.resolve() })
-  return { ...view, projects, send, settled }
+  return { ...view, projects: repositories, history, send, settled }
 }
 
 /**
@@ -130,28 +119,16 @@ const openSaveMenu = async () => {
 }
 
 describe('what the menu offers', () => {
-  it('offers nothing about history in a browser tab', async () => {
+  /** Every source keeps a history (ADR-0031 §1): a browser tab's as well as a folder's. */
+  it('offers both wherever work is kept', async () => {
     show()
-    await openSaveMenu()
-    expect(screen.queryByText('Snapshot…')).toBeNull()
-  })
-
-  it('offers nothing on a machine with no git', async () => {
-    // An item that cannot work is worse than an item that is missing.
-    show(fakeHistory({ available: () => Promise.resolve(false) }).history)
-    await openSaveMenu()
-    await waitFor(() => expect(screen.queryByText('Snapshot…')).toBeNull())
-  })
-
-  it('offers both once there is a git and a folder', async () => {
-    show(fakeHistory().history)
     await openSaveMenu()
     await waitFor(() => expect(screen.getByText('Snapshot…')).toBeDefined())
     expect(screen.getByText('History…')).toBeDefined()
   })
 
-  it('offers both on the organisation screen too: a snapshot is of the folder', async () => {
-    renderApp({ scopes: new InMemoryScopeStore([project()]), folder: { history: fakeHistory().history } })
+  it('offers both on the organisation screen too: a snapshot is of every scope', async () => {
+    renderApp({ repositories: kept().repositories })
     await screen.findByTestId('shell-toolbar')
     await openSaveMenu()
     await waitFor(() => expect(screen.getByText('Snapshot…')).toBeDefined())
@@ -160,48 +137,31 @@ describe('what the menu offers', () => {
 })
 
 describe('from the menu bar', () => {
-  it('says so on a machine with no git, rather than doing nothing', async () => {
-    // The desktop's menu offers the item regardless; a click that vanished
-    // would look like a broken app rather than a missing program.
-    const view = showDesktop(fakeHistory({ available: () => Promise.resolve(false) }).history)
-    await view.settled()
-    view.send({ type: 'snapshot' })
-    expect(await screen.findByText(/This machine has no git/)).toBeDefined()
-    expect(screen.queryByLabelText('What changed')).toBeNull()
-  })
-
-  it('takes a snapshot of the folder from the organisation screen', async () => {
-    // A snapshot is of the folder, so it means the same from the front door as
-    // from inside a landscape — and the screen writes straight through, so
-    // there is nothing to save first.
-    const held = fakeHistory({ keeping: () => Promise.resolve(true) })
-    const view = showDesktop(held.history, { open: false })
+  it('takes a snapshot from the organisation screen', async () => {
+    // A snapshot is of every scope, so it means the same from the front door
+    // as from inside a landscape.
+    const view = showDesktop([], { open: false })
     await screen.findByTestId('shell-toolbar')
     await view.settled()
     view.send({ type: 'snapshot' })
     await screen.findByLabelText('What changed')
     fireEvent.click(screen.getByText('Take snapshot'))
 
-    await waitFor(() => expect(held.calls.snapshots).toEqual(['Snapshot']))
+    await waitFor(() => expect(view.history.recorded).toEqual([{ subject: 'Snapshot' }]))
     expect(await screen.findByText('Snapshot taken.')).toBeDefined()
   })
 
   it('opens the history from the organisation screen, over the home scope’s own document', async () => {
-    const held = fakeHistory({
-      entries: [{ id: 'abc1234', subject: 'Before the merger', at: 1_757_000_000_000, author: 'W. Simons', labels: [] }],
-      keeping: () => Promise.resolve(true),
-      projectAt: (path) => Promise.resolve({
+    const view = showDesktop([{
+      id: 'abc1234', address: '', subject: 'Before the merger', at: 1_757_000_000_000, by: 'W. Simons',
+      state: {
         ...project(),
-        path,
+        path: '',
         model: model({
-          elements: [{
-            id: 'crews', kind: 'application', name: 'Crews',
-            lifecycle: 'live', isManaged: true, aspects: {},
-          }],
+          elements: [{ id: 'crews', kind: 'application', name: 'Crews', lifecycle: 'live', isManaged: true, aspects: {} }],
         }),
-      }),
-    })
-    const view = showDesktop(held.history, { open: false })
+      },
+    }], { open: false })
     await screen.findByTestId('shell-toolbar')
     await view.settled()
     view.send({ type: 'history' })
@@ -210,38 +170,31 @@ describe('from the menu bar', () => {
     // The root holds nothing now, and the snapshot held Crews: removed since.
     expect(await screen.findByText('Removed Crews')).toBeDefined()
   })
-
-  it('says so on a machine with no git from the organisation screen too', async () => {
-    const view = showDesktop(fakeHistory({ available: () => Promise.resolve(false) }).history, { open: false })
-    await screen.findByTestId('shell-toolbar')
-    await view.settled()
-    view.send({ type: 'history' })
-    expect(await screen.findByText(/This machine has no git/)).toBeDefined()
-  })
 })
 
 describe('taking a snapshot', () => {
-  const takeOne = async (held: { history: ProjectHistory }) => {
-    show(held.history)
+  const takeOne = async (entries: FakeEntry[] = [], made?: 'entries' | 'nothing') => {
+    const view = show(entries, made)
     await openSaveMenu()
     await waitFor(() => expect(screen.getByText('Snapshot…')).toBeDefined())
     fireEvent.click(screen.getByText('Snapshot…'))
     await waitFor(() => expect(screen.getByLabelText('What changed')).toBeDefined())
+    return view
   }
+  const earlier: FakeEntry = { id: 'c1', address: 'acme/landscape', subject: 'Earlier', at: 1_757_000_000_000 }
 
   it('asks first, and says what starting a history means', async () => {
-    await takeOne(fakeHistory())
-    expect(screen.getByText(/does not keep a history yet/)).toBeDefined()
+    await takeOne()
+    expect(await screen.findByText('Start keeping history')).toBeDefined()
   })
 
-  it('does not explain itself again once the folder is keeping one', async () => {
-    await takeOne(fakeHistory({ keeping: () => Promise.resolve(true) }))
-    expect(screen.queryByText(/does not keep a history yet/)).toBeNull()
+  it('does not explain itself again once the scope has a history', async () => {
+    await takeOne([earlier])
+    await waitFor(() => expect(screen.queryByText('Start keeping history')).toBeNull())
   })
 
   it('drafts the message from what was actually done', async () => {
-    const held = fakeHistory({ keeping: () => Promise.resolve(true) })
-    show(held.history)
+    show([earlier])
     act(() => { screen.getByTestId('edit-the-diagram').click() })
     await openSaveMenu()
     await waitFor(() => expect(screen.getByText('Snapshot…')).toBeDefined())
@@ -252,10 +205,9 @@ describe('taking a snapshot', () => {
   })
 
   it('writes the project out before recording it', async () => {
-    // A snapshot of a folder that does not yet hold what is on screen is a
+    // A snapshot of a scope that does not yet hold what is on screen is a
     // snapshot of the wrong thing, and it would be silently so.
-    const held = fakeHistory({ keeping: () => Promise.resolve(true) })
-    const view = show(held.history)
+    const view = show([earlier])
     act(() => { screen.getByTestId('edit-the-diagram').click() })
     await openSaveMenu()
     await waitFor(() => expect(screen.getByText('Snapshot…')).toBeDefined())
@@ -263,28 +215,13 @@ describe('taking a snapshot', () => {
     await screen.findByLabelText('What changed')
     fireEvent.click(screen.getByText('Take snapshot'))
 
-    await waitFor(async () => {
-      const stored = await view.projects.load('acme/landscape')
-      expect(stored?.model.diagrams[0].name).toBe('Edited')
-    })
-    expect(held.calls.snapshots).toHaveLength(1)
-  })
-
-  it('starts the history the first time, and only then', async () => {
-    const held = fakeHistory()
-    await takeOne(held)
-    fireEvent.click(screen.getByText('Take snapshot'))
-
-    await waitFor(() => expect(held.calls.started).toBe(1))
-    await waitFor(() => expect(screen.getByText('Snapshot taken.')).toBeDefined())
+    await waitFor(() => expect(view.history.recorded).toHaveLength(1))
+    const stored = await view.projects.read('acme/landscape')
+    expect(stored?.model.diagrams[0].name).toBe('Edited')
   })
 
   it('says so when there was nothing to record', async () => {
-    const held = fakeHistory({
-      keeping: () => Promise.resolve(true),
-      snapshot: () => Promise.resolve(false),
-    })
-    await takeOne(held)
+    await takeOne([earlier], 'nothing')
     fireEvent.click(screen.getByText('Take snapshot'))
 
     await waitFor(() => expect(
@@ -294,68 +231,50 @@ describe('taking a snapshot', () => {
 })
 
 describe('reading one back', () => {
-  const entry: HistoryEntry = {
-    id: 'abc1234', subject: 'Before the merger', at: 1_757_000_000_000, author: 'W. Simons', labels: [],
-  }
-
-  it('lists the snapshots and says what changed since the chosen one', async () => {
-    const held = fakeHistory({
-      entries: [entry],
-      keeping: () => Promise.resolve(true),
-      projectAt: () => Promise.resolve({
-        ...project(),
-        model: model({
-          elements: [{
-            id: 'crews', kind: 'application', name: 'Crews',
-            lifecycle: 'live', isManaged: true, aspects: {},
-          }],
-        }),
-      }),
-    })
-    show(held.history)
+  const entry = (over: Partial<FakeEntry> = {}): FakeEntry => ({
+    id: 'abc1234', address: 'acme/landscape', subject: 'Before the merger', at: 1_757_000_000_000, by: 'W. Simons', ...over,
+  })
+  const openIt = async () => {
     await openSaveMenu()
     await waitFor(() => expect(screen.getByText('History…')).toBeDefined())
     fireEvent.click(screen.getByText('History…'))
+  }
 
+  it('lists the snapshots and says what changed since the chosen one', async () => {
+    show([entry({
+      state: {
+        ...project(),
+        model: model({
+          elements: [{ id: 'crews', kind: 'application', name: 'Crews', lifecycle: 'live', isManaged: true, aspects: {} }],
+        }),
+      },
+    })])
+    await openIt()
     expect(within(await screen.findByTestId('history-list')).getByText('Before the merger')).toBeDefined()
     // The element is in the snapshot and not on screen now, so it was removed
     // since — which is the direction somebody standing in a history reads in.
     expect(await screen.findByText('Removed Crews')).toBeDefined()
   })
 
-  it('says so when the project was not in the folder then', async () => {
-    const held = fakeHistory({ entries: [entry], keeping: () => Promise.resolve(true) })
-    show(held.history)
-    await openSaveMenu()
-    await waitFor(() => expect(screen.getByText('History…')).toBeDefined())
-    fireEvent.click(screen.getByText('History…'))
-
-    expect(await screen.findByText('This project was not in the folder at that snapshot.'))
-      .toBeDefined()
+  it('says so when the scope was not there then', async () => {
+    show([entry()])
+    await openIt()
+    expect(await screen.findByText('This project was not in the folder at that snapshot.')).toBeDefined()
   })
 
   it('says when there is nothing to show yet', async () => {
-    const held = fakeHistory({ keeping: () => Promise.resolve(true) })
-    show(held.history)
-    await openSaveMenu()
-    await waitFor(() => expect(screen.getByText('History…')).toBeDefined())
-    fireEvent.click(screen.getByText('History…'))
-
+    show()
+    await openIt()
     expect(await screen.findByText('No snapshots yet.')).toBeDefined()
   })
 
   it('gives the window something to be dragged by, as every full page must', async () => {
-    const held = fakeHistory({ keeping: () => Promise.resolve(true) })
     renderApp({
-      scopes: new InMemoryScopeStore([project()]),
+      repositories: kept().repositories,
       boot: { initialProject: project() },
-      folder: { history: held.history },
       host: { windowChrome: { draggable: true, controlsInset: 78 } },
     })
-    await openSaveMenu()
-    await waitFor(() => expect(screen.getByText('History…')).toBeDefined())
-    fireEvent.click(screen.getByText('History…'))
-
+    await openIt()
     const bar = await screen.findByTestId('history-topbar')
     expect(getComputedStyle(bar).paddingLeft).toBe('90px')
     const css = [...document.querySelectorAll('style')].map((tag) => tag.textContent).join('')
@@ -377,27 +296,27 @@ describe('the history of one thing (ADR-0008)', () => {
   const withDescribed = (): ScopeSnapshot => ({ ...project(), model: described() })
 
   /** Three snapshots: one touched the diagram, one the description, one the decision. */
-  const threeSnapshots = () => new InMemoryProjectHistory([
+  const threeSnapshots = (): FakeEntry[] => [
     {
-      id: 'c3', subject: 'Retitled the decision', at: at + 2000, author: 'W.',
-      touched: ['acme/landscape/decisions/0001-one-writer.md'],
-      projects: [{ ...withDescribed(), model: { ...described(), decisions: [{ ...described().decisions![0], title: 'Two writers' }] } }],
+      id: 'c3', address: 'acme/landscape', subject: 'Retitled the decision', at: at + 2000,
+      records: [{ kind: 'decision', id: 'adr-1' }],
+      state: { ...withDescribed(), model: { ...described(), decisions: [{ ...described().decisions![0], title: 'Two writers' }] } },
     },
     {
-      id: 'c2', subject: 'Wrote about billing', at: at + 1000, author: 'W.',
-      touched: ['acme/landscape/docs/billing.md'],
-      projects: [withDescribed()],
+      id: 'c2', address: 'acme/landscape', subject: 'Wrote about billing', at: at + 1000,
+      records: [{ kind: 'element', id: 'billing' }],
+      state: withDescribed(),
     },
     {
-      id: 'c1', subject: 'Moved everything', at, author: 'W.',
-      touched: ['acme/landscape/diagrams/d1.geometry.json', 'acme/landscape/diagrams/d1.json'],
-      projects: [{ ...withDescribed(), model: { ...described(), diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'Old name', placements: [] })] } }],
+      id: 'c1', address: 'acme/landscape', subject: 'Moved everything', at,
+      records: [{ kind: 'diagram', id: 'd1' }],
+      state: { ...withDescribed(), model: { ...described(), diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'Old name', placements: [] })] } },
     },
-  ])
+  ]
 
-  function showDescribed(history: InMemoryProjectHistory) {
-    const projects = new InMemoryScopeStore([withDescribed()])
-    return renderApp({ scopes: projects, boot: { initialProject: withDescribed() }, folder: { history } })
+  function showDescribed(entries: FakeEntry[]) {
+    const { repositories } = kept([withDescribed()], entries)
+    return renderApp({ repositories, boot: { initialProject: withDescribed() } })
   }
 
   it('opens on a diagram from its tab, listing only the snapshots that touched it', async () => {
@@ -456,25 +375,17 @@ describe('the history of one thing (ADR-0008)', () => {
         elements: [{ ...described().elements[0], ref: 'acme', description: 'What it means to us.' }],
       },
     })
-    const projects = new InMemoryScopeStore([master(), drawing()])
-    renderApp({
-      scopes: projects,
-      boot: { initialProject: drawing() },
-      folder: {
-        history: new InMemoryProjectHistory([
-          {
-            id: 'c2', subject: 'What billing means to us', at: at + 1000, author: 'W.',
-            touched: ['acme/landscape/docs/billing.md'],
-            projects: [drawing()],
-          },
-          {
-            id: 'c1', subject: 'What billing is', at, author: 'W.',
-            touched: ['acme/docs/billing.md'],
-            projects: [drawing()],
-          },
-        ]),
+    const { repositories } = kept([master(), drawing()], [
+      {
+        id: 'c2', address: 'acme/landscape', subject: 'What billing means to us', at: at + 1000,
+        records: [{ kind: 'element', id: 'billing' }], state: drawing(),
       },
-    })
+      {
+        id: 'c1', address: 'acme', subject: 'What billing is', at,
+        records: [{ kind: 'element', id: 'billing' }], state: master(),
+      },
+    ])
+    renderApp({ repositories, boot: { initialProject: drawing() } })
     fireEvent.click(await screen.findByTestId('history-of-the-diagram'))
     fireEvent.change(await screen.findByLabelText('Show the history of'), { target: { value: 'description:billing' } })
     const list = await screen.findByTestId('history-list')
@@ -488,9 +399,9 @@ describe('the history of one thing (ADR-0008)', () => {
   })
 
   it('says so when no snapshot touched the thing', async () => {
-    showDescribed(new InMemoryProjectHistory([
-      { id: 'c1', subject: 'Something else', at, author: 'W.', touched: ['acme/landscape/model.json'] },
-    ]))
+    showDescribed([
+      { id: 'c1', address: 'acme/landscape', subject: 'Something else', at, records: [{ kind: 'element', id: 'other' }] },
+    ])
     fireEvent.click(await screen.findByTestId('history-of-the-diagram'))
     expect(await screen.findByText('No snapshot has touched this yet.')).toBeDefined()
   })
@@ -510,11 +421,11 @@ describe('going back, as going forward (ADR-0008)', () => {
       ...over,
     }),
   })
-  const oneSnapshot = (held: ScopeSnapshot = before()) => new InMemoryProjectHistory([{
-    id: 'c1', subject: 'Before the mess', at, author: 'W.',
-    touched: ['acme/landscape/diagrams/d1.json', 'acme/landscape/decisions/0001-one-writer.md'],
-    projects: [held],
-  }])
+  const oneSnapshot = (held: ScopeSnapshot = before()): FakeEntry[] => [{
+    id: 'c1', address: 'acme/landscape', subject: 'Before the mess', at,
+    records: [{ kind: 'diagram', id: 'd1' }, { kind: 'decision', id: 'adr-1' }],
+    state: held,
+  }]
 
   const now = (over: Partial<HostModel> = {}): ScopeSnapshot => ({
     ...project(),
@@ -547,9 +458,8 @@ describe('going back, as going forward (ADR-0008)', () => {
   }
 
   it('restores one diagram as a new step: named in the Activity list, undoable, and offered a snapshot', async () => {
-    const history = oneSnapshot()
-    const projects = new InMemoryScopeStore([now()])
-    renderApp({ scopes: projects, boot: { initialProject: now() }, folder: { history } })
+    const { repositories: projects, history } = kept([now()], oneSnapshot())
+    renderApp({ repositories: projects, boot: { initialProject: now() } })
     await openHistoryOfTheDiagram()
     fireEvent.click(screen.getByRole('button', { name: 'Restore this version…' }))
     // The copy says what a restore is before the first one is taken.
@@ -570,15 +480,14 @@ describe('going back, as going forward (ADR-0008)', () => {
     const field = await screen.findByLabelText('What changed')
     expect((field as HTMLTextAreaElement).value).toContain('Restored the diagram Old name')
     fireEvent.click(screen.getByText('Take snapshot'))
-    await waitFor(() => expect(history.calls.snapshots).toHaveLength(1))
+    await waitFor(() => expect(history.recorded).toHaveLength(1))
     // And the folder now holds the old diagram, through the store that always writes it.
-    const stored = await projects.load('acme/landscape')
+    const stored = await projects.read('acme/landscape')
     expect(stored?.model.diagrams[0].name).toBe('Old name')
   })
 
   it('refuses to restore a locked decision, and says why', async () => {
-    const history = oneSnapshot()
-    renderApp({ scopes: new InMemoryScopeStore([now()]), boot: { initialProject: now() }, folder: { history } })
+    renderApp({ repositories: kept([now()], oneSnapshot()).repositories, boot: { initialProject: now() } })
     fireEvent.click(screen.getByText('Decisions'))
     fireEvent.click(within(await screen.findByTestId('adr-list')).getByText('One writer'))
     fireEvent.click(within(await screen.findByTestId('adr-reader')).getByRole('button', { name: 'History…' }))
@@ -594,8 +503,8 @@ describe('going back, as going forward (ADR-0008)', () => {
   })
 
   it('restores the whole project behind its own confirm', async () => {
-    const history = oneSnapshot(before({ decisions: [] }))
-    renderApp({ scopes: new InMemoryScopeStore([now({ decisions: [] })]), boot: { initialProject: now({ decisions: [] }) }, folder: { history } })
+    const { repositories } = kept([now({ decisions: [] })], oneSnapshot(before({ decisions: [] })))
+    renderApp({ repositories, boot: { initialProject: now({ decisions: [] }) } })
     await openSaveMenu()
     await waitFor(() => expect(screen.getByText('History…')).toBeDefined())
     fireEvent.click(screen.getByText('History…'))
@@ -611,10 +520,10 @@ describe('going back, as going forward (ADR-0008)', () => {
 
 describe('a label on a snapshot (ADR-0008)', () => {
   const at = 1_757_000_000_000
-  const twoSnapshots = () => new InMemoryProjectHistory([
-    { id: 'c2', subject: 'Two', at: at + 1000, author: 'W.', projects: [project()], labels: ['Shown to the board'] },
-    { id: 'c1', subject: 'One', at, author: 'W.', projects: [project()] },
-  ])
+  const twoSnapshots = (): FakeEntry[] => [
+    { id: 'c2', address: 'acme/landscape', subject: 'Two', at: at + 1000, state: project(), labels: ['Shown to the board'] },
+    { id: 'c1', address: 'acme/landscape', subject: 'One', at, state: project() },
+  ]
 
   const openHistory = async () => {
     await openSaveMenu()
@@ -631,8 +540,8 @@ describe('a label on a snapshot (ADR-0008)', () => {
   })
 
   it('labels the chosen snapshot and reads the list again', async () => {
-    const history = twoSnapshots()
-    show(history)
+    const entries = twoSnapshots()
+    show(entries)
     const list = await openHistory()
     fireEvent.click(within(list).getByText('One'))
     fireEvent.click(await screen.findByRole('button', { name: 'Label…' }))
@@ -642,7 +551,7 @@ describe('a label on a snapshot (ADR-0008)', () => {
 
     await waitFor(() => expect(within(screen.getByTestId('history-list')).getByText('Release 1.2')).toBeDefined())
     expect((await screen.findByRole('alert', { hidden: true })).textContent).toContain('Labelled.')
-    expect(await history.entries()).toMatchObject([{ labels: ['Shown to the board'] }, { labels: ['Release 1.2'] }])
+    expect(entries.map((one) => one.labels)).toEqual([['Shown to the board'], ['Release 1.2']])
   })
 
   it('refuses a second label with the same name, and says so', async () => {

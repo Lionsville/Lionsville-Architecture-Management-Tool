@@ -26,7 +26,11 @@ import type { ScopePath } from '../projects/scopePath'
 import { technologyRows } from '../projects/technologyRegister'
 import type { WorkspaceAgentView } from './useAgentShell'
 import type { MakeId } from './useDiagramActions'
-import type { ProjectSaver } from './useDocumentSession'
+import { readScopes } from '../projects/scopeAccess'
+import type { ScopeReader } from '../projects/scopeAccess'
+import type { ImageEntry, ImageName } from '../model/imageName'
+import { ShellError } from '../platform/errors'
+import { readDataUrl } from '../projects/dataUrl'
 import type { ModelSession } from './useModelSession'
 import type { WorkspacePages } from './useWorkspacePages'
 
@@ -37,12 +41,14 @@ export function useWorkspaceAgentView(deps: {
   indexRef: RefObject<ScopeIndex>
   rowsElsewhereRef: RefObject<Relation[]>
   scopes: ScopeSummary
-  projects: ProjectSaver
+  reader: ScopeReader
   ancestorRecords: readonly Adr[]
   readOnly: boolean
   documentStatus: string
   renderer: RendererView
   save: () => Promise<void>
+  /** Put a picture's bytes where the scope is kept, and answer its library entry (`ScopeWriter.put`). */
+  putPicture: (name: ImageName, bytes: Uint8Array) => Promise<ImageEntry>
   pages: WorkspacePages
   showElement: (id: string) => void
   openDocumentation: (elementId?: string, diagramId?: string) => void
@@ -52,13 +58,13 @@ export function useWorkspaceAgentView(deps: {
   onAgentSession: ((view: WorkspaceAgentView | undefined) => void) | undefined
 }): void {
   const {
-    session, scope, indexRef, rowsElsewhereRef, scopes, projects, ancestorRecords, readOnly, documentStatus,
-    renderer, save, pages, showElement, openDocumentation, makeId, today, s, onAgentSession,
+    session, scope, indexRef, rowsElsewhereRef, scopes, reader, ancestorRecords, readOnly, documentStatus,
+    renderer, save, putPicture, pages, showElement, openDocumentation, makeId, today, s, onAgentSession,
   } = deps
   const { page, openView, openDecisions, openObservations, openRoadmap, closePages, openPlatformReport, openServiceReport } = pages
   const openPlan = pages.plans.openPlan
   const agentView = useMemo<WorkspaceAgentView>(() => ({
-    ...throughSession(session),
+    ...throughSession(session, putPicture),
     scopePath: () => scope,
     ancestorDecisions: () => ancestorRecords,
     /**
@@ -81,9 +87,9 @@ export function useWorkspaceAgentView(deps: {
     save,
     page,
     show: showOn(pages, showElement, openDocumentation),
-    tree: agentTree({ session, scope, indexRef, rowsElsewhereRef, scopes, projects }),
+    tree: agentTree({ session, scope, indexRef, rowsElsewhereRef, scopes, reader }),
   }), [
-    session, scope, ancestorRecords, documentStatus, readOnly, makeId, today, s, renderer, save, scopes, projects,
+    session, scope, ancestorRecords, documentStatus, readOnly, makeId, today, s, renderer, save, putPicture, scopes, reader,
     page, openPlan, openView, openDecisions, openObservations, openRoadmap, closePages, showElement, openDocumentation,
     openPlatformReport, openServiceReport, indexRef, rowsElsewhereRef,
   ])
@@ -140,9 +146,9 @@ function agentTree(at: {
   indexRef: RefObject<ScopeIndex>
   rowsElsewhereRef: RefObject<Relation[]>
   scopes: ScopeSummary
-  projects: ProjectSaver
+  reader: ScopeReader
 }): WorkspaceAgentView['tree'] {
-  const { session, scope, indexRef, rowsElsewhereRef, scopes, projects } = at
+  const { session, scope, indexRef, rowsElsewhereRef, scopes, reader } = at
   return {
     scopes: () => flattenScopes(scopes).map((held) => ({
       path: held.path, name: held.name, ...(held.kind ? { kind: held.kind } : {}), views: held.diagrams,
@@ -172,11 +178,8 @@ function agentTree(at: {
     // A read for one call, the scope and its ancestors' records: what the
     // open scope was handed at open, done again for the one asked about.
     read: async (path) => {
-      const load = projects.load
-      if (!load) return undefined
-      const held = await load(path)
+      const [held, ...above] = await readScopes(reader, [path, ...ancestorScopes(path)])
       if (!held) return undefined
-      const above = await Promise.all(ancestorScopes(path).map((one) => load(one)))
       return {
         model: held.model,
         activeDiagramId: held.activeDiagramId,
@@ -211,7 +214,9 @@ function recordRules(
 }
 
 /** What the handler reads and writes through the session: the model, the one way in, and the log. */
-function throughSession(session: ModelSession): Pick<
+function throughSession(
+  session: ModelSession, putPicture: (name: ImageName, bytes: Uint8Array) => Promise<ImageEntry>,
+): Pick<
   WorkspaceAgentView,
   'indexed' | 'current' | 'activeDiagramId' | 'dispatch' | 'ids' | 'revision' | 'history' | 'undo' | 'images' | 'addImage'
 > {
@@ -225,6 +230,11 @@ function throughSession(session: ModelSession): Pick<
     history: session.history,
     undo: session.undo,
     images: session.currentImages,
-    addImage: (image) => session.setImageLibrary((library) => [...library, image]),
+    addImage: async (image) => {
+      const read = readDataUrl(image.url)
+      if (!read) throw new ShellError('shell.imageUnreadable')
+      const entry = await putPicture(image.file, read.bytes)
+      session.setImageLibrary((library) => [...library, entry])
+    },
   }
 }

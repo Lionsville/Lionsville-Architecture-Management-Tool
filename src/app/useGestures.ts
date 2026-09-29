@@ -31,14 +31,16 @@ import type { StringKey, Translate } from '../i18n'
 import type { Command, DesignElement, ElementId } from '../model'
 import { reasonOf } from '../platform/errors'
 import {
-  GESTURE_BARRIER, GESTURE_REFUSAL, isGestureRefusal, planGesture, withDefinition,
+  definitionCommand, GESTURE_BARRIER, GESTURE_REFUSAL, isGestureRefusal, planGesture,
 } from '../projects/gestures'
 import type { GestureKind, GesturePlan, GestureRequest } from '../projects/gestures'
 import type { ScopeModel, ScopeSnapshot } from '../projects/scope'
 import type { ScopeIndex } from '../projects/scopeIndex'
 import { ancestorScopes, isWithinScope, ROOT_SCOPE } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
-import { rewriteScope } from './rewriteScope'
+import { changeScope } from '../projects/scopeAccess'
+import type { ScopeReader } from '../projects/scopeAccess'
+import type { ScopeRepository } from '../ports/ScopeRepository'
 import type { Notify } from './useToasts'
 
 /** Which dialog is up. One at a time, because both are about one record. */
@@ -72,16 +74,16 @@ export function useGestures(deps: {
   /** The scope the session has open. */
   scope: ScopePath
   /** Reading and writing another scope: the narrowest shape that will do. */
-  scopes: {
-    save(scope: ScopeSnapshot, expects?: string): Promise<void>
-    load?(path: ScopePath): Promise<ScopeSnapshot | undefined>
-  }
+  scopes: ScopeReader & Pick<ScopeRepository, 'apply'>
+  /**
+   * Write what the session holds now, and answer once it has landed — or
+   * reject where it did not. The gesture's own step is written with it.
+   */
+  save: () => Promise<void>
   /**
    * Whether the source carries every change of the open scope as a step
    * (`Shell.publishesSteps`, ADR-0022). Then the command dispatched here has
-   * already gone out, and a whole write of the scope after it would be a
-   * second copy of it — one that lands over whatever anybody else's steps did
-   * in between.
+   * already gone out, and there is nothing of this session's to write.
    */
   published?: boolean
   /**
@@ -117,7 +119,7 @@ export function useGestures(deps: {
   s: Translate
 }): Gestures {
   const {
-    scope, scopes, models, index, session, onTreeChanged, onOpenScope, scopeLabel,
+    scope, scopes, save, models, index, session, onTreeChanged, onOpenScope, scopeLabel,
     notify, onFailure, s, published = false,
   } = deps
   const [choice, setChoice] = useState<GestureChoice | undefined>(undefined)
@@ -179,11 +181,8 @@ export function useGestures(deps: {
       for (const write of plan.writes) {
         // Expecting what was read, and made again over a scope that moved in
         // between: the definition is written into the scope as it stands, so a
-        // colleague's change to it survives the gesture (`rewriteScope.ts`).
-        const written = scopes.load
-          ? await rewriteScope({ load: scopes.load.bind(scopes), save: scopes.save.bind(scopes) }, write.path,
-            (held) => (held ? withDefinition(held, write.element) : undefined))
-          : undefined
+        // colleague's change to it survives the gesture (`changeScope`).
+        const written = await changeScope(scopes, write.path, (held) => [definitionCommand(held.model, write.element)])
         if (!written) {
           notify(s(GESTURE_REFUSAL['gesture.noSuchScope']), 'warning')
           return
@@ -204,15 +203,13 @@ export function useGestures(deps: {
     if (session.dispatch(command) === undefined) return
     const scopeName = scopeLabel(plan.owner)
     // Where the source publishes every step, the dispatch above is the write:
-    // it has gone out as a step and lands in its order. A whole snapshot after
-    // it is a second copy, taken of this window's model, and it would land
-    // over every step somebody else made to this scope in the meantime.
+    // it has gone out as a step and lands in its order.
     if (!published) {
       try {
-        // Through the store rather than through the document session's own
-        // save, because this one has to be able to fail out loud: everything
-        // above it has already landed in another scope.
-        await scopes.save(session.snapshot())
+        // Written now rather than when the session next gets round to it,
+        // because this one has to be able to fail out loud: everything above
+        // it has already landed in another scope.
+        await save()
       } catch (cause) {
         onFailure('gesture.save', cause)
         notify(s('gesture.leftCopy', { scope: scopeName, message: reasonOf(cause) }), 'warning')
@@ -226,7 +223,7 @@ export function useGestures(deps: {
       'success',
       onOpenScope ? { label: s('standIn.open', { scope: scopeName }), onClick: () => onOpenScope(plan.owner) } : undefined,
     )
-  }, [scopes, session, notify, onFailure, s, scopeLabel, onTreeChanged, onOpenScope, published])
+  }, [scopes, save, session, notify, onFailure, s, scopeLabel, onTreeChanged, onOpenScope, published])
 
   const ask = useCallback((request: Omit<GestureRequest, 'scope'>) => {
     if (!models || !session.mayChange()) return

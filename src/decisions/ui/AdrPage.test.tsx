@@ -414,7 +414,7 @@ describe('AdrPage — pictures (ADR-0009)', () => {
     const area = screen.getByLabelText('Decision source (markdown)') as HTMLTextAreaElement
     const file = new File([new Uint8Array([1, 2])], 'Screenshot.png', { type: 'image/png' })
     fireEvent.paste(area, { clipboardData: { files: [file], items: [], types: ['Files'], getData: () => '' } })
-    await vi.waitFor(() => expect(area.value).toContain('![Screenshot](../images/screenshot-k1.png)'))
+    await vi.waitFor(() => expect(area.value).toContain('![Screenshot](image:screenshot-k1.png)'))
     fireEvent.blur(area)
     expect(onProject).toHaveBeenCalledWith(expect.arrayContaining([
       expect.objectContaining({ id: 'l1', body: expect.stringContaining('screenshot-k1.png') }),

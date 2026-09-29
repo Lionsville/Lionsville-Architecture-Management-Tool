@@ -8,7 +8,7 @@
 export { linkElementRefs, outline, stripInline } from './documentation'
 export type { MarkdownRenderOptions, OutlineEntry } from './documentation'
 /** Pictures a document holds, and how it refers to them (ADR-0009). */
-export { IMAGES_FOLDER, documentsUsing, imageReference, imageSrcFile, imagesUsedIn } from './images'
+export { documentsUsing, imagesUsedIn, pictureMarkdown } from './images'
 export type { NamedDocument } from './images'
 /** The business case a document computes, and the block it is written in (ADR-0009). */
 export {

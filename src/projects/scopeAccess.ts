@@ -17,14 +17,19 @@
  * always been handed a refusal they can say (`app/messageFor.ts`).
  */
 import type { UploadedLogo } from '../model'
+import { imageEntryOf } from '../model/imageEntry'
+import { isImageName } from '../model/imageName'
+import type { ImageEntry, ImageName } from '../model/imageName'
+import type { ImageRepository } from '../ports/ImageRepository'
 import { ShellError } from '../platform/errors'
 import type { IndexedScope, IndexRead, OrganisationIndex } from '../ports/OrganisationIndex'
 import type { Created, Refused, ScopeNode, ScopeRepository, ScopeTree } from '../ports/ScopeRepository'
+import { dataUrl, readDataUrl } from './dataUrl'
 import { readdressRef, readdressRefs } from './readdress'
 import { SCOPE_MOVED } from './revision'
 import { resolveActive } from './scope'
 import { isWithinScope } from './scopePath'
-import type { ScopeModel, ScopeSnapshot, ScopeSummary } from './scope'
+import type { CarriedImage, ScopeModel, ScopeSnapshot, ScopeSummary } from './scope'
 import { STEP_ELSEWHERE } from './scopeState'
 import type {
   Revision, ScopeAddress, ScopeCommand, ScopeContent, ScopeId, ScopeRefusal, ScopeState, ScopeStep,
@@ -66,7 +71,7 @@ export function nodeAt(tree: ScopeTree, address: ScopeAddress): ScopeNode | unde
  * it opens on resolved against the views it has, and the marks as a list.
  */
 export function snapshotOf(state: ScopeState): ScopeSnapshot {
-  const { id, address, model, activeDiagramId, logoLibrary, kind, client, links, updatedAt, unreadable, revision } = state
+  const { id, address, model, activeDiagramId, logoLibrary, kind, client, links, updatedAt, unreadable, revision, images } = state
   return {
     path: address,
     id,
@@ -79,6 +84,7 @@ export function snapshotOf(state: ScopeState): ScopeSnapshot {
     ...(updatedAt !== undefined ? { updatedAt } : {}),
     ...(unreadable?.length ? { unreadable } : {}),
     revision,
+    images,
   }
 }
 
@@ -90,6 +96,18 @@ export async function readScope(scopes: ScopeReader, address: ScopeAddress): Pro
   const node = nodeAt(await scopes.tree(), address)
   const state = node && await scopes.state(node.id)
   return state && snapshotOf(state)
+}
+
+/** Several scopes, by their addresses, from one read of the tree; `undefined` for each that is not there. */
+export async function readScopes(
+  scopes: ScopeReader, addresses: readonly ScopeAddress[],
+): Promise<(ScopeSnapshot | undefined)[]> {
+  const tree = await scopes.tree()
+  return Promise.all(addresses.map(async (address) => {
+    const node = nodeAt(tree, address)
+    const state = node && await scopes.state(node.id)
+    return state && snapshotOf(state)
+  }))
 }
 
 /** Every scope's records and rows, as the index folds them (`scopeIndex.ts`). */
@@ -177,7 +195,7 @@ export async function ensureScope(
  * model, and what it says about itself. The pictures' entries are the
  * library's (`images`), handed in by whoever put their bytes.
  */
-export function contentOf(scope: ScopeSnapshot, images: ScopeContent['images'] = []): ScopeContent {
+export function contentOf(scope: ScopeSnapshot, images: ScopeContent['images'] = scope.images ?? []): ScopeContent {
   return {
     model: scope.model,
     ...(scope.activeDiagramId ? { activeDiagramId: scope.activeDiagramId } : {}),
@@ -238,4 +256,142 @@ export async function moveScope(
   landed(await scopes.move(node.id, to, expects))
   for (const patch of patches) if (inside(patch.path)) await carry(readdressRef(patch.path, from, to), patch.refs)
   return readScope(scopes, to)
+}
+
+/** A picture a whole content carries: its name in the library, and its bytes. */
+export type CarriedPicture = { name: ImageName; bytes: Uint8Array }
+
+/** A whole content on its way to an address, with the bytes of the pictures it names. */
+export type Arriving = {
+  address: ScopeAddress
+  /** What it holds; its library is made from `pictures`. */
+  content: ScopeContent
+  pictures?: readonly CarriedPicture[]
+}
+
+/**
+ * Several contents that arrive whole, landed together: every scope or none
+ * (ADR-0023, amendment 2). The scopes that are not there are made first,
+ * shallowest first, and the pictures' bytes are put; then one apply lands a
+ * `scope.replace` on each, expecting what was read of it — so a scope
+ * somebody changed in between refuses the whole, no content is written, and
+ * the scopes made to hold them are taken away again.
+ */
+export async function placeTogether(
+  repositories: {
+    scopes: ScopeReader & Pick<ScopeRepository, 'create' | 'apply' | 'remove'>
+    images: Pick<ImageRepository, 'put'>
+  },
+  arriving: readonly Arriving[],
+): Promise<void> {
+  const { scopes } = repositories
+  const ordered = [...arriving].sort((one, other) => depthOf(one.address) - depthOf(other.address))
+  const before = new Set(nodesOf((await scopes.tree()).root).map((node) => node.id))
+  const ids: ScopeId[] = []
+  for (const one of ordered) {
+    ids.push(await ensureScope(scopes, one.address, { name: one.content.model.name, ...(one.content.kind ? { kind: one.content.kind } : {}) }))
+  }
+  try {
+    await landEach(repositories, ordered, ids)
+  } catch (cause) {
+    // Nothing of the contents landed, so the scopes made only to hold them go
+    // again — deepest first, and each only where nothing has been done to it.
+    for (const id of [...ids].reverse()) if (!before.has(id)) await scopes.remove(id).catch(() => undefined)
+    throw cause
+  }
+}
+
+/** The pictures' bytes put, then every content landed on its scope in one apply. */
+async function landEach(
+  repositories: { scopes: ScopeReader & Pick<ScopeRepository, 'apply'>; images: Pick<ImageRepository, 'put'> },
+  ordered: readonly Arriving[],
+  ids: readonly ScopeId[],
+): Promise<void> {
+  const { scopes, images } = repositories
+  const libraries: ImageEntry[][] = []
+  for (const [at, one] of ordered.entries()) {
+    const library: ImageEntry[] = []
+    for (const picture of one.pictures ?? []) {
+      landed(await images.put(ids[at], picture.name, picture.bytes))
+      library.push(await imageEntryOf(picture.name, picture.bytes))
+    }
+    libraries.push(library)
+  }
+  const reads = await Promise.all(ids.map((id) => scopes.state(id)))
+  landed(await scopes.apply(ordered.map((one, at) => ({
+    scope: ids[at],
+    steps: [stepOf({ type: 'scope.replace', content: { ...one.content, images: libraries[at] } })],
+    ...(reads[at] ? { expects: reads[at].revision } : {}),
+  }))))
+}
+
+function depthOf(address: ScopeAddress): number {
+  return address === '' ? 0 : address.split('/').length
+}
+
+/**
+ * The pictures a snapshot carries whole, as names and bytes: each whose name
+ * is one a library may hold, and whose bytes read. The rest are left out, as
+ * a picture no document can name.
+ */
+export function picturesOf(carried: readonly CarriedImage[] | undefined): CarriedPicture[] {
+  return (carried ?? []).flatMap((image) => {
+    const read = readDataUrl(image.url)
+    return read && isImageName(image.file) ? [{ name: image.file, bytes: read.bytes }] : []
+  })
+}
+
+/** A scope's pictures, with their bytes, as a snapshot carries them whole. */
+export async function carriedOf(
+  images: Pick<ImageRepository, 'bytes'>, scope: ScopeId, library: readonly ImageEntry[],
+): Promise<CarriedImage[]> {
+  const carried: CarriedImage[] = []
+  for (const entry of library) {
+    const held = await images.bytes(scope, entry.name)
+    if (held) carried.push({ file: entry.name, url: dataUrl(held.mediaType, held.bytes) })
+  }
+  return carried
+}
+
+/**
+ * Every scope the source holds, in full, pictures and all, and in tree order:
+ * what a working set is made of (ADR-0018). Refused, naming them, where a
+ * scope could not be read — one the tree names as unreadable, or one it lists
+ * that then does not read (ADR-0023, amended): a working set without one of
+ * its scopes, handed over as the organisation, is the loss this refuses.
+ */
+export async function everyScope(
+  repositories: { scopes: ScopeReader; images: Pick<ImageRepository, 'bytes'> },
+): Promise<ScopeSnapshot[]> {
+  const tree = await repositories.scopes.tree()
+  const nodes = nodesOf(tree.root)
+  const states = await Promise.all(nodes.map((node) => repositories.scopes.state(node.id)))
+  const unreadable = [
+    ...(tree.unreadable ?? []),
+    ...nodes.filter((node, at) => states[at] === undefined).map((node) => node.address),
+  ]
+  if (unreadable.length) {
+    throw new ShellError('shell.exportUnreadable', { paths: unreadable.map((path) => path || '/').join(', ') })
+  }
+  // The organisation is always there, whether or not anything was ever put
+  // in it; one with no name and nothing in it is nothing yet, and a working
+  // set does not carry it.
+  const held = states.filter((state) => !(state!.address === '' && blank(state!)))
+  return Promise.all(held.map(async (state) => {
+    const snapshot = snapshotOf(state!)
+    const carried = await carriedOf(repositories.images, state!.id, state!.images)
+    return carried.length ? { ...snapshot, imageLibrary: carried } : snapshot
+  }))
+}
+
+/**
+ * A scope with no name, and nothing in it or said about it: the organisation
+ * before anybody put anything there, which is always there all the same.
+ */
+export function blank(scope: ScopeState | ScopeSnapshot): boolean {
+  const { model } = scope
+  const said = Object.entries(model).some(([key, value]) => key !== 'name' && (Array.isArray(value) ? value.length > 0 : value !== undefined))
+  const described = scope.kind !== undefined || scope.client !== undefined || (scope.links?.length ?? 0) > 0
+    || (scope.logoLibrary?.length ?? 0) > 0
+  return model.name.trim() === '' && !said && !described && (scope.images?.length ?? 0) === 0
 }

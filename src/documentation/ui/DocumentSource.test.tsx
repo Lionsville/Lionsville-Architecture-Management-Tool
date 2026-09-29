@@ -37,7 +37,7 @@ describe('DocumentSource', () => {
     fireEvent.paste(area, { clipboardData: transfer([imageFile()]) })
     await vi.waitFor(() => expect(onChange).toHaveBeenCalled())
     expect(onAddImage).toHaveBeenCalledTimes(1)
-    expect(onChange).toHaveBeenLastCalledWith('Hello\n\n![Screenshot](../images/screenshot-k1.png)\n\n')
+    expect(onChange).toHaveBeenLastCalledWith('Hello\n\n![Screenshot](image:screenshot-k1.png)\n\n')
   })
 
   it('offers neither pictures nor the hint about them on a host that cannot take one', () => {
@@ -48,14 +48,14 @@ describe('DocumentSource', () => {
 
   it('lists the project’s pictures and puts one in', () => {
     const images = {
-      library: [{ file: 'cutover-k1.png', url: 'data:image/png;base64,AQI=', bytes: 2 }],
+      library: [{ name: 'cutover-k1.png', mediaType: 'image/png', size: 2, width: 1, height: 1, contentAddress: `sha256:${'1'.repeat(64)}` }],
       usedBy: () => [],
       onRemove: vi.fn(),
     }
     const { onChange } = setup({ images })
     fireEvent.click(screen.getByRole('button', { name: 'Pictures (1)' }))
     fireEvent.click(within(screen.getByTestId('doc-pictures')).getByRole('button', { name: 'Insert' }))
-    expect(onChange).toHaveBeenCalledWith(expect.stringContaining('![cutover-k1](../images/cutover-k1.png)'))
+    expect(onChange).toHaveBeenCalledWith(expect.stringContaining('![cutover-k1](image:cutover-k1.png)'))
   })
 
   it('wraps a selection in bold on ⌘B', () => {

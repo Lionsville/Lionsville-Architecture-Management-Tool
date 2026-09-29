@@ -34,6 +34,7 @@
  */
 import type { StringKey } from '../i18n/strings'
 import type { Command, DesignElement, ElementId } from '../model'
+import type { HostModel } from '../model/hostModel'
 import { ownerDetailOn } from './checks'
 import type { ScopeModel, ScopeSnapshot } from './scope'
 import type { ScopeIndex } from './scopeIndex'
@@ -151,20 +152,20 @@ export type GesturePlan = {
 export const GESTURE_BARRIER: StringKey = 'gesture.barrier'
 
 /**
- * One scope's document, given a definition: upserted by id, appended where the
- * scope had no record of it.
- *
- * The load-patch-save half of a gesture, said here because it is arithmetic
- * over a document and the hook that calls it should hold nothing but the
- * order of the writes.
+ * The same definition, as the step that writes it into a scope: made where
+ * the scope has no record of the id, and otherwise the record replaced whole
+ * — every field the definition says, every field it does not cleared, and a
+ * stand-in's `ref` with them, which is what lets the reducer take the owner's
+ * detail onto what was a stand-in (`model/standIn.ts`).
  */
-export function withDefinition(scope: ScopeSnapshot, element: DesignElement): ScopeSnapshot {
-  const held = scope.model.elements
-  const at = held.findIndex((one) => one.id === element.id)
-  const elements = at === -1
-    ? [...held, element]
-    : held.map((one, n) => (n === at ? element : one))
-  return { ...scope, model: { ...scope.model, elements } }
+export function definitionCommand(model: Pick<HostModel, 'elements'>, element: DesignElement): Command {
+  const held = model.elements.find((one) => one.id === element.id)
+  if (!held) return { type: 'element.create', element }
+  const patch: Record<string, unknown> = {}
+  for (const key of new Set([...Object.keys(held), ...Object.keys(element)])) {
+    if (key !== 'id') patch[key] = (element as unknown as Record<string, unknown>)[key]
+  }
+  return { type: 'element.update', id: element.id, patch: patch as Partial<DesignElement> }
 }
 
 export function isGestureRefusal(

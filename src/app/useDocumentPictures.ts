@@ -11,8 +11,7 @@ import { useCallback } from 'react'
 import { decisionsOf, transitionsOf } from '../model'
 import { transitionLabel } from '../model/transition'
 import { formatAdrNumber } from '../decisions/adr'
-import { documentsUsing, imageSrcFile } from '../documentation'
-import { imageNameOfSource } from '../documentation/images'
+import { documentsUsing } from '../documentation'
 import type { MarkdownRenderOptions } from '../documentation'
 import { renderMarkdown } from '../documentation/ui/renderMarkdown'
 import type { ModelSession } from './useModelSession'
@@ -25,22 +24,6 @@ export type DocumentPictures = {
 }
 
 export function useDocumentPictures(session: ModelSession): DocumentPictures {
-  /**
-   * The picture behind an image source, or nothing — which is the whole of the
-   * "this app does not fetch" rule for documents (ADR-0009).
-   *
-   * Stable for the life of the workspace, deliberately: `MarkdownView` memoises
-   * its component table on this function, so a new one per render would remount
-   * every block in every document and redraw every mermaid diagram. It reads
-   * the library through the session instead, and a picture just added shows
-   * because adding one also writes a line into the document, which is what the
-   * view actually re-renders on.
-   */
-  const resolveImage = useCallback((src: string): string | undefined => {
-    const file = imageNameOfSource(src) ?? imageSrcFile(src)
-    return file ? session.currentImages().find((image) => image.file === file)?.url : undefined
-  }, [session])
-
   const imageUsedBy = useCallback((file: string): readonly string[] => {
     const model = session.indexed()
     return documentsUsing(file, [
@@ -51,8 +34,8 @@ export function useDocumentPictures(session: ModelSession): DocumentPictures {
   }, [session])
 
   const renderDocument = useCallback(
-    (md: string, options?: MarkdownRenderOptions) => renderMarkdown(md, { ...options, resolveImage }),
-    [resolveImage],
+    (md: string, options?: MarkdownRenderOptions) => renderMarkdown(md, options),
+    [],
   )
   return { imageUsedBy, renderDocument }
 }

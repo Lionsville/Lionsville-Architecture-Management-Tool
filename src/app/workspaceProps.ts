@@ -8,8 +8,7 @@
  * snapshots, the agent and the shell's services — rather than forty-five
  * values in one list that the reader has to sort into those piles.
  *
- * Every piece is typed as the narrowest shape that will do: `source.store` is
- * "something that can save", not a `ProjectStore`. The shell builds these
+ * Every piece is typed as the narrowest shape that will do. The shell builds these
  * once per render, so a hook below must depend on a field and never on one
  * of these objects, which is new every time.
  */
@@ -23,12 +22,12 @@ import type { SourceRecentActivity, SourceStatus, SourceWork, SourceWorkChanged 
 import type { HostCommand } from '../platform/hostCommands'
 import type { WindowChrome } from '../platform/windowChrome'
 import type { HostControls } from '../ports/HostControls'
-import type { ProjectHistory } from '../ports/ProjectHistory'
+import type { HistoryRepository } from '../ports/HistoryRepository'
+import type { Repositories } from '../ports/Repositories'
 import type { CrashTrail } from './ErrorBoundary'
 import type { InitialPage } from './App'
 import type { ProjectSettings } from './ProjectSettingsDialog'
 import type { Crumb, ToolbarAgent, ToolbarChip, ToolbarOverflow } from './ShellToolbar'
-import type { ProjectSaver } from './useDocumentSession'
 import type { WorkspaceAgentView } from './useAgentShell'
 import type { MakeId } from './useDiagramActions'
 import type { ScopeSession } from './useModelSession'
@@ -41,8 +40,12 @@ import type { WorkingFileManifest } from '../projects/workingFileManifest'
 
 /** Where this scope is kept, and what the source it is kept in says about it. */
 export type WorkspaceSource = {
-  /** Save, load and the owners' prose: what this workspace does to a store. */
-  store: ProjectSaver
+  /**
+   * Where the scope is kept (ADR-0031 §4): its steps are written there, the
+   * other scopes a gesture or a stand-in reads are read there, and its
+   * pictures are asked for there when they are shown.
+   */
+  repositories: Repositories
   /**
    * Somebody else changed this project's files. Bound to this project's ref by
    * the caller, and absent in a browser tab, where nothing can watch.
@@ -210,11 +213,11 @@ export type WorkspaceSettings = {
   /** Called when the dialog opens, so the caller can refresh the tree it offers. */
   onOpen: () => void
   /**
-   * Apply the settings to the project as it stands, and hand back what was
-   * saved so the session can take it on. Nothing comes back from a move: that
-   * changes the ref, and this workspace is remounted on it.
+   * What is left of the settings once the session has made the name and the
+   * defaults its own steps: where the scope is filed. A move changes the
+   * address, and this workspace is entered again there.
    */
-  onApply: (settings: ProjectSettings, current: ScopeSnapshot) => Promise<ScopeSnapshot | undefined>
+  onApply: (settings: ProjectSettings, current: ScopeSnapshot) => Promise<void>
 }
 
 /** The window around the workspace: its menu, its bar, and what it is told. */
@@ -262,14 +265,10 @@ export type WorkspaceFiles = {
   chooseFolder?: ChooseFolderForWorkingFile
 }
 
-/** The folder's snapshots (ADR-0008). */
+/** The scope's snapshots (ADR-0008). */
 export type WorkspaceSnapshots = {
-  /**
-   * The snapshots of the folder this project is in. Absent in a browser tab and
-   * until a folder is chosen — there is nothing for a history to be a history
-   * of — and the menu offers nothing when it is.
-   */
-  history?: ProjectHistory
+  /** The history of the scopes where this one is kept; the menu offers nothing where there is none. */
+  history?: HistoryRepository
   /** A snapshot succeeded. The shell decides whether that means a push. */
   onTaken?: () => void
 }

@@ -13,7 +13,9 @@
  */
 import { afterEach, describe, expect, it } from 'vitest'
 import { act, cleanup, render } from '@testing-library/react'
-import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
+import { answering, heldRepositories } from './testing/heldRepositories'
+import type { HeldRepositories } from './testing/heldRepositories'
+import { modelsOf, nodesOf, stepOf } from '../projects/scopeAccess'
 import { translator } from '../i18n'
 import type { DesignElement } from '../model'
 import { laidOut } from '../model/testFixtures'
@@ -63,7 +65,7 @@ function tree(): ScopeSnapshot[] {
 type Harness = {
   gestures: () => Gestures
   session: () => ModelSession
-  store: InMemoryScopeStore
+  store: HeldRepositories
   writes: string[]
   notices: [string, string | undefined][]
   failures: string[]
@@ -72,32 +74,43 @@ type Harness = {
 type Options = {
   /** The source carries the open scope's changes as steps (`Shell.publishesSteps`). */
   published?: boolean
-  /** Somebody else's save, made between this side's read of a scope and its write. */
-  meanwhile?: (store: InMemoryScopeStore, path: string) => Promise<void>
+  /** Somebody else's step, made between this side's read of a scope and its write. */
+  meanwhile?: (store: HeldRepositories, path: string) => Promise<void>
   /** The open scope is only read (`ModelSession.readOnly`). */
   readOnly?: boolean
 }
 
 function mount(open: string, initial = tree(), failOnWrite?: number, options: Options = {}): Harness {
-  const store = new InMemoryScopeStore(initial)
+  const store = heldRepositories(initial)
   const writes: string[] = []
   const notices: [string, string | undefined][] = []
   const failures: string[] = []
   const held = initial.find((one) => one.path === open)!
   let interloped = false
-  const scopes = {
-    save: async (one: ScopeSnapshot, expects?: string) => {
-      writes.push(one.path)
-      if (failOnWrite !== undefined && writes.length === failOnWrite) {
-        throw new Error('the store said no')
-      }
-      if (options.meanwhile && !interloped) {
-        interloped = true
-        await options.meanwhile(store, one.path)
-      }
-      return store.save(one, expects)
+  /** One write: counted by the address it went to, refused where the test says, raced where it says. */
+  const writing = async (path: string) => {
+    writes.push(path)
+    if (failOnWrite !== undefined && writes.length === failOnWrite) throw new Error('the store said no')
+    if (options.meanwhile && !interloped) {
+      interloped = true
+      await options.meanwhile(store, path)
+    }
+  }
+  const scopes = answering(store, {
+    apply: async (work) => {
+      const tree = await store.scopes.tree()
+      for (const one of work) await writing(nodesOf(tree.root).find((node) => node.id === one.scope)!.address)
+      return store.scopes.apply(work)
     },
-    load: (path: string) => store.load(path),
+  }).scopes
+  /** The open scope's write: what the session did, as the steps it was. */
+  const save = async () => {
+    await writing(open)
+    const id = (await store.read(open))!.id!
+    const pending = session.journal.pending()
+    const answer = await store.scopes.apply([{ scope: id, steps: [...pending] }])
+    if ('refused' in answer) throw new Error(answer.refused)
+    session.journal.written(pending.length)
   }
 
   let gestures!: Gestures
@@ -106,11 +119,12 @@ function mount(open: string, initial = tree(), failOnWrite?: number, options: Op
   function Probe() {
     // The session's toasts go to the same list: the refusal at ⌘Z is the
     // session's, and it is what a person sees after a gesture.
-    session = useModelSession({ initialProject: held, notify, s, ...(options.readOnly ? { readOnly: true } : {}) })
+    session = useModelSession({ initialProject: held, notify, s, journaling: true, ...(options.readOnly ? { readOnly: true } : {}) })
     gestures = useGestures({
       scope: open,
       scopes,
-      models: () => store.models(),
+      save,
+      models: async () => modelsOf(await store.index.read()),
       index: indexScopes(initial.map((one) => ({ path: one.path, model: one.model }))),
       session,
       onTreeChanged: () => {},
@@ -178,9 +192,9 @@ describe('promote', () => {
     await settle()
 
     expect(held.writes).toEqual(['', 'retail'])
-    expect((await held.store.load(''))?.model.elements[0])
+    expect((await held.store.read(''))?.model.elements[0])
       .toMatchObject({ id: 'wms', name: 'Retail WMS', vendor: 'Initech' })
-    expect((await held.store.load('retail'))?.model.elements[0])
+    expect((await held.store.read('retail'))?.model.elements[0])
       .toMatchObject({ id: 'wms', ref: '', name: 'Retail WMS' })
   })
 
@@ -207,8 +221,8 @@ describe('promote', () => {
     await act(async () => { held.gestures().confirm() })
     await settle()
 
-    expect((await held.store.load(''))?.model.elements[0]).toMatchObject({ id: 'wms' })
-    expect((await held.store.load('retail'))?.model.elements[0].ref).toBeUndefined()
+    expect((await held.store.read(''))?.model.elements[0]).toMatchObject({ id: 'wms' })
+    expect((await held.store.read('retail'))?.model.elements[0].ref).toBeUndefined()
     expect(held.failures).toContain('gesture.save')
     expect(held.notices.some(([message, severity]) => severity === 'warning' && message.includes('both places')))
       .toBe(true)
@@ -241,20 +255,20 @@ describe('what is on offer', () => {
 })
 
 /**
- * A whole write lands over whatever else happened to the scope it writes, so
- * the two the gestures make are made the way a second writer needs them made.
+ * A write lands on whatever else happened to the scope it writes, so the two
+ * the gestures make are made the way a second writer needs them made.
  */
 describe('with somebody else writing too', () => {
   /**
-   * The other scope is read, changed and written back. A colleague's save to
-   * it in between is written over by a blind save; expecting what was read,
-   * the store refuses, and the definition is written again into their version.
+   * The other scope is read and changed by a step that expects what was read.
+   * A colleague's step in between refuses it, and the definition is written
+   * again into their version.
    */
   it('writes the definition into the other scope as it stands, keeping what was saved meanwhile', async () => {
     const held = mount('retail', tree(), undefined, {
       meanwhile: async (store, path) => {
-        const theirs = await store.load(path)
-        await store.save({ ...theirs!, model: { ...theirs!.model, name: 'Renamed meanwhile' } })
+        const theirs = (await store.read(path))!
+        await store.scopes.apply([{ scope: theirs.id!, steps: [stepOf({ type: 'project.settings', patch: { name: 'Renamed meanwhile' } })] }])
       },
     })
     await act(async () => { held.gestures().ask({ gesture: 'promote', id: 'wms', to: '' }) })
@@ -262,7 +276,7 @@ describe('with somebody else writing too', () => {
     await act(async () => { held.gestures().confirm() })
     await settle()
 
-    const above = await held.store.load('')
+    const above = await held.store.read('')
     expect(above?.model.name).toBe('Renamed meanwhile')
     expect(above?.model.elements[0]).toMatchObject({ id: 'wms', name: 'Retail WMS' })
     expect(held.writes).toEqual(['', '', 'retail'])
@@ -270,11 +284,10 @@ describe('with somebody else writing too', () => {
 
   /**
    * Where every change of the open scope is published as a step, the command
-   * the gesture dispatched has gone out already, and a whole write of this
-   * window's model after it would land over every step somebody else made to
-   * the scope in the meantime.
+   * the gesture dispatched has gone out already, and there is nothing of this
+   * session's to write.
    */
-  it('does not write the open scope whole where its steps are published', async () => {
+  it('does not write the open scope where its steps are published', async () => {
     const held = mount('retail', tree(), undefined, { published: true })
     await act(async () => { held.gestures().ask({ gesture: 'promote', id: 'wms', to: '' }) })
     await settle()

@@ -33,6 +33,7 @@ import type { DesignElement, DocumentImage, ElementId } from '../model/types'
 import { ShellError } from '../platform/errors'
 import { documentsUsing } from '../documentation/images'
 import { imageReference } from '../model/imageName'
+import type { ImageEntry } from '../model/imageName'
 import type { NamedDocument } from '../documentation/images'
 import { expandRect, placementRect, unionRects } from '../model/placement'
 import { apply } from '../model/reducer'
@@ -117,15 +118,19 @@ export type SessionView = {
   history(): readonly HistoryEntry[]
   /** ⌘Z. The handler has already checked whose step is on top. */
   undo(): void
-  /** The pictures the documents may show, and the way one arrives (ADR-0009). Shell state, not a step. */
-  images(): readonly DocumentImage[]
+  /**
+   * The pictures the documents may show: the scope's library, an entry per
+   * picture named as the documents name it (ADR-0009, ADR-0031 §3). Shell
+   * state, not a step.
+   */
+  images(): readonly ImageEntry[]
   /**
    * Absent where there is nowhere to keep one: a build with no window keeps no
    * pictures, and `image.upload` then answers `agent.noScreen` rather than
    * accepting bytes it would drop. The documents still say what they show, and
    * `images.list` still lists whatever {@link SessionView.images} has.
    */
-  addImage?(image: DocumentImage): void
+  addImage?(image: DocumentImage): Promise<void> | void
   /** Write the project now. Rejects when the store refuses. */
   save(): Promise<void>
 }
@@ -497,10 +502,10 @@ function listImages(model: Model, session: SessionView): AgentAnswer {
   ]
   return json({
     images: session.images().map((image) => ({
-      file: image.file,
-      reference: imageReference(image.file),
-      bytes: dataUrlBytes(image.url),
-      usedBy: documentsUsing(image.file, documents),
+      file: image.name,
+      reference: imageReference(image.name),
+      bytes: image.size,
+      usedBy: documentsUsing(image.name, documents),
     })),
   })
 }
@@ -533,10 +538,10 @@ async function uploadImage(args: Record<string, unknown>, session: SessionView):
   try {
     const image = await readImageFile(
       { name, type, size: dataUrlBytes(url) },
-      takenImageFiles(session.images()),
+      new Set(session.images().map((image) => image.name)),
       () => Promise.resolve(url),
     )
-    addImage(image)
+    await addImage(image)
     const reference = imageReference(image.file)
     return json({ file: image.file, reference, markdown: `![${name.replace(/[[\]]/g, '')}](${reference})`, bytes: dataUrlBytes(url) })
   } catch (error) {

@@ -12,7 +12,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useTheme } from '@mui/material/styles'
 import { cleanup, screen } from '@testing-library/react'
 import { laidOut } from '../model/testFixtures'
-import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
+import { heldRepositories } from './testing/heldRepositories'
 import type { ScopeSnapshot } from '../projects/scope'
 import type { SolutionDesignEditorProps } from '../editor'
 import { exportThemeFor } from '../editor/useExport'
@@ -47,7 +47,7 @@ const project = (): ScopeSnapshot => ({
 
 describe('an export in the other mode', () => {
   it('is made in the app’s own theme for that mode', async () => {
-    renderApp({ scopes: new InMemoryScopeStore([project()]), boot: { initialProject: project() } })
+    renderApp({ repositories: heldRepositories([project()]), boot: { initialProject: project() } })
     const out = await screen.findByTestId('export-tokens')
     const other = out.getAttribute('data-mode') as 'light' | 'dark'
     expect(JSON.parse(out.textContent ?? '')).toEqual(getExportTokens(shellTheme(other)))

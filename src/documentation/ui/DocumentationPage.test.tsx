@@ -176,7 +176,7 @@ describe('DocumentationPage', () => {
     });
 
     expect(onAddImage).toHaveBeenCalledTimes(1);
-    expect(source()!.value).toContain('![Screenshot](../images/screenshot.png)');
+    expect(source()!.value).toContain('![Screenshot](image:screenshot.png)');
   });
 
   it('writes nothing when the host refuses the picture', async () => {
@@ -216,7 +216,7 @@ describe('DocumentationPage', () => {
       fireEvent.drop(source()!, { dataTransfer: transfer([imageFile('Plan.png')]) });
     });
 
-    expect(source()!.value).toContain('![Plan](../images/plan.png)');
+    expect(source()!.value).toContain('![Plan](image:plan.png)');
   });
 
   it('offers no picture affordance to a host that cannot take one', async () => {
@@ -386,11 +386,11 @@ describe('DocumentationPage', () => {
 });
 
 describe('DocumentationPage — the pictures the project holds (ADR-0009)', () => {
-  const png = 'data:image/png;base64,AAAA';
-  const library = [
-    { file: 'cutover-k1.png', url: png },
-    { file: 'whiteboard-k2.jpg', url: png },
-  ];
+  const entry = (name: string, n: number) => ({
+    name, mediaType: name.endsWith('.jpg') ? 'image/jpeg' : 'image/png', size: 2, width: 1, height: 1,
+    contentAddress: `sha256:${String(n).repeat(64)}`,
+  });
+  const library = [entry('cutover-k1.png', 1), entry('whiteboard-k2.jpg', 2)];
 
   function withPictures(overrides: Partial<DocumentationPageProps> = {}) {
     const images = {
@@ -399,7 +399,7 @@ describe('DocumentationPage — the pictures the project holds (ADR-0009)', () =
       onRemove: vi.fn(),
     };
     const view = setup({
-      element: element({ description: 'Shown: ![Cutover](../images/cutover-k1.png)' }),
+      element: element({ description: 'Shown: ![Cutover](image:cutover-k1.png)' }),
       onAddImage: vi.fn(async () => 'x.png'),
       images,
       ...overrides,
@@ -423,7 +423,7 @@ describe('DocumentationPage — the pictures the project holds (ADR-0009)', () =
     fireEvent.click(screen.getByRole('button', { name: 'Pictures (2)' }));
     const [, insertWhiteboard] = within(screen.getByTestId('doc-pictures')).getAllByRole('button', { name: 'Insert' });
     act(() => { fireEvent.click(insertWhiteboard); });
-    expect(source()!.value).toContain('![whiteboard-k2](../images/whiteboard-k2.jpg)');
+    expect(source()!.value).toContain('![whiteboard-k2](image:whiteboard-k2.jpg)');
   });
 
   it('asks before deleting, naming every document that shows it', () => {
@@ -461,7 +461,7 @@ describe('DocumentationPage — help with the markdown', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Markdown help' }));
     const help = within(screen.getByTestId('markdown-help'));
     expect(help.getByText('[[Order Management]]')).toBeTruthy();
-    expect(help.getByText('![caption](../images/file.png)')).toBeTruthy();
+    expect(help.getByText('![caption](image:file.png)')).toBeTruthy();
     expect(help.getByText(/business case/i)).toBeTruthy();
   });
 
@@ -470,7 +470,7 @@ describe('DocumentationPage — help with the markdown', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
     fireEvent.click(screen.getByRole('button', { name: 'Markdown help' }));
     const help = within(screen.getByTestId('markdown-help'));
-    expect(help.queryByText('![caption](../images/file.png)')).toBeNull();
+    expect(help.queryByText('![caption](image:file.png)')).toBeNull();
     expect(help.getByText('[[Order Management]]')).toBeTruthy();
   });
 });

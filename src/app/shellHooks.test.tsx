@@ -10,7 +10,7 @@
  */
 import { describe, expect, it, vi } from 'vitest'
 import { act, renderHook, waitFor } from '@testing-library/react'
-import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
+import { heldRepositories } from './testing/heldRepositories'
 import { laidOut } from '../model/testFixtures'
 import type { ScopeSnapshot } from '../projects/scope'
 import { ROOT_SCOPE } from '../projects/scopePath'
@@ -43,9 +43,9 @@ describe('where the shell is', () => {
     const refreshTree = { current: vi.fn() }
     const refreshIndex = { current: vi.fn() }
     const failed = vi.fn()
-    const store = new InMemoryScopeStore(held)
+    const store = heldRepositories(held)
     const view = renderHook(() => useShellNavigation({
-      initialProject: undefined, projects: store, watchProject: undefined, prefs,
+      initialProject: undefined, scopes: store.scopes, watchProject: undefined, prefs,
       failedRef: { current: failed }, refreshTree, refreshIndex, ...(writable ? { writable } : {}),
     }))
     return { view, prefs, refreshTree, refreshIndex, store, failed }
@@ -78,20 +78,20 @@ describe('where the shell is', () => {
     expect(refreshIndex.current).toHaveBeenCalled()
   })
 
-  it('gives a scope with no document one before opening the page asked for on it', async () => {
+  it('makes a scope where there is none before opening the page asked for on it', async () => {
     const { view, store, failed } = mount([scope('north')])
-    act(() => view.result.current.openScopeAt(ROOT_SCOPE, { page: 'decisions' }))
-    await waitFor(() => expect(view.result.current.project?.path).toBe(ROOT_SCOPE))
-    expect(await store.load(ROOT_SCOPE)).toBeDefined()
+    act(() => view.result.current.openScopeAt('north/depots', { page: 'decisions' }))
+    await waitFor(() => expect(view.result.current.project?.path).toBe('north/depots'))
+    expect(await store.read('north/depots')).toBeDefined()
     expect(view.result.current.initialPage).toEqual({ page: 'decisions' })
     expect(failed).not.toHaveBeenCalled()
   })
 
-  it('opens that page empty, writing nothing, where the scope may only be read', async () => {
+  it('opens that page empty, making nothing, where the scope may only be read', async () => {
     const { view, store } = mount([scope('north')], () => false)
-    act(() => view.result.current.openScopeAt(ROOT_SCOPE, { page: 'roadmap' }))
-    await waitFor(() => expect(view.result.current.project?.path).toBe(ROOT_SCOPE))
-    expect(await store.load(ROOT_SCOPE)).toBeUndefined()
+    act(() => view.result.current.openScopeAt('north/depots', { page: 'roadmap' }))
+    await waitFor(() => expect(view.result.current.project?.path).toBe('north/depots'))
+    expect(await store.read('north/depots')).toBeUndefined()
   })
 
   it('opens a scope by its path, and reads the tree again where the path names nothing', async () => {

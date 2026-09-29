@@ -7,10 +7,11 @@
  * overview reads the owner's, one load per owning scope, and keeps none.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { act, cleanup, render } from '@testing-library/react'
+import { cleanup, render } from '@testing-library/react'
 import type { DesignElement } from '../model'
 import type { ScopeSnapshot } from '../projects/scope'
 import { indexScopes } from '../projects/scopeIndex'
+import { heldRepositories } from './testing/heldRepositories'
 import { useOwnerDescriptions } from './useOwnerDescriptions'
 
 afterEach(() => cleanup())
@@ -33,40 +34,29 @@ const tree = {
 }
 const index = indexScopes(Object.values(tree).map(({ path, model }) => ({ path, model })))
 
-function mount(load = vi.fn(async (path: string) => tree[path as keyof typeof tree])) {
+function mount() {
+  const repositories = heldRepositories(Object.values(tree))
+  const states = vi.fn((id: string) => repositories.scopes.state(id))
+  const scopes = { tree: () => repositories.scopes.tree(), state: states }
   let held!: ReadonlyMap<string, string>
   function Host() {
-    held = useOwnerDescriptions({ scope: '', index, load })
+    held = useOwnerDescriptions({ scope: '', index, scopes })
     return null
   }
   render(<Host />)
-  return { load, held: () => held }
+  return { states, repositories, held: () => held }
 }
 
 describe('useOwnerDescriptions', () => {
   it('reads each owner once and answers with what the owner says, for the ids it has text for', async () => {
     const host = mount()
-    await act(async () => { await Promise.resolve(); await Promise.resolve() })
-    expect(host.load.mock.calls.map(([path]) => path).sort()).toEqual(['acme/logistics', 'acme/retail'])
-    expect(host.held().get('erp')).toBe('Retail says: the ERP')
+    await vi.waitFor(() => expect(host.held().get('erp')).toBe('Retail says: the ERP'))
+    const owners = [(await host.repositories.read('acme/logistics'))?.id, (await host.repositories.read('acme/retail'))?.id]
+    expect(host.states.mock.calls.map(([id]) => id).sort()).toEqual([...owners].sort())
     expect(host.held().get('wms')).toBe('Stock and docks')
     // No text at the owner, and no owner at all: nothing, so a card falls back.
     expect(host.held().has('pos')).toBe(false)
     expect(host.held().has('ghost')).toBe(false)
-  })
-
-  it('takes the narrow read where the store has one, and never loads then', async () => {
-    const load = vi.fn()
-    const descriptions = vi.fn(async (path: string) => {
-      const held = tree[path as keyof typeof tree]
-      return Object.fromEntries(held.model.elements.flatMap((e) => (e.description ? [[e.id, e.description]] : [])))
-    })
-    let held!: ReadonlyMap<string, string>
-    function Host() { held = useOwnerDescriptions({ scope: '', index, load, descriptions }); return null }
-    render(<Host />)
-    await act(async () => { await Promise.resolve(); await Promise.resolve() })
-    expect(load).not.toHaveBeenCalled()
-    expect(held.get('erp')).toBe('Retail says: the ERP')
   })
 
   it('reads nothing where there is nothing to read from', () => {

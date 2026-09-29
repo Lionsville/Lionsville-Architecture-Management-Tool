@@ -14,7 +14,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { laidOut } from '../model/testFixtures';
 import { act, cleanup, fireEvent, screen } from '@testing-library/react'
-import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
+import { heldRepositories } from './testing/heldRepositories'
+import { contentOf, placeWhole } from '../projects/scopeAccess'
 import type { PullOutcome, PushOutcome, ResolveOutcome, SyncSide } from '../platform/sync'
 import type { LocalSettings } from '../projects/folderSettings'
 import type { ScopeSnapshot } from '../projects/scope'
@@ -104,8 +105,8 @@ const pushing = folderSettings({ git: { pullOnOpen: false, pushAfterSnapshot: tr
 const quiet = folderSettings({ git: { pullOnOpen: false, pushAfterSnapshot: false } })
 
 function show(over: Parameters<typeof renderApp>[0] = {}) {
-  const projects = new InMemoryScopeStore([project()])
-  return { ...renderApp({ scopes: projects, ...over, boot: { initialProject: project(), ...over.boot } }), projects }
+  const projects = heldRepositories([project()])
+  return { ...renderApp({ repositories: projects, ...over, boot: { initialProject: project(), ...over.boot } }), projects }
 }
 
 /** Everything the fakes have queued, carried out and drawn. */
@@ -174,11 +175,12 @@ describe('the push after a snapshot', () => {
 
   it('never unmakes the snapshot: a refusal is a notice', async () => {
     const held = fakeHistory({ push: 'unreachable' })
-    show({ folder: { history: held.history, settings: pushing } })
+    const view = show({ folder: { history: held.history, settings: pushing } })
     await takeSnapshot()
     await settled(held.asked.push)
     expect(screen.getByText(/was not pushed/)).toBeDefined()
-    expect(held.calls.snapshots).toBe(1)
+    const scope = (await view.projects.read('acme/landscape'))!.id!
+    expect((await view.projects.history.entries({ scopes: [scope] })).entries).toHaveLength(1)
     expect(screen.queryByTestId('sync-notice')).toBeNull()
   })
 
@@ -196,7 +198,7 @@ describe('the two answers', () => {
     const held = fakeHistory()
     const view = show({ boot: { initialSync: 'diverged' }, folder: { history: held.history, settings: quiet } })
     // What "disk" now holds, as the remote left it.
-    await view.projects.save(project('From the remote'))
+    await placeWhole(view.projects.scopes, 'acme/landscape', contentOf(project('From the remote')))
     fireEvent.click(screen.getByText('Take theirs'))
 
     await settled(held.asked.resolve)
@@ -208,7 +210,7 @@ describe('the two answers', () => {
   it('keep ours: our version stands, unread and unmoved', async () => {
     const held = fakeHistory()
     const view = show({ boot: { initialSync: 'diverged' }, folder: { history: held.history, settings: quiet } })
-    await view.projects.save(project('From the remote'))
+    await placeWhole(view.projects.scopes, 'acme/landscape', contentOf(project('From the remote')))
     fireEvent.click(screen.getByText('Keep ours'))
 
     await settled(held.asked.resolve)

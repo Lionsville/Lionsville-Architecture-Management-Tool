@@ -15,6 +15,7 @@
  * is this hook's conversation with the gateway, and `useModelSession` has a
  * suite of its own.
  */
+import { imageEntryOf } from '../model/imageEntry'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { laidOut } from '../model/testFixtures';
 import { act, cleanup, render, waitFor } from '@testing-library/react'
@@ -91,6 +92,7 @@ function mount(
   function Host() {
     files = useProjectFiles({
       session,
+      putPicture: (name, held) => imageEntryOf(name, held),
       documents: channel,
       ...(workingSet ? { workingSet } : {}),
       ...(adoptWorkingSet ? { adoptWorkingSet } : {}),

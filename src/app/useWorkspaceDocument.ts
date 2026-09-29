@@ -7,13 +7,18 @@
  * answers for the source.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { ShellError } from '../platform/errors'
+import { imageEntryOf } from '../model/imageEntry'
+import type { ImageRepository } from '../ports/ImageRepository'
+import type { ScopeRepository } from '../ports/ScopeRepository'
+import { landed, nodeAt, snapshotOf } from '../projects/scopeAccess'
+import type { ScopeReader } from '../projects/scopeAccess'
 import type { Translate } from '../i18n'
 import type { ScopeSnapshot } from '../projects/scope'
 import type { SourceStatus, SourceWork, SourceWorkChanged } from '../platform/sourceProvider'
 import { useDocumentSession } from './useDocumentSession'
-import type { DocumentSessionHook, ProjectSaver } from './useDocumentSession'
+import type { DocumentSessionHook, ScopeWriter } from './useDocumentSession'
 import type { ModelSession, ScopeSession } from './useModelSession'
-import { useNearlyFullNotice } from './useStorageNotice'
 import type { StorageNotice } from './useStorageNotice'
 import type { Notify } from './useToasts'
 
@@ -27,7 +32,7 @@ export type WorkspaceDocument = {
 
 export function useWorkspaceDocument(deps: {
   session: ModelSession
-  projects: ProjectSaver
+  writer: ScopeWriter
   watch: ((onChanged: () => void) => () => void) | undefined
   sourceStatus: ((work: SourceWork) => SourceStatus) | undefined
   onSourceWork: SourceWorkChanged | undefined
@@ -37,7 +42,7 @@ export function useWorkspaceDocument(deps: {
   notify: Notify
   s: Translate
 }): WorkspaceDocument {
-  const { session, projects, watch, sourceStatus, onSourceWork, onUnsavedWork, onStorageResult, onTreeChanged, notify, s } = deps
+  const { session, writer, watch, sourceStatus, onSourceWork, onUnsavedWork, onStorageResult, onTreeChanged, notify, s } = deps
   /**
    * What the bar says about saving. Two pieces of state, not one: the last
    * accepted time is worth keeping through a failure — it is the honest answer
@@ -53,20 +58,16 @@ export function useWorkspaceDocument(deps: {
     setSaveFailed(!ok)
     onStorageResult(ok, cause)
   }, [onStorageResult])
-  // Per project rather than per session, because the workspace is remounted when
-  // one is opened: the same warning on a different project is worth hearing.
-  const nearlyFull = useNearlyFullNotice(notify, s)
 
   const document = useDocumentSession({
     session,
-    projects,
+    writer,
     // A browser tab has no watcher to say the tree changed, so a save is the
     // one moment it can learn that this scope's records now say something
     // else — a plan flagged an initiative reaches the organisation's roadmap
     // through the index, and the index is read again only when asked.
     onSaved: (at: Date) => { setSavedAt(at); if (!watch) onTreeChanged() },
     onResult: onSaveResult,
-    onPressure: nearlyFull,
     watch,
     sourceStatus,
     onSourceWork,
@@ -117,4 +118,40 @@ export function useScopeSessionSeam(
   ])
   useEffect(() => onScopeSession?.(scopeSession), [onScopeSession, scopeSession])
   return alsoHere
+}
+
+/**
+ * Where the open scope is written: steps applied to it by its identity, which
+ * a move does not change, and a read of it as it is kept now.
+ *
+ * A scope entered with no identity yet — handed in by address, as a test or a
+ * boot that read it by address does — is looked up by its address the first
+ * time it is written.
+ */
+export function useScopeWriter(
+  scopes: ScopeReader & Pick<ScopeRepository, 'apply'>, images: Pick<ImageRepository, 'put'>, project: ScopeSnapshot,
+): ScopeWriter {
+  const { id, path } = project
+  return useMemo<ScopeWriter>(() => {
+    let known = id
+    const identity = async (): Promise<string> => {
+      known ??= nodeAt(await scopes.tree(), path)?.id
+      if (known === undefined) throw new ShellError('shell.scopeGone')
+      return known
+    }
+    return {
+      write: async (steps, expects) => {
+        const scope = await identity()
+        return landed(await scopes.apply([{ scope, steps, ...(expects !== undefined ? { expects } : {}) }])).revisions[0]
+      },
+      read: async () => {
+        const state = await scopes.state(await identity())
+        return state && snapshotOf(state)
+      },
+      put: async (name, bytes) => {
+        landed(await images.put(await identity(), name, bytes))
+        return imageEntryOf(name, bytes)
+      },
+    }
+  }, [scopes, images, id, path])
 }

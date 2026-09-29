@@ -290,13 +290,9 @@ export function importsAcross(graph: Graph): Record<string, string[]> {
  * written from `app/` and `projects/`, and the ports it replaces.
  */
 export const IMPORT_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {
-  'src/app/App.tsx': ['src/projects/workingFileManifest.ts'],
   'src/app/bootReads.ts': ['src/projects/migration.ts'],
   'src/app/dialogs/PreferencesDialog.tsx': ['src/projects/folderSettings.ts'],
   'src/app/examples/copy.ts': ['src/projects/fileText.ts', 'src/projects/folderFormat.ts'],
-  'src/app/history/HistoryPage.tsx': ['src/projects/historyPath.ts'],
-  'src/app/history/changesFor.ts': ['src/projects/historyPath.ts'],
-  'src/app/history/useProjectHistory.ts': ['src/projects/historyPath.ts'],
   'src/app/main.tsx': ['src/projects/migration.ts'],
   'src/app/shellParts.ts': ['src/projects/workingFileManifest.ts'],
   'src/app/useHomeFiles.ts': ['src/projects/workingFileManifest.ts'],
@@ -355,9 +351,6 @@ export const WORD_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {
   'src/app/useWorkspaceFiles.ts': ['.json', 'folder'],
   'src/app/workingFileFlows.ts': ['folder'],
   'src/app/workspaceProps.ts': ['folder', 'storage'],
-  'src/documentation/images.ts': ['../', 'folder'],
-  'src/documentation/index.ts': ['folder'],
-  'src/documentation/ui/MarkdownHelp.tsx': ['../', 'images/'],
   'src/platform/hostCommands.ts': ['folder'],
   'src/platform/menu.ts': ['folder', 'folders'],
   'src/platform/workingSource.ts': ['folder', 'storage'],
@@ -377,9 +370,9 @@ export const CEILINGS = {
   /** Files of the folder format still in the domain. */
   folderFormat: 13,
   /** Files importing across the line, and the imports between them. */
-  importingFiles: 21,
-  imports: 31,
+  importingFiles: 17,
+  imports: 27,
   /** Files naming storage, and the words and patterns between them. */
-  namingFiles: 50,
-  words: 80,
+  namingFiles: 47,
+  words: 75,
 } as const

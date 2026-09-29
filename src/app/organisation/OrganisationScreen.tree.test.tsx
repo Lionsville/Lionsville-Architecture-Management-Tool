@@ -13,9 +13,9 @@
  * not pin are new: **the root is not a row** (it is the screen), and a scope
  * with children folds shut.
  */
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { InMemoryScopeStore } from '../../adapters/memory/InMemoryScopeStore'
+import { heldRepositories } from '../testing/heldRepositories'
 import { laidOut } from '../../model/testFixtures'
 import type { ScopeSnapshot } from '../../projects/scope'
 import { renderApp } from '../testing/renderShell'
@@ -49,8 +49,8 @@ const TREE = () => [
 ]
 
 const show = (scopes = TREE()) => {
-  const store = new InMemoryScopeStore(scopes)
-  return { store, ...renderApp({ scopes: store, today: TODAY }) }
+  const store = heldRepositories(scopes)
+  return { store, ...renderApp({ repositories: store, today: TODAY }) }
 }
 
 describe('the tree', () => {
@@ -145,7 +145,7 @@ describe('the tree', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Delete Retail' }))
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
     await waitFor(() => expect(screen.queryByTestId('scope-retail')).toBeNull())
-    expect(await store.load('retail/warehouse')).toBeUndefined()
+    expect(await store.read('retail/warehouse')).toBeUndefined()
   })
 
   /**
@@ -162,7 +162,7 @@ describe('the tree', () => {
     fireEvent.click(screen.getByTestId('new-scope'))
     fireEvent.change(await screen.findByLabelText('Name'), { target: { value: 'Returns' } })
     fireEvent.click(screen.getByRole('button', { name: 'Create' }))
-    await waitFor(async () => expect(await store.load('retail/returns')).toBeDefined())
+    await waitFor(async () => expect(await store.read('retail/returns')).toBeDefined())
   })
 
   /** The organisation's home is the root's, so what it makes is filed at the top. */
@@ -172,7 +172,7 @@ describe('the tree', () => {
     fireEvent.click(screen.getByTestId('new-scope'))
     fireEvent.change(await screen.findByLabelText('Name'), { target: { value: 'Returns' } })
     fireEvent.click(screen.getByRole('button', { name: 'Create' }))
-    await waitFor(async () => expect(await store.load('returns')).toBeDefined())
+    await waitFor(async () => expect(await store.read('returns')).toBeDefined())
   })
 
   /** A scope that draws may still hold scopes of its own, so its home offers the way too. */
@@ -196,8 +196,8 @@ describe('the tree', () => {
     fireEvent.change(await screen.findByLabelText('Name'), { target: { value: 'Returns' } })
     fireEvent.click(screen.getByRole('checkbox', { name: 'Start with a landscape board' }))
     fireEvent.click(screen.getByRole('button', { name: 'Create' }))
-    await waitFor(async () => expect(await store.load('retail/returns')).toBeDefined())
-    const made = await store.load('retail/returns')
+    await waitFor(async () => expect(await store.read('retail/returns')).toBeDefined())
+    const made = await store.read('retail/returns')
     expect(made?.model.diagrams).toEqual([])
     expect(made?.kind).toBe('domain')
   })
@@ -220,38 +220,27 @@ describe('the tree', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Settings for Retail' }))
     fireEvent.change(await screen.findByLabelText('Name'), { target: { value: 'Retail & wholesale' } })
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
-    await waitFor(async () => expect((await store.load('retail'))?.model.name).toBe('Retail & wholesale'))
+    await waitFor(async () => expect((await store.read('retail'))?.model.name).toBe('Retail & wholesale'))
     // The address is how everything under it is filed; a rename is a label.
-    expect(await store.load('retail/warehouse')).toBeDefined()
+    expect(await store.read('retail/warehouse')).toBeDefined()
   })
 
   /**
    * A move is save-then-remove, and `remove` takes the subtree with it — so the
    * order is not a detail: removing first and failing to save loses the lot.
    */
-  it('moves a scope and its subtree, saving the new addresses before removing the old', async () => {
+  it('moves a scope and its subtree, each keeping what it is', async () => {
     const { store } = show()
-    const order: string[] = []
-    vi.spyOn(store, 'save').mockImplementation(async function (this: InMemoryScopeStore, held) {
-      order.push(`save ${held.path}`)
-      return InMemoryScopeStore.prototype.save.call(this, held)
-    })
-    vi.spyOn(store, 'remove').mockImplementation(async function (this: InMemoryScopeStore, path) {
-      order.push(`remove ${path}`)
-      return InMemoryScopeStore.prototype.remove.call(this, path)
-    })
+    const before = [(await store.read('retail'))?.id, (await store.read('retail/warehouse'))?.id]
 
     fireEvent.click(await screen.findByRole('button', { name: 'Settings for Retail' }))
     fireEvent.mouseDown(await screen.findByLabelText('Filed under'))
     fireEvent.click(screen.getByRole('option', { name: 'Finance' }))
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 
-    await waitFor(async () => expect(await store.load('finance/retail')).toBeDefined())
-    expect(await store.load('finance/retail/warehouse')).toBeDefined()
-    expect(await store.load('retail')).toBeUndefined()
-    expect(order).toEqual([
-      'save finance/retail', 'save finance/retail/warehouse', 'remove retail/warehouse', 'remove retail',
-    ])
+    await waitFor(async () => expect(await store.read('finance/retail')).toBeDefined())
+    expect([(await store.read('finance/retail'))?.id, (await store.read('finance/retail/warehouse'))?.id]).toEqual(before)
+    expect(await store.read('retail')).toBeUndefined()
   })
 })
 
@@ -368,7 +357,7 @@ describe('a domain’s home', () => {
     fireEvent.click(screen.getByTestId('new-scope'))
     fireEvent.change(await screen.findByLabelText('Name'), { target: { value: 'Returns' } })
     fireEvent.click(screen.getByRole('button', { name: 'Create' }))
-    await waitFor(async () => expect(await store.load('retail/returns')).toBeDefined())
+    await waitFor(async () => expect(await store.read('retail/returns')).toBeDefined())
   })
 
   it('goes back to the organisation by its crumb', async () => {
@@ -589,7 +578,7 @@ describe('a scope’s first landscape', () => {
     fireEvent.click(await screen.findByTestId('home-retail'))
     await makeOne('Retail today')
     await waitFor(() => expect(screen.getByTestId('saved-indicator')).toBeDefined())
-    const retail = await store.load('retail')
+    const retail = await store.read('retail')
     expect(retail?.model.diagrams.map((d) => [d.id, d.kind, d.name])).toEqual([['new-landscape', 'layer7', 'Retail today']])
     expect(retail?.activeDiagramId).toBe('new-landscape')
   })
@@ -599,14 +588,14 @@ describe('a scope’s first landscape', () => {
     await screen.findByTestId('scope-retail')
     await makeOne()
     await waitFor(() => expect(screen.getByTestId('saved-indicator')).toBeDefined())
-    expect((await store.load(''))?.model.diagrams).toHaveLength(1)
+    expect((await store.read(''))?.model.diagrams).toHaveLength(1)
   })
 
   it('takes a key beside the boards the scope already has', async () => {
     const { store } = show()
     fireEvent.click(await screen.findByTestId('home-finance'))
     await makeOne()
-    await waitFor(async () => expect((await store.load('finance'))?.model.diagrams).toHaveLength(2))
-    expect((await store.load('finance'))?.model.diagrams.map((d) => d.id)).toEqual(['l7', 'new-landscape'])
+    await waitFor(async () => expect((await store.read('finance'))?.model.diagrams).toHaveLength(2))
+    expect((await store.read('finance'))?.model.diagrams.map((d) => d.id)).toEqual(['l7', 'new-landscape'])
   })
 })

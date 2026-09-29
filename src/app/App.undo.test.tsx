@@ -17,7 +17,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { placeOn } from '../model/commands';
 import { laidOut } from '../model/testFixtures';
 import { act, cleanup, fireEvent, screen } from '@testing-library/react'
-import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
+import { heldRepositories } from './testing/heldRepositories'
 import { transaction } from '../model'
 import type { Command } from '../model'
 import type { EditorHistory } from '../editor'
@@ -74,8 +74,8 @@ const project = (): ScopeSnapshot => ({
 
 function show() {
   const initial = project()
-  const projects = new InMemoryScopeStore([initial])
-  renderApp({ scopes: projects, boot: { initialProject: initial } })
+  const projects = heldRepositories([initial])
+  renderApp({ repositories: projects, boot: { initialProject: initial } })
   return projects
 }
 

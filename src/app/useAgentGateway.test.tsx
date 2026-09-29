@@ -17,7 +17,7 @@ import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import type { AgentAnswer, AgentRequest } from '../agent/tools'
 import type { AgentGateway } from '../ports/AgentGateway'
 import type { ScopeSnapshot } from '../projects/scope'
-import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
+import { heldRepositories } from './testing/heldRepositories'
 import { renderApp } from './testing/renderShell'
 
 /** What the stubbed editor's handle was asked, for the renderer tests. */
@@ -151,7 +151,7 @@ describe('the agent seam, bound to the shell', () => {
 
   it('moves the binding from the shell to the workspace when a project opens', async () => {
     const { gateway, ask } = fakeGateway()
-    renderApp({ agent: gateway, scopes: new InMemoryScopeStore([project]), boot: { initialProject: undefined } })
+    renderApp({ agent: gateway, repositories: heldRepositories([project]), boot: { initialProject: undefined } })
     await waitFor(() => expect(screen.getByTestId('scope-acme/landscape')).toBeDefined())
     // The row's own Open, onto the scope's home — the cards above it open the
     // ROOT scope's pages, and this is the scope the agent is about to be asked

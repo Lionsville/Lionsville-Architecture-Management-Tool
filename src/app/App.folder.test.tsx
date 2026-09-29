@@ -16,7 +16,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { laidOut } from '../model/testFixtures';
 import { cleanup, fireEvent, screen } from '@testing-library/react'
-import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
+import { heldRepositories } from './testing/heldRepositories'
 import type { ScopeSnapshot } from '../projects/scope'
 import { renderApp } from './testing/renderShell'
 
@@ -37,7 +37,7 @@ const project = (): ScopeSnapshot => ({
 describe('a desktop with no folder yet', () => {
   it('asks for one instead of listing projects kept inside the app', () => {
     renderApp({
-      scopes: new InMemoryScopeStore([project()]),
+      repositories: heldRepositories([project()]),
       source: { kind: 'browserStorage' },
       folder: { onChoose: () => {}, needed: true },
     })
@@ -73,7 +73,7 @@ describe('a desktop with no folder yet', () => {
 describe('once there is a folder', () => {
   it('goes back to being the app', () => {
     renderApp({
-      scopes: new InMemoryScopeStore([project()]),
+      repositories: heldRepositories([project()]),
       source: { kind: 'folder', name: 'Architecture', root: '/Users/someone/Architecture' },
       folder: { onChoose: () => {}, needed: true },
     })
@@ -85,7 +85,7 @@ describe('once there is a folder', () => {
 
 describe('a browser tab', () => {
   it('never sees the question, because it cannot answer it', () => {
-    renderApp({ scopes: new InMemoryScopeStore([project()]) })
+    renderApp({ repositories: heldRepositories([project()]) })
 
     expect(screen.queryByTestId('choose-folder')).toBeNull()
     // The organisation's home, which is what a tab opens on.
@@ -95,7 +95,7 @@ describe('a browser tab', () => {
   it('is offered a folder where the browser has one, and never made to choose', () => {
     // Chromium can hand a page a real directory; a tab that can have a folder
     // is still a tab that works perfectly well without one.
-    renderApp({ scopes: new InMemoryScopeStore([project()]), folder: { onChoose: () => {} } })
+    renderApp({ repositories: heldRepositories([project()]), folder: { onChoose: () => {} } })
 
     expect(screen.queryByTestId('choose-folder')).toBeNull()
     expect(screen.getByTestId('working-source').textContent).toContain('In this browser')
@@ -107,7 +107,7 @@ describe('a browser tab', () => {
     // write access declined, a browser that will not hand out that folder —
     // used to be a line in the console and a screen that did not change.
     renderApp({
-      scopes: new InMemoryScopeStore([project()]),
+      repositories: heldRepositories([project()]),
       folder: { onChoose: () => {} },
       boot: {
         folderFailure: Object.assign(new Error('write access was denied'), { name: 'NotAllowedError' }),

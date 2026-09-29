@@ -19,7 +19,7 @@ import type { AgentAnswer, AgentRequest } from '../agent/tools'
 import type { MovedBy, Screen } from '../agent/screen'
 import type { AgentGateway } from '../ports/AgentGateway'
 import type { ScopeSnapshot } from '../projects/scope'
-import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
+import { heldRepositories } from './testing/heldRepositories'
 import { renderApp } from './testing/renderShell'
 
 vi.mock('../editor', async (importOriginal) => {
@@ -97,9 +97,13 @@ const parsed = (answer: AgentAnswer): Record<string, unknown> => {
 }
 const refusal = (answer: AgentAnswer) => (answer.ok ? undefined : answer.refusal)
 
+/**
+ * The root, `acme/retail`, and `acme` above it: a scope is filed under a scope,
+ * so the one between is made with it (`ScopeRepository.create`).
+ */
 async function organisationOnScreen() {
   const wire = fakeGateway()
-  renderApp({ agent: wire.gateway, scopes: new InMemoryScopeStore([root, retail]), boot: { initialProject: undefined } })
+  renderApp({ agent: wire.gateway, repositories: heldRepositories([root, retail]), boot: { initialProject: undefined } })
   await waitFor(() => expect(wire.bound()).toBe(true))
   return wire
 }
@@ -107,7 +111,7 @@ async function organisationOnScreen() {
 describe('with the organisation screen up', () => {
   it('tells the agent where the app is, and what there is', async () => {
     const { ask } = await organisationOnScreen()
-    await waitFor(async () => expect(parsed(await ask('app.current')).scopes).toBe(2))
+    await waitFor(async () => expect(parsed(await ask('app.current')).scopes).toBe(3))
     const where = parsed(await ask('app.current'))
     expect(where.home).toEqual({ path: '', name: 'Acme Logistics' })
     expect(where.open).toBeUndefined()
@@ -119,7 +123,7 @@ describe('with the organisation screen up', () => {
 
   it('opens a scope for the agent, and puts the banner up under the client\'s name', async () => {
     const { ask } = await organisationOnScreen()
-    await waitFor(async () => expect(parsed(await ask('app.current')).scopes).toBe(2))
+    await waitFor(async () => expect(parsed(await ask('app.current')).scopes).toBe(3))
     const out = parsed(await ask('app.open', { scope: 'acme/retail' }))
     expect(out.arrived).toBe(true)
     expect(out.open).toEqual({ path: 'acme/retail', name: 'Retail', view: { id: 'r7', name: 'Retail board', kind: 'layer7' } })
@@ -134,7 +138,7 @@ describe('with the organisation screen up', () => {
 
   it('opens the organisation\'s register, and a page over an open scope', async () => {
     const { ask } = await organisationOnScreen()
-    await waitFor(async () => expect(parsed(await ask('app.current')).scopes).toBe(2))
+    await waitFor(async () => expect(parsed(await ask('app.current')).scopes).toBe(3))
     const register = parsed(await ask('app.open', { scope: '', page: 'register' }))
     expect(register.arrived).toBe(true)
     expect(register.page).toEqual({ page: 'register' })
@@ -158,7 +162,7 @@ describe('with the organisation screen up', () => {
    */
   it('takes the page back to a record asked for again, and says which record is on show', async () => {
     const { ask } = await organisationOnScreen()
-    await waitFor(async () => expect(parsed(await ask('app.current')).scopes).toBe(2))
+    await waitFor(async () => expect(parsed(await ask('app.current')).scopes).toBe(3))
     await ask('app.open', { scope: '', page: 'decisions', id: 'adr-1' })
     const title = () => within(screen.getByTestId('adr-reader')).getByRole('heading', { level: 1 }).textContent
     await waitFor(() => expect(title()).toBe('One warehouse'))
@@ -173,7 +177,7 @@ describe('with the organisation screen up', () => {
 
   it('lets the person stop the agent, tells the agent so, and lets it ask to go on', async () => {
     const { ask } = await organisationOnScreen()
-    await waitFor(async () => expect(parsed(await ask('app.current')).scopes).toBe(2))
+    await waitFor(async () => expect(parsed(await ask('app.current')).scopes).toBe(3))
     await ask('app.open', { scope: 'acme/retail' })
     fireEvent.click(screen.getByTestId('agent-stop'))
     await waitFor(() => expect(screen.queryByTestId('agent-driving')).toBeNull())
@@ -211,7 +215,7 @@ describe('a chrome, told who moved the app', () => {
     const wire = fakeGateway()
     renderApp({
       agent: wire.gateway,
-      scopes: new InMemoryScopeStore([root, retail]),
+      repositories: heldRepositories([root, retail]),
       boot: { initialProject: undefined },
       provider: { chrome: [{ kind: 'elsewhere', chrome: Where }] },
     })
@@ -219,7 +223,7 @@ describe('a chrome, told who moved the app', () => {
     const where = () => screen.getByTestId('provider-where').textContent
     expect(where()).toBe('home  by person')
 
-    await waitFor(async () => expect(parsed(await wire.ask('app.current')).scopes).toBe(2))
+    await waitFor(async () => expect(parsed(await wire.ask('app.current')).scopes).toBe(3))
     expect(parsed(await wire.ask('app.open', { scope: 'acme/retail' })).arrived).toBe(true)
     await waitFor(() => expect(where()).toBe('acme/retail by agent'))
 
@@ -249,12 +253,12 @@ describe('a chrome, told who moved the app', () => {
     const wire = fakeGateway()
     renderApp({
       agent: wire.gateway,
-      scopes: new InMemoryScopeStore([root, retail]),
+      repositories: heldRepositories([root, retail]),
       boot: { initialProject: undefined },
       provider: { chrome: [{ kind: 'elsewhere', chrome: Where }] },
     })
     await waitFor(() => expect(wire.bound()).toBe(true))
-    await waitFor(async () => expect(parsed(await wire.ask('app.current')).scopes).toBe(2))
+    await waitFor(async () => expect(parsed(await wire.ask('app.current')).scopes).toBe(3))
     await wire.ask('app.open', { scope: 'acme/retail' })
     await waitFor(() => expect(screen.getByTestId('provider-where').textContent).toBe('acme/retail by agent'))
     fireEvent.click(screen.getByTestId('agent-stop'))

@@ -14,7 +14,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { laidOut } from '../model/testFixtures';
 import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
-import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
+import { heldRepositories } from './testing/heldRepositories'
 import type { HostCommand } from '../platform/hostCommands'
 import type { UpdateSettings, UpdateSettingsPatch } from '../platform/updateSettings'
 import { DEFAULT_LOCAL_SETTINGS } from '../projects/folderSettings'
@@ -82,7 +82,7 @@ const history = (available: boolean): ProjectHistory => ({
 function show(over: Parameters<typeof renderApp>[0] = {}) {
   const listeners: ((command: HostCommand) => void)[] = []
   const harness = renderApp({
-    scopes: new InMemoryScopeStore([project()]),
+    repositories: heldRepositories([project()]),
     ...over,
     boot: { initialProject: project(), ...over.boot },
     host: { commands: (listener) => { listeners.push(listener); return () => {} }, ...over.host },

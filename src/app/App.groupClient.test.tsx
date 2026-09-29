@@ -13,7 +13,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { laidOut } from '../model/testFixtures';
 import { cleanup, screen } from '@testing-library/react'
-import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
+import { heldRepositories } from './testing/heldRepositories'
 import type { ScopeSnapshot } from '../projects/scope'
 import { renderApp } from './testing/renderShell'
 
@@ -52,7 +52,7 @@ const parent = (over: Partial<ScopeSnapshot> = {}): ScopeSnapshot => ({
 describe('the client on an export', () => {
   it('is the organisation\'s name when nothing above has said otherwise', async () => {
     renderApp({
-      scopes: new InMemoryScopeStore([parent(), project()]),
+      repositories: heldRepositories([parent(), project()]),
       boot: { initialProject: project() },
     })
     expect((await screen.findByTestId('export-client')).textContent).toBe('Acme')
@@ -60,7 +60,7 @@ describe('the client on an export', () => {
 
   it('is what the scope above says once it says something', async () => {
     renderApp({
-      scopes: new InMemoryScopeStore([parent({ client: 'Acme Logistics BV' }), project()]),
+      repositories: heldRepositories([parent({ client: 'Acme Logistics BV' }), project()]),
       boot: { initialProject: project() },
     })
     await screen.findByText('Acme Logistics BV')
@@ -69,7 +69,7 @@ describe('the client on an export', () => {
   /** The closest record to the drawing is the one that knows. */
   it('is the scope\'s own client where it has one, over its parent\'s', async () => {
     renderApp({
-      scopes: new InMemoryScopeStore([
+      repositories: heldRepositories([
         parent({ client: 'Acme Logistics BV' }),
         { ...project(), client: 'Acme Rail BV' },
       ]),

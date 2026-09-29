@@ -28,7 +28,6 @@ export function renderMarkdown(markdown: string, options?: MarkdownRenderOptions
     <MarkdownView
       markdown={markdown}
       onElementLink={options?.onElementLink}
-      resolveImage={options?.resolveImage}
     />
   )
 }

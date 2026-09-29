@@ -12,7 +12,7 @@
  */
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { cleanup, configure, fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
+import { heldRepositories } from './testing/heldRepositories'
 import { installReactFlowMocks } from '../editor/reactFlowTestSetup'
 import { CONTROL_NAMES, controlSelector } from '../platform/controlNames'
 import type { ControlName } from '../platform/controlNames'
@@ -57,7 +57,7 @@ landscape.model = {
 
 function show(opened: boolean) {
   return renderApp({
-    scopes: new InMemoryScopeStore(example),
+    repositories: heldRepositories(example),
     boot: { initialProject: opened ? landscape : undefined },
   })
 }

@@ -18,7 +18,8 @@
  */
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { InMemoryScopeStore } from '../../adapters/memory/InMemoryScopeStore'
+import { answering, heldRepositories } from '../testing/heldRepositories'
+import type { HeldRepositories } from '../testing/heldRepositories'
 import { registerStrings } from '../../i18n'
 import { laidOut } from '../../model/testFixtures'
 import type { ScopeSnapshot } from '../../projects/scope'
@@ -140,7 +141,7 @@ function withTechnology(): ScopeSnapshot[] {
 
 describe('the organisation screen — identity', () => {
   it('shows the root scope as the screen, name and description and links', async () => {
-    renderApp({ scopes: new InMemoryScopeStore([organisation()]), today: TODAY })
+    renderApp({ repositories: heldRepositories([organisation()]), today: TODAY })
     expect((await screen.findByTestId('organisation-name')).textContent).toBe('Acme Logistics')
     expect(screen.getByText('A parcel and pallet operator.')).toBeDefined()
     const link = screen.getByRole('link', { name: 'Wiki' })
@@ -151,7 +152,7 @@ describe('the organisation screen — identity', () => {
 
   it('counts the scopes beneath by what each says it is, in the words of the badges', async () => {
     renderApp({
-      scopes: new InMemoryScopeStore([
+      repositories: heldRepositories([
         organisation(),
         { ...scope('retail', 'Retail', { kind: 'domain' }), model: { name: 'Retail', elements: [], relations: [], diagrams: [] } },
         scope('retail/warehouse', 'Warehouse', { kind: 'landscape' }),
@@ -167,29 +168,27 @@ describe('the organisation screen — identity', () => {
 
   /** "For Acme Logistics" under the heading "Acme Logistics" says it twice. */
   it('names the client only when it differs from the name', async () => {
-    renderApp({ scopes: new InMemoryScopeStore([organisation()]), today: TODAY })
+    renderApp({ repositories: heldRepositories([organisation()]), today: TODAY })
     expect((await screen.findByTestId('organisation-meta')).textContent)
       .toContain('For Acme Logistics BV')
 
     cleanup()
     const same = organisation()
     same.client = 'Acme Logistics'
-    renderApp({ scopes: new InMemoryScopeStore([same]), today: TODAY })
+    renderApp({ repositories: heldRepositories([same]), today: TODAY })
     expect((await screen.findByTestId('organisation-meta')).textContent).not.toContain('For ')
   })
 })
 
 describe('the organisation screen — what the listing could not read', () => {
   /** A store whose listing says it could not read these paths (`ScopeSummary.unreadable`). */
-  function listingWithout(unreadable: string[]): InMemoryScopeStore {
-    const store = new InMemoryScopeStore([organisation(), scope('retail', 'Retail')])
-    const listing = store.list.bind(store)
-    store.list = async () => ({ ...await listing(), unreadable })
-    return store
+  function listingWithout(unreadable: string[]): HeldRepositories {
+    const held = heldRepositories([organisation(), scope('retail', 'Retail')])
+    return answering(held, { tree: async () => ({ ...await held.scopes.tree(), unreadable }) })
   }
 
   it('says which scopes it could not read, rather than leaving them out in silence', async () => {
-    renderApp({ scopes: listingWithout(['finance', 'retail/north']), today: TODAY })
+    renderApp({ repositories: listingWithout(['finance', 'retail/north']), today: TODAY })
     expect((await screen.findByTestId('organisation-unreadable')).textContent).toBe(
       '2 scopes could not be read and are not shown: finance, retail/north. '
       + 'Their folders are left as they are, and nothing is created in their place.',
@@ -198,13 +197,13 @@ describe('the organisation screen — what the listing could not read', () => {
   })
 
   it('says so when the folder itself could not be read', async () => {
-    renderApp({ scopes: listingWithout(['']), today: TODAY })
+    renderApp({ repositories: listingWithout(['']), today: TODAY })
     expect((await screen.findByTestId('organisation-unreadable')).textContent)
       .toContain('This folder could not be read')
   })
 
   it('says nothing when everything read', async () => {
-    renderApp({ scopes: new InMemoryScopeStore([organisation()]), today: TODAY })
+    renderApp({ repositories: heldRepositories([organisation()]), today: TODAY })
     await screen.findByTestId('organisation-name')
     expect(screen.queryByTestId('organisation-unreadable')).toBeNull()
   })
@@ -212,7 +211,7 @@ describe('the organisation screen — what the listing could not read', () => {
 
 describe('the organisation screen — its own pages', () => {
   it('counts the root’s own business layer, and says what is not yet mapped', async () => {
-    renderApp({ scopes: new InMemoryScopeStore([organisation()]), today: TODAY })
+    renderApp({ repositories: heldRepositories([organisation()]), today: TODAY })
     const cards = await screen.findByTestId('organisation-cards')
     await waitFor(() => expect(cards.textContent).toContain('1 journey'))
     expect(cards.textContent).toContain('2 functions')
@@ -222,7 +221,7 @@ describe('the organisation screen — its own pages', () => {
   })
 
   it('counts the root’s records by status and names the newest', async () => {
-    renderApp({ scopes: new InMemoryScopeStore([organisation()]), today: TODAY })
+    renderApp({ repositories: heldRepositories([organisation()]), today: TODAY })
     const cards = await screen.findByTestId('organisation-cards')
     await waitFor(() => expect(cards.textContent).toContain('2 records'))
     expect(cards.textContent).toContain('1 proposed')
@@ -231,7 +230,7 @@ describe('the organisation screen — its own pages', () => {
   })
 
   it('shows the first thing the roadmap’s dates disagree about', async () => {
-    renderApp({ scopes: new InMemoryScopeStore([organisation()]), today: TODAY })
+    renderApp({ repositories: heldRepositories([organisation()]), today: TODAY })
     const cards = await screen.findByTestId('organisation-cards')
     await waitFor(() => expect(cards.textContent).toContain('1 plan'))
     expect(cards.textContent).toContain('was due to finish on 2026-08-01')
@@ -243,14 +242,14 @@ describe('the organisation screen — its own pages', () => {
    * opens on the decisions page.
    */
   it('opens what the roadmap card\u2019s finding is about, and the record the decisions card names', async () => {
-    renderApp({ scopes: new InMemoryScopeStore([organisation()]), today: TODAY })
+    renderApp({ repositories: heldRepositories([organisation()]), today: TODAY })
     const cards = await screen.findByTestId('organisation-cards')
     const finding = await within(cards).findByRole('button', { name: /was due to finish on 2026-08-01/ })
     fireEvent.click(finding)
     expect(await screen.findByTestId('plan-topbar')).toBeTruthy()
     expect(screen.getByTestId('plan-topbar').textContent).toContain('Retire the rater')
     cleanup()
-    renderApp({ scopes: new InMemoryScopeStore([organisation()]), today: TODAY })
+    renderApp({ repositories: heldRepositories([organisation()]), today: TODAY })
     const again = await screen.findByTestId('organisation-cards')
     fireEvent.click(await within(again).findByRole('button', { name: 'Latest: ADR-0002 Federate the model' }))
     const reader = await screen.findByTestId('adr-reader')
@@ -263,7 +262,7 @@ describe('the organisation screen — its own pages', () => {
    * it can count applications the root's own document has none of.
    */
   it('counts the register over every scope, and opens it', async () => {
-    renderApp({ scopes: new InMemoryScopeStore(withApplications()), today: TODAY })
+    renderApp({ repositories: heldRepositories(withApplications()), today: TODAY })
     const cards = await screen.findByTestId('organisation-cards')
     await waitFor(() => expect(cards.textContent).toContain('2 applications'))
     expect(cards.textContent).toContain('2 owned by a domain')
@@ -292,7 +291,7 @@ describe('the organisation screen — its own pages', () => {
    * anybody saying so.
    */
   it('counts the technology over every scope, and opens it', async () => {
-    renderApp({ scopes: new InMemoryScopeStore(withTechnology()), today: TODAY })
+    renderApp({ repositories: heldRepositories(withTechnology()), today: TODAY })
     const cards = await screen.findByTestId('organisation-cards')
     await waitFor(() => expect(cards.textContent).toContain('2 services'))
     expect(cards.textContent).toContain('1 platform')
@@ -321,7 +320,7 @@ describe('the organisation screen — its own pages', () => {
     // The row's scope draws a board, so the canvas mounts — the one place in
     // these tests where React Flow needs jsdom's missing pieces.
     installReactFlowMocks()
-    renderApp({ scopes: new InMemoryScopeStore(withApplications()), today: TODAY })
+    renderApp({ repositories: heldRepositories(withApplications()), today: TODAY })
     fireEvent.click(within(await screen.findByTestId('organisation-cards')).getByTestId('open-register'))
     fireEvent.click(await screen.findByTestId('register-page-post'))
     // The landscape opens, and on it the page — with the record's fields
@@ -334,7 +333,7 @@ describe('the organisation screen — its own pages', () => {
   }, 20_000)
 
   it('opens the root on the page the card was pressed for', async () => {
-    renderApp({ scopes: new InMemoryScopeStore([organisation()]), today: TODAY })
+    renderApp({ repositories: heldRepositories([organisation()]), today: TODAY })
     fireEvent.click(await screen.findByTestId('open-decisions'))
     // The root draws nothing at all; the decisions page is what it was opened
     // for, and is what appears.
@@ -342,7 +341,7 @@ describe('the organisation screen — its own pages', () => {
   })
 
   it('offers to make a sheet where the scope has none, and to open the one it has', async () => {
-    renderApp({ scopes: new InMemoryScopeStore([organisation()]), today: TODAY })
+    renderApp({ repositories: heldRepositories([organisation()]), today: TODAY })
     expect((await screen.findByTestId('open-business')).textContent).toBe('Make a sheet…')
 
     cleanup()
@@ -350,12 +349,12 @@ describe('the organisation screen — its own pages', () => {
     withSheet.model.diagrams = [{
       id: 'sh', kind: 'sheet', name: 'Business architecture', members: [], geometry: { nodes: [] },
     }]
-    renderApp({ scopes: new InMemoryScopeStore([withSheet]), today: TODAY })
+    renderApp({ repositories: heldRepositories([withSheet]), today: TODAY })
     await waitFor(() => expect(screen.getByTestId('open-business').textContent).toBe('Open'))
   })
 
   it('offers to make a map beside the sheet, and to open the one it has', async () => {
-    renderApp({ scopes: new InMemoryScopeStore([organisation()]), today: TODAY })
+    renderApp({ repositories: heldRepositories([organisation()]), today: TODAY })
     expect((await screen.findByTestId('open-map')).textContent).toBe('Make a map…')
 
     cleanup()
@@ -363,7 +362,7 @@ describe('the organisation screen — its own pages', () => {
     withMap.model.diagrams = [{
       id: 'mp', kind: 'map', name: 'Enterprise map', members: [], geometry: { nodes: [] },
     }]
-    renderApp({ scopes: new InMemoryScopeStore([withMap]), today: TODAY })
+    renderApp({ repositories: heldRepositories([withMap]), today: TODAY })
     await waitFor(() => expect(screen.getByTestId('open-map').textContent).toBe('Map'))
     fireEvent.click(screen.getByTestId('open-map'))
     // The root draws nothing; the map is what it was opened for.
@@ -381,14 +380,14 @@ describe('the organisation screen — its own pages', () => {
         ],
       },
     }
-    renderApp({ scopes: new InMemoryScopeStore([organisation(), retail]), today: TODAY })
+    renderApp({ repositories: heldRepositories([organisation(), retail]), today: TODAY })
     const cards = await screen.findByTestId('organisation-cards')
     await waitFor(() => expect(cards.textContent).toContain('1 initiative from below'))
   })
 
   /** A fresh folder. Four zeroes read as a fault; a sentence reads as a start. */
   it('says nothing is here yet rather than showing zeroes', async () => {
-    renderApp({ scopes: new InMemoryScopeStore([]), today: TODAY })
+    renderApp({ repositories: heldRepositories([]), today: TODAY })
     const cards = await screen.findByTestId('organisation-cards')
     await waitFor(() => expect(cards.textContent).toContain('Nothing at this level yet.'))
     expect(cards.textContent).not.toContain('0 journeys')
@@ -397,21 +396,21 @@ describe('the organisation screen — its own pages', () => {
 
 describe('the organisation screen — a fresh folder', () => {
   it('asks for a name where the heading would be, and takes it', async () => {
-    const scopes = new InMemoryScopeStore([])
-    renderApp({ scopes, today: TODAY })
+    const scopes = heldRepositories([])
+    renderApp({ repositories: scopes, today: TODAY })
 
     expect(screen.queryByTestId('organisation-name')).toBeNull()
     const field = await screen.findByTestId('organisation-name-field')
     fireEvent.change(field, { target: { value: 'Globex' } })
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 
-    await waitFor(async () => expect((await scopes.load(''))?.model.name).toBe('Globex'))
+    await waitFor(async () => expect((await scopes.read(''))?.model.name).toBe('Globex'))
     expect((await screen.findByTestId('organisation-name')).textContent).toBe('Globex')
   })
 
   it('says the tree is empty, with the examples underneath', async () => {
     renderApp({
-      scopes: new InMemoryScopeStore([]),
+      repositories: heldRepositories([]),
       today: TODAY,
       examples: [{
         key: 'acme', path: 'acme-logistics', label: 'Acme Logistics', description: 'an example',
@@ -439,7 +438,7 @@ describe('the organisation screen — a fresh folder', () => {
    * saying it is empty rather than showing nothing.
    */
   it('explains itself: the subtitle, a description on every card, and the empty tree', async () => {
-    renderApp({ scopes: new InMemoryScopeStore([scope('', 'Acme Logistics')]), today: TODAY })
+    renderApp({ repositories: heldRepositories([scope('', 'Acme Logistics')]), today: TODAY })
     const subtitle = await screen.findByTestId('organisation-subtitle')
     expect(subtitle.textContent).toContain('Everything here is kept in this browser.')
     expect(subtitle.textContent).toContain('Each scope below \u2014 a domain, a team, a landscape scope \u2014 has its own')
@@ -465,7 +464,7 @@ describe('the organisation screen — a fresh folder', () => {
   it('says where work is kept in the provider’s own sentence for a registered source', async () => {
     registerStrings('en', { 'elsewhere.kept': 'Your work is kept elsewhere, and elsewhere says when.' })
     renderApp({
-      scopes: new InMemoryScopeStore([scope('', 'Acme Logistics')]),
+      repositories: heldRepositories([scope('', 'Acme Logistics')]),
       today: TODAY,
       source: { kind: 'registered', provider: 'elsewhere', name: 'Elsewhere', key: 'one' },
       provider: { description: 'elsewhere.kept' },
@@ -484,7 +483,7 @@ describe('the organisation screen — a fresh folder', () => {
    */
   it('drops the clause where a registered source’s provider gave no sentence', async () => {
     renderApp({
-      scopes: new InMemoryScopeStore([scope('', 'Acme Logistics')]),
+      repositories: heldRepositories([scope('', 'Acme Logistics')]),
       today: TODAY,
       source: { kind: 'registered', provider: 'nowords', name: 'Elsewhere', key: 'one' },
     })
@@ -503,7 +502,7 @@ describe('the organisation screen — for somebody who may only read', () => {
 
   it('offers no new scope, no new board, no settings, no removal and no Make…', async () => {
     renderApp({
-      scopes: new InMemoryScopeStore([organisation(), scope('retail', 'Retail')]),
+      repositories: heldRepositories([organisation(), scope('retail', 'Retail')]),
       today: TODAY,
       provider: reading,
     })
@@ -524,7 +523,7 @@ describe('the organisation screen — for somebody who may only read', () => {
 
   it('still offers what a writer is offered where the source says the scope may be written', async () => {
     renderApp({
-      scopes: new InMemoryScopeStore([organisation(), scope('retail', 'Retail')]),
+      repositories: heldRepositories([organisation(), scope('retail', 'Retail')]),
       today: TODAY,
       provider: { readOnlyAt: () => false },
     })
@@ -541,21 +540,22 @@ describe('the organisation screen — for somebody who may only read', () => {
  * opened, twice.
  */
 describe('the organisation screen — a scope with no document of its own', () => {
-  it('gives it one, whole, and opens the page that was asked for', async () => {
-    const scopes = new InMemoryScopeStore([scope('retail', 'Retail')])
-    renderApp({ scopes, today: TODAY })
+  it('opens the page that was asked for on it', async () => {
+    const scopes = heldRepositories([scope('retail', 'Retail')])
+    renderApp({ repositories: scopes, today: TODAY })
     fireEvent.click(await screen.findByTestId('open-decisions'))
     expect(await screen.findByText('Architecture decisions')).toBeDefined()
-    expect(await scopes.load('')).toBeDefined()
+    expect(await scopes.read('')).toBeDefined()
     expect(screen.queryByText('That project could not be opened.')).toBeNull()
   })
 
-  it('opens the page empty, and writes nothing, for somebody who may only read', async () => {
-    const scopes = new InMemoryScopeStore([scope('retail', 'Retail')])
-    renderApp({ scopes, today: TODAY, provider: { readOnlyAt: () => true } })
+  it('opens the page, and writes nothing, for somebody who may only read', async () => {
+    const scopes = heldRepositories([scope('retail', 'Retail')])
+    const before = (await scopes.read(''))?.revision
+    renderApp({ repositories: scopes, today: TODAY, provider: { readOnlyAt: () => true } })
     fireEvent.click(await screen.findByTestId('open-decisions'))
     expect(await screen.findByText('Architecture decisions')).toBeDefined()
-    expect(await scopes.load('')).toBeUndefined()
+    expect((await scopes.read(''))?.revision).toBe(before)
     expect(screen.queryByText('That project could not be opened.')).toBeNull()
   })
 })
@@ -575,8 +575,8 @@ describe('the organisation screen — the shipped example', () => {
   // work, as libavoidRouter.test.ts does, rather than the runner's mood. It is
   // done once: what the folder offers afterwards is read off the same copy.
   it('becomes the organisation, with its landscape as a row beneath, and offers no examples any more', async () => {
-    const scopes = new InMemoryScopeStore([])
-    renderApp({ scopes, today: TODAY, examples: EXAMPLES })
+    const scopes = heldRepositories([])
+    renderApp({ repositories: scopes, today: TODAY, examples: EXAMPLES })
 
     fireEvent.click(await screen.findByRole('button', { name: 'Copy into this folder…' }))
     // Copying lands the person in the scope that has the work in it.

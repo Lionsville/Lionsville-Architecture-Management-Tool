@@ -2,23 +2,21 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * The history, as the workspace uses it: is there one, take one, look at one.
+ * The history, as the workspace uses it: is there one, take one, look at one
+ * (ADR-0008, ADR-0031 §1).
  *
- * All of the awkwardness of layer two lives here, and it is mostly about
- * saying no gracefully. There may be no git on the machine; the folder may not
- * be keeping history; the project may not have existed at the snapshot somebody
- * clicked. None of those is a failure and none of them may interrupt a save —
- * so every one of them is a state this hook can sit in, and the menu simply
- * does not offer what cannot be done.
+ * A snapshot is `record` over every scope, with the person's words; the
+ * safeguard before a replace is `record` over the scope being replaced. A
+ * history is read in the domain's words — the entries of the scopes that hold
+ * a thing, about the record it is — and going back is the model's own restore,
+ * dispatched like any step, so the history only grows.
  *
- * The one ordering that matters: a snapshot is of the FOLDER, so the folder has
- * to hold what is on screen before one is taken. That is why `save` is awaited
+ * The one ordering that matters: a snapshot is of what is kept, so what is on
+ * screen has to be written before one is taken. That is why `save` is awaited
  * rather than fired.
  */
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { draftCommitMessage } from '../../projects/commitMessage'
-import { historyPlaces } from '../../projects/historyPath'
-import type { HistoryPlace, HistorySubject } from '../../projects/historyPath'
 import type { ScopeIndex } from '../../projects/scopeIndex'
 import type { Command } from '../../model/commands'
 import type { HostModel } from '../../model/hostModel'
@@ -28,9 +26,17 @@ import { restoreCommand } from '../../model/restore'
 import type { StepSummary } from '../../model/activity'
 import type { Translate } from '../../i18n'
 import { reasonOf } from '../../platform/errors'
+import type { HistoryEntry, HistoryRepository } from '../../ports/HistoryRepository'
 import type { ScopeSnapshot } from '../../projects/scope'
-import type { HistoryEntry, ProjectHistory } from '../../ports/ProjectHistory'
+import { nodeAt } from '../../projects/scopeAccess'
+import type { ScopeReader } from '../../projects/scopeAccess'
+import type { ScopePath } from '../../projects/scopePath'
 import type { Notify } from '../useToasts'
+import { recordOf, scopesOf } from './subjects'
+import type { HistorySubject } from './subjects'
+
+/** How many entries the page lists: the newest, as a history read by a person is read. */
+export const ENTRIES_SHOWN = 50
 
 /** The day a snapshot was taken, `yyyy-mm-dd`, in the person's own clock. */
 function dayOf(at: number): string {
@@ -40,16 +46,11 @@ function dayOf(at: number): string {
 }
 
 export type ProjectHistoryState = {
-  /** Can this machine keep a history at all? Nothing is offered when it cannot. */
+  /** Is there a history to keep? Nothing is offered where there is none. */
   available: boolean
-  /**
-   * Known NOT to be able to: there is no seam, or the machine has no git. Not
-   * the same as `!available`, which is also true for the moment before the
-   * machine has answered — and a warning about a git that is merely still
-   * being looked for would be wrong.
-   */
+  /** Known NOT to be: there is no history here at all. */
   unavailable: boolean
-  /** Is this folder keeping one yet? The dialog explains the first time. */
+  /** Does this scope have an entry yet? The dialog explains the first time. */
   keeping: boolean
   dialogOpen: boolean
   pageOpen: boolean
@@ -57,15 +58,14 @@ export type ProjectHistoryState = {
   draft: string
   entries: readonly HistoryEntry[]
   chosen?: { id: string; model?: HostModel }
-  /** Whose history the page is showing; absent is the whole project's (ADR-0008). */
+  /** Whose history the page is showing; absent is the whole scope's (ADR-0008). */
   subject?: HistorySubject
   /**
-   * Every scope the open subject is filed in, this one first (ADR-0012 §7).
-   *
-   * What the page says under the picker — *everywhere this is drawn* — and
-   * empty for the whole scope's history, which is one folder by definition.
+   * Every scope the open subject's history is read over, this one first
+   * (ADR-0012 §7): what the page says under the picker — *everywhere this is
+   * drawn* — and empty for the whole scope's history, which is this scope's.
    */
-  places: readonly HistoryPlace[]
+  places: readonly ScopePath[]
   openDialog: () => void
   closeDialog: () => void
   take: (message: string) => void
@@ -73,132 +73,101 @@ export type ProjectHistoryState = {
   openPage: (subject?: HistorySubject) => void
   closePage: () => void
   choose: (id: string) => void
-  /** Narrow or widen what the open page is about; the list is read again. */
   setSubject: (subject: HistorySubject | undefined) => void
-  /**
-   * Make the subject — or, with none, the whole project — what the chosen
-   * snapshot held, as one command through the session (ADR-0008). Nothing
-   * happens until the snapshot has been read; the page's button waits for it.
-   */
   restore: () => void
-  /**
-   * A snapshot before something writes over what is here, where the folder
-   * keeps a history (ADR-0025, amended): `true` when it is safe to go on —
-   * taken, nothing to take, or no history kept, which the warning already
-   * said — and `false` when a snapshot was due and could not be taken.
-   */
+  /** Record the scope before a replace; `false` only where that was wanted and failed. */
   safeguard: () => Promise<boolean>
-  /** Call the chosen snapshot something (ADR-0008). The list is read again when it took. */
   label: (name: string) => void
 }
 
 export function useProjectHistory(deps: {
-  history?: ProjectHistory
-  /**
-   * The organisation's index (ADR-0012 §2), for the scopes an element's page
-   * is filed in besides this one. Absent where there is no tree to read, and
-   * the history is then this scope's — which is what it was before the tree
-   * had an index.
-   */
+  history?: HistoryRepository
+  /** The tree, for which scopes a history is asked about by address. */
+  scopes: ScopeReader
   index?: ScopeIndex
-  /** What is on screen, and how it got there. */
   project: () => ScopeSnapshot
   steps: () => readonly { summary: StepSummary }[]
-  /** Write the project out and answer when it has landed. */
   save: () => Promise<void>
-  /** The session's two halves a restore needs: what stands, and the one way to change it. */
   indexed: () => Model
   dispatch: (command: Command) => unknown
   notify: Notify
   s: Translate
-  /** A snapshot succeeded. What follows — a push, perhaps — is the caller's. */
   onTaken?: () => void
 }): ProjectHistoryState {
-  const { history, index, project, steps, save, indexed, dispatch, notify, s, onTaken } = deps
+  const { history, scopes, index, project, steps, save, indexed, dispatch, notify, s, onTaken } = deps
 
-  /** Undefined until the machine has answered; a menu item can be chosen before it has. */
-  const [available, setAvailable] = useState<boolean | undefined>(undefined)
-  const [keeping, setKeeping] = useState(false)
+  const [keeping, setKeeping] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [pageOpen, setPageOpen] = useState(false)
   const [draft, setDraft] = useState('')
   const [entries, setEntries] = useState<readonly HistoryEntry[]>([])
   const [chosen, setChosen] = useState<{ id: string; model?: HostModel } | undefined>(undefined)
   const [subject, setSubjectState] = useState<HistorySubject | undefined>(undefined)
-  const [places, setPlaces] = useState<readonly HistoryPlace[]>([])
-
-  /** How much of this session's log the last snapshot already covers. */
-  const recorded = useRef(0)
-
-  useEffect(() => {
-    if (!history) { setAvailable(false); return }
-    void history.available().then(async (can) => {
-      setAvailable(can)
-      if (can) setKeeping(await history.keeping())
-    }, () => setAvailable(false))
-  }, [history])
+  const [places, setPlaces] = useState<readonly ScopePath[]>([])
 
   /**
-   * Whether an item that was offered anyway can be honoured. The desktop's
-   * menu bar decides nothing (`platform/menu.ts`), so *Snapshot…* is there on a
-   * machine with no git and has to answer with a word rather than with
-   * silence — an item that does nothing looks like a broken app, not like a
-   * missing program. A machine still being asked answers nothing yet; the
-   * answer is milliseconds away and a wrong warning would outlive it.
+   * How many of the session's steps the last snapshot covered. The draft is
+   * made from the ones after it, so a second snapshot does not repeat the first.
    */
+  const recorded = useRef(0)
+
+  /** The identities of the scopes at these addresses, as the tree has them now. */
+  const idsAt = useCallback(async (addresses: readonly ScopePath[]): Promise<string[]> => {
+    const tree = await scopes.tree()
+    return addresses.flatMap((address) => nodeAt(tree, address)?.id ?? [])
+  }, [scopes])
+
   const refused = useCallback((): boolean => {
-    if (available === true) return false
-    if (!history || available === false) notify(s('history.unavailable'), 'warning')
+    if (history) return false
+    notify(s('history.unavailable'), 'warning')
     return true
-  }, [available, history, notify, s])
+  }, [history, notify, s])
 
   const openDialog = useCallback(() => {
-    if (refused()) return
+    if (refused() || !history) return
     // Drafted now rather than held: the log has grown since the dialog was last
     // open, and a stale draft is worse than none.
     const drafted = draftCommitMessage(steps().slice(recorded.current).map((held) => held.summary), s)
-    // An empty log is not an empty snapshot. The folder can have changed on
-    // another machine, or the last snapshot may have covered everything this
-    // session did — and a message field that cannot be submitted because
-    // nothing happened HERE would be a dead end.
+    // An empty log is not an empty snapshot. The scope can have changed
+    // elsewhere, or the last snapshot may have covered everything this session
+    // did — and a message field that cannot be submitted because nothing
+    // happened HERE would be a dead end.
     setDraft(drafted || s('history.defaultMessage'))
     setDialogOpen(true)
-  }, [refused, steps, s])
+    void idsAt([project().path]).then(
+      async (ids) => setKeeping(ids.length > 0 && (await history.entries({ scopes: ids, limit: 1 })).entries.length > 0),
+      () => setKeeping(true),
+    )
+  }, [refused, history, steps, idsAt, project, s])
 
   const take = useCallback((message: string) => {
     if (!history) return
     setDialogOpen(false)
     void (async () => {
-      // The folder first. A snapshot of a folder that does not yet hold what is
-      // on screen is a snapshot of the wrong thing, and it would be silently so.
+      // What is on screen first. A snapshot of a scope that does not yet hold
+      // what is on screen is a snapshot of the wrong thing, and silently so.
       await save()
-      if (!keeping) await history.start()
-      const written = await history.snapshot(message)
+      const written = await history.record({ subject: message })
       setKeeping(true)
       recorded.current = steps().length
-      notify(s(written ? 'history.taken' : 'history.nothingToRecord'), written ? 'success' : 'info')
-      // Whether or not anything was recorded: an earlier push may have been
-      // refused, and the snapshot is the moment this machine tries again.
+      notify(s(written.length > 0 ? 'history.taken' : 'history.nothingToRecord'), written.length > 0 ? 'success' : 'info')
+      // Whether or not anything was recorded: what follows a snapshot (a push
+      // that was refused before, say) is the moment to try again.
       onTaken?.()
     })().catch((cause: unknown) => {
       notify(s('history.failed', { message: reasonOf(cause) }), 'error')
     })
-  }, [history, keeping, save, steps, notify, s, onTaken])
+  }, [history, save, steps, notify, s, onTaken])
 
   const safeguard = useCallback(async (): Promise<boolean> => {
     if (!history) return true
-    // Asked now rather than read from state: the state is filled by an effect
-    // that may not have answered yet, and a replace is not a thing to let
-    // through on a guess.
-    const keeps = await history.available().then(
-      async (can) => can && await history.keeping(),
-      () => false,
-    )
-    if (!keeps) return true
     try {
       await save()
-      const written = await history.snapshot(s('history.beforeReplace'))
-      if (written) {
+      const scope = await idsAt([project().path])
+      // A scope with no document yet has nothing to lose.
+      if (scope.length === 0) return true
+      const written = await history.record({ scopes: scope, subject: s('history.beforeReplace') })
+      if (written.length > 0) {
         recorded.current = steps().length
         notify(s('history.takenBeforeReplace'), 'info')
         onTaken?.()
@@ -208,40 +177,34 @@ export function useProjectHistory(deps: {
       notify(s('history.failedBeforeReplace', { message: reasonOf(cause) }), 'error')
       return false
     }
-  }, [history, save, steps, notify, s, onTaken])
+  }, [history, save, idsAt, project, steps, notify, s, onTaken])
 
   const choose = useCallback((id: string) => {
-    if (!history) return
+    const entry = entries.find((held) => held.id === id)
+    if (!history || !entry) return
     setChosen({ id })
-    void history.projectAt(project().path, id).then(
+    void history.stateAt(entry.scope, id).then(
       (held) => setChosen({ id, model: held?.model }),
       (cause: unknown) => {
         setChosen({ id })
         notify(s('history.readFailed', { message: reasonOf(cause) }), 'error')
       },
     )
-  }, [history, project, notify, s])
+  }, [history, entries, notify, s])
 
-  /**
-   * The list, for one subject or for everything. A subject the model cannot
-   * place (a decision that is gone) has no paths and therefore no snapshots —
-   * an empty list, not everybody's.
-   */
   const list = useCallback((of: HistorySubject | undefined) => {
     if (!history) return
-    const held = project()
-    // Everywhere it is filed, which for an element's page is every scope that
+    // Everywhere it is kept, which for an element's page is every scope that
     // holds the id (ADR-0012 §7) and for everything else is this scope alone.
-    const places = of
-      ? historyPlaces(of, { scope: held.path, model: held.model, ...(index ? { index } : {}) })
-      : undefined
-    setPlaces(places ?? [])
-    const read = of && !places ? Promise.resolve([]) : history.entries(undefined, places)
-    void read.then(setEntries, (cause: unknown) => {
+    const addresses = scopesOf(of, project().path, index)
+    setPlaces(of ? addresses : [])
+    void idsAt(addresses).then(async (ids) => (ids.length === 0 ? [] : (await history.entries({
+      scopes: ids, ...(of ? { record: recordOf(of) } : {}), limit: ENTRIES_SHOWN,
+    })).entries)).then(setEntries, (cause: unknown) => {
       setEntries([])
       notify(s('history.readFailed', { message: reasonOf(cause) }), 'error')
     })
-  }, [history, project, index, notify, s])
+  }, [history, project, index, idsAt, notify, s])
 
   const openPage = useCallback((of?: HistorySubject) => {
     if (refused()) return
@@ -251,12 +214,6 @@ export function useProjectHistory(deps: {
     list(of)
   }, [refused, list])
 
-  /**
-   * The restore itself. A refusal is a toast and nothing else; a success
-   * closes the page, so the person sees what came back, and offers the
-   * snapshot rather than taking it — a restore that was itself a mistake is
-   * one ⌘Z away until it is recorded.
-   */
   const restore = useCallback(() => {
     if (!chosen?.model) return
     const entry = entries.find((held) => held.id === chosen.id)
@@ -275,17 +232,19 @@ export function useProjectHistory(deps: {
   }, [chosen, entries, subject, indexed, dispatch, notify, s, openDialog])
 
   const label = useCallback((name: string) => {
-    if (!history || !chosen) return
-    void history.label(chosen.id, name).then((outcome) => {
+    const entry = entries.find((held) => held.id === chosen?.id)
+    if (!history || !entry) return
+    void history.label(entry.scope, entry.id, name).then((outcome) => {
       switch (outcome) {
         case 'done': notify(s('history.labelled'), 'success'); list(subject); break
         case 'exists': notify(s('history.labelExists'), 'warning'); break
         case 'unnamed': notify(s('history.labelUnnamed'), 'warning'); break
+        case 'gone': notify(s('history.readFailed', { message: outcome }), 'warning'); break
       }
     }, (cause: unknown) => {
       notify(s('history.failed', { message: reasonOf(cause) }), 'error')
     })
-  }, [history, chosen, subject, list, notify, s])
+  }, [history, entries, chosen, subject, list, notify, s])
 
   const setSubject = useCallback((of: HistorySubject | undefined) => {
     // The chosen snapshot is dropped with the list: it may not be in the new one.
@@ -295,8 +254,8 @@ export function useProjectHistory(deps: {
   }, [list])
 
   return {
-    available: available === true,
-    unavailable: available === false,
+    available: history !== undefined,
+    unavailable: history === undefined,
     keeping,
     dialogOpen,
     pageOpen,

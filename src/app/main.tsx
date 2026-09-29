@@ -62,7 +62,7 @@ import {
   withMigratedFolder, withoutLastScope, withWorkingDirectory,
 } from '../projects/preferences'
 import { holdsScopes, migrated, migrateInto } from '../projects/migration'
-import { modelsAhead } from '../projects/readAhead'
+import { readScope } from '../projects/scopeAccess'
 import { pullOnOpen as pullBeforeOpening, upgradeFormat as upgradeFormatOf } from './bootReads'
 import type { PullOutcome } from '../platform/sync'
 import { sourceKey } from '../platform/workingSource'
@@ -179,6 +179,12 @@ async function rememberedDirectory(stored: unknown): Promise<void> {
   if (!wanted) return
   const directory = granted.find((held) => held.root === wanted)
   if (directory) shell = inWorkingDirectory(shell, files, directory)
+}
+
+/** The source's repositories: what every source brings, and a wiring mistake where one did not. */
+function repositoriesOf(held: Shell): NonNullable<Shell['repositories']> {
+  if (!held.repositories) throw new Error('the source brought no repositories')
+  return held.repositories
 }
 
 /** What the first-run screen offers. Empty until the boot has asked. */
@@ -650,8 +656,7 @@ function renderApp(
         // A folder change is a fresh mount, not a swap in place: see
         // `chooseWorkingDirectory` and `sourceKey`.
         key={sourceKey(shell.source)}
-        scopes={shell.scopes}
-        {...(shell.repositories ? { repositories: shell.repositories } : {})}
+        repositories={repositoriesOf(shell)}
         preferences={shell.preferences}
         documents={shell.documents}
         diagnostics={shell.diagnostics}
@@ -761,8 +766,7 @@ void shell.preferences.read()
     // The tree's models and the scope it reopens, asked for together: the index
     // is read the moment the app mounts, and nothing about it waits on which
     // scope is open. After the format pass, so what is read is this format.
-    shell = { ...shell, scopes: modelsAhead(shell.scopes) }
-    const held = lastScope === undefined ? undefined : await shell.scopes.load(lastScope)
+    const held = lastScope === undefined ? undefined : await readScope(repositoriesOf(shell).scopes, lastScope)
     // A scope with no views is a domain (ADR-0012 §1): there is nothing for the
     // canvas to show, so its home opens instead of an empty editor — and a
     // scope an address named opens on its home unless it named a view.

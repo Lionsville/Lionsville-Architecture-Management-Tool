@@ -16,7 +16,7 @@
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { act, cleanup, configure, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import type { HostCommand } from '../platform/hostCommands'
-import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
+import { heldRepositories } from './testing/heldRepositories'
 import { installReactFlowMocks } from '../editor/reactFlowTestSetup'
 import { EXAMPLES, exampleScopes } from './examples'
 import { renderApp } from './testing/renderShell'
@@ -40,7 +40,7 @@ const landscape = example.find((scope) => scope.model.diagrams.some((diagram) =>
 function show(opened: boolean) {
   const listeners: ((command: HostCommand) => void)[] = []
   const rendered = renderApp({
-    scopes: new InMemoryScopeStore(example),
+    repositories: heldRepositories(example),
     boot: { initialProject: opened ? landscape : undefined },
     host: {
       commands: (listener) => {

@@ -22,23 +22,22 @@
  */
 import { useEffect, useState } from 'react'
 import type { ElementId } from '../model'
-import type { ScopeSnapshot } from '../projects/scope'
+import { readScopes } from '../projects/scopeAccess'
+import type { ScopeReader } from '../projects/scopeAccess'
 import type { ScopeIndex } from '../projects/scopeIndex'
 import type { ScopePath } from '../projects/scopePath'
 
 export function useOwnerDescriptions(deps: {
   scope: ScopePath
   index: ScopeIndex
-  /** Absent where there is no tree to read — a test, a browser tab with one scope. */
-  load?: (path: ScopePath) => Promise<ScopeSnapshot | undefined>
-  /** The narrow read, where the store has one. */
-  descriptions?: (path: ScopePath) => Promise<Record<string, string> | undefined>
+  /** Where the owning scopes are read; absent where there is no tree to read — a test. */
+  scopes?: ScopeReader
 }): ReadonlyMap<ElementId, string> {
-  const { scope, index, load, descriptions } = deps
+  const { scope, index, scopes } = deps
   const [found, setFound] = useState<ReadonlyMap<ElementId, string>>(() => new Map())
 
   useEffect(() => {
-    if (!load && !descriptions) return
+    if (!scopes) return
     const wanted = new Map<ScopePath, ElementId[]>()
     for (const entry of index.entries()) {
       if (entry.master === undefined || entry.master === scope || !entry.drawnIn.includes(scope)) continue
@@ -46,8 +45,7 @@ export function useOwnerDescriptions(deps: {
     }
     let stale = false
     const read = async (path: ScopePath): Promise<Record<string, string> | undefined> => {
-      if (descriptions) return descriptions(path).catch(() => undefined)
-      const held = await load!(path).catch(() => undefined)
+      const [held] = await readScopes(scopes, [path]).catch(() => [undefined])
       if (!held) return undefined
       return Object.fromEntries(held.model.elements.flatMap((element) => (
         element.description !== undefined ? [[element.id, element.description]] : []
@@ -61,7 +59,7 @@ export function useOwnerDescriptions(deps: {
       if (!stale) setFound(new Map(pairs.flat()))
     })
     return () => { stale = true }
-  }, [scope, index, load, descriptions])
+  }, [scope, index, scopes])
 
   return found
 }

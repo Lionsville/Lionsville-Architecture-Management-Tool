@@ -39,8 +39,8 @@ import type { Language, Translate } from '../../i18n'
 import { PageDialog } from '../../widgets/PageDialog'
 import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
-import type { HistoryEntry } from '../../ports/ProjectHistory'
-import type { HistorySubject } from '../../projects/historyPath'
+import type { HistoryEntry } from '../../ports/HistoryRepository'
+import type { HistorySubject } from './subjects'
 import { changeLine } from './changeLine'
 import { changesFor } from './changesFor'
 import { LabelDialog } from './LabelDialog'
@@ -240,7 +240,7 @@ export function HistoryPage(props: HistoryPageProps) {
                   onClick={() => onChoose(entry.id)}
                   sx={{ display: 'block', py: 1 }}
                 >
-                  <Typography sx={{ fontSize: 13, fontWeight: 600 }}>{entry.subject}</Typography>
+                  <Typography sx={{ fontSize: 13, fontWeight: 600 }}>{entry.subject ?? ''}</Typography>
                   {entry.labels.length > 0 && (
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, my: 0.5 }}>
                       {entry.labels.map((held) => (
@@ -249,7 +249,7 @@ export function HistoryPage(props: HistoryPageProps) {
                     </Box>
                   )}
                   <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
-                    {when(entry.at, language)} · {s('history.by', { author: entry.author })}
+                    {when(entry.at, language)} · {s('history.by', { author: entry.by })}
                   </Typography>
                 </ListItemButton>
               ))}

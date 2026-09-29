@@ -12,6 +12,9 @@
  * rather than navigate it, and an element link must reach the callback and
  * nothing else.
  */
+import type { ImageEntry } from '../../model/imageName'
+import { memoryImageSource } from '../pictureSource'
+import { PicturesProvider } from './Pictures'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { MarkdownView } from './MarkdownView'
@@ -110,26 +113,25 @@ describe('MarkdownView', () => {
     expect(container.querySelector('pre')?.textContent).toContain('const x = 1')
   })
 
-  it('draws a picture the project holds, through the resolver', () => {
-    const { container } = renderShell(
-      <MarkdownView
-        markdown={'![Cutover](../images/cutover.png)'}
-        resolveImage={(src) => (src === '../images/cutover.png' ? 'data:image/png;base64,AQI=' : undefined)}
-      />,
-    )
-    const img = container.querySelector('img')
-    expect(img?.getAttribute('src')).toBe('data:image/png;base64,AQI=')
-    expect(img?.getAttribute('alt')).toBe('Cutover')
-  })
+  /** The scope's pictures, as a workspace hands them down (`Pictures.tsx`). */
+  const CUTOVER: ImageEntry = {
+    name: 'cutover.png', mediaType: 'image/png', size: 2, width: 4, height: 3, contentAddress: `sha256:${'1'.repeat(64)}`,
+  }
+  const pictures = (markdown: string) => (
+    <PicturesProvider
+      source={memoryImageSource({ acme: { 'cutover.png': { mediaType: 'image/png', bytes: new Uint8Array([1, 2]) } } })}
+      scope="acme"
+      library={[CUTOVER]}
+      addresses={{ make: () => 'blob:cutover', release: () => {} }}
+    >
+      <MarkdownView markdown={markdown} />
+    </PicturesProvider>
+  )
 
-  it('draws a picture named image:<name> through the resolver where no library is handed down', () => {
-    const { container } = renderShell(
-      <MarkdownView
-        markdown={'![Cutover](image:cutover.png)'}
-        resolveImage={(src) => (src === 'image:cutover.png' ? 'data:image/png;base64,AQI=' : undefined)}
-      />,
-    )
-    expect(container.querySelector('img')?.getAttribute('src')).toBe('data:image/png;base64,AQI=')
+  it('draws a picture the library holds, by its name', async () => {
+    const { container } = renderShell(pictures('![Cutover](image:cutover.png)'))
+    await waitFor(() => expect(container.querySelector('img')?.getAttribute('src')).toBe('blob:cutover'))
+    expect(container.querySelector('img')?.getAttribute('alt')).toBe('Cutover')
   })
 
   it('lets a picture\'s name through as a picture\'s source, never as a link', () => {
@@ -138,56 +140,42 @@ describe('MarkdownView', () => {
   })
 
   it('opens the same picture full size on a click, and closes it on the next', async () => {
-    renderShell(
-      <MarkdownView
-        markdown={'![Cutover](../images/cutover.png)'}
-        resolveImage={() => 'data:image/png;base64,AQI='}
-      />,
-    )
+    renderShell(pictures('![Cutover](image:cutover.png)'))
     expect(screen.queryByTestId('lightbox')).toBeNull()
-    fireEvent.click(screen.getByRole('img', { name: 'Cutover' }))
+    const shown = await screen.findByRole('img', { name: 'Cutover' })
+    await waitFor(() => expect(shown.getAttribute('src')).toBe('blob:cutover'))
+    fireEvent.click(shown)
     const large = screen.getByTestId('lightbox')
-    // The file from disk, not a copy resized for the page.
-    expect(large.getAttribute('src')).toBe('data:image/png;base64,AQI=')
+    // The picture's own bytes, not a copy resized for the page.
+    expect(large.getAttribute('src')).toBe('blob:cutover')
     fireEvent.click(large)
     await waitFor(() => expect(screen.queryByTestId('lightbox')).toBeNull())
   })
 
   it('marks the blocks that may run wider than the prose, and only those', () => {
-    const { container } = renderShell(
-      <MarkdownView
-        markdown={[
-          'A paragraph.',
-          '![Cutover](../images/cutover.png)',
-          '| a | b |\n|---|---|\n| 1 | 2 |',
-          '```\ncode\n```',
-          '```business-case\ncurrency: EUR\nperiods: 2026\nlines:\n  - Thing: -1\n```',
-        ].join('\n\n')}
-        resolveImage={() => 'data:image/png;base64,AQI='}
-      />,
-    )
+    const { container } = renderShell(pictures([
+      'A paragraph.',
+      '![Cutover](image:cutover.png)',
+      '| a | b |\n|---|---|\n| 1 | 2 |',
+      '```\ncode\n```',
+      '```business-case\ncurrency: EUR\nperiods: 2026\nlines:\n  - Thing: -1\n```',
+    ].join('\n\n')))
     const wide = Array.from(container.querySelectorAll('[data-wide]'))
     expect(wide.map((el) => el.tagName.toLowerCase())).toEqual(['p', 'div', 'pre', 'div'])
     expect(container.querySelector('p:not([data-wide])')?.textContent).toBe('A paragraph.')
   })
 
   it('never fetches a remote image, whatever a description asks for', () => {
-    // The resolver is the allowlist. Anything it declines is drawn as its alt
-    // text, so a tracking pixel in somebody's markdown makes no request.
-    const resolveImage = vi.fn(() => undefined)
-    const { container } = renderShell(
-      <MarkdownView
-        markdown={'![Pixel](https://example.org/p.gif)\n\n![Gone](../images/missing.png)'}
-        resolveImage={resolveImage}
-      />,
-    )
+    // The library is the allowlist. Anything it does not hold is drawn as its
+    // alt text, so a tracking pixel in somebody's markdown makes no request.
+    const { container } = renderShell(pictures('![Pixel](https://example.org/p.gif)\n\n![Gone](image:missing.png)'))
     expect(container.querySelector('img')).toBeNull()
     expect(container.textContent).toContain('Pixel')
     expect(container.textContent).toContain('Gone')
   })
 
-  it('draws nothing at all when no resolver was given', () => {
-    const { container } = renderShell(<MarkdownView markdown={'![x](../images/x.png)'} />)
+  it('draws nothing at all where no library is handed down', () => {
+    const { container } = renderShell(<MarkdownView markdown={'![x](image:x.png)'} />)
     expect(container.querySelector('img')).toBeNull()
   })
 

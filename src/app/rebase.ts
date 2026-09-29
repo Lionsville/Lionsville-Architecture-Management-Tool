@@ -26,24 +26,12 @@
  * and never re-decided: a run is **oldest first**, the order the folds were
  * made in and the order they go back on. Taking one off walks it backwards.
  */
+import type { DroppedStep, StepFold } from '../ports/ScopeSession'
 import { apply, transaction } from '../model'
 import type { Command, Model } from '../model'
 import type { CommandRefusal } from '../model'
 
-/**
- * One announcement's worth of a step: what that fold applied, and what undoes
- * it.
- *
- * This is also the shape a caller supplies for a fold this stack no longer
- * holds (`RebaseRun.steps`), which is why it says nothing about a stack.
- */
-export type StepFold = {
-  /** What this fold is called: a UUID, unique to the one announcement it was. */
-  changeId: string
-  commands: Command[]
-  /** Already in undo order, newest first — as the session records them. */
-  inverses: Command[]
-}
+export type { DroppedStep, StepFold } from '../ports/ScopeSession'
 
 /** What this file needs to know about a step: its name, and the folds it is made of. */
 export type StepRun = {
@@ -121,14 +109,6 @@ export function unwind(
     next = result.model
   }
   return { ok: true, model: next }
-}
-
-/** A fold that did not survive the way back, and the key that says why. */
-export type DroppedStep = {
-  changeId: string
-  /** The step it was a fold of, where it came off this stack rather than from a caller. */
-  stepId?: string
-  reason: CommandRefusal
 }
 
 /**

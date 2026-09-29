@@ -26,6 +26,7 @@ import {
   WORKING_FILE_TYPE, WORKING_FILE_VERSION, isWorkingFile, workingFileLogoLibrary,
 } from '../model/hostModel'
 import type { HostModel, WorkingFile } from '../model/hostModel'
+import type { ImageEntry } from '../model/imageName'
 import type { Observation } from '../model/observation'
 import { isBoardKind } from '../model/placement'
 import type { RecordLink } from './links'
@@ -102,6 +103,13 @@ export type ScopeSnapshot = {
    * two — the same reasoning as a model carrying no decisions.
    */
   imageLibrary?: CarriedImage[]
+  /**
+   * The scope's image library as a repository keeps it (ADR-0031 §3): an entry
+   * per picture — its name, media type, size, dimensions and content address —
+   * and never its bytes, which a page asks for when it shows one. Absent on a
+   * scope that was not read from a repository.
+   */
+  images?: readonly ImageEntry[]
   /** ISO timestamp of the last save. Absent until a store has written it once. */
   updatedAt?: string
   /**

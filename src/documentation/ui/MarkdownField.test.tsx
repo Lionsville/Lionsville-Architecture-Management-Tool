@@ -23,6 +23,6 @@ describe('MarkdownField', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Markdown help' }));
     const help = within(screen.getByTestId('markdown-help'));
     expect(help.getByText('[[Order Management]]')).toBeTruthy();
-    expect(help.queryByText('![caption](../images/file.png)')).toBeNull();
+    expect(help.queryByText('![caption](image:file.png)')).toBeNull();
   });
 });

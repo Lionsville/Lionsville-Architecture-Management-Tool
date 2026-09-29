@@ -22,7 +22,10 @@ import { AUTOSAVE_IDLE_MS } from '../projects/documentSession'
 import type { ScopeSnapshot } from '../projects/scope'
 import type { SourceStatus, SourceWork, SourceWorkChanged } from '../platform/sourceProvider'
 import { useDocumentSession } from './useDocumentSession'
-import type { DocumentSessionHook, SavableSession } from './useDocumentSession'
+import type { DocumentSessionHook, SavableSession, ScopeWriter } from './useDocumentSession'
+import type { PendingStep, SessionJournal } from './useModelSession'
+import { ShellError } from '../platform/errors'
+import type { ScopeStep } from '../projects/scopeState'
 
 beforeEach(() => vi.useFakeTimers())
 afterEach(() => { vi.useRealTimers(); cleanup() })
@@ -48,6 +51,7 @@ function mount(
   const latest = { current: project() }
   const saved = vi.fn()
   const result = vi.fn()
+  /** What was on screen at each write, as the steps written said it. */
   const writes: ScopeSnapshot[] = []
   const adopted: ScopeSnapshot[] = []
   const reported: boolean[] = []
@@ -58,19 +62,32 @@ function mount(
   // The session's own array, not a fresh one per render: the hook watches these
   // three by identity, exactly as `useEffect` does.
   const logoLibrary: unknown[] = []
+  // What the session has done and not yet written, as the session keeps it.
+  let pending: PendingStep[] = []
+  const journal: SessionJournal = {
+    pending: () => pending,
+    written: (count) => { pending = pending.slice(count) },
+    adopted: () => adopted.length,
+  }
+  let revision = 0
+  const writer: ScopeWriter = {
+    write: () => {
+      writes.push({ ...latest.current })
+      return save(latest.current).then(() => `r${++revision}`)
+    },
+    read: () => Promise.resolve(onDisk?.current),
+    put: () => Promise.reject(new Error('no pictures here')),
+  }
 
   /** Only what the hook reaches for. `snapshot` is a function on purpose: the
       hook must ask at save time, not at render time. */
   function Host({ model, active = 'd1' }: { model: unknown; active?: string }) {
     const session: SavableSession = {
-      model, activeDiagramId: active, logoLibrary, snapshot: () => latest.current,
+      model, activeDiagramId: active, logoLibrary, snapshot: () => latest.current, journal,
     }
     hook = useDocumentSession({
       session,
-      projects: {
-        save: (p) => { writes.push(p); return save(p) },
-        load: () => Promise.resolve(onDisk?.current),
-      },
+      writer,
       onSaved: saved,
       onResult: result,
       onUnsavedWork: (held) => reported.push(held),
@@ -109,6 +126,7 @@ function mount(
     /** What editing looks like from here: the model the session holds changes. */
     edit: (name: string) => act(() => {
       latest.current = project(name)
+      pending = [...pending, { stepId: `step-${pending.length}`, command: { type: 'project.settings', patch: { name } }, at: 0 }]
       view.rerender(<Host model={latest.current.model} />)
     }),
     idle: (ms = AUTOSAVE_IDLE_MS) => act(async () => { await vi.advanceTimersByTimeAsync(ms) }),
@@ -459,5 +477,99 @@ describe('a source that says its own answer has moved', () => {
     expect(listeners).toBe(1)
     view.unmount()
     expect(listeners).toBe(0)
+  })
+})
+
+/**
+ * What is written is what was done here (ADR-0031 §1): the session's own
+ * commands as steps, expecting the revision last known, with what the scope
+ * says about itself and its library beside them — and never the scope whole.
+ */
+describe('what a write carries', () => {
+  type Written = { steps: readonly ScopeStep[]; expects?: string }
+
+  function writing(answer: (written: Written) => Promise<string> = () => Promise.resolve('r2')) {
+    const written: Written[] = []
+    let pending: PendingStep[] = []
+    let snapshot: ScopeSnapshot = { ...project(), revision: 'r1', images: [] }
+    let hook!: DocumentSessionHook
+    const journal: SessionJournal = {
+      pending: () => pending,
+      written: (count) => { pending = pending.slice(count) },
+      adopted: () => 0,
+    }
+    const writer: ScopeWriter = {
+      write: (steps, expects) => {
+        const one = { steps, ...(expects !== undefined ? { expects } : {}) }
+        written.push(one)
+        return answer(one)
+      },
+      read: () => Promise.resolve({ ...snapshot, revision: 'theirs' }),
+      put: () => Promise.reject(new Error('no pictures here')),
+    }
+    function Host({ model }: { model: unknown }) {
+      hook = useDocumentSession({
+        session: { model, activeDiagramId: snapshot.activeDiagramId, logoLibrary: snapshot.logoLibrary, snapshot: () => snapshot, journal },
+        writer, onSaved: () => {}, onResult: () => {}, onAdopt: () => {},
+      })
+      return null
+    }
+    const view = render(<Host model={snapshot.model} />)
+    return {
+      written,
+      hook: () => hook,
+      change: (next: Partial<ScopeSnapshot>, command?: PendingStep['command']) => act(() => {
+        snapshot = { ...snapshot, ...next }
+        if (command) pending = [...pending, { stepId: `s${pending.length}`, command, at: 0 }]
+        view.rerender(<Host model={snapshot.model} />)
+      }),
+    }
+  }
+
+  const rename = (name: string) => ({ type: 'project.settings', patch: { name } }) as const
+  const picture = {
+    name: 'map.png', mediaType: 'image/png', size: 3, width: 1, height: 1,
+    contentAddress: `sha256:${'a'.repeat(64)}`,
+  }
+
+  it('writes the session’s commands as steps, expecting the revision last known, and the next from the answer', async () => {
+    const view = writing()
+    view.change({ model: { ...project().model, name: 'One' } }, rename('One'))
+    await act(async () => { await view.hook().forceSave() })
+    view.change({ model: { ...project().model, name: 'Two' } }, rename('Two'))
+    await act(async () => { await view.hook().forceSave() })
+    expect(view.written.map((one) => [one.steps.map((step) => step.command), one.expects])).toEqual([
+      [[rename('One')], 'r1'],
+      [[rename('Two')], 'r2'],
+    ])
+  })
+
+  it('writes the view it opens on, the marks and the library beside them, and never the scope whole', async () => {
+    const view = writing()
+    view.change({ activeDiagramId: 'd2', images: [picture], model: { ...project().model, name: 'One' } }, rename('One'))
+    await act(async () => { await view.hook().forceSave() })
+    const kinds = view.written.flatMap((one) => one.steps.map((step) => step.command.type))
+    expect(kinds).toEqual(['project.settings', 'scope.describe', 'image.add'])
+    expect(kinds).not.toContain('scope.replace')
+    view.change({ images: [], model: { ...project().model, name: 'Two' } }, rename('Two'))
+    await act(async () => { await view.hook().forceSave() })
+    expect(view.written[1].steps.map((step) => step.command)).toEqual([rename('Two'), { type: 'image.remove', name: 'map.png' }])
+  })
+
+  it('says a scope somebody changed since as the conflict it is, and writes nothing over it', async () => {
+    const view = writing(() => Promise.reject(new ShellError('shell.scopeMoved')))
+    view.change({ model: { ...project().model, name: 'Mine' } }, rename('Mine'))
+    await act(async () => { await view.hook().forceSave() })
+    expect(view.hook().state.status).toBe('conflict')
+  })
+
+  it('writes at once when asked, a change made a moment ago included, and says where it did not land', async () => {
+    const view = writing()
+    act(() => { view.change({ model: { ...project().model, name: 'Now' } }, rename('Now')) })
+    await act(async () => { await view.hook().flush() })
+    expect(view.written).toHaveLength(1)
+    const refusing = writing(() => Promise.reject(new Error('gone')))
+    refusing.change({ model: { ...project().model, name: 'Now' } }, rename('Now'))
+    await act(async () => { await expect(refusing.hook().flush()).rejects.toThrow('gone') })
   })
 })

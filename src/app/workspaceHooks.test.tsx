@@ -172,6 +172,7 @@ describe('a search hit, chosen', () => {
       const dialogs = useWorkspaceDialogs({
         session, settings: { onOpen: vi.fn(), onApply: vi.fn() }, diagnostics: { report: vi.fn() } as never, notify: vi.fn(), s,
         scope: 'north/south', show: showOn(pages, vi.fn(), openDocumentation), onOpenScope,
+        save: () => Promise.resolve(),
       })
       return { session, pages, dialogs }
     })

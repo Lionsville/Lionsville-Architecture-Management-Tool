@@ -14,7 +14,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { laidOut } from '../model/testFixtures'
-import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
+import { heldRepositories } from './testing/heldRepositories'
+import type { HeldRepositories } from './testing/heldRepositories'
+import type { OrganisationIndex } from '../ports/OrganisationIndex'
 import type { AgentAnswer, AgentRequest } from '../agent/tools'
 import type { AgentGateway } from '../ports/AgentGateway'
 import type { DesignElement } from '../model'
@@ -90,25 +92,29 @@ const said = (answer: AgentAnswer): Record<string, unknown> => {
  */
 async function twoScopes() {
   const wire = fakeGateway()
-  const held = new InMemoryScopeStore([
+  const held = heldRepositories([
     scope(''),
     scope('acme/retail', [element('warehouse', 'Warehouse')]),
     scope('acme/finance'),
   ])
-  let read = 0
-  const scopes = {
-    list: () => held.list(),
-    load: (path: string) => held.load(path),
-    save: (given: ScopeSnapshot) => held.save(given),
-    remove: (path: string) => held.remove(path),
-    models: () => { read += 1; return held.models() },
-  }
-  renderApp({ scopes, agent: wire.gateway, boot: { initialProject: scope('acme/finance') } })
+  const counted = countingIndex(held)
+  renderApp({ repositories: counted.repositories, agent: wire.gateway, boot: { initialProject: scope('acme/finance') } })
   // Nothing on screen waits for the tree to be read, so the test does — which
   // is the same wait the watcher's report ends on disk.
-  await waitFor(() => expect(read).toBeGreaterThan(0))
+  await waitFor(() => expect(counted.read()).toBeGreaterThan(0))
   await act(async () => {})
   return { wire, scopes: held }
+}
+
+/** The repositories, with every read of the whole index counted. */
+function countingIndex(held: HeldRepositories) {
+  let read = 0
+  const index: OrganisationIndex = {
+    id: held.index.id,
+    read: () => { read += 1; return held.index.read() },
+    since: (revision) => held.index.since(revision),
+  }
+  return { repositories: { ...held, index }, read: () => read }
 }
 
 describe('an agent is refused the owner\'s detail, as a person is', () => {
@@ -126,24 +132,14 @@ describe('an agent is refused the owner\'s detail, as a person is', () => {
         elements: [{ ...element('erp', 'Retail ERP'), ref: 'acme/retail' }],
       },
     }
-    const held = new InMemoryScopeStore([
+    const held = heldRepositories([
       scope(''),
       scope('acme/retail', [element('erp', 'Retail ERP')]),
       open,
     ])
-    let read = 0
-    renderApp({
-      scopes: {
-        list: () => held.list(),
-        load: (path: string) => held.load(path),
-        save: (given: ScopeSnapshot) => held.save(given),
-        remove: (path: string) => held.remove(path),
-        models: () => { read += 1; return held.models() },
-      },
-      agent: wire.gateway,
-      boot: { initialProject: open },
-    })
-    await waitFor(() => expect(read).toBeGreaterThan(0))
+    const counted = countingIndex(held)
+    renderApp({ repositories: counted.repositories, agent: wire.gateway, boot: { initialProject: open } })
+    await waitFor(() => expect(counted.read()).toBeGreaterThan(0))
     await act(async () => {})
     return wire
   }
@@ -191,9 +187,9 @@ describe('the agent reads the tree', () => {
   it('lists the scopes, and answers a read over another one', async () => {
     const { wire } = await twoScopes()
     const scopes = said(await wire.call('scopes.list', {}))
-    // In the store's listing order, which is by name.
+    // Every scope of the tree, `acme` above the two included, root first.
     expect((scopes.scopes as { path: string; open: boolean }[]).map((s) => [s.path, s.open])).toEqual([
-      ['', false], ['acme/finance', true], ['acme/retail', false],
+      ['', false], ['acme', false], ['acme/finance', true], ['acme/retail', false],
     ])
     const retail = said(await wire.call('elements.list', { scope: 'acme/retail' }))
     expect((retail.elements as { id: string }[]).map((e) => e.id)).toEqual(['warehouse'])
@@ -208,7 +204,7 @@ describe('the agent reads the tree', () => {
     const out = await wire.call('element.add', { scope: 'acme/retail', kind: 'application', name: 'Ghost' })
     expect(out.ok).toBe(false)
     expect(!out.ok && out.refusal).toBe('agent.scopeNotOpen')
-    expect((await scopes.load('acme/retail'))?.model.elements.map((e) => e.id)).toEqual(['warehouse'])
+    expect((await scopes.read('acme/retail'))?.model.elements.map((e) => e.id)).toEqual(['warehouse'])
   })
 })
 
@@ -235,7 +231,7 @@ describe('the enterprise map, across scopes', () => {
     }
     const retail = scope('acme/retail', [element('wms', 'Warehouse system')])
     retail.model.relations = [{ id: 's1', type: 'supports', sourceId: 'wms', targetId: 'fulfilment' }]
-    renderApp({ scopes: new InMemoryScopeStore([root, retail]) })
+    renderApp({ repositories: heldRepositories([root, retail]) })
 
     fireEvent.click(await screen.findByTestId('open-map'))
     const grid = await screen.findByTestId('map-grid', {}, { timeout: 3000 })

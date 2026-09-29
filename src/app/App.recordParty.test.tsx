@@ -12,7 +12,7 @@
  */
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { cleanup, configure, fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
+import { heldRepositories } from './testing/heldRepositories'
 import { installReactFlowMocks } from '../editor/reactFlowTestSetup'
 import type { ScopeSnapshot } from '../projects/scope'
 import { EXAMPLES, exampleScopes } from './examples'
@@ -32,7 +32,7 @@ const landscape = example.find((scope) => scope.model.diagrams.some((diagram) =>
 const organisation = example.find((scope) => scope.path === '')!
 
 async function recordOf(id: string) {
-  renderApp({ scopes: new InMemoryScopeStore(example), boot: { initialProject: landscape } })
+  renderApp({ repositories: heldRepositories(example), boot: { initialProject: landscape } })
   const card = await waitFor(() => {
     const found = document.querySelector<HTMLElement>(`.react-flow__node[data-id="${id}"]`)
     expect(found, id).not.toBeNull()

@@ -16,12 +16,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, render, waitFor } from '@testing-library/react'
 import type { DesignElement } from '../model'
-import { scopeTree } from '../projects/scope'
-import type { ScopeModel, ScopeSnapshot, ScopeSummary } from '../projects/scope'
-import type { ScopePath } from '../projects/scopePath'
+import type { IndexRead, OrganisationIndex } from '../ports/OrganisationIndex'
+import type { ScopeModel } from '../projects/scope'
 import { useIndex } from './useIndex'
 import type { IndexHook } from './useIndex'
-import type { IndexSource } from '../projects/scopeIndex'
 
 afterEach(() => cleanup())
 
@@ -31,47 +29,47 @@ function element(id: string, over: Partial<DesignElement> = {}): DesignElement {
   }
 }
 
-const listing = (paths: readonly ScopePath[]): ScopeSummary => scopeTree(
-  paths.map((path) => ({ path, name: path, diagrams: 0, children: [] })),
-)
+/**
+ * An index over what `models` answers, each scope's identity its address. It
+ * answers `since` where the test says what changed, and nothing — read it all
+ * again — where it does not.
+ */
+function indexOver(models: () => Promise<ScopeModel[]>, since?: OrganisationIndex['since']): OrganisationIndex {
+  let reads = 0
+  return {
+    id: 'an index for a test',
+    read: async (): Promise<IndexRead> => ({
+      revision: `read ${reads += 1}`,
+      scopes: (await models()).map(({ path, model }) => ({ id: path, address: path, model })),
+    }),
+    since: since ?? (() => Promise.resolve(undefined)),
+  }
+}
 
 function mount(deps: {
   models?: () => Promise<ScopeModel[]>
-  list?: () => Promise<ScopeSummary>
-  load?: (path: ScopePath) => Promise<ScopeSnapshot | undefined>
+  since?: OrganisationIndex['since']
   watch?: (onChanged: () => void) => () => void
   onFailure?: (where: string, cause: unknown) => void
 }) {
   let hook!: IndexHook
-  // One store object for the life of the host, the way `App` holds the one it
-  // was handed: the hook reads again when that object is swapped, so a fresh
+  // One index for the life of the host, the way `App` holds the one it was
+  // handed: the hook reads again when that object is swapped, so a fresh
   // literal per render would be a read per render.
-  const scopes = storeOf(deps)
-  function Host(props: { scopes: IndexSource }) {
+  const index = indexOver(deps.models ?? (() => Promise.resolve([])), deps.since)
+  function Host(props: { index: OrganisationIndex }) {
     hook = useIndex({
-      scopes: props.scopes,
+      index: props.index,
       watch: deps.watch,
       onFailure: deps.onFailure ?? (() => {}),
     })
     return null
   }
-  const mounted = render(<Host scopes={scopes} />)
+  const mounted = render(<Host index={index} />)
   const read = () => hook
-  /** The same host, over another store — what opening a folder after the boot does. */
-  read.swap = (next: Parameters<typeof storeOf>[0]) => mounted.rerender(<Host scopes={storeOf(next)} />)
+  /** The same host, over another source's index — what opening a folder after the boot does. */
+  read.swap = (models: () => Promise<ScopeModel[]>) => mounted.rerender(<Host index={indexOver(models)} />)
   return read
-}
-
-function storeOf(deps: {
-  models?: () => Promise<ScopeModel[]>
-  list?: () => Promise<ScopeSummary>
-  load?: (path: ScopePath) => Promise<ScopeSnapshot | undefined>
-}): IndexSource {
-  return {
-    ...(deps.models ? { models: deps.models } : {}),
-    list: deps.list ?? (() => Promise.resolve(listing([]))),
-    load: deps.load ?? (() => Promise.resolve(undefined)),
-  }
 }
 
 describe('useIndex', () => {
@@ -103,17 +101,15 @@ describe('useIndex', () => {
    * every stand-in dangling, every application unowned, and the map's
    * columns said by their ids.
    */
-  it('reads it again when the store it reads from is swapped', async () => {
+  it('reads it again when the index it reads from is swapped', async () => {
     const before = vi.fn(() => Promise.resolve<ScopeModel[]>([]))
     const hook = mount({ models: before })
     await waitFor(() => expect(before).toHaveBeenCalledTimes(1))
     expect(hook().index.lookup('erp')).toBeUndefined()
 
-    hook.swap({
-      models: () => Promise.resolve([
-        { path: 'retail', model: { elements: [element('erp')], relations: [] } },
-      ]),
-    })
+    hook.swap(() => Promise.resolve([
+      { path: 'retail', model: { elements: [element('erp')], relations: [] } },
+    ]))
     await waitFor(() => expect(hook().index.lookup('erp')?.master).toBe('retail'))
     expect(before).toHaveBeenCalledTimes(1)
   })
@@ -176,6 +172,28 @@ describe('useIndex', () => {
     await act(async () => { tell() })
     await waitFor(() => expect(onFailure).toHaveBeenCalledWith('index', expect.any(Error)))
     expect(hook().index.lookup('erp')?.master).toBe('retail')
+  })
+
+  /** What changed since the index it holds, where the source can say, rather than the whole of it again. */
+  it('folds in what changed since the index it holds, and reads all of it only where that cannot be said', async () => {
+    const models = vi.fn(() => Promise.resolve<ScopeModel[]>([
+      { path: 'retail', model: { elements: [element('erp')], relations: [] } },
+      { path: 'finance', model: { elements: [element('ledger')], relations: [] } },
+    ]))
+    const since = vi.fn(() => Promise.resolve({
+      revision: 'later',
+      changed: [{ id: 'retail', address: 'retail', model: { elements: [element('erp'), element('pos')], relations: [] } }],
+      removed: ['finance'],
+    }))
+    let tell = () => {}
+    const hook = mount({ models, since, watch: (onChanged) => { tell = onChanged; return () => {} } })
+    await waitFor(() => expect(hook().index.lookup('ledger')?.master).toBe('finance'))
+
+    await act(async () => { tell() })
+    await waitFor(() => expect(hook().index.lookup('pos')?.master).toBe('retail'))
+    expect(hook().index.lookup('ledger')).toBeUndefined()
+    expect(since).toHaveBeenCalledWith('read 1')
+    expect(models).toHaveBeenCalledTimes(1)
   })
 
   it('stops watching when it goes away', async () => {

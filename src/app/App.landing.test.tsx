@@ -9,7 +9,7 @@
  */
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, screen, waitFor } from '@testing-library/react'
-import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
+import { heldRepositories } from './testing/heldRepositories'
 import { laidOut } from '../model/testFixtures'
 import type { ScopeSnapshot } from '../projects/scope'
 import { renderApp } from './testing/renderShell'
@@ -32,7 +32,7 @@ const TREE = () => [scope('', 'Acme Logistics', false), scope('retail', 'Retail'
 
 describe('the first paint', () => {
   it('is the home of the scope the address named, and not one of its boards', async () => {
-    renderApp({ scopes: new InMemoryScopeStore(TREE()), boot: { initialProject: undefined, initialHome: 'retail' } })
+    renderApp({ repositories: heldRepositories(TREE()), boot: { initialProject: undefined, initialHome: 'retail' } })
     // Until the listing is read a home it does not hold reads as the root's.
     await waitFor(() => expect(screen.getByTestId('organisation-name').textContent).toBe('Retail'))
     expect(screen.getByTestId('crumb-current').textContent).toBe('Retail')
@@ -40,17 +40,17 @@ describe('the first paint', () => {
   })
 
   it('is the organisation’s home where nothing was named', async () => {
-    renderApp({ scopes: new InMemoryScopeStore(TREE()) })
+    renderApp({ repositories: heldRepositories(TREE()) })
     expect((await screen.findByTestId('organisation-name')).textContent).toBe('Acme Logistics')
   })
 
   it('has the preferences open over it where the address asked for them', async () => {
-    renderApp({ scopes: new InMemoryScopeStore(TREE()), boot: { initialProject: undefined, opensDialog: 'preferences' } })
+    renderApp({ repositories: heldRepositories(TREE()), boot: { initialProject: undefined, opensDialog: 'preferences' } })
     await waitFor(() => expect(screen.getByTestId('preferences-dialog')).toBeDefined())
   })
 
   it('has no dialog open over it where the address asked for none', async () => {
-    renderApp({ scopes: new InMemoryScopeStore(TREE()) })
+    renderApp({ repositories: heldRepositories(TREE()) })
     await screen.findByTestId('organisation-name')
     expect(screen.queryByTestId('preferences-dialog')).toBeNull()
   })

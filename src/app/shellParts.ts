@@ -22,7 +22,6 @@ import type { ShellNavigation } from './useShellNavigation'
 import type { ShellServices, useProjectOrder } from './useShellServices'
 import type { SyncState } from './useSync'
 import type { TreeFindings } from './useTreeFindings'
-import type { WorkspaceSource } from './workspaceProps'
 import type { WorkingFileManifest } from '../projects/workingFileManifest'
 
 /**
@@ -58,13 +57,12 @@ export interface ShellParts {
   prompts: { password: ReturnType<typeof usePasswordPrompt>; openInto: ReturnType<typeof useOpenIntoPrompt> }
   /** What the open workspace is handed to write through: the shell's side of each write it asks for. */
   writes: {
-    store: WorkspaceSource['store']
     readTreeModels: () => Promise<ScopeModel[]>
     readWorkingSet: () => Promise<ScopeSnapshot[]>
     adoptScopes: (held: readonly ScopeSnapshot[], manifest?: WorkingFileManifest) => Promise<void>
     readScope: (path: ScopePath) => Promise<ScopeSnapshot | undefined>
     treeChanged: () => void
-    applyProjectSettings: (settings: ProjectSettings, current: ScopeSnapshot) => Promise<ScopeSnapshot | undefined>
+    applyProjectSettings: (settings: ProjectSettings, current: ScopeSnapshot) => Promise<void>
   }
   /** Today, read once per render rather than per card. */
   todayDay: string

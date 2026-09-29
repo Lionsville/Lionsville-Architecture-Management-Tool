@@ -8,6 +8,8 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Destination } from '../agent/screen'
+import type { ProjectPatch } from '../model/commands'
+import type { HostModel } from '../model/hostModel'
 import { ConfirmDialog } from '../widgets/ConfirmDialog'
 import { GlobalSearchDialog } from '../search/ui/GlobalSearchDialog'
 import { treeSources } from '../search/search'
@@ -48,12 +50,14 @@ export function useWorkspaceDialogs(deps: {
   show: (to: Destination & { scope: string }) => void
   /** Open another scope on a page; absent where there is nowhere to go. */
   onOpenScope?: (path: ScopePath, page?: InitialPage) => void
+  /** Write what the session holds now, and answer once it has landed (`DocumentSessionHook.flush`). */
+  save: () => Promise<void>
 }) {
-  const { session, diagnostics, notify, s, scope, show, onOpenScope } = deps
+  const { session, diagnostics, notify, s, scope, show, onOpenScope, save } = deps
   const { onOpen: onOpenSettings, onApply: onApplySettings } = deps.settings
   const [settingsOpen, setSettingsOpen] = useState(false)
-  // The settings rename the scope and can move it, which writes it whole —
-  // so on a scope that is only read they are refused at the door, not after.
+  // The settings rename the scope and can move it — so on a scope that is
+  // only read they are refused at the door, not after.
   const openSettings = useCallback(() => {
     if (!session.mayChange()) return
     onOpenSettings()
@@ -88,18 +92,17 @@ export function useWorkspaceDialogs(deps: {
   }, [])
 
   /**
-   * Hand the settings to the caller together with the project as the session
-   * has it, and take back whatever was saved.
-   *
-   * Both halves matter. The session's model is the one being edited, so it is
-   * what the settings must be applied to; and the saved result has to come back
-   * into the session, or the session goes on holding a model from before the
-   * dialog and the next autosave writes the settings straight back out again.
+   * The name and the defaults are the session's own to change: one step, on
+   * the stack and in the Activity list like any other. Where the scope is
+   * filed is the caller's, handed the project once what the session holds is
+   * written, because a move enters the scope again at its new address, from
+   * what is kept there.
    */
   const applySettings = useCallback((settings: ProjectSettings) => {
     if (!session.mayChange()) return
-    void onApplySettings(settings, session.snapshot()).then(
-      (saved: ScopeSnapshot | undefined) => { if (saved) session.adopt(saved, false) },
+    const patch = settingsPatch(session.current(), settings)
+    if (patch) session.dispatch({ type: 'project.settings', patch })
+    void save().then(() => onApplySettings(settings, session.snapshot())).catch(
       // The caller reports what it could; this is the case where the promise
       // itself broke, which nothing above would otherwise hear about.
       (cause: unknown) => {
@@ -107,7 +110,7 @@ export function useWorkspaceDialogs(deps: {
         notify(messageFor(cause, s), 'error')
       },
     )
-  }, [session, onApplySettings, diagnostics, notify, s])
+  }, [session, save, onApplySettings, diagnostics, notify, s])
 
   return { settingsOpen, setSettingsOpen, openSettings, searchOpen, setSearchOpen, chooseHit, applySettings }
 }
@@ -135,7 +138,7 @@ export function HistoryDialogs({ parts }: { parts: WorkspaceParts }) {
         current={session.model}
         subject={snapshots.subject}
         onSubjectChange={snapshots.setSubject}
-        scopes={snapshots.places.map((place) => readings.scopeLabel(place.path))}
+        scopes={snapshots.places.map((place) => readings.scopeLabel(place))}
         onRestore={snapshots.restore}
         onLabel={snapshots.label}
         language={language}
@@ -254,4 +257,15 @@ function GestureDialogs({ parts }: { parts: WorkspaceParts }) {
       />
     </>
   )
+}
+
+/** What the dialog changes of the model itself, as a patch; nothing where it changes nothing. */
+function settingsPatch(model: HostModel, settings: ProjectSettings): ProjectPatch | undefined {
+  const patch: ProjectPatch = {}
+  if (settings.name !== model.name) patch.name = settings.name
+  if (settings.defaultAuthor !== model.defaultAuthor) patch.defaultAuthor = settings.defaultAuthor
+  if (JSON.stringify(settings.defaultAspectConfig) !== JSON.stringify(model.defaultAspectConfig)) {
+    patch.defaultAspectConfig = settings.defaultAspectConfig
+  }
+  return Object.keys(patch).length > 0 ? patch : undefined
 }

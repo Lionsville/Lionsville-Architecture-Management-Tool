@@ -11,12 +11,11 @@
  * that reads as "you have nothing here", a scope half renamed, a scope quietly
  * filed at two addresses.
  */
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { laidOut } from '../model/testFixtures';
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
-import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
-import type { ScopeLibrary } from './App'
-import { scopeTree } from '../projects/scope'
+import { answering, heldRepositories } from './testing/heldRepositories'
+import type { ScopeRepository } from '../ports/ScopeRepository'
 import { renderApp } from './testing/renderShell'
 
 afterEach(() => cleanup())
@@ -35,16 +34,10 @@ const project = (key: string, name: string) => ({
   logoLibrary: [],
 })
 
-/** The whole app on the organisation screen, one seam replaced by a refusing one. */
-function show(projects: Partial<ScopeLibrary>) {
+/** The whole app on the organisation screen, some of what the scopes answer replaced by a refusal. */
+function show(over: Partial<ScopeRepository>) {
   return renderApp({
-    scopes: {
-      list: () => Promise.resolve(scopeTree([])),
-      load: () => Promise.resolve(undefined),
-      save: () => Promise.resolve(),
-      remove: () => Promise.resolve(),
-      ...projects,
-    },
+    repositories: answering(heldRepositories(), over),
     examples: [{
       key: 'acme',
       path: 'acme/landscape',
@@ -65,13 +58,13 @@ function show(projects: Partial<ScopeLibrary>) {
 
 describe('the organisation screen, when the store refuses', () => {
   it('says the list could not be read instead of showing an empty one', async () => {
-    show({ list: refused })
+    show({ tree: refused })
     await waitFor(() => expect(screen.getByRole('alert').textContent)
       .toContain('Your projects could not be read.'))
   })
 
   it('puts the cause in the trail, not only on the screen', async () => {
-    const { diagnostics } = show({ list: refused })
+    const { diagnostics } = show({ tree: refused })
     await waitFor(() => expect(diagnostics.messages()).toContain('picker.listFailed'))
     expect((diagnostics.recent()[0].cause as Error).message).toBe('storage refused')
   })
@@ -79,7 +72,7 @@ describe('the organisation screen, when the store refuses', () => {
 
 describe('copying an example, when the store refuses', () => {
   it('does not sit there looking as though nothing was pressed', async () => {
-    const { diagnostics } = show({ load: refused })
+    const { diagnostics } = show({ apply: refused })
     fireEvent.click(await screen.findByText('Copy into this folder…'))
     await waitFor(() => expect(diagnostics.recent().some((e) => e.where === 'organisation.copyExample')).toBe(true))
     // A load that will not read is a store refusing, so the standing storage
@@ -99,10 +92,11 @@ describe('copying an example, when the store refuses', () => {
  */
 describe('a scope whose record will not save', () => {
   it('says so rather than leaving the dialog looking as though it landed', async () => {
-    const projects = new InMemoryScopeStore([project('warehouse', 'Warehouse')])
-    vi.spyOn(projects, 'save').mockRejectedValue(new Error('quota'))
+    const projects = answering(heldRepositories([project('warehouse', 'Warehouse')]), {
+      apply: () => Promise.reject(new Error('quota')),
+    })
 
-    const { diagnostics } = renderApp({ scopes: projects })
+    const { diagnostics } = renderApp({ repositories: projects })
 
     fireEvent.click(await screen.findByRole('button', { name: 'Settings for Warehouse' }))
     fireEvent.change(await screen.findByLabelText('Name'), {

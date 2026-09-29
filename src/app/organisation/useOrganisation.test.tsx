@@ -6,18 +6,20 @@
  * The organisation screen's wiring, driven directly.
  *
  * The screen's own tests go through the shell, which is the honest way to check
- * what a person sees. What is pinned here is the part that has no pixels: the
- * store operations and their ORDER — ancestors written before the scope filed
- * under them, a copied example landing where the root's state says it should,
- * an open that carries the page it was opened for, and a refusal that reaches
- * the trail rather than the screen.
+ * what a person sees. What is pinned here is the part that has no pixels: what
+ * reaches the repositories — ancestors made before the scope filed under them,
+ * a copied example landing where the root's state says it should, a move
+ * carrying the stand-ins that point into it, an open that carries the page it
+ * was opened for, and a refusal that reaches the trail rather than the screen.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, render } from '@testing-library/react'
-import { InMemoryScopeStore } from '../../adapters/memory/InMemoryScopeStore'
+import { heldRepositories } from '../testing/heldRepositories'
 import { translator } from '../../i18n'
 import type { ScopeSnapshot } from '../../projects/scope'
-import type { InitialPage, ScopeLibrary } from '../App'
+import type { InitialPage } from '../App'
+import type { HeldRepositories } from '../testing/heldRepositories'
+import type { ScopeRepository } from '../../ports/ScopeRepository'
 import type { ExampleProject } from '../examples'
 import { useOrganisation } from './useOrganisation'
 import type { Organisation } from './useOrganisation'
@@ -67,41 +69,39 @@ type Harness = {
   held: () => Organisation
   entered: ReturnType<typeof vi.fn>
   failures: string[]
-  store: InMemoryScopeStore
+  store: HeldRepositories
   treeChanged: ReturnType<typeof vi.fn>
 }
 
+/** The scopes, with some of what they answer answered otherwise: a refusal, a count of calls. */
+type Over = Partial<ScopeRepository>
+
 function mount(
   initial: readonly ScopeSnapshot[] = [],
-  over: Partial<ScopeLibrary> = {},
+  over: Over = {},
   active = true,
   writable?: (path: string) => boolean,
 ): Harness {
-  const store = new InMemoryScopeStore(initial)
-  return mountWith({
-    list: () => store.list(),
-    load: (path) => store.load(path),
-    save: (scope) => store.save(scope),
-    remove: (path, expects) => store.remove(path, expects),
-    ...over,
-  }, store, active, writable)
+  return mountWith(heldRepositories(initial), over, active, writable)
 }
 
-/** The same harness over a library somebody else built — one that counts its calls. */
+/** The same harness over repositories built beforehand, some of whose answers are the test's. */
 function mountWith(
-  scopes: ScopeLibrary, store: InMemoryScopeStore, active = true, writable?: (path: string) => boolean,
+  store: HeldRepositories, over: Over = {}, active = true, writable?: (path: string) => boolean,
 ): Harness {
   const entered = vi.fn<(scope: ScopeSnapshot, page?: InitialPage) => void>()
   const treeChanged = vi.fn()
   const failures: string[] = []
   let current: Organisation | undefined
+  // One value for the life of the screen, as the shell hands it over.
+  const repositories = { ...store, scopes: { ...bound(store.scopes), ...over } }
 
   // `onFailure` is deliberately a fresh arrow on every render: that is what it
   // is in the shell, where it hangs off the toasts and the language, and an
   // effect that depended on its identity would read the tree for ever.
   function Probe() {
     current = useOrganisation({
-      scopes,
+      repositories,
       active,
       at: '',
       onEnter: entered,
@@ -116,6 +116,19 @@ function mountWith(
   }
   render(<Probe />)
   return { held: () => current!, entered, failures, store, treeChanged }
+}
+
+/** A repository's members as plain functions, so a test can put some of its own beside them. */
+function bound(scopes: ScopeRepository): ScopeRepository {
+  return {
+    id: scopes.id,
+    tree: () => scopes.tree(),
+    state: (id) => scopes.state(id),
+    apply: (work) => scopes.apply(work),
+    create: (at, scope) => scopes.create(at, scope),
+    move: (scope, to, expects) => scopes.move(scope, to, expects),
+    remove: (scope, expects) => scopes.remove(scope, expects),
+  }
 }
 
 /** Let the reads and writes the hook started settle. */
@@ -151,18 +164,17 @@ describe('useOrganisation', () => {
    * a network the costly one — is not listed again for it.
    */
   it('reads the new home and not the whole tree again when a crumb moves it', async () => {
-    const store = new InMemoryScopeStore([
+    const store = heldRepositories([
       { path: '', model: { name: 'Acme', elements: [], relations: [], diagrams: [] }, activeDiagramId: '', logoLibrary: [] },
       { path: 'rail', model: { name: 'Rail', elements: [], relations: [], diagrams: [] }, activeDiagramId: '', logoLibrary: [] },
     ])
-    const list = vi.fn(() => store.list())
-    const load = vi.fn((path: string) => store.load(path))
-    // One library for the life of the screen, as the shell hands it over.
-    const scopes: ScopeLibrary = { list, load, save: (scope) => store.save(scope), remove: (path) => store.remove(path) }
+    const states = vi.fn((id: string) => store.scopes.state(id))
+    // One value for the life of the screen, as the shell hands it over.
+    const repositories = { ...store, scopes: { ...bound(store.scopes), state: states } }
     let current: Organisation | undefined
     function Probe({ at }: { at: string }) {
       current = useOrganisation({
-        scopes,
+        repositories,
         active: true,
         at,
         onEnter: () => {},
@@ -179,8 +191,8 @@ describe('useOrganisation', () => {
     rerender(<Probe at="rail" />)
     await settle()
     expect(current?.root?.model.name).toBe('Rail')
-    expect(load.mock.calls.map(([path]) => path)).toEqual(['', 'rail'])
-    expect(list).toHaveBeenCalledTimes(1)
+    expect(states).toHaveBeenCalledTimes(2)
+    expect((await store.read('rail'))?.id).toBe(states.mock.calls[1][0])
   })
 
   /**
@@ -195,9 +207,9 @@ describe('useOrganisation', () => {
     await act(async () => { held().create(); await Promise.resolve() })
     await settle()
 
-    expect((await store.load('acme'))?.model.name).toBe('acme')
-    expect((await store.load('acme/rail'))?.kind).toBe('domain')
-    expect((await store.load('acme/rail/rolling-stock'))?.model.name).toBe('Rolling stock')
+    expect((await store.read('acme'))?.model.name).toBe('acme')
+    expect((await store.read('acme/rail'))?.kind).toBe('domain')
+    expect((await store.read('acme/rail/rolling-stock'))?.model.name).toBe('Rolling stock')
   })
 
   it('enters the scope it made, so a refresh does not lose it', async () => {
@@ -220,13 +232,11 @@ describe('useOrganisation', () => {
     ['above it, where an ancestor would be made', 'acme/rail', 'acme'],
   ])('creates nothing where the listing could not read a scope %s', async (_said, parent, unreadable) => {
     const writes: string[] = []
-    const store = new InMemoryScopeStore([])
-    const { held, failures, entered } = mountWith({
-      list: async () => ({ ...await store.list(), unreadable: [unreadable] }),
-      load: (path) => store.load(path),
-      save: (one) => { writes.push(`save ${one.path}`); return store.save(one) },
-      remove: (path) => store.remove(path),
-    }, store)
+    const store = heldRepositories([])
+    const { held, failures, entered } = mountWith(store, {
+      tree: async () => ({ ...await store.scopes.tree(), unreadable: [unreadable] }),
+      create: (at, scope) => { writes.push(`create ${at}`); return store.scopes.create(at, scope) },
+    })
     await settle()
     act(() => held().addUnder(parent))
     act(() => held().setNewScopeName('Retail'))
@@ -254,7 +264,7 @@ describe('useOrganisation', () => {
     await act(async () => { held().createBoard(); await Promise.resolve() })
     await settle()
 
-    const root = await store.load('')
+    const root = await store.read('')
     expect(root?.model.diagrams).toEqual([
       { id: 'new-landscape', kind: 'layer7', name: 'Acme today', members: [], geometry: { nodes: [] } },
     ])
@@ -277,7 +287,7 @@ describe('useOrganisation', () => {
     act(() => held().addBoard('retail'))
     await act(async () => { held().createBoard(); await Promise.resolve() })
     await settle()
-    expect((await store.load('retail'))?.model.diagrams.map((d) => d.id)).toEqual(['new-landscape', 'new-landscape-2'])
+    expect((await store.read('retail'))?.model.diagrams.map((d) => d.id)).toEqual(['new-landscape', 'new-landscape-2'])
   })
 
   /**
@@ -314,7 +324,7 @@ describe('useOrganisation', () => {
     act(() => held().askDeleteBoard('retail', { id: 'cd', name: 'ERP' }))
     await act(async () => { held().confirmDeleteBoard(); await Promise.resolve() })
     await settle()
-    const retail = await store.load('retail')
+    const retail = await store.read('retail')
     expect(retail?.model.diagrams.map((d) => d.id)).toEqual(['l7'])
     expect(retail?.model.elements.map((e) => e.id)).toEqual(['erp', 'crm'])
     // The container line went with its container; what it meant did not.
@@ -340,7 +350,7 @@ describe('useOrganisation', () => {
     expect(held().dialog).toEqual({ kind: 'deleteBoard', path: 'retail', board: { id: 'cd', name: 'ERP' } })
     await act(async () => { held().confirmDeleteBoard(); await Promise.resolve() })
     await settle()
-    const retail = await store.load('retail')
+    const retail = await store.read('retail')
     expect(retail?.model.diagrams.map((d) => d.id)).toEqual(['l7'])
     expect(retail?.activeDiagramId).toBe('l7')
     expect(held().dialog).toEqual({ kind: 'none' })
@@ -356,31 +366,31 @@ describe('useOrganisation', () => {
     expect(entered).toHaveBeenCalledWith(expect.objectContaining({ path: '' }), { page: 'roadmap' })
   })
 
-  it('gives a scope with no document one, whole, before opening the page asked for on it', async () => {
+  it('makes a scope where there is none, before opening the page asked for on it', async () => {
     const { held, entered, failures, store, treeChanged } = mount([{
       path: 'retail', model: { name: 'Retail', elements: [], relations: [], diagrams: [] },
       activeDiagramId: '', logoLibrary: [],
     }])
     await settle()
-    await act(async () => { held().open('', { page: 'decisions' }) })
+    await act(async () => { held().open('retail/stores', { page: 'decisions' }) })
     await settle()
     await settle()
-    expect(await store.load('')).toMatchObject({ path: '', model: { elements: [], diagrams: [] } })
-    expect(entered).toHaveBeenCalledWith(expect.objectContaining({ path: '' }), { page: 'decisions' })
+    expect(await store.read('retail/stores')).toMatchObject({ path: 'retail/stores', model: { elements: [], diagrams: [] } })
+    expect(entered).toHaveBeenCalledWith(expect.objectContaining({ path: 'retail/stores' }), { page: 'decisions' })
     expect(treeChanged).toHaveBeenCalled()
     expect(failures).toEqual([])
   })
 
-  it('opens the page empty and writes nothing where the scope may only be read', async () => {
+  it('opens the page empty and makes nothing where the scope may only be read', async () => {
     const { held, entered, failures, store } = mount([{
       path: 'retail', model: { name: 'Retail', elements: [], relations: [], diagrams: [] },
       activeDiagramId: '', logoLibrary: [],
     }], {}, true, () => false)
     await settle()
-    await act(async () => { held().open('', { page: 'roadmap' }) })
+    await act(async () => { held().open('retail/stores', { page: 'roadmap' }) })
     await settle()
-    expect(await store.load('')).toBeUndefined()
-    expect(entered).toHaveBeenCalledWith(expect.objectContaining({ path: '' }), { page: 'roadmap' })
+    expect(await store.read('retail/stores')).toBeUndefined()
+    expect(entered).toHaveBeenCalledWith(expect.objectContaining({ path: 'retail/stores' }), { page: 'roadmap' })
     expect(failures).toEqual([])
   })
 
@@ -399,9 +409,9 @@ describe('useOrganisation', () => {
       await settle()
       await act(async () => { held().copyExample(EXAMPLE); await Promise.resolve() })
       await settle()
-      expect((await store.load(''))?.model.name).toBe('Acme Logistics')
-      expect((await store.load('application-landscape'))?.model.name).toBe('Application landscape')
-      expect(await store.load('acme-logistics')).toBeUndefined()
+      expect((await store.read(''))?.model.name).toBe('Acme Logistics')
+      expect((await store.read('application-landscape'))?.model.name).toBe('Application landscape')
+      expect(await store.read('acme-logistics')).toBeUndefined()
     })
 
     it('files it under a child when the root is already something', async () => {
@@ -412,9 +422,9 @@ describe('useOrganisation', () => {
       await settle()
       await act(async () => { held().copyExample(EXAMPLE); await Promise.resolve() })
       await settle()
-      expect((await store.load(''))?.model.name).toBe('Globex')
-      expect((await store.load('acme-logistics'))?.model.name).toBe('Acme Logistics')
-      expect((await store.load('acme-logistics/application-landscape'))).toBeDefined()
+      expect((await store.read(''))?.model.name).toBe('Globex')
+      expect((await store.read('acme-logistics'))?.model.name).toBe('Acme Logistics')
+      expect((await store.read('acme-logistics/application-landscape'))).toBeDefined()
     })
 
     it('lands in the board-drawing scope with the applications, not in the platform scope beside it (ADR-0013, ADR-0014)', async () => {
@@ -422,7 +432,7 @@ describe('useOrganisation', () => {
       await settle()
       await act(async () => { held().copyExample(EXAMPLE); await Promise.resolve() })
       await settle()
-      expect((await store.load('platforms'))?.model.name).toBe('Shared platforms')
+      expect((await store.read('platforms'))?.model.name).toBe('Shared platforms')
       expect(entered).toHaveBeenCalledWith(expect.objectContaining({ path: 'application-landscape' }))
     })
   })
@@ -447,14 +457,14 @@ describe('useOrganisation', () => {
    * and one of them means "your work is still there, somewhere".
    */
   it('says which failure it was when the listing refuses', async () => {
-    const { failures } = mount([], { list: () => Promise.reject(new Error('no')) })
+    const { failures } = mount([], { tree: () => Promise.reject(new Error('no')) })
     await settle()
     expect(failures).toContain('organisation.list')
   })
 
   /** The cards are decoration beside a tree that reads; the trail still gets it. */
   it('reports a root that will not load without interrupting the screen', async () => {
-    const { held, failures } = mount([], { load: () => Promise.reject(new Error('no')) })
+    const { held, failures } = mount([], { state: () => Promise.reject(new Error('no')) })
     await settle()
     expect(failures).toContain('organisation.root')
     expect(held().ready).toBe(true)
@@ -491,146 +501,35 @@ describe('useOrganisation', () => {
       await act(async () => { held().applySettings('rail', { name: 'Rail', parent: 'freight' }) })
       await settle()
 
-      const road = await store.load('road')
+      const road = await store.read('road')
       expect(road?.model.elements.map((e) => e.ref))
         .toEqual(['freight/rail', 'freight/rail/rolling-stock'])
-      expect((await store.load('freight/rail/rolling-stock'))?.model.elements[0].id).toBe('wms')
-      expect(await store.load('rail')).toBeUndefined()
+      expect((await store.read('freight/rail/rolling-stock'))?.model.elements[0].id).toBe('wms')
+      expect(await store.read('rail')).toBeUndefined()
     })
 
-    /**
-     * The order is the point: a pass that wrote the subtree first and then
-     * failed would have removed the old folder before the rest of the tree
-     * had heard where it went.
-     */
-    it('writes the scopes outside it first, then the subtree, then removes the old folder', async () => {
-      const writes: string[] = []
-      const store = new InMemoryScopeStore(tree())
-      const { held } = mountWith({
-        models: () => store.models(),
-        list: () => store.list(),
-        load: (path) => store.load(path),
-        save: (one) => { writes.push(`save ${one.path}`); return store.save(one) },
-        remove: (path) => { writes.push(`remove ${path}`); return store.remove(path) },
-      }, store)
+    it('moves the scope and everything under it, each keeping what it is', async () => {
+      const { held, store } = mount(tree())
+      await settle()
+      const before = [(await store.read('rail'))?.id, (await store.read('rail/rolling-stock'))?.id]
+      await act(async () => { held().applySettings('rail', { name: 'Rail', parent: 'freight' }) })
+      await settle()
+      expect([(await store.read('freight/rail'))?.id, (await store.read('freight/rail/rolling-stock'))?.id]).toEqual(before)
+    })
+
+    /** A move the repository refuses moves nothing, and says so. */
+    it('moves nothing where the repository refuses, and says so', async () => {
+      const store = heldRepositories(tree())
+      const { held, failures } = mountWith(store, {
+        move: () => Promise.resolve({ refused: 'shell.scopeTaken' }),
+      })
       await settle()
       await act(async () => { held().applySettings('rail', { name: 'Rail', parent: 'freight' }) })
       await settle()
 
-      expect(writes).toEqual([
-        'save road',
-        'save freight/rail',
-        'save freight/rail/rolling-stock',
-        'remove rail/rolling-stock',
-        'remove rail',
-      ])
-    })
-
-    /**
-     * A move writes the subtree at its new address and removes the old folder.
-     * A file a read left out (`ScopeSnapshot.unread`) is not written at the new
-     * address, so the removal would take it with the folder (ADR-0028, amended).
-     */
-    it('refuses to move a scope a file of which its read left out, before it writes anything', async () => {
-      const writes: string[] = []
-      const store = new InMemoryScopeStore(tree())
-      const { held, failures } = mountWith({
-        models: () => store.models(),
-        list: () => store.list(),
-        load: async (path) => {
-          const scope = await store.load(path)
-          return scope && path === 'rail/rolling-stock' ? { ...scope, unread: ['docs/wms.md'] } : scope
-        },
-        save: (one) => { writes.push(`save ${one.path}`); return store.save(one) },
-        remove: (path) => { writes.push(`remove ${path}`); return store.remove(path) },
-      }, store)
-      await settle()
-      await act(async () => { held().applySettings('rail', { name: 'Rail', parent: 'freight' }) })
-      await settle()
-
-      expect(writes).toEqual([])
-      expect(failures).toContain('organisation.settings.readdress')
-      expect(await store.load('rail/rolling-stock')).toBeDefined()
-    })
-
-    it('refuses to move a scope onto an address the listing could not read, before it writes anything', async () => {
-      const writes: string[] = []
-      const store = new InMemoryScopeStore(tree())
-      const { held, failures } = mountWith({
-        models: () => store.models(),
-        list: async () => ({ ...await store.list(), unreadable: ['freight/rail'] }),
-        load: (path) => store.load(path),
-        save: (one) => { writes.push(`save ${one.path}`); return store.save(one) },
-        remove: (path) => { writes.push(`remove ${path}`); return store.remove(path) },
-      }, store)
-      await settle()
-      await act(async () => { held().applySettings('rail', { name: 'Rail', parent: 'freight' }) })
-      await settle()
-
-      expect(writes).toEqual([])
-      expect(failures).toContain('organisation.settings.readdress')
-      expect(await store.load('rail')).toBeDefined()
-    })
-
-    /**
-     * A change somebody made to the old address while the move was being
-     * written is not removed with it: the removal expects what the move read,
-     * and a refused one leaves two copies rather than one that lost a change.
-     */
-    it('keeps the old address where somebody changed it while the move was written', async () => {
-      const store = new InMemoryScopeStore(tree())
-      const { held, failures } = mountWith({
-        models: () => store.models(),
-        list: () => store.list(),
-        load: (path) => store.load(path),
-        save: (one, expects) => store.save(one, expects),
-        remove: async (path, expects) => {
-          if (path === 'rail') {
-            const theirs = await store.load(path)
-            await store.save({ ...theirs!, model: { ...theirs!.model, name: 'Changed meanwhile' } })
-          }
-          return store.remove(path, expects)
-        },
-      }, store)
-      await settle()
-      await act(async () => { held().applySettings('rail', { name: 'Rail', parent: 'freight' }) })
-      await settle()
-
-      expect((await store.load('rail'))?.model.name).toBe('Changed meanwhile')
-      expect((await store.load('freight/rail'))?.model.name).toBe('Rail')
-      expect(failures).toContain('organisation.settings.remove')
-    })
-
-    /**
-     * A removal checks only the scope it names and takes what is filed under
-     * it, so the move removes the subtree deepest first, each scope expecting
-     * what was read of it: a change to a scope under the one moved is kept too.
-     */
-    it('keeps a scope under the old address where somebody changed it while the move was written', async () => {
-      const store = new InMemoryScopeStore(tree())
-      let changed = false
-      const { held, failures } = mountWith({
-        models: () => store.models(),
-        list: () => store.list(),
-        load: (path) => store.load(path),
-        save: (one, expects) => store.save(one, expects),
-        remove: async (path, expects) => {
-          if (!changed) {
-            changed = true
-            const theirs = await store.load('rail/rolling-stock')
-            await store.save({ ...theirs!, model: { ...theirs!.model, name: 'Changed meanwhile' } })
-          }
-          return store.remove(path, expects)
-        },
-      }, store)
-      await settle()
-      await act(async () => { held().applySettings('rail', { name: 'Rail', parent: 'freight' }) })
-      await settle()
-
-      expect((await store.load('rail/rolling-stock'))?.model.name).toBe('Changed meanwhile')
-      expect(await store.load('rail')).toBeDefined()
-      expect(await store.load('freight/rail/rolling-stock')).toBeDefined()
-      expect(failures).toContain('organisation.settings.remove')
+      expect(failures).toContain('organisation.settings')
+      expect(await store.read('rail')).toBeDefined()
+      expect(await store.read('freight/rail')).toBeUndefined()
     })
   })
 

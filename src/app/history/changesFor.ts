@@ -15,7 +15,7 @@
  * or went, which took the description with it.
  */
 import type { ModelChange } from '../../model/diff'
-import type { HistorySubject } from '../../projects/historyPath'
+import type { HistorySubject } from './subjects'
 
 export function changesFor(changes: readonly ModelChange[], subject: HistorySubject | undefined): ModelChange[] {
   if (!subject) return [...changes]

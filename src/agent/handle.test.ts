@@ -15,7 +15,7 @@ import { summarise } from '../model/activity'
 import type { StepSummary } from '../model/activity'
 import type { Command } from '../model/commands'
 import type { HostModel } from '../model/hostModel'
-import type { DocumentImage } from '../model/types'
+import type { ImageEntry } from '../model/imageName'
 import { idPolicy } from '../model/keys'
 import { placedOn, fromArrays, toArrays } from '../model/normalised'
 import type { Model } from '../model/normalised'
@@ -68,7 +68,7 @@ function session(over: Partial<SessionView> = {}): SessionView & {
   let counter = 0
   let revision = 0
   let saved = 0
-  const library: DocumentImage[] = []
+  const library: ImageEntry[] = []
   const past: { at: number; origin?: 'agent' | 'remote'; by?: string; via?: string; summary: StepSummary; commands: Command[]; inverse: Command }[] = []
   return {
     model: () => model,
@@ -114,7 +114,10 @@ function session(over: Partial<SessionView> = {}): SessionView & {
       revision += 1
     },
     images: () => library,
-    addImage: (image) => { library.push(image) },
+    addImage: (image) => {
+      // The workspace puts the bytes where the scope is kept and keeps the entry.
+      library.push({ name: image.file, mediaType: image.url.slice(5, image.url.indexOf(';')), size: 70, width: 1, height: 1, contentAddress: `sha256:${'0'.repeat(64)}` })
+    },
     save: () => { saved += 1; return Promise.resolve() },
     saved: () => saved,
     ...over,
@@ -322,7 +325,7 @@ describe('the session’s own: revision, the log, undo, save', () => {
     expect(out.file).toMatch(/^target-state-[a-z0-9]+\.png$/)
     expect(out.markdown).toBe(`![Target state.png](image:${out.file})`)
     expect(out.bytes).toBe(70)
-    expect(held.images()[0]).toMatchObject({ file: out.file, url: `data:image/png;base64,${PNG}` })
+    expect(held.images()[0]).toMatchObject({ name: out.file, mediaType: 'image/png' })
     const asUrl = parsed(await handle({ id: '2', tool: 'image.upload', args: { name: 'deck', data: `data:image/webp;base64,${PNG}` } }, held)) as { file: string }
     expect(asUrl.file).toMatch(/^deck-[a-z0-9]+\.webp$/)
     // Shown by a description, once one refers to it.

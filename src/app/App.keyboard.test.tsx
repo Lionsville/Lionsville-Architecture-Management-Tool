@@ -16,7 +16,7 @@
  */
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { cleanup, configure, fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
+import { heldRepositories } from './testing/heldRepositories'
 import { installReactFlowMocks } from '../editor/reactFlowTestSetup'
 import { FILE_MENU, HELP_MENU, PREFERENCES_ITEM, THEME_ITEMS, offered } from '../platform/menu'
 import type { MenuItemSpec } from '../platform/menu'
@@ -41,7 +41,7 @@ const landscape = example.find((scope) => scope.model.diagrams.some((diagram) =>
 const s = translator('en')
 
 function show() {
-  renderApp({ scopes: new InMemoryScopeStore(example), boot: { initialProject: landscape } })
+  renderApp({ repositories: heldRepositories(example), boot: { initialProject: landscape } })
 }
 
 async function overflow(): Promise<HTMLElement> {

@@ -37,12 +37,13 @@ import { shellTheme } from '../theme'
 import { LanguageProvider, translator } from '../../i18n'
 import type { Language, Translate } from '../../i18n'
 import { InMemoryPreferencesStore } from '../../adapters/memory/InMemoryPreferencesStore'
-import { InMemoryScopeStore } from '../../adapters/memory/InMemoryScopeStore'
 import { RecordingDiagnostics } from '../../adapters/memory/RecordingDiagnostics'
 import type { ScopeSnapshot } from '../../projects/scope'
 import type { AppBoot, AppProps } from '../App'
 import { App } from '../App'
 import type { SavedDocument } from '../../ports/DocumentGateway'
+import { heldRepositories } from './heldRepositories'
+import type { HeldRepositories } from './heldRepositories'
 
 export type ShellOptions = {
   language?: Language
@@ -127,7 +128,7 @@ export function recordingDocuments() {
 }
 
 export type ShellHarness = {
-  scopes: InMemoryScopeStore
+  repositories: HeldRepositories
   preferences: InMemoryPreferencesStore
   documents: ReturnType<typeof recordingDocuments>
   diagnostics: RecordingDiagnostics
@@ -143,7 +144,7 @@ export type ShellHarness = {
 /** The seams, filled with things that keep receipts. */
 export function shellHarness(projects: readonly ScopeSnapshot[] = []): ShellHarness {
   return {
-    scopes: new InMemoryScopeStore(projects),
+    repositories: heldRepositories(projects),
     preferences: new InMemoryPreferencesStore(),
     documents: recordingDocuments(),
     diagnostics: new RecordingDiagnostics(),
@@ -180,7 +181,7 @@ export function renderApp(
   const harness = shellHarness()
   const { boot, ...rest } = over
   const props: AppProps = {
-    scopes: harness.scopes,
+    repositories: harness.repositories,
     preferences: harness.preferences,
     documents: harness.documents,
     diagnostics: harness.diagnostics,

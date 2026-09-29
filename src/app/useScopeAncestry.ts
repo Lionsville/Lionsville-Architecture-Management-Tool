@@ -14,7 +14,8 @@ import type { ScopeSnapshot, ScopeSummary } from '../projects/scope'
 import { organisationLabel, scopeClient } from '../projects/scopeLabel'
 import { ancestorScopes } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
-import type { ScopeLibrary } from './App'
+import { readScopes } from '../projects/scopeAccess'
+import type { ScopeReader } from '../projects/scopeAccess'
 import { crumbsFor } from './ShellToolbar'
 import type { Failed } from './useShellServices'
 
@@ -22,13 +23,13 @@ export type ScopeAncestry = ReturnType<typeof useScopeAncestry>
 
 export function useScopeAncestry(deps: {
   project: ScopeSnapshot | undefined
-  projects: Pick<ScopeLibrary, 'load'>
+  scopes: ScopeReader
   /** The listing, which names the crumbs. */
   tree: ScopeSummary
   failedRef: RefObject<Failed>
   s: Translate
 }) {
-  const { project, projects, tree, failedRef, s } = deps
+  const { project, scopes, tree, failedRef, s } = deps
   /**
    * The scopes above the open one, for the decisions and the client they carry.
    *
@@ -48,9 +49,9 @@ export function useScopeAncestry(deps: {
   // read through the ref so it cannot re-trigger the read: a dependency that
   // changes identity on render is not a needless read but an endless one.
   const readAncestors = useCallback(async (of: ScopePath): Promise<ScopeSnapshot[]> => {
-    const held = await Promise.all(ancestorScopes(of).map((path) => projects.load(path)))
+    const held = await readScopes(scopes, ancestorScopes(of))
     return held.filter((scope): scope is ScopeSnapshot => !!scope)
-  }, [projects])
+  }, [scopes])
   useEffect(() => {
     if (openPath === undefined) return
     let live = true

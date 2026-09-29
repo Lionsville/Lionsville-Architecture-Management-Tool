@@ -29,13 +29,14 @@ import Tooltip from '@mui/material/Tooltip'
 import useMediaQuery from '@mui/material/useMediaQuery'
 import { DocumentIcon, EyeIcon } from '../../widgets/icons'
 import Typography from '@mui/material/Typography'
-import type { DocumentImage } from '../../model/types'
+import type { ImageEntry } from '../../model/imageName'
 import { useStrings } from '../../i18n/LanguageContext'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
 import { TrashIcon } from '../../widgets/icons'
 import { businessCaseTemplate } from '../businessCase'
-import { imageReference, imagesUsedIn } from '../images'
+import { imagesUsedIn, pictureMarkdown } from '../images'
 import { MarkdownHelp } from './MarkdownHelp'
+import { PictureThumbnail } from './Pictures'
 
 const CODE_FONT = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace'
 
@@ -46,7 +47,7 @@ const CODE_FONT = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace'
  * confirmation says.
  */
 export type DocumentImages = {
-  library: readonly DocumentImage[]
+  library: readonly ImageEntry[]
   usedBy(file: string): readonly string[]
   onRemove(file: string): void
 }
@@ -126,7 +127,7 @@ export function DocumentSource(props: DocumentSourceProps) {
     // order the reads happened to finish.
     void files.reduce(
       (queue, file) => queue.then(() => onAddImage(file).then((name) => {
-        if (name) insertAtCaret(`\n\n${imageReference(name, file.name.replace(/\.[^.]+$/, ''))}\n\n`)
+        if (name) insertAtCaret(`\n\n${pictureMarkdown(name, file.name.replace(/\.[^.]+$/, ''))}\n\n`)
       })),
       Promise.resolve(),
     )
@@ -159,8 +160,8 @@ export function DocumentSource(props: DocumentSourceProps) {
   const usedHere = useMemo(() => new Set(imagesUsedIn(value)), [value])
   const deletingUsedBy = deleting ? images?.usedBy(deleting) ?? [] : []
 
-  const insertPicture = (image: DocumentImage) =>
-    insertAtCaret(`\n\n${imageReference(image.file, image.file.replace(/\.[^.]+$/, ''))}\n\n`)
+  const insertPicture = (image: ImageEntry) =>
+    insertAtCaret(`\n\n${pictureMarkdown(image.name, image.name.replace(/\.[^.]+$/, ''))}\n\n`)
 
   return (
     // `flex: 1` because the pane sits in a column on two of its three pages
@@ -237,24 +238,19 @@ export function DocumentSource(props: DocumentSourceProps) {
             <Typography variant="body2" color="text.secondary">{t('doc.picturesNone')}</Typography>
           )}
           {library.map((image) => (
-            <Box key={image.file} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.5 }}>
-              <Box
-                component="img"
-                src={image.url}
-                alt=""
-                sx={{ width: 48, height: 36, objectFit: 'contain', borderRadius: 0.5, bgcolor: 'action.hover', flexShrink: 0 }}
-              />
+            <Box key={image.name} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.5 }}>
+              <PictureThumbnail entry={image} />
               <Box sx={{ flex: 1, minWidth: 0 }}>
                 <Typography sx={{ fontSize: 12, fontFamily: CODE_FONT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {image.file}
+                  {image.name}
                 </Typography>
-                {usedHere.has(image.file) && (
+                {usedHere.has(image.name) && (
                   <Typography variant="caption" color="text.secondary">{t('doc.pictureUsedHere')}</Typography>
                 )}
               </Box>
               <Button size="small" onClick={() => insertPicture(image)}>{t('doc.insertPicture')}</Button>
               <Tooltip title={t('doc.deletePicture')}>
-                <IconButton size="small" aria-label={`${t('doc.deletePicture')} ${image.file}`} onClick={() => setDeleting(image.file)}>
+                <IconButton size="small" aria-label={`${t('doc.deletePicture')} ${image.name}`} onClick={() => setDeleting(image.name)}>
                   <TrashIcon size={16} />
                 </IconButton>
               </Tooltip>

@@ -11,8 +11,10 @@ import { bareScope } from '../projects/scope'
 import type { ScopeSnapshot } from '../projects/scope'
 import { ROOT_SCOPE, scopePathLabel } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
-import type { InitialPage, ScopeLibrary } from './App'
-import { rewriteScope } from './rewriteScope'
+import type { InitialPage } from './App'
+import { ensureScope, readScope } from '../projects/scopeAccess'
+import type { ScopeReader } from '../projects/scopeAccess'
+import type { ScopeRepository } from '../ports/ScopeRepository'
 import type { AppFolder } from './appProps'
 import type { Failed } from './useShellServices'
 import type { ShellPreferences } from './useShellPreferences'
@@ -48,7 +50,7 @@ export function useShellNavigation(deps: {
   initialProject: ScopeSnapshot | undefined
   /** Whose home is up at the first paint where nothing is open; the root's where absent. */
   initialHome?: ScopePath
-  projects: Pick<ScopeLibrary, 'load' | 'save'>
+  scopes: ScopeReader & Pick<ScopeRepository, 'create'>
   watchProject: AppFolder['watch']
   prefs: ShellPreferences
   failedRef: RefObject<Failed>
@@ -71,7 +73,7 @@ export function useShellNavigation(deps: {
    */
   writable?: (path: ScopePath) => boolean
 }) {
-  const { initialProject, initialHome, projects, watchProject, prefs, failedRef, refreshTree, refreshIndex, writable } = deps
+  const { initialProject, initialHome, scopes, watchProject, prefs, failedRef, refreshTree, refreshIndex, writable } = deps
   const [project, setProject] = useState<ScopeSnapshot | undefined>(initialProject)
 
   /**
@@ -96,7 +98,7 @@ export function useShellNavigation(deps: {
   const [reloadKey, setReloadKey] = useState(0)
   const reloadOpenProject = useCallback(() => {
     if (!project) return
-    void projects.load(project.path).then(
+    void readScope(scopes, project.path).then(
       (found) => {
         if (!found) { setProject(undefined); refreshTree.current(); return }
         setProject(found)
@@ -104,7 +106,7 @@ export function useShellNavigation(deps: {
       },
       (cause: unknown) => failedRef.current('reloadOpenProject', cause, 'picker.loadFailed'),
     )
-  }, [project, projects, refreshTree, failedRef])
+  }, [project, scopes, refreshTree, failedRef])
 
   /**
    * Opening is what makes a scope "last opened", so both happen here — and, when
@@ -155,21 +157,21 @@ export function useShellNavigation(deps: {
    */
   const openScopeAt = useCallback((path: ScopePath, page?: InitialPage) => {
     void (async () => {
-      const found = await projects.load(path)
+      const found = await readScope(scopes, path)
       if (found) { enter(found, page); return }
       if (!opensOnNothing(page)) { refreshTree.current(); return }
       const bare = bareScope(path, scopePathLabel(path))
       if (writable && !writable(path)) { enter(bare, page); return }
-      // Written only where nothing is: a scope somebody wrote in between is
+      // Made only where nothing is: a scope somebody made in between is
       // theirs, and is the one entered.
-      await rewriteScope(projects, path, (read) => (read ? undefined : bare))
-      const written = await projects.load(path)
+      await ensureScope(scopes, path, { name: bare.model.name })
+      const written = await readScope(scopes, path)
       if (!written) { refreshTree.current(); return }
       enter(written, page)
       refreshTree.current()
       refreshIndex?.current()
     })().catch((cause: unknown) => failedRef.current('openScopeAt', cause, 'picker.loadFailed'))
-  }, [projects, enter, refreshTree, refreshIndex, writable, failedRef])
+  }, [scopes, enter, refreshTree, refreshIndex, writable, failedRef])
 
   const goHome = useCallback((to: ScopePath) => {
     setHome(to)

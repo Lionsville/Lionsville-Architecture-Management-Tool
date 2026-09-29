@@ -13,7 +13,7 @@ import { useFilePicker } from './useFilePicker'
 import type { FilePicker } from './useFilePicker'
 import type { ModelSession } from './useModelSession'
 import { useProjectFiles } from './useProjectFiles'
-import type { ProjectFiles } from './useProjectFiles'
+import type { ProjectFiles, ProjectFilesDeps } from './useProjectFiles'
 import type { Notify } from './useToasts'
 import type { WorkspaceFiles, WorkspaceTree } from './workspaceProps'
 import type { WorkingFileManifest } from '../projects/workingFileManifest'
@@ -31,6 +31,8 @@ export type WorkspaceFileParts = {
 
 export function useWorkspaceFiles(deps: {
   session: ModelSession
+  /** Put a picture's bytes where the scope is kept, and answer its library entry (`ScopeWriter.put`). */
+  putPicture: ProjectFilesDeps['putPicture']
   seams: WorkspaceFiles
   workingSet: WorkspaceTree['workingSet']
   onAdoptScopes: WorkspaceTree['onAdoptScopes']
@@ -39,7 +41,7 @@ export function useWorkspaceFiles(deps: {
   notify: Notify
   s: Translate
 }): WorkspaceFileParts {
-  const { session, workingSet, onAdoptScopes, readScope, onTreeChanged, notify, s } = deps
+  const { session, putPicture, workingSet, onAdoptScopes, readScope, onTreeChanged, notify, s } = deps
   const { documents, askPassword, landing, chooseFolder } = deps.seams
   /** The store write, and then the two reads a changed tree needs (ADR-0012 §10). */
   const adoptWorkingSet = useCallback(
@@ -53,6 +55,7 @@ export function useWorkspaceFiles(deps: {
   const beforeReplace = useCallback(() => safeguardRef.current(), [])
   const files = useProjectFiles({
     session,
+    putPicture,
     documents,
     beforeReplace,
     ...(workingSet ? { workingSet } : {}),

@@ -259,3 +259,26 @@ export function LibraryPicture({ entry, alt }: { entry: ImageEntry; alt: string 
     </>
   )
 }
+
+/**
+ * A picture of the library, small: what the list of a scope's pictures shows
+ * beside each name. Asked for as any picture is, when it comes into view, and
+ * an empty tint until then.
+ */
+export function PictureThumbnail({ entry }: { entry: ImageEntry }) {
+  const element = useRef<HTMLImageElement>(null)
+  const { address, failed } = usePicture(entry, element)
+  return (
+    <Box
+      component="img"
+      ref={element}
+      src={address}
+      alt=""
+      data-picture={entry.name}
+      sx={{
+        width: 48, height: 36, objectFit: 'contain', borderRadius: 0.5, flexShrink: 0,
+        bgcolor: 'action.hover', ...(failed ? FAILED : {}),
+      }}
+    />
+  )
+}

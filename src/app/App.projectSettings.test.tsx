@@ -18,10 +18,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { laidOut } from '../model/testFixtures';
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
-import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
+import { answering, heldRepositories } from './testing/heldRepositories'
+import type { HeldRepositories } from './testing/heldRepositories'
 import { bareScope } from '../projects/scope'
 import type { ScopeSnapshot } from '../projects/scope'
-import type { ScopePath } from '../projects/scopePath'
 import { renderApp } from './testing/renderShell'
 
 /** The one thing the stub does: land a change on the model, as editing would. */
@@ -59,8 +59,8 @@ const project = (): ScopeSnapshot => ({
 })
 
 function show(initial: ScopeSnapshot) {
-  const projects = new InMemoryScopeStore([initial])
-  renderApp({ scopes: projects, boot: { initialProject: initial } })
+  const projects = heldRepositories([initial])
+  renderApp({ repositories: projects, boot: { initialProject: initial } })
   return projects
 }
 
@@ -76,8 +76,8 @@ function applySettings(fields: { name?: string; author?: string }) {
   fireEvent.click(screen.getByText('Save'))
 }
 
-const saved = (store: InMemoryScopeStore) =>
-  store.load('acme/landscape')
+const saved = (store: HeldRepositories) =>
+  store.read('acme/landscape')
 
 /**
  * The autosave waits three seconds now (ADR-0003), which is longer than a test
@@ -88,158 +88,54 @@ function leaveTheWindow() {
   fireEvent.blur(window)
 }
 
+/** File the open scope under Globex, through the dialog. */
+async function moveUnderGlobex() {
+  fireEvent.click(screen.getByText('Settings…'))
+  fireEvent.mouseDown(screen.getByLabelText('Group'))
+  fireEvent.click(await screen.findByRole('option', { name: 'Globex' }))
+  fireEvent.click(screen.getByText('Save'))
+}
+
 describe('project settings on an open project', () => {
-  it('does not let a pending save put the project back where it was', async () => {
-    // A move is save-here, remove-there, and the workspace showing the project
-    // is still mounted in between. An autosave landing on the old address a
-    // millisecond after it was removed leaves two copies — and the one the user
-    // goes on editing is the one that disappears next time.
-    //
-    // The remove is held open so the window is real rather than a matter of
-    // microseconds: the stale save is fired while it is in flight.
-    // The target scope has to exist: a move files this one under another
-    // scope, and "somewhere new" is its own gesture now (New scope…).
-    const store = new InMemoryScopeStore([project(), bareScope('globex', 'Globex', 'domain')])
-    let release: (() => void) | undefined
-    const written: ScopePath[] = []
-    const held = {
-      list: () => store.list(),
-      load: (ref: ScopePath) => store.load(ref),
-      save: (project: ScopeSnapshot) => { written.push(project.path); return store.save(project) },
-      remove: async (ref: ScopePath) => {
-        await new Promise<void>((resolve) => { release = resolve })
-        await store.remove(ref)
-      },
-    }
-    renderApp({ scopes: held, boot: { initialProject: project() } })
+  /**
+   * A move takes the scope to its new address with its identity, so what the
+   * session did before it is written where the scope went — and nothing is
+   * written at the address it left.
+   */
+  it('moves the open scope with what was done in it, and leaves nothing behind', async () => {
+    const store = heldRepositories([project(), bareScope('globex', 'Globex', 'domain')])
+    renderApp({ repositories: store, boot: { initialProject: project() } })
     fireEvent.click(screen.getByTestId('edit-the-diagram'))
+    await moveUnderGlobex()
 
-    fireEvent.click(screen.getByText('Settings…'))
-    fireEvent.mouseDown(screen.getByLabelText('Group'))
-    fireEvent.click(await screen.findByRole('option', { name: 'Globex' }))
-    fireEvent.click(screen.getByText('Save'))
-
-    await waitFor(() => expect(release).toBeDefined())
-    written.length = 0 // the move's own save, which went to the new address
+    await waitFor(async () => expect((await store.read('globex/landscape'))?.model.diagrams[0].author).toBe('Grace'))
     leaveTheWindow()
-    release!()
-
-    await waitFor(async () => {
-      expect(await store.load('globex/landscape')).toBeTruthy()
-    })
-    // Nothing was written to the address the project left, at any point after
-    // the move began. Whether the remove happened to run first is a matter of
-    // microseconds and not something to depend on.
-    expect(written.filter((path) => path.startsWith('acme/'))).toEqual([])
-    expect(await store.load('acme/landscape')).toBeUndefined()
+    expect(await store.read('acme/landscape')).toBeUndefined()
   })
 
-  /**
-   * A move writes the scope at its new address and removes the old folder, so
-   * a file the read left out would go with the folder (ADR-0028, amended).
-   */
-  it('refuses to move a project a file of which its read left out, and says so', async () => {
-    const opened = { ...project(), unread: ['docs/crews.md'] }
-    const store = new InMemoryScopeStore([opened, bareScope('globex', 'Globex', 'domain')])
-    const removed: ScopePath[] = []
-    const held = {
-      list: () => store.list(),
-      load: (ref: ScopePath) => store.load(ref),
-      save: (one: ScopeSnapshot) => store.save(one),
-      remove: (ref: ScopePath) => { removed.push(ref); return store.remove(ref) },
-    }
-    renderApp({ scopes: held, boot: { initialProject: opened } })
-
-    fireEvent.click(screen.getByText('Settings…'))
-    fireEvent.mouseDown(screen.getByLabelText('Group'))
-    fireEvent.click(await screen.findByRole('option', { name: 'Globex' }))
-    fireEvent.click(screen.getByText('Save'))
-
-    expect(await screen.findByText(/This scope was not moved/)).toBeTruthy()
-    expect(removed).toEqual([])
-    expect(await store.load('globex/landscape')).toBeUndefined()
-    expect(await store.load('acme/landscape')).toBeTruthy()
-  })
-
-  /**
-   * A scope the listing could not read is not offered as taken, so a move
-   * could land on its address and write over it.
-   */
-  it('refuses to move a project onto an address the listing could not read, and says so', async () => {
-    const opened = project()
-    const store = new InMemoryScopeStore([opened, bareScope('globex', 'Globex', 'domain')])
-    const saved: ScopePath[] = []
-    const held = {
-      list: async () => ({ ...await store.list(), unreadable: ['globex/landscape'] }),
-      load: (ref: ScopePath) => store.load(ref),
-      save: (one: ScopeSnapshot) => { saved.push(one.path); return store.save(one) },
-      remove: (ref: ScopePath) => store.remove(ref),
-    }
-    renderApp({ scopes: held, boot: { initialProject: opened } })
-
-    fireEvent.click(screen.getByText('Settings…'))
-    fireEvent.mouseDown(screen.getByLabelText('Group'))
-    fireEvent.click(await screen.findByRole('option', { name: 'Globex' }))
-    fireEvent.click(screen.getByText('Save'))
-
-    expect(await screen.findByText(/a scope that could not be read is already at that address/)).toBeTruthy()
-    expect(saved).not.toContain('globex/landscape')
-    expect(await store.load('acme/landscape')).toBeTruthy()
-  })
-
-  /**
-   * A removal takes a scope and everything filed under it, so a move that
-   * wrote only the open scope at its new address lost the scopes under it.
-   * It is the organisation screen's move: the subtree first, then the old
-   * folder.
-   */
   it('moves the scopes filed under the open one with it', async () => {
     const child: ScopeSnapshot = { ...bareScope('acme/landscape/team', 'Team', 'team') }
-    const store = new InMemoryScopeStore([project(), child, bareScope('globex', 'Globex', 'domain')])
-    renderApp({ scopes: store, boot: { initialProject: project() } })
+    const store = heldRepositories([project(), child, bareScope('globex', 'Globex', 'domain')])
+    renderApp({ repositories: store, boot: { initialProject: project() } })
+    await moveUnderGlobex()
 
-    fireEvent.click(screen.getByText('Settings…'))
-    fireEvent.mouseDown(screen.getByLabelText('Group'))
-    fireEvent.click(await screen.findByRole('option', { name: 'Globex' }))
-    fireEvent.click(screen.getByText('Save'))
-
-    await waitFor(async () => expect(await store.load('acme/landscape')).toBeUndefined())
-    expect((await store.load('globex/landscape/team'))?.model.name).toBe('Team')
-    expect(await store.load('globex/landscape')).toBeTruthy()
+    await waitFor(async () => expect(await store.read('acme/landscape')).toBeUndefined())
+    expect((await store.read('globex/landscape/team'))?.model.name).toBe('Team')
+    expect(await store.read('globex/landscape')).toBeTruthy()
   })
 
-  /**
-   * A change somebody made to the old address while the move was being
-   * written is not removed with it: each removal expects what the move read,
-   * and a refused one leaves two copies and says so, rather than one that
-   * lost the change.
-   */
-  it('keeps the old address where somebody changed it while the move was written', async () => {
-    const store = new InMemoryScopeStore([project(), bareScope('globex', 'Globex', 'domain')])
-    let changed = false
-    const held = {
-      list: () => store.list(),
-      load: (ref: ScopePath) => store.load(ref),
-      save: (one: ScopeSnapshot, expects?: string) => store.save(one, expects),
-      remove: async (ref: ScopePath, expects?: string) => {
-        if (!changed) {
-          changed = true
-          const theirs = await store.load('acme/landscape')
-          await store.save({ ...theirs!, model: { ...theirs!.model, name: 'Changed meanwhile' } })
-        }
-        return store.remove(ref, expects)
-      },
-    }
-    renderApp({ scopes: held, boot: { initialProject: project() } })
+  /** A move the repository refuses moves nothing, and says why. */
+  it('says so where the move is refused, and moves nothing', async () => {
+    const store = answering(
+      heldRepositories([project(), bareScope('globex', 'Globex', 'domain')]),
+      { move: () => Promise.resolve({ refused: 'shell.scopeTaken' }) },
+    )
+    renderApp({ repositories: store, boot: { initialProject: project() } })
+    await moveUnderGlobex()
 
-    fireEvent.click(screen.getByText('Settings…'))
-    fireEvent.mouseDown(screen.getByLabelText('Group'))
-    fireEvent.click(await screen.findByRole('option', { name: 'Globex' }))
-    fireEvent.click(screen.getByText('Save'))
-
-    await waitFor(() => expect(changed).toBe(true))
-    await waitFor(async () => expect(await store.load('globex/landscape')).toBeTruthy())
-    expect((await store.load('acme/landscape'))?.model.name).toBe('Changed meanwhile')
+    expect(await screen.findByText(/already/)).toBeTruthy()
+    expect(await store.read('globex/landscape')).toBeUndefined()
+    expect(await store.read('acme/landscape')).toBeTruthy()
   })
 
   it('keeps the editing the session has done', async () => {
@@ -256,12 +152,12 @@ describe('project settings on an open project', () => {
     })
   })
 
-  it('hands the saved project back to the session, so the next save keeps it', async () => {
+  it('changes the name and the defaults in the session, so the next save keeps them', async () => {
     const store = show(project())
     applySettings({ name: 'Renamed', author: 'Ada' })
 
     // The toolbar reads the session's model: seeing the new name is the proof
-    // that the session took the saved project on.
+    // that the change was the session's own.
     await waitFor(() => expect(screen.getByText('Renamed')).toBeTruthy())
 
     // A later change must not carry a pre-dialog model back over the defaults.
@@ -277,9 +173,8 @@ describe('project settings on an open project', () => {
 })
 
 /**
- * The settings rename the scope and can move it — a write of the whole scope
- * that does not go through a command. On a scope that is only read they are
- * refused before the dialog opens, with the session's sentence.
+ * The settings rename the scope and can move it. On a scope that is only read
+ * they are refused before the dialog opens, with the session's sentence.
  */
 describe('project settings on a scope that is only read', () => {
   it('does not open, and says why', async () => {

@@ -471,7 +471,7 @@ describe('the document', () => {
     const file = new File([new Uint8Array([1, 2])], 'Screenshot.png', { type: 'image/png' })
     fireEvent.paste(area, { clipboardData: { files: [file], items: [], types: ['Files'], getData: () => '' } })
     await vi.waitFor(() => expect(actions.updateTransition).toHaveBeenCalledWith('tr-1', {
-      body: expect.stringContaining('![Screenshot](../images/screenshot-k1.png)'),
+      body: expect.stringContaining('![Screenshot](image:screenshot-k1.png)'),
     }))
   })
 

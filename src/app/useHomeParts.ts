@@ -17,7 +17,7 @@ import type { ScopeIndex } from '../projects/scopeIndex'
 import { ROOT_SCOPE } from '../projects/scopePath'
 import { scopeDisplayName } from '../projects/scopeLabel'
 import type { ScopePath } from '../projects/scopePath'
-import type { ProjectHistory } from '../ports/ProjectHistory'
+import type { Repositories } from '../ports/Repositories'
 import { useProjectHistory } from './history/useProjectHistory'
 import type { Organisation } from './organisation/useOrganisation'
 import type { HomeFileDoors, HomeHistoryDoors } from './useShellCommands'
@@ -45,7 +45,8 @@ export function useHomeParts(deps: {
   setHome: (path: ScopePath) => void
   /** The scope that is open; everything here is inert while there is one. */
   scopeOpen: boolean
-  history: ProjectHistory | undefined
+  /** Where the home's history is read and recorded, and its tree for which scope is which. */
+  repositories: Pick<Repositories, 'scopes' | 'history'>
   index: ScopeIndex
   /** A restore on the history page: one write of the home's document. */
   restore: (command: Command) => void
@@ -81,7 +82,8 @@ export function useHomeParts(deps: {
     [organisation.root, organisation.tree.name, home],
   )
   const history = useProjectHistory({
-    history: scopeOpen ? undefined : deps.history,
+    history: scopeOpen ? undefined : deps.repositories.history,
+    scopes: deps.repositories.scopes,
     index,
     project: homeDocument,
     steps: NO_STEPS,

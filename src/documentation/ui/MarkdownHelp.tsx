@@ -32,7 +32,7 @@ const ROWS: readonly Row[] = [
   { syntax: '- [ ] to do\n- [x] done', label: 'docHelp.tasks' },
   { syntax: '[[Order Management]]', label: 'docHelp.elementLink' },
   { syntax: '[text](https://example.org)', label: 'docHelp.link' },
-  { syntax: '![caption](../images/file.png)', label: 'docHelp.image', images: true },
+  { syntax: '![caption](image:file.png)', label: 'docHelp.image', images: true },
   { syntax: '| a | b |\n|---|---|\n| 1 | 2 |', label: 'docHelp.table' },
   { syntax: '> quoted', label: 'docHelp.quote' },
   { syntax: '`code`\n```\nblock\n```', label: 'docHelp.code' },

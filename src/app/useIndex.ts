@@ -11,8 +11,11 @@
  * not editing.
  *
  * **Read twice, and never per keystroke.** Once when the app starts — or when
- * the store it reads from is swapped, which is how the desktop opens a folder
- * after the boot — and again when the folder changes under us. That is the whole schedule, and it is what
+ * the repositories it reads from are swapped, which is how the desktop opens a
+ * folder after the boot — and again when the source says the tree changed.
+ * *Again* is a question about what changed since the index it holds
+ * (`OrganisationIndex.since`), and the whole index is read only where the
+ * repository cannot say. That is the whole schedule, and it is what
  * the budget line in `model/testing/` is written against: a rebuild is a pass
  * over every scope's records, which is tens of milliseconds and must not
  * happen while somebody is typing a name. The open scope's own edits are not a
@@ -32,9 +35,12 @@
  * happen, drawn over work that is perfectly fine.
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { EMPTY_INDEX, indexScopes, treeModels } from '../projects/scopeIndex'
-import type { IndexSource, ScopeIndex } from '../projects/scopeIndex'
+import type { IndexChanges, IndexedScope, IndexRead, OrganisationIndex } from '../ports/OrganisationIndex'
+import { EMPTY_INDEX, indexScopes } from '../projects/scopeIndex'
+import type { ScopeIndex } from '../projects/scopeIndex'
+import { modelOf } from '../projects/scopeAccess'
 import type { ScopeModel } from '../projects/scope'
+import type { Revision } from '../projects/scopeState'
 
 export type IndexHook = {
   /**
@@ -59,8 +65,8 @@ export type IndexHook = {
 }
 
 export function useIndex(deps: {
-  /** Where the tree is read from — `models()` where a store has it, loads where not. */
-  scopes: IndexSource
+  /** Where the tree's records are read from: the source's index (ADR-0031 §1). */
+  index: OrganisationIndex
   /**
    * Tell me when anything in the working directory changed, other than by us.
    *
@@ -73,14 +79,16 @@ export function useIndex(deps: {
   /** Where a failed read goes. No message: an index is nothing a person asked for. */
   onFailure: (where: string, cause: unknown) => void
 }): IndexHook {
-  const { scopes, watch, onFailure } = deps
+  const { index, watch, onFailure } = deps
   const [held, setHeld] = useState<{ index: ScopeIndex; models: readonly ScopeModel[] }>(NOTHING_READ)
+  /** What was read last, by identity, and the revision it was read at: what `since` is asked from. */
+  const kept = useRef<{ revision: Revision; scopes: ReadonlyMap<string, IndexedScope> } | undefined>(undefined)
 
   // Read through refs so `refresh` keeps one identity for the life of the
   // hook: it is handed to the watcher, and a new function per render would be
   // a fresh subscription per render.
-  const source = useRef(scopes)
-  source.current = scopes
+  const source = useRef(index)
+  source.current = index
   const failed = useRef(onFailure)
   failed.current = onFailure
 
@@ -93,7 +101,11 @@ export function useIndex(deps: {
     reading.current = true
     // Built inside the chain, so a fold that throws is the failure below and
     // not an exception out of a callback nobody awaits.
-    void treeModels(source.current).then((models) => ({ index: indexScopes(models), models })).then(
+    void readIndex(source.current, kept.current).then((read) => {
+      kept.current = { revision: read.revision, scopes: new Map(read.scopes.map((one) => [one.id, one])) }
+      const models = read.scopes.map(modelOf)
+      return { index: indexScopes(models), models }
+    }).then(
       (built) => {
         reading.current = false
         if (live.current) setHeld(built)
@@ -108,16 +120,17 @@ export function useIndex(deps: {
     )
   }, [])
 
-  // On `scopes` and not only on mount: the desktop opens a folder from the
-  // Recent menu by rendering the same `App` again over the folder's store
-  // (`main.tsx`, `workIn`), and an index read once over the boot's empty
-  // store would stand for the whole session — every stand-in dangling, every
-  // application unowned, and the map's columns said by their ids.
+  // On `index` and not only on mount: the desktop opens a folder by rendering
+  // the same `App` again over the folder's repositories, and an index read
+  // once over the boot's empty ones would stand for the whole session — every
+  // stand-in dangling, every application unowned, and the map's columns said
+  // by their ids.
   useEffect(() => {
     live.current = true
+    kept.current = undefined
     read()
     return () => { live.current = false }
-  }, [scopes, read])
+  }, [index, read])
 
   useEffect(() => {
     if (!watch) return undefined
@@ -128,3 +141,22 @@ export function useIndex(deps: {
 }
 
 const NOTHING_READ = { index: EMPTY_INDEX, models: [] }
+
+/**
+ * The index as it now stands: what changed since the one held, folded over
+ * it, where the repository can say — and the whole of it where it cannot, or
+ * where nothing is held yet.
+ */
+async function readIndex(
+  index: OrganisationIndex, held: { revision: Revision; scopes: ReadonlyMap<string, IndexedScope> } | undefined,
+): Promise<IndexRead> {
+  const changes = held && await index.since(held.revision)
+  return changes ? { revision: changes.revision, scopes: folded(held.scopes, changes) } : index.read()
+}
+
+function folded(held: ReadonlyMap<string, IndexedScope>, changes: IndexChanges): IndexedScope[] {
+  const next = new Map(held)
+  for (const id of changes.removed) next.delete(id)
+  for (const scope of changes.changed) next.set(scope.id, scope)
+  return [...next.values()]
+}

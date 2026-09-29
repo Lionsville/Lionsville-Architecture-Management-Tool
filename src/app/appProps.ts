@@ -29,7 +29,7 @@ import type { ProjectHistory } from '../ports/ProjectHistory'
 import type { Repositories } from '../ports/Repositories'
 import type { UpdateSettingsStore } from '../ports/UpdateSettings'
 import type {
-  RegisteredChrome, RegisteredMenu, ScopeLibrary, ShellDiagnostics, SourceAgentPanel, SourceChipFace,
+  RegisteredChrome, RegisteredMenu, ShellDiagnostics, SourceAgentPanel, SourceChipFace,
   SourceChipPanel,
 } from './App'
 import type { ExampleOffer } from './examples/offers'
@@ -316,12 +316,12 @@ export type AppHost = {
 }
 
 export type AppProps = {
-  scopes: ScopeLibrary
   /**
    * Where the source keeps work, in the domain's words (ADR-0031 §4): the one
-   * value its provider built, handed in by the composition root.
+   * value its provider built, handed in by the composition root, and the only
+   * way the app reaches a scope, its history, its pictures or its settings.
    */
-  repositories?: Repositories
+  repositories: Repositories
   preferences: PreferencesWriter
   documents: ProjectFileChannel
   diagnostics: ShellDiagnostics

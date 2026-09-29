@@ -37,18 +37,31 @@ import { useTechnologyLandscape } from './useTechnologyLandscape'
 import { useTreeReadings } from './useTreeReadings'
 import { showOn, useWorkspaceAgentView } from './useWorkspaceAgentView'
 import { useInitialPage, useWorkspaceCommands } from './useWorkspaceCommands'
-import { useScopeSessionSeam, useWorkspaceDocument } from './useWorkspaceDocument'
+import { useScopeSessionSeam, useScopeWriter, useWorkspaceDocument } from './useWorkspaceDocument'
 import { useWorkspaceFiles } from './useWorkspaceFiles'
 import { useWorkspaceOwnership } from './useWorkspaceOwnership'
 import { useWorkspacePages } from './useWorkspacePages'
 import { useWorkspaceRequests } from './useWorkspaceRequests'
 import type { WorkspaceParts } from './workspaceParts'
+import { PicturesProvider } from '../documentation/ui/Pictures'
 import type { ProjectWorkspaceProps } from './workspaceProps'
 
 export function ProjectWorkspace(props: ProjectWorkspaceProps) {
   const { parts, toolbarRef } = useWorkspaceParts(props)
+  const { diagnostics } = props.host
+  const pictureFailed = useCallback((cause: unknown) => {
+    diagnostics.report({ level: 'warn', where: 'pictures', message: 'a picture was not read', cause })
+  }, [diagnostics])
+  // Every page and panel here that shows a document shows this scope's
+  // pictures: laid out from the library's entries at once, their bytes asked
+  // for where the scope is kept when they come into view (ADR-0031 §3).
   return (
-    <>
+    <PicturesProvider
+      source={props.source.repositories.images}
+      scope={props.project.id ?? ''}
+      library={parts.session.imageLibrary}
+      onFailure={pictureFailed}
+    >
       <WorkspaceBar parts={parts} toolbarRef={toolbarRef} />
       {parts.pickers.document.input}
       {parts.pickers.logo.input}
@@ -56,7 +69,7 @@ export function ProjectWorkspace(props: ProjectWorkspaceProps) {
       <HistoryDialogs parts={parts} />
       <WorkspacePages parts={parts} />
       <WorkspaceDialogs parts={parts} />
-    </>
+    </PicturesProvider>
   )
 }
 
@@ -120,10 +133,14 @@ function useSessionParts(props: ProjectWorkspaceProps) {
     // The one place it is decided: every change from here on is refused at
     // the session, and what is handed `readOnly` below only hides what would be.
     readOnly,
+    // What is done here is written as the steps it was, where nothing else
+    // carries them (`Shell.publishesSteps`).
+    journaling: !readOnly && !(source.publishesSteps ?? false),
   })
   const diagrams = useDiagramActions({ session, notify, s, makeId })
+  const writer = useScopeWriter(source.repositories.scopes, source.repositories.images, project)
   const { files, pickers, safeguardRef } = useWorkspaceFiles({
-    session, seams: props.files, workingSet: tree.workingSet, onAdoptScopes: tree.onAdoptScopes, readScope: tree.readScope, onTreeChanged, notify, s,
+    session, putPicture: writer.put, seams: props.files, workingSet: tree.workingSet, onAdoptScopes: tree.onAdoptScopes, readScope: tree.readScope, onTreeChanged, notify, s,
   })
   const requests = useWorkspaceRequests({ session, scope: project.path, indexRef, onOpenScope, notify, s })
   /**
@@ -148,13 +165,13 @@ function useSessionParts(props: ProjectWorkspaceProps) {
   const landscapes = useTechnologyLandscape({ session, makeId, s })
   const pictures = useDocumentPictures(session)
   const document = useWorkspaceDocument({
-    session, projects: source.store, watch: source.watch, sourceStatus: source.status, onSourceWork: source.onWork,
+    session, writer, watch: source.watch, sourceStatus: source.status, onSourceWork: source.onWork,
     onUnsavedWork: host.onUnsavedWork, onStorageResult: source.onResult, onTreeChanged, notify, s,
   })
   const alsoHere = useScopeSessionSeam(project, session, source.onSession)
   const renderer = useRendererView(session, requests.focusElement)
   return {
-    readOnly, unreadable, ancestorRecords, indexRef, session, diagrams, files, pickers, safeguardRef, requests,
+    readOnly, unreadable, ancestorRecords, indexRef, session, writer, diagrams, files, pickers, safeguardRef, requests,
     showElement, sheets, maps, landscapes, pictures, document, alsoHere, renderer,
   }
 }
@@ -176,7 +193,8 @@ function useTreeParts(props: ProjectWorkspaceProps, base: ReturnType<typeof useS
    */
   const gestures = useGestures({
     scope: project.path,
-    scopes: source.store,
+    scopes: source.repositories.scopes,
+    save: base.document.document.flush,
     ...(models ? { models } : {}),
     index,
     session,
@@ -202,7 +220,7 @@ function useTreeParts(props: ProjectWorkspaceProps, base: ReturnType<typeof useS
   // rebuilt every time a dialog opens: both are `useCallback`s over the tree
   // and the session, and neither moves when the choice does.
   const ownership = useWorkspaceOwnership({
-    session, scope: project.path, index, projects: source.store, onOpenScope,
+    session, scope: project.path, index, scopes: source.repositories.scopes, onOpenScope,
     rowsThrough: readings.rowsThrough, scopeLabel: readings.scopeLabel,
     gestureOffers: gestures.offers, gestureChoose: gestures.choose, addExisting: library.open, s,
   })
@@ -221,6 +239,7 @@ function useScreenParts(
   const forceSave = base.document.document.forceSave
   const snapshots = useProjectHistory({
     history: props.snapshots.history,
+    scopes: source.repositories.scopes,
     index: props.tree.index,
     project: session.snapshot,
     steps: session.history,
@@ -254,8 +273,9 @@ function useScreenParts(
   })
   useWorkspaceAgentView({
     session, scope: project.path, indexRef: base.indexRef, rowsElsewhereRef: tree.readings.rowsElsewhereRef,
-    scopes: props.tree.scopes, projects: source.store, ancestorRecords: base.ancestorRecords, readOnly: base.readOnly,
-    documentStatus: base.document.document.state.status, renderer: renderer.renderer, save: forceSave, pages,
+    scopes: props.tree.scopes, reader: source.repositories.scopes, ancestorRecords: base.ancestorRecords, readOnly: base.readOnly,
+    documentStatus: base.document.document.state.status, renderer: renderer.renderer,
+    save: base.document.document.flush, putPicture: base.writer.put, pages,
     showElement: showElement.show, openDocumentation: requests.openDocumentation, makeId, today, s,
     onAgentSession: props.agent.onSession,
   })
@@ -268,7 +288,7 @@ function useScreenParts(
     [pages, showElement.show, requests.openDocumentation],
   )
   const dialogs = useWorkspaceDialogs({
-    session, settings: props.settings, diagnostics: host.diagnostics, notify, s,
+    session, settings: props.settings, diagnostics: host.diagnostics, notify, s, save: base.document.document.flush,
     scope: project.path, show, ...(navigation.onOpenScope ? { onOpenScope: navigation.onOpenScope } : {}),
   })
   const analysis = useAnalysisActions({ session, makeId, today, s })

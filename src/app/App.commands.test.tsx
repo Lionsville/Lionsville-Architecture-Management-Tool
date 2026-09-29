@@ -17,11 +17,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { laidOut } from '../model/testFixtures';
 import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
-import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
+import { heldRepositories } from './testing/heldRepositories'
 import type { HostCommand } from '../platform/hostCommands'
 import { DESKTOP_APP_LINK, FILE_MENU, HELP_MENU, PREFERENCES_ITEM, THEME_ITEMS, offered } from '../platform/menu'
 import { translator } from '../i18n'
-import type { ProjectHistory } from '../ports/ProjectHistory'
 import type { ScopeSnapshot } from '../projects/scope'
 import { sealBytes, unsealBytes } from '../projects/sealedFile'
 import { workingFileBytes } from '../projects/workingFile'
@@ -61,9 +60,9 @@ const project = (name = 'Landscape'): ScopeSnapshot => ({
 /** The command stream, as the preload would hand it over. */
 function show(over: Parameters<typeof renderApp>[0] = {}) {
   const listeners: ((command: HostCommand) => void)[] = []
-  const projects = new InMemoryScopeStore([project()])
+  const projects = heldRepositories([project()])
   const harness = renderApp({
-    scopes: projects,
+    repositories: projects,
     ...over,
     boot: { initialProject: project(), ...over.boot },
     host: {
@@ -110,7 +109,8 @@ describe('commands from the host', () => {
 
     await seal('correct horse')
     await waitFor(() => expect(view.documents.saved).toHaveLength(1))
-    expect(view.documents.saved[0].name).toBe('landscape.lvarch')
+    // Named for the top of the set: `acme`, which the landscape is filed under.
+    expect(view.documents.saved[0].name).toBe('acme.lvarch')
     expect(view.documents.saved[0].mediaType).toBe('application/octet-stream')
     expect(await unsealBytes(view.documents.saved[0].bytes as Uint8Array, 'correct horse')).toBeDefined()
   })
@@ -123,7 +123,7 @@ describe('commands from the host', () => {
 
     await seal('correct horse')
     await waitFor(() => expect(view.documents.saved).toHaveLength(1))
-    expect(view.documents.saved[0].name).toBe('landscape.lvarch')
+    expect(view.documents.saved[0].name).toBe('acme.lvarch')
     expect(await unsealBytes(view.documents.saved[0].bytes as Uint8Array, 'correct horse')).toBeDefined()
   })
 
@@ -155,7 +155,7 @@ describe('commands from the host', () => {
 
     await waitFor(() => expect(screen.getByTestId('open-into-here')).toBeDefined())
     fireEvent.click(screen.getByTestId('open-into-here'))
-    await waitFor(async () => expect((await view.projects.load(''))?.model.name).toBe('From a colleague'))
+    await waitFor(async () => expect((await view.projects.read(''))?.model.name).toBe('From a colleague'))
   })
 
   it('the theme is chosen outright, from the View menu or the overflow', async () => {
@@ -194,7 +194,7 @@ describe('commands from the host', () => {
 
   it('Undo from the host takes back the last step, and a focused field keeps its own', async () => {
     const view = show()
-    const named = async () => (await view.projects.load('acme/landscape'))?.model.diagrams[0].name
+    const named = async () => (await view.projects.read('acme/landscape'))?.model.diagrams[0].name
     act(() => { screen.getByTestId('edit-the-diagram').click() })
     view.send({ type: 'save' })
     await waitFor(async () => expect(await named()).toBe('Edited'))
@@ -217,7 +217,7 @@ describe('commands from the host', () => {
     view.send({ type: 'save' })
 
     await waitFor(async () => {
-      const held = await view.projects.load('acme/landscape')
+      const held = await view.projects.read('acme/landscape')
       expect(held?.model.diagrams[0].name).toBe('Edited')
     })
   })
@@ -245,7 +245,7 @@ describe('commands from the host', () => {
     await waitFor(() => expect(screen.getByTestId('open-into-here')).toBeDefined())
     fireEvent.click(screen.getByText('Cancel'))
     await waitFor(() => expect(screen.queryByTestId('open-into-here')).toBeNull())
-    expect((await view.projects.load('acme/landscape'))?.model.name).toBe('Landscape')
+    expect((await view.projects.read('acme/landscape'))?.model.name).toBe('Landscape')
     expect(screen.queryByText('From a colleague')).toBeNull()
   })
 
@@ -273,7 +273,7 @@ describe('commands from the host', () => {
     fireEvent.click(screen.getByText('Replace'))
     await waitFor(() => expect(placed).toEqual([['', 'retail']]))
     // And nothing here was touched.
-    expect((await view.projects.load('acme/landscape'))?.model.name).toBe('Landscape')
+    expect((await view.projects.read('acme/landscape'))?.model.name).toBe('Landscape')
   })
 
   it('offers no folder where none can be chosen', async () => {
@@ -314,15 +314,6 @@ describe('commands from the host', () => {
  * jsdom test walks the whole list.
  */
 describe('the overflow on the web', () => {
-  const history: ProjectHistory = {
-    available: () => Promise.resolve(true),
-    keeping: () => Promise.resolve(true),
-    start: () => Promise.resolve(),
-    snapshot: () => Promise.resolve(true),
-    entries: () => Promise.resolve([]),
-    projectAt: () => Promise.resolve(undefined),
-    label: () => Promise.resolve('done'),
-  }
   const s = translator('en')
 
   const openOverflow = async () => {
@@ -331,7 +322,7 @@ describe('the overflow on the web', () => {
   }
 
   it('reaches every item the desktop menu bar carries', async () => {
-    show({ folder: { history, onChoose: () => {} } })
+    show({ folder: { onChoose: () => {} } })
     await openOverflow()
     // Wait for the history to have answered, so its two items are offered.
     await waitFor(() => expect(screen.getByText('Snapshot…')).toBeDefined())
@@ -345,20 +336,19 @@ describe('the overflow on the web', () => {
   })
 
   it('sends the same command the menu bar would', async () => {
-    const view = show({ folder: { history } })
+    const view = show()
     await openOverflow()
     fireEvent.click(screen.getByText('Save a Copy of the Working File…'))
 
     await seal('correct horse')
     await waitFor(() => expect(view.documents.saved).toHaveLength(1))
-    expect(view.documents.saved[0].name).toBe('landscape.lvarch')
+    expect(view.documents.saved[0].name).toBe('acme.lvarch')
   })
 
-  it('offers no folder where none can be chosen, and no history where none can be kept', async () => {
+  it('offers no folder where none can be chosen', async () => {
     show()
     await openOverflow()
     expect(screen.queryByText('Open Folder…')).toBeNull()
-    expect(screen.queryByText('Snapshot…')).toBeNull()
   })
 
   /**

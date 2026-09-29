@@ -1031,7 +1031,7 @@ describe('useModelSession — a scope that is only read', () => {
   it('takes no picture and no mark into the scope', () => {
     const { session, notify } = readOnly()
     act(() => {
-      session().setImageLibrary((library) => [...library, { file: 'a.png', url: 'data:image/png;base64,' }])
+      session().setImageLibrary((library) => [...library, { name: 'a.png', mediaType: 'image/png', size: 0, width: 0, height: 0, contentAddress: `sha256:${'0'.repeat(64)}` }])
       session().setLogoLibrary((library) => [...library, { key: 'mark', label: 'Mark', url: 'data:image/png;base64,' }])
     })
     expect(session().imageLibrary).toEqual([])

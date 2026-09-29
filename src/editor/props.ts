@@ -9,6 +9,7 @@
  * `ReactNode`, `HTMLElement` and callbacks, and a module that computes must not
  * have to see any of that to read what an element is.
  */
+import type { ImageEntry } from '../model/imageName';
 import type { ReactNode } from 'react';
 import type { Theme } from '@mui/material/styles';
 import type { C4PanelInfo } from './export/c4Panel';
@@ -21,7 +22,7 @@ import type { EditorPreferences } from './preferences';
 import type { ShownDays } from './useShownDays';
 import type { StandInNote } from './nodes/nodeData';
 import type {
-  DesignElement, DesignModel, DiagramSettings, DocumentImage, ElementId, Layer7Zone,
+  DesignElement, DesignModel, DiagramSettings, ElementId, Layer7Zone,
   Rect, UploadedLogo,
 } from '../model/types';
 import type { Transition } from '../model/transition';
@@ -614,7 +615,7 @@ export interface SolutionDesignEditorProps {
    * plans that may show a picture are the host's. Absent = no list.
    */
   images?: {
-    library: readonly DocumentImage[];
+    library: readonly ImageEntry[];
     usedBy(file: string): readonly string[];
     onRemove(file: string): void;
   };

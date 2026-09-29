@@ -20,7 +20,9 @@ import type { ScopeIndex } from '../projects/scopeIndex'
 import { ancestorScopes, ROOT_SCOPE } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
 import { technologyRows } from '../projects/technologyRegister'
-import type { ScopeLibrary } from './App'
+import { readScopes } from '../projects/scopeAccess'
+import type { ScopeReader } from '../projects/scopeAccess'
+import type { OrganisationIndex } from '../ports/OrganisationIndex'
 import { registerRows } from './organisation/register'
 import { platformTreeOf } from './platformTree'
 
@@ -37,12 +39,12 @@ import { platformTreeOf } from './platformTree'
  * Watching the root is one subscription on the same watcher the workspace
  * uses — main watches a root once, whoever asks.
  */
-export function useTreeIndex(projects: ScopeLibrary, watchProject: AppFolder['watch'], failed: Failed) {
+export function useTreeIndex(index: OrganisationIndex, watchProject: AppFolder['watch'], failed: Failed) {
   const watchTree = useMemo(() => {
     if (!watchProject) return undefined
     return (onChanged: () => void) => watchProject(ROOT_SCOPE, onChanged, true)
   }, [watchProject])
-  return useIndex({ scopes: projects, watch: watchTree, onFailure: failed })
+  return useIndex({ index, watch: watchTree, onFailure: failed })
 }
 
 export type TreeFindings = ReturnType<typeof useTreeFindings>
@@ -53,9 +55,9 @@ export function useTreeFindings(deps: {
   tree: ScopeSummary
   /** Whose home is up: the cards count what is below it. */
   home: ScopePath
-  projects: Pick<ScopeLibrary, 'load'>
+  scopes: ScopeReader
 }) {
-  const { index, tree, home, projects } = deps
+  const { index, tree, home, scopes } = deps
   /**
    * What the organisation contradicts about itself, by scope (ADR-0012 §9).
    *
@@ -81,7 +83,7 @@ export function useTreeFindings(deps: {
   const register = useMemo(() => registerRows(index, identity), [index, identity])
   /** The technology register (ADR-0014 §2.6), the same fold over the same index. */
   const technology = useMemo(() => technologyRows(index, identity), [index, identity])
-  const shellTree = useShellTree(tree, index, identity, projects)
+  const shellTree = useShellTree(tree, index, identity, scopes)
   /** The platform tree, for the roadmap card's finding: the one the roadmap page reads (`platformTree.ts`). */
   const platformTree = useMemo(() => platformTreeOf(index), [index])
   return { initiatives, sharedObservations, treeFindings, register, technology, shellTree, platformTree }
@@ -95,7 +97,7 @@ export function useTreeFindings(deps: {
  */
 function useShellTree(
   tree: ScopeSummary, index: ScopeIndex, identity: ReturnType<typeof identityFindings>,
-  projects: Pick<ScopeLibrary, 'load'>,
+  scopes: ScopeReader,
 ): TreeView {
   const treeRef = useRef({ tree, index, identity })
   treeRef.current = { tree, index, identity }
@@ -111,14 +113,13 @@ function useShellTree(
     rowsTo: (id, types) => treeRef.current.index.rowsTo(id, types).map((row) => row.relation),
     findings: () => treeRef.current.identity,
     read: async (path) => {
-      const held = await projects.load(path)
+      const [held, ...above] = await readScopes(scopes, [path, ...ancestorScopes(path)])
       if (!held) return undefined
-      const above = await Promise.all(ancestorScopes(path).map((one) => projects.load(one)))
       return {
         model: held.model,
         activeDiagramId: held.activeDiagramId,
         ancestorDecisions: above.flatMap((one) => one?.model.decisions ?? []),
       }
     },
-  }), [projects])
+  }), [scopes])
 }

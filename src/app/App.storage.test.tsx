@@ -16,14 +16,13 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { laidOut } from '../model/testFixtures';
 import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { scopeTree } from '../projects/scope'
 import { registerStrings, useStrings } from '../i18n'
 import type { SourceStatus } from '../platform/sourceProvider'
 import type { AgentAnswer, AgentRequest } from '../agent/tools'
 import type { AgentGateway } from '../ports/AgentGateway'
 import type { ScopeSession } from './useModelSession'
 import type { Destination, Screen } from '../agent/screen'
-import { InMemoryScopeStore } from '../adapters/memory/InMemoryScopeStore'
+import { answering, heldRepositories } from './testing/heldRepositories'
 import { renderApp } from './testing/renderShell'
 import { installReactFlowMocks } from '../editor/reactFlowTestSetup'
 
@@ -412,7 +411,7 @@ describe('the chrome a registered provider brought', () => {
 
   it('is handed a way to a scope, and takes the person there', async () => {
     renderApp({
-      scopes: new InMemoryScopeStore([scope]),
+      repositories: heldRepositories([scope]),
       source: elsewhere,
       provider: {
         chrome: [{
@@ -436,7 +435,7 @@ describe('the chrome a registered provider brought', () => {
    */
   it('takes the scope that is open where the destination names none', async () => {
     renderApp({
-      scopes: new InMemoryScopeStore([scope]),
+      repositories: heldRepositories([scope]),
       source: elsewhere,
       boot: { initialProject: scope },
       provider: {
@@ -642,12 +641,7 @@ describe('a refusal where the source keeps work', () => {
   function refuse(over: Partial<Parameters<typeof renderApp>[0]> = {}) {
     return renderApp({
       source: elsewhere,
-      scopes: {
-        list: () => Promise.resolve(scopeTree([])),
-        load: () => Promise.reject(new Error('signed out')),
-        save: () => Promise.resolve(),
-        remove: () => Promise.resolve(),
-      },
+      repositories: answering(heldRepositories(), { apply: () => Promise.reject(new Error('signed out')) }),
       examples: [{
         key: 'acme',
         path: 'acme/landscape',
@@ -867,7 +861,7 @@ describe('the lines a registered provider puts in the menu', () => {
   it('tells a line how to send the person to a scope', async () => {
     registerStrings('en', { 'elsewhere.board': 'Open the board' })
     renderApp({
-      scopes: new InMemoryScopeStore([scope]),
+      repositories: heldRepositories([scope]),
       source: elsewhere,
       provider: {
         menu: [{
@@ -1051,7 +1045,7 @@ describe('the chip a registered provider names', () => {
    */
   it('is on the workspace’s bar and on every home where the provider gave one', async () => {
     renderApp({
-      scopes: new InMemoryScopeStore(tree),
+      repositories: heldRepositories(tree),
       source: elsewhere,
       boot: { initialProject: tree[2] },
       provider: { chip: () => ({ label: 'Anna Berg' }) },
@@ -1063,7 +1057,7 @@ describe('the chip a registered provider names', () => {
   })
 
   it('stays on the organisation’s home alone where the provider gave none', async () => {
-    renderApp({ scopes: new InMemoryScopeStore(tree), source: elsewhere, boot: { initialProject: tree[2] } })
+    renderApp({ repositories: heldRepositories(tree), source: elsewhere, boot: { initialProject: tree[2] } })
     await screen.findByTestId('crumb-acme')
     expect(onBar()).toBeNull()
     fireEvent.click(screen.getByTestId('crumb-acme'))
@@ -1089,7 +1083,7 @@ describe('the chip a registered provider names', () => {
       )
     }
     renderApp({
-      scopes: new InMemoryScopeStore(tree),
+      repositories: heldRepositories(tree),
       source: elsewhere,
       boot: { initialProject: tree[2] },
       provider: { chipPanel: Panel },
@@ -1120,7 +1114,7 @@ describe('the chip a registered provider names', () => {
       return <div data-testid="chip-panel">Anna</div>
     }
     renderApp({
-      scopes: new InMemoryScopeStore(tree),
+      repositories: heldRepositories(tree),
       source: elsewhere,
       boot: { initialProject: tree[2] },
       provider: { chip: () => ({ label: 'Anna Berg' }), chipFace: Face, chipPanel: Panel },
@@ -1156,7 +1150,7 @@ describe('the chip a registered provider names', () => {
       return <div data-testid="chip-panel">Anna</div>
     }
     renderApp({
-      scopes: new InMemoryScopeStore(tree),
+      repositories: heldRepositories(tree),
       source: elsewhere,
       boot: { initialProject: tree[2] },
       provider: { chip: () => ({ label: 'Anna Berg' }), chipPanel: Panel },
@@ -1196,7 +1190,7 @@ describe('the chip a registered provider names', () => {
       const height = vi.spyOn(Element.prototype, 'clientHeight', 'get').mockReturnValue(300)
       try {
         renderApp({
-          scopes: new InMemoryScopeStore(tree),
+          repositories: heldRepositories(tree),
           source: elsewhere,
           boot: { initialProject: tree[2] },
           provider: { chipPanel: Panel },
@@ -1223,7 +1217,7 @@ describe('the chip a registered provider names', () => {
     const errors = vi.spyOn(console, 'error').mockImplementation(() => undefined)
     try {
       renderApp({
-        scopes: new InMemoryScopeStore(tree),
+        repositories: heldRepositories(tree),
         source: elsewhere,
         boot: { initialProject: tree[2] },
         provider: { chip: () => ({ label: 'Anna Berg' }), chipFace: Face },

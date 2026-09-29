@@ -6,6 +6,8 @@
  * screens, the home's history, the standing notices and the providers'
  * strips, and the dialogs that outlive a scope.
  */
+import type { ImageEntry } from '../model/imageName'
+import { PicturesProvider } from '../documentation/ui/Pictures'
 import { useCallback, useRef } from 'react'
 import type { ReactNode } from 'react'
 import Alert from '@mui/material/Alert'
@@ -123,7 +125,7 @@ function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSn
       key={`${project.path}#${nav.reloadKey}`}
       project={project}
       source={{
-        store: writes.store,
+        repositories: props.repositories,
         watch: nav.watchOpenProject,
         // Two facts about where work is kept that the workspace reads as
         // its own: whether it may be written at all, and what this source
@@ -167,7 +169,7 @@ function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSn
         landing: prompts.openInto.prompts,
         chooseFolder: folder.onChooseForWorkingFile,
       }}
-      snapshots={{ history: folder.history, onTaken: parts.sync.afterSnapshot }}
+      snapshots={{ history: props.repositories.history, onTaken: parts.sync.afterSnapshot }}
       agent={{ onSession: parts.agent.registerAgentSession, bar: parts.agentServer.bar }}
       shell={{ s, language: prefs.language, notify: toasts.notify, makeId: props.makeId }}
       preferences={{ initial: prefs.preferences, onChange: prefs.savePreferences }}
@@ -176,47 +178,59 @@ function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSn
 }
 
 function Home({ parts }: { parts: ShellParts }) {
-  const { props, services: { prefs, s }, nav, findings, folder } = parts
+  const { props, services: { prefs, s }, nav, findings, folder, organisation } = parts
   const { openScopeAt } = nav
+  // The home's own document shows the home scope's pictures, as a workspace
+  // shows its scope's.
   return (
-    <OrganisationScreen
-      organisation={parts.organisation}
-      examples={props.examples}
-      order={parts.order.order}
-      onOrderChange={parts.order.chooseOrder}
-      source={parts.source}
-      sourceDescription={props.provider?.description}
-      sourceChip={parts.provider.chip}
-      chipPanel={chipPanelFor(parts)}
-      chipFace={chipFaceFor(parts)}
-      onChooseWorkingDirectory={folder.onChoose}
-      waysIn={parts.provider.offered}
-      // The same two the workspace's bar carries: the menu on a host
-      // that has none of its own, and the agent glyph, which has to be
-      // reachable with nothing open (ADR-0007). The folder's history, from
-      // its front door too (`homeHistory`).
-      overflow={overflowFor(parts, { history: parts.home.history.available, scope: false })}
-      agent={parts.agentServer.bar}
-      onGoHome={nav.goHome}
-      findings={findings.treeFindings}
-      register={findings.register}
-      technology={findings.technology}
-      initiatives={findings.initiatives}
-      sharedObservations={findings.sharedObservations}
-      platformTree={findings.platformTree}
-      onOpenRegisterRow={(path, id) => openScopeAt(path, { page: 'element', id })}
-      onOpenRegisterPage={(path, id) => openScopeAt(path, { page: 'document', id })}
-      onLinkFromRegister={(path, id, to) => openScopeAt(path, { page: 'link', id, to })}
-      pageRequest={parts.agent.orgPageRequest}
-      onPageChange={parts.agent.setOrgPage}
-      writable={writableFor(parts)}
-      today={parts.todayDay}
-      language={prefs.language}
-      s={s}
-      windowChrome={parts.windowChrome}
-    />
+    <PicturesProvider
+      source={props.repositories.images}
+      scope={organisation.root?.id ?? ''}
+      library={organisation.root?.images ?? NO_PICTURES}
+      onFailure={parts.services.failed.bind(undefined, 'pictures')}
+    >
+      <OrganisationScreen
+        organisation={parts.organisation}
+        examples={props.examples}
+        order={parts.order.order}
+        onOrderChange={parts.order.chooseOrder}
+        source={parts.source}
+        sourceDescription={props.provider?.description}
+        sourceChip={parts.provider.chip}
+        chipPanel={chipPanelFor(parts)}
+        chipFace={chipFaceFor(parts)}
+        onChooseWorkingDirectory={folder.onChoose}
+        waysIn={parts.provider.offered}
+        // The same two the workspace's bar carries: the menu on a host
+        // that has none of its own, and the agent glyph, which has to be
+        // reachable with nothing open (ADR-0007). The folder's history, from
+        // its front door too (`homeHistory`).
+        overflow={overflowFor(parts, { history: parts.home.history.available, scope: false })}
+        agent={parts.agentServer.bar}
+        onGoHome={nav.goHome}
+        findings={findings.treeFindings}
+        register={findings.register}
+        technology={findings.technology}
+        initiatives={findings.initiatives}
+        sharedObservations={findings.sharedObservations}
+        platformTree={findings.platformTree}
+        onOpenRegisterRow={(path, id) => openScopeAt(path, { page: 'element', id })}
+        onOpenRegisterPage={(path, id) => openScopeAt(path, { page: 'document', id })}
+        onLinkFromRegister={(path, id, to) => openScopeAt(path, { page: 'link', id, to })}
+        pageRequest={parts.agent.orgPageRequest}
+        onPageChange={parts.agent.setOrgPage}
+        writable={writableFor(parts)}
+        today={parts.todayDay}
+        language={prefs.language}
+        s={s}
+        windowChrome={parts.windowChrome}
+      />
+    </PicturesProvider>
   )
 }
+
+/** A home with no document has no pictures: the same empty library every time. */
+const NO_PICTURES: readonly ImageEntry[] = []
 
 /** The home's snapshot and history, while nothing is open (`useHomeParts`). */
 export function HomeHistoryDialogs({ parts }: { parts: ShellParts }) {
@@ -241,7 +255,7 @@ export function HomeHistoryDialogs({ parts }: { parts: ShellParts }) {
         current={home.model}
         subject={history.subject}
         onSubjectChange={history.setSubject}
-        scopes={history.places.map((place) => home.scopeLabel(place.path))}
+        scopes={history.places.map((place) => home.scopeLabel(place))}
         onRestore={history.restore}
         onLabel={history.label}
         language={prefs.language}

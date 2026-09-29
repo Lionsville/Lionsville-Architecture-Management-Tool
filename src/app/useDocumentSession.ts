@@ -21,6 +21,15 @@
  * three seconds of quiet is one edit rather than forty. Blur: leaving the window
  * is the moment a person thinks they are done. Quit: the last moment there is,
  * and the only one that also asks.
+ *
+ * **What is written is what was done here** (ADR-0031 §1): the commands the
+ * session applied since the last write, as steps, with what the scope says
+ * about itself that the session changed — the view it opens on, the marks —
+ * beside them, and never the scope whole. They expect the revision this
+ * session last saw the scope at, so a write over a change made elsewhere is
+ * refused rather than made, and the machine says *changed elsewhere* the way
+ * it always has. *Keep mine* writes ours onto theirs, and puts on screen the
+ * scope as that left it.
  */
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import {
@@ -28,35 +37,39 @@ import {
 } from '../projects/documentSession'
 import type { DocumentEvent, DocumentSession, SaveTrigger } from '../projects/documentSession'
 import type { SourceStatus, SourceWork, SourceWorkChanged } from '../platform/sourceProvider'
+import type { ImageEntry, ImageName } from '../model/imageName'
+import { sameValue } from '../model/recordKey'
+import { isScopeMoved } from '../projects/revision'
 import type { ScopeSnapshot } from '../projects/scope'
-import type { ScopePath } from '../projects/scopePath'
+import { stepOf } from '../projects/scopeAccess'
+import type { Revision, ScopeCommand, ScopeDescription, ScopeStep } from '../projects/scopeState'
+import type { SessionJournal } from './useModelSession'
 import type { StorageNotice } from './useStorageNotice'
-import type { StoragePressure } from '../ports/ScopeStore'
 
 /**
- * What this hook needs from a store: writing it out. Nothing else.
- *
- * Not `load`, not `list`, not `remove` — an autosave that could reach those
- * would be one refactor away from saving the open project over a different one.
- * The project carries its own ref, so there is no second argument to get wrong.
+ * Where the open scope is written: steps applied to it, and a read of it as it
+ * is kept now. Nothing else — a writer that could reach another scope would be
+ * one refactor away from writing this one's changes onto it.
  */
-export type ProjectSaver = {
-  save(project: ScopeSnapshot): Promise<void>
+export type ScopeWriter = {
   /**
-   * Reading is here for one reason only: taking their version. The alternative
-   * is the workspace loading the project itself and telling the machine
-   * afterwards, which puts a transition somewhere it cannot be tested.
+   * Apply steps to the open scope, expecting it at `expects` where given, and
+   * answer the revision it is at after them. Rejects with the repository's
+   * key: `shell.scopeMoved` where somebody changed it since.
    */
-  load?(path: ScopePath): Promise<ScopeSnapshot | undefined>
-  /** See {@link ../ports/ScopeStore.descriptions}: one scope's prose, for the stand-ins drawn here. */
-  descriptions?(path: ScopePath): Promise<Record<string, string> | undefined>
+  write(steps: readonly ScopeStep[], expects?: Revision): Promise<Revision>
   /**
-   * How full it is, where it can say — see `ports/ProjectStore`. Read after a
-   * save rather than before one: the number that matters is what the write it
-   * just did leaves for the next one, and asking first would either measure a
-   * project this store is about to replace or cost a second serialisation.
+   * The scope as it is kept now; `undefined` where it is gone. For taking
+   * their version, and for learning where the scope stands after a document
+   * was adopted in place of the one opened.
    */
-  pressure?(): StoragePressure | undefined
+  read(): Promise<ScopeSnapshot | undefined>
+  /**
+   * Put a picture's bytes where the scope is kept, and answer its library
+   * entry: the bytes go first, and the entry is written with the session's
+   * other changes, as the step that adds it (ADR-0031 §3).
+   */
+  put(name: ImageName, bytes: Uint8Array): Promise<ImageEntry>
 }
 
 /** The part of the editing session this one reads: what changed, and what to write. */
@@ -66,6 +79,8 @@ export type SavableSession = {
   logoLibrary: unknown
   /** The project as it stands NOW — asked at save time, never at render time. */
   snapshot: () => ScopeSnapshot
+  /** The changes made here that are still to be written. */
+  journal: SessionJournal
 }
 
 export type DocumentSessionHook = {
@@ -91,18 +106,23 @@ export type DocumentSessionHook = {
    * is on screen.
    */
   forceSave: () => Promise<void>
+  /**
+   * Write what the session holds now, whatever the machine last heard, and
+   * reject where it did not land.
+   *
+   * For a caller that has just changed the session itself and cannot wait for
+   * the change to be noticed — a gesture whose other half has already landed
+   * elsewhere, a scope about to be entered again at another address — and has
+   * to be able to say out loud that the write did not happen.
+   */
+  flush: () => Promise<void>
 }
 
 export function useDocumentSession(deps: {
   session: SavableSession
-  projects: ProjectSaver
+  writer: ScopeWriter
   onSaved: (at: Date) => void
   onResult: StorageNotice
-  /**
-   * The store is filling up. Called after every successful save that a store
-   * can answer for; absent where nothing is listening.
-   */
-  onPressure?: (pressure: StoragePressure) => void
   /**
    * Somebody else changed this project's files. Absent where nothing can
    * watch — a browser tab — and the document then simply never leaves the
@@ -148,7 +168,7 @@ export function useDocumentSession(deps: {
   onSourceWork?: SourceWorkChanged
 }): DocumentSessionHook {
   const {
-    session, projects, onSaved, onResult, onPressure, watch, onAdopt, onUnsavedWork,
+    session, writer, onSaved, onResult, watch, onAdopt, onUnsavedWork,
     sourceStatus, onSourceWork,
   } = deps
   const { model, logoLibrary, snapshot } = session
@@ -172,24 +192,23 @@ export function useDocumentSession(deps: {
   }, [])
   const editedAt = useRef(0)
 
-  const save = useCallback((trigger: SaveTrigger): Promise<void> => {
+  const writes = useScopeWrites(session, writer, onAdopt)
+  const save = useCallback((trigger: SaveTrigger, failedTo?: (cause: unknown) => void): Promise<void> => {
     if (!shouldSaveNow(held.current, trigger, Date.now() - editedAt.current)) {
       return Promise.resolve()
     }
     apply({ type: 'saveRequested' })
-    return projects.save(snapshot()).then(
+    return writes.write().then(
       () => {
-        // No fingerprint: a store that keeps projects in a browser has no file
-        // to fingerprint, and inventing one would answer "was that our own
-        // write?" wrongly rather than not at all. The folder store supplies one
-        // once there is a watcher to need it.
         apply({ type: 'saveSucceeded' })
         onSaved(new Date())
         onResult(true)
-        const pressure = projects.pressure?.()
-        if (pressure) onPressure?.(pressure)
       },
       (cause: unknown) => {
+        failedTo?.(cause)
+        // Somebody changed the scope since this session last saw it: nothing
+        // was written, and what happens next is a person's to say.
+        if (isScopeMoved(cause)) { apply({ type: 'externalChangeDetected' }); return }
         apply({ type: 'saveFailed', reason: String(cause) })
         // The cause travels with the fact: what a refusal where this source
         // keeps work means is the source's own sentence to say, and this is the
@@ -197,7 +216,7 @@ export function useDocumentSession(deps: {
         onResult(false, cause)
       },
     )
-  }, [apply, projects, snapshot, onSaved, onResult])
+  }, [apply, writes, onSaved, onResult])
 
   // Read by the timers, which are installed once and must not hold the save
   // they were installed with.
@@ -282,54 +301,59 @@ export function useDocumentSession(deps: {
       // refusal does not surface as an unhandled rejection on a page that is
       // halfway gone.
       event.preventDefault()
-      projects.save(snapshot()).catch(() => {})
+      writes.write().catch(() => {})
     }
     window.addEventListener('beforeunload', onLeaving)
     return () => window.removeEventListener('beforeunload', onLeaving)
-  }, [projects, snapshot])
+  }, [writes])
 
-  /**
-   * The other author.
-   *
-   * Whether this is news at all was settled before it got here: the desktop
-   * adapter drops the changes our own writes caused, by content, so everything
-   * that arrives is somebody else's. No fingerprint travels with it — a project
-   * is a folder of files and there is no one file to fingerprint, which is
-   * exactly why `sameFile` treats an absent one as "not ours".
-   */
+  // The workspace going — home, another scope — with changes not yet
+  // written: written on the way out, as a window closing would, rather than
+  // left in a session nobody holds any more.
+  const leaving = useRef(writes)
+  leaving.current = writes
+  useEffect(() => () => {
+    if (leaving.current.pending()) leaving.current.write().catch(() => {})
+  }, [])
+
   useEffect(() => {
     if (!watch) return undefined
     return watch(() => apply({ type: 'externalChangeDetected' }))
   }, [watch, apply])
 
   const takeTheirs = useCallback(() => {
-    const path = snapshot().path
-    void projects.load?.(path)?.then((project) => {
-      // Gone from disk entirely: somebody deleted the project while it was
-      // open. Nothing to take, and the copy on screen is now the only one —
-      // which the unsaved-work prompt will insist on when the window closes.
-      if (!project) return
-      onAdopt?.(project)
-      apply({ type: 'reloadAccepted' })
+    void writes.takeTheirs().then((taken) => {
+      // Gone entirely: somebody removed the scope while it was open. Nothing
+      // to take, and the copy on screen is now the only one — which the
+      // unsaved-work prompt will insist on when the window closes.
+      if (taken) apply({ type: 'reloadAccepted' })
     }, (cause: unknown) => {
       apply({ type: 'saveFailed', reason: String(cause) })
     })
-  }, [apply, projects, snapshot, onAdopt])
+  }, [apply, writes])
 
   const keepMine = useCallback(() => {
     // From `external-changed` this is a decision, and the machine only accepts
-    // one in `conflict` — deliberately, because saving over a file we have been
-    // told is newer is the one way to lose somebody's work without being asked.
-    // Editing is what turns the question into a conflict, and choosing "mine"
-    // IS an edit as far as the document is concerned.
+    // one in `conflict` — deliberately, because writing over a scope we have
+    // been told changed is the one way to lose somebody's work without being
+    // asked. Editing is what turns the question into a conflict, and choosing
+    // "mine" IS an edit as far as the document is concerned. The next write
+    // puts ours onto theirs.
+    writes.overTheirs()
     apply({ type: 'edited' })
     apply({ type: 'conflictResolved', resolution: 'mine' })
-  }, [apply])
+  }, [apply, writes])
 
   // A person asking is not the idle timer, so it does not wait — but it is
   // still refused when there is nothing to write, or when writing would land on
   // top of somebody else's change.
   const forceSave = useCallback(() => save('blur'), [save])
+  const flush = useCallback(async () => {
+    if (writes.pending()) apply({ type: 'edited' })
+    let failed: { cause: unknown } | undefined
+    await save('blur', (cause) => { failed = { cause } })
+    if (failed) throw failed.cause
+  }, [writes, apply, save])
 
   /**
    * The state as everybody above reads it, with the source's word on the
@@ -356,5 +380,97 @@ export function useDocumentSession(deps: {
     // that means here.
   }, [sourceStatus, state, asked])
 
-  return { state: shown, forceSave, takeTheirs, keepMine }
+  return { state: shown, forceSave, flush, takeTheirs, keepMine }
+}
+
+/**
+ * What of the scope the session changes besides its model: the view it opens
+ * on and the marks, which it says about itself, and its image library.
+ */
+type Described = Pick<ScopeDescription, 'activeDiagramId' | 'logoLibrary'> & { images: readonly ImageEntry[] }
+
+function describedOf(scope: ScopeSnapshot): Described {
+  return { activeDiagramId: scope.activeDiagramId, logoLibrary: scope.logoLibrary, images: scope.images ?? [] }
+}
+
+/**
+ * What changed of it since it was written, as the steps that say so: what the
+ * scope says about itself as one patch, and each picture that left the
+ * library or joined it — out before in, so a picture put back under its own
+ * name is one out and one in. Nothing where nothing changed.
+ */
+function changesOf(was: Described, now: Described): ScopeCommand[] {
+  const patch: ScopeDescription = {}
+  if (was.activeDiagramId !== now.activeDiagramId) patch.activeDiagramId = now.activeDiagramId
+  if (!sameValue(was.logoLibrary, now.logoLibrary)) patch.logoLibrary = now.logoLibrary
+  const kept = (image: ImageEntry, among: readonly ImageEntry[]) => among.some((held) => sameValue(held, image))
+  return [
+    ...(Object.keys(patch).length > 0 ? [{ type: 'scope.describe' as const, patch }] : []),
+    ...was.images.filter((image) => !kept(image, now.images)).map((image) => ({ type: 'image.remove' as const, name: image.name })),
+    ...now.images.filter((image) => !kept(image, was.images)).map((image) => ({ type: 'image.add' as const, image })),
+  ]
+}
+
+/**
+ * What this session last knew of the scope as it is kept: the revision it
+ * was at, what it said about itself, and how many documents the session had
+ * adopted when it knew.
+ */
+type Known = { revision?: Revision; described: Described; adopted: number }
+
+/**
+ * The writes themselves: the session's changes as steps, expecting the
+ * revision last known, and what is known moved on with each one that lands.
+ */
+function useScopeWrites(
+  session: SavableSession, writer: ScopeWriter, onAdopt: ((project: ScopeSnapshot) => void) | undefined,
+) {
+  const { snapshot, journal } = session
+  const known = useRef<Known | undefined>(undefined)
+  known.current ??= { revision: snapshot().revision, described: describedOf(snapshot()), adopted: journal.adopted() }
+  /** The next write puts ours onto theirs, rather than expecting what we last saw. */
+  const over = useRef(false)
+
+  /** The scope as it is kept, put on screen; what is known of it is what was read. */
+  const take = useCallback((project: ScopeSnapshot) => {
+    onAdopt?.(project)
+    known.current = { revision: project.revision, described: describedOf(project), adopted: journal.adopted() }
+  }, [onAdopt, journal])
+
+  return useMemo(() => ({
+    write: async (): Promise<void> => {
+      // A document was adopted in place of the one opened, and written where
+      // it came from: where the scope stands now is learnt, not assumed.
+      if (known.current!.adopted !== journal.adopted()) {
+        const read = await writer.read()
+        known.current = { revision: read?.revision, described: read ? describedOf(read) : known.current!.described, adopted: journal.adopted() }
+      }
+      const pending = journal.pending()
+      const now = describedOf(snapshot())
+      const steps: ScopeStep[] = [
+        ...pending.map(({ stepId, command, at }) => ({ stepId, command, at })),
+        ...changesOf(known.current!.described, now).map((command) => stepOf(command)),
+      ]
+      if (steps.length === 0) return
+      const onTheirs = over.current
+      const revision = await writer.write(steps, onTheirs ? undefined : known.current!.revision)
+      journal.written(pending.length)
+      known.current = { ...known.current!, revision, described: now }
+      if (!onTheirs) return
+      // Ours went onto theirs, so what is kept is both: that is what is shown.
+      over.current = false
+      const read = await writer.read()
+      if (read) take(read)
+    },
+    takeTheirs: async (): Promise<boolean> => {
+      const read = await writer.read()
+      if (!read) return false
+      take(read)
+      return true
+    },
+    overTheirs: () => { over.current = true },
+    /** Is there anything this session has not written? */
+    pending: (): boolean => journal.pending().length > 0
+      || changesOf(known.current!.described, describedOf(snapshot())).length > 0,
+  }), [writer, journal, snapshot, take])
 }
