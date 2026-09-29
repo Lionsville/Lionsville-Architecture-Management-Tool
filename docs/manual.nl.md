@@ -330,6 +330,18 @@ strook:
 
 In beide gevallen wordt wat open staat eerst geschreven.
 
+**De eigen git-instellingen van de map.** De app draait git met je eigen
+git-configuratie. De `.git/config` van een map mag instellen wat een repository
+nodig heeft, zoals haar remotes, haar branches en wie er commit, maar geen
+programma, proxy, credential helper of adresherschrijving: die komen alleen uit
+je eigen configuratie. In een map die iets anders instelt, wordt ophalen of
+pushen geweigerd en noemt de melding de instelling, zoals in *De map is niet
+opgehaald: its configuration sets http.cookieFile, …* (dat deel is in het
+Engels); een momentopname wordt daar ook geweigerd, en de diagnose noemt de
+instelling. Hetzelfde geldt voor git-lfs dat alleen voor die map is ingesteld
+(`git lfs install` stelt het voor jou in, en dan draait het), en voor een remote
+die een map binnen de werkmap is.
+
 Een browsertabblad kan ook in een map werken, waar de browser dat aanbiedt
 (Chromium doet dat). De toestemming overleeft een herstart zelden, en erom
 vragen vereist een klik. Een tabblad pakt een onthouden map dus alleen weer op
@@ -392,6 +404,28 @@ blijft:
 
 Er wordt nooit iets ongevraagd overschreven.
 
+### Als een onderdeel niet helemaal te lezen is
+
+Is een deel van een onderdeel niet te lezen, omdat een bestand ervan beschadigd
+is of met de hand is veranderd, dan opent het onderdeel om te bekijken en niet
+om te wijzigen, en een melding noemt wat niet te lezen was. Die biedt
+**Terugzetten uit de geschiedenis…** en **Een werkbestand binnenhalen…**; in een
+map zegt hij ook dat je het bestand kunt herstellen en het onderdeel opnieuw
+kunt openen.
+- **Terugzetten uit de geschiedenis…** opent de pagina Geschiedenis, waar **De
+  hele scope terugzetten…** het hele onderdeel maakt wat het was bij de
+  momentopname die je kiest. Wat niet te lezen was, wordt eerst bewaard, als
+  een punt in de geschiedenis of apart gezet naast het onderdeel, en waar dat
+  niet kan, wordt niets teruggezet.
+- **Een werkbestand binnenhalen…**, of er een openen op het onderdeel, zet het
+  op dezelfde manier terug uit het bestand, en de vraag vooraf zegt dat.
+
+Een punt in de geschiedenis dat bewaarde wat niet te lezen was, biedt **Bewaar
+wat niet gelezen kon worden…**, dat het als een bestand van jezelf bewaart. Een
+onderdeel dat een latere versie van de app schreef, opent alleen om te
+bekijken: de melding zegt dat je de app moet bijwerken, en niets hier zet het
+terug.
+
 ## Geschiedenis
 
 Elke plek houdt een geschiedenis van je werk bij. **Snapshot…** in het menu
@@ -406,18 +440,19 @@ bewaard:
 - zolang het tabblad open is, waar de opslag van de browser niet opengaat.
 
 Er gaat niets van je machine af, tenzij je voor een map met een remote **Na elke
-momentopname pushen** hebt aangezet. Op de desktop heeft
-de geschiedenis **git** op de machine nodig: zonder git wordt een momentopname
-geweigerd met een zin die dat zegt, en werkt de rest precies zoals eerst.
+momentopname pushen** hebt aangezet. Op de desktop heeft de geschiedenis **git**
+2.26 of nieuwer op de machine nodig: zonder git wordt een momentopname geweigerd
+met een zin die dat zegt, en werkt de rest precies zoals eerst.
 
 **Geschiedenis…** toont elke momentopname. Kies er een en je ziet wat er
-sindsdien veranderde — applicaties erbij, weg en gewijzigd, koppelingen
-getekend en doorgeknipt, besluiten genomen — met de geometrie als aantal in
-plaats van als lijst, want een Tidy-ronde is één zin en vierhonderd gewijzigde
-regels.
+sindsdien veranderde — applicaties erbij, weg en gewijzigd, koppelingen getekend
+en doorgeknipt, besluiten genomen — met de geometrie als aantal in plaats van
+als lijst, want een Tidy-ronde is één zin en vierhonderd gewijzigde regels. Een
+verplaatsing is ook een punt, *Verplaatst van X naar Y*, in de geschiedenis van
+elk onderdeel dat ze verplaatste.
 
-**De geschiedenis van één ding.** De keuzelijst bovenaan de pagina beperkt
-haar tot een aanzicht, een beschrijving of een besluit: de lijst wordt de
+**De geschiedenis van één ding.** De keuzelijst bovenaan de pagina beperkt haar
+tot een aanzicht, een beschrijving of een besluit: de lijst wordt de
 momentopnames die dat raakten, en de veranderingen de regels die erover gaan.
 Dezelfde pagina opent al beperkt via **Geschiedenis…** in het menu van een
 aanzicht-tab, op de documentatiepagina en op de pagina van een besluit.
@@ -449,11 +484,11 @@ git-client toont. Twee labels met dezelfde naam worden geweigerd, overal in een
 map en binnen één onderdeel in een browser; kies een ander woord.
 
 **Momentopnamen die de app zelf maakt**, waar een geschiedenis wordt
-bijgehouden: voordat een werkbestand vervangt wat hier staat, en, op de
-desktop, voordat een map van haar remote wordt opgehaald en voordat een map van
-een oudere versie wordt omgezet. Elk heet naar waar hij aan voorafging, zodat
-wat er stond kan worden
-teruggezet.
+bijgehouden: voordat een werkbestand vervangt wat hier staat, voordat een
+onderdeel uit de geschiedenis wordt teruggezet, en, op de desktop, voordat een
+map van haar remote wordt opgehaald en voordat een map van een oudere versie
+wordt omgezet. Elk heet naar waar hij aan voorafging, zodat wat er stond kan
+worden teruggezet.
 
 ## De werkruimte
 
@@ -464,7 +499,7 @@ Eén open project: een balk bovenin, de editor eronder.
 | **Het kruimelpad** | De organisatie, elk onderdeel ertussen, en het open onderdeel vet; elk is een weg naar het thuis van dat onderdeel, en de naam van de organisatie is de weg terug naar het eerste scherm |
 | **Instellingen…** | Naam van dit onderdeel en waaronder het valt, en zijn standaarden: de auteur op een geëxporteerd diagram, en de operationele aspecten waar een nieuw landschap mee begint. Een onderdeel onder een ander zetten laat de inhoud met rust |
 | **⋯** | In een browser het menu: **Map openen…** waar de browser er een aanbiedt, **Openen…**, **Bewaren**, **Kopie van het werkbestand bewaren…**, **Momentopname…**, **Geschiedenis…**, **Agent koppelen…**, het thema, **Voorkeuren…**, en onder Help **Handleiding**, **Sneltoetsen…** en **Desktop-app downloaden**. Op de desktop staan dezelfde onderdelen, op de laatste na, in de menubalk |
-| **Activiteit** | Wat er sinds het openen aan dit project is veranderd — een lijst met benoemde stappen en het tijdstip van elke. Alleen lezen: ⌘Z is hoe je teruggaat |
+| **Activiteit** | Wat er sinds het openen aan dit project is veranderd — een lijst met benoemde stappen en het tijdstip van elke, en de verplaatsingen, *Verplaatst van X naar Y*, en wie het verplaatste. Hij blijft bij het onderdeel, waar het ook heen gaat. Alleen lezen: ⌘Z is hoe je teruggaat |
 | **Bewaard · uu:mm** | Hoe het project ervoor staat: het tijdstip van de laatste schrijfactie, of **Nog niet bewaarde wijzigingen**, **Bezig met bewaren…**, **Elders gewijzigd**, **Hier én elders gewijzigd**, **Niet bewaard — opslag weigert** |
 
 Alles wordt vanzelf bewaard terwijl je werkt: drie seconden nadat je stopt, als

@@ -356,6 +356,19 @@ Streifen:
 
 So oder so wird zuerst geschrieben, was offen ist.
 
+**Die eigenen git-Einstellungen des Ordners.** Die App führt git mit Ihrer
+eigenen git-Konfiguration aus. Die `.git/config` eines Ordners darf festlegen,
+was ein Repository braucht, etwa seine Remotes, seine Branches und wer
+committet, aber kein Programm, keinen Proxy, keinen Credential Helper und keine
+Adressumschreibung: die kommen nur aus Ihrer eigenen Konfiguration. In einem
+Ordner, der etwas anderes festlegt, wird Holen oder Pushen abgelehnt, und die
+Meldung nennt die Einstellung, etwa *Der Ordner wurde nicht geholt: its
+configuration sets http.cookieFile, …* (dieser Teil ist englisch); auch eine
+Momentaufnahme wird dort abgelehnt, und die Diagnose nennt die Einstellung.
+Dasselbe gilt für git-lfs, das nur für diesen Ordner eingerichtet ist (`git lfs
+install` richtet es für Sie ein, und dann läuft es), und für einen Remote, der
+ein Ordner innerhalb des Arbeitsordners ist.
+
 Auch ein Browser-Tab kann in einem Ordner arbeiten, wo der Browser es anbietet
 (Chromium tut das). Die Berechtigung überlebt einen Neustart selten, und sie zu
 erfragen braucht einen Klick. Deshalb nimmt ein Tab einen gemerkten Ordner nur
@@ -421,6 +434,28 @@ Streifen über der Zeichenfläche fragt, welche Version gilt:
 
 Nichts wird ohne Nachfrage überschrieben.
 
+### Wenn ein Bereich nicht ganz lesbar ist
+
+Ist ein Teil eines Bereichs nicht lesbar, weil eine Datei davon beschädigt ist
+oder von Hand geändert wurde, öffnet sich der Bereich zum Ansehen und nicht
+zum Ändern, und eine Meldung nennt, was nicht lesbar war. Sie bietet **Aus dem
+Verlauf zurückholen…** und **Eine Arbeitsdatei einbringen…**; in einem Ordner
+sagt sie auch, dass Sie die Datei reparieren und den Bereich erneut öffnen
+können.
+- **Aus dem Verlauf zurückholen…** öffnet die Seite Verlauf, wo **Den ganzen
+  Bereich zurückholen…** den ganzen Bereich zu dem macht, was er bei der
+  gewählten Momentaufnahme war. Was nicht lesbar war, wird zuerst aufbewahrt,
+  als Eintrag im Verlauf oder neben dem Bereich beiseitegelegt, und wo das
+  nicht geht, wird nichts zurückgeholt.
+- **Eine Arbeitsdatei einbringen…**, oder eine auf den Bereich zu öffnen, holt
+  ihn auf dieselbe Weise aus der Datei zurück, und die Frage davor sagt das.
+
+Ein Eintrag im Verlauf, der aufbewahrt hat, was nicht lesbar war, bietet
+**Speichern, was nicht gelesen werden konnte…**, das es als eigene Datei
+speichert. Ein Bereich, den eine spätere Version der App geschrieben hat,
+öffnet sich nur zum Ansehen: die Meldung sagt, dass Sie die App aktualisieren
+sollen, und nichts hier holt ihn zurück.
+
 ## Verlauf
 
 Jeder Ort führt einen Verlauf Ihrer Arbeit. **Snapshot…** im Menü File (im
@@ -434,17 +469,18 @@ aufbewahrt wird:
   Ordner geschrieben) und für einen Tab ohne Ordner;
 - solange der Tab offen ist, wo sich der Speicher des Browsers nicht öffnet.
 
-Nichts verlässt den Rechner, es sei denn, Sie haben für einen Ordner mit
-einem Remote **Nach jeder Momentaufnahme pushen** eingeschaltet. Auf dem Desktop
-braucht der Verlauf
-**git** auf dem Rechner: ohne git wird eine Momentaufnahme mit einem Satz
-abgelehnt, der das sagt, und alles andere funktioniert wie gewohnt.
+Nichts verlässt den Rechner, es sei denn, Sie haben für einen Ordner mit einem
+Remote **Nach jeder Momentaufnahme pushen** eingeschaltet. Auf dem Desktop
+braucht der Verlauf **git** 2.26 oder neuer auf dem Rechner: ohne git wird eine
+Momentaufnahme mit einem Satz abgelehnt, der das sagt, und alles andere
+funktioniert wie gewohnt.
 
 **Verlauf…** listet jede Momentaufnahme auf. Eine auszuwählen zeigt, was sich
 seither geändert hat — Anwendungen hinzugefügt, entfernt und geändert,
 Verbindungen gezogen und gekappt, Entscheidungen getroffen — mit der Geometrie
 als Zahl statt als Liste, weil ein Aufräum-Durchlauf ein Satz ist und
-vierhundert geänderte Zeilen.
+vierhundert geänderte Zeilen. Eine Verschiebung ist auch ein Eintrag, *Von X
+nach Y verschoben*, im Verlauf jedes Bereichs, den sie verschoben hat.
 
 **Der Verlauf eines einzelnen Dings.** Die Auswahl oben auf der Verlaufsseite
 grenzt ihn auf ein Diagramm, eine Beschreibung oder eine Entscheidung ein: die
@@ -483,10 +519,10 @@ Namen werden abgelehnt, überall in einem Ordner und innerhalb eines Bereichs in
 einem Browser; wählen Sie ein anderes Wort.
 
 **Momentaufnahmen, die die App selbst macht**, wo ein Verlauf geführt wird:
-bevor eine Arbeitsdatei ersetzt, was hier ist, und, auf dem Desktop, bevor
-ein Ordner von seinem Remote geholt wird und bevor ein Ordner aus einer älteren
-Version umgewandelt wird. Jede ist nach dem benannt, dem sie voranging, sodass
-das, was da war,
+bevor eine Arbeitsdatei ersetzt, was hier ist, bevor ein Bereich aus dem Verlauf
+zurückgeholt wird, und, auf dem Desktop, bevor ein Ordner von seinem Remote
+geholt wird und bevor ein Ordner aus einer älteren Version umgewandelt wird.
+Jede ist nach dem benannt, dem sie voranging, sodass das, was da war,
 wiederhergestellt werden kann.
 
 ## Der Arbeitsbereich
@@ -498,7 +534,7 @@ Ein offenes Projekt: eine Leiste oben, der Editor darunter.
 | **Die Brotkrumen** | Die Organisation, jeder Bereich dazwischen, und der offene fett; jeder ist ein Weg zum Zuhause dieses Bereichs, und der Name der Organisation ist der Weg zurück zum ersten Bildschirm |
 | **Einstellungen…** | Der Name dieses Bereichs und wo er abgelegt ist, und seine Standardwerte: der Autor, der auf einem exportierten Diagramm genannt wird, und die betrieblichen Aspekte, mit denen eine neue Landschaft beginnt. Einen Bereich zu verschieben legt ihn unter einem anderen ab und lässt seinen Inhalt unberührt |
 | **⋯** | In einem Browser das Menü: **Ordner öffnen…**, wo der Browser einen anbietet, **Öffnen…**, **Speichern**, **Kopie der Arbeitsdatei speichern…**, **Snapshot erstellen…**, **Verlauf…**, **Agent verbinden…**, das Design, **Voreinstellungen…**, und unter Hilfe **Handbuch**, **Tastenkürzel…** und **Desktop-App herunterladen**. Auf dem Desktop stehen dieselben Einträge, bis auf den letzten, in der Menüleiste |
-| **Aktivität** | Was sich an diesem Projekt seit dem Öffnen geändert hat — eine Liste benannter Schritte mit der Uhrzeit jedes einzelnen. Nur lesend: ⌘Z ist der Weg zurück |
+| **Aktivität** | Was sich an diesem Projekt seit dem Öffnen geändert hat — eine Liste benannter Schritte mit der Uhrzeit jedes einzelnen, und die Verschiebungen, *Von X nach Y verschoben*, und wer sie vorgenommen hat. Sie bleibt beim Bereich, wohin er auch geht. Nur lesend: ⌘Z ist der Weg zurück |
 | **Gespeichert · hh:mm** | Wo das Projekt steht: die Uhrzeit, zu der es zuletzt geschrieben wurde, oder **Ungespeicherte Änderungen**, **Wird gespeichert…**, **Anderswo geändert**, **Hier und anderswo geändert**, **Nicht gespeichert — Speicher verweigert** |
 
 Alles wird automatisch gespeichert, während Sie arbeiten: drei Sekunden nachdem
