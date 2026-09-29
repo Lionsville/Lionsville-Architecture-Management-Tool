@@ -12,7 +12,7 @@ afterEach(() => cleanup())
 
 const props = (current: boolean): SourceChromeProps => ({
   current, open: () => {}, screen: {} as never, movedBy: 'person' as never, notify: () => {},
-  preferences: { read: () => ({}), write: () => {} }, reread: () => {},
+  preferences: { read: () => ({}), write: () => {} }, reread: () => {}, flush: () => Promise.resolve(),
 })
 
 describe('the notice where nothing is kept', () => {

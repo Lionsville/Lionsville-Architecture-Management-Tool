@@ -310,11 +310,14 @@ export function useDocumentSession(deps: {
 
   // The workspace going — home, another scope — with changes not yet
   // written: written on the way out, as a window closing would, rather than
-  // left in a session nobody holds any more.
-  const leaving = useRef(writes)
-  leaving.current = writes
+  // left in a session nobody holds any more. A write refused on the way out
+  // is said as any refused write is: the app outlives this workspace, and the
+  // person is told on the screen they went to.
+  const leaving = useRef({ writes, onResult })
+  leaving.current = { writes, onResult }
   useEffect(() => () => {
-    if (leaving.current.pending()) leaving.current.write().catch(() => {})
+    const { writes: last, onResult: told } = leaving.current
+    if (last.pending()) last.write().catch((cause: unknown) => told(false, cause))
   }, [])
 
   useEffect(() => {

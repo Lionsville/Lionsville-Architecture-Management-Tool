@@ -35,26 +35,53 @@ function blob(initial: Record<string, unknown> = {}) {
   return { read: () => held, write: (patch: Record<string, unknown>) => { held = { ...held, ...patch } } }
 }
 
-async function ask(options: { from?: Repositories; preferences?: ReturnType<typeof blob>; language?: Language } = {}) {
+async function ask(options: {
+  from?: Repositories; preferences?: ReturnType<typeof blob>; language?: Language; flush?: () => Promise<void>
+} = {}) {
   const from = options.from ?? await kept()
   const into = memoryRepositories()
   const preferences = options.preferences ?? blob()
   const reread = vi.fn()
+  const flush = vi.fn(options.flush ?? (() => Promise.resolve()))
   const diagnostics = new RecordingDiagnostics()
   const own = folderOwn({ settings: into.settings, diagnostics, adoption: { from, into, root: '/test2', name: 'test2' } })
   render(
     <LanguageProvider language={options.language ?? 'en'}>
       <FolderChrome
-        current own={own} preferences={preferences} reread={reread} notify={vi.fn()}
+        current own={own} preferences={preferences} reread={reread} flush={flush} notify={vi.fn()}
         open={() => {}} screen={{} as never} movedBy={'person' as never}
       />
     </LanguageProvider>,
   )
   await act(() => new Promise<void>((resolve) => { setTimeout(resolve, 0) }))
-  return { from, into, preferences, reread, diagnostics }
+  return { from, into, preferences, reread, flush, diagnostics }
 }
 
 const settled = () => act(() => new Promise<void>((resolve) => { setTimeout(resolve, 0) }))
+
+/** A promise the test settles when it says so. */
+function deferred() {
+  let settle!: () => void
+  let refuse!: (cause: unknown) => void
+  const promise = new Promise<void>((resolve, reject) => { settle = resolve; refuse = reject })
+  return { promise, settle, refuse }
+}
+
+/** Acme's work, and Globex's, whose state will not read. */
+async function keptWithOneUnread(): Promise<Repositories> {
+  const from = await kept()
+  await placeTogether(from, [{
+    address: 'globex',
+    content: contentOf({ path: 'globex', model: { name: 'Globex', elements: [], relations: [], diagrams: [] }, activeDiagramId: '', logoLibrary: [] }, []),
+  }])
+  const globex = (await from.scopes.tree()).root.children.find((node) => node.address === 'globex')!.id
+  const scopes = new Proxy(from.scopes, {
+    get: (target, member) => (member === 'state'
+      ? (id: string) => (id === globex ? Promise.reject(new Error('torn')) : target.state(id))
+      : Reflect.get(target, member)),
+  })
+  return { ...from, scopes }
+}
 
 describe('the question a folder pick asks', () => {
   it('names the folder the answer is about, and says neither answer deletes anything', async () => {
@@ -69,7 +96,7 @@ describe('the question a folder pick asks', () => {
     expect(screen.getByText('Je werk meenemen naar deze map?')).toBeDefined()
   })
 
-  it('copies the work in on a yes, remembers it, and has the folder read again', async () => {
+  it('copies the work in on a yes, remembers it, has the folder read again, and says so on screen', async () => {
     const { into, preferences, reread, from, diagnostics } = await ask()
     fireEvent.click(screen.getByTestId('adopt-copy'))
     await settled()
@@ -80,9 +107,36 @@ describe('the question a folder pick asks', () => {
     expect((await readScope(from.scopes, 'acme'))?.model.name).toBe('Acme Logistics')
     // Counts, never names.
     expect(diagnostics.messages()).toEqual(['copied 1 scopes, kept 0, failed 0, unread 0'])
+    expect(screen.getByTestId('adopt-outcome').textContent).toBe('1 copied into “test2”.')
+    fireEvent.click(screen.getByTestId('adopt-close'))
+    await waitFor(() => expect(screen.queryByTestId('adopt-folder')).toBeNull())
   })
 
-  it('says in the trail a copy that fell over, and remembers nothing, so it is asked again', async () => {
+  it('stays open and busy until the copy is done, with nothing to press, and writes the open scope first', async () => {
+    const writing = deferred()
+    const { into, flush } = await ask({ flush: () => writing.promise })
+    fireEvent.click(screen.getByTestId('adopt-copy'))
+    await settled()
+    expect(flush).toHaveBeenCalledTimes(1)
+    expect(screen.getByTestId('adopt-busy')).toBeDefined()
+    expect(screen.getByTestId('adopt-folder').textContent).toContain('Copying your work into “test2”')
+    expect(screen.queryByRole('button')).toBeNull()
+    // Nothing is copied before the open scope is written.
+    expect(await readScope(into.scopes, 'acme')).toBeUndefined()
+    writing.settle()
+    await settled()
+    expect(screen.queryByTestId('adopt-busy')).toBeNull()
+    expect(screen.getByTestId('adopt-outcome').textContent).toBe('1 copied into “test2”.')
+  })
+
+  it('says on screen which scopes could not be copied', async () => {
+    await ask({ from: await keptWithOneUnread() })
+    fireEvent.click(screen.getByTestId('adopt-copy'))
+    await settled()
+    expect(screen.getByTestId('adopt-outcome').textContent).toBe('1 copied; 1 could not be copied: globex.')
+  })
+
+  it('says on screen and in the trail a copy that fell over, and remembers nothing, so it is asked again', async () => {
     const from = await kept()
     let asked = 0
     // The tree answers the question, and refuses the copy.
@@ -97,6 +151,15 @@ describe('the question a folder pick asks', () => {
     expect(preferences.read()).toEqual({})
     expect(reread).not.toHaveBeenCalled()
     expect(diagnostics.messages()).toEqual(['rejected'])
+    expect(screen.getByRole('alert').textContent).toBe('Nothing was copied: this browser refused')
+  })
+
+  it('copies nothing where the open scope could not be written first, and says why', async () => {
+    const { into } = await ask({ flush: () => Promise.reject(new Error('the disk is full')) })
+    fireEvent.click(screen.getByTestId('adopt-copy'))
+    await settled()
+    expect(await readScope(into.scopes, 'acme')).toBeUndefined()
+    expect(screen.getByRole('alert').textContent).toBe('Nothing was copied: the disk is full')
   })
 
   it('copies nothing on a no, and remembers the no for this folder', async () => {

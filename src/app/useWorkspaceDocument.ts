@@ -6,7 +6,7 @@
  * when, what the bar says about that, and the session handed to whoever
  * answers for the source.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ShellError } from '../platform/errors'
 import { imageEntryOf } from '../model/imageEntry'
 import type { ImageRepository } from '../ports/ImageRepository'
@@ -96,8 +96,13 @@ export function useScopeSessionSeam(
   project: ScopeSnapshot,
   session: ModelSession,
   onScopeSession: ((session: ScopeSession) => (() => void) | void) | undefined,
+  flush?: () => Promise<void>,
 ): readonly string[] {
   const [alsoHere, setAlsoHere] = useState<readonly string[]>([])
+  // Through a ref: the write it asks for moves with every edit, and the
+  // session handed out must not.
+  const flushing = useRef(flush)
+  flushing.current = flush
   const scopeSession = useMemo<ScopeSession>(() => ({
     scope: project.path,
     steps: session.steps,
@@ -108,6 +113,7 @@ export function useScopeSessionSeam(
     revision: session.revision,
     ...(project.revision !== undefined ? { openedFrom: project.revision } : {}),
     alsoHere: setAlsoHere,
+    flush: () => flushing.current?.() ?? Promise.resolve(),
   }), [
     project.path, project.revision, session.steps, session.dispatch,
     session.current, session.indexed, session.history, session.revision,

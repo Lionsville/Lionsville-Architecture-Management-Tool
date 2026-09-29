@@ -48,12 +48,13 @@ async function own(sync: FolderSync, pushAfterSnapshot: boolean, pulled?: PullOu
 function chrome(held: FolderOwn | undefined) {
   const notify = vi.fn()
   const reread = vi.fn()
+  const flush = vi.fn(() => Promise.resolve())
   const props: SourceChromeProps<FolderOwn> = {
-    current: true, own: held, notify, reread, open: () => {}, screen: {} as never, movedBy: 'person' as never,
+    current: true, own: held, notify, reread, flush, open: () => {}, screen: {} as never, movedBy: 'person' as never,
     preferences: { read: () => ({}), write: () => {} },
   }
   render(<FolderChrome {...props} />)
-  return { notify, reread }
+  return { notify, reread, flush }
 }
 
 /** Everything the fakes have queued, carried out and drawn. */
@@ -163,6 +164,21 @@ describe('the two answers', () => {
     await settled()
     expect(notify).toHaveBeenCalledWith(expect.stringContaining('the channel closed'), 'error')
     expect(screen.getByTestId('sync-notice')).toBeDefined()
+  })
+
+  it('writes the open scope before either answer, and answers nothing where it could not be written', async () => {
+    const held = remote()
+    const { flush, notify } = chrome((await own(held.sync, false, 'diverged')).held)
+    flush.mockImplementation(() => Promise.reject(new Error('the disk is full')))
+    fireEvent.click(screen.getByText('Take theirs'))
+    await settled()
+    expect(flush).toHaveBeenCalledTimes(1)
+    expect(held.calls.resolved).toEqual([])
+    expect(notify).toHaveBeenCalledWith(expect.stringContaining('the disk is full'), 'error')
+    flush.mockImplementation(() => Promise.resolve())
+    fireEvent.click(screen.getByText('Take theirs'))
+    await settled()
+    expect(held.calls.resolved).toEqual(['theirs'])
   })
 
   it('a refusal leaves the folder as it was, and the question standing', async () => {

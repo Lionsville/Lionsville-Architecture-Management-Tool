@@ -168,7 +168,7 @@ function useSessionParts(props: ProjectWorkspaceProps) {
     session, writer, watch: source.watch, sourceStatus: source.status, onSourceWork: source.onWork,
     onUnsavedWork: host.onUnsavedWork, onKeptResult: source.onResult, onTreeChanged,
   })
-  const alsoHere = useScopeSessionSeam(project, session, source.onSession)
+  const alsoHere = useScopeSessionSeam(project, session, source.onSession, document.document.flush)
   const renderer = useRendererView(session, requests.focusElement)
   return {
     readOnly, unreadable, ancestorRecords, indexRef, session, writer, diagrams, files, pickers, safeguardRef, requests,

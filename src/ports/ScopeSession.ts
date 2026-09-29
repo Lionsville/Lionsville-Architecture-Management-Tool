@@ -426,5 +426,13 @@ export type ScopeSession = {
    * nobody has asked for one.
    */
   alsoHere: (names: readonly string[]) => void
+  /**
+   * Write what this scope holds unwritten, now, and settle once it is kept —
+   * or reject with why it was not. Asked before something replaces what is
+   * kept of it from outside this window, so an edit made a moment ago is kept
+   * first rather than written over what arrived. Absent where nothing is
+   * written from this side.
+   */
+  flush?: () => Promise<void>
 }
 

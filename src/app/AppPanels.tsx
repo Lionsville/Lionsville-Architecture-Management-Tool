@@ -336,6 +336,7 @@ function chromeProps(parts: ShellParts, kind: string): SourceChromeProps {
       parts.nav.reloadOpenProject()
       parts.writes.treeChanged()
     },
+    flush: async () => { await provider.openScope?.flush?.() },
   }
 }
 

@@ -25,9 +25,17 @@ import {
   blank, carriedOf, contentOf, nodesOf, picturesOf, placeTogether, readScope, snapshotOf,
 } from './scopeAccess'
 import type { ScopeReader } from './scopeAccess'
+import type { ScopeAddress } from './scopeState'
 
 /** What a copy did: brought, kept as the destination had it, would not land, would not read. */
-export type CopyTally = { scopes: number; kept: number; failed: number; unread: number }
+export type CopyTally = {
+  scopes: number
+  kept: number
+  failed: number
+  unread: number
+  /** Where a scope was left behind, failed or unread: for the person, who is looking for it. */
+  missed: ScopeAddress[]
+}
 
 type From = { scopes: ScopeReader; images: Pick<ImageRepository, 'bytes'> }
 type Into = {
@@ -55,12 +63,13 @@ export async function holdsWork(from: { scopes: ScopeReader }): Promise<boolean>
 }
 
 export async function copyScopes(from: From, into: Into): Promise<CopyTally> {
-  const tally: CopyTally = { scopes: 0, kept: 0, failed: 0, unread: 0 }
+  const tally: CopyTally = { scopes: 0, kept: 0, failed: 0, unread: 0, missed: [] }
   const tree = await from.scopes.tree()
   tally.unread += tree.unreadable?.length ?? 0
+  tally.missed.push(...tree.unreadable ?? [])
   for (const node of nodesOf(tree.root)) {
     const state = await from.scopes.state(node.id).catch(() => undefined)
-    if (!state) { tally.unread += 1; continue }
+    if (!state) { tally.unread += 1; tally.missed.push(node.address); continue }
     if (blank(state)) continue
     try {
       const there = await readScope(into.scopes, node.address)
@@ -70,6 +79,7 @@ export async function copyScopes(from: From, into: Into): Promise<CopyTally> {
       tally.scopes += 1
     } catch {
       tally.failed += 1
+      tally.missed.push(node.address)
     }
   }
   return tally

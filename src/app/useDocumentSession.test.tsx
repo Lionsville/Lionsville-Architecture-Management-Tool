@@ -220,6 +220,17 @@ describe('when the store refuses', () => {
     expect(view.saved).not.toHaveBeenCalled()
   })
 
+  it('says a write refused as the workspace goes, as any refused write is said', async () => {
+    const refusal = new Error('quota')
+    const view = mount(() => Promise.reject(refusal))
+    view.edit('Edited')
+    view.unmount()
+    await act(async () => { await vi.advanceTimersByTimeAsync(0) })
+
+    expect(view.writes).toHaveLength(1)
+    expect(view.result).toHaveBeenCalledWith(false, refusal)
+  })
+
   it('tries again after the next edit', async () => {
     const view = mount(() => Promise.reject(new Error('quota')))
     view.edit('One')

@@ -139,6 +139,14 @@ export type SourceChromeProps<Own = unknown> = {
    * index and the open scope are read again, with nothing carried over.
    */
   reread: () => void
+  /**
+   * Write what the open scope holds unwritten, now — asked before a provider
+   * replaces what the source keeps from outside this window (another version
+   * taken in, older work brought over, a copy made), so a moment-old edit is
+   * kept first and not written over what arrived. Rejects with why it was not
+   * kept, and the provider then replaces nothing.
+   */
+  flush: () => Promise<void>
 }
 
 /** What a panel opened from the chip that names a source is handed: a chrome's, and the way to close it. */

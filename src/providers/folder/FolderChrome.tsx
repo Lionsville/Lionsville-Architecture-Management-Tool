@@ -38,17 +38,17 @@ export const SYNC_REFUSAL_LABEL: Record<SyncRefusal, StringKey> = {
 }
 
 /** Drawn whatever the source; about the folder only while a folder is the source. */
-export function FolderChrome({ own, notify, reread, preferences }: SourceChromeProps<FolderOwn>) {
+export function FolderChrome({ own, notify, reread, flush, preferences }: SourceChromeProps<FolderOwn>) {
   if (!own) return null
   return (
     <>
-      {own.adoption && <FolderAdoptionQuestion own={own} adoption={own.adoption} preferences={preferences} reread={reread} />}
-      {own.sync && <SyncStrip own={own} notify={notify} reread={reread} />}
+      {own.adoption && <FolderAdoptionQuestion own={own} adoption={own.adoption} preferences={preferences} reread={reread} flush={flush} />}
+      {own.sync && <SyncStrip own={own} notify={notify} reread={reread} flush={flush} />}
     </>
   )
 }
 
-function SyncStrip({ own, notify, reread }: Pick<SourceChromeProps<FolderOwn>, 'notify' | 'reread'> & { own: FolderOwn }) {
+function SyncStrip({ own, notify, reread, flush }: Pick<SourceChromeProps<FolderOwn>, 'notify' | 'reread' | 'flush'> & { own: FolderOwn }) {
   const { t: s } = useStrings()
   const [diverged, setDiverged] = useState(own.pulled === 'diverged')
   // Said once, on mount: a refusal as the folder opened is a notice rather than
@@ -72,7 +72,9 @@ function SyncStrip({ own, notify, reread }: Pick<SourceChromeProps<FolderOwn>, '
   const resolve = useCallback((side: SyncSide) => {
     const sync = own.sync
     if (!sync) return
-    void sync.resolve(side).then((outcome) => {
+    // What the open scope holds unwritten is written first: taken into the
+    // merge on *mine*, and not written over their version on *theirs*.
+    void flush().then(() => sync.resolve(side)).then((outcome) => {
       if (outcome !== 'done') {
         notify(s('sync.resolveRefused', { reason: s(SYNC_REFUSAL_LABEL[outcome]) }), 'warning')
         return
@@ -92,7 +94,7 @@ function SyncStrip({ own, notify, reread }: Pick<SourceChromeProps<FolderOwn>, '
       own.report('sync.resolve', cause)
       notify(s('sync.resolveRefused', { reason: reasonOf(cause) }), 'error')
     })
-  }, [own, notify, reread, s])
+  }, [own, notify, reread, flush, s])
 
   if (!diverged) return null
   return (

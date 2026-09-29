@@ -41,17 +41,18 @@ function earlier(standing: Partial<EarlierStanding> = {}) {
   return { held, asked }
 }
 
-function show(options: { standing?: Standing; earlier?: Earlier } = {}) {
+function show(options: { standing?: Standing; earlier?: Earlier; flush?: () => Promise<void> } = {}) {
   const db = database(options.standing)
   const made = browserOwn(db.held, options.earlier)
   const notify = vi.fn()
   const reread = vi.fn()
+  const flush = vi.fn(options.flush ?? (() => Promise.resolve()))
   const props: SourceChromeProps<typeof made.own> = {
-    current: true, own: made.own, notify, reread, open: () => {}, screen: {} as never, movedBy: 'person' as never,
+    current: true, own: made.own, notify, reread, flush, open: () => {}, screen: {} as never, movedBy: 'person' as never,
     preferences: { read: () => ({}), write: () => {} },
   }
   render(<BrowserChrome {...props} />)
-  return { ...made, db, notify, reread }
+  return { ...made, db, notify, reread, flush }
 }
 
 const settled = () => act(() => new Promise<void>((resolve) => { setTimeout(resolve, 0) }))
