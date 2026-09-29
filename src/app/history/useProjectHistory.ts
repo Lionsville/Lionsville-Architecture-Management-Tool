@@ -32,7 +32,6 @@ import type { Model } from '../../model/normalised'
 import { restoreCommand } from '../../model/restore'
 import type { StepSummary } from '../../model/activity'
 import type { Translate } from '../../i18n'
-import { reasonOf } from '../../platform/errors'
 import { reasonIn } from '../messageFor'
 import type { HistoryEntry, HistoryRepository } from '../../ports/HistoryRepository'
 import type { ScopeRepository } from '../../ports/ScopeRepository'
@@ -278,7 +277,7 @@ export function useProjectHistory(deps: {
       (held) => setChosen({ id, model: held?.model }),
       (cause: unknown) => {
         setChosen({ id })
-        notify(s('history.readFailed', { message: reasonOf(cause) }), 'error')
+        notify(s('history.readFailed', { message: reasonIn(cause, s) }), 'error')
       },
     )
   }, [history, entries, notify, s])
@@ -293,7 +292,7 @@ export function useProjectHistory(deps: {
       scopes: ids, ...(of ? { record: recordOf(of) } : {}), limit: ENTRIES_SHOWN,
     })).entries)).then(setEntries, (cause: unknown) => {
       setEntries([])
-      notify(s('history.readFailed', { message: reasonOf(cause) }), 'error')
+      notify(s('history.readFailed', { message: reasonIn(cause, s) }), 'error')
     })
   }, [history, project, index, idsAt, notify, s])
 
@@ -340,7 +339,7 @@ export function useProjectHistory(deps: {
         case 'gone': notify(s('history.readFailed', { message: outcome }), 'warning'); break
       }
     }, (cause: unknown) => {
-      notify(s('history.failed', { message: reasonOf(cause) }), 'error')
+      notify(s('history.failed', { message: reasonIn(cause, s) }), 'error')
     })
   }, [history, entries, chosen, subject, list, notify, s])
 
