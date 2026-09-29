@@ -2,13 +2,14 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * The store and the repositories over a real browser's IndexedDB, in Chromium
- * and WebKit (`vitest.browser.config.ts`, `npm run test:browser`).
+ * The store, the repositories and a folder's history over a real browser's
+ * IndexedDB, in Chromium and WebKit (`vitest.browser.config.ts`, `npm run test:browser`).
  *
  * The same contract and suites node runs over a fake, and what only a browser
  * can show: a digest awaited inside a transaction, a page that goes away
- * half-way through a write, a second tab on either side of an upgrade, and a
- * quota the browser enforces. A second tab is a frame of this page's origin,
+ * half-way through a write, a second tab on either side of an upgrade, a
+ * database an earlier build laid out, two tabs recording a folder's history
+ * at once, and a quota the browser enforces. A second tab is a frame of this page's origin,
  * which opens the same database as a tab does and goes when it is removed.
  */
 import { describe, expect, it, vi } from 'vitest'
@@ -21,9 +22,13 @@ import type { RepositoriesUnderTest } from '../../ports/Repositories.contract'
 import { describeScopeRepository } from '../../ports/ScopeRepository.contract'
 import { describeSettingsRepository } from '../../ports/SettingsRepository.contract'
 import { describeKeyedStore } from '../repositories/KeyedStore.contract'
-import { SHELVES } from '../repositories/KeyedStore'
+import { REPOSITORY_SHELVES, SHELVES } from '../repositories/KeyedStore'
 import type { Transaction } from '../repositories/KeyedStore'
 import type { KeptContent } from '../repositories/kept'
+import { BrowserFolder } from '../folder/browser/browserFolder'
+import { browserFolderGit } from '../folder/browser/browserFolderGit'
+import { FakeDirectory } from '../folder/fakeDirectory'
+import { writeAt } from '../folder/handles'
 import { browserRepositories } from './browserRepositories'
 import { DATABASE_VERSION, IndexedDbStore } from './IndexedDbStore'
 import type { IndexedDb } from './IndexedDbStore'
@@ -181,6 +186,33 @@ describe(`IndexedDbStore in ${server.browser}`, () => {
     expect(store.standing()).toBe('reload')
   })
 
+  it('lays out a folder’s shelves over a database an earlier build left at version 2, and keeps what it held', async () => {
+    const name = unique()
+    const earlier = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open(name, 2)
+      request.onupgradeneeded = () => {
+        for (const shelf of REPOSITORY_SHELVES) request.result.createObjectStore(shelf)
+        request.transaction!.objectStore('meta').put('before', 'a')
+        request.transaction!.objectStore('scopes').put({ address: 'acme' }, 's-1')
+      }
+      request.onsuccess = () => resolve(request.result)
+      request.onerror = () => reject(request.error ?? new Error('would not open'))
+    })
+    earlier.close()
+    const store = new IndexedDbStore(thisPage(), name)
+    expect(await store.transaction(['meta', 'scopes'], 'read', async (tx) => [await tx.get('meta', 'a'), await tx.get('scopes', 's-1')]))
+      .toEqual(['before', { address: 'acme' }])
+    await store.transaction(['folders', 'folderData'], 'write', (tx) => {
+      tx.put('folders', 'k', { handle: {} })
+      tx.put('folderData', 'k\u0000step\u0000one', ['s-1', 1])
+      return Promise.resolve()
+    })
+    expect(await store.transaction(['folderData'], 'read', (tx) => tx.get('folderData', 'k\u0000step\u0000one'))).toEqual(['s-1', 1])
+    const now = await holdOpen(thisPage(), name, DATABASE_VERSION)
+    expect([now.version, [...now.objectStoreNames].sort()]).toEqual([3, [...SHELVES].sort()])
+    now.close()
+  })
+
   // A storage bucket with a quota of its own is how a test meets a quota the
   // browser enforces without filling the disk. Chromium has buckets; WebKit
   // does not, and its quota is a share of the disk, far past what a test should
@@ -202,5 +234,27 @@ describe(`IndexedDbStore in ${server.browser}`, () => {
     expect(await store.transaction(['meta', 'bytes'], 'read', async (tx) => [await tx.get('meta', 'a'), await tx.get('bytes', 'big')]))
       .toEqual(['small', undefined])
     expect(store.standing()).toBe('open')
+  })
+})
+
+describe(`a folder’s history in ${server.browser}’s database`, () => {
+  /** A folder as this browser keeps it, over a database of a tab: the same folder whatever handle names it. */
+  const opened = (indexedDb: IndexedDb, name: string, root: FakeDirectory) =>
+    browserFolderGit(new BrowserFolder(new IndexedDbStore(indexedDb, name), { folder: 'acme' }, () => Promise.resolve(true)), root)
+
+  it('lands both commits of two tabs recording at once, one after the other, under the one key both settle on', async () => {
+    const name = unique()
+    const root = new FakeDirectory()
+    const tab = otherTab()
+    const here = opened(thisPage(), name, root)
+    const there = opened(tab.indexedDb, name, root)
+    await writeAt(root, 'acme/model.json', '{}')
+    await writeAt(root, 'globex/model.json', '{}')
+    const both = await Promise.all([here.commit(['acme/model.json'], 'one'), there.commit(['globex/model.json'], 'two')])
+    const log = await here.log({ limit: 5 })
+    expect(new Set(log.map((commit) => commit.sha))).toEqual(new Set(both))
+    expect(log.map((commit) => commit.parents)).toEqual([[log[1].sha], []])
+    expect((await there.treeAt(log[0].sha, '')).map((entry) => entry.path)).toEqual(['acme/model.json', 'globex/model.json'])
+    tab.close()
   })
 })
