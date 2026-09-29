@@ -21,16 +21,15 @@
  *
  * Deliberate hardenings, all of them about not hanging or surprising:
  *
- * - **Only the person's own configuration names a program; a folder's never
- *   does** ({@link quietConfig}, {@link folderPrograms}). Every git here is
- *   told `core.hooksPath` is an empty folder of the app's own
- *   ({@link useHooksFolder}), so no hook in `.git` — the repository owner's,
- *   or one written there by anybody — is a program this app runs;
- *   `core.fsmonitor` is off; the `ext::` transport is refused; and every
- *   other key that names a program — signing, credential helpers, askpass,
- *   proxy, ssh, pager, editor, external diff, filters, merge drivers, what a
- *   remote runs — is the person's own where the folder sets it. `--no-verify` as well,
- *   where a command takes it, because a pre-commit hook belongs to the
+ * - **A folder's own configuration is taken for what a folder needs, and for
+ *   nothing else** (`gitGuard.ts`): before every git with a folder, its
+ *   `.git/config` is read apart from the person's, and each key it sets is
+ *   allowed, set again to the person's own value or git's default, or the
+ *   command is refused. Always: no hook (`core.hooksPath` is an empty folder
+ *   of the app's own, {@link useHooksFolder}), no file-system monitor, no
+ *   `ext::` transport, no submodule entered, and this folder the work tree.
+ *   `--no-verify` as well,
+   where a command takes it, because a pre-commit hook belongs to the
  *   repository's owner and their linter must not decide whether this app can
  *   save a snapshot.
  * - `GIT_TERMINAL_PROMPT=0`, `ssh -o BatchMode=yes` and a timeout, because a
@@ -64,10 +63,10 @@
  * Tested in node against a real repository, which is what it always was.
  */
 import { execFile } from 'node:child_process'
-import { access, mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
+import { access, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
+import { gitEnvironment, guardedFlags } from './gitGuard'
 import { LOCAL_SETTINGS_PATH } from '../../adapters/folder/format/folderSettings'
 import { isSpacedLabel, labelSlug } from '../../projects/label'
 import type { LabelOutcome } from '../../projects/label'
@@ -77,6 +76,8 @@ import type {
 } from '../sync'
 
 const run = promisify(execFile)
+
+export { commandOf, gitEnvironment, GitRefused, useHooksFolder } from './gitGuard'
 
 /** One entry in the history, as a person reads it. */
 export type GitCommit = {
@@ -111,232 +112,11 @@ const KEEP_OURS_MESSAGE = 'Keep this folder\'s version over the remote\'s'
 /** The separator: a byte that cannot occur in a commit subject. */
 const UNIT = '\x1f'
 
-/**
- * Nothing here may ask a question. Without these a remote that wants a
- * password makes git wait on a pipe for an answer that never comes, and
- * `execFile` waits with it — on the desktop, before the first window has
- * drawn. With them, git fails, and the failure is a refusal the app can name.
- */
-const QUIET_ENV = {
-  GIT_TERMINAL_PROMPT: '0',
-  GIT_OPTIONAL_LOCKS: '0',
-}
-
-/** The `ssh` git runs when the process names none: one that never asks. */
-const QUIET_SSH = 'ssh -o BatchMode=yes'
-
-/**
- * The environment every git here runs in. An `ssh` command the process was
- * already given is kept: whoever set it chose the key and the host file, and
- * took on keeping it from asking — a process that runs unattended with a key
- * of its own names it this way, and overwriting it would push with no key at
- * all. Where none is set, the quiet one above.
- */
-export function gitEnvironment(from: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
-  const ssh = from.GIT_SSH_COMMAND?.trim() ? from.GIT_SSH_COMMAND : QUIET_SSH
-  return { ...from, ...QUIET_ENV, GIT_SSH_COMMAND: ssh }
-}
-
 type GitError = Error & { stderr?: string; killed?: boolean; signal?: string; code?: number | string }
 
-/** Where the empty hooks folder is: the app's own, where main says; a temporary one of this process's where nobody does. */
-let hooksFolder: Promise<string> | undefined
-
-/**
- * The empty folder every git here is told its hooks are in. Main names one
- * in its own data folder at start; made where it is not there, and emptied of
- * nothing — it is the app's, which no page reaches.
- */
-export function useHooksFolder(path: string): void {
-  hooksFolder = mkdir(path, { recursive: true }).then(() => path)
-}
-
-function noHooks(): Promise<string> {
-  hooksFolder ??= mkdtemp(join(tmpdir(), 'lvarch-no-hooks-'))
-  return hooksFolder
-}
-
-/**
- * What every git here is run with, before its command: no hook, no
- * file-system monitor, and no `ext::` transport, which runs whatever command a
- * remote's address says. With `root` and a command that could start a program
- * a configuration names, also {@link folderPrograms}.
- */
-export async function quietConfig(root?: string, args: readonly string[] = []): Promise<string[]> {
-  return (await hardened(root, args)).flags
-}
-
-/** Every argument a git here is run with: the flags, then its own, with what its command must be told. */
+/** Every argument a git in this folder is run with: what it is always run with, what the folder may say, then its own. */
 export async function gitArgs(root: string, args: readonly string[]): Promise<string[]> {
-  const { flags, options } = await hardened(root, args)
-  if (options.length === 0) return [...flags, ...args]
-  const at = commandAt(args)
-  return [...flags, ...args.slice(0, at + 1), ...options, ...args.slice(at + 1)]
-}
-
-async function hardened(root: string | undefined, args: readonly string[]): Promise<Hardened> {
-  const base = [
-    '-c', `core.hooksPath=${await noHooks()}`, '-c', 'core.fsmonitor=false', '-c', 'protocol.ext.allow=never',
-  ]
-  const command = commandOf(args)
-  if (root === undefined || !CONFIGURED.has(command)) return { flags: base, options: [] }
-  const programs = await folderPrograms(root, base, command)
-  return { flags: [...base, ...programs.flags], options: programs.options }
-}
-
-type Hardened = { flags: string[]; options: string[] }
-
-/**
- * The commands that may start a program a configuration names: those that run
- * a file through a filter or a merge driver, sign, talk to a remote, ask for a
- * credential, or open an editor or a pager. Only they read the folder's
- * configuration first — a read of git's own objects starts none, and a second
- * git for each of those would be one for nothing.
- */
-const CONFIGURED: ReadonlySet<string> = new Set([
-  'add', 'am', 'apply', 'checkout', 'cherry-pick', 'clone', 'commit', 'diff', 'fetch', 'ls-remote', 'merge', 'mv',
-  'pull', 'push', 'rebase', 'reset', 'restore', 'revert', 'rm', 'stash', 'status', 'submodule', 'switch', 'tag',
-])
-
-/** Where the command is among a git's arguments: the first word that is not an option, or the value of one. */
-function commandAt(args: readonly string[]): number {
-  for (let at = 0; at < args.length; at += 1) {
-    if (args[at] === '-c' || args[at] === '-C') { at += 1; continue }
-    if (!args[at].startsWith('-')) return at
-  }
-  return -1
-}
-
-/** The command a git is run with. */
-export function commandOf(args: readonly string[]): string {
-  const at = commandAt(args)
-  return at < 0 ? '' : args[at]
-}
-
-/**
- * The keys whose value is a program git starts, or says whether one starts —
- * a filter's or a merge driver's, a diff's, a signer, a credential helper, an
- * askpass, a proxy, an ssh, a pager, an editor, the program a remote runs —
- * and where a worktree keeps configuration of its own.
- */
-const PROGRAM_KEYS = new RegExp([
-  '^filter\\..+\\.(clean|smudge|process|required)$', '^diff\\..+\\.(command|textconv)$', '^diff\\.external$',
-  '^merge\\..+\\.driver$', '^remote\\..+\\.(uploadpack|receivepack)$', '^credential\\.(.+\\.)?helper$',
-  '^core\\.(askpass|gitproxy|sshcommand|pager|editor)$', '^(commit|tag)\\.gpgsign$', '^gpg\\.(format|program)$',
-  '^gpg\\..+\\.program$', '^gpg\\.ssh\\.defaultkeycommand$', '^extensions\\.worktreeconfig$',
-].join('|'))
-
-/** What a key is where the person's own configuration says nothing: git's own default, or no program. */
-const NONE: Readonly<Record<string, string>> = {
-  'commit.gpgsign': 'false', 'tag.gpgsign': 'false', 'gpg.format': 'openpgp', 'gpg.program': 'gpg',
-  'gpg.openpgp.program': 'gpg', 'gpg.x509.program': 'gpgsm', 'gpg.ssh.program': 'ssh-keygen',
-  'core.pager': 'cat', 'core.editor': ':',
-}
-
-type Entry = { origin: string; key: string; value: string }
-
-/** Every entry for those keys, where each came from; none where git says nothing. */
-async function entriesIn(root: string, base: readonly string[], scope: readonly string[]): Promise<Entry[]> {
-  try {
-    const { stdout } = await run('git', [
-      ...base, 'config', '-z', '--show-origin', ...scope, '--includes', '--get-regexp', PROGRAM_KEYS.source,
-    ], { cwd: root, timeout: TIMEOUT_MS, windowsHide: true, env: gitEnvironment() })
-    // An origin, then its key and value apart by the first line break — a
-    // value is a command, with dots and spaces of its own — each ended by NUL.
-    const fields = stdout.split('\0')
-    const entries: Entry[] = []
-    for (let at = 0; at + 1 < fields.length; at += 2) {
-      const pair = fields[at + 1]
-      const brk = pair.indexOf('\n')
-      entries.push({ origin: fields[at], key: brk < 0 ? pair : pair.slice(0, brk), value: brk < 0 ? '' : pair.slice(brk + 1) })
-    }
-    return entries
-  } catch {
-    return []
-  }
-}
-
-/**
- * The folder's own configuration, and everybody else's: what the folder keeps
- * — `.git/config`, what it includes, and a worktree's own where there is one —
- * read apart from all of it, so that what is left is the machine's, the
- * person's global one and what the process was started with.
- */
-async function configurations(root: string, base: readonly string[]): Promise<{ folder: Entry[]; own: Entry[] }> {
-  const [all, local] = await Promise.all([entriesIn(root, base, []), entriesIn(root, base, ['--local'])])
-  const worktree = local.some((entry) => entry.key === 'extensions.worktreeconfig' && /^(true|yes|on|1)$/i.test(entry.value))
-    ? await entriesIn(root, base, ['--worktree'])
-    : []
-  const folder = [...local, ...worktree]
-  const counted = new Map<string, number>()
-  const id = (entry: Entry) => `${entry.origin}\u0001${entry.key}\u0001${entry.value}`
-  for (const entry of folder) counted.set(id(entry), (counted.get(id(entry)) ?? 0) + 1)
-  const own = all.filter((entry) => {
-    const left = counted.get(id(entry)) ?? 0
-    if (left === 0) return true
-    counted.set(id(entry), left - 1)
-    return false
-  })
-  return { folder, own }
-}
-
-/**
- * **Only the person's own configuration names a program; a folder's never
- * does.** Every key above the folder's configuration sets is set again, after
- * it, to the person's own value — the machine's, their global one — or, where
- * they have none, to git's default or to no program at all. Keys git does not
- * let a later value override are handled apart:
- *
- * - a credential helper is a list: it is emptied, and the person's own are
- *   named again, in their order;
- * - the program a remote runs is taken from the first value, so the command
- *   is told it instead (`--upload-pack`, `--receive-pack`);
- * - a proxy is taken from the first value too, and serves only the `git://`
- *   transport, which is then refused;
- * - a filter whose own programs are the folder's alone runs nothing and is not
- *   required, so the file is taken as it is. Git reads an empty `process` as
- *   no filter at all, so a folder that names one the person does not turns
- *   the whole filter off: the safe way to be wrong.
- *
- * A key whose name holds an `=` cannot be overridden — `-c` reads its key up
- * to the first — so the command is refused rather than run.
- */
-async function folderPrograms(root: string, base: readonly string[], command: string): Promise<Hardened> {
-  const { folder, own } = await configurations(root, base)
-  const keys = new Set(folder.map((entry) => entry.key).filter((key) => key !== 'extensions.worktreeconfig'))
-  if (keys.size === 0) return { flags: [], options: [] }
-  if ([...keys].some((key) => key.includes('='))) {
-    throw new Error('this folder’s configuration names a program under a key that cannot be overridden; nothing was run')
-  }
-  const theirs = (key: string) => own.filter((entry) => entry.key === key).map((entry) => entry.value)
-  const flags: string[] = []
-  const options: string[] = []
-  const emptiedFilters = new Set<string>()
-  const credentials = /^credential\.(.+\.)?helper$/
-  for (const key of keys) {
-    if (credentials.test(key)) continue
-    if (key === 'core.gitproxy') { flags.push('-c', 'protocol.git.allow=never'); continue }
-    const remote = /^remote\.(.+)\.(uploadpack|receivepack)$/.exec(key)
-    if (remote) {
-      if (remote[2] === 'uploadpack' && ['fetch', 'pull', 'ls-remote', 'clone'].includes(command)) options.push('--upload-pack=git-upload-pack')
-      if (remote[2] === 'receivepack' && command === 'push') options.push('--receive-pack=git-receive-pack')
-      continue
-    }
-    const filter = /^filter\.(.+)\.(clean|smudge|process|required)$/.exec(key)
-    if (filter?.[2] === 'required') continue
-    const value = theirs(key).at(-1) ?? NONE[key] ?? ''
-    if (filter && theirs(key).length === 0) emptiedFilters.add(filter[1])
-    flags.push('-c', `${key}=${value}`)
-  }
-  for (const name of new Set([...keys].flatMap((key) => /^filter\.(.+)\.required$/.exec(key)?.[1] ?? []).concat([...emptiedFilters]))) {
-    const required = emptiedFilters.has(name) ? 'false' : theirs(`filter.${name}.required`).at(-1) ?? 'false'
-    flags.push('-c', `filter.${name}.required=${required}`)
-  }
-  if ([...keys].some((key) => credentials.test(key))) {
-    flags.push('-c', 'credential.helper=')
-    for (const entry of own) if (credentials.test(entry.key)) flags.push('-c', `${entry.key}=${entry.value}`)
-  }
-  return { flags, options: [...new Set(options)] }
+  return [...await guardedFlags(root, args), ...args]
 }
 
 export async function git(root: string, args: readonly string[], timeout = TIMEOUT_MS): Promise<string> {
