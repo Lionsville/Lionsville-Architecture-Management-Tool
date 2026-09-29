@@ -491,7 +491,21 @@ repositories, in `src/adapters/folder/`:
   the folder: a page can write a repository there as plain files, and git
   runs the hooks of a repository it pushes to on this machine as that
   repository's own. One outside the folder — a shared drive, a disk — is the
-  person's, and its hooks run as git runs them for any local remote.
+  person's, and its hooks run as git runs them for any local remote. The app
+  talks only to a remote the configuration names: a branch's remote, push
+  remote or `remote.pushDefault` that names none is refused, since git reads
+  such a name as an address; so is a remote named the old way, in
+  `.git/remotes` or `.git/branches`, and a repository given to a fetch, pull,
+  push or listing that is a path inside the folder. Before a fetch or a push,
+  every address git would reach the remote by, as `git remote get-url` says it
+  after every rewrite, is held to the same rule.
+
+  **Large files kept with git-lfs** go up before the commits that point at
+  them: git-lfs uploads them from the hook git runs before a push, and no hook
+  runs here, so where the folder's attributes hand files to `lfs` and the
+  person's own configuration defines that filter, the person's git-lfs is
+  asked to push them (`git lfs push <remote> HEAD`); where it does not, the
+  push is refused, saying large files would not be uploaded.
 
   So a person who signs keeps signing with their own signer and key, their
   credential helpers and a filter they define — git-lfs as it installs

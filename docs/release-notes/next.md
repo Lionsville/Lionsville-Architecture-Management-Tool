@@ -27,17 +27,30 @@ refused: git's own proxy command, the upload-pack and receive-pack programs, a
 pager for one command, an address rewrite and a cookie file. In a folder that
 sets one, a snapshot, a label, a pull or a push is refused, and the message
 names that setting: remove it, or use git yourself in that folder.
-Git-lfs set up for one folder only (`git lfs install --local`) is refused,
-naming the filter, rather than committing large files whole; `git lfs install`
-sets it up for you and it runs again. A remote that is a folder inside the
-working folder is refused. The desktop now needs **git 2.26 or newer**, to tell
-a folder's settings from yours; an older git is told so, in the one sentence the
-history has for it.
+The app pulls from and pushes to only a remote named in the folder's
+configuration. A remote that is a folder inside the working folder is refused,
+however it is reached: named as a remote, given as a branch's remote, arrived
+at through an address rewrite, or named the old way in `.git/remotes` or
+`.git/branches`. A remote elsewhere on your machine, such as a shared drive,
+works, and its own hooks run as git runs them.
+
+**Large files kept with git-lfs are now uploaded when you push.** Git-lfs
+uploads them from a hook, and the app runs no hooks, so earlier versions,
+3.2.1 included, pushed the pointers without the files. Where your own
+configuration sets git-lfs up (`git lfs install`), the app now runs
+`git lfs push` before each push. Where it does not, the push is refused with a
+sentence saying large files would not be uploaded. Git-lfs set up for one
+folder only (`git lfs install --local`) is refused, naming the filter, rather
+than committing large files whole; `git lfs install` sets it up for you and it
+runs again.
+
+The desktop now needs **git 2.26 or newer**, to tell a folder's settings from
+yours; an older git is told so, in the one sentence the history has for it.
 
 The hole predates this release. **Update the desktop app**, and check
 `.git/config` in every folder you opened with the previous version: a setting
-written through the old hole could name a filter, a signing program or a
-credential helper that git would run.
+written through the old hole could name a filter, a signing program, a
+credential helper or a remote that git would use.
 
 **Every place your work is kept now keeps a history.** Snapshot…, History…,
 restoring and labels used to be the desktop's, and only where git was
