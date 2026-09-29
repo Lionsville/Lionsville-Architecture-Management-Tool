@@ -98,8 +98,12 @@ export function FolderAdoptionQuestion({ own, adoption, preferences, reread, flu
     // Scopes somebody worked in while they were being copied are theirs, and
     // said by name: the outcome is not a plain success.
     const meanwhile = tally.meanwhile.length > 0 ? ` ${s('folder.adoptMeanwhile', { paths: pathsOf(tally.meanwhile) })}` : ''
+    // Nothing copied at all is said plainly, and not as a count of none.
+    const text = meanwhile && missed === 0 && tally.scopes === 0
+      ? s('folder.adoptNoneMeanwhile', { name: adoption.name, paths: pathsOf(tally.meanwhile) })
+      : said + meanwhile
     setStage({
-      at: 'said', severity: missed === 0 && !meanwhile ? 'success' : 'warning', text: said + meanwhile,
+      at: 'said', severity: missed === 0 && !meanwhile ? 'success' : 'warning', text,
       ...(tally.failed > 0 ? { again: true as const } : {}),
     })
   }, [own, adoption, preferences, reread, s])

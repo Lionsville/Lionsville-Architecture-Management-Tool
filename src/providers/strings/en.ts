@@ -126,6 +126,7 @@ export const EN = {
   'folder.adoptPartly': '{copied} copied; {failed} could not be copied: {paths}.',
   'folder.adoptFailed': 'Nothing was copied: {message}',
   'folder.adoptMeanwhile': 'Left as they were, because they changed meanwhile: {paths}.',
+  'folder.adoptNoneMeanwhile': 'Nothing was copied into \u201c{name}\u201d: left as they were, because they changed meanwhile: {paths}.',
   'folder.adoptAgain': 'Try again',
   'folder.adoptClose': 'Close',
 } as const

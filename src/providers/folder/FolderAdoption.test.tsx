@@ -185,7 +185,7 @@ describe('the question a folder pick asks', () => {
     fireEvent.click(screen.getByTestId('adopt-copy'))
     await settled()
     expect(screen.getByTestId('adopt-outcome').textContent)
-      .toBe('0 copied into “test2”. Left as they were, because they changed meanwhile: acme.')
+      .toBe('Nothing was copied into “test2”: left as they were, because they changed meanwhile: acme.')
     expect((await readScope(folder.scopes, 'acme'))?.model.name).toBe('Acme, worked on')
   })
 

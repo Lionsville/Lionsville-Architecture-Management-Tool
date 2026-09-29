@@ -88,6 +88,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'folder.adoptPartly': '{copied} gekopieerd; {failed} kon niet worden gekopieerd: {paths}.',
   'folder.adoptFailed': 'Er is niets gekopieerd: {message}',
   'folder.adoptMeanwhile': 'Gelaten zoals ze waren, want ze zijn intussen gewijzigd: {paths}.',
+  'folder.adoptNoneMeanwhile': 'Niets gekopieerd naar \u201c{name}\u201d: gelaten zoals ze waren, want ze zijn intussen gewijzigd: {paths}.',
   'folder.adoptAgain': 'Opnieuw proberen',
   'folder.adoptClose': 'Sluiten',
 }
