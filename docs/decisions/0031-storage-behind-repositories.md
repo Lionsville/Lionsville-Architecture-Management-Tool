@@ -400,52 +400,68 @@ repositories, in `src/adapters/folder/`:
   nothing else** (`platform/node/gitGuard.ts`). A folder arrives from anywhere
   — a zip, a shared drive, a clone — and git reads its `.git/config` on every
   command. So before every git the app runs with a folder, reads included,
-  that configuration — `.git/config`, a worktree's own and what they include —
-  is read apart from the person's (the machine's, their global one, what the
-  process was started with), and each key it sets is one of three things.
+  its whole configuration is read in one read that says of each key whose it
+  is (`--show-scope`): the folder's are those of `.git/config` and a
+  worktree's own, and of any file either includes, however it came to be
+  included; the rest — the machine's, the person's global one, what the
+  process was started with — is the person's. It is read at every git and
+  never kept, since nothing kept can say what git will read after a branch
+  switch or through a `.git` that points elsewhere; a read that fails
+  refuses the command, and git older than 2.26, which cannot say whose a key
+  is, is asked to be updated. Keys are matched as git matches them, without
+  regard to case. Each key the folder sets is one of three things.
   - **Allowed**, as the folder says it — what a repository needs to be one,
-    and settings that start no program, send nothing anywhere and read no file
-    outside it: `core.` format and disk keys (`repositoryformatversion`,
+    and settings that start no program, send nothing anywhere and read no
+    file outside it: `core.` format and disk keys (`repositoryformatversion`,
     `bare`, `filemode`, `ignorecase`, `precomposeunicode`, `symlinks`,
-    `logallrefupdates`, `autocrlf`, `eol`, `safecrlf`, `sparsecheckout` and
-    the like), because a repository is not one without them and each only
-    says how git sees the disk; `user.`, `author.` and `committer.` names,
-    emails and signing key, because who commits is the folder's to say and a
-    signing key names a key, never a program; `remote.<name>` addresses,
-    refspecs and pruning, and `branch.<name>` tracking, because syncing needs
-    them; `submodule.<name>` addresses and state, since nothing enters a
-    submodule; `extensions.` git knows (`objectFormat`, `worktreeConfig`,
-    `preciousObjects`, `refStorage`, `partialClone`, `noop`); `init.defaultBranch`;
-    `include.path` and `includeIf.<condition>.path`, whose files are read and
-    held to the same rules; `lfs.` settings but its custom transfers and
-    extensions, since git-lfs's filter is the person's; and display,
-    housekeeping and default settings (`color.`, `gc.`, `pack.`, `index.`,
-    `status.`, `gui.`, `pull.`, `push.`, `fetch.`, `merge.` and `diff.` of
-    one level, and the like) but those that name a program or a file
-    (`diff.external`, `diff.orderFile`, `merge.tool`, `fetch.bundleUri`,
-    `gc.recentObjectsHook`, `blame.ignoreRevsFile`).
+    `logallrefupdates`, `autocrlf`, `eol`, `safecrlf`, `sparsecheckout`,
+    `sharedRepository` and the like), because a repository is not one
+    without them and each only says how git sees the disk; `user.`,
+    `author.` and `committer.` names and emails, because who commits is the
+    folder's to say; `remote.<name>` addresses, refspecs and pruning,
+    `remote.pushDefault`, `branch.<name>` tracking and `branch.sort`, because
+    syncing needs them; `submodule.<name>` addresses and state, since nothing
+    enters a submodule; `extensions.` git knows (`objectFormat`,
+    `worktreeConfig`, `preciousObjects`, `refStorage`, `partialClone`,
+    `noop`); `init.defaultBranch`; `include.path` and
+    `includeIf.<condition>.path`, whose files are read and held to the same
+    rules, and refused where they lie in the work tree, where a page can
+    write them; `lfs.` settings but its custom transfers and extensions,
+    since git-lfs's filter is the person's; `commit.` settings but signing
+    and the template file; `http.postBuffer` and `credential.useHttpPath`;
+    what only commands the app never runs read (`difftool.`, `mergetool.`,
+    `diff.tool`, `merge.tool`, `sendemail.`, `svn-remote.`); a diff driver's
+    `xfuncname`; and display, housekeeping and default settings (`color.`,
+    `gc.`, `pack.`, `index.`, `status.`, `gui.`, `pull.`, `push.`, `fetch.`,
+    `merge.` and `diff.` of one level, and the like) but those that name a
+    program, sign or read a file (`diff.external`, `diff.orderFile`,
+    `fetch.bundleUri`, `gc.recentObjectsHook`, `blame.ignoreRevsFile`,
+    `tag.forceSignAnnotated`, `push.gpgSign`).
   - **Set again, after it**, to the person's own value, or where they have
     none to git's default or to no program: signing (`commit.gpgSign`,
-    `tag.gpgSign`, `gpg.format`, `gpg.program`, `gpg.<format>.program`,
-    `gpg.ssh.defaultKeyCommand`), `core.askPass`, `core.sshCommand`,
-    `core.pager`, `core.editor`, `sequence.editor`, `diff.external`,
-    `diff.<driver>.command` and `.textconv`, `merge.<driver>.driver`, a
-    filter's `clean`, `smudge`, `process` and `required`, `http.proxy` and
-    `remote.<name>.proxy`, `http.extraHeader`,
-    `branch.<name>.mergeOptions`, `submodule.<name>.update`,
-    `core.attributesFile` and `core.excludesFile`. A credential helper is a
-    list: it is emptied, and the person's own are named again in their order.
+    `tag.gpgSign`, `tag.forceSignAnnotated`, `push.gpgSign`, `gpg.format`,
+    `gpg.program`, `gpg.<format>.program`, `gpg.ssh.defaultKeyCommand`, and
+    `user.signingKey`, whose default is who commits), `core.askPass`,
+    `core.sshCommand`, `core.pager`, `core.editor`, `sequence.editor`,
+    `diff.external`, `diff.<driver>.command` and `.textconv`,
+    `merge.<driver>.driver`, a filter's `clean`, `smudge`, `process` and
+    `required`, `branch.<name>.mergeOptions`, `submodule.<name>.update`,
+    `commit.template`, `core.attributesFile` and `core.excludesFile`. A proxy
+    (`http.proxy`, `remote.<name>.proxy`) is the person's own or the one the
+    process's environment names, never turned off. A list an empty value
+    empties — a credential helper, `http.extraHeader` — is emptied, and the
+    person's own are named again in their order.
   - **Refused**, the command not run and the key named: a key git takes from
     its first value, so nothing set after it wins (`core.gitProxy`,
-    `remote.<name>.uploadPack` and `.receivePack`); a key named with an `=`,
-    which `-c` cannot reach; an extension git may not know; a `core.worktree`
-    other than the folder itself; and any other key the folder sets that is
-    not allowed and has no value to set in its place — `http.sslCAInfo`, say,
-    or `url.<base>.insteadOf`. A person can remove it, or use git themselves.
-
-  The read is kept per folder, and read again only when a file it came from
-  or might come from — the configuration files, what they include, `HEAD` for
-  a conditional include — has changed.
+    `remote.<name>.uploadPack` and `.receivePack`); an address rewrite
+    (`url.<base>.insteadOf`, `.pushInsteadOf`), every value of which counts
+    and which an empty value would make a rewrite of every address; a key
+    named with an `=`, which `-c` cannot reach; an extension git may not
+    know; a `core.worktree` other than the folder itself; and any other key
+    the folder sets that is not allowed and has no value to set in its place
+    — `http.sslCAInfo`, say, or `http.cookieFile`. A person can remove it, or
+    use git themselves; a sync refused this way says so in the folder's
+    strip, in the refusal's own words, which name the key.
 
   **Always**, whatever the folder says: no hook (`core.hooksPath` is an empty
   folder of the app's), no file-system monitor, no `ext::` transport, no
@@ -453,9 +469,10 @@ repositories, in `src/adapters/folder/`:
   submodule entered (`submodule.recurse`, `fetch.recurseSubmodules`,
   `push.recurseSubmodules`), TLS checked as the person checks it (`true`
   where they say nothing), and this folder the work tree. The `GIT_DIR` and
-  the like the process may have been started with are not passed on, and the
-  `ssh` git runs is the one the process names, which git takes before any
-  configuration's.
+  the like the process may have been started with are not passed on, a
+  partial clone fetches nothing it lacks but on a fetch
+  (`GIT_NO_LAZY_FETCH`), and the `ssh` git runs is the one the process
+  names, which git takes before any configuration's.
 
   **A remote that is a path on this machine** is refused where it lies inside
   the folder: a page can write a repository there as plain files, and git
@@ -463,7 +480,7 @@ repositories, in `src/adapters/folder/`:
   repository's own. One outside the folder — a shared drive, a disk — is the
   person's, and its hooks run as git runs them for any local remote.
 
-  So a person who signs keeps signing with their own signer, their
+  So a person who signs keeps signing with their own signer and key, their
   credential helpers and a filter they define — git-lfs as it installs
   itself — run as they always did, and a filter only the folder defines runs
   nothing: the file is taken as it is, which for an LFS set up for one folder
