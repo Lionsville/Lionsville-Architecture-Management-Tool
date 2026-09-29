@@ -28,6 +28,8 @@ export class FolderImageRepository implements ImageRepository {
   async put(scope: ScopeId, name: ImageName, bytes: Uint8Array): Promise<Put> {
     const refused = imageNameRefusal(name)
     if (refused) return { refused }
+    // Bytes for no scope would be held for nobody, and never let go of with a scope.
+    if (!await this.folder.resolve(scope)) return { refused: 'shell.scopeGone' }
     const contentAddress = await contentAddressOf(bytes)
     this.staging.put(scope, contentAddress, bytes)
     return { contentAddress }

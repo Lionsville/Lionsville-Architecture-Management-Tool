@@ -387,6 +387,7 @@ class Memory {
   private async put(scope: ScopeId, name: ImageName, bytes: Uint8Array): Promise<Put> {
     const refused = imageNameRefusal(name)
     if (refused) return { refused }
+    if (!this.kept.has(scope)) return { refused: 'shell.scopeGone' }
     const contentAddress = await contentAddressOf(bytes)
     const held = this.stored.get(scope) ?? new Map<ContentAddress, Uint8Array>()
     held.set(contentAddress, new Uint8Array(bytes))

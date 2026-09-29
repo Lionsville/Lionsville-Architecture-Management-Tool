@@ -40,8 +40,10 @@ export type ImageBytes = {
   bytes: Uint8Array
 }
 
-/** Bytes kept, under their content address; or the key for a name no picture may have. */
-export type Put = { contentAddress: ContentAddress } | { refused: 'shell.imageBadName' | 'shell.imageBadType' }
+/** Bytes kept, under their content address; or the key for a name no picture may have, or a scope that is not there. */
+export type Put =
+  | { contentAddress: ContentAddress }
+  | { refused: 'shell.imageBadName' | 'shell.imageBadType' | 'shell.scopeGone' }
 
 export interface ImageRepository {
   readonly id: string
@@ -49,7 +51,9 @@ export interface ImageRepository {
   /**
    * Keep a picture's bytes for a scope, to be added to its library under
    * `name`, and answer their content address. The media type is the name's.
-   * The same bytes put twice are kept once, under one address.
+   * The same bytes put twice are kept once, under one address. Refused,
+   * `shell.scopeGone`, for a scope that is not there: bytes kept for no scope
+   * would be kept for nobody, and never let go of with a scope.
    */
   put(scope: ScopeId, name: ImageName, bytes: Uint8Array): Promise<Put>
 

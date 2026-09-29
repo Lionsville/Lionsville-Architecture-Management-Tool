@@ -61,6 +61,13 @@ export function describeImageRepository(name: string, make: MakeRepositories): v
       expect(refusal(await repositories.images.put(acme, 'animation.gif', bytes(1)))).toBe('shell.imageBadType')
     })
 
+    it('refuses bytes for a scope that is not there, or was removed', async () => {
+      const { repositories, acme } = await fresh()
+      expect(refusal(await repositories.images.put('no such scope', 'context.png', bytes(1)))).toBe('shell.scopeGone')
+      ok(await repositories.remove(acme))
+      expect(refusal(await repositories.images.put(acme, 'context.png', bytes(1)))).toBe('shell.scopeGone')
+    })
+
     it('answers nothing by name for bytes put and never added to the library', async () => {
       const { repositories, acme } = await fresh()
       ok(await repositories.images.put(acme, 'context.png', bytes(1, 2, 3)))
