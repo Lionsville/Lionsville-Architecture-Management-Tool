@@ -53,11 +53,19 @@ import { EN } from '../../src/platform/strings/en'
 
 /**
  * Commands sent before anything in the window listens: held, and sent the
- * moment something does (`app:listening`, from the preload). The boot reads
- * the preferences, opens where work is kept and may pull a folder before the
- * app is up to hear a menu item, and a command sent then was one that
- * silently did nothing.
+ * moment something does (`app:listening`, from the preload), in the order
+ * they were sent. The boot reads the preferences, opens where work is kept
+ * and may pull a folder before the app is up to hear a menu item, and a
+ * command sent then was one that silently did nothing.
+ *
+ * A window that never says it listens — its renderer crashed before the app
+ * was up — is never sent anything, so what waits for it is bounded: the first
+ * {@link HELD_AT_MOST} are kept, and any sent after them are dropped, as every
+ * early command was before. A person does not press a menu item that many
+ * times into a window that shows nothing, and the documents the OS hands over
+ * wait in main as paths, not here (`index.ts`).
  */
+export const HELD_AT_MOST = 16
 const held: HostCommand[] = []
 let listening = false
 
@@ -70,7 +78,7 @@ let listening = false
  */
 export function sendCommand(command: HostCommand): void {
   if (!listening) {
-    held.push(command)
+    if (held.length < HELD_AT_MOST) held.push(command)
     return
   }
   const all = webContents.getAllWebContents().filter((open) => !open.isDestroyed())
