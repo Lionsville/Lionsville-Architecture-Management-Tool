@@ -20,11 +20,11 @@ import { sameRecord } from '../../model/recordKey'
 import type { RecordKey } from '../../model/recordKey'
 import type { ScopeId, ScopeState } from '../../projects/scopeState'
 import type {
-  EntriesWanted, EntryId, EntryLabelled, HistoryEntry, HistoryPage, HistoryRepository, RecordWanted,
+  EntriesWanted, EntryId, EntryLabelled, HistoryEntry, HistoryPage, HistoryRepository, RecordWanted, UnreadKept,
 } from '../../ports/HistoryRepository'
 import { keyOf, prefix } from './KeyedStore'
 import type { Transaction } from './KeyedStore'
-import { stateAtEntry } from './entryStates'
+import { stateAtEntry, unreadAtEntry } from './entryStates'
 import { sweepUnnamed } from './imageNames'
 import { allScopes, closeEntry, entryKey, META_KEY, readMeta } from './kept'
 import type { KeptEntry } from './kept'
@@ -38,8 +38,11 @@ function seqOf(entry: EntryId): number | undefined {
   return /^[1-9]\d*$/.test(String(entry)) ? Number(entry) : undefined
 }
 
-function listed({ seq, scope, at, by, subject, labels, moved }: KeptEntry): HistoryEntry {
-  return { id: String(seq), scope, at, by, labels, ...(subject !== undefined ? { subject } : {}), ...(moved ? { moved } : {}) }
+function listed({ seq, scope, at, by, subject, labels, moved, unread }: KeptEntry): HistoryEntry {
+  return {
+    id: String(seq), scope, at, by, labels,
+    ...(subject !== undefined ? { subject } : {}), ...(moved ? { moved } : {}), ...(unread ? { unread } : {}),
+  }
 }
 
 export class KeptHistory implements HistoryRepository {
@@ -91,6 +94,16 @@ export class KeptHistory implements HistoryRepository {
     const seq = seqOf(entry)
     if (seq === undefined) return Promise.resolve(undefined)
     return this.source.read((tx) => stateAtEntry(tx, scope, seq))
+  }
+
+  /** The content as it was stored where it could not be read, written out as JSON. */
+  unreadAt(scope: ScopeId, entry: EntryId): Promise<UnreadKept | undefined> {
+    const seq = seqOf(entry)
+    if (seq === undefined) return Promise.resolve(undefined)
+    return this.source.read(async (tx) => {
+      const unread = await unreadAtEntry(tx, scope, seq)
+      return unread === undefined ? undefined : { text: JSON.stringify(unread, null, 2), mediaType: 'application/json', extension: 'json' }
+    })
   }
 
   label(scope: ScopeId, entry: EntryId, name: string): Promise<EntryLabelled> {

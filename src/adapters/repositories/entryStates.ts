@@ -239,6 +239,12 @@ async function readAt(tx: Transaction, scope: ScopeId, seq: number): Promise<Rea
 }
 
 /** The state at an entry, or `undefined` for an entry the scope does not have. */
+/** What an entry's state kept of the scope's content where it could not be read, as it was stored; `undefined` where it kept none. */
+export async function unreadAtEntry(tx: Transaction, scope: ScopeId, seq: number): Promise<unknown> {
+  const kept = await tx.get<KeptEntryState>('entryStates', entryKey(scope, seq))
+  return kept?.form === 'checkpoint' ? kept.unread : undefined
+}
+
 export async function stateAtEntry(tx: Transaction, scope: ScopeId, seq: number): Promise<ScopeState | undefined> {
   const read = await readAt(tx, scope, seq)
   return read && stateOf(read.parts)

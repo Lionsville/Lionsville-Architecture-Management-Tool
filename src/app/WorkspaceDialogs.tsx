@@ -17,6 +17,8 @@ import type { SearchHit } from '../search/search'
 import { flattenScopes } from '../projects/scope'
 import type { ScopePath } from '../projects/scopePath'
 import { HistoryPage } from './history/lazyHistoryPage'
+import { useSaveUnread } from './history/saveUnread'
+import type { SavedDocument } from '../ports/DocumentGateway'
 import { SnapshotDialog } from './history/SnapshotDialog'
 import { AddFromLibraryDialog } from './dialogs/AddFromLibraryDialog'
 import { ChooseBoardDialog } from './dialogs/ChooseBoardDialog'
@@ -118,6 +120,14 @@ export function useWorkspaceDialogs(deps: {
 export function HistoryDialogs({ parts }: { parts: WorkspaceParts }) {
   const { props, session, snapshots, diagrams, readings, pageChrome } = parts
   const { s, language } = props.shell
+  const documents = props.files.documents
+  const saveUnread = useSaveUnread({
+    history: props.snapshots.history,
+    keep: useCallback((doc: SavedDocument) => documents.save(doc), [documents]),
+    scopeName: useCallback(() => session.snapshot().model.name, [session]),
+    notify: props.shell.notify,
+    s,
+  })
   return (
     <>
       <SnapshotDialog
@@ -141,6 +151,7 @@ export function HistoryDialogs({ parts }: { parts: WorkspaceParts }) {
         scopes={snapshots.places.map((place) => readings.scopeLabel(place))}
         onRestore={snapshots.restore}
         whole={snapshots.whole}
+        {...(saveUnread ? { onSaveUnread: saveUnread } : {})}
         onLabel={snapshots.label}
         language={language}
         s={s}

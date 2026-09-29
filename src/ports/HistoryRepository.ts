@@ -65,7 +65,16 @@ export type HistoryEntry = {
    * is the scope's once moved. Absent on every other entry.
    */
   moved?: EntryMoved
+  /**
+   * The entry keeps, beside the scope's state, what of the scope could not be
+   * read when it was made: a scope put back whole was kept so first
+   * (`ScopeState.unreadable`). Read with {@link HistoryRepository.unreadAt}.
+   */
+  unread?: true
 }
+
+/** What an entry kept that could not be read, as text, with the media type and name ending a kept copy of it takes. */
+export type UnreadKept = { text: string; mediaType: string; extension: string }
 
 /** Where a scope was, and where a move took it. */
 export type EntryMoved = { from: ScopeAddress; to: ScopeAddress }
@@ -128,4 +137,13 @@ export interface HistoryRepository {
    * `unnamed` where nothing of the name survives.
    */
   label(scope: ScopeId, entry: EntryId, name: string): Promise<EntryLabelled>
+
+  /**
+   * What an entry kept of its scope that could not be read (`HistoryEntry.unread`),
+   * as the text a person may keep and take to somebody who can read it;
+   * `undefined` where the entry kept none. Optional: an implementation that
+   * sets what it could not read aside where a person finds it has nothing
+   * more to give here.
+   */
+  unreadAt?(scope: ScopeId, entry: EntryId): Promise<UnreadKept | undefined>
 }

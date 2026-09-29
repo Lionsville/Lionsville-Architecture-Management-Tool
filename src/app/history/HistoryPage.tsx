@@ -76,6 +76,12 @@ export type HistoryPageProps = {
    * is what the snapshot held — the part that could not is not.
    */
   whole?: boolean
+  /**
+   * Save what the chosen entry kept of the scope that could not be read, as a
+   * file the person keeps (`HistoryEntry.unread`); absent where the history
+   * cannot give it.
+   */
+  onSaveUnread?: (entry: HistoryEntry) => void
   /** Call the chosen snapshot something (ADR-0008). */
   onLabel: (name: string) => void
   language: Language
@@ -268,7 +274,7 @@ export function HistoryPage(props: HistoryPageProps) {
             <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, mb: 2 }}>
               <Typography sx={{ fontSize: 15, fontWeight: 600, minWidth: 0 }}>{titleOf(chosenEntry, s)}</Typography>
               <Box sx={{ flex: 1 }} />
-              <Button size="small" onClick={() => setLabelling(true)}>{s('history.label')}</Button>
+              <EntryActions entry={chosenEntry} onLabel={() => setLabelling(true)} onSaveUnread={props.onSaveUnread} s={s} />
             </Box>
           )}
           {chosen && !chosen.model && (
@@ -357,4 +363,18 @@ function GoBackButton({ one, whole, changed, onPress, s }: {
  */
 function titleOf(entry: HistoryEntry, s: Translate): string {
   return entry.moved ? s('activity.scopeMoved', { from: entry.moved.from, to: entry.moved.to }) : entry.subject ?? ''
+}
+
+/** What can be done to the chosen entry: call it something, and save what it kept that could not be read. */
+function EntryActions({ entry, onLabel, onSaveUnread, s }: {
+  entry: HistoryEntry; onLabel: () => void; onSaveUnread: ((entry: HistoryEntry) => void) | undefined; s: Translate
+}) {
+  return (
+    <>
+      {entry.unread && onSaveUnread && (
+        <Button size="small" onClick={() => onSaveUnread(entry)} data-testid="history-save-unread">{s('history.saveUnread')}</Button>
+      )}
+      <Button size="small" onClick={onLabel}>{s('history.label')}</Button>
+    </>
+  )
 }

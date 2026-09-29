@@ -259,6 +259,8 @@ export type KeptEntry = {
   records: readonly RecordKey[]
   /** A move's entry: from which address to which (`HistoryEntry.moved`). */
   moved?: EntryMoved
+  /** Its state keeps what the scope's content was stored as where it could not be read (`HistoryEntry.unread`). */
+  unread?: true
 }
 
 /**
@@ -278,6 +280,7 @@ export async function closeEntry(
     seq: meta.entrySeq, scope: kept.id, at: pending.at, by,
     ...(subject !== undefined ? { subject } : {}), labels: [], records: pending.records,
     ...(moved ? { moved } : {}),
+    ...(unread !== undefined ? { unread: true as const } : {}),
   }
   tx.put('entries', entryKey(kept.id, entry.seq), entry)
   const state = await readState(tx, kept)

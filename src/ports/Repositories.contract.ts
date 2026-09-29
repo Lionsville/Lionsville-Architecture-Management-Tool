@@ -166,6 +166,7 @@ export function over(under: RepositoriesUnderTest) {
       entries: (wanted) => history.entries(wanted),
       stateAt: (scope, entry) => history.stateAt(scope, entry),
       label: (scope, entry, name) => settled(history.label(scope, entry, name)),
+      ...(history.unreadAt ? { unreadAt: (scope: ScopeId, entry: string) => history.unreadAt!(scope, entry) } : {}),
     } satisfies HistoryRepository,
     images: {
       id: images.id,

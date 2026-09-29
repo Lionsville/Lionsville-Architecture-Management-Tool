@@ -66,6 +66,30 @@ describe('a scope that could not be read whole', () => {
     // The scope as it stood, unread and all, is an entry of its history, before the put back.
     const [kept] = (await repositories.history.entries({ scopes: [acme] })).entries
     expect(kept.subject).toBe('Before it was put back from the history')
+    expect(kept.unread).toBe(true)
+  })
+
+  it('saves what an entry kept that could not be read as a file the person keeps', async () => {
+    const { repositories, acme } = await spoiled()
+    const project = await readScope(repositories.scopes, 'acme')
+    const { documents } = renderApp({ repositories, boot: { initialProject: project } })
+    fireEvent.click(within(await screen.findByTestId('unreadable-notice')).getByTestId('unreadable-put-back'))
+    fireEvent.click(await screen.findByTestId('history-restore'))
+    fireEvent.click(await screen.findByRole('button', { name: 'Put back' }))
+    await waitFor(() => expect(screen.queryByTestId('unreadable-notice')).toBeNull())
+    const [kept] = (await repositories.history.entries({ scopes: [acme] })).entries
+
+    fireEvent.click(await screen.findByTestId('overflow-button'))
+    await screen.findByTestId('overflow-menu')
+    fireEvent.click(await screen.findByText('History…'))
+    fireEvent.click(within(await screen.findByTestId('history-list')).getByText(kept.subject!))
+    fireEvent.click(await screen.findByTestId('history-save-unread'))
+    await waitFor(() => expect(documents.saved).toHaveLength(1))
+    const [saved] = documents.saved
+    expect(saved.name).toMatch(/^acme-\d{4}-\d{2}-\d{2}-unread\.json$/)
+    expect(saved.mediaType).toBe('application/json')
+    expect(JSON.parse(saved.text ?? '')).toMatchObject({ model: 'torn' })
+    expect(await screen.findByText('Saved what could not be read.')).toBeDefined()
   })
 
   /**

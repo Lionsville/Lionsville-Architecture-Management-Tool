@@ -534,6 +534,12 @@ export function describeScopeRepository(name: string, make: MakeRepositories): v
         const [newest] = (await repositories.history.entries({ scopes: [acme] })).entries
         const kept = (put.setAside?.length ?? 0) > 0 || (newest.id !== entries[0].id && newest.subject === 'As it stood')
         expect(kept).toBe(true)
+        // Kept in the history, it can be had back as text a person keeps.
+        if (!put.setAside?.length) {
+          expect(newest.unread).toBe(true)
+          expect((await repositories.history.unreadAt?.(acme, newest.id))?.text).toMatch(/\S/)
+          expect(await repositories.history.unreadAt?.(acme, entries[0].id)).toBeUndefined()
+        }
         await repositories.steps(acme, renameCrews)
         expect((await repositories.state(acme)).model.elements.find((one) => one.id === 'crews')?.name).toBe('Crew planning')
       })
