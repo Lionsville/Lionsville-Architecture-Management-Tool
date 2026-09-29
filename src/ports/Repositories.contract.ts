@@ -40,7 +40,7 @@ import type { HistoryRepository } from './HistoryRepository'
 import type { ImageRepository } from './ImageRepository'
 import type { Repositories } from './Repositories'
 import type {
-  Applied, Created, Moved, NewScope, Refused, Removed, ScopeRepository, StepsFor,
+  Applied, Created, Moved, NewScope, Refused, Removed, ScopeNode, ScopeRepository, StepsFor,
 } from './ScopeRepository'
 import type { SettingsRepository } from './SettingsRepository'
 
@@ -198,6 +198,13 @@ export function over(under: RepositoriesUnderTest) {
     },
     /** The organisation's identity. */
     root: async (): Promise<ScopeId> => (await scopes.tree()).root.id,
+    /** The identity of the scope at an address, which must be there. */
+    scopeAt: async (address: ScopeAddress): Promise<ScopeId> => {
+      const nodes = (node: ScopeNode): ScopeNode[] => [node, ...node.children.flatMap(nodes)]
+      const found = nodes((await scopes.tree()).root).find((node) => node.address === address)
+      expect(found, `a scope at ${address}`).toBeDefined()
+      return found!.id
+    },
     /** A scope's state, which must be there. */
     state: async (scope: ScopeId): Promise<ScopeState> => {
       const found = await scopes.state(scope)

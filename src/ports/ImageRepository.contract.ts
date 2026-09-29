@@ -147,6 +147,33 @@ export function describeImageRepository(name: string, make: MakeRepositories): v
       expect((await repositories.images.bytes(globex, 'context.png'))?.bytes).toEqual(bytes(2))
     })
 
+    it('keeps the libraries of the scopes under a moved one', async () => {
+      const { repositories } = await fresh()
+      const rail = await repositories.scope('acme/rail', 'Rail')
+      const stock = await repositories.scope('acme/rail/rolling-stock', 'Rolling stock')
+      const entry = await add(repositories, stock, 'wagons.png', bytes(4, 5, 6))
+      ok(await repositories.move(rail, 'globex/rail'))
+      expect(await repositories.images.find(stock, 'wagons.png')).toEqual(entry)
+      expect((await repositories.images.bytes(stock, 'wagons.png'))?.bytes).toEqual(bytes(4, 5, 6))
+      expect((await repositories.state(stock)).images).toEqual([entry])
+    })
+
+    it('starts a scope created where a removed one was with an empty library, its own and its children’s', async () => {
+      const { repositories, acme } = await fresh()
+      const rail = await repositories.scope('acme/rail', 'Rail')
+      await add(repositories, acme, 'context.png', bytes(1, 2, 3))
+      await add(repositories, rail, 'wagons.png', bytes(4, 5, 6))
+      ok(await repositories.remove(acme))
+      const again = await repositories.scope('acme/rail', 'Rail again')
+      const above = await repositories.scopeAt('acme')
+      for (const scope of [again, above]) {
+        expect(await repositories.images.list(scope, '')).toEqual({ images: [], imageFolders: [] })
+        expect((await repositories.state(scope)).images).toEqual([])
+      }
+      expect(await repositories.images.bytes(again, 'wagons.png')).toBeUndefined()
+      expect(await repositories.images.bytes(above, 'context.png')).toBeUndefined()
+    })
+
     it('keeps a scope’s library through a move, because it follows the identity', async () => {
       const { repositories, acme } = await fresh()
       const entry = await add(repositories, acme, 'diagrams/context.png', bytes(1, 2, 3))

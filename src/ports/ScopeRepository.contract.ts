@@ -519,6 +519,22 @@ export function describeScopeRepository(name: string, make: MakeRepositories): v
         expect(await addresses(repositories)).toEqual(['', 'acme', 'acme/road'])
       })
 
+      it('starts a scope created where a removed one was empty, with an identity of its own — under it too', async () => {
+        const repositories = await fresh()
+        const rail = await repositories.scope('acme/rail', 'Rail')
+        const stock = await repositories.scope('acme/rail/rolling-stock', 'Rolling stock')
+        await repositories.steps(rail, addCrews, { type: 'scope.describe', patch: { kind: 'domain' } })
+        await repositories.steps(stock, addDepot)
+        ok(await repositories.remove(rail))
+        const again = await repositories.scope('acme/rail/rolling-stock', 'Rolling stock again')
+        const above = await repositories.scopeAt('acme/rail')
+        expect([again, above]).not.toContain(stock)
+        expect([again, above]).not.toContain(rail)
+        expect((await repositories.state(again)).model.elements).toEqual([])
+        expect((await repositories.state(above)).model.elements).toEqual([])
+        expect((await repositories.state(above)).kind).toBeUndefined()
+      })
+
       it('refuses the organisation, and a removal that expects a revision somebody has moved on from', async () => {
         const repositories = await fresh()
         const acme = await repositories.scope('acme', 'Acme Logistics')

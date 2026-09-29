@@ -85,6 +85,26 @@ export function describeSettingsRepository(name: string, make: MakeRepositories)
       expect(await repositories.settings.read({ of: 'scope', scope: acme })).toEqual({ review: { quorum: 3 } })
     })
 
+    it('keeps the settings of the scopes under a moved one', async () => {
+      const { repositories } = await fresh()
+      const rail = await repositories.scope('globex/rail', 'Rail')
+      const stock = await repositories.scope('globex/rail/rolling-stock', 'Rolling stock')
+      await repositories.settings.write({ of: 'scope', scope: stock }, { review: { quorum: 1 } })
+      ok(await repositories.move(rail, 'initech/rail'))
+      expect(await repositories.settings.read({ of: 'scope', scope: stock })).toEqual({ review: { quorum: 1 } })
+    })
+
+    it('starts a scope created where a removed one was with no settings, its own and its children’s', async () => {
+      const { repositories, acme } = await fresh()
+      const rail = await repositories.scope('acme/rail', 'Rail')
+      await repositories.settings.write({ of: 'scope', scope: acme }, { who: 'acme' })
+      await repositories.settings.write({ of: 'scope', scope: rail }, { who: 'rail' })
+      ok(await repositories.remove(acme))
+      const again = await repositories.scope('acme/rail', 'Rail again')
+      expect(await repositories.settings.read({ of: 'scope', scope: again })).toEqual({})
+      expect(await repositories.settings.read({ of: 'scope', scope: await repositories.scopeAt('acme') })).toEqual({})
+    })
+
     it('hands out settings nobody else holds: changing what it answered changes nothing it keeps', async () => {
       const { repositories } = await fresh()
       await repositories.settings.write({ of: 'organisation' }, { review: { quorum: 2 } })

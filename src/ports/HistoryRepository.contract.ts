@@ -191,6 +191,20 @@ export function describeHistoryRepository(name: string, make: MakeRepositories):
       expect((await repositories.history.stateAt(acme, before[0].id))?.model.elements.map((element) => element.id)).toEqual(['crews'])
     })
 
+    it('follows the scopes under a moved one too: each keeps its entries, and reads them as they were', async () => {
+      const repositories = await fresh()
+      const rail = await repositories.scope('acme/rail', 'Rail')
+      const stock = await repositories.scope('acme/rail/rolling-stock', 'Rolling stock')
+      await repositories.steps(stock, addCrews)
+      await repositories.record('before the move')
+      const before = await everyEntry(repositories.history, { scopes: [stock] })
+      ok(await repositories.move(rail, 'globex/rail'))
+      const after = await everyEntry(repositories.history, { scopes: [stock] })
+      expect(after.map((entry) => entry.id)).toEqual(expect.arrayContaining(before.map((entry) => entry.id)))
+      const [newest] = before
+      expect((await repositories.history.stateAt(stock, newest.id))?.model.elements.map((element) => element.id)).toEqual(['crews'])
+    })
+
     it('starts a scope created where a removed one was with a history of its own', async () => {
       const { repositories, acme } = await withEntries(addCrews)
       const old = await everyEntry(repositories.history, { scopes: [acme] })
@@ -198,6 +212,20 @@ export function describeHistoryRepository(name: string, make: MakeRepositories):
       const again = await repositories.scope('acme', 'Acme again')
       const fresh = await everyEntry(repositories.history, { scopes: [again] })
       expect(fresh.map((entry) => entry.id)).not.toEqual(expect.arrayContaining(old.map((entry) => entry.id)))
+    })
+
+    it('starts a scope created under a removed one’s address with none of the entries of the scopes that were under it', async () => {
+      const repositories = await fresh()
+      await repositories.scope('acme', 'Acme Logistics')
+      const rail = await repositories.scope('acme/rail', 'Rail')
+      await repositories.steps(rail, addCrews)
+      await repositories.record('rail')
+      const old = await everyEntry(repositories.history, { scopes: [rail] })
+      ok(await repositories.remove(await repositories.scopeAt('acme')))
+      const again = await repositories.scope('acme/rail', 'Rail again')
+      const mine = await everyEntry(repositories.history, { scopes: [again] })
+      expect(mine.map((entry) => entry.id)).not.toEqual(expect.arrayContaining(old.map((entry) => entry.id)))
+      for (const entry of old) expect(await repositories.history.stateAt(again, entry.id)).toBeUndefined()
     })
 
     it('answers nothing for an entry the scope does not have', async () => {
