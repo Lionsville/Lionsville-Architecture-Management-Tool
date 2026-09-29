@@ -142,19 +142,20 @@ function usePictureAddress(entry: ImageEntry, element: RefObject<Element | null>
     const picture = { name, contentAddress }
     let live = true
     let showing = false
-    const show = () => {
-      const shown = cache.show(scope, picture)
-      if (shown === undefined) return
+    const present = (shown: string) => {
       showing = true
       setAddress(shown)
     }
     const seen = () => {
-      void cache.load(scope, picture).then((here) => {
-        if (live && here) show()
+      void cache.request(scope, picture).then((shown) => {
+        if (shown === undefined) return
+        if (live) present(shown)
+        else cache.hide(scope, picture)
       })
     }
     let unwatch: (() => void) | undefined
-    if (cache.has(scope, picture)) show()
+    const kept = cache.show(scope, picture)
+    if (kept !== undefined) present(kept)
     else if (element.current) unwatch = watch(element.current, seen)
     return () => {
       live = false

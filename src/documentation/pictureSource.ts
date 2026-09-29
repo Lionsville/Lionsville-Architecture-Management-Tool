@@ -147,13 +147,18 @@ export const PICTURES_KEPT = 48
  * {@link load} asks the source once however many places want the same
  * picture at the same moment, and keeps what it answers. {@link show} gives
  * a place the address to draw kept bytes from, made the first time any place
- * shows them, and {@link hide} lets it go once no place does. Bytes nobody
- * shows are dropped oldest first beyond `keep`; bytes being shown never are.
+ * shows them, and {@link hide} lets it go once no place does.
+ * {@link request} is the two for a place that has just seen a picture: its
+ * bytes cannot be dropped between arriving and being shown, however many
+ * others arrive in between. Bytes nobody shows are dropped oldest first
+ * beyond `keep`; bytes being shown, or waited for, never are.
  */
 export class PictureCache {
   private readonly kept = new Map<string, PictureBytes>()
   private readonly asking = new Map<string, Promise<boolean>>()
   private readonly shown = new Map<string, { address: string; places: number }>()
+  /** How many places are waiting to show bytes being asked for. */
+  private readonly wanted = new Map<string, number>()
   private readonly keep: number
   private readonly addresses: PictureAddresses
   private readonly onFailure: (error: unknown) => void
@@ -205,6 +210,23 @@ export class PictureCache {
     return address
   }
 
+  /**
+   * Ask for a picture's bytes and show them: the address to draw them from,
+   * for one more place, or `undefined` where there are none. A place that is
+   * gone by the time they arrive hides what it was given.
+   */
+  async request(scope: string, entry: PictureKey): Promise<string | undefined> {
+    const key = keyOf(scope, entry)
+    this.wanted.set(key, (this.wanted.get(key) ?? 0) + 1)
+    try {
+      return await this.load(scope, entry) ? this.show(scope, entry) : undefined
+    } finally {
+      const waiting = (this.wanted.get(key) ?? 1) - 1
+      if (waiting > 0) this.wanted.set(key, waiting)
+      else this.wanted.delete(key)
+    }
+  }
+
   /** One place stopped showing a picture; the last to stop lets its address go. */
   hide(scope: string, entry: PictureKey): void {
     const key = keyOf(scope, entry)
@@ -228,12 +250,17 @@ export class PictureCache {
     this.kept.set(key, picture)
   }
 
-  /** Bytes nobody shows, beyond `keep`, dropped oldest first; bytes being shown do not count. */
+  /** Whether bytes are shown, or about to be: they are never dropped, and do not count against `keep`. */
+  private inUse(key: string): boolean {
+    return this.shown.has(key) || this.wanted.has(key)
+  }
+
+  /** Bytes nobody shows, beyond `keep`, dropped oldest first. */
   private trim(): void {
-    let over = [...this.kept.keys()].filter((key) => !this.shown.has(key)).length - this.keep
+    let over = [...this.kept.keys()].filter((key) => !this.inUse(key)).length - this.keep
     for (const key of this.kept.keys()) {
       if (over <= 0) return
-      if (this.shown.has(key)) continue
+      if (this.inUse(key)) continue
       this.kept.delete(key)
       over -= 1
     }

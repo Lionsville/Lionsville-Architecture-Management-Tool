@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import type { ImageEntry } from '../model/imageName'
-import { memoryImageSource, NO_PICTURES, PictureCache, pictureDataAddress, picturesForReport } from './pictureSource'
+import {
+  defaultPictureAddresses, memoryImageSource, NO_PICTURES, PictureCache, pictureDataAddress, picturesForReport,
+} from './pictureSource'
 import type { PictureAddresses } from './pictureSource'
 
 const PNG = { mediaType: 'image/png', bytes: new Uint8Array([1, 2, 3]) }
@@ -106,6 +108,101 @@ describe('the cache', () => {
     expect(await cache.load('crews', entry('depot.png'))).toBe(false)
     expect(failures).toHaveLength(2)
     expect(calls).toBe(2)
+  })
+})
+
+describe('the cache under pressure', () => {
+  it('shows every picture asked for at once, even when more arrive together than it keeps', async () => {
+    const source = memoryImageSource({ crews: { 'a.png': PNG, 'b.png': PNG, 'c.png': PNG } })
+    const addresses = countedAddresses()
+    const cache = new PictureCache(source, { keep: 0, addresses })
+    source.hold()
+    const asked = ['a.png', 'b.png', 'c.png'].map((name) => cache.request('crews', entry(name)))
+    source.answer()
+    expect(await Promise.all(asked)).toEqual(['picture:1', 'picture:2', 'picture:3'])
+    // Nobody shows them any more: none is kept beyond `keep`.
+    for (const name of ['a.png', 'b.png', 'c.png']) cache.hide('crews', entry(name))
+    expect(['a.png', 'b.png', 'c.png'].filter((name) => cache.has('crews', entry(name)))).toEqual([])
+    expect(addresses.released).toEqual(['picture:1', 'picture:2', 'picture:3'])
+  })
+
+  it('with room for two, shows all three pictures seen together, and keeps two once none is shown', async () => {
+    const source = memoryImageSource({ crews: { 'a.png': PNG, 'b.png': PNG, 'c.png': PNG } })
+    const cache = new PictureCache(source, { keep: 2, addresses: countedAddresses() })
+    source.hold()
+    const asked = ['a.png', 'b.png', 'c.png'].map((name) => cache.request('crews', entry(name)))
+    source.answer()
+    expect((await Promise.all(asked)).every((address) => address !== undefined)).toBe(true)
+    for (const name of ['a.png', 'b.png', 'c.png']) cache.hide('crews', entry(name))
+    expect(['a.png', 'b.png', 'c.png'].filter((name) => cache.has('crews', entry(name)))).toEqual(['b.png', 'c.png'])
+  })
+
+  it('two places asking for one picture together are one ask and one address', async () => {
+    const source = memoryImageSource({ crews: { 'a.png': PNG } })
+    const cache = new PictureCache(source, { keep: 0, addresses: countedAddresses() })
+    const both = await Promise.all([cache.request('crews', entry('a.png')), cache.request('crews', entry('a.png'))])
+    expect(both).toEqual(['picture:1', 'picture:1'])
+    expect(source.asked).toHaveLength(1)
+    cache.hide('crews', entry('a.png'))
+    expect(cache.has('crews', entry('a.png'))).toBe(true)
+  })
+
+  it('answers nothing for a picture whose bytes are not there, and keeps nothing for it', async () => {
+    const cache = new PictureCache(memoryImageSource({}), { addresses: countedAddresses() })
+    expect(await cache.request('crews', entry('gone.png'))).toBeUndefined()
+    expect(cache.has('crews', entry('gone.png'))).toBe(false)
+  })
+
+  it('hiding a picture nobody shows changes nothing', () => {
+    const addresses = countedAddresses()
+    new PictureCache(NO_PICTURES, { addresses }).hide('crews', entry('a.png'))
+    expect(addresses.released).toEqual([])
+  })
+
+  it('with nothing said about failures, a failure answers no and throws nothing', async () => {
+    const cache = new PictureCache({ bytes: () => Promise.reject(new Error('gone')) }, { addresses: countedAddresses() })
+    expect(await cache.request('crews', entry('a.png'))).toBeUndefined()
+  })
+})
+
+describe('the addresses a picture is drawn from', () => {
+  const create = URL.createObjectURL
+  const revoke = URL.revokeObjectURL
+  afterEach(() => {
+    URL.createObjectURL = create
+    URL.revokeObjectURL = revoke
+  })
+
+  it('are object addresses where the platform makes them, let go of when asked', () => {
+    const made: Blob[] = []
+    const released: string[] = []
+    URL.createObjectURL = (blob: Blob) => { made.push(blob); return 'blob:one' }
+    URL.revokeObjectURL = (address: string) => { released.push(address) }
+    const addresses = defaultPictureAddresses()
+    expect(addresses.make(PNG)).toBe('blob:one')
+    expect(made[0].type).toBe('image/png')
+    expect(made[0].size).toBe(3)
+    addresses.release('blob:one')
+    expect(released).toEqual(['blob:one'])
+  })
+
+  it('are data addresses where it does not, with nothing to let go of', () => {
+    ;(URL as { createObjectURL?: unknown }).createObjectURL = undefined
+    const addresses = defaultPictureAddresses()
+    expect(addresses.make(PNG)).toBe('data:image/png;base64,AQID')
+    expect(() => addresses.release('data:image/png;base64,AQID')).not.toThrow()
+  })
+
+  it('carry bytes of any size as base64', () => {
+    const large = new Uint8Array(0x8000 * 2 + 5).fill(255)
+    const address = pictureDataAddress({ mediaType: 'image/png', bytes: large })
+    expect(atob(address.slice('data:image/png;base64,'.length))).toHaveLength(large.length)
+  })
+})
+
+describe('a memory source answering', () => {
+  it('with nothing held back answers nothing more', () => {
+    expect(() => memoryImageSource({}).answer()).not.toThrow()
   })
 })
 
