@@ -387,7 +387,7 @@ export type Installation = {
   /** `process.execPath`: on macOS, the binary inside the bundle. */
   readonly executable: string
   /** macOS: may this user write the folder the `.app` sits in? */
-  readonly bundleFolderWritable: boolean
+  readonly installWritable: boolean
   /** The environment; on Linux `APPIMAGE` says the app is one. */
   readonly env: Record<string, string | undefined>
 }
@@ -449,7 +449,7 @@ export function selfReplacement(install: Installation): SelfReplacement {
       const bundle = macBundleOf(install.executable) ?? install.executable
       if (bundle.startsWith('/Volumes/')) return { possible: false, because: 'mountedVolume' }
       if (bundle.includes('/AppTranslocation/')) return { possible: false, because: 'translocated' }
-      if (!install.bundleFolderWritable) return { possible: false, because: 'notWritable' }
+      if (!install.installWritable) return { possible: false, because: 'notWritable' }
       return { possible: true }
     }
     case 'win32':

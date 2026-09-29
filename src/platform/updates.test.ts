@@ -331,8 +331,8 @@ describe('macBundleOf', () => {
 })
 
 describe('selfReplacement', () => {
-  const mac = (executable: string, bundleFolderWritable = true): Installation => ({
-    platform: 'darwin', packaged: true, executable, bundleFolderWritable, env: {},
+  const mac = (executable: string, installWritable = true): Installation => ({
+    platform: 'darwin', packaged: true, executable, installWritable, env: {},
   })
   const inside = (folder: string) => `${folder}/Lionsville Architect.app/Contents/MacOS/Lionsville Architect`
 
@@ -357,14 +357,14 @@ describe('selfReplacement', () => {
   })
 
   it('replaces a Windows install, whose installer runs again over it', () => {
-    expect(selfReplacement({ platform: 'win32', packaged: true, executable: 'C:\\App\\app.exe', bundleFolderWritable: false, env: {} }))
+    expect(selfReplacement({ platform: 'win32', packaged: true, executable: 'C:\\App\\app.exe', installWritable: false, env: {} }))
       .toEqual({ possible: true })
   })
 
   /** A .deb is the package manager's; only an AppImage says it is one. */
   it('replaces a Linux AppImage and not a package', () => {
     const linux = (env: Record<string, string | undefined>): Installation => ({
-      platform: 'linux', packaged: true, executable: '/opt/app/app', bundleFolderWritable: false, env,
+      platform: 'linux', packaged: true, executable: '/opt/app/app', installWritable: false, env,
     })
     expect(selfReplacement(linux({ APPIMAGE: '/home/someone/App.AppImage' }))).toEqual({ possible: true })
     expect(selfReplacement(linux({}))).toEqual({ possible: false, because: 'packageManager' })

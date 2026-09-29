@@ -463,7 +463,7 @@ async function installation(): Promise<Installation> {
     platform: process.platform,
     packaged: app.isPackaged,
     executable: process.execPath,
-    bundleFolderWritable: bundle ? await writable(dirname(bundle)) : false,
+    installWritable: bundle ? await writable(dirname(bundle)) : false,
     env: process.env,
   }
 }
