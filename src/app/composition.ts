@@ -60,7 +60,7 @@ import { isFormatPath } from '../projects/folderFormat'
 import type { WindowChrome } from '../platform/windowChrome'
 import type { WorkingSource } from '../platform/workingSource'
 import { BROWSER_STORAGE_SOURCE } from '../providers/browserStorage/browserStorageSource'
-import { desktopOpening, FOLDER_SOURCE } from '../providers/folder/folderSource'
+import { browserOpening, desktopOpening, FOLDER_SOURCE } from '../providers/folder/folderSource'
 import type { FolderOpening } from '../providers/folder/folderSource'
 import { MEMORY_SOURCE } from '../providers/memory/memorySource'
 import type { HookInvoke } from '../platform/desktopHook'
@@ -781,8 +781,8 @@ function withoutSourceParts(shell: Shell): Shell {
  * a file changed) and no history (there is no git in a tab). Those are absent
  * rather than stubbed, and the app offers what is present.
  */
-export function inBrowserFolder(shell: Shell, handle: DirectoryHandleLike, name: string): Shell {
-  return overFolder(shell, { handle, name, root: name })
+export function inBrowserFolder(shell: Shell, handle: DirectoryHandleLike): Shell {
+  return overFolder(shell, browserOpening(handle))
 }
 
 export function inWorkingDirectory(

@@ -18,8 +18,11 @@ import type { FolderChannel } from '../../adapters/desktop/rememberingWrites'
 import {
   canChooseDirectory, chooseDirectory as chooseBrowserDirectory, rememberedDirectory,
 } from '../../adapters/folder/browser/workingDirectory'
+import { BrowserFolder } from '../../adapters/folder/browser/browserFolder'
+import { browserFolderGit } from '../../adapters/folder/browser/browserFolderGit'
+import { browserPlaceStore, browserStampCache, browserStepStore } from '../../adapters/folder/browser/browserStepStore'
 import { DesktopFolderGit } from '../../adapters/folder/desktop/DesktopFolderGit'
-import { desktopStepStore } from '../../adapters/folder/desktop/desktopStepStore'
+import { desktopPlaceStore, desktopStampCache, desktopStepStore } from '../../adapters/folder/desktop/desktopStepStore'
 import { IpcDirectoryHandle } from '../../adapters/folder/desktop/IpcDirectoryHandle'
 import type { DirectoryHandleLike } from '../../adapters/folder/DirectoryHandle'
 import { FileSystemFolderSettings } from '../../adapters/folder/FileSystemFolderSettings'
@@ -28,7 +31,11 @@ import type { FolderGit } from '../../adapters/folder/folderGit'
 import { folderRepositories } from '../../adapters/folder/folderRepositories'
 import { memoryGit } from '../../adapters/folder/memoryGit'
 import type { PersonSettings } from '../../adapters/folder/FolderSettingsRepository'
+import type { StampCache } from '../../adapters/folder/folderPictures'
+import type { PlaceStore } from '../../adapters/folder/folderScopes'
 import type { StepStore } from '../../adapters/folder/stepMemory'
+import { browserDatabase } from '../../adapters/webStorage/available'
+import { IndexedDbStore } from '../../adapters/webStorage/IndexedDbStore'
 import type { SourceProvider } from '../../platform/sourceProvider'
 import type { WorkingSource } from '../../platform/workingSource'
 import type { Diagnostics } from '../../ports/Diagnostics'
@@ -47,8 +54,9 @@ import { desktopPerson } from './desktopPerson'
  *
  * A browser's handle has no path to give, so `root` falls back to the name —
  * which is all a tab knows about where it is, and enough to tell two folders
- * apart within one tab. It has no git either, so its history is kept for as
- * long as the tab is open.
+ * apart within one tab. It has no git either: its history, and what it keeps
+ * about the folder, are kept in the browser's database beside the folder's
+ * handle; where there is no database, for as long as the tab is open.
  */
 export type FolderOpening = {
   handle: DirectoryHandleLike
@@ -56,6 +64,8 @@ export type FolderOpening = {
   root: string
   git?: FolderGit
   steps?: StepStore
+  places?: PlaceStore
+  stamps?: StampCache
   person?: PersonSettings
 }
 
@@ -89,9 +99,30 @@ export function desktopOpening(
     ...(settings
       ? {
         steps: desktopStepStore(settings, directory.root),
+        places: desktopPlaceStore(settings, directory.root),
+        stamps: desktopStampCache(settings, directory.root),
         person: desktopPerson(settings, directory.root, new FileSystemFolderSettings(handle)),
       }
       : {}),
+  }
+}
+
+/**
+ * A folder a browser tab was given: its history, the step ids its
+ * repositories applied and what it has learnt about the folder, kept in this
+ * browser's database under the folder's handle — so they outlive the tab.
+ */
+export function browserOpening(handle: DirectoryHandleLike): FolderOpening {
+  const opening: FolderOpening = { handle, name: handle.name, root: handle.name }
+  const database = browserDatabase()
+  if (!database) return opening
+  const folder = new BrowserFolder(new IndexedDbStore(database), handle)
+  return {
+    ...opening,
+    git: browserFolderGit(folder, handle),
+    steps: browserStepStore(folder),
+    places: browserPlaceStore(folder),
+    stamps: browserStampCache(folder),
   }
 }
 
@@ -110,7 +141,7 @@ export async function chooseFolderOpening(): Promise<FolderOpening | undefined> 
   }
   if (!canChooseDirectory()) return undefined
   const handle = await chooseBrowserDirectory()
-  return handle && { handle, name: handle.name, root: handle.name }
+  return handle && browserOpening(handle)
 }
 
 /** A folder in a browser tab, where the browser can give one. */
@@ -157,11 +188,12 @@ export const FOLDER_SOURCE: SourceProvider<FolderParts, FolderOpening, { readonl
   kind: 'folder',
   connect: { labelKey: 'picker.chooseFolder', open: chooseFolderOpening },
   // The trail the app keeps is where a file that will not read is said.
-  open: ({ handle, name, root, git, steps, person }, { diagnostics }) => ({
+  open: ({ handle, name, root, git, steps, places, stamps, person }, { diagnostics }) => ({
     scopes: new FileSystemScopeStore(handle, diagnostics),
     repositories: folderRepositories({
       root: handle, git: git ?? memoryGit(handle, 'this tab'), diagnostics,
-      ...(steps ? { steps } : {}), ...(person ? { person } : {}),
+      ...(steps ? { steps } : {}), ...(places ? { places } : {}), ...(stamps ? { stamps } : {}),
+      ...(person ? { person } : {}),
     }),
     folderSettings: new FileSystemFolderSettings(handle),
     source: { kind: 'folder', name, root },

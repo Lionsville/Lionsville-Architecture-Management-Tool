@@ -163,7 +163,7 @@ async function rememberedDirectory(stored: unknown): Promise<void> {
     // give one, only if it gave one before, and only if the permission is still
     // granted — asking again needs a click, and a boot is not one.
     const handle = browserFolders.possible() ? await browserFolders.remembered() : undefined
-    if (handle) shell = inBrowserFolder(shell, handle, handle.name)
+    if (handle) shell = inBrowserFolder(shell, handle)
     return
   }
   // None is an answer the first-run screen can give; a channel that failed to
@@ -449,7 +449,7 @@ async function openBrowserFolderWith(handle: Parameters<typeof inBrowserFolder>[
   // The trail says where a pick got to, because "nothing happened" has been
   // reported and a folder's name is not the folder's content.
   shell.diagnostics.report({ level: 'info', where: 'workingDirectory', message: 'a folder was chosen' })
-  const inFolder = inBrowserFolder(shell, handle, handle.name)
+  const inFolder = inBrowserFolder(shell, handle)
   // The same offer as the desktop's, and the same rule: asked at most once per
   // folder, copied at most once anywhere, nothing deleted. Keyed on the
   // folder's name, which is all a tab knows about where it is.

@@ -40,9 +40,11 @@ export function browserStorage(): KeyValueStorage | undefined {
  */
 export function browserDatabase(): IndexedDb | undefined {
   try {
-    return typeof indexedDB === 'undefined' || typeof IDBKeyRange === 'undefined'
-      ? undefined
-      : { factory: indexedDB, keyRange: IDBKeyRange }
+    if (typeof indexedDB === 'undefined' || typeof IDBKeyRange === 'undefined') return undefined
+    // How full this site's storage is, and whether it is kept, where the
+    // browser can say: absent in a browser that has no storage manager.
+    const manager = typeof navigator !== 'undefined' ? navigator.storage : undefined
+    return { factory: indexedDB, keyRange: IDBKeyRange, ...(manager ? { manager } : {}) }
   } catch {
     return undefined
   }
