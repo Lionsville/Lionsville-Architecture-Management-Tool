@@ -151,6 +151,12 @@ export function memoryGit(root: DirectoryHandleLike, author = 'memory'): FolderG
         return held === undefined ? [] : [[id, new TextDecoder().decode(Uint8Array.from(held, (character) => character.charCodeAt(0)))]]
       })))
     },
+    sizes(ids) {
+      return Promise.resolve(Object.fromEntries(ids.flatMap((id) => {
+        const held = texts.get(id)
+        return held === undefined ? [] : [[id, held.length]]
+      })))
+    },
     tags: () => Promise.resolve(tags.map((tag) => ({ ...tag }))),
     tag(sha, name, message) {
       if (tags.some((tag) => tag.name === name)) return Promise.resolve('exists')

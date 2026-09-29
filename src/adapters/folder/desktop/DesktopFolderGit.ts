@@ -53,6 +53,10 @@ export class DesktopFolderGit implements FolderGit {
     return this.git.texts(this.root, [...ids])
   }
 
+  sizes(ids: readonly string[]): Promise<Record<string, number>> {
+    return this.git.sizes(this.root, [...ids])
+  }
+
   blobsAt(at: readonly { sha: string; path: string }[]): Promise<(string | undefined)[]> {
     return this.git.blobsAt(this.root, at.map((one) => ({ ...one })))
   }

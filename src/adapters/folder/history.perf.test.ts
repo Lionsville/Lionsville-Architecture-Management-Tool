@@ -14,11 +14,15 @@
  * records, as an older build's or a person's commits are. Made with `git fast-import`, which writes
  * ten thousand commits in a second or two, and read through the same handle
  * and git the desktop uses, minus the wire.
+ *
+ * A second folder has a `model.json` of two megabytes that every one of its
+ * commits changes: a thing's history reads each version of it, and hundreds
+ * of them together are more than one read of git's objects may answer.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { execFile } from 'node:child_process'
 import { mkdtempSync, realpathSync, rmSync } from 'node:fs'
-import { readFile } from 'node:fs/promises'
+import { readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
 import { promisify } from 'node:util'
@@ -72,10 +76,42 @@ function inline(path: string, text: string): string {
   return `M 100644 inline ${path}\ndata ${Buffer.byteLength(text)}\n${text}\n`
 }
 
+/** One fast-import commit on `main`. */
+function commitOf(at: number, message: string, changed: string): string {
+  return `commit refs/heads/main\ncommitter A <a@example.org> ${1_700_000_000 + at} +0000\ndata ${Buffer.byteLength(message)}\n${message}\n${changed}`
+}
+
+/** A folder made a repository of these commits, streamed to `git fast-import` one at a time, and checked out. */
+async function imported(at: string, commits: Iterable<string>): Promise<void> {
+  await run('git', ['init', '-q'], { cwd: at })
+  await new Promise<void>((resolve, reject) => {
+    const child = execFile('git', ['fast-import', '--quiet'], { cwd: at, maxBuffer: 64 * 1024 * 1024 }, (failure) => (failure ? reject(failure) : resolve()))
+    const input = child.stdin!
+    const next = commits[Symbol.iterator]()
+    const write = (): void => {
+      for (let one = next.next(); !one.done; one = next.next()) {
+        if (!input.write(one.value)) {
+          input.once('drain', write)
+          return
+        }
+      }
+      input.end()
+    }
+    write()
+  })
+  await run('git', ['symbolic-ref', 'HEAD', 'refs/heads/main'], { cwd: at })
+  await run('git', ['reset', '-q', '--hard'], { cwd: at })
+}
+
+/** A folder's repositories over the same handle and git the desktop uses, minus the wire. */
+function repositoriesAt(at: string): Over {
+  const root = new IpcDirectoryHandle(filesOver(), at, basename(at))
+  return over({ repositories: folderRepositories({ root, git: folderGitAt(at) }) })
+}
+
 async function generate(): Promise<void> {
   folder = realpathSync(mkdtempSync(join(tmpdir(), 'lvarch-history-perf-')))
-  const root = new IpcDirectoryHandle(filesOver(), folder, basename(folder))
-  repositories = over({ repositories: folderRepositories({ root, git: folderGitAt(folder) }) })
+  repositories = repositoriesAt(folder)
   acme = await repositories.scope('acme', 'Acme Logistics')
   await repositories.steps(acme, ...Array.from({ length: ELEMENTS }, (_, n) =>
     ({ type: 'element.create' as const, element: element(`e${n}`, `Element ${n}`, `Description of ${n}.`) })))
@@ -99,15 +135,9 @@ async function generate(): Promise<void> {
         changed += inline('acme/model.json', stableJson(model))
       }
     }
-    stream.push(`commit refs/heads/main\ncommitter A <a@example.org> ${1_700_000_000 + at} +0000\ndata ${Buffer.byteLength(message)}\n${message}\n${changed}`)
+    stream.push(commitOf(at, message, changed))
   }
-  await run('git', ['init', '-q'], { cwd: folder })
-  await new Promise<void>((resolve, reject) => {
-    const child = execFile('git', ['fast-import', '--quiet'], { cwd: folder, maxBuffer: 64 * 1024 * 1024 }, (failure) => (failure ? reject(failure) : resolve()))
-    child.stdin?.end(stream.join(''))
-  })
-  await run('git', ['symbolic-ref', 'HEAD', 'refs/heads/main'], { cwd: folder })
-  await run('git', ['reset', '-q', '--hard'], { cwd: folder })
+  await imported(folder, stream)
 }
 
 async function timed<T>(label: string, work: () => Promise<T>): Promise<{ ms: number; value: T }> {
@@ -165,5 +195,57 @@ describe.skipIf(!available)('the folder’s history on ten thousand commits', ()
     const state = await timed('folder history: the state at an entry', () => repositories.history.stateAt(acme, newest.id))
     expect(state.value?.model.elements).toHaveLength(ELEMENTS + 1 + BULK)
     expect(state.ms).toBeLessThan(BUDGET.historyLook)
+  })
+})
+
+/** Commits of the folder whose large model every commit changes: more than one chunk of the history. */
+const LARGE_COMMITS = 220
+/** How large its `model.json` is, at least. */
+const LARGE_MODEL = 2 * 1024 * 1024
+
+describe.skipIf(!available)('the folder’s history where every commit changes a large model', () => {
+  let large = ''
+  let held: Over
+  let scope = ''
+
+  beforeAll(async () => {
+    large = realpathSync(mkdtempSync(join(tmpdir(), 'lvarch-history-large-')))
+    held = repositoriesAt(large)
+    scope = await held.scope('globex', 'Globex')
+    await held.steps(scope, ...Array.from({ length: ELEMENTS }, (_, n) =>
+      ({ type: 'element.create' as const, element: element(`e${n}`, `Element ${n}`, `Description of ${n}.`) })))
+    const header = await readFile(join(large, 'globex/scope.json'), 'utf8')
+    const model = JSON.parse(await readFile(join(large, 'globex/model.json'), 'utf8')) as { elements: { id: string; name: string }[] }
+    const [template] = model.elements
+    const renamed = model.elements.find((one) => one.id === 'e3')!
+    for (let n = 0; stableJson(model).length < LARGE_MODEL; n += 1) {
+      model.elements.push(...Array.from({ length: 500 }, (_, k) => ({ ...template, id: `bulk-${n}-${k}`, name: `Bulk ${n}-${k}` })))
+    }
+    const trailer = scopeTrailer(scope, 'globex')
+    function* commits(): Generator<string> {
+      yield commitOf(0, `step 0\n\n${trailer}`, inline('globex/scope.json', header) + inline('globex/model.json', stableJson(model)))
+      for (let at = 1; at < LARGE_COMMITS; at += 1) {
+        renamed.name = `Renamed ${at}`
+        yield commitOf(at, `step ${at}\n\n${trailer}`, inline('globex/model.json', stableJson(model)))
+      }
+    }
+    await rm(join(large, 'globex'), { recursive: true, force: true })
+    await imported(large, commits())
+  }, 300_000)
+  afterAll(() => rmSync(large, { recursive: true, force: true }))
+
+  it('answers a page of the element every commit changes, reading the model’s versions a batch at a time', async () => {
+    const page = await timed('folder history: first page of an element every commit of a 2 MB model changes', () =>
+      held.history.entries({ scopes: [scope], record: { kind: 'element', id: 'e3' }, limit: 50 }))
+    expect(page.value.entries.map((entry) => entry.subject).slice(0, 2)).toEqual([`step ${LARGE_COMMITS - 1}`, `step ${LARGE_COMMITS - 2}`])
+    expect(page.value.entries).toHaveLength(50)
+    expect(page.ms).toBeLessThan(BUDGET.folderThingHistory)
+  })
+
+  it('answers a page of an element changed once, which reads every version of the model there is', async () => {
+    const page = await timed('folder history: a page of an element changed once, over every version of a 2 MB model', () =>
+      held.history.entries({ scopes: [scope], record: { kind: 'element', id: 'e5' }, limit: 50 }))
+    expect(page.value.entries.map((entry) => entry.subject)).toEqual(['step 0'])
+    expect(page.ms).toBeLessThan(BUDGET.folderThingHistory)
   })
 })

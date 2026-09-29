@@ -105,6 +105,7 @@ describe('the folder’s history and its applied steps', () => {
       [() => history.readiness('/work'), 'git:readiness', ['/work']],
       [() => history.head('/work'), 'git:head', ['/work']],
       [() => history.texts('/work', ['abc1234']), 'git:texts', ['/work', ['abc1234']]],
+      [() => history.sizes('/work', ['abc1234']), 'git:sizes', ['/work', ['abc1234']]],
       [() => history.commitPaths('/work', ['model.json'], 'Snapshot'), 'git:commitPaths', ['/work', ['model.json'], 'Snapshot']],
       [() => history.log('/work', { limit: 5, paths: ['acme'], tip: 'abc1234', skip: 2 }), 'git:log', ['/work', { limit: 5, paths: ['acme'], tip: 'abc1234', skip: 2 }]],
       [() => history.treeAt('/work', 'abc1234', 'acme'), 'git:treeAt', ['/work', 'abc1234', 'acme']],

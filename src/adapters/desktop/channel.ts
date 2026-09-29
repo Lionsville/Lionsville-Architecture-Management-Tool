@@ -102,6 +102,8 @@ export type DesktopHistory = {
   readAt(root: string, sha: string, paths: string[]): Promise<DesktopFileAt[]>
   /** What files held, as text, by their ids. */
   texts(root: string, ids: string[]): Promise<Record<string, string>>
+  /** How many bytes each id's content is, without reading it. */
+  sizes(root: string, ids: string[]): Promise<Record<string, number>>
   /** The id of what one file held at each of some commits. */
   blobsAt(root: string, at: { sha: string; path: string }[]): Promise<(string | undefined)[]>
   /** Every tag, on the commit it marks, with its words. */

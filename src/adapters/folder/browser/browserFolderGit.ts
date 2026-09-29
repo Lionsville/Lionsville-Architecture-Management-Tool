@@ -14,7 +14,7 @@
  * is another history.
  *
  * **What it keeps.** File contents by their SHA-256, each once however many
- * commits hold it; each commit as what it changed, from and to, and its
+ * commits hold it, and its size beside it; each commit as what it changed, from and to, and its
  * message, with the whole tree at every so many commits (`browserTrees.ts`);
  * the tags; which commit the folder is at; and, as git's index does, the
  * folder's tree at that commit with the size and time written each file had
@@ -103,21 +103,21 @@ async function planned(was: Record<string, TreeRow>, now: Map<string, Working>, 
   return { tree, objects, changed, blobs }
 }
 
+/** The folder's files its history is kept of (`workingSet.ts`); those held or named are kept whatever. */
+async function workingIn(root: DirectoryHandleLike, kept: Iterable<string>): Promise<Map<string, Working>> {
+  const rule = workingSetRule(await textAt(root, '.gitignore'), kept)
+  const files = await filesUnder(root, (name, within) => rule.skipsFolder(within ? `${within}/${name}` : name))
+  const found = new Map<string, Working>()
+  for (const { path, handle } of files) {
+    if (path === LOCAL_SETTINGS_PATH || rule.skipsFile(path)) continue
+    const file = await handle.getFile()
+    found.set(path, { path, size: file.size, lastModified: file.lastModified, read: async () => new Uint8Array(await file.arrayBuffer()) })
+  }
+  return found
+}
+
 export function browserFolderGit(folder: BrowserFolder, root: DirectoryHandleLike): FolderGit {
   const store = folder.store
-
-  /** The folder's files its history is kept of (`workingSet.ts`); those held or named are kept whatever. */
-  const working = async (kept: Iterable<string>): Promise<Map<string, Working>> => {
-    const rule = workingSetRule(await textAt(root, '.gitignore'), kept)
-    const files = await filesUnder(root, (name, within) => rule.skipsFolder(within ? `${within}/${name}` : name))
-    const found = new Map<string, Working>()
-    for (const { path, handle } of files) {
-      if (path === LOCAL_SETTINGS_PATH || rule.skipsFile(path)) continue
-      const file = await handle.getFile()
-      found.set(path, { path, size: file.size, lastModified: file.lastModified, read: async () => new Uint8Array(await file.arrayBuffer()) })
-    }
-    return found
-  }
 
   const head = async (): Promise<string | undefined> => {
     const key = await folder.keyOf('ref', 'HEAD')
@@ -130,6 +130,13 @@ export function browserFolderGit(folder: BrowserFolder, root: DirectoryHandleLik
     const key = await folder.keyOf('ref', 'index')
     const row = await store.transaction(['folderData'], 'read', (tx) => tx.get<IndexRow>('folderData', key))
     return row ?? { seq: 0, tree: {} }
+  }
+
+  /** How many bytes each content is, kept beside it so it is known without reading it. */
+  const sizes = async (ids: readonly string[]): Promise<Record<string, number>> => {
+    const keys = await Promise.all(ids.map((id) => folder.keyOf('size', id)))
+    const held = await store.transaction(['folderData'], 'read', (tx) => Promise.all(keys.map((key) => tx.get<number>('folderData', key))))
+    return Object.fromEntries(ids.flatMap((id, at) => (held[at] === undefined ? [] : [[id, held[at]]])))
   }
 
   const texts = async (ids: readonly string[]): Promise<Record<string, string>> => {
@@ -146,7 +153,7 @@ export function browserFolderGit(folder: BrowserFolder, root: DirectoryHandleLik
    */
   const commitOnce = async (paths: readonly string[], message: string): Promise<string | undefined | 'moved'> => {
     const was = await headTree()
-    const now = await working([...Object.keys(was.tree), ...paths])
+    const now = await workingIn(root, [...Object.keys(was.tree), ...paths])
     const { tree, objects, changed, blobs } = await planned(was.tree, now, paths)
     if (changed.length === 0) return undefined
     const seq = was.seq + 1
@@ -157,11 +164,15 @@ export function browserFolderGit(folder: BrowserFolder, root: DirectoryHandleLik
       commit: await folder.keyOf('commit', sha), seq: await folder.keyOf('seq', seqName(seq)),
       head: await folder.keyOf('ref', 'HEAD'), index: await folder.keyOf('ref', 'index'), tree: await folder.keyOf('tree', seqName(seq)),
       objects: await Promise.all([...objects.keys()].map((blob) => folder.keyOf('object', blob))),
+      sizes: await Promise.all([...objects.keys()].map((blob) => folder.keyOf('size', blob))),
     }
     const row: LogRow = { sha, parents, seq, at, author: AUTHOR, message, changed, blobs }
     return store.transaction(['folderData'], 'write', async (tx) => {
       if (await tx.get<string>('folderData', keys.head) !== was.sha) return 'moved'
-      ;[...objects.values()].forEach((bytes, index) => tx.put('folderData', keys.objects[index], bytes))
+      ;[...objects.values()].forEach((bytes, index) => {
+        tx.put('folderData', keys.objects[index], bytes)
+        tx.put('folderData', keys.sizes[index], bytes.byteLength)
+      })
       tx.put('folderData', keys.commit, { seq } satisfies CommitRow)
       tx.put('folderData', keys.seq, row)
       if (checkpointOf(seq) === seq) {
@@ -180,7 +191,7 @@ export function browserFolderGit(folder: BrowserFolder, root: DirectoryHandleLik
 
     async changes(): Promise<FolderChange[]> {
       const { tree } = await headTree()
-      const now = await working(Object.keys(tree))
+      const now = await workingIn(root, Object.keys(tree))
       const found: FolderChange[] = []
       for (const file of now.values()) if (await differs(file, tree[file.path])) found.push({ path: file.path, deleted: false })
       for (const path of Object.keys(tree)) if (!now.has(path)) found.push({ path, deleted: true })
@@ -249,6 +260,7 @@ export function browserFolderGit(folder: BrowserFolder, root: DirectoryHandleLik
     },
 
     texts,
+    sizes,
 
     blobsAt: trees.blobsAt,
 

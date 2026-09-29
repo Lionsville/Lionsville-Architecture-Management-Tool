@@ -18,7 +18,7 @@ import { gitAvailable, isRepository, snapshot, useHooksFolder } from './git'
 const run = promisify(execFile)
 import {
   allTags, blobsAt, changes, commitLog, commitPaths, folderGitAt, headOf, isScopeTagName, readAt, readiness, startHistory,
-  tagCommit, textsOf, treeAt,
+  sizesOf, tagCommit, textsOf, treeAt,
 } from './gitEntries'
 
 const available = await gitAvailable()
@@ -303,6 +303,8 @@ describe.skipIf(!available)('what changed, and what a file held', () => {
     const [before, after] = commit.blobs!['model.json']
     expect(await textsOf(root, [before, after, 'not-an-id'])).toEqual({ [before]: '{"at":0}', [after]: '{"at":1}' })
     expect(await textsOf(root, [])).toEqual({})
+    expect(await sizesOf(root, [before, after, 'not-an-id', 'f'.repeat(40)])).toEqual({ [before]: 8, [after]: 8 })
+    expect(await sizesOf(root, [])).toEqual({})
     const tree = (await run('git', ['rev-parse', `${sha}^{tree}`], { cwd: root })).stdout.trim()
     expect(await textsOf(root, [tree, after])).toEqual({ [after]: '{"at":1}' })
     const [bare] = await commitLog(root, { limit: 1, bare: true })
@@ -315,6 +317,7 @@ describe.skipIf(!available)('what changed, and what a file held', () => {
     expect(await held.blobsAt([{ sha: sha!, path: 'model.json' }])).toEqual([after])
     expect(await held.readiness()).toBe('ready')
     expect(await held.texts([after])).toEqual({ [after]: '{"at":1}' })
+    expect(await held.sizes([after])).toEqual({ [after]: 8 })
   })
 
   it('is part way while a file is left unmerged, whatever else git keeps', async () => {

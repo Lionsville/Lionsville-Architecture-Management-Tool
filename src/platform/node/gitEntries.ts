@@ -300,6 +300,20 @@ export async function textsOf(root: string, ids: readonly string[]): Promise<Rec
   return found
 }
 
+/** How many bytes each id's content is, in one look at git's objects and without reading one; an id that is not there is left out. */
+export async function sizesOf(root: string, ids: readonly string[]): Promise<Record<string, number>> {
+  const wanted = [...new Set(ids.filter(isSha))]
+  if (wanted.length === 0 || !await isRepository(root)) return {}
+  const out = (await gitWithInput(root, ['cat-file', '--batch-check'], wanted.map((id) => `${id}\n`).join(''))).toString('utf8')
+  const found: Record<string, number> = {}
+  for (const line of out.split('\n')) {
+    // `<id> <type> <size>`, or `<id> missing`.
+    const [, id, size] = /^([0-9a-f]+) \w+ (\d+)$/.exec(line) ?? []
+    if (id !== undefined) found[id] = Number(size)
+  }
+  return found
+}
+
 /** The id of what one file held at each of some commits, in one look at git's objects; `undefined` where it was not there. */
 export async function blobsAt(root: string, at: readonly { sha: string; path: string }[]): Promise<(string | undefined)[]> {
   const usable = at.map(({ sha, path }) => isSha(sha) && isInside(path) && !path.includes('\n'))
@@ -368,6 +382,7 @@ export function folderGitAt(root: string) {
     treeAt: (sha: string, within: string) => treeAt(root, sha, within),
     readAt: (sha: string, paths: readonly string[]) => readAt(root, sha, paths),
     texts: (ids: readonly string[]) => textsOf(root, ids),
+    sizes: (ids: readonly string[]) => sizesOf(root, ids),
     blobsAt: (at: readonly { sha: string; path: string }[]) => blobsAt(root, at),
     tags: () => allTags(root),
     tag: (sha: string, name: string, message: string) => tagCommit(root, sha, name, message),

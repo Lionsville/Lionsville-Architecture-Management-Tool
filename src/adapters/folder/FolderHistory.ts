@@ -82,6 +82,32 @@ const MESSAGES = 5000
 /** How many of each thing read of the history are kept. */
 const KEPT = 256
 
+/**
+ * How many bytes of text are asked for at once. A chunk's model versions can
+ * be hundreds of megabytes in all; they are read a batch at a time, and each
+ * batch is let go of before the next is read.
+ */
+export const TEXT_BUDGET = 32 * 1024 * 1024
+
+/** Ids in batches of at most `budget` bytes, in order; one larger than that alone. */
+export function inBudget(ids: readonly string[], sizes: Readonly<Record<string, number>>, budget = TEXT_BUDGET): string[][] {
+  const batches: string[][] = []
+  let batch: string[] = []
+  let held = 0
+  for (const id of ids) {
+    const size = sizes[id] ?? 0
+    if (batch.length && held + size > budget) {
+      batches.push(batch)
+      batch = []
+      held = 0
+    }
+    batch.push(id)
+    held += size
+  }
+  if (batch.length) batches.push(batch)
+  return batches
+}
+
 /** A scope asked about, and every address it has been at. */
 type Asked = { id: ScopeId; held: ScopeAddress[] }
 
@@ -324,11 +350,10 @@ export class FolderHistory implements HistoryRepository {
     if (places.length) {
       const blobs = await this.git.blobsAt(places.map(({ sha, address }) => ({ sha, path: scopeFilePath(address, 'scope.json') })))
       const unread = [...new Set(blobs.filter((blob): blob is string => blob !== undefined && !this.headers.has(blob)))]
-      const texts = unread.length ? await this.git.texts(unread) : {}
-      for (const blob of unread) {
-        const declared = headerOf(texts[blob])?.['id']
+      await this.eachText(unread, (blob, text) => {
+        const declared = headerOf(text)?.['id']
         this.headers.set(blob, isScopeId(declared) ? declared : null)
-      }
+      })
       places.forEach(({ sha, address }, at) => {
         const blob = blobs[at]
         this.identities.set(`${sha}\u0000${address}`, (blob && this.headers.get(blob)) || identityAt(address))
@@ -340,8 +365,16 @@ export class FolderHistory implements HistoryRepository {
       .filter(([path]) => path === 'model.json' || path.endsWith('/model.json'))
       .flatMap(([, ids]) => ids.filter((id) => id && !this.rows.has(rowKey(id, list, record.id))))))]
     if (models.length === 0) return
-    const texts = await this.git.texts(models)
-    for (const blob of models) this.keepRow(blob, texts[blob], list, record.id)
+    await this.eachText(models, (blob, text) => this.keepRow(blob, text, list, record.id))
+  }
+
+  /** Each id's text handed on, read a batch within the byte budget at a time. */
+  private async eachText(ids: readonly string[], use: (id: string, text: string | undefined) => void): Promise<void> {
+    if (ids.length === 0) return
+    for (const batch of inBudget(ids, await this.git.sizes(ids))) {
+      const texts = await this.git.texts(batch)
+      for (const id of batch) use(id, texts[id])
+    }
   }
 
   async entries({ scopes, record, limit = PAGE, after }: EntriesWanted): Promise<HistoryPage> {

@@ -32,7 +32,7 @@ import {
   resolve, snapshot,
 } from '../../src/platform/node/git'
 import {
-  allTags, blobsAt, changes, commitLog, commitPaths, headOf, isScopeTagName, readAt, readiness, startHistory, tagCommit, textsOf, treeAt,
+  allTags, blobsAt, changes, commitLog, commitPaths, headOf, isScopeTagName, readAt, readiness, sizesOf, startHistory, tagCommit, textsOf, treeAt,
 } from '../../src/platform/node/gitEntries'
 import { log } from './log'
 import { sayable } from './sayable'
@@ -431,6 +431,9 @@ function registerRepositoryChannels(): void {
 
   answer('git:texts', (_event, root: unknown, ids: unknown) =>
     (isGranted(root) && isStrings(ids) ? textsOf(root, ids) : {}))
+
+  answer('git:sizes', (_event, root: unknown, ids: unknown) =>
+    (isGranted(root) && isStrings(ids) ? sizesOf(root, ids) : {}))
 
   answer('git:blobsAt', (_event, root: unknown, at: unknown) => {
     const pairs = Array.isArray(at) ? at.filter((one): one is { sha: string; path: string } =>
