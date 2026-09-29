@@ -130,8 +130,11 @@ function answer<T>(request: IDBRequest<T>): Promise<T> {
 
 /** A transaction that landed nothing because its connection went: worth one more try on a new one. */
 class ConnectionLost extends Error {
-  constructor(readonly cause: unknown) {
+  readonly cause: unknown
+
+  constructor(cause: unknown) {
     super('the connection to the database was lost')
+    this.cause = cause
   }
 }
 
@@ -160,7 +163,13 @@ export class IndexedDbStore implements KeyedStore {
   /** Has a connection ever opened here? Until one has, a refusal to open is no database, not a lost one. */
   private everOpened = false
 
-  constructor(private readonly indexedDb: IndexedDb, private readonly name = DATABASE_NAME) {}
+  private readonly indexedDb: IndexedDb
+  private readonly name: string
+
+  constructor(indexedDb: IndexedDb, name = DATABASE_NAME) {
+    this.indexedDb = indexedDb
+    this.name = name
+  }
 
   /** Whether this page may use the database now. */
   standing(): Standing {

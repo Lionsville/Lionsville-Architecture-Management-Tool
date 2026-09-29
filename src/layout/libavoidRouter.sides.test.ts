@@ -176,10 +176,16 @@ describe('routeWithLibavoid — how the pins are built (against a fake module)',
       processTransaction(): void {}
     }
     class FakePoint {
+      readonly x: number;
+      readonly y: number;
+
       constructor(
-        readonly x: number,
-        readonly y: number,
-      ) {}
+        x: number,
+        y: number,
+      ) {
+        this.x = x;
+        this.y = y;
+      }
     }
     class Handle {}
     class ShapeRef extends Handle {}

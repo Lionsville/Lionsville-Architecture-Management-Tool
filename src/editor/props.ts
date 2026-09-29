@@ -240,8 +240,11 @@ export interface EditorHandle {
 export type EditorRefusal = 'hidden' | 'busy' | 'gone';
 
 export class EditorRefused extends Error {
-  constructor(readonly reason: EditorRefusal) {
+  readonly reason: EditorRefusal;
+
+  constructor(reason: EditorRefusal) {
     super(reason);
+    this.reason = reason;
     this.name = 'EditorRefused';
   }
 }

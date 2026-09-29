@@ -28,7 +28,11 @@ import type { DirectoryHandleLike } from './FileSystemScopeStore'
 export class FileSystemFolderSettings implements FolderSettingsStore {
   readonly id = 'folder on disk'
 
-  constructor(private readonly root: DirectoryHandleLike) {}
+  private readonly root: DirectoryHandleLike
+
+  constructor(root: DirectoryHandleLike) {
+    this.root = root
+  }
 
   /** The text of one of the two files, or nothing for every way that fails. */
   private async text(name: string): Promise<string | undefined> {

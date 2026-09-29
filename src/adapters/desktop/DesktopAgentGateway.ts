@@ -20,7 +20,11 @@ import type { DesktopAgent } from './channel'
 export class DesktopAgentGateway implements AgentGateway {
   readonly id = 'desktop'
 
-  constructor(private readonly channel: DesktopAgent) {}
+  private readonly channel: DesktopAgent
+
+  constructor(channel: DesktopAgent) {
+    this.channel = channel
+  }
 
   on(handler: (request: AgentRequest) => Promise<AgentAnswer>): () => void {
     return this.channel.onRequest((request) => {

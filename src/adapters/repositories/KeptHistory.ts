@@ -45,7 +45,10 @@ function listed({ seq, scope, at, by, subject, labels }: KeptEntry): HistoryEntr
 export class KeptHistory implements HistoryRepository {
   readonly id: string
 
-  constructor(private readonly source: Source) {
+  private readonly source: Source
+
+  constructor(source: Source) {
+    this.source = source
     this.id = source.id
   }
 

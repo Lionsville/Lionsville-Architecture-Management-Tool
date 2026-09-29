@@ -55,11 +55,18 @@ class MemoryTransaction implements Transaction {
   /** How many times it has been made active; an idle mark from before the last is stale. */
   private turn = 0
 
+  private readonly store: (shelf: Shelf) => Held
+  private readonly shelves: readonly Shelf[]
+  private readonly mode: 'read' | 'write'
+
   constructor(
-    private readonly store: (shelf: Shelf) => Held,
-    private readonly shelves: readonly Shelf[],
-    private readonly mode: 'read' | 'write',
+    store: (shelf: Shelf) => Held,
+    shelves: readonly Shelf[],
+    mode: 'read' | 'write',
   ) {
+    this.store = store
+    this.shelves = shelves
+    this.mode = mode
     this.wake()
   }
 

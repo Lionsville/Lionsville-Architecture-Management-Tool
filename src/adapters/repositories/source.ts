@@ -81,7 +81,12 @@ export class Source {
   readonly by: string
   private made: Promise<void> | undefined
 
-  constructor(private readonly store: KeyedStore, private readonly options: SourceOptions) {
+  private readonly store: KeyedStore
+  private readonly options: SourceOptions
+
+  constructor(store: KeyedStore, options: SourceOptions) {
+    this.store = store
+    this.options = options
     this.id = options.id
     this.by = options.by
   }

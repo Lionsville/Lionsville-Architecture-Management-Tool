@@ -170,6 +170,10 @@ type Plan = { path: ScopePath; writes: FolderFile[]; removals: Entry[] }
 export class FileSystemScopeStore implements ScopeStore {
   readonly id = 'folder on disk'
 
+  private readonly root: DirectoryHandleLike
+  private readonly diagnostics?: Pick<Diagnostics, 'report'>
+  private readonly pictures: PicturesKept
+
   /**
    * `diagnostics` is where a file that is there and will not read is said.
    * The store still answers without it — a scope with the rest of its files, a
@@ -178,10 +182,14 @@ export class FileSystemScopeStore implements ScopeStore {
    * decision goes missing and nobody can say why.
    */
   constructor(
-    private readonly root: DirectoryHandleLike,
-    private readonly diagnostics?: Pick<Diagnostics, 'report'>,
-    private readonly pictures: PicturesKept = 'with',
-  ) {}
+    root: DirectoryHandleLike,
+    diagnostics?: Pick<Diagnostics, 'report'>,
+    pictures: PicturesKept = 'with',
+  ) {
+    this.root = root
+    this.diagnostics = diagnostics
+    this.pictures = pictures
+  }
 
   /**
    * The handler for a read that may meet nothing: `undefined` either way, and

@@ -914,7 +914,11 @@ class TierShapes {
   private readonly shapes = new Map<ElementId, AvoidShapeRef>();
   private readonly pinned = new Set<string>();
 
-  constructor(private readonly avoid: AvoidApi) {}
+  private readonly avoid: AvoidApi;
+
+  constructor(avoid: AvoidApi) {
+    this.avoid = avoid;
+  }
 
   add(id: ElementId, shape: AvoidShapeRef): void {
     this.shapes.set(id, shape);

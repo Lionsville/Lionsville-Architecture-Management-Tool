@@ -38,7 +38,11 @@ const watched = new Map<Element, IntersectionObserverCallback>()
 
 /** The observer every provider makes, recording what it watches; nothing is in view until the test says. */
 class Observer {
-  constructor(private readonly callback: IntersectionObserverCallback) {}
+  private readonly callback: IntersectionObserverCallback
+
+  constructor(callback: IntersectionObserverCallback) {
+    this.callback = callback
+  }
   observe(element: Element) { watched.set(element, this.callback) }
   unobserve(element: Element) { watched.delete(element) }
   disconnect() {}

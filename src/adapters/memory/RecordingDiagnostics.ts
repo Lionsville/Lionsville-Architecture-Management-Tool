@@ -18,7 +18,11 @@ export class RecordingDiagnostics implements Diagnostics {
   private entries: DiagnosticEntry[] = []
   private tick = 0
 
-  constructor(private readonly limit: number = RING_SIZE) {}
+  private readonly limit: number
+
+  constructor(limit: number = RING_SIZE) {
+    this.limit = limit
+  }
 
   report(entry: Diagnostic): void {
     this.tick += 1

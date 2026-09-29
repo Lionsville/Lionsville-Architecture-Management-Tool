@@ -10,7 +10,13 @@ import type { DesktopHistory } from '../../desktop/channel'
 import type { CommitsWanted, CommittedFile, FolderChange, FolderCommit, FolderGit, FolderTag, TreeEntry } from '../folderGit'
 
 export class DesktopFolderGit implements FolderGit {
-  constructor(private readonly git: DesktopHistory, private readonly root: string) {}
+  private readonly git: DesktopHistory
+  private readonly root: string
+
+  constructor(git: DesktopHistory, root: string) {
+    this.git = git
+    this.root = root
+  }
 
   keeping(): Promise<boolean> {
     return this.git.isRepository(this.root)

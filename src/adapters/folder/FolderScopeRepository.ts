@@ -141,11 +141,19 @@ function refusalOf(cause: unknown, scope: ScopeId): Refused | undefined {
 export class FolderScopeRepository implements ScopeRepository {
   readonly id = 'folder'
 
+  private readonly folder: FolderScopes
+  private readonly applied: StepMemory
+  private readonly staging: PictureStaging
+
   constructor(
-    private readonly folder: FolderScopes,
-    private readonly applied: StepMemory,
-    private readonly staging: PictureStaging,
-  ) {}
+    folder: FolderScopes,
+    applied: StepMemory,
+    staging: PictureStaging,
+  ) {
+    this.folder = folder
+    this.applied = applied
+    this.staging = staging
+  }
 
   async tree(): Promise<ScopeTree> {
     const { nodes, unreadable } = await this.folder.walk(true)

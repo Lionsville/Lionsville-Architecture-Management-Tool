@@ -223,7 +223,13 @@ export class FolderHistory implements HistoryRepository {
   /** Where a scope was at a commit, found by walking its first parents. */
   private readonly places = new Lru<string, ScopeAddress | null>(KEPT * 4)
 
-  constructor(private readonly folder: FolderScopes, private readonly git: FolderGit) {}
+  private readonly folder: FolderScopes
+  private readonly git: FolderGit
+
+  constructor(folder: FolderScopes, git: FolderGit) {
+    this.folder = folder
+    this.git = git
+  }
 
   record({ scopes, subject }: RecordWanted): Promise<readonly HistoryEntry[]> {
     return this.folder.serial(async () => {

@@ -40,11 +40,19 @@ const SEQ_KEY = '#seq'
 export class BrowserFolder {
   private key: Promise<string> | undefined
 
+  readonly store: KeyedStore
+  private readonly handle: FolderHandle
+  private readonly same: SameFolder
+
   constructor(
-    readonly store: KeyedStore,
-    private readonly handle: FolderHandle,
-    private readonly same: SameFolder = sameEntry,
-  ) {}
+    store: KeyedStore,
+    handle: FolderHandle,
+    same: SameFolder = sameEntry,
+  ) {
+    this.store = store
+    this.handle = handle
+    this.same = same
+  }
 
   /** This folder's key: the record whose handle is this folder, or a new one. */
   folderKey(): Promise<string> {

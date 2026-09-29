@@ -1,9 +1,10 @@
 {
+  "//": "erasableSyntaxOnly: every file loads under Node's type stripping, as a server that takes core by path loads it — no parameter properties, enums, namespaces or `import =`.",
   "compilerOptions": {
     "target": "ES2022", "lib": ["ES2022", "DOM", "DOM.Iterable"], "module": "ESNext",
     "moduleResolution": "bundler", "jsx": "react-jsx", "strict": true,
     "skipLibCheck": true, "allowImportingTsExtensions": true, "noEmit": true,
-    "resolveJsonModule": true, "esModuleInterop": true, "types": ["vite/client", "node"]
+    "resolveJsonModule": true, "esModuleInterop": true, "erasableSyntaxOnly": true, "types": ["vite/client", "node"]
   },
   "include": ["src"]
 }

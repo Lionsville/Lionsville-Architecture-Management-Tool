@@ -23,7 +23,13 @@ import { bytesAt } from './handles'
 export class FolderImageRepository implements ImageRepository {
   readonly id = 'folder'
 
-  constructor(private readonly folder: FolderScopes, private readonly staging: PictureStaging) {}
+  private readonly folder: FolderScopes
+  private readonly staging: PictureStaging
+
+  constructor(folder: FolderScopes, staging: PictureStaging) {
+    this.folder = folder
+    this.staging = staging
+  }
 
   async put(scope: ScopeId, name: ImageName, bytes: Uint8Array): Promise<Put> {
     const refused = imageNameRefusal(name)

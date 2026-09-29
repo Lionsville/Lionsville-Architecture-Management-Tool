@@ -174,7 +174,10 @@ export class PictureCache {
   private readonly addresses: PictureAddresses
   private readonly onFailure: (error: unknown) => void
 
-  constructor(private readonly source: ImageSource, options: PictureCacheOptions = {}) {
+  private readonly source: ImageSource
+
+  constructor(source: ImageSource, options: PictureCacheOptions = {}) {
+    this.source = source
     this.keep = options.keep ?? PICTURES_KEPT
     this.addresses = options.addresses ?? defaultPictureAddresses()
     this.onFailure = options.onFailure ?? (() => undefined)

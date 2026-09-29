@@ -152,12 +152,21 @@ export class FolderScopes {
   /** The places as they were last kept, to write them only when they moved. */
   private kept: string | undefined
 
+  readonly root: DirectoryHandleLike
+  readonly diagnostics?: Pick<Diagnostics, 'report'>
+  private readonly places: PlaceStore
+  private readonly stamps: StampCache
+
   constructor(
-    readonly root: DirectoryHandleLike,
-    readonly diagnostics?: Pick<Diagnostics, 'report'>,
-    private readonly places: PlaceStore = placesInMemory(),
-    private readonly stamps: StampCache = stampsInMemory(),
+    root: DirectoryHandleLike,
+    diagnostics?: Pick<Diagnostics, 'report'>,
+    places: PlaceStore = placesInMemory(),
+    stamps: StampCache = stampsInMemory(),
   ) {
+    this.root = root
+    this.diagnostics = diagnostics
+    this.places = places
+    this.stamps = stamps
     this.store = new FileSystemScopeStore(root, diagnostics, 'apart')
   }
 

@@ -44,10 +44,20 @@ export type FakeControls = {
 }
 
 export class FakeKeyRange {
+  readonly lower: Key | undefined
+  readonly upper: Key | undefined
+  readonly lowerOpen: boolean
+  readonly upperOpen: boolean
+
   private constructor(
-    readonly lower: Key | undefined, readonly upper: Key | undefined,
-    readonly lowerOpen: boolean, readonly upperOpen: boolean,
-  ) {}
+    lower: Key | undefined, upper: Key | undefined,
+    lowerOpen: boolean, upperOpen: boolean,
+  ) {
+    this.lower = lower
+    this.upper = upper
+    this.lowerOpen = lowerOpen
+    this.upperOpen = upperOpen
+  }
 
   static bound(lower: Key, upper: Key, lowerOpen = false, upperOpen = false): FakeKeyRange {
     if (lower > upper || (lower === upper && (lowerOpen || upperOpen))) throw new DOMException('empty range', 'DataError')
@@ -100,7 +110,14 @@ class FakeTransaction {
   private active = true
   private turn = 0
 
-  constructor(private readonly database: FakeDatabase, private readonly names: readonly string[], private readonly mode: string) {
+  private readonly database: FakeDatabase
+  private readonly names: readonly string[]
+  private readonly mode: string
+
+  constructor(database: FakeDatabase, names: readonly string[], mode: string) {
+    this.database = database
+    this.names = names
+    this.mode = mode
     this.wake()
   }
 
@@ -238,8 +255,14 @@ class FakeDatabase {
   commits = 0
   read = 0
 
+  readonly shelves: Shelves
+  private readonly faults: Fault[]
+
   /** `faults` is the whole fake's: asked for before a database exists, they wait for one. */
-  constructor(readonly shelves: Shelves, private readonly faults: Fault[]) {}
+  constructor(shelves: Shelves, faults: Fault[]) {
+    this.shelves = shelves
+    this.faults = faults
+  }
 
   /** The first fault asked for at this point, taken, as the exception a browser would give. */
   fault(at: Fault['at']): DOMException | undefined {
@@ -269,7 +292,10 @@ class FakeConnection {
   onclose: (() => void) | null = null
   private closed = false
 
-  constructor(private readonly database: FakeDatabase) {
+  private readonly database: FakeDatabase
+
+  constructor(database: FakeDatabase) {
+    this.database = database
     database.connections.add(this)
   }
 

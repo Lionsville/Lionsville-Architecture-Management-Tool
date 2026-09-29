@@ -81,16 +81,26 @@ function join(chunks: readonly Uint8Array[]): Uint8Array {
 export class IpcDirectoryHandle implements DirectoryHandleLike {
   readonly kind = 'directory' as const
 
+  private readonly files: DesktopFiles
+  private readonly root: string
+  readonly name: string
+  private readonly path: string
+
   /**
    * `root` is the folder the user chose and never changes; `path` is where this
    * handle sits inside it. Both are strings main will check again.
    */
   constructor(
-    private readonly files: DesktopFiles,
-    private readonly root: string,
-    readonly name: string,
-    private readonly path = '',
-  ) {}
+    files: DesktopFiles,
+    root: string,
+    name: string,
+    path = '',
+  ) {
+    this.files = files
+    this.root = root
+    this.name = name
+    this.path = path
+  }
 
   private within(name: string): string {
     return this.path ? `${this.path}/${name}` : name

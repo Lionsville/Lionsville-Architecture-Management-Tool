@@ -16,10 +16,16 @@ export const PREFERENCES_KEY = 'lvarch.preferences'
 export class WebStoragePreferencesStore implements PreferencesStore {
   readonly id = 'browser-storage'
 
+  private readonly storage: KeyValueStorage
+  private readonly key: string
+
   constructor(
-    private readonly storage: KeyValueStorage,
-    private readonly key: string = PREFERENCES_KEY,
-  ) {}
+    storage: KeyValueStorage,
+    key: string = PREFERENCES_KEY,
+  ) {
+    this.storage = storage
+    this.key = key
+  }
 
   read(): Promise<unknown> {
     try {

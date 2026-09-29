@@ -37,7 +37,10 @@ type Planned = { kept: KeptScope; before: ScopeContent; content: ScopeContent; r
 export class KeptScopes implements ScopeRepository {
   readonly id: string
 
-  constructor(private readonly source: Source) {
+  private readonly source: Source
+
+  constructor(source: Source) {
+    this.source = source
     this.id = source.id
   }
 

@@ -24,7 +24,11 @@ export class DesktopDocumentGateway implements DocumentGateway {
 
   private readonly browser = new BrowserDocumentGateway()
 
-  constructor(private readonly files: DesktopFiles) {}
+  private readonly files: DesktopFiles
+
+  constructor(files: DesktopFiles) {
+    this.files = files
+  }
 
   async save(doc: SavedDocument): Promise<void> {
     const bytes = doc.text === undefined

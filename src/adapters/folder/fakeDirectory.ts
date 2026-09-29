@@ -43,12 +43,18 @@ export class FakeDirectory implements DirectoryHandleLike {
   private readonly files = new Map<string, StoredFile>()
   private readonly folders = new Map<string, FakeDirectory>()
 
+  readonly name: string
+  private readonly options: { canMove?: boolean }
+
   /**
    * `canMove: false` is a browser whose handles cannot rename a file the
    * person chose — no `move` on them at all — and holds for every folder
    * made inside this one.
    */
-  constructor(readonly name = '', private readonly options: { canMove?: boolean } = {}) {}
+  constructor(name = '', options: { canMove?: boolean } = {}) {
+    this.name = name
+    this.options = options
+  }
 
   async getDirectoryHandle(name: string, options?: { create?: boolean }): Promise<DirectoryHandleLike> {
     const existing = this.folders.get(name)

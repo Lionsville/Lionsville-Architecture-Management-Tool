@@ -30,10 +30,16 @@ export class ConsoleDiagnostics implements Diagnostics {
   readonly id = 'console'
   private entries: DiagnosticEntry[] = []
 
+  private readonly limit: number
+  private readonly now: () => string
+
   constructor(
-    private readonly limit: number = RING_SIZE,
-    private readonly now: () => string = () => new Date().toISOString(),
-  ) {}
+    limit: number = RING_SIZE,
+    now: () => string = () => new Date().toISOString(),
+  ) {
+    this.limit = limit
+    this.now = now
+  }
 
   report(entry: Diagnostic): void {
     const stamped: DiagnosticEntry = { ...entry, at: this.now() }

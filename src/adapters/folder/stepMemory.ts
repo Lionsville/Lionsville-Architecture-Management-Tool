@@ -58,7 +58,13 @@ type Held = Map<string, { scope: ScopeId; at: number; expected?: string }>
 export class StepMemory {
   private held: Held | undefined
 
-  constructor(private readonly store: StepStore = stepsInMemory(), private readonly now: () => number = Date.now) {}
+  private readonly store: StepStore
+  private readonly now: () => number
+
+  constructor(store: StepStore = stepsInMemory(), now: () => number = Date.now) {
+    this.store = store
+    this.now = now
+  }
 
   private async load(): Promise<Held> {
     if (this.held) return this.held

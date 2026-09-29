@@ -28,7 +28,10 @@ import type { Source } from './source'
 export class KeptImages implements ImageRepository {
   readonly id: string
 
-  constructor(private readonly source: Source) {
+  private readonly source: Source
+
+  constructor(source: Source) {
+    this.source = source
     this.id = source.id
   }
 

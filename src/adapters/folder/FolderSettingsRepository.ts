@@ -59,7 +59,13 @@ function settingsIn(text: string | undefined): Settings {
 export class FolderSettingsRepository implements SettingsRepository {
   readonly id = 'folder'
 
-  constructor(private readonly folder: FolderScopes, private readonly person: PersonSettings) {}
+  private readonly folder: FolderScopes
+  private readonly person: PersonSettings
+
+  constructor(folder: FolderScopes, person: PersonSettings) {
+    this.folder = folder
+    this.person = person
+  }
 
   /** Where a set is kept in the folder; `undefined` for a scope that is not there. */
   private async fileOf(of: SettingsOf): Promise<string | undefined> {

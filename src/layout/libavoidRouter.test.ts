@@ -933,10 +933,16 @@ describe('routeWithLibavoid — when the WASM module misbehaves', () => {
       }
     }
     class FakePoint {
+      readonly x: number;
+      readonly y: number;
+
       constructor(
-        readonly x: number,
-        readonly y: number,
-      ) {}
+        x: number,
+        y: number,
+      ) {
+        this.x = x;
+        this.y = y;
+      }
     }
     /** Rectangle, ShapeRef and ConnEnd are opaque handles to the adapter. */
     class Handle {}

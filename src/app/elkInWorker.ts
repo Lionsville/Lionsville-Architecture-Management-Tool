@@ -22,7 +22,11 @@ import type { ELK, ELKConstructorArguments } from 'elkjs'
 import ElkWorker from 'elkjs/lib/elk-worker.min.js?worker'
 
 export default class ElkInWorker implements ELK {
-  constructor(private readonly options: ELKConstructorArguments = {}) {}
+  private readonly options: ELKConstructorArguments
+
+  constructor(options: ELKConstructorArguments = {}) {
+    this.options = options
+  }
 
   private async once<T>(ask: (elk: ELK) => Promise<T>): Promise<T> {
     const elk = new ElkApi({ ...this.options, workerFactory: () => new ElkWorker() })

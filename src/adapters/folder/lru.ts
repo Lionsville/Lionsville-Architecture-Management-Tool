@@ -10,7 +10,11 @@
 export class Lru<K, V> {
   private readonly held = new Map<K, V>()
 
-  constructor(private readonly size: number) {}
+  private readonly size: number
+
+  constructor(size: number) {
+    this.size = size
+  }
 
   has(key: K): boolean {
     return this.held.has(key)

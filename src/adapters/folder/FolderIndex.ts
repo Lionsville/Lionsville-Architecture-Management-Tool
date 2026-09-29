@@ -30,7 +30,11 @@ export class FolderIndex implements OrganisationIndex {
   /** Each revision answered with, and each scope's part of the index then, by identity. */
   private readonly past = new Map<Revision, Map<ScopeId, string>>()
 
-  constructor(private readonly folder: FolderScopes) {}
+  private readonly folder: FolderScopes
+
+  constructor(folder: FolderScopes) {
+    this.folder = folder
+  }
 
   async read(): Promise<IndexRead> {
     const [{ nodes }, models] = await Promise.all([this.folder.walk(), this.folder.store.models()])

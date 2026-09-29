@@ -77,10 +77,16 @@ export const STORAGE_WARNING_FRACTION = 0.8
 export class WebStorageScopeStore implements ScopeStore {
   readonly id = 'browser-storage'
 
+  private readonly storage: KeyValueStorage
+  private readonly prefix: string
+
   constructor(
-    private readonly storage: KeyValueStorage,
-    private readonly prefix: string = SCOPE_PREFIX,
-  ) {}
+    storage: KeyValueStorage,
+    prefix: string = SCOPE_PREFIX,
+  ) {
+    this.storage = storage
+    this.prefix = prefix
+  }
 
   private keyFor(path: ScopePath): string {
     return `${this.prefix}${path}`

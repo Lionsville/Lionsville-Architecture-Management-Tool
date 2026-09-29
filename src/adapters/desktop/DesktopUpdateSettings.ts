@@ -17,7 +17,11 @@ import type { DesktopSettings } from './channel'
 export class DesktopUpdateSettings implements UpdateSettingsStore {
   readonly id = 'desktop'
 
-  constructor(private readonly channel: DesktopSettings) {}
+  private readonly channel: DesktopSettings
+
+  constructor(channel: DesktopSettings) {
+    this.channel = channel
+  }
 
   read(): Promise<UpdateSettings> {
     return this.channel.readUpdates()
