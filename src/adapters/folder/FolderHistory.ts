@@ -47,7 +47,7 @@ import { ShellError } from '../../platform/errors'
 import { fromArrays } from '../../model/normalised'
 import { recordsChanged, SCOPE_RECORD, sameRecord, sameValue, stableText } from '../../model/recordKey'
 import type { RecordKey, RecordKind } from '../../model/recordKey'
-import { descriptionPath, isFormatPath, modelListsFrom } from '../../projects/folderFormat'
+import { descriptionPath, isFormatPath, modelRowFrom } from '../../projects/folderFormat'
 import type { FolderFile } from '../../projects/folderFormat'
 import { isLabelSpace, isSpacedLabel, labelSlug } from '../../projects/label'
 import { isSupersededPath, openScopeFolder } from '../../projects/migrate4to5'
@@ -420,8 +420,7 @@ export class FolderHistory implements HistoryRepository {
 
   /** One record's row out of one version of a model, kept as text by the version's id — and nothing else of it. */
   private keepRow(blob: string, text: string | undefined, list: 'elements' | 'relations', id: string): void {
-    const lists = modelListsFrom(text)
-    const row = (lists?.[list] as readonly { id: string }[] | undefined)?.find((one) => one.id === id)
+    const row = modelRowFrom(text, list, id)
     this.rows.set(rowKey(blob, list, id), row === undefined ? null : stableText(row))
   }
 

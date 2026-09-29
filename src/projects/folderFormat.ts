@@ -651,6 +651,24 @@ export function modelListsFrom(
 }
 
 /**
+ * One row of a model's elements or relations, by id, as {@link modelListsFrom}
+ * reads it — with the file parsed once and no other row made: a thing's
+ * history asks for one row of each of hundreds of versions of a large model.
+ * `undefined` where the file is not a model or holds no such row.
+ */
+export function modelRowFrom(
+  text: string | undefined, list: 'elements' | 'relations', id: string,
+): DesignElement | Relation | undefined {
+  const held = text === undefined ? undefined : parseJson(text)
+  if (!held || typeof held !== 'object' || Array.isArray(held)) return undefined
+  const row = listOf((held as Record<string, unknown>)[list]).find((one) => one.id === id)
+  if (!row) return undefined
+  if (list === 'relations') return row as unknown as Relation
+  const { explicit: _held, ...rest } = row
+  return elementRecord(rest)
+}
+
+/**
  * Is this a `model.json` that is there and is not a model — half a write, a
  * merge conflict's markers, a hand edit that lost a brace?
  *

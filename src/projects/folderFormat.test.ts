@@ -14,7 +14,7 @@ import type { Transition } from '../model/transition'
 import type { HostModel } from '../model/hostModel'
 import { stableJson, textFromBytes } from './fileText'
 import {
-  isFormatPath, MODEL_FILE, modelListsFrom, SCOPE_FILE, SCOPE_FORMAT_VERSION, scopeFiles, scopeFromFolder,
+  isFormatPath, MODEL_FILE, modelListsFrom, modelRowFrom, SCOPE_FILE, SCOPE_FORMAT_VERSION, scopeFiles, scopeFromFolder,
   scopeSummaryFrom,
 } from './folderFormat'
 import type { FolderFile } from './folderFormat'
@@ -463,6 +463,11 @@ describe('projectFromFolder', () => {
     const listed = modelListsFrom('text' in text ? text.text : '')!
     expect(listed.elements.find((e) => e.id === 'kafka')?.platformArchetype).toBe('service')
     expect(listed.elements.some((e) => 'platformCategory' in e)).toBe(false)
+    // And so does the history's, which reads one row of it.
+    const model = 'text' in text ? text.text : ''
+    for (const one of listed.elements) expect(modelRowFrom(model, 'elements', one.id)).toEqual(one)
+    for (const one of listed.relations) expect(modelRowFrom(model, 'relations', one.id)).toEqual(one)
+    expect(modelRowFrom(model, 'elements', 'nobody')).toBeUndefined()
   })
 
   it('marks a scope whose model.json is there and does not parse, rather than reading it as empty', () => {
@@ -476,6 +481,12 @@ describe('projectFromFolder', () => {
     // The index's reader does not answer it with an empty pair either.
     expect(modelListsFrom('{"elements": [')).toBeUndefined()
     expect(modelListsFrom('[]')).toBeUndefined()
+    const whole = scopeFiles(project()).find((file) => file.path === MODEL_FILE)!
+    const model = 'text' in whole ? whole.text : ''
+    expect(modelRowFrom(model, 'relations', 'c-1')).toEqual(modelListsFrom(model)!.relations.find((one) => one.id === 'c-1'))
+    expect(modelRowFrom(model, 'relations', 'c-1')).toBeDefined()
+    expect([modelRowFrom('{"elements": [', 'elements', 'crews'), modelRowFrom('[]', 'elements', 'crews'), modelRowFrom(undefined, 'elements', 'crews')])
+      .toEqual([undefined, undefined, undefined])
     // No file at all is an ordinary domain, and a whole file is read as ever.
     expect(modelListsFrom(undefined)).toEqual({ elements: [], relations: [] })
     expect(scopeFromFolder(scopeFiles(project()), REF)?.unreadable).toBeUndefined()
