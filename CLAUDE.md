@@ -533,9 +533,11 @@ src/adapters/     The outside world, one folder per flavour.
 src/providers/    A place work is kept, whole (ADR-0031 §4, as built): the
                   adapters it is built on, its way in, and the chrome it draws
                   — in the language that is on, and in the words of how it
-                  keeps work, which nothing else may say. Composition and
-                  chrome only: what it computes is its adapter's or the
-                  domain's. Registered by `app/composition.ts` and imported by
+                  keeps work, which nothing else may say — and the
+                  orchestration of an opening: what is done before a source
+                  is read and while it is open. Reading and writing where
+                  work is kept is its adapter's; what the domain computes is
+                  the domain's. Registered by `app/composition.ts` and imported by
                   nothing else; it may import the adapters, the ports, the
                   projects, the model, the platform, the words and the widgets.
                     folder/           the folder's source: its way in (the

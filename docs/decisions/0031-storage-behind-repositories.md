@@ -1,6 +1,7 @@
 # ADR-0031 — Storage behind repositories: the domain speaks no storage language
 
-* Status: accepted, 29 September 2026; not yet built
+* Status: accepted, 29 September 2026; built but for the working-file codec's
+  move into the folder's format
 * Date: 2026-09-29
 * Deciders: Wouter Simons
 * Supersedes:
@@ -889,9 +890,12 @@ draws.
   and nothing else imports one: not the app, which reaches a provider through
   the registry, and not an adapter, which stays free of screens.
 - **The line.** The storage line reads it as an implementation: its chrome is
-  where the words about a folder are spoken. It holds composition and chrome,
-  and no logic of its own; what it computes goes to the adapter it is built on
-  or to the domain.
+  where the words about a folder are spoken. A provider is its way in, its
+  chrome, and the orchestration of an opening — what is done before a source
+  is read, and what is said while it is open: the folder's pull and format
+  pass, its push after an entry, the fall to memory where this browser's
+  database will not open. Reading and writing where work is kept is the
+  adapter's, and what the domain computes stays the domain's.
 
 **What a provider hands the app** is one type, `ports/ProviderParts.ts`,
 for the three that ship and for any composed from outside: the source's
@@ -967,8 +971,10 @@ Memory's chrome says that nothing is kept.
 **Every change is a step, and a whole content arrives as one.** The session
 keeps every change, undo and redo included, for the writer, which lands them
 as steps expecting what was read. `scope.replace` is for a content that
-arrives whole — a working set landing, an example copied in — and never for
-the session's own saving, which a test holds; going back in the history
+arrives whole — a working set landing, an example copied in, and *keep mine*
+where a step of this session cannot land on another author's version, when
+what is on screen lands whole over the state just read — and never for the
+session's ordinary saving, which a test holds; going back in the history
 stays the model's own restore. A content placed at an address makes the
 scopes above it that are not there, named by their address.
 

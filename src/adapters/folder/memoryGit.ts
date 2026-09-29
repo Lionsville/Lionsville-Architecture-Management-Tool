@@ -3,7 +3,8 @@
 
 /**
  * A history kept in memory, over any folder handle: for a folder a browser tab
- * was given, where there is no git to run, and for the suites that run the
+ * was given with no database to keep one in (a tab with one keeps its history
+ * there, `browser/browserFolderGit.ts`), and for the suites that run the
  * folder's repositories over the fake folder.
  *
  * It does what the seam says and nothing git does beyond it, and it lasts for
