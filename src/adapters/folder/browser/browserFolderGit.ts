@@ -228,6 +228,12 @@ export function browserFolderGit(folder: BrowserFolder, root: DirectoryHandleLik
 
     texts,
 
+    async blobsAt(at) {
+      const rows = new Map<string, CommitRow | undefined>()
+      for (const { sha } of at) if (!rows.has(sha)) rows.set(sha, await commitRow(sha))
+      return at.map(({ sha, path }) => rows.get(sha)?.tree[path]?.blob)
+    },
+
     async tags(): Promise<FolderTag[]> {
       const range = await folder.kind('tag')
       const start = (await folder.keyOf('tag')).length

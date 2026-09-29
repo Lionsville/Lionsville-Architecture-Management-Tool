@@ -139,6 +139,12 @@ export function memoryGit(root: DirectoryHandleLike, author = 'memory'): FolderG
         return held === undefined ? [] : [asFile(path, held)]
       }))
     },
+    blobsAt(at) {
+      return Promise.resolve(at.map(({ sha, path }) => {
+        const held = commits.find((one) => one.sha === sha)?.tree.get(path)
+        return held === undefined ? undefined : blobOf(held)
+      }))
+    },
     texts(ids) {
       return Promise.resolve(Object.fromEntries(ids.flatMap((id) => {
         const held = texts.get(id)

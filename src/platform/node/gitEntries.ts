@@ -300,6 +300,21 @@ export async function textsOf(root: string, ids: readonly string[]): Promise<Rec
   return found
 }
 
+/** The id of what one file held at each of some commits, in one look at git's objects; `undefined` where it was not there. */
+export async function blobsAt(root: string, at: readonly { sha: string; path: string }[]): Promise<(string | undefined)[]> {
+  const usable = at.map(({ sha, path }) => isSha(sha) && isInside(path) && !path.includes('\n'))
+  if (!usable.some(Boolean) || !await isRepository(root)) return at.map(() => undefined)
+  const asked = at.filter((_one, index) => usable[index])
+  const out = (await gitWithInput(root, ['cat-file', '--batch-check'], asked.map(({ sha, path }) => `${sha}:${path}\n`).join(''))).toString('utf8')
+  const lines = out.split('\n')
+  let next = 0
+  return at.map((_one, index) => {
+    if (!usable[index]) return undefined
+    const [id, type] = (lines[next++] ?? '').split(' ')
+    return type === 'blob' ? id : undefined
+  })
+}
+
 export type GitTag = { name: string; sha: string; message: string }
 
 /** Every tag, by name, on the commit it marks, with the words it carries; a lightweight one carries none. */
@@ -353,6 +368,7 @@ export function folderGitAt(root: string) {
     treeAt: (sha: string, within: string) => treeAt(root, sha, within),
     readAt: (sha: string, paths: readonly string[]) => readAt(root, sha, paths),
     texts: (ids: readonly string[]) => textsOf(root, ids),
+    blobsAt: (at: readonly { sha: string; path: string }[]) => blobsAt(root, at),
     tags: () => allTags(root),
     tag: (sha: string, name: string, message: string) => tagCommit(root, sha, name, message),
   }

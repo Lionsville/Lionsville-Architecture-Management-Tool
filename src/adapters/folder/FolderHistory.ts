@@ -45,7 +45,7 @@ import { imageMediaType } from '../../model/documentImage'
 import type { ImageEntry } from '../../model/imageName'
 import { ShellError } from '../../platform/errors'
 import { fromArrays } from '../../model/normalised'
-import { recordsChanged, SCOPE_RECORD, sameRecord, sameValue } from '../../model/recordKey'
+import { recordsChanged, SCOPE_RECORD, sameRecord, sameValue, stableText } from '../../model/recordKey'
 import type { RecordKey, RecordKind } from '../../model/recordKey'
 import { descriptionPath, isFormatPath, modelListsFrom } from '../../projects/folderFormat'
 import type { FolderFile } from '../../projects/folderFormat'
@@ -190,8 +190,10 @@ export class FolderHistory implements HistoryRepository {
   private readonly trees = new Lru<string, TreeEntry[]>(KEPT)
   /** The identity a header said at a commit, by commit and address. */
   private readonly identities = new Lru<string, ScopeId>(KEPT * 4)
-  /** A model's records and rows, by the id of the file they were read from. */
-  private readonly models = new Lru<string, { elements: readonly unknown[]; relations: readonly unknown[] }>(KEPT)
+  /** The identity a header declared, by the id of the file it was read from; `null` for one that declared none. */
+  private readonly headers = new Lru<string, ScopeId | null>(KEPT * 4)
+  /** One record's row in one version of a model, as text, by the version's id: all that is kept of a model read. */
+  private readonly rows = new Lru<string, string | null>(KEPT * 16)
   /** Where a scope was at a commit, found by walking its first parents. */
   private readonly places = new Lru<string, ScopeAddress | null>(KEPT * 4)
 
@@ -298,12 +300,48 @@ export class FolderHistory implements HistoryRepository {
   /** The commits git lists for a question, from a tip, from the one at `from` on, each with the entries it is. */
   private async *listed(
     asked: readonly Asked[], addresses: readonly ScopeAddress[], paths: readonly string[] | undefined, tip: string, from: number,
+    record?: RecordKey,
   ): AsyncGenerator<{ index: number; members: Found[] }> {
     for (let at = from; ; at += CHUNK) {
       const commits = await this.git.log({ ...(paths ? { paths } : {}), tip, skip: at, limit: CHUNK })
+      await this.prepare(commits, asked, record)
       for (const [n, commit] of commits.entries()) yield { index: at + n, members: await this.membersOf(commit, asked, addresses) }
       if (commits.length < CHUNK) return
     }
+  }
+
+  /**
+   * What a chunk of commits will be asked, read in as few looks as there are:
+   * the header each unmarked commit had at each address its scopes have been
+   * at, and — for an element's or a relation's history — every version of the
+   * model the chunk changed from or to. One look at git's objects each,
+   * rather than one per commit.
+   */
+  private async prepare(commits: readonly FolderCommit[], asked: readonly Asked[], record: RecordKey | undefined): Promise<void> {
+    const places = commits.filter((commit) => trailersOf(commit.message).size === 0)
+      .flatMap((commit) => asked.flatMap(({ held }) => held.map((address) => ({ sha: commit.sha, address }))))
+      .filter(({ sha, address }) => !this.identities.has(`${sha}\u0000${address}`))
+    if (places.length) {
+      const blobs = await this.git.blobsAt(places.map(({ sha, address }) => ({ sha, path: scopeFilePath(address, 'scope.json') })))
+      const unread = [...new Set(blobs.filter((blob): blob is string => blob !== undefined && !this.headers.has(blob)))]
+      const texts = unread.length ? await this.git.texts(unread) : {}
+      for (const blob of unread) {
+        const declared = headerOf(texts[blob])?.['id']
+        this.headers.set(blob, isScopeId(declared) ? declared : null)
+      }
+      places.forEach(({ sha, address }, at) => {
+        const blob = blobs[at]
+        this.identities.set(`${sha}\u0000${address}`, (blob && this.headers.get(blob)) || identityAt(address))
+      })
+    }
+    if (record?.kind !== 'element' && record?.kind !== 'relation') return
+    const list = record.kind === 'element' ? 'elements' : 'relations'
+    const models = [...new Set(commits.flatMap((commit) => Object.entries(commit.blobs ?? {})
+      .filter(([path]) => path === 'model.json' || path.endsWith('/model.json'))
+      .flatMap(([, ids]) => ids.filter((id) => id && !this.rows.has(rowKey(id, list, record.id))))))]
+    if (models.length === 0) return
+    const texts = await this.git.texts(models)
+    for (const blob of models) this.keepRow(blob, texts[blob], list, record.id)
   }
 
   async entries({ scopes, record, limit = PAGE, after }: EntriesWanted): Promise<HistoryPage> {
@@ -321,7 +359,7 @@ export class FolderHistory implements HistoryRepository {
       ? held.flatMap((address) => (recordFiles(record)?.paths ?? KIND_PATHS[record.kind]).map((path) => scopeFilePath(address, path)))
       : held.includes('') ? undefined : held
     const page: { found: Found; index: number; k: number }[] = []
-    fill: for await (const { index, members } of this.listed(asked, addresses, paths, tip, cursor?.index ?? 0)) {
+    fill: for await (const { index, members } of this.listed(asked, addresses, paths, tip, cursor?.index ?? 0, record)) {
       for (const [k, found] of members.entries()) {
         if (cursor && index === cursor.index && k < cursor.k) continue
         if (record && !await this.touches(found, record, asked, addresses)) continue
@@ -340,14 +378,18 @@ export class FolderHistory implements HistoryRepository {
    * the file by its id — read once per version of the file — or `undefined`
    * where there is no such file, or it holds no such row.
    */
-  private async rowIn(blob: string | undefined, list: 'elements' | 'relations', id: string): Promise<unknown> {
+  private async rowIn(blob: string | undefined, list: 'elements' | 'relations', id: string): Promise<string | undefined> {
     if (!blob) return undefined
-    let lists = this.models.get(blob)
-    if (!lists) {
-      lists = modelListsFrom((await this.git.texts([blob]))[blob]) ?? { elements: [], relations: [] }
-      this.models.set(blob, lists)
-    }
-    return (lists[list] as readonly { id: string }[]).find((row) => row.id === id)
+    const key = rowKey(blob, list, id)
+    if (!this.rows.has(key)) this.keepRow(blob, (await this.git.texts([blob]))[blob], list, id)
+    return this.rows.get(key) ?? undefined
+  }
+
+  /** One record's row out of one version of a model, kept as text by the version's id — and nothing else of it. */
+  private keepRow(blob: string, text: string | undefined, list: 'elements' | 'relations', id: string): void {
+    const lists = modelListsFrom(text)
+    const row = (lists?.[list] as readonly { id: string }[] | undefined)?.find((one) => one.id === id)
+    this.rows.set(rowKey(blob, list, id), row === undefined ? null : stableText(row))
   }
 
   /**
@@ -368,7 +410,7 @@ export class FolderHistory implements HistoryRepository {
     const model = raw.get('model.json')
     if (!model) return false
     const list = record.kind === 'element' ? 'elements' : 'relations'
-    return !sameValue(await this.rowIn(model[0], list, record.id), await this.rowIn(model[1], list, record.id))
+    return await this.rowIn(model[0], list, record.id) !== await this.rowIn(model[1], list, record.id)
   }
 
   /** A scope's own files at a commit, with the ids of what they held. */
@@ -436,7 +478,7 @@ export class FolderHistory implements HistoryRepository {
     if ((recordFiles(record)?.own ?? []).some((path) => now.get(path) !== was.get(path))) return true
     if (record.kind === 'element' || record.kind === 'relation') {
       const list = record.kind === 'element' ? 'elements' : 'relations'
-      return !sameValue(await this.rowIn(now.get('model.json'), list, record.id), await this.rowIn(was.get('model.json'), list, record.id))
+      return await this.rowIn(now.get('model.json'), list, record.id) !== await this.rowIn(was.get('model.json'), list, record.id)
     }
     const pictures = record.kind === 'image'
     const after = await this.stateOf(found.commit.sha, found.id, found.address, pictures)
@@ -513,6 +555,11 @@ export class FolderHistory implements HistoryRepository {
       return this.git.tag(held.commit.sha, mine, name.trim())
     })
   }
+}
+
+/** Where one record's row in one version of a model is kept. */
+function rowKey(blob: string, list: string, id: string): string {
+  return `${blob}\u0000${list}\u0000${id}`
 }
 
 /** Where a page starts: the tip the first page was counted from, the commit it had reached, and how many of its entries were taken. */

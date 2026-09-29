@@ -105,6 +105,8 @@ export interface FolderGit {
   readAt(sha: string, paths: readonly string[]): Promise<CommittedFile[]>
   /** What files held, as text, by the ids a tree or a log gave; an id that is not there is left out. */
   texts(ids: readonly string[]): Promise<Record<string, string>>
+  /** The id of what one file held at each of some commits, in one look; `undefined` where it was not there. */
+  blobsAt(at: readonly { sha: string; path: string }[]): Promise<(string | undefined)[]>
   tags(): Promise<FolderTag[]>
   /** An annotated tag on a commit, never over one that is there. */
   tag(sha: string, name: string, message: string): Promise<'done' | 'exists'>
