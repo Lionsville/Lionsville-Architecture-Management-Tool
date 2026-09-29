@@ -9,7 +9,7 @@
  * call in a tool that promises none.
  */
 import { describe, expect, it } from 'vitest'
-import { documentsUsing, imageNameOfSource, imageNamesIn, imagesUsedIn, pictureMarkdown } from './images'
+import { documentsUsing, imageNameOfSource, imagesUsedIn, pictureMarkdown } from './images'
 
 describe('pictureMarkdown', () => {
   it('writes a picture of the library by its name', () => {
@@ -72,10 +72,6 @@ describe('a picture named by its name in the library', () => {
     expect(imageNameOfSource('image:../depot.png')).toBeUndefined()
     expect(imageNameOfSource('image:depot.exe')).toBeUndefined()
     expect(imageNameOfSource(undefined)).toBeUndefined()
-  })
-
-  it('lists every picture a document names, once each, in order', () => {
-    expect(imageNamesIn('![a](image:b.png) ![c](image:a.png) ![again](image:b.png) ![old](x.png)')).toEqual(['b.png', 'a.png'])
   })
 })
 

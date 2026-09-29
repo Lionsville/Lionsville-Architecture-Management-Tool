@@ -44,6 +44,7 @@ import { IMAGE_REFERENCE } from '../../model/imageName'
 import { blockFor } from './blocks'
 import type { BlockContext } from './blocks'
 import type { MermaidRenderer } from './MermaidBlock'
+import { useDrawnPicture } from './PictureCollector'
 import { LibraryPicture, usePictureEntry } from './Pictures'
 
 export const ELEMENT_LINK_SCHEME = 'element:'
@@ -126,6 +127,7 @@ function MissingPicture({ src, alt }: { src: string | undefined; alt: string }) 
  */
 function NamedPicture({ name, src, alt }: { name: string; src: string; alt: string }) {
   const entry = usePictureEntry(name)
+  useDrawnPicture(entry)
   if (entry) return <LibraryPicture key={`${entry.name}\u0000${entry.contentAddress}`} entry={entry} alt={alt} />
   return <MissingPicture src={src} alt={alt} />
 }

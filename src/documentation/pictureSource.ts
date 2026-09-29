@@ -21,13 +21,11 @@
  * from is made when a picture is shown and let go when the last place showing
  * it goes; the bytes stay in the cache until newer ones push them out.
  *
- * **A report asks for every picture, when it is produced.**
- * {@link picturesForReport} is what printing or exporting documents calls,
- * then and not before.
+ * **A report asks for every picture, when it is produced**, and never before
+ * (`pictureReport.ts`).
  */
 import { imageNameKey } from '../model/imageName'
 import type { ImageEntry, ImageName } from '../model/imageName'
-import { imageNamesIn } from './images'
 
 /** A picture's bytes, and what they are. The shape an image repository answers. */
 export type PictureBytes = {
@@ -278,30 +276,4 @@ export class PictureCache {
       over -= 1
     }
   }
-}
-
-/**
- * Every picture the documents of a report show, asked for now, once each:
- * what printing or exporting them calls when it produces them, and never
- * before. A name the library does not hold, or whose bytes are not there,
- * is left out, and the report draws its alt text as a page does.
- */
-export async function picturesForReport(
-  source: ImageSource,
-  scope: string,
-  library: readonly ImageEntry[],
-  documents: readonly string[],
-): Promise<ReadonlyMap<ImageName, PictureBytes>> {
-  const held = new Map(library.map((entry) => [imageNameKey(entry.name), entry]))
-  const names = new Set<string>()
-  for (const document of documents) {
-    for (const name of imageNamesIn(document)) {
-      const entry = held.get(imageNameKey(name))
-      if (entry) names.add(entry.name)
-    }
-  }
-  const answered = await Promise.all([...names].map(async (name) => [name, await source.bytes(scope, name)] as const))
-  const found = new Map<ImageName, PictureBytes>()
-  for (const [name, picture] of answered) if (picture) found.set(name, picture)
-  return found
 }

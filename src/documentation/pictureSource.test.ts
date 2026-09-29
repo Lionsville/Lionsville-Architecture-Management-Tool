@@ -4,7 +4,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import type { ImageEntry } from '../model/imageName'
 import {
-  defaultPictureAddresses, memoryImageSource, NO_PICTURES, PictureCache, pictureDataAddress, picturesForReport,
+  defaultPictureAddresses, memoryImageSource, NO_PICTURES, PictureCache, pictureDataAddress,
 } from './pictureSource'
 import type { PictureAddresses } from './pictureSource'
 
@@ -219,22 +219,3 @@ describe('a memory source answering', () => {
   })
 })
 
-describe('a report', () => {
-  const library = [entry('depot.png'), entry('plans/yard.svg')]
-  const documents = ['![Depot](image:depot.png) and ![Yard](image:plans/yard.svg)', '![Again](image:depot.png) ![None](image:none.png)']
-
-  it('asks for nothing until it is produced, then for every picture its documents show, once each', async () => {
-    const source = memoryImageSource({ crews: { 'depot.png': PNG, 'plans/yard.svg': SVG } })
-    const produce = () => picturesForReport(source, 'crews', library, documents)
-    expect(source.asked).toEqual([])
-    const pictures = await produce()
-    expect(source.asked.map((ask) => ask.name).sort()).toEqual(['depot.png', 'plans/yard.svg'])
-    expect([...pictures.keys()].sort()).toEqual(['depot.png', 'plans/yard.svg'])
-    expect(pictureDataAddress(pictures.get('depot.png')!)).toBe('data:image/png;base64,AQID')
-  })
-
-  it('leaves out a picture whose bytes are not there', async () => {
-    const pictures = await picturesForReport(memoryImageSource({ crews: { 'depot.png': PNG } }), 'crews', library, documents)
-    expect([...pictures.keys()]).toEqual(['depot.png'])
-  })
-})

@@ -55,16 +55,6 @@ export function imageNameOfSource(src: string | undefined): ImageName | undefine
   return imageNameOfReference(target.normalize('NFC'))
 }
 
-/** Every picture a document names by `image:<name>`, once each, in the order it names them. */
-export function imageNamesIn(markdown: string): ImageName[] {
-  const found: ImageName[] = []
-  for (const match of markdown.matchAll(/!\[[^\]]*\]\((<[^>\n]*>|[^)\s]+)/g)) {
-    const name = imageNameOfSource(match[1])
-    if (name !== undefined && !found.includes(name)) found.push(name)
-  }
-  return found
-}
-
 /** A document, as the usage scan sees it: what to call it, and what it says. */
 export interface NamedDocument {
   label: string
