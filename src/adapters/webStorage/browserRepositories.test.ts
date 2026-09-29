@@ -18,7 +18,7 @@ import { fakeIndexedDb } from './testing/fakeIndexedDb'
 function make(): RepositoriesUnderTest {
   const indexedDb = fakeIndexedDb()
   return {
-    repositories: browserRepositories(indexedDb),
+    repositories: browserRepositories(indexedDb).repositories,
     spoil: (scope) => new IndexedDbStore(indexedDb).transaction(SHELVES, 'write', async (tx) => {
       const held = await tx.get<KeptContent>('contents', scope)
       tx.put('contents', scope, { ...held, format: 2 })

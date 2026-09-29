@@ -3,82 +3,248 @@
 
 /**
  * The scopes this browser kept before its repositories, brought into them
- * once, as what a new store starts with (`Source`, `SourceOptions.seed`).
+ * (`Bringing`, `adapters/repositories/bring.ts`).
  *
  * Until the repositories, a browser kept each scope as one text under its
  * address in the key-value storage (`WebStorageScopeStore`): the model with
  * its documents as the folder writes them — a picture named `../images/<file>`
  * — and each picture's bytes as a data URL beside it. The repositories keep a
  * document naming its pictures (`image:<name>`), the library as entries, and
- * the bytes by content address, so each scope is read the way the store it
+ * the bytes by content address. So each scope is read the way the store it
  * was kept by reads it, and turned into that shape with the folder's own
- * translation (`adapters/folder/imageLibrary.ts`) — the same pictures, under
+ * translation (`adapters/folder/imageLibrary.ts`): the same pictures, under
  * the same names wherever the rule allows them, and the documents pointing at
- * them.
+ * them. A picture whose file name says nothing, or the wrong thing, about what
+ * its bytes are takes the extension its data URL says, so its name is one the
+ * library holds and its documents still find it.
  *
- * **Copied, never moved.** Nothing here writes to the key-value storage. What a
- * person kept there is still there, byte for byte, under the key it always
- * had, and the scope's first entry in its new history is the state it arrived
- * in — so neither the old copy nor the conversion can be lost, and either is a
- * way back from the other. A text that would not read is left where it is, as
- * the store it came from always left it; a picture whose bytes would not read,
- * or that is not one the library holds, stays named in its documents as it
- * was, and out of the library.
+ * **Copied, never moved.** Nothing here writes a scope's key. What a person
+ * kept there is still there, byte for byte, and each scope's first entry in
+ * its new history is the state it arrived in — so neither copy can be lost,
+ * and either is a way back from the other. The one key this writes is a
+ * marker outside every key a scope or a preference is kept under, which an
+ * older build does not read: it says a copy was made.
  *
- * **Once.** It is asked only while the new store is empty. A scope an older
- * page writes to the key-value storage after that is not brought over again:
- * by then the scope has a history here that a second copy would write over.
+ * **Every start looks again.** The note kept with the repositories says, per
+ * address, the revision and time of the text that was brought. A scope an
+ * older page wrote there since — changed, or new — is brought again, as an
+ * entry of its own, after an entry that keeps what was here before it.
+ *
+ * **A lost database is asked about, never refilled on the quiet.** Where the
+ * marker says a copy was made and the database is new, what the key-value
+ * storage holds may be long out of date: the work since was in the database
+ * that is gone. Nothing is brought, and the standing says a person must choose
+ * (`Earlier.standing`, `bringOver`, `leave`).
+ *
+ * **What would not read is left, and said.** A text that does not read, a
+ * scope that will not convert, a picture whose bytes or name will not do: each
+ * stays where it was, the rest of the scope and every other scope come over,
+ * and the note lists what was left so a person can be told.
  */
+import { imageMediaType } from '../../model/documentImage'
 import { imageEntryRefusal } from '../../model/imageName'
 import type { ImageEntry, ImageName } from '../../model/imageName'
+import { sameValue } from '../../model/recordKey'
 import { readDataUrl } from '../../projects/fileText'
 import type { ScopeSnapshot } from '../../projects/scope'
+import type { ScopePath } from '../../projects/scopePath'
 import type { ScopeContent } from '../../projects/scopeState'
 import { imageEntryOf, imageNameOfFile, namesInDocuments } from '../folder/imageLibrary'
-import type { Seed, SeededScope } from '../repositories/source'
+import type { Brought, BroughtScope } from '../repositories/bring'
+import type { Bringing, BroughtAnswer, Source } from '../repositories/source'
 import type { KeyValueStorage } from './KeyValueStorage'
-import { WebStorageScopeStore } from './WebStorageScopeStore'
+import { LEGACY_PROJECT_PREFIX, SCOPE_PREFIX, WebStorageScopeStore } from './WebStorageScopeStore'
 
-/** What the entry each scope arrives as says it was. Kept in a history, so in the history's language: English. */
+/** What the entry each scope first arrives as says it was. Kept in a history, so a sentence, in English. */
 export const EARLIER_SUBJECT = 'Brought over from this browser’s earlier storage'
 
-/** Every scope the key-value storage holds, as a seed; `undefined` where it holds none. */
-export async function earlierScopes(storage: KeyValueStorage): Promise<Seed | undefined> {
-  const store = new WebStorageScopeStore(storage)
-  const paths = new Set((await store.models()).map((scope) => scope.path))
-  const scopes: SeededScope[] = []
-  for (const path of paths) {
-    const snapshot = await store.load(path)
-    if (snapshot) scopes.push(await seeded(snapshot))
-  }
-  return scopes.length > 0 ? { subject: EARLIER_SUBJECT, scopes } : undefined
+/** What the entry a scope arrives as again says it was. */
+export const AGAIN_SUBJECT = 'Brought over again from this browser’s earlier storage'
+
+/** What the entry that keeps what was here, before a scope is brought over again, says it was. */
+export const BEFORE_AGAIN_SUBJECT = 'Before bringing this over again from this browser’s earlier storage'
+
+/** The one key written: a copy was made into this browser's repositories. Under no scope or preference prefix. */
+export const EARLIER_MARKER = 'lvarch.repositories'
+
+/** What was left where it was: a scope whole, or pictures of one, by file name. */
+export type Left = { path: ScopePath; why: 'unread' } | { path: ScopePath; why: 'pictures'; pictures: string[] }
+
+/** Per address, the text that was brought: its revision and when it was saved. */
+type Seen = Record<ScopePath, { revision?: string; updatedAt?: string }>
+
+/** The note kept with the repositories between starts. */
+type Note = { seen: Seen; left: Left[]; asking?: true }
+
+/** What a start could not decide, and what was left behind. */
+export type EarlierStanding = {
+  /** The database was lost after a copy: a person chooses to bring the older copy over, or leave it. */
+  asking: boolean
+  left: readonly Left[]
+  /** Addresses whose scope here could not be read whole, so nothing was brought over it. */
+  refused: readonly string[]
 }
 
-/** One scope as the repositories keep it, with its pictures' bytes. */
-async function seeded(snapshot: ScopeSnapshot): Promise<SeededScope> {
-  const taken = new Set<string>()
-  const names = new Map<string, ImageName>()
-  const images: ImageEntry[] = []
-  const bytes: SeededScope['bytes'][number][] = []
-  for (const image of snapshot.imageLibrary ?? []) {
-    const read = readDataUrl(image.url)
-    if (!read) continue
-    const name = imageNameOfFile(image.file, taken)
-    const entry = await imageEntryOf(name, read.bytes)
-    if (imageEntryRefusal(entry)) continue
-    names.set(image.file, name)
-    images.push(entry)
-    bytes.push({ contentAddress: entry.contentAddress, bytes: read.bytes })
+/** What step 4's composition answers for a person about the scopes kept before. */
+export type Earlier = {
+  standing(): Promise<EarlierStanding>
+  /** Bring every scope kept before over again, as entries of their own. */
+  bringOver(): Promise<BroughtAnswer>
+  /** Leave them where they are: noted as seen, brought only once they change. */
+  leave(): Promise<void>
+}
+
+type Reading = { scopes: BroughtScope[]; seen: Seen; left: Left[] }
+
+const EXTENSION: Readonly<Record<string, string>> = {
+  'image/png': 'png', 'image/jpeg': 'jpg', 'image/svg+xml': 'svg', 'image/webp': 'webp',
+}
+
+function asNote(value: unknown): Note | undefined {
+  const held = value as Note | undefined
+  return held && typeof held.seen === 'object' && Array.isArray(held.left) ? held : undefined
+}
+
+/** A file name with the extension its bytes' media type has, where the name says otherwise or nothing. */
+function withExtension(file: string, mediaType: string): string {
+  const extension = EXTENSION[mediaType]
+  if (!extension || imageMediaType(file) === mediaType) return file
+  const dot = file.lastIndexOf('.')
+  const stem = dot > file.lastIndexOf('/') ? file.slice(0, dot) : file
+  return `${stem}.${extension}`
+}
+
+/** The addresses the key-value storage keeps a scope under, either prefix. */
+function pathsIn(storage: KeyValueStorage): ScopePath[] {
+  const found = new Set<ScopePath>()
+  for (const key of storage.keys()) {
+    if (key.startsWith(SCOPE_PREFIX)) found.add(key.slice(SCOPE_PREFIX.length))
+    else if (key.startsWith(LEGACY_PROJECT_PREFIX)) found.add(key.slice(LEGACY_PROJECT_PREFIX.length))
   }
+  return [...found].sort()
+}
+
+type Pictures = { images: ImageEntry[]; bytes: BroughtScope['bytes'][number][]; names: Map<string, ImageName>; left: string[] }
+
+async function picturesOf(snapshot: ScopeSnapshot): Promise<Pictures> {
+  const found: Pictures = { images: [], bytes: [], names: new Map(), left: [] }
+  const library: unknown = snapshot.imageLibrary
+  if (library === undefined) return found
+  if (!Array.isArray(library)) return { ...found, left: [''] }
+  const taken = new Set<string>()
+  for (const image of library as unknown[]) {
+    const { file, url } = (image ?? {}) as { file?: unknown; url?: unknown }
+    try {
+      const read = typeof file === 'string' && typeof url === 'string' ? readDataUrl(url) : undefined
+      if (!read) throw new Error('no picture')
+      const entry = await imageEntryOf(imageNameOfFile(withExtension(file as string, read.mediaType), taken), read.bytes)
+      if (imageEntryRefusal(entry)) throw new Error('not a picture the library holds')
+      found.names.set(file as string, entry.name)
+      found.images.push(entry)
+      found.bytes.push({ contentAddress: entry.contentAddress, bytes: read.bytes })
+    } catch {
+      found.left.push(typeof file === 'string' ? file : '')
+    }
+  }
+  return found
+}
+
+function broughtOf(snapshot: ScopeSnapshot, pictures: Pictures): BroughtScope {
   const content: ScopeContent = {
-    model: namesInDocuments(snapshot.model, (file) => names.get(file)),
-    images,
+    model: namesInDocuments(snapshot.model, (file) => pictures.names.get(file)),
+    images: pictures.images,
     activeDiagramId: snapshot.activeDiagramId,
     logoLibrary: snapshot.logoLibrary,
     ...(snapshot.kind !== undefined ? { kind: snapshot.kind } : {}),
     ...(snapshot.client !== undefined ? { client: snapshot.client } : {}),
     ...(snapshot.links !== undefined ? { links: snapshot.links } : {}),
   }
-  const at = snapshot.updatedAt === undefined ? Number.NaN : Date.parse(snapshot.updatedAt)
-  return { address: snapshot.path, content, bytes, ...(Number.isFinite(at) ? { at } : {}) }
+  return {
+    address: snapshot.path, content, bytes: pictures.bytes,
+    ...(snapshot.updatedAt !== undefined ? { updatedAt: snapshot.updatedAt } : {}),
+  }
+}
+
+/** Every scope the key-value storage holds, as the repositories keep one, and what would not read. */
+export async function readEarlier(storage: KeyValueStorage): Promise<Reading> {
+  const reading: Reading = { scopes: [], seen: {}, left: [] }
+  const store = new WebStorageScopeStore(storage)
+  let paths: ScopePath[]
+  try {
+    paths = pathsIn(storage)
+  } catch {
+    return reading
+  }
+  for (const path of paths) {
+    try {
+      const snapshot = await store.load(path)
+      if (!snapshot) throw new Error('did not read')
+      const pictures = await picturesOf(snapshot)
+      reading.scopes.push(broughtOf(snapshot, pictures))
+      reading.seen[snapshot.path] = {
+        ...(snapshot.revision !== undefined ? { revision: snapshot.revision } : {}),
+        ...(snapshot.updatedAt !== undefined ? { updatedAt: snapshot.updatedAt } : {}),
+      }
+      if (pictures.left.length > 0) reading.left.push({ path: snapshot.path, why: 'pictures', pictures: pictures.left })
+    } catch {
+      reading.left.push({ path, why: 'unread' })
+    }
+  }
+  return reading
+}
+
+function broughtFrom(reading: Reading, scopes: readonly BroughtScope[], subject: string, asking = false): Brought {
+  const note: Note = { seen: reading.seen, left: reading.left, ...(asking ? { asking: true } : {}) }
+  return { scopes, subject, safeguard: BEFORE_AGAIN_SUBJECT, note }
+}
+
+function markerOn(storage: KeyValueStorage): boolean {
+  try {
+    return storage.getItem(EARLIER_MARKER) !== null
+  } catch {
+    return false
+  }
+}
+
+/** The way this browser's repositories bring in what the key-value storage kept. */
+export function bringingEarlier(storage: KeyValueStorage): Bringing {
+  return {
+    prepare: async (value, fresh) => {
+      const note = asNote(value)
+      if (!fresh && note?.asking) return undefined
+      const reading = await readEarlier(storage)
+      if (fresh) {
+        const lost = markerOn(storage) && reading.scopes.length > 0
+        return lost ? broughtFrom(reading, [], EARLIER_SUBJECT, true) : broughtFrom(reading, reading.scopes, EARLIER_SUBJECT)
+      }
+      const changed = reading.scopes.filter(({ address }) => !sameValue(note?.seen[address], reading.seen[address]))
+      if (changed.length === 0 && sameValue(note?.left, reading.left)) return undefined
+      return broughtFrom(reading, changed, AGAIN_SUBJECT)
+    },
+    started: () => {
+      try {
+        if (!markerOn(storage)) storage.setItem(EARLIER_MARKER, JSON.stringify({ copied: new Date().toISOString() }))
+      } catch {
+        // A marker that could not be written costs a question on a lost database, and nothing else.
+      }
+    },
+  }
+}
+
+/** The answers a person gives about the scopes kept before, over the source that brings them. */
+export function earlierOf(source: Source, storage: KeyValueStorage): Earlier {
+  return {
+    standing: async () => {
+      const last = await source.lastBrought()
+      const note = asNote(last?.note)
+      return { asking: note?.asking === true, left: note?.left ?? [], refused: last?.refused ?? [] }
+    },
+    bringOver: () => source.bring(async () => {
+      const reading = await readEarlier(storage)
+      return broughtFrom(reading, reading.scopes, AGAIN_SUBJECT)
+    }),
+    leave: async () => {
+      await source.bring(async () => broughtFrom(await readEarlier(storage), [], AGAIN_SUBJECT))
+    },
+  }
 }
