@@ -798,7 +798,7 @@ team aan een oorzaak doet, hoe een idee zich een besluit verdient, en of wat
 er gebouwd is de waarnemingen heeft laten ophouden. De tekening heeft links de
 oorzaken — de grondoorzaken, en elke andere oorzaak die een oplossing aanpakt
 — dan de **richtingen** (ideeën die worden uitgewerkt of getest), de
-**experimenten**, en de **structurele** oplossingen (bewezen, aangenomen,
+**experimenten**, en de **structurele** oplossingen (bewezen, overgenomen,
 ingevoerd). Een oplossing schuift naar rechts naarmate ze rijper wordt; haar
 breedte is de baat die ze belooft en haar vulling hoe ver ze is. Is ze
 structureel, dan houdt ze een vervaagd vak in de baan van de richtingen voor
@@ -833,7 +833,7 @@ om vraagt.
 Over een bewezen oplossing wordt besloten op de pagina **Besluiten**. **Het
 besluit voorstellen** schrijft een nieuw besluit waarvan de context noemt wat
 de oplossing aanpakt en wat er verder is overwogen. Zodra dat besluit is
-aangenomen, kan de oplossing naar **aangenomen**, en **Een plan starten**
+aanvaard, kan de oplossing naar **overgenomen**, en **Een plan starten**
 schrijft het plan dat haar bouwt. Als dat plan **klaar** is, leest de
 oplossing als **ingevoerd**, en **Heeft het gewerkt?** toont de waarnemingen
 eronder: die zouden niet meer gezien moeten worden, en een die opnieuw gezien
@@ -1063,9 +1063,10 @@ staat in de naam, dus u typt over wat het heette en drukt op Enter.
   niet getekend.
 - **+ gebied**, na het laatste gebied, maakt er een en tekent hem vanaf dat
   moment op dit blad.
-- **+ groep** en **+ capability** binnen een gebied, en **+ capability** binnen
-  een groep. Een capability die rechtstreeks in een gebied gemaakt wordt is een
-  kaartje in de kolom, en wordt een groep zodra er iets in gezet wordt.
+- **+ groepering** en **+ capability** binnen een gebied, en **+ capability**
+  binnen een groepering. Een capability die rechtstreeks in een gebied gemaakt
+  wordt is een kaartje in de kolom, en wordt een groepering zodra er iets in
+  gezet wordt.
 - **+ belanghebbende**, naast een regel op de rail, zet er een onder; **+
   groep**, onderaan de rail, begint een eigen tak.
 

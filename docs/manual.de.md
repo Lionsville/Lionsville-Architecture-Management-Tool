@@ -71,7 +71,7 @@ wie der Ordner selbst, bis Sie ihm einen Namen geben.
 
 **Ihre eigenen Seiten**, als Karten. Jede sagt in einem Satz, was hinter
 **Öffnen** liegt, und zählt dann: **Geschäftsarchitektur** die Kundenreisen,
-Bereiche, Funktionen und Beteiligten, die die Organisation selbst hält, und wie
+Gebiete, Funktionen und Beteiligten, die die Organisation selbst hält, und wie
 viele Funktionen noch keiner Domäne übergeben wurden; **Entscheidungen** ihre
 Einträge nach Status, mit dem neuesten beim Namen; **Fahrplan** ihre Pläne und
 das Erste, worüber deren Daten uneins sind; **Register** jede Anwendung im
@@ -395,7 +395,8 @@ jedem Bildschirm sagt das. Das Etikett auf dem Zuhause der Organisation sagt
 **Nirgends gespeichert**, in der Warnfarbe. Die Zeile unter dem Namen sagt
 *Alles hier wird noch nirgends aufbewahrt — speichern Sie eine Arbeitsdatei, um
 es zu behalten.*, und die erste Momentaufnahme sagt *Momentaufnahmen bleiben
-erhalten, solange dieser Tab offen ist, und gehen mit ihm.* Arbeit, die eine
+erhalten, solange dieser Tab offen ist, und verschwinden, wenn er geschlossen
+wird.* Arbeit, die eine
 ältere Version in diesem Browser aufbewahrt hat, wird angezeigt. Speichern Sie
 eine Arbeitsdatei, bevor Sie den Tab schließen.
 
@@ -1055,13 +1056,13 @@ sie es tut, und wie viel davon irgendeine Software überhaupt abdeckt.
 
 Ein Blatt wird *angeordnet*, nicht gezeichnet. Es gibt nichts zu ziehen und
 keinen Router: was es zeigt, sind vier Bäume — eine Kundenreise, die
-Verantwortungsbereiche darunter, die Fähigkeiten darin und die Beteiligten am
+Verantwortungsgebiete darunter, die Fähigkeiten darin und die Beteiligten am
 Rand — und die Seite wird aus deren Reihenfolge und Tiefe berechnet. Es bekommt
 einen Reiter neben den Boards, und es zu öffnen lässt die Zeichenfläche, wo sie
 war, sodass das Bild, an dem Sie gearbeitet haben, noch da ist, wenn Sie
 zurückkommen.
 
-![Das Blatt der Geschäftsarchitektur: die Beteiligten am Rand, die Kundenreise oben mit einer Zeile je Bahn, und die Bereiche mit ihren Fähigkeiten und wie jede abgedeckt ist](screenshot-sheet.png)
+![Das Blatt der Geschäftsarchitektur: die Beteiligten am Rand, die Kundenreise oben mit einer Zeile je Bahn, und die Gebiete mit ihren Fähigkeiten und wie jede abgedeckt ist](screenshot-sheet.png)
 
 ### Die Kundenreise, und die Wege durch sie
 
@@ -1083,12 +1084,12 @@ Ein Schritt, den jemand außerhalb der Organisation tut — ein Partner, der ein
 Auftrag erfüllt — wird als außerhalb erledigt markiert, sodass die Seite sagen
 kann, dass eine Phase von niemandem innerhalb abgedeckt wird.
 
-### Bereiche, und was sie abdeckt
+### Gebiete, und was sie abdeckt
 
-Unter der Kundenreise stehen die **Bereiche** der Verantwortung, jeder mit
-seinen Gruppen und den Fähigkeiten darin. Gezeichnet wird die Tiefe, und das
-Modell kennt die Wörter nicht: ein Eintrag auf oberster Ebene ist ein Bereich,
-einer darin eine Gruppe, einer darin eine Fähigkeit.
+Unter der Kundenreise stehen die **Gebiete** der Verantwortung, jedes mit
+seinen Gruppierungen und den Fähigkeiten darin. Gezeichnet wird die Tiefe, und
+das Modell kennt die Wörter nicht: ein Eintrag auf oberster Ebene ist ein
+Gebiet, einer darin eine Gruppierung, einer darin eine Fähigkeit.
 
 Jede Fähigkeit sagt, wer sie abdeckt:
 
@@ -1108,7 +1109,7 @@ Unterstützung kann wie alles andere mit einem Datum ein Zeitfenster tragen,
 sodass eine ab März abgedeckte Fähigkeit ab März abgedeckt ist.
 
 Am Ende steht ein Band für das, was **noch keiner Domäne zugeordnet** ist — die
-Bereiche, die niemandem gegeben wurden. Es ist ein Befund, kein Fehler: eine
+Gebiete, die niemandem gegeben wurden. Es ist ein Befund, kein Fehler: eine
 Liste dessen, was die Organisation zu tun gesagt hat und wofür sie noch nicht
 gesagt hat, wer es tut.
 
@@ -1116,7 +1117,7 @@ gesagt hat, wer es tut.
 
 Ein Blatt in einem Projekt, das nichts über seinen Anwendungen hat, ist leer,
 und die leere Seite bietet die zwei Stellen zum Beginnen: **Neue Kundenreise**
-und **Neuer Bereich**. Alles andere ist ein **+** dort, wo das Ding hinkäme, und
+und **Neues Gebiet**. Alles andere ist ein **+** dort, wo das Ding hinkäme, und
 sie funktionieren alle gleich — was Sie angelegt haben, erscheint, es ist
 ausgewählt, und der Cursor steht in seinem Namen, sodass Sie überschreiben, wie
 es hieß, und Enter drücken.
@@ -1132,12 +1133,12 @@ es hieß, und Enter drücken.
   markiert, wenn er es ist — und bei welcher Phase sie abzweigt, denn eine Bahn
   wird dort gezeichnet, wo ihre Schritte sind, und eine ohne Schritte wird gar
   nicht gezeichnet.
-- **+ Bereich**, nach dem letzten Bereich, fügt einen hinzu und zeichnet ihn
-  auf diesem Blatt von dem Moment an, in dem er existiert.
-- **+ Gruppe** und **+ Fähigkeit** in einem Bereich, und **+ Fähigkeit** in
-  einer Gruppe. Eine direkt in einem Bereich angelegte Fähigkeit ist eine Karte
-  in der Spalte und wird in dem Moment zur Gruppe, in dem etwas hineingelegt
-  wird.
+- **+ Gebiet**, nach dem letzten Gebiet, fügt eines hinzu und zeichnet es auf
+  diesem Blatt von dem Moment an, in dem es existiert.
+- **+ Gruppierung** und **+ Fähigkeit** in einem Gebiet, und **+ Fähigkeit** in
+  einer Gruppierung. Eine direkt in einem Gebiet angelegte Fähigkeit ist eine
+  Karte in der Spalte und wird in dem Moment zur Gruppierung, in dem etwas
+  hineingelegt wird.
 - **+ Beteiligter**, neben einem Eintrag der Leiste, fügt einen darunter hinzu;
   **+ Gruppe**, am Fuß der Leiste, beginnt einen eigenen Zweig.
 
@@ -1149,12 +1150,13 @@ Sie es tun.
 
 **Löschen**, am Fuß des Inspektors, entfernt, was ausgewählt ist, und jede
 Zeile, die darauf endete. Es wird abgelehnt, solange etwas darin steckt, und
-sagt, wie viel: nichts kaskadiert, also ist ein Bereich, den Sie löschen, einer,
-den Sie zuerst geleert haben.
+sagt, wie viel: nichts kaskadiert, also ist ein Gebiet, das Sie löschen, eines,
+das Sie zuerst
+geleert haben.
 
 **Was dieses Blatt zeigt**, die Schalter in der oberen Leiste, betrifft das
 Blatt und nicht das Modell — welche Kundenreise oben quer verläuft (ein Projekt
-mit zwei Kundenreisen beginnt mit keiner), welche Bereiche gezeichnet werden und
+mit zwei Kundenreisen beginnt mit keiner), welche Gebiete gezeichnet werden und
 in welcher Reihenfolge, die Reihenfolge der Bahnen, und ob die Leiste überhaupt
 da ist.
 
@@ -1184,9 +1186,10 @@ Organisationsbildschirms öffnet die der Wurzel. Es ist dieselbe Ebene, andershe
 gelesen: jede Funktion am Rand, in der Reihenfolge, in der das Blatt sie
 zeichnet, und nach Tiefe eingerückt; eine Spalte je Anwendung, die die Zeilen
 nennen; eine Marke, wo die eine die andere unterstützt. Auf einem Abschnitt —
-einem Bereich, einer Gruppe — ist die Marke hohl und bedeutet *etwas hierunter*:
-die Zusammenfassung, sodass der Kopf eines Bereichs sagt, worauf sich der ganze
-Bereich stützt, bevor Sie seine Fähigkeiten lesen. Anwendungen, die ein anderer
+einem Gebiet, einer Gruppierung — ist die Marke hohl und
+bedeutet *etwas hierunter*: die Zusammenfassung, sodass der Kopf eines Gebiets
+sagt, worauf sich das ganze Gebiet stützt, bevor Sie seine Fähigkeiten lesen.
+Anwendungen, die ein anderer
 Bereich hält, werden oben quer unter dem Namen dieses Bereichs gruppiert, denn
 die Systeme, die die Fähigkeiten der Organisation unterstützen, sind meist die
 einer Landschaft, und eine Spalte, die nicht sagt, wessen sie ist, hat die Hälfte
