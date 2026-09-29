@@ -122,6 +122,16 @@ describe('MarkdownView', () => {
     expect(img?.getAttribute('alt')).toBe('Cutover')
   })
 
+  it('draws a picture named image:<name> through the resolver where no library is handed down', () => {
+    const { container } = renderShell(
+      <MarkdownView
+        markdown={'![Cutover](image:cutover.png)'}
+        resolveImage={(src) => (src === 'image:cutover.png' ? 'data:image/png;base64,AQI=' : undefined)}
+      />,
+    )
+    expect(container.querySelector('img')?.getAttribute('src')).toBe('data:image/png;base64,AQI=')
+  })
+
   it('opens the same picture full size on a click, and closes it on the next', async () => {
     renderShell(
       <MarkdownView

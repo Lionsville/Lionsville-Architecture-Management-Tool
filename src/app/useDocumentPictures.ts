@@ -12,6 +12,7 @@ import { decisionsOf, transitionsOf } from '../model'
 import { transitionLabel } from '../model/transition'
 import { formatAdrNumber } from '../decisions/adr'
 import { documentsUsing, imageSrcFile } from '../documentation'
+import { imageNameOfSource } from '../documentation/images'
 import type { MarkdownRenderOptions } from '../documentation'
 import { renderMarkdown } from '../documentation/ui/renderMarkdown'
 import type { ModelSession } from './useModelSession'
@@ -36,7 +37,7 @@ export function useDocumentPictures(session: ModelSession): DocumentPictures {
    * view actually re-renders on.
    */
   const resolveImage = useCallback((src: string): string | undefined => {
-    const file = imageSrcFile(src)
+    const file = imageNameOfSource(src) ?? imageSrcFile(src)
     return file ? session.currentImages().find((image) => image.file === file)?.url : undefined
   }, [session])
 

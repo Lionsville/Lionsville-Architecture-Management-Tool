@@ -127,10 +127,17 @@ function MissingPicture({ src, alt }: { src: string | undefined; alt: string }) 
  * place — switching from one document to the next — gets a new `img`, never
  * the last one's with its source still on it.
  */
-function NamedPicture({ name, src, alt }: { name: string; src: string; alt: string }) {
+function NamedPicture({ name, src, alt, resolveImage }: {
+  name: string
+  src: string
+  alt: string
+  resolveImage: ((src: string) => string | undefined) | undefined
+}) {
   const entry = usePictureEntry(name)
-  if (!entry) return <MissingPicture src={src} alt={alt} />
-  return <LibraryPicture key={`${entry.name}\u0000${entry.contentAddress}`} entry={entry} alt={alt} />
+  if (entry) return <LibraryPicture key={`${entry.name}\u0000${entry.contentAddress}`} entry={entry} alt={alt} />
+  // A host that hands no library may still resolve the name itself.
+  const url = resolveImage?.(src)
+  return url ? <Picture key={url} url={url} alt={alt} /> : <MissingPicture src={src} alt={alt} />
 }
 
 /**
@@ -321,7 +328,9 @@ function components(
      */
     img: ({ src, alt }) => {
       const name = imageNameOfSource(src)
-      if (name !== undefined && src) return <NamedPicture key={name} name={name} src={src} alt={alt ?? ''} />
+      if (name !== undefined && src) {
+        return <NamedPicture key={name} name={name} src={src} alt={alt ?? ''} resolveImage={resolveImage} />
+      }
       const url = src ? resolveImage?.(src) : undefined
       if (!url) return <MissingPicture src={src} alt={alt ?? ''} />
       return <Picture key={url} url={url} alt={alt ?? ''} />
