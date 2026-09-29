@@ -611,7 +611,6 @@ src/app/          The shell around the editor.
                     OverflowMenu      the menu, on a host that has no menu bar —
                                       and the section a source provider's own
                                       lines are drawn in, after all of ours
-                    SyncNotice · useSync   the folder and its remote disagree
                     useAgentGateway · dialogs/ConnectAgentDialog   the seam bound
                                       to the session, and the way in for a person
                     testing/          renderShell / renderApp: the shared harness

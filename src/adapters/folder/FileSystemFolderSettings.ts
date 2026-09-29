@@ -5,10 +5,10 @@
  * A working directory's own settings, as two files in a dot-folder at its
  * root (ADR-0005).
  *
- * Over `DirectoryHandleLike`, so a browser's directory handle and the hosted
- * plugin's folder over HTTP both satisfy it. The desktop reads through it for
+ * Over `DirectoryHandleLike`, so a browser's directory handle and the
+ * desktop's over its channel both satisfy it. The desktop reads through it for
  * what an older build left in the folder and keeps the machine's own settings
- * elsewhere (`DesktopFolderSettings`, ADR-0023). Everything about what the
+ * elsewhere (`providers/folder/desktopPerson.ts`, ADR-0023). Everything about what the
  * files mean is in `adapters/folder/format/folderSettings.ts`; this only finds them and
  * puts the text back. The shared file is read and never written.
  *

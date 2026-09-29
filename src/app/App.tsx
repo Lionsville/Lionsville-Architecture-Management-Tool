@@ -587,7 +587,7 @@ function useShellBase(props: AppProps) {
   )
   const nav = useShellNavigation({
     initialProject: boot.initialProject, initialHome: boot.initialHome, scopes: repositories.scopes,
-    watchProject: changes, prefs, failedRef, refreshTree, refreshIndex, writable,
+    changes, prefs, failedRef, refreshTree, refreshIndex, writable,
   })
   const { project, enter } = nav
   const tree = useTreeIndex(repositories.index, changes, failed)

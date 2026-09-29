@@ -473,7 +473,7 @@ export type SourceProvider<Parts, Opening = void, Base = unknown> = {
    * changed its shape — is skipped while this says `false`, because a read of
    * a source that is not there fails, and a failure the person did not ask for
    * is an error on their screen about nothing they did. The provider owes the
-   * read instead, and says the tree changed when it is back (`watchProject`).
+   * read instead, and says the tree changed when it is back (`ProviderParts.changes`).
    * Asked at the moment of the read, so it must be cheap and must not throw.
    *
    * Absent for the three that ship, which are always there to be read.

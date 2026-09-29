@@ -45,7 +45,7 @@ describe('where the shell is', () => {
     const failed = vi.fn()
     const store = heldRepositories(held)
     const view = renderHook(() => useShellNavigation({
-      initialProject: undefined, scopes: store.scopes, watchProject: undefined, prefs,
+      initialProject: undefined, scopes: store.scopes, changes: undefined, prefs,
       failedRef: { current: failed }, refreshTree, refreshIndex, ...(writable ? { writable } : {}),
     }))
     return { view, prefs, refreshTree, refreshIndex, store, failed }

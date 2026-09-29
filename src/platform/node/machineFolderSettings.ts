@@ -18,7 +18,7 @@
  *
  * Each entry is exactly what `local.json` held, read and patched by the same
  * two functions, which is what makes a folder's old file readable as an entry
- * that has not been written yet (`DesktopFolderSettings`).
+ * that has not been written yet (`providers/folder/desktopPerson.ts`).
  *
  * Pure: text in, text out. The main process finds the file and puts the text
  * back; this decides what the text says.

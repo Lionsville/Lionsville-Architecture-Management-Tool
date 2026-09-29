@@ -51,7 +51,7 @@ export function useShellNavigation(deps: {
   /** Whose home is up at the first paint where nothing is open; the root's where absent. */
   initialHome?: ScopePath
   scopes: ScopeReader & Pick<ScopeRepository, 'create'>
-  watchProject: SourceChanges | undefined
+  changes: SourceChanges | undefined
   prefs: ShellPreferences
   failedRef: RefObject<Failed>
   /**
@@ -73,7 +73,7 @@ export function useShellNavigation(deps: {
    */
   writable?: (path: ScopePath) => boolean
 }) {
-  const { initialProject, initialHome, scopes, watchProject, prefs, failedRef, refreshTree, refreshIndex, writable } = deps
+  const { initialProject, initialHome, scopes, changes, prefs, failedRef, refreshTree, refreshIndex, writable } = deps
   const [project, setProject] = useState<ScopeSnapshot | undefined>(initialProject)
 
   /**
@@ -85,9 +85,9 @@ export function useShellNavigation(deps: {
    */
   const openPath = project?.path
   const watchOpenProject = useMemo(() => {
-    if (!watchProject || openPath === undefined) return undefined
-    return (onChanged: () => void) => watchProject(openPath, onChanged)
-  }, [watchProject, openPath])
+    if (!changes || openPath === undefined) return undefined
+    return (onChanged: () => void) => changes(openPath, onChanged)
+  }, [changes, openPath])
 
   /**
    * Bumped when the open project has to be read again from disk with nothing
