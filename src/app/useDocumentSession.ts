@@ -363,10 +363,14 @@ export function useDocumentSession(deps: {
     // ran is written after it: a flush that answered at once while one was
     // running let a replace go on beside a late write of ours.
     while (running.current) await running.current
-    // Which version stands is a person's to settle, and nothing is written
-    // over theirs to make way for a replace: the caller replaces nothing.
+    // Which version stands is a person's to settle where something done here
+    // is not written yet, and nothing is written over theirs to make way for
+    // what the caller does next: it does nothing. Their version changed and
+    // nothing here did — two tabs on one scope — is nothing to write, and no
+    // reason to stop anybody.
     const { status } = held.current
-    if (status === 'conflict' || status === 'external-changed') throw new ShellError('shell.unsettledFirst')
+    const unwritten = status === 'conflict' || (status === 'external-changed' && writes.pending())
+    if (unwritten) throw new ShellError('shell.unsettledFirst')
     if (writes.pending()) apply({ type: 'edited' })
     let failed: { cause: unknown } | undefined
     await save('blur', (cause) => { failed = { cause } })

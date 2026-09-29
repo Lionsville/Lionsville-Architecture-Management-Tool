@@ -368,12 +368,13 @@ describe('a flush', () => {
     expect(view.writes).toEqual([])
   })
 
-  it('refuses where their version changed and nothing here did, and writes nothing', async () => {
+  it('answers, and writes nothing, where their version changed and nothing here did', async () => {
     const view = mount(undefined, { current: project('Theirs') })
     view.somebodyElseWrote()
     expect(view.status()).toBe('external-changed')
-    await expect(view.flush()).rejects.toMatchObject({ key: 'shell.unsettledFirst' })
+    await expect(view.flush()).resolves.toBeUndefined()
     expect(view.writes).toEqual([])
+    expect(view.status()).toBe('external-changed')
   })
 })
 
