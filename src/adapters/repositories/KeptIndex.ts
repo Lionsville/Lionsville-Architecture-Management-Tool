@@ -15,7 +15,7 @@
 import type { ScopeId } from '../../projects/scopeState'
 import type { IndexChanges, IndexedScope, IndexRead, OrganisationIndex } from '../../ports/OrganisationIndex'
 import type { Transaction } from './KeyedStore'
-import { allScopes, indexRevision, readContent, readMeta, sequenceKey } from './kept'
+import { allScopes, indexRevision, readMeta, readModel, sequenceKey } from './kept'
 import type { IndexLogged, KeptScope } from './kept'
 import type { Source } from './source'
 
@@ -68,7 +68,7 @@ function sequenceOf(revision: string, nonce: string): number | undefined {
 
 /** What the index reads of a scope: its records and rows, and nothing written in prose. */
 async function indexed(tx: Transaction, kept: KeptScope): Promise<IndexedScope> {
-  const { elements, relations, transitions, observations } = (await readContent(tx, kept)).content.model
+  const { elements, relations, transitions, observations } = (await readModel(tx, kept)).content.model
   return {
     id: kept.id, address: kept.address,
     model: {

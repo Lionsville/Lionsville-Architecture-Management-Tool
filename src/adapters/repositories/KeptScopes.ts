@@ -20,7 +20,7 @@ import type {
 } from '../../ports/ScopeRepository'
 import type { Transaction } from './KeyedStore'
 import {
-  allScopes, forget, indexChanged, makeAncestors, makeScope, META_KEY, mintId, parentOf, readContent, readMeta, readState, says, scopeAt,
+  allScopes, forget, indexChanged, makeAncestors, makeScope, META_KEY, mintId, parentOf, readContent, readMeta, readModel, readState, says, scopeAt,
   writeContent,
 } from './kept'
 import type { KeptScope, Meta } from './kept'
@@ -181,7 +181,7 @@ type Runs = { runs: Map<ScopeId, Run>; kept: Map<ScopeId, KeptScope> }
 async function readable(tx: Transaction, scope: ScopeId): Promise<KeptScope | Refused> {
   const kept = await tx.get<KeptScope>('scopes', scope)
   if (!kept) return { refused: 'shell.scopeGone', scope }
-  if ((await readContent(tx, kept)).unreadable) return { refused: 'shell.unreadableNotSaved', scope }
+  if ((await readModel(tx, kept)).unreadable) return { refused: 'shell.unreadableNotSaved', scope }
   return kept
 }
 

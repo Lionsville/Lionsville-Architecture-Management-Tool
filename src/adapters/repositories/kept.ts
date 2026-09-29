@@ -130,18 +130,29 @@ function isShaped(content: Partial<KeptContent> | undefined): content is KeptCon
     && typeof content.description === 'object' && content.description !== null
 }
 
-/** A scope's content as kept, or what could be read of it and why the rest could not. */
-export async function readContent(
+/**
+ * A scope's content without its library, or what could be read of it and why
+ * the rest could not: what the index reads, and whether a step may land.
+ */
+export async function readModel(
   tx: Transaction, kept: KeptScope,
-): Promise<{ content: ScopeContent; unreadable?: string[] }> {
+): Promise<{ content: Omit<ScopeContent, 'images'>; unreadable?: string[] }> {
   const held = await tx.get<Partial<KeptContent>>('contents', kept.id)
-  const images = (await tx.range<ImageEntry>('library', libraryRange(kept.id))).map(({ value }) => value)
-  if (isShaped(held)) return { content: { ...held.description, model: held.model, images } }
+  if (isShaped(held)) return { content: { ...held.description, model: held.model } }
   const why = held && typeof held.format === 'number' && held.format > CONTENT_FORMAT
     ? `written by a later version (format ${held.format})`
     : 'its model could not be read'
   const model = held?.model && Array.isArray(held.model.diagrams) ? held.model : emptyContent(kept.says.name).model
-  return { content: { model, images }, unreadable: [why] }
+  return { content: { model }, unreadable: [why] }
+}
+
+/** A scope's content, its library included. */
+export async function readContent(
+  tx: Transaction, kept: KeptScope,
+): Promise<{ content: ScopeContent; unreadable?: string[] }> {
+  const { content, unreadable } = await readModel(tx, kept)
+  const images = (await tx.range<ImageEntry>('library', libraryRange(kept.id))).map(({ value }) => value)
+  return { content: { ...content, images }, ...(unreadable ? { unreadable } : {}) }
 }
 
 export async function readState(tx: Transaction, kept: KeptScope): Promise<ScopeState> {
