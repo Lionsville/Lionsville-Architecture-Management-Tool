@@ -13,7 +13,8 @@
  * An example is one entry in a catalogue. Opening one copies it into scopes of
  * the person's own, under the path the entry names; from that moment they are
  * theirs and nothing here is involved again. Adding one is a JSON file, an
- * entry in the app's `examples/offers.ts` and a line in {@link EXAMPLE_FOLDERS}.
+ * entry in the app's `examples/offers.ts` and a line in `SHIPPED_EXAMPLES`
+ * (`shippedExamples.ts`).
  *
  * It has to be *good*, too. It is the first thing anyone opens, and a thin
  * example makes the tool look thin — so the shipped one is a landscape with
@@ -104,13 +105,4 @@ export function exampleScopes(folder: ExampleFolder, path: ScopePath): ScopeSnap
     const scope = scopeFromFolder(inside, prefix === '' ? path : joinScope(path, prefix))
     return scope ? [scope] : []
   })
-}
-
-/**
- * The folder of each example that ships, by its key, fetched when somebody
- * copies it: the shipped organisation is the largest single file in the app,
- * and wanted on one screen, by a place with nothing in it yet, once.
- */
-export const EXAMPLE_FOLDERS: Readonly<Record<string, () => Promise<ExampleFolder>>> = {
-  'acme-logistics': () => import('./examples/acme-logistics.json').then((held) => held.default as ExampleFolder),
 }

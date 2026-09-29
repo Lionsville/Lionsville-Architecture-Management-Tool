@@ -41,7 +41,7 @@ import type { DesktopCommands, DesktopFiles } from '../adapters/desktop/channel'
 import { RAIL_PACK } from './iconPacks/rail'
 import { EXAMPLE_CATALOGUE } from './examples/offers'
 import type { ExampleOffer } from './examples/offers'
-import { EXAMPLE_FOLDERS, exampleScopes } from '../adapters/folder/format/exampleFolder'
+import { SHIPPED_EXAMPLES } from '../adapters/folder/format/shippedExamples'
 import { BrowserDocumentGateway } from '../adapters/browser/BrowserDocumentGateway'
 import { browserHostControls } from '../adapters/browser/browserHostControls'
 import { reloadOnStaleScripts } from '../adapters/browser/staleScripts'
@@ -648,8 +648,8 @@ export const INTERCHANGE: Interchange = (() => {
  * read by its own reader.
  */
 export const EXAMPLE_OFFERS: readonly ExampleOffer[] = EXAMPLE_CATALOGUE.flatMap((entry) => {
-  const folder = EXAMPLE_FOLDERS[entry.key]
-  return folder ? [{ ...entry, load: async () => exampleScopes(await folder(), entry.path) }] : []
+  const load = SHIPPED_EXAMPLES[entry.key]
+  return load ? [{ ...entry, load: () => load(entry.path) }] : []
 })
 
 /**

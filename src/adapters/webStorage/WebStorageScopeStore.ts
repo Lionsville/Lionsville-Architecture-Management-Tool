@@ -22,7 +22,7 @@
  * and somebody needs to know.
  */
 import { ShellError } from '../../platform/errors'
-import { isBeforeFormat4, migrateModel } from '../folder/format/migrate3to4'
+import { isBeforeFormat4, migrateModel } from '../folder/format/model3to4'
 import { fingerprint, scopeMoved } from '../../projects/revision'
 import { isStoredScope, scopeTree, sortScopes, summarise } from '../../projects/scope'
 import type { ScopeModel, ScopeSnapshot, ScopeSummary } from '../../projects/scope'
