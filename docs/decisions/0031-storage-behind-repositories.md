@@ -205,10 +205,10 @@ implementing them yet, and the ports they replace are still there:
 - **Their words**, where the domain's pure code can share them:
   - `projects/scopeState.ts`: address, identity, revision, a scope's state,
     the step, and `applySteps`, the one writer every implementation shares.
-  - `model/recordKey.ts`: a record by kind and id, worked out from what a
-    command writes (ADR-0028).
+  - `model/recordKey.ts`: a record by kind and id, and the records that
+    differ between two models.
   - `model/imageName.ts`: an image's name, its image folder, the `image:`
-    reference, and the content address.
+    reference, a library entry, and the content address.
   - `projects/settings.ts`: settings, and the patch that changes them.
 - **A contract suite per repository**, `src/ports/*Repository.contract.ts` and
   `OrganisationIndex.contract.ts`, all taking one maker
@@ -216,14 +216,22 @@ implementing them yet, and the ports they replace are still there:
   written for them, `src/ports/testing/memoryRepositories.ts`, which are test
   support and not an implementation.
 - **The rule** of §4 is `build/storageLine.test.ts`, over the data in
-  `build/storageLine.ts`: no imports across the line, and no storage words in
-  identifiers. The tree's violations when it arrived are its exceptions, each
-  held to exactly what its file does, so the list only shrinks: 20 files
-  importing the folder format, and 47 naming storage. The twelve files that
-  are the folder format and still sit in `projects/` and `ports/` are listed,
-  and leave the list as they move. The new seams and their words are held to
-  the stricter list of the decision drivers, comments included, with no
-  exceptions.
+  `build/storageLine.ts`:
+  - no imports across the line;
+  - no storage words in identifiers, nor in the strings of code: the words,
+    and the folder format's own spellings (`.json`, `../`, `images/`, `.git`).
+    A comment, the words tables, a module name imported, the marks' strings,
+    and *database* and *SQL* in a string, which are what a landscape holds,
+    are not read.
+
+  The tree's violations when the rule arrived are its exceptions, each held
+  to exactly what its file does: 22 files importing the folder format (32
+  imports), 52 naming storage (83 words and spellings), and the 14 files of the
+  folder format still in `projects/`, `ports/` and `platform/`. Each list has a
+  ceiling held to exactly its length, so it can only shrink, and grows only by
+  a ceiling raised where the change shows it. The new seams and their words
+  are held to the stricter list of the decision drivers, comments included,
+  with no exceptions.
 
 **Where the build departed from the text.**
 - **The domain types live in `projects/` and `model/`, not in `ports/`.**
@@ -234,27 +242,56 @@ implementing them yet, and the ports they replace are still there:
   view and marks) are steps. They are shaped as the model's commands are,
   with the model's refusals (`command.taken`, `command.gone`,
   `command.notAField`), so they can join the command vocabulary unchanged.
-- **The history has no member that records an entry.** When a run of steps
-  becomes an entry is each implementation's own business. The suites make
-  one through the maker's `cut`.
+- **What a step touched is read off the state**, before and after, not off
+  what its command says it writes (ADR-0028): a delete reaches relations,
+  views and children its command does not name, and a relation's history
+  ends with the step that removed it.
+- **A step id is the source's, not a scope's.** A step applied, to whichever
+  scope, is not applied again; a run whose steps have all landed answers the
+  revisions as they stand, whatever it expected; a refused apply counts no
+  step as applied and moves no revision anywhere.
+- **The history records an entry when asked.** Steps collect in each scope's
+  open entry, and `HistoryRepository.record` closes it with a subject; an
+  implementation may also close one when it judges a run has ended. When the
+  app moves onto the repositories, the four places that take a snapshot today
+  become:
+  - *File › Snapshot* (`app/history/useProjectHistory.ts`, `take`): `record`
+    over every scope, with the person's words;
+  - the safeguard before a replace (`useProjectHistory.ts`, `safeguard`):
+    `record` over the scope being replaced, before the replace's steps;
+  - the snapshot before a pull on open (`app/bootReads.ts`, `pullOnOpen`):
+    pulling is the folder implementation's own capability (§2), so the record
+    before it moves with it into the folder provider's chrome;
+  - the snapshot before a format upgrade (`bootReads.ts`, `upgradeFormat`):
+    the upgrade is the folder implementation's own pass, and it records
+    through its own history before it rewrites anything.
 - **Labels are a scope's own.** Two scopes may each use one label.
-- **A content address is the SHA-256 of the bytes**, fixed rather than left
-  to each implementation, so an address means one thing in every source.
-  `ImageRepository` answers a listing of one image folder and a lookup by
-  name beside the bytes.
+- **An image's name is fixed as a rule**, the same wherever it is checked:
+  - composed (Unicode NFC), and refused when it is not;
+  - segments split on `/`, none empty and none `.` or `..`;
+  - no white space, no control character (U+0000–U+001F, U+007F), and none of
+    `\ < > ( ) ? # % : * " |`;
+  - an extension, in any case, that is `png`, `jpg`, `jpeg`, `svg` or `webp`;
+  - one picture per name in a scope's library, compared composed and in lower
+    case.
+
+  An entry's media type is its name's, its content address is `sha256:` and
+  64 lower-case hex digits — the SHA-256 of the bytes, fixed so an address
+  means one thing in every source — and its size, width and height are whole
+  numbers of zero or more. `ImageRepository` answers a listing of one image
+  folder and a lookup by name beside the bytes, and the bytes of a name come
+  with its own entry's media type.
 - **The library's folders are called image folders** in code, so the rule can
   read *folder* as the storage word everywhere else.
 - **A settings patch takes a key out with `null`**, not `undefined`, because
   a patch may travel as text.
-- **The tree carries a revision** of its own, beside each scope's and the
-  index's.
-- **A step that changes nothing moves no revision.** The reducer hands back a
-  new model for some such steps, so `applySteps` compares the records a step
-  writes, before and after.
-- **Refusals are values with keys.** Three are new: `shell.scopeGone`,
-  `shell.scopeTaken`, `shell.scopeIntoItself`; and `shell.imageBadName` for
-  a name a picture may not have. An address the repository refuses is one
-  `isSafeScopePath` refuses today.
-- **The rule reads identifiers only.** A comment may say what a folder does,
-  and the words tables are not checked by it: *strings stay free of storage*
-  is still a matter for review.
+- **Revisions.** A scope's revision moves when its state changes, and only
+  then; a move changes the moved scope's and every scope's under it, because
+  an address is part of a state. The tree has a revision of its own, which
+  moves when what a node says changes and not for `updatedAt`. The index's
+  answer to *what changed since* names every scope something happened to and
+  no other.
+- **Refusals are values with keys.** Five are new: `shell.scopeGone`,
+  `shell.scopeTaken`, `shell.scopeIntoItself`, and `shell.imageBadName` and
+  `shell.imageBadEntry` for a picture. An address the repository refuses is
+  one `isSafeScopePath` refuses today.

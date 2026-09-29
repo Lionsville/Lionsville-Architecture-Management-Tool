@@ -216,9 +216,9 @@ src/model/        What a landscape is made of, and the arithmetic over it.
                     imageName         an image's name in its scope's library, its
                                       image folder, the `image:` reference, and
                                       the content address of its bytes (ADR-0031 §3)
-                    recordKey         a record by kind and id, and the records a
-                                      command writes: what a thing's history is
-                                      asked by (ADR-0031 §1)
+                    recordKey         a record by kind and id, and the records that
+                                      differ between two models: what a thing's
+                                      history is asked by (ADR-0031 §1)
                     clipboard · equality   what copies, and what counts as the same
                     diff              what changed, in the landscape's own terms
                     restore           going back as one command (ADR-0008)
@@ -582,11 +582,14 @@ it aside); the one loop of types between modules, `ports` ↔ `projects`, is
 listed there by name. **And the domain speaks no storage** (ADR-0031 §4):
 `build/storageLine.test.ts` fails when a file outside the implementations and
 the composition root imports an implementation or the folder format, or names
-a storage mechanism in an identifier. `build/storageLine.ts` lists the words,
+a storage mechanism in an identifier or a string in its code — `kind ===
+'folder'` and `'scope.json'` included. `build/storageLine.ts` lists the words,
 with why each is on the list or off it, and the exceptions the tree had when
-the rule arrived, each held to exactly what its file does — so the list only
-shrinks. Taking a file off it is the point; adding one is a decision said in
-the commit.
+the rule arrived, each held to exactly what its file does. **Each list has a
+ceiling** (`CEILINGS`), held to exactly its length: an entry added fails the
+test unless its ceiling is raised in the same diff, where a reader sees it,
+and an entry taken off fails until its ceiling comes down with it. Taking an
+entry off is the point; raising a ceiling is a decision said in the commit.
 
 Three rows are worth knowing because they are not obvious. `editor` may not import
 `decisions` or `projects` — a canvas that knows what a project is cannot be
