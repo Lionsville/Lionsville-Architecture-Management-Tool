@@ -71,7 +71,7 @@ export function nodeAt(tree: ScopeTree, address: ScopeAddress): ScopeNode | unde
  * it opens on resolved against the views it has, and the marks as a list.
  */
 export function snapshotOf(state: ScopeState): ScopeSnapshot {
-  const { id, address, model, activeDiagramId, logoLibrary, kind, client, links, updatedAt, unreadable, revision, images } = state
+  const { id, address, model, activeDiagramId, logoLibrary, kind, client, links, updatedAt, unreadable, later, revision, images } = state
   return {
     path: address,
     id,
@@ -83,6 +83,7 @@ export function snapshotOf(state: ScopeState): ScopeSnapshot {
     ...(links !== undefined ? { links } : {}),
     ...(updatedAt !== undefined ? { updatedAt } : {}),
     ...(unreadable?.length ? { unreadable } : {}),
+    ...(later ? { later } : {}),
     revision,
     images,
   }
@@ -292,6 +293,13 @@ export type Arriving = {
    * landing expects what is read of the scope just before it lands.
    */
   checked?: { revision?: Revision }
+  /**
+   * The person asked for this content to put back the scope at the address,
+   * which could not be read whole (`ScopeState.unreadable`); `subject` is what
+   * the entry that keeps it as it stood says. Absent, a scope there that could
+   * not be read whole refuses the landing, whole.
+   */
+  putBack?: { subject: string }
 }
 
 /**
@@ -302,7 +310,8 @@ export type Arriving = {
  * somebody changed in between refuses the whole, no content is written, and
  * the scopes made to hold them are taken away again, each only where nothing
  * was done to it since. A page that dies between the making and the landing
- * may leave a scope it made there, empty.
+ * may leave a scope it made there, empty. Answers what a put back set aside
+ * first (`Applied.setAside`).
  */
 export async function placeTogether(
   repositories: {
@@ -310,7 +319,7 @@ export async function placeTogether(
     images: Pick<ImageRepository, 'put'>
   },
   arriving: readonly Arriving[],
-): Promise<void> {
+): Promise<readonly string[]> {
   const { scopes } = repositories
   const ordered = [...arriving].sort((one, other) => depthOf(one.address) - depthOf(other.address))
   const places: { id: ScopeId; made?: Revision }[] = []
@@ -318,7 +327,7 @@ export async function placeTogether(
     places.push(await madeAt(scopes, one.address, { name: one.content.model.name, ...(one.content.kind ? { kind: one.content.kind } : {}) }))
   }
   try {
-    await landEach(repositories, ordered, places)
+    return await landEach(repositories, ordered, places)
   } catch (cause) {
     // Nothing of the contents landed, so the scopes made only to hold them go
     // again — deepest first, and each only where nothing has been done to it
@@ -336,7 +345,7 @@ async function landEach(
   repositories: { scopes: ScopeReader & Pick<ScopeRepository, 'apply'>; images: Pick<ImageRepository, 'put'> },
   ordered: readonly Arriving[],
   places: readonly { id: ScopeId; made?: Revision }[],
-): Promise<void> {
+): Promise<readonly string[]> {
   const { scopes, images } = repositories
   const libraries: ImageEntry[][] = []
   for (const [at, one] of ordered.entries()) {
@@ -350,11 +359,14 @@ async function landEach(
     libraries.push(library)
   }
   const expects = await Promise.all(ordered.map((one, at) => expectedOf(scopes, one, places[at])))
-  landed(await scopes.apply(ordered.map((one, at) => ({
+  const applied = landed(await scopes.apply(ordered.map((one, at) => ({
     scope: places[at].id,
-    steps: [stepOf({ type: 'scope.replace', content: { ...one.content, images: libraries[at] } })],
+    steps: [stepOf({
+      type: 'scope.replace', content: { ...one.content, images: libraries[at] }, ...(one.putBack ? { putBack: one.putBack } : {}),
+    })],
     ...(expects[at] !== undefined ? { expects: expects[at] } : {}),
   }))))
+  return applied.setAside ?? []
 }
 
 /**

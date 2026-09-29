@@ -47,7 +47,12 @@ export const CHECKPOINT_EVERY = 32
 /** A part kept at a checkpoint: its value, or the earlier checkpoint that holds the same value. */
 type HeldPart = { value: unknown } | { at: number }
 
-type Checkpoint = { form: 'checkpoint'; parts: Record<string, HeldPart> }
+/**
+ * A state kept whole. `unread` is what the scope's content was kept as where
+ * it could not be read — a later layout's, a damaged one — held as it was, so
+ * a put back over it loses nothing (`ScopeState.unreadable`).
+ */
+type Checkpoint = { form: 'checkpoint'; parts: Record<string, HeldPart>; unread?: unknown }
 
 /** A list of records whose ids are unique: what was set, what went, and the order where it is not implied. */
 type ListChange = { by: string; set: unknown[]; gone: string[]; order?: string[] }
@@ -259,7 +264,9 @@ const IMAGES = `${OWN}images`
  * chain is long enough, where there is no entry before it, or where the state
  * could not be read whole and so is kept as it was read.
  */
-export async function keepEntryState(tx: Transaction, scope: ScopeId, seq: number, state: ScopeState): Promise<KeptAt> {
+export async function keepEntryState(
+  tx: Transaction, scope: ScopeId, seq: number, state: ScopeState, unread?: unknown,
+): Promise<KeptAt> {
   const parts = partsOf(state)
   const [last] = await tx.range('entryStates', { from: keyOf(scope, ''), below: entryKey(scope, seq), reverse: true, limit: 1 })
   const before = last && await readAt(tx, scope, seqOfKey(last.key))
@@ -267,7 +274,7 @@ export async function keepEntryState(tx: Transaction, scope: ScopeId, seq: numbe
   const kept = before && !state.unreadable && before.depth + 1 < CHECKPOINT_EVERY
     ? changesFrom(before, parts)
     : undefined
-  const form = kept ?? checkpoint(parts, before)
+  const form = unread === undefined ? kept ?? checkpoint(parts, before) : { ...checkpoint(parts, before), unread }
   tx.put('entryStates', entryKey(scope, seq), form)
   return { kept: form, imagesMoved }
 }

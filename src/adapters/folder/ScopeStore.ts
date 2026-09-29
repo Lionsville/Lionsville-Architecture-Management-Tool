@@ -126,7 +126,10 @@ export interface ScopeStore {
    * the snapshot is all the scope is to be, so it is written even where a file
    * of the scope would not read, over the files of the format it names and in
    * place of those it does not — and never over or in place of a file that is
-   * not the format's, which stays whoever's it is.
+   * not the format's, which stays whoever's it is. A file of the format it
+   * writes over or removes that did not read is set aside first, beside
+   * itself, and the answer is where each went, from the folder's root; one
+   * that cannot be set aside refuses the whole write.
    *
    * Optional, because a store that cannot promise the second half should not
    * pretend to; the caller then saves one scope at a time, as it always did.
@@ -138,7 +141,7 @@ export interface ScopeStore {
   saveTogether?(
     entries: readonly { scope: ScopeSnapshot; expects?: string; whole?: boolean }[],
     held?: { manifest?: WorkingFileManifest },
-  ): Promise<void>
+  ): Promise<readonly string[] | void>
 
   /**
    * Remove one scope, and everything filed under it.

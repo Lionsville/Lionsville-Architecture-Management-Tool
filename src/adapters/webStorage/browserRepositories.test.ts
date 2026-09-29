@@ -14,21 +14,17 @@ import { describeOrganisationIndex } from '../../ports/OrganisationIndex.contrac
 import type { RepositoriesUnderTest } from '../../ports/Repositories.contract'
 import { describeScopeRepository } from '../../ports/ScopeRepository.contract'
 import { describeSettingsRepository } from '../../ports/SettingsRepository.contract'
-import { SHELVES } from '../repositories/KeyedStore'
-import type { KeptContent } from '../repositories/kept'
+import { spoilKept } from '../repositories/testing/spoil'
 import { browserRepositories } from './browserRepositories'
 import { IndexedDbStore } from './IndexedDbStore'
 import type { IndexedDb } from './IndexedDbStore'
 import { fakeIndexedDb } from './testing/fakeIndexedDb'
 
-/** A scope's content marked as a later version's, written by another opening of the same database. */
+/** A scope's content torn, or marked as a later version's, written by another opening of the same database. */
 function over(indexedDb: IndexedDb): RepositoriesUnderTest {
   return {
     repositories: browserRepositories(indexedDb).repositories,
-    spoil: (scope) => new IndexedDbStore(indexedDb).transaction(SHELVES, 'write', async (tx) => {
-      const held = await tx.get<KeptContent>('contents', scope)
-      tx.put('contents', scope, { ...held, format: 2 })
-    }),
+    spoil: (scope, how) => spoilKept(new IndexedDbStore(indexedDb), scope, how),
   }
 }
 

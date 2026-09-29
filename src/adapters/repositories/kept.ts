@@ -137,35 +137,37 @@ function isShaped(content: Partial<KeptContent> | undefined): content is KeptCon
 
 /**
  * A scope's content without its library, or what could be read of it and why
- * the rest could not: what the index reads, and whether a step may land.
+ * the rest could not — and whether that is because a later version wrote it
+ * (`ScopeState.later`): what the index reads, and whether a step may land.
  */
 export async function readModel(
   tx: Transaction, kept: KeptScope,
-): Promise<{ content: Omit<ScopeContent, 'images'>; unreadable?: string[] }> {
+): Promise<{ content: Omit<ScopeContent, 'images'>; unreadable?: string[]; later?: true }> {
   const held = await tx.get<Partial<KeptContent>>('contents', kept.id)
   if (isShaped(held)) return { content: { ...held.description, model: held.model } }
-  const why = held && typeof held.format === 'number' && held.format > CONTENT_FORMAT
-    ? `written by a later version (format ${held.format})`
-    : 'its model could not be read'
-  const model = held?.model && Array.isArray(held.model.diagrams) ? held.model : emptyContent(kept.says.name).model
-  return { content: { model }, unreadable: [why] }
+  const later = !!held && typeof held.format === 'number' && held.format > CONTENT_FORMAT
+  const why = later ? `written by a later version (format ${String(held.format)})` : 'its model could not be read'
+  const model = held?.model && Array.isArray(held.model.elements) && Array.isArray(held.model.diagrams)
+    ? held.model : emptyContent(kept.says.name).model
+  return { content: { model }, unreadable: [why], ...(later ? { later } : {}) }
 }
 
 /** A scope's content, its library included. */
 export async function readContent(
   tx: Transaction, kept: KeptScope,
-): Promise<{ content: ScopeContent; unreadable?: string[] }> {
-  const { content, unreadable } = await readModel(tx, kept)
+): Promise<{ content: ScopeContent; unreadable?: string[]; later?: true }> {
+  const { content, unreadable, later } = await readModel(tx, kept)
   const images = (await tx.range<ImageEntry>('library', libraryRange(kept.id))).map(({ value }) => value)
-  return { content: { ...content, images }, ...(unreadable ? { unreadable } : {}) }
+  return { content: { ...content, images }, ...(unreadable ? { unreadable } : {}), ...(later ? { later } : {}) }
 }
 
 export async function readState(tx: Transaction, kept: KeptScope): Promise<ScopeState> {
-  const { content, unreadable } = await readContent(tx, kept)
+  const { content, unreadable, later } = await readContent(tx, kept)
   return {
     ...content, id: kept.id, address: kept.address, revision: kept.revision,
     ...(kept.updatedAt ? { updatedAt: kept.updatedAt } : {}),
     ...(unreadable ? { unreadable } : {}),
+    ...(later ? { later } : {}),
   }
 }
 
@@ -263,10 +265,11 @@ export type KeptEntry = {
  * Close a scope's open entry: the entry, numbered next in the source, and the
  * scope's state as it stands (`entryStates.ts`) — whose pictures' bytes then
  * stay as long as the history does. The scope must have one open; the caller
- * writes `meta` back. `moved` makes it a move's entry.
+ * writes `meta` back. `moved` makes it a move's entry; `unread` is what the
+ * scope's content was kept as where it could not be read, kept with the entry.
  */
 export async function closeEntry(
-  tx: Transaction, meta: Meta, kept: KeptScope, by: string, subject?: string, moved?: EntryMoved,
+  tx: Transaction, meta: Meta, kept: KeptScope, by: string, subject?: string, moved?: EntryMoved, unread?: unknown,
 ): Promise<KeptEntry> {
   const { pending, ...closed } = kept
   if (!pending) throw new Error('an entry was closed on a scope with none open')
@@ -278,7 +281,7 @@ export async function closeEntry(
   }
   tx.put('entries', entryKey(kept.id, entry.seq), entry)
   const state = await readState(tx, kept)
-  const { imagesMoved } = await keepEntryState(tx, kept.id, entry.seq, state)
+  const { imagesMoved } = await keepEntryState(tx, kept.id, entry.seq, state, unread)
   if (imagesMoved) await historyNamed(tx, kept.id, state.images)
   tx.put('scopes', kept.id, closed satisfies KeptScope)
   return entry

@@ -95,7 +95,7 @@ export async function destinationIn(opening: FolderOpening): Promise<SourceDesti
     opening,
     occupied,
     // As one, the way *Replace here* lands (ADR-0023, amendments 2 and 3).
-    place: (scopes) => store.saveTogether(scopes.map((scope) => ({ scope }))),
+    place: async (scopes) => { await store.saveTogether(scopes.map((scope) => ({ scope }))) },
     read: (path) => store.load(path),
   }
 }

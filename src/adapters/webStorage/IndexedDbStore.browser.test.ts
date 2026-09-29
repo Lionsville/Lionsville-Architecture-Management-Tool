@@ -24,7 +24,7 @@ import { describeSettingsRepository } from '../../ports/SettingsRepository.contr
 import { describeKeyedStore } from '../repositories/KeyedStore.contract'
 import { REPOSITORY_SHELVES, SHELVES } from '../repositories/KeyedStore'
 import type { Transaction } from '../repositories/KeyedStore'
-import type { KeptContent } from '../repositories/kept'
+import { spoilKept } from '../repositories/testing/spoil'
 import { BrowserFolder } from '../folder/browser/browserFolder'
 import { browserFolderGit } from '../folder/browser/browserFolderGit'
 import { FakeDirectory } from '../folder/fakeDirectory'
@@ -91,10 +91,7 @@ function repositories(): RepositoriesUnderTest {
   const name = unique()
   return {
     repositories: browserRepositories(thisPage(), undefined, name).repositories,
-    spoil: (scope) => new IndexedDbStore(thisPage(), name).transaction(SHELVES, 'write', async (tx) => {
-      const held = await tx.get<KeptContent>('contents', scope)
-      tx.put('contents', scope, { ...held, format: 2 })
-    }),
+    spoil: (scope, how) => spoilKept(new IndexedDbStore(thisPage(), name), scope, how),
   }
 }
 

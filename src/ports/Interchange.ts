@@ -104,7 +104,17 @@ export type BringOptions = {
   before?: string
   /** The subject of the entry each landed scope's replacing becomes. */
   subject?: string
+  /**
+   * The person asked for the parcel's top to put back the scope at its
+   * address, which could not be read whole (`ScopeState.unreadable`), and
+   * what the entry that keeps it as it stood says. Absent, a scope that could
+   * not be read whole anywhere the parcel lands refuses the landing, whole.
+   */
+  putBack?: { subject: string }
 }
+
+/** What a landing kept of a scope it put back, set aside beside it first (`Applied.setAside`); empty where nothing was. */
+export type BroughtIn = { setAside: readonly string[] }
 
 export interface Interchange {
   /** What a person may be offered to pick, as a picker names kinds: every parcel this reads. */
@@ -126,7 +136,7 @@ export interface Interchange {
    * put, then one `scope.replace` step per scope in one apply. Every scope or
    * none; the scopes made to hold them go again where the apply is refused.
    */
-  bringIn(into: Pick<Repositories, 'scopes' | 'images' | 'history'>, opened: Opened, options?: BringOptions): Promise<void>
+  bringIn(into: Pick<Repositories, 'scopes' | 'images' | 'history'>, opened: Opened, options?: BringOptions): Promise<BroughtIn>
 
   /** What landed, read back through `read`, held to what the parcel says it holds. */
   check(opened: Opened, read: ReadBack): Promise<Arrival>

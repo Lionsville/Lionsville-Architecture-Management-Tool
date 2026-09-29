@@ -42,9 +42,9 @@ function waiting<T extends object>(held: T, ready: Promise<void>): T {
 
 export function heldRepositories(scopes: readonly ScopeSnapshot[] = []): HeldRepositories {
   const held = memoryRepositories()
-  const ready = scopes.length === 0 ? Promise.resolve() : placeTogether(held, scopes.map((scope) => ({
+  const ready: Promise<void> = scopes.length === 0 ? Promise.resolve() : placeTogether(held, scopes.map((scope) => ({
     address: scope.path, content: contentOf(scope, []), pictures: picturesOf(scope.imageLibrary),
-  })))
+  }))).then(() => undefined)
   // A test that seeded something unreadable learns it from its first read.
   ready.catch(() => undefined)
   const repositories: Repositories = {

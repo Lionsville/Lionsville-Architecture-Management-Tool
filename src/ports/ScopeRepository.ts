@@ -104,8 +104,14 @@ export type StepsFor = {
 /** What a refusal says: the key, and the scope and step it was met at where there was one. */
 export type Refused = { refused: ScopeRefusal; scope?: ScopeId; stepId?: string }
 
-/** Steps applied: each scope's revision after them, in the order they were given. */
-export type Applied = { revisions: readonly Revision[] }
+/**
+ * Steps applied: each scope's revision after them, in the order they were
+ * given; and, where a put back landed on a scope that could not be read
+ * whole, what of it the repository set aside first, in its own words, for a
+ * person to be told where (`ScopeState.unreadable`). Absent where it set
+ * nothing aside — it kept the scope as it stood in its history instead.
+ */
+export type Applied = { revisions: readonly Revision[]; setAside?: readonly string[] }
 
 export type Created = { id: ScopeId; revision: Revision }
 

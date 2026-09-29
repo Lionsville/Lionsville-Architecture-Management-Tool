@@ -52,6 +52,8 @@ export const EN = {
    * a file a person can mend — says it in its own words (`unreadableKey`).
    */
   'shell.unreadableScope': '{files} in this scope could not be read, so it is open to be looked at and not changed: a change would lose what it holds. Put it back from the history, or bring in a working file.',
+  /** A scope a later version of the app wrote (`ScopeState.later`): nothing here changes it, or puts it back. */
+  'shell.unreadableLater': 'A later version of the app wrote this scope, and this one cannot read all of it ({files}), so it is open to be looked at and not changed. Update the app to change it.',
   'shell.putBackFromHistory': 'Put back from the history…',
   'shell.bringInWorkingFile': 'Bring in a working file…',
   /**
@@ -299,9 +301,11 @@ export const EN = {
   'history.putBack': 'Put back the whole scope…',
   'history.putBackTitle': 'Put the whole scope back as it was on {date}?',
   'history.putBackBody':
-    'Part of this scope could not be read. This makes all of it what it was at that snapshot, the part that could not be read included, and it can be changed again afterwards. The history keeps everything, and where one is kept the scope as it stands now is recorded first.',
+    'Part of this scope could not be read. This makes all of it what it was at that snapshot, the part that could not be read included, and it can be changed again afterwards. What could not be read is kept first — as an entry of the history, or set aside beside the scope — and where it cannot be, nothing is put back.',
   'history.putBackConfirm': 'Put back',
   'history.putBackDone': 'The scope is back as it was on {date}, and reads whole again.',
+  'history.putBackSetAside': ' What could not be read was set aside first, beside the scope: {files}.',
+  'history.putBackKept': ' An entry of the scope as it stood, what could not be read included, was recorded first.',
   'history.putBackWithout': ' {count} pictures it held then are no longer kept, and were left out.',
   'history.putBackFailed': 'The scope was not put back: {message}',
   'history.snapshotNow': 'Snapshot',

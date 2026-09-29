@@ -166,8 +166,15 @@ export type PicturesKept = 'with' | 'apart'
 /** One file in a scope's folder, with enough to read it, replace it or remove it. */
 type Entry = { path: string; name: string; parent: DirectoryHandleLike; handle: FileHandleLike }
 
-/** What a save of one scope will write and remove, every refusal already made. */
-type Plan = { path: ScopePath; writes: FolderFile[]; removals: Entry[] }
+/**
+ * What a save of one scope will write and remove, every refusal already made;
+ * and, put back whole, the files of the format it will write over or remove
+ * that did not read, which are set aside first.
+ */
+type Plan = { path: ScopePath; writes: FolderFile[]; removals: Entry[]; aside: Entry[] }
+
+/** What a file that did not read is set aside as: its own name and this, in the folder it is in, which the format never reads. */
+export const SET_ASIDE = '.unread'
 
 export class FileSystemScopeStore implements ScopeStore {
   readonly id = 'folder on disk'
@@ -655,9 +662,54 @@ export class FileSystemScopeStore implements ScopeStore {
    * The folder holds no manifest check of its own: the caller reads the
    * landing back and holds it to the file (ADR-0023, amended).
    */
-  async saveTogether(entries: readonly { scope: ScopeSnapshot; expects?: string; whole?: boolean }[]): Promise<void> {
+  async saveTogether(entries: readonly { scope: ScopeSnapshot; expects?: string; whole?: boolean }[]): Promise<readonly string[]> {
     const plans: Plan[] = []
     for (const { scope, expects, whole } of entries) plans.push(await this.plan(scope, expects, whole))
+    const setAside = await this.setAside(plans)
+    await this.writePlans(plans)
+    return setAside
+  }
+
+  /**
+   * Every file of the format a whole write will write over or remove that did
+   * not read, copied first beside itself under a name the format never reads
+   * (`<name>.unread`, then `.unread-2` and on): so a scope put back loses
+   * nothing a person could still mend. One whose bytes will not come refuses
+   * the write, and nothing of the scope is written. Answers where each went,
+   * from the folder's root.
+   */
+  private async setAside(plans: readonly Plan[]): Promise<string[]> {
+    const went: string[] = []
+    for (const plan of plans) {
+      for (const entry of plan.aside) {
+        const bytes = await entry.handle.getFile().then(async (file) => new Uint8Array(await file.arrayBuffer()), () => undefined)
+        if (!bytes) throw new ShellError('shell.unreadableNotSaved')
+        const name = await this.freeName(entry.parent, `${entry.name}${SET_ASIDE}`)
+        const handle = await entry.parent.getFileHandle(name, { create: true })
+        const writable = await handle.createWritable()
+        try {
+          await writable.write(bytes)
+        } finally {
+          await writable.close()
+        }
+        const within = entry.path.slice(0, -entry.name.length)
+        went.push([...scopeSegments(plan.path), `${within}${name}`].join('/'))
+      }
+    }
+    return went
+  }
+
+  /** A name in a folder nothing holds: this one, or it with `-2`, `-3` and on. */
+  private async freeName(folder: DirectoryHandleLike, name: string): Promise<string> {
+    for (let n = 1; ; n += 1) {
+      const candidate = n === 1 ? name : `${name}-${n}`
+      const taken = await folder.getFileHandle(candidate).then(() => true, () => false)
+      if (!taken) return candidate
+    }
+  }
+
+  /** The planned writes made, as {@link saveTogether} says: as one where the folder can, staged where it can rename, else scope by scope. */
+  private async writePlans(plans: readonly Plan[]): Promise<void> {
     const together = this.root.writeTogether?.bind(this.root)
     if (together) {
       const writes: { path: string; data: string | Uint8Array }[] = []
@@ -760,6 +812,13 @@ export class FileSystemScopeStore implements ScopeStore {
     // at its address would be written over it.
     const header = held[files.findIndex((file) => file.path === SCOPE_FILE)]
     const refused = files.some((file, n) => unread.has(file.path) || held[n] === UNREAD)
+    const heldUnread = (n: number) => {
+      const was = held[n]
+      const path = files[n].path
+      return unread.has(path) || was === UNREAD
+        || (path === MODEL_FILE && typeof was === 'string' && modelUnreadable(was))
+        || (path === SCOPE_FILE && typeof was === 'string' && headerUnreadable(was))
+    }
     if (!whole && (refused || (typeof model === 'string' && modelUnreadable(model))
       || (typeof header === 'string' && headerUnreadable(header)))) {
       throw new ShellError('shell.unreadableNotSaved')
@@ -780,7 +839,22 @@ export class FileSystemScopeStore implements ScopeStore {
       // and a scope filed inside this one is never among these at all.
       removals.push(entry)
     }
-    return { path: scope.path, writes, removals }
+    const aside = whole ? [
+      ...files.flatMap((file, n) => (heldUnread(n) && at.has(file.path) ? [at.get(file.path)!] : [])),
+      ...await this.unreadOf(removals, unread),
+    ] : []
+    return { path: scope.path, writes, removals, aside }
+  }
+
+  /** Of the files a write removes, those that did not read: named so, or not reading now, or a model that is not one. */
+  private async unreadOf(removals: readonly Entry[], unread: ReadonlySet<string>): Promise<Entry[]> {
+    const found: Entry[] = []
+    for (const entry of removals) {
+      const now = await this.read(entry)
+      const text = now && now !== UNREAD && 'text' in now ? now.text : undefined
+      if (unread.has(entry.path) || now === UNREAD || (entry.path === MODEL_FILE && modelUnreadable(text))) found.push(entry)
+    }
+    return found
   }
 
   /** A planned save, made: written before anything is removed. */

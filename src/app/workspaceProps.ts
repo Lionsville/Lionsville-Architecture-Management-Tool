@@ -35,7 +35,7 @@ import type { ProjectFileChannel } from './useProjectFiles'
 import type { AskPassword } from './usePasswordPrompt'
 import type { KeepNotice } from './useKeepNotice'
 import type { Notify } from './useToasts'
-import type { ChooseDestination, LandingPrompts, OpenedWorkingFile } from './workingFileFlows'
+import type { AdoptScopes, ChooseDestination, LandingPrompts } from './workingFileFlows'
 import type { CarriedOut, Interchange } from '../ports/Interchange'
 
 /** Where this scope is kept, and what the source it is kept in says about it. */
@@ -166,7 +166,7 @@ export type WorkspaceTree = {
    * shell's, because it owns the store; absent where there is none, and such a
    * file is then refused rather than half-opened.
    */
-  onAdoptScopes?: (opened: OpenedWorkingFile) => Promise<void>
+  onAdoptScopes?: AdoptScopes
   /**
    * One scope as the store holds it now, to read an opened working file back
    * and hold it to the file (ADR-0023, amended).

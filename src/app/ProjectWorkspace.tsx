@@ -111,9 +111,10 @@ function useSessionParts(props: ProjectWorkspaceProps) {
    * A scope that could not be read whole, where the source may be written: it
    * takes no change, but it may be put back whole (`ScopeState.unreadable`) —
    * from the history, or from a working file brought in — and is read again
-   * once it has been.
+   * once it has been. Not one a later version wrote, which only a version
+   * that reads it may change (`ScopeState.later`).
    */
-  const recovering = unreadable.length > 0 && !(source.readOnly ?? false)
+  const recovering = unreadable.length > 0 && !project.later && !(source.readOnly ?? false)
   /**
    * Every ancestor's records as one list — what the search and the agent read.
    *

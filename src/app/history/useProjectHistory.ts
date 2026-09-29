@@ -31,7 +31,7 @@ import { fromArrays } from '../../model/normalised'
 import type { Model } from '../../model/normalised'
 import { restoreCommand } from '../../model/restore'
 import type { StepSummary } from '../../model/activity'
-import type { StringKey, Translate } from '../../i18n'
+import type { Translate } from '../../i18n'
 import { reasonOf } from '../../platform/errors'
 import { reasonIn } from '../messageFor'
 import type { HistoryEntry, HistoryRepository } from '../../ports/HistoryRepository'
@@ -114,7 +114,6 @@ async function beforeReplace(
     scopes: ScopeReader; project: () => ScopeSnapshot; notify: Notify; s: Translate
   },
   onRecorded: () => void,
-  subject: StringKey = 'history.beforeReplace',
 ): Promise<boolean> {
   const { history, kept, save, scopes, project, notify, s } = deps
   if (!history) return true
@@ -126,7 +125,7 @@ async function beforeReplace(
     const node = nodeAt(await scopes.tree(), project().path)
     // A scope with no document yet has nothing to lose.
     if (!node) return true
-    const written = await history.record({ scopes: nodesOf(node).map((held) => held.id), subject: s(subject) })
+    const written = await history.record({ scopes: nodesOf(node).map((held) => held.id), subject: s('history.beforeReplace') })
     if (written.length > 0) {
       onRecorded()
       notify(s('history.takenBeforeReplace'), 'info')
@@ -139,9 +138,10 @@ async function beforeReplace(
 }
 
 /**
- * A scope that could not be read whole, put back as an entry held it: the
- * entry before it where a history is kept, then the whole scope, then the
- * scope opened again (`PutBack.done`). Said as it went, whichever way.
+ * A scope that could not be read whole, put back as an entry held it — the
+ * repository keeping it as it stood first, or refusing — and then opened
+ * again (`PutBack.done`). Said as it went, whichever way: where what could
+ * not be read went, and what of the entry was left out.
  */
 async function putBack(
   deps: Parameters<typeof beforeReplace>[0] & { history: HistoryRepository },
@@ -151,16 +151,24 @@ async function putBack(
 ): Promise<void> {
   const { history, notify, s } = deps
   try {
-    if (!await beforeReplace(deps, () => undefined, 'history.beforePutBack')) return
-    const outcome = await putBackWhole({ scopes: into.scopes, history }, into.scope, entry)
+    // The repository keeps the scope as it stood first, or refuses: an entry
+    // recorded here would find nothing open, and keep nothing it could not read.
+    const outcome = await putBackWhole({ scopes: into.scopes, history }, into.scope, entry, s('history.beforePutBack'))
     if (!outcome) { notify(s('history.gone'), 'warning'); return }
     onPut()
-    const without = outcome.left ? s('history.putBackWithout', { count: outcome.left }) : ''
-    notify(s('history.putBackDone', { date: dayOf(entry.at) }) + without, 'success')
+    notify(s('history.putBackDone', { date: dayOf(entry.at) }) + putBackSaid(outcome, s), 'success')
     into.done()
   } catch (cause) {
     notify(s('history.putBackFailed', { message: reasonIn(cause, s) }), 'error')
   }
+}
+
+/** What a put back kept first and what it left out, as the sentences after the one that says it landed. */
+export function putBackSaid(outcome: { left?: number; setAside: readonly string[] }, s: Translate): string {
+  const kept = outcome.setAside.length
+    ? s('history.putBackSetAside', { files: outcome.setAside.join(', ') })
+    : s('history.putBackKept')
+  return kept + (outcome.left ? s('history.putBackWithout', { count: outcome.left }) : '')
 }
 
 /** Putting back the open scope, where it could not be read whole; `undefined` where it reads whole. */

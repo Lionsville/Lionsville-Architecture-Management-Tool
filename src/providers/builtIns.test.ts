@@ -11,9 +11,9 @@
 import { vi } from 'vitest'
 import type { MemoryStore } from '../adapters/memory/MemoryStore'
 import { RecordingDiagnostics } from '../adapters/memory/RecordingDiagnostics'
-import { SHELVES } from '../adapters/repositories/KeyedStore'
-import type { KeptContent } from '../adapters/repositories/kept'
-import { writeAt } from '../adapters/folder/handles'
+import { spoilKept } from '../adapters/repositories/testing/spoil'
+import { textAt, writeAt } from '../adapters/folder/handles'
+import { spoilFolder } from '../adapters/folder/testing/spoil'
 import { IndexedDbStore } from '../adapters/webStorage/IndexedDbStore'
 import type { IndexedDb } from '../adapters/webStorage/IndexedDbStore'
 import { FakeDirectory } from '../adapters/folder/fakeDirectory'
@@ -47,14 +47,6 @@ vi.mock('../adapters/memory/memoryRepositories', async (importOriginal) => {
   }
 })
 
-/** A scope's content marked as a later version's, which no build here reads whole. */
-function laterVersion(store: { transaction: MemoryStore['transaction'] }, scope: string): Promise<void> {
-  return store.transaction(SHELVES, 'write', async (tx) => {
-    const held = await tx.get<KeptContent>('contents', scope)
-    tx.put('contents', scope, { ...held, format: 2 })
-  })
-}
-
 /** A key-value storage that keeps what it is given, for as long as the test runs. */
 function keyValues(): KeyValueStorage {
   const held = new Map<string, string>()
@@ -70,25 +62,21 @@ const MAKERS: readonly [string, MakeRepositories][] = [
   ['the memory provider', async () => {
     const { repositories } = await MEMORY_SOURCE.open(undefined, {})
     const store = made.store!
-    return { repositories, spoil: (scope) => laterVersion(store, scope) }
+    return { repositories, spoil: (scope, how) => spoilKept(store, scope, how) }
   }],
   ['this browser\'s provider', async () => {
     const database: IndexedDb = fakeIndexedDb()
     const { repositories } = await BROWSER_STORAGE_SOURCE.open(
       { storage: keyValues(), database }, { diagnostics: new RecordingDiagnostics() },
     )
-    return { repositories, spoil: (scope) => laterVersion(new IndexedDbStore(database), scope) }
+    return { repositories, spoil: (scope, how) => spoilKept(new IndexedDbStore(database), scope, how) }
   }],
   ['the folder provider', async () => {
     const handle = new FakeDirectory('Architecture')
     const { repositories } = await openFolder({ handle, name: 'Architecture', root: 'Architecture' }, { diagnostics: new RecordingDiagnostics() })
     return {
       repositories,
-      // A model.json that is there and is not a model: the scope reads to be looked at, and takes no step.
-      spoil: async (scope) => {
-        const state = await repositories.scopes.state(scope)
-        if (state) await writeAt(handle, state.address ? `${state.address}/model.json` : 'model.json', '{ half a write')
-      },
+      spoil: (scope, how) => spoilFolder(repositories, { read: (path) => textAt(handle, path), write: (path, text) => writeAt(handle, path, text) }, scope, how),
     }
   }],
 ]

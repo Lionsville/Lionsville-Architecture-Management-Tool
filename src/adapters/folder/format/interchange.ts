@@ -18,7 +18,7 @@ import { carriedOf, contentOf, everyScope, nodeAt, picturesOf, placeTogether } f
 import { isWithinScope, joinScopePath, ROOT_SCOPE } from '../../../projects/scopePath'
 import type { ScopeAddress, ScopeId } from '../../../projects/scopeState'
 import type {
-  Arrival, BringOptions, CarriedOut, CarryOptions, Interchange, Opened, ReadBack,
+  Arrival, BringOptions, BroughtIn, CarriedOut, CarryOptions, Interchange, Opened, ReadBack,
 } from '../../../ports/Interchange'
 import type { Repositories } from '../../../ports/Repositories'
 import { openDocumentBytes, WORKING_FILE_MEDIA_TYPE, workingFileBytes, workingFileName } from './workingFile'
@@ -37,7 +37,7 @@ export type CarriedFrom = Pick<Repositories, 'scopes' | 'images'>
 /** What one is brought into: the same, and the history a landing may record in. */
 export type BroughtInto = Pick<Repositories, 'scopes' | 'images' | 'history'>
 
-export type { Arrival, BringOptions, CarriedOut, CarryOptions, Opened } from '../../../ports/Interchange'
+export type { Arrival, BringOptions, BroughtIn, CarriedOut, CarryOptions, Opened } from '../../../ports/Interchange'
 
 /**
  * The organisation, or the scope at `from` and every scope under it, as a
@@ -204,17 +204,19 @@ async function accountOfNamed(
  */
 export async function bringIn(
   into: BroughtInto, opened: Opened, options: BringOptions = {},
-): Promise<void> {
+): Promise<BroughtIn> {
   const held = [opened.top, ...opened.rest]
   const addresses = held.map((scope) => scope.path)
   if (options.before) {
     const there = await idsAt(into, addresses)
     if (there.length) await into.history.record({ scopes: there, subject: options.before })
   }
-  await placeTogether(into, held.map((scope) => ({
+  const setAside = await placeTogether(into, held.map((scope) => ({
     address: scope.path, content: contentOf(scope, []), pictures: picturesOf(scope.imageLibrary),
+    ...(options.putBack && scope === opened.top ? { putBack: options.putBack } : {}),
   })))
   if (options.subject) await into.history.record({ scopes: await idsAt(into, addresses), subject: options.subject })
+  return { setAside }
 }
 
 /** The identities of the scopes at these addresses, where there are any. */

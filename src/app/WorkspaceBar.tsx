@@ -111,7 +111,9 @@ export function WorkspaceBar({ parts, toolbarRef }: {
 function UnreadableNotice({ parts }: { parts: WorkspaceParts }) {
   const { props, snapshots, pickers, recovering } = parts
   const { s } = props.shell
-  const key = (props.source.unreadableKey ?? 'shell.unreadableScope') as StringKey
+  // A later version's scope is somebody's newer work: nothing here puts it
+  // back, and the notice says what does.
+  const key = props.project.later ? 'shell.unreadableLater' : (props.source.unreadableKey ?? 'shell.unreadableScope') as StringKey
   return (
     <Alert
       severity="warning"

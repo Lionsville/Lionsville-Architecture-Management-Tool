@@ -11,7 +11,7 @@
  */
 import type { Translate } from '../i18n'
 import type { SavedDocument } from '../ports/DocumentGateway'
-import type { Arrival, CarriedOut, Interchange, Opened } from '../ports/Interchange'
+import type { Arrival, BringOptions, BroughtIn, CarriedOut, Interchange, Opened } from '../ports/Interchange'
 import type { ScopeSnapshot } from '../projects/scope'
 import { ROOT_SCOPE } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
@@ -108,6 +108,14 @@ export type LandingPrompts = {
 }
 
 export type OpenedWorkingFile = Opened
+
+/**
+ * The scopes an opened working file brought, written by the shell, which owns
+ * the store — the file's top put back over a scope that could not be read
+ * whole only where `putBack` says the person asked for that
+ * (`BringOptions.putBack`). Answers what it set aside first.
+ */
+export type AdoptScopes = (opened: OpenedWorkingFile, options?: Pick<BringOptions, 'putBack'>) => Promise<BroughtIn | void>
 
 /**
  * Where a working file lands (ADR-0025), asked every time.

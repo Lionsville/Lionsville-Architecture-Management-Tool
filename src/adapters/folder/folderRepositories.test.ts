@@ -28,6 +28,7 @@ import { fakeIndexedDb } from '../webStorage/testing/fakeIndexedDb'
 import { composed, identityAt, placesInMemory } from './folderScopes'
 import { stampsInMemory } from './folderPictures'
 import { memoryGit } from './memoryGit'
+import { spoilFolder } from './testing/spoil'
 import { FileSystemScopeStore } from './FileSystemScopeStore'
 import { bytesAt, removeAt, textAt, writeAt } from './handles'
 import { emptyContent } from '../../projects/scopeState'
@@ -38,11 +39,8 @@ function overFakeFolder(): RepositoriesUnderTest {
   const repositories = folderRepositories({ root, git: memoryGit(root) })
   return {
     repositories,
-    // A model.json that is there and is not a model: the scope reads to be looked at, and takes no step.
-    spoil: async (scope: ScopeId) => {
-      const state = await repositories.scopes.state(scope)
-      if (state) await writeAt(root, state.address ? `${state.address}/model.json` : 'model.json', '{ half a write')
-    },
+    // A model.json that is not a model, or a header a later version wrote (`testing/spoil.ts`).
+    spoil: (scope: ScopeId, how) => spoilFolder(repositories, { read: (path) => textAt(root, path), write: (path, text) => writeAt(root, path, text) }, scope, how),
   }
 }
 
@@ -60,10 +58,7 @@ function overBrowserFolder(): RepositoriesUnderTest {
   })
   return {
     repositories,
-    spoil: async (scope: ScopeId) => {
-      const state = await repositories.scopes.state(scope)
-      if (state) await writeAt(root, state.address ? `${state.address}/model.json` : 'model.json', '{ half a write')
-    },
+    spoil: (scope: ScopeId, how) => spoilFolder(repositories, { read: (path) => textAt(root, path), write: (path, text) => writeAt(root, path, text) }, scope, how),
   }
 }
 
@@ -657,7 +652,7 @@ describe('a folder nobody has named', () => {
 })
 
 describe('a folder scope put back whole', () => {
-  it('writes over and removes the format’s files it could not read, and leaves every file that is not the format’s', async () => {
+  it('sets aside the format’s files it could not read, writes over and removes them, and leaves every file that is not the format’s', async () => {
     const root = new FakeDirectory()
     const repositories = over({ repositories: folderRepositories({ root, git: memoryGit(root) }) })
     const acme = await repositories.scope('acme', 'Acme Logistics')
@@ -675,7 +670,15 @@ describe('a folder scope put back whole', () => {
     expect(read.unreadable?.length).toBeGreaterThan(0)
 
     const whole = { ...emptyContent('Acme Logistics'), model: replayed(emptyContent('Acme Logistics').model, [addDepot]) }
-    ok(await repositories.apply([{ scope: acme, steps: [step({ type: 'scope.replace', content: whole })], expects: read.revision }]))
+    // No history is kept here: what could not be read is set aside beside itself, and said.
+    expect(refusal(await repositories.apply([{ scope: acme, steps: [step({ type: 'scope.replace', content: whole })] }])))
+      .toBe('shell.unreadableNotSaved')
+    const put = ok(await repositories.apply([{
+      scope: acme, steps: [step({ type: 'scope.replace', content: whole, putBack: { subject: 'As it stood' } })], expects: read.revision,
+    }]))
+    expect([...put.setAside ?? []].sort()).toEqual(['acme/docs/crews.md.unread', 'acme/docs/ghost.md.unread', 'acme/model.json.unread'])
+    expect(await textAt(root, 'acme/model.json.unread')).toBe('{ half a write')
+    expect(await textAt(root, 'acme/docs/ghost.md.unread')).toBe('Nobody.')
 
     const after = await repositories.state(acme)
     expect(after.unreadable).toBeUndefined()

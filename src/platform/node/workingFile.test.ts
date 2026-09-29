@@ -10,7 +10,11 @@ import { describe, expect, it } from 'vitest'
 import { memoryRepositories } from '../../adapters/memory/memoryRepositories'
 import { organisation, seed } from '../../adapters/folder/format/testing/organisation'
 import type { Repositories } from '../../ports/Repositories'
-import { nodeAt } from '../../projects/scopeAccess'
+import { nodeAt, readScope } from '../../projects/scopeAccess'
+import { MemoryStore } from '../../adapters/memory/MemoryStore'
+import { spoilKept } from '../../adapters/repositories/testing/spoil'
+import { bringIn, open } from '../../adapters/folder/format/interchange'
+import type { Spoiled } from '../../ports/Repositories.contract'
 import { slug } from '../../model/keys'
 import { readWorkingFile, writeWorkingFile } from './workingFile'
 
@@ -138,5 +142,57 @@ describe('the working file, from node', () => {
 
   it('refuses to write from an address that holds no scope', async () => {
     await expect(writeWorkingFile(memoryRepositories(), { from: 'nowhere' })).rejects.toMatchObject({ key: 'shell.scopeGone' })
+  })
+})
+
+/**
+ * A working file never lands over a scope that could not be read whole, but
+ * where a person asked for it to put that scope back — and never over one a
+ * later version wrote, asked or not.
+ */
+describe('a working file over a scope that could not be read whole', () => {
+  async function spoiledTarget(how: Spoiled) {
+    const store = new MemoryStore()
+    const target = memoryRepositories(store)
+    await seed(target)
+    const id = nodeAt(await target.scopes.tree(), 'application-landscape')!.id
+    await spoilKept(store, id, how)
+    const source = memoryRepositories()
+    await seed(source, organisation().map((scope) => ({ ...scope, model: { ...scope.model, description: 'From the file.' } })))
+    return { target, id, bytes: (await writeWorkingFile(source)).bytes, store }
+  }
+
+  for (const how of ['damaged', 'later'] as const) {
+    it(`lands nothing where nobody asked it to put the scope back (${how})`, async () => {
+      const { target, id, bytes, store } = await spoiledTarget(how)
+      const raw = await store.transaction(['contents'], 'read', (tx) => tx.get('contents', id))
+      await expect(readWorkingFile(target, bytes)).rejects.toMatchObject({ key: how === 'later' ? 'shell.laterNotReplaced' : 'shell.unreadableNotSaved' })
+      expect(await store.transaction(['contents'], 'read', (tx) => tx.get('contents', id))).toEqual(raw)
+      expect((await readScope(target.scopes, ''))?.model.description).not.toBe('From the file.')
+    })
+  }
+
+  it('puts the scope back where a person asked, keeping it as it stood first', async () => {
+    const { target, id } = await spoiledTarget('damaged')
+    const source = memoryRepositories()
+    await seed(source, organisation().map((scope) => ({ ...scope, model: { ...scope.model, description: 'From the file.' } })))
+    const opened = await open((await writeWorkingFile(source, { from: 'application-landscape' })).bytes, 'application-landscape')
+    if ('refused' in opened) throw new Error(opened.refused)
+    const brought = await bringIn(target, opened, { putBack: { subject: 'As it stood' } })
+    expect(brought.setAside).toEqual([])
+    expect((await target.scopes.state(id))?.unreadable).toBeUndefined()
+    expect((await target.scopes.state(id))?.model.description).toBe('From the file.')
+    expect((await target.history.entries({ scopes: [id] })).entries[0].subject).toBe('As it stood')
+  })
+
+  it('puts back no scope a later version wrote, even where a person asked', async () => {
+    const { target, id, store } = await spoiledTarget('later')
+    const raw = await store.transaction(['contents'], 'read', (tx) => tx.get('contents', id))
+    const source = memoryRepositories()
+    await seed(source)
+    const opened = await open((await writeWorkingFile(source, { from: 'application-landscape' })).bytes, 'application-landscape')
+    if ('refused' in opened) throw new Error(opened.refused)
+    await expect(bringIn(target, opened, { putBack: { subject: 'As it stood' } })).rejects.toMatchObject({ key: 'shell.laterNotReplaced' })
+    expect(await store.transaction(['contents'], 'read', (tx) => tx.get('contents', id))).toEqual(raw)
   })
 })

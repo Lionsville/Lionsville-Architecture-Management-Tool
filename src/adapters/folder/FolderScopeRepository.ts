@@ -38,7 +38,7 @@ import { stableJson } from '../../projects/text'
 import type { ScopeSnapshot } from '../../projects/scope'
 import { fingerprint } from '../../projects/revision'
 import { ancestorScopes, isSafeScopePath, isWithinScope, ROOT_SCOPE, scopeFilePath, scopePathLabel } from '../../projects/scopePath'
-import { applySteps, emptyContent, putsBackWhole, STEP_ELSEWHERE } from '../../projects/scopeState'
+import { applySteps, emptyContent, partlyReadRefusal, putBackOf, STEP_ELSEWHERE } from '../../projects/scopeState'
 import type { ScopeAddress, ScopeContent, ScopeId, ScopeState, ScopeStep } from '../../projects/scopeState'
 import { reasonOf, ShellError } from '../../platform/errors'
 import type {
@@ -110,12 +110,12 @@ function nextLibrary(was: readonly KeptPicture[], entries: readonly ImageEntry[]
 
 /**
  * A scope's state as the folder store writes it: the documents' pictures as
- * files, the library and the identity in the header. Put back `whole`, it
- * says nothing of the files a read did not take in: the content is all the
- * scope is to be, and those files are the format's to write over or remove.
+ * files, the library and the identity in the header. What a read did not
+ * take in is said on it, for the store to leave alone — or, put back whole,
+ * to set aside before it writes over it.
  */
 function snapshotFor(
-  node: FolderNode, content: ScopeContent, was: ReadScope | undefined, library: readonly KeptPicture[], whole = false,
+  node: FolderNode, content: ScopeContent, was: ReadScope | undefined, library: readonly KeptPicture[],
 ): ScopeSnapshot {
   const model = filesInDocuments(content.model, was?.snapshot?.model, pictureFiles(library, was?.library ?? []))
   const { [LIBRARY_KEY]: _rows, ...carried } = { ...was?.snapshot?.carried }
@@ -127,7 +127,7 @@ function snapshotFor(
     ...(content.kind !== undefined ? { kind: content.kind } : {}),
     ...(content.client !== undefined ? { client: content.client } : {}),
     ...(content.links !== undefined ? { links: content.links } : {}),
-    ...(was?.snapshot?.unread && !whole ? { unread: was.snapshot.unread } : {}),
+    ...(was?.snapshot?.unread ? { unread: was.snapshot.unread } : {}),
     carried: { ...carried, [ID_KEY]: node.id, ...(library.length ? { [LIBRARY_KEY]: rowsFor(library) } : {}) },
   }
 }
@@ -213,7 +213,7 @@ export class FolderScopeRepository implements ScopeRepository {
         if (missing) return { refused: 'shell.imageBytesGone', scope: read.node.id, ...(missing.stepId ? { stepId: missing.stepId } : {}) }
         if (!result.changed && !whole) continue
         const library = nextLibrary(read.library, result.content.images)
-        const snapshot = snapshotFor(read.node, result.content, read, library, whole)
+        const snapshot = snapshotFor(read.node, result.content, read, library)
         planned.push({ read, content: result.content, library, snapshot, steps, whole })
       }
       const pending = await this.expectations(planned)
@@ -221,17 +221,20 @@ export class FolderScopeRepository implements ScopeRepository {
       // A write refused wrote nothing: none of its steps was applied. One that
       // threw may have written some scopes, and its steps stay pending for a
       // step sent again to find out which.
-      const refused = await this.write(planned)
-      if (refused) {
+      const written = await this.write(planned)
+      if ('refused' in written) {
         await this.applied.forget(pending.map((one) => one.stepId))
-        return refused
+        return written
       }
       await this.applied.remember(work.flatMap(({ scope, steps }) => steps.map((one) => ({ stepId: one.stepId, scope }))))
       const revisions = new Map<ScopeId, string>()
       for (const { scope } of work) {
         if (!revisions.has(scope)) revisions.set(scope, (await this.folder.read(scope))?.state.revision ?? '')
       }
-      return { revisions: work.map(({ scope }) => revisions.get(scope)!) }
+      return {
+        revisions: work.map(({ scope }) => revisions.get(scope)!),
+        ...(written.setAside.length ? { setAside: written.setAside } : {}),
+      }
     })
   }
 
@@ -270,10 +273,11 @@ export class FolderScopeRepository implements ScopeRepository {
         seen.set(one.stepId, scope)
       }
       const partly = read.state.unreadable !== undefined
-      if (partly && !runs.has(scope) && !putsBackWhole(fresh)) return { refused: 'shell.unreadableNotSaved', scope }
+      const refusal = partly && !runs.has(scope) ? partlyReadRefusal(read.state, fresh) : undefined
+      if (refusal) return { refused: refusal, scope }
       if (fresh.length === 0) continue
       if (expects !== undefined && expects !== read.state.revision) return { refused: 'shell.scopeMoved', scope }
-      const run = runs.get(scope) ?? { read, steps: [], whole: partly }
+      const run = runs.get(scope) ?? { read, steps: [], whole: partly && putBackOf(fresh) !== undefined }
       run.steps.push(...fresh)
       runs.set(scope, run)
     }
@@ -314,10 +318,10 @@ export class FolderScopeRepository implements ScopeRepository {
    * stops in between leaves a picture no row names, which the library reads
    * as a file of its own, and never a row whose file is not there, which it
    * would drop without a word. A refused write puts back what it wrote, and so
-   * wrote nothing.
+   * wrote nothing. Answers the files a scope put back whole set aside first.
    */
-  private async write(planned: readonly Planned[]): Promise<Refused | undefined> {
-    if (planned.length === 0) return undefined
+  private async write(planned: readonly Planned[]): Promise<Refused | { setAside: readonly string[] }> {
+    if (planned.length === 0) return { setAside: [] }
     const entries = planned.map(({ read, snapshot, whole }) => ({
       scope: snapshot,
       ...(read.stored !== undefined ? { expects: read.stored } : {}),
@@ -331,8 +335,9 @@ export class FolderScopeRepository implements ScopeRepository {
         return refused
       }
     }
+    let setAside: readonly string[]
     try {
-      await this.folder.store.saveTogether(entries)
+      setAside = await this.folder.store.saveTogether(entries)
     } catch (cause) {
       const refused = refusalOf(cause, planned[0].read.node.id)
       if (!refused) throw cause
@@ -340,7 +345,7 @@ export class FolderScopeRepository implements ScopeRepository {
       return refused
     }
     for (const { read, library } of planned) await this.picturesOut(read, library)
-    return undefined
+    return { setAside }
   }
 
   /**

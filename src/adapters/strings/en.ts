@@ -23,6 +23,12 @@ export const EN = {
    */
   'shell.folderUnavailable': 'That folder is not available. Choose it again, or reconnect the drive it is on.',
   /**
+   * A step refused on a scope a later version of the app wrote
+   * (`ScopeState.later`), a put back included: what this version cannot read
+   * is somebody's newer work.
+   */
+  'shell.laterNotReplaced': 'This scope was not changed: a later version of the app wrote it, and this one cannot read all of it. Update the app, and open the scope again.',
+  /**
    * A step refused on a scope a part of which did not read
    * (`ScopeState.unreadable`): a change would have written the scope without
    * that part. Putting it back whole is the step it takes, and the sentence

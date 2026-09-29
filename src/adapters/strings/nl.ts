@@ -14,6 +14,7 @@ import type { EN } from './en'
 export const NL: Record<keyof typeof EN, string> = {
   'shell.badScopePath': 'Dat onderdeel heeft geen bruikbaar adres ({path}) en kan dus niet bewaard worden.',
   'shell.folderUnavailable': 'Die map is niet beschikbaar. Kies hem opnieuw, of koppel de schijf weer aan.',
+  'shell.laterNotReplaced': 'Deze scope is niet gewijzigd: een latere versie van de app heeft hem geschreven, en deze kan niet alles ervan lezen. Werk de app bij, en open de scope opnieuw.',
   'shell.unreadableNotSaved': 'Deze scope is niet opgeslagen: een deel ervan kon niet worden gelezen, en een wijziging zou verloren hebben wat erin staat. Zet hem terug uit de geschiedenis, of haal een werkbestand binnen.',
   'shell.scopeMoved': 'Iemand heeft dit onderdeel gewijzigd terwijl dit bezig was, dus er is niets weggeschreven. Open het opnieuw en voer de wijziging nog eens uit.',
   'shell.historyMidway': 'Er is niets vastgelegd: de geschiedenis van deze map is halverwege een samenvoeging, een rebase of een andere eigen wijziging. Rond die eerst af of breek hem af, en leg daarna opnieuw vast.',

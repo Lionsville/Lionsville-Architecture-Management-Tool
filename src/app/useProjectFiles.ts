@@ -28,7 +28,8 @@ import type { ModelSession } from './useModelSession'
 import type { AskPassword } from './usePasswordPrompt'
 import type { Notify } from './useToasts'
 import { landWorkingFile, savedWithout, sealedWorkingFile, unsealedBytes } from './workingFileFlows'
-import type { ChooseDestination, LandingPrompts, OpenedWorkingFile, ReadScope } from './workingFileFlows'
+import type { AdoptScopes, ChooseDestination, LandingPrompts, OpenedWorkingFile, ReadScope } from './workingFileFlows'
+import { putBackSaid } from './history/useProjectHistory'
 
 /**
  * What this hook needs from a document channel.
@@ -99,7 +100,7 @@ export type ProjectFilesDeps = {
    * than opened for its top scope alone. Half a working set is the loss this
    * whole arrangement exists to prevent.
    */
-  adoptWorkingSet?: (opened: OpenedWorkingFile) => Promise<void>
+  adoptWorkingSet?: AdoptScopes
   /**
    * One scope as the store now holds it: what a landing is read back through
    * and held to the file's manifest (ADR-0023, amended). Absent where there
@@ -208,8 +209,15 @@ export function useProjectFiles(deps: ProjectFilesDeps): ProjectFiles {
       notify(s('shell.workingSetNotHere'), 'error')
       return false
     }
+    if (puttingBack) {
+      // Asked for, from the notice over a scope that could not be read whole:
+      // the one landing such a scope takes, and what it kept first said.
+      const brought = await adoptWorkingSet(result, { putBack: { subject: s('history.beforeReplace') } })
+      notify(putBackSaid(brought ?? { setAside: [] }, s).trim(), 'info')
+      onPutBack()
+      return true
+    }
     if (adoptWorkingSet) await adoptWorkingSet(result)
-    if (puttingBack) { onPutBack(); return true }
     // What landed, as it is kept now: the file carries its pictures' bytes,
     // and the library's entries — which the session draws them from — are
     // made where they were put. A working file carries its own geometry, and

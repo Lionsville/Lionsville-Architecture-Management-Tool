@@ -9,7 +9,10 @@
  */
 import { describe, expect, it } from 'vitest'
 import type { ScopeRepository } from '../ports/ScopeRepository'
+import { MemoryStore } from '../adapters/memory/MemoryStore'
+import { memoryRepositories } from '../adapters/memory/memoryRepositories'
 import { putBackWhole } from './putBack'
+import { placeWhole } from './scopeAccess'
 import { emptyContent } from './scopeState'
 import type { ScopeState } from './scopeState'
 
@@ -28,11 +31,15 @@ describe('putting a scope back whole', () => {
       apply: (work) => {
         const { command } = work[0].steps[0]
         applied.push(command.type === 'scope.replace' ? command.content.images : undefined)
-        return Promise.resolve(applied.length === 1 ? { refused: 'shell.imageBytesGone', scope: 'acme' } : { revisions: ['after'] })
+        expect(command.type === 'scope.replace' && command.putBack).toEqual({ subject: 'Kept' })
+        return Promise.resolve(applied.length === 1
+          ? { refused: 'shell.imageBytesGone', scope: 'acme' }
+          : { revisions: ['after'], setAside: ['acme/model.json.unread'] })
       },
     }
     const history = { stateAt: () => Promise.resolve(then) }
-    expect(await putBackWhole({ scopes, history }, 'acme', { id: 'e1', scope: 'acme' })).toEqual({ left: 1 })
+    expect(await putBackWhole({ scopes, history }, 'acme', { id: 'e1', scope: 'acme' }, 'Kept'))
+      .toEqual({ left: 1, setAside: ['acme/model.json.unread'] })
     expect(applied).toEqual([[picture, held], [held]])
   })
 
@@ -41,6 +48,19 @@ describe('putting a scope back whole', () => {
       state: () => Promise.resolve(undefined), apply: () => Promise.reject(new Error('not asked')),
     }
     const history = { stateAt: () => Promise.resolve(undefined) }
-    expect(await putBackWhole({ scopes, history }, 'acme', { id: 'e1', scope: 'acme' })).toBeUndefined()
+    expect(await putBackWhole({ scopes, history }, 'acme', { id: 'e1', scope: 'acme' }, 'Kept')).toBeUndefined()
+  })
+})
+
+describe('putting back a scope a later version wrote', () => {
+  it('is refused, and the newer work stays as it was kept', async () => {
+    const store = new MemoryStore()
+    const repositories = memoryRepositories(store)
+    const acme = await placeWhole(repositories.scopes, 'acme', emptyContent('Acme'))
+    const [older] = await repositories.history.record({ subject: 'Older' })
+    const newer = { format: 2, model: { name: 'Acme', elements: [{ id: 'newer', name: 'NEWER WORK' }], diagrams: [] }, description: {} }
+    await store.transaction(['contents'], 'write', async (tx) => { tx.put('contents', acme, newer) })
+    await expect(putBackWhole(repositories, acme, older, 'Kept')).rejects.toMatchObject({ key: 'shell.laterNotReplaced' })
+    expect(await store.transaction(['contents'], 'read', (tx) => tx.get('contents', acme))).toEqual(newer)
   })
 })

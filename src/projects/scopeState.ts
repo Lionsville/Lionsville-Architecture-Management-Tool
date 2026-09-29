@@ -91,15 +91,31 @@ export type ScopeState = ScopeContent & {
    * read whole is not a state a step can be applied to without losing what
    * was not read.
    *
-   * **But one it can be put back by.** A run whose first step is
-   * `scope.replace` is accepted: it says what the whole scope is to be, so
-   * nothing it did not read is lost to it but what it replaces. It replaces
-   * the scope whole, the parts that could not be read included, and the scope
-   * reads whole after it — even where the content put back is what could be
-   * read. Without that, a scope in a source with nothing a person can mend by
-   * hand would be stuck as it is for good.
+   * **But one it can be put back by.** A run whose first step is a put back
+   * (`scope.replace` with `putBack`, which a person asked for) is accepted:
+   * it says what the whole scope is to be. It replaces the scope whole, the
+   * parts that could not be read included, and the scope reads whole after it
+   * — even where the content put back is what could be read. Without that, a
+   * scope in a source with nothing a person can mend by hand would be stuck
+   * as it is for good. A replace that is not a put back is refused like any
+   * other step, so nothing lands over such a scope that a person did not ask
+   * to put there.
+   *
+   * **Nothing it did not read is lost to it.** Before the put back lands,
+   * the repository keeps what was there, the parts it could not read
+   * included: an entry of the scope's history holding it, closed with the put
+   * back's `subject`, or what could not be read set aside beside the scope and
+   * said in the answer (`Applied.setAside`). A repository that can do neither
+   * refuses the put back (`shell.unreadableNotSaved`).
    */
   unreadable?: readonly string[]
+  /**
+   * What could not be read was written by a later version of the app. Such a
+   * scope takes no step at all, a put back included (`shell.laterNotReplaced`):
+   * what this version cannot read is somebody's newer work, and only a version
+   * that reads it may change it.
+   */
+  later?: true
 }
 
 /** A picture put into, or taken out of, the library. The bytes go through `ImageRepository` first. */
@@ -128,7 +144,17 @@ export type DescribeCommand = { type: 'scope.describe'; patch: ScopeDescription 
  * `ImageRepository` first, as for `image.add`. Like any step it may say what
  * it expects the scope to be, so it never lands over a state nobody read.
  */
-export type ReplaceCommand = { type: 'scope.replace'; content: ScopeContent }
+export type ReplaceCommand = {
+  type: 'scope.replace'
+  content: ScopeContent
+  /**
+   * A person asked for this content to put back a scope that could not be
+   * read whole (`ScopeState.unreadable`): the one step such a scope takes.
+   * `subject` is what the entry that keeps the scope as it stood says.
+   * Absent on every other replace, which such a scope refuses.
+   */
+  putBack?: { subject: string }
+}
 
 /** Everything a step may carry. */
 export type ScopeCommand = Command | ImageCommand | DescribeCommand | ReplaceCommand
@@ -167,8 +193,10 @@ export const SCOPE_REFUSALS = [
   'shell.scopeIntoItself',
   /** An address no scope may have. */
   'shell.badScopePath',
-  /** A step on a scope that was not read whole (`ScopeState.unreadable`), in a run that does not begin by replacing it. */
+  /** A step on a scope that was not read whole (`ScopeState.unreadable`), in a run that does not begin by putting it back. */
   'shell.unreadableNotSaved',
+  /** A step on a scope written by a later version (`ScopeState.later`), a put back included. */
+  'shell.laterNotReplaced',
   /** A picture's name no picture may have, or an entry that does not describe its picture (`model/imageName.ts`). */
   'shell.imageBadName',
   'shell.imageBadType',
@@ -220,12 +248,23 @@ type Working = { description: ScopeDescription; model: Model; images: readonly I
 type Outcome = { ok: true; working: Working } | { ok: false; refused: ScopeRefusal }
 
 /**
- * Whether a run may land on a scope that was not read whole: only one whose
- * first step replaces it (`ScopeState.unreadable`). The one rule every
- * implementation asks, so none of them words it again.
+ * Whether a run may land on a scope that was not read whole, and what it is
+ * refused with where not: none on one a later version wrote, and otherwise
+ * only one whose first step puts it back (`ScopeState.unreadable`). The one
+ * rule every implementation asks, so none of them words it again.
+ * `undefined` where it may land.
  */
-export function putsBackWhole(steps: readonly ScopeStep[]): boolean {
-  return steps[0]?.command.type === 'scope.replace'
+export function partlyReadRefusal(
+  state: Pick<ScopeState, 'later'>, steps: readonly ScopeStep[],
+): 'shell.unreadableNotSaved' | 'shell.laterNotReplaced' | undefined {
+  if (state.later) return 'shell.laterNotReplaced'
+  return putBackOf(steps) ? undefined : 'shell.unreadableNotSaved'
+}
+
+/** The put back a run begins with, where it begins with one. */
+export function putBackOf(steps: readonly ScopeStep[]): { subject: string } | undefined {
+  const [first] = steps
+  return first?.command.type === 'scope.replace' ? first.command.putBack : undefined
 }
 
 /**

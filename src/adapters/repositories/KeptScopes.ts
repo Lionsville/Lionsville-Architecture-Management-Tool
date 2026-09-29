@@ -13,7 +13,7 @@
 import type { RecordKey } from '../../model/recordKey'
 import { SCOPE_RECORD, sameRecord, sameValue } from '../../model/recordKey'
 import { isSafeScopePath, isWithinScope, ROOT_SCOPE } from '../../projects/scopePath'
-import { applySteps, emptyContent, putsBackWhole, STEP_ELSEWHERE } from '../../projects/scopeState'
+import { applySteps, emptyContent, partlyReadRefusal, putBackOf, STEP_ELSEWHERE } from '../../projects/scopeState'
 import type { Revision, ScopeAddress, ScopeContent, ScopeId, ScopeState, ScopeStep } from '../../projects/scopeState'
 import type {
   Applied, Created, Moved, NewScope, Refused, Removed, ScopeNode, ScopeRepository, ScopeTree, StepsFor,
@@ -29,14 +29,18 @@ import { bytesMissing } from './imageNames'
 import { appliedTo, letGo, remember } from './stepIds'
 
 /**
- * One scope's new steps in an apply, its runs one after the other; `whole`
+ * One scope's new steps in an apply, its runs one after the other; `putBack`
  * where the scope was not read whole and the run puts it back, so it is
- * written even where what it puts back is what could be read.
+ * written even where what it puts back is what could be read, and what was
+ * there is kept first.
  */
-type Run = { kept: KeptScope; steps: ScopeStep[]; whole: boolean }
+type Run = { kept: KeptScope; steps: ScopeStep[]; putBack?: { subject: string } }
 
 /** What one scope's run came to, before it is written. */
-type Planned = { kept: KeptScope; before: ScopeContent; content: ScopeContent; records: readonly RecordKey[]; at: number }
+type Planned = {
+  kept: KeptScope; before: ScopeContent; content: ScopeContent; records: readonly RecordKey[]; at: number
+  putBack?: { subject: string }
+}
 
 export class KeptScopes implements ScopeRepository {
   readonly id: string
@@ -70,19 +74,20 @@ export class KeptScopes implements ScopeRepository {
       if ('refused' in found) return found
       const { runs, kept: read } = found
       const planned: Planned[] = []
-      for (const { kept, steps, whole } of runs.values()) {
+      for (const { kept, steps, putBack } of runs.values()) {
         const { content: before } = await readContent(tx, kept)
         const result = applySteps(before, steps)
         if (!result.ok) return { refused: result.refused, scope: kept.id, stepId: result.stepId }
         const missing = await bytesMissing(tx, kept.id, before.images, result.content.images, steps)
         if (missing) return { refused: 'shell.imageBytesGone', scope: kept.id, ...(missing.stepId ? { stepId: missing.stepId } : {}) }
-        if (result.changed || whole) {
-          planned.push({ kept, before, content: result.content, records: result.records, at: Math.max(...steps.map((one) => one.at)) })
+        if (result.changed || putBack) {
+          const at = Math.max(...steps.map((one) => one.at))
+          planned.push({ kept, before, content: result.content, records: result.records, at, ...(putBack ? { putBack } : {}) })
         }
       }
       for (const [scope, { steps }] of runs) for (const one of steps) remember(tx, one.stepId, scope, now)
       await letGo(tx, now)
-      if (planned.length > 0) await commit(tx, await readMeta(tx), planned, now)
+      if (planned.length > 0) await commit(tx, await readMeta(tx), planned, { now, by: this.source.by })
       return { revisions: work.map(({ scope }) => read.get(scope)!.revision) }
     })
   }
@@ -165,18 +170,19 @@ function moveRefusal(
 /**
  * Each scope's new steps, its runs one after the other, or the refusal met on
  * the way: a scope gone, or read in part by a run that does not begin by
- * replacing it; a step id applied to another scope; a revision moved on from.
+ * putting it back, or written by a later version; a step id applied to
+ * another scope; a revision moved on from.
  * A step already applied to its scope is left out, and a run whose steps have
  * all landed is not compared with what it expects.
  */
 async function runsOf(tx: Transaction, work: readonly StepsFor[]): Promise<Runs | Refused> {
   const runs = new Map<ScopeId, Run>()
-  const read = new Map<ScopeId, { kept: KeptScope; partly: boolean }>()
+  const read = new Map<ScopeId, There>()
   const seen = new Map<string, ScopeId>()
   for (const { scope, steps, expects } of work) {
     const found = read.get(scope) ?? await thereAt(tx, scope)
     if ('refused' in found) return found
-    const { kept, partly } = found
+    const { kept, partly, later } = found
     read.set(scope, found)
     const fresh: ScopeStep[] = []
     for (const one of steps) {
@@ -185,10 +191,12 @@ async function runsOf(tx: Transaction, work: readonly StepsFor[]): Promise<Runs 
       if (where === undefined) fresh.push(one)
       seen.set(one.stepId, scope)
     }
-    if (partly && !runs.has(scope) && !putsBackWhole(fresh)) return { refused: 'shell.unreadableNotSaved', scope }
+    const refusal = partly && !runs.has(scope) ? partlyReadRefusal({ ...(later ? { later } : {}) }, fresh) : undefined
+    if (refusal) return { refused: refusal, scope }
     if (fresh.length === 0) continue
     if (expects !== undefined && expects !== kept.revision) return { refused: 'shell.scopeMoved', scope }
-    const run = runs.get(scope) ?? { kept, steps: [], whole: partly }
+    const putBack = partly ? putBackOf(fresh) : undefined
+    const run = runs.get(scope) ?? { kept, steps: [], ...(putBack ? { putBack } : {}) }
     run.steps.push(...fresh)
     runs.set(scope, run)
   }
@@ -198,22 +206,35 @@ async function runsOf(tx: Transaction, work: readonly StepsFor[]): Promise<Runs 
 /** Each scope an apply names, as it stands before the apply; and the runs of those with new steps. */
 type Runs = { runs: Map<ScopeId, Run>; kept: Map<ScopeId, KeptScope> }
 
-/** A scope a step names, and whether it was read in part; refused where it is not there. */
-async function thereAt(tx: Transaction, scope: ScopeId): Promise<{ kept: KeptScope; partly: boolean } | Refused> {
+/** A scope a step names, whether it was read in part, and whether a later version wrote it; refused where it is not there. */
+async function thereAt(tx: Transaction, scope: ScopeId): Promise<There | Refused> {
   const kept = await tx.get<KeptScope>('scopes', scope)
   if (!kept) return { refused: 'shell.scopeGone', scope }
-  return { kept, partly: (await readModel(tx, kept)).unreadable !== undefined }
+  const read = await readModel(tx, kept)
+  return { kept, partly: read.unreadable !== undefined, later: read.later === true }
 }
+
+type There = { kept: KeptScope; partly: boolean; later: boolean }
+
+/** When an apply was made, and who a history's entry says made it. */
+type Made = { now: number; by: string }
 
 function mergeRecords(held: readonly RecordKey[], more: readonly RecordKey[]): RecordKey[] {
   return [...held, ...more.filter((record) => !held.some((one) => sameRecord(one, record)))]
 }
 
-/** Write what the runs came to: each scope's content and revision, the tree's revision where a node changed, the index's log. */
-async function commit(tx: Transaction, meta: Meta, planned: readonly Planned[], now: number): Promise<void> {
+/**
+ * Write what the runs came to: each scope's content and revision, the tree's
+ * revision where a node changed, the index's log. A scope put back is first
+ * kept as it stood, in an entry of its history that holds what its content
+ * was kept as, unread and all (`ScopeState.unreadable`).
+ */
+async function commit(tx: Transaction, meta: Meta, planned: readonly Planned[], made: Made): Promise<void> {
+  const { now } = made
   const updatedAt = new Date(now).toISOString()
   let treeMoved = false
-  for (const { kept, before, content, records, at } of planned) {
+  for (const { kept, before, content, records, at, putBack } of planned) {
+    if (putBack) await keepAsItStood(tx, meta, kept, made, putBack.subject)
     const said = says(content)
     treeMoved ||= !sameValue(kept.says, said)
     await writeContent(tx, kept.id, before.images, content)
@@ -226,6 +247,14 @@ async function commit(tx: Transaction, meta: Meta, planned: readonly Planned[], 
   if (treeMoved) meta.treeRevision = mintId()
   indexChanged(tx, meta, planned.map(({ kept }) => kept.id))
   tx.put('meta', META_KEY, meta)
+}
+
+/** A scope's open entry closed as the scope stands, with its content as it was kept beside it, and none left open. */
+async function keepAsItStood(tx: Transaction, meta: Meta, kept: KeptScope, made: Made, subject: string): Promise<void> {
+  const unread = await tx.get<unknown>('contents', kept.id)
+  kept.pending = { records: mergeRecords(kept.pending?.records ?? [], [SCOPE_RECORD]), at: Math.max(made.now, kept.pending?.at ?? 0) }
+  await closeEntry(tx, meta, kept, made.by, subject, undefined, unread)
+  delete kept.pending
 }
 
 function nodeOf(scopes: readonly KeptScope[], kept: KeptScope): ScopeNode {

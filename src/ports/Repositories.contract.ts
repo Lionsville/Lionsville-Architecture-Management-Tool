@@ -63,12 +63,17 @@ export type RepositoriesUnderTest = {
    */
   settled?(): Promise<void>
   /**
-   * Make one scope's state one the implementation cannot read whole, the way
-   * a part of it refusing to be read does. Optional: only an implementation
-   * that can meet such a state has anything to show about it.
+   * Make one scope's state one the implementation cannot read whole: the way
+   * a part of it refusing to be read does (`damaged`), or the way a later
+   * version of the app writing it does (`later`). Optional, and `false` for a
+   * way the implementation cannot meet: only one that can meet such a state
+   * has anything to show about it.
    */
-  spoil?(scope: ScopeId): void | Promise<void>
+  spoil?(scope: ScopeId, how: Spoiled): void | boolean | Promise<void | boolean>
 }
+
+/** How a scope is made one an implementation cannot read whole (`RepositoriesUnderTest.spoil`). */
+export type Spoiled = 'damaged' | 'later'
 
 /** Repositories to test, fresh and empty but for the organisation. */
 export type MakeRepositories = () => RepositoriesUnderTest | Promise<RepositoriesUnderTest>
@@ -190,11 +195,11 @@ export function over(under: RepositoriesUnderTest) {
     /** Close every open entry, as a person's *Snapshot* does. */
     record: (subject?: string) => written.history.record(subject === undefined ? {} : { subject }),
     /** Spoil a scope, where the implementation can; `false` where it cannot. */
-    spoil: async (scope: ScopeId): Promise<boolean> => {
+    spoil: async (scope: ScopeId, how: Spoiled = 'damaged'): Promise<boolean> => {
       if (!under.spoil) return false
-      await under.spoil(scope)
+      const done = await under.spoil(scope, how)
       await settle()
-      return true
+      return done !== false
     },
     /** The organisation's identity. */
     root: async (): Promise<ScopeId> => (await scopes.tree()).root.id,

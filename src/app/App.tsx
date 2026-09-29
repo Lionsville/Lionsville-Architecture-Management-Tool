@@ -49,7 +49,7 @@ import { useOpenIntoPrompt } from './useOpenIntoPrompt'
 import { useAgentServer } from './useAgentServer'
 import { AppDialogs, AppNotices, AppScreen, HomeHistoryDialogs } from './AppPanels'
 import type { AppHost, AppProps } from './appProps'
-import type { OpenedWorkingFile } from './workingFileFlows'
+import type { AdoptScopes } from './workingFileFlows'
 import { useHomeParts } from './useHomeParts'
 import { useMachineSettings } from './useMachineSettings'
 import { useProviderParts } from './useProviderParts'
@@ -462,9 +462,9 @@ function useShellParts(props: AppProps): ShellParts {
    * read of its scope, so one somebody changed in between refuses the whole,
    * and nothing of the file's contents is written.
    */
-  const adoptScopes = useCallback(async (opened: OpenedWorkingFile) => {
+  const adoptScopes = useCallback<AdoptScopes>(async (opened, options = {}) => {
     try {
-      await props.interchange.bringIn(repositories, opened)
+      return await props.interchange.bringIn(repositories, opened, options)
     } catch (cause) {
       throw new ShellError('shell.workingFileNotLanded', {
         reason: cause instanceof ShellError ? messageFor(cause, s) : reasonOf(cause),

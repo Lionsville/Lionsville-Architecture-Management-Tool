@@ -11,7 +11,7 @@
  */
 import { afterAll, describe, expect, it } from 'vitest'
 import { existsSync, mkdtempSync, realpathSync, rmSync } from 'node:fs'
-import { lstat, mkdir, readdir, symlink, writeFile as writeOnDisk } from 'node:fs/promises'
+import { lstat, mkdir, readdir, readFile as readOnDisk, symlink, writeFile as writeOnDisk } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
@@ -36,6 +36,7 @@ import { folderRepositories } from '../folderRepositories'
 import { DesktopFolderGit } from './DesktopFolderGit'
 import { desktopStepStore } from './desktopStepStore'
 import { IpcDirectoryHandle } from './IpcDirectoryHandle'
+import { spoilFolder } from '../testing/spoil'
 
 const run = promisify(execFile)
 
@@ -103,11 +104,11 @@ function onTheDesktop(folder = freshFolder()): RepositoriesUnderTest {
   const repositories = folderRepositories({ root, git: new DesktopFolderGit(historyOver(), folder) })
   return {
     repositories,
-    // Half a write of a model, on the disk: the scope reads to be looked at, and takes no step.
-    spoil: async (scope) => {
-      const state = await repositories.scopes.state(scope)
-      if (state) await writeOnDisk(join(folder, state.address, 'model.json'), '{ half a write')
-    },
+    // Half a write of a model, or a later version's header, on the disk (`testing/spoil.ts`).
+    spoil: (scope, how) => spoilFolder(repositories, {
+      read: (path) => readOnDisk(join(folder, path), 'utf8').catch(() => undefined),
+      write: (path, text) => writeOnDisk(join(folder, path), text),
+    }, scope, how),
   }
 }
 

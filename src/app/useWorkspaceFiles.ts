@@ -14,7 +14,7 @@ import type { ModelSession } from './useModelSession'
 import { useProjectFiles } from './useProjectFiles'
 import type { ProjectFiles, ProjectFilesDeps } from './useProjectFiles'
 import type { Notify } from './useToasts'
-import type { OpenedWorkingFile } from './workingFileFlows'
+import type { AdoptScopes } from './workingFileFlows'
 import type { WorkspaceFiles, WorkspaceTree } from './workspaceProps'
 
 export type WorkspaceFileParts = {
@@ -45,10 +45,11 @@ export function useWorkspaceFiles(deps: {
   const { session, putPicture, carryOut, onAdoptScopes, readScope, onTreeChanged, onPutBack, notify, s } = deps
   const { documents, interchange, askPassword, landing, chooseDestination } = deps.seams
   /** The store write, and then the two reads a changed tree needs (ADR-0012 §10). */
-  const adoptWorkingSet = useCallback(
-    async (opened: OpenedWorkingFile) => {
-      await onAdoptScopes!(opened)
+  const adoptWorkingSet = useCallback<AdoptScopes>(
+    async (opened, options) => {
+      const brought = await onAdoptScopes!(opened, options)
       onTreeChanged()
+      return brought
     },
     [onAdoptScopes, onTreeChanged],
   )

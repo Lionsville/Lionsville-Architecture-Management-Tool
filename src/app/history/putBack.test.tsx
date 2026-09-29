@@ -14,8 +14,8 @@ import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/re
 import { installReactFlowMocks } from '../../editor/reactFlowTestSetup'
 import { MemoryStore } from '../../adapters/memory/MemoryStore'
 import { memoryRepositories } from '../../adapters/memory/memoryRepositories'
-import { SHELVES } from '../../adapters/repositories/KeyedStore'
-import type { KeptContent } from '../../adapters/repositories/kept'
+import { spoilKept } from '../../adapters/repositories/testing/spoil'
+import type { Spoiled } from '../../ports/Repositories.contract'
 import { element } from '../../ports/Repositories.contract'
 import type { Repositories } from '../../ports/Repositories'
 import { placeWhole, readScope } from '../../projects/scopeAccess'
@@ -26,19 +26,16 @@ import { renderApp } from '../testing/renderShell'
 afterEach(() => cleanup())
 beforeAll(() => installReactFlowMocks())
 
-/** A scope with one element, recorded, and then made one this build cannot read whole. */
-async function spoiled(): Promise<{ repositories: Repositories; acme: ScopeId }> {
+/** A scope with one element, recorded, and then made one this build cannot read whole: torn, or a later version's. */
+async function spoiled(how: Spoiled = 'damaged'): Promise<{ repositories: Repositories; acme: ScopeId; store: MemoryStore }> {
   const store = new MemoryStore()
   const repositories = memoryRepositories(store)
   const acme = await placeWhole(repositories.scopes, 'acme', {
     ...emptyContent('Acme'), model: { ...emptyContent('Acme').model, elements: [element('crews', 'Crews')] },
   })
   await repositories.history.record({ subject: 'Crews in' })
-  await store.transaction(SHELVES, 'write', async (tx) => {
-    const held = await tx.get<KeptContent>('contents', acme)
-    tx.put('contents', acme, { ...held, format: 2 })
-  })
-  return { repositories, acme }
+  await spoilKept(store, acme, how)
+  return { repositories, acme, store }
 }
 
 describe('a scope that could not be read whole', () => {
@@ -57,13 +54,35 @@ describe('a scope that could not be read whole', () => {
     await waitFor(() => expect((putBack as HTMLButtonElement).disabled).toBe(false))
     expect(putBack.textContent).toBe('Put back the whole scope…')
     fireEvent.click(putBack)
+    // Nothing is promised that is not so: what could not be read is kept first, or nothing is put back.
+    expect((await screen.findByRole('dialog')).textContent).not.toContain('The history keeps everything')
     fireEvent.click(await screen.findByRole('button', { name: 'Put back' }))
 
     await waitFor(() => expect(screen.queryByTestId('unreadable-notice')).toBeNull())
     const state = await repositories.scopes.state(acme)
     expect(state?.unreadable).toBeUndefined()
     expect(state?.model.elements.map((one) => one.id)).toEqual(['crews'])
-    expect(await screen.findByText(/The scope is back as it was on/)).toBeDefined()
+    expect(await screen.findByText(/The scope is back as it was on .* An entry of the scope as it stood/)).toBeDefined()
+    // The scope as it stood, unread and all, is an entry of its history, before the put back.
+    const [kept] = (await repositories.history.entries({ scopes: [acme] })).entries
+    expect(kept.subject).toBe('Before it was put back from the history')
+  })
+
+  /**
+   * A scope a later version wrote is somebody's newer work: a stale tab offers
+   * no way to put it back, and the notice says to update the app.
+   */
+  it('offers nothing to put back where a later version wrote it, and says to update the app', async () => {
+    const { repositories, acme, store } = await spoiled('later')
+    const project = await readScope(repositories.scopes, 'acme')
+    expect(project?.later).toBe(true)
+    renderApp({ repositories, boot: { initialProject: project } })
+    const notice = await screen.findByTestId('unreadable-notice')
+    expect(notice.textContent).toContain('Update the app to change it.')
+    expect(within(notice).queryByTestId('unreadable-put-back')).toBeNull()
+    expect(within(notice).queryByTestId('unreadable-bring-in')).toBeNull()
+    const raw = await store.transaction(['contents'], 'read', (tx) => tx.get<{ format: number }>('contents', acme))
+    expect(raw?.format).toBe(2)
   })
 
   it('names the ways every source has, and a file to mend only where its source says there is one', async () => {

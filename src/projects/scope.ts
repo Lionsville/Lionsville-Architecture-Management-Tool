@@ -121,6 +121,8 @@ export type ScopeSnapshot = {
    * opening the scope again is the way back.
    */
   unreadable?: readonly string[]
+  /** What could not be read was written by a later version: it takes no change here (`ScopeState.later`). */
+  later?: true
   /**
    * The files that were in this scope's folder when it was read and that the
    * read did not take in, by path inside the folder: one that would not read,

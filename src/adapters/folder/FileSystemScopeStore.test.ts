@@ -722,7 +722,7 @@ describe('a working file landed in a folder a browser holds (ADR-0023, amendment
   it('falls back to one file at a time where the first rename is refused, with nothing staged left', async () => {
     const root = new FakeDirectory()
     const store = new FileSystemScopeStore(refusingWrites(root, { moveAt: 0 }))
-    await expect(store.saveTogether(entries())).resolves.toBeUndefined()
+    await expect(store.saveTogether(entries())).resolves.toEqual([])
     expect(await fleet(root)).toBe('fleet')
     expect(staged(root)).toEqual([])
   })
