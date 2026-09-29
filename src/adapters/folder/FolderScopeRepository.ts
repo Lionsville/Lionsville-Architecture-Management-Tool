@@ -339,7 +339,11 @@ export class FolderScopeRepository implements ScopeRepository {
       if (!bytes) continue
       const path = picturePath(address, file)
       if (there.has(file)) {
-        undo.push({ path, before: await bytesAt(this.folder.root, path) })
+        // Written over only once what it held is in hand to put back: a
+        // refused write never takes away a file it cannot give back.
+        const before = await bytesAt(this.folder.root, path).catch(() => undefined)
+        if (!before) return { refused: 'shell.scopeMoved', scope: id }
+        undo.push({ path, before })
         await writeAt(this.folder.root, path, bytes)
       } else if (await createAt(this.folder.root, path, bytes)) {
         undo.push({ path })
@@ -360,19 +364,32 @@ export class FolderScopeRepository implements ScopeRepository {
 
   /**
    * The files of a library just written that no entry keeps any more,
-   * removed — never one that differs only in case from a file kept, which on
-   * a disk that does not tell case apart is that file. One that will not go
-   * is said, and the scope's files are already right.
+   * removed — but for one that differs only in case from a file kept where
+   * the disk does not tell case apart, which is that file. The folder says
+   * which: listed now, it holds both names where they are two files, and one
+   * of them where they are one. One that will not go is said, and the
+   * scope's files are already right.
    */
   private async picturesOut(read: ReadScope, library: readonly KeptPicture[]): Promise<void> {
-    const wanted = new Set(library.map((kept) => imageNameKey(kept.file)))
+    const wanted = new Set(library.map((kept) => kept.file))
+    const byKey = new Map(library.map((kept) => [imageNameKey(kept.file), kept.file]))
+    const gone = read.files.map(({ file }) => file).filter((file) => !wanted.has(file))
+    const listed = gone.some((file) => byKey.has(imageNameKey(file))) ? await this.picturesNow(read.node.address) : new Set<string>()
     try {
-      for (const { file } of read.files) {
-        if (!wanted.has(imageNameKey(file))) await removeAt(this.folder.root, picturePath(read.node.address, file))
+      for (const file of gone) {
+        const kept = byKey.get(imageNameKey(file))
+        if (kept !== undefined && !listed.has(kept)) continue
+        await removeAt(this.folder.root, picturePath(read.node.address, file))
       }
     } catch (cause) {
       this.folder.diagnostics?.report({ level: 'warn', where: 'folder', message: `a picture could not be kept: ${reasonOf(cause)}`, cause })
     }
+  }
+
+  /** The files a scope's pictures folder holds now, by their paths inside it. */
+  private async picturesNow(address: ScopeAddress): Promise<Set<string>> {
+    const folder = await folderAt(this.folder.root, picturePath(address, '').replace(/\/$/, ''))
+    return new Set(folder ? (await filesUnder(folder)).map(({ path }) => path) : [])
   }
 
   create(at: ScopeAddress, scope: NewScope): Promise<Created | Refused> {

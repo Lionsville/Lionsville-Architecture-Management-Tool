@@ -275,8 +275,10 @@ function stoppable(folder: DirectoryHandleLike): {
   handle: DirectoryHandleLike
   stopAt(path: string | undefined): void
   meanwhile(path: string, then: () => Promise<void>): void
+  unreadable(path: string | undefined): void
 } {
   let stopAt: string | undefined
+  let unreadable: string | undefined
   let then: { path: string; run: () => Promise<void> } | undefined
   const wrap = (held: DirectoryHandleLike, inside: string): DirectoryHandleLike => {
     const at = (name: string) => (inside ? `${inside}/${name}` : name)
@@ -287,7 +289,8 @@ function stoppable(folder: DirectoryHandleLike): {
       getFileHandle: async (name, options) => {
         const file = await held.getFileHandle(name, options)
         return {
-          kind: 'file', name: file.name, getFile: () => file.getFile(),
+          kind: 'file', name: file.name,
+          getFile: () => (at(name) === unreadable ? Promise.reject(new Error('NotReadableError: held elsewhere')) : file.getFile()),
           createWritable: async () => {
             if (at(name) === stopAt) throw new Error('AbortError: the page went away')
             if (at(name) === then?.path) {
@@ -312,6 +315,7 @@ function stoppable(folder: DirectoryHandleLike): {
     handle: wrap(folder, ''),
     stopAt: (path) => { stopAt = path },
     meanwhile: (path, run) => { then = { path, run } },
+    unreadable: (path) => { unreadable = path },
   }
 }
 
@@ -514,6 +518,44 @@ describe('what a scope’s pictures folder says, over what its rows say', () => 
     expect(root.paths().filter((path) => path.startsWith('acme/images/'))).toEqual(['acme/images/map.png'])
     expect((await repositories.state(acme)).images).toEqual([{ ...entry, name: 'Map.png' }])
     expect((await repositories.images.bytes(acme, 'Map.png'))?.bytes).toEqual(picture(64, 32))
+  })
+
+  it('refuses to write over a picture it cannot read first, so a refused write never takes one away', async () => {
+    const root = new FakeDirectory()
+    const { handle, meanwhile, unreadable } = stoppable(root)
+    const repositories = over({ repositories: folderRepositories({ root: handle, git: memoryGit(root) }) })
+    const [globex, acme] = [await repositories.scope('globex', 'Globex'), await repositories.scope('acme', 'Acme Logistics')]
+    const bytes = picture(8, 8)
+    const { contentAddress } = ok(await repositories.images.put(acme, 'map.png', bytes))
+    const entry = { name: 'map.png', mediaType: 'image/png', size: bytes.length, width: 8, height: 8, contentAddress }
+    await repositories.steps(acme, { type: 'image.add', image: entry })
+    ok(await repositories.images.put(globex, 'map.png', bytes))
+    const again = picture(16, 16)
+    const put = ok(await repositories.images.put(acme, 'map.png', again))
+    meanwhile('globex/images/map.png', () => Promise.resolve(unreadable('acme/images/map.png')))
+    const answer = await repositories.apply([
+      { scope: globex, steps: [step({ type: 'image.add', image: entry })] },
+      { scope: acme, steps: [step({ type: 'image.remove', name: 'map.png' }),
+        step({ type: 'image.add', image: { ...entry, size: again.length, width: 16, height: 16, contentAddress: put.contentAddress } })] },
+    ])
+    unreadable(undefined)
+    expect(answer).toEqual({ refused: 'shell.scopeMoved', scope: acme })
+    expect(await bytesAt(root, 'acme/images/map.png')).toEqual(bytes)
+    expect(root.paths()).not.toContain('globex/images/map.png')
+  })
+
+  it('takes away a picture whose name differs only in case from one kept, where the disk tells them apart', async () => {
+    const root = new FakeDirectory()
+    const repositories = over({ repositories: folderRepositories({ root, git: memoryGit(root) }) })
+    const acme = await repositories.scope('acme', 'Acme Logistics')
+    await repositories.steps(acme, addCrews)
+    await writeAt(root, 'acme/images/MAP.png', picture(8, 8))
+    await writeAt(root, 'acme/images/map.png', picture(9, 9))
+    const [upper, lower] = (await repositories.state(acme)).images
+    expect([upper.name, lower.name]).toHaveLength(2)
+    await repositories.steps(acme, { type: 'image.remove', name: upper.name })
+    expect(root.paths().filter((path) => path.startsWith('acme/images/'))).toEqual(['acme/images/map.png'])
+    expect((await repositories.state(acme)).images.map((image) => image.name)).toEqual([lower.name])
   })
 
   it('refuses a step naming a picture before its bytes were put, and writes nothing of it', async () => {
