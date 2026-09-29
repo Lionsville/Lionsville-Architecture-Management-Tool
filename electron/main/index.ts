@@ -27,6 +27,7 @@ import { pathToFileURL } from 'node:url'
 import { basename } from 'node:path'
 import { readFile } from 'node:fs/promises'
 import { openedDocuments } from './openedDocuments'
+import { guardWindow, windowsOf } from './windowGuard'
 import { commandsHeard, commandsListened, holdUntilHeard, installAppMenu, reportScopeOpen, reportTheme, sendCommand } from './appMenu'
 import { productName } from '../../package.json'
 import { isThemeMode } from '../../src/platform/theme'
@@ -443,31 +444,7 @@ void app.whenReady().then(() => {
   const opened = documentIn(process.argv)
   if (opened) openDocument(opened)
 
-  const mainWindow = createWindow()
-  guardUnsavedWork(mainWindow)
-
-  // A load that neither finishes nor fails is the hardest thing to read from
-  // outside the process: no window, no error, no exit. Say what went wrong.
-  mainWindow.webContents.on('did-fail-load', (_event, code, description, url) => {
-    log('renderer', `did-fail-load ${code} ${description} ${url}`)
-  })
-  mainWindow.webContents.on('render-process-gone', (_event, details) => {
-    log('renderer', `render-process-gone ${details.reason}`)
-    // A dead renderer is a window that will never paint again. Without this it
-    // stays on screen showing the last frame it managed, and the only way to
-    // tell it apart from a very slow app is to wait indefinitely.
-    if (UNATTENDED || mainWindow.isDestroyed()) return
-    void dialog.showMessageBox(mainWindow, {
-      type: 'error',
-      message: 'The window stopped responding.',
-      detail: `Reason: ${details.reason}.\nDiagnostics: ${logFilePath()}`,
-      buttons: ['Reload', 'Close'],
-      defaultId: 0,
-      cancelId: 1,
-    }).then(({ response }) => {
-      if (response === 0 && !mainWindow.isDestroyed()) mainWindow.webContents.reload()
-    })
-  })
+  const mainWindow = windows.first()
 
   // The renderer's console, relayed. This is the desktop half of the
   // diagnostics port: the shell reports through `ConsoleDiagnostics`, which
@@ -508,52 +485,6 @@ void app.whenReady().then(() => {
   .catch((error: unknown) => fatal('starting up', error))
 
 /**
- * Closing the window must not lose the last few seconds of work.
- *
- * The browser has `beforeunload` for this and shows its own dialog; Electron
- * fires the same event and does NOT — returning a value there cancels the close
- * silently, which is worse than either alternative. So the conversation happens
- * here.
- *
- * It saves rather than asking. Everything in this app is written three seconds
- * after you stop typing; a window that interrupts you to ask whether you meant
- * it is a window that trains you to dismiss the question. What it does ask
- * about is the case where saving did not work — a folder that has gone, a
- * permission withdrawn — because closing then really does lose something.
- */
-function guardUnsavedWork(window: BrowserWindow): void {
-  let letting = false
-  window.on('close', (event) => {
-    if (letting || !unsaved || UNATTENDED) return
-    event.preventDefault()
-    sendCommand({ type: 'save' })
-
-    const deadline = Date.now() + 5_000
-    const poll = setInterval(() => {
-      if (!unsaved) {
-        clearInterval(poll)
-        letting = true
-        window.close()
-        return
-      }
-      if (Date.now() <= deadline) return
-      clearInterval(poll)
-      const choice = dialog.showMessageBoxSync(window, {
-        type: 'warning',
-        message: 'This project could not be saved.',
-        detail: 'Closing now loses the changes that are still only in this window.',
-        buttons: ['Close anyway', 'Keep the window open'],
-        defaultId: 1,
-        cancelId: 1,
-      })
-      if (choice !== 0) return
-      letting = true
-      window.close()
-    }, 100)
-  })
-}
-
-/**
  * The end of the line: something went wrong before there was an app to say it
  * in.
  *
@@ -571,10 +502,24 @@ function fatal(during: string, error: unknown): void {
   )
 }
 
-/** A window again, where the app runs with none: the Dock's click, or a document opened from Finder. */
+/**
+ * Every window, made through one door and guarded there (`windowGuard.ts`):
+ * the first at the start, and one again where the app runs with none — the
+ * Dock's click, or a document opened from Finder.
+ */
+const windows = windowsOf({
+  make: createWindow,
+  guard: (window) => guardWindow(window, {
+    unsaved: () => unsaved, save: () => sendCommand({ type: 'save' }), unattended: UNATTENDED,
+    dialog, log, logFile: logFilePath,
+  }),
+  load: (window) => window.loadURL(RENDERER_URL),
+  open: () => BrowserWindow.getAllWindows().length,
+  failed: fatal,
+})
+
 function windowAgain(): void {
-  if (BrowserWindow.getAllWindows().length !== 0) return
-  createWindow().loadURL(RENDERER_URL).catch((error: unknown) => fatal('reopening the window', error))
+  windows.again()
 }
 
 app.on('activate', windowAgain)
