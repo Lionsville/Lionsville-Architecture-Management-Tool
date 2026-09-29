@@ -252,6 +252,18 @@ function useHomeReads({ scopes, active, at, revision, onFailure }: {
   return { tree, root, ready, listed }
 }
 
+/**
+ * The root as a copy decides where to land by, read at the press: the tree as
+ * it is kept now, not the one on screen — a listing that has not answered yet
+ * reads as an empty, nameless root — and whether the root holds records, which
+ * no listing says: a root with records in it and no name or board is
+ * somebody's work.
+ */
+async function rootAsKept(scopes: Repositories['scopes']): Promise<[ScopeSummary, boolean]> {
+  const [tree, kept] = await Promise.all([scopes.tree(), readScope(scopes, ROOT_SCOPE)])
+  return [summaryOf(tree), kept !== undefined && !blank(kept)]
+}
+
 /** Every scope may be written: what the hook is told by every source that ships. */
 const ANYWHERE = () => true
 
@@ -554,10 +566,7 @@ export function useOrganisation({
   const copyExample = useCallback((offer: ExampleOffer) => {
     void (async () => {
       const example = await exampleOf(offer)
-      // Where it lands is decided on the tree as it is kept now, and not on
-      // the one on screen: a listing that has not answered yet reads as an
-      // empty, nameless root, which the example would take over.
-      const copy = copyExampleInto(example, summaryOf(await scopes.tree()))
+      const copy = copyExampleInto(example, ...await rootAsKept(scopes))
       // A shipped example this build cannot read is a bug the example tests
       // exist to prevent, so it reaches here as nothing rather than as a crash.
       if (copy.length === 0) {

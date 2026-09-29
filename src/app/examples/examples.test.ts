@@ -744,6 +744,11 @@ describe('where a copy lands', () => {
       .toEqual(['acme-logistics-2', 'acme-logistics-2/application-landscape', 'acme-logistics-2/platforms'])
   })
 
+  /** No name and no board is not nothing: records in the root are somebody's work. */
+  it('files a copy under a child where the root holds records, whatever its listing says', () => {
+    expect(copyExampleInto(example, root(), true)[0].path).toBe('acme-logistics')
+  })
+
   /**
    * The content travels; the ADDRESSES in it travel with it (ADR-0012 §3). A
    * stand-in's `ref` is a path, and a copy that carried the old one would land

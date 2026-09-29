@@ -45,6 +45,11 @@ export type ExampleProject = {
  * re-addressed under one new scope named after the example, with the ordinary
  * collision rule, so copying twice gives two rather than one overwritten one.
  *
+ * **A root that holds records is something too**, with no name and no board:
+ * an application an agent added, a decision left after its only view was
+ * removed. A listing does not say what a scope holds, so the caller reads the
+ * root and says (`rootHoldsWork`); the example is filed under it, never over it.
+ *
  * A board of its own is not in the sentence the design asked for — it says "a
  * name or children" — and is here anyway: an unnamed root with a landscape
  * drawn in it is rare, and overwriting it would be the one mistake on this
@@ -53,8 +58,9 @@ export type ExampleProject = {
 export function copyExampleInto(
   example: ExampleProject,
   root: ScopeSummary,
+  rootHoldsWork = false,
 ): ScopeSnapshot[] {
-  const fresh = root.name.trim() === '' && root.children.length === 0 && root.diagrams === 0
+  const fresh = !rootHoldsWork && root.name.trim() === '' && root.children.length === 0 && root.diagrams === 0
   const base = fresh
     ? ROOT_SCOPE
     : scopePathFor(ROOT_SCOPE, scopePathLabel(example.path), namesUnder(root))
