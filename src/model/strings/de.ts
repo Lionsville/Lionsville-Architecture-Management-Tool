@@ -87,7 +87,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.logoTooBig': 'Dieses Logo ist zu groß ({size} kB). Die Grenze liegt bei {max} kB.',
   'shell.logoUnreadable': 'Diese Datei konnte nicht gelesen werden.',
   'shell.imageBadType': 'Nur PNG-, JPEG-, SVG- und WebP-Dateien können in ein Dokument aufgenommen werden.',
-  'shell.imageBadName': 'So kann ein Bild nicht heißen: Ein Name hat keine leeren Teile, keine Leerzeichen und keine Klammern und endet mit seinem Typ, etwa diagrams/context.png.',
+  'shell.imageBadName': 'So kann ein Bild nicht heißen: Ein Name hat keine leeren Teile, keine Leerzeichen, keine Klammern und keines von : * " |, und endet mit seinem Typ, etwa diagrams/context.png.',
+  'shell.imageBadEntry': 'Dieses Bild wurde nicht hinzugefügt: Was darüber gesagt wurde, passt nicht zum Bild. Fügen Sie es erneut hinzu.',
   'shell.imageTooBig': 'Dieses Bild ist zu groß ({size} kB). Die Grenze liegt bei {max} kB.',
   'shell.imageUnreadable': 'Diese Datei konnte nicht gelesen werden.',
 

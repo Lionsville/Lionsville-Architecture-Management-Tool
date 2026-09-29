@@ -55,13 +55,14 @@ export type ImageEntry = {
 export const IMAGE_REFERENCE = 'image:'
 
 /**
- * One segment of a name: something a person can read in a document and that
- * a markdown reader takes as one link target. No white space, which ends a
- * link target; no brackets, which close one; nothing a reader would take as
- * the start of a question or a fragment; no escape character; and nothing
- * invisible.
+ * One segment of a name: something a person can read in a document, that a
+ * markdown reader takes as one link target, and that any desktop can keep as
+ * it is. No white space, which ends a link target; no brackets, which close
+ * one; nothing a reader would take as the start of a question or a fragment;
+ * no escape character; and none of `: * " |`, which a desktop refuses in a
+ * name. Control characters are refused beside it.
  */
-const SEGMENT = /^[^\s\\/<>()?#%]+$/u
+const SEGMENT = /^[^\s\\/<>()?#%:*"|]+$/u
 
 function isSegment(segment: string): boolean {
   if (segment === '.' || segment === '..' || !SEGMENT.test(segment)) return false
@@ -73,22 +74,65 @@ function isSegment(segment: string): boolean {
 }
 
 /**
+ * A name as a picture is called: the text given, composed (Unicode NFC), so
+ * `ü` typed on one keyboard and pasted from another is one name. Whoever makes
+ * a name makes it with this; {@link imageNameRefusal} refuses one that is not
+ * composed.
+ */
+export function imageName(given: string): ImageName {
+  return given.normalize('NFC')
+}
+
+/**
  * Why a name cannot be a picture's name, as a refusal key — or `undefined`
  * where it can.
  *
- * `shell.imageBadName` for a name that is not one: empty, an image folder
- * with no name in it, a segment that is `.` or `..`, or a character a reference
- * cannot carry. `shell.imageBadType` for a name whose extension is not a
- * picture this tool writes and reads back.
+ * `shell.imageBadName` for a name that is not one: not composed (NFC), empty,
+ * an image folder with no name in it, a segment that is `.` or `..`, or a
+ * character a reference or a desktop cannot carry. `shell.imageBadType` for a
+ * name whose extension is not a picture this tool writes and reads back.
  */
 export function imageNameRefusal(name: unknown): 'shell.imageBadName' | 'shell.imageBadType' | undefined {
-  if (typeof name !== 'string') return 'shell.imageBadName'
+  if (typeof name !== 'string' || name !== name.normalize('NFC')) return 'shell.imageBadName'
   if (!name.split('/').every(isSegment)) return 'shell.imageBadName'
   return imageMediaType(name) === undefined ? 'shell.imageBadType' : undefined
 }
 
 export function isImageName(name: unknown): name is ImageName {
   return imageNameRefusal(name) === undefined
+}
+
+/**
+ * What two names are the same picture by: the name composed and in lower
+ * case. A library holds one picture per such key, because a desktop that
+ * does not tell `Context.png` from `context.png` would keep only one of them.
+ */
+export function imageNameKey(name: ImageName): string {
+  return name.normalize('NFC').toLowerCase()
+}
+
+const CONTENT_ADDRESS = /^sha256:[0-9a-f]{64}$/
+
+function isCount(value: unknown): boolean {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0
+}
+
+/**
+ * Why an entry cannot be in a library, as a refusal key — or `undefined`
+ * where it can. Its name as {@link imageNameRefusal} says; then
+ * `shell.imageBadEntry` where the entry does not describe a picture: a media
+ * type other than its name's, a content address that is not one, or a size,
+ * width or height that is not a whole number of zero or more.
+ */
+export function imageEntryRefusal(
+  entry: ImageEntry,
+): 'shell.imageBadName' | 'shell.imageBadType' | 'shell.imageBadEntry' | undefined {
+  const named = imageNameRefusal(entry?.name)
+  if (named) return named
+  const described = entry.mediaType === imageMediaType(entry.name)
+    && typeof entry.contentAddress === 'string' && CONTENT_ADDRESS.test(entry.contentAddress)
+    && [entry.size, entry.width, entry.height].every(isCount)
+  return described ? undefined : 'shell.imageBadEntry'
 }
 
 /** The image folder a name is in: everything before its last `/`, and `''` at the top. */

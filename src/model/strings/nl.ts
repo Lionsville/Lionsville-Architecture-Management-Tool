@@ -87,7 +87,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.logoTooBig': 'Dit logo is te groot ({size} kB). Maximaal {max} kB.',
   'shell.logoUnreadable': 'Dit bestand kon niet worden gelezen.',
   'shell.imageBadType': 'Alleen PNG-, JPEG-, SVG- en WebP-bestanden kunnen in een document worden opgenomen.',
-  'shell.imageBadName': 'Zo kan een afbeelding niet heten: een naam heeft geen lege delen, geen spaties en geen haakjes, en eindigt op het type, zoals diagrams/context.png.',
+  'shell.imageBadName': 'Zo kan een afbeelding niet heten: een naam heeft geen lege delen, geen spaties, geen haakjes en geen : * " |, en eindigt op het type, zoals diagrams/context.png.',
+  'shell.imageBadEntry': 'Deze afbeelding is niet toegevoegd: wat erover werd gezegd klopt niet met de afbeelding. Voeg haar opnieuw toe.',
   'shell.imageTooBig': 'Deze afbeelding is te groot ({size} kB). Maximaal {max} kB.',
   'shell.imageUnreadable': 'Dit bestand kon niet worden gelezen.',
 
