@@ -11,11 +11,26 @@
  * scopes it closes an entry of, which is what a snapshot of the folder has
  * always been; each of them has the commit as an entry.
  *
- * **A thing's history is worked out, not kept.** The commits of a scope are
- * found by the paths it has been at; which of them changed one record is
- * read off the scope's state at each and at the entry before it, where the
- * files a commit changed could hold that record. A store with an index answers
- * this by a lookup; the folder reads, and that is its cost to carry.
+ * **Which commits are a scope's.** Those whose trailers name it; and, of
+ * those with none — an older build's snapshot, a person's own commit — each
+ * that changed the scope's own files at an address it has been at, while the
+ * header there said the scope's identity (or said none, and the address makes
+ * it). A scope made where a removed one was is not handed the removed one's
+ * past.
+ *
+ * **A page is counted from one tip.** The first page answers from the commit
+ * the folder is at, and every page after it from that same commit, so a
+ * history that grows or merges meanwhile neither repeats an entry nor skips
+ * one. A merge is no entry of its own: what it brings in is in the commits it
+ * merges, which are listed as themselves.
+ *
+ * **A thing's history is worked out, not kept.** git is asked only for the
+ * commits that changed where a record of that kind could be; of those, the
+ * ones whose files for it are the same as just before are passed over by
+ * their ids alone, and the rest are read — the scope at the commit and at its
+ * parent — and the record compared. A page stops at the entry after its last.
+ * What was read is kept to a size (`Lru`). A store with an index answers this
+ * by a lookup; the folder reads, and that is its cost to carry.
  *
  * **A label is a tag**, named after the scope's identity and the label's
  * slug, so two scopes may each use one label. A tag named otherwise — one an
@@ -39,12 +54,13 @@ import type {
   EntriesWanted, EntryId, EntryLabelled, HistoryEntry, HistoryPage, HistoryRepository, RecordWanted,
 } from '../../ports/HistoryRepository'
 import { SCOPE_TRAILER, ownFilesAt, ownerOf, scopeTrailer, subjectLine, trailersOf, within } from './folderGit'
-import type { FolderCommit, FolderGit, FolderTag } from './folderGit'
+import type { FolderCommit, FolderGit, FolderTag, TreeEntry } from './folderGit'
 import { libraryOf, LIBRARY_KEY, rowsOf } from './folderPictures'
 import { folderRevision } from './revision'
-import { headerOf, revisionOf, stateFrom } from './folderScopes'
+import { headerOf, identityAt, isScopeId, revisionOf, stateFrom } from './folderScopes'
 import type { FolderScopes } from './folderScopes'
 import { imageEntryOf, PICTURES } from './imageLibrary'
+import { Lru } from './lru'
 
 /** What a record without a subject is called in the commit. English: it is a git message. */
 const DEFAULT_SUBJECT = 'Snapshot'
@@ -55,13 +71,34 @@ const PAGE = 50
 /** How many commits are read at a time while a page fills. */
 const CHUNK = 200
 
+/** How many of each thing read of the history are kept. */
+const KEPT = 256
+
 /** A scope asked about, and every address it has been at. */
 type Asked = { id: ScopeId; held: ScopeAddress[] }
 
 /** One entry, found: the commit, the scope, and where the scope was. */
 type Found = { commit: FolderCommit; id: ScopeId; address: ScopeAddress }
 
-/** Where a commit could hold a record of a kind, by a path inside the scope's folder. */
+/** A scope at a commit: which commit, and where the scope was in it. */
+type At = { sha: string; address: ScopeAddress }
+
+/** Where in a scope's folder a record of a kind is kept: what git is asked for commits that changed. */
+const KIND_PATHS: Record<RecordKind, readonly string[]> = {
+  element: ['model.json', 'docs'],
+  relation: ['model.json'],
+  diagram: ['diagrams', 'scope.json'],
+  decision: ['decisions'],
+  transition: ['transitions'],
+  observation: ['observations'],
+  cause: ['observations/causes'],
+  solution: ['observations/solutions'],
+  experiment: ['observations/experiments'],
+  image: ['scope.json', PICTURES],
+  scope: ['scope.json', 'model.json'],
+}
+
+/** Where a commit could hold a record of a kind, by a path inside the scope's folder: the paths above, more finely. */
 const COULD_HOLD: Record<RecordKind, (path: string) => boolean> = {
   element: (path) => path === 'model.json' || path.startsWith('docs/'),
   relation: (path) => path === 'model.json',
@@ -117,8 +154,14 @@ function recordsBetween(before: ScopeState | undefined, after: ScopeState): Reco
 
 export class FolderHistory implements HistoryRepository {
   readonly id = 'folder (git)'
-  /** States read at a commit, by commit and scope: a commit does not change. */
-  private readonly states = new Map<string, ScopeState | undefined>()
+  /** A scope's state at a commit, by commit, identity, address and whether its pictures were read. */
+  private readonly states = new Lru<string, ScopeState | undefined>(KEPT)
+  /** A scope's own files at a commit, with their ids. */
+  private readonly trees = new Lru<string, TreeEntry[]>(KEPT)
+  /** The identity a header said at a commit, by commit and address. */
+  private readonly identities = new Lru<string, ScopeId>(KEPT * 4)
+  /** Where a scope was at a commit, found by walking its first parents. */
+  private readonly places = new Lru<string, ScopeAddress | null>(KEPT * 4)
 
   constructor(private readonly folder: FolderScopes, private readonly git: FolderGit) {}
 
@@ -140,7 +183,7 @@ export class FolderHistory implements HistoryRepository {
       ].join('\n')
       const sha = await this.git.commit(closing.flatMap((node) => owned.get(node.address)!), message)
       if (!sha) return []
-      const [commit] = await this.git.log({ from: sha, limit: 1 })
+      const [commit] = await this.git.log({ tip: sha, limit: 1 })
       const tags = await this.git.tags()
       const spaces = new Set(nodes.map((node) => labelSpace(node.id)))
       return closing.map((node) => this.entryOf({ commit, id: node.id, address: node.address }, tags, spaces))
@@ -155,6 +198,16 @@ export class FolderHistory implements HistoryRepository {
     return { id: entryIdOf(commit.sha, id), scope: id, at: commit.at, by: commit.author, subject: commit.subject, labels }
   }
 
+  /** Every commit whose message holds a text, in chunks, to the first commit there is. */
+  private async grep(text: string): Promise<FolderCommit[]> {
+    const found: FolderCommit[] = []
+    for (let skip = 0; ; skip += CHUNK) {
+      const commits = await this.git.log({ grep: text, limit: CHUNK, skip })
+      found.push(...commits)
+      if (commits.length < CHUNK) return found
+    }
+  }
+
   /** The scopes asked about, each with every address it has been at: where it is, and where its entries say it was. */
   private async asked(ids: readonly ScopeId[]): Promise<{ asked: Asked[]; addresses: ScopeAddress[]; spaces: Set<string> }> {
     const { nodes } = await this.folder.walk()
@@ -163,8 +216,7 @@ export class FolderHistory implements HistoryRepository {
       const held = new Set<ScopeAddress>()
       const here = nodes.find((node) => node.id === id)
       if (here) held.add(here.address)
-      const said = await this.git.log({ grep: `${SCOPE_TRAILER}: ${id} `, limit: 10_000 }).catch(() => [])
-      for (const commit of said) {
+      for (const commit of await this.grep(`${SCOPE_TRAILER}: ${id} `)) {
         const address = trailersOf(commit.message).get(id)
         if (address !== undefined) held.add(address)
       }
@@ -173,12 +225,24 @@ export class FolderHistory implements HistoryRepository {
     return { asked, addresses: nodes.map((node) => node.address), spaces: new Set(nodes.map((node) => labelSpace(node.id))) }
   }
 
+  /** The identity the header at an address said at a commit: its own where it had one, and the one its address makes where not. */
+  private async identityAt(sha: string, address: ScopeAddress): Promise<ScopeId> {
+    const key = `${sha}\u0000${address}`
+    const known = this.identities.get(key)
+    if (known !== undefined) return known
+    const [file] = await this.git.readAt(sha, [scopeFilePath(address, 'scope.json')])
+    const declared = file && 'text' in file ? headerOf(file.text)?.['id'] : undefined
+    const id = isScopeId(declared) ? declared : identityAt(address)
+    this.identities.set(key, id)
+    return id
+  }
+
   /**
    * The scopes a commit is an entry of, of those asked: the ones its trailers
    * name, where it has any; otherwise each whose own files it changed at an
-   * address the scope has been at.
+   * address the scope has been at, while the header there said who it is.
    */
-  private membersOf(commit: FolderCommit, asked: readonly Asked[], addresses: readonly ScopeAddress[]): Found[] {
+  private async membersOf(commit: FolderCommit, asked: readonly Asked[], addresses: readonly ScopeAddress[]): Promise<Found[]> {
     const trailers = trailersOf(commit.message)
     if (trailers.size) {
       return asked.flatMap(({ id }) => {
@@ -186,32 +250,26 @@ export class FolderHistory implements HistoryRepository {
         return address === undefined ? [] : [{ commit, id, address }]
       })
     }
-    return asked.flatMap(({ id, held }) => {
-      const address = held.find((at) => commit.changed.some((path) => ownerOf(path, [...addresses, at]) === at))
-      return address === undefined ? [] : [{ commit, id, address }]
-    })
+    const found: Found[] = []
+    for (const { id, held } of asked) {
+      for (const at of held) {
+        if (!commit.changed.some((path) => ownerOf(path, [...addresses, at]) === at)) continue
+        if (await this.identityAt(commit.sha, at) !== id) continue
+        found.push({ commit, id, address: at })
+        break
+      }
+    }
+    return found
   }
 
-  /** Every entry of the scopes asked, newest first, from a cursor on; as many as `enough`, or all. */
-  private async found(asked: readonly Asked[], addresses: readonly ScopeAddress[], from: Cursor | undefined, enough: number): Promise<Found[]> {
-    const held = [...new Set(asked.flatMap((one) => one.held))]
-    if (held.length === 0) return []
-    const paths = held.includes('') ? undefined : held
-    const found: Found[] = []
-    let start = from?.sha
-    let skip = from?.skip ?? 0
-    let continuing = false
-    for (;;) {
-      const commits = await this.git.log({ ...(paths ? { paths } : {}), limit: CHUNK, ...(start ? { from: start } : {}) }).catch(() => [])
-      // A chunk after the first starts at the last commit of the one before, which is read already.
-      for (const commit of continuing ? commits.slice(1) : commits) {
-        found.push(...this.membersOf(commit, asked, addresses).slice(skip))
-        skip = 0
-        if (found.length >= enough) return found
-      }
-      if (commits.length < CHUNK) return found
-      start = commits[commits.length - 1].sha
-      continuing = true
+  /** The commits git lists for a question, from a tip, from the one at `from` on, each with the entries it is. */
+  private async *listed(
+    asked: readonly Asked[], addresses: readonly ScopeAddress[], paths: readonly string[] | undefined, tip: string, from: number,
+  ): AsyncGenerator<{ index: number; members: Found[] }> {
+    for (let at = from; ; at += CHUNK) {
+      const commits = await this.git.log({ ...(paths ? { paths } : {}), tip, skip: at, limit: CHUNK })
+      for (const [n, commit] of commits.entries()) yield { index: at + n, members: await this.membersOf(commit, asked, addresses) }
+      if (commits.length < CHUNK) return
     }
   }
 
@@ -220,65 +278,117 @@ export class FolderHistory implements HistoryRepository {
     const cursor = after === undefined ? undefined : cursorOf(after)
     if (after !== undefined && !cursor) return { entries: [] }
     const { asked, addresses, spaces } = await this.asked(scopes)
-    const tags = await this.git.tags().catch(() => [])
-    const listed = (found: readonly Found[]) => found.map((one) => this.entryOf(one, tags, spaces))
-    if (record) {
-      const touched = await this.touching(await this.found(asked, addresses, undefined, Infinity), record)
-      const at = cursor ? touched.findIndex((one) => one.commit.sha === cursor.sha) : 0
-      if (at < 0) return { entries: [] }
-      const start = at + (cursor?.skip ?? 0)
-      const page = touched.slice(start, start + size)
-      const next = touched[start + size]
-      if (!next) return { entries: listed(page) }
-      const first = touched.findIndex((one) => one.commit.sha === next.commit.sha)
-      return { entries: listed(page), next: `${next.commit.sha}:${start + size - first}` }
+    const held = [...new Set(asked.flatMap((one) => one.held))]
+    const tip = cursor?.tip ?? await this.git.head()
+    if (!tip || held.length === 0) return { entries: [] }
+    const paths = record
+      ? held.flatMap((address) => KIND_PATHS[record.kind].map((path) => scopeFilePath(address, path)))
+      : held.includes('') ? undefined : held
+    const page: { found: Found; index: number; k: number }[] = []
+    fill: for await (const { index, members } of this.listed(asked, addresses, paths, tip, cursor?.index ?? 0)) {
+      for (const [k, found] of members.entries()) {
+        if (cursor && index === cursor.index && k < cursor.k) continue
+        if (record && !await this.touches(found, record, asked, addresses)) continue
+        page.push({ found, index, k })
+        if (page.length > size) break fill
+      }
     }
-    const found = await this.found(asked, addresses, cursor, size + 1)
-    if (found.length <= size) return { entries: listed(found) }
-    const next = found[size]
-    const taken = found.slice(0, size).filter((one) => one.commit.sha === next.commit.sha).length
-    const before = cursor && cursor.sha === next.commit.sha ? cursor.skip : 0
-    return { entries: listed(found.slice(0, size)), next: `${next.commit.sha}:${taken + before}` }
+    const tags = await this.git.tags()
+    const entries = page.slice(0, size).map(({ found }) => this.entryOf(found, tags, spaces))
+    const next = page[size]
+    return next ? { entries, next: `${tip}:${next.index}:${next.k}` } : { entries }
   }
 
-  /** The entries, of those found, whose steps changed a record: read off each state and the one before it in its scope. */
-  private async touching(every: readonly Found[], record: RecordKey): Promise<Found[]> {
-    const touched: Found[] = []
-    for (const [at, one] of every.entries()) {
-      const could = one.commit.changed.some((path) => {
-        const inside = within(one.address, path)
-        return inside !== undefined && COULD_HOLD[record.kind](inside)
-      })
-      if (!could) continue
-      const before = every.slice(at + 1).find((other) => other.id === one.id)
-      const now = await this.stateOf(one)
-      if (!now) continue
-      const was = before ? await this.stateOf(before) : undefined
-      if (recordsBetween(was, now).some((changed) => sameRecord(changed, record))) touched.push(one)
-    }
-    return touched
+  /** A scope's own files at a commit, with the ids of what they held. */
+  private async ownTree(sha: string, address: ScopeAddress): Promise<TreeEntry[]> {
+    const key = `${sha}\u0000${address}`
+    const known = this.trees.get(key)
+    if (known) return known
+    const own = ownFilesAt(address, await this.git.treeAt(sha, address))
+    this.trees.set(key, own)
+    return own
   }
 
-  /** A scope as it was at one of its entries. */
-  private async stateOf({ commit, id, address }: Found): Promise<ScopeState | undefined> {
-    const key = `${commit.sha}\u0000${id}`
+  /**
+   * Where a scope was at a commit: its one address, where it has only been at
+   * one; otherwise where its nearest entry along the commit's first parents
+   * says. `undefined` where the scope was not there, or another was.
+   */
+  private async placeAt(sha: string, one: Asked, addresses: readonly ScopeAddress[]): Promise<At | undefined> {
+    const key = `${sha}\u0000${one.id}`
+    let address = this.places.get(key)
+    if (address === undefined) {
+      address = one.held.length === 1 ? one.held[0] : null
+      if (one.held.length > 1) {
+        search: for (let skip = 0; ; skip += CHUNK) {
+          const commits = await this.git.log({ paths: one.held.includes('') ? undefined : one.held, tip: sha, skip, limit: CHUNK, firstParent: true })
+          for (const commit of commits) {
+            const [found] = await this.membersOf(commit, [one], addresses)
+            if (found) {
+              address = found.address
+              break search
+            }
+          }
+          if (commits.length < CHUNK) break
+        }
+      }
+      this.places.set(key, address)
+    }
+    if (address === null || await this.identityAt(sha, address) !== one.id) return undefined
+    return (await this.ownTree(sha, address)).some((file) => file.path === 'scope.json') ? { sha, address } : undefined
+  }
+
+  /**
+   * Whether an entry's steps changed a record: nothing where the files a
+   * record of its kind could be in are the same, by their ids, as at the
+   * commit before; otherwise the scope read at both, and the record compared.
+   */
+  private async touches(found: Found, record: RecordKey, asked: readonly Asked[], addresses: readonly ScopeAddress[]): Promise<boolean> {
+    const could = found.commit.changed.some((path) => {
+      const inside = within(found.address, path)
+      return inside !== undefined && COULD_HOLD[record.kind](inside)
+    })
+    if (!could) return false
+    const one = asked.find((scope) => scope.id === found.id)!
+    const parent = found.commit.parents[0]
+    const before = parent === undefined ? undefined : await this.placeAt(parent, one, addresses)
+    const blobs = async (at: At | undefined) => (at
+      ? (await this.ownTree(at.sha, at.address)).filter((file) => COULD_HOLD[record.kind](file.path))
+        .map((file) => `${file.path}\u0000${file.blob}`).sort().join('\n')
+      : '')
+    if (await blobs({ sha: found.commit.sha, address: found.address }) === await blobs(before)) return false
+    const pictures = record.kind === 'image'
+    const now = await this.stateOf(found.commit.sha, found.id, found.address, pictures)
+    if (!now) return false
+    const was = before ? await this.stateOf(before.sha, found.id, before.address, pictures) : undefined
+    return recordsBetween(was, now).some((changed) => sameRecord(changed, record))
+  }
+
+  /**
+   * A scope as it was at a commit. Its pictures' entries are read where
+   * `pictures` asks, and only then: describing a picture no row names means
+   * reading it, and only a picture's own history needs that.
+   */
+  private async stateOf(sha: string, id: ScopeId, address: ScopeAddress, pictures: boolean): Promise<ScopeState | undefined> {
+    const key = `${sha}\u0000${id}\u0000${address}\u0000${pictures}`
     if (this.states.has(key)) return structuredClone(this.states.get(key))
-    const tree = await this.git.treeAt(commit.sha, address)
-    const own = ownFilesAt(address, tree)
-    const format = own.filter((path) => (isFormatPath(path) || isSupersededPath(path)) && !path.startsWith(`${PICTURES}/`))
-    const files: FolderFile[] = (await this.git.readAt(commit.sha, format.map((path) => scopeFilePath(address, path))))
+    const own = await this.ownTree(sha, address)
+    const format = own.map((file) => file.path)
+      .filter((path) => (isFormatPath(path) || isSupersededPath(path)) && !path.startsWith(`${PICTURES}/`))
+    const files: FolderFile[] = (await this.git.readAt(sha, format.map((path) => scopeFilePath(address, path))))
       .map((file) => ({ ...file, path: within(address, file.path)! }))
     const snapshot = openScopeFolder(files, address)
     let state: ScopeState | undefined
     if (snapshot) {
-      const pictures = own
+      const kept = own.map((file) => file.path)
         .filter((path) => path.startsWith(`${PICTURES}/`) && imageMediaType(path) !== undefined)
         .map((path) => ({ file: path.slice(PICTURES.length + 1) }))
         .filter(({ file }) => !file.split('/').some((segment) => segment.startsWith('.')))
       const library = await libraryOf(rowsOf(snapshot.carried?.[LIBRARY_KEY]), {
-        files: pictures,
+        files: kept,
         describe: async (file, name): Promise<ImageEntry | undefined> => {
-          const [held] = await this.git.readAt(commit.sha, [scopeFilePath(address, `${PICTURES}/${file.file}`)])
+          if (!pictures) return undefined
+          const [held] = await this.git.readAt(sha, [scopeFilePath(address, `${PICTURES}/${file.file}`)])
           if (!held) return undefined
           return imageEntryOf(name, 'bytes' in held ? held.bytes : new TextEncoder().encode(held.text))
         },
@@ -286,7 +396,7 @@ export class FolderHistory implements HistoryRepository {
       const scopeText = files.find((file) => file.path === 'scope.json')
       const header = headerOf(scopeText && 'text' in scopeText ? scopeText.text : undefined) ?? {}
       const node = { id, address, header, summary: { path: address, name: snapshot.model.name, diagrams: 0, children: [] } }
-      state = stateFrom(node, snapshot, library, revisionOf(address, folderRevision(files), pictures))
+      state = stateFrom(node, snapshot, library, revisionOf(address, folderRevision(files), kept))
     }
     this.states.set(key, state)
     return structuredClone(state)
@@ -296,16 +406,16 @@ export class FolderHistory implements HistoryRepository {
   private async entry(scope: ScopeId, entry: EntryId): Promise<{ found: Found; spaces: Set<string> } | undefined> {
     const sha = commitOf(entry, scope)
     if (sha === undefined) return undefined
-    const [commit] = await this.git.log({ from: sha, limit: 1 }).catch(() => [])
+    const [commit] = await this.git.log({ tip: sha, limit: 1 }).catch(() => [])
     if (!commit || commit.sha !== sha) return undefined
     const { asked, addresses, spaces } = await this.asked([scope])
-    const [found] = this.membersOf(commit, asked, addresses)
+    const [found] = await this.membersOf(commit, asked, addresses)
     return found ? { found, spaces } : undefined
   }
 
   async stateAt(scope: ScopeId, entry: EntryId): Promise<ScopeState | undefined> {
     const held = await this.entry(scope, entry)
-    return held ? this.stateOf(held.found) : undefined
+    return held ? this.stateOf(held.found.commit.sha, scope, held.found.address, true) : undefined
   }
 
   label(scope: ScopeId, entry: EntryId, name: string): Promise<EntryLabelled> {
@@ -324,10 +434,10 @@ export class FolderHistory implements HistoryRepository {
   }
 }
 
-/** Where a page starts: a commit, and how many of its entries the pages before took. */
-type Cursor = { sha: string; skip: number }
+/** Where a page starts: the tip the first page was counted from, the commit it had reached, and how many of its entries were taken. */
+type Cursor = { tip: string; index: number; k: number }
 
 function cursorOf(after: string): Cursor | undefined {
-  const match = /^([A-Za-z0-9][A-Za-z0-9-]{0,63}):(\d{1,4})$/.exec(after)
-  return match ? { sha: match[1], skip: Number(match[2]) } : undefined
+  const match = /^([A-Za-z0-9][A-Za-z0-9-]{0,63}):(\d{1,9}):(\d{1,4})$/.exec(after)
+  return match ? { tip: match[1], index: Number(match[2]), k: Number(match[3]) } : undefined
 }

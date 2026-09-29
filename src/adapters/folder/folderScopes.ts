@@ -79,7 +79,7 @@ export function headerOf(text: string | undefined): Record<string, unknown> | un
 }
 
 /** An id a header may carry: something a tag, a key and a line of text all hold as it is. */
-function isScopeId(value: unknown): value is ScopeId {
+export function isScopeId(value: unknown): value is ScopeId {
   return typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(value)
 }
 

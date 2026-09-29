@@ -176,3 +176,29 @@ describe('the folder, beyond what the suites say', () => {
     }
   })
 })
+
+describe('the folder’s history of commits nobody marked', () => {
+  /** Everything in the folder committed as a person would in a terminal: no trailer. */
+  async function commitByHand(root: FakeDirectory, git: ReturnType<typeof memoryGit>, message: string): Promise<void> {
+    await git.start()
+    await git.commit((await git.changes()).map((change) => change.path), message)
+  }
+
+  it('counts one for the scope whose header said who it was, and never for one made there after it was removed', async () => {
+    const root = await folderOfToday()
+    const git = memoryGit(root)
+    await commitByHand(root, git, 'By hand, before any identity')
+    const repositories = over({ repositories: folderRepositories({ root, git }) })
+    const acme = (await repositories.scopes.tree()).root.children[0].id
+    const theirs = (await repositories.history.entries({ scopes: [acme] })).entries
+    expect(theirs.map((entry) => entry.subject)).toEqual(['By hand, before any identity'])
+    expect((await repositories.history.stateAt(acme, theirs[0].id))?.model.elements.map((one) => one.id)).toEqual(['crews', 'reisinfo'])
+
+    ok(await repositories.remove(acme))
+    const again = await repositories.scope('acme', 'Acme again')
+    expect((await repositories.history.entries({ scopes: [again] })).entries).toEqual([])
+    await commitByHand(root, git, 'By hand, after')
+    expect((await repositories.history.entries({ scopes: [again] })).entries.map((entry) => entry.subject)).toEqual(['By hand, after'])
+    expect(await repositories.history.stateAt(again, theirs[0].id)).toBeUndefined()
+  })
+})
