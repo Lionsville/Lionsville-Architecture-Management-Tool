@@ -53,6 +53,8 @@ function mount(
   const result = vi.fn()
   /** What was on screen at each write, as the steps written said it. */
   const writes: ScopeSnapshot[] = []
+  /** The steps each write carried, and what it expected. */
+  const sent: { steps: readonly ScopeStep[]; expects?: string }[] = []
   const adopted: ScopeSnapshot[] = []
   const reported: boolean[] = []
   let hook!: DocumentSessionHook
@@ -71,7 +73,8 @@ function mount(
   }
   let revision = 0
   const writer: ScopeWriter = {
-    write: () => {
+    write: (steps, expects) => {
+      sent.push({ steps, ...(expects !== undefined ? { expects } : {}) })
       writes.push({ ...latest.current })
       return save(latest.current).then(() => `r${++revision}`)
     },
@@ -109,6 +112,7 @@ function mount(
     saved,
     result,
     writes,
+    sent,
     adopted,
     reported,
     watching: () => watching,
@@ -342,6 +346,29 @@ describe('when somebody else changes the folder', () => {
 
     await view.idle()
     expect(view.writes.map((held) => held.model.name)).toEqual(['Mine'])
+  })
+
+  /**
+   * Theirs removed what this session changed: every step of mine replayed on
+   * theirs is refused as one, at every try. So what is on screen lands whole,
+   * over the state just read and expecting it — mine over theirs, as asked.
+   */
+  it('keeps ours whole where a step of ours cannot land on theirs', async () => {
+    const onDisk = { current: { ...project('Theirs'), revision: 'r-theirs' } as ScopeSnapshot | undefined }
+    let tries = 0
+    const view = mount(() => (tries++ === 0 ? Promise.reject(new ShellError('command.gone')) : Promise.resolve()), onDisk)
+    view.edit('Mine')
+    view.somebodyElseWrote()
+    view.keepMine()
+    await view.idle()
+
+    expect(view.sent.map((one) => [one.steps.map((step) => step.command.type), one.expects])).toEqual([
+      [['project.settings'], undefined],
+      [['scope.replace'], 'r-theirs'],
+    ])
+    const replaced = view.sent[1].steps[0].command
+    expect(replaced.type === 'scope.replace' && replaced.content.model.name).toBe('Mine')
+    expect(view.status()).toBe('clean')
   })
 
   it('stops listening when the workspace goes', () => {

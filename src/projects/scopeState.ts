@@ -103,9 +103,11 @@ export type DescribeCommand = { type: 'scope.describe'; patch: ScopeDescription 
 
 /**
  * A scope's content made equal to a content that arrives whole, and used for
- * that alone: a set of scopes a person hands over, landed on one, and a scope
- * built from an example.
- * Never the open scope's own writes, which are the commands its session
+ * that alone: a set of scopes a person hands over, landed on one; a scope
+ * built from an example; and what a person keeps over another author's
+ * version when a step of theirs cannot land on it (*keep mine*), which is
+ * the scope as it stands on their screen.
+ * Never the open scope's ordinary writes, which are the commands its session
  * applied, and never a restore, which is the model's own command and keeps
  * what a restore keeps.
  *

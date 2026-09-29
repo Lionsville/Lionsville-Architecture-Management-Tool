@@ -39,9 +39,10 @@ import type { DocumentEvent, DocumentSession, SaveTrigger } from '../projects/do
 import type { SourceStatus, SourceWork, SourceWorkChanged } from '../platform/sourceProvider'
 import type { ImageEntry, ImageName } from '../model/imageName'
 import { sameValue } from '../model/recordKey'
+import { ShellError } from '../platform/errors'
 import { isScopeMoved } from '../projects/revision'
 import type { ScopeSnapshot } from '../projects/scope'
-import { stepOf } from '../projects/scopeAccess'
+import { contentOf, stepOf } from '../projects/scopeAccess'
 import type { Revision, ScopeCommand, ScopeDescription, ScopeStep } from '../projects/scopeState'
 import type { SessionJournal } from './useModelSession'
 import type { KeepNotice } from './useKeepNotice'
@@ -419,6 +420,24 @@ function changesOf(was: Described, now: Described): ScopeCommand[] {
 type Known = { revision?: Revision; described: Described; adopted: number }
 
 /**
+ * Mine kept over theirs (*Keep mine*): this session's steps, landed on the
+ * scope as it now is, expecting nothing. Where one of them cannot land on
+ * theirs — a record they removed and this session renamed — the steps are
+ * refused as one, and would be at every try; so what is on screen lands
+ * instead, whole, over the state just read, and expecting it: a content that
+ * arrives whole, which is what *mine over theirs* is.
+ */
+async function mineOverTheirs(writer: ScopeWriter, steps: readonly ScopeStep[], snapshot: () => ScopeSnapshot): Promise<Revision> {
+  try {
+    return await writer.write(steps, undefined)
+  } catch (cause) {
+    if (!(cause instanceof ShellError)) throw cause
+    const theirs = await writer.read()
+    return writer.write([stepOf({ type: 'scope.replace', content: contentOf(snapshot()) })], theirs?.revision)
+  }
+}
+
+/**
  * The writes themselves: the session's changes as steps, expecting the
  * revision last known, and what is known moved on with each one that lands.
  */
@@ -453,7 +472,7 @@ function useScopeWrites(
       ]
       if (steps.length === 0) return
       const onTheirs = over.current
-      const revision = await writer.write(steps, onTheirs ? undefined : known.current!.revision)
+      const revision = onTheirs ? await mineOverTheirs(writer, steps, snapshot) : await writer.write(steps, known.current!.revision)
       journal.written(pending.length)
       known.current = { ...known.current!, revision, described: now }
       if (!onTheirs) return
