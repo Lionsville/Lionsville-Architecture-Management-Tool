@@ -34,7 +34,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.readOnlyRefused': 'Dieser Bereich ist zum Lesen geöffnet und nicht zum Ändern, deshalb wurde nichts getan.',
   'shell.conflictThere': 'Dieses Projekt wurde anderswo geändert, und hier gibt es ungespeicherte Änderungen.',
   'shell.unsettledFirst': 'Dieser Scope wurde anderswo geändert, während Änderungen hier ungespeichert sind. Wählen Sie zuerst in der Leiste, welche Fassung gilt.',
-  'shell.takeTheirs': 'Die von der Festplatte',
+  'shell.takeTheirs': 'Die von anderswo',
   'shell.keepMine': 'Meine behalten',
   'shell.saveACopy': 'Kopie speichern…',
   'shell.keepFailed':

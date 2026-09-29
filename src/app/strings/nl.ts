@@ -34,7 +34,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.readOnlyRefused': 'Deze scope staat open om te lezen en niet om te wijzigen, dus er is niets gedaan.',
   'shell.conflictThere': 'Dit project is elders gewijzigd, en hier staan wijzigingen open.',
   'shell.unsettledFirst': 'Deze scope is elders gewijzigd terwijl wijzigingen hier niet bewaard zijn. Kies eerst op de balk welke versie blijft.',
-  'shell.takeTheirs': 'Die van schijf',
+  'shell.takeTheirs': 'Die van elders',
   'shell.keepMine': 'Die van mij',
   'shell.saveACopy': 'Kopie bewaren…',
   'shell.keepFailed':
