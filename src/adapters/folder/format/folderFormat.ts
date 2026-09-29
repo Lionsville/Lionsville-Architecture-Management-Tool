@@ -65,6 +65,7 @@ import type {
   DomainGroupRect, Geometry, NodeGeometry, PlatformArchetype, Relation, RouteGeometry, UploadedLogo,
 } from '../../../model'
 import { imageMediaType, isImageFile } from '../../../model/documentImage'
+import { isImageName } from '../../../model/imageName'
 import type { HostModel } from '../../../model/hostModel'
 import type { Transition } from '../../../model/transition'
 import type { Cause, Experiment, Observation, Solution } from '../../../model/observation'
@@ -365,6 +366,10 @@ export function scopeFiles(scope: ScopeSnapshot): FolderFile[] {
  * list to keep in step with the folder, and a picture somebody drops into
  * `images/` by hand is a picture their documents can use immediately.
  *
+ * A picture filed in an image folder (ADR-0031 §3) is a file in a folder of
+ * `images/` of the same name — `image:diagrams/context.png` is
+ * `images/diagrams/context.png` — as the folder's own library keeps it.
+ *
  * An SVG is written as text and everything else as bytes, which is the rule the
  * marks already follow: an SVG is XML and should diff as XML.
  */
@@ -372,9 +377,10 @@ function imageFiles(library: readonly CarriedImage[]): FolderFile[] {
   const files: FolderFile[] = []
   const written = new Set<string>()
   for (const image of library) {
-    // A name with a slash in it is not a file in `images/`, and a duplicate
-    // would be two entries fighting over one path.
-    if (!isImageFile(image.file) || image.file.includes('/') || written.has(image.file)) continue
+    // A name in an image folder is one the library's rule allows, so it
+    // cannot climb out of `images/`; a duplicate would be two entries
+    // fighting over one path.
+    if (!isImageFile(image.file) || (image.file.includes('/') && !isImageName(image.file)) || written.has(image.file)) continue
     const held = readDataUrl(image.url)
     if (!held) continue
     written.add(image.file)
@@ -386,13 +392,13 @@ function imageFiles(library: readonly CarriedImage[]): FolderFile[] {
   return files
 }
 
-/** Every picture in the folder, by name. The folder is the whole index. */
+/** Every picture in the folder, by name, image folders included. The folder is the whole index. */
 function readImages(folder: Folder): CarriedImage[] {
   const images: CarriedImage[] = []
   for (const path of [...folder.keys()].sort()) {
     if (!path.startsWith(`${IMAGES_FOLDER}/`)) continue
     const file = path.slice(IMAGES_FOLDER.length + 1)
-    if (file.includes('/')) continue
+    if (file.includes('/') && !isImageName(file)) continue
     const mediaType = imageMediaType(file)
     if (!mediaType) continue
     images.push({ file, url: markFor(folder.get(path)!, mediaType) })
@@ -490,7 +496,7 @@ export function isFormatPath(path: string): boolean {
   if (folder === DIAGRAMS_FOLDER) return rest.length === 1 && name.endsWith('.json')
   if (folder === DOCS_FOLDER) return rest.length === 1 && name.endsWith('.md')
   if (folder === LOGOS_FOLDER) return rest.length === 1 && /\.(svg|png)$/.test(name)
-  if (folder === IMAGES_FOLDER) return rest.length === 1 && isImageFile(name)
+  if (folder === IMAGES_FOLDER) return rest.length >= 1 && isImageFile(name)
   if (folder === DECISIONS_FOLDER) return rest.length <= 2 && /^\d{1,6}-.*\.md$/.test(name)
   if (folder === TRANSITIONS_FOLDER) return rest.length === 1 && /^\d{1,6}-.*\.md$/.test(name)
   if (folder === OBSERVATIONS_FOLDER) {

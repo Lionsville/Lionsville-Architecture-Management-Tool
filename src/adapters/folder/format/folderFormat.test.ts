@@ -158,11 +158,12 @@ describe('projectFiles', () => {
       imageLibrary: [
         { file: 'ok.png', url: 'data:image/png;base64,AQI=' },
         { file: 'nested/x.png', url: 'data:image/png;base64,AQI=' },
+        { file: '../out.png', url: 'data:image/png;base64,AQI=' },
         { file: 'notes.md', url: 'data:image/png;base64,AQI=' },
         { file: 'ok.png', url: 'data:image/png;base64,AwQ=' },
       ],
     }))
-    expect(paths(files).filter((path) => path.startsWith('images/'))).toEqual(['images/ok.png'])
+    expect(paths(files).filter((path) => path.startsWith('images/'))).toEqual(['images/nested/x.png', 'images/ok.png'])
   })
 
   it('names the format and the tool, so a folder says what it is', () => {
@@ -411,6 +412,7 @@ describe('projectFromFolder', () => {
     ]
     expect(scopeFromFolder(files, REF)?.imageLibrary).toEqual([
       { file: 'cutover.png', url: 'data:image/png;base64,AQI=' },
+      { file: 'nested/deep.png', url: 'data:image/png;base64,BQ==' },
       { file: 'whiteboard.jpg', url: 'data:image/jpeg;base64,AwQ=' },
     ])
   })
@@ -587,6 +589,8 @@ describe('isFormatPath', () => {
     expect(isFormatPath('observations/experiments/0001-trial.md')).toBe(true)
     expect(isFormatPath('observations/notes/0001-x.md')).toBe(false)
     expect(isFormatPath('images/cutover.png')).toBe(true)
+    expect(isFormatPath('images/diagrams/ctx.png')).toBe(true)
+    expect(isFormatPath('images/diagrams/notes.md')).toBe(false)
     expect(isFormatPath('logos/own.svg')).toBe(true)
   })
 

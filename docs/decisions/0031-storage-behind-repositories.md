@@ -1116,6 +1116,11 @@ names no format.
   browser, out again, into a folder, out again and into memory is the same
   file each time, byte for byte, pictures included, each source opened
   through its own provider (`providers/interchange.test.ts`).
+- **Pictures in image folders travel.** A picture filed in an image folder is
+  `images/<image folder>/<file>` in the working file, as the folder keeps it,
+  and is read back from there; the format used to leave any name with a `/`
+  in it out, without a word. A picture whose bytes do not come with a scope
+  is named in what the file was made without.
 - **A landing is read back with its pictures.** The scope a check reads now
   carries its pictures' bytes (`readWhole`), so a file with pictures in it is
   no longer said to have arrived without them.
@@ -1139,9 +1144,6 @@ names no format.
 - **The interchange is the composition's, not a provider's.** It works over
   any repositories, so every source gets the same one, and a provider composed
   from outside exports and imports with nothing of its own to write.
-- **A picture filed in an image folder is not carried**, as it was not
-  before: the working file keeps `images/` flat, and a name with a `/` in it
-  is left out.
 - **A document in a working file names a picture `image:<name>`**, as the
   state does; the folder writes `../images/<file>` on disk, and the codec does
   not translate. A file an older build wrote, with `../images/` in its

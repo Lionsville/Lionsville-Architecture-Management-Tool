@@ -124,6 +124,8 @@ export function usablePath(path: ScopePath): boolean {
  */
 function ownFolder(name: string, within: string): boolean {
   if (within === '') return SCOPE_FOLDERS.includes(name)
+  // A picture may be filed in an image folder, at any depth (ADR-0031 §3).
+  if (within === IMAGES_FOLDER || within.startsWith(`${IMAGES_FOLDER}/`)) return !name.startsWith('.')
   if (within === DECISIONS_FOLDER) return true
   return within === OBSERVATIONS_FOLDER && OBSERVATION_SUBFOLDERS.includes(name)
 }

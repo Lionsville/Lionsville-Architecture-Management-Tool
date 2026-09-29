@@ -4,7 +4,8 @@
 /**
  * An organisation to carry out and bring in: the shipped example — every
  * kind of record there is, in two scopes — with a picture a description
- * shows, and a domain of its own with a picture in it too. Put into
+ * shows, and a domain of its own with a picture in it too, and one filed in
+ * an image folder. Put into
  * repositories through the domain's own landing, so a test of the working
  * file does not start from the working file.
  */
@@ -42,7 +43,10 @@ export function organisation(): ScopeSnapshot[] {
       model: { name: 'Depots', description: 'Where the trucks sleep.', elements: [], relations: [], diagrams: [] },
       activeDiagramId: '',
       logoLibrary: [],
-      imageLibrary: [{ file: 'yard.png', url: dataUrl('image/png', png(2)) }],
+      imageLibrary: [
+        { file: 'yard.png', url: dataUrl('image/png', png(2)) },
+        { file: 'diagrams/ctx.png', url: dataUrl('image/png', png(3)) },
+      ],
     },
   ]
 }

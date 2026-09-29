@@ -65,6 +65,7 @@ describe('the working file between sources', () => {
       const inside = unzipSync(second.bytes)
       expect(Object.keys(inside)).toEqual(expect.arrayContaining([
         'scope.json', 'application-landscape/scope.json', 'application-landscape/images/depot.png', 'depots/images/yard.png',
+        'depots/images/diagrams/ctx.png',
       ]))
       // And what landed, read back, is everything the file says it holds.
       const arrival = await interchange.check(opened, (address) => readWhole(target, address))

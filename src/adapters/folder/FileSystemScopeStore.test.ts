@@ -622,6 +622,21 @@ describe('a picture that is not a PNG', () => {
   })
 })
 
+describe('a picture filed in an image folder (ADR-0031 §3)', () => {
+  it('is written in a folder of images/ of its name, read back, and removed when the library lets it go', async () => {
+    const folder = new FakeDirectory()
+    const store = new FileSystemScopeStore(folder)
+    const url = 'data:image/png;base64,AQI='
+    await store.save({ ...sampleScope(), imageLibrary: [{ file: 'diagrams/ctx.png', url }, { file: 'flat.png', url }] })
+    expect((await store.load(SAMPLE_PATH))?.imageLibrary).toEqual([
+      { file: 'diagrams/ctx.png', url }, { file: 'flat.png', url },
+    ])
+
+    await store.save({ ...sampleScope(), imageLibrary: [{ file: 'flat.png', url }] })
+    expect((await store.load(SAMPLE_PATH))?.imageLibrary).toEqual([{ file: 'flat.png', url }])
+  })
+})
+
 /**
  * The same folder, with the writing of one file refused — the way a full disk
  * or a file another program holds refuses it — or the renaming of the staged

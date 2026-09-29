@@ -66,7 +66,7 @@ describe('the working file, from node', () => {
 
     await readWorkingFile(repositories, bytes)
 
-    expect(said).toEqual(['put depot.png', 'put yard.png', 'apply scope.replace scope.replace scope.replace'])
+    expect(said).toEqual(['put depot.png', 'put diagrams/ctx.png', 'put yard.png', 'apply scope.replace scope.replace scope.replace'])
   })
 
   it('records an entry before replacing what is there, and one of each scope it landed, with the subjects given', async () => {
