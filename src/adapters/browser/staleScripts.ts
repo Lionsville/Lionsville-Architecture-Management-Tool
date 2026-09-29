@@ -12,6 +12,12 @@
  * the answer is the page again — the new one, which names the scripts that
  * exist.
  *
+ * **Never over work a reload would lose.** A tab holding an edit not yet
+ * written, or working from a source nothing outlives the tab in, is not
+ * reloaded: `mayReload` says so, the event is left alone, and the part that
+ * asked for the script refuses in its own words — the person keeps their
+ * work and reloads once it is kept.
+ *
  * **Once.** A reload that meets the same event again straight away is a
  * deploy that is broken rather than new, and reloading it for ever is a tab
  * nobody can use. So the moment is kept in this tab's session storage, and a
@@ -38,6 +44,11 @@ export type StaleScriptsDeps = {
   /** This tab's session storage, or nothing where the browser will not give it. */
   storage?: () => Storage | undefined
   now?: () => number
+  /**
+   * Whether a reload now loses nothing: no edit unwritten, and a source that
+   * outlives the tab. Absent, it always may.
+   */
+  mayReload?: () => boolean
 }
 
 export function reloadOnStaleScripts(deps: StaleScriptsDeps): () => void {
@@ -45,6 +56,12 @@ export function reloadOnStaleScripts(deps: StaleScriptsDeps): () => void {
   const storage = deps.storage ?? (() => window.sessionStorage)
   const now = deps.now ?? Date.now
   const heard = (event: Event): void => {
+    if (deps.mayReload && !deps.mayReload()) {
+      deps.diagnostics.report({
+        level: 'warn', where: 'scripts', message: 'a script this page needs would not load; not reloading over work a reload would lose',
+      })
+      return
+    }
     let held: Storage | undefined
     try {
       held = storage()

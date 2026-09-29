@@ -85,6 +85,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.workingFileArrivedOwn': 'Werkbestand “{name}” geladen en gecontroleerd tegen wat het bevat, omdat een oudere versie het zonder manifest bewaarde: {scopes} scopes, {views} views en {files} bestanden, allemaal aangekomen.',
   'shell.workingFileShort': 'Werkbestand “{name}” is niet volledig aangekomen. Na het laden ontbreekt: {what}.',
   'shell.workingFileShortOwn': 'Werkbestand “{name}” is niet volledig aangekomen. Het heeft geen manifest, omdat een oudere versie het bewaarde, dus het is gecontroleerd tegen wat het bevat. Na het laden ontbreekt: {what}.',
+  'shell.workingFilePartMissing': 'Het deel van de app dat werkbestanden leest en schrijft is niet geladen: deze pagina is misschien ouder dan de app op de server, of de verbinding is weg. Er is niets veranderd. Bewaar je werk, laad de pagina daarna opnieuw en probeer het nog eens.',
   'shell.workingFileNotLanded': 'Het werkbestand is niet geladen, en er is niets van geschreven: alle scopes erin komen samen aan of geen enkele. {reason}',
   'shell.workingFileLandedInPart': 'Mogelijk is maar een deel van het werkbestand geschreven: deze map wordt bestand voor bestand geschreven, en het schrijven is halverwege gestopt. {reason}',
   'shell.shortScope': 'de scope “{name}” ({path})',

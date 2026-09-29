@@ -73,6 +73,7 @@ import type {
 } from '../ports/ProviderParts'
 import type { Repositories } from '../ports/Repositories'
 import type { Interchange } from '../ports/Interchange'
+import { ShellError } from '../platform/errors'
 import { WORKING_FILE_ACCEPTS } from '../adapters/folder/format/workingFileKinds'
 import type { Translate } from '../i18n'
 import type { AgentGateway } from '../ports/AgentGateway'
@@ -630,16 +631,37 @@ export function sourceDestination(kind: string): (() => Promise<SourceDestinatio
  * file — the codec, the readers of the older formats and the zip are nothing a
  * first screen needs, and the first download is where the room is short.
  */
-export const INTERCHANGE: Interchange = (() => {
-  const codec = () => import('../adapters/folder/format/interchange').then((held) => held.WORKING_FILE_INTERCHANGE)
+export const INTERCHANGE = interchangeLoaded(
+  () => import('../adapters/folder/format/interchange').then((held) => held.WORKING_FILE_INTERCHANGE),
+)
+
+/**
+ * The interchange behind a load: fetched once — a load that failed is tried
+ * again the next time it is asked for — and a load that fails refused as a
+ * `ShellError` the person is shown, never a page reloaded under their work
+ * (`reloadWhenScriptsAreGone`). `preload` fetches it before anybody asks: once
+ * the app is idle after the boot, so it is there when it is wanted.
+ */
+export function interchangeLoaded(load: () => Promise<Interchange>): Interchange & { preload(): void } {
+  let loading: Promise<Interchange> | undefined
+  const codec = (): Promise<Interchange> => {
+    // Why it did not load is the trail's (`reloadOnStaleScripts` reports
+    // it); the person is told the part did not, and that nothing changed.
+    loading ??= load().catch(() => {
+      loading = undefined
+      throw new ShellError('shell.workingFilePartMissing')
+    })
+    return loading
+  }
   return {
+    preload: () => { codec().catch(() => undefined) },
     accepts: WORKING_FILE_ACCEPTS,
     carryOut: async (from, options) => (await codec()).carryOut(from, options),
     open: async (bytes, at) => (await codec()).open(bytes, at),
     bringIn: async (into, opened, options) => (await codec()).bringIn(into, opened, options),
     check: async (opened, read) => (await codec()).check(opened, read),
   }
-})()
+}
 
 /**
  * The examples that ship, as the organisation's page offers them: what each is
@@ -673,6 +695,10 @@ registerSourceProvider({ ...MEMORY_SOURCE, chrome: MemoryNotice })
  * somebody reaches a part it had not loaded yet; the page again is the answer
  * (`adapters/browser/staleScripts.ts`). Once, and on this shell's own reload.
  */
-export function reloadWhenScriptsAreGone(shell: Pick<Shell, 'hostControls' | 'diagnostics'>): () => void {
-  return reloadOnStaleScripts({ reload: () => shell.hostControls.reload(), diagnostics: shell.diagnostics })
+export function reloadWhenScriptsAreGone(
+  shell: Pick<Shell, 'hostControls' | 'diagnostics'>, mayReload?: () => boolean,
+): () => void {
+  return reloadOnStaleScripts({
+    reload: () => shell.hostControls.reload(), diagnostics: shell.diagnostics, ...(mayReload ? { mayReload } : {}),
+  })
 }

@@ -18,8 +18,9 @@ import { memoryRepositories } from '../adapters/memory/memoryRepositories'
 import { RecordingDiagnostics } from '../adapters/memory/RecordingDiagnostics'
 const IN_MEMORY = { provider: 'memory', name: '', key: '', transient: true } as const
 import type { SourceProvider } from '../platform/sourceProvider'
+import { WORKING_FILE_INTERCHANGE } from '../adapters/folder/format/interchange'
 import {
-  openSource, registerSourceProvider, registeredChrome, registeredConnects,
+  interchangeLoaded, openSource, registerSourceProvider, registeredChrome, registeredConnects,
   registeredMenus, sourceAgentPanel, sourceChip, sourceChipFace, sourceChipPanel, sourceDescription, sourceProvider,
   sourceSayings,
   type Shell, type SourceBase, type SourceParts,
@@ -610,3 +611,28 @@ describe('sourceChipFace', () => {
   })
 })
 
+/**
+ * The working file's part is a script of its own. One that will not load —
+ * a tab left open over a deploy, a connection gone — is a refusal the person
+ * is shown, with nothing changed, and never a page reloaded under their work.
+ */
+describe('the working file\'s part, loaded when wanted', () => {
+  it('refuses in words when it will not load, and loads it the next time it is asked', async () => {
+    let tries = 0
+    const interchange = interchangeLoaded(() => {
+      tries += 1
+      return tries === 1 ? Promise.reject(new TypeError('Failed to fetch dynamically imported module')) : Promise.resolve(WORKING_FILE_INTERCHANGE)
+    })
+    await expect(interchange.open(new Uint8Array([1]), '')).rejects.toMatchObject({ name: 'ShellError', key: 'shell.workingFilePartMissing' })
+    await expect(interchange.open(new TextEncoder().encode('no'), '')).resolves.toEqual({ refused: 'shell.unknownFile' })
+    expect(tries).toBe(2)
+  })
+
+  it('is fetched once, ahead of the first ask, when preloaded', async () => {
+    let tries = 0
+    const interchange = interchangeLoaded(() => { tries += 1; return Promise.resolve(WORKING_FILE_INTERCHANGE) })
+    interchange.preload()
+    await interchange.open(new TextEncoder().encode('no'), '')
+    expect(tries).toBe(1)
+  })
+})

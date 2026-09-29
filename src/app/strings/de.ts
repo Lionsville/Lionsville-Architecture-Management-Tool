@@ -85,6 +85,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.workingFileArrivedOwn': 'Arbeitsdatei „{name}“ geladen und mit ihrem Inhalt abgeglichen, weil eine ältere Version sie ohne Manifest gespeichert hat: {scopes} Bereiche, {views} Ansichten und {files} Dateien, alle angekommen.',
   'shell.workingFileShort': 'Arbeitsdatei „{name}“ ist nicht vollständig angekommen. Nach dem Laden fehlt: {what}.',
   'shell.workingFileShortOwn': 'Arbeitsdatei „{name}“ ist nicht vollständig angekommen. Sie hat kein Manifest, weil eine ältere Version sie gespeichert hat, deshalb wurde sie mit ihrem Inhalt abgeglichen. Nach dem Laden fehlt: {what}.',
+  'shell.workingFilePartMissing': 'Der Teil der App, der Arbeitsdateien liest und schreibt, wurde nicht geladen: Diese Seite ist vielleicht älter als die App auf dem Server, oder die Verbindung ist weg. Es wurde nichts verändert. Sichern Sie Ihre Arbeit, laden Sie die Seite dann neu und versuchen Sie es erneut.',
   'shell.workingFileNotLanded': 'Die Arbeitsdatei wurde nicht geladen, und nichts davon wurde geschrieben: Alle Bereiche darin kommen gemeinsam an oder keiner. {reason}',
   'shell.workingFileLandedInPart': 'Möglicherweise wurde nur ein Teil der Arbeitsdatei geschrieben: Dieser Ordner wird Datei für Datei geschrieben, und das Schreiben hat unterwegs aufgehört. {reason}',
   'shell.shortScope': 'der Bereich „{name}“ ({path})',

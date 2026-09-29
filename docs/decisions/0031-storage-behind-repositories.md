@@ -1100,9 +1100,13 @@ names no format.
   before this one, the working file and its manifest. The reader of a version
   1 or 2 document moved with them out of `projects/scope.ts`, which keeps only
   why bytes did not open.
-- **The composition root hands it to the app** (`AppProps.interchange`), and
-  loads it the first time a person exports, imports or opens a working file.
-  The password around a file stays the app's (ADR-0023).
+- **The composition root hands it to the app** (`AppProps.interchange`), as a
+  script of its own, fetched once the first screen is up and the page is
+  idle. Where it will not load — a tab left open over a deploy, a connection
+  gone — the person is told, and nothing changed: a page is never reloaded
+  for a script that is gone while it holds an edit not yet written, or works
+  from a source nothing outlives the tab in. The password around a file
+  stays the app's (ADR-0023).
 - **A process with no screen** writes and reads one with repositories of its
   own through `platform/node/workingFile.ts`: `writeWorkingFile` for the
   organisation or a scope and those under it, and `readWorkingFile` to land one

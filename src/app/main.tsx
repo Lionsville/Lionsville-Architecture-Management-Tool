@@ -120,9 +120,28 @@ const root = createRoot(container)
 let browserShell = composeShell(translator(detectBrowserLanguage(navigator.languages ?? navigator.language)))
 let shell = browserShell
 
+/** Whether the open scope holds an edit not yet written, as the app last said. */
+let unsaved = false
+
 // Before anything is rendered: a part reached later is a script of its own,
-// and a deploy while this tab was open is a script that is gone.
-reloadWhenScriptsAreGone(browserShell)
+// and a deploy while this tab was open is a script that is gone. Never
+// reloaded over work a reload would lose — an edit not yet written, or a
+// source nothing outlives the tab in: the part says it did not load instead.
+reloadWhenScriptsAreGone(browserShell, () => !unsaved && !shell.source.transient)
+
+/**
+ * The working file's part, fetched once the first screen is up and the page
+ * is idle, so Export and Open find it loaded rather than asking for it then —
+ * when a tab left open over a deploy would find it gone.
+ */
+let preloaded = false
+function preloadWhenIdle(): void {
+  if (preloaded) return
+  preloaded = true
+  const idle = (globalThis as { requestIdleCallback?: (run: () => void) => number }).requestIdleCallback
+  if (idle) idle(() => INTERCHANGE.preload())
+  else setTimeout(() => INTERCHANGE.preload(), 2_000)
+}
 
 /** The menu bar, and the documents the OS opens us with. Nothing in a browser tab. */
 const commands = desktopCommandChannel()
@@ -468,7 +487,10 @@ function renderApp(
         host={{
           commands: commands?.on,
           hostMenu: Boolean(commands),
-          onUnsavedWork: commands?.reportUnsaved,
+          onUnsavedWork: (held: boolean) => {
+            unsaved = held
+            commands?.reportUnsaved(held)
+          },
           onThemeMode: commands?.reportTheme,
           onScopeOpen: commands?.reportScopeOpen,
           windowChrome: shell.windowChrome,
@@ -481,6 +503,7 @@ function renderApp(
       />
     </StrictMode>,
   )
+  preloadWhenIdle()
 }
 
 /**

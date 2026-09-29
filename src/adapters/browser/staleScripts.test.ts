@@ -53,6 +53,25 @@ describe('reloadOnStaleScripts', () => {
     expect(reload).not.toHaveBeenCalled()
   })
 
+  it('does not reload over work a reload would lose, and leaves the event for the part to refuse', () => {
+    sessionStorage.clear()
+    const target = new EventTarget()
+    const reload = vi.fn()
+    const diagnostics = new RecordingDiagnostics()
+    let holding = true
+    reloadOnStaleScripts({ reload, diagnostics, target, storage: () => sessionStorage, now: () => 1_000_000, mayReload: () => !holding })
+    const event = stale()
+    target.dispatchEvent(event)
+    expect(reload).not.toHaveBeenCalled()
+    expect(event.defaultPrevented).toBe(false)
+    expect(sessionStorage.getItem(STALE_SCRIPTS_KEY)).toBeNull()
+    expect(diagnostics.recent().some((entry) => entry.where === 'scripts' && entry.level === 'warn')).toBe(true)
+    // Once the work is kept, the next time is a reload as ever.
+    holding = false
+    target.dispatchEvent(stale())
+    expect(reload).toHaveBeenCalledTimes(1)
+  })
+
   it('stops listening when asked', () => {
     sessionStorage.clear()
     const { target, reload, stop } = listening(sessionStorage)
