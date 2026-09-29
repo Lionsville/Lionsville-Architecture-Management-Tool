@@ -44,7 +44,7 @@ import type {
 import { usablePath } from './FileSystemScopeStore'
 import { fileFor, foldersOf, LIBRARY_KEY, pictureFiles, picturePath, rowsFor } from './folderPictures'
 import type { KeptPicture, PictureStaging } from './folderPictures'
-import { headerOf, ID_KEY, newIdentity } from './folderScopes'
+import { composed, headerOf, ID_KEY, newIdentity } from './folderScopes'
 import type { FolderNode, FolderScopes, ReadScope } from './folderScopes'
 import { bytesAt, filesUnder, folderAt, removeAt, writeAt } from './handles'
 import { filesInDocuments } from './imageLibrary'
@@ -116,7 +116,7 @@ export class FolderScopeRepository implements ScopeRepository {
       const { summary } = node
       const parent = node.address === ROOT_SCOPE ? undefined : parentOf(node.address)
       return {
-        id: node.id, address: node.address, name: summary.name, diagrams: summary.diagrams,
+        id: node.id, address: composed(node.address), name: summary.name, diagrams: summary.diagrams,
         ...(parent ? { parent: parent.id } : {}),
         ...(summary.kind !== undefined ? { kind: summary.kind } : {}),
         ...(summary.client !== undefined ? { client: summary.client } : {}),
@@ -252,8 +252,8 @@ export class FolderScopeRepository implements ScopeRepository {
     return this.folder.serial(async () => {
       if (!isSafeScopePath(at) || !usablePath(at)) return { refused: 'shell.badScopePath' }
       const { nodes, unreadable } = await this.folder.walk()
-      const taken = new Set(nodes.map((node) => node.address))
-      if (taken.has(at) || unreadable.some((held) => isWithinScope(at, held))) return { refused: 'shell.scopeTaken' }
+      const taken = new Set(nodes.map((node) => composed(node.address)))
+      if (taken.has(composed(at)) || unreadable.some((held) => isWithinScope(at, held))) return { refused: 'shell.scopeTaken' }
       const made = ancestorScopes(at).reverse().filter((above) => above !== ROOT_SCOPE && !taken.has(above))
         .map((above) => newSnapshot(above, newIdentity(), { name: scopePathLabel(above) }))
       const id = newIdentity()
@@ -271,13 +271,13 @@ export class FolderScopeRepository implements ScopeRepository {
       if (isWithinScope(to, node.address)) return { refused: 'shell.scopeIntoItself', scope }
       const { nodes, unreadable } = await this.folder.walk()
       const occupied = await folderAt(this.folder.root, to).catch(() => undefined)
-      if (occupied || nodes.some((held) => held.address === to) || unreadable.some((held) => isWithinScope(to, held))) {
+      if (occupied || nodes.some((held) => composed(held.address) === composed(to)) || unreadable.some((held) => isWithinScope(to, held))) {
         return { refused: 'shell.scopeTaken', scope }
       }
       if (expects !== undefined && (await this.folder.read(scope))?.state.revision !== expects) {
         return { refused: 'shell.scopeMoved', scope }
       }
-      const taken = new Set(nodes.map((held) => held.address))
+      const taken = new Set(nodes.map((held) => composed(held.address)))
       const made = ancestorScopes(to).reverse().filter((above) => above !== ROOT_SCOPE && !taken.has(above))
         .map((above) => ({ scope: newSnapshot(above, newIdentity(), { name: scopePathLabel(above) }) }))
       if (made.length) await this.folder.store.saveTogether(made)

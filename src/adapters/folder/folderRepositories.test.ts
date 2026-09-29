@@ -19,6 +19,7 @@ import { describeSettingsRepository } from '../../ports/SettingsRepository.contr
 import type { DirectoryHandleLike } from './DirectoryHandle'
 import { FakeDirectory } from './fakeDirectory'
 import { folderRepositories } from './folderRepositories'
+import { composed, identityAt } from './folderScopes'
 import { memoryGit } from './memoryGit'
 import { FileSystemScopeStore } from './FileSystemScopeStore'
 import { textAt, writeAt } from './handles'
@@ -261,5 +262,29 @@ describe('a run across several scopes that stopped part way', () => {
     expect((await repositories.state(acme)).model.elements.map((one) => one.id)).toEqual(['crews'])
     expect((await repositories.state(globex)).model.elements.map((one) => one.id)).toEqual(['depot'])
     expect(again.revisions).toEqual([(await repositories.state(acme)).revision, (await repositories.state(globex)).revision])
+  })
+})
+
+describe('a scope’s identity, when a folder is copied by hand', () => {
+  it('stays with the folder it was last found at, and the copy is another scope', async () => {
+    const root = new FakeDirectory()
+    const repositories = over({ repositories: folderRepositories({ root, git: memoryGit(root) }) })
+    const globex = await repositories.scope('globex', 'Globex')
+    await repositories.steps(globex, addCrews)
+    for (const path of root.paths().filter((one) => one.startsWith('globex/'))) {
+      await writeAt(root, `acme/${path.slice('globex/'.length)}`, (await textAt(root, path))!)
+    }
+    const tree = await repositories.scopes.tree()
+    const byAddress = new Map(tree.root.children.map((node) => [node.address, node.id]))
+    expect(byAddress.get('globex')).toBe(globex)
+    expect(byAddress.get('acme')).not.toBe(globex)
+    expect((await repositories.state(globex)).address).toBe('globex')
+  })
+})
+
+describe('an address as the domain is answered it', () => {
+  it('is composed, and one identity, however the disk spells the folder back', () => {
+    expect(composed('café/rail')).toBe('café/rail')
+    expect(identityAt('café/rail')).toBe(identityAt('café/rail'))
   })
 })

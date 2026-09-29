@@ -37,6 +37,7 @@ import type { Revision, ScopeAddress, ScopeId, ScopeState } from '../../projects
 import type { Diagnostics } from '../../ports/Diagnostics'
 import type { DirectoryHandleLike } from './DirectoryHandle'
 import { FileSystemScopeStore } from './FileSystemScopeStore'
+import type { ScopeHeader } from './FileSystemScopeStore'
 import { libraryOf, LIBRARY_KEY, pictureFiles, pictureStamps, rowsOf } from './folderPictures'
 import type { KeptPicture, PictureFile } from './folderPictures'
 import { bytesAt, filesUnder, folderAt, textAt } from './handles'
@@ -83,9 +84,18 @@ export function isScopeId(value: unknown): value is ScopeId {
   return typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(value)
 }
 
-/** The identity of a scope whose header carries none: from its address, the same every time it is read. */
+/**
+ * The identity of a scope whose header carries none: from its address,
+ * composed (NFC), the same every time it is read — however the disk spells
+ * the folder's name back.
+ */
 export function identityAt(address: ScopeAddress): ScopeId {
-  return `f-${fingerprint(['scope', address])}`
+  return `f-${fingerprint(['scope', address.normalize('NFC')])}`
+}
+
+/** An address as the domain is answered it: composed (NFC), whatever the disk spells; nothing on the disk is renamed. */
+export function composed(address: ScopeAddress): ScopeAddress {
+  return address.normalize('NFC')
 }
 
 /** A new identity, for a scope being made. */
@@ -124,11 +134,15 @@ export class FolderScopes {
     return next
   }
 
-  /** Every scope, with its identity, parent-first; the organisation always, with a header or without. */
+  /**
+   * Every scope, with its identity, parent-first; the organisation always,
+   * with a header or without. Where two headers claim one identity, the one at
+   * the address it was last found at keeps it, and otherwise the first by
+   * address; the other reads as a folder with none.
+   */
   async walk(dated = false): Promise<Walked> {
     const { headers, unreadable } = await this.store.headers(dated)
-    const nodes: FolderNode[] = []
-    const claimed = new Set<ScopeId>()
+    const read: { found: ScopeHeader; summary: ScopeSummary; header: Record<string, unknown>; declared?: ScopeId }[] = []
     for (const found of [...headers].sort((one, other) => (one.path < other.path ? -1 : 1))) {
       const summary = scopeSummaryFrom(found.text, found.path, found.updatedAt)
       if (!summary) {
@@ -137,10 +151,17 @@ export class FolderScopes {
       }
       const header = headerOf(found.text) ?? {}
       const declared = found.current && isScopeId(header[ID_KEY]) ? header[ID_KEY] : undefined
-      const id = declared !== undefined && !claimed.has(declared) ? declared : identityAt(found.path)
-      claimed.add(id)
-      nodes.push({ id, address: found.path, header, summary, ...(found.updatedAt ? { updatedAt: found.updatedAt } : {}) })
+      read.push({ found, summary, header, ...(declared !== undefined ? { declared } : {}) })
     }
+    const keeper = new Map<ScopeId, string>()
+    for (const { found, declared } of read) {
+      if (declared === undefined) continue
+      if (!keeper.has(declared) || this.found.get(declared) === found.path) keeper.set(declared, found.path)
+    }
+    const nodes: FolderNode[] = read.map(({ found, summary, header, declared }) => ({
+      id: declared !== undefined && keeper.get(declared) === found.path ? declared : identityAt(found.path),
+      address: found.path, header, summary, ...(found.updatedAt ? { updatedAt: found.updatedAt } : {}),
+    }))
     if (!nodes.some((node) => node.address === ROOT_SCOPE)) nodes.unshift(this.bareRoot())
     for (const node of nodes) this.found.set(node.id, node.address)
     return { nodes, unreadable: [...new Set(unreadable)].sort() }
@@ -254,7 +275,7 @@ export function stateFrom(
   const active = node.header['activeDiagramId']
   return {
     id: node.id,
-    address: node.address,
+    address: composed(node.address),
     revision,
     ...(snapshot?.updatedAt ? { updatedAt: snapshot.updatedAt } : {}),
     ...(snapshot?.unreadable?.length ? { unreadable: [...snapshot.unreadable] } : {}),
