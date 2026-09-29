@@ -12,7 +12,7 @@
  */
 import type { RecordKey } from '../../model/recordKey'
 import { sameRecord, sameValue } from '../../model/recordKey'
-import { ancestorScopes, isSafeScopePath, isWithinScope, ROOT_SCOPE, scopePathLabel } from '../../projects/scopePath'
+import { isSafeScopePath, isWithinScope, ROOT_SCOPE } from '../../projects/scopePath'
 import { applySteps, emptyContent, STEP_ELSEWHERE } from '../../projects/scopeState'
 import type { Revision, ScopeAddress, ScopeContent, ScopeId, ScopeState, ScopeStep } from '../../projects/scopeState'
 import type {
@@ -20,7 +20,7 @@ import type {
 } from '../../ports/ScopeRepository'
 import type { Transaction } from './KeyedStore'
 import {
-  allScopes, forget, indexChanged, makeScope, META_KEY, mintId, parentOf, readContent, readMeta, readState, says, scopeAt,
+  allScopes, forget, indexChanged, makeAncestors, makeScope, META_KEY, mintId, parentOf, readContent, readMeta, readState, says, scopeAt,
   writeContent,
 } from './kept'
 import type { KeptScope, Meta } from './kept'
@@ -206,18 +206,6 @@ function commit(tx: Transaction, meta: Meta, planned: readonly Planned[], now: n
   if (treeMoved) meta.treeRevision = mintId()
   indexChanged(tx, meta, planned.map(({ kept }) => kept.id))
   tx.put('meta', META_KEY, meta)
-}
-
-/** The scopes above an address that are not there, made root side first, each named after its own last segment. */
-function makeAncestors(tx: Transaction, scopes: KeptScope[], address: ScopeAddress): KeptScope[] {
-  const made: KeptScope[] = []
-  for (const above of ancestorScopes(address).reverse()) {
-    if (scopeAt(scopes, above)) continue
-    const kept = makeScope(tx, above, emptyContent(scopePathLabel(above)))
-    scopes.push(kept)
-    made.push(kept)
-  }
-  return made
 }
 
 function nodeOf(scopes: readonly KeptScope[], kept: KeptScope): ScopeNode {

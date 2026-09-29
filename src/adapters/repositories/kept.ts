@@ -16,7 +16,7 @@ import { SCOPE_RECORD, sameValue } from '../../model/recordKey'
 import type { RecordKey } from '../../model/recordKey'
 import type { ScopeKind } from '../../projects/scope'
 import type { RecordLink } from '../../projects/links'
-import { ancestorScopes } from '../../projects/scopePath'
+import { ancestorScopes, scopePathLabel } from '../../projects/scopePath'
 import { emptyContent } from '../../projects/scopeState'
 import type {
   Revision, ScopeAddress, ScopeContent, ScopeDescription, ScopeId, ScopeState,
@@ -212,4 +212,52 @@ export function makeScope(tx: Transaction, address: ScopeAddress, content: Scope
   tx.put('scopes', kept.id, kept)
   writeContent(tx, kept.id, [], content)
   return kept
+}
+
+/** The scopes above an address that are not there, made root side first, each named after its own last segment. */
+export function makeAncestors(tx: Transaction, scopes: KeptScope[], address: ScopeAddress): KeptScope[] {
+  const made: KeptScope[] = []
+  for (const above of ancestorScopes(address).reverse()) {
+    if (scopeAt(scopes, above)) continue
+    const kept = makeScope(tx, above, emptyContent(scopePathLabel(above)))
+    scopes.push(kept)
+    made.push(kept)
+  }
+  return made
+}
+
+/** An entry as it is kept for a list; the state at it is kept apart, under the same key. */
+export type KeptEntry = {
+  seq: number
+  scope: ScopeId
+  at: number
+  by: string
+  subject?: string
+  labels: string[]
+  records: readonly RecordKey[]
+}
+
+export function entryKey(scope: ScopeId, seq: number): string {
+  return keyOf(scope, sequenceKey(seq))
+}
+
+/**
+ * Close a scope's open entry: the entry, numbered next in the source, and the
+ * scope's state as it stands. The scope must have one open; the caller writes
+ * `meta` back.
+ */
+export async function closeEntry(
+  tx: Transaction, meta: Meta, kept: KeptScope, by: string, subject?: string,
+): Promise<KeptEntry> {
+  const { pending, ...closed } = kept
+  if (!pending) throw new Error('an entry was closed on a scope with none open')
+  meta.entrySeq += 1
+  const entry: KeptEntry = {
+    seq: meta.entrySeq, scope: kept.id, at: pending.at, by,
+    ...(subject !== undefined ? { subject } : {}), labels: [], records: pending.records,
+  }
+  tx.put('entries', entryKey(kept.id, entry.seq), entry)
+  tx.put('entryStates', entryKey(kept.id, entry.seq), await readState(tx, kept))
+  tx.put('scopes', kept.id, closed satisfies KeptScope)
+  return entry
 }

@@ -24,27 +24,12 @@ import type {
 } from '../../ports/HistoryRepository'
 import { keyOf, prefix } from './KeyedStore'
 import type { Transaction } from './KeyedStore'
-import { allScopes, META_KEY, readMeta, readState, sequenceKey } from './kept'
-import type { KeptScope } from './kept'
+import { allScopes, closeEntry, entryKey, META_KEY, readMeta } from './kept'
+import type { KeptEntry } from './kept'
 import type { Source } from './source'
-
-/** An entry as it is kept for a list. */
-type KeptEntry = {
-  seq: number
-  scope: ScopeId
-  at: number
-  by: string
-  subject?: string
-  labels: string[]
-  records: readonly RecordKey[]
-}
 
 /** How many entries a page holds where the caller did not say. */
 export const PAGE = 50
-
-function entryKey(scope: ScopeId, seq: number): string {
-  return keyOf(scope, sequenceKey(seq))
-}
 
 /** An entry's number from its id, or `undefined` for an id this source never gave. */
 function seqOf(entry: EntryId): number | undefined {
@@ -68,16 +53,7 @@ export class KeptHistory implements HistoryRepository {
       const made: KeptEntry[] = []
       for (const kept of await allScopes(tx)) {
         if (!kept.pending || (scopes && !scopes.includes(kept.id))) continue
-        meta.entrySeq += 1
-        const entry: KeptEntry = {
-          seq: meta.entrySeq, scope: kept.id, at: kept.pending.at, by: this.source.by,
-          ...(subject !== undefined ? { subject } : {}), labels: [], records: kept.pending.records,
-        }
-        tx.put('entries', entryKey(kept.id, entry.seq), entry)
-        tx.put('entryStates', entryKey(kept.id, entry.seq), await readState(tx, kept))
-        const { pending: _closed, ...closed } = kept
-        tx.put('scopes', kept.id, closed satisfies KeptScope)
-        made.push(entry)
+        made.push(await closeEntry(tx, meta, kept, this.source.by, subject))
       }
       tx.put('meta', META_KEY, meta)
       return made.reverse().map(listed)
