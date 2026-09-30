@@ -524,7 +524,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'observation.filterCauseField': 'Filteren op tekst in oorzaken',
   'observation.filterCauseTip': 'Oorzaken waarvan de tekst past, met alles wat ze verklaren en alles erachter.',
   'observation.filterCauseExample': 'bijv. met de hand',
-  'observation.filterRoot': 'GO',
+  'observation.filterRoot': 'RC',
   'observation.filterRootField': 'Filteren op tekst in grondoorzaken',
   'observation.filterRootTip': 'Grondoorzaken waarvan de tekst past, met elke keten die ernaartoe leidt en hun oplossingen.',
   'observation.filterRootExample': 'bijv. eigenaar',

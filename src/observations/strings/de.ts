@@ -524,7 +524,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'observation.filterCauseField': 'Nach Text in Ursachen filtern',
   'observation.filterCauseTip': 'Ursachen, deren Text passt, mit allem, was sie erklären, und allem dahinter.',
   'observation.filterCauseExample': 'z. B. von Hand',
-  'observation.filterRoot': 'GU',
+  'observation.filterRoot': 'RC',
   'observation.filterRootField': 'Nach Text in Grundursachen filtern',
   'observation.filterRootTip': 'Grundursachen, deren Text passt, mit jeder Kette, die zu ihnen führt, und ihren Lösungen.',
   'observation.filterRootExample': 'z. B. Verantwortung',
