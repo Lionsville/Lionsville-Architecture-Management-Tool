@@ -1,6 +1,6 @@
 # ADR-0032 — Local and global analysis, and a root cause that is said
 
-* Status: accepted, 30 September 2026; not yet built
+* Status: accepted, 30 September 2026; as built, 30 September 2026, on a branch awaiting release
 * Date: 2026-09-30
 * Deciders: Wouter Simons
 * Supersedes:
@@ -396,3 +396,149 @@ Reading a scope written before:
 * **Open:** saved filters are a person's. A filter a team keeps together
   is not decided. Nor is a picture that can fold one scope's boundary
   into a single box with its counts.
+
+## As built, 30 September 2026, on a branch awaiting release
+
+Every section was built, in core, on one branch that has not been released.
+What follows is what was built, and where the build departed from the text
+above and why. The hosted server's part — the scopes a person may read, and
+a step below sent to that scope's channel — is not in this repository.
+
+### §1 Local and global
+
+As decided. `Observation.shared`, `setShared`, the tick-box and the reader's
+button went; a file or a history that carries them is read and not written.
+`scopeIndex.analysisBelow(path)` replaced `observationsBelow` and is read by
+the page, the organisation's card, the tree's findings and the agent.
+
+### §2 The page reads the scopes below
+
+As decided, with these departures:
+- **A change below is a save of that scope, not a line in its Activity
+  list.** The page hands a change to a scope below to `useChangeBelow`, which
+  turns the four lists into commands, applies them through the one writer to
+  the scope as read, and writes it back expecting what was read
+  (`app/rewriteScope.ts`). So it is refused below as it would be there, with
+  the writer's key, and it is not on the page's undo stack. But on the
+  desktop no session holds the scope below, so the step is a save of that
+  scope rather than a step in an Activity list somebody could undo; the text
+  above assumed a session there. The note after it says where it went.
+- **A solution and an experiment of a scope below are read, not changed.**
+  Their gates read the plans and decisions of their own scope, which the page
+  above does not read, so a reader of one below draws no gate and offers
+  only the way to its scope. The right-click on one offers the same.
+- **The register lists more than the observations below.** With View local
+  on, the causes, the solutions and the experiments of each scope below are
+  listed after this scope's, under a heading each, and an observation below
+  is said to be analysed by its own scope's causes.
+- **The counts over the picture are the picture's**: what it draws of the
+  scopes in view, less what the filters hid (`graph.pictureCounts`). Off,
+  the toolbar says how many local records are hidden.
+- **The new observation offers the scopes below only while View local is
+  on.** Off, the page shows one scope, and a record made from it is made
+  there.
+
+### §3 A root cause is said
+
+As decided. `Cause.root`, `RC-` on the cause's own number, and the two
+steps with their refusal keys, `command.rootExplained` and
+`command.rootAddressed`. Where the guards sit departed from the text:
+- **Make root cause and make cause are refused in `apply`**, not in a guard
+  (`model/commands/analysis.ts`): the rule is the one writer's whoever sent
+  the step, and no step written before a cause could be a root names `root`,
+  so a replayed log arrives where it did. What the reducer sees is one
+  scope, so a cause *above* that explains the one being made a root is
+  refused by the rules (`makeRootCause` with the causes above), the page and
+  the agent, which read the tree; the reducer does not.
+- **A link into a root cause is refused by the rules, the page and the agent
+  only** (`linkRefusal`'s `root`), not by the reducer. A link is a patch of
+  the explaining cause's `explains`, and the cause it names may live in
+  another scope the reducer never sees.
+- The Activity list says *made a root cause* and *made a cause again*. The
+  page asks before either step and names the records in the way where it is
+  refused. The shipped example says its three root causes.
+
+### §4 A cause above explains a cause below
+
+As decided. The link lives on the explaining cause with the scope's path,
+and `scopeIndex.explainedFromAbove` tells the scope below. Refused: upward,
+sideways, an observation below, and into a root cause. The agent names the
+cause below by **`explainsScope`**, on `cause.link` and `cause.unlink`, and
+not by `scope`: every tool's `scope` is the scope a call works in, so the
+same word could not also name the record. A copy of the shipped example
+carries the path to wherever the landscape lands, as it carries a stand-in's
+`ref`; a scope *moved* in the tree does not carry it yet.
+
+### §5 Merging from below
+
+As decided.
+
+### §6 The form
+
+As decided, with the causes made in the form and the observation, the new
+causes and the links one transaction. *Seen before?* lists up to three
+(`wording.similarTitles`). The top bar's *New cause* went: a cause starts
+from what it explains, and the form's *New cause* is where one is written.
+The link dialog behind *Cause*, *Deeper cause*, *Root cause*, *Org cause* and
+*Local cause* has a **New** tab — the cause's own fields, *it is a root
+cause*, and the cause behind it — and an **Existing** tab offering only what
+`linkRefusal` allows. The title takes the focus once the dialog has opened:
+the page is a dialog too, and its focus trap took back a focus claimed as
+the form mounted.
+
+### §7 Actions are buttons
+
+As decided. The labels are *Seen again*, *Cause*, *Edit*, *Merge*,
+*Archive*, *Delete* on an observation; *Deeper cause*, *Root cause*, *Make
+root*, *Verify* on a cause; *Solution* and *Make cause* on a root cause;
+*Org cause* and *Local cause* across a boundary. Below 560 pixels a
+solution's *Drop* moves into `⋯` with merge, archive and delete. The tooltip
+describes the button rather than naming it and opens on keyboard focus.
+The page's own buttons are in sentence case, the top bar's included; the tab
+toggle keeps the theme's, and so does the shared dialog that confirms a
+delete.
+
+### §8 The picture
+
+As decided, with these departures:
+- **The picture draws the live solutions in a last lane** of each section,
+  after the root causes. The text above placed solutions in the filters and
+  in the two sizes without saying where they stand; a root cause without the
+  solution that addresses it is half the answer to *what is being done*.
+- **The register's own search went.** The filter row serves the register,
+  the analysis and the solutions tab alike, so a second search over the
+  register alone would have been a second rule for *found*.
+- **A saved filter is replaced by name.** Saving under a name already in the
+  list replaces that one where it stands, rather than keeping two of one
+  name.
+- The *Observations* filter reads **Obs** in its box, and the root-cause
+  filter **RC** in every language, as the label on the card does.
+- **Fit** fits both ways where that reads, and the height only where fitting
+  both ways would go below 75 %, never below 40 %; it holds until the person
+  zooms. A lane with nothing in it is only as wide as its heading, so this
+  scope's four headings stand in view together.
+- **Trace** follows the focus as well as the pointer, and Enter or Space
+  selects. A cause whose link leads out of the picture — explained from a
+  scope above that is not drawn, or explaining a scope below while View
+  local is off — says so on its card.
+
+### §9 Files written before
+
+As decided: the folder format is 9, a cause a live solution addresses reads
+as a root cause and nothing else does, `shared` and its events are read as
+history, and `check.causeExplainsObservationBelow` names the cause below to
+link instead.
+
+### §10 At the agent
+
+As decided, with one narrowing: **`observations.list` with `below: true`
+answers the observations of the scopes below**, each with its scope and
+explained by its own causes, rather than their whole analysis. The causes of
+a scope below are read with `causes.list` addressed to that scope, as every
+tool reads another scope.
+
+### The example
+
+The organisation has a global analysis of its own: one observation, and a
+root cause that explains it and the landscape's *Two systems compute a
+price*, so View local on the organisation draws a line across the boundary.
