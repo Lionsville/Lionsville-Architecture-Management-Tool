@@ -59,7 +59,7 @@ export function useLifecycle(args: {
   nameOf: (id: string, scope?: string) => string
   s: Translate
   /** Land a change on a scope below, as that scope's step (ADR-0032 §2). */
-  changeBelow?: (scope: string, change: (lists: LifecycleLists) => LifecycleLists | undefined) => void
+  changeBelow?: ((scope: string, change: (lists: LifecycleLists) => LifecycleLists | undefined) => void) | undefined
 }): Lifecycle {
   const { lists, commit, today, nameOf, s } = args
   const [seeing, setSeeing] = useState<{ observation: Observation; scope?: string } | undefined>(undefined)

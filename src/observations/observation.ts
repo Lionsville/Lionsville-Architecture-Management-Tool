@@ -461,14 +461,31 @@ export function causeEvidence(body: string): { why: boolean; verify: boolean; co
  * is found in any language and made, in `t`'s, where the body has none.
  */
 export function withConfirmation(body: string, confirmed: string, date: string, t: Translate): string {
-  const line = `${date}: ${confirmed.trim()}`
-  const verify = headingsFor('observation.tplVerify')
+  return underHeading(body, 'observation.tplVerify', `${date}: ${confirmed.trim()}`, t)
+}
+
+/**
+ * The body with `why` written under *Why we think so* (ADR-0032 §6): what a
+ * cause's form asks in a line of its own, kept where the next reader, and
+ * verifying, look for it. Nothing to say leaves the body as it was.
+ */
+export function withReason(body: string, why: string, t: Translate): string {
+  return why.trim() ? underHeading(body, 'observation.tplWhy', why.trim(), t) : body
+}
+
+/**
+ * `line` after whatever the section under that heading already says — the
+ * heading found in any language the tool speaks, and made, in `t`'s, at the
+ * end where the body has none.
+ */
+function underHeading(body: string, key: 'observation.tplWhy' | 'observation.tplVerify', line: string, t: Translate): string {
+  const spellings = headingsFor(key)
   const lines = body.split('\n')
   const at = lines.findIndex((one) => {
     const heading = /^#{1,6}\s+(.*?)\s*#*\s*$/.exec(one)
-    return heading !== null && verify.has(heading[1].trim().toLowerCase())
+    return heading !== null && spellings.has(heading[1].trim().toLowerCase())
   })
-  if (at < 0) return `${body.trimEnd()}${body.trim() ? '\n\n' : ''}## ${t('observation.tplVerify')}\n\n${line}\n`
+  if (at < 0) return `${body.trimEnd()}${body.trim() ? '\n\n' : ''}## ${t(key)}\n\n${line}\n`
   let end = lines.findIndex((one, index) => index > at && /^#{1,6}\s/.test(one))
   if (end < 0) end = lines.length
   // After the last line with anything on it, so the answer follows what is there.

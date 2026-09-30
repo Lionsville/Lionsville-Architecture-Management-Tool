@@ -8,7 +8,8 @@ import {
   isArchived, isMerged, isRootCause, linkCause, linkRefusal, liveObservations, makeCause, makeRootCause, observationsBelow,
   mergeObservations, newCause, newObservation,
   nextCauseNumber, nextObservationNumber, removeCause, removeObservation, rootCauses, seenAgain, seenDayProblem,
-  setArchived, unlinkCause, updateCause, updateObservation, verifyCause, withConfirmation,
+  setArchived, unlinkCause, updateCause, updateObservation, verifyCause, withConfirmation, withReason,
+  causeTemplate,
 } from './observation'
 import type { Analysis, Cause, LinkContext, Observation, ScopeAnalysis } from './observation'
 
@@ -326,5 +327,13 @@ describe('verifying a cause', () => {
     const written = '## How to verify\n\nRan the query.\n\n## More\n\nx\n'
     expect(withConfirmation(written, 'It held', '2026-09-20', t)).toBe('## How to verify\n\nRan the query.\n\n2026-09-20: It held\n\n## More\n\nx\n')
     expect(withConfirmation('A note.', 'It held', '2026-09-20', t)).toBe('A note.\n\n## How to verify\n\n2026-09-20: It held\n')
+  })
+  it('writes why we think so under its heading, in any language, and leaves the body alone with nothing to say', () => {
+    const body = withReason(causeTemplate(t), 'Volumes doubled', t)
+    expect(body).toBe('## Why we think so\n\nVolumes doubled\n\n## How to verify\n\n')
+    expect(causeEvidence(body)).toMatchObject({ why: true, verify: false })
+    expect(withReason('## Waarom we dat denken\n\n## Hoe te verifiëren\n', 'Twee keer zo veel', t))
+      .toBe('## Waarom we dat denken\n\nTwee keer zo veel\n\n## Hoe te verifiëren\n')
+    expect(withReason(causeTemplate(t), '  ', t)).toBe(causeTemplate(t))
   })
 })

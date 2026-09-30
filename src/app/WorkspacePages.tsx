@@ -102,6 +102,7 @@ function RecordPages({ parts }: { parts: WorkspaceParts }) {
         model={session.model}
         groupName={groupName}
         crumbs={crumbs}
+        path={props.project.path}
         below={readings.analysisBelow}
         explainedAbove={readings.explainedAbove}
         {...(readOnly ? {} : { onChangeBelow: changeBelow })}

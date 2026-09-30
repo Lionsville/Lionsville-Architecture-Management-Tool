@@ -63,9 +63,8 @@ import type { MakeId } from '../../model/keys'
 import type { CommandRefusal } from '../../model/reducer'
 import {
   absorbedBy, absorbFromBelow, causeLabel, explainedBy, formatObservationNumber, isArchived, isMerged,
-  isRootCause, linkCause, liveObservations, mergeObservations, newCause, newObservation, nextCauseNumber,
-  nextObservationNumber, observationsBelow, removeCause, removeObservation, setArchived, sortCauses, sortObservations,
-  unlinkCause, updateCause,
+  isRootCause, linkCause, liveObservations, mergeObservations, observationsBelow, removeCause, removeObservation,
+  setArchived, sortCauses, sortObservations, unlinkCause, updateCause,
 } from '../observation'
 import type {
   Analysis, Cause, CauseAbove, CauseLink, CausePatch, Observation, ObservationBelow, ScopeAnalysis,
@@ -73,7 +72,7 @@ import type {
 import { nodeKey } from '../graph'
 import { IMPACT_COLOR, IMPACT_LABEL, STATE_COLOR, STATE_LABEL, STRENGTH_LABEL } from '../observationScope'
 import { AnalysisPicture, PictureLegend } from './AnalysisPicture'
-import { ArchiveDialog, LinkDialog, MergeDialog, NewCauseDialog, NewObservationDialog } from './ObservationDialogs'
+import { ArchiveDialog, MergeDialog } from './ObservationDialogs'
 import { EmptyRegister, crumbTrail, experimentMoveActions, preselectedCause, rootToggle, useLifecycle } from './ObservationLifecycle'
 import { PictureMenu } from './PictureMenu'
 import type { MenuAction, PictureTarget } from './PictureMenu'
@@ -81,11 +80,11 @@ import { MergedNote, ReaderModeContext } from './Readers'
 import type { MergedInto } from './Readers'
 import { RecordReader } from './PageReaders'
 import type { DeleteKind, Selected } from './PageReaders'
-import type { LinkTarget } from './readerActions'
+import { useAnalysisForms } from './useAnalysisForms'
 import {
-  addressCause, defaultStrength, dropSolution, forgetCause, formatExperimentNumber, formatSolutionNumber, isLive,
-  mayAddress, mayPlanExperiment, moveSolution, newExperiment, newSolution, nextExperimentNumber, nextSolutionNumber,
-  planExperiment, removeExperiment, removeSolution, restoreSolution, setTestStrength, openItems, previousState,
+  addressCause, dropSolution, forgetCause, formatExperimentNumber, formatSolutionNumber, isLive, mayAddress,
+  mayPlanExperiment, moveSolution, newExperiment, newSolution, nextExperimentNumber, nextSolutionNumber, planExperiment,
+  removeExperiment, removeSolution, restoreSolution, setTestStrength, openItems, previousState,
   rootsWithoutSolution, seenSinceImplemented, solutionGate, solutionPhase, solutionPlanOf, solutionQuestions,
   unaddressCause, untestSolution,
 } from '../solution'
@@ -94,6 +93,7 @@ import { causesForProposal, experimentKey, solutionGraph, solutionKey } from '..
 import { OUTCOME_COLOR, OUTCOME_LABEL, PHASE_COLOR, PHASE_LABEL, QUESTION_LABEL } from '../observationScope'
 import { SolutionLegend, SolutionPicture } from './SolutionPicture'
 import { AddressDialog, DropDialog, NewExperimentDialog, NewSolutionDialog } from './SolutionDialogs'
+import type { NewSolution } from './SolutionDialogs'
 
 /** Everything the page hands back: the analysis and what is being done about it. */
 export type ObservationWork = Analysis & SolutionWork
@@ -126,6 +126,8 @@ export type ObservationsPageProps = {
    * a name that is empty is left out rather than drawn as an empty crumb.
    */
   crumbs?: readonly { path: string; name: string }[]
+  /** This scope's path, for the rules about links across the tree (ADR-0032 §4); the root where absent. */
+  path?: string
   /** The analysis of every scope below this one (ADR-0032 §1), off the tree. */
   below?: readonly ScopeAnalysis[]
   /** The causes of the scopes above that explain this scope's records, by the id explained (ADR-0032 §4). */
@@ -324,14 +326,10 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const [query, setQuery] = useState('')
   const [showMerged, setShowMerged] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
-  const [creating, setCreating] = useState(false)
   /** What is being archived: a dialog asks why first. */
   const [archiving, setArchiving] = useState<Observation | undefined>(undefined)
-  const [creatingCause, setCreatingCause] = useState(false)
   /** What is being merged away: one of this scope's, or one of a scope below. */
   const [merging, setMerging] = useState<{ observation: Observation; scope?: string } | undefined>(undefined)
-  /** What a cause is being linked to; a root cause is asked for by `root`, and a new one is made one. */
-  const [linking, setLinking] = useState<{ key: string; label: string; link: Omit<CauseLink, 'strength'>; root?: boolean } | undefined>(undefined)
   const [deleting, setDeleting] = useState<{ kind: DeleteKind; id: string; label: string } | undefined>(undefined)
 
   // --- what is where ------------------------------------------------------------------
@@ -412,25 +410,15 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const commit = useCallback((next: Partial<ObservationWork>) => {
     if (!readOnly) onChange({ ...work, ...next })
   }, [onChange, readOnly, work])
+  /** The new observation and the link dialog, and where what they make lands (ADR-0032 §2, §6). */
+  const forms = useAnalysisForms({
+    work, below, path: props.path, scopeName: model.name, commit, readOnly, onChangeBelow: props.onChangeBelow,
+    makeId, today, s, scopeLabel, nameOf, select: setSelectedKey, renderMarkdown: props.renderMarkdown,
+  })
   /** Seen again, verified, an experiment concluded or reopened: the moves that ask first. */
-  const lifecycle = useLifecycle({ lists: work, commit, today, nameOf, s })
+  const lifecycle = useLifecycle({ lists: work, commit, today, nameOf, s, changeBelow: forms.changeBelow })
   const { seeAgain, verify, moveExperiment, dialogs } = lifecycle
 
-  const create = (fields: { title: string; where: string; by: string; impact: Observation['impact'] }) => {
-    const fresh = newObservation({
-      id: makeId('ob'), number: nextObservationNumber(observations), date: today(), t: s, ...fields,
-    })
-    commit({ observations: [...observations, fresh], causes: [...causes] })
-    setCreating(false)
-    setSelectedKey(fresh.id)
-  }
-  const createCause = (title: string, root?: boolean): Cause => newCause({ id: makeId('ca'), number: nextCauseNumber(causes), title, t: s, root })
-  const addCause = (title: string) => {
-    const fresh = createCause(title)
-    commit({ observations: [...observations], causes: [...causes, fresh] })
-    setCreatingCause(false)
-    setSelectedKey(fresh.id)
-  }
   const patchCause = (id: string, patch: CausePatch) => commit({ ...analysis, causes: updateCause(causes, id, patch) })
   const rootOf = (cause: Cause) => rootToggle(cause, {
     lists: work, above: props.explainedAbove?.get(cause.id), commit, nameOf, scopeLabel, s, readOnly,
@@ -450,20 +438,6 @@ export function ObservationsPage(props: ObservationsPageProps) {
     setMerging(undefined)
     setSelectedKey(into)
   }
-  const link = (choice: { causeId?: string; newTitle?: string; strength: CauseLink['strength'] }) => {
-    if (!linking) return
-    let list = [...causes]
-    let causeId = choice.causeId
-    if (!causeId) {
-      const fresh = createCause(choice.newTitle ?? '', linking.root)
-      list = [...list, fresh]
-      causeId = fresh.id
-    }
-    const linked = linkCause(list, causeId, { ...linking.link, strength: choice.strength })
-    commit({ observations: [...observations], causes: linked })
-    setLinking(undefined)
-    setSelectedKey(causeId)
-  }
   const unlink = (causeId: string, target: Pick<CauseLink, 'id' | 'scope'>) => (
     commit({ ...analysis, causes: unlinkCause(causes, causeId, target.id, target.scope) })
   )
@@ -479,10 +453,10 @@ export function ObservationsPage(props: ObservationsPageProps) {
 
   // --- solutions (ADR-0026) ----------------------------------------------------------------
 
-  const proposeSolution = (fields: { title: string; causeId?: string }) => {
+  const proposeSolution = (fields: NewSolution) => {
     const fresh = newSolution({
       id: makeId('so'), number: nextSolutionNumber(solutions), title: fields.title, date: today(), t: s,
-      ...(fields.causeId ? { addresses: [{ id: fields.causeId, strength: defaultStrength(fields.causeId, causes) }] } : {}),
+      body: fields.body, addresses: fields.addresses,
     })
     commit({ solutions: [...solutions, fresh] })
     setProposing(undefined)
@@ -723,7 +697,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
         return [
           edit,
           { key: 'seen', label: s('observation.seenAgain'), onClick: () => seeAgain(one) },
-          { key: 'link', label: s('observation.link'), onClick: () => setLinking({ key, label: nameOf(one.id), link: { id: one.id } }) },
+          { key: 'link', label: s('observation.link'), onClick: () => forms.openLink({ mode: 'cause', id: one.id }) },
           { key: 'merge', label: s('observation.merge'), onClick: () => setMerging({ observation: one }) },
           { key: 'archive', label: s('observation.archive'), onClick: () => setArchiving(one) },
           remove('observation', one.id),
@@ -747,7 +721,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
             onClick: () => (one.state === 'assumed' ? verify(one) : patchCause(one.id, { state: 'assumed' })),
           },
           rootOf(one).action,
-          ...(isRootCause(one) ? [] : [{ key: 'link-deeper', label: s('observation.linkDeeper'), onClick: () => setLinking({ key: one.id, label: nameOf(one.id), link: { id: one.id } }) }]),
+          ...(isRootCause(one) ? [] : [{ key: 'link-deeper', label: s('observation.linkDeeper'), onClick: () => forms.openLink({ mode: 'deeper', id: one.id }) }]),
           ...(isRootCause(one) ? [{ key: 'propose', label: s('solution.proposeForCause'), onClick: () => setProposing({ causeId: one.id }) }] : []),
           remove('cause', one.id),
         ]
@@ -862,10 +836,6 @@ export function ObservationsPage(props: ObservationsPageProps) {
 
   const openKey = (key: string) => setSelectedKey(key)
   const { onOpenScope } = props
-  /** A cause for a record here, a deeper one, or the root cause its chain ends in. */
-  const openLink = ({ mode, id }: LinkTarget) => setLinking({
-    key: id, label: nameOf(id), link: { id }, ...(mode === 'root' ? { root: true } : {}),
-  })
   const reader = (
     <RecordReader
       selected={selected}
@@ -873,7 +843,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
       ctx={{
         work, below, plans, context, decisions: model.decisions ?? [], transitions: model.transitions ?? [],
         ...(props.explainedAbove ? { explainedAbove: props.explainedAbove } : {}),
-        readOnly, today, scopeName: model.name, s, nameOf, scopeLabel, commit, forms: { openLink }, lifecycle,
+        readOnly, today, scopeName: model.name, s, nameOf, scopeLabel, commit, forms, lifecycle,
         ask: {
           archive: setArchiving, merge: (observation, scope) => setMerging({ observation, ...(scope !== undefined ? { scope } : {}) }),
           remove: (kind, id) => setDeleting({ kind, id, label: nameOf(id) }), propose: (causeId) => setProposing({ causeId }),
@@ -919,10 +889,9 @@ export function ObservationsPage(props: ObservationsPageProps) {
           <Box sx={{ flex: 1 }} />
           {!readOnly && (
             <>
-              <Button size="small" onClick={() => setCreatingCause(true)} data-guide="observations.newCause">+ {s('observation.newCause')}</Button>
               {tab === 'solutions'
                 ? <Button size="small" variant="contained" onClick={() => setProposing(preselectedCause(causes, selected))} data-testid="solution-new" data-guide="solutions.new">+ {s('solution.new')}</Button>
-                : <Button size="small" variant="contained" onClick={() => setCreating(true)} data-guide="observations.new">+ {s('observation.new')}</Button>}
+                : <Button size="small" variant="contained" onClick={forms.openNew} data-guide="observations.new">+ {s('observation.new')}</Button>}
             </>
           )}
         </Box>
@@ -956,9 +925,8 @@ export function ObservationsPage(props: ObservationsPageProps) {
         </Box>
         <PictureMenu at={menu?.at} actions={menu ? menuActions(menu.target) : []} onClose={() => setMenu(undefined)} />
 
-        <NewObservationDialog open={creating} onCancel={() => setCreating(false)} onCreate={create} s={s} />
+        {forms.dialogs}
         {dialogs}
-        <NewCauseDialog open={creatingCause} onCancel={() => setCreatingCause(false)} onCreate={addCause} s={s} />
         <ArchiveDialog
           subject={archiving ? { id: archiving.id, label: nameOf(archiving.id) } : undefined}
           onCancel={() => setArchiving(undefined)}
@@ -978,19 +946,13 @@ export function ObservationsPage(props: ObservationsPageProps) {
           }}
           s={s}
         />
-        <LinkDialog
-          subject={linking ? { id: linking.key, label: linking.label } : undefined}
-          candidates={causes.filter((one) => one.id !== linking?.key && (linking?.root ? isRootCause(one) : true))}
-          onCancel={() => setLinking(undefined)}
-          onConfirm={link}
-          s={s}
-        />
         <NewSolutionDialog
           open={Boolean(proposing)}
           causes={causesForProposal(causes)}
           causeId={proposing?.causeId}
           onCancel={() => setProposing(undefined)}
           onCreate={proposeSolution}
+          renderMarkdown={props.renderMarkdown}
           s={s}
         />
         <AddressDialog

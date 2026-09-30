@@ -166,8 +166,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   // one is read from there before the tabs are changed.
   [['the observations, one of them read', [
     'observations.tabRegister', 'observations.tabAnalysis', 'observations.tabSolutions', 'observations.register',
-    'observations.row', 'observations.new', 'observations.newCause', 'observation.seenAgain', 'observation.merge',
-    'observation.cause',
+    'observations.row', 'observations.new', 'observation.seenAgain', 'observation.merge', 'observation.cause',
   ], async () => {
     const dialog = await page('Observations')
     fireEvent.click((await within(dialog).findAllByTestId(/^observation-row-/))[0])
@@ -185,6 +184,16 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   }],
   ['the solutions', ['solutions.new', 'solutions.phases'], async () => {
     fireEvent.click(await within(screen.getByRole('dialog')).findByTestId('observation-tab-solutions'))
+  }],
+  // A cause starts from what it explains: the form's New cause, not the bar's.
+  ['a new observation being written', [
+    'observations.newCause', 'observationForm.causes', 'observationForm.existingCause', 'observationForm.record',
+    'observationForm.description',
+  ], async () => {
+    const page = screen.getByRole('dialog')
+    fireEvent.click(within(page).getByTestId('observation-tab-register'))
+    fireEvent.click(within(page).getByRole('button', { name: '+ New observation' }))
+    await screen.findByRole('dialog', { name: 'New observation' })
   }]],
   [['the decisions, one from above read', [
     'decisions.list', 'decisions.row', 'decisions.new', 'decisions.fromAbove', 'decision.status', 'decision.signers',

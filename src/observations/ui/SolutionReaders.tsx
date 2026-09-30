@@ -54,6 +54,7 @@ import {
 } from '../observationScope'
 import { BAR_SX, LinkList, READER_ROOT_SX, TITLE_SX, Term, Value, useDraft } from './Readers'
 import { ReaderActions } from './ActionButton'
+import { TitleField } from './FormParts'
 import { deleteAction, experimentMoveButtons, modeAction, restoreAction, solutionActions } from './readerActions'
 import { experimentMoveLabel } from './ObservationLifecycle'
 
@@ -90,6 +91,14 @@ function AnswerField(props: { label: string; value: string; onSave: (value: stri
 }
 
 // --- one solution -------------------------------------------------------------------------
+
+/** A patch that never blanks a title: what was refused stays in the draft, with what is wrong under it. */
+function keepTitle<T extends { title?: string }>(patch: T): T {
+  if (patch.title === undefined || patch.title.trim()) return patch
+  const { title: _title, ...rest } = patch
+  void _title
+  return rest as T
+}
 
 export type SolutionReaderProps = {
   solution: Solution
@@ -138,7 +147,7 @@ export function SolutionReader(props: SolutionReaderProps) {
   const dropped = solution.state === 'dropped'
   const canEdit = !readOnly && !dropped
   const stored = useMemo(() => ({ title: solution.title, body: solution.body }), [solution])
-  const { mode, draft, setDraft, commit, switchMode } = useDraft(stored, (patch) => props.onUpdate(patch), canEdit)
+  const { mode, draft, setDraft, commit, switchMode } = useDraft(stored, (patch) => props.onUpdate(keepTitle(patch)), canEdit)
   const [previewShown, setPreviewShown] = useState(true)
   const showPreview = mode === 'read' || previewShown
   const text = mode === 'edit' ? draft.body : solution.body
@@ -195,8 +204,8 @@ export function SolutionReader(props: SolutionReaderProps) {
       <Box sx={{ display: 'grid', gridTemplateColumns: mode === 'edit' && showPreview ? 'minmax(0, 1fr) minmax(0, 1fr)' : 'minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
         {mode === 'edit' && (
           <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0, borderRight: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
-            <Box sx={{ px: 1.5, py: 1, borderBottom: 1, borderColor: 'divider' }}>
-              <TextField size="small" fullWidth label={s('solution.titleField')} value={draft.title} onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))} onBlur={commit} />
+            <Box sx={{ px: 1.5, py: 1.25, borderBottom: 1, borderColor: 'divider' }}>
+              <TitleField label={s('solution.titleField')} value={draft.title} onChange={(title) => setDraft((d) => ({ ...d, title }))} onBlur={commit} example={s('solution.newTitleHelp')} missing={s('solution.formTitleMissing')} />
             </Box>
             <DocumentSource
               value={draft.body}
@@ -507,7 +516,7 @@ export function ExperimentReader(props: ExperimentReaderProps) {
     where: experiment.where ?? '', by: experiment.by ?? '', from: experiment.from ?? '', to: experiment.to ?? '',
     result: experiment.result ?? '',
   }), [experiment])
-  const { mode, draft, setDraft, commit, switchMode } = useDraft(stored, (patch) => props.onUpdate(patch), canEdit)
+  const { mode, draft, setDraft, commit, switchMode } = useDraft(stored, (patch) => props.onUpdate(keepTitle(patch)), canEdit)
   const [previewShown, setPreviewShown] = useState(true)
   const showPreview = mode === 'read' || previewShown
   const text = mode === 'edit' ? draft.body : experiment.body
@@ -556,7 +565,12 @@ export function ExperimentReader(props: ExperimentReaderProps) {
         {mode === 'edit' && (
           <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0, borderRight: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
             <Box sx={{ px: 1.5, py: 1, borderBottom: 1, borderColor: 'divider', display: 'grid', gap: 1, gridTemplateColumns: '1fr 1fr' }}>
-              <TextField size="small" label={s('solution.titleField')} value={draft.title} onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))} onBlur={commit} sx={{ gridColumn: '1 / -1' }} />
+              <Box sx={{ gridColumn: '1 / -1' }}>
+                <TitleField
+                  label={s('solution.titleField')} value={draft.title} onChange={(title) => setDraft((d) => ({ ...d, title }))} onBlur={commit}
+                  example={s('solution.experimentTitleExample')} missing={s('solution.experimentTitleMissing')}
+                />
+              </Box>
               {field('hypothesis', s('solution.hypothesis'), { wide: true })}
               {field('measure', s('solution.measure'), { wide: true })}
               {field('where', s('solution.whereField'))}

@@ -21,7 +21,8 @@
  *
  * Editing follows the decisions reader: a local draft, committed when it has
  * been quiet for a moment, when the mode switches back to read, and when the
- * pane closes or moves to another record.
+ * pane closes or moves to another record. The fields are the form's, with the
+ * same examples, and the facts an observation needs are never blanked.
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import Box from '@mui/material/Box'
@@ -29,7 +30,6 @@ import Chip from '@mui/material/Chip'
 import IconButton from '@mui/material/IconButton'
 import Link from '@mui/material/Link'
 import MenuItem from '@mui/material/MenuItem'
-import TextField from '@mui/material/TextField'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n'
@@ -46,8 +46,11 @@ import {
 import type {
   Cause, CauseLink, CausePatch, Observation, ObservationImpact, ObservationPatch,
 } from '../observation'
+import { observationProblems } from '../form'
 import { EVENT_LABEL, IMPACT_COLOR, IMPACT_LABEL, STATE_COLOR, STATE_LABEL, STRENGTH_LABEL } from '../observationScope'
 import { COMPACT, ReaderActions, ReaderNotice } from './ActionButton'
+import { ExampleField, TitleField } from './FormParts'
+import { exampleFor, problemText } from './ObservationForm'
 import {
   causeActions, modeAction, observationActions, openScopeAction, restoreAction,
 } from './readerActions'
@@ -237,6 +240,20 @@ export type ObservationReaderProps = {
   images?: DocumentImages
 }
 
+/**
+ * A patch as the reader may hand it on: the four facts an observation needs
+ * are never blanked, and the day is never after today (ADR-0032 §6, §10).
+ * What was refused stays in the draft, with what is wrong under it.
+ */
+function keepFacts(patch: ObservationPatch, today: string): ObservationPatch {
+  const problems = observationProblems({
+    title: patch.title ?? 'x', where: patch.where ?? 'x', by: patch.by ?? 'x', date: patch.date ?? today,
+  }, today)
+  const kept = { ...patch }
+  for (const key of Object.keys(problems) as (keyof typeof problems)[]) delete kept[key]
+  return kept
+}
+
 export function ObservationReader(props: ObservationReaderProps) {
   const { observation, s, renderMarkdown, nameOf, readOnly, fromScope, mergedInto } = props
   const archived = observation.archived === true
@@ -246,7 +263,7 @@ export function ObservationReader(props: ObservationReaderProps) {
     title: observation.title, body: observation.body, where: observation.where ?? '', by: observation.by ?? '',
     date: observation.date, impact: observation.impact,
   }), [observation])
-  const { mode, draft, setDraft, commit, switchMode } = useDraft(stored, (patch) => props.onUpdate(patch), canEdit)
+  const { mode, draft, setDraft, commit, switchMode } = useDraft(stored, (patch) => props.onUpdate(keepFacts(patch, props.today)), canEdit)
   const [previewShown, setPreviewShown] = useState(true)
   const showPreview = mode === 'read' || previewShown
   const text = mode === 'edit' ? draft.body : observation.body
@@ -360,7 +377,7 @@ export function ObservationReader(props: ObservationReaderProps) {
   )
 }
 
-/** The facts and the impact, edited in place. */
+/** The four facts and the impact, as the form asks them: an example under each, and what is wrong in its place. */
 function ObservationFields({ draft, onChange, onBlur, today, s }: {
   draft: { title: string; where: string; by: string; date: string; impact: ObservationImpact }
   onChange: (patch: Partial<{ title: string; where: string; by: string; date: string; impact: ObservationImpact }>) => void
@@ -368,15 +385,31 @@ function ObservationFields({ draft, onChange, onBlur, today, s }: {
   today: string
   s: Translate
 }) {
+  const problems = observationProblems(draft, today)
+  const field = (key: 'title' | 'where' | 'by', labelKey: 'observation.titleField' | 'observation.whereField' | 'observation.byField', wide?: boolean) => (
+    <Box sx={wide ? { gridColumn: '1 / -1' } : undefined}>
+      <ExampleField
+        required label={s(labelKey)} value={draft[key]} onChange={(value) => onChange({ [key]: value })} onBlur={onBlur}
+        example={exampleFor(key, s)} problem={problemText(key, problems[key], s)}
+      />
+    </Box>
+  )
   return (
-    <Box sx={{ px: 1.5, py: 1, borderBottom: 1, borderColor: 'divider', display: 'grid', gap: 1, gridTemplateColumns: '1fr 1fr' }}>
-      <TextField size="small" label={s('observation.titleField')} value={draft.title} onChange={(e) => onChange({ title: e.target.value })} onBlur={onBlur} sx={{ gridColumn: '1 / -1' }} />
-      <TextField size="small" label={s('observation.whereField')} value={draft.where} onChange={(e) => onChange({ where: e.target.value })} onBlur={onBlur} />
-      <TextField size="small" label={s('observation.byField')} value={draft.by} onChange={(e) => onChange({ by: e.target.value })} onBlur={onBlur} />
-      <TextField size="small" type="date" label={s('observation.dateField')} value={draft.date} onChange={(e) => onChange({ date: e.target.value })} onBlur={onBlur} slotProps={{ inputLabel: { shrink: true }, htmlInput: { max: today } }} />
-      <TextField select size="small" label={s('observation.impactField')} value={draft.impact} onChange={(e) => onChange({ impact: e.target.value as ObservationImpact })} onBlur={onBlur} slotProps={{ htmlInput: { 'aria-label': s('observation.impactField') } }}>
+    <Box sx={{ px: 1.5, py: 1.25, borderBottom: 1, borderColor: 'divider', display: 'grid', gap: 1.5, gridTemplateColumns: '1fr 1fr' }}>
+      {field('title', 'observation.titleField', true)}
+      {field('where', 'observation.whereField')}
+      {field('by', 'observation.byField')}
+      <ExampleField
+        required type="date" max={today} label={s('observation.dateField')} value={draft.date}
+        onChange={(date) => onChange({ date })} onBlur={onBlur}
+        example={exampleFor('date', s)} problem={problemText('date', problems.date, s)}
+      />
+      <ExampleField
+        select label={s('observation.impactField')} value={draft.impact} example={s('observation.formImpactExample')}
+        onChange={(value) => onChange({ impact: value as ObservationImpact })} onBlur={onBlur}
+      >
         {OBSERVATION_IMPACTS.map((one) => <MenuItem key={one} value={one}>{s(IMPACT_LABEL[one])}</MenuItem>)}
-      </TextField>
+      </ExampleField>
     </Box>
   )
 }
@@ -465,7 +498,11 @@ export function CauseReader(props: CauseReaderProps) {
   const canEdit = !readOnly && !fromScope
   const mayAdd = canEdit || (!readOnly && Boolean(fromScope) && props.mayChangeBelow === true)
   const stored = useMemo(() => ({ title: cause.title, body: cause.body }), [cause])
-  const { mode, draft, setDraft, commit, switchMode } = useDraft(stored, (patch) => props.onUpdate(patch), canEdit)
+  const { mode, draft, setDraft, commit, switchMode } = useDraft(stored, (patch) => {
+    // A title is never blanked: what was refused stays in the draft.
+    const { title, ...rest } = patch
+    props.onUpdate(title !== undefined && !title.trim() ? rest : patch)
+  }, canEdit)
   const [previewShown, setPreviewShown] = useState(true)
   const [panel, setPanel] = useState<'root' | 'org' | undefined>(undefined)
   const showPreview = mode === 'read' || previewShown
@@ -516,8 +553,11 @@ export function CauseReader(props: CauseReaderProps) {
       <Box sx={{ display: 'grid', gridTemplateColumns: mode === 'edit' && showPreview ? 'minmax(0, 1fr) minmax(0, 1fr)' : 'minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
         {mode === 'edit' && (
           <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0, borderRight: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
-            <Box sx={{ px: 1.5, py: 1, borderBottom: 1, borderColor: 'divider' }}>
-              <TextField size="small" fullWidth label={s('observation.titleField')} value={draft.title} onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))} onBlur={commit} />
+            <Box sx={{ px: 1.5, py: 1.25, borderBottom: 1, borderColor: 'divider' }}>
+              <TitleField
+                label={s('observation.titleField')} value={draft.title} onChange={(title) => setDraft((d) => ({ ...d, title }))} onBlur={commit}
+                example={s('observation.causeTitleExample')} missing={s('observation.causeTitleMissing')}
+              />
             </Box>
             <DocumentSource
               value={draft.body}

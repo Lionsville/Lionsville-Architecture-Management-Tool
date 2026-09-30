@@ -19,7 +19,8 @@ import { chooseLast, keepsWhatIsTyped } from './testing/questionDialogs'
 import type { QuestionDialogCase } from './testing/questionDialogs'
 import { translator } from '../i18n'
 import { newCause, newObservation } from '../observations/observation'
-import { ArchiveDialog, LinkDialog, MergeDialog, SeenDialog, VerifyDialog } from '../observations/ui/ObservationDialogs'
+import { ArchiveDialog, MergeDialog, SeenDialog, VerifyDialog } from '../observations/ui/ObservationDialogs'
+import { LinkDialog } from '../observations/ui/LinkForm'
 import { AddressDialog, ConcludeDialog, DropDialog, NewExperimentDialog } from '../observations/ui/SolutionDialogs'
 import { newAdr } from '../decisions/adr'
 import type { Adr } from '../decisions/adr'
@@ -59,12 +60,21 @@ const CASES: QuestionDialogCase[] = [
   },
   {
     name: 'linking a cause',
-    open: (id) => <LinkDialog subject={{ id, label: 'O-1 Seen' }} candidates={causes()} onCancel={nothing} onConfirm={nothing} s={s} />,
-    // The picker's last choice hides the title field, so the title is typed and the strength chosen.
+    open: (id) => (
+      <LinkDialog
+        spec={{
+          id, title: 'Cause for O-1', intro: 'Why?', subject: 'O-1 Seen',
+          candidates: causes().map((one) => ({ key: one.id, label: one.title, title: one.title, root: false })),
+          create: { madeIn: 'Acme', nextNumber: 3, behind: [] },
+        }}
+        onCancel={nothing} onCreate={nothing} onLink={nothing} renderMarkdown={(md) => md} s={s}
+      />
+    ),
+    // The cause's own fields: its title typed and its strength chosen.
     fill: () => {
       const dialog = document.querySelector<HTMLElement>('[role="dialog"]')!
-      fireEvent.change(within(dialog).getByLabelText('Name the cause'), { target: { value: 'Too few pickers' } })
-      chooseLast(within(dialog).getAllByRole('combobox')[1]!)
+      fireEvent.change(within(dialog).getByTestId('cause-draft-title'), { target: { value: 'Too few pickers' } })
+      chooseLast(within(dialog).getAllByRole('combobox')[0]!)
     },
   },
   {

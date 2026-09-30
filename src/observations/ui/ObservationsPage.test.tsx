@@ -127,15 +127,17 @@ describe('ObservationsPage', () => {
     expect(screen.getByTestId('observation-history').textContent).toContain('Recorded')
   })
 
-  it('records a new observation under the next number, shared when asked', () => {
+  it('records a new observation under the next number, with the four facts it needs', () => {
     const { onChange } = mount()
     fireEvent.click(screen.getByRole('button', { name: '+ New observation' }))
-    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Duplicate customers' } })
-    fireEvent.change(screen.getByLabelText('Where it was seen'), { target: { value: 'CRM' } })
-    fireEvent.change(screen.getByLabelText('Observed by'), { target: { value: 'W.S.' } })
+    fireEvent.change(screen.getByRole('textbox', { name: 'Title' }), { target: { value: 'Duplicate customers' } })
+    fireEvent.change(screen.getByRole('textbox', { name: 'Where it was seen' }), { target: { value: 'CRM' } })
+    fireEvent.change(screen.getByRole('textbox', { name: 'Observed by' }), { target: { value: 'W.S.' } })
+    // When seen starts at today, and is shown.
+    expect((screen.getByTestId('form-date') as HTMLInputElement).value).toBe('2026-09-20')
     // Nothing is shared: a new one is local, and the scopes above read it anyway (ADR-0032 §1).
     expect(screen.queryByLabelText('Share with the scopes above')).toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: 'Record' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Record observation' }))
     const next = lastChange(onChange)
     expect(next.observations).toHaveLength(3)
     expect(next.observations[2]).toMatchObject({ number: 3, title: 'Duplicate customers', where: 'CRM', by: 'W.S.', seen: 1, date: '2026-09-20' })
@@ -193,11 +195,32 @@ describe('ObservationsPage', () => {
     const { onChange } = mount()
     fireEvent.click(screen.getByTestId('observation-row-o2'))
     fireEvent.click(screen.getByRole('button', { name: 'Cause' }))
-    fireEvent.change(screen.getByLabelText('Name the cause'), { target: { value: 'Two teams own one rule' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Link' }))
+    expect(screen.getByTestId('link-made-as').textContent).toBe('Made in Claims as CA-0002.')
+    fireEvent.change(screen.getByTestId('cause-draft-title'), { target: { value: 'Two teams own one rule' } })
+    fireEvent.change(screen.getByTestId('cause-draft-why'), { target: { value: 'Both teams say it is theirs' } })
+    fireEvent.click(screen.getByTestId('link-create'))
     const next = lastChange(onChange)
+    expect(onChange).toHaveBeenCalledTimes(1)
     expect(next.causes).toHaveLength(2)
     expect(next.causes[1]).toMatchObject({ number: 2, title: 'Two teams own one rule', state: 'assumed', explains: [{ id: 'o2', strength: 'normal' }] })
+    expect(next.causes[1].body).toContain('Both teams say it is theirs')
+  })
+
+  it('links an existing cause, offering only what the rules allow', () => {
+    const { onChange } = mount({ model: { ...model, causes: [
+      cause({ explains: [{ id: 'o1', strength: 'strong' }] }),
+      cause({ id: 'c2', number: 2, title: 'Nobody owns releases', explains: [] }),
+    ] } })
+    fireEvent.click(screen.getByTestId('observation-row-o1'))
+    fireEvent.click(screen.getByRole('button', { name: 'Cause' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Existing cause (1)' }))
+    // CA-0001 explains it already, so the one to pick is CA-0002.
+    expect(screen.getAllByTestId('link-candidate').map((one) => one.textContent)).toEqual(['CA-0002 Nobody owns releases'])
+    fireEvent.click(screen.getByTestId('link-confirm'))
+    expect(screen.getByRole('alert').textContent).toBe('Choose a cause to link.')
+    fireEvent.click(screen.getByRole('radio', { name: 'CA-0002 Nobody owns releases' }))
+    fireEvent.click(screen.getByTestId('link-confirm'))
+    expect(lastChange(onChange).causes[1].explains).toEqual([{ id: 'o1', strength: 'normal' }])
   })
 
   it('merges one observation into another, and the page says where it went', () => {
@@ -295,8 +318,8 @@ describe('ObservationsPage', () => {
     // The dialog fades out; until it is gone the page behind it is hidden from role queries.
     await waitForElementToBeRemoved(() => screen.queryByTestId('verify-answer'))
     fireEvent.click(screen.getByRole('button', { name: 'Deeper cause' }))
-    fireEvent.change(screen.getByLabelText('Name the cause'), { target: { value: 'No capacity planning' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Link' }))
+    fireEvent.change(screen.getByTestId('cause-draft-title'), { target: { value: 'No capacity planning' } })
+    fireEvent.click(screen.getByTestId('link-create'))
     const next = lastChange(onChange)
     expect(next.causes[1]).toMatchObject({ title: 'No capacity planning', explains: [{ id: 'c1', strength: 'normal' }] })
   })
