@@ -150,6 +150,7 @@ function useSessionParts(props: ProjectWorkspaceProps) {
   const { files, pickers, safeguardRef } = useWorkspaceFiles({
     session, putPicture: writer.put, seams: props.files, carryOut: tree.carryOut, onAdoptScopes: tree.onAdoptScopes, readScope: tree.readScope, onTreeChanged,
     ...(recovering && navigation.onReload ? { onPutBack: navigation.onReload } : {}),
+    onGoHome: navigation.onGoHome,
     notify, s,
   })
   const requests = useWorkspaceRequests({ session, scope: project.path, indexRef, onOpenScope, notify, s })

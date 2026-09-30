@@ -39,10 +39,12 @@ export function useWorkspaceFiles(deps: {
   onTreeChanged: () => void
   /** Where the open scope could not be read whole: what opens it again once a working file has put it back. */
   onPutBack?: () => void
+  /** A scope's home: where a working file whose top draws nothing is shown once it has landed here. */
+  onGoHome?: ProjectFilesDeps['onNothingToDraw']
   notify: Notify
   s: Translate
 }): WorkspaceFileParts {
-  const { session, putPicture, carryOut, onAdoptScopes, readScope, onTreeChanged, onPutBack, notify, s } = deps
+  const { session, putPicture, carryOut, onAdoptScopes, readScope, onTreeChanged, onPutBack, onGoHome, notify, s } = deps
   const { documents, interchange, askPassword, landing, chooseDestination } = deps.seams
   /** The store write, and then the two reads a changed tree needs (ADR-0012 §10). */
   const adoptWorkingSet = useCallback<AdoptScopes>(
@@ -65,6 +67,7 @@ export function useWorkspaceFiles(deps: {
     ...(onAdoptScopes ? { adoptWorkingSet } : {}),
     ...(readScope ? { readScope } : {}),
     ...(onPutBack ? { onPutBack } : {}),
+    ...(onGoHome ? { onNothingToDraw: onGoHome } : {}),
     askPassword,
     landing,
     ...(chooseDestination ? { chooseDestination } : {}),

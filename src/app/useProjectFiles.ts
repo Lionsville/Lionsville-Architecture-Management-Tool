@@ -24,6 +24,7 @@ import type { SavedDocument } from '../ports/DocumentGateway'
 import type { CarriedOut, Interchange } from '../ports/Interchange'
 import { messageFor } from './messageFor'
 import type { ScopeSnapshot } from '../projects/scope'
+import type { ScopePath } from '../projects/scopePath'
 import type { ModelSession } from './useModelSession'
 import type { AskPassword } from './usePasswordPrompt'
 import type { Notify } from './useToasts'
@@ -125,6 +126,13 @@ export type ProjectFilesDeps = {
    * then read again rather than adopted into a session that may not change.
    */
   onPutBack?: () => void
+  /**
+   * A working file landed here whose top draws nothing: an ordinary scope,
+   * but one with no canvas to show, so it is shown where such a scope is —
+   * on its home, as a page closed over it lands there. Absent where there is
+   * no home to go to, and the scope then stays open as it landed.
+   */
+  onNothingToDraw?: (path: ScopePath) => void
   notify: Notify
   s: Translate
 }
@@ -132,7 +140,7 @@ export type ProjectFilesDeps = {
 export function useProjectFiles(deps: ProjectFilesDeps): ProjectFiles {
   const {
     session, putPicture, documents, carryOut, interchange, adoptWorkingSet, readScope, askPassword, landing, chooseDestination,
-    beforeReplace, onPutBack, notify, s,
+    beforeReplace, onPutBack, onNothingToDraw, notify, s,
   } = deps
 
   /**
@@ -209,12 +217,17 @@ export function useProjectFiles(deps: ProjectFilesDeps): ProjectFiles {
       notify(s('shell.workingSetNotHere'), 'error')
       return false
     }
+    // Only where the store wrote it: a scope the session alone holds is
+    // written by the session, which a home would close first.
+    const goHome = adoptWorkingSet && onNothingToDraw && !result.top.model.diagrams.length
+      ? () => onNothingToDraw(result.top.path) : undefined
     if (puttingBack) {
       // Asked for, from the notice over a scope that could not be read whole:
       // the one landing such a scope takes, and what it kept first said.
       const brought = await adoptWorkingSet(result, { putBack: { subject: s('history.beforeReplace') } })
       notify(putBackSaid(brought ?? { setAside: [] }, s).trim(), 'info')
-      onPutBack()
+      if (goHome) goHome()
+      else onPutBack()
       return true
     }
     if (adoptWorkingSet) await adoptWorkingSet(result)
@@ -224,8 +237,9 @@ export function useProjectFiles(deps: ProjectFilesDeps): ProjectFiles {
     // is left as it is.
     const landed = adoptWorkingSet && readScope ? await readScope(result.top.path).catch(() => undefined) : undefined
     session.adopt(landed ?? result.top, false)
+    goHome?.()
     return true
-  }, [session, adoptWorkingSet, readScope, onPutBack, notify, s])
+  }, [session, adoptWorkingSet, readScope, onPutBack, onNothingToDraw, notify, s])
 
   const openDocument = useCallback((name: string, held: Uint8Array) => {
     // A sealed file asks for its password first (ADR-0023), and everything

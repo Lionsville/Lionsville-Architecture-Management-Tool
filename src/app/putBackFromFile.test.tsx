@@ -59,6 +59,33 @@ describe('a working file opened onto a scope that could not be read whole', () =
     expect(notify).toHaveBeenCalledWith(expect.stringContaining('acme/model.json.unread'), 'info')
   })
 
+  it('shows a put-back scope that draws nothing on its home, where there is no canvas to show it on', async () => {
+    const landing: LandingPrompts = {
+      askDestination: () => Promise.resolve('here'),
+      confirmReplace: () => Promise.resolve(true),
+    }
+    const adopt = vi.fn<AdoptScopes>(() => Promise.resolve({ setAside: [] }))
+    const onPutBack = vi.fn()
+    const onNothingToDraw = vi.fn()
+    const session = { mayChange: () => false, snapshot: scope, adopt: vi.fn() } as unknown as ModelSession
+    let files!: ProjectFiles
+    function Host() {
+      files = useProjectFiles({
+        session, putPicture: () => Promise.reject(new Error('no pictures')),
+        documents: { save: () => Promise.resolve(), readBytes: () => Promise.reject(new Error('unread')), readDataUrl: () => Promise.reject(new Error('unread')) },
+        carryOut: () => Promise.reject(new Error('not asked')), interchange: WORKING_FILE_INTERCHANGE,
+        adoptWorkingSet: adopt, onPutBack, onNothingToDraw, askPassword: () => Promise.resolve(undefined), landing, notify: vi.fn(), s,
+      })
+      return null
+    }
+    render(<Host />)
+    const drawless = { ...scope(), model: { ...scope().model, diagrams: [] }, activeDiagramId: '' }
+    files.openDocument('acme.lvarch', (await carryScopes([drawless])).bytes)
+    await waitFor(() => expect(onNothingToDraw).toHaveBeenCalledWith('acme'))
+    expect(adopt).toHaveBeenCalledTimes(1)
+    expect(onPutBack).not.toHaveBeenCalled()
+  })
+
   it('says, where the question is asked, that replacing puts the scope back and keeps what could not be read', () => {
     renderShell(
       <OpenIntoDialog open file="acme.lvarch" here="Acme" canGoElsewhere={false} puttingBack onCancel={() => {}} onElsewhere={() => {}} onHere={() => {}} s={s} />,
