@@ -17,7 +17,7 @@
  * strength, and taken off again with the button at its end. Nothing in it
  * exists until the form is recorded.
  */
-import { useId, useState, type ReactNode } from 'react'
+import { useId, useState, type ReactNode, type Ref } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Checkbox from '@mui/material/Checkbox'
@@ -56,6 +56,8 @@ export function ExampleField(props: {
   type?: 'date'
   max?: string
   autoFocus?: boolean
+  /** The input itself, for a dialog that puts focus on it once it has opened. */
+  inputRef?: Ref<HTMLInputElement>
   testId?: string
   onBlur?: () => void
   onEnter?: () => void
@@ -70,6 +72,7 @@ export function ExampleField(props: {
       type={props.type}
       required={props.required}
       autoFocus={props.autoFocus}
+      inputRef={props.inputRef}
       label={props.label}
       value={props.value}
       error={props.problem !== undefined}

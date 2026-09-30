@@ -61,8 +61,8 @@ export function ArchiveDialog({ subject, onCancel, onConfirm, s }: ArchiveDialog
         />
       </DialogContent>
       <DialogActions>
-        <Button onClick={onCancel}>{s('common.cancel')}</Button>
-        <Button variant="contained" onClick={() => onConfirm(note.trim())}>{s('observation.archiveConfirm')}</Button>
+        <Button sx={{ textTransform: 'none' }} onClick={onCancel}>{s('common.cancel')}</Button>
+        <Button sx={{ textTransform: 'none' }} variant="contained" onClick={() => onConfirm(note.trim())}>{s('observation.archiveConfirm')}</Button>
       </DialogActions>
     </Dialog>
   )
@@ -122,8 +122,8 @@ export function SeenDialog({ subject, today, onCancel, onConfirm, s }: SeenDialo
         />
       </DialogContent>
       <DialogActions>
-        <Button onClick={onCancel}>{s('common.cancel')}</Button>
-        <Button variant="contained" disabled={problem !== undefined} onClick={submit} data-testid="seen-confirm">{s('observation.seenAgain')}</Button>
+        <Button sx={{ textTransform: 'none' }} onClick={onCancel}>{s('common.cancel')}</Button>
+        <Button sx={{ textTransform: 'none' }} variant="contained" disabled={problem !== undefined} onClick={submit} data-testid="seen-confirm">{s('observation.seenAgain')}</Button>
       </DialogActions>
     </Dialog>
   )
@@ -164,8 +164,8 @@ export function VerifyDialog({ subject, onCancel, onConfirm, s }: VerifyDialogPr
         />
       </DialogContent>
       <DialogActions>
-        <Button onClick={onCancel}>{s('common.cancel')}</Button>
-        <Button variant="contained" disabled={!ready} onClick={() => onConfirm(answer.trim())} data-testid="verify-confirm">{s('observation.verify')}</Button>
+        <Button sx={{ textTransform: 'none' }} onClick={onCancel}>{s('common.cancel')}</Button>
+        <Button sx={{ textTransform: 'none' }} variant="contained" disabled={!ready} onClick={() => onConfirm(answer.trim())} data-testid="verify-confirm">{s('observation.verify')}</Button>
       </DialogActions>
     </Dialog>
   )
@@ -206,8 +206,8 @@ export function MergeDialog({ target, candidates, onCancel, onConfirm, s }: Merg
         </TextField>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onCancel}>{s('common.cancel')}</Button>
-        <Button variant="contained" disabled={!into} onClick={() => onConfirm(into)}>{s('observation.mergeConfirm')}</Button>
+        <Button sx={{ textTransform: 'none' }} onClick={onCancel}>{s('common.cancel')}</Button>
+        <Button sx={{ textTransform: 'none' }} variant="contained" disabled={!into} onClick={() => onConfirm(into)}>{s('observation.mergeConfirm')}</Button>
       </DialogActions>
     </Dialog>
   )

@@ -796,8 +796,8 @@ export function ObservationsPage(props: ObservationsPageProps) {
           {!readOnly && (
             <>
               {tab === 'solutions'
-                ? <Button size="small" variant="contained" onClick={() => setProposing(preselectedCause(causes, selected))} data-testid="solution-new" data-guide="solutions.new">+ {s('solution.new')}</Button>
-                : <Button size="small" variant="contained" onClick={forms.openNew} data-guide="observations.new">+ {s('observation.new')}</Button>}
+                ? <Button size="small" variant="contained" onClick={() => setProposing(preselectedCause(causes, selected))} sx={{ textTransform: 'none' }} data-testid="solution-new" data-guide="solutions.new">+ {s('solution.new')}</Button>
+                : <Button size="small" variant="contained" onClick={forms.openNew} sx={{ textTransform: 'none' }} data-guide="observations.new">+ {s('observation.new')}</Button>}
             </>
           )}
         </Box>

@@ -186,7 +186,7 @@ export function SolutionReader(props: SolutionReaderProps) {
         aria-label={s(field === 'benefit' ? 'solution.benefitField' : 'solution.costField')}
         data-testid={`solution-${field}`}
       >
-        {SOLUTION_SIZES.map((size) => <ToggleButton key={size} value={size} sx={{ py: 0, px: 1, fontSize: 11 }}>{s(SIZE_LABEL[size])}</ToggleButton>)}
+        {SOLUTION_SIZES.map((size) => <ToggleButton key={size} value={size} sx={{ py: 0, px: 1, fontSize: 11, textTransform: 'none' }}>{s(SIZE_LABEL[size])}</ToggleButton>)}
       </ToggleButtonGroup>
     ) : value ? s(SIZE_LABEL[value]) : <Muted>{s('solution.unset')}</Muted>
   )
@@ -278,7 +278,7 @@ export function SolutionReader(props: SolutionReaderProps) {
                         slotProps={{ htmlInput: { 'aria-label': s('solution.validatedWith'), 'data-testid': 'solution-validated-field' } }}
                         sx={{ minWidth: 180 }}
                       />
-                      <Button size="small" onClick={addName} data-testid="solution-validated-add">{s('solution.add')}</Button>
+                      <Button sx={{ textTransform: 'none' }} size="small" onClick={addName} data-testid="solution-validated-add">{s('solution.add')}</Button>
                     </>
                   )}
                 </Box>
@@ -294,7 +294,7 @@ export function SolutionReader(props: SolutionReaderProps) {
                   {solution.attempts.map((one, index) => (
                     <li key={index}>
                       {one.when ? <b>{one.when}: </b> : null}{one.what}{one.why ? <> — <i>{one.why}</i></> : null}
-                      {canEdit && <Button size="small" sx={{ minWidth: 0, px: 0.5, fontSize: 11 }} onClick={() => props.onUpdate({ attempts: solution.attempts.filter((_, at) => at !== index) })}>{s('solution.remove')}</Button>}
+                      {canEdit && <Button size="small" sx={{ textTransform: 'none', minWidth: 0, px: 0.5, fontSize: 11 }} onClick={() => props.onUpdate({ attempts: solution.attempts.filter((_, at) => at !== index) })}>{s('solution.remove')}</Button>}
                     </li>
                   ))}
                 </Box>
@@ -307,7 +307,7 @@ export function SolutionReader(props: SolutionReaderProps) {
                       <TextField size="small" placeholder={s('solution.attemptWhen')} value={attempt.when} onChange={(e) => setAttempt((a) => ({ ...a, when: e.target.value }))} slotProps={{ htmlInput: { 'aria-label': s('solution.attemptWhen') } }} />
                       <TextField size="small" placeholder={s('solution.attemptWhat')} value={attempt.what} onChange={(e) => setAttempt((a) => ({ ...a, what: e.target.value }))} slotProps={{ htmlInput: { 'aria-label': s('solution.attemptWhat'), 'data-testid': 'solution-attempt-what' } }} />
                       <TextField size="small" placeholder={s('solution.attemptWhy')} value={attempt.why} onChange={(e) => setAttempt((a) => ({ ...a, why: e.target.value }))} slotProps={{ htmlInput: { 'aria-label': s('solution.attemptWhy'), 'data-testid': 'solution-attempt-why' } }} />
-                      <Button size="small" onClick={addAttempt} data-testid="solution-attempt-add">{s('solution.attemptAdd')}</Button>
+                      <Button sx={{ textTransform: 'none' }} size="small" onClick={addAttempt} data-testid="solution-attempt-add">{s('solution.attemptAdd')}</Button>
                     </Box>
                   </Value>
                 </>
@@ -340,7 +340,7 @@ export function SolutionReader(props: SolutionReaderProps) {
                 {props.plan
                   ? <>{props.onOpenPlan ? <Link component="button" type="button" onClick={props.onOpenPlan}>{props.plan.label}</Link> : props.plan.label} <Muted>· {props.plan.status}</Muted></>
                   : solution.state === 'adopted' && canEdit && props.onStartPlan
-                    ? <Button size="small" variant="outlined" onClick={props.onStartPlan} data-testid="solution-start-plan">{s('solution.startPlan')}</Button>
+                    ? <Button sx={{ textTransform: 'none' }} size="small" variant="outlined" onClick={props.onStartPlan} data-testid="solution-start-plan">{s('solution.startPlan')}</Button>
                     : <Muted>{s('solution.noPlan')}</Muted>}
               </Value>
               <Term>{s('solution.alternatives')}</Term>
@@ -359,7 +359,7 @@ export function SolutionReader(props: SolutionReaderProps) {
             )}
             {!gate && solution.state === 'adopted' && canEdit && back && (
               <Box sx={{ mt: 2 }}>
-                <Button size="small" onClick={() => props.onMove(back)} data-testid="solution-back">{s('solution.moveBack', { state: s(PHASE_LABEL[back]).toLowerCase() })}</Button>
+                <Button sx={{ textTransform: 'none' }} size="small" onClick={() => props.onMove(back)} data-testid="solution-back">{s('solution.moveBack', { state: s(PHASE_LABEL[back]).toLowerCase() })}</Button>
               </Box>
             )}
             {!back && props.reopenBy && !dropped && (
@@ -450,9 +450,9 @@ function SolutionGate({ gate, solution, canEdit, back, s, onPlanExperiment, onDe
             <Tooltip describeChild title={s(GATE_HINT[one.item])}>
               <Box component="span" tabIndex={0} data-gate-line sx={{ flex: 1, cursor: 'help' }}>{label(one.item)}</Box>
             </Tooltip>
-            {!one.ok && canEdit && one.item === 'experimentPlanned' && <Button size="small" onClick={onPlanExperiment}>{s('solution.planExperiment')}</Button>}
+            {!one.ok && canEdit && one.item === 'experimentPlanned' && <Button sx={{ textTransform: 'none' }} size="small" onClick={onPlanExperiment}>{s('solution.planExperiment')}</Button>}
             {!one.ok && canEdit && one.item === 'decisionAccepted' && !solution.decision && onDecide && (
-              <Button size="small" onClick={onDecide} data-testid="solution-decide" data-guide="solution.decide">{s('solution.proposeDecision')}</Button>
+              <Button sx={{ textTransform: 'none' }} size="small" onClick={onDecide} data-testid="solution-decide" data-guide="solution.decide">{s('solution.proposeDecision')}</Button>
             )}
           </Box>
         ))}
@@ -460,17 +460,17 @@ function SolutionGate({ gate, solution, canEdit, back, s, onPlanExperiment, onDe
       {canEdit && gate.items.some((one) => one.item === 'experimentConfirmed' && !one.ok) && (
         <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
           <TextField size="small" fullWidth label={s('solution.waiveField')} value={waiver} onChange={(event) => setWaiver(event.target.value)} slotProps={{ htmlInput: { 'data-testid': 'solution-waive-field' } }} />
-          <Button size="small" disabled={!waiver.trim()} onClick={() => { onWaive(waiver); setWaiver('') }} data-testid="solution-waive">{s('solution.waive')}</Button>
+          <Button sx={{ textTransform: 'none' }} size="small" disabled={!waiver.trim()} onClick={() => { onWaive(waiver); setWaiver('') }} data-testid="solution-waive">{s('solution.waive')}</Button>
         </Box>
       )}
       {canEdit && (
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 1.5 }}>
-          <Button variant="contained" size="small" disabled={open.length > 0} onClick={() => onMove(gate.to)} data-testid="solution-move">
+          <Button sx={{ textTransform: 'none' }} variant="contained" size="small" disabled={open.length > 0} onClick={() => onMove(gate.to)} data-testid="solution-move">
             {s('solution.moveOn', { state: s(PHASE_LABEL[gate.to]).toLowerCase() })}
           </Button>
           {open.length > 0 && <Typography variant="caption" color="text.secondary">{s('solution.toGo', { count: open.length })}</Typography>}
           <Box sx={{ flex: 1 }} />
-          {back && <Button size="small" onClick={() => onMove(back)} data-testid="solution-back">{s('solution.moveBack', { state: s(PHASE_LABEL[back]).toLowerCase() })}</Button>}
+          {back && <Button sx={{ textTransform: 'none' }} size="small" onClick={() => onMove(back)} data-testid="solution-back">{s('solution.moveBack', { state: s(PHASE_LABEL[back]).toLowerCase() })}</Button>}
         </Box>
       )}
     </Section>

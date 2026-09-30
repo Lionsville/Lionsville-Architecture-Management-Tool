@@ -145,6 +145,23 @@ describe('ObservationsPage', () => {
     expect(next.causes).toEqual(model.causes)
   })
 
+  it('puts the focus on the title once the new observation has opened, over the page’s own dialog', async () => {
+    mount()
+    fireEvent.click(screen.getByRole('button', { name: '+ New observation' }))
+    // In a browser the page's focus trap takes back the focus the title
+    // claimed as it mounted, and the dialog's own trap then settles on the
+    // dialog: the title is focused again once the dialog has opened.
+    screen.getByRole('dialog', { name: 'New observation' }).focus()
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId('form-title')))
+  })
+
+  it('says its buttons in sentence case, the top bar’s too', () => {
+    mount()
+    expect(getComputedStyle(screen.getByRole('button', { name: '+ New observation' })).textTransform).toBe('none')
+    fireEvent.click(screen.getByTestId('observation-tab-solutions'))
+    expect(getComputedStyle(screen.getByTestId('solution-new')).textTransform).toBe('none')
+  })
+
   it('seen again is a dated operation on the record, and there is no share to take', () => {
     const { onChange } = mount()
     fireEvent.click(screen.getByTestId('observation-row-o2'))

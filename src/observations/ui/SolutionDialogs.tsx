@@ -165,8 +165,8 @@ export function AddressDialog({ subject, candidates, onCancel, onConfirm, s }: A
         </TextField>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onCancel}>{s('common.cancel')}</Button>
-        <Button variant="contained" disabled={!causeId} onClick={() => onConfirm({ causeId, strength })}>{s('solution.addressConfirm')}</Button>
+        <Button sx={{ textTransform: 'none' }} onClick={onCancel}>{s('common.cancel')}</Button>
+        <Button sx={{ textTransform: 'none' }} variant="contained" disabled={!causeId} onClick={() => onConfirm({ causeId, strength })}>{s('solution.addressConfirm')}</Button>
       </DialogActions>
     </Dialog>
   )
@@ -196,8 +196,8 @@ export function NewExperimentDialog({ subject, onCancel, onCreate, s }: NewExper
         <TextField fullWidth size="small" label={s('solution.measure')} value={measure} onChange={(event) => setMeasure(event.target.value)} />
       </DialogContent>
       <DialogActions>
-        <Button onClick={onCancel}>{s('common.cancel')}</Button>
-        <Button variant="contained" disabled={!ready} onClick={() => onCreate({ title: title.trim(), hypothesis: hypothesis.trim(), measure: measure.trim() })} data-testid="new-experiment-create">
+        <Button sx={{ textTransform: 'none' }} onClick={onCancel}>{s('common.cancel')}</Button>
+        <Button sx={{ textTransform: 'none' }} variant="contained" disabled={!ready} onClick={() => onCreate({ title: title.trim(), hypothesis: hypothesis.trim(), measure: measure.trim() })} data-testid="new-experiment-create">
           {s('solution.createExperiment')}
         </Button>
       </DialogActions>
@@ -224,8 +224,8 @@ export function DropDialog({ subject, onCancel, onConfirm, s }: DropDialogProps)
         <TextField autoFocus fullWidth size="small" multiline label={s('solution.dropNote')} value={note} onChange={(event) => setNote(event.target.value)} slotProps={{ htmlInput: { 'data-testid': 'drop-note' } }} />
       </DialogContent>
       <DialogActions>
-        <Button onClick={onCancel}>{s('common.cancel')}</Button>
-        <Button variant="contained" disabled={!note.trim()} onClick={() => onConfirm(note.trim())} data-testid="drop-confirm">{s('solution.dropConfirm')}</Button>
+        <Button sx={{ textTransform: 'none' }} onClick={onCancel}>{s('common.cancel')}</Button>
+        <Button sx={{ textTransform: 'none' }} variant="contained" disabled={!note.trim()} onClick={() => onConfirm(note.trim())} data-testid="drop-confirm">{s('solution.dropConfirm')}</Button>
       </DialogActions>
     </Dialog>
   )
@@ -273,8 +273,8 @@ export function ConcludeDialog({ subject, today, onCancel, onConfirm, s }: Concl
         />
       </DialogContent>
       <DialogActions>
-        <Button onClick={onCancel}>{s('common.cancel')}</Button>
-        <Button variant="contained" disabled={!ready} onClick={() => onConfirm({ result: result.trim(), to })} data-testid="conclude-confirm">
+        <Button sx={{ textTransform: 'none' }} onClick={onCancel}>{s('common.cancel')}</Button>
+        <Button sx={{ textTransform: 'none' }} variant="contained" disabled={!ready} onClick={() => onConfirm({ result: result.trim(), to })} data-testid="conclude-confirm">
           {s('solution.concludeConfirm')}
         </Button>
       </DialogActions>

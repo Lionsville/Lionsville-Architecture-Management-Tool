@@ -234,7 +234,7 @@ export function EmptyRegister({ observations, showArchived, onShowArchived, filt
   return (
     <>
       {s('observation.listArchivedOnly', { count: archived })}
-      <Button size="small" onClick={onShowArchived} sx={{ ml: 1 }} data-testid="observation-show-archived">
+      <Button size="small" onClick={onShowArchived} sx={{ textTransform: 'none', ml: 1 }} data-testid="observation-show-archived">
         {s('observation.showArchived')}
       </Button>
     </>

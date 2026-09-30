@@ -117,8 +117,8 @@ export function ScopesPopover({ scopes, off, onChange, s }: {
             {listed.length === 0 && <Typography variant="body2" color="text.secondary" sx={{ p: 1 }}>{s('observation.filterScopesNone')}</Typography>}
           </Box>
           <Box sx={{ display: 'flex', gap: 1, mt: 1, pt: 1, borderTop: 1, borderColor: 'divider' }}>
-            <Button size="small" onClick={() => onChange([])}>{s('observation.filterScopesAll')}</Button>
-            <Button size="small" onClick={() => onChange(scopes.filter((one) => !one.here).map((one) => one.path))}>{s('observation.filterScopesOnly')}</Button>
+            <Button sx={{ textTransform: 'none' }} size="small" onClick={() => onChange([])}>{s('observation.filterScopesAll')}</Button>
+            <Button sx={{ textTransform: 'none' }} size="small" onClick={() => onChange(scopes.filter((one) => !one.here).map((one) => one.path))}>{s('observation.filterScopesOnly')}</Button>
           </Box>
         </>
       )}
@@ -188,7 +188,7 @@ export function SavedPopover({ list, canSave, onSave, onRecall, onDelete, s }: {
                 placeholder={canSave ? s('observation.savedNameExample') : s('observation.savedNeedsFilter')}
                 slotProps={{ htmlInput: { maxLength: 40, autoComplete: 'off' } }}
               />
-              <Button type="submit" size="small" variant="contained" disabled={!canSave || !name.trim()}>{s('observation.savedSave')}</Button>
+              <Button sx={{ textTransform: 'none' }} type="submit" size="small" variant="contained" disabled={!canSave || !name.trim()}>{s('observation.savedSave')}</Button>
             </Box>
             <Typography variant="caption" color="text.secondary">{s('observation.savedNote')}</Typography>
           </Box>

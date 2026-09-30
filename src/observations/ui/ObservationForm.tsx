@@ -24,7 +24,7 @@
  * The form says what it wants and the page performs it: the page owns the
  * lists, the numbering and where the step lands.
  */
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
@@ -118,6 +118,7 @@ export function NewObservationDialog(props: NewObservationDialogProps) {
   const [shown, setShown] = useState<Partial<Record<RequiredField, 'missing' | 'future'>>>({})
   const [rows, setRows] = useState<Row[]>([])
   const [dropped, setDropped] = useState(false)
+  const titleRef = useRef<HTMLInputElement>(null)
   useEffect(() => {
     if (!open) return
     setScopeIndex(0); setFields(freshFields(today, s)); setShown({}); setRows([]); setDropped(false)
@@ -152,7 +153,13 @@ export function NewObservationDialog(props: NewObservationDialogProps) {
   const shownCount = Object.keys(shown).length
 
   return (
-    <Dialog open={open} onClose={props.onCancel} maxWidth="lg" fullWidth aria-labelledby="new-observation-title">
+    <Dialog
+      open={open} onClose={props.onCancel} maxWidth="lg" fullWidth aria-labelledby="new-observation-title"
+      // The page is a dialog too, and its focus trap takes back a focus the
+      // title claims while this one is still opening: the title is focused
+      // again once it has.
+      slotProps={{ transition: { onEntered: () => titleRef.current?.focus() } }}
+    >
       <DialogTitle id="new-observation-title">{s('observation.new')}</DialogTitle>
       <DialogContent>
         <DialogContentText sx={{ fontSize: 13, mb: 2 }}>{s('observation.formIntro')}</DialogContentText>
@@ -167,7 +174,7 @@ export function NewObservationDialog(props: NewObservationDialogProps) {
               </ExampleField>
             )}
             <ExampleField
-              required autoFocus label={s('observation.titleField')} value={fields.title} onChange={(value) => set('title', value)}
+              required autoFocus inputRef={titleRef} label={s('observation.titleField')} value={fields.title} onChange={(value) => set('title', value)}
               example={exampleFor('title', s)} problem={problemText('title', shown.title, s)} testId="form-title"
             />
             <LookAlikes
