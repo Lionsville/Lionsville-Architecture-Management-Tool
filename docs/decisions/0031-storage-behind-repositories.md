@@ -1230,6 +1230,14 @@ names no format.
     open scope, with the edits it has not written yet.
   - `open`: what bytes hold, placed at an address, or the key for bytes that
     are not a working file.
+    *As built, 30 September 2026:* a file whose scopes carry their headers
+    opens whatever its top draws. A scope that draws nothing is ordinary, and
+    an organisation whose top draws nothing is what `carryOut` writes of one.
+    Only a file with no header — a zip from before scopes had one, or a
+    version-1 or -2 document — is refused for having no view
+    (`shell.workingFileNoDiagrams`), its views being the one sign it is a
+    working file. Landed over an open scope, a top that draws nothing is
+    shown on its home, as a page closed over such a scope is.
   - `bringIn`: what was opened, landed as one `scope.replace` step per scope in
     one apply, every scope or none, each picture's bytes put before the step
     that names it (`placeTogether`, *As built: the app on the repositories*).

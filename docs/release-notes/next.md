@@ -142,6 +142,10 @@ with who moved it. Activity stays with the scope wherever it moves.
   not be read whole, rather than landing over it.
 - Opening a working file onto a scope that could not be read whole says that
   it puts the scope back, and keeps what could not be read.
+- A working file of an organisation whose top scope draws nothing, as the app
+  saves one, opens again. It used to be refused as having no diagrams, a
+  refusal now kept for older files that hold nothing to recognise them by.
+  Opened over a board, such a scope is shown on its home.
 - A pull or push that git was not run for says why, in its own words, instead
   of saying the folder has no remote.
 - Copying an example never takes over an organisation that holds work. An
