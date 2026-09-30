@@ -142,7 +142,10 @@ function onScreen(name: string): HTMLImageElement {
   return found
 }
 
-describe('pictures, through the app', () => {
+// The whole app, rendered and driven through several pages per test: on a
+// shared two-core runner one such test took 5.6 s where it takes 0.7 s here,
+// so the suite takes the budget the other whole-app suites take.
+describe('pictures, through the app', { timeout: 20_000 }, () => {
   it('opening a scope full of pictures asks for none of them', async () => {
     const { asked, initialProject } = await opened()
     expect(initialProject.images?.map((entry) => entry.name).sort()).toEqual([...PICTURES].sort())
