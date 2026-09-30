@@ -7,7 +7,15 @@
  * overview reads the owner's, one load per owning scope, and keeps none.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, render } from '@testing-library/react'
+import { act, cleanup, render } from '@testing-library/react'
+import { FakeDirectory } from '../adapters/folder/fakeDirectory'
+import { folderRepositories } from '../adapters/folder/folderRepositories'
+import { descriptionPath } from '../adapters/folder/format/folderFormat'
+import { markdownFile } from '../adapters/folder/format/fileText'
+import { writeAt } from '../adapters/folder/handles'
+import { memoryGit } from '../adapters/folder/memoryGit'
+import { contentOf, placeTogether } from '../projects/scopeAccess'
+import { useIndex } from './useIndex'
 import type { DesignElement } from '../model'
 import type { ScopeSnapshot } from '../projects/scope'
 import { indexScopes } from '../projects/scopeIndex'
@@ -64,6 +72,39 @@ describe('useOwnerDescriptions', () => {
     function Host() { held = useOwnerDescriptions({ scope: '', index }); return null }
     render(<Host />)
     expect(held.size).toBe(0)
+  })
+})
+
+/**
+ * A description changed and nothing else: a pull, or another window, writing
+ * an owner's `docs/`. A folder's index reads no description, so `since` says
+ * nothing changed and the index keeps its identity; the descriptions are read
+ * again all the same, because the source answered.
+ */
+describe('an owner whose description alone changed, in a folder', () => {
+  it('is read again when the index answers, though the index did not move', async () => {
+    const root = new FakeDirectory()
+    const repositories = folderRepositories({ root, git: memoryGit(root) })
+    await placeTogether(repositories, [snapshot('', [element('erp', { ref: 'acme/retail' })]), tree['acme/retail']]
+      .map((scope) => ({ address: scope.path, content: contentOf(scope, []), pictures: [] })))
+    let tell = () => {}
+    let held!: ReadonlyMap<string, string>
+    let seen!: { index: unknown; answered: number }
+    function Host() {
+      const hook = useIndex({ index: repositories.index, watch: (onChanged) => { tell = onChanged; return () => {} }, onFailure: () => {} })
+      seen = hook
+      held = useOwnerDescriptions({ scope: '', index: hook.index, answered: hook.answered, scopes: repositories.scopes })
+      return null
+    }
+    render(<Host />)
+    await vi.waitFor(() => expect(held.get('erp')).toBe('Retail says: the ERP'))
+    const before = seen
+
+    await writeAt(root, `acme/retail/${descriptionPath('erp')!}`, markdownFile('Retail says it again'))
+    await act(async () => { tell() })
+    await vi.waitFor(() => expect(seen.answered).toBe(before.answered + 1))
+    expect(seen.index).toBe(before.index)
+    await vi.waitFor(() => expect(held.get('erp')).toBe('Retail says it again'))
   })
 })
 

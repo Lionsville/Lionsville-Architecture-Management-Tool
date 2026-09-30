@@ -60,6 +60,17 @@ export type IndexHook = {
    * folds are cached against. Empty exactly when the index is.
    */
   models: readonly ScopeModel[]
+  /**
+   * How many answers the source has given: moves on every one, a tree whose
+   * index did not move included, where {@link index} keeps its identity.
+   *
+   * For a reader of what the index does not hold. The index reads no
+   * description, so a folder whose `docs/` changed — a pull, another window —
+   * answers `since` with nothing changed; the owners' descriptions
+   * (`useOwnerDescriptions`) are read again on this, and the checks and the
+   * search, which read only what the index holds, stay on its identity.
+   */
+  answered: number
   /** Read the tree again. What the watcher calls, and what a write can call. */
   refresh: () => void
 }
@@ -80,7 +91,7 @@ export function useIndex(deps: {
   onFailure: (where: string, cause: unknown) => void
 }): IndexHook {
   const { index, watch, onFailure } = deps
-  const [held, setHeld] = useState<{ index: ScopeIndex; models: readonly ScopeModel[] }>(NOTHING_READ)
+  const [held, setHeld] = useState<{ index: ScopeIndex; models: readonly ScopeModel[]; answered: number }>(NOTHING_READ)
   /** What was read last, by identity, and the revision it was read at: what `since` is asked from. */
   const kept = useRef<Held | undefined>(undefined)
 
@@ -104,7 +115,7 @@ export function useIndex(deps: {
     void readIndex(source.current, kept.current).then((read) => {
       if ('unchanged' in read) {
         if (kept.current) kept.current = { ...kept.current, revision: read.unchanged }
-        return undefined
+        return 'unchanged' as const
       }
       kept.current = { revision: read.revision, scopes: new Map(read.scopes.map((one) => [one.id, one])) }
       const models = read.scopes.map(modelOf)
@@ -112,7 +123,8 @@ export function useIndex(deps: {
     }).then(
       (built) => {
         reading.current = false
-        if (built && live.current) setHeld(built)
+        // The same index where nothing it holds moved, and an answer counted either way.
+        if (live.current) setHeld((was) => (built === 'unchanged' ? { ...was, answered: was.answered + 1 } : { ...built, answered: was.answered + 1 }))
         if (again.current) { again.current = false; read() }
       },
       (cause: unknown) => {
@@ -141,10 +153,10 @@ export function useIndex(deps: {
     return watch(read)
   }, [watch, read])
 
-  return { index: held.index, models: held.models, refresh: read }
+  return { index: held.index, models: held.models, answered: held.answered, refresh: read }
 }
 
-const NOTHING_READ = { index: EMPTY_INDEX, models: [] }
+const NOTHING_READ = { index: EMPTY_INDEX, models: [], answered: 0 }
 
 type Held = { revision: Revision; scopes: ReadonlyMap<string, IndexedScope> }
 

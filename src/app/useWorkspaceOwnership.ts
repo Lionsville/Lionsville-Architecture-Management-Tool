@@ -32,6 +32,8 @@ export function useWorkspaceOwnership(deps: {
   session: ModelSession
   scope: ScopePath
   index: ScopeIndex
+  /** How many answers the index's source has given (`IndexHook.answered`). */
+  indexAnswered?: number
   scopes: ScopeReader
   onOpenScope: ((path: ScopePath, page?: InitialPage) => void) | undefined
   rowsThrough: Relation[]
@@ -42,13 +44,13 @@ export function useWorkspaceOwnership(deps: {
   s: Translate
 }): EditorOwnership {
   const {
-    session, scope, index, scopes, onOpenScope, rowsThrough, scopeLabel, gestureOffers, gestureChoose, addExisting, s,
+    session, scope, index, indexAnswered, scopes, onOpenScope, rowsThrough, scopeLabel, gestureOffers, gestureChoose, addExisting, s,
   } = deps
   /**
    * What the owners say about the stand-ins drawn here (ADR-0012 §3): read
    * from the owning scopes, shown on the card and in the panel, never kept.
    */
-  const ownerDescriptions = useOwnerDescriptions({ scope, index, scopes })
+  const ownerDescriptions = useOwnerDescriptions({ scope, index, answered: indexAnswered, scopes })
 
   const notes = useStandInNotes(index, scope, s, ownerDescriptions)
 

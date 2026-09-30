@@ -230,7 +230,7 @@ function useTreeParts(props: ProjectWorkspaceProps, base: ReturnType<typeof useS
   // rebuilt every time a dialog opens: both are `useCallback`s over the tree
   // and the session, and neither moves when the choice does.
   const ownership = useWorkspaceOwnership({
-    session, scope: project.path, index, scopes: source.repositories.scopes, onOpenScope,
+    session, scope: project.path, index, indexAnswered: tree.indexAnswered, scopes: source.repositories.scopes, onOpenScope,
     rowsThrough: readings.rowsThrough, scopeLabel: readings.scopeLabel,
     gestureOffers: gestures.offers, gestureChoose: gestures.choose, addExisting: library.open, s,
   })

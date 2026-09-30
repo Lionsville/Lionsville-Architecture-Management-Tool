@@ -12,8 +12,10 @@
  *
  * The index cannot answer this: it reads every scope's `model.json` and
  * never a description (`ScopeStore.models`), so the owning scopes are read
- * here — one read per DISTINCT owner, not per card, memoised until the tree
- * changes, which is when the index is rebuilt and this reads again. The read
+ * here — one read per DISTINCT owner, not per card, memoised until the source
+ * answers again (`IndexHook.answered`), which is when this reads again: not
+ * only when the index is rebuilt, because a change of descriptions alone is
+ * nothing the index holds, and a source may answer it as no change at all. The read
  * is `ScopeStore.descriptions` where the store has it, which is the `docs/`
  * folder and nothing else; a store without it is loaded in full, which is
  * slower and not wrong. A scope that will not read contributes nothing
@@ -30,10 +32,12 @@ import type { ScopePath } from '../projects/scopePath'
 export function useOwnerDescriptions(deps: {
   scope: ScopePath
   index: ScopeIndex
+  /** How many answers the index's source has given (`IndexHook.answered`): each one is a reason to read the owners again. */
+  answered?: number
   /** Where the owning scopes are read; absent where there is no tree to read — a test. */
   scopes?: ScopeReader
 }): ReadonlyMap<ElementId, string> {
-  const { scope, index, scopes } = deps
+  const { scope, index, answered, scopes } = deps
   const [found, setFound] = useState<ReadonlyMap<ElementId, string>>(() => new Map())
 
   useEffect(() => {
@@ -52,7 +56,7 @@ export function useOwnerDescriptions(deps: {
       if (!stale) setFound(new Map(pairs.flat()))
     })
     return () => { stale = true }
-  }, [scope, index, scopes])
+  }, [scope, index, answered, scopes])
 
   return found
 }

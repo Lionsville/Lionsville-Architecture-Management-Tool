@@ -116,6 +116,12 @@ export type WorkspaceTree = {
    */
   index: ScopeIndex
   /**
+   * How many answers the index's source has given (`IndexHook.answered`): a
+   * reader of what the index does not hold — the owners' descriptions — reads
+   * again on each. Absent in a test.
+   */
+  indexAnswered?: number
+  /**
    * What the index was built from: every scope's records, rows, plans and
    * observations as the tree's last read had them (ADR-0012 §2). The search
    * over the organisation (ADR-0029) reads the other scopes from here, so a

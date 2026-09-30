@@ -219,6 +219,8 @@ describe('useIndex', () => {
 
     expect(hook().index).toBe(first.index)
     expect(hook().models).toBe(first.models)
+    // …and every answer counted, for a reader of what the index does not hold.
+    expect(hook().answered).toBe(first.answered + 2)
     expect(since.mock.calls).toEqual([['read 1'], ['quiet 2']])
     expect(models).toHaveBeenCalledTimes(1)
   })

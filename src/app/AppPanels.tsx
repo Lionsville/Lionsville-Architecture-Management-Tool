@@ -131,6 +131,7 @@ function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSn
       }}
       tree={{
         index: parts.tree.index,
+        indexAnswered: parts.tree.answered,
         scopeModels: parts.tree.models,
         scopes: parts.organisation.tree,
         ancestorDecisions: ancestry.ancestorDecisions,
