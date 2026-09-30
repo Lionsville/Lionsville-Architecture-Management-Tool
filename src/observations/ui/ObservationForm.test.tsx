@@ -184,7 +184,7 @@ describe('the new observation form', () => {
     expect(made).toMatchObject({ number: 2, title: 'Duplicate policyholders at intake' })
     expect(next.causes.at(-1)).toMatchObject({ number: 3, title: 'Two teams enter policyholders', explains: [{ id: made.id, strength: 'normal' }] })
     expect(next.causes[0].explains).toEqual(below[0].causes[0].explains)
-    expect(await screen.findByText('Made in Intake. It is in the Activity list there, and undone there.')).toBeTruthy()
+    expect(await screen.findByText('Made in Intake, as a step of that scope. Undo here does not reach it: to take it back, change it back.')).toBeTruthy()
   })
 
   it('is clean to axe with a cause being written', async () => {

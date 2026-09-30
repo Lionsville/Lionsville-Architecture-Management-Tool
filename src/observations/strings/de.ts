@@ -471,7 +471,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'observation.linkNone': 'Hier gibt es keine Ursache zum Verknüpfen.',
   'observation.linkPickMissing': 'Wählen Sie eine Ursache zum Verknüpfen.',
   'observation.linkUseTip': 'Diese Ursache verknüpfen, statt eine neue zu schreiben.',
-  'observation.madeBelow': 'Angelegt in {scope}. Es steht dort in der Liste Aktivität und wird dort rückgängig gemacht.',
+  'observation.madeBelow': 'In {scope} angelegt, als Schritt jenes Scopes. Rückgängig hier erreicht ihn nicht: um ihn zurückzunehmen, ändern Sie ihn zurück.',
   'observation.belowReadOnly': 'In {scope} wurde nichts angelegt: Er darf von hier aus nicht geändert werden.',
   'observation.belowRefused': 'In {scope} wurde nichts angelegt: Seine eigenen Regeln haben die Änderung abgelehnt.',
   'observation.belowNotMade': 'In {scope} wurde nichts angelegt.',

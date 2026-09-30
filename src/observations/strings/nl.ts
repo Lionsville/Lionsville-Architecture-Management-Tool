@@ -471,7 +471,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'observation.linkNone': 'Hier is geen oorzaak om te koppelen.',
   'observation.linkPickMissing': 'Kies een oorzaak om te koppelen.',
   'observation.linkUseTip': 'Koppel deze oorzaak in plaats van een nieuwe te schrijven.',
-  'observation.madeBelow': 'Gemaakt in {scope}. Het staat daar in de lijst Activiteit, en wordt daar ongedaan gemaakt.',
+  'observation.madeBelow': 'Gemaakt in {scope}, als stap van die scope. Ongedaan maken hier bereikt het niet: verander het terug om het terug te nemen.',
   'observation.belowReadOnly': 'Er is niets gemaakt in {scope}: die mag van hieruit niet gewijzigd worden.',
   'observation.belowRefused': 'Er is niets gemaakt in {scope}: haar eigen regels weigerden de wijziging.',
   'observation.belowNotMade': 'Er is niets gemaakt in {scope}.',

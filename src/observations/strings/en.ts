@@ -490,7 +490,7 @@ export const EN = {
   'observation.linkNone': 'No cause to link here.',
   'observation.linkPickMissing': 'Choose a cause to link.',
   'observation.linkUseTip': 'Link this cause instead of writing a new one.',
-  'observation.madeBelow': 'Made in {scope}. It is in the Activity list there, and undone there.',
+  'observation.madeBelow': 'Made in {scope}, as a step of that scope. Undo here does not reach it: to take it back, change it back.',
   'observation.belowReadOnly': 'Nothing was made in {scope}: it may not be changed from here.',
   'observation.belowRefused': 'Nothing was made in {scope}: its own rules refused the change.',
   'observation.belowNotMade': 'Nothing was made in {scope}.',
