@@ -21,11 +21,27 @@ describe('an analysis kept before a root cause was said (ADR-0032 §9)', () => {
   it('reads a cause a live solution addresses as a root cause, and no other', () => {
     const read = rootsFromSolutions({
       causes: [cause('ca-1'), cause('ca-2'), cause('ca-3', { explains: [{ id: 'ca-1', strength: 'normal' }] }), cause('ca-4')],
-      solutions: [solution('so-1', ['ca-1']), solution('so-2', ['ca-2'], 'dropped'), solution('so-3', ['ca-1', 'ca-4'], 'adopted')],
+      solutions: [solution('so-1', ['ca-1']), solution('so-2', ['ca-2'], 'dropped'), solution('so-3', ['ca-3', 'ca-4'], 'adopted')],
     })
     expect(read.causes?.map((one) => [one.id, one.root])).toEqual([
-      ['ca-1', true], ['ca-2', undefined], ['ca-3', undefined], ['ca-4', true],
+      ['ca-1', undefined], ['ca-2', undefined], ['ca-3', true], ['ca-4', true],
     ])
+  })
+
+  it('leaves a cause that another cause of its own scope explains a cause, with the solution’s link kept', () => {
+    const model = {
+      causes: [
+        cause('ca-1'), cause('ca-2', { explains: [{ id: 'ca-1', strength: 'normal' }] }),
+        // A link from a cause above names that scope, and is not this scope's to count.
+        cause('ca-3', { explains: [{ id: 'ca-4', scope: 'acme/claims', strength: 'strong' }] }), cause('ca-4'),
+      ],
+      solutions: [solution('so-1', ['ca-1', 'ca-2']), solution('so-2', ['ca-4'])],
+    }
+    const read = rootsFromSolutions(model)
+    expect(read.causes?.map((one) => [one.id, one.root])).toEqual([
+      ['ca-1', undefined], ['ca-2', true], ['ca-3', undefined], ['ca-4', true],
+    ])
+    expect(read.solutions).toBe(model.solutions)
   })
 
   it('drops `shared` from an observation, and keeps its events as history', () => {
@@ -38,7 +54,7 @@ describe('an analysis kept before a root cause was said (ADR-0032 §9)', () => {
   it('changes nothing over data that already says its roots, and keeps the rest of the model', () => {
     const model = {
       name: 'Claims',
-      causes: [cause('ca-1', { root: true }), cause('ca-2', { explains: [{ id: 'ca-1', strength: 'weak' }] })],
+      causes: [cause('ca-1', { root: true, explains: [{ id: 'ca-2', strength: 'weak' }] }), cause('ca-2')],
       solutions: [solution('so-1', ['ca-1'])],
     }
     expect(rootsFromSolutions(model)).toEqual(model)

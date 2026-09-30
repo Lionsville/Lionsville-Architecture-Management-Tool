@@ -545,7 +545,10 @@ As decided, `check.causeExplainsObservationBelow` names the cause below to
 link instead. What older data meant is said once, in the domain
 (`observations/rootsFromSolutions.ts`): a cause a live solution addresses
 reads as a root cause and nothing else does, and `shared` is dropped while
-its events stay as history. Since ADR-0031 each place work is kept is an
+its events stay as history. One departure from the text: a cause that another
+cause of its own scope explains stays a cause even where a live solution
+addresses it, because the writer refuses a root cause somebody explains; the
+solution's link stays, and its `worksAround` question asks about it. Since ADR-0031 each place work is kept is an
 implementation of its own, so there are three turns, each reading its own
 older data through that one function:
 - **The folder's format turns to 9** (`adapters/folder/format/scopeHeader.ts`,
