@@ -23,9 +23,8 @@
 import { useCallback, useMemo, useState } from 'react'
 import { NO_FILTERS, activeFilters, applyFilters, filterRecords, recallFilter, saveFilter } from '../filter'
 import type { FilterResult, Filters, SavedFilter, SavedFilters } from '../filter'
-import { pictureLinks } from '../graph'
-import { nodeKey } from '../graph'
-import type { PictureSize } from '../graph'
+import { nodeKey, pictureCounts, pictureLinks } from '../graph'
+import type { PictureCounts, PictureSize } from '../graph'
 import type { ObservationBelow, ScopeAnalysis } from '../observation'
 import type { Translate } from '../../i18n'
 
@@ -75,6 +74,11 @@ export type PictureFilters = {
   view: PictureView
   /** Left by the filters: everything, while none is on. */
   shows: (key: string) => boolean
+  /**
+   * The counts over the picture: what it draws of the scopes in view, less
+   * what the filters hid — told what the scopes over each explain of it.
+   */
+  counts: (above?: (scope: string) => ReadonlyMap<string, readonly unknown[]> | undefined) => PictureCounts
   /** What a scope is called on the page, this one included. */
   labelOf: (path: string) => string
   /** The heading over this scope's lanes while there are boundaries beside them. */
@@ -138,6 +142,7 @@ export function usePictureFilters(deps: {
     filters, setFilters, clear, rowOpen, toggleRow: () => setRowOpen((open) => !open),
     active: activeFilters(filters, paths), result, inView, hasBelow, viewLocal, setViewLocal, hiddenLocal,
     saved: savedApi, view, shows,
+    counts: (above) => pictureCounts(inView, here.scope, { ...(above ? { above } : {}), ...(result.filtering ? { visible: result.visible } : {}) }),
     labelOf: (path) => (path === here.scope ? name : scopeLabel(path)),
     hereLabel: (s) => (here.scope === '' ? s('observation.pictureGlobal') : s('observation.pictureThisScope', { scope: name })),
     rowsBelow: (groups) => (viewLocal

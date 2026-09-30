@@ -276,6 +276,53 @@ export function openEnds(
   return open
 }
 
+/** What the counts over the picture say (ADR-0032 §3, §8). */
+export type PictureCounts = {
+  observed: number
+  analysed: number
+  assumed: number
+  verified: number
+  roots: number
+  openEnds: number
+}
+
+/**
+ * The counts over what the picture draws: the scopes read — this one, and
+ * those below while View local is on — less what the filters hid. An
+ * observation counts while it stands (not archived, not folded into another)
+ * and is analysed once a cause explains it, from its own scope or from any
+ * over it; the causes count by state, the root causes as said, and the open
+ * ends as `openEnds` finds them. So the numbers over the picture are the
+ * picture's, and never this scope's alone while more is drawn.
+ */
+export function pictureCounts(
+  scopes: readonly ScopeAnalysis[], here: string, options: {
+    visible?: ReadonlySet<string>
+    above?: (scope: string) => ReadonlyMap<string, readonly unknown[]> | undefined
+  } = {},
+): PictureCounts {
+  const gone = absorbedKeys(scopes, here)
+  const shown = (key: string) => !gone.has(key) && (options.visible === undefined || options.visible.has(key))
+  const explained = new Set(pictureLinks(scopes, here).filter((link) => link.kind === 'explains').map((link) => link.from))
+  const counts: PictureCounts = { observed: 0, analysed: 0, assumed: 0, verified: 0, roots: 0, openEnds: 0 }
+  for (const { scope, observations, causes } of scopes) {
+    const fromAbove = options.above?.(scope)
+    for (const one of observations) {
+      const key = pictureKey(here, scope, one.id)
+      if (isArchived(one) || !shown(key)) continue
+      counts.observed += 1
+      if (explained.has(key) || (fromAbove?.get(one.id)?.length ?? 0) > 0) counts.analysed += 1
+    }
+    for (const one of causes) {
+      if (!shown(pictureKey(here, scope, one.id))) continue
+      counts[one.state] += 1
+      if (isRootCause(one)) counts.roots += 1
+    }
+  }
+  counts.openEnds = [...openEnds(scopes, here, options.above)].filter(shown).length
+  return counts
+}
+
 export type PictureSize = 'large' | 'small'
 
 /**
@@ -343,6 +390,8 @@ const BOX_PAD = 16
 const BOX_HEAD = 36
 const STACK_GAP = 18
 const LEFT_GAP = 64
+/** The pitch of a lane with nothing in it: room for its heading and no more. */
+const EMPTY_LANE = 124
 
 type Section = {
   scope: string
@@ -395,17 +444,17 @@ export function analysisPicture(scopes: readonly ScopeAnalysis[], options: Pictu
     if (!from || !to || link.kind === 'tests') continue
     edges.push({ ...link, kind: link.kind, crossing: from.scope !== to.scope })
   }
-  const ownWidth = (root.lanes - 1) * slot.lane + slot.width
+  const own = laneOffsets(root, slot)
   const ownHeight = root.tallest > 0 ? (root.tallest - 1) * slot.row + slot.height : 0
   return {
     nodes,
     edges,
     boundaries,
-    lanes: root.kinds.map((lane, index) => ({ lane, x: hereX + index * slot.lane })),
+    lanes: root.kinds.map((lane, index) => ({ lane, x: hereX + own.xs[index] })),
     headingY: top - 12,
     ...(locals ? { zoneY: MARGIN + 10 } : {}),
     hereX,
-    width: hereX + ownWidth + MARGIN,
+    width: hereX + own.width + MARGIN,
     height: Math.max(top + ownHeight, top + column.height) + MARGIN,
   }
 }
@@ -474,18 +523,38 @@ function byPath(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0
 }
 
+/**
+ * Where each of a section's lanes starts, from its left edge, and how wide the
+ * lanes are together. A lane with a record in it is a slot's pitch wide; an
+ * empty one — this scope's always has every lane, for its headings — only as
+ * wide as its heading, so four headings over nothing yet stand in view
+ * together rather than a window apart.
+ */
+function laneOffsets(section: Section, slot: Slot): { xs: number[]; width: number } {
+  const used = new Set(section.nodes.map((node) => node.lane))
+  const xs: number[] = []
+  let x = 0
+  for (let lane = 0; lane < section.lanes; lane += 1) {
+    xs.push(x)
+    x += used.has(lane) ? slot.lane : EMPTY_LANE
+  }
+  const last = section.lanes - 1
+  return { xs, width: last < 0 ? 0 : xs[last] + (used.has(last) ? slot.width : EMPTY_LANE) }
+}
+
 /** A section's rows placed from `(left, top)`, each lane centred on the tallest. */
 function placeOwn(section: Section, left: number, top: number, slot: Slot): void {
   const rowsIn = (lane: number) => section.nodes.filter((node) => node.lane === lane).length
+  const { xs } = laneOffsets(section, slot)
   for (const node of section.nodes) {
-    node.x = left + node.lane * slot.lane
+    node.x = left + xs[node.lane]
     node.y = top + (node.row + (section.tallest - rowsIn(node.lane)) / 2) * slot.row
   }
 }
 
 function ownSize(section: Section, slot: Slot): { width: number; height: number } {
   if (section.nodes.length === 0) return { width: 0, height: 0 }
-  return { width: (section.lanes - 1) * slot.lane + slot.width, height: (section.tallest - 1) * slot.row + slot.height }
+  return { width: laneOffsets(section, slot).width, height: (section.tallest - 1) * slot.row + slot.height }
 }
 
 /**

@@ -80,14 +80,22 @@ export const BAR_SX = {
 
 /**
  * The strip that says a record lives in a scope below (ADR-0032 §2): read
- * here, and whatever is added to it here is made there.
+ * here, and whatever is added to it here is made there. The way to that
+ * scope stands under the sentence, so the sentence keeps the strip's width
+ * rather than wrapping into a column beside a button.
  */
 export function ScopeStrip({ text, action, testId }: { text: string; action?: ReactNode; testId: string }) {
   return (
-    <Box data-testid={testId} sx={{ display: 'flex', alignItems: 'center', gap: 1, mx: 2, mt: 1, px: 1.25, py: 0.75, border: 1, borderColor: 'info.main', borderRadius: 1, bgcolor: 'action.hover' }}>
-      <Box component="span" aria-hidden sx={{ color: 'info.main', display: 'inline-flex' }}><ScopeIcon size={14} /></Box>
-      <Typography variant="caption" sx={{ flex: 1, fontSize: 12.5 }}>{text}</Typography>
-      {action}
+    <Box
+      data-testid={testId}
+      sx={{
+        display: 'grid', gridTemplateColumns: 'auto minmax(0, 1fr)', columnGap: 1, rowGap: 0.75, alignItems: 'start',
+        mx: 2, mt: 1, px: 1.25, py: 0.75, border: 1, borderColor: 'info.main', borderRadius: 1, bgcolor: 'action.hover',
+      }}
+    >
+      <Box component="span" aria-hidden sx={{ color: 'info.main', display: 'inline-flex', pt: 0.25 }}><ScopeIcon size={14} /></Box>
+      <Typography variant="caption" sx={{ fontSize: 12.5 }}>{text}</Typography>
+      {action && <Box sx={{ gridColumn: 2 }}>{action}</Box>}
     </Box>
   )
 }
@@ -464,6 +472,13 @@ export type CauseReaderProps = {
   s: Translate
   renderMarkdown: (md: string, options?: MarkdownRenderOptions) => ReactNode
   nameOf: NameOf
+  /**
+   * The key a linked record is selected by, from its id and the scope its
+   * link names: `scope#id` for a record below. A cause of a scope below keys
+   * its own links in its own scope; absent, a link with no scope is this
+   * scope's.
+   */
+  keyOf?: (id: string, scope?: string) => string
   onUpdate: (patch: CausePatch) => void
   /**
    * Mark it verified. The page decides how: straight away where the body
@@ -594,6 +609,7 @@ function CauseLinks({ cause, explainedBy, mayAdd, props }: {
   props: CauseReaderProps
 }) {
   const { s, nameOf, readOnly, fromScope } = props
+  const keyOf = props.keyOf ?? ((id: string, scope?: string) => (scope === undefined ? id : `${scope}#${id}`))
   const root = isRootCause(cause)
   const label = causeLabel(cause)
   const unlinkFrom = (from: string) => s('observation.tipUnlink', { from, to: label })
@@ -607,7 +623,7 @@ function CauseLinks({ cause, explainedBy, mayAdd, props }: {
                     <LinkList
                       onOpen={props.onOpen}
                       links={cause.explains.map((link) => ({
-                        key: link.scope === undefined ? link.id : `${link.scope}#${link.id}`,
+                        key: keyOf(link.id, link.scope),
                         label: nameOf(link.id, link.scope),
                         note: s(STRENGTH_LABEL[link.strength]).toLowerCase(),
                         ...(mayAdd ? { onRemove: () => props.onUnlink(link), removeLabel: s('observation.tipUnlink', { from: label, to: nameOf(link.id, link.scope) }) } : {}),
@@ -624,7 +640,7 @@ function CauseLinks({ cause, explainedBy, mayAdd, props }: {
                       onOpen={(key) => { const from = props.explainedFrom?.find((one) => one.key === key); if (from?.open) from.open(); else props.onOpen(key) }}
                       links={[
                         ...explainedBy.map((other) => ({
-                          key: other.id,
+                          key: keyOf(other.id),
                           label: `${causeLabel(other)} ${other.title}`,
                           ...(mayAdd && !fromScope ? { onRemove: () => props.onUnlinkFrom(other.id), removeLabel: unlinkFrom(causeLabel(other)) } : {}),
                         })),

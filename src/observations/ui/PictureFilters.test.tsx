@@ -99,7 +99,8 @@ describe('View local', () => {
     fireEvent.click(screen.getByTestId('observation-tab-register'))
     expect(screen.queryByText('Local to Intake')).toBeNull()
     fireEvent.click(screen.getByLabelText('View local'))
-    expect(screen.getByText('Local to Intake')).toBeDefined()
+    // Its observations under a heading, and its cause under another.
+    expect(screen.getAllByText('Local to Intake')).toHaveLength(2)
   })
 
   it('is off, and says why, where the scope has no scopes below', () => {
@@ -341,5 +342,101 @@ describe('the picture and the readers, joined', () => {
     const node = picture().querySelector('[data-key="acme/claims/intake#b2"]')!
     expect(node.querySelector('[data-testid="picture-open-end"]')).toBeNull()
     expect(node.textContent).toContain('↗ RC-0001')
+  })
+})
+
+describe('what a look at the page found (ADR-0032 §2)', () => {
+  /** The scope below with a solution and an experiment of its own, beside the cause it already has. */
+  function mountBelow() {
+    const t = translator('en')
+    const fix = newSolution({ id: 'sb1', number: 1, title: 'Intake starts after the batch', date: '2026-09-10', t, addresses: [{ id: 'b1', strength: 'normal' }] })
+    const trial = {
+      id: 'eb1', number: 1, title: 'Start intake at ten for a week', hypothesis: 'Nothing waits', body: '', tests: ['sb1'],
+      outcome: 'running' as const,
+    }
+    const scopes: ScopeAnalysis[] = [{ ...below[0], solutions: [fix], experiments: [trial] }]
+    renderShell(
+      <ObservationsPage
+        open onClose={() => {}} model={model} groupName="Acme" below={scopes} path="acme/claims"
+        scopeLabel={(path) => (path === 'acme/claims/intake' ? 'Intake' : path)}
+        onChangeBelow={vi.fn(() => Promise.resolve({ ok: true as const }))} onOpenScope={() => {}}
+        onChange={() => {}} s={t} language="en" makeId={(prefix) => prefix} today={() => '2026-09-20'}
+        renderMarkdown={(md) => <MarkdownView markdown={md} />}
+      />,
+    )
+  }
+
+  it('says what an observation below was analysed into, and lists the causes, solutions and experiments below under their scope', () => {
+    mountBelow()
+    const row = screen.getByTestId('observation-row-acme/claims/intake#in1')
+    expect(row.textContent).toContain('CA-0001')
+    expect(row.textContent).not.toContain('not yet')
+    // Its cause is the scope below's, and the chip opens it there.
+    fireEvent.click(within(row).getByText('CA-0001'))
+    expect(screen.getByTestId('cause-reader').textContent).toContain('Intake waits on the batch')
+
+    const heading = (list: string) => within(screen.getByTestId(list)).getByTestId('register-below-heading').textContent
+    expect(heading('cause-list')).toBe('Local to Intake')
+    expect(screen.getByTestId('cause-row-acme/claims/intake#b1').textContent).toContain('Intake waits on the batch')
+    expect(heading('solution-list')).toBe('Local to Intake')
+    fireEvent.click(screen.getByTestId('solution-row-acme/claims/intake#so:sb1'))
+    expect(screen.getByTestId('solution-from-below').textContent).toContain('Intake')
+    expect(heading('experiment-list')).toBe('Local to Intake')
+    fireEvent.click(within(screen.getByTestId('experiment-list')).getByText('EX-0001 Start intake at ten for a week'))
+    expect(screen.getByTestId('experiment-from-below').textContent).toContain('Intake')
+    expect(screen.getByTestId('experiment-reader').textContent).toContain('Start intake at ten for a week')
+
+    // Off, the register is this scope's alone.
+    fireEvent.click(screen.getByLabelText('View local'))
+    expect(screen.queryByTestId('register-below-heading')).toBeNull()
+    expect(screen.queryByTestId('cause-row-acme/claims/intake#b1')).toBeNull()
+  })
+
+  it('reads the links of a cause below in its own scope, and says where it lives above its way there', () => {
+    mountBelow()
+    fireEvent.click(screen.getByTestId('observation-tab-analysis'))
+    fireEvent.click(picture().querySelector('[data-key="acme/claims/intake#b1"]')!)
+    const explains = screen.getByTestId('cause-explains')
+    expect(explains.textContent).toContain('OB-0001 Intake closes before the batch starts')
+    expect(explains.textContent).not.toContain('in1')
+    expect(screen.getByTestId('cause-explained-by').textContent).toContain('RC-0003 Nobody owns the batch schedule')
+    // A link opens the record where it lives.
+    fireEvent.click(within(explains).getByText('OB-0001 Intake closes before the batch starts'))
+    expect(screen.getByTestId('observation-reader').textContent).toContain('Intake closes before the batch starts')
+    // The way to the scope stands under the sentence, not in a column beside it.
+    const strip = screen.getByTestId('observation-from-below')
+    const action = within(strip).getByRole('group')
+    expect(action.parentElement?.parentElement).toBe(strip)
+  })
+
+  it('counts what the picture draws: the scope below while View local is on, and what the filters left', () => {
+    mountBelow()
+    fireEvent.click(screen.getByTestId('observation-tab-analysis'))
+    const phases = () => screen.getByTestId('analysis-phases').textContent
+    // Two observations here and one below; all three analysed; three causes here and one below.
+    expect(phases()).toContain('3observed')
+    expect(phases()).toContain('3analysed')
+    expect(phases()).toContain('4assumed')
+    fireEvent.click(screen.getByLabelText('View local'))
+    expect(phases()).toContain('2observed')
+    expect(phases()).toContain('3assumed')
+    fireEvent.click(screen.getByLabelText('View local'))
+    fireEvent.change(within(screen.getByTestId('filter-observations')).getByRole('textbox'), { target: { value: 'policyholder' } })
+    expect(phases()).toContain('1observed')
+    expect(phases()).toContain('1analysed')
+  })
+
+  it('heads this scope’s four lanes even where they hold nothing', () => {
+    renderShell(
+      <ObservationsPage
+        open onClose={() => {}} model={{ name: 'Claims', elements: [], relations: [], diagrams: [] }} groupName="Acme" below={below} path="acme/claims"
+        scopeLabel={(path) => (path === 'acme/claims/intake' ? 'Intake' : path)}
+        onChange={() => {}} s={translator('en')} language="en" makeId={(prefix) => prefix} today={() => '2026-09-20'}
+        renderMarkdown={(md) => <MarkdownView markdown={md} />}
+      />,
+    )
+    fireEvent.click(screen.getByTestId('observation-tab-analysis'))
+    const headings = [...screen.getByTestId('picture-headings').querySelectorAll('text')].map((one) => one.textContent)
+    expect(headings.slice(0, 4)).toEqual(['Observations', 'Causes', 'Root causes', 'Solutions'])
   })
 })

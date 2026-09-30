@@ -62,7 +62,7 @@ import type {
   Analysis, Cause, CauseAbove, CauseLink, CausePatch, Observation, ObservationBelow, ScopeAnalysis,
 } from '../observation'
 import type { SavedFilters } from '../filter'
-import { nodeKey, openEnds } from '../graph'
+import { nodeKey } from '../graph'
 import { IMPACT_COLOR, IMPACT_LABEL, STRENGTH_LABEL } from '../observationScope'
 import { AnalysisPicture, PictureLegend } from './AnalysisPicture'
 import { ArchiveDialog, MergeDialog } from './ObservationDialogs'
@@ -70,7 +70,7 @@ import { EmptyRegister, crumbTrail, experimentMoveActions, preselectedCause, roo
 import { PictureMenu } from './PictureMenu'
 import type { MenuAction, PictureTarget } from './PictureMenu'
 import { ReaderModeContext } from './Readers'
-import { ObservationRegister } from './ObservationRegister'
+import { ObservationRegister, recordsBelow } from './ObservationRegister'
 import { PictureToolbar } from './PictureToolbar'
 import type { MergedInto } from './Readers'
 import { RecordReader, belowMenuActions, resolveSelected } from './PageReaders'
@@ -290,6 +290,19 @@ function mergedIntoOf(one: Observation, from: {
   }
 }
 
+/**
+ * What an observation was analysed into, read in its own scope: that scope's
+ * causes, keyed as the page keys a record below, and any cause of this scope
+ * that still explains one below (ADR-0032 §9).
+ */
+function analysedIntoOf(causes: readonly Cause[], below: readonly ScopeAnalysis[]) {
+  return (id: string, scope?: string) => [
+    ...(scope === undefined ? [] : explainedBy(below.find((one) => one.scope === scope)?.causes ?? [], id))
+      .map((cause) => ({ key: nodeKey(cause.id, scope), label: causeLabel(cause) })),
+    ...explainedBy(causes, id, scope).map((cause) => ({ key: cause.id, label: causeLabel(cause) })),
+  ]
+}
+
 export function ObservationsPage(props: ObservationsPageProps) {
   const {
     open, onClose, model, groupName, below = [], onChange, initialId, initialNonce, readOnly = false, s, today, makeId,
@@ -491,7 +504,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
     .filter((one) => (showArchived || isLive(one)) && shows(solutionKey(one.id)))
   const experimentRows = [...experiments].sort((a, b) => b.number - a.number).filter((one) => shows(experimentKey(one.id)))
 
-  const analysedInto = (id: string, scope?: string) => explainedBy(causes, id, scope)
+  const analysedInto = analysedIntoOf(causes, below)
   const mergedLabel = (one: Observation) => mergedIntoOf(one, {
     observations, absorbedAbove, nameOf, scopeLabel,
     select: (id) => setSelectedKey(nodeKey(id)),
@@ -505,13 +518,14 @@ export function ObservationsPage(props: ObservationsPageProps) {
       causes={causeRows}
       solutions={solutionRows}
       experiments={experimentRows}
+      analysisBelow={recordsBelow(below, here.scope, f.viewLocal, shows, showArchived)}
       empty={<EmptyRegister observations={observations} showArchived={showArchived} onShowArchived={() => setShowArchived(true)} filtering={f.result.filtering} s={s} />}
       selectedKey={selectedKey}
       onSelect={setSelectedKey}
-      explainedBy={analysedInto}
+      analysedInto={analysedInto}
       mergedInto={mergedLabel}
       phaseOf={(one) => phaseOf(one)}
-      nameOf={(id) => nameOf(id)}
+      nameOf={nameOf}
       scopeLabel={scopeLabel}
       showMerged={showMerged}
       onShowMerged={setShowMerged}
@@ -525,7 +539,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
   /** What the reading pane reads and asks — and the right-click on a record below, which offers what its reader does. */
   const { onOpenScope } = props
   const readerCtx: ReaderContext = {
-    work, below, plans, context, decisions: model.decisions ?? [], transitions: model.transitions ?? [],
+    here: here.scope, work, below, plans, context, decisions: model.decisions ?? [], transitions: model.transitions ?? [],
     ...(explainedAbove ? { explainedAbove } : {}), explainedAboveOf: aboveOf,
     readOnly, today, scopeName: model.name, s, nameOf, scopeLabel, commit, forms, lifecycle,
     ask: {
@@ -542,13 +556,12 @@ export function ObservationsPage(props: ObservationsPageProps) {
   // --- the analysis ----------------------------------------------------------------------
 
   const queue = liveObservations(observations).filter((one) => analysedInto(one.id).length === 0)
+  /** The counts over the picture are the picture's: the scopes below while View local is on, less what the filters hid. */
+  const counted = f.counts(aboveOf)
   const phases = [
-    ['observation.phaseObserved', liveObservations(observations).length],
-    ['observation.phaseAnalysed', liveObservations(observations).length - queue.length],
-    ['observation.phaseAssumed', causes.filter((one) => one.state === 'assumed').length],
-    ['observation.phaseVerified', causes.filter((one) => one.state === 'verified').length],
-    ['observation.phaseRoots', causes.filter((one) => isRootCause(one)).length],
-    ['observation.phaseOpenEnds', openEnds([here], here.scope, aboveOf).size],
+    ['observation.phaseObserved', counted.observed], ['observation.phaseAnalysed', counted.analysed],
+    ['observation.phaseAssumed', counted.assumed], ['observation.phaseVerified', counted.verified],
+    ['observation.phaseRoots', counted.roots], ['observation.phaseOpenEnds', counted.openEnds],
   ] as const
 
   // --- the right-click ------------------------------------------------------------------

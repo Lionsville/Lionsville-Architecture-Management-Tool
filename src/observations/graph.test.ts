@@ -3,7 +3,8 @@
 
 import { describe, expect, it } from 'vitest'
 import {
-  PICTURE_SIZE, analysisGraph, analysisPicture, fitZoom, openEnds, pictureKey, pictureLinks, placeGraph, solutionKey, traceChain,
+  PICTURE_SIZE, analysisGraph, analysisPicture, fitZoom, openEnds, pictureCounts, pictureKey, pictureLinks, placeGraph, solutionKey,
+  traceChain,
 } from './graph'
 import type { Analysis, Cause, Observation, ScopeAnalysis } from './observation'
 import type { Solution } from './solution'
@@ -238,6 +239,18 @@ describe('analysisPicture', () => {
     expect(keys).not.toContain(solutionKey('s1'))
   })
 
+  it('gives a lane with nothing in it only the room its heading needs', () => {
+    const empty: ScopeAnalysis = { scope: '', observations: [], causes: [], solutions: [], experiments: [] }
+    const bare = picture([empty, tree[1]])
+    expect(bare.lanes.map((lane) => lane.lane)).toEqual(['observations', 'causes', 'roots', 'solutions'])
+    const steps = bare.lanes.slice(1).map((lane, index) => lane.x - bare.lanes[index].x)
+    expect(steps.every((step) => step < PICTURE_SIZE.large.lane)).toBe(true)
+    // A lane holding a record keeps a slot's pitch: here the causes lane is empty and the rest are not.
+    const noCause = picture([{ ...tree[0], causes: [cause('r1', 2, [{ id: 'o1', strength: 'normal' }], { root: true })] }])
+    expect(at(noCause, 'r1')!.x - at(noCause, 'o1')!.x).toBeLessThan(2 * PICTURE_SIZE.large.lane)
+    expect(at(noCause, solutionKey('s1'))!.x - at(noCause, 'r1')!.x).toBe(PICTURE_SIZE.large.lane)
+  })
+
   it('sizes the slots by the size asked for', () => {
     const small = analysisPicture(tree, { here: '', size: 'small' })
     expect(at(small, 'r1')!.x - at(small, 'o1')!.x).toBe(2 * PICTURE_SIZE.small.lane)
@@ -248,6 +261,26 @@ describe('analysisPicture', () => {
     const drawn = analysisPicture([tree[1], tree[2]], { here: 'acme', size: 'large' })
     expect(drawn.nodes.map((node) => node.key).sort()).toEqual(['a1', 'a2', 'acme/rail#x1', 'acme/rail#y1', 'b1'])
     expect(drawn.boundaries.map((box) => box.scope)).toEqual(['acme/rail'])
+  })
+})
+
+describe('pictureCounts', () => {
+  it('counts what the picture draws, the scopes below included, and what a filter left', () => {
+    expect(pictureCounts(tree, '')).toEqual({ observed: 5, analysed: 4, assumed: 4, verified: 0, roots: 1, openEnds: 1 })
+    expect(pictureCounts([tree[0]], '')).toEqual({ observed: 1, analysed: 1, assumed: 2, verified: 0, roots: 1, openEnds: 0 })
+    const left = new Set(['o1', 'c1', 'r1', 'acme/rail#x1', 'acme/rail#y1'])
+    expect(pictureCounts(tree, '', { visible: left })).toEqual({ observed: 2, analysed: 2, assumed: 3, verified: 0, roots: 1, openEnds: 1 })
+  })
+
+  it('leaves out what is closed or folded in, and takes an explanation from above as analysed', () => {
+    const closed: ScopeAnalysis[] = [
+      { ...tree[0], observations: [observation('o1', 1, { history: [{ date: 'd', kind: 'absorbed', id: 'a2', scope: 'acme', seen: 1 }] })] },
+      { ...tree[1], observations: [observation('a1', 1, { archived: true }), observation('a2', 2)], causes: [] },
+    ]
+    expect(pictureCounts(closed, '').observed).toBe(1)
+    const lone: ScopeAnalysis[] = [{ scope: 'acme', observations: [observation('a9', 9)], causes: [], solutions: [], experiments: [] }]
+    expect(pictureCounts(lone, 'acme').analysed).toBe(0)
+    expect(pictureCounts(lone, 'acme', { above: () => new Map([['a9', [{}]]]) }).analysed).toBe(1)
   })
 })
 
