@@ -166,7 +166,7 @@ function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSn
       snapshots={{ history: props.repositories.history, note: historyNote(parts), kept: props.provider?.historyKept }}
       agent={{ onSession: parts.agent.registerAgentSession, bar: parts.agentServer.bar }}
       shell={{ s, language: prefs.language, notify: toasts.notify, makeId: props.makeId }}
-      preferences={{ initial: prefs.preferences, onChange: prefs.savePreferences }}
+      preferences={{ initial: prefs.preferences, onChange: prefs.savePreferences, savedFilters: parts.savedFilters }}
     />
   )
 }

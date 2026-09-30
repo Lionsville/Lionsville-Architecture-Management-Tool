@@ -57,7 +57,7 @@ import { useScopeAncestry } from './useScopeAncestry'
 import { useShellAgent } from './useShellAgent'
 import { useHostFacts, useShellCommands, useWindowTitle } from './useShellCommands'
 import { useShellNavigation } from './useShellNavigation'
-import { useOpeningFailures, useProjectOrder, useShellServices } from './useShellServices'
+import { useOpeningFailures, useProjectOrder, useSavedFilters, useShellServices } from './useShellServices'
 import { useTreeFindings, useTreeIndex } from './useTreeFindings'
 import type { ShellParts } from './shellParts'
 
@@ -518,11 +518,11 @@ function useShellParts(props: AppProps): ShellParts {
   const provider = useProviderParts({
     provider: props.provider ?? NOTHING, source, diagnostics, openSomewhere: shellAgent.openSomewhere,
   })
-  const { machine, order, todayDay } = base
+  const { machine, order, savedFilters, todayDay } = base
   return {
     props, source, host, hostMenu: host.hostMenu ?? false, windowChrome: host.windowChrome ?? NO_WINDOW_CHROME,
     services, nav, tree, organisation, findings, home, ancestry, agentServer, agent: shellAgent, machine,
-    commands, provider, order, prompts, todayDay,
+    commands, provider, order, savedFilters, prompts, todayDay,
     writes: { readTreeModels, carryOut, adoptScopes, readScope: readScopeAt, treeChanged, applyProjectSettings },
   }
 }
@@ -619,6 +619,7 @@ function useShellBase(props: AppProps) {
     language: prefs.language, onLanguage: host.onLanguage,
   })
   const order = useProjectOrder(prefs)
+  const savedFilters = useSavedFilters(prefs)
 
   /**
    * The organisation screen's wiring (`useOrganisation`).
@@ -644,6 +645,6 @@ function useShellBase(props: AppProps) {
   refreshTree.current = organisation.refresh
   return {
     source, host, services, todayDay, nav, tree, agentServer, machine, commands, order,
-    organisation, refreshTree,
+    savedFilters, organisation, refreshTree,
   }
 }

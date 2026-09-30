@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
+import type { SavedFilters } from '../observations/filter'
 import type { WindowChrome } from '../platform/windowChrome'
 import type { WorkingSource } from '../platform/workingSource'
 import type { ScopeModel, ScopeSnapshot } from '../projects/scope'
@@ -51,6 +52,8 @@ export interface ShellParts {
   commands: ShellCommands
   provider: ProviderParts
   order: ReturnType<typeof useProjectOrder>
+  /** The observation filters this person saved, offered in every scope (ADR-0032 §8). */
+  savedFilters: SavedFilters
   /** The one password dialog and the one *where does it land* dialog, lent to both file flows (ADR-0023, ADR-0025). */
   prompts: { password: ReturnType<typeof usePasswordPrompt>; openInto: ReturnType<typeof useOpenIntoPrompt> }
   /** What the open workspace is handed to write through: the shell's side of each write it asks for. */

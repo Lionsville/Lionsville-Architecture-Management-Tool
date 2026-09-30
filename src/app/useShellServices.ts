@@ -11,6 +11,8 @@ import type { RefObject } from 'react'
 import { translator } from '../i18n'
 import type { StringKey, Translate } from '../i18n'
 import { reasonOf } from '../platform/errors'
+import { SAVED_FILTERS_KEY, readSavedFilters } from '../observations/filter'
+import type { SavedFilter, SavedFilters } from '../observations/filter'
 import { isProjectOrder } from '../projects/scope'
 import type { ProjectOrder } from '../projects/scope'
 import type { SourceFailure } from '../platform/sourceProvider'
@@ -129,4 +131,18 @@ export function useProjectOrder(prefs: ShellPreferences) {
     prefs.writePreference({ projectOrder: next })
   }, [prefs])
   return { order, chooseOrder }
+}
+
+/**
+ * The observation filters this person saved (ADR-0032 §8): a preference that
+ * follows the person, offered in every scope, and held here rather than in the
+ * page so a page opened again reads what was saved since the boot.
+ */
+export function useSavedFilters(prefs: ShellPreferences): SavedFilters {
+  const [list, setList] = useState<SavedFilter[]>(() => readSavedFilters(prefs.preferences))
+  const onChange = useCallback((next: SavedFilter[]) => {
+    setList(next)
+    prefs.writePreference({ [SAVED_FILTERS_KEY]: next })
+  }, [prefs])
+  return useMemo(() => ({ list, onChange }), [list, onChange])
 }

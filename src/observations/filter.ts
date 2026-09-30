@@ -189,6 +189,12 @@ export function filterRecords(scopes: readonly ScopeAnalysis[], here: string): F
  */
 export type SavedFilter = { name: string; filters: Filters }
 
+/** The saved filters as a page is handed them: the list, and where a changed list goes. */
+export type SavedFilters = {
+  list: readonly SavedFilter[]
+  onChange: (next: SavedFilter[]) => void
+}
+
 /** Where the saved filters are kept in the preferences blob. */
 export const SAVED_FILTERS_KEY = 'observationFilters'
 

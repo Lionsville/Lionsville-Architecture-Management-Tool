@@ -14,6 +14,7 @@
  */
 import type { Language, Translate } from '../i18n'
 import type { EditorPreferences } from '../editor'
+import type { SavedFilters } from '../observations/filter'
 import type { AncestorRecords } from '../decisions/adrScope'
 import type { ScopeModel, ScopeSnapshot, ScopeSummary } from '../projects/scope'
 import type { ScopePath } from '../projects/scopePath'
@@ -325,6 +326,8 @@ export type WorkspaceShell = {
 export type WorkspacePreferences = {
   initial: unknown
   onChange: (next: EditorPreferences) => void
+  /** The observation filters this person saved, offered in every scope (ADR-0032 §8). */
+  savedFilters?: SavedFilters
 }
 
 export type ProjectWorkspaceProps = {
