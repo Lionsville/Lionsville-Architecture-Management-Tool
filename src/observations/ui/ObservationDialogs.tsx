@@ -14,13 +14,11 @@
 import { useEffect, useState } from 'react'
 import { useFreshFor } from '../../widgets/useFreshFor'
 import Button from '@mui/material/Button'
-import Checkbox from '@mui/material/Checkbox'
 import Dialog from '@mui/material/Dialog'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogContentText from '@mui/material/DialogContentText'
 import DialogTitle from '@mui/material/DialogTitle'
-import FormControlLabel from '@mui/material/FormControlLabel'
 import MenuItem from '@mui/material/MenuItem'
 import TextField from '@mui/material/TextField'
 import { useStrings } from '../../i18n'
@@ -32,24 +30,21 @@ import { IMPACT_LABEL, STRENGTH_LABEL } from '../observationScope'
 
 export type NewObservationDialogProps = {
   open: boolean
-  /** Whether sharing is worth asking: a root has nobody above it. */
-  canShare: boolean
   onCancel: () => void
-  onCreate: (fields: { title: string; where: string; by: string; impact: ObservationImpact; shared: boolean }) => void
+  onCreate: (fields: { title: string; where: string; by: string; impact: ObservationImpact }) => void
   s: Translate
 }
 
-export function NewObservationDialog({ open, canShare, onCancel, onCreate, s }: NewObservationDialogProps) {
+export function NewObservationDialog({ open, onCancel, onCreate, s }: NewObservationDialogProps) {
   const [title, setTitle] = useState('')
   const [where, setWhere] = useState('')
   const [by, setBy] = useState('')
   const [impact, setImpact] = useState<ObservationImpact>('minor')
-  const [shared, setShared] = useState(false)
   useEffect(() => {
-    if (open) { setTitle(''); setWhere(''); setBy(''); setImpact('minor'); setShared(false) }
+    if (open) { setTitle(''); setWhere(''); setBy(''); setImpact('minor') }
   }, [open])
   const ready = title.trim().length > 0
-  const submit = () => { if (ready) onCreate({ title: title.trim(), where: where.trim(), by: by.trim(), impact, shared }) }
+  const submit = () => { if (ready) onCreate({ title: title.trim(), where: where.trim(), by: by.trim(), impact }) }
 
   return (
     <Dialog open={open} onClose={onCancel} maxWidth="sm" fullWidth>
@@ -89,12 +84,6 @@ export function NewObservationDialog({ open, canShare, onCancel, onCreate, s }: 
         >
           {OBSERVATION_IMPACTS.map((one) => <MenuItem key={one} value={one}>{s(IMPACT_LABEL[one])}</MenuItem>)}
         </TextField>
-        {canShare && (
-          <FormControlLabel
-            control={<Checkbox size="small" checked={shared} onChange={(event) => setShared(event.target.checked)} />}
-            label={s('observation.newShareField')}
-          />
-        )}
       </DialogContent>
       <DialogActions>
         <Button onClick={onCancel}>{s('common.cancel')}</Button>

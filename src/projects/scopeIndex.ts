@@ -53,7 +53,7 @@
 import type { DesignElement, ElementId, ElementKind, LifecycleDates, PlatformArchetype, Relation, RelationType } from '../model'
 import { isDay } from '../model/lifecycle'
 import type { Transition } from '../model/transition'
-import type { Observation } from '../model/observation'
+import type { CauseAbove, ScopeAnalysis } from '../model/observation'
 import { ShellError } from '../platform/errors'
 import { flattenScopes } from './scope'
 import type { ScopeModel, ScopeSnapshot, ScopeSummary } from './scope'
@@ -180,11 +180,11 @@ export type IndexedTransition = {
   elements: readonly DesignElement[]
 }
 
-/** An observation another scope shared (ADR-0021), with where it lives. */
-export type IndexedObservation = {
-  scope: ScopePath
-  observation: Observation
-}
+/**
+ * One scope's analysis as a scope above reads it (ADR-0032 §1): its own
+ * observations, causes, solutions and experiments, in number order.
+ */
+export type IndexedAnalysis = ScopeAnalysis & { scope: ScopePath }
 
 /**
  * Where an observation was folded into another scope's (ADR-0021): the scope
@@ -259,12 +259,19 @@ export type ScopeIndex = {
    */
   initiativesBelow(path: ScopePath): IndexedTransition[]
   /**
-   * The observations shared by the scopes under this one (ADR-0021): every
-   * observation marked `shared` in a scope strictly below `path`, by scope
-   * and then by number. What the observations page above reads, links to its
-   * causes and may fold into its own.
+   * The analysis of every scope strictly below `path` (ADR-0032 §1), one
+   * entry per scope that has any, in path order: local to those scopes, and
+   * read here with nothing shared first. Which of them a session may read is
+   * the source's answer; an index is built over what the source read.
    */
-  observationsBelow(path: ScopePath): IndexedObservation[]
+  analysisBelow(path: ScopePath): IndexedAnalysis[]
+  /**
+   * What the scopes above `path` say explains its records (ADR-0032 §4), by
+   * the id of the record explained: every cause above whose link names a
+   * record of `path`. Derived from the explaining cause, because the link is
+   * written where that cause lives and the scope below is only told.
+   */
+  explainedFromAbove(path: ScopePath): Map<string, CauseAbove[]>
   /**
    * The observations of `path` that a scope above folded into one of its own
    * (ADR-0021), by id — derived from the absorbing scope's history, because a
@@ -333,8 +340,9 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
   const touching = new Map<ElementId, IndexedRelation[]>()
   const paths: ScopePath[] = []
   const initiatives: IndexedTransition[] = []
-  const shared: IndexedObservation[] = []
+  const analyses: IndexedAnalysis[] = []
   const absorptions: Absorption[] = []
+  const fromAbove = new Map<ScopePath, Map<string, CauseAbove[]>>()
 
   const at = (id: ElementId): Held => {
     const found = held.get(id) ?? { id, definitions: [], standIns: [] }
@@ -376,14 +384,10 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
         initiatives.push({ scope: path, transition, elements })
       }
     }
-    for (const observation of [...(model.observations ?? [])].sort((a, b) => a.number - b.number)) {
-      if (observation.shared) shared.push({ scope: path, observation })
-      for (const event of observation.history) {
-        if (event.kind !== 'absorbed' || event.scope === undefined || event.id === undefined) continue
-        absorptions.push({
-          scope: event.scope, id: event.id, by: path, into: observation.id, intoTitle: observation.title, date: event.date,
-        })
-      }
+    const analysis = analysisOf(path, model)
+    if (analysis) {
+      analyses.push(analysis)
+      readAcross(analysis, absorptions, fromAbove)
     }
   }
 
@@ -440,9 +444,10 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
     initiativesBelow: (path) => initiatives.filter(({ scope }) => (
       path === '' ? scope !== '' : scope.startsWith(`${path}/`)
     )),
-    observationsBelow: (path) => shared.filter(({ scope }) => (
+    analysisBelow: (path) => analyses.filter(({ scope }) => (
       path === '' ? scope !== '' : scope.startsWith(`${path}/`)
     )),
+    explainedFromAbove: (path) => new Map(fromAbove.get(path) ?? []),
     absorbedFrom: (path) => {
       const found = new Map<string, Absorption>()
       for (const one of absorptions) if (one.scope === path && !found.has(one.id)) found.set(one.id, one)
@@ -450,6 +455,47 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
     },
     scopes: () => [...paths],
   }
+}
+
+/**
+ * What one scope's analysis says about the scopes below it: the observations
+ * it absorbed from them, and the records of theirs its causes explain. Both
+ * are written in this scope and read by the one below (ADR-0021 §4, ADR-0032 §4).
+ */
+function readAcross(
+  analysis: IndexedAnalysis, absorptions: Absorption[], fromAbove: Map<ScopePath, Map<string, CauseAbove[]>>,
+): void {
+  const by = analysis.scope
+  for (const observation of analysis.observations) {
+    for (const event of observation.history) {
+      if (event.kind !== 'absorbed' || event.scope === undefined || event.id === undefined) continue
+      absorptions.push({
+        scope: event.scope, id: event.id, by, into: observation.id, intoTitle: observation.title, date: event.date,
+      })
+    }
+  }
+  for (const cause of analysis.causes) {
+    for (const link of cause.explains) {
+      if (link.scope === undefined) continue
+      const byId = fromAbove.get(link.scope) ?? new Map<string, CauseAbove[]>()
+      fromAbove.set(link.scope, byId)
+      byId.set(link.id, [...(byId.get(link.id) ?? []), { scope: by, cause, strength: link.strength }])
+    }
+  }
+}
+
+/** A scope's analysis in number order, or nothing where it has none. */
+function analysisOf(path: ScopePath, model: ScopeModel['model']): IndexedAnalysis | undefined {
+  const byNumber = <T extends { number: number }>(list: readonly T[] | undefined): T[] => [...(list ?? [])].sort((a, b) => a.number - b.number)
+  const analysis = {
+    scope: path,
+    observations: byNumber(model.observations),
+    causes: byNumber(model.causes),
+    solutions: byNumber(model.solutions),
+    experiments: byNumber(model.experiments),
+  }
+  const empty = !analysis.observations.length && !analysis.causes.length && !analysis.solutions.length && !analysis.experiments.length
+  return empty ? undefined : analysis
 }
 
 /**

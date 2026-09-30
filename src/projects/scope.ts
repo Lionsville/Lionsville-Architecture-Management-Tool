@@ -24,7 +24,7 @@ import type {
 } from '../model'
 import type { HostModel } from '../model/hostModel'
 import type { ImageEntry } from '../model/imageName'
-import type { Observation } from '../model/observation'
+import type { Cause, Experiment, Observation, Solution } from '../model/observation'
 import { isBoardKind } from '../model/placement'
 import type { RecordLink } from './links'
 import { ancestorScopes, isWithinScope, ROOT_SCOPE } from './scopePath'
@@ -247,10 +247,14 @@ export type ScopeModel = {
      */
     transitions?: readonly Transition[]
     /**
-     * The scope's observations, for the shared ones a scope above reads
-     * (ADR-0021) — read with the model for the same reason the plans are.
+     * The scope's analysis — observations, causes, solutions, experiments —
+     * which every scope above reads (ADR-0032 §1), read with the model for
+     * the same reason the plans are; absent where a store has not read them.
      */
     observations?: readonly Observation[]
+    causes?: readonly Cause[]
+    solutions?: readonly Solution[]
+    experiments?: readonly Experiment[]
   }
 }
 

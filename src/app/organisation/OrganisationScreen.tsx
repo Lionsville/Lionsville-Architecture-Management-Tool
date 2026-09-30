@@ -199,8 +199,8 @@ export type OrganisationScreenProps = {
   technology?: readonly TechnologyRow[]
   /** How many plans below the root are initiatives (ADR-0012 §7), off the same index. */
   initiatives?: number
-  /** How many observations the scopes below shared (ADR-0021), off the same index. */
-  sharedObservations?: number
+  /** How many open observations the scopes below hold (ADR-0032 §1), off the same index. */
+  localObservations?: number
   /**
    * The platform tree off the same index (`platformTree.ts`), so the roadmap
    * card's finding is the one the roadmap page puts first.
@@ -266,7 +266,7 @@ function cardDoors(open: Organisation['open'], at: ScopePath, pages: Organisatio
 export function OrganisationScreen({
   organisation, examples, order, onOrderChange, source, sourceDescription, sourceSayings = {}, sourceChip, chipPanel, chipFace,
   waysIn,
-  overflow, agent, onGoHome, findings, register = [], technology = [], initiatives = 0, sharedObservations = 0, platformTree,
+  overflow, agent, onGoHome, findings, register = [], technology = [], initiatives = 0, localObservations = 0, platformTree,
   onOpenRegisterRow, onOpenRegisterPage, onLinkFromRegister, pageRequest, onPageChange,
   writable = ANYWHERE, today, language, s, windowChrome = NO_WINDOW_CHROME,
 }: OrganisationScreenProps) {
@@ -502,7 +502,7 @@ export function OrganisationScreen({
               pages={pages}
               ready={ready}
               {...cardDoors(organisation.open, at, pages)}
-              sharedObservations={sharedObservations}
+              localObservations={localObservations}
               register={registerCounts}
               technology={technologyCounts}
               initiatives={initiatives}

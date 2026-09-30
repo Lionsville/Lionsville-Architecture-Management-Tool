@@ -13,12 +13,11 @@ import { isDay } from '../../model/lifecycle'
 import type { Cause, CauseLink, CauseState, CauseStrength, Observation, ObservationImpact } from '../../model/observation'
 import { forgetCause } from '../../observations/solution'
 import {
-  absorbShared, causeEvidence, causeLabel, formatCauseNumber, formatObservationNumber, linkCause, linkRefusal,
-  mergeObservations, newCause, newObservation, nextCauseNumber, nextObservationNumber, removeCause,
-  removeObservation, seenAgain, seenDayProblem, setArchived, setShared, unlinkCause, updateCause,
-  updateObservation,
+  absorbFromBelow, causeEvidence, causeLabel, formatCauseNumber, formatObservationNumber, linkCause, linkRefusal,
+  mergeObservations, newCause, newObservation, nextCauseNumber, nextObservationNumber, observationsBelow, removeCause,
+  removeObservation, seenAgain, seenDayProblem, setArchived, unlinkCause, updateCause, updateObservation,
 } from '../../observations/observation'
-import type { Analysis, CausePatch, LinkRefusal, ObservationPatch } from '../../observations/observation'
+import type { Analysis, CausePatch, LinkContext, LinkRefusal, ObservationPatch } from '../../observations/observation'
 import { causeLine, findCause, findObservation, observationLine } from '../answer'
 import type { AgentAnswer } from '../tools'
 import { json, refused } from '../tools'
@@ -60,14 +59,22 @@ function causeAnswer(work: Work, after: Analysis, id: string) {
   )
 }
 
-/** What a cause explains: an observation or a cause here, or an observation shared from below. */
+/** The analysis of the scopes below this one, as the tree reads it (ADR-0032 §1). */
+function belowOf(view: WriteView): LinkContext {
+  return { here: view.scopePath, below: view.tree?.analysisBelow?.(view.scopePath) ?? [] }
+}
+
+/**
+ * What a cause explains: an observation or a cause here, or a record of the
+ * scope `scope` names — found there by id or label, and asked of the rules
+ * (`linkRefusal`) before it is linked.
+ */
 function linkOf(work: Work, view: WriteView, id: unknown, scope: unknown, strength: unknown): CauseLink | AgentAnswer {
   const held = strength === undefined ? 'normal' : strength as CauseStrength
   if (typeof scope === 'string') {
-    const shared = (view.tree?.observationsBelow?.(view.scopePath) ?? [])
-      .find((one) => one.scope === scope && one.observation.id === id)
-    if (!shared) return refused('agent.unknownId', `shared observation ${String(id)} in ${scope}`)
-    return { id: shared.observation.id, scope, strength: held }
+    const there = belowOf(view).below.find((one) => one.scope === scope)
+    const target = there && (findCause(there.causes, String(id)) ?? findObservation(there.observations, String(id)))
+    return { id: target?.id ?? String(id), scope, strength: held }
   }
   const target = work.observationOf(id) ?? work.causeOf(id)
   if (!target) return refused('agent.unknownId', `observation or cause ${String(id)}`)
@@ -108,7 +115,6 @@ export const recordObservation: Handler = (args, view) => {
     ...(typeof args.where === 'string' ? { where: args.where } : {}),
     ...(typeof args.by === 'string' ? { by: args.by } : {}),
     ...(typeof args.impact === 'string' ? { impact: args.impact as ObservationImpact } : {}),
-    ...(args.shared === true ? { shared: true } : {}),
     ...(typeof args.body === 'string' ? { body: args.body } : {}),
   })
   const after = { ...before, observations: [...before.observations, fresh] }
@@ -136,9 +142,7 @@ function observationPatch(args: Args): ObservationPatch | AgentAnswer {
 export const updateObservationTool = onObservation((held, args, view, work) => {
   const patch = observationPatch(args)
   if ('ok' in patch) return patch
-  let observations = updateObservation(work.before.observations, held.id, patch)
-  if (typeof args.shared === 'boolean') observations = setShared(observations, held.id, args.shared, view.today())
-  const after = { ...work.before, observations }
+  const after = { ...work.before, observations: updateObservation(work.before.observations, held.id, patch) }
   return finish(work, after, observationAnswer(after, held.id))
 })
 
@@ -178,10 +182,11 @@ export const mergeObservation: Handler = (args, view) => {
   const into = work.observationOf(args.into)
   if (!into) return refused('agent.unknownId', `observation ${String(args.into)}`)
   if (typeof args.fromScope === 'string') {
-    const shared = (view.tree?.observationsBelow?.(view.scopePath) ?? [])
-      .find((one) => one.scope === args.fromScope && one.observation.id === args.id)
-    if (!shared) return refused('agent.unknownId', `shared observation ${String(args.id)} in ${args.fromScope}`)
-    const after = absorbShared(before, shared, into.id, view.today())
+    // Any observation of a scope below may be folded in: nothing is shared first (ADR-0032 §5).
+    const fromBelow = observationsBelow(belowOf(view).below)
+      .find((one) => one.scope === args.fromScope && (one.observation.id === args.id || findObservation([one.observation], String(args.id))))
+    if (!fromBelow) return refused('agent.unknownId', `observation ${String(args.id)} in ${args.fromScope}`)
+    const after = absorbFromBelow(before, fromBelow, into.id, view.today())
     if (after === before) return refused('agent.badArguments', `${String(args.id)} cannot be merged into ${into.id}`)
     return finish(work, after, observationAnswer(after, into.id))
   }
@@ -206,20 +211,25 @@ export const addCause: Handler = (args, view) => {
   // Asked before an id is minted, so a refusal leaves no trace; a cause with
   // no body starts as the template, which holds no evidence.
   const body = typeof args.body === 'string' ? args.body : ''
-  if (args.state === 'verified' && !causeEvidence(body).complete) return unverified(formatCauseNumber(nextCauseNumber(before.causes)))
+  const number = nextCauseNumber(before.causes)
+  if (args.state === 'verified' && !causeEvidence(body).complete) return unverified(formatCauseNumber(number))
+  // What it explains, likewise: a new cause is neither itself nor behind
+  // anything yet, so only what it names can refuse it.
+  const links: CauseLink[] = []
+  for (const row of (args.explains as { id: string; scope?: string; strength?: string }[] | undefined) ?? []) {
+    const link = linkOf(work, view, row.id, row.scope, row.strength)
+    if ('ok' in link) return link
+    const why = linkRefusal(before.causes, '', link, belowOf(view))
+    if (why) return linkRefused(why, { number }, link, before.causes)
+    links.push(link)
+  }
   const fresh = newCause({
-    id: view.makeId('ca'), number: nextCauseNumber(before.causes), title, t: view.translate,
+    id: view.makeId('ca'), number, title, t: view.translate,
     ...(typeof args.body === 'string' ? { body: args.body } : {}),
   })
   if (typeof args.state === 'string') fresh.state = args.state as CauseState
   let causes = [...before.causes, fresh]
-  for (const row of (args.explains as { id: string; scope?: string; strength?: string }[] | undefined) ?? []) {
-    const link = linkOf(work, view, row.id, row.scope, row.strength)
-    if ('ok' in link) return link
-    const why = linkRefusal(causes, fresh.id, link)
-    if (why) return linkRefused(why, fresh, link, causes)
-    causes = linkCause(causes, fresh.id, link)
-  }
+  for (const link of links) causes = linkCause(causes, fresh.id, link, belowOf(view))
   const after = { ...before, causes }
   return finish(work, after, causeAnswer(work, after, fresh.id))
 }
@@ -254,22 +264,28 @@ function unverified(label: string): AgentAnswer {
  * on it: a root cause ends the chain (ADR-0032 §3), so what lies behind one
  * is said after a person has made it a cause again.
  */
-function linkRefused(why: LinkRefusal, cause: Cause, link: CauseLink, causes: readonly Cause[]): AgentAnswer {
-  const target = causes.find((one) => one.id === link.id)
-  const name = target ? causeLabel(target) : link.id
+function linkRefused(why: LinkRefusal, cause: Pick<Cause, 'number' | 'root'>, link: CauseLink, causes: readonly Cause[]): AgentAnswer {
+  const target = link.scope === undefined ? causes.find((one) => one.id === link.id) : undefined
+  const name = target ? causeLabel(target) : link.scope === undefined ? link.id : `${link.id} in ${link.scope}`
+  const said = causeLabel(cause)
   switch (why) {
     case 'root': return refused('agent.badArguments', `${name} is a root cause, and nothing explains a root cause. If a person says something lies behind it, make it a cause first (cause.update with root false) — refused while a solution addresses it.`)
-    case 'self': return refused('agent.badArguments', `${causeLabel(cause)} cannot explain itself`)
-    case 'loop': return refused('agent.badArguments', `${causeLabel(cause)} cannot explain ${name}: ${name} already leads back to it, and a loop is not an explanation`)
+    case 'self': return refused('agent.badArguments', `${said} cannot explain itself`)
+    case 'loop': return refused('agent.badArguments', `${said} cannot explain ${name}: ${name} already leads back to it, and a loop is not an explanation`)
+    case 'upward': return refused('agent.badArguments', `${said} cannot explain ${name}: a cause explains the causes of the scopes below its own, never one of its own scope or above it`)
+    case 'sideways': return refused('agent.badArguments', `${said} cannot explain ${name}: ${link.scope} is not below this scope, and a cause explains the causes of the scopes below its own only`)
+    case 'observationBelow': return refused('agent.badArguments', `${said} cannot explain ${name}: it is an observation of ${link.scope}, and that scope explains its own observations. Link the cause there that explains it instead.`)
+    case 'unknown': return refused('agent.unknownId', `${link.id} in ${link.scope ?? 'this scope'}: scopes.list and causes.list with scope say what there is`)
   }
 }
 
 export const linkCauseTool = onCause((held, args, view, work) => {
   const link = linkOf(work, view, args.explains, args.scope, args.strength)
   if ('ok' in link) return link
-  const why = linkRefusal(work.before.causes, held.id, link)
+  const context = belowOf(view)
+  const why = linkRefusal(work.before.causes, held.id, link, context)
   if (why) return linkRefused(why, held, link, work.before.causes)
-  const causes = linkCause(work.before.causes, held.id, link)
+  const causes = linkCause(work.before.causes, held.id, link, context)
   const after = { ...work.before, causes }
   return finish(work, after, causeAnswer(work, after, held.id))
 })

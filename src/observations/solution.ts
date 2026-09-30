@@ -42,7 +42,7 @@ import type {
   SolutionLink, SolutionSize, SolutionState,
 } from '../model/observation'
 import { absorbedBy, causeLabel, formatObservationNumber, isRootCause } from './observation'
-import type { Analysis, SharedObservation } from './observation'
+import type { Analysis, ObservationBelow } from './observation'
 
 export type {
   EarlierAttempt, Experiment, ExperimentOutcome, Solution, SolutionEvent, SolutionEventKind, SolutionLink,
@@ -783,7 +783,7 @@ export type SeenAgain = Reached & { date: string }
  * and empty when it held.
  */
 export function seenSinceImplemented(
-  solution: Solution, analysis: Analysis, shared: readonly SharedObservation[], plans: readonly SolutionPlan[],
+  solution: Solution, analysis: Analysis, below: readonly ObservationBelow[], plans: readonly SolutionPlan[],
 ): SeenAgain[] {
   const since = implementedOn(solution, plans)
   if (!since) return []
@@ -791,7 +791,7 @@ export function seenSinceImplemented(
   for (const reached of underneath(solution, analysis)) {
     const observation = reached.scope === undefined
       ? analysis.observations.find((one) => one.id === reached.id)
-      : shared.find((one) => one.scope === reached.scope && one.observation.id === reached.id)?.observation
+      : below.find((one) => one.scope === reached.scope && one.observation.id === reached.id)?.observation
     const days = (observation?.history ?? []).filter((event) => event.kind === 'seen' && event.date >= since).map((event) => event.date)
     if (days.length) out.push({ ...reached, date: days.sort().at(-1)! })
   }

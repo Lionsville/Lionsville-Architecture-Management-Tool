@@ -30,7 +30,7 @@
 import type { Adr } from '../model/adr'
 import type { HostModel } from '../model/hostModel'
 import type { Transition } from '../model/transition'
-import type { Observation } from '../model/observation'
+import type { CauseAbove, ScopeAnalysis } from '../model/observation'
 import { matchesQuery } from '../model/textSearch'
 import type { ElementId, ElementKind, PlatformArchetype, Relation, RelationType } from '../model/types'
 import type { AgentAnswer } from './tools'
@@ -122,8 +122,10 @@ export type TreeView = {
   findings(): readonly TreeFinding[]
   /** The plans flagged as initiatives in the scopes strictly below `path` (§7). */
   initiativesBelow(path: string): readonly { scope: string; transition: Transition }[]
-  /** The observations shared by the scopes strictly below `path` (ADR-0021). Absent in a shell built before it. */
-  observationsBelow?(path: string): readonly { scope: string; observation: Observation }[]
+  /** The analysis of every scope strictly below `path` (ADR-0032 §1). Absent in a shell built before it. */
+  analysisBelow?(path: string): readonly ScopeAnalysis[]
+  /** The causes of the scopes above `path` that explain its records, by the id explained (ADR-0032 §4). */
+  explainedFromAbove?(path: string): ReadonlyMap<string, readonly CauseAbove[]>
   /**
    * Every row in the tree that points at this id, wherever it was written
    * (§2): what realises a service is the platform scope's row, and what

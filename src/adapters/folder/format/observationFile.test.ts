@@ -10,7 +10,7 @@ import {
 
 const observation: Observation = {
   id: 'ob-a1', number: 3, title: 'The nightly claims batch runs into office hours', date: '2026-09-08',
-  where: 'Claims settlement run', by: 'W. Simons', impact: 'major', seen: 4, shared: true, archived: true,
+  where: 'Claims settlement run', by: 'W. Simons', impact: 'major', seen: 4, archived: true,
   body: '## What we saw\n\nStill running at 08:40.\n',
   history: [
     { date: '2026-09-08', kind: 'recorded' },
@@ -37,7 +37,9 @@ describe('an observation as a file', () => {
     const text = observationFileText(observation)
     expect(text.startsWith('---\nid: ob-a1\nnumber: 3\ndate: 2026-09-08\n')).toBe(true)
     expect(text).toContain('by: W. Simons\n')
-    expect(text).toContain('shared: true\narchived: true\n')
+    expect(text).toContain('seen: 4\narchived: true\n')
+    // The history keeps a share from before nothing was shared (ADR-0032).
+    expect(text).toContain('  - date: 2026-09-11\n    kind: shared\n')
     expect(text).toContain('history:\n  - date: 2026-09-08\n    kind: recorded\n')
     expect(text).toContain('  - date: 2026-09-20\n    kind: archived\n    note: Fixed by the window change\n')
     expect(text).toContain('# OB-0003 — The nightly claims batch runs into office hours\n\n## What we saw')
@@ -48,7 +50,6 @@ describe('an observation as a file', () => {
     const local: Observation = { ...observation, history: [{ date: '2026-09-08', kind: 'recorded' }] }
     delete local.where
     delete local.by
-    delete local.shared
     delete local.archived
     expect(observationFromFile(observationFileText(local), observationPath(local))).toEqual(local)
   })
@@ -57,6 +58,13 @@ describe('an observation as a file', () => {
     const bare: Observation = { ...observation, history: [] }
     expect(observationFileText(bare)).toContain('history: none\n')
     expect(observationFromFile(observationFileText(bare), observationPath(bare))).toEqual(bare)
+  })
+
+  it('reads `shared` in a file written before ADR-0032 past, and does not write it again', () => {
+    const before = observationFileText(observation).replace('archived: true\n', 'shared: true\narchived: true\n')
+    const read = observationFromFile(before, observationPath(observation))
+    expect(read).toEqual(observation)
+    expect(observationFileText(read!)).not.toContain('shared: true')
   })
 
   it('reads a hand-written file: number from the name, defaults for the rest, one recorded event', () => {

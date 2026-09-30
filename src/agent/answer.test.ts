@@ -336,14 +336,18 @@ describe('search', () => {
     const below = view(withAnalysis)
     const tree = {
       lookup: () => undefined, rowsTo: () => [], initiativesBelow: () => [],
-      observationsBelow: () => [{ scope: 'shop', observation: { ...observation, id: 'ob-s', title: 'Invoices lost in the shop', shared: true as const } }],
+      analysisBelow: () => [{
+        scope: 'shop', observations: [{ ...observation, id: 'ob-s', title: 'Invoices lost in the shop' }],
+        causes: [{ id: 'ca-s', number: 1, title: 'Invoices kept in two queues', state: 'assumed' as const, body: '', explains: [] }],
+        solutions: [], experiments: [],
+      }],
     }
     const hits = (read('search', { query: 'invoices', kinds: ['observation', 'cause', 'solution', 'experiment'] }, { ...below, tree }) as {
       hits: Record<string, unknown>[]
     }).hits
     expect(hits.map((h) => [h.kind, h.id, h.scopePath])).toEqual([
       ['observation', 'ob-1', undefined], ['observation', 'ob-s', 'shop'],
-      ['cause', 'ca-1', undefined], ['solution', 'so-1', undefined], ['experiment', 'ex-1', undefined],
+      ['cause', 'ca-1', undefined], ['cause', 'ca-s', 'shop'], ['solution', 'so-1', undefined], ['experiment', 'ex-1', undefined],
     ])
     expect(hits[0]).toMatchObject({ label: 'OB-0002', status: 'minor', title: 'Invoices printed twice' })
     expect(answer('search', { query: 'invoices', kinds: ['nonsense'] }, below)).toMatchObject({ ok: false, refusal: 'agent.badArguments' })

@@ -49,7 +49,7 @@ function imagesOf({ session, pictures, files }: WorkspaceParts) {
 
 /** The decisions page (ADR-0012 §7) and the observations page (ADR-0021). */
 function RecordPages({ parts }: { parts: WorkspaceParts }) {
-  const { props, session, pages, snapshots, analysis, readings, pictures, files, readOnly, requests, pageChrome } = parts
+  const { props, session, pages, snapshots, analysis, readings, pictures, files, readOnly, requests, pageChrome, changeBelow } = parts
   const { s, language, makeId } = props.shell
   const { groupName, ancestorDecisions, scopes } = props.tree
   const { onOpenScope, crumbs, onGoHome } = props.navigation
@@ -102,10 +102,11 @@ function RecordPages({ parts }: { parts: WorkspaceParts }) {
         model={session.model}
         groupName={groupName}
         crumbs={crumbs}
-        shared={readings.sharedBelow}
+        below={readings.analysisBelow}
+        explainedAbove={readings.explainedAbove}
+        {...(readOnly ? {} : { onChangeBelow: changeBelow })}
         scopeLabel={readings.scopeLabel}
         absorbedAbove={readings.absorbedAbove}
-        canShare={props.project.path !== ''}
         {...(onOpenScope
           ? { onOpenScope: (path: string, id?: string) => onOpenScope(path, { page: 'observations', ...(id !== undefined ? { id } : {}) }) }
           : {})}

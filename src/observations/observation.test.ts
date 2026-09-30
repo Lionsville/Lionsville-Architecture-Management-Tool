@@ -4,13 +4,13 @@
 import { describe, expect, it } from 'vitest'
 import { translator } from '../i18n'
 import {
-  absorbShared, absorbedBy, causeDepth, causeEvidence, causeLabel, explainedBy, formatCauseNumber, formatObservationNumber,
-  isArchived, isMerged, isRootCause, linkCause, linkRefusal, liveObservations, makeCause, makeRootCause,
+  absorbFromBelow, absorbedBy, causeDepth, causeEvidence, causeLabel, explainedBy, formatCauseNumber, formatObservationNumber,
+  isArchived, isMerged, isRootCause, linkCause, linkRefusal, liveObservations, makeCause, makeRootCause, observationsBelow,
   mergeObservations, newCause, newObservation,
   nextCauseNumber, nextObservationNumber, removeCause, removeObservation, rootCauses, seenAgain, seenDayProblem,
-  setArchived, setShared, unlinkCause, updateCause, updateObservation, verifyCause, withConfirmation,
+  setArchived, unlinkCause, updateCause, updateObservation, verifyCause, withConfirmation,
 } from './observation'
-import type { Analysis, Cause, Observation } from './observation'
+import type { Analysis, Cause, LinkContext, Observation, ScopeAnalysis } from './observation'
 
 const t = translator('en')
 
@@ -42,16 +42,14 @@ describe('a new record', () => {
     const fresh = newObservation({ id: 'x', number: 1, title: '  Duplicate customers ', date: '2026-09-10', t })
     expect(fresh.title).toBe('Duplicate customers')
     expect(fresh.seen).toBe(1)
-    expect(fresh.shared).toBeUndefined()
     expect(fresh.impact).toBe('minor')
     expect(fresh.history).toEqual([{ date: '2026-09-10', kind: 'recorded' }])
     expect(fresh.body.match(/^## /gm)?.length).toBe(3)
   })
-  it('records the share on the day when it is shared from the start', () => {
-    const fresh = newObservation({ id: 'x', number: 1, title: 'T', date: '2026-09-10', t, shared: true, where: ' Claims desk ' })
-    expect(fresh.shared).toBe(true)
+  it('trims where it was seen, and records nothing but the day it was written down', () => {
+    const fresh = newObservation({ id: 'x', number: 1, title: 'T', date: '2026-09-10', t, where: ' Claims desk ' })
     expect(fresh.where).toBe('Claims desk')
-    expect(fresh.history.map((one) => one.kind)).toEqual(['recorded', 'shared'])
+    expect(fresh.history.map((one) => one.kind)).toEqual(['recorded'])
   })
   it('a cause starts assumed and explains nothing', () => {
     const fresh = newCause({ id: 'c', number: 1, title: 'Why', t })
@@ -61,21 +59,11 @@ describe('a new record', () => {
   })
 })
 
-describe('seeing, sharing, editing', () => {
+describe('seeing and editing', () => {
   it('seen again counts one more and dates it', () => {
     const list = seenAgain([observation({})], 'o1', '2026-09-12', 'Monday run')
     expect(list[0].seen).toBe(2)
     expect(list[0].history.at(-1)).toEqual({ date: '2026-09-12', kind: 'seen', note: 'Monday run' })
-  })
-  it('sharing writes the change of mind and not the confirmation', () => {
-    const shared = setShared([observation({})], 'o1', true, '2026-09-12')
-    expect(shared[0].shared).toBe(true)
-    expect(shared[0].history.at(-1)?.kind).toBe('shared')
-    const again = setShared(shared, 'o1', true, '2026-09-13')
-    expect(again[0].history).toHaveLength(2)
-    const back = setShared(again, 'o1', false, '2026-09-14')
-    expect(back[0].shared).toBeUndefined()
-    expect(back[0].history.at(-1)?.kind).toBe('unshared')
   })
   it('an emptied where is dropped rather than kept blank', () => {
     const list = updateObservation([observation({ where: 'Desk' })], 'o1', { where: '  ', title: ' New ' })
@@ -114,8 +102,8 @@ describe('archiving', () => {
     }
     expect(mergeObservations(analysis, 'o1', 'o2', '2026-09-21')).toBe(analysis)
     expect(mergeObservations(analysis, 'o2', 'o1', '2026-09-21')).toBe(analysis)
-    const below = { scope: 'acme/x', observation: observation({ id: 'b1', shared: true, archived: true }) }
-    expect(absorbShared(analysis, below, 'o2', '2026-09-21')).toBe(analysis)
+    const below = { scope: 'acme/x', observation: observation({ id: 'b1', archived: true }) }
+    expect(absorbFromBelow(analysis, below, 'o2', '2026-09-21')).toBe(analysis)
   })
 })
 
@@ -149,20 +137,20 @@ describe('merging', () => {
     expect(mergeObservations(once, 'o2', 'o1', 'd')).toBe(once)
     expect(mergeObservations(once, 'o1', 'o2', 'd')).toBe(once)
   })
-  it('absorbs a shared observation from below by writing only the survivor', () => {
+  it('absorbs an observation of a scope below, with nothing shared first, by writing only the survivor', () => {
     const held: Analysis = {
       observations: [observation({})],
       causes: [cause({ explains: [{ id: 'b1', scope: 'acme/claims', strength: 'strong' }] })],
     }
-    const below = { scope: 'acme/claims', observation: observation({ id: 'b1', number: 1, seen: 2, shared: true }) }
-    const after = absorbShared(held, below, 'o1', '2026-09-16')
+    const below = { scope: 'acme/claims', observation: observation({ id: 'b1', number: 1, seen: 2 }) }
+    const after = absorbFromBelow(held, below, 'o1', '2026-09-16')
     expect(after.observations).toHaveLength(1)
     expect(after.observations[0].seen).toBe(3)
     expect(after.observations[0].history.at(-1)).toEqual({ date: '2026-09-16', kind: 'absorbed', id: 'b1', scope: 'acme/claims', seen: 2 })
     expect(after.causes[0].explains).toEqual([{ id: 'o1', strength: 'strong' }])
     expect(absorbedBy(after.observations, 'b1', 'acme/claims')?.id).toBe('o1')
     // Not twice.
-    expect(absorbShared(after, below, 'o1', 'd')).toBe(after)
+    expect(absorbFromBelow(after, below, 'o1', 'd')).toBe(after)
   })
 })
 
@@ -244,6 +232,57 @@ describe('making a root cause, and a cause again (ADR-0032 §3)', () => {
     const list = [cause({ root: true }), cause({ id: 'c2', number: 2 })]
     expect(makeRootCause(list, 'c1')).toEqual({ ok: true, causes: list })
     expect(makeCause(list, 'c2', [])).toEqual({ ok: true, causes: list })
+  })
+})
+
+/**
+ * A three-level tree (ADR-0032 §4): the organisation, a domain under it, and
+ * a team under that, with a sibling domain beside. A cause explains the
+ * non-root causes of the scopes below its own, never upward, never
+ * sideways, and never an observation below.
+ */
+describe('links down the tree', () => {
+  const tree = (): ScopeAnalysis[] => [
+    { scope: 'claims', observations: [observation({ id: 'ob-c' })], causes: [cause({ id: 'ca-c' }), cause({ id: 'rc-c', root: true })], solutions: [], experiments: [] },
+    { scope: 'claims/intake', observations: [observation({ id: 'ob-i' })], causes: [cause({ id: 'ca-i' })], solutions: [], experiments: [] },
+    { scope: 'billing', observations: [], causes: [cause({ id: 'ca-b' })], solutions: [], experiments: [] },
+  ]
+  const at = (here: string): LinkContext => ({ here, below: tree().filter((one) => one.scope.startsWith(here === '' ? '' : `${here}/`) && one.scope !== here) })
+  const org = [cause({ id: 'ca-o' })]
+
+  it('lets a cause explain a non-root cause of any scope below its own, and says so from below', () => {
+    expect(linkRefusal(org, 'ca-o', { id: 'ca-c', scope: 'claims' }, at(''))).toBeUndefined()
+    expect(linkRefusal(org, 'ca-o', { id: 'ca-i', scope: 'claims/intake' }, at(''))).toBeUndefined()
+    const claims = [cause({ id: 'ca-c' })]
+    expect(linkRefusal(claims, 'ca-c', { id: 'ca-i', scope: 'claims/intake' }, at('claims'))).toBeUndefined()
+    expect(linkCause(org, 'ca-o', { id: 'ca-i', scope: 'claims/intake', strength: 'strong' }, at(''))[0].explains)
+      .toEqual([{ id: 'ca-i', scope: 'claims/intake', strength: 'strong' }])
+  })
+  it('refuses a link upward, sideways, into a root cause below, or to an observation below', () => {
+    const intake = [cause({ id: 'ca-i' })]
+    expect(linkRefusal(intake, 'ca-i', { id: 'ca-c', scope: 'claims' }, at('claims/intake'))).toBe('upward')
+    expect(linkRefusal(intake, 'ca-i', { id: 'ca-o', scope: '' }, at('claims/intake'))).toBe('upward')
+    expect(linkRefusal(intake, 'ca-i', { id: 'ca-i', scope: 'claims/intake' }, at('claims/intake'))).toBe('upward')
+    expect(linkRefusal([cause({ id: 'ca-c' })], 'ca-c', { id: 'ca-b', scope: 'billing' }, at('claims'))).toBe('sideways')
+    expect(linkRefusal(org, 'ca-o', { id: 'rc-c', scope: 'claims' }, at(''))).toBe('root')
+    expect(linkRefusal(org, 'ca-o', { id: 'ob-i', scope: 'claims/intake' }, at(''))).toBe('observationBelow')
+    expect(linkRefusal(org, 'ca-o', { id: 'nope', scope: 'claims' }, at(''))).toBe('unknown')
+    expect(linkRefusal(org, 'ca-o', { id: 'ca-c', scope: 'claims' })).toBe('unknown')
+    expect(linkCause(org, 'ca-o', { id: 'ob-i', scope: 'claims/intake', strength: 'weak' }, at(''))).toEqual(org)
+  })
+  it('keeps a link to an observation below that was made before, and changes only its strength', () => {
+    const before = [cause({ id: 'ca-o', explains: [{ id: 'ob-i', scope: 'claims/intake', strength: 'weak' }] })]
+    expect(linkRefusal(before, 'ca-o', { id: 'ob-i', scope: 'claims/intake' }, at(''))).toBeUndefined()
+    expect(linkCause(before, 'ca-o', { id: 'ob-i', scope: 'claims/intake', strength: 'strong' }, at(''))[0].explains)
+      .toEqual([{ id: 'ob-i', scope: 'claims/intake', strength: 'strong' }])
+  })
+  it('refuses a root cause below that a cause above explains, naming it', () => {
+    const above = [{ scope: '', cause: cause({ id: 'ca-o' }), strength: 'normal' as const }]
+    const refused = makeRootCause([cause({ id: 'ca-i' })], 'ca-i', above)
+    expect(refused).toMatchObject({ ok: false, refusal: 'command.rootExplained', causes: [], above })
+  })
+  it('reads the observations of every scope below as one list, scope by scope', () => {
+    expect(observationsBelow(tree()).map((one) => `${one.scope}#${one.observation.id}`)).toEqual(['claims#ob-c', 'claims/intake#ob-i'])
   })
 })
 

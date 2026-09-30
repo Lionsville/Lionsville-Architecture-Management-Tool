@@ -245,7 +245,7 @@ const cause: Searchable<Cause> = {
     title: ca.title,
     fields: [],
     prose: ca.body,
-    label: numbered('CA', ca.number),
+    label: numbered(ca.root ? 'RC' : 'CA', ca.number),
     status: ca.state,
     opens: { page: 'observations', id: ca.id },
   }),

@@ -8,7 +8,7 @@
  * The third sibling of {@link ./adrFile} and {@link ./transitionFile}, and
  * deliberately the same shape: front matter for the fields that are not
  * prose, a heading that names it the way people say it out loud, and markdown
- * below. The history of an observation — seen again, shared, absorbed, merged,
+ * below. The history of an observation — seen again, absorbed, merged,
  * archived — is rows in the front matter, dated, so that `git log` on the file and the
  * file itself tell the same story.
  *
@@ -17,8 +17,8 @@
  * edited by anything and an observation that half-parses is worth more than a
  * refusal.
  *
- * What may happen to an observation — the numbering, the merge, the share —
- * is `observations/observation.ts` and is none of this file's business.
+ * What may happen to an observation — the numbering, the merge, the root
+ * cause — is `observations/observation.ts` and is none of this file's business.
  */
 import {
   CAUSE_STATES, CAUSE_STRENGTHS, EXPERIMENT_OUTCOMES, OBSERVATION_EVENT_KINDS, OBSERVATION_IMPACTS,
@@ -113,7 +113,6 @@ export function observationFileText(observation: Observation): string {
     by: observation.by,
     impact: observation.impact,
     seen: observation.seen,
-    shared: observation.shared,
     archived: observation.archived,
     // None at all is said, so it reads back as none rather than as the one a hand-written file is given.
     history: observation.history.length ? historyRows(observation.history) : NO_HISTORY,
@@ -222,7 +221,8 @@ export function observationFromFile(text: string, path: string): Observation | u
     ...(by ? { by } : {}),
     impact: impactOf(frontMatterString(fields, 'impact')),
     seen: seen !== undefined && seen >= 1 ? Math.trunc(seen) : 1,
-    ...(frontMatterString(fields, 'shared') === 'true' ? { shared: true as const } : {}),
+    // `shared: true` in a file written before ADR-0032 is read past and not
+    // written again: nothing is shared any more, and the events stay as history.
     ...(frontMatterString(fields, 'archived') === 'true' ? { archived: true as const } : {}),
     body,
     history: history.length || frontMatterString(fields, 'history') === NO_HISTORY ? history : [{ date, kind: 'recorded' }],

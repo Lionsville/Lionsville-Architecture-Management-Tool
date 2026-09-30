@@ -17,7 +17,7 @@ import { patchWrites } from './writes'
 /** Every field of an observation but its id. */
 const OBSERVATION_FIELDS: PatchKeys<'observation.update'> = {
   number: true, title: true, date: true, where: true, by: true, impact: true, seen: true,
-  shared: true, archived: true, body: true, history: true,
+  archived: true, body: true, history: true,
 }
 
 /** Every field of a cause but its id. */

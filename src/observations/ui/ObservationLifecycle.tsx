@@ -18,8 +18,10 @@ import { useState, type ReactNode } from 'react'
 import Button from '@mui/material/Button'
 import type { Translate } from '../../i18n'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
-import { causeEvidence, isArchived, isMerged, isRootCause, makeCause, makeRootCause, seenAgain, verifyCause } from '../observation'
-import type { Cause, Observation } from '../observation'
+import {
+  causeEvidence, causeLabel, isArchived, isMerged, isRootCause, makeCause, makeRootCause, seenAgain, verifyCause,
+} from '../observation'
+import type { Cause, CauseAbove, Observation } from '../observation'
 import { concludeExperiment, experimentMovesFrom, formatSolutionNumber, isConcluded, reopenWithdraws } from '../solution'
 import type { Experiment, ExperimentOutcome, Solution } from '../solution'
 import { causesForProposal } from '../solutionGraph'
@@ -149,15 +151,25 @@ function reopenBody(withdraws: readonly string[], s: Translate): string {
  */
 export function rootToggle(cause: Cause, deps: {
   lists: Pick<LifecycleLists, 'causes' | 'solutions'>
+  /** The causes of the scopes above that explain it, off the tree. */
+  above?: readonly CauseAbove[]
   commit: (next: Partial<LifecycleLists>) => void
   nameOf: (id: string) => string
+  scopeLabel: (path: string) => string
   s: Translate
   readOnly: boolean
 }): { action: MenuAction; reader: { onRoot?: () => void; rootRefused?: string } } {
   const { lists, commit, nameOf, s } = deps
-  const change = isRootCause(cause) ? makeCause(lists.causes, cause.id, lists.solutions) : makeRootCause(lists.causes, cause.id)
+  const change = isRootCause(cause)
+    ? makeCause(lists.causes, cause.id, lists.solutions)
+    : makeRootCause(lists.causes, cause.id, deps.above)
   const refused = change.ok ? undefined : change.refusal === 'command.rootExplained'
-    ? s('observation.refusedRootExplained', { names: change.causes.map((one) => nameOf(one.id)).join(', ') })
+    ? s('observation.refusedRootExplained', {
+      names: [
+        ...change.causes.map((one) => nameOf(one.id)),
+        ...change.above.map((one) => `${causeLabel(one.cause)} ${one.cause.title} (${deps.scopeLabel(one.scope)})`),
+      ].join(', '),
+    })
     : s('observation.refusedRootAddressed', { names: change.solutions.map((one) => nameOf(one.id)).join(', ') })
   const onRoot = () => { if (change.ok) commit({ causes: change.causes }) }
   return {

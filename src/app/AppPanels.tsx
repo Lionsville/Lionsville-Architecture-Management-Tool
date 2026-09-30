@@ -206,7 +206,7 @@ function Home({ parts }: { parts: ShellParts }) {
         register={findings.register}
         technology={findings.technology}
         initiatives={findings.initiatives}
-        sharedObservations={findings.sharedObservations}
+        localObservations={findings.localObservations}
         platformTree={findings.platformTree}
         onOpenRegisterRow={(path, id) => openScopeAt(path, { page: 'element', id })}
         onOpenRegisterPage={(path, id) => openScopeAt(path, { page: 'document', id })}

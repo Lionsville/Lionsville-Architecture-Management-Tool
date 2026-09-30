@@ -77,8 +77,8 @@ export type OrganisationCardsProps = {
   onOpenDecision?: (id: string) => void
   /** The observations page (ADR-0021). */
   onOpenObservations: () => void
-  /** How many observations the scopes below shared, off the index. */
-  sharedObservations?: number
+  /** How many open observations the scopes below hold (ADR-0032 §1), off the index. */
+  localObservations?: number
   onOpenRoadmap: () => void
   /** What the roadmap card's finding is about, opened as the roadmap page opens it (`findingTarget`). */
   onOpenFinding?: (target: FindingTarget) => void
@@ -172,7 +172,7 @@ function Actions({ children }: { children: ReactNode }) {
 }
 
 export function OrganisationCards({
-  pages, ready, register, technology, initiatives = 0, sharedObservations = 0, shows, onOpenBusiness, onOpenMap, onOpenDecisions,
+  pages, ready, register, technology, initiatives = 0, localObservations = 0, shows, onOpenBusiness, onOpenMap, onOpenDecisions,
   onOpenDecision, onOpenObservations, onOpenRoadmap, onOpenFinding, onOpenRegister, onOpenTechnology, onOpenTechnologyLandscape,
   onOpenDocumentation, writable = true, s,
 }: OrganisationCardsProps) {
@@ -283,10 +283,10 @@ export function OrganisationCards({
                   : '',
             ].filter(Boolean).join(' · ')
             : '',
-          // What the scopes below offered upward (ADR-0021): off the index,
-          // like the initiatives on the roadmap card.
-          sharedObservations > 0
-            ? plural(s, { one: 'org.sharedBelowOne', other: 'org.sharedBelowOther' }, sharedObservations)
+          // What the scopes below observed (ADR-0032 §1): local to them, and
+          // off the index like the initiatives on the roadmap card.
+          localObservations > 0
+            ? plural(s, { one: 'org.localBelowOne', other: 'org.localBelowOther' }, localObservations)
             : '',
         ].filter(Boolean).join(' · ') || undefined}
         action={(

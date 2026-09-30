@@ -25,15 +25,15 @@
 import {
   absorbedBy, causeDepth, isArchived, isMerged, isRootCause,
 } from './observation'
-import type { Analysis, Cause, CauseStrength, Observation, SharedObservation } from './observation'
+import type { Analysis, Cause, CauseStrength, Observation, ObservationBelow } from './observation'
 
 export type GraphNode =
   | {
     kind: 'observation'
-    /** `id`, or `scope#id` for one shared from below, so the two cannot collide. */
+    /** `id`, or `scope#id` for one of a scope below, so the two cannot collide. */
     key: string
     id: string
-    /** Present for an observation a scope below shared. */
+    /** Present for an observation of a scope below. */
     scope?: string
     observation: Observation
     lane: 0
@@ -69,10 +69,10 @@ export function nodeKey(id: string, scope?: string): string {
 }
 
 /**
- * The picture over this scope's analysis and the observations shared from
+ * The picture over this scope's analysis and the observations of the scopes
  * below. Rows are assigned lane by lane; every node has one.
  */
-export function analysisGraph(analysis: Analysis, shared: readonly SharedObservation[] = []): AnalysisGraph {
+export function analysisGraph(analysis: Analysis, below: readonly ObservationBelow[] = []): AnalysisGraph {
   const { observations, causes } = analysis
   const drawnObservations: GraphNode[] = []
   for (const observation of observations) {
@@ -81,7 +81,7 @@ export function analysisGraph(analysis: Analysis, shared: readonly SharedObserva
       kind: 'observation', key: nodeKey(observation.id), id: observation.id, observation, lane: 0, row: 0,
     })
   }
-  for (const { scope, observation } of shared) {
+  for (const { scope, observation } of below) {
     if (absorbedBy(observations, observation.id, scope) || isArchived(observation)) continue
     drawnObservations.push({
       kind: 'observation', key: nodeKey(observation.id, scope), id: observation.id, scope, observation, lane: 0, row: 0,

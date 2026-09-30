@@ -27,7 +27,7 @@
 import { analysisGraph, assignRows } from './graph'
 import type { GraphNode } from './graph'
 import { isRootCause } from './observation'
-import type { Analysis, Cause, CauseStrength, SharedObservation } from './observation'
+import type { Analysis, Cause, CauseStrength, ObservationBelow } from './observation'
 import { isLive, solutionPhase, testStrength } from './solution'
 import type { Experiment, Solution, SolutionPhase, SolutionPlan, SolutionState, SolutionWork } from './solution'
 
@@ -87,7 +87,7 @@ export type SolutionGraph = {
 }
 
 export type SolutionGraphOptions = {
-  shared?: readonly SharedObservation[]
+  below?: readonly ObservationBelow[]
   /** Observations and the whole analysis to the left of the solutions. */
   wholeChain?: boolean
   /** Dropped solutions, in the lane they were dropped from. */
@@ -121,7 +121,7 @@ export function solutionGraph(
   let first: number
 
   if (options.wholeChain) {
-    const chain = analysisGraph(analysis, options.shared ?? [])
+    const chain = analysisGraph(analysis, options.below ?? [])
     nodes.push(...chain.nodes)
     for (const edge of chain.edges) edges.push({ from: edge.from, to: edge.to, kind: 'explains', strength: edge.strength })
     for (let lane = 0; lane < chain.lanes; lane += 1) {

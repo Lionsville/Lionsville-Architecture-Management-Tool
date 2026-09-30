@@ -49,7 +49,7 @@ function view(model: Model): WriteView {
     today: () => day,
     translate: DEFAULT_TRANSLATE,
     containerName: (name) => name,
-    tree: { lookup: () => undefined, initiativesBelow: () => [], observationsBelow: () => [], rowsTo: () => [] },
+    tree: { lookup: () => undefined, initiativesBelow: () => [], analysisBelow: () => [], rowsTo: () => [] },
   }
 }
 

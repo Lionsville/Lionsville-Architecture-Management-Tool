@@ -28,7 +28,7 @@ describe('analysisGraph', () => {
       ...analysis,
       observations: analysis.observations.map((one) => (one.id === 'o2' ? { ...one, archived: true as const } : one)),
     }
-    const below = [{ scope: 'acme/x', observation: observation('b1', 1, { shared: true, archived: true }) }]
+    const below = [{ scope: 'acme/x', observation: observation('b1', 1, { archived: true }) }]
     const graph = analysisGraph(closed, below)
     expect(graph.nodes.map((node) => node.key)).not.toContain('o2')
     expect(graph.nodes.map((node) => node.key)).not.toContain('acme/x#b1')
@@ -100,18 +100,18 @@ describe('analysisGraph', () => {
       ],
       causes: [],
     }
-    const shared = [
-      { scope: 'acme/claims', observation: observation('b1', 1, { shared: true }) },
-      { scope: 'acme/claims', observation: observation('b2', 2, { shared: true }) },
+    const below = [
+      { scope: 'acme/claims', observation: observation('b1', 1) },
+      { scope: 'acme/claims', observation: observation('b2', 2) },
     ]
-    const graph = analysisGraph(merged, shared)
+    const graph = analysisGraph(merged, below)
     expect(graph.nodes.map((node) => node.key)).toEqual(['o1', 'acme/claims#b2'])
   })
 
-  it('keeps a link to a shared observation apart from one to a local id that happens to match', () => {
+  it('keeps a link to an observation below apart from one to a local id that happens to match', () => {
     const graph = analysisGraph(
       { observations: [observation('x', 1)], causes: [cause('c1', 1, [{ id: 'x', scope: 'acme/claims', strength: 'weak' }])] },
-      [{ scope: 'acme/claims', observation: observation('x', 9, { shared: true }) }],
+      [{ scope: 'acme/claims', observation: observation('x', 9) }],
     )
     expect(graph.edges).toEqual([{ from: 'acme/claims#x', to: 'c1', strength: 'weak' }])
   })

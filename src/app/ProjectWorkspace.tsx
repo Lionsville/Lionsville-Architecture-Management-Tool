@@ -39,6 +39,7 @@ import { showOn, useWorkspaceAgentView } from './useWorkspaceAgentView'
 import { useInitialPage, useWorkspaceCommands } from './useWorkspaceCommands'
 import { useScopeSessionSeam, useScopeWriter, useWorkspaceDocument } from './useWorkspaceDocument'
 import { useWorkspaceFiles } from './useWorkspaceFiles'
+import { useChangeBelow } from './useChangeBelow'
 import { useWorkspaceOwnership } from './useWorkspaceOwnership'
 import { useWorkspacePages } from './useWorkspacePages'
 import { useWorkspaceRequests } from './useWorkspaceRequests'
@@ -235,7 +236,9 @@ function useTreeParts(props: ProjectWorkspaceProps, base: ReturnType<typeof useS
     rowsThrough: readings.rowsThrough, scopeLabel: readings.scopeLabel,
     gestureOffers: gestures.offers, gestureChoose: gestures.choose, addExisting: library.open, s,
   })
-  return { readings, gestures, library, ownership }
+  /** A change to a scope below made from the observations page, as that scope's step (ADR-0032 §2). */
+  const changeBelow = useChangeBelow({ scopes: source.store, mayChange: session.mayChange, onTreeChanged })
+  return { readings, gestures, library, ownership, changeBelow }
 }
 
 /** The snapshots, the menu, the pages beside the canvas and the doors in. */

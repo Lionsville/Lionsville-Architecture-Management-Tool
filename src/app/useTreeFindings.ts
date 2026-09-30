@@ -69,9 +69,9 @@ export function useTreeFindings(deps: {
   const identity = useMemo(() => identityFindings(index), [index])
   /** Every plan flagged as an initiative anywhere below the root (ADR-0012 §7), for the roadmap card. */
   const initiatives = useMemo(() => index.initiativesBelow(home).length, [index, home])
-  /** Every observation shared from anywhere below this home (ADR-0021), for the observations card. */
-  const sharedObservations = useMemo(
-    () => index.observationsBelow(home).filter(({ observation }) => !observation.archived).length,
+  /** Every open observation anywhere below this home (ADR-0032 §1), for the observations card. */
+  const localObservations = useMemo(
+    () => index.analysisBelow(home).reduce((sum, one) => sum + one.observations.filter((held) => !held.archived).length, 0),
     [index, home],
   )
   const treeFindings = useMemo(() => findingsByScope(identity), [identity])
@@ -86,7 +86,7 @@ export function useTreeFindings(deps: {
   const shellTree = useShellTree(tree, index, identity, scopes)
   /** The platform tree, for the roadmap card's finding: the one the roadmap page reads (`platformTree.ts`). */
   const platformTree = useMemo(() => platformTreeOf(index), [index])
-  return { initiatives, sharedObservations, treeFindings, register, technology, shellTree, platformTree }
+  return { initiatives, localObservations, treeFindings, register, technology, shellTree, platformTree }
 }
 
 /**
@@ -109,7 +109,8 @@ function useShellTree(
     register: () => treeRef.current.index.register(),
     technology: () => technologyRows(treeRef.current.index, treeRef.current.identity),
     initiativesBelow: (path) => treeRef.current.index.initiativesBelow(path),
-    observationsBelow: (path) => treeRef.current.index.observationsBelow(path),
+    analysisBelow: (path) => treeRef.current.index.analysisBelow(path),
+    explainedFromAbove: (path) => treeRef.current.index.explainedFromAbove(path),
     rowsTo: (id, types) => treeRef.current.index.rowsTo(id, types).map((row) => row.relation),
     findings: () => treeRef.current.identity,
     read: async (path) => {

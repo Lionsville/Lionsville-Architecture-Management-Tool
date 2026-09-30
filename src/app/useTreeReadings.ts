@@ -121,16 +121,17 @@ export function useTreeReadings(deps: {
   )
 
   /**
-   * The observations the scopes below shared (ADR-0021), off the index like
-   * the initiatives — and, the other way, which of this scope's own a scope
-   * above folded into one of its own.
+   * The analysis of every scope below (ADR-0032 §1), off the index like the
+   * initiatives — and, the other way, which of this scope's own a scope above
+   * folded into one of its own, and which it explains.
    */
-  const sharedBelow = useMemo(() => index.observationsBelow(scope), [index, scope])
+  const analysisBelow = useMemo(() => index.analysisBelow(scope), [index, scope])
   const absorbedAbove = useMemo(() => index.absorbedFrom(scope), [index, scope])
+  const explainedAbove = useMemo(() => index.explainedFromAbove(scope), [index, scope])
 
   return {
     scopeLabel, rowsElsewhere, rowsThrough, rowsElsewhereRef, initiativesBelow, describeForMap,
-    sharedElsewhere, applicationsInTree, sharedBelow, absorbedAbove,
+    sharedElsewhere, applicationsInTree, analysisBelow, absorbedAbove, explainedAbove,
   }
 }
 

@@ -104,7 +104,7 @@ function view(model: Model): WriteView {
     today: () => '2026-09-20',
     translate: DEFAULT_TRANSLATE,
     containerName: (name) => `${name} · containers`,
-    tree: { lookup: () => undefined, initiativesBelow: () => [], observationsBelow: () => [], rowsTo: () => [] },
+    tree: { lookup: () => undefined, initiativesBelow: () => [], analysisBelow: () => [], rowsTo: () => [] },
   }
 }
 
@@ -176,7 +176,7 @@ const EVERY_WRITE: { readonly [T in CommandTool]: readonly Case[] } = {
   'decision.transition': [{ args: { id: 'adr-2', status: 'rejected', reason: 'Not now.' } }],
 
   'observation.record': [{ args: { title: 'Duplicate customers', impact: 'major' } }],
-  'observation.update': [{ args: { id: 'ob-2', shared: true } }],
+  'observation.update': [{ args: { id: 'ob-2', where: 'Service desk' } }],
   'observation.seen': [{ args: { id: 'ob-2' } }],
   'observation.archive': [{ args: { id: 'ob-2', note: 'Fixed in the checklist' } }],
   'observation.merge': [{ args: { id: 'ob-2', into: 'ob-1' } }],

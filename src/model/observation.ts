@@ -37,7 +37,9 @@ export const OBSERVATION_IMPACTS: readonly ObservationImpact[] = ['minor', 'majo
  *
  * `recorded` — the day it was written down. `seen` — seen again; the count
  * went up by one. `shared` / `unshared` — offered to the scopes above, or
- * taken back. `absorbed` — another observation was judged to be the same
+ * taken back, while that was a step (ADR-0021 §3); nothing is shared since
+ * ADR-0032, and the two are read as history and never written again.
+ * `absorbed` — another observation was judged to be the same
  * thing and folded into this one: `id` (and `scope`, when it lived in a scope
  * below) say which, and `seen` how many sightings came with it. `merged` —
  * this one was folded into `id`, and is history from then on. `archived` —
@@ -83,14 +85,6 @@ export type Observation = {
   /** How often it has been seen, this record's own sightings and the absorbed ones together. */
   seen: number
   /**
-   * Offered to the scopes above this one: every ancestor reads it and may
-   * link it to a cause of its own, or fold it into an observation of its own.
-   * Absent is local, which is the default — a domain says which of its
-   * observations are the enterprise's business; the enterprise does not go
-   * and pick them.
-   */
-  shared?: true
-  /**
    * Fixed, addressed, or no longer relevant. The record stays where it is,
    * for the history, and is out of the analysis until it is restored.
    */
@@ -111,12 +105,14 @@ export type CauseStrength = 'strong' | 'normal' | 'weak'
 export const CAUSE_STRENGTHS: readonly CauseStrength[] = ['strong', 'normal', 'weak']
 
 /**
- * One thing a cause explains: an observation of this scope, an observation a
- * scope below shared (`scope` present), or a shallower cause of this scope.
+ * One thing a cause explains: an observation or a shallower cause of this
+ * scope, or a cause of a scope below (`scope` present, ADR-0032 §4). A link
+ * to an observation below is one ADR-0021 allowed and nothing makes any
+ * more: it is kept, and reported.
  */
 export type CauseLink = {
   id: string
-  /** The scope the observation lives in, when it is not this one. */
+  /** The scope below the explained record lives in, when it is not this one. */
   scope?: string
   strength: CauseStrength
 }
@@ -263,4 +259,30 @@ export type Experiment = {
   /** What happened, in numbers where there are numbers. */
   result?: string
   body: string
+}
+
+/**
+ * The analysis of one scope below the one being read (ADR-0032 §1): its own
+ * observations, causes, solutions and experiments, local to it and edited
+ * there. What a scope above reads of every scope under it, off the tree.
+ */
+export type ScopeAnalysis = {
+  /** The scope it lives in: a plain string, because what a scope is belongs to `projects/`. */
+  scope: string
+  observations: readonly Observation[]
+  causes: readonly Cause[]
+  solutions: readonly Solution[]
+  experiments: readonly Experiment[]
+}
+
+/**
+ * A cause of a scope above that explains a record of this one (ADR-0032 §4),
+ * as this scope reads it off the tree. The link lives on that cause, in that
+ * scope; this one is never written for it.
+ */
+export type CauseAbove = {
+  /** The scope the explaining cause lives in. */
+  scope: string
+  cause: Cause
+  strength: CauseStrength
 }

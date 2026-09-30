@@ -3,8 +3,8 @@
 
 /**
  * Everything a scope observed in one place, and the analysis the team makes
- * of it (ADR-0021): a register of the observations — this scope's own and the
- * ones the scopes below shared — with the record beside it, and a second tab
+ * of it (ADR-0021): a register of the observations — this scope's own and
+ * those of the scopes below — with the record beside it, and a second tab
  * that draws the observations analysed into causes and causes into root
  * causes, with the same reading pane for whatever is clicked. A third tab
  * (ADR-0026) takes the causes on: solutions proposed for them, vetted through
@@ -13,10 +13,11 @@
  *
  * **One list per scope, read upward.** This scope's observations and causes
  * are two arrays on its model and go back whole (`onChange`), so the caller
- * commits one model change. An observation a scope below marked `shared` is
- * read here off the tree, may be linked to a cause here and may be folded
- * into an observation here — and is otherwise **edited where it lives**, the
- * rule every record follows.
+ * commits one model change. The analysis of every scope below is read here
+ * off the tree (ADR-0032 §1), with nothing shared first; an observation of
+ * one may be folded into an observation here, and is otherwise **edited
+ * where it lives**, the rule every record follows. A change to a scope
+ * below made from here is that scope's step (`onChangeBelow`).
  *
  * The page never writes anywhere itself.
  *
@@ -59,14 +60,15 @@ import { PageDialog } from '../../widgets/PageDialog'
 import { SeamResizer } from '../../widgets/SeamResizer'
 import type { DocumentImages } from '../../documentation/ui/DocumentSource'
 import type { MakeId } from '../../model/keys'
+import type { CommandRefusal } from '../../model/reducer'
 import {
-  absorbedBy, absorbShared, causeLabel, explainedBy, formatObservationNumber, isArchived, isMerged,
+  absorbedBy, absorbFromBelow, causeLabel, explainedBy, formatObservationNumber, isArchived, isMerged,
   isRootCause, linkCause, liveObservations, mergeObservations, newCause, newObservation, nextCauseNumber,
-  nextObservationNumber, removeCause, removeObservation, setArchived, setShared, sortCauses, sortObservations,
+  nextObservationNumber, observationsBelow, removeCause, removeObservation, setArchived, sortCauses, sortObservations,
   unlinkCause, updateCause, updateObservation,
 } from '../observation'
 import type {
-  Analysis, Cause, CauseLink, CausePatch, Observation, ObservationPatch, SharedObservation,
+  Analysis, Cause, CauseAbove, CauseLink, CausePatch, Observation, ObservationBelow, ObservationPatch, ScopeAnalysis,
 } from '../observation'
 import { nodeKey } from '../graph'
 import { IMPACT_COLOR, IMPACT_LABEL, STATE_COLOR, STATE_LABEL, STRENGTH_LABEL } from '../observationScope'
@@ -98,6 +100,21 @@ import { AddressDialog, DropDialog, NewExperimentDialog, NewSolutionDialog } fro
 /** Everything the page hands back: the analysis and what is being done about it. */
 export type ObservationWork = Analysis & SolutionWork
 
+/**
+ * A change to the analysis of a scope below, landed as that scope's step
+ * (ADR-0032 §2). `change` is handed its four lists as they stand and answers
+ * what they become, or nothing for no change; it may be called more than
+ * once, over a scope that moved in between, so it must do nothing but answer.
+ */
+export type ChangeBelow = (
+  path: string, change: (work: ObservationWork) => ObservationWork | undefined,
+) => Promise<ChangedBelow>
+
+/** Where a change below went: landed, refused by that scope's writer with its key, or not made. */
+export type ChangedBelow =
+  | { ok: true }
+  | { ok: false; reason: CommandRefusal | 'readOnly' | 'gone' | 'unchanged' }
+
 const ADR_STATUS_KEY = {
   proposed: 'adr.statusProposed', reviewing: 'adr.statusReviewing', accepted: 'adr.statusAccepted',
   rejected: 'adr.statusRejected', superseded: 'adr.statusSuperseded',
@@ -119,14 +136,20 @@ export type ObservationsPageProps = {
    * a name that is empty is left out rather than drawn as an empty crumb.
    */
   crumbs?: readonly { path: string; name: string }[]
-  /** The observations the scopes below shared (ADR-0021), off the tree. */
-  shared?: readonly SharedObservation[]
+  /** The analysis of every scope below this one (ADR-0032 §1), off the tree. */
+  below?: readonly ScopeAnalysis[]
+  /** The causes of the scopes above that explain this scope's records, by the id explained (ADR-0032 §4). */
+  explainedAbove?: ReadonlyMap<string, readonly CauseAbove[]>
+  /**
+   * Land a change on the analysis of a scope below, as that scope's step
+   * (ADR-0032 §2): in its Activity list and undone there, never on this
+   * page's stack. Absent where the host cannot write another scope.
+   */
+  onChangeBelow?: ChangeBelow
   /** What a scope below is called, for the headings; the path where the host cannot say. */
   scopeLabel?: (path: string) => string
   /** This scope's own observations that a scope above folded into one of its own, by id. */
   absorbedAbove?: ReadonlyMap<string, { by: string; into: string; intoTitle: string; date: string }>
-  /** Whether there is a scope above to share with: the root has none. */
-  canShare: boolean
   /**
    * Open the observations page of another scope: the one an observation from
    * below lives in, or the one above that one of these was merged into — on
@@ -271,8 +294,8 @@ function mergedIntoOf(one: Observation, from: {
 
 export function ObservationsPage(props: ObservationsPageProps) {
   const {
-    open, onClose, model, groupName, shared = [], onChange, initialId, initialNonce, readOnly = false, s, today, makeId,
-    canShare, absorbedAbove,
+    open, onClose, model, groupName, below = [], onChange, initialId, initialNonce, readOnly = false, s, today, makeId,
+    absorbedAbove,
   } = props
   const chrome = props.windowChrome ?? NO_WINDOW_CHROME
   const bar = barChromeFor(chrome)
@@ -316,7 +339,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
   /** What is being archived: a dialog asks why first. */
   const [archiving, setArchiving] = useState<Observation | undefined>(undefined)
   const [creatingCause, setCreatingCause] = useState(false)
-  /** What is being merged away: one of this scope's, or one a scope below shared. */
+  /** What is being merged away: one of this scope's, or one of a scope below. */
   const [merging, setMerging] = useState<{ observation: Observation; scope?: string } | undefined>(undefined)
   const [linking, setLinking] = useState<{ key: string; label: string; link: Omit<CauseLink, 'strength'> } | undefined>(undefined)
   const [deleting, setDeleting] = useState<{ kind: 'observation' | 'cause' | 'solution' | 'experiment'; id: string; label: string } | undefined>(undefined)
@@ -324,20 +347,31 @@ export function ObservationsPage(props: ObservationsPageProps) {
   // --- what is where ------------------------------------------------------------------
 
   /** The observations from below this scope has not folded into its own, and that are still open below. */
-  const sharedShown = useMemo(
-    () => shared.filter((one) => !absorbedBy(observations, one.observation.id, one.scope) && !isArchived(one.observation)),
-    [shared, observations],
+  const belowAll = useMemo(() => observationsBelow(below), [below])
+  const belowShown = useMemo(
+    () => belowAll.filter((one) => !absorbedBy(observations, one.observation.id, one.scope) && !isArchived(one.observation)),
+    [belowAll, observations],
   )
-  const sharedByScope = useMemo(() => {
-    const groups = new Map<string, SharedObservation[]>()
-    for (const one of sharedShown) groups.set(one.scope, [...(groups.get(one.scope) ?? []), one])
+  /**
+   * The ones below a cause here still explains: links ADR-0021 allowed and
+   * nothing makes any more (ADR-0032 §9), drawn so they can be seen and put
+   * right. The rest are that scope's to explain.
+   */
+  const belowLinked = useMemo(
+    () => belowShown.filter((one) => explainedBy(causes, one.observation.id, one.scope).length > 0), [belowShown, causes],
+  )
+  const belowByScope = useMemo(() => {
+    const groups = new Map<string, ObservationBelow[]>()
+    for (const one of belowShown) groups.set(one.scope, [...(groups.get(one.scope) ?? []), one])
     return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b))
-  }, [sharedShown])
+  }, [belowShown])
 
   const nameOf = useCallback((id: string, scope?: string): string => {
     if (scope !== undefined) {
-      const held = shared.find((one) => one.scope === scope && one.observation.id === id)
-      return held ? `${formatObservationNumber(held.observation.number)} ${held.observation.title} (${scopeLabel(scope)})` : `${id} (${scopeLabel(scope)})`
+      const held = belowAll.find((one) => one.scope === scope && one.observation.id === id)
+      const cause = below.find((one) => one.scope === scope)?.causes.find((one) => one.id === id)
+      const named = held ? `${formatObservationNumber(held.observation.number)} ${held.observation.title}` : cause ? `${causeLabel(cause)} ${cause.title}` : id
+      return `${named} (${scopeLabel(scope)})`
     }
     const observation = observations.find((one) => one.id === id)
     if (observation) return `${formatObservationNumber(observation.number)} ${observation.title}`
@@ -351,7 +385,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
     if (decision) return `${label4('ADR', decision.number)} ${decision.title}`
     const plan = model.transitions?.find((one) => one.id === id)
     return plan ? `${label4('TR', plan.number)} ${plan.title}` : id
-  }, [shared, observations, causes, solutions, experiments, model.decisions, model.transitions, scopeLabel])
+  }, [below, belowAll, observations, causes, solutions, experiments, model.decisions, model.transitions, scopeLabel])
 
   /** What a key names: the reader it opens and the menu it gets are both read off this. */
   const resolve = useCallback((key: string) => {
@@ -363,9 +397,9 @@ export function ObservationsPage(props: ObservationsPageProps) {
     if (cause) return { kind: 'cause' as const, cause }
     const own = observations.find((one) => one.id === key)
     if (own) return { kind: 'observation' as const, observation: own }
-    const below = shared.find((one) => nodeKey(one.observation.id, one.scope) === key)
-    return below ? { kind: 'shared' as const, ...below } : undefined
-  }, [causes, observations, shared, solutions, experiments])
+    const fromBelow = belowAll.find((one) => nodeKey(one.observation.id, one.scope) === key)
+    return fromBelow ? { kind: 'below' as const, ...fromBelow } : undefined
+  }, [causes, observations, belowAll, solutions, experiments])
   const selected = useMemo(() => (selectedKey ? resolve(selectedKey) : undefined), [selectedKey, resolve])
   const editing = selected !== undefined && editingKey !== undefined && editingKey === selectedKey
   const readerMode = useMemo(() => ({
@@ -388,7 +422,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
   /** Seen again, verified, an experiment concluded or reopened: the moves that ask first. */
   const { seeAgain, verify, moveExperiment, dialogs } = useLifecycle({ lists: work, commit, today, nameOf, s })
 
-  const create = (fields: { title: string; where: string; by: string; impact: Observation['impact']; shared: boolean }) => {
+  const create = (fields: { title: string; where: string; by: string; impact: Observation['impact'] }) => {
     const fresh = newObservation({
       id: makeId('ob'), number: nextObservationNumber(observations), date: today(), t: s, ...fields,
     })
@@ -405,8 +439,9 @@ export function ObservationsPage(props: ObservationsPageProps) {
   }
   const patchObservation = (id: string, patch: ObservationPatch) => commit({ ...analysis, observations: updateObservation(observations, id, patch) })
   const patchCause = (id: string, patch: CausePatch) => commit({ ...analysis, causes: updateCause(causes, id, patch) })
-  const rootOf = (cause: Cause) => rootToggle(cause, { lists: work, commit, nameOf, s, readOnly })
-  const share = (id: string, on: boolean) => commit({ ...analysis, observations: setShared(observations, id, on, today()) })
+  const rootOf = (cause: Cause) => rootToggle(cause, {
+    lists: work, above: props.explainedAbove?.get(cause.id), commit, nameOf, scopeLabel, s, readOnly,
+  })
   const archive = (id: string, note: string) => {
     commit({ ...analysis, observations: setArchived(observations, id, true, today(), note) })
     setArchiving(undefined)
@@ -417,8 +452,8 @@ export function ObservationsPage(props: ObservationsPageProps) {
     setMerging(undefined)
     setSelectedKey(into)
   }
-  const absorb = (from: SharedObservation, into: string) => {
-    commit(absorbShared(analysis, from, into, today()))
+  const absorb = (from: ObservationBelow, into: string) => {
+    commit(absorbFromBelow(analysis, from, into, today()))
     setMerging(undefined)
     setSelectedKey(into)
   }
@@ -580,7 +615,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
           {ownRows.length === 0 && (
             <TableRow><TableCell colSpan={7} sx={{ color: 'text.secondary' }} data-testid="observation-register-empty">{trimmed ? s('observation.searchEmpty', { query: trimmed }) : <EmptyRegister observations={observations} showArchived={showArchived} onShowArchived={() => setShowArchived(true)} s={s} />}</TableCell></TableRow>
           )}
-          {sharedByScope.map(([scope, held]) => (
+          {belowByScope.map(([scope, held]) => (
             <Fragment key={scope}>
               {heading(s('observation.fromBelow', { scope: scopeLabel(scope) }))}
               {held.filter((one) => matches(one.observation)).map((one) => observationRow(one.observation, one.scope))}
@@ -628,10 +663,9 @@ export function ObservationsPage(props: ObservationsPageProps) {
   // --- the analysis ----------------------------------------------------------------------
 
   const queue = liveObservations(observations).filter((one) => analysedInto(one.id).length === 0)
-  const sharedQueue = sharedShown.filter((one) => analysedInto(one.observation.id, one.scope).length === 0)
   const phases = [
-    ['observation.phaseObserved', liveObservations(observations).length + sharedShown.length],
-    ['observation.phaseAnalysed', liveObservations(observations).length + sharedShown.length - queue.length - sharedQueue.length],
+    ['observation.phaseObserved', liveObservations(observations).length],
+    ['observation.phaseAnalysed', liveObservations(observations).length - queue.length],
     ['observation.phaseAssumed', causes.filter((one) => one.state === 'assumed').length],
     ['observation.phaseVerified', causes.filter((one) => one.state === 'verified').length],
     ['observation.phaseRoots', causes.filter((one) => isRootCause(one)).length],
@@ -701,15 +735,13 @@ export function ObservationsPage(props: ObservationsPageProps) {
           { key: 'seen', label: s('observation.seenAgain'), onClick: () => seeAgain(one) },
           { key: 'link', label: s('observation.link'), onClick: () => setLinking({ key, label: nameOf(one.id), link: { id: one.id } }) },
           { key: 'merge', label: s('observation.merge'), onClick: () => setMerging({ observation: one }) },
-          ...(canShare ? [{ key: 'share', label: one.shared ? s('observation.unshare') : s('observation.share'), onClick: () => share(one.id, !one.shared) }] : []),
           { key: 'archive', label: s('observation.archive'), onClick: () => setArchiving(one) },
           remove('observation', one.id),
         ]
       }
-      case 'shared': {
+      case 'below': {
         const { observation: one, scope } = held
         return [
-          { key: 'link', label: s('observation.link'), onClick: () => setLinking({ key, label: nameOf(one.id, scope), link: { id: one.id, scope } }) },
           { key: 'merge', label: s('observation.merge'), onClick: () => setMerging({ observation: one, scope }) },
           ...(props.onOpenScope
             ? [{ key: 'open-scope', label: s('observation.openScope', { scope: scopeLabel(scope) }), divider: true, onClick: () => { onClose(); props.onOpenScope?.(scope) } }]
@@ -769,26 +801,26 @@ export function ObservationsPage(props: ObservationsPageProps) {
           </Typography>
         ))}
       </Box>
-      <AnalysisPicture analysis={analysis} shared={sharedShown} selectedKey={selectedKey} onSelect={setSelectedKey} onMenu={openMenu} s={s} />
+      <AnalysisPicture analysis={analysis} below={belowLinked} selectedKey={selectedKey} onSelect={setSelectedKey} onMenu={openMenu} s={s} />
       <PictureLegend s={s} />
     </Box>
   )
 
   const graph = useMemo(
-    () => solutionGraph(analysis, { solutions: [...solutions], experiments: [...experiments] }, plans, { shared: sharedShown, wholeChain, showDropped }),
-    [analysis, solutions, experiments, plans, sharedShown, wholeChain, showDropped],
+    () => solutionGraph(analysis, { solutions: [...solutions], experiments: [...experiments] }, plans, { below: belowLinked, wholeChain, showDropped }),
+    [analysis, solutions, experiments, plans, belowLinked, wholeChain, showDropped],
   )
   const flags = useMemo(() => {
     const found = new Map<string, { text: string; strong?: boolean }>()
     for (const cause of orphanRoots) found.set(cause.id, { text: s('solution.flagNoSolution') })
     for (const one of solutions) {
-      const seenAgain = seenSinceImplemented(one, analysis, shared, plans)
+      const seenAgain = seenSinceImplemented(one, analysis, belowAll, plans)
       const questions = solutionQuestions(one, context)
       if (seenAgain.length) found.set(solutionKey(one.id), { text: s('solution.findingSeenAgain', { names: seenAgain.map((held) => nameOf(held.id, held.scope)).join(', ') }), strong: true })
       else if (questions.length) found.set(solutionKey(one.id), { text: questions.map((question) => s(QUESTION_LABEL[question])).join(' ') })
     }
     return found
-  }, [orphanRoots, solutions, analysis, shared, plans, context, s, nameOf])
+  }, [orphanRoots, solutions, analysis, belowAll, plans, context, s, nameOf])
   const rootCount = causes.filter((one) => isRootCause(one)).length
   const phaseCounts = (['idea', 'shaped', 'testing', 'proven', 'adopted', 'implemented'] as const)
     .map((phase) => [phase, solutions.filter((one) => phaseOf(one) === phase).length] as const)
@@ -820,7 +852,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
     </Box>
   )
 
-  const toAnalyse = (queue.length + sharedQueue.length) > 0 && (
+  const toAnalyse = queue.length > 0 && (
     <Box data-testid="analysis-queue" sx={{ borderTop: 1, borderColor: 'divider', bgcolor: 'background.paper', maxHeight: '40%', overflow: 'auto' }}>
       <ListSubheader component="div" disableSticky sx={{ lineHeight: '32px', bgcolor: 'transparent' }}>{s('observation.toAnalyse')}</ListSubheader>
       <List component="div" dense disablePadding>
@@ -830,15 +862,6 @@ export function ObservationsPage(props: ObservationsPageProps) {
             <Chip size="small" color={IMPACT_COLOR[one.impact]} label={s(IMPACT_LABEL[one.impact])} sx={{ height: 18, fontSize: 10 }} />
           </ListItemButton>
         ))}
-        {sharedQueue.map((one) => {
-          const key = nodeKey(one.observation.id, one.scope)
-          return (
-            <ListItemButton key={key} selected={key === selectedKey} onClick={() => setSelectedKey(key)} sx={{ py: 0.25 }}>
-              <ListItemText primary={`${formatObservationNumber(one.observation.number)} ${one.observation.title}`} secondary={scopeLabel(one.scope)} slotProps={{ primary: { noWrap: true, sx: { fontSize: 12 } }, secondary: { sx: { fontSize: 11 } } }} />
-              <Chip size="small" color={IMPACT_COLOR[one.observation.impact]} label={s(IMPACT_LABEL[one.observation.impact])} sx={{ height: 18, fontSize: 10 }} />
-            </ListItemButton>
-          )
-        })}
       </List>
     </Box>
   )
@@ -849,7 +872,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const solutionReader = (one: Solution) => {
     const phase = phaseOf(one)
     const since = implementedOn(one, plans)
-    const seenAgain = seenSinceImplemented(one, analysis, shared, plans)
+    const seenAgain = seenSinceImplemented(one, analysis, belowAll, plans)
     const decision = model.decisions?.find((held) => held.id === one.decision)
     const plan = model.transitions?.find((held) => held.id === one.plan)
     return (
@@ -954,29 +977,27 @@ export function ObservationsPage(props: ObservationsPageProps) {
     <ObservationReader
       key={selectedKey}
       observation={selected.observation}
-      fromScope={selected.kind === 'shared' ? { path: selected.scope, label: scopeLabel(selected.scope) } : undefined}
-      explainedBy={analysedInto(selected.observation.id, selected.kind === 'shared' ? selected.scope : undefined)
+      fromScope={selected.kind === 'below' ? { path: selected.scope, label: scopeLabel(selected.scope) } : undefined}
+      explainedBy={analysedInto(selected.observation.id, selected.kind === 'below' ? selected.scope : undefined)
         .map((cause) => ({ cause, link: cause.explains.find((held) => held.id === selected.observation.id)! }))}
       mergedInto={selected.kind === 'observation' ? mergedLabel(selected.observation) : undefined}
       readOnly={readOnly}
-      canShare={canShare}
       s={s}
       renderMarkdown={props.renderMarkdown}
       nameOf={nameOf}
       onUpdate={(patch) => patchObservation(selected.observation.id, patch)}
       onSeenAgain={() => seeAgain(selected.observation)}
-      onShare={(on) => share(selected.observation.id, on)}
       onArchive={() => setArchiving(selected.observation)}
       onRestore={() => restore(selected.observation.id)}
-      onMerge={() => setMerging({ observation: selected.observation, ...(selected.kind === 'shared' ? { scope: selected.scope } : {}) })}
+      onMerge={() => setMerging({ observation: selected.observation, ...(selected.kind === 'below' ? { scope: selected.scope } : {}) })}
       onLink={() => setLinking({
         key: selectedKey!,
-        label: nameOf(selected.observation.id, selected.kind === 'shared' ? selected.scope : undefined),
-        link: { id: selected.observation.id, ...(selected.kind === 'shared' ? { scope: selected.scope } : {}) },
+        label: nameOf(selected.observation.id),
+        link: { id: selected.observation.id },
       })}
-      onUnlink={(causeId) => unlink(causeId, { id: selected.observation.id, ...(selected.kind === 'shared' ? { scope: selected.scope } : {}) })}
+      onUnlink={(causeId) => unlink(causeId, { id: selected.observation.id, ...(selected.kind === 'below' ? { scope: selected.scope } : {}) })}
       onDelete={() => setDeleting({ kind: 'observation', id: selected.observation.id, label: nameOf(selected.observation.id) })}
-      onOpenScope={selected.kind === 'shared' && props.onOpenScope
+      onOpenScope={selected.kind === 'below' && props.onOpenScope
         ? () => { onClose(); props.onOpenScope?.(selected.scope) }
         : undefined}
       onOpen={openKey}
@@ -1054,7 +1075,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
         </Box>
         <PictureMenu at={menu?.at} actions={menu ? menuActions(menu.target) : []} onClose={() => setMenu(undefined)} />
 
-        <NewObservationDialog open={creating} canShare={canShare} onCancel={() => setCreating(false)} onCreate={create} s={s} />
+        <NewObservationDialog open={creating} onCancel={() => setCreating(false)} onCreate={create} s={s} />
         {dialogs}
         <NewCauseDialog open={creatingCause} onCancel={() => setCreatingCause(false)} onCreate={addCause} s={s} />
         <ArchiveDialog
@@ -1063,8 +1084,8 @@ export function ObservationsPage(props: ObservationsPageProps) {
           onConfirm={(note) => { if (archiving) archive(archiving.id, note) }}
           s={s}
         />
-        {/* A shared observation from below is merged INTO one of this scope's:
-            the rules absorb it here without touching the scope it lives in. */}
+        {/* An observation from below is merged INTO one of this scope's: the
+            rules absorb it here without touching the scope it lives in. */}
         <MergeDialog
           target={merging?.observation}
           candidates={liveObservations(observations).filter((one) => one.id !== merging?.observation.id)}

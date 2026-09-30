@@ -38,7 +38,7 @@ import { businessCaseFence, computeBusinessCase, readBusinessCase } from '../doc
 import { formatAdrNumber } from '../decisions/adr'
 import { SEARCH_LIMIT_PER_KIND, searchAll } from '../search/search'
 import type { SearchHit, SearchSource } from '../search/search'
-import type { SearchKind } from '../model/searchable'
+import type { SearchableModel, SearchKind } from '../model/searchable'
 import type { AgentAnswer, ToolName } from './tools'
 import { checkArguments, json, refused, SEARCH_HIT_KINDS, text, toolSpec } from './tools'
 import { identityOf } from './tree'
@@ -52,8 +52,9 @@ import {
 import type { SolutionContext, SolutionPlan } from '../observations/solution'
 import type { Cause, Observation } from '../model/observation'
 import {
-  absorbedBy, causeLabel, explainedBy, formatObservationNumber, isMerged, isRootCause,
+  absorbedBy, causeLabel, explainedBy, formatObservationNumber, isMerged, isRootCause, observationsBelow,
 } from '../observations/observation'
+import type { ObservationBelow } from '../observations/observation'
 
 /** The tools this file answers: the read tier, by name. */
 export type ReadTool = Extract<ToolName,
@@ -82,7 +83,7 @@ export type ReadView = {
   /** The records of the scope above this one, which are not on this model. */
   readonly ancestorDecisions: readonly Adr[]
   /** The tree, for who answers for an id (ADR-0012 §9). Absent where there is none. */
-  readonly tree?: Pick<TreeView, 'lookup' | 'initiativesBelow' | 'observationsBelow' | 'rowsTo'>
+  readonly tree?: Pick<TreeView, 'lookup' | 'initiativesBelow' | 'analysisBelow' | 'explainedFromAbove' | 'rowsTo'>
 }
 
 type Args = Record<string, unknown>
@@ -232,7 +233,7 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
         .filter((one) => args.includeArchived === true || !one.archived)
         .filter((one) => wanted(one))
         .map((one) => observationLine(one, causes, own))
-      const fromBelow = (view.tree?.observationsBelow?.(view.scopePath) ?? [])
+      const fromBelow = observationsBelow(view.tree?.analysisBelow?.(view.scopePath) ?? [])
         .filter(({ scope, observation }) => !absorbedBy(own, observation.id, scope) && !observation.archived && wanted(observation, scope))
         .map(({ scope, observation }) => ({ scope, ...observationLine(observation, causes, own, scope) }))
       return json({ observations: rows, ...(fromBelow.length > 0 ? { fromBelow } : {}) })
@@ -607,7 +608,8 @@ export type SolutionFacts = {
   model: Model
   solutions: Solution[]
   context: SolutionContext
-  shared: ReturnType<NonNullable<TreeView['observationsBelow']>>
+  /** The observations of the scopes below, for a sighting under a solution that reaches one (a link from before ADR-0032). */
+  below: readonly ObservationBelow[]
 }
 
 export function solutionFacts(view: Pick<ReadView, 'model' | 'tree' | 'scopePath'>): SolutionFacts {
@@ -623,7 +625,7 @@ export function solutionFacts(view: Pick<ReadView, 'model' | 'tree' | 'scopePath
       decisions: Object.values(decisionsOf(model)).map((one) => ({ id: one.id, status: one.status })),
       plans,
     },
-    shared: view.tree?.observationsBelow?.(view.scopePath) ?? [],
+    below: observationsBelow(view.tree?.analysisBelow?.(view.scopePath) ?? []),
   }
 }
 
@@ -639,7 +641,7 @@ export function solutionLine(solution: Solution, facts: SolutionFacts) {
   const decision = solution.decision ? decisionsOf(model)[solution.decision] : undefined
   const plan = solution.plan ? transitionList(model).find((one) => one.id === solution.plan) : undefined
   const analysis = { observations: observationList(model), causes: [...causes] }
-  const seenAgain = seenSinceImplemented(solution, analysis, facts.shared, context.plans)
+  const seenAgain = seenSinceImplemented(solution, analysis, facts.below, context.plans)
   return {
     id: solution.id,
     label: formatSolutionNumber(solution.number),
@@ -716,7 +718,6 @@ export function observationLine(observation: Observation, causes: readonly Cause
     ...(observation.by ? { by: observation.by } : {}),
     impact: observation.impact,
     seen: observation.seen,
-    shared: observation.shared === true,
     ...(observation.archived ? { archived: true } : {}),
     ...(merged ? { mergedInto: merged.id } : {}),
     causes: explainedBy(causes, observation.id, scope).map((cause) => ({
@@ -1042,13 +1043,16 @@ function searchSources(view: ReadView): SearchSource[] {
   const here = view.scopePath
   const sources: SearchSource[] = [{ scope: here, model: view.current() }]
   if (view.ancestorDecisions.length > 0) sources.push({ model: { decisions: view.ancestorDecisions } })
-  const below = new Map<string, { observations: Observation[]; transitions: Transition[] }>()
+  const below = new Map<string, SearchableModel & { transitions: Transition[] }>()
   const at = (scope: string) => {
-    const held = below.get(scope) ?? { observations: [], transitions: [] }
+    const held = below.get(scope) ?? { transitions: [] }
     below.set(scope, held)
     return held
   }
-  for (const one of view.tree?.observationsBelow?.(here) ?? []) at(one.scope).observations.push(one.observation)
+  // Every scope below's analysis is read here, local to it (ADR-0032 §1).
+  for (const { scope, observations, causes, solutions, experiments } of view.tree?.analysisBelow?.(here) ?? []) {
+    Object.assign(at(scope), { observations, causes, solutions, experiments })
+  }
   for (const one of view.tree?.initiativesBelow(here) ?? []) at(one.scope).transitions.push(one.transition)
   for (const [scope, model] of below) sources.push({ scope, model })
   return sources

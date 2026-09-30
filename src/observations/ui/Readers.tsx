@@ -5,11 +5,11 @@
  * The reading pane of the observations page: one observation, or one cause,
  * read first and edited on request (ADR-0021).
  *
- * The header — number, title, date, where, who, impact, seen, shared — is
+ * The header — number, title, date, where, who, impact, seen, scope — is
  * fields, not text, drawn above the body so it cannot drift from it. The body
  * is markdown through the same renderer as documentation. The history at the
- * end is the dated ledger: recorded, seen again, shared, absorbed, merged,
- * archived. An archived record reads, and offers Restore and nothing else:
+ * end is the dated ledger: recorded, seen again, absorbed, merged, archived —
+ * and shared, in a record from before nothing was shared (ADR-0032). An archived record reads, and offers Restore and nothing else:
  * closed is closed until somebody says otherwise.
  *
  * Editing follows the decisions reader: a local draft, committed when it has
@@ -216,21 +216,18 @@ export function MergedNote({ merged, s, day }: { merged: MergedInto; s: Translat
 
 export type ObservationReaderProps = {
   observation: Observation
-  /** Present for an observation a scope below shared: read here, changed there. */
+  /** Present for an observation of a scope below: read here, changed there. */
   fromScope?: { path: string; label: string }
   /** This scope's causes that explain it. */
   explainedBy: readonly { cause: Cause; link: CauseLink }[]
   /** Where it went, when it was merged away — here, or in a scope above. */
   mergedInto?: MergedInto
   readOnly: boolean
-  /** Sharing upward is offered where there is an upward: the root has none. */
-  canShare: boolean
   s: Translate
   renderMarkdown: (md: string, options?: MarkdownRenderOptions) => ReactNode
   nameOf: NameOf
   onUpdate: (patch: ObservationPatch) => void
   onSeenAgain: () => void
-  onShare: (shared: boolean) => void
   /** Close it (a dialog asks why), or bring it back. */
   onArchive: () => void
   onRestore: () => void
@@ -262,7 +259,6 @@ export function ObservationReader(props: ObservationReaderProps) {
   const { language } = useStrings()
   const day = (date: string) => formatDay(date, language)
   const occasional: MenuAction[] = canEdit ? [
-    ...(props.canShare ? [{ key: 'share', label: observation.shared ? s('observation.unshare') : s('observation.share'), onClick: () => props.onShare(!observation.shared) }] : []),
     { key: 'archive', label: s('observation.archive'), onClick: props.onArchive },
     { key: 'delete', label: s('observation.delete'), divider: true, danger: true, onClick: props.onDelete },
   ] : []
@@ -272,7 +268,6 @@ export function ObservationReader(props: ObservationReaderProps) {
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 0.75, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flexWrap: 'wrap' }}>
         <Chip size="small" color={IMPACT_COLOR[observation.impact]} label={s(IMPACT_LABEL[observation.impact])} data-testid="observation-impact" />
         <Chip size="small" variant="outlined" label={s('observation.seenTimes', { count: observation.seen })} data-testid="observation-seen" />
-        {observation.shared && <Chip size="small" variant="outlined" color="info" label={s('observation.sharedMark')} />}
         {archived && <Chip size="small" variant="outlined" label={s('observation.archivedMark')} data-testid="observation-archived" />}
         <Typography variant="caption" color="text.secondary">{day(observation.date)}</Typography>
         <Box sx={{ flex: 1 }} />
@@ -281,13 +276,6 @@ export function ObservationReader(props: ObservationReaderProps) {
             <Button size="small" variant="outlined" onClick={props.onSeenAgain} data-testid="observation-seen-again" data-guide="observation.seenAgain">{s('observation.seenAgain')}</Button>
             <Button size="small" variant="outlined" onClick={props.onLink}>{s('observation.link')}</Button>
             <Button size="small" onClick={props.onMerge} data-guide="observation.merge">{s('observation.merge')}</Button>
-            {props.canShare && (
-              <Tooltip title={s('observation.shareHelp')}>
-                <Button size="small" onClick={() => props.onShare(!observation.shared)} data-testid="observation-share" sx={WIDE_ONLY_SX}>
-                  {observation.shared ? s('observation.unshare') : s('observation.share')}
-                </Button>
-              </Tooltip>
-            )}
             <Button size="small" onClick={props.onArchive} data-testid="observation-archive" sx={WIDE_ONLY_SX}>{s('observation.archive')}</Button>
             <Button size="small" color="error" onClick={props.onDelete} sx={WIDE_ONLY_SX}>{s('observation.delete')}</Button>
             <OverflowActions actions={occasional} label={s('observation.more')} />
@@ -296,11 +284,10 @@ export function ObservationReader(props: ObservationReaderProps) {
         {archived && !readOnly && !fromScope && (
           <Button size="small" variant="outlined" onClick={props.onRestore} data-testid="observation-restore">{s('observation.restore')}</Button>
         )}
+        {/* A cause here explains the causes below, not their observations
+            (ADR-0032 §4), so one from below is merged here and linked there. */}
         {fromScope && !readOnly && !mergedInto && !archived && (
-          <>
-            <Button size="small" variant="outlined" onClick={props.onLink}>{s('observation.link')}</Button>
-            <Button size="small" onClick={props.onMerge} data-guide="observation.merge">{s('observation.merge')}</Button>
-          </>
+          <Button size="small" onClick={props.onMerge} data-guide="observation.merge">{s('observation.merge')}</Button>
         )}
         <ToggleButtonGroup exclusive size="small" value={mode} onChange={(_e, value: Mode | null) => switchMode(value)}>
           <ToggleButton value="read">{s('observation.read')}</ToggleButton>
@@ -365,7 +352,7 @@ export function ObservationReader(props: ObservationReaderProps) {
               <Term>{s('observation.impactField')}</Term><Value>{s(IMPACT_LABEL[observation.impact])}</Value>
               <Term>{s('observation.colSeen')}</Term><Value>{s('observation.seenTimes', { count: observation.seen })}</Value>
               <Term>{s('observation.colScope')}</Term>
-              <Value>{fromScope ? fromScope.label : observation.shared ? s('observation.shared') : s('observation.local')}</Value>
+              <Value>{fromScope ? fromScope.label : s('observation.local')}</Value>
               <Term>{s('observation.explainedBy')}</Term>
               <Value testId="observation-explained-by">
                 {props.explainedBy.length === 0

@@ -3,6 +3,7 @@
 
 import type { EditorOwnership, ShownDays } from '../editor'
 import type { Adr } from '../decisions/adr'
+import type { ChangeBelow } from '../observations/ui/ObservationsPage'
 import type { WindowChrome } from '../platform/windowChrome'
 import type { ProjectHistoryState } from './history/useProjectHistory'
 import type { AnalysisActions } from './useAnalysisActions'
@@ -69,6 +70,8 @@ export interface WorkspaceParts {
   landscapes: TechnologyLandscapes
   pages: WorkspacePages
   analysis: AnalysisActions
+  /** A change to the analysis of a scope below, landed as that scope's step (ADR-0032 §2). */
+  changeBelow: ChangeBelow
   dialogs: WorkspaceDialogState
   /** The day each board is being looked at, which is nobody's write (ADR-0027). */
   viewing: ShownDays

@@ -1083,7 +1083,7 @@ describe('a plan as a record an agent may write (ADR-0009)', () => {
       refusal: 'agent.badArguments', detail: 'the gate to done still needs: retiredDated',
     })
     const lookup = (id: string) => (id === 'ledger' ? { retired: '2027-03-01' } : undefined)
-    const tree = { lookup, initiativesBelow: () => [], observationsBelow: () => [], rowsTo: () => [] } as unknown as WriteView['tree']
+    const tree = { lookup, initiativesBelow: () => [], analysisBelow: () => [], rowsTo: () => [] } as unknown as WriteView['tree']
     const done = roundTrip(standing, commandFor('plan.update', { id: 'tr-1', status: 'done' }, view(standing, { tree })))
     expect(done.transitions?.['tr-1'].status).toBe('done')
   })

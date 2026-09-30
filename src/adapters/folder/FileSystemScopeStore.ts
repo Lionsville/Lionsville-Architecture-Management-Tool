@@ -57,8 +57,10 @@ import {
 } from './format/folderFormat'
 import type { FolderFile } from './format/folderFormat'
 import { markdownBody } from './format/fileText'
-import { OBSERVATION_SUBFOLDERS, observationFromFile } from './format/observationFile'
-import type { Observation } from '../../model/observation'
+import {
+  CAUSES_SUBFOLDER, causeFromFile, EXPERIMENTS_SUBFOLDER, experimentFromFile, OBSERVATION_SUBFOLDERS, observationFromFile,
+  SOLUTIONS_SUBFOLDER, solutionFromFile,
+} from './format/observationFile'
 import { isSupersededPath, openScopeFolder } from './format/migrate4to5'
 import { scopeMoved } from '../../projects/revision'
 import { scopeTree, sortScopes } from '../../projects/scope'
@@ -175,6 +177,9 @@ type Plan = { path: ScopePath; writes: FolderFile[]; removals: Entry[]; aside: E
 
 /** What a file that did not read is set aside as: its own name and this, in the folder it is in, which the format never reads. */
 export const SET_ASIDE = '.unread'
+
+/** The four lists of a scope's analysis, as a store reads them for the index. */
+type AnalysisList = 'observations' | 'causes' | 'solutions' | 'experiments'
 
 export class FileSystemScopeStore implements ScopeStore {
   readonly id = 'folder on disk'
@@ -391,7 +396,7 @@ export class FileSystemScopeStore implements ScopeStore {
       found.push({ path, model: {
         ...lists,
         transitions: await this.transitionsIn(folder),
-        observations: await this.observationsIn(folder),
+        ...await this.analysisIn(folder),
       } })
     })
     return found
@@ -444,17 +449,33 @@ export class FileSystemScopeStore implements ScopeStore {
     return found.sort((a, b) => a.number - b.number)
   }
 
-  /** The observations, likewise (ADR-0021): the shared ones are what a scope above reads. */
-  private async observationsIn(folder: DirectoryHandleLike): Promise<Observation[]> {
+  /**
+   * The analysis, likewise (ADR-0021, ADR-0026): the observations and the
+   * three folders under them, which every scope above reads (ADR-0032 §1).
+   */
+  private async analysisIn(folder: DirectoryHandleLike): Promise<Required<Pick<ScopeModel['model'], AnalysisList>>> {
     const held = await folder.getDirectoryHandle(OBSERVATIONS_FOLDER).catch(this.orAbsent('the observations folder'))
-    if (!held) return []
-    const found: Observation[] = []
-    for await (const entry of held.values()) {
+    const under = async (name: string) => held?.getDirectoryHandle(name).catch(this.orAbsent(`the ${name} folder`))
+    return {
+      observations: await this.recordsIn(held, OBSERVATIONS_FOLDER, observationFromFile),
+      causes: await this.recordsIn(await under(CAUSES_SUBFOLDER), `${OBSERVATIONS_FOLDER}/${CAUSES_SUBFOLDER}`, causeFromFile),
+      solutions: await this.recordsIn(await under(SOLUTIONS_SUBFOLDER), `${OBSERVATIONS_FOLDER}/${SOLUTIONS_SUBFOLDER}`, solutionFromFile),
+      experiments: await this.recordsIn(await under(EXPERIMENTS_SUBFOLDER), `${OBSERVATIONS_FOLDER}/${EXPERIMENTS_SUBFOLDER}`, experimentFromFile),
+    }
+  }
+
+  /** The records one folder holds, by number. A file that will not read is left out. */
+  private async recordsIn<T extends { number: number }>(
+    folder: DirectoryHandleLike | undefined, path: string, read: (text: string, path: string) => T | undefined,
+  ): Promise<T[]> {
+    if (!folder) return []
+    const found: T[] = []
+    for await (const entry of folder.values()) {
       if (entry.kind !== 'file' || !entry.name.endsWith('.md')) continue
-      const text = await this.textOf(entry, 'an observation')
+      const text = await this.textOf(entry, 'a record of the analysis')
       if (text === undefined) continue
-      const observation = observationFromFile(text, `${OBSERVATIONS_FOLDER}/${entry.name}`)
-      if (observation) found.push(observation)
+      const record = read(text, `${path}/${entry.name}`)
+      if (record) found.push(record)
     }
     return found.sort((a, b) => a.number - b.number)
   }

@@ -12,7 +12,7 @@
  */
 import { describe, expect, it, vi } from 'vitest'
 import type { DesignElement, Relation } from '../model'
-import type { Observation } from '../model/observation'
+import type { Cause, Observation } from '../model/observation'
 import { indexOf, indexScopes, isMaster, ownerOf } from './scopeIndex'
 import { scopeTree } from './scope'
 import type { ScopeModel, ScopeSnapshot, ScopeSummary } from './scope'
@@ -363,32 +363,43 @@ describe('the index — the two questions an inspector asks', () => {
   })
 })
 
-describe('the index — the observations shared from below, and what was absorbed above (ADR-0021)', () => {
+describe('the index — the analysis below, what was absorbed above, and what explains from above (ADR-0032)', () => {
   const observation = (id: string, number: number, over: Partial<Observation> = {}): Observation => ({
     id, number, title: id, date: '2026-09-01', impact: 'minor', seen: 1, body: '',
     history: [{ date: '2026-09-01', kind: 'recorded' }], ...over,
   })
+  const cause = (id: string, number: number, explains: Cause['explains'] = []): Cause => ({
+    id, number, title: id, state: 'assumed', body: '', explains,
+  })
+  // Three levels: the organisation, acme under it, acme/claims under that.
   const tree = () => indexScopes([
     { path: '', model: { elements: [], relations: [], observations: [
-      observation('root-1', 1, { shared: true }),
+      observation('root-1', 1),
       observation('root-2', 2, { history: [
         { date: '2026-09-01', kind: 'recorded' },
         { date: '2026-09-05', kind: 'absorbed', id: 'claims-2', scope: 'acme/claims', seen: 3 },
       ] }),
+    ], causes: [cause('org-1', 1, [{ id: 'claims-ca-1', scope: 'acme/claims', strength: 'strong' }])] } },
+    { path: 'acme', model: { elements: [], relations: [], observations: [observation('acme-1', 1)], causes: [
+      cause('acme-ca-1', 1, [{ id: 'claims-ca-1', scope: 'acme/claims', strength: 'weak' }]),
     ] } },
-    { path: 'acme', model: { elements: [], relations: [], observations: [observation('acme-1', 1, { shared: true })] } },
-    { path: 'acme/claims', model: { elements: [], relations: [], observations: [
-      observation('claims-2', 2, { shared: true }), observation('claims-1', 1, { shared: true }), observation('claims-3', 3),
-    ] } },
+    { path: 'acme/claims', model: {
+      elements: [], relations: [],
+      observations: [observation('claims-2', 2), observation('claims-1', 1), observation('claims-3', 3)],
+      causes: [cause('claims-ca-1', 1, [{ id: 'claims-1', strength: 'normal' }])],
+      solutions: [{ id: 'so-1', number: 1, title: 'Fix', state: 'idea', addresses: [], validatedWith: [], attempts: [], body: '', history: [] }],
+    } },
     scope('other', []),
   ])
 
-  it('answers the shared observations of the scopes strictly below, by scope and number', () => {
-    expect(tree().observationsBelow('acme').map(({ scope, observation: held }) => [scope, held.number]))
-      .toEqual([['acme/claims', 1], ['acme/claims', 2]])
-    expect(tree().observationsBelow('').map(({ scope, observation: held }) => [scope, held.number]))
-      .toEqual([['acme', 1], ['acme/claims', 1], ['acme/claims', 2]])
-    expect(tree().observationsBelow('acme/claims')).toEqual([])
+  it('answers the whole analysis of every scope strictly below, local to each, by scope and number — nothing shared first', () => {
+    const below = tree().analysisBelow('acme')
+    expect(below.map((one) => one.scope)).toEqual(['acme/claims'])
+    expect(below[0].observations.map((one) => one.number)).toEqual([1, 2, 3])
+    expect(below[0].causes.map((one) => one.id)).toEqual(['claims-ca-1'])
+    expect(below[0].solutions.map((one) => one.id)).toEqual(['so-1'])
+    expect(tree().analysisBelow('').map((one) => one.scope)).toEqual(['acme', 'acme/claims'])
+    expect(tree().analysisBelow('acme/claims')).toEqual([])
   })
 
   it('tells a scope which of its own a scope above folded into one of its own', () => {
@@ -398,5 +409,11 @@ describe('the index — the observations shared from below, and what was absorbe
       scope: 'acme/claims', id: 'claims-2', by: '', into: 'root-2', intoTitle: 'root-2', date: '2026-09-05',
     })
     expect(tree().absorbedFrom('acme').size).toBe(0)
+  })
+
+  it('tells a scope which causes above explain its records, read off the explaining causes', () => {
+    const above = tree().explainedFromAbove('acme/claims').get('claims-ca-1')
+    expect(above?.map((one) => [one.scope, one.cause.id, one.strength])).toEqual([['', 'org-1', 'strong'], ['acme', 'acme-ca-1', 'weak']])
+    expect(tree().explainedFromAbove('acme').size).toBe(0)
   })
 })

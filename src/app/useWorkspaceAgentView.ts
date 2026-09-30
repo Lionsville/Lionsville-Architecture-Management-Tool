@@ -157,7 +157,8 @@ function agentTree(at: {
     register: () => indexRef.current.register(),
     technology: () => technologyRows(indexRef.current, identityFindings(indexRef.current)),
     initiativesBelow: (path) => indexRef.current.initiativesBelow(path),
-    observationsBelow: (path) => indexRef.current.observationsBelow(path),
+    analysisBelow: (path) => indexRef.current.analysisBelow(path),
+    explainedFromAbove: (path) => indexRef.current.explainedFromAbove(path),
     rowsTo: (id, types) => indexRef.current.rowsTo(id, types).map((row) => row.relation),
     findings: () => {
       const model = session.current()

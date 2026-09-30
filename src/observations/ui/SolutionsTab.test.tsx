@@ -57,7 +57,6 @@ function mount(model: HostModel, over: Partial<ObservationsPageProps> = {}) {
       onClose={() => {}}
       model={model}
       groupName="Acme"
-      canShare
       onChange={onChange}
       s={translator('en')}
       language="en"

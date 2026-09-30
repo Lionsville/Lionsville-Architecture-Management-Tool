@@ -3,9 +3,9 @@
 
 // @vitest-environment jsdom
 /**
- * The observations page as a user meets it (ADR-0021): the register with this
- * scope's own and the shared ones from below, a record made in the right
- * list under the right number, seen again and shared from the reader, linked
+ * The observations page as a user meets it (ADR-0021, ADR-0032): the register
+ * with this scope's own and those of the scopes below, a record made in the
+ * right list under the right number, seen again from the reader, linked
  * to a new cause, merged into another, and the picture drawn from the same
  * lists. Writes are handlers: the page proposes both lists, the caller keeps
  * them.
@@ -16,7 +16,7 @@ import { axeFindings } from '../../app/testing/axe'
 import { translator } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
 import type { HostModel } from '../../model/hostModel'
-import type { Cause, Observation } from '../observation'
+import type { Cause, Observation, ScopeAnalysis } from '../observation'
 import { MarkdownView } from '../../documentation/ui/MarkdownView'
 import { ObservationsPage } from './ObservationsPage'
 import type { ObservationsPageProps } from './ObservationsPage'
@@ -40,9 +40,11 @@ const model: HostModel = {
   ],
   causes: [cause({ explains: [{ id: 'o1', strength: 'strong' }] })],
 }
-const shared = [{
+/** A scope below, local to itself and read here with nothing shared first (ADR-0032 §1). */
+const below: ScopeAnalysis[] = [{
   scope: 'acme/claims/intake',
-  observation: observation({ id: 'in1', number: 1, title: 'Two records for one policyholder', shared: true, seen: 2 }),
+  observations: [observation({ id: 'in1', number: 1, title: 'Two records for one policyholder', seen: 2 })],
+  causes: [], solutions: [], experiments: [],
 }]
 
 let ids = 0
@@ -55,9 +57,8 @@ function mount(over: Partial<ObservationsPageProps> = {}) {
       onClose={() => {}}
       model={model}
       groupName="Acme"
-      shared={shared}
+      below={below}
       scopeLabel={(path) => (path === 'acme/claims/intake' ? 'Intake' : path)}
-      canShare
       onOpenScope={onOpenScope}
       onChange={onChange}
       s={translator('en')}
@@ -82,13 +83,13 @@ describe('ObservationsPage, as axe reads it', () => {
 })
 
 describe('ObservationsPage', () => {
-  it('lists this scope’s own, then the shared ones from below under their scope, then the causes', () => {
+  it('lists this scope’s own, then those of each scope below under its name, then the causes', () => {
     mount()
     const register = screen.getByTestId('observation-register')
     expect(within(register).getByTestId('observation-row-o1').textContent).toContain('OB-0001')
     expect(within(register).getByTestId('observation-row-o1').textContent).toContain('CA-0001')
     expect(within(register).getByTestId('observation-row-o2').textContent).toContain('not yet')
-    expect(within(register).getByText('Shared from Intake')).toBeDefined()
+    expect(within(register).getByText('Local to Intake')).toBeDefined()
     expect(within(register).getByTestId('observation-row-acme/claims/intake#in1').textContent).toContain('Two records')
     expect(within(screen.getByTestId('cause-list')).getByText('CA-0001 Window sized for 2019')).toBeDefined()
   })
@@ -103,7 +104,7 @@ describe('ObservationsPage', () => {
     expect(onShown).toHaveBeenLastCalledWith('o2', 1)
     const again = (nonce: number) => (
       <ObservationsPage
-        open onClose={() => {}} model={model} groupName="Acme" shared={shared} canShare onChange={() => {}}
+        open onClose={() => {}} model={model} groupName="Acme" below={below} onChange={() => {}}
         initialId="o1" initialNonce={nonce} onShown={onShown} s={translator('en')} language="en"
         makeId={(prefix) => prefix} today={() => '2026-09-20'} renderMarkdown={(md) => <MarkdownView markdown={md} />}
       />
@@ -132,24 +133,24 @@ describe('ObservationsPage', () => {
     fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Duplicate customers' } })
     fireEvent.change(screen.getByLabelText('Where it was seen'), { target: { value: 'CRM' } })
     fireEvent.change(screen.getByLabelText('Observed by'), { target: { value: 'W.S.' } })
-    fireEvent.click(screen.getByLabelText('Share with the scopes above'))
+    // Nothing is shared: a new one is local, and the scopes above read it anyway (ADR-0032 §1).
+    expect(screen.queryByLabelText('Share with the scopes above')).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Record' }))
     const next = lastChange(onChange)
     expect(next.observations).toHaveLength(3)
-    expect(next.observations[2]).toMatchObject({ number: 3, title: 'Duplicate customers', where: 'CRM', by: 'W.S.', seen: 1, shared: true, date: '2026-09-20' })
-    expect(next.observations[2].history.map((one) => one.kind)).toEqual(['recorded', 'shared'])
+    expect(next.observations[2]).toMatchObject({ number: 3, title: 'Duplicate customers', where: 'CRM', by: 'W.S.', seen: 1, date: '2026-09-20' })
+    expect(next.observations[2].history.map((one) => one.kind)).toEqual(['recorded'])
     expect(next.causes).toEqual(model.causes)
   })
 
-  it('seen again and share are dated operations on the record', () => {
+  it('seen again is a dated operation on the record, and there is no share to take', () => {
     const { onChange } = mount()
     fireEvent.click(screen.getByTestId('observation-row-o2'))
     fireEvent.click(screen.getByTestId('observation-seen-again'))
     fireEvent.click(screen.getByTestId('seen-confirm'))
     expect(lastChange(onChange).observations[1]).toMatchObject({ seen: 2 })
     expect(lastChange(onChange).observations[1].history.at(-1)).toEqual({ date: '2026-09-20', kind: 'seen' })
-    fireEvent.click(screen.getByTestId('observation-share'))
-    expect(lastChange(onChange).observations[1]).toMatchObject({ shared: true })
+    expect(screen.queryByTestId('observation-share')).toBeNull()
   })
 
   it('archives an observation with a note, hides it until asked, and restores it', async () => {
@@ -181,9 +182,11 @@ describe('ObservationsPage', () => {
     cleanup()
     mount({ model: { ...model, observations: [model.observations![0], closed] } })
     fireEvent.click(screen.getByTestId('observation-tab-analysis'))
-    expect(within(screen.getByTestId('analysis-queue')).queryByText(/OB-0002/)).toBeNull()
-    // Two circles: this scope's OB-0001 and the shared one from below; the archived one is not drawn.
-    expect(within(screen.getByTestId('analysis-picture')).getAllByTestId('analysis-observation')).toHaveLength(2)
+    // Nothing of this scope's is left unexplained, and one below is its own scope's to explain.
+    expect(screen.queryByTestId('analysis-queue')).toBeNull()
+    // One circle: this scope's OB-0001. The archived one is not drawn, and one
+    // from below is its own scope's to explain.
+    expect(within(screen.getByTestId('analysis-picture')).getAllByTestId('analysis-observation')).toHaveLength(1)
   })
 
   it('links an observation to a new cause with a strength, and lands on the cause', () => {
@@ -211,7 +214,7 @@ describe('ObservationsPage', () => {
     expect(next.observations.find((one) => one.id === 'o2')!.history.at(-1)).toEqual({ date: '2026-09-20', kind: 'merged', id: 'o1' })
     // Shown again with the merged one: it is history, read but not analysed.
     rerender(<ObservationsPage
-      open onClose={() => {}} model={{ ...model, observations: next.observations, causes: next.causes }} groupName="Acme" canShare
+      open onClose={() => {}} model={{ ...model, observations: next.observations, causes: next.causes }} groupName="Acme"
       onChange={onChange} s={translator('en')} language="en" makeId={(p) => p} today={() => '2026-09-20'} renderMarkdown={(md) => <MarkdownView markdown={md} />}
     />)
     expect(screen.queryByTestId('observation-row-o2')).toBeNull()
@@ -226,21 +229,16 @@ describe('ObservationsPage', () => {
     expect(screen.getByTestId('observation-row-o1').className).toContain('Mui-selected')
   })
 
-  it('reads a shared observation from below, links it here, folds it in here, and opens its scope', async () => {
+  it('reads an observation of a scope below, folds it in here, and opens its scope — it is explained there', async () => {
     // A closing dialog hides the page from role queries until its transition ends.
     const dialogGone = (confirm: string) => waitFor(() => expect(screen.queryByRole('button', { name: confirm, hidden: true })).toBeNull())
     const { onChange, onOpenScope } = mount()
     fireEvent.click(screen.getByTestId('observation-row-acme/claims/intake#in1'))
-    expect(screen.getByTestId('observation-from-below').textContent).toContain('belongs to Intake')
+    expect(screen.getByTestId('observation-from-below').textContent).toContain('local to Intake')
     expect(screen.queryByTestId('observation-seen-again')).toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: 'Link to a cause…' }))
-    fireEvent.mouseDown(screen.getByLabelText('Cause'))
-    fireEvent.click(screen.getByRole('option', { name: /CA-0001/ }))
-    fireEvent.click(screen.getByRole('button', { name: 'Link' }))
-    expect(lastChange(onChange).causes[0].explains).toContainEqual({ id: 'in1', scope: 'acme/claims/intake', strength: 'normal' })
-    await dialogGone('Link')
+    // A cause here explains the causes below, never their observations (ADR-0032 §4).
+    expect(screen.queryByRole('button', { name: 'Link to a cause…' })).toBeNull()
 
-    fireEvent.click(screen.getByTestId('observation-row-acme/claims/intake#in1'))
     fireEvent.click(screen.getByRole('button', { name: 'Merge into…' }))
     fireEvent.mouseDown(screen.getByLabelText('The observation it is the same as'))
     fireEvent.click(screen.getByRole('option', { name: /OB-0001/ }))

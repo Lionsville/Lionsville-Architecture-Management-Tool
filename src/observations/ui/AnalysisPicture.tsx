@@ -24,7 +24,7 @@ import { inkOn, mix } from '../../widgets'
 import { analysisGraph, placeGraph } from '../graph'
 import type { GraphNode } from '../graph'
 import { causeLabel, formatObservationNumber } from '../observation'
-import type { Analysis, CauseStrength, ObservationImpact, SharedObservation } from '../observation'
+import type { Analysis, CauseStrength, ObservationImpact, ObservationBelow } from '../observation'
 import { STATE_LABEL } from '../observationScope'
 import type { PictureMenuHandler } from './PictureMenu'
 
@@ -40,7 +40,7 @@ export const STROKE: Record<CauseStrength, { width: number; dash?: string }> = {
 
 export type AnalysisPictureProps = {
   analysis: Analysis
-  shared: readonly SharedObservation[]
+  below: readonly ObservationBelow[]
   selectedKey?: string
   onSelect: (key: string) => void
   /** A right-click on a node or a line; absent, the browser's own menu. */
@@ -51,9 +51,9 @@ export type AnalysisPictureProps = {
 /** The invisible band along a line that takes the right-click, so a thin line is not a one-pixel target. */
 export const LINE_HIT_WIDTH = 12
 
-export function AnalysisPicture({ analysis, shared, selectedKey, onSelect, onMenu, s }: AnalysisPictureProps) {
+export function AnalysisPicture({ analysis, below, selectedKey, onSelect, onMenu, s }: AnalysisPictureProps) {
   const theme = useTheme()
-  const graph = useMemo(() => analysisGraph(analysis, shared), [analysis, shared])
+  const graph = useMemo(() => analysisGraph(analysis, below), [analysis, below])
   const placed = useMemo(() => placeGraph(graph, { laneWidth: LANE_WIDTH, rowHeight: ROW_HEIGHT, top: 36, left: 0 }), [graph])
   const at = useMemo(() => new Map(placed.map((one) => [one.key, one])), [placed])
   const rows = Math.max(1, ...graph.nodes.map((node) => node.row + 1))

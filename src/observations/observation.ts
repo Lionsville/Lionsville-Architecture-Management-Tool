@@ -2,9 +2,9 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * The rules for observations and causes (ADR-0021): numbering, what a new one
- * starts as, seeing one again, sharing it upward, folding two into one, and
- * the links from a cause to what it explains.
+ * The rules for observations and causes (ADR-0021, ADR-0032): numbering, what
+ * a new one starts as, seeing one again, folding two into one, the links from
+ * a cause to what it explains, and which cause is a root.
  *
  * Pure, and over lists: the page and the agent hand a list in and take a list
  * out, and the caller commits the difference. The shapes are `model/
@@ -33,10 +33,10 @@
  * **absorbed** into the first: its sightings move over, the links to it move
  * over, and both records say so in their dated history. The absorbed record
  * stays — it is where the original wording and evidence are — and is read as
- * merged because the survivor says it absorbed it. An observation shared from
- * a scope below is absorbed the same way; only the survivor is written,
- * because a record is edited where it lives, and the scope below reads that
- * its observation went into one above from the tree (`scopeIndex.absorbedFrom`).
+ * merged because the survivor says it absorbed it. An observation of a scope
+ * below is absorbed the same way; only the survivor is written, because a
+ * record is edited where it lives, and the scope below reads that its
+ * observation went into one above from the tree (`scopeIndex.absorbedFrom`).
  *
  * ## Archiving is history too
  *
@@ -47,25 +47,30 @@
  * deleted to close an observation; deleting is for a record that should
  * never have been one.
  *
- * ## Sharing goes up, and only when said
+ * ## Local and global are places
  *
- * `shared` is the one bit a scope sets to offer an observation to the scopes
- * above it. Every ancestor then reads it, may link it to a cause of its own
- * and may absorb it. Nothing flows down: what the enterprise observes is the
- * enterprise's, and a domain reads its own.
+ * Every scope's analysis is its own, and a scope reads the analysis of every
+ * scope below it (ADR-0032 §1): local to that scope, and nothing is shared
+ * to get there — who may read a scope is the source's to say, never a field
+ * on a record. A cause may explain a cause of a scope below, never the other
+ * way and never sideways, and never an observation below: the scope below
+ * explains its own observations, and the scope above explains the scope
+ * below's causes (§4). The link lives on the explaining cause, and the scope
+ * below reads what explains its causes off the tree.
  */
 import type { Translate } from '../i18n/strings'
 import { isDay } from '../model/lifecycle'
 import type {
-  Cause, CauseLink, CauseState, CauseStrength, Observation, ObservationEvent, ObservationImpact, Solution,
+  Cause, CauseAbove, CauseLink, CauseState, CauseStrength, Observation, ObservationEvent, ObservationImpact,
+  ScopeAnalysis, Solution,
 } from '../model/observation'
 import { DE } from './strings/de'
 import { EN } from './strings/en'
 import { NL } from './strings/nl'
 
 export type {
-  Cause, CauseLink, CauseState, CauseStrength, Observation, ObservationEvent, ObservationEventKind,
-  ObservationImpact,
+  Cause, CauseAbove, CauseLink, CauseState, CauseStrength, Observation, ObservationEvent, ObservationEventKind,
+  ObservationImpact, ScopeAnalysis,
 } from '../model/observation'
 export { CAUSE_STATES, CAUSE_STRENGTHS, OBSERVATION_IMPACTS } from '../model/observation'
 
@@ -75,11 +80,26 @@ export type Analysis = {
   causes: Cause[]
 }
 
-/** One observation a scope below shared (ADR-0021), as this scope reads it. */
-export type SharedObservation = {
+/** One observation of a scope below (ADR-0032 §1), as this scope reads it. */
+export type ObservationBelow = {
   /** The scope it lives in; a plain string because this module may not import `projects`. */
   scope: string
   observation: Observation
+}
+
+/** The observations of the scopes below, one row each, in the order the tree reads them. */
+export function observationsBelow(below: readonly ScopeAnalysis[]): ObservationBelow[] {
+  return below.flatMap(({ scope, observations }) => observations.map((observation) => ({ scope, observation })))
+}
+
+/** Is `scope` strictly below `here`? Paths as strings, `''` the organisation. */
+function isBelow(scope: string, here: string): boolean {
+  return here === '' ? scope !== '' : scope.startsWith(`${here}/`)
+}
+
+/** Is `scope` this one or one above it? */
+function isAboveOrHere(scope: string, here: string): boolean {
+  return scope === here || scope === '' || here.startsWith(`${scope}/`)
 }
 
 // --- numbers and labels ----------------------------------------------------------
@@ -144,7 +164,6 @@ export function newObservation(args: {
   /** Who saw it. Free text. */
   by?: string
   impact?: ObservationImpact
-  shared?: boolean
   body?: string
 }): Observation {
   const { id, number, title, date, t } = args
@@ -159,12 +178,8 @@ export function newObservation(args: {
     ...(by ? { by } : {}),
     impact: args.impact ?? 'minor',
     seen: 1,
-    ...(args.shared ? { shared: true as const } : {}),
     body: args.body?.trim() ? args.body : observationTemplate(t),
-    history: [
-      { date, kind: 'recorded' },
-      ...(args.shared ? [{ date, kind: 'shared' as const }] : []),
-    ],
+    history: [{ date, kind: 'recorded' }],
   }
 }
 
@@ -234,21 +249,6 @@ export function seenAgain(list: readonly Observation[], id: string, date: string
     { ...one, seen: one.seen + 1 },
     { date, kind: 'seen', ...(note?.trim() ? { note: note.trim() } : {}) },
   ))
-}
-
-/**
- * Offer an observation to the scopes above, or take it back. Saying what it
- * already is changes nothing, so the history holds the changes of mind and
- * not the confirmations.
- */
-export function setShared(list: readonly Observation[], id: string, shared: boolean, date: string): Observation[] {
-  return replace(list, id, (one) => {
-    if (Boolean(one.shared) === shared) return one
-    const next = { ...one }
-    if (shared) next.shared = true
-    else delete next.shared
-    return withEvent(next, { date, kind: shared ? 'shared' : 'unshared' })
-  })
 }
 
 /**
@@ -349,14 +349,15 @@ export function mergeObservations(analysis: Analysis, from: string, into: string
 }
 
 /**
- * An observation a scope below shared is judged to be the same thing as one
- * here. Only this scope's records change: the survivor absorbs the sightings
- * and says which observation of which scope it stands for now; the links
- * that named the shared one move over. The scope below is not written — it
- * reads the absorption off the tree.
+ * An observation of a scope below is judged to be the same thing as one
+ * here (ADR-0032 §5): nothing has to be shared first. Only this scope's
+ * records change: the survivor absorbs the sightings and says which
+ * observation of which scope it stands for now; a link from here that named
+ * the one below moves over. The scope below is not written — it reads the
+ * absorption off the tree.
  */
-export function absorbShared(
-  analysis: Analysis, from: SharedObservation, into: string, date: string,
+export function absorbFromBelow(
+  analysis: Analysis, from: ObservationBelow, into: string, date: string,
 ): Analysis {
   const { observations, causes } = analysis
   const survivor = observations.find((one) => one.id === into)
@@ -522,18 +523,35 @@ function reaches(list: readonly Cause[], start: string, target: string): boolean
  * - `self` — a cause does not explain itself;
  * - `loop` — the other cause already leads back to this one, and a loop is
  *   not an explanation;
- * - `root` — the other is a root cause, and nothing explains a root cause
- *   (ADR-0032 §3). To say something lies behind it, make it a cause first.
+ * - `root` — the other is a root cause, here or below, and nothing explains a
+ *   root cause (ADR-0032 §3). To say something lies behind it, make it a
+ *   cause first;
+ * - `upward` — the other lives in a scope above this one, or in this one
+ *   named as if it were elsewhere: a cause explains down the tree (§4);
+ * - `sideways` — the other lives in a scope that is not below this one;
+ * - `observationBelow` — the other is an observation of a scope below: that
+ *   scope explains its own observations, and this one explains its causes;
+ * - `unknown` — the scope below holds no such record, or the tree was not
+ *   given to ask.
  *
  * A link the cause already has is only ever a change of strength, so it is
  * not asked again: what was linked before a rule existed stays linked.
  */
-export type LinkRefusal = 'self' | 'loop' | 'root'
+export type LinkRefusal = 'self' | 'loop' | 'root' | 'upward' | 'sideways' | 'observationBelow' | 'unknown'
 
-export function linkRefusal(list: readonly Cause[], causeId: string, link: Omit<CauseLink, 'strength'>): LinkRefusal | undefined {
+/** Where the cause doing the explaining lives, and what the tree holds below it. */
+export type LinkContext = {
+  /** The path of the scope the explaining cause lives in. */
+  here: string
+  below: readonly ScopeAnalysis[]
+}
+
+export function linkRefusal(
+  list: readonly Cause[], causeId: string, link: Omit<CauseLink, 'strength'>, context?: LinkContext,
+): LinkRefusal | undefined {
   const cause = list.find((one) => one.id === causeId)
   if (cause?.explains.some((one) => one.id === link.id && one.scope === link.scope)) return undefined
-  if (link.scope !== undefined) return undefined
+  if (link.scope !== undefined) return belowRefusal(link as CauseLink, context)
   if (link.id === causeId) return 'self'
   const target = list.find((one) => one.id === link.id)
   if (!target) return undefined
@@ -541,14 +559,27 @@ export function linkRefusal(list: readonly Cause[], causeId: string, link: Omit<
   return reaches(list, link.id, causeId) ? 'loop' : undefined
 }
 
+/** A new link to a record of another scope: a non-root cause strictly below, or refused. */
+function belowRefusal(link: CauseLink, context: LinkContext | undefined): LinkRefusal | undefined {
+  const scope = link.scope!
+  if (!context) return 'unknown'
+  if (isAboveOrHere(scope, context.here)) return 'upward'
+  if (!isBelow(scope, context.here)) return 'sideways'
+  const held = context.below.find((one) => one.scope === scope)
+  if (held?.observations.some((one) => one.id === link.id)) return 'observationBelow'
+  const target = held?.causes.find((one) => one.id === link.id)
+  if (!target) return 'unknown'
+  return isRootCause(target) ? 'root' : undefined
+}
+
 /**
  * Say that a cause explains something. Where {@link linkRefusal} says no,
  * refused by returning the list unchanged. Linking to what it already
  * explains changes the strength and nothing else.
  */
-export function linkCause(list: readonly Cause[], causeId: string, link: CauseLink): Cause[] {
+export function linkCause(list: readonly Cause[], causeId: string, link: CauseLink, context?: LinkContext): Cause[] {
   const cause = list.find((one) => one.id === causeId)
-  if (!cause || linkRefusal(list, causeId, link)) return [...list]
+  if (!cause || linkRefusal(list, causeId, link, context)) return [...list]
   const held = cause.explains.find((one) => one.id === link.id && one.scope === link.scope)
   const explains = held
     ? cause.explains.map((one) => (one === held ? { ...one, strength: link.strength } : one))
@@ -592,23 +623,24 @@ export function rootCauses(list: readonly Cause[]): Cause[] {
 
 /** What stands in the way of a cause becoming a root cause, or going back (ADR-0032 §3). */
 export type RootChangeRefusal =
-  /** Made a root cause while causes explain it: `causes` are those. */
-  | { refusal: 'command.rootExplained'; causes: Cause[] }
+  /** Made a root cause while causes explain it: `causes` are this scope's, `above` those of the scopes above. */
+  | { refusal: 'command.rootExplained'; causes: Cause[]; above: CauseAbove[] }
   /** Made a cause again while solutions address it: `solutions` are those. */
   | { refusal: 'command.rootAddressed'; solutions: Pick<Solution, 'id' | 'number' | 'title'>[] }
 
 export type RootChange = { ok: true; causes: Cause[] } | ({ ok: false } & RootChangeRefusal)
 
 /**
- * Say that a cause is a root cause. Refused while a cause explains it, with
- * those causes: unlink them, or make that one the root cause instead. Saying
- * what it already is changes nothing.
+ * Say that a cause is a root cause. Refused while a cause explains it — of
+ * this scope, or of a scope above (`above`, off the tree) — with those
+ * causes: unlink them, or make that one the root cause instead. Saying what
+ * it already is changes nothing.
  */
-export function makeRootCause(list: readonly Cause[], id: string): RootChange {
+export function makeRootCause(list: readonly Cause[], id: string, above: readonly CauseAbove[] = []): RootChange {
   const cause = list.find((one) => one.id === id)
   if (!cause || isRootCause(cause)) return { ok: true, causes: [...list] }
   const by = explainedBy(list, id)
-  if (by.length) return { ok: false, refusal: 'command.rootExplained', causes: by }
+  if (by.length || above.length) return { ok: false, refusal: 'command.rootExplained', causes: by, above: [...above] }
   return { ok: true, causes: list.map((one) => (one.id === id ? { ...one, root: true as const } : one)) }
 }
 
