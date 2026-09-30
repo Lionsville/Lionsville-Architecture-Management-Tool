@@ -401,7 +401,9 @@ Reading a scope written before:
 
 Every section was built, in core, on one branch that has not been released.
 What follows is what was built, and where the build departed from the text
-above and why. The hosted server's part — the scopes a person may read, and
+above and why. The branch was then carried onto the repositories of
+ADR-0031 (release 3.3.0), where storage is an implementation of its own and
+every write is a step; §2, §4 and §9 say what that changed. The hosted server's part — the scopes a person may read, and
 a step below sent to that scope's channel — is not in this repository.
 
 ### §1 Local and global
@@ -414,15 +416,22 @@ the page, the organisation's card, the tree's findings and the agent.
 ### §2 The page reads the scopes below
 
 As decided, with these departures:
-- **A change below is a save of that scope, not a line in its Activity
-  list.** The page hands a change to a scope below to `useChangeBelow`, which
-  turns the four lists into commands, applies them through the one writer to
-  the scope as read, and writes it back expecting what was read
-  (`app/rewriteScope.ts`). So it is refused below as it would be there, with
-  the writer's key, and it is not on the page's undo stack. But on the
-  desktop no session holds the scope below, so the step is a save of that
-  scope rather than a step in an Activity list somebody could undo; the text
-  above assumed a session there. The note after it says where it went.
+- **A change below is a step on that scope, through the source's
+  repositories.** The page hands a change to a scope below to
+  `useChangeBelow`, which turns the four lists into commands the way the
+  page's whole-lists path does (`model/commands.ts`) and applies them as one
+  step on that scope with `projects/scopeAccess.changeScope` (ADR-0031):
+  expecting what was read, and worked out again over a scope somebody changed
+  in between. So it is refused below as it would be there, with the writer's
+  key, it is not on the page's undo stack, and it is in that scope's history,
+  as every step applied to it is.
+- **Its Activity list shows it where the source keeps a log of every step**
+  (`SourceRecentActivity`). For the three sources that ship, a scope's
+  Activity list is the open session's own steps, and no session holds the
+  scope below, so it is not there, and nothing but another change takes it
+  back; the text above assumed a session there. The note after it says it is
+  a step of that scope, that undo on this page does not reach it, and to
+  change it back to take it back.
 - **A solution and an experiment of a scope below are read, not changed.**
   Their gates read the plans and decisions of their own scope, which the page
   above does not read, so a reader of one below draws no gate and offers
@@ -467,7 +476,15 @@ cause below by **`explainsScope`**, on `cause.link` and `cause.unlink`, and
 not by `scope`: every tool's `scope` is the scope a call works in, so the
 same word could not also name the record. A copy of the shipped example
 carries the path to wherever the landscape lands, as it carries a stand-in's
-`ref`; a scope *moved* in the tree does not carry it yet.
+`ref`.
+
+**A move carries the links.** A scope moved in the tree carries a cause
+link's path into it, and an `absorbed` event's, as it carries a stand-in's
+`ref` (`projects/scopeAccess.moveScope`, `projects/readdress.ts`): every scope
+the index says names an address in the moved subtree gets, once the move has
+landed, one step patching those links and events, outside the subtree first,
+each worked out from what the scope holds and expecting what was read. A move
+that is refused carries nothing.
 
 ### §5 Merging from below
 
@@ -524,10 +541,28 @@ As decided, with these departures:
 
 ### §9 Files written before
 
-As decided: the folder format is 9, a cause a live solution addresses reads
-as a root cause and nothing else does, `shared` and its events are read as
-history, and `check.causeExplainsObservationBelow` names the cause below to
-link instead.
+As decided, `check.causeExplainsObservationBelow` names the cause below to
+link instead. What older data meant is said once, in the domain
+(`observations/rootsFromSolutions.ts`): a cause a live solution addresses
+reads as a root cause and nothing else does, and `shared` is dropped while
+its events stay as history. Since ADR-0031 each place work is kept is an
+implementation of its own, so there are three turns, each reading its own
+older data through that one function:
+- **The folder's format turns to 9** (`adapters/folder/format/scopeHeader.ts`,
+  the observation file codec): a folder written at 8 or before reads its roots
+  through the function, and a root cause is written with `root: true`.
+- **Browser storage and memory keep a content format of their own**, and it
+  turns from 1 to 2 (`adapters/repositories/kept.ts`): a content kept at 1 is
+  read through the function and written at 2 by the next write, and one at 3
+  or more is a later build's, read in part and never stepped on. The scopes
+  this browser's earlier storage kept arrive through it too, and are still
+  known by what was kept there, so a copy saved again as it was asks nothing.
+- **A source elsewhere** applies the same function to whatever it kept before
+  a root cause was said, by whatever tells it the data is older.
+
+Their indexes carry a scope's whole analysis for the scopes above it — the
+folder's and the keyed store's alike — and the index contract holds every
+implementation to it (`ports/OrganisationIndex.contract.ts`).
 
 ### §10 At the agent
 

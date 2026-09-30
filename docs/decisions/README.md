@@ -107,4 +107,4 @@ now, with their words unchanged.
 | [0029](0029-every-record-says-what-it-is-to-a-search.md) | Every record says what it is to a search | 2026-09-27 | — |
 | [0030](0030-a-build-with-a-feed-updates-itself.md) | A build with a feed updates itself, and the releases here carry no installers | 2026-09-28 | — |
 | [0031](0031-storage-behind-repositories.md) | Storage behind repositories: the domain speaks no storage language | 2026-09-29 | — |
-| [0032](0032-local-and-global-analysis-and-a-root-cause-said.md) | Local and global analysis, and a root cause that is said (not yet built) | 2026-09-30 | — |
+| [0032](0032-local-and-global-analysis-and-a-root-cause-said.md) | Local and global analysis, and a root cause that is said | 2026-09-30 | — |
