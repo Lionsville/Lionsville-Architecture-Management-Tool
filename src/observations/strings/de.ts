@@ -473,6 +473,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'observation.linkUseTip': 'Diese Ursache verknüpfen, statt eine neue zu schreiben.',
   'observation.madeBelow': 'In {scope} angelegt, als Schritt jenes Scopes. Rückgängig hier erreicht ihn nicht: um ihn zurückzunehmen, ändern Sie ihn zurück.',
   'observation.belowReadOnly': 'In {scope} wurde nichts angelegt: Er darf von hier aus nicht geändert werden.',
+  'observation.belowNotYours': 'In {scope} wurde nichts angelegt: Sie dürfen ihn lesen, aber nicht ändern.',
   'observation.belowRefused': 'In {scope} wurde nichts angelegt: Seine eigenen Regeln haben die Änderung abgelehnt.',
   'observation.belowNotMade': 'In {scope} wurde nichts angelegt.',
   'solution.formIntro': 'Was eine Grundursache beseitigen würde. Es beginnt als Idee; seine Schranken fragen nach dem Rest.',

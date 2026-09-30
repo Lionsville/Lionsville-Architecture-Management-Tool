@@ -104,10 +104,16 @@ export type ChangeBelow = (
   path: string, change: (work: ObservationWork) => ObservationWork | undefined,
 ) => Promise<ChangedBelow>
 
-/** Where a change below went: landed, refused by that scope's writer with its key, or not made. */
+/**
+ * Where a change below went: landed, refused by that scope's writer with its
+ * key, refused because the person may read that scope and not change it
+ * (`shell.scopeReadOnly`, from a source that decides who may write), or not
+ * made — nothing may be written from here (`readOnly`), no such scope, or
+ * nothing to change.
+ */
 export type ChangedBelow =
   | { ok: true }
-  | { ok: false; reason: CommandRefusal | 'readOnly' | 'gone' | 'unchanged' }
+  | { ok: false; reason: CommandRefusal | 'shell.scopeReadOnly' | 'readOnly' | 'gone' | 'unchanged' }
 
 const label4 = (prefix: string, number: number) => `${prefix}-${String(Math.max(0, Math.trunc(number))).padStart(4, '0')}`
 

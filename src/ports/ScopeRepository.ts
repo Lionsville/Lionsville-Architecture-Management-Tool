@@ -30,6 +30,12 @@
  * is written. A promise rejects only where the implementation itself could not
  * answer.
  *
+ * **A source that decides who may write answers who may not.** Where a
+ * person may read a scope and not change it, steps on it made on their behalf
+ * are refused with `shell.scopeReadOnly`, as any other refusal is: a value,
+ * and nothing written (`apply`). A source that lets whoever may read a scope
+ * write it never answers it.
+ *
  * `ScopeRepository.contract.ts`, beside this seam, is the behaviour every
  * implementation must show.
  */
@@ -168,6 +174,10 @@ export interface ScopeRepository {
    *
    * **A step that changes nothing changes no revision**, and makes no history
    * entry.
+   *
+   * **A scope the person may read and not change** is refused with
+   * `shell.scopeReadOnly` and the scope named, by a source that decides who
+   * may write; the rest of the apply with it, as for any refusal.
    */
   apply(work: readonly StepsFor[]): Promise<Applied | Refused>
 

@@ -492,6 +492,7 @@ export const EN = {
   'observation.linkUseTip': 'Link this cause instead of writing a new one.',
   'observation.madeBelow': 'Made in {scope}, as a step of that scope. Undo here does not reach it: to take it back, change it back.',
   'observation.belowReadOnly': 'Nothing was made in {scope}: it may not be changed from here.',
+  'observation.belowNotYours': 'Nothing was made in {scope}: you may read it, but not change it.',
   'observation.belowRefused': 'Nothing was made in {scope}: its own rules refused the change.',
   'observation.belowNotMade': 'Nothing was made in {scope}.',
   'solution.formIntro': 'What would take a root cause away. It starts as an idea; its gates ask for the rest.',

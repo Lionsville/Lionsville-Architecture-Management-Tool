@@ -42,6 +42,12 @@ export const EN = {
    */
   'shell.scopeMoved': 'Somebody changed this scope while this was being done, so nothing was written. Open it again and redo the change.',
   /**
+   * A write to a scope the person may read and not change, answered by a
+   * source that decides who may write. Nothing was written; the sentence
+   * says whose it is to change.
+   */
+  'shell.scopeReadOnly': 'Nothing was written: you may read this scope, but not change it. Ask somebody who may change it.',
+  /**
    * A record of the history the folder's git is in no state to take: part way
    * through a merge, a rebase, a cherry-pick or a revert, or with a file left
    * unmerged. Nothing was recorded; the person finishes or abandons that first.

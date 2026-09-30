@@ -112,6 +112,16 @@ describe('the readers’ buttons', () => {
     await waitFor(() => expect(screen.getByTestId('observation-notice').textContent).toContain('Made in Intake'))
   })
 
+  it('says plainly when the person may read the scope below and not change it', async () => {
+    const { onChangeBelow } = mount({ initialId: 'acme/claims/intake#bc1' })
+    onChangeBelow.mockImplementation(() => Promise.resolve({ ok: false, reason: 'shell.scopeReadOnly' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Deeper cause' }))
+    fireEvent.change(screen.getByTestId('cause-draft-title'), { target: { value: 'Intake has no duplicate check' } })
+    fireEvent.click(screen.getByTestId('link-create'))
+    await waitFor(() => expect(screen.getByTestId('observation-notice').textContent)
+      .toBe('Nothing was made in Intake: you may read it, but not change it.'))
+  })
+
   it('links a cause here to a cause below from either end, and keeps the link on the cause here', () => {
     const { onChange } = mount({ initialId: 'c1' })
     fireEvent.click(screen.getByRole('button', { name: 'Local cause' }))

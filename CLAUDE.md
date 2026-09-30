@@ -6,7 +6,7 @@ Layer-7 application landscape and the C4 container diagrams under it. **There is
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **7299 tests** and one of every config. The
+One codebase, in modules, with **7301 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -56,7 +56,7 @@ the two categories above.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 7299 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 7301 tests. Run it
 after every change. The tests run with coverage on, and `build/coverage.ts`
 prints one line per module of the import matrix and fails below that module's
 floor — the level it was measured at, written down so it can only go up.

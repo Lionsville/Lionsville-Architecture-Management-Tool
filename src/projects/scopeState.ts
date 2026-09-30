@@ -185,6 +185,12 @@ export type ScopeStep = {
 export const SCOPE_REFUSALS = [
   /** The state is no longer what the write expected: somebody changed the scope since it was read. */
   'shell.scopeMoved',
+  /**
+   * The person the write is made for may read the scope but not change it.
+   * Answered only by a source that decides who may write which scope; one
+   * that lets whoever reads a scope write it never answers it.
+   */
+  'shell.scopeReadOnly',
   /** No scope has that identity any more. */
   'shell.scopeGone',
   /** Another scope already has that address. */

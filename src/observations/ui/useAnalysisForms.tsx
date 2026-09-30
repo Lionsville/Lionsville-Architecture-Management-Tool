@@ -196,6 +196,7 @@ export function useAnalysisForms(deps: {
 function belowNotice(result: ChangedBelow, scope: string, s: Translate): string {
   if (result.ok) return s('observation.madeBelow', { scope })
   if (result.reason === 'readOnly') return s('observation.belowReadOnly', { scope })
+  if (result.reason === 'shell.scopeReadOnly') return s('observation.belowNotYours', { scope })
   if (result.reason === 'gone' || result.reason === 'unchanged') return s('observation.belowNotMade', { scope })
   return s('observation.belowRefused', { scope })
 }

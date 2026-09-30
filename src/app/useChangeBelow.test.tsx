@@ -108,6 +108,18 @@ describe('landing a change on a scope below', () => {
     expect((await readScope(scopes, 'claims/intake'))?.revision).toBe(before?.revision)
   })
 
+  it('says so where the source lets the person read that scope and not change it', async () => {
+    const { scopes } = await tree()
+    const before = await readScope(scopes, 'claims/intake')
+    // A source that decides who may write answers a write it does not allow with a refusal, not a failure.
+    const reading: BelowScopes = {
+      tree: () => scopes.tree(), state: (id) => scopes.state(id),
+      apply: (writes) => Promise.resolve({ refused: 'shell.scopeReadOnly', scope: writes[0].scope }),
+    }
+    expect(await landBelow(reading, 'claims/intake', seenAgain)).toEqual({ ok: false, reason: 'shell.scopeReadOnly' })
+    expect((await readScope(scopes, 'claims/intake'))?.revision).toBe(before?.revision)
+  })
+
   it('works the change out again over a scope somebody changed in between', async () => {
     const { scopes } = await tree()
     let asked = 0

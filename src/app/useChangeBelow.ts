@@ -51,10 +51,15 @@ function stepFor(model: Model, next: ObservationWork): Command | undefined {
   return commands.length === 1 ? commands[0] : transaction(commands)
 }
 
-/** A refusal the writer gave, as the page names one; anything else is not this change's to say. */
+/**
+ * A refusal the writer gave, as the page names one; anything else is not this
+ * change's to say. A source that decides who may write refuses a scope the
+ * person may only read with `shell.scopeReadOnly`, and the page says so.
+ */
 function refusalOf(error: unknown): ChangedBelow | undefined {
   if (!(error instanceof ShellError)) return undefined
   if (error.key === 'shell.scopeGone') return { ok: false, reason: 'gone' }
+  if (error.key === 'shell.scopeReadOnly') return { ok: false, reason: 'shell.scopeReadOnly' }
   return error.key.startsWith('command.') ? { ok: false, reason: error.key as CommandRefusal } : undefined
 }
 
