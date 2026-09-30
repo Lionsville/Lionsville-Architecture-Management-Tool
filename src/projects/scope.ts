@@ -396,7 +396,10 @@ export function bareScope(path: ScopePath, name: string, kind?: ScopeKind): Scop
   }
 }
 
-/** Why bytes handed over did not open: they hold no view to open on, or are nothing this reads. */
+/**
+ * Why bytes handed over did not open: a file from before scopes carried a
+ * header, which holds no view to open on, or nothing this reads.
+ */
 export type OpenRefusal = 'shell.workingFileNoDiagrams' | 'shell.unknownFile'
 
 /**

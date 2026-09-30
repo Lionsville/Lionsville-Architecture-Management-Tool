@@ -123,6 +123,8 @@ export function openScopeDocument(
   into: ScopeSnapshot,
 ): OpenResult {
   if (isWorkingFile(parsed)) {
+    // A version-1 or -2 document is one scope with no header: its views are
+    // the one sign it is a file of ours, so one without them is refused.
     if (!parsed.model?.diagrams?.length) return { ok: false, messageKey: 'shell.workingFileNoDiagrams' }
     return {
       ok: true,
@@ -295,7 +297,12 @@ export function openDocumentBytes(bytes: Uint8Array, into: ScopeSnapshot): OpenR
     const top = tops[0]
     const scope = openScopeFolder(filesOfScope(files, top, tops), into.path)
     if (!scope) return { ok: false, messageKey: 'shell.unknownFile' }
-    if (!scope.model.diagrams.length) return { ok: false, messageKey: 'shell.workingFileNoDiagrams' }
+    // A zip whose scopes carry their headers is recognisably a working file,
+    // and opens whatever its top draws: a scope that draws nothing is
+    // ordinary, and an organisation whose top draws nothing is written by
+    // this very codec. Only a header-less zip has its views as the one sign
+    // that it is ours, and is refused without them.
+    if (!roots.length && !scope.model.diagrams.length) return { ok: false, messageKey: 'shell.workingFileNoDiagrams' }
     // Filed where the file says, relative to where the top one landed: a
     // `retail` inside the file opened into `acme` is `acme/retail`.
     const under = top ? `${top}/` : ''

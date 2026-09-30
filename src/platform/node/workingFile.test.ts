@@ -62,6 +62,33 @@ describe('the working file, from node', () => {
     expect(Buffer.from((await writeWorkingFile(target)).bytes).equals(Buffer.from(written.bytes))).toBe(true)
   })
 
+  it('reads an organisation whose top draws nothing back as it wrote it', async () => {
+    // A scope that draws nothing is ordinary; its children draw.
+    const [root, ...under] = organisation()
+    const drawless = [{ ...root, model: { ...root.model, diagrams: [] }, activeDiagramId: '' }, ...under]
+    const source = memoryRepositories()
+    await seed(source, drawless)
+    const written = await writeWorkingFile(source)
+
+    const target = memoryRepositories()
+    const read = await readWorkingFile(target, written.bytes)
+    if ('refused' in read) throw new Error(read.refused)
+    expect(read.landed).toEqual(['', 'application-landscape', 'depots'])
+    expect(read.arrival.short).toBeUndefined()
+    expect(read.arrival.accounted).toBe(true)
+    const top = await readScope(target.scopes, '')
+    expect(top?.model.diagrams).toEqual([])
+    expect(top?.activeDiagramId).toBe('')
+    expect((await readScope(target.scopes, 'application-landscape'))?.model.diagrams.length).toBeGreaterThan(0)
+    // Equal but for what each repository mints for itself: an identity, a revision, a time.
+    const content = async (repositories: Repositories, address: string) => {
+      const { id: _id, revision: _revision, updatedAt: _updatedAt, ...rest } = (await readScope(repositories.scopes, address)) ?? {}
+      return rest
+    }
+    for (const address of read.landed) expect(await content(target, address)).toEqual(await content(source, address))
+    expect(Buffer.from((await writeWorkingFile(target)).bytes).equals(Buffer.from(written.bytes))).toBe(true)
+  })
+
   it('lands every scope as a replace, in one apply, with each picture\'s bytes put first', async () => {
     const source = memoryRepositories()
     await seed(source)

@@ -187,6 +187,32 @@ describe('openDocumentBytes — the whole set', () => {
     expect(workingFileBytes(back)).toEqual(workingFileBytes(tree()))
   })
 
+  it('opens a tree whose top draws nothing, as the tree it wrote', () => {
+    // A scope that draws nothing is ordinary, and an organisation whose top
+    // draws nothing is what this very writer makes of one: written here, it
+    // opens here.
+    const drawless: ScopeSnapshot = { ...bareScope('', 'Acme Logistics'), kind: 'domain' }
+    const written = workingFileBytes([drawless, ...tree().slice(1)])
+    const held = openDocumentBytes(written, bareScope('', ''))
+    if (!held.ok) throw new Error(held.messageKey)
+    expect(held.scope.model.diagrams).toEqual([])
+    expect(held.scope.activeDiagramId).toBe('')
+    expect(held.rest?.map((scope) => scope.path)).toEqual(['retail', 'retail/warehouse'])
+    expect(workingFileBytes([held.scope, ...(held.rest ?? [])])).toEqual(written)
+  })
+
+  it('opens one scope that draws nothing, carried with its header', () => {
+    const domain: ScopeSnapshot = {
+      ...bareScope('depots', 'Depots', 'domain'),
+      model: { ...bareScope('depots', 'Depots').model, description: 'Where the trucks sleep.' },
+    }
+    const held = openDocumentBytes(workingFileBytes([domain]), into())
+    if (!held.ok) throw new Error(held.messageKey)
+    expect(held.scope.model.description).toBe('Where the trucks sleep.')
+    expect(held.scope.model.diagrams).toEqual([])
+    expect(held.rest).toBeUndefined()
+  })
+
   it('says nothing came with it when the file holds one scope', () => {
     // Absent rather than empty, so a caller that can only replace one scope
     // knows it is not quietly dropping anything.
@@ -319,6 +345,24 @@ describe('openDocumentBytes', () => {
     expect('customerName' in held.scope.model).toBe(false)
   })
 
+
+  it('refuses a version-4 zip with no view, which has nothing else to say it is ours', () => {
+    // No header anywhere: its views are the one sign it is a file of ours.
+    const entries: Record<string, Uint8Array> = {
+      'project.json': bytesFromText(stableJson({
+        type: WORKING_FILE_TYPE, formatVersion: 4, name: 'Landscape', activeDiagramId: '', diagrams: [],
+      })),
+      'model.json': bytesFromText(stableJson({ relations: [], elements: [] })),
+    }
+    expect(openDocumentBytes(zipSync(entries), into))
+      .toEqual({ ok: false, messageKey: 'shell.workingFileNoDiagrams' })
+  })
+
+  it('refuses a version-2 document with no view, with its own key', () => {
+    const v2 = stableJson({ type: WORKING_FILE_TYPE, version: 2, model: { ...project().model, diagrams: [] } })
+    expect(openDocumentBytes(bytesFromText(v2), into))
+      .toEqual({ ok: false, messageKey: 'shell.workingFileNoDiagrams' })
+  })
 
   it('refuses a zip that is not a project', () => {
     const held = openDocumentBytes(zipSync({ 'notes.txt': bytesFromText('hello') }), into)
