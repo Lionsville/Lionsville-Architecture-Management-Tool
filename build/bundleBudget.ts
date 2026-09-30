@@ -27,6 +27,13 @@
  * `public/` beside the bundle rather than through it (`libavoidWasm.ts`), and is
  * not counted.
  *
+ * **The whole raised on 30 September 2026**, to 8.4 MB, for local and global
+ * analysis (ADR-0032): the observations page with its filters, its two sizes,
+ * its forms and its buttons is 172 kB of a script of its own, fetched when the
+ * page is opened, and the first download is 17 kB lighter for it; the words
+ * of the page in three languages stay in the first download with every other
+ * module's. The whole was 8.15 MB before and is 8.31 MB now.
+ *
  * The engine is counted by a name only the engine carries: the worker script
  * and the self-contained bundle both hold it, and the API that talks to either
  * does not. More than one file holding it is ELK shipped twice
@@ -41,7 +48,7 @@ export type Budget = {
   total: number
 }
 
-export const WEB_BUDGET: Budget = { file: 2_550_000, total: 8_300_000 }
+export const WEB_BUDGET: Budget = { file: 2_550_000, total: 8_400_000 }
 
 /**
  * The desktop's renderer is the same bundle unminified — electron-vite's
