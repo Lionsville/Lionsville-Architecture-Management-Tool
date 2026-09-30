@@ -219,24 +219,8 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
       })
 
     case 'observations.list': {
-      const impact = args.impact as string | undefined
-      const analysed = args.analysed as boolean | undefined
-      const own = observationList(model)
-      const causes = causeList(model)
-      const wanted = (observation: Observation, scope?: string) => {
-        if (impact !== undefined && observation.impact !== impact) return false
-        if (analysed === undefined) return true
-        return (explainedBy(causes, observation.id, scope).length > 0) === analysed
-      }
-      const rows = own
-        .filter((one) => args.includeMerged === true || !isMerged(own, one.id))
-        .filter((one) => args.includeArchived === true || !one.archived)
-        .filter((one) => wanted(one))
-        .map((one) => observationLine(one, causes, own))
-      const fromBelow = observationsBelow(view.tree?.analysisBelow?.(view.scopePath) ?? [])
-        .filter(({ scope, observation }) => !absorbedBy(own, observation.id, scope) && !observation.archived && wanted(observation, scope))
-        .map(({ scope, observation }) => ({ scope, ...observationLine(observation, causes, own, scope) }))
-      return json({ observations: rows, ...(fromBelow.length > 0 ? { fromBelow } : {}) })
+      if (args.below === true) return json({ observations: observationsBelowLines(args, view) })
+      return json({ observations: observationRows(args, observationList(model), causeList(model)) })
     }
 
     case 'observation.read': {
@@ -706,6 +690,33 @@ export function findCause(list: readonly Cause[], idOrLabel: string): Cause | un
   return number ? list.find((one) => one.number === Number(number[1])) : undefined
 }
 
+/** One scope's observations as `observations.list` filters them, each with the causes of that scope that explain it. */
+function observationRows(args: Args, own: readonly Observation[], causes: readonly Cause[]) {
+  const impact = args.impact as string | undefined
+  const analysed = args.analysed as boolean | undefined
+  return own
+    .filter((one) => args.includeMerged === true || !isMerged(own, one.id))
+    .filter((one) => args.includeArchived === true || !one.archived)
+    .filter((one) => impact === undefined || one.impact === impact)
+    .filter((one) => analysed === undefined || (explainedBy(causes, one.id).length > 0) === analysed)
+    .map((one) => observationLine(one, causes, own))
+}
+
+/**
+ * The observations of every scope below (ADR-0032 §1), each with its scope's
+ * path: local to that scope, filtered and explained as that scope lists its
+ * own. One this scope folded into its own is listed here, merged, only when
+ * asked for, as a merged one of its own would be.
+ */
+function observationsBelowLines(args: Args, view: ReadView) {
+  const own = observationList(view.model)
+  return (view.tree?.analysisBelow?.(view.scopePath) ?? []).flatMap(({ scope, observations, causes }) => {
+    const absorbed = new Set(observations.filter((one) => absorbedBy(own, one.id, scope)).map((one) => one.id))
+    const shown = args.includeMerged === true ? observations : observations.filter((one) => !absorbed.has(one.id))
+    return observationRows(args, shown, causes).map((line) => ({ scope, ...line }))
+  })
+}
+
 /** One observation as a list answers it, with the causes of this scope that explain it (ADR-0021). */
 export function observationLine(observation: Observation, causes: readonly Cause[], own: readonly Observation[], scope?: string) {
   const merged = scope === undefined ? absorbedBy(own, observation.id) : undefined
@@ -1024,9 +1035,9 @@ function decisionLine(adr: Adr, scope: 'group' | 'landscape' | 'application') {
 
 /**
  * What the agent's `search` reads, nearest first: this scope's every list,
- * the records of the scopes above, and what the scopes below offer up — the
- * observations they shared and the plans they flagged as initiatives, which
- * this scope's own pages show too. A scope elsewhere is searched by naming
+ * the records of the scopes above, and what this scope reads of the scopes
+ * below — their analysis (ADR-0032 §1) and the plans they flagged as
+ * initiatives, which this scope's own pages show too. A scope elsewhere is searched by naming
  * it: every tool takes `scope`.
  */
 function searchHits(args: Args, view: ReadView): Record<string, unknown>[] {

@@ -85,11 +85,15 @@ const refusal = (model: Model, tool: ToolName, args: unknown): string => {
 }
 
 describe('observations.list and observation.read', () => {
-  it('lists this scope’s own with their causes, and those of the scopes below with their scope', () => {
-    const listed = read(fromArrays(host), 'observations.list') as { observations: { id: string; causes: { label: string }[] }[]; fromBelow: { scope: string; id: string }[] }
+  it('lists this scope’s own with their causes, and with below those of the scopes below, each with its scope', () => {
+    const listed = read(fromArrays(host), 'observations.list') as { observations: { id: string; causes: { label: string }[] }[] }
     expect(listed.observations.map((one) => one.id)).toEqual(['ob-1', 'ob-2'])
     expect(listed.observations[0].causes.map((one) => one.label)).toEqual(['CA-0001'])
-    expect(listed.fromBelow).toEqual([expect.objectContaining({ scope: 'acme/claims/intake', id: 'in-1', seen: 3 })])
+    expect(listed).not.toHaveProperty('fromBelow')
+    const local = read(fromArrays(host), 'observations.list', { below: true }) as { observations: { scope: string; id: string; causes: { id: string }[] }[] }
+    // Explained where it lives: by the scope below's own cause.
+    expect(local.observations).toEqual([expect.objectContaining({ scope: 'acme/claims/intake', id: 'in-1', seen: 3, causes: [expect.objectContaining({ id: 'in-ca-1' })] })])
+    expect((read(fromArrays(host), 'observations.list', { below: true, analysed: false }) as { observations: unknown[] }).observations).toEqual([])
   })
 
   it('filters by analysed and impact, and reads one by its label', () => {
@@ -118,23 +122,44 @@ describe('archiving', () => {
     expect(model.observations!['ob-2'].history.map((one) => one.kind)).toEqual(['recorded', 'archived', 'restored'])
   })
 
-  it('an observation archived below is no longer offered above', () => {
+  it('an observation archived below is listed above only when asked, as it is below', () => {
     const closedBelow = [{ ...below[0], observations: [observation('in-1', 1, { archived: true })] }]
-    const listed = read(fromArrays(host), 'observations.list') as { fromBelow?: unknown }
-    expect(listed.fromBelow).toBeDefined()
-    const gone = parse(answer('observations.list', {}, view(fromArrays(host), { tree: { lookup: () => undefined, initiativesBelow: () => [], analysisBelow: () => closedBelow, rowsTo: () => [] } }))) as { fromBelow?: unknown }
-    expect(gone.fromBelow).toBeUndefined()
+    const at = view(fromArrays(host), { tree: { lookup: () => undefined, initiativesBelow: () => [], analysisBelow: () => closedBelow, rowsTo: () => [] } })
+    expect((parse(answer('observations.list', { below: true }, at)) as { observations: unknown[] }).observations).toEqual([])
+    expect((parse(answer('observations.list', { below: true, includeArchived: true }, at)) as { observations: unknown[] }).observations).toHaveLength(1)
   })
 })
 
 describe('recording and analysing', () => {
-  it('records a local observation, seen once, with the template, and says who saw it', () => {
+  it('records a local observation, seen once today, with the template, and says where and who saw it', () => {
     const { model, answer: said } = write(fromArrays(host), 'observation.record', { title: 'Duplicate customers', where: 'CRM', by: 'W.S.', impact: 'major' })
-    expect(said).toMatchObject({ label: 'OB-0003', title: 'Duplicate customers', where: 'CRM', by: 'W.S.', impact: 'major', seen: 1 })
+    expect(said).toMatchObject({ label: 'OB-0003', title: 'Duplicate customers', date: '2026-09-20', where: 'CRM', by: 'W.S.', impact: 'major', seen: 1 })
     expect(said).not.toHaveProperty('shared')
-    expect(read(write(model, 'observation.update', { id: 'ob-new-1', by: '' }).model, 'observation.read', { id: 'ob-new-1' })).not.toHaveProperty('by')
     expect(model.order.observations).toEqual(['ob-1', 'ob-2', 'ob-new-1'])
     expect(model.observations!['ob-new-1'].body).toMatch(/^## /)
+  })
+
+  it('refuses an observation without where it was seen or who saw it, naming the field, and one dated later than today', () => {
+    const model = fromArrays(host)
+    expect(refusal(model, 'observation.record', { title: 'Duplicate customers', by: 'W.S.' })).toContain('\\"where\\" is required')
+    expect(refusal(model, 'observation.record', { title: 'Duplicate customers', where: 'CRM' })).toContain('\\"by\\" is required')
+    expect(refusal(model, 'observation.record', { title: 'Duplicate customers', where: '  ', by: 'W.S.' })).toContain('\\"where\\" is required: where it was seen')
+    expect(refusal(model, 'observation.record', { title: 'Duplicate customers', where: 'CRM', by: '' })).toContain('\\"by\\" is required: who saw it')
+    expect(refusal(model, 'observation.record', { title: 'X', where: 'CRM', by: 'W.S.', date: '2026-09-21' })).toContain('in the future')
+    expect(refusal(model, 'observation.record', { title: 'X', where: 'CRM', by: 'W.S.', shared: true })).toContain('\\"shared\\" is not an argument')
+  })
+
+  it('corrects an observation but never blanks its title, where or who, and leaves one written without them be', () => {
+    const model = fromArrays(host)
+    for (const field of ['title', 'where', 'by']) {
+      expect(refusal(model, 'observation.update', { id: 'ob-2', [field]: ' ' })).toContain(`\\"${field}\\" must not be blank`)
+    }
+    expect(refusal(model, 'observation.update', { id: 'ob-2', shared: true })).toContain('\\"shared\\" is not an argument')
+    // Written before where and who were asked for: corrected in another field, it stays without them.
+    const said = write(model, 'observation.update', { id: 'ob-2', impact: 'major' }).answer
+    expect(said).toMatchObject({ id: 'ob-2', impact: 'major' })
+    expect(said).not.toHaveProperty('where')
+    expect(write(model, 'observation.update', { id: 'ob-2', where: 'Service desk', by: 'W.S.' }).answer).toMatchObject({ where: 'Service desk', by: 'W.S.' })
   })
 
   it('seen again on a day said, never in the future and never before it was first seen', () => {
@@ -199,6 +224,72 @@ describe('recording and analysing', () => {
   })
 })
 
+/**
+ * A root cause is said (ADR-0032 §3), and a cause explains the causes of the
+ * scopes below its own (§4): the tools take both, and refuse what the chain
+ * contradicts, naming the records in the way.
+ */
+describe('root causes and the scopes below, at the agent', () => {
+  const explained = (id: string) => new Map([[id, [{ scope: '', cause: intakeCause('org-1', 1, { title: 'Nobody owns the customer' }), strength: 'strong' as const }]]])
+  const addressed: HostModel = {
+    ...host,
+    causes: [...host.causes!, { id: 'ca-2', number: 2, title: 'Nobody owns the window', state: 'assumed', root: true, body: '', explains: [{ id: 'ca-1', strength: 'normal' }] }],
+    solutions: [{ id: 'so-1', number: 1, title: 'Give the window an owner', state: 'idea', addresses: [{ id: 'ca-2', strength: 'strong' }], validatedWith: [], attempts: [], body: '', history: [] }],
+  }
+
+  it('makes a root cause as it is made, labelled RC-, only when asked, and lists it by the field', () => {
+    const { model, answer: said } = write(fromArrays(host), 'cause.add', { title: 'Nobody owns the batch', root: true, explains: [{ id: 'ca-1' }] })
+    expect(said).toMatchObject({ label: 'RC-0002', root: true })
+    expect((read(model, 'causes.list', { root: true }) as { causes: { id: string }[] }).causes.map((one) => one.id)).toEqual(['ca-new-1'])
+    expect(read(model, 'cause.read', { id: 'RC-2' })).toMatchObject({ id: 'ca-new-1', label: 'RC-0002' })
+    expect(write(fromArrays(host), 'cause.add', { title: 'Plain', explains: [{ id: 'ob-2' }] }).answer).toMatchObject({ label: 'CA-0002', root: false })
+  })
+
+  it('makes a cause a root cause, and refuses while a cause explains it, naming that cause', () => {
+    const model = fromArrays(addressed)
+    const refused = JSON.parse(refusal(model, 'cause.update', { id: 'ca-1', root: true })) as { refusal: string; detail: string }
+    expect(refused.refusal).toBe('command.rootExplained')
+    expect(refused.detail).toContain('CA-0001 is explained by RC-0002 Nobody owns the window')
+    const alone = fromArrays(host)
+    expect(write(alone, 'cause.update', { id: 'ca-1', root: true }).answer).toMatchObject({ label: 'RC-0001', root: true })
+  })
+
+  it('refuses a root cause a cause of a scope above explains, naming it and its scope', () => {
+    const at = view(fromArrays(host), { tree: { lookup: () => undefined, initiativesBelow: () => [], analysisBelow: () => below, explainedFromAbove: () => explained('ca-1'), rowsTo: () => [] } })
+    const out = commandFor('cause.update', { id: 'ca-1', root: true }, at)
+    expect(out).toMatchObject({ ok: false, refusal: 'command.rootExplained' })
+    expect(JSON.stringify(out)).toContain('CA-0001 Nobody owns the customer (in the organisation)')
+  })
+
+  it('makes a root cause a cause again, and refuses while a solution addresses it, naming the solution', () => {
+    const model = fromArrays(addressed)
+    const refused = JSON.parse(refusal(model, 'cause.update', { id: 'RC-2', root: false })) as { refusal: string; detail: string }
+    expect(refused.refusal).toBe('command.rootAddressed')
+    expect(refused.detail).toContain('RC-0002 is addressed by SO-0001 Give the window an owner')
+    const free = fromArrays({ ...addressed, solutions: [] })
+    expect(write(free, 'cause.update', { id: 'RC-2', root: false }).answer).toMatchObject({ label: 'CA-0002', root: false })
+  })
+
+  it('links a cause to a cause of a scope below, by id or label, and refuses what the tree does not allow', () => {
+    const model = fromArrays(host)
+    const linked = write(model, 'cause.link', { id: 'ca-1', explains: 'CA-1', explainsScope: 'acme/claims/intake', strength: 'strong' })
+    expect(linked.model.causes!['ca-1'].explains).toContainEqual({ id: 'in-ca-1', scope: 'acme/claims/intake', strength: 'strong' })
+    expect(linked.answer).toMatchObject({ explains: expect.arrayContaining([{ id: 'in-ca-1', scope: 'acme/claims/intake', strength: 'strong' }]) })
+    expect(refusal(model, 'cause.link', { id: 'ca-1', explains: 'in-1', explainsScope: 'acme/claims/intake' })).toContain('that scope explains its own observations')
+    expect(refusal(model, 'cause.link', { id: 'ca-1', explains: 'in-rc-2', explainsScope: 'acme/claims/intake' })).toContain('nothing explains a root cause')
+    expect(refusal(model, 'cause.link', { id: 'ca-1', explains: 'x', explainsScope: 'acme' })).toContain('never one of its own scope or above it')
+    expect(refusal(model, 'cause.link', { id: 'ca-1', explains: 'x', explainsScope: 'acme/billing' })).toContain('is not below this scope')
+    expect(refusal(model, 'cause.link', { id: 'ca-1', explains: 'nope', explainsScope: 'acme/claims/intake' })).toContain('agent.unknownId')
+    const unlinked = write(linked.model, 'cause.unlink', { id: 'ca-1', explains: 'in-ca-1', explainsScope: 'acme/claims/intake' })
+    expect(unlinked.model.causes!['ca-1'].explains).toEqual([{ id: 'ob-1', strength: 'strong' }])
+  })
+
+  it('refuses a local root cause as the thing a cause explains', () => {
+    const model = fromArrays(addressed)
+    expect(refusal(model, 'cause.link', { id: 'ca-1', explains: 'RC-2' })).toContain('RC-0002 is a root cause, and nothing explains a root cause')
+  })
+})
+
 describe('merging', () => {
   it('folds one own observation into another: sightings, links and history move', () => {
     const { model, answer: said } = write(fromArrays(host), 'observation.merge', { id: 'ob-1', into: 'ob-2' })
@@ -215,7 +306,7 @@ describe('merging', () => {
     expect(said).toMatchObject({ id: 'ob-1', seen: 5 })
     expect(model.observations!['ob-1'].history.at(-1)).toEqual({ date: '2026-09-20', kind: 'absorbed', id: 'in-1', scope: 'acme/claims/intake', seen: 3 })
     expect(model.order.observations).toEqual(['ob-1', 'ob-2'])
-    expect((read(model, 'observations.list') as { fromBelow?: unknown }).fromBelow).toBeUndefined()
+    expect((read(model, 'observations.list', { below: true }) as { observations: unknown[] }).observations).toEqual([])
   })
 
   it('refuses a merge into itself and a second merge of the same record', () => {

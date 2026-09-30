@@ -11,13 +11,15 @@ import type { Model } from '../../model/normalised'
 import { causeList, fromArrays, observationList, solutionList, toArrays } from '../../model/normalised'
 import { isDay } from '../../model/lifecycle'
 import type { Cause, CauseLink, CauseState, CauseStrength, Observation, ObservationImpact } from '../../model/observation'
-import { forgetCause } from '../../observations/solution'
+import { forgetCause, formatSolutionNumber } from '../../observations/solution'
 import {
   absorbFromBelow, causeEvidence, causeLabel, formatCauseNumber, formatObservationNumber, linkCause, linkRefusal,
-  mergeObservations, newCause, newObservation, nextCauseNumber, nextObservationNumber, observationsBelow, removeCause,
+  makeCause, makeRootCause, mergeObservations, newCause, newObservation, nextCauseNumber, nextObservationNumber, observationsBelow, removeCause,
   removeObservation, seenAgain, seenDayProblem, setArchived, unlinkCause, updateCause, updateObservation,
 } from '../../observations/observation'
-import type { Analysis, CausePatch, LinkContext, LinkRefusal, ObservationPatch } from '../../observations/observation'
+import type {
+  Analysis, CausePatch, LinkContext, LinkRefusal, ObservationPatch, RootChangeRefusal,
+} from '../../observations/observation'
 import { causeLine, findCause, findObservation, observationLine } from '../answer'
 import type { AgentAnswer } from '../tools'
 import { json, refused } from '../tools'
@@ -108,12 +110,19 @@ export const recordObservation: Handler = (args, view) => {
   const { before } = work
   const title = (args.title as string).trim()
   if (!title) return refused('agent.badArguments', '"title" must not be blank')
-  const date = typeof args.date === 'string' ? args.date : view.today()
+  // The three facts that make it an observation (ADR-0032 §10): what, where
+  // and who. The day defaults to today, as the page's does, and is never later.
+  for (const field of ['where', 'by'] as const) {
+    if (typeof args[field] !== 'string' || !args[field].trim()) return refused('agent.badArguments', `"${field}" is required: ${FACT[field]}`)
+  }
+  const today = view.today()
+  const date = typeof args.date === 'string' ? args.date : today
   if (!isDay(date)) return refused('agent.badArguments', `date ${date} is not yyyy-mm-dd`)
+  if (date > today) return refused('agent.badArguments', `date ${date} is in the future; today is ${today}`)
   const fresh = newObservation({
     id: view.makeId('ob'), number: nextObservationNumber(before.observations), title, date, t: view.translate,
-    ...(typeof args.where === 'string' ? { where: args.where } : {}),
-    ...(typeof args.by === 'string' ? { by: args.by } : {}),
+    where: args.where as string,
+    by: args.by as string,
     ...(typeof args.impact === 'string' ? { impact: args.impact as ObservationImpact } : {}),
     ...(typeof args.body === 'string' ? { body: args.body } : {}),
   })
@@ -121,16 +130,27 @@ export const recordObservation: Handler = (args, view) => {
   return finish(work, after, observationAnswer(after, fresh.id))
 }
 
-/** The fields an update names, or the refusal for the first one that cannot be had. */
+/** What each of an observation's required facts is, for the refusal that asks for it. */
+const FACT = {
+  where: 'where it was seen — a system, a desk, a job, a meeting',
+  by: 'who saw it, or who wrote it down — a name, initials, a team',
+} as const
+
+/**
+ * The fields an update names, or the refusal for the first one that cannot
+ * be had. Title, where and who may be corrected and never blanked (ADR-0032
+ * §10); a record written before without where or who keeps going without
+ * them until somebody writes them.
+ */
 function observationPatch(args: Args): ObservationPatch | AgentAnswer {
   const patch: ObservationPatch = {}
-  if (typeof args.title === 'string') {
-    if (!args.title.trim()) return refused('agent.badArguments', '"title" must not be blank')
-    patch.title = args.title
+  for (const field of ['title', 'where', 'by'] as const) {
+    const value = args[field]
+    if (typeof value !== 'string') continue
+    if (!value.trim()) return refused('agent.badArguments', `"${field}" must not be blank`)
+    patch[field] = value
   }
   if (typeof args.body === 'string') patch.body = args.body
-  if (typeof args.where === 'string') patch.where = args.where
-  if (typeof args.by === 'string') patch.by = args.by
   if (typeof args.impact === 'string') patch.impact = args.impact as ObservationImpact
   if (typeof args.date === 'string') {
     if (!isDay(args.date)) return refused('agent.badArguments', `date ${args.date} is not yyyy-mm-dd`)
@@ -212,7 +232,8 @@ export const addCause: Handler = (args, view) => {
   // no body starts as the template, which holds no evidence.
   const body = typeof args.body === 'string' ? args.body : ''
   const number = nextCauseNumber(before.causes)
-  if (args.state === 'verified' && !causeEvidence(body).complete) return unverified(formatCauseNumber(number))
+  const root = args.root === true
+  if (args.state === 'verified' && !causeEvidence(body).complete) return unverified(formatCauseNumber(number, root))
   // What it explains, likewise: a new cause is neither itself nor behind
   // anything yet, so only what it names can refuse it.
   const links: CauseLink[] = []
@@ -220,11 +241,13 @@ export const addCause: Handler = (args, view) => {
     const link = linkOf(work, view, row.id, row.scope, row.strength)
     if ('ok' in link) return link
     const why = linkRefusal(before.causes, '', link, belowOf(view))
-    if (why) return linkRefused(why, { number }, link, before.causes)
+    if (why) return linkRefused(why, { number, ...(root ? { root } : {}) }, link, before.causes)
     links.push(link)
   }
+  // A root cause as it is made, where a person said so: nothing explains a
+  // new cause yet, so nothing refuses it (ADR-0032 §3).
   const fresh = newCause({
-    id: view.makeId('ca'), number, title, t: view.translate,
+    id: view.makeId('ca'), number, title, t: view.translate, root,
     ...(typeof args.body === 'string' ? { body: args.body } : {}),
   })
   if (typeof args.state === 'string') fresh.state = args.state as CauseState
@@ -234,7 +257,7 @@ export const addCause: Handler = (args, view) => {
   return finish(work, after, causeAnswer(work, after, fresh.id))
 }
 
-export const updateCauseTool = onCause((held, args, _view, work) => {
+export const updateCauseTool = onCause((held, args, view, work) => {
   const patch: CausePatch = {}
   if (typeof args.title === 'string') {
     if (!args.title.trim()) return refused('agent.badArguments', '"title" must not be blank')
@@ -245,9 +268,33 @@ export const updateCauseTool = onCause((held, args, _view, work) => {
   if (patch.state === 'verified' && held.state !== 'verified' && !causeEvidence(patch.body ?? held.body).complete) {
     return unverified(causeLabel(held))
   }
-  const after = { ...work.before, causes: updateCause(work.before.causes, held.id, patch) }
+  let causes = work.before.causes
+  if (typeof args.root === 'boolean') {
+    // Made a root cause, or a cause again (ADR-0032 §3): refused while the
+    // chain says otherwise — here, or from a scope above — naming the records.
+    const change = args.root
+      ? makeRootCause(causes, held.id, view.tree?.explainedFromAbove?.(view.scopePath).get(held.id))
+      : makeCause(causes, held.id, solutionList(view.model))
+    if (!change.ok) return rootRefused(change, held)
+    causes = change.causes
+  }
+  const after = { ...work.before, causes: updateCause(causes, held.id, patch) }
   return finish(work, after, causeAnswer(work, after, held.id))
 })
+
+/** Why a cause cannot become a root cause, or go back, said with the records in the way. */
+function rootRefused(change: RootChangeRefusal, cause: Cause): AgentAnswer {
+  const label = causeLabel(cause)
+  if (change.refusal === 'command.rootExplained') {
+    const names = [
+      ...change.causes.map((one) => `${causeLabel(one)} ${one.title}`),
+      ...change.above.map((one) => `${causeLabel(one.cause)} ${one.cause.title} (in ${one.scope || 'the organisation'})`),
+    ]
+    return refused('command.rootExplained', `${label} is explained by ${names.join(', ')}. A root cause ends the chain: unlink that first (cause.unlink), or make that one the root cause instead.`)
+  }
+  const names = change.solutions.map((one) => `${formatSolutionNumber(one.number)} ${one.title}`)
+  return refused('command.rootAddressed', `${label} is addressed by ${names.join(', ')}, and a solution addresses root causes only. Move it to another root cause (solution.address, then solution.unaddress), or unaddress it, first.`)
+}
 
 /**
  * Verified is a claim about evidence (ADR-0021, amended 28 September 2026),
@@ -280,7 +327,7 @@ function linkRefused(why: LinkRefusal, cause: Pick<Cause, 'number' | 'root'>, li
 }
 
 export const linkCauseTool = onCause((held, args, view, work) => {
-  const link = linkOf(work, view, args.explains, args.scope, args.strength)
+  const link = linkOf(work, view, args.explains, args.explainsScope, args.strength)
   if ('ok' in link) return link
   const context = belowOf(view)
   const why = linkRefusal(work.before.causes, held.id, link, context)
@@ -291,8 +338,8 @@ export const linkCauseTool = onCause((held, args, view, work) => {
 })
 
 export const unlinkCauseTool = onCause((held, args, _view, work) => {
-  const target: { id: string; scope?: string } = typeof args.scope === 'string'
-    ? { id: String(args.explains), scope: args.scope }
+  const target: { id: string; scope?: string } = typeof args.explainsScope === 'string'
+    ? { id: String(args.explains), scope: args.explainsScope }
     : { id: (work.observationOf(args.explains) ?? work.causeOf(args.explains))?.id ?? String(args.explains) }
   const after = { ...work.before, causes: unlinkCause(work.before.causes, held.id, target.id, target.scope) }
   return finish(work, after, causeAnswer(work, after, held.id))

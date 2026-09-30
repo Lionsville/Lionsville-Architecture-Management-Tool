@@ -3,10 +3,11 @@
 
 /**
  * The method behind the observations, said once for an agent (ADR-0021,
- * ADR-0026). The tools say what each call does; this says what each record is
- * *for*, which is the thing a model gets wrong when it is only told the calls:
- * it writes its reading of a problem into the observation, proposes a fix for
- * a symptom, and answers a gate from its own judgement.
+ * ADR-0026, ADR-0032). The tools say what each call does; this says what each
+ * record is *for*, which is the thing a model gets wrong when it is only told
+ * the calls: it writes its reading of a problem into the observation, proposes
+ * a fix for a symptom, declares a root cause because nothing deeper came to
+ * mind, and answers a gate from its own judgement.
  *
  * Handed over on connect by every host — the desktop's paragraph and a hosted
  * environment's both end with it — so it lives here, with no word about a
@@ -15,11 +16,19 @@
 export const OBSERVATIONS_METHOD =
   'Observations, causes, solutions and experiments are a method, and the tools keep to it. '
   + 'An observation (observation.record) is a fact: what was seen, where, when, by whom and the evidence, '
-  + 'in neutral words — no explanation, no opinion, no blame and no fix. The same thing seen again is '
-  + 'observation.seen, not a new record; one written down twice is merged. '
+  + 'in neutral words — no explanation, no opinion, no blame and no fix. Where and by whom are required: ask '
+  + 'rather than guess. The same thing seen again is observation.seen, not a new record; one written down '
+  + 'twice is merged. '
   + 'Why it happens is a cause (cause.add): the team\'s analysis goes there, assumed until a person has '
-  + 'checked it. Ask why again — a deeper cause explains a shallower one (cause.link) — until you reach a '
-  + 'root cause, one nothing else explains. '
+  + 'checked it. Ask why again — a deeper cause explains a shallower one (cause.link) — until the team says '
+  + 'which cause is the root cause (RC-): where the chain ends, and nothing explains it any more. A root cause '
+  + 'is said by a person, never inferred: a cause nothing explains yet is an open end, not a root. Never make '
+  + 'a cause a root cause, or a root cause a cause again, on your own judgement, any more than you would '
+  + 'verify one — ask. '
+  + 'Local and global are places, not a permission: every scope\'s observations, causes, solutions and '
+  + 'experiments are its own, and a scope reads those of every scope below it (observations.list with below). '
+  + 'Nothing is shared, and a record is changed in the scope it lives in. A cause may explain a cause of a '
+  + 'scope below; the scope below explains its own observations. '
   + 'What to do about it is a solution (solution.propose), and a solution addresses root causes only. '
   + 'Propose the alternatives too and drop the ones not pursued, with the reason, rather than removing them. '
   + 'A solution is an idea until its gates are answered from what people said — benefit, cost, who it was '
@@ -30,5 +39,5 @@ export const OBSERVATIONS_METHOD =
   + 'and one that has stopped is archived with a note. '
   + 'When a person describes a problem in one breath, split it — the facts into observations, their '
   + 'explanations into causes, their ideas into solutions — and tell them which went where. Never answer a '
-  + 'gate, verify a cause, conclude an experiment or accept a decision on your own judgement: those are the '
-  + 'team\'s to say, so ask.'
+  + 'gate, verify a cause, say a root cause, conclude an experiment or accept a decision on your own judgement: '
+  + 'those are the team\'s to say, so ask.'

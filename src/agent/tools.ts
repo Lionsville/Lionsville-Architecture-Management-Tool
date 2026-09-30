@@ -465,10 +465,10 @@ const SPECS = [
     tier: 'read',
     description:
       'What was observed in this scope (ADR-0021): id, label, title, date, where, impact, how often it was seen, '
-      + 'whether it is shared upward, and the causes it was analysed into — plus, as fromBelow, the observations '
-      + 'the scopes under this one shared, each with the scope it lives in. An observation merged into another '
-      + 'is listed only when includeMerged is true; an archived one — fixed, addressed, no longer relevant — only '
-      + 'when includeArchived is true.',
+      + 'and the causes it was analysed into. With below true, the observations of every scope under this one '
+      + 'instead (ADR-0032): local to those scopes, each with the path of the scope it lives in and the causes of '
+      + 'that scope that explain it. An observation merged into another is listed only when includeMerged is true; '
+      + 'an archived one — fixed, addressed, no longer relevant — only when includeArchived is true.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -476,6 +476,7 @@ const SPECS = [
         analysed: { type: 'boolean', description: 'true: only those linked to a cause; false: only those not yet analysed.' },
         includeMerged: { type: 'boolean', description: 'Also list observations that were merged into another.' },
         includeArchived: { type: 'boolean', description: 'Also list observations that were archived.' },
+        below: { type: 'boolean', description: 'true: the observations of the scopes below this one, each with its scope, instead of this scope\'s own.' },
       },
       additionalProperties: false,
     },
@@ -490,14 +491,15 @@ const SPECS = [
     name: 'causes.list',
     tier: 'read',
     description:
-      'The causes this scope\'s analysis found (ADR-0021): id, label, title, assumed or verified, what each explains '
-      + '(observations and shallower causes, with the strength of each link), and whether it is a root cause — '
-      + 'one that explains something and is explained by nothing.',
+      'The causes this scope\'s analysis found (ADR-0021): id, label (CA-, or RC- for a root cause), title, assumed '
+      + 'or verified, what each explains (observations and shallower causes here, causes of the scopes below, with '
+      + 'the strength of each link), what explains it, and whether it is a root cause — one a person said is '
+      + '(ADR-0032), where the chain ends.',
     inputSchema: {
       type: 'object',
       properties: {
         state: { type: 'string', description: 'Only causes in this state.', enum: ['assumed', 'verified'] },
-        root: { type: 'boolean', description: 'true: only root causes.' },
+        root: { type: 'boolean', description: 'true: only root causes, as said on the cause.' },
       },
       additionalProperties: false,
     },
@@ -987,25 +989,25 @@ const SPECS = [
     name: 'observation.record',
     tier: 'write',
     description:
-      'Write down something that was seen (ADR-0021), numbered after the last observation in this scope, seen once, '
-      + 'local unless shared is true. An observation is a fact: what was seen, where, when, by whom and the evidence, '
+      'Write down something that was seen (ADR-0021), numbered after the last observation in this scope, seen once. '
+      + 'Where it was seen and who saw it are required, and the day is today unless date says another. '
+      + 'An observation is a fact: what was seen, where, when, by whom and the evidence, '
       + 'in neutral words — no explanation, no opinion, no blame and no fix. Why it happens is a cause (cause.add); '
       + 'what to do about it is a solution (solution.propose). When a person\'s account mixes them, record the facts '
       + 'here, put the rest where it belongs and say so. Seen again is observation.seen, not a new record; check '
-      + 'observations.list first. Local is the default: only a shared observation is read by the scopes above, '
-      + 'which may link it to a cause of their own or merge it into one of their own. Leave the body out for the template.',
+      + 'observations.list first. It is local to the scope it is recorded in, and every scope above reads it '
+      + '(ADR-0032): nothing is shared. Leave the body out for the template.',
     inputSchema: {
       type: 'object',
       properties: {
         title: { type: 'string', description: 'What was seen, as one neutral sentence: no cause and no fix in it.' },
         body: { type: 'string', description: 'What was seen, the evidence, and who or what it affected, as markdown. Facts only: the reading of them is a cause.' },
-        where: { type: 'string', description: 'Where it was seen: a system, a desk, a job. Prose, not an id.' },
-        by: { type: 'string', description: 'Who saw it, or who wrote it down. Free text: a name, initials, a team.' },
-        date: { type: 'string', description: 'The day it was seen, yyyy-mm-dd. Default: today.' },
+        where: { type: 'string', description: 'Where it was seen: a system, a desk, a job. Prose, not an id. Required.' },
+        by: { type: 'string', description: 'Who saw it, or who wrote it down. Free text: a name, initials, a team. Required.' },
+        date: { type: 'string', description: 'The day it was seen, yyyy-mm-dd. Default: today. Not in the future.' },
         impact: { type: 'string', description: 'How much it matters to whoever it affected — not how sure anyone is. Default: minor.', enum: ['minor', 'major', 'critical'] },
-        shared: { type: 'boolean', description: 'Offer it to the scopes above, when it matters beyond this one. Default: false.' },
       },
-      required: ['title'],
+      required: ['title', 'where', 'by'],
       additionalProperties: false,
     },
   },
@@ -1014,20 +1016,18 @@ const SPECS = [
     tier: 'write',
     description:
       'Correct an observation — keeping it a fact, with any reading of it moved to a cause: its title, body, where, '
-      + 'who, date or impact — or share it upward and take that back, '
-      + 'which is written into its history with the day. The count moves only through observation.seen and '
-      + 'observation.merge; closing it is observation.archive.',
+      + 'who, date or impact. Title, where and who may be corrected, never blanked. The count moves only through '
+      + 'observation.seen and observation.merge; closing it is observation.archive.',
     inputSchema: {
       type: 'object',
       properties: {
         id: ID('observation'),
         title: { type: 'string', description: 'A new title.' },
         body: { type: 'string', description: 'The body as markdown.' },
-        where: { type: 'string', description: 'Where it was seen.' },
-        by: { type: 'string', description: 'Who saw it. Blank clears it.' },
+        where: { type: 'string', description: 'Where it was seen. Not blank.' },
+        by: { type: 'string', description: 'Who saw it. Not blank.' },
         date: { type: 'string', description: 'The day it was first seen, yyyy-mm-dd.' },
         impact: { type: 'string', description: 'How much it matters.', enum: ['minor', 'major', 'critical'] },
-        shared: { type: 'boolean', description: 'Shared with the scopes above, or local.' },
       },
       required: ['id'],
       additionalProperties: false,
@@ -1073,7 +1073,7 @@ const SPECS = [
     description:
       'Two observations are the same thing: fold one into another of this scope. The sightings and the links move to '
       + 'the survivor and both records say so with today\'s date; the merged record stays as history. To fold in an '
-      + 'observation a scope below shared, give fromScope: only this scope\'s survivor is written, and the scope '
+      + 'observation of a scope below, give fromScope: only this scope\'s survivor is written, and the scope '
       + 'below reads the merge off the tree.',
     inputSchema: {
       type: 'object',
@@ -1099,24 +1099,27 @@ const SPECS = [
       'Say what lies behind one or more observations, or behind other causes (ADR-0021): a new cause, assumed until '
       + 'verified, numbered after the last one here. This is where the analysis goes — the team\'s explanation, '
       + 'one statement per cause, with no remedy in it (a remedy is a solution). Then ask why again: a deeper cause '
-      + 'explains this one (explains: this cause\'s id), until you reach a root cause, one nothing explains, which '
-      + 'is where solutions go. Name what it explains and the links are made in the same step; an observation a '
-      + 'scope below shared is named with its scope. Leave the body out for the template.',
+      + 'explains this one (explains: this cause\'s id), until the team says one is the root cause, where the '
+      + 'chain ends and solutions go (ADR-0032). root: true makes it one as it is made — only when a person said '
+      + 'so. Name what it explains and the links are made in the same step: observations and causes of this '
+      + 'scope, and causes of a scope below (with its scope) — never an observation below, which that scope '
+      + 'explains, and never a root cause. Leave the body out for the template.',
     inputSchema: {
       type: 'object',
       properties: {
         title: { type: 'string', description: 'The cause, as one sentence.' },
         body: { type: 'string', description: 'Why the team thinks so and how to verify it, as markdown.' },
         state: { type: 'string', description: 'Default: assumed. Verified only when a person says it was checked, and only with the body\'s "Why we think so" and "How to verify" filled in.', enum: ['assumed', 'verified'] },
+        root: { type: 'boolean', description: 'true: it is a root cause, labelled RC-. Only when a person said so; never on your own judgement.' },
         explains: {
           type: 'array',
-          description: 'What this cause explains: observations of this scope, observations shared from below (with scope), or shallower causes of this scope.',
+          description: 'What this cause explains: observations or shallower causes of this scope, or non-root causes of a scope below (with scope).',
           items: {
             type: 'object',
             description: 'One thing this cause explains.',
             properties: {
               id: { type: 'string', description: 'The observation or cause.' },
-              scope: { type: 'string', description: 'The path of the scope below, for a shared observation.' },
+              scope: { type: 'string', description: 'The path of the scope below, for one of its causes.' },
               strength: { type: 'string', description: 'How firmly. Default: normal.', enum: ['strong', 'normal', 'weak'] },
             },
             required: ['id'],
@@ -1131,7 +1134,7 @@ const SPECS = [
   {
     name: 'cause.update',
     tier: 'write',
-    description: 'Correct a cause: its title, its body, or its state — verified once a person says the team has checked it against evidence, never on your own reasoning, and only with the body\'s "Why we think so" and "How to verify" filled in (the same call may write them); back to assumed when it has not.',
+    description: 'Correct a cause: its title, its body, or its state — verified once a person says the team has checked it against evidence, never on your own reasoning, and only with the body\'s "Why we think so" and "How to verify" filled in (the same call may write them); back to assumed when it has not. root makes it a root cause or a cause again (ADR-0032), only when a person said so: a root cause is refused while a cause explains it, and a cause again while a solution addresses it, and the refusal names them.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -1139,6 +1142,7 @@ const SPECS = [
         title: { type: 'string', description: 'A new title.' },
         body: { type: 'string', description: 'The body as markdown.' },
         state: { type: 'string', description: 'Assumed or verified.', enum: ['assumed', 'verified'] },
+        root: { type: 'boolean', description: 'true: make it a root cause; false: make it a cause again. Only when a person said so.' },
       },
       required: ['id'],
       additionalProperties: false,
@@ -1148,15 +1152,17 @@ const SPECS = [
     name: 'cause.link',
     tier: 'write',
     description:
-      'A cause explains something: an observation of this scope, one a scope below shared (with its scope), or a '
-      + 'shallower cause of this scope. Linking to what it already explains changes the strength: how firmly the team '
-      + 'believes this cause explains it. A loop between causes is refused.',
+      'A cause explains something: an observation or a shallower cause of this scope, or a cause of a scope below '
+      + '(explainsScope: its path; ADR-0032). Linking to what it already explains changes the strength: how firmly '
+      + 'the team believes this cause explains it. Refused: a loop between causes, a root cause as the thing '
+      + 'explained, a cause of this scope or one above named as below, a scope beside this one, and an observation '
+      + 'of a scope below — that scope explains its own observations, and this one explains its causes.',
     inputSchema: {
       type: 'object',
       properties: {
         id: ID('cause'),
-        explains: { type: 'string', description: 'The observation or cause it explains.' },
-        scope: { type: 'string', description: 'The path of the scope below, for a shared observation.' },
+        explains: { type: 'string', description: 'The observation or cause it explains, by id or label.' },
+        explainsScope: { type: 'string', description: 'The path of the scope below that cause lives in, when it is not this one.' },
         strength: { type: 'string', description: 'How firmly. Default: normal.', enum: ['strong', 'normal', 'weak'] },
       },
       required: ['id', 'explains'],
@@ -1172,7 +1178,7 @@ const SPECS = [
       properties: {
         id: ID('cause'),
         explains: { type: 'string', description: 'The observation or cause it stops explaining.' },
-        scope: { type: 'string', description: 'The path of the scope below, for a shared observation.' },
+        explainsScope: { type: 'string', description: 'The path of the scope below it lives in, when it is not this one.' },
       },
       required: ['id', 'explains'],
       additionalProperties: false,

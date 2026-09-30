@@ -175,7 +175,7 @@ const EVERY_WRITE: { readonly [T in CommandTool]: readonly Case[] } = {
   'decision.remove': [{ args: { id: 'adr-1' } }],
   'decision.transition': [{ args: { id: 'adr-2', status: 'rejected', reason: 'Not now.' } }],
 
-  'observation.record': [{ args: { title: 'Duplicate customers', impact: 'major' } }],
+  'observation.record': [{ args: { title: 'Duplicate customers', where: 'CRM', by: 'W.S.', impact: 'major' } }],
   'observation.update': [{ args: { id: 'ob-2', where: 'Service desk' } }],
   'observation.seen': [{ args: { id: 'ob-2' } }],
   'observation.archive': [{ args: { id: 'ob-2', note: 'Fixed in the checklist' } }],
