@@ -733,49 +733,157 @@ scope.
 analysed as a team, what lies behind it. The page has three tabs. The
 **register** is a table read off the records: number, title, the day it was
 first seen, where, its impact, how often it has been seen, and the causes it
-was analysed into; the record you pick opens beside it. The **analysis** is
-a picture: the observations on the left as circles, the causes they were
-analysed into in the lanes to the right, and the root causes last.
+was analysed into; under it the causes, the solutions and the experiments;
+the record you pick opens beside it. The **analysis** is a picture: the
+observations on the left, the causes they were analysed into in the lanes to
+the right, then the root causes, and the solutions that address them last.
+The third tab, **Solutions**, is below.
 
-An observation is a numbered record (`OB-0007`) with a title, a date, a
-place, who saw it — free text: a name, initials, a team — an impact —
-*minor*, *major* or *critical* — and a markdown body for what was seen, the
-evidence and first thoughts. **Seen again** counts one
+**Local and global.** Every scope's observations, causes, solutions and
+experiments are its own. Read from a scope, those of the scopes below it are
+**local** to those scopes; read from the organisation, the organisation's own
+are the **global** analysis. Nothing is shared to get there: a scope reads
+the analysis of every scope below it, and who may read a scope is decided
+where the work is kept, never on a record. **View local**, beside the
+picture's other controls, is on where the scope has scopes below and off,
+saying why, where it has none. On, the picture draws each scope below in a
+boundary of its own to the left of this scope's lanes, nested as the tree
+nests, and the register, the causes, the solutions and the experiments list
+the records of each scope below after this scope's own, under *Local to …*.
+The counts over the picture — observed, analysed, assumed, verified, root
+causes, open ends — count what the picture draws, the scopes below included.
+Off, the page shows this scope alone, and says how many local records it
+hides.
+
+A record of a scope below is **changed where it lives**. Its reader says so
+in a strip — *Local to Application landscape* — with a button under it that
+opens that scope's page. What you add to it from here — a sighting, a cause,
+a deeper cause, a link between its own records, making one of its causes a
+root cause — is made in that scope and saved there at once, as that scope's change
+rather than this page's: a note after it says where it went, and ⌘Z on this
+page does not reach it — to take it back, change it back. Where that scope
+may not be changed from here, or its own rules refuse the change, the note
+says nothing was made. A solution or an experiment of a scope below
+is read here and not changed.
+
+An observation is a numbered record (`OB-0007`) with a title, a place, who
+saw it — free text: a name, initials, a team — the day it was first seen, an
+impact — *minor*, *major* or *critical* — and a markdown body for what was
+seen, the evidence and who or what it affected. **Seen again** counts one
 more and writes the day into the record's **history**, which is the dated
-ledger at the end of every observation: recorded, seen again, shared,
-merged. The count is what the picture tints a circle by; the impact is its
-size.
+ledger at the end of every observation: recorded, seen again, merged,
+archived. On a large card the impact is a stripe down the left and the count
+is in the corner; on a small one the impact is the size of the circle.
+
+**New observation** asks for the four facts that make one: the title,
+**where it was seen**, **observed by** and **when seen**. When seen starts at
+today and may not be in the future; the impact starts at minor. Every field
+has an example under it, and a field left empty says what is missing in its
+place. The description on the right is optional, starts from its three
+headings, and switches between **Edit** and **Preview**. Under the title, two
+hints that never stop you: **Seen before?** lists observations of the chosen
+scope whose titles share words with yours, each with **Seen again**, which
+records a sighting on that one and nothing new; and a title that uses a word
+that reads like a cause, a fix or blame — *because*, *should*, *fix*,
+*fault* — is told to keep to what was seen and put the why in a cause. With
+View local on, the form asks first which scope the observation belongs to;
+one below makes it local there.
+
+The **causes** can be written with the observation. **New cause** opens a
+cause's fields in the form — its title, *why we think so*, whether it is a
+root cause, and how strongly it explains the observation — with *Already
+written down?* over the causes of the scope. **Existing cause** picks one
+already written down. Each row says whether it is new or existing and can be
+taken off again, and nothing is made until you record: the button says what
+it will make, *Record observation with 1 new cause and 1 link*, and it is one
+step — ⌘Z takes the observation, the new causes and the links back together.
+Changing the scope takes off the links to causes of the scope chosen before,
+and says so.
 
 Two observations that turn out to be the same thing are **merged**: pick the
 one it is the same as, and its sightings and its causes move over. Both
 records say so with the day. The merged record stays — it is where the
 original wording is — and is read as merged rather than deleted; *Show
-merged* brings it back into the register.
+merged* brings it back into the register. An observation of a scope below
+can be merged into one of this scope's; only this scope's record is written,
+and the scope below reads where its observation went.
 
 An observation that was fixed, addressed or has stopped mattering is
-**archived**: *Archive…* asks why, optionally, and writes the day and the
+**archived**: *Archive* asks why, optionally, and writes the day and the
 note into the history. The record stays where it is, for the history, and
 leaves the analysis — not drawn, not queued, not offered as a merge target —
 until *Restore* brings it back. *Show archived* lists the closed ones.
-Archived below, an observation is no longer offered to the scopes above.
 Nothing is deleted to close an observation; *Delete* is for a record that
 should never have been one.
 
-An observation is **local** to its scope unless you **share** it. Shared, it
-is read by every scope above — under *Shared from …* — where it can be
-linked to a cause of that scope and merged into an observation of that
-scope. It is still changed where it lives; the reader above shows it without
-an Edit and offers to open its scope. Nothing flows down: what the
-organisation observes stays the organisation's.
-
 A **cause** (`CA-0003`) is what the team says lies behind one or more
 observations, or behind other causes. It starts **assumed** and is marked
-**verified** once checked. **Link to a cause…** on an observation names an
-existing cause or a new one, with the strength of the relationship — strong,
-normal or weak, which is the weight of the line. **Link to a deeper cause…**
-on a cause does the same one level further. A cause nobody explains is a
-**root cause**, drawn last with the heavier outline; link it to a deeper
-cause and it stops being one.
+**verified** once checked. A **root cause** is a cause the team says is one,
+and it is labelled **RC** on the cause's own number: `CA-0004` made a root
+cause is `RC-0004`, and made a cause again it is `CA-0004` once more. A root
+cause ends the chain: nothing explains it, and a solution addresses it. It
+may explain causes and observations. A cause that is not a root cause and
+that nothing explains is an **open end** — the analysis is not finished
+there — marked `?` in the picture and counted over it.
+
+**Make root** and **Make cause** are steps with a name in the Activity list,
+and each asks first. Make root is refused while a cause explains this one:
+the reader names each cause that does, and says to unlink it or to make that
+one the root cause instead. Make cause is refused while a solution addresses
+it: the reader names each solution, and says to move it to another root cause
+or unlink it first. A new cause can be made a root cause as it is written.
+
+**Every action on a reader is a small button** with an icon and a word or
+two, and hovering it, or reaching it with Tab, says in full what it does and
+what it is refused for. An observation offers *Seen again*, *Cause*, *Edit*,
+*Merge*, *Archive* and *Delete*; a cause *Deeper cause*, *Root cause*,
+*Make root* and *Verify*; a root cause *Solution* and *Make cause*, and never
+a deeper cause. *Cause*, *Deeper cause* and *Root cause* open one dialog with
+two tabs: **New cause**, the cause's own fields, and **Existing cause**,
+offering only what the rules allow. Where the reader is narrow, *Merge*,
+*Archive* and *Delete* move into `⋯`.
+
+**Across the tree, a cause explains down and never up.** A cause may explain
+a cause of a scope below its own — an organisation-wide reason behind a
+landscape's cause — and the link is kept on the cause above, in the scope
+above. The cause below says what explains it on its reader, and the picture
+draws the line across the boundary, dashed. On a cause of this scope,
+**Local cause** links a cause of a scope below that it explains; on a cause
+below, **Org cause** links a cause of this scope that explains it. Refused:
+a cause below explaining a cause above, a cause explaining one of a
+sibling scope, a cause above explaining an **observation** below — the scope
+below explains its own observations — and anything explaining a root cause:
+to say an organisation-wide reason lies behind a local root cause, make that
+root cause a cause first, in its own scope.
+
+**The filters.** *Filters* shows or hides a row under the picture's controls
+and counts the filters that are on. **Scopes** is a list with a box per
+scope, which a field narrows. **Obs** keeps the observations whose text
+matches and the chain behind them — their causes, root causes and solutions.
+**Cause** and **RC** keep the causes, or the root causes, whose text matches,
+with everything they explain and everything behind them. **Search** looks in
+every record, solutions included, and keeps what is found and what is linked
+to it. Filters narrow each other, and they narrow all three tabs. What
+matched is outlined and what came with it is drawn plainly; the count says
+*12 of 40 shown*, and × beside *Filters* clears them all. **Saved filters**
+keeps the filters that are on under a short name you give: one saved again
+under the same name replaces it, a saved one is put back on from the list,
+and one is deleted from it. They are yours — kept with your preferences and
+offered in every scope — and a saved scope that is gone is left out when it
+is recalled.
+
+**Looking at the picture.** **Large** draws every record as a card with its
+label and title; **Small** as a circle with the label under it — an
+observation sized by its impact, a cause hollow, a root cause with a double
+ring, a solution as a square. Dashed is assumed and solid verified, in both,
+and the legend under the picture follows the size. The picture starts
+**fitted** to the window, and fits again when what it draws changes until you
+zoom; the zoom buttons, and ⌘ or Ctrl with the scroll wheel, zoom it, and dragging the
+background pans it. **Hovering a record** — or reaching it with Tab — traces
+its chain both ways: everything linked to it stays and the rest dims, and its
+full title, its label and its scope show under it. Enter or a click reads
+it. The same records under the same filters land in the same place every
+time.
 
 ### Solutions
 
@@ -793,14 +901,18 @@ observations and the whole analysis back on the left, so one picture runs from
 what was seen to what was built. A mark (!) says where to look: a root cause
 nobody is working on, or a solution with a question.
 
-**Propose a solution…** on a cause, or **New solution** on the bar, writes a
-numbered record (`SO-0003`) with a title and the cause it is for, and nothing
-else. The cause is a root cause: one that something deeper explains is a
-symptom of that deeper one, so its reader points there instead of offering a
-solution. Before it counts as **shaped** it needs what the team would ask
-anyway: the benefit it is expected to bring and a rough cost, who it was
-checked with, and whether something like it was tried before — and if so, why
-it would work now. The reader lists what is still open under *To move on to…*,
+**Solution** on a root cause's reader, or **New solution** on the bar, opens
+the form: a title with an example under it, an optional body with **Edit**
+and **Preview**, and a table of the root causes of this scope it addresses,
+linked when you propose — the button says *Propose solution for 1 root
+cause*. It writes a numbered record (`SO-0003`) and nothing else. A solution
+addresses root causes only: a cause that something deeper explains is a
+symptom of that deeper one, so its reader offers no *Solution* and points at
+the root cause instead, and a root cause a solution addresses cannot be made
+a cause again until the solution is moved or unlinked. Before it counts as
+**shaped** it needs what the team would ask anyway: the benefit it is expected
+to bring and a rough cost, who it was checked with, and whether something like
+it was tried before — and if so, why it would work now. The reader lists what is still open under *To move on to…*,
 each line with its control beside it, and the button stays disabled until the
 list is clear. **Back to…** moves it one step back at any time.
 
@@ -826,6 +938,13 @@ plan clear anything up, or only add? A solution that is not pursued is
 **dropped** with the reason and stays as an alternative that was considered:
 it is listed on every other solution for the same causes. Both records are
 markdown files, under `observations/solutions/` and `observations/experiments/`.
+
+A solution's reader has the same small buttons as the analysis: *Root
+cause* to address another while it is an idea or shaped, *Experiment* to plan
+one while it is shaped or testing, *Edit*, and *Drop* and *Delete*, which
+move into `⋯` where the reader is narrow. A solution of a scope below, drawn
+in its boundary with View local on, is read here and worked on in its own
+scope.
 
 **Right-click** anything in the analysis or the solutions picture for what can
 be done with it — the same actions its reader offers, Edit among them — and a

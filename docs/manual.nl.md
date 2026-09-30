@@ -785,52 +785,177 @@ onderdeel bewaard.
 heeft — en, als team geanalyseerd, wat erachter zit. De pagina heeft drie
 tabbladen. Het **register** is een tabel die uit de records gelezen wordt:
 nummer, titel, de dag waarop het voor het eerst gezien is, waar, de impact,
-hoe vaak het gezien is en de oorzaken waarnaar het geanalyseerd is; het
-record dat je kiest opent ernaast. De **analyse** is een tekening: de
-waarnemingen links als cirkels, de oorzaken waarnaar ze geanalyseerd zijn in
-de banen rechts ervan, en de grondoorzaken als laatste.
+hoe vaak het gezien is en de oorzaken waarnaar het geanalyseerd is; daaronder
+de oorzaken, de oplossingen en de experimenten; het record dat je kiest opent
+ernaast. De **analyse** is een tekening: de waarnemingen links, de oorzaken
+waarnaar ze geanalyseerd zijn in de banen rechts ervan, dan de grondoorzaken,
+en de oplossingen die ze aanpakken als laatste. Het derde tabblad,
+**Oplossingen**, staat hieronder.
 
-Een waarneming is een genummerd record (`OB-0007`) met een titel, een datum,
-een plaats, een impact — *klein*, *groot* of *kritiek* — en een markdowntekst
-voor wat er gezien is, het bewijs en de eerste gedachten. **Opnieuw gezien**
-telt er één bij en schrijft de dag in de **geschiedenis** van het record:
-het gedateerde overzicht onderaan elke waarneming — vastgelegd, opnieuw
-gezien, gedeeld, samengevoegd. De teller bepaalt de tint van de cirkel in de
-tekening; de impact de grootte.
+**Lokaal en globaal.** De waarnemingen, oorzaken, oplossingen en
+experimenten van een scope zijn van die scope. Gelezen vanuit een scope zijn
+die van de scopes eronder **lokaal** in die scopes; gelezen vanuit de
+organisatie is wat van de organisatie zelf is de **globale** analyse. Er
+wordt niets gedeeld om daar te komen: een scope leest de analyse van elke
+scope eronder, en wie een scope mag lezen wordt beslist waar het werk
+bewaard wordt, nooit op een record. **Lokaal tonen**, naast de andere
+knoppen van de tekening, staat aan waar de scope scopes eronder heeft, en
+uit — met de reden erbij — waar die er niet zijn. Aan tekent de tekening elke
+scope eronder in een eigen kader links van de banen van deze scope, genest
+zoals de boom genest is, en noemen het register, de oorzaken, de oplossingen
+en de experimenten de records van elke scope eronder na die van deze scope,
+onder *Lokaal in …*. De tellingen boven de tekening — waargenomen,
+geanalyseerd, aangenomen, geverifieerd, grondoorzaken, open einden — tellen
+wat de tekening toont, de scopes eronder meegerekend. Uit toont de pagina
+alleen deze scope, en zegt ze hoeveel lokale records ze verbergt.
+
+Een record van een scope eronder wordt **gewijzigd waar het woont**. De
+lezer zegt dat in een strook — *Lokaal in Application landscape* — met
+daaronder een knop die de pagina van die scope opent. Wat je er vanaf hier
+aan toevoegt — opnieuw gezien, een oorzaak, een diepere oorzaak, een
+koppeling tussen de eigen records, een van de oorzaken tot grondoorzaak
+maken — wordt in die scope gemaakt en daar meteen opgeslagen, als wijziging van
+die scope en niet van deze pagina: een melding zegt waar het heen ging, en ⌘Z
+op deze pagina komt er niet bij — terugnemen is het terugzetten. Waar die
+scope vanaf hier niet gewijzigd mag worden, of haar eigen regels de wijziging
+weigeren, zegt de melding dat er niets gemaakt is. Een
+oplossing of een experiment van een scope eronder wordt hier gelezen en niet
+gewijzigd.
+
+Een waarneming is een genummerd record (`OB-0007`) met een titel, een plaats,
+wie het zag — vrije tekst: een naam, initialen, een team — de dag waarop het
+voor het eerst gezien is, een impact — *klein*, *groot* of *kritiek* — en een
+markdowntekst voor wat er gezien is, het bewijs en wie of wat het raakte.
+**Opnieuw gezien** telt er één bij en schrijft de dag in de
+**geschiedenis** van het record: het gedateerde overzicht onderaan elke
+waarneming — vastgelegd, opnieuw gezien, samengevoegd, gearchiveerd. Op een
+grote kaart is de impact een streep langs de linkerkant en staat de teller in
+de hoek; op een kleine is de impact de grootte van de cirkel.
+
+**Nieuwe waarneming** vraagt de vier feiten die er een waarneming van maken:
+de titel, **waar het gezien is**, **waargenomen door** en **wanneer
+gezien**. Wanneer gezien begint bij vandaag en mag niet in de toekomst
+liggen; de impact begint bij klein. Onder elk veld staat een voorbeeld, en
+een veld dat leeg blijft zegt op die plek wat er ontbreekt. De beschrijving
+rechts is optioneel, begint met haar drie kopjes, en schakelt tussen
+**Bewerken** en **Voorbeeld**. Onder de titel staan twee hints die je nooit
+tegenhouden: **Al eerder gezien?** noemt waarnemingen van de gekozen scope
+waarvan de titel woorden met de jouwe deelt, elk met **Opnieuw gezien**, dat
+een waarneming bij die ene telt en niets nieuws vastlegt; en een titel met een
+woord dat klinkt als een oorzaak, een oplossing of schuld — *omdat*, *moet*,
+*oplossen*, *schuld* — krijgt de hint bij wat gezien is te blijven en het
+waarom in een oorzaak te zetten. Met Lokaal tonen aan vraagt het formulier
+eerst in welke scope de waarneming hoort; een scope eronder maakt haar daar
+lokaal.
+
+De **oorzaken** kunnen met de waarneming meegeschreven worden. **Nieuwe
+oorzaak** opent de velden van een oorzaak in het formulier — de titel,
+*waarom we dat denken*, of het een grondoorzaak is, en hoe sterk ze de
+waarneming verklaart — met *Al opgeschreven?* over de oorzaken van de scope.
+**Bestaande oorzaak** kiest er een die al opgeschreven is. Elke regel zegt of
+hij nieuw of bestaand is en kan er weer af, en er wordt niets gemaakt tot je
+vastlegt: de knop zegt wat hij gaat maken, *Waarneming vastleggen met 1
+nieuwe oorzaak en 1 koppeling*, en het is één stap — ⌘Z neemt de waarneming,
+de nieuwe oorzaken en de koppelingen samen terug. Een andere scope kiezen
+haalt de koppelingen naar oorzaken van de eerder gekozen scope eraf, en zegt
+dat.
 
 Twee waarnemingen die hetzelfde blijken te zijn worden **samengevoegd**:
 kies de waarneming waar het dezelfde van is, en de keren dat het gezien is
 en de oorzaken gaan over. Beide records zeggen dat met de datum. Het
 samengevoegde record blijft — daar staat de oorspronkelijke tekst — en wordt
 als samengevoegd gelezen, niet verwijderd; *Samengevoegde tonen* haalt het
-terug in het register.
+terug in het register. Een waarneming van een scope eronder kan worden
+samengevoegd met een waarneming van deze scope; alleen het record van deze
+scope wordt geschreven, en de scope eronder leest waar zijn waarneming heen
+ging.
 
 Een waarneming die is opgelost, aangepakt of er niet meer toe doet wordt
-**gearchiveerd**: *Archiveren…* vraagt, vrijblijvend, waarom, en schrijft de
+**gearchiveerd**: *Archiveren* vraagt, vrijblijvend, waarom, en schrijft de
 dag en de toelichting in de geschiedenis. Het record blijft waar het is, voor
 de geschiedenis, en verdwijnt uit de analyse — niet getekend, niet in de
 wachtrij, niet als samenvoegdoel — tot *Terughalen* het terugbrengt.
-*Gearchiveerde tonen* laat de gesloten zien. Een waarneming die eronder
-gearchiveerd is, wordt de scopes erboven niet meer aangeboden. Om een
-waarneming te sluiten wordt niets verwijderd; *Verwijderen* is voor een
-record dat er nooit een had moeten zijn. Wie de waarneming deed is een vrij
-tekstveld op het record: een naam, initialen, een team.
-
-Een waarneming is **lokaal** in haar scope tenzij je haar **deelt**. Gedeeld
-leest elke scope erboven haar — onder *Gedeeld vanuit …* — en kan haar daar
-aan een eigen oorzaak koppelen en samenvoegen met een eigen waarneming. Ze
-wordt nog steeds gewijzigd waar ze woont; de lezer erboven toont haar zonder
-Bewerken en biedt aan haar scope te openen. Niets stroomt naar beneden.
+*Gearchiveerde tonen* laat de gesloten zien. Om een waarneming te sluiten
+wordt niets verwijderd; *Verwijderen* is voor een record dat er nooit een had
+moeten zijn.
 
 Een **oorzaak** (`CA-0003`) is wat het team zegt dat achter één of meer
 waarnemingen zit, of achter andere oorzaken. Ze begint **aangenomen** en
-wordt **geverifieerd** zodra ze gecontroleerd is. **Koppelen aan een
-oorzaak…** op een waarneming noemt een bestaande oorzaak of een nieuwe, met
-de sterkte van het verband — sterk, normaal of zwak, de dikte van de lijn.
-**Koppelen aan een diepere oorzaak…** op een oorzaak doet hetzelfde een
-niveau verder. Een oorzaak die door niets verklaard wordt is een
-**grondoorzaak**, als laatste getekend met de dikkere rand; koppel haar aan
-een diepere en ze is er geen meer.
+wordt **geverifieerd** zodra ze gecontroleerd is. Een **grondoorzaak** is een
+oorzaak waarvan het team zegt dat ze er een is, en ze heet **RC** op het
+eigen nummer van de oorzaak: `CA-0004` tot grondoorzaak gemaakt is `RC-0004`,
+en weer tot oorzaak gemaakt is ze opnieuw `CA-0004`. Een grondoorzaak sluit
+de keten af: niets verklaart haar, en een oplossing pakt haar aan. Ze mag
+oorzaken en waarnemingen verklaren. Een oorzaak die geen grondoorzaak is en
+die door niets verklaard wordt is een **open einde** — daar is de analyse nog
+niet af — met `?` gemarkeerd in de tekening en erboven geteld.
+
+**Grond maken** en **Tot oorzaak maken** zijn stappen met een naam in de
+Activiteit-lijst, en elk vraagt eerst. Grond maken wordt geweigerd zolang een
+oorzaak deze verklaart: de lezer noemt elke oorzaak die dat doet, en zegt die
+los te koppelen of die ene tot grondoorzaak te maken. Tot oorzaak maken wordt
+geweigerd zolang een oplossing haar aanpakt: de lezer noemt elke oplossing,
+en zegt die eerst naar een andere grondoorzaak te verplaatsen of los te
+koppelen. Een nieuwe oorzaak kan bij het schrijven meteen grondoorzaak
+worden.
+
+**Elke actie in een lezer is een kleine knop** met een pictogram en een of
+twee woorden, en er met de muis boven hangen, of er met Tab op komen, zegt
+voluit wat hij doet en waarvoor hij geweigerd wordt. Een waarneming biedt
+*Opnieuw gezien*, *Oorzaak*, *Bewerken*, *Samenvoegen*, *Archiveren* en
+*Verwijderen*; een oorzaak *Diepere oorzaak*, *Grondoorzaak*, *Grond maken*
+en *Verifiëren*; een grondoorzaak *Oplossing* en *Tot oorzaak maken*, en nooit
+een diepere oorzaak. *Oorzaak*, *Diepere oorzaak* en *Grondoorzaak* openen
+één dialoog met twee tabbladen: **Nieuwe oorzaak**, de eigen velden van de
+oorzaak, en **Bestaande oorzaak**, dat alleen aanbiedt wat de regels
+toestaan. Waar de lezer smal is, gaan *Samenvoegen*, *Archiveren* en
+*Verwijderen* in `⋯`.
+
+**Door de boom verklaart een oorzaak naar beneden en nooit naar boven.** Een
+oorzaak mag een oorzaak van een scope onder de hare verklaren — een reden
+voor de hele organisatie achter een oorzaak van een landschap — en de
+koppeling staat op de oorzaak erboven, in de scope erboven. De oorzaak
+eronder zegt in haar lezer wat haar verklaart, en de tekening trekt de lijn
+gestreept over de grens. Op een oorzaak van deze scope koppelt **Lokale
+oorzaak** een oorzaak van een scope eronder die ze verklaart; op een oorzaak
+eronder koppelt **Org-oorzaak** een oorzaak van deze scope die haar
+verklaart. Geweigerd: een oorzaak eronder die een oorzaak erboven verklaart,
+een oorzaak die er een van een zusterscope verklaart, een oorzaak erboven die
+een **waarneming** eronder verklaart — de scope eronder verklaart zijn eigen
+waarnemingen — en alles wat een grondoorzaak verklaart: om te zeggen dat er
+een reden voor de hele organisatie achter een lokale grondoorzaak zit, maak
+je die grondoorzaak eerst weer oorzaak, in haar eigen scope.
+
+**De filters.** *Filters* toont of verbergt een rij onder de knoppen van de
+tekening en telt de filters die aan staan. **Scopes** is een lijst met een
+vakje per scope, die een veld inkort. **Wrn** houdt de waarnemingen waarvan
+de tekst past en de keten erachter — hun oorzaken, grondoorzaken en
+oplossingen. **Oorzaak** en **RC** houden de oorzaken, of de grondoorzaken,
+waarvan de tekst past, met alles wat ze verklaren en alles wat erachter zit.
+**Alles doorzoeken** kijkt in elk record, oplossingen meegerekend, en houdt
+wat gevonden is en wat eraan gekoppeld is. Filters beperken elkaar, en ze
+beperken alle drie de tabbladen. Wat paste krijgt een rand en wat meekwam
+wordt gewoon getekend; de telling zegt *12 van 40 getoond*, en × naast
+*Filters* wist ze allemaal. **Bewaarde filters** bewaart de filters die aan
+staan onder een korte naam die je zelf kiest: een die opnieuw onder dezelfde
+naam bewaard wordt vervangt de oude, een bewaarde wordt vanuit de lijst weer
+aangezet, en een wordt eruit verwijderd. Ze zijn van jou — bewaard bij je
+voorkeuren en in elke scope aangeboden — en een bewaarde scope die er niet
+meer is valt weg als je het filter terughaalt.
+
+**De tekening bekijken.** **Groot** tekent elk record als een kaart met zijn
+label en titel; **Klein** als een cirkel met het label eronder — een
+waarneming zo groot als haar impact, een oorzaak hol, een grondoorzaak met
+een dubbele ring, een oplossing als een vierkant. Gestreept is aangenomen en
+doorgetrokken geverifieerd, in beide, en de legenda onder de tekening volgt
+de grootte. De tekening begint **passend** in het venster, en past zich
+opnieuw aan als wat ze toont verandert, tot je zoomt; de zoomknoppen, en ⌘ of
+Ctrl met het scrollwiel, zoomen, en slepen over de achtergrond verschuift
+haar. **Boven een record hangen** — of er met Tab op komen — volgt de keten
+beide kanten op: alles wat eraan gekoppeld is blijft en de rest vervaagt, en
+de volledige titel, het label en de scope staan eronder. Enter of een klik
+leest het. Dezelfde records onder dezelfde filters komen elke keer op
+dezelfde plek.
 
 ### Oplossingen
 
@@ -850,12 +975,17 @@ van wat gezien is tot wat gebouwd is. Een markering (!) zegt waar je moet
 kijken: een grondoorzaak waar niemand aan werkt, of een oplossing met een
 vraag.
 
-**Een oplossing voorstellen…** bij een oorzaak, of **Nieuwe oplossing** in de
-balk, schrijft een genummerd record (`SO-0003`) met een titel en de oorzaak
-waarvoor het is, en verder niets. Die oorzaak is een grondoorzaak: een oorzaak
-die door iets diepers verklaard wordt is een symptoom daarvan, dus de lezer
-wijst dan naar die diepere in plaats van een oplossing aan te bieden. Voordat
-het als **uitgewerkt** telt, heeft het nodig wat het team toch al zou vragen:
+**Oplossing** in de lezer van een grondoorzaak, of **Nieuwe oplossing** in de
+balk, opent het formulier: een titel met een voorbeeld eronder, een
+optionele tekst met **Bewerken** en **Voorbeeld**, en een tabel van de
+grondoorzaken van deze scope die ze aanpakt, gekoppeld zodra je voorstelt —
+de knop zegt *Oplossing voorstellen voor 1 grondoorzaak*. Het schrijft een
+genummerd record (`SO-0003`) en verder niets. Een oplossing pakt alleen
+grondoorzaken aan: een oorzaak die door iets diepers verklaard wordt is een
+symptoom daarvan, dus haar lezer biedt geen *Oplossing* en wijst naar de
+grondoorzaak, en een grondoorzaak die een oplossing aanpakt kan geen oorzaak
+meer worden tot die oplossing verplaatst of losgekoppeld is. Voordat het als
+**uitgewerkt** telt, heeft het nodig wat het team toch al zou vragen:
 de verwachte baat en grove kosten, bij wie het getoetst is, en of iets
 dergelijks eerder geprobeerd is — en zo ja, waarom het nu wel zou werken. De
 lezer zet wat nog open staat onder *Om door te gaan naar…*, elke regel met
@@ -887,6 +1017,13 @@ oplossing die niet wordt doorgezet, wordt met reden **laten vallen** en
 blijft staan als overwogen alternatief: ze staat bij elke andere oplossing
 voor dezelfde oorzaken. Beide records zijn markdownbestanden, onder
 `observations/solutions/` en `observations/experiments/`.
+
+De lezer van een oplossing heeft dezelfde kleine knoppen als de analyse:
+*Grondoorzaak* om er nog een aan te pakken zolang ze een idee of uitgewerkt
+is, *Experiment* om er een te plannen zolang ze uitgewerkt is of getest
+wordt, *Bewerken*, en *Laten vallen* en *Verwijderen*, die in `⋯` gaan waar
+de lezer smal is. Een oplossing van een scope eronder, met Lokaal tonen aan
+in haar kader getekend, wordt hier gelezen en in haar eigen scope bewerkt.
 
 **Rechtsklik** op iets in de analyse of de tekening van de oplossingen voor
 wat je ermee kunt — dezelfde acties als in de lezer, Bewerken daaronder — en

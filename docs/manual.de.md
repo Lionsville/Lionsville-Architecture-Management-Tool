@@ -835,53 +835,181 @@ gesehen hat — und, im Team analysiert, was dahintersteckt. Die Seite hat drei
 Reiter. Das **Register** ist eine Tabelle, die aus den Datensätzen gelesen
 wird: Nummer, Titel, der Tag, an dem es zuerst gesehen wurde, wo, die
 Auswirkung, wie oft es gesehen wurde und die Ursachen, zu denen es analysiert
-wurde; der gewählte Datensatz öffnet sich daneben. Die **Analyse** ist ein
-Bild: die Beobachtungen links als Kreise, die Ursachen, zu denen sie
-analysiert wurden, in den Bahnen rechts davon, und die Grundursachen zuletzt.
+wurde; darunter die Ursachen, die Lösungen und die Experimente; der gewählte
+Datensatz öffnet sich daneben. Die **Analyse** ist ein Bild: die
+Beobachtungen links, die Ursachen, zu denen sie analysiert wurden, in den
+Bahnen rechts davon, dann die Grundursachen, und die Lösungen, die sie
+angehen, zuletzt. Der dritte Reiter, **Lösungen**, folgt unten.
 
-Eine Beobachtung ist ein nummerierter Datensatz (`OB-0007`) mit Titel, Datum,
-Ort, einer Auswirkung — *gering*, *erheblich* oder *kritisch* — und einem
-Markdown-Text für das Gesehene, die Belege und erste Gedanken. **Erneut
-gesehen** zählt eins dazu und schreibt den Tag in die **Geschichte** des
-Datensatzes: das datierte Verzeichnis am Ende jeder Beobachtung —
-festgehalten, erneut gesehen, geteilt, zusammengeführt. Die Zahl bestimmt die
-Tönung des Kreises im Bild; die Auswirkung seine Größe.
+**Lokal und global.** Die Beobachtungen, Ursachen, Lösungen und Experimente
+eines Scopes gehören ihm. Aus einem Scope gelesen sind die der Scopes
+darunter **lokal** in jenen Scopes; aus der Organisation gelesen ist, was der
+Organisation selbst gehört, die **globale** Analyse. Um dorthin zu kommen,
+wird nichts geteilt: Ein Scope liest die Analyse jedes Scopes darunter, und
+wer einen Scope lesen darf, wird dort entschieden, wo die Arbeit aufbewahrt
+wird, nie an einem Datensatz. **Lokal zeigen**, neben den anderen
+Bedienelementen des Bildes, ist an, wo der Scope Scopes darunter hat, und aus
+— mit dem Grund dazu —, wo er keine hat. An zeichnet das Bild jeden Scope
+darunter in einem eigenen Rahmen links von den Bahnen dieses Scopes,
+verschachtelt wie der Baum, und das Register, die Ursachen, die Lösungen und
+die Experimente führen die Datensätze jedes Scopes darunter nach denen dieses
+Scopes auf, unter *Lokal in …*. Die Zahlen über dem Bild — beobachtet,
+analysiert, angenommen, verifiziert, Grundursachen, offene Enden — zählen,
+was das Bild zeigt, die Scopes darunter eingeschlossen. Aus zeigt die Seite
+nur diesen Scope und sagt, wie viele lokale Einträge sie ausblendet.
+
+Ein Datensatz eines Scopes darunter wird **dort geändert, wo er lebt**. Sein
+Leser sagt das in einem Streifen — *Lokal in Application landscape* — mit
+einer Schaltfläche darunter, die die Seite jenes Scopes öffnet. Was Sie von
+hier aus hinzufügen — eine Sichtung, eine Ursache, eine tiefere Ursache, eine
+Verknüpfung zwischen seinen eigenen Datensätzen, eine seiner Ursachen zur
+Grundursache machen —, wird in jenem Scope angelegt und dort sofort gespeichert, als Änderung jenes
+Scopes und nicht dieser Seite: Ein Hinweis danach sagt, wohin es ging, und ⌘Z
+auf dieser Seite reicht nicht hin — zurücknehmen heißt, es zurückzuändern. Wo
+jener Scope von hier aus nicht geändert werden darf, oder seine eigenen
+Regeln die Änderung ablehnen, sagt der Hinweis, dass nichts angelegt wurde.
+Eine Lösung oder ein Experiment eines Scopes darunter wird hier gelesen und
+nicht geändert.
+
+Eine Beobachtung ist ein nummerierter Datensatz (`OB-0007`) mit Titel, Ort,
+wer sie gemacht hat — freier Text: ein Name, Initialen, ein Team —, dem Tag,
+an dem es zuerst gesehen wurde, einer Auswirkung — *gering*, *erheblich* oder
+*kritisch* — und einem Markdown-Text für das Gesehene, die Belege und wen
+oder was es betraf. **Erneut gesehen** zählt eins dazu und schreibt den Tag
+in die **Geschichte** des Datensatzes: das datierte Verzeichnis am Ende jeder
+Beobachtung — festgehalten, erneut gesehen, zusammengeführt, archiviert. Auf
+einer großen Karte ist die Auswirkung ein Streifen am linken Rand und die
+Zahl steht in der Ecke; auf einer kleinen ist die Auswirkung die Größe des
+Kreises.
+
+**Neue Beobachtung** fragt nach den vier Fakten, die eine Beobachtung
+ausmachen: dem Titel, **wo es gesehen wurde**, **beobachtet von** und
+**wann gesehen**. Wann gesehen beginnt mit heute und darf nicht in der
+Zukunft liegen; die Auswirkung beginnt mit gering. Unter jedem Feld steht ein
+Beispiel, und ein leer gelassenes Feld sagt an dieser Stelle, was fehlt. Die
+Beschreibung rechts ist optional, beginnt mit ihren drei Überschriften und
+wechselt zwischen **Bearbeiten** und **Vorschau**. Unter dem Titel stehen
+zwei Hinweise, die nie aufhalten: **Schon einmal gesehen?** nennt
+Beobachtungen des gewählten Scopes, deren Titel Wörter mit Ihrem teilt, jede
+mit **Erneut gesehen**, das eine Sichtung an jener festhält und nichts Neues
+anlegt; und ein Titel mit einem Wort, das nach einer Ursache, einer Abhilfe
+oder Schuld klingt — *weil*, *sollte*, *beheben*, *Schuld* —, erhält den
+Hinweis, beim Gesehenen zu bleiben und das Warum in eine Ursache zu setzen.
+Mit Lokal zeigen fragt das Formular zuerst, in welchen Scope die Beobachtung
+gehört; einer darunter macht sie dort lokal.
+
+Die **Ursachen** können mit der Beobachtung geschrieben werden. **Neue
+Ursache** öffnet die Felder einer Ursache im Formular — den Titel, *warum
+wir das annehmen*, ob es eine Grundursache ist, und wie stark sie die
+Beobachtung erklärt — mit *Schon aufgeschrieben?* über den Ursachen des
+Scopes. **Vorhandene Ursache** wählt eine, die schon aufgeschrieben ist. Jede
+Zeile sagt, ob sie neu oder vorhanden ist, und lässt sich wieder
+herausnehmen, und nichts wird angelegt, bis Sie erfassen: Die Schaltfläche
+sagt, was sie anlegen wird, *Beobachtung erfassen mit 1 neuen Ursache und 1
+Verknüpfung*, und es ist ein Schritt — ⌘Z nimmt die Beobachtung, die neuen
+Ursachen und die Verknüpfungen zusammen zurück. Ein anderer Scope nimmt die
+Verknüpfungen zu Ursachen des vorher gewählten heraus und sagt das.
 
 Zwei Beobachtungen, die sich als dasselbe erweisen, werden
 **zusammengeführt**: Wählen Sie die, mit der sie identisch ist, und die
 Sichtungen und Ursachen gehen über. Beide Datensätze sagen das mit dem Datum.
 Der zusammengeführte Datensatz bleibt — dort steht der ursprüngliche Wortlaut
 — und wird als zusammengeführt gelesen, nicht gelöscht; *Zusammengeführte
-zeigen* holt ihn ins Register zurück.
+zeigen* holt ihn ins Register zurück. Eine Beobachtung eines Scopes darunter
+kann in eine dieses Scopes zusammengeführt werden; geschrieben wird nur der
+Datensatz dieses Scopes, und der Scope darunter liest, wohin seine
+Beobachtung ging.
 
 Eine Beobachtung, die behoben, angegangen oder nicht mehr von Belang ist, wird
-**archiviert**: *Archivieren…* fragt, unverbindlich, nach dem Warum und
+**archiviert**: *Archivieren* fragt, unverbindlich, nach dem Warum und
 schreibt den Tag und die Notiz in die Geschichte. Der Datensatz bleibt, wo er
 ist, für die Geschichte, und verlässt die Analyse — nicht gezeichnet, nicht in
 der Warteschlange, kein Ziel einer Zusammenführung — bis *Wiederherstellen*
-ihn zurückbringt. *Archivierte zeigen* listet die geschlossenen. Eine
-darunter archivierte Beobachtung wird den Scopes darüber nicht mehr
-angeboten. Um eine Beobachtung zu schließen, wird nichts gelöscht; *Löschen*
-ist für einen Datensatz, der nie einer hätte sein sollen. Wer die Beobachtung
-gemacht hat, ist ein freies Textfeld am Datensatz: ein Name, Initialen, ein
-Team.
-
-Eine Beobachtung ist **lokal** in ihrem Scope, solange Sie sie nicht
-**teilen**. Geteilt liest jeder Scope darüber sie — unter *Geteilt aus …* —
-und kann sie dort mit einer eigenen Ursache verknüpfen und in eine eigene
-Beobachtung zusammenführen. Geändert wird sie weiterhin dort, wo sie lebt;
-der Leser darüber zeigt sie ohne Bearbeiten und bietet an, ihren Scope zu
-öffnen. Nichts fließt nach unten.
+ihn zurückbringt. *Archivierte zeigen* listet die geschlossenen. Um eine
+Beobachtung zu schließen, wird nichts gelöscht; *Löschen* ist für einen
+Datensatz, der nie einer hätte sein sollen.
 
 Eine **Ursache** (`CA-0003`) ist, was das Team hinter einer oder mehreren
 Beobachtungen vermutet, oder hinter anderen Ursachen. Sie beginnt
-**angenommen** und wird **verifiziert**, sobald sie geprüft ist. **Mit einer
-Ursache verknüpfen…** auf einer Beobachtung nennt eine bestehende oder eine
-neue Ursache, mit der Stärke des Zusammenhangs — stark, normal oder schwach,
-die Dicke der Linie. **Mit einer tieferen Ursache verknüpfen…** auf einer
-Ursache tut dasselbe eine Ebene weiter. Eine Ursache, die nichts erklärt, ist
-eine **Grundursache**, zuletzt gezeichnet mit dem stärkeren Rand; verknüpfen
-Sie sie mit einer tieferen, und sie ist keine mehr.
+**angenommen** und wird **verifiziert**, sobald sie geprüft ist. Eine
+**Grundursache** ist eine Ursache, von der das Team sagt, dass sie eine ist,
+und sie heißt **RC** auf der eigenen Nummer der Ursache: `CA-0004` zur
+Grundursache gemacht ist `RC-0004`, und wieder zur Ursache gemacht ist sie
+erneut `CA-0004`. Eine Grundursache beendet die Kette: Nichts erklärt sie,
+und eine Lösung setzt an ihr an. Sie darf Ursachen und Beobachtungen
+erklären. Eine Ursache, die keine Grundursache ist und die nichts erklärt,
+ist ein **offenes Ende** — dort ist die Analyse noch nicht fertig —, im Bild
+mit `?` markiert und darüber gezählt.
+
+**Zum Grund machen** und **Zur Ursache machen** sind Schritte mit einem Namen
+in der Aktivitätsliste, und jeder fragt zuerst. Zum Grund machen wird
+abgelehnt, solange eine Ursache diese erklärt: Der Leser nennt jede Ursache,
+die das tut, und sagt, sie zu lösen oder jene zur Grundursache zu machen. Zur
+Ursache machen wird abgelehnt, solange eine Lösung an ihr ansetzt: Der Leser
+nennt jede Lösung und sagt, sie zuerst zu einer anderen Grundursache zu
+verschieben oder zu lösen. Eine neue Ursache kann schon beim Schreiben zur
+Grundursache werden.
+
+**Jede Aktion in einem Leser ist eine kleine Schaltfläche** mit einem Symbol
+und ein oder zwei Wörtern, und darüber zu fahren, oder sie mit Tab zu
+erreichen, sagt ausführlich, was sie tut und wofür sie abgelehnt wird. Eine
+Beobachtung bietet *Erneut gesehen*, *Ursache*, *Bearbeiten*,
+*Zusammenführen*, *Archivieren* und *Löschen*; eine Ursache *Tiefere
+Ursache*, *Grundursache*, *Zum Grund machen* und *Verifizieren*; eine
+Grundursache *Lösung* und *Zur Ursache machen*, und nie eine tiefere Ursache.
+*Ursache*, *Tiefere Ursache* und *Grundursache* öffnen einen Dialog mit zwei
+Reitern: **Neue Ursache**, die eigenen Felder der Ursache, und **Vorhandene
+Ursache**, der nur anbietet, was die Regeln erlauben. Wo der Leser schmal
+ist, wandern *Zusammenführen*, *Archivieren* und *Löschen* in `⋯`.
+
+**Durch den Baum erklärt eine Ursache nach unten und nie nach oben.** Eine
+Ursache darf eine Ursache eines Scopes unter ihrem eigenen erklären — einen
+Grund für die ganze Organisation hinter einer Ursache einer Landschaft —,
+und die Verknüpfung steht an der Ursache darüber, im Scope darüber. Die
+Ursache darunter sagt in ihrem Leser, was sie erklärt, und das Bild zieht die
+Linie gestrichelt über die Grenze. An einer Ursache dieses Scopes verknüpft
+**Lokale Ursache** eine Ursache eines Scopes darunter, die sie erklärt; an
+einer Ursache darunter verknüpft **Org-Ursache** eine Ursache dieses Scopes,
+die sie erklärt. Abgelehnt: eine Ursache darunter, die eine darüber erklärt,
+eine Ursache, die eine eines Nachbarscopes erklärt, eine Ursache darüber, die
+eine **Beobachtung** darunter erklärt — der Scope darunter erklärt seine
+eigenen Beobachtungen —, und alles, was eine Grundursache erklärt: Um zu
+sagen, dass hinter einer lokalen Grundursache ein Grund für die ganze
+Organisation steckt, machen Sie jene Grundursache zuerst wieder zur Ursache,
+in ihrem eigenen Scope.
+
+**Die Filter.** *Filter* zeigt oder verbirgt eine Zeile unter den
+Bedienelementen des Bildes und zählt die Filter, die an sind. **Scopes** ist
+eine Liste mit einem Kästchen je Scope, die ein Feld eingrenzt. **Beob**
+behält die Beobachtungen, deren Text passt, und die Kette dahinter — ihre
+Ursachen, Grundursachen und Lösungen. **Ursache** und **RC** behalten die
+Ursachen, oder die Grundursachen, deren Text passt, mit allem, was sie
+erklären, und allem, was dahintersteckt. **Alles durchsuchen** sucht in jedem
+Datensatz, Lösungen eingeschlossen, und behält, was gefunden wurde, und was
+damit verknüpft ist. Filter grenzen einander ein, und sie grenzen alle drei
+Reiter ein. Was passte, wird umrandet, und was mitkam, schlicht gezeichnet;
+die Zahl sagt *12 von 40 gezeigt*, und × neben *Filter* setzt alle zurück.
+**Gespeicherte Filter** hebt die Filter, die an sind, unter einem kurzen
+Namen auf, den Sie wählen: Einer, der unter demselben Namen noch einmal
+gespeichert wird, ersetzt den alten, ein gespeicherter wird aus der Liste
+wieder angewendet, und einer wird daraus gelöscht. Sie gehören Ihnen — bei
+Ihren Einstellungen aufbewahrt und in jedem Scope angeboten —, und ein
+gespeicherter Scope, den es nicht mehr gibt, fällt beim Zurückholen weg.
+
+**Das Bild betrachten.** **Groß** zeichnet jeden Datensatz als Karte mit
+Kennung und Titel; **Klein** als Kreis mit der Kennung darunter — eine
+Beobachtung so groß wie ihre Auswirkung, eine Ursache hohl, eine Grundursache
+mit doppeltem Ring, eine Lösung als Quadrat. Gestrichelt heißt angenommen und
+durchgezogen verifiziert, in beiden, und die Legende unter dem Bild folgt der
+Größe. Das Bild beginnt **eingepasst** ins Fenster und passt sich erneut an,
+wenn sich ändert, was es zeigt, bis Sie zoomen; die Zoom-Schaltflächen, und ⌘
+oder Strg mit dem Mausrad, zoomen, und Ziehen über den Hintergrund
+verschiebt es. **Über einem Datensatz verweilen** — oder ihn mit Tab
+erreichen — verfolgt seine Kette in beide Richtungen: Alles, was damit
+verknüpft ist, bleibt, und der Rest verblasst, und der volle Titel, die
+Kennung und der Scope stehen darunter. Enter oder ein Klick liest ihn.
+Dieselben Datensätze unter denselben Filtern landen jedes Mal an derselben
+Stelle.
 
 ### Lösungen
 
@@ -901,12 +1029,17 @@ sodass ein Bild vom Gesehenen bis zum Gebauten reicht. Eine Markierung (!)
 sagt, wohin man schauen sollte: eine Grundursache, an der niemand arbeitet,
 oder eine Lösung mit einer Frage.
 
-**Eine Lösung vorschlagen…** an einer Ursache oder **Neue Lösung** in der
-Leiste schreibt einen nummerierten Eintrag (`SO-0003`) mit einem Titel und der
-Ursache, für die er ist, und sonst nichts. Diese Ursache ist eine
-Grundursache: eine, die etwas Tieferes erklärt, ist ein Symptom davon, deshalb
-verweist der Leser dann dorthin, statt eine Lösung anzubieten. Bevor er als
-**ausgearbeitet** gilt, braucht er, was das Team ohnehin fragen würde: den
+**Lösung** im Leser einer Grundursache oder **Neue Lösung** in der Leiste
+öffnet das Formular: einen Titel mit einem Beispiel darunter, einen
+optionalen Text mit **Bearbeiten** und **Vorschau**, und eine Tabelle der
+Grundursachen dieses Scopes, an denen sie ansetzt, verknüpft, sobald Sie
+vorschlagen — die Schaltfläche sagt *Lösung für 1 Grundursache vorschlagen*.
+Es schreibt einen nummerierten Eintrag (`SO-0003`) und sonst nichts. Eine
+Lösung setzt nur an Grundursachen an: Eine Ursache, die etwas Tieferes
+erklärt, ist ein Symptom davon, deshalb bietet ihr Leser keine *Lösung* an
+und verweist auf die Grundursache, und eine Grundursache, an der eine Lösung
+ansetzt, kann nicht wieder zur Ursache werden, bis jene Lösung verschoben
+oder gelöst ist. Bevor er als **ausgearbeitet** gilt, braucht er, was das Team ohnehin fragen würde: den
 erwarteten Nutzen und grobe Kosten, mit wem er geprüft wurde und ob etwas
 Ähnliches schon einmal versucht wurde — und wenn ja, warum es jetzt
 funktionieren würde. Der Leser führt unter *Um weiterzugehen zu…* auf, was
@@ -938,6 +1071,14 @@ wird, wird mit Grund **verworfen** und bleibt als erwogene Alternative
 stehen: sie erscheint bei jeder anderen Lösung für dieselben Ursachen. Beide
 Einträge sind Markdown-Dateien, unter `observations/solutions/` und
 `observations/experiments/`.
+
+Der Leser einer Lösung hat dieselben kleinen Schaltflächen wie die Analyse:
+*Grundursache*, um eine weitere anzugehen, solange sie eine Idee oder
+ausgearbeitet ist, *Experiment*, um eines zu planen, solange sie
+ausgearbeitet ist oder getestet wird, *Bearbeiten*, und *Verwerfen* und
+*Löschen*, die in `⋯` wandern, wo der Leser schmal ist. Eine Lösung eines
+Scopes darunter, bei Lokal zeigen in ihrem Rahmen gezeichnet, wird hier
+gelesen und in ihrem eigenen Scope bearbeitet.
 
 Ein **Rechtsklick** auf etwas in der Analyse oder im Bild der Lösungen zeigt,
 was man damit tun kann — dieselben Aktionen wie im Leser, Bearbeiten darunter
