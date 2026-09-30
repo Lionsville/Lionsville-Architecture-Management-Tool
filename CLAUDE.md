@@ -248,17 +248,28 @@ src/documentation/  Descriptions as documents.
                     ui/               DocumentationPage, MarkdownField, blocks/
 src/decisions/    Decision records: the status machine, the numbering, the page.
 src/observations/ What was seen, what lies behind it (ADR-0021), and what is
-                  done about it (ADR-0026).
-                    observation       numbering, seen again, sharing upward, merging
-                                      with history, links from a cause to what it
-                                      explains, root causes derived
+                  done about it (ADR-0026); local and global (ADR-0032).
+                    observation       numbering, seen again, merging with history
+                                      (from a scope below too), links from a cause
+                                      to what it explains — down the tree, never
+                                      up or sideways — and a root cause said on
+                                      the cause, with its two guarded steps
                     solution          a solution's gates, one step at a time, the
                                       waiver, dropping, implemented read off the
                                       plan, the two questions, seen since
-                    graph             lanes and rows for the picture, no force; the
-                                      sweep is shared with solutionGraph
+                    graph             the picture in sections, no force: this
+                                      scope's lanes, each scope below in a boundary
+                                      to the left, the solutions last; open ends,
+                                      the counts over it, fit and trace. The sweep
+                                      is shared with solutionGraph
+                    filter            the one filter model the three tabs share —
+                                      scopes, Obs, Cause, RC, search, and the
+                                      chains they keep — and saved filters
+                    form · wording    what the new observation asks and refuses,
+                                      Seen before?, and the wording hint's lists
                     ui/ObservationsPage  the register, the analysis, the solutions,
-                                      the readers
+                                      the readers; View local, the filter row and
+                                      the forms beside it (`ui/`)
 src/roadmap/      The landscape on a time axis, and the plans over it (ADR-0009).
                     timeline          rows and spans, in days rather than pixels;
                                       a window, and a plan's shadow run
@@ -1079,7 +1090,7 @@ identifiers is still a list of a customer's identifiers.
 | A step this session did not make (ADR-0022, amended) | an **external step**: `origin: 'remote'`, `by`, and `via` — the client that author made it with, where whoever handed the step over said which, said on the Activity line as *by NAME via CLIENT* and answered by `activity.list` — on the stack, landed with `steps.applyExternal`, named in the Activity list, and stepped over by ⌘Z. `steps.rebase` lifts a run of ours off the model and puts it back around one — named by `stepId` or by `changeId`, and with `steps` for the bodies of what the cap has taken off this stack; `steps.onChange` is how anything outside hears what was done here, **once per announcement**, each under a `changeId` of its own, because a step that coalesces is one step here and one sequenced step per fold out there (`HistoryStep.folds`); `steps.settled` is how the far end says it is done with one, and the log's cap of 200 will not evict a fold nobody has said that about; `command.taken` is what a create on an id another author took is refused with |
 | What a build composed from this one may ask of main (ADR-0022, amended) | a **desktop hook**: `registerDesktopHook` at composition, run where main registers its own channels. `ChannelHost` is as much of `ipcMain` as answering a call takes, `SecretStore` is read · write · remove over a file in `userData` at mode 0600, and `origins()` names where the page may reach — folded into `connect-src`, and into `img-src` where that hook said pictures load from there, asked again every time a document's header is built and dropped unless it is `scheme://host[:port]` and nothing more (`electron/main/csp.ts`). Its channels are named `hook:<hook>:<what>` (`HOOK_CHANNEL_PREFIX`) and the page reaches them through the preload's one generic door, `window.desktop.invokeHook` — which opens for that prefix and nothing else. Core registers none |
 | Where a working file lands (ADR-0025) | **asked, every time**, after the file is read: *A new folder…* — chosen with the folder picker, written with the file's top scope as its root, occupied folders confirmed separately, and the app moves there — or *Replace “<scope>” here*, what opening always did, with the warning on the button. `landWorkingFile` in `app/workingFileFlows.ts`; `chooseFolderDestination` in the composition; the boot's `folder.onChooseForWorkingFile` |
-| Working-folder format | **8** — `SCOPE_FORMAT_VERSION`, and the `.lvarch`'s version with it; 7 is 6 with `observations/` (ADR-0021); 8 is 7 with `observations/solutions/` and `observations/experiments/` (ADR-0026) |
+| Working-folder format | **9** — `SCOPE_FORMAT_VERSION`, and the `.lvarch`'s version with it; 7 is 6 with `observations/` (ADR-0021); 8 is 7 with `observations/solutions/` and `observations/experiments/` (ADR-0026); 9 is 8 with `root: true` on a root cause and `RC-` in its heading, and `shared` no longer written (ADR-0032). A folder written before reads a cause a live solution addresses as a root cause, and nothing else |
 | What one scope's folder holds | `scope.json` · `model.json` · the seven folders below · the scopes filed under it |
 | A scope's own folders (and the names a child may not take) | `diagrams` `docs` `decisions` `transitions` `observations` `images` `logos` |
 | What a scope says it is | a **label**: `organisation` · `domain` · `programme` · `team` · `landscape` — never a branch |
@@ -1090,10 +1101,10 @@ identifiers is still a list of a customer's identifiers.
 | Every mutating tool | takes `ifRevision`; every mutation answers with `revision` (ADR-0011) |
 | A plan for changing the landscape | a **transition**, `TR-0001` on screen; flagged `initiative`, it is drawn on the roadmap of every scope above it (ADR-0012 §7) |
 | Plans on disk | `transitions/NNNN-<slug>.md`, flat, numbers per project |
-| What was seen, and why (ADR-0021) | an **observation**, `OB-0001` on screen, `seen` times, `by` whom (free text), local unless `shared` — then read by every scope above; `archived` when fixed or no longer relevant — kept, out of the analysis, restored the same way; a **cause**, `CA-0001`, `assumed` → `verified`, `explains` observations and shallower causes with a `strength`; a **root cause** is derived: explains something, explained by nothing. Merging is an `absorbed` event on the survivor and a `merged` one on the other; a shared one absorbed above is written on the survivor only |
+| What was seen, and why (ADR-0021, ADR-0032) | an **observation**, `OB-0001` on screen, `seen` times, `where` and `by` whom (free text), local to its scope and read by every scope above it with nothing shared first (`scopeIndex.analysisBelow`; `shared` and its two events are history, read and not written); `archived` when fixed or no longer relevant — kept, out of the analysis, restored the same way; a **cause**, `CA-0001`, `assumed` → `verified`, `explains` observations and shallower causes with a `strength`, and a non-root cause of a scope below with that scope's path (§4) — never one above, one sideways or an observation below; a **root cause** is **said**: `root: true`, `RC-0001` on the cause's own number, and nothing explains it. *Make root* is refused while a cause explains it (`command.rootExplained`), *make cause* while a solution addresses it (`command.rootAddressed`), by the reducer whoever sent it. A cause that is no root and that nothing explains is an **open end**, `?`. Merging is an `absorbed` event on the survivor and a `merged` one on the other; one of a scope below absorbed above is written on the survivor only |
 | What is done about a cause (ADR-0026) | a **solution**, `SO-0001`, `addresses` root causes of its scope with a `strength` — a non-root cause is refused; `idea` → `shaped` → `testing` → `proven` → `adopted`, one step at a time, each forward step behind a gate read off its fields (`solutionGate`), `waived` with a reason the one way past the testing gate; `dropped` with a note and kept as a considered alternative; **implemented** is derived from its plan being `done`. An **experiment**, `EX-0001`, `tests` solutions — each with a `strength` where it is not normal — with a `hypothesis` and ends `confirmed` · `refuted` · `inconclusive`. The questions a record asks without stopping it: `worksAround` · `addsOnly` · `adoptedUnplanned`; the finding: seen again since it was implemented |
 | Observations on disk | `observations/NNNN-<slug>.md` and `observations/causes/NNNN-<slug>.md`, flat, numbers per scope; `observations/solutions/NNNN-<slug>.md` and `observations/experiments/NNNN-<slug>.md` beside the causes |
-| Agent tools, observations (ADR-0021) | `observations.list` `observation.read` `causes.list` `cause.read` `observation.record` `observation.update` `observation.seen` `observation.archive` `observation.merge` `observation.remove` `cause.add` `cause.update` `cause.link` `cause.unlink` `cause.remove` |
+| Agent tools, observations (ADR-0021, ADR-0032 §10) | `observations.list` `observation.read` `causes.list` `cause.read` `observation.record` `observation.update` `observation.seen` `observation.archive` `observation.merge` `observation.remove` `cause.add` `cause.update` `cause.link` `cause.unlink` `cause.remove` — `observation.record` requires `where` and `by` and takes the day as today; `observation.update` has no `shared` and never blanks a title, where or who; `observations.list` takes `below: true` for the observations of the scopes below instead of its own, each with its scope, and has no `fromBelow`; `cause.add` and `cause.update` take `root`; `cause.link` and `cause.unlink` name a cause below by `explainsScope`; `causes.list`'s `root` reads the field |
 | Agent tools, solutions (ADR-0026) | `solutions.list` `solution.read` `experiments.list` `experiment.read` `solution.propose` `solution.update` `solution.address` `solution.unaddress` `solution.move` `solution.waive` `solution.drop` `solution.restore` `solution.decide` `solution.plan` `solution.remove` `experiment.plan` `experiment.update` `experiment.conclude` `experiment.remove` |
 | Pictures a document holds | `images/<file>.png\|.jpg\|.svg\|.webp`, referred to as `../images/<file>` |
 | The business-case block | a ```business-case fence; its keys and column order are the format, and stay English |

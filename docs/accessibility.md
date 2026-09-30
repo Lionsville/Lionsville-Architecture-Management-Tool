@@ -104,6 +104,27 @@ the other card and Enter. Every line is named by its two ends and its label,
 and every card and line tells a screen reader which keys it answers to, in the
 app's language.
 
+**The observations page** (ADR-0032). The picture is a scrollable region in
+the Tab order, so the arrows scroll it, and every record in it is a button
+named by its label and title. Tab reaches the records in drawing order —
+the scopes below first, then this scope's lanes — and reaching one does what
+hovering does: its chain is traced both ways, the rest dims, and its full
+title, its label and its scope are said beside it, as its description. Enter
+or Space reads it in the pane beside, whose buttons are every action its
+right-click menu offers. The zoom has buttons; ⌘ or Ctrl with the wheel and
+a drag on the background are the pointer's second ways to zoom and pan, not
+the only ones. *Filters*, the ×, *View local* — which says why it is off
+where there are no scopes below — *Large* and *Small*, the zoom buttons and
+each filter box carry a tooltip that opens on keyboard focus as it does on
+hover: what the control does, and what a filter keeps. *Scopes* and *Saved
+filters* are buttons that open a dialog of their own: a field that narrows
+the list and a checkbox per scope, and a named field with the saved filters
+under it, each deleted by a button named for it. The new observation puts the
+focus on its title once it has opened — the page's own focus trap took it
+back while it opened, until 30 September — and a field left empty says what
+is missing as its helper text, with the count of such fields announced as an
+alert.
+
 ## Fixed in this audit
 
 - Controls without a name: the rows of the diagram settings' aspect columns
@@ -222,5 +243,13 @@ paragraph spacing 2em, letter spacing 0.12em, word spacing 0.16em.
   but the board's structure — which band a card is in, what crosses what — is
   carried by names and the menus rather than by the reading order, and the
   order Tab walks is the drawing order, not the layout.
-- **Not assessed.** Content on hover (1.4.13) beyond MUI's tooltips, and the
-  desktop's native menu bar, whose keyboard access is the operating system's.
+- **The observations picture's lines.** A link's strength is changed, and a
+  link unlinked, from the line's right-click menu, and a line cannot be
+  focused. Unlinking has its keyboard path on the reader of either end; a
+  strength has none but unlinking and linking again with the one wanted.
+- **The observations picture's hover card** (1.4.13): it shows while a
+  record is hovered or focused and goes when the pointer or the focus leaves,
+  but Escape does not dismiss it, and the pointer cannot move onto it.
+- **Not assessed.** Content on hover (1.4.13) beyond MUI's tooltips and the
+  picture's card above, and the desktop's native menu bar, whose keyboard
+  access is the operating system's.
