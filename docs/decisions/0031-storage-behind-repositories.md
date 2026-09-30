@@ -1,6 +1,7 @@
 # ADR-0031 — Storage behind repositories: the domain speaks no storage language
 
-* Status: accepted, 29 September 2026; implemented, 29 September 2026
+* Status: accepted, 29 September 2026; implemented, 30 September 2026
+  (where each part was built: *As built, in sum*, the last section)
 * Date: 2026-09-29
 * Deciders: Wouter Simons
 * Supersedes:
@@ -1419,3 +1420,50 @@ implementation keeps one, and the entry needed one field. The Activity line
 is `activity.scopeMoved` with `from` and `to` beside the keys a step's
 summary already has, so a source that keeps a log of its own says a move the
 same way.
+
+## As built, in sum, 30 September 2026
+
+Each part of the decision, and where it was built. The sections above are
+dated as their parts landed. What one of them says is not yet done is done
+in a later one, named here.
+
+- **§1, the repositories.** The five ports and `Repositories.ts` in
+  `src/ports/`, their words in `projects/scopeState.ts`, `model/recordKey.ts`,
+  `model/imageName.ts` and `projects/settings.ts`, and a contract suite each
+  (*the repository contracts*). Memory, browser storage and the folder
+  implement all five and run every suite, directly and through their own
+  provider (*the folder implementation*, *browser storage and memory*,
+  `providers/builtIns.test.ts`). `DirectoryHandle`, `ProjectHistory`,
+  `FolderSettings` and `ScopeStore` no longer reach the app: what is left of
+  them is the folder's own, in `adapters/folder/` (*the app on the
+  repositories*, *What went*). What the index says changed since a revision
+  is how the app follows it: where nothing changed it keeps the index it
+  has, and it reads other scopes' descriptions only for the ids a scope
+  draws (`app/useIndex.ts`, `app/useOwnerDescriptions.ts`).
+- **§2, the folder and its format.** The folder implementation in
+  `src/adapters/folder/`, its history over git with labels as tags, and pull,
+  push and a remote as its provider's chrome (`providers/folder/`). The format
+  and the working file's codec are in `adapters/folder/format/`, and
+  `FOLDER_FORMAT` is empty (*the working file as an interchange*). Any source
+  carries its work out as a working file and takes one in through
+  `ports/Interchange.ts`, and a process with no screen does the same through
+  `platform/node/workingFile.ts`.
+- **§3, pictures by name, loaded when shown.** `image:<name>` in documents, the
+  library in a scope's state, and pictures laid out from it and asked for
+  when they come into view (*images loaded when shown*). The folder writes
+  `../images/<file>` on disk and reads it back as a name.
+- **§4, the composition root chooses.** `app/composition.ts` registers the
+  three providers that ship (`src/providers/`), each handing the app its
+  `ProviderParts`, and the app names no storage. The rule is
+  `build/storageLine.test.ts`, which holds no exceptions (*the working file as
+  an interchange*), and the lint's import matrix.
+- **Consequences.** Every folder a 3.2.1 build wrote opens as it is. A
+  scope's identity is written into its `scope.json` the first time the app
+  writes that scope, and no migration touches a person's folder. The
+  desktop's behaviour is held by its own smoke run.
+
+Beyond the text, built with it: a scope that cannot be read whole is put
+back from its history or a working file (*a scope put back whole*); the
+examples are the domain's (*the examples in the domain*); and a move is an
+entry in the history of every scope it moved, which Activity follows by
+identity (*a move in a scope's history*).

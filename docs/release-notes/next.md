@@ -115,6 +115,14 @@ version of the app wrote is only shown, with a note to update the app.
 history of every scope it moved, and Activity lists it as *Moved from X to Y*,
 with who moved it. Activity stays with the scope wherever it moves.
 
+**Scopes that borrow from a large landscape open sooner.** The descriptions a
+scope shows of what another scope owns are picked out for the things it
+draws, not read into a table of everything that scope holds, and the
+organisation's index is kept as it is where nothing changed, rather than
+rebuilt and worked through again by every part of the page that reads it.
+A description changed elsewhere, by a pull or in another window, is still
+read again.
+
 **Fixed**
 - Selecting an element no longer counts as an edit. The category and group
   fields used to write themselves on every selection, marking the scope
@@ -157,6 +165,10 @@ with who moved it. Activity stays with the scope wherever it moves.
   references and pictures stay where they were, and scopes made for it are
   removed only where nothing was done to them since.
 - A snapshot is never recorded over a save that was refused.
+- Dutch and German strings that said the wrong thing are mended: the working
+  file's name, answering for a record, a business area in German, counts and
+  lists that read as sentences, and adopted, accepted and assumed told apart
+  in Dutch.
 - On the desktop, a history that could not be read or written, git missing
   or too old, and a git refused in the folder are said in a sentence of their
   own, instead of an error message from the app's internals.
