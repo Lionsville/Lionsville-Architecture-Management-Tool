@@ -12,7 +12,8 @@
 import { describe, expect, it } from 'vitest'
 import type { DesignElement } from '../model'
 import type { ScopeModel, ScopeSnapshot } from './scope'
-import { applyRefPatch, readdressRef, readdressRefs } from './readdress'
+import { analysisNamesWithin, applyRefPatch, readdressAnalysis, readdressRef, readdressRefs } from './readdress'
+import type { Cause, Observation } from '../model/observation'
 
 function element(id: string, ref?: string): DesignElement {
   return {
@@ -109,5 +110,38 @@ describe('applyRefPatch', () => {
     const held = snapshot()
     expect(applyRefPatch(held)).toBe(held)
     expect(applyRefPatch(held, { path: 'acme/road', refs: [] })).toBe(held)
+  })
+})
+
+describe('the addresses an analysis holds (ADR-0032 §4, §5)', () => {
+  const cause = (id: string, scopes: (string | undefined)[]): Cause => ({
+    id, number: 1, title: id, state: 'assumed', body: '', explains: scopes.map((scope, at) => ({ id: `x-${at}`, strength: 'normal', ...(scope !== undefined ? { scope } : {}) })),
+  })
+  const observation = (id: string, scope?: string): Observation => ({
+    id, number: 1, title: id, date: '2026-09-01', impact: 'minor', seen: 1, body: '',
+    history: [{ date: '2026-09-01', kind: 'recorded' }, ...(scope !== undefined ? [{ date: '2026-09-02', kind: 'absorbed' as const, id: 'ob-below', scope }] : [])],
+  })
+
+  it('says whether a scope names an address in the subtree, never for the root', () => {
+    expect(analysisNamesWithin({ causes: [cause('ca-1', [undefined, 'acme/rail/stock'])] }, 'acme/rail')).toBe(true)
+    expect(analysisNamesWithin({ observations: [observation('ob-1', 'acme/rail')] }, 'acme/rail')).toBe(true)
+    expect(analysisNamesWithin({ causes: [cause('ca-1', ['acme/railway'])], observations: [observation('ob-1')] }, 'acme/rail')).toBe(false)
+    expect(analysisNamesWithin({ causes: [cause('ca-1', ['acme'])] }, '')).toBe(false)
+  })
+
+  it('patches each cause’s links and each observation’s history that name one, and nothing else', () => {
+    const commands = readdressAnalysis({
+      causes: [cause('ca-1', [undefined, 'acme/rail', 'globex']), cause('ca-2', ['globex'])],
+      observations: [observation('ob-1', 'acme/rail/stock'), observation('ob-2')],
+    }, 'acme/rail', 'group/rail')
+    expect(commands).toEqual([
+      { type: 'cause.update', id: 'ca-1', patch: { explains: [
+        { id: 'x-0', strength: 'normal' }, { id: 'x-1', strength: 'normal', scope: 'group/rail' }, { id: 'x-2', strength: 'normal', scope: 'globex' },
+      ] } },
+      { type: 'observation.update', id: 'ob-1', patch: { history: [
+        { date: '2026-09-01', kind: 'recorded' }, { date: '2026-09-02', kind: 'absorbed', id: 'ob-below', scope: 'group/rail/stock' },
+      ] } },
+    ])
+    expect(readdressAnalysis({ causes: [cause('ca-1', ['acme/rail'])] }, 'acme/rail', 'acme/rail')).toEqual([])
   })
 })

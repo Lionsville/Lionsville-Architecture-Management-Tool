@@ -21,7 +21,8 @@
  * order is the caller's — and the order is not arbitrary (see
  * {@link readdressRefs}).
  */
-import type { DesignElement, ElementId } from '../model'
+import type { Command, DesignElement, ElementId } from '../model'
+import type { Cause, Observation } from '../model/observation'
 import type { ScopeModel, ScopeSnapshot } from './scope'
 import { isWithinScope, ROOT_SCOPE } from './scopePath'
 import type { ScopePath } from './scopePath'
@@ -97,4 +98,49 @@ export function applyRefPatch(scope: ScopeSnapshot, patch?: RefPatch): ScopeSnap
     return ref === undefined ? element : { ...element, ref }
   })
   return { ...scope, model: { ...scope.model, elements } }
+}
+
+/**
+ * The other addresses a scope may hold, in its analysis (ADR-0032 §4, §5): a
+ * cause that explains a cause of a scope below names that scope's path on
+ * the link, and an observation that absorbed one of a scope below names that
+ * scope's path on its `absorbed` event. A move carries them as it carries a
+ * stand-in's `ref`, or the link and the history point at a folder that is not
+ * there.
+ */
+type AnalysisHeld = { causes?: readonly Cause[]; observations?: readonly Observation[] }
+
+/** Whether a scope's analysis names an address inside the subtree at `from`. */
+export function analysisNamesWithin(model: AnalysisHeld, from: ScopePath): boolean {
+  if (from === ROOT_SCOPE) return false
+  const within = (scope: string | undefined) => scope !== undefined && isWithinScope(scope, from)
+  return (model.causes ?? []).some((one) => one.explains.some((link) => within(link.scope)))
+    || (model.observations ?? []).some((one) => one.history.some((event) => within(event.scope)))
+}
+
+/**
+ * The commands that carry what a scope's analysis names inside the subtree at
+ * `from` to `to`: a patch of each cause's links, and of each observation's
+ * history, that names an address there — and nothing for one that names none.
+ * Worked out from the scope as it is read, so what it holds by then is what
+ * is carried.
+ */
+export function readdressAnalysis(model: AnalysisHeld, from: ScopePath, to: ScopePath): Command[] {
+  if (from === ROOT_SCOPE || from === to) return []
+  const carry = <T extends { scope?: string }>(held: T): T => (
+    held.scope === undefined ? held : { ...held, scope: readdressRef(held.scope, from, to) }
+  )
+  const causes = (model.causes ?? []).flatMap((one): Command[] => {
+    const explains = one.explains.map(carry)
+    return explains.some((link, at) => link.scope !== one.explains[at].scope)
+      ? [{ type: 'cause.update', id: one.id, patch: { explains } }]
+      : []
+  })
+  const observations = (model.observations ?? []).flatMap((one): Command[] => {
+    const history = one.history.map(carry)
+    return history.some((event, at) => event.scope !== one.history[at].scope)
+      ? [{ type: 'observation.update', id: one.id, patch: { history } }]
+      : []
+  })
+  return [...causes, ...observations]
 }

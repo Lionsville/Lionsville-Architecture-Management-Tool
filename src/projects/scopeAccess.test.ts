@@ -125,6 +125,50 @@ describe('a content that arrives whole, and a scope moved', () => {
     expect(await readScope(repositories.scopes, 'acme')).toBeUndefined()
   })
 
+  /**
+   * A cause that explains a cause of a scope below names it by its path, and so
+   * does an observation's `absorbed` event (ADR-0032 §4, §5): a move carries
+   * them as it carries a stand-in, outside the subtree and inside it, each
+   * scope's as one step — and leaves a scope that names nothing in it as it was.
+   */
+  it('carries the causes and the observations that name a scope it moves', async () => {
+    const { repositories } = await withAcme()
+    const cause = (id: string, explains: { id: string; scope?: string }[] = [], root?: true) => ({
+      id, number: 1, title: id, state: 'assumed' as const, body: '', explains: explains.map((one) => ({ ...one, strength: 'normal' as const })),
+      ...(root ? { root } : {}),
+    })
+    const model = (name: string, over: object = {}) => ({ name, elements: [], relations: [], diagrams: [], ...over })
+    const at = (path: string, over: object) => placeWhole(repositories.scopes, path, { ...contentOf(example(path)), model: model(path, over) })
+    await at('acme/rail', { causes: [cause('ca-rail')] })
+    await at('acme', {
+      causes: [cause('ca-acme', [{ id: 'ca-rail', scope: 'acme/rail' }])],
+      observations: [{
+        id: 'ob-acme', number: 1, title: 'Late', date: '2026-09-01', impact: 'minor', seen: 2, body: '',
+        history: [{ date: '2026-09-01', kind: 'recorded' }, { date: '2026-09-03', kind: 'absorbed', id: 'ob-rail', scope: 'acme/rail', seen: 1 }],
+      }],
+    })
+    await at('', { causes: [cause('rc-org', [{ id: 'ca-rail', scope: 'acme/rail' }, { id: 'ca-acme', scope: 'acme' }], true)] })
+    await at('globex', { causes: [cause('ca-globex', [{ id: 'ca-other', scope: 'globex/other' }])] })
+    const globex = await readScope(repositories.scopes, 'globex')
+    const applied: number[] = []
+    const counting = { ...repositories.scopes, tree: () => repositories.scopes.tree(), state: (id: string) => repositories.scopes.state(id),
+      move: repositories.scopes.move.bind(repositories.scopes),
+      apply: (writes: Parameters<typeof repositories.scopes.apply>[0]) => {
+        applied.push(...writes.map((write) => write.steps.length))
+        return repositories.scopes.apply(writes)
+      } }
+
+    await moveScope(counting, repositories.index, 'acme', 'group/acme')
+    const links = async (path: string) => (await readScope(repositories.scopes, path))?.model.causes?.flatMap((one) => one.explains.map((link) => link.scope))
+    expect(await links('')).toEqual(['group/acme/rail', 'group/acme'])
+    expect(await links('group/acme')).toEqual(['group/acme/rail'])
+    expect((await readScope(repositories.scopes, 'group/acme'))?.model.observations?.[0].history.map((event) => event.scope))
+      .toEqual([undefined, 'group/acme/rail'])
+    expect((await readScope(repositories.scopes, 'globex'))?.revision).toBe(globex?.revision)
+    // One step per scope carried: the organisation, and the scope moved.
+    expect(applied).toEqual([1, 1])
+  })
+
   it('says a move the repository refuses with its key, and moves nothing — not a stand-in either', async () => {
     const { repositories } = await withAcme()
     await placeWhole(repositories.scopes, 'acme/crews', contentOf(example('acme/crews')))

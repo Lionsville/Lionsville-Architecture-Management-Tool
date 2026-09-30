@@ -16,7 +16,7 @@
  * earlier: the repository answers one as a value, and the screens above have
  * always been handed a refusal they can say (`app/messageFor.ts`).
  */
-import type { UploadedLogo } from '../model'
+import type { Command, UploadedLogo } from '../model'
 import { imageEntryOf } from '../model/imageEntry'
 import { isImageName } from '../model/imageName'
 import type { ContentAddress, ImageEntry, ImageName } from '../model/imageName'
@@ -25,7 +25,7 @@ import { ShellError } from '../platform/errors'
 import type { IndexedScope, IndexRead, OrganisationIndex } from '../ports/OrganisationIndex'
 import type { Created, Refused, ScopeNode, ScopeRepository, ScopeTree } from '../ports/ScopeRepository'
 import { dataUrl, readDataUrl } from './dataUrl'
-import { readdressRef, readdressRefs } from './readdress'
+import { analysisNamesWithin, readdressAnalysis, readdressRef, readdressRefs } from './readdress'
 import { SCOPE_MOVED, scopeMoved } from './revision'
 import { resolveActive } from './scope'
 import { isWithinScope } from './scopePath'
@@ -243,15 +243,18 @@ export async function placeWhole(
 
 /**
  * A scope, and everything filed under it, to another address — and the
- * stand-ins elsewhere that named it by its old one, named by its new.
+ * stand-ins elsewhere that named it by its old one, named by its new, and so
+ * the causes and observations that name a scope in it (ADR-0032 §4, §5).
  *
  * The repository moves the subtree whole, identities and all; what it cannot
  * know is who else points into it, which the index says. Those stand-ins are
- * written as the refresh they are (`standin.refresh`), each expecting what
- * was read of its scope, once the move has landed: a move refused — the
- * address taken, a scope into itself, a scope gone — leaves every stand-in
- * naming the scope where it still is. The ones inside the subtree are
- * written at their new addresses.
+ * written as the refresh they are (`standin.refresh`), and a cause's link to
+ * a cause below or an observation's `absorbed` event as a patch of the
+ * record — each scope's as one step, worked out from what it holds and
+ * expecting what was read of it, once the move has landed: a move refused —
+ * the address taken, a scope into itself, a scope gone — leaves every
+ * address naming the scope where it still is. The ones inside the subtree
+ * are written at their new addresses.
  */
 export async function moveScope(
   scopes: ScopeReader & Pick<ScopeRepository, 'apply' | 'move'>,
@@ -262,18 +265,42 @@ export async function moveScope(
 ): Promise<ScopeSnapshot | undefined> {
   const node = nodeAt(await scopes.tree(), from)
   if (!node) return undefined
-  const patches = readdressRefs(modelsOf(await index.read()), from, to)
+  const models = modelsOf(await index.read())
+  const carried = carriedBy(models, from, to)
   const inside = (address: ScopeAddress) => isWithinScope(address, from)
   const carry = async (address: ScopeAddress, refs: readonly { id: string; ref: string }[]) => {
     await changeScope(scopes, address, (held) => {
       const names = new Map(held.model.elements.map((element) => [element.id, element.name]))
       const entries = refs.filter((one) => names.has(one.id)).map((one) => ({ ...one, name: names.get(one.id)! }))
-      return entries.length ? [{ type: 'standin.refresh', entries }] : undefined
+      const commands: Command[] = [
+        ...(entries.length ? [{ type: 'standin.refresh', entries } as const] : []),
+        ...readdressAnalysis(held.model, from, to),
+      ]
+      if (commands.length === 0) return undefined
+      return [commands.length === 1 ? commands[0] : { type: 'transaction', commands }]
     })
   }
   landed(await scopes.move(node.id, to, expects))
-  for (const patch of patches) await carry(inside(patch.path) ? readdressRef(patch.path, from, to) : patch.path, patch.refs)
+  for (const [path, refs] of carried) await carry(inside(path) ? readdressRef(path, from, to) : path, refs)
   return readScope(scopes, to)
+}
+
+/**
+ * Every scope that names an address in the subtree at `from`, by where it is
+ * before the move, with the stand-ins it holds there: the scopes outside the
+ * subtree first, as `readdressRefs` orders them, then those inside it.
+ */
+function carriedBy(
+  models: readonly ScopeModel[], from: ScopeAddress, to: ScopeAddress,
+): Map<ScopeAddress, readonly { id: string; ref: string }[]> {
+  const carried = new Map<ScopeAddress, readonly { id: string; ref: string }[]>()
+  for (const patch of readdressRefs(models, from, to)) carried.set(patch.path, patch.refs)
+  if (from === to) return carried
+  for (const one of models) {
+    if (!carried.has(one.path) && analysisNamesWithin(one.model, from)) carried.set(one.path, [])
+  }
+  const inside = (address: ScopeAddress) => Number(isWithinScope(address, from))
+  return new Map([...carried].sort(([a], [b]) => inside(a) - inside(b) || a.localeCompare(b)))
 }
 
 /** A picture a whole content carries: its name in the library, and its bytes. */
