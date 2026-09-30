@@ -13,6 +13,7 @@
  * Named `.contract.ts` so the runner does not pick it up on its own.
  */
 import { describe, expect, it } from 'vitest'
+import type { Command } from '../model/commands'
 import type { DesignElement } from '../model/types'
 import type { IndexedScope } from './OrganisationIndex'
 import type { ScopeId } from '../projects/scopeState'
@@ -24,6 +25,26 @@ function withoutProse(element: DesignElement): Omit<DesignElement, 'description'
   const { description: _prose, ...rest } = element
   return rest
 }
+
+/** One of each record of a scope's analysis, a root cause said and a solution on it (ADR-0021, ADR-0026, ADR-0032). */
+const analysis: readonly Command[] = [
+  { type: 'observation.add', observation: {
+    id: 'ob-late', number: 1, title: 'The nightly batch runs into office hours', date: '2026-09-01', where: 'Claims intake',
+    by: 'Operations', impact: 'major', seen: 1, body: '', history: [{ date: '2026-09-01', kind: 'recorded' }],
+  } },
+  { type: 'cause.add', cause: {
+    id: 'ca-late', number: 1, title: 'The window was sized for 2019', state: 'assumed', root: true, body: '',
+    explains: [{ id: 'ob-late', strength: 'strong' }],
+  } },
+  { type: 'solution.add', solution: {
+    id: 'so-late', number: 1, title: 'Widen the window', state: 'idea', addresses: [{ id: 'ca-late', strength: 'strong' }],
+    validatedWith: [], attempts: [], body: '', history: [{ date: '2026-09-02', kind: 'proposed' }],
+  } },
+  { type: 'experiment.add', experiment: {
+    id: 'ex-late', number: 1, title: 'Run it an hour earlier for a week', tests: ['so-late'], hypothesis: 'It ends by eight',
+    outcome: 'planned', body: '',
+  } },
+]
 
 function part(scopes: readonly IndexedScope[], id: ScopeId): IndexedScope | undefined {
   return scopes.find((scope) => scope.id === id)
@@ -58,6 +79,24 @@ export function describeOrganisationIndex(name: string, make: MakeRepositories):
       expect(part(read.scopes, acme)?.model.elements.map(withoutProse)).toEqual(state.model.elements.map(withoutProse))
       expect(part(read.scopes, rail)?.model.elements.map((element) => element.id)).toEqual(['depot'])
       expect(part(read.scopes, rail)?.model.relations).toEqual([])
+    })
+
+    /**
+     * Every scope above reads the analysis of every scope below it (ADR-0032
+     * §1), off the index: an index that held the elements alone would draw a
+     * scope below as having nothing to say.
+     */
+    it('holds every scope’s analysis — observations, causes, solutions and experiments — as its steps left them', async () => {
+      const repositories = await fresh()
+      const claims = await repositories.scope('claims', 'Claims')
+      await repositories.steps(claims, ...analysis)
+      const held = part((await repositories.index.read()).scopes, claims)?.model
+      const state = await repositories.state(claims)
+      expect(held?.observations).toEqual(state.model.observations)
+      expect(held?.causes).toEqual(state.model.causes)
+      expect(held?.solutions).toEqual(state.model.solutions)
+      expect(held?.experiments).toEqual(state.model.experiments)
+      expect(held?.causes?.map((one) => [one.id, one.root])).toEqual([['ca-late', true]])
     })
 
     it('answers one revision while nothing changes, and another once a step lands', async () => {
