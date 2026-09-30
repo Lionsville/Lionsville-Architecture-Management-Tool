@@ -24,7 +24,7 @@
  * lanes — observations, then causes by depth — and the solution lanes go on
  * to the right of them: one picture from what was seen to what was built.
  */
-import { analysisGraph, assignRows } from './graph'
+import { analysisGraph, assignRows, experimentKey, solutionKey } from './graph'
 import type { GraphNode } from './graph'
 import { isRootCause } from './observation'
 import type { Analysis, Cause, CauseStrength, ObservationBelow } from './observation'
@@ -102,9 +102,8 @@ export function isDirection(solution: Solution): boolean {
   return DIRECTIONS.includes(state)
 }
 
-/** The keys for a node, one namespace per kind, so an id can never collide across lists. */
-export const solutionKey = (id: string): string => `so:${id}`
-export const experimentKey = (id: string): string => `ex:${id}`
+/** The keys for a node, one namespace per kind, so an id can never collide across lists (`graph.ts`). */
+export { experimentKey, solutionKey }
 /** The direction a structural solution was. */
 export const trailKey = (id: string): string => `so:${id}#direction`
 

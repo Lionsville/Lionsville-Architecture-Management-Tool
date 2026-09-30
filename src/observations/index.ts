@@ -9,6 +9,7 @@
 export * from './observation'
 export * from './observationScope'
 export * from './graph'
+export * from './filter'
 export * from './solution'
 export * from './solutionGraph'
 export { ObservationsPage } from './ui/ObservationsPage'

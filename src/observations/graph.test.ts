@@ -2,8 +2,11 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { describe, expect, it } from 'vitest'
-import { analysisGraph, placeGraph } from './graph'
-import type { Analysis, Cause, Observation } from './observation'
+import {
+  PICTURE_SIZE, analysisGraph, analysisPicture, fitZoom, openEnds, pictureKey, pictureLinks, placeGraph, solutionKey,
+} from './graph'
+import type { Analysis, Cause, Observation, ScopeAnalysis } from './observation'
+import type { Solution } from './solution'
 
 const observation = (id: string, number: number, over: Partial<Observation> = {}): Observation => ({
   id, number, title: id, date: '2026-09-01', impact: 'minor', seen: 1, body: '',
@@ -126,5 +129,159 @@ describe('placeGraph', () => {
     // The one root sits level with that middle.
     expect(placed.get('r1')?.y).toBe(75)
     expect(placed.get('r1')?.x).toBe(500)
+  })
+})
+
+const solution = (id: string, number: number, addresses: Solution['addresses'], over: Partial<Solution> = {}): Solution => ({
+  id, number, title: id, state: 'idea', addresses, validatedWith: [], attempts: [], body: '', history: [], ...over,
+})
+
+/** The organisation, two scopes right below it, and one below the first of those. */
+const tree: ScopeAnalysis[] = [
+  {
+    scope: '',
+    observations: [observation('o1', 1)],
+    causes: [
+      cause('c1', 1, [{ id: 'o1', strength: 'strong' }]),
+      cause('r1', 2, [{ id: 'c1', strength: 'normal' }, { id: 'b1', scope: 'acme', strength: 'weak' }], { root: true }),
+    ],
+    solutions: [solution('s1', 1, [{ id: 'r1', strength: 'normal' }])],
+    experiments: [],
+  },
+  {
+    scope: 'acme',
+    observations: [observation('a1', 1), observation('a2', 2)],
+    causes: [cause('b1', 1, [{ id: 'a1', strength: 'normal' }, { id: 'a2', strength: 'normal' }])],
+    solutions: [], experiments: [],
+  },
+  {
+    scope: 'acme/rail',
+    observations: [observation('x1', 1)],
+    causes: [cause('y1', 1, [{ id: 'x1', strength: 'normal' }])],
+    solutions: [], experiments: [],
+  },
+  { scope: 'zeta', observations: [observation('z1', 1)], causes: [], solutions: [], experiments: [] },
+]
+
+describe('analysisPicture', () => {
+  const picture = (scopes = tree, visible?: Set<string>) => analysisPicture(scopes, { here: '', size: 'large', visible })
+  const at = (drawn: ReturnType<typeof picture>, key: string) => drawn.nodes.find((node) => node.key === key)
+
+  it('lays this scope out in its lanes, the solutions last, and every heading even where a lane is empty', () => {
+    const drawn = picture()
+    expect(drawn.lanes.map((lane) => lane.lane)).toEqual(['observations', 'causes', 'roots', 'solutions'])
+    expect(at(drawn, 'o1')?.lane).toBe(0)
+    expect(at(drawn, 'r1')?.lane).toBe(2)
+    expect(at(drawn, solutionKey('s1'))?.lane).toBe(3)
+    // This scope's lanes start to the right of every boundary.
+    const right = Math.max(...drawn.boundaries.map((box) => box.x + box.width))
+    expect(drawn.hereX).toBeGreaterThan(right)
+    expect(at(drawn, 'o1')!.x).toBe(drawn.hereX)
+  })
+
+  it('draws each scope below in a boundary to the left, nested as the tree nests, in path order', () => {
+    const drawn = picture()
+    expect(drawn.boundaries.map((box) => [box.scope, box.depth])).toEqual([['acme', 1], ['acme/rail', 2], ['zeta', 1]])
+    const box = (scope: string) => drawn.boundaries.find((one) => one.scope === scope)!
+    const inside = (outer: ReturnType<typeof box>, inner: { x: number; y: number }) => (
+      inner.x >= outer.x && inner.y >= outer.y && inner.x < outer.x + outer.width && inner.y < outer.y + outer.height
+    )
+    expect(inside(box('acme'), box('acme/rail'))).toBe(true)
+    expect(inside(box('acme/rail'), at(drawn, 'acme/rail#x1')!)).toBe(true)
+    expect(inside(box('acme'), at(drawn, 'acme#a1')!)).toBe(true)
+    expect(inside(box('acme/rail'), at(drawn, 'acme#a1')!)).toBe(false)
+    // The scope below's own lanes stand to the right of the one nested in it.
+    expect(at(drawn, 'acme#a1')!.x).toBeGreaterThan(box('acme/rail').x + box('acme/rail').width)
+    expect(box('zeta').y).toBeGreaterThan(box('acme').y + box('acme').height)
+    expect(box('acme')).toMatchObject({ observations: 2, causes: 1 })
+  })
+
+  it('marks the lines that cross a boundary: a cause above explaining a cause below', () => {
+    const drawn = picture()
+    const crossing = drawn.edges.filter((edge) => edge.crossing)
+    expect(crossing).toEqual([{ from: 'acme#b1', to: 'r1', kind: 'explains', strength: 'weak', crossing: true }])
+    expect(drawn.edges).toContainEqual({ from: 'r1', to: solutionKey('s1'), kind: 'addresses', strength: 'normal', crossing: false })
+  })
+
+  it('lands the same records in the same place, whatever order the scopes come in', () => {
+    const once = picture()
+    const shuffled = picture([tree[0], tree[3], tree[2], tree[1]])
+    expect(shuffled).toEqual(once)
+    expect(picture()).toEqual(once)
+  })
+
+  it('removes what the filters hid before it places anything, so what is left closes up', () => {
+    const drawn = picture(tree, new Set(['o1', 'c1', 'r1', 'acme/rail#x1', 'acme/rail#y1']))
+    expect(drawn.nodes.map((node) => node.key).sort()).toEqual(['acme/rail#x1', 'acme/rail#y1', 'c1', 'o1', 'r1'])
+    // A boundary holding nothing but the scope below it stays, around that one; one holding nothing goes.
+    expect(drawn.boundaries.map((box) => box.scope)).toEqual(['acme', 'acme/rail'])
+    expect(drawn.height).toBeLessThan(picture().height)
+    // Without anything below, this scope's lanes start at the margin.
+    const alone = picture(tree, new Set(['o1', 'c1']))
+    expect(alone.boundaries).toEqual([])
+    expect(alone.hereX).toBe(24)
+    expect(alone.zoneY).toBeUndefined()
+  })
+
+  it('leaves out an archived observation, a dropped solution, and one absorbed from below', () => {
+    const closed: ScopeAnalysis[] = [
+      {
+        ...tree[0],
+        observations: [observation('o1', 1, { history: [{ date: 'd', kind: 'recorded' }, { date: 'd', kind: 'absorbed', id: 'a2', scope: 'acme', seen: 1 }] })],
+        solutions: [solution('s1', 1, [], { state: 'dropped' })],
+      },
+      { ...tree[1], observations: [observation('a1', 1, { archived: true }), observation('a2', 2)] },
+    ]
+    const keys = picture(closed).nodes.map((node) => node.key)
+    expect(keys).not.toContain('acme#a1')
+    expect(keys).not.toContain('acme#a2')
+    expect(keys).not.toContain(solutionKey('s1'))
+  })
+
+  it('sizes the slots by the size asked for', () => {
+    const small = analysisPicture(tree, { here: '', size: 'small' })
+    expect(at(small, 'r1')!.x - at(small, 'o1')!.x).toBe(2 * PICTURE_SIZE.small.lane)
+    expect(at(picture(), 'r1')!.x - at(picture(), 'o1')!.x).toBe(2 * PICTURE_SIZE.large.lane)
+  })
+
+  it('reads a scope below as the scope being read, keyed as its own', () => {
+    const drawn = analysisPicture([tree[1], tree[2]], { here: 'acme', size: 'large' })
+    expect(drawn.nodes.map((node) => node.key).sort()).toEqual(['a1', 'a2', 'acme/rail#x1', 'acme/rail#y1', 'b1'])
+    expect(drawn.boundaries.map((box) => box.scope)).toEqual(['acme/rail'])
+  })
+})
+
+describe('pictureLinks and openEnds', () => {
+  it('keys a link by the scope of the record at each end', () => {
+    expect(pictureKey('', '', 'o1')).toBe('o1')
+    expect(pictureKey('', 'acme', 'o1')).toBe('acme#o1')
+    expect(pictureLinks(tree, '')).toContainEqual({ from: 'acme#b1', to: 'r1', kind: 'explains', strength: 'weak' })
+    expect(pictureLinks(tree, '')).toContainEqual({ from: 'acme/rail#x1', to: 'acme/rail#y1', kind: 'explains', strength: 'normal' })
+  })
+
+  it('finds the causes that are not root causes and that nothing explains, here, below or from above', () => {
+    expect([...openEnds(tree, '')].sort()).toEqual(['acme/rail#y1'])
+    const read = [tree[0], { ...tree[1], causes: [...tree[1].causes, cause('b2', 2, [])] }]
+    expect([...openEnds(read, '')].sort()).toEqual(['acme#b2'])
+    const lone: ScopeAnalysis[] = [{ ...tree[0], causes: [cause('c9', 9, [])] }]
+    expect([...openEnds(lone, '')]).toEqual(['c9'])
+    expect([...openEnds(lone, '', new Map([['c9', [{}]]]))]).toEqual([])
+  })
+})
+
+describe('fitZoom', () => {
+  it('fits the whole picture, no larger than 110 %', () => {
+    expect(fitZoom({ width: 400, height: 300 }, { width: 2000, height: 2000 })).toBe(1.1)
+    expect(fitZoom({ width: 1000, height: 500 }, { width: 908, height: 908 })).toBe(0.9)
+  })
+
+  it('fits the height instead where fitting both would go below 75 %, and never below 40 %', () => {
+    expect(fitZoom({ width: 4000, height: 500 }, { width: 1008, height: 808 })).toBe(0.75)
+    expect(fitZoom({ width: 4000, height: 2000 }, { width: 1008, height: 1008 })).toBe(0.5)
+    expect(fitZoom({ width: 4000, height: 8000 }, { width: 1008, height: 1008 })).toBe(0.4)
+  })
+
+  it('is 100 % while the window has not been measured', () => {
+    expect(fitZoom({ width: 400, height: 300 }, { width: 0, height: 0 })).toBe(1)
   })
 })
