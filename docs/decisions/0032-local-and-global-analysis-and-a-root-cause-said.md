@@ -1,6 +1,6 @@
 # ADR-0032 — Local and global analysis, and a root cause that is said
 
-* Status: accepted, 30 September 2026; as built, 30 September 2026, on a branch awaiting release
+* Status: accepted, 30 September 2026; as built, 30 September 2026; implemented, 30 September 2026 (released in 3.3.1)
 * Date: 2026-09-30
 * Deciders: Wouter Simons
 * Supersedes:
