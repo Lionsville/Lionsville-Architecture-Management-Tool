@@ -3,6 +3,10 @@
 * Status: accepted
 * Date: 2026-09-24
 * Deciders: Wouter Simons
+* Superseded-by: ADR-0032, in part, 2026-09-30 — the 25 September
+  amendment's *a link that exists is kept when its cause later gains a
+  deeper one*: a root cause is said, and gains no deeper cause while a
+  solution addresses it
 * Extends: ADR-0021 (observations, and what lies behind them)
 
 ## Context and Problem Statement
@@ -260,7 +264,9 @@ the agent's side.
   invites the fix the method exists to prevent. `causesForProposal` is the
   root causes and nothing else; a non-root cause's reader offers no *Propose a
   solution* and says where to go instead; `solution.propose` and
-  `solution.address` refuse one, naming the deeper cause that explains it. A
+  `solution.address` refuse one, naming the deeper cause that explains it.
+  *Superseded in part by ADR-0032 (§3): the root is said, not derived, and the
+  next sentence no longer arises.* A
   link that exists is kept when its cause later gains a deeper one — changing
   its strength is still allowed — and `worksAround` is the question that then
   asks about it. The shipped example's first solution addressed a root and the

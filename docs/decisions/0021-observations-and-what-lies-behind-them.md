@@ -3,6 +3,12 @@
 * Status: accepted
 * Date: 2026-09-20
 * Deciders: Wouter Simons
+* Superseded-by: ADR-0032, in part, 2026-09-30 — §1's derived root cause (a
+  root cause is said, `RC-`, by a step); §3's sharing upward (the `shared`
+  bit goes, and a scope reads the analysis of every scope below); §4's
+  *shared from below*, read as *from a scope below*; §5's *Shared from*
+  sections; §6's `shared` and `fromBelow`; and the 28 September
+  amendment's list of what the reader moves into `⋯`
 * Extends: ADR-0012 §7 (a record is edited where it lives; what a scope
   above reads from the scopes below it)
 
@@ -59,6 +65,9 @@ Option 3, with the merge kept where the rule allows it.
 
 ### 1. Two records on the model
 
+*Superseded in part by ADR-0032 (§3): a root cause is said on the cause,
+`root`, labelled `RC-`, and is no longer derived; and (§1) `shared` goes.*
+
 `model.observations` and `model.causes` are two arrays on a scope's model,
 absent when empty exactly as `decisions` is. An **observation** has a
 number (`OB-0007`), a title, the day it was first seen, where, an impact
@@ -93,6 +102,10 @@ observations, which is the loss the number exists to refuse.
 
 ### 3. Sharing goes up, and only when said
 
+*Superseded by ADR-0032 (§1, §2, §4): nothing is shared; a scope reads the
+analysis of every scope below it, and a cause above explains a cause below,
+never an observation below.*
+
 `shared` is the one bit a scope sets. The tree index (`scopeIndex.ts`)
 answers `observationsBelow(path)`: every shared observation in a scope
 strictly below, the way `initiativesBelow` answers the flagged plans. The
@@ -113,6 +126,9 @@ wording and evidence are, and it is *read as* merged because the survivor
 says so (`absorbedBy`). It is left out of the picture and of the register
 unless asked for.
 
+*Superseded in part by ADR-0032 (§5): read* shared from below *as* from a
+scope below.*
+
 An observation shared from below is absorbed the same way, except that only
 the survivor is written: its `absorbed` event carries the scope of the
 observation it stands for now. The scope below is not touched; its page
@@ -120,6 +136,9 @@ reads off the tree (`absorbedFrom(path)`) that its observation went into
 one above, and says so on the row.
 
 ### 5. The page and the picture
+
+*Superseded in part by ADR-0032 (§2, §8): the scopes below are drawn in a
+boundary each, and the picture filters, fits and draws in two sizes.*
 
 One page, *Observations*, beside *Decisions* on the bar and as a card on
 every scope's home. Two tabs: the **register** — a table read off the
@@ -138,6 +157,9 @@ The page hands both lists back whole; the workspace turns the difference
 into one transaction, so ⌘Z puts back one record.
 
 ### 6. At the agent
+
+*Superseded in part by ADR-0032 (§10): `shared` and `fromBelow` go; `root`
+arrives on `cause.add` and `cause.update`.*
 
 Read: `observations.list` (with `fromBelow`), `observation.read`,
 `causes.list`, `cause.read`. Write: `observation.record`,
@@ -240,7 +262,8 @@ last open observation was archived.
   notes on a merge or an archive say "28 Sept 2026" in the interface's
   language (`i18n/dates.ts`), not the stored `2026-09-28`; the date inputs
   are the one place the stored shape shows.
-* **The reader reads its own width.** Below 560 pixels a container query on
+* *Superseded in part by ADR-0032 (§7): only merge, archive and delete move
+  into `⋯`.* **The reader reads its own width.** Below 560 pixels a container query on
   the reader shrinks the title and moves the occasional actions — verify,
   link deeper, share, archive, delete — into a `⋯` menu, and a link row wraps
   instead of running its note into its button.
