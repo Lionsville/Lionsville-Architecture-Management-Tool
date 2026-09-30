@@ -107,6 +107,8 @@ function RecordPages({ parts }: { parts: WorkspaceParts }) {
         explainedAbove={readings.explainedAbove}
         {...(readOnly ? {} : { onChangeBelow: changeBelow })}
         scopeLabel={readings.scopeLabel}
+        scope={props.project.path}
+        {...(props.preferences.savedFilters ? { savedFilters: props.preferences.savedFilters } : {})}
         absorbedAbove={readings.absorbedAbove}
         {...(onOpenScope
           ? { onOpenScope: (path: string, id?: string) => onOpenScope(path, { page: 'observations', ...(id !== undefined ? { id } : {}) }) }

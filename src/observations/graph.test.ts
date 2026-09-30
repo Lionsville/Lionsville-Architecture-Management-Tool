@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from 'vitest'
 import {
-  PICTURE_SIZE, analysisGraph, analysisPicture, fitZoom, openEnds, pictureKey, pictureLinks, placeGraph, solutionKey,
+  PICTURE_SIZE, analysisGraph, analysisPicture, fitZoom, openEnds, pictureKey, pictureLinks, placeGraph, solutionKey, traceChain,
 } from './graph'
 import type { Analysis, Cause, Observation, ScopeAnalysis } from './observation'
 import type { Solution } from './solution'
@@ -283,5 +283,18 @@ describe('fitZoom', () => {
 
   it('is 100 % while the window has not been measured', () => {
     expect(fitZoom({ width: 400, height: 300 }, { width: 0, height: 0 })).toBe(1)
+  })
+})
+
+describe('traceChain', () => {
+  it('follows the lines both ways from a record, and not sideways', () => {
+    const edges = [
+      { from: 'o1', to: 'c1' }, { from: 'o2', to: 'c1' }, { from: 'c1', to: 'r1' }, { from: 'r1', to: 's1' },
+      { from: 'o3', to: 'c3' },
+    ]
+    expect([...traceChain('c1', edges)].sort()).toEqual(['c1', 'o1', 'o2', 'r1', 's1'])
+    // From one observation, its causes and what lies behind them; not the observation beside it.
+    expect([...traceChain('o1', edges)].sort()).toEqual(['c1', 'o1', 'r1', 's1'])
+    expect([...traceChain('o3', edges)].sort()).toEqual(['c3', 'o3'])
   })
 })

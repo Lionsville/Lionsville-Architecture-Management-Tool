@@ -2,302 +2,417 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * The analysis drawn: observations on the left as circles, the causes they
- * were analysed into in the lanes to the right, root causes last (ADR-0021).
+ * The analysis drawn (ADR-0021, ADR-0032 §8): observations on the left, the
+ * causes they were analysed into in the lanes to the right, root causes, and
+ * the solutions that address them last — and, with *View local* on, each
+ * scope below in a boundary of its own to the left, nested as the tree
+ * nests, with the lines that cross a boundary drawn apart.
  *
- * Plain SVG over `analysisGraph` and `placeGraph`: no canvas, no library,
- * nothing dragged. A mark's size is the observation's impact, its tint how
- * often it was seen; a cause is a box with a dashed outline while assumed and
- * a solid one once verified, and a root cause is drawn with the heavier
- * outline. A line is thick, ordinary or dotted for a strong, normal or weak
- * link. Clicking anything selects it, which is how the team walks the picture
- * while analysing; a right-click on a node or a line asks the page what can be
- * done with it (`PictureMenu`).
+ * Plain SVG over `analysisPicture` (`graph.ts`): no canvas library, nothing
+ * dragged, the same records in the same place every time. Each record is one
+ * of two sizes (`PictureMarks`). The picture starts fitted to its window;
+ * the zoom buttons and ⌘ or Ctrl with the scroll wheel zoom it, and a drag on
+ * the background pans it. Hovering a record — or focusing it from the
+ * keyboard — traces its chain both ways and dims the rest, and shows its full
+ * title, label and scope beside it, so a title cut short on a card is always
+ * one hover from whole.
+ *
+ * Clicking anything selects it; Enter or Space does the same from the
+ * keyboard. A right-click on a record or a line asks the page what can be
+ * done with it (`PictureMenu`); a line offers its menu only where the link is
+ * this scope's to change.
  */
-import { useMemo, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import { useTheme } from '@mui/material/styles'
-import type { Theme } from '@mui/material/styles'
 import type { Translate } from '../../i18n'
-import { inkOn, mix } from '../../widgets'
-import { analysisGraph, placeGraph } from '../graph'
-import type { GraphNode } from '../graph'
-import { causeLabel, formatObservationNumber } from '../observation'
-import type { Analysis, CauseStrength, ObservationImpact, ObservationBelow } from '../observation'
-import { STATE_LABEL } from '../observationScope'
+import { analysisPicture, fitZoom, openEnds, pictureKey, traceChain, PICTURE_SIZE } from '../graph'
+import type { PictureEdge, PictureLane, PictureNode, SectionedPicture } from '../graph'
+import { causeLabel } from '../observation'
+import type { CauseAbove, ScopeAnalysis } from '../observation'
+import type { FilterResult } from '../filter'
+import { LINE_HIT_WIDTH, STROKE, seenTint } from './ChainMarks'
 import type { PictureMenuHandler } from './PictureMenu'
-
-export const LANE_WIDTH = 260
-export const ROW_HEIGHT = 84
-export const BOX = { width: 180, height: 44 }
-export const RADIUS: Record<ObservationImpact, number> = { minor: 12, major: 17, critical: 23 }
-export const STROKE: Record<CauseStrength, { width: number; dash?: string }> = {
-  strong: { width: 3.5 },
-  normal: { width: 1.6 },
-  weak: { width: 1.4, dash: '3 4' },
-}
+import { RecordMark, anchorOf, recordLabel, recordState, recordTitle } from './PictureMarks'
+import type { PictureView } from './usePictureFilters'
 
 export type AnalysisPictureProps = {
-  analysis: Analysis
-  below: readonly ObservationBelow[]
+  /** The scopes in view: this one first, then those below while View local is on. */
+  scopes: readonly ScopeAnalysis[]
+  here: string
+  /** What the filters left, and what they matched themselves, which is outlined. */
+  filter?: Pick<FilterResult, 'filtering' | 'visible' | 'matched'>
+  /** The causes of the scopes above that explain this scope's, by the id explained. */
+  explainedAbove?: ReadonlyMap<string, readonly CauseAbove[]>
+  view: PictureView
+  /** What a scope is called, this one included. */
+  scopeLabel: (path: string) => string
+  /** The heading over this scope's lanes while there are boundaries beside them. */
+  hereLabel: string
   selectedKey?: string
   onSelect: (key: string) => void
-  /** A right-click on a node or a line; absent, the browser's own menu. */
+  /** A right-click on a record or a line; absent, the browser's own menu. */
   onMenu?: PictureMenuHandler
   s: Translate
 }
 
-/** The invisible band along a line that takes the right-click, so a thin line is not a one-pixel target. */
-export const LINE_HIT_WIDTH = 12
-
-export function AnalysisPicture({ analysis, below, selectedKey, onSelect, onMenu, s }: AnalysisPictureProps) {
-  const theme = useTheme()
-  const graph = useMemo(() => analysisGraph(analysis, below), [analysis, below])
-  const placed = useMemo(() => placeGraph(graph, { laneWidth: LANE_WIDTH, rowHeight: ROW_HEIGHT, top: 36, left: 0 }), [graph])
-  const at = useMemo(() => new Map(placed.map((one) => [one.key, one])), [placed])
-  const rows = Math.max(1, ...graph.nodes.map((node) => node.row + 1))
-  const width = graph.lanes * LANE_WIDTH
-  const height = 36 + rows * ROW_HEIGHT + 16
-  const maxSeen = Math.max(1, ...graph.nodes.map((node) => (node.kind === 'observation' ? node.observation.seen : 1)))
-  const tint = (seen: number) => seenTint(theme, seen, maxSeen)
-  const laneTitle = (lane: number) => (
-    lane === 0 ? s('observation.laneObservations') : lane === graph.lanes - 1 && graph.lanes > 1 ? s('observation.laneRoots') : s('observation.laneCauses')
-  )
-
-  if (graph.nodes.length === 0) {
-    return (
-      <Box sx={{ p: 5, color: 'text.secondary' }}>
-        <Typography>{s('observation.graphEmpty')}</Typography>
-      </Box>
-    )
-  }
-
-  const line = theme.palette.text.secondary
-  const nodeOf = (key: string): GraphNode | undefined => graph.nodes.find((node) => node.key === key)
-
-  return (
-    <Box sx={{ overflow: 'auto', flex: 1, minHeight: 0, bgcolor: 'background.default' }}>
-      <svg
-        width={Math.max(width, 3 * LANE_WIDTH)}
-        height={height}
-        role="img"
-        aria-label={s('observation.tabAnalysis')}
-        data-testid="analysis-picture" data-guide="observations.picture"
-        style={{ display: 'block', fontFamily: theme.typography.fontFamily }}
-      >
-        {/* lane headings */}
-        {Array.from({ length: graph.lanes }, (_, lane) => (
-          <text
-            key={lane}
-            x={lane * LANE_WIDTH + LANE_WIDTH / 2}
-            y={18}
-            textAnchor="middle"
-            fontSize={11}
-            fill={theme.palette.text.secondary}
-            style={{ textTransform: 'uppercase', letterSpacing: '.05em' }}
-          >
-            {laneTitle(lane)}
-          </text>
-        ))}
-
-        {/* links: from what is explained to the cause that explains it */}
-        {graph.edges.map((edge) => {
-          const from = at.get(edge.from)
-          const to = at.get(edge.to)
-          if (!from || !to) return null
-          const fromNode = nodeOf(edge.from)
-          const startX = from.x + (fromNode?.kind === 'observation' ? RADIUS[fromNode.observation.impact] : BOX.width / 2)
-          const endX = to.x - BOX.width / 2
-          const mid = (startX + endX) / 2
-          const stroke = STROKE[edge.strength]
-          const dim = selectedKey !== undefined && edge.from !== selectedKey && edge.to !== selectedKey
-          const d = `M${startX},${from.y} C${mid},${from.y} ${mid},${to.y} ${endX},${to.y}`
-          const explained = fromNode
-          const cause = nodeOf(edge.to)
-          return (
-            <g key={`${edge.from}->${edge.to}`}>
-              <path
-                d={d}
-                fill="none"
-                stroke={line}
-                strokeWidth={stroke.width}
-                strokeDasharray={stroke.dash}
-                strokeOpacity={dim ? 0.2 : 0.75}
-                data-testid="analysis-link"
-                data-strength={edge.strength}
-              />
-              {onMenu && explained && cause && (
-                <path
-                  d={d}
-                  fill="none"
-                  stroke="transparent"
-                  strokeWidth={LINE_HIT_WIDTH}
-                  pointerEvents="stroke"
-                  data-testid="analysis-link-hit"
-                  onContextMenu={(event) => {
-                    event.preventDefault()
-                    onMenu({
-                      kind: 'explains', causeId: cause.id, id: explained.id,
-                      ...(explained.kind === 'observation' && explained.scope !== undefined ? { scope: explained.scope } : {}),
-                      strength: edge.strength,
-                    }, { x: event.clientX, y: event.clientY })
-                  }}
-                />
-              )}
-            </g>
-          )
-        })}
-
-        {/* nodes */}
-        {graph.nodes.map((node) => {
-          const spot = at.get(node.key)
-          if (!spot) return null
-          const selected = node.key === selectedKey
-          const common = {
-            cursor: 'pointer' as const,
-            onClick: () => onSelect(node.key),
-            onContextMenu: onMenu ? (event: ReactMouseEvent) => {
-              event.preventDefault()
-              onMenu({ kind: 'node', key: node.key }, { x: event.clientX, y: event.clientY })
-            } : undefined,
-            'data-testid': node.kind === 'observation' ? 'analysis-observation' : 'analysis-cause',
-          }
-          if (node.kind === 'observation') {
-            return <ObservationMark key={node.key} node={node} x={spot.x} y={spot.y} selected={selected} fill={tint(node.observation.seen)} {...common} />
-          }
-          return <CauseMark key={node.key} node={node} x={spot.x} y={spot.y} selected={selected} s={s} {...common} />
-        })}
-      </svg>
-    </Box>
-  )
+const LANE_KEY: Record<PictureLane, 'observation.laneObservations' | 'observation.laneCauses' | 'observation.laneDeeper' | 'observation.laneRoots' | 'observation.laneSolutions'> = {
+  observations: 'observation.laneObservations',
+  causes: 'observation.laneCauses',
+  deeper: 'observation.laneDeeper',
+  roots: 'observation.laneRoots',
+  solutions: 'observation.laneSolutions',
 }
 
-type MarkProps<N> = {
-  node: N
-  x: number
-  y: number
-  selected: boolean
-  onClick: () => void
-  onContextMenu?: (event: ReactMouseEvent) => void
-  cursor: 'pointer'
-  'data-testid': string
-  dim?: boolean
+/** A record's own id, as the lists and the page's menus name it. */
+export function recordId(node: PictureNode): string {
+  return node.kind === 'observation' ? node.observation.id : node.kind === 'cause' ? node.cause.id : node.solution.id
+}
+
+export function AnalysisPicture(props: AnalysisPictureProps) {
+  const { scopes, here, view, s } = props
+  const visible = props.filter?.filtering ? props.filter.visible : undefined
+  const picture = useMemo(
+    () => analysisPicture(scopes, { here, size: view.size, ...(visible ? { visible } : {}) }),
+    [scopes, here, view.size, visible],
+  )
+  const open = useMemo(() => openEnds(scopes, here, props.explainedAbove), [scopes, here, props.explainedAbove])
+  const [hot, setHot] = useState<string | undefined>(undefined)
+  const traced = useMemo(() => (hot ? traceChain(hot, picture.edges) : undefined), [hot, picture.edges])
+  const hotNode = hot ? picture.nodes.find((node) => node.key === hot) : undefined
+
+  return (
+    <PictureFrame picture={picture} view={view} label={s('observation.tabAnalysis')}>
+      {picture.nodes.length === 0 ? (
+        <Box sx={{ p: 5, color: 'text.secondary' }}>
+          <Typography>{visible ? s('observation.filterNothing') : s('observation.graphEmpty')}</Typography>
+        </Box>
+      ) : (
+        <Box sx={{ position: 'relative', width: picture.width * view.zoom, height: picture.height * view.zoom }}>
+          <svg
+            width={picture.width * view.zoom}
+            height={picture.height * view.zoom}
+            viewBox={`0 0 ${picture.width} ${picture.height}`}
+            role="group"
+            aria-label={s('observation.tabAnalysis')}
+            data-testid="analysis-picture"
+            data-guide="observations.picture"
+            data-size={view.size}
+            style={{ display: 'block' }}
+          >
+            <Headings picture={picture} hereLabel={props.hereLabel} s={s} large={view.size === 'large'} />
+            <Boundaries picture={picture} scopeLabel={props.scopeLabel} s={s} />
+            <Edges picture={picture} here={here} large={view.size === 'large'} traced={traced} onMenu={props.onMenu} />
+            <Nodes {...props} picture={picture} open={open} traced={traced} hot={hot} onHot={setHot} />
+          </svg>
+          {hotNode && <HoverCard node={hotNode} picture={picture} zoom={view.zoom} large={view.size === 'large'} scopeLabel={props.scopeLabel} s={s} />}
+        </Box>
+      )}
+    </PictureFrame>
+  )
 }
 
 /**
- * How an observation seen `seen` times is tinted, among marks the most-seen of
- * which was seen `maxSeen` times: once is the palest, a quarter of the accent
- * over the paper, and the most-seen is the full accent.
- *
- * Worked out here rather than left to CSS's `color-mix`, because the count
- * drawn on the circle has to be lettered against this colour: the page's ink
- * on the full accent was 2.2:1 in the dark mode and 3.5:1 in the light
- * (`inkOn`).
+ * The window the picture is looked at through: it measures itself to fit,
+ * zooms with ⌘ or Ctrl and the scroll wheel, and pans with a drag on the
+ * background. Scrollable, so it takes the keyboard's arrows as well.
  */
-export function seenTint(theme: Theme, seen: number, maxSeen: number): string {
-  const share = maxSeen <= 1 ? 1 : (seen - 1) / (maxSeen - 1)
-  return mix(theme.palette.primary.main, 0.25 + share * 0.75, theme.palette.background.paper)
+function PictureFrame({ picture, view, label, children }: { picture: SectionedPicture; view: PictureView; label: string; children: ReactNode }) {
+  const theme = useTheme()
+  const frame = useRef<HTMLDivElement>(null)
+  const latest = useRef(view)
+  latest.current = view
+  const [viewport, setViewport] = useState({ width: 0, height: 0 })
+  const [pan, setPan] = useState<{ x: number; y: number; left: number; top: number } | undefined>(undefined)
+
+  useEffect(() => {
+    const element = frame.current
+    if (!element) return undefined
+    const measure = () => setViewport({ width: element.clientWidth, height: element.clientHeight })
+    measure()
+    const wheel = (event: WheelEvent) => {
+      if (!event.ctrlKey && !event.metaKey) return
+      event.preventDefault()
+      latest.current.zoomTo(latest.current.zoom * (event.deltaY < 0 ? 1.1 : 0.9))
+    }
+    element.addEventListener('wheel', wheel, { passive: false })
+    // Absent under a test's DOM, which never resizes.
+    const observer = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(measure)
+    observer?.observe(element)
+    return () => {
+      element.removeEventListener('wheel', wheel)
+      observer?.disconnect()
+    }
+  }, [])
+
+  const { fit, fitted } = view
+  useEffect(() => {
+    if (fit) fitted(fitZoom(picture, viewport))
+  }, [fit, fitted, picture, viewport])
+
+  const start = (event: PointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0 || (event.target as Element).closest('[data-key]')) return
+    const element = event.currentTarget
+    setPan({ x: event.clientX, y: event.clientY, left: element.scrollLeft, top: element.scrollTop })
+    element.setPointerCapture?.(event.pointerId)
+  }
+  const move = (event: PointerEvent<HTMLDivElement>) => {
+    if (!pan) return
+    event.currentTarget.scrollLeft = pan.left - (event.clientX - pan.x)
+    event.currentTarget.scrollTop = pan.top - (event.clientY - pan.y)
+  }
+  return (
+    <Box
+      ref={frame}
+      role="region"
+      aria-label={label}
+      tabIndex={0}
+      data-testid="analysis-frame"
+      onPointerDown={start}
+      onPointerMove={move}
+      onPointerUp={() => setPan(undefined)}
+      onPointerCancel={() => setPan(undefined)}
+      sx={{
+        flex: 1, minHeight: 0, overflow: 'auto', position: 'relative', cursor: pan ? 'grabbing' : 'grab',
+        bgcolor: 'background.default', fontFamily: theme.typography.fontFamily,
+        backgroundImage: `radial-gradient(${theme.palette.divider} 1px, transparent 1px)`, backgroundSize: '18px 18px',
+        '&:focus-visible': { outline: `2px solid ${theme.palette.primary.main}`, outlineOffset: -2 },
+      }}
+    >
+      {children}
+    </Box>
+  )
 }
 
-/** An observation: a circle sized by its impact, tinted by how often it was seen. */
-export function ObservationMark(props: MarkProps<Extract<GraphNode, { kind: 'observation' }>> & { fill: string }) {
+function Headings({ picture, hereLabel, large, s }: { picture: SectionedPicture; hereLabel: string; large: boolean; s: Translate }) {
   const theme = useTheme()
-  const { node, x, y, selected, fill, dim, ...rest } = props
-  const r = RADIUS[node.observation.impact]
-  const seen = node.observation.seen
+  const head = { fontSize: 10, fontWeight: 600, style: { textTransform: 'uppercase' as const, letterSpacing: '.09em' } }
   return (
-    <g transform={`translate(${x},${y})`} {...rest} data-key={node.key}>
-      {/* An opaque backing, so a dimmed mark still hides the lines behind it. */}
-      <circle r={r} fill={theme.palette.background.default} />
-      <g opacity={dim ? 0.35 : 1}>
-        <title>{`${formatObservationNumber(node.observation.number)} ${node.observation.title}`}</title>
-        <circle
-          r={r}
-          fill={fill}
-          stroke={selected ? theme.palette.secondary.main : theme.palette.primary.main}
-          strokeWidth={selected ? 3 : 1.5}
-        />
-        {seen > 1 && (
-          <text textAnchor="middle" dy="0.35em" fontSize={11} fontWeight={600} fill={inkOn(theme, fill)}>{seen}×</text>
-        )}
-        <text textAnchor="middle" y={r + 13} fontSize={10} fill={theme.palette.text.secondary}>
-          {formatObservationNumber(node.observation.number)}{node.scope !== undefined ? ' ↑' : ''}
+    <g data-testid="picture-headings">
+      {picture.lanes.map(({ lane, x }) => (
+        <text key={x} x={x + (large ? 0 : PICTURE_SIZE.small.width / 2)} y={picture.headingY} textAnchor={large ? 'start' : 'middle'} fill={theme.palette.text.secondary} {...head}>
+          {s(LANE_KEY[lane])}
         </text>
-        <text textAnchor="middle" y={r + 25} fontSize={10} fill={theme.palette.text.primary}>
-          {shorten(node.observation.title, 34)}
-        </text>
-      </g>
+      ))}
+      {picture.zoneY !== undefined && (
+        <>
+          <text x={24} y={picture.zoneY} fill={theme.palette.info.main} {...head}>{s('observation.pictureLocal')}</text>
+          <text x={picture.hereX} y={picture.zoneY} fill={theme.palette.primary.main} {...head}>{hereLabel}</text>
+        </>
+      )}
     </g>
   )
 }
 
-/** A cause: a box, dashed while assumed, with the heavier rounded outline for a root. */
-export function CauseMark(props: MarkProps<Extract<GraphNode, { kind: 'cause' }>> & { s: Translate; flag?: string }) {
+function Boundaries({ picture, scopeLabel, s }: { picture: SectionedPicture; scopeLabel: (path: string) => string; s: Translate }) {
   const theme = useTheme()
-  const { node, x, y, selected, s, flag, dim, ...rest } = props
-  const rootStroke = node.root ? theme.palette.secondary.main : node.cause.state === 'verified' ? theme.palette.success.main : theme.palette.warning.main
+  const { info } = theme.palette
   return (
-    <g transform={`translate(${x},${y})`} {...rest} data-key={node.key} data-root={node.root ? 'true' : undefined}>
-      <rect x={-BOX.width / 2} y={-BOX.height / 2} width={BOX.width} height={BOX.height} rx={node.root ? BOX.height / 2 : 5} fill={theme.palette.background.paper} />
-      <g opacity={dim ? 0.35 : 1}>
-        <title>{`${causeLabel(node.cause)} ${node.cause.title}`}</title>
-        <rect
-          x={-BOX.width / 2}
-          y={-BOX.height / 2}
-          width={BOX.width}
-          height={BOX.height}
-          rx={node.root ? BOX.height / 2 : 5}
-          fill={theme.palette.background.paper}
-          stroke={selected ? theme.palette.secondary.main : rootStroke}
-          strokeWidth={selected ? 3 : node.root ? 2.5 : 1.8}
-          strokeDasharray={node.cause.state === 'assumed' ? '5 3' : undefined}
-        />
-        <text textAnchor="middle" dy="-0.15em" fontSize={11} fill={theme.palette.text.primary}>
-          {shorten(node.cause.title, 28)}
-        </text>
-        <text textAnchor="middle" dy="1.05em" fontSize={10} fill={theme.palette.text.secondary}>
-          {causeLabel(node.cause)} · {s(STATE_LABEL[node.cause.state]).toLowerCase()}{node.root ? ` · ${s('observation.rootCause').toLowerCase()}` : ''}
-        </text>
-        {flag && <Flag x={BOX.width / 2} y={-BOX.height / 2} title={flag} />}
-      </g>
+    <g>
+      {picture.boundaries.map((box) => (
+        <g key={box.scope} data-testid="picture-boundary" data-scope={box.scope}>
+          <rect x={box.x} y={box.y} width={box.width} height={box.height} rx={12} fill={info.main} fillOpacity={0.05} stroke={info.main} strokeWidth={1.2} />
+          <text x={box.x + 14} y={box.y + 22} fontSize={12} fontWeight={600} fill={info.main}>{scopeLabel(box.scope)}</text>
+          <text x={box.x + box.width - 14} y={box.y + 22} fontSize={11} textAnchor="end" fill={theme.palette.text.secondary}>
+            {s('observation.pictureBoxCounts', { observations: box.observations, causes: box.causes })}
+          </text>
+        </g>
+      ))}
     </g>
   )
 }
 
-/** The small mark on a node that asks for attention, with the reason as its title. */
-export function Flag({ x, y, title, strong = false }: { x: number; y: number; title: string; strong?: boolean }) {
+function Edges({ picture, here, large, traced, onMenu }: {
+  picture: SectionedPicture; here: string; large: boolean; traced?: ReadonlySet<string>; onMenu?: PictureMenuHandler
+}) {
   const theme = useTheme()
+  const byKey = useMemo(() => new Map(picture.nodes.map((node) => [node.key, node])), [picture.nodes])
+  const size = large ? 'large' : 'small'
   return (
-    <g transform={`translate(${x},${y})`} data-testid="picture-flag">
-      <title>{title}</title>
-      <circle r={8} fill={strong ? theme.palette.error.main : theme.palette.warning.main} />
-      <text textAnchor="middle" dy="0.35em" fontSize={11} fontWeight={700} fill={theme.palette.background.paper}>!</text>
+    <g>
+      {picture.edges.map((edge) => {
+        const from = byKey.get(edge.from)!
+        const to = byKey.get(edge.to)!
+        const a = anchorOf(from, 'right', size)
+        const b = anchorOf(to, 'left', size)
+        const bend = Math.max(40, (b.x - a.x) / 2)
+        const d = `M${a.x},${a.y} C${a.x + bend},${a.y} ${b.x - bend},${b.y} ${b.x},${b.y}`
+        const on = traced !== undefined && traced.has(edge.from) && traced.has(edge.to)
+        const plain = STROKE[edge.strength]
+        const colour = on ? theme.palette.primary.main : edge.crossing ? theme.palette.info.main : theme.palette.text.secondary
+        const menu = onMenu && to.scope === here ? edgeTarget(edge, from, to, here) : undefined
+        return (
+          <g key={`${edge.from}->${edge.to}`}>
+            <path
+              d={d}
+              fill="none"
+              stroke={colour}
+              strokeWidth={on ? 2.2 : edge.crossing ? 1.7 : plain.width}
+              strokeDasharray={on ? undefined : edge.crossing ? '6 4' : plain.dash}
+              strokeOpacity={traced && !on ? 0.16 : 0.75}
+              data-testid="analysis-link"
+              data-strength={edge.strength}
+              data-crossing={edge.crossing ? 'true' : undefined}
+            />
+            {menu && onMenu && (
+              <path
+                d={d} fill="none" stroke="transparent" strokeWidth={LINE_HIT_WIDTH} pointerEvents="stroke" data-testid="analysis-link-hit"
+                onContextMenu={(event) => { event.preventDefault(); onMenu(menu, { x: event.clientX, y: event.clientY }) }}
+              />
+            )}
+          </g>
+        )
+      })}
     </g>
   )
 }
 
-export function shorten(text: string, max: number): string {
-  return text.length > max ? `${text.slice(0, max - 1)}…` : text
+/** What a right-click on a line of this scope's is about: the link it draws. */
+function edgeTarget(edge: PictureEdge, from: PictureNode, to: PictureNode, here: string) {
+  if (edge.kind === 'addresses') {
+    return { kind: 'addresses' as const, solutionId: recordId(to), causeId: recordId(from), strength: edge.strength }
+  }
+  return {
+    kind: 'explains' as const, causeId: recordId(to), id: recordId(from),
+    ...(from.scope !== here ? { scope: from.scope } : {}), strength: edge.strength,
+  }
 }
 
-/** What the marks mean, said once under the picture. */
-export function PictureLegend({ s }: { s: Translate }) {
+type NodesProps = AnalysisPictureProps & {
+  picture: SectionedPicture
+  open: ReadonlySet<string>
+  traced?: ReadonlySet<string>
+  hot?: string
+  onHot: (key: string | undefined) => void
+}
+
+/** The marker on a cause where a link leaves the picture: explained from above, or explaining causes below not drawn. */
+function markerOf(node: PictureNode, props: NodesProps, drawn: ReadonlySet<string>): string | undefined {
+  if (node.kind !== 'cause') return undefined
+  const above = node.scope === props.here ? props.explainedAbove?.get(node.cause.id) : undefined
+  if (above && above.length > 0) {
+    return props.s('observation.pictureFromAbove', { label: causeLabel(above[0].cause), scope: props.scopeLabel(above[0].scope) })
+  }
+  const away = node.cause.explains.filter((link) => link.scope !== undefined && !drawn.has(pictureKey(props.here, link.scope, link.id))).length
+  return away > 0 ? props.s('observation.pictureToBelow', { count: away }) : undefined
+}
+
+function Nodes(props: NodesProps) {
   const theme = useTheme()
+  const { picture, view, traced, onSelect, onMenu, onHot } = props
+  const drawn = useMemo(() => new Set(picture.nodes.map((node) => node.key)), [picture.nodes])
+  const maxSeen = Math.max(1, ...picture.nodes.map((node) => (node.kind === 'observation' ? node.observation.seen : 1)))
+  const keyDown = (key: string) => (event: KeyboardEvent) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return
+    event.preventDefault()
+    onSelect(key)
+  }
+  return (
+    <g>
+      {picture.nodes.map((node) => (
+        <g
+          key={node.key}
+          transform={`translate(${node.x},${node.y})`}
+          role="button"
+          tabIndex={0}
+          aria-label={`${recordLabel(node)} ${recordTitle(node)}`}
+          aria-describedby={props.hot === node.key ? 'analysis-hover' : undefined}
+          data-testid={`analysis-${node.kind}`}
+          data-key={node.key}
+          data-root={node.kind === 'cause' && node.root ? 'true' : undefined}
+          opacity={traced && !traced.has(node.key) ? 0.16 : 1}
+          style={{ cursor: 'pointer' }}
+          onClick={() => onSelect(node.key)}
+          onKeyDown={keyDown(node.key)}
+          onMouseEnter={() => onHot(node.key)}
+          onMouseLeave={() => onHot(undefined)}
+          onFocus={() => onHot(node.key)}
+          onBlur={() => onHot(undefined)}
+          onContextMenu={onMenu ? (event) => {
+            event.preventDefault()
+            onMenu({ kind: 'node', key: node.key }, { x: event.clientX, y: event.clientY })
+          } : undefined}
+        >
+          <RecordMark
+            node={node}
+            size={view.size}
+            selected={node.key === props.selectedKey}
+            matched={(props.filter?.filtering ?? false) && (props.filter?.matched.has(node.key) ?? false)}
+            openEnd={props.open.has(node.key)}
+            marker={markerOf(node, props, drawn)}
+            fill={node.kind === 'observation' ? seenTint(theme, node.observation.seen, maxSeen) : theme.palette.background.paper}
+            s={props.s}
+          />
+        </g>
+      ))}
+    </g>
+  )
+}
+
+/** The full title, the label, what it is and the scope, under the record hovered or focused. */
+function HoverCard({ node, picture, zoom, large, scopeLabel, s }: {
+  node: PictureNode; picture: SectionedPicture; zoom: number; large: boolean; scopeLabel: (path: string) => string; s: Translate
+}) {
+  const slot = PICTURE_SIZE[large ? 'large' : 'small']
+  const left = Math.min(Math.max(0, (node.x + slot.width / 2) * zoom - 150), Math.max(0, picture.width * zoom - 300))
+  return (
+    <Box
+      id="analysis-hover"
+      role="tooltip"
+      data-testid="analysis-hover"
+      sx={{
+        position: 'absolute', left, top: (node.y + slot.height) * zoom + 6, width: 300, pointerEvents: 'none', zIndex: 1,
+        bgcolor: 'text.primary', color: 'background.paper', borderRadius: 1, px: 1.25, py: 0.75, boxShadow: 4, fontSize: 12.5, lineHeight: 1.4,
+      }}
+    >
+      <b>{recordLabel(node)}</b> {recordTitle(node)}
+      <Box sx={{ fontSize: 11.5, mt: 0.25 }}>{recordState(node, s)} · {scopeLabel(node.scope)}</Box>
+    </Box>
+  )
+}
+
+/** What the marks mean, said once under the picture, for the size it is drawn in. */
+export function PictureLegend({ size, local, s }: { size: 'large' | 'small'; local: boolean; s: Translate }) {
+  const theme = useTheme()
+  const { palette } = theme
   const row = (glyph: ReactNode, text: string) => (
     <Box key={text} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-      <svg width={34} height={14} aria-hidden>{glyph}</svg>
+      <svg width={26} height={14} aria-hidden>{glyph}</svg>
       <Typography variant="caption" color="text.secondary">{text}</Typography>
     </Box>
   )
+  const box = (stroke: string, over: { dash?: string; width?: number; rx?: number; fill?: string } = {}) => (
+    <rect x={2} y={2} width={22} height={10} rx={over.rx ?? 3} fill={over.fill ?? 'none'} stroke={stroke} strokeWidth={over.width ?? 1.4} strokeDasharray={over.dash} />
+  )
+  const ring = (stroke: string, over: { dash?: string; double?: boolean } = {}) => (
+    <>
+      <circle cx={13} cy={7} r={6} fill="none" stroke={stroke} strokeWidth={1.4} strokeDasharray={over.dash} />
+      {over.double && <circle cx={13} cy={7} r={3} fill="none" stroke={stroke} strokeWidth={1} />}
+    </>
+  )
+  const solutionFill = palette.background.paper
+  const rows = size === 'large' ? [
+    row(<><rect x={2} y={2} width={22} height={10} rx={3} fill="none" stroke={palette.text.secondary} /><rect x={2} y={2} width={4} height={10} fill={palette.error.main} /></>, s('observation.legendStripe')),
+    row(box(palette.warning.main, { dash: '3 2' }), s('observation.legendAssumed')),
+    row(box(palette.success.main), s('observation.legendVerified')),
+    row(box(palette.secondary.main, { width: 2.4, rx: 6 }), s('observation.legendRoot')),
+    row(box(palette.primary.main, { fill: solutionFill }), s('observation.legendSolution')),
+  ] : [
+    row(<><circle cx={7} cy={7} r={4} fill={palette.primary.main} /><circle cx={19} cy={7} r={6} fill={palette.primary.main} /></>, s('observation.legendCircle')),
+    row(ring(palette.text.secondary), s('observation.legendHollow')),
+    row(ring(palette.warning.main, { dash: '3 2' }), s('observation.legendAssumed')),
+    row(ring(palette.success.main), s('observation.legendVerified')),
+    row(ring(palette.secondary.main, { double: true }), s('observation.legendDoubleRing')),
+    row(<rect x={8} y={2} width={10} height={10} rx={2} fill={solutionFill} stroke={palette.primary.main} />, s('observation.legendSquare')),
+  ]
   return (
-    <Box data-testid="analysis-legend" sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, px: 2, py: 1, borderTop: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
-      {row(<><circle cx={8} cy={7} r={4} fill="none" stroke={theme.palette.primary.main} /><circle cx={22} cy={7} r={6.5} fill="none" stroke={theme.palette.primary.main} /></>, s('observation.legendImpact'))}
-      {row(<><circle cx={6} cy={7} r={5} fill={theme.palette.primary.main} fillOpacity={0.25} /><circle cx={17} cy={7} r={5} fill={theme.palette.primary.main} fillOpacity={0.6} /><circle cx={28} cy={7} r={5} fill={theme.palette.primary.main} /></>, s('observation.legendSeen'))}
-      {row(<rect x={2} y={3} width={30} height={8} rx={2} fill="none" stroke={theme.palette.warning.main} strokeDasharray="3 2" />, s('observation.legendAssumed'))}
-      {row(<rect x={2} y={3} width={30} height={8} rx={2} fill="none" stroke={theme.palette.success.main} />, s('observation.legendVerified'))}
-      {row(<rect x={2} y={3} width={30} height={8} rx={4} fill="none" stroke={theme.palette.secondary.main} strokeWidth={2} />, s('observation.legendRoot'))}
-      {row(<><line x1={2} y1={3} x2={32} y2={3} stroke={theme.palette.text.secondary} strokeWidth={3} /><line x1={2} y1={8} x2={32} y2={8} stroke={theme.palette.text.secondary} strokeWidth={1.5} /><line x1={2} y1={12} x2={32} y2={12} stroke={theme.palette.text.secondary} strokeDasharray="3 3" /></>, s('observation.legendStrength'))}
+    <Box data-testid="analysis-legend" data-size={size} sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, px: 2, py: 1, borderTop: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
+      {rows}
+      {row(<><circle cx={13} cy={7} r={6} fill={palette.background.paper} stroke={palette.warning.main} /><text x={13} y={7} dy="0.35em" textAnchor="middle" fontSize={9} fontWeight={700} fill={palette.warning.main}>?</text></>, s('observation.legendOpenEnd'))}
+      {row(<><line x1={1} y1={3} x2={25} y2={3} stroke={palette.text.secondary} strokeWidth={3} /><line x1={1} y1={7} x2={25} y2={7} stroke={palette.text.secondary} strokeWidth={1.5} /><line x1={1} y1={11} x2={25} y2={11} stroke={palette.text.secondary} strokeDasharray="3 3" /></>, s('observation.legendStrength'))}
+      {local && row(box(palette.info.main), s('observation.legendScopeBelow'))}
+      {local && row(<line x1={1} y1={7} x2={25} y2={7} stroke={palette.info.main} strokeWidth={1.7} strokeDasharray="6 4" />, s('observation.legendAcross'))}
     </Box>
   )
 }

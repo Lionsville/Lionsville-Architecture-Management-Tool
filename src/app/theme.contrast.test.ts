@@ -30,7 +30,7 @@ import { FILLED_COLOURS, fieldOutline, filledAlert, filledControl, shellTheme } 
 import { getNodeTokens } from '../editor/theme/tokens'
 import type { AspectToken } from '../editor/theme/tokens'
 import { groupColors } from '../editor/canvas/DomainGroupLayer'
-import { seenTint } from '../observations/ui/AnalysisPicture'
+import { seenTint } from '../observations/ui/ChainMarks'
 import { dangerInk, inkOn } from '../widgets'
 
 type Rgb = { r: number; g: number; b: number }
@@ -345,10 +345,12 @@ const DIMMED: Record<string, [uses: number, what: string]> = {
   // Bars, bands, hatches and the today line: shapes whose words are in their tooltips.
   'src/roadmap/ui/RoadmapPage.tsx': [6, 'bars, bands, markers'],
   // The observations and causes not on the selected path, and a dropped solution, struck through as well.
-  'src/observations/ui/AnalysisPicture.tsx': [2, 'off-path dim'],
+  // On the analysis picture, what is off the chain a hover traces.
+  'src/observations/ui/AnalysisPicture.tsx': [1, 'off-trace dim'],
+  'src/observations/ui/ChainMarks.tsx': [2, 'off-path dim'],
   'src/observations/ui/SolutionPicture.tsx': [3, 'off-path dim, dropped solution'],
   // A merged or archived observation and a solution no longer live: a design call, like the retired card.
-  'src/observations/ui/ObservationsPage.tsx': [2, 'merged, archived, not live'],
+  'src/observations/ui/ObservationRegister.tsx': [2, 'merged, archived, not live'],
   // The column editor while its switch is off: a control that is off (1.4.3).
   'src/editor/AspectColumnsEditor.tsx': [1, 'switched off'],
   // The drop-zone highlight fading in: a tint, no words.

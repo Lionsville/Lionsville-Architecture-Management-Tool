@@ -186,9 +186,11 @@ describe('ObservationsPage', () => {
     fireEvent.click(screen.getByTestId('observation-tab-analysis'))
     // Nothing of this scope's is left unexplained, and one below is its own scope's to explain.
     expect(screen.queryByTestId('analysis-queue')).toBeNull()
-    // One circle: this scope's OB-0001. The archived one is not drawn, and one
-    // from below is its own scope's to explain.
-    expect(within(screen.getByTestId('analysis-picture')).getAllByTestId('analysis-observation')).toHaveLength(1)
+    // This scope's OB-0001 alone among its own: the archived one is not drawn.
+    // The one below is drawn too now, in its own scope's boundary (ADR-0032 §2),
+    // where it is that scope's to explain.
+    const drawn = within(screen.getByTestId('analysis-picture')).getAllByTestId('analysis-observation').map((node) => node.getAttribute('data-key'))
+    expect(drawn).toEqual(['acme/claims/intake#in1', 'o1'])
   })
 
   it('links an observation to a new cause with a strength, and lands on the cause', () => {

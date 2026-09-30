@@ -529,3 +529,26 @@ export function fitZoom(content: { width: number; height: number }, viewport: { 
   if (zoom < 0.75) zoom = Math.min(0.75, tall)
   return Math.max(0.4, Math.round(zoom * 100) / 100)
 }
+
+/**
+ * What hovering a record traces: the record, everything behind it and
+ * everything ahead of it along the lines drawn — its causes, their causes and
+ * what addresses them, and what it explains down to the observations.
+ */
+export function traceChain(key: string, edges: readonly { from: string; to: string }[]): Set<string> {
+  const reached = new Set([key])
+  for (const [start, end] of [['from', 'to'], ['to', 'from']] as const) {
+    const stack = [key]
+    const seen = new Set([key])
+    while (stack.length) {
+      const at = stack.pop()!
+      for (const edge of edges) {
+        if (edge[start] !== at || seen.has(edge[end])) continue
+        seen.add(edge[end])
+        reached.add(edge[end])
+        stack.push(edge[end])
+      }
+    }
+  }
+  return reached
+}

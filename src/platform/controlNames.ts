@@ -46,6 +46,8 @@ export const CONTROL_NAMES = [
   'observations.tabRegister', 'observations.tabAnalysis', 'observations.tabSolutions',
   'observations.register', 'observations.row', 'observations.picture', 'observations.new', 'observations.newCause',
   'observation.seenAgain', 'observation.merge', 'observation.cause',
+  // Over the observations page's tabs: the filters, their row, View local and the picture's two sizes.
+  'observations.filters', 'observations.filterRow', 'observations.viewLocal', 'observations.size',
   // The form that records an observation, with its causes (ADR-0032 §6).
   'observationForm.causes', 'observationForm.existingCause', 'observationForm.record', 'observationForm.description',
   'solutions.new', 'solutions.phases', 'solution.planExperiment', 'solution.decide',

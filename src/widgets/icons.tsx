@@ -716,3 +716,23 @@ export function MinusIcon({ size = 16 }: IconProps) {
     </svg>
   );
 }
+
+// --- the observations page's filters (ADR-0032 §8) ------------------------------------------
+
+/** A funnel: the filters that narrow a picture or a list (ADR-0032 §8). */
+export function FilterIcon({ size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M3 4.5h18l-6.75 8.25v6.75l-4.5-2.25v-4.5z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** A bookmark: filters kept under a name. */
+export function BookmarkIcon({ size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M6 3h12v18l-6-4.5L6 21z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+    </svg>
+  );
+}

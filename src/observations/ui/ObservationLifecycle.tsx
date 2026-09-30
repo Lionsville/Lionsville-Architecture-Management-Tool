@@ -220,12 +220,15 @@ export function experimentMoveActions(one: Experiment, s: Translate, onMove: (to
  * records it is hiding and the way to show them, so an empty list does not
  * read as nothing ever seen — or, where nothing is hidden, that nothing was.
  */
-export function EmptyRegister({ observations, showArchived, onShowArchived, s }: {
+export function EmptyRegister({ observations, showArchived, onShowArchived, filtering = false, s }: {
   observations: readonly Observation[]
   showArchived: boolean
   onShowArchived: () => void
+  /** A filter is on: what it hid is the filter's doing, and it says so (ADR-0032 §8). */
+  filtering?: boolean
   s: Translate
 }) {
+  if (filtering) return <>{s('observation.filterNothing')}</>
   const archived = observations.filter((one) => isArchived(one) && !isMerged(observations, one.id)).length
   if (archived === 0 || showArchived) return <>{s('observation.listEmpty')}</>
   return (

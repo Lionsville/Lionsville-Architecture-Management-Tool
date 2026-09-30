@@ -30,7 +30,7 @@ import type { CauseStrength } from '../observation'
 import { solutionKey } from '../solutionGraph'
 import type { SolutionGraph, SolutionGraphEdge, SolutionGraphNode, SolutionLane } from '../solutionGraph'
 import { OUTCOME_LABEL, PHASE_LABEL } from '../observationScope'
-import { BOX, CauseMark, Flag, LANE_WIDTH, LINE_HIT_WIDTH, ObservationMark, RADIUS, ROW_HEIGHT, STROKE, seenTint, shorten } from './AnalysisPicture'
+import { BOX, CauseMark, Flag, LANE_WIDTH, LINE_HIT_WIDTH, ObservationMark, RADIUS, ROW_HEIGHT, STROKE, seenTint, shorten } from './ChainMarks'
 import type { PictureMenuHandler, PictureTarget } from './PictureMenu'
 
 const WIDTH: Record<SolutionSize | 'unset', number> = { unset: 160, small: 160, medium: 184, large: 212 }

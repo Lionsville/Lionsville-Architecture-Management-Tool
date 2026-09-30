@@ -167,6 +167,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   [['the observations, one of them read', [
     'observations.tabRegister', 'observations.tabAnalysis', 'observations.tabSolutions', 'observations.register',
     'observations.row', 'observations.new', 'observation.seenAgain', 'observation.merge', 'observation.cause',
+    'observations.filters', 'observations.filterRow', 'observations.viewLocal',
   ], async () => {
     const dialog = await page('Observations')
     fireEvent.click((await within(dialog).findAllByTestId(/^observation-row-/))[0])
@@ -179,7 +180,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     const list = within(screen.getByRole('dialog')).getByTestId('solution-list')
     fireEvent.click(within(list).getAllByRole('button').find((one) => /let the portal show the estimate/i.test(one.textContent ?? ''))!)
   }],
-  ['the analysis', ['observations.picture'], async () => {
+  ['the analysis', ['observations.picture', 'observations.size'], async () => {
     fireEvent.click(await within(screen.getByRole('dialog')).findByTestId('observation-tab-analysis'))
   }],
   ['the solutions', ['solutions.new', 'solutions.phases'], async () => {

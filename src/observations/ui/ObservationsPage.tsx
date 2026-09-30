@@ -37,20 +37,12 @@ import List from '@mui/material/List'
 import ListItemButton from '@mui/material/ListItemButton'
 import ListItemText from '@mui/material/ListItemText'
 import ListSubheader from '@mui/material/ListSubheader'
-import Table from '@mui/material/Table'
-import TableBody from '@mui/material/TableBody'
-import TableCell from '@mui/material/TableCell'
-import TableHead from '@mui/material/TableHead'
-import TableRow from '@mui/material/TableRow'
-import TextField from '@mui/material/TextField'
 import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import { LanguageProvider } from '../../i18n'
-import { matchesQuery } from '../../model'
 import type { Language, Translate } from '../../i18n'
-import { formatDay } from '../../i18n/dates'
 import type { MarkdownRenderOptions } from '../../documentation/documentation'
 import type { HostModel } from '../../model/hostModel'
 import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
@@ -69,14 +61,17 @@ import {
 import type {
   Analysis, Cause, CauseAbove, CauseLink, CausePatch, Observation, ObservationBelow, ScopeAnalysis,
 } from '../observation'
-import { nodeKey } from '../graph'
-import { IMPACT_COLOR, IMPACT_LABEL, STATE_COLOR, STATE_LABEL, STRENGTH_LABEL } from '../observationScope'
+import type { SavedFilters } from '../filter'
+import { nodeKey, openEnds } from '../graph'
+import { IMPACT_COLOR, IMPACT_LABEL, STRENGTH_LABEL } from '../observationScope'
 import { AnalysisPicture, PictureLegend } from './AnalysisPicture'
 import { ArchiveDialog, MergeDialog } from './ObservationDialogs'
 import { EmptyRegister, crumbTrail, experimentMoveActions, preselectedCause, rootToggle, useLifecycle } from './ObservationLifecycle'
 import { PictureMenu } from './PictureMenu'
 import type { MenuAction, PictureTarget } from './PictureMenu'
-import { MergedNote, ReaderModeContext } from './Readers'
+import { ReaderModeContext } from './Readers'
+import { ObservationRegister } from './ObservationRegister'
+import { PictureToolbar } from './PictureToolbar'
 import type { MergedInto } from './Readers'
 import { RecordReader } from './PageReaders'
 import type { DeleteKind, Selected } from './PageReaders'
@@ -90,10 +85,11 @@ import {
 } from '../solution'
 import type { Solution, SolutionContext, SolutionPhase, SolutionPlan, SolutionState, SolutionWork } from '../solution'
 import { causesForProposal, experimentKey, solutionGraph, solutionKey } from '../solutionGraph'
-import { OUTCOME_COLOR, OUTCOME_LABEL, PHASE_COLOR, PHASE_LABEL, QUESTION_LABEL } from '../observationScope'
+import { PHASE_LABEL, QUESTION_LABEL } from '../observationScope'
 import { SolutionLegend, SolutionPicture } from './SolutionPicture'
 import { AddressDialog, DropDialog, NewExperimentDialog, NewSolutionDialog } from './SolutionDialogs'
 import type { NewSolution } from './SolutionDialogs'
+import { usePictureFilters } from './usePictureFilters'
 
 /** Everything the page hands back: the analysis and what is being done about it. */
 export type ObservationWork = Analysis & SolutionWork
@@ -140,6 +136,10 @@ export type ObservationsPageProps = {
   onChangeBelow?: ChangeBelow
   /** What a scope below is called, for the headings; the path where the host cannot say. */
   scopeLabel?: (path: string) => string
+  /** This scope's own path, which the filters name it by; the organisation's where absent. */
+  scope?: string
+  /** The filters this person saved, offered in every scope (ADR-0032 §8); absent, nothing can be saved. */
+  savedFilters?: SavedFilters
   /** This scope's own observations that a scope above folded into one of its own, by id. */
   absorbedAbove?: ReadonlyMap<string, { by: string; into: string; intoTitle: string; date: string }>
   /**
@@ -302,6 +302,10 @@ export function ObservationsPage(props: ObservationsPageProps) {
     causes, experiments, plans, decisions: (model.decisions ?? []).map((one) => ({ id: one.id, status: one.status })),
   }), [causes, experiments, plans, model.decisions])
   const scopeLabel = props.scopeLabel ?? ((path: string) => path)
+  const here = useMemo<ScopeAnalysis>(() => ({ scope: props.scope ?? '', ...work }), [props.scope, work])
+  /** The filters, View local and the look of the picture (ADR-0032 §8), over all three tabs. */
+  const f = usePictureFilters({ here, below, saved: props.savedFilters, name: model.name, scopeLabel })
+  const { labelOf } = f
 
   const [tab, setTab] = useState<Tab>('register')
   const [readerWidth, setReaderWidth] = useState<Record<Tab, number>>({
@@ -323,7 +327,6 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const [editingKey, setEditingKey] = useState<string | undefined>(undefined)
   /** A right-click on a picture: what it landed on, and where. */
   const [menu, setMenu] = useState<{ target: PictureTarget; at: { x: number; y: number } } | undefined>(undefined)
-  const [query, setQuery] = useState('')
   const [showMerged, setShowMerged] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
   /** What is being archived: a dialog asks why first. */
@@ -401,7 +404,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
   useOpening({
     open, request: { id: initialId, nonce: initialNonce }, work, shown: recordIdOf(selected, selectedKey),
     onShown: props.onShown,
-    land: ({ tab: to, key }) => { setQuery(''); if (to) setTab(to); setSelectedKey(key) },
+    land: ({ tab: to, key }) => { f.clear(); if (to) setTab(to); setSelectedKey(key) },
   })
 
   // --- changes ---------------------------------------------------------------------------
@@ -481,15 +484,13 @@ export function ObservationsPage(props: ObservationsPageProps) {
 
   // --- the register --------------------------------------------------------------------
 
-  const trimmed = query.trim()
-  const matches = (one: Observation) => !trimmed || matchesQuery(trimmed, [one.title, one.body, one.where ?? '', one.by ?? '', formatObservationNumber(one.number)])
+  const { shows } = f
   const ownRows = sortObservations(observations)
-    .filter((one) => (showMerged || !isMerged(observations, one.id)) && (showArchived || !isArchived(one)) && matches(one))
-  const causeRows = sortCauses(causes).filter((one) => !trimmed || matchesQuery(trimmed, [one.title, one.body, causeLabel(one)]))
+    .filter((one) => (showMerged || !isMerged(observations, one.id)) && (showArchived || !isArchived(one)) && shows(one.id))
+  const causeRows = sortCauses(causes).filter((one) => shows(one.id))
   const solutionRows = [...solutions].sort((a, b) => b.number - a.number)
-    .filter((one) => (showArchived || isLive(one)) && (!trimmed || matchesQuery(trimmed, [one.title, one.body, formatSolutionNumber(one.number)])))
-  const experimentRows = [...experiments].sort((a, b) => b.number - a.number)
-    .filter((one) => !trimmed || matchesQuery(trimmed, [one.title, one.body, one.hypothesis, formatExperimentNumber(one.number)]))
+    .filter((one) => (showArchived || isLive(one)) && shows(solutionKey(one.id)))
+  const experimentRows = [...experiments].sort((a, b) => b.number - a.number).filter((one) => shows(experimentKey(one.id)))
 
   const analysedInto = (id: string, scope?: string) => explainedBy(causes, id, scope)
   const mergedLabel = (one: Observation) => mergedIntoOf(one, {
@@ -498,130 +499,28 @@ export function ObservationsPage(props: ObservationsPageProps) {
     ...(props.onOpenScope ? { openAbove: (path: string, id: string) => { onClose(); props.onOpenScope?.(path, id) } } : {}),
   })
 
-  const observationRow = (one: Observation, scope?: string) => {
-    const key = nodeKey(one.id, scope)
-    const into = analysedInto(one.id, scope)
-    const merged = scope === undefined ? mergedLabel(one) : undefined
-    const archived = isArchived(one)
-    return (
-      <TableRow
-        key={key}
-        hover
-        selected={key === selectedKey}
-        onClick={() => setSelectedKey(key)}
-        sx={{ cursor: 'pointer', opacity: merged || archived ? 0.55 : 1 }}
-        data-testid={`observation-row-${key}`}
-        data-guide="observations.row"
-      >
-        <TableCell sx={{ fontFamily: 'ui-monospace, Menlo, monospace', fontSize: 11, color: 'text.secondary', whiteSpace: 'nowrap' }}>
-          {formatObservationNumber(one.number)}
-        </TableCell>
-        <TableCell sx={{ fontWeight: 600 }}>
-          {one.title}
-          {archived && <Chip size="small" variant="outlined" label={s('observation.archivedMark')} sx={{ height: 18, fontSize: 10, ml: 1 }} />}
-        </TableCell>
-        <TableCell sx={{ whiteSpace: 'nowrap', fontSize: 12 }}>{formatDay(one.date, props.language)}</TableCell>
-        <TableCell sx={{ fontSize: 12 }}>{one.where ?? ''}</TableCell>
-        <TableCell><Chip size="small" color={IMPACT_COLOR[one.impact]} label={s(IMPACT_LABEL[one.impact])} sx={{ height: 18, fontSize: 10 }} /></TableCell>
-        <TableCell sx={{ fontVariantNumeric: 'tabular-nums', fontSize: 12 }}>{s('observation.seenTimes', { count: one.seen })}</TableCell>
-        <TableCell sx={{ fontSize: 12 }}>
-          {merged
-            ? <Typography variant="caption" color="text.secondary"><MergedNote merged={merged} s={s} day={(date) => formatDay(date, props.language)} /></Typography>
-            : into.length
-              ? into.map((cause) => <Chip key={cause.id} size="small" variant="outlined" label={causeLabel(cause)} sx={{ height: 18, fontSize: 10, mr: 0.5 }} onClick={(event) => { event.stopPropagation(); setSelectedKey(cause.id) }} />)
-              : <Typography variant="caption" color="text.secondary">{s('observation.notAnalysed')}</Typography>}
-        </TableCell>
-      </TableRow>
-    )
-  }
-
-  const heading = (text: string) => (
-    <TableRow>
-      <TableCell colSpan={7} sx={{ bgcolor: 'background.default', py: 0.5, fontSize: 11, textTransform: 'uppercase', letterSpacing: '.05em', color: 'text.secondary' }}>{text}</TableCell>
-    </TableRow>
-  )
-
   const register = (
-    <Box data-testid="observation-register" data-guide="observations.register" sx={{ overflow: 'auto', minHeight: 0, minWidth: 0, bgcolor: 'background.paper' }}>
-      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', p: 1.5, borderBottom: 1, borderColor: 'divider' }}>
-        <TextField
-          size="small"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder={s('observation.searchPlaceholder')}
-          slotProps={{ htmlInput: { 'aria-label': s('observation.searchField'), autoComplete: 'off' } }}
-          sx={{ flex: 1 }}
-        />
-        <FormControlLabel
-          control={<Checkbox size="small" checked={showMerged} onChange={(event) => setShowMerged(event.target.checked)} />}
-          label={<Typography sx={{ fontSize: 12 }}>{s('observation.showMerged')}</Typography>}
-        />
-        <FormControlLabel
-          control={<Checkbox size="small" checked={showArchived} onChange={(event) => setShowArchived(event.target.checked)} />}
-          label={<Typography sx={{ fontSize: 12 }}>{s('observation.showArchived')}</Typography>}
-        />
-      </Box>
-      <Table size="small" stickyHeader>
-        <TableHead>
-          <TableRow>
-            <TableCell>{s('observation.colNumber')}</TableCell>
-            <TableCell>{s('observation.colTitle')}</TableCell>
-            <TableCell>{s('observation.colDate')}</TableCell>
-            <TableCell>{s('observation.colWhere')}</TableCell>
-            <TableCell>{s('observation.colImpact')}</TableCell>
-            <TableCell>{s('observation.colSeen')}</TableCell>
-            <TableCell>{s('observation.colCauses')}</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {heading(s('observation.scopeHere'))}
-          {ownRows.map((one) => observationRow(one))}
-          {ownRows.length === 0 && (
-            <TableRow><TableCell colSpan={7} sx={{ color: 'text.secondary' }} data-testid="observation-register-empty">{trimmed ? s('observation.searchEmpty', { query: trimmed }) : <EmptyRegister observations={observations} showArchived={showArchived} onShowArchived={() => setShowArchived(true)} s={s} />}</TableCell></TableRow>
-          )}
-          {belowByScope.map(([scope, held]) => (
-            <Fragment key={scope}>
-              {heading(s('observation.fromBelow', { scope: scopeLabel(scope) }))}
-              {held.filter((one) => matches(one.observation)).map((one) => observationRow(one.observation, one.scope))}
-            </Fragment>
-          ))}
-        </TableBody>
-      </Table>
-      <List component="div" dense disablePadding data-testid="cause-list">
-        <ListSubheader component="div" disableSticky sx={{ lineHeight: '32px', bgcolor: 'background.default' }}>{s('observation.causes')}</ListSubheader>
-        {causeRows.map((cause) => (
-          <ListItemButton key={cause.id} selected={cause.id === selectedKey} onClick={() => setSelectedKey(cause.id)} sx={{ py: 0.5 }}>
-            <ListItemText
-              primary={`${causeLabel(cause)} ${cause.title}`}
-              slotProps={{ primary: { sx: { fontSize: 13 } } }}
-            />
-            {isRootCause(cause) && <Chip size="small" variant="outlined" color="secondary" label={s('observation.rootCause')} sx={{ height: 18, fontSize: 10, mr: 1 }} />}
-            <Chip size="small" color={STATE_COLOR[cause.state]} label={s(STATE_LABEL[cause.state])} sx={{ height: 18, fontSize: 10 }} />
-          </ListItemButton>
-        ))}
-      </List>
-      <List component="div" dense disablePadding data-testid="solution-list">
-        <ListSubheader component="div" disableSticky sx={{ lineHeight: '32px', bgcolor: 'background.default' }}>{s('solution.solutions')}</ListSubheader>
-        {solutionRows.map((one) => {
-          const phase = phaseOf(one)
-          return (
-            <ListItemButton key={one.id} selected={solutionKey(one.id) === selectedKey} onClick={() => setSelectedKey(solutionKey(one.id))} sx={{ py: 0.5, opacity: isLive(one) ? 1 : 0.55 }}>
-              <ListItemText primary={`${formatSolutionNumber(one.number)} ${one.title}`} slotProps={{ primary: { sx: { fontSize: 13 } } }} />
-              <Chip size="small" color={PHASE_COLOR[phase]} label={s(PHASE_LABEL[phase])} sx={{ height: 18, fontSize: 10 }} />
-            </ListItemButton>
-          )
-        })}
-      </List>
-      <List component="div" dense disablePadding data-testid="experiment-list">
-        <ListSubheader component="div" disableSticky sx={{ lineHeight: '32px', bgcolor: 'background.default' }}>{s('solution.experiments')}</ListSubheader>
-        {experimentRows.map((one) => (
-          <ListItemButton key={one.id} selected={experimentKey(one.id) === selectedKey} onClick={() => setSelectedKey(experimentKey(one.id))} sx={{ py: 0.5 }}>
-            <ListItemText primary={`${formatExperimentNumber(one.number)} ${one.title}`} secondary={one.tests.map((id) => nameOf(id)).join(', ')} slotProps={{ primary: { sx: { fontSize: 13 } }, secondary: { sx: { fontSize: 11 } } }} />
-            <Chip size="small" color={OUTCOME_COLOR[one.outcome]} label={s(OUTCOME_LABEL[one.outcome])} sx={{ height: 18, fontSize: 10 }} data-testid={`experiment-row-outcome-${one.id}`} />
-          </ListItemButton>
-        ))}
-      </List>
-    </Box>
+    <ObservationRegister
+      own={ownRows}
+      below={f.rowsBelow(belowByScope)}
+      causes={causeRows}
+      solutions={solutionRows}
+      experiments={experimentRows}
+      empty={<EmptyRegister observations={observations} showArchived={showArchived} onShowArchived={() => setShowArchived(true)} filtering={f.result.filtering} s={s} />}
+      selectedKey={selectedKey}
+      onSelect={setSelectedKey}
+      explainedBy={analysedInto}
+      mergedInto={mergedLabel}
+      phaseOf={(one) => phaseOf(one)}
+      nameOf={(id) => nameOf(id)}
+      scopeLabel={scopeLabel}
+      showMerged={showMerged}
+      onShowMerged={setShowMerged}
+      showArchived={showArchived}
+      onShowArchived={setShowArchived}
+      language={props.language}
+      s={s}
+    />
   )
 
   // --- the analysis ----------------------------------------------------------------------
@@ -633,6 +532,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
     ['observation.phaseAssumed', causes.filter((one) => one.state === 'assumed').length],
     ['observation.phaseVerified', causes.filter((one) => one.state === 'verified').length],
     ['observation.phaseRoots', causes.filter((one) => isRootCause(one)).length],
+    ['observation.phaseOpenEnds', openEnds([here], here.scope, props.explainedAbove).size],
   ] as const
 
   // --- the right-click ------------------------------------------------------------------
@@ -767,15 +667,34 @@ export function ObservationsPage(props: ObservationsPageProps) {
           </Typography>
         ))}
       </Box>
-      <AnalysisPicture analysis={analysis} below={belowLinked} selectedKey={selectedKey} onSelect={setSelectedKey} onMenu={openMenu} s={s} />
-      <PictureLegend s={s} />
+      <AnalysisPicture
+        scopes={f.inView}
+        here={here.scope}
+        filter={f.result}
+        explainedAbove={props.explainedAbove}
+        view={f.view}
+        scopeLabel={labelOf}
+        hereLabel={f.hereLabel(s)}
+        selectedKey={selectedKey}
+        onSelect={setSelectedKey}
+        onMenu={openMenu}
+        s={s}
+      />
+      <PictureLegend size={f.view.size} local={f.viewLocal} s={s} />
     </Box>
   )
 
-  const graph = useMemo(
-    () => solutionGraph(analysis, { solutions: [...solutions], experiments: [...experiments] }, plans, { below: belowLinked, wholeChain, showDropped }),
-    [analysis, solutions, experiments, plans, belowLinked, wholeChain, showDropped],
-  )
+  /** The Solutions tab draws what the filters left, as the picture does. */
+  const { visible, filtering } = f.result
+  const graph = useMemo(() => {
+    const keep = <T,>(list: readonly T[], key: (one: T) => string) => (filtering ? list.filter((one) => visible.has(key(one))) : [...list])
+    return solutionGraph(
+      { observations: keep(observations, (one) => one.id), causes: keep(causes, (one) => one.id) },
+      { solutions: keep(solutions, (one) => solutionKey(one.id)), experiments: keep(experiments, (one) => experimentKey(one.id)) },
+      plans,
+      { below: keep(belowLinked, (one) => nodeKey(one.observation.id, one.scope)), wholeChain, showDropped },
+    )
+  }, [observations, causes, solutions, experiments, plans, belowLinked, wholeChain, showDropped, visible, filtering])
   const flags = useMemo(() => {
     const found = new Map<string, { text: string; strong?: boolean }>()
     for (const cause of orphanRoots) found.set(cause.id, { text: s('solution.flagNoSolution') })
@@ -895,6 +814,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
             </>
           )}
         </Box>
+        {!editing && <PictureToolbar f={f} tab={tab} scopeLabel={labelOf} s={s} />}
 
         {/* Editing gives the record the whole width — the editor on the left, its
             preview on the right — and reading puts the picture back beside it. */}
