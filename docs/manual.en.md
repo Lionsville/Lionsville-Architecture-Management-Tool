@@ -124,7 +124,9 @@ address, and renaming is not moving. Moving one changes the address of the
 scope and of everything under it, and leaves the content untouched: every
 stand-in elsewhere in the folder that pointed into it is carried over to the
 new address in the same step, so a move never leaves a trail of stale copies
-behind it. On boot the app reopens the scope you had open.
+behind it. So is every cause that explains one of its causes, and every
+observation that absorbed one of its observations: they name it by its
+address, and follow it. On boot the app reopens the scope you had open.
 
 Seven names are refused, because a scope's own folders use them already:
 `diagrams`, `docs`, `decisions`, `transitions`, `observations`, `images` and `logos`.
@@ -825,6 +827,12 @@ cause ends the chain: nothing explains it, and a solution addresses it. It
 may explain causes and observations. A cause that is not a root cause and
 that nothing explains is an **open end** — the analysis is not finished
 there — marked `?` in the picture and counted over it.
+
+**An analysis from an earlier version** said no root causes: a root cause was
+then any cause nothing explained. It opens with a root cause wherever a
+solution that was not dropped addresses a cause, and nowhere else, so a cause
+that was a root only because nothing explained it yet opens as an open end.
+The same holds wherever the work is kept.
 
 **Make root** and **Make cause** are steps with a name in the Activity list,
 and each asks first. Make root is refused while a cause explains this one:

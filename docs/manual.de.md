@@ -139,7 +139,9 @@ abgelegt ist, ist seine Adresse, und Umbenennen ist kein Verschieben. Einen zu
 verschieben ändert die Adresse des Bereichs und von allem darunter und lässt den
 Inhalt unberührt: jeder Platzhalter anderswo im Ordner, der hineinzeigte, wird
 im selben Schritt an die neue Adresse mitgenommen, sodass ein Verschieben nie
-eine Spur veralteter Kopien hinterlässt. Beim Start öffnet die App den Bereich
+eine Spur veralteter Kopien hinterlässt. Ebenso jede Ursache, die eine seiner
+Ursachen erklärt, und jede Beobachtung, die eine seiner Beobachtungen
+aufgenommen hat: Sie nennen ihn bei seiner Adresse und gehen mit. Beim Start öffnet die App den Bereich
 wieder, den Sie geöffnet hatten.
 
 Sieben Namen werden abgelehnt, weil die eigenen Ordner eines Bereichs sie schon
@@ -940,6 +942,13 @@ und eine Lösung setzt an ihr an. Sie darf Ursachen und Beobachtungen
 erklären. Eine Ursache, die keine Grundursache ist und die nichts erklärt,
 ist ein **offenes Ende** — dort ist die Analyse noch nicht fertig —, im Bild
 mit `?` markiert und darüber gezählt.
+
+**Eine Analyse aus einer früheren Version** nannte keine Grundursachen: Eine
+Grundursache war damals jede Ursache, die von nichts erklärt wurde. Sie öffnet mit einer
+Grundursache überall dort, wo eine nicht verworfene Lösung an einer Ursache
+ansetzt, und nirgends sonst; eine Ursache, die nur Grundursache war, weil
+noch nichts sie erklärte, öffnet als offenes Ende. Das gilt, wo auch immer die
+Arbeit aufbewahrt wird.
 
 **Zum Grund machen** und **Zur Ursache machen** sind Schritte mit einem Namen
 in der Aktivitätsliste, und jeder fragt zuerst. Zum Grund machen wird

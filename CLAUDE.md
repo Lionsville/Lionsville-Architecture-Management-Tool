@@ -6,7 +6,7 @@ Layer-7 application landscape and the C4 container diagrams under it. **There is
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **7148 tests** and one of every config. The
+One codebase, in modules, with **7299 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -56,7 +56,7 @@ the two categories above.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 7148 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 7299 tests. Run it
 after every change. The tests run with coverage on, and `build/coverage.ts`
 prints one line per module of the import matrix and fails below that module's
 floor — the level it was measured at, written down so it can only go up.
@@ -267,6 +267,12 @@ src/observations/ What was seen, what lies behind it (ADR-0021), and what is
                                       chains they keep — and saved filters
                     form · wording    what the new observation asks and refuses,
                                       Seen before?, and the wording hint's lists
+                    rootsFromSolutions   what an analysis kept before a root
+                                      cause was said means: a cause a live
+                                      solution addresses is a root, and
+                                      `shared` is dropped — the one rule every
+                                      place work is kept reads its older data
+                                      by (ADR-0032 §9)
                     ui/ObservationsPage  the register, the analysis, the solutions,
                                       the readers; View local, the filter row and
                                       the forms beside it (`ui/`)
@@ -382,7 +388,10 @@ src/projects/     A scope: open, save, order, summarise, address, remember.
                                       the repositories in the screens' words: the
                                       tree as summaries, a scope by its address,
                                       a change as steps expecting what was read,
-                                      and a content placed whole (ADR-0031)
+                                      a content placed whole (ADR-0031), and a
+                                      move that carries the stand-ins, the cause
+                                      links and the absorbed events naming the
+                                      scopes it moves (`readdress`, ADR-0032 §4)
                     copyScopes        every scope one place keeps, copied into
                                       another that keeps what it has — nothing
                                       there written over, nothing taken away
@@ -574,7 +583,13 @@ src/adapters/     The outside world, one folder per flavour.
                                       browser's storage, which differ only in
                                       where the values sit; a history kept as
                                       checkpoints and changes, and pictures'
-                                      bytes nothing names taken away a day on
+                                      bytes nothing names taken away a day on.
+                                      A content is kept at `CONTENT_FORMAT`
+                                      (`kept.ts`), 2: one at 1 reads its roots
+                                      through its solutions (`rootsFromSolutions`)
+                                      and is written at 2 by the next write, and
+                                      one at 3 or more is a later build's, read
+                                      in part (ADR-0032 §9)
                     memory/           …and InMemoryCommandChannel: a head model, a
                                       bounded log and the subscribers, for two
                                       sessions put in one order without a process;
@@ -666,9 +681,9 @@ src/app/          The shell around the editor.
                                       confirm, and the barrier on the stack (§10)
                     carryRefs         the pass a move makes over the refs
                                       pointing into it (§3)
-                    rewriteScope      read, change, write back expecting what
-                                      was read — and again over a scope that
-                                      moved in between
+                    useChangeBelow    a change to a scope below made from the
+                                      observations page: that scope's step,
+                                      through `changeScope` (ADR-0032 §2)
                     useLibrary · dialogs/AddFromLibraryDialog   the palette's
                                       *Existing application…*: the picker over
                                       the register, and the one question it asks
@@ -1080,7 +1095,7 @@ identifiers is still a list of a customer's identifiers.
 | What the chip that names a registered source says (ADR-0022, amended) | the provider's **`chip`**: the `label` it goes by now — not the `name` it was opened under, which is decided at the handshake and says nothing about who is signed in — with `tipKey` for the hover, falling through to `describeKey` where it gave none, and `onClick` where there is something to press, which makes it a `button` and not a span, because that bar is the window's drag surface. Re-read on `onSourceWork`, as `statusOf` is. A provider's **`chipPanel`** on the registration is what pressing it opens, drawn under it in the theme, the language and a boundary, handed what a chrome is and `close`. Its **`chipFace`** is what the chip looks like where a word is not enough: drawn inside the chip in place of the label, handed `label` and whether the panel is `open`; the label stays the button's name and its tooltip, and a face that throws is drawn as the label. Where the open source's provider gave any of the three, the chip is on every home and on the workspace's bar (`SourceChipView`), not on the organisation's home alone, and it sits **at the right end, right after the agent control** and before the menu, on every one of those bars. Absent for the three that ship, whose chip is unchanged byte for byte and where it always was |
 | Where an address lands (ADR-0022, amended) | `Shell.opensAt` with no `view` lands on **that scope's home**, with a `view` on that board (`app/bootLanding.ts`'s `landingOf`); `{ scope: '' }` is a provider's way to start every fresh open on the organisation's home. With no address, the last scope reopens as it was. The tree's *Open* goes to a scope's home too; a board is opened from the home's list |
 | A dialog an address may open (ADR-0022, amended) | `?open=preferences`, and nothing else (`BOOT_DIALOGS`): open at the first paint, taken out of the address at once |
-| What a whole write expects (ADR-0022, amended) | a **revision**: `ScopeSnapshot.revision`, stamped by `load`, opaque, handed back as `save(scope, expects)`; a store holding anything else refuses `shell.scopeMoved` and writes nothing. A read-change-write outside the open session goes through `app/rewriteScope.ts`, which reads again and makes the change again; `Shell.publishesSteps` says the open scope's steps are its write, and then the shell writes it whole nowhere |
+| What a whole write expects (ADR-0022, amended) | a **revision**: `ScopeSnapshot.revision`, stamped by `load`, opaque, handed back as `save(scope, expects)`; a store holding anything else refuses `shell.scopeMoved` and writes nothing. A change to a scope outside the open session goes through `projects/scopeAccess.changeScope`, as steps that expect what was read and are worked out again over a scope that moved; `Shell.publishesSteps` says the open scope's steps are its write, and then the shell writes it whole nowhere |
 | What a refusal where work is kept says (ADR-0022, amended) | the source's own **`sourceFailure`**: a sentence rather than a key, because what is worth saying depends on the cause — and carried with a source's parts rather than declared on the kind, since what a store said no for is a fact about this opening and not about the sort of place it is. `undefined` is *nothing from me about this one*, and then nothing of ours is said either and the latch stays open, because a refusal nobody mentioned must not be followed by *saving works again*. Core's three bring none |
 | Whether a way in is drawn where it is about to be (ADR-0022, amended) | `connect.offer(context)`: told the source as it stands and the address the boot read, answering `null` for *not here* and a label for something else to say — so a standing *Connect to…* does not offer a person the place they are already working from. Asked again on `onSourceWork`, afresh per source, and a provider that throws costs its own button the label it asked for. Absent, or `undefined`, leaves `connect.labelKey` exactly as it is, which is what the folder's does |
 | What a provider puts inside *Connect an agent* (ADR-0022, amended) | its **`agentPanel`**: a component handed the open scope's `ScopeSession` where there is one, drawn inside the theme and in a boundary of its own — in a tab in place of the sentence about the desktop, on a host under the loopback section rather than over it, because both ways in exist there and hiding one of two true answers is not this shell's call. Asked of the open source's provider alone, unlike a chrome and menu lines, because a panel from a provider answering for nothing is a way in to nowhere. Core's three register none |
@@ -1090,7 +1105,7 @@ identifiers is still a list of a customer's identifiers.
 | A step this session did not make (ADR-0022, amended) | an **external step**: `origin: 'remote'`, `by`, and `via` — the client that author made it with, where whoever handed the step over said which, said on the Activity line as *by NAME via CLIENT* and answered by `activity.list` — on the stack, landed with `steps.applyExternal`, named in the Activity list, and stepped over by ⌘Z. `steps.rebase` lifts a run of ours off the model and puts it back around one — named by `stepId` or by `changeId`, and with `steps` for the bodies of what the cap has taken off this stack; `steps.onChange` is how anything outside hears what was done here, **once per announcement**, each under a `changeId` of its own, because a step that coalesces is one step here and one sequenced step per fold out there (`HistoryStep.folds`); `steps.settled` is how the far end says it is done with one, and the log's cap of 200 will not evict a fold nobody has said that about; `command.taken` is what a create on an id another author took is refused with |
 | What a build composed from this one may ask of main (ADR-0022, amended) | a **desktop hook**: `registerDesktopHook` at composition, run where main registers its own channels. `ChannelHost` is as much of `ipcMain` as answering a call takes, `SecretStore` is read · write · remove over a file in `userData` at mode 0600, and `origins()` names where the page may reach — folded into `connect-src`, and into `img-src` where that hook said pictures load from there, asked again every time a document's header is built and dropped unless it is `scheme://host[:port]` and nothing more (`electron/main/csp.ts`). Its channels are named `hook:<hook>:<what>` (`HOOK_CHANNEL_PREFIX`) and the page reaches them through the preload's one generic door, `window.desktop.invokeHook` — which opens for that prefix and nothing else. Core registers none |
 | Where a working file lands (ADR-0025) | **asked, every time**, after the file is read: *A new folder…* — chosen with the folder picker, written with the file's top scope as its root, occupied folders confirmed separately, and the app moves there — or *Replace “<scope>” here*, what opening always did, with the warning on the button. `landWorkingFile` in `app/workingFileFlows.ts`; `chooseFolderDestination` in the composition; the boot's `folder.onChooseForWorkingFile` |
-| Working-folder format | **9** — `SCOPE_FORMAT_VERSION`, and the `.lvarch`'s version with it; 7 is 6 with `observations/` (ADR-0021); 8 is 7 with `observations/solutions/` and `observations/experiments/` (ADR-0026); 9 is 8 with `root: true` on a root cause and `RC-` in its heading, and `shared` no longer written (ADR-0032). A folder written before reads a cause a live solution addresses as a root cause, and nothing else |
+| Working-folder format | **9** — `SCOPE_FORMAT_VERSION` (`adapters/folder/format/scopeHeader.ts`), and the `.lvarch`'s version with it; 7 is 6 with `observations/` (ADR-0021); 8 is 7 with `observations/solutions/` and `observations/experiments/` (ADR-0026); 9 is 8 with `root: true` on a root cause and `RC-` in its heading, and `shared` no longer written (ADR-0032). A folder written before reads a cause a live solution addresses as a root cause, and nothing else (`observations/rootsFromSolutions`, which browser storage and memory read their content format 1 by too) |
 | What one scope's folder holds | `scope.json` · `model.json` · the seven folders below · the scopes filed under it |
 | A scope's own folders (and the names a child may not take) | `diagrams` `docs` `decisions` `transitions` `observations` `images` `logos` |
 | What a scope says it is | a **label**: `organisation` · `domain` · `programme` · `team` · `landscape` — never a branch |

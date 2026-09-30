@@ -128,7 +128,9 @@ Hernoemen hernoemt alleen het label — waar iets staat is zijn adres, en
 hernoemen is niet verplaatsen. Verplaatsen verandert het adres van het onderdeel
 en van alles eronder, en laat de inhoud ongemoeid: elke verwijzing elders in de
 map die naar iets in die tak wees, gaat in dezelfde stap mee naar het nieuwe
-adres, zodat een verplaatsing geen spoor van verouderde kopieën achterlaat. Bij
+adres, zodat een verplaatsing geen spoor van verouderde kopieën achterlaat. Zo
+ook elke oorzaak die een van zijn oorzaken verklaart, en elke waarneming die een
+van zijn waarnemingen opnam: die noemen het bij zijn adres, en gaan mee. Bij
 het starten opent de app het onderdeel dat je open had.
 
 Zeven namen worden geweigerd, omdat de mappen van een onderdeel ze al gebruiken:
@@ -889,6 +891,13 @@ de keten af: niets verklaart haar, en een oplossing pakt haar aan. Ze mag
 oorzaken en waarnemingen verklaren. Een oorzaak die geen grondoorzaak is en
 die door niets verklaard wordt is een **open einde** — daar is de analyse nog
 niet af — met `?` gemarkeerd in de tekening en erboven geteld.
+
+**Een analyse uit een eerdere versie** noemde geen grondoorzaken: een
+grondoorzaak was toen elke oorzaak die door niets verklaard werd. Ze opent met
+een grondoorzaak overal waar een oplossing die niet is laten vallen een oorzaak
+aanpakt, en nergens anders, dus een oorzaak die alleen grondoorzaak was omdat
+nog niets haar verklaarde, opent als open einde. Dat geldt waar het werk ook
+bewaard wordt.
 
 **Grond maken** en **Tot oorzaak maken** zijn stappen met een naam in de
 Activiteit-lijst, en elk vraagt eerst. Grond maken wordt geweigerd zolang een

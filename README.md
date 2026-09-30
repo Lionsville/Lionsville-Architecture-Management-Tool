@@ -135,14 +135,17 @@ run per list and are never reused.
 
 Every scope keeps a register of **observations** — what a team saw, where,
 how often and how much it matters — and analyses them, as a team, into
-**causes** and causes of causes until a **root cause** stands at the end.
-The analysis is drawn: observations on the left, causes in lanes, roots on
-the right, with the weight of each line saying how firmly one explains the
-other. Two observations that turn out to be the same are merged with the
-history kept, and one that was fixed is archived rather than deleted; an
-observation is local unless it is explicitly shared with the
-scopes above, which can then analyse it or merge it into their own
-(`docs/decisions/0021`).
+**causes** and causes of causes until a **root cause** stands at the end —
+one the team says is one, `RC-` on the cause's own number, and what a
+solution addresses. The analysis is drawn: observations on the left, causes
+in lanes, roots and then solutions on the right, with the weight of each line
+saying how firmly one explains the other, and filters, two sizes and a trace
+to find a way through it. Two observations that turn out to be the same are
+merged with the history kept, and one that was fixed is archived rather than
+deleted. Every scope reads the analysis of every scope below it, with nothing
+shared first: local there, global here, each scope below in a boundary of its
+own, and a cause above may explain a cause below (`docs/decisions/0021`,
+`0032`).
 
 ### One search over all of it
 
@@ -303,7 +306,7 @@ locally).
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 7148 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 7299 tests. Run it
 after every change; it is fast on purpose.
 
 ```bash
