@@ -10,7 +10,7 @@ import { useMemo } from 'react'
 import type { ComponentProps } from 'react'
 import { shownAsOf } from '../editor'
 import { AdrPage } from '../decisions/ui/AdrPage'
-import { ObservationsPage } from '../observations/ui/ObservationsPage'
+import type { ObservationsPage as ObservationsPageShape } from '../observations/ui/ObservationsPage'
 import { flattenScopes } from '../projects/scope'
 import { scopeDisplayName } from '../projects/scopeLabel'
 import { PlanPage, ReplaceDialog, RoadmapPage } from '../roadmap'
@@ -30,6 +30,14 @@ const ServiceReportPage = lazyPart<ComponentProps<typeof ServiceReportShape>>(
 )
 const PlatformReportPage = lazyPart<ComponentProps<typeof PlatformReportShape>>(
   () => import('../technology/ui/ReportPage').then((held) => held.PlatformReportPage), { until: (props) => props.open },
+)
+/**
+ * The observations page is reached from a card or a tab's menu, never the first
+ * view, and with its picture, its filters and its forms it is the largest page
+ * the workspace has: its script arrives when it is first opened.
+ */
+const ObservationsPage = lazyPart<ComponentProps<typeof ObservationsPageShape>>(
+  () => import('../observations/ui/ObservationsPage').then((held) => held.ObservationsPage), { until: (props) => props.open },
 )
 
 export function WorkspacePages({ parts }: { parts: WorkspaceParts }) {
