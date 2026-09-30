@@ -36,8 +36,14 @@ import { sheetPage } from '../../business'
 import { buildEdges, buildNodes } from '../../editor/graph'
 import type { BuildGraphArgs } from '../../editor/graph'
 import type { DesignModel } from '../../model'
-import { analysisGraph } from '../../observations/graph'
+import type { HostModel } from '../../model/hostModel'
+import { analysisGraph, analysisPicture } from '../../observations/graph'
 import { explainedBy, rootCauses } from '../../observations/observation'
+
+/** A scope's four lists, as the picture reads a scope. */
+const analysisOf = (model: HostModel) => ({
+  observations: model.observations ?? [], causes: model.causes ?? [], solutions: model.solutions ?? [], experiments: model.experiments ?? [],
+})
 
 /** The scope with the applications in it — by what it is, since the platforms sit beside it (ADR-0013). */
 const landscapeOf = (example: (typeof EXAMPLES)[number]) =>
@@ -496,6 +502,37 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s teaches by e
     }
     // Nothing explains a root cause.
     for (const root of roots) expect(explainedBy(causes, root.id), root.id).toEqual([])
+  })
+
+  /**
+   * The organisation has an analysis of its own (ADR-0032 §1, §4): one
+   * observation, and a root cause that explains it and one of the
+   * landscape's causes — so View local on the organisation draws a line
+   * across the boundary, and the landscape reads what explains it off the
+   * tree.
+   */
+  it('gives the organisation a global analysis whose root cause explains a cause of the landscape', () => {
+    const scopes = exampleScopes(example)
+    const project = scopes.find((scope) => scope.kind === 'landscape')!
+    const organisation = scopes.find((scope) => scope.kind === 'organisation')!.model
+    expect(organisation.observations?.map((one) => one.id)).toEqual(['ob-replaced-still-run'])
+    const [root] = organisation.causes ?? []
+    expect(root.root).toBe(true)
+    expect(root.explains).toEqual([
+      { id: 'ob-replaced-still-run', strength: 'strong' },
+      { id: 'ca-two-raters', scope: project.path, strength: 'normal' },
+    ])
+    // The cause below is no root cause, which is what lets anything explain it.
+    expect(model.causes?.find((one) => one.id === 'ca-two-raters')?.root).toBeUndefined()
+    const tree = indexScopes(scopes.map((scope) => ({ path: scope.path, model: scope.model })))
+    expect(tree.explainedFromAbove(project.path).get('ca-two-raters')?.map((one) => [one.scope, one.cause.id]))
+      .toEqual([[example.path, 'ca-nobody-retires']])
+    const picture = analysisPicture(
+      [{ scope: example.path, ...analysisOf(organisation) }, ...tree.analysisBelow(example.path)],
+      { here: example.path, size: 'large' },
+    )
+    expect(picture.edges.filter((edge) => edge.crossing).map((edge) => [edge.from, edge.to]))
+      .toEqual([[`${project.path}#ca-two-raters`, 'ca-nobody-retires']])
   })
 })
 

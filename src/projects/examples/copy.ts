@@ -82,7 +82,14 @@ export function copyExampleInto(
     // there. The example ships at its own paths and lands wherever the root
     // sends it, so the two have to move together — which the drift check found
     // the moment it existed.
-    model: { ...scope.model, elements: scope.model.elements.map(withRef(readdress)) },
+    model: {
+      ...scope.model,
+      elements: scope.model.elements.map(withRef(readdress)),
+      // So is the scope a cause above names when it explains a cause below
+      // (ADR-0032 §4): the organisation's root cause in the shipped example
+      // explains one of the landscape's, wherever the landscape lands.
+      ...(scope.model.causes ? { causes: scope.model.causes.map(withLinks(readdress)) } : {}),
+    },
   }))
 }
 
@@ -116,6 +123,15 @@ export async function placeCopy(
   await placeTogether(repositories, copy.map((scope) => ({
     address: scope.path, content: contentOf(scope, []), pictures: picturesOf(scope.imageLibrary),
   })))
+}
+
+/** One cause's links to a scope below, re-addressed. Untouched where it has none. */
+function withLinks(readdress: (path: ScopePath) => ScopePath) {
+  return (cause: NonNullable<ScopeSnapshot['model']['causes']>[number]) => (
+    cause.explains.some((link) => link.scope !== undefined)
+      ? { ...cause, explains: cause.explains.map((link) => (link.scope === undefined ? link : { ...link, scope: readdress(link.scope) })) }
+      : cause
+  )
 }
 
 /** One element's `ref`, re-addressed. Untouched where there is none. */

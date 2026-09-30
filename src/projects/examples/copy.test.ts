@@ -79,6 +79,11 @@ describe('where a copy lands', () => {
       [...new Set(scope.model.elements.map((e) => e.ref).filter((ref) => ref !== undefined))]
     expect(refs(asRoot[1])).toEqual(['', 'platforms'])
     expect(refs(asChild[1])).toEqual(['acme-logistics', 'acme-logistics/platforms'])
+
+    // The organisation's root cause names the landscape's cause by the landscape's path (ADR-0032 §4).
+    const across = (scope: typeof asRoot[number]) => scope.model.causes?.flatMap((one) => one.explains).find((link) => link.scope !== undefined)?.scope
+    expect(across(asRoot[0])).toBe('application-landscape')
+    expect(across(asChild[0])).toBe('acme-logistics/application-landscape')
   })
 })
 
