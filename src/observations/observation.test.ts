@@ -4,8 +4,9 @@
 import { describe, expect, it } from 'vitest'
 import { translator } from '../i18n'
 import {
-  absorbShared, absorbedBy, causeDepth, causeEvidence, explainedBy, formatCauseNumber, formatObservationNumber,
-  isArchived, isMerged, isRootCause, linkCause, liveObservations, mergeObservations, newCause, newObservation,
+  absorbShared, absorbedBy, causeDepth, causeEvidence, causeLabel, explainedBy, formatCauseNumber, formatObservationNumber,
+  isArchived, isMerged, isRootCause, linkCause, linkRefusal, liveObservations, makeCause, makeRootCause,
+  mergeObservations, newCause, newObservation,
   nextCauseNumber, nextObservationNumber, removeCause, removeObservation, rootCauses, seenAgain, seenDayProblem,
   setArchived, setShared, unlinkCause, updateCause, updateObservation, verifyCause, withConfirmation,
 } from './observation'
@@ -22,9 +23,12 @@ const cause = (over: Partial<Cause>): Cause => ({
 })
 
 describe('numbering', () => {
-  it('formats as OB- and CA- with four digits', () => {
+  it('formats as OB- and CA- with four digits, and a root cause as RC- on the same number', () => {
     expect(formatObservationNumber(7)).toBe('OB-0007')
     expect(formatCauseNumber(12)).toBe('CA-0012')
+    expect(formatCauseNumber(12, true)).toBe('RC-0012')
+    expect(causeLabel(cause({ number: 4 }))).toBe('CA-0004')
+    expect(causeLabel(cause({ number: 4, root: true }))).toBe('RC-0004')
   })
   it('is one past the highest, and never reuses a gap', () => {
     expect(nextObservationNumber([])).toBe(1)
@@ -176,20 +180,37 @@ describe('causes and their links', () => {
     list = unlinkCause(list, 'c2', 'c1')
     expect(list[1].explains).toEqual([])
   })
-  it('a root cause explains something and is explained by nothing; depth counts the causes between', () => {
+  it('a root cause is the one that says so, whatever the links; depth counts the causes between', () => {
     const list = [
       cause({ explains: [{ id: 'o1', strength: 'strong' }] }),
       cause({ id: 'c2', number: 2, explains: [{ id: 'c1', strength: 'normal' }] }),
-      cause({ id: 'c3', number: 3 }),
+      cause({ id: 'c3', number: 3, root: true }),
     ]
-    expect(isRootCause(list[0], list)).toBe(false)
-    expect(isRootCause(list[1], list)).toBe(true)
-    expect(isRootCause(list[2], list)).toBe(false)
-    expect(rootCauses(list).map((one) => one.id)).toEqual(['c2'])
+    // Explained by nothing is an open end, not a root: nobody said so.
+    expect(isRootCause(list[0])).toBe(false)
+    expect(isRootCause(list[1])).toBe(false)
+    expect(isRootCause(list[2])).toBe(true)
+    expect(rootCauses(list).map((one) => one.id)).toEqual(['c3'])
     expect(causeDepth(list[0], list)).toBe(1)
     expect(causeDepth(list[1], list)).toBe(2)
     expect(causeDepth(list[2], list)).toBe(1)
   })
+  it('refuses a root cause as the thing a cause explains, and keeps a link that was there before', () => {
+    const list = [cause({ root: true }), cause({ id: 'c2', number: 2 })]
+    expect(linkRefusal(list, 'c2', { id: 'c1' })).toBe('root')
+    expect(linkCause(list, 'c2', { id: 'c1', strength: 'strong' })).toEqual(list)
+    expect(linkRefusal(list, 'c1', { id: 'c1' })).toBe('self')
+    // A root cause may explain causes and observations.
+    expect(linkCause(list, 'c1', { id: 'c2', strength: 'strong' })[0].explains).toEqual([{ id: 'c2', strength: 'strong' }])
+    expect(linkRefusal(list, 'c1', { id: 'o1' })).toBeUndefined()
+    const before = [cause({ root: true }), cause({ id: 'c2', number: 2, explains: [{ id: 'c1', strength: 'weak' }] })]
+    expect(linkCause(before, 'c2', { id: 'c1', strength: 'strong' })[1].explains).toEqual([{ id: 'c1', strength: 'strong' }])
+  })
+  it('a new cause may be a root cause as it is made', () => {
+    expect(newCause({ id: 'c', number: 1, title: 'Why', t, root: true }).root).toBe(true)
+    expect(newCause({ id: 'c', number: 1, title: 'Why', t }).root).toBeUndefined()
+  })
+
   it('removing takes the links with it', () => {
     const held: Analysis = {
       observations: [observation({})],
@@ -198,6 +219,31 @@ describe('causes and their links', () => {
     expect(removeCause(held, 'c1').causes).toEqual([cause({ id: 'c2', number: 2, explains: [] })])
     expect(removeObservation(held, 'o1').causes[0].explains).toEqual([])
     expect(removeObservation(held, 'o1').observations).toEqual([])
+  })
+})
+
+describe('making a root cause, and a cause again (ADR-0032 §3)', () => {
+  const solution = (id: string, number: number, causeId: string) => ({ id, number, title: `Fix ${number}`, addresses: [{ id: causeId }] })
+
+  it('refuses a root cause while causes explain it, naming them', () => {
+    const list = [cause({}), cause({ id: 'c2', number: 2, explains: [{ id: 'c1', strength: 'normal' }] })]
+    const refused = makeRootCause(list, 'c1')
+    expect(refused).toMatchObject({ ok: false, refusal: 'command.rootExplained' })
+    expect(!refused.ok && refused.refusal === 'command.rootExplained' && refused.causes.map((one) => one.id)).toEqual(['c2'])
+    const made = makeRootCause(list, 'c2')
+    expect(made.ok && made.causes[1].root).toBe(true)
+  })
+  it('refuses a cause again while solutions address it, naming them — a dropped one too', () => {
+    const list = [cause({ root: true })]
+    const refused = makeCause(list, 'c1', [solution('s1', 1, 'c1'), solution('s2', 2, 'c9')])
+    expect(refused).toEqual({ ok: false, refusal: 'command.rootAddressed', solutions: [{ id: 's1', number: 1, title: 'Fix 1' }] })
+    const made = makeCause(list, 'c1', [])
+    expect(made.ok && made.causes[0]).toEqual(cause({}))
+  })
+  it('changes nothing when it already is what is asked', () => {
+    const list = [cause({ root: true }), cause({ id: 'c2', number: 2 })]
+    expect(makeRootCause(list, 'c1')).toEqual({ ok: true, causes: list })
+    expect(makeCause(list, 'c2', [])).toEqual({ ok: true, causes: list })
   })
 })
 

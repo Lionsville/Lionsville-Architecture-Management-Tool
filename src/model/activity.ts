@@ -233,7 +233,7 @@ export function summarise(commands: readonly Command[], before: Model): StepSumm
     case 'cause.add':
       return { key: 'activity.causeAdded', name: lead.cause.title }
     case 'cause.update':
-      return { key: 'activity.causeChanged', name: causesOf(before)[lead.id]?.title }
+      return causeChanged(lead, before)
     case 'cause.remove':
       return { key: 'activity.causeRemoved', name: causesOf(before)[lead.id]?.title }
     case 'solution.add':
@@ -257,6 +257,20 @@ export function summarise(commands: readonly Command[], before: Model): StepSumm
       // Unreachable: `flatten` has none left. Named so the switch is total.
       return NOTHING
   }
+}
+
+/**
+ * A cause changed. Becoming a root cause, and going back, are claims somebody
+ * made (ADR-0032 §3), and the line says which rather than "changed"; a patch
+ * that names `root` and says what it already was is an ordinary change.
+ */
+function causeChanged(lead: Extract<CommandBody, { type: 'cause.update' }>, before: Model): StepSummary {
+  const held = causesOf(before)[lead.id]
+  const name = held?.title
+  if ('root' in lead.patch && Boolean(lead.patch.root) !== Boolean(held?.root)) {
+    return { key: lead.patch.root ? 'activity.causeMadeRoot' : 'activity.causeMadeCause', name }
+  }
+  return { key: 'activity.causeChanged', name }
 }
 
 /** Every command of a step, transactions opened out, in the order they ran. */

@@ -24,7 +24,7 @@ import {
   reopenWithdraws, restoreSolution, setTestStrength, unaddressCause, updateExperiment, updateSolution, waiveExperiment,
 } from '../../observations/solution'
 import type { Experiment, ExperimentPatch, SolutionPatch, SolutionWork } from '../../observations/solution'
-import { formatCauseNumber, isRootCause } from '../../observations/observation'
+import { causeLabel, isRootCause } from '../../observations/observation'
 import { formatAdrNumber, newAdr, nextAdrNumber } from '../../decisions/adr'
 import { experimentLine, findCause, findExperiment, findSolution, solutionFacts, solutionLine } from '../answer'
 import type { AgentAnswer } from '../tools'
@@ -70,16 +70,17 @@ const experimentAnswer = (after: SolutionWork, id: string) => () => experimentLi
 const withSolutions = (work: Work, solutions: Solution[]): SolutionWork => ({ ...work.before, solutions })
 
 /**
- * A solution addresses a root cause (ADR-0026, amended): one a deeper cause
- * explains is a symptom of that one, and the refusal names where to go instead.
+ * A solution addresses a root cause (ADR-0026), and a root cause is one a
+ * person said is (ADR-0032 §3): the refusal names the deeper causes where
+ * there are some, and otherwise says how a cause becomes a root.
  */
 function notRoot(cause: Cause, causes: readonly Cause[]): AgentAnswer | undefined {
-  if (isRootCause(cause, causes)) return undefined
+  if (isRootCause(cause)) return undefined
   const deeper = causes.filter((one) => one.explains.some((link) => link.id === cause.id && link.scope === undefined))
-  const label = formatCauseNumber(cause.number)
+  const label = causeLabel(cause)
   return refused('agent.badArguments', deeper.length
-    ? `${label} is not a root cause: ${deeper.map((one) => formatCauseNumber(one.number)).join(', ')} explains it. A solution addresses a root cause — address that one, or keep asking why until you reach one.`
-    : `${label} is not a root cause: it explains nothing yet. Link it to what it explains first (cause.link).`)
+    ? `${label} is not a root cause: ${deeper.map((one) => causeLabel(one)).join(', ')} explains it. A solution addresses a root cause — address a root cause behind it, or keep asking why until you reach one.`
+    : `${label} is not a root cause. A solution addresses a root cause, and a cause becomes one when a person says so: ask them, and only then make it one (cause.update with root true).`)
 }
 
 /**

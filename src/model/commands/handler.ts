@@ -67,6 +67,18 @@ export type CommandRefusal =
    * `applyGuarded` runs and `apply` does not.
    */
   | 'command.ownedElsewhere'
+  /**
+   * A cause made a root cause while another cause explains it (ADR-0032 §3):
+   * a root cause ends the chain. Unlink the deeper cause, or make that one the
+   * root cause instead.
+   */
+  | 'command.rootExplained'
+  /**
+   * A root cause made a cause again while a solution addresses it (ADR-0032
+   * §3): a solution addresses root causes only (ADR-0026). Move the solution
+   * to another root cause, or unlink it, first.
+   */
+  | 'command.rootAddressed'
 
 export type ApplyResult =
   | { ok: true; model: Model; inverse: Command }

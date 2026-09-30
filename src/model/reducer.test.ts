@@ -18,7 +18,7 @@ import { apply, applyAll } from './reducer'
 import type { ApplyResult } from './reducer'
 import { NOTHING, transaction } from './commands'
 import type { Command } from './commands'
-import { fromArrays, toArrays, toDiagram } from './normalised'
+import { causesOf, fromArrays, toArrays, toDiagram } from './normalised'
 import type { Model } from './normalised'
 import type { HostModel } from './hostModel'
 import { RELATION_TYPES } from './relations'
@@ -752,6 +752,57 @@ describe('apply — a create on an id the model already holds', () => {
       { type: 'element.create', element: element('d') },
       { type: 'element.create', element: element('a') },
     ]))).toEqual(held)
+  })
+})
+
+/**
+ * A root cause is said (ADR-0032 §3), and the writer refuses the two steps
+ * the chain contradicts, whoever sent them: made a root while a cause
+ * explains it, made a cause again while a solution addresses it.
+ */
+describe('apply — a root cause is said', () => {
+  const deeper = (id: string, number: number, explains: string): Cause => ({
+    ...because(id, number), explains: [{ id: explains, strength: 'normal' }],
+  })
+  const solution = (id: string, causeId: string) => ({
+    id, number: 1, title: 'Fix it', state: 'idea' as const, addresses: [{ id: causeId, strength: 'strong' as const }],
+    validatedWith: [], attempts: [], body: '', history: [],
+  })
+
+  it('refuses a root cause that another cause explains, and lands one nothing explains', () => {
+    const m = sample({ causes: [because('ca1', 1), deeper('ca2', 2, 'ca1')] })
+    expect(apply(m, { type: 'cause.update', id: 'ca1', patch: { root: true } }))
+      .toEqual({ ok: false, reason: 'command.rootExplained' })
+    const landed = reversible(m, { type: 'cause.update', id: 'ca2', patch: { root: true } })
+    expect(causesOf(landed).ca2.root).toBe(true)
+  })
+
+  it('refuses a cause again while a solution addresses it, and lands it once none does', () => {
+    const root = { ...because('ca1', 1), root: true as const }
+    const addressed = sample({ causes: [root], solutions: [solution('so1', 'ca1')] })
+    expect(apply(addressed, { type: 'cause.update', id: 'ca1', patch: { root: undefined } }))
+      .toEqual({ ok: false, reason: 'command.rootAddressed' })
+    const free = sample({ causes: [root] })
+    expect(causesOf(reversible(free, { type: 'cause.update', id: 'ca1', patch: { root: undefined } })).ca1.root).toBeUndefined()
+  })
+
+  it('does not ask a patch that says what the cause already is', () => {
+    const root = { ...because('ca1', 1), root: true as const }
+    const m = sample({ causes: [root, deeper('ca2', 2, 'ca3')], solutions: [solution('so1', 'ca1')] })
+    ok(apply(m, { type: 'cause.update', id: 'ca1', patch: { ...root, title: 'Renamed' } }))
+  })
+
+  it('takes the whole transaction down, and lets one that unlinks first through', () => {
+    const m = sample({ causes: [because('ca1', 1), deeper('ca2', 2, 'ca1')] })
+    expect(apply(m, transaction([
+      { type: 'cause.update', id: 'ca1', patch: { title: 'Renamed' } },
+      { type: 'cause.update', id: 'ca1', patch: { root: true } },
+    ]))).toEqual({ ok: false, reason: 'command.rootExplained' })
+    const landed = ok(apply(m, transaction([
+      { type: 'cause.update', id: 'ca2', patch: { explains: [] } },
+      { type: 'cause.update', id: 'ca1', patch: { root: true } },
+    ]))).model
+    expect(causesOf(landed).ca1.root).toBe(true)
   })
 })
 

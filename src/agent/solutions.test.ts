@@ -30,7 +30,7 @@ const host: HostModel = {
   }],
   causes: [
     { id: 'ca-1', number: 1, title: 'Two systems compute it', state: 'verified', body: '', explains: [{ id: 'ob-1', strength: 'strong' }] },
-    { id: 'ca-2', number: 2, title: 'Nobody owns the data', state: 'verified', body: '', explains: [{ id: 'ca-1', strength: 'strong' }] },
+    { id: 'ca-2', number: 2, title: 'Nobody owns the data', state: 'verified', root: true, body: '', explains: [{ id: 'ca-1', strength: 'strong' }] },
   ],
 }
 
@@ -118,7 +118,7 @@ describe('solution tools', () => {
     const adr = decided.answer.proposed as { id: string; label: string; status: string }
     expect(adr).toMatchObject({ label: 'ADR-0001', status: 'proposed' })
     const body = decided.model.decisions![adr.id].body
-    expect(body).toContain('* CA-0002 Nobody owns the data')
+    expect(body).toContain('* RC-0002 Nobody owns the data')
     expect(body).toContain('Chosen option: \u201cSO-0001 One estimate service\u201d, because EX-0001 Two weeks at one desk confirmed it: 41 to 12 a week')
     expect(body).toContain('OB-0001 should stop being seen')
     // The only solution on its causes: leaving it as it is is the other option weighed.
@@ -165,25 +165,20 @@ describe('solution tools', () => {
   it('addresses root causes only, and names the deeper one when asked for a symptom', () => {
     const model = fromArrays(host)
     expect(refusal(model, 'solution.propose', { title: 'Sync the two estimates', addresses: [{ id: 'ca-1' }] }))
-      .toContain('CA-0001 is not a root cause: CA-0002 explains it')
+      .toContain('CA-0001 is not a root cause: RC-0002 explains it')
     const proposed = write(model, 'solution.propose', { title: 'Own the data', addresses: [{ id: 'ca-2' }] }).model
-    expect(refusal(proposed, 'solution.address', { id: 'SO-0001', cause: 'ca-1' })).toContain('CA-0002 explains it')
+    expect(refusal(proposed, 'solution.address', { id: 'SO-0001', cause: 'ca-1' })).toContain('RC-0002 explains it')
   })
 
-  it('asks whether a proven solution works around its cause once that cause gains a deeper one', () => {
+  it('keeps a root cause a solution addresses the end of its chain: no deeper cause, and no way back while it is addressed', () => {
     let model = write(fromArrays(host), 'solution.propose', { title: 'Own the data', addresses: [{ id: 'ca-2' }] }).model
     model = shape(model, 'SO-0001')
-    model = write(model, 'experiment.plan', { tests: ['SO-0001'], title: 'Trial', hypothesis: 'Fewer calls' }).model
-    model = write(model, 'experiment.conclude', { id: 'EX-0001', outcome: 'running' }).model
-    model = write(model, 'experiment.conclude', { id: 'EX-0001', outcome: 'confirmed', result: 'Calls fell by half' }).model
-    model = write(model, 'solution.move', { id: 'SO-0001', to: 'proven' }).model
     expect(read(model, 'solution.read', { id: 'SO-0001' }).questions).toEqual([])
-    model = write(model, 'cause.add', { title: 'Nobody was asked to own it', explains: [{ id: 'ca-2' }] }).model
-    const asked = read(model, 'solution.read', { id: 'SO-0001' })
-    expect(asked.questions).toEqual(['worksAround'])
-    expect(asked.addresses).toEqual([expect.objectContaining({ id: 'ca-2', root: false })])
+    expect(refusal(model, 'cause.add', { title: 'Nobody was asked to own it', explains: [{ id: 'ca-2' }] }))
+      .toContain('RC-0002 is a root cause, and nothing explains a root cause')
+    expect(refusal(model, 'cause.link', { id: 'ca-1', explains: 'ca-2' })).toContain('nothing explains a root cause')
     const restrengthened = write(model, 'solution.address', { id: 'SO-0001', cause: 'ca-2', strength: 'weak' })
-    expect(restrengthened.answer.addresses).toEqual([expect.objectContaining({ id: 'ca-2', strength: 'weak' })])
+    expect(restrengthened.answer.addresses).toEqual([expect.objectContaining({ id: 'ca-2', strength: 'weak', root: true })])
   })
 
   it('removing a cause takes it out of every solution, as one step', () => {
@@ -222,8 +217,11 @@ describe('solution tools', () => {
     let model = write(fromArrays(host), 'solution.propose', { title: 'A', addresses: [{ id: 'ca-2' }] }).model
     model = shape(model, 'SO-0001')
     model = write(model, 'experiment.plan', { tests: ['SO-0001'], title: 'Trial', hypothesis: 'It works' }).model
-    model = write(model, 'cause.add', { title: 'Nobody was asked to own it', explains: [{ id: 'ca-2' }] }).model
-    expect(refusal(model, 'solution.address', { id: 'SO-0001', cause: 'CA-0003' })).toContain('SO-0001 is testing: a solution takes on a cause while it is an idea or shaped')
+    const held = toArrays(model)
+    model = fromArrays({ ...held, causes: [...held.causes ?? [], {
+      id: 'ca-3', number: 3, title: 'Nobody was asked to own it', state: 'assumed', root: true, body: '', explains: [{ id: 'ob-1', strength: 'normal' }],
+    }] })
+    expect(refusal(model, 'solution.address', { id: 'SO-0001', cause: 'RC-0003' })).toContain('SO-0001 is testing: a solution takes on a cause while it is an idea or shaped')
     // How directly it addresses one it already does may still change.
     expect(write(model, 'solution.address', { id: 'SO-0001', cause: 'ca-2', strength: 'weak' }).answer.addresses)
       .toEqual([expect.objectContaining({ id: 'ca-2', strength: 'weak' })])

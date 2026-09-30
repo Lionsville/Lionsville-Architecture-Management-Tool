@@ -18,7 +18,7 @@ const analysis: Analysis = {
   causes: [
     cause('c1', 1, [{ id: 'o1', strength: 'strong' }, { id: 'o2', strength: 'weak' }]),
     cause('c2', 2, [{ id: 'o3', strength: 'normal' }]),
-    cause('r1', 3, [{ id: 'c1', strength: 'strong' }, { id: 'c2', strength: 'normal' }]),
+    cause('r1', 3, [{ id: 'c1', strength: 'strong' }, { id: 'c2', strength: 'normal' }], { root: true }),
   ],
 }
 
@@ -45,6 +45,29 @@ describe('analysisGraph', () => {
     expect(graph.lanes).toBe(3)
     const root = graph.nodes.find((node) => node.key === 'r1')
     expect(root?.kind === 'cause' && root.root).toBe(true)
+  })
+
+  it('puts every root cause in the root lane whatever its depth, and a cause nobody said is a root beside its depth', () => {
+    const said: Analysis = {
+      observations: analysis.observations,
+      causes: [
+        cause('c1', 1, [{ id: 'o1', strength: 'strong' }]),
+        cause('d1', 2, [{ id: 'c1', strength: 'strong' }]),
+        cause('r1', 3, [{ id: 'o2', strength: 'strong' }], { root: true }),
+        cause('r2', 4, [{ id: 'd1', strength: 'strong' }], { root: true }),
+        cause('open', 5, [{ id: 'o3', strength: 'normal' }]),
+      ],
+    }
+    const graph = analysisGraph(said)
+    const lane = (key: string) => graph.nodes.find((node) => node.key === key)?.lane
+    expect(lane('c1')).toBe(1)
+    expect(lane('d1')).toBe(2)
+    expect(lane('open')).toBe(1)
+    expect(lane('r1')).toBe(3)
+    expect(lane('r2')).toBe(3)
+    expect(graph.lanes).toBe(4)
+    const roots = graph.nodes.filter((node) => node.kind === 'cause' && node.root).map((node) => node.key)
+    expect(roots).toEqual(['r1', 'r2'])
   })
 
   it('draws every link once, from the explained thing to the cause', () => {

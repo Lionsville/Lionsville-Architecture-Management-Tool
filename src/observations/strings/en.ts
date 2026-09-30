@@ -108,6 +108,10 @@ export const EN = {
   'observation.stateVerified': 'Verified',
   'observation.verify': 'Mark verified',
   'observation.unverify': 'Back to assumed',
+  'observation.makeRoot': 'Make root cause',
+  'observation.makeCause': 'Make cause',
+  'observation.refusedRootExplained': '{names} explains it. Unlink that, or make that one the root cause instead.',
+  'observation.refusedRootAddressed': '{names} addresses it. Move that to another root cause, or unlink it, first.',
   'observation.explains': 'Explains',
   'observation.explainedBy': 'Explained by',
   'observation.noLinks': 'Nothing yet',
@@ -125,7 +129,7 @@ export const EN = {
   'observation.strengthWeak': 'Weak',
   'observation.deleteCauseTitle': 'Delete {name}?',
   'observation.deleteCauseBody': 'The links from it and to it go with it.',
-  'observation.rootNote': 'Nothing has been found behind this cause. Link it to a deeper one and it stops being a root.',
+  'observation.rootNote': 'A root cause ends the chain: nothing explains it. To say something lies behind it, make it a cause first.',
 
   // --- the template ----------------------------------------------------------------------
   'observation.tplSaw': 'What we saw',

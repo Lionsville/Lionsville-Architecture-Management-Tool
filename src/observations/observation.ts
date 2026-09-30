@@ -15,9 +15,17 @@
  * An observation is what was seen; a cause is what the team says lies behind
  * it. The link is on the cause — `explains` names observations and shallower
  * causes — because that is the direction analysis runs: a cause is written to
- * explain something, and an observation knows nothing about why. A cause
- * nobody explains is a **root cause**, derived and never stored, so that
- * finding what lies behind a root is one link and not a flag to remember.
+ * explain something, and an observation knows nothing about why.
+ *
+ * ## A root cause is said
+ *
+ * A **root cause** is a cause the team said is one (ADR-0032 §3), `RC-` on
+ * the cause's own number. It ends the chain: nothing explains it, and a
+ * solution addresses it. Becoming one and going back are steps, each refused
+ * while the chain says otherwise — made a root while a cause explains it, or
+ * made a cause again while a solution addresses it. The refusals carry the
+ * one writer's keys, so the page, the agent and the reducer say one rule in
+ * one word; the reducer refuses the same two steps whoever sent them.
  *
  * ## Merging is history, not deletion
  *
@@ -49,7 +57,7 @@
 import type { Translate } from '../i18n/strings'
 import { isDay } from '../model/lifecycle'
 import type {
-  Cause, CauseLink, CauseState, CauseStrength, Observation, ObservationEvent, ObservationImpact,
+  Cause, CauseLink, CauseState, CauseStrength, Observation, ObservationEvent, ObservationImpact, Solution,
 } from '../model/observation'
 import { DE } from './strings/de'
 import { EN } from './strings/en'
@@ -85,9 +93,14 @@ export function formatObservationNumber(number: number): string {
   return `OB-${pad(number)}`
 }
 
-/** `CA-0003`. */
-export function formatCauseNumber(number: number): string {
-  return `CA-${pad(number)}`
+/** `CA-0003`, or `RC-0003` for a root cause: the kind is a prefix on the one number, never a renumbering. */
+export function formatCauseNumber(number: number, root?: boolean): string {
+  return `${root ? 'RC' : 'CA'}-${pad(number)}`
+}
+
+/** A cause's label as people say it: `CA-0003`, or `RC-0003` once it is a root cause. */
+export function causeLabel(cause: Pick<Cause, 'number' | 'root'>): string {
+  return formatCauseNumber(cause.number, cause.root === true)
 }
 
 /** The next number for a scope's observations. Sequential, and never reused. */
@@ -155,12 +168,14 @@ export function newObservation(args: {
   }
 }
 
-export function newCause(args: { id: string; number: number; title: string; t: Translate; body?: string }): Cause {
+/** A new cause, assumed; a root cause as it is made where `root` says so, since nothing explains a new one yet. */
+export function newCause(args: { id: string; number: number; title: string; t: Translate; body?: string; root?: boolean }): Cause {
   return {
     id: args.id,
     number: args.number,
     title: args.title.trim(),
     state: 'assumed',
+    ...(args.root ? { root: true as const } : {}),
     body: args.body?.trim() ? args.body : causeTemplate(args.t),
     explains: [],
   }
@@ -502,17 +517,38 @@ function reaches(list: readonly Cause[], start: string, target: string): boolean
 }
 
 /**
- * Say that a cause explains something. Linking it to itself, or to a cause
- * that already leads back to it, is refused by returning the list unchanged —
- * a loop is not an explanation. Linking to what it already explains changes
- * the strength and nothing else.
+ * Why a cause may not explain this, or nothing where it may:
+ *
+ * - `self` — a cause does not explain itself;
+ * - `loop` — the other cause already leads back to this one, and a loop is
+ *   not an explanation;
+ * - `root` — the other is a root cause, and nothing explains a root cause
+ *   (ADR-0032 §3). To say something lies behind it, make it a cause first.
+ *
+ * A link the cause already has is only ever a change of strength, so it is
+ * not asked again: what was linked before a rule existed stays linked.
+ */
+export type LinkRefusal = 'self' | 'loop' | 'root'
+
+export function linkRefusal(list: readonly Cause[], causeId: string, link: Omit<CauseLink, 'strength'>): LinkRefusal | undefined {
+  const cause = list.find((one) => one.id === causeId)
+  if (cause?.explains.some((one) => one.id === link.id && one.scope === link.scope)) return undefined
+  if (link.scope !== undefined) return undefined
+  if (link.id === causeId) return 'self'
+  const target = list.find((one) => one.id === link.id)
+  if (!target) return undefined
+  if (isRootCause(target)) return 'root'
+  return reaches(list, link.id, causeId) ? 'loop' : undefined
+}
+
+/**
+ * Say that a cause explains something. Where {@link linkRefusal} says no,
+ * refused by returning the list unchanged. Linking to what it already
+ * explains changes the strength and nothing else.
  */
 export function linkCause(list: readonly Cause[], causeId: string, link: CauseLink): Cause[] {
   const cause = list.find((one) => one.id === causeId)
-  if (!cause) return [...list]
-  if (link.scope === undefined && link.id === causeId) return [...list]
-  const toCause = link.scope === undefined && list.some((one) => one.id === link.id)
-  if (toCause && reaches(list, link.id, causeId)) return [...list]
+  if (!cause || linkRefusal(list, causeId, link)) return [...list]
   const held = cause.explains.find((one) => one.id === link.id && one.scope === link.scope)
   const explains = held
     ? cause.explains.map((one) => (one === held ? { ...one, strength: link.strength } : one))
@@ -543,17 +579,64 @@ export function removeCause(analysis: Analysis, id: string): Analysis {
 }
 
 /**
- * A root cause explains something and is explained by nothing — derived, so
- * that it stops being one the moment a deeper cause is linked to it. A cause
- * linked to nothing at all is not a root; it is a note the team has not
- * placed yet.
+ * A root cause is one the team said is (ADR-0032 §3). Read off the record,
+ * never off the links: a link that changes does not change who is a root.
  */
-export function isRootCause(cause: Cause, list: readonly Cause[]): boolean {
-  return cause.explains.length > 0 && explainedBy(list, cause.id).length === 0
+export function isRootCause(cause: Pick<Cause, 'root'>): boolean {
+  return cause.root === true
 }
 
 export function rootCauses(list: readonly Cause[]): Cause[] {
-  return list.filter((one) => isRootCause(one, list))
+  return list.filter(isRootCause)
+}
+
+/** What stands in the way of a cause becoming a root cause, or going back (ADR-0032 §3). */
+export type RootChangeRefusal =
+  /** Made a root cause while causes explain it: `causes` are those. */
+  | { refusal: 'command.rootExplained'; causes: Cause[] }
+  /** Made a cause again while solutions address it: `solutions` are those. */
+  | { refusal: 'command.rootAddressed'; solutions: Pick<Solution, 'id' | 'number' | 'title'>[] }
+
+export type RootChange = { ok: true; causes: Cause[] } | ({ ok: false } & RootChangeRefusal)
+
+/**
+ * Say that a cause is a root cause. Refused while a cause explains it, with
+ * those causes: unlink them, or make that one the root cause instead. Saying
+ * what it already is changes nothing.
+ */
+export function makeRootCause(list: readonly Cause[], id: string): RootChange {
+  const cause = list.find((one) => one.id === id)
+  if (!cause || isRootCause(cause)) return { ok: true, causes: [...list] }
+  const by = explainedBy(list, id)
+  if (by.length) return { ok: false, refusal: 'command.rootExplained', causes: by }
+  return { ok: true, causes: list.map((one) => (one.id === id ? { ...one, root: true as const } : one)) }
+}
+
+/**
+ * Say that a root cause is a cause after all. Refused while a solution
+ * addresses it — any solution, a dropped one too, because the link is there
+ * and a solution addresses root causes only (ADR-0026): move it to another
+ * root cause, or unlink it, first.
+ */
+export function makeCause(
+  list: readonly Cause[], id: string,
+  solutions: readonly (Pick<Solution, 'id' | 'number' | 'title'> & { addresses: readonly { id: string }[] })[],
+): RootChange {
+  const cause = list.find((one) => one.id === id)
+  if (!cause || !isRootCause(cause)) return { ok: true, causes: [...list] }
+  const by = solutions.filter((one) => one.addresses.some((address) => address.id === id))
+  if (by.length) {
+    return { ok: false, refusal: 'command.rootAddressed', solutions: by.map(({ id: key, number, title }) => ({ id: key, number, title })) }
+  }
+  return {
+    ok: true,
+    causes: list.map((one) => {
+      if (one.id !== id) return one
+      const { root: _root, ...rest } = one
+      void _root
+      return rest
+    }),
+  }
 }
 
 /**

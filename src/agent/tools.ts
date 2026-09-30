@@ -2243,6 +2243,8 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'command.taken': 'Something in the scope already has that id, so the record you meant to add would have overwritten it. Read the scope again and add it under a free id.',
   'command.notAField': 'A patch names a field the record does not have. Nothing was changed; send only the record\'s own fields.',
   'command.ownedElsewhere': 'The record is a stand-in, and that field is written in the scope that defines it. Change it there.',
+  'command.rootExplained': 'A root cause ends the chain, and another cause explains this one. Unlink that cause first, or make it the root cause instead.',
+  'command.rootAddressed': 'A solution addresses this root cause, and a solution addresses root causes only. Move the solution to another root cause, or unaddress it, first.',
 }
 
 export function refused(refusal: AgentRefusal, detail?: string): AgentAnswer {

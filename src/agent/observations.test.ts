@@ -153,14 +153,14 @@ describe('recording and analysing', () => {
     expect(model.observations!['ob-2'].history.map((one) => one.kind)).toEqual(['recorded', 'seen', 'shared'])
   })
 
-  it('a new cause explains an own observation and a shared one, then a deeper cause makes it a non-root', () => {
+  it('a new cause explains an own observation and a shared one, and a deeper cause explains it', () => {
     let model = fromArrays(host)
     const added = write(model, 'cause.add', {
       title: 'No customer master',
       explains: [{ id: 'OB-2', strength: 'strong' }, { id: 'in-1', scope: 'acme/claims/intake' }],
     })
     model = added.model
-    expect(added.answer).toMatchObject({ label: 'CA-0002', state: 'assumed', root: true })
+    expect(added.answer).toMatchObject({ label: 'CA-0002', state: 'assumed', root: false })
     expect(model.causes!['ca-new-1'].explains).toEqual([
       { id: 'ob-2', strength: 'strong' }, { id: 'in-1', scope: 'acme/claims/intake', strength: 'normal' },
     ])
@@ -172,9 +172,10 @@ describe('recording and analysing', () => {
       body: '## Why we think so\n\nThree teams edit it.\n\n## How to verify\n\n2026-09-18: the change log names three teams.\n',
     })
     model = deeper.model
-    expect(deeper.answer).toMatchObject({ root: true, state: 'verified' })
+    // Explained by nothing is not a root: a person says which one is.
+    expect(deeper.answer).toMatchObject({ root: false, state: 'verified' })
     expect((read(model, 'cause.read', { id: 'CA-2' }) as { root: boolean; explainedBy: { id: string }[] })).toMatchObject({ root: false, explainedBy: [{ id: 'ca-new-2' }] })
-    expect((read(model, 'causes.list', { root: true }) as { causes: { id: string }[] }).causes.map((one) => one.id)).toEqual(['ca-1', 'ca-new-2'])
+    expect((read(model, 'causes.list', { root: true }) as { causes: { id: string }[] }).causes).toEqual([])
   })
 
   it('refuses a loop between causes and a link to nothing', () => {

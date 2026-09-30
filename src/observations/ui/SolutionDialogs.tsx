@@ -23,7 +23,7 @@ import TextField from '@mui/material/TextField'
 import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
-import { CAUSE_STRENGTHS, formatCauseNumber } from '../observation'
+import { causeLabel, CAUSE_STRENGTHS } from '../observation'
 import type { Cause, CauseStrength } from '../observation'
 import type { ExperimentOutcome } from '../solution'
 import { OUTCOME_LABEL, STRENGTH_LABEL } from '../observationScope'
@@ -72,7 +72,7 @@ export function NewSolutionDialog({ open, causes, causeId, onCancel, onCreate, s
           slotProps={{ htmlInput: { 'aria-label': s('solution.newCauseField') } }}
         >
           <MenuItem value={NONE}>{s('solution.noCause')}</MenuItem>
-          {causes.map((one) => <MenuItem key={one.id} value={one.id}>{formatCauseNumber(one.number)} · {one.title}</MenuItem>)}
+          {causes.map((one) => <MenuItem key={one.id} value={one.id}>{causeLabel(one)} · {one.title}</MenuItem>)}
         </TextField>
       </DialogContent>
       <DialogActions>
@@ -105,7 +105,7 @@ export function AddressDialog({ subject, candidates, onCancel, onConfirm, s }: A
           onChange={(event) => setCauseId(event.target.value)}
           slotProps={{ htmlInput: { 'aria-label': s('solution.addressPick') } }}
         >
-          {candidates.map((one) => <MenuItem key={one.id} value={one.id}>{formatCauseNumber(one.number)} · {one.title}</MenuItem>)}
+          {candidates.map((one) => <MenuItem key={one.id} value={one.id}>{causeLabel(one)} · {one.title}</MenuItem>)}
         </TextField>
         <TextField
           select size="small" label={s('observation.linkStrength')} value={strength}

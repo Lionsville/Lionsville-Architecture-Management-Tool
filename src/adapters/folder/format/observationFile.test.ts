@@ -86,6 +86,17 @@ describe('a cause as a file', () => {
     expect(causeFromFile(text, causePath(cause))).toEqual(cause)
   })
 
+  it('writes a root cause with root in its front matter and RC- in its heading, and reads it back (ADR-0032)', () => {
+    const root: Cause = { ...cause, root: true }
+    const text = causeFileText(root)
+    expect(text).toContain('state: verified\nroot: true\nexplains:\n')
+    expect(text).toContain('# RC-0002 — Batch window sized for 2019 volumes')
+    expect(causeFromFile(text, causePath(root))).toEqual(root)
+    expect(causeFileText(cause)).not.toContain('root:')
+    // The front matter says it; a heading that says RC- is prose.
+    expect(causeFromFile('---\nnumber: 4\n---\n# RC-0004 — Why\n', 'observations/causes/0004-why.md')?.root).toBeUndefined()
+  })
+
   it('defaults a mistyped state and strength rather than refusing', () => {
     const text = '---\nnumber: 4\nstate: certain\nexplains:\n  - id: ob-1\n    strength: huge\n  - strength: strong\n---\n# CA-0004 — Why\n\nBody.\n'
     expect(causeFromFile(text, 'observations/causes/0004-why.md')).toEqual({

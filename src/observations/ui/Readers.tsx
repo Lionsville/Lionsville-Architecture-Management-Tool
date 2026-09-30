@@ -42,7 +42,7 @@ import { DocumentSheet } from '../../documentation/ui/DocumentSheet'
 import { DocumentSource } from '../../documentation/ui/DocumentSource'
 import type { DocumentImages } from '../../documentation/ui/DocumentSource'
 import {
-  OBSERVATION_IMPACTS, formatCauseNumber, formatObservationNumber, isRootCause,
+  causeLabel, formatObservationNumber, isRootCause, OBSERVATION_IMPACTS,
 } from '../observation'
 import type {
   Cause, CauseLink, CausePatch, Observation, ObservationImpact, ObservationPatch,
@@ -375,7 +375,7 @@ export function ObservationReader(props: ObservationReaderProps) {
                       onOpen={props.onOpen}
                       links={props.explainedBy.map(({ cause, link }) => ({
                         key: cause.id,
-                        label: `${formatCauseNumber(cause.number)} ${cause.title}`,
+                        label: `${causeLabel(cause)} ${cause.title}`,
                         note: s(STRENGTH_LABEL[link.strength]).toLowerCase(),
                         ...(readOnly || mergedInto || archived ? {} : { onRemove: () => props.onUnlink(cause.id), removeLabel: s('observation.unlink') }),
                       }))}
@@ -424,6 +424,13 @@ export type CauseReaderProps = {
    * amended 28 September 2026). Back to assumed is `onUpdate`.
    */
   onVerify: () => void
+  /**
+   * Make it a root cause, or a cause again (ADR-0032 §3); absent where
+   * nothing may be written. `rootRefused` says what stands in the way, and
+   * the action is off while it does.
+   */
+  onRoot?: () => void
+  rootRefused?: string
   onLinkDeeper: () => void
   onUnlink: (link: CauseLink) => void
   /** Another cause stops explaining this one. */
@@ -447,11 +454,14 @@ export function CauseReader(props: CauseReaderProps) {
   const showPreview = mode === 'read' || previewShown
   const text = mode === 'edit' ? draft.body : cause.body
   const rendered = text.trim() ? renderMarkdown(text) : <Typography color="text.secondary">{s('common.empty')}</Typography>
-  const root = isRootCause(cause, causes)
+  const root = isRootCause(cause)
   const explainedBy = causes.filter((other) => other.explains.some((link) => link.id === cause.id && link.scope === undefined))
   const verify = () => (cause.state === 'assumed' ? props.onVerify() : props.onUpdate({ state: 'assumed' }))
+  const rootLabel = root ? s('observation.makeCause') : s('observation.makeRoot')
+  const onRoot = props.onRoot
   const occasional: MenuAction[] = canEdit ? [
     { key: 'verify', label: cause.state === 'assumed' ? s('observation.verify') : s('observation.unverify'), onClick: verify },
+    ...(onRoot ? [{ key: 'root', label: rootLabel, disabled: Boolean(props.rootRefused), onClick: onRoot }] : []),
     { key: 'link-deeper', label: s('observation.linkDeeper'), onClick: props.onLinkDeeper },
     { key: 'delete', label: s('observation.delete'), divider: true, danger: true, onClick: props.onDelete },
   ] : []
@@ -467,6 +477,13 @@ export function CauseReader(props: CauseReaderProps) {
             <Button size="small" variant="outlined" onClick={verify} data-testid="cause-verify" sx={WIDE_ONLY_SX}>
               {cause.state === 'assumed' ? s('observation.verify') : s('observation.unverify')}
             </Button>
+            {onRoot && (
+              <Tooltip title={props.rootRefused ?? ''}>
+                <Box component="span" sx={WIDE_ONLY_SX}>
+                  <Button size="small" variant="outlined" onClick={onRoot} disabled={Boolean(props.rootRefused)} data-testid="cause-root-toggle">{rootLabel}</Button>
+                </Box>
+              </Tooltip>
+            )}
             <Button size="small" variant="outlined" onClick={props.onLinkDeeper} sx={WIDE_ONLY_SX}>{s('observation.linkDeeper')}</Button>
             <Button size="small" color="error" onClick={props.onDelete} sx={WIDE_ONLY_SX}>{s('observation.delete')}</Button>
             <OverflowActions actions={occasional} label={s('observation.more')} />
@@ -497,7 +514,7 @@ export function CauseReader(props: CauseReaderProps) {
         )}
         {showPreview && (
           <DocumentSheet dense={mode === 'edit'}>
-            <Typography variant="overline" color="text.secondary">{formatCauseNumber(cause.number)}</Typography>
+            <Typography variant="overline" color="text.secondary">{causeLabel(cause)}</Typography>
             <Typography variant="h4" component="h1" sx={TITLE_SX}>
               {mode === 'edit' ? draft.title : cause.title}
             </Typography>
@@ -527,7 +544,7 @@ export function CauseReader(props: CauseReaderProps) {
                       onOpen={props.onOpen}
                       links={explainedBy.map((other) => ({
                         key: other.id,
-                        label: `${formatCauseNumber(other.number)} ${other.title}`,
+                        label: `${causeLabel(other)} ${other.title}`,
                         ...(readOnly ? {} : { onRemove: () => props.onUnlinkFrom(other.id), removeLabel: s('observation.unlink') }),
                       }))}
                     />

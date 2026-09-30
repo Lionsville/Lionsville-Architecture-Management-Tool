@@ -13,11 +13,12 @@ import { isDay } from '../../model/lifecycle'
 import type { Cause, CauseLink, CauseState, CauseStrength, Observation, ObservationImpact } from '../../model/observation'
 import { forgetCause } from '../../observations/solution'
 import {
-  absorbShared, causeEvidence, formatCauseNumber, formatObservationNumber, linkCause, mergeObservations, newCause,
-  newObservation, nextCauseNumber, nextObservationNumber, removeCause, removeObservation, seenAgain, seenDayProblem,
-  setArchived, setShared, unlinkCause, updateCause, updateObservation,
+  absorbShared, causeEvidence, causeLabel, formatCauseNumber, formatObservationNumber, linkCause, linkRefusal,
+  mergeObservations, newCause, newObservation, nextCauseNumber, nextObservationNumber, removeCause,
+  removeObservation, seenAgain, seenDayProblem, setArchived, setShared, unlinkCause, updateCause,
+  updateObservation,
 } from '../../observations/observation'
-import type { Analysis, CausePatch, ObservationPatch } from '../../observations/observation'
+import type { Analysis, CausePatch, LinkRefusal, ObservationPatch } from '../../observations/observation'
 import { causeLine, findCause, findObservation, observationLine } from '../answer'
 import type { AgentAnswer } from '../tools'
 import { json, refused } from '../tools'
@@ -215,6 +216,8 @@ export const addCause: Handler = (args, view) => {
   for (const row of (args.explains as { id: string; scope?: string; strength?: string }[] | undefined) ?? []) {
     const link = linkOf(work, view, row.id, row.scope, row.strength)
     if ('ok' in link) return link
+    const why = linkRefusal(causes, fresh.id, link)
+    if (why) return linkRefused(why, fresh, link, causes)
     causes = linkCause(causes, fresh.id, link)
   }
   const after = { ...before, causes }
@@ -230,7 +233,7 @@ export const updateCauseTool = onCause((held, args, _view, work) => {
   if (typeof args.body === 'string') patch.body = args.body
   if (typeof args.state === 'string') patch.state = args.state as CauseState
   if (patch.state === 'verified' && held.state !== 'verified' && !causeEvidence(patch.body ?? held.body).complete) {
-    return unverified(formatCauseNumber(held.number))
+    return unverified(causeLabel(held))
   }
   const after = { ...work.before, causes: updateCause(work.before.causes, held.id, patch) }
   return finish(work, after, causeAnswer(work, after, held.id))
@@ -246,13 +249,27 @@ function unverified(label: string): AgentAnswer {
   return refused('agent.badArguments', `${label} cannot be verified yet: its body must say, under "Why we think so" and under "How to verify", why the team thinks so and what confirmed it, with the day. Ask the person what confirmed it, write that into "body" in the same call, then mark it verified.`)
 }
 
+/**
+ * Why a cause may not explain this (`linkRefusal`), said so an agent can act
+ * on it: a root cause ends the chain (ADR-0032 §3), so what lies behind one
+ * is said after a person has made it a cause again.
+ */
+function linkRefused(why: LinkRefusal, cause: Cause, link: CauseLink, causes: readonly Cause[]): AgentAnswer {
+  const target = causes.find((one) => one.id === link.id)
+  const name = target ? causeLabel(target) : link.id
+  switch (why) {
+    case 'root': return refused('agent.badArguments', `${name} is a root cause, and nothing explains a root cause. If a person says something lies behind it, make it a cause first (cause.update with root false) — refused while a solution addresses it.`)
+    case 'self': return refused('agent.badArguments', `${causeLabel(cause)} cannot explain itself`)
+    case 'loop': return refused('agent.badArguments', `${causeLabel(cause)} cannot explain ${name}: ${name} already leads back to it, and a loop is not an explanation`)
+  }
+}
+
 export const linkCauseTool = onCause((held, args, view, work) => {
   const link = linkOf(work, view, args.explains, args.scope, args.strength)
   if ('ok' in link) return link
+  const why = linkRefusal(work.before.causes, held.id, link)
+  if (why) return linkRefused(why, held, link, work.before.causes)
   const causes = linkCause(work.before.causes, held.id, link)
-  if (JSON.stringify(causes) === JSON.stringify(work.before.causes)) {
-    return refused('agent.badArguments', `${held.id} cannot explain ${link.id}: a cause does not explain itself, and a loop is not an explanation`)
-  }
   const after = { ...work.before, causes }
   return finish(work, after, causeAnswer(work, after, held.id))
 })
@@ -274,6 +291,6 @@ export const removeCauseTool = onCause((held, _args, _view, work) => {
   ]
   return {
     command: transaction(commands, { origin: 'agent' }),
-    answer: json({ id: held.id, label: formatCauseNumber(held.number), title: held.title, removed: true }),
+    answer: json({ id: held.id, label: causeLabel(held), title: held.title, removed: true }),
   }
 })

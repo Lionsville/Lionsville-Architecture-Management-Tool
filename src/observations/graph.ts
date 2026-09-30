@@ -3,14 +3,16 @@
 
 /**
  * The analysis as a picture: observations on the left, causes in the lanes
- * after them, root causes on the right (ADR-0021).
+ * after them, root causes on the right (ADR-0021, ADR-0032).
  *
  * Laid out here, in lanes and rows rather than pixels, so the page draws what
  * a node test can assert. A lane is a depth — zero for the observations, one
  * for a cause that explains only observations, one more per cause between —
- * and a row is a position in the lane, chosen to keep the lines short: each
- * node sits near the average row of what it explains (a barycentre pass, one
- * sweep left to right), and ties keep the record order. No force simulation:
+ * except that every root cause stands in the last lane, whatever depth it
+ * was said at, and nothing else does. A row is a position in the lane,
+ * chosen to keep the lines short: each node sits near the average row of
+ * what it explains (a barycentre pass, one sweep left to right), and ties
+ * keep the record order. No force simulation:
  * the picture must land in the same place every time the page opens, and a
  * team pointing at "the one third from the top" needs it to still be there.
  *
@@ -58,7 +60,7 @@ export type GraphEdge = {
 export type AnalysisGraph = {
   nodes: GraphNode[]
   edges: GraphEdge[]
-  /** How many lanes there are; the root causes stand in the last. */
+  /** How many lanes there are; the root causes stand in the last, and only they. */
   lanes: number
 }
 
@@ -86,9 +88,15 @@ export function analysisGraph(analysis: Analysis, shared: readonly SharedObserva
     })
   }
 
+  // A cause stands in the lane of its depth; every root cause in the lane
+  // after the deepest of them (ADR-0032 §3), because a root is what the team
+  // said and not how far from the observations it happens to stand.
+  const depths = new Map(causes.map((cause) => [cause.id, causeDepth(cause, causes)]))
+  const deepest = Math.max(0, ...causes.filter((cause) => !isRootCause(cause)).map((cause) => depths.get(cause.id)!))
+  const rootLane = Math.max(deepest + 1, ...causes.filter(isRootCause).map((cause) => depths.get(cause.id)!))
   const causeNodes: GraphNode[] = causes.map((cause) => ({
     kind: 'cause', key: nodeKey(cause.id), id: cause.id, cause,
-    root: isRootCause(cause, causes), lane: causeDepth(cause, causes), row: 0,
+    root: isRootCause(cause), lane: isRootCause(cause) ? rootLane : depths.get(cause.id)!, row: 0,
   }))
 
   const known = new Set([...drawnObservations, ...causeNodes].map((node) => node.key))

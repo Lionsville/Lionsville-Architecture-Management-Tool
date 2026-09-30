@@ -128,14 +128,19 @@ function linkRows(links: readonly CauseLink[]): Record<string, FrontMatterScalar
     .map((one) => ({ id: one.id, ...(one.scope !== undefined ? { scope: one.scope } : {}), strength: one.strength }))
 }
 
+/**
+ * A root cause is a cause with `root: true` (ADR-0032 §3), in the same folder
+ * and on the same number, and its heading says `RC-` the way people say it.
+ */
 export function causeFileText(cause: Cause): string {
   const fields = frontMatterText({
     id: cause.id,
     number: cause.number,
     state: cause.state,
+    root: cause.root,
     explains: linkRows(cause.explains),
   })
-  const heading = `# CA-${numberPrefix(cause.number)} — ${cause.title}`
+  const heading = `# ${cause.root ? 'RC' : 'CA'}-${numberPrefix(cause.number)} — ${cause.title}`
   return `${fields}\n${heading}\n\n${cause.body}\n`
 }
 
@@ -226,7 +231,7 @@ export function observationFromFile(text: string, path: string): Observation | u
 
 /** A cause back out of a file, or `undefined` when the file is not one. */
 export function causeFromFile(text: string, path: string): Cause | undefined {
-  const { title, body, fields } = headed(text, /^CA-\d+\s+[—-]\s+/)
+  const { title, body, fields } = headed(text, /^(?:CA|RC)-\d+\s+[—-]\s+/)
   const number = frontMatterNumber(fields, 'number') ?? numberFromName(path)
   if (number === undefined) return undefined
   return {
@@ -234,6 +239,9 @@ export function causeFromFile(text: string, path: string): Cause | undefined {
     number,
     title,
     state: stateOf(frontMatterString(fields, 'state')),
+    // The front matter says it, not the heading: a heading is prose somebody
+    // may have typed, and being a root is a step with a name on it.
+    ...(frontMatterString(fields, 'root') === 'true' ? { root: true as const } : {}),
     body,
     explains: linksFrom(frontMatterRows(fields, 'explains')),
   }

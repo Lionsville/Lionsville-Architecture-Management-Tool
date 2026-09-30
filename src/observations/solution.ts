@@ -41,7 +41,7 @@ import type {
   Cause, CauseStrength, EarlierAttempt, Experiment, ExperimentOutcome, Observation, Solution, SolutionEvent,
   SolutionLink, SolutionSize, SolutionState,
 } from '../model/observation'
-import { absorbedBy, formatCauseNumber, formatObservationNumber, isRootCause } from './observation'
+import { absorbedBy, causeLabel, formatObservationNumber, isRootCause } from './observation'
 import type { Analysis, SharedObservation } from './observation'
 
 export type {
@@ -169,7 +169,7 @@ export function newSolution(args: {
 /** The strength a new link gets: strong on a root cause, normal on one that has a cause of its own. */
 export function defaultStrength(causeId: string, causes: readonly Cause[]): CauseStrength {
   const cause = causes.find((one) => one.id === causeId)
-  return cause && isRootCause(cause, causes) ? 'strong' : 'normal'
+  return cause && isRootCause(cause) ? 'strong' : 'normal'
 }
 
 export function newExperiment(args: {
@@ -760,7 +760,7 @@ export function solutionQuestions(
   if (late && !hasProof(solution, context.experiments)) out.push('proofWithdrawn')
   const addressesRoot = solution.addresses.some((address) => {
     const cause = context.causes.find((one) => one.id === address.id)
-    return cause !== undefined && isRootCause(cause, context.causes)
+    return cause !== undefined && isRootCause(cause)
   })
   if (late && solution.addresses.length > 0 && !addressesRoot) out.push('worksAround')
   const plan = context.plans.find((one) => one.id === solution.plan)
@@ -801,7 +801,7 @@ export function seenSinceImplemented(
 /** The root causes no live solution addresses: what nobody is working on. */
 export function rootsWithoutSolution(causes: readonly Cause[], solutions: readonly Solution[]): Cause[] {
   const covered = new Set(solutions.filter(isLive).flatMap((one) => one.addresses.map((address) => address.id)))
-  return causes.filter((cause) => isRootCause(cause, causes) && !covered.has(cause.id))
+  return causes.filter((cause) => isRootCause(cause) && !covered.has(cause.id))
 }
 
 /** Rough sizes in order, for sorting and for the width of a mark. */
@@ -845,7 +845,7 @@ export function decisionBody(solution: Solution, ctx: DecisionBodyContext, t: Tr
   const causes = solution.addresses
     .map((address) => ctx.causes.find((one) => one.id === address.id))
     .filter((cause): cause is Cause => cause !== undefined)
-    .map((cause) => `* ${formatCauseNumber(cause.number)} ${cause.title}`)
+    .map((cause) => `* ${causeLabel(cause)} ${cause.title}`)
   const size = (value: SolutionSize) => t(SIZE_WORD[value]).toLowerCase()
 
   const drivers = [

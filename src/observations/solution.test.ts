@@ -37,7 +37,7 @@ const analysis: Analysis = {
   observations: [observation({}), observation({ id: 'o2', number: 2 })],
   causes: [
     cause({ explains: [{ id: 'o1', strength: 'strong' }, { id: 'o2', strength: 'normal' }] }),
-    cause({ id: 'c2', number: 2, title: 'Nobody owns the data', explains: [{ id: 'c1', strength: 'strong' }] }),
+    cause({ id: 'c2', number: 2, title: 'Nobody owns the data', root: true, explains: [{ id: 'c1', strength: 'strong' }] }),
   ],
 }
 
@@ -401,7 +401,7 @@ describe('what is derived', () => {
       causes: analysis.causes, solutions: [vetted, other], experiments: [trial], observations: analysis.observations,
     }, t)
     expect(text).toMatch(/^## Context and Problem Statement\n\nSO-0001 One estimate service\n/)
-    expect(text).toContain('## Decision Drivers\n\n* CA-0002 Nobody owns the data\n* Expected benefit: large\n* Rough cost: small\n')
+    expect(text).toContain('## Decision Drivers\n\n* RC-0002 Nobody owns the data\n* Expected benefit: large\n* Rough cost: small\n')
     expect(text).toContain('## Considered Options\n\n* SO-0001 One estimate service\n* SO-0002 Rewrite (dropped: Too costly)\n')
     expect(text).toContain('Chosen option: \u201cSO-0001 One estimate service\u201d, because EX-0001 Two weeks at one desk confirmed it: 41 to 12 a week')
     expect(text).toContain('* Good, because the expected benefit is large.\n* Bad, because the rough cost is small.')

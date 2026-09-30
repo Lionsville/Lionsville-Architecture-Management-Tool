@@ -60,10 +60,10 @@ import { SeamResizer } from '../../widgets/SeamResizer'
 import type { DocumentImages } from '../../documentation/ui/DocumentSource'
 import type { MakeId } from '../../model/keys'
 import {
-  absorbShared, absorbedBy, explainedBy, formatCauseNumber, formatObservationNumber, isMerged, isRootCause,
-  linkCause, liveObservations, mergeObservations, newCause, newObservation, nextCauseNumber,
-  isArchived, nextObservationNumber, removeCause, removeObservation, setArchived, setShared,
-  sortCauses, sortObservations, unlinkCause, updateCause, updateObservation,
+  absorbedBy, absorbShared, causeLabel, explainedBy, formatObservationNumber, isArchived, isMerged,
+  isRootCause, linkCause, liveObservations, mergeObservations, newCause, newObservation, nextCauseNumber,
+  nextObservationNumber, removeCause, removeObservation, setArchived, setShared, sortCauses, sortObservations,
+  unlinkCause, updateCause, updateObservation,
 } from '../observation'
 import type {
   Analysis, Cause, CauseLink, CausePatch, Observation, ObservationPatch, SharedObservation,
@@ -72,7 +72,7 @@ import { nodeKey } from '../graph'
 import { IMPACT_COLOR, IMPACT_LABEL, STATE_COLOR, STATE_LABEL, STRENGTH_LABEL } from '../observationScope'
 import { AnalysisPicture, PictureLegend } from './AnalysisPicture'
 import { ArchiveDialog, LinkDialog, MergeDialog, NewCauseDialog, NewObservationDialog } from './ObservationDialogs'
-import { EmptyRegister, crumbTrail, experimentMoveActions, preselectedCause, useLifecycle } from './ObservationLifecycle'
+import { EmptyRegister, crumbTrail, experimentMoveActions, preselectedCause, rootToggle, useLifecycle } from './ObservationLifecycle'
 import { PictureMenu } from './PictureMenu'
 import type { MenuAction, PictureTarget } from './PictureMenu'
 import { CauseReader, MergedNote, ObservationReader, ReaderModeContext } from './Readers'
@@ -342,7 +342,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
     const observation = observations.find((one) => one.id === id)
     if (observation) return `${formatObservationNumber(observation.number)} ${observation.title}`
     const cause = causes.find((one) => one.id === id)
-    if (cause) return `${formatCauseNumber(cause.number)} ${cause.title}`
+    if (cause) return `${causeLabel(cause)} ${cause.title}`
     const solution = solutions.find((one) => one.id === id)
     if (solution) return `${formatSolutionNumber(solution.number)} ${solution.title}`
     const experiment = experiments.find((one) => one.id === id)
@@ -396,10 +396,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
     setCreating(false)
     setSelectedKey(fresh.id)
   }
-  const createCause = (title: string): Cause => {
-    const fresh = newCause({ id: makeId('ca'), number: nextCauseNumber(causes), title, t: s })
-    return fresh
-  }
+  const createCause = (title: string): Cause => newCause({ id: makeId('ca'), number: nextCauseNumber(causes), title, t: s })
   const addCause = (title: string) => {
     const fresh = createCause(title)
     commit({ observations: [...observations], causes: [...causes, fresh] })
@@ -408,6 +405,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
   }
   const patchObservation = (id: string, patch: ObservationPatch) => commit({ ...analysis, observations: updateObservation(observations, id, patch) })
   const patchCause = (id: string, patch: CausePatch) => commit({ ...analysis, causes: updateCause(causes, id, patch) })
+  const rootOf = (cause: Cause) => rootToggle(cause, { lists: work, commit, nameOf, s, readOnly })
   const share = (id: string, on: boolean) => commit({ ...analysis, observations: setShared(observations, id, on, today()) })
   const archive = (id: string, note: string) => {
     commit({ ...analysis, observations: setArchived(observations, id, true, today(), note) })
@@ -488,7 +486,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const matches = (one: Observation) => !trimmed || matchesQuery(trimmed, [one.title, one.body, one.where ?? '', one.by ?? '', formatObservationNumber(one.number)])
   const ownRows = sortObservations(observations)
     .filter((one) => (showMerged || !isMerged(observations, one.id)) && (showArchived || !isArchived(one)) && matches(one))
-  const causeRows = sortCauses(causes).filter((one) => !trimmed || matchesQuery(trimmed, [one.title, one.body, formatCauseNumber(one.number)]))
+  const causeRows = sortCauses(causes).filter((one) => !trimmed || matchesQuery(trimmed, [one.title, one.body, causeLabel(one)]))
   const solutionRows = [...solutions].sort((a, b) => b.number - a.number)
     .filter((one) => (showArchived || isLive(one)) && (!trimmed || matchesQuery(trimmed, [one.title, one.body, formatSolutionNumber(one.number)])))
   const experimentRows = [...experiments].sort((a, b) => b.number - a.number)
@@ -531,7 +529,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
           {merged
             ? <Typography variant="caption" color="text.secondary"><MergedNote merged={merged} s={s} day={(date) => formatDay(date, props.language)} /></Typography>
             : into.length
-              ? into.map((cause) => <Chip key={cause.id} size="small" variant="outlined" label={formatCauseNumber(cause.number)} sx={{ height: 18, fontSize: 10, mr: 0.5 }} onClick={(event) => { event.stopPropagation(); setSelectedKey(cause.id) }} />)
+              ? into.map((cause) => <Chip key={cause.id} size="small" variant="outlined" label={causeLabel(cause)} sx={{ height: 18, fontSize: 10, mr: 0.5 }} onClick={(event) => { event.stopPropagation(); setSelectedKey(cause.id) }} />)
               : <Typography variant="caption" color="text.secondary">{s('observation.notAnalysed')}</Typography>}
         </TableCell>
       </TableRow>
@@ -595,10 +593,10 @@ export function ObservationsPage(props: ObservationsPageProps) {
         {causeRows.map((cause) => (
           <ListItemButton key={cause.id} selected={cause.id === selectedKey} onClick={() => setSelectedKey(cause.id)} sx={{ py: 0.5 }}>
             <ListItemText
-              primary={`${formatCauseNumber(cause.number)} ${cause.title}`}
+              primary={`${causeLabel(cause)} ${cause.title}`}
               slotProps={{ primary: { sx: { fontSize: 13 } } }}
             />
-            {isRootCause(cause, causes) && <Chip size="small" variant="outlined" color="secondary" label={s('observation.rootCause')} sx={{ height: 18, fontSize: 10, mr: 1 }} />}
+            {isRootCause(cause) && <Chip size="small" variant="outlined" color="secondary" label={s('observation.rootCause')} sx={{ height: 18, fontSize: 10, mr: 1 }} />}
             <Chip size="small" color={STATE_COLOR[cause.state]} label={s(STATE_LABEL[cause.state])} sx={{ height: 18, fontSize: 10 }} />
           </ListItemButton>
         ))}
@@ -636,7 +634,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
     ['observation.phaseAnalysed', liveObservations(observations).length + sharedShown.length - queue.length - sharedQueue.length],
     ['observation.phaseAssumed', causes.filter((one) => one.state === 'assumed').length],
     ['observation.phaseVerified', causes.filter((one) => one.state === 'verified').length],
-    ['observation.phaseRoots', causes.filter((one) => isRootCause(one, causes)).length],
+    ['observation.phaseRoots', causes.filter((one) => isRootCause(one)).length],
   ] as const
 
   // --- the right-click ------------------------------------------------------------------
@@ -726,8 +724,9 @@ export function ObservationsPage(props: ObservationsPageProps) {
             key: 'verify', label: one.state === 'assumed' ? s('observation.verify') : s('observation.unverify'),
             onClick: () => (one.state === 'assumed' ? verify(one) : patchCause(one.id, { state: 'assumed' })),
           },
+          rootOf(one).action,
           { key: 'link-deeper', label: s('observation.linkDeeper'), onClick: () => setLinking({ key: one.id, label: nameOf(one.id), link: { id: one.id } }) },
-          ...(isRootCause(one, causes) ? [{ key: 'propose', label: s('solution.proposeForCause'), onClick: () => setProposing({ causeId: one.id }) }] : []),
+          ...(isRootCause(one) ? [{ key: 'propose', label: s('solution.proposeForCause'), onClick: () => setProposing({ causeId: one.id }) }] : []),
           remove('cause', one.id),
         ]
       }
@@ -790,7 +789,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
     }
     return found
   }, [orphanRoots, solutions, analysis, shared, plans, context, s, nameOf])
-  const rootCount = causes.filter((one) => isRootCause(one, causes)).length
+  const rootCount = causes.filter((one) => isRootCause(one)).length
   const phaseCounts = (['idea', 'shaped', 'testing', 'proven', 'adopted', 'implemented'] as const)
     .map((phase) => [phase, solutions.filter((one) => phaseOf(one) === phase).length] as const)
 
@@ -864,7 +863,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
         questions={solutionQuestions(one, context)}
         addresses={one.addresses.map((address) => {
           const cause = causes.find((held) => held.id === address.id)
-          return { id: address.id, label: nameOf(address.id), strength: address.strength, root: cause ? isRootCause(cause, causes) : false }
+          return { id: address.id, label: nameOf(address.id), strength: address.strength, root: cause ? isRootCause(cause) : false }
         })}
         experiments={experimentsFor(experiments, one.id).map((held) => ({ key: experimentKey(held.id), label: nameOf(held.id), outcome: held.outcome }))}
         alternatives={alternatives(one, solutions).map((held) => ({ key: solutionKey(held.id), label: nameOf(held.id), phase: phaseOf(held) }))}
@@ -938,6 +937,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
       nameOf={nameOf}
       onUpdate={(patch) => patchCause(selected.cause.id, patch)}
       onVerify={() => verify(selected.cause)}
+      {...rootOf(selected.cause).reader}
       onLinkDeeper={() => setLinking({ key: selected.cause.id, label: nameOf(selected.cause.id), link: { id: selected.cause.id } })}
       onUnlink={(target) => unlink(selected.cause.id, target)}
       onUnlinkFrom={(causeId) => unlink(causeId, { id: selected.cause.id })}
@@ -946,7 +946,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
       solutions={solutionsFor(selected.cause.id).map((one) => ({
         key: solutionKey(one.id), label: nameOf(one.id), note: s(PHASE_LABEL[phaseOf(one)]).toLowerCase(),
       }))}
-      {...(readOnly || !isRootCause(selected.cause, causes) ? {} : { onPropose: () => setProposing({ causeId: selected.cause.id }) })}
+      {...(readOnly || !isRootCause(selected.cause) ? {} : { onPropose: () => setProposing({ causeId: selected.cause.id }) })}
       onAddImage={props.onAddImage}
       images={props.images}
     />

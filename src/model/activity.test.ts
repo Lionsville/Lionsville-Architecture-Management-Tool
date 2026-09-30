@@ -72,6 +72,18 @@ describe('summarise', () => {
     }], before())).toEqual({ key: 'activity.standInsRefreshed', count: 2 })
   })
 
+  it('says a cause was made a root cause, or a cause again, rather than changed (ADR-0032 §3)', () => {
+    const cause = { id: 'ca1', number: 1, title: 'Nobody owns pricing', state: 'assumed' as const, body: '', explains: [] }
+    const with1 = (root?: true) => fromArrays(model({ causes: [{ ...cause, ...(root ? { root } : {}) }] }))
+    expect(summarise([{ type: 'cause.update', id: 'ca1', patch: { root: true } }], with1()))
+      .toEqual({ key: 'activity.causeMadeRoot', name: 'Nobody owns pricing' })
+    expect(summarise([{ type: 'cause.update', id: 'ca1', patch: { root: undefined } }], with1(true)))
+      .toEqual({ key: 'activity.causeMadeCause', name: 'Nobody owns pricing' })
+    // A whole row's replacement names `root` and says what it already was.
+    expect(summarise([{ type: 'cause.update', id: 'ca1', patch: { ...cause, root: true, title: 'x' } }], with1(true)))
+      .toEqual({ key: 'activity.causeChanged', name: 'Nobody owns pricing' })
+  })
+
   it('takes a transaction’s name from its subject, not its consequences', () => {
     // Drawing a card is an element and a placement; it is "Added Warehouse",
     // never "Moved one element".

@@ -258,7 +258,7 @@ describe('ObservationsPage', () => {
   it('draws the analysis: circles for observations, boxes for causes, a root, and the lines between', () => {
     mount({ model: { ...model, causes: [
       cause({ explains: [{ id: 'o1', strength: 'strong' }, { id: 'in1', scope: 'acme/claims/intake', strength: 'weak' }] }),
-      cause({ id: 'c2', number: 2, title: 'Nobody owns the batch', state: 'verified', explains: [{ id: 'c1', strength: 'normal' }] }),
+      cause({ id: 'c2', number: 2, title: 'Nobody owns the batch', state: 'verified', root: true, explains: [{ id: 'c1', strength: 'normal' }] }),
     ] } })
     fireEvent.click(screen.getByTestId('observation-tab-analysis'))
     const picture = screen.getByTestId('analysis-picture')
@@ -275,10 +275,14 @@ describe('ObservationsPage', () => {
     expect(screen.getByTestId('cause-root')).toBeDefined()
   })
 
-  it('a cause can be verified, and a root stops being one when a deeper cause is linked', async () => {
+  it('a cause can be verified, made a root cause, and linked to a deeper one', async () => {
     const { onChange } = mount()
     fireEvent.click(within(screen.getByTestId('cause-list')).getByText('CA-0001 Window sized for 2019'))
-    expect(screen.getByTestId('cause-root')).toBeDefined()
+    // Explained by nothing is not a root: nobody has said so yet.
+    expect(screen.queryByTestId('cause-root')).toBeNull()
+    fireEvent.click(screen.getByTestId('cause-root-toggle'))
+    expect(lastChange(onChange).causes[0].root).toBe(true)
+    onChange.mockClear()
     // Its body says why, but not how it was verified: the page asks what confirmed it.
     fireEvent.click(screen.getByTestId('cause-verify'))
     expect(onChange).not.toHaveBeenCalled()
@@ -293,6 +297,28 @@ describe('ObservationsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Link' }))
     const next = lastChange(onChange)
     expect(next.causes[1]).toMatchObject({ title: 'No capacity planning', explains: [{ id: 'c1', strength: 'normal' }] })
+  })
+
+  it('refuses a root cause a deeper cause explains, and a cause again a solution addresses, saying which', () => {
+    const { onChange } = mount({ model: { ...model, causes: [
+      cause({ explains: [{ id: 'o1', strength: 'strong' }] }),
+      cause({ id: 'c2', number: 2, title: 'No capacity planning', explains: [{ id: 'c1', strength: 'normal' }] }),
+      cause({ id: 'c3', number: 3, title: 'Nobody owns the batch', root: true }),
+    ], solutions: [{
+      id: 's1', number: 1, title: 'Give the batch an owner', state: 'idea', addresses: [{ id: 'c3', strength: 'strong' }],
+      validatedWith: [], attempts: [], body: '', history: [],
+    }] } })
+    fireEvent.click(within(screen.getByTestId('cause-list')).getByText('CA-0001 Window sized for 2019'))
+    const toRoot = screen.getByTestId('cause-root-toggle') as HTMLButtonElement
+    expect(toRoot.textContent).toBe('Make root cause')
+    expect(toRoot.disabled).toBe(true)
+    expect(toRoot.parentElement?.getAttribute('aria-label')).toContain('CA-0002 No capacity planning explains it')
+    fireEvent.click(within(screen.getByTestId('cause-list')).getByText('RC-0003 Nobody owns the batch'))
+    const toCause = screen.getByTestId('cause-root-toggle') as HTMLButtonElement
+    expect(toCause.textContent).toBe('Make cause')
+    expect(toCause.disabled).toBe(true)
+    expect(toCause.parentElement?.getAttribute('aria-label')).toContain('SO-0001 Give the batch an owner addresses it')
+    expect(onChange).not.toHaveBeenCalled()
   })
 
   it('asks on which day it was seen again, with a note, and never a day in the future', () => {
@@ -352,12 +378,12 @@ describe('the analysis picture’s right-click, and editing across the whole wid
   const rightClick = (element: Element) => fireEvent.contextMenu(element, { clientX: 40, clientY: 60 })
 
   it('offers a cause’s own actions, and Edit opens it with the picture stepped aside', () => {
-    mount()
+    mount({ model: { ...model, causes: [cause({ root: true, explains: [{ id: 'o1', strength: 'strong' }] })] } })
     fireEvent.click(screen.getByTestId('observation-tab-analysis'))
     rightClick(screen.getByTestId('analysis-picture').querySelector('[data-key="c1"]')!)
     const menu = screen.getByTestId('picture-menu')
     expect(within(menu).getAllByRole('menuitem').map((item) => item.textContent)).toEqual([
-      'Edit', 'Mark verified', 'Link to a deeper cause…', 'Propose a solution…', 'Delete',
+      'Edit', 'Mark verified', 'Make cause', 'Link to a deeper cause…', 'Propose a solution…', 'Delete',
     ])
     fireEvent.click(screen.getByTestId('picture-menu-edit'))
     expect(screen.getByTestId('observation-body').dataset.editing).toBe('true')

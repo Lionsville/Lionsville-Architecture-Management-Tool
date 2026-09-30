@@ -23,7 +23,7 @@ import type { Translate } from '../../i18n'
 import { inkOn, mix } from '../../widgets'
 import { analysisGraph, placeGraph } from '../graph'
 import type { GraphNode } from '../graph'
-import { formatCauseNumber, formatObservationNumber } from '../observation'
+import { causeLabel, formatObservationNumber } from '../observation'
 import type { Analysis, CauseStrength, ObservationImpact, SharedObservation } from '../observation'
 import { STATE_LABEL } from '../observationScope'
 import type { PictureMenuHandler } from './PictureMenu'
@@ -241,7 +241,7 @@ export function CauseMark(props: MarkProps<Extract<GraphNode, { kind: 'cause' }>
     <g transform={`translate(${x},${y})`} {...rest} data-key={node.key} data-root={node.root ? 'true' : undefined}>
       <rect x={-BOX.width / 2} y={-BOX.height / 2} width={BOX.width} height={BOX.height} rx={node.root ? BOX.height / 2 : 5} fill={theme.palette.background.paper} />
       <g opacity={dim ? 0.35 : 1}>
-        <title>{`${formatCauseNumber(node.cause.number)} ${node.cause.title}`}</title>
+        <title>{`${causeLabel(node.cause)} ${node.cause.title}`}</title>
         <rect
           x={-BOX.width / 2}
           y={-BOX.height / 2}
@@ -257,7 +257,7 @@ export function CauseMark(props: MarkProps<Extract<GraphNode, { kind: 'cause' }>
           {shorten(node.cause.title, 28)}
         </text>
         <text textAnchor="middle" dy="1.05em" fontSize={10} fill={theme.palette.text.secondary}>
-          {formatCauseNumber(node.cause.number)} · {s(STATE_LABEL[node.cause.state]).toLowerCase()}{node.root ? ` · ${s('observation.rootCause').toLowerCase()}` : ''}
+          {causeLabel(node.cause)} · {s(STATE_LABEL[node.cause.state]).toLowerCase()}{node.root ? ` · ${s('observation.rootCause').toLowerCase()}` : ''}
         </text>
         {flag && <Flag x={BOX.width / 2} y={-BOX.height / 2} title={flag} />}
       </g>

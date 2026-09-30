@@ -7,8 +7,10 @@
  * patched and removed.
  */
 import { causesOf, experimentsOf, observationsOf, solutionsOf } from '../normalised'
+import type { Model } from '../normalised'
+import type { Cause } from '../observation'
 import { gone, ok, taken } from './handler'
-import type { CommandTable, PatchKeys } from './handler'
+import type { CommandTable, PatchKeys, Refused } from './handler'
 import { drop, patched, put, withCauses, withExperiments, withObservations, withSolutions } from './rows'
 import { patchWrites } from './writes'
 
@@ -20,7 +22,27 @@ const OBSERVATION_FIELDS: PatchKeys<'observation.update'> = {
 
 /** Every field of a cause but its id. */
 const CAUSE_FIELDS: PatchKeys<'cause.update'> = {
-  number: true, title: true, state: true, body: true, explains: true,
+  number: true, title: true, state: true, root: true, body: true, explains: true,
+}
+
+/**
+ * Whether a cause may become a root cause, or go back, as the patch says
+ * (ADR-0032 §3). Refused in `apply` rather than in a guard, because the rule
+ * is the one writer's whoever sent the step — the page, the agent, a replay —
+ * and no step written before a cause could be a root names `root`, so a log
+ * replayed through here arrives where it did. A patch that names `root` and
+ * says what the cause already is, as a whole row's replacement does, is no
+ * change and is not asked.
+ */
+function rootRefusal(model: Model, held: Cause, patch: Partial<Cause>): Refused | undefined {
+  if (!('root' in patch) || Boolean(patch.root) === Boolean(held.root)) return undefined
+  if (patch.root) {
+    const explained = Object.values(causesOf(model))
+      .some((one) => one.id !== held.id && one.explains.some((link) => link.id === held.id && link.scope === undefined))
+    return explained ? { ok: false, reason: 'command.rootExplained' } : undefined
+  }
+  const addressed = Object.values(solutionsOf(model)).some((one) => one.addresses.some((address) => address.id === held.id))
+  return addressed ? { ok: false, reason: 'command.rootAddressed' } : undefined
 }
 
 /** Every field of a solution but its id. */
@@ -93,6 +115,8 @@ export const CAUSE_COMMANDS = {
     apply(model, command, { meta }) {
       const held = causesOf(model)[command.id]
       if (!held) return gone
+      const refused = rootRefusal(model, held, command.patch)
+      if (refused) return refused
       const { row, inverse } = patched(held, command.patch)
       const rows = put(causesOf(model), model.order.causes, command.id, row)
       return ok(withCauses(model, rows), { type: 'cause.update', id: command.id, patch: inverse }, meta)

@@ -64,6 +64,8 @@ export const EN = {
   'command.taken': 'Something here already has that id — another author took it while this change was being made. Try again.',
   'command.notAField': 'That change carries a field this record does not have, so none of it was made.',
   'command.ownedElsewhere': 'This is a stand-in: its lifecycle, dates, owner, vendor, name and description are written in the scope that defines it. Open that scope to change them.',
+  'command.rootExplained': 'A cause that another cause explains cannot be a root cause: a root cause ends the chain. Unlink the deeper cause, or make that one the root cause instead.',
+  'command.rootAddressed': 'A root cause that a solution addresses cannot become a cause again: a solution addresses root causes only. Move the solution to another root cause, or unlink it, first.',
   // A restore that cannot be (ADR-0008). A refusal, never an exception.
   'restore.absentThen': 'This was not in the project at that snapshot.',
   'restore.absentNow': 'The element is no longer in the project; restore the whole project to bring it back.',
@@ -142,6 +144,8 @@ export const EN = {
   'activity.observationRemoved': 'Removed the observation {name}',
   'activity.causeAdded': 'Added the cause {name}',
   'activity.causeChanged': 'Changed the cause {name}',
+  'activity.causeMadeRoot': 'Made {name} a root cause',
+  'activity.causeMadeCause': 'Made {name} a cause again',
   'activity.causeRemoved': 'Removed the cause {name}',
   'activity.solutionAdded': 'Added the solution {name}',
   'activity.solutionChanged': 'Changed the solution {name}',

@@ -36,6 +36,8 @@ import { sheetPage } from '../../business'
 import { buildEdges, buildNodes } from '../../editor/graph'
 import type { BuildGraphArgs } from '../../editor/graph'
 import type { DesignModel } from '../../model'
+import { analysisGraph } from '../../observations/graph'
+import { explainedBy, rootCauses } from '../../observations/observation'
 
 /** The scope with the applications in it — by what it is, since the platforms sit beside it (ADR-0013). */
 const landscapeOf = (example: (typeof EXAMPLES)[number]) =>
@@ -479,6 +481,21 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s teaches by e
     expect(paths.filter((path) => path.includes('/decisions/')).length)
       .toBe(model.decisions?.length ?? 0)
     expect(paths.filter((path) => path.includes('/transitions/')).length).toBe(plans.length)
+  })
+
+  it('says its root causes, draws every one in the root lane, and addresses nothing else (ADR-0032)', () => {
+    const causes = model.causes ?? []
+    const roots = rootCauses(causes)
+    expect(roots.map((one) => one.id).sort()).toEqual(['ca-hand-mapping', 'ca-no-price-owner', 'ca-two-estimates'])
+    const graph = analysisGraph({ observations: [...(model.observations ?? [])], causes: [...causes] })
+    const lanes = graph.nodes.filter((node) => node.kind === 'cause')
+    expect(lanes.filter((node) => node.lane === graph.lanes - 1).map((node) => node.key).sort())
+      .toEqual(roots.map((one) => one.id).sort())
+    for (const solution of model.solutions ?? []) {
+      for (const address of solution.addresses) expect(roots.some((one) => one.id === address.id), address.id).toBe(true)
+    }
+    // Nothing explains a root cause.
+    for (const root of roots) expect(explainedBy(causes, root.id), root.id).toEqual([])
   })
 })
 

@@ -9,8 +9,9 @@ import { experimentKey, isDirection, solutionGraph, solutionKey, trailKey } from
 const observation = (id: string): Observation => ({
   id, number: 1, title: id, date: '2026-06-01', impact: 'minor', seen: 1, body: '', history: [],
 })
-const cause = (id: string, explains: string[]): Cause => ({
+const cause = (id: string, explains: string[], root?: true): Cause => ({
   id, number: 1, title: id, state: 'verified', body: '', explains: explains.map((one) => ({ id: one, strength: 'normal' })),
+  ...(root ? { root } : {}),
 })
 const solution = (id: string, state: Solution['state'], addresses: string[], over: Partial<Solution> = {}): Solution => ({
   id, number: 1, title: id, state, addresses: addresses.map((one) => ({ id: one, strength: 'strong' })),
@@ -23,7 +24,7 @@ const experiment = (id: string, tests: string[], outcome: Experiment['outcome'] 
 // o1 ← c1 ← r1 (root), o2 ← r2 (root), c3 explains nothing yet.
 const analysis: Analysis = {
   observations: [observation('o1'), observation('o2')],
-  causes: [cause('c1', ['o1']), cause('r1', ['c1']), cause('r2', ['o2']), cause('c3', [])],
+  causes: [cause('c1', ['o1']), cause('r1', ['c1'], true), cause('r2', ['o2'], true), cause('c3', [])],
 }
 const work: SolutionWork = {
   solutions: [

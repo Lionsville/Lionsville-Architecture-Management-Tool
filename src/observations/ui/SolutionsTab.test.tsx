@@ -44,7 +44,7 @@ const base: HostModel = {
   observations: [observation({ history: [{ date: '2026-06-01', kind: 'recorded' }, { date: '2026-09-10', kind: 'seen' }] })],
   causes: [
     cause({ explains: [{ id: 'o1', strength: 'strong' }] }),
-    cause({ id: 'c2', number: 2, title: 'Nobody owns the data', explains: [{ id: 'c1', strength: 'strong' }] }),
+    cause({ id: 'c2', number: 2, title: 'Nobody owns the data', root: true, explains: [{ id: 'c1', strength: 'strong' }] }),
   ],
 }
 
@@ -202,7 +202,7 @@ describe('the Solutions tab', () => {
     mount(base, { initialId: 'c2' })
     fireEvent.click(screen.getByTestId('observation-tab-solutions'))
     fireEvent.click(screen.getByTestId('solution-new'))
-    expect(screen.getByRole('dialog').textContent).toContain('CA-0002')
+    expect(screen.getByRole('dialog').textContent).toContain('RC-0002')
   })
 
   it('shows each experiment\'s outcome in the register', () => {

@@ -52,7 +52,7 @@ import {
 import type { SolutionContext, SolutionPlan } from '../observations/solution'
 import type { Cause, Observation } from '../model/observation'
 import {
-  absorbedBy, explainedBy, formatCauseNumber, formatObservationNumber, isMerged, isRootCause,
+  absorbedBy, causeLabel, explainedBy, formatObservationNumber, isMerged, isRootCause,
 } from '../observations/observation'
 
 /** The tools this file answers: the read tier, by name. */
@@ -251,7 +251,7 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
       return json({
         causes: causes
           .filter((one) => state === undefined || one.state === state)
-          .filter((one) => args.root !== true || isRootCause(one, causes))
+          .filter((one) => args.root !== true || isRootCause(one))
           .map((one) => causeLine(one, causes, model)),
       })
     }
@@ -652,7 +652,7 @@ export function solutionLine(solution: Solution, facts: SolutionFacts) {
       const cause = causes.find((one) => one.id === address.id)
       return {
         id: address.id, strength: address.strength,
-        ...(cause ? { label: formatCauseNumber(cause.number), title: cause.title, root: isRootCause(cause, causes) } : {}),
+        ...(cause ? { label: causeLabel(cause), title: cause.title, root: isRootCause(cause) } : {}),
       }
     }),
     validatedWith: solution.validatedWith,
@@ -699,7 +699,8 @@ export function experimentLine(experiment: Experiment, solutions: readonly Solut
 export function findCause(list: readonly Cause[], idOrLabel: string): Cause | undefined {
   const held = list.find((one) => one.id === idOrLabel)
   if (held) return held
-  const number = /^(?:ca-?)?(\d+)$/i.exec(idOrLabel.trim())
+  // CA and RC share the number (ADR-0032 §3): either label finds the cause.
+  const number = /^(?:(?:ca|rc)-?)?(\d+)$/i.exec(idOrLabel.trim())
   return number ? list.find((one) => one.number === Number(number[1])) : undefined
 }
 
@@ -720,7 +721,7 @@ export function observationLine(observation: Observation, causes: readonly Cause
     ...(merged ? { mergedInto: merged.id } : {}),
     causes: explainedBy(causes, observation.id, scope).map((cause) => ({
       id: cause.id,
-      label: formatCauseNumber(cause.number),
+      label: causeLabel(cause),
       title: cause.title,
       strength: cause.explains.find((link) => link.id === observation.id && link.scope === scope)?.strength,
     })),
@@ -732,20 +733,20 @@ export function causeLine(cause: Cause, causes: readonly Cause[], model: Model) 
   const observations = observationsOf(model)
   return {
     id: cause.id,
-    label: formatCauseNumber(cause.number),
+    label: causeLabel(cause),
     title: cause.title,
     state: cause.state,
-    root: isRootCause(cause, causes),
+    root: isRootCause(cause),
     explains: cause.explains.map((link) => {
       const held = link.scope === undefined ? observations[link.id] ?? causes.find((one) => one.id === link.id) : undefined
       return {
         id: link.id,
         ...(link.scope !== undefined ? { scope: link.scope } : {}),
         strength: link.strength,
-        ...(held ? { title: held.title, label: 'number' in held && 'state' in held ? formatCauseNumber(held.number) : formatObservationNumber(held.number) } : {}),
+        ...(held ? { title: held.title, label: 'number' in held && 'state' in held ? causeLabel(held) : formatObservationNumber(held.number) } : {}),
       }
     }),
-    explainedBy: explainedBy(causes, cause.id).map((other) => ({ id: other.id, label: formatCauseNumber(other.number), title: other.title })),
+    explainedBy: explainedBy(causes, cause.id).map((other) => ({ id: other.id, label: causeLabel(other), title: other.title })),
   }
 }
 

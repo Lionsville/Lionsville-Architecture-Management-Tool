@@ -11,14 +11,14 @@
  * through the same rules the agent uses.
  *
  * Beside it, the small pieces the page reads off the same records: the words
- * for an experiment's moves, the register's empty line, the cause a new
- * solution starts from, and the crumbs.
+ * for an experiment's moves, making a root cause and a cause again, the
+ * register's empty line, the cause a new solution starts from, and the crumbs.
  */
 import { useState, type ReactNode } from 'react'
 import Button from '@mui/material/Button'
 import type { Translate } from '../../i18n'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
-import { causeEvidence, isArchived, isMerged, seenAgain, verifyCause } from '../observation'
+import { causeEvidence, isArchived, isMerged, isRootCause, makeCause, makeRootCause, seenAgain, verifyCause } from '../observation'
 import type { Cause, Observation } from '../observation'
 import { concludeExperiment, experimentMovesFrom, formatSolutionNumber, isConcluded, reopenWithdraws } from '../solution'
 import type { Experiment, ExperimentOutcome, Solution } from '../solution'
@@ -139,6 +139,34 @@ function reopenBody(withdraws: readonly string[], s: Translate): string {
   if (!withdraws.length) return s('solution.reopenBody')
   const key = withdraws.length === 1 ? 'solution.reopenWithdraws' : 'solution.reopenWithdrawsMany'
   return `${s('solution.reopenBody')} ${s(key, { names: withdraws.join(', ') })}`
+}
+
+/**
+ * Make a root cause, or a cause again (ADR-0032 §3), as the menu and the
+ * reader offer it. The rules refuse and name what stands in the way; this
+ * says that in the page's words, and the action is off while it stands. The
+ * reader is offered nothing where nothing may be written.
+ */
+export function rootToggle(cause: Cause, deps: {
+  lists: Pick<LifecycleLists, 'causes' | 'solutions'>
+  commit: (next: Partial<LifecycleLists>) => void
+  nameOf: (id: string) => string
+  s: Translate
+  readOnly: boolean
+}): { action: MenuAction; reader: { onRoot?: () => void; rootRefused?: string } } {
+  const { lists, commit, nameOf, s } = deps
+  const change = isRootCause(cause) ? makeCause(lists.causes, cause.id, lists.solutions) : makeRootCause(lists.causes, cause.id)
+  const refused = change.ok ? undefined : change.refusal === 'command.rootExplained'
+    ? s('observation.refusedRootExplained', { names: change.causes.map((one) => nameOf(one.id)).join(', ') })
+    : s('observation.refusedRootAddressed', { names: change.solutions.map((one) => nameOf(one.id)).join(', ') })
+  const onRoot = () => { if (change.ok) commit({ causes: change.causes }) }
+  return {
+    action: {
+      key: 'root', label: isRootCause(cause) ? s('observation.makeCause') : s('observation.makeRoot'),
+      disabled: refused !== undefined, onClick: onRoot,
+    },
+    reader: deps.readOnly ? {} : { onRoot, ...(refused !== undefined ? { rootRefused: refused } : {}) },
+  }
 }
 
 /** The words for a move of an experiment from where it stands: Start, Reopen…, Back to planned, Confirmed…. */

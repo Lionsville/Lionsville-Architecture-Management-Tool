@@ -82,7 +82,7 @@ const host: HostModel = {
   ],
   causes: [
     { id: 'ca-1', number: 1, title: 'Two systems compute it', state: 'verified', body: '', explains: [{ id: 'ob-1', strength: 'strong' }] },
-    { id: 'ca-2', number: 2, title: 'Nobody owns the data', state: 'verified', body: '', explains: [{ id: 'ca-1', strength: 'strong' }] },
+    { id: 'ca-2', number: 2, title: 'Nobody owns the data', state: 'verified', root: true, body: '', explains: [{ id: 'ca-1', strength: 'strong' }] },
   ],
   transitions: [{
     id: 'tr-1', number: 1, title: 'Replace billing', status: 'agreed',

@@ -13,9 +13,11 @@
  * A cause is what the team, analysing, says lies behind one or more
  * observations — and behind other causes, because a cause has causes. The
  * links run from a cause to what it **explains**: an observation, or a
- * shallower cause. A cause nobody explains is a **root cause**, and that is
- * derived from the links rather than written on the record, so a cause stops
- * being a root the moment somebody finds what lies behind it.
+ * shallower cause. A **root cause** is a cause somebody said is one (ADR-0032
+ * §3): the chain ends there, nothing explains it, and it is what a solution
+ * addresses. Said rather than derived, because a root that stopped being one
+ * the moment a deeper cause was linked left the solution on it addressing a
+ * symptom without anybody having said so.
  *
  * The rules — numbering, merging, sharing, what a link may name, which cause
  * is a root — are `observations/observation.ts`. The split is the one every
@@ -122,11 +124,16 @@ export type CauseLink = {
 export type Cause = {
   /** Stable, never shown. The number is what people call it. */
   id: string
-  /** Sequential within the scope; `CA-0003` on screen. Never reused. */
+  /** Sequential within the scope; `CA-0003` on screen, `RC-0003` once it is a root. Never reused. */
   number: number
   title: string
   /** Assumed when first written down; verified once the team has checked it. */
   state: CauseState
+  /**
+   * Said to be a root cause (ADR-0032 §3): `RC-0003` on screen, on the same
+   * number. Absent is a cause. Becoming one, and going back, are steps.
+   */
+  root?: true
   /** Markdown: the reasoning, the evidence, what verifying it took. */
   body: string
   /** What lies behind, said from this side: everything this cause explains. */
@@ -141,8 +148,7 @@ export type Cause = {
  * while an experiment runs, `proven` when one confirmed it, `adopted` when a
  * decision record accepted it. It can be `dropped` from anywhere short of
  * adopted, with a reason, and restored. *Implemented* is not a state: it is
- * read off the plan that builds it being done, the way a root cause is read
- * off the links.
+ * read off the plan that builds it being done.
  *
  * An **experiment** tests a solution against a hypothesis and ends with an
  * outcome. It is a record of its own because one solution can need several

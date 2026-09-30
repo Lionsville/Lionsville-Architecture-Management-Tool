@@ -131,7 +131,7 @@ export function solutionGraph(
   } else {
     const addressed = new Set(drawn.flatMap((one) => one.addresses.map((address) => address.id)))
     for (const cause of causes) {
-      const root = isRootCause(cause, causes)
+      const root = isRootCause(cause)
       if (!root && !addressed.has(cause.id)) continue
       nodes.push({ kind: 'cause', key: cause.id, id: cause.id, cause, root, lane: 0, row: 0 })
     }
@@ -198,7 +198,7 @@ export function solutionGraph(
  * then asks about it.
  */
 export function causesForProposal(causes: readonly Cause[]): Cause[] {
-  return causes.filter((one) => isRootCause(one, causes))
+  return causes.filter((one) => isRootCause(one))
 }
 
 /** The causes that explain this one: where a solution for it belongs instead. */

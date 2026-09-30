@@ -26,7 +26,7 @@ import TextField from '@mui/material/TextField'
 import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
-import { CAUSE_STRENGTHS, OBSERVATION_IMPACTS, formatCauseNumber, formatObservationNumber, seenDayProblem } from '../observation'
+import { causeLabel, formatObservationNumber, seenDayProblem, CAUSE_STRENGTHS, OBSERVATION_IMPACTS } from '../observation'
 import type { Cause, CauseStrength, Observation, ObservationImpact } from '../observation'
 import { IMPACT_LABEL, STRENGTH_LABEL } from '../observationScope'
 
@@ -361,7 +361,7 @@ export function LinkDialog({ subject, candidates, onCancel, onConfirm, s }: Link
         >
           <MenuItem value={NEW}>{s('observation.linkNew')}</MenuItem>
           {candidates.map((one) => (
-            <MenuItem key={one.id} value={one.id}>{formatCauseNumber(one.number)} · {one.title}</MenuItem>
+            <MenuItem key={one.id} value={one.id}>{causeLabel(one)} · {one.title}</MenuItem>
           ))}
         </TextField>
         {causeId === NEW && (
