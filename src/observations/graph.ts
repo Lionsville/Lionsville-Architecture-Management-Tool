@@ -253,20 +253,24 @@ export function absorbedKeys(scopes: readonly ScopeAnalysis[], here: string): Se
 
 /**
  * The open ends (ADR-0032 §3): the causes that are not root causes and that
- * nothing explains — nothing in the scopes read, and, for this scope's own,
- * nothing above (`above`, by id). The analysis is not finished there. Not a
- * finding: a chain still being asked about contradicts nothing.
+ * nothing explains — nothing in the scopes read, and nothing above the scope
+ * a cause lives in (`above`, per scope, by id): a cause below that a cause of
+ * this scope, or of any scope over it, explains is not open, whether or not
+ * the scope that explains it is read. The analysis is not finished there. Not
+ * a finding: a chain still being asked about contradicts nothing.
  */
 export function openEnds(
-  scopes: readonly ScopeAnalysis[], here: string, above?: ReadonlyMap<string, readonly unknown[]>,
+  scopes: readonly ScopeAnalysis[], here: string,
+  above?: (scope: string) => ReadonlyMap<string, readonly unknown[]> | undefined,
 ): Set<string> {
   const explained = new Set(pictureLinks(scopes, here).filter((link) => link.kind === 'explains').map((link) => link.from))
   const open = new Set<string>()
   for (const { scope, causes } of scopes) {
+    const fromAbove = above?.(scope)
     for (const cause of causes) {
       const key = pictureKey(here, scope, cause.id)
-      const fromAbove = scope === here && (above?.get(cause.id)?.length ?? 0) > 0
-      if (!isRootCause(cause) && !explained.has(key) && !fromAbove) open.add(key)
+      const explainedAbove = (fromAbove?.get(cause.id)?.length ?? 0) > 0
+      if (!isRootCause(cause) && !explained.has(key) && !explainedAbove) open.add(key)
     }
   }
   return open

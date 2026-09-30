@@ -93,6 +93,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'observation.noLinks': 'Nog niets',
   'observation.link': 'Koppelen aan een oorzaak…',
   'observation.linkDeeper': 'Koppelen aan een diepere oorzaak…',
+  'observation.linkOrg': 'Koppelen aan een oorzaak van {scope}…',
   'observation.linkStrength': 'Verband',
   'observation.linkConfirm': 'Koppelen',
   'observation.unlink': 'Ontkoppelen',

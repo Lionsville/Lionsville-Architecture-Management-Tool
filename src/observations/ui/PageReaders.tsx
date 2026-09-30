@@ -30,12 +30,16 @@ import {
 } from '../solution'
 import type { Experiment, ExperimentOutcome, Solution, SolutionContext, SolutionPlan, SolutionState } from '../solution'
 import { experimentKey, solutionKey } from '../solutionGraph'
+import { formatExperimentNumber, formatSolutionNumber } from '../solution'
 import { PHASE_LABEL } from '../observationScope'
 import { rootToggle } from './ObservationLifecycle'
-import { CauseReader, ObservationReader } from './Readers'
+import { CauseReader, ObservationReader, ScopeStrip } from './Readers'
+import { ReaderActions } from './ActionButton'
+import { openScopeAction } from './readerActions'
 import type { MergedInto } from './Readers'
 import { ExperimentReader, SolutionReader } from './SolutionReaders'
 import type { LinkTarget } from './readerActions'
+import type { MenuAction } from './PictureMenu'
 import type { ObservationWork } from './ObservationsPage'
 
 /** What a change to a scope below is, as the page hands it over: that scope's lists in, what they become out. */
@@ -67,7 +71,34 @@ export type Selected =
   | { kind: 'cause'; cause: Cause }
   | { kind: 'causeBelow'; scope: string; cause: Cause }
   | { kind: 'solution'; solution: Solution }
+  | { kind: 'solutionBelow'; scope: string; solution: Solution }
   | { kind: 'experiment'; experiment: Experiment }
+
+/**
+ * What a key names, as the page keys its records: a solution or an
+ * experiment by its prefix, a record of this scope by its id, one of a scope
+ * below as `scope#id` — the reader it opens and the menu it gets are both
+ * read off this, so a record the picture draws is a record the pane reads.
+ */
+export function resolveSelected(key: string, work: ObservationWork, below: readonly ScopeAnalysis[]): Selected | undefined {
+  const solution = work.solutions.find((one) => solutionKey(one.id) === key)
+  if (solution) return { kind: 'solution', solution }
+  const experiment = work.experiments.find((one) => experimentKey(one.id) === key)
+  if (experiment) return { kind: 'experiment', experiment }
+  const cause = work.causes.find((one) => one.id === key)
+  if (cause) return { kind: 'cause', cause }
+  const observation = work.observations.find((one) => one.id === key)
+  if (observation) return { kind: 'observation', observation }
+  for (const { scope, observations, causes, solutions } of below) {
+    const seen = observations.find((one) => nodeKey(one.id, scope) === key)
+    if (seen) return { kind: 'below', scope, observation: seen }
+    const why = causes.find((one) => nodeKey(one.id, scope) === key)
+    if (why) return { kind: 'causeBelow', scope, cause: why }
+    const done = solutions.find((one) => nodeKey(solutionKey(one.id), scope) === key)
+    if (done) return { kind: 'solutionBelow', scope, solution: done }
+  }
+  return undefined
+}
 
 export type DeleteKind = 'observation' | 'cause' | 'solution' | 'experiment'
 
@@ -81,6 +112,8 @@ export type ReaderContext = {
   transitions: readonly Transition[]
   /** The causes above that explain this scope's records, by the id explained. */
   explainedAbove?: ReadonlyMap<string, readonly CauseAbove[]>
+  /** The same for a scope below, by its path: every scope over it, this one included. */
+  explainedAboveOf?: (scope: string) => ReadonlyMap<string, readonly CauseAbove[]> | undefined
   readOnly: boolean
   /** `yyyy-mm-dd`. */
   today: () => string
@@ -122,6 +155,7 @@ export function RecordReader({ selected, selectedKey, ctx }: { selected: Selecte
   if (!selected) return <Box sx={{ p: 5, color: 'text.secondary' }}><Typography>{ctx.s('observation.noneSelected')}</Typography></Box>
   switch (selected.kind) {
     case 'solution': return solutionReader(selected.solution, ctx)
+    case 'solutionBelow': return solutionBelowReader(selected.solution, selected.scope, ctx)
     case 'experiment': return experimentReader(selected.experiment, ctx)
     case 'cause': return causeReader(selected.cause, undefined, ctx)
     case 'causeBelow': return causeReader(selected.cause, selected.scope, ctx)
@@ -194,25 +228,82 @@ function restoreObservation(list: readonly Observation[], id: string, date: stri
  * may explain one below (*Local cause*), and one below may be explained by a
  * cause of this scope (*Org cause*), which is this scope's link (ADR-0032 §4).
  */
-function causeReader(cause: Cause, scope: string | undefined, ctx: ReaderContext) {
-  const { s, work, forms } = ctx
+/**
+ * What explains a cause from another scope, and its root step, wherever it
+ * lives: one above explains one here; one here — or, off the tree, any scope
+ * over it — explains one below, and the root step below is refused for all of
+ * them, not only for the ones this scope's page draws.
+ */
+function crossScope(cause: Cause, scope: string | undefined, ctx: ReaderContext) {
+  const { work, forms } = ctx
   const own = scope === undefined
-  const lists = listsOf(scope, ctx)
-  // What explains it from another scope: one above explains one here, one here explains one below.
   const across: readonly CauseAbove[] = own
     ? ctx.explainedAbove?.get(cause.id) ?? []
     : work.causes.flatMap((held) => held.explains.filter((link) => link.id === cause.id && link.scope === scope)
       .map((link) => ({ scope: '', cause: held, strength: link.strength })))
+  const fromTree = own ? undefined : ctx.explainedAboveOf?.(scope)?.get(cause.id)
+  const above = fromTree ?? across
   const toggle = rootToggle(cause, {
-    lists, above: across, commit: ctx.commit, nameOf: (id) => ctx.nameOf(id, scope), scopeLabel: (path) => (own ? ctx.scopeLabel(path) : ctx.scopeName),
-    s, readOnly: ctx.readOnly || (!own && !forms.changeBelow),
+    lists: listsOf(scope, ctx), above, commit: ctx.commit, nameOf: (id) => ctx.nameOf(id, scope),
+    scopeLabel: (path) => (own || fromTree ? ctx.scopeLabel(path) : ctx.scopeName),
+    s: ctx.s, readOnly: ctx.readOnly || (!own && !forms.changeBelow),
     ...(own ? {} : {
       apply: () => forms.changeBelow?.(scope, (held) => {
-        const change = isRootCause(cause) ? makeCause(held.causes, cause.id, held.solutions) : makeRootCause(held.causes, cause.id, across)
+        const change = isRootCause(cause) ? makeCause(held.causes, cause.id, held.solutions) : makeRootCause(held.causes, cause.id, above)
         return change.ok ? { ...held, causes: change.causes } : undefined
       }),
     }),
   })
+  return { across, toggle }
+}
+
+/**
+ * The right-click on a record of a scope below offers what its reader offers,
+ * in the menu's words: a sighting, a cause, a deeper cause and the root step
+ * where that scope may be written from here, the links this scope keeps, and
+ * the way to the scope it lives in (ADR-0032 §2, §4).
+ */
+export function belowMenuActions(held: Selected, ctx: ReaderContext): MenuAction[] {
+  if (held.kind !== 'below' && held.kind !== 'causeBelow' && held.kind !== 'solutionBelow') return []
+  const { s, forms } = ctx
+  const { scope } = held
+  const writable = !ctx.readOnly && Boolean(forms.changeBelow)
+  const openScope = ctx.openScope
+  const open: MenuAction[] = openScope
+    ? [{ key: 'open-scope', label: s('observation.openScope', { scope: ctx.scopeLabel(scope) }), divider: true, onClick: () => openScope(scope) }]
+    : []
+  if (held.kind === 'solutionBelow') return open
+  if (held.kind === 'below') {
+    const one = held.observation
+    if (ctx.readOnly || one.archived === true) return open
+    return [
+      ...(writable ? [
+        { key: 'seen', label: s('observation.seenAgain'), onClick: () => ctx.lifecycle.seeAgain(one, scope) },
+        { key: 'link', label: s('observation.link'), onClick: () => forms.openLink({ mode: 'cause', id: one.id, scope }) },
+      ] : []),
+      { key: 'merge', label: s('observation.merge'), onClick: () => ctx.ask.merge(one, scope) },
+      ...open,
+    ]
+  }
+  const cause = held.cause
+  if (ctx.readOnly) return open
+  const root = isRootCause(cause)
+  return [
+    ...(writable && !root ? [{ key: 'link-deeper', label: s('observation.linkDeeper'), onClick: () => forms.openLink({ mode: 'deeper', id: cause.id, scope }) }] : []),
+    ...(writable ? [crossScope(cause, scope, ctx).toggle.action] : []),
+    ...(forms.across ? [{
+      key: 'org', label: s('observation.linkOrg', { scope: ctx.scopeName }), disabled: root,
+      onClick: () => forms.openLink({ mode: 'org', id: cause.id, scope }),
+    }] : []),
+    ...open,
+  ]
+}
+
+function causeReader(cause: Cause, scope: string | undefined, ctx: ReaderContext) {
+  const { s, work, forms } = ctx
+  const own = scope === undefined
+  const lists = listsOf(scope, ctx)
+  const { across, toggle } = crossScope(cause, scope, ctx)
   const onCauses = (change: (list: Cause[]) => Cause[]) => (own
     ? ctx.commit({ causes: change(work.causes) })
     : forms.changeBelow?.(scope, (held) => ({ ...held, causes: change(held.causes) })))
@@ -323,6 +414,54 @@ function solutionReader(one: Solution, ctx: ReaderContext) {
       onAddImage={ctx.onAddImage}
       images={ctx.images}
     />
+  )
+}
+
+/**
+ * A solution of a scope below, read and not changed: it is worked on in its
+ * own scope, whose plans and decisions this page does not read, so no gate is
+ * drawn here that could not say where it stands. The strip says where it
+ * lives and opens that scope.
+ */
+function solutionBelowReader(one: Solution, scope: string, ctx: ReaderContext) {
+  const lists = listsOf(scope, ctx)
+  const nameOf = (id: string): string => {
+    const solution = lists.solutions.find((held) => held.id === id)
+    if (solution) return `${formatSolutionNumber(solution.number)} ${solution.title}`
+    const experiment = lists.experiments.find((held) => held.id === id)
+    return experiment ? `${formatExperimentNumber(experiment.number)} ${experiment.title}` : ctx.nameOf(id, scope)
+  }
+  const openScope = ctx.openScope
+  const label = ctx.scopeLabel(scope)
+  const nothing = () => {}
+  return (
+    <Box key={nodeKey(solutionKey(one.id), scope)} sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+      <ScopeStrip
+        testId="solution-from-below"
+        text={ctx.s('observation.fromScope', { scope: label })}
+        action={openScope ? <ReaderActions actions={[openScopeAction(label, () => openScope(scope), ctx.s)]} label={ctx.s('observation.fromScopeActions')} moreLabel={ctx.s('observation.more')} /> : undefined}
+      />
+      <SolutionReader
+        solution={one}
+        phase={solutionPhase(one, [])}
+        questions={[]}
+        addresses={one.addresses.map((address) => {
+          const cause = lists.causes.find((held) => held.id === address.id)
+          return { id: address.id, label: nameOf(address.id), strength: address.strength, root: cause ? isRootCause(cause) : false }
+        })}
+        experiments={experimentsFor(lists.experiments, one.id).map((held) => ({ key: nodeKey(experimentKey(held.id), scope), label: nameOf(held.id), outcome: held.outcome }))}
+        alternatives={alternatives(one, lists.solutions).map((held) => ({ key: nodeKey(solutionKey(held.id), scope), label: nameOf(held.id), phase: solutionPhase(held, []) }))}
+        mayGoBack={false}
+        readOnly
+        s={ctx.s}
+        renderMarkdown={ctx.renderMarkdown}
+        nameOf={nameOf}
+        onUpdate={nothing} onMove={nothing} onWaive={nothing} onAddress={nothing} onUnaddress={nothing}
+        onPlanExperiment={nothing} onDrop={nothing} onRestore={nothing} onDelete={nothing}
+        onOpen={ctx.openKey}
+        images={ctx.images}
+      />
+    </Box>
   )
 }
 

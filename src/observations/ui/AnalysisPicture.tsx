@@ -43,8 +43,12 @@ export type AnalysisPictureProps = {
   here: string
   /** What the filters left, and what they matched themselves, which is outlined. */
   filter?: Pick<FilterResult, 'filtering' | 'visible' | 'matched'>
-  /** The causes of the scopes above that explain this scope's, by the id explained. */
-  explainedAbove?: ReadonlyMap<string, readonly CauseAbove[]>
+  /**
+   * The causes above a scope that explain its records, by the id explained:
+   * for this scope and for every one below it, read off the tree whether or
+   * not the scope that explains them is drawn.
+   */
+  explainedAbove?: (scope: string) => ReadonlyMap<string, readonly CauseAbove[]> | undefined
   view: PictureView
   /** What a scope is called, this one included. */
   scopeLabel: (path: string) => string
@@ -290,7 +294,9 @@ type NodesProps = AnalysisPictureProps & {
 /** The marker on a cause where a link leaves the picture: explained from above, or explaining causes below not drawn. */
 function markerOf(node: PictureNode, props: NodesProps, drawn: ReadonlySet<string>): string | undefined {
   if (node.kind !== 'cause') return undefined
-  const above = node.scope === props.here ? props.explainedAbove?.get(node.cause.id) : undefined
+  // A cause above that is drawn has its line; one that is not is said on the card.
+  const above = props.explainedAbove?.(node.scope)?.get(node.cause.id)
+    ?.filter((one) => !drawn.has(pictureKey(props.here, one.scope, one.cause.id)))
   if (above && above.length > 0) {
     return props.s('observation.pictureFromAbove', { label: causeLabel(above[0].cause), scope: props.scopeLabel(above[0].scope) })
   }

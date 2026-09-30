@@ -93,6 +93,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'observation.noLinks': 'Noch nichts',
   'observation.link': 'Mit einer Ursache verknüpfen…',
   'observation.linkDeeper': 'Mit einer tieferen Ursache verknüpfen…',
+  'observation.linkOrg': 'Mit einer Ursache von {scope} verknüpfen…',
   'observation.linkStrength': 'Zusammenhang',
   'observation.linkConfirm': 'Verknüpfen',
   'observation.unlink': 'Verknüpfung lösen',

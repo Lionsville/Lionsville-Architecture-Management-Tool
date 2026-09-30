@@ -265,7 +265,18 @@ describe('pictureLinks and openEnds', () => {
     expect([...openEnds(read, '')].sort()).toEqual(['acme#b2'])
     const lone: ScopeAnalysis[] = [{ ...tree[0], causes: [cause('c9', 9, [])] }]
     expect([...openEnds(lone, '')]).toEqual(['c9'])
-    expect([...openEnds(lone, '', new Map([['c9', [{}]]]))]).toEqual([])
+    expect([...openEnds(lone, '', (scope) => (scope === '' ? new Map([['c9', [{}]]]) : undefined))]).toEqual([])
+  })
+
+  it('takes a cause below that a scope above it explains as not open, even where that scope is not read', () => {
+    // Read from acme, the organisation's r1 is not read: b1 is open until the tree says r1 explains it.
+    const read = [tree[1], tree[2]]
+    expect([...openEnds(read, 'acme')]).toEqual(['b1', 'acme/rail#y1'])
+    const fromRoot = (scope: string) => (scope === 'acme' ? new Map([['b1', [{}]]]) : undefined)
+    expect([...openEnds(read, 'acme', fromRoot)]).toEqual(['acme/rail#y1'])
+    // And a cause of the scope below, explained from above it, is not open either.
+    const both = (scope: string) => (scope === 'acme/rail' ? new Map([['y1', [{}]]]) : fromRoot(scope))
+    expect([...openEnds(read, 'acme', both)]).toEqual([])
   })
 })
 

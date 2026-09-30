@@ -73,8 +73,8 @@ import { ReaderModeContext } from './Readers'
 import { ObservationRegister } from './ObservationRegister'
 import { PictureToolbar } from './PictureToolbar'
 import type { MergedInto } from './Readers'
-import { RecordReader } from './PageReaders'
-import type { DeleteKind, Selected } from './PageReaders'
+import { RecordReader, belowMenuActions, resolveSelected } from './PageReaders'
+import type { DeleteKind, ReaderContext, Selected } from './PageReaders'
 import { useAnalysisForms } from './useAnalysisForms'
 import {
   addressCause, dropSolution, forgetCause, formatExperimentNumber, formatSolutionNumber, isLive, mayAddress,
@@ -122,12 +122,21 @@ export type ObservationsPageProps = {
    * a name that is empty is left out rather than drawn as an empty crumb.
    */
   crumbs?: readonly { path: string; name: string }[]
-  /** This scope's path, for the rules about links across the tree (ADR-0032 §4); the root where absent. */
+  /**
+   * This scope's path: the rules about links across the tree (ADR-0032 §4)
+   * read it, and the filters name this scope by it. The root where absent.
+   */
   path?: string
   /** The analysis of every scope below this one (ADR-0032 §1), off the tree. */
   below?: readonly ScopeAnalysis[]
   /** The causes of the scopes above that explain this scope's records, by the id explained (ADR-0032 §4). */
   explainedAbove?: ReadonlyMap<string, readonly CauseAbove[]>
+  /**
+   * The same for a scope below, by its path: the causes of every scope over
+   * it, this one included, that explain its records. What makes a cause
+   * below explained from a scope the picture does not draw.
+   */
+  explainedAboveOf?: (path: string) => ReadonlyMap<string, readonly CauseAbove[]>
   /**
    * Land a change on the analysis of a scope below, as that scope's step
    * (ADR-0032 §2): in its Activity list and undone there, never on this
@@ -136,8 +145,6 @@ export type ObservationsPageProps = {
   onChangeBelow?: ChangeBelow
   /** What a scope below is called, for the headings; the path where the host cannot say. */
   scopeLabel?: (path: string) => string
-  /** This scope's own path, which the filters name it by; the organisation's where absent. */
-  scope?: string
   /** The filters this person saved, offered in every scope (ADR-0032 §8); absent, nothing can be saved. */
   savedFilters?: SavedFilters
   /** This scope's own observations that a scope above folded into one of its own, by id. */
@@ -302,10 +309,16 @@ export function ObservationsPage(props: ObservationsPageProps) {
     causes, experiments, plans, decisions: (model.decisions ?? []).map((one) => ({ id: one.id, status: one.status })),
   }), [causes, experiments, plans, model.decisions])
   const scopeLabel = props.scopeLabel ?? ((path: string) => path)
-  const here = useMemo<ScopeAnalysis>(() => ({ scope: props.scope ?? '', ...work }), [props.scope, work])
+  const here = useMemo<ScopeAnalysis>(() => ({ scope: props.path ?? '', ...work }), [props.path, work])
   /** The filters, View local and the look of the picture (ADR-0032 §8), over all three tabs. */
   const f = usePictureFilters({ here, below, saved: props.savedFilters, name: model.name, scopeLabel })
   const { labelOf } = f
+  const { explainedAbove, explainedAboveOf } = props
+  /** What the scopes over a scope explain of it: this one's handed in, one below's asked of the tree. */
+  const aboveOf = useCallback(
+    (scope: string) => (scope === here.scope ? explainedAbove : explainedAboveOf?.(scope)),
+    [here.scope, explainedAbove, explainedAboveOf],
+  )
 
   const [tab, setTab] = useState<Tab>('register')
   const [readerWidth, setReaderWidth] = useState<Record<Tab, number>>({
@@ -378,22 +391,8 @@ export function ObservationsPage(props: ObservationsPageProps) {
     return plan ? `${label4('TR', plan.number)} ${plan.title}` : id
   }, [below, belowAll, observations, causes, solutions, experiments, model.decisions, model.transitions, scopeLabel])
 
-  const causesBelow = useMemo(() => below.flatMap(({ scope, causes: list }) => list.map((cause) => ({ scope, cause }))), [below])
   /** What a key names: the reader it opens and the menu it gets are both read off this. */
-  const resolve = useCallback((key: string): Selected | undefined => {
-    const solution = solutions.find((one) => solutionKey(one.id) === key)
-    if (solution) return { kind: 'solution' as const, solution }
-    const experiment = experiments.find((one) => experimentKey(one.id) === key)
-    if (experiment) return { kind: 'experiment' as const, experiment }
-    const cause = causes.find((one) => one.id === key)
-    if (cause) return { kind: 'cause' as const, cause }
-    const own = observations.find((one) => one.id === key)
-    if (own) return { kind: 'observation' as const, observation: own }
-    const fromBelow = belowAll.find((one) => nodeKey(one.observation.id, one.scope) === key)
-    if (fromBelow) return { kind: 'below' as const, ...fromBelow }
-    const causeBelow = causesBelow.find((one) => nodeKey(one.cause.id, one.scope) === key)
-    return causeBelow ? { kind: 'causeBelow' as const, ...causeBelow } : undefined
-  }, [causes, observations, belowAll, causesBelow, solutions, experiments])
+  const resolve = useCallback((key: string) => resolveSelected(key, work, below), [work, below])
   const selected = useMemo(() => (selectedKey ? resolve(selectedKey) : undefined), [selectedKey, resolve])
   const editing = selected !== undefined && editingKey !== undefined && editingKey === selectedKey
   const readerMode = useMemo(() => ({
@@ -415,7 +414,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
   }, [onChange, readOnly, work])
   /** The new observation and the link dialog, and where what they make lands (ADR-0032 §2, §6). */
   const forms = useAnalysisForms({
-    work, below, path: props.path, scopeName: model.name, commit, readOnly, onChangeBelow: props.onChangeBelow,
+    work, below, local: f.viewLocal, path: props.path, scopeName: model.name, commit, readOnly, onChangeBelow: props.onChangeBelow,
     makeId, today, s, scopeLabel, nameOf, select: setSelectedKey, renderMarkdown: props.renderMarkdown,
   })
   /** Seen again, verified, an experiment concluded or reopened: the moves that ask first. */
@@ -523,6 +522,23 @@ export function ObservationsPage(props: ObservationsPageProps) {
     />
   )
 
+  /** What the reading pane reads and asks — and the right-click on a record below, which offers what its reader does. */
+  const { onOpenScope } = props
+  const readerCtx: ReaderContext = {
+    work, below, plans, context, decisions: model.decisions ?? [], transitions: model.transitions ?? [],
+    ...(explainedAbove ? { explainedAbove } : {}), explainedAboveOf: aboveOf,
+    readOnly, today, scopeName: model.name, s, nameOf, scopeLabel, commit, forms, lifecycle,
+    ask: {
+      archive: setArchiving, merge: (observation, scope) => setMerging({ observation, ...(scope !== undefined ? { scope } : {}) }),
+      remove: (kind, id) => setDeleting({ kind, id, label: nameOf(id) }), propose: (causeId) => setProposing({ causeId }),
+      address: setAddressing, plan: setPlanning, drop: setDropping,
+    },
+    mergedLabel, openKey: setSelectedKey,
+    ...(onOpenScope ? { openScope: (path: string) => { onClose(); onOpenScope(path) } } : {}),
+    onDecide: props.onDecide, onStartPlan: props.onStartPlan, onOpenDecision: props.onOpenDecision, onOpenPlan: props.onOpenPlan,
+    renderMarkdown: props.renderMarkdown, onAddImage: props.onAddImage, images: props.images,
+  }
+
   // --- the analysis ----------------------------------------------------------------------
 
   const queue = liveObservations(observations).filter((one) => analysedInto(one.id).length === 0)
@@ -532,7 +548,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
     ['observation.phaseAssumed', causes.filter((one) => one.state === 'assumed').length],
     ['observation.phaseVerified', causes.filter((one) => one.state === 'verified').length],
     ['observation.phaseRoots', causes.filter((one) => isRootCause(one)).length],
-    ['observation.phaseOpenEnds', openEnds([here], here.scope, props.explainedAbove).size],
+    ['observation.phaseOpenEnds', openEnds([here], here.scope, aboveOf).size],
   ] as const
 
   // --- the right-click ------------------------------------------------------------------
@@ -603,15 +619,6 @@ export function ObservationsPage(props: ObservationsPageProps) {
           remove('observation', one.id),
         ]
       }
-      case 'below': {
-        const { observation: one, scope } = held
-        return [
-          { key: 'merge', label: s('observation.merge'), onClick: () => setMerging({ observation: one, scope }) },
-          ...(props.onOpenScope
-            ? [{ key: 'open-scope', label: s('observation.openScope', { scope: scopeLabel(scope) }), divider: true, onClick: () => { onClose(); props.onOpenScope?.(scope) } }]
-            : []),
-        ]
-      }
       case 'cause': {
         const one = held.cause
         return [
@@ -652,8 +659,9 @@ export function ObservationsPage(props: ObservationsPageProps) {
         const one = held.experiment
         return [edit, ...experimentMoveActions(one, s, (to) => moveExperiment(one, to)), remove('experiment', one.id)]
       }
-      case 'causeBelow':
-        return []
+      default:
+        // A record of a scope below: what its reader offers.
+        return belowMenuActions(held, readerCtx)
     }
   }
 
@@ -671,7 +679,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
         scopes={f.inView}
         here={here.scope}
         filter={f.result}
-        explainedAbove={props.explainedAbove}
+        explainedAbove={aboveOf}
         view={f.view}
         scopeLabel={labelOf}
         hereLabel={f.hereLabel(s)}
@@ -753,28 +761,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
 
   // --- the reading pane ---------------------------------------------------------------------
 
-  const openKey = (key: string) => setSelectedKey(key)
-  const { onOpenScope } = props
-  const reader = (
-    <RecordReader
-      selected={selected}
-      selectedKey={selectedKey}
-      ctx={{
-        work, below, plans, context, decisions: model.decisions ?? [], transitions: model.transitions ?? [],
-        ...(props.explainedAbove ? { explainedAbove: props.explainedAbove } : {}),
-        readOnly, today, scopeName: model.name, s, nameOf, scopeLabel, commit, forms, lifecycle,
-        ask: {
-          archive: setArchiving, merge: (observation, scope) => setMerging({ observation, ...(scope !== undefined ? { scope } : {}) }),
-          remove: (kind, id) => setDeleting({ kind, id, label: nameOf(id) }), propose: (causeId) => setProposing({ causeId }),
-          address: setAddressing, plan: setPlanning, drop: setDropping,
-        },
-        mergedLabel, openKey,
-        ...(onOpenScope ? { openScope: (path: string) => { onClose(); onOpenScope(path) } } : {}),
-        onDecide: props.onDecide, onStartPlan: props.onStartPlan, onOpenDecision: props.onOpenDecision, onOpenPlan: props.onOpenPlan,
-        renderMarkdown: props.renderMarkdown, onAddImage: props.onAddImage, images: props.images,
-      }}
-    />
-  )
+  const reader = <RecordReader selected={selected} selectedKey={selectedKey} ctx={readerCtx} />
 
   const crumbNames = crumbTrail(props.crumbs, groupName, model.name)
 

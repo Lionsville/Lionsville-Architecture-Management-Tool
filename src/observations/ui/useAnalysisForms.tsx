@@ -52,7 +52,7 @@ export type AnalysisForms = {
   across: true
   /** Land a change on a scope below and say where it went; absent where nothing below may be written. */
   changeBelow?: (scope: string, change: WorkChange, landed?: () => void) => void
-  /** The scopes a new observation may be made in: this one, then those below where they may be written. */
+  /** The scopes a new observation may be made in: this one, then those below while View local is on and they may be written. */
   scopes: FormScope[]
   dialogs: ReactNode
 }
@@ -60,6 +60,12 @@ export type AnalysisForms = {
 export function useAnalysisForms(deps: {
   work: ObservationWork
   below: readonly ScopeAnalysis[]
+  /**
+   * View local is on (ADR-0032 §8): the page shows the scopes below, so the
+   * new observation may be made in one of them. Off, it is made here, in the
+   * one scope the page is showing.
+   */
+  local: boolean
   /** This scope's path, for the rules about links across the tree; the root's where the host did not say. */
   path: string | undefined
   scopeName: string
@@ -155,7 +161,7 @@ export function useAnalysisForms(deps: {
 
   const scopes: FormScope[] = [
     { label: s('observation.formScopeHere', { name: deps.scopeName }), observations: work.observations, causes: work.causes },
-    ...(onChangeBelow ? below.map((one) => ({
+    ...(onChangeBelow && deps.local ? below.map((one) => ({
       scope: one.scope, label: s('observation.formScopeBelow', { name: scopeLabel(one.scope) }), observations: one.observations, causes: one.causes,
     })) : []),
   ]

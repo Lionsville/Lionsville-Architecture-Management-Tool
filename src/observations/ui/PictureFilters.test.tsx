@@ -19,7 +19,8 @@ import { MarkdownView } from '../../documentation/ui/MarkdownView'
 import { translator } from '../../i18n'
 import type { HostModel } from '../../model/hostModel'
 import type { SavedFilter } from '../filter'
-import type { Cause, Observation, ScopeAnalysis } from '../observation'
+import type { Cause, CauseAbove, Observation, ScopeAnalysis } from '../observation'
+import { newSolution } from '../solution'
 import { ObservationsPage } from './ObservationsPage'
 
 afterEach(() => cleanup())
@@ -57,7 +58,7 @@ function Page({ onSaved }: { onSaved: (next: SavedFilter[]) => void }) {
   const [list, setList] = useState<SavedFilter[]>([])
   return (
     <ObservationsPage
-      open onClose={() => {}} model={model} groupName="Acme" below={below} scope="acme/claims"
+      open onClose={() => {}} model={model} groupName="Acme" below={below} path="acme/claims"
       scopeLabel={(path) => (path === 'acme/claims/intake' ? 'Intake' : path)}
       savedFilters={{ list, onChange: (next) => { setList(next); onSaved(next) } }}
       onChange={() => {}} s={translator('en')} language="en" makeId={(prefix) => prefix} today={() => '2026-09-20'}
@@ -158,6 +159,34 @@ describe('the filters', () => {
     expect(onSaved).toHaveBeenLastCalledWith([])
   })
 
+  it('narrow the Solutions tab too, and are kept while a record is read beside it', () => {
+    const t = translator('en')
+    const withSolutions: HostModel = {
+      ...model,
+      causes: [...model.causes!, cause('r2', 4, 'Policyholders have no key of their own', [{ id: 'c2', strength: 'normal' }], true)],
+      solutions: [
+        newSolution({ id: 's1', number: 1, title: 'Give the schedule an owner', date: '2026-09-10', t, addresses: [{ id: 'r1', strength: 'normal' }] }),
+        newSolution({ id: 's2', number: 2, title: 'A policyholder key', date: '2026-09-10', t, addresses: [{ id: 'r2', strength: 'normal' }] }),
+      ],
+    }
+    renderShell(
+      <ObservationsPage
+        open onClose={() => {}} model={withSolutions} groupName="Acme" below={below} path="acme/claims"
+        onChange={() => {}} s={t} language="en" makeId={(prefix) => prefix} today={() => '2026-09-20'}
+        renderMarkdown={(md) => <MarkdownView markdown={md} />}
+      />,
+    )
+    fireEvent.click(screen.getByTestId('observation-tab-solutions'))
+    const solutionKeys = () => [...screen.getByTestId('solution-picture').querySelectorAll('[data-testid="solution-picture-solution"]')]
+      .map((node) => node.getAttribute('data-key'))
+    expect(solutionKeys().sort()).toEqual(['so:s1', 'so:s2'])
+    fireEvent.change(within(screen.getByTestId('filter-roots')).getByRole('textbox'), { target: { value: 'owns' } })
+    expect(solutionKeys()).toEqual(['so:s1'])
+    fireEvent.click(screen.getByTestId('solution-picture').querySelector('[data-key="so:s1"]')!)
+    expect(screen.getByTestId('solution-reader')).toBeDefined()
+    expect((within(screen.getByTestId('filter-roots')).getByRole('textbox') as HTMLInputElement).value).toBe('owns')
+  })
+
   it('switches a scope off from the list, which a field narrows', () => {
     mount()
     fireEvent.click(screen.getByTestId('filter-scopes'))
@@ -224,5 +253,93 @@ describe('the picture', () => {
     fireEvent.change(within(screen.getByTestId('filter-search')).getByRole('textbox'), { target: { value: 'batch' } })
     fireEvent.click(screen.getByTestId('picture-size-small'))
     expect(await axeFindings()).toEqual([])
+  })
+})
+
+describe('the picture and the readers, joined', () => {
+  /** A scope that may write the one below, and hears from the tree what the scopes above explain there. */
+  function mountWritable(explainedAboveOf?: (path: string) => ReadonlyMap<string, readonly CauseAbove[]>, extra?: ScopeAnalysis['causes']) {
+    const onChangeBelow = vi.fn(() => Promise.resolve({ ok: true as const }))
+    const scopes = extra ? [{ ...below[0], causes: [...below[0].causes, ...extra] }] : below
+    renderShell(
+      <ObservationsPage
+        open onClose={() => {}} model={model} groupName="Acme" below={scopes} path="acme/claims"
+        scopeLabel={(path) => (path === 'acme/claims/intake' ? 'Intake' : path)}
+        onChangeBelow={onChangeBelow} {...(explainedAboveOf ? { explainedAboveOf } : {})}
+        onChange={() => {}} s={translator('en')} language="en" makeId={(prefix) => prefix} today={() => '2026-09-20'}
+        renderMarkdown={(md) => <MarkdownView markdown={md} />}
+      />,
+    )
+    fireEvent.click(screen.getByTestId('observation-tab-analysis'))
+    return { onChangeBelow }
+  }
+
+  it('reads a cause below that is clicked, with its actions, and offers the same on a right-click', () => {
+    mountWritable()
+    fireEvent.click(picture().querySelector('[data-key="acme/claims/intake#b1"]')!)
+    const reader = screen.getByTestId('cause-reader')
+    expect(reader.textContent).toContain('Intake waits on the batch')
+    expect(within(reader).getByTestId('cause-deeper')).toBeDefined()
+    expect(within(reader).getByTestId('cause-root-toggle')).toBeDefined()
+    expect(within(reader).getByTestId('cause-org')).toBeDefined()
+
+    fireEvent.contextMenu(picture().querySelector('[data-key="acme/claims/intake#b1"]')!)
+    const menu = screen.getByRole('menu')
+    expect(within(menu).getAllByRole('menuitem').map((item) => item.textContent)).toEqual([
+      'Link to a deeper cause…', 'Make root cause', 'Link to a cause of Claims…',
+    ])
+  })
+
+  it('offers what a reader of an observation below offers on its right-click', () => {
+    mountWritable()
+    fireEvent.contextMenu(picture().querySelector('[data-key="acme/claims/intake#in1"]')!)
+    expect(within(screen.getByRole('menu')).getAllByRole('menuitem').map((item) => item.textContent)).toEqual([
+      'Seen again', 'Link to a cause…', 'Merge into…',
+    ])
+  })
+
+  it('offers the scopes below in the new observation only while View local is on', () => {
+    mountWritable()
+    const create = () => fireEvent.click(document.querySelector('[data-guide="observations.new"]')!)
+    create()
+    expect(screen.getByTestId('form-scope')).toBeDefined()
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
+    fireEvent.click(screen.getByLabelText('View local'))
+    create()
+    expect(screen.queryByTestId('form-scope')).toBeNull()
+  })
+
+  it('reads a solution below, read only, with the scope it lives in', () => {
+    const t = translator('en')
+    const fix = newSolution({ id: 'sb1', number: 1, title: 'Intake starts after the batch', date: '2026-09-10', t, addresses: [{ id: 'b1', strength: 'normal' }] })
+    const onOpenScope = vi.fn()
+    renderShell(
+      <ObservationsPage
+        open onClose={() => {}} model={model} groupName="Acme" below={[{ ...below[0], solutions: [fix] }]} path="acme/claims"
+        scopeLabel={(path) => (path === 'acme/claims/intake' ? 'Intake' : path)} onOpenScope={onOpenScope}
+        onChange={() => {}} s={t} language="en" makeId={(prefix) => prefix} today={() => '2026-09-20'}
+        renderMarkdown={(md) => <MarkdownView markdown={md} />}
+      />,
+    )
+    fireEvent.click(screen.getByTestId('observation-tab-analysis'))
+    fireEvent.click(picture().querySelector('[data-key="acme/claims/intake#so:sb1"]')!)
+    expect(screen.getByTestId('solution-reader').textContent).toContain('Intake starts after the batch')
+    expect(screen.getByTestId('solution-from-below').textContent).toContain('Intake')
+    expect(screen.queryByTestId('solution-gate')).toBeNull()
+    expect(screen.queryByTestId('reader-edit')).toBeNull()
+    fireEvent.contextMenu(picture().querySelector('[data-key="acme/claims/intake#so:sb1"]')!)
+    expect(within(screen.getByRole('menu')).getAllByRole('menuitem').map((item) => item.textContent)).toEqual(['Open Intake'])
+  })
+
+  it('takes a cause below that a scope above explains as no open end', () => {
+    const lone = cause('b2', 2, 'Intake is staffed for mornings', [])
+    mountWritable(undefined, [lone])
+    expect(picture().querySelector('[data-key="acme/claims/intake#b2"] [data-testid="picture-open-end"]')).not.toBeNull()
+    cleanup()
+    const organisation = cause('g1', 1, 'Nobody plans staffing across the group', [], true)
+    mountWritable((path) => new Map(path === 'acme/claims/intake' ? [['b2', [{ scope: '', cause: organisation, strength: 'normal' as const }]]] : []), [lone])
+    const node = picture().querySelector('[data-key="acme/claims/intake#b2"]')!
+    expect(node.querySelector('[data-testid="picture-open-end"]')).toBeNull()
+    expect(node.textContent).toContain('↗ RC-0001')
   })
 })

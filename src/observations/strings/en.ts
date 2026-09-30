@@ -107,6 +107,7 @@ export const EN = {
   'observation.noLinks': 'Nothing yet',
   'observation.link': 'Link to a cause…',
   'observation.linkDeeper': 'Link to a deeper cause…',
+  'observation.linkOrg': 'Link to a cause of {scope}…',
   'observation.linkStrength': 'Relationship',
   'observation.linkConfirm': 'Link',
   'observation.unlink': 'Unlink',
