@@ -187,7 +187,7 @@ which is the safe direction for a notice to be wrong in.
 - inherits 2.0.4 — ISC
 - inline-style-parser 0.2.7 — MIT
 - internmap 2.0.3 — ISC
-- ip-address 10.7.0 — MIT
+- ip-address 10.7.2 — MIT
 - ipaddr.js 1.9.1 — MIT
 - is-alphabetical 2.0.1 — MIT
 - is-alphanumerical 2.0.1 — MIT
@@ -7194,7 +7194,7 @@ THIS SOFTWARE.
 
 ---
 
-## ip-address 10.7.0
+## ip-address 10.7.2
 
 Licence: MIT
 
