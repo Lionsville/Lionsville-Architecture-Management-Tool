@@ -119,7 +119,7 @@ describe('a copy over the tree as it is kept', () => {
       const root = (await repositories.scopes.tree()).root.id
       await store.transaction(['contents'], 'write', async (tx) => {
         tx.put('contents', root, how === 'later'
-          ? { format: 2, model: { name: 'Precious', records: ['NEWER WORK'] }, description: {} }
+          ? { format: 3, model: { name: 'Precious', records: ['NEWER WORK'] }, description: {} }
           : { format: 1, model: 'torn', description: {} })
       })
       expect((await repositories.scopes.tree()).root.name).toBe('')

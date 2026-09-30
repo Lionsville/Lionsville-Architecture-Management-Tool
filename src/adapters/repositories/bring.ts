@@ -25,6 +25,7 @@
  */
 import type { ContentAddress } from '../../model/imageName'
 import { SCOPE_RECORD, sameRecord, sameValue, stableText } from '../../model/recordKey'
+import { rootsFromSolutions } from '../../observations/rootsFromSolutions'
 import { fingerprint } from '../../projects/revision'
 import { isSafeScopePath, ROOT_SCOPE } from '../../projects/scopePath'
 import { emptyContent, recordsBetween } from '../../projects/scopeState'
@@ -132,26 +133,30 @@ export async function landBrought(
 ): Promise<Landed> {
   const landed: Landed = { changed: [], treeMoved: false, landed: [], diverged: [], refused: [] }
   const settled = new Set(brought.settle ?? [])
-  for (const one of inTreeOrder(brought.scopes)) {
-    if (settled.has(one.address)) continue
-    const print = contentPrint(one.content)
+  for (const asKept of inTreeOrder(brought.scopes)) {
+    if (settled.has(asKept.address)) continue
+    // Whatever kept it kept it before a root cause was said, so it arrives
+    // as the domain reads such an analysis (ADR-0032 §9) — and is known by
+    // what was kept, so a copy saved again as it was is still no change.
+    const print = contentPrint(asKept.content)
+    const one = { ...asKept, content: { ...asKept.content, model: rootsFromSolutions(asKept.content.model) } }
     if (!brought.force && placed[one.address]?.content === print) continue
     const held = scopeAt(scopes, one.address)
     if (!brought.force && !await untouched(tx, held, placed[one.address])) {
       landed.diverged.push(one.address)
       continue
     }
-    const kept = held ? await over(tx, meta, held, one, brought, by, landed) : await made(tx, scopes, one, landed)
-    if (kept === 'refused') continue
+    const written = held ? await over(tx, meta, held, one, brought, by, landed) : await made(tx, scopes, one, landed)
+    if (written === 'refused') continue
     landed.landed.push(one.address)
-    const now = kept ?? held!
+    const now = written ?? held!
     placed[one.address] = { scope: now.id, revision: now.revision, content: print }
-    if (!kept) continue
+    if (!written) continue
     for (const { contentAddress, bytes } of one.bytes) {
-      tx.put('bytes', bytesKey(kept.id, contentAddress), bytes)
-      await bytesPut(tx, kept.id, contentAddress, Date.now())
+      tx.put('bytes', bytesKey(written.id, contentAddress), bytes)
+      await bytesPut(tx, written.id, contentAddress, Date.now())
     }
-    await closeEntry(tx, meta, kept, by, brought.subject)
+    await closeEntry(tx, meta, written, by, brought.subject)
   }
   for (const address of settled) {
     const held = scopeAt(scopes, address)

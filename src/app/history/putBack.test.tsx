@@ -106,7 +106,7 @@ describe('a scope that could not be read whole', () => {
     expect(within(notice).queryByTestId('unreadable-put-back')).toBeNull()
     expect(within(notice).queryByTestId('unreadable-bring-in')).toBeNull()
     const raw = await store.transaction(['contents'], 'read', (tx) => tx.get<{ format: number }>('contents', acme))
-    expect(raw?.format).toBe(2)
+    expect(raw?.format).toBe(3)
   })
 
   it('names the ways every source has, and a file to mend only where its source says there is one', async () => {

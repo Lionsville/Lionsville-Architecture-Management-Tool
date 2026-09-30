@@ -11,11 +11,12 @@ import type { Spoiled } from '../../../ports/Repositories.contract'
 import type { ScopeId } from '../../../projects/scopeState'
 import { SHELVES } from '../KeyedStore'
 import type { KeyedStore } from '../KeyedStore'
+import { CONTENT_FORMAT } from '../kept'
 import type { KeptContent } from '../kept'
 
 export function spoilKept(store: KeyedStore, scope: ScopeId, how: Spoiled): Promise<void> {
   return store.transaction(SHELVES, 'write', async (tx) => {
     const held = await tx.get<KeptContent>('contents', scope)
-    tx.put('contents', scope, how === 'later' ? { ...held, format: 2 } : { ...held, model: 'torn' })
+    tx.put('contents', scope, how === 'later' ? { ...held, format: CONTENT_FORMAT + 1 } : { ...held, model: 'torn' })
   })
 }

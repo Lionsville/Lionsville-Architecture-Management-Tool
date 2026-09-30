@@ -58,7 +58,7 @@ describe('putting back a scope a later version wrote', () => {
     const repositories = memoryRepositories(store)
     const acme = await placeWhole(repositories.scopes, 'acme', emptyContent('Acme'))
     const [older] = await repositories.history.record({ subject: 'Older' })
-    const newer = { format: 2, model: { name: 'Acme', elements: [{ id: 'newer', name: 'NEWER WORK' }], diagrams: [] }, description: {} }
+    const newer = { format: 3, model: { name: 'Acme', elements: [{ id: 'newer', name: 'NEWER WORK' }], diagrams: [] }, description: {} }
     await store.transaction(['contents'], 'write', async (tx) => { tx.put('contents', acme, newer) })
     await expect(putBackWhole(repositories, acme, older, 'Kept')).rejects.toMatchObject({ key: 'shell.laterNotReplaced' })
     expect(await store.transaction(['contents'], 'read', (tx) => tx.get('contents', acme))).toEqual(newer)

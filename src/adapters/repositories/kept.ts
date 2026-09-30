@@ -13,6 +13,7 @@
  */
 import type { ImageEntry } from '../../model/imageName'
 import { SCOPE_RECORD, sameValue } from '../../model/recordKey'
+import { rootsFromSolutions } from '../../observations/rootsFromSolutions'
 import type { RecordKey } from '../../model/recordKey'
 import type { EntryMoved } from '../../ports/HistoryRepository'
 import type { ScopeKind } from '../../projects/scope'
@@ -54,8 +55,20 @@ export type KeptScope = {
  * The version of what `contents` holds. A value written by a later build, or
  * one that does not have the shape this build writes, is a scope read in part:
  * shown, and not stepped on (`ScopeState.unreadable`).
+ *
+ * **2 is 1 with a root cause said** (ADR-0032 §9): `root: true` on a cause,
+ * and no `shared` on an observation. A build that reads 1 would keep a root
+ * cause and write it back as it read it, so it reads a 2 as later, and
+ * leaves it be. A content at 1 is read as the domain reads an analysis kept
+ * before a root cause was said (`rootsFromSolutions`), and written at 2 by
+ * the next write.
  */
-export const CONTENT_FORMAT = 1
+export const CONTENT_FORMAT = 2
+
+/** The formats before this one a content is still read from, each by what it meant then. */
+const READ_FROM: Readonly<Record<number, (model: ScopeContent['model']) => ScopeContent['model']>> = {
+  1: rootsFromSolutions,
+}
 
 export type KeptContent = { format: number; model: ScopeContent['model']; description: ScopeDescription }
 
@@ -130,7 +143,7 @@ export function bytesKey(scope: ScopeId, contentAddress: string): string {
 }
 
 function isShaped(content: Partial<KeptContent> | undefined): content is KeptContent {
-  return !!content && content.format === CONTENT_FORMAT && !!content.model
+  return !!content && (content.format === CONTENT_FORMAT || Object.hasOwn(READ_FROM, content.format ?? '')) && !!content.model
     && Array.isArray(content.model.elements) && Array.isArray(content.model.diagrams)
     && typeof content.description === 'object' && content.description !== null
 }
@@ -144,7 +157,10 @@ export async function readModel(
   tx: Transaction, kept: KeptScope,
 ): Promise<{ content: Omit<ScopeContent, 'images'>; unreadable?: string[]; later?: true }> {
   const held = await tx.get<Partial<KeptContent>>('contents', kept.id)
-  if (isShaped(held)) return { content: { ...held.description, model: held.model } }
+  if (isShaped(held)) {
+    const model = held.format === CONTENT_FORMAT ? held.model : READ_FROM[held.format](held.model)
+    return { content: { ...held.description, model } }
+  }
   const later = !!held && typeof held.format === 'number' && held.format > CONTENT_FORMAT
   const why = later ? `written by a later version (format ${String(held.format)})` : 'its model could not be read'
   const model = held?.model && Array.isArray(held.model.elements) && Array.isArray(held.model.diagrams)

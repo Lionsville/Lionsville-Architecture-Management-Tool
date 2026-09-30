@@ -69,16 +69,20 @@ function sequenceOf(revision: string, nonce: string): number | undefined {
   return Number(line)
 }
 
-/** What the index reads of a scope: its records and rows, and nothing written in prose. */
+/** What the index reads of a scope: its records and rows, its analysis, and nothing written in prose. */
 async function indexed(tx: Transaction, kept: KeptScope): Promise<IndexedScope> {
-  const { elements, relations, transitions, observations } = (await readModel(tx, kept)).content.model
+  const { elements, relations, transitions, observations, causes, solutions, experiments } = (await readModel(tx, kept)).content.model
   return {
     id: kept.id, address: kept.address,
     model: {
       elements: elements.map(({ description: _prose, ...element }) => element),
       relations,
       ...(transitions ? { transitions } : {}),
+      // A scope's analysis, which every scope above reads (ADR-0032 §1).
       ...(observations ? { observations } : {}),
+      ...(causes ? { causes } : {}),
+      ...(solutions ? { solutions } : {}),
+      ...(experiments ? { experiments } : {}),
     },
   }
 }

@@ -15,6 +15,7 @@ import { MemoryStore } from '../memory/MemoryStore'
 import { repositoriesOn, repositoriesOver } from './repositoriesOver'
 import type { Brought } from './bring'
 import { SHELVES } from './KeyedStore'
+import { CONTENT_FORMAT } from './kept'
 import { Source } from './source'
 
 const addCrews = {
@@ -139,7 +140,7 @@ describe('work brought from somewhere else', () => {
     const made = await repositories.scopes.create('acme', { name: 'Acme Logistics' })
     if ('refused' in made) throw new Error(made.refused)
     await store.transaction(SHELVES, 'write', async (tx) => {
-      tx.put('contents', made.id, { ...await tx.get<object>('contents', made.id), format: 2 })
+      tx.put('contents', made.id, { ...await tx.get<object>('contents', made.id), format: CONTENT_FORMAT + 1 })
     })
     const source = new Source(store, {
       id: 'brought', by: 'test',
