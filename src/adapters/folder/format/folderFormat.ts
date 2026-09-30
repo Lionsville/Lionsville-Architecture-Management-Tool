@@ -154,7 +154,7 @@ export const SCOPE_FOLDERS: readonly string[] = [
  * **9 is 8, with `root: true` on a cause that is a root cause** (ADR-0032 §9).
  * A build that reads 8 would read `RC-0004` as `CA-0004` and write it back
  * without the field — the loss the number exists to refuse. A folder written
- * before reads its root causes off its solutions (`rootsSaidBefore`), and its
+ * before reads its root causes off its solutions (`rootsFromSolutions`), and its
  * `shared` is read past and not written.
  */
 export { SCOPE_FORMAT_VERSION }

@@ -81,7 +81,7 @@ const MAY_IMPORT = {
   editor: ['model', 'layout', 'i18n', 'platform', 'widgets', 'documentation', 'search'],
   agent: ['model', 'layout', 'i18n', 'platform', 'documentation', 'decisions', 'observations', 'business', 'search'],
   ports: ['model', 'platform', 'projects', 'agent'],
-  adapters: ['model', 'platform', 'projects', 'ports', 'agent'],
+  adapters: ['model', 'platform', 'projects', 'ports', 'agent', 'observations'],
   providers: ['model', 'i18n', 'platform', 'widgets', 'projects', 'ports', 'adapters'],
   // `platform/node` is the one thing the top of the tree may not have either:
   // `app` is the renderer, and code that says `node:` cannot be in it.
@@ -106,7 +106,7 @@ const WHY = {
   editor: 'The editor takes a model and emits batches. Decisions and projects reach it as props.',
   agent: 'An agent asks about the landscape in the landscape\'s own terms — including a laid-out page, which is arithmetic like any other. It does not know how the model is drawn or where it is saved.',
   ports: 'A seam names what crosses it: a project, a model, a diagnostic, an agent\'s request.',
-  adapters: 'An adapter fills one seam: the model, projects, ports, platform and the agent\'s vocabulary are all it may know.',
+  adapters: 'An adapter fills one seam: the model, projects, ports, platform and the agent\'s vocabulary are all it may know — and, of the analysis, what older data meant (`observations/rootsFromSolutions`, ADR-0032 §9), which every place work is kept reads the same way.',
   providers: 'A provider is a place work is kept, whole: its implementation, its way in and its chrome (ADR-0022, ADR-0031 §4). It may draw, in the language that is on, and name how it keeps work; only the composition root registers one, and it knows no screen of the app\'s.',
   app: 'Ask for a ProjectStore / PreferencesStore / DocumentGateway; src/app/composition.ts picks which.',
 }

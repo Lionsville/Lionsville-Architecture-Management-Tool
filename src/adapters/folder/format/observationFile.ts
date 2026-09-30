@@ -30,7 +30,7 @@ import type {
   SolutionLink, SolutionSize, SolutionState,
 } from '../../../model/observation'
 import { slug } from '../../../model/keys'
-import { isLive } from '../../../observations/solution'
+import { rootsFromSolutions } from '../../../observations/rootsFromSolutions'
 import {
   frontMatterNumber, frontMatterRows, frontMatterString, frontMatterText, markdownBody, readFrontMatter,
 } from './fileText'
@@ -252,24 +252,14 @@ export function causeFromFile(text: string, path: string): Cause | undefined {
 export const ROOTS_SAID_FROM = 9
 
 /**
- * The causes of a scope written before format 9, as format 9 reads them
- * (ADR-0032 §9): a cause that a live solution addresses is a root cause,
- * because a solution addressed root causes only and that one was what it
- * addressed. Nothing else becomes one — a cause that was a root only for
- * want of a deeper cause reads as an open end, which is what it was.
- */
-export function rootsSaidBefore(causes: readonly Cause[], solutions: readonly Solution[]): Cause[] {
-  const addressed = new Set(solutions.filter(isLive).flatMap((one) => one.addresses.map((address) => address.id)))
-  return causes.map((one) => (addressed.has(one.id) && !one.root ? { ...one, root: true as const } : one))
-}
-
-/**
  * The causes as the folder's version says them: read off the solutions where
- * it was written before format 9, and as written from then on. A folder with
- * no version is somebody's hand-made scope, read as this build writes.
+ * it was written before format 9, by the domain's one rule for an analysis
+ * kept before a root cause was said (`rootsFromSolutions`), and as written
+ * from then on. A folder with no version is somebody's hand-made scope, read
+ * as this build writes.
  */
 export function causesAsSaid(causes: readonly Cause[], solutions: readonly Solution[], version: number | undefined): Cause[] {
-  return version !== undefined && version < ROOTS_SAID_FROM ? rootsSaidBefore(causes, solutions) : [...causes]
+  return version !== undefined && version < ROOTS_SAID_FROM ? [...rootsFromSolutions({ causes, solutions }).causes ?? []] : [...causes]
 }
 
 // --- solutions and experiments (ADR-0026) -----------------------------------------
