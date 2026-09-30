@@ -237,7 +237,7 @@ function useTreeParts(props: ProjectWorkspaceProps, base: ReturnType<typeof useS
     gestureOffers: gestures.offers, gestureChoose: gestures.choose, addExisting: library.open, s,
   })
   /** A change to a scope below made from the observations page, as that scope's step (ADR-0032 §2). */
-  const changeBelow = useChangeBelow({ scopes: source.store, mayChange: session.mayChange, onTreeChanged })
+  const changeBelow = useChangeBelow({ scopes: source.repositories.scopes, mayChange: session.mayChange, onTreeChanged })
   return { readings, gestures, library, ownership, changeBelow }
 }
 
