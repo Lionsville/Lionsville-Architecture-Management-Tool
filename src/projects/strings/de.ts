@@ -26,6 +26,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'check.unmapped': '{name} ist niemandem zugewiesen und von keiner Domäne übernommen — weisen Sie es zu, oder übergeben Sie es einer Domäne',
   'check.uncovered': 'Nichts und niemand erledigt {name} — verbinden Sie eine Anwendung, die es unterstützt, oder weisen Sie eine Person zu',
   'check.offeredNotShared': '{name} wird von {detail} genutzt, außerhalb des Teams, das es pflegt, und ist nicht als geteilt markiert — markieren Sie es als geteilt, oder verschieben Sie es',
+  'check.causeExplainsObservationBelow': '{name} erklärt eine Beobachtung von {scope} direkt — verknüpfen Sie stattdessen {detail}, die Ursache, die sie dort erklärt',
+  'check.causeExplainsObservationBelowBare': '{name} erklärt eine Beobachtung von {scope} direkt, und dort erklärt sie noch nichts — eine Ursache dort erklärt sie, und diese erklärt jene Ursache',
 
   'check.short.conflict.one': '{count} Konflikt',
   'check.short.conflict.other': '{count} Konflikte',
@@ -49,6 +51,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'check.short.uncovered.other': '{count} nicht abgedeckt',
   'check.short.offeredNotShared.one': '{count} angeboten, nicht als geteilt markiert',
   'check.short.offeredNotShared.other': '{count} angeboten, nicht als geteilt markiert',
+  'check.short.causeExplainsObservationBelow.one': '{count} Verknüpfung zu einer Beobachtung darunter',
+  'check.short.causeExplainsObservationBelow.other': '{count} Verknüpfungen zu Beobachtungen darunter',
 
   'gesture.unknownId': 'Dieser Bereich hält diesen Datensatz nicht mehr.',
   'gesture.notADefinition': 'Dieser Datensatz verweist bereits auf eine Definition anderswo.',

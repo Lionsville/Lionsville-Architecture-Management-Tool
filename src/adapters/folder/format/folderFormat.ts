@@ -77,7 +77,7 @@ import {
   TRANSITIONS_FOLDER, transitionFileText, transitionFromFile, transitionPath,
 } from './transitionFile'
 import {
-  CAUSES_SUBFOLDER, causeFileText, causeFromFile, causePath, EXPERIMENTS_SUBFOLDER, experimentFileText,
+  causesAsSaid, CAUSES_SUBFOLDER, causeFileText, causeFromFile, causePath, EXPERIMENTS_SUBFOLDER, experimentFileText,
   experimentFromFile, experimentPath, OBSERVATION_SUBFOLDERS, OBSERVATIONS_FOLDER, observationFileText,
   observationFromFile, observationPath, SOLUTIONS_SUBFOLDER, solutionFileText, solutionFromFile, solutionPath,
 } from './observationFile'
@@ -150,11 +150,17 @@ export const SCOPE_FOLDERS: readonly string[] = [
  * **8 is 7, with `solutions/` and `experiments/` under `observations/`**
  * (ADR-0026). A build that reads 7 walks into `causes/` and no further, so it
  * would open an 8 and write it back without them: the number turns again.
+ *
+ * **9 is 8, with `root: true` on a cause that is a root cause** (ADR-0032 §9).
+ * A build that reads 8 would read `RC-0004` as `CA-0004` and write it back
+ * without the field — the loss the number exists to refuse. A folder written
+ * before reads its root causes off its solutions (`rootsSaidBefore`), and its
+ * `shared` is read past and not written.
  */
 export { SCOPE_FORMAT_VERSION }
 
 /** The versions of a scope's own folder this build reads without folding. */
-const READABLE_SCOPE_VERSIONS: readonly number[] = [5, 6, 7, 8]
+const READABLE_SCOPE_VERSIONS: readonly number[] = [5, 6, 7, 8, 9]
 
 /**
  * The second half of a view's pair of files: where it ended up.
@@ -991,8 +997,8 @@ export function scopeFromFolder(
   const decisions = readDecisions(files)
   const transitions = readTransitions(files)
   const observations = readObservations(files)
-  const causes = readCauses(files)
   const solutions = readSolutions(files)
+  const causes = causesAsSaid(readCauses(files), solutions, held.version)
   const experiments = readExperiments(files)
   const { elements, explicitFields } = readElements(folder)
   const model: HostModel = {

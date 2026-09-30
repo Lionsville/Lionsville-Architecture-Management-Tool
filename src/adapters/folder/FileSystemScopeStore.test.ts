@@ -301,6 +301,33 @@ describe('FileSystemScopeStore — the folder is somebody else’s too', () => {
   })
 
   /**
+   * The index reads every scope's analysis for the scopes above it (ADR-0032
+   * §1), and reads a folder written before format 9 the way opening it does:
+   * a cause a live solution addresses is a root cause (§9).
+   */
+  it('hands the index the whole analysis, and the roots a folder written before format 9 said through its solutions', async () => {
+    const { root, store } = setup()
+    const scope = sampleScope()
+    scope.model.causes = [
+      { id: 'ca-1', number: 1, title: 'Window sized for 2019', state: 'assumed', body: 'Why.', explains: [] },
+      { id: 'ca-2', number: 2, title: 'Nobody plans capacity', state: 'assumed', body: 'Why.', explains: [] },
+    ]
+    scope.model.solutions = [{
+      id: 'so-1', number: 1, title: 'Widen the window', state: 'idea', addresses: [{ id: 'ca-1', strength: 'strong' }],
+      validatedWith: [], attempts: [], body: 'One idea.', history: [{ date: '2026-09-20', kind: 'proposed' }],
+    }]
+    await store.save(scope)
+    const read = async () => (await store.models()).find((held) => held.path === scope.path)!.model
+    expect((await read()).solutions?.map((one) => one.id)).toEqual(['so-1'])
+    expect((await read()).causes?.map((one) => [one.id, one.root])).toEqual([['ca-1', undefined], ['ca-2', undefined]])
+
+    const folder = await (await root.getDirectoryHandle('acme-logistics')).getDirectoryHandle('landscape') as FakeDirectory
+    const header = await (await (await folder.getFileHandle('scope.json')).getFile()).text()
+    folder.writeRaw('scope.json', header.replace(/"version": \d+/, '"version": 8'))
+    expect((await read()).causes?.map((one) => [one.id, one.root])).toEqual([['ca-1', true], ['ca-2', undefined]])
+  })
+
+  /**
    * A `model.json` somebody's merge left markers in, or a sync client wrote
    * half of. Read as empty, the next save wrote an empty model over it and
    * removed every description beside it — the scope's documents, gone

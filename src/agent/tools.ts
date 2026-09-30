@@ -355,7 +355,9 @@ const SPECS = [
       + 'check.dangling (a stand-in nobody defines), check.danglingEnd (a relation end nobody holds), '
       + 'check.proposal (a domain names a function no ancestor has), check.ownedElsewhere (the owner\'s '
       + 'detail written on a stand-in), check.unattributed (outside, and nobody has said whose), '
-      + 'check.unmapped and check.uncovered (the business layer\'s two), and check.notDrawn, which is '
+      + 'check.unmapped and check.uncovered (the business layer\'s two), check.causeExplainsObservationBelow (a '
+      + 'cause explains an observation of a scope below, which nothing makes any more: link the cause there that '
+      + 'explains it, named in the detail, instead), and check.notDrawn, which is '
       + 'information rather than a fault and is listed only when asked. A finding is never a refusal and '
       + 'never a reason a save fails.',
     inputSchema: {

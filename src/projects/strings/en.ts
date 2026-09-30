@@ -41,6 +41,8 @@ export const EN = {
   'check.unmapped': '{name} is assigned to nobody and claimed by no domain — assign it, or hand it to a domain',
   'check.uncovered': 'Nothing and nobody does {name} — connect an application that supports it, or assign a person',
   'check.offeredNotShared': '{name} is used by {detail}, beyond the team that maintains it, and is not marked shared — mark it shared, or move it',
+  'check.causeExplainsObservationBelow': '{name} explains an observation of {scope} directly — link {detail}, the cause there that explains it, instead',
+  'check.causeExplainsObservationBelowBare': '{name} explains an observation of {scope} directly, and nothing there explains it yet — a cause there explains it, and this one explains that cause',
 
   /**
    * What a stand-in says about itself, on the three surfaces that draw one: the
@@ -70,6 +72,8 @@ export const EN = {
   'check.short.uncovered.other': '{count} uncovered',
   'check.short.offeredNotShared.one': '{count} offered, not marked shared',
   'check.short.offeredNotShared.other': '{count} offered, not marked shared',
+  'check.short.causeExplainsObservationBelow.one': '{count} link to an observation below',
+  'check.short.causeExplainsObservationBelow.other': '{count} links to observations below',
 
   /**
    * Why a gesture that crosses scopes was declined (ADR-0012 §10).

@@ -16,6 +16,7 @@ import { translator } from '../i18n'
 import { laidOut } from '../model/testFixtures'
 import type { DesignElement, Relation } from '../model'
 import type { HostModel } from '../model/hostModel'
+import type { Cause, Observation } from '../model/observation'
 import {
   documentFindings, findingSentence, findingsByScope, identityFindings, offeredBeyond, OWNER_DETAIL, scopeFindings, tally,
 } from './checks'
@@ -411,5 +412,57 @@ describe('findingSentence', () => {
   it('names the organisation where a finding names no other scope', () => {
     expect(findingSentence({ key: 'check.ownedElsewhere', scope: 'retail', id: 'x', name: 'X' }, s, scopeName))
       .toBe('This is kept in the organisation — change it there')
+  })
+})
+
+/**
+ * A cause above explaining an observation below (ADR-0032 §9): a link ADR-0021
+ * allowed, kept and drawn, and reported with the cause below to link instead.
+ * Over three levels, so the finding is about the scope that wrote the link
+ * and names the one whose observation it is.
+ */
+describe('a cause above an observation below', () => {
+  const observation = (id: string, number: number): Observation => ({
+    id, number, title: id, date: '2026-09-01', impact: 'minor', seen: 1, body: '', history: [{ date: '2026-09-01', kind: 'recorded' }],
+  })
+  const cause = (id: string, number: number, explains: Cause['explains'] = [], over: Partial<Cause> = {}): Cause => ({
+    id, number, title: `Cause ${number}`, state: 'assumed', body: '', explains, ...over,
+  })
+  const org = document({ causes: [
+    cause('org-1', 1, [{ id: 'ob-in', scope: 'claims/intake', strength: 'strong' }, { id: 'ob-lone', scope: 'claims/intake', strength: 'weak' }]),
+    cause('org-2', 2, [{ id: 'ca-in', scope: 'claims/intake', strength: 'normal' }], { root: true }),
+  ] })
+  const index = indexScopes([
+    { path: '', model: { elements: [], relations: [], causes: org.causes } },
+    { path: 'claims', model: { elements: [], relations: [] } },
+    { path: 'claims/intake', model: {
+      elements: [], relations: [],
+      observations: [observation('ob-in', 1), observation('ob-lone', 2)],
+      causes: [cause('ca-in', 1, [{ id: 'ob-in', strength: 'normal' }])],
+    } },
+  ])
+
+  it('names the cause below that explains the observation, and says so where there is none', () => {
+    const found = documentFindings({ scope: '', model: org, index }).filter((one) => one.key === 'check.causeExplainsObservationBelow')
+    expect(found).toEqual([
+      {
+        key: 'check.causeExplainsObservationBelow', scope: '', id: 'org-1', name: 'CA-0001 Cause 1', scopes: ['claims/intake'],
+        fields: ['ob-in', 'ca-in'], detail: 'CA-0001 Cause 1',
+      },
+      {
+        key: 'check.causeExplainsObservationBelow', scope: '', id: 'org-1', name: 'CA-0001 Cause 1', scopes: ['claims/intake'],
+        fields: ['ob-lone'],
+      },
+    ])
+    const s = translator('en')
+    const named = (path: string) => (path === 'claims/intake' ? 'Intake' : path)
+    expect(findingSentence(found[0], s, named)).toBe('CA-0001 Cause 1 explains an observation of Intake directly — link CA-0001 Cause 1, the cause there that explains it, instead')
+    expect(findingSentence(found[1], s, named)).toContain('nothing there explains it yet')
+  })
+
+  it('is not raised by a cause above explaining a cause below, which is how it should be', () => {
+    const one = document({ causes: [org.causes![1]] })
+    expect(documentFindings({ scope: '', model: one, index }).filter((f) => f.key === 'check.causeExplainsObservationBelow')).toEqual([])
+    expect(tally(documentFindings({ scope: '', model: org, index }))['check.causeExplainsObservationBelow']).toBe(2)
   })
 })

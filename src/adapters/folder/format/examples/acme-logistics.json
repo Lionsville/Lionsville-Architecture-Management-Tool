@@ -2650,7 +2650,7 @@
     "kind": "landscape",
     "name": "Application landscape",
     "type": "lionsville-architecture",
-    "version": 8
+    "version": 9
   },
   "application-landscape/transitions/0001-retire-the-legacy-rater.md": [
     "---",
@@ -4416,7 +4416,7 @@
     "kind": "domain",
     "name": "Shared platforms",
     "type": "lionsville-architecture",
-    "version": 8
+    "version": 9
   },
   "scope.json": {
     "activeDiagramId": "business-architecture",
@@ -4428,6 +4428,6 @@
     "kind": "organisation",
     "name": "Acme Logistics",
     "type": "lionsville-architecture",
-    "version": 8
+    "version": 9
   }
 }

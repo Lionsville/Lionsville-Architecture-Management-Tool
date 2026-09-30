@@ -22,8 +22,9 @@
  *   every row of the tree without loading a single model.
  * - {@link documentFindings} reads **one scope's own document** — the owner's
  *   detail on a stand-in, an unattributed outsider, a relation end nobody
- *   holds, a master drawn nowhere, and the two the business layer already
- *   answers. Paid by the scope that is open, once per model.
+ *   holds, a master drawn nowhere, the two the business layer already
+ *   answers, and a cause that explains an observation of a scope below.
+ *   Paid by the scope that is open, once per model.
  *
  * **Why `business/`'s two arrive as an argument.** `unmappedFunctions` and
  * `coverageOf` stay where they are — they are the business layer's arithmetic
@@ -37,6 +38,7 @@ import type { StringKey, Translate } from '../i18n/strings'
 import { OWNER_DETAIL } from '../model'
 import type { DesignElement, ElementId, OwnerDetailField } from '../model'
 import type { HostModel } from '../model/hostModel'
+import { causeLabel } from '../observations/observation'
 import type { ScopeIndex } from './scopeIndex'
 import { ancestorScopes } from './scopePath'
 import type { ScopePath } from './scopePath'
@@ -75,6 +77,13 @@ export type CheckKey =
    * (ADR-0014): being offered, whether or not anybody said so.
    */
   | 'check.offeredNotShared'
+  /**
+   * A cause here explains an observation of a scope below (ADR-0032 §9): a
+   * link ADR-0021 allowed and nothing makes any more, kept and drawn. Names
+   * the cause below that explains that observation, where there is one —
+   * linking that one instead is the repair.
+   */
+  | 'check.causeExplainsObservationBelow'
 
 /**
  * The sentence for each finding, published as a table (ADR-0012 §9).
@@ -100,6 +109,16 @@ export const CHECK_LABEL: Record<CheckKey, StringKey> = {
   'check.unmapped': 'check.unmapped',
   'check.uncovered': 'check.uncovered',
   'check.offeredNotShared': 'check.offeredNotShared',
+  'check.causeExplainsObservationBelow': 'check.causeExplainsObservationBelow',
+}
+
+/**
+ * The sentence where the finding has nothing to name beside it — no cause
+ * below explains the observation yet — for the one finding whose repair
+ * names a record when there is one.
+ */
+const CHECK_LABEL_BARE: Partial<Record<CheckKey, StringKey>> = {
+  'check.causeExplainsObservationBelow': 'check.causeExplainsObservationBelowBare',
 }
 
 /**
@@ -115,7 +134,8 @@ export const CHECK_LABEL: Record<CheckKey, StringKey> = {
 export function findingSentence(
   finding: Finding, s: Translate, scopeName: (path: ScopePath) => string,
 ): string {
-  return s(CHECK_LABEL[finding.key], {
+  const key = finding.detail === undefined ? CHECK_LABEL_BARE[finding.key] ?? CHECK_LABEL[finding.key] : CHECK_LABEL[finding.key]
+  return s(key, {
     name: finding.name,
     scope: scopeName(finding.scopes?.[0] ?? ''),
     detail: finding.detail ?? '',
@@ -142,6 +162,9 @@ export const CHECK_SHORT: Record<CheckKey, { one: StringKey; other: StringKey }>
   'check.unmapped': { one: 'check.short.unmapped.one', other: 'check.short.unmapped.other' },
   'check.uncovered': { one: 'check.short.uncovered.one', other: 'check.short.uncovered.other' },
   'check.offeredNotShared': { one: 'check.short.offeredNotShared.one', other: 'check.short.offeredNotShared.other' },
+  'check.causeExplainsObservationBelow': {
+    one: 'check.short.causeExplainsObservationBelow.one', other: 'check.short.causeExplainsObservationBelow.other',
+  },
 }
 
 /**
@@ -423,6 +446,33 @@ export function documentFindings(deps: {
   }
   for (const id of business?.uncovered ?? []) {
     found.push({ key: 'check.uncovered', scope, id, name: named(id) })
+  }
+  return [...found, ...causesOverObservationsBelow(scope, model, index)]
+}
+
+/**
+ * Every cause of this scope that explains an observation of a scope below
+ * (ADR-0032 §9). The scope below explains its own observations, and this one
+ * explains its causes, so the repair is to link the cause below that explains
+ * the observation — named in `detail`, and its id after the observation's in
+ * `fields`, where there is one.
+ */
+function causesOverObservationsBelow(scope: ScopePath, model: HostModel, index: ScopeIndex): Finding[] {
+  const below = new Map(index.analysisBelow(scope).map((one) => [one.scope, one]))
+  const found: Finding[] = []
+  for (const cause of model.causes ?? []) {
+    for (const link of cause.explains) {
+      const there = link.scope === undefined ? undefined : below.get(link.scope)
+      const observation = there?.observations.find((one) => one.id === link.id)
+      if (!there || !observation) continue
+      const local = there.causes.find((one) => one.explains.some((held) => held.id === observation.id && held.scope === undefined))
+      found.push({
+        key: 'check.causeExplainsObservationBelow', scope, id: cause.id, name: `${causeLabel(cause)} ${cause.title}`,
+        scopes: [there.scope],
+        fields: [observation.id, ...(local ? [local.id] : [])],
+        ...(local ? { detail: `${causeLabel(local)} ${local.title}` } : {}),
+      })
+    }
   }
   return found
 }

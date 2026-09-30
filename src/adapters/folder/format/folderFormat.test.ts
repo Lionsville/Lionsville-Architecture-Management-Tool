@@ -12,6 +12,7 @@ import type { Adr } from '../../../decisions/adr'
 import type { DesignElement } from '../../../model'
 import type { Transition } from '../../../model/transition'
 import type { HostModel } from '../../../model/hostModel'
+import type { Cause, Observation, Solution } from '../../../model/observation'
 import { stableJson, textFromBytes } from '../../../projects/text'
 import {
   isFormatPath, MODEL_FILE, modelListsFrom, modelRowFrom, SCOPE_FILE, SCOPE_FORMAT_VERSION, scopeFiles, scopeFromFolder,
@@ -606,5 +607,69 @@ describe('isFormatPath', () => {
   it('does not claim a file belonging to a scope filed inside this one', () => {
     expect(isFormatPath('retail/model.json')).toBe(false)
     expect(isFormatPath('retail/diagrams/l7.json')).toBe(false)
+  })
+})
+
+/**
+ * Format 9 (ADR-0032 §9): a root cause says it is one, and a folder written
+ * before reads its roots off its solutions — the causes a live solution
+ * addresses, and nothing else — and its `shared` is read past. Written back,
+ * it is format 9 and says what it read.
+ */
+describe('a folder written before format 9', () => {
+  const cause = (id: string, number: number, explains: Cause['explains'] = []): Cause => ({
+    id, number, title: `Cause ${number}`, state: 'assumed', body: '## Why\n\nBecause.', explains,
+  })
+  const solution = (id: string, number: number, causeId: string, state: Solution['state']): Solution => ({
+    id, number, title: `Solution ${number}`, state, addresses: [{ id: causeId, strength: 'strong' }],
+    validatedWith: [], attempts: [], body: '## Idea\n\nThis.', history: [{ date: '2026-09-01', kind: 'proposed' }],
+    ...(state === 'dropped' ? { droppedFrom: 'idea' as const, dropNote: 'Not now' } : {}),
+  })
+  const observation: Observation = {
+    id: 'ob-1', number: 1, title: 'Seen', date: '2026-09-01', impact: 'minor', seen: 1, body: '## What\n\nIt.',
+    history: [{ date: '2026-09-01', kind: 'recorded' }, { date: '2026-09-02', kind: 'shared' }],
+  }
+  const written = project({ model: {
+    observations: [observation],
+    causes: [
+      cause('ca-1', 1, [{ id: 'ob-1', strength: 'strong' }]),
+      cause('ca-2', 2, [{ id: 'ca-1', strength: 'normal' }]),
+      cause('ca-3', 3, [{ id: 'ob-1', strength: 'weak' }]),
+      cause('ca-4', 4),
+    ],
+    solutions: [solution('so-1', 1, 'ca-2', 'testing'), solution('so-2', 2, 'ca-3', 'dropped')],
+  } as Partial<HostModel> as HostModel })
+  /** The files as format 8 wrote them: its header, `shared: true` on the observation, no `root` anywhere. */
+  const eight = (): FolderFile[] => scopeFiles(written).map((file) => {
+    if (!('text' in file)) return file
+    if (file.path === SCOPE_FILE) return { ...file, text: file.text.replace(`"version": ${SCOPE_FORMAT_VERSION}`, '"version": 8') }
+    if (file.path.startsWith('observations/0001')) return { ...file, text: file.text.replace('seen: 1\n', 'seen: 1\nshared: true\n') }
+    return file
+  })
+  const at = (files: readonly FolderFile[], start: string) => textOf(files, files.find((file) => file.path.startsWith(start))!.path)
+
+  it('reads a cause a live solution addresses as a root cause, and nothing else', () => {
+    expect(textOf(eight(), SCOPE_FILE)).toContain('"version": 8')
+    expect(at(eight(), 'observations/0001')).toContain('shared: true')
+    const read = scopeFromFolder(eight(), REF)!
+    const roots = (read.model.causes ?? []).filter((one) => one.root).map((one) => one.id)
+    // ca-2 is addressed by a live solution. ca-3's solution was dropped, and
+    // ca-4 was a root only for want of a deeper cause: open ends, both.
+    expect(roots).toEqual(['ca-2'])
+    expect(read.model.observations?.[0]).toEqual(observation)
+  })
+
+  it('writes format 9 back, with root on the cause and shared nowhere, and reads it as written', () => {
+    const again = scopeFiles(scopeFromFolder(eight(), REF)!)
+    expect(JSON.parse(textOf(again, SCOPE_FILE)).version).toBe(9)
+    expect(at(again, 'observations/causes/0002')).toContain('root: true')
+    expect(at(again, 'observations/causes/0002')).toContain('# RC-0002 — Cause 2')
+    expect(at(again, 'observations/0001')).not.toContain('shared: true')
+    expect(at(again, 'observations/0001')).toContain('kind: shared')
+    // At format 9 the field is what it says: a solution no longer makes a root.
+    const nine = scopeFromFolder(again, REF)!
+    expect(stableJson(scopeFiles(nine))).toBe(stableJson(again))
+    const unsaid = scopeFromFolder(scopeFiles(written), REF)!
+    expect((unsaid.model.causes ?? []).some((one) => one.root)).toBe(false)
   })
 })

@@ -58,7 +58,7 @@ import {
 import type { FolderFile } from './format/folderFormat'
 import { markdownBody } from './format/fileText'
 import {
-  CAUSES_SUBFOLDER, causeFromFile, EXPERIMENTS_SUBFOLDER, experimentFromFile, OBSERVATION_SUBFOLDERS, observationFromFile,
+  causesAsSaid, CAUSES_SUBFOLDER, causeFromFile, EXPERIMENTS_SUBFOLDER, experimentFromFile, OBSERVATION_SUBFOLDERS, observationFromFile,
   SOLUTIONS_SUBFOLDER, solutionFromFile,
 } from './format/observationFile'
 import { isSupersededPath, openScopeFolder } from './format/migrate4to5'
@@ -387,16 +387,21 @@ export class FileSystemScopeStore implements ScopeStore {
    */
   async models(): Promise<ScopeModel[]> {
     const found: ScopeModel[] = []
-    await this.walk(this.root, [], async ({ folder, path }) => {
+    await this.walk(this.root, [], async ({ folder, path, header }) => {
       const handle = await folder.getFileHandle(MODEL_FILE).catch(this.orAbsent('a model'))
       const text = await this.textOf(handle, 'a model')
       if (text === undefined) return
       const lists = modelListsFrom(text)
       if (!lists) return
+      // The header says how to read the causes: a folder written before
+      // format 9 says its root causes through its solutions (ADR-0032 §9).
+      const headerText = await this.textOf(header, 'a scope header')
+      const analysis = await this.analysisIn(folder)
       found.push({ path, model: {
         ...lists,
         transitions: await this.transitionsIn(folder),
-        ...await this.analysisIn(folder),
+        ...analysis,
+        causes: causesAsSaid(analysis.causes, analysis.solutions, headerText === undefined ? undefined : folderFormatVersion(headerText)),
       } })
     })
     return found

@@ -26,6 +26,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'check.unmapped': '{name} is aan niemand toegewezen en door geen domein opgepakt — wijs het toe, of geef het aan een domein',
   'check.uncovered': 'Niets en niemand doet {name} — koppel een applicatie die het ondersteunt, of wijs een persoon toe',
   'check.offeredNotShared': '{name} wordt gebruikt door {detail}, buiten het team dat het onderhoudt, en is niet als gedeeld gemarkeerd — markeer het als gedeeld, of verplaats het',
+  'check.causeExplainsObservationBelow': '{name} verklaart rechtstreeks een waarneming van {scope} — koppel in plaats daarvan {detail}, de oorzaak die haar daar verklaart',
+  'check.causeExplainsObservationBelowBare': '{name} verklaart rechtstreeks een waarneming van {scope}, en daar verklaart nog niets haar — een oorzaak daar verklaart haar, en deze verklaart die oorzaak',
 
   'check.short.conflict.one': '{count} conflict',
   'check.short.conflict.other': '{count} conflicten',
@@ -49,6 +51,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'check.short.uncovered.other': '{count} niet gedekt',
   'check.short.offeredNotShared.one': '{count} aangeboden, niet als gedeeld gemarkeerd',
   'check.short.offeredNotShared.other': '{count} aangeboden, niet als gedeeld gemarkeerd',
+  'check.short.causeExplainsObservationBelow.one': '{count} koppeling naar een waarneming eronder',
+  'check.short.causeExplainsObservationBelow.other': '{count} koppelingen naar waarnemingen eronder',
 
   'gesture.unknownId': 'Dit niveau heeft dat record niet meer.',
   'gesture.notADefinition': 'Dit record verwijst al naar een definitie elders.',
