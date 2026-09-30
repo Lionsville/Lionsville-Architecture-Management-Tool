@@ -153,6 +153,15 @@ app's language.
   merged observation went, and the finding and newest record on a home's
   roadmap and decisions cards. The bands on the roadmap still answer a
   click as well; the name beside each is its way in by the keyboard.
+- **The actions on an observation, a cause, a solution and an experiment**
+  (ADR-0032 §7). Each is a button named by its short label, with the full
+  sentence — what it does, and what it is refused for — as its description:
+  the tooltip, which opens on keyboard focus as it does on hover, and the
+  button's title while it is closed. The row is a group named for the record.
+  Unlinking is a button named by the whole sentence it says. Below 560 pixels
+  the merge, archive and delete move into a `⋯` menu that is a named button
+  in the Tab order. A refusal to make a root cause, or a cause again, is an
+  alert that names the records in the way.
 
 ## Reflow and zoom
 

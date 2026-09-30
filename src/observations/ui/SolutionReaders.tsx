@@ -41,7 +41,7 @@ import { DocumentSheet } from '../../documentation/ui/DocumentSheet'
 import { DocumentSource } from '../../documentation/ui/DocumentSource'
 import type { DocumentImages } from '../../documentation/ui/DocumentSource'
 import {
-  SOLUTION_SIZES, experimentMovesFrom, formatExperimentNumber, formatSolutionNumber, isConcluded, mayAddress,
+  SOLUTION_SIZES, experimentMovesFrom, formatExperimentNumber, formatSolutionNumber, mayAddress,
   mayPlanExperiment, previousState,
 } from '../solution'
 import type {
@@ -52,9 +52,9 @@ import type { CauseStrength } from '../observation'
 import {
   GATE_HINT, GATE_LABEL, OUTCOME_COLOR, OUTCOME_LABEL, PHASE_COLOR, PHASE_LABEL, QUESTION_LABEL, SIZE_LABEL, STRENGTH_LABEL,
 } from '../observationScope'
-import { LinkList, OverflowActions, READER_ROOT_SX, TITLE_SX, Term, Value, WIDE_ONLY_SX, useDraft } from './Readers'
-import type { Mode } from './Readers'
-import type { MenuAction } from './PictureMenu'
+import { BAR_SX, LinkList, READER_ROOT_SX, TITLE_SX, Term, Value, useDraft } from './Readers'
+import { ReaderActions } from './ActionButton'
+import { deleteAction, experimentMoveButtons, modeAction, restoreAction, solutionActions } from './readerActions'
 import { experimentMoveLabel } from './ObservationLifecycle'
 
 function Section({ title, children, testId }: { title: string; children: ReactNode; testId?: string }) {
@@ -147,10 +147,14 @@ export function SolutionReader(props: SolutionReaderProps) {
   const back = props.mayGoBack ? previousState(solution.state) : undefined
   const { language } = useStrings()
   const day = (date: string) => formatDay(date, language)
-  const occasional: MenuAction[] = canEdit ? [
-    ...(solution.state !== 'adopted' ? [{ key: 'drop', label: s('solution.drop'), onClick: props.onDrop }] : []),
-    { key: 'delete', label: s('observation.delete'), divider: true, danger: true, onClick: props.onDelete },
-  ] : []
+  const actions = [
+    ...solutionActions({
+      s, canEdit, mayAddress: mayAddress(solution), mayPlan: mayPlanExperiment(solution), mayDrop: solution.state !== 'adopted',
+      onAddress: props.onAddress, onPlanExperiment: props.onPlanExperiment, onDrop: props.onDrop, onDelete: props.onDelete,
+    }),
+    ...(canEdit ? [modeAction(mode, switchMode, s('solution.tipEdit'), s)] : []),
+    ...(dropped && !readOnly ? [restoreAction(s('solution.tipRestore'), props.onRestore, 'solution-restore', s)] : []),
+  ]
 
   const [name, setName] = useState('')
   const [attempt, setAttempt] = useState<EarlierAttempt>({ when: '', what: '', why: '' })
@@ -180,25 +184,12 @@ export function SolutionReader(props: SolutionReaderProps) {
 
   return (
     <Box data-testid="solution-reader" sx={READER_ROOT_SX}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 0.75, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flexWrap: 'wrap' }}>
-        <Chip size="small" color={PHASE_COLOR[phase]} label={s(PHASE_LABEL[phase])} data-testid="solution-phase" />
-        <Box sx={{ flex: 1 }} />
-        {canEdit && (
-          <>
-            {mayAddress(solution) && <Button size="small" variant="outlined" onClick={props.onAddress} data-testid="solution-address">{s('solution.addressCause')}</Button>}
-            {mayPlanExperiment(solution) && <Button size="small" variant="outlined" onClick={props.onPlanExperiment} data-guide="solution.planExperiment">{s('solution.planExperiment')}</Button>}
-            {solution.state !== 'adopted' && <Button size="small" onClick={props.onDrop} data-testid="solution-drop" sx={WIDE_ONLY_SX}>{s('solution.drop')}</Button>}
-            <Button size="small" color="error" onClick={props.onDelete} sx={WIDE_ONLY_SX}>{s('observation.delete')}</Button>
-            <OverflowActions actions={occasional} label={s('observation.more')} />
-          </>
-        )}
-        {dropped && !readOnly && (
-          <Button size="small" variant="outlined" onClick={props.onRestore} data-testid="solution-restore">{s('solution.restore')}</Button>
-        )}
-        <ToggleButtonGroup exclusive size="small" value={mode} onChange={(_e, value: Mode | null) => switchMode(value)}>
-          <ToggleButton value="read">{s('observation.read')}</ToggleButton>
-          {canEdit && <ToggleButton value="edit">{s('observation.edit')}</ToggleButton>}
-        </ToggleButtonGroup>
+      <Box sx={BAR_SX}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+          <Chip size="small" variant="outlined" label={label} sx={{ fontFamily: 'ui-monospace, Menlo, monospace' }} />
+          <Chip size="small" color={PHASE_COLOR[phase]} label={s(PHASE_LABEL[phase])} data-testid="solution-phase" />
+        </Box>
+        {actions.length > 0 && <ReaderActions actions={actions} label={s('observation.actions', { name: label })} moreLabel={s('observation.more')} />}
       </Box>
 
       <Box sx={{ display: 'grid', gridTemplateColumns: mode === 'edit' && showPreview ? 'minmax(0, 1fr) minmax(0, 1fr)' : 'minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
@@ -255,7 +246,7 @@ export function SolutionReader(props: SolutionReaderProps) {
                         key: one.id,
                         label: one.label,
                         note: `${s(STRENGTH_LABEL[one.strength]).toLowerCase()}${one.root ? ` · ${s('observation.rootCause').toLowerCase()}` : ''}`,
-                        ...(canEdit ? { onRemove: () => props.onUnaddress(one.id), removeLabel: s('observation.unlink') } : {}),
+                        ...(canEdit ? { onRemove: () => props.onUnaddress(one.id), removeLabel: s('solution.tipUnaddress', { from: label, to: one.label }) } : {}),
                       }))}
                     />
                   )}
@@ -531,43 +522,34 @@ export function ExperimentReader(props: ExperimentReaderProps) {
     />
   )
   const shown = (value: string | undefined) => (value ? value : <Muted>—</Muted>)
+  const label = formatExperimentNumber(experiment.number)
   const { language } = useStrings()
   const shownDay = (value: string | undefined) => (value ? formatDay(value, language) : <Muted>—</Muted>)
 
   return (
     <Box data-testid="experiment-reader" sx={READER_ROOT_SX}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 0.75, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flexWrap: 'wrap' }}>
-        <Chip size="small" color={OUTCOME_COLOR[experiment.outcome]} label={s(OUTCOME_LABEL[experiment.outcome])} data-testid="experiment-outcome" />
-        <Box sx={{ flex: 1 }} />
+      <Box sx={BAR_SX}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+          <Chip size="small" variant="outlined" label={label} sx={{ fontFamily: 'ui-monospace, Menlo, monospace' }} />
+          <Chip size="small" color={OUTCOME_COLOR[experiment.outcome]} label={s(OUTCOME_LABEL[experiment.outcome])} data-testid="experiment-outcome" />
+        </Box>
         {canEdit && (
-          <>
+          <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', alignItems: 'center' }}>
             {/* The moves from here, and only those: planned starts, running
                 goes back or is concluded, a concluded one is reopened. */}
-            <Box role="group" aria-label={s('solution.experimentMoves')} sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-              {experimentMovesFrom(experiment.outcome).map((to) => (
-                <Button
-                  key={to}
-                  size="small"
-                  variant={isConcluded(to) || (to === 'running' && experiment.outcome === 'planned') ? 'outlined' : 'text'}
-                  color={to === 'confirmed' ? 'success' : to === 'refuted' ? 'error' : 'primary'}
-                  onClick={() => props.onMove(to)}
-                  data-testid={`experiment-outcome-${to}`}
-                >
-                  {experimentMoveLabel(experiment.outcome, to, s)}
-                </Button>
-              ))}
-            </Box>
-            <Button size="small" color="error" onClick={props.onDelete} sx={WIDE_ONLY_SX}>{s('observation.delete')}</Button>
-            <OverflowActions
-              actions={[{ key: 'delete', label: s('observation.delete'), danger: true, onClick: props.onDelete }]}
-              label={s('observation.more')}
+            <ReaderActions
+              label={s('solution.experimentMoves')} moreLabel={s('observation.more')}
+              actions={experimentMoveButtons({
+                s, from: experiment.outcome, moves: experimentMovesFrom(experiment.outcome),
+                label: (to) => experimentMoveLabel(experiment.outcome, to, s), onMove: props.onMove,
+              })}
             />
-          </>
+            <ReaderActions
+              label={s('observation.actions', { name: label })} moreLabel={s('observation.more')}
+              actions={[modeAction(mode, switchMode, s('solution.tipExperimentEdit'), s), deleteAction(s('solution.tipDeleteExperiment'), props.onDelete, s)]}
+            />
+          </Box>
         )}
-        <ToggleButtonGroup exclusive size="small" value={mode} onChange={(_e, value: Mode | null) => switchMode(value)}>
-          <ToggleButton value="read">{s('observation.read')}</ToggleButton>
-          {canEdit && <ToggleButton value="edit">{s('observation.edit')}</ToggleButton>}
-        </ToggleButtonGroup>
       </Box>
 
       <Box sx={{ display: 'grid', gridTemplateColumns: mode === 'edit' && showPreview ? 'minmax(0, 1fr) minmax(0, 1fr)' : 'minmax(0, 1fr)', flex: 1, minHeight: 0 }}>

@@ -167,6 +167,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   [['the observations, one of them read', [
     'observations.tabRegister', 'observations.tabAnalysis', 'observations.tabSolutions', 'observations.register',
     'observations.row', 'observations.new', 'observations.newCause', 'observation.seenAgain', 'observation.merge',
+    'observation.cause',
   ], async () => {
     const dialog = await page('Observations')
     fireEvent.click((await within(dialog).findAllByTestId(/^observation-row-/))[0])

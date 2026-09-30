@@ -162,7 +162,7 @@ describe('ObservationsPage', () => {
     const closed = lastChange(onChange).observations[1]
     expect(closed.archived).toBe(true)
     expect(closed.history.at(-1)).toEqual({ date: '2026-09-20', kind: 'archived', note: 'Release checklist fixed' })
-    await waitFor(() => expect(screen.queryByRole('button', { name: 'Archive', hidden: true })).toBeNull())
+    await waitForElementToBeRemoved(() => screen.queryByLabelText('Why (optional)'))
 
     // The page is handed the closed record back, as the workspace would.
     cleanup()
@@ -192,7 +192,7 @@ describe('ObservationsPage', () => {
   it('links an observation to a new cause with a strength, and lands on the cause', () => {
     const { onChange } = mount()
     fireEvent.click(screen.getByTestId('observation-row-o2'))
-    fireEvent.click(screen.getByRole('button', { name: 'Link to a cause…' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Cause' }))
     fireEvent.change(screen.getByLabelText('Name the cause'), { target: { value: 'Two teams own one rule' } })
     fireEvent.click(screen.getByRole('button', { name: 'Link' }))
     const next = lastChange(onChange)
@@ -203,7 +203,7 @@ describe('ObservationsPage', () => {
   it('merges one observation into another, and the page says where it went', () => {
     const { onChange, rerender } = mount()
     fireEvent.click(screen.getByTestId('observation-row-o2'))
-    fireEvent.click(screen.getByRole('button', { name: 'Merge into…' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Merge' }))
     fireEvent.mouseDown(screen.getByLabelText('The observation it is the same as'))
     fireEvent.click(screen.getByRole('option', { name: /OB-0001/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Merge' }))
@@ -231,22 +231,22 @@ describe('ObservationsPage', () => {
 
   it('reads an observation of a scope below, folds it in here, and opens its scope — it is explained there', async () => {
     // A closing dialog hides the page from role queries until its transition ends.
-    const dialogGone = (confirm: string) => waitFor(() => expect(screen.queryByRole('button', { name: confirm, hidden: true })).toBeNull())
+    const dialogGone = () => waitFor(() => expect(screen.queryAllByLabelText('The observation it is the same as')).toHaveLength(0))
     const { onChange, onOpenScope } = mount()
     fireEvent.click(screen.getByTestId('observation-row-acme/claims/intake#in1'))
-    expect(screen.getByTestId('observation-from-below').textContent).toContain('local to Intake')
+    expect(screen.getByTestId('observation-from-below').textContent).toContain('Local to Intake')
+    // Nothing below may be written here, so nothing is added to it: it is merged here, and changed there.
     expect(screen.queryByTestId('observation-seen-again')).toBeNull()
-    // A cause here explains the causes below, never their observations (ADR-0032 §4).
-    expect(screen.queryByRole('button', { name: 'Link to a cause…' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Cause' })).toBeNull()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Merge into…' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Merge' }))
     fireEvent.mouseDown(screen.getByLabelText('The observation it is the same as'))
     fireEvent.click(screen.getByRole('option', { name: /OB-0001/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Merge' }))
     const next = lastChange(onChange)
     expect(next.observations).toHaveLength(2)
     expect(next.observations[0].history.at(-1)).toEqual({ date: '2026-09-20', kind: 'absorbed', id: 'in1', scope: 'acme/claims/intake', seen: 2 })
-    await dialogGone('Merge')
+    await dialogGone()
 
     fireEvent.click(screen.getByTestId('observation-row-acme/claims/intake#in1'))
     fireEvent.click(screen.getByRole('button', { name: 'Open Intake' }))
@@ -278,7 +278,11 @@ describe('ObservationsPage', () => {
     fireEvent.click(within(screen.getByTestId('cause-list')).getByText('CA-0001 Window sized for 2019'))
     // Explained by nothing is not a root: nobody has said so yet.
     expect(screen.queryByTestId('cause-root')).toBeNull()
+    // Making it one is asked first, saying what it becomes.
     fireEvent.click(screen.getByTestId('cause-root-toggle'))
+    expect(onChange).not.toHaveBeenCalled()
+    expect(screen.getByTestId('cause-root-ask').textContent).toContain('Make CA-0001 a root cause? It becomes RC-0001.')
+    fireEvent.click(screen.getByTestId('cause-root-ask-confirm'))
     expect(lastChange(onChange).causes[0].root).toBe(true)
     onChange.mockClear()
     // Its body says why, but not how it was verified: the page asks what confirmed it.
@@ -290,7 +294,7 @@ describe('ObservationsPage', () => {
     expect(lastChange(onChange).causes[0].body).toContain('2026-09-20: The June run log')
     // The dialog fades out; until it is gone the page behind it is hidden from role queries.
     await waitForElementToBeRemoved(() => screen.queryByTestId('verify-answer'))
-    fireEvent.click(screen.getByRole('button', { name: 'Link to a deeper cause…' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Deeper cause' }))
     fireEvent.change(screen.getByLabelText('Name the cause'), { target: { value: 'No capacity planning' } })
     fireEvent.click(screen.getByRole('button', { name: 'Link' }))
     const next = lastChange(onChange)
@@ -307,15 +311,17 @@ describe('ObservationsPage', () => {
       validatedWith: [], attempts: [], body: '', history: [],
     }] } })
     fireEvent.click(within(screen.getByTestId('cause-list')).getByText('CA-0001 Window sized for 2019'))
-    const toRoot = screen.getByTestId('cause-root-toggle') as HTMLButtonElement
-    expect(toRoot.textContent).toBe('Make root cause')
-    expect(toRoot.disabled).toBe(true)
-    expect(toRoot.parentElement?.getAttribute('aria-label')).toContain('CA-0002 No capacity planning explains it')
+    fireEvent.click(screen.getByRole('button', { name: 'Make root' }))
+    // The refusal names the cause in the way, and how to put it right.
+    const refused = screen.getByRole('alert')
+    expect(refused.textContent).toContain('CA-0001 can’t become a root cause while a cause explains it.')
+    expect(refused.textContent).toContain('CA-0002 No capacity planning explains it. Unlink that, or make that one the root cause instead.')
+    expect(within(refused).queryByRole('button', { name: 'Make root cause' })).toBeNull()
+    fireEvent.click(within(refused).getByRole('button', { name: 'OK' }))
+    expect(screen.queryByRole('alert')).toBeNull()
     fireEvent.click(within(screen.getByTestId('cause-list')).getByText('RC-0003 Nobody owns the batch'))
-    const toCause = screen.getByTestId('cause-root-toggle') as HTMLButtonElement
-    expect(toCause.textContent).toBe('Make cause')
-    expect(toCause.disabled).toBe(true)
-    expect(toCause.parentElement?.getAttribute('aria-label')).toContain('SO-0001 Give the batch an owner addresses it')
+    fireEvent.click(screen.getByRole('button', { name: 'Make cause' }))
+    expect(screen.getByRole('alert').textContent).toContain('SO-0001 Give the batch an owner addresses it')
     expect(onChange).not.toHaveBeenCalled()
   })
 
@@ -380,8 +386,9 @@ describe('the analysis picture’s right-click, and editing across the whole wid
     fireEvent.click(screen.getByTestId('observation-tab-analysis'))
     rightClick(screen.getByTestId('analysis-picture').querySelector('[data-key="c1"]')!)
     const menu = screen.getByTestId('picture-menu')
+    // A root cause ends the chain, so nothing deeper is offered on it.
     expect(within(menu).getAllByRole('menuitem').map((item) => item.textContent)).toEqual([
-      'Edit', 'Mark verified', 'Make cause', 'Link to a deeper cause…', 'Propose a solution…', 'Delete',
+      'Edit', 'Mark verified', 'Make cause', 'Propose a solution…', 'Delete',
     ])
     fireEvent.click(screen.getByTestId('picture-menu-edit'))
     expect(screen.getByTestId('observation-body').dataset.editing).toBe('true')
@@ -397,7 +404,7 @@ describe('the analysis picture’s right-click, and editing across the whole wid
     fireEvent.click(screen.getByTestId('observation-tab-analysis'))
     rightClick(screen.getByTestId('analysis-picture').querySelector('[data-key="c1"]')!)
     fireEvent.click(screen.getByTestId('picture-menu-edit'))
-    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Window sized for 2019 volumes' } })
+    fireEvent.change(screen.getByRole('textbox', { name: 'Title' }), { target: { value: 'Window sized for 2019 volumes' } })
     fireEvent.click(screen.getByTestId('observation-tab-register'))
     expect(lastChange(onChange).causes[0].title).toBe('Window sized for 2019 volumes')
     expect(screen.getByTestId('observation-body').dataset.editing).toBeUndefined()

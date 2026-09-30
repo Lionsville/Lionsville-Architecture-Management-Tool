@@ -65,10 +65,10 @@ import {
   absorbedBy, absorbFromBelow, causeLabel, explainedBy, formatObservationNumber, isArchived, isMerged,
   isRootCause, linkCause, liveObservations, mergeObservations, newCause, newObservation, nextCauseNumber,
   nextObservationNumber, observationsBelow, removeCause, removeObservation, setArchived, sortCauses, sortObservations,
-  unlinkCause, updateCause, updateObservation,
+  unlinkCause, updateCause,
 } from '../observation'
 import type {
-  Analysis, Cause, CauseAbove, CauseLink, CausePatch, Observation, ObservationBelow, ObservationPatch, ScopeAnalysis,
+  Analysis, Cause, CauseAbove, CauseLink, CausePatch, Observation, ObservationBelow, ScopeAnalysis,
 } from '../observation'
 import { nodeKey } from '../graph'
 import { IMPACT_COLOR, IMPACT_LABEL, STATE_COLOR, STATE_LABEL, STRENGTH_LABEL } from '../observationScope'
@@ -77,24 +77,22 @@ import { ArchiveDialog, LinkDialog, MergeDialog, NewCauseDialog, NewObservationD
 import { EmptyRegister, crumbTrail, experimentMoveActions, preselectedCause, rootToggle, useLifecycle } from './ObservationLifecycle'
 import { PictureMenu } from './PictureMenu'
 import type { MenuAction, PictureTarget } from './PictureMenu'
-import { CauseReader, MergedNote, ObservationReader, ReaderModeContext } from './Readers'
+import { MergedNote, ReaderModeContext } from './Readers'
 import type { MergedInto } from './Readers'
+import { RecordReader } from './PageReaders'
+import type { DeleteKind, Selected } from './PageReaders'
+import type { LinkTarget } from './readerActions'
 import {
-  addressCause, alternatives, defaultStrength, dropSolution, experimentsFor,
-  forgetCause, formatExperimentNumber, formatSolutionNumber, implementedOn, isLive, mayAddress,
-  mayPlanExperiment, moveSolution, newExperiment, newSolution, nextExperimentNumber, nextSolutionNumber, planExperiment,
-  removeExperiment, removeSolution, restoreSolution, setTestStrength, openItems, previousState,
+  addressCause, defaultStrength, dropSolution, forgetCause, formatExperimentNumber, formatSolutionNumber, isLive,
+  mayAddress, mayPlanExperiment, moveSolution, newExperiment, newSolution, nextExperimentNumber, nextSolutionNumber,
+  planExperiment, removeExperiment, removeSolution, restoreSolution, setTestStrength, openItems, previousState,
   rootsWithoutSolution, seenSinceImplemented, solutionGate, solutionPhase, solutionPlanOf, solutionQuestions,
-  unaddressCause, underneath, untestSolution, updateExperiment, updateSolution, waiveExperiment,
+  unaddressCause, untestSolution,
 } from '../solution'
-import type {
-  Experiment, ExperimentPatch, Solution, SolutionContext, SolutionPatch, SolutionPhase,
-  SolutionPlan, SolutionState, SolutionWork,
-} from '../solution'
+import type { Solution, SolutionContext, SolutionPhase, SolutionPlan, SolutionState, SolutionWork } from '../solution'
 import { causesForProposal, experimentKey, solutionGraph, solutionKey } from '../solutionGraph'
 import { OUTCOME_COLOR, OUTCOME_LABEL, PHASE_COLOR, PHASE_LABEL, QUESTION_LABEL } from '../observationScope'
 import { SolutionLegend, SolutionPicture } from './SolutionPicture'
-import { ExperimentReader, SolutionReader } from './SolutionReaders'
 import { AddressDialog, DropDialog, NewExperimentDialog, NewSolutionDialog } from './SolutionDialogs'
 
 /** Everything the page hands back: the analysis and what is being done about it. */
@@ -114,14 +112,6 @@ export type ChangeBelow = (
 export type ChangedBelow =
   | { ok: true }
   | { ok: false; reason: CommandRefusal | 'readOnly' | 'gone' | 'unchanged' }
-
-const ADR_STATUS_KEY = {
-  proposed: 'adr.statusProposed', reviewing: 'adr.statusReviewing', accepted: 'adr.statusAccepted',
-  rejected: 'adr.statusRejected', superseded: 'adr.statusSuperseded',
-} as const
-const PLAN_STATUS_KEY = {
-  draft: 'plan.draft', agreed: 'plan.agreed', running: 'plan.running', done: 'plan.done', abandoned: 'plan.abandoned',
-} as const
 
 const label4 = (prefix: string, number: number) => `${prefix}-${String(Math.max(0, Math.trunc(number))).padStart(4, '0')}`
 
@@ -217,10 +207,9 @@ const DELETE_BODY = {
  * apart by. One shared from below keeps its key, which names its scope;
  * a key that names nothing any more is nothing on show.
  */
-function recordIdOf(
-  selected: { solution?: { id: string }; experiment?: { id: string } } | undefined, key: string | undefined,
-): string | undefined {
-  return selected && (selected.solution?.id ?? selected.experiment?.id ?? key)
+function recordIdOf(selected: Selected | undefined, key: string | undefined): string | undefined {
+  if (!selected) return undefined
+  return selected.kind === 'solution' ? selected.solution.id : selected.kind === 'experiment' ? selected.experiment.id : key
 }
 
 /**
@@ -341,8 +330,9 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const [creatingCause, setCreatingCause] = useState(false)
   /** What is being merged away: one of this scope's, or one of a scope below. */
   const [merging, setMerging] = useState<{ observation: Observation; scope?: string } | undefined>(undefined)
-  const [linking, setLinking] = useState<{ key: string; label: string; link: Omit<CauseLink, 'strength'> } | undefined>(undefined)
-  const [deleting, setDeleting] = useState<{ kind: 'observation' | 'cause' | 'solution' | 'experiment'; id: string; label: string } | undefined>(undefined)
+  /** What a cause is being linked to; a root cause is asked for by `root`, and a new one is made one. */
+  const [linking, setLinking] = useState<{ key: string; label: string; link: Omit<CauseLink, 'strength'>; root?: boolean } | undefined>(undefined)
+  const [deleting, setDeleting] = useState<{ kind: DeleteKind; id: string; label: string } | undefined>(undefined)
 
   // --- what is where ------------------------------------------------------------------
 
@@ -387,8 +377,9 @@ export function ObservationsPage(props: ObservationsPageProps) {
     return plan ? `${label4('TR', plan.number)} ${plan.title}` : id
   }, [below, belowAll, observations, causes, solutions, experiments, model.decisions, model.transitions, scopeLabel])
 
+  const causesBelow = useMemo(() => below.flatMap(({ scope, causes: list }) => list.map((cause) => ({ scope, cause }))), [below])
   /** What a key names: the reader it opens and the menu it gets are both read off this. */
-  const resolve = useCallback((key: string) => {
+  const resolve = useCallback((key: string): Selected | undefined => {
     const solution = solutions.find((one) => solutionKey(one.id) === key)
     if (solution) return { kind: 'solution' as const, solution }
     const experiment = experiments.find((one) => experimentKey(one.id) === key)
@@ -398,8 +389,10 @@ export function ObservationsPage(props: ObservationsPageProps) {
     const own = observations.find((one) => one.id === key)
     if (own) return { kind: 'observation' as const, observation: own }
     const fromBelow = belowAll.find((one) => nodeKey(one.observation.id, one.scope) === key)
-    return fromBelow ? { kind: 'below' as const, ...fromBelow } : undefined
-  }, [causes, observations, belowAll, solutions, experiments])
+    if (fromBelow) return { kind: 'below' as const, ...fromBelow }
+    const causeBelow = causesBelow.find((one) => nodeKey(one.cause.id, one.scope) === key)
+    return causeBelow ? { kind: 'causeBelow' as const, ...causeBelow } : undefined
+  }, [causes, observations, belowAll, causesBelow, solutions, experiments])
   const selected = useMemo(() => (selectedKey ? resolve(selectedKey) : undefined), [selectedKey, resolve])
   const editing = selected !== undefined && editingKey !== undefined && editingKey === selectedKey
   const readerMode = useMemo(() => ({
@@ -420,7 +413,8 @@ export function ObservationsPage(props: ObservationsPageProps) {
     if (!readOnly) onChange({ ...work, ...next })
   }, [onChange, readOnly, work])
   /** Seen again, verified, an experiment concluded or reopened: the moves that ask first. */
-  const { seeAgain, verify, moveExperiment, dialogs } = useLifecycle({ lists: work, commit, today, nameOf, s })
+  const lifecycle = useLifecycle({ lists: work, commit, today, nameOf, s })
+  const { seeAgain, verify, moveExperiment, dialogs } = lifecycle
 
   const create = (fields: { title: string; where: string; by: string; impact: Observation['impact'] }) => {
     const fresh = newObservation({
@@ -430,14 +424,13 @@ export function ObservationsPage(props: ObservationsPageProps) {
     setCreating(false)
     setSelectedKey(fresh.id)
   }
-  const createCause = (title: string): Cause => newCause({ id: makeId('ca'), number: nextCauseNumber(causes), title, t: s })
+  const createCause = (title: string, root?: boolean): Cause => newCause({ id: makeId('ca'), number: nextCauseNumber(causes), title, t: s, root })
   const addCause = (title: string) => {
     const fresh = createCause(title)
     commit({ observations: [...observations], causes: [...causes, fresh] })
     setCreatingCause(false)
     setSelectedKey(fresh.id)
   }
-  const patchObservation = (id: string, patch: ObservationPatch) => commit({ ...analysis, observations: updateObservation(observations, id, patch) })
   const patchCause = (id: string, patch: CausePatch) => commit({ ...analysis, causes: updateCause(causes, id, patch) })
   const rootOf = (cause: Cause) => rootToggle(cause, {
     lists: work, above: props.explainedAbove?.get(cause.id), commit, nameOf, scopeLabel, s, readOnly,
@@ -462,7 +455,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
     let list = [...causes]
     let causeId = choice.causeId
     if (!causeId) {
-      const fresh = createCause(choice.newTitle ?? '')
+      const fresh = createCause(choice.newTitle ?? '', linking.root)
       list = [...list, fresh]
       causeId = fresh.id
     }
@@ -496,7 +489,6 @@ export function ObservationsPage(props: ObservationsPageProps) {
     setTab('solutions')
     setSelectedKey(solutionKey(fresh.id))
   }
-  const patchSolution = (id: string, patch: SolutionPatch) => commit({ solutions: updateSolution(solutions, id, patch) })
   const move = (id: string, to: SolutionState) => {
     const result = moveSolution(solutions, id, to, today(), context)
     if (result.ok) commit({ solutions: result.solutions })
@@ -509,10 +501,8 @@ export function ObservationsPage(props: ObservationsPageProps) {
     setPlanning(undefined)
     setSelectedKey(experimentKey(fresh.id))
   }
-  const patchExperiment = (id: string, patch: ExperimentPatch) => commit({ experiments: updateExperiment(experiments, id, patch) })
 
   const phaseOf = (one: Solution): SolutionPhase => solutionPhase(one, plans)
-  const solutionsFor = (causeId: string) => solutions.filter((one) => one.addresses.some((address) => address.id === causeId))
   const orphanRoots = rootsWithoutSolution(causes, solutions)
 
   // --- the register --------------------------------------------------------------------
@@ -757,7 +747,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
             onClick: () => (one.state === 'assumed' ? verify(one) : patchCause(one.id, { state: 'assumed' })),
           },
           rootOf(one).action,
-          { key: 'link-deeper', label: s('observation.linkDeeper'), onClick: () => setLinking({ key: one.id, label: nameOf(one.id), link: { id: one.id } }) },
+          ...(isRootCause(one) ? [] : [{ key: 'link-deeper', label: s('observation.linkDeeper'), onClick: () => setLinking({ key: one.id, label: nameOf(one.id), link: { id: one.id } }) }]),
           ...(isRootCause(one) ? [{ key: 'propose', label: s('solution.proposeForCause'), onClick: () => setProposing({ causeId: one.id }) }] : []),
           remove('cause', one.id),
         ]
@@ -788,6 +778,8 @@ export function ObservationsPage(props: ObservationsPageProps) {
         const one = held.experiment
         return [edit, ...experimentMoveActions(one, s, (to) => moveExperiment(one, to)), remove('experiment', one.id)]
       }
+      case 'causeBelow':
+        return []
     }
   }
 
@@ -869,140 +861,29 @@ export function ObservationsPage(props: ObservationsPageProps) {
   // --- the reading pane ---------------------------------------------------------------------
 
   const openKey = (key: string) => setSelectedKey(key)
-  const solutionReader = (one: Solution) => {
-    const phase = phaseOf(one)
-    const since = implementedOn(one, plans)
-    const seenAgain = seenSinceImplemented(one, analysis, belowAll, plans)
-    const decision = model.decisions?.find((held) => held.id === one.decision)
-    const plan = model.transitions?.find((held) => held.id === one.plan)
-    return (
-      <SolutionReader
-        key={one.id}
-        solution={one}
-        phase={phase}
-        gate={solutionGate(one, context)}
-        mayGoBack={!(one.state === 'adopted' && decision?.status === 'accepted')}
-        {...(one.state === 'adopted' && decision?.status === 'accepted' ? { reopenBy: label4('ADR', decision.number) } : {})}
-        questions={solutionQuestions(one, context)}
-        addresses={one.addresses.map((address) => {
-          const cause = causes.find((held) => held.id === address.id)
-          return { id: address.id, label: nameOf(address.id), strength: address.strength, root: cause ? isRootCause(cause) : false }
-        })}
-        experiments={experimentsFor(experiments, one.id).map((held) => ({ key: experimentKey(held.id), label: nameOf(held.id), outcome: held.outcome }))}
-        alternatives={alternatives(one, solutions).map((held) => ({ key: solutionKey(held.id), label: nameOf(held.id), phase: phaseOf(held) }))}
-        {...(decision ? { decision: { label: nameOf(decision.id), status: s(ADR_STATUS_KEY[decision.status]).toLowerCase() } } : {})}
-        {...(plan ? { plan: { label: nameOf(plan.id), status: s(PLAN_STATUS_KEY[plan.status]).toLowerCase() } } : {})}
-        {...(since ? {
-          implemented: {
-            since,
-            observations: underneath(one, analysis).map((held) => ({
-              key: nodeKey(held.id, held.scope),
-              label: nameOf(held.id, held.scope),
-              ...(() => {
-                const seenOn = seenAgain.find((again) => again.id === held.id && again.scope === held.scope)?.date
-                return seenOn ? { seenOn } : {}
-              })(),
-            })),
-          },
-        } : {})}
-        readOnly={readOnly}
-        s={s}
-        renderMarkdown={props.renderMarkdown}
-        nameOf={(id) => nameOf(id)}
-        onUpdate={(patch) => patchSolution(one.id, patch)}
-        onMove={(to) => move(one.id, to)}
-        onWaive={(reason) => commit({ solutions: waiveExperiment(solutions, one.id, reason, today()) })}
-        onAddress={() => setAddressing(one)}
-        onUnaddress={(causeId) => commit({ solutions: unaddressCause(solutions, one.id, causeId) })}
-        onPlanExperiment={() => setPlanning(one)}
-        {...(props.onDecide ? { onDecide: () => props.onDecide?.(one.id) } : {})}
-        {...(props.onStartPlan ? { onStartPlan: () => props.onStartPlan?.(one.id) } : {})}
-        {...(decision && props.onOpenDecision ? { onOpenDecision: () => props.onOpenDecision?.(decision.id) } : {})}
-        {...(plan && props.onOpenPlan ? { onOpenPlan: () => props.onOpenPlan?.(plan.id) } : {})}
-        onDrop={() => setDropping(one)}
-        onRestore={() => commit({ solutions: restoreSolution(solutions, one.id, today()) })}
-        onDelete={() => setDeleting({ kind: 'solution', id: one.id, label: nameOf(one.id) })}
-        onOpen={openKey}
-        onAddImage={props.onAddImage}
-        images={props.images}
-      />
-    )
-  }
-  const experimentReader = (one: Experiment) => (
-    <ExperimentReader
-      key={one.id}
-      experiment={one}
-      tests={one.tests.map((id) => ({ key: solutionKey(id), label: nameOf(id) }))}
-      readOnly={readOnly}
-      s={s}
-      renderMarkdown={props.renderMarkdown}
-      onUpdate={(patch) => patchExperiment(one.id, patch)}
-      onMove={(to) => moveExperiment(one, to)}
-      onDelete={() => setDeleting({ kind: 'experiment', id: one.id, label: nameOf(one.id) })}
-      onOpen={openKey}
-      onAddImage={props.onAddImage}
-      images={props.images}
-    />
-  )
-
-  const reader = !selected ? (
-    <Box sx={{ p: 5, color: 'text.secondary' }}><Typography>{s('observation.noneSelected')}</Typography></Box>
-  ) : selected.kind === 'solution' ? solutionReader(selected.solution)
-    : selected.kind === 'experiment' ? experimentReader(selected.experiment)
-    : selected.kind === 'cause' ? (
-    <CauseReader
-      key={selected.cause.id}
-      cause={selected.cause}
-      causes={causes}
-      readOnly={readOnly}
-      s={s}
-      renderMarkdown={props.renderMarkdown}
-      nameOf={nameOf}
-      onUpdate={(patch) => patchCause(selected.cause.id, patch)}
-      onVerify={() => verify(selected.cause)}
-      {...rootOf(selected.cause).reader}
-      onLinkDeeper={() => setLinking({ key: selected.cause.id, label: nameOf(selected.cause.id), link: { id: selected.cause.id } })}
-      onUnlink={(target) => unlink(selected.cause.id, target)}
-      onUnlinkFrom={(causeId) => unlink(causeId, { id: selected.cause.id })}
-      onDelete={() => setDeleting({ kind: 'cause', id: selected.cause.id, label: nameOf(selected.cause.id) })}
-      onOpen={openKey}
-      solutions={solutionsFor(selected.cause.id).map((one) => ({
-        key: solutionKey(one.id), label: nameOf(one.id), note: s(PHASE_LABEL[phaseOf(one)]).toLowerCase(),
-      }))}
-      {...(readOnly || !isRootCause(selected.cause) ? {} : { onPropose: () => setProposing({ causeId: selected.cause.id }) })}
-      onAddImage={props.onAddImage}
-      images={props.images}
-    />
-  ) : (
-    <ObservationReader
-      key={selectedKey}
-      observation={selected.observation}
-      fromScope={selected.kind === 'below' ? { path: selected.scope, label: scopeLabel(selected.scope) } : undefined}
-      explainedBy={analysedInto(selected.observation.id, selected.kind === 'below' ? selected.scope : undefined)
-        .map((cause) => ({ cause, link: cause.explains.find((held) => held.id === selected.observation.id)! }))}
-      mergedInto={selected.kind === 'observation' ? mergedLabel(selected.observation) : undefined}
-      readOnly={readOnly}
-      s={s}
-      renderMarkdown={props.renderMarkdown}
-      nameOf={nameOf}
-      onUpdate={(patch) => patchObservation(selected.observation.id, patch)}
-      onSeenAgain={() => seeAgain(selected.observation)}
-      onArchive={() => setArchiving(selected.observation)}
-      onRestore={() => restore(selected.observation.id)}
-      onMerge={() => setMerging({ observation: selected.observation, ...(selected.kind === 'below' ? { scope: selected.scope } : {}) })}
-      onLink={() => setLinking({
-        key: selectedKey!,
-        label: nameOf(selected.observation.id),
-        link: { id: selected.observation.id },
-      })}
-      onUnlink={(causeId) => unlink(causeId, { id: selected.observation.id, ...(selected.kind === 'below' ? { scope: selected.scope } : {}) })}
-      onDelete={() => setDeleting({ kind: 'observation', id: selected.observation.id, label: nameOf(selected.observation.id) })}
-      onOpenScope={selected.kind === 'below' && props.onOpenScope
-        ? () => { onClose(); props.onOpenScope?.(selected.scope) }
-        : undefined}
-      onOpen={openKey}
-      onAddImage={props.onAddImage}
-      images={props.images}
+  const { onOpenScope } = props
+  /** A cause for a record here, a deeper one, or the root cause its chain ends in. */
+  const openLink = ({ mode, id }: LinkTarget) => setLinking({
+    key: id, label: nameOf(id), link: { id }, ...(mode === 'root' ? { root: true } : {}),
+  })
+  const reader = (
+    <RecordReader
+      selected={selected}
+      selectedKey={selectedKey}
+      ctx={{
+        work, below, plans, context, decisions: model.decisions ?? [], transitions: model.transitions ?? [],
+        ...(props.explainedAbove ? { explainedAbove: props.explainedAbove } : {}),
+        readOnly, today, scopeName: model.name, s, nameOf, scopeLabel, commit, forms: { openLink }, lifecycle,
+        ask: {
+          archive: setArchiving, merge: (observation, scope) => setMerging({ observation, ...(scope !== undefined ? { scope } : {}) }),
+          remove: (kind, id) => setDeleting({ kind, id, label: nameOf(id) }), propose: (causeId) => setProposing({ causeId }),
+          address: setAddressing, plan: setPlanning, drop: setDropping,
+        },
+        mergedLabel, openKey,
+        ...(onOpenScope ? { openScope: (path: string) => { onClose(); onOpenScope(path) } } : {}),
+        onDecide: props.onDecide, onStartPlan: props.onStartPlan, onOpenDecision: props.onOpenDecision, onOpenPlan: props.onOpenPlan,
+        renderMarkdown: props.renderMarkdown, onAddImage: props.onAddImage, images: props.images,
+      }}
     />
   )
 
@@ -1099,7 +980,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
         />
         <LinkDialog
           subject={linking ? { id: linking.key, label: linking.label } : undefined}
-          candidates={causes.filter((one) => one.id !== linking?.key)}
+          candidates={causes.filter((one) => one.id !== linking?.key && (linking?.root ? isRootCause(one) : true))}
           onCancel={() => setLinking(undefined)}
           onConfirm={link}
           s={s}

@@ -45,7 +45,7 @@ export const CONTROL_NAMES = [
   // The observations page: its three tabs, one observation, and the solutions.
   'observations.tabRegister', 'observations.tabAnalysis', 'observations.tabSolutions',
   'observations.register', 'observations.row', 'observations.picture', 'observations.new', 'observations.newCause',
-  'observation.seenAgain', 'observation.merge',
+  'observation.seenAgain', 'observation.merge', 'observation.cause',
   'solutions.new', 'solutions.phases', 'solution.planExperiment', 'solution.decide',
   // The decisions page, and one record. A record in the list and a move of
   // one record's status are each named on every one of them, as a row is.

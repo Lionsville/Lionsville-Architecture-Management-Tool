@@ -39,8 +39,11 @@ export type LifecycleLists = {
 }
 
 export type Lifecycle = {
-  /** Ask on which day it was seen again, and for a note. */
-  seeAgain: (observation: Observation) => void
+  /**
+   * Ask on which day it was seen again, and for a note. An observation of a
+   * scope below (`scope`) takes the sighting there, as that scope's step.
+   */
+  seeAgain: (observation: Observation, scope?: string) => void
   /** Verified straight away where the body holds the evidence; otherwise ask what confirmed it. */
   verify: (cause: Cause) => void
   /** Move an experiment as `experimentMovesFrom` allows, asking first where a move needs it. */
@@ -53,11 +56,13 @@ export function useLifecycle(args: {
   lists: LifecycleLists
   commit: (next: Partial<LifecycleLists>) => void
   today: () => string
-  nameOf: (id: string) => string
+  nameOf: (id: string, scope?: string) => string
   s: Translate
+  /** Land a change on a scope below, as that scope's step (ADR-0032 §2). */
+  changeBelow?: (scope: string, change: (lists: LifecycleLists) => LifecycleLists | undefined) => void
 }): Lifecycle {
   const { lists, commit, today, nameOf, s } = args
-  const [seeing, setSeeing] = useState<Observation | undefined>(undefined)
+  const [seeing, setSeeing] = useState<{ observation: Observation; scope?: string } | undefined>(undefined)
   const [verifying, setVerifying] = useState<Cause | undefined>(undefined)
   const [concluding, setConcluding] = useState<{ experiment: Experiment; outcome: ExperimentOutcome } | undefined>(undefined)
   const [reopening, setReopening] = useState<Experiment | undefined>(undefined)
@@ -82,12 +87,16 @@ export function useLifecycle(args: {
   const dialogs = (
     <>
       <SeenDialog
-        subject={seeing ? { id: seeing.id, label: nameOf(seeing.id), firstSeen: seeing.date } : undefined}
+        subject={seeing ? { id: seeing.observation.id, label: nameOf(seeing.observation.id, seeing.scope), firstSeen: seeing.observation.date } : undefined}
         today={today()}
         onCancel={() => setSeeing(undefined)}
         onConfirm={({ date, note }) => {
-          if (seeing) commit({ observations: seenAgain(lists.observations, seeing.id, date, note) })
+          const held = seeing
           setSeeing(undefined)
+          if (!held) return
+          const { id } = held.observation
+          if (held.scope === undefined) commit({ observations: seenAgain(lists.observations, id, date, note) })
+          else args.changeBelow?.(held.scope, (work) => ({ ...work, observations: seenAgain(work.observations, id, date, note) }))
         }}
         s={s}
       />
@@ -124,7 +133,7 @@ export function useLifecycle(args: {
       />
     </>
   )
-  return { seeAgain: setSeeing, verify, moveExperiment, dialogs }
+  return { seeAgain: (observation, scope) => setSeeing({ observation, ...(scope !== undefined ? { scope } : {}) }), verify, moveExperiment, dialogs }
 }
 
 /** What the conclude dialog is told: the id and the name, the outcome, and what the record already holds. */
@@ -158,6 +167,11 @@ export function rootToggle(cause: Cause, deps: {
   scopeLabel: (path: string) => string
   s: Translate
   readOnly: boolean
+  /**
+   * The step itself, where it is not this scope's: a cause of a scope below
+   * is made a root there, over its lists as they are when it lands.
+   */
+  apply?: () => void
 }): { action: MenuAction; reader: { onRoot?: () => void; rootRefused?: string } } {
   const { lists, commit, nameOf, s } = deps
   const change = isRootCause(cause)
@@ -171,7 +185,7 @@ export function rootToggle(cause: Cause, deps: {
       ].join(', '),
     })
     : s('observation.refusedRootAddressed', { names: change.solutions.map((one) => nameOf(one.id)).join(', ') })
-  const onRoot = () => { if (change.ok) commit({ causes: change.causes }) }
+  const onRoot = deps.apply ?? (() => { if (change.ok) commit({ causes: change.causes }) })
   return {
     action: {
       key: 'root', label: isRootCause(cause) ? s('observation.makeCause') : s('observation.makeRoot'),

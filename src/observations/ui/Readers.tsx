@@ -9,29 +9,27 @@
  * fields, not text, drawn above the body so it cannot drift from it. The body
  * is markdown through the same renderer as documentation. The history at the
  * end is the dated ledger: recorded, seen again, absorbed, merged, archived —
- * and shared, in a record from before nothing was shared (ADR-0032). An archived record reads, and offers Restore and nothing else:
- * closed is closed until somebody says otherwise.
+ * and shared, in a record from before nothing was shared (ADR-0032). An
+ * archived record reads, and offers Restore and nothing else: closed is closed
+ * until somebody says otherwise.
+ *
+ * The actions are buttons (ADR-0032 §7, `ActionButton`): an icon, a word or
+ * two, and a tooltip that says in full what each does. A record of a scope
+ * below says so in a strip, and what is added to it here is made there. Make
+ * root and Make cause ask first, and where the chain says otherwise the
+ * reader says why, naming the records in the way.
  *
  * Editing follows the decisions reader: a local draft, committed when it has
  * been quiet for a moment, when the mode switches back to read, and when the
  * pane closes or moves to another record.
- *
- * A reader reads its own width, not the window's: the pane is dragged narrow
- * beside a picture as often as it is wide beside the register. Below 560
- * pixels (a container query on the reader, so nothing is measured in script)
- * the title steps down a size and the actions that are not the record's
- * everyday ones move into a `⋯` menu, so the bar keeps to one row.
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
 import IconButton from '@mui/material/IconButton'
 import Link from '@mui/material/Link'
 import MenuItem from '@mui/material/MenuItem'
 import TextField from '@mui/material/TextField'
-import ToggleButton from '@mui/material/ToggleButton'
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n'
@@ -41,28 +39,29 @@ import type { MarkdownRenderOptions } from '../../documentation/documentation'
 import { DocumentSheet } from '../../documentation/ui/DocumentSheet'
 import { DocumentSource } from '../../documentation/ui/DocumentSource'
 import type { DocumentImages } from '../../documentation/ui/DocumentSource'
+import { ScopeIcon, UnlinkIcon } from '../../widgets/icons'
 import {
-  causeLabel, formatObservationNumber, isRootCause, OBSERVATION_IMPACTS,
+  causeLabel, formatCauseNumber, formatObservationNumber, isRootCause, OBSERVATION_IMPACTS,
 } from '../observation'
 import type {
   Cause, CauseLink, CausePatch, Observation, ObservationImpact, ObservationPatch,
 } from '../observation'
 import { EVENT_LABEL, IMPACT_COLOR, IMPACT_LABEL, STATE_COLOR, STATE_LABEL, STRENGTH_LABEL } from '../observationScope'
-import { PictureMenu } from './PictureMenu'
-import type { MenuAction } from './PictureMenu'
+import { COMPACT, ReaderActions, ReaderNotice } from './ActionButton'
+import {
+  causeActions, modeAction, observationActions, openScopeAction, restoreAction,
+} from './readerActions'
+import type { LinkMode, Mode } from './readerActions'
+
+export type { Mode } from './readerActions'
 
 /** How long the text must be quiet before a draft becomes a commit. */
 const COMMIT_DELAY_MS = 1200
 
-export type Mode = 'read' | 'edit'
-
 /** A name for whatever a link or an event points at, resolved by the page. */
 export type NameOf = (id: string, scope?: string) => string
 
-/** Below this the reader is compact: a query on the reader's own width. */
-const COMPACT = '@container reader (max-width: 559px)'
-
-/** The reader's outermost box: the container {@link COMPACT} measures. */
+/** The reader's outermost box: the container `COMPACT` measures. */
 export const READER_ROOT_SX = {
   display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%',
   containerType: 'inline-size', containerName: 'reader',
@@ -71,33 +70,22 @@ export const READER_ROOT_SX = {
 /** A record's title: a size smaller where the reader is narrow, so it does not take four lines. */
 export const TITLE_SX = { fontWeight: 600, lineHeight: 1.2, [COMPACT]: { fontSize: '1.5rem' } } as const
 
-/** An action that moves into the `⋯` menu where the reader is narrow. */
-export const WIDE_ONLY_SX = { [COMPACT]: { display: 'none' } } as const
+/** The bar over a record: what it is, then what can be done with it. */
+export const BAR_SX = {
+  display: 'grid', gap: 0.75, px: 2, py: 1, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper',
+} as const
 
 /**
- * The `⋯` a narrow reader gathers its occasional actions under: hidden while
- * the reader is wide, where each is a button of its own. The menu is the
- * pictures' right-click menu, so an action reads the same wherever it is met.
+ * The strip that says a record lives in a scope below (ADR-0032 §2): read
+ * here, and whatever is added to it here is made there.
  */
-export function OverflowActions({ actions, label }: { actions: readonly MenuAction[]; label: string }) {
-  const [at, setAt] = useState<{ x: number; y: number } | undefined>(undefined)
-  if (actions.length === 0) return null
+export function ScopeStrip({ text, action, testId }: { text: string; action?: ReactNode; testId: string }) {
   return (
-    <>
-      <IconButton
-        size="small"
-        aria-label={label}
-        data-testid="reader-more"
-        onClick={(event) => {
-          const box = event.currentTarget.getBoundingClientRect()
-          setAt({ x: box.left, y: box.bottom })
-        }}
-        sx={{ display: 'none', [COMPACT]: { display: 'inline-flex' } }}
-      >
-        <Box component="span" aria-hidden sx={{ display: 'inline-block', width: 18, textAlign: 'center', fontSize: 16, lineHeight: 1 }}>⋯</Box>
-      </IconButton>
-      <PictureMenu at={at} actions={actions} onClose={() => setAt(undefined)} />
-    </>
+    <Box data-testid={testId} sx={{ display: 'flex', alignItems: 'center', gap: 1, mx: 2, mt: 1, px: 1.25, py: 0.75, border: 1, borderColor: 'info.main', borderRadius: 1, bgcolor: 'action.hover' }}>
+      <Box component="span" aria-hidden sx={{ color: 'info.main', display: 'inline-flex' }}><ScopeIcon size={14} /></Box>
+      <Typography variant="caption" sx={{ flex: 1, fontSize: 12.5 }}>{text}</Typography>
+      {action}
+    </Box>
   )
 }
 
@@ -167,15 +155,18 @@ export function LinkList({ links, onOpen }: {
     <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
       {links.map((one) => (
         // The row wraps rather than squeezing: the label takes what is left and
-        // breaks, and the note and the button keep their own width, so a
-        // narrow reader never runs "normal" into "Unlink".
+        // breaks, and the note and the button keep their own width.
         <Box component="li" key={one.key} sx={{ display: 'flex', flexWrap: 'wrap', columnGap: 1, rowGap: 0, alignItems: 'center', py: 0.25 }}>
           <Link component="button" type="button" onClick={() => onOpen(one.key)} sx={{ fontSize: 'inherit', textAlign: 'left', minWidth: 0, overflowWrap: 'anywhere' }}>
             {one.label}
           </Link>
           {one.note && <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}>{one.note}</Typography>}
           {one.onRemove && (
-            <Button size="small" onClick={one.onRemove} sx={{ minWidth: 0, px: 0.5, fontSize: 11, flexShrink: 0 }}>{one.removeLabel}</Button>
+            <Tooltip title={one.removeLabel ?? ''}>
+              <IconButton size="small" aria-label={one.removeLabel} onClick={one.onRemove} data-testid="link-unlink" sx={{ p: 0.25, flexShrink: 0 }}>
+                <UnlinkIcon size={14} />
+              </IconButton>
+            </Tooltip>
           )}
         </Box>
       ))}
@@ -216,13 +207,17 @@ export function MergedNote({ merged, s, day }: { merged: MergedInto; s: Translat
 
 export type ObservationReaderProps = {
   observation: Observation
-  /** Present for an observation of a scope below: read here, changed there. */
+  /** Present for an observation of a scope below: read here, added to there, changed there. */
   fromScope?: { path: string; label: string }
-  /** This scope's causes that explain it. */
-  explainedBy: readonly { cause: Cause; link: CauseLink }[]
+  /** The causes that explain it: its own scope's, with `scope` where that is a scope below. */
+  explainedBy: readonly { cause: Cause; link: CauseLink; scope?: string }[]
   /** Where it went, when it was merged away — here, or in a scope above. */
   mergedInto?: MergedInto
   readOnly: boolean
+  /** A sighting and a cause may be added to one of a scope below, as that scope's step (ADR-0032 §2). */
+  mayChangeBelow?: boolean
+  /** `yyyy-mm-dd`: the latest day it may say it was first seen. */
+  today: string
   s: Translate
   renderMarkdown: (md: string, options?: MarkdownRenderOptions) => ReactNode
   nameOf: NameOf
@@ -232,8 +227,9 @@ export type ObservationReaderProps = {
   onArchive: () => void
   onRestore: () => void
   onMerge: () => void
+  /** A cause for it: a new one, or one already written down in its scope. */
   onLink: () => void
-  onUnlink: (causeId: string) => void
+  onUnlink: (causeId: string, scope?: string) => void
   onDelete: () => void
   onOpenScope?: () => void
   onOpen: (key: string) => void
@@ -258,50 +254,36 @@ export function ObservationReader(props: ObservationReaderProps) {
   const label = formatObservationNumber(observation.number)
   const { language } = useStrings()
   const day = (date: string) => formatDay(date, language)
-  const occasional: MenuAction[] = canEdit ? [
-    { key: 'archive', label: s('observation.archive'), onClick: props.onArchive },
-    { key: 'delete', label: s('observation.delete'), divider: true, danger: true, onClick: props.onDelete },
-  ] : []
+  const standing = !readOnly && !mergedInto && !archived
+  const actions = [
+    ...observationActions({
+      s, own: canEdit, mayAdd: canEdit || (standing && Boolean(fromScope) && props.mayChangeBelow === true),
+      scope: fromScope ? fromScope.label : s('observation.thisScope'), mayMerge: standing,
+      onSeenAgain: props.onSeenAgain, onLink: props.onLink, onMerge: props.onMerge, onArchive: props.onArchive, onDelete: props.onDelete,
+    }),
+    ...(canEdit ? [modeAction(mode, switchMode, s('observation.tipEdit'), s)] : []),
+    ...(archived && !readOnly && !fromScope ? [restoreAction(s('observation.tipRestore'), props.onRestore, 'observation-restore', s)] : []),
+  ]
 
   return (
     <Box data-testid="observation-reader" sx={READER_ROOT_SX}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 0.75, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flexWrap: 'wrap' }}>
-        <Chip size="small" color={IMPACT_COLOR[observation.impact]} label={s(IMPACT_LABEL[observation.impact])} data-testid="observation-impact" />
-        <Chip size="small" variant="outlined" label={s('observation.seenTimes', { count: observation.seen })} data-testid="observation-seen" />
-        {archived && <Chip size="small" variant="outlined" label={s('observation.archivedMark')} data-testid="observation-archived" />}
-        <Typography variant="caption" color="text.secondary">{day(observation.date)}</Typography>
-        <Box sx={{ flex: 1 }} />
-        {canEdit && (
-          <>
-            <Button size="small" variant="outlined" onClick={props.onSeenAgain} data-testid="observation-seen-again" data-guide="observation.seenAgain">{s('observation.seenAgain')}</Button>
-            <Button size="small" variant="outlined" onClick={props.onLink}>{s('observation.link')}</Button>
-            <Button size="small" onClick={props.onMerge} data-guide="observation.merge">{s('observation.merge')}</Button>
-            <Button size="small" onClick={props.onArchive} data-testid="observation-archive" sx={WIDE_ONLY_SX}>{s('observation.archive')}</Button>
-            <Button size="small" color="error" onClick={props.onDelete} sx={WIDE_ONLY_SX}>{s('observation.delete')}</Button>
-            <OverflowActions actions={occasional} label={s('observation.more')} />
-          </>
-        )}
-        {archived && !readOnly && !fromScope && (
-          <Button size="small" variant="outlined" onClick={props.onRestore} data-testid="observation-restore">{s('observation.restore')}</Button>
-        )}
-        {/* A cause here explains the causes below, not their observations
-            (ADR-0032 §4), so one from below is merged here and linked there. */}
-        {fromScope && !readOnly && !mergedInto && !archived && (
-          <Button size="small" onClick={props.onMerge} data-guide="observation.merge">{s('observation.merge')}</Button>
-        )}
-        <ToggleButtonGroup exclusive size="small" value={mode} onChange={(_e, value: Mode | null) => switchMode(value)}>
-          <ToggleButton value="read">{s('observation.read')}</ToggleButton>
-          {canEdit && <ToggleButton value="edit">{s('observation.edit')}</ToggleButton>}
-        </ToggleButtonGroup>
+      <Box sx={BAR_SX}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+          <Chip size="small" variant="outlined" label={label} sx={{ fontFamily: 'ui-monospace, Menlo, monospace' }} />
+          <Chip size="small" color={IMPACT_COLOR[observation.impact]} label={s(IMPACT_LABEL[observation.impact])} data-testid="observation-impact" />
+          <Chip size="small" variant="outlined" label={s('observation.seenTimes', { count: observation.seen })} data-testid="observation-seen" />
+          {archived && <Chip size="small" variant="outlined" label={s('observation.archivedMark')} data-testid="observation-archived" />}
+          <Typography variant="caption" color="text.secondary">{day(observation.date)}</Typography>
+        </Box>
+        {actions.length > 0 && <ReaderActions actions={actions} label={s('observation.actions', { name: label })} moreLabel={s('observation.more')} />}
       </Box>
 
       {fromScope && (
-        <Box data-testid="observation-from-below" sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 1, bgcolor: 'action.hover', borderBottom: 1, borderColor: 'divider' }}>
-          <Typography variant="caption" color="text.secondary" sx={{ flex: 1 }}>
-            {s('observation.fromScope', { scope: fromScope.label })}
-          </Typography>
-          {props.onOpenScope && <Button size="small" onClick={props.onOpenScope}>{s('observation.openScope', { scope: fromScope.label })}</Button>}
-        </Box>
+        <ScopeStrip
+          testId="observation-from-below"
+          text={s('observation.fromScope', { scope: fromScope.label })}
+          action={props.onOpenScope ? <ReaderActions actions={[openScopeAction(fromScope.label, props.onOpenScope, s)]} label={s('observation.fromScopeActions')} moreLabel={s('observation.more')} /> : undefined}
+        />
       )}
       {archived && (
         <Typography variant="caption" color="text.secondary" data-testid="observation-archived-note" sx={{ px: 2, py: 0.5, borderBottom: 1, borderColor: 'divider' }}>
@@ -317,15 +299,7 @@ export function ObservationReader(props: ObservationReaderProps) {
       <Box sx={{ display: 'grid', gridTemplateColumns: mode === 'edit' && showPreview ? 'minmax(0, 1fr) minmax(0, 1fr)' : 'minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
         {mode === 'edit' && (
           <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0, borderRight: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
-            <Box sx={{ px: 1.5, py: 1, borderBottom: 1, borderColor: 'divider', display: 'grid', gap: 1, gridTemplateColumns: '1fr 1fr' }}>
-              <TextField size="small" label={s('observation.titleField')} value={draft.title} onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))} onBlur={commit} sx={{ gridColumn: '1 / -1' }} />
-              <TextField size="small" label={s('observation.whereField')} value={draft.where} onChange={(e) => setDraft((d) => ({ ...d, where: e.target.value }))} onBlur={commit} />
-              <TextField size="small" label={s('observation.byField')} value={draft.by} onChange={(e) => setDraft((d) => ({ ...d, by: e.target.value }))} onBlur={commit} />
-              <TextField size="small" type="date" label={s('observation.dateField')} value={draft.date} onChange={(e) => setDraft((d) => ({ ...d, date: e.target.value }))} onBlur={commit} slotProps={{ inputLabel: { shrink: true } }} />
-              <TextField select size="small" label={s('observation.impactField')} value={draft.impact} onChange={(e) => { setDraft((d) => ({ ...d, impact: e.target.value as ObservationImpact })) }} onBlur={commit} slotProps={{ htmlInput: { 'aria-label': s('observation.impactField') } }}>
-                {OBSERVATION_IMPACTS.map((one) => <MenuItem key={one} value={one}>{s(IMPACT_LABEL[one])}</MenuItem>)}
-              </TextField>
-            </Box>
+            <ObservationFields draft={draft} onChange={(patch) => setDraft((d) => ({ ...d, ...patch }))} onBlur={commit} today={props.today} s={s} />
             <DocumentSource
               value={draft.body}
               onChange={(body) => setDraft((d) => ({ ...d, body }))}
@@ -355,19 +329,10 @@ export function ObservationReader(props: ObservationReaderProps) {
               <Value>{fromScope ? fromScope.label : s('observation.local')}</Value>
               <Term>{s('observation.explainedBy')}</Term>
               <Value testId="observation-explained-by">
-                {props.explainedBy.length === 0
-                  ? <Box component="span" sx={{ color: 'text.secondary' }}>{s('observation.noLinks')}</Box>
-                  : (
-                    <LinkList
-                      onOpen={props.onOpen}
-                      links={props.explainedBy.map(({ cause, link }) => ({
-                        key: cause.id,
-                        label: `${causeLabel(cause)} ${cause.title}`,
-                        note: s(STRENGTH_LABEL[link.strength]).toLowerCase(),
-                        ...(readOnly || mergedInto || archived ? {} : { onRemove: () => props.onUnlink(cause.id), removeLabel: s('observation.unlink') }),
-                      }))}
-                    />
-                  )}
+                <ExplainedBy
+                  links={props.explainedBy} label={label} s={s} onOpen={props.onOpen}
+                  onUnlink={(causeId, scope) => (!standing || (scope !== undefined && !props.mayChangeBelow) ? undefined : () => props.onUnlink(causeId, scope))}
+                />
               </Value>
             </Box>
             <Box sx={{ fontSize: 15, mt: 3 }} data-document>{rendered}</Box>
@@ -395,12 +360,74 @@ export function ObservationReader(props: ObservationReaderProps) {
   )
 }
 
+/** The facts and the impact, edited in place. */
+function ObservationFields({ draft, onChange, onBlur, today, s }: {
+  draft: { title: string; where: string; by: string; date: string; impact: ObservationImpact }
+  onChange: (patch: Partial<{ title: string; where: string; by: string; date: string; impact: ObservationImpact }>) => void
+  onBlur: () => void
+  today: string
+  s: Translate
+}) {
+  return (
+    <Box sx={{ px: 1.5, py: 1, borderBottom: 1, borderColor: 'divider', display: 'grid', gap: 1, gridTemplateColumns: '1fr 1fr' }}>
+      <TextField size="small" label={s('observation.titleField')} value={draft.title} onChange={(e) => onChange({ title: e.target.value })} onBlur={onBlur} sx={{ gridColumn: '1 / -1' }} />
+      <TextField size="small" label={s('observation.whereField')} value={draft.where} onChange={(e) => onChange({ where: e.target.value })} onBlur={onBlur} />
+      <TextField size="small" label={s('observation.byField')} value={draft.by} onChange={(e) => onChange({ by: e.target.value })} onBlur={onBlur} />
+      <TextField size="small" type="date" label={s('observation.dateField')} value={draft.date} onChange={(e) => onChange({ date: e.target.value })} onBlur={onBlur} slotProps={{ inputLabel: { shrink: true }, htmlInput: { max: today } }} />
+      <TextField select size="small" label={s('observation.impactField')} value={draft.impact} onChange={(e) => onChange({ impact: e.target.value as ObservationImpact })} onBlur={onBlur} slotProps={{ htmlInput: { 'aria-label': s('observation.impactField') } }}>
+        {OBSERVATION_IMPACTS.map((one) => <MenuItem key={one} value={one}>{s(IMPACT_LABEL[one])}</MenuItem>)}
+      </TextField>
+    </Box>
+  )
+}
+
+/** The causes that explain an observation, each a way to it and, where it may be, unlinked. */
+function ExplainedBy({ links, label, s, onOpen, onUnlink }: {
+  links: ObservationReaderProps['explainedBy']
+  label: string
+  s: Translate
+  onOpen: (key: string) => void
+  /** What unlinking one does, or nothing where it may not be. */
+  onUnlink: (causeId: string, scope?: string) => (() => void) | undefined
+}) {
+  if (links.length === 0) return <Box component="span" sx={{ color: 'text.secondary' }}>{s('observation.noLinks')}</Box>
+  return (
+    <LinkList
+      onOpen={onOpen}
+      links={links.map(({ cause, link, scope }) => {
+        const remove = onUnlink(cause.id, scope)
+        return {
+          key: scope === undefined ? cause.id : `${scope}#${cause.id}`,
+          label: `${causeLabel(cause)} ${cause.title}`,
+          note: s(STRENGTH_LABEL[link.strength]).toLowerCase(),
+          ...(remove ? { onRemove: remove, removeLabel: s('observation.tipUnlink', { from: causeLabel(cause), to: label }) } : {}),
+        }
+      })}
+    />
+  )
+}
+
 // --- one cause ----------------------------------------------------------------------------
 
 export type CauseReaderProps = {
   cause: Cause
+  /** The causes of its own scope: those that explain it are read off these. */
   causes: readonly Cause[]
+  /** Present for a cause of a scope below: read here, added to there (ADR-0032 §2). */
+  fromScope?: { label: string; onOpenScope?: () => void }
+  /**
+   * The causes of another scope that explain it: one here explaining one
+   * below, or one above — which opens where it lives, where `open` says how.
+   */
+  explainedFrom?: readonly { key: string; label: string; onRemove?: () => void; open?: () => void }[]
   readOnly: boolean
+  /** Links and the root step may be taken on one of a scope below, as that scope's step. */
+  mayChangeBelow?: boolean
+  /** The links across a scope boundary this reader offers (ADR-0032 §4), and the name of the scope reading. */
+  across?: readonly ('org' | 'local')[]
+  here?: string
+  /** Why an organisation cause may not be linked to it: it is a root cause below. */
+  orgRefused?: string
   s: Translate
   renderMarkdown: (md: string, options?: MarkdownRenderOptions) => ReactNode
   nameOf: NameOf
@@ -414,13 +441,14 @@ export type CauseReaderProps = {
   /**
    * Make it a root cause, or a cause again (ADR-0032 §3); absent where
    * nothing may be written. `rootRefused` says what stands in the way, and
-   * the action is off while it does.
+   * pressing it then says so instead of asking.
    */
   onRoot?: () => void
   rootRefused?: string
-  onLinkDeeper: () => void
+  /** A deeper cause, a root cause, or a cause across a scope boundary: the page opens the dialog. */
+  onLink: (mode: LinkMode) => void
   onUnlink: (link: CauseLink) => void
-  /** Another cause stops explaining this one. */
+  /** Another cause of its own scope stops explaining this one. */
   onUnlinkFrom: (causeId: string) => void
   onDelete: () => void
   onOpen: (key: string) => void
@@ -433,54 +461,57 @@ export type CauseReaderProps = {
 }
 
 export function CauseReader(props: CauseReaderProps) {
-  const { cause, causes, s, renderMarkdown, nameOf, readOnly } = props
-  const canEdit = !readOnly
+  const { cause, causes, s, renderMarkdown, readOnly, fromScope } = props
+  const canEdit = !readOnly && !fromScope
+  const mayAdd = canEdit || (!readOnly && Boolean(fromScope) && props.mayChangeBelow === true)
   const stored = useMemo(() => ({ title: cause.title, body: cause.body }), [cause])
   const { mode, draft, setDraft, commit, switchMode } = useDraft(stored, (patch) => props.onUpdate(patch), canEdit)
   const [previewShown, setPreviewShown] = useState(true)
+  const [panel, setPanel] = useState<'root' | 'org' | undefined>(undefined)
   const showPreview = mode === 'read' || previewShown
   const text = mode === 'edit' ? draft.body : cause.body
   const rendered = text.trim() ? renderMarkdown(text) : <Typography color="text.secondary">{s('common.empty')}</Typography>
   const root = isRootCause(cause)
+  const label = causeLabel(cause)
+  const flipped = formatCauseNumber(cause.number, !root)
   const explainedBy = causes.filter((other) => other.explains.some((link) => link.id === cause.id && link.scope === undefined))
   const verify = () => (cause.state === 'assumed' ? props.onVerify() : props.onUpdate({ state: 'assumed' }))
-  const rootLabel = root ? s('observation.makeCause') : s('observation.makeRoot')
-  const onRoot = props.onRoot
-  const occasional: MenuAction[] = canEdit ? [
-    { key: 'verify', label: cause.state === 'assumed' ? s('observation.verify') : s('observation.unverify'), onClick: verify },
-    ...(onRoot ? [{ key: 'root', label: rootLabel, disabled: Boolean(props.rootRefused), onClick: onRoot }] : []),
-    { key: 'link-deeper', label: s('observation.linkDeeper'), onClick: props.onLinkDeeper },
-    { key: 'delete', label: s('observation.delete'), divider: true, danger: true, onClick: props.onDelete },
-  ] : []
-
+  const actions = [
+    ...causeActions({
+      s, label, flipped, root, verified: cause.state === 'verified', mayAdd, own: canEdit,
+      across: readOnly ? [] : props.across ?? [], here: props.here ?? '', mayPropose: Boolean(props.onPropose),
+      onLink: (linkMode) => (linkMode === 'org' && props.orgRefused ? setPanel('org') : props.onLink(linkMode)),
+      ...(props.onRoot ? { onRoot: () => setPanel('root') } : {}),
+      onVerify: verify, onPropose: () => props.onPropose?.(), onDelete: props.onDelete,
+    }),
+    ...(canEdit ? [modeAction(mode, switchMode, s('observation.tipEditCause'), s)] : []),
+  ]
   return (
     <Box data-testid="cause-reader" sx={READER_ROOT_SX}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 0.75, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flexWrap: 'wrap' }}>
-        <Chip size="small" color={STATE_COLOR[cause.state]} label={s(STATE_LABEL[cause.state])} data-testid="cause-state" />
-        {root && <Chip size="small" color="secondary" variant="outlined" label={s('observation.rootCause')} data-testid="cause-root" />}
-        <Box sx={{ flex: 1 }} />
-        {canEdit && (
-          <>
-            <Button size="small" variant="outlined" onClick={verify} data-testid="cause-verify" sx={WIDE_ONLY_SX}>
-              {cause.state === 'assumed' ? s('observation.verify') : s('observation.unverify')}
-            </Button>
-            {onRoot && (
-              <Tooltip title={props.rootRefused ?? ''}>
-                <Box component="span" sx={WIDE_ONLY_SX}>
-                  <Button size="small" variant="outlined" onClick={onRoot} disabled={Boolean(props.rootRefused)} data-testid="cause-root-toggle">{rootLabel}</Button>
-                </Box>
-              </Tooltip>
-            )}
-            <Button size="small" variant="outlined" onClick={props.onLinkDeeper} sx={WIDE_ONLY_SX}>{s('observation.linkDeeper')}</Button>
-            <Button size="small" color="error" onClick={props.onDelete} sx={WIDE_ONLY_SX}>{s('observation.delete')}</Button>
-            <OverflowActions actions={occasional} label={s('observation.more')} />
-          </>
-        )}
-        <ToggleButtonGroup exclusive size="small" value={mode} onChange={(_e, value: Mode | null) => switchMode(value)}>
-          <ToggleButton value="read">{s('observation.read')}</ToggleButton>
-          {canEdit && <ToggleButton value="edit">{s('observation.edit')}</ToggleButton>}
-        </ToggleButtonGroup>
+      <Box sx={BAR_SX}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+          <Chip size="small" variant="outlined" label={label} sx={{ fontFamily: 'ui-monospace, Menlo, monospace' }} />
+          {root && <Chip size="small" color="secondary" variant="outlined" label={s('observation.rootCause')} data-testid="cause-root" />}
+          <Chip size="small" color={STATE_COLOR[cause.state]} label={s(STATE_LABEL[cause.state])} data-testid="cause-state" />
+        </Box>
+        {actions.length > 0 && <ReaderActions actions={actions} label={s('observation.actions', { name: label })} moreLabel={s('observation.more')} />}
       </Box>
+      {panel === 'root' && props.onRoot && (
+        <RootPanel
+          refused={props.rootRefused} root={root} label={label} flipped={flipped} s={s}
+          onConfirm={() => { setPanel(undefined); props.onRoot?.() }} onClose={() => setPanel(undefined)}
+        />
+      )}
+      {panel === 'org' && props.orgRefused && (
+        <ReaderNotice refused lines={[props.orgRefused]} onClose={() => setPanel(undefined)} closeLabel={s('observation.ok')} testId="cause-org-refused" />
+      )}
+      {fromScope && (
+        <ScopeStrip
+          testId="cause-from-below"
+          text={s('observation.fromScope', { scope: fromScope.label })}
+          action={fromScope.onOpenScope ? <ReaderActions actions={[openScopeAction(fromScope.label, fromScope.onOpenScope, s)]} label={s('observation.fromScopeActions')} moreLabel={s('observation.more')} /> : undefined}
+        />
+      )}
 
       <Box sx={{ display: 'grid', gridTemplateColumns: mode === 'edit' && showPreview ? 'minmax(0, 1fr) minmax(0, 1fr)' : 'minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
         {mode === 'edit' && (
@@ -501,11 +532,33 @@ export function CauseReader(props: CauseReaderProps) {
         )}
         {showPreview && (
           <DocumentSheet dense={mode === 'edit'}>
-            <Typography variant="overline" color="text.secondary">{causeLabel(cause)}</Typography>
+            <Typography variant="overline" color="text.secondary">{label}</Typography>
             <Typography variant="h4" component="h1" sx={TITLE_SX}>
               {mode === 'edit' ? draft.title : cause.title}
             </Typography>
-            <Box component="dl" sx={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: 3, rowGap: 0.5, mt: 2, mb: 0, fontSize: 14 }}>
+            <CauseLinks cause={cause} explainedBy={explainedBy} mayAdd={mayAdd} props={props} />
+            <Box sx={{ fontSize: 15, mt: 3 }} data-document>{rendered}</Box>
+          </DocumentSheet>
+        )}
+      </Box>
+    </Box>
+  )
+}
+
+
+/** What a cause explains, what explains it, and the solutions on it, each a way to it. */
+function CauseLinks({ cause, explainedBy, mayAdd, props }: {
+  cause: Cause
+  explainedBy: readonly Cause[]
+  mayAdd: boolean
+  props: CauseReaderProps
+}) {
+  const { s, nameOf, readOnly, fromScope } = props
+  const root = isRootCause(cause)
+  const label = causeLabel(cause)
+  const unlinkFrom = (from: string) => s('observation.tipUnlink', { from, to: label })
+  return (
+    <Box component="dl" sx={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: 3, rowGap: 0.5, mt: 2, mb: 0, fontSize: 14 }}>
               <Term>{s('observation.explains')}</Term>
               <Value testId="cause-explains">
                 {cause.explains.length === 0
@@ -517,23 +570,30 @@ export function CauseReader(props: CauseReaderProps) {
                         key: link.scope === undefined ? link.id : `${link.scope}#${link.id}`,
                         label: nameOf(link.id, link.scope),
                         note: s(STRENGTH_LABEL[link.strength]).toLowerCase(),
-                        ...(readOnly ? {} : { onRemove: () => props.onUnlink(link), removeLabel: s('observation.unlink') }),
+                        ...(mayAdd ? { onRemove: () => props.onUnlink(link), removeLabel: s('observation.tipUnlink', { from: label, to: nameOf(link.id, link.scope) }) } : {}),
                       }))}
                     />
                   )}
               </Value>
               <Term>{s('observation.explainedBy')}</Term>
               <Value testId="cause-explained-by">
-                {explainedBy.length === 0
+                {explainedBy.length === 0 && !props.explainedFrom?.length
                   ? <Box component="span" sx={{ color: 'text.secondary' }}>{root ? s('observation.rootNote') : s('observation.noLinks')}</Box>
                   : (
                     <LinkList
-                      onOpen={props.onOpen}
-                      links={explainedBy.map((other) => ({
-                        key: other.id,
-                        label: `${causeLabel(other)} ${other.title}`,
-                        ...(readOnly ? {} : { onRemove: () => props.onUnlinkFrom(other.id), removeLabel: s('observation.unlink') }),
-                      }))}
+                      onOpen={(key) => { const from = props.explainedFrom?.find((one) => one.key === key); if (from?.open) from.open(); else props.onOpen(key) }}
+                      links={[
+                        ...explainedBy.map((other) => ({
+                          key: other.id,
+                          label: `${causeLabel(other)} ${other.title}`,
+                          ...(mayAdd && !fromScope ? { onRemove: () => props.onUnlinkFrom(other.id), removeLabel: unlinkFrom(causeLabel(other)) } : {}),
+                        })),
+                        ...(props.explainedFrom ?? []).map((one) => (
+                          one.onRemove && !readOnly
+                            ? { key: one.key, label: one.label, onRemove: one.onRemove, removeLabel: unlinkFrom(one.label) }
+                            : { key: one.key, label: one.label }
+                        )),
+                      ]}
                     />
                   )}
               </Value>
@@ -543,7 +603,7 @@ export function CauseReader(props: CauseReaderProps) {
                   <Value testId="cause-solutions">
                     {props.solutions.length > 0 && <LinkList onOpen={props.onOpen} links={props.solutions} />}
                     {props.onPropose
-                      ? <Button size="small" onClick={props.onPropose} data-testid="cause-propose" sx={{ px: 0 }}>{s('solution.proposeForCause')}</Button>
+                      ? <Link component="button" type="button" onClick={props.onPropose} data-testid="cause-propose" sx={{ fontSize: 'inherit' }}>{s('solution.proposeForCause')}</Link>
                       : !root && !readOnly
                         ? <Box component="span" sx={{ color: 'text.secondary' }} data-testid="cause-propose-at-root">{s('solution.proposeAtRoot')}</Box>
                         : props.solutions.length === 0 && <Box component="span" sx={{ color: 'text.secondary' }}>{s('solution.none')}</Box>}
@@ -551,10 +611,33 @@ export function CauseReader(props: CauseReaderProps) {
                 </>
               )}
             </Box>
-            <Box sx={{ fontSize: 15, mt: 3 }} data-document>{rendered}</Box>
-          </DocumentSheet>
-        )}
-      </Box>
-    </Box>
+  )
+}
+
+/**
+ * Making a root cause, or a cause again, asked before it is taken — or, where
+ * the chain says otherwise, refused with the records in the way and how to put
+ * it right (ADR-0032 §3).
+ */
+function RootPanel({ refused, root, label, flipped, s, onConfirm, onClose }: {
+  refused?: string
+  root: boolean
+  label: string
+  flipped: string
+  s: Translate
+  onConfirm: () => void
+  onClose: () => void
+}) {
+  if (refused) {
+    const lead = root ? s('observation.makeCauseRefused', { label }) : s('observation.makeRootRefused', { label })
+    return <ReaderNotice refused lines={[lead, refused]} onClose={onClose} closeLabel={s('observation.ok')} testId="cause-root-refused" />
+  }
+  return (
+    <ReaderNotice
+      refused={false} testId="cause-root-ask"
+      lines={[root ? s('observation.makeCauseAsk', { label, next: flipped }) : s('observation.makeRootAsk', { label, next: flipped })]}
+      confirm={root ? s('observation.makeCause') : s('observation.makeRoot')} onConfirm={onConfirm}
+      onClose={onClose} closeLabel={s('common.cancel')}
+    />
   )
 }
