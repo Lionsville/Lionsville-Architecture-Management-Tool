@@ -46,11 +46,15 @@ export const CONTROL_NAMES = [
   'observations.tabRegister', 'observations.tabAnalysis', 'observations.tabSolutions',
   'observations.register', 'observations.row', 'observations.picture', 'observations.new', 'observations.newCause',
   'observation.seenAgain', 'observation.merge', 'observation.cause',
+  // One cause: the step that makes it a root cause, or a cause again.
+  'cause.root',
   // Over the observations page's tabs: the filters, their row, View local and the picture's two sizes.
   'observations.filters', 'observations.filterRow', 'observations.viewLocal', 'observations.size',
   // The form that records an observation, with its causes (ADR-0032 §6).
   'observationForm.causes', 'observationForm.existingCause', 'observationForm.record', 'observationForm.description',
   'solutions.new', 'solutions.phases', 'solution.planExperiment', 'solution.decide',
+  // One solution: the step on to its next stage, behind its gate.
+  'solution.move',
   // The decisions page, and one record. A record in the list and a move of
   // one record's status are each named on every one of them, as a row is.
   'decisions.list', 'decisions.row', 'decisions.new', 'decisions.fromAbove',

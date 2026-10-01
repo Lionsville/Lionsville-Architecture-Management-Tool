@@ -128,7 +128,7 @@ export function causeActions(o: {
     key: 'root-toggle', icon: o.root ? <MakeCauseIcon size={14} /> : <MakeRootIcon size={14} />,
     label: o.root ? s('observation.makeCause') : s('observation.actMakeRoot'),
     tip: s(o.root ? 'observation.tipMakeCause' : 'observation.tipMakeRoot', { label: o.label, next: o.flipped }),
-    onClick: onRoot, testId: 'cause-root-toggle',
+    onClick: onRoot, testId: 'cause-root-toggle', guide: 'cause.root',
   }] : []
   const across: ReaderAction[] = o.across.map((mode) => (mode === 'org'
     ? { key: 'org', icon: <GlobeIcon size={14} />, label: s('observation.actOrg'), tip: s('observation.tipOrg', { scope: o.here }), onClick: () => o.onLink('org'), testId: 'cause-org' }

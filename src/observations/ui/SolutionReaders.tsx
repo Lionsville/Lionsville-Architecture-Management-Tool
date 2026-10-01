@@ -465,7 +465,7 @@ function SolutionGate({ gate, solution, canEdit, back, s, onPlanExperiment, onDe
       )}
       {canEdit && (
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 1.5 }}>
-          <Button sx={{ textTransform: 'none' }} variant="contained" size="small" disabled={open.length > 0} onClick={() => onMove(gate.to)} data-testid="solution-move">
+          <Button sx={{ textTransform: 'none' }} variant="contained" size="small" disabled={open.length > 0} onClick={() => onMove(gate.to)} data-testid="solution-move" data-guide="solution.move">
             {s('solution.moveOn', { state: s(PHASE_LABEL[gate.to]).toLowerCase() })}
           </Button>
           {open.length > 0 && <Typography variant="caption" color="text.secondary">{s('solution.toGo', { count: open.length })}</Typography>}

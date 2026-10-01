@@ -172,7 +172,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     const dialog = await page('Observations')
     fireEvent.click((await within(dialog).findAllByTestId(/^observation-row-/))[0])
   }],
-  ['a solution being tested, read', ['solution.planExperiment'], async () => {
+  ['a solution being tested, read', ['solution.planExperiment', 'solution.move'], async () => {
     const list = await within(screen.getByRole('dialog')).findByTestId('solution-list')
     fireEvent.click(within(list).getAllByRole('button').find((one) => /carrier onboarding kit/i.test(one.textContent ?? ''))!)
   }],
@@ -182,6 +182,10 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   }],
   ['the analysis', ['observations.picture', 'observations.size'], async () => {
     fireEvent.click(await within(screen.getByRole('dialog')).findByTestId('observation-tab-analysis'))
+  }],
+  ['a cause, read', ['cause.root'], async () => {
+    const picture = await within(screen.getByRole('dialog')).findByTestId('analysis-picture')
+    fireEvent.click((await within(picture).findAllByTestId('analysis-cause'))[0])
   }],
   ['the solutions', ['solutions.new', 'solutions.phases'], async () => {
     fireEvent.click(await within(screen.getByRole('dialog')).findByTestId('observation-tab-solutions'))
