@@ -55,12 +55,15 @@ function viewWithNoId(page: InitialPage | undefined): boolean {
 /**
  * What an open by path does where it does not open the scope, for a caller
  * that has to say so: how it lands on the scope's home where the page asked
- * for a view the scope does not have. `goHome` where absent — which leaves a
- * page that was up over a home's cards up over the next home's; a caller
- * that sends the app somewhere asks for the home as itself.
+ * for a view the scope does not have — `goHome` where absent, which leaves a
+ * page that was up over a home's cards up over the next home's, so a caller
+ * that sends the app somewhere asks for the home as itself — and that it
+ * ended having moved nothing: a scope with nothing there to open, or one
+ * that could not be read.
  */
 export type OpenEnds = {
   readonly home?: (path: ScopePath) => void
+  readonly nothing?: () => void
 }
 
 export function useShellNavigation(deps: {
@@ -201,18 +204,21 @@ export function useShellNavigation(deps: {
       if (found) { enter(found, page, ends); return }
       // A view of a scope with no document: it has none, and none is made.
       if (viewWithNoId(page)) { (ends.home ?? goHome)(path); return }
-      if (!opensOnNothing(page)) { refreshTree.current(); return }
+      if (!opensOnNothing(page)) { refreshTree.current(); ends.nothing?.(); return }
       const bare = bareScope(path, scopePathLabel(path))
       if (writable && !writable(path)) { enter(bare, page, ends); return }
       // Made only where nothing is: a scope somebody made in between is
       // theirs, and is the one entered.
       await ensureScope(scopes, path, { name: bare.model.name })
       const written = await readScope(scopes, path)
-      if (!written) { refreshTree.current(); return }
+      if (!written) { refreshTree.current(); ends.nothing?.(); return }
       enter(written, page, ends)
       refreshTree.current()
       refreshIndex?.current()
-    })().catch((cause: unknown) => failedRef.current('openScopeAt', cause, 'picker.loadFailed'))
+    })().catch((cause: unknown) => {
+      ends.nothing?.()
+      failedRef.current('openScopeAt', cause, 'picker.loadFailed')
+    })
   }, [scopes, enter, goHome, refreshTree, refreshIndex, writable, failedRef])
 
   return {

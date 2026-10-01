@@ -12,7 +12,7 @@
  */
 import { useEffect } from 'react'
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { laidOut } from '../model/testFixtures'
 import type { DesignElement, DesignDiagram } from '../model'
 import type { Adr } from '../model/adr'
@@ -20,7 +20,8 @@ import type { Observation } from '../model/observation'
 import type { Destination, MovedBy, Screen } from '../agent/screen'
 import type { SourceOpenOptions } from '../ports/ProviderParts'
 import type { ScopeSnapshot } from '../projects/scope'
-import { heldRepositories } from './testing/heldRepositories'
+import { answering, heldRepositories } from './testing/heldRepositories'
+import type { HeldRepositories } from './testing/heldRepositories'
 import { renderApp } from './testing/renderShell'
 import { installReactFlowMocks } from '../editor/reactFlowTestSetup'
 
@@ -91,8 +92,11 @@ function guide(stops: readonly { label: string; to: Destination; options?: Sourc
 
 const told = (): { where: Screen; movedBy: MovedBy } => JSON.parse(screen.getByTestId('guide-where').textContent ?? '{}')
 
-function show(stops: Parameters<typeof guide>[0], scopes: ScopeSnapshot[] = tree(), initialProject?: ScopeSnapshot) {
-  const repositories = heldRepositories(scopes)
+function show(
+  stops: Parameters<typeof guide>[0], scopes: ScopeSnapshot[] = tree(), initialProject?: ScopeSnapshot,
+  held: (repositories: HeldRepositories) => HeldRepositories = (repositories) => repositories,
+) {
+  const repositories = held(heldRepositories(scopes))
   renderApp({
     repositories,
     source: elsewhere,
@@ -150,6 +154,56 @@ describe('a move a provider says is its own', () => {
     fireEvent.click(screen.getByRole('button', { name: 'To a map' }))
     await waitFor(() => expect(told().where.home?.path).toBe('acme/landscape'))
     expect(movers(from)).toEqual(['provider'])
+  })
+
+  it('leaves no mark where it opened nothing, so the person’s next move there is the person’s', async () => {
+    show([
+      { label: 'To a decision', to: { scope: 'acme/new', page: 'decisions', id: 'adr-1' }, options: { by: 'provider' } },
+      { label: 'To its roadmap', to: { scope: 'acme/new', page: 'roadmap' } },
+    ])
+    await waitFor(() => expect(told().where.home?.path).toBe(''))
+    // A scope with no document, asked for by a record it cannot have: nothing opens.
+    fireEvent.click(screen.getByRole('button', { name: 'To a decision' }))
+    fireEvent.click(screen.getByRole('button', { name: 'To its roadmap' }))
+    await waitFor(() => expect(told().where).toMatchObject({ open: { path: 'acme/new' }, page: { page: 'roadmap' } }))
+    expect(told().movedBy).toBe('person')
+  })
+
+  it('leaves no mark where the scope could not be read', async () => {
+    let down = false
+    show([
+      { label: 'To the decisions', to: { scope: 'acme/landscape', page: 'decisions' }, options: { by: 'provider' } },
+      { label: 'To the roadmap', to: { scope: 'acme/landscape', page: 'roadmap' } },
+    ], tree(), undefined, (held) => answering(held, {
+      state: (id) => (down ? Promise.reject(new Error('the store is down')) : held.scopes.state(id)),
+    }))
+    await waitFor(() => expect(told().where.home?.path).toBe(''))
+    down = true
+    fireEvent.click(screen.getByRole('button', { name: 'To the decisions' }))
+    await screen.findByText(/could not be opened|could not be read/i)
+    down = false
+    fireEvent.click(screen.getByRole('button', { name: 'To the roadmap' }))
+    await waitFor(() => expect(told().where.page).toEqual({ page: 'roadmap' }))
+    expect(told().movedBy).toBe('person')
+  })
+
+  it('leaves no mark where it lands on the home that was already up, bare', async () => {
+    show([
+      { label: 'To the landscape’s home', to: { scope: 'acme/landscape', page: 'home' } },
+      { label: 'To a map', to: { page: 'map' }, options: { by: 'provider' } },
+      { label: 'The register', to: { page: 'register' } },
+    ])
+    await waitFor(() => expect(told().where.home?.path).toBe(''))
+    fireEvent.click(screen.getByRole('button', { name: 'To the landscape’s home' }))
+    await waitFor(() => expect(told().where.home?.path).toBe('acme/landscape'))
+    // Nothing moves: the home the map falls back to is the one that is up.
+    // Once its read is done, the register opened next is the person's.
+    fireEvent.click(screen.getByRole('button', { name: 'To a map' }))
+    await act(() => new Promise((resolve) => { setTimeout(resolve, 0) }))
+    expect(told().where).toEqual({ home: { path: 'acme/landscape', name: 'Landscape' } })
+    fireEvent.click(screen.getByText('The register'))
+    await waitFor(() => expect(told().where.page).toEqual({ page: 'register' }))
+    expect(told().movedBy).toBe('person')
   })
 })
 

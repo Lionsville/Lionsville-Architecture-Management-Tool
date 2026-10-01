@@ -94,11 +94,18 @@ export function useShellAgent(deps: {
   // nothing to show — comes back as itself, not with the page last asked for.
   useEffect(() => { if (project) setOrgPageRequest(undefined) }, [project])
   const agentSessionRef = useRef<WorkspaceAgentView | undefined>(undefined)
+  /** The screen the last look found: what an open that ends on a home compares that home with. */
+  const lastLook = useRef<Screen | undefined>(undefined)
   const screenNow = useCallback(
     (): Screen => screenOf(agentSessionRef.current, project, { home, homeName, organisationName, orgPage }),
     [project, home, homeName, organisationName, orgPage],
   )
-  const openFor = useCallback((to: Destination & { scope: string }) => {
+  /**
+   * Open a destination; `nothing` is told where the open ended without
+   * moving the app — nothing there to open, a scope that could not be read,
+   * or a fallback onto the home that was already up with nothing over it.
+   */
+  const openFor = useCallback((to: Destination & { scope: string }, nothing: () => void = NOBODY) => {
     if (to.page === 'home' || to.page === 'register' || to.page === 'technologyRegister') {
       homeAt(to.scope, to.page)
       return
@@ -117,7 +124,14 @@ export function useShellAgent(deps: {
       return
     }
     // Where it lands on the home, the home as itself, as above.
-    openScopeAt(to.scope, initialPageFor(to), { home: (path) => homeAt(path, 'home') })
+    openScopeAt(to.scope, initialPageFor(to), {
+      home: (path) => {
+        const before = lastLook.current
+        if (before !== undefined && arrived(before, { page: 'home' }, path)) nothing()
+        homeAt(path, 'home')
+      },
+      nothing,
+    })
   }, [homeAt, project, openScopeAt])
   /**
    * The window's history (ADR-0033): every look below is handed to it, so a
@@ -164,6 +178,7 @@ export function useShellAgent(deps: {
   const shown = useRef(where)
   const lookAgain = useCallback(() => {
     const next = screenNow()
+    lastLook.current = next
     lookAtPlace(next)
     if (!watchScreen) return
     const same = shown.current !== undefined && JSON.stringify(shown.current.screen) === JSON.stringify(next)
@@ -191,10 +206,12 @@ export function useShellAgent(deps: {
    */
   const openSomewhere = useCallback<SourceOpen>((to, options) => {
     const sent = { ...to, scope: to.scope ?? project?.path ?? home }
-    if (options?.by === 'provider') {
-      providerMove.current = movesTheApp(screenNow(), sent, agentSessionRef.current) ? { to: sent, reached: false } : undefined
-    }
-    openFor(sent)
+    if (options?.by !== 'provider') { openFor(sent); return }
+    const move = movesTheApp(screenNow(), sent, agentSessionRef.current) ? { to: sent, reached: false } : undefined
+    providerMove.current = move
+    // An open that ends having moved nothing leaves no mark on the next move
+    // somebody else makes, as one to where the app already is leaves none.
+    openFor(sent, () => { if (move !== undefined && providerMove.current === move) providerMove.current = undefined })
   }, [openFor, project, home, screenNow])
   const agentStopped = useCallback((client: string | undefined) => {
     notify(s('agent.stoppedToast', { name: client ?? s('agent.someone') }), 'info')
