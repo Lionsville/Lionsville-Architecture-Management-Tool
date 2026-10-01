@@ -1,6 +1,6 @@
 # ADR-0033 — Back goes to the place before
 
-* Status: accepted, 1 October 2026; not yet built
+* Status: accepted, 1 October 2026; as built, 1 October 2026, on a branch awaiting release
 * Date: 2026-10-01
 * Deciders: Wouter Simons
 * Extends: ADR-0019 (the screen an agent reads and the destination it opens:
@@ -204,3 +204,84 @@ gestures do the whole job, because they move the same history.
   asks for them, and are greyed out at either end of the history.
 * The desktop's smoke run: Back after opening a scope from a home returns to
   that home.
+
+## As built, 1 October 2026, on a branch awaiting release
+
+Every part was built, in core, on one branch that has not been released.
+What follows is where it was built, and where the build departed from the
+text above and why.
+
+### A place
+
+`agent/place.ts`. A place is a `Destination` with its scope said, and its
+address is a fixed prefix and a query string in the fragment:
+`#place?scope=acme%2Frail&page=board&id=landscape`, the organisation's scope
+written as the empty one. The prefix is what tells a place from a fragment a
+source wrote, and `readPlace` is strict for the same reason: a key it does not
+know, a key said twice, no scope or a page there is no such thing as is not a
+place. `readPlace`, `writePlace` and `PLACE_PREFIX` are exported for a source
+that reads the address too. In an entry's state the place is kept under
+`lvarch.place`, beside whatever else the entry holds. `placeOf` is the place a
+screen is; a scope whose workspace has not said what is on it yet is no place
+at all.
+
+### What is a step
+
+As decided, in `app/placeHistory.ts`, with one addition: **a move is written
+once it has settled**, 150 ms after the last look that found a different
+place. One move is often several looks — a scope chosen and then its workspace
+up, a home and then the register over it, a page and then the record it lands
+on — and a Back that went to one of those in between would go nowhere anybody
+was. The look is taken on every move whether or not a provider's chrome
+watches the screen; what `watchScreen` still saves is the render.
+
+A move made by Back or Forward is marked before it is made and stays marked
+until the app has landed somewhere other than where Back was pressed, or ten
+seconds have passed. The entry the window opened on is replaced, not pushed,
+and keeps a fragment that is not a place: the place is then in its state
+alone.
+
+### Going back
+
+As decided, through `openFor`. Where a place lands is worked out first
+(`app/placeLanding.ts`, over `nearestPlace`), from the listing the shell holds
+and the scope's own document — the open session's for the scope that is open —
+and the entry is written over with where it landed, so a reload goes there
+too. Departures:
+- **A removed record on the decisions or the observations page** opens that
+  page without one, and the page then shows what it shows when it is opened
+  with no record asked for. The entry is written over with that.
+- **A removed plan** opens the roadmap; a removed platform's or service's
+  report, which has no page without its record, opens the scope's first view.
+- **A scope that cannot be read** while Back is worked out lands as a removed
+  one does, on the nearest home above it, and is said on the trail.
+- **Dialogs.** A dialog the workspace or a page opened goes with the page, as
+  decided. The window's own two, *Preferences* and *Connect an agent*, belong
+  to no page and stay open over a browser's Back.
+
+### The address
+
+As decided, in `app/bootLanding.ts` (`bootDecidedBy`, `placeLanding`,
+`landedAt`) and the boot in `main.tsx`. A place in the fragment wins over a
+source's own landing as well as over the last scope: the history leaves the
+query alone, so after a move and a reload the address carries both, and the
+query is only the link the person arrived by. A place that names a scope that
+is not there, or that cannot be read, lands on the organisation's home — at
+boot there is no listing yet to find the nearest scope above it.
+
+### On the desktop
+
+As decided. `WindowChrome.backForward`, set by `windowChromeFor` on every
+desktop platform; `app/BackForward.tsx` draws the two at the start of the
+workspace's bar and of every home's, greyed out as the Navigation API says and
+both pressable where there is none. The *Go* menu is `platform/menu.ts`'s
+`goMenu`, after View; its keys are its accelerators and nothing else, because
+on macOS a menu accelerator fires whether or not the page handled the key. The
+two commands are answered at the shell, so they work with nothing open. The
+mouse's buttons are read in the page (buttons 3 and 4), on every platform,
+rather than from Windows' `app-command`, which would have been a second Back
+for the same press; the swipe is `BrowserWindow`'s, a swipe to the left being
+Back. While a dialog is open — one with the `dialog` role that nothing has
+hidden — none of these is taken. The smoke run presses Back after the
+example's landscape was opened from a home, and Forward again.
+
