@@ -1090,7 +1090,10 @@ are written exactly as they were and draw exactly what they drew.
   only read, or an unexpected error raises, where no other offer has it. The
   open source's provider is handed the `Problem` — where, the key, the
   command refused by its type, the cause's kind, message and stack, when,
-  and the screen — only when the person presses it. Nothing about it is
+  and the screen — only when the person presses it. An action may say
+  whether it can be taken now (`available`), asked each time a problem
+  happens: where it cannot, that problem's notice or crash screen carries no
+  button. Nothing about it is
   written to the trail, which keeps keys and messages and never a
   landscape's content; what the person hands over is theirs to hand.
 * **A host may answer tools of its own.** `RespondOptions.hostTools`
@@ -1115,7 +1118,9 @@ The crash screen reads the offer from a context `App` provides
 (`ProblemOfferContext`), so every boundary under the shell draws it without a
 prop through every place that makes one; the session's refusals carry it
 through the workspace's `shell.problem`; a notice with no offer is said with
-no third argument, exactly as before (`app/problem.ts`'s `offerFor`).
+no third argument, exactly as before (`app/problem.ts`'s `offerFor`), and
+so is one raised while the action's `available` answers `false`: `problemOffer`
+asks it when the problem happens, never when the boot reads the action.
 `App.storage.test.tsx` pins the button on the workspace's bar and on every
 home, after the agent and before the chip, in the language that is on,
 reached by the keyboard and clean under axe, nothing where no provider drew
@@ -1125,7 +1130,7 @@ scope that is open — through the workspace — and on the notice of a failure
 the shell reports, and nowhere without one.
 `ErrorBoundary.test.tsx`, `useGlobalErrors.test.tsx`,
 `useModelSession.test.tsx` and `problem.test.ts` pin the problem said and
-handed over only when pressed; `mcpProtocol.test.ts` the host's tools;
+handed over only when pressed, and no button while the action cannot be taken; `mcpProtocol.test.ts` the host's tools;
 `App.destination.test.tsx` a provider's move; `composition.test.tsx` the
 registry answering the button and the action for the open source's provider
 and for nobody else.

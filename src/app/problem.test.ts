@@ -72,4 +72,26 @@ describe('problemOffer', () => {
       at: '2026-10-01T09:30:00.000Z', screen: ON_A_BOARD,
     }])
   })
+
+  it('asks whether the action can be taken each time a problem happens, and offers nothing while it cannot', () => {
+    const handed: Problem[] = []
+    let can = false
+    let asked = 0
+    const offer = problemOffer(
+      { labelKey: 'elsewhere.tell', run: (problem) => handed.push(problem), available: () => { asked += 1; return can } },
+      (key) => key, () => undefined, () => AT,
+    )!
+    // Made while the action cannot be taken yet: nothing is asked until a problem happens.
+    expect(asked).toBe(0)
+    expect(offer({ where: 'app' })).toBeUndefined()
+    expect(asked).toBe(1)
+    can = true
+    const action = offer({ where: 'session.dispatch', key: 'command.taken' })!
+    expect(asked).toBe(2)
+    expect(action.label).toBe('elsewhere.tell')
+    // Pressed after it stopped being available: the offer made is still the person's to take.
+    can = false
+    action.onClick()
+    expect(handed).toEqual([{ where: 'session.dispatch', key: 'command.taken', at: '2026-10-01T09:30:00.000Z' }])
+  })
 })

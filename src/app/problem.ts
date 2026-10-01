@@ -69,7 +69,9 @@ function messageOf(cause: unknown): string | undefined {
 /**
  * The offer a notice carries: the provider's words, and a press that hands it
  * the problem as it was when it happened. Nothing where no provider offered an
- * action, so a build with none draws every notice exactly as before.
+ * action, so a build with none draws every notice exactly as before; and
+ * nothing for a problem that happens while the action says it cannot be taken
+ * (`available`), asked then and not when the offer was made.
  */
 export function problemOffer(
   action: ProblemAction | undefined,
@@ -79,6 +81,7 @@ export function problemOffer(
 ): ProblemOffer | undefined {
   if (!action) return undefined
   return (facts) => {
+    if (action.available && !action.available()) return undefined
     const problem = problemOf(facts, now(), screen())
     return { label: label(action.labelKey), onClick: () => action.run(problem) }
   }

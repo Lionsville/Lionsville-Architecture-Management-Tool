@@ -234,6 +234,12 @@ export type Problem = {
 export type ProblemAction = {
   readonly labelKey: string
   readonly run: (problem: Problem) => void
+  /**
+   * Whether the action can be taken now, asked each time a problem happens,
+   * before its button is drawn: where it answers `false`, that problem's
+   * notice or crash screen carries no button. Absent, it always can.
+   */
+  readonly available?: () => boolean
 }
 
 /** What a provider's part of *Connect an agent* is handed. */

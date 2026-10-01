@@ -39,7 +39,8 @@ of its own at the right end of the bar while its source is open (`barButton`);
 offer the person an action on a problem the app ran into, drawn on the crash
 screen and on the notice of a failure, a refusal or an unexpected error, and
 handed the problem only when it is pressed — the app sends nothing itself
-(`problemAction`); and move the app saying the move is its own
+(`problemAction`, whose `available` may say it cannot be taken when the
+problem happens, and then no button is drawn); and move the app saying the move is its own
 (`open(to, { by: 'provider' })`), which its chrome is then told as
 `movedBy: 'provider'`. A destination takes `tab` and `select`, and the screen
 says the observations tab that is up. A view's page with no id that a provider

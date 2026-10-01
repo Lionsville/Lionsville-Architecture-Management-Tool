@@ -159,6 +159,21 @@ describe('ErrorBoundary', () => {
     expect(handed[0].stack).toContain('the canvas fell over')
   })
 
+  it('offers two things and no third where the provider\u2019s action cannot be taken when the render throws', () => {
+    const run = vi.fn()
+    const offer = problemOffer({ labelKey: 'x', run, available: () => false }, () => 'Pass it on', () => undefined)
+    quietly(() => renderShell(
+      <ProblemOfferContext.Provider value={offer}>
+        <ErrorBoundary where="editor" diagnostics={new RecordingDiagnostics()} controls={controls()} s={translator('en')} showStack={false}>
+          <Boom />
+        </ErrorBoundary>
+      </ProblemOfferContext.Provider>,
+    ))
+    expect(screen.getAllByRole('button').map((one) => one.textContent)).toEqual(['Reload', 'Copy diagnostics'])
+    expect(screen.queryByTestId('crash-problem-action')).toBeNull()
+    expect(run).not.toHaveBeenCalled()
+  })
+
   it('offers nothing where it draws a fallback of its caller\u2019s instead of the crash screen', () => {
     const run = vi.fn()
     const offer = problemOffer({ labelKey: 'x', run }, () => 'Pass it on', () => undefined)
