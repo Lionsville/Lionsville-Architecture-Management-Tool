@@ -13,7 +13,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { translator } from '../i18n'
 import { RecordingDiagnostics } from '../adapters/memory/RecordingDiagnostics'
-import { ErrorBoundary } from './ErrorBoundary'
+import { ErrorBoundary, ProblemOfferContext } from './ErrorBoundary'
+import { problemOffer } from './problem'
+import type { Problem } from './problem'
 import { renderShell } from './testing/renderShell'
 
 afterEach(() => cleanup())
@@ -118,5 +120,56 @@ describe('ErrorBoundary', () => {
     cleanup()
     mount({ showStack: false })
     expect(screen.queryByTestId('crash-stack')).toBeNull()
+  })
+
+  it('offers two things and no third where no provider offers an action on a problem', () => {
+    mount()
+    const buttons = screen.getAllByRole('button').map((one) => one.textContent)
+    expect(buttons).toEqual(['Reload', 'Copy diagnostics'])
+    expect(screen.queryByTestId('crash-problem-action')).toBeNull()
+  })
+
+  /**
+   * The open source's provider's action on a problem, beside the two (ADR-0022,
+   * amended): in its own words, and handed the problem as it was when the
+   * render threw — only when it is pressed.
+   */
+  it('offers the provider\u2019s action as a third, and hands it the problem when pressed', () => {
+    const handed: Problem[] = []
+    const offer = problemOffer(
+      { labelKey: 'elsewhere.passOn', run: (problem) => handed.push(problem) },
+      () => 'Pass it on', () => ({ home: { path: '', name: 'Acme' } }), () => new Date('2026-10-01T09:30:00.000Z'),
+    )
+    quietly(() => renderShell(
+      <ProblemOfferContext.Provider value={offer}>
+        <ErrorBoundary where="editor" diagnostics={new RecordingDiagnostics()} controls={controls()} s={translator('en')} showStack={false}>
+          <Boom />
+        </ErrorBoundary>
+      </ProblemOfferContext.Provider>,
+    ))
+    const action = screen.getByTestId('crash-problem-action')
+    expect(action.textContent).toBe('Pass it on')
+    expect(handed).toEqual([])
+    fireEvent.click(action)
+    expect(handed).toHaveLength(1)
+    expect(handed[0]).toMatchObject({
+      where: 'editor', name: 'Error', message: 'the canvas fell over', at: '2026-10-01T09:30:00.000Z',
+      screen: { home: { path: '', name: 'Acme' } },
+    })
+    expect(handed[0].stack).toContain('the canvas fell over')
+  })
+
+  it('offers nothing where it draws a fallback of its caller\u2019s instead of the crash screen', () => {
+    const run = vi.fn()
+    const offer = problemOffer({ labelKey: 'x', run }, () => 'Pass it on', () => undefined)
+    quietly(() => renderShell(
+      <ProblemOfferContext.Provider value={offer}>
+        <ErrorBoundary where="face" diagnostics={new RecordingDiagnostics()} controls={controls()} s={translator('en')} fallback={<i>label</i>}>
+          <Boom />
+        </ErrorBoundary>
+      </ProblemOfferContext.Provider>,
+    ))
+    expect(screen.getByText('label')).toBeTruthy()
+    expect(screen.queryByText('Pass it on')).toBeNull()
   })
 })

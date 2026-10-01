@@ -22,8 +22,8 @@
  * A class, because `getDerivedStateFromError` and `componentDidCatch` have no
  * hook equivalent — this is the one place React still requires one.
  */
-import { Component } from 'react'
-import type { ErrorInfo, ReactNode } from 'react'
+import { Component, createContext } from 'react'
+import type { ContextType, ErrorInfo, ReactNode } from 'react'
 import Alert from '@mui/material/Alert'
 import AlertTitle from '@mui/material/AlertTitle'
 import Box from '@mui/material/Box'
@@ -32,6 +32,17 @@ import Typography from '@mui/material/Typography'
 import type { Translate } from '../i18n'
 import { describeCause, formatDiagnostics } from '../platform/diagnostics'
 import type { Diagnostic, DiagnosticEntry } from '../platform/diagnostics'
+import type { ProblemOffer } from './problem'
+import type { ToastAction } from './useToasts'
+
+/**
+ * The action the open source's provider offers on a problem (`problem.ts`),
+ * for every boundary under the shell: provided once by `App`, so each
+ * boundary draws it without a prop through every place that makes one.
+ * Nothing where no provider offered one, which is every build in this
+ * repository.
+ */
+export const ProblemOfferContext = createContext<ProblemOffer | undefined>(undefined)
 
 /**
  * What this boundary needs of the diagnostics seam: somewhere to report, and
@@ -66,9 +77,11 @@ export type ErrorBoundaryProps = {
 }
 
 type CopyState = 'idle' | 'copied' | 'failed'
-type ErrorBoundaryState = { error: Error | null; copied: CopyState }
+type ErrorBoundaryState = { error: Error | null; copied: CopyState; offered?: ToastAction }
 
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  static contextType = ProblemOfferContext
+  declare context: ContextType<typeof ProblemOfferContext>
   state: ErrorBoundaryState = { error: null, copied: 'idle' }
 
   static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
@@ -84,6 +97,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       message: `render threw${info.componentStack ? ` in${firstFrame(info.componentStack)}` : ''}`,
       cause: error,
     })
+    // Worked out now, so the problem is the moment it happened; handed over
+    // only if the person presses it.
+    const offered = this.props.fallback === undefined ? this.context?.({ where: this.props.where, cause: error }) : undefined
+    if (offered) this.setState({ offered })
   }
 
   private copy = (): void => {
@@ -129,6 +146,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 ? 'shell.diagnosticsCopied'
                 : copied === 'failed' ? 'shell.copyFailed' : 'shell.copyDiagnostics')}
             </Button>
+            {this.state.offered && (
+              <Button size="small" onClick={this.state.offered.onClick} data-testid="crash-problem-action">
+                {this.state.offered.label}
+              </Button>
+            )}
           </Box>
         </Alert>
       </Box>

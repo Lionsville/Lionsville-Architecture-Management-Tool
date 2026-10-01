@@ -435,7 +435,7 @@ export const GROWN = {
   'src/app/organisation/ScopeSettingsDialog.tsx': { lines: 159 },
   'src/app/organisation/organisationPages.ts': { complexity: 30 },
   'src/app/organisation/useOrganisation.ts': { lines: 233 },
-  'src/app/useModelSession.ts': { lines: 337 },
+  'src/app/useModelSession.ts': { lines: 330 },
   'src/business/ui/SheetPage.tsx': { complexity: 68, lines: 365 },
   'src/decisions/ui/AdrPage.tsx': { lines: 251 },
   'src/documentation/bpmn.ts': { complexity: 31 },

@@ -1387,3 +1387,59 @@ describe('the button a registered provider draws in the bar', () => {
     }
   })
 })
+
+/**
+ * The open source's provider's action on a problem (ADR-0022, amended): on the
+ * crash screen and on the notice of an unexpected error, in the provider's own
+ * words, handed the problem only when the person presses it — and nowhere at
+ * all for the sources that ship.
+ */
+describe('the action a registered provider offers on a problem', () => {
+  const elsewhere = { provider: 'elsewhere', name: 'Elsewhere', key: 'one' }
+  registerStrings('en', { 'elsewhere.passOn': 'Pass it on' })
+  function Broken(): never {
+    throw new TypeError('the strip fell over')
+  }
+
+  it('is a third button on the crash screen, and hands over the problem when pressed', async () => {
+    const handed: unknown[] = []
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    try {
+      renderApp({
+        source: elsewhere,
+        provider: {
+          chrome: [{ kind: 'elsewhere', chrome: Broken }],
+          problemAction: { labelKey: 'elsewhere.passOn', run: (problem) => handed.push(problem) },
+        },
+      })
+      const action = await screen.findByTestId('crash-problem-action')
+      expect(action.textContent).toBe('Pass it on')
+      expect(handed).toEqual([])
+      fireEvent.click(action)
+      expect(handed).toEqual([expect.objectContaining({
+        where: 'sourceChrome', name: 'TypeError', message: 'the strip fell over', screen: { home: expect.objectContaining({ path: '' }) },
+      })])
+    } finally {
+      errors.mockRestore()
+    }
+  })
+
+  it('is the button on the notice of an unexpected error', async () => {
+    const handed: unknown[] = []
+    renderApp({ source: elsewhere, provider: { problemAction: { labelKey: 'elsewhere.passOn', run: (problem) => handed.push(problem) } } })
+    act(() => { window.dispatchEvent(new ErrorEvent('error', { message: 'a timer fell over', error: new Error('a timer fell over') })) })
+    fireEvent.click(await screen.findByRole('button', { name: 'Pass it on' }))
+    expect(handed).toEqual([expect.objectContaining({ where: 'window', key: 'shell.unexpectedError', message: 'a timer fell over' })])
+  })
+
+  it('is nowhere where no provider offers one', async () => {
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    try {
+      renderApp({ source: elsewhere, provider: { chrome: [{ kind: 'elsewhere', chrome: Broken }] } })
+      await screen.findByTestId('crash-fallback')
+      expect(screen.queryByTestId('crash-problem-action')).toBeNull()
+    } finally {
+      errors.mockRestore()
+    }
+  })
+})

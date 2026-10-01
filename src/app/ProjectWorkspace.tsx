@@ -136,6 +136,8 @@ function useSessionParts(props: ProjectWorkspaceProps) {
     initialProject: project,
     notify,
     s,
+    // The open source's provider's action on a problem, on the notice of a refusal.
+    problem: shell.problem,
     // Read per ask, not captured: the index is rebuilt under a live session
     // whenever the folder changes (ADR-0012 §2).
     takenInTree: useCallback(() => indexRef.current.takenIds(), []),

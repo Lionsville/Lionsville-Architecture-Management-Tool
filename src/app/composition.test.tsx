@@ -22,7 +22,7 @@ import { WORKING_FILE_INTERCHANGE } from '../adapters/folder/format/interchange'
 import {
   interchangeLoaded, openSource, registerSourceProvider, registeredChrome, registeredConnects,
   registeredMenus, sourceAgentPanel, sourceBarButton, sourceChip, sourceChipFace, sourceChipPanel, sourceDescription,
-  sourceProvider, sourceSayings,
+  sourceProblemAction, sourceProvider, sourceSayings,
   type Shell, type SourceBase, type SourceParts,
 } from './composition'
 
@@ -630,6 +630,24 @@ describe('sourceBarButton', () => {
     expect(sourceBarButton(IN_MEMORY)).toBeUndefined()
     expect(sourceBarButton({ provider: 'folder', name: 'work', key: '/work' })).toBeUndefined()
     expect(sourceBarButton({ provider: 'faced', name: 'Faced', key: 'one' })).toBeUndefined()
+  })
+})
+
+/** An action on a problem: the open source's provider's own, and nobody else's. */
+describe('sourceProblemAction', () => {
+  it('is the provider\u2019s own for a source it answers for, and nothing otherwise', () => {
+    const action = { labelKey: 'acted.passOn', run: () => {} }
+    registerSourceProvider({
+      kind: 'acted',
+      problemAction: action,
+      open: () => ({
+        repositories: memoryRepositories(),
+        source: { provider: 'acted', name: 'Acted', key: 'one' },
+      }),
+    })
+    expect(sourceProblemAction({ provider: 'acted', name: 'Acted', key: 'one' })).toBe(action)
+    expect(sourceProblemAction(IN_MEMORY)).toBeUndefined()
+    expect(sourceProblemAction({ provider: 'folder', name: 'work', key: '/work' })).toBeUndefined()
   })
 })
 

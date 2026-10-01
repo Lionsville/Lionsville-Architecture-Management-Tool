@@ -1129,3 +1129,44 @@ describe('useModelSession — the changes still to be written', () => {
     expect(session().journal.pending()).toEqual([])
   })
 })
+
+/**
+ * A refusal said here carries the open source's provider's action on a
+ * problem where it offers one (ADR-0022, amended): the key that was refused,
+ * the command by its type, and nothing handed over until it is pressed.
+ */
+describe('useModelSession — an action on a refusal', () => {
+  function offering() {
+    const facts: unknown[] = []
+    const problem = (said: unknown) => {
+      facts.push(said)
+      return { label: 'Pass it on', onClick: () => {} }
+    }
+    const notify = vi.fn()
+    let session!: ModelSession
+    function Host({ readOnly }: { readOnly: boolean }) {
+      session = useModelSession({
+        initialProject: project({ model: model({ diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [] })] }) }),
+        notify, s: translator('en'), readOnly, problem,
+      })
+      return null
+    }
+    return { facts, notify, session: () => session, Host }
+  }
+
+  it('says the refusal and the command it refused', () => {
+    const { facts, notify, session, Host } = offering()
+    render(<Host readOnly={false} />)
+    act(() => { session().dispatch({ type: 'diagram.delete', id: 'd1' }) })
+    expect(facts).toEqual([{ where: 'session.dispatch', key: 'command.lastLandscape', command: 'diagram.delete' }])
+    expect(notify).toHaveBeenCalledWith(expect.stringContaining('last landscape'), 'error', { label: 'Pass it on', onClick: expect.any(Function) })
+  })
+
+  it('says a change refused because the scope is only read', () => {
+    const { facts, notify, session, Host } = offering()
+    render(<Host readOnly />)
+    act(() => { session().dispatch(rename('Renamed')) })
+    expect(facts).toEqual([{ where: 'session.readOnly', key: 'shell.readOnlyRefused', command: 'element.update' }])
+    expect(notify.mock.calls[0][2]).toMatchObject({ label: 'Pass it on' })
+  })
+})

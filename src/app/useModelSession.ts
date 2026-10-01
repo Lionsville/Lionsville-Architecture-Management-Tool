@@ -50,6 +50,8 @@ export type {
   StepFold, StepOrigin,
 } from '../ports/ScopeSession'
 import type { Notify } from './useToasts'
+import { offerFor } from './problem'
+import type { ProblemOffer } from './problem'
 
 /**
  * How many steps the session remembers. A step is a pair of commands rather than
@@ -249,7 +251,8 @@ function withoutUnattended(command: Command): Command {
   return carried
 }
 
-export function useModelSession(deps: {
+/** What the session is opened with: the scope, the way to say something, and the rules it keeps. */
+export type ModelSessionDeps = {
   initialProject: ScopeSnapshot
   notify: Notify
   s: Translate
@@ -279,8 +282,16 @@ export function useModelSession(deps: {
    * — and then nothing is kept, rather than a list that only grows.
    */
   journaling?: boolean
-}): ModelSession {
-  const { initialProject, notify, s, takenInTree, readOnly = false, journaling = false } = deps
+  /**
+   * The action the open source's provider offers on a problem, put on the
+   * notice of every refusal said here (`problem.ts`). Absent where none is
+   * offered, and the notices are what they always were.
+   */
+  problem?: ProblemOffer
+}
+
+export function useModelSession(deps: ModelSessionDeps): ModelSession {
+  const { initialProject, notify, s, takenInTree, readOnly = false, journaling = false, problem } = deps
 
   const [model, setModel]
  = useState<Model>(() => fromArrays(initialProject.model))
@@ -295,11 +306,11 @@ export function useModelSession(deps: {
    * person or a caller can change goes through here first; what another
    * author did, and a document adopted in place of this one, do not.
    */
-  const mayChange = useCallback((): boolean => {
+  const mayChange = useCallback((command?: Command): boolean => {
     if (!readOnly) return true
-    notify(s('shell.readOnlyRefused'), 'warning')
+    notify(s('shell.readOnlyRefused'), 'warning', ...offerFor(problem, { where: 'session.readOnly', key: 'shell.readOnlyRefused', command: command?.type }))
     return false
-  }, [readOnly, notify, s])
+  }, [readOnly, notify, s, problem])
   const guardedLogos = useCallback<ModelSession['setLogoLibrary']>((next) => {
     if (mayChange()) setLogoLibrary(next)
   }, [mayChange])
@@ -500,11 +511,11 @@ export function useModelSession(deps: {
   }, [notify, s, setActiveDiagramId])
 
   const dispatch = useCallback<ModelSession['dispatch']>((command, options) => {
-    if (!mayChange()) return undefined
+    if (!mayChange(command)) return undefined
     const before = modelRef.current
     const result = apply(before, command)
     if (!result.ok) {
-      notify(s(result.reason), 'error')
+      notify(s(result.reason), 'error', ...offerFor(problem, { where: 'session.dispatch', key: result.reason, command: command.type }))
       return undefined
     }
     if (options?.activeDiagramId !== undefined) setActiveDiagramId(options.activeDiagramId)
@@ -519,7 +530,7 @@ export function useModelSession(deps: {
     record(before, result.model, [withoutUnattended(command)], [result.inverse], meta)
     if (deletesAnElement(command)) reportOrphans(before, result.model)
     return asArrays(result.model)
-  }, [notify, s, record, setActiveDiagramId, asArrays, reportOrphans, mayChange])
+  }, [notify, s, record, setActiveDiagramId, asArrays, reportOrphans, mayChange, problem])
 
   const step = useCallback((from: 'past' | 'future') => {
     const stack = from === 'past' ? past.current : future.current
@@ -553,7 +564,7 @@ export function useModelSession(deps: {
     if (!result.ok) {
       // The stack refers to something the model no longer holds. Put nothing
       // back: a stack that cannot be replayed is worse than a shorter one.
-      notify(s(result.reason), 'error')
+      notify(s(result.reason), 'error', ...offerFor(problem, { where: `session.${from === 'past' ? 'undo' : 'redo'}`, key: result.reason }))
       setHistoryVersion((v) => v + 1)
       return
     }
@@ -578,7 +589,7 @@ export function useModelSession(deps: {
       ...(entry.origin !== undefined ? { origin: entry.origin } : {}),
       ...(entry.by !== undefined ? { by: entry.by } : {}),
     })
-  }, [notify, s, announce, keep])
+  }, [notify, s, announce, keep, problem])
 
   const undo = useCallback(() => { if (mayChange()) step('past') }, [step, mayChange])
   const redo = useCallback(() => { if (mayChange()) step('future') }, [step, mayChange])
@@ -599,7 +610,7 @@ export function useModelSession(deps: {
     const before = modelRef.current
     const result = apply(before, command)
     if (!result.ok) {
-      notify(s(result.reason), 'error')
+      notify(s(result.reason), 'error', ...offerFor(problem, { where: 'session.external', key: result.reason, command: command.type }))
       return undefined
     }
     // A command that changed nothing is not a refusal and not a step, exactly
@@ -617,7 +628,7 @@ export function useModelSession(deps: {
     refreshIds()
     if (deletesAnElement(command)) reportOrphans(before, result.model)
     return asArrays(result.model)
-  }, [notify, s, record, asArrays, refreshIds, reportOrphans])
+  }, [notify, s, record, asArrays, refreshIds, reportOrphans, problem])
 
   /**
    * Take a run of our own steps off the model, let the caller put what it has
@@ -647,7 +658,7 @@ export function useModelSession(deps: {
     if (!off.ok) {
       // Nothing moved. The caller has the key and decides what to do with it —
       // apply the external steps unrebased, or ask a person.
-      notify(s(off.reason), 'error')
+      notify(s(off.reason), 'error', ...offerFor(problem, { where: 'session.rebase', key: off.reason }))
       return { reapplied: [], dropped: [], unknown, supplied: [], refused: off.reason }
     }
     /**
@@ -701,7 +712,7 @@ export function useModelSession(deps: {
         .filter((fold) => fold.stepId === undefined)
         .map(({ changeId, commands, inverses }) => ({ changeId, commands, inverses })),
     }
-  }, [notify, s, trim])
+  }, [notify, s, trim, problem])
 
   const settled = useCallback<SessionSteps['settled']>((changeIds) => {
     for (const id of changeIds) unsettled.current.delete(id)

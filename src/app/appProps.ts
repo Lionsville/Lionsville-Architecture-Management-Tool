@@ -38,7 +38,7 @@ import type { CommandStream } from './useHostCommands'
 import type { ProjectFileChannel } from './useProjectFiles'
 import type { PreferencesWriter } from './useShellPreferences'
 import type { ChooseDestination } from './workingFileFlows'
-import type { SourceChanges } from '../ports/ProviderParts'
+import type { ProblemAction, SourceChanges } from '../ports/ProviderParts'
 
 /** A provider's sentences about its source, as keys of its own table. */
 export type SourceSayings = {
@@ -236,6 +236,14 @@ export type AppProvider = {
    * every build in this repository. Read from the registration by the boot.
    */
   barButton?: SourceBarButton
+  /**
+   * What the open source's provider offers the person on a problem
+   * (`ProblemAction`): drawn on the crash screen and on the notices a
+   * failure, a refusal or an unexpected error raise, and handed the problem
+   * only when it is pressed. Absent for every build in this repository.
+   * Read from the registration by the boot.
+   */
+  problemAction?: ProblemAction
   /**
    * The other places this build can work from: what each button says, and what
    * pressing it does (`platform/sourceProvider.ts`).

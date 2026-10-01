@@ -69,7 +69,7 @@ import type {
   SourcePreferencesPanel,
 } from './App'
 import type {
-  BarButtonProps, ProviderParts, SourceChipPanelProps, SourceChromeProps, SourceDestination,
+  BarButtonProps, ProblemAction, ProviderParts, SourceChipPanelProps, SourceChromeProps, SourceDestination,
   SourcePreferencesPanelProps,
 } from '../ports/ProviderParts'
 import type { Repositories } from '../ports/Repositories'
@@ -234,6 +234,13 @@ export type RegisteredSourceProvider<Opening = never, Own = unknown> =
      * `chipFace`. Core's three register none.
      */
     readonly barButton?: ComponentType<BarButtonProps<Own>>
+    /**
+     * What this provider offers the person on a problem the app ran into
+     * (`ProblemAction`): drawn where the app already says something about
+     * one, while its source is the one open, and handed the problem only when
+     * it is pressed. Core's three offer none, and send nothing anywhere.
+     */
+    readonly problemAction?: ProblemAction
     /**
      * What this provider puts inside *Preferences* about its own source
      * (`App`'s `SourcePreferencesPanel`), handed what it handed with its
@@ -457,6 +464,15 @@ export function sourceChipFace(source: WorkingSource): SourceChipFace | undefine
  */
 export function sourceBarButton(source: WorkingSource): SourceBarButton | undefined {
   return sourceProvider(source.provider)?.barButton
+}
+
+/**
+ * What the open source's provider offers the person on a problem, or
+ * nothing. The open source's alone: the problem is about the work that
+ * source holds, and nobody else is told it.
+ */
+export function sourceProblemAction(source: WorkingSource): ProblemAction | undefined {
+  return sourceProvider(source.provider)?.problemAction
 }
 
 /**

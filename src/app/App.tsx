@@ -20,6 +20,7 @@ import Box from '@mui/material/Box'
 import CssBaseline from '@mui/material/CssBaseline'
 import { ThemeProvider } from '@mui/material/styles'
 import type { Command, ElementId } from '../model'
+import type { Screen } from '../agent/screen'
 import type { Diagnostic, DiagnosticEntry } from '../platform/diagnostics'
 import { reasonOf, ShellError } from '../platform/errors'
 import { messageFor } from './messageFor'
@@ -41,7 +42,7 @@ import type {
   SourceOpen, SourcePreferencesPanelProps,
 } from '../ports/ProviderParts'
 import { useMouseHistoryButtons } from './BackForward'
-import { ErrorBoundary } from './ErrorBoundary'
+import { ErrorBoundary, ProblemOfferContext } from './ErrorBoundary'
 import { useOrganisation } from './organisation/useOrganisation'
 import type { ProjectSettings } from './ProjectSettingsDialog'
 import { ToastBar } from './ToastBar'
@@ -402,6 +403,9 @@ export function App(props: AppProps) {
        it, because that is what paints the page background. */
     <ThemeProvider theme={prefs.theme}>
       <CssBaseline />
+      {/* The open source's provider's action on a problem, for every boundary
+          below: nothing where it offers none. */}
+      <ProblemOfferContext.Provider value={parts.services.problem}>
       <Box sx={{ height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column' }}>
         {/* Inside the theme, so the fallback is painted in the user's colours,
             and around the two screens rather than around everything: a crash
@@ -419,6 +423,7 @@ export function App(props: AppProps) {
           onExited={toasts.exited}
         />
       </Box>
+      </ProblemOfferContext.Provider>
     </ThemeProvider>
   )
 }
@@ -535,6 +540,7 @@ function useShellParts(props: AppProps): ShellParts {
     watchScreen: (props.provider?.chrome?.length ?? 0) > 0 || props.provider?.chipPanel !== undefined
       || props.provider?.barButton !== undefined,
   })
+  base.screenRef.current = shellAgent.screenNow
   useWindowTitle({
     onTitle: host.onTitle, project, groupName: ancestry.groupName, organisationName: organisation.tree.name,
     home: nav.home, homeName: home.name,
@@ -599,9 +605,12 @@ function useShellBase(props: AppProps) {
   // The way in the host names: *Open…* in its menu, and its Recent list.
   const hostWay = props.provider?.waysIn?.find((way) => way.hostMenu)
   const host: AppHost = props.host ?? NOTHING
+  /** Where the app is, once the agent's half of the shell below can say it: what a problem says it happened on. */
+  const screenRef = useRef<() => Screen | undefined>(() => undefined)
   const services = useShellServices({
     preferences: props.preferences, initialPreferences: boot.initialPreferences, browserLanguages: boot.browserLanguages,
-    keepFailure: props.provider?.keepFailure, diagnostics,
+    keepFailure: props.provider?.keepFailure, diagnostics, problemAction: props.provider?.problemAction,
+    screen: () => screenRef.current(),
   })
   const { toasts, prefs, s, reportKept, failed, failedRef } = services
   // Read once per render rather than per card: a finding re-derived because a
@@ -671,6 +680,6 @@ function useShellBase(props: AppProps) {
   refreshTree.current = organisation.refresh
   return {
     source, host, services, todayDay, nav, tree, agentServer, machine, commands, order,
-    savedFilters, organisation, refreshTree,
+    savedFilters, organisation, refreshTree, screenRef,
   }
 }

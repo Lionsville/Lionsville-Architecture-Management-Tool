@@ -22,6 +22,8 @@
 import { useEffect, useRef } from 'react'
 import type { Translate } from '../i18n'
 import type { Diagnostic } from '../platform/diagnostics'
+import { offerFor } from './problem'
+import type { ProblemOffer } from './problem'
 import type { Notify } from './useToasts'
 
 /** How long a notice keeps the next one quiet. */
@@ -42,16 +44,18 @@ export function useGlobalErrors(deps: {
   diagnostics: { report(entry: Diagnostic): void }
   notify: Notify
   s: Translate
+  /** The action the open source's provider offers on a problem, where it offers one. */
+  problem?: ProblemOffer
   /** Injected so a test does not have to wait ten seconds. */
   throttleMs?: number
   now?: () => number
 }): void {
-  const { diagnostics, notify, s, throttleMs = ERROR_TOAST_THROTTLE_MS, now = Date.now } = deps
+  const { diagnostics, notify, s, problem, throttleMs = ERROR_TOAST_THROTTLE_MS, now = Date.now } = deps
 
   // In refs, so re-registering the listeners is not a consequence of a new
   // translator: the throttle would reset with them.
-  const latest = useRef({ diagnostics, notify, s, throttleMs, now })
-  latest.current = { diagnostics, notify, s, throttleMs, now }
+  const latest = useRef({ diagnostics, notify, s, problem, throttleMs, now })
+  latest.current = { diagnostics, notify, s, problem, throttleMs, now }
   const lastShown = useRef(-Infinity)
 
   useEffect(() => {
@@ -60,7 +64,7 @@ export function useGlobalErrors(deps: {
       it.diagnostics.report({ level: 'error', where, message, cause })
       if (it.now() - lastShown.current < it.throttleMs) return
       lastShown.current = it.now()
-      it.notify(it.s('shell.unexpectedError'), 'error')
+      it.notify(it.s('shell.unexpectedError'), 'error', ...offerFor(it.problem, { where, key: 'shell.unexpectedError', cause }))
     }
 
     const onError = (event: ErrorEvent) => {

@@ -32,6 +32,7 @@ import type { ProjectSettings } from './ProjectSettingsDialog'
 import type { Crumb, ToolbarAgent, ToolbarChip, ToolbarOverflow } from './ShellToolbar'
 import type { WorkspaceAgentView } from './useAgentShell'
 import type { MakeId } from './useDiagramActions'
+import type { ProblemOffer } from './problem'
 import type { ScopeSession } from './useModelSession'
 import type { ProjectFileChannel } from './useProjectFiles'
 import type { AskPassword } from './usePasswordPrompt'
@@ -325,6 +326,12 @@ export type WorkspaceShell = {
   language: Language
   notify: Notify
   makeId: MakeId
+  /**
+   * The action the open source's provider offers on a problem, for the
+   * notice of a refusal (`problem.ts`). Absent for all three sources that
+   * ship.
+   */
+  problem?: ProblemOffer
   /** Today as `yyyy-mm-dd`, for a decision's dates. Injected so a test can pin it. */
   today?: () => string
 }

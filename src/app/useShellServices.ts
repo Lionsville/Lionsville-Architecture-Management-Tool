@@ -16,7 +16,10 @@ import type { SavedFilter, SavedFilters } from '../observations/filter'
 import { isProjectOrder } from '../projects/scope'
 import type { ProjectOrder } from '../projects/scope'
 import type { SourceFailure } from '../platform/sourceProvider'
+import type { Screen } from '../agent/screen'
 import type { ShellDiagnostics } from './App'
+import { offerFor, problemOffer } from './problem'
+import type { ProblemAction, ProblemOffer } from './problem'
 import { useGlobalErrors } from './useGlobalErrors'
 import { useShellPreferences } from './useShellPreferences'
 import type { PreferencesWriter, ShellPreferences } from './useShellPreferences'
@@ -36,6 +39,12 @@ export type ShellServices = {
   reportKept: KeepNotice
   failed: Failed
   /**
+   * The action on a notice about a problem, where the open source's provider
+   * offers one (`problem.ts`); nothing otherwise. What the workspace's session
+   * puts on its refusals, and what every boundary draws on its crash screen.
+   */
+  problem: ProblemOffer | undefined
+  /**
    * `failed` by reference, so an effect can report without depending on its
    * identity: a dependency that changes on render is not a needless read but an
    * endless one.
@@ -49,8 +58,12 @@ export function useShellServices(deps: {
   browserLanguages: readonly string[] | string | undefined
   keepFailure: SourceFailure | undefined
   diagnostics: ShellDiagnostics
+  /** The open source's provider's action on a problem, where it offers one. */
+  problemAction?: ProblemAction
+  /** Where the app is now, for a problem to say where it happened; read when it happens. */
+  screen?: () => Screen | undefined
 }): ShellServices {
-  const { preferences, initialPreferences, browserLanguages, keepFailure, diagnostics } = deps
+  const { preferences, initialPreferences, browserLanguages, keepFailure, diagnostics, problemAction } = deps
   const toasts = useToasts()
   /**
    * Preferences and the storage notice need each other: writing a preference can
@@ -70,9 +83,17 @@ export function useShellServices(deps: {
   })
   const s = useMemo(() => translator(prefs.language), [prefs.language])
   noticeRef.current = useKeepNotice(toasts.notify, s, keepFailure)
+  // Through a ref: where the app is is known only once the shell below has
+  // been composed, and a problem reads it at the moment it happens.
+  const screenRef = useRef(deps.screen)
+  screenRef.current = deps.screen
+  const problem = useMemo(
+    () => problemOffer(problemAction, (key) => s(key as StringKey), () => screenRef.current?.()),
+    [problemAction, s],
+  )
 
   // The half a boundary cannot see: a throw in a listener, a timer or a promise.
-  useGlobalErrors({ diagnostics, notify: toasts.notify, s })
+  useGlobalErrors({ diagnostics, notify: toasts.notify, s, problem })
 
   /**
    * What happens when one of the shell's promises rejects.
@@ -88,11 +109,11 @@ export function useShellServices(deps: {
    */
   const failed = useCallback<Failed>((where, cause, key) => {
     diagnostics.report({ level: 'error', where, message: key ?? 'rejected', cause })
-    if (key) toasts.notify(s(key), 'error')
-  }, [diagnostics, toasts, s])
+    if (key) toasts.notify(s(key), 'error', ...offerFor(problem, { where, key, cause }))
+  }, [diagnostics, toasts, s, problem])
   const failedRef = useRef(failed)
   failedRef.current = failed
-  return { toasts, prefs, s, reportKept, failed, failedRef }
+  return { toasts, prefs, s, reportKept, failed, problem, failedRef }
 }
 
 /**

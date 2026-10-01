@@ -52,7 +52,8 @@ import { detectBrowserLanguage, translator } from '../i18n'
 import {
   composeShell, desktopCommandChannel, EXAMPLE_OFFERS, INTERCHANGE, openSource, overSource, registeredChrome, registeredConnects,
   registeredMenus, reloadWhenScriptsAreGone, sourceAgentPanel, sourceBarButton, sourceChip, sourceChipFace, sourceChipPanel,
-  sourceConnected, sourceDescription, sourceDestination, sourcePreferencesPanel, sourceRecentActivity, sourceSayings,
+  sourceConnected, sourceDescription, sourceDestination, sourcePreferencesPanel, sourceProblemAction, sourceRecentActivity,
+  sourceSayings,
 } from './composition'
 import type { RegisteredConnect } from './composition'
 import type { SourceLocation, SourceRecent, SourceWayIn } from '../platform/sourceProvider'
@@ -498,6 +499,7 @@ function renderApp(
           chipPanel: sourceChipPanel(shell.source),
           chipFace: sourceChipFace(shell.source),
           barButton: sourceBarButton(shell.source),
+          problemAction: sourceProblemAction(shell.source),
           menu: menus,
           onScopeSession: shell.onScopeSession,
           publishesSteps: shell.publishesSteps,

@@ -194,6 +194,40 @@ export type BarButtonProps<Own = unknown> = {
   own?: Own
 }
 
+/**
+ * A problem the app ran into, as the facts it had: handed to a provider's
+ * action on a problem ({@link ProblemAction}) when the person presses it, and
+ * never before. Every field but `where` and `at` is there where the app had it.
+ */
+export type Problem = {
+  /** Where it was caught or refused: a boundary (`app`, `editor`), a step, the session, the window. */
+  readonly where: string
+  /** What the person was told, or what was refused, as its key. */
+  readonly key?: string
+  /** What kind of error it was, where it was one (`TypeError`). */
+  readonly name?: string
+  /** What it said of itself. */
+  readonly message?: string
+  /** Its stack, where it carried one. */
+  readonly stack?: string
+  /** The command that was refused, by its type. */
+  readonly command?: string
+  /** When it happened, as an ISO 8601 instant. */
+  readonly at: string
+  /** Where the app was when it happened (ADR-0019's `Screen`). */
+  readonly screen?: Screen
+}
+
+/**
+ * An action a provider offers the person on a problem: the words on its
+ * button, as a key of the provider's own table, and what a press does with
+ * the problem. The app sends nothing anywhere itself.
+ */
+export type ProblemAction = {
+  readonly labelKey: string
+  readonly run: (problem: Problem) => void
+}
+
 /** What a provider's part of *Connect an agent* is handed. */
 export type SourceAgentPanelProps = { session?: ScopeSession }
 

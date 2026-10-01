@@ -11,10 +11,12 @@ import { cleanup, render } from '@testing-library/react'
 import { translator } from '../i18n'
 import { RecordingDiagnostics } from '../adapters/memory/RecordingDiagnostics'
 import { useGlobalErrors } from './useGlobalErrors'
+import { problemOffer } from './problem'
+import type { Problem, ProblemOffer } from './problem'
 
 afterEach(() => cleanup())
 
-function mount(over: { throttleMs?: number; now?: () => number } = {}) {
+function mount(over: { throttleMs?: number; now?: () => number; problem?: ProblemOffer } = {}) {
   const diagnostics = new RecordingDiagnostics()
   const notify = vi.fn()
   function Host() {
@@ -96,5 +98,23 @@ describe('useGlobalErrors', () => {
     // handler picks the event up, and a real Error there fails the file.
     window.dispatchEvent(new ErrorEvent('error', { message: 'after the app is gone' }))
     expect(diagnostics.recent()).toHaveLength(0)
+  })
+
+  it('says nothing more than it did where no provider offers an action on a problem', () => {
+    const { notify } = mount()
+    throwAt('a timer fell over')
+    expect(notify).toHaveBeenCalledWith('Something unexpected went wrong. If the screen stops responding, reload the page.', 'error')
+    expect(notify.mock.calls[0]).toHaveLength(2)
+  })
+
+  it('carries the provider\u2019s action on a problem, and hands over what was thrown when pressed', () => {
+    const handed: Problem[] = []
+    const problem = problemOffer({ labelKey: 'x', run: (one) => handed.push(one) }, () => 'Pass it on', () => undefined)
+    const { notify } = mount({ problem })
+    throwAt('a timer fell over')
+    const action = notify.mock.calls[0][2] as { label: string; onClick: () => void }
+    expect(action.label).toBe('Pass it on')
+    action.onClick()
+    expect(handed[0]).toMatchObject({ where: 'window', key: 'shell.unexpectedError', name: 'Error', message: 'a timer fell over' })
   })
 })
