@@ -1,7 +1,8 @@
 # ADR-0033 — Back goes to the place before
 
-* Status: accepted, 1 October 2026; as built, 1 October 2026, on a branch awaiting release;
-  amended 1 October 2026 (a place on the observations page carries its tab)
+* Status: accepted, 1 October 2026; as built, 1 October 2026; amended 1 October
+  2026 (a place on the observations page carries its tab); implemented,
+  1 October 2026
 * Date: 2026-10-01
 * Deciders: Wouter Simons
 * Extends: ADR-0019 (the screen an agent reads and the destination it opens:
@@ -206,7 +207,7 @@ gestures do the whole job, because they move the same history.
 * The desktop's smoke run: Back after opening a scope from a home returns to
   that home.
 
-## As built, 1 October 2026, on a branch awaiting release
+## As built, 1 October 2026
 
 Every part was built, in core, on one branch that has not been released.
 What follows is where it was built, and where the build departed from the
