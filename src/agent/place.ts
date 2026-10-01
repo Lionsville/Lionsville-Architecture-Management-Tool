@@ -21,6 +21,10 @@
  *     #place?scope=acme%2Frail&page=board&id=landscape
  *     #place?scope=&page=home                          the organisation's home
  *
+ * The observations page says which of its tabs is up, so a place on it may
+ * carry `tab` as well (ADR-0019, amended): a reload stays on the tab, and a
+ * change of tab is another record on the same page as far as a step goes.
+ *
  * The prefix is what tells a place from anything else a fragment may carry: a
  * source provider reads the address too (`SourceConnect.fromLocation`), and a
  * fragment that is not a place is left alone for whoever wrote it. The rest is
@@ -33,7 +37,7 @@
  * the history (`app/placeHistory.ts`), and a test here says that every place
  * written is read back the same.
  */
-import { HOME_PAGES, PAGES, VIEW_PAGES, viewPage } from './screen'
+import { HOME_PAGES, isObservationTab, PAGES, VIEW_PAGES, viewPage } from './screen'
 import type { Destination, Page, Screen } from './screen'
 
 /** A destination that names its scope: what the history holds, and what an address carries. */
@@ -45,7 +49,7 @@ export const PLACE_PREFIX = 'place?'
 /** The key a place is kept under in a history entry's state, beside whatever other code keeps there. */
 export const PLACE_STATE_KEY = 'lvarch.place'
 
-const KEYS = new Set(['scope', 'page', 'id'])
+const KEYS = new Set(['scope', 'page', 'id', 'tab'])
 
 /** The fragment for a place, with its `#`. */
 export function writePlace(place: Place): string {
@@ -53,14 +57,16 @@ export function writePlace(place: Place): string {
   query.set('scope', place.scope)
   if (place.page !== undefined) query.set('page', place.page)
   if (place.id !== undefined) query.set('id', place.id)
+  if (place.tab !== undefined) query.set('tab', place.tab)
   return `#${PLACE_PREFIX}${query.toString()}`
 }
 
 /**
  * The place a fragment names, with or without its `#` — or `undefined` for a
  * fragment that is not one: no prefix, a key this grammar does not have, a
- * key said twice, no scope, or a page there is no such thing as. Strict,
- * because a fragment that nearly is a place is somebody else's.
+ * key said twice, no scope, a page there is no such thing as, or a tab that
+ * is not one of the observations page's. Strict, because a fragment that
+ * nearly is a place is somebody else's.
  */
 export function readPlace(hash: string): Place | undefined {
   const fragment = hash.startsWith('#') ? hash.slice(1) : hash
@@ -76,7 +82,9 @@ export function readPlace(hash: string): Place | undefined {
   const page = query.get('page')
   if (page !== null && !isPage(page)) return undefined
   const id = query.get('id')
-  return { scope, ...(page !== null ? { page } : {}), ...(id !== null ? { id } : {}) }
+  const tab = query.get('tab')
+  if (tab !== null && !isObservationTab(tab)) return undefined
+  return { scope, ...(page !== null ? { page } : {}), ...(id !== null ? { id } : {}), ...(tab !== null ? { tab } : {}) }
 }
 
 function isPage(value: string): value is Page {
@@ -92,11 +100,12 @@ export function placeInState(state: unknown): Place | undefined {
   if (typeof state !== 'object' || state === null) return undefined
   const held = (state as Record<string, unknown>)[PLACE_STATE_KEY]
   if (typeof held !== 'object' || held === null) return undefined
-  const { scope, page, id } = held as Record<string, unknown>
+  const { scope, page, id, tab } = held as Record<string, unknown>
   if (typeof scope !== 'string') return undefined
   if (page !== undefined && (typeof page !== 'string' || !isPage(page))) return undefined
   if (id !== undefined && typeof id !== 'string') return undefined
-  return { scope, ...(page !== undefined ? { page } : {}), ...(id !== undefined ? { id } : {}) }
+  if (tab !== undefined && !isObservationTab(tab)) return undefined
+  return { scope, ...(page !== undefined ? { page } : {}), ...(id !== undefined ? { id } : {}), ...(tab !== undefined ? { tab } : {}) }
 }
 
 /**
@@ -111,7 +120,13 @@ export function placeInState(state: unknown): Place | undefined {
 export function placeOf(screen: Screen): Place | undefined {
   if (screen.open) {
     const scope = screen.open.path
-    if (screen.page) return { scope, page: screen.page.page, ...('id' in screen.page && screen.page.id !== undefined ? { id: screen.page.id } : {}) }
+    if (screen.page) {
+      const up = screen.page
+      return {
+        scope, page: up.page, ...('id' in up && up.id !== undefined ? { id: up.id } : {}),
+        ...(up.page === 'observations' && up.tab !== undefined ? { tab: up.tab } : {}),
+      }
+    }
     const view = screen.open.view
     return view ? { scope, page: viewPage(view.kind), id: view.id } : undefined
   }
@@ -119,10 +134,10 @@ export function placeOf(screen: Screen): Place | undefined {
   return undefined
 }
 
-/** The same place: the same scope, page and id. */
+/** The same place: the same scope, page, id and tab. */
 export function samePlace(a: Place | undefined, b: Place | undefined): boolean {
   if (a === undefined || b === undefined) return a === b
-  return a.scope === b.scope && a.page === b.page && a.id === b.id
+  return a.scope === b.scope && a.page === b.page && a.id === b.id && a.tab === b.tab
 }
 
 /** The two pages where moving from one record to the next is choosing, not going somewhere. */
@@ -134,9 +149,10 @@ const RECORD_PAGES: readonly Page[] = ['decisions', 'observations']
  * - **Nothing** for the same place: a look that found nothing new.
  * - **Replace** the entry for the first place there is — the entry the window
  *   opened on is the app's, and pushing would leave a Back that goes nowhere
- *   — and for another record on the same record page, because a Back that
- *   walked through every record looked at would be useless. The address still
- *   names the record on screen, so a reload stays on it.
+ *   — and for another record or another tab on the same record page, because
+ *   a Back that walked through every record looked at would be useless. The
+ *   address still names the record and the tab on screen, so a reload stays
+ *   on them.
  * - **Push** for every other move. Opening a record page on a record from
  *   anywhere else is one of those.
  */
@@ -202,8 +218,9 @@ export function nearestPlace(place: Place, facts: PlaceFacts): Place {
   if (id === undefined || facts.holds === undefined || facts.holds(id)) return place
   switch (page) {
     case 'decisions':
-    case 'observations':
       return { scope, page }
+    case 'observations':
+      return { scope, page, ...(place.tab !== undefined ? { tab: place.tab } : {}) }
     case 'plan':
       return { scope, page: 'roadmap' }
     default:

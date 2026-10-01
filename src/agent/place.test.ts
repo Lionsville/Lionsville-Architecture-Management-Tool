@@ -171,3 +171,42 @@ describe('where a place that is not there any more lands', () => {
     expect(nearestPlace({ scope: 'acme', page: 'platform', id: 'p' }, facts)).toEqual({ scope: 'acme', page: 'sheet', id: 'first' })
   })
 })
+
+/**
+ * The observations page's tab, which the screen says (ADR-0019, amended): a
+ * place on that page carries it, a reload stays on it, and a change of tab
+ * replaces the entry as another record on the same page does.
+ */
+describe('a place on the observations page, on a tab', () => {
+  it('is written and read back with its tab, and a tab that is none is no place', () => {
+    for (const tab of ['register', 'analysis', 'solutions'] as const) {
+      const place: Place = { scope: 'acme', page: 'observations', id: 'OB-1', tab }
+      expect(readPlace(writePlace(place))).toEqual(place)
+    }
+    expect(readPlace('#place?scope=acme&page=observations&tab=picture')).toBeUndefined()
+    expect(readPlace('#place?scope=acme&page=observations&tab=analysis&tab=register')).toBeUndefined()
+    expect(placeInState({ [PLACE_STATE_KEY]: { scope: 'acme', page: 'observations', tab: 'solutions' } }))
+      .toEqual({ scope: 'acme', page: 'observations', tab: 'solutions' })
+    expect(placeInState({ [PLACE_STATE_KEY]: { scope: 'acme', page: 'observations', tab: 'picture' } })).toBeUndefined()
+  })
+
+  it('is the place a screen with a tab up is', () => {
+    const open = { path: 'acme', name: 'Acme', view: { id: 'l7', name: 'Board', kind: 'layer7' } }
+    expect(placeOf({ open, page: { page: 'observations', id: 'OB-1', tab: 'analysis' } }))
+      .toEqual({ scope: 'acme', page: 'observations', id: 'OB-1', tab: 'analysis' })
+  })
+
+  it('is another place on another tab, and a change of tab replaces the entry', () => {
+    const register: Place = { scope: 'acme', page: 'observations', tab: 'register' }
+    const analysis: Place = { scope: 'acme', page: 'observations', tab: 'analysis' }
+    expect(samePlace(register, analysis)).toBe(false)
+    expect(stepBetween(register, analysis)).toBe('replace')
+    expect(stepBetween({ scope: 'acme', page: 'board', id: 'l7' }, analysis)).toBe('push')
+  })
+
+  it('keeps its tab where its record was removed', () => {
+    const facts: PlaceFacts = { scopeIs: () => true, views: [], holds: () => false }
+    expect(nearestPlace({ scope: 'acme', page: 'observations', id: 'OB-9', tab: 'solutions' }, facts))
+      .toEqual({ scope: 'acme', page: 'observations', tab: 'solutions' })
+  })
+})

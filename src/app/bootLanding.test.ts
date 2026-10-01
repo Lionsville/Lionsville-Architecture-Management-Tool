@@ -149,6 +149,17 @@ describe('a place in the address (ADR-0033)', () => {
     expect(placeLanding(held(scope('acme', [])), { scope: 'acme', page: 'board', id: 'gone' })).toEqual({ initialHome: 'acme' })
   })
 
+  /** A view's page with no id: the one of its kind there is, and the home where there is none (ADR-0019, amended). */
+  it('opens a view\u2019s page with no id on the one of its kind there is, and makes none', () => {
+    expect(placeLanding(held(rail), { scope: 'acme/rail', page: 'board' }).initialProject?.activeDiagramId).toBe('one')
+    expect(placeLanding(held(rail), { scope: 'acme/rail', page: 'sheet' })).toEqual({ initialHome: 'acme/rail' })
+  })
+
+  it('opens the observations page on the tab a place names', () => {
+    expect(placeLanding(held(rail), { scope: 'acme/rail', page: 'observations', tab: 'analysis' }).initialPage)
+      .toEqual({ page: 'observations', tab: 'analysis' })
+  })
+
   it('opens the page a place names over the scope, on its record, and without one that was removed', () => {
     const decided = held(rail, {
       decisions: [{ id: 'ADR-1', number: 1, title: 'One', status: 'proposed', date: '2026-01-01', body: '', signers: [] }],
