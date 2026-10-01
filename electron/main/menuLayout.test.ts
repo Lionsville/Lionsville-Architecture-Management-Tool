@@ -9,7 +9,7 @@
  * Close Window.
  */
 import { describe, expect, it } from 'vitest'
-import { fileMenuSlot, helpMenuTail, replacingSlot } from './menuLayout'
+import { fileMenuSlot, goMenuSlot, helpMenuTail, replacingSlot } from './menuLayout'
 
 /** The default macOS menu bar, with the roles spelled as Electron returns them. */
 const macDefaults = [
@@ -45,6 +45,19 @@ describe('replacingSlot', () => {
       .toEqual({ index: 2, replace: true })
     expect(replacingSlot([{ role: 'filemenu' }, { role: 'Help' }], 'editmenu'))
       .toEqual({ index: 2, replace: false })
+  })
+})
+
+describe('goMenuSlot (ADR-0033)', () => {
+  it('goes after View, as on every Mac', () => {
+    expect(goMenuSlot(macDefaults)).toBe(4)
+    expect(goMenuSlot([{ role: 'filemenu' }, { role: 'viewMenu' }, { role: 'help' }])).toBe(2)
+  })
+
+  it('goes before Window or Help where there is no View, and last where there is neither', () => {
+    expect(goMenuSlot([{ role: 'filemenu' }, { role: 'windowmenu' }, { role: 'help' }])).toBe(1)
+    expect(goMenuSlot([{ role: 'filemenu' }, { role: 'help' }])).toBe(1)
+    expect(goMenuSlot([{ role: 'filemenu' }])).toBe(1)
   })
 })
 

@@ -40,6 +40,7 @@ import type {
   SourceAgentPanelProps, SourceChipFaceProps, SourceChipPanelProps, SourceChromeProps, SourceMenuContext, SourceOpen,
   SourcePreferencesPanelProps,
 } from '../ports/ProviderParts'
+import { useMouseHistoryButtons } from './BackForward'
 import { ErrorBoundary } from './ErrorBoundary'
 import { useOrganisation } from './organisation/useOrganisation'
 import type { ProjectSettings } from './ProjectSettingsDialog'
@@ -615,6 +616,8 @@ function useShellBase(props: AppProps) {
     openPreferences: machine.setOpen, openAgent: agentServer.openDialog, hostControls,
   })
   useOpeningFailures({ failure: boot.sourceFailure, failureKey: boot.sourceFailureKey, notify: toasts.notify, s })
+  // The mouse's back and forward buttons, where the host asks for Back and Forward (ADR-0033).
+  useMouseHistoryButtons(host.windowChrome ?? NO_WINDOW_CHROME)
   useHostFacts({
     project, onScopeOpen: host.onScopeOpen, themeMode: prefs.themeMode, onThemeMode: host.onThemeMode,
     language: prefs.language, onLanguage: host.onLanguage,

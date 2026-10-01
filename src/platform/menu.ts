@@ -124,6 +124,36 @@ export const HELP_MENU: readonly MenuEntry[] = [
 ]
 
 /**
+ * The Go menu (ADR-0033): Back and Forward, the desktop's alone — a browser
+ * has both of its own, and they move the same history.
+ *
+ * Its keys are the ones every desktop app has: ⌘[ and ⌘] on macOS, Alt+← and
+ * Alt+→ elsewhere. On the menu items and nowhere else: on macOS a menu
+ * accelerator fires whether or not the page handled the key, so a chord with
+ * a renderer keymap as well would move the history twice. Neither chord is
+ * one the page takes for anything — the canvas nudges on a bare arrow and on
+ * Shift with one, never on Alt.
+ */
+export function goMenu(platform: string): readonly MenuItemSpec[] {
+  const mac = platform === 'darwin'
+  return [
+    { kind: 'item', label: 'menu.back', command: { type: 'back' }, accelerator: mac ? 'Cmd+[' : 'Alt+Left', on: ['desktop'] },
+    { kind: 'item', label: 'menu.forward', command: { type: 'forward' }, accelerator: mac ? 'Cmd+]' : 'Alt+Right', on: ['desktop'] },
+  ]
+}
+
+/**
+ * The trackpad's swipe between pages, as Electron names its direction: a
+ * swipe to the left is Back, as it is in every browser on a Mac. Up and down
+ * mean nothing here.
+ */
+export function swipeCommand(direction: string): HostCommand | undefined {
+  if (direction === 'left') return { type: 'back' }
+  if (direction === 'right') return { type: 'forward' }
+  return undefined
+}
+
+/**
  * The way from the web build to the desktop app: a link under Help to the page
  * it is downloaded from (ADR-0030).
  *

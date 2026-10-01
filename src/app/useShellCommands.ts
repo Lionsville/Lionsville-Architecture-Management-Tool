@@ -21,6 +21,7 @@ import type { ScopeSnapshot } from '../projects/scope'
 import { ROOT_SCOPE } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
 import type { HostControls } from '../ports/HostControls'
+import { goInHistory } from './BackForward'
 import { useHostCommands } from './useHostCommands'
 import type { CommandBus, CommandStream } from './useHostCommands'
 import type { ShellPreferences } from './useShellPreferences'
@@ -70,6 +71,9 @@ export function useShellCommands(deps: {
     // In the app's language, which is why it is answered here and not by the
     // menu bar: main does not know which one is on.
     if (command.type === 'manual') hostControls.openExternal(manualUrl(prefs.language))
+    // Here and not in the workspace, so the Go menu works from a home with
+    // nothing open as well as over a scope (ADR-0033).
+    if (command.type === 'back' || command.type === 'forward') goInHistory(command.type)
   }), [bus, onConnect, onReopen, prefs, openPreferences, openAgent, hostControls])
   return { bus, homeHistory, homeFiles }
 }

@@ -10,7 +10,8 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
-  EDIT_ITEMS, FILE_MENU, HELP_MENU, PREFERENCES_ITEM, SETTINGS_ITEM, THEME_ITEMS, commandsIn, offered, preferencesPlacement,
+  EDIT_ITEMS, FILE_MENU, HELP_MENU, PREFERENCES_ITEM, SETTINGS_ITEM, THEME_ITEMS, commandsIn, goMenu, offered, preferencesPlacement,
+  swipeCommand,
 } from './menu'
 
 const labels = (entries: ReturnType<typeof offered>) =>
@@ -110,5 +111,38 @@ describe('with no scope open', () => {
     expect(EDIT_ITEMS.delete.accelerator).toBeUndefined()
     expect(EDIT_ITEMS.selectAll.accelerator).toBeUndefined()
     expect(EDIT_ITEMS.selectAll.command).toEqual({ type: 'selectAll' })
+  })
+})
+
+describe('the Go menu (ADR-0033)', () => {
+  it('is Back and Forward, on the platform’s own keys', () => {
+    expect(goMenu('darwin').map((item) => [item.command.type, item.accelerator])).toEqual([['back', 'Cmd+['], ['forward', 'Cmd+]']])
+    for (const platform of ['win32', 'linux']) {
+      expect(goMenu(platform).map((item) => [item.command.type, item.accelerator])).toEqual([['back', 'Alt+Left'], ['forward', 'Alt+Right']])
+    }
+  })
+
+  it('is the desktop’s alone, needs nothing open, and the web is offered none of it', () => {
+    for (const item of goMenu('darwin')) {
+      expect(item.on).toEqual(['desktop'])
+      expect(item.needs).toBeUndefined()
+    }
+    expect(offered(goMenu('linux'), 'web', { history: true, connect: true, scope: true })).toEqual([])
+    expect(offered(goMenu('linux'), 'desktop', { history: false, connect: false, scope: false })).toHaveLength(2)
+  })
+
+  it('takes no chord another menu item takes', () => {
+    const others = [...FILE_MENU, ...HELP_MENU, ...Object.values(EDIT_ITEMS), PREFERENCES_ITEM]
+      .flatMap((entry) => (entry.kind === 'item' && entry.accelerator ? [entry.accelerator] : []))
+    for (const platform of ['darwin', 'win32']) {
+      for (const item of goMenu(platform)) expect(others).not.toContain(item.accelerator)
+    }
+  })
+
+  it('reads a swipe to the left as Back and one to the right as Forward', () => {
+    expect(swipeCommand('left')).toEqual({ type: 'back' })
+    expect(swipeCommand('right')).toEqual({ type: 'forward' })
+    expect(swipeCommand('up')).toBeUndefined()
+    expect(swipeCommand('down')).toBeUndefined()
   })
 })

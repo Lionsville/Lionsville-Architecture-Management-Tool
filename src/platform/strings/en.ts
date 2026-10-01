@@ -44,6 +44,10 @@ export const EN = {
   'menu.help': 'Help',
   'menu.userManual': 'User Manual',
   'menu.shortcuts': 'Keyboard Shortcuts…',
+  /** The desktop's Go menu (ADR-0033), between View and Window as on every Mac. */
+  'menu.go': 'Go',
+  'menu.back': 'Back',
+  'menu.forward': 'Forward',
   /** The web's link to the desktop app's download page; the desktop never shows it. */
   'menu.getDesktopApp': 'Get the Desktop App',
   // The question the desktop asks where closing would lose what could not be saved.

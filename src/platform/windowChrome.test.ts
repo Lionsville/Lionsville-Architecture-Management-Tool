@@ -15,9 +15,20 @@ describe('windowChromeFor', () => {
     expect(chrome.draggable).toBe(true)
   })
 
-  it('leaves the other desktops alone: they keep a real title bar', () => {
-    expect(windowChromeFor({ desktop: true, platform: 'win32' })).toEqual(NO_WINDOW_CHROME)
-    expect(windowChromeFor({ desktop: true, platform: 'linux' })).toEqual(NO_WINDOW_CHROME)
+  it('leaves the other desktops their title bar: no inset and no handle', () => {
+    for (const platform of ['win32', 'linux']) {
+      const chrome = windowChromeFor({ desktop: true, platform })
+      expect(chrome.controlsInset).toBe(0)
+      expect(chrome.draggable).toBe(false)
+    }
+  })
+
+  it('asks for Back and Forward on every desktop, and never in a browser tab (ADR-0033)', () => {
+    for (const platform of ['darwin', 'win32', 'linux', undefined]) {
+      expect(windowChromeFor({ desktop: true, platform }).backForward).toBe(true)
+      expect(windowChromeFor({ desktop: false, platform }).backForward).toBeUndefined()
+    }
+    expect(NO_WINDOW_CHROME.backForward).toBeUndefined()
   })
 
   it('does not take the platform of a browser to mean anything', () => {

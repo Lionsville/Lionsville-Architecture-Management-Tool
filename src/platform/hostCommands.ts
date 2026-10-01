@@ -63,6 +63,13 @@ export type HostCommand =
   | { type: 'manual' }
   /** Help: the shortcut overlay the `?` button already opens. */
   | { type: 'shortcuts' }
+  /**
+   * The Go menu's two, its keys and the trackpad's swipe (ADR-0033): the
+   * window's own history, moved from inside the page — the same Back and
+   * Forward the bar draws on the desktop and a browser has of its own.
+   */
+  | { type: 'back' }
+  | { type: 'forward' }
 
 /**
  * Somewhere to send them, and two things to send back.

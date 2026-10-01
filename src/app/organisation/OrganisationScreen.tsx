@@ -66,6 +66,7 @@ import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Link from '@mui/material/Link'
 import type { ExampleOffer } from '../../projects/examples/catalogue'
+import { BackForward } from '../BackForward'
 import { OverflowMenu } from '../OverflowMenu'
 import type { ToolbarAgent, ToolbarOverflow } from '../ShellToolbar'
 import { agentTip, Crumbs, crumbsFor, QUIET, SourceChipView, WRAPS } from '../ShellToolbar'
@@ -872,6 +873,7 @@ function OrganisationBar({
       WebkitAppRegion: windowChrome.draggable ? 'drag' : undefined,
       '& button, & a, & input': { WebkitAppRegion: 'no-drag' },
     }}>
+      <BackForward chrome={windowChrome} s={s} />
       <Crumbs crumbs={crumbs} current={heading} currentPath={home.path} onGoHome={onGoHome} s={s} />
       <Typography sx={{ fontSize: 11, color: 'text.secondary', whiteSpace: 'nowrap' }}>
         {s(SCOPE_KIND_LABEL[home.kind ?? level])}

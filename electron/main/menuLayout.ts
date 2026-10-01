@@ -59,6 +59,18 @@ export function replacingSlot(items: readonly PlaceableItem[], role: 'editmenu' 
 }
 
 /**
+ * Where the Go menu goes (ADR-0033): after View, as on every Mac, and before
+ * Window and Help where there is no View — never over anything, because
+ * Electron builds no Go menu of its own.
+ */
+export function goMenuSlot(items: readonly PlaceableItem[]): number {
+  const view = items.findIndex((item) => roleOf(item) === 'viewmenu')
+  if (view !== -1) return view + 1
+  const later = items.findIndex((item) => roleOf(item) === 'windowmenu' || roleOf(item) === 'help')
+  return later !== -1 ? later : items.length
+}
+
+/**
  * What the Help menu ends with.
  *
  * *Check for Updates…* is main's own item, in one place on every platform, and

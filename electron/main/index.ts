@@ -30,6 +30,7 @@ import { openedDocuments } from './openedDocuments'
 import { guardWindow, liveWindows, platformWords, reportUnsaved, windowsOf } from './windowGuard'
 import { commandsHeard, commandsListened, holdUntilHeard, installAppMenu, reportScopeOpen, reportTheme, sendCommand } from './appMenu'
 import { productName } from '../../package.json'
+import { swipeCommand } from '../../src/platform/menu'
 import { isThemeMode } from '../../src/platform/theme'
 import { USER_DATA_NAME } from '../../src/platform/userData'
 import { recentDirectories, registerFileChannel, stopWatching } from './files'
@@ -199,6 +200,13 @@ function createWindow(): BrowserWindow {
   })
   window.webContents.on('will-navigate', (event, url) => {
     if (!url.startsWith(RENDERER_URL)) event.preventDefault()
+  })
+  // The trackpad's swipe between pages (ADR-0033), on macOS where the system
+  // is set to swipe between pages: Back and Forward, as the Go menu sends
+  // them. The mouse's own back and forward buttons reach the page itself.
+  window.on('swipe', (_event, direction) => {
+    const command = swipeCommand(direction)
+    if (command) sendCommand(command)
   })
 
   return window

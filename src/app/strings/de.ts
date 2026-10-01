@@ -387,6 +387,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.activityUnattended': 'AUTOMATISCH ANGEORDNET',
   'shell.alsoHere': 'Auch hier: {names}',
   'shell.search': 'Suchen',
+  'shell.back': 'Zurück',
+  'shell.forward': 'Vorwärts',
   'shell.searchTip': 'Elemente, Dokumentation und Entscheidungen durchsuchen (⌘K)',
 
   // Der Organisationsbildschirm: das Zuhause des Wurzelbereichs, der die Auswahl ersetzt hat.

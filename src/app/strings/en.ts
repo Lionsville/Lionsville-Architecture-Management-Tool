@@ -562,6 +562,9 @@ export const EN = {
    */
   'shell.alsoHere': 'Also here: {names}',
   'shell.search': 'Search',
+  /** The desktop bar's two (ADR-0033): the window's own Back and Forward, pressed from inside the page. */
+  'shell.back': 'Back',
+  'shell.forward': 'Forward',
   'shell.searchTip': 'Search elements, documentation and decisions (\u2318K)',
 
   // The organisation screen: the root scope's home, which replaced the picker.

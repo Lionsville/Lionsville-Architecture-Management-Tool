@@ -386,6 +386,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.activityUnattended': 'AUTOMATISCH INGEDEELD',
   'shell.alsoHere': 'Ook hier: {names}',
   'shell.search': 'Zoeken',
+  'shell.back': 'Terug',
+  'shell.forward': 'Vooruit',
   'shell.searchTip': 'Zoek elementen, documentatie en besluiten (\u2318K)',
 
   // Het organisatiescherm: het thuis van de hoofdonderdeel, dat de kiezer verving.

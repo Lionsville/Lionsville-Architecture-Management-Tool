@@ -28,6 +28,13 @@
  * while none is, rather than doing nothing in silence. Main asks nothing
  * else (ADR-0005, amended).
  *
+ * **Go** is ours alone, Back and Forward (ADR-0033): Electron builds no Go
+ * menu, so it is added after View rather than put over anything. Its two
+ * work with nothing open as well as over a scope — the renderer answers them
+ * at the shell, not in the workspace — and they are not held for a window
+ * that does not listen yet: a Back pressed at a page that is not there has
+ * no place before to go to.
+ *
  * Edit and Help are ours as well as File. Electron's Edit menu binds Undo to
  * the DOM, which the app's one undo stack is not in, so its four that are the
  * app's send commands and the clipboard roles stay; its Help menu links to
@@ -42,10 +49,10 @@
 import { Menu, MenuItem, webContents } from 'electron'
 import type { MenuItemConstructorOptions, WebContents } from 'electron'
 import type { DesktopDirectory } from '../../src/adapters/desktop/channel'
-import { fileMenuSlot, helpMenuTail, replacingSlot } from './menuLayout'
+import { fileMenuSlot, goMenuSlot, helpMenuTail, replacingSlot } from './menuLayout'
 import type { HostCommand } from '../../src/platform/hostCommands'
 import {
-  EDIT_ITEMS, FILE_MENU, HELP_MENU, PREFERENCES_ITEM, SETTINGS_ITEM, THEME_ITEMS, preferencesPlacement,
+  EDIT_ITEMS, FILE_MENU, HELP_MENU, PREFERENCES_ITEM, SETTINGS_ITEM, THEME_ITEMS, goMenu, preferencesPlacement,
 } from '../../src/platform/menu'
 import type { MenuEntry, MenuItemSpec } from '../../src/platform/menu'
 import type { ThemeMode } from '../../src/platform/theme'
@@ -266,6 +273,7 @@ export function installAppMenu(options: {
   const file = new MenuItem({ label: label('menu.file'), submenu: fileMenuFor(options.recents) })
   const edit = new MenuItem({ label: label('menu.edit'), submenu: editMenuFor() })
   const help = new MenuItem({ label: label('menu.help'), role: 'help', submenu: helpMenuFor(options.onCheckForUpdates) })
+  const go = new MenuItem({ label: label('menu.go'), submenu: goMenu(process.platform).map(itemFor) })
 
   // Over Electron's own File menu, whose one item ours ends with; then over
   // its Edit and Help, which bind the wrong things.
@@ -276,6 +284,7 @@ export function installAppMenu(options: {
   items.splice(editSlot.index, editSlot.replace ? 1 : 0, edit)
   const helpSlot = replacingSlot(items, 'help')
   items.splice(helpSlot.index, helpSlot.replace ? 1 : 0, help)
+  items.splice(goMenuSlot(items), 0, go)
 
   const menu = new Menu()
   for (const held of items) menu.append(held)

@@ -31,6 +31,13 @@ export type WindowChrome = {
    * click away from each other. Absent or zero, a page covers the window.
    */
   topInset?: number
+  /**
+   * Whether the top bar draws Back and Forward (ADR-0033): a window with no
+   * browser bar around it has no other Back to press. Never in a browser tab,
+   * whose own Back, keys and gestures move the same history — a page that drew
+   * a second Back beside the browser's would have two that disagree.
+   */
+  backForward?: boolean
 }
 
 /** A browser tab draws its own frame around us; there, the page owns every pixel. */
@@ -59,9 +66,11 @@ const MAC_TRAFFIC_LIGHTS = 78
 
 /**
  * Windows and Linux keep a real title bar, which moves the window itself and
- * covers nothing of ours: only macOS hands us both jobs.
+ * covers nothing of ours: only macOS hands us both jobs. Back and Forward are
+ * the bar's on every desktop, because no desktop window has a browser's.
  */
 export function windowChromeFor(host: { desktop: boolean; platform?: string }): WindowChrome {
-  if (!host.desktop || host.platform !== 'darwin') return NO_WINDOW_CHROME
-  return { controlsInset: MAC_TRAFFIC_LIGHTS, draggable: true }
+  if (!host.desktop) return NO_WINDOW_CHROME
+  if (host.platform !== 'darwin') return { ...NO_WINDOW_CHROME, backForward: true }
+  return { controlsInset: MAC_TRAFFIC_LIGHTS, draggable: true, backForward: true }
 }

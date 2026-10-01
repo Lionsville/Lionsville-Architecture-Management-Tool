@@ -37,6 +37,9 @@ export const NL: Record<keyof typeof EN, string> = {
   'menu.help': 'Help',
   'menu.userManual': 'Handleiding',
   'menu.shortcuts': 'Sneltoetsen…',
+  'menu.go': 'Ga',
+  'menu.back': 'Terug',
+  'menu.forward': 'Vooruit',
   'menu.getDesktopApp': 'Desktop-app downloaden',
   // The question the desktop asks where closing would lose what could not be saved.
   'window.unsavedTitle': 'Niet-bewaarde wijzigingen',

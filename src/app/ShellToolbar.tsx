@@ -46,6 +46,7 @@ import type { WindowChrome } from '../platform/windowChrome'
 import type { WorkingSource } from '../platform/workingSource'
 import type { SourceChip, SourceMenuEntry, SourceWorkChanged } from '../platform/sourceProvider'
 import { ActivityMenu } from './ActivityMenu'
+import { BackForward } from './BackForward'
 import type { ActivityEntry, ActivityMenuProps } from './ActivityMenu'
 import { OverflowMenu } from './OverflowMenu'
 import { clockTime } from './clockTime'
@@ -583,6 +584,7 @@ export function ShellToolbar({
       WebkitAppRegion: windowChrome.draggable ? 'drag' : undefined,
       '& button, & a, & input': { WebkitAppRegion: 'no-drag' },
     }}>
+      <BackForward chrome={windowChrome} s={s} />
       <Crumbs crumbs={crumbs} current={designName} currentPath={scopePath} onGoHome={onGoHome} s={s} />
       <Tooltip title={s('settings.title')}>
         <Button size="small" color="inherit" onClick={onOpenSettings} sx={quiet}>
