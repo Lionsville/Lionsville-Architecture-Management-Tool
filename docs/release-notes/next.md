@@ -28,6 +28,12 @@ reload stays on it, and changing the tab is not a step for Back. *Make…* on a
 home's card and **New board…** over its boards still make a new sheet, map or
 landscape, as before.
 
+**An agent that opens a home shows the home.** When the register or the
+technology register was open over a home's cards, an agent asking for that
+home left the page up over them. It now closes, as it does when Back goes to
+the home, and a register an agent opened no longer comes back over the home
+when you return to it from a scope.
+
 **For a build composed from this one.** A source's provider may draw a button
 of its own at the right end of the bar while its source is open (`barButton`);
 offer the person an action on a problem the app ran into, drawn on the crash

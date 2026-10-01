@@ -33,6 +33,13 @@ import type { Notify } from './useToasts'
 
 export type OrgPage = 'register' | 'technologyRegister'
 
+/**
+ * What the shell asks of the organisation screen: one of its two pages, or
+ * the home itself with neither over it. With a nonce, because the same thing
+ * asked for twice is two requests and a prop that did not change is none.
+ */
+export type OrgPageRequest = { page: OrgPage | 'home'; nonce: number }
+
 /** Where a failure goes when the caller gave nowhere: a history that cannot say where a place lands still opens it. */
 const NOBODY = () => {}
 
@@ -68,9 +75,23 @@ export function useShellAgent(deps: {
   const watchScreen = deps.watchScreen ?? false
   const report = deps.report ?? NOBODY
   const [orgPage, setOrgPage] = useState<OrgPage | undefined>(undefined)
-  const [orgPageRequest, setOrgPageRequest] = useState<{ page: OrgPage; nonce: number } | undefined>(
+  const [orgPageRequest, setOrgPageRequest] = useState<OrgPageRequest | undefined>(
     () => (deps.initialHomePage ? { page: deps.initialHomePage, nonce: 1 } : undefined),
   )
+  /**
+   * A home is opened as itself: the home asked for, and the page over it said
+   * every time — closed for `home` — because the screen may be up with a page
+   * open over its cards, and a move to the home that left that page up would
+   * not have arrived where it was sent.
+   */
+  const homeAt = useCallback((scope: ScopePath, page: OrgPage | 'home') => {
+    goHome(scope)
+    setOrgPageRequest((prev) => ({ page, nonce: (prev?.nonce ?? 0) + 1 }))
+  }, [goHome])
+  // A request is for the screen that is up. Once a scope is open that screen
+  // is gone, and the home that comes back later — by a crumb, or a scope with
+  // nothing to show — comes back as itself, not with the page last asked for.
+  useEffect(() => { if (project) setOrgPageRequest(undefined) }, [project])
   const agentSessionRef = useRef<WorkspaceAgentView | undefined>(undefined)
   const screenNow = useCallback(
     (): Screen => screenOf(agentSessionRef.current, project, { home, homeName, organisationName, orgPage }),
@@ -78,9 +99,7 @@ export function useShellAgent(deps: {
   )
   const openFor = useCallback((to: Destination & { scope: string }) => {
     if (to.page === 'home' || to.page === 'register' || to.page === 'technologyRegister') {
-      const page = to.page
-      goHome(to.scope)
-      setOrgPageRequest((prev) => (page === 'home' ? undefined : { page, nonce: (prev?.nonce ?? 0) + 1 }))
+      homeAt(to.scope, to.page)
       return
     }
     const open = agentSessionRef.current
@@ -89,7 +108,7 @@ export function useShellAgent(deps: {
       // the scope's home where there is none: an open never makes a view.
       if (to.page !== undefined && VIEW_PAGES.includes(to.page)) {
         const id = viewFor(to.page, to.id, open.current().diagrams, open.activeDiagramId())
-        if (id === undefined) { goHome(to.scope); return }
+        if (id === undefined) { homeAt(to.scope, 'home'); return }
         open.show({ ...to, id })
         return
       }
@@ -97,7 +116,7 @@ export function useShellAgent(deps: {
       return
     }
     openScopeAt(to.scope, initialPageFor(to))
-  }, [goHome, project, openScopeAt])
+  }, [homeAt, project, openScopeAt])
   /**
    * The window's history (ADR-0033): every look below is handed to it, so a
    * move to another place is a step whoever made it, and Back opens the place

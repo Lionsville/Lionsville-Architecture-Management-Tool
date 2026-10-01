@@ -156,6 +156,32 @@ describe('with the organisation screen up', () => {
   })
 
   /**
+   * A home is opened as itself: the page over its cards closes, whichever of
+   * the two it was, and the home that comes back after a scope comes back
+   * without the page last asked for.
+   */
+  it('closes the page over the home when the home itself is asked for', async () => {
+    const { ask } = await organisationOnScreen()
+    await waitFor(async () => expect(parsed(await ask('app.current')).scopes).toBe(3))
+    for (const [page, bar] of [['register', 'register-topbar'], ['technologyRegister', 'technology-register-topbar']]) {
+      expect(parsed(await ask('app.open', { scope: '', page })).page).toEqual({ page })
+      expect(await screen.findByTestId(bar)).toBeDefined()
+      const home = parsed(await ask('app.open', { scope: '', page: 'home' }))
+      expect(home.arrived).toBe(true)
+      expect(home.page).toBeUndefined()
+      await waitFor(() => expect(screen.queryByTestId(bar)).toBeNull())
+      expect(screen.getByTestId('organisation-cards')).toBeDefined()
+    }
+    await ask('app.open', { scope: '', page: 'register' })
+    expect(await screen.findByTestId('register-topbar')).toBeDefined()
+    await ask('app.open', { scope: 'acme/retail' })
+    fireEvent.click(screen.getByTestId('crumb-'))
+    expect(await screen.findByTestId('organisation-cards')).toBeDefined()
+    expect(screen.queryByTestId('register-topbar')).toBeNull()
+    expect(parsed(await ask('app.current')).page).toBeUndefined()
+  })
+
+  /**
    * The agent is told the record on show, not the one it last asked for; and
    * asking for that one again after the person moved off it lands, where it
    * used to leave the page where it was.

@@ -199,6 +199,20 @@ describe('Back and Forward', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
   })
 
+  it('goes back from a page over the home to the home itself, with the page closed', async () => {
+    const { ask, where } = await organisationOnScreen()
+    await ask('app.open', { scope: '', page: 'register' })
+    await settledOn({ scope: '', page: 'register' })
+    expect(await screen.findByTestId('register-topbar')).toBeDefined()
+    window.history.back()
+    await waitFor(() => expect(screen.queryByTestId('register-topbar')).toBeNull())
+    expect((await where()).page).toBeUndefined()
+    expect(entryPlace()).toEqual({ scope: '', page: 'home' })
+    window.history.forward()
+    expect(await screen.findByTestId('register-topbar')).toBeDefined()
+    await settledOn({ scope: '', page: 'register' })
+  })
+
   /** An entry naming what is gone, as it would after a removal: the history cannot skip it. */
   async function backTo(place: Place) {
     const wire = await organisationOnScreen()

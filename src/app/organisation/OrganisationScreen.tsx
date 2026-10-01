@@ -218,11 +218,12 @@ export type OrganisationScreenProps = {
   /** Open a row's page — the record and its document — where it is answered for. */
   onOpenRegisterPage?: (scope: ScopePath, id: ElementId) => void
   /**
-   * An agent asked for one of this screen's two pages (ADR-0019). A request
-   * with a nonce, because the same page asked for twice is two requests and
-   * a prop that did not change is none.
+   * One of this screen's two pages asked for, or the home itself with neither
+   * over it (`home`) — by an agent, a provider or Back (ADR-0019, ADR-0033). A
+   * request with a nonce, because the same page asked for twice is two
+   * requests and a prop that did not change is none.
    */
-  pageRequest?: { page: 'register' | 'technologyRegister'; nonce: number }
+  pageRequest?: { page: 'register' | 'technologyRegister' | 'home'; nonce: number }
   /** Which of the two pages is up, whenever that changes — so the shell can say where the app is. */
   onPageChange?: (page: 'register' | 'technologyRegister' | undefined) => void
   /** Resolve a conflict: open the scope that should yield, with *link* pending. */
@@ -305,8 +306,8 @@ export function OrganisationScreen({
     setBarHeight(node.getBoundingClientRect().height)
   }, [])
   const pageChrome = useMemo<WindowChrome>(() => ({ ...windowChrome, topInset: barHeight }), [windowChrome, barHeight])
-  // An agent's request for either page (ADR-0019), and the answer back: which
-  // one is up, said on every change and taken back when this screen goes.
+  // A request for either page or for neither (ADR-0019), and the answer back:
+  // which one is up, said on every change and taken back when this screen goes.
   useEffect(() => {
     if (!pageRequest) return
     setRegisterOpen(pageRequest.page === 'register')
