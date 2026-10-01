@@ -42,7 +42,8 @@ first and saw every box on one point, and fitting the view only zoomed in on
 the pile, until somebody who may change it had opened it. Now the reader's
 screen lays it out the same way, and nothing is saved: the first person who
 may change the view still lays it out for everyone, and once they have, the
-reader sees their layout.
+reader sees their layout. A PNG the reader exports, or a picture an agent takes
+of the view for them, shows it laid out as they see it.
 
 **For a build composed from this one.** A source's provider may draw a button
 of its own at the right end of the bar while its source is open (`barButton`);
