@@ -188,8 +188,9 @@ export function landed(screen: Screen, to: Destination & { scope: string }): boo
   if (HOME_PAGES.includes(page)) {
     return screen.open === undefined && (page === 'home' ? screen.page === undefined : screen.page?.page === page)
   }
-  // An open of a view the scope does not have lands on its home.
-  if (VIEW_PAGES.includes(page)) return screen.open === undefined || screen.page === undefined
+  // An open of a view the scope does not have lands on its home — with
+  // nothing over the cards, as nothing is over the view it lands on otherwise.
+  if (VIEW_PAGES.includes(page)) return screen.page === undefined
   if (screen.open === undefined) return false
   if (page === 'element' || page === 'document' || page === 'documentation') return true
   return screen.page?.page === page

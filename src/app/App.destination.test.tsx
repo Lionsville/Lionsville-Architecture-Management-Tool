@@ -218,6 +218,21 @@ describe('a move a provider says is its own, onto a record’s page', () => {
 })
 
 describe('an open of a view', () => {
+  it('closes the register over the home it falls back to', async () => {
+    show([
+      { label: 'The register', to: { scope: '', page: 'register' } },
+      { label: 'To a map', to: { scope: 'acme/landscape', page: 'map' }, options: { by: 'provider' } },
+    ])
+    await waitFor(() => expect(told().where.home?.path).toBe(''))
+    fireEvent.click(screen.getByRole('button', { name: 'The register' }))
+    await screen.findByTestId('register-topbar')
+    fireEvent.click(screen.getByText('To a map'))
+    await waitFor(() => expect(told().where.home?.path).toBe('acme/landscape'))
+    await waitFor(() => expect(told().where.page).toBeUndefined())
+    await waitFor(() => expect(screen.queryByTestId('register-topbar')).toBeNull())
+    expect(told().movedBy).toBe('provider')
+  })
+
   it('lands on the scope’s home where it has none of that kind, and makes none', async () => {
     const repositories = show([{ label: 'To a sheet', to: { scope: 'acme/landscape', page: 'sheet' }, options: { by: 'provider' } }])
     await waitFor(() => expect(told().where.home?.path).toBe(''))

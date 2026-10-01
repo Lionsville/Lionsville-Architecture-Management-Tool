@@ -52,6 +52,17 @@ function viewWithNoId(page: InitialPage | undefined): boolean {
     && page.id === undefined
 }
 
+/**
+ * What an open by path does where it does not open the scope, for a caller
+ * that has to say so: how it lands on the scope's home where the page asked
+ * for a view the scope does not have. `goHome` where absent — which leaves a
+ * page that was up over a home's cards up over the next home's; a caller
+ * that sends the app somewhere asks for the home as itself.
+ */
+export type OpenEnds = {
+  readonly home?: (path: ScopePath) => void
+}
+
 export function useShellNavigation(deps: {
   initialProject: ScopeSnapshot | undefined
   /** Whose home is up at the first paint where nothing is open; the root's where absent. */
@@ -154,11 +165,12 @@ export function useShellNavigation(deps: {
    * A view's page lands on the view it names, or the one of its kind that is
    * there (`pageLanding`): the session starts on it, the way a tab click would
    * leave it — no step on the stack, and nothing dirty for it. One the scope
-   * has none of lands on the scope's home, because an open never makes a view.
+   * has none of lands on the scope's home, because an open never makes a view
+   * — the caller's way there where it gave one (`OpenEnds`).
    */
-  const enter = useCallback((next: ScopeSnapshot, page?: InitialPage) => {
+  const enter = useCallback((next: ScopeSnapshot, page?: InitialPage, ends: OpenEnds = {}) => {
     const landing = pageLanding(next, page)
-    if ('home' in landing) { goHome(next.path); return }
+    if ('home' in landing) { (ends.home ?? goHome)(next.path); return }
     const { activeDiagramId } = landing
     setProject(activeDiagramId !== undefined ? { ...next, activeDiagramId } : next)
     setInitialPage(landing.page)
@@ -183,21 +195,21 @@ export function useShellNavigation(deps: {
    * refuses a step on a scope that does not exist — and opened empty, with
    * nothing written, for somebody who may only read.
    */
-  const openScopeAt = useCallback((path: ScopePath, page?: InitialPage) => {
+  const openScopeAt = useCallback((path: ScopePath, page?: InitialPage, ends: OpenEnds = {}) => {
     void (async () => {
       const found = await readScope(scopes, path)
-      if (found) { enter(found, page); return }
+      if (found) { enter(found, page, ends); return }
       // A view of a scope with no document: it has none, and none is made.
-      if (viewWithNoId(page)) { goHome(path); return }
+      if (viewWithNoId(page)) { (ends.home ?? goHome)(path); return }
       if (!opensOnNothing(page)) { refreshTree.current(); return }
       const bare = bareScope(path, scopePathLabel(path))
-      if (writable && !writable(path)) { enter(bare, page); return }
+      if (writable && !writable(path)) { enter(bare, page, ends); return }
       // Made only where nothing is: a scope somebody made in between is
       // theirs, and is the one entered.
       await ensureScope(scopes, path, { name: bare.model.name })
       const written = await readScope(scopes, path)
       if (!written) { refreshTree.current(); return }
-      enter(written, page)
+      enter(written, page, ends)
       refreshTree.current()
       refreshIndex?.current()
     })().catch((cause: unknown) => failedRef.current('openScopeAt', cause, 'picker.loadFailed'))

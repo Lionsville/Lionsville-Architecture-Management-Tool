@@ -25,6 +25,7 @@ import { ROOT_SCOPE, scopePathLabel } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
 import type { InitialPage, SourceOpen } from './App'
 import { initialPageFor } from './bootLanding'
+import type { OpenEnds } from './useShellNavigation'
 import { useAgentShell } from './useAgentShell'
 import type { WorkspaceAgentView } from './useAgentShell'
 import { landingFor } from './placeLanding'
@@ -55,7 +56,7 @@ export function useShellAgent(deps: {
   homeName: string | undefined
   organisationName: string
   goHome: (to: ScopePath) => void
-  openScopeAt: (path: ScopePath, page?: InitialPage) => void
+  openScopeAt: (path: ScopePath, page?: InitialPage, ends?: OpenEnds) => void
   notify: Notify
   s: Translate
   /**
@@ -115,7 +116,8 @@ export function useShellAgent(deps: {
       open.show(to)
       return
     }
-    openScopeAt(to.scope, initialPageFor(to))
+    // Where it lands on the home, the home as itself, as above.
+    openScopeAt(to.scope, initialPageFor(to), { home: (path) => homeAt(path, 'home') })
   }, [homeAt, project, openScopeAt])
   /**
    * The window's history (ADR-0033): every look below is handed to it, so a

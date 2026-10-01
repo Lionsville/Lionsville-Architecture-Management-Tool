@@ -41,10 +41,12 @@ describe('landed', () => {
     expect(landed({ ...onBoard, page: { page: 'decisions', id: 'adr-9' } }, { scope: 'acme/retail', page: 'decisions', id: 'adr-1' })).toBe(true)
   })
 
-  it('is on a view, or on the home where the scope had no view of that kind', () => {
+  it('is on a view, or on the home where the scope had no view of that kind, with nothing over either', () => {
     expect(landed(onBoard, { scope: 'acme/retail', page: 'sheet' })).toBe(true)
     expect(landed(home('acme/retail'), { scope: 'acme/retail', page: 'sheet' })).toBe(true)
     expect(landed(onTab('register'), { scope: 'acme/retail', page: 'board', id: 'r7' })).toBe(false)
+    // The register still up over the home's cards: the home it closes is yet to come.
+    expect(landed({ ...home('acme/retail'), page: { page: 'register' } }, { scope: 'acme/retail', page: 'sheet' })).toBe(false)
   })
 
   it('is on the scope for an element or a record’s page, which the screen does not show', () => {
