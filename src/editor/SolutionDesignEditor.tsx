@@ -156,7 +156,11 @@ function useEditorParts(props: SolutionDesignEditorProps) {
     capturing: capture.capturing, ...session,
   };
   useEditorHandle({
-    onHandle: props.onHandle, state, diagram: activeDiagram, readOnly, busy: layout.busy !== undefined,
+    onHandle: props.onHandle, state, diagram: activeDiagram, readOnly,
+    // A reader's pass is waited out like the writer's, and what it drew is
+    // what a host's crop is worked out over.
+    busy: layout.busy !== undefined || layout.reading,
+    ...(layout.shown && layout.shown !== activeDiagram ? { drawn: layout.shown } : {}),
     tidy: useCallback((meta?: CommandMeta) => layout.handleTidy(undefined, true, meta), [layout.handleTidy]),
     routeEdges: layout.handleRouteEdges, capture: capture.captureBoard, deletes, showShortcuts: dialogs.openHelp,
   });

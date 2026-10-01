@@ -13,11 +13,13 @@ import { DEFAULT_TRANSLATE } from '../i18n/strings'
 import { LayoutRefused } from '../layout/elkLayout'
 import { summarise } from '../model/activity'
 import type { StepSummary } from '../model/activity'
+import { placeOn } from '../model/commands'
 import type { Command } from '../model/commands'
 import type { HostModel } from '../model/hostModel'
 import type { ImageEntry } from '../model/imageName'
 import { idPolicy } from '../model/keys'
 import { placedOn, fromArrays, toArrays } from '../model/normalised'
+import { placedNodes } from '../model/placement'
 import type { Model } from '../model/normalised'
 import { apply } from '../model/reducer'
 import { handle } from './handle'
@@ -433,6 +435,28 @@ describe('the four things only the renderer can do', () => {
     expect(captured[0]).toMatchObject({ bounds: { x: -60, y: -60, width: 320, height: 250 }, pixelRatio: 2 })
     expect(await handle({ id: '2', tool: 'diagram.render', args: { elementIds: ['ghost'] } }, held))
       .toMatchObject({ refusal: 'agent.unknownId' })
+  })
+
+  it('crops to the board the screen draws, where that is not the board stored', async () => {
+    // A board shown laid out to somebody who may only read it: stored with
+    // every card at the origin, drawn with them where the reader's pass put them.
+    const drawnAt = fromArrays({ ...host, diagrams: [laidOut({ id: 'l7', kind: 'layer7', name: 'L7', placements: [{ id: 'billing', x: 900, y: 600 }] })] })
+    const { renderer, captured } = fakeRenderer({ drawn: (id) => (id === 'l7' ? drawnAt.diagrams.l7 : undefined) })
+    const out = await handle({ id: '1', tool: 'diagram.render', args: { elementIds: ['billing'] } }, session({ renderer }))
+    expect(out.ok).toBe(true)
+    expect(captured[0]).toMatchObject({ bounds: { x: 840, y: 540, width: 320, height: 250 } })
+  })
+
+  it('crops to the board as it stands once it has settled, not as it was asked about', async () => {
+    // A settling pass lands while `show` waits for the board.
+    const held = session()
+    const moved = laidOut({ id: 'l7', kind: 'layer7', name: 'L7', placements: [{ id: 'billing', x: 900, y: 600 }] })
+    const { renderer, captured } = fakeRenderer({
+      show: async () => { held.dispatch(placeOn('l7', placedNodes(moved))) },
+    })
+    const out = await handle({ id: '1', tool: 'diagram.render', args: { elementIds: ['billing'] } }, { ...held, renderer })
+    expect(out.ok).toBe(true)
+    expect(captured[0]).toMatchObject({ bounds: { x: 840, y: 540, width: 320, height: 250 } })
   })
 
   it('turns the renderer’s refusals into keys', async () => {

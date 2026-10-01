@@ -14,6 +14,7 @@
  * reason, so the handler can turn it into the key the agent reads.
  */
 import type { CommandMeta } from '../model/commands'
+import type { Diagram } from '../model/normalised'
 import type { Rect } from '../model/types'
 
 export type RendererRefusal =
@@ -61,6 +62,14 @@ export type RendererView = {
   route(meta?: CommandMeta): Promise<void>
   /** The board as a PNG. */
   capture(options: CaptureOptions): Promise<Uint8Array>
+  /**
+   * The board on screen as drawn, where that is not the board as stored: a
+   * board nobody has laid out, shown laid out to somebody who may only read
+   * it, by a pass that is never saved. Undefined where the stored board is
+   * what is drawn, or the board is not on screen. Optional: a host that draws
+   * only what is stored need not say so.
+   */
+  drawn?(diagramId: string): Diagram | undefined
   /** Select an element and bring it into view, so the person sees which one is meant. */
   focus(elementId: string): void
   /**

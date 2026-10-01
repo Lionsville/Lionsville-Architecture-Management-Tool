@@ -9,6 +9,7 @@ import { useCallback, useMemo, useRef } from 'react'
 import type { RefObject } from 'react'
 import { EditorRefused } from '../editor'
 import type { EditorHandle } from '../editor'
+import { toDiagram } from '../model'
 import { RendererRefused } from '../agent/renderer'
 import type { RendererView } from '../agent/renderer'
 import type { SheetHandle } from '../business'
@@ -63,7 +64,9 @@ export function useRendererView(session: ModelSession, focusElement: (id: string
         if (session.currentActiveId() !== diagramId) session.setActiveDiagramId(diagramId)
         await settled(diagramId)
         // A settling pass on a machine-laid-out diagram starts a moment after
-        // the switch; give it that moment, then wait it out.
+        // the switch; give it that moment, then wait it out. A reader's pass
+        // over the same board is waited out the same way: the editor counts it
+        // as busy from the board's first render.
         await new Promise((resolve) => setTimeout(resolve, 150))
         await settled(diagramId)
       },
@@ -74,6 +77,10 @@ export function useRendererView(session: ModelSession, focusElement: (id: string
         return new Uint8Array(await blob.arrayBuffer())
       },
       focus: focusElement,
+      drawn: (diagramId) => {
+        const held = editorHandle.current
+        return held?.activeDiagramId === diagramId && held.drawn ? toDiagram(held.drawn) : undefined
+      },
       /**
        * A laid-out view is drawn in the tab, not on the canvas: make it the
        * active view, wait for it to hand over its handle, and rasterise what

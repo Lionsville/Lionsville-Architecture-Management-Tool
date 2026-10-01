@@ -123,12 +123,13 @@ export function useLayoutActions(args: LayoutArgs) {
   /**
    * The same pass for a reader, who makes no step: held on the screen, framed
    * like the writer's, and landed nowhere (`useReadingLayout`). `shown` is the
-   * board to draw — the stored one everywhere else. A pass that lands while
-   * the reader is on another board leaves that board fitted when they come
-   * back, rather than put back at the frame the canvas took of its pile.
+   * board to draw — the stored one everywhere else — and `reading` says a
+   * pass for it is still running. A pass that lands while the reader is on
+   * another board leaves that board fitted when they come back, rather than
+   * put back at the frame the canvas took of its pile.
    */
   const viewports = args.viewports;
-  const shown = useReadingLayout({
+  const { shown, reading } = useReadingLayout({
     diagram,
     readOnly,
     options: tidyOptions,
@@ -138,7 +139,7 @@ export function useLayoutActions(args: LayoutArgs) {
   });
 
   const routes = useRouteActions(args, running);
-  return { busy, ...reports, handleTidy, handleTidyGroup, ...routes, shown };
+  return { busy, ...reports, handleTidy, handleTidyGroup, ...routes, shown, reading };
 }
 
 export type LayoutActions = ReturnType<typeof useLayoutActions>;

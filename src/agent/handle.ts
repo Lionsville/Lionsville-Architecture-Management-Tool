@@ -643,7 +643,13 @@ async function seeing(
       const after = session.indexed()
       return json(inspect(after, after.diagrams[diagram.id] ?? diagram))
     }
-    return await render(model, diagram, args, renderer)
+    // The crop is worked out over the board as it is once it has settled — a
+    // settling pass may have landed meanwhile — and as the screen draws it: a
+    // board nobody has laid out is shown laid out to somebody who may only
+    // read it, by a pass that is never saved.
+    const settled = session.indexed()
+    const drawn = renderer.drawn?.(diagram.id) ?? settled.diagrams[diagram.id] ?? diagram
+    return await render(settled, drawn, args, renderer)
   } catch (error) {
     if (isLayoutRefusal(error, 'tooLarge')) {
       return refused('agent.tooLarge', `${error.count ?? '?'} boxes, the cap is ${error.limit ?? '?'}`)

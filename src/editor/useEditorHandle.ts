@@ -17,6 +17,8 @@ export interface HandleArgs {
   onHandle: SolutionDesignEditorProps['onHandle'];
   state: EditorState;
   diagram: DesignDiagram | undefined;
+  /** The board as drawn, where it is not `diagram`: see `EditorHandle.drawn`. */
+  drawn?: DesignDiagram;
   readOnly: boolean;
   busy: boolean;
   tidy(meta?: CommandMeta): Promise<void>;
@@ -33,13 +35,14 @@ export interface HandleArgs {
  * way the button's second press is.
  */
 export function useEditorHandle(args: HandleArgs) {
-  const { onHandle, state, diagram, readOnly, busy, tidy, routeEdges, capture, showShortcuts } = args;
+  const { onHandle, state, diagram, drawn, readOnly, busy, tidy, routeEdges, capture, showShortcuts } = args;
   const { setDeleteTarget, requestDeleteConnection, requestDeleteSelection } = args.deletes;
   useEffect(() => {
     if (!onHandle) return;
     const handle: EditorHandle = {
       activeDiagramId: diagram?.id,
       busy,
+      ...(drawn ? { drawn } : {}),
       tidy: (meta) => (busy ? Promise.reject(new EditorRefused('busy')) : tidy(meta)),
       routeEdges: (meta) => (busy ? Promise.reject(new EditorRefused('busy')) : routeEdges(meta)),
       capture,
@@ -57,7 +60,7 @@ export function useEditorHandle(args: HandleArgs) {
     };
     onHandle(handle);
     return () => onHandle(undefined);
-  }, [onHandle, diagram, busy, tidy, routeEdges, capture, readOnly, state, setDeleteTarget, requestDeleteConnection, requestDeleteSelection, showShortcuts]);
+  }, [onHandle, diagram, drawn, busy, tidy, routeEdges, capture, readOnly, state, setDeleteTarget, requestDeleteConnection, requestDeleteSelection, showShortcuts]);
 }
 
 /**

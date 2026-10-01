@@ -218,8 +218,19 @@ export interface EditorRequests {
 export interface EditorHandle {
   /** The diagram on screen. */
   readonly activeDiagramId: string | undefined;
-  /** A layout pass is running; `tidy` and `routeEdges` refuse meanwhile. */
+  /**
+   * A layout pass is running; `tidy` and `routeEdges` refuse meanwhile. A
+   * reader's pass over a board nobody has laid out counts too: it lands
+   * nothing, but it changes what is drawn.
+   */
   readonly busy: boolean;
+  /**
+   * The board as drawn, where that is not the board as stored: a board nobody
+   * has laid out, shown to a reader laid out by a pass that is never saved
+   * (`useReadingLayout`). Absent everywhere else. A host that crops a picture
+   * of the board works out where things are from this one.
+   */
+  readonly drawn?: DesignDiagram;
   /**
    * Lay the diagram on screen out, as the Tidy button does. Rejects with the
    * layout's own refusal. `meta` rides on the one step the pass lands: the

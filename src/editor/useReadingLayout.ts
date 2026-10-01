@@ -107,6 +107,18 @@ export interface UseReadingLayoutArgs {
   onLandedAway?(diagramId: string): void;
 }
 
+/** What a reader is shown of the open board, and whether that may still change. */
+export interface ReadingLayout {
+  /** The board to draw. */
+  shown: DesignDiagram | undefined;
+  /**
+   * A pass is running for the open board, so what is drawn of it is about to
+   * change: a host waiting for the board to settle before it takes a picture
+   * of it waits for this as it waits for the writer's pass.
+   */
+  reading: boolean;
+}
+
 interface Held {
   from: DesignDiagram;
   shown: DesignDiagram;
@@ -121,8 +133,11 @@ const NOTHING_HELD: ReadonlyMap<string, Held> = new Map();
  * on it once it has run, or the last pass carried onto it while it is worked
  * out again; otherwise, and before any pass has run, the board as stored.
  */
-export function useReadingLayout({ diagram, readOnly, options, lay, onShown, onLandedAway }: UseReadingLayoutArgs): DesignDiagram | undefined {
+export function useReadingLayout({ diagram, readOnly, options, lay, onShown, onLandedAway }: UseReadingLayoutArgs): ReadingLayout {
   const [held, setHeld] = useState(NOTHING_HELD);
+  /** The stored boards whose pass has ended, landed or not; the count is what draws again. */
+  const endedRef = useRef(new WeakSet<DesignDiagram>());
+  const [, setEnded] = useState(0);
   /**
    * The stored boards a pass has been started for, by object. Written before
    * the pass starts, so a failure is not retried in a loop and a double render
@@ -143,6 +158,10 @@ export function useReadingLayout({ diagram, readOnly, options, lay, onShown, onL
     attemptedRef.current.add(diagram);
     const started = ++startsRef.current;
     const { options: current, lay: run } = latestRef.current;
+    const ended = () => {
+      endedRef.current.add(diagram);
+      setEnded((count) => count + 1);
+    };
     void run(diagram, settlingOptions(current)).then(
       (shown) => {
         // A board that changed while this pass ran has had a pass of its own,
@@ -150,12 +169,15 @@ export function useReadingLayout({ diagram, readOnly, options, lay, onShown, onL
         setHeld((was) => ((was.get(diagram.id)?.started ?? 0) > started
           ? was
           : new Map(was).set(diagram.id, { from: diagram, shown, started })));
+        ended();
         const latest = latestRef.current;
         if (latest.diagram?.id !== diagram.id && !framedRef.current.has(diagram.id)) latest.onLandedAway?.(diagram.id);
       },
       () => {
         // Reported by `lay` through the editor's one message channel; the
-        // board is drawn as stored, and this one is not tried again.
+        // board is drawn as stored, or with the last pass carried onto it,
+        // and this one is not tried again.
+        ended();
       },
     );
   }, [diagram, readOnly]);
@@ -174,5 +196,8 @@ export function useReadingLayout({ diagram, readOnly, options, lay, onShown, onL
     latestRef.current.onShown?.();
   }, [diagram, shown]);
 
-  return shown;
+  // From the first render of the board, before the effect has started its
+  // pass: a host asking straight away is told to wait, not handed the pile.
+  const reading = readOnly && diagram !== undefined && awaitsLayout(diagram) && !endedRef.current.has(diagram);
+  return { shown, reading };
 }

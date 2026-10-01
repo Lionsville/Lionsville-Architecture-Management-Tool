@@ -11,6 +11,7 @@ import { tidyLayer7 } from '../layout/tidy';
 import { testTheme } from './testing/theme';
 import { HostedEditor } from './testing/editorHost';
 import type { EditorHostState, HostedEditorProps } from './testing/editorHost';
+import type { EditorHandle } from './props';
 import { installReactFlowMocks } from './reactFlowTestSetup';
 import { ViewportMemory } from './canvas/viewportMemory';
 
@@ -226,6 +227,34 @@ describe('SolutionDesignEditor — a reader opening a board nobody has laid out'
     await waitFor(() => expect(mockTidy).toHaveBeenCalledTimes(2));
     await new Promise((r) => setTimeout(r, 20));
     expect(onLayoutError).toHaveBeenCalledTimes(1);
+  });
+
+  it('tells a host the board is busy while the pass runs, and hands it the board as drawn once it lands', async () => {
+    let finish!: () => void;
+    mockTidy.mockImplementation(() => new Promise((resolve) => { finish = () => resolve({ placements: LAID, edgeRoutes: [] }); }));
+    const handle = { current: undefined as EditorHandle | undefined };
+    renderBoard({ onHandle: (held) => { handle.current = held; } });
+
+    // An agent's picture waits on `busy`, as it waits out the writer's pass.
+    await waitFor(() => expect(handle.current?.activeDiagramId).toBe('d1'));
+    expect(handle.current?.busy).toBe(true);
+    expect(handle.current?.drawn).toBeUndefined();
+
+    finish();
+    await waitFor(() => expect(handle.current?.busy).toBe(false));
+    // What is drawn is the pass's layout; what is stored still has no positions.
+    expect(handle.current?.drawn?.geometry.nodes.map(({ id, x, y }) => ({ id, x, y }))).toEqual(
+      LAID.map(({ id, x, y }) => ({ id, x, y })),
+    );
+  });
+
+  it('hands a writer\'s host no board of its own: what is drawn is what is stored', async () => {
+    mockTidy.mockResolvedValue({ placements: LAID, edgeRoutes: [] });
+    const handle = { current: undefined as EditorHandle | undefined };
+    const { onLayoutSettled } = renderBoard({ readOnly: false, onHandle: (held) => { handle.current = held; } });
+    await waitFor(() => expect(onLayoutSettled).toHaveBeenCalledWith('d1'));
+    await waitFor(() => expect(handle.current?.busy).toBe(false));
+    expect(handle.current?.drawn).toBeUndefined();
   });
 
   it('leaves a board somebody has laid out exactly as stored', async () => {
