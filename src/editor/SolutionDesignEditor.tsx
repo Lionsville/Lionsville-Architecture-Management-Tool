@@ -144,7 +144,10 @@ function useEditorParts(props: SolutionDesignEditorProps) {
   const exports = useExportDialog({
     props, wrapperRef, theme, showEdgeLabels: view.showEdgeLabels, reportLayoutError: layout.reportLayoutError,
     titleBlock: {
-      diagram: activeDiagram, model: state.model, lookingAt: board.lookingAt, host: props.exportTitleBlock,
+      // The board as drawn, whose sheet the picture frames: for a reader, one
+      // nobody has laid out carries the pass's canvas. Its own fields are the
+      // stored board's, so the title block reads the same.
+      diagram: layout.shown, model: state.model, lookingAt: board.lookingAt, host: props.exportTitleBlock,
       showLifecycle: view.showLifecycle, t, language,
     },
   });

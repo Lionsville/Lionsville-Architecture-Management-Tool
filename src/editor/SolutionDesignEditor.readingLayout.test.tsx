@@ -3,7 +3,7 @@
 
 // @vitest-environment jsdom
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { ThemeProvider } from '@mui/material/styles';
 import { laidOut } from '../model/testFixtures';
 import type { DesignModel, PlacedNode } from '../model/types';
@@ -263,6 +263,31 @@ describe('SolutionDesignEditor — a reader opening a board nobody has laid out'
     await waitFor(() => expect(drawnAt().size).toBe(IDS.length));
     await new Promise((r) => setTimeout(r, 20));
     expect(mockTidy).not.toHaveBeenCalled();
+  });
+});
+
+/** The size the export dialog says the picture will be, once it is open. */
+async function exportSize(): Promise<string> {
+  fireEvent.click(screen.getByRole('button', { name: 'Export PNG' }));
+  const said = await screen.findByText(/pixels, about/);
+  return said.textContent ?? '';
+}
+
+describe('SolutionDesignEditor — a picture of a board laid out for a reader', () => {
+  /** The pass grows the landscape's sheet past the default one, as a wide board does. */
+  const GROWN = { width: 3200, height: 1900 };
+
+  it('is of the sheet the reader is shown, the one the writer\'s step would store', async () => {
+    mockTidy.mockResolvedValue({ placements: LAID, edgeRoutes: [], canvas: GROWN });
+    const writer = renderBoard({ readOnly: false });
+    await waitFor(() => expect(writer.onLayoutSettled).toHaveBeenCalledWith('d1'));
+    const stored = await exportSize();
+    cleanup();
+
+    renderBoard();
+    await waitFor(() => expect(new Set(drawnAt().values()).size).toBe(IDS.length));
+    // The stored board still has the default sheet; the reader is shown the grown one.
+    expect(await exportSize()).toBe(stored);
   });
 });
 
