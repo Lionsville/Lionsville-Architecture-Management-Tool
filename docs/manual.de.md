@@ -569,6 +569,51 @@ entscheidet die Sprache des Browsers. Der Entwurf selbst ändert sich nicht;
 Elementnamen sind Inhalt, nicht Oberfläche. Frysk wurde bis zum 26. September
 2026 angeboten; wer es gewählt hatte, sieht die App jetzt auf Niederländisch.
 
+### Zurück und Vorwärts
+
+**Zurück geht an den Ort, an dem Sie vorher waren**, und Vorwärts an den Ort,
+von dem Sie zurückkamen. Ein Ort ist das Zuhause eines Bereichs und die
+Seite darauf, oder ein geöffneter Bereich auf seiner Ansicht oder auf der Seite
+darüber: seine Entscheidungen, seine Beobachtungen, seine Roadmap, ein Plan,
+der Bericht einer Plattform oder eines Dienstes. Jeder Wechsel an einen anderen
+Ort ist ein Schritt, ob Sie ihn mit dem Baum, einem Brotkrumen, einer Karte,
+einem Suchtreffer oder einem Link auf einer Seite gemacht haben oder ein Agent
+ihn für Sie gemacht hat. Hat ein Agent einen Bereich geöffnet, bringt Zurück
+Sie dorthin, wo Sie waren. Was ausgewählt ist, der Tag, an dem ein Board
+gezeigt wird, ein Filter und ein offener Dialog gehören nicht zu einem Ort, und
+einen anderen Eintrag auf der Seite der Entscheidungen oder der Beobachtungen
+zu wählen ist auch kein Schritt. Zurück ist kein Rückgängig: Es bewegt den
+Bildschirm und ändert nichts, und ⌘Z bleibt der Weg, eine Änderung
+zurückzunehmen.
+
+**Im Browser** tun das Zurück und Vorwärts des Browsers, mit ihren Tasten und
+Gesten. Die Adresse nennt den Ort, an dem Sie sind, nach einem `#`, sodass ein
+Neuladen dort bleibt und eine aus der Leiste kopierte Adresse denselben Ort für
+jeden öffnet, der ihn lesen darf. Der Rest der Adresse bleibt, wie er war.
+
+**In der Desktop-App** beginnt die Leiste mit einer Schaltfläche **‹** und
+einer Schaltfläche **›** (unter macOS nach den Schaltflächen des Fensters),
+ausgegraut, wenn es nirgendwohin geht. Dieselben Schritte stehen im Menü
+**Go** als **Back** und **Forward**, auf **⌘[** und **⌘]** unter macOS und
+**Alt+←** und **Alt+→** unter Windows und Linux. Die Zurück- und
+Vorwärtstasten der Maus funktionieren auch, ebenso das Wischen zwischen Seiten
+auf einem Mac-Trackpad, wenn es auf *Mit zwei oder drei Fingern streichen*
+steht (Systemeinstellungen → Trackpad → Weitere Gesten → Zwischen Seiten
+streichen). Alle wirken auf dem Zuhause der Organisation ebenso wie mit
+geöffnetem Bereich. Solange ein Dialog offen ist, liegen die Schaltflächen
+dahinter, und die Tasten, die Menüeinträge und die Maustasten tun nichts. Der
+Verlauf gehört zum Fenster: Er ist weg, wenn das Fenster geschlossen wird.
+
+**Zurück schließt einen Dialog**, wenn die Seite verlassen wird, auf der er
+geöffnet wurde, so wie wenn Sie die Seite auf anderem Weg verlassen. Darin
+getippter Text wird nicht behalten.
+
+**Ein Ort, den es nicht mehr gibt**, wird durch den nächsten ersetzt, den es
+gibt: Eine entfernte Ansicht öffnet ihren Bereich auf der ersten Ansicht, die
+er noch hat, ein entfernter Eintrag öffnet seine Seite ohne Eintrag, und ein
+entfernter Bereich öffnet das Zuhause des nächsten Bereichs darüber. Die
+Liste Aktivität sagt, was entfernt wurde.
+
 ## Zeichnen
 
 **Die Landschaft** hat fünf Bänder: Akteure, Eingabekanäle, externe Systeme, die
@@ -1692,5 +1737,6 @@ würde eine Frage aufwerfen („und alles danach?“), die ⌘Z bereits beantwor
 | Shift+1, Shift+2, `=`, `-` | Einpassen, 100 %, Vergrößern, Verkleinern |
 | Shift+F10 | Das Menü für die Auswahl |
 | ⌘S / Ctrl+S | Jetzt speichern |
+| ⌘[ ⌘] unter macOS, sonst Alt+← Alt+→ | Zurück, Vorwärts, in der Desktop-App; im Browser die des Browsers |
 
 Unter Windows und Linux lesen Sie Ctrl für ⌘.

@@ -534,6 +534,48 @@ verandert niet; namen van elementen zijn inhoud, geen interface. Frysk werd
 aangeboden tot 26 september 2026; wie het had gekozen, opent de app nu in het
 Nederlands.
 
+### Terug en Vooruit
+
+**Terug gaat naar de plek waar je hiervoor was**, en Vooruit naar de plek
+waarvandaan je terugkwam. Een plek is het thuis van een onderdeel en de pagina
+daarop, of een open onderdeel op zijn weergave of op de pagina daarover: zijn
+besluiten, zijn waarnemingen, zijn roadmap, een plan, het rapport van een
+platform of een dienst. Elke stap naar een andere plek telt, of je hem zette
+met de boom, een kruimel, een kaart, een zoekresultaat of een link op een
+pagina, of dat een agent hem voor je zette. Heeft een agent een onderdeel
+geopend, dan brengt Terug je naar waar je was. Wat geselecteerd is, de dag
+waarop een bord wordt getoond, een filter en een open dialoog horen niet bij
+een plek, en een ander record kiezen op de pagina met besluiten of
+waarnemingen is ook geen stap. Terug is geen ongedaan maken: het verplaatst
+het scherm en verandert niets, en ⌘Z blijft hoe je een wijziging terugdraait.
+
+**In een browser** doen de knoppen Terug en Vooruit van de browser dit, met
+hun toetsen en gebaren. Het adres noemt de plek waar je bent, na een `#`, dus
+herladen blijft daar, en een adres gekopieerd uit de balk opent dezelfde plek
+voor iedereen die hem mag lezen. De rest van het adres blijft zoals het was.
+
+**In de desktop-app** begint de balk met een knop **‹** en een knop **›** (op
+macOS na de knoppen van het venster), grijs als er nergens heen te gaan is.
+Dezelfde stappen staan in het menu **Go** als **Back** en **Forward**, op
+**⌘[** en **⌘]** op macOS en **Alt+←** en **Alt+→** op Windows en Linux. De
+terug- en vooruitknoppen van de muis werken ook, en vegen tussen pagina's op
+een Mac-trackpad als dat op *Veeg met twee of drie vingers* staat
+(Systeeminstellingen → Trackpad → Meer gebaren → Veeg tussen pagina's). Ze
+werken allemaal vanaf het thuis van de organisatie en met een onderdeel open.
+Zolang er een dialoog open is, liggen de knoppen erachter en doen de toetsen,
+de menu-onderdelen en de muisknoppen niets. De geschiedenis hoort bij het
+venster: ze is weg als het venster sluit.
+
+**Terug sluit een dialoog** als de pagina waarop hij werd geopend wordt
+verlaten, zoals wanneer je die pagina op een andere manier verlaat. Tekst die
+erin getypt was, wordt niet bewaard.
+
+**Een plek die er niet meer is** wordt vervangen door de dichtstbijzijnde die
+er wel is: een verwijderde weergave opent zijn onderdeel op de eerste weergave
+die over is, een verwijderd record opent zijn pagina zonder record, en een
+verwijderd onderdeel opent het thuis van het dichtstbijzijnde onderdeel erboven.
+De lijst Activiteit zegt wat er werd verwijderd.
+
 ## Tekenen
 
 **Het landschap** heeft vijf banden: actoren, invoerkanalen, externe systemen,
@@ -1592,5 +1634,6 @@ alles daarna?") die ⌘Z al beantwoordt.
 | Shift+1, Shift+2, `=`, `-` | Passend maken, 100 %, inzoomen, uitzoomen |
 | Shift+F10 | Het menu voor de selectie |
 | ⌘S / Ctrl+S | Nu bewaren |
+| ⌘[ ⌘] op macOS, elders Alt+← Alt+→ | Terug, Vooruit, in de desktop-app; in een browser die van de browser |
 
 Op Windows en Linux lees je Ctrl voor ⌘.

@@ -502,6 +502,45 @@ decides. The design itself does not change; element names are content, not
 interface. Frysk was offered until 26 September 2026; if you had chosen it,
 the app now opens in Dutch.
 
+### Back and Forward
+
+**Back goes to the place you were before**, and Forward goes to the place you
+came back from. A place is a scope's home and the page on it, or an open scope
+on its view or on the page over it: its decisions, its observations, its
+roadmap, a plan, a platform's or a service's report. Every move to another
+place is a step, whether you made it with the tree, a crumb, a card, a search
+hit or a link on a page, or an agent made it for you. So after an agent has
+opened a scope, Back takes you to where you were. What is selected, the day a
+board is shown on, a filter and an open dialog are not part of a place, and
+choosing another record on the decisions or the observations page is not a
+step either. Back is not undo: it moves the screen and changes nothing, and
+⌘Z is still how a change is taken back.
+
+**In a browser** the browser's own Back and Forward do this, with their keys
+and gestures. The address names the place you are on, after a `#`, so a reload
+stays there, and an address copied from the bar opens the same place for anyone
+who may read it. The rest of the address is left as it was.
+
+**In the desktop app** the bar starts with a **‹** and a **›** button (after
+the window's buttons on macOS), greyed out when there is nowhere to go. The
+same moves are in the **Go** menu as **Back** and **Forward**, on **⌘[** and
+**⌘]** on macOS and **Alt+←** and **Alt+→** on Windows and Linux. The mouse's
+back and forward buttons work too, and so does swiping between pages on a Mac
+trackpad when it is set to *Swipe with two or three fingers* (System
+Settings → Trackpad → More Gestures → Swipe between pages). They all work from
+the organisation's home as well as with a scope open. While a dialog is open
+the buttons are behind it, and the keys, the menu items and the mouse buttons
+do nothing. The history belongs to the window: it is gone when the window
+closes.
+
+**A dialog is closed by Back** when the page it was opened on is left, as when
+you leave that page any other way. Text typed into it is not kept.
+
+**A place that is no longer there** is replaced by the nearest one that is: a
+removed view opens its scope on the first view it has left, a removed record
+opens its page without a record, and a removed scope opens the home of the
+nearest scope above it. The Activity list says what was removed.
+
 ## Drawing
 
 **The landscape** has five bands: actors, input channels, external systems,
@@ -1488,5 +1527,6 @@ everything after it?") that ⌘Z already answers.
 | Shift+1, Shift+2, `=`, `-` | Fit view, 100 %, zoom in, zoom out |
 | Shift+F10 | The menu for the selection |
 | ⌘S / Ctrl+S | Save now |
+| ⌘[ ⌘] on macOS, Alt+← Alt+→ elsewhere | Back, Forward, in the desktop app; in a browser, the browser's own |
 
 On Windows and Linux, read Ctrl for ⌘.

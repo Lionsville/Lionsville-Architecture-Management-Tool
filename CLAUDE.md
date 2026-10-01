@@ -337,6 +337,10 @@ src/agent/        An agent as a peer of the menu (ADR-0007). Pure; the first
                     screen · shell · driving   the app as a screen and a
                                       destination, moving it, and the session
                                       the person can stop (ADR-0019)
+                    place             a screen as a place in the history, its
+                                      address in the fragment and back, what a
+                                      move does to the history, and where a
+                                      place that is gone lands (ADR-0033)
 src/i18n/         The registry. Each module owns `strings/en.ts`,
 `strings/nl.ts`
                   and `strings/de.ts`; `strings.en.ts` composes them and is the
@@ -688,6 +692,13 @@ src/app/          The shell around the editor.
                                       *Existing application…*: the picker over
                                       the register, and the one question it asks
                     dialogs/ · iconPacks/ · history/
+                    placeHistory · usePlaceHistory · placeLanding · BackForward
+                                      the window's history holding places, a
+                                      move written once it settles and Back
+                                      opened through `openFor`; where a place
+                                      lands now; the desktop's two buttons, its
+                                      Go menu's commands and the mouse's
+                                      buttons (ADR-0033)
                     OverflowMenu      the menu, on a host that has no menu bar —
                                       and the section a source provider's own
                                       lines are drawn in, after all of ours
