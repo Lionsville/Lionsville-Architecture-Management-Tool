@@ -26,6 +26,7 @@
  * description a client sees and the check its call meets are the same object.
  */
 import type { CommandRefusal } from '../model/reducer'
+import { OBSERVATION_TABS } from '../observations/tabs'
 
 /**
  * Read answers from the model; write is one command; see is what only the
@@ -2015,10 +2016,13 @@ const SPECS = [
       'Move the app: open a scope, and in it a view or a page — what a person does with the tree, the tabs '
       + 'and the cards. `scope` is a path from scopes.list (default: the open one); `page` is what to show '
       + 'there: home (the scope\'s own screen, nothing open), board / sheet / map / technology (a view, by '
-      + 'id, or the only one of that kind), decisions (optionally on one record), roadmap, plan (by id), '
+      + 'id, or the only one of that kind), decisions (optionally on one record), observations (optionally '
+      + 'on one record, and on one of its tabs with `tab`), roadmap, plan (by id), '
       + 'element (selected on a board that draws it), document or documentation (a record\'s page), '
       + 'platform or service (a report, by id), register or technologyRegister (the organisation-wide '
-      + 'lists, on the home). With no page a scope opens on its canvas, or on its home when it draws '
+      + 'lists, on the home). `select` names an element to select on the board, sheet, map or technology '
+      + 'landscape being opened; where that view does not draw it, nothing is selected. Opening never '
+      + 'makes a view. With no page a scope opens on its canvas, or on its home when it draws '
       + 'nothing. Answers with app.current once the app has arrived. Starts a driving session, which the '
       + 'person sees as a banner and can stop.',
     inputSchema: {
@@ -2035,6 +2039,12 @@ const SPECS = [
           ],
         },
         id: { type: 'string', description: 'The view, element, plan, decision, observation or cause the page is about, where it is about one.' },
+        tab: {
+          type: 'string',
+          description: 'Which tab of the observations page: the register, the analysis or the solutions. Only with page observations.',
+          enum: OBSERVATION_TABS,
+        },
+        select: { type: 'string', description: 'An element to select on the board, sheet, map or technology landscape being opened.' },
       },
       additionalProperties: false,
     },

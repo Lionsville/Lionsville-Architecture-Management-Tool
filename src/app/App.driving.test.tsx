@@ -175,6 +175,18 @@ describe('with the organisation screen up', () => {
     expect(parsed(await ask('app.current')).page).toEqual({ page: 'decisions', id: 'adr-1' })
   })
 
+  /** The observations page on a tab (ADR-0019, amended): the agent arrives once that tab is up, and is told it. */
+  it('opens the observations on the tab asked for, and says which tab is up', async () => {
+    const { ask } = await organisationOnScreen()
+    await waitFor(async () => expect(parsed(await ask('app.current')).scopes).toBe(3))
+    const out = parsed(await ask('app.open', { scope: '', page: 'observations', tab: 'solutions' }))
+    expect(out.arrived).toBe(true)
+    expect(out.page).toMatchObject({ page: 'observations', tab: 'solutions' })
+    expect(screen.getByTestId('observation-tab-solutions').getAttribute('aria-pressed')).toBe('true')
+    fireEvent.click(screen.getByTestId('observation-tab-register'))
+    await waitFor(async () => expect(parsed(await ask('app.current')).page).toMatchObject({ page: 'observations', tab: 'register' }))
+  })
+
   it('lets the person stop the agent, tells the agent so, and lets it ask to go on', async () => {
     const { ask } = await organisationOnScreen()
     await waitFor(async () => expect(parsed(await ask('app.current')).scopes).toBe(3))

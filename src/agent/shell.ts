@@ -156,7 +156,7 @@ function viewRow(scope: string, scopeName: string, diagram: DesignDiagram, activ
 
 // --- app.open --------------------------------------------------------------------
 
-type Resolved = { page?: Page; id?: string }
+type Resolved = { page?: Page; id?: string; tab?: Destination['tab']; select?: string }
 
 export async function openApp(rawArgs: unknown, session: OpenScope | undefined, shell: ShellView | undefined): Promise<AgentAnswer> {
   if (!shell) return refused('agent.noScreen', 'there is no screen to move')
@@ -176,6 +176,7 @@ export async function openApp(rawArgs: unknown, session: OpenScope | undefined, 
 
   let target: Resolved = { ...(asked.page !== undefined ? { page: asked.page } : {}), ...(asked.id !== undefined ? { id: asked.id } : {}) }
   const aboutSomething = asked.id !== undefined || (asked.page !== undefined && VIEW_PAGES.includes(asked.page))
+  let model: HostModel | undefined
   if (aboutSomething) {
     const document = session && scope === session.scopePath()
       ? { model: session.current(), ancestorDecisions: session.ancestorDecisions() }
@@ -184,7 +185,11 @@ export async function openApp(rawArgs: unknown, session: OpenScope | undefined, 
     const resolved = resolveTarget(document.model, document.ancestorDecisions, target, scope)
     if ('ok' in resolved) return resolved
     target = resolved
+    model = document.model
   }
+  const refined = withTabAndSelect(asked, target, model, scope)
+  if ('ok' in refined) return refined
+  target = refined
   // A scope that draws nothing has no canvas to open on: its home is the
   // honest place, which is where the tree's own *Open* would not go at all.
   if (target.page === undefined && target.id === undefined && known.views === 0) target = { page: 'home' }
@@ -263,6 +268,33 @@ function resolveTarget(model: HostModel, ancestors: readonly Adr[], asked: Resol
       // home, roadmap, documentation and the two registers are about the
       // scope; an id given with them is not an error, only unused.
       return { page }
+  }
+}
+
+/**
+ * The tab and the selection a destination asks for, held to the page it
+ * resolved to: a tab is the observations page's, and an element to select is
+ * one this scope knows, on a board, sheet, map or technology landscape.
+ * Whether that view draws it is not checked here — where it does not, the
+ * view opens with nothing selected, as it would for a person.
+ */
+function withTabAndSelect(asked: Destination, target: Resolved, model: HostModel | undefined, scope: string): Resolved | AgentAnswer {
+  const where = scope || 'the organisation'
+  if (asked.tab !== undefined && target.page !== 'observations') {
+    return refused('agent.badArguments', '"tab" is for page observations')
+  }
+  if (asked.select !== undefined) {
+    if (target.page === undefined || !VIEW_PAGES.includes(target.page)) {
+      return refused('agent.badArguments', '"select" is for page board, sheet, map or technology')
+    }
+    if (!model?.elements.some((element) => element.id === asked.select)) {
+      return refused('agent.unknownId', `element ${asked.select} in ${where}`)
+    }
+  }
+  return {
+    ...target,
+    ...(asked.tab !== undefined ? { tab: asked.tab } : {}),
+    ...(asked.select !== undefined ? { select: asked.select } : {}),
   }
 }
 

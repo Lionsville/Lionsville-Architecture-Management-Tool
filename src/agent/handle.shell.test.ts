@@ -115,6 +115,7 @@ function shell({ screen: seed, client, ...over }: Partial<Omit<ShellView, 'scree
       const diagram = document?.diagrams.find((held) => held.id === to.id)
       const view = diagram ? { id: diagram.id, name: diagram.name, kind: diagram.kind } : firstView(path)
       const page = to.page === 'decisions' ? { page: 'decisions' as const, ...(to.id ? { id: to.id } : {}) }
+        : to.page === 'observations' ? { page: 'observations' as const, ...(to.id ? { id: to.id } : {}), tab: to.tab ?? 'register' }
         : to.page === 'roadmap' ? { page: 'roadmap' as const }
           : to.page === 'plan' || to.page === 'platform' || to.page === 'service' ? { page: to.page, id: to.id! }
             : undefined
@@ -287,6 +288,49 @@ describe('with nothing open', () => {
     expect(opened.at(-1)).toEqual({ scope: 'acme/retail', page: 'technology', id: 'tech' })
     expect(only.page).toBeUndefined()
     expect((only.open as { view: { id: string } }).view.id).toBe('tech')
+  })
+
+  /**
+   * A tab of the observations page, and an element selected on a view
+   * (ADR-0019, amended): handed to the shell with the rest of the destination,
+   * and held to the page they belong to before it is asked.
+   */
+  it('opens the observations on a tab, and arrives once that tab is up', async () => {
+    const { view, opened } = shell()
+    const out = parsed(await handle(call('app.open', { scope: 'acme/retail', page: 'observations', tab: 'analysis' }), undefined, view))
+    expect(opened.at(-1)).toEqual({ scope: 'acme/retail', page: 'observations', tab: 'analysis' })
+    expect(out.page).toEqual({ page: 'observations', tab: 'analysis' })
+    expect(out.arrived).toBe(true)
+  })
+
+  it('refuses a tab for any page but the observations, and an unknown tab', async () => {
+    const { view, opened } = shell()
+    expect(refusal(await handle(call('app.open', { scope: 'acme/retail', page: 'decisions', tab: 'analysis' }), undefined, view)))
+      .toBe('agent.badArguments')
+    expect(refusal(await handle(call('app.open', { scope: 'acme/retail', page: 'observations', tab: 'picture' }), undefined, view)))
+      .toBe('agent.badArguments')
+    expect(opened).toEqual([])
+  })
+
+  it('hands an element to select to the shell with the view it is selected on', async () => {
+    const { view, opened } = shell()
+    const out = parsed(await handle(call('app.open', { scope: 'acme/retail', page: 'board', id: 'r7b', select: 'wms' }), undefined, view))
+    expect(opened.at(-1)).toEqual({ scope: 'acme/retail', page: 'board', id: 'r7b', select: 'wms' })
+    expect(out.arrived).toBe(true)
+    // A view named by its id alone takes a selection too.
+    await handle(call('app.open', { scope: 'acme/retail', id: 'tech', select: 'openshift' }), undefined, view)
+    expect(opened.at(-1)).toEqual({ scope: 'acme/retail', page: 'technology', id: 'tech', select: 'openshift' })
+  })
+
+  it('refuses a selection on a page that is not a view, and one the scope does not know', async () => {
+    const { view, opened } = shell()
+    expect(refusal(await handle(call('app.open', { scope: 'acme/retail', page: 'roadmap', select: 'wms' }), undefined, view)))
+      .toBe('agent.badArguments')
+    expect(refusal(await handle(call('app.open', { scope: 'acme/retail', select: 'wms' }), undefined, view)))
+      .toBe('agent.badArguments')
+    expect(refusal(await handle(call('app.open', { scope: 'acme/retail', page: 'board', id: 'r7', select: 'erp' }), undefined, view)))
+      .toBe('agent.unknownId')
+    expect(opened).toEqual([])
   })
 
   it('needs a scope when nothing is open and none is said', async () => {
