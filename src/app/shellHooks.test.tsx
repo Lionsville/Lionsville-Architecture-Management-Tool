@@ -19,7 +19,7 @@ import type { UpdateSettings } from '../platform/updateSettings'
 import { translator } from '../i18n'
 import type { ShellPreferences } from './useShellPreferences'
 import { useShellNavigation } from './useShellNavigation'
-import { initialPageFor } from './useShellAgent'
+import { initialPageFor } from './bootLanding'
 import { useProviderParts } from './useProviderParts'
 import { useMachineSettings } from './useMachineSettings'
 

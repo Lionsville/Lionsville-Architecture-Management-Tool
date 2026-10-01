@@ -50,6 +50,8 @@ export function useShellNavigation(deps: {
   initialProject: ScopeSnapshot | undefined
   /** Whose home is up at the first paint where nothing is open; the root's where absent. */
   initialHome?: ScopePath
+  /** The page the scope open at the first paint shows (ADR-0033): what a place in the address named. */
+  initialPage?: InitialPage
   scopes: ScopeReader & Pick<ScopeRepository, 'create'>
   changes: SourceChanges | undefined
   prefs: ShellPreferences
@@ -116,7 +118,9 @@ export function useShellNavigation(deps: {
    * scopes clears it: a page asked for on the root is not a page asked for on
    * the landscape opened next.
    */
-  const [initialPage, setInitialPage] = useState<InitialPage | undefined>(undefined)
+  const [initialPage, setInitialPage] = useState<InitialPage | undefined>(
+    () => (initialProject !== undefined ? deps.initialPage : undefined),
+  )
   const enter = useCallback((next: ScopeSnapshot, page?: InitialPage) => {
     // Opened for one board: the session starts on it, the way a tab click
     // would leave it — no step on the stack, and nothing dirty for it.

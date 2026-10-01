@@ -15,6 +15,7 @@ import type { StringKey } from '../i18n'
 import type { ScopeSnapshot } from '../projects/scope'
 import type { ScopePath } from '../projects/scopePath'
 import type { BootDialog } from './bootLanding'
+import type { InitialPage } from './App'
 import type { ThemeMode } from '../platform/theme'
 import type { WindowChrome } from '../platform/windowChrome'
 import type { WorkingSource } from '../platform/workingSource'
@@ -57,6 +58,13 @@ export type AppBoot = {
    * the organisation's.
    */
   initialHome?: ScopePath
+  /**
+   * The page the scope that is open shows at the first paint, and the page
+   * over the home that is up: what a place in the address named (ADR-0033,
+   * `bootLanding`'s `placeLanding`). Absent: the view, and the bare home.
+   */
+  initialPage?: InitialPage
+  initialHomePage?: 'register' | 'technologyRegister'
   /**
    * One of the shell's own dialogs, open at the first paint because the
    * address asked for it (`bootLanding`'s `dialogAsked`) — a page elsewhere

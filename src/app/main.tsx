@@ -59,7 +59,11 @@ import type { SourceLocation, SourceRecent, SourceWayIn } from '../platform/sour
 import { readLanguage, readLastScope, withoutLastScope } from '../projects/preferences'
 import { readScope } from '../projects/scopeAccess'
 import { sourceKey } from '../platform/workingSource'
-import { dialogAsked, landingOf, reopened, scopeToRead, withoutDialog } from './bootLanding'
+import {
+  bootDecidedBy, dialogAsked, landedAt, landingOf, placeLanding, placeToRead, readPlaceScope, reopened, withoutDialog,
+} from './bootLanding'
+import { readPlace } from '../agent/place'
+import type { Place } from '../agent/place'
 import type { BootDialog, BootLanding } from './bootLanding'
 import { App } from './App'
 import { BootFailure } from './BootFailure'
@@ -385,6 +389,30 @@ const askedDialog = (() => {
 })()
 
 /**
+ * A place the address's fragment carries (ADR-0033): where a reload in a
+ * browser was a moment ago, or where a link copied from the bar points. Read
+ * once, before anything moves the history; a fragment that is not a place is
+ * left alone for the source that may have written it.
+ */
+const bootPlace = readPlace(window.location.hash)
+
+/**
+ * Where that place lands, once the source it is in is open. A read that fails
+ * is a place this person may not be shown: said on the trail, and the
+ * organisation's home, which is where a refused open leaves somebody who had
+ * nothing open.
+ */
+async function landingAtPlace(place: Place): Promise<BootLanding> {
+  const path = placeToRead(place)
+  if (path === undefined) return placeLanding(undefined, place)
+  const reading = readPlaceScope(shell.repositories.scopes, path).catch((cause: unknown) => {
+    shell.diagnostics.report({ level: 'warn', where: 'boot', message: 'the place in the address could not be read', cause })
+    return undefined
+  })
+  return landedAt(reading, place)
+}
+
+/**
  * Where the page was opened, as much of it as a provider may read.
  *
  * The one place this file reads an address, and the reason a provider is handed
@@ -452,6 +480,8 @@ function renderApp(
         boot={{
           initialProject: landing?.initialProject,
           ...(landing?.initialHome !== undefined ? { initialHome: landing.initialHome } : {}),
+          ...(landing?.initialPage ? { initialPage: landing.initialPage } : {}),
+          ...(landing?.initialHomePage ? { initialHomePage: landing.initialHomePage } : {}),
           ...(landing?.dialog ? { opensDialog: landing.dialog } : {}),
           initialPreferences: storedPreferences,
           browserLanguages: navigator.languages ?? navigator.language,
@@ -528,11 +558,21 @@ void settled()
     await readRecents()
     // Where a way in is needed first, there is nothing to reopen: the only
     // place a scope could be is where the boot composed, which is exactly what
-    // ADR-0003 retired. The first screen asks instead. An address that named a
-    // place wins over the scope this machine last had open, for the reason the
-    // address wins over the source above; a home an address named is not read
-    // here at all — it reads its own document once it is up (`scopeToRead`).
-    const lastScope = scopeToRead(shell.opensAt, sourceNeeded() ? undefined : readLastScope(storedPreferences))
+    // ADR-0003 retired. The first screen asks instead. A place in the fragment
+    // (ADR-0033) wins over everything else, read now that the source it is in
+    // is open; then an address that named a scope wins over the scope this
+    // machine last had open, for the reason the address wins over the source
+    // above; a home an address named is not read here at all — it reads its
+    // own document once it is up (`scopeToRead`).
+    const needed = sourceNeeded()
+    const decided = bootDecidedBy(
+      needed ? undefined : bootPlace, shell.opensAt, needed ? undefined : readLastScope(storedPreferences),
+    )
+    if ('place' in decided) {
+      renderApp(storedPreferences, { ...await landingAtPlace(decided.place), dialog: askedDialog })
+      return
+    }
+    const lastScope = decided.read
     // After the source opened, so what is read is what it holds now.
     // A scope with no views is a domain (ADR-0012 §1): there is nothing for the
     // canvas to show, so its home opens instead of an empty editor — and a

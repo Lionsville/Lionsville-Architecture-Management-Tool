@@ -6,9 +6,14 @@
  * driving session with its Stop. Which of the organisation screen's two pages
  * is up is the one fact about that screen the shell has to hold, because an
  * agent may ask for either and may ask where it stands.
+ *
+ * And the window's history (ADR-0033), because it is made of the same two
+ * things: the look at the screen after every move, and `openFor`, the one way
+ * a destination is opened — by an agent, by a provider's chrome, and by Back.
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Translate } from '../i18n'
+import type { Place } from '../agent/place'
 import type { Destination, MovedBy, Screen } from '../agent/screen'
 import type { TreeView } from '../agent/tree'
 import type { AgentServerStatus } from '../platform/agentServer'
@@ -17,11 +22,17 @@ import type { ScopeSnapshot } from '../projects/scope'
 import { ROOT_SCOPE, scopePathLabel } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
 import type { InitialPage, SourceOpen } from './App'
+import { initialPageFor } from './bootLanding'
 import { useAgentShell } from './useAgentShell'
 import type { WorkspaceAgentView } from './useAgentShell'
+import { landingFor } from './placeLanding'
+import { usePlaceHistory } from './usePlaceHistory'
 import type { Notify } from './useToasts'
 
-type OrgPage = 'register' | 'technologyRegister'
+export type OrgPage = 'register' | 'technologyRegister'
+
+/** Where a failure goes when the caller gave nowhere: a history that cannot say where a place lands still opens it. */
+const NOBODY = () => {}
 
 export type ShellAgent = ReturnType<typeof useShellAgent>
 
@@ -41,19 +52,54 @@ export function useShellAgent(deps: {
   /**
    * Keep {@link ShellAgent}'s `screen` as the screen moves, for a source
    * provider's chrome to be handed. Off where no provider draws one, which is
-   * every build in this repository: nobody then pays a look per render.
+   * every build in this repository: nobody then pays a render per move. The
+   * look itself is taken either way, because the history needs it (ADR-0033):
+   * a screen and a place compared, which costs nothing worth saving.
    */
   watchScreen?: boolean
+  /** The organisation screen's page the first paint opens over the home, where the address named one. */
+  initialHomePage?: OrgPage
+  /** Somewhere to say that where a place in the history lands could not be worked out. */
+  report?: (cause: unknown) => void
 }) {
   const { gateway, status, tree, project, home, homeName, organisationName, goHome, openScopeAt, notify, s } = deps
   const watchScreen = deps.watchScreen ?? false
+  const report = deps.report ?? NOBODY
   const [orgPage, setOrgPage] = useState<OrgPage | undefined>(undefined)
-  const [orgPageRequest, setOrgPageRequest] = useState<{ page: OrgPage; nonce: number } | undefined>(undefined)
+  const [orgPageRequest, setOrgPageRequest] = useState<{ page: OrgPage; nonce: number } | undefined>(
+    () => (deps.initialHomePage ? { page: deps.initialHomePage, nonce: 1 } : undefined),
+  )
   const agentSessionRef = useRef<WorkspaceAgentView | undefined>(undefined)
   const screenNow = useCallback(
     (): Screen => screenOf(agentSessionRef.current, project, { home, homeName, organisationName, orgPage }),
     [project, home, homeName, organisationName, orgPage],
   )
+  const openFor = useCallback((to: Destination & { scope: string }) => {
+    if (to.page === 'home' || to.page === 'register' || to.page === 'technologyRegister') {
+      const page = to.page
+      goHome(to.scope)
+      setOrgPageRequest((prev) => (page === 'home' ? undefined : { page, nonce: (prev?.nonce ?? 0) + 1 }))
+      return
+    }
+    const held = agentSessionRef.current
+    if (project && project.path === to.scope && held) {
+      held.show(to)
+      return
+    }
+    openScopeAt(to.scope, initialPageFor(to))
+  }, [goHome, project, openScopeAt])
+  /**
+   * The window's history (ADR-0033): every look below is handed to it, so a
+   * move to another place is a step whoever made it, and Back opens the place
+   * before through `openFor`, the way `app.open` is answered. Where a place
+   * lands when it is not there any more is asked of the tree the shell holds,
+   * and of the open session for the scope that is open.
+   */
+  const nearest = useCallback((place: Place) => landingFor(place, tree, (path) => {
+    const held = agentSessionRef.current
+    return held && project?.path === path ? { model: held.current(), ancestorDecisions: held.ancestorDecisions() } : undefined
+  }, report), [tree, project, report])
+  const lookAtPlace = usePlaceHistory({ open: openFor, nearest, failed: report })
   /**
    * Where the app is, as `app.current` says it (ADR-0019), held as state so a
    * provider's chrome is drawn again when it moves — `screenNow` is read at
@@ -77,33 +123,20 @@ export function useShellAgent(deps: {
   const agentOpened = useRef(false)
   const agentDriving = useRef(false)
   const lookAgain = useCallback(() => {
-    if (!watchScreen) return
     const next = screenNow()
+    lookAtPlace(next)
+    if (!watchScreen) return
     const by: MovedBy = agentOpened.current || agentDriving.current ? 'agent' : 'person'
     setWhere((held) => {
       if (held && JSON.stringify(held.screen) === JSON.stringify(next)) return held
       return { screen: next, by }
     })
-  }, [watchScreen, screenNow])
+  }, [watchScreen, screenNow, lookAtPlace])
   useEffect(lookAgain, [lookAgain])
   // Through a ref, so registering the view does not change identity with the
   // screen: the workspace re-registers whenever this function changes.
   const lookAgainRef = useRef(lookAgain)
   lookAgainRef.current = lookAgain
-  const openFor = useCallback((to: Destination & { scope: string }) => {
-    if (to.page === 'home' || to.page === 'register' || to.page === 'technologyRegister') {
-      const page = to.page
-      goHome(to.scope)
-      setOrgPageRequest((prev) => (page === 'home' ? undefined : { page, nonce: (prev?.nonce ?? 0) + 1 }))
-      return
-    }
-    const held = agentSessionRef.current
-    if (project && project.path === to.scope && held) {
-      held.show(to)
-      return
-    }
-    openScopeAt(to.scope, initialPageFor(to))
-  }, [goHome, project, openScopeAt])
   /**
    * The same move, for a source provider's own chrome and its own menu lines
    * ({@link SourceOpen}).
@@ -154,11 +187,6 @@ export function useShellAgent(deps: {
   }
 }
 
-/**
- * The page a scope opens on for an agent's destination (ADR-0019): the same
- * three words, so the two vocabularies cannot drift. A home page is the
- * shell's own business and never reaches here.
- */
 /** Where the app is, as the agent is told it: the scope that is open and its view and page, or the home. */
 function screenOf(
   held: WorkspaceAgentView | undefined,
@@ -179,24 +207,5 @@ function screenOf(
   return {
     home: { path: home, name: home === ROOT_SCOPE ? organisationName : (homeName ?? scopePathLabel(home)) },
     ...(orgPage ? { page: { page: orgPage } } : {}),
-  }
-}
-
-export function initialPageFor(to: Destination): InitialPage | undefined {
-  switch (to.page) {
-    case 'board': return to.id !== undefined ? { page: 'board', id: to.id } : undefined
-    case 'sheet': return { page: 'sheet', ...(to.id !== undefined ? { id: to.id } : {}) }
-    case 'map': return { page: 'map', ...(to.id !== undefined ? { id: to.id } : {}) }
-    case 'technology': return { page: 'technology', ...(to.id !== undefined ? { id: to.id } : {}) }
-    case 'decisions': return { page: 'decisions', ...(to.id !== undefined ? { id: to.id } : {}) }
-    case 'observations': return { page: 'observations', ...(to.id !== undefined ? { id: to.id } : {}) }
-    case 'roadmap': return { page: 'roadmap' }
-    case 'plan': return to.id !== undefined ? { page: 'plan', id: to.id } : { page: 'roadmap' }
-    case 'element': return to.id !== undefined ? { page: 'element', id: to.id } : undefined
-    case 'document': return to.id !== undefined ? { page: 'document', id: to.id } : { page: 'documentation' }
-    case 'documentation': return { page: 'documentation' }
-    case 'platform': return to.id !== undefined ? { page: 'platform', id: to.id } : undefined
-    case 'service': return to.id !== undefined ? { page: 'service', id: to.id } : undefined
-    default: return undefined
   }
 }

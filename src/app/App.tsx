@@ -508,7 +508,8 @@ function useShellParts(props: AppProps): ShellParts {
   const shellAgent = useShellAgent({
     gateway: agent, status: agentServer.status, tree: findings.shellTree, project, home: nav.home,
     homeName: home.name, organisationName: organisation.tree.name, goHome: nav.goHome,
-    openScopeAt: nav.openScopeAt, notify: toasts.notify, s,
+    openScopeAt: nav.openScopeAt, notify: toasts.notify, s, initialHomePage: props.boot.initialHomePage,
+    report: (cause) => diagnostics.report({ level: 'warn', where: 'history', message: 'where a place lands could not be read', cause }),
     watchScreen: (props.provider?.chrome?.length ?? 0) > 0 || props.provider?.chipPanel !== undefined,
   })
   useWindowTitle({
@@ -598,7 +599,7 @@ function useShellBase(props: AppProps) {
     [source, readOnlyAt],
   )
   const nav = useShellNavigation({
-    initialProject: boot.initialProject, initialHome: boot.initialHome, scopes: repositories.scopes,
+    initialProject: boot.initialProject, initialHome: boot.initialHome, initialPage: boot.initialPage, scopes: repositories.scopes,
     changes, prefs, failedRef, refreshTree, refreshIndex, writable,
   })
   const { project, enter } = nav

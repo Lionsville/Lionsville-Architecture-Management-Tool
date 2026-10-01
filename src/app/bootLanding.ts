@@ -6,16 +6,29 @@
  * boot was given before anything renders. Pure, so each case is a test without
  * a shell.
  */
+import { nearestPlace } from '../agent/place'
+import type { Place } from '../agent/place'
+import { HOME_PAGES, VIEW_PAGES } from '../agent/screen'
+import type { Destination } from '../agent/screen'
 import { isOpenableScope, onView } from '../projects/scope'
 import type { ScopeSnapshot } from '../projects/scope'
-import { ROOT_SCOPE } from '../projects/scopePath'
+import { readScopes } from '../projects/scopeAccess'
+import type { ScopeReader } from '../projects/scopeAccess'
+import { ancestorScopes, ROOT_SCOPE } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
 import type { SourceLanding } from '../platform/sourceProvider'
+import type { InitialPage } from './App'
+import { factsOf } from './placeLanding'
+import type { HeldScope } from './placeLanding'
 
-/** Where the first paint is: a scope open on a view, or a scope's home. */
+/** Where the first paint is: a scope open on a view or a page, or a scope's home and its page. */
 export type BootLanding = {
   initialProject?: ScopeSnapshot
   initialHome?: ScopePath
+  /** The page over the scope that is open, where a place in the address named one (ADR-0033). */
+  initialPage?: InitialPage
+  /** The organisation screen's page over the home, likewise. */
+  initialHomePage?: 'register' | 'technologyRegister'
 }
 
 /**
@@ -57,13 +70,136 @@ export const BOOT_READ_MS = 4000
 export async function reopened(
   reading: Promise<ScopeSnapshot | undefined>, path: ScopePath, opensAt: SourceLanding | undefined, ms = BOOT_READ_MS,
 ): Promise<BootLanding> {
+  const read = await inTime(reading, ms)
+  return read === 'late' ? homeOf(path) : landingOf(read.held, opensAt)
+}
+
+/** A read, or `late` where it keeps the first paint waiting past `ms`. */
+async function inTime<T>(reading: Promise<T>, ms: number): Promise<{ held: T } | 'late'> {
   let timer: ReturnType<typeof setTimeout> | undefined
   const late = new Promise<'late'>((resolve) => { timer = setTimeout(() => resolve('late'), ms) })
   const read = await Promise.race([reading.then((held) => ({ held })), late]).finally(() => clearTimeout(timer))
-  if (read !== 'late') return landingOf(read.held, opensAt)
   // Answered after all, or never: nothing waits on it now.
-  reading.catch(() => undefined)
+  if (read === 'late') reading.catch(() => undefined)
+  return read
+}
+
+/** A scope's home as the first paint: the organisation's is the one with nothing said. */
+function homeOf(path: ScopePath): BootLanding {
   return path === ROOT_SCOPE ? {} : { initialHome: path }
+}
+
+/**
+ * What decides the first paint, in the order the boot asks: a place in the
+ * fragment (ADR-0033), then a source's own landing (`Shell.opensAt`), then the
+ * scope this machine last had open. A place wins over the other two because
+ * it is where the person was a moment ago — the history writes it on every
+ * move and leaves the query, which a source may land the app from, alone, so
+ * after a move and a reload the address carries both and the query is only
+ * the link the person arrived by.
+ */
+export function bootDecidedBy(
+  place: Place | undefined, opensAt: SourceLanding | undefined, last: ScopePath | undefined,
+): { place: Place } | { read: ScopePath | undefined } {
+  if (place !== undefined) return { place }
+  return { read: scopeToRead(opensAt, last) }
+}
+
+/**
+ * Which scope a place in the address needs read before the first paint
+ * (ADR-0033): none for a home, which reads its own document once it is up,
+ * as an address that names a scope without a view does.
+ */
+export function placeToRead(place: Place): ScopePath | undefined {
+  return place.page !== undefined && HOME_PAGES.includes(place.page) ? undefined : place.scope
+}
+
+/**
+ * Where a place in the address lands (ADR-0033) — the one a reload in a
+ * browser finds there, or a link somebody copied out of the bar.
+ *
+ * **It wins over everything else the boot could land on**: a source's own
+ * landing, read out of the query by its provider, and the scope this machine
+ * last had open. The query is the link the person arrived by and the
+ * preference is where they worked last time; the fragment is where they were
+ * a moment ago, because the history writes it on every move and leaves the
+ * query alone.
+ *
+ * A home lands on that home and the page on it. Anything else lands where the
+ * place lands now (`nearestPlace`): on the view or the page it names, its
+ * scope's first view for a view that was removed, the page without its record
+ * for a record that was. A scope that is not there, or that this person may
+ * not read, is the organisation's home — where an address that names one
+ * lands now, and where a refused open leaves a person who had nothing open.
+ */
+export function placeLanding(held: PlaceScope | undefined, place: Place): BootLanding {
+  const { scope, page } = place
+  if (page !== undefined && HOME_PAGES.includes(page)) {
+    return { ...homeOf(scope), ...(page === 'home' ? {} : { initialHomePage: page as 'register' | 'technologyRegister' }) }
+  }
+  if (held === undefined) return {}
+  const near = nearestPlace(place, { scopeIs: () => true, ...factsOf(held) })
+  const snapshot = held.snapshot
+  if (near.page === 'home') return homeOf(scope)
+  if (near.page === undefined || VIEW_PAGES.includes(near.page)) {
+    // A scope that draws nothing has no view to open on: its home.
+    if (!isOpenableScope(snapshot)) return homeOf(scope)
+    return { initialProject: near.id === undefined ? snapshot : onView(snapshot, near.id) }
+  }
+  const opened = initialPageFor(near)
+  return { initialProject: snapshot, ...(opened ? { initialPage: opened } : {}) }
+}
+
+/** A scope as a place in it is landed by: its snapshot, and the records it reads from above. */
+export type PlaceScope = HeldScope & { snapshot: ScopeSnapshot }
+
+/**
+ * The scope a place names, with its ancestors' decisions — a place on the
+ * decisions page may name a record from above, which is shown there too —
+ * in one read of the tree. `undefined` where no scope is there.
+ */
+export async function readPlaceScope(scopes: ScopeReader, path: ScopePath): Promise<PlaceScope | undefined> {
+  const [held, ...above] = await readScopes(scopes, [path, ...ancestorScopes(path)])
+  if (!held) return undefined
+  return { snapshot: held, model: held.model, ancestorDecisions: above.flatMap((one) => one?.model.decisions ?? []) }
+}
+
+/**
+ * The scope a place names, read in time for the first paint, as
+ * {@link reopened} reads the last one: where the read keeps it waiting, the
+ * scope's home. A read that fails is a place this person may not be shown,
+ * and is the caller's to say on the trail; here it is the organisation's home.
+ */
+export async function landedAt(
+  reading: Promise<PlaceScope | undefined>, place: Place, ms = BOOT_READ_MS,
+): Promise<BootLanding> {
+  const read = await inTime(reading, ms)
+  return read === 'late' ? homeOf(place.scope) : placeLanding(read.held, place)
+}
+
+/**
+ * The page a scope opens on for a destination — an agent's (ADR-0019), a
+ * search hit's, a place in the history (ADR-0033): the same three words, so
+ * the vocabularies cannot drift. A home page is the shell's own business and
+ * never reaches here.
+ */
+export function initialPageFor(to: Destination): InitialPage | undefined {
+  switch (to.page) {
+    case 'board': return to.id !== undefined ? { page: 'board', id: to.id } : undefined
+    case 'sheet': return { page: 'sheet', ...(to.id !== undefined ? { id: to.id } : {}) }
+    case 'map': return { page: 'map', ...(to.id !== undefined ? { id: to.id } : {}) }
+    case 'technology': return { page: 'technology', ...(to.id !== undefined ? { id: to.id } : {}) }
+    case 'decisions': return { page: 'decisions', ...(to.id !== undefined ? { id: to.id } : {}) }
+    case 'observations': return { page: 'observations', ...(to.id !== undefined ? { id: to.id } : {}) }
+    case 'roadmap': return { page: 'roadmap' }
+    case 'plan': return to.id !== undefined ? { page: 'plan', id: to.id } : { page: 'roadmap' }
+    case 'element': return to.id !== undefined ? { page: 'element', id: to.id } : undefined
+    case 'document': return to.id !== undefined ? { page: 'document', id: to.id } : { page: 'documentation' }
+    case 'documentation': return { page: 'documentation' }
+    case 'platform': return to.id !== undefined ? { page: 'platform', id: to.id } : undefined
+    case 'service': return to.id !== undefined ? { page: 'service', id: to.id } : undefined
+    default: return undefined
+  }
 }
 
 /**
