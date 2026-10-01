@@ -1,6 +1,7 @@
 # ADR-0033 — Back goes to the place before
 
-* Status: accepted, 1 October 2026; as built, 1 October 2026, on a branch awaiting release
+* Status: accepted, 1 October 2026; as built, 1 October 2026, on a branch awaiting release;
+  amended 1 October 2026 (a place on the observations page carries its tab)
 * Date: 2026-10-01
 * Deciders: Wouter Simons
 * Extends: ADR-0019 (the screen an agent reads and the destination it opens:
@@ -285,3 +286,18 @@ Back. While a dialog is open — one with the `dialog` role that nothing has
 hidden — none of these is taken. The smoke run presses Back after the
 example's landscape was opened from a home, and Forward again.
 
+## Amended — a place on the observations page carries its tab
+
+*1 October 2026.* The screen says which tab of the observations page is up
+(ADR-0019, amended), and a place is what the screen says, so a place on that
+page carries it: `tab`, one of `register`, `analysis` and `solutions`, beside
+the scope, the page and the id — in the address
+(`#place?scope=acme&page=observations&tab=analysis`), in an entry's state, and
+in what makes two places the same. A reload stays on the tab, and `readPlace`
+refuses a tab that is not one of the three as it refuses a page there is no
+such thing as. A change of tab on the page that is up replaces the entry, as
+another record on the same page does: choosing where to look on a page is not
+going somewhere. A removed record on the page keeps its tab. Nothing else is
+part of a place: an element selected as a destination opens (`select`) is a
+selection, and stays out of it. `place.test.ts` and `bootLanding.test.ts` pin
+it.

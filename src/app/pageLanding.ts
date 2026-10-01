@@ -11,7 +11,7 @@
  * the scope's tab where it is of that kind, and the first of that kind
  * otherwise; with none of that kind it lands on the home. The one way onto a
  * view that writes one is `make`, which is the person's own *Make…* and
- * *+ Sheet*, said apart so nothing else can ask for it by accident.
+ * *New board…*, said apart so nothing else can ask for it by accident.
  *
  * An element's page starts the session on the board that draws it where the
  * board on the tab does not and exactly one does, so the screen the scope

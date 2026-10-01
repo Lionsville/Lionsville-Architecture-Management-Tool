@@ -1,6 +1,8 @@
 # ADR-0022 — A source is a provider, and a step can come from another author
 
-* Status: accepted
+* Status: accepted; amended 1 October 2026 (a button of a provider's own in
+  the bar, an action on a problem, a host's own tools, and a move a provider
+  says is its own), as built the same day
 * Date: 2026-09-21
 * Deciders: Wouter Simons
 * Extends: ADR-0002 (every change is a command through one reducer), ADR-0005
@@ -1055,6 +1057,76 @@ one optional member, so the three built-ins are written exactly as they were.
 the log and the session's steps in the order they happened with each step
 once, says whose each line is, and shows the session alone where the log could
 not be read.
+
+## Amended — the four a build with a button, an offer and tools of its own needed
+
+*1 October 2026.* A build composed from this one wanted a way into something
+of its own that a person reaches from wherever they are, an offer it can make
+on a problem the app ran into, tools of its own beside the agent's, and a way
+to move the app that the shell does not take for the person's. Each is added
+as the smallest public thing that closes it, optional, so the three built-ins
+are written exactly as they were and draw exactly what they drew.
+
+* **A provider may draw a button of its own in the bar.** `barButton` on the
+  registration (`App`'s `SourceBarButton`, handed `BarButtonProps`) is drawn
+  at the right end of both bars — the workspace's and every home's — after
+  the agent control and before the chip, while that provider's source is the
+  one open. It is drawn inside the language, in a boundary of its own that
+  draws nothing where it throws, because a crash screen the size of a bar
+  would cost the bar; it must be a `button` or an `a`, the elements the bar's
+  drag rule leaves pressable, and say its own name. It is handed which bar it
+  is in (`where`), the way about (`open`), where the app is and who moved it
+  there (`screen`, `movedBy`), the way to say something (`notify`), and the
+  open scope's `session` on the workspace's bar and its own parts (`own`).
+  The end of a bar is one component both bars draw (`BarEnd`): the agent
+  glyph, this button, the chip where it sits at the end, and the menu, as
+  siblings in the bar with no box of their own.
+* **A provider may offer the person an action on a problem; the app sends
+  nothing.** `problemAction` on the registration — a `labelKey` from the
+  provider's own table and `run` — is drawn where the app already says
+  something about a problem: a third button on the crash screen beside
+  *Reload* and *Copy diagnostics*, and the one button of the notice a failure
+  (`failed`), a refusal by the reducer, a change refused on a scope that is
+  only read, or an unexpected error raises, where no other offer has it. The
+  open source's provider is handed the `Problem` — where, the key, the
+  command refused by its type, the cause's kind, message and stack, when,
+  and the screen — only when the person presses it. Nothing about it is
+  written to the trail, which keeps keys and messages and never a
+  landscape's content; what the person hands over is theirs to hand.
+* **A host may answer tools of its own.** `RespondOptions.hostTools`
+  (`agent/mcpProtocol.ts`) lists a host's own tools after the vocabulary in
+  `tools/list`, whatever `tools` decides about the vocabulary, and a call by
+  one of their names reaches the relay with its arguments as they came, as
+  any name the vocabulary does not have did already. Checking those
+  arguments is the host's. A host's tool never takes a vocabulary name; one
+  that does is not listed. `ToolSpec` takes its name type as a parameter, so
+  a host describes them in the same shape.
+* **A move a provider says is its own is the provider's.** `SourceOpen`
+  takes `{ by: 'provider' }`, and `MovedBy` gains `provider`: a chrome, a
+  menu line or a bar button that moves the app of its own accord, and not to
+  pass on a press of the person's, is told `movedBy: 'provider'` for every
+  screen that move brings, never `person` (ADR-0019, amended, says how long).
+
+**As built, 1 October 2026.** `ports/ProviderParts.ts` holds `BarButtonProps`,
+`Problem`, `ProblemAction` and `SourceOpenOptions`; `app/composition.ts`
+reads `barButton` and `problemAction` from the open source's provider
+(`sourceBarButton`, `sourceProblemAction`), and the boot hands both to `App`.
+The crash screen reads the offer from a context `App` provides
+(`ProblemOfferContext`), so every boundary under the shell draws it without a
+prop through every place that makes one; the session's refusals carry it
+through the workspace's `shell.problem`; a notice with no offer is said with
+no third argument, exactly as before (`app/problem.ts`'s `offerFor`).
+`App.storage.test.tsx` pins the button on the workspace's bar and on every
+home, after the agent and before the chip, in the language that is on,
+reached by the keyboard and clean under axe, nothing where no provider drew
+one, and a button that throws costing only itself; the action on the crash
+screen and on an unexpected error's notice, and nowhere without one.
+`ErrorBoundary.test.tsx`, `useGlobalErrors.test.tsx`,
+`useModelSession.test.tsx` and `problem.test.ts` pin the problem said and
+handed over only when pressed; `mcpProtocol.test.ts` the host's tools;
+`App.destination.test.tsx` a provider's move; `composition.test.tsx` the
+registry answering the button and the action for the open source's provider
+and for nobody else.
 
 ## More Information
 

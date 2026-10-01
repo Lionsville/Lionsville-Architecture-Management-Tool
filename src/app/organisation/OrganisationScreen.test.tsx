@@ -355,9 +355,9 @@ describe('the organisation screen — its own pages', () => {
   })
 
   /**
-   * The card's *Make…* and the boards' *+* are the person's own way onto a view
-   * that writes one (ADR-0019, amended): they still make it, through a page
-   * of their own, where an open of a view never does.
+   * The card's *Make…* and *New board…* over the boards are the person's own
+   * way onto a view that writes one (ADR-0019, amended): they still make it,
+   * through a page of their own, where an open of a view never does.
    */
   it('makes a sheet where the card says it will, and opens it', async () => {
     renderApp({ repositories: heldRepositories([organisation()]), today: TODAY })

@@ -1,6 +1,8 @@
 # ADR-0019 — An agent drives the app, and the person can stop it
 
-* Status: accepted
+* Status: accepted; amended 1 October 2026 (a move a provider says is its
+  own, a tab and a selection in a destination, and an open that never makes
+  a view), as built the same day
 * Date: 2026-09-19
 * Deciders: Wouter Simons
 
@@ -164,6 +166,94 @@ would be a lie.
   reason.
 * The desktop smoke run still connects with the real client and reads the
   scope on screen; the tool list it reports grows by five.
+
+## Amended — a destination a provider can use precisely
+
+*1 October 2026.* A source's provider was handed the agent's way about —
+`open(to)` and the `Screen` — so that a notice could send a person where it
+names (ADR-0022, amended). A provider whose chrome sends a person from one
+place to the next found four things it could not say, and one thing an open
+did that nobody had asked for. Each is said here in the destination's own words,
+and the agent's `app.open` takes the two new ones, because an agent can do
+what a person can (ADR-0011).
+
+* **A move a provider says is its own is the provider's.** `SourceOpen`
+  takes `{ by: 'provider' }`, and `MovedBy` gains `provider`. Every screen
+  such a move brings in the scope it was sent to is `provider`'s until the
+  app has landed where it was sent (`landed`: on the kind of page asked for,
+  whichever record or tab it then shows — and on the scope's home where a
+  view was asked for and the scope has none of that kind), and a screen in
+  another scope lets the mark go, because that move was somebody else's. A
+  move to where the app already is leaves no mark on the next one, and an
+  agent's move after it is the agent's. A move a person makes is never said
+  to be a provider's. Under ADR-0033 a provider's move is a step in the
+  window's history as an agent's is — that record counts every move to
+  another place whoever made it — and a move made by Back is the history's,
+  never the provider's: the mark is set by a provider's own open and by
+  nothing else.
+* **A destination may name a tab of the observations page.**
+  `Destination.tab` is one of `register`, `analysis` and `solutions`
+  (`observations/tabs.ts`); with an id as well, the tab named wins over the
+  one the record would open on, and the record is selected there. The
+  screen says which tab is up (`ScreenPage`'s `tab` on the observations
+  page), once the page has said so, so a tab the person changes is seen,
+  and `arrived` waits for a tab asked for. The tab is part of a place
+  (ADR-0033): the address carries it, and a change of tab replaces the entry
+  as another record on the same page does.
+* **A destination may name an element to select.** `Destination.select` is
+  an element selected on the board, sheet, map or technology landscape being
+  opened, where that view draws it, and nothing is selected where it does
+  not: on a board through the editor's own focus, and only where the board
+  places it, because that request would otherwise switch to a board that
+  does; on the technology landscape through the card it is drawn as; on a
+  sheet or a map through a numbered request the page honours where it draws
+  it. A selection is not part of a place (ADR-0033 leaves it out), so the
+  address never carries it, though like every field of a destination it is
+  a plain string.
+* **An open never makes a view.** A view's page with no id — a board's as
+  much as a sheet's, a map's or a technology landscape's — opens the one on
+  the scope's tab where it is of that kind, and the first of that kind
+  otherwise; where the scope has none of that kind it lands on the scope's
+  home, and nothing is made. It used to make a sheet, a map or a landscape
+  where there was none, and a board with no id opened whatever view was on
+  the tab. The one way onto a view that writes one is the person's own
+  *Make…* on a home's card and *New board…* over its boards, which ask for
+  it by name (`InitialPage`'s `make`) and do what they did. A view an id
+  names opens as before; where one that was removed lands is ADR-0033's rule. The one write
+  an open made before this stays as it was: a page every scope has before
+  anything is written in it — its decisions, observations, roadmap,
+  documentation — asked for on a scope with no document writes that scope's
+  bare document first, for somebody who may write there (`opensOnNothing`).
+* **What is opened is what is seen.** Whatever a destination opens in the
+  scope that is open, the documentation page over the board is closed first,
+  but for a record's page, which takes its place
+  (`EditorRequests.leaveDocumentation`).
+
+`app.open` takes `tab` and `select`, held to the page the destination
+resolves to before the shell is asked: a tab is the observations page's,
+an element to select is one the scope knows, on a view's page. Its own rule
+for a view's page with no id is unchanged — the only one of that kind, and a
+refusal that says which where there are none or several — so an agent still
+never meets the home it lands on for a provider.
+
+**As built, 1 October 2026.** `agent/screen.ts` says the destination and
+the screen (`Destination.tab`, `select`, `ScreenPage`'s `tab`,
+`MovedBy`), and `landed` and `viewFor`; `agent/place.ts` carries the tab in a
+place; `app/useShellAgent.ts` keeps a provider's mark and resolves a view's
+page in the scope that is open, and `app/pageLanding.ts` resolves it in one
+that is opened, for `useShellNavigation`'s `enter`; the boot's landing of a
+place follows the same rule (`bootLanding.ts`). The tab is the page's
+(`ObservationsPage`'s `initialTab`, said back with what is on show), the
+selection `app/useViewSelect.ts` with `widgets/useSelectRequest.ts`, and
+`agent/shell.ts` checks both for `app.open`. `App.destination.test.tsx` pins
+a provider's move through the whole shell, a view asked for with none of
+its kind landing on the home with nothing written, the one there is opened,
+a board with no id the board on the tab, the observations page on a tab and
+the screen saying so, a selection on a sheet and none where the sheet does
+not draw it, and the documentation page closed by another page; `screen`,
+`place`, `pageLanding`, `bootLanding`, `useViewSelect` and `handle.shell`
+tests pin the rest, and `OrganisationScreen.test.tsx` the person's own
+*Make…* and *New board…*, which still make a sheet.
 
 ## More Information
 

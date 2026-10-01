@@ -344,7 +344,7 @@ export type InitialPage =
   | { page: 'board' | 'sheet' | 'map' | 'technology'; id?: string; select?: ElementId }
   /**
    * A new sheet, enterprise map or technology landscape, made the moment the
-   * scope opens: the person's own *Make…* and *+ Sheet* on a home, which is
+   * scope opens: the person's own *Make…* and *New board…* on a home, which is
    * the one way onto a view that writes one.
    */
   | { page: 'make'; kind: 'sheet' | 'map' | 'technology' }
