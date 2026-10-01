@@ -271,13 +271,25 @@ function lookWithMark(mark: { current: ProviderMove | undefined }, next: Screen,
  * Will a provider's move change what is on screen? A destination the app is
  * already at moves nothing, and a move that moves nothing must not leave its
  * mark on the next move somebody else makes. Most pages say on the screen
- * whether they are up (`arrived`); a record's page and an element do not, so
- * for those in the scope that is open it is whether a page over the view
- * closes, or — for an element — whether another board comes up to show it.
+ * whether they are up (`arrived`); in the scope that is open, three kinds are
+ * judged on what the open will do instead. A view's page is resolved first,
+ * as `openFor` resolves it: the view it names or the one of its kind there
+ * is, and the scope's home where there is none, which from an open scope is
+ * always a move. A record's page asked for again picks again — the record
+ * asked for, the newest observation, the first decision — so it is always a
+ * move, over once the page has settled. An element and a document are not on
+ * the screen's face: it is whether a page over the view closes, or — for an
+ * element — whether another board comes up to show it.
  */
 function movesTheApp(screen: Screen, to: Destination & { scope: string }, open: WorkspaceAgentView | undefined): boolean {
+  if (screen.open?.path !== to.scope || !open) return !arrived(screen, to, to.scope)
+  if (to.page !== undefined && VIEW_PAGES.includes(to.page)) {
+    const id = viewFor(to.page, to.id, open.current().diagrams, open.activeDiagramId())
+    return id === undefined || !arrived(screen, { ...to, id }, to.scope)
+  }
+  if (to.page === 'decisions' || to.page === 'observations') return true
   const silent = to.page === 'element' || to.page === 'document' || to.page === 'documentation'
-  if (!silent || screen.open?.path !== to.scope || !open) return !arrived(screen, to, to.scope)
+  if (!silent) return !arrived(screen, to, to.scope)
   if (screen.page !== undefined) return true
   if (to.page !== 'element' || to.id === undefined) return false
   const boards = boardsDrawing(open.current(), to.id)

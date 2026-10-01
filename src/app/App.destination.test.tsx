@@ -130,6 +130,27 @@ describe('a move a provider says is its own', () => {
     await waitFor(() => expect(told().where.open?.path).toBe('acme/landscape'))
     expect(told().movedBy).toBe('person')
   })
+
+  it('is the provider’s where a view with no id brings another view of the scope that is open', async () => {
+    const scopes = tree()
+    scopes[2].model.diagrams = [board, sheet('s1')]
+    show([{ label: 'To the sheet', to: { page: 'sheet' }, options: { by: 'provider' } }], scopes, scopes[2])
+    await waitFor(() => expect(told().where.open?.view?.id).toBe('d1'))
+    const from = handed.length
+    fireEvent.click(screen.getByRole('button', { name: 'To the sheet' }))
+    await waitFor(() => expect(told().where.open?.view?.id).toBe('s1'))
+    expect(movers(from)).toEqual(['provider'])
+  })
+
+  it('is the provider’s where a view the scope that is open has none of lands on its home', async () => {
+    const scopes = tree()
+    show([{ label: 'To a map', to: { page: 'map' }, options: { by: 'provider' } }], scopes, scopes[2])
+    await waitFor(() => expect(told().where.open?.view?.id).toBe('d1'))
+    const from = handed.length
+    fireEvent.click(screen.getByRole('button', { name: 'To a map' }))
+    await waitFor(() => expect(told().where.home?.path).toBe('acme/landscape'))
+    expect(movers(from)).toEqual(['provider'])
+  })
 })
 
 /**
@@ -162,6 +183,22 @@ describe('a move a provider says is its own, onto a record’s page', () => {
     fireEvent.click(within(await screen.findByRole('dialog')).getByTestId('observation-row-o1'))
     await waitFor(() => expect(told().where.page).toMatchObject({ page: 'observations', id: 'o1' }))
     expect(told().movedBy).toBe('person')
+  })
+
+  it('is the provider’s where the page that is up picks again', async () => {
+    const scopes = withRecords()
+    show([
+      { label: 'The older one', to: { page: 'observations', id: 'o1' } },
+      { label: 'To the observations', to: { page: 'observations' }, options: { by: 'provider' } },
+    ], scopes, scopes[2])
+    await waitFor(() => expect(told().where.open?.view?.id).toBe('d1'))
+    fireEvent.click(screen.getByRole('button', { name: 'The older one' }))
+    await waitFor(() => expect(told().where.page).toEqual({ page: 'observations', id: 'o1', tab: 'register' }))
+    const from = handed.length
+    fireEvent.click(screen.getByText('To the observations'))
+    await waitFor(() => expect(told().where.page).toEqual({ page: 'observations', id: 'o2', tab: 'register' }))
+    expect(movers(from).length).toBeGreaterThan(0)
+    expect(movers(from)).not.toContain('person')
   })
 
   it('is the provider’s through the decision the page picks', async () => {

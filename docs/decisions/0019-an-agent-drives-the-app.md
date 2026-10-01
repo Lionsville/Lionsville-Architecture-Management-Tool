@@ -187,7 +187,10 @@ what a person can (ADR-0011).
   picked what it shows — the newest observation, the first decision, the tab
   that is up — and that pick is the provider's too. A screen in another
   scope lets the mark go, because that move was somebody else's, and so does
-  a screen off the destination once the app had landed on it. A
+  a screen off the destination once the app had landed on it. Whether the
+  move moves the app at all is judged on where it will land — a view's page
+  in the scope that is open on the view it resolves to, and a record's page
+  asked for again as a move, because it picks again. A
   move to where the app already is leaves no mark on the next one, and an
   agent's move after it is the agent's. A move a person makes is never said
   to be a provider's. Under ADR-0033 a provider's move is a step in the
@@ -253,7 +256,9 @@ selection `app/useViewSelect.ts` with `widgets/useSelectRequest.ts`, and
 record's page has settled (`WorkspaceAgentView.settled`), which the mark waits
 for. `App.destination.test.tsx` pins a provider's move through the whole
 shell — onto a record's page that picks an observation or a decision, from a
-home and in the scope that is open — a view asked for with none of
+home and in the scope that is open, and again where that page is up; onto
+another view, or the home, from a view's page with no id in the scope that
+is open — a view asked for with none of
 its kind landing on the home with nothing written, the one there is opened,
 a board with no id the board on the tab, the observations page on a tab and
 the screen saying so, a selection on a sheet and none where the sheet does
