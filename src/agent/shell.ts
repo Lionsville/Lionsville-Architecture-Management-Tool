@@ -16,7 +16,7 @@ import type { Adr } from '../model/adr'
 import type { HostModel } from '../model/hostModel'
 import type { DesignDiagram } from '../model/types'
 import type { Driving } from './driving'
-import { arrived, HOME_PAGES, NEEDS_ID, scopeOf, VIEW_PAGES } from './screen'
+import { arrived, HOME_PAGES, NEEDS_ID, scopeOf, VIEW_PAGES, viewPage } from './screen'
 import type { Destination, Page, Screen } from './screen'
 import type { AgentAnswer } from './tools'
 import { json, refused } from './tools'
@@ -266,9 +266,9 @@ function resolveTarget(model: HostModel, ancestors: readonly Adr[], asked: Resol
   }
 }
 
-/** Which page's tab a view is: the two drawn kinds are boards, the laid-out ones are their own. */
+/** Which page's tab a view is (`screen.ts`'s `viewPage`). */
 function pageOf(diagram: DesignDiagram): Page {
-  return diagram.kind === 'layer7' || diagram.kind === 'container' ? 'board' : diagram.kind as Page
+  return viewPage(diagram.kind)
 }
 
 // --- session.start / session.end ------------------------------------------------------

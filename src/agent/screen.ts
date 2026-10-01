@@ -31,6 +31,15 @@ export type Page = (typeof PAGES)[number]
 /** Pages that are a view's tab: the id is a diagram's. */
 export const VIEW_PAGES: readonly Page[] = ['board', 'sheet', 'map', 'technology']
 
+/**
+ * Which page's tab a view is: the two drawn kinds are boards, the laid-out
+ * ones are their own. Said once, for `app.open` to check a view against and
+ * for a place to be written from the view on screen (`place.ts`).
+ */
+export function viewPage(kind: string): Page {
+  return kind === 'layer7' || kind === 'container' ? 'board' : kind as Page
+}
+
 /** Pages that live on a scope's home rather than in the workspace. */
 export const HOME_PAGES: readonly Page[] = ['home', 'register', 'technologyRegister']
 

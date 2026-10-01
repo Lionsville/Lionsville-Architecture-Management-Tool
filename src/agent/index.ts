@@ -24,7 +24,11 @@ export type { SessionView } from './handle'
 export { handle } from './handle'
 export type { OpenScope, ShellView } from './shell'
 export type { Destination, Page, Screen, ScreenPage, ScreenView } from './screen'
-export { HOME_PAGES, NEEDS_ID, PAGES, VIEW_PAGES, arrived, scopeOf } from './screen'
+export { HOME_PAGES, NEEDS_ID, PAGES, VIEW_PAGES, arrived, scopeOf, viewPage } from './screen'
+export type { Place, PlaceFacts } from './place'
+export {
+  PLACE_PREFIX, PLACE_STATE_KEY, nearestPlace, placeInState, placeOf, readPlace, samePlace, stepBetween, writePlace,
+} from './place'
 export type { DrivingSession, DrivingState } from './driving'
 export { Driving, drives } from './driving'
 export type { CaptureOptions, RendererRefusal, RendererView } from './renderer'
