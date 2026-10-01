@@ -128,6 +128,7 @@ function RecordPages({ parts }: { parts: WorkspaceParts }) {
         onOpenDecision={(adrId) => { pages.closeObservations(); pages.openDecisions(adrId) }}
         onOpenPlan={(planId) => { pages.closeObservations(); plans.openPlan(planId) }}
         initialId={pages.obsPage.id}
+        initialTab={pages.obsPage.tab}
         initialNonce={pages.obsPage.nonce}
         onShown={pages.observationShown}
         s={s}

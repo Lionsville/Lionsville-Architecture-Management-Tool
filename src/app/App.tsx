@@ -20,7 +20,7 @@ import Box from '@mui/material/Box'
 import CssBaseline from '@mui/material/CssBaseline'
 import { ThemeProvider } from '@mui/material/styles'
 import type { Command, ElementId } from '../model'
-import type { Screen } from '../agent/screen'
+import type { ObservationTab, Screen } from '../agent/screen'
 import type { Diagnostic, DiagnosticEntry } from '../platform/diagnostics'
 import { reasonOf, ShellError } from '../platform/errors'
 import { messageFor } from './messageFor'
@@ -326,18 +326,28 @@ export type RegisteredMenu = {
 export type InitialPage =
   /** The decisions page, on one record when an id is given (ADR-0019). */
   | { page: 'decisions'; id?: string }
-  /** The observations page (ADR-0021), on one observation or cause when an id is given. */
-  | { page: 'observations'; id?: string }
+  /**
+   * The observations page (ADR-0021), on one observation or cause when an id
+   * is given, and on one of its tabs when a tab is (ADR-0019, amended).
+   */
+  | { page: 'observations'; id?: string; tab?: ObservationTab }
   | { page: 'roadmap' }
   /** A platform's report, or a service's (ADR-0013, ADR-0014): derived, opened by id, never made. */
   | { page: 'platform'; id: ElementId }
   | { page: 'service'; id: ElementId }
-  /** A sheet by id, or — with none — the one the scope is about to be given. */
-  | { page: 'sheet'; id?: string }
-  /** The enterprise map, likewise. */
-  | { page: 'map'; id?: string }
-  /** The technology landscape (ADR-0015), likewise. */
-  | { page: 'technology'; id?: string }
+  /**
+   * A view on its tab, by id — or, with none, the one on the scope's tab where
+   * it is of that kind and else the first; a scope with none of that kind
+   * lands on its home, because an open never makes a view (ADR-0019, amended).
+   * `select` is an element selected there where it is drawn there.
+   */
+  | { page: 'board' | 'sheet' | 'map' | 'technology'; id?: string; select?: ElementId }
+  /**
+   * A new sheet, enterprise map or technology landscape, made the moment the
+   * scope opens: the person's own *Make…* and *+ Sheet* on a home, which is
+   * the one way onto a view that writes one.
+   */
+  | { page: 'make'; kind: 'sheet' | 'map' | 'technology' }
   /** One plan, on its page over the roadmap — an initiative opened where it lives (ADR-0012 §7). */
   | { page: 'plan'; id: string }
   /**
@@ -352,8 +362,6 @@ export type InitialPage =
   | { page: 'document'; id: ElementId }
   /** The documentation page as the bar opens it: on the selected element, or the first. */
   | { page: 'documentation' }
-  /** One board, made the active one — a row of the views table on a landscape's home. */
-  | { page: 'board'; id: string }
   /**
    * Not a page, and here anyway: *link* (ADR-0012 §10), asked the moment the
    * scope opens.

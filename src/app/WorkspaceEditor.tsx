@@ -37,7 +37,10 @@ export function WorkspaceEditor({ parts }: { parts: WorkspaceParts }) {
         pages={{ render: (diagram, view) => laidOutPage(parts, diagram, view) }}
         diagrams={diagramCalls(parts)}
         history={seams.historyRequests}
-        requests={{ focus: requests.focus, documentation: requests.documentation }}
+        requests={{
+          focus: requests.focus, documentation: requests.documentation,
+          ...(requests.leftDocumentation ? { leaveDocumentation: requests.leftDocumentation } : {}),
+        }}
         plans={{
           list: session.model.transitions ?? [],
           onOpen: parts.pages.plans.openPlan,
@@ -177,6 +180,7 @@ function sheetPage(parts: WorkspaceParts, diagram: DesignDiagram, view: PageView
       applications={readings.applicationsInTree}
       onOpenDocumentation={(id) => requests.openDocumentation(id, diagram.id)}
       onSave={files.savePicture}
+      select={parts.pages.selectRequestFor(diagram.id)}
     />
   )
 }
@@ -198,6 +202,7 @@ function mapPage(parts: WorkspaceParts, diagram: DesignDiagram, view: PageView):
       today={todayDay}
       applications={readings.applicationsInTree}
       onOpenDocumentation={(id) => requests.openDocumentation(id, diagram.id)}
+      select={parts.pages.selectRequestFor(diagram.id)}
     />
   )
 }

@@ -46,7 +46,8 @@ import { alpha, useTheme } from '@mui/material/styles'
 import type { Theme } from '@mui/material/styles'
 import type { DesignDiagram, DesignModel, ElementId, Relation } from '../../model'
 import {
-  applicationList, landscapeEdges, nodeKey, platformList, serviceList, startsFolded, technologyLandscape, touchedBy,
+  applicationList, drawsCard, landscapeEdges, nodeKey, platformList, serviceList, startsFolded, technologyLandscape,
+  touchedBy,
 } from '../../model'
 import type {
   LandscapeApplication, LandscapeEdge, LandscapeEdgeKind, LandscapeGroup, LandscapePlatform, LandscapeService,
@@ -125,7 +126,9 @@ type Lines = 'focus' | 'all'
  * the person back to it after each click and each edit. The door's key
  * stays set until the view is opened another way, which is why a key
  * already honoured is not honoured again until it has gone; it waits for
- * the landscape, so a view that arrives late still lands.
+ * the landscape, so a view that arrives late still lands. A card the
+ * landscape does not draw is chosen as nothing: a page never selects what a
+ * person cannot see on it.
  */
 function useDoorFocus(
   focusKey: NodeKey | undefined, landscape: TechnologyLandscape | undefined, held: ReadonlySet<ElementId>,
@@ -138,6 +141,7 @@ function useDoorFocus(
     if (focusKey === undefined) { honoured.current = undefined; return }
     if (!landscape || honoured.current === focusKey) return
     honoured.current = focusKey
+    if (!drawsCard(landscape, focusKey)) return
     choose(focusKey)
     const id = focusKey.slice(focusKey.indexOf(':') + 1)
     latest.current?.(held.has(id) && !focusKey.startsWith('group:') ? id : undefined)

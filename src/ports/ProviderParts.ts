@@ -134,8 +134,16 @@ export type SourceDestination<Opening = unknown> = {
   opening: Opening
 }
 
+/**
+ * How a move a provider asks for is said: `by: 'provider'` where it is the
+ * provider's own doing and not a press of the person's passed on — then the
+ * screens it brings are said to be the provider's (`MovedBy`), never the
+ * person's. Absent, the move is said as it always was.
+ */
+export type SourceOpenOptions = { readonly by?: 'provider' }
+
 /** Sending the person to a scope, as a provider's chrome or menu line may (ADR-0019's destination). */
-export type SourceOpen = (to: Destination) => void
+export type SourceOpen = (to: Destination, options?: SourceOpenOptions) => void
 
 /**
  * What a provider's chrome is handed: the open scope's session and its own

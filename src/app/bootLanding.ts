@@ -8,7 +8,7 @@
  */
 import { nearestPlace } from '../agent/place'
 import type { Place } from '../agent/place'
-import { HOME_PAGES, VIEW_PAGES } from '../agent/screen'
+import { HOME_PAGES, VIEW_PAGES, viewFor } from '../agent/screen'
 import type { Destination } from '../agent/screen'
 import { isOpenableScope, onView } from '../projects/scope'
 import type { ScopeSnapshot } from '../projects/scope'
@@ -144,7 +144,11 @@ export function placeLanding(held: PlaceScope | undefined, place: Place): BootLa
   if (near.page === undefined || VIEW_PAGES.includes(near.page)) {
     // A scope that draws nothing has no view to open on: its home.
     if (!isOpenableScope(snapshot)) return homeOf(scope)
-    return { initialProject: near.id === undefined ? snapshot : onView(snapshot, near.id) }
+    if (near.page === undefined) return { initialProject: snapshot }
+    // A view's page with no id is the one of its kind there is, and the home
+    // where there is none: an open never makes a view (ADR-0019, amended).
+    const view = viewFor(near.page, near.id, snapshot.model.diagrams, snapshot.activeDiagramId)
+    return view === undefined ? homeOf(scope) : { initialProject: onView(snapshot, view) }
   }
   const opened = initialPageFor(near)
   return { initialProject: snapshot, ...(opened ? { initialPage: opened } : {}) }
@@ -179,18 +183,18 @@ export async function landedAt(
 
 /**
  * The page a scope opens on for a destination — an agent's (ADR-0019), a
- * search hit's, a place in the history (ADR-0033): the same three words, so
- * the vocabularies cannot drift. A home page is the shell's own business and
- * never reaches here.
+ * provider's, a search hit's, a place in the history (ADR-0033): the same
+ * words, so the vocabularies cannot drift. A home page is the shell's own
+ * business and never reaches here; a view's page with no id is resolved
+ * against the scope once it is read (`pageLanding`), and never makes a view.
  */
 export function initialPageFor(to: Destination): InitialPage | undefined {
+  const id = to.id !== undefined ? { id: to.id } : {}
   switch (to.page) {
-    case 'board': return to.id !== undefined ? { page: 'board', id: to.id } : undefined
-    case 'sheet': return { page: 'sheet', ...(to.id !== undefined ? { id: to.id } : {}) }
-    case 'map': return { page: 'map', ...(to.id !== undefined ? { id: to.id } : {}) }
-    case 'technology': return { page: 'technology', ...(to.id !== undefined ? { id: to.id } : {}) }
-    case 'decisions': return { page: 'decisions', ...(to.id !== undefined ? { id: to.id } : {}) }
-    case 'observations': return { page: 'observations', ...(to.id !== undefined ? { id: to.id } : {}) }
+    case 'board': case 'sheet': case 'map': case 'technology':
+      return { page: to.page, ...id, ...(to.select !== undefined ? { select: to.select } : {}) }
+    case 'decisions': return { page: 'decisions', ...id }
+    case 'observations': return { page: 'observations', ...id, ...(to.tab !== undefined ? { tab: to.tab } : {}) }
     case 'roadmap': return { page: 'roadmap' }
     case 'plan': return to.id !== undefined ? { page: 'plan', id: to.id } : { page: 'roadmap' }
     case 'element': return to.id !== undefined ? { page: 'element', id: to.id } : undefined

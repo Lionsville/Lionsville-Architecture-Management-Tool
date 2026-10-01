@@ -12,7 +12,7 @@
  * landscape opened on one application, which is the page's initial focus.
  */
 import { useCallback, useState } from 'react'
-import { nodeKey, seedTechnologyLandscape, toDiagram } from '../model'
+import { cardFor, nodeKey, seedTechnologyLandscape, toDiagram } from '../model'
 import type { DesignDiagram, ElementId, NodeKey } from '../model'
 import type { MakeId } from '../model/keys'
 import type { Translate } from '../i18n'
@@ -29,6 +29,11 @@ export type TechnologyLandscapes = {
   focus: NodeKey | undefined
   /** Open the scope's landscape — the first, made where there is none — on this application. */
   showOn: (elementId: ElementId) => void
+  /**
+   * Choose the card this element is drawn as on the landscape that is up, as
+   * a door would (ADR-0019, amended): nothing where it is not drawn there.
+   */
+  select: (elementId: ElementId) => void
 }
 
 export function useTechnologyLandscape(deps: { session: ModelSession; makeId: MakeId; s: Translate }): TechnologyLandscapes {
@@ -57,5 +62,11 @@ export function useTechnologyLandscape(deps: { session: ModelSession; makeId: Ma
     }
   }, [session, makeId, s])
 
-  return { diagramId, diagram: active?.kind === 'technology' ? active : undefined, open, create, focus, showOn }
+  const select = useCallback((elementId: ElementId) => {
+    const held = session.current().elements.find((element) => element.id === elementId)
+    const key = held ? cardFor(held.kind, held.id) : undefined
+    if (key) setFocus(key)
+  }, [session])
+
+  return { diagramId, diagram: active?.kind === 'technology' ? active : undefined, open, create, focus, showOn, select }
 }

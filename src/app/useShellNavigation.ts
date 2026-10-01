@@ -12,6 +12,7 @@ import type { ScopeSnapshot } from '../projects/scope'
 import { ROOT_SCOPE, scopePathLabel } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
 import type { InitialPage } from './App'
+import { pageLanding } from './pageLanding'
 import { ensureScope, readScope } from '../projects/scopeAccess'
 import type { ScopeReader } from '../projects/scopeAccess'
 import type { ScopeRepository } from '../ports/ScopeRepository'
@@ -23,10 +24,12 @@ export type ShellNavigation = ReturnType<typeof useShellNavigation>
 
 /**
  * Is this a page a scope has before anything is written in it — its decisions,
- * its observations, its roadmap, or a sheet, map or technology landscape it is
- * about to be given? Those open on a scope with no document. A page that names
- * a record, a plan or a board names something that has to be there, and a
- * scope that is not there is then one somebody removed, not one to make.
+ * its observations, its roadmap, or a sheet, map or technology landscape the
+ * person asked to be made? Those open on a scope with no document. A page that
+ * names a record, a plan or a view names something that has to be there, and
+ * a scope that is not there is then one somebody removed, not one to make; a
+ * view's page with no id opens one that is there, and a scope with no
+ * document has none (`pageLanding`).
  */
 export function opensOnNothing(page: InitialPage | undefined): boolean {
   if (page === undefined) return false
@@ -36,14 +39,17 @@ export function opensOnNothing(page: InitialPage | undefined): boolean {
       return page.id === undefined
     case 'roadmap':
     case 'documentation':
+    case 'make':
       return true
-    case 'sheet':
-    case 'map':
-    case 'technology':
-      return page.id === undefined
     default:
       return false
   }
+}
+
+/** A view's page that names no view: on a scope with no document, it lands on the scope's home. */
+function viewWithNoId(page: InitialPage | undefined): boolean {
+  return page !== undefined && (page.page === 'board' || page.page === 'sheet' || page.page === 'map' || page.page === 'technology')
+    && page.id === undefined
 }
 
 export function useShellNavigation(deps: {
@@ -121,16 +127,6 @@ export function useShellNavigation(deps: {
   const [initialPage, setInitialPage] = useState<InitialPage | undefined>(
     () => (initialProject !== undefined ? deps.initialPage : undefined),
   )
-  const enter = useCallback((next: ScopeSnapshot, page?: InitialPage) => {
-    // Opened for one board: the session starts on it, the way a tab click
-    // would leave it — no step on the stack, and nothing dirty for it.
-    const asked = page !== undefined && 'id' in page && page.id !== undefined
-      && (page.page === 'board' || page.page === 'sheet' || page.page === 'map' || page.page === 'technology')
-      ? page.id : undefined
-    setProject(asked !== undefined ? { ...next, activeDiagramId: asked } : next)
-    setInitialPage(page)
-    prefs.writePreference({ lastScope: next.path })
-  }, [prefs])
 
   /**
    * Whose home is up while nothing is open: the root's, or a scope's beneath
@@ -140,6 +136,34 @@ export function useShellNavigation(deps: {
    * was, and a home is a place you pass through on the way to it.
    */
   const [home, setHome] = useState<ScopePath>(initialHome ?? ROOT_SCOPE)
+
+  const goHome = useCallback((to: ScopePath) => {
+    setHome(to)
+    setProject(undefined)
+    setInitialPage(undefined)
+    // Deliberately keeps `lastScope`: closing a scope is not the same as saying
+    // you never want to see it again, and a refresh should still land you back
+    // in your work.
+    refreshTree.current()
+    // And the index: what a session changed reaches the cards, the register
+    // and the findings here, however the source keeps it.
+    refreshIndex?.current()
+  }, [refreshTree, refreshIndex])
+
+  /**
+   * A view's page lands on the view it names, or the one of its kind that is
+   * there (`pageLanding`): the session starts on it, the way a tab click would
+   * leave it — no step on the stack, and nothing dirty for it. One the scope
+   * has none of lands on the scope's home, because an open never makes a view.
+   */
+  const enter = useCallback((next: ScopeSnapshot, page?: InitialPage) => {
+    const landing = pageLanding(next, page)
+    if ('home' in landing) { goHome(next.path); return }
+    const { activeDiagramId } = landing
+    setProject(activeDiagramId !== undefined ? { ...next, activeDiagramId } : next)
+    setInitialPage(landing.page)
+    prefs.writePreference({ lastScope: next.path })
+  }, [prefs, goHome])
 
   /**
    * Open another scope by its path — what *Open …* beside a field another
@@ -163,6 +187,8 @@ export function useShellNavigation(deps: {
     void (async () => {
       const found = await readScope(scopes, path)
       if (found) { enter(found, page); return }
+      // A view of a scope with no document: it has none, and none is made.
+      if (viewWithNoId(page)) { goHome(path); return }
       if (!opensOnNothing(page)) { refreshTree.current(); return }
       const bare = bareScope(path, scopePathLabel(path))
       if (writable && !writable(path)) { enter(bare, page); return }
@@ -175,20 +201,7 @@ export function useShellNavigation(deps: {
       refreshTree.current()
       refreshIndex?.current()
     })().catch((cause: unknown) => failedRef.current('openScopeAt', cause, 'picker.loadFailed'))
-  }, [scopes, enter, refreshTree, refreshIndex, writable, failedRef])
-
-  const goHome = useCallback((to: ScopePath) => {
-    setHome(to)
-    setProject(undefined)
-    setInitialPage(undefined)
-    // Deliberately keeps `lastScope`: closing a scope is not the same as saying
-    // you never want to see it again, and a refresh should still land you back
-    // in your work.
-    refreshTree.current()
-    // And the index: what a session changed reaches the cards, the register
-    // and the findings here, however the source keeps it.
-    refreshIndex?.current()
-  }, [refreshTree, refreshIndex])
+  }, [scopes, enter, goHome, refreshTree, refreshIndex, writable, failedRef])
 
   return {
     project, watchOpenProject, reloadKey, reloadOpenProject, initialPage, enter, home, setHome, openScopeAt, goHome,

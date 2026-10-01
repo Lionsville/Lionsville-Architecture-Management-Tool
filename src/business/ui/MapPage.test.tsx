@@ -142,3 +142,15 @@ describe('what a person can do from it', () => {
     expect((screen.getByLabelText('Name') as HTMLInputElement).disabled).toBe(true)
   })
 })
+
+/** A row selected from outside: a place opened with something selected on it (ADR-0019, amended). */
+describe('a selection asked for', () => {
+  it('opens the inspector on a row the map draws, and on nothing it does not', () => {
+    open({ select: { id: 'dunning', nonce: 1 }, onOpenDocumentation: vi.fn() })
+    expect(screen.getByTestId('sheet-open-page').getAttribute('aria-label')).toContain('Chase a late payment')
+    cleanup()
+    // A system is a column, not a row: nothing is selected for it.
+    open({ select: { id: 'wms', nonce: 1 }, onOpenDocumentation: vi.fn() })
+    expect(screen.queryByTestId('sheet-open-page')).toBeNull()
+  })
+})

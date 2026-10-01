@@ -57,6 +57,7 @@ import type { ScopePath } from '../../projects/scopePath'
 import { NO_WINDOW_CHROME } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import type { WorkingSource } from '../../platform/workingSource'
+import type { InitialPage } from '../App'
 import type { SourceSayings } from '../appProps'
 import type { SourceChip, SourceWayIn } from '../../platform/sourceProvider'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
@@ -251,20 +252,24 @@ function cardsDrawn(atRoot: boolean, listed: boolean, ready: boolean): boolean {
 /**
  * Where each card's doors go: a page of the scope whose home this is, opened
  * the way the workspace opens it — the sheet, the map and the technology
- * landscape on the one the scope has, and the decisions page on the record a
- * card names, the roadmap card's finding on what it is about.
+ * landscape on the one the scope has, and made where it has none, which is
+ * what the card's *Make…* says (`make`: an open itself never makes a view);
+ * the decisions page on the record a card names, the roadmap card's finding
+ * on what it is about.
  */
 function cardDoors(open: Organisation['open'], at: ScopePath, pages: OrganisationPages) {
-  const withId = (id: string | undefined) => (id !== undefined ? { id } : {})
+  const viewOr = (page: 'sheet' | 'map' | 'technology', id: string | undefined): InitialPage => (
+    id !== undefined ? { page, id } : { page: 'make', kind: page }
+  )
   return {
-    onOpenBusiness: () => open(at, { page: 'sheet', ...withId(pages.business.sheetId) }),
-    onOpenMap: () => open(at, { page: 'map', ...withId(pages.business.mapId) }),
+    onOpenBusiness: () => open(at, viewOr('sheet', pages.business.sheetId)),
+    onOpenMap: () => open(at, viewOr('map', pages.business.mapId)),
     onOpenDecisions: () => open(at, { page: 'decisions' }),
     onOpenDecision: (id: string) => open(at, { page: 'decisions', id }),
     onOpenObservations: () => open(at, { page: 'observations' }),
     onOpenRoadmap: () => open(at, { page: 'roadmap' }),
     onOpenFinding: (target: FindingTarget) => open(at, target),
-    onOpenTechnologyLandscape: () => open(at, { page: 'technology', ...withId(pages.technology.landscapeId) }),
+    onOpenTechnologyLandscape: () => open(at, viewOr('technology', pages.technology.landscapeId)),
     onOpenDocumentation: () => open(at, { page: 'documentation' }),
   } satisfies Partial<OrganisationCardsProps>
 }
@@ -539,11 +544,11 @@ export function OrganisationScreen({
               boards={root.model.diagrams}
               onOpen={(id) => organisation.open(at, { page: 'board', id })}
               onAdd={() => organisation.addBoard(at)}
-              // The same kinds the editor's + tab offers (ADR-0016): a page
-              // opened with no id is the one the scope is about to be given.
-              onAddSheet={() => organisation.open(at, { page: 'sheet' })}
-              onAddMap={() => organisation.open(at, { page: 'map' })}
-              onAddTechnology={() => organisation.open(at, { page: 'technology' })}
+              // The same kinds the editor's + tab offers (ADR-0016), made the
+              // moment the scope opens: the one door onto a view that writes one.
+              onAddSheet={() => organisation.open(at, { page: 'make', kind: 'sheet' })}
+              onAddMap={() => organisation.open(at, { page: 'make', kind: 'map' })}
+              onAddTechnology={() => organisation.open(at, { page: 'make', kind: 'technology' })}
               onDelete={(board) => organisation.askDeleteBoard(at, board)}
               readOnly={!mayWrite}
               language={language}

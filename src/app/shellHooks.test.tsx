@@ -108,8 +108,12 @@ describe('where the shell is', () => {
 describe('the page a destination opens on', () => {
   it('is the same word, with what is missing falling back to the page that holds it', () => {
     expect(initialPageFor({ page: 'board', id: 'd1' })).toEqual({ page: 'board', id: 'd1' })
-    expect(initialPageFor({ page: 'board' })).toBeUndefined()
+    // A view's page with no id is resolved once the scope is read (`pageLanding`):
+    // a board with no id is the board on the tab, and no longer whatever view is.
+    expect(initialPageFor({ page: 'board' })).toEqual({ page: 'board' })
     expect(initialPageFor({ page: 'sheet' })).toEqual({ page: 'sheet' })
+    expect(initialPageFor({ page: 'map', id: 'm1', select: 'billing' })).toEqual({ page: 'map', id: 'm1', select: 'billing' })
+    expect(initialPageFor({ page: 'observations', id: 'o1', tab: 'solutions' })).toEqual({ page: 'observations', id: 'o1', tab: 'solutions' })
     expect(initialPageFor({ page: 'plan' })).toEqual({ page: 'roadmap' })
     expect(initialPageFor({ page: 'document' })).toEqual({ page: 'documentation' })
     expect(initialPageFor({ page: 'home' })).toBeUndefined()

@@ -13,7 +13,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import type { Translate } from '../i18n'
 import type { ShownDays } from '../editor'
-import type { ScreenPage } from '../agent/screen'
+import type { ObservationTab, ScreenPage } from '../agent/screen'
 import type { ScopePath } from '../projects/scopePath'
 import type { MakeId } from './useDiagramActions'
 import type { Maps } from './useMap'
@@ -23,6 +23,7 @@ import type { Plans } from './usePlans'
 import { usePlatformReport } from './usePlatformReport'
 import type { PlatformReading } from './usePlatformReport'
 import type { TechnologyLandscapes } from './useTechnologyLandscape'
+import { useViewSelect } from './useViewSelect'
 
 export type WorkspacePages = ReturnType<typeof useWorkspacePages>
 
@@ -47,6 +48,8 @@ export function useWorkspacePages(deps: {
     navigate: useMemo(() => ({ toElement: focusElement, toDecision: showDecision }), [focusElement, showDecision]),
   })
   const openers = usePageOpeners({ session, records, plans, platformReading, maps, landscapes })
+  /** An element selected on a view as it is opened, where the view draws it (ADR-0019, amended). */
+  const viewSelect = useViewSelect({ session, focusElement, landscapes })
 
   /**
    * A scope that draws nothing has nowhere to go when the page closes.
@@ -71,7 +74,7 @@ export function useWorkspacePages(deps: {
    */
   const page = useCallback((): ScreenPage | undefined => {
     if (adrPage.open) return withId('decisions', adrShown?.nonce === adrPage.nonce ? adrShown.id : adrPage.adrId)
-    if (obsPage.open) return withId('observations', obsShown?.nonce === obsPage.nonce ? obsShown.id : obsPage.id)
+    if (obsPage.open) return observationsPage(obsPage, obsShown)
     if (plans.planId !== undefined) return { page: 'plan', id: plans.planId }
     if (plans.roadmapOpen) return { page: 'roadmap' }
     if (platformReading.platformId !== undefined) return { page: 'platform', id: platformReading.platformId }
@@ -81,6 +84,7 @@ export function useWorkspacePages(deps: {
 
   return {
     adrPage, obsPage, plans, platformReading, page, leaveIfNothingToDraw,
+    selectOn: viewSelect.select, selectRequestFor: viewSelect.requestFor,
     decisionShown: records.decisionShown, observationShown: records.observationShown,
     closeDecisions: records.closeRecords, closeObservations: records.closeObservations, ...openers,
   }
@@ -88,6 +92,20 @@ export function useWorkspacePages(deps: {
 
 function withId(page: 'decisions' | 'observations', id: string | undefined): ScreenPage {
   return { page, ...(id !== undefined ? { id } : {}) }
+}
+
+/**
+ * The observations page as the screen says it: the record and the tab the
+ * page says it shows once it has landed on the latest request, and until
+ * then the ones asked for — a tab nobody asked for is said once the page
+ * says which is up.
+ */
+function observationsPage(
+  asked: { id?: string; tab?: ObservationTab; nonce: number }, shown: Shown | undefined,
+): ScreenPage {
+  const landed = shown?.nonce === asked.nonce
+  const tab = landed ? shown.tab : asked.tab
+  return { ...withId('observations', landed ? shown.id : asked.id), ...(tab !== undefined ? { tab } : {}) }
 }
 
 /**
@@ -99,25 +117,29 @@ function withId(page: 'decisions' | 'observations', id: string | undefined): Scr
  * last opening's record, a render ahead of the new one — is not taken for
  * the answer.
  */
-type Shown = { id?: string; nonce: number | undefined }
-const shownAs = (id: string | undefined, nonce: number | undefined): Shown => ({ ...(id !== undefined ? { id } : {}), nonce })
+type Shown = { id?: string; nonce: number | undefined; tab?: ObservationTab }
+const shownAs = (id: string | undefined, nonce: number | undefined, tab?: ObservationTab): Shown => (
+  { ...(id !== undefined ? { id } : {}), nonce, ...(tab !== undefined ? { tab } : {}) }
+)
 
 /** The decisions page and the observations page: which is up, on what, and what each shows. */
 function useRecordPages() {
   const [adrPage, setAdrPage] = useState<{ open: boolean; adrId?: string; nonce: number }>({ open: false, nonce: 0 })
-  /** The observations page (ADR-0021), on one observation or cause when an id is given. */
-  const [obsPage, setObsPage] = useState<{ open: boolean; id?: string; nonce: number }>({ open: false, nonce: 0 })
+  /** The observations page (ADR-0021), on one observation or cause when an id is given, on a tab when one is. */
+  const [obsPage, setObsPage] = useState<{ open: boolean; id?: string; tab?: ObservationTab; nonce: number }>({ open: false, nonce: 0 })
   const [adrShown, setAdrShown] = useState<Shown | undefined>(undefined)
   const [obsShown, setObsShown] = useState<Shown | undefined>(undefined)
   const showDecision = useCallback((adrId?: string) => {
     setAdrPage((was) => ({ open: true, ...(adrId !== undefined ? { adrId } : {}), nonce: was.nonce + 1 }))
   }, [])
-  const showObservations = useCallback((id?: string) => {
+  const showObservations = useCallback((id?: string, tab?: ObservationTab) => {
     setAdrPage((was) => ({ open: false, nonce: was.nonce }))
-    setObsPage((was) => ({ open: true, ...(id !== undefined ? { id } : {}), nonce: was.nonce + 1 }))
+    setObsPage((was) => ({ open: true, ...(id !== undefined ? { id } : {}), ...(tab !== undefined ? { tab } : {}), nonce: was.nonce + 1 }))
   }, [])
   const decisionShown = useCallback((id: string | undefined, nonce: number | undefined) => setAdrShown(shownAs(id, nonce)), [])
-  const observationShown = useCallback((id: string | undefined, nonce: number | undefined) => setObsShown(shownAs(id, nonce)), [])
+  const observationShown = useCallback(
+    (id: string | undefined, nonce: number | undefined, tab?: ObservationTab) => setObsShown(shownAs(id, nonce, tab)), [],
+  )
   /** Both shut: the decisions page closes the observations page it may have been opened over. */
   const closeRecords = useCallback(() => {
     setAdrPage((was) => ({ open: false, nonce: was.nonce }))
@@ -150,11 +172,11 @@ function usePageOpeners(deps: {
     closeObservations()
     showDecision(adrId)
   }, [closePlans, closeReport, closeObservations, showDecision])
-  /** The observations page (ADR-0021): the same one-at-a-time rule. */
-  const openObservations = useCallback((id?: string) => {
+  /** The observations page (ADR-0021): the same one-at-a-time rule; on a tab where one is named. */
+  const openObservations = useCallback((id?: string, tab?: ObservationTab) => {
     closePlans()
     closeReport()
-    showObservations(id)
+    showObservations(id, tab)
   }, [closePlans, closeReport, showObservations])
   const openRoadmap = useCallback(() => {
     closeRecords()

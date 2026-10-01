@@ -14,7 +14,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Translate } from '../i18n'
 import type { Place } from '../agent/place'
+import { arrived, landed, scopeOf, VIEW_PAGES, viewFor } from '../agent/screen'
 import type { Destination, MovedBy, Screen } from '../agent/screen'
+import { boardsDrawing } from '../model'
 import type { TreeView } from '../agent/tree'
 import type { AgentServerStatus } from '../platform/agentServer'
 import type { AgentGateway } from '../ports/AgentGateway'
@@ -81,9 +83,17 @@ export function useShellAgent(deps: {
       setOrgPageRequest((prev) => (page === 'home' ? undefined : { page, nonce: (prev?.nonce ?? 0) + 1 }))
       return
     }
-    const held = agentSessionRef.current
-    if (project && project.path === to.scope && held) {
-      held.show(to)
+    const open = agentSessionRef.current
+    if (project && project.path === to.scope && open) {
+      // A view's page with no id opens the one of its kind that is there, and
+      // the scope's home where there is none: an open never makes a view.
+      if (to.page !== undefined && VIEW_PAGES.includes(to.page)) {
+        const id = viewFor(to.page, to.id, open.current().diagrams, open.activeDiagramId())
+        if (id === undefined) { goHome(to.scope); return }
+        open.show({ ...to, id })
+        return
+      }
+      open.show(to)
       return
     }
     openScopeAt(to.scope, initialPageFor(to))
@@ -122,15 +132,25 @@ export function useShellAgent(deps: {
    */
   const agentOpened = useRef(false)
   const agentDriving = useRef(false)
+  /**
+   * A move a provider said was its own (`SourceOpen`'s `by: 'provider'`):
+   * where it sent the app. Every screen the app shows in that scope is the
+   * provider's until the app lands where it was sent (`landed`), and a screen
+   * in any other scope lets it go — that move was somebody else's.
+   */
+  const providerMove = useRef<(Destination & { scope: string }) | undefined>(undefined)
+  const shown = useRef(where)
   const lookAgain = useCallback(() => {
     const next = screenNow()
     lookAtPlace(next)
     if (!watchScreen) return
-    const by: MovedBy = agentOpened.current || agentDriving.current ? 'agent' : 'person'
-    setWhere((held) => {
-      if (held && JSON.stringify(held.screen) === JSON.stringify(next)) return held
-      return { screen: next, by }
-    })
+    if (shown.current && JSON.stringify(shown.current.screen) === JSON.stringify(next)) return
+    const sent = providerMove.current
+    const theirs = sent !== undefined && scopeOf(next) === sent.scope
+    if (sent !== undefined && (!theirs || landed(next, sent))) providerMove.current = undefined
+    const by: MovedBy = theirs ? 'provider' : agentOpened.current || agentDriving.current ? 'agent' : 'person'
+    shown.current = { screen: next, by }
+    setWhere(shown.current)
   }, [watchScreen, screenNow, lookAtPlace])
   useEffect(lookAgain, [lookAgain])
   // Through a ref, so registering the view does not change identity with the
@@ -148,14 +168,20 @@ export function useShellAgent(deps: {
    * that is open, and with nothing open the home that is up — and everything
    * after that is the one path the agent takes.
    */
-  const openSomewhere = useCallback<SourceOpen>((to) => {
-    openFor({ ...to, scope: to.scope ?? project?.path ?? home })
-  }, [openFor, project, home])
+  const openSomewhere = useCallback<SourceOpen>((to, options) => {
+    const sent = { ...to, scope: to.scope ?? project?.path ?? home }
+    if (options?.by === 'provider') {
+      providerMove.current = movesTheApp(screenNow(), sent, agentSessionRef.current) ? sent : undefined
+    }
+    openFor(sent)
+  }, [openFor, project, home, screenNow])
   const agentStopped = useCallback((client: string | undefined) => {
     notify(s('agent.stoppedToast', { name: client ?? s('agent.someone') }), 'info')
   }, [notify, s])
   const agentOpen = useCallback((to: Destination & { scope: string }) => {
     agentOpened.current = true
+    // An agent's move after a provider's is the agent's, wherever it goes.
+    providerMove.current = undefined
     openFor(to)
   }, [openFor])
   const agentShell = useAgentShell({ gateway, status, tree, screen: screenNow, open: agentOpen, onStopped: agentStopped })
@@ -185,6 +211,23 @@ export function useShellAgent(deps: {
     orgPageRequest, setOrgPage, openSomewhere, driving: agentShell.driving, stop: agentShell.stop, registerAgentSession,
     screen: where?.screen, movedBy: where?.by ?? 'person', screenNow,
   }
+}
+
+/**
+ * Will a provider's move change what is on screen? A destination the app is
+ * already at moves nothing, and a move that moves nothing must not leave its
+ * mark on the next move somebody else makes. Most pages say on the screen
+ * whether they are up (`arrived`); a record's page and an element do not, so
+ * for those in the scope that is open it is whether a page over the view
+ * closes, or — for an element — whether another board comes up to show it.
+ */
+function movesTheApp(screen: Screen, to: Destination & { scope: string }, open: WorkspaceAgentView | undefined): boolean {
+  const silent = to.page === 'element' || to.page === 'document' || to.page === 'documentation'
+  if (!silent || screen.open?.path !== to.scope || !open) return !arrived(screen, to, to.scope)
+  if (screen.page !== undefined) return true
+  if (to.page !== 'element' || to.id === undefined) return false
+  const boards = boardsDrawing(open.current(), to.id)
+  return boards.length === 1 && boards[0].id !== open.activeDiagramId()
 }
 
 /** Where the app is, as the agent is told it: the scope that is open and its view and page, or the home. */

@@ -26,10 +26,18 @@ export type DocumentationRequest = { elementId?: string; diagramId?: string; non
 export type WorkspaceRequests = {
   focus: FocusRequest | undefined
   documentation: DocumentationRequest | undefined
+  /** The documentation page closed from outside, by its number (`EditorRequests.leaveDocumentation`). */
+  leftDocumentation: { nonce: number } | undefined
   /** Select an element on the board that draws it. */
   focusElement: (id: string) => void
   /** `diagramId` is the view the reader came from — a sheet, whose neighbours the page then lists. */
   openDocumentation: (elementId?: string, diagramId?: string) => void
+  /**
+   * Close the documentation page that is over the board, where one is: what
+   * a move to a view or to another page does first, so what it opened is
+   * what the person sees (ADR-0019, amended).
+   */
+  leaveDocumentation: () => void
 }
 
 export function useWorkspaceRequests(deps: {
@@ -60,5 +68,7 @@ export function useWorkspaceRequests(deps: {
     }
     setDocumentation((prev) => ({ elementId, diagramId, nonce: (prev?.nonce ?? 0) + 1 }))
   }, [session, notify, s, scope, onOpenScope, indexRef])
-  return { focus, documentation, focusElement, openDocumentation }
+  const [leftDocumentation, setLeftDocumentation] = useState<{ nonce: number } | undefined>(undefined)
+  const leaveDocumentation = useCallback(() => setLeftDocumentation((prev) => ({ nonce: (prev?.nonce ?? 0) + 1 })), [])
+  return { focus, documentation, focusElement, openDocumentation, leftDocumentation, leaveDocumentation }
 }

@@ -297,16 +297,16 @@ function useScreenParts(
     scopes: props.tree.scopes, reader: source.repositories.scopes, ancestorRecords: base.ancestorRecords, readOnly: base.readOnly,
     documentStatus: base.document.document.state.status, renderer: renderer.renderer,
     save: base.document.document.flush, putPicture: base.writer.put, pages,
-    showElement: showElement.show, openDocumentation: requests.openDocumentation, makeId, today, s,
-    onAgentSession: props.agent.onSession,
+    showElement: showElement.show, openDocumentation: requests.openDocumentation,
+    leaveDocumentation: requests.leaveDocumentation, makeId, today, s, onAgentSession: props.agent.onSession,
   })
   useInitialPage({
     initialPage: navigation.initialPage, pages, createSheet: base.sheets.create, showElement: showElement.show,
     openDocumentation: requests.openDocumentation, gestures: tree.gestures,
   })
   const show = useMemo(
-    () => showOn(pages, showElement.show, requests.openDocumentation),
-    [pages, showElement.show, requests.openDocumentation],
+    () => showOn(pages, showElement.show, requests.openDocumentation, requests.leaveDocumentation),
+    [pages, showElement.show, requests.openDocumentation, requests.leaveDocumentation],
   )
   const dialogs = useWorkspaceDialogs({
     session, settings: props.settings, diagnostics: host.diagnostics, notify, s, save: base.document.document.flush,

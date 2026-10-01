@@ -52,6 +52,8 @@ export function useWorkspaceAgentView(deps: {
   pages: WorkspacePages
   showElement: (id: string) => void
   openDocumentation: (elementId?: string, diagramId?: string) => void
+  /** Close the documentation page over the board, where one is (`useWorkspaceRequests`). */
+  leaveDocumentation: () => void
   makeId: MakeId
   today: () => string
   s: Translate
@@ -59,7 +61,7 @@ export function useWorkspaceAgentView(deps: {
 }): void {
   const {
     session, scope, indexRef, rowsElsewhereRef, scopes, reader, ancestorRecords, readOnly, documentStatus,
-    renderer, save, putPicture, pages, showElement, openDocumentation, makeId, today, s, onAgentSession,
+    renderer, save, putPicture, pages, showElement, openDocumentation, leaveDocumentation, makeId, today, s, onAgentSession,
   } = deps
   const { page, openView, openDecisions, openObservations, openRoadmap, closePages, openPlatformReport, openServiceReport } = pages
   const openPlan = pages.plans.openPlan
@@ -86,12 +88,12 @@ export function useWorkspaceAgentView(deps: {
     renderer,
     save,
     page,
-    show: showOn(pages, showElement, openDocumentation),
+    show: showOn(pages, showElement, openDocumentation, leaveDocumentation),
     tree: agentTree({ session, scope, indexRef, rowsElsewhereRef, scopes, reader }),
   }), [
     session, scope, ancestorRecords, documentStatus, readOnly, makeId, today, s, renderer, save, putPicture, scopes, reader,
     page, openPlan, openView, openDecisions, openObservations, openRoadmap, closePages, showElement, openDocumentation,
-    openPlatformReport, openServiceReport, indexRef, rowsElsewhereRef,
+    openPlatformReport, openServiceReport, indexRef, rowsElsewhereRef, leaveDocumentation, pages.selectOn,
   ])
   useEffect(() => {
     onAgentSession?.(agentView)
@@ -101,25 +103,36 @@ export function useWorkspaceAgentView(deps: {
 
 /**
  * Show a view or a page of the open scope, as the agent asks for one
- * (ADR-0019) and as a search hit opens one (ADR-0029). The destination has
- * been checked against the model already.
+ * (ADR-0019), as a provider sends the person to one, and as a search hit
+ * opens one (ADR-0029). The destination has been checked against the model
+ * already, and a view's page carries the view by id.
+ *
+ * Whatever it opens, the documentation page over the board is closed first
+ * — but for a record's page, which it replaces — so what was opened is what
+ * the person sees (ADR-0019, amended). An element `select`ed on a view is
+ * selected there where the view draws it, and nowhere else.
  */
 export function showOn(
   pages: WorkspacePages,
   showElement: (id: string) => void,
   openDocumentation: (elementId?: string, diagramId?: string) => void,
+  leaveDocumentation: () => void,
 ): WorkspaceAgentView['show'] {
   const { openView, openDecisions, openObservations, openRoadmap, closePages, openPlatformReport, openServiceReport } = pages
   const openPlan = pages.plans.openPlan
   return (to: Destination & { scope: string }) => {
+    if (to.page !== 'document' && to.page !== 'documentation') leaveDocumentation()
     switch (to.page) {
       case 'board': case 'sheet': case 'map': case 'technology':
-        if (to.id !== undefined) openView(to.id)
+        if (to.id !== undefined) {
+          openView(to.id)
+          if (to.select !== undefined) pages.selectOn(to.id, to.select)
+        }
         break
       case 'decisions': openDecisions(to.id); break
       // It fell through to closing every page, so `app.open` on the
       // observations of the scope already open landed on the canvas.
-      case 'observations': openObservations(to.id); break
+      case 'observations': openObservations(to.id, to.tab); break
       case 'roadmap': openRoadmap(); break
       case 'plan': openRoadmap(); if (to.id !== undefined) openPlan(to.id); break
       case 'element': closePages(); if (to.id !== undefined) showElement(to.id); break

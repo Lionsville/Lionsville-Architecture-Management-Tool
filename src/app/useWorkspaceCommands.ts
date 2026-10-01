@@ -71,6 +71,10 @@ export function useWorkspaceCommands(deps: {
  * by hooks of their own and one of them has to make a diagram first. Keyed on
  * nothing: the workspace remounts on a project switch, so "once" is once per
  * project, which is what was asked for.
+ *
+ * A view's page names its view by id by now (`useShellNavigation`'s
+ * `enter`), and opening it writes nothing; `make` is the one page that makes
+ * a view, and only the person's own *Make…* asks for it.
  */
 export function useInitialPage(deps: {
   initialPage: InitialPage | undefined
@@ -81,50 +85,54 @@ export function useInitialPage(deps: {
   gestures: Gestures
 }): void {
   const { initialPage, pages, createSheet, showElement, openDocumentation, gestures } = deps
-  const {
-    openDecisions, openObservations, openRoadmap, openView, createMap, openTechnology, createTechnology,
-    openPlatformReport, openServiceReport,
-  } = pages
-  const openPlan = pages.plans.openPlan
   const openedFor = useRef(false)
+  // Read through a ref: what each page opens with is the pages' own, and a
+  // page is shown once whatever they become.
+  const latest = useRef({ pages, createSheet, showElement, openDocumentation, gestures })
+  latest.current = { pages, createSheet, showElement, openDocumentation, gestures }
   useEffect(() => {
     if (!initialPage || openedFor.current) return
     openedFor.current = true
-    if (initialPage.page === 'decisions') openDecisions(initialPage.id)
-    if (initialPage.page === 'observations') openObservations(initialPage.id)
-    if (initialPage.page === 'roadmap') openRoadmap()
-    if (initialPage.page === 'sheet') {
-      if (initialPage.id) openView(initialPage.id)
-      else createSheet()
-    }
-    if (initialPage.page === 'map') {
-      if (initialPage.id) openView(initialPage.id)
-      else createMap()
-    }
-    if (initialPage.page === 'technology') {
-      if (initialPage.id) openTechnology(initialPage.id)
-      else createTechnology()
-    }
+    showInitialPage(initialPage, latest.current)
+  }, [initialPage])
+}
+
+/** One page, shown the way its door shows it. */
+function showInitialPage(page: InitialPage, by: {
+  pages: WorkspacePages
+  createSheet: Sheets['create']
+  showElement: (id: string) => void
+  openDocumentation: (elementId?: string, diagramId?: string) => void
+  gestures: Gestures
+}): void {
+  const { pages } = by
+  switch (page.page) {
+    case 'decisions': pages.openDecisions(page.id); break
+    case 'observations': pages.openObservations(page.id, page.tab); break
+    case 'roadmap': pages.openRoadmap(); break
+    case 'board': case 'sheet': case 'map': case 'technology':
+      if (page.id === undefined) break
+      if (page.page === 'technology') pages.openTechnology(page.id)
+      else pages.openView(page.id)
+      if (page.select !== undefined) pages.selectOn(page.id, page.select)
+      break
+    case 'make':
+      if (page.kind === 'sheet') by.createSheet()
+      else if (page.kind === 'map') pages.createMap()
+      else pages.createTechnology()
+      break
     // Over the roadmap, so closing the plan lands on the roadmap and closing
     // that leaves a scope that draws nothing, rather than on an empty board.
-    if (initialPage.page === 'plan') {
-      openRoadmap()
-      openPlan(initialPage.id)
-    }
+    case 'plan': pages.openRoadmap(); pages.plans.openPlan(page.id); break
     // A row of the register, opened where it is answered for.
-    if (initialPage.page === 'element') showElement(initialPage.id)
+    case 'element': by.showElement(page.id); break
     // A report, reached by an agent or a link (ADR-0019): derived, so opening it is the whole of it.
-    if (initialPage.page === 'platform') openPlatformReport(initialPage.id)
-    if (initialPage.page === 'service') openServiceReport(initialPage.id)
-    if (initialPage.page === 'document') openDocumentation(initialPage.id)
-    if (initialPage.page === 'documentation') openDocumentation()
+    case 'platform': pages.openPlatformReport(page.id); break
+    case 'service': pages.openServiceReport(page.id); break
+    case 'document': by.openDocumentation(page.id); break
+    case 'documentation': by.openDocumentation(); break
     // Not a page: the register's *Link…*, which can only be done by the
     // session that holds this scope (ADR-0012 §10).
-    if (initialPage.page === 'link') {
-      gestures.ask({ gesture: 'link', id: initialPage.id, to: initialPage.to })
-    }
-  }, [
-    initialPage, openDecisions, openObservations, openRoadmap, openView, createSheet, createMap, openTechnology,
-    createTechnology, openPlan, openDocumentation, gestures, openPlatformReport, openServiceReport, showElement,
-  ])
+    case 'link': by.gestures.ask({ gesture: 'link', id: page.id, to: page.to }); break
+  }
 }

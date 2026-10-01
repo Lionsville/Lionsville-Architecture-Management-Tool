@@ -48,7 +48,7 @@ import { ancestorPlatforms, platformParentOf } from './hosting'
 import type { PlatformTree } from './hosting'
 import { narrowRealisers } from './leverage'
 import type { PlatformDescribe } from './platformReport'
-import type { DesignDiagram, DesignElement, ElementId, Lifecycle, PlatformArchetype, Relation } from './types'
+import type { DesignDiagram, DesignElement, ElementId, ElementKind, Lifecycle, PlatformArchetype, Relation } from './types'
 
 /** More applications than this on the board, and every group starts folded. */
 export const FOLD_ABOVE = 40
@@ -399,6 +399,26 @@ export function platformList(landscape: TechnologyLandscape): { node: LandscapeP
 /** Every application, across the groups. */
 export function applicationList(landscape: TechnologyLandscape): LandscapeApplication[] {
   return landscape.groups.flatMap((group) => group.applications)
+}
+
+/**
+ * The card an element of this kind would be drawn as: an application, a
+ * service or a platform. Nothing for a kind the landscape does not draw.
+ */
+export function cardFor(kind: ElementKind, id: ElementId): NodeKey | undefined {
+  if (kind === 'application') return nodeKey.application(id)
+  if (kind === 'platformService') return nodeKey.service(id)
+  if (kind === 'platform') return nodeKey.platform(id)
+  return undefined
+}
+
+/** Is this card on the landscape: the application, service, platform or group it names? */
+export function drawsCard(landscape: TechnologyLandscape, key: NodeKey): boolean {
+  const id = key.slice(key.indexOf(':') + 1)
+  if (key.startsWith('application:')) return applicationList(landscape).some((app) => app.id === id)
+  if (key.startsWith('service:')) return serviceList(landscape).some(({ node }) => node.id === id)
+  if (key.startsWith('platform:')) return platformList(landscape).some(({ node }) => node.id === id)
+  return landscape.groups.some((group) => group.key === id)
 }
 
 /** Whether the groups start folded, for this many applications on the board. */

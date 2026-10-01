@@ -43,6 +43,8 @@ import type { WindowChrome } from '../../platform/windowChrome'
 import { BackIcon } from '../../widgets/icons'
 import { PageDialog } from '../../widgets/PageDialog'
 import { SeamResizer } from '../../widgets/SeamResizer'
+import { useSelectRequest } from '../../widgets/useSelectRequest'
+import type { SelectRequest } from '../../widgets/useSelectRequest'
 import { mapPage } from '../map'
 import type { LaidOutMap, MapColumn, MapDescribe, MapRow } from '../map'
 import { captureSheet } from '../../widgets/capturePage'
@@ -81,6 +83,12 @@ export type MapPageProps = {
   applications?: readonly Supporter[]
   /** The way to an element's own page. Absent = no *Details ›* on the inspector. */
   onOpenDocumentation?(id: ElementId): void
+  /**
+   * Select this, where the map draws it as a row: a place opened with
+   * something selected on it (ADR-0019, amended). Each number once; nothing
+   * where the map does not draw it.
+   */
+  select?: SelectRequest
 }
 
 /** The first column's width, which is sticky and so has to be a number. */
@@ -128,6 +136,7 @@ export function MapPage(props: MapPageProps) {
     ? undefined
     : model.elements.find((element) => element.id === selectedId)
   const held = useMemo(() => new Set(model.elements.map((element) => element.id)), [model.elements])
+  useSelectRequest(props.select, laidOut && ((id) => laidOut.rows.some((row) => row.element.id === id)), setSelectedId)
 
   const Frame = props.inline ? InlineFrame : PageDialog
   return (

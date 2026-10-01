@@ -63,7 +63,7 @@ const index = indexScopes([
 describe('the pages beside the canvas', () => {
   function mount(m = model()) {
     const maps = { mapId: undefined, map: undefined, open: vi.fn(), create: vi.fn() }
-    const landscapes = { diagramId: undefined, diagram: undefined, focus: undefined, open: vi.fn(), create: vi.fn(), showOn: vi.fn() }
+    const landscapes = { diagramId: undefined, diagram: undefined, focus: undefined, open: vi.fn(), create: vi.fn(), showOn: vi.fn(), select: vi.fn() }
     const onGoHome = vi.fn()
     const view = renderHook(() => {
       const session = useModelSession({ initialProject: snapshot(m), notify: vi.fn(), s })
@@ -164,14 +164,14 @@ describe('a search hit, chosen', () => {
       const session = useModelSession({ initialProject: snapshot(model({ observations: [observation] })), notify: vi.fn(), s })
       const viewing = useShownDays(() => undefined)
       const maps = { mapId: undefined, map: undefined, open: vi.fn(), create: vi.fn() }
-      const landscapes = { diagramId: undefined, diagram: undefined, focus: undefined, open: vi.fn(), create: vi.fn(), showOn: vi.fn() }
+      const landscapes = { diagramId: undefined, diagram: undefined, focus: undefined, open: vi.fn(), create: vi.fn(), showOn: vi.fn(), select: vi.fn() }
       const pages = useWorkspacePages({
         session, scope: 'north/south', makeId: (prefix) => `${prefix}-1`, s, viewing,
         focusElement: vi.fn(), maps, landscapes, onGoHome: vi.fn(),
       })
       const dialogs = useWorkspaceDialogs({
         session, settings: { onOpen: vi.fn(), onApply: vi.fn() }, diagnostics: { report: vi.fn() } as never, notify: vi.fn(), s,
-        scope: 'north/south', show: showOn(pages, vi.fn(), openDocumentation), onOpenScope,
+        scope: 'north/south', show: showOn(pages, vi.fn(), openDocumentation, vi.fn()), onOpenScope,
         save: () => Promise.resolve(),
       })
       return { session, pages, dialogs }

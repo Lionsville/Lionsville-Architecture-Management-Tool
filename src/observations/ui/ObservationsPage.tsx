@@ -45,6 +45,7 @@ import { LanguageProvider } from '../../i18n'
 import type { Language, Translate } from '../../i18n'
 import type { MarkdownRenderOptions } from '../../documentation/documentation'
 import type { HostModel } from '../../model/hostModel'
+import type { ObservationTab } from '../tabs'
 import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
@@ -174,14 +175,19 @@ export type ObservationsPageProps = {
   onOpenPlan?: (planId: string) => void
   /** Open straight onto this observation or cause. */
   initialId?: string
+  /**
+   * Open on this tab: with `initialId` too, the tab named wins over the one
+   * the record would open on, and the record is selected there.
+   */
+  initialTab?: Tab
   /** The request's own number: the same record asked for again is a new one, and lands again. */
   initialNonce?: number
   /**
    * Which record is on show, by its id, whenever that changes, with the
-   * number of the request the page has landed on: what the agent is told
-   * the page is on.
+   * number of the request the page has landed on and the tab that is up:
+   * what the agent is told the page is on.
    */
-  onShown?: (key: string | undefined, nonce: number | undefined) => void
+  onShown?: (key: string | undefined, nonce: number | undefined, tab: Tab) => void
   readOnly?: boolean
   s: Translate
   language: Language
@@ -194,7 +200,8 @@ export type ObservationsPageProps = {
   windowChrome?: WindowChrome
 }
 
-type Tab = 'register' | 'analysis' | 'solutions'
+/** The page's three tabs, in the words a destination names them by (`agent/screen.ts`). */
+type Tab = ObservationTab
 
 /**
  * How wide the reading pane is, in pixels, per tab: the register wants room
@@ -231,14 +238,16 @@ function recordIdOf(selected: Selected | undefined, key: string | undefined): st
  * Where an opening lands: on the newest standing observation — unless asked
  * for a record, which the id names. A solution or an experiment opens on its
  * own tab, by its key or its bare id (ADR-0026); an observation or a cause
- * leaves the tab as it was.
+ * leaves the tab as it was. A tab asked for wins over all of that, and the
+ * record is selected on it.
  */
-function landingFor(id: string | undefined, work: ObservationWork): { tab?: Tab; key: string | undefined } {
-  if (!id) return { tab: 'register', key: sortObservations(liveObservations(work.observations))[0]?.id }
+function landingFor(id: string | undefined, work: ObservationWork, asked?: Tab): { tab?: Tab; key: string | undefined } {
+  const on = (tab: Tab | undefined, key: string | undefined) => ({ ...((asked ?? tab) ? { tab: asked ?? tab } : {}), key })
+  if (!id) return on('register', sortObservations(liveObservations(work.observations))[0]?.id)
   const solution = work.solutions.find((one) => id === one.id || id === solutionKey(one.id))
-  if (solution) return { tab: 'solutions', key: solutionKey(solution.id) }
+  if (solution) return on('solutions', solutionKey(solution.id))
   const experiment = work.experiments.find((one) => id === one.id || id === experimentKey(one.id))
-  return experiment ? { tab: 'solutions', key: experimentKey(experiment.id) } : { key: id }
+  return experiment ? on('solutions', experimentKey(experiment.id)) : on(undefined, id)
 }
 
 /**
@@ -251,25 +260,27 @@ function landingFor(id: string | undefined, work: ObservationWork): { tab?: Tab;
  */
 function useOpening(deps: {
   open: boolean
-  request: { id: string | undefined; nonce: number | undefined }
+  request: { id: string | undefined; nonce: number | undefined; tab: Tab | undefined }
   work: ObservationWork
   shown: string | undefined
+  /** The tab that is up, said with what is on show. */
+  tab: Tab
   land: (at: { tab?: Tab; key: string | undefined }) => void
-  onShown: ((id: string | undefined, nonce: number | undefined) => void) | undefined
+  onShown: ((id: string | undefined, nonce: number | undefined, tab: Tab) => void) | undefined
 }) {
-  const { open, shown } = deps
-  const { id, nonce } = deps.request
+  const { open, shown, tab: up } = deps
+  const { id, nonce, tab } = deps.request
   const [landed, setLanded] = useState<number | undefined>(undefined)
   const latest = useRef(deps)
   latest.current = deps
   useEffect(() => {
     if (!open) return
-    latest.current.land(landingFor(id, latest.current.work))
+    latest.current.land(landingFor(id, latest.current.work, tab))
     setLanded(nonce)
-  }, [open, id, nonce])
+  }, [open, id, nonce, tab])
   useEffect(() => {
-    if (open) latest.current.onShown?.(shown, landed)
-  }, [open, shown, landed])
+    if (open) latest.current.onShown?.(shown, landed, up)
+  }, [open, shown, landed, up])
 }
 
 /**
@@ -420,7 +431,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
   }), [editing, selectedKey])
 
   useOpening({
-    open, request: { id: initialId, nonce: initialNonce }, work, shown: recordIdOf(selected, selectedKey),
+    open, request: { id: initialId, nonce: initialNonce, tab: props.initialTab }, work, shown: recordIdOf(selected, selectedKey), tab,
     onShown: props.onShown,
     land: ({ tab: to, key }) => { f.clear(); if (to) setTab(to); setSelectedKey(key) },
   })

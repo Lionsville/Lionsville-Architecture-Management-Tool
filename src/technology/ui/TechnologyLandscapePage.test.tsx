@@ -217,6 +217,14 @@ describe('in the tab (ADR-0016)', () => {
     expect(onSelect).toHaveBeenLastCalledWith(undefined)
   })
 
+  /** A card the landscape does not draw is chosen as nothing (ADR-0019, amended). */
+  it('chooses nothing for a card the landscape does not draw', () => {
+    const onSelect = vi.fn()
+    open({ inline: true, onSelect, focus: 'application:nowhere' })
+    expect(onSelect).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('landscape-inspector-title')).toBeNull()
+  })
+
   /**
    * The door is where the page starts, not where it stays. The editor hands
    * the page a new `onSelect` on each of its renders and a new model on each

@@ -56,7 +56,7 @@
  * painted on top.
  */
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
+import type { ReactNode, RefObject } from 'react'
 import Box from '@mui/material/Box'
 import Chip from '@mui/material/Chip'
 import IconButton from '@mui/material/IconButton'
@@ -75,15 +75,17 @@ import type { WindowChrome } from '../../platform/windowChrome'
 import { BackIcon, ExportIcon, EyeIcon, SearchIcon, SlidersIcon } from '../../widgets/icons'
 import { PageDialog } from '../../widgets/PageDialog'
 import { SeamResizer } from '../../widgets/SeamResizer'
+import { useSelectRequest } from '../../widgets/useSelectRequest'
+import type { SelectRequest } from '../../widgets/useSelectRequest'
 import {
   AREA_COLUMN, MAX_SPAN, fitSpans, isPaperSize, packAreas, paperHeight, paperOfWidth, paperWidth, sheetColumns, sheetPaper,
   sheetPaperWidth, spanOf, withSpan,
 } from '../grid'
 import { sheetPage } from '../sheet'
-import { findOnSheet } from '../find'
+import { drawnOnSheet, findOnSheet } from '../find'
 import type { SheetBand, SheetHit } from '../find'
 import type { Relation } from '../../model'
-import type { SheetActor, SheetArea, SheetCapability, SheetJourney, SheetLane, SheetStep } from '../sheet'
+import type { LaidOutSheet, SheetActor, SheetArea, SheetCapability, SheetJourney, SheetLane, SheetStep } from '../sheet'
 import type { PageCaptureOptions, PageHandle } from '../../widgets/capturePage'
 import { captureSheet } from '../../widgets/capturePage'
 import { FunctionInspector, INSPECTOR_WIDTH } from './FunctionInspector'
@@ -137,6 +139,12 @@ export type SheetPageProps = {
    * host). Absent = no *Save as a picture…* on the bar.
    */
   onSave?(doc: { name: string; bytes: Uint8Array; mediaType: 'image/png' }): void
+  /**
+   * Select this, where the page draws it: a place opened with something
+   * selected on it (ADR-0019, amended). Each number once; nothing where the
+   * page does not draw it.
+   */
+  select?: SelectRequest
 }
 
 /** What only the drawn page can do: hand over what it looks like. */
@@ -179,15 +187,6 @@ export function SheetPage(props: SheetPageProps) {
   /** The finder under the glass: where it is anchored while open, and what is typed in it. */
   const [findAnchor, setFindAnchor] = useState<HTMLElement | null>(null)
   const [query, setQuery] = useState('')
-  /**
-   * The thing the finder last took you to, ringed until the timer clears it.
-   * Drawn as one rule on the page keyed by the id rather than a prop through
-   * seven kinds of card, because it is a moment's emphasis and not state any
-   * card has a say in.
-   */
-  const [locatedId, setLocatedId] = useState<ElementId | undefined>(undefined)
-  const locatedTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
-  useEffect(() => () => clearTimeout(locatedTimer.current), [])
   const [railWidth, setRailWidth] = useState<number>(RAIL.default)
   const [detailsWidth, setDetailsWidth] = useState<number>(INSPECTOR_WIDTH.default)
   /**
@@ -254,18 +253,11 @@ export function SheetPage(props: SheetPageProps) {
     [laidOut, findAnchor, query],
   )
   const closeFinder = useCallback(() => { setFindAnchor(null); setQuery('') }, [])
-  /** Select it, bring it on screen, and ring it for a moment. */
-  const locate = useCallback((id: ElementId) => {
-    closeFinder()
-    setSelectedId(id)
-    setLocatedId(id)
-    clearTimeout(locatedTimer.current)
-    locatedTimer.current = setTimeout(() => setLocatedId(undefined), LOCATED_FOR_MS)
-    // The card carries its id as data, so the page can find it without a ref
-    // per card; jsdom has no scrollIntoView, hence the optional call.
-    const node = page.current?.querySelector<HTMLElement>(`[data-element-id="${id}"]`)
-    node?.scrollIntoView?.({ block: 'center', inline: 'center', behavior: 'smooth' })
-  }, [closeFinder])
+  const { locatedId, locate: bringOn } = useLocated(page, setSelectedId)
+  const locate = useCallback((id: ElementId) => { closeFinder(); bringOn(id) }, [closeFinder, bringOn])
+  // Asked from outside — a place opened with something selected on it — and
+  // honoured where the page draws it.
+  useSelectRequest(props.select, drawnBy(laidOut), bringOn)
 
   /**
    * The width the page is laid out at: what a picture asked for, else the
@@ -749,6 +741,35 @@ function Add({ label, title, onClick, disabled, sx }: {
 
 /** How long the ring stays on what the finder took you to. */
 const LOCATED_FOR_MS = 3000
+
+/** What the page draws, as the question a request from outside asks of it: nothing until it is laid out. */
+function drawnBy(laidOut: LaidOutSheet | undefined): ((id: ElementId) => boolean) | undefined {
+  return laidOut && ((id) => drawnOnSheet(laidOut).some((hit) => hit.element.id === id))
+}
+
+/**
+ * Select a thing, bring it on screen, and ring it for a moment: what the
+ * finder does with a hit, and what a request from outside does with what the
+ * page draws. The ring is one rule on the page keyed by the id rather than a
+ * prop through seven kinds of card, because it is a moment's emphasis and
+ * not state any card has a say in.
+ */
+function useLocated(page: RefObject<HTMLDivElement | null>, select: (id: ElementId) => void) {
+  const [locatedId, setLocatedId] = useState<ElementId | undefined>(undefined)
+  const locatedTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  useEffect(() => () => clearTimeout(locatedTimer.current), [])
+  const locate = useCallback((id: ElementId) => {
+    select(id)
+    setLocatedId(id)
+    clearTimeout(locatedTimer.current)
+    locatedTimer.current = setTimeout(() => setLocatedId(undefined), LOCATED_FOR_MS)
+    // The card carries its id as data, so the page can find it without a ref
+    // per card; jsdom has no scrollIntoView, hence the optional call.
+    const node = page.current?.querySelector<HTMLElement>(`[data-element-id="${id}"]`)
+    node?.scrollIntoView?.({ block: 'center', inline: 'center', behavior: 'smooth' })
+  }, [page, select])
+  return { locatedId, locate }
+}
 /** Rows the finder lists before it asks for another word. */
 const FINDER_ROWS = 12
 

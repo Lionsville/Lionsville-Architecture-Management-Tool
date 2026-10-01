@@ -12,7 +12,7 @@
 import { describe, expect, it } from 'vitest'
 import { element } from './testFixtures'
 import {
-  FOLD_ABOVE, applicationList, landscapeEdges, nodeKey, platformList, serviceList, startsFolded,
+  FOLD_ABOVE, applicationList, cardFor, drawsCard, landscapeEdges, nodeKey, platformList, serviceList, startsFolded,
   technologyLandscape, touchedBy,
 } from './technologyLandscape'
 import type { LandscapeView } from './technologyLandscape'
@@ -288,5 +288,28 @@ describe('shared offerings from elsewhere (ADR-0020)', () => {
     expect(edges.map((edge) => `${edge.kind}>${edge.to}`)).toEqual(['uses>service:ent-bus', 'uses>service:managed-db'])
     expect(applicationList(own())[0]).toMatchObject({ uses: ['ent-bus', 'managed-db'] })
     expect([...touchedBy(own(), nodeKey.service('ent-bus'), open)].sort()).toEqual(['application:billing', 'service:ent-bus'])
+  })
+})
+
+/** Which card an element is drawn as, and whether the landscape draws it: what a selection asked from outside reads. */
+describe('the card an element is', () => {
+  it('is an application, a service or a platform, by its kind, and nothing for any other kind', () => {
+    expect(cardFor('application', 'wms')).toBe(nodeKey.application('wms'))
+    expect(cardFor('platformService', 'cloud')).toBe(nodeKey.service('cloud'))
+    expect(cardFor('platform', 'kafka')).toBe(nodeKey.platform('kafka'))
+    expect(cardFor('function', 'billing')).toBeUndefined()
+    expect(cardFor('component', 'wms-api')).toBeUndefined()
+  })
+
+  it('is on the landscape where it is drawn there, and not where it is not', () => {
+    const drawn = landscape()
+    expect(drawsCard(drawn, nodeKey.application('wms'))).toBe(true)
+    expect(drawsCard(drawn, nodeKey.service('postgres'))).toBe(true)
+    expect(drawsCard(drawn, nodeKey.platform('ns'))).toBe(true)
+    expect(drawsCard(drawn, nodeKey.group(drawn.groups[0].key))).toBe(true)
+    expect(drawsCard(drawn, nodeKey.application('nowhere'))).toBe(false)
+    expect(drawsCard(drawn, nodeKey.service('kafka'))).toBe(false)
+    expect(drawsCard(drawn, nodeKey.platform('cloud'))).toBe(false)
+    expect(drawsCard(drawn, nodeKey.group('no-such-group'))).toBe(false)
   })
 })

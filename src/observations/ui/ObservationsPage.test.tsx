@@ -99,9 +99,10 @@ describe('ObservationsPage', () => {
     const { rerender } = mount({ initialId: 'o1', initialNonce: 1, onShown })
     const reader = () => screen.getByTestId('observation-reader').textContent
     expect(reader()).toContain('OB-0001')
-    expect(onShown).toHaveBeenLastCalledWith('o1', 1)
+    // Said with the tab that is up, which is the register on a fresh opening.
+    expect(onShown).toHaveBeenLastCalledWith('o1', 1, 'register')
     fireEvent.click(screen.getByTestId('observation-row-o2'))
-    expect(onShown).toHaveBeenLastCalledWith('o2', 1)
+    expect(onShown).toHaveBeenLastCalledWith('o2', 1, 'register')
     const again = (nonce: number) => (
       <ObservationsPage
         open onClose={() => {}} model={model} groupName="Acme" below={below} onChange={() => {}}
@@ -113,7 +114,26 @@ describe('ObservationsPage', () => {
     expect(reader()).toContain('OB-0002')
     rerender(again(2))
     expect(reader()).toContain('OB-0001')
-    expect(onShown).toHaveBeenLastCalledWith('o1', 2)
+    expect(onShown).toHaveBeenLastCalledWith('o1', 2, 'register')
+  })
+
+  /**
+   * A tab asked for (ADR-0019, amended): the page opens on it, with the record
+   * asked for selected there where one is, and says which tab is up whenever
+   * the person changes it.
+   */
+  it('opens on a tab asked for, with the record asked for selected on it, and says the tab', () => {
+    const onShown = vi.fn()
+    mount({ initialTab: 'analysis', initialNonce: 1, onShown })
+    expect(screen.getByTestId('observation-tab-analysis').getAttribute('aria-pressed')).toBe('true')
+    expect(onShown).toHaveBeenLastCalledWith('o2', 1, 'analysis')
+    fireEvent.click(screen.getByTestId('observation-tab-solutions'))
+    expect(onShown).toHaveBeenLastCalledWith('o2', 1, 'solutions')
+    cleanup()
+    // A record and a tab: the tab named wins, and the record is selected on it.
+    mount({ initialId: 'c1', initialTab: 'register', initialNonce: 2, onShown })
+    expect(screen.getByTestId('observation-tab-register').getAttribute('aria-pressed')).toBe('true')
+    expect(onShown).toHaveBeenLastCalledWith('c1', 2, 'register')
   })
 
   it('opens on the newest standing observation, with its fields, its causes and its history', () => {

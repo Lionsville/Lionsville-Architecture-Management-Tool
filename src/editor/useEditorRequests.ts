@@ -121,6 +121,11 @@ export function useDocumentation(
     setDocumentationId(elementId);
   }, [setSelection, state.model.elements, props.ownership]);
   useHostDocumentation(props.requests?.documentation, state, activeDiagram, open, setDiagramId);
+  // By the number, so a host that hands the same request over again closes nothing twice.
+  const leaveNonce = props.requests?.leaveDocumentation?.nonce;
+  useEffect(() => {
+    if (leaveNonce !== undefined) { setDocumentationId(undefined); setDiagramId(undefined); }
+  }, [leaveNonce]);
 
   const close = () => { setDocumentationId(undefined); setDiagramId(undefined); };
   // An element deleted (or undone out of existence) while its page is open

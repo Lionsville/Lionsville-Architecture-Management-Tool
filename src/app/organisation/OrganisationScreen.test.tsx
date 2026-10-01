@@ -354,6 +354,27 @@ describe('the organisation screen — its own pages', () => {
     await waitFor(() => expect(screen.getByTestId('open-business').textContent).toBe('Open'))
   })
 
+  /**
+   * The card's *Make…* and the boards' *+* are the person's own way onto a view
+   * that writes one (ADR-0019, amended): they still make it, through a page
+   * of their own, where an open of a view never does.
+   */
+  it('makes a sheet where the card says it will, and opens it', async () => {
+    renderApp({ repositories: heldRepositories([organisation()]), today: TODAY })
+    fireEvent.click(await screen.findByTestId('open-business'))
+    // The root had no sheet: the one drawn is the one the press made.
+    expect(await screen.findByTestId('sheet-canvas', {}, { timeout: 3000 })).toBeDefined()
+  })
+
+  it('makes a sheet from a landscape\u2019s boards, beside its board', async () => {
+    installReactFlowMocks()
+    renderApp({ repositories: heldRepositories([organisation(), scope('retail', 'Retail')]), today: TODAY })
+    fireEvent.click(await screen.findByTestId('home-retail'))
+    fireEvent.click(await screen.findByTestId('new-board'))
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Business architecture' }))
+    expect(await screen.findByTestId('sheet-canvas', {}, { timeout: 3000 })).toBeDefined()
+  })
+
   it('offers to make a map beside the sheet, and to open the one it has', async () => {
     renderApp({ repositories: heldRepositories([organisation()]), today: TODAY })
     expect((await screen.findByTestId('open-map')).textContent).toBe('Make a map…')

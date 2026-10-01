@@ -200,6 +200,13 @@ export interface EditorRequests {
      * active board.
      */
     documentation?: { elementId?: ElementId; diagramId?: string; nonce: number };
+    /**
+     * Close the documentation page from outside the editor — a host moving
+     * the person to a view or another page, which the page over the board
+     * would otherwise hide. Bump `nonce` to ask again; nothing where no page
+     * is open.
+     */
+    leaveDocumentation?: { nonce: number };
 }
 
 /**
