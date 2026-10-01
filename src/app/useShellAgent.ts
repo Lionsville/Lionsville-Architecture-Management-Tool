@@ -154,19 +154,19 @@ export function useShellAgent(deps: {
   /**
    * A move a provider said was its own (`SourceOpen`'s `by: 'provider'`):
    * where it sent the app. Every screen the app shows in that scope is the
-   * provider's until the app lands where it was sent (`landed`), and a screen
-   * in any other scope lets it go — that move was somebody else's.
+   * provider's until the app lands where it was sent (`landed`) and the page
+   * there has settled on what it shows, and a screen in any other scope lets
+   * it go — that move was somebody else's.
    */
-  const providerMove = useRef<(Destination & { scope: string }) | undefined>(undefined)
+  const providerMove = useRef<ProviderMove | undefined>(undefined)
   const shown = useRef(where)
   const lookAgain = useCallback(() => {
     const next = screenNow()
     lookAtPlace(next)
     if (!watchScreen) return
-    if (shown.current && JSON.stringify(shown.current.screen) === JSON.stringify(next)) return
-    const sent = providerMove.current
-    const theirs = sent !== undefined && scopeOf(next) === sent.scope
-    if (sent !== undefined && (!theirs || landed(next, sent))) providerMove.current = undefined
+    const same = shown.current !== undefined && JSON.stringify(shown.current.screen) === JSON.stringify(next)
+    const theirs = lookWithMark(providerMove, next, same, agentSessionRef.current?.settled() ?? true)
+    if (same) return
     const by: MovedBy = theirs ? 'provider' : agentOpened.current || agentDriving.current ? 'agent' : 'person'
     shown.current = { screen: next, by }
     setWhere(shown.current)
@@ -190,7 +190,7 @@ export function useShellAgent(deps: {
   const openSomewhere = useCallback<SourceOpen>((to, options) => {
     const sent = { ...to, scope: to.scope ?? project?.path ?? home }
     if (options?.by === 'provider') {
-      providerMove.current = movesTheApp(screenNow(), sent, agentSessionRef.current) ? sent : undefined
+      providerMove.current = movesTheApp(screenNow(), sent, agentSessionRef.current) ? { to: sent, reached: false } : undefined
     }
     openFor(sent)
   }, [openFor, project, home, screenNow])
@@ -230,6 +230,41 @@ export function useShellAgent(deps: {
     orgPageRequest, setOrgPage, openSomewhere, driving: agentShell.driving, stop: agentShell.stop, registerAgentSession,
     screen: where?.screen, movedBy: where?.by ?? 'person', screenNow,
   }
+}
+
+/**
+ * A provider's move under way: where it sent the app, and whether the app has
+ * landed there while the page it landed on was still picking what to show.
+ */
+type ProviderMove = { readonly to: Destination & { scope: string }; reached: boolean }
+
+/**
+ * A look at the screen while a provider's move may be under way: is the
+ * screen the provider's, and is the move over.
+ *
+ * A screen in another scope is somebody else's, and so is a screen off the
+ * destination once the app had landed on it. On the destination the move is
+ * over once the page there has settled: a record's page names the record
+ * asked for until it has picked one, and what it picks — the newest
+ * observation, the first decision, the tab that is up — is the provider's
+ * too. A look that finds the screen as it was labels nothing, but a page that
+ * was seen picking may have settled on what it already showed, and then the
+ * move is over all the same: the person's next move on that page is theirs.
+ */
+function lookWithMark(mark: { current: ProviderMove | undefined }, next: Screen, same: boolean, settled: boolean): boolean {
+  const move = mark.current
+  if (move === undefined) return false
+  const on = landed(next, move.to)
+  if (same) {
+    if (on && !settled) move.reached = true
+    else if (on && move.reached) mark.current = undefined
+    return false
+  }
+  if (on && settled) mark.current = undefined
+  else if (on) move.reached = true
+  const theirs = scopeOf(next) === move.to.scope && (on || !move.reached)
+  if (!theirs) mark.current = undefined
+  return theirs
 }
 
 /**

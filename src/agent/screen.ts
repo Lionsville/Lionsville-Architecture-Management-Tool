@@ -111,8 +111,9 @@ export type Screen = {
  *
  * `provider` where a provider's chrome, menu line or bar button moved it and
  * said so (`SourceOpen`'s `by: 'provider'`): every screen the app shows in the
- * scope it was sent to, until it arrives where it was sent ({@link landed}) or
- * goes to another scope — a move a provider makes is never the person's.
+ * scope it was sent to, until it arrives where it was sent ({@link landed})
+ * and the page there has picked what it shows, or goes to another scope — a
+ * move a provider makes is never the person's.
  * `agent` where the move was an agent's `app.open`, or happened while an
  * agent's driving session was up — whatever the person clicked in the middle of
  * it, since the banner says a click then changes what the agent sees and the

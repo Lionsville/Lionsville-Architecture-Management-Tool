@@ -10,10 +10,13 @@
  * is selected on the view it opens, where that view draws it; and what is
  * opened is what is seen, with the documentation page over the board closed.
  */
-import { afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { useEffect } from 'react'
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { laidOut } from '../model/testFixtures'
 import type { DesignElement, DesignDiagram } from '../model'
+import type { Adr } from '../model/adr'
+import type { Observation } from '../model/observation'
 import type { Destination, MovedBy, Screen } from '../agent/screen'
 import type { SourceOpenOptions } from '../ports/ProviderParts'
 import type { ScopeSnapshot } from '../projects/scope'
@@ -43,7 +46,27 @@ const tree = () => [
   }, 'd1'),
 ]
 
+/** The same tree with records on the landscape: two observations and two decisions, for a record page to pick from. */
+const observation = (id: string, number: number): Observation => ({
+  id, number, title: `Seen ${id}`, date: '2026-09-01', impact: 'minor', seen: 1, body: '', history: [{ date: '2026-09-01', kind: 'recorded' }],
+})
+const decision = (id: string, number: number): Adr => ({
+  id, number, title: `Decided ${id}`, status: 'proposed', date: '2026-09-01', body: '', signers: [],
+})
+const withRecords = () => {
+  const scopes = tree()
+  scopes[2].model.observations = [observation('o1', 1), observation('o2', 2)]
+  scopes[2].model.decisions = [decision('l1', 1), decision('l2', 2)]
+  return scopes
+}
+
 const elsewhere = { provider: 'elsewhere', name: 'Elsewhere', key: 'one' }
+
+/** Every screen the chrome was handed, with who it was told moved the app there, in order. */
+let handed: { where: Screen; movedBy: MovedBy }[] = []
+beforeEach(() => { handed = [] })
+/** Who moved the app, for every screen handed over since `from`. */
+const movers = (from: number) => handed.slice(from).map((one) => one.movedBy)
 
 /**
  * A chrome with one button per destination a test hands it, which says where
@@ -54,6 +77,7 @@ function guide(stops: readonly { label: string; to: Destination; options?: Sourc
   return function Guide({ screen: where, movedBy, open }: {
     screen: Screen; movedBy: MovedBy; open: (to: Destination, options?: SourceOpenOptions) => void
   }) {
+    useEffect(() => { handed.push({ where, movedBy }) }, [where, movedBy])
     return (
       <div>
         <p data-testid="guide-where">{JSON.stringify({ where, movedBy })}</p>
@@ -104,6 +128,54 @@ describe('a move a provider says is its own', () => {
     await waitFor(() => expect(told().where.home?.path).toBe(''))
     fireEvent.click(screen.getByRole('button', { name: 'To the landscape' }))
     await waitFor(() => expect(told().where.open?.path).toBe('acme/landscape'))
+    expect(told().movedBy).toBe('person')
+  })
+})
+
+/**
+ * A record's page picks what it shows once it has the request: the record
+ * asked for, or the newest observation, or the first decision, and the tab
+ * that is up. That pick is part of the provider's move, and the person's next
+ * move on the same page is the person's.
+ */
+describe('a move a provider says is its own, onto a record’s page', () => {
+  it('is the provider’s through the observation the page picks, from a home', async () => {
+    show([{ label: 'To the solutions', to: { scope: 'acme/landscape', page: 'observations', tab: 'solutions' }, options: { by: 'provider' } }], withRecords())
+    await waitFor(() => expect(told().where.home?.path).toBe(''))
+    const from = handed.length
+    fireEvent.click(screen.getByRole('button', { name: 'To the solutions' }))
+    await waitFor(() => expect(told().where.page).toEqual({ page: 'observations', id: 'o2', tab: 'solutions' }))
+    expect(movers(from)).not.toContain('person')
+    fireEvent.click(within(await screen.findByRole('dialog')).getByTestId('observation-tab-analysis'))
+    await waitFor(() => expect(told().where.page).toMatchObject({ page: 'observations', tab: 'analysis' }))
+    expect(told().movedBy).toBe('person')
+  })
+
+  it('is the provider’s through the observation the page picks, in the scope that is open', async () => {
+    const scopes = withRecords()
+    show([{ label: 'To the observations', to: { page: 'observations' }, options: { by: 'provider' } }], scopes, scopes[2])
+    await waitFor(() => expect(told().where.open?.view?.id).toBe('d1'))
+    const from = handed.length
+    fireEvent.click(screen.getByRole('button', { name: 'To the observations' }))
+    await waitFor(() => expect(told().where.page).toEqual({ page: 'observations', id: 'o2', tab: 'register' }))
+    expect(movers(from)).not.toContain('person')
+    fireEvent.click(within(await screen.findByRole('dialog')).getByTestId('observation-row-o1'))
+    await waitFor(() => expect(told().where.page).toMatchObject({ page: 'observations', id: 'o1' }))
+    expect(told().movedBy).toBe('person')
+  })
+
+  it('is the provider’s through the decision the page picks', async () => {
+    const scopes = withRecords()
+    show([{ label: 'To the decisions', to: { page: 'decisions' }, options: { by: 'provider' } }], scopes, scopes[2])
+    await waitFor(() => expect(told().where.open?.view?.id).toBe('d1'))
+    const from = handed.length
+    fireEvent.click(screen.getByRole('button', { name: 'To the decisions' }))
+    await waitFor(() => expect(told().where.page).toMatchObject({ page: 'decisions', id: expect.any(String) }))
+    expect(movers(from)).not.toContain('person')
+    const picked = told().where.page
+    const other = picked?.page === 'decisions' && picked.id === 'l1' ? 'Decided l2' : 'Decided l1'
+    fireEvent.click(within(await screen.findByTestId('adr-list')).getByText(other))
+    await waitFor(() => expect(told().where.page).not.toEqual(picked))
     expect(told().movedBy).toBe('person')
   })
 })

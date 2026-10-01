@@ -81,9 +81,15 @@ export function useWorkspacePages(deps: {
     if (platformReading.serviceId !== undefined) return { page: 'service', id: platformReading.serviceId }
     return undefined
   }, [adrPage, obsPage, adrShown, obsShown, plans.planId, plans.roadmapOpen, platformReading.platformId, platformReading.serviceId])
+  /** Has the record page that is up — the same one `page` names — said what it landed on for the latest request? */
+  const settled = useCallback((): boolean => {
+    if (adrPage.open) return adrShown?.nonce === adrPage.nonce
+    if (obsPage.open) return obsShown?.nonce === obsPage.nonce
+    return true
+  }, [adrPage, obsPage, adrShown, obsShown])
 
   return {
-    adrPage, obsPage, plans, platformReading, page, leaveIfNothingToDraw,
+    adrPage, obsPage, plans, platformReading, page, settled, leaveIfNothingToDraw,
     selectOn: viewSelect.select, selectRequestFor: viewSelect.requestFor,
     decisionShown: records.decisionShown, observationShown: records.observationShown,
     closeDecisions: records.closeRecords, closeObservations: records.closeObservations, ...openers,

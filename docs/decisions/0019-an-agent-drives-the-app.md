@@ -182,8 +182,12 @@ what a person can (ADR-0011).
   such a move brings in the scope it was sent to is `provider`'s until the
   app has landed where it was sent (`landed`: on the kind of page asked for,
   whichever record or tab it then shows — and on the scope's home where a
-  view was asked for and the scope has none of that kind), and a screen in
-  another scope lets the mark go, because that move was somebody else's. A
+  view was asked for and the scope has none of that kind) and the page there
+  has settled: a record's page names the record asked for until it has
+  picked what it shows — the newest observation, the first decision, the tab
+  that is up — and that pick is the provider's too. A screen in another
+  scope lets the mark go, because that move was somebody else's, and so does
+  a screen off the destination once the app had landed on it. A
   move to where the app already is leaves no mark on the next one, and an
   agent's move after it is the agent's. A move a person makes is never said
   to be a provider's. Under ADR-0033 a provider's move is a step in the
@@ -245,8 +249,11 @@ that is opened, for `useShellNavigation`'s `enter`; the boot's landing of a
 place follows the same rule (`bootLanding.ts`). The tab is the page's
 (`ObservationsPage`'s `initialTab`, said back with what is on show), the
 selection `app/useViewSelect.ts` with `widgets/useSelectRequest.ts`, and
-`agent/shell.ts` checks both for `app.open`. `App.destination.test.tsx` pins
-a provider's move through the whole shell, a view asked for with none of
+`agent/shell.ts` checks both for `app.open`. The workspace says whether a
+record's page has settled (`WorkspaceAgentView.settled`), which the mark waits
+for. `App.destination.test.tsx` pins a provider's move through the whole
+shell — onto a record's page that picks an observation or a decision, from a
+home and in the scope that is open — a view asked for with none of
 its kind landing on the home with nothing written, the one there is opened,
 a board with no id the board on the tab, the observations page on a tab and
 the screen saying so, a selection on a sheet and none where the sheet does

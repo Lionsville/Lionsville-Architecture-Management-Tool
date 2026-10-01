@@ -30,11 +30,20 @@ import { useAgentGateway } from './useAgentGateway'
 
 /**
  * What the workspace registers while a scope is open: the handler's session
- * view, plus the two things only the workspace knows about its own screen —
- * which page is up over the canvas, and how to show another.
+ * view, plus what only the workspace knows about its own screen — which page
+ * is up over the canvas, whether that page has settled, and how to show
+ * another.
  */
 export type WorkspaceAgentView = SessionView & {
   page(): ScreenPage | undefined
+  /**
+   * Has the page over the canvas answered the latest request for it? A
+   * record's page names the record and the tab asked for until it has picked
+   * what it shows — the record asked for, the newest observation, the first
+   * decision, the tab that is up — and says those from then on. True where no
+   * record's page is up.
+   */
+  settled(): boolean
   /** Show a view or a page of the open scope. The destination has been checked against the model. */
   show(to: Destination & { scope: string }): void
 }

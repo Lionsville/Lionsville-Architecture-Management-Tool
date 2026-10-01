@@ -63,7 +63,7 @@ export function useWorkspaceAgentView(deps: {
     session, scope, indexRef, rowsElsewhereRef, scopes, reader, ancestorRecords, readOnly, documentStatus,
     renderer, save, putPicture, pages, showElement, openDocumentation, leaveDocumentation, makeId, today, s, onAgentSession,
   } = deps
-  const { page, openView, openDecisions, openObservations, openRoadmap, closePages, openPlatformReport, openServiceReport } = pages
+  const { page, settled, openView, openDecisions, openObservations, openRoadmap, closePages, openPlatformReport, openServiceReport } = pages
   const openPlan = pages.plans.openPlan
   const agentView = useMemo<WorkspaceAgentView>(() => ({
     ...throughSession(session, putPicture),
@@ -88,11 +88,12 @@ export function useWorkspaceAgentView(deps: {
     renderer,
     save,
     page,
+    settled,
     show: showOn(pages, showElement, openDocumentation, leaveDocumentation),
     tree: agentTree({ session, scope, indexRef, rowsElsewhereRef, scopes, reader }),
   }), [
     session, scope, ancestorRecords, documentStatus, readOnly, makeId, today, s, renderer, save, putPicture, scopes, reader,
-    page, openPlan, openView, openDecisions, openObservations, openRoadmap, closePages, showElement, openDocumentation,
+    page, settled, openPlan, openView, openDecisions, openObservations, openRoadmap, closePages, showElement, openDocumentation,
     openPlatformReport, openServiceReport, indexRef, rowsElsewhereRef, leaveDocumentation, pages.selectOn,
   ])
   useEffect(() => {
