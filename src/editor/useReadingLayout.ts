@@ -61,8 +61,19 @@ export interface UseReadingLayoutArgs {
    * it has reported itself: the stored board is then drawn as it is.
    */
   lay(diagram: DesignDiagram, options: TidyOptions): Promise<DesignDiagram>;
-  /** Once a laid-out board is on screen, if it is still the open one: the canvas framed the pile. */
+  /**
+   * The first time a board is on screen laid out, as the open board — when
+   * its pass lands, or when the reader comes back to it after it landed while
+   * they were elsewhere: the canvas framed the pile. Once per board, so a pass
+   * for a board that changed under the reader leaves their view where it is.
+   */
   onShown?(): void;
+  /**
+   * A pass that landed for a board not open at the time, and not on screen
+   * laid out yet: the viewport kept for it is the one the canvas framed the
+   * pile at, and is not worth coming back to.
+   */
+  onLandedAway?(diagramId: string): void;
 }
 
 interface Held {
@@ -78,7 +89,7 @@ const NOTHING_HELD: ReadonlyMap<string, Held> = new Map();
  * The board to draw: for a reader, a board nobody has laid out with the pass
  * on it once it has run; otherwise, and meanwhile, the board as stored.
  */
-export function useReadingLayout({ diagram, readOnly, options, lay, onShown }: UseReadingLayoutArgs): DesignDiagram | undefined {
+export function useReadingLayout({ diagram, readOnly, options, lay, onShown, onLandedAway }: UseReadingLayoutArgs): DesignDiagram | undefined {
   const [held, setHeld] = useState(NOTHING_HELD);
   /**
    * The stored boards a pass has been started for, by object. Written before
@@ -88,9 +99,11 @@ export function useReadingLayout({ diagram, readOnly, options, lay, onShown }: U
   const attemptedRef = useRef(new WeakSet<DesignDiagram>());
   /** How many passes this editor has started, so each knows its place among them. */
   const startsRef = useRef(0);
+  /** The boards, by id, that have been on screen laid out as the open board. */
+  const framedRef = useRef(new Set<string>());
   // Read inside the effect so a changed callback identity cannot re-trigger it.
-  const latestRef = useRef({ options, lay, onShown, diagram });
-  latestRef.current = { options, lay, onShown, diagram };
+  const latestRef = useRef({ options, lay, onShown, onLandedAway, diagram });
+  latestRef.current = { options, lay, onShown, onLandedAway, diagram };
 
   useEffect(() => {
     if (!readOnly || !diagram || !awaitsLayout(diagram)) return;
@@ -105,7 +118,8 @@ export function useReadingLayout({ diagram, readOnly, options, lay, onShown }: U
         setHeld((was) => ((was.get(diagram.id)?.started ?? 0) > started
           ? was
           : new Map(was).set(diagram.id, { from: diagram, shown, started })));
-        if (latestRef.current.diagram === diagram) latestRef.current.onShown?.();
+        const latest = latestRef.current;
+        if (latest.diagram?.id !== diagram.id && !framedRef.current.has(diagram.id)) latest.onLandedAway?.(diagram.id);
       },
       () => {
         // Reported by `lay` through the editor's one message channel; the
@@ -114,7 +128,16 @@ export function useReadingLayout({ diagram, readOnly, options, lay, onShown }: U
     );
   }, [diagram, readOnly]);
 
-  if (!diagram || !readOnly) return diagram;
-  const kept = held.get(diagram.id);
-  return kept?.from === diagram ? kept.shown : diagram;
+  const kept = diagram && readOnly ? held.get(diagram.id) : undefined;
+  const shown = kept && kept.from === diagram ? kept.shown : diagram;
+
+  // Framed once it is on screen as the open board, which is not always when
+  // its pass lands: a reader who went elsewhere meanwhile comes back to it.
+  useEffect(() => {
+    if (!diagram || shown === diagram || framedRef.current.has(diagram.id)) return;
+    framedRef.current.add(diagram.id);
+    latestRef.current.onShown?.();
+  }, [diagram, shown]);
+
+  return shown;
 }

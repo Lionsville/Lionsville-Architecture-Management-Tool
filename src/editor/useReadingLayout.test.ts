@@ -87,16 +87,18 @@ function render(over: Partial<UseReadingLayoutArgs> = {}) {
   const lay = vi.fn<(diagram: DesignDiagram, options: TidyOptions) => Promise<DesignDiagram>>()
     .mockImplementation((diagram) => Promise.resolve(laidOutForReading(modelOf(diagram), diagram, RESULT)));
   const onShown = vi.fn<() => void>();
+  const onLandedAway = vi.fn<(diagramId: string) => void>();
   const args: UseReadingLayoutArgs = {
     diagram: unplaced(),
     readOnly: true,
     options: DEFAULT_TIDY_OPTIONS,
     lay,
     onShown,
+    onLandedAway,
     ...over,
   };
   const view = renderHook((props: UseReadingLayoutArgs) => useReadingLayout(props), { initialProps: args });
-  return { ...view, lay, onShown, args };
+  return { ...view, lay, onShown, onLandedAway, args };
 }
 
 const positions = (diagram: DesignDiagram | undefined) =>
@@ -104,15 +106,18 @@ const positions = (diagram: DesignDiagram | undefined) =>
 
 describe('useReadingLayout — when a reader is shown a pass', () => {
   it('shows a reader the board laid out, once, and frames it', async () => {
-    const { result, lay, onShown, rerender, args } = render();
+    const { result, lay, onShown, onLandedAway, rerender, args } = render();
     // Meanwhile, the board as stored.
     expect(result.current).toBe(args.diagram);
 
     await waitFor(() => expect(positions(result.current)).toEqual(['100,300', '500,300']));
-    expect(onShown).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onShown).toHaveBeenCalledTimes(1));
     rerender({ ...args });
     rerender({ ...args });
     expect(lay).toHaveBeenCalledTimes(1);
+    expect(onShown).toHaveBeenCalledTimes(1);
+    // Open when it landed: the canvas is still on it, and frames it now.
+    expect(onLandedAway).not.toHaveBeenCalled();
   });
 
   it('runs it with the writer\'s settling options', async () => {
@@ -198,12 +203,12 @@ describe('useReadingLayout — what is shown belongs to the board it was worked 
     expect(lay).toHaveBeenCalledTimes(2);
   });
 
-  it('keeps each board\'s pass, and frames only the board still open', async () => {
+  it('keeps a board\'s pass that lands while another is open, and frames it once it is open again', async () => {
     let finish!: (diagram: DesignDiagram) => void;
     const first = unplaced();
     const lay = vi.fn<(diagram: DesignDiagram, options: TidyOptions) => Promise<DesignDiagram>>()
       .mockImplementation((diagram) => new Promise((resolve) => { finish = () => resolve(laidOutForReading(modelOf(diagram), diagram, RESULT)); }));
-    const { result, onShown, rerender, args } = render({ diagram: first, lay });
+    const { result, onShown, onLandedAway, rerender, args } = render({ diagram: first, lay });
     await waitFor(() => expect(lay).toHaveBeenCalledTimes(1));
 
     // Another board is opened while the first one's pass is still running.
@@ -213,11 +218,36 @@ describe('useReadingLayout — what is shown belongs to the board it was worked 
     await new Promise((r) => setTimeout(r, 10));
     expect(onShown).not.toHaveBeenCalled();
     expect(result.current).toBe(other);
+    // The frame the canvas kept for the first board was of its pile.
+    expect(onLandedAway).toHaveBeenCalledExactlyOnceWith('d1');
 
-    // Back on the first board, its pass is on screen without running again.
+    // Back on the first board, its pass is on screen without running again,
+    // and framed now: the reader has not seen it laid out before.
     rerender({ ...args, diagram: first });
     expect(positions(result.current)).toEqual(['100,300', '500,300']);
+    await waitFor(() => expect(onShown).toHaveBeenCalledTimes(1));
     expect(lay).toHaveBeenCalledTimes(1);
+
+    // And only that once: leaving and coming back again keeps the reader's view.
+    rerender({ ...args, diagram: other });
+    rerender({ ...args, diagram: first });
+    await new Promise((r) => setTimeout(r, 10));
+    expect(onShown).toHaveBeenCalledTimes(1);
+  });
+
+  it('frames a board once, and not again for a pass of the board changed under the reader', async () => {
+    const { result, lay, onShown, onLandedAway, rerender, args } = render();
+    await waitFor(() => expect(onShown).toHaveBeenCalledTimes(1));
+
+    const renamed = { ...unplaced(), name: 'Renamed' };
+    rerender({ ...args, diagram: renamed });
+    await waitFor(() => expect(lay).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(result.current?.name).toBe('Renamed'));
+    expect(positions(result.current)).toEqual(['100,300', '500,300']);
+    await new Promise((r) => setTimeout(r, 10));
+    // The reader may have zoomed in since: their view is theirs.
+    expect(onShown).toHaveBeenCalledTimes(1);
+    expect(onLandedAway).not.toHaveBeenCalled();
   });
 
   it('draws the board as stored when the pass fails, and does not retry it', async () => {

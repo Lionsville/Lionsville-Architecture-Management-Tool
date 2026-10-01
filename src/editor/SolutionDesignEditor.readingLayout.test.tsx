@@ -12,6 +12,7 @@ import { testTheme } from './testing/theme';
 import { HostedEditor } from './testing/editorHost';
 import type { EditorHostState, HostedEditorProps } from './testing/editorHost';
 import { installReactFlowMocks } from './reactFlowTestSetup';
+import { ViewportMemory } from './canvas/viewportMemory';
 
 /**
  * A board nobody has laid out, opened by a reader.
@@ -168,6 +169,30 @@ describe('SolutionDesignEditor — a reader opening a board nobody has laid out'
     expect(onLayoutError.mock.calls[0][0]).toBe('This diagram could not be laid out automatically.');
     expect(host.current.commands).toEqual([]);
     expect(onLayoutSettled).not.toHaveBeenCalled();
+    expect(mockTidy).toHaveBeenCalledTimes(1);
+  });
+
+  it('forgets the frame of a board whose pass lands while the reader is on another', async () => {
+    let finish!: () => void;
+    mockTidy.mockImplementation(() => new Promise((resolve) => { finish = () => resolve({ placements: LAID, edgeRoutes: [] }); }));
+    const forget = vi.spyOn(ViewportMemory.prototype, 'forget');
+    const other = laidOut({
+      id: 'd2', kind: 'layer7', name: 'Other',
+      placements: IDS.map((id, i) => ({ id, zone: 'landscape' as const, x: 200 + i * 360, y: 300 })),
+    });
+    const model = { ...unplaced(), diagrams: [...unplaced().diagrams, other] };
+    const { rerender } = renderBoard({ model });
+    await waitFor(() => expect(mockTidy).toHaveBeenCalledTimes(1));
+
+    // The reader goes to another board before the pass lands: the canvas framed
+    // the pile meanwhile, and kept that frame for when they come back.
+    rerender({ model, activeDiagramId: 'd2' });
+    finish();
+    await waitFor(() => expect(forget).toHaveBeenCalledWith('d1'));
+
+    // Back on it, it is laid out, from the pass that already ran.
+    rerender({ model, activeDiagramId: 'd1' });
+    await waitFor(() => expect(new Set(drawnAt().values()).size).toBe(IDS.length));
     expect(mockTidy).toHaveBeenCalledTimes(1);
   });
 

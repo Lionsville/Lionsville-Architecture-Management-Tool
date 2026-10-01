@@ -25,4 +25,13 @@ describe('ViewportMemory', () => {
     expect(memory.recall('l7')?.zoom).toBe(1);
     expect(memory.recall('cd')).toEqual({ x: 500, y: 500, zoom: 2 });
   });
+
+  it('forgets one diagram, which is then fitted when it is opened, and keeps the others', () => {
+    const memory = new ViewportMemory();
+    memory.keep('l7', { x: 1, y: 2, zoom: 2.5 });
+    memory.keep('cd', { x: 500, y: 500, zoom: 2 });
+    memory.forget('l7');
+    expect(memory.recall('l7')).toBeUndefined();
+    expect(memory.recall('cd')).toEqual({ x: 500, y: 500, zoom: 2 });
+  });
 });

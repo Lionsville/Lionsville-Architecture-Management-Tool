@@ -115,11 +115,11 @@ function EditorBody(props: SolutionDesignEditorProps) {
 
 /**
  * Every piece of the body's state, one hook per concern, composed in the
- * order they read each other: the view settings first, the layout passes —
- * which say where a reader is shown the cards of a board nobody has laid out
- * — and the board's look over what they show, the requests and the deletes
- * over the selection, the export over those, and the doors a host and the
- * keyboard come in by last.
+ * order they read each other: the view settings and the session first, the
+ * layout passes — which say where a reader is shown the cards of a board
+ * nobody has laid out — and the board's look over what they show, the
+ * requests and the deletes over the selection, the export over those, and
+ * the doors a host and the keyboard come in by last.
  */
 function useEditorParts(props: SolutionDesignEditorProps) {
   const theme = useTheme();
@@ -129,9 +129,10 @@ function useEditorParts(props: SolutionDesignEditorProps) {
   const readOnly = props.editing.readOnly ?? false;
   const activeDiagram = state.model.diagrams.find((d) => d.id === props.document.activeDiagramId);
   const view = useViewSettings(props.preferences);
+  const session = useEditorSession();
   const layout = useLayoutActions({
     props, state, diagram: activeDiagram, readOnly,
-    tidyOptions: view.tidyOptions, groupTidyOptions: view.groupTidyOptions, t,
+    tidyOptions: view.tidyOptions, groupTidyOptions: view.groupTidyOptions, t, viewports: session.viewports,
   });
   const board = useBoardView({
     model: state.model, diagram: layout.shown, viewing: props.document.viewing,
@@ -150,7 +151,6 @@ function useEditorParts(props: SolutionDesignEditorProps) {
   const capture = useBoardCapture(wrapperRef, activeDiagram, theme, props.logos?.onExportImagesMissing);
   const dialogs = useEditorDialogs();
   const clicks = useDoubleClicks(props, state, activeDiagram, docs.open);
-  const session = useEditorSession();
   const parts: EditorParts = {
     props, state, readOnly, view, board, layout, requests, docs, deletes, exports, dialogs, clicks,
     capturing: capture.capturing, ...session,

@@ -23,6 +23,7 @@ import type { LayoutAction } from './EditorToolbar';
 import type { EditorState } from './useEditorState';
 import type { SolutionDesignEditorProps } from './props';
 import { FIT_ALL, viewportOverNodes } from './canvas/fitAll';
+import type { ViewportMemory } from './canvas/viewportMemory';
 import { useAutoLayout } from './useAutoLayout';
 import { laidOutForReading, useReadingLayout } from './useReadingLayout';
 import { useRouteActions } from './useRouteActions';
@@ -82,6 +83,8 @@ export interface LayoutArgs {
   tidyOptions: TidyOptions;
   groupTidyOptions: TidyOptions;
   t: Translate;
+  /** Where each board was left (`useEditorSession`): a reader's pass forgets the pile's frame. */
+  viewports?: ViewportMemory;
 }
 
 export function useLayoutActions(args: LayoutArgs) {
@@ -120,14 +123,18 @@ export function useLayoutActions(args: LayoutArgs) {
   /**
    * The same pass for a reader, who makes no step: held on the screen, framed
    * like the writer's, and landed nowhere (`useReadingLayout`). `shown` is the
-   * board to draw — the stored one everywhere else.
+   * board to draw — the stored one everywhere else. A pass that lands while
+   * the reader is on another board leaves that board fitted when they come
+   * back, rather than put back at the frame the canvas took of its pile.
    */
+  const viewports = args.viewports;
   const shown = useReadingLayout({
     diagram,
     readOnly,
     options: tidyOptions,
     lay: useLayForReading(args, reports),
     onShown: frameBoard,
+    onLandedAway: useCallback((diagramId: string) => viewports?.forget(diagramId), [viewports]),
   });
 
   const routes = useRouteActions(args, running);

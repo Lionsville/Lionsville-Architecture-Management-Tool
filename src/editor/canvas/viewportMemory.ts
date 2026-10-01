@@ -29,4 +29,14 @@ export class ViewportMemory {
     const held = this.kept.get(diagramId);
     return held ? { ...held } : undefined;
   }
+
+  /**
+   * Nothing kept for this diagram any more, so it is fitted the next time it
+   * is opened: for a viewport that framed what the diagram no longer looks
+   * like, as a board nobody had laid out does once a reader is shown it laid
+   * out (`useReadingLayout`).
+   */
+  forget(diagramId: string): void {
+    this.kept.delete(diagramId);
+  }
 }
