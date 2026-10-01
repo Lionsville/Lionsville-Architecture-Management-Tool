@@ -306,7 +306,7 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
   // The menu bar, as a person reads it: the app menu named after the product
   // rather than the package, a Help menu with the manual, the shortcuts and
   // the update check in one place, and an Edit menu whose Undo is ours.
-  results.push(await checkHere('the menu bar names the product, and carries Help and Edit', async () => {
+  results.push(await checkHere('the menu bar names the product, and carries Help, Edit and Go', async () => {
     const menu = Menu.getApplicationMenu()
     if (!menu) throw new Error('no application menu')
     const labels = menu.items.map((held) => held.label)
@@ -322,7 +322,13 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
     for (const want of ['Undo', 'Redo', 'Cut', 'Copy', 'Paste', 'Delete', 'Select All']) {
       if (!edit.includes(want)) throw new Error(`no "${want}" in Edit: ${edit.join(' · ')}`)
     }
-    return `${labels.join(' · ')}; Help: ${help.join(' · ')}`
+    // Go, after View (ADR-0033): Back and Forward, which work with nothing open.
+    const go = under('Go')
+    for (const want of ['Back', 'Forward']) {
+      if (!go.includes(want)) throw new Error(`no "${want}" in Go: ${go.join(' · ') || labels.join(' · ')}`)
+    }
+    if (labels.indexOf('Go') !== labels.indexOf('View') + 1) throw new Error(`Go is not after View: ${labels.join(' · ')}`)
+    return `${labels.join(' · ')}; Help: ${help.join(' · ')}; Go: ${go.join(' · ')}`
   }))
 
   // The name on screen is allowed to change; the folder a person's preferences,
@@ -437,6 +443,27 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
     if (!decisions.some((name) => /^0001-.*\.md$/.test(name))) throw new Error(`decisions/: ${decisions.join(', ')}`)
     if (!plans.some((name) => /^0001-.*\.md$/.test(name))) throw new Error(`transitions/: ${plans.join(', ')}`)
     return `${seen}; ${EXAMPLE.path}/ + ${EXAMPLE.landscape}/, ${decisions.length} decisions, ${plans.length} plans on disk`
+  }))
+
+  // Back goes to the place before (ADR-0033): the landscape was opened from a
+  // home, and the Go menu's Back — the command its ⌘[ sends — returns to that
+  // home through the window's own history; Forward puts the board back for
+  // the canvas checks below. Each move is waited for as the address says it,
+  // because a move is written once it has settled.
+  results.push(await checkHere('Back after opening a scope from a home returns to that home, and Forward to the scope', async () => {
+    const landscapeHash = `#place?scope=${encodeURIComponent(EXAMPLE.landscape)}&page=board`
+    await page(waitFor(`location.hash.startsWith(${JSON.stringify(landscapeHash)}) && document.querySelector('.react-flow') && 'on the board'`, 'the board in the address'))
+    const ends = await page(`JSON.stringify({ back: window.navigation ? navigation.canGoBack : 'no Navigation API' })`)
+    sendCommand({ type: 'back' })
+    const home = await page(waitFor(`(() => {
+      const cards = document.querySelector('[data-testid="organisation-cards"]')
+      return cards && !document.querySelector('.react-flow') && location.hash.includes('page=home') && location.hash
+    })()`, 'a home after Back'))
+    const forward = await page(`String(window.navigation ? navigation.canGoForward : 'no Navigation API')`)
+    if (forward === 'false') throw new Error('the Navigation API says there is nowhere to go forward to')
+    sendCommand({ type: 'forward' })
+    await page(waitFor(`location.hash.startsWith(${JSON.stringify(landscapeHash)}) && document.querySelector('.react-flow') && 'board'`, 'the board after Forward'))
+    return `before Back ${ends}; Back landed on ${decodeURIComponent(home)}; Forward on the board again`
   }))
 
   // --- the canvas: routing in wasm on a worker, and a picture out ------------
