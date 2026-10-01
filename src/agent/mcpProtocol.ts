@@ -121,6 +121,15 @@ export type RespondOptions = {
   readonly instructions?: string
   /** Which of `TOOLS` this host has. Everything, when unsaid. */
   readonly tools?: (tool: ToolSpec) => boolean
+  /**
+   * Tools the host answers itself, beside the vocabulary: listed after it,
+   * whatever `tools` decides about the vocabulary, and called through the
+   * relay as any other name is. What their arguments may be, and checking
+   * them, is the host's: nothing here knows what they do. A host's tool never
+   * takes a name the vocabulary has; one that does is not listed, and a call
+   * by that name is the vocabulary's.
+   */
+  readonly hostTools?: readonly ToolSpec<string>[]
 }
 
 /** The see-tier tools that change nothing: a report, and a picture. */
@@ -170,20 +179,7 @@ export async function respond(
       return ok({})
 
     case 'tools/list':
-      return ok({
-        tools: TOOLS.filter(has).map((tool) => ({
-          name: tool.name,
-          description: tool.description,
-          inputSchema: tool.inputSchema,
-          annotations: {
-            readOnlyHint: tool.tier === 'read' || LOOKS_ONLY.includes(tool.name),
-            // A remove is the one kind of change ⌘Z is the only way back from
-            // once the person has moved on; a client may ask before one.
-            destructiveHint: tool.name.endsWith('.remove'),
-            openWorldHint: false,
-          },
-        })),
-      })
+      return ok({ tools: [...TOOLS.filter(has).map(listed), ...hostToolsOf(options).map(listedForHost)] })
 
     case 'tools/call': {
       const name = params['name']
@@ -215,6 +211,39 @@ export async function respond(
     default:
       return fail(RPC.methodNotFound, `method not found: ${message.method}`)
   }
+}
+
+/** One of the vocabulary's tools, as `tools/list` says it. */
+function listed(tool: ToolSpec) {
+  return {
+    ...listedForHost(tool),
+    annotations: {
+      readOnlyHint: tool.tier === 'read' || LOOKS_ONLY.includes(tool.name),
+      // A remove is the one kind of change ⌘Z is the only way back from
+      // once the person has moved on; a client may ask before one.
+      destructiveHint: tool.name.endsWith('.remove'),
+      openWorldHint: false,
+    },
+  }
+}
+
+/**
+ * A host's own tool, as `tools/list` says it: the same three facts, and the
+ * two hints its tier and its name can honestly give. Whether it reaches
+ * beyond the app is the host's to know, so nothing is said about that.
+ */
+function listedForHost(tool: ToolSpec<string>) {
+  return {
+    name: tool.name,
+    description: tool.description,
+    inputSchema: tool.inputSchema,
+    annotations: { readOnlyHint: tool.tier === 'read', destructiveHint: tool.name.endsWith('.remove') },
+  }
+}
+
+/** The host's own tools that may be listed: none that takes a name the vocabulary has. */
+function hostToolsOf(options: RespondOptions): readonly ToolSpec<string>[] {
+  return (options.hostTools ?? []).filter((tool) => !TOOLS.some((held) => held.name === tool.name))
 }
 
 /** The JSON an ok answer's first text block carries, or nothing. */

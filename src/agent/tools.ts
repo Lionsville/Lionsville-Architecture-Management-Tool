@@ -78,8 +78,13 @@ export type InputSchema = {
   readonly additionalProperties: false
 }
 
-export type ToolSpec = {
-  readonly name: ToolName
+/**
+ * One tool as a client is told it. `Name` is this vocabulary's own names by
+ * default; a host that answers tools of its own describes them in the same
+ * shape with names of its choosing (`mcpProtocol`'s `RespondOptions.hostTools`).
+ */
+export type ToolSpec<Name extends string = ToolName> = {
+  readonly name: Name
   readonly tier: ToolTier
   readonly description: string
   readonly inputSchema: InputSchema

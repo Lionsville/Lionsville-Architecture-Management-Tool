@@ -77,6 +77,64 @@ describe('the protocol on its own', () => {
     expect(asked).toBe(0)
   })
 
+  /**
+   * A host may answer tools of its own: listed after the vocabulary, whatever
+   * the host left out of it, and called through the relay with what the
+   * client sent — checking those arguments is the host's.
+   */
+  describe('a host\'s own tools', () => {
+    const almanac: ToolSpec<string> = {
+      name: 'almanac.read', tier: 'read', description: 'Read a page of the almanac.',
+      inputSchema: { type: 'object', properties: { page: { type: 'integer', description: 'Which page.' } }, additionalProperties: false },
+    }
+    const cleanup: ToolSpec<string> = {
+      name: 'almanac.remove', tier: 'write', description: 'Take a page out.',
+      inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    }
+    type Listed = { name: string; annotations: Record<string, boolean> }
+    const listOf = async (options: Parameters<typeof respond>[3]) => {
+      const answer = await respond({ jsonrpc: '2.0', id: 1, method: 'tools/list' }, quiet, server, options)
+      return (answer as { result: { tools: Listed[] } }).result.tools
+    }
+
+    it('lists them after the vocabulary, with the hints their tier and name give', async () => {
+      const tools = await listOf({ hostTools: [almanac, cleanup] })
+      const names = tools.map((tool) => tool.name)
+      expect(names.slice(-2)).toEqual(['almanac.read', 'almanac.remove'])
+      expect(names).toContain('elements.list')
+      expect(tools.find((tool) => tool.name === 'almanac.read')!.annotations).toEqual({ readOnlyHint: true, destructiveHint: false })
+      expect(tools.find((tool) => tool.name === 'almanac.remove')!.annotations).toEqual({ readOnlyHint: false, destructiveHint: true })
+    })
+
+    it('lists them whatever the host left out of the vocabulary', async () => {
+      const names = (await listOf({ tools: () => false, hostTools: [almanac] })).map((tool) => tool.name)
+      expect(names).toEqual(['almanac.read'])
+    })
+
+    it('lists none that takes a name the vocabulary has', async () => {
+      const shadow: ToolSpec<string> = { ...almanac, name: 'elements.list', description: 'Not the vocabulary\'s.' }
+      const tools = await listOf({ hostTools: [shadow] })
+      expect(tools.filter((tool) => tool.name === 'elements.list')).toHaveLength(1)
+      expect(JSON.stringify(tools)).not.toContain('Not the vocabulary')
+    })
+
+    it('hands a call to the relay with the arguments as they came', async () => {
+      const asked: unknown[] = []
+      const relay = { ...quiet, ask: async (request: unknown) => { asked.push(request); return json({ page: 12, text: 'Rain.' }) } }
+      const called = await respond(
+        { jsonrpc: '2.0', id: 7, method: 'tools/call', params: { name: 'almanac.read', arguments: { page: 'twelve' } } },
+        relay, server, { tools: () => false, hostTools: [almanac] },
+      )
+      expect(asked).toEqual([{ id: '7', tool: 'almanac.read', args: { page: 'twelve' } }])
+      expect(called).toMatchObject({ result: { content: [{ type: 'text' }] } })
+      expect((called as { result: { isError?: boolean } }).result.isError).toBeUndefined()
+    })
+
+    it('leaves the list as it was where a host has none', async () => {
+      expect(await listOf({ hostTools: [] })).toEqual(await listOf({}))
+    })
+  })
+
   it('turns an answer into a result, and a refusal into an error result', () => {
     expect(toolResult(json({ a: 1 }))).toEqual({ content: [{ type: 'text', text: '{\n  "a": 1\n}' }] })
     expect(toolResult(refused('agent.off'))).toEqual({
