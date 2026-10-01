@@ -59,17 +59,15 @@ import type { WindowChrome } from '../../platform/windowChrome'
 import type { WorkingSource } from '../../platform/workingSource'
 import type { SourceSayings } from '../appProps'
 import type { SourceChip, SourceWayIn } from '../../platform/sourceProvider'
-import { AgentIcon } from '../../widgets/icons'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
-import IconButton from '@mui/material/IconButton'
 import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Link from '@mui/material/Link'
 import type { ExampleOffer } from '../../projects/examples/catalogue'
 import { BackForward } from '../BackForward'
-import { OverflowMenu } from '../OverflowMenu'
+import { BarEnd } from '../BarEnd'
 import type { ToolbarAgent, ToolbarOverflow } from '../ShellToolbar'
-import { agentTip, Crumbs, crumbsFor, QUIET, SourceChipView, WRAPS } from '../ShellToolbar'
+import { Crumbs, crumbsFor, QUIET, SourceChipView, WRAPS } from '../ShellToolbar'
 import { NewScopeDialog } from './NewScopeDialog'
 import { registerSummary, registerWithin } from './register'
 import type { RegisterRow } from './register'
@@ -167,6 +165,13 @@ export type OrganisationScreenProps = {
   /** The menu, for a host that has no menu bar — where theme and language are. */
   overflow?: ToolbarOverflow
   agent?: ToolbarAgent
+  /**
+   * The open source's provider's own button (`App`'s `SourceBarButton`),
+   * already inside its boundary and the language: at the right end of the
+   * bar, after the agent control and before the chip, on every home. Absent
+   * for every source that ships.
+   */
+  barButton?: ReactNode
   /**
    * Go to another scope's home: a crumb on the bar, or a row's name. The
    * shell's, because which home is up is the shell's state — the same as
@@ -267,7 +272,7 @@ function cardDoors(open: Organisation['open'], at: ScopePath, pages: Organisatio
 export function OrganisationScreen({
   organisation, examples, order, onOrderChange, source, sourceDescription, sourceSayings = {}, sourceChip, chipPanel, chipFace,
   waysIn,
-  overflow, agent, onGoHome, findings, register = [], technology = [], initiatives = 0, localObservations = 0, platformTree,
+  overflow, agent, barButton, onGoHome, findings, register = [], technology = [], initiatives = 0, localObservations = 0, platformTree,
   onOpenRegisterRow, onOpenRegisterPage, onLinkFromRegister, pageRequest, onPageChange,
   writable = ANYWHERE, today, language, s, windowChrome = NO_WINDOW_CHROME,
 }: OrganisationScreenProps) {
@@ -418,7 +423,7 @@ export function OrganisationScreen({
         onGoHome={onGoHome}
         onSettings={writable(home.path) ? () => organisation.editScope(home) : undefined}
         overflow={overflow}
-        agent={agent}
+        agent={agent} barButton={barButton}
         s={s}
         windowChrome={windowChrome}
       />
@@ -821,7 +826,7 @@ function UnreadableScopes({ tree, at, s }: { tree: ScopeSummary; at: ScopePath; 
 function OrganisationBar({
   barRef, tree, home, heading, level, source, sourceDescription, sourceLabelKey, sourceChip, chipPanel, chipFace,
   waysIn = [],
-  onGoHome, onSettings, overflow, agent, s, windowChrome,
+  onGoHome, onSettings, overflow, agent, barButton, s, windowChrome,
 }: {
   /** Measured, so the pages that open under it know how far down to start. */
   barRef: (node: HTMLDivElement | null) => void
@@ -847,6 +852,8 @@ function OrganisationBar({
   onSettings?: () => void
   overflow?: ToolbarOverflow
   agent?: ToolbarAgent
+  /** The open source's provider's own button, already drawn: at the end, before the chip. */
+  barButton?: ReactNode
   s: Translate
   windowChrome: WindowChrome
 }) {
@@ -903,36 +910,7 @@ function OrganisationBar({
           {s(way.labelKey as StringKey)}
         </Button>
       ))}
-      {agent && (
-        <Tooltip title={agentTip(agent.status, s)}>
-          <IconButton
-            size="small"
-            aria-label={agentTip(agent.status, s)}
-            data-testid="agent-glyph"
-            data-state={agent.status.kind}
-            onClick={agent.onOpen}
-            sx={{
-              width: 30, height: 30,
-              color: agent.status.kind === 'connected'
-                ? 'primary.main'
-                : agent.status.kind === 'listening' ? 'text.primary' : 'text.secondary',
-            }}
-          >
-            <AgentIcon filled={agent.status.kind === 'connected'} />
-          </IconButton>
-        </Tooltip>
-      )}
-      {source && atTheEnd && chip}
-      {overflow && (
-        <OverflowMenu
-          themeMode={overflow.themeMode}
-          can={overflow.can}
-          onCommand={overflow.onCommand}
-          sourceEntries={overflow.sourceEntries}
-          onSourceWork={overflow.onSourceWork}
-          s={s}
-        />
-      )}
+      <BarEnd agent={agent} button={barButton} chip={source && atTheEnd ? chip : undefined} overflow={overflow} s={s} />
     </Box>
   )
 }

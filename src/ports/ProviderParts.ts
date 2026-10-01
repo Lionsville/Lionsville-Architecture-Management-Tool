@@ -175,6 +175,25 @@ export type SourceChipPanelProps<Own = unknown> = SourceChromeProps<Own> & { clo
 /** What the chip's own face is handed: the word it goes by now, and whether its panel is open. */
 export type SourceChipFaceProps = { label: string; open: boolean }
 
+/**
+ * What a provider's own button in the bar is handed: which bar it is in —
+ * the workspace's, over an open scope, or a home's — the way about and where
+ * the app is, and what a chrome is handed besides that costs nothing to pass.
+ * Drawn only while this provider's source is the one open, so `own` is always
+ * its own and `session` is the open scope's where one is.
+ */
+export type BarButtonProps<Own = unknown> = {
+  where: 'workspace' | 'organisation'
+  open: SourceOpen
+  screen: Screen
+  movedBy: MovedBy
+  notify: SourceNotify
+  /** The open scope's session, on the workspace's bar; absent on a home. */
+  session?: ScopeSession
+  /** What this provider handed with its parts. */
+  own?: Own
+}
+
 /** What a provider's part of *Connect an agent* is handed. */
 export type SourceAgentPanelProps = { session?: ScopeSession }
 

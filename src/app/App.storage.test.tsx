@@ -25,6 +25,7 @@ import type { Destination, Screen } from '../agent/screen'
 import { answering, heldRepositories } from './testing/heldRepositories'
 import { contentOf, placeWhole } from '../projects/scopeAccess'
 import { renderApp } from './testing/renderShell'
+import { axeFindings } from './testing/axe'
 import { installReactFlowMocks } from '../editor/reactFlowTestSetup'
 import { exampleScopes } from '../adapters/folder/format/exampleFolder'
 
@@ -1273,6 +1274,113 @@ describe('the chip a registered provider names', () => {
         provider: { chip: () => ({ label: 'Anna Berg' }), chipFace: Face },
       })
       await waitFor(() => expect(onBar()?.textContent).toBe('Anna Berg'))
+      expect(screen.queryByTestId('crash-fallback')).toBeNull()
+    } finally {
+      errors.mockRestore()
+    }
+  })
+})
+
+/**
+ * A button of the provider's own in the bar (ADR-0022, amended): on the
+ * workspace's bar and on every home's while its source is the one open,
+ * after the agent control and before the chip, in the language that is on,
+ * told which bar it is in and where the app is — and nothing at all where no
+ * provider drew one, which is every source that ships.
+ */
+describe('the button a registered provider draws in the bar', () => {
+  const elsewhere = { provider: 'elsewhere', name: 'Elsewhere', key: 'one' }
+  const board = laidOut({ id: 'd1', kind: 'layer7' as const, name: 'L7', placements: [] })
+  const tree = [
+    { path: '', model: { name: 'Acme', elements: [], relations: [], diagrams: [] }, activeDiagramId: '', logoLibrary: [] },
+    { path: 'acme', model: { name: 'Domain', elements: [], relations: [], diagrams: [] }, activeDiagramId: '', logoLibrary: [] },
+    { path: 'acme/landscape', model: { name: 'Landscape', elements: [], relations: [], diagrams: [board] }, activeDiagramId: 'd1', logoLibrary: [] },
+  ]
+  registerStrings('en', { 'elsewhere.ring': 'Ring the bell' })
+  registerStrings('nl', { 'elsewhere.ring': 'Bel aanbellen' })
+  const told: { where: string; at: string; session: string }[] = []
+  function Bell({ where, screen: at, session, open }: {
+    where: 'workspace' | 'organisation'; screen: Screen; session?: ScopeSession; open: (to: Destination) => void
+  }) {
+    const { t } = useStrings()
+    told.push({ where, at: at.open?.path ?? `home ${at.home?.path ?? ''}`, session: session?.scope ?? 'none' })
+    return (
+      <button type="button" data-testid="bar-bell" data-where={where} onClick={() => open({ scope: 'acme', page: 'home' })}>
+        {t('elsewhere.ring' as never)}
+      </button>
+    )
+  }
+  const inBar = () => within(screen.getByTestId('shell-toolbar')).queryByTestId('bar-bell')
+  const order = () => {
+    const bar = screen.getByTestId('shell-toolbar')
+    return [...bar.querySelectorAll('[data-testid="agent-glyph"], [data-testid="bar-bell"], [data-testid="working-source"]')]
+      .map((one) => one.getAttribute('data-testid'))
+  }
+
+  it('is on the workspace’s bar and on every home, after the agent and before the chip', async () => {
+    told.length = 0
+    renderApp({
+      repositories: heldRepositories(tree),
+      source: elsewhere,
+      boot: { initialProject: tree[2] },
+      provider: { chip: () => ({ label: 'Anna Berg' }), barButton: Bell },
+    })
+    await waitFor(() => expect(inBar()?.getAttribute('data-where')).toBe('workspace'))
+    expect(inBar()!.tagName).toBe('BUTTON')
+    expect(inBar()!.textContent).toBe('Ring the bell')
+    expect(order()).toEqual(['agent-glyph', 'bar-bell', 'working-source'])
+    expect(told[told.length - 1]).toEqual({ where: 'workspace', at: 'acme/landscape', session: 'acme/landscape' })
+
+    // Pressed, it moves the app the way a chrome does: to a domain's home.
+    fireEvent.click(inBar()!)
+    await screen.findByTestId('organisation-name')
+    await waitFor(() => expect(inBar()?.getAttribute('data-where')).toBe('organisation'))
+    expect(order()).toEqual(['agent-glyph', 'bar-bell', 'working-source'])
+    expect(told[told.length - 1]).toEqual({ where: 'organisation', at: 'home acme', session: 'none' })
+
+    fireEvent.click(screen.getByTestId('crumb-'))
+    await waitFor(() => expect(screen.queryByTestId('crumb-acme')).toBeNull())
+    expect(order()).toEqual(['agent-glyph', 'bar-bell', 'working-source'])
+  })
+
+  it('is drawn in the language that is on', async () => {
+    renderApp({ repositories: heldRepositories(tree), source: elsewhere, provider: { barButton: Bell } }, { language: 'nl' })
+    await waitFor(() => expect(inBar()?.textContent).toBe('Bel aanbellen'))
+  })
+
+  it('is reached by the keyboard, and the bar passes the accessibility check with it', async () => {
+    renderApp({ repositories: heldRepositories(tree), source: elsewhere, provider: { barButton: Bell } })
+    const bell = await waitFor(() => { const one = inBar(); expect(one).not.toBeNull(); return one! })
+    expect(bell.tabIndex).toBe(0)
+    bell.focus()
+    expect(document.activeElement).toBe(bell)
+    expect(await axeFindings()).toEqual([])
+  })
+
+  it('is not there where no provider drew one, and the bar ends where it always did', async () => {
+    renderApp({ repositories: heldRepositories(tree), source: elsewhere, boot: { initialProject: tree[2] } })
+    await screen.findByTestId('crumb-acme')
+    expect(inBar()).toBeNull()
+    // The agent glyph is still a control of the bar itself, with nothing put
+    // around it: the end both bars share draws no box of its own.
+    const bar = screen.getByTestId('shell-toolbar')
+    expect(within(bar).getByTestId('agent-glyph').parentElement).toBe(bar)
+    fireEvent.click(screen.getByTestId('crumb-acme'))
+    await screen.findByTestId('organisation-name')
+    expect(inBar()).toBeNull()
+    const home = screen.getByTestId('shell-toolbar')
+    expect(within(home).getByTestId('agent-glyph').parentElement).toBe(home)
+  })
+
+  it('costs only itself where it throws: the bar stands, with no crash screen in it', async () => {
+    function Broken(): never {
+      throw new Error('no bell today')
+    }
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    try {
+      renderApp({ repositories: heldRepositories(tree), source: elsewhere, boot: { initialProject: tree[2] }, provider: { barButton: Broken } })
+      await screen.findByTestId('crumb-acme')
+      expect(screen.getByTestId('agent-glyph')).toBeTruthy()
       expect(screen.queryByTestId('crash-fallback')).toBeNull()
     } finally {
       errors.mockRestore()

@@ -12,6 +12,7 @@
  * once per render, so a hook below must depend on a field and never on one
  * of these objects, which is new every time.
  */
+import type { ReactNode } from 'react'
 import type { Language, Translate } from '../i18n'
 import type { EditorPreferences } from '../editor'
 import type { SavedFilters } from '../observations/filter'
@@ -83,6 +84,12 @@ export type WorkspaceSource = {
    * sources that ship, whose chip is on the organisation's home alone.
    */
   chip?: ToolbarChip
+  /**
+   * The open source's provider's own button in the bar (`App`'s
+   * `SourceBarButton`), already drawn inside its boundary and the language.
+   * Absent for all three sources that ship.
+   */
+  barButton?: ReactNode
   /**
    * Every change of the open scope travels as a step (`Shell.publishesSteps`),
    * and the scope is not written whole after one. Absent for all three sources

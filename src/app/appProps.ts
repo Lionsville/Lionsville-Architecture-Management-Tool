@@ -28,7 +28,7 @@ import type { Interchange } from '../ports/Interchange'
 import type { Repositories } from '../ports/Repositories'
 import type { UpdateSettingsStore } from '../ports/UpdateSettings'
 import type {
-  RegisteredChrome, RegisteredMenu, ShellDiagnostics, SourceAgentPanel, SourceChipFace,
+  RegisteredChrome, RegisteredMenu, ShellDiagnostics, SourceAgentPanel, SourceBarButton, SourceChipFace,
   SourceChipPanel, SourcePreferencesPanel,
 } from './App'
 import type { ExampleOffer } from '../projects/examples/catalogue'
@@ -230,6 +230,12 @@ export type AppProvider = {
    * registration by the boot.
    */
   chipFace?: SourceChipFace
+  /**
+   * A button of the open source's provider's own in the bar
+   * (`SourceBarButton`), on the workspace's and on every home's. Absent for
+   * every build in this repository. Read from the registration by the boot.
+   */
+  barButton?: SourceBarButton
   /**
    * The other places this build can work from: what each button says, and what
    * pressing it does (`platform/sourceProvider.ts`).

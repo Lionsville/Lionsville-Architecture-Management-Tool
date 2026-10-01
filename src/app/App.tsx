@@ -37,8 +37,8 @@ import { NO_WINDOW_CHROME } from '../platform/windowChrome'
 import { sourceIsReadOnly } from '../platform/workingSource'
 import type { SourceMenuEntry } from '../platform/sourceProvider'
 import type {
-  SourceAgentPanelProps, SourceChipFaceProps, SourceChipPanelProps, SourceChromeProps, SourceMenuContext, SourceOpen,
-  SourcePreferencesPanelProps,
+  BarButtonProps, SourceAgentPanelProps, SourceChipFaceProps, SourceChipPanelProps, SourceChromeProps, SourceMenuContext,
+  SourceOpen, SourcePreferencesPanelProps,
 } from '../ports/ProviderParts'
 import { useMouseHistoryButtons } from './BackForward'
 import { ErrorBoundary } from './ErrorBoundary'
@@ -253,6 +253,27 @@ export type SourceChipPanel = ComponentType<SourceChipPanelProps>
  * chip is the word it always was.
  */
 export type SourceChipFace = ComponentType<SourceChipFaceProps>
+
+/**
+ * A button of the provider's own in the bar, while its source is the one
+ * open: a way into something of the provider's that a person reaches from
+ * wherever they are, without it hanging off the chip's menu or a strip.
+ *
+ * The shell draws it at the right end of both bars — the workspace's and
+ * every home's — after the agent control and before the chip, inside the
+ * theme and the language, in a boundary of its own that draws nothing where
+ * it throws: a button that falls over costs the button, and a crash screen
+ * the size of a bar would cost the bar. It must be a `button` or an `a`, the
+ * elements the bar's drag rule leaves pressable on the desktop, and say its
+ * own accessible name.
+ *
+ * It is handed which bar it is in, the way about and where the app is, and
+ * what a chrome is handed that is cheap to pass (`BarButtonProps`). Asked of
+ * the open source's provider alone, as the chip is: one that answers for
+ * nothing here has nothing to open. On the registration beside `chipFace`,
+ * and core's three register none, so their bars are what they always were.
+ */
+export type SourceBarButton = ComponentType<BarButtonProps>
 
 /**
  * What a provider is told when it is asked what it wants in the menu.
@@ -511,7 +532,8 @@ function useShellParts(props: AppProps): ShellParts {
     homeName: home.name, organisationName: organisation.tree.name, goHome: nav.goHome,
     openScopeAt: nav.openScopeAt, notify: toasts.notify, s, initialHomePage: props.boot.initialHomePage,
     report: (cause) => diagnostics.report({ level: 'warn', where: 'history', message: 'where a place lands could not be read', cause }),
-    watchScreen: (props.provider?.chrome?.length ?? 0) > 0 || props.provider?.chipPanel !== undefined,
+    watchScreen: (props.provider?.chrome?.length ?? 0) > 0 || props.provider?.chipPanel !== undefined
+      || props.provider?.barButton !== undefined,
   })
   useWindowTitle({
     onTitle: host.onTitle, project, groupName: ancestry.groupName, organisationName: organisation.tree.name,

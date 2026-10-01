@@ -25,7 +25,6 @@ import { useState } from 'react'
 import type { MouseEvent, ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
-import IconButton from '@mui/material/IconButton'
 import Popover from '@mui/material/Popover'
 import Tooltip from '@mui/material/Tooltip'
 import useMediaQuery from '@mui/material/useMediaQuery'
@@ -36,19 +35,15 @@ import { ancestorScopes } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
 import type { ScopeSummary } from '../projects/scope'
 import { scopeDisplayName } from '../projects/scopeLabel'
-import type { AgentServerStatus } from '../platform/agentServer'
-import { AgentIcon } from '../widgets/icons'
-import type { HostCommand } from '../platform/hostCommands'
-import type { MenuCapabilities } from '../platform/menu'
-import type { ThemeMode } from '../platform/theme'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
 import type { WindowChrome } from '../platform/windowChrome'
 import type { WorkingSource } from '../platform/workingSource'
-import type { SourceChip, SourceMenuEntry, SourceWorkChanged } from '../platform/sourceProvider'
+import type { SourceChip } from '../platform/sourceProvider'
 import { ActivityMenu } from './ActivityMenu'
 import { BackForward } from './BackForward'
 import type { ActivityEntry, ActivityMenuProps } from './ActivityMenu'
-import { OverflowMenu } from './OverflowMenu'
+import { BarEnd } from './BarEnd'
+import type { ToolbarAgent, ToolbarOverflow } from './BarEnd'
 import { clockTime } from './clockTime'
 
 /**
@@ -401,39 +396,10 @@ export function Crumbs({ crumbs, current, currentPath, onGoHome, s }: {
   )
 }
 
-/**
- * The agent glyph (ADR-0007): the one place the server's state is visible,
- * and how a person finds out the feature exists. Three states, encoded in the
- * glyph and named in its tooltip.
- */
-export type ToolbarAgent = {
-  status: AgentServerStatus
-  onOpen: () => void
-}
-
-/** What the glyph says, per state. */
-export function agentTip(status: AgentServerStatus, s: Translate): string {
-  switch (status.kind) {
-    case 'off': return s('agent.tipOff')
-    case 'listening': return s('agent.tipListening', { port: status.port })
-    case 'connected': return s('agent.tipConnected', { name: status.client.name })
-  }
-}
-
-/** The web's overflow. Absent on the desktop, which has a menu bar. */
-export type ToolbarOverflow = {
-  themeMode: ThemeMode
-  can: MenuCapabilities
-  onCommand: (command: HostCommand) => void
-  /**
-   * What the source providers want in the menu, asked for when it opens
-   * (`App`'s `SourceMenu`). Absent where no provider registered a line, which
-   * is every build in this repository.
-   */
-  sourceEntries?: () => readonly SourceMenuEntry[]
-  /** A provider says its own answer has moved, so an open menu asks again. */
-  onSourceWork?: SourceWorkChanged
-}
+// The glyph and the menu moved to the end both bars share (`BarEnd`); their
+// words are still said here, where the callers of this bar read them.
+export { agentTip } from './BarEnd'
+export type { ToolbarAgent, ToolbarOverflow } from './BarEnd'
 
 export type ShellToolbarProps = {
   designName: string
@@ -534,6 +500,12 @@ export type ShellToolbarProps = {
    * is on the organisation's home and nowhere else, as it always was.
    */
   sourceChip?: ToolbarChip
+  /**
+   * The open source's provider's own button (`App`'s `SourceBarButton`),
+   * already inside its boundary and the language: drawn after the agent
+   * control and before the chip. Absent for every source that ships.
+   */
+  barButton?: ReactNode
   s: Translate
   /**
    * What the window leaves to this bar. On the desktop the macOS title bar is
@@ -557,7 +529,7 @@ export function ShellToolbar({
   designName, crumbs, scopePath, savedAt, status = 'clean', saveFailed = false,
   publishesSteps, sourceStatus, alsoHere = [], language, onGoHome, onOpenSettings, onOpenDocumentation, onOpenDecisions, onOpenObservations, onOpenRoadmap,
   onOpenSearch, activity, recentActivity, activityKept = recentActivity !== undefined,
-  overflow, agent, sourceChip, s, windowChrome = NO_WINDOW_CHROME,
+  overflow, agent, barButton, sourceChip, s, windowChrome = NO_WINDOW_CHROME,
 }: ShellToolbarProps) {
   const [activityMenu, setActivityMenu] = useState<HTMLElement | null>(null)
   // Half a screen: the status collapses to a dot that says the same thing on
@@ -637,41 +609,13 @@ export function ShellToolbar({
         language={language}
         s={s}
       />
-      {agent && (
-        <Tooltip title={agentTip(agent.status, s)}>
-          <IconButton
-            size="small"
-            aria-label={agentTip(agent.status, s)}
-            data-testid="agent-glyph"
-            data-state={agent.status.kind}
-            onClick={agent.onOpen}
-            sx={{
-              width: 30, height: 30,
-              // Dimmed when off, ordinary when listening, the accent when
-              // something is actually editing beside the person.
-              color: agent.status.kind === 'connected'
-                ? 'primary.main'
-                : agent.status.kind === 'listening' ? 'text.primary' : 'text.secondary',
-            }}
-          >
-            <AgentIcon filled={agent.status.kind === 'connected'} />
-          </IconButton>
-        </Tooltip>
-      )}
       {/* The chip at the right end, beside the agent control: what it names
           is who and where the person is, which a bar says last, and the
           same place on every screen it is drawn on. */}
-      {sourceChip && <SourceChipView {...sourceChip} s={s} />}
-      {overflow && (
-        <OverflowMenu
-          themeMode={overflow.themeMode}
-          can={overflow.can}
-          onCommand={overflow.onCommand}
-          sourceEntries={overflow.sourceEntries}
-          onSourceWork={overflow.onSourceWork}
-          s={s}
-        />
-      )}
+      <BarEnd
+        agent={agent} button={barButton} chip={sourceChip && <SourceChipView {...sourceChip} s={s} />}
+        overflow={overflow} s={s}
+      />
     </Box>
   )
 }

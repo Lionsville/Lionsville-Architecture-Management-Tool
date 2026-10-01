@@ -124,6 +124,7 @@ function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSn
         onWork: props.provider?.onWork,
         onSession,
         chip: workspaceChip(parts),
+        barButton: barButtonFor(parts, 'workspace'),
         publishesSteps: props.provider?.publishesSteps ?? false,
         recentActivity: props.provider?.recentActivity,
         unreadableKey: props.provider?.sayings?.unreadableKey,
@@ -201,6 +202,7 @@ function Home({ parts }: { parts: ShellParts }) {
         // its front door too (`homeHistory`).
         overflow={overflowFor(parts, { history: parts.home.history.available, scope: false })}
         agent={parts.agentServer.bar}
+        barButton={barButtonFor(parts, 'organisation')}
         onGoHome={nav.goHome}
         findings={findings.treeFindings}
         register={findings.register}
@@ -301,6 +303,29 @@ function chipFaceFor(parts: ShellParts): ((open: boolean, fallback: ReactNode) =
     >
       <LanguageProvider language={prefs.language}>
         <Face label={sourceLabel(parts.source, s, provider.chip, props.provider?.sayings?.labelKey)} open={open} />
+      </LanguageProvider>
+    </ErrorBoundary>
+  )
+}
+
+/**
+ * The open source's provider's own button in the bar, where it drew one:
+ * inside the language and in a boundary of its own that draws nothing where
+ * it throws — a crash screen in a bar would cost the bar — and handed which
+ * bar it is in, the way about, where the app is and the cheap half of what a
+ * chrome is handed.
+ */
+function barButtonFor(parts: ShellParts, where: 'workspace' | 'organisation'): ReactNode {
+  const { props, services: { prefs, s, toasts }, provider, agent } = parts
+  const Button = provider.BarButton
+  if (!Button) return undefined
+  return (
+    <ErrorBoundary where="sourceBarButton" diagnostics={props.diagnostics} controls={props.hostControls} s={s} fallback={null}>
+      <LanguageProvider language={prefs.language}>
+        <Button
+          where={where} open={agent.openSomewhere} screen={agent.screen ?? agent.screenNow()} movedBy={agent.movedBy}
+          notify={toasts.notify} session={where === 'workspace' ? provider.openScope : undefined} own={provider.own}
+        />
       </LanguageProvider>
     </ErrorBoundary>
   )

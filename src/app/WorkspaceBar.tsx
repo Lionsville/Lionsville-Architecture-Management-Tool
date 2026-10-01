@@ -83,6 +83,7 @@ export function WorkspaceBar({ parts, toolbarRef }: {
         activityKept={keptLog !== undefined}
         agent={props.agent.bar}
         sourceChip={props.source.chip}
+        barButton={props.source.barButton}
         {...(props.source.publishesSteps !== undefined ? { publishesSteps: props.source.publishesSteps } : {})}
         sourceStatus={props.source.status !== undefined}
         s={s}

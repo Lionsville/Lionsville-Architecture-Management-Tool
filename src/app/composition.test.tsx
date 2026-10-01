@@ -21,8 +21,8 @@ import type { SourceProvider } from '../platform/sourceProvider'
 import { WORKING_FILE_INTERCHANGE } from '../adapters/folder/format/interchange'
 import {
   interchangeLoaded, openSource, registerSourceProvider, registeredChrome, registeredConnects,
-  registeredMenus, sourceAgentPanel, sourceChip, sourceChipFace, sourceChipPanel, sourceDescription, sourceProvider,
-  sourceSayings,
+  registeredMenus, sourceAgentPanel, sourceBarButton, sourceChip, sourceChipFace, sourceChipPanel, sourceDescription,
+  sourceProvider, sourceSayings,
   type Shell, type SourceBase, type SourceParts,
 } from './composition'
 
@@ -608,6 +608,28 @@ describe('sourceChipFace', () => {
     expect(sourceChipFace(IN_MEMORY)).toBeUndefined()
     expect(sourceChipFace({ provider: 'folder', name: 'work', key: '/work' })).toBeUndefined()
     expect(sourceChipFace({ provider: 'lined', name: 'Lined', key: 'one' })).toBeUndefined()
+  })
+})
+
+/** A button in the bar: the open source's provider's own, and nobody else's. */
+describe('sourceBarButton', () => {
+  function Ring() {
+    return <button type="button">Ring</button>
+  }
+
+  it('is the provider\u2019s own for a source it answers for, and nothing otherwise', () => {
+    registerSourceProvider({
+      kind: 'buttoned',
+      barButton: Ring,
+      open: () => ({
+        repositories: memoryRepositories(),
+        source: { provider: 'buttoned', name: 'Buttoned', key: 'one' },
+      }),
+    })
+    expect(sourceBarButton({ provider: 'buttoned', name: 'Buttoned', key: 'one' })).toBe(Ring)
+    expect(sourceBarButton(IN_MEMORY)).toBeUndefined()
+    expect(sourceBarButton({ provider: 'folder', name: 'work', key: '/work' })).toBeUndefined()
+    expect(sourceBarButton({ provider: 'faced', name: 'Faced', key: 'one' })).toBeUndefined()
   })
 })
 

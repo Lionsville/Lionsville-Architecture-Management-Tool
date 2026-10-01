@@ -65,11 +65,12 @@ import type {
 import type { StringKey } from '../i18n/strings'
 import type { ComponentType } from 'react'
 import type {
-  RegisteredChrome, RegisteredMenu, SourceAgentPanel, SourceChipFace, SourceChipPanel, SourceMenu,
+  RegisteredChrome, RegisteredMenu, SourceAgentPanel, SourceBarButton, SourceChipFace, SourceChipPanel, SourceMenu,
   SourcePreferencesPanel,
 } from './App'
 import type {
-  ProviderParts, SourceChipPanelProps, SourceChromeProps, SourceDestination, SourcePreferencesPanelProps,
+  BarButtonProps, ProviderParts, SourceChipPanelProps, SourceChromeProps, SourceDestination,
+  SourcePreferencesPanelProps,
 } from '../ports/ProviderParts'
 import type { Repositories } from '../ports/Repositories'
 import type { Interchange } from '../ports/Interchange'
@@ -227,6 +228,12 @@ export type RegisteredSourceProvider<Opening = never, Own = unknown> =
      * three register none.
      */
     readonly chipFace?: SourceChipFace
+    /**
+     * A button of this provider's own in the bar, drawn while its source is
+     * the one open ({@link SourceBarButton}). A component, so here beside
+     * `chipFace`. Core's three register none.
+     */
+    readonly barButton?: ComponentType<BarButtonProps<Own>>
     /**
      * What this provider puts inside *Preferences* about its own source
      * (`App`'s `SourcePreferencesPanel`), handed what it handed with its
@@ -439,6 +446,17 @@ export function sourceConnected(source: WorkingSource): (() => boolean) | undefi
  */
 export function sourceChipFace(source: WorkingSource): SourceChipFace | undefined {
   return sourceProvider(source.provider)?.chipFace
+}
+
+/**
+ * The open source's provider's own button in the bar, where it drew one;
+ * nothing otherwise, and the bar is what it always was.
+ *
+ * The open source's alone, for the reason {@link sourceChip} is: a button of
+ * a provider that answers for nothing here would be a way into nowhere.
+ */
+export function sourceBarButton(source: WorkingSource): SourceBarButton | undefined {
+  return sourceProvider(source.provider)?.barButton
 }
 
 /**
