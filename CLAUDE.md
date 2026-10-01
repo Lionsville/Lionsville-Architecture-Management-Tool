@@ -6,7 +6,7 @@ Layer-7 application landscape and the C4 container diagrams under it. **There is
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **7459 tests** and one of every config. The
+One codebase, in modules, with **7478 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -56,7 +56,7 @@ the two categories above.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 7459 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 7478 tests. Run it
 after every change. The tests run with coverage on, and `build/coverage.ts`
 prints one line per module of the import matrix and fails below that module's
 floor — the level it was measured at, written down so it can only go up.
@@ -237,6 +237,9 @@ src/editor/       The canvas and everything docked to it. React.
                     useEditorState    the selection, and gestures said as commands
                     useShownDays      the day a board is looked at, which is a
                                       window's and never a command (ADR-0027)
+                    useReadingLayout  what a reader is shown of a board nobody
+                                      has laid out: the settling pass, held on
+                                      the screen and never a step
                     testing/          editorHost: the editor over a real reducer
 src/documentation/  Descriptions as documents.
                     documentation     outline, element links, the template

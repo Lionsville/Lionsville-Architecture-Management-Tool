@@ -804,116 +804,10 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         geometry(placeOn(diagram.id, placements));
       },
 
-      applyTidyResult(
-        { placements, domainGroups, canvas, edgeRoutes, partial, routingError },
-        amend, meta,
-      ) {
+      applyTidyResult(result, amend, meta) {
         const diagram = currentDiagram();
         if (!diagram) return tokenRef.current;
-        const commands: Command[] = [];
-        if (placements.length > 0) {
-          commands.push(placeOn(diagram.id, placements));
-        }
-        // Layer7 only: write the group rects AND the grown canvas in ONE
-        // layoutConfig object so they land in a single undo step. Group rects
-        // merge by name — create-OR-resize: a tidy rect whose name already
-        // exists resizes that rect in place; a tidy rect with a new name is
-        // appended (Tidy emits a rect for every group with members). Rects Tidy
-        // did NOT produce (member-less / other groups) are preserved untouched.
-        // The canvas is written even when there are no domainGroups, so a
-        // landscape with only loose apps still resizes/shrinks the board.
-        // The board's own numbers, as ONE patch: the grown canvas, and the
-        // flag that says a machine wrote this geometry. A whole-board pass
-        // that placed anything is the layout that flag asks for, so the flag
-        // goes in the SAME step as the placements — never in a change of its
-        // own, which a session that carries its steps elsewhere would not
-        // carry, leaving the board to be laid out again on every open. A
-        // partial pass (one group) is not the board's layout and leaves the
-        // flag alone. Deleted rather than set to false: a saved file should
-        // look like a hand-written one.
-        const board: BoardPatch = {};
-        const settles = placements.length > 0 && !partial && diagram.geometry?.needsLayout === true;
-        if (settles) board.needsLayout = undefined;
-        if (diagram.kind === 'layer7') {
-          // Boxes merge by id — create-OR-resize; a box for a group the board
-          // does not hold is ignored by the reducer. The canvas is written even
-          // when there are no boxes, so a landscape with only loose apps still
-          // resizes the board.
-          if (domainGroups && domainGroups.length > 0) {
-            commands.push({ type: 'box.set', diagramId: diagram.id, boxes: domainGroups });
-          }
-          if (canvas) board.canvas = canvas;
-        }
-        if (Object.keys(board).length > 0) commands.push({ type: 'board.set', diagramId: diagram.id, patch: board });
-        // U-edge-2: Tidy carries ELK's computed orthogonal edge routes, so
-        // tidied edges route AROUND the relaid-out nodes instead of cutting
-        // through them. For every edge ELK routed with bends, PERSIST those
-        // waypoints (resetting the label anchor so the chip re-centres on the
-        // new polyline). Every OTHER manual route on the diagram — an edge ELK
-        // routed straight, or a cross-zone/unrouted edge ELK never touched — is
-        // CLEARED back to default floating routing (U1 behaviour), since Tidy
-        // reflowed the nodes under it. All folded into THIS step so the whole
-        // Tidy stays one undo step.
-        const rows: EdgeRoute[] = [];
-        if (edgeRoutes) {
-          const routeById = new Map(edgeRoutes.map((r) => [r.relationId, r]));
-          // An entry SETS content when it has waypoints, a pinned label — which
-          // covers a straight (waypoint-less) cross-zone edge whose chip must
-          // clear a group box — or an explicit pin re-emitted by the pass.
-          // Everything else is a straight reflow to clear.
-          const sets = hasRouteContent;
-          // There is no second "keep the manual ones" filter here any more, and
-          // its absence is the point. `pinAnchorPoints` is enforced inside the
-          // routing pass, which re-emits a preserved route verbatim — so by the
-          // time the result reaches this step it already carries the right
-          // geometry and writing it back is a no-op. Two mechanisms for one rule
-          // is how the label-only gap survived as long as it did; this step now
-          // just persists whatever the pass decided.
-          for (const r of edgeRoutes) {
-            if (!sets(r)) continue;
-            rows.push({
-              relationId: r.relationId,
-              waypoints: r.waypoints,
-              // Tidy may pin a routed edge's label clear of a group box; otherwise
-              // reset (undefined) so the chip re-centres on the new polyline.
-              labelPosition: r.labelPosition,
-              // Whatever the routing pass said. It is `auto` for geometry the
-              // router computed and the STORED value for a route re-emitted
-              // verbatim, so a preserved manual route stays manual through here.
-              source: r.source,
-              pinned: r.pinned,
-              // The sides the pass routed under, carried back so the next one
-              // routes under them too.
-              ...routeSides(r),
-            });
-          }
-          for (const route of edgeRoutesOf(diagram)) {
-            const r = routeById.get(route.relationId);
-            if (r && sets(r)) continue; // already set above
-            // A PARTIAL result (one group) reflowed only its own members, so
-            // it may only clear the routes it explicitly listed — every other
-            // manual route on the board is still valid and stays.
-            if (partial && !r) continue;
-            rows.push(clearedRoute(route));
-          }
-        } else if (!partial && routingError === undefined) {
-          // No routes supplied by a pass that did not FAIL to produce them —
-          // a direct call. The board was reflowed, so every stored route is
-          // geometry measured against positions that no longer exist and is
-          // cleared back to default floating routing.
-          //
-          // The `routingError` guard is the load-bearing half. When the router
-          // threw, `routeOrDegrade` drops the routes and keeps the placements,
-          // and this branch used to clear the board's stored routes anyway —
-          // contradicting what both `TidyResult.routingError` and
-          // `tidy.routingFailure.test.ts` say happens. That is the worst moment
-          // to discard someone's bends: we could not compute a replacement, so
-          // destroying what is there trades "routes are stale" for "routes are
-          // gone", and pinning them would not have saved them either, since a
-          // pass that produced nothing preserved nothing.
-          for (const route of edgeRoutesOf(diagram)) rows.push(clearedRoute(route));
-        }
-        commands.push(...routeCommands(diagram.id, rows));
+        const commands = tidyCommands(diagram, result);
         if (commands.length === 0) return tokenRef.current;
         // `dispatch`, never `geometry`: a tidy — and an auto-layout, which is
         // one — routes as its own final step, so bumping here would queue a
@@ -1591,6 +1485,131 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
     canUndo: props.editing.history.canUndo,
     canRedo: props.editing.history.canRedo,
   };
+}
+
+/**
+ * The commands a layout pass's result lands as on this board: the
+ * placements, the group boxes and the grown canvas, the flag's clearing when
+ * the pass is the board's layout, and the routes — one transaction's worth,
+ * which `applyTidyResult` sends as one step.
+ *
+ * Pure, and outside the hook, because a reader is shown the same result
+ * without a step (`useReadingLayout`): the board on a reader's screen is
+ * worked out from these commands by the same reducer, so the two cannot
+ * disagree about what a pass leaves behind.
+ */
+export function tidyCommands(diagram: DesignDiagram, result: TidyResult): Command[] {
+  const { placements, domainGroups, canvas, partial } = result;
+  const commands: Command[] = [];
+  if (placements.length > 0) {
+    commands.push(placeOn(diagram.id, placements));
+  }
+  // Layer7 only: write the group rects AND the grown canvas in ONE
+  // layoutConfig object so they land in a single undo step. Group rects
+  // merge by name — create-OR-resize: a tidy rect whose name already
+  // exists resizes that rect in place; a tidy rect with a new name is
+  // appended (Tidy emits a rect for every group with members). Rects Tidy
+  // did NOT produce (member-less / other groups) are preserved untouched.
+  // The canvas is written even when there are no domainGroups, so a
+  // landscape with only loose apps still resizes/shrinks the board.
+  // The board's own numbers, as ONE patch: the grown canvas, and the
+  // flag that says a machine wrote this geometry. A whole-board pass
+  // that placed anything is the layout that flag asks for, so the flag
+  // goes in the SAME step as the placements — never in a change of its
+  // own, which a session that carries its steps elsewhere would not
+  // carry, leaving the board to be laid out again on every open. A
+  // partial pass (one group) is not the board's layout and leaves the
+  // flag alone. Deleted rather than set to false: a saved file should
+  // look like a hand-written one.
+  const board: BoardPatch = {};
+  const settles = placements.length > 0 && !partial && diagram.geometry?.needsLayout === true;
+  if (settles) board.needsLayout = undefined;
+  if (diagram.kind === 'layer7') {
+    // Boxes merge by id — create-OR-resize; a box for a group the board
+    // does not hold is ignored by the reducer. The canvas is written even
+    // when there are no boxes, so a landscape with only loose apps still
+    // resizes the board.
+    if (domainGroups && domainGroups.length > 0) {
+      commands.push({ type: 'box.set', diagramId: diagram.id, boxes: domainGroups });
+    }
+    if (canvas) board.canvas = canvas;
+  }
+  if (Object.keys(board).length > 0) commands.push({ type: 'board.set', diagramId: diagram.id, patch: board });
+  // U-edge-2: Tidy carries ELK's computed orthogonal edge routes, so
+  // tidied edges route AROUND the relaid-out nodes instead of cutting
+  // through them. For every edge ELK routed with bends, PERSIST those
+  // waypoints (resetting the label anchor so the chip re-centres on the
+  // new polyline). Every OTHER manual route on the diagram — an edge ELK
+  // routed straight, or a cross-zone/unrouted edge ELK never touched — is
+  // CLEARED back to default floating routing (U1 behaviour), since Tidy
+  // reflowed the nodes under it. All folded into THIS step so the whole
+  // Tidy stays one undo step.
+  commands.push(...routeCommands(diagram.id, tidyRouteRows(diagram, result)));
+  return commands;
+}
+
+/** The route rows a whole-board or one-group pass leaves; see `tidyCommands`. */
+function tidyRouteRows(diagram: DesignDiagram, { edgeRoutes, partial, routingError }: TidyResult): EdgeRoute[] {
+  const rows: EdgeRoute[] = [];
+  if (edgeRoutes) {
+    const routeById = new Map(edgeRoutes.map((r) => [r.relationId, r]));
+    // An entry SETS content when it has waypoints, a pinned label — which
+    // covers a straight (waypoint-less) cross-zone edge whose chip must
+    // clear a group box — or an explicit pin re-emitted by the pass.
+    // Everything else is a straight reflow to clear.
+    const sets = hasRouteContent;
+    // There is no second "keep the manual ones" filter here any more, and
+    // its absence is the point. `pinAnchorPoints` is enforced inside the
+    // routing pass, which re-emits a preserved route verbatim — so by the
+    // time the result reaches this step it already carries the right
+    // geometry and writing it back is a no-op. Two mechanisms for one rule
+    // is how the label-only gap survived as long as it did; this step now
+    // just persists whatever the pass decided.
+    for (const r of edgeRoutes) {
+      if (!sets(r)) continue;
+      rows.push({
+        relationId: r.relationId,
+        waypoints: r.waypoints,
+        // Tidy may pin a routed edge's label clear of a group box; otherwise
+        // reset (undefined) so the chip re-centres on the new polyline.
+        labelPosition: r.labelPosition,
+        // Whatever the routing pass said. It is `auto` for geometry the
+        // router computed and the STORED value for a route re-emitted
+        // verbatim, so a preserved manual route stays manual through here.
+        source: r.source,
+        pinned: r.pinned,
+        // The sides the pass routed under, carried back so the next one
+        // routes under them too.
+        ...routeSides(r),
+      });
+    }
+    for (const route of edgeRoutesOf(diagram)) {
+      const r = routeById.get(route.relationId);
+      if (r && sets(r)) continue; // already set above
+      // A PARTIAL result (one group) reflowed only its own members, so
+      // it may only clear the routes it explicitly listed — every other
+      // manual route on the board is still valid and stays.
+      if (partial && !r) continue;
+      rows.push(clearedRoute(route));
+    }
+  } else if (!partial && routingError === undefined) {
+    // No routes supplied by a pass that did not FAIL to produce them —
+    // a direct call. The board was reflowed, so every stored route is
+    // geometry measured against positions that no longer exist and is
+    // cleared back to default floating routing.
+    //
+    // The `routingError` guard is the load-bearing half. When the router
+    // threw, `routeOrDegrade` drops the routes and keeps the placements,
+    // and this branch used to clear the board's stored routes anyway —
+    // contradicting what both `TidyResult.routingError` and
+    // `tidy.routingFailure.test.ts` say happens. That is the worst moment
+    // to discard someone's bends: we could not compute a replacement, so
+    // destroying what is there trades "routes are stale" for "routes are
+    // gone", and pinning them would not have saved them either, since a
+    // pass that produced nothing preserved nothing.
+    for (const route of edgeRoutesOf(diagram)) rows.push(clearedRoute(route));
+  }
+  return rows;
 }
 
 /**

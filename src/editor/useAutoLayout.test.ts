@@ -83,8 +83,8 @@ describe('useAutoLayout — when it runs', () => {
   });
 
   it('never runs read-only', async () => {
-    // A design version is an immutable snapshot; it must not spend a quarter of a
-    // second of somebody's main thread computing a layout it will throw away.
+    // A reader makes no step: what a reader is shown of such a board is the
+    // same pass held on the screen (`useReadingLayout.test.ts`), never this one.
     const { run } = render({ readOnly: true });
     await new Promise((r) => setTimeout(r, 10));
     expect(run).not.toHaveBeenCalled();

@@ -115,9 +115,11 @@ function EditorBody(props: SolutionDesignEditorProps) {
 
 /**
  * Every piece of the body's state, one hook per concern, composed in the
- * order they read each other: the view settings and the board's look first,
- * the requests and the deletes over the selection, the layout passes, the
- * export over those, and the doors a host and the keyboard come in by last.
+ * order they read each other: the view settings first, the layout passes —
+ * which say where a reader is shown the cards of a board nobody has laid out
+ * — and the board's look over what they show, the requests and the deletes
+ * over the selection, the export over those, and the doors a host and the
+ * keyboard come in by last.
  */
 function useEditorParts(props: SolutionDesignEditorProps) {
   const theme = useTheme();
@@ -127,17 +129,17 @@ function useEditorParts(props: SolutionDesignEditorProps) {
   const readOnly = props.editing.readOnly ?? false;
   const activeDiagram = state.model.diagrams.find((d) => d.id === props.document.activeDiagramId);
   const view = useViewSettings(props.preferences);
+  const layout = useLayoutActions({
+    props, state, diagram: activeDiagram, readOnly,
+    tidyOptions: view.tidyOptions, groupTidyOptions: view.groupTidyOptions, t,
+  });
   const board = useBoardView({
-    model: state.model, diagram: activeDiagram, viewing: props.document.viewing,
+    model: state.model, diagram: layout.shown, viewing: props.document.viewing,
     platformTree: props.ownership?.platformTree, theme, actions: state.actions,
   });
   const requests = useCanvasRequests(props, state, view.setInspectorCollapsed);
   const docs = useDocumentation(props, state, activeDiagram);
   const deletes = useDeleteRequests(state, activeDiagram, readOnly);
-  const layout = useLayoutActions({
-    props, state, diagram: activeDiagram, readOnly,
-    tidyOptions: view.tidyOptions, groupTidyOptions: view.groupTidyOptions, t,
-  });
   const exports = useExportDialog({
     props, wrapperRef, theme, showEdgeLabels: view.showEdgeLabels, reportLayoutError: layout.reportLayoutError,
     titleBlock: {

@@ -33,8 +33,14 @@ import type { LayoutAction } from './EditorToolbar';
  * seed that shipped real coordinates with the flag still on — is a board
  * somebody may already have looked at and arranged, and relaying it on every
  * open, as the step of whoever happened to open it, rearranged it each time.
- * Where both say "nobody has placed anything here", nothing is lost. Nor is it
- * ever run for a reader: a read-only session must not change what it shows.
+ * Where both say "nobody has placed anything here", nothing is lost
+ * ({@link awaitsLayout} is the two of them, and a member to place).
+ *
+ * Nor is it ever run for a reader: a read-only session makes no step. What a
+ * reader is shown of such a board is the same pass held on the screen and
+ * landed nowhere (`useReadingLayout`) — without it, every member answers
+ * (0, 0) until somebody who may write the board has opened it, and the reader
+ * sees the whole board on one point.
  *
  * The pass that runs is marked as the editor's own and carries the flag's
  * clearing in the same step (`useLayoutActions`), so the two travel together.
@@ -93,6 +99,20 @@ export function settlingOptions(options: TidyOptions): TidyOptions {
 }
 
 /**
+ * Whether this board is one nobody has laid out: a machine wrote it and said so
+ * (`needsLayout`), it has members to place, and none of them has a position of
+ * its own yet. The writer's settling pass and the reader's shown one both ask
+ * exactly this, so the two cannot disagree about which boards they are for.
+ */
+export function awaitsLayout(diagram: DesignDiagram): boolean {
+  if (diagram.geometry?.needsLayout !== true) return false;
+  // An empty diagram has nothing to lay out. `tidyLayer7` returns [] for it
+  // without throwing, so this is politeness rather than safety.
+  if (diagram.members.length === 0) return false;
+  return !hasStoredPosition(diagram);
+}
+
+/**
  * Whether any member of this board already has a position of its own.
  *
  * A position for an element no longer on the board does not count: it is a
@@ -127,11 +147,7 @@ export function useAutoLayout({
 
   useEffect(() => {
     if (!diagram || readOnly || busy !== undefined) return;
-    if (diagram.geometry?.needsLayout !== true) return;
-    // An empty diagram has nothing to lay out. `tidyLayer7` returns [] for it
-    // without throwing, so this is politeness rather than safety.
-    if (diagram.members.length === 0) return;
-    if (hasStoredPosition(diagram)) return;
+    if (!awaitsLayout(diagram)) return;
     if (attemptedRef.current.has(diagram.id)) return;
 
     attemptedRef.current.add(diagram.id);

@@ -13,9 +13,9 @@
 import { useCallback, useState } from 'react';
 import { useReactFlow, useStoreApi } from '@xyflow/react';
 import type { CommandMeta } from '../model/commands';
-import type { DesignDiagram } from '../model/types';
+import type { DesignDiagram, DesignModel } from '../model/types';
 import type { Translate } from '../i18n';
-import { tidyContainer, tidyGroup, tidyLayer7, type TidyOptions } from '../layout/tidy';
+import { tidyContainer, tidyGroup, tidyLayer7, type TidyOptions, type TidyResult } from '../layout/tidy';
 import { MAX_CONNECTORS_PER_TIER, type SkippedTier } from '../layout/libavoidRouter';
 import { isLayoutRefusal, MAX_TIDY_NODES } from '../layout/elkLayout';
 import type { StringKey } from '../i18n/strings';
@@ -24,6 +24,7 @@ import type { EditorState } from './useEditorState';
 import type { SolutionDesignEditorProps } from './props';
 import { FIT_ALL, viewportOverNodes } from './canvas/fitAll';
 import { useAutoLayout } from './useAutoLayout';
+import { laidOutForReading, useReadingLayout } from './useReadingLayout';
 import { useRouteActions } from './useRouteActions';
 
 /**
@@ -88,7 +89,8 @@ export function useLayoutActions(args: LayoutArgs) {
   const [busy, setBusy] = useState<LayoutAction | undefined>(undefined);
   const reports = useLayoutReports(props.layout?.onError, args.t);
   const running = { busy, setBusy, ...reports };
-  const handleTidy = useTidy(args, running);
+  const frameBoard = useFrameBoard();
+  const handleTidy = useTidy(args, running, frameBoard);
   const handleTidyGroup = useTidyGroup(args, running);
 
   /**
@@ -115,8 +117,21 @@ export function useLayoutActions(args: LayoutArgs) {
     onSettled: props.layout?.onSettled,
   });
 
+  /**
+   * The same pass for a reader, who makes no step: held on the screen, framed
+   * like the writer's, and landed nowhere (`useReadingLayout`). `shown` is the
+   * board to draw — the stored one everywhere else.
+   */
+  const shown = useReadingLayout({
+    diagram,
+    readOnly,
+    options: tidyOptions,
+    lay: useLayForReading(args, reports),
+    onShown: frameBoard,
+  });
+
   const routes = useRouteActions(args, running);
-  return { busy, ...reports, handleTidy, handleTidyGroup, ...routes };
+  return { busy, ...reports, handleTidy, handleTidyGroup, ...routes, shown };
 }
 
 export type LayoutActions = ReturnType<typeof useLayoutActions>;
@@ -127,9 +142,14 @@ export type LayoutRunning = LayoutReports & {
   setBusy(busy: LayoutAction | undefined): void;
 };
 
-function useTidy(args: LayoutArgs, running: LayoutRunning) {
-  const { state, diagram, tidyOptions, t } = args;
-  const { busy, setBusy, reportLayoutError, reportSkippedTiers } = running;
+/** A whole-board pass over this board, by its kind. */
+function tidyBoard(model: DesignModel, diagram: DesignDiagram, options: TidyOptions): Promise<TidyResult> {
+  return diagram.kind === 'layer7'
+    ? tidyLayer7(model, diagram, options)
+    : tidyContainer(model, diagram, options);
+}
+
+function useFrameBoard() {
   const { fitView, getNodes, setViewport } = useReactFlow();
   const flow = useStoreApi();
 
@@ -145,7 +165,7 @@ function useTidy(args: LayoutArgs, running: LayoutRunning) {
    * zoomed in on a corner. `fitView` stays as the answer only where there is
    * no pane size to work from.
    */
-  const frameBoard = useCallback(() => {
+  return useCallback(() => {
     requestAnimationFrame(() => requestAnimationFrame(() => {
       const { width, height } = flow.getState();
       const viewport = viewportOverNodes(getNodes(), width, height);
@@ -153,6 +173,11 @@ function useTidy(args: LayoutArgs, running: LayoutRunning) {
       else void fitView({ ...FIT_ALL, duration: 300 });
     }));
   }, [flow, getNodes, setViewport, fitView]);
+}
+
+function useTidy(args: LayoutArgs, running: LayoutRunning, frameBoard: () => void) {
+  const { state, diagram, tidyOptions, t } = args;
+  const { busy, setBusy, reportLayoutError, reportSkippedTiers } = running;
 
   /**
    * `override` exists so the settling pass can force the pin options off — see
@@ -169,9 +194,7 @@ function useTidy(args: LayoutArgs, running: LayoutRunning) {
     const options = override ?? tidyOptions;
     setBusy('tidy');
     try {
-      const result = diagram.kind === 'layer7'
-        ? await tidyLayer7(state.model, diagram, options)
-        : await tidyContainer(state.model, diagram, options);
+      const result = await tidyBoard(state.model, diagram, options);
       // Applied FIRST, and applied even when routing failed: `routingError`
       // means the placements are good and only the routes are missing.
       state.actions.applyTidyResult(result, undefined, meta);
@@ -191,6 +214,32 @@ function useTidy(args: LayoutArgs, running: LayoutRunning) {
     }
   }, [diagram, busy, state.model, state.actions, frameBoard, tidyOptions, reportLayoutError, reportSkippedTiers, t, setBusy]);
   return handleTidy;
+}
+
+/**
+ * The reader's pass (`useReadingLayout`): the writer's settling pass over the
+ * model as it stood when it started, said the way an unattended pass says
+ * things through the same channel, and answered with the board to show
+ * rather than landed. Rethrows, so nothing is shown for a pass that produced
+ * nothing.
+ */
+function useLayForReading(args: LayoutArgs, reports: LayoutReports) {
+  const { state, t } = args;
+  const { reportLayoutError, reportSkippedTiers } = reports;
+  return useCallback(async (diagram: DesignDiagram, options: TidyOptions) => {
+    const model = state.model;
+    try {
+      const result = await tidyBoard(model, diagram, options);
+      if (result.routingError !== undefined) {
+        reportLayoutError(t('error.tidyRoutingUnattended'), result.routingError);
+      } else reportSkippedTiers(result.skipped);
+      return laidOutForReading(model, diagram, result);
+    } catch (error) {
+      const message = layoutFailureMessage(error, 'error.tidyUnattended', t);
+      if (message !== undefined) reportLayoutError(message, error);
+      throw error;
+    }
+  }, [state.model, reportLayoutError, reportSkippedTiers, t]);
 }
 
 function useTidyGroup(args: LayoutArgs, running: LayoutRunning) {
