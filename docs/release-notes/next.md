@@ -34,6 +34,16 @@ home left the page up over them. It now closes, as it does when Back goes to
 the home, and a register an agent opened no longer comes back over the home
 when you return to it from a scope.
 
+**A view nobody has laid out yet is laid out for a reader too.** A view the
+app or another tool made with no positions in it — a new container view, an
+import, an example — is laid out the first time somebody opens it, and that
+layout is saved as their step. Somebody who may only read the view got there
+first and saw every box on one point, and fitting the view only zoomed in on
+the pile, until somebody who may change it had opened it. Now the reader's
+screen lays it out the same way, and nothing is saved: the first person who
+may change the view still lays it out for everyone, and once they have, the
+reader sees their layout.
+
 **For a build composed from this one.** A source's provider may draw a button
 of its own at the right end of the bar while its source is open (`barButton`);
 offer the person an action on a problem the app ran into, drawn on the crash
