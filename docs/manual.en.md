@@ -512,8 +512,9 @@ place is a step, whether you made it with the tree, a crumb, a card, a search
 hit or a link on a page, or an agent made it for you. So after an agent has
 opened a scope, Back takes you to where you were. What is selected, the day a
 board is shown on, a filter and an open dialog are not part of a place, and
-choosing another record on the decisions or the observations page is not a
-step either. Back is not undo: it moves the screen and changes nothing, and
+choosing another record on the decisions or the observations page, or another
+tab of the observations page, is not a step either: the address names the tab
+that is up, so a reload stays on it. Back is not undo: it moves the screen and changes nothing, and
 ⌘Z is still how a change is taken back.
 
 **In a browser** the browser's own Back and Forward do this, with their keys
@@ -1477,8 +1478,13 @@ Your coding agent — Claude Code, Codex, Cursor or any other MCP client — can
 connect to the desktop app (*Connect an agent…* on the bar, or the glyph
 beside the menu) and work in the organisation while you watch. It reads
 every scope, and it can move the app the way you do: open a scope, switch to
-a board or a sheet, open the decisions or the roadmap, look at a report. It
-does not need you to open anything for it first.
+a board or a sheet, open the decisions or the roadmap, open the observations
+on the Register, Analysis or Solutions tab, look at a report. It can open a
+board, a sheet, a map or a technology landscape with one thing selected on
+it, where that view draws it. It does not need you to open anything for it
+first, and opening a view never makes one: where a scope has no view of the
+kind it asks for, the app goes to that scope's home. Whatever it opens is
+what you see, so a record's page that was open over the board closes.
 
 While it is moving the app or changing the model, a strip along the bottom
 of the window says so, with the agent's name and — when it said — what it is

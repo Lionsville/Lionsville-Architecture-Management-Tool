@@ -546,7 +546,8 @@ pagina, of dat een agent hem voor je zette. Heeft een agent een onderdeel
 geopend, dan brengt Terug je naar waar je was. Wat geselecteerd is, de dag
 waarop een bord wordt getoond, een filter en een open dialoog horen niet bij
 een plek, en een ander record kiezen op de pagina met besluiten of
-waarnemingen is ook geen stap. Terug is geen ongedaan maken: het verplaatst
+waarnemingen, of een ander tabblad van de waarnemingen, is ook geen stap: het
+adres noemt het tabblad dat open is, dus herladen blijft daarop. Terug is geen ongedaan maken: het verplaatst
 het scherm en verandert niets, en ⌘Z blijft hoe je een wijziging terugdraait.
 
 **In een browser** doen de knoppen Terug en Vooruit van de browser dit, met
@@ -1583,7 +1584,14 @@ verbinding maken met de desktop-app (*Een agent koppelen…* op de balk, of
 het symbool naast het menu) en in de organisatie werken terwijl u meekijkt.
 De agent leest elke scope en kan de app bewegen zoals u dat doet: een scope
 openen, naar een bord of een blad gaan, de besluiten of de roadmap openen,
-een rapport bekijken. U hoeft er niets voor open te zetten.
+de waarnemingen openen op het tabblad Register, Analyse of Oplossingen, een
+rapport bekijken. Hij kan een bord, een blad, een kaart of een
+technologielandschap openen met één ding daarop geselecteerd, als die
+weergave het tekent. U hoeft er niets voor open te zetten, en een weergave
+openen maakt er nooit een: heeft een scope geen weergave van de soort die de
+agent vraagt, dan gaat de app naar het startscherm van die scope. Wat hij
+opent, ziet u ook, dus de pagina van een record die over het bord open stond,
+gaat dicht.
 
 Zolang de agent de app beweegt of het model wijzigt, zegt een strook onder
 in het venster dat, met de naam van de agent en — als die dat heeft gezegd —

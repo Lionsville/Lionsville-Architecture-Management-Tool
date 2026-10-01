@@ -16,3 +16,26 @@ pages on a Mac trackpad. Choosing another record on the decisions or the
 observations page is not a step, and a place that has been removed since is
 replaced by the nearest one that is still there. Back moves the screen and
 changes nothing: ⌘Z is still how a change is undone.
+
+**An agent opens the observations on a tab, and a view with something
+selected.** An agent can open the observations page on its Register, Analysis
+or Solutions tab, and a board, a sheet, a map or a technology landscape with one
+thing selected on it, where that view draws it. Opening a view never makes one:
+where a scope has no view of the kind asked for, the app goes to that scope's
+home. Whatever it opens is what you see, so a record's page that was open over
+the board closes. The address names the observations tab that is up, so a
+reload stays on it, and changing the tab is not a step for Back. *Make…* on a
+home's card and **New board…** over its boards still make a new sheet, map or
+landscape, as before.
+
+**For a build composed from this one.** A source's provider may draw a button
+of its own at the right end of the bar while its source is open (`barButton`);
+offer the person an action on a problem the app ran into, drawn on the crash
+screen and on the notice of a failure, a refusal or an unexpected error, and
+handed the problem only when it is pressed — the app sends nothing itself
+(`problemAction`); and move the app saying the move is its own
+(`open(to, { by: 'provider' })`), which its chrome is then told as
+`movedBy: 'provider'`. A destination takes `tab` and `select`, and the screen
+says the observations tab that is up. A host may answer agent tools of its own
+beside the app's (`RespondOptions.hostTools`). Two control names are new:
+`cause.root` and `solution.move`.

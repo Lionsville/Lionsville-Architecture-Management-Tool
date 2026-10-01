@@ -582,7 +582,8 @@ ihn für Sie gemacht hat. Hat ein Agent einen Bereich geöffnet, bringt Zurück
 Sie dorthin, wo Sie waren. Was ausgewählt ist, der Tag, an dem ein Board
 gezeigt wird, ein Filter und ein offener Dialog gehören nicht zu einem Ort, und
 einen anderen Eintrag auf der Seite der Entscheidungen oder der Beobachtungen
-zu wählen ist auch kein Schritt. Zurück ist kein Rückgängig: Es bewegt den
+oder einen anderen Reiter der Beobachtungen zu wählen ist auch kein Schritt:
+Die Adresse nennt den offenen Reiter, sodass ein Neuladen auf ihm bleibt. Zurück ist kein Rückgängig: Es bewegt den
 Bildschirm und ändert nichts, und ⌘Z bleibt der Weg, eine Änderung
 zurückzunehmen.
 
@@ -1683,8 +1684,14 @@ kann sich mit der Desktop-App verbinden (*Einen Agenten verbinden…* in der
 Leiste oder das Symbol neben dem Menü) und in der Organisation arbeiten,
 während Sie zusehen. Er liest jeden Bereich und kann die App bewegen wie
 Sie: einen Bereich öffnen, zu einem Board oder einem Blatt wechseln, die
-Entscheidungen oder die Roadmap öffnen, einen Bericht ansehen. Sie müssen
-dafür nichts vorher öffnen.
+Entscheidungen oder die Roadmap öffnen, die Beobachtungen auf dem Reiter
+Register, Analyse oder Lösungen öffnen, einen Bericht ansehen. Er kann ein
+Board, ein Blatt, eine Karte oder eine Technologielandschaft mit einem darauf
+ausgewählten Element öffnen, wenn diese Ansicht es zeigt. Sie müssen dafür
+nichts vorher öffnen, und das Öffnen einer Ansicht legt nie eine an: Hat ein
+Bereich keine Ansicht der verlangten Art, geht die App zur Startseite dieses
+Bereichs. Was er öffnet, sehen Sie auch; die Seite eines Eintrags, die über
+dem Board offen war, schließt sich.
 
 Solange er die App bewegt oder das Modell ändert, sagt ein Streifen am
 unteren Fensterrand das, mit dem Namen des Agenten und — wenn er es gesagt
