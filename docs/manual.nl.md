@@ -1589,9 +1589,9 @@ rapport bekijken. Hij kan een bord, een blad, een kaart of een
 technologielandschap openen met één ding daarop geselecteerd, als die
 weergave het tekent. U hoeft er niets voor open te zetten, en een weergave
 openen maakt er nooit een: heeft een scope geen weergave van de soort die de
-agent vraagt, dan gaat de app naar het startscherm van die scope. Wat hij
-opent, ziet u ook, dus de pagina van een record die over het bord open stond,
-gaat dicht.
+agent vraagt, dan krijgt de agent dat te horen en blijft het scherm waar het
+is — er een maken is een wijziging als elke andere. Wat hij opent, ziet u
+ook, dus de pagina van een record die over het bord open stond, gaat dicht.
 
 Zolang de agent de app beweegt of het model wijzigt, zegt een strook onder
 in het venster dat, met de naam van de agent en — als die dat heeft gezegd —

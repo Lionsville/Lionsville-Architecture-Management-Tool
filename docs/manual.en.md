@@ -1483,8 +1483,9 @@ on the Register, Analysis or Solutions tab, look at a report. It can open a
 board, a sheet, a map or a technology landscape with one thing selected on
 it, where that view draws it. It does not need you to open anything for it
 first, and opening a view never makes one: where a scope has no view of the
-kind it asks for, the app goes to that scope's home. Whatever it opens is
-what you see, so a record's page that was open over the board closes.
+kind it asks for, the agent is told so and the screen stays where it is —
+making one is a change like any other. Whatever it opens is what you see, so
+a record's page that was open over the board closes.
 
 While it is moving the app or changing the model, a strip along the bottom
 of the window says so, with the agent's name and — when it said — what it is

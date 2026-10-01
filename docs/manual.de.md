@@ -1689,9 +1689,10 @@ Register, Analyse oder Lösungen öffnen, einen Bericht ansehen. Er kann ein
 Board, ein Blatt, eine Karte oder eine Technologielandschaft mit einem darauf
 ausgewählten Element öffnen, wenn diese Ansicht es zeigt. Sie müssen dafür
 nichts vorher öffnen, und das Öffnen einer Ansicht legt nie eine an: Hat ein
-Bereich keine Ansicht der verlangten Art, geht die App zur Startseite dieses
-Bereichs. Was er öffnet, sehen Sie auch; die Seite eines Eintrags, die über
-dem Board offen war, schließt sich.
+Bereich keine Ansicht der verlangten Art, erfährt der Agent das, und der
+Bildschirm bleibt, wo er ist — eine anzulegen ist eine Änderung wie jede
+andere. Was er öffnet, sehen Sie auch; die Seite eines Eintrags, die über dem
+Board offen war, schließt sich.
 
 Solange er die App bewegt oder das Modell ändert, sagt ein Streifen am
 unteren Fensterrand das, mit dem Namen des Agenten und — wenn er es gesagt
