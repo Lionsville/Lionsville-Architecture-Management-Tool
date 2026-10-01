@@ -79,6 +79,12 @@ function placed(): DesignModel {
   return { ...before, diagrams: [board] };
 }
 
+/** The same board renamed by somebody who did not open it: still no positions. */
+function renamed(): DesignModel {
+  const before = unplaced();
+  return { ...before, diagrams: [{ ...before.diagrams[0], name: 'Landscape, renamed' }] };
+}
+
 function renderBoard(over: Partial<HostedEditorProps> = {}) {
   const onLayoutSettled = vi.fn<(diagramId: string) => void>();
   const onLayoutError = vi.fn<(message: string) => void>();
@@ -194,6 +200,32 @@ describe('SolutionDesignEditor — a reader opening a board nobody has laid out'
     rerender({ model, activeDiagramId: 'd1' });
     await waitFor(() => expect(new Set(drawnAt().values()).size).toBe(IDS.length));
     expect(mockTidy).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the cards where they are while a board changed under the reader is worked out again', async () => {
+    mockTidy.mockResolvedValueOnce({ placements: LAID, edgeRoutes: [] });
+    mockTidy.mockImplementation(() => new Promise(() => {}));
+    const { rerender } = renderBoard();
+    await waitFor(() => expect(new Set(drawnAt().values()).size).toBe(IDS.length));
+    const shown = drawnAt();
+
+    // Somebody renames the board without opening it: a new board, still with
+    // no positions, and a pass of its own that has not landed.
+    rerender({ model: renamed() });
+    await waitFor(() => expect(mockTidy).toHaveBeenCalledTimes(2));
+    expect(drawnAt()).toEqual(shown);
+  });
+
+  it('tells a reader about a failing pass once per board, however often the board changes', async () => {
+    mockTidy.mockResolvedValue({ placements: LAID, edgeRoutes: [], routingError: new Error('router down') });
+    const { onLayoutError, rerender } = renderBoard();
+    await waitFor(() => expect(onLayoutError).toHaveBeenCalledTimes(1));
+    expect(onLayoutError.mock.calls[0][0]).toBe('This diagram was laid out but its connections could not be routed.');
+
+    rerender({ model: renamed() });
+    await waitFor(() => expect(mockTidy).toHaveBeenCalledTimes(2));
+    await new Promise((r) => setTimeout(r, 20));
+    expect(onLayoutError).toHaveBeenCalledTimes(1);
   });
 
   it('leaves a board somebody has laid out exactly as stored', async () => {

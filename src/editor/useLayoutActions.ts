@@ -10,7 +10,7 @@
  * the faster one's result. Whichever is running disables the other and shows
  * the spinner on its own button.
  */
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useReactFlow, useStoreApi } from '@xyflow/react';
 import type { CommandMeta } from '../model/commands';
 import type { DesignDiagram, DesignModel } from '../model/types';
@@ -229,21 +229,34 @@ function useTidy(args: LayoutArgs, running: LayoutRunning, frameBoard: () => voi
  * things through the same channel, and answered with the board to show
  * rather than landed. Rethrows, so nothing is shown for a pass that produced
  * nothing.
+ *
+ * Said once per board, as the writer's pass — which runs once per board —
+ * says it: a board that changes under the reader is worked out again with
+ * every change, and the same failure told again each time is not news.
  */
 function useLayForReading(args: LayoutArgs, reports: LayoutReports) {
   const { state, t } = args;
   const { reportLayoutError, reportSkippedTiers } = reports;
+  /** The boards, by id, a reader has been told something about. */
+  const toldRef = useRef(new Set<string>());
   return useCallback(async (diagram: DesignDiagram, options: TidyOptions) => {
     const model = state.model;
+    const told = toldRef.current;
     try {
       const result = await tidyBoard(model, diagram, options);
-      if (result.routingError !== undefined) {
-        reportLayoutError(t('error.tidyRoutingUnattended'), result.routingError);
-      } else reportSkippedTiers(result.skipped);
+      if (!told.has(diagram.id)) {
+        if (result.routingError !== undefined) {
+          told.add(diagram.id);
+          reportLayoutError(t('error.tidyRoutingUnattended'), result.routingError);
+        } else if (reportSkippedTiers(result.skipped)) told.add(diagram.id);
+      }
       return laidOutForReading(model, diagram, result);
     } catch (error) {
       const message = layoutFailureMessage(error, 'error.tidyUnattended', t);
-      if (message !== undefined) reportLayoutError(message, error);
+      if (message !== undefined && !told.has(diagram.id)) {
+        told.add(diagram.id);
+        reportLayoutError(message, error);
+      }
       throw error;
     }
   }, [state.model, reportLayoutError, reportSkippedTiers, t]);

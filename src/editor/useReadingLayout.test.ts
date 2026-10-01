@@ -8,7 +8,7 @@ import { laidOut, type V3Diagram } from '../model/testFixtures';
 import { placedNodes } from '../model/placement';
 import type { DesignDiagram, DesignModel } from '../model/types';
 import { DEFAULT_TIDY_OPTIONS, type TidyOptions, type TidyResult } from '../layout/tidy';
-import { laidOutForReading, useReadingLayout, type UseReadingLayoutArgs } from './useReadingLayout';
+import { carriedOver, laidOutForReading, useReadingLayout, type UseReadingLayoutArgs } from './useReadingLayout';
 
 /**
  * When a reader is shown a pass, and what the board shown is. One case per
@@ -80,6 +80,32 @@ describe('laidOutForReading', () => {
   it('answers the stored board for a result that changes nothing', () => {
     const stored = unplaced();
     expect(laidOutForReading(modelOf(stored), stored, { placements: [] })).toBe(stored);
+  });
+});
+
+describe('carriedOver', () => {
+  it('puts the last pass\'s layout on the board as it now is, and keeps the board\'s own members', () => {
+    const before = unplaced();
+    const shown = laidOutForReading(modelOf(before), before, RESULT);
+    const now = unplaced({ name: 'Renamed', placements: [{ id: 'e1', zone: 'landscape', x: 0, y: 0 }, { id: 'e3', zone: 'landscape', x: 0, y: 0 }] });
+    const carried = carriedOver(now, shown);
+
+    expect(carried.name).toBe('Renamed');
+    expect(carried.members).toBe(now.members);
+    // e1 where the last pass put it, e3 new to the board and at the origin
+    // until its own pass lands; e2's position is a leftover nobody draws.
+    expect(positions(carried)).toEqual(['100,300', '0,0']);
+    expect(carried.geometry.canvas).toEqual({ width: 2000, height: 1200 });
+    expect(carried.geometry.routes).toEqual(shown.geometry.routes);
+    expect(carried.geometry.needsLayout).toBeUndefined();
+    expect(now.geometry.needsLayout).toBe(true);
+  });
+
+  it('answers the same object for the same two boards', () => {
+    const before = unplaced();
+    const shown = laidOutForReading(modelOf(before), before, RESULT);
+    const now = { ...unplaced(), name: 'Renamed' };
+    expect(carriedOver(now, shown)).toBe(carriedOver(now, shown));
   });
 });
 
@@ -174,6 +200,43 @@ describe('useReadingLayout — what is shown belongs to the board it was worked 
     rerender({ ...args, diagram: renamed });
     await waitFor(() => expect(lay).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(result.current?.name).toBe('Renamed'));
+    expect(positions(result.current)).toEqual(['100,300', '500,300']);
+  });
+
+  it('keeps the last layout on a board that changed under the reader while its own pass runs', async () => {
+    const MOVED: TidyResult = { ...RESULT, placements: RESULT.placements.map((p) => ({ ...p, y: p.y + 50 })) };
+    let finish!: () => void;
+    const lay = vi.fn<(diagram: DesignDiagram, options: TidyOptions) => Promise<DesignDiagram>>()
+      .mockImplementationOnce((diagram) => Promise.resolve(laidOutForReading(modelOf(diagram), diagram, RESULT)))
+      .mockImplementation((diagram) => new Promise((resolve) => { finish = () => resolve(laidOutForReading(modelOf(diagram), diagram, MOVED)); }));
+    const { result, rerender, args } = render({ lay });
+    await waitFor(() => expect(positions(result.current)).toEqual(['100,300', '500,300']));
+
+    // Renamed by somebody, still with no positions: worked out again, and
+    // meanwhile the cards stay where the reader was shown them.
+    const renamed = { ...unplaced(), name: 'Renamed' };
+    rerender({ ...args, lay, diagram: renamed });
+    expect(result.current?.name).toBe('Renamed');
+    expect(positions(result.current)).toEqual(['100,300', '500,300']);
+    await waitFor(() => expect(lay).toHaveBeenCalledTimes(2));
+
+    finish();
+    await waitFor(() => expect(positions(result.current)).toEqual(['100,350', '500,350']));
+    expect(result.current?.name).toBe('Renamed');
+  });
+
+  it('keeps the last layout on a changed board whose own pass fails', async () => {
+    const lay = vi.fn<(diagram: DesignDiagram, options: TidyOptions) => Promise<DesignDiagram>>()
+      .mockImplementationOnce((diagram) => Promise.resolve(laidOutForReading(modelOf(diagram), diagram, RESULT)))
+      .mockRejectedValue(new Error('elk'));
+    const { result, rerender, args } = render({ lay });
+    await waitFor(() => expect(positions(result.current)).toEqual(['100,300', '500,300']));
+
+    const renamed = { ...unplaced(), name: 'Renamed' };
+    rerender({ ...args, lay, diagram: renamed });
+    await waitFor(() => expect(lay).toHaveBeenCalledTimes(2));
+    await new Promise((r) => setTimeout(r, 10));
+    expect(result.current?.name).toBe('Renamed');
     expect(positions(result.current)).toEqual(['100,300', '500,300']);
   });
 

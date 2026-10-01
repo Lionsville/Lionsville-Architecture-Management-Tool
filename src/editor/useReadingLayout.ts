@@ -23,9 +23,11 @@
  * What is shown belongs to the stored board it was worked out from. When the
  * stored board changes — above all when somebody's settling step arrives with
  * real positions — the stored board wins at once, and one that still has
- * none is worked out again. Passes for one board are not lined up, so the
- * one that ends last is not always the newest: a pass never displaces what a
- * pass started after it has put on the screen.
+ * none is worked out again, with the last pass's layout carried onto it
+ * meanwhile ({@link carriedOver}) rather than every card back on one point.
+ * Passes for one board are not lined up, so the one that ends last is not
+ * always the newest: a pass never displaces what a pass started after it has
+ * put on the screen.
  */
 import { useEffect, useRef, useState } from 'react';
 import { transaction } from '../model/commands';
@@ -47,6 +49,35 @@ export function laidOutForReading(model: DesignModel, diagram: DesignDiagram, re
   const outcome = apply(fromArrays(model), transaction(commands));
   const next = outcome.ok ? outcome.model.diagrams[diagram.id] : undefined;
   return next ? fromDiagram(next) : diagram;
+}
+
+const carried = new WeakMap<DesignDiagram, WeakMap<DesignDiagram, DesignDiagram>>();
+
+/**
+ * A board that changed under the reader and still has no positions, with the
+ * layout an earlier pass showed on it: that pass's positions, boxes, canvas and
+ * routes, on the board as it now is. It is what is drawn while the board's own
+ * pass runs, and after it if that pass fails. The board's members are its own,
+ * so a position for one that has gone is a leftover nobody draws, and one new
+ * to the board stands at the origin until its pass lands. The same object for
+ * the same two boards, so a render in between draws nothing anew.
+ */
+export function carriedOver(diagram: DesignDiagram, shown: DesignDiagram): DesignDiagram {
+  let byShown = carried.get(diagram);
+  if (!byShown) {
+    byShown = new WeakMap();
+    carried.set(diagram, byShown);
+  }
+  const held = byShown.get(shown);
+  if (held) return held;
+  const { needsLayout: _flag, ...geometry } = diagram.geometry;
+  const { nodes, groups, canvas, routes } = shown.geometry;
+  const out: DesignDiagram = {
+    ...diagram,
+    geometry: { ...geometry, nodes, ...(groups ? { groups } : {}), ...(canvas ? { canvas } : {}), ...(routes ? { routes } : {}) },
+  };
+  byShown.set(shown, out);
+  return out;
 }
 
 export interface UseReadingLayoutArgs {
@@ -87,7 +118,8 @@ const NOTHING_HELD: ReadonlyMap<string, Held> = new Map();
 
 /**
  * The board to draw: for a reader, a board nobody has laid out with the pass
- * on it once it has run; otherwise, and meanwhile, the board as stored.
+ * on it once it has run, or the last pass carried onto it while it is worked
+ * out again; otherwise, and before any pass has run, the board as stored.
  */
 export function useReadingLayout({ diagram, readOnly, options, lay, onShown, onLandedAway }: UseReadingLayoutArgs): DesignDiagram | undefined {
   const [held, setHeld] = useState(NOTHING_HELD);
@@ -129,7 +161,10 @@ export function useReadingLayout({ diagram, readOnly, options, lay, onShown, onL
   }, [diagram, readOnly]);
 
   const kept = diagram && readOnly ? held.get(diagram.id) : undefined;
-  const shown = kept && kept.from === diagram ? kept.shown : diagram;
+  const shown = !diagram || !kept ? diagram
+    : kept.from === diagram ? kept.shown
+    : awaitsLayout(diagram) ? carriedOver(diagram, kept.shown)
+    : diagram;
 
   // Framed once it is on screen as the open board, which is not always when
   // its pass lands: a reader who went elsewhere meanwhile comes back to it.
