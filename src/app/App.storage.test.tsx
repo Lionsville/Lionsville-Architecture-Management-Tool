@@ -1390,7 +1390,8 @@ describe('the button a registered provider draws in the bar', () => {
 
 /**
  * The open source's provider's action on a problem (ADR-0022, amended): on the
- * crash screen and on the notice of an unexpected error, in the provider's own
+ * crash screen, on the notice of an unexpected error, of a refusal in the
+ * scope that is open and of a failure the shell reports, in the provider's own
  * words, handed the problem only when the person presses it — and nowhere at
  * all for the sources that ship.
  */
@@ -1441,5 +1442,52 @@ describe('the action a registered provider offers on a problem', () => {
     } finally {
       errors.mockRestore()
     }
+  })
+
+  const board = laidOut({ id: 'd1', kind: 'layer7' as const, name: 'L7', placements: [] })
+  const tree = [
+    { path: '', model: { name: 'Acme', elements: [], relations: [], diagrams: [] }, activeDiagramId: '', logoLibrary: [] },
+    { path: 'acme/landscape', model: { name: 'Landscape', elements: [], relations: [], diagrams: [board] }, activeDiagramId: 'd1', logoLibrary: [] },
+  ]
+
+  it('is the button on the notice of a refusal in the scope that is open, through the workspace', async () => {
+    const handed: unknown[] = []
+    let session: ScopeSession | undefined
+    renderApp({
+      repositories: heldRepositories(tree),
+      source: elsewhere,
+      boot: { initialProject: tree[1] },
+      provider: {
+        onScopeSession: (held) => { session = held },
+        problemAction: { labelKey: 'elsewhere.passOn', run: (problem) => handed.push(problem) },
+      },
+    })
+    await waitFor(() => expect(session?.scope).toBe('acme/landscape'))
+    // The last landscape: the reducer refuses it, and the session says so.
+    act(() => { session!.dispatch({ type: 'diagram.delete', id: 'd1' }) })
+    fireEvent.click(await screen.findByRole('button', { name: 'Pass it on' }))
+    expect(handed).toEqual([expect.objectContaining({ where: 'session.dispatch', key: 'command.lastLandscape', command: 'diagram.delete' })])
+  })
+
+  it('is the button on the notice of a failure the shell reports', async () => {
+    const handed: unknown[] = []
+    let down = false
+    function Opens({ open }: { open: (to: Destination) => void }) {
+      return <button type="button" onClick={() => open({ scope: 'acme/landscape' })}>To the landscape</button>
+    }
+    const held = heldRepositories(tree)
+    renderApp({
+      repositories: answering(held, { state: (id) => (down ? Promise.reject(new Error('the store is down')) : held.scopes.state(id)) }),
+      source: elsewhere,
+      provider: {
+        chrome: [{ kind: 'elsewhere', chrome: Opens }],
+        problemAction: { labelKey: 'elsewhere.passOn', run: (problem) => handed.push(problem) },
+      },
+    })
+    const press = await screen.findByRole('button', { name: 'To the landscape' })
+    down = true
+    fireEvent.click(press)
+    fireEvent.click(await screen.findByRole('button', { name: 'Pass it on' }))
+    expect(handed).toEqual([expect.objectContaining({ where: 'openScopeAt', key: 'picker.loadFailed', message: 'the store is down' })])
   })
 })

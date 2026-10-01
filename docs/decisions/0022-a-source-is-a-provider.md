@@ -1120,7 +1120,9 @@ no third argument, exactly as before (`app/problem.ts`'s `offerFor`).
 home, after the agent and before the chip, in the language that is on,
 reached by the keyboard and clean under axe, nothing where no provider drew
 one, and a button that throws costing only itself; the action on the crash
-screen and on an unexpected error's notice, and nowhere without one.
+screen, on an unexpected error's notice, on the notice of a refusal in the
+scope that is open — through the workspace — and on the notice of a failure
+the shell reports, and nowhere without one.
 `ErrorBoundary.test.tsx`, `useGlobalErrors.test.tsx`,
 `useModelSession.test.tsx` and `problem.test.ts` pin the problem said and
 handed over only when pressed; `mcpProtocol.test.ts` the host's tools;

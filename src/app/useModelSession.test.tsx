@@ -1162,6 +1162,17 @@ describe('useModelSession — an action on a refusal', () => {
     expect(notify).toHaveBeenCalledWith(expect.stringContaining('last landscape'), 'error', { label: 'Pass it on', onClick: expect.any(Function) })
   })
 
+  it('says an undo the model no longer takes, and which way it went', () => {
+    const { facts, notify, session, Host } = offering()
+    render(<Host readOnly={false} />)
+    act(() => { session().dispatch(rename('Renamed')) })
+    // Somebody else removes it: putting back what ours did has nothing left to act on.
+    act(() => { session().steps.applyExternal({ type: 'element.delete', id: 'billing' }, { by: 'A. Author' }) })
+    act(() => { session().undo() })
+    expect(facts).toEqual([{ where: 'session.undo', key: 'command.gone' }])
+    expect(notify).toHaveBeenLastCalledWith(expect.any(String), 'error', { label: 'Pass it on', onClick: expect.any(Function) })
+  })
+
   it('says a change refused because the scope is only read', () => {
     const { facts, notify, session, Host } = offering()
     render(<Host readOnly />)
