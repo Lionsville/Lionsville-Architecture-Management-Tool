@@ -23,7 +23,9 @@
  * What is shown belongs to the stored board it was worked out from. When the
  * stored board changes — above all when somebody's settling step arrives with
  * real positions — the stored board wins at once, and one that still has
- * none is worked out again.
+ * none is worked out again. Passes for one board are not lined up, so the
+ * one that ends last is not always the newest: a pass never displaces what a
+ * pass started after it has put on the screen.
  */
 import { useEffect, useRef, useState } from 'react';
 import { transaction } from '../model/commands';
@@ -66,6 +68,8 @@ export interface UseReadingLayoutArgs {
 interface Held {
   from: DesignDiagram;
   shown: DesignDiagram;
+  /** When its pass started, in this editor's count: the later start wins. */
+  started: number;
 }
 
 const NOTHING_HELD: ReadonlyMap<string, Held> = new Map();
@@ -82,6 +86,8 @@ export function useReadingLayout({ diagram, readOnly, options, lay, onShown }: U
    * cannot double-run; a board that changes is a new object, and gets one pass.
    */
   const attemptedRef = useRef(new WeakSet<DesignDiagram>());
+  /** How many passes this editor has started, so each knows its place among them. */
+  const startsRef = useRef(0);
   // Read inside the effect so a changed callback identity cannot re-trigger it.
   const latestRef = useRef({ options, lay, onShown, diagram });
   latestRef.current = { options, lay, onShown, diagram };
@@ -90,10 +96,15 @@ export function useReadingLayout({ diagram, readOnly, options, lay, onShown }: U
     if (!readOnly || !diagram || !awaitsLayout(diagram)) return;
     if (attemptedRef.current.has(diagram)) return;
     attemptedRef.current.add(diagram);
+    const started = ++startsRef.current;
     const { options: current, lay: run } = latestRef.current;
     void run(diagram, settlingOptions(current)).then(
       (shown) => {
-        setHeld((was) => new Map(was).set(diagram.id, { from: diagram, shown }));
+        // A board that changed while this pass ran has had a pass of its own,
+        // and when that one has ended first, what it shows is the newer.
+        setHeld((was) => ((was.get(diagram.id)?.started ?? 0) > started
+          ? was
+          : new Map(was).set(diagram.id, { from: diagram, shown, started })));
         if (latestRef.current.diagram === diagram) latestRef.current.onShown?.();
       },
       () => {

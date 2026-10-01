@@ -172,6 +172,32 @@ describe('useReadingLayout — what is shown belongs to the board it was worked 
     expect(positions(result.current)).toEqual(['100,300', '500,300']);
   });
 
+  it('never lets a pass that ends late displace one started after it', async () => {
+    const finishes = new Map<DesignDiagram, () => void>();
+    const lay = vi.fn<(diagram: DesignDiagram, options: TidyOptions) => Promise<DesignDiagram>>()
+      .mockImplementation((diagram) => new Promise((resolve) => {
+        finishes.set(diagram, () => resolve(laidOutForReading(modelOf(diagram), diagram, RESULT)));
+      }));
+    const first = unplaced();
+    const { result, rerender, args } = render({ diagram: first, lay });
+    await waitFor(() => expect(lay).toHaveBeenCalledTimes(1));
+
+    // The board changes while its pass runs, still with no positions: a pass of its own.
+    const renamed = { ...unplaced(), name: 'Renamed' };
+    rerender({ ...args, diagram: renamed });
+    await waitFor(() => expect(lay).toHaveBeenCalledTimes(2));
+
+    // The newer pass ends first, the older one after it.
+    finishes.get(renamed)!();
+    await waitFor(() => expect(positions(result.current)).toEqual(['100,300', '500,300']));
+    finishes.get(first)!();
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(result.current?.name).toBe('Renamed');
+    expect(positions(result.current)).toEqual(['100,300', '500,300']);
+    expect(lay).toHaveBeenCalledTimes(2);
+  });
+
   it('keeps each board\'s pass, and frames only the board still open', async () => {
     let finish!: (diagram: DesignDiagram) => void;
     const first = unplaced();
