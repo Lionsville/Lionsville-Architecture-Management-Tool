@@ -446,24 +446,45 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
   }))
 
   // Back goes to the place before (ADR-0033): the landscape was opened from a
-  // home, and the Go menu's Back — the command its ⌘[ sends — returns to that
-  // home through the window's own history; Forward puts the board back for
-  // the canvas checks below. Each move is waited for as the address says it,
-  // because a move is written once it has settled.
+  // home. Back is the Go menu's command — what its ⌘[ sends — and Forward is
+  // the bar's own button, so both ways into the one history are driven; each
+  // ends in the window's history.back() or history.forward(). The bar's two
+  // are read at each end: on the board after a move, Back is live and
+  // Forward greyed; on the home after Back, Forward is live; on the board
+  // again, Forward is greyed. Each move is waited for as the address says
+  // it, because a move is written once it has settled.
   results.push(await checkHere('Back after opening a scope from a home returns to that home, and Forward to the scope', async () => {
     const landscapeHash = `#place?scope=${encodeURIComponent(EXAMPLE.landscape)}&page=board`
-    await page(waitFor(`location.hash.startsWith(${JSON.stringify(landscapeHash)}) && document.querySelector('.react-flow') && 'on the board'`, 'the board in the address'))
-    const ends = await page(`JSON.stringify({ back: window.navigation ? navigation.canGoBack : 'no Navigation API' })`)
+    const onBoard = `location.hash.startsWith(${JSON.stringify(landscapeHash)}) && document.querySelector('.react-flow')`
+    /** The bar's two, as a person sees them: which of Back and Forward can be pressed. */
+    const bar = async () => JSON.parse(await page(`(() => {
+      const two = [...document.querySelectorAll('[data-testid="back-forward"] button')]
+      if (two.length !== 2) throw new Error('the bar draws ' + two.length + ' history buttons')
+      return JSON.stringify({ back: !two[0].disabled, forward: !two[1].disabled })
+    })()`)) as { back: boolean; forward: boolean }
+    const expectBar = async (where: string, want: { back?: boolean; forward: boolean }) => {
+      const deadline = Date.now() + 5_000
+      let now = await bar()
+      while ((now.forward !== want.forward || (want.back !== undefined && now.back !== want.back)) && Date.now() < deadline) {
+        await new Promise((resolve) => setTimeout(resolve, 100))
+        now = await bar()
+      }
+      if (now.forward !== want.forward || (want.back !== undefined && now.back !== want.back)) {
+        throw new Error(`${where}: the bar has Back ${now.back ? 'live' : 'greyed'} and Forward ${now.forward ? 'live' : 'greyed'}`)
+      }
+    }
+    await page(waitFor(`${onBoard} && 'on the board'`, 'the board in the address'))
+    await expectBar('on the board', { back: true, forward: false })
     sendCommand({ type: 'back' })
     const home = await page(waitFor(`(() => {
       const cards = document.querySelector('[data-testid="organisation-cards"]')
       return cards && !document.querySelector('.react-flow') && location.hash.includes('page=home') && location.hash
     })()`, 'a home after Back'))
-    const forward = await page(`String(window.navigation ? navigation.canGoForward : 'no Navigation API')`)
-    if (forward === 'false') throw new Error('the Navigation API says there is nowhere to go forward to')
-    sendCommand({ type: 'forward' })
-    await page(waitFor(`location.hash.startsWith(${JSON.stringify(landscapeHash)}) && document.querySelector('.react-flow') && 'board'`, 'the board after Forward'))
-    return `before Back ${ends}; Back landed on ${decodeURIComponent(home)}; Forward on the board again`
+    await expectBar('on the home after Back', { forward: true })
+    await page(`(() => { document.querySelectorAll('[data-testid="back-forward"] button')[1].click(); return 'pressed' })()`)
+    await page(waitFor(`${onBoard} && 'board'`, 'the board after Forward'))
+    await expectBar('on the board after Forward', { back: true, forward: false })
+    return `Back (Go menu) landed on ${decodeURIComponent(home)}; Forward (the bar's button) on the board again; the bar greyed at each end`
   }))
 
   // --- the canvas: routing in wasm on a worker, and a picture out ------------
