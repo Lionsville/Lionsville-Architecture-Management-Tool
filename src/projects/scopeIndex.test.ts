@@ -402,6 +402,12 @@ describe('the index — the analysis below, what was absorbed above, and what ex
     expect(tree().analysisBelow('acme/claims')).toEqual([])
   })
 
+  it('answers every scope’s analysis, the organisation’s included, causes and all, for a merge across the tree', () => {
+    const all = tree().analyses()
+    expect(all.map((one) => one.scope)).toEqual(['', 'acme', 'acme/claims'])
+    expect(all.find((one) => one.scope === 'acme/claims')!.causes.map((one) => one.id)).toEqual(['claims-ca-1'])
+  })
+
   it('tells a scope which of its own a scope above folded into one of its own', () => {
     const absorbed = tree().absorbedFrom('acme/claims')
     expect([...absorbed.keys()]).toEqual(['claims-2'])

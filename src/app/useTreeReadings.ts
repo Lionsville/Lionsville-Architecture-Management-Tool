@@ -128,12 +128,14 @@ export function useTreeReadings(deps: {
   const analysisBelow = useMemo(() => index.analysisBelow(scope), [index, scope])
   const absorbedAbove = useMemo(() => index.absorbedFrom(scope), [index, scope])
   const explainedAbove = useMemo(() => index.explainedFromAbove(scope), [index, scope])
+  /** Every scope's analysis, for a merge across the tree (ADR-0035 §2). */
+  const analysisTree = useMemo(() => index.analyses(), [index])
   /** The same for any scope below, which the picture asks per scope it draws. */
   const explainedAboveOf = useCallback((path: ScopePath) => index.explainedFromAbove(path), [index])
 
   return {
     scopeLabel, rowsElsewhere, rowsThrough, rowsElsewhereRef, initiativesBelow, describeForMap,
-    sharedElsewhere, applicationsInTree, analysisBelow, absorbedAbove, explainedAbove, explainedAboveOf,
+    sharedElsewhere, applicationsInTree, analysisBelow, analysisTree, absorbedAbove, explainedAbove, explainedAboveOf,
   }
 }
 

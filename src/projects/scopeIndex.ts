@@ -266,6 +266,13 @@ export type ScopeIndex = {
    */
   analysisBelow(path: ScopePath): IndexedAnalysis[]
   /**
+   * The analysis of every scope read, in path order — above, below and
+   * beside alike. What the merge screen searches when it searches across
+   * scopes (ADR-0035 §2): the records of the scopes the source let this
+   * session read, causes and solutions as well as observations.
+   */
+  analyses(): IndexedAnalysis[]
+  /**
    * What the scopes above `path` say explains its records (ADR-0032 §4), by
    * the id of the record explained: every cause above whose link names a
    * record of `path`. Derived from the explaining cause, because the link is
@@ -447,6 +454,7 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
     analysisBelow: (path) => analyses.filter(({ scope }) => (
       path === '' ? scope !== '' : scope.startsWith(`${path}/`)
     )),
+    analyses: () => [...analyses],
     explainedFromAbove: (path) => new Map(fromAbove.get(path) ?? []),
     absorbedFrom: (path) => {
       const found = new Map<string, Absorption>()
