@@ -91,6 +91,16 @@ export type ProviderParts<Own = unknown> = {
    * subtitle and the history's note say what is so from the first frame.
    */
   settled?: () => Promise<ProviderParts<Own>>
+  /**
+   * The address a link to this source starts from, where there is one: where
+   * somebody else who may read the same work reaches it — a server's public
+   * address, never a folder's path or this browser's storage. The app adds
+   * the place the person is at as the fragment (ADR-0033, amended), so the
+   * provider says where and the app says what is there. Asked each time a
+   * link is made; `undefined` is *not now*. Absent where work kept here
+   * cannot be reached from a link, which is all three core registers.
+   */
+  shareAddress?: () => string | undefined
   /** Handed back to this provider's own chrome and panels while its source is open. */
   own?: Own
 }

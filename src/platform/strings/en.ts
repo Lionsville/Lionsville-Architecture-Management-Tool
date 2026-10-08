@@ -21,6 +21,7 @@ export const EN = {
   'menu.open': 'Open…',
   'menu.save': 'Save',
   'menu.exportWorkingFile': 'Save a Copy of the Working File…',
+  'menu.shareLink': 'Share with a Link…',
   'menu.snapshot': 'Snapshot…',
   'menu.history': 'History…',
   'menu.connectAgent': 'Connect an Agent…',

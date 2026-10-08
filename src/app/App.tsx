@@ -58,6 +58,7 @@ import { useProviderParts } from './useProviderParts'
 import { useScopeAncestry } from './useScopeAncestry'
 import { useShellAgent } from './useShellAgent'
 import { useHostFacts, useShellCommands, useWindowTitle } from './useShellCommands'
+import { useShareLink } from './useShareLink'
 import { useShellNavigation } from './useShellNavigation'
 import { useOpeningFailures, useProjectOrder, useSavedFilters, useShellServices } from './useShellServices'
 import { useTreeFindings, useTreeIndex } from './useTreeFindings'
@@ -560,7 +561,7 @@ function useShellParts(props: AppProps): ShellParts {
   return {
     props, source, host, hostMenu: host.hostMenu ?? false, windowChrome: host.windowChrome ?? NO_WINDOW_CHROME,
     services, nav, tree, organisation, findings, home, ancestry, agentServer, agent: shellAgent, machine,
-    commands, provider, order, savedFilters, prompts, todayDay,
+    commands, provider, order, savedFilters, prompts, todayDay, share: base.share,
     writes: { readTreeModels, carryOut, adoptScopes, readScope: readScopeAt, treeChanged, applyProjectSettings },
   }
 }
@@ -646,13 +647,20 @@ function useShellBase(props: AppProps) {
   const tree = useTreeIndex(repositories.index, changes, failed)
   refreshIndex.current = tree.refresh
   const agentServer = useAgentServer({ agent, failedRef, notify: toasts.notify, s })
+  const copyText = useCallback((text: string) => hostControls.copyText(text), [hostControls])
+  // Through the ref, so the command's subscription does not follow every render.
+  const screenNow = useCallback(() => screenRef.current(), [])
+  const share = useShareLink({
+    address: props.provider?.shareAddress, screen: screenNow, copyText, diagnostics,
+    notify: toasts.notify, s,
+  })
   const machine = useMachineSettings({
     updateSettings: host.updateSettings, failedRef, notify: toasts.notify, s,
     initiallyOpen: boot.opensDialog === 'preferences',
   })
   const commands = useShellCommands({
     commands: host.commands, onConnect: hostWay?.onConnect, onReopen: hostWay?.onReopen, prefs,
-    openPreferences: machine.setOpen, openAgent: agentServer.openDialog, hostControls,
+    openPreferences: machine.setOpen, openAgent: agentServer.openDialog, share: share.share, hostControls,
   })
   useOpeningFailures({ failure: boot.sourceFailure, failureKey: boot.sourceFailureKey, notify: toasts.notify, s })
   // The mouse's back and forward buttons, where the host asks for Back and Forward (ADR-0033).
@@ -688,6 +696,6 @@ function useShellBase(props: AppProps) {
   refreshTree.current = organisation.refresh
   return {
     source, host, services, todayDay, nav, tree, agentServer, machine, commands, order,
-    savedFilters, organisation, refreshTree, screenRef,
+    savedFilters, organisation, refreshTree, screenRef, share,
   }
 }

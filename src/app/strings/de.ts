@@ -364,6 +364,16 @@ export const DE: Record<keyof typeof EN, string> = {
   'agent.drivingHint': 'Was Sie inzwischen anklicken, kann \u00e4ndern, was der Agent tut. Stopp beendet die Sitzung und teilt es dem Agenten mit.',
   'agent.stop': 'Stopp',
   'agent.stoppedToast': '{name} wurde gestoppt. Der Agent erf\u00e4hrt es beim n\u00e4chsten Aufruf und kann fragen, ob er weitermachen darf.',
+
+  // --- Per Link teilen… (ADR-0033, geändert) ---------------------------------
+  'share.title': 'Per Link teilen',
+  'share.what': 'Wer diese Arbeit lesen darf, öffnet sie mit diesem Link genau hier: derselbe Bereich, dieselbe Seite, derselbe Eintrag. Wer noch nicht angemeldet ist, meldet sich zuerst an und landet danach hier.',
+  'share.linkLabel': 'Link zu dieser Stelle',
+  'share.copy': 'Link kopieren',
+  'share.copied': 'Link kopiert',
+  'share.copyFailed': 'Der Link konnte nicht kopiert werden. Markieren Sie ihn im Dialog und kopieren Sie ihn dort.',
+  'share.noAddress': 'Arbeit, die hier aufbewahrt wird — in einem Ordner, in diesem Browser oder nirgends —, lässt sich nicht über einen Link öffnen: Niemand sonst erreicht sie unter einer Adresse. Ein Link lässt sich teilen, wo die Arbeit auf einem Server liegt, bei dem sich alle anmelden, die sie lesen dürfen.',
+  'share.noPlace': 'Auf dem Bildschirm ist noch keine Stelle, auf die ein Link zeigen könnte. Öffnen Sie einen Bereich oder eine Startseite und versuchen Sie es erneut.',
   'shell.documentation': 'Dokumentation',
   'shell.documentationTip': 'Die Dokumentationsseite des ausgewählten Elements öffnen',
   'shell.noElements': 'Es gibt noch nichts zu dokumentieren — fügen Sie zuerst ein Element hinzu.',

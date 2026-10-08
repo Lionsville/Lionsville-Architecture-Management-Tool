@@ -21,6 +21,7 @@ import type { ShellAgent } from './useShellAgent'
 import type { ShellCommands } from './useShellCommands'
 import type { ShellNavigation } from './useShellNavigation'
 import type { ShellServices, useProjectOrder } from './useShellServices'
+import type { ShareLink } from './useShareLink'
 import type { TreeFindings } from './useTreeFindings'
 import type { CarriedOut } from '../ports/Interchange'
 import type { AdoptScopes } from './workingFileFlows'
@@ -67,4 +68,6 @@ export interface ShellParts {
   }
   /** Today, read once per render rather than per card. */
   todayDay: string
+  /** *Share with a Link…*: the link to the place on screen, and its dialog (ADR-0033, amended). */
+  share: ShareLink
 }

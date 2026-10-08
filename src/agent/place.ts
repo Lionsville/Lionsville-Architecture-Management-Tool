@@ -62,6 +62,19 @@ export function writePlace(place: Place): string {
 }
 
 /**
+ * A link to a place (ADR-0033, amended): the address somebody else reaches the
+ * same work at, with the place as its fragment. Whatever fragment the address
+ * had is dropped — a link names one place, and a fragment that is somebody
+ * else's would be read before it — and its path and query are kept as they
+ * were said, because which of those a link needs is the business of whoever
+ * gave the address.
+ */
+export function linkTo(address: string, place: Place): string {
+  const hash = address.indexOf('#')
+  return `${hash < 0 ? address : address.slice(0, hash)}${writePlace(place)}`
+}
+
+/**
  * The place a fragment names, with or without its `#` — or `undefined` for a
  * fragment that is not one: no prefix, a key this grammar does not have, a
  * key said twice, no scope, a page there is no such thing as, or a tab that

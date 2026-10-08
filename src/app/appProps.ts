@@ -271,6 +271,8 @@ export type AppProvider = {
   historyNoteKey?: string
   /** Whether a history is kept here already (`ProviderParts.historyKept`). */
   historyKept?: () => Promise<boolean>
+  /** The address a link to the open source starts from (`ProviderParts.shareAddress`). */
+  shareAddress?: () => string | undefined
   /**
    * What the open source's provider calls a source of its kind, says of where
    * everything is kept, says removing a scope takes with it, and says of a

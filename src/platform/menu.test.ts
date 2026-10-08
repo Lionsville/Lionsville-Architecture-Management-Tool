@@ -21,7 +21,7 @@ describe('offered', () => {
   it('carries the whole list on a desktop that can do everything', () => {
     expect(labels(offered(FILE_MENU, 'desktop', { history: true, connect: true, scope: true }))).toEqual([
       'menu.connect', '<recent>', '<separator>',
-      'menu.open', 'menu.save', 'menu.exportWorkingFile', '<separator>',
+      'menu.open', 'menu.save', 'menu.exportWorkingFile', 'menu.shareLink', '<separator>',
       'menu.snapshot', 'menu.history', '<separator>',
       'menu.connectAgent',
     ])
@@ -86,14 +86,14 @@ describe('the vocabulary', () => {
 describe('with no scope open', () => {
   const nothing = { history: true, connect: true, scope: false }
 
-  it('leaves out Save, and keeps Open…, Save a Copy…, the folder and its history', () => {
+  it('leaves out Save, and keeps Open…, Save a Copy…, the link, the folder and its history', () => {
     // Save is the open scope's. Open… and Save a Copy… are the working set's
     // (ADR-0023): the organisation's home is the screen the file is named
     // after, and it has to be able to write it.
     const entries = labels(offered(FILE_MENU, 'web', nothing))
     expect(entries).not.toContain('menu.save')
     expect(entries).toEqual([
-      'menu.connect', '<separator>', 'menu.open', 'menu.exportWorkingFile', '<separator>',
+      'menu.connect', '<separator>', 'menu.open', 'menu.exportWorkingFile', 'menu.shareLink', '<separator>',
       'menu.snapshot', 'menu.history', '<separator>', 'menu.connectAgent',
     ])
   })
@@ -144,5 +144,17 @@ describe('the Go menu (ADR-0033)', () => {
     expect(swipeCommand('right')).toEqual({ type: 'forward' })
     expect(swipeCommand('up')).toBeUndefined()
     expect(swipeCommand('down')).toBeUndefined()
+  })
+})
+
+describe('Share with a Link…', () => {
+  const share = FILE_MENU.find((entry) => entry.kind === 'item' && entry.command.type === 'share')
+
+  it('is offered on both hosts with nothing open and nothing kept, and carries no key', () => {
+    expect(share).toMatchObject({ label: 'menu.shareLink', on: ['desktop', 'web'] })
+    expect(share?.kind === 'item' ? share.needs : 'none').toBeUndefined()
+    expect(share?.kind === 'item' ? share.accelerator : 'none').toBeUndefined()
+    const nothing = { history: false, connect: false, scope: false }
+    expect(labels(offered(FILE_MENU, 'web', nothing))).toContain('menu.shareLink')
   })
 })

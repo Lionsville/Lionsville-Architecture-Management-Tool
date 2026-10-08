@@ -50,6 +50,12 @@ export type HostCommand =
   /** Open the dialog that explains and enables an agent's way in (ADR-0007). */
   | { type: 'connectAgent' }
   /**
+   * A link to the place on screen, copied and shown (ADR-0033, amended): the
+   * open source's address with the place as its fragment, or the sentence
+   * that says why work kept here cannot be reached from a link.
+   */
+  | { type: 'share' }
+  /**
    * The Edit menu's four, sent as commands rather than left as the roles
    * Electron gives them: the roles act on the DOM, and the app's one undo
    * stack and the canvas's selection are not in the DOM. Cut, Copy and

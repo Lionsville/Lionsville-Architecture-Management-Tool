@@ -20,7 +20,7 @@ const IN_MEMORY = { provider: 'memory', name: '', key: '', transient: true } as 
 import type { SourceProvider } from '../platform/sourceProvider'
 import { WORKING_FILE_INTERCHANGE } from '../adapters/folder/format/interchange'
 import {
-  interchangeLoaded, openSource, registerSourceProvider, registeredChrome, registeredConnects,
+  interchangeLoaded, openSource, overSource, registerSourceProvider, registeredChrome, registeredConnects,
   registeredMenus, sourceAgentPanel, sourceBarButton, sourceChip, sourceChipFace, sourceChipPanel, sourceDescription,
   sourceProblemAction, sourceProvider, sourceSayings,
   type Shell, type SourceBase, type SourceParts,
@@ -674,5 +674,21 @@ describe('the working file\'s part, loaded when wanted', () => {
     interchange.preload()
     await interchange.open(new TextEncoder().encode('no'), '')
     expect(tries).toBe(1)
+  })
+})
+
+describe('the shell over what a source just opened', () => {
+  it('takes off the address a link to the source before started from, and keeps the one the new source gives', () => {
+    const repositories = memoryRepositories()
+    const before: Shell = {
+      repositories, preferences: new InMemoryPreferencesStore(),
+      source: { kind: 'browser' }, shareAddress: () => 'https://before.example/',
+    } as unknown as Shell
+    const folder = overSource(before, { repositories, source: { kind: 'browser' } } as unknown as SourceParts)
+    expect(folder.shareAddress).toBeUndefined()
+    const server = overSource(before, {
+      repositories, source: { kind: 'browser' }, shareAddress: () => 'https://after.example/',
+    } as unknown as SourceParts)
+    expect(server.shareAddress?.()).toBe('https://after.example/')
   })
 })

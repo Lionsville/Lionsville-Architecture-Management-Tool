@@ -47,9 +47,11 @@ export function useShellCommands(deps: {
   prefs: ShellPreferences
   openPreferences: (open: true) => void
   openAgent: () => void
+  /** *Share with a Link…*: answered here, so it works from a home as well as over a scope. */
+  share: () => void
   hostControls: HostControls
 }): ShellCommands {
-  const { commands, onConnect, onReopen, prefs, openPreferences, openAgent, hostControls } = deps
+  const { commands, onConnect, onReopen, prefs, openPreferences, openAgent, share, hostControls } = deps
   const bus = useHostCommands(commands)
   const homeHistory = useRef<HomeHistoryDoors | undefined>(undefined)
   /**
@@ -63,6 +65,7 @@ export function useShellCommands(deps: {
     if (command.type === 'theme') prefs.chooseTheme(command.mode)
     if (command.type === 'preferences') openPreferences(true)
     if (command.type === 'connectAgent') openAgent()
+    if (command.type === 'share') share()
     if (command.type === 'snapshot') homeHistory.current?.openDialog()
     if (command.type === 'history') homeHistory.current?.openPage()
     if (command.type === 'export') homeFiles.current?.exportWorkingFile()
@@ -74,7 +77,7 @@ export function useShellCommands(deps: {
     // Here and not in the workspace, so the Go menu works from a home with
     // nothing open as well as over a scope (ADR-0033).
     if (command.type === 'back' || command.type === 'forward') goInHistory(command.type)
-  }), [bus, onConnect, onReopen, prefs, openPreferences, openAgent, hostControls])
+  }), [bus, onConnect, onReopen, prefs, openPreferences, openAgent, share, hostControls])
   return { bus, homeHistory, homeFiles }
 }
 

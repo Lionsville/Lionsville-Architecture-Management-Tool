@@ -516,6 +516,16 @@ export const EN = {
   'agent.stop': 'Stop',
   'agent.stoppedToast': '{name} was stopped. It hears so on its next call, and may ask to continue.',
 
+  // --- Share with a Link… (ADR-0033, amended) --------------------------------
+  'share.title': 'Share with a link',
+  'share.what': 'Anyone who may read this work opens it here with this link: the same scope, page and record. Somebody who is not signed in yet signs in first and lands here after.',
+  'share.linkLabel': 'Link to this place',
+  'share.copy': 'Copy link',
+  'share.copied': 'Link copied',
+  'share.copyFailed': 'The link could not be copied. Select it in the dialog and copy it from there.',
+  'share.noAddress': 'Work kept here — in a folder, in this browser or nowhere at all — cannot be opened from a link: nobody else reaches it at an address. A link can be shared where work is kept on a server everybody who may read it signs in to.',
+  'share.noPlace': 'There is no place on screen to link to yet. Open a scope or a home, and try again.',
+
   // --- the shell's top bar: the three pages beside the canvas -------------
   'shell.documentation': 'Documentation',
   'shell.documentationTip': 'Open the documentation page of the selected element',

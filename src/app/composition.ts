@@ -640,14 +640,17 @@ export function desktopCommandChannel(): DesktopCommands | undefined {
  * opened into, with everything the source before it said for itself taken off
  * first — its status words, its failure sentence, its session hook, its
  * read-only scopes, its landing, whether it publishes steps, what it hears of
- * changes and its own parts. A folder whose scopes are bound to a server's
- * session, or which reports a server's failure, is the defect this closes.
+ * changes, its own parts and the address a link to it starts from. A folder
+ * whose scopes are bound to a server's session, or which reports a server's
+ * failure, or a link to a folder made from a server's address, is the defect
+ * this closes.
  */
 export function overSource(shell: Shell, parts: SourceParts): Shell {
   const {
     sourceStatus: _status, onSourceWork: _work, sourceFailure: _failure, onScopeSession: _session,
     publishesSteps: _publishes, readOnlyAt: _readOnly, opensAt: _opensAt, changes: _changes,
-    own: _own, historyNoteKey: _historyNote, historyKept: _historyKept, sayings: _sayings, settled: _settled, ...rest
+    own: _own, historyNoteKey: _historyNote, historyKept: _historyKept, sayings: _sayings, settled: _settled,
+    shareAddress: _share, ...rest
   } = shell
   return { ...rest, ...parts, preferences: parts.preferences ?? shell.preferences }
 }

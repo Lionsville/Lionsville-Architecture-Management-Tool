@@ -15,6 +15,7 @@ import type { StringKey } from '../i18n'
 import { sourceIsReadOnly } from '../platform/workingSource'
 import { ConnectAgentDialog } from './dialogs/ConnectAgentDialog'
 import { PreferencesDialog } from './dialogs/PreferencesDialog'
+import { ShareLinkDialog } from './dialogs/ShareLinkDialog'
 import { ErrorBoundary } from './ErrorBoundary'
 import { HistoryPage } from './history/lazyHistoryPage'
 import { SnapshotDialog } from './history/SnapshotDialog'
@@ -410,7 +411,10 @@ export function AppNotices({ parts }: { parts: ShellParts }) {
   )
 }
 
-/** The dialogs that outlive a scope: the two file prompts, the preferences and *Connect an agent*. */
+/**
+ * The dialogs that outlive a scope: the two file prompts, the preferences,
+ * *Connect an agent* and *Share with a link*.
+ */
 export function AppDialogs({ parts }: { parts: ShellParts }) {
   const { props, services: { prefs, s }, machine, agentServer, provider, prompts } = parts
   const { updates } = machine
@@ -471,6 +475,7 @@ export function AppDialogs({ parts }: { parts: ShellParts }) {
         )}
         s={s}
       />
+      <ShareLinkDialog answer={parts.share.answer} onCopy={parts.share.copy} onClose={parts.share.close} s={s} />
     </>
   )
 }

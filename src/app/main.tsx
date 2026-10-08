@@ -512,6 +512,7 @@ function renderApp(
           own: shell.own,
           historyNoteKey: shell.historyNoteKey,
           historyKept: shell.historyKept,
+          shareAddress: shell.shareAddress,
           sayings: { ...sourceSayings(shell.source), ...shell.sayings },
           sourceNeeded: sourceNeeded(),
           changes: shell.changes,

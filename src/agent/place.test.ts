@@ -9,7 +9,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
-  PLACE_PREFIX, PLACE_STATE_KEY, nearestPlace, placeInState, placeOf, readPlace, samePlace, stepBetween, writePlace,
+  PLACE_PREFIX, PLACE_STATE_KEY, linkTo, nearestPlace, placeInState, placeOf, readPlace, samePlace, stepBetween, writePlace,
 } from './place'
 import type { Place, PlaceFacts } from './place'
 import { PAGES } from './screen'
@@ -208,5 +208,25 @@ describe('a place on the observations page, on a tab', () => {
     const facts: PlaceFacts = { scopeIs: () => true, views: [], holds: () => false }
     expect(nearestPlace({ scope: 'acme', page: 'observations', id: 'OB-9', tab: 'solutions' }, facts))
       .toEqual({ scope: 'acme', page: 'observations', tab: 'solutions' })
+  })
+})
+
+describe('a link to a place', () => {
+  const place: Place = { scope: 'acme/rail', page: 'decisions', id: 'adr-2' }
+
+  it('is the address with the place as its fragment, read back as the same place', () => {
+    const link = linkTo('https://work.example/', place)
+    expect(link).toBe('https://work.example/#place?scope=acme%2Frail&page=decisions&id=adr-2')
+    expect(readPlace(new URL(link).hash)).toEqual(place)
+  })
+
+  it('keeps the address’s path and query, and drops a fragment it had', () => {
+    expect(linkTo('https://work.example/app/?tenant=t1#somebody-else', { scope: '', page: 'home' }))
+      .toBe('https://work.example/app/?tenant=t1#place?scope=&page=home')
+  })
+
+  it('carries the tab of the observations page', () => {
+    const link = linkTo('https://work.example/', { scope: 'acme', page: 'observations', id: 'OB-1', tab: 'analysis' })
+    expect(readPlace(new URL(link).hash)).toEqual({ scope: 'acme', page: 'observations', id: 'OB-1', tab: 'analysis' })
   })
 })

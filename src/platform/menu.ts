@@ -5,7 +5,7 @@
  * The menu, said once (ADR-0005).
  *
  * The File menu's vocabulary — Open Folder…, Open…, Save, the two exports,
- * Snapshot…, History…, Preferences… — and the View menu's, which is the
+ * Share with a Link…, Snapshot…, History…, Preferences… — and the View menu's, which is the
  * theme, declared here as data: a label key, a command, an accelerator, and
  * which hosts carry it. Two things render this list and neither decides
  * anything:
@@ -80,6 +80,13 @@ export const FILE_MENU: readonly MenuEntry[] = [
   item('menu.open', { type: 'open' }, 'CmdOrCtrl+O'),
   item('menu.save', { type: 'save' }, 'CmdOrCtrl+S', ['scope']),
   item('menu.exportWorkingFile', { type: 'export' }, 'CmdOrCtrl+Shift+E'),
+  // Needing nothing, on both hosts and from every screen: where the source
+  // has no address a link may carry, the dialog says so rather than the item
+  // going missing, as *Connect an Agent…* does in a tab (ADR-0033, amended).
+  // No accelerator: the chord a reader would guess, ⌘⇧L, is a macOS
+  // service's (Search With Google), and on macOS a menu key fires whether or
+  // not the page handled it, so a chord here must be free everywhere.
+  item('menu.shareLink', { type: 'share' }),
   { kind: 'separator' },
   item('menu.snapshot', { type: 'snapshot' }, undefined, ['history']),
   item('menu.history', { type: 'history' }, undefined, ['history']),

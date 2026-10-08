@@ -363,6 +363,16 @@ export const NL: Record<keyof typeof EN, string> = {
   'agent.drivingHint': 'Wat je ondertussen aanklikt, kan veranderen wat de agent doet. Stoppen beëindigt de sessie en zegt dat tegen de agent.',
   'agent.stop': 'Stoppen',
   'agent.stoppedToast': '{name} is gestopt. De agent hoort dat bij de volgende aanroep en kan vragen om door te gaan.',
+
+  // --- Delen met een link… (ADR-0033, gewijzigd) -----------------------------
+  'share.title': 'Delen met een link',
+  'share.what': 'Wie dit werk mag lezen, opent het met deze link hier: dezelfde scope, pagina en hetzelfde record. Wie nog niet is aangemeld, meldt zich eerst aan en komt daarna hier uit.',
+  'share.linkLabel': 'Link naar deze plek',
+  'share.copy': 'Link kopiëren',
+  'share.copied': 'Link gekopieerd',
+  'share.copyFailed': 'De link kon niet worden gekopieerd. Selecteer hem in het venster en kopieer hem daar.',
+  'share.noAddress': 'Werk dat hier wordt bewaard — in een map, in deze browser of nergens — is niet met een link te openen: niemand anders bereikt het op een adres. Een link kan worden gedeeld waar werk op een server staat waarop iedereen die het mag lezen zich aanmeldt.',
+  'share.noPlace': 'Er staat nog geen plek op het scherm om naar te linken. Open een scope of een startpagina en probeer het opnieuw.',
   'shell.documentation': 'Documentatie',
   'shell.documentationTip': 'Open de documentatiepagina van het geselecteerde element',
   'shell.noElements': 'Er is nog niets om te documenteren \u2014 voeg eerst een element toe.',

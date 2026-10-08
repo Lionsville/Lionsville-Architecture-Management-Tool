@@ -18,6 +18,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'menu.open': 'Öffnen…',
   'menu.save': 'Speichern',
   'menu.exportWorkingFile': 'Kopie der Arbeitsdatei speichern…',
+  'menu.shareLink': 'Per Link teilen…',
   'menu.snapshot': 'Snapshot erstellen…',
   'menu.history': 'Verlauf…',
   'menu.connectAgent': 'Agent verbinden…',
