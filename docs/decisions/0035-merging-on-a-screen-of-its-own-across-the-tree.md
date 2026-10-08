@@ -327,3 +327,65 @@ this scope's register once it was merged anywhere.
 The screen's main controls carry `merge.search`, `merge.across`,
 `merge.survivor` (on each record picked), `merge.what`, `merge.values`,
 `merge.links` and `merge.confirm`.
+
+## As built, 8 October 2026: the agent's tools
+
+§6, built over the plan above (`agent/merge.ts`, `agent/write/merge.ts`).
+
+**Three tools.** `observation.merge` takes `into` (the survivor, by id or
+label, in the scope the call is for or `intoScope`), `absorb` (`[{ id,
+scope? }]`, each scope defaulting to the survivor's), `values` (`title`,
+`where`, `by`, `impact`, `date`, `body`; a field left out stays as the
+survivor has it, and title, place and observer are never blanked) and
+`links` (`[{ key, move, strength }]`, keyed as `planMerge`'s rows are).
+`cause.merge` is new, with the same shape and a cause's values (`title`,
+`state`, `root`, `body`). `id` and `fromScope` are the old way to say an
+observation merge and are accepted for one beta, as the schema says: `id`
+is one record to absorb, and `id` with `fromScope` still folds in an
+observation of a scope below by writing only this scope's survivor, as it
+did before this record.
+
+**The preview is a read, `merge.plan`** (decided in the build), rather than
+a `dryRun` flag on the two writes. It takes the same arguments and a `kind`,
+and answers every row — its key, the record it lives on and the one it
+names, where it would land, whether it moves and, where it may not, the
+refusal in the link form's words with a sentence — the scopes the merge
+would write, and the refusal the merge would meet. A read answers while
+nothing may be changed, for a scope that is not open and for a person who
+may only read; a write with a flag would be refused in all three, and would
+count as driving the app.
+
+**Refusals have keys.** A merge refused as a whole answers `merge.nothing`,
+`merge.merged`, `merge.archived`, `merge.survivorAbsorbed`,
+`merge.notADay` or `merge.unverified`, a record that is not there
+`agent.unknownId`, and the two root steps' keys pass through. A row of
+`links` asked to move where the tree forbids it is `merge.linkForbidden`,
+with the row's reason (`MERGE_LINK_SENTENCE`, one sentence per
+`MergeLinkRefusal`); a key no row has is `agent.badArguments`.
+
+**What the agent reads without waiting**: the scope the call is for, from
+its session, and the others as the tree last read them. The organisation is
+below nothing, so where it is not the scope open it is known only by the
+causes it holds that explain a record of the merge — enough to say what a
+merge does with them, never to write it.
+
+**Where it lands.** A merge whose writes are all on the call's scope is one
+transaction at the session, marked the agent's, which `undo` takes back,
+and may be a step of a `batch`. One that writes another scope lands only
+through a host that writes several scopes as one: `SessionView.changeAcross`,
+a seam declared in `agent/merge.ts` in the shape of the page's
+`onChangeAcross`, which reads every scope the merge reads, has the plan made
+again over what it read, and writes each scope's part as that scope's step,
+all or none. Where a host does not fill it — and inside a batch, which is
+one transaction at one session — such a merge is refused
+`agent.scopeNotOpen`, naming the scopes; `links` with `move: false` keeps a
+row that reaches another scope where it is. No host fills the seam yet: the
+desktop hands its agent no `changeAcross`, and a hosted environment's
+server would compose one from its own several-scope write.
+
+`causes.list` leaves a merged cause out unless `includeMerged`, and says
+where a merged cause or observation went (`mergedInto`, and
+`mergedIntoScope` where the survivor lives in another scope); `cause.read`
+answers the cause's history. The method an agent is handed on connect says
+that observations and causes are merged, that `merge.plan` says what a
+merge would do, and that a merge may take records of any scope.
