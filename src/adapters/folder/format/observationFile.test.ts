@@ -105,6 +105,21 @@ describe('a cause as a file', () => {
     expect(causeFromFile('---\nnumber: 4\n---\n# RC-0004 — Why\n', 'observations/causes/0004-why.md')?.root).toBeUndefined()
   })
 
+  it('writes what happened to a cause, and nothing where nothing did (ADR-0035 §4)', () => {
+    const merged: Cause = {
+      ...cause,
+      history: [{ date: '2026-10-01', kind: 'absorbed', id: 'ca-z', scope: 'acme/claims' }, { date: '2026-10-02', kind: 'merged', id: 'ca-y' }],
+    }
+    const text = causeFileText(merged)
+    expect(text).toContain('history:\n  - date: 2026-10-01\n    kind: absorbed\n    id: ca-z\n    scope: acme/claims\n')
+    expect(causeFromFile(text, causePath(merged))).toEqual(merged)
+    expect(causeFileText(cause)).not.toContain('history:')
+    expect(causeFileText({ ...cause, history: [] })).not.toContain('history:')
+    // A row that names no kind this build knows, or no cause, is read past.
+    const odd = '---\nnumber: 4\nhistory:\n  - date: 2026-10-01\n    kind: split\n    id: ca-1\n  - date: 2026-10-01\n    kind: merged\n---\n# CA-0004 — Why\n'
+    expect(causeFromFile(odd, 'observations/causes/0004-why.md')?.history).toBeUndefined()
+  })
+
   it('defaults a mistyped state and strength rather than refusing', () => {
     const text = '---\nnumber: 4\nstate: certain\nexplains:\n  - id: ob-1\n    strength: huge\n  - strength: strong\n---\n# CA-0004 — Why\n\nBody.\n'
     expect(causeFromFile(text, 'observations/causes/0004-why.md')).toEqual({

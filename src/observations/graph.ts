@@ -30,7 +30,7 @@
  * Solutions tab's whole chain is drawn from.
  */
 import {
-  absorbedBy, causeDepth, isArchived, isMerged, isRootCause,
+  absorbedBy, causeDepth, isArchived, isMerged, isRootCause, liveCauses, mergedInto,
 } from './observation'
 import type { Analysis, Cause, CauseStrength, Observation, ObservationBelow, ScopeAnalysis } from './observation'
 import type { Solution } from './solution'
@@ -81,7 +81,9 @@ export function nodeKey(id: string, scope?: string): string {
  * below. Rows are assigned lane by lane; every node has one.
  */
 export function analysisGraph(analysis: Analysis, below: readonly ObservationBelow[] = []): AnalysisGraph {
-  const { observations, causes } = analysis
+  const { observations } = analysis
+  // A merged cause is history (ADR-0035 §4), drawn nowhere.
+  const causes = liveCauses(analysis.causes)
   const drawnObservations: GraphNode[] = []
   for (const observation of observations) {
     if (isMerged(observations, observation.id) || isArchived(observation)) continue
@@ -90,7 +92,7 @@ export function analysisGraph(analysis: Analysis, below: readonly ObservationBel
     })
   }
   for (const { scope, observation } of below) {
-    if (absorbedBy(observations, observation.id, scope) || isArchived(observation)) continue
+    if (absorbedBy(observations, observation.id, scope) || mergedInto(observation.history) || isArchived(observation)) continue
     drawnObservations.push({
       kind: 'observation', key: nodeKey(observation.id, scope), id: observation.id, scope, observation, lane: 0, row: 0,
     })
@@ -235,18 +237,23 @@ export function pictureLinks(scopes: readonly ScopeAnalysis[], here: string): Pi
 }
 
 /**
- * The observations of the scopes read that one of them folded into another,
- * by key: merged within a scope, or absorbed from a scope below. History,
- * read but no longer drawn.
+ * The observations and causes of the scopes read that a merge folded into
+ * another, by key: absorbed by a survivor of a scope read, or saying itself
+ * that it was merged — which a merge across the tree writes on the absorbed
+ * record where it lives (ADR-0035 §4, §5). History, read but no longer drawn
+ * or counted.
  */
 export function absorbedKeys(scopes: readonly ScopeAnalysis[], here: string): Set<string> {
   const gone = new Set<string>()
-  for (const { scope, observations } of scopes) {
-    for (const observation of observations) {
-      for (const event of observation.history) {
-        if (event.kind === 'absorbed' && event.id !== undefined) gone.add(pictureKey(here, event.scope ?? scope, event.id))
-      }
+  const read = (scope: string, id: string, history: readonly { kind: string; id?: string; scope?: string }[]) => {
+    for (const event of history) {
+      if (event.kind === 'absorbed' && event.id !== undefined) gone.add(pictureKey(here, event.scope ?? scope, event.id))
+      if (event.kind === 'merged') gone.add(pictureKey(here, scope, id))
     }
+  }
+  for (const { scope, observations, causes } of scopes) {
+    for (const observation of observations) read(scope, observation.id, observation.history)
+    for (const cause of causes) read(scope, cause.id, cause.history ?? [])
   }
   return gone
 }
@@ -263,17 +270,28 @@ export function openEnds(
   scopes: readonly ScopeAnalysis[], here: string,
   above?: (scope: string) => ReadonlyMap<string, readonly unknown[]> | undefined,
 ): Set<string> {
-  const explained = new Set(pictureLinks(scopes, here).filter((link) => link.kind === 'explains').map((link) => link.from))
+  const gone = absorbedKeys(scopes, here)
+  const explained = explainedKeys(scopes, here, gone)
   const open = new Set<string>()
   for (const { scope, causes } of scopes) {
     const fromAbove = above?.(scope)
     for (const cause of causes) {
       const key = pictureKey(here, scope, cause.id)
+      if (gone.has(key)) continue
       const explainedAbove = (fromAbove?.get(cause.id)?.length ?? 0) > 0
       if (!isRootCause(cause) && !explained.has(key) && !explainedAbove) open.add(key)
     }
   }
   return open
+}
+
+/**
+ * What a cause explains, by key — a merged cause's links left out: what
+ * could not move with a merge stays on the absorbed cause as history
+ * (ADR-0035 §3), and history explains nothing now.
+ */
+function explainedKeys(scopes: readonly ScopeAnalysis[], here: string, gone: ReadonlySet<string>): Set<string> {
+  return new Set(pictureLinks(scopes, here).filter((link) => link.kind === 'explains' && !gone.has(link.to)).map((link) => link.from))
 }
 
 /** What the counts over the picture say (ADR-0032 §3, §8). */
@@ -303,7 +321,7 @@ export function pictureCounts(
 ): PictureCounts {
   const gone = absorbedKeys(scopes, here)
   const shown = (key: string) => !gone.has(key) && (options.visible === undefined || options.visible.has(key))
-  const explained = new Set(pictureLinks(scopes, here).filter((link) => link.kind === 'explains').map((link) => link.from))
+  const explained = explainedKeys(scopes, here, gone)
   const counts: PictureCounts = { observed: 0, analysed: 0, assumed: 0, verified: 0, roots: 0, openEnds: 0 }
   for (const { scope, observations, causes } of scopes) {
     const fromAbove = options.above?.(scope)

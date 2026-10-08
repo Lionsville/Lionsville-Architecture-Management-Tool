@@ -41,7 +41,7 @@ import type {
   Cause, CauseStrength, EarlierAttempt, Experiment, ExperimentOutcome, Observation, Solution, SolutionEvent,
   SolutionLink, SolutionSize, SolutionState,
 } from '../model/observation'
-import { absorbedBy, causeLabel, formatObservationNumber, isRootCause } from './observation'
+import { absorbedBy, causeLabel, formatObservationNumber, isRootCause, rootCauses } from './observation'
 import type { Analysis, ObservationBelow } from './observation'
 
 export type {
@@ -801,7 +801,7 @@ export function seenSinceImplemented(
 /** The root causes no live solution addresses: what nobody is working on. */
 export function rootsWithoutSolution(causes: readonly Cause[], solutions: readonly Solution[]): Cause[] {
   const covered = new Set(solutions.filter(isLive).flatMap((one) => one.addresses.map((address) => address.id)))
-  return causes.filter((cause) => isRootCause(cause) && !covered.has(cause.id))
+  return rootCauses(causes).filter((cause) => !covered.has(cause.id))
 }
 
 /** Rough sizes in order, for sorting and for the width of a mark. */

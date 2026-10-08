@@ -144,4 +144,12 @@ describe('the addresses an analysis holds (ADR-0032 §4, §5)', () => {
     ])
     expect(readdressAnalysis({ causes: [cause('ca-1', ['acme/rail'])] }, 'acme/rail', 'acme/rail')).toEqual([])
   })
+
+  it('carries the scope a merged cause names on its history, and its links only where they moved (ADR-0035 §4)', () => {
+    const merged: Cause = { ...cause('ca-3', [undefined]), history: [{ date: '2026-10-01', kind: 'merged', id: 'ca-9', scope: 'acme/rail' }] }
+    expect(analysisNamesWithin({ causes: [merged] }, 'acme/rail')).toBe(true)
+    expect(readdressAnalysis({ causes: [merged] }, 'acme/rail', 'group/rail')).toEqual([
+      { type: 'cause.update', id: 'ca-3', patch: { history: [{ date: '2026-10-01', kind: 'merged', id: 'ca-9', scope: 'group/rail' }] } },
+    ])
+  })
 })

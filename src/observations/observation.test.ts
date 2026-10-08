@@ -9,7 +9,7 @@ import {
   mergeObservations, newCause, newObservation,
   nextCauseNumber, nextObservationNumber, removeCause, removeObservation, rootCauses, seenAgain, seenDayProblem,
   setArchived, unlinkCause, updateCause, updateObservation, verifyCause, withConfirmation, withReason,
-  causeTemplate,
+  causeTemplate, causeAbsorbedBy, isCauseMerged, liveCauses, mergedInto,
 } from './observation'
 import type { Analysis, Cause, LinkContext, Observation, ScopeAnalysis } from './observation'
 
@@ -335,5 +335,43 @@ describe('verifying a cause', () => {
     expect(withReason('## Waarom we dat denken\n\n## Hoe te verifiëren\n', 'Twee keer zo veel', t))
       .toBe('## Waarom we dat denken\n\nTwee keer zo veel\n\n## Hoe te verifiëren\n')
     expect(withReason(causeTemplate(t), '  ', t)).toBe(causeTemplate(t))
+  })
+})
+
+describe('a merged cause is history (ADR-0035 §4)', () => {
+  const survivor = cause({ id: 'c1', root: true, history: [{ date: '2026-10-01', kind: 'absorbed', id: 'c2' }] })
+  const absorbed = cause({ id: 'c2', number: 2, root: true, history: [{ date: '2026-10-01', kind: 'merged', id: 'c1' }] })
+  const other = cause({ id: 'c3', number: 3 })
+
+  it('is read as merged by the survivor of its scope, and by its own history', () => {
+    expect(causeAbsorbedBy([survivor, absorbed], 'c2')?.id).toBe('c1')
+    expect(isCauseMerged([survivor, absorbed], 'c2')).toBe(true)
+    // Merged into a scope elsewhere: only the record itself says so.
+    const elsewhere = cause({ id: 'c4', history: [{ date: '2026-10-01', kind: 'merged', id: 'x', scope: 'acme' }] })
+    expect(isCauseMerged([elsewhere], 'c4')).toBe(true)
+    expect(isCauseMerged([survivor, absorbed], 'c1')).toBe(false)
+    expect(isCauseMerged([other], 'c3')).toBe(false)
+  })
+  it('is left out of the causes standing and of the root causes', () => {
+    expect(liveCauses([survivor, absorbed, other]).map((one) => one.id)).toEqual(['c1', 'c3'])
+    expect(rootCauses([survivor, absorbed, other]).map((one) => one.id)).toEqual(['c1'])
+  })
+  it('is never linked to, and links nothing', () => {
+    const list = [survivor, cause({ ...absorbed, root: undefined }), other]
+    expect(linkRefusal(list, 'c3', { id: 'c2' })).toBe('merged')
+    expect(linkRefusal(list, 'c2', { id: 'c3' })).toBe('merged')
+    const below: ScopeAnalysis[] = [{ scope: 'acme', observations: [], causes: [cause({ id: 'b1', history: [{ date: '2026-10-01', kind: 'merged', id: 'b2' }] })], solutions: [], experiments: [] }]
+    expect(linkRefusal([other], 'c3', { id: 'b1', scope: 'acme' }, { here: '', below })).toBe('merged')
+  })
+  it('says where it went, the last merge first', () => {
+    expect(mergedInto(absorbed.history)).toEqual({ id: 'c1', date: '2026-10-01' })
+    expect(mergedInto([{ date: '2026-10-02', kind: 'merged', id: 'x', scope: 'acme' }])).toEqual({ id: 'x', scope: 'acme', date: '2026-10-02' })
+    expect(mergedInto(undefined)).toBeUndefined()
+    expect(mergedInto(survivor.history)).toBeUndefined()
+  })
+  it('an observation that says itself it was merged elsewhere is merged here too', () => {
+    const gone = observation({ id: 'o9', history: [{ date: '2026-09-08', kind: 'recorded' }, { date: '2026-10-01', kind: 'merged', id: 'x', scope: 'acme' }] })
+    expect(isMerged([gone], 'o9')).toBe(true)
+    expect(liveObservations([gone])).toEqual([])
   })
 })

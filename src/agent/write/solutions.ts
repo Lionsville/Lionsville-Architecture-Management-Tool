@@ -24,7 +24,7 @@ import {
   reopenWithdraws, restoreSolution, setTestStrength, unaddressCause, updateExperiment, updateSolution, waiveExperiment,
 } from '../../observations/solution'
 import type { Experiment, ExperimentPatch, SolutionPatch, SolutionWork } from '../../observations/solution'
-import { causeLabel, isRootCause } from '../../observations/observation'
+import { causeLabel, isCauseMerged, isRootCause } from '../../observations/observation'
 import { formatAdrNumber, newAdr, nextAdrNumber } from '../../decisions/adr'
 import { experimentLine, findCause, findExperiment, findSolution, solutionFacts, solutionLine } from '../answer'
 import type { AgentAnswer } from '../tools'
@@ -75,6 +75,10 @@ const withSolutions = (work: Work, solutions: Solution[]): SolutionWork => ({ ..
  * there are some, and otherwise says how a cause becomes a root.
  */
 function notRoot(cause: Cause, causes: readonly Cause[]): AgentAnswer | undefined {
+  // A merged cause is history (ADR-0035 §4): what it went into is addressed instead.
+  if (isCauseMerged(causes, cause.id)) {
+    return refused('agent.badArguments', `${causeLabel(cause)} was merged into another cause and is history. Address the cause it was merged into instead.`)
+  }
   if (isRootCause(cause)) return undefined
   const deeper = causes.filter((one) => one.explains.some((link) => link.id === cause.id && link.scope === undefined))
   const label = causeLabel(cause)

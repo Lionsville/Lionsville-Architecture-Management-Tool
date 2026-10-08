@@ -30,7 +30,7 @@ import type { FindingTarget } from '../../roadmap/findingTarget'
 import { TRANSITION_STATUSES } from '../../model/transition'
 import type { TransitionStatus } from '../../model/transition'
 import type { ScopeSnapshot } from '../../projects/scope'
-import { liveObservations, rootCauses } from '../../observations/observation'
+import { liveCauses, liveObservations, rootCauses } from '../../observations/observation'
 import { isLive, rootsWithoutSolution } from '../../observations/solution'
 import { CAUSE_STATES } from '../../model/observation'
 import type { CauseState } from '../../model/observation'
@@ -159,7 +159,7 @@ export function organisationPages(
     },
     observations: {
       total: liveObservations(observations).length,
-      causes: tally(CAUSE_STATES, causes.map((one) => ({ status: one.state }))),
+      causes: tally(CAUSE_STATES, liveCauses(causes).map((one) => ({ status: one.state }))),
       roots: rootCauses(causes).length,
       solutions: solutions.filter(isLive).length,
       covered: rootCauses(causes).length - rootsWithoutSolution(causes, solutions).length,

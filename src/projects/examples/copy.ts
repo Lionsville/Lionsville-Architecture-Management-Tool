@@ -127,11 +127,12 @@ export async function placeCopy(
 
 /** One cause's links to a scope below, re-addressed. Untouched where it has none. */
 function withLinks(readdress: (path: ScopePath) => ScopePath) {
-  return (cause: NonNullable<ScopeSnapshot['model']['causes']>[number]) => (
-    cause.explains.some((link) => link.scope !== undefined)
-      ? { ...cause, explains: cause.explains.map((link) => (link.scope === undefined ? link : { ...link, scope: readdress(link.scope) })) }
-      : cause
-  )
+  const carry = <T extends { scope?: string }>(held: T): T => (held.scope === undefined ? held : { ...held, scope: readdress(held.scope) })
+  return (cause: NonNullable<ScopeSnapshot['model']['causes']>[number]) => {
+    const named = cause.explains.some((link) => link.scope !== undefined) || (cause.history ?? []).some((event) => event.scope !== undefined)
+    if (!named) return cause
+    return { ...cause, explains: cause.explains.map(carry), ...(cause.history ? { history: cause.history.map(carry) } : {}) }
+  }
 }
 
 /** One element's `ref`, re-addressed. Untouched where there is none. */

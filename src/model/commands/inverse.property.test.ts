@@ -245,7 +245,11 @@ const COMMANDS: { [K in CommandType]: (r: Random, model: Model) => Extract<Comma
   'cause.add': (r) => ({ type: 'cause.add', cause: cause(r, r.chance(0.8) ? `ca-${2 + r.int(100)}` : 'ca-1', 2) }),
   'cause.update': (r, m) => ({
     type: 'cause.update', id: held(r, m.order.causes, 'ca'),
-    patch: { state: r.pick(['assumed', 'verified'] as const), ...(r.chance(0.5) ? { body: 'Because, really.' } : {}) },
+    patch: {
+      state: r.pick(['assumed', 'verified'] as const), ...(r.chance(0.5) ? { body: 'Because, really.' } : {}),
+      // A merge writes the history (ADR-0035 §4), and an undo takes it back off.
+      ...(r.chance(0.3) ? { history: [{ date: '2026-10-01', kind: 'merged' as const, id: 'ca-1' }] } : {}),
+    },
   }),
   'cause.remove': (r, m) => ({ type: 'cause.remove', id: held(r, m.order.causes, 'ca') }),
   'solution.add': (r) => ({ type: 'solution.add', solution: solution(r, r.chance(0.8) ? `so-${2 + r.int(100)}` : 'so-1', 2) }),

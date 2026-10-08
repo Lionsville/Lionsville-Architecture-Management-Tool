@@ -69,7 +69,7 @@ import { EN } from './strings/en'
 import { NL } from './strings/nl'
 
 export type {
-  Cause, CauseAbove, CauseLink, CauseState, CauseStrength, Observation, ObservationEvent, ObservationEventKind,
+  Cause, CauseAbove, CauseEvent, CauseEventKind, CauseLink, CauseState, CauseStrength, Observation, ObservationEvent, ObservationEventKind,
   ObservationImpact, ScopeAnalysis,
 } from '../model/observation'
 export { CAUSE_STATES, CAUSE_STRENGTHS, OBSERVATION_IMPACTS } from '../model/observation'
@@ -283,9 +283,21 @@ export function absorbedBy(
   )))
 }
 
-/** Folded into another observation of this scope: history, read but no longer analysed. */
+/**
+ * Folded into another observation: history, read but no longer analysed.
+ * Either this scope's survivor says it absorbed it, or the record says itself
+ * where it went — which a merge into another scope writes on it (ADR-0035 §5).
+ */
 export function isMerged(list: readonly Observation[], id: string): boolean {
-  return absorbedBy(list, id) !== undefined
+  if (absorbedBy(list, id) !== undefined) return true
+  return list.find((one) => one.id === id)?.history.some((event) => event.kind === 'merged') ?? false
+}
+
+/** Where a record says it was merged to, off its own history: the last `merged` event, or nothing. */
+export function mergedInto(history: readonly { kind: string; id?: string; scope?: string; date: string }[] | undefined):
+  { id: string; scope?: string; date: string } | undefined {
+  const event = [...(history ?? [])].reverse().find((one) => one.kind === 'merged' && one.id !== undefined)
+  return event && { id: event.id!, ...(event.scope !== undefined ? { scope: event.scope } : {}), date: event.date }
 }
 
 /**
@@ -386,6 +398,29 @@ export function removeObservation(analysis: Analysis, id: string): Analysis {
 }
 
 // --- causes ------------------------------------------------------------------------------
+
+/** The cause of this scope that absorbed `id` (from `scope`, or from this scope when absent) (ADR-0035 §4). */
+export function causeAbsorbedBy(list: readonly Cause[], id: string, scope?: string): Cause | undefined {
+  return list.find((one) => (one.history ?? []).some((event) => (
+    event.kind === 'absorbed' && event.id === id && event.scope === scope
+  )))
+}
+
+/**
+ * Folded into another cause: history, kept in its list on its number and
+ * read but no longer analysed — not drawn, not counted, not linked to, not
+ * addressed (ADR-0035 §4). Said by the survivor where it is of this scope,
+ * and by the record itself in any case a merge wrote.
+ */
+export function isCauseMerged(list: readonly Cause[], id: string): boolean {
+  if (causeAbsorbedBy(list, id) !== undefined) return true
+  return (list.find((one) => one.id === id)?.history ?? []).some((event) => event.kind === 'merged')
+}
+
+/** The causes still standing: what is drawn, counted, linked to and addressed. */
+export function liveCauses(list: readonly Cause[]): Cause[] {
+  return list.filter((one) => !isCauseMerged(list, one.id))
+}
 
 export type CausePatch = Partial<Pick<Cause, 'title' | 'body' | 'state'>>
 
@@ -548,13 +583,15 @@ function reaches(list: readonly Cause[], start: string, target: string): boolean
  * - `sideways` — the other lives in a scope that is not below this one;
  * - `observationBelow` — the other is an observation of a scope below: that
  *   scope explains its own observations, and this one explains its causes;
+ * - `merged` — the one or the other was folded into another cause, and is
+ *   history (ADR-0035 §4): link the survivor instead;
  * - `unknown` — the scope below holds no such record, or the tree was not
  *   given to ask.
  *
  * A link the cause already has is only ever a change of strength, so it is
  * not asked again: what was linked before a rule existed stays linked.
  */
-export type LinkRefusal = 'self' | 'loop' | 'root' | 'upward' | 'sideways' | 'observationBelow' | 'unknown'
+export type LinkRefusal = 'self' | 'loop' | 'root' | 'upward' | 'sideways' | 'observationBelow' | 'merged' | 'unknown'
 
 /** Where the cause doing the explaining lives, and what the tree holds below it. */
 export type LinkContext = {
@@ -568,10 +605,12 @@ export function linkRefusal(
 ): LinkRefusal | undefined {
   const cause = list.find((one) => one.id === causeId)
   if (cause?.explains.some((one) => one.id === link.id && one.scope === link.scope)) return undefined
+  if (cause && isCauseMerged(list, causeId)) return 'merged'
   if (link.scope !== undefined) return belowRefusal(link as CauseLink, context)
   if (link.id === causeId) return 'self'
   const target = list.find((one) => one.id === link.id)
   if (!target) return undefined
+  if (isCauseMerged(list, target.id)) return 'merged'
   if (isRootCause(target)) return 'root'
   return reaches(list, link.id, causeId) ? 'loop' : undefined
 }
@@ -586,6 +625,7 @@ function belowRefusal(link: CauseLink, context: LinkContext | undefined): LinkRe
   if (held?.observations.some((one) => one.id === link.id)) return 'observationBelow'
   const target = held?.causes.find((one) => one.id === link.id)
   if (!target) return 'unknown'
+  if (isCauseMerged(held!.causes, target.id)) return 'merged'
   return isRootCause(target) ? 'root' : undefined
 }
 
@@ -634,8 +674,9 @@ export function isRootCause(cause: Pick<Cause, 'root'>): boolean {
   return cause.root === true
 }
 
+/** The root causes still standing: a merged one is history (ADR-0035 §4), and nothing is written for it. */
 export function rootCauses(list: readonly Cause[]): Cause[] {
-  return list.filter(isRootCause)
+  return liveCauses(list).filter(isRootCause)
 }
 
 /** What stands in the way of a cause becoming a root cause, or going back (ADR-0032 §3). */

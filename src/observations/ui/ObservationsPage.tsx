@@ -55,8 +55,8 @@ import type { DocumentImages } from '../../documentation/ui/DocumentSource'
 import type { MakeId } from '../../model/keys'
 import type { CommandRefusal } from '../../model/reducer'
 import {
-  absorbedBy, absorbFromBelow, causeLabel, explainedBy, formatObservationNumber, isArchived, isMerged,
-  isRootCause, linkCause, liveObservations, mergeObservations, observationsBelow, removeCause, removeObservation,
+  absorbedBy, absorbFromBelow, causeLabel, explainedBy, formatObservationNumber, isArchived, isCauseMerged, isMerged,
+  isRootCause, linkCause, liveObservations, mergeObservations, observationsBelow, removeCause, removeObservation, rootCauses,
   setArchived, sortCauses, sortObservations, unlinkCause, updateCause,
 } from '../observation'
 import type {
@@ -516,7 +516,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const { shows } = f
   const ownRows = sortObservations(observations)
     .filter((one) => (showMerged || !isMerged(observations, one.id)) && (showArchived || !isArchived(one)) && shows(one.id))
-  const causeRows = sortCauses(causes).filter((one) => shows(one.id))
+  const causeRows = sortCauses(causes).filter((one) => (showMerged || !isCauseMerged(causes, one.id)) && shows(one.id))
   const solutionRows = [...solutions].sort((a, b) => b.number - a.number)
     .filter((one) => (showArchived || isLive(one)) && shows(solutionKey(one.id)))
   const experimentRows = [...experiments].sort((a, b) => b.number - a.number).filter((one) => shows(experimentKey(one.id)))
@@ -535,7 +535,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
       causes={causeRows}
       solutions={solutionRows}
       experiments={experimentRows}
-      analysisBelow={recordsBelow(below, here.scope, f.viewLocal, shows, showArchived)}
+      analysisBelow={recordsBelow(below, here.scope, f.viewLocal, shows, showArchived, showMerged)}
       empty={<EmptyRegister observations={observations} showArchived={showArchived} onShowArchived={() => setShowArchived(true)} filtering={f.result.filtering} s={s} />}
       selectedKey={selectedKey}
       onSelect={setSelectedKey}
@@ -744,7 +744,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
     }
     return found
   }, [orphanRoots, solutions, analysis, belowAll, plans, context, s, nameOf])
-  const rootCount = causes.filter((one) => isRootCause(one)).length
+  const rootCount = rootCauses(causes).length
   const phaseCounts = (['idea', 'shaped', 'testing', 'proven', 'adopted', 'implemented'] as const)
     .map((phase) => [phase, solutions.filter((one) => phaseOf(one) === phase).length] as const)
 

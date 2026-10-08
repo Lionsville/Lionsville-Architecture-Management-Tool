@@ -26,7 +26,7 @@ import Snackbar from '@mui/material/Snackbar'
 import type { Translate } from '../../i18n'
 import type { MarkdownRenderOptions } from '../../documentation/documentation'
 import type { MakeId } from '../../model/keys'
-import { causeLabel, linkCause, linkRefusal, nextCauseNumber, seenAgain } from '../observation'
+import { causeLabel, linkCause, linkRefusal, liveCauses, nextCauseNumber, seenAgain } from '../observation'
 import type { Cause, CauseLink, LinkContext, ScopeAnalysis } from '../observation'
 import { addCauseLinked, recordObservation } from '../form'
 import { nodeKey } from '../graph'
@@ -217,7 +217,9 @@ function linkSpec(target: LinkTarget, o: {
 }): LinkSpec {
   const { s, work } = o
   const { mode, id, scope } = target
-  const causesIn = (at: string | undefined): readonly Cause[] => (at === undefined ? work.causes : o.below.find((one) => one.scope === at)?.causes ?? [])
+  // A merged cause is history (ADR-0035 §4): never offered, to link or to make a link from.
+  const everyCause = (at: string | undefined): readonly Cause[] => (at === undefined ? work.causes : o.below.find((one) => one.scope === at)?.causes ?? [])
+  const causesIn = (at: string | undefined): readonly Cause[] => liveCauses(everyCause(at))
   const candidate = (cause: Cause, at?: string): LinkCandidate => ({
     key: nodeKey(cause.id, at), title: cause.title, root: cause.root === true,
     label: `${causeLabel(cause)} ${cause.title}${at !== undefined ? ` (${o.scopeLabel(at)})` : ''}`,
@@ -227,14 +229,14 @@ function linkSpec(target: LinkTarget, o: {
   if (mode === 'local') {
     const here = work.causes
     const own = here.find((one) => one.id === id)
-    const candidates = o.below.flatMap((held) => held.causes
+    const candidates = o.below.flatMap((held) => liveCauses(held.causes)
       .filter((cause) => !cause.root && !own?.explains.some((link) => link.id === cause.id && link.scope === held.scope))
       .filter((cause) => linkRefusal(here, id, { id: cause.id, scope: held.scope }, o.context) === undefined)
       .map((cause) => candidate(cause, held.scope)))
     return { ...base, title: s('observation.linkLocalTitle', { name: subject }), intro: s('observation.linkLocalIntro'), candidates }
   }
   if (mode === 'org') {
-    const here = work.causes
+    const here = causesIn(undefined)
     const candidates = here
       .filter((cause) => !cause.explains.some((link) => link.id === id && link.scope === scope))
       .filter((cause) => linkRefusal(here, cause.id, { id, ...(scope !== undefined ? { scope } : {}) }, o.context) === undefined)
@@ -242,7 +244,7 @@ function linkSpec(target: LinkTarget, o: {
     return {
       ...base, title: s('observation.linkOrgTitle', { name: subject, scope: o.scopeName }),
       intro: s('observation.linkOrgIntro', { scope: o.scopeName, below: scope !== undefined ? o.scopeLabel(scope) : o.scopeName }),
-      candidates, create: { madeIn: o.scopeName, nextNumber: nextCauseNumber(here), rootDefault: true, behind: here.map((cause) => candidate(cause)) },
+      candidates, create: { madeIn: o.scopeName, nextNumber: nextCauseNumber(work.causes), rootDefault: true, behind: here.map((cause) => candidate(cause)) },
     }
   }
   const list = causesIn(scope)
@@ -260,7 +262,7 @@ function linkSpec(target: LinkTarget, o: {
     ...base, title: s(title, { name: subject }), intro: s(intro),
     candidates: allowed.map((cause) => ({ ...candidate(cause), key: cause.id })),
     create: {
-      madeIn: scope === undefined ? o.scopeName : o.scopeLabel(scope), nextNumber: nextCauseNumber(list),
+      madeIn: scope === undefined ? o.scopeName : o.scopeLabel(scope), nextNumber: nextCauseNumber(everyCause(scope)),
       rootFixed: mode === 'root', rootDefault: false,
       behind: list.filter((cause) => cause.id !== id).map((cause) => ({ ...candidate(cause), key: cause.id })),
     },

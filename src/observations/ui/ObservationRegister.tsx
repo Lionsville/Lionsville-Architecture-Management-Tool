@@ -30,7 +30,7 @@ import Typography from '@mui/material/Typography'
 import type { Language, Translate } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
 import { nodeKey, pictureKey } from '../graph'
-import { causeLabel, formatObservationNumber, isArchived, isRootCause, sortCauses } from '../observation'
+import { causeLabel, formatObservationNumber, isArchived, isCauseMerged, isRootCause, sortCauses } from '../observation'
 import type { Cause, Observation, ObservationBelow, ScopeAnalysis } from '../observation'
 import { IMPACT_COLOR, IMPACT_LABEL, OUTCOME_COLOR, OUTCOME_LABEL, PHASE_COLOR, PHASE_LABEL, STATE_COLOR, STATE_LABEL } from '../observationScope'
 import { formatExperimentNumber, formatSolutionNumber, isLive, solutionPhase } from '../solution'
@@ -235,6 +235,7 @@ function ExperimentRow({ one, rowKey, scope, selectedKey, onSelect, nameOf, s }:
  */
 export function recordsBelow(
   below: readonly ScopeAnalysis[], here: string, viewLocal: boolean, shows: (key: string) => boolean, showArchived: boolean,
+  showMerged = false,
 ): ScopeAnalysis[] {
   if (!viewLocal) return []
   return below.map((one) => {
@@ -242,7 +243,7 @@ export function recordsBelow(
     return {
       ...one,
       observations: [],
-      causes: sortCauses(one.causes).filter((cause) => keep(cause.id)),
+      causes: sortCauses(one.causes).filter((cause) => (showMerged || !isCauseMerged(one.causes, cause.id)) && keep(cause.id)),
       solutions: [...one.solutions].sort((a, b) => b.number - a.number).filter((held) => (showArchived || isLive(held)) && keep(solutionKey(held.id))),
       experiments: [...one.experiments].sort((a, b) => b.number - a.number).filter((held) => keep(experimentKey(held.id))),
     }

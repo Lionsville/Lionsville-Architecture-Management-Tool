@@ -38,7 +38,7 @@ import type { StringKey, Translate } from '../i18n/strings'
 import { OWNER_DETAIL } from '../model'
 import type { DesignElement, ElementId, OwnerDetailField } from '../model'
 import type { HostModel } from '../model/hostModel'
-import { causeLabel } from '../observations/observation'
+import { causeLabel, liveCauses } from '../observations/observation'
 import type { ScopeIndex } from './scopeIndex'
 import { ancestorScopes } from './scopePath'
 import type { ScopePath } from './scopePath'
@@ -460,12 +460,13 @@ export function documentFindings(deps: {
 function causesOverObservationsBelow(scope: ScopePath, model: HostModel, index: ScopeIndex): Finding[] {
   const below = new Map(index.analysisBelow(scope).map((one) => [one.scope, one]))
   const found: Finding[] = []
-  for (const cause of model.causes ?? []) {
+  // A merged cause is history (ADR-0035 §4): what it still names contradicts nothing.
+  for (const cause of liveCauses(model.causes ?? [])) {
     for (const link of cause.explains) {
       const there = link.scope === undefined ? undefined : below.get(link.scope)
       const observation = there?.observations.find((one) => one.id === link.id)
       if (!there || !observation) continue
-      const local = there.causes.find((one) => one.explains.some((held) => held.id === observation.id && held.scope === undefined))
+      const local = liveCauses(there.causes).find((one) => one.explains.some((held) => held.id === observation.id && held.scope === undefined))
       found.push({
         key: 'check.causeExplainsObservationBelow', scope, id: cause.id, name: `${causeLabel(cause)} ${cause.title}`,
         scopes: [there.scope],

@@ -284,6 +284,34 @@ describe('pictureCounts', () => {
   })
 })
 
+describe('a merged cause (ADR-0035 §4)', () => {
+  // c9 was folded into c1: its link to o1 could not move and stays as history.
+  const merged: ScopeAnalysis[] = [{
+    scope: '',
+    observations: [observation('o1', 1), observation('o2', 2)],
+    causes: [
+      cause('c1', 1, [{ id: 'o2', strength: 'normal' }], { history: [{ date: 'd', kind: 'absorbed', id: 'c9' }] }),
+      cause('c9', 9, [{ id: 'o1', strength: 'normal' }], { history: [{ date: 'd', kind: 'merged', id: 'c1' }] }),
+      cause('c8', 8, [], { history: [{ date: 'd', kind: 'merged', id: 'x', scope: 'acme' }] }),
+    ],
+    solutions: [], experiments: [],
+  }]
+
+  it('is not drawn, counted, nor an open end, and what it still explains is not analysed by it', () => {
+    const keys = analysisPicture(merged, { here: '', size: 'large' }).nodes.map((node) => node.key)
+    expect(keys).toContain('c1')
+    expect(keys).not.toContain('c9')
+    expect(keys).not.toContain('c8')
+    expect(pictureCounts(merged, '')).toEqual({ observed: 2, analysed: 1, assumed: 1, verified: 0, roots: 0, openEnds: 1 })
+    expect([...openEnds(merged, '')]).toEqual(['c1'])
+  })
+
+  it('is left out of the lanes the solutions tab draws from', () => {
+    const graph = analysisGraph({ observations: [...merged[0].observations], causes: [...merged[0].causes] })
+    expect(graph.nodes.map((node) => node.key).sort()).toEqual(['c1', 'o1', 'o2'])
+  })
+})
+
 describe('pictureLinks and openEnds', () => {
   it('keys a link by the scope of the record at each end', () => {
     expect(pictureKey('', '', 'o1')).toBe('o1')

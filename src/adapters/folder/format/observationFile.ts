@@ -21,11 +21,11 @@
  * cause — is `observations/observation.ts` and is none of this file's business.
  */
 import {
-  CAUSE_STATES, CAUSE_STRENGTHS, EXPERIMENT_OUTCOMES, OBSERVATION_EVENT_KINDS, OBSERVATION_IMPACTS,
+  CAUSE_EVENT_KINDS, CAUSE_STATES, CAUSE_STRENGTHS, EXPERIMENT_OUTCOMES, OBSERVATION_EVENT_KINDS, OBSERVATION_IMPACTS,
   SOLUTION_EVENT_KINDS, SOLUTION_SIZES, SOLUTION_STATES,
 } from '../../../model/observation'
 import type {
-  Cause, CauseLink, CauseState, CauseStrength, EarlierAttempt, Experiment, ExperimentOutcome, Observation,
+  Cause, CauseEvent, CauseEventKind, CauseLink, CauseState, CauseStrength, EarlierAttempt, Experiment, ExperimentOutcome, Observation,
   ObservationEvent, ObservationEventKind, ObservationImpact, Solution, SolutionEvent, SolutionEventKind,
   SolutionLink, SolutionSize, SolutionState,
 } from '../../../model/observation'
@@ -128,6 +128,12 @@ function linkRows(links: readonly CauseLink[]): Record<string, FrontMatterScalar
     .map((one) => ({ id: one.id, ...(one.scope !== undefined ? { scope: one.scope } : {}), strength: one.strength }))
 }
 
+function causeHistoryRows(history: readonly CauseEvent[]): Record<string, FrontMatterScalar>[] {
+  return history
+    .filter((one) => one.date && one.id)
+    .map((one) => ({ date: one.date, kind: one.kind, id: one.id, ...(one.scope !== undefined ? { scope: one.scope } : {}) }))
+}
+
 /**
  * A root cause is a cause with `root: true` (ADR-0032 §3), in the same folder
  * and on the same number, and its heading says `RC-` the way people say it.
@@ -139,6 +145,9 @@ export function causeFileText(cause: Cause): string {
     state: cause.state,
     root: cause.root,
     explains: linkRows(cause.explains),
+    // Only where something happened to it (ADR-0035 §4): a cause nothing
+    // happened to is written as every cause before a cause had a history.
+    history: cause.history?.length ? causeHistoryRows(cause.history) : undefined,
   })
   const heading = `# ${cause.root ? 'RC' : 'CA'}-${numberPrefix(cause.number)} — ${cause.title}`
   return `${fields}\n${heading}\n\n${cause.body}\n`
@@ -169,6 +178,16 @@ function historyFrom(rows: Record<string, FrontMatterScalar>[]): ObservationEven
       ...(typeof row.seen === 'number' ? { seen: row.seen } : {}),
       ...(typeof row.note === 'string' && row.note ? { note: row.note } : {}),
     }]
+  })
+}
+
+function causeHistoryFrom(rows: Record<string, FrontMatterScalar>[]): CauseEvent[] {
+  return rows.flatMap((row) => {
+    const date = typeof row.date === 'string' ? row.date : ''
+    const kind = typeof row.kind === 'string' ? row.kind : ''
+    const id = typeof row.id === 'string' ? row.id : ''
+    if (!date || !id || !CAUSE_EVENT_KINDS.includes(kind as CauseEventKind)) return []
+    return [{ date, kind: kind as CauseEventKind, id, ...(typeof row.scope === 'string' ? { scope: row.scope } : {}) }]
   })
 }
 
@@ -235,6 +254,7 @@ export function causeFromFile(text: string, path: string): Cause | undefined {
   const { title, body, fields } = headed(text, /^(?:CA|RC)-\d+\s+[—-]\s+/)
   const number = frontMatterNumber(fields, 'number') ?? numberFromName(path)
   if (number === undefined) return undefined
+  const history = causeHistoryFrom(frontMatterRows(fields, 'history'))
   return {
     id: frontMatterString(fields, 'id') || `ca-${number}`,
     number,
@@ -245,6 +265,7 @@ export function causeFromFile(text: string, path: string): Cause | undefined {
     ...(frontMatterString(fields, 'root') === 'true' ? { root: true as const } : {}),
     body,
     explains: linksFrom(frontMatterRows(fields, 'explains')),
+    ...(history.length ? { history } : {}),
   }
 }
 

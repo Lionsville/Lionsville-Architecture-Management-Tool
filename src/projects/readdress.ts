@@ -104,7 +104,9 @@ export function applyRefPatch(scope: ScopeSnapshot, patch?: RefPatch): ScopeSnap
  * The other addresses a scope may hold, in its analysis (ADR-0032 §4, §5): a
  * cause that explains a cause of a scope below names that scope's path on
  * the link, and an observation that absorbed one of a scope below names that
- * scope's path on its `absorbed` event. A move carries them as it carries a
+ * scope's path on its `absorbed` event — and, since ADR-0035, a merged
+ * observation or cause names its survivor's scope on its `merged` event, and
+ * a cause the scope of what it absorbed. A move carries them as it carries a
  * stand-in's `ref`, or the link and the history point at a folder that is not
  * there.
  */
@@ -114,7 +116,9 @@ type AnalysisHeld = { causes?: readonly Cause[]; observations?: readonly Observa
 export function analysisNamesWithin(model: AnalysisHeld, from: ScopePath): boolean {
   if (from === ROOT_SCOPE) return false
   const within = (scope: string | undefined) => scope !== undefined && isWithinScope(scope, from)
-  return (model.causes ?? []).some((one) => one.explains.some((link) => within(link.scope)))
+  return (model.causes ?? []).some((one) => (
+    one.explains.some((link) => within(link.scope)) || (one.history ?? []).some((event) => within(event.scope))
+  ))
     || (model.observations ?? []).some((one) => one.history.some((event) => within(event.scope)))
 }
 
@@ -132,9 +136,12 @@ export function readdressAnalysis(model: AnalysisHeld, from: ScopePath, to: Scop
   )
   const causes = (model.causes ?? []).flatMap((one): Command[] => {
     const explains = one.explains.map(carry)
-    return explains.some((link, at) => link.scope !== one.explains[at].scope)
-      ? [{ type: 'cause.update', id: one.id, patch: { explains } }]
-      : []
+    // A merge across the tree names the other cause's scope on both records' history (ADR-0035 §4).
+    const history = one.history?.map(carry)
+    const linksMoved = explains.some((link, at) => link.scope !== one.explains[at].scope)
+    const historyMoved = history?.some((event, at) => event.scope !== one.history![at].scope) ?? false
+    if (!linksMoved && !historyMoved) return []
+    return [{ type: 'cause.update', id: one.id, patch: { ...(linksMoved ? { explains } : {}), ...(historyMoved ? { history } : {}) } }]
   })
   const observations = (model.observations ?? []).flatMap((one): Command[] => {
     const history = one.history.map(carry)

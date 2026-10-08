@@ -26,7 +26,7 @@
  */
 import { analysisGraph, assignRows, experimentKey, solutionKey } from './graph'
 import type { GraphNode } from './graph'
-import { isRootCause } from './observation'
+import { isRootCause, liveCauses, rootCauses } from './observation'
 import type { Analysis, Cause, CauseStrength, ObservationBelow } from './observation'
 import { isLive, solutionPhase, testStrength } from './solution'
 import type { Experiment, Solution, SolutionPhase, SolutionPlan, SolutionState, SolutionWork } from './solution'
@@ -110,7 +110,8 @@ export const trailKey = (id: string): string => `so:${id}#direction`
 export function solutionGraph(
   analysis: Analysis, work: SolutionWork, plans: readonly SolutionPlan[], options: SolutionGraphOptions = {},
 ): SolutionGraph {
-  const { causes } = analysis
+  // A merged cause is history (ADR-0035 §4): not drawn, and nothing addresses it from here.
+  const causes = liveCauses(analysis.causes)
   const drawn = work.solutions.filter((one) => options.showDropped || isLive(one))
   const drawnIds = new Set(drawn.map((one) => one.id))
 
@@ -197,7 +198,7 @@ export function solutionGraph(
  * then asks about it.
  */
 export function causesForProposal(causes: readonly Cause[]): Cause[] {
-  return causes.filter((one) => isRootCause(one))
+  return rootCauses(causes)
 }
 
 /** The causes that explain this one: where a solution for it belongs instead. */

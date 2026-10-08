@@ -22,7 +22,7 @@ const OBSERVATION_FIELDS: PatchKeys<'observation.update'> = {
 
 /** Every field of a cause but its id. */
 const CAUSE_FIELDS: PatchKeys<'cause.update'> = {
-  number: true, title: true, state: true, root: true, body: true, explains: true,
+  number: true, title: true, state: true, root: true, body: true, explains: true, history: true,
 }
 
 /**

@@ -56,7 +56,11 @@ export type ObservationEvent = {
   kind: ObservationEventKind
   /** The other observation, for `absorbed` and `merged`. */
   id?: string
-  /** Its scope, when it is not this one — an absorbed observation from a scope below. */
+  /**
+   * Its scope, when it is not this one: the path in the tree. On `absorbed`,
+   * where the absorbed observation lives; on `merged`, where the survivor
+   * does (ADR-0035 §5).
+   */
   scope?: string
   /** How many sightings an absorbed observation brought. */
   seen?: number
@@ -134,7 +138,34 @@ export type Cause = {
   body: string
   /** What lies behind, said from this side: everything this cause explains. */
   explains: CauseLink[]
+  /**
+   * What happened to it, oldest first (ADR-0035 §4). Absent on a cause
+   * nothing has happened to yet — every cause written before a cause could
+   * be merged — and read as empty.
+   */
+  history?: CauseEvent[]
 }
+
+/**
+ * One dated thing that happened to a cause (ADR-0035 §4), as an
+ * observation's events are. `absorbed` — another cause was judged to be the
+ * same and folded into this one: `id` says which, and `scope` where it lives
+ * when that is not this scope. `merged` — this one was folded into `id` (of
+ * `scope`, when that is not this one), and is history from then on.
+ */
+export type CauseEvent = {
+  /** `yyyy-mm-dd`. */
+  date: string
+  kind: CauseEventKind
+  /** The other cause. */
+  id: string
+  /** Its scope, when it is not this one: the path in the tree. */
+  scope?: string
+}
+
+export type CauseEventKind = 'absorbed' | 'merged'
+
+export const CAUSE_EVENT_KINDS: readonly CauseEventKind[] = ['absorbed', 'merged']
 
 /**
  * What a team does about a cause (ADR-0026).

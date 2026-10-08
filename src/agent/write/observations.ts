@@ -322,6 +322,7 @@ function linkRefused(why: LinkRefusal, cause: Pick<Cause, 'number' | 'root'>, li
     case 'upward': return refused('agent.badArguments', `${said} cannot explain ${name}: a cause explains the causes of the scopes below its own, never one of its own scope or above it`)
     case 'sideways': return refused('agent.badArguments', `${said} cannot explain ${name}: ${link.scope} is not below this scope, and a cause explains the causes of the scopes below its own only`)
     case 'observationBelow': return refused('agent.badArguments', `${said} cannot explain ${name}: it is an observation of ${link.scope}, and that scope explains its own observations. Link the cause there that explains it instead.`)
+    case 'merged': return refused('agent.badArguments', `${said} cannot explain ${name}: one of the two was merged into another cause and is history. Link the cause it was merged into instead.`)
     case 'unknown': return refused('agent.unknownId', `${link.id} in ${link.scope ?? 'this scope'}: scopes.list and causes.list with scope say what there is`)
   }
 }

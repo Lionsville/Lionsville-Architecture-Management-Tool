@@ -35,11 +35,11 @@ export {
 
 /** What was seen, and what lies behind it (ADR-0021). */
 export {
-  CAUSE_STATES, CAUSE_STRENGTHS, EXPERIMENT_OUTCOMES, OBSERVATION_EVENT_KINDS, OBSERVATION_IMPACTS, SOLUTION_EVENT_KINDS,
+  CAUSE_EVENT_KINDS, CAUSE_STATES, CAUSE_STRENGTHS, EXPERIMENT_OUTCOMES, OBSERVATION_EVENT_KINDS, OBSERVATION_IMPACTS, SOLUTION_EVENT_KINDS,
   SOLUTION_SIZES, SOLUTION_STATES,
 } from './observation'
 export type {
-  Cause, CauseLink, CauseState, CauseStrength, EarlierAttempt, Experiment, ExperimentOutcome, Observation,
+  Cause, CauseEvent, CauseEventKind, CauseLink, CauseState, CauseStrength, EarlierAttempt, Experiment, ExperimentOutcome, Observation,
   Solution, SolutionEvent, SolutionEventKind, SolutionLink, SolutionSize, SolutionState, ObservationEvent, ObservationEventKind, ObservationImpact,
 } from './observation'
 
