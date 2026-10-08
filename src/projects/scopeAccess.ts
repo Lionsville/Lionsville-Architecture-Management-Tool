@@ -176,6 +176,47 @@ export async function changeScope(
 }
 
 /**
+ * Change several scopes as one (ADR-0031 §1, ADR-0035 §5): read them all,
+ * work out each one's commands from what they hold, and apply every scope's
+ * as its own step in one `apply`, each expecting what was read — so all of
+ * them land, or none does.
+ *
+ * `change` answers the commands per address, for the addresses read and no
+ * others; nothing, or no command anywhere, is an answer, and nothing is
+ * applied. Over a scope somebody changed in between, the whole change is
+ * worked out again from what they all hold now, as `changeScope` does for
+ * one, and then the refusal is said — as a `ShellError` with the
+ * repository's key, `shell.scopeReadOnly` among them where the source lets
+ * the person read a scope and not change it. Answers every scope read, as
+ * the change left it; `undefined` where one of them is not there.
+ */
+export async function changeScopes(
+  scopes: ScopeReader & Pick<ScopeRepository, 'apply'>,
+  addresses: readonly ScopeAddress[],
+  change: (held: ReadonlyMap<ScopeAddress, ScopeSnapshot>) => ReadonlyMap<ScopeAddress, readonly ScopeCommand[]> | undefined,
+): Promise<Map<ScopeAddress, ScopeSnapshot> | undefined> {
+  const wanted = [...new Set(addresses)]
+  for (let tried = 1; ; tried += 1) {
+    const read = await readScopes(scopes, wanted)
+    if (read.some((one) => !one?.id)) return undefined
+    const held = new Map(wanted.map((address, at) => [address, read[at]!]))
+    const commands = [...(change(held) ?? new Map<ScopeAddress, readonly ScopeCommand[]>())].filter(([, list]) => list.length > 0)
+    if (commands.length === 0) return held
+    const work = commands.map(([address, list]) => {
+      const scope = held.get(address)
+      if (!scope) throw new Error(`a change named a scope it did not read (${address})`)
+      return { scope: scope.id!, steps: list.map((command) => stepOf(command)), expects: scope.revision }
+    })
+    const answer = await scopes.apply(work)
+    if (!('refused' in answer)) {
+      const after = await readScopes(scopes, wanted)
+      return new Map(wanted.map((address, at) => [address, after[at] ?? held.get(address)!]))
+    }
+    if (answer.refused !== SCOPE_MOVED || tried >= CHANGE_TRIES) throw refusedError(answer.refused)
+  }
+}
+
+/**
  * A scope at an address, made there where there is none: its identity either
  * way. The scopes above it that are not there are made too — the repository's
  * rule, since a scope filed under nothing would be addressed by nothing.

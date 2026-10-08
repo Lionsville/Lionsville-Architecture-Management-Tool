@@ -6,7 +6,7 @@ import { memoryRepositories } from '../adapters/memory/memoryRepositories'
 import { ShellError } from '../platform/errors'
 import type { Repositories } from '../ports/Repositories'
 import {
-  changeScope, contentOf, ensureScope, everyScope, keptAt, landed, modelsOf, moveScope, placeTogether, placeWhole, readScope,
+  changeScope, changeScopes, contentOf, ensureScope, everyScope, keptAt, landed, modelsOf, moveScope, placeTogether, placeWhole, readScope,
   readWhole, stepOf, summaryOf,
 } from './scopeAccess'
 import type { ScopeSnapshot } from './scope'
@@ -83,6 +83,59 @@ describe('the app’s questions about scopes, asked of the repositories', () => 
     await changeScope(repositories.scopes, 'acme', () => [crews])
     const models = modelsOf(await repositories.index.read())
     expect(models.map((one) => [one.path, one.model.elements.map((element) => element.id)]).sort()).toEqual([['', []], ['acme', ['crews']]])
+  })
+})
+
+describe('several scopes changed as one (ADR-0035 §5)', () => {
+  const depot = { ...crews, element: { ...crews.element, id: 'depot', name: 'Depot' } }
+
+  it('applies each scope’s commands as its step in one apply, and answers every scope read as it now is', async () => {
+    const { repositories } = await withAcme()
+    await repositories.scopes.create('globex', { name: 'Globex' })
+    const applies: number[] = []
+    const counting = { ...repositories.scopes, tree: () => repositories.scopes.tree(), state: (id: string) => repositories.scopes.state(id),
+      apply: (work: Parameters<typeof repositories.scopes.apply>[0]) => { applies.push(work.length); return repositories.scopes.apply(work) } }
+    const after = await changeScopes(counting, ['acme', 'globex', ''], () => new Map([['acme', [crews]], ['globex', [depot]], ['', []]]))
+    expect(applies).toEqual([2])
+    expect([...after!.keys()]).toEqual(['acme', 'globex', ''])
+    expect(after!.get('acme')?.model.elements.map((one) => one.id)).toEqual(['crews'])
+    expect(after!.get('globex')?.model.elements.map((one) => one.id)).toEqual(['depot'])
+  })
+
+  it('applies nothing for nothing to do, and answers nothing where a scope is not there', async () => {
+    const { repositories } = await withAcme()
+    const before = await readScope(repositories.scopes, 'acme')
+    expect((await changeScopes(repositories.scopes, ['acme'], () => undefined))?.get('acme')?.revision).toBe(before?.revision)
+    expect(await changeScopes(repositories.scopes, ['acme', 'globex'], () => new Map([['acme', [crews]]]))).toBeUndefined()
+    expect((await readScope(repositories.scopes, 'acme'))?.revision).toBe(before?.revision)
+    await expect(changeScopes(repositories.scopes, ['acme'], () => new Map([['globex', [crews]]]))).rejects.toThrow(/did not read/)
+  })
+
+  it('lands all or none: a refusal on one scope writes neither, and says its key', async () => {
+    const { repositories } = await withAcme()
+    await repositories.scopes.create('globex', { name: 'Globex' })
+    await changeScope(repositories.scopes, 'globex', () => [depot])
+    const before = await readScope(repositories.scopes, 'acme')
+    await expect(changeScopes(repositories.scopes, ['acme', 'globex'], () => new Map([['acme', [crews]], ['globex', [depot]]])))
+      .rejects.toEqual(new ShellError('command.taken'))
+    expect((await readScope(repositories.scopes, 'acme'))?.revision).toBe(before?.revision)
+  })
+
+  it('works the whole change out again over a scope somebody changed in between, and gives up after a few tries', async () => {
+    const { repositories, acme } = await withAcme()
+    let asked = 0
+    const after = await changeScopes(repositories.scopes, ['acme'], (held) => {
+      asked += 1
+      if (asked === 1) void repositories.scopes.apply([{ scope: acme, steps: [stepOf({ type: 'project.settings', patch: { name: 'Acme' } })] }])
+      return new Map([['acme', held.get('acme')!.model.elements.length === 0 ? [crews] : []]])
+    })
+    expect(asked).toBe(2)
+    expect(after?.get('acme')?.model.name).toBe('Acme')
+    const moving = {
+      tree: () => repositories.scopes.tree(), state: (id: string) => repositories.scopes.state(id),
+      apply: () => Promise.resolve({ refused: 'shell.scopeMoved' as const }),
+    }
+    await expect(changeScopes(moving, ['acme'], () => new Map([['acme', [depot]]]))).rejects.toEqual(new ShellError('shell.scopeMoved'))
   })
 })
 
