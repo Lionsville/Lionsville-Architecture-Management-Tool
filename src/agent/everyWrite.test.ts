@@ -179,13 +179,17 @@ const EVERY_WRITE: { readonly [T in CommandTool]: readonly Case[] } = {
   'observation.update': [{ args: { id: 'ob-2', where: 'Service desk' } }],
   'observation.seen': [{ args: { id: 'ob-2' } }],
   'observation.archive': [{ args: { id: 'ob-2', note: 'Fixed in the checklist' } }],
-  'observation.merge': [{ args: { id: 'ob-2', into: 'ob-1' } }],
+  'observation.merge': [
+    { args: { id: 'ob-2', into: 'ob-1' } },
+    { args: { into: 'ob-1', absorb: [{ id: 'OB-2' }], values: { title: 'Invoices arrive late, per channel' } } },
+  ],
   'observation.remove': [{ args: { id: 'ob-2' } }],
   'cause.add': [{ args: { title: 'No customer master', explains: [{ id: 'ob-2' }] } }],
   'cause.update': [{ args: { id: 'ca-1', title: 'Two systems compute the total' } }],
   'cause.link': [{ args: { id: 'ca-2', explains: 'ob-2' } }],
   'cause.unlink': [{ args: { id: 'ca-1', explains: 'ob-1' } }],
   'cause.remove': [{ args: { id: 'ca-1' } }],
+  'cause.merge': [{ args: { into: 'ca-1', absorb: [{ id: 'CA-3' }] }, on: [['cause.add', { title: 'Totals per channel', explains: [{ id: 'ob-2' }] }]] }],
 
   'solution.propose': [{ args: { title: 'Appoint a data owner', addresses: [{ id: 'ca-2' }] } }],
   'solution.update': [{ args: { id: 'SO-0001', benefit: 'large' }, on: [PROPOSED] }],

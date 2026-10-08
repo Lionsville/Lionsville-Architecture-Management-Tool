@@ -26,6 +26,7 @@
  * description a client sees and the check its call meets are the same object.
  */
 import type { CommandRefusal } from '../model/reducer'
+import type { MergeLinkRefusal } from '../observations/merge'
 import { OBSERVATION_TABS } from '../observations/tabs'
 
 /**
@@ -260,6 +261,57 @@ const SIGNERS: ArgumentSchema = {
  * listed twice. The order is the order a client lists them in, which is why the
  * orientation tool comes first.
  */
+/** The records a merge folds into its survivor (ADR-0035 §6), each with its scope where it is not the survivor's. */
+const MERGE_ABSORB = (what: string, labels: string): ArgumentSchema => ({
+  type: 'array',
+  description: `The ${what}s folded into the survivor.`,
+  items: {
+    type: 'object',
+    description: `One ${what} to fold in.`,
+    properties: {
+      id: { type: 'string', description: `The ${what}, by id or ${labels} label.` },
+      scope: { type: 'string', description: 'The path of the scope it lives in, when it is not the survivor\'s.' },
+    },
+    required: ['id'],
+    additionalProperties: false,
+  },
+})
+
+/** What is chosen for the links a merge touches: by the key merge.plan answers. */
+const MERGE_LINKS: ArgumentSchema = {
+  type: 'array',
+  description: 'What to do with a link the merge touches, by the key merge.plan answers. A row not named moves where it may, at the strength offered.',
+  items: {
+    type: 'object',
+    description: 'One link.',
+    properties: {
+      key: { type: 'string', description: 'The row\'s key, as merge.plan answers it.' },
+      move: { type: 'boolean', description: 'false: it stays on the absorbed record, as history. true for a row that may not move is refused.' },
+      strength: { type: 'string', description: 'Its strength where it lands. Default: the stronger of the links that land there.', enum: ['strong', 'normal', 'weak'] },
+    },
+    required: ['key'],
+    additionalProperties: false,
+  },
+}
+
+/** What a surviving observation may be given to say. */
+const OBSERVATION_VALUES = {
+  title: { type: 'string', description: 'The title. Not blank.' },
+  where: { type: 'string', description: 'Where it was seen. Not blank.' },
+  by: { type: 'string', description: 'Who saw it. Not blank.' },
+  impact: { type: 'string', description: 'How much it matters.', enum: ['minor', 'major', 'critical'] },
+  date: { type: 'string', description: 'The day it was first seen, yyyy-mm-dd: usually the earliest of the set.' },
+  body: { type: 'string', description: 'The body as markdown: the survivor\'s, with what the others add.' },
+} as const satisfies Record<string, ArgumentSchema>
+
+/** What a surviving cause may be given to say. */
+const CAUSE_VALUES = {
+  title: { type: 'string', description: 'The title. Not blank.' },
+  state: { type: 'string', description: 'Assumed or verified; verified only when a person says it was checked, with the evidence in the body.', enum: ['assumed', 'verified'] },
+  root: { type: 'boolean', description: 'Whether it is a root cause. Only when a person said so.' },
+  body: { type: 'string', description: 'The body as markdown.' },
+} as const satisfies Record<string, ArgumentSchema>
+
 const SPECS = [
   {
     name: 'project.current',
@@ -473,7 +525,8 @@ const SPECS = [
       'What was observed in this scope (ADR-0021): id, label, title, date, where, impact, how often it was seen, '
       + 'and the causes it was analysed into. With below true, the observations of every scope under this one '
       + 'instead (ADR-0032): local to those scopes, each with the path of the scope it lives in and the causes of '
-      + 'that scope that explain it. An observation merged into another is listed only when includeMerged is true; '
+      + 'that scope that explain it. An observation merged into another is listed only when includeMerged is true, '
+      + 'with mergedInto — and mergedIntoScope where the survivor lives in another scope (ADR-0035); '
       + 'an archived one — fixed, addressed, no longer relevant — only when includeArchived is true.',
     inputSchema: {
       type: 'object',
@@ -500,12 +553,14 @@ const SPECS = [
       'The causes this scope\'s analysis found (ADR-0021): id, label (CA-, or RC- for a root cause), title, assumed '
       + 'or verified, what each explains (observations and shallower causes here, causes of the scopes below, with '
       + 'the strength of each link), what explains it, and whether it is a root cause — one a person said is '
-      + '(ADR-0032), where the chain ends.',
+      + '(ADR-0032), where the chain ends. A cause merged into another (cause.merge) is history: listed only when '
+      + 'includeMerged is true, with mergedInto — and mergedIntoScope where the survivor lives in another scope.',
     inputSchema: {
       type: 'object',
       properties: {
         state: { type: 'string', description: 'Only causes in this state.', enum: ['assumed', 'verified'] },
         root: { type: 'boolean', description: 'true: only root causes, as said on the cause.' },
+        includeMerged: { type: 'boolean', description: 'Also list causes that were merged into another.' },
       },
       additionalProperties: false,
     },
@@ -513,8 +568,37 @@ const SPECS = [
   {
     name: 'cause.read',
     tier: 'read',
-    description: 'One cause in full: its state, what it explains, what explains it, and its body as markdown.',
+    description: 'One cause in full: its state, what it explains, what explains it, its body as markdown, and its history — what it absorbed, and where it was merged to.',
     inputSchema: { type: 'object', properties: { id: ID('cause') }, required: ['id'], additionalProperties: false },
+  },
+  {
+    name: 'merge.plan',
+    tier: 'read',
+    description:
+      'What observation.merge or cause.merge would do with these arguments, without doing it (ADR-0035): the '
+      + 'survivor and the records it would absorb, every link that names an absorbed record — its key, the record '
+      + 'it lives on and the one it names, where it would land, whether it may move and, where not, why in the '
+      + 'link form\'s words, whether both records had it and the strength offered — the scopes the merge would '
+      + 'write, and the refusal it would meet, if any. Pass the key back in links to keep a row where it is or '
+      + 'choose its strength. A read: it changes nothing, and answers for a scope that is not open.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        kind: { type: 'string', description: 'Which records are merged.', enum: ['observation', 'cause'] },
+        into: { type: 'string', description: 'The survivor, by id or label.' },
+        intoScope: { type: 'string', description: 'The path of the scope the survivor lives in, when it is not the one this call is for.' },
+        absorb: MERGE_ABSORB('record', 'OB-, CA- or RC-'),
+        values: {
+          type: 'object',
+          description: 'What the survivor would say, as the merge tool of that kind takes it.',
+          properties: { ...OBSERVATION_VALUES, ...CAUSE_VALUES },
+          additionalProperties: false,
+        },
+        links: MERGE_LINKS,
+      },
+      required: ['kind', 'into', 'absorb'],
+      additionalProperties: false,
+    },
   },
   {
     name: 'solutions.list',
@@ -1077,18 +1161,35 @@ const SPECS = [
     name: 'observation.merge',
     tier: 'write',
     description:
-      'Two observations are the same thing: fold one into another of this scope. The sightings and the links move to '
-      + 'the survivor and both records say so with today\'s date; the merged record stays as history. To fold in an '
-      + 'observation of a scope below, give fromScope: only this scope\'s survivor is written, and the scope '
-      + 'below reads the merge off the tree.',
+      'Several observations are the same thing: fold them into one survivor (ADR-0035). into is the survivor, '
+      + 'of this scope or of intoScope; absorb lists the records folded in, each with its scope where it is not the '
+      + 'survivor\'s — above, below or beside. The survivor keeps its own title, where, by, impact, day and body '
+      + 'unless values says otherwise, and its sightings are the sum; every record says so in its history, and an '
+      + 'absorbed one stays as history, never deleted. Every link that names an absorbed record moves to the '
+      + 'survivor where the tree allows it — a cause explains observations of its own scope only — and stays on '
+      + 'the absorbed record where it does not. merge.plan says what would move, by key, before anything is '
+      + 'written; links unticks a row or chooses its strength. A merge that writes only the scope this call is '
+      + 'for is one step, which undo takes back. One that writes other scopes is one step on each, all or none, '
+      + 'where the host can write several scopes as one, and is refused agent.scopeNotOpen where it cannot. '
+      + 'id and fromScope are the old way to say it, accepted for one beta: id is one observation to absorb, and '
+      + 'with fromScope (a scope below) only this scope\'s survivor is written, as before. Use absorb.',
     inputSchema: {
       type: 'object',
       properties: {
-        id: { type: 'string', description: 'The observation being merged away.' },
-        into: { type: 'string', description: 'The observation of this scope it is the same as.' },
-        fromScope: { type: 'string', description: 'The path of the scope below the merged observation lives in, when it is not this one.' },
+        into: { type: 'string', description: 'The survivor: the observation that keeps standing, by id or OB- label.' },
+        intoScope: { type: 'string', description: 'The path of the scope the survivor lives in, when it is not the one this call is for.' },
+        absorb: MERGE_ABSORB('observation', 'OB-'),
+        values: {
+          type: 'object',
+          description: 'What the survivor says after the merge; a field left out stays as the survivor has it.',
+          properties: OBSERVATION_VALUES,
+          additionalProperties: false,
+        },
+        links: MERGE_LINKS,
+        id: { type: 'string', description: 'The old name for one record in absorb. Accepted for one beta; use absorb.' },
+        fromScope: { type: 'string', description: 'With id, the old way to fold in an observation of a scope below, writing only this scope. Accepted for one beta; use absorb with its scope.' },
       },
-      required: ['id', 'into'],
+      required: ['into'],
       additionalProperties: false,
     },
   },
@@ -1195,6 +1296,41 @@ const SPECS = [
     tier: 'write',
     description: 'Throw a cause away, and every link from it and to it. Its number is never reused.',
     inputSchema: { type: 'object', properties: { id: ID('cause') }, required: ['id'], additionalProperties: false },
+  },
+  {
+    name: 'cause.merge',
+    tier: 'write',
+    description:
+      'Several causes say the same thing: fold them into one survivor (ADR-0035), as observation.merge does for '
+      + 'observations. into is the survivor, of this scope or of intoScope; absorb lists the causes folded in, '
+      + 'each with its scope where it is not the survivor\'s. The survivor keeps its own title, state, root and '
+      + 'body unless values says otherwise — verified only with the evidence written, and root only when a person '
+      + 'said so; an absorbed cause stays as history, labelled as merged, and is no longer drawn, linked or '
+      + 'addressed. Three kinds of link move where the survivor may hold them: what an absorbed cause explains, '
+      + 'the causes that explain it, and the solutions that address it (of the survivor\'s scope, and only while '
+      + 'it is a root cause). A link that would loop, point up or sideways, or name a root cause is not moved and '
+      + 'stays on the absorbed cause; merge.plan says which, by key, before anything is written. Refused, with '
+      + 'the root steps\' keys, where the survivor would be a root cause something still explains, or a cause '
+      + 'again that a solution still addresses. Lands as observation.merge does: one step on this scope, which '
+      + 'undo takes back, or one step on every scope it writes where the host can, and agent.scopeNotOpen where '
+      + 'it cannot.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        into: { type: 'string', description: 'The survivor: the cause that keeps standing, by id or CA-/RC- label.' },
+        intoScope: { type: 'string', description: 'The path of the scope the survivor lives in, when it is not the one this call is for.' },
+        absorb: MERGE_ABSORB('cause', 'CA-/RC-'),
+        values: {
+          type: 'object',
+          description: 'What the survivor says after the merge; a field left out stays as the survivor has it.',
+          properties: CAUSE_VALUES,
+          additionalProperties: false,
+        },
+        links: MERGE_LINKS,
+      },
+      required: ['into', 'absorb'],
+      additionalProperties: false,
+    },
   },
   {
     name: 'solution.propose',
@@ -2223,6 +2359,21 @@ export type AgentRefusal =
    * the undo arrives from.
    */
   | 'gesture.barrier'
+  /**
+   * A merge refused as a whole (ADR-0035, `observations/merge.ts`'s
+   * `MergeRefusal`): nothing to absorb, a record already merged or archived,
+   * the survivor among the absorbed, a first day that is not a day, a cause
+   * made verified without its evidence, or a row of `links` asked to move
+   * where the tree forbids it. A record that is not there is
+   * `agent.unknownId`, and the two root steps' keys pass through.
+   */
+  | 'merge.nothing'
+  | 'merge.merged'
+  | 'merge.archived'
+  | 'merge.survivorAbsorbed'
+  | 'merge.notADay'
+  | 'merge.unverified'
+  | 'merge.linkForbidden'
   | CommandRefusal
 
 export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
@@ -2256,6 +2407,13 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'agent.saveFailed': 'The project could not be saved; the app shows why.',
   'check.ownedElsewhere': 'This record is a stand-in: the scope named in the detail defines the thing and answers for its lifecycle, dates, owner, vendor, technology, aspects and category. Its description is the owner\'s too: shown here, and changed in that scope.',
   'gesture.barrier': 'That step wrote two scopes — a record moved between them — so it cannot be undone from here. Move the record back with a gesture of its own.',
+  'merge.nothing': 'A merge needs at least one record to fold into the survivor: name them in absorb.',
+  'merge.merged': 'One of the records was merged into another already and is history. Merge the one it was merged into instead.',
+  'merge.archived': 'One of the observations is archived, and an archived observation is out of the analysis. Restore it first (observation.archive with restore), or leave it out.',
+  'merge.survivorAbsorbed': 'The survivor is among the records to absorb. A record cannot be folded into itself; leave it out of absorb.',
+  'merge.notADay': 'The day the survivor was first seen is not a day: write it yyyy-mm-dd.',
+  'merge.unverified': 'The survivor would be verified, and its body does not say why the team thinks so and how it was verified. Ask the person what confirmed it and write that into values.body in the same call.',
+  'merge.linkForbidden': 'A link named in links may not move: the tree forbids it where the survivor lives, and the detail says why. Leave it out of links, or say move false; it stays on the absorbed record as history.',
   'command.gone': 'Something the change refers to is no longer in the project.',
   'command.lastLandscape': 'The last landscape diagram cannot be deleted.',
   'command.datesOutOfOrder': 'The lifecycle dates run backwards: live, then retiring, then retired.',
@@ -2268,6 +2426,26 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'command.ownedElsewhere': 'The record is a stand-in, and that field is written in the scope that defines it. Change it there.',
   'command.rootExplained': 'A root cause ends the chain, and another cause explains this one. Unlink that cause first, or make it the root cause instead.',
   'command.rootAddressed': 'A solution addresses this root cause, and a solution addresses root causes only. Move the solution to another root cause, or unaddress it, first.',
+}
+
+/**
+ * Why a link a merge touches cannot move to the survivor (ADR-0035 §3), in
+ * the link form's words and the three more a merge meets: what `merge.plan`
+ * says beside each row that stays, and what `merge.linkForbidden` says of a
+ * row asked to move all the same.
+ */
+export const MERGE_LINK_SENTENCE: Record<MergeLinkRefusal, string> = {
+  self: 'It would name the record it lives on: the survivor cannot explain itself.',
+  loop: 'It would close a loop between causes once the records are one, and a loop is not an explanation.',
+  root: 'It would explain a root cause, and nothing explains a root cause.',
+  upward: 'It would point up: a cause explains the causes of the scopes below its own, never one of its own scope or above it.',
+  sideways: 'It would point sideways: a cause explains the causes of the scopes below its own only.',
+  observationBelow: 'It would name an observation of a scope below, and that scope explains its own observations.',
+  merged: 'It names a cause that was merged into another and is history.',
+  unknown: 'It names a record of a scope that was not read, or that holds no such record.',
+  observationElsewhere: 'A cause explains observations of its own scope only, and the survivor lives in another.',
+  solutionElsewhere: 'A solution addresses causes of its own scope only, and the survivor lives in another.',
+  notRoot: 'A solution addresses a root cause only, and the survivor will not be one.',
 }
 
 export function refused(refusal: AgentRefusal, detail?: string): AgentAnswer {

@@ -23,9 +23,10 @@ import { proposeDecision, removeDecision, transitionDecision, updateDecision } f
 import { createDiagram, updateDiagram } from './diagrams'
 import { addElement, removeElement, updateElement } from './elements'
 import {
-  addCause, archiveObservation, linkCauseTool, mergeObservation, observationSeen, recordObservation, removeCauseTool,
+  addCause, archiveObservation, linkCauseTool, observationSeen, recordObservation, removeCauseTool,
   removeObservationTool, unlinkCauseTool, updateCauseTool, updateObservationTool,
 } from './observations'
+import { mergeCause, mergeObservation } from './merge'
 import {
   addMilestone, createPlan, port, removeMilestone, removePlan, replace, unport, updateMilestone, updatePlan,
 } from './plans'
@@ -81,6 +82,7 @@ export const HANDLERS: { readonly [T in CommandTool]: Handler } = {
   'cause.link': linkCauseTool,
   'cause.unlink': unlinkCauseTool,
   'cause.remove': removeCauseTool,
+  'cause.merge': mergeCause,
 
   'solution.propose': proposeSolution,
   'solution.update': updateSolutionTool,

@@ -23,6 +23,13 @@ describe('the method sent on connect', () => {
     expect(OBSERVATIONS_METHOD).not.toMatch(/\bshared observation\b|share it/)
   })
 
+  it('says observations and causes are merged, what merge.plan is for, and that a merge may cross scopes', () => {
+    expect(OBSERVATIONS_METHOD).toContain('is merged (observation.merge)')
+    expect(OBSERVATIONS_METHOD).toContain('two causes that say the same thing are merged too (cause.merge)')
+    expect(OBSERVATIONS_METHOD).toContain('merge.plan says what a merge would do')
+    expect(OBSERVATIONS_METHOD).toContain('A merge may take records of any scope')
+  })
+
   it('asks for where and by whom rather than guessing them', () => {
     expect(OBSERVATIONS_METHOD).toContain('Where and by whom are required: ask rather than guess')
   })

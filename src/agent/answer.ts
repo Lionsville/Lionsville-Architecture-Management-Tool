@@ -52,8 +52,10 @@ import {
 import type { SolutionContext, SolutionPlan } from '../observations/solution'
 import type { Cause, Observation } from '../model/observation'
 import {
-  absorbedBy, causeLabel, explainedBy, formatObservationNumber, isMerged, isRootCause, observationsBelow,
+  absorbedBy, causeAbsorbedBy, causeLabel, explainedBy, formatObservationNumber, isCauseMerged, isMerged, isRootCause,
+  mergedInto, observationsBelow,
 } from '../observations/observation'
+import { planAnswer } from './merge'
 import type { ObservationBelow } from '../observations/observation'
 
 /** The tools this file answers: the read tier, by name. */
@@ -61,7 +63,7 @@ export type ReadTool = Extract<ToolName,
   'project.current' | 'elements.list' | 'element.describe' | 'connections.list' | 'diagrams.list'
   | 'decisions.list' | 'decision.read' | 'plans.list' | 'plan.read' | 'roadmap.check' | 'search' | 'project.export'
   | 'platform.report' | 'service.report'
-  | 'observations.list' | 'observation.read' | 'causes.list' | 'cause.read'
+  | 'observations.list' | 'observation.read' | 'causes.list' | 'cause.read' | 'merge.plan'
   | 'solutions.list' | 'solution.read' | 'experiments.list' | 'experiment.read'>
 
 /**
@@ -218,10 +220,7 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
         diagrams: model.order.diagrams.map((id) => diagramLine(model.diagrams[id], view.activeDiagramId)),
       })
 
-    case 'observations.list': {
-      if (args.below === true) return json({ observations: observationsBelowLines(args, view) })
-      return json({ observations: observationRows(args, observationList(model), causeList(model)) })
-    }
+    case 'observations.list': return json({ observations: observationLines(args, view) })
 
     case 'observation.read': {
       const own = observationList(model)
@@ -230,22 +229,15 @@ export function answer(tool: ReadTool, rawArgs: unknown, view: ReadView): AgentA
       return json({ ...observationLine(observation, causeList(model), own), body: observation.body, history: observation.history })
     }
 
-    case 'causes.list': {
-      const state = args.state as string | undefined
-      const causes = causeList(model)
-      return json({
-        causes: causes
-          .filter((one) => state === undefined || one.state === state)
-          .filter((one) => args.root !== true || isRootCause(one))
-          .map((one) => causeLine(one, causes, model)),
-      })
-    }
+    case 'causes.list': return json({ causes: causeRows(args, model) })
+
+    case 'merge.plan': return planAnswer(args, view)
 
     case 'cause.read': {
       const causes = causeList(model)
       const cause = findCause(causes, args.id as string)
       if (!cause) return refused('agent.unknownId', `cause ${String(args.id)}`)
-      return json({ ...causeLine(cause, causes, model), body: cause.body })
+      return json({ ...causeLine(cause, causes, model), body: cause.body, history: cause.history })
     }
 
     case 'solutions.list': {
@@ -690,6 +682,35 @@ export function findCause(list: readonly Cause[], idOrLabel: string): Cause | un
   return number ? list.find((one) => one.number === Number(number[1])) : undefined
 }
 
+/** `observations.list`: this scope's own, or with `below` those of every scope below it. */
+function observationLines(args: Args, view: ReadView) {
+  if (args.below === true) return observationsBelowLines(args, view)
+  return observationRows(args, observationList(view.model), causeList(view.model))
+}
+
+/** `causes.list`: this scope's causes as filtered, a merged one only when asked for (ADR-0035 §4). */
+function causeRows(args: Args, model: Model) {
+  const state = args.state as string | undefined
+  const causes = causeList(model)
+  return causes
+    .filter((one) => args.includeMerged === true || !isCauseMerged(causes, one.id))
+    .filter((one) => state === undefined || one.state === state)
+    .filter((one) => args.root !== true || isRootCause(one))
+    .map((one) => causeLine(one, causes, model))
+}
+
+/**
+ * Where a merged record went, said as a list says it: the survivor's id, and
+ * its scope where that is another (ADR-0035 §5). Read off this scope's
+ * survivor, or off the record's own history, which a merge across the tree
+ * writes where the record lives.
+ */
+function wentTo(absorbing: { id: string } | undefined, history: Parameters<typeof mergedInto>[0]) {
+  const went = absorbing ?? mergedInto(history)
+  if (!went) return {}
+  return { mergedInto: went.id, ...('scope' in went && went.scope !== undefined ? { mergedIntoScope: went.scope } : {}) }
+}
+
 /** One scope's observations as `observations.list` filters them, each with the causes of that scope that explain it. */
 function observationRows(args: Args, own: readonly Observation[], causes: readonly Cause[]) {
   const impact = args.impact as string | undefined
@@ -730,7 +751,7 @@ export function observationLine(observation: Observation, causes: readonly Cause
     impact: observation.impact,
     seen: observation.seen,
     ...(observation.archived ? { archived: true } : {}),
-    ...(merged ? { mergedInto: merged.id } : {}),
+    ...wentTo(merged, observation.history),
     causes: explainedBy(causes, observation.id, scope).map((cause) => ({
       id: cause.id,
       label: causeLabel(cause),
@@ -759,6 +780,7 @@ export function causeLine(cause: Cause, causes: readonly Cause[], model: Model) 
       }
     }),
     explainedBy: explainedBy(causes, cause.id).map((other) => ({ id: other.id, label: causeLabel(other), title: other.title })),
+    ...wentTo(causeAbsorbedBy(causes, cause.id), cause.history),
   }
 }
 

@@ -13,8 +13,8 @@ import { isDay } from '../../model/lifecycle'
 import type { Cause, CauseLink, CauseState, CauseStrength, Observation, ObservationImpact } from '../../model/observation'
 import { forgetCause, formatSolutionNumber } from '../../observations/solution'
 import {
-  absorbFromBelow, causeEvidence, causeLabel, formatCauseNumber, formatObservationNumber, linkCause, linkRefusal,
-  makeCause, makeRootCause, mergeObservations, newCause, newObservation, nextCauseNumber, nextObservationNumber, observationsBelow, removeCause,
+  causeEvidence, causeLabel, formatCauseNumber, formatObservationNumber, linkCause, linkRefusal,
+  makeCause, makeRootCause, newCause, newObservation, nextCauseNumber, nextObservationNumber, removeCause,
   removeObservation, seenAgain, seenDayProblem, setArchived, unlinkCause, updateCause, updateObservation,
 } from '../../observations/observation'
 import type {
@@ -195,27 +195,6 @@ export const archiveObservation = onObservation((held, args, view, work) => {
   const after = { ...before, observations }
   return finish(work, after, observationAnswer(after, held.id))
 })
-
-export const mergeObservation: Handler = (args, view) => {
-  const work = workOn(view)
-  const { before } = work
-  const into = work.observationOf(args.into)
-  if (!into) return refused('agent.unknownId', `observation ${String(args.into)}`)
-  if (typeof args.fromScope === 'string') {
-    // Any observation of a scope below may be folded in: nothing is shared first (ADR-0032 §5).
-    const fromBelow = observationsBelow(belowOf(view).below)
-      .find((one) => one.scope === args.fromScope && (one.observation.id === args.id || findObservation([one.observation], String(args.id))))
-    if (!fromBelow) return refused('agent.unknownId', `observation ${String(args.id)} in ${args.fromScope}`)
-    const after = absorbFromBelow(before, fromBelow, into.id, view.today())
-    if (after === before) return refused('agent.badArguments', `${String(args.id)} cannot be merged into ${into.id}`)
-    return finish(work, after, observationAnswer(after, into.id))
-  }
-  const from = work.observationOf(args.id)
-  if (!from) return refused('agent.unknownId', `observation ${String(args.id)}`)
-  const after = mergeObservations(before, from.id, into.id, view.today())
-  if (after === before) return refused('agent.badArguments', `${from.id} cannot be merged into ${into.id}`)
-  return finish(work, after, observationAnswer(after, into.id))
-}
 
 export const removeObservationTool = onObservation((held, _args, _view, work) => (
   finish(work, removeObservation(work.before, held.id), { id: held.id, label: formatObservationNumber(held.number), title: held.title, removed: true })

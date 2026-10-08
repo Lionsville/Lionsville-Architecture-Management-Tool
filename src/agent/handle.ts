@@ -43,6 +43,9 @@ import { isLayoutRefusal } from '../layout/elkLayout'
 import type { Translate } from '../i18n/strings'
 import { formatAdrNumber } from '../decisions/adr'
 import { answer } from './answer'
+import { landAcross } from './merge'
+import type { ChangeAcross } from './merge'
+import type { MergeKind } from '../observations/merge'
 import type { ReadTool } from './answer'
 import { currentApp, endSession, listViews, openApp, startSession, untilStopped } from './shell'
 import type { ShellView } from './shell'
@@ -133,6 +136,13 @@ export type SessionView = {
   addImage?(image: DocumentImage): Promise<void> | void
   /** Write the project now. Rejects when the store refuses. */
   save(): Promise<void>
+  /**
+   * Change several scopes as one step on each, all or none (ADR-0035 §5):
+   * how a merge that writes a scope other than this one lands. Absent where
+   * the host writes only the scope open, and such a merge is then refused
+   * `agent.scopeNotOpen`.
+   */
+  changeAcross?: ChangeAcross
 }
 
 /** One step as the handler reads it: enough to name it, date it and say whose it was. */
@@ -273,10 +283,13 @@ async function answerRequest(request: AgentRequest, session: SessionView | undef
   if (request.tool === 'diagram.tidy' || request.tool === 'diagram.route') {
     return seeing(request.tool, args, session)
   }
-  if (request.tool === 'image.upload') return uploadImage(args, session)
-  if (request.tool === 'undo') return undoSteps(args, session)
-  if (request.tool === 'project.save') return saveProject(session)
-  if (request.tool === 'batch') return batch(args, session)
+  const own = answeredBySession(request.tool, args, session)
+  if (own) return own
+
+  // A merge that writes other scopes, where the host writes several as one
+  // (ADR-0035 §5); one that writes only this scope is a command like any other.
+  const across = landAcross(MERGE_KIND[request.tool], withoutGuard(args) as Record<string, unknown>, writeView(session), session.today(), session.changeAcross)
+  if (across) return withRevision(await across, session)
 
   const prepared = commandFor(request.tool, withoutGuard(request.args), writeView(session))
   if ('ok' in prepared) return prepared
@@ -290,6 +303,22 @@ async function answerRequest(request: AgentRequest, session: SessionView | undef
   session.dispatch(prepared.command, prepared.activeDiagramId ? { activeDiagramId: prepared.activeDiagramId } : undefined)
   return withRevision(prepared.answer, session)
 }
+
+/** The write tools the session answers itself, rather than as one command; nothing for any other tool. */
+function answeredBySession(
+  tool: ToolName, args: Record<string, unknown>, session: SessionView,
+): Promise<AgentAnswer> | AgentAnswer | undefined {
+  switch (tool) {
+    case 'image.upload': return uploadImage(args, session)
+    case 'undo': return undoSteps(args, session)
+    case 'project.save': return saveProject(session)
+    case 'batch': return batch(args, session)
+    default: return undefined
+  }
+}
+
+/** The tools that merge, by the kind of record they merge; a tool that does not merge lands nothing across. */
+const MERGE_KIND: Partial<Record<ToolName, MergeKind>> = { 'observation.merge': 'observation', 'cause.merge': 'cause' }
 
 /**
  * The tools that are about the app rather than a document (ADR-0019), with
