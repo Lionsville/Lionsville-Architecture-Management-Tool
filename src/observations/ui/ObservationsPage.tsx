@@ -55,9 +55,9 @@ import type { DocumentImages } from '../../documentation/ui/DocumentSource'
 import type { MakeId } from '../../model/keys'
 import type { CommandRefusal } from '../../model/reducer'
 import {
-  absorbedBy, absorbFromBelow, causeLabel, explainedBy, formatObservationNumber, isArchived, isCauseMerged, isMerged,
-  isRootCause, linkCause, liveObservations, mergeObservations, observationsBelow, removeCause, removeObservation, rootCauses,
-  setArchived, sortCauses, sortObservations, unlinkCause, updateCause,
+  absorbedBy, causeLabel, explainedBy, formatObservationNumber, isArchived, isCauseMerged, isMerged,
+  isRootCause, isScopeBelow, linkCause, liveObservations, observationsBelow, removeCause, removeObservation,
+  rootCauses, setArchived, sortCauses, sortObservations, unlinkCause, updateCause,
 } from '../observation'
 import type {
   Analysis, Cause, CauseAbove, CauseLink, CausePatch, Observation, ObservationBelow, ScopeAnalysis,
@@ -66,7 +66,12 @@ import type { SavedFilters } from '../filter'
 import { nodeKey } from '../graph'
 import { IMPACT_COLOR, IMPACT_LABEL, STRENGTH_LABEL } from '../observationScope'
 import { AnalysisPicture, PictureLegend } from './AnalysisPicture'
-import { ArchiveDialog, MergeDialog } from './ObservationDialogs'
+import { ArchiveDialog } from './ObservationDialogs'
+import { MergePage } from './MergePage'
+import { useMerge } from './useMerge'
+import { mergedTo, recordName } from '../mergeScreen'
+import type { MergeKind } from '../merge'
+import { formatDay } from '../../i18n/dates'
 import { EmptyRegister, crumbTrail, experimentMoveActions, preselectedCause, rootToggle, useLifecycle } from './ObservationLifecycle'
 import { PictureMenu } from './PictureMenu'
 import type { MenuAction, PictureTarget } from './PictureMenu'
@@ -165,6 +170,18 @@ export type ObservationsPageProps = {
   path?: string
   /** The analysis of every scope below this one (ADR-0032 §1), off the tree. */
   below?: readonly ScopeAnalysis[]
+  /**
+   * The analysis of every scope the person can read — above, below and
+   * beside — off the tree: what the merge screen searches across scopes
+   * (ADR-0035 §2). Where absent, it searches this scope and those below.
+   */
+  tree?: readonly ScopeAnalysis[]
+  /**
+   * May the person change the scope at this path? A record of a scope they
+   * may only read is listed by the merge screen and cannot be picked
+   * (ADR-0035 §2). Where absent, every scope is as writable as this one.
+   */
+  writable?: (path: string) => boolean
   /** The causes of the scopes above that explain this scope's records, by the id explained (ADR-0032 §4). */
   explainedAbove?: ReadonlyMap<string, readonly CauseAbove[]>
   /**
@@ -318,27 +335,46 @@ function useOpening(deps: {
   }, [open, shown, landed, up])
 }
 
-/**
- * Where an observation went when it was merged away, and the way there: the
- * one it was merged into, selected here, or opened on the page of the scope
- * above that keeps it.
- */
-function mergedIntoOf(one: Observation, from: {
-  observations: readonly Observation[]
-  absorbedAbove: ObservationsPageProps['absorbedAbove']
-  nameOf: (id: string) => string
+/** What a merged record's note reads, and the ways to where it went. */
+type Away = {
+  /** Every scope read, this one as the page holds it. */
+  everywhere: readonly ScopeAnalysis[]
+  here: string
   scopeLabel: (path: string) => string
-  select: (id: string) => void
-  openAbove?: (path: string, id: string) => void
-}): MergedInto | undefined {
-  const here = absorbedBy(from.observations, one.id)
-  if (here) return { label: from.nameOf(here.id), open: () => from.select(here.id) }
+  select: (key: string) => void
+  openScope?: (path: string, id: string) => void
+}
+
+/**
+ * Where a record went when it was merged (ADR-0035 §4): the survivor its
+ * history names, or the one of its scope that says it absorbed it — selected
+ * here or below, or opened on the page of the scope that keeps it.
+ */
+function mergedAway(kind: MergeKind, id: string, scope: string, from: Away): MergedInto | undefined {
+  const lists = from.everywhere.find((one) => one.scope === scope)
+  const to = lists && mergedTo(lists, kind, id)
+  if (!to) return undefined
+  const { openScope, select, here } = from
+  const open = to.scope === here ? () => select(to.id)
+    : isScopeBelow(to.scope, here) ? () => select(nodeKey(to.id, to.scope))
+      : openScope ? () => openScope(to.scope, to.id) : undefined
+  return { label: recordName(from.everywhere, here, from.scopeLabel, to), ...(open ? { open } : {}) }
+}
+
+/**
+ * Where an observation of this scope went: as {@link mergedAway} says, or —
+ * written by a build before a merge wrote both ends — into one a scope above
+ * keeps, read off the tree (ADR-0021).
+ */
+function mergedIntoOf(one: Observation, from: Away & { absorbedAbove: ObservationsPageProps['absorbedAbove'] }): MergedInto | undefined {
+  const away = mergedAway('observation', one.id, from.here, from)
+  if (away) return away
   const above = from.absorbedAbove?.get(one.id)
   if (!above) return undefined
-  const { openAbove } = from
+  const { openScope } = from
   return {
     label: above.intoTitle, scope: from.scopeLabel(above.by), date: above.date,
-    ...(openAbove ? { open: () => openAbove(above.by, above.into) } : {}),
+    ...(openScope ? { open: () => openScope(above.by, above.into) } : {}),
   }
 }
 
@@ -375,6 +411,9 @@ export function ObservationsPage(props: ObservationsPageProps) {
   }), [causes, experiments, plans, model.decisions])
   const scopeLabel = props.scopeLabel ?? ((path: string) => path)
   const here = useMemo<ScopeAnalysis>(() => ({ scope: props.path ?? '', ...work }), [props.path, work])
+  /** Every scope read, this one as it stands here: what a merge searches and plans over (ADR-0035). */
+  const everywhere = useMemo(
+    () => [here, ...(props.tree ?? below).filter((one) => one.scope !== here.scope)], [here, props.tree, below])
   /** The filters, View local and the look of the picture (ADR-0032 §8), over all three tabs. */
   const f = usePictureFilters({ here, below, saved: props.savedFilters, name: model.name, scopeLabel })
   const { labelOf } = f
@@ -409,8 +448,6 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const [showArchived, setShowArchived] = useState(false)
   /** What is being archived: a dialog asks why first. */
   const [archiving, setArchiving] = useState<Observation | undefined>(undefined)
-  /** What is being merged away: one of this scope's, or one of a scope below. */
-  const [merging, setMerging] = useState<{ observation: Observation; scope?: string } | undefined>(undefined)
   const [deleting, setDeleting] = useState<{ kind: DeleteKind; id: string; label: string } | undefined>(undefined)
 
   // --- what is where ------------------------------------------------------------------
@@ -418,7 +455,10 @@ export function ObservationsPage(props: ObservationsPageProps) {
   /** The observations from below this scope has not folded into its own, and that are still open below. */
   const belowAll = useMemo(() => observationsBelow(below), [below])
   const belowShown = useMemo(
-    () => belowAll.filter((one) => !absorbedBy(observations, one.observation.id, one.scope) && !isArchived(one.observation)),
+    () => belowAll.filter((one) => (
+      !absorbedBy(observations, one.observation.id, one.scope) && !isArchived(one.observation)
+      && !one.observation.history.some((event) => event.kind === 'merged')
+    )),
     [belowAll, observations],
   )
   /**
@@ -495,16 +535,12 @@ export function ObservationsPage(props: ObservationsPageProps) {
     setArchiving(undefined)
   }
   const restore = (id: string) => commit({ ...analysis, observations: setArchived(observations, id, false, today()) })
-  const merge = (from: Observation, into: string) => {
-    commit(mergeObservations(analysis, from.id, into, today()))
-    setMerging(undefined)
-    setSelectedKey(into)
-  }
-  const absorb = (from: ObservationBelow, into: string) => {
-    commit(absorbFromBelow(analysis, from, into, today()))
-    setMerging(undefined)
-    setSelectedKey(into)
-  }
+  /** The merge screen (ADR-0035): over this page, planned over every scope read, landed here or across. */
+  const merging = useMerge({
+    here: here.scope, scopes: everywhere, writable: props.writable, readOnly, commit, onChangeAcross: props.onChangeAcross,
+    today, t: s, scopeLabel, day: (date) => formatDay(date, props.language), select: setSelectedKey,
+  })
+  const mergeAt = (kind: MergeKind, id: string, scope?: string) => merging.open(kind, { scope: scope ?? here.scope, id })
   const unlink = (causeId: string, target: Pick<CauseLink, 'id' | 'scope'>) => (
     commit({ ...analysis, causes: unlinkCause(causes, causeId, target.id, target.scope) })
   )
@@ -557,11 +593,12 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const experimentRows = [...experiments].sort((a, b) => b.number - a.number).filter((one) => shows(experimentKey(one.id)))
 
   const analysedInto = analysedIntoOf(causes, below)
-  const mergedLabel = (one: Observation) => mergedIntoOf(one, {
-    observations, absorbedAbove, nameOf, scopeLabel,
-    select: (id) => setSelectedKey(nodeKey(id)),
-    ...(props.onOpenScope ? { openAbove: (path: string, id: string) => { onClose(); props.onOpenScope?.(path, id) } } : {}),
-  })
+  const away: Away = {
+    everywhere, here: here.scope, scopeLabel, select: setSelectedKey,
+    ...(props.onOpenScope ? { openScope: (path: string, id: string) => { onClose(); props.onOpenScope?.(path, id) } } : {}),
+  }
+  const mergedLabel = (one: Observation) => mergedIntoOf(one, { ...away, absorbedAbove })
+  const mergedCause = (cause: Cause, scope?: string) => mergedAway('cause', cause.id, scope ?? here.scope, away)
 
   const register = (
     <ObservationRegister
@@ -576,6 +613,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
       onSelect={setSelectedKey}
       analysedInto={analysedInto}
       mergedInto={mergedLabel}
+      causeMergedInto={mergedCause}
       phaseOf={(one) => phaseOf(one)}
       nameOf={nameOf}
       scopeLabel={scopeLabel}
@@ -595,11 +633,12 @@ export function ObservationsPage(props: ObservationsPageProps) {
     ...(explainedAbove ? { explainedAbove } : {}), explainedAboveOf: aboveOf,
     readOnly, today, scopeName: model.name, s, nameOf, scopeLabel, commit, forms, lifecycle,
     ask: {
-      archive: setArchiving, merge: (observation, scope) => setMerging({ observation, ...(scope !== undefined ? { scope } : {}) }),
+      archive: setArchiving, merge: (observation, scope) => mergeAt('observation', observation.id, scope),
+      mergeCause: (cause, scope) => mergeAt('cause', cause.id, scope),
       remove: (kind, id) => setDeleting({ kind, id, label: nameOf(id) }), propose: (causeId) => setProposing({ causeId }),
       address: setAddressing, plan: setPlanning, drop: setDropping,
     },
-    mergedLabel, openKey: setSelectedKey,
+    mergedLabel, mergedCause, openKey: setSelectedKey,
     ...(onOpenScope ? { openScope: (path: string) => { onClose(); onOpenScope(path) } } : {}),
     onDecide: props.onDecide, onStartPlan: props.onStartPlan, onOpenDecision: props.onOpenDecision, onOpenPlan: props.onOpenPlan,
     renderMarkdown: props.renderMarkdown, onAddImage: props.onAddImage, images: props.images,
@@ -679,13 +718,14 @@ export function ObservationsPage(props: ObservationsPageProps) {
           edit,
           { key: 'seen', label: s('observation.seenAgain'), onClick: () => seeAgain(one) },
           { key: 'link', label: s('observation.link'), onClick: () => forms.openLink({ mode: 'cause', id: one.id }) },
-          { key: 'merge', label: s('observation.merge'), onClick: () => setMerging({ observation: one }) },
+          { key: 'merge', label: s('observation.merge'), onClick: () => mergeAt('observation', one.id) },
           { key: 'archive', label: s('observation.archive'), onClick: () => setArchiving(one) },
           remove('observation', one.id),
         ]
       }
       case 'cause': {
         const one = held.cause
+        if (mergedCause(one)) return []
         return [
           edit,
           {
@@ -695,6 +735,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
           rootOf(one).action,
           ...(isRootCause(one) ? [] : [{ key: 'link-deeper', label: s('observation.linkDeeper'), onClick: () => forms.openLink({ mode: 'deeper', id: one.id }) }]),
           ...(isRootCause(one) ? [{ key: 'propose', label: s('solution.proposeForCause'), onClick: () => setProposing({ causeId: one.id }) }] : []),
+          { key: 'merge', label: s('observation.merge'), onClick: () => mergeAt('cause', one.id) },
           remove('cause', one.id),
         ]
       }
@@ -905,19 +946,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
           onConfirm={(note) => { if (archiving) archive(archiving.id, note) }}
           s={s}
         />
-        {/* An observation from below is merged INTO one of this scope's: the
-            rules absorb it here without touching the scope it lives in. */}
-        <MergeDialog
-          target={merging?.observation}
-          candidates={liveObservations(observations).filter((one) => one.id !== merging?.observation.id)}
-          onCancel={() => setMerging(undefined)}
-          onConfirm={(into) => {
-            if (!merging) return
-            if (merging.scope !== undefined) absorb({ scope: merging.scope, observation: merging.observation }, into)
-            else merge(merging.observation, into)
-          }}
-          s={s}
-        />
+        <MergePage state={merging.state} note={merging.note} onNoteClose={merging.clearNote} s={s} renderMarkdown={props.renderMarkdown} windowChrome={props.windowChrome} />
         <NewSolutionDialog
           open={Boolean(proposing)}
           causes={causesForProposal(causes)}

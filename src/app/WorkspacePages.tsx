@@ -112,6 +112,8 @@ function RecordPages({ parts }: { parts: WorkspaceParts }) {
         crumbs={crumbs}
         path={props.project.path}
         below={readings.analysisBelow}
+        tree={readings.analysisTree}
+        {...(props.source.writable ? { writable: props.source.writable } : {})}
         explainedAbove={readings.explainedAbove}
         explainedAboveOf={readings.explainedAboveOf}
         {...(readOnly ? {} : { onChangeBelow: changeBelow, onChangeAcross: changeAcross })}

@@ -18,8 +18,8 @@ import { cleanup, fireEvent, within } from '@testing-library/react'
 import { chooseLast, keepsWhatIsTyped } from './testing/questionDialogs'
 import type { QuestionDialogCase } from './testing/questionDialogs'
 import { translator } from '../i18n'
-import { newCause, newObservation } from '../observations/observation'
-import { ArchiveDialog, MergeDialog, SeenDialog, VerifyDialog } from '../observations/ui/ObservationDialogs'
+import { newCause } from '../observations/observation'
+import { ArchiveDialog, SeenDialog, VerifyDialog } from '../observations/ui/ObservationDialogs'
 import { LinkDialog } from '../observations/ui/LinkForm'
 import { AddressDialog, ConcludeDialog, DropDialog, NewExperimentDialog } from '../observations/ui/SolutionDialogs'
 import { newAdr } from '../decisions/adr'
@@ -34,7 +34,6 @@ afterEach(() => cleanup())
 const s = translator('en')
 const nothing = () => {}
 const causes = () => [1, 2].map((number) => newCause({ id: `c${number}`, number, title: `Cause ${number}`, t: s }))
-const observation = (id: string, number: number) => newObservation({ id, number, title: `Seen ${number}`, date: '2026-01-01', t: s })
 const accepted = (id: string, number: number): Adr => ({ ...newAdr({ id, number, title: `Record ${number}`, date: '2026-01-01', t: s }), status: 'accepted' })
 const application = (id: string): DesignElement =>
   ({ id, kind: 'application', name: 'Warehouse', lifecycle: 'live', isManaged: true, aspects: {} }) as DesignElement
@@ -53,10 +52,6 @@ const CASES: QuestionDialogCase[] = [
   {
     name: 'verifying a cause',
     open: (id) => <VerifyDialog subject={{ id, label: 'C-1 Cause' }} onCancel={nothing} onConfirm={nothing} s={s} />,
-  },
-  {
-    name: 'merging an observation',
-    open: (id) => <MergeDialog target={observation(id, 1)} candidates={[observation('o2', 2), observation('o3', 3)]} onCancel={nothing} onConfirm={nothing} s={s} />,
   },
   {
     name: 'linking a cause',

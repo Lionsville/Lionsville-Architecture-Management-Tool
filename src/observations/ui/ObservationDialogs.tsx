@@ -2,13 +2,13 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * The short questions the observations page asks in a dialog: which
- * observation another is the same as, and why an observation is being
- * archived (ADR-0021); since 28 September 2026 also when it was seen again,
- * and what confirmed a cause that is being marked verified without its
- * evidence written down. The forms that make records — an observation with
+ * The short questions the observations page asks in a dialog: why an
+ * observation is being archived (ADR-0021); since 28 September 2026 also when
+ * it was seen again, and what confirmed a cause that is being marked verified
+ * without its evidence written down. The forms that make records — an observation with
  * its causes, a cause with its links — are `ObservationForm` and `LinkForm`
- * (ADR-0032 §6).
+ * (ADR-0032 §6). Which records are one thing is asked on a screen of its
+ * own, the merge screen (ADR-0035).
  *
  * Each says what it wants and lets the page perform it — the page owns the
  * lists, the numbering and the date.
@@ -21,13 +21,11 @@ import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogContentText from '@mui/material/DialogContentText'
 import DialogTitle from '@mui/material/DialogTitle'
-import MenuItem from '@mui/material/MenuItem'
 import TextField from '@mui/material/TextField'
 import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
-import { formatObservationNumber, seenDayProblem } from '../observation'
-import type { Observation } from '../observation'
+import { seenDayProblem } from '../observation'
 
 /**
  * Why an observation is being closed — fixed, addressed, no longer relevant —
@@ -166,48 +164,6 @@ export function VerifyDialog({ subject, onCancel, onConfirm, s }: VerifyDialogPr
       <DialogActions>
         <Button sx={{ textTransform: 'none' }} onClick={onCancel}>{s('common.cancel')}</Button>
         <Button sx={{ textTransform: 'none' }} variant="contained" disabled={!ready} onClick={() => onConfirm(answer.trim())} data-testid="verify-confirm">{s('observation.verify')}</Button>
-      </DialogActions>
-    </Dialog>
-  )
-}
-
-export type MergeDialogProps = {
-  /** The observation being merged away; the dialog is closed while undefined. */
-  target?: Observation
-  /** This scope's standing observations it could go into. */
-  candidates: readonly Observation[]
-  onCancel: () => void
-  onConfirm: (intoId: string) => void
-  s: Translate
-}
-
-export function MergeDialog({ target, candidates, onCancel, onConfirm, s }: MergeDialogProps) {
-  const [into, setInto] = useState('')
-  useFreshFor(target, (one) => one.id, () => setInto(''))
-  return (
-    <Dialog open={Boolean(target)} onClose={onCancel} maxWidth="sm" fullWidth>
-      <DialogTitle>
-        {target ? s('observation.mergeTitle', { name: `${formatObservationNumber(target.number)} ${target.title}` }) : ''}
-      </DialogTitle>
-      <DialogContent>
-        <DialogContentText sx={{ mb: 2 }}>{s('observation.mergeBody')}</DialogContentText>
-        <TextField
-          select
-          fullWidth
-          size="small"
-          label={s('observation.mergePick')}
-          value={into}
-          onChange={(event) => setInto(event.target.value)}
-          slotProps={{ htmlInput: { 'aria-label': s('observation.mergePick') } }}
-        >
-          {candidates.map((one) => (
-            <MenuItem key={one.id} value={one.id}>{formatObservationNumber(one.number)} · {one.title}</MenuItem>
-          ))}
-        </TextField>
-      </DialogContent>
-      <DialogActions>
-        <Button sx={{ textTransform: 'none' }} onClick={onCancel}>{s('common.cancel')}</Button>
-        <Button sx={{ textTransform: 'none' }} variant="contained" disabled={!into} onClick={() => onConfirm(into)}>{s('observation.mergeConfirm')}</Button>
       </DialogActions>
     </Dialog>
   )

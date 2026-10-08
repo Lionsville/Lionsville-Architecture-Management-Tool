@@ -456,6 +456,10 @@ export type CauseReaderProps = {
   causes: readonly Cause[]
   /** Present for a cause of a scope below: read here, added to there (ADR-0032 §2). */
   fromScope?: { label: string; onOpenScope?: () => void }
+  /** Where it went, when it was merged (ADR-0035 §4): read, and changed nowhere. */
+  mergedInto?: MergedInto
+  /** Open the merge screen on it; absent where nothing may be merged. */
+  onMerge?: () => void
   /**
    * The causes of another scope that explain it: one here explaining one
    * below, or one above — which opens where it lives, where `open` says how.
@@ -509,9 +513,11 @@ export type CauseReaderProps = {
 }
 
 export function CauseReader(props: CauseReaderProps) {
-  const { cause, causes, s, renderMarkdown, readOnly, fromScope } = props
-  const canEdit = !readOnly && !fromScope
-  const mayAdd = canEdit || (!readOnly && Boolean(fromScope) && props.mayChangeBelow === true)
+  const { cause, causes, s, renderMarkdown, readOnly, fromScope, mergedInto } = props
+  const { language } = useStrings()
+  const standing = !readOnly && !mergedInto
+  const canEdit = standing && !fromScope
+  const mayAdd = canEdit || (standing && Boolean(fromScope) && props.mayChangeBelow === true)
   const stored = useMemo(() => ({ title: cause.title, body: cause.body }), [cause])
   const { mode, draft, setDraft, commit, switchMode } = useDraft(stored, (patch) => {
     // A title is never blanked: what was refused stays in the draft.
@@ -531,7 +537,8 @@ export function CauseReader(props: CauseReaderProps) {
   const actions = [
     ...causeActions({
       s, label, flipped, root, verified: cause.state === 'verified', mayAdd, own: canEdit,
-      across: readOnly ? [] : props.across ?? [], here: props.here ?? '', mayPropose: Boolean(props.onPropose),
+      across: standing ? props.across ?? [] : [], here: props.here ?? '', mayPropose: standing && Boolean(props.onPropose),
+      ...(standing && props.onMerge ? { onMerge: props.onMerge } : {}),
       onLink: (linkMode) => (linkMode === 'org' && props.orgRefused ? setPanel('org') : props.onLink(linkMode)),
       ...(props.onRoot ? { onRoot: () => setPanel('root') } : {}),
       onVerify: verify, onPropose: () => props.onPropose?.(), onDelete: props.onDelete,
@@ -556,6 +563,11 @@ export function CauseReader(props: CauseReaderProps) {
       )}
       {panel === 'org' && props.orgRefused && (
         <ReaderNotice refused lines={[props.orgRefused]} onClose={() => setPanel(undefined)} closeLabel={s('observation.ok')} testId="cause-org-refused" />
+      )}
+      {mergedInto && (
+        <Typography variant="caption" color="text.secondary" data-testid="cause-merged" sx={{ px: 2, py: 0.5, borderBottom: 1, borderColor: 'divider' }}>
+          <MergedNote merged={mergedInto} s={s} day={(date) => formatDay(date, language)} />
+        </Typography>
       )}
       {fromScope && (
         <ScopeStrip

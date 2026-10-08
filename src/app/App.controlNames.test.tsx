@@ -200,6 +200,15 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     fireEvent.click(within(page).getByRole('button', { name: '+ New observation' }))
     await screen.findByRole('dialog', { name: 'New observation' })
   }]],
+  // The merge screen, over the observations page, on the record read.
+  [['the merge screen, opened on an observation', [
+    'merge.search', 'merge.across', 'merge.survivor', 'merge.what', 'merge.values', 'merge.links', 'merge.confirm',
+  ], async () => {
+    const dialog = await page('Observations')
+    fireEvent.click((await within(dialog).findAllByTestId(/^observation-row-/))[0])
+    fireEvent.click(dialog.querySelector<HTMLElement>(controlSelector('observation.merge'))!)
+    await screen.findByRole('dialog', { name: 'Merge observations' })
+  }]],
   [['the decisions, one from above read', [
     'decisions.list', 'decisions.row', 'decisions.new', 'decisions.fromAbove', 'decision.status', 'decision.signers',
   ], async () => {

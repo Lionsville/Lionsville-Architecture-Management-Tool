@@ -58,6 +58,8 @@ export type ObservationRegisterProps = {
   /** The causes an observation was analysed into, in its own scope and from over it: a label each, and its key. */
   analysedInto: (id: string, scope?: string) => readonly { key: string; label: string }[]
   mergedInto: (one: Observation) => MergedInto | undefined
+  /** Where a cause went when it was merged (ADR-0035 §4): this scope's, or `scope`'s. */
+  causeMergedInto?: (cause: Cause, scope?: string) => MergedInto | undefined
   phaseOf: (one: Solution) => SolutionPhase
   /** A record's label and title: this scope's, or `scope`'s. */
   nameOf: (id: string, scope?: string) => string
@@ -125,11 +127,11 @@ export function ObservationRegister(props: ObservationRegisterProps) {
       </Table>
       <List component="div" dense disablePadding data-testid="cause-list">
         {subheader(s('observation.causes'))}
-        {props.causes.map((cause) => <CauseRow key={cause.id} cause={cause} rowKey={cause.id} {...props} />)}
+        {props.causes.map((cause) => <CauseRow key={cause.id} cause={cause} rowKey={cause.id} merged={props.causeMergedInto?.(cause)} {...props} />)}
         {props.analysisBelow.filter((one) => one.causes.length > 0).map(({ scope, causes }) => (
           <Fragment key={scope}>
             {belowHeading(scope)}
-            {causes.map((cause) => <CauseRow key={cause.id} cause={cause} rowKey={nodeKey(cause.id, scope)} {...props} />)}
+            {causes.map((cause) => <CauseRow key={cause.id} cause={cause} rowKey={nodeKey(cause.id, scope)} merged={props.causeMergedInto?.(cause, scope)} {...props} />)}
           </Fragment>
         ))}
       </List>
@@ -199,10 +201,16 @@ const SMALL = { primary: { sx: { fontSize: 13 } } }
 
 type RowProps = ObservationRegisterProps & { rowKey: string }
 
-function CauseRow({ cause, rowKey, selectedKey, onSelect, s }: RowProps & { cause: Cause }) {
+/** One cause; a merged one dimmed, saying where it went (ADR-0035 §4). */
+function CauseRow({ cause, rowKey, merged, selectedKey, onSelect, language, s }: RowProps & { cause: Cause; merged: MergedInto | undefined }) {
   return (
-    <ListItemButton selected={rowKey === selectedKey} onClick={() => onSelect(rowKey)} sx={{ py: 0.5 }} data-testid={`cause-row-${rowKey}`}>
-      <ListItemText primary={`${causeLabel(cause)} ${cause.title}`} slotProps={SMALL} />
+    <ListItemButton selected={rowKey === selectedKey} onClick={() => onSelect(rowKey)} sx={{ py: 0.5, opacity: merged ? 0.55 : 1 }} data-testid={`cause-row-${rowKey}`}>
+      {/* Said, not a link: the row is the button, and a button in a button is reached by nobody's keyboard. */}
+      <ListItemText
+        primary={`${causeLabel(cause)} ${cause.title}`}
+        {...(merged ? { secondary: <MergedNote merged={{ ...merged, open: undefined }} s={s} day={(date) => formatDay(date, language)} /> } : {})}
+        slotProps={{ ...SMALL, secondary: { sx: { fontSize: 11 } } }}
+      />
       {isRootCause(cause) && <Chip size="small" variant="outlined" color="secondary" label={s('observation.rootCause')} sx={{ height: 18, fontSize: 10, mr: 1 }} />}
       <Chip size="small" color={STATE_COLOR[cause.state]} label={s(STATE_LABEL[cause.state])} sx={{ height: 18, fontSize: 10 }} />
     </ListItemButton>

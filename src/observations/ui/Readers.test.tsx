@@ -95,7 +95,7 @@ describe('the readers’ buttons', () => {
   it('offers a root cause a solution and never a deeper cause', () => {
     mount({ initialId: 'c2' })
     const actions = within(screen.getByRole('group', { name: 'Actions on RC-0002' }))
-    expect(actions.getAllByRole('button').map((one) => one.textContent)).toEqual(['Solution', 'Make cause', 'Local cause', 'Verify', 'Edit', 'Delete'])
+    expect(actions.getAllByRole('button').map((one) => one.textContent)).toEqual(['Solution', 'Make cause', 'Local cause', 'Verify', 'Edit', 'Merge', 'Delete'])
   })
 
   it('adds a deeper cause to a cause below in its own scope, and says so before and after', async () => {

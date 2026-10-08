@@ -109,6 +109,8 @@ export function causeActions(o: {
   /** The name of the scope reading the one below, for the Org cause tooltip. */
   here: string
   mayPropose: boolean
+  /** Open the merge screen on it (ADR-0035); absent where it may not be merged. */
+  onMerge?: () => void
   onLink: (mode: LinkMode) => void
   onRoot?: () => void
   onVerify: () => void
@@ -137,9 +139,15 @@ export function causeActions(o: {
     key: 'verify', icon: <CheckIcon size={14} />, label: o.verified ? s('observation.stateAssumed') : s('observation.actVerify'),
     tip: o.verified ? s('observation.tipAssumed') : s('observation.tipVerify'), onClick: o.onVerify, testId: 'cause-verify',
   }
+  const onMerge = o.onMerge
+  const merge: ReaderAction[] = onMerge ? [{
+    key: 'merge', icon: <MergeIcon size={14} />, label: s('observation.actMerge'), tip: s('observation.tipMergeCause'),
+    onClick: onMerge, occasional: true, testId: 'cause-merge',
+  }] : []
   return [
     ...(o.mayAdd ? [...chain, ...solution, ...rootStep] : solution),
     ...across,
+    ...merge,
     ...(o.own ? [verify, deleteAction(s('observation.tipDeleteCause'), o.onDelete, s)] : []),
   ]
 }

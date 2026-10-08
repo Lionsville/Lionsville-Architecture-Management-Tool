@@ -287,7 +287,7 @@ describe('the picture and the readers, joined', () => {
     fireEvent.contextMenu(picture().querySelector('[data-key="acme/claims/intake#b1"]')!)
     const menu = screen.getByRole('menu')
     expect(within(menu).getAllByRole('menuitem').map((item) => item.textContent)).toEqual([
-      'Link to a deeper cause…', 'Make root cause', 'Link to a cause of Claims…',
+      'Link to a deeper cause…', 'Make root cause', 'Link to a cause of Claims…', 'Merge…',
     ])
   })
 
@@ -295,7 +295,7 @@ describe('the picture and the readers, joined', () => {
     mountWritable()
     fireEvent.contextMenu(picture().querySelector('[data-key="acme/claims/intake#in1"]')!)
     expect(within(screen.getByRole('menu')).getAllByRole('menuitem').map((item) => item.textContent)).toEqual([
-      'Seen again', 'Link to a cause…', 'Merge into…',
+      'Seen again', 'Link to a cause…', 'Merge…',
     ])
   })
 

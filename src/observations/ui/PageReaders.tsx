@@ -138,6 +138,8 @@ export type ReaderContext = {
   ask: {
     archive: (observation: Observation) => void
     merge: (observation: Observation, scope?: string) => void
+    /** The merge screen, opened on a cause of this scope or of `scope` (ADR-0035). */
+    mergeCause: (cause: Cause, scope?: string) => void
     remove: (kind: DeleteKind, id: string) => void
     propose: (causeId: string) => void
     address: (solution: Solution) => void
@@ -145,6 +147,8 @@ export type ReaderContext = {
     drop: (solution: Solution) => void
   }
   mergedLabel: (observation: Observation) => MergedInto | undefined
+  /** Where a cause went when it was merged, of this scope or of `scope`. */
+  mergedCause: (cause: Cause, scope?: string) => MergedInto | undefined
   openKey: (key: string) => void
   /** Open the page of another scope, closing this one. */
   openScope?: (path: string) => void
@@ -333,7 +337,7 @@ export function belowMenuActions(held: Selected, ctx: ReaderContext): MenuAction
     ]
   }
   const cause = held.cause
-  if (ctx.readOnly) return open
+  if (ctx.readOnly || ctx.mergedCause(cause, scope)) return open
   const root = isRootCause(cause)
   return [
     ...(writable && !root ? [{ key: 'link-deeper', label: s('observation.linkDeeper'), onClick: () => forms.openLink({ mode: 'deeper', id: cause.id, scope }) }] : []),
@@ -342,6 +346,7 @@ export function belowMenuActions(held: Selected, ctx: ReaderContext): MenuAction
       key: 'org', label: s('observation.linkOrg', { scope: ctx.scopeName }), disabled: root,
       onClick: () => forms.openLink({ mode: 'org', id: cause.id, scope }),
     }] : []),
+    { key: 'merge', label: s('observation.merge'), onClick: () => ctx.ask.mergeCause(cause, scope) },
     ...open,
   ]
 }
@@ -362,6 +367,8 @@ function causeReader(cause: Cause, scope: string | undefined, ctx: ReaderContext
       key={nodeKey(cause.id, scope)}
       cause={cause}
       causes={lists.causes}
+      mergedInto={ctx.mergedCause(cause, scope)}
+      onMerge={() => ctx.ask.mergeCause(cause, scope)}
       {...(own ? {} : { fromScope: { label: ctx.scopeLabel(scope), ...(openScope ? { onOpenScope: () => openScope(scope) } : {}) } })}
       explainedFrom={explainedFromOf(cause, scope, own ? ctx.explainedAbove?.get(cause.id) ?? [] : above, ctx)}
       readOnly={ctx.readOnly}

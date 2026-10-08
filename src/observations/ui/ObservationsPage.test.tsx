@@ -19,7 +19,7 @@ import type { HostModel } from '../../model/hostModel'
 import type { Cause, Observation, ScopeAnalysis } from '../observation'
 import { MarkdownView } from '../../documentation/ui/MarkdownView'
 import { ObservationsPage } from './ObservationsPage'
-import type { ObservationsPageProps } from './ObservationsPage'
+import type { ChangeAcross, ObservationsPageProps } from './ObservationsPage'
 import { renderShell } from '../../app/testing/renderShell'
 
 afterEach(() => cleanup())
@@ -263,13 +263,18 @@ describe('ObservationsPage', () => {
     expect(lastChange(onChange).causes[1].explains).toEqual([{ id: 'o1', strength: 'normal' }])
   })
 
-  it('merges one observation into another, and the page says where it went', () => {
+  it('merges one observation into another on the merge screen, as one step here, and the page says where it went', async () => {
     const { onChange, rerender } = mount()
     fireEvent.click(screen.getByTestId('observation-row-o2'))
     fireEvent.click(screen.getByRole('button', { name: 'Merge' }))
-    fireEvent.mouseDown(screen.getByLabelText('The observation it is the same as'))
-    fireEvent.click(screen.getByRole('option', { name: /OB-0001/ }))
-    fireEvent.click(screen.getByRole('button', { name: 'Merge' }))
+    const merge = await screen.findByRole('dialog', { name: 'Merge observations' })
+    // Opened from OB-0002, which survives until another is chosen.
+    expect(within(merge).getByTestId('merge-confirm').textContent).toBe('Merge 0 observations into OB-0002')
+    fireEvent.click(within(within(merge).getByTestId('merge-hit-#o1')).getByRole('checkbox'))
+    fireEvent.click(within(merge).getByRole('radio', { name: /Nightly batch/ }))
+    const confirm = within(merge).getByTestId('merge-confirm')
+    expect(confirm.textContent).toBe('Merge 1 observation into OB-0001')
+    fireEvent.click(confirm)
     const next = lastChange(onChange)
     const survivor = next.observations.find((one) => one.id === 'o1')!
     expect(survivor.seen).toBe(5)
@@ -285,35 +290,86 @@ describe('ObservationsPage', () => {
     expect(screen.getByTestId('observation-row-o2').textContent).toContain('Merged into OB-0001')
     // Where it went is a link to it, on the row and in the reader.
     fireEvent.click(screen.getByTestId('observation-row-o2'))
-    // By test id: the merge dialog, still closing, hides the page from role queries.
+    // By test id: the merge screen, still closing, hides the page from role queries.
     const link = within(screen.getByTestId('observation-merged')).getByTestId('observation-merged-link')
     expect(link.tagName).toBe('BUTTON')
     fireEvent.click(link)
     expect(screen.getByTestId('observation-row-o1').className).toContain('Mui-selected')
   })
 
-  it('reads an observation of a scope below, folds it in here, and opens its scope — it is explained there', async () => {
-    // A closing dialog hides the page from role queries until its transition ends.
-    const dialogGone = () => waitFor(() => expect(screen.queryAllByLabelText('The observation it is the same as')).toHaveLength(0))
-    const { onChange, onOpenScope } = mount()
+  it('merges an observation of a scope below into one here across both scopes, each written where it lives', async () => {
+    // Before ADR-0035 this absorbed it here and wrote nothing below; now the
+    // record below is told where it went, in its own scope, in the same step.
+    const onChangeAcross = vi.fn<ChangeAcross>(async () => ({ ok: true, changed: ['acme/claims/intake', ''] }))
+    const { onChange, onOpenScope } = mount({ onChangeAcross })
     fireEvent.click(screen.getByTestId('observation-row-acme/claims/intake#in1'))
     expect(screen.getByTestId('observation-from-below').textContent).toContain('Local to Intake')
-    // Nothing below may be written here, so nothing is added to it: it is merged here, and changed there.
+    // Nothing below may be written here, so nothing is added to it: it is merged, and changed there.
     expect(screen.queryByTestId('observation-seen-again')).toBeNull()
     expect(screen.queryByRole('button', { name: 'Cause' })).toBeNull()
 
     fireEvent.click(screen.getByRole('button', { name: 'Merge' }))
-    fireEvent.mouseDown(screen.getByLabelText('The observation it is the same as'))
-    fireEvent.click(screen.getByRole('option', { name: /OB-0001/ }))
-    fireEvent.click(screen.getByRole('button', { name: 'Merge' }))
-    const next = lastChange(onChange)
-    expect(next.observations).toHaveLength(2)
-    expect(next.observations[0].history.at(-1)).toEqual({ date: '2026-09-20', kind: 'absorbed', id: 'in1', scope: 'acme/claims/intake', seen: 2 })
-    await dialogGone()
+    const merge = await screen.findByRole('dialog', { name: 'Merge observations' })
+    fireEvent.click(within(within(merge).getByTestId('merge-hit-#o1')).getByRole('checkbox'))
+    fireEvent.click(within(merge).getByRole('radio', { name: /Nightly batch/ }))
+    fireEvent.click(within(merge).getByTestId('merge-confirm'))
+    await waitFor(() => expect(onChangeAcross).toHaveBeenCalled())
+    expect(onChange).not.toHaveBeenCalled()
+    const [paths, change] = onChangeAcross.mock.calls[0]!
+    expect([...paths].sort()).toEqual(['', 'acme', 'acme/claims', 'acme/claims/intake'])
+    const work = (one: ScopeAnalysis) => ({ observations: [...one.observations], causes: [...one.causes], solutions: [], experiments: [] })
+    const held = new Map(paths.map((path) => [path, path === 'acme/claims/intake' ? work(below[0]!)
+      : path === '' ? { observations: [...model.observations!], causes: [...model.causes!], solutions: [], experiments: [] }
+        : { observations: [], causes: [], solutions: [], experiments: [] }]))
+    const written = change(held) as ReadonlyMap<string, { observations: Observation[] }>
+    expect([...written.keys()]).toEqual(['', 'acme/claims/intake'])
+    expect(written.get('')!.observations[0]!.history.at(-1)).toEqual({
+      date: '2026-09-20', kind: 'absorbed', id: 'in1', scope: 'acme/claims/intake', seen: 2,
+    })
+    expect(written.get('acme/claims/intake')!.observations[0]!.history.at(-1)).toEqual({ date: '2026-09-20', kind: 'merged', id: 'o1', scope: '' })
+    expect((await screen.findByTestId('merge-note')).textContent).toContain('It changed Intake and')
 
+    await waitFor(() => expect(screen.queryAllByRole('dialog', { name: 'Merge observations' })).toHaveLength(0))
     fireEvent.click(screen.getByTestId('observation-row-acme/claims/intake#in1'))
     fireEvent.click(screen.getByRole('button', { name: 'Open Intake' }))
     expect(onOpenScope).toHaveBeenCalledWith('acme/claims/intake')
+  })
+
+  it('opens the merge screen on a cause, and reads a merged cause as history, saying where it went', async () => {
+    const merged = { ...model, causes: [
+      cause({ explains: [{ id: 'o1', strength: 'strong' }], history: [{ date: '2026-09-19', kind: 'absorbed', id: 'c2' }] }),
+      cause({ id: 'c2', number: 2, title: 'Batch window too short', explains: [] }),
+      cause({ id: 'c3', number: 3, title: 'Volumes doubled', history: [{ date: '2026-09-19', kind: 'merged', id: 'in9', scope: 'acme/claims/intake' }] }),
+    ] }
+    mount({ model: merged })
+    const list = () => within(screen.getByTestId('cause-list'))
+    expect(list().queryByTestId('cause-row-c2')).toBeNull()
+    fireEvent.click(screen.getByLabelText('Show merged'))
+    expect(list().getByTestId('cause-row-c2').textContent).toContain('Merged into CA-0001 Window sized for 2019')
+    // One merged into a scope it cannot read names it by its id, with the scope.
+    expect(list().getByTestId('cause-row-c3').textContent).toContain('Merged into in9 (Intake)')
+    fireEvent.click(list().getByTestId('cause-row-c2'))
+    const reader = screen.getByTestId('cause-reader')
+    expect(within(reader).getByTestId('cause-merged').textContent).toContain('Merged into CA-0001')
+    expect(within(reader).queryByTestId('cause-merge')).toBeNull()
+    expect(within(reader).queryByRole('button', { name: 'Edit' })).toBeNull()
+    fireEvent.click(within(within(reader).getByTestId('cause-merged')).getByTestId('observation-merged-link'))
+    expect(list().getByTestId('cause-row-c1').className).toContain('Mui-selected')
+
+    fireEvent.click(within(screen.getByTestId('cause-reader')).getByTestId('cause-merge'))
+    const page = await screen.findByRole('dialog', { name: 'Merge causes' })
+    // The merged ones are history: not offered.
+    expect(within(page).getAllByTestId(/^merge-hit-/).map((one) => one.dataset.testid)).toEqual(['merge-hit-#c1'])
+  })
+
+  it('does not merge across scopes where no other scope may be written from here, and says why', async () => {
+    mount()
+    fireEvent.click(screen.getByTestId('observation-row-acme/claims/intake#in1'))
+    fireEvent.click(screen.getByRole('button', { name: 'Merge' }))
+    const merge = await screen.findByRole('dialog', { name: 'Merge observations' })
+    fireEvent.click(within(within(merge).getByTestId('merge-hit-#o1')).getByRole('checkbox'))
+    expect(within(merge).getByTestId('merge-confirm')).toHaveProperty('disabled', true)
+    expect(within(merge).getByTestId('merge-blocked').textContent).toContain('only this one may be changed from here')
   })
 
   it('draws the analysis: circles for observations, boxes for causes, a root, and the lines between', () => {
@@ -451,7 +507,7 @@ describe('the analysis picture’s right-click, and editing across the whole wid
     const menu = screen.getByTestId('picture-menu')
     // A root cause ends the chain, so nothing deeper is offered on it.
     expect(within(menu).getAllByRole('menuitem').map((item) => item.textContent)).toEqual([
-      'Edit', 'Mark verified', 'Make cause', 'Propose a solution…', 'Delete',
+      'Edit', 'Mark verified', 'Make cause', 'Propose a solution…', 'Merge…', 'Delete',
     ])
     fireEvent.click(screen.getByTestId('picture-menu-edit'))
     expect(screen.getByTestId('observation-body').dataset.editing).toBe('true')

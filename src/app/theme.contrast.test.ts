@@ -349,8 +349,8 @@ const DIMMED: Record<string, [uses: number, what: string]> = {
   'src/observations/ui/AnalysisPicture.tsx': [1, 'off-trace dim'],
   'src/observations/ui/ChainMarks.tsx': [2, 'off-path dim'],
   'src/observations/ui/SolutionPicture.tsx': [3, 'off-path dim, dropped solution'],
-  // A merged or archived observation and a solution no longer live: a design call, like the retired card.
-  'src/observations/ui/ObservationRegister.tsx': [2, 'merged, archived, not live'],
+  // A merged or archived observation, a merged cause and a solution no longer live: a design call, like the retired card.
+  'src/observations/ui/ObservationRegister.tsx': [3, 'merged, archived, not live'],
   // The column editor while its switch is off: a control that is off (1.4.3).
   'src/editor/AspectColumnsEditor.tsx': [1, 'switched off'],
   // The drop-zone highlight fading in: a tint, no words.

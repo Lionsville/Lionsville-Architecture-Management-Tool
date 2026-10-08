@@ -46,6 +46,9 @@ export const CONTROL_NAMES = [
   'observations.tabRegister', 'observations.tabAnalysis', 'observations.tabSolutions',
   'observations.register', 'observations.row', 'observations.picture', 'observations.new', 'observations.newCause',
   'observation.seenAgain', 'observation.merge', 'observation.cause',
+  // The merge screen (ADR-0035): the search, across scopes, the survivor of
+  // each record picked, its three parts and Merge.
+  'merge.search', 'merge.across', 'merge.survivor', 'merge.what', 'merge.values', 'merge.links', 'merge.confirm',
   // One cause: the step that makes it a root cause, or a cause again.
   'cause.root',
   // Over the observations page's tabs: the filters, their row, View local and the picture's two sizes.
