@@ -28,6 +28,19 @@ three headings in it, and the last is required beside the title, the place,
 who saw it and the day. The three are recorded as one description under the
 same headings, so an observation is read and edited as before.
 
+**Merging has a screen of its own, across the tree, for causes too.**
+*Merge…* on an observation or a cause opens a screen over the observations
+page in place of the small dialog. Search for the others to merge, in this
+scope or, with *Across scopes*, in every scope you can read; choose which
+title, place, day and impact the one that stays keeps, and see every link
+that moves with it — or why one cannot — before you press *Merge*. Causes
+written down twice can now be merged as well, and a merged cause is kept as
+history and says where it went. A merge that changes another scope changes it
+there, as one step on each scope, all or none; merging from a scope below now
+marks the record below as merged in its own scope too. An agent can do the
+same: it can ask what a merge would do first, and merge observations or
+causes of any scope.
+
 **A new scope made without a board opens on its home.** Unticking *Start with
 a landscape board* in the new-scope dialog made the scope, but then opened it
 on a canvas with nothing to draw and an error about a missing diagram id. Now
