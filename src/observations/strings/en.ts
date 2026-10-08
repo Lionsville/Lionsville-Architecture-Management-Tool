@@ -39,6 +39,8 @@ export const EN = {
   /** The heading over what a scope below holds, local to it (ADR-0032 §1). */
   'observation.fromBelow': 'Local to {scope}',
   'observation.showMerged': 'Show merged',
+  'observation.mergedFromHeading': 'Merged from {label}',
+  'observation.mergedFromHeadingScope': 'Merged from {label} in {scope}',
   'observation.showArchived': 'Show archived',
   'observation.archivedMark': 'Archived',
   'observation.notAnalysed': 'not yet',

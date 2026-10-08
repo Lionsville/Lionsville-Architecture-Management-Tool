@@ -93,12 +93,12 @@ export function observationsBelow(below: readonly ScopeAnalysis[]): ObservationB
 }
 
 /** Is `scope` strictly below `here`? Paths as strings, `''` the organisation. */
-function isBelow(scope: string, here: string): boolean {
+export function isScopeBelow(scope: string, here: string): boolean {
   return here === '' ? scope !== '' : scope.startsWith(`${here}/`)
 }
 
 /** Is `scope` this one or one above it? */
-function isAboveOrHere(scope: string, here: string): boolean {
+export function isScopeAboveOrHere(scope: string, here: string): boolean {
   return scope === here || scope === '' || here.startsWith(`${scope}/`)
 }
 
@@ -619,8 +619,8 @@ export function linkRefusal(
 function belowRefusal(link: CauseLink, context: LinkContext | undefined): LinkRefusal | undefined {
   const scope = link.scope!
   if (!context) return 'unknown'
-  if (isAboveOrHere(scope, context.here)) return 'upward'
-  if (!isBelow(scope, context.here)) return 'sideways'
+  if (isScopeAboveOrHere(scope, context.here)) return 'upward'
+  if (!isScopeBelow(scope, context.here)) return 'sideways'
   const held = context.below.find((one) => one.scope === scope)
   if (held?.observations.some((one) => one.id === link.id)) return 'observationBelow'
   const target = held?.causes.find((one) => one.id === link.id)

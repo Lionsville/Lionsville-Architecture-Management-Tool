@@ -30,6 +30,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'observation.scopeHere': 'Deze scope',
   'observation.fromBelow': 'Lokaal in {scope}',
   'observation.showMerged': 'Samengevoegde tonen',
+  'observation.mergedFromHeading': 'Samengevoegd uit {label}',
+  'observation.mergedFromHeadingScope': 'Samengevoegd uit {label} in {scope}',
   'observation.showArchived': 'Gearchiveerde tonen',
   'observation.archivedMark': 'Gearchiveerd',
   'observation.notAnalysed': 'nog niet',

@@ -30,6 +30,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'observation.scopeHere': 'Dieser Scope',
   'observation.fromBelow': 'Lokal in {scope}',
   'observation.showMerged': 'Zusammengeführte zeigen',
+  'observation.mergedFromHeading': 'Zusammengeführt aus {label}',
+  'observation.mergedFromHeadingScope': 'Zusammengeführt aus {label} in {scope}',
   'observation.showArchived': 'Archivierte zeigen',
   'observation.archivedMark': 'Archiviert',
   'observation.notAnalysed': 'noch nicht',
