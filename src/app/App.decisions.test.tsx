@@ -99,8 +99,10 @@ describe('a decision from the scope above', () => {
       // The workspace's bar and the page's own both say where it is.
       expect(new Set(screen.getAllByTestId('crumb-current').map((crumb) => crumb.textContent))).toEqual(new Set(['Acme Logistics']))
       expect(within(screen.getByTestId('adr-reader')).getByText('Fulfilment is one capability')).toBeDefined()
+      // The records above are read for the scope opened after it opens, so
+      // for a render the page can still hold the ones the last scope had.
+      expect(within(screen.getByTestId('adr-tree')).queryByText('From Acme Logistics')).toBeNull()
+      expect(screen.queryByTestId('adr-from-ancestor')).toBeNull()
     })
-    expect(within(screen.getByTestId('adr-tree')).queryByText('From Acme Logistics')).toBeNull()
-    expect(screen.queryByTestId('adr-from-ancestor')).toBeNull()
   })
 })
