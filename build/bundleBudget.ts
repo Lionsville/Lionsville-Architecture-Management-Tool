@@ -70,8 +70,14 @@ export const WEB_BUDGET: Budget = { file: 3_000_000, total: 10_000_000 }
  * default, and an installer's bytes are not a download per visit — so it has
  * ceilings of its own, set the same way: 5.22 MB for the largest file against
  * 5.5 MB, 15.3 MB for the whole against 16 MB.
+ *
+ * **Raised on 8 October 2026** with the web build's, by the same measure —
+ * 2.6 to 3 MB a file there is 4.9 to 5.6 MB here, 8.4 to 10 MB in all is 16
+ * to 19 MB: the merge screen, the agent's merge tools and the share link
+ * took the renderer to 4.867 MB for its largest file and 16.016 MB in all,
+ * 16 kB over the 16 MB before.
  */
-export const DESKTOP_BUDGET: Budget = { file: 4_900_000, total: 16_000_000 }
+export const DESKTOP_BUDGET: Budget = { file: 5_600_000, total: 19_000_000 }
 
 /** What only ELK's engine says, and neither its API nor anything else here. */
 export const ELK_ENGINE_MARK = 'RecursiveGraphLayoutEngine'
