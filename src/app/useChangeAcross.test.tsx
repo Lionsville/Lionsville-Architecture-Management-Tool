@@ -262,4 +262,20 @@ describe('useChangeAcross', () => {
     expect(await result.current(['', 'claims'], everywhere)).toEqual({ ok: false, reason: 'readOnly' })
     expect((await readScope(scopes, 'claims'))?.model.observations?.[0].seen).toBe(2)
   })
+  it('marks every scope\u2019s step the agent\u2019s where it lands an agent\u2019s change (ADR-0035 §6)', async () => {
+    const { scopes } = await tree()
+    const written: Command[] = []
+    const watched: BelowScopes = {
+      tree: () => scopes.tree(), state: (id) => scopes.state(id),
+      apply: (work) => { for (const one of work) for (const step of one.steps) written.push(step.command as Command); return scopes.apply(work) },
+    }
+    const open = session()
+    const { result } = renderHook(() => useChangeAcross({
+      scope: '', scopes: watched, session: open, writable: () => true, save: () => Promise.resolve(),
+      mayChange: () => true, origin: 'agent',
+    }))
+    expect(await result.current(['', 'claims'], everywhere)).toEqual({ ok: true, changed: ['claims', ''] })
+    expect(written.map((one) => one.origin)).toEqual(['agent'])
+    expect(open.dispatched.map((one) => [one.origin, one.barrier])).toEqual([['agent', ACROSS_BARRIER]])
+  })
 })

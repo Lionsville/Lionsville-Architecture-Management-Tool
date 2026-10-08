@@ -1,7 +1,7 @@
 # ADR-0035 — Merging on a screen of its own, across the tree
 
-* Status: accepted, 8 October 2026; as built, 8 October 2026: the rules, the one
-  apply and the screen (§1–§5); the agent's tools (§6) not yet built
+* Status: accepted, 8 October 2026; as built, 8 October 2026; implemented,
+  8 October 2026
 * Date: 2026-10-08
 * Deciders: Wouter Simons
 * Supersedes: ADR-0021 §4 in part (*only the survivor is written*: a merge
@@ -207,8 +207,8 @@ merges with the tools and reads the result off the page.
 ## As built, 8 October 2026: the rules and the one apply
 
 The first part of the build: what a merge does, and how it lands. The
-screen (§1, §2) is the next section; the agent's tools (§6) are still to
-come.
+screen (§1, §2) is the next section, and the agent's tools (§6) the one
+after it.
 
 **A cause has a history** (§4). `Cause.history` holds `absorbed` and
 `merged` events — the date, the other cause's id, and its scope where it is
@@ -379,9 +379,18 @@ again over what it read, and writes each scope's part as that scope's step,
 all or none. Where a host does not fill it — and inside a batch, which is
 one transaction at one session — such a merge is refused
 `agent.scopeNotOpen`, naming the scopes; `links` with `move: false` keeps a
-row that reaches another scope where it is. No host fills the seam yet: the
-desktop hands its agent no `changeAcross`, and a hosted environment's
-server would compose one from its own several-scope write.
+row that reaches another scope where it is.
+
+**The app fills the seam**, on the desktop and on the web alike: the
+workspace hands its agent the same change across the observations page lands
+through (`app/useChangeAcross.ts`), built a second time with `origin:
+'agent'`, so every scope's step is marked the agent's and the Activity list
+says whose it was (`app/ProjectWorkspace.tsx`, `useWorkspaceAgentView`). It
+asks the same questions first — whether anything may be changed, and
+whether the person may change every scope the merge writes — and tells the
+tree afterwards, so the index reads what landed. A host that answers agents
+with no window composes one from its own several-scope write, or leaves it
+out, and such a merge is then refused as above.
 
 `causes.list` leaves a merged cause out unless `includeMerged`, and says
 where a merged cause or observation went (`mergedInto`, and

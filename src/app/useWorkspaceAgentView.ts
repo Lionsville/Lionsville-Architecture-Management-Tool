@@ -12,6 +12,7 @@ import type { RefObject } from 'react'
 import type { Translate } from '../i18n'
 import type { Adr } from '../decisions/adr'
 import type { DesignElement, Relation } from '../model'
+import type { ChangeAcross } from '../agent/merge'
 import type { RendererView } from '../agent/renderer'
 import type { Destination } from '../agent/screen'
 import { coverageOf, unmappedFunctions } from '../business'
@@ -58,10 +59,17 @@ export function useWorkspaceAgentView(deps: {
   today: () => string
   s: Translate
   onAgentSession: ((view: WorkspaceAgentView | undefined) => void) | undefined
+  /**
+   * Change several scopes as one, as the agent's (`useChangeAcross` with
+   * `origin: 'agent'`): how an agent's merge that writes a scope other than
+   * this one lands (ADR-0035 §6). Absent, such a merge is refused.
+   */
+  changeAcross?: ChangeAcross
 }): void {
   const {
     session, scope, indexRef, rowsElsewhereRef, scopes, reader, ancestorRecords, readOnly, documentStatus,
     renderer, save, putPicture, pages, showElement, openDocumentation, leaveDocumentation, makeId, today, s, onAgentSession,
+    changeAcross,
   } = deps
   const { page, settled, openView, openDecisions, openObservations, openRoadmap, closePages, openPlatformReport, openServiceReport } = pages
   const openPlan = pages.plans.openPlan
@@ -91,10 +99,11 @@ export function useWorkspaceAgentView(deps: {
     settled,
     show: showOn(pages, showElement, openDocumentation, leaveDocumentation),
     tree: agentTree({ session, scope, indexRef, rowsElsewhereRef, scopes, reader }),
+    ...(changeAcross ? { changeAcross } : {}),
   }), [
     session, scope, ancestorRecords, documentStatus, readOnly, makeId, today, s, renderer, save, putPicture, scopes, reader,
     page, settled, openPlan, openView, openDecisions, openObservations, openRoadmap, closePages, showElement, openDocumentation,
-    openPlatformReport, openServiceReport, indexRef, rowsElsewhereRef, leaveDocumentation, pages.selectOn,
+    openPlatformReport, openServiceReport, indexRef, rowsElsewhereRef, leaveDocumentation, pages.selectOn, changeAcross,
   ])
   useEffect(() => {
     onAgentSession?.(agentView)

@@ -20,6 +20,7 @@ import type { OrganisationIndex } from '../ports/OrganisationIndex'
 import type { AgentAnswer, AgentRequest } from '../agent/tools'
 import type { AgentGateway } from '../ports/AgentGateway'
 import type { DesignElement } from '../model'
+import type { Observation } from '../model/observation'
 import type { ScopeSnapshot } from '../projects/scope'
 import { renderApp } from './testing/renderShell'
 
@@ -205,6 +206,41 @@ describe('the agent reads the tree', () => {
     expect(out.ok).toBe(false)
     expect(!out.ok && out.refusal).toBe('agent.scopeNotOpen')
     expect((await scopes.read('acme/retail'))?.model.elements.map((e) => e.id)).toEqual(['warehouse'])
+  })
+})
+
+/**
+ * An agent merges across the tree as a person does (ADR-0035 §6): the
+ * workspace hands it the same change across the observations page lands
+ * through, so a merge that writes another scope writes it, each scope's part
+ * that scope's step, marked the agent's.
+ */
+describe('the agent merges across the tree', () => {
+  const seen = (id: string, title: string): Observation => ({
+    id, number: 1, title, date: '2026-09-01', where: 'the desk', by: 'Sam', impact: 'minor', seen: 1, body: '',
+    history: [{ date: '2026-09-01', kind: 'recorded' }],
+  })
+  const holding = (path: string, observation: Observation): ScopeSnapshot => {
+    const held = scope(path)
+    return { ...held, model: { ...held.model, observations: [observation] } }
+  }
+
+  it('writes the record of another scope where it lives, and the survivor here', async () => {
+    const wire = fakeGateway()
+    const held = heldRepositories([
+      scope(''), holding('acme/retail', seen('ob-ret', 'Slow scans')), holding('acme/finance', seen('ob-fin', 'Slow scanning')),
+    ])
+    const counted = countingIndex(held)
+    renderApp({ repositories: counted.repositories, agent: wire.gateway, boot: { initialProject: holding('acme/finance', seen('ob-fin', 'Slow scanning')) } })
+    await waitFor(() => expect(counted.read()).toBeGreaterThan(0))
+    await act(async () => {})
+    const out = said(await wire.call('observation.merge', { into: 'ob-fin', absorb: [{ id: 'ob-ret', scope: 'acme/retail' }] }))
+    expect(out.changed).toEqual(['acme/retail', 'acme/finance'])
+    const retail = (await held.read('acme/retail'))?.model.observations ?? []
+    expect(retail[0].history.at(-1)).toEqual(expect.objectContaining({ kind: 'merged' }))
+    // This scope's part is one step on its stack, and it is the agent's.
+    const { steps } = said(await wire.call('activity.list', {})) as { steps: { by?: string }[] }
+    expect(steps.map((one) => one.by)).toEqual(['agent'])
   })
 })
 

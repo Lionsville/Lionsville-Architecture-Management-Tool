@@ -252,7 +252,13 @@ function useTreeParts(props: ProjectWorkspaceProps, base: ReturnType<typeof useS
     writable: source.writable ?? writableLikeHere(source.readOnly ?? false), save: base.document.document.flush,
     published: source.publishesSteps ?? false, onTreeChanged,
   })
-  return { readings, gestures, library, ownership, changeBelow, changeAcross }
+  /** The same for an agent in this window, its steps marked its own: how its merge across the tree lands (ADR-0035 §6). */
+  const agentChangeAcross = useChangeAcross({
+    scope: project.path, scopes: source.repositories.scopes, session, mayChange: session.mayChange,
+    writable: source.writable ?? writableLikeHere(source.readOnly ?? false), save: base.document.document.flush,
+    published: source.publishesSteps ?? false, origin: 'agent', onTreeChanged,
+  })
+  return { readings, gestures, library, ownership, changeBelow, changeAcross, agentChangeAcross }
 }
 
 /** The snapshots, the menu, the pages beside the canvas and the doors in. */
@@ -311,6 +317,7 @@ function useScreenParts(
     save: base.document.document.flush, putPicture: base.writer.put, pages,
     showElement: showElement.show, openDocumentation: requests.openDocumentation,
     leaveDocumentation: requests.leaveDocumentation, makeId, today, s, onAgentSession: props.agent.onSession,
+    changeAcross: tree.agentChangeAcross,
   })
   useInitialPage({
     initialPage: navigation.initialPage, pages, createSheet: base.sheets.create, showElement: showElement.show,

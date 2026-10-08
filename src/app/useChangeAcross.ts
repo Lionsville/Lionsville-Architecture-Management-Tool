@@ -65,6 +65,12 @@ export type AcrossDeps = {
   save: () => Promise<void>
   /** The source carries every step of the open scope (`publishesSteps`): its dispatch is its write. */
   published?: boolean
+  /**
+   * Whose steps these are, where not the person's: an agent's merge across
+   * the tree (ADR-0035 §6) marks every scope's step its own, as every other
+   * write an agent makes is marked, so the Activity list says so.
+   */
+  origin?: 'agent'
 }
 
 /** A scope's four lists, as the page holds them. */
@@ -109,8 +115,9 @@ function workOut(
   for (const [path, work] of next) {
     const model = models.get(path)
     if (!model) throw new Error(`a change across wrote a scope it did not read (${path})`)
-    const step = stepFor(model, work)
-    if (!step) continue
+    const made = stepFor(model, work)
+    if (!made) continue
+    const step: Command = deps.origin ? { ...made, origin: deps.origin } : made
     if (!deps.writable(path)) return { stop: { ok: false, reason: 'shell.scopeReadOnly', scope: path } }
     if (path === deps.scope) open = step
     else steps.set(path, [step])
@@ -163,7 +170,8 @@ export async function landAcross(deps: AcrossDeps, paths: readonly ScopePath[], 
 }
 
 /**
- * The page's way to change several scopes as one: {@link landAcross}, asked
+ * The page's way to change several scopes as one — and, with `origin`, the
+ * agent's (`SessionView.changeAcross`, ADR-0035 §6): {@link landAcross}, asked
  * whether anything may be written first, and the tree told afterwards where
  * another scope was written, so the index reads what landed.
  */
@@ -171,11 +179,13 @@ export function useChangeAcross(deps: AcrossDeps & {
   mayChange: () => boolean
   onTreeChanged?: () => void
 }): ChangeAcross {
-  const { scope, scopes, session, writable, save, published, mayChange, onTreeChanged } = deps
+  const { scope, scopes, session, writable, save, published, origin, mayChange, onTreeChanged } = deps
   return useCallback(async (paths, change) => {
     if (!mayChange()) return { ok: false, reason: 'readOnly' }
-    const landed = await landAcross({ scope, scopes, session, writable, save, ...(published !== undefined ? { published } : {}) }, paths, change)
+    const landed = await landAcross({
+      scope, scopes, session, writable, save, ...(published !== undefined ? { published } : {}), ...(origin ? { origin } : {}),
+    }, paths, change)
     if (landed.ok && landed.changed.some((path) => path !== scope)) onTreeChanged?.()
     return landed
-  }, [scope, scopes, session, writable, save, published, mayChange, onTreeChanged])
+  }, [scope, scopes, session, writable, save, published, origin, mayChange, onTreeChanged])
 }
