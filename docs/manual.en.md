@@ -819,10 +819,14 @@ is in the corner; on a small one the impact is the size of the circle.
 
 **New observation** asks for the four facts that make one: the title,
 **where it was seen**, **observed by** and **when seen**. When seen starts at
-today and may not be in the future; the impact starts at minor. Every field
-has an example under it, and a field left empty says what is missing in its
-place. The description on the right is optional, starts from its three
-headings, and switches between **Edit** and **Preview**. Under the title, two
+today and may not be in the future; the impact starts at minor. On the right
+the description asks its three questions a field each — **what we saw**,
+**evidence** and **who or what it affected** — and the last is required too:
+an observation always says whom or what it touched. Recorded, the three are
+one markdown description under those headings, and an observation's
+description is edited as one text from then on. **Preview** shows it as it
+will read, and **Edit** goes back to the fields. Every field has an example
+under it, and a field left empty says what is missing in its place. Under the title, two
 hints that never stop you: **Seen before?** lists observations of the chosen
 scope whose titles share words with yours, each with **Seen again**, which
 records a sighting on that one and nothing new; and a title that uses a word

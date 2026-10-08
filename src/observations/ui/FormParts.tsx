@@ -163,6 +163,73 @@ export function DescriptionField({ label, value, onChange, example, renderMarkdo
   )
 }
 
+/** One of a new observation's three questions, as the form asks it. */
+export type SectionInput = {
+  key: string
+  label: string
+  value: string
+  onChange: (value: string) => void
+  example: string
+  /** What is wrong, in place of the example; absent where nothing is. */
+  problem?: string
+  required?: boolean
+}
+
+/**
+ * The body asked as its sections, a field each, under one Edit and Preview:
+ * the preview is the markdown they make together, as it will be recorded.
+ */
+export function SectionsField({ label, sections, body, renderMarkdown, s }: {
+  label: string
+  sections: readonly SectionInput[]
+  /** The markdown the sections make. */
+  body: string
+  renderMarkdown: (md: string, options?: MarkdownRenderOptions) => ReactNode
+  s: Translate
+}) {
+  const [preview, setPreview] = useState(false)
+  return (
+    <Box sx={{ display: 'grid', gap: 1, minWidth: 0, alignContent: 'start' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+        <Typography variant="body2" sx={{ fontWeight: 500 }}>{label}</Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <MarkdownHelp />
+          <ToggleButtonGroup
+            exclusive size="small" value={preview ? 'preview' : 'edit'}
+            onChange={(_event, next: 'edit' | 'preview' | null) => { if (next) setPreview(next === 'preview') }}
+            aria-label={s('observation.formDescriptionMode')}
+            data-guide="observationForm.description"
+          >
+            <ToggleButton value="edit" sx={{ py: 0.25, px: 1.25, textTransform: 'none' }}>{s('observation.formEdit')}</ToggleButton>
+            <ToggleButton value="preview" sx={{ py: 0.25, px: 1.25, textTransform: 'none' }}>{s('observation.formPreview')}</ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
+      </Box>
+      {preview ? (
+        <Box data-testid="form-preview" sx={{ border: 1, borderColor: 'divider', borderRadius: 1, px: 1.5, py: 1, minHeight: 210, bgcolor: 'background.default', fontSize: 14, overflow: 'auto' }}>
+          {renderMarkdown(body)}
+        </Box>
+      ) : sections.map((one) => (
+        <TextField
+          key={one.key}
+          multiline
+          fullWidth
+          size="small"
+          minRows={3}
+          required={one.required}
+          label={one.label}
+          value={one.value}
+          error={one.problem !== undefined}
+          helperText={one.problem ?? one.example}
+          onChange={(event) => one.onChange(event.target.value)}
+          slotProps={{ htmlInput: { 'data-testid': `form-${one.key}`, spellCheck: true } }}
+          sx={{ '& textarea': { fontFamily: 'ui-monospace, Menlo, monospace', fontSize: 13 } }}
+        />
+      ))}
+    </Box>
+  )
+}
+
 /** How strongly a cause explains what it is linked to. */
 export function StrengthSelect({ value, onChange, label, helperText, compact, s }: {
   value: CauseStrength

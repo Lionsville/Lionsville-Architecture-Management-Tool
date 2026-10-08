@@ -880,10 +880,14 @@ de hoek; op een kleine is de impact de grootte van de cirkel.
 **Nieuwe waarneming** vraagt de vier feiten die er een waarneming van maken:
 de titel, **waar het gezien is**, **waargenomen door** en **wanneer
 gezien**. Wanneer gezien begint bij vandaag en mag niet in de toekomst
-liggen; de impact begint bij klein. Onder elk veld staat een voorbeeld, en
-een veld dat leeg blijft zegt op die plek wat er ontbreekt. De beschrijving
-rechts is optioneel, begint met haar drie kopjes, en schakelt tussen
-**Bewerken** en **Voorbeeld**. Onder de titel staan twee hints die je nooit
+liggen; de impact begint bij klein. Rechts stelt de beschrijving haar drie
+vragen, een veld per vraag — **wat we zagen**, **bewijs** en **wie of wat het
+raakte** — en de laatste is ook verplicht: een waarneming zegt altijd wie of
+wat ze raakte. Vastgelegd zijn de drie één markdowntekst onder die kopjes, en
+daarna bewerk je de beschrijving van een waarneming als één tekst.
+**Voorbeeld** toont haar zoals ze zal lezen, en **Bewerken** gaat terug naar
+de velden. Onder elk veld staat een voorbeeld, en een veld dat leeg blijft
+zegt op die plek wat er ontbreekt. Onder de titel staan twee hints die je nooit
 tegenhouden: **Al eerder gezien?** noemt waarnemingen van de gekozen scope
 waarvan de titel woorden met de jouwe deelt, elk met **Opnieuw gezien**, dat
 een waarneming bij die ene telt en niets nieuws vastlegt; en een titel met een

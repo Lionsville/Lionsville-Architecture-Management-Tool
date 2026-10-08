@@ -13,3 +13,10 @@ screen lays it out the same way, and nothing is saved: the first person who
 may change the view still lays it out for everyone, and once they have, the
 reader sees their layout. A PNG the reader exports, or a picture an agent takes
 of the view for them, shows it laid out as they see it.
+
+**A new observation says who or what it affected.** The form that records a
+new observation asks its three questions a field each — what we saw, the
+evidence, and who or what it affected — in place of one description with
+three headings in it, and the last is required beside the title, the place,
+who saw it and the day. The three are recorded as one description under the
+same headings, so an observation is read and edited as before.

@@ -147,12 +147,13 @@ describe('ObservationsPage', () => {
     expect(screen.getByTestId('observation-history').textContent).toContain('Recorded')
   })
 
-  it('records a new observation under the next number, with the four facts it needs', () => {
+  it('records a new observation under the next number, with the four facts and who or what it affected', () => {
     const { onChange } = mount()
     fireEvent.click(screen.getByRole('button', { name: '+ New observation' }))
     fireEvent.change(screen.getByRole('textbox', { name: 'Title' }), { target: { value: 'Duplicate customers' } })
     fireEvent.change(screen.getByRole('textbox', { name: 'Where it was seen' }), { target: { value: 'CRM' } })
     fireEvent.change(screen.getByRole('textbox', { name: 'Observed by' }), { target: { value: 'W.S.' } })
+    fireEvent.change(screen.getByRole('textbox', { name: 'Who or what it affected' }), { target: { value: 'Sales' } })
     // When seen starts at today, and is shown.
     expect((screen.getByTestId('form-date') as HTMLInputElement).value).toBe('2026-09-20')
     // Nothing is shared: a new one is local, and the scopes above read it anyway (ADR-0032 §1).

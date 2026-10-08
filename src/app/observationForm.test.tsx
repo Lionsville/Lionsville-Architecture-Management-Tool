@@ -58,6 +58,7 @@ describe('the observation form over a session', () => {
     fireEvent.change(screen.getByTestId('form-title'), { target: { value: 'Pick lists print twice' } })
     fireEvent.change(screen.getByTestId('form-where'), { target: { value: 'Pick station 3' } })
     fireEvent.change(screen.getByTestId('form-by'), { target: { value: 'Shift lead' } })
+    fireEvent.change(screen.getByTestId('form-affected'), { target: { value: 'Pickers walk twice' } })
     for (const title of ['The WMS re-sends a split list', 'Splits are not modelled']) {
       fireEvent.click(screen.getByTestId('form-new-cause'))
       fireEvent.change(screen.getByTestId('cause-draft-title'), { target: { value: title } })

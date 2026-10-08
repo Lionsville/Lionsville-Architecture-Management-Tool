@@ -7,8 +7,10 @@
  *
  * On the left the facts — title, where, observed by and when seen, all four
  * required, and the impact — each with an example under it that a refusal
- * replaces with what is missing. On the right the optional body, seeded with
- * the three questions a sighting answers, with Edit and Preview. Under the
+ * replaces with what is missing. On the right the three questions a sighting
+ * answers, a field each — what was seen, the evidence, and who or what it
+ * affected, the last required — which make the body under the template's
+ * headings, with Edit and Preview over the whole. Under the
  * title two hints that never block: *Seen before?*, the observations of the
  * chosen scope whose titles share words with this one, each with *Seen
  * again* — a sighting on that one, and nothing new recorded — and a wording
@@ -40,14 +42,14 @@ import type { Translate } from '../../i18n'
 import type { MarkdownRenderOptions } from '../../documentation/documentation'
 import { AddIcon, EyeIcon, LinkIcon } from '../../widgets/icons'
 import {
-  causeLabel, formatObservationNumber, liveObservations, observationTemplate, OBSERVATION_IMPACTS,
+  causeLabel, formatObservationNumber, liveObservations, OBSERVATION_IMPACTS,
 } from '../observation'
 import type { Cause, CauseStrength, Observation } from '../observation'
-import { observationProblems } from '../form'
-import type { CauseChoice, CauseDraft, ObservationFields, RequiredField } from '../form'
+import { newObservationProblems, observationBody } from '../form'
+import type { CauseChoice, CauseDraft, ObservationFields, ObservationSections, RequiredField } from '../form'
 import { hintWords, similarTitles, wordingHint } from '../wording'
 import { IMPACT_LABEL } from '../observationScope'
-import { CauseDraftFields, CausePicker, DescriptionField, ExampleField, LinkRowsTable, LookAlikes, SubPanel } from './FormParts'
+import { CauseDraftFields, CausePicker, ExampleField, LinkRowsTable, LookAlikes, SectionsField, SubPanel } from './FormParts'
 import type { LinkRow } from './FormParts'
 
 /** A scope an observation may be recorded in, and what the form reads of it. */
@@ -98,6 +100,17 @@ const blankDraft = (): CauseDraft => ({ title: '', why: '', root: false, strengt
 
 type Row = CauseChoice & { key: string }
 
+/** A field the form refuses: the four facts, and who or what it affected. */
+type Refused = RequiredField | 'affected'
+
+const SECTIONS = [
+  { key: 'saw', label: 'observation.tplSaw', example: 'observation.formSawExample' },
+  { key: 'evidence', label: 'observation.tplEvidence', example: 'observation.formEvidenceExample' },
+  { key: 'affected', label: 'observation.tplAffected', example: 'observation.formAffectedExample' },
+] as const
+
+const blankSections = (): ObservationSections => ({ saw: '', evidence: '', affected: '' })
+
 /** What the Record button says it will make: *Record observation with 1 new cause and 1 link*. */
 export function recordLabel(rows: readonly CauseChoice[], s: Translate): string {
   const made = rows.filter((one) => one.kind === 'new').length
@@ -114,14 +127,15 @@ export function recordLabel(rows: readonly CauseChoice[], s: Translate): string 
 export function NewObservationDialog(props: NewObservationDialogProps) {
   const { open, scopes, today, s } = props
   const [scopeIndex, setScopeIndex] = useState(0)
-  const [fields, setFields] = useState<ObservationFields>(() => freshFields(today, s))
-  const [shown, setShown] = useState<Partial<Record<RequiredField, 'missing' | 'future'>>>({})
+  const [fields, setFields] = useState<ObservationFields>(() => freshFields(today))
+  const [sections, setSections] = useState<ObservationSections>(blankSections)
+  const [shown, setShown] = useState<Partial<Record<Refused, 'missing' | 'future'>>>({})
   const [rows, setRows] = useState<Row[]>([])
   const [dropped, setDropped] = useState(false)
   const titleRef = useRef<HTMLInputElement>(null)
   useEffect(() => {
     if (!open) return
-    setScopeIndex(0); setFields(freshFields(today, s)); setShown({}); setRows([]); setDropped(false)
+    setScopeIndex(0); setFields(freshFields(today)); setSections(blankSections()); setShown({}); setRows([]); setDropped(false)
   }, [open, today, s])
 
   const scope = scopes[scopeIndex] ?? scopes[0]
@@ -130,10 +144,18 @@ export function NewObservationDialog(props: NewObservationDialogProps) {
     [fields.title, scope],
   )
   const hint = wordingHint(fields.title, hintWords(s('observation.formHintWords')))
+  const forget = (key: string) => {
+    if (key in shown) setShown((held) => { const next = { ...held }; delete next[key as Refused]; return next })
+  }
   const set = (key: keyof ObservationFields, value: string) => {
     setFields((held) => ({ ...held, [key]: value }))
-    if (key in shown) setShown((held) => { const next = { ...held }; delete next[key as RequiredField]; return next })
+    forget(key)
   }
+  const setSection = (key: keyof ObservationSections, value: string) => {
+    setSections((held) => ({ ...held, [key]: value }))
+    forget(key)
+  }
+  const body = observationBody(sections, s)
   const changeScope = (index: number) => {
     const before = rows.length
     const kept = rows.filter((one) => one.kind === 'new')
@@ -141,12 +163,12 @@ export function NewObservationDialog(props: NewObservationDialogProps) {
     setRows(kept)
     setDropped(kept.length < before)
   }
-  const problems = observationProblems(fields, today)
+  const problems = newObservationProblems({ ...fields, affected: sections.affected }, today)
   const record = () => {
     if (Object.keys(problems).length) { setShown(problems); return }
     props.onRecord({
       ...(scope?.scope !== undefined ? { scope: scope.scope } : {}),
-      fields: { ...fields, title: fields.title.trim(), where: fields.where.trim(), by: fields.by.trim() },
+      fields: { ...fields, title: fields.title.trim(), where: fields.where.trim(), by: fields.by.trim(), body },
       causes: rows.map(({ key: _key, ...choice }) => { void _key; return choice }),
     })
   }
@@ -213,9 +235,15 @@ export function NewObservationDialog(props: NewObservationDialogProps) {
               </ExampleField>
             </Box>
           </Box>
-          <DescriptionField
-            label={s('observation.formDescription')} value={fields.body} onChange={(value) => set('body', value)}
-            example={s('observation.formDescriptionExample')} renderMarkdown={props.renderMarkdown} s={s}
+          <SectionsField
+            label={s('observation.formDescription')} body={body} renderMarkdown={props.renderMarkdown} s={s}
+            sections={SECTIONS.map((one) => ({
+              key: one.key, label: s(one.label), value: sections[one.key], onChange: (value: string) => setSection(one.key, value),
+              example: s(one.example),
+              ...(one.key === 'affected'
+                ? { required: true, ...(shown.affected ? { problem: s('observation.formAffectedMissing') } : {}) }
+                : {}),
+            }))}
           />
         </Box>
 
@@ -338,6 +366,6 @@ function CausesSection({ scope, rows, onRows, dropped, onDismissDropped, s }: {
   )
 }
 
-function freshFields(today: string, s: Translate): ObservationFields {
-  return { title: '', where: '', by: '', date: today, impact: 'minor', body: observationTemplate(s) }
+function freshFields(today: string): ObservationFields {
+  return { title: '', where: '', by: '', date: today, impact: 'minor', body: '' }
 }

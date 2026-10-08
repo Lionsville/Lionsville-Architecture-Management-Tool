@@ -71,6 +71,7 @@ const fill = (title: string) => {
   fireEvent.change(screen.getByTestId('form-title'), { target: { value: title } })
   fireEvent.change(screen.getByTestId('form-where'), { target: { value: 'Pick station 3' } })
   fireEvent.change(screen.getByTestId('form-by'), { target: { value: 'Shift lead' } })
+  fireEvent.change(screen.getByTestId('form-affected'), { target: { value: 'Pickers walk twice' } })
 }
 const newCause = (title: string) => {
   fireEvent.click(screen.getByTestId('form-new-cause'))
@@ -85,16 +86,17 @@ const landedBelow = (onChangeBelow: ReturnType<typeof vi.fn<ChangeBelow>>) => {
 }
 
 describe('the new observation form', () => {
-  it('refuses a record without its four facts, putting what is missing where the example was', () => {
+  it('refuses a record without its four facts and who or what it affected, putting what is missing where the example was', () => {
     const { onChange } = mount()
     openForm()
     expect(form().getByText(/e\.g\. The nightly claims batch runs into office hours/)).toBeTruthy()
     fireEvent.click(screen.getByTestId('form-record'))
     expect(onChange).not.toHaveBeenCalled()
-    expect(screen.getByTestId('form-problems').textContent).toBe('3 fields need filling in.')
+    expect(screen.getByTestId('form-problems').textContent).toBe('4 fields need filling in.')
     expect(form().getByText('Say what was seen, in one sentence.')).toBeTruthy()
     expect(form().getByText('Say where it was seen.')).toBeTruthy()
     expect(form().getByText('Say who saw it.')).toBeTruthy()
+    expect(form().getByText('Say who or what it affected.')).toBeTruthy()
     expect(form().queryByText(/e\.g\. The nightly claims batch/)).toBeNull()
     // Written, a field's example comes back; a day after today is refused too.
     fill('Labels print twice')
@@ -194,12 +196,28 @@ describe('the new observation form', () => {
     expect(await axeFindings()).toEqual([])
   })
 
-  it('shows the description as it will read, in the same place', () => {
+  it('shows the three answers as the description they make, in the same place', () => {
     mount()
     openForm()
-    fireEvent.change(screen.getByTestId('form-description'), { target: { value: '## What we saw\n\nTwo labels.' } })
+    fireEvent.change(screen.getByTestId('form-saw'), { target: { value: 'Two labels.' } })
+    fireEvent.change(screen.getByTestId('form-affected'), { target: { value: 'The packers.' } })
     fireEvent.click(screen.getByRole('button', { name: 'Preview' }))
-    expect(screen.getByTestId('form-preview').textContent).toContain('Two labels.')
-    expect(screen.queryByTestId('form-description')).toBeNull()
+    const preview = screen.getByTestId('form-preview').textContent
+    expect(preview).toContain('What we saw')
+    expect(preview).toContain('Two labels.')
+    expect(preview).toContain('Who or what it affected')
+    expect(preview).toContain('The packers.')
+    expect(screen.queryByTestId('form-saw')).toBeNull()
+  })
+
+  it('records the three answers as one body under the template’s headings', () => {
+    const { onChange } = mount()
+    openForm()
+    fill('Labels print twice')
+    fireEvent.change(screen.getByTestId('form-saw'), { target: { value: 'Two labels per parcel.' } })
+    fireEvent.click(screen.getByTestId('form-record'))
+    expect(lastChange(onChange).observations.at(-1)!.body).toBe(
+      '## What we saw\n\nTwo labels per parcel.\n\n## Evidence\n\n\n## Who or what it affected\n\nPickers walk twice\n',
+    )
   })
 })

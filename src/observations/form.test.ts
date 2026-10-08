@@ -3,8 +3,9 @@
 
 import { describe, expect, it } from 'vitest'
 import { translator } from '../i18n'
-import { addCauseLinked, observationProblems, recordObservation } from './form'
+import { addCauseLinked, newObservationProblems, observationBody, observationProblems, recordObservation } from './form'
 import type { ObservationFields } from './form'
+import { observationTemplate } from './observation'
 import type { Analysis, Cause, Observation } from './observation'
 
 const t = translator('en')
@@ -29,6 +30,20 @@ describe('what an observation needs', () => {
     expect(observationProblems({ title: ' ', where: '', by: 'W.S.', date: '' }, '2026-09-30')).toEqual({ title: 'missing', where: 'missing', date: 'missing' })
     expect(observationProblems({ title: 'x', where: 'y', by: 'z', date: '2026-10-01' }, '2026-09-30')).toEqual({ date: 'future' })
     expect(observationProblems({ title: 'x', where: 'y', by: 'z', date: '2026-09-30' }, '2026-09-30')).toEqual({})
+  })
+})
+
+describe('the three answers of a new observation', () => {
+  it('make one body under the template’s headings, an empty answer leaving its heading', () => {
+    expect(observationBody({ saw: ' Two labels. ', evidence: '', affected: 'Packers\n' }, t))
+      .toBe('## What we saw\n\nTwo labels.\n\n## Evidence\n\n\n## Who or what it affected\n\nPackers\n')
+    expect(observationBody({ saw: '', evidence: '', affected: '' }, t)).toBe(observationTemplate(t))
+  })
+
+  it('refuse a new observation that says nobody and nothing was affected, beside the four facts', () => {
+    const facts = { title: 'x', where: 'y', by: 'z', date: '2026-09-30' }
+    expect(newObservationProblems({ ...facts, affected: ' ' }, '2026-09-30')).toEqual({ affected: 'missing' })
+    expect(newObservationProblems({ ...facts, title: '', affected: 'Packers' }, '2026-09-30')).toEqual({ title: 'missing' })
   })
 })
 

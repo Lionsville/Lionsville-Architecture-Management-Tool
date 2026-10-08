@@ -933,10 +933,15 @@ Kreises.
 **Neue Beobachtung** fragt nach den vier Fakten, die eine Beobachtung
 ausmachen: dem Titel, **wo es gesehen wurde**, **beobachtet von** und
 **wann gesehen**. Wann gesehen beginnt mit heute und darf nicht in der
-Zukunft liegen; die Auswirkung beginnt mit gering. Unter jedem Feld steht ein
-Beispiel, und ein leer gelassenes Feld sagt an dieser Stelle, was fehlt. Die
-Beschreibung rechts ist optional, beginnt mit ihren drei Überschriften und
-wechselt zwischen **Bearbeiten** und **Vorschau**. Unter dem Titel stehen
+Zukunft liegen; die Auswirkung beginnt mit gering. Rechts stellt die
+Beschreibung ihre drei Fragen, ein Feld je Frage — **was wir gesehen haben**,
+**Belege** und **wen oder was es betraf** —, und die letzte ist ebenfalls
+Pflicht: Eine Beobachtung sagt immer, wen oder was sie betraf. Festgehalten
+sind die drei ein Markdown-Text unter diesen Überschriften, und danach wird
+die Beschreibung einer Beobachtung als ein Text bearbeitet. **Vorschau** zeigt
+sie so, wie sie gelesen wird, und **Bearbeiten** geht zurück zu den Feldern.
+Unter jedem Feld steht ein Beispiel, und ein leer gelassenes Feld sagt an
+dieser Stelle, was fehlt. Unter dem Titel stehen
 zwei Hinweise, die nie aufhalten: **Schon einmal gesehen?** nennt
 Beobachtungen des gewählten Scopes, deren Titel Wörter mit Ihrem teilt, jede
 mit **Erneut gesehen**, das eine Sichtung an jener festhält und nichts Neues

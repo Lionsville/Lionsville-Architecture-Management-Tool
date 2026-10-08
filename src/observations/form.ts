@@ -55,6 +55,31 @@ export function observationProblems(
   return problems
 }
 
+/**
+ * The three questions a sighting answers, asked one field each by the form
+ * that records a new observation. Only who or what it affected is required
+ * there: an observation that touched nobody is not yet worth recording. Once
+ * recorded they are one markdown body, edited as such, so nothing else asks.
+ */
+export type ObservationSections = { saw: string; evidence: string; affected: string }
+
+/** The body the three answers make: the template's headings, each with its answer under it; all three empty is the template. */
+export function observationBody(sections: ObservationSections, t: Translate): string {
+  const part = (heading: string, text: string) => `## ${heading}\n\n${text.trim() ? `${text.trim()}\n` : ''}`
+  return [
+    part(t('observation.tplSaw'), sections.saw),
+    part(t('observation.tplEvidence'), sections.evidence),
+    part(t('observation.tplAffected'), sections.affected),
+  ].join('\n')
+}
+
+/** What the new-observation form refuses: the four facts, and who or what it affected. */
+export function newObservationProblems(
+  fields: Pick<ObservationFields, RequiredField> & Pick<ObservationSections, 'affected'>, today: string,
+): Partial<Record<RequiredField | 'affected', FieldProblem>> {
+  return { ...observationProblems(fields, today), ...(fields.affected.trim() ? {} : { affected: 'missing' as const }) }
+}
+
 /** A cause written in the form: nothing is made of it until the form is recorded. */
 export type CauseDraft = {
   title: string
