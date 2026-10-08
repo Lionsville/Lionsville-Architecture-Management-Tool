@@ -42,6 +42,13 @@
  * The app went from 2.535 MB to 2.561 MB; the whole is 8.39 MB, within its
  * 8.4 MB.
  *
+ * **Both raised on 8 October 2026**, to 3 MB a file and 10 MB in all: the
+ * owner raised the ceilings so the merge screen's and the share link's words
+ * fit with room. With the agent's merge tools (ADR-0035 §6) and File › Share
+ * with a Link… (ADR-0033) the app's own file is 2.587 MB and the whole
+ * 8.413 MB, which was 13 kB over the 8.4 MB before. A ceiling is still a
+ * number somebody changes on purpose, in a commit that says why.
+ *
  * The engine is counted by a name only the engine carries: the worker script
  * and the self-contained bundle both hold it, and the API that talks to either
  * does not. More than one file holding it is ELK shipped twice
@@ -56,7 +63,7 @@ export type Budget = {
   total: number
 }
 
-export const WEB_BUDGET: Budget = { file: 2_600_000, total: 8_400_000 }
+export const WEB_BUDGET: Budget = { file: 3_000_000, total: 10_000_000 }
 
 /**
  * The desktop's renderer is the same bundle unminified — electron-vite's
