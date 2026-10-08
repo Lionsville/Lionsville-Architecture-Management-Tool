@@ -202,3 +202,69 @@ merges with the tools and reads the result off the page.
   merged cause as a cause standing on its own.
 * Neutral: links the tree forbids stay on the absorbed record, which the
   screen says before the merge rather than after.
+
+## As built, 8 October 2026: the rules and the one apply
+
+The first part of the build: what a merge does, and how it lands. The
+screen (§1, §2) and the agent's tools (§6) are still to come, and the
+existing dialog still merges as it did.
+
+**A cause has a history** (§4). `Cause.history` holds `absorbed` and
+`merged` events — the date, the other cause's id, and its scope where it is
+not this one. It is written in a cause file's front matter only where
+something happened to the cause, so a cause nothing happened to is written
+as before, and a content kept without it reads as before; no format moved.
+`isCauseMerged` reads a cause as merged where a survivor of its scope says
+it absorbed it, or where its own history says it was merged — and
+`isMerged` now reads an observation's own `merged` event the same way,
+because a merge across the tree writes that event where the record lives
+and the survivor is then in another scope. A merged cause is left out of
+the picture and its counts (what it still explains analyses nothing), the
+open ends, the register unless *Show merged*, the link pickers, the
+findings, the organisation's counts and `rootCauses` — what a solution may
+address — and `linkRefusal` answers `merged` for it, either way round. A
+move of a scope carries the scope a cause's history names, as it carries a
+link's.
+
+**The merge is planned by one pure rule**, `observations/merge.ts`
+(`planMerge`), over the analyses of the scopes it reads
+(`scopesForMerge`: the records' scopes, every scope above them, and the
+scopes below that an absorbed cause explains a record of). It answers the
+rows of §3 — every link that names an absorbed record or lives on one, with
+where it would land, whether it may move and why not, whether both records
+had it and the strength offered — and what each scope's lists become, or a
+refusal. A row that cannot move says so in the link form's words
+(`LinkRefusal`: `self`, `loop`, `root`, `upward`, `sideways`,
+`observationBelow`, `merged`, `unknown`) and in three more:
+`observationElsewhere` (a cause explains observations of its own scope
+only), `solutionElsewhere` (a solution addresses causes of its own scope)
+and `notRoot` (a solution addresses a root cause, and the survivor will not
+be one). The merge as a whole is refused as `nothing`, `missing`, `merged`,
+`archived`, `survivorAbsorbed`, `notADay`, `unverified` (made verified with
+a body that does not say why), or with the two root steps' keys where it
+changes whether the survivor is a root. Inside one scope, with nothing
+chosen, it writes exactly what `mergeObservations` writes. *Add the others'
+descriptions* is `withMergedDescriptions`.
+
+**The open scope's part goes through its session** (§5, decided in the
+build). A merge that writes other scopes writes them in one
+`ScopeRepository.apply`, each scope's part as its step and each expecting
+the revision read (`projects/scopeAccess.changeScopes`), retried over a
+scope that moved, all or nothing. The open scope is not in that apply: it
+is read from its session, which may hold work not written yet, and its part
+is dispatched there once the others have landed — asked of the reducer
+before anything is applied, so a part the session would refuse refuses the
+whole. A step written to the open scope through the repository would be
+*changed elsewhere* to the session on its next write in every source, and
+another author's step where the source carries steps; going through the
+session is the one way that works the same for every source. So that step
+is on the page's stack with a barrier (`observation.acrossBarrier`, as a
+gesture across scopes has one, ADR-0012 §10): ⌘Z stops there and says why.
+Where the source writes rather than carries steps, it is written at once,
+and the answer says when that failed and the step waits for the next write.
+The one gap left is a session that refuses its own part after the others
+landed, which the reducer was asked about first, and which is answered as
+`partial`. A merge inside the open scope alone is an ordinary step, undone
+by ⌘Z. The page is handed this as `onChangeAcross`
+(`app/useChangeAcross.ts`), which asks `writable` of every scope the change
+writes — and of no scope it only reads — before it writes any.

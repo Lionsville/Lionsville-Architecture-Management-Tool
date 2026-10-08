@@ -98,6 +98,12 @@ export type WorkspaceSource = {
    */
   publishesSteps?: boolean
   /**
+   * May the person change the scope at this path (`ProviderParts.readOnlyAt`)?
+   * Asked of every scope a change across the tree writes before it writes
+   * any (ADR-0035 §2). Absent, every scope is as writable as this one.
+   */
+  writable?: (path: ScopePath) => boolean
+  /**
    * The source's own log of a scope, everybody's steps and not only this
    * window's (`platform/sourceProvider.ts`'s `SourceRecentActivity`). Absent for
    * all three sources that ship, whose Activity list is the session's.

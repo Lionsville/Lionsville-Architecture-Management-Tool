@@ -57,7 +57,7 @@ function imagesOf({ session, pictures, files }: WorkspaceParts) {
 
 /** The decisions page (ADR-0012 §7) and the observations page (ADR-0021). */
 function RecordPages({ parts }: { parts: WorkspaceParts }) {
-  const { props, session, pages, snapshots, analysis, readings, pictures, files, readOnly, requests, pageChrome, changeBelow } = parts
+  const { props, session, pages, snapshots, analysis, readings, pictures, files, readOnly, requests, pageChrome, changeBelow, changeAcross } = parts
   const { s, language, makeId } = props.shell
   const { groupName, ancestorDecisions, scopes } = props.tree
   const { onOpenScope, crumbs, onGoHome } = props.navigation
@@ -114,7 +114,7 @@ function RecordPages({ parts }: { parts: WorkspaceParts }) {
         below={readings.analysisBelow}
         explainedAbove={readings.explainedAbove}
         explainedAboveOf={readings.explainedAboveOf}
-        {...(readOnly ? {} : { onChangeBelow: changeBelow })}
+        {...(readOnly ? {} : { onChangeBelow: changeBelow, onChangeAcross: changeAcross })}
         scopeLabel={readings.scopeLabel}
         {...(props.preferences.savedFilters ? { savedFilters: props.preferences.savedFilters } : {})}
         absorbedAbove={readings.absorbedAbove}

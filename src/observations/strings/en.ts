@@ -41,6 +41,7 @@ export const EN = {
   'observation.showMerged': 'Show merged',
   'observation.mergedFromHeading': 'Merged from {label}',
   'observation.mergedFromHeadingScope': 'Merged from {label} in {scope}',
+  'observation.acrossBarrier': 'That step changed other scopes as well, so it cannot be taken back here. Change it back in each scope it changed.',
   'observation.showArchived': 'Show archived',
   'observation.archivedMark': 'Archived',
   'observation.notAnalysed': 'not yet',

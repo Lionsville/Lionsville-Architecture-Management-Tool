@@ -30,7 +30,7 @@
  * ends up with the same link twice — both records had it — it keeps one, the
  * stronger unless a strength is chosen.
  */
-import type { Translate } from '../i18n/strings'
+import type { StringKey, Translate } from '../i18n/strings'
 import { isDay } from '../model/lifecycle'
 import type {
   Cause, CauseLink, CauseState, CauseStrength, Observation, ObservationImpact, ScopeAnalysis, Solution,
@@ -41,6 +41,14 @@ import {
 import type { LinkRefusal } from './observation'
 
 export type MergeKind = 'observation' | 'cause'
+
+/**
+ * Why ⌘Z stops at a step that changed other scopes too (ADR-0012 §10,
+ * ADR-0035 §5): the open scope's part is on this page's stack, and the other
+ * scopes' parts are steps in their own histories, which nothing here can take
+ * back.
+ */
+export const ACROSS_BARRIER: StringKey = 'observation.acrossBarrier'
 
 /** A record somewhere in the tree: the path of the scope it lives in (`''` the organisation), and its id. */
 export type RecordAt = { scope: string; id: string }

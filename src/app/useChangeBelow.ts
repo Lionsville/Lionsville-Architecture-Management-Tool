@@ -42,7 +42,7 @@ import type { ScopePath } from '../projects/scopePath'
 export type BelowScopes = ScopeReader & Pick<ScopeRepository, 'apply'>
 
 /** The one step a change makes, from the scope's lists before it and after. */
-function stepFor(model: Model, next: ObservationWork): Command | undefined {
+export function stepFor(model: Model, next: ObservationWork): Command | undefined {
   const commands = [
     ...observationsToCommands(model, next.observations), ...causesToCommands(model, next.causes),
     ...solutionsToCommands(model, next.solutions), ...experimentsToCommands(model, next.experiments),
@@ -56,7 +56,7 @@ function stepFor(model: Model, next: ObservationWork): Command | undefined {
  * change's to say. A source that decides who may write refuses a scope the
  * person may only read with `shell.scopeReadOnly`, and the page says so.
  */
-function refusalOf(error: unknown): ChangedBelow | undefined {
+export function refusalOf(error: unknown): ChangedBelow | undefined {
   if (!(error instanceof ShellError)) return undefined
   if (error.key === 'shell.scopeGone') return { ok: false, reason: 'gone' }
   if (error.key === 'shell.scopeReadOnly') return { ok: false, reason: 'shell.scopeReadOnly' }

@@ -32,6 +32,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'observation.showMerged': 'Samengevoegde tonen',
   'observation.mergedFromHeading': 'Samengevoegd uit {label}',
   'observation.mergedFromHeadingScope': 'Samengevoegd uit {label} in {scope}',
+  'observation.acrossBarrier': 'Die stap heeft ook andere niveaus gewijzigd en kan hier niet ongedaan worden gemaakt. Draai hem terug in elk niveau dat hij wijzigde.',
   'observation.showArchived': 'Gearchiveerde tonen',
   'observation.archivedMark': 'Gearchiveerd',
   'observation.notAnalysed': 'nog niet',

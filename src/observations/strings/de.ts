@@ -32,6 +32,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'observation.showMerged': 'Zusammengeführte zeigen',
   'observation.mergedFromHeading': 'Zusammengeführt aus {label}',
   'observation.mergedFromHeadingScope': 'Zusammengeführt aus {label} in {scope}',
+  'observation.acrossBarrier': 'Dieser Schritt hat auch andere Bereiche geändert und kann hier nicht rückgängig gemacht werden. Ändern Sie ihn in jedem Bereich zurück, den er geändert hat.',
   'observation.showArchived': 'Archivierte zeigen',
   'observation.archivedMark': 'Archiviert',
   'observation.notAnalysed': 'noch nicht',

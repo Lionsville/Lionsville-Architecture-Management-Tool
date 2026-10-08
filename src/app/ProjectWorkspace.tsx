@@ -39,6 +39,7 @@ import { showOn, useWorkspaceAgentView } from './useWorkspaceAgentView'
 import { useInitialPage, useWorkspaceCommands } from './useWorkspaceCommands'
 import { useScopeSessionSeam, useScopeWriter, useWorkspaceDocument } from './useWorkspaceDocument'
 import { useWorkspaceFiles } from './useWorkspaceFiles'
+import { useChangeAcross } from './useChangeAcross'
 import { useChangeBelow } from './useChangeBelow'
 import { useWorkspaceOwnership } from './useWorkspaceOwnership'
 import { useWorkspacePages } from './useWorkspacePages'
@@ -190,6 +191,11 @@ function useSessionParts(props: ProjectWorkspaceProps) {
   }
 }
 
+/** Every scope as writable as this one, where the source says nothing per scope. Made once per answer, so the hook over it is stable. */
+const WRITABLE = () => true
+const READ_ONLY = () => false
+const writableLikeHere = (readOnly: boolean) => (readOnly ? READ_ONLY : WRITABLE)
+
 /** What the rest of the organisation says about this scope, and who answers for each record. */
 function useTreeParts(props: ProjectWorkspaceProps, base: ReturnType<typeof useSessionParts>) {
   const { project, source, tree, navigation, host, shell } = props
@@ -240,7 +246,13 @@ function useTreeParts(props: ProjectWorkspaceProps, base: ReturnType<typeof useS
   })
   /** A change to a scope below made from the observations page, as that scope's step (ADR-0032 §2). */
   const changeBelow = useChangeBelow({ scopes: source.repositories.scopes, mayChange: session.mayChange, onTreeChanged })
-  return { readings, gestures, library, ownership, changeBelow }
+  /** A change to several scopes as one — a merge across the tree (ADR-0035 §5): the others in one apply, this one through the session. */
+  const changeAcross = useChangeAcross({
+    scope: project.path, scopes: source.repositories.scopes, session, mayChange: session.mayChange,
+    writable: source.writable ?? writableLikeHere(source.readOnly ?? false), save: base.document.document.flush,
+    published: source.publishesSteps ?? false, onTreeChanged,
+  })
+  return { readings, gestures, library, ownership, changeBelow, changeAcross }
 }
 
 /** The snapshots, the menu, the pages beside the canvas and the doors in. */

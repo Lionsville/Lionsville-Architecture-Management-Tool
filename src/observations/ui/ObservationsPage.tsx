@@ -116,6 +116,35 @@ export type ChangedBelow =
   | { ok: true }
   | { ok: false; reason: CommandRefusal | 'shell.scopeReadOnly' | 'readOnly' | 'gone' | 'unchanged' }
 
+/**
+ * A change to the analysis of several scopes as one (ADR-0035 §5): `paths`
+ * are read — the open scope from this page, as it stands — and `change` is
+ * handed each one's four lists and answers what those it writes become, or a
+ * refusal of its own (`{ refused }`), or nothing. It may be called more than
+ * once, over a scope that moved in between, so it must do nothing but answer.
+ */
+export type ChangeAcross = (
+  paths: readonly string[],
+  change: (held: ReadonlyMap<string, ObservationWork>) => ReadonlyMap<string, ObservationWork> | { refused: string } | undefined,
+) => Promise<ChangedAcross>
+
+/**
+ * Where a change across went: landed on `changed` (the open scope among them
+ * where it was written, as a step on this page's stack with a barrier when
+ * others were written too; `unsaved` where that step is not written yet), or
+ * refused — by `change` itself, by a writer with its key, by a scope the
+ * person may read and not change (`scope` names it), or not made: nothing may
+ * be written from here, a scope gone, or nothing to change. `partial` is the
+ * one that should never be met: the other scopes landed and this page's
+ * session then refused its own part.
+ */
+export type ChangedAcross =
+  | { ok: true; changed: readonly string[]; unsaved?: true }
+  | { ok: false; reason: 'refused'; refused: string }
+  | { ok: false; reason: 'shell.scopeReadOnly'; scope?: string }
+  | { ok: false; reason: 'partial'; changed: readonly string[] }
+  | { ok: false; reason: CommandRefusal | 'shell.scopeMoved' | 'readOnly' | 'gone' | 'unchanged' }
+
 const label4 = (prefix: string, number: number) => `${prefix}-${String(Math.max(0, Math.trunc(number))).padStart(4, '0')}`
 
 export type ObservationsPageProps = {
@@ -150,6 +179,12 @@ export type ObservationsPageProps = {
    * page's stack. Absent where the host cannot write another scope.
    */
   onChangeBelow?: ChangeBelow
+  /**
+   * Land a change on several scopes as one — a merge across the tree
+   * (ADR-0035 §5): the other scopes in one apply, this one as a step here.
+   * Absent where nothing may be written from here.
+   */
+  onChangeAcross?: ChangeAcross
   /** What a scope below is called, for the headings; the path where the host cannot say. */
   scopeLabel?: (path: string) => string
   /** The filters this person saved, offered in every scope (ADR-0032 §8); absent, nothing can be saved. */
