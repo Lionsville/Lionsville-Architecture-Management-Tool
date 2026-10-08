@@ -909,15 +909,49 @@ de nieuwe oorzaken en de koppelingen samen terug. Een andere scope kiezen
 haalt de koppelingen naar oorzaken van de eerder gekozen scope eraf, en zegt
 dat.
 
-Twee waarnemingen die hetzelfde blijken te zijn worden **samengevoegd**:
-kies de waarneming waar het dezelfde van is, en de keren dat het gezien is
-en de oorzaken gaan over. Beide records zeggen dat met de datum. Het
-samengevoegde record blijft — daar staat de oorspronkelijke tekst — en wordt
-als samengevoegd gelezen, niet verwijderd; *Samengevoegde tonen* haalt het
-terug in het register. Een waarneming van een scope eronder kan worden
-samengevoegd met een waarneming van deze scope; alleen het record van deze
-scope wordt geschreven, en de scope eronder leest waar zijn waarneming heen
-ging.
+Waarnemingen die hetzelfde blijken te zijn worden **samengevoegd**, en
+oorzaken die twee keer zijn opgeschreven ook. **Samenvoegen…** op een
+waarneming of een oorzaak — in de lezer, met een rechtsklik, of op een van een
+scope eronder — opent het **samenvoegscherm** over de pagina, met dat record
+gekozen. Het heeft drie delen:
+
+- **Wat samengevoegd wordt.** Zoeken in de levende waarnemingen, of de
+  oorzaken die niet zijn samengevoegd, van deze scope; vink **Over scopes
+  heen** aan om in elke scope te zoeken die je kunt lezen, de dichtstbijzijnde
+  eerst, met bij elke treffer de scope. Vink er zoveel aan als hetzelfde zijn.
+  Een van de gekozen **blijft staan**; dat is het record waarmee je begon tot
+  je een ander kiest. Een record van een scope die je mag lezen en niet
+  wijzigen staat in de lijst, kan niet worden aangevinkt, en zegt waarom.
+- **Wat het blijvende record zegt.** Een rij per waarde — voor een waarneming
+  de titel, waar, waargenomen door, de impact en de dag van eerst gezien, die
+  begint bij de vroegste van de gekozen; voor een oorzaak de titel,
+  aangenomen of geverifieerd, en of het een grondoorzaak is. Ernaast is de
+  waarde van elk gekozen record een knop die haar in het veld zet, of typ je
+  eigen. De keren gezien worden opgeteld, niet gekozen. De beschrijving is die
+  van het blijvende record, te bewerken; **De beschrijvingen van de andere
+  toevoegen** zet die van elk eronder, onder *Samengevoegd uit OB-0007* (met
+  de scope waar dat een andere is). De andere houden hoe dan ook hun eigen
+  beschrijving.
+- **Wat meegaat.** Elke koppeling die een record noemt dat wordt
+  samengevoegd, een rij elk, aangevinkt waar ze naar het blijvende record mag.
+  Vink er een uit om haar te laten waar ze is. Een koppeling die de boom niet
+  toestaat — een kringloop, een koppeling omhoog of opzij, een oorzaak die een
+  waarneming van een andere scope verklaart, een oplossing en een oorzaak die
+  geen grondoorzaak wordt — kan niet worden aangevinkt, en zegt waarom. Waar
+  beide records dezelfde koppeling hadden, kies je de sterkte; de sterkste
+  wordt aangeboden.
+
+**Samenvoegen** zegt wat het maakt — *2 waarnemingen samenvoegen in OB-0002* —
+of, grijs, waarom het niet kan. Een samenvoeging binnen deze scope is één
+stap, en ⌘Z neemt haar terug. Een die een andere scope wijzigt — een record
+ervan samengevoegd, of een koppeling die daar staat verplaatst — schrijft elke
+scope die ze wijzigt als stap van die scope, alles of niets, en een melding
+zegt welke scopes ze wijzigde; ⌘Z neemt dat hier niet terug, verander het dus
+terug. Het scherm sluit op het blijvende record. Elk samengevoegd record
+blijft — daar staat de oorspronkelijke tekst — en wordt als samengevoegd
+gelezen, niet verwijderd, met waar het heen ging, ook als dat een andere scope
+is; *Samengevoegde tonen* haalt samengevoegde waarnemingen en oorzaken terug in
+het register.
 
 Een waarneming die is opgelost, aangepakt of er niet meer toe doet wordt
 **gearchiveerd**: *Archiveren* vraagt, vrijblijvend, waarom, en schrijft de
@@ -959,8 +993,8 @@ worden.
 twee woorden, en er met de muis boven hangen, of er met Tab op komen, zegt
 voluit wat hij doet en waarvoor hij geweigerd wordt. Een waarneming biedt
 *Opnieuw gezien*, *Oorzaak*, *Bewerken*, *Samenvoegen*, *Archiveren* en
-*Verwijderen*; een oorzaak *Diepere oorzaak*, *Grondoorzaak*, *Grond maken*
-en *Verifiëren*; een grondoorzaak *Oplossing* en *Tot oorzaak maken*, en nooit
+*Verwijderen*; een oorzaak *Diepere oorzaak*, *Grondoorzaak*, *Grond maken*,
+*Verifiëren* en *Samenvoegen*; een grondoorzaak *Oplossing* en *Tot oorzaak maken*, en nooit
 een diepere oorzaak. *Oorzaak*, *Diepere oorzaak* en *Grondoorzaak* openen
 één dialoog met twee tabbladen: **Nieuwe oorzaak**, de eigen velden van de
 oorzaak, en **Bestaande oorzaak**, dat alleen aanbiedt wat de regels

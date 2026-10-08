@@ -846,13 +846,42 @@ step — ⌘Z takes the observation, the new causes and the links back together.
 Changing the scope takes off the links to causes of the scope chosen before,
 and says so.
 
-Two observations that turn out to be the same thing are **merged**: pick the
-one it is the same as, and its sightings and its causes move over. Both
-records say so with the day. The merged record stays — it is where the
-original wording is — and is read as merged rather than deleted; *Show
-merged* brings it back into the register. An observation of a scope below
-can be merged into one of this scope's; only this scope's record is written,
-and the scope below reads where its observation went.
+Observations that turn out to be the same thing are **merged**, and so are
+causes written down twice. **Merge…** on an observation or a cause — on its
+reader, on a right-click, or on one of a scope below — opens the **merge
+screen** over the page, with that record picked. It has three parts:
+
+- **What to merge.** A search over the live observations, or the causes that
+  are not merged, of this scope; tick **Across scopes** to search every scope
+  you can read, nearest first, each hit naming its scope. Tick as many as are
+  the same thing. One of those picked **keeps standing** — the survivor; it is
+  the record you started from until you choose another. A record of a scope
+  you may read and not change is listed and cannot be ticked, and says why.
+- **What the survivor says.** One row per value — for an observation the
+  title, where, observed by, the impact and the day first seen, which starts
+  at the earliest of those picked; for a cause the title, assumed or
+  verified, and whether it is a root cause. Beside each, every picked
+  record's value is a button that puts it in the field, or type your own. The
+  sightings are added up, not chosen. The description is the survivor's,
+  editable; **Add the others' descriptions** appends each one's under
+  *Merged from OB-0007* (with its scope where that is another). The others
+  keep their own descriptions either way.
+- **What moves with it.** Every link that names a record being merged, one
+  row each, ticked where it may move to the survivor. Untick one to leave it
+  where it is. A link the tree does not allow — a loop, a link up or sideways,
+  a cause explaining an observation of another scope, a solution and a cause
+  that will not be a root cause — cannot be ticked, and says why. Where both
+  records had the same link, choose its strength; the stronger is offered.
+
+**Merge** says what it will make — *Merge 2 observations into OB-0002* — or,
+greyed, why it cannot. A merge inside this scope is one step, and ⌘Z takes it
+back. One that changes another scope — a record of it merged, or a link kept
+there moved — writes every scope it changes as that scope's own step, all or
+nothing, and a note says which scopes it changed; ⌘Z here does not take that
+back, so change it back. The screen closes on the survivor. Every merged
+record stays — it is where the original wording is — and is read as merged
+rather than deleted, saying where it went, also when that is another scope;
+*Show merged* brings merged observations and causes back into the register.
 
 An observation that was fixed, addressed or has stopped mattering is
 **archived**: *Archive* asks why, optionally, and writes the day and the
@@ -889,8 +918,8 @@ or unlink it first. A new cause can be made a root cause as it is written.
 two, and hovering it, or reaching it with Tab, says in full what it does and
 what it is refused for. An observation offers *Seen again*, *Cause*, *Edit*,
 *Merge*, *Archive* and *Delete*; a cause *Deeper cause*, *Root cause*,
-*Make root* and *Verify*; a root cause *Solution* and *Make cause*, and never
-a deeper cause. *Cause*, *Deeper cause* and *Root cause* open one dialog with
+*Make root*, *Verify* and *Merge*; a root cause *Solution* and *Make cause*,
+and never a deeper cause. *Cause*, *Deeper cause* and *Root cause* open one dialog with
 two tabs: **New cause**, the cause's own fields, and **Existing cause**,
 offering only what the rules allow. Where the reader is narrow, *Merge*,
 *Archive* and *Delete* move into `⋯`.

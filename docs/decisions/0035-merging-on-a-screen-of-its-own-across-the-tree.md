@@ -1,6 +1,7 @@
 # ADR-0035 — Merging on a screen of its own, across the tree
 
-* Status: accepted, 8 October 2026; not yet built
+* Status: accepted, 8 October 2026; as built, 8 October 2026: the rules, the one
+  apply and the screen (§1–§5); the agent's tools (§6) not yet built
 * Date: 2026-10-08
 * Deciders: Wouter Simons
 * Supersedes: ADR-0021 §4 in part (*only the survivor is written*: a merge
@@ -206,8 +207,8 @@ merges with the tools and reads the result off the page.
 ## As built, 8 October 2026: the rules and the one apply
 
 The first part of the build: what a merge does, and how it lands. The
-screen (§1, §2) and the agent's tools (§6) are still to come, and the
-existing dialog still merges as it did.
+screen (§1, §2) is the next section; the agent's tools (§6) are still to
+come.
 
 **A cause has a history** (§4). `Cause.history` holds `absorbed` and
 `merged` events — the date, the other cause's id, and its scope where it is
@@ -268,3 +269,61 @@ landed, which the reducer was asked about first, and which is answered as
 by ⌘Z. The page is handed this as `onChangeAcross`
 (`app/useChangeAcross.ts`), which asks `writable` of every scope the change
 writes — and of no scope it only reads — before it writes any.
+
+## As built, 8 October 2026: the screen
+
+**Merge…** on an observation or a cause — on its reader, on a right-click,
+and on a record of a scope below — opens the merge screen
+(`observations/ui/MergePage.tsx`) over the observations page, with that
+record picked and surviving. The small dialog is gone. Its wiring is one
+hook, `useMerge`, and what it reads off the tree is pure
+(`observations/mergeScreen.ts`).
+
+**What it searches across scopes is what the tree already read.** The
+index each session builds holds every readable scope's analysis — its
+observations, causes, solutions and experiments are read with its model in
+every source that ships (`ScopeModel`), so nothing is loaded on demand.
+`ScopeIndex.analyses()` hands all of it out, and the page is given it as
+`tree`; the open scope is the page's own, as it stands. A search offers the
+records that are live — observations neither merged nor archived, causes
+not merged — and leaves out anything a survivor anywhere says it absorbed.
+It matches every word typed against the label, the title and, for an
+observation, where it was seen; scopes nearest first by steps through the
+tree, a tie in path order, and newest first within a scope; fifty are
+listed, and how many more there are is said.
+
+**Whether a scope may be changed** is the source's `writable`, handed to
+the page. A record of a scope that may only be read is listed with that
+said and cannot be picked, and Merge says the same of any scope the plan
+would write. The storage still refuses it where it must.
+
+**Everything shown is planned.** `planMerge` is asked on every change, over
+the scopes `scopesForMerge` names, read off the tree: the value rows (each
+picked record's distinct value as a button, or one typed), the sightings
+summed, the link rows with the link form's words for a row that cannot
+move, a strength where both had the link, and the reason Merge cannot be
+pressed. *Add the others' descriptions* is offered once per set picked.
+Merge says what it makes — *Merge 2 observations into OB-0002*, causes by
+their `CA-` or `RC-` label.
+
+**Where it lands is what the plan writes.** A plan that writes only the open
+scope is the page's own step, undone by ⌘Z. One that writes any other scope
+— a record of it merged, or a link held there moved — goes to
+`onChangeAcross`, which reads every scope fresh and plans again over what
+it read, so the merge that lands is planned over what is there; a plan
+that no longer holds is refused and nothing is written. A note after it
+names the scopes changed, or why nothing was merged, and the screen stays
+up where nothing was. A merge from below into this scope therefore now
+writes both scopes, where the dialog wrote only this one (ADR-0021 §4); an
+absorption written that way before reads as it did.
+
+**A merged record says where it went**, wherever that is: a merged cause is
+listed under *Show merged*, dimmed, and its reader says *Merged into
+CA-0003* — with the scope where it is another — offers nothing to change,
+and goes there; an observation merged into another scope reads its own
+`merged` event the same way, and one of a scope below no longer stands in
+this scope's register once it was merged anywhere.
+
+The screen's main controls carry `merge.search`, `merge.across`,
+`merge.survivor` (on each record picked), `merge.what`, `merge.values`,
+`merge.links` and `merge.confirm`.

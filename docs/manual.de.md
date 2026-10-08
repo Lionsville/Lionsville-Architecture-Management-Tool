@@ -963,15 +963,52 @@ Verknüpfung*, und es ist ein Schritt — ⌘Z nimmt die Beobachtung, die neuen
 Ursachen und die Verknüpfungen zusammen zurück. Ein anderer Scope nimmt die
 Verknüpfungen zu Ursachen des vorher gewählten heraus und sagt das.
 
-Zwei Beobachtungen, die sich als dasselbe erweisen, werden
-**zusammengeführt**: Wählen Sie die, mit der sie identisch ist, und die
-Sichtungen und Ursachen gehen über. Beide Datensätze sagen das mit dem Datum.
-Der zusammengeführte Datensatz bleibt — dort steht der ursprüngliche Wortlaut
-— und wird als zusammengeführt gelesen, nicht gelöscht; *Zusammengeführte
-zeigen* holt ihn ins Register zurück. Eine Beobachtung eines Scopes darunter
-kann in eine dieses Scopes zusammengeführt werden; geschrieben wird nur der
-Datensatz dieses Scopes, und der Scope darunter liest, wohin seine
-Beobachtung ging.
+Beobachtungen, die sich als dasselbe erweisen, werden **zusammengeführt**,
+und Ursachen, die zweimal aufgeschrieben wurden, ebenso. **Zusammenführen…**
+an einer Beobachtung oder einer Ursache — im Leser, per Rechtsklick oder an
+einer eines Scopes darunter — öffnet die **Zusammenführungsansicht** über der
+Seite, mit diesem Datensatz gewählt. Sie hat drei Teile:
+
+- **Was zusammengeführt wird.** Eine Suche über die lebenden Beobachtungen,
+  oder die nicht zusammengeführten Ursachen, dieses Scopes; mit **Über Scopes
+  hinweg** wird in jedem Scope gesucht, den Sie lesen können, der nächste
+  zuerst, und jeder Treffer nennt seinen Scope. Haken Sie so viele an, wie
+  dasselbe sind. Einer der gewählten **bleibt bestehen**; bis Sie einen
+  anderen wählen, ist es der, von dem Sie ausgingen. Ein Datensatz eines
+  Scopes, den Sie lesen und nicht ändern dürfen, wird aufgeführt, kann nicht
+  angehakt werden und sagt, warum.
+- **Was der bleibende Datensatz sagt.** Eine Zeile je Wert — für eine
+  Beobachtung der Titel, wo, beobachtet von, die Auswirkung und der Tag des
+  ersten Sehens, der beim frühesten der gewählten beginnt; für eine Ursache
+  der Titel, angenommen oder verifiziert, und ob sie eine Grundursache ist.
+  Daneben ist der Wert jedes gewählten Datensatzes eine Schaltfläche, die ihn
+  ins Feld setzt, oder Sie geben Ihren eigenen ein. Die Sichtungen werden
+  addiert, nicht gewählt. Die Beschreibung ist die des bleibenden
+  Datensatzes, bearbeitbar; **Die Beschreibungen der anderen hinzufügen**
+  hängt die jedes anderen an, unter *Zusammengeführt aus OB-0007* (mit seinem
+  Scope, wo das ein anderer ist). Die anderen behalten ihre eigene
+  Beschreibung in jedem Fall.
+- **Was mitgeht.** Jede Verknüpfung, die einen zusammengeführten Datensatz
+  nennt, eine Zeile je, angehakt, wo sie zum bleibenden Datensatz wandern
+  darf. Haken Sie eine ab, um sie zu lassen, wo sie ist. Eine Verknüpfung, die
+  der Baum nicht erlaubt — eine Schleife, eine Verknüpfung nach oben oder zur
+  Seite, eine Ursache, die eine Beobachtung eines anderen Scopes erklärt, eine
+  Lösung und eine Ursache, die keine Grundursache sein wird — kann nicht
+  angehakt werden und sagt, warum. Wo beide Datensätze dieselbe Verknüpfung
+  hatten, wählen Sie die Stärke; die stärkere wird angeboten.
+
+**Zusammenführen** sagt, was es macht — *2 Beobachtungen in OB-0002
+zusammenführen* — oder, ausgegraut, warum es nicht geht. Eine Zusammenführung
+innerhalb dieses Scopes ist ein Schritt, und ⌘Z nimmt sie zurück. Eine, die
+einen anderen Scope ändert — ein Datensatz von dort zusammengeführt, oder
+eine dort gehaltene Verknüpfung verschoben — schreibt jeden Scope, den sie
+ändert, als Schritt jenes Scopes, alles oder nichts, und ein Hinweis sagt,
+welche Scopes sie geändert hat; ⌘Z nimmt das hier nicht zurück, ändern Sie es
+also zurück. Die Ansicht schließt auf dem bleibenden Datensatz. Jeder
+zusammengeführte Datensatz bleibt — dort steht der ursprüngliche Wortlaut —
+und wird als zusammengeführt gelesen, nicht gelöscht, und sagt, wohin er
+ging, auch wenn das ein anderer Scope ist; *Zusammengeführte zeigen* holt
+zusammengeführte Beobachtungen und Ursachen ins Register zurück.
 
 Eine Beobachtung, die behoben, angegangen oder nicht mehr von Belang ist, wird
 **archiviert**: *Archivieren* fragt, unverbindlich, nach dem Warum und
@@ -1015,7 +1052,8 @@ und ein oder zwei Wörtern, und darüber zu fahren, oder sie mit Tab zu
 erreichen, sagt ausführlich, was sie tut und wofür sie abgelehnt wird. Eine
 Beobachtung bietet *Erneut gesehen*, *Ursache*, *Bearbeiten*,
 *Zusammenführen*, *Archivieren* und *Löschen*; eine Ursache *Tiefere
-Ursache*, *Grundursache*, *Zum Grund machen* und *Verifizieren*; eine
+Ursache*, *Grundursache*, *Zum Grund machen*, *Verifizieren* und
+*Zusammenführen*; eine
 Grundursache *Lösung* und *Zur Ursache machen*, und nie eine tiefere Ursache.
 *Ursache*, *Tiefere Ursache* und *Grundursache* öffnen einen Dialog mit zwei
 Reitern: **Neue Ursache**, die eigenen Felder der Ursache, und **Vorhandene
