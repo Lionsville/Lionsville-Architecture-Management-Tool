@@ -27,7 +27,10 @@ export type PageLanding =
   | { readonly page?: InitialPage; readonly activeDiagramId?: string }
 
 export function pageLanding(scope: Pick<ScopeSnapshot, 'model' | 'activeDiagramId'>, page: InitialPage | undefined): PageLanding {
-  if (page === undefined) return {}
+  // No page named is the view on the tab. A scope with no views — a domain
+  // made without a board — has none, and the canvas could only say so as an
+  // error: it lands on its home, empty until a board is made.
+  if (page === undefined) return scope.model.diagrams.length === 0 ? { home: true } : {}
   if (page.page === 'board' || page.page === 'sheet' || page.page === 'map' || page.page === 'technology') {
     const id = viewFor(page.page, page.id, scope.model.diagrams, scope.activeDiagramId)
     if (id === undefined) return { home: true }

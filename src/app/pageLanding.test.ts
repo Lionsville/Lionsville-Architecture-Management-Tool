@@ -24,6 +24,12 @@ describe('pageLanding', () => {
     laidOut({ id: 'b2', kind: 'layer7', name: 'Two', placements: [{ id: 'crm', x: 0, y: 0 }] }),
   ]
 
+  /** Opened with no page named, a scope that draws nothing has only its home to show. */
+  it('lands a scope with no views on its home when no page is named', () => {
+    expect(pageLanding(scope([]), undefined)).toEqual({ home: true })
+    expect(pageLanding(scope(boards, 'b1'), undefined)).toEqual({})
+  })
+
   it('opens a view it names, and starts the session on it', () => {
     expect(pageLanding(scope([view('s1', 'sheet'), view('s2', 'sheet')]), { page: 'sheet', id: 's2', select: 'x' }))
       .toEqual({ page: { page: 'sheet', id: 's2', select: 'x' }, activeDiagramId: 's2' })

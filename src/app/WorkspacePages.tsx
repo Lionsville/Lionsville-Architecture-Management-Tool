@@ -85,7 +85,12 @@ function RecordPages({ parts }: { parts: WorkspaceParts }) {
             s={s}
           />
         )}
-        {...(onOpenScope ? { onOpenScope } : {})}
+        {...(onOpenScope
+          // On the record, as the observations page opens on its own: the scope
+          // above may draw nothing, and a scope with no views opened on no page
+          // lands on its home (`pageLanding`), away from the record.
+          ? { onOpenScope: (path: string, id: string) => onOpenScope(path, { page: 'decisions', id }) }
+          : {})}
         onProjectDecisionsChange={analysis.onDecisionsChange}
         initialAdrId={pages.adrPage.adrId}
         initialNonce={pages.adrPage.nonce}

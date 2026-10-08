@@ -20,3 +20,9 @@ evidence, and who or what it affected — in place of one description with
 three headings in it, and the last is required beside the title, the place,
 who saw it and the day. The three are recorded as one description under the
 same headings, so an observation is read and edited as before.
+
+**A new scope made without a board opens on its home.** Unticking *Start with
+a landscape board* in the new-scope dialog made the scope, but then opened it
+on a canvas with nothing to draw and an error about a missing diagram id. Now
+the scope is filed empty and you land on its home, where a board can be added
+when you want one.

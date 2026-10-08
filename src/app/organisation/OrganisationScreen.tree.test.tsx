@@ -200,6 +200,11 @@ describe('the tree', () => {
     const made = await store.read('retail/returns')
     expect(made?.model.diagrams).toEqual([])
     expect(made?.kind).toBe('domain')
+    // And it is entered on its home, empty until a board is made: there is no
+    // board to open it on, and the canvas would say so as an error.
+    await waitFor(() => expect(screen.getByTestId('organisation-name').textContent).toBe('Returns'))
+    expect(screen.queryByTestId('saved-indicator')).toBeNull()
+    expect(screen.queryByText(/Diagram not found/)).toBeNull()
   })
 
   /** Refused where a person can see it, rather than quietly suffixed. */

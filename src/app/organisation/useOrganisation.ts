@@ -131,6 +131,12 @@ export type Organisation = {
    * does not hold yet is a home nobody has looked for, not one that is gone.
    */
   listed: boolean
+  /**
+   * Whether the listing is the one read since the last `refresh`. A home made
+   * a moment ago is not in the listing read before it was made, and is not
+   * gone for that: until this is true, a missing home is one being looked for.
+   */
+  listedNow: boolean
   refresh: () => void
   dialog: OrganisationDialog
   /** Which scopes are folded shut. Per session: a fold is not a preference. */
@@ -189,9 +195,11 @@ function useHomeReads({ scopes, active, at, revision, onFailure }: {
   at: ScopePath
   revision: number
   onFailure: UseOrganisationInput['onFailure']
-}): { tree: ScopeSummary; root: ScopeSnapshot | undefined; ready: boolean; listed: boolean } {
+}): { tree: ScopeSummary; root: ScopeSnapshot | undefined; ready: boolean; listed: boolean; listedNow: boolean } {
   const [tree, setTree] = useState<ScopeSummary>(() => scopeTree([]))
   const [listed, setListed] = useState(false)
+  /** The revision the listing on screen was read at. */
+  const [listedAt, setListedAt] = useState(-1)
   const [root, setRoot] = useState<ScopeSnapshot | undefined>(undefined)
   const [ready, setReady] = useState(false)
 
@@ -218,11 +226,12 @@ function useHomeReads({ scopes, active, at, revision, onFailure }: {
   useEffect(() => {
     let live = true
     void scopes.tree().then(
-      (held) => { if (live) { setTree(summaryOf(held)); setListed(true) } },
+      (held) => { if (live) { setTree(summaryOf(held)); setListed(true); setListedAt(revision) } },
       (cause: unknown) => {
         if (!live) return
         setTree(scopeTree([]))
         setListed(true)
+        setListedAt(revision)
         failedRef.current('organisation.list', cause, 'picker.listFailed')
       },
     )
@@ -249,7 +258,7 @@ function useHomeReads({ scopes, active, at, revision, onFailure }: {
     return () => { live = false }
   }, [scopes, active, at, revision])
 
-  return { tree, root, ready, listed }
+  return { tree, root, ready, listed, listedNow: listed && listedAt === revision }
 }
 
 /** Every scope may be written: what the hook is told by every source that ships. */
@@ -264,7 +273,7 @@ export function useOrganisation({
   const [revision, setRevision] = useState(0)
 
   const refresh = useCallback(() => setRevision((held) => held + 1), [])
-  const { tree, root, ready, listed } = useHomeReads({ scopes, active, at, revision, onFailure })
+  const { tree, root, ready, listed, listedNow } = useHomeReads({ scopes, active, at, revision, onFailure })
 
 
   const toggleCollapsed = useCallback((path: ScopePath) => {
@@ -599,13 +608,13 @@ export function useOrganisation({
   }, [applySettings])
 
   return useMemo(() => ({
-    tree, listed, at, root, ready, refresh, dialog, collapsed, toggleCollapsed,
+    tree, listed, listedNow, at, root, ready, refresh, dialog, collapsed, toggleCollapsed,
     addUnder, editScope, askDelete, closeDialog, setNewScopeName, setNewScopeParent,
     setNewScopeWithBoard, create, addBoard, setNewBoardName, createBoard,
     askDeleteBoard, confirmDeleteBoard,
     applySettings, confirmDelete, open, copyExample, nameOrganisation,
   }), [
-    tree, listed, at, root, ready, refresh, dialog, collapsed, toggleCollapsed,
+    tree, listed, listedNow, at, root, ready, refresh, dialog, collapsed, toggleCollapsed,
     addUnder, editScope, askDelete, closeDialog, setNewScopeName, setNewScopeParent,
     setNewScopeWithBoard, create, addBoard, setNewBoardName, createBoard,
     askDeleteBoard, confirmDeleteBoard,

@@ -92,18 +92,15 @@ describe('a decision from the scope above', () => {
     fireEvent.click(within(await screen.findByTestId('adr-list')).getByText('Fulfilment is one capability'))
     fireEvent.click(await screen.findByRole('button', { name: 'Open Acme Logistics' }))
 
-    // The shell reads that scope and makes it the one that is open — where the
-    // same record is this scope's own, with nothing above it and an Edit
-    // button on it.
-    // The page closes as the other scope opens, and the workspace remounts on
-    // it — so the bar under it is a different one, and has to be there first.
-    await waitFor(() => expect(screen.queryByTestId('adr-tree')).toBeNull())
-    fireEvent.click(await screen.findByText('Decisions'))
-    const there = await screen.findByTestId('adr-tree')
-    await waitFor(() => expect(within(there).getByTestId('adr-scope-subject:fulfilment')).toBeDefined())
-    expect(within(there).queryByText('From Acme Logistics')).toBeNull()
-    fireEvent.click(within(there).getByTestId('adr-scope-subject:fulfilment'))
-    fireEvent.click(within(await screen.findByTestId('adr-list')).getByText('Fulfilment is one capability'))
+    // The shell reads that scope and makes it the one that is open, on the
+    // same record — this scope's own there, with nothing above it. The scope above draws nothing, so it is the decisions page
+    // that is asked for: opened on no page it would land on its home.
+    await waitFor(() => {
+      // The workspace's bar and the page's own both say where it is.
+      expect(new Set(screen.getAllByTestId('crumb-current').map((crumb) => crumb.textContent))).toEqual(new Set(['Acme Logistics']))
+      expect(within(screen.getByTestId('adr-reader')).getByText('Fulfilment is one capability')).toBeDefined()
+    })
+    expect(within(screen.getByTestId('adr-tree')).queryByText('From Acme Logistics')).toBeNull()
     expect(screen.queryByTestId('adr-from-ancestor')).toBeNull()
   })
 })

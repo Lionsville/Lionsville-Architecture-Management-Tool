@@ -61,8 +61,11 @@ export type AdrPageProps = {
    * person gets to where one can be edited.
    */
   ancestors?: readonly AncestorRecords[]
-  /** Open one of those scopes. Absent where the host cannot — a test, a page with nowhere to go. */
-  onOpenScope?: (path: string) => void
+  /**
+   * Open one of those scopes on the record read here, where it can be edited.
+   * Absent where the host cannot — a test, a page with nowhere to go.
+   */
+  onOpenScope?: (path: string, id: string) => void
   onProjectDecisionsChange: (next: Adr[]) => void
   /** Open straight onto this record — from the search, a link, or an agent. */
   initialAdrId?: string
@@ -399,7 +402,7 @@ export function AdrPage(props: AdrPageProps) {
             {selected && fromAbove && (
               <FromAboveBanner
                 scopeName={scopeLabel(scopeOfRecord(selected))} s={s}
-                onOpen={onOpenScope ? () => { onClose(); onOpenScope(fromAbove.path) } : undefined}
+                onOpen={onOpenScope ? () => { onClose(); onOpenScope(fromAbove.path, selected.id) } : undefined}
               />
             )}
             {selected ? (

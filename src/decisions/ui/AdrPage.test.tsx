@@ -123,7 +123,7 @@ describe('AdrPage', () => {
     expect(within(reader).queryByRole('button', { name: 'Edit' })).toBeNull()
     expect(within(reader).queryByRole('button', { name: /Move to/ })).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Open Acme Logistics' }))
-    expect(onOpenScope).toHaveBeenCalledExactlyOnceWith('acme')
+    expect(onOpenScope).toHaveBeenCalledExactlyOnceWith('acme', 'g1')
     expect(onProject).not.toHaveBeenCalled()
   })
 
