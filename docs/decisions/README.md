@@ -109,3 +109,4 @@ now, with their words unchanged.
 | [0031](0031-storage-behind-repositories.md) | Storage behind repositories: the domain speaks no storage language | 2026-09-29 | — |
 | [0032](0032-local-and-global-analysis-and-a-root-cause-said.md) | Local and global analysis, and a root cause that is said | 2026-09-30 | — |
 | [0033](0033-back-goes-to-the-place-before.md) | Back goes to the place before | 2026-10-01 | — |
+| [0034](0034-a-drawing-is-a-view-and-points-at-the-model.md) | A drawing is a view, drawn in draw.io, and points at the model | 2026-10-08 | — |
