@@ -96,7 +96,7 @@ now, with their words unchanged.
 | [0018](0018-one-file-and-it-is-the-working-set.md) | One file out, and it is the working set | 2026-09-19 | — |
 | [0019](0019-an-agent-drives-the-app.md) | An agent drives the app, and the person can stop it | 2026-09-19 | — |
 | [0020](0020-the-technology-landscape-is-where-technology-use-is-written.md) | The technology landscape is where technology use is written | 2026-09-20 | — |
-| [0021](0021-observations-and-what-lies-behind-them.md) | Observations, and what lies behind them | 2026-09-20 | [0032](0032-local-and-global-analysis-and-a-root-cause-said.md) in part |
+| [0021](0021-observations-and-what-lies-behind-them.md) | Observations, and what lies behind them | 2026-09-20 | [0032](0032-local-and-global-analysis-and-a-root-cause-said.md) in part, [0035](0035-merging-on-a-screen-of-its-own-across-the-tree.md) in part |
 | [0022](0022-a-source-is-a-provider.md) | A source is a provider, and a step can come from another author | 2026-09-21 | [0031](0031-storage-behind-repositories.md) in part |
 | [0023](0023-a-sealed-working-file-from-any-home.md) | A sealed working file, from any home, and settings that stay with the install | 2026-09-21 | — |
 | [0024](0024-the-web-build-is-a-release.md) | The web build is a release, and it has an address | 2026-09-21 | [0030](0030-a-build-with-a-feed-updates-itself.md) in part |
@@ -107,6 +107,7 @@ now, with their words unchanged.
 | [0029](0029-every-record-says-what-it-is-to-a-search.md) | Every record says what it is to a search | 2026-09-27 | — |
 | [0030](0030-a-build-with-a-feed-updates-itself.md) | A build with a feed updates itself, and the releases here carry no installers | 2026-09-28 | — |
 | [0031](0031-storage-behind-repositories.md) | Storage behind repositories: the domain speaks no storage language | 2026-09-29 | — |
-| [0032](0032-local-and-global-analysis-and-a-root-cause-said.md) | Local and global analysis, and a root cause that is said | 2026-09-30 | — |
+| [0032](0032-local-and-global-analysis-and-a-root-cause-said.md) | Local and global analysis, and a root cause that is said | 2026-09-30 | [0035](0035-merging-on-a-screen-of-its-own-across-the-tree.md) in part |
 | [0033](0033-back-goes-to-the-place-before.md) | Back goes to the place before | 2026-10-01 | — |
 | [0034](0034-a-drawing-is-a-view-and-points-at-the-model.md) | A drawing is a view, drawn in draw.io, and points at the model | 2026-10-08 | — |
+| [0035](0035-merging-on-a-screen-of-its-own-across-the-tree.md) | Merging on a screen of its own, across the tree | 2026-10-08 | — |

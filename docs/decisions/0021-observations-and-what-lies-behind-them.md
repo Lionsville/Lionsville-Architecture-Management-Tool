@@ -9,6 +9,8 @@
   *shared from below*, read as *from a scope below*; §5's *Shared from*
   sections; §6's `shared` and `fromBelow`; and the 28 September
   amendment's list of what the reader moves into `⋯`
+* Superseded-by: ADR-0035, in part, 8 October 2026 — §4's *only the
+  survivor is written*: a merge writes every scope it touches, in one step
 * Extends: ADR-0012 §7 (a record is edited where it lives; what a scope
   above reads from the scopes below it)
 

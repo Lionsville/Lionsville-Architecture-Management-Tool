@@ -3,6 +3,8 @@
 * Status: accepted, 30 September 2026; as built, 30 September 2026; implemented, 30 September 2026 (released in 3.3.1)
 * Date: 2026-09-30
 * Deciders: Wouter Simons
+* Superseded-by: ADR-0035, in part, 8 October 2026 — §5: merging is no
+  longer only from a scope below, and every scope a merge touches is written
 * Supersedes:
   * ADR-0021, in part.
     * §1: a root cause is no longer derived. It is a cause that says it is
