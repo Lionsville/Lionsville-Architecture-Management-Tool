@@ -2,7 +2,8 @@
 
 * Status: accepted, 1 October 2026; as built, 1 October 2026; amended 1 October
   2026 (a place on the observations page carries its tab); implemented,
-  1 October 2026
+  1 October 2026; amended 8 October 2026 (a link to a place, shared from the
+  menu), accepted and built
 * Date: 2026-10-01
 * Deciders: Wouter Simons
 * Extends: ADR-0019 (the screen an agent reads and the destination it opens:
@@ -302,3 +303,55 @@ going somewhere. A removed record on the page keeps its tab. Nothing else is
 part of a place: an element selected as a destination opens (`select`) is a
 selection, and stays out of it. `place.test.ts` and `bootLanding.test.ts` pin
 it.
+
+## Amended — a link to a place, shared from the menu
+
+*8 October 2026; accepted and built the same day.* The record said an address
+copied from the bar opens the same place for anybody who may read it. That
+holds in a browser, and nowhere else: the desktop has no bar to copy from, and
+a person in a browser has to know that the bar is the thing to copy. So
+sharing a place is a command.
+
+**What it is.** *Share with a Link…* in the File menu, on both hosts — the
+desktop's menu bar and the web's overflow — answered by the shell, so it works
+on every home with nothing open as well as over a scope. It makes the link,
+copies it through `HostControls.copyText`, and says *Link copied* only once
+the copy has resolved; a refused copy is said as such and put on the trail.
+The same press shows the link in a small dialog, in a read-only field, so it
+can be read, selected and copied again. No accelerator: the chord a reader
+would guess, ⌘⇧L, is a macOS service's, and a menu key fires on macOS whether
+or not the page handled it.
+
+**What a link is.** Two halves, each said by whoever knows it. *Where* is the
+open source's: `ProviderParts.shareAddress()` (ADR-0022's parts), the address
+somebody else who may read the same work reaches it at, or `undefined` for
+*not now*. *What is there* is this record's: the place the screen is, written
+as the fragment the boot already reads (`linkTo` beside `writePlace` in
+`agent/place.ts`). So the receiver lands where a reload would have landed the
+sender, through the same reading of the address, and nothing new is read at
+the other end. A fragment the address had is dropped, and its path and query
+are kept as the provider said them.
+
+**The record is in the place already.** A shared link from a record page has
+to open the record, and it does without a change here: the screen names the
+record the decisions page and the observations page show — the one the person
+moved to, once the page has landed on it — and the observations page's tab, so
+the place does too. Choosing another record still replaces the entry rather
+than pushing one, as decided above; the link is written from the place, not
+from the history. `App.share.test.tsx` pins both: a record chosen by a click
+is in the link, and the click pushed no entry.
+
+**Where there is no address.** A folder, this browser's storage and memory
+give none — nobody else reaches them at an address — and none of core's three
+registrations says one. The item is not hidden or greyed out there: the dialog
+says why there is no link and nothing is copied, as *Connect an Agent…* says in
+a tab why there is no agent. A screen that is not a place yet — a scope whose
+workspace has not said what is on it — is said the same way. The address is
+asked first, so a folder is never told *try again in a moment*.
+
+**What is deliberately not done.** No selection on a board, no day being
+looked at and no dialog in a link: a link is a place, and a place holds none of
+them. No link of the app's own making that a provider did not give an address
+for: a guess at an address would be a link that opens somebody else's work, or
+nothing.
+

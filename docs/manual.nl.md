@@ -506,7 +506,7 @@ Eén open project: een balk bovenin, de editor eronder.
 |---|---|
 | **Het kruimelpad** | De organisatie, elk onderdeel ertussen, en het open onderdeel vet; elk is een weg naar het thuis van dat onderdeel, en de naam van de organisatie is de weg terug naar het eerste scherm |
 | **Instellingen…** | Naam van dit onderdeel en waaronder het valt, en zijn standaarden: de auteur op een geëxporteerd diagram, en de operationele aspecten waar een nieuw landschap mee begint. Een onderdeel onder een ander zetten laat de inhoud met rust |
-| **⋯** | In een browser het menu: **Map openen…** waar de browser er een aanbiedt, **Openen…**, **Bewaren**, **Kopie van het werkbestand bewaren…**, **Momentopname…**, **Geschiedenis…**, **Agent koppelen…**, het thema, **Voorkeuren…**, en onder Help **Handleiding**, **Sneltoetsen…** en **Desktop-app downloaden**. Op de desktop staan dezelfde onderdelen, op de laatste na, in de menubalk, met **Preferences…** als **Settings…** in het app-menu op macOS |
+| **⋯** | In een browser het menu: **Map openen…** waar de browser er een aanbiedt, **Openen…**, **Bewaren**, **Kopie van het werkbestand bewaren…**, **Delen met een link…**, **Momentopname…**, **Geschiedenis…**, **Agent koppelen…**, het thema, **Voorkeuren…**, en onder Help **Handleiding**, **Sneltoetsen…** en **Desktop-app downloaden**. Op de desktop staan dezelfde onderdelen, op de laatste na, in de menubalk, met **Preferences…** als **Settings…** in het app-menu op macOS |
 | **Activiteit** | Wat er sinds het openen aan dit project is veranderd — een lijst met benoemde stappen en het tijdstip van elke, en de verplaatsingen, *Verplaatst van X naar Y*, en wie het verplaatste, gelezen uit de geschiedenis, dus ook die van voor het openen. Hij blijft bij het onderdeel, waar het ook heen gaat. Alleen lezen: ⌘Z is hoe je teruggaat |
 | **Bewaard · uu:mm** | Hoe het project ervoor staat: het tijdstip van de laatste schrijfactie, of **Nog niet bewaarde wijzigingen**, **Bezig met bewaren…**, **Elders gewijzigd**, **Hier én elders gewijzigd**, **Niet bewaard — opslag weigert** |
 
@@ -576,6 +576,26 @@ er wel is: een verwijderde weergave opent zijn onderdeel op de eerste weergave
 die over is, een verwijderd record opent zijn pagina zonder record, en een
 verwijderd onderdeel opent het thuis van het dichtstbijzijnde onderdeel erboven.
 De lijst Activiteit zegt wat er werd verwijderd.
+
+### Delen met een link
+
+**File → Share with a Link…** (in een browser **Delen met een link…** in het
+menu **⋯**) maakt een link naar de plek waar je bent, kopieert hem en toont hem
+in een klein venster, waar je hem kunt selecteren en met **Link kopiëren**
+opnieuw kunt kopiëren. *Link gekopieerd* verschijnt zodra het kopiëren gelukt
+is. De link is het adres van waar het werk wordt bewaard, met de plek na een
+`#`, zoals het adres in de browser die noemt: het thuis van een onderdeel, of
+een open onderdeel op zijn weergave of op een pagina erover. Op de pagina's
+met besluiten en waarnemingen noemt hij het record dat geselecteerd is, en op
+de pagina met waarnemingen ook het tabblad dat openstaat, zodat wie hem opent
+op dat record uitkomt — een ander record kiezen is nog steeds geen stap voor
+Terug. Iedereen die het werk mag lezen, opent er dezelfde plek mee; wie nog niet
+is aangemeld, meldt zich eerst aan en komt daarna op die plek uit.
+
+**Een link heeft een adres nodig dat een ander kan bereiken.** Werk in een map,
+in deze browser of nergens heeft dat niet; dan zegt het venster waarom er geen
+link is, en wordt er niets gekopieerd. Het menu-onderdeel werkt vanaf elk
+scherm, ook vanaf het thuis van de organisatie.
 
 ## Tekenen
 

@@ -3,6 +3,13 @@
 *What has landed on `main` since 3.3.4 that a user would notice, in the user's
 words. Pasted into the GitHub release when it is cut, and emptied then.*
 
+**Share with a link.** *File → Share with a Link…*, and in a browser the same
+item in the **⋯** menu, copies a link to the place you are on and shows it to
+read or copy again: a scope's home, a view, or a page over it, with the
+decision or observation that is selected. Whoever may read the work opens the
+same place with it. Where work is kept in a folder, in this browser or nowhere,
+there is no address another person could reach, and the dialog says so instead.
+
 **A view nobody has laid out yet is laid out for a reader too.** A view the
 app or another tool made with no positions in it — a new container view, an
 import, an example — is laid out the first time somebody opens it, and that

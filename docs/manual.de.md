@@ -541,7 +541,7 @@ Ein offenes Projekt: eine Leiste oben, der Editor darunter.
 |---|---|
 | **Die Brotkrumen** | Die Organisation, jeder Bereich dazwischen, und der offene fett; jeder ist ein Weg zum Zuhause dieses Bereichs, und der Name der Organisation ist der Weg zurück zum ersten Bildschirm |
 | **Einstellungen…** | Der Name dieses Bereichs und wo er abgelegt ist, und seine Standardwerte: der Autor, der auf einem exportierten Diagramm genannt wird, und die betrieblichen Aspekte, mit denen eine neue Landschaft beginnt. Einen Bereich zu verschieben legt ihn unter einem anderen ab und lässt seinen Inhalt unberührt |
-| **⋯** | In einem Browser das Menü: **Ordner öffnen…**, wo der Browser einen anbietet, **Öffnen…**, **Speichern**, **Kopie der Arbeitsdatei speichern…**, **Snapshot erstellen…**, **Verlauf…**, **Agent verbinden…**, das Design, **Voreinstellungen…**, und unter Hilfe **Handbuch**, **Tastenkürzel…** und **Desktop-App herunterladen**. Auf dem Desktop stehen dieselben Einträge, bis auf den letzten, in der Menüleiste, mit **Preferences…** als **Settings…** im App-Menü unter macOS |
+| **⋯** | In einem Browser das Menü: **Ordner öffnen…**, wo der Browser einen anbietet, **Öffnen…**, **Speichern**, **Kopie der Arbeitsdatei speichern…**, **Per Link teilen…**, **Snapshot erstellen…**, **Verlauf…**, **Agent verbinden…**, das Design, **Voreinstellungen…**, und unter Hilfe **Handbuch**, **Tastenkürzel…** und **Desktop-App herunterladen**. Auf dem Desktop stehen dieselben Einträge, bis auf den letzten, in der Menüleiste, mit **Preferences…** als **Settings…** im App-Menü unter macOS |
 | **Aktivität** | Was sich an diesem Projekt seit dem Öffnen geändert hat — eine Liste benannter Schritte mit der Uhrzeit jedes einzelnen, und die Verschiebungen, *Von X nach Y verschoben*, und wer sie vorgenommen hat, aus dem Verlauf gelesen, also auch die von vor dem Öffnen. Sie bleibt beim Bereich, wohin er auch geht. Nur lesend: ⌘Z ist der Weg zurück |
 | **Gespeichert · hh:mm** | Wo das Projekt steht: die Uhrzeit, zu der es zuletzt geschrieben wurde, oder **Ungespeicherte Änderungen**, **Wird gespeichert…**, **Anderswo geändert**, **Hier und anderswo geändert**, **Nicht gespeichert — Speicher verweigert** |
 
@@ -614,6 +614,27 @@ gibt: Eine entfernte Ansicht öffnet ihren Bereich auf der ersten Ansicht, die
 er noch hat, ein entfernter Eintrag öffnet seine Seite ohne Eintrag, und ein
 entfernter Bereich öffnet das Zuhause des nächsten Bereichs darüber. Die
 Liste Aktivität sagt, was entfernt wurde.
+
+### Per Link teilen
+
+**File → Share with a Link…** (im Browser **Per Link teilen…** im Menü **⋯**)
+erstellt einen Link zu dem Ort, an dem Sie sind, kopiert ihn und zeigt ihn in
+einem kleinen Dialog, in dem er sich markieren und mit **Link kopieren** erneut
+kopieren lässt. *Link kopiert* erscheint, sobald das Kopieren gelungen ist. Der
+Link ist die Adresse, unter der die Arbeit aufbewahrt wird, mit dem Ort nach
+einem `#`, so wie die Adresse im Browser ihn nennt: das Zuhause eines Bereichs
+oder ein geöffneter Bereich auf seiner Ansicht oder auf einer Seite darüber.
+Auf den Seiten der Entscheidungen und der Beobachtungen nennt er den
+ausgewählten Eintrag, auf der Seite der Beobachtungen auch den offenen Reiter,
+sodass, wer ihn öffnet, bei diesem Eintrag landet — einen anderen Eintrag zu
+wählen ist weiterhin kein Schritt für Zurück. Wer die Arbeit lesen darf, öffnet
+damit denselben Ort; wer noch nicht angemeldet ist, meldet sich zuerst an und
+landet danach dort.
+
+**Ein Link braucht eine Adresse, die andere erreichen.** Arbeit in einem Ordner,
+in diesem Browser oder nirgends hat keine; dort sagt der Dialog, warum es keinen
+Link gibt, und nichts wird kopiert. Der Menüeintrag wirkt auf jedem Bildschirm,
+auch auf dem Zuhause der Organisation.
 
 ## Zeichnen
 

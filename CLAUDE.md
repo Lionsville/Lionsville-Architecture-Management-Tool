@@ -6,7 +6,7 @@ Layer-7 application landscape and the C4 container diagrams under it. **There is
 identifier, a storage key, a file extension or a shipped example; *Names,
 decided* below holds the settled ones (the working file is `.lvarch`).
 
-One codebase, in modules, with **7497 tests** and one of every config. The
+One codebase, in modules, with **7531 tests** and one of every config. The
 editor was a separate package under `vendor/` until September 2026; that
 boundary is gone and `docs/decisions/0001` says why.
 
@@ -56,7 +56,7 @@ the two categories above.
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 7497 tests. Run it
+A few seconds: typecheck and lint of everything, plus all 7531 tests. Run it
 after every change. The tests run with coverage on, and `build/coverage.ts`
 prints one line per module of the import matrix and fails below that module's
 floor — the level it was measured at, written down so it can only go up.
@@ -718,6 +718,10 @@ src/app/          The shell around the editor.
                                       lands now; the desktop's two buttons, its
                                       Go menu's commands and the mouse's
                                       buttons (ADR-0033)
+                    useShareLink · dialogs/ShareLinkDialog   *Share with a
+                                      Link…*: the source's address and the place
+                                      as its fragment, copied and shown, or why
+                                      there is none (ADR-0033, amended)
                     OverflowMenu      the menu, on a host that has no menu bar —
                                       and the section a source provider's own
                                       lines are drawn in, after all of ours
@@ -1129,6 +1133,7 @@ identifiers is still a list of a customer's identifiers.
 | A move a provider says is its own (ADR-0019, ADR-0022, amended) | `open(to, { by: 'provider' })` (`SourceOpenOptions`): every screen it brings in the scope it was sent to is `movedBy: 'provider'` until the app has **landed** (`agent/screen.ts`'s `landed`) and the page there has settled — a record's page picks its record and tab once it has the request (`WorkspaceAgentView.settled`), and that pick is the provider's too — or gone to another scope; never the person's. A step in the window's history as an agent's move is (ADR-0033) |
 | What a destination opens (ADR-0019, amended) | **an open never makes a view**: a view's page with no id — any of the four kinds — opens the one on the scope's tab where it is of that kind, else the first of that kind, and the scope's home where there is none (`viewFor`, `app/pageLanding.ts`); the person's own *Make…* and *New board…* ask for a new one by name (`InitialPage`'s `make`). `tab` opens the observations page on a tab, the record named selected there, and the screen says the tab that is up (`ScreenPage`'s `tab`), which a place carries (ADR-0033, amended); `select` is selected where the view draws it, and is no part of a place. Whatever a destination opens, the documentation page over the board closes first, but for a record's page (`EditorRequests.leaveDocumentation`) |
 | Where an address lands (ADR-0022, amended) | `Shell.opensAt` with no `view` lands on **that scope's home**, with a `view` on that board (`app/bootLanding.ts`'s `landingOf`); `{ scope: '' }` is a provider's way to start every fresh open on the organisation's home. With no address, the last scope reopens as it was. The tree's *Open* goes to a scope's home too; a board is opened from the home's list |
+| A link to a place (ADR-0033, amended) | *Share with a Link…* (`{ type: 'share' }`, File menu, both hosts, no accelerator), answered by the shell from every screen: the open source's **`ProviderParts.shareAddress()`** — where somebody else reaches the same work, `undefined` for not now, absent for core's three — with the place as its fragment (`linkTo`, `agent/place.ts`), copied through `HostControls.copyText` and shown in `ShareLinkDialog`; with no address the dialog says why and nothing is copied (`app/useShareLink.ts`) |
 | A dialog an address may open (ADR-0022, amended) | `?open=preferences`, and nothing else (`BOOT_DIALOGS`): open at the first paint, taken out of the address at once |
 | What a whole write expects (ADR-0022, amended) | a **revision**: `ScopeSnapshot.revision`, stamped by `load`, opaque, handed back as `save(scope, expects)`; a store holding anything else refuses `shell.scopeMoved` and writes nothing. A change to a scope outside the open session goes through `projects/scopeAccess.changeScope`, as steps that expect what was read and are worked out again over a scope that moved; `Shell.publishesSteps` says the open scope's steps are its write, and then the shell writes it whole nowhere |
 | What a refusal where work is kept says (ADR-0022, amended) | the source's own **`sourceFailure`**: a sentence rather than a key, because what is worth saying depends on the cause — and carried with a source's parts rather than declared on the kind, since what a store said no for is a fact about this opening and not about the sort of place it is. `undefined` is *nothing from me about this one*, and then nothing of ours is said either and the latch stays open, because a refusal nobody mentioned must not be followed by *saving works again*. Core's three bring none |

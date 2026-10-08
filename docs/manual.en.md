@@ -476,7 +476,7 @@ One open project: a bar at the top, the editor below it.
 |---|---|
 | **The crumbs** | The organisation, each scope between, and the open one in bold; each is a way to that scope's home, and the organisation's name is the way back to the first screen |
 | **Settings…** | This scope's name and where it is filed, and its defaults: the author named on an exported diagram, and the operational aspects a new landscape starts with. Moving a scope files it under another one and leaves its content untouched |
-| **⋯** | In a browser, the menu: **Open Folder…** where the browser offers one, **Open…**, **Save**, **Save a Copy of the Working File…**, **Snapshot…**, **History…**, **Connect an Agent…**, the theme, **Preferences…**, and under Help **User Manual**, **Keyboard Shortcuts…** and **Get the Desktop App**. On the desktop the same items, but the last, are in the menu bar, with **Preferences…** as **Settings…** in the app menu on macOS |
+| **⋯** | In a browser, the menu: **Open Folder…** where the browser offers one, **Open…**, **Save**, **Save a Copy of the Working File…**, **Share with a Link…**, **Snapshot…**, **History…**, **Connect an Agent…**, the theme, **Preferences…**, and under Help **User Manual**, **Keyboard Shortcuts…** and **Get the Desktop App**. On the desktop the same items, but the last, are in the menu bar, with **Preferences…** as **Settings…** in the app menu on macOS |
 | **Activity** | What has changed in this project since you opened it — a list of named steps with the time each was taken, and the moves, *Moved from X to Y*, with who moved it, read from the history, so they include moves from before you opened it. It stays with the scope wherever it moves. Read-only: ⌘Z is how you go back |
 | **Saved · hh:mm** | Where the project stands: the time it was last written, or **Unsaved changes**, **Saving…**, **Changed elsewhere**, **Changed here and elsewhere**, **Not saved — storage refused** |
 
@@ -541,6 +541,25 @@ you leave that page any other way. Text typed into it is not kept.
 removed view opens its scope on the first view it has left, a removed record
 opens its page without a record, and a removed scope opens the home of the
 nearest scope above it. The Activity list says what was removed.
+
+### Share with a link
+
+**File → Share with a Link…** (in a browser, in the **⋯** menu) makes a link
+to the place you are on, copies it, and shows it in a small dialog, where it
+can be selected and copied again with **Copy link**. *Link copied* is said once
+the copy has been made. The link is the address of where the work is kept with
+the place after a `#`, the same way the browser's address names it: a scope's
+home, or an open scope on its view or on a page over it. On the decisions and
+the observations page it names the record that is selected, and on the
+observations page the tab that is up, so the person who opens it lands on
+that record — choosing another record is still not a step for Back. Anyone who
+may read the work opens the same place with it; somebody who is not signed in
+yet signs in first and lands there after.
+
+**A link needs an address somebody else can reach.** Work kept in a folder, in
+this browser or nowhere at all has none, so there the dialog says why there is
+no link, and nothing is copied. The menu item works from every screen, the
+organisation's home included.
 
 ## Drawing
 
