@@ -85,7 +85,7 @@ describe('fromArrays / toArrays', () => {
     expect(empty.decisions).toEqual({})
     expect(empty.diagrams.one.edgeRoutes).toEqual({})
     expect(toArrays(empty).decisions).toEqual([])
-    expect(toArrays(empty).diagrams[0].geometry.routes).toEqual([])
+    expect(toArrays(empty).diagrams[0].geometry!.routes).toEqual([])
   })
 
   it('reads an absent list through the helpers without a default at each site', () => {

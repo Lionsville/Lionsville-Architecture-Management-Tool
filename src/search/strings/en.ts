@@ -47,4 +47,5 @@ export const EN = {
   'gsearch.view.sheet': 'Business architecture',
   'gsearch.view.map': 'Enterprise map',
   'gsearch.view.technology': 'Technology landscape',
+  'gsearch.view.drawing': 'Drawing',
 } as const

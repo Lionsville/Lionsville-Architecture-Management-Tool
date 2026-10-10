@@ -79,7 +79,7 @@ describe('a pin through the one writer', () => {
     expect(cleared.ok).toBe(true);
     if (!cleared.ok) return;
     // Not an empty list: a saved file should look like a hand-written one.
-    expect(toArrays(cleared.model).diagrams[0].geometry.routes).toBeUndefined();
+    expect(toArrays(cleared.model).diagrams[0].geometry!.routes).toBeUndefined();
     const back = apply(cleared.model, cleared.inverse);
     expect(back.ok && edgeRoutesOf(toArrays(back.model).diagrams[0])).toEqual([PIN]);
   });

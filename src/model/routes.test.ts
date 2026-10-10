@@ -644,7 +644,7 @@ describe('diagramWithRoutes', () => {
       { relationId: 'c1', waypoints: [{ x: 1, y: 1 }], pinned: true },
     ]);
     expect(held.lines).toEqual([{ relationId: 'c1', pinned: true }]);
-    expect(held.geometry.routes).toEqual([{ relationId: 'c1', waypoints: [{ x: 1, y: 1 }] }]);
+    expect(held.geometry!.routes).toEqual([{ relationId: 'c1', waypoints: [{ x: 1, y: 1 }] }]);
     expect(edgeRoutesOf(held)).toEqual([
       { relationId: 'c1', pinned: true, waypoints: [{ x: 1, y: 1 }] },
     ]);
@@ -655,6 +655,6 @@ describe('diagramWithRoutes', () => {
       { relationId: 'c1', waypoints: [{ x: 1, y: 1 }] },
     ]), []);
     expect('lines' in held).toBe(false);
-    expect('routes' in held.geometry).toBe(false);
+    expect('routes' in held.geometry!).toBe(false);
   });
 });

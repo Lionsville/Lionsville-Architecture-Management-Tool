@@ -209,7 +209,7 @@ describe('a format-3 folder', () => {
     expect(headerOf(foldFolderToFormat5(v3())!).version).toBe(SCOPE_FORMAT_VERSION)
     expect(scope.model.elements[0]).toMatchObject({ kind: 'application' })
     expect(scope.model.diagrams[0].members).toEqual([{ id: 'portal', zone: 'inputChannels' }])
-    expect(scope.model.diagrams[0].geometry.nodes).toEqual([{ id: 'portal', x: 1, y: 2 }])
+    expect(scope.model.diagrams[0].geometry!.nodes).toEqual([{ id: 'portal', x: 1, y: 2 }])
   })
 
   it('leaves neither superseded file behind once it is written back', () => {

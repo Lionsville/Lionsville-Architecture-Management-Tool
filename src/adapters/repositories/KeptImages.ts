@@ -15,8 +15,8 @@
  * to that entry must find them; bytes named by neither go a day after they
  * were put, and all of them go with their scope (`imageNames.ts`).
  */
-import { contentAddressOf, imageFolderOf, imageFoldersUnder, imageNameRefusal } from '../../model/imageName'
-import type { ImageEntry, ImageFolder, ImageName } from '../../model/imageName'
+import { contentAddressOf, imageFolderOf, imageFoldersUnder, imageNameRefusal, mediaTypeOfBytes } from '../../model/imageName'
+import type { ContentAddress, ImageEntry, ImageFolder, ImageName } from '../../model/imageName'
 import type { ScopeId } from '../../projects/scopeState'
 import type { ImageBytes, ImageListing, ImageRepository, Put } from '../../ports/ImageRepository'
 import { keyOf, prefix } from './KeyedStore'
@@ -71,6 +71,18 @@ export class KeptImages implements ImageRepository {
       const entry = await entryOf(tx, scope, name)
       const held = entry && await tx.get<Uint8Array>('bytes', bytesKey(scope, entry.contentAddress))
       return entry && held ? { mediaType: entry.mediaType, bytes: new Uint8Array(held) } : undefined
+    })
+  }
+
+  bytesAt(scope: ScopeId, address: ContentAddress): Promise<ImageBytes | undefined> {
+    return this.source.read(async (tx) => {
+      const held = await tx.get<Uint8Array>('bytes', bytesKey(scope, address))
+      if (!held) return undefined
+      const copy = new Uint8Array(held)
+      const named = (await tx.range<ImageEntry>('library', prefix(keyOf(scope, ''))))
+        .map(({ value }) => value)
+        .find((entry) => entry.contentAddress === address)
+      return { mediaType: named?.mediaType ?? mediaTypeOfBytes(copy), bytes: copy }
     })
   }
 }

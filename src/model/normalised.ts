@@ -349,7 +349,9 @@ export function fromDiagram(diagram: Diagram): DesignDiagram {
     // and is not the same as never having had one (see the note at the top).
     else if (!split.lines) geometry.routes = []
   }
-  out.geometry = geometry
+  // A drawing is not laid out and has no geometry file. The other kinds
+  // always carry one, empty or not.
+  if (diagram.kind !== 'drawing') out.geometry = geometry
   converted.set(diagram, out)
   return out
 }

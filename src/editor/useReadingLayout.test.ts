@@ -63,9 +63,9 @@ describe('laidOutForReading', () => {
       { id: 'e1', x: 100, y: 300 },
       { id: 'e2', x: 500, y: 300 },
     ]);
-    expect(shown.geometry.canvas).toEqual({ width: 2000, height: 1200 });
-    expect(shown.geometry.needsLayout).toBeUndefined();
-    expect(shown.geometry.routes?.[0]?.waypoints).toEqual(RESULT.edgeRoutes?.[0]?.waypoints);
+    expect(shown.geometry!.canvas).toEqual({ width: 2000, height: 1200 });
+    expect(shown.geometry!.needsLayout).toBeUndefined();
+    expect(shown.geometry!.routes?.[0]?.waypoints).toEqual(RESULT.edgeRoutes?.[0]?.waypoints);
   });
 
   it('changes nothing it was handed', () => {
@@ -95,10 +95,10 @@ describe('carriedOver', () => {
     // e1 where the last pass put it, e3 new to the board and at the origin
     // until its own pass lands; e2's position is a leftover nobody draws.
     expect(positions(carried)).toEqual(['100,300', '0,0']);
-    expect(carried.geometry.canvas).toEqual({ width: 2000, height: 1200 });
-    expect(carried.geometry.routes).toEqual(shown.geometry.routes);
-    expect(carried.geometry.needsLayout).toBeUndefined();
-    expect(now.geometry.needsLayout).toBe(true);
+    expect(carried.geometry!.canvas).toEqual({ width: 2000, height: 1200 });
+    expect(carried.geometry!.routes).toEqual(shown.geometry!.routes);
+    expect(carried.geometry!.needsLayout).toBeUndefined();
+    expect(now.geometry!.needsLayout).toBe(true);
   });
 
   it('answers the same object for the same two boards', () => {

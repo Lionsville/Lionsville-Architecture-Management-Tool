@@ -114,6 +114,7 @@ function counted(held: HeldRepositories = heldRepositories(scopes)): { repositor
       asked.push(name)
       return held.images.bytes(scope, name)
     },
+    bytesAt: (scope, address) => held.images.bytesAt(scope, address),
   }
   return { repositories: { ...held, images }, asked }
 }

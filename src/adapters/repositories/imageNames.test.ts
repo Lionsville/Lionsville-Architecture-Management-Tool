@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { toDiagram } from '../../model'
 import type { ContentAddress, ImageEntry } from '../../model/imageName'
 import type { ScopeCommand, ScopeId } from '../../projects/scopeState'
 import type { Repositories } from '../../ports/Repositories'
@@ -78,6 +79,25 @@ describe('pictures’ bytes nothing names', () => {
     at(UNNAMED_KEPT_MS + HOUR)
     await repositories.history.record({})
     expect(await kept(store, acme, image.contentAddress)).toBe(true)
+  })
+
+  it('stay while a drawing in the head names them, and go once it does not', async () => {
+    const { store, repositories, acme } = await made()
+    const image = await put(repositories, acme, 'drawn.svg', 60, 61)
+    const drawing = {
+      id: 'ctx', kind: 'drawing' as const, name: 'Context', members: [],
+      drawing: { xml: '<mxfile/>', picture: image.contentAddress, links: [] as const },
+    }
+    await steps(repositories, acme, { type: 'diagram.create', diagram: toDiagram(drawing) })
+    at(30 * UNNAMED_KEPT_MS)
+    await repositories.history.record({})
+    expect(await kept(store, acme, image.contentAddress)).toBe(true)
+    await steps(repositories, acme, { type: 'diagram.update', id: 'ctx', patch: { drawing: undefined } })
+    at(60 * UNNAMED_KEPT_MS)
+    await repositories.history.record({})
+    expect(await kept(store, acme, image.contentAddress)).toBe(false)
+    await steps(repositories, acme, { type: 'diagram.update', id: 'ctx', patch: { drawing: { xml: '<mxfile/>', picture: image.contentAddress, links: [] } } })
+    expect(await repositories.images.bytesAt(acme, image.contentAddress)).toBeUndefined()
   })
 
   it('stay while the library names them, however old', async () => {

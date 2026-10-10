@@ -6,10 +6,12 @@
  * can go (`bytes`, `bytesNamed`, `bytesUnnamed`).
  *
  * **The rule.** Bytes stay while the scope's library names their content
- * address, or while any entry of its history does — going back to that entry
- * must find them. Bytes named by neither go a day after they were last put:
- * the day is the time between putting a picture's bytes and the step that
- * adds it to the library, which a page may lose on the way.
+ * address, while any entry of its history does — going back to that entry
+ * must find them — or while a drawing in the head names them. A drawing's
+ * picture has no library name: the view holds the address. Bytes named by
+ * none of the three go a day after they were last put: the day is the time
+ * between putting a picture's bytes and the step that adds it to the library,
+ * which a page may lose on the way.
  *
  * **Counted where the names change, in the same transaction.** Each address
  * keeps how many names in the current library point at it, whether an entry
@@ -32,15 +34,21 @@ import type { Transaction } from './KeyedStore'
 /** How long bytes named by nothing are kept after they were last put. */
 export const UNNAMED_KEPT_MS = 24 * 60 * 60 * 1000
 
-/** What names one picture's bytes: the library, how many times; the history, ever; and when they were last put. */
-export type Named = { library: number; history: boolean; put: number }
+/**
+ * What names one picture's bytes: the library, how many times; the history,
+ * ever; a drawing in the head, how many times; and when they were last put.
+ *
+ * `drawings` is absent on a count written before a drawing could name bytes.
+ * Absent is none.
+ */
+export type Named = { library: number; history: boolean; put: number; drawings?: number }
 
 function namedKey(scope: ScopeId, address: ContentAddress | string): string {
   return keyOf(scope, address)
 }
 
-function isUnnamed({ library, history }: Named): boolean {
-  return library === 0 && !history
+function isUnnamed({ library, history, drawings }: Named): boolean {
+  return library === 0 && !history && !drawings
 }
 
 function keep(tx: Transaction, key: string, named: Named): void {
@@ -53,7 +61,7 @@ function keep(tx: Transaction, key: string, named: Named): void {
 export async function bytesPut(tx: Transaction, scope: ScopeId, address: ContentAddress, at: number): Promise<void> {
   const key = namedKey(scope, address)
   const held = await tx.get<Named>('bytesNamed', key)
-  keep(tx, key, { library: held?.library ?? 0, history: held?.history ?? false, put: at })
+  keep(tx, key, { library: held?.library ?? 0, history: held?.history ?? false, drawings: held?.drawings ?? 0, put: at })
 }
 
 /**
@@ -72,7 +80,34 @@ export async function libraryNamed(
     const key = namedKey(scope, address)
     const held = await tx.get<Named>('bytesNamed', key)
     if (!held && by < 0) continue
-    keep(tx, key, { library: Math.max(0, (held?.library ?? 0) + by), history: held?.history ?? false, put: held?.put ?? 0 })
+    keep(tx, key, {
+      library: Math.max(0, (held?.library ?? 0) + by), history: held?.history ?? false,
+      drawings: held?.drawings ?? 0, put: held?.put ?? 0,
+    })
+  }
+}
+
+/**
+ * A scope's drawings, from the addresses they named to the addresses they
+ * name now. An address a drawing in the head names stays, the way one the
+ * history names stays. One a drawing no longer names, and that the library
+ * and the history do not name either, is unnamed and the sweep can take it.
+ */
+export async function drawingsNamed(
+  tx: Transaction, scope: ScopeId, before: readonly ContentAddress[], after: readonly ContentAddress[],
+): Promise<void> {
+  const moved = new Map<string, number>()
+  for (const address of before) moved.set(address, (moved.get(address) ?? 0) - 1)
+  for (const address of after) moved.set(address, (moved.get(address) ?? 0) + 1)
+  for (const [address, by] of moved) {
+    if (by === 0) continue
+    const key = namedKey(scope, address)
+    const held = await tx.get<Named>('bytesNamed', key)
+    if (!held && by < 0) continue
+    keep(tx, key, {
+      library: held?.library ?? 0, history: held?.history ?? false,
+      drawings: Math.max(0, (held?.drawings ?? 0) + by), put: held?.put ?? 0,
+    })
   }
 }
 
@@ -82,7 +117,7 @@ export async function historyNamed(tx: Transaction, scope: ScopeId, images: read
     const key = namedKey(scope, address)
     const held = await tx.get<Named>('bytesNamed', key)
     if (held?.history) continue
-    keep(tx, key, { library: held?.library ?? 0, history: true, put: held?.put ?? 0 })
+    keep(tx, key, { library: held?.library ?? 0, history: true, drawings: held?.drawings ?? 0, put: held?.put ?? 0 })
   }
 }
 

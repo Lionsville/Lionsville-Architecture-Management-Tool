@@ -16,6 +16,7 @@ import type { ShownDays } from '../editor'
 import type { ObservationTab, ScreenPage } from '../agent/screen'
 import type { ScopePath } from '../projects/scopePath'
 import type { MakeId } from './useDiagramActions'
+import type { Drawings } from './useDrawing'
 import type { Maps } from './useMap'
 import type { ModelSession } from './useModelSession'
 import { usePlans } from './usePlans'
@@ -23,6 +24,7 @@ import type { Plans } from './usePlans'
 import { usePlatformReport } from './usePlatformReport'
 import type { PlatformReading } from './usePlatformReport'
 import type { TechnologyLandscapes } from './useTechnologyLandscape'
+import { useDrawing } from './useDrawing'
 import { useViewSelect } from './useViewSelect'
 
 export type WorkspacePages = ReturnType<typeof useWorkspacePages>
@@ -47,7 +49,8 @@ export function useWorkspacePages(deps: {
     session, makeId, s, viewing,
     navigate: useMemo(() => ({ toElement: focusElement, toDecision: showDecision }), [focusElement, showDecision]),
   })
-  const openers = usePageOpeners({ session, records, plans, platformReading, maps, landscapes })
+  const drawings = useDrawing({ session, makeId, s })
+  const openers = usePageOpeners({ session, records, plans, platformReading, maps, landscapes, drawings })
   /** An element selected on a view as it is opened, where the view draws it (ADR-0019, amended). */
   const viewSelect = useViewSelect({ session, focusElement, landscapes })
 
@@ -166,8 +169,9 @@ function usePageOpeners(deps: {
   platformReading: PlatformReading
   maps: Maps
   landscapes: TechnologyLandscapes
+  drawings: Drawings
 }) {
-  const { session, maps, landscapes } = deps
+  const { session, maps, landscapes, drawings } = deps
   const { showDecision, showObservations, closeRecords, closeObservations } = deps.records
   const { closeAll: closePlans, openRoadmap: showRoadmap } = deps.plans
   const { close: closeReport, open: showPlatform, openService: showService } = deps.platformReading
@@ -209,6 +213,7 @@ function usePageOpeners(deps: {
     [closePages, landscapes.showOn],
   )
   const createTechnology = useCallback(() => { closePages(); landscapes.create() }, [closePages, landscapes.create])
+  const createDrawing = useCallback(() => { closePages(); drawings.create() }, [closePages, drawings.create])
   /**
    * A platform's report (ADR-0013, redone): reached from the platform's own
    * card and from the finding that names it, and never created — every mark on
@@ -225,6 +230,6 @@ function usePageOpeners(deps: {
   }, [closePlans, showPlatform])
   return {
     openDecisions, openObservations, openRoadmap, closePages, openView, createMap,
-    openTechnology, openTechnologyFor, createTechnology, openServiceReport, openPlatformReport,
+    openTechnology, openTechnologyFor, createTechnology, createDrawing, openServiceReport, openPlatformReport,
   }
 }

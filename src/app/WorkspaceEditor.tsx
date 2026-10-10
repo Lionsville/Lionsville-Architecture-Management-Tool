@@ -11,6 +11,7 @@ import Box from '@mui/material/Box'
 import { SolutionDesignEditor } from '../editor'
 import type { PageView } from '../editor'
 import type { DesignDiagram } from '../model'
+import { DrawingView } from './DrawingView'
 import { MapPage, SheetPage } from '../business'
 import { TechnologyLandscapePage } from '../technology/ui/TechnologyLandscapePage'
 import { ErrorBoundary } from './ErrorBoundary'
@@ -146,6 +147,8 @@ function diagramCalls({ diagrams, sheets, pages }: WorkspaceParts) {
     onCreateMap: pages.createMap,
     onOpenTechnology: pages.openTechnology,
     onCreateTechnology: pages.createTechnology,
+    onOpenDrawing: pages.openView,
+    onCreateDrawing: pages.createDrawing,
     onOpenTechnologyFor: pages.openTechnologyFor,
     onOpenPlatformReport: pages.openPlatformReport,
     onOpenServiceReport: pages.openServiceReport,
@@ -158,10 +161,31 @@ function diagramCalls({ diagrams, sheets, pages }: WorkspaceParts) {
  * the canvas would be. Rebuilt per render, as the editor's other props are.
  */
 function laidOutPage(parts: WorkspaceParts, diagram: DesignDiagram, view: PageView): ReactNode {
-  if (diagram.kind === 'sheet') return sheetPage(parts, diagram, view)
-  if (diagram.kind === 'map') return mapPage(parts, diagram, view)
-  if (diagram.kind === 'technology') return technologyPage(parts, diagram, view)
-  return null
+  switch (diagram.kind) {
+    case 'sheet':
+      return sheetPage(parts, diagram, view)
+    case 'map':
+      return mapPage(parts, diagram, view)
+    case 'technology':
+      return technologyPage(parts, diagram, view)
+    case 'drawing':
+      return (
+        <DrawingView
+          diagram={diagram}
+          scope={parts.props.project.id}
+          images={parts.props.source.repositories.images}
+          s={parts.props.shell.s}
+        />
+      )
+    case 'layer7':
+    case 'container':
+      // A board is the canvas, drawn by the editor itself.
+      return null
+    default: {
+      const unexpected: never = diagram.kind
+      return unexpected
+    }
+  }
 }
 
 function sheetPage(parts: WorkspaceParts, diagram: DesignDiagram, view: PageView): ReactNode {

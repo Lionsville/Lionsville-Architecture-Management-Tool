@@ -146,8 +146,8 @@ describe('SolutionDesignEditor — a reader opening a board nobody has laid out'
     // who may write it settles it, as the step of their own open.
     expect(host.current.commands).toEqual([]);
     expect(onLayoutSettled).not.toHaveBeenCalled();
-    expect(host.current.model.diagrams[0].geometry.needsLayout).toBe(true);
-    expect(host.current.model.diagrams[0].geometry.nodes).toEqual([]);
+    expect(host.current.model.diagrams[0].geometry!.needsLayout).toBe(true);
+    expect(host.current.model.diagrams[0].geometry!.nodes).toEqual([]);
   });
 
   it('gives way to the stored layout once somebody has laid the board out', async () => {
@@ -243,7 +243,7 @@ describe('SolutionDesignEditor — a reader opening a board nobody has laid out'
     finish();
     await waitFor(() => expect(handle.current?.busy).toBe(false));
     // What is drawn is the pass's layout; what is stored still has no positions.
-    expect(handle.current?.drawn?.geometry.nodes.map(({ id, x, y }) => ({ id, x, y }))).toEqual(
+    expect(handle.current?.drawn?.geometry!.nodes.map(({ id, x, y }) => ({ id, x, y }))).toEqual(
       LAID.map(({ id, x, y }) => ({ id, x, y })),
     );
   });
@@ -298,7 +298,7 @@ describe('SolutionDesignEditor — a writer opening the same board', () => {
 
     await waitFor(() => expect(onLayoutSettled).toHaveBeenCalledWith('d1'));
     expect(host.current.commands.length).toBeGreaterThan(0);
-    expect(host.current.model.diagrams[0].geometry.needsLayout).toBeUndefined();
+    expect(host.current.model.diagrams[0].geometry!.needsLayout).toBeUndefined();
     await waitFor(() => expect(new Set(drawnAt().values()).size).toBe(IDS.length));
     expect(mockTidy).toHaveBeenCalledTimes(1);
   });

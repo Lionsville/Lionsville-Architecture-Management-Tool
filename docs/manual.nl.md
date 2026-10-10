@@ -1562,6 +1562,15 @@ wat leunt, het dienstrapport wie er zou stranden vóór je er een intrekt, en de
 bevinding welke dingen van je eigen team andere teams stilletjes zijn gaan
 gebruiken.
 
+## Een tekening
+
+Een **tekening** is een aanzicht. **+** in de diagramtabbladen, dan **Tekening**,
+maakt er een, en de startpagina van een scope biedt hetzelfde onder **Nieuw
+bord…**. Hij heeft een eigen tabblad, zoals een landschap of een sheet.
+
+Een tekening wordt getoond als zijn afbeelding. Een tekening zonder afbeelding
+zegt **Nog niet getekend**.
+
 ## Zoeken
 
 **Zoeken** in de bovenbalk, of ⌘K, doorzoekt alles in één keer: elementen op

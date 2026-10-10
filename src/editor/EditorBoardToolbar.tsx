@@ -68,7 +68,7 @@ function diagramMenus(
   dialogs: EditorDialogState,
 ): Pick<EditorToolbarProps,
   | 'onActiveDiagramChange' | 'onCreateLayer7Diagram' | 'onOpenSheet' | 'onCreateSheet' | 'onOpenMap' | 'onCreateMap'
-  | 'onOpenTechnology' | 'onCreateTechnology' | 'onRenameDiagram' | 'onOpenDiagramSettings' | 'onDuplicateDiagram'
+  | 'onOpenTechnology' | 'onCreateTechnology' | 'onOpenDrawing' | 'onCreateDrawing' | 'onRenameDiagram' | 'onOpenDiagramSettings' | 'onDuplicateDiagram'
   | 'onDeleteDiagram' | 'onDiagramHistory'> {
   const { diagrams } = props;
   return {
@@ -80,6 +80,8 @@ function diagramMenus(
     onCreateMap: diagrams.onCreateMap,
     onOpenTechnology: diagrams.onOpenTechnology,
     onCreateTechnology: diagrams.onCreateTechnology,
+    onOpenDrawing: diagrams.onOpenDrawing,
+    onCreateDrawing: diagrams.onCreateDrawing,
     onRenameDiagram: diagrams.onRename ? (id, name) => dialogs.setRenameDiagramTarget({ id, name }) : undefined,
     onOpenDiagramSettings: diagrams.onSettingsChange ? (id) => dialogs.setSettingsDiagramId(id) : undefined,
     onDuplicateDiagram: diagrams.onDuplicate,

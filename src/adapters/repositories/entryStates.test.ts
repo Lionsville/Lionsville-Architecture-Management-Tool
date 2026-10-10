@@ -68,7 +68,7 @@ function smallEdit(state: ScopeState, next: () => number, at: number): ScopeComm
   if (roll < 0.55) return { type: 'element.update', id: pick(elements).id, patch: { description: `Described again at ${at}.` } }
   if (roll < 0.75) {
     const diagram = pick(state.model.diagrams)
-    const placed = diagram.geometry.nodes.map((node) => node.id)
+    const placed = diagram.geometry!.nodes.map((node) => node.id)
     if (placed.length > 0) return { type: 'node.set', diagramId: diagram.id, nodes: [{ id: pick(placed), x: at, y: at * 2 }] }
   }
   if (roll < 0.85) {

@@ -12,7 +12,8 @@ import { seedTechnologyLandscape } from '../../model/technologyLandscape'
 import { DEFAULT_PAPER, isSheetPaper } from '../../business/grid'
 import { seedMap } from '../../business/map'
 import { rootsOfKind, seedSheet } from '../../business/sheetDiagram'
-import type { DesignDiagram } from '../../model/types'
+import { linksFromXml } from '../../model/drawing'
+import type { C4Level, DesignDiagram } from '../../model/types'
 import type { AgentAnswer } from '../tools'
 import { json, refused } from '../tools'
 import type { Args, Handler, Prepared, WriteView } from './shared'
@@ -69,13 +70,45 @@ const BY_NAME: Record<string, { what: string; make: (name: string, view: WriteVi
   },
 }
 
+const C4_LEVELS: readonly C4Level[] = ['context', 'container', 'component']
+
 export const createDiagram: Handler = (args, view) => {
+  if (args.kind === 'drawing') return drawingDiagram(args, view)
   const byName = typeof args.kind === 'string' && Object.hasOwn(BY_NAME, args.kind) ? BY_NAME[args.kind] : undefined
   if (byName) {
     const name = nameFor(args, byName.what)
     return typeof name === 'string' ? byName.make(name, view) : name
   }
   return containerDiagram(args, view)
+}
+
+/** A drawing: a name, and optionally the element it is anchored to and the C4 level it shows. */
+function drawingDiagram(args: Args, view: WriteView): Prepared | AgentAnswer {
+  const name = nameFor(args, 'a drawing')
+  if (typeof name !== 'string') return name
+  const elementId = args.elementId
+  if (elementId !== undefined && elementId !== null && elementId !== '') {
+    if (typeof elementId !== 'string') return refused('agent.badArguments', '"elementId" is the element a drawing is anchored to')
+    if (!view.model.elements[elementId]) return refused('agent.unknownId', `element ${elementId}`)
+  }
+  const level = args.level
+  if (level !== undefined && level !== null && level !== '') {
+    if (typeof level !== 'string' || !(C4_LEVELS as readonly string[]).includes(level)) {
+      return refused('agent.badArguments', '"level" is context, container or component')
+    }
+  }
+  const anchor = typeof elementId === 'string' && elementId ? elementId : undefined
+  const c4Level = typeof level === 'string' && (C4_LEVELS as readonly string[]).includes(level) ? level as C4Level : undefined
+  const diagram: DesignDiagram = {
+    id: view.makeId('dr'), kind: 'drawing', name, members: [],
+    ...(anchor !== undefined ? { elementId: anchor } : {}),
+    ...(c4Level !== undefined ? { c4Level } : {}),
+  }
+  return made(diagram, {
+    id: diagram.id, kind: 'drawing', name,
+    ...(anchor !== undefined ? { elementId: anchor } : {}),
+    ...(c4Level !== undefined ? { level: c4Level } : {}),
+  })
 }
 
 /** An application's container view: the one it has, switched to, or a new one seeded from what it holds. */
@@ -121,7 +154,8 @@ const ONLY: readonly [field: string, allowed: (kind: Kind) => boolean, what: str
   ['areaSpans', (kind) => kind === 'sheet', 'a sheet'],
   ['paper', (kind) => kind === 'sheet', 'a sheet'],
   ['areas', (kind) => kind === 'sheet' || kind === 'map', 'a sheet or a map'],
-  ['asOf', (kind) => kind !== 'sheet' && kind !== 'map' && kind !== 'technology', 'a board'],
+  ['asOf', (kind) => kind === 'layer7' || kind === 'container', 'a board'],
+  ['xml', (kind) => kind === 'drawing', 'a drawing'],
   ['showDeployment', (kind) => kind === 'container', 'a container diagram'],
   ['colourBy', (kind) => kind === 'layer7', 'a landscape'],
 ]
@@ -242,7 +276,15 @@ const asOf: ViewField = (args, _model, patch) => {
   return undefined
 }
 
-const VIEW_FIELDS: readonly ViewField[] = [colourBy, showDeployment, journey, lanes, areas, page, areaSpans, asOf]
+/** A drawing's XML. The links are read from it at once; the picture is left unset, so the drawing says it is not drawn yet. */
+const xmlField: ViewField = (args, _model, patch) => {
+  if (args.xml === undefined) return undefined
+  if (typeof args.xml !== 'string') return refused('agent.badArguments', '"xml" is the drawing\'s XML')
+  patch.drawing = { xml: args.xml, links: linksFromXml(args.xml) }
+  return undefined
+}
+
+const VIEW_FIELDS: readonly ViewField[] = [colourBy, showDeployment, journey, lanes, areas, page, areaSpans, asOf, xmlField]
 
 /**
  * What a laid-out view is OF (ADR-0012 §6), and a board's day. Each id is

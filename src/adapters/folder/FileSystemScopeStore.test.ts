@@ -218,7 +218,7 @@ describe('FileSystemScopeStore — the folder is somebody else’s too', () => {
     const before = await stamps(root)
 
     const moved = sampleScope()
-    moved.model.diagrams[0].geometry.nodes = [{ id: 'crews', x: 999, y: 20 }]
+    moved.model.diagrams[0].geometry!.nodes = [{ id: 'crews', x: 999, y: 20 }]
     await store.save(moved)
 
     expect(touched(before, await stamps(root)))

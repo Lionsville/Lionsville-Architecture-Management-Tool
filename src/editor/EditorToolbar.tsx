@@ -72,6 +72,9 @@ export interface EditorToolbarProps {
   /** The technology landscape (ADR-0015), listed among the tabs like the other laid-out views. */
   onOpenTechnology?(diagramId: string): void;
   onCreateTechnology?(): void;
+  /** A drawing, listed on its own and made from the same menu. */
+  onOpenDrawing?(diagramId: string): void;
+  onCreateDrawing?(): void;
   /** The active view is laid out (ADR-0016): the canvas's controls have nothing to act on. */
   laidOut?: boolean;
   /** Offer a business architecture beside a landscape under the `+`. */
@@ -200,15 +203,69 @@ export interface EditorToolbarProps {
  * Top bar: Layer 7 diagram tabs (breadcrumb when drilled into a container
  * diagram) and the tidy / fit / export actions.
  */
+/**
+ * Which tab list a view belongs on. A container view is not a tab. A drawing
+ * is its own list, offered only where the host can open one — the same rule
+ * as a sheet, a map and a technology landscape.
+ */
+function tabList(kind: DesignDiagram['kind'], props: EditorToolbarProps): 'board' | 'sheet' | 'map' | 'technology' | 'drawing' | 'none' {
+  switch (kind) {
+    case 'layer7':
+      return 'board'
+    case 'container':
+      return 'none'
+    case 'sheet':
+      return props.onOpenSheet ? 'sheet' : 'none'
+    case 'map':
+      return props.onOpenMap ? 'map' : 'none'
+    case 'technology':
+      return props.onOpenTechnology ? 'technology' : 'none'
+    case 'drawing':
+      return props.onOpenDrawing ? 'drawing' : 'none'
+    default: {
+      const unexpected: never = kind
+      return unexpected
+    }
+  }
+}
+
+/** Open the tab the host draws this kind on. A board changes the active view; the others ask the host. */
+function openTab(kind: DesignDiagram['kind'], id: string, props: EditorToolbarProps): void {
+  switch (kind) {
+    case 'layer7':
+    case 'container':
+      props.onActiveDiagramChange(id)
+      return
+    case 'sheet':
+      ;(props.onOpenSheet ?? props.onActiveDiagramChange)(id)
+      return
+    case 'map':
+      ;(props.onOpenMap ?? props.onActiveDiagramChange)(id)
+      return
+    case 'technology':
+      ;(props.onOpenTechnology ?? props.onActiveDiagramChange)(id)
+      return
+    case 'drawing':
+      ;(props.onOpenDrawing ?? props.onActiveDiagramChange)(id)
+      return
+    default: {
+      const unexpected: never = kind
+      return unexpected
+    }
+  }
+}
+
 export function EditorToolbar(props: EditorToolbarProps) {
   const theme = useTheme();
   const { t, language } = useStrings();
-  const layer7Diagrams = props.model.diagrams.filter((d) => d.kind === 'layer7');
-  // The laid-out views, listed only where the host can draw one.
-  const sheets = props.onOpenSheet ? props.model.diagrams.filter((d) => d.kind === 'sheet') : [];
-  const maps = props.onOpenMap ? props.model.diagrams.filter((d) => d.kind === 'map') : [];
-  const technology = props.onOpenTechnology ? props.model.diagrams.filter((d) => d.kind === 'technology') : [];
-  const tabs = [...layer7Diagrams, ...sheets, ...maps, ...technology];
+  const layer7Diagrams = props.model.diagrams.filter((d) => tabList(d.kind, props) === 'board');
+  // Each kind is its own list. A drawing is not dropped into a sheet's, and a
+  // kind the host cannot open is not offered.
+  const sheets = props.model.diagrams.filter((d) => tabList(d.kind, props) === 'sheet');
+  const maps = props.model.diagrams.filter((d) => tabList(d.kind, props) === 'map');
+  const technology = props.model.diagrams.filter((d) => tabList(d.kind, props) === 'technology');
+  const drawings = props.model.diagrams.filter((d) => tabList(d.kind, props) === 'drawing');
+  const tabs = [...layer7Diagrams, ...sheets, ...maps, ...technology, ...drawings];
   const isContainer = props.activeDiagram.kind === 'container';
   // The legend is a button of its own beside the lifecycle toggle: a control
   // whose hover explained the colours and whose click did something else
@@ -333,9 +390,8 @@ export function EditorToolbar(props: EditorToolbarProps) {
               // host draws it in place of the canvas. The host's openers stay
               // for whatever else it does on the way — closing a page over
               // the editor, say — and the plain change is the fallback.
-              if (sheets.some((d) => d.id === value)) (props.onOpenSheet ?? props.onActiveDiagramChange)(value);
-              else if (maps.some((d) => d.id === value)) (props.onOpenMap ?? props.onActiveDiagramChange)(value);
-              else if (technology.some((d) => d.id === value)) (props.onOpenTechnology ?? props.onActiveDiagramChange)(value);
+              const diagram = props.model.diagrams.find((d) => d.id === value);
+              if (diagram) openTab(diagram.kind, value, props);
               else props.onActiveDiagramChange(value);
             }}
             variant="scrollable"
@@ -424,6 +480,11 @@ export function EditorToolbar(props: EditorToolbarProps) {
                 {props.onCreateTechnology && (
                   <MenuItem onClick={() => { setNewMenu(null); props.onCreateTechnology?.(); }}>
                     {t('toolbar.newTechnology')}
+                  </MenuItem>
+                )}
+                {props.onCreateDrawing && (
+                  <MenuItem onClick={() => { setNewMenu(null); props.onCreateDrawing?.(); }}>
+                    {t('toolbar.newDrawing')}
                   </MenuItem>
                 )}
               </Menu>

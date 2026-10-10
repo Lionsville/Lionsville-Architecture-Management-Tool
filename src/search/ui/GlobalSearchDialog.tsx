@@ -28,6 +28,7 @@ import ListSubheader from '@mui/material/ListSubheader'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import type { StringKey, Translate } from '../../i18n'
+import type { DesignDiagram } from '../../model'
 import { STATUS_LABEL } from '../../decisions/adrScope'
 import { isElementKind, kindLabel } from '../../model/kinds'
 import { isRelationType, RELATION_LABEL } from '../../model/relations'
@@ -64,12 +65,17 @@ const KIND_LABEL: Record<SearchKind, StringKey> = {
   experiment: 'gsearch.kind.experiment',
 }
 
-const VIEW_LABEL: Record<string, StringKey> = {
+const VIEW_LABEL = {
   layer7: 'gsearch.view.layer7',
   container: 'gsearch.view.container',
   sheet: 'gsearch.view.sheet',
   map: 'gsearch.view.map',
   technology: 'gsearch.view.technology',
+  drawing: 'gsearch.view.drawing',
+} as const satisfies Record<DesignDiagram['kind'], StringKey>
+
+function isViewKind(kind: string): kind is DesignDiagram['kind'] {
+  return Object.prototype.hasOwnProperty.call(VIEW_LABEL, kind)
 }
 
 /** Each kind's status words, from the tables the modules that own them publish. */
@@ -91,7 +97,7 @@ export function chipOf(hit: SearchHit, s: Translate): string | undefined {
   }
   if (variant === undefined) return undefined
   if ((hit.kind === 'element' || hit.kind === 'documentation') && isElementKind(variant)) return kindLabel(variant, s)
-  if (hit.kind === 'view' && VIEW_LABEL[variant]) return s(VIEW_LABEL[variant])
+  if (hit.kind === 'view' && isViewKind(variant)) return s(VIEW_LABEL[variant])
   if (hit.kind === 'relation' && isRelationType(variant)) return s(RELATION_LABEL[variant])
   return undefined
 }

@@ -286,11 +286,27 @@ export interface DocumentedGroup {
   elements: DesignElement[];
 }
 
-/** What a laid-out view draws (ADR-0012 §6): the trees, not a membership list. */
-const LAID_OUT_KINDS: Partial<Record<DesignDiagram['kind'], readonly ElementKind[]>> = {
-  sheet: ['actor', 'function', 'step'],
-  map: ['function'],
-};
+/**
+ * What a laid-out view draws (ADR-0012 §6): the trees, not a membership list.
+ * A drawing is not laid out from element kinds; a board is membership.
+ */
+function laidOutKinds(kind: DesignDiagram['kind']): readonly ElementKind[] | undefined {
+  switch (kind) {
+    case 'sheet':
+      return ['actor', 'function', 'step']
+    case 'map':
+      return ['function']
+    case 'technology':
+    case 'layer7':
+    case 'container':
+    case 'drawing':
+      return undefined
+    default: {
+      const unexpected: never = kind
+      return unexpected
+    }
+  }
+}
 
 /**
  * The elements placed on a diagram, grouped by kind and sorted by name, for the
@@ -303,7 +319,7 @@ const LAID_OUT_KINDS: Partial<Record<DesignDiagram['kind'], readonly ElementKind
  * from the sheet lists the other capabilities, not the board's applications.
  */
 export function documentedElements(model: DesignModel, diagram: DesignDiagram): DocumentedGroup[] {
-  const kinds = LAID_OUT_KINDS[diagram.kind];
+  const kinds = laidOutKinds(diagram.kind);
   const placed = kinds ? undefined : new Set(placedNodes(diagram).map((p) => p.id));
   const byKind = new Map<ElementKind, DesignElement[]>();
   for (const element of model.elements) {

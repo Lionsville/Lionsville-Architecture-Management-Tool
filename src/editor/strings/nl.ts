@@ -172,6 +172,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'toolbar.newSheet': 'Bedrijfsarchitectuur',
   'toolbar.newMap': 'Bedrijfskaart',
   'toolbar.newTechnology': 'Technologielandschap',
+  'toolbar.newDrawing': 'Tekening',
   'toolbar.readOnly': 'Alleen-lezen',
   'toolbar.undo': 'Ongedaan maken',
   'toolbar.undoTip': 'Ongedaan maken (⌘Z)',

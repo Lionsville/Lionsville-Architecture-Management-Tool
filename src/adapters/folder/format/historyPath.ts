@@ -32,7 +32,7 @@ import type { ElementId } from '../../../model'
 import type { HostModel } from '../../../model/hostModel'
 import { adrPathPattern } from './adrFile'
 import {
-  descriptionPath, diagramStems, DIAGRAMS_FOLDER, GEOMETRY_SUFFIX, MODEL_FILE,
+  descriptionPath, diagramStems, DIAGRAMS_FOLDER, DRAWIO_SUFFIX, GEOMETRY_SUFFIX, MODEL_FILE,
 } from './folderFormat'
 import type { ScopeIndex } from '../../../projects/scopeIndex'
 import type { ScopePath } from '../../../projects/scopePath'
@@ -54,11 +54,14 @@ export function historyPaths(subject: HistorySubject, model: HostModel): string[
     case 'diagram': {
       // Named over the whole list, because a stem is decided by who came
       // first; a diagram deleted since is named as it would be on its own.
-      const known = model.diagrams.some((diagram) => diagram.id === subject.id)
+      const known = model.diagrams.find((diagram) => diagram.id === subject.id)
       const stems = diagramStems(known ? model.diagrams : [{ id: subject.id }])
       const stem = stems.get(subject.id)
       if (!stem) return undefined
-      return [`${DIAGRAMS_FOLDER}/${stem}.json`, `${DIAGRAMS_FOLDER}/${stem}${GEOMETRY_SUFFIX}`]
+      // A drawing's other file is its XML. Every other view's is its geometry.
+      // A diagram that is gone is named as a board would be: the geometry file.
+      const other = known?.kind === 'drawing' ? DRAWIO_SUFFIX : GEOMETRY_SUFFIX
+      return [`${DIAGRAMS_FOLDER}/${stem}.json`, `${DIAGRAMS_FOLDER}/${stem}${other}`]
     }
     case 'description':
       // An element whose id cannot be a file name keeps its description in

@@ -38,6 +38,7 @@
  * written is read back the same.
  */
 import { HOME_PAGES, isObservationTab, PAGES, VIEW_PAGES, viewPage } from './screen'
+import type { DesignDiagram } from '../model/types'
 import type { Destination, Page, Screen } from './screen'
 
 /** A destination that names its scope: what the history holds, and what an address carries. */
@@ -141,7 +142,7 @@ export function placeOf(screen: Screen): Place | undefined {
       }
     }
     const view = screen.open.view
-    return view ? { scope, page: viewPage(view.kind), id: view.id } : undefined
+    return view ? { scope, page: viewPage(diagramKind(view.kind)), id: view.id } : undefined
   }
   if (screen.home) return { scope: screen.home.path, page: screen.page?.page ?? 'home' }
   return undefined
@@ -222,7 +223,7 @@ export function nearestPlace(place: Place, facts: PlaceFacts): Place {
   const views = facts.views
   const first: Place = views === undefined
     ? { scope }
-    : views.length > 0 ? { scope, page: viewPage(views[0].kind), id: views[0].id } : { scope, page: 'home' }
+    : views.length > 0 ? { scope, page: viewPage(diagramKind(views[0].kind)), id: views[0].id } : { scope, page: 'home' }
   if (page === undefined) return views !== undefined && views.length === 0 ? first : place
   if (VIEW_PAGES.includes(page)) {
     if (id === undefined || views === undefined || views.some((view) => view.id === id)) return place
@@ -238,5 +239,20 @@ export function nearestPlace(place: Place, facts: PlaceFacts): Place {
       return { scope, page: 'roadmap' }
     default:
       return first
+  }
+}
+
+/** A view's kind as the model spells it. Anything else is a board: the page a view opened on before a drawing was a kind. */
+function diagramKind(kind: string): DesignDiagram['kind'] {
+  switch (kind) {
+    case 'layer7':
+    case 'container':
+    case 'sheet':
+    case 'map':
+    case 'technology':
+    case 'drawing':
+      return kind
+    default:
+      return 'layer7'
   }
 }

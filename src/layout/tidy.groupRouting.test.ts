@@ -122,7 +122,7 @@ describe('tidyGroup — the board the router is routing against', () => {
       expect(routedById.get(id)).toEqual(placedNodes(layer7).find((p) => p.id === id));
     }
     // And the resized box, not the stale one still in `layoutConfig`.
-    expect(routed.geometry.groups).toEqual([
+    expect(routed.geometry!.groups).toEqual([
       result.domainGroups![0],
       { id: 'Other', x: 1200, y: 200, width: 200, height: 200 },
     ]);

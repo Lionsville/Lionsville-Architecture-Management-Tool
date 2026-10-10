@@ -50,7 +50,7 @@ function modelWithPlacement(diagramId: 'd1' | 'd2'): DesignModel {
   const model = baseModel();
   const diagram = model.diagrams.find((d) => d.id === diagramId) as DesignModel['diagrams'][0];
   diagram.members = [{ id: 'a1', zone: 'landscape' }];
-  diagram.geometry.nodes = [{ id: 'a1', x: 400, y: 300 }];
+  diagram.geometry!.nodes = [{ id: 'a1', x: 400, y: 300 }];
   return model;
 }
 
@@ -366,7 +366,7 @@ function modelWithConnection(): DesignModel {
     aspects: {},
   });
   model.diagrams[0].members.push({ id: 'b1', zone: 'externalSystems' });
-  model.diagrams[0].geometry.nodes.push({ id: 'b1', x: 1500, y: 400 });
+  model.diagrams[0].geometry!.nodes.push({ id: 'b1', x: 1500, y: 400 });
   model.relations = [
     { type: 'flow', id: 'c1', sourceId: 'a1', targetId: 'b1', label: 'Sends orders', protocol: 'EDI', isBidirectional: false },
   ];
@@ -417,7 +417,7 @@ describe('SolutionDesignEditor — edge labels', () => {
 
   it('right-click on a repositioned label offers "Reset label position"', async () => {
     const model = modelWithConnection();
-    model.diagrams[0].geometry.routes = [
+    model.diagrams[0].geometry!.routes = [
       { relationId: 'c1', waypoints: [], labelPosition: { x: 500, y: 200 } },
     ];
     const { landed } = renderEditor({ model, initialPreferences: { showEdgeLabels: true } });
@@ -481,7 +481,7 @@ describe('SolutionDesignEditor — route provenance and handles', () => {
     // existing board's bends at the router's radius — and, before 2a, would have
     // stripped their handles.
     const model = modelWithConnection();
-    model.diagrams[0].geometry.routes = [{ relationId: 'c1', waypoints: [{ x: 900, y: 320 }] }];
+    model.diagrams[0].geometry!.routes = [{ relationId: 'c1', waypoints: [{ x: 900, y: 320 }] }];
     renderEditor({ model, initialPreferences: { showEdgeLabels: true } });
     await screen.findByTestId('edge-label-c1');
     const path = document.getElementById('c1') as SVGPathElement | null;
@@ -830,7 +830,7 @@ describe('SolutionDesignEditor — route connections only', () => {
   it('routes the blocked edge and leaves every node where it was', async () => {
     const model = modelWithBlockedEdge();
     const placements = placedNodes(model.diagrams[0]);
-    const geometry = model.diagrams[0].geometry;
+    const geometry = model.diagrams[0].geometry!;
     const { landed, sent } = renderEditor({ model });
 
     fireEvent.click(screen.getByLabelText('Route connections only'));
