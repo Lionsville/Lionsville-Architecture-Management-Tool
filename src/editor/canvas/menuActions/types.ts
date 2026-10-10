@@ -40,6 +40,8 @@ export interface MenuActionHost {
   openApplication?(elementId: ElementId): void;
   /** Make the application's container diagram, on purpose (the menu's *Create container diagram*). */
   createContainer?(elementId: ElementId): void;
+  /** Make a drawing anchored to this element (the menu's *Create drawing*). */
+  createDrawing?(elementId: ElementId): void;
   /** "Open documentation": the editor shows the element's page. */
   openDocumentation?(elementId: ElementId): void;
   requestRename?(elementId: ElementId): void;

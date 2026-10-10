@@ -53,6 +53,41 @@ describe('doubleClickTarget', () => {
     expect(doubleClickTarget(model, 'brokering', undefined)).toEqual({ kind: 'serviceReport', serviceId: 'brokering' });
   });
 
+  it('offers an element\'s drawings beside its container view, and makes nothing', () => {
+    const drawings = [
+      { id: 'dr-1', kind: 'drawing' as const, name: 'Context', elementId: 'erp', members: [] },
+      { id: 'dr-2', kind: 'drawing' as const, name: 'Deploy', elementId: 'erp', members: [] },
+      { id: 'dr-other', kind: 'drawing' as const, name: 'Other', elementId: 'billing', members: [] },
+      { id: 'dr-scope', kind: 'drawing' as const, name: 'Scope', members: [] },
+    ]
+    const withDrawings = { ...model, diagrams: [...model.diagrams, ...drawings] }
+    expect(doubleClickTarget(withDrawings, 'erp', undefined)).toEqual({
+      kind: 'container',
+      diagramId: 'cd-erp',
+      drawings: [
+        { id: 'dr-1', name: 'Context' },
+        { id: 'dr-2', name: 'Deploy' },
+      ],
+    })
+    // No container view: the drawings are still offered, and looking does not make one.
+    const bare = { ...withDrawings, diagrams: withDrawings.diagrams.filter((d) => d.kind !== 'container') }
+    const before = bare.diagrams.map((d) => d.id)
+    expect(doubleClickTarget(bare, 'erp', undefined)).toEqual({
+      kind: 'drawings',
+      drawings: [
+        { id: 'dr-1', name: 'Context' },
+        { id: 'dr-2', name: 'Deploy' },
+      ],
+    })
+    expect(bare.diagrams.map((d) => d.id)).toEqual(before)
+    // Beside the page, for an element that is not an application.
+    const onOps = { ...model, diagrams: [...model.diagrams, { id: 'dr-ops', kind: 'drawing' as const, name: 'Ops', elementId: 'ops', members: [] }] }
+    expect(doubleClickTarget(onOps, 'ops', undefined)).toEqual({
+      kind: 'documentation',
+      drawings: [{ id: 'dr-ops', name: 'Ops' }],
+    })
+  })
+
   it('falls through for a stand-in nobody can show, and opens a page for everything else', () => {
     expect(doubleClickTarget(model, 'ghost', { ownerOf: () => undefined })).toBeUndefined();
     expect(doubleClickTarget(model, 'ops', undefined)).toEqual({ kind: 'documentation' });

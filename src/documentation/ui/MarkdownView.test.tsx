@@ -13,8 +13,10 @@
  * nothing else.
  */
 import type { ImageEntry } from '../../model/imageName'
+import type { DesignDiagram } from '../../model/types'
 import { memoryImageSource } from '../pictureSource'
 import { PicturesProvider } from './Pictures'
+import { ViewEmbedsProvider } from './ViewEmbed'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { MarkdownView } from './MarkdownView'
@@ -186,5 +188,74 @@ describe('MarkdownView', () => {
     await waitFor(() => expect(container.querySelector('[data-state="failed"]')).not.toBeNull())
     expect(container.textContent).toContain('not a diagram')
     expect(container.textContent).toContain('Parse error')
+  })
+})
+
+const svg = new TextEncoder().encode('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 100"></svg>')
+
+const drawing = (): DesignDiagram => ({
+  id: 'ctx', kind: 'drawing', name: 'Context', members: [],
+  drawing: {
+    xml: '<mxfile/>',
+    picture: 'sha256:aa',
+    links: [
+      { shapeId: 'a', elementId: 'billing', area: { x: 10, y: 20, width: 80, height: 40 } },
+      { shapeId: 'b', elementId: 'ledger', area: { x: 100, y: 20, width: 40, height: 30 } },
+    ],
+  },
+})
+
+const sheet = (): DesignDiagram => ({
+  id: 'sheet-1', kind: 'sheet', name: 'Business', members: [], geometry: { nodes: [] },
+})
+
+describe('a view in a document', () => {
+  it('draws a drawing\'s picture and its areas, another kind\'s caption, and a missing view', async () => {
+    const openElement = vi.fn()
+    const { container } = renderShell(
+      <ViewEmbedsProvider
+        diagrams={[drawing(), sheet()]}
+        bytesAt={async (address) => (
+          address === 'sha256:aa' ? { mediaType: 'image/svg+xml', bytes: svg } : undefined
+        )}
+        openElement={openElement}
+        nameOf={(id) => (id === 'billing' ? 'Billing' : id)}
+      >
+        <MarkdownView markdown={[
+          '![The context](view:ctx)',
+          '',
+          '![The sheet](view:sheet-1)',
+          '',
+          '![Gone](view:missing)',
+          '',
+          '![Elsewhere](view:acme/ctx)',
+        ].join('\n')} />
+      </ViewEmbedsProvider>,
+    )
+    const picture = await screen.findByTestId('view-picture')
+    expect(picture.getAttribute('alt')).toBe('The context')
+    expect(picture.getAttribute('src')).toBeTruthy()
+    const areas = container.querySelectorAll('[data-testid="view-area"]')
+    expect(areas).toHaveLength(2)
+    const billing = areas[0] as HTMLButtonElement
+    expect(billing.getAttribute('data-element')).toBe('billing')
+    expect(billing.style.left).toBe('5%')
+    expect(billing.style.top).toBe('20%')
+    expect(billing.style.width).toBe('40%')
+    expect(billing.style.height).toBe('40%')
+    expect(billing.style.background).toBe('transparent')
+    expect((areas[1] as HTMLElement).getAttribute('data-element')).toBe('ledger')
+    fireEvent.click(billing)
+    expect(openElement).toHaveBeenCalledWith('billing')
+
+    const plain = screen.getByTestId('view-no-picture')
+    expect(plain.textContent).toContain('The sheet')
+    expect(plain.textContent).toContain('No picture yet')
+
+    const missing = screen.getAllByTestId('view-missing')
+    expect(missing.map((one) => one.textContent)).toEqual([
+      'Gone — This view is missing.',
+      'Elsewhere — This view is missing.',
+    ])
   })
 })

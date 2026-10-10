@@ -314,6 +314,8 @@ export interface DiagramCanvasProps {
   onElementDoubleClick?(elementId: ElementId): void;
   /** The element menu's *Create container diagram*; absent under `readOnly`. */
   onCreateContainer?(elementId: ElementId): void;
+  /** The element menu's *Create drawing*; absent under `readOnly`. */
+  onCreateDrawing?(elementId: ElementId): void;
   /**
    * Where each diagram was left, kept by the editor for the session
    * (`viewportMemory.ts`): this canvas is mounted anew per diagram, so the
@@ -960,7 +962,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
     [onAddByDrop, onAddDomainGroupByDrop, onPaletteDragOver, screenToFlowPosition],
   );
 
-  const { onElementDoubleClick, onCreateContainer } = props;
+  const { onElementDoubleClick, onCreateContainer, onCreateDrawing } = props;
   const handleNodeDoubleClick = useCallback(
     (_event: unknown, node: Node) => onElementDoubleClick?.(node.id),
     [onElementDoubleClick],
@@ -1392,6 +1394,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
       resolveDrop,
       openApplication: onElementDoubleClick,
       createContainer: onCreateContainer,
+      createDrawing: onCreateDrawing,
       openDocumentation: onOpenDocumentation,
       requestRename: onRequestRename,
       requestDelete: onRequestDeleteElement,
@@ -1431,6 +1434,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
       resolveDrop,
       onElementDoubleClick,
       onCreateContainer,
+      onCreateDrawing,
       onOpenDocumentation,
       onRequestRename,
       onRequestDeleteElement,

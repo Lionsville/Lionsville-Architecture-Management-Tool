@@ -63,6 +63,22 @@ export function drawingProse(xml: string): string {
  * the way it keeps an address the history names: a drawing's picture has no
  * library name of its own.
  */
+/**
+ * The drawings anchored to one element, in the order the scope keeps its
+ * views. A drawing with no element is of the scope itself and is not among
+ * them.
+ */
+export function drawingsAnchoredTo(
+  diagrams: readonly { id: string; kind: string; name: string; elementId?: string }[],
+  elementId: string,
+): { id: string; name: string }[] {
+  const found: { id: string; name: string }[] = []
+  for (const diagram of diagrams) {
+    if (diagram.kind === 'drawing' && diagram.elementId === elementId) found.push({ id: diagram.id, name: diagram.name })
+  }
+  return found
+}
+
 export function drawingPictureAddresses(
   diagrams: readonly { kind: string; drawing?: { picture?: string } }[],
 ): ContentAddress[] {

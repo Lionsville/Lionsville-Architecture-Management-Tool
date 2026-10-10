@@ -62,6 +62,8 @@ export const NL: Record<keyof typeof EN, string> = {
 
   'menu.openContainer': 'Containeraanzicht openen',
   'menu.createContainer': 'Containeraanzicht maken',
+  'menu.createDrawing': 'Tekening maken',
+  'menu.openInside': 'Openen',
   'menu.platformReport': 'Platformrapport',
   'menu.serviceReport': 'Dienstrapport',
   'menu.openOwner': 'Openen waar het gedefinieerd is',
@@ -365,6 +367,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'field.detailOther': 'Detail: {count} koppelvlakken op het containerdiagram · {protocols}',
   'field.detailOpen': 'Openen',
   'field.noContainer': 'Er is nog niets in getekend. Een containeraanzicht is waar haar componenten staan.',
+  'field.anchoredDrawing': 'Een tekening verankerd aan dit element.',
   'field.newInterface': 'Nieuw koppelvlak',
   'field.detachFrom': 'Losmaken van “{label}”',
   'field.technologyHelp': 'Waar het van gemaakt is: OpenAPI 3, een Kafka-topic, een SFTP-drop',

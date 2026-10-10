@@ -55,6 +55,7 @@ import {
 } from '../documentation';
 import { useStrings } from '../../i18n/LanguageContext';
 import { DocGlyph } from '../../widgets/icons';
+import { drawingsAnchoredTo } from '../../model/drawing';
 import { kindLabel } from '../../model/kinds';
 import { fieldEdit } from '../../model/commands';
 import { BackIcon } from '../../widgets/icons';
@@ -138,6 +139,11 @@ export interface DocumentationPageProps {
    * that name this element above its fields. Absent = no such section.
    */
   plans?: { list: readonly Transition[]; onOpen(transitionId: string): void };
+  /**
+   * The drawings anchored to this element. Choosing one opens it. Absent: the
+   * names are still listed, and nothing opens.
+   */
+  onOpenDrawing?(diagramId: string): void;
   /**
    * How wide the fields column is, and where a drag on its seam goes.
    *
@@ -246,6 +252,14 @@ export function DocumentationPage(props: DocumentationPageProps) {
     () => (props.plans ? transitionsForElement(props.plans.list, element.id) : []),
     [props.plans, element.id],
   );
+  const drawingsHere = useMemo(
+    () => drawingsAnchoredTo(model.diagrams, element.id),
+    [model.diagrams, element.id],
+  );
+  const openDrawing = useCallback((id: string) => {
+    commit();
+    props.onOpenDrawing?.(id);
+  }, [commit, props.onOpenDrawing]);
   const groups = useMemo(() => documentedElements(model, diagram), [model, diagram]);
   const order = useMemo(() => groups.flatMap((g) => g.elements.map((e) => e.id)), [groups]);
   const position = order.indexOf(element.id);
@@ -463,12 +477,42 @@ export function DocumentationPage(props: DocumentationPageProps) {
           />
         )}
         <Box sx={{ borderLeft: props.fieldsWidth ? 0 : 1, borderColor: 'divider', bgcolor: 'background.paper', overflow: 'auto', p: 2, minWidth: 0 }}>
+          <DrawingsHere drawings={drawingsHere} onOpen={props.onOpenDrawing ? openDrawing : undefined} />
           {props.plans && <PlansHere plans={plansHere} onOpen={props.plans.onOpen} />}
           {props.renderInspector?.(element, { readOnly })}
         </Box>
       </Box>
 
     </PageDialog>
+  );
+}
+
+/**
+ * The drawings anchored to this element, each a way to open it — a button,
+ * so the keyboard reaches it as the pointer does. None: the section is absent.
+ */
+function DrawingsHere({ drawings, onOpen }: {
+  drawings: readonly { id: string; name: string }[];
+  onOpen: ((id: string) => void) | undefined;
+}) {
+  const { t } = useStrings();
+  if (drawings.length === 0) return null;
+  return (
+    <Box data-testid="doc-drawings" sx={{ mb: 2 }}>
+      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>{t('doc.drawings')}</Typography>
+      {drawings.map((drawing) => onOpen ? (
+        <Link
+          key={drawing.id}
+          component="button" type="button" color="inherit" underline="hover"
+          sx={{ display: 'block', fontSize: 13, textAlign: 'left' }}
+          onClick={() => onOpen(drawing.id)}
+        >
+          {drawing.name}
+        </Link>
+      ) : (
+        <Typography key={drawing.id} sx={{ fontSize: 13 }}>{drawing.name}</Typography>
+      ))}
+    </Box>
   );
 }
 

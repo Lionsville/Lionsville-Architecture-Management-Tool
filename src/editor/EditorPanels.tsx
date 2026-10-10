@@ -119,6 +119,7 @@ export function BoardCanvas({ parts, diagram }: { parts: EditorParts; diagram: D
         mountEveryElement={parts.capturing || exports.exportOptions !== undefined}
         onElementDoubleClick={clicks.handleDoubleClick}
         onCreateContainer={writable(props.diagrams.onCreateContainer)}
+        onCreateDrawing={writable(props.diagrams.onCreateDrawingFor)}
         viewports={parts.viewports}
         onLineDoubleClick={clicks.handleLineDoubleClick}
         showDeployment={board.showDeployment}

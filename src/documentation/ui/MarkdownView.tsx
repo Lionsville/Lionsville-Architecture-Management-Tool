@@ -17,6 +17,9 @@
  * outside the app: a new tab in a browser, and on the desktop the main process
  * already routes a window-open request to the system browser.
  *
+ * A picture may name a view of this scope, `![caption](view:<id>)`, the way
+ * `image:` names a picture in the library. A drawing is shown as its picture.
+ *
  * Sizes are in `em`, on purpose. The same component sits in a 13px inspector
  * preview and on a full page at reading size, and it should scale with the
  * container rather than fight it.
@@ -41,6 +44,8 @@ import remarkGfm from 'remark-gfm'
 import { useStrings } from '../../i18n/LanguageContext'
 import { imageNameOfSource } from '../images'
 import { IMAGE_REFERENCE } from '../../model/imageName'
+import { VIEW_REFERENCE, viewOfSource } from '../viewRef'
+import { ViewEmbed } from './ViewEmbed'
 import { blockFor } from './blocks'
 import type { BlockContext } from './blocks'
 import type { MermaidRenderer } from './MermaidBlock'
@@ -71,14 +76,15 @@ function isDrawnFence(children: ReactNode): boolean {
 /**
  * The default transform drops every scheme it does not know, which is the
  * right instinct — a `javascript:` href must never survive — but it would also
- * drop the two schemes the model writes: a link to an element, and a picture
- * by its name in the library. Let those through untouched and leave
- * everything else to the default. A picture's name passes as a picture's
- * source and nowhere else: a link to `image:…` is nothing this app opens.
+ * drop the schemes a document writes: a link to an element, a picture by its
+ * name in the library, and a view of this scope. Let those through untouched
+ * and leave everything else to the default. A picture's name, and a view's id,
+ * pass as a picture's source and nowhere else: a link to either is nothing
+ * this app opens.
  */
 function urlTransform(url: string, key: string): string {
   if (url.startsWith(ELEMENT_LINK_SCHEME)) return url
-  if (key === 'src' && url.startsWith(IMAGE_REFERENCE)) return url
+  if (key === 'src' && (url.startsWith(IMAGE_REFERENCE) || url.startsWith(VIEW_REFERENCE))) return url
   return defaultUrlTransform(url)
 }
 
@@ -275,6 +281,8 @@ function components(
      * markdown would have seen anyway.
      */
     img: ({ src, alt }) => {
+      const view = viewOfSource(src)
+      if (view) return <ViewEmbed source={view} caption={alt ?? ''} />
       const name = imageNameOfSource(src)
       if (name !== undefined && src) {
         return <NamedPicture key={name} name={name} src={src} alt={alt ?? ''} />

@@ -109,6 +109,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.newMap': 'Unternehmenskarte',
   'shell.newTechnology': 'Technologielandschaft',
   'shell.newDrawing': 'Zeichnung',
+  'shell.drawingOf': '{name} · Zeichnung',
   'shell.drawingNotDrawn': 'Noch nicht gezeichnet',
   'shell.drawingEdit': 'Bearbeiten',
   'shell.drawingEditorUnavailable': 'Der Editor ist nicht verfügbar',

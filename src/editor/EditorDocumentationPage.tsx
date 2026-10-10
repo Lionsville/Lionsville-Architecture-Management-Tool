@@ -68,6 +68,10 @@ export function EditorDocumentationPage({ props, state, readOnly, docs, onReques
         />
       )}
       plans={props.plans ? { list: props.plans.list, onOpen: props.plans.onOpen } : undefined}
+      onOpenDrawing={(id) => {
+        docs.close();
+        (props.diagrams.onOpenDrawing ?? props.document.onActiveDiagramChange)(id);
+      }}
       fieldsWidth={{ value: docs.fieldsWidth, onChange: docs.setFieldsWidth }}
       onNavigate={docs.open}
       onClose={docs.close}
@@ -118,6 +122,10 @@ function PageInspector({ props, state, readOnly, inspectorReadOnly, docs, elemen
       parties={ownership?.parties}
       onShowOnTechnology={diagrams.onOpenTechnologyFor
         ? (id) => { docs.leave(); diagrams.onOpenTechnologyFor?.(id); }
+        : undefined}
+      onCreateContainer={readOnly ? undefined : diagrams.onCreateContainer}
+      onCreateDrawing={!readOnly && diagrams.onCreateDrawingFor
+        ? (id) => { docs.close(); diagrams.onCreateDrawingFor?.(id); }
         : undefined}
       layout="stacked"
       hideDescription

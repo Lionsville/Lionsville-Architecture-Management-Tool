@@ -207,10 +207,11 @@ eigene Zeile.
 - **Ohne Eigentümer** — ein System, das als das von jemand anderem markiert ist,
   ohne dass jemand gesagt hat, wessen.
 
-Eines auf der Liste ist **Information und kein Fehler**: ein Datensatz, den kein
-Board in seinem eigenen Bereich zeichnet. Ein Ding kann echt, verantwortet und
-dokumentiert sein, ohne schon auf irgendjemandes Bild zu stehen, deshalb wird es
-getrennt gezählt und nie wie ein Befund eingefärbt.
+Eines auf der Liste ist **Information und kein Fehler**: ein Datensatz, den
+nichts in seinem eigenen Bereich zeichnet — kein Board hält ihn, und keine
+Zeichnung dort zeigt auf ihn. Ein Ding kann echt, verantwortet und dokumentiert
+sein, ohne schon auf irgendjemandes Bild zu stehen, deshalb wird es getrennt
+gezählt und nie wie ein Befund eingefärbt.
 
 ### Das Register
 
@@ -1698,7 +1699,12 @@ unter **Neue Tafel…**. Sie hat einen eigenen Reiter, wie eine Landschaft oder
 ein Blatt.
 
 Eine Zeichnung wird als ihr Bild gezeigt. Eine Zeichnung ohne Bild sagt **Noch
-nicht gezeichnet**.
+nicht gezeichnet**, und hat keine Flächen.
+
+Auf dem Bild ist jede Form, die auf ein Element zeigt, eine durchsichtige
+Fläche. Die Fläche wählen öffnet dieses Element. Der Inspektor des Elements
+nennt die Zeichnungen in diesem Bereich, die darauf zeigen. Eine Form, die auf
+ein Element zeigt, das dieser Bereich nicht hält, ist ein Befund.
 
 **Bearbeiten** öffnet den Editor, in der Sprache der App. Die Palette enthält
 die Elemente des Bereichs — jedes eine Form, die auf dieses Element zeigt —
@@ -1707,6 +1713,23 @@ und die Verweise, die die Formen setzen.
 
 Wo keine Adresse für den Editor angegeben wurde, wird die Zeichnung weiterhin
 gezeigt, und **Bearbeiten** sagt, dass der Editor nicht verfügbar ist.
+
+Eine Zeichnung kann an einem Element verankert sein. Das Menü des Elements
+bietet **Zeichnung erstellen** neben **Container-Diagramm erstellen** oder
+**Container-Diagramm öffnen**, und der Inspektor hat dieselbe Schaltfläche.
+Das Anlegen ist ein Schritt, und Rückgängig nimmt sie weg. Ein Doppelklick
+auf das Element bietet die Zeichnungen, die daran verankert sind, neben dem
+Container-Diagramm, wenn es eines hat. Ein Doppelklick legt nie eine Zeichnung
+an.
+
+Die Seite des Elements nennt diese Zeichnungen. Eine auswählen öffnet sie.
+
+In einem Dokument zeigt `![Beschriftung](view:id)` die Ansicht mit dieser Id
+aus diesem Bereich. Eine Zeichnung wird als ihr Bild gezeigt, mit einer
+durchsichtigen Schaltfläche für jede Form, die auf ein Element zeigt; die
+Schaltfläche wählen öffnet dieses Element. Eine Ansicht einer anderen Art
+zeigt die Beschriftung und **Noch kein Bild**. Eine Ansicht, die nicht in
+diesem Bereich ist, zeigt die Beschriftung und sagt, dass die Ansicht fehlt.
 
 ## Suchen
 

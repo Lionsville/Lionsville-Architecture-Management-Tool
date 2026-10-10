@@ -33,6 +33,7 @@ export interface CanvasForDiagramProps {
   mountEveryElement: boolean;
   onElementDoubleClick(elementId: ElementId): void;
   onCreateContainer?(elementId: ElementId): void;
+  onCreateDrawing?(elementId: ElementId): void;
   viewports?: ViewportMemory;
   /** The way down from a landscape line (ADR-0013). */
   onLineDoubleClick(relationId: string): void;

@@ -112,6 +112,7 @@ function SelectedElementInspector({ parts, diagram }: { parts: EditorParts; diag
       parties={ownership?.parties}
       onShowOnTechnology={props.diagrams.onOpenTechnologyFor}
       onCreateContainer={readOnly ? undefined : props.diagrams.onCreateContainer}
+      onCreateDrawing={readOnly ? undefined : props.diagrams.onCreateDrawingFor}
     />
   );
 }
