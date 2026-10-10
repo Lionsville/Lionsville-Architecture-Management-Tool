@@ -53,7 +53,21 @@ export type CanvasKind = 'application' | 'component' | 'actor' | 'platform' | 'p
  * same question, and a scope holding only a sheet was answering yes to both.
  */
 export function isBoardKind(kind: DesignDiagram['kind']): boolean {
-  return kind === 'layer7' || kind === 'container';
+  switch (kind) {
+    case 'layer7':
+    case 'container':
+      return true
+    // A sheet, a map, a technology view and a drawing are not boards.
+    case 'sheet':
+    case 'map':
+    case 'technology':
+    case 'drawing':
+      return false
+    default: {
+      const unexpected: never = kind
+      return unexpected
+    }
+  }
 }
 
 /**
@@ -63,7 +77,21 @@ export function isBoardKind(kind: DesignDiagram['kind']): boolean {
  * and "can this be open" are two questions again, and this is the second.
  */
 export function isLaidOutKind(kind: DesignDiagram['kind']): boolean {
-  return kind === 'sheet' || kind === 'map' || kind === 'technology';
+  switch (kind) {
+    case 'sheet':
+    case 'map':
+    case 'technology':
+      return true
+    // A board is geometry. A drawing is the XML. Neither is laid out.
+    case 'layer7':
+    case 'container':
+    case 'drawing':
+      return false
+    default: {
+      const unexpected: never = kind
+      return unexpected
+    }
+  }
 }
 
 /** Why a kind cannot go on a view. A key, as every refusal from `model/` is. */

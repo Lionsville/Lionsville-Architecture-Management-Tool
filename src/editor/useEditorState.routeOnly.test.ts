@@ -64,7 +64,7 @@ describe('route-only through applyTidyResult', () => {
     const { result, host } = render();
     const before = result.current.model.diagrams[0];
     const placementsBefore = placedNodes(before);
-    const boardBefore = { nodes: before.geometry.nodes, groups: before.geometry.groups };
+    const boardBefore = { nodes: before.geometry!.nodes, groups: before.geometry!.groups };
 
     // The router is WASM, so the pass is async: await it OUTSIDE `act` and commit
     // the finished result inside, which keeps the commit a single React update.
@@ -87,8 +87,8 @@ describe('route-only through applyTidyResult', () => {
     // thing in the geometry this pass writes (ADR-0012 §6).
     const after = result.current.model.diagrams[0];
     expect(placedNodes(after)).toEqual(placementsBefore);
-    expect(after.geometry.nodes).toEqual(boardBefore.nodes);
-    expect(after.geometry.groups).toEqual(boardBefore.groups);
+    expect(after.geometry!.nodes).toEqual(boardBefore.nodes);
+    expect(after.geometry!.groups).toEqual(boardBefore.groups);
     const c1 = edgeRoutesOf(after)!.find((r) => r.relationId === 'c1')!;
     expect(c1.waypoints.length).toBeGreaterThan(0);
     expect(c1.waypoints).not.toEqual([{ x: 10, y: 20 }]); // the stale route is gone

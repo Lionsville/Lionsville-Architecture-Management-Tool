@@ -174,6 +174,7 @@ export function over(under: RepositoriesUnderTest) {
       list: (scope, within) => images.list(scope, within),
       find: (scope, name) => images.find(scope, name),
       bytes: (scope, name) => images.bytes(scope, name),
+      bytesAt: (scope, address) => images.bytesAt(scope, address),
     } satisfies ImageRepository,
     settings: {
       id: settings.id,

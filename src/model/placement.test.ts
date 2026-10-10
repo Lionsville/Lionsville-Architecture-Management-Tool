@@ -246,7 +246,7 @@ describe('diagramWithLivePlacements', () => {
     expect(placedNodes(moved)[0]).toEqual({ id: 'a', zone: 'landscape', x: 111, y: 222 });
     // Identity is the geometry ROW's: the joined view is worked out per
     // diagram object, so what a memo downstream compares is the node.
-    expect(moved.geometry.nodes[1]).toBe(diagram.geometry.nodes[1]);
+    expect(moved.geometry!.nodes[1]).toBe(diagram.geometry!.nodes[1]);
   });
 
   it('leaves the input untouched', () => {

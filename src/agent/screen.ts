@@ -19,11 +19,12 @@
  * how to tell whether the app has arrived.
  */
 
+import type { DesignDiagram } from '../model/types'
 import type { ObservationTab } from '../observations/tabs'
 
 /** The pages an agent can ask for. `home` is a scope's own screen, with nothing open. */
 export const PAGES = [
-  'home', 'board', 'sheet', 'map', 'technology',
+  'home', 'board', 'sheet', 'map', 'technology', 'drawing',
   'decisions', 'observations', 'roadmap', 'plan', 'element', 'document', 'documentation',
   'platform', 'service', 'register', 'technologyRegister',
 ] as const
@@ -31,15 +32,32 @@ export const PAGES = [
 export type Page = (typeof PAGES)[number]
 
 /** Pages that are a view's tab: the id is a diagram's. */
-export const VIEW_PAGES: readonly Page[] = ['board', 'sheet', 'map', 'technology']
+export const VIEW_PAGES: readonly Page[] = ['board', 'sheet', 'map', 'technology', 'drawing']
 
 /**
- * Which page's tab a view is: the two drawn kinds are boards, the laid-out
- * ones are their own. Said once, for `app.open` to check a view against and
- * for a place to be written from the view on screen (`place.ts`).
+ * Which page's tab a view is. The two drawn kinds are boards. A sheet, a map,
+ * a technology landscape and a drawing are each their own page. Said once,
+ * for `app.open` to check a view against and for a place to be written from
+ * the view on screen (`place.ts`).
  */
-export function viewPage(kind: string): Page {
-  return kind === 'layer7' || kind === 'container' ? 'board' : kind as Page
+export function viewPage(kind: DesignDiagram['kind']): Page {
+  switch (kind) {
+    case 'layer7':
+    case 'container':
+      return 'board'
+    case 'sheet':
+      return 'sheet'
+    case 'map':
+      return 'map'
+    case 'technology':
+      return 'technology'
+    case 'drawing':
+      return 'drawing'
+    default: {
+      const unexpected: never = kind
+      return unexpected
+    }
+  }
 }
 
 /** Pages that live on a scope's home rather than in the workspace. */
@@ -207,6 +225,12 @@ export function viewFor(
 ): string | undefined {
   if (!VIEW_PAGES.includes(page)) return undefined
   if (id !== undefined) return id
-  const ofKind = diagrams.filter((diagram) => viewPage(diagram.kind) === page)
+  const ofKind = diagrams.filter((diagram) => isViewKind(diagram.kind) && viewPage(diagram.kind) === page)
   return (ofKind.find((diagram) => diagram.id === onTab) ?? ofKind[0])?.id
+}
+
+const VIEW_KINDS: readonly DesignDiagram['kind'][] = ['layer7', 'container', 'sheet', 'map', 'technology', 'drawing']
+
+function isViewKind(kind: string): kind is DesignDiagram['kind'] {
+  return (VIEW_KINDS as readonly string[]).includes(kind)
 }

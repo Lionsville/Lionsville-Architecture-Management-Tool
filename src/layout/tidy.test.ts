@@ -1600,7 +1600,7 @@ describe('tidyGroup — one group in place', () => {
     // Sits in the Core box but was never tagged (e.g. dropped before the group
     // existed) — the user sees it inside, so Tidy must lay it out and tag it.
     diagram.members.push({ id: 'outside', zone: 'landscape' });
-    diagram.geometry.nodes.push({ id: 'outside', x: 300, y: 300 });
+    diagram.geometry!.nodes.push({ id: 'outside', x: 300, y: 300 });
     placedNodes(diagram).splice(
       placedNodes(diagram).findIndex((p) => p.id === 'outside' && p.x === 900),
       1,
@@ -1680,7 +1680,7 @@ describe('tidy settings (direction / density)', () => {
     const runWith = async (canvas: { width: number; height: number }) => {
       const model = chain();
       const diagram = model.diagrams[0];
-      diagram.geometry = { ...diagram.geometry, canvas };
+      diagram.geometry = { ...diagram.geometry!, canvas };
       const result = await tidyLayer7(model, diagram, DEFAULT_TIDY_OPTIONS);
       const xs = result.placements.map((p) => p.x);
       const ys = result.placements.map((p) => p.y);

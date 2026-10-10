@@ -11,14 +11,14 @@
  * one whose entry was added before they were written answers them from
  * there.
  */
-import { contentAddressOf, imageFolderOf, imageFoldersUnder, imageNameRefusal } from '../../model/imageName'
-import type { ImageEntry, ImageFolder, ImageName } from '../../model/imageName'
+import { contentAddressOf, imageFolderOf, imageFoldersUnder, imageNameRefusal, mediaTypeOfBytes } from '../../model/imageName'
+import type { ContentAddress, ImageEntry, ImageFolder, ImageName } from '../../model/imageName'
 import type { ScopeId } from '../../projects/scopeState'
 import type { ImageBytes, ImageListing, ImageRepository, Put } from '../../ports/ImageRepository'
 import { picturePath } from './folderPictures'
 import type { PictureStaging } from './folderPictures'
 import type { FolderScopes } from './folderScopes'
-import { bytesAt } from './handles'
+import { bytesAt as fileBytes } from './handles'
 
 export class FolderImageRepository implements ImageRepository {
   readonly id = 'folder'
@@ -59,8 +59,18 @@ export class FolderImageRepository implements ImageRepository {
     const held = await this.folder.libraryAt(scope)
     const found = held?.library.find((kept) => kept.entry.name === name)
     if (!held || !found) return undefined
-    const bytes = await bytesAt(this.folder.root, picturePath(held.node.address, found.file))
+    const bytes = await fileBytes(this.folder.root, picturePath(held.node.address, found.file))
       ?? this.staging.get(scope, found.entry.contentAddress)
+    return bytes ? { mediaType: found.entry.mediaType, bytes } : undefined
+  }
+
+  async bytesAt(scope: ScopeId, address: ContentAddress): Promise<ImageBytes | undefined> {
+    const staged = this.staging.get(scope, address)
+    if (staged) return { mediaType: mediaTypeOfBytes(staged), bytes: staged }
+    const held = await this.folder.libraryAt(scope)
+    const found = held?.library.find((kept) => kept.entry.contentAddress === address)
+    if (!held || !found) return undefined
+    const bytes = await fileBytes(this.folder.root, picturePath(held.node.address, found.file))
     return bytes ? { mediaType: found.entry.mediaType, bytes } : undefined
   }
 }

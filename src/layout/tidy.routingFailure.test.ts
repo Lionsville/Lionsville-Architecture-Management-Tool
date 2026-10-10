@@ -111,7 +111,7 @@ describe('tidy — a router failure keeps the placements', () => {
     mockRoute.mockRejectedValue(wasmDown());
     const { model, layer7 } = board();
     layer7.geometry = {
-      ...layer7.geometry,
+      ...layer7.geometry!,
       groups: [{ id: 'Ops', x: 60, y: 350, width: 1400, height: 300 }],
     };
 

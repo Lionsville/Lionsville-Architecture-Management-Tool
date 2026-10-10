@@ -246,7 +246,7 @@ describe('routeDiagramEdges — route-only pass', () => {
     // edge would be drawn straight through it.
     const group = { id: 'Ops', x: 600, y: 350, width: 300, height: 260 };
     const { model, diagram } = twoNodeModel({ groups: [group] });
-    diagram.geometry.nodes = placedNodes(diagram).map((p) =>
+    diagram.geometry!.nodes = placedNodes(diagram).map((p) =>
       p.id === 'a' ? { ...p, domainGroup: 'Ops' } : p,
     );
 
@@ -531,7 +531,7 @@ describe('routeDiagramEdges — real E-Commerce landscape after a manual nudge',
 
     // The originally-reported case still holds: marketplace→order clears the
     // Customer Experience box it would otherwise cut through.
-    const cx = diagram.geometry.groups!.find((g) => g.id === 'Customer Experience')!;
+    const cx = diagram.geometry!.groups!.find((g) => g.id === 'Customer Experience')!;
     const mpOrder = routeOf(result, 'marketplace-order')!;
     const mpDrawn = routedPath(
       rectFor(model, diagram, 'marketplace'),

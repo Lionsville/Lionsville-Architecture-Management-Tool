@@ -78,6 +78,19 @@ describe('what a subject is filed as', () => {
     )
   })
 
+  it('names a drawing\'s XML rather than a geometry file', () => {
+    const held = model({
+      diagrams: [
+        ...model().diagrams,
+        { id: 'ctx', kind: 'drawing', name: 'Context', members: [], drawing: { xml: '<mxfile/>', links: [] } },
+      ],
+    })
+    const paths = historyPaths({ what: 'diagram', id: 'ctx' }, held)
+    expect(paths).toEqual(['diagrams/ctx.json', 'diagrams/ctx.drawio'])
+    for (const path of paths!) expect(written(held)).toContain(path)
+    expect(written(held)).not.toContain('diagrams/ctx.geometry.json')
+  })
+
   it('still names a diagram that has been deleted since', () => {
     const paths = historyPaths({ what: 'diagram', id: 'gone' }, model())
     expect(paths).toEqual(['diagrams/gone.json', 'diagrams/gone.geometry.json'])

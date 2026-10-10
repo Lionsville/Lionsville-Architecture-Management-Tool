@@ -694,7 +694,7 @@ describe('where a card goes (the placement fixes)', () => {
   const model = fromArrays(host)
   const boxed = fromArrays({
     ...host,
-    diagrams: [{ ...host.diagrams[0], geometry: { ...host.diagrams[0].geometry, groups: [{ id: 'finance', x: 60, y: 360, width: 300, height: 200 }] } }],
+    diagrams: [{ ...host.diagrams[0], geometry: { ...host.diagrams[0].geometry!, groups: [{ id: 'finance', x: 60, y: 360, width: 300, height: 200 }] } }],
   })
   const applied = (m: Model, out: Prepared | AgentAnswer): Model => {
     const result = apply(m, prepared(out).command)
@@ -826,7 +826,7 @@ describe('group', () => {
         ...host.diagrams[0],
         groups: [{ id: 'finance', name: 'Finance', color: '#111111' }],
         geometry: {
-          ...host.diagrams[0].geometry,
+          ...host.diagrams[0].geometry!,
           groups: [{ id: 'finance', x: 40, y: 300, width: 300, height: 200 }],
         },
       }],
@@ -844,7 +844,7 @@ describe('group', () => {
   it('recolours an existing box on its own, and wants a member for a new one', () => {
     const boxed = fromArrays({
       ...host,
-      diagrams: [{ ...host.diagrams[0], geometry: { ...host.diagrams[0].geometry, groups: [{ id: 'finance', x: 40, y: 300, width: 300, height: 200 }] } }],
+      diagrams: [{ ...host.diagrams[0], geometry: { ...host.diagrams[0].geometry!, groups: [{ id: 'finance', x: 40, y: 300, width: 300, height: 200 }] } }],
     })
     const after = roundTrip(boxed, commandFor('group', { name: 'Finance', color: '#aa0000' }, view(boxed)))
     // The box is untouched; the colour is the group's, one file over.

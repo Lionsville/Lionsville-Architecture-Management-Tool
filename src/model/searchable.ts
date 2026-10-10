@@ -31,6 +31,7 @@ import type { Adr } from './adr'
 import type { ModelOrder } from './normalised'
 import type { Cause, Experiment, Observation, Solution } from './observation'
 import type { Transition } from './transition'
+import { drawingProse } from './drawing'
 import type { DesignDiagram, DesignElement, ElementKind, Relation } from './types'
 
 /**
@@ -52,7 +53,7 @@ export type SearchKind = (typeof SEARCH_KINDS)[number]
  * shell checks that they still are.
  */
 export type SearchPage =
-  | 'element' | 'document' | 'board' | 'sheet' | 'map' | 'technology' | 'decisions' | 'plan' | 'observations'
+  | 'element' | 'document' | 'board' | 'sheet' | 'map' | 'technology' | 'drawing' | 'decisions' | 'plan' | 'observations'
 
 export type SearchPlace = { readonly page: SearchPage; readonly id: string }
 
@@ -127,6 +128,8 @@ function numbered(prefix: string, number: number): string {
 
 const VIEW_PAGE: Record<DesignDiagram['kind'], SearchPage> = {
   layer7: 'board', container: 'board', sheet: 'sheet', map: 'map', technology: 'technology',
+  // A drawing opens as its own view, the same way a sheet does.
+  drawing: 'drawing',
 }
 
 const element: Searchable<DesignElement> = {
@@ -169,13 +172,17 @@ const relation: Searchable<Relation> = {
 const view: Searchable<DesignDiagram> = {
   kind: 'view',
   order: 'name',
-  describe: (d) => ({
-    id: d.id,
-    title: d.name,
-    fields: [d.author, d.client],
-    variant: d.kind,
-    opens: { page: VIEW_PAGE[d.kind] ?? 'board', id: d.id },
-  }),
+  describe: (d) => {
+    const prose = d.kind === 'drawing' ? drawingProse(d.drawing?.xml ?? '') : ''
+    return {
+      id: d.id,
+      title: d.name,
+      fields: [d.author, d.client],
+      ...(prose ? { prose } : {}),
+      variant: d.kind,
+      opens: { page: VIEW_PAGE[d.kind], id: d.id },
+    }
+  },
 }
 
 const decision: Searchable<Adr> = {

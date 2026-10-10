@@ -183,7 +183,7 @@ describe('FloatingEdge — segment drag', () => {
 
   it('makes an orthogonal jog out of a line that has no bends', async () => {
     const m = model();
-    m.diagrams[0].geometry.routes = [];
+    m.diagrams[0].geometry!.routes = [];
     const { host, lastRoute } = renderEditor({ model: m });
     fireEvent.click(await screen.findByTestId('rf__edge-c1'));
     // A straight line shows exactly one segment handle.

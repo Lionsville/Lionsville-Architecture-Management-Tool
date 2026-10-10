@@ -643,8 +643,12 @@ export interface DesignDiagram {
    * them and is not a kind: it is a report reached from the platform's own
    * card, computed on open (ADR-0013, redone). A view that is not a picture
    * is not a view — and the technology landscape is one.
+   *
+   * A `drawing` is neither a board nor laid out. Its content is draw.io's
+   * XML ({@link DesignDiagram.drawing}), it has no geometry file, and
+   * {@link DesignDiagram.geometry} stays absent.
    */
-  kind: 'layer7' | 'container' | 'sheet' | 'map' | 'technology';
+  kind: 'layer7' | 'container' | 'sheet' | 'map' | 'technology' | 'drawing';
   name: string;
   /**
    * Who drew it. Rendered in the exported PNG's title block, and nowhere else —
@@ -676,6 +680,26 @@ export interface DesignDiagram {
   /** Whether the exported PNG carries a title block at all. Absent = it does. */
   showTitleBlock?: boolean;
   applicationElementId?: ElementId;
+  /**
+   * A drawing: the element it is anchored to, the way a container view names
+   * its application. Absent is a drawing of the scope itself.
+   */
+  elementId?: ElementId;
+  /**
+   * A drawing: which C4 level it shows. A label, nothing branches on it.
+   * Absent says nothing.
+   */
+  c4Level?: C4Level;
+  /**
+   * A drawing's content, replaced together: the XML, the picture's content
+   * address and the links worked out from the XML. One field, so one save
+   * writes one key. Absent is a drawing that has not been drawn.
+   *
+   * `picture` is a content address as `imageName.ts` spells `ContentAddress`
+   * (`sha256:` and the digest). This file imports nothing, so the field is
+   * that type's underlying string.
+   */
+  drawing?: DrawingContent;
   /**
    * A sheet: the journey drawn across the top — the `step` at the root of the
    * tree whose phases become the header row (ADR-0012 §6). Absent draws no
@@ -778,8 +802,40 @@ export interface DesignDiagram {
    * derived on every render from the rows themselves.
    */
   colourBy?: 'platform' | 'technologyLifecycle' | `one:${string}`;
-  /** Where it all ended up. A separate file, and a separate question (§6). */
-  geometry: Geometry;
+  /**
+   * Where it all ended up. A separate file, and a separate question (§6).
+   *
+   * Required for a board and for a laid-out view. Absent on a drawing, which
+   * is not laid out and has no geometry file.
+   */
+  geometry?: Geometry;
+}
+
+/** Which C4 level a drawing says it shows. A label; nothing branches on it. */
+export type C4Level = 'context' | 'container' | 'component';
+
+/**
+ * One shape in a drawing that points at an element, and where that shape sits
+ * in the picture: model coordinates, ancestors summed.
+ */
+export interface DrawingLink {
+  shapeId: string;
+  elementId: ElementId;
+  area: { x: number; y: number; width: number; height: number };
+}
+
+/**
+ * What a drawing keeps, as one value: the XML, the picture and the links.
+ * Replacing it replaces the three together.
+ */
+export interface DrawingContent {
+  xml: string;
+  /**
+   * The picture's content address (`sha256:` and the digest), the same
+   * spelling as `ContentAddress` in `imageName.ts`. Absent: not drawn yet.
+   */
+  picture?: string;
+  links: readonly DrawingLink[];
 }
 
 /**

@@ -254,6 +254,8 @@ const SETTING_FIELDS = [
 
 const PATCH_FIELDS = [
   'autoRoute', 'applicationElementId', 'asOf',
+  // A drawing's content, its anchor and its level travel with the view.
+  'drawing', 'elementId', 'c4Level',
 ] as const satisfies readonly (keyof DiagramPatch)[]
 
 /** The board's own numbers — the geometry file's, minus the per-thing rows. */
@@ -275,17 +277,21 @@ function diagramCommands(
   const routes = edgeRoutesOf(wanted).filter((route) => against.relations[route.relationId])
 
   if (!current) {
+    const geometry = wanted.geometry
     const diagram = toDiagram({
       ...wanted,
       members: placed.map(memberOf),
-      geometry: {
-        ...wanted.geometry,
-        nodes: placed.map(nodeGeometryOf),
-        ...(wanted.geometry.routes !== undefined || wanted.lines !== undefined
-          ? splitRoutes(routes)
-          : {}),
-      },
-      ...(wanted.lines !== undefined || wanted.geometry.routes !== undefined
+      // A drawing has no geometry. The other kinds always do.
+      ...(geometry ? {
+        geometry: {
+          ...geometry,
+          nodes: placed.map(nodeGeometryOf),
+          ...(geometry.routes !== undefined || wanted.lines !== undefined
+            ? splitRoutes(routes)
+            : {}),
+        },
+      } : {}),
+      ...(wanted.lines !== undefined || geometry?.routes !== undefined
         ? { lines: splitRoutes(routes).lines }
         : {}),
     })

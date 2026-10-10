@@ -169,7 +169,7 @@ describe('useLibrary', () => {
     act(() => host.lib().pick('shelf'))
     expect(host.lib().choice).toBeUndefined()
     expect(host.current().diagrams[0].members.find((member) => member.id === 'shelf')?.zone).toBe('externalSystems')
-    expect(host.current().diagrams[0].geometry.nodes.find((node) => node.id === 'shelf')).toMatchObject({ x: 120, y: 340 })
+    expect(host.current().diagrams[0].geometry!.nodes.find((node) => node.id === 'shelf')).toMatchObject({ x: 120, y: 340 })
     // The point is spent: the next open from the palette asks again.
     act(() => host.lib().open())
     act(() => host.lib().pick('crm'))

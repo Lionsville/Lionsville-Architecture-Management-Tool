@@ -38,12 +38,26 @@ export function useViewSelect(deps: {
   const select = useCallback((viewId: string, elementId: ElementId) => {
     const view = session.current().diagrams.find((diagram) => diagram.id === viewId)
     if (!view) return
-    if (view.kind === 'layer7' || view.kind === 'container') {
-      if (placedNode(view, elementId) !== undefined) focusElement(elementId)
-      return
+    switch (view.kind) {
+      case 'layer7':
+      case 'container':
+        if (placedNode(view, elementId) !== undefined) focusElement(elementId)
+        return
+      case 'technology':
+        chooseCard(elementId)
+        return
+      case 'sheet':
+      case 'map':
+        setRequest((was) => ({ viewId, id: elementId, nonce: (was?.nonce ?? 0) + 1 }))
+        return
+      case 'drawing':
+        // A drawing does not select an element on a board, a sheet or a map.
+        return
+      default: {
+        const unexpected: never = view.kind
+        return unexpected
+      }
     }
-    if (view.kind === 'technology') { chooseCard(elementId); return }
-    setRequest((was) => ({ viewId, id: elementId, nonce: (was?.nonce ?? 0) + 1 }))
   }, [session, focusElement, chooseCard])
   const requestFor = useCallback((viewId: string): SelectRequest | undefined => (
     request?.viewId === viewId ? { id: request.id, nonce: request.nonce } : undefined

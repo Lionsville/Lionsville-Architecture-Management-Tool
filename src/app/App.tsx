@@ -342,13 +342,13 @@ export type InitialPage =
    * lands on its home, because an open never makes a view (ADR-0019, amended).
    * `select` is an element selected there where it is drawn there.
    */
-  | { page: 'board' | 'sheet' | 'map' | 'technology'; id?: string; select?: ElementId }
+  | { page: 'board' | 'sheet' | 'map' | 'technology' | 'drawing'; id?: string; select?: ElementId }
   /**
    * A new sheet, enterprise map or technology landscape, made the moment the
    * scope opens: the person's own *Make…* and *New board…* on a home, which is
    * the one way onto a view that writes one.
    */
-  | { page: 'make'; kind: 'sheet' | 'map' | 'technology' }
+  | { page: 'make'; kind: 'sheet' | 'map' | 'technology' | 'drawing' }
   /** One plan, on its page over the roadmap — an initiative opened where it lives (ADR-0012 §7). */
   | { page: 'plan'; id: string }
   /**

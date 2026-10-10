@@ -296,7 +296,7 @@ describe('openDocumentBytes', () => {
     expect(held.scope.model.relations[0]).toMatchObject({ type: 'flow', id: 'c-1' })
     expect(held.scope.model.elements[0]).toMatchObject({ kind: 'application' })
     expect(held.scope.model.diagrams[0].members).toEqual([{ id: 'portal', zone: 'inputChannels' }])
-    expect(held.scope.model.diagrams[0].geometry.nodes).toEqual([{ id: 'portal', x: 4, y: 8 }])
+    expect(held.scope.model.diagrams[0].geometry!.nodes).toEqual([{ id: 'portal', x: 4, y: 8 }])
   })
 
   it('opens a version-3 zip, and what comes out is the model\'s own shape', () => {
@@ -340,7 +340,7 @@ describe('openDocumentBytes', () => {
     if (!held.ok) return
     expect(held.scope.model.name).toBe('Landscape')
     expect(held.scope.kind).toBe('landscape')
-    expect(held.scope.model.diagrams[0].geometry.nodes).toEqual([{ id: 'wms', x: 3, y: 4 }])
+    expect(held.scope.model.diagrams[0].geometry!.nodes).toEqual([{ id: 'wms', x: 3, y: 4 }])
     // The name of the folder above it, which this file has no folder above.
     expect('customerName' in held.scope.model).toBe(false)
   })

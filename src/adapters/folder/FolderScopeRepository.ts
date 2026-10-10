@@ -32,6 +32,7 @@
  * can see and settle, and never none. Each scope's identity goes with it,
  * written into its header where it was not yet.
  */
+import { drawingPictureAddresses } from '../../model/drawing'
 import { contentAddressOf, imageName, imageNameKey } from '../../model/imageName'
 import type { ImageEntry } from '../../model/imageName'
 import { stableJson } from '../../projects/text'
@@ -344,7 +345,9 @@ export class FolderScopeRepository implements ScopeRepository {
       await this.undo(undo)
       return refused
     }
-    for (const { read, library } of planned) await this.picturesOut(read, library)
+    for (const { read, library, snapshot } of planned) {
+      await this.picturesOut(read, library, new Set(drawingPictureAddresses(snapshot.model.diagrams)))
+    }
     return { setAside }
   }
 
@@ -400,10 +403,17 @@ export class FolderScopeRepository implements ScopeRepository {
    * of them where they are one. One that will not go is said, and the
    * scope's files are already right.
    */
-  private async picturesOut(read: ReadScope, library: readonly KeptPicture[]): Promise<void> {
+  private async picturesOut(read: ReadScope, library: readonly KeptPicture[], drawings: ReadonlySet<string>): Promise<void> {
     const wanted = new Set(library.map((kept) => kept.file))
     const byKey = new Map(library.map((kept) => [imageNameKey(kept.file), kept.file]))
-    const gone = read.files.map(({ file }) => file).filter((file) => !wanted.has(file))
+    const namedBy = new Map(read.library.map((kept) => [kept.file, kept.entry.contentAddress]))
+    // A file no library entry keeps, whose bytes a drawing in the head still
+    // names, stays. The sweep of unnamed bytes does not take a drawing's picture.
+    const gone = read.files.map(({ file }) => file).filter((file) => {
+      if (wanted.has(file)) return false
+      const address = namedBy.get(file)
+      return address === undefined || !drawings.has(address)
+    })
     const listed = gone.some((file) => byKey.has(imageNameKey(file))) ? await this.picturesNow(read.node.address) : new Set<string>()
     try {
       for (const file of gone) {

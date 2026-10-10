@@ -174,7 +174,7 @@ describe('dashed groups', () => {
   })
 
   it('leaves the boxes in the geometry, keyed by the id and not the name', () => {
-    expect(opened().model.diagrams[0].geometry.groups).toEqual([
+    expect(opened().model.diagrams[0].geometry!.groups).toEqual([
       { id: 'core-systems', x: 10, y: 20, width: 300, height: 200 },
       { id: 'core-systems-2', x: 400, y: 20, width: 300, height: 200 },
     ])
@@ -183,7 +183,7 @@ describe('dashed groups', () => {
 
 describe('what a view is, and where it ended up', () => {
   it('takes the coordinates, the canvas and the band widths into the geometry', () => {
-    const geometry = opened().model.diagrams[0].geometry
+    const geometry = opened().model.diagrams[0].geometry!
     expect(geometry.nodes).toEqual([
       { id: 'carrier', x: 1500, y: 40 },
       { id: 'monitoring', x: 100, y: 900 },
@@ -197,7 +197,7 @@ describe('what a view is, and where it ended up', () => {
   it('splits a route row into what was asked for and where the line went', () => {
     const diagram = opened().model.diagrams[0]
     expect(diagram.lines).toEqual([{ relationId: 'c-1', sourceSide: 'left', source: 'manual' }])
-    expect(diagram.geometry.routes).toEqual([{ relationId: 'c-1', waypoints: [{ x: 1, y: 2 }] }])
+    expect(diagram.geometry!.routes).toEqual([{ relationId: 'c-1', waypoints: [{ x: 1, y: 2 }] }])
   })
 
   it('reads every line as the one type format 3 had, window and all', () => {
@@ -321,10 +321,10 @@ describe('a model stored as one object', () => {
       { id: 'portal', zone: 'inputChannels' },
       { id: 'wms', group: 'core' },
     ])
-    expect(model.diagrams[0].geometry.nodes).toEqual([
+    expect(model.diagrams[0].geometry!.nodes).toEqual([
       { id: 'portal', x: 10, y: 20 }, { id: 'wms', x: 200, y: 20 },
     ])
-    expect(model.diagrams[0].geometry.routes).toEqual([{ relationId: 'c-1', waypoints: [{ x: 5, y: 5 }] }])
+    expect(model.diagrams[0].geometry!.routes).toEqual([{ relationId: 'c-1', waypoints: [{ x: 5, y: 5 }] }])
   })
 
   it('leaves a model that is already this shape exactly as it is', () => {

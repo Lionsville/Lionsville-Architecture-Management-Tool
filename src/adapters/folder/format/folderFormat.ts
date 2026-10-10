@@ -14,6 +14,7 @@
  * model.json                        elements and relations
  * diagrams/<id>.json                what a view is, and what is on it
  * diagrams/<id>.geometry.json       where its elements ended up
+ * diagrams/<id>.drawio              a drawing's XML, uncompressed; no geometry file
  * docs/<elementId>.md               an element's description, as prose
  * decisions/[<subjectId>/]NNNN-<slug>.md
  * transitions/NNNN-<slug>.md        a plan, its window and what it touches
@@ -62,7 +63,7 @@ import { ADR_STATUSES } from '../../../model/adr'
 import type { Adr } from '../../../model/adr'
 import type {
   AspectConfigEntry, DesignDiagram, DesignElement, DiagramGroup, DiagramLine, DiagramMember,
-  DomainGroupRect, Geometry, NodeGeometry, PlatformArchetype, Relation, RouteGeometry, UploadedLogo,
+  DomainGroupRect, DrawingLink, Geometry, NodeGeometry, PlatformArchetype, Relation, RouteGeometry, UploadedLogo,
 } from '../../../model'
 import { imageMediaType, isImageFile } from '../../../model/documentImage'
 import { isImageName } from '../../../model/imageName'
@@ -160,7 +161,7 @@ export const SCOPE_FOLDERS: readonly string[] = [
 export { SCOPE_FORMAT_VERSION }
 
 /** The versions of a scope's own folder this build reads without folding. */
-const READABLE_SCOPE_VERSIONS: readonly number[] = [5, 6, 7, 8, 9]
+const READABLE_SCOPE_VERSIONS: readonly number[] = [5, 6, 7, 8, 9, 10]
 
 /**
  * The second half of a view's pair of files: where it ended up.
@@ -170,6 +171,12 @@ const READABLE_SCOPE_VERSIONS: readonly number[] = [5, 6, 7, 8, 9]
  * definition from its geometry.
  */
 export const GEOMETRY_SUFFIX = '.geometry.json'
+
+/** A drawing's XML, beside its definition. Uncompressed text. */
+export const DRAWIO_SUFFIX = '.drawio'
+
+/** The first scope format that keeps a drawing. An older folder is read without them. */
+const DRAWING_FORMAT = 10
 
 /** What may stand as a file name without escaping, quoting or surprising an OS. */
 const SAFE_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/
@@ -267,7 +274,9 @@ type ScopeFile = {
  * a file name.
  */
 export function diagramFiles(diagram: DesignDiagram, name = diagram.id): FolderFile[] {
+  if (diagram.kind === 'drawing') return drawingFiles(diagram, name)
   const { members, groups, lines, geometry, ...definition } = diagram
+  const laid = geometry ?? { nodes: [] }
   return [
     {
       path: `${DIAGRAMS_FOLDER}/${name}.json`,
@@ -286,15 +295,38 @@ export function diagramFiles(diagram: DesignDiagram, name = diagram.id): FolderF
     {
       path: `${DIAGRAMS_FOLDER}/${name}${GEOMETRY_SUFFIX}`,
       text: stableJson({
-        ...(geometry.needsLayout ? { needsLayout: geometry.needsLayout } : {}),
-        ...(geometry.canvas !== undefined ? { canvas: geometry.canvas } : {}),
-        ...(geometry.zones !== undefined ? { zones: geometry.zones } : {}),
-        nodes: byId(geometry.nodes),
-        ...(geometry.groups !== undefined ? { groups: byId(geometry.groups) } : {}),
-        ...(geometry.routes !== undefined ? { routes: byRelation(geometry.routes) } : {}),
+        ...(laid.needsLayout ? { needsLayout: laid.needsLayout } : {}),
+        ...(laid.canvas !== undefined ? { canvas: laid.canvas } : {}),
+        ...(laid.zones !== undefined ? { zones: laid.zones } : {}),
+        nodes: byId(laid.nodes),
+        ...(laid.groups !== undefined ? { groups: byId(laid.groups) } : {}),
+        ...(laid.routes !== undefined ? { routes: byRelation(laid.routes) } : {}),
       }),
     },
   ]
+}
+
+/**
+ * A drawing, as two files: the definition (name, kind, anchor, level, picture,
+ * links — not the XML) and the XML itself, uncompressed. No geometry file.
+ * An empty drawing still writes the definition; the XML file is there only
+ * once the drawing has content, so a drawing that has not been drawn does
+ * not grow a file of nothing.
+ */
+function drawingFiles(diagram: DesignDiagram, name: string): FolderFile[] {
+  const { members: _members, groups: _groups, lines: _lines, geometry: _geometry, drawing, ...definition } = diagram
+  const picture = drawing?.picture
+  const links = drawing?.links
+  const files: FolderFile[] = [{
+    path: `${DIAGRAMS_FOLDER}/${name}.json`,
+    text: stableJson({
+      ...definition,
+      ...(picture !== undefined ? { picture } : {}),
+      ...(links !== undefined ? { links } : {}),
+    }),
+  }]
+  if (drawing) files.push({ path: `${DIAGRAMS_FOLDER}/${name}${DRAWIO_SUFFIX}`, text: drawing.xml })
+  return files
 }
 
 /**
@@ -499,7 +531,7 @@ export function isFormatPath(path: string): boolean {
   if (parts.some((part) => !part || part === '.' || part === '..')) return false
   const [folder, ...rest] = parts
   const name = rest[rest.length - 1]
-  if (folder === DIAGRAMS_FOLDER) return rest.length === 1 && name.endsWith('.json')
+  if (folder === DIAGRAMS_FOLDER) return rest.length === 1 && (name.endsWith('.json') || name.endsWith(DRAWIO_SUFFIX))
   if (folder === DOCS_FOLDER) return rest.length === 1 && name.endsWith('.md')
   if (folder === LOGOS_FOLDER) return rest.length === 1 && /\.(svg|png)$/.test(name)
   if (folder === IMAGES_FOLDER) return rest.length >= 1 && isImageFile(name)
@@ -740,6 +772,7 @@ function readDiagram(folder: Folder, name: string): DesignDiagram | undefined {
   if (!definition || typeof definition.id !== 'string' || typeof definition.name !== 'string') {
     return undefined
   }
+  if (definition.kind === 'drawing') return readDrawing(folder, name, definition)
   const laid = jsonAt(folder, `${DIAGRAMS_FOLDER}/${name}${GEOMETRY_SUFFIX}`)
   const { members, groups, lines, ...rest } = definition
 
@@ -774,6 +807,47 @@ function readDiagram(folder: Folder, name: string): DesignDiagram | undefined {
     members: listOf(members).filter((row) => typeof row.id === 'string') as unknown as DiagramMember[],
     geometry,
   }
+}
+
+/**
+ * A drawing, from its definition and its XML. The picture and the links live
+ * in the definition; the XML lives in the `.drawio`. Neither is a geometry.
+ */
+function readDrawing(folder: Folder, name: string, definition: Record<string, unknown>): DesignDiagram {
+  const { members, groups: _groups, lines: _lines, picture, links, drawing: _nested, geometry: _geometry, ...rest } = definition
+  const xml = textAt(folder, `${DIAGRAMS_FOLDER}/${name}${DRAWIO_SUFFIX}`)
+  const address = typeof picture === 'string' ? picture : undefined
+  const parsed = readDrawingLinks(links)
+  const hasDrawing = xml !== undefined || address !== undefined || links !== undefined
+  return {
+    ...(rest as unknown as Omit<DesignDiagram, 'members' | 'geometry' | 'drawing'>),
+    kind: 'drawing',
+    members: listOf(members).filter((row) => typeof row.id === 'string') as unknown as DiagramMember[],
+    ...(hasDrawing ? {
+      drawing: {
+        xml: xml ?? '',
+        ...(address !== undefined ? { picture: address } : {}),
+        links: parsed,
+      },
+    } : {}),
+  }
+}
+
+function readDrawingLinks(held: unknown): DrawingLink[] {
+  return listOf(held).flatMap((row) => {
+    const area = row.area
+    if (typeof row.shapeId !== 'string' || typeof row.elementId !== 'string') return []
+    if (!area || typeof area !== 'object') return []
+    const box = area as Record<string, unknown>
+    if (typeof box.x !== 'number' || typeof box.y !== 'number' || typeof box.width !== 'number' || typeof box.height !== 'number') {
+      return []
+    }
+    return [{
+      shapeId: row.shapeId,
+      elementId: row.elementId,
+      area: { x: box.x, y: box.y, width: box.width, height: box.height },
+    }]
+  })
 }
 
 function readElements(folder: Folder): {
@@ -979,7 +1053,18 @@ export function scopeFromFolder(
 
   // The header says the order; the folder says what is there. A diagram file
   // somebody added by hand comes last rather than not at all.
-  const byName = new Map(names.map((name) => [name, readDiagram(folder, name)]))
+  // A drawing in a folder older than the format that keeps one is dropped:
+  // the read succeeds, and the model has no drawing.
+  const version = typeof held.version === 'number' ? held.version : SCOPE_FORMAT_VERSION
+  const dropped = new Set<string>()
+  const byName = new Map(names.map((name) => {
+    const diagram = readDiagram(folder, name)
+    if (diagram?.kind === 'drawing' && version < DRAWING_FORMAT) {
+      dropped.add(name)
+      return [name, undefined] as const
+    }
+    return [name, diagram] as const
+  }))
   const ordered: DesignDiagram[] = []
   const seen = new Set<string>()
   for (const id of Array.isArray(held.diagrams) ? held.diagrams : []) {
@@ -1039,7 +1124,7 @@ export function scopeFromFolder(
     ...carriedOf(held),
     // Read as far as it reads, so it can be looked at; said, so nothing writes
     // the empty model — or the header without a mark — it would be saved as.
-    ...leftOut(folder, held, byName, elements, failed),
+    ...leftOut(folder, held, byName, elements, failed, dropped),
   }
 }
 
@@ -1068,9 +1153,10 @@ function leftOut(
   views: ReadonlyMap<string, DesignDiagram | undefined>,
   elements: readonly DesignElement[],
   failed: readonly string[],
+  dropped: ReadonlySet<string> = new Set(),
 ): Pick<ScopeSnapshot, 'unread' | 'unreadable'> {
   const modelFailed = failed.includes(MODEL_FILE) || modelUnreadable(textAt(folder, MODEL_FILE))
-  const unread = [...failed, ...untakenFiles(folder, views, elements, modelFailed)].sort()
+  const unread = [...failed, ...untakenFiles(folder, views, elements, modelFailed, dropped)].sort()
   const unreadable = [
     ...(modelFailed ? [MODEL_FILE] : []),
     ...namedMarks(held).filter((mark) => failed.includes(mark)),
@@ -1094,11 +1180,18 @@ function namedMarks(held: ScopeFile): string[] {
  * a view that did not parse, a geometry with no view, a description of nobody,
  * and a `model.json` that is not one.
  */
+function diagramStem(name: string): string {
+  if (name.endsWith(GEOMETRY_SUFFIX)) return name.slice(0, -GEOMETRY_SUFFIX.length)
+  if (name.endsWith(DRAWIO_SUFFIX)) return name.slice(0, -DRAWIO_SUFFIX.length)
+  return name.slice(0, -'.json'.length)
+}
+
 function untakenFiles(
   folder: Folder,
   views: ReadonlyMap<string, DesignDiagram | undefined>,
   elements: readonly DesignElement[],
   modelFailed: boolean,
+  dropped: ReadonlySet<string>,
 ): string[] {
   const ids = new Set(elements.map((element) => element.id))
   const untaken: string[] = []
@@ -1106,8 +1199,12 @@ function untakenFiles(
     const [within, name, deeper] = path.split('/')
     if (path === MODEL_FILE) {
       if (modelFailed) untaken.push(path)
-    } else if (within === DIAGRAMS_FOLDER && deeper === undefined && name.endsWith('.json')) {
-      const stem = name.slice(0, -(name.endsWith(GEOMETRY_SUFFIX) ? GEOMETRY_SUFFIX : '.json').length)
+    } else if (within === DIAGRAMS_FOLDER && deeper === undefined
+      && (name.endsWith('.json') || name.endsWith(DRAWIO_SUFFIX))) {
+      const stem = diagramStem(name)
+      // A drawing an older scope is not allowed to keep was dropped on
+      // purpose. It is not a file the read failed to understand.
+      if (dropped.has(stem)) continue
       if (!views.get(stem)) untaken.push(path)
     } else if (within === DOCS_FOLDER && deeper === undefined && name.endsWith('.md')) {
       if (!ids.has(name.slice(0, -'.md'.length))) untaken.push(path)

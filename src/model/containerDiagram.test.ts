@@ -112,8 +112,8 @@ describe('seedContainerDiagram', () => {
     expect(diagram?.name).toBe('crews · containers')
     expect(diagram?.members.map((m) => m.id)).toEqual(containerDiagramMembers(model(), 'crews'))
     // There are no coordinates yet.
-    expect(diagram?.geometry.needsLayout).toBe(true)
-    expect(diagram?.geometry.nodes).toEqual([])
+    expect(diagram?.geometry!.needsLayout).toBe(true)
+    expect(diagram?.geometry!.nodes).toEqual([])
   })
 
   it('returns nothing for an application that does not exist', () => {

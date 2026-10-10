@@ -74,4 +74,12 @@ export interface ImageRepository {
    * each answers its own media type.
    */
   bytes(scope: ScopeId, name: ImageName): Promise<ImageBytes | undefined>
+
+  /**
+   * One picture's bytes by their content address, whether or not a library
+   * name points at them. A drawing's picture is kept this way: the view holds
+   * the address and no library entry. `undefined` where those bytes are not
+   * there — put and never kept, or swept after nothing named them.
+   */
+  bytesAt(scope: ScopeId, address: ContentAddress): Promise<ImageBytes | undefined>
 }

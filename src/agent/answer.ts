@@ -1030,12 +1030,18 @@ function connectionLine(model: Model, c: Relation, dated?: Map<string, Transitio
 }
 
 function diagramLine(diagram: Diagram, activeDiagramId: string) {
+  const pointsAt = diagram.kind === 'drawing'
+    ? [...new Set((diagram.drawing?.links ?? []).map((link) => link.elementId))]
+    : undefined
   return {
     id: diagram.id,
     name: diagram.name,
     kind: diagram.kind,
     applicationElementId: diagram.applicationElementId,
     elements: placedList(diagram).length,
+    ...(diagram.kind === 'drawing' && diagram.elementId !== undefined ? { elementId: diagram.elementId } : {}),
+    ...(diagram.kind === 'drawing' && diagram.c4Level !== undefined ? { c4Level: diagram.c4Level } : {}),
+    ...(pointsAt !== undefined ? { pointsAt } : {}),
     active: diagram.id === activeDiagramId,
   }
 }

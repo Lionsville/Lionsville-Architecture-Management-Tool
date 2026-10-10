@@ -91,7 +91,7 @@ describe('a hand edit claims the route', () => {
     // Drawing the first bend on a plain floating edge. There is no row yet, so
     // nothing to inherit a source from, and it must not default to auto.
     const plain = model();
-    plain.diagrams[0].geometry.routes = undefined;
+    plain.diagrams[0].geometry!.routes = undefined;
     const { result, stored } = render(plain);
 
     act(() => {

@@ -43,6 +43,17 @@ export function ContainerIcon({ size = 18 }: IconProps) {
  * is a type error in this file rather than a row with a hole in it — and a
  * line for a kind the model dropped is one too.
  */
+/** A drawing: a page with a picture on it. Not a board and not a laid-out view. */
+export function DrawingIcon({ size = 18 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="2" />
+      <path d="M7 15l3.2-3.2a1 1 0 0 1 1.4 0L14 14.2l1.2-1.2a1 1 0 0 1 1.4 0L18 14.5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="9" cy="9" r="1.25" fill="currentColor" />
+    </svg>
+  )
+}
+
 export const BOARD_ICONS = {
   layer7: LandscapeIcon,
   container: ContainerIcon,
@@ -51,6 +62,7 @@ export const BOARD_ICONS = {
   // The technology landscape's card draws hosting boxes; the view it opens
   // is the same three bands, so it wears the same glyph.
   technology: DeploymentIcon,
+  drawing: DrawingIcon,
 } satisfies Record<DesignDiagram['kind'], ComponentType<IconProps>>
 
 /** The glyph for a board of this kind, in the colour of the text around it. */

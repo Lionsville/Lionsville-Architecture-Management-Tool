@@ -462,7 +462,7 @@ function flaggedModel(): DesignModel {
     ...modelWithCanvas(),
     diagrams: modelWithCanvas().diagrams.map((diagram) => ({
       ...diagram,
-      geometry: { ...diagram.geometry, needsLayout: true },
+      geometry: { ...diagram.geometry!, needsLayout: true },
     })),
   };
 }

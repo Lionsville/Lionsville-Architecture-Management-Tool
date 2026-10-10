@@ -79,7 +79,7 @@ describe('canChangeKind', () => {
   it('refuses what a container diagram is about, and what still belongs to an application', () => {
     const m = board();
     m.diagrams[0].members.push({ id: 'boundary', zone: 'landscape' });
-    m.diagrams[0].geometry.nodes.push({ id: 'boundary', x: 0, y: 0 });
+    m.diagrams[0].geometry!.nodes.push({ id: 'boundary', x: 0, y: 0 });
     expect(canChangeKind(m, m.diagrams[0], 'boundary', 'actor')).toEqual({
       ok: false,
       reason: 'kindChange.hasContainerDiagram',

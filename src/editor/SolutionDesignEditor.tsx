@@ -10,7 +10,6 @@ import { useTheme } from '@mui/material/styles';
 import type { DesignDiagram, UploadedLogo } from '../model/types';
 import type { ClipboardPayload } from '../model/clipboard';
 import type { CommandMeta } from '../model/commands';
-import { isBoardKind } from '../model/placement';
 import type { SolutionDesignEditorProps } from './props';
 import { LogoLibraryProvider } from './nodes/logoRegistry';
 import { LanguageProvider, useStrings } from '../i18n/LanguageContext';
@@ -89,21 +88,22 @@ function EditorBody(props: SolutionDesignEditorProps) {
       </>
     );
   }
-  // A laid-out view in the tab (ADR-0016). The technology landscape authors
-  // the layer's two kinds, so it keeps the palette and the inspector docked;
-  // the sheet and the map carry their own and take the whole body.
-  const laidOut = !isBoardKind(activeDiagram.kind);
-  const docked = activeDiagram.kind === 'technology' || !laidOut;
+  // A board is the canvas. A laid-out view is the host's page in its place
+  // (ADR-0016). A drawing is neither: the host shows its picture, and the
+  // board's tools stay put away. The technology landscape authors the layer's
+  // two kinds, so it keeps the palette and the inspector docked.
+  const body = viewBody(activeDiagram.kind);
+  const docked = body === 'board' || activeDiagram.kind === 'technology';
   const shown = parts.board.shownDiagram ?? activeDiagram;
   return (
     <Box
       ref={setWrapperNode}
       sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}
     >
-      <BoardToolbar parts={parts} diagram={activeDiagram} laidOut={laidOut} />
+      <BoardToolbar parts={parts} diagram={activeDiagram} laidOut={body !== 'board'} />
       <Box sx={{ display: 'flex', flex: 1, minHeight: 0 }}>
         {!readOnly && docked && <PaletteDock parts={parts} diagram={activeDiagram} />}
-        {laidOut ? <LaidOutView parts={parts} diagram={shown} /> : <BoardCanvas parts={parts} diagram={shown} />}
+        {body === 'board' ? <BoardCanvas parts={parts} diagram={shown} /> : <LaidOutView parts={parts} diagram={shown} />}
         {docked && <InspectorDock parts={parts} diagram={activeDiagram} />}
       </Box>
       <EditorDialogs state={state} diagram={activeDiagram} deletes={parts.deletes} exports={parts.exports} dialogs={parts.dialogs} />
@@ -224,4 +224,27 @@ function useKeyboard(
     wrapperRef.current = node;
     setShortcutContainer(node);
   }, [setShortcutContainer, wrapperRef]);
+}
+
+/**
+ * What the body under the toolbar is. A drawing is not a board and not laid
+ * out: the host draws its picture in the slot a laid-out view uses, and the
+ * canvas is not opened under it.
+ */
+function viewBody(kind: DesignDiagram['kind']): 'board' | 'laidOut' | 'drawing' {
+  switch (kind) {
+    case 'layer7':
+    case 'container':
+      return 'board'
+    case 'sheet':
+    case 'map':
+    case 'technology':
+      return 'laidOut'
+    case 'drawing':
+      return 'drawing'
+    default: {
+      const unexpected: never = kind
+      return unexpected
+    }
+  }
 }

@@ -15,6 +15,7 @@ export type {
   Lifecycle, LifecycleDates, DesignElement, DesignConnection, Relation, RelationType, PlatformArchetype,
   EdgeLineStyle, EdgeRouting,
   EdgeArrowhead, NodeShapeVariant, NodeIconSize, UploadedLogo, DocumentImage, DiagramMember, NodeGeometry, PlacedNode, DesignDiagram, SheetPaper,
+  C4Level, DrawingContent, DrawingLink,
   DesignModel, DiagramGroup, DiagramLine, DiagramSettings, DomainGroupRect, Geometry, RouteGeometry,
   EdgeRoute, EdgeRouteSource, AttachSide, Point, ResizableZone, Rect,
 } from './types'

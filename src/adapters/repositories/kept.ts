@@ -24,7 +24,8 @@ import type {
   Revision, ScopeAddress, ScopeContent, ScopeDescription, ScopeId, ScopeState,
 } from '../../projects/scopeState'
 import { entryKey, keepEntryState, sequenceKey } from './entryStates'
-import { historyNamed, libraryNamed } from './imageNames'
+import { drawingPictureAddresses } from '../../model/drawing'
+import { drawingsNamed, historyNamed, libraryNamed } from './imageNames'
 import { keyOf, prefix } from './KeyedStore'
 import type { Transaction } from './KeyedStore'
 
@@ -195,6 +196,7 @@ export async function readState(tx: Transaction, kept: KeptScope): Promise<Scope
  */
 export async function writeContent(tx: Transaction, id: ScopeId, before: readonly ImageEntry[], after: ScopeContent): Promise<void> {
   const { model, images, ...description } = after
+  const previous = await tx.get<Partial<KeptContent>>('contents', id)
   tx.put('contents', id, { format: CONTENT_FORMAT, model, description } satisfies KeptContent)
   const was = new Map(before.map((image) => [image.name, image]))
   const is = new Set(images.map((image) => image.name))
@@ -203,6 +205,9 @@ export async function writeContent(tx: Transaction, id: ScopeId, before: readonl
     if (!sameValue(was.get(image.name), image)) tx.put('library', libraryKey(id, image.name), image)
   }
   await libraryNamed(tx, id, before, images)
+  // The head's drawings name picture addresses the library does not. Counted
+  // in the same write as the model, so a sweep after it keeps them.
+  await drawingsNamed(tx, id, drawingPictureAddresses(previous?.model?.diagrams ?? []), drawingPictureAddresses(model.diagrams))
 }
 
 /** Everything kept about one scope, gone: its parts, its pictures, its settings and its history. */

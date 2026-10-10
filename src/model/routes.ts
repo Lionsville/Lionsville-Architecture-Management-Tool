@@ -93,6 +93,9 @@ export function diagramWithRoutes<T extends Pick<DesignDiagram, 'lines' | 'geome
   diagram: T,
   rows: readonly EdgeRoute[],
 ): T {
+  // A drawing has no routes and no geometry. Leaving it untouched is the
+  // only honest answer: there is no board to put a route on.
+  if (!diagram.geometry) return diagram
   const { lines, routes } = splitRoutes(rows);
   const next = { ...diagram, geometry: { ...diagram.geometry, routes } };
   if (lines) next.lines = lines;

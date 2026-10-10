@@ -46,4 +46,5 @@ export const DE: Record<keyof typeof EN, string> = {
   'gsearch.view.sheet': 'Geschäftsarchitektur',
   'gsearch.view.map': 'Unternehmenskarte',
   'gsearch.view.technology': 'Technologielandschaft',
+  'gsearch.view.drawing': 'Zeichnung',
 }

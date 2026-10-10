@@ -70,8 +70,10 @@ export function carriedOver(diagram: DesignDiagram, shown: DesignDiagram): Desig
   }
   const held = byShown.get(shown);
   if (held) return held;
-  const { needsLayout: _flag, ...geometry } = diagram.geometry;
-  const { nodes, groups, canvas, routes } = shown.geometry;
+  const stored = diagram.geometry ?? { nodes: [] }
+  const shownGeometry = shown.geometry ?? { nodes: [] }
+  const { needsLayout: _flag, ...geometry } = stored
+  const { nodes, groups, canvas, routes } = shownGeometry
   const out: DesignDiagram = {
     ...diagram,
     geometry: { ...geometry, nodes, ...(groups ? { groups } : {}), ...(canvas ? { canvas } : {}), ...(routes ? { routes } : {}) },
