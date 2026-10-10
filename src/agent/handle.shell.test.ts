@@ -66,6 +66,12 @@ const retail: HostModel = {
     id: 'tr-1', number: 1, title: 'One warehouse system', status: 'agreed', from: '2027-01-01',
     elements: [], decisions: [], milestones: [], body: '',
   }],
+  solutions: [{
+    id: 'so-1', number: 1, title: 'One till', state: 'idea', addresses: [], validatedWith: [], attempts: [], body: '', history: [],
+  }],
+  experiments: [{
+    id: 'ex-1', number: 1, title: 'Count the doubles', tests: ['so-1'], hypothesis: 'Fewer doubles', outcome: 'planned', body: '',
+  }],
 }
 
 const DOCUMENTS: Record<string, HostModel> = { '': organisation, 'acme/finance': finance, 'acme/retail': retail }
@@ -310,6 +316,18 @@ describe('with nothing open', () => {
     expect(refusal(await handle(call('app.open', { scope: 'acme/retail', page: 'observations', tab: 'picture' }), undefined, view)))
       .toBe('agent.badArguments')
     expect(opened).toEqual([])
+  })
+
+  it('opens a solution and an experiment the way the observations page does', async () => {
+    const { view, opened } = shell()
+    const solution = parsed(await handle(call('app.open', { scope: 'acme/retail', id: 'so-1' }), undefined, view))
+    expect(opened.at(-1)).toEqual({ scope: 'acme/retail', page: 'observations', id: 'so-1' })
+    expect(solution.page).toEqual({ page: 'observations', id: 'so-1', tab: 'register' })
+    // The picture's key is accepted too, and the shell is handed the record's own id.
+    const experiment = parsed(await handle(call('app.open', { scope: 'acme/retail', page: 'observations', id: 'ex:ex-1' }), undefined, view))
+    expect(opened.at(-1)).toEqual({ scope: 'acme/retail', page: 'observations', id: 'ex-1' })
+    expect(experiment.page).toEqual({ page: 'observations', id: 'ex-1', tab: 'register' })
+    expect(experiment.arrived).toBe(true)
   })
 
   it('hands an element to select to the shell with the view it is selected on', async () => {

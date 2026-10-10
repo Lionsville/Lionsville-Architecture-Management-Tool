@@ -15,6 +15,7 @@
 import type { Adr } from '../model/adr'
 import type { HostModel } from '../model/hostModel'
 import type { DesignDiagram } from '../model/types'
+import { experimentKey, solutionKey } from '../observations/graph'
 import type { Driving } from './driving'
 import { arrived, HOME_PAGES, NEEDS_ID, scopeOf, VIEW_PAGES, viewPage } from './screen'
 import type { Destination, Page, Screen } from './screen'
@@ -222,16 +223,16 @@ function resolveTarget(model: HostModel, ancestors: readonly Adr[], asked: Resol
   const decision = asked.id !== undefined
     ? [...(model.decisions ?? []), ...ancestors].find((held) => held.id === asked.id)
     : undefined
-  const observed = asked.id !== undefined
-    ? [...(model.observations ?? []), ...(model.causes ?? [])].find((held) => held.id === asked.id)
-    : undefined
+  // An observation, a cause, a solution or an experiment, as the page
+  // addresses one. The id handed on is the record's own.
+  const analysis = analysisRecord(model, asked.id)
 
   if (asked.page === undefined) {
     if (diagram) return { page: pageOf(diagram), id: diagram.id }
     if (element) return { page: 'element', id: element.id }
     if (plan) return { page: 'plan', id: plan.id }
     if (decision) return { page: 'decisions', id: decision.id }
-    if (observed) return { page: 'observations', id: observed.id }
+    if (analysis) return { page: 'observations', id: analysis.id }
     return refused('agent.unknownId', `${asked.id} in ${where}`)
   }
   const page = asked.page
@@ -251,8 +252,10 @@ function resolveTarget(model: HostModel, ancestors: readonly Adr[], asked: Resol
       if (asked.id !== undefined && !decision) return refused('agent.unknownId', `decision ${asked.id} in ${where}`)
       return asked.id !== undefined ? { page, id: asked.id } : { page }
     case 'observations':
-      if (asked.id !== undefined && !observed) return refused('agent.unknownId', `observation or cause ${asked.id} in ${where}`)
-      return asked.id !== undefined ? { page, id: asked.id } : { page }
+      if (asked.id !== undefined && !analysis) {
+        return refused('agent.unknownId', `observation, cause, solution or experiment ${asked.id} in ${where}`)
+      }
+      return analysis ? { page, id: analysis.id } : { page }
     case 'plan':
       return plan ? { page, id: plan.id } : refused('agent.unknownId', `plan ${asked.id} in ${where}`)
     case 'element':
@@ -296,6 +299,25 @@ function withTabAndSelect(asked: Destination, target: Resolved, model: HostModel
     ...(asked.tab !== undefined ? { tab: asked.tab } : {}),
     ...(asked.select !== undefined ? { select: asked.select } : {}),
   }
+}
+
+/**
+ * The observation, cause, solution or experiment an id names, as the page
+ * addresses a solution and an experiment: by id, or by the picture's key
+ * (`so:` and `ex:`).
+ */
+function analysisRecord(model: HostModel, id: string | undefined): { id: string } | undefined {
+  if (id === undefined) return undefined
+  const observed = [...(model.observations ?? []), ...(model.causes ?? [])].find((held) => held.id === id)
+  if (observed) return observed
+  return byKey(model.solutions, id, solutionKey) ?? byKey(model.experiments, id, experimentKey)
+}
+
+/** A record by its id, or by the key the page uses for it (`so:` and `ex:`). */
+function byKey<T extends { id: string }>(
+  list: readonly T[] | undefined, id: string, key: (id: string) => string,
+): T | undefined {
+  return list?.find((held) => held.id === id || key(held.id) === id)
 }
 
 /** Which page's tab a view is (`screen.ts`'s `viewPage`). */

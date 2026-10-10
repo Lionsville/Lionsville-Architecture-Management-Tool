@@ -2153,7 +2153,8 @@ const SPECS = [
       + 'and the cards. `scope` is a path from scopes.list (default: the open one); `page` is what to show '
       + 'there: home (the scope\'s own screen, nothing open), board / sheet / map / technology (a view, by '
       + 'id, or the only one of that kind), decisions (optionally on one record), observations (optionally '
-      + 'on one record, and on one of its tabs with `tab`), roadmap, plan (by id), '
+      + 'on one record — an observation, a cause, a solution or an experiment, by id or by the key the '
+      + 'page uses — and on one of its tabs with `tab`), roadmap, plan (by id), '
       + 'element (selected on a board that draws it), document or documentation (a record\'s page), '
       + 'platform or service (a report, by id), register or technologyRegister (the organisation-wide '
       + 'lists, on the home). `select` names an element to select on the board, sheet, map or technology '
@@ -2174,7 +2175,7 @@ const SPECS = [
             'platform', 'service', 'register', 'technologyRegister',
           ],
         },
-        id: { type: 'string', description: 'The view, element, plan, decision, observation or cause the page is about, where it is about one.' },
+        id: { type: 'string', description: 'The view, element, plan, decision, observation, cause, solution or experiment the page is about, where it is about one. A solution or an experiment may also be named by the key the page uses (so: and ex:).' },
         tab: {
           type: 'string',
           description: 'Which tab of the observations page: the register, the analysis or the solutions. Only with page observations.',
