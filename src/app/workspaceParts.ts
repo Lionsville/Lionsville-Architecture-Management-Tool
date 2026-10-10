@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
+import type { Destination } from '../agent/screen'
 import type { EditorOwnership, ShownDays } from '../editor'
 import type { Adr } from '../decisions/adr'
 import type { ChangeAcross, ChangeBelow } from '../observations/ui/ObservationsPage'
@@ -69,6 +70,8 @@ export interface WorkspaceParts {
   sheets: Sheets
   landscapes: TechnologyLandscapes
   pages: WorkspacePages
+  /** Show a page of this scope, as `app.open` does. */
+  show: (to: Destination & { scope: string }) => void
   analysis: AnalysisActions
   /** A change to the analysis of a scope below, landed as that scope's step (ADR-0032 §2). */
   changeBelow: ChangeBelow

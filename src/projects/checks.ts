@@ -22,7 +22,8 @@
  *   every row of the tree without loading a single model.
  * - {@link documentFindings} reads **one scope's own document** — the owner's
  *   detail on a stand-in, an unattributed outsider, a relation end nobody
- *   holds, a master drawn nowhere, the two the business layer already
+ *   holds, a master drawn nowhere, a shape on a drawing that points at an
+ *   element this scope does not hold, the two the business layer already
  *   answers, and a cause that explains an observation of a scope below.
  *   Paid by the scope that is open, once per model.
  *
@@ -68,6 +69,8 @@ export type CheckKey =
   | 'check.unattributed'
   /** A master no view in its own scope draws. Information. */
   | 'check.notDrawn'
+  /** A shape on a drawing points at an element this scope does not hold. */
+  | 'check.drawingLinkMissing'
   /** A function assigned to nobody and claimed by nobody. */
   | 'check.unmapped'
   /** A function with no `supports` and no `assigned`: nothing and nobody does it. */
@@ -106,6 +109,7 @@ export const CHECK_LABEL: Record<CheckKey, StringKey> = {
   'check.ownedElsewhere': 'check.ownedElsewhere',
   'check.unattributed': 'check.unattributed',
   'check.notDrawn': 'check.notDrawn',
+  'check.drawingLinkMissing': 'check.drawingLinkMissing',
   'check.unmapped': 'check.unmapped',
   'check.uncovered': 'check.uncovered',
   'check.offeredNotShared': 'check.offeredNotShared',
@@ -159,6 +163,7 @@ export const CHECK_SHORT: Record<CheckKey, { one: StringKey; other: StringKey }>
   'check.ownedElsewhere': { one: 'check.short.ownedElsewhere.one', other: 'check.short.ownedElsewhere.other' },
   'check.unattributed': { one: 'check.short.unattributed.one', other: 'check.short.unattributed.other' },
   'check.notDrawn': { one: 'check.short.notDrawn.one', other: 'check.short.notDrawn.other' },
+  'check.drawingLinkMissing': { one: 'check.short.drawingLinkMissing.one', other: 'check.short.drawingLinkMissing.other' },
   'check.unmapped': { one: 'check.short.unmapped.one', other: 'check.short.unmapped.other' },
   'check.uncovered': { one: 'check.short.uncovered.one', other: 'check.short.uncovered.other' },
   'check.offeredNotShared': { one: 'check.short.offeredNotShared.one', other: 'check.short.offeredNotShared.other' },
@@ -415,8 +420,9 @@ export function documentFindings(deps: {
     if (element.kind === 'application' && element.outside && element.partyId === undefined) {
       found.push({ key: 'check.unattributed', scope, id: element.id, name: element.name })
     }
-    // A master no view in its own scope draws. Information: a record and a
-    // drawing are two acts (§10), and a master with no view is ordinary.
+    // A master nothing in its own scope draws. Information: a record and a
+    // drawing are two acts (§10), and a master with no view is ordinary. A
+    // drawing that points at it counts, the same way a board that holds it does.
     if (index.lookup(element.id)?.master === scope && !drawnIn(model, element.id)) {
       found.push({
         key: 'check.notDrawn', scope, id: element.id, name: element.name, information: true,
@@ -447,7 +453,34 @@ export function documentFindings(deps: {
   for (const id of business?.uncovered ?? []) {
     found.push({ key: 'check.uncovered', scope, id, name: named(id) })
   }
-  return [...found, ...causesOverObservationsBelow(scope, model, index)]
+  return [...found, ...drawingLinkFindings(scope, model, held), ...causesOverObservationsBelow(scope, model, index)]
+}
+
+/**
+ * A shape on a drawing whose element this scope does not hold.
+ *
+ * One per shape, in diagram order then link order. The tree knowing the id
+ * is not enough: a drawing points at an element this scope holds, a
+ * definition or a stand-in, and an id only another scope holds is missing
+ * here.
+ */
+function drawingLinkFindings(scope: ScopePath, model: HostModel, held: ReadonlySet<ElementId>): Finding[] {
+  const found: Finding[] = []
+  for (const diagram of model.diagrams) {
+    if (diagram.kind !== 'drawing') continue
+    for (const link of diagram.drawing?.links ?? []) {
+      if (held.has(link.elementId)) continue
+      found.push({
+        key: 'check.drawingLinkMissing',
+        scope,
+        id: `${diagram.id}:${link.shapeId}`,
+        name: diagram.name,
+        fields: [link.elementId],
+        detail: link.elementId,
+      })
+    }
+  }
+  return found
 }
 
 /**
@@ -520,9 +553,16 @@ export function tally(findings: readonly Finding[]): Partial<Record<CheckKey, nu
   return found
 }
 
-/** Is this element a member of any view in this scope? */
+/**
+ * Is this element drawn on a view in this scope?
+ *
+ * A board's member, a drawing in this scope that points at it, or a service
+ * or platform where the scope has a technology landscape.
+ */
 function drawnIn(model: HostModel, id: ElementId): boolean {
   if (model.diagrams.some((diagram) => diagram.members.some((member) => member.id === id))) return true
+  if (model.diagrams.some((diagram) =>
+    diagram.kind === 'drawing' && (diagram.drawing?.links ?? []).some((link) => link.elementId === id))) return true
   // A technology landscape draws every service and platform the scope holds
   // (ADR-0015), so one of those is drawn wherever the scope has the view.
   const kind = model.elements.find((element) => element.id === id)?.kind

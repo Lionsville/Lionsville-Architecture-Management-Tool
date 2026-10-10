@@ -416,7 +416,8 @@ const SPECS = [
       + 'detail written on a stand-in), check.unattributed (outside, and nobody has said whose), '
       + 'check.unmapped and check.uncovered (the business layer\'s two), check.causeExplainsObservationBelow (a '
       + 'cause explains an observation of a scope below, which nothing makes any more: link the cause there that '
-      + 'explains it, named in the detail, instead), and check.notDrawn, which is '
+      + 'explains it, named in the detail, instead), check.drawingLinkMissing (a shape on a drawing '
+      + 'points at an element this scope does not hold), and check.notDrawn, which is '
       + 'information rather than a fault and is listed only when asked. A finding is never a refusal and '
       + 'never a reason a save fails.',
     inputSchema: {

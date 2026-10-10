@@ -349,6 +349,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'field.iconSize': 'Symbolgröße',
   'field.iconFirst': 'Wählen Sie zuerst ein Symbol',
   'field.placement': 'Platzierung',
+  'field.onDrawings': 'Auf Zeichnungen',
   'field.zone': 'Zone: {name}',
   'field.note': 'Notiz',
   'field.notePlaceholder': 'z. B. AKS, GitHub Actions',
