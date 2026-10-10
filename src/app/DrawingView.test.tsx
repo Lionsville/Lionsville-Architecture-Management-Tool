@@ -25,6 +25,8 @@ describe('DrawingView', () => {
     renderShell(<DrawingView diagram={drawing()} scope="acme" images={undefined} s={s} />)
     expect(screen.getByTestId('drawing-not-drawn').textContent).toBe('Not drawn yet')
     expect(screen.queryByTestId('drawing-picture')).toBeNull()
+    expect(screen.getByTestId('drawing-edit').textContent).toBe('Edit')
+    expect(screen.getByTestId('drawing-editor-unavailable').textContent).toBe('The editor is not available')
   })
 
   it('shows the picture when the bytes are there, and the same words when they are not', async () => {

@@ -21,6 +21,7 @@
  */
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { drawioPin } from './dependencyPolicy.ts'
 
 /** What `renderNotices` needs to say about one package. */
 export interface PackageNotice {
@@ -161,7 +162,32 @@ const HEADING = 'Third-party notices'
  * ships — not a canonical copy of MIT, because the copyright lines differ and
  * those are the part the licence actually asks for.
  */
-export function renderNotices(notices: PackageNotice[], productName: string): string {
+/**
+ * draw.io, as the notices say it: Apache-2.0, fetched as the pinned archive,
+ * not an npm dependency. The bundles carry DOMPurify, which is Apache-2.0
+ * and MPL-2.0.
+ */
+export function drawioNotice(pin: { version: string; sha256: string }): PackageNotice {
+  return {
+    name: 'draw.io',
+    version: pin.version,
+    license: 'Apache-2.0',
+    homepage: 'https://github.com/jgraph/drawio',
+    text: [
+      'draw.io (diagrams.net) is shipped with the desktop app as files, not as an',
+      `npm dependency. The archive is draw.war ${pin.version}, sha256 ${pin.sha256},`,
+      'pruned to the editor and the languages the app speaks.',
+      '',
+      'Copyright (c) JGraph Holdings Ltd and draw.io AG.',
+      '',
+      'Licensed under the Apache License, Version 2.0.',
+      '',
+      'The bundles carry DOMPurify, which is Apache-2.0 and MPL-2.0.',
+    ].join('\n'),
+  }
+}
+
+export function renderNotices(notices: PackageNotice[], productName: string, hand: readonly PackageNotice[] = []): string {
   const lines = [
     `# ${HEADING}`,
     '',
@@ -200,6 +226,32 @@ export function renderNotices(notices: PackageNotice[], productName: string): st
         `original text is published at ${notice.homepage ?? 'its own repository'}.`,
         '',
       )
+    }
+  }
+  if (hand.length > 0) {
+    lines.push(
+      '---',
+      '',
+      'One library is shipped as files and is not an npm dependency. Its version',
+      'and checksum are the pin in `build/dependencyPolicy.ts`, which is also what',
+      'fetches it.',
+      '',
+    )
+    for (const notice of hand) {
+      lines.push(
+        '---',
+        '',
+        `## ${notice.name} ${notice.version}`,
+        '',
+        `Licence: ${licenceLine(notice)}`,
+        '',
+      )
+      if (notice.text) {
+        const text = notice.text.replace(/\r\n/g, '\n').trimEnd()
+        const longest = Math.max(2, ...[...text.matchAll(/^`{3,}/gm)].map((m) => m[0].length))
+        const fence = '`'.repeat(longest + 1)
+        lines.push(fence, text, fence, '')
+      }
     }
   }
   return lines.join('\n')
@@ -319,7 +371,7 @@ export function noticesFor(root: string, sourceRoots = ['src', 'electron']): Pac
 if (process.argv[1]?.endsWith('thirdPartyNotices.ts')) {
   const target = 'THIRD-PARTY-NOTICES.md'
   const product = 'Lionsville Architect'
-  const generated = renderNotices(noticesFor(process.cwd()), product)
+  const generated = renderNotices(noticesFor(process.cwd()), product, [drawioNotice(drawioPin)])
   if (process.argv.includes('--check')) {
     const current = readFileSync(target, 'utf8')
     if (current !== generated) {

@@ -22,7 +22,7 @@ import { WORKING_FILE_INTERCHANGE } from '../adapters/folder/format/interchange'
 import {
   interchangeLoaded, openSource, overSource, registerSourceProvider, registeredChrome, registeredConnects,
   registeredMenus, sourceAgentPanel, sourceBarButton, sourceChip, sourceChipFace, sourceChipPanel, sourceDescription,
-  sourceProblemAction, sourceProvider, sourceSayings,
+  sourceProblemAction, sourceProvider, sourceSayings, withDesktopDrawing,
   type Shell, type SourceBase, type SourceParts,
 } from './composition'
 
@@ -690,5 +690,29 @@ describe('the shell over what a source just opened', () => {
       repositories, source: { kind: 'browser' }, shareAddress: () => 'https://after.example/',
     } as unknown as SourceParts)
     expect(server.shareAddress?.()).toBe('https://after.example/')
+  })
+
+  it('takes off where the previous source served the drawing editor, and keeps what the new source gives', () => {
+    const repositories = memoryRepositories()
+    const before: Shell = {
+      repositories, preferences: new InMemoryPreferencesStore(),
+      source: { kind: 'browser' }, drawingOrigin: () => 'https://draw.before.example',
+    } as unknown as Shell
+    const folder = overSource(before, { repositories, source: { kind: 'browser' } } as unknown as SourceParts)
+    expect(folder.drawingOrigin).toBeUndefined()
+    const server = overSource(before, {
+      repositories, source: { kind: 'browser' }, drawingOrigin: () => 'https://draw.after.example',
+    } as unknown as SourceParts)
+    expect(server.drawingOrigin?.()).toBe('https://draw.after.example')
+  })
+
+  it('gives the desktop its scheme when the source names none, and leaves a named origin and a browser alone', () => {
+    const repositories = memoryRepositories()
+    const shell = { repositories, source: { kind: 'browser' } } as unknown as Shell
+    const desktop = withDesktopDrawing(shell, true)
+    expect(desktop.drawingOrigin?.()).toBe('drawing://local')
+    const named = withDesktopDrawing({ ...shell, drawingOrigin: () => 'https://draw.example' } as unknown as Shell, true)
+    expect(named.drawingOrigin?.()).toBe('https://draw.example')
+    expect(withDesktopDrawing(shell, false).drawingOrigin).toBeUndefined()
   })
 })

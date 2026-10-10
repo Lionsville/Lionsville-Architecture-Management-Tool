@@ -97,6 +97,12 @@ module.exports = {
   // holds it, which the licence asks to be given with every copy.
   files: ['out/**', 'package.json', 'THIRD-PARTY-NOTICES.md', 'LICENSE', 'NOTICE'],
 
+  // The drawing editor, outside the asar. `app.min.js` is larger than the
+  // renderer budget, so it is not under `out/**`. `build/fetchDrawio.ts`
+  // writes the pruned tree; this copies it beside the app, where main serves
+  // it on the drawing scheme.
+  extraResources: [{ from: 'build/drawio', to: 'drawio' }],
+
   // The product name has spaces in it, which is right for the Dock and wrong
   // for a download link. Name the artifacts after the package instead.
   artifactName: '${name}-${version}-${os}-${arch}.${ext}',

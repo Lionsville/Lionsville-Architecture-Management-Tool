@@ -24,6 +24,19 @@
  */
 import type { Policy } from './dependencies.ts'
 
+/**
+ * draw.io, shipped as files beside the app and not installed as a package.
+ *
+ * `build/fetchDrawio.ts` fetches this asset, and the hand entry in
+ * `THIRD-PARTY-NOTICES.md` is written from here. One pin: the version and the
+ * checksum are not copied anywhere else.
+ */
+export const drawioPin = {
+  version: '32.4.1',
+  sha256: 'b83663313ccdecef6581476a7eaa96750bccf1bfdc3768981eb5d95e94be7820',
+  asset: 'draw.war',
+} as const
+
 export const policy: Policy = {
   allowed: [
     'MIT', 'ISC', 'BSD-2-Clause', 'BSD-3-Clause', 'Apache-2.0', '0BSD', 'CC0-1.0',

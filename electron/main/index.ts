@@ -22,7 +22,7 @@ import { app, BrowserWindow, dialog, ipcMain, protocol, net, shell } from 'elect
 import { access } from 'node:fs/promises'
 import { mkdirSync, mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { extname, isAbsolute, join, relative, resolve } from 'node:path'
+import { extname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { basename } from 'node:path'
 import { readFile } from 'node:fs/promises'
@@ -35,6 +35,7 @@ import { isThemeMode } from '../../src/platform/theme'
 import { USER_DATA_NAME } from '../../src/platform/userData'
 import { recentDirectories, registerFileChannel, stopWatching } from './files'
 import { contentSecurityPolicy, pageOrigins } from './csp'
+import { drawingDirectory, drawingFileResponse, frameNavigationCancelled, withinRoot } from './drawing'
 import { hookOrigins } from '../../src/platform/desktopHook'
 import { runDesktopHooks } from './desktopHooks'
 import { log, logFilePath } from './log'
@@ -77,6 +78,12 @@ protocol.registerSchemesAsPrivileged([
   {
     scheme: 'app',
     privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true, codeCache: true },
+  },
+  // The drawing editor, on an origin of its own. One call: Electron keeps the
+  // privileges of the first registration of a scheme and ignores a second.
+  {
+    scheme: 'drawing',
+    privileges: { standard: true, secure: true, supportFetchAPI: true },
   },
 ])
 
@@ -133,12 +140,15 @@ function serveRenderer(): void {
     const url = new URL(request.url)
     if (url.host !== 'local') return new Response('not found', { status: 404 })
 
-    const requested = decodeURIComponent(url.pathname)
-    const filePath = resolve(RENDERER_ROOT, `.${requested === '/' ? '/index.html' : requested}`)
-    const inside = relative(RENDERER_ROOT, filePath)
-    if (!inside || inside.startsWith('..') || isAbsolute(inside)) {
+    let requested: string
+    let filePath: string
+    try {
+      requested = decodeURIComponent(url.pathname)
+      filePath = resolve(RENDERER_ROOT, `.${requested === '/' ? '/index.html' : requested}`)
+    } catch {
       return new Response('forbidden', { status: 403 })
     }
+    if (!withinRoot(RENDERER_ROOT, filePath)) return new Response('forbidden', { status: 403 })
     try {
       await access(filePath)
     } catch {
@@ -153,6 +163,21 @@ function serveRenderer(): void {
     headers.set('X-Content-Type-Options', 'nosniff')
     return new Response(response.body, { status: 200, headers })
   })
+}
+
+/**
+ * The drawing editor, from the files shipped beside the app.
+ *
+ * Registered whether or not the renderer is served here: a dev server still
+ * frames `drawing://local`, and the files are not the renderer's bundle.
+ */
+function serveDrawing(): void {
+  const root = drawingDirectory({
+    packaged: app.isPackaged,
+    resourcesPath: process.resourcesPath,
+    moduleDir: __dirname,
+  })
+  protocol.handle('drawing', (request) => drawingFileResponse(root, request.url))
 }
 
 /**
@@ -200,6 +225,11 @@ function createWindow(): BrowserWindow {
   })
   window.webContents.on('will-navigate', (event, url) => {
     if (!url.startsWith(RENDERER_URL)) event.preventDefault()
+  })
+  // A frame stays on the drawing scheme. The main frame is the app, and the
+  // listener above already keeps it there.
+  window.webContents.on('will-frame-navigate', (event) => {
+    if (frameNavigationCancelled(event.url, event.isMainFrame)) event.preventDefault()
   })
   // The trackpad's swipe between pages (ADR-0033), on macOS where the system
   // is set to swipe between pages: Back and Forward, as the Go menu sends
@@ -366,6 +396,7 @@ void app.whenReady().then(() => {
   // The first line of every run, and the thing the smoke step looks for: a log
   // that exists but says nothing proves only that a file was created.
   log('main', `started ${app.getVersion()} on ${process.platform} ${process.arch}`)
+  serveDrawing()
   if (!process.env['ELECTRON_RENDERER_URL']) serveRenderer()
 
   // Before the window, because it must not wait on one: the check is background
