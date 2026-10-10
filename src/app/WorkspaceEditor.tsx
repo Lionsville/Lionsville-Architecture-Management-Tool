@@ -6,17 +6,27 @@
  * it throws, and the laid-out views it draws in the tab.
  */
 import { useCallback, useMemo } from 'react'
-import type { ReactNode } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import { SolutionDesignEditor } from '../editor'
 import type { PageView } from '../editor'
 import type { DesignDiagram } from '../model'
-import { DrawingView } from './DrawingView'
+import type { DrawingView as DrawingViewShape } from './DrawingView'
+import { lazyPart } from '../widgets/lazyPart'
 import { MapPage, SheetPage } from '../business'
 import { TechnologyLandscapePage } from '../technology/ui/TechnologyLandscapePage'
 import { ErrorBoundary } from './ErrorBoundary'
 import { shellTheme } from './theme'
 import type { WorkspaceParts } from './workspaceParts'
+
+/**
+ * A drawing is a tab, never the first view: its picture and its editor arrive
+ * when one is opened (`widgets/lazyPart`), so the first download does not
+ * carry them.
+ */
+const DrawingView = lazyPart<ComponentProps<typeof DrawingViewShape>>(
+  () => import('./DrawingView').then((held) => held.DrawingView),
+)
 
 export function WorkspaceEditor({ parts }: { parts: WorkspaceParts }) {
   const { props, session, requests, ownership, pictures, files, pickers, renderer } = parts
