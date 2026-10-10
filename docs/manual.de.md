@@ -207,10 +207,11 @@ eigene Zeile.
 - **Ohne Eigentümer** — ein System, das als das von jemand anderem markiert ist,
   ohne dass jemand gesagt hat, wessen.
 
-Eines auf der Liste ist **Information und kein Fehler**: ein Datensatz, den kein
-Board in seinem eigenen Bereich zeichnet. Ein Ding kann echt, verantwortet und
-dokumentiert sein, ohne schon auf irgendjemandes Bild zu stehen, deshalb wird es
-getrennt gezählt und nie wie ein Befund eingefärbt.
+Eines auf der Liste ist **Information und kein Fehler**: ein Datensatz, den
+nichts in seinem eigenen Bereich zeichnet — kein Board hält ihn, und keine
+Zeichnung dort zeigt auf ihn. Ein Ding kann echt, verantwortet und dokumentiert
+sein, ohne schon auf irgendjemandes Bild zu stehen, deshalb wird es getrennt
+gezählt und nie wie ein Befund eingefärbt.
 
 ### Das Register
 
@@ -1685,7 +1686,12 @@ unter **Neue Tafel…**. Sie hat einen eigenen Reiter, wie eine Landschaft oder
 ein Blatt.
 
 Eine Zeichnung wird als ihr Bild gezeigt. Eine Zeichnung ohne Bild sagt **Noch
-nicht gezeichnet**.
+nicht gezeichnet**, und hat keine Flächen.
+
+Auf dem Bild ist jede Form, die auf ein Element zeigt, eine durchsichtige
+Fläche. Die Fläche wählen öffnet dieses Element. Der Inspektor des Elements
+nennt die Zeichnungen in diesem Bereich, die darauf zeigen. Eine Form, die auf
+ein Element zeigt, das dieser Bereich nicht hält, ist ein Befund.
 
 **Bearbeiten** öffnet den Editor, in der Sprache der App. Die Palette enthält
 die Elemente des Bereichs — jedes eine Form, die auf dieses Element zeigt —

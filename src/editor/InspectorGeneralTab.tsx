@@ -14,7 +14,8 @@ import MenuItem from '@mui/material/MenuItem';
 import Switch from '@mui/material/Switch';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import type { DesignDiagram, DesignElement } from '../model/types';
+import type { DesignDiagram, DesignElement, DesignModel, ElementId } from '../model/types';
+import { drawingsPointingAt } from '../model/drawing';
 import { placedNodes } from '../model/placement';
 import { zoneLabel } from '../model/zones';
 import { useStrings } from '../i18n/LanguageContext';
@@ -57,6 +58,7 @@ export function GeneralTab({ field, inspector, uses, picker }: {
         />
       )}
       <PlacementField field={field} diagram={inspector.diagram} />
+      <DrawingsField model={model} elementId={element.id} />
       {onCreateContainer && !readOnly && offersContainer(element, model) && (
         <ContainerOffer onCreate={() => onCreateContainer(element.id)} />
       )}
@@ -164,6 +166,28 @@ function PlacementField({ field, diagram }: { field: InspectorField; diagram: De
           )}
         />
       )}
+    </Box>
+  );
+}
+
+/**
+ * The drawings in this scope whose links point at the element. Nothing, when
+ * none do — an empty heading would be a heading about an absence.
+ */
+function DrawingsField({ model, elementId }: { model: DesignModel; elementId: ElementId }) {
+  const { t } = useStrings();
+  const drawings = drawingsPointingAt(model.diagrams, elementId);
+  if (drawings.length === 0) return null;
+  return (
+    <Box data-testid="element-drawings">
+      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+        {t('field.onDrawings')}
+      </Typography>
+      {drawings.map((drawing) => (
+        <Typography key={drawing.id} variant="body2" component="div" data-testid={`element-drawing-${drawing.id}`}>
+          {drawing.name}
+        </Typography>
+      ))}
     </Box>
   );
 }

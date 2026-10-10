@@ -185,10 +185,10 @@ finds. Each row of the tree on the organisation screen carries its own line.
 - **Without an owner** — a system marked as somebody else's that nobody has said
   whose it is.
 
-One thing on the list is **information rather than a fault**: a record no board
-in its own scope draws. A thing can be real, owned and documented without being
-on anybody's picture yet, so it is counted apart and never coloured like a
-finding.
+One thing on the list is **information rather than a fault**: a record nothing
+in its own scope draws — no board holds it, and no drawing there points at it.
+A thing can be real, owned and documented without being on anybody's picture
+yet, so it is counted apart and never coloured like a finding.
 
 ### The register
 
@@ -1473,7 +1473,12 @@ and a scope's home offers the same under **New board…**. It has a tab of its
 own, like a landscape or a sheet.
 
 A drawing is shown as its picture. A drawing that has no picture says **Not
-drawn yet**.
+drawn yet**, and has no areas.
+
+On the picture, each shape that points at an element is a transparent area.
+Choosing the area opens that element. The element's inspector lists the
+drawings in this scope that point at it. A shape that points at an element
+this scope does not hold is a finding.
 
 **Edit** opens the editor, in the language the app is using. The palette holds
 the scope's elements — each a shape that points at that element — and the C4

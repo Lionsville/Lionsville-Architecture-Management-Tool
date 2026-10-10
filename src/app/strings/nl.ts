@@ -114,6 +114,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.drawingEditorUnavailable': 'De editor is niet beschikbaar',
   'shell.drawingElements': 'Elementen',
   'shell.drawingSaveFailed': 'De tekening kon niet worden bewaard.',
+  'shell.drawingOpenElement': '{name} openen',
   'shell.add': 'Toevoegen',
   'shell.imagesMissing': 'PNG geëxporteerd, maar deze logo’s ontbreken: {labels}.',
   'shell.logoAdded': 'Logo “{name}” toegevoegd aan de eigen bibliotheek.',

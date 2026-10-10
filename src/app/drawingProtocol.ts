@@ -64,13 +64,14 @@ const SHAPE_HEIGHT = 60
  * One element, as a shape draw.io can drop on the page.
  *
  * Uncompressed XML, so it starts with `<`. The shape is a UserObject: the
- * label is the element's name, and `link="element:<id>"` is the point at it.
+ * label is the element's name, `link="element:<id>"` is the point at it, and
+ * `lvElement` says the same id beside the link.
  */
 export function elementShapeXml(element: PaletteElement): string {
   const label = xmlAttr(element.name || element.id)
   const id = xmlAttr(element.id)
   return '<mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>'
-    + `<UserObject label="${label}" link="element:${id}" id="2">`
+    + `<UserObject label="${label}" link="element:${id}" lvElement="${id}" id="2">`
     + '<mxCell vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;">'
     + `<mxGeometry width="${SHAPE_WIDTH}" height="${SHAPE_HEIGHT}" as="geometry"/>`
     + '</mxCell></UserObject></root></mxGraphModel>'
