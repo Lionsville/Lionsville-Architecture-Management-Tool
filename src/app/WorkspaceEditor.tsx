@@ -179,6 +179,7 @@ function laidOutPage(parts: WorkspaceParts, diagram: DesignDiagram, view: PageVi
           language={parts.props.shell.language}
           dispatch={parts.session.dispatch}
           notify={parts.props.shell.notify}
+          onOpen={(to) => parts.show({ ...to, scope: parts.props.project.path })}
           s={parts.props.shell.s}
         />
       )

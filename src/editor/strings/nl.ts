@@ -347,6 +347,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'field.iconSize': 'Pictogramgrootte',
   'field.iconFirst': 'Kies eerst een pictogram',
   'field.placement': 'Plaatsing',
+  'field.onDrawings': 'Op tekeningen',
   'field.zone': 'Zone: {name}',
   'field.note': 'Notitie',
   'field.notePlaceholder': 'bijv. AKS, GitHub Actions',

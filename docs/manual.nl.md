@@ -190,10 +190,10 @@ van de boom op het organisatiescherm draagt zijn eigen zin.
 - **Zonder eigenaar** — een systeem dat als andermans is gemarkeerd zonder dat
   iemand heeft gezegd van wie.
 
-Eén ding op die lijst is **informatie en geen fout**: een record dat geen enkel
-bord in zijn eigen onderdeel tekent. Iets kan echt, beheerd en beschreven zijn
-zonder al op iemands plaat te staan, dus het wordt apart geteld en nooit als
-bevinding gekleurd.
+Eén ding op die lijst is **informatie en geen fout**: een record dat niets in
+zijn eigen onderdeel tekent — geen bord houdt het, en geen tekening daar wijst
+ernaar. Iets kan echt, beheerd en beschreven zijn zonder al op iemands plaat te
+staan, dus het wordt apart geteld en nooit als bevinding gekleurd.
 
 ### Het register
 
@@ -1569,7 +1569,12 @@ maakt er een, en de startpagina van een scope biedt hetzelfde onder **Nieuw
 bord…**. Hij heeft een eigen tabblad, zoals een landschap of een sheet.
 
 Een tekening wordt getoond als zijn afbeelding. Een tekening zonder afbeelding
-zegt **Nog niet getekend**.
+zegt **Nog niet getekend**, en heeft geen vlakken.
+
+Op de afbeelding is elke vorm die naar een element wijst een doorzichtig vlak.
+Het vlak kiezen opent dat element. De inspector van het element noemt de
+tekeningen in deze scope die ernaar wijzen. Een vorm die naar een element wijst
+dat deze scope niet heeft, is een bevinding.
 
 **Bewerken** opent de editor, in de taal van de app. Het palet bevat de
 elementen van de scope — elk een vorm die naar dat element wijst — en de

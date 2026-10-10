@@ -332,5 +332,5 @@ function useScreenParts(
     scope: project.path, show, ...(navigation.onOpenScope ? { onOpenScope: navigation.onOpenScope } : {}),
   })
   const analysis = useAnalysisActions({ session, makeId, today, s })
-  return { snapshots, toolbarRef, pageChrome, todayDay, today, viewing, pages, dialogs, analysis }
+  return { snapshots, toolbarRef, pageChrome, todayDay, today, viewing, pages, show, dialogs, analysis }
 }

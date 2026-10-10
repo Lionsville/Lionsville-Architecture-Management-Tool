@@ -6,15 +6,26 @@
  *
  * A drawing is draw.io's XML. A shape points at an element by
  * `link="element:<id>"` on the cell, or on the UserObject that wraps it.
- * The place is the cell's `mxGeometry`, and a child is placed relative to
- * its parent, so the absolute area is the sum of the ancestors. The labels
- * — a cell's `value`, a UserObject's `label` — are the prose a search
+ * `lvElement="<id>"` is the same point when the cell has no `link`. The
+ * place is the cell's `mxGeometry`, and a child is placed relative to its
+ * parent, so the absolute area is the sum of the ancestors. The labels —
+ * a cell's `value`, a UserObject's `label` — are the prose a search
  * indexes. Nothing here draws, and nothing here changes the model.
  */
 import type { ContentAddress } from './imageName'
-import type { DrawingLink } from './types'
+import type { DesignDiagram, DrawingLink, ElementId } from './types'
 
 const ELEMENT_LINK = /^element:(.+)$/
+
+/** draw.io's page, when the model does not name one. */
+const PAGE_WIDTH = 850
+const PAGE_HEIGHT = 1100
+
+/**
+ * The coordinate frame a picture is drawn in: model units, origin included.
+ * A viewBox is the export's; a page is the model's, origin at 0.
+ */
+export type PictureFrame = { x: number; y: number; width: number; height: number }
 
 type Attrs = Record<string, string>
 
@@ -75,10 +86,81 @@ export function drawingPictureAddresses(
   return addresses
 }
 
+/**
+ * The page the model draws on.
+ *
+ * Origin at 0. The size is what `mxGraphModel` names, and draw.io's own page
+ * where it names none — that is the frame an export uses when the picture
+ * itself does not say.
+ */
+export function modelFrame(xml: string): PictureFrame {
+  const tag = /<mxGraphModel\b([^>]*)>/i.exec(xml)?.[1] ?? ''
+  return {
+    x: 0,
+    y: 0,
+    width: positive(attr(tag, 'pageWidth')) ?? PAGE_WIDTH,
+    height: positive(attr(tag, 'pageHeight')) ?? PAGE_HEIGHT,
+  }
+}
+
+/**
+ * The picture's own frame, when it is an SVG that names a viewBox.
+ *
+ * That box is the coordinate system the image was exported in, so a model
+ * coordinate scales onto the displayed image by it. Absent when the markup
+ * is not an SVG or names no box.
+ */
+export function svgFrame(markup: string): PictureFrame | undefined {
+  const tag = /<svg\b[^>]*>/i.exec(markup)?.[0]
+  if (!tag) return undefined
+  const box = /\sviewBox\s*=\s*(?:"([^"]*)"|'([^']*)')/i.exec(tag)
+  const raw = box?.[1] ?? box?.[2]
+  if (!raw) return undefined
+  const [x, y, width, height] = raw.trim().split(/[\s,]+/).map(Number)
+  if (![x, y, width, height].every((value) => Number.isFinite(value))) return undefined
+  if (width <= 0 || height <= 0) return undefined
+  return { x, y, width, height }
+}
+
+/**
+ * Where an area sits on the displayed picture, as fractions of it.
+ *
+ * The area is in model coordinates. The frame is the picture's, so the
+ * fractions are the place on the image however it is scaled.
+ */
+export function areaOnPicture(
+  area: DrawingLink['area'],
+  frame: PictureFrame,
+): { left: number; top: number; width: number; height: number } | undefined {
+  if (frame.width <= 0 || frame.height <= 0) return undefined
+  return {
+    left: (area.x - frame.x) / frame.width,
+    top: (area.y - frame.y) / frame.height,
+    width: area.width / frame.width,
+    height: area.height / frame.height,
+  }
+}
+
+/**
+ * The drawings in this list whose links point at the element, in the list's
+ * order. A drawing anchored to the element and not pointing at it is not one.
+ */
+export function drawingsPointingAt(diagrams: readonly DesignDiagram[], elementId: ElementId): DesignDiagram[] {
+  return diagrams.filter((diagram) =>
+    diagram.kind === 'drawing' && (diagram.drawing?.links ?? []).some((link) => link.elementId === elementId))
+}
+
 function elementOf(link: string | undefined): string | undefined {
   const matched = link?.match(ELEMENT_LINK)
   const id = matched?.[1]
   return id ? id : undefined
+}
+
+/** `link` when the cell has one; otherwise `lvElement` read as `element:<id>`. */
+function pointedAt(link: string | undefined, lvElement: string | undefined): string | undefined {
+  if (link) return link
+  if (lvElement) return `element:${lvElement}`
+  return undefined
 }
 
 function absoluteArea(cell: Cell, byId: ReadonlyMap<string, Cell>): DrawingLink['area'] {
@@ -124,7 +206,10 @@ function cellOf(node: El, inner?: El): Cell | undefined {
   if (!id) return undefined
   const source = inner ?? node
   const geometry = geometryOf(source) ?? geometryOf(node)
-  const link = node.attrs.link || source.attrs.link
+  const link = pointedAt(
+    node.attrs.link || source.attrs.link,
+    node.attrs.lvElement || source.attrs.lvElement,
+  )
   const label = node.attrs.label || node.attrs.value || source.attrs.value || source.attrs.label
   return {
     id,
@@ -147,6 +232,17 @@ function geometryOf(node: El): { x: number; y: number; width: number; height: nu
     width: numberOf(geometry.attrs.width),
     height: numberOf(geometry.attrs.height),
   }
+}
+
+function attr(raw: string, name: string): string | undefined {
+  const match = new RegExp(`(?:^|\\s)${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)')`).exec(raw)
+  return match?.[1] ?? match?.[2]
+}
+
+function positive(value: string | undefined): number | undefined {
+  if (value === undefined || value === '') return undefined
+  const parsed = Number(value)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined
 }
 
 function numberOf(value: string | undefined): number {

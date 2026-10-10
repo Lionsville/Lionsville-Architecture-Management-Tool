@@ -360,6 +360,8 @@ export const EN = {
   'field.iconSize': 'Icon size',
   'field.iconFirst': 'Pick an icon first',
   'field.placement': 'Placement',
+  /** Drawings in this scope whose shapes point at the element. */
+  'field.onDrawings': 'On drawings',
   'field.zone': 'Zone: {name}',
   'field.note': 'Note',
   'field.notePlaceholder': 'e.g. AKS, GitHub Actions',

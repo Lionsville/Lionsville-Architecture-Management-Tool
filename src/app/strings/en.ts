@@ -206,6 +206,8 @@ export const EN = {
   'shell.drawingElements': 'Elements',
   /** An export that was not a picture, or bytes that could not be kept. */
   'shell.drawingSaveFailed': 'The drawing could not be saved.',
+  /** A shape on the picture that points at an element: what the area is called. */
+  'shell.drawingOpenElement': 'Open {name}',
   'shell.add': 'Add',
   'shell.imagesMissing': 'PNG exported, but these logos are missing: {labels}.',
   'shell.logoAdded': 'Logo “{name}” added to your own library.',
