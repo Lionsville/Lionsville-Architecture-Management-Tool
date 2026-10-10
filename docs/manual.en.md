@@ -1475,6 +1475,14 @@ own, like a landscape or a sheet.
 A drawing is shown as its picture. A drawing that has no picture says **Not
 drawn yet**.
 
+**Edit** opens the editor, in the language the app is using. The palette holds
+the scope's elements — each a shape that points at that element — and the C4
+shapes. Saving keeps the drawing as one: its XML, its picture, and the links
+the shapes make.
+
+Where no address for the editor was given, the drawing is still shown, and
+**Edit** says the editor is not available.
+
 ## Search
 
 **Search** in the top bar, or ⌘K, searches everything at once: elements by

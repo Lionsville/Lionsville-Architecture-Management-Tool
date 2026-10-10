@@ -198,6 +198,14 @@ export const EN = {
   'shell.newTechnology': 'Technology landscape',
   'shell.newDrawing': 'Drawing',
   'shell.drawingNotDrawn': 'Not drawn yet',
+  /** Opens the drawing editor, when this source has an origin for one. */
+  'shell.drawingEdit': 'Edit',
+  /** What Edit says when no origin was given: the drawing is still shown. */
+  'shell.drawingEditorUnavailable': 'The editor is not available',
+  /** The palette the editor opens with: the scope's elements. */
+  'shell.drawingElements': 'Elements',
+  /** An export that was not a picture, or bytes that could not be kept. */
+  'shell.drawingSaveFailed': 'The drawing could not be saved.',
   'shell.add': 'Add',
   'shell.imagesMissing': 'PNG exported, but these logos are missing: {labels}.',
   'shell.logoAdded': 'Logo “{name}” added to your own library.',

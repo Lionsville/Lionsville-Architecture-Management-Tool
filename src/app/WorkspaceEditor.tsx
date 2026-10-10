@@ -174,6 +174,11 @@ function laidOutPage(parts: WorkspaceParts, diagram: DesignDiagram, view: PageVi
           diagram={diagram}
           scope={parts.props.project.id}
           images={parts.props.source.repositories.images}
+          elements={parts.session.model.elements.map((element) => ({ id: element.id, name: element.name }))}
+          origin={parts.props.shell.drawingOrigin}
+          language={parts.props.shell.language}
+          dispatch={parts.session.dispatch}
+          notify={parts.props.shell.notify}
           s={parts.props.shell.s}
         />
       )

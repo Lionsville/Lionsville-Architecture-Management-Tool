@@ -274,6 +274,11 @@ export type AppProvider = {
   /** The address a link to the open source starts from (`ProviderParts.shareAddress`). */
   shareAddress?: () => string | undefined
   /**
+   * Where the drawing editor is served (`ProviderParts.drawingOrigin`).
+   * Absent, or answering nothing, and Edit says the editor is not available.
+   */
+  drawingOrigin?: () => string | undefined
+  /**
    * What the open source's provider calls a source of its kind, says of where
    * everything is kept, says removing a scope takes with it, and says of a
    * scope that could not be read whole (`SourceProvider.labelKey`, `whereKey`,

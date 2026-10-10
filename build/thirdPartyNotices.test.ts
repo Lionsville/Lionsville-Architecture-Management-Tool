@@ -12,10 +12,12 @@ import {
   noticesFor,
   noticesOver,
   packagesImportedBy,
+  drawioNotice,
   renderNotices,
   shipsCode,
   type Manifest,
 } from './thirdPartyNotices'
+import { drawioPin } from './dependencyPolicy'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 const COMMITTED = readFileSync(new URL('../THIRD-PARTY-NOTICES.md', import.meta.url), 'utf8')
@@ -168,7 +170,7 @@ describe('THIRD-PARTY-NOTICES.md as committed', () => {
   // The drift guard: a new dependency without a regenerated file is a red check,
   // rather than a release that quietly ships an incomplete notice.
   it('is what generating it now produces', () => {
-    expect(renderNotices(noticesFor(root), PRODUCT)).toBe(COMMITTED)
+    expect(renderNotices(noticesFor(root), PRODUCT, [drawioNotice(drawioPin)])).toBe(COMMITTED)
   })
 
   it('names the libraries whose licences ask for more than a mention', () => {
@@ -181,5 +183,18 @@ describe('THIRD-PARTY-NOTICES.md as committed', () => {
     // Reached only as MUI's peers, and bundled all the same.
     expect(COMMITTED).toContain('- @emotion/react ')
     expect(COMMITTED).toContain('- @emotion/styled ')
+  })
+
+  it('pins draw.io once: the policy, the notice and the fetch name the same version', () => {
+    const script = readFileSync(new URL('./fetchDrawio.ts', import.meta.url), 'utf8')
+    expect(drawioPin.version).toBe('32.4.1')
+    expect(COMMITTED).toContain(`## draw.io ${drawioPin.version}`)
+    expect(COMMITTED).toContain(drawioPin.sha256)
+    expect(COMMITTED).toContain('DOMPurify')
+    expect(COMMITTED).toContain('MPL-2.0')
+    // The fetch reads the pin. It does not keep a second copy of the version or the checksum.
+    expect(script).toContain('drawioPin')
+    expect(script).not.toContain(drawioPin.version)
+    expect(script).not.toContain(drawioPin.sha256)
   })
 })

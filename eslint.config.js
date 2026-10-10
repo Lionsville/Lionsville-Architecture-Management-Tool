@@ -497,7 +497,9 @@ export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    ignores: ['dist/**', 'node_modules/**', 'public/**', '*.config.ts', '*.config.js'],
+    // `build/drawio/` is the pruned editor a build fetches. It is not our
+    // source, and linting its bundles exhausts the process.
+    ignores: ['dist/**', 'node_modules/**', 'public/**', '*.config.ts', '*.config.js', 'build/drawio/**'],
   },
   {
     rules: {

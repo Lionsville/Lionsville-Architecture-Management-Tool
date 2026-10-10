@@ -16,8 +16,8 @@
  * So a desktop hook names the origins its own source needs
  * (`platform/desktopHook.ts`) and they are folded in here, at the point the
  * header is built. This build registers no hook, so `contentSecurityPolicy()`
- * over an empty list is exactly the header this app has always sent — which is
- * what the suite beside this file pins first.
+ * over an empty list is the header this app sends — the one the suite beside
+ * this file pins, frame included.
  *
  * Its own file because it is arithmetic: a list of names in, one string out,
  * with no Electron and no `net.fetch` around it. What a hook may widen and what
@@ -84,11 +84,13 @@ export function pageOrigins(named: readonly HookOrigin[]): {
  *
  * A hook's origins reach `connect-src`, which is the directive that is about
  * where the page may ASK something, and `img-src` only where that hook said
- * pictures load from there. Nothing reaches `script-src`, `style-src`,
- * `worker-src` or `frame-src`, and there is no seam that would let it: code from
- * somewhere else running in this window is not a source of work, it is a second
- * app, and `object-src 'none'` and `base-uri 'none'` stay absolute for the same
+ * pictures load from there. Nothing reaches `script-src`, `style-src` or
+ * `worker-src`, and there is no seam that would let it: code from somewhere
+ * else running in this window is not a source of work, it is a second app,
+ * and `object-src 'none'` and `base-uri 'none'` stay absolute for the same
  * reason.
+ *
+ * The one frame is the drawing scheme. A hook cannot name another.
  */
 export function contentSecurityPolicy(named: readonly HookOrigin[] = []): string {
   const { data, pictures } = pageOrigins(named)
@@ -100,6 +102,7 @@ export function contentSecurityPolicy(named: readonly HookOrigin[] = []): string
     "font-src 'self' data:",
     ["connect-src 'self' data: blob:", ...data].join(' '),
     "worker-src 'self' blob:",
+    "frame-src drawing://local",
     "object-src 'none'",
     "base-uri 'none'",
     "form-action 'none'",

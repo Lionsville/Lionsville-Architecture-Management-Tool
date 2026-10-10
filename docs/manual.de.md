@@ -1687,6 +1687,14 @@ ein Blatt.
 Eine Zeichnung wird als ihr Bild gezeigt. Eine Zeichnung ohne Bild sagt **Noch
 nicht gezeichnet**.
 
+**Bearbeiten** öffnet den Editor, in der Sprache der App. Die Palette enthält
+die Elemente des Bereichs — jedes eine Form, die auf dieses Element zeigt —
+und die C4-Formen. Speichern hält die Zeichnung als eines: das XML, das Bild
+und die Verweise, die die Formen setzen.
+
+Wo keine Adresse für den Editor angegeben wurde, wird die Zeichnung weiterhin
+gezeigt, und **Bearbeiten** sagt, dass der Editor nicht verfügbar ist.
+
 ## Suchen
 
 **Suchen** in der oberen Leiste, oder ⌘K, durchsucht alles auf einmal: Elemente

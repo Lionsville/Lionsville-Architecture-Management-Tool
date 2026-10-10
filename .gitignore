@@ -5,6 +5,8 @@ public/_marks/
 vendor/solution-design/node_modules/
 .DS_Store
 out/
+# draw.io, fetched and pruned by build/fetchDrawio.ts. Not part of the tree.
+build/drawio/
 release/
 smoke-screenshot.png
 tmp/

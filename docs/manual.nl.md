@@ -1586,6 +1586,14 @@ bord…**. Hij heeft een eigen tabblad, zoals een landschap of een sheet.
 Een tekening wordt getoond als zijn afbeelding. Een tekening zonder afbeelding
 zegt **Nog niet getekend**.
 
+**Bewerken** opent de editor, in de taal van de app. Het palet bevat de
+elementen van de scope — elk een vorm die naar dat element wijst — en de
+C4-vormen. Bewaren houdt de tekening als één: de XML, de afbeelding en de
+koppelingen die de vormen maken.
+
+Waar geen adres voor de editor is gegeven, wordt de tekening nog steeds
+getoond, en **Bewerken** zegt dat de editor niet beschikbaar is.
+
 ## Zoeken
 
 **Zoeken** in de bovenbalk, of ⌘K, doorzoekt alles in één keer: elementen op

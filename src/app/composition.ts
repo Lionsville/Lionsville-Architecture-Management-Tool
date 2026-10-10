@@ -29,6 +29,7 @@
  * that may name both a seam and a filling. A build composed from this one adds
  * a fourth by registering it, and nothing above this line is edited for it.
  */
+import { DESKTOP_DRAWING_ORIGIN } from '../platform/drawingOrigin'
 import { registerLogoPack } from '../model/logoRegistry'
 import { DesktopAgentGateway } from '../adapters/desktop/DesktopAgentGateway'
 import {
@@ -640,8 +641,8 @@ export function desktopCommandChannel(): DesktopCommands | undefined {
  * opened into, with everything the source before it said for itself taken off
  * first — its status words, its failure sentence, its session hook, its
  * read-only scopes, its landing, whether it publishes steps, what it hears of
- * changes, its own parts and the address a link to it starts from. A folder
- * whose scopes are bound to a server's session, or which reports a server's
+ * changes, its own parts, the address a link to it starts from and where its
+ * drawing editor is served. A folder whose scopes are bound to a server's
  * failure, or a link to a folder made from a server's address, is the defect
  * this closes.
  */
@@ -650,9 +651,21 @@ export function overSource(shell: Shell, parts: SourceParts): Shell {
     sourceStatus: _status, onSourceWork: _work, sourceFailure: _failure, onScopeSession: _session,
     publishesSteps: _publishes, readOnlyAt: _readOnly, opensAt: _opensAt, changes: _changes,
     own: _own, historyNoteKey: _historyNote, historyKept: _historyKept, sayings: _sayings, settled: _settled,
-    shareAddress: _share, ...rest
+    shareAddress: _share, drawingOrigin: _drawing, ...rest
   } = shell
   return { ...rest, ...parts, preferences: parts.preferences ?? shell.preferences }
+}
+
+/**
+ * The desktop serves the editor on its own scheme.
+ *
+ * A source that names an origin keeps it. One that names none, opened on the
+ * desktop, is given the scheme. A browser has no desktop and supplies none:
+ * drawings still show, and Edit says the editor is not available.
+ */
+export function withDesktopDrawing(shell: Shell, desktop: boolean): Shell {
+  if (!desktop || shell.drawingOrigin) return shell
+  return { ...shell, drawingOrigin: () => DESKTOP_DRAWING_ORIGIN }
 }
 
 /**
