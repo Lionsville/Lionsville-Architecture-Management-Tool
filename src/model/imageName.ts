@@ -170,6 +170,25 @@ export function imageNameOfReference(target: string): ImageName | undefined {
   return isImageName(name) ? name : undefined
 }
 
+/**
+ * What some bytes are, read off the bytes themselves.
+ *
+ * A library entry says the media type of a name. Bytes asked for by content
+ * address — a drawing's picture, which has no library name — have only the
+ * bytes. PNG, JPEG, WebP and SVG are what a picture here can be; anything
+ * else is left as an SVG only when it looks like XML, and otherwise as bytes
+ * nobody can draw.
+ */
+export function mediaTypeOfBytes(bytes: Uint8Array): string {
+  if (bytes.length >= 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) return 'image/png'
+  if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return 'image/jpeg'
+  if (bytes.length >= 12 && bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46
+    && bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50) return 'image/webp'
+  const head = new TextDecoder().decode(bytes.subarray(0, Math.min(bytes.length, 256))).trimStart()
+  if (head.startsWith('<svg') || head.startsWith('<?xml') || head.startsWith('<!DOCTYPE svg')) return 'image/svg+xml'
+  return 'application/octet-stream'
+}
+
 /** The content address of some bytes. */
 export async function contentAddressOf(bytes: Uint8Array): Promise<ContentAddress> {
   const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', new Uint8Array(bytes)))

@@ -550,6 +550,7 @@ export function OrganisationScreen({
               onAddSheet={() => organisation.open(at, { page: 'make', kind: 'sheet' })}
               onAddMap={() => organisation.open(at, { page: 'make', kind: 'map' })}
               onAddTechnology={() => organisation.open(at, { page: 'make', kind: 'technology' })}
+              onAddDrawing={() => organisation.open(at, { page: 'make', kind: 'drawing' })}
               onDelete={(board) => organisation.askDeleteBoard(at, board)}
               readOnly={!mayWrite}
               language={language}

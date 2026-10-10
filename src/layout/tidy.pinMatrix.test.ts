@@ -155,7 +155,7 @@ describe('Tidy — box position × member layout', () => {
     // once a Tidy or a drag wrote one. That is a normal state, not an edge case,
     // and a zero-sized leaf would collapse the group under ELK.
     const model = landscape();
-    model.diagrams[0].geometry = { ...model.diagrams[0].geometry, groups: [] };
+    model.diagrams[0].geometry = { ...model.diagrams[0].geometry!, groups: [] };
     const result = await tidyLayer7(model, model.diagrams[0], options({ pinGroupContents: true }));
 
     const alpha = result.domainGroups?.find((g) => g.id === 'Alpha');

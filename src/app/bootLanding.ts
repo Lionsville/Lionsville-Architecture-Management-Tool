@@ -191,7 +191,7 @@ export async function landedAt(
 export function initialPageFor(to: Destination): InitialPage | undefined {
   const id = to.id !== undefined ? { id: to.id } : {}
   switch (to.page) {
-    case 'board': case 'sheet': case 'map': case 'technology':
+    case 'board': case 'sheet': case 'map': case 'technology': case 'drawing':
       return { page: to.page, ...id, ...(to.select !== undefined ? { select: to.select } : {}) }
     case 'decisions': return { page: 'decisions', ...id }
     case 'observations': return { page: 'observations', ...id, ...(to.tab !== undefined ? { tab: to.tab } : {}) }

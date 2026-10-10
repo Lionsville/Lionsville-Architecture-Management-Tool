@@ -181,6 +181,7 @@ export const EN = {
   'toolbar.newSheet': 'Business architecture',
   'toolbar.newMap': 'Enterprise map',
   'toolbar.newTechnology': 'Technology landscape',
+  'toolbar.newDrawing': 'Drawing',
   'toolbar.readOnly': 'Read-only',
   'toolbar.undo': 'Undo',
   'toolbar.undoTip': 'Undo (⌘Z)',

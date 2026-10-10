@@ -89,5 +89,6 @@ describe('the view a destination opens', () => {
     expect(viewPage('layer7')).toBe('board')
     expect(viewPage('container')).toBe('board')
     expect(viewPage('technology')).toBe('technology')
+    expect(viewPage('drawing')).toBe('drawing')
   })
 })

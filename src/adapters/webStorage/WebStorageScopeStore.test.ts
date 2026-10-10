@@ -191,7 +191,7 @@ describe('WebStorageScopeStore — a record from before format 4', () => {
     ])
     expect(held?.model.elements[0]).toMatchObject({ kind: 'application' })
     expect(held?.model.diagrams[0].members).toEqual([{ id: 'portal', zone: 'inputChannels' }])
-    expect(held?.model.diagrams[0].geometry.nodes).toEqual([{ id: 'portal', x: 1, y: 2 }])
+    expect(held?.model.diagrams[0].geometry!.nodes).toEqual([{ id: 'portal', x: 1, y: 2 }])
   })
 })
 

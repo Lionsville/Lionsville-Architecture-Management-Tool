@@ -13,14 +13,32 @@ import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { formatDay } from '../../i18n/dates'
 import { plural } from '../../i18n/strings'
+import type { StringKey } from '../../i18n'
 import type { Language, Translate } from '../../i18n'
-import { isBoardKind } from '../../model/placement'
 import type { DesignDiagram } from '../../model'
 import { BoardKindIcon } from './boardIcons'
 import { outlineBoards } from './boardOutline'
 
-/** What a laid-out view's row says instead of a day and a count: the kind, and that it is laid out. */
-const LAID_OUT_LABEL = { sheet: 'org.viewSheet', map: 'org.viewMap', technology: 'org.viewTechnology' } as const
+/** What a view that is not a board says, instead of a day and a count. A drawing is not laid out. */
+function viewLabel(kind: DesignDiagram['kind']): StringKey | undefined {
+  switch (kind) {
+    case 'sheet':
+      return 'org.viewSheet'
+    case 'map':
+      return 'org.viewMap'
+    case 'technology':
+      return 'org.viewTechnology'
+    case 'drawing':
+      return 'org.viewDrawing'
+    case 'layer7':
+    case 'container':
+      return undefined
+    default: {
+      const unexpected: never = kind
+      return unexpected
+    }
+  }
+}
 
 /** The name is a button that looks like a name: see {@link BoardRow}. */
 const NAME_SX = {
@@ -50,7 +68,7 @@ interface RowActions {
  * ({@link outlineBoards}). What a row says is what tells two boards of one
  * landscape apart: the kind, the day it shows (ADR-0009) and how much is on it.
  */
-export function BoardsTable({ boards, onOpen, onAdd, onAddSheet, onAddMap, onAddTechnology, onDelete, readOnly = false, language, s }: {
+export function BoardsTable({ boards, onOpen, onAdd, onAddSheet, onAddMap, onAddTechnology, onAddDrawing, onDelete, readOnly = false, language, s }: {
   boards: readonly DesignDiagram[]
   onOpen: (id: string) => void
   /** A landscape for this scope — the only way to its first one. */
@@ -59,6 +77,8 @@ export function BoardsTable({ boards, onOpen, onAdd, onAddSheet, onAddMap, onAdd
   onAddSheet: () => void
   onAddMap: () => void
   onAddTechnology: () => void
+  /** A drawing, the same door as the other views. */
+  onAddDrawing: () => void
   /**
    * A container diagram only: a landscape is deleted from its tab, where the
    * last one is refused, and a container diagram has no tab and no last one.
@@ -97,6 +117,7 @@ export function BoardsTable({ boards, onOpen, onAdd, onAddSheet, onAddMap, onAdd
           <MenuItem onClick={pick(onAddSheet)}>{s('org.newBoardSheet')}</MenuItem>
           <MenuItem onClick={pick(onAddMap)}>{s('org.newBoardMap')}</MenuItem>
           <MenuItem onClick={pick(onAddTechnology)}>{s('org.newBoardTechnology')}</MenuItem>
+          <MenuItem onClick={pick(onAddDrawing)}>{s('org.newBoardDrawing')}</MenuItem>
         </Menu>
       </Stack>
       {boards.length === 0 && (
@@ -153,7 +174,8 @@ function BoardRow({ board, under, compact = false, onOpen, onDelete, language, s
   under?: string
   compact?: boolean
 }) {
-  const said = !isBoardKind(board.kind) ? s(LAID_OUT_LABEL[board.kind as keyof typeof LAID_OUT_LABEL]) : [
+  const label = viewLabel(board.kind)
+  const said = label ? s(label) : [
     s(board.kind === 'container' ? 'org.viewContainer' : 'org.viewLayer7'),
     // The day the board shows. A board with no date moves with the
     // calendar, and says so rather than printing today's.

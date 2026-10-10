@@ -270,7 +270,7 @@ describe('what one change touches', () => {
       ...diagram,
       geometry: {
         ...diagram.geometry,
-        nodes: diagram.geometry.nodes.map((node) => (node.id === 'crews' ? { ...node, x: 44 } : node)),
+        nodes: diagram.geometry!.nodes.map((node) => (node.id === 'crews' ? { ...node, x: 44 } : node)),
       },
     }
     expect(changed(before, scopeFiles(moved))).toEqual(['diagrams/l7.geometry.json'])
@@ -659,9 +659,9 @@ describe('a folder written before format 9', () => {
     expect(read.model.observations?.[0]).toEqual(observation)
   })
 
-  it('writes format 9 back, with root on the cause and shared nowhere, and reads it as written', () => {
+  it('writes the current format back, with root on the cause and shared nowhere, and reads it as written', () => {
     const again = scopeFiles(scopeFromFolder(eight(), REF)!)
-    expect(JSON.parse(textOf(again, SCOPE_FILE)).version).toBe(9)
+    expect(JSON.parse(textOf(again, SCOPE_FILE)).version).toBe(SCOPE_FORMAT_VERSION)
     expect(at(again, 'observations/causes/0002')).toContain('root: true')
     expect(at(again, 'observations/causes/0002')).toContain('# RC-0002 — Cause 2')
     expect(at(again, 'observations/0001')).not.toContain('shared: true')

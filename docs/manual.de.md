@@ -1662,6 +1662,16 @@ Dienstbericht, wer strandete, bevor Sie einen zurückziehen, und der Befund,
 welche Dinge Ihres eigenen Teams andere Teams stillschweigend zu nutzen
 begonnen haben.
 
+## Eine Zeichnung
+
+Eine **Zeichnung** ist eine Ansicht. **+** in den Diagrammreitern, dann
+**Zeichnung**, legt eine an, und die Startseite eines Bereichs bietet dasselbe
+unter **Neue Tafel…**. Sie hat einen eigenen Reiter, wie eine Landschaft oder
+ein Blatt.
+
+Eine Zeichnung wird als ihr Bild gezeigt. Eine Zeichnung ohne Bild sagt **Noch
+nicht gezeichnet**.
+
 ## Suchen
 
 **Suchen** in der oberen Leiste, oder ⌘K, durchsucht alles auf einmal: Elemente

@@ -142,6 +142,9 @@ export async function listViews(
 }
 
 function viewRow(scope: string, scopeName: string, diagram: DesignDiagram, active: string | undefined, open: string | undefined) {
+  const pointsAt = diagram.kind === 'drawing'
+    ? [...new Set((diagram.drawing?.links ?? []).map((link) => link.elementId))]
+    : undefined
   return {
     scope,
     scopeName,
@@ -149,6 +152,9 @@ function viewRow(scope: string, scopeName: string, diagram: DesignDiagram, activ
     name: diagram.name,
     kind: diagram.kind,
     elements: diagram.members.length,
+    ...(diagram.kind === 'drawing' && diagram.elementId !== undefined ? { elementId: diagram.elementId } : {}),
+    ...(diagram.kind === 'drawing' && diagram.c4Level !== undefined ? { c4Level: diagram.c4Level } : {}),
+    ...(pointsAt !== undefined ? { pointsAt } : {}),
     ...(diagram.id === active ? { onTab: true } : {}),
     ...(diagram.id === active && scope === open ? { onScreen: true } : {}),
   }
@@ -284,7 +290,8 @@ function withTabAndSelect(asked: Destination, target: Resolved, model: HostModel
     return refused('agent.badArguments', '"tab" is for page observations')
   }
   if (asked.select !== undefined) {
-    if (target.page === undefined || !VIEW_PAGES.includes(target.page)) {
+    // A drawing opens as a view and does not select an element on a board.
+    if (target.page !== 'board' && target.page !== 'sheet' && target.page !== 'map' && target.page !== 'technology') {
       return refused('agent.badArguments', '"select" is for page board, sheet, map or technology')
     }
     if (!model?.elements.some((element) => element.id === asked.select)) {

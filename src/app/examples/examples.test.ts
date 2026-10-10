@@ -558,7 +558,7 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s on a sheet',
     expect(sheets).toHaveLength(1)
     // A sheet is laid out, so its geometry file is the empty one a save writes
     // rather than coordinates nobody chose.
-    expect(sheets[0].geometry.nodes).toEqual([])
+    expect(sheets[0].geometry!.nodes).toEqual([])
   })
 
   /**

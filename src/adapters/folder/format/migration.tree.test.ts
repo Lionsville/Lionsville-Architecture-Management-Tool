@@ -156,7 +156,7 @@ describe('a format-4 working directory', () => {
     expect(warehouse.kind).toBe('landscape')
     expect(warehouse.model.decisions?.[0]).toMatchObject({ subjectId: 'wms' })
     expect(warehouse.model.transitions?.[0].title).toBe('Replace the rater')
-    expect(warehouse.model.diagrams[0].geometry.nodes).toEqual([{ id: 'wms', x: 10, y: 20 }])
+    expect(warehouse.model.diagrams[0].geometry!.nodes).toEqual([{ id: 'wms', x: 10, y: 20 }])
   })
 
   it('names a group that never had a record from its own folder', async () => {
@@ -252,7 +252,7 @@ describe('a format-3 working directory', () => {
     const held = (await store.load('acme/warehouse'))!
     expect(held.model.elements[0]).toMatchObject({ kind: 'application' })
     expect(held.model.diagrams[0].members).toEqual([{ id: 'portal', zone: 'inputChannels' }])
-    expect(held.model.diagrams[0].geometry.nodes).toEqual([{ id: 'portal', x: 1, y: 2 }])
+    expect(held.model.diagrams[0].geometry!.nodes).toEqual([{ id: 'portal', x: 1, y: 2 }])
 
     const files = Object.keys(await contents(root))
     expect(files).toContain('acme/warehouse/scope.json')

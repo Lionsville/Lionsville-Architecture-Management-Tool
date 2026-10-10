@@ -68,6 +68,19 @@ export function describeImageRepository(name: string, make: MakeRepositories): v
       expect(refusal(await repositories.images.put(acme, 'context.png', bytes(1)))).toBe('shell.scopeGone')
     })
 
+    it('answers bytes by content address, named or not', async () => {
+      const { repositories, acme } = await fresh()
+      const put = ok(await repositories.images.put(acme, 'context.png', bytes(1, 2, 3)))
+      const held = await repositories.images.bytesAt(acme, put.contentAddress)
+      expect(held?.bytes).toEqual(bytes(1, 2, 3))
+      expect(held?.mediaType).toMatch(/\S/)
+      expect(await repositories.images.bytes(acme, 'context.png')).toBeUndefined()
+      expect(await repositories.images.bytesAt(acme, await contentAddressOf(bytes(9, 9)))).toBeUndefined()
+      const answered = held!
+      answered.bytes[0] = 9
+      expect((await repositories.images.bytesAt(acme, put.contentAddress))?.bytes).toEqual(bytes(1, 2, 3))
+    })
+
     it('answers nothing by name for bytes put and never added to the library', async () => {
       const { repositories, acme } = await fresh()
       ok(await repositories.images.put(acme, 'context.png', bytes(1, 2, 3)))

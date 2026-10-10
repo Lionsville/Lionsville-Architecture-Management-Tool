@@ -20,12 +20,11 @@
  * no `File`. What arrives has already been read and already `JSON.parse`d.
  */
 import type {
-  AspectConfigEntry, DesignElement, Relation, Transition, UploadedLogo,
+  AspectConfigEntry, DesignDiagram, DesignElement, Relation, Transition, UploadedLogo,
 } from '../model'
 import type { HostModel } from '../model/hostModel'
 import type { ImageEntry } from '../model/imageName'
 import type { Cause, Experiment, Observation, Solution } from '../model/observation'
-import { isBoardKind } from '../model/placement'
 import type { RecordLink } from './links'
 import { ancestorScopes, isWithinScope, ROOT_SCOPE } from './scopePath'
 import type { ScopePath } from './scopePath'
@@ -357,10 +356,34 @@ export function isStoredScope(value: unknown): value is ScopeSnapshot {
  * deleted in another session, or somebody else's file. The first diagram is then
  * a better answer than a blank canvas.
  */
+/**
+ * Boards before every other view. A drawing is not a board and not laid out;
+ * it sorts with the views that are not boards.
+ */
+function viewRank(kind: DesignDiagram['kind']): number {
+  switch (kind) {
+    case 'layer7':
+    case 'container':
+      return 0
+    case 'sheet':
+    case 'map':
+    case 'technology':
+    case 'drawing':
+      return 1
+    default: {
+      const unexpected: never = kind
+      return unexpected
+    }
+  }
+}
+
 export function resolveActive(model: HostModel, preferred?: string): string {
   // Any view (ADR-0016): a laid-out one is drawn in the tab. A board first
   // where there is one, because a scope with a landscape opens on it.
-  const views = [...model.diagrams].sort((a, b) => Number(isBoardKind(b.kind)) - Number(isBoardKind(a.kind)))
+  // Boards first, then every other view. A drawing is a view and not a board,
+  // so it sorts with the laid-out kinds: opening a scope lands on a board
+  // when it has one.
+  const views = [...model.diagrams].sort((a, b) => viewRank(a.kind) - viewRank(b.kind))
   if (preferred && views.some((d) => d.id === preferred)) return preferred
   return views[0]?.id ?? ''
 }

@@ -110,15 +110,16 @@ function showInitialPage(page: InitialPage, by: {
     case 'decisions': pages.openDecisions(page.id); break
     case 'observations': pages.openObservations(page.id, page.tab); break
     case 'roadmap': pages.openRoadmap(); break
-    case 'board': case 'sheet': case 'map': case 'technology':
+    case 'board': case 'sheet': case 'map': case 'technology': case 'drawing':
       if (page.id === undefined) break
       if (page.page === 'technology') pages.openTechnology(page.id)
       else pages.openView(page.id)
-      if (page.select !== undefined) pages.selectOn(page.id, page.select)
+      if (page.select !== undefined && page.page !== 'drawing') pages.selectOn(page.id, page.select)
       break
     case 'make':
       if (page.kind === 'sheet') by.createSheet()
       else if (page.kind === 'map') pages.createMap()
+      else if (page.kind === 'drawing') pages.createDrawing()
       else pages.createTechnology()
       break
     // Over the roadmap, so closing the plan lands on the roadmap and closing

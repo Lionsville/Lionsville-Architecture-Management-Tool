@@ -31,7 +31,7 @@ export function pageLanding(scope: Pick<ScopeSnapshot, 'model' | 'activeDiagramI
   // made without a board — has none, and the canvas could only say so as an
   // error: it lands on its home, empty until a board is made.
   if (page === undefined) return scope.model.diagrams.length === 0 ? { home: true } : {}
-  if (page.page === 'board' || page.page === 'sheet' || page.page === 'map' || page.page === 'technology') {
+  if (page.page === 'board' || page.page === 'sheet' || page.page === 'map' || page.page === 'technology' || page.page === 'drawing') {
     const id = viewFor(page.page, page.id, scope.model.diagrams, scope.activeDiagramId)
     if (id === undefined) return { home: true }
     return { page: { ...page, id }, activeDiagramId: id }

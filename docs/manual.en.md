@@ -1452,6 +1452,15 @@ tells you who leans on what, the service report tells you who would be
 stranded before you withdraw one, and the finding tells you which of your
 own team's things other teams have quietly come to depend on.
 
+## A drawing
+
+A **drawing** is a view. **+** in the diagram tabs, then **Drawing**, makes one,
+and a scope's home offers the same under **New board…**. It has a tab of its
+own, like a landscape or a sheet.
+
+A drawing is shown as its picture. A drawing that has no picture says **Not
+drawn yet**.
+
 ## Search
 
 **Search** in the top bar, or ⌘K, searches everything at once: elements by

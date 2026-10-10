@@ -41,6 +41,7 @@ function show(boards = BOARDS(), readOnly = false) {
       onAddSheet={vi.fn()}
       onAddMap={vi.fn()}
       onAddTechnology={vi.fn()}
+      onAddDrawing={vi.fn()}
       onDelete={onDelete}
       readOnly={readOnly}
       language="en"

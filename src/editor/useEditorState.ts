@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { BoardGeometry } from '../model/zones';
 import { claimKey } from '../model/keys';
 import { placeOn, transaction } from '../model/commands';
-import { isBoardKind, memberOf, nodeGeometryOf, placedNode, seedPlacement } from '../model/placement';
+import { isLaidOutKind, memberOf, nodeGeometryOf, placedNode, seedPlacement } from '../model/placement';
 import type { CanvasKind } from '../model/placement';
 import type { DesignConnection, DesignDiagram, DesignElement, DesignModel, DiagramGroup, PlacedNode, EdgeRoute, EdgeRouteSource, ElementId, ElementKind, Layer7Zone, NodeIconSize, NodeShapeVariant, Point, Rect, Relation, ResizableZone } from '../model/types';
 import type { SolutionDesignEditorProps } from './props';
@@ -668,7 +668,8 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         // second copy of it — and it is a refusal the caller can read, never a
         // throw. A laid-out view that authors (ADR-0016) makes the record and
         // no placement: the view lays it out.
-        const laidOut = !isBoardKind(diagram.kind);
+        // A drawing is not laid out and not a board: nothing is placed on it.
+        const laidOut = isLaidOutKind(diagram.kind);
         if (laidOut ? !allowedKindsOn(diagram).includes(seed.kind as CanvasKind) : !canPlaceKind(seed.kind, diagram.kind).ok) return;
         // The name first, because the id is derived from it: an element gets the
         // key the file would have given it, at the moment it is drawn.
@@ -1275,7 +1276,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
       setZoneSize(zone, size) {
         const diagram = currentDiagram();
         if (!diagram || diagram.kind !== 'layer7') return;
-        const current = diagram.geometry ?? {};
+        const current = diagram.geometry ?? { nodes: [] };
         const zones = { ...current.zones, [zone]: { size: clampZoneSize(zone, size, current) } };
         dispatch({ type: 'board.set', diagramId: diagram.id, patch: { zones } });
       },
@@ -1283,7 +1284,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
       setCanvasSize(size) {
         const diagram = currentDiagram();
         if (!diagram || diagram.kind !== 'layer7') return;
-        const current = diagram.geometry ?? {};
+        const current = diagram.geometry ?? { nodes: [] };
         const canvas = clampCanvasSize(size);
         // Band maxima are fractions of the board, so a smaller board means
         // shallower bands. Leaving the stored sizes alone and clamping them only
@@ -1364,7 +1365,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
       moveDomainGroup(groupId, dx, dy) {
         const diagram = currentDiagram();
         if (!diagram || diagram.kind !== 'layer7' || (dx === 0 && dy === 0)) return;
-        const current = diagram.geometry ?? {};
+        const current = diagram.geometry ?? { nodes: [] };
         const groups = [...(current.groups ?? [])];
         const index = groups.findIndex((g) => g.id === groupId);
         if (index < 0) return; // no such group — nothing to move

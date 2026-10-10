@@ -15,7 +15,7 @@ afterEach(() => cleanup())
  * added to the union and not to this list a type error, so the walk cannot
  * quietly skip it.
  */
-const KINDS = ['layer7', 'container', 'sheet', 'map', 'technology'] as const satisfies readonly DesignDiagram['kind'][]
+const KINDS = ['layer7', 'container', 'sheet', 'map', 'technology', 'drawing'] as const satisfies readonly DesignDiagram['kind'][]
 type Missing = Exclude<DesignDiagram['kind'], (typeof KINDS)[number]>
 const EVERY_KIND_LISTED: [Missing] extends [never] ? true : Missing = true
 

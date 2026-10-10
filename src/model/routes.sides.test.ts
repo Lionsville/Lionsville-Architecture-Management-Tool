@@ -195,7 +195,7 @@ describe('sides travel with the row through the model layer', () => {
     // the geometry holds nothing for it (ADR-0012 §6).
     const back = gone.ok ? toArrays(gone.model).diagrams[0] : undefined;
     expect(back?.lines).toBeUndefined();
-    expect(back?.geometry.routes).toBeUndefined();
+    expect(back?.geometry!.routes).toBeUndefined();
   });
 
   it('a side change is one step, and its inverse puts the old side back', () => {

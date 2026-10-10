@@ -14,6 +14,9 @@ import { patchWrites } from './writes'
 const DIAGRAM_FIELDS: PatchKeys<'diagram.update'> = {
   autoRoute: true, applicationElementId: true, asOf: true, showDeployment: true, colourBy: true,
   journeyId: true, lanes: true, areas: true, showActors: true, areaSpans: true, columns: true, paper: true,
+  // The XML, the picture and the links are one field. The anchor and the level
+  // are their own, beside it.
+  drawing: true, elementId: true, c4Level: true,
 }
 
 /** The board's own numbers (`BoardPatch`). */
@@ -67,7 +70,10 @@ export const DIAGRAM_COMMANDS = {
   'diagram.update': {
     carries: { id: true, patch: true },
     patch: { keys: DIAGRAM_FIELDS, row: (model, command) => model.diagrams[command.id] },
-    writes: (command) => patchWrites(`diagram/${command.id}`, command.patch),
+    // `drawing` is one value — the XML, the picture and the links — so it is
+    // one key. patchWrites would walk into the object and name each part,
+    // and two saves of one drawing would then not be the same write.
+    writes: (command) => drawingWrites(`diagram/${command.id}`, command.patch),
     apply(model, command, { meta }) {
       const diagram = model.diagrams[command.id]
       if (!diagram) return gone
@@ -129,6 +135,19 @@ function applySettings(diagram: Diagram, settings: DiagramSettings): Diagram {
     else writable[field] = settings[field]
   }
   return next
+}
+
+/**
+ * The keys a diagram patch writes. Every field is its own key, as every
+ * other patch is, except `drawing`: that object is one fact and one key,
+ * `diagram/<id>/drawing`, whether it arrives or is cleared.
+ */
+function drawingWrites(at: string, patch: { drawing?: unknown } | undefined): ReturnType<typeof patchWrites> {
+  if (!patch || Object.keys(patch).length === 0) return [at]
+  const { drawing: _drawing, ...rest } = patch
+  const keys = Object.keys(rest).length === 0 ? [] : patchWrites(at, rest)
+  if (Object.prototype.hasOwnProperty.call(patch, 'drawing')) keys.push(`${at}/drawing`)
+  return keys
 }
 
 function settingsOf(diagram: Diagram): DiagramSettings {

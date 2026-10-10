@@ -347,8 +347,9 @@ const SPECS = [
     tier: 'read',
     description:
       'Every view in the organisation, scope by scope: boards (layer7 and container), business sheets, '
-      + 'enterprise maps and technology landscapes, each with its id, name and kind, and which is on the tab '
-      + 'in its scope. The overview a person gets from the organisation screen and the tabs, in one answer; '
+      + 'enterprise maps, technology landscapes and drawings, each with its id, name and kind, and which is on the tab '
+      + 'in its scope. A drawing also says the element it is anchored to, when it has one, and the element ids its '
+      + 'shapes point at. The overview a person gets from the organisation screen and the tabs, in one answer; '
       + 'app.open takes a row\'s scope and id. Reads every scope that holds a view, so ask once and keep it.',
     inputSchema: {
       type: 'object',
@@ -357,7 +358,7 @@ const SPECS = [
         kind: {
           type: 'string',
           description: 'Only views of this kind.',
-          enum: ['layer7', 'container', 'sheet', 'map', 'technology'],
+          enum: ['layer7', 'container', 'sheet', 'map', 'technology', 'drawing'],
         },
         limit: { type: 'integer', description: 'At most this many. Default 500.', minimum: 1, maximum: 5000 },
       },
@@ -490,8 +491,10 @@ const SPECS = [
     name: 'diagrams.list',
     tier: 'read',
     description:
-      'The diagrams of the project: id, name, kind (a layer-7 landscape or a C4 container view), '
-      + 'which application a container view is about, and how many elements each draws.',
+      'The diagrams of the project: id, name, kind (a layer-7 landscape, a C4 container view, a sheet, '
+      + 'a map, a technology landscape or a drawing), which application a container view is about, '
+      + 'and how many elements each draws. A drawing also says the element it is anchored to, when it '
+      + 'has one, and the element ids its shapes point at.',
     inputSchema: NO_ARGUMENTS,
   },
   {
@@ -1768,9 +1771,11 @@ const SPECS = [
     inputSchema: {
       type: 'object',
       properties: {
-        kind: { type: 'string', description: 'A layer-7 landscape, a container view, a business architecture sheet, an enterprise map, or a technology landscape.', enum: ['layer7', 'container', 'sheet', 'map', 'technology'] },
-        name: { type: 'string', description: 'For a landscape, a sheet, a map or a technology landscape: its name.' },
+        kind: { type: 'string', description: 'A layer-7 landscape, a container view, a business architecture sheet, an enterprise map, a technology landscape, or a drawing.', enum: ['layer7', 'container', 'sheet', 'map', 'technology', 'drawing'] },
+        name: { type: 'string', description: 'For a landscape, a sheet, a map, a technology landscape or a drawing: its name.' },
         applicationId: { type: 'string', description: 'For a container view: the application it is about.' },
+        elementId: { type: 'string', description: 'For a drawing: the element it is anchored to. Optional.' },
+        level: { type: 'string', description: 'For a drawing: the C4 level it shows.', enum: ['context', 'container', 'component'] },
       },
       required: ['kind'],
       additionalProperties: false,
@@ -1816,6 +1821,11 @@ const SPECS = [
           description: 'A container diagram: whether the deployment boxes are drawn — the platforms its containers '
             + 'are hostedOn, as dashed groups around them, nested the way the platforms nest (ADR-0013). '
             + 'Absent or null: they are.',
+        },
+        xml: {
+          type: 'string',
+          description: 'A drawing: its draw.io XML, uncompressed. Replaces the drawing. Every cell whose link '
+            + 'is element:<id> becomes a link, at the cell\'s place. The picture is left unset.',
         },
       },
       required: ['id'],

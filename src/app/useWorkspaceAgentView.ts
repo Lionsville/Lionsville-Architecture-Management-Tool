@@ -133,10 +133,11 @@ export function showOn(
   return (to: Destination & { scope: string }) => {
     if (to.page !== 'document' && to.page !== 'documentation') leaveDocumentation()
     switch (to.page) {
-      case 'board': case 'sheet': case 'map': case 'technology':
+      case 'board': case 'sheet': case 'map': case 'technology': case 'drawing':
         if (to.id !== undefined) {
           openView(to.id)
-          if (to.select !== undefined) pages.selectOn(to.id, to.select)
+          // A drawing does not select an element. selectOn no-ops there.
+          if (to.select !== undefined && to.page !== 'drawing') pages.selectOn(to.id, to.select)
         }
         break
       case 'decisions': openDecisions(to.id); break
