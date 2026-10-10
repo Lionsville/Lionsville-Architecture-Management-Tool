@@ -140,7 +140,8 @@ export async function drawingFileResponse(root: string, requestUrl: string): Pro
   }
 
   const name = located.filePath.split(/[/\\]/).pop() ?? ''
-  const body = name === 'PreConfig.js' ? withDrawingOrigin(bytes.toString('utf8')) : bytes
+  // A `Buffer` is not a body the DOM types accept. A copy is.
+  const body = name === 'PreConfig.js' ? withDrawingOrigin(bytes.toString('utf8')) : new Uint8Array(bytes)
   const headers = new Headers()
   headers.set('Content-Type', MIME[extname(located.filePath).toLowerCase()] ?? 'application/octet-stream')
   headers.set('Content-Security-Policy', drawingContentSecurityPolicy())
