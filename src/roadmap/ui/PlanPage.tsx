@@ -108,6 +108,11 @@ export type PlanPageProps = {
    * say so. Absent in a shell with no tree.
    */
   describe?: DescribeElsewhere
+  /**
+   * Copy a link to this plan. Shown even when the plan is read-only; where
+   * there is no address, the press says why.
+   */
+  onCopyLink?: (id: string) => void
 }
 
 export function PlanPage(props: PlanPageProps) {
@@ -159,6 +164,9 @@ export function PlanPage(props: PlanPageProps) {
           </Typography>
         )}
         <Box sx={{ flex: 1 }} />
+        {plan && props.onCopyLink && (
+          <Button size="small" onClick={() => props.onCopyLink?.(plan.id)} data-testid="copy-link">{t('share.copy')}</Button>
+        )}
         {plan && (
           <Button size="small" onClick={() => setFullPage((on) => !on)}>
             {fullPage ? t('plan.showFacts') : t('plan.fullPage')}

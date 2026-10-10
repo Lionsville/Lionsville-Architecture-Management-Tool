@@ -22,6 +22,7 @@ import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import type { StringKey, Translate } from '../../i18n'
+import { CopyLinkButton } from '../../widgets/CopyLinkButton'
 import {
   adrGate, adrOptionNames, formatAdrNumber, isAdrDeletable, isAdrLocked, selfAccepted, supersededByUnaccepted, transitionsFrom,
 } from '../adr'
@@ -100,7 +101,7 @@ function acceptGateOf(adr: Adr, list: readonly Adr[]) {
  * The record's own bar: status, day, the moves, delete, history, and read or
  * edit. Acceptance waits for its gate; withdrawing a proposal is called that.
  */
-export function ReaderBar({ adr, list, readOnly, canEdit, mode, s, day, onStatus, onDelete, onHistory, onMode }: {
+export function ReaderBar({ adr, list, readOnly, canEdit, mode, s, day, onStatus, onDelete, onHistory, onMode, onCopyLink }: {
   adr: Adr
   list: readonly Adr[]
   readOnly: boolean
@@ -112,6 +113,8 @@ export function ReaderBar({ adr, list, readOnly, canEdit, mode, s, day, onStatus
   onDelete: () => void
   onHistory?: () => void
   onMode: (next: Mode | null) => void
+  /** Copy a link to this record. Shown when the page can ask for one, read-only included. */
+  onCopyLink?: () => void
 }) {
   const moves = transitionsFrom(adr.status)
   const acceptOpen = acceptGateOf(adr, list)?.items.some((one) => !one.ok) ?? false
@@ -142,6 +145,7 @@ export function ReaderBar({ adr, list, readOnly, canEdit, mode, s, day, onStatus
       {onHistory && (
         <Button size="small" onClick={onHistory}>{s('common.history')}</Button>
       )}
+      {onCopyLink && <CopyLinkButton label={s('share.copy')} onCopy={onCopyLink} />}
       <ToggleButtonGroup exclusive size="small" value={mode} onChange={(_e, value: Mode | null) => onMode(value)}>
         <ToggleButton value="read">{s('adr.read')}</ToggleButton>
         {canEdit && <ToggleButton value="edit">{s('adr.edit')}</ToggleButton>}

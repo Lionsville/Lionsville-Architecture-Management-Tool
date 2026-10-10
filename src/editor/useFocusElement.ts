@@ -26,8 +26,10 @@ export function useFocusElement(args: {
   activeDiagramId: string;
   setSelection(selection: Selection): void;
   onActiveDiagramChange(diagramId: string): void;
+  /** Ring the element once it is on the board. The focus itself has already selected it and brought it into view. */
+  onFocused?(id: string): void;
 }): void {
-  const { focusElement, model, activeDiagramId, setSelection, onActiveDiagramChange } = args;
+  const { focusElement, model, activeDiagramId, setSelection, onActiveDiagramChange, onFocused } = args;
   const { fitView } = useReactFlow();
   const handledNonceRef = useRef<number | undefined>(undefined);
   const switchRequestedNonceRef = useRef<number | undefined>(undefined);
@@ -43,6 +45,7 @@ export function useFocusElement(args: {
     if (isPlacedOn(activeDiagramId)) {
       handledNonceRef.current = focusElement.nonce;
       setSelection(selectElement(focusElement.id));
+      onFocused?.(focusElement.id);
       // Pan/zoom on the next frame so React Flow has the (possibly just
       // switched) diagram's nodes in its store before fitting.
       const frame = requestAnimationFrame(() => {
@@ -69,5 +72,5 @@ export function useFocusElement(args: {
       // Nonce stays unconsumed: the host switching activeDiagramId re-runs
       // this effect and the placed-on-active branch finishes the job.
     }
-  }, [focusElement, model, activeDiagramId, setSelection, onActiveDiagramChange, fitView]);
+  }, [focusElement, model, activeDiagramId, setSelection, onActiveDiagramChange, onFocused, fitView]);
 }

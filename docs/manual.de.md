@@ -636,6 +636,21 @@ in diesem Browser oder nirgends hat keine; dort sagt der Dialog, warum es keinen
 Link gibt, und nichts wird kopiert. Der Menüeintrag wirkt auf jedem Bildschirm,
 auch auf dem Zuhause der Organisation.
 
+**Link kopieren** bei einer Entscheidung, einer Beobachtung, einer Ursache,
+einer Lösung, einem Experiment und einem Plan kopiert einen Link zu diesem
+Eintrag. Er steht in der Leiste des Eintrags, in der Kopfzeile eines Plans und
+im Menü, das ein Rechtsklick auf einen Eintrag in einem Bild der Beobachtungen
+öffnet. Den Link zu öffnen öffnet diesen Eintrag; auf der Seite der
+Beobachtungen öffnet er den Reiter, der offen war. Das Bedienelement ist auch
+da, wenn der Eintrag nur gelesen werden kann. Wo die Arbeit keine Adresse hat,
+bleibt es stehen, sagt warum, und nichts wird kopiert.
+
+Eine Adresse kann auch ein Element nennen, das bei der Ankunft ausgewählt
+wird, geschrieben als `select` nach dem Ort. Sie zu öffnen landet auf dem Ort
+und wählt dieses Element auf dem Board, dem Blatt, der Karte oder der
+Technologielandschaft aus, wo die Ansicht es zeichnet. Die Auswahl bleibt nach
+dem Landen nicht in der Adresse, und sie ist kein Schritt für Zurück.
+
 ## Zeichnen
 
 **Die Landschaft** hat fünf Bänder: Akteure, Eingabekanäle, externe Systeme, die

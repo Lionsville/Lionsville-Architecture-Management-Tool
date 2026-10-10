@@ -19,6 +19,8 @@ import type {
   PlatformReportPage as PlatformReportShape, ServiceReportPage as ServiceReportShape,
 } from '../technology/ui/ReportPage'
 import { lazyPart } from '../widgets/lazyPart'
+import { ShareLinkDialog } from './dialogs/ShareLinkDialog'
+import { useRecordLink } from './useShareLink'
 import type { WorkspaceParts } from './workspaceParts'
 
 /**
@@ -41,11 +43,21 @@ const ObservationsPage = lazyPart<ComponentProps<typeof ObservationsPageShape>>(
 )
 
 export function WorkspacePages({ parts }: { parts: WorkspaceParts }) {
+  const { s } = parts.props.shell
+  const links = useRecordLink({
+    address: parts.props.source.shareAddress,
+    scope: parts.props.project.path,
+    copyText: parts.props.host.controls.copyText,
+    diagnostics: parts.props.host.diagnostics,
+    notify: parts.props.shell.notify,
+    s,
+  })
   return (
     <>
-      <RecordPages parts={parts} />
-      <PlanPages parts={parts} />
+      <RecordPages parts={parts} copyRecord={links.copyRecord} />
+      <PlanPages parts={parts} copyRecord={links.copyRecord} />
       <ReportPages parts={parts} />
+      <ShareLinkDialog answer={links.answer} onCopy={links.copy} onClose={links.close} s={s} />
     </>
   )
 }
@@ -56,7 +68,7 @@ function imagesOf({ session, pictures, files }: WorkspaceParts) {
 }
 
 /** The decisions page (ADR-0012 §7) and the observations page (ADR-0021). */
-function RecordPages({ parts }: { parts: WorkspaceParts }) {
+function RecordPages({ parts, copyRecord }: { parts: WorkspaceParts; copyRecord: ReturnType<typeof useRecordLink>['copyRecord'] }) {
   const { props, session, pages, snapshots, analysis, readings, pictures, files, readOnly, requests, pageChrome, changeBelow, changeAcross } = parts
   const { s, language, makeId } = props.shell
   const { groupName, ancestorDecisions, scopes } = props.tree
@@ -107,6 +119,7 @@ function RecordPages({ parts }: { parts: WorkspaceParts }) {
           : undefined}
         onOpenPlan={plans.openPlan}
         onOpenSolution={(solutionId) => { pages.closeDecisions(); pages.openObservations(solutionId) }}
+        onCopyLink={(id) => copyRecord('decisions', id)}
         windowChrome={pageChrome}
       />
       <ObservationsPage
@@ -145,6 +158,7 @@ function RecordPages({ parts }: { parts: WorkspaceParts }) {
         renderMarkdown={pictures.renderDocument}
         onAddImage={files.addImage}
         images={imagesOf(parts)}
+        onCopyLink={(record) => copyRecord('observations', record.id, record.tab)}
         windowChrome={pageChrome}
       />
     </>
@@ -152,7 +166,7 @@ function RecordPages({ parts }: { parts: WorkspaceParts }) {
 }
 
 /** The roadmap, the replace dialog it starts from a card, and one plan over it. */
-function PlanPages({ parts }: { parts: WorkspaceParts }) {
+function PlanPages({ parts, copyRecord }: { parts: WorkspaceParts; copyRecord: ReturnType<typeof useRecordLink>['copyRecord'] }) {
   const { props, session, pages, readings, ownership, viewing, pictures, files, readOnly, todayDay, pageChrome } = parts
   const { onOpenScope } = props.navigation
   const { plans } = pages
@@ -197,6 +211,7 @@ function PlanPages({ parts }: { parts: WorkspaceParts }) {
         windowChrome={pageChrome}
         initiativeToggle={props.project.path !== ''}
         describe={readings.describeForMap}
+        onCopyLink={(id) => copyRecord('plan', id)}
       />
     </>
   )

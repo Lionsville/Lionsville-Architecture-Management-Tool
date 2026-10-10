@@ -246,7 +246,7 @@ export function SolutionPicture({ graph, selectedKey, onSelect, flags, onMenu, s
           const flag = flags.get(node.key)
           const common = {
             cursor: 'pointer' as const, onClick: () => onSelect(node.key), onContextMenu: menuOn(node.key),
-            'data-testid': `solution-picture-${node.kind}`, dim,
+            'data-testid': `solution-picture-${node.kind}`, 'data-element-id': node.key, dim,
           }
           if (node.kind === 'observation') {
             return <ObservationMark key={node.key} node={node} x={spot.x} y={spot.y} selected={selected} fill={tint(node.observation.seen)} {...common} />
@@ -260,7 +260,7 @@ export function SolutionPicture({ graph, selectedKey, onSelect, flags, onMenu, s
             const w = WIDTH[solution.benefit ?? 'unset']
             const chosen = solutionKey(node.id) === selectedKey
             return (
-              <g key={node.key} transform={`translate(${spot.x},${spot.y})`} onClick={() => onSelect(solutionKey(node.id))} onContextMenu={menuOn(solutionKey(node.id))} cursor="pointer" data-testid="solution-picture-trail" data-key={node.key}>
+              <g key={node.key} transform={`translate(${spot.x},${spot.y})`} onClick={() => onSelect(solutionKey(node.id))} onContextMenu={menuOn(solutionKey(node.id))} cursor="pointer" data-testid="solution-picture-trail" data-key={node.key} data-element-id={node.key}>
                 <rect x={-w / 2} y={-HEIGHT / 2} width={w} height={HEIGHT} rx={10} fill={theme.palette.background.paper} />
                 <g opacity={dim ? 0.25 : 0.6}>
                   <title>{`${formatSolutionNumber(solution.number)} ${solution.title} — ${s('solution.trail')}`}</title>
@@ -279,7 +279,7 @@ export function SolutionPicture({ graph, selectedKey, onSelect, flags, onMenu, s
           if (node.kind === 'experiment') {
             const { experiment } = node
             return (
-              <g key={node.key} transform={`translate(${spot.x},${spot.y})`} onClick={common.onClick} onContextMenu={common.onContextMenu} cursor="pointer" data-testid={common['data-testid']} data-key={node.key}>
+              <g key={node.key} transform={`translate(${spot.x},${spot.y})`} onClick={common.onClick} onContextMenu={common.onContextMenu} cursor="pointer" data-testid={common['data-testid']} data-key={node.key} data-element-id={node.key}>
                 <rect x={-BOX.width / 2} y={-HEIGHT / 2} width={BOX.width} height={HEIGHT} rx={3} fill={theme.palette.background.paper} />
                 <g opacity={dim ? 0.35 : 1}>
                   <title>{`${formatExperimentNumber(experiment.number)} ${experiment.title}`}</title>
@@ -297,7 +297,7 @@ export function SolutionPicture({ graph, selectedKey, onSelect, flags, onMenu, s
           const w = WIDTH[solution.benefit ?? 'unset']
           const done = phase === 'implemented'
           return (
-            <g key={node.key} transform={`translate(${spot.x},${spot.y})`} onClick={common.onClick} onContextMenu={common.onContextMenu} cursor="pointer" data-testid={common['data-testid']} data-key={node.key} data-phase={phase}>
+            <g key={node.key} transform={`translate(${spot.x},${spot.y})`} onClick={common.onClick} onContextMenu={common.onContextMenu} cursor="pointer" data-testid={common['data-testid']} data-key={node.key} data-element-id={node.key} data-phase={phase}>
               <rect x={-w / 2} y={-HEIGHT / 2} width={w} height={HEIGHT} rx={10} fill={theme.palette.background.paper} />
               <g opacity={dim ? 0.35 : phase === 'dropped' ? 0.55 : 1}>
                 <title>{`${formatSolutionNumber(solution.number)} ${solution.title}`}</title>

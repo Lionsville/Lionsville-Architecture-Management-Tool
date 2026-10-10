@@ -93,6 +93,8 @@ export type AdrReaderProps = {
    * are from theirs. Absent: no row.
    */
   solutions?: { list: readonly Pick<Solution, 'id' | 'number' | 'title' | 'decision'>[]; onOpen(solutionId: string): void }
+  /** Copy a link to this record. Shown when the host can ask for one, read-only included. */
+  onCopyLink?: () => void
 }
 
 export function AdrReader(props: AdrReaderProps) {
@@ -158,6 +160,7 @@ export function AdrReader(props: AdrReaderProps) {
       <ReaderBar
         adr={adr} list={list} readOnly={readOnly} canEdit={canEdit} mode={mode} s={s} day={day}
         onStatus={onStatus} onDelete={props.onDelete} onHistory={props.onHistory} onMode={switchMode}
+        onCopyLink={props.onCopyLink}
       />
       <ReaderNotices adr={adr} list={list} readOnly={readOnly} s={s} />
 

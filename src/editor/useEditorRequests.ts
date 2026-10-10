@@ -40,6 +40,7 @@ export function useCanvasRequests(
   props: Pick<SolutionDesignEditorProps, 'requests' | 'document'>,
   state: EditorState,
   setInspectorCollapsed: (collapsed: boolean) => void,
+  onFocused?: (id: string) => void,
 ) {
   const [menuRequest, setMenuRequest] = useState<{ kind: 'open' | 'rename'; nonce: number } | undefined>(undefined);
   const menuNonce = useRef(0);
@@ -87,6 +88,7 @@ export function useCanvasRequests(
     activeDiagramId: props.document.activeDiagramId,
     setSelection,
     onActiveDiagramChange: props.document.onActiveDiagramChange,
+    onFocused,
   });
   return { menuRequest, requestMenu, renameRequest, requestRename, requestFocus };
 }

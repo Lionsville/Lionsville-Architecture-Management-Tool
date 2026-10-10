@@ -188,6 +188,7 @@ export function AdrRecordList({ query, onQuery, shown, selectedId, describe, emp
             onClick={() => onChoose(adr, where)}
             alignItems="flex-start"
             data-guide="decisions.row"
+            data-element-id={adr.id}
             sx={{ display: 'block', py: 1, borderBottom: 1, borderColor: 'divider' }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest'
 import { readPlace } from '../agent/place'
 import type { Screen } from '../agent/screen'
-import { shareLinkOf } from './useShareLink'
+import { recordLinkOf, shareLinkOf } from './useShareLink'
 
 const onDecision: Screen = {
   open: { path: 'acme/rail', name: 'Rail', view: { id: 'b1', name: 'Board', kind: 'layer7' } },
@@ -34,6 +34,17 @@ describe('the link to a screen', () => {
     expect(shareLinkOf(undefined, onDecision)).toEqual({ refused: 'share.noAddress' })
     expect(shareLinkOf('', onDecision)).toEqual({ refused: 'share.noAddress' })
     expect(shareLinkOf(undefined, undefined)).toEqual({ refused: 'share.noAddress' })
+  })
+
+  it('is a record’s own link, and the same refusal where there is no address', () => {
+    const place = { scope: 'acme/rail', page: 'plan' as const, id: 'tr-1' }
+    expect(recordLinkOf('https://work.example/', place))
+      .toEqual({ link: 'https://work.example/#place?scope=acme%2Frail&page=plan&id=tr-1' })
+    const linked = recordLinkOf('https://work.example/', { ...place, select: 'billing' })
+    if (!('link' in linked)) throw new Error('no link')
+    expect(linked.link.includes('select=')).toBe(false)
+    expect(recordLinkOf(undefined, place)).toEqual({ refused: 'share.noAddress' })
+    expect(recordLinkOf('', place)).toEqual({ refused: 'share.noAddress' })
   })
 
   it('is refused where the screen is not a place yet', () => {

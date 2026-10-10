@@ -174,6 +174,7 @@ function ObservationRow({ one, scope, ...props }: ObservationRegisterProps & { o
       sx={{ cursor: 'pointer', opacity: merged || archived ? 0.55 : 1 }}
       data-testid={`observation-row-${key}`}
       data-guide="observations.row"
+      data-element-id={key}
     >
       <TableCell sx={{ fontFamily: 'ui-monospace, Menlo, monospace', fontSize: 11, color: 'text.secondary', whiteSpace: 'nowrap' }}>
         {formatObservationNumber(one.number)}
@@ -204,7 +205,7 @@ type RowProps = ObservationRegisterProps & { rowKey: string }
 /** One cause; a merged one dimmed, saying where it went (ADR-0035 §4). */
 function CauseRow({ cause, rowKey, merged, selectedKey, onSelect, language, s }: RowProps & { cause: Cause; merged: MergedInto | undefined }) {
   return (
-    <ListItemButton selected={rowKey === selectedKey} onClick={() => onSelect(rowKey)} sx={{ py: 0.5, opacity: merged ? 0.55 : 1 }} data-testid={`cause-row-${rowKey}`}>
+    <ListItemButton selected={rowKey === selectedKey} onClick={() => onSelect(rowKey)} sx={{ py: 0.5, opacity: merged ? 0.55 : 1 }} data-testid={`cause-row-${rowKey}`} data-element-id={rowKey}>
       {/* Said, not a link: the row is the button, and a button in a button is reached by nobody's keyboard. */}
       <ListItemText
         primary={`${causeLabel(cause)} ${cause.title}`}
@@ -219,7 +220,7 @@ function CauseRow({ cause, rowKey, merged, selectedKey, onSelect, language, s }:
 
 function SolutionRow({ one, rowKey, phase, selectedKey, onSelect, s }: RowProps & { one: Solution; phase: SolutionPhase }) {
   return (
-    <ListItemButton selected={rowKey === selectedKey} onClick={() => onSelect(rowKey)} sx={{ py: 0.5, opacity: isLive(one) ? 1 : 0.55 }} data-testid={`solution-row-${rowKey}`}>
+    <ListItemButton selected={rowKey === selectedKey} onClick={() => onSelect(rowKey)} sx={{ py: 0.5, opacity: isLive(one) ? 1 : 0.55 }} data-testid={`solution-row-${rowKey}`} data-element-id={rowKey}>
       <ListItemText primary={`${formatSolutionNumber(one.number)} ${one.title}`} slotProps={SMALL} />
       <Chip size="small" color={PHASE_COLOR[phase]} label={s(PHASE_LABEL[phase])} sx={{ height: 18, fontSize: 10 }} />
     </ListItemButton>
@@ -228,7 +229,7 @@ function SolutionRow({ one, rowKey, phase, selectedKey, onSelect, s }: RowProps 
 
 function ExperimentRow({ one, rowKey, scope, selectedKey, onSelect, nameOf, s }: RowProps & { one: Experiment; scope?: string }) {
   return (
-    <ListItemButton selected={rowKey === selectedKey} onClick={() => onSelect(rowKey)} sx={{ py: 0.5 }}>
+    <ListItemButton selected={rowKey === selectedKey} onClick={() => onSelect(rowKey)} sx={{ py: 0.5 }} data-element-id={rowKey}>
       <ListItemText primary={`${formatExperimentNumber(one.number)} ${one.title}`} secondary={one.tests.map((id) => nameOf(id, scope)).join(', ')} slotProps={{ ...SMALL, secondary: { sx: { fontSize: 11 } } }} />
       <Chip size="small" color={OUTCOME_COLOR[one.outcome]} label={s(OUTCOME_LABEL[one.outcome])} sx={{ height: 18, fontSize: 10 }} data-testid={`experiment-row-outcome-${one.id}`} />
     </ListItemButton>

@@ -41,6 +41,7 @@ type MarkProps<N> = {
   onContextMenu?: (event: ReactMouseEvent) => void
   cursor: 'pointer'
   'data-testid': string
+  'data-element-id'?: string
   dim?: boolean
 }
 

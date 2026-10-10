@@ -498,7 +498,9 @@ src/widgets/      Presentation with no opinions: icons, one confirm dialog,
                   card, fetched when it is opened, and every part preloaded
                   before a suite's first test (`app/testing/lazyParts.ts`) —
                   and a request from outside to select what a page draws,
-                  honoured where it draws it (`useSelectRequest`).
+                  honoured where it draws it (`useSelectRequest`), and the
+                  moment's ring on what was just brought into view
+                  (`useLocated`).
 src/ports/        The seams. Interfaces only, no implementations.
                     PreferencesStore · DocumentGateway
                     Diagnostics · HostControls · UpdateSettings

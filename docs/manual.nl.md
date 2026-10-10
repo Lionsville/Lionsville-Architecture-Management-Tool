@@ -597,6 +597,21 @@ in deze browser of nergens heeft dat niet; dan zegt het venster waarom er geen
 link is, en wordt er niets gekopieerd. Het menu-onderdeel werkt vanaf elk
 scherm, ook vanaf het thuis van de organisatie.
 
+**Link kopiëren** op een besluit, een waarneming, een oorzaak, een oplossing,
+een experiment en een plan kopieert een link naar dat record. Hij staat in de
+balk van het record, in de kop van een plan, en in het menu dat je krijgt met
+een rechtsklik op een record in een plaat van de waarnemingen. De link openen
+opent dat record; op de pagina met waarnemingen opent hij het tabblad dat
+openstond. Het besturingselement staat er ook als het record alleen te lezen
+is. Waar het werk geen adres heeft, blijft het staan, zegt het waarom, en
+wordt er niets gekopieerd.
+
+Een adres kan ook een element noemen om bij aankomst te selecteren, geschreven
+als `select` na de plek. Het openen landt op de plek en selecteert dat element
+op het bord, het blad, de kaart of het technologielandschap, waar de weergave
+het tekent. De selectie blijft na het landen niet in het adres, en het is geen
+stap voor Terug.
+
 ## Tekenen
 
 **Het landschap** heeft vijf banden: actoren, invoerkanalen, externe systemen,

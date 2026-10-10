@@ -56,7 +56,7 @@
  * painted on top.
  */
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { ReactNode, RefObject } from 'react'
+import type { ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Chip from '@mui/material/Chip'
 import IconButton from '@mui/material/IconButton'
@@ -76,6 +76,7 @@ import { BackIcon, ExportIcon, EyeIcon, SearchIcon, SlidersIcon } from '../../wi
 import { PageDialog } from '../../widgets/PageDialog'
 import { SeamResizer } from '../../widgets/SeamResizer'
 import { useSelectRequest } from '../../widgets/useSelectRequest'
+import { locatedMark, useLocated } from '../../widgets/useLocated'
 import type { SelectRequest } from '../../widgets/useSelectRequest'
 import {
   AREA_COLUMN, MAX_SPAN, fitSpans, isPaperSize, packAreas, paperHeight, paperOfWidth, paperWidth, sheetColumns, sheetPaper,
@@ -395,12 +396,7 @@ export function SheetPage(props: SheetPageProps) {
             // size is the page's whole size, which is what the capture reads.
             ? { display: 'flex', alignItems: 'stretch', flex: 'none', ...(exporting.width !== undefined ? { width: exporting.width } : {}) }
             : { flex: '1 1 auto', minHeight: 0, display: 'flex' }),
-          ...(locatedId !== undefined && !exporting ? {
-            [`& [data-element-id="${locatedId}"]`]: {
-              outline: '2px solid', outlineColor: 'primary.main', outlineOffset: 2,
-              borderRadius: 1,
-            },
-          } : {}),
+          ...(!exporting ? locatedMark(locatedId) : {}),
         }}
       >
         {laidOut && sheet?.showActors !== false && panels && (
@@ -739,37 +735,11 @@ function Add({ label, title, onClick, disabled, sx }: {
 
 // --- finding something on the page -----------------------------------------
 
-/** How long the ring stays on what the finder took you to. */
-const LOCATED_FOR_MS = 3000
-
 /** What the page draws, as the question a request from outside asks of it: nothing until it is laid out. */
 function drawnBy(laidOut: LaidOutSheet | undefined): ((id: ElementId) => boolean) | undefined {
   return laidOut && ((id) => drawnOnSheet(laidOut).some((hit) => hit.element.id === id))
 }
 
-/**
- * Select a thing, bring it on screen, and ring it for a moment: what the
- * finder does with a hit, and what a request from outside does with what the
- * page draws. The ring is one rule on the page keyed by the id rather than a
- * prop through seven kinds of card, because it is a moment's emphasis and
- * not state any card has a say in.
- */
-function useLocated(page: RefObject<HTMLDivElement | null>, select: (id: ElementId) => void) {
-  const [locatedId, setLocatedId] = useState<ElementId | undefined>(undefined)
-  const locatedTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
-  useEffect(() => () => clearTimeout(locatedTimer.current), [])
-  const locate = useCallback((id: ElementId) => {
-    select(id)
-    setLocatedId(id)
-    clearTimeout(locatedTimer.current)
-    locatedTimer.current = setTimeout(() => setLocatedId(undefined), LOCATED_FOR_MS)
-    // The card carries its id as data, so the page can find it without a ref
-    // per card; jsdom has no scrollIntoView, hence the optional call.
-    const node = page.current?.querySelector<HTMLElement>(`[data-element-id="${id}"]`)
-    node?.scrollIntoView?.({ block: 'center', inline: 'center', behavior: 'smooth' })
-  }, [page, select])
-  return { locatedId, locate }
-}
 /** Rows the finder lists before it asks for another word. */
 const FINDER_ROWS = 12
 
