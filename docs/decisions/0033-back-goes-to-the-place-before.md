@@ -3,7 +3,8 @@
 * Status: accepted, 1 October 2026; as built, 1 October 2026; amended 1 October
   2026 (a place on the observations page carries its tab); implemented,
   1 October 2026; amended 8 October 2026 (a link to a place, shared from the
-  menu), accepted and built
+  menu), accepted and built; amended 10 October 2026 (an element named on the
+  way in), accepted and built
 * Date: 2026-10-01
 * Deciders: Wouter Simons
 * Extends: ADR-0019 (the screen an agent reads and the destination it opens:
@@ -354,4 +355,24 @@ looked at and no dialog in a link: a link is a place, and a place holds none of
 them. No link of the app's own making that a provider did not give an address
 for: a guess at an address would be a link that opens somebody else's work, or
 nothing.
+
+## Amended — an element named on the way in
+
+*10 October 2026; accepted and built the same day.* The amendment of 1 October
+said an element selected as a destination (`select`) is a selection and stays
+out of a place. That still holds for what a place is, and for what is written
+back. The address may carry the selection on the way in.
+
+**What rides in.** `select` may be in the fragment on arrival
+(`#place?scope=acme&page=board&id=landscape&select=billing`). `readPlace`
+yields it with the place. It is not part of the place: `samePlace` and
+`placeInState` ignore it, so two places that differ only by it are the same
+place. Arriving with it does not push an entry because of it, and changing it
+does not push.
+
+**Read once.** It is read on arrival only. The screen then selects that
+element, the way a destination's `select` already does (ADR-0019). It is
+dropped from the place that is written back, so the address after landing
+does not keep it. A link (`linkTo`, `writePlace`) does not write it: a link
+is a place, and a place holds no selection.
 

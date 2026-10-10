@@ -25,6 +25,12 @@
  * carry `tab` as well (ADR-0019, amended): a reload stays on the tab, and a
  * change of tab is another record on the same page as far as a step goes.
  *
+ * **A selection on the way in.** An address may also carry `select`, the id
+ * of an element to select on arrival (ADR-0033, amended 10 October 2026). It
+ * is read then and dropped from whatever is written back: it is not part of
+ * a place, so two places that differ only by it are the same place, and a
+ * link never writes it.
+ *
  * The prefix is what tells a place from anything else a fragment may carry: a
  * source provider reads the address too (`SourceConnect.fromLocation`), and a
  * fragment that is not a place is left alone for whoever wrote it. The rest is
@@ -49,9 +55,15 @@ export const PLACE_PREFIX = 'place?'
 /** The key a place is kept under in a history entry's state, beside whatever other code keeps there. */
 export const PLACE_STATE_KEY = 'lvarch.place'
 
-const KEYS = new Set(['scope', 'page', 'id', 'tab'])
+const KEYS = new Set(['scope', 'page', 'id', 'tab', 'select'])
 
-/** The fragment for a place, with its `#`. */
+/**
+ * The fragment for a place, with its `#`.
+ *
+ * `select` is not written. It may ride in the address on arrival and is read
+ * by {@link readPlace}; a place that is written back — a link, the address
+ * after landing — does not keep it (ADR-0033, amended).
+ */
 export function writePlace(place: Place): string {
   const query = new URLSearchParams()
   query.set('scope', place.scope)
@@ -78,8 +90,9 @@ export function linkTo(address: string, place: Place): string {
  * The place a fragment names, with or without its `#` — or `undefined` for a
  * fragment that is not one: no prefix, a key this grammar does not have, a
  * key said twice, no scope, a page there is no such thing as, or a tab that
- * is not one of the observations page's. Strict, because a fragment that
- * nearly is a place is somebody else's.
+ * is not one of the observations page's. `select`, where the address carries
+ * one, is yielded with the place and is not part of it. Strict, because a
+ * fragment that nearly is a place is somebody else's.
  */
 export function readPlace(hash: string): Place | undefined {
   const fragment = hash.startsWith('#') ? hash.slice(1) : hash
@@ -97,7 +110,14 @@ export function readPlace(hash: string): Place | undefined {
   const id = query.get('id')
   const tab = query.get('tab')
   if (tab !== null && !isObservationTab(tab)) return undefined
-  return { scope, ...(page !== null ? { page } : {}), ...(id !== null ? { id } : {}), ...(tab !== null ? { tab } : {}) }
+  const select = query.get('select')
+  return {
+    scope,
+    ...(page !== null ? { page } : {}),
+    ...(id !== null ? { id } : {}),
+    ...(tab !== null ? { tab } : {}),
+    ...(select !== null ? { select } : {}),
+  }
 }
 
 function isPage(value: string): value is Page {
@@ -113,6 +133,8 @@ export function placeInState(state: unknown): Place | undefined {
   if (typeof state !== 'object' || state === null) return undefined
   const held = (state as Record<string, unknown>)[PLACE_STATE_KEY]
   if (typeof held !== 'object' || held === null) return undefined
+  // `select` is ignored on purpose: a history entry holds a place, and a
+  // selection is not one (ADR-0033, amended).
   const { scope, page, id, tab } = held as Record<string, unknown>
   if (typeof scope !== 'string') return undefined
   if (page !== undefined && (typeof page !== 'string' || !isPage(page))) return undefined
@@ -147,7 +169,7 @@ export function placeOf(screen: Screen): Place | undefined {
   return undefined
 }
 
-/** The same place: the same scope, page, id and tab. */
+/** The same place: the same scope, page, id and tab. A selection is not part of one. */
 export function samePlace(a: Place | undefined, b: Place | undefined): boolean {
   if (a === undefined || b === undefined) return a === b
   return a.scope === b.scope && a.page === b.page && a.id === b.id && a.tab === b.tab
