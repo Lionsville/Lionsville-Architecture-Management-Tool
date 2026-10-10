@@ -214,6 +214,11 @@ function usePageOpeners(deps: {
   )
   const createTechnology = useCallback(() => { closePages(); landscapes.create() }, [closePages, landscapes.create])
   const createDrawing = useCallback(() => { closePages(); drawings.create() }, [closePages, drawings.create])
+  /** A drawing anchored to an element: the menu and the inspector, one command. */
+  const createDrawingFor = useCallback((elementId: string) => {
+    closePages()
+    drawings.createFor(elementId)
+  }, [closePages, drawings.createFor])
   /**
    * A platform's report (ADR-0013, redone): reached from the platform's own
    * card and from the finding that names it, and never created — every mark on
@@ -230,6 +235,6 @@ function usePageOpeners(deps: {
   }, [closePlans, showPlatform])
   return {
     openDecisions, openObservations, openRoadmap, closePages, openView, createMap,
-    openTechnology, openTechnologyFor, createTechnology, createDrawing, openServiceReport, openPlatformReport,
+    openTechnology, openTechnologyFor, createTechnology, createDrawing, createDrawingFor, openServiceReport, openPlatformReport,
   }
 }

@@ -25,12 +25,12 @@ const project = (): ScopeSnapshot => {
   return { path: 'acme', model, activeDiagramId: 'd1', logoLibrary: [] }
 }
 
-function mount() {
+function mount(initial = project()) {
   let drawings!: Drawings
   let session!: ModelSession
   let counter = 0
   function Host() {
-    session = useModelSession({ initialProject: project(), notify: vi.fn(), s: translator('en') })
+    session = useModelSession({ initialProject: initial, notify: vi.fn(), s: translator('en') })
     drawings = useDrawing({ session, makeId: (prefix) => `${prefix}-${++counter}`, s: translator('en') })
     return null
   }
@@ -53,6 +53,24 @@ describe('making a drawing', () => {
     expect(made?.drawing).toBeUndefined()
     expect(host.activeId()).toBe('dr-1')
     host.undo()
+    expect(host.model().diagrams.some((diagram) => diagram.kind === 'drawing')).toBe(false)
+  })
+
+  it('anchors one to an element — the command the menu and the inspector use — and undoing takes it off', () => {
+    const held = project()
+    held.model.elements = [
+      { id: 'billing', kind: 'application', name: 'Billing', lifecycle: 'live', isManaged: true, aspects: {} },
+    ]
+    const host = mount(held)
+    act(() => host.drawings().createFor('billing'))
+    const made = host.model().diagrams.find((diagram) => diagram.kind === 'drawing')
+    expect(made).toMatchObject({ id: 'dr-1', kind: 'drawing', name: 'Billing · drawing', elementId: 'billing' })
+    expect(made?.geometry).toBeUndefined()
+    expect(made?.drawing).toBeUndefined()
+    expect(host.activeId()).toBe('dr-1')
+    host.undo()
+    expect(host.model().diagrams.some((diagram) => diagram.kind === 'drawing')).toBe(false)
+    act(() => host.drawings().createFor('nobody'))
     expect(host.model().diagrams.some((diagram) => diagram.kind === 'drawing')).toBe(false)
   })
 })

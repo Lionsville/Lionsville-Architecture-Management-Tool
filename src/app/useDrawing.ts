@@ -22,6 +22,11 @@ export type Drawings = {
   open: (id: string) => void
   /** Make one, and make it the active view. */
   create: () => void
+  /**
+   * Make one anchored to an element, and make it the active view. The menu's
+   * *Create drawing* and the inspector's button. One command, so one undo.
+   */
+  createFor: (elementId: string) => void
 }
 
 export function useDrawing(deps: { session: ModelSession; makeId: MakeId; s: Translate }): Drawings {
@@ -36,10 +41,20 @@ export function useDrawing(deps: { session: ModelSession; makeId: MakeId; s: Tra
     session.dispatch({ type: 'diagram.create', diagram: toDiagram(drawing) }, { activeDiagramId: drawing.id })
   }, [session, makeId, s])
 
+  const createFor = useCallback((elementId: string) => {
+    const element = session.current().elements.find((held) => held.id === elementId)
+    if (!element) return
+    const drawing: DesignDiagram = {
+      id: makeId('dr'), kind: 'drawing', name: s('shell.drawingOf', { name: element.name }), elementId, members: [],
+    }
+    session.dispatch({ type: 'diagram.create', diagram: toDiagram(drawing) }, { activeDiagramId: drawing.id })
+  }, [session, makeId, s])
+
   return {
     drawingId,
     drawing: active?.kind === 'drawing' ? active : undefined,
     open: session.setActiveDiagramId,
     create,
+    createFor,
   }
 }

@@ -108,6 +108,12 @@ export interface ElementInspectorProps {
    */
   onCreateContainer?(elementId: ElementId): void;
   /**
+   * Make a drawing anchored to this element. Offered beside the container
+   * button, on any element: a double-click only opens one (`doubleClick.ts`).
+   * Absent where the host cannot, and under `readOnly`.
+   */
+  onCreateDrawing?(elementId: ElementId): void;
+  /**
    * For an application or a container: what it leverages, as the host works
    * it out over the whole tree (ADR-0014). Absent = read off this scope's own
    * rows, which is the answer a shell with no tree can give.

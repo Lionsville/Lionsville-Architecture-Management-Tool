@@ -1594,6 +1594,22 @@ koppelingen die de vormen maken.
 Waar geen adres voor de editor is gegeven, wordt de tekening nog steeds
 getoond, en **Bewerken** zegt dat de editor niet beschikbaar is.
 
+Een tekening kan aan een element verankerd zijn. Het menu van het element
+biedt **Tekening maken** naast **Containeraanzicht maken** of
+**Containeraanzicht openen**, en de inspector heeft dezelfde knop. Maken is
+één stap, en ongedaan maken haalt haar weg. Een dubbelklik op het element
+biedt de tekeningen die eraan verankerd zijn, naast het containeraanzicht als
+het er een heeft. Een dubbelklik maakt nooit een tekening.
+
+De pagina van het element noemt die tekeningen. Eén kiezen opent haar.
+
+In een document toont `![bijschrift](view:id)` het aanzicht met die id uit
+deze scope. Een tekening wordt getoond als haar afbeelding, met een
+doorzichtige knop per vorm die naar een element wijst; de knop kiezen opent
+dat element. Een aanzicht van een andere soort toont het bijschrift en **Nog
+geen afbeelding**. Een aanzicht dat niet in deze scope staat toont het
+bijschrift en zegt dat het aanzicht ontbreekt.
+
 ## Zoeken
 
 **Zoeken** in de bovenbalk, of ⌘K, doorzoekt alles in één keer: elementen op

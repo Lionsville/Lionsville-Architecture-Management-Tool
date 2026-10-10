@@ -197,6 +197,7 @@ export const EN = {
   'shell.newMap': 'Enterprise map',
   'shell.newTechnology': 'Technology landscape',
   'shell.newDrawing': 'Drawing',
+  'shell.drawingOf': '{name} · drawing',
   'shell.drawingNotDrawn': 'Not drawn yet',
   /** Opens the drawing editor, when this source has an origin for one. */
   'shell.drawingEdit': 'Edit',

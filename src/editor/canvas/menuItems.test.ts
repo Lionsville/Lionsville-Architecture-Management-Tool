@@ -67,6 +67,7 @@ describe('menuItemsFor — node', () => {
     expect(ids(items)).toEqual([
       'open-documentation',
       'open-container',
+      'create-drawing',
       'rename',
       'start-connection',
       'icon',
@@ -94,13 +95,15 @@ describe('menuItemsFor — node', () => {
     // rename, no lifecycle, no kind, no duplicate — the lines, the icon, the
     // band and the removal stay.
     expect(ids(away)).toEqual([
-      'open-documentation', 'open-container', 'start-connection', 'icon', 'move-to-zone',
+      'open-documentation', 'open-container', 'create-drawing', 'start-connection', 'icon', 'move-to-zone',
       'copy', 'cut', 'remove-from-diagram', 'delete-from-model',
     ]);
     // Its own action: a double-click opens and never makes, so making is
     // said by name and routed to the host's create, not to the open path.
     expect(byId(items, 'create-container').label).toBe('Create container diagram');
     expect(byId(items, 'create-container').action).toBe('create-container');
+    expect(byId(items, 'create-drawing').label).toBe('Create drawing');
+    expect(byId(items, 'create-drawing').action).toBe('create-drawing');
   });
 
   it('offers a platform its report, always (ADR-0013)', () => {

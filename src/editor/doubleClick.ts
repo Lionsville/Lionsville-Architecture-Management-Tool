@@ -16,22 +16,32 @@
  * for an application that had none, which is a new view in the model made by
  * a gesture that reads as "look inside" — and the first thing a person did
  * with the view they had not asked for was look for a way to delete it. An
- * application with nothing inside answers `undefined` here: the menu's
- * *Create container diagram* and the inspector's button are where one is
- * made, on purpose, and both go through the same command.
+ * application with no container view and no drawing answers `undefined`
+ * here: the menu's *Create container diagram* and the inspector's button are
+ * where one is made, on purpose, and both go through the same command.
+ *
+ * The drawings anchored to the element are offered beside that, and a
+ * double-click never makes one of those either. The menu's *Create drawing*
+ * and the inspector's button are where a drawing is made.
  */
 import { refinementsOf } from '../model';
+import { drawingsAnchoredTo } from '../model/drawing';
 import type { DesignDiagram, DesignElement, ElementId, Relation } from '../model';
 import type { EditorOwnership } from './props';
 
+/** A drawing anchored to the element, as a double-click offers it. */
+export type DrawingOffer = { id: string; name: string };
+
 export type DoubleClickTarget =
-  | { kind: 'documentation' }
-  | { kind: 'owner'; show: () => void }
-  | { kind: 'container'; diagramId: string }
+  | { kind: 'documentation'; drawings?: readonly DrawingOffer[] }
+  | { kind: 'owner'; show: () => void; drawings?: readonly DrawingOffer[] }
+  | { kind: 'container'; diagramId: string; drawings?: readonly DrawingOffer[] }
+  /** Drawings, and no container view: offered, never made. */
+  | { kind: 'drawings'; drawings: readonly DrawingOffer[] }
   /** A platform's report (ADR-0013): what would be left standing if it went. */
-  | { kind: 'platformReport'; platformId: ElementId }
+  | { kind: 'platformReport'; platformId: ElementId; drawings?: readonly DrawingOffer[] }
   /** A service's report (ADR-0014): what would be stranded if it were withdrawn. */
-  | { kind: 'serviceReport'; serviceId: ElementId };
+  | { kind: 'serviceReport'; serviceId: ElementId; drawings?: readonly DrawingOffer[] };
 
 export function doubleClickTarget(
   model: { elements: readonly DesignElement[]; diagrams: readonly DesignDiagram[] },
@@ -43,18 +53,30 @@ export function doubleClickTarget(
   // What is inside a platform is what stands on it (ADR-0013). A report and
   // not a view: it is derived from the rows this scope holds, whoever defines
   // the platform, so there is nothing to make and nothing to find.
-  if (element.kind === 'platform') return { kind: 'platformReport', platformId: elementId };
+  if (element.kind === 'platform') return offer(model, elementId, { kind: 'platformReport', platformId: elementId });
   // And the offering's, from the other side (ADR-0014): who leans on it.
-  if (element.kind === 'platformService') return { kind: 'serviceReport', serviceId: elementId };
-  if (element.kind !== 'application') return { kind: 'documentation' };
+  if (element.kind === 'platformService') return offer(model, elementId, { kind: 'serviceReport', serviceId: elementId });
+  if (element.kind !== 'application') return offer(model, elementId, { kind: 'documentation' });
   if (element.ref !== undefined) {
     const show = ownership?.ownerOf(elementId)?.onShow;
-    if (show) return { kind: 'owner', show };
+    if (show) return offer(model, elementId, { kind: 'owner', show });
   }
   const existing = model.diagrams.find(
     (d) => d.kind === 'container' && d.applicationElementId === elementId,
   );
-  return existing ? { kind: 'container', diagramId: existing.id } : undefined;
+  if (existing) return offer(model, elementId, { kind: 'container', diagramId: existing.id });
+  const drawings = drawingsAnchoredTo(model.diagrams, elementId);
+  return drawings.length > 0 ? { kind: 'drawings', drawings } : undefined;
+}
+
+/** The element's drawings beside whatever a double-click already opened. None: the target unchanged. */
+function offer<T extends DoubleClickTarget>(
+  model: { diagrams: readonly DesignDiagram[] },
+  elementId: ElementId,
+  target: T,
+): T {
+  const drawings = drawingsAnchoredTo(model.diagrams, elementId);
+  return drawings.length > 0 ? { ...target, drawings } : target;
 }
 
 

@@ -62,6 +62,8 @@ export const DE: Record<keyof typeof EN, string> = {
 
   'menu.openContainer': 'Container-Diagramm öffnen',
   'menu.createContainer': 'Container-Diagramm erstellen',
+  'menu.createDrawing': 'Zeichnung erstellen',
+  'menu.openInside': 'Öffnen',
   'menu.platformReport': 'Plattformbericht',
   'menu.serviceReport': 'Dienstbericht',
   'menu.openOwner': 'Öffnen, wo sie definiert ist',
@@ -365,6 +367,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'field.detailOther': 'Detail: {count} Schnittstellen im Containerdiagramm · {protocols}',
   'field.detailOpen': 'Öffnen',
   'field.noContainer': 'Darin ist noch nichts gezeichnet. Ein Container-Diagramm ist, wo ihre Komponenten stehen.',
+  'field.anchoredDrawing': 'Eine Zeichnung, die an diesem Element verankert ist.',
   'field.newInterface': 'Neue Schnittstelle',
   'field.detachFrom': 'Von „{label}“ lösen',
   'field.technologyHelp': 'Woraus sie gebaut ist: OpenAPI 3, ein Kafka-Topic, ein SFTP-Ablageort',

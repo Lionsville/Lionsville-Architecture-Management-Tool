@@ -1695,6 +1695,23 @@ und die Verweise, die die Formen setzen.
 Wo keine Adresse für den Editor angegeben wurde, wird die Zeichnung weiterhin
 gezeigt, und **Bearbeiten** sagt, dass der Editor nicht verfügbar ist.
 
+Eine Zeichnung kann an einem Element verankert sein. Das Menü des Elements
+bietet **Zeichnung erstellen** neben **Container-Diagramm erstellen** oder
+**Container-Diagramm öffnen**, und der Inspektor hat dieselbe Schaltfläche.
+Das Anlegen ist ein Schritt, und Rückgängig nimmt sie weg. Ein Doppelklick
+auf das Element bietet die Zeichnungen, die daran verankert sind, neben dem
+Container-Diagramm, wenn es eines hat. Ein Doppelklick legt nie eine Zeichnung
+an.
+
+Die Seite des Elements nennt diese Zeichnungen. Eine auswählen öffnet sie.
+
+In einem Dokument zeigt `![Beschriftung](view:id)` die Ansicht mit dieser Id
+aus diesem Bereich. Eine Zeichnung wird als ihr Bild gezeigt, mit einer
+durchsichtigen Schaltfläche für jede Form, die auf ein Element zeigt; die
+Schaltfläche wählen öffnet dieses Element. Eine Ansicht einer anderen Art
+zeigt die Beschriftung und **Noch kein Bild**. Eine Ansicht, die nicht in
+diesem Bereich ist, zeigt die Beschriftung und sagt, dass die Ansicht fehlt.
+
 ## Suchen
 
 **Suchen** in der oberen Leiste, oder ⌘K, durchsucht alles auf einmal: Elemente

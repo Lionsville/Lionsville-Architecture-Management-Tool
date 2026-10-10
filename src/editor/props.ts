@@ -143,6 +143,12 @@ export interface EditorDiagramActions {
     onOpenDrawing?(diagramId: string): void;
     onCreateDrawing?(): void;
     /**
+     * Make a drawing anchored to an element. The canvas menu and the inspector
+     * both call it; a double-click never does. Absent where the host cannot,
+     * and the menu's action then does nothing.
+     */
+    onCreateDrawingFor?(elementId: ElementId): void;
+    /**
      * A platform's report (ADR-0013, redone): what would be left standing if
      * it went. Not a view — there is nothing to make and nothing in the tab
      * strip — so this takes the platform, and the host draws the page.

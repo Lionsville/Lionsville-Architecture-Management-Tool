@@ -24,6 +24,9 @@ export const NODE_ACTIONS = {
   'create-container': ({ host, elementId }) => {
     if (elementId) host.createContainer?.(elementId);
   },
+  'create-drawing': ({ host, elementId }) => {
+    if (elementId) host.createDrawing?.(elementId);
+  },
   'open-documentation': ({ host, elementId }) => {
     if (elementId) host.openDocumentation?.(elementId);
   },
