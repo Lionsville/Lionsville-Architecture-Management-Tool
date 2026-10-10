@@ -1,6 +1,7 @@
 # ADR-0034 — A drawing is a view, drawn in draw.io, and points at the model
 
-* Status: accepted, 8 October 2026; not yet built
+* Status: accepted, 8 October 2026; not yet built; amended 10 October 2026
+  (what the code already does, settled before the build)
 * Date: 2026-10-08
 * Deciders: Wouter Simons
 * Extends: ADR-0009 (a document that computes: a document can show a view),
@@ -86,6 +87,10 @@ drawing is listed with its element: in the element's documentation and in
 what a double-click on it offers. Nothing branches on the level; it is a
 label, as a scope's kind is.
 
+*Amended 10 October 2026.* Adding the kind makes every switch on a view's
+kind exhaustive, or the place records why a drawing is not one of its cases.
+The amendment below says which.
+
 ### 2. What is kept
 
 * **The XML**, uncompressed, in `diagrams/<id>.drawio` beside
@@ -102,6 +107,12 @@ earlier three back. Two people saving one drawing at once write the same
 keys; the second is refused as an overlap, and the editor then offers
 draw.io's own merge of the newer drawing with theirs before saving again.
 There is no merge below the drawing.
+
+*Amended 10 October 2026.* The picture is read by its content address, and
+the sweep keeps every address a drawing in the head names. The three are
+written under one key, `diagram/<id>/drawing`; the refusal of a second save
+is the channel's. An inverse that names bytes already swept shows *not drawn
+yet*. The amendment below says each.
 
 The scope format's version goes up by one, and an older scope reads with no
 drawings.
@@ -122,6 +133,14 @@ app's origin with scripts allowed can reach everything the app can.
 * **In the web build**, an origin named in the build's configuration, served
   with the same files. A build that names none offers no editor: drawings are
   still shown, and *Edit* says it is not available here.
+
+*Amended 10 October 2026.* The drawing scheme joins the one
+`registerSchemesAsPrivileged` call, beside `app`, and `frame-src` is written
+by core. A frame's navigation is kept on the scheme. The web origin is a
+provider part, `ProviderParts.drawingOrigin`, beside `shareAddress`. The
+amendment below says each. The web build this repository releases names no
+origin: drawings are shown there, and *Edit* says the editor is not
+available.
 
 **It is started closed off**: embedded, with the JSON protocol and its
 configuration from the app, without its own network use, without opening
@@ -152,6 +171,10 @@ nothing. When a drawing is opened in the editor, the labels of pointing
 shapes are set to their elements' names as they are now. **A shape that
 points at an element that is not there is a finding** of the checks, and an
 element says which drawings point at it.
+
+*Amended 10 October 2026.* The organisation index never reads views, so the
+finding and the list are the drawing's own scope. A drawing in another scope
+that pointed here is left open. The amendment below says so.
 
 ### 5. A document shows a view
 
@@ -204,3 +227,123 @@ straight away. `app.open` opens a drawing as it opens any view.
   view shows its caption.
 * The desktop's smoke run: a drawing created, a shape dragged in from the
   elements, saved, and its area opens the element.
+
+## Amended — what the code already does, settled before the build
+
+*10 October 2026.* A read of the desktop policy, the picture seam, the write
+keys, the organisation index, the web build and the switches on a view's kind
+found six things this record had not yet said. Each is settled here, before
+the build. How an environment serves the drawing origin — a second name on
+its own app, the files alone, no session — is that environment's record, not
+this one. This repository's web build names no such origin.
+
+### The desktop's policy forbids frames, in writing
+
+`electron/main/csp.ts` folds a hook's origins into `connect-src` and, where
+the hook said so, `img-src`. The comment there says nothing reaches
+`script-src`, `style-src`, `worker-src` or `frame-src`, and there is no seam
+that would let it. The drawing scheme is this repository's own and fixed, so
+`frame-src drawing://local` is written by `contentSecurityPolicy` itself, and
+the comment says that the one frame it allows is that scheme and that a hook
+cannot name another. A hook's origin still reaches neither `frame-src` nor
+`script-src`.
+
+Electron allows one `protocol.registerSchemesAsPrivileged` call, and it has
+to precede `ready` (`electron/main/index.ts`). The drawing scheme is
+registered in that same call, beside `app`, with the privileges a framed
+page needs (`standard`, `secure`, `supportFetchAPI`). A second call would
+replace the first and drop the app scheme.
+
+Nothing watches a frame's navigation today. The main process handles
+`will-frame-navigate` and keeps the frame on `drawing://`: a navigation to
+any other scheme is cancelled. The scheme's own handler serves the shipped
+files and answers anything else with a refusal, and the policy on those
+files allows no `connect-src` and no frame of their own.
+
+### A picture is found by name, and unnamed bytes are swept
+
+`ImageRepository.bytes` answers one picture by its name in the library.
+`sweepUnnamed` (`adapters/repositories/imageNames.ts`) lets go of bytes no
+library entry names, a day after they were put. A drawing's picture has no
+library name: the view holds the content address.
+
+The seam therefore answers bytes by content address as well as by name, and
+the contract beside it says so. The sweep keeps every address a drawing in
+the head names, the way it keeps an address the history names. Bytes a
+drawing no longer names, and that the library and the history do not name
+either, are swept as unnamed bytes are.
+
+An inverse puts the earlier address back and does not put the bytes back. An
+address the sweep has already taken is not there, and the drawing shows
+*not drawn yet* — the same words a drawing an agent wrote shows, until a
+person next saves it in the editor. The editor puts the picture again then,
+as it does for any save.
+
+### The overlap refusal is a channel's
+
+Core reports the keys a command writes (ADR-0028) and does not decide that
+two steps overlap. That decision is the channel's, made from those keys
+(`ports/CommandChannel.ts`).
+
+A drawing's XML, its picture's address and its links are one fact saved
+together, so `diagram.update` of a drawing writes them under **one key**,
+`diagram/<id>/drawing`, rather than one key per field. A channel that
+refuses an overlap then refuses the second save of that drawing whole. The
+editor's answer to the refusal is unchanged: it fetches the newer drawing
+and offers draw.io's own merge before saving again.
+
+### The organisation index never reads views
+
+`projects/scopeIndex.ts` indexes a scope's records and rows. A view is not
+among them, and loading every view of the tree to answer one element's card
+is the cost that index exists to avoid.
+
+A shape points at an element of the drawing's own scope, or at a stand-in
+that scope holds, which is already this record's rule. The check for a
+pointing shape whose element is gone is therefore that scope's own check,
+read from the scope's views. *Drawings that point at it* on an element lists
+the drawings of the element's own scope. A drawing in another scope that
+pointed at the element, and a document that embedded a view from another
+scope, stay open until asked for.
+
+### The drawing origin is a provider part
+
+The web build has no `VITE_*` value and no `define` that names an origin.
+Whoever serves a page already hands it what this repository does not know —
+`ProviderParts.shareAddress` is that seam for a link (ADR-0033, amended).
+
+The drawing origin is the same kind of fact. `ProviderParts.drawingOrigin`,
+beside `shareAddress`, answers the origin the frame loads, or `undefined`
+for *not available*. It is asked when a drawing is edited, not baked into
+the bundle. Absent, or answering `undefined`, the drawings are still shown
+and *Edit* says the editor is not available. The web build this repository
+releases supplies none. A provider that serves the files on an origin of its
+own supplies the origin; the files, the host and the certificate are that
+provider's.
+
+### Every switch on a view's kind is exhaustive
+
+A view's kind is a union, and a switch that ends in `never` fails to compile
+when a member is added. Several places compare instead, so a new kind would
+fall through with the compiler quiet. The ones a read found:
+
+* `isBoardKind` and `isLaidOutKind` (`model/placement.ts`)
+* `viewPage` (`agent/screen.ts`)
+* `LAID_OUT_KINDS` (`documentation/documentation.ts`)
+* `LAID_OUT_LABEL` (`app/organisation/BoardsTable.tsx`)
+* `VIEW_LABEL` (`search/ui/GlobalSearchDialog.tsx`)
+* `useViewSelect` (`app/useViewSelect.ts`)
+* the toolbar's lists of sheets, maps and technology views
+  (`editor/EditorToolbar.tsx`)
+* the page a view opens on (`agent/shell.ts`, through `viewPage`)
+* the sort that puts boards before laid-out views (`projects/scope.ts`)
+* the editor's `laidOut` test (`editor/SolutionDesignEditor.tsx`,
+  `editor/useEditorState.ts`)
+
+Each of these becomes a switch the compiler checks, or the place records
+why a drawing is not one of its cases — a drawing is not a board, not laid
+out, and not a technology view, and the record of that is a case that says
+so rather than a comparison the next kind falls out of. A comparison that
+is about one kind and one fact (`diagram.kind === 'container'` beside
+`applicationElementId`) stays a comparison: it is not a classification of
+every kind.
