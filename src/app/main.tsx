@@ -53,7 +53,7 @@ import {
   composeShell, desktopCommandChannel, EXAMPLE_OFFERS, INTERCHANGE, openSource, overSource, registeredChrome, registeredConnects,
   registeredMenus, reloadWhenScriptsAreGone, sourceAgentPanel, sourceBarButton, sourceChip, sourceChipFace, sourceChipPanel,
   sourceConnected, sourceDescription, sourceDestination, sourcePreferencesPanel, sourceProblemAction, sourceRecentActivity,
-  sourceSayings,
+  sourceSayings, withDesktopDrawing,
 } from './composition'
 import type { RegisteredConnect } from './composition'
 import type { SourceLocation, SourceRecent, SourceWayIn } from '../platform/sourceProvider'
@@ -231,7 +231,7 @@ async function workFrom(kind: string, opening: unknown): Promise<boolean> {
     shell.diagnostics.report({ level: 'error', where: 'source', message: `the '${kind}' source brought no repositories` })
     return false
   }
-  shell = overSource(shell, parts)
+  shell = withDesktopDrawing(overSource(shell, parts), Boolean(commands))
   sourced = true
   return true
 }
@@ -443,7 +443,7 @@ async function settled(): Promise<void> {
     return undefined
   })
   // Settled either way: a second boot step never asks again.
-  shell = overSource(shell, parts ?? { ...shell, settled: undefined })
+  shell = withDesktopDrawing(overSource(shell, parts ?? { ...shell, settled: undefined }), Boolean(commands))
   browserShell = shell
 }
 
@@ -513,6 +513,7 @@ function renderApp(
           historyNoteKey: shell.historyNoteKey,
           historyKept: shell.historyKept,
           shareAddress: shell.shareAddress,
+          drawingOrigin: shell.drawingOrigin,
           sayings: { ...sourceSayings(shell.source), ...shell.sayings },
           sourceNeeded: sourceNeeded(),
           changes: shell.changes,

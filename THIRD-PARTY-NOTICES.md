@@ -12932,3 +12932,27 @@ CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
+
+---
+
+One library is shipped as files and is not an npm dependency. Its version
+and checksum are the pin in `build/dependencyPolicy.ts`, which is also what
+fetches it.
+
+---
+
+## draw.io 32.4.1
+
+Licence: Apache-2.0
+
+```
+draw.io (diagrams.net) is shipped with the desktop app as files, not as an
+npm dependency. The archive is draw.war 32.4.1, sha256 b83663313ccdecef6581476a7eaa96750bccf1bfdc3768981eb5d95e94be7820,
+pruned to the editor and the languages the app speaks.
+
+Copyright (c) JGraph Holdings Ltd and draw.io AG.
+
+Licensed under the Apache License, Version 2.0.
+
+The bundles carry DOMPurify, which is Apache-2.0 and MPL-2.0.
+```

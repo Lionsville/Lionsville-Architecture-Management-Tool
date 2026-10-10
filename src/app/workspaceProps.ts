@@ -331,6 +331,8 @@ export type WorkspaceShell = {
   s: Translate
   language: Language
   notify: Notify
+  /** Where the drawing editor is served (`ProviderParts.drawingOrigin`). Absent: Edit says it is not. */
+  drawingOrigin?: () => string | undefined
   makeId: MakeId
   /**
    * The action the open source's provider offers on a problem, for the

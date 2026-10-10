@@ -101,6 +101,13 @@ export type ProviderParts<Own = unknown> = {
    * cannot be reached from a link, which is all three core registers.
    */
   shareAddress?: () => string | undefined
+  /**
+   * Where the drawing editor is served, when this source has one: the frame's
+   * address. Asked when a drawing is edited. `undefined` means the editor is
+   * not available, and the drawing is still shown. Absent where this source
+   * has no editor, which is every source this repository opens in a browser.
+   */
+  drawingOrigin?: () => string | undefined
   /** Handed back to this provider's own chrome and panels while its source is open. */
   own?: Own
 }

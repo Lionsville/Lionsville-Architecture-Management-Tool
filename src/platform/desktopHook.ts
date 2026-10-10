@@ -103,10 +103,11 @@ export type DesktopSide = {
 /**
  * An origin the page may reach, as a hook names one.
  *
- * The renderer is served under a Content-Security-Policy that names `'self'`
- * and two data schemes and nothing else (`electron/main/index.ts`), which is
- * ADR-0007's sandbox written as a header: a page that cannot be talked into
- * reaching anywhere is the point of it. A source of work kept somewhere else
+ * The renderer is served under a Content-Security-Policy that names `'self'`,
+ * two data schemes and one frame — the drawing scheme, which a hook cannot
+ * widen (`electron/main/csp.ts`). That is ADR-0007's sandbox written as a
+ * header: a page that cannot be talked into reaching anywhere is the point of
+ * it. A source of work kept somewhere else
  * has to be reached, though, and a hook is where that fact lives — so a hook
  * names the origins its own source needs and the header is assembled with them
  * in it, rather than the policy being widened for everybody or the page quietly

@@ -35,6 +35,7 @@ describe('contentSecurityPolicy', () => {
       "font-src 'self' data:",
       "connect-src 'self' data: blob:",
       "worker-src 'self' blob:",
+      "frame-src drawing://local",
       "object-src 'none'",
       "base-uri 'none'",
       "form-action 'none'",
@@ -52,6 +53,8 @@ describe('contentSecurityPolicy', () => {
     expect(header['script-src']).toEqual(["'self'", "'wasm-unsafe-eval'"])
     expect(header['default-src']).toEqual(["'self'"])
     expect(header['worker-src']).toEqual(["'self'", 'blob:'])
+    // The one frame is the drawing scheme. A hook's origin is not a frame.
+    expect(header['frame-src']).toEqual(['drawing://local'])
   })
 
   it('names it in img-src as well where that hook said pictures load from there', () => {
@@ -96,7 +99,8 @@ describe('contentSecurityPolicy', () => {
     const header = directives(contentSecurityPolicy(named))
     expect(header['connect-src']).toEqual(["'self'", 'data:', 'blob:', 'https://work.example'])
     // The one thing a `;` must not have done: added a directive.
-    expect(Object.keys(header)).toHaveLength(10)
+    expect(Object.keys(header)).toHaveLength(11)
+    expect(header['frame-src']).toEqual(['drawing://local'])
   })
 })
 

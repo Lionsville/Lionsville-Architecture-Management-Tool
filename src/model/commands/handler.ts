@@ -80,6 +80,32 @@ export type CommandRefusal =
    */
   | 'command.rootAddressed'
 
+/**
+ * Whether a refusal is one of the reducer's.
+ *
+ * A channel may refuse with a key of its own, and that key is deliberately
+ * not one of these (`ports/CommandChannel.ts`). Callers that repair a
+ * reducer's refusal one way and a channel's another tell them apart here.
+ */
+const COMMAND_REFUSALS: Record<CommandRefusal, true> = {
+  'command.gone': true,
+  'command.lastLandscape': true,
+  'command.datesOutOfOrder': true,
+  'command.refinesEnds': true,
+  'command.refinesLevel': true,
+  'command.hostedOnContainers': true,
+  'command.technologyEnds': true,
+  'command.taken': true,
+  'command.notAField': true,
+  'command.ownedElsewhere': true,
+  'command.rootExplained': true,
+  'command.rootAddressed': true,
+}
+
+export function isCommandRefusal(value: string): value is CommandRefusal {
+  return Object.hasOwn(COMMAND_REFUSALS, value)
+}
+
 export type ApplyResult =
   | { ok: true; model: Model; inverse: Command }
   | { ok: false; reason: CommandRefusal }
