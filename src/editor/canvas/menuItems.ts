@@ -31,6 +31,7 @@ export type MenuActionId =
   | 'open-documentation'
   | 'open-container'
   | 'create-container'
+  | 'create-drawing'
   | 'rename'
   | 'start-connection'
   | 'pick-icon'
@@ -348,6 +349,11 @@ function nodeItems(ctx: MenuContext): MenuItem[] {
     items.push({ id: 'open-container', label: t('menu.serviceReport'), action: 'open-container' });
   }
   if (ctx.readOnly) return items;
+
+  // A drawing anchored to this element, beside the container entry above.
+  // A double-click opens and never makes (`doubleClick.ts`), so making is
+  // said here, by name, the same way a container view is made.
+  items.push({ id: 'create-drawing', label: t('menu.createDrawing'), action: 'create-drawing' });
 
   // A stand-in is offered what this scope answers for and nothing else
   // (ADR-0012 §3, `projects/mayEdit.ts`): where it sits, how it is drawn, and

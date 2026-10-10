@@ -122,6 +122,32 @@ describe('DocumentationPage — as axe reads it', () => {
   });
 });
 
+describe('DocumentationPage — the drawings anchored to the element', () => {
+  it('lists them, and choosing one opens it', () => {
+    const onOpenDrawing = vi.fn();
+    const main = element();
+    const held = model(main);
+    held.diagrams = [
+      ...held.diagrams,
+      { id: 'dr-1', kind: 'drawing', name: 'Context', elementId: 'e1', members: [] },
+      { id: 'dr-2', kind: 'drawing', name: 'Deploy', elementId: 'e1', members: [] },
+      { id: 'dr-other', kind: 'drawing', name: 'Other', elementId: 'e2', members: [] },
+    ];
+    setup({ element: main, model: held, onOpenDrawing });
+    const section = screen.getByTestId('doc-drawings');
+    expect(within(section).getByRole('button', { name: 'Context' })).toBeTruthy();
+    expect(within(section).getByRole('button', { name: 'Deploy' })).toBeTruthy();
+    expect(within(section).queryByRole('button', { name: 'Other' })).toBeNull();
+    fireEvent.click(within(section).getByRole('button', { name: 'Context' }));
+    expect(onOpenDrawing).toHaveBeenCalledWith('dr-1');
+  });
+
+  it('says nothing when the element has none', () => {
+    setup();
+    expect(screen.queryByTestId('doc-drawings')).toBeNull();
+  });
+});
+
 describe('DocumentationPage — the plans that name the element (ADR-0010)', () => {
   const plan = (id: string, title: string, elementId: string) => ({
     id, number: Number(id.slice(-1)), title, status: 'agreed' as const,

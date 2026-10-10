@@ -109,6 +109,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.newMap': 'Unternehmenskarte',
   'shell.newTechnology': 'Technologielandschaft',
   'shell.newDrawing': 'Zeichnung',
+  'shell.drawingOf': '{name} · Zeichnung',
   'shell.drawingNotDrawn': 'Noch nicht gezeichnet',
   'shell.add': 'Hinzufügen',
   'shell.imagesMissing': 'PNG exportiert, aber diese Logos fehlen: {labels}.',

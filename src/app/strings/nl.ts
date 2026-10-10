@@ -108,6 +108,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.newMap': 'Bedrijfskaart',
   'shell.newTechnology': 'Technologielandschap',
   'shell.newDrawing': 'Tekening',
+  'shell.drawingOf': '{name} · tekening',
   'shell.drawingNotDrawn': 'Nog niet getekend',
   'shell.add': 'Toevoegen',
   'shell.imagesMissing': 'PNG geëxporteerd, maar deze logo’s ontbreken: {labels}.',

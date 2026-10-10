@@ -67,6 +67,8 @@ export const EN = {
   // --- context menus -------------------------------------------------------
   'menu.openContainer': 'Open container diagram',
   'menu.createContainer': 'Create container diagram',
+  'menu.createDrawing': 'Create drawing',
+  'menu.openInside': 'Open',
   'menu.platformReport': 'Platform report',
   'menu.serviceReport': 'Service report',
   'menu.openOwner': 'Open where it is defined',
@@ -378,6 +380,7 @@ export const EN = {
   'field.detailOther': 'Detail: {count} interfaces on the container diagram · {protocols}',
   'field.detailOpen': 'Open',
   'field.noContainer': 'Nothing is drawn inside it yet. A container diagram is where its components go.',
+  'field.anchoredDrawing': 'A drawing anchored to this element.',
   'field.newInterface': 'New interface',
   'field.detachFrom': 'Detach from “{label}”',
   'field.technologyHelp': 'What it is built out of: OpenAPI 3, a Kafka topic, an SFTP drop',

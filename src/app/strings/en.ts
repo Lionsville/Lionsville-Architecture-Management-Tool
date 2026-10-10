@@ -197,6 +197,7 @@ export const EN = {
   'shell.newMap': 'Enterprise map',
   'shell.newTechnology': 'Technology landscape',
   'shell.newDrawing': 'Drawing',
+  'shell.drawingOf': '{name} · drawing',
   'shell.drawingNotDrawn': 'Not drawn yet',
   'shell.add': 'Add',
   'shell.imagesMissing': 'PNG exported, but these logos are missing: {labels}.',

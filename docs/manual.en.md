@@ -1461,6 +1461,21 @@ own, like a landscape or a sheet.
 A drawing is shown as its picture. A drawing that has no picture says **Not
 drawn yet**.
 
+A drawing may be anchored to an element. The element's menu offers **Create
+drawing** beside **Create container diagram** or **Open container diagram**,
+and the inspector has the same button. Making one is one step, and undo takes
+it away. A double-click on the element offers the drawings anchored to it,
+beside its container view when it has one. A double-click never makes a
+drawing.
+
+The element's page lists those drawings. Choosing one opens it.
+
+In a document, `![caption](view:id)` shows the view with that id from this
+scope. A drawing is shown as its picture, with a transparent button for each
+shape that points at an element; choosing the button opens that element. A
+view of another kind shows the caption and **No picture yet**. A view that is
+not in this scope shows the caption and says the view is missing.
+
 ## Search
 
 **Search** in the top bar, or ⌘K, searches everything at once: elements by

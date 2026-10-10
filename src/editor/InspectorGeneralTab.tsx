@@ -34,7 +34,7 @@ export function GeneralTab({ field, inspector, uses, picker }: {
   picker: ReturnType<typeof useUsesPicker>;
 }) {
   const { element, model, readOnly } = field;
-  const { onOpenDocumentation, onCreateContainer } = inspector;
+  const { onOpenDocumentation, onCreateContainer, onCreateDrawing } = inspector;
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
       <TechnologyFields field={field} offeredBeyond={inspector.offeredBeyond} />
@@ -59,6 +59,9 @@ export function GeneralTab({ field, inspector, uses, picker }: {
       <PlacementField field={field} diagram={inspector.diagram} />
       {onCreateContainer && !readOnly && offersContainer(element, model) && (
         <ContainerOffer onCreate={() => onCreateContainer(element.id)} />
+      )}
+      {onCreateDrawing && !readOnly && (
+        <DrawingOffer onCreate={() => onCreateDrawing(element.id)} />
       )}
     </Box>
   );
@@ -170,6 +173,24 @@ function PlacementField({ field, diagram }: { field: InspectorField; diagram: De
  * double-click on the card only OPENS one (`doubleClick.ts`), and a card with
  * nothing inside gives no hint — this button is the hint.
  */
+/**
+ * Make a drawing anchored to this element. Beside the container button where
+ * there is one: a double-click only opens a drawing (`doubleClick.ts`).
+ */
+function DrawingOffer({ onCreate }: { onCreate(): void }) {
+  const { t } = useStrings();
+  return (
+    <Box>
+      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+        {t('field.anchoredDrawing')}
+      </Typography>
+      <Button size="small" variant="outlined" onClick={onCreate}>
+        {t('menu.createDrawing')}
+      </Button>
+    </Box>
+  );
+}
+
 function ContainerOffer({ onCreate }: { onCreate(): void }) {
   const { t } = useStrings();
   return (

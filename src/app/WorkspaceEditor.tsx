@@ -149,6 +149,7 @@ function diagramCalls({ diagrams, sheets, pages }: WorkspaceParts) {
     onCreateTechnology: pages.createTechnology,
     onOpenDrawing: pages.openView,
     onCreateDrawing: pages.createDrawing,
+    onCreateDrawingFor: pages.createDrawingFor,
     onOpenTechnologyFor: pages.openTechnologyFor,
     onOpenPlatformReport: pages.openPlatformReport,
     onOpenServiceReport: pages.openServiceReport,

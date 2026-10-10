@@ -24,6 +24,7 @@ import { useLayoutActions } from './useLayoutActions';
 import { useBoardCapture, useExportDialog } from './useExport';
 import { useDoubleClicks, useEditorHandle } from './useEditorHandle';
 import { EditorDialogs, EditorLateDialogs, useEditorDialogs } from './EditorDialogs';
+import { InsideChoice } from './InsideChoice';
 import { EditorDocumentationPage } from './EditorDocumentationPage';
 import { BoardToolbar } from './EditorBoardToolbar';
 import { BoardCanvas, LaidOutView, PaletteDock } from './EditorPanels';
@@ -107,6 +108,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
         {docked && <InspectorDock parts={parts} diagram={activeDiagram} />}
       </Box>
       <EditorDialogs state={state} diagram={activeDiagram} deletes={parts.deletes} exports={parts.exports} dialogs={parts.dialogs} />
+      <InsideChoice offers={parts.clicks.offers} onClose={parts.clicks.dismissOffers} />
       {documentationPage}
       <EditorLateDialogs props={props} state={state} dialogs={parts.dialogs} onFocus={parts.requests.requestFocus} />
     </Box>

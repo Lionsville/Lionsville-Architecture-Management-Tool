@@ -6,14 +6,13 @@
  * been drawn. Nothing here edits. The picture is an image, so nothing inside
  * it runs.
  */
-import { useEffect, useState } from 'react'
+import { useCallback } from 'react'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
-import type { ContentAddress } from '../model/imageName'
-import { mediaTypeOfBytes } from '../model/imageName'
 import type { DesignDiagram } from '../model'
 import type { ImageRepository } from '../ports/ImageRepository'
 import type { Translate } from '../i18n'
+import { useContentPicture } from '../documentation/ui/useContentPicture'
 
 export function DrawingView({ diagram, scope, images, s }: {
   diagram: DesignDiagram
@@ -23,7 +22,12 @@ export function DrawingView({ diagram, scope, images, s }: {
   s: Translate
 }) {
   const address = diagram.drawing?.picture
-  const url = useDrawingPicture(scope, images, address)
+  const load = useCallback(
+    (asked: string) => (scope && images ? images.bytesAt(scope, asked) : Promise.resolve(undefined)),
+    [scope, images],
+  )
+  const shown = useContentPicture(scope && images && address ? load : undefined, address)
+  const url = shown && shown !== 'absent' ? shown.url : undefined
   return (
     <Box
       data-testid="drawing-view"
@@ -46,36 +50,3 @@ export function DrawingView({ diagram, scope, images, s }: {
   )
 }
 
-/**
- * The picture's bytes, as an address a browser can draw, or nothing when the
- * drawing has no picture or the bytes are not there.
- */
-function useDrawingPicture(
-  scope: string | undefined,
-  images: Pick<ImageRepository, 'bytesAt'> | undefined,
-  address: ContentAddress | undefined,
-): string | undefined {
-  const [url, setUrl] = useState<string | undefined>(undefined)
-  useEffect(() => {
-    if (!scope || !images || !address) {
-      setUrl(undefined)
-      return undefined
-    }
-    let gone = false
-    let objectUrl: string | undefined
-    void images.bytesAt(scope, address).then((held) => {
-      if (gone || !held) return
-      const type = held.mediaType && held.mediaType !== 'application/octet-stream' ? held.mediaType : mediaTypeOfBytes(held.bytes)
-      const copy = new Uint8Array(held.bytes)
-      objectUrl = URL.createObjectURL(new Blob([copy], { type }))
-      if (!gone) setUrl(objectUrl)
-    }).catch(() => {
-      if (!gone) setUrl(undefined)
-    })
-    return () => {
-      gone = true
-      if (objectUrl) URL.revokeObjectURL(objectUrl)
-    }
-  }, [scope, images, address])
-  return url
-}

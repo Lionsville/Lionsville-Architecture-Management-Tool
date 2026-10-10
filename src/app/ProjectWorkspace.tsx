@@ -17,6 +17,7 @@
  * component of its own over those parts.
  */
 import { useCallback, useEffect, useMemo, useRef } from 'react'
+import type { ReactNode } from 'react'
 import { useShownDays } from '../editor'
 import { useProjectHistory } from './history/useProjectHistory'
 import { HistoryDialogs, useWorkspaceDialogs, WorkspaceDialogs } from './WorkspaceDialogs'
@@ -46,6 +47,7 @@ import { useWorkspacePages } from './useWorkspacePages'
 import { useWorkspaceRequests } from './useWorkspaceRequests'
 import type { WorkspaceParts } from './workspaceParts'
 import { PicturesProvider } from '../documentation/ui/Pictures'
+import { ViewEmbedsProvider } from '../documentation/ui/ViewEmbed'
 import type { ProjectWorkspaceProps } from './workspaceProps'
 
 export function ProjectWorkspace(props: ProjectWorkspaceProps) {
@@ -64,14 +66,47 @@ export function ProjectWorkspace(props: ProjectWorkspaceProps) {
       library={parts.session.imageLibrary}
       onFailure={pictureFailed}
     >
-      <WorkspaceBar parts={parts} toolbarRef={toolbarRef} />
-      {parts.pickers.document.input}
-      {parts.pickers.logo.input}
-      <WorkspaceEditor parts={parts} />
-      <HistoryDialogs parts={parts} />
-      <WorkspacePages parts={parts} />
-      <WorkspaceDialogs parts={parts} />
+      <ScopeViews parts={parts}>
+        <WorkspaceBar parts={parts} toolbarRef={toolbarRef} />
+        {parts.pickers.document.input}
+        {parts.pickers.logo.input}
+        <WorkspaceEditor parts={parts} />
+        <HistoryDialogs parts={parts} />
+        <WorkspacePages parts={parts} />
+        <WorkspaceDialogs parts={parts} />
+      </ScopeViews>
     </PicturesProvider>
+  )
+}
+
+/**
+ * The views a document in this scope may show (`view:<id>`), and the door a
+ * shape's button opens: the same destination `app.open` takes for an element.
+ */
+function ScopeViews({ parts, children }: { parts: WorkspaceParts; children: ReactNode }) {
+  const { session, pages, showElement, requests, props } = parts
+  const scope = props.project.id ?? ''
+  const images = props.source.repositories.images
+  const latest = useRef({ pages, showElement, requests, path: props.project.path })
+  latest.current = { pages, showElement, requests, path: props.project.path }
+  const bytesAt = useCallback(
+    (address: string) => images.bytesAt(scope, address),
+    [images, scope],
+  )
+  const openElement = useCallback((id: string) => {
+    const now = latest.current
+    showOn(now.pages, now.showElement.show, now.requests.openDocumentation, now.requests.leaveDocumentation)({
+      scope: now.path, page: 'element', id,
+    })
+  }, [])
+  const nameOf = useCallback(
+    (id: string) => session.model.elements.find((element) => element.id === id)?.name ?? id,
+    [session.model.elements],
+  )
+  return (
+    <ViewEmbedsProvider diagrams={session.model.diagrams} bytesAt={bytesAt} openElement={openElement} nameOf={nameOf}>
+      {children}
+    </ViewEmbedsProvider>
   )
 }
 
