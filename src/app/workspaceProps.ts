@@ -117,6 +117,12 @@ export type WorkspaceSource = {
   unreadableKey?: string
   /** How a save went: the shell's notice says what a refusal means (`useKeepNotice`). */
   onResult: KeepNotice
+  /**
+   * The address a link to this source starts from (`ProviderParts.shareAddress`).
+   * Absent where nobody else reaches the work at an address — a folder, this
+   * browser, memory — and a copied link then says why.
+   */
+  shareAddress?: () => string | undefined
 }
 
 /** The organisation around this scope, as the shell holds it. */

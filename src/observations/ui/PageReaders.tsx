@@ -159,6 +159,14 @@ export type ReaderContext = {
   renderMarkdown: (md: string, options?: MarkdownRenderOptions) => ReactNode
   onAddImage?: (file: File) => Promise<string | undefined>
   images?: DocumentImages
+  /** Copy a link to the record this id names, on the tab that is up. */
+  copyLink?: (id: string) => void
+}
+
+/** The reader's *Copy link*, bound to the id the screen would name this record by. */
+function copying(ctx: ReaderContext, id: string): { onCopyLink?: () => void } {
+  const copy = ctx.copyLink
+  return copy ? { onCopyLink: () => copy(id) } : {}
 }
 
 export function RecordReader({ selected, selectedKey, ctx }: { selected: Selected | undefined; selectedKey: string | undefined; ctx: ReaderContext }) {
@@ -246,6 +254,7 @@ function observationReader(one: Observation, scope: string | undefined, selected
       onOpen={ctx.openKey}
       onAddImage={ctx.onAddImage}
       images={ctx.images}
+      {...copying(ctx, selectedKey ?? one.id)}
     />
   )
 }
@@ -396,6 +405,7 @@ function causeReader(cause: Cause, scope: string | undefined, ctx: ReaderContext
       {...(ctx.readOnly || !own || !isRootCause(cause) ? {} : { onPropose: () => ctx.ask.propose(cause.id) })}
       onAddImage={ctx.onAddImage}
       images={ctx.images}
+      {...copying(ctx, scope === undefined ? cause.id : nodeKey(cause.id, scope))}
     />
   )
 }
@@ -460,6 +470,7 @@ function solutionReader(one: Solution, ctx: ReaderContext) {
       onOpen={ctx.openKey}
       onAddImage={ctx.onAddImage}
       images={ctx.images}
+      {...copying(ctx, one.id)}
     />
   )
 }
@@ -502,6 +513,7 @@ function solutionBelowReader(one: Solution, scope: string, ctx: ReaderContext) {
         onPlanExperiment={nothing} onDrop={nothing} onRestore={nothing} onDelete={nothing}
         onOpen={ctx.openKey}
         images={ctx.images}
+        {...copying(ctx, nodeKey(solutionKey(one.id), scope))}
       />
     </Box>
   )
@@ -529,6 +541,7 @@ function experimentBelowReader(one: Experiment, scope: string, ctx: ReaderContex
         onUpdate={nothing} onMove={nothing} onDelete={nothing}
         onOpen={ctx.openKey}
         images={ctx.images}
+        {...copying(ctx, nodeKey(experimentKey(one.id), scope))}
       />
     </Box>
   )
@@ -549,6 +562,7 @@ function experimentReader(one: Experiment, ctx: ReaderContext) {
       onOpen={ctx.openKey}
       onAddImage={ctx.onAddImage}
       images={ctx.images}
+      {...copying(ctx, one.id)}
     />
   )
 }

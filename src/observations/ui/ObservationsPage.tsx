@@ -51,6 +51,7 @@ import type { WindowChrome } from '../../platform/windowChrome'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
 import { PageDialog } from '../../widgets/PageDialog'
 import { SeamResizer } from '../../widgets/SeamResizer'
+import { locatedMark, useLocated } from '../../widgets/useLocated'
 import type { DocumentImages } from '../../documentation/ui/DocumentSource'
 import type { MakeId } from '../../model/keys'
 import type { CommandRefusal } from '../../model/reducer'
@@ -240,6 +241,11 @@ export type ObservationsPageProps = {
    * what the agent is told the page is on.
    */
   onShown?: (key: string | undefined, nonce: number | undefined, tab: Tab) => void
+  /**
+   * Copy a link to this record, on the tab that is up. Shown even when the
+   * page is read-only; where there is no address, the press says why.
+   */
+  onCopyLink?: (record: { id: string; tab: Tab }) => void
   readOnly?: boolean
   s: Translate
   language: Language
@@ -511,6 +517,22 @@ export function ObservationsPage(props: ObservationsPageProps) {
     land: ({ tab: to, key }) => { f.clear(); if (to) setTab(to); setSelectedKey(key) },
   })
 
+  // The record an address named is already selected. Scroll it into view and
+  // ring it, on the register or on the picture, once that row has painted.
+  const body = useRef<HTMLDivElement>(null)
+  const { locatedId, locate } = useLocated(body, setSelectedKey)
+  const marked = useRef<string | undefined>(undefined)
+  useEffect(() => {
+    if (!open || initialId === undefined || selectedKey === undefined) return
+    const landing = landingFor(initialId, work, props.initialTab)
+    if (selectedKey !== landing.key) return
+    const stamp = `${initialNonce ?? ''}:${selectedKey}`
+    if (marked.current === stamp) return
+    if (!body.current?.querySelector(`[data-element-id="${selectedKey}"]`)) return
+    marked.current = stamp
+    locate(selectedKey)
+  }, [open, initialId, initialNonce, props.initialTab, selectedKey, work, locate])
+
   // --- changes ---------------------------------------------------------------------------
 
   /** Hand the lists back whole; what is not said is what it was. */
@@ -642,6 +664,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
     ...(onOpenScope ? { openScope: (path: string) => { onClose(); onOpenScope(path) } } : {}),
     onDecide: props.onDecide, onStartPlan: props.onStartPlan, onOpenDecision: props.onOpenDecision, onOpenPlan: props.onOpenPlan,
     renderMarkdown: props.renderMarkdown, onAddImage: props.onAddImage, images: props.images,
+    ...(props.onCopyLink ? { copyLink: (id: string) => props.onCopyLink?.({ id, tab }) } : {}),
   }
 
   // --- the analysis ----------------------------------------------------------------------
@@ -672,10 +695,23 @@ export function ObservationsPage(props: ObservationsPageProps) {
   /**
    * What the menu offers: the reader's own actions for a record, in its own
    * words, and for a line the one thing a line is — how strong the link is,
-   * or no link at all. Read-only offers nothing, so the menu does not open.
+   * or no link at all. *Copy link* stays when the page is read-only: a link
+   * changes nothing.
    */
+  /** A link to the record a picture node names, after whatever else the menu offers. */
+  const withLink = (actions: MenuAction[], id: string | undefined): MenuAction[] => {
+    if (id === undefined || !props.onCopyLink) return actions
+    const copy = props.onCopyLink
+    return [...actions, {
+      key: 'copy-link', label: s('share.copy'), divider: actions.length > 0,
+      onClick: () => copy({ id, tab }),
+    }]
+  }
   const menuActions = (target: PictureTarget): MenuAction[] => {
-    if (readOnly) return []
+    if (readOnly) {
+      if (target.kind !== 'node') return []
+      return withLink([], recordIdOf(resolve(target.key), target.key))
+    }
     if (target.kind === 'explains') {
       const link = { id: target.id, ...(target.scope !== undefined ? { scope: target.scope } : {}) }
       return [
@@ -709,7 +745,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
       key: 'delete', label: s('observation.delete'), divider: true, danger: true,
       onClick: () => setDeleting({ kind, id, label: nameOf(id) }),
     })
-    switch (held.kind) {
+    const offered = ((): MenuAction[] => { switch (held.kind) {
       case 'observation': {
         const one = held.observation
         if (isArchived(one)) return [{ key: 'restore', label: s('observation.restore'), onClick: () => restore(one.id) }]
@@ -768,7 +804,8 @@ export function ObservationsPage(props: ObservationsPageProps) {
       default:
         // A record of a scope below: what its reader offers.
         return belowMenuActions(held, readerCtx)
-    }
+    } })()
+    return withLink(offered, recordIdOf(held, key))
   }
 
   const picture = (
@@ -912,9 +949,13 @@ export function ObservationsPage(props: ObservationsPageProps) {
         {/* Editing gives the record the whole width — the editor on the left, its
             preview on the right — and reading puts the picture back beside it. */}
         <Box
+          ref={body}
           data-testid="observation-body"
           data-editing={editing ? 'true' : undefined}
-          sx={{ display: 'grid', gridTemplateColumns: editing ? 'minmax(0, 1fr)' : `minmax(0, 1fr) auto ${readerWidth[tab]}px`, flex: 1, minHeight: 0 }}
+          sx={{
+            display: 'grid', gridTemplateColumns: editing ? 'minmax(0, 1fr)' : `minmax(0, 1fr) auto ${readerWidth[tab]}px`, flex: 1, minHeight: 0,
+            ...locatedMark(locatedId),
+          }}
         >
           {!editing && (tab === 'register' ? register : tab === 'analysis' ? picture : solutionsView)}
           {!editing && (

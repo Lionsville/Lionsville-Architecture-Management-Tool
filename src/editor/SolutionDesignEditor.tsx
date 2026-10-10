@@ -29,6 +29,7 @@ import { BoardToolbar } from './EditorBoardToolbar';
 import { BoardCanvas, LaidOutView, PaletteDock } from './EditorPanels';
 import { InspectorDock } from './EditorInspectorDock';
 import type { EditorParts } from './editorParts';
+import { locatedMark, useLocated } from '../widgets/useLocated';
 
 /**
  * The @lionsville/solution-design editor: toolbar (diagram tabs/breadcrumb,
@@ -67,7 +68,7 @@ const EMPTY_LOGO_LIBRARY: UploadedLogo[] = [];
  */
 function EditorBody(props: SolutionDesignEditorProps) {
   const { t } = useStrings();
-  const { parts, activeDiagram, setWrapperNode } = useEditorParts(props);
+  const { parts, activeDiagram, setWrapperNode, locatedId } = useEditorParts(props);
   const { state, readOnly } = parts;
   const documentationPage = (
     <EditorDocumentationPage
@@ -98,7 +99,7 @@ function EditorBody(props: SolutionDesignEditorProps) {
   return (
     <Box
       ref={setWrapperNode}
-      sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}
+      sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', bgcolor: 'background.default', ...locatedMark(locatedId) }}
     >
       <BoardToolbar parts={parts} diagram={activeDiagram} laidOut={body !== 'board'} />
       <Box sx={{ display: 'flex', flex: 1, minHeight: 0 }}>
@@ -138,7 +139,9 @@ function useEditorParts(props: SolutionDesignEditorProps) {
     model: state.model, diagram: layout.shown, viewing: props.document.viewing,
     platformTree: props.ownership?.platformTree, theme, actions: state.actions,
   });
-  const requests = useCanvasRequests(props, state, view.setInspectorCollapsed);
+  // The ring after a focus. The focus itself selects and fits; this only marks.
+  const located = useLocated(wrapperRef, () => undefined);
+  const requests = useCanvasRequests(props, state, view.setInspectorCollapsed, located.show);
   const docs = useDocumentation(props, state, activeDiagram);
   const deletes = useDeleteRequests(state, activeDiagram, readOnly);
   const exports = useExportDialog({
@@ -168,7 +171,7 @@ function useEditorParts(props: SolutionDesignEditorProps) {
     routeEdges: layout.handleRouteEdges, capture: capture.captureBoard, deletes, showShortcuts: dialogs.openHelp,
   });
   const setWrapperNode = useKeyboard(parts, activeDiagram, wrapperRef);
-  return { parts, activeDiagram, setWrapperNode };
+  return { parts, activeDiagram, setWrapperNode, locatedId: located.locatedId };
 }
 
 /** Session state no hook owns: where each board was left, and the clipboard. */

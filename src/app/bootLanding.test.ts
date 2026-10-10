@@ -141,6 +141,12 @@ describe('a place in the address (ADR-0033)', () => {
     expect(placeLanding(undefined, { scope: 'acme', page: 'register' })).toEqual({ initialHome: 'acme', initialHomePage: 'register' })
   })
 
+  it('opens the view a place names, and selects the element the address named on the way in', () => {
+    const landing = placeLanding(held(rail), { scope: 'acme/rail', page: 'board', id: 'two', select: 'billing' })
+    expect(landing.initialProject?.activeDiagramId).toBe('two')
+    expect(landing.initialPage).toEqual({ page: 'board', id: 'two', select: 'billing' })
+  })
+
   it('opens the view a place names, and the scope’s first view for one that was removed', () => {
     expect(placeLanding(held(rail), { scope: 'acme/rail', page: 'board', id: 'two' }).initialProject?.activeDiagramId).toBe('two')
     expect(placeLanding(held(rail), { scope: 'acme/rail', page: 'board', id: 'gone' }).initialProject?.activeDiagramId).toBe('one')

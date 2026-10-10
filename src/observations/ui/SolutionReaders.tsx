@@ -52,6 +52,7 @@ import type { CauseStrength } from '../observation'
 import {
   GATE_HINT, GATE_LABEL, OUTCOME_COLOR, OUTCOME_LABEL, PHASE_COLOR, PHASE_LABEL, QUESTION_LABEL, SIZE_LABEL, STRENGTH_LABEL,
 } from '../observationScope'
+import { CopyLinkButton } from '../../widgets/CopyLinkButton'
 import { BAR_SX, LinkList, READER_ROOT_SX, TITLE_SX, Term, Value, useDraft } from './Readers'
 import { ReaderActions } from './ActionButton'
 import { TitleField } from './FormParts'
@@ -140,6 +141,8 @@ export type SolutionReaderProps = {
   onOpen: (key: string) => void
   onAddImage?: (file: File) => Promise<string | undefined>
   images?: DocumentImages
+  /** Copy a link to this record. Shown when the page can ask for one, read-only included. */
+  onCopyLink?: () => void
 }
 
 export function SolutionReader(props: SolutionReaderProps) {
@@ -198,7 +201,12 @@ export function SolutionReader(props: SolutionReaderProps) {
           <Chip size="small" variant="outlined" label={label} sx={{ fontFamily: 'ui-monospace, Menlo, monospace' }} />
           <Chip size="small" color={PHASE_COLOR[phase]} label={s(PHASE_LABEL[phase])} data-testid="solution-phase" />
         </Box>
-        {actions.length > 0 && <ReaderActions actions={actions} label={s('observation.actions', { name: label })} moreLabel={s('observation.more')} />}
+        {(actions.length > 0 || props.onCopyLink) && (
+          <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', alignItems: 'center' }}>
+            {actions.length > 0 && <ReaderActions actions={actions} label={s('observation.actions', { name: label })} moreLabel={s('observation.more')} />}
+            {props.onCopyLink && <CopyLinkButton label={s('share.copy')} onCopy={props.onCopyLink} />}
+          </Box>
+        )}
       </Box>
 
       <Box sx={{ display: 'grid', gridTemplateColumns: mode === 'edit' && showPreview ? 'minmax(0, 1fr) minmax(0, 1fr)' : 'minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
@@ -506,6 +514,8 @@ export type ExperimentReaderProps = {
   onOpen: (key: string) => void
   onAddImage?: (file: File) => Promise<string | undefined>
   images?: DocumentImages
+  /** Copy a link to this record. Shown when the page can ask for one, read-only included. */
+  onCopyLink?: () => void
 }
 
 export function ExperimentReader(props: ExperimentReaderProps) {
@@ -542,21 +552,26 @@ export function ExperimentReader(props: ExperimentReaderProps) {
           <Chip size="small" variant="outlined" label={label} sx={{ fontFamily: 'ui-monospace, Menlo, monospace' }} />
           <Chip size="small" color={OUTCOME_COLOR[experiment.outcome]} label={s(OUTCOME_LABEL[experiment.outcome])} data-testid="experiment-outcome" />
         </Box>
-        {canEdit && (
+        {(canEdit || props.onCopyLink) && (
           <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', alignItems: 'center' }}>
-            {/* The moves from here, and only those: planned starts, running
-                goes back or is concluded, a concluded one is reopened. */}
-            <ReaderActions
-              label={s('solution.experimentMoves')} moreLabel={s('observation.more')}
-              actions={experimentMoveButtons({
-                s, from: experiment.outcome, moves: experimentMovesFrom(experiment.outcome),
-                label: (to) => experimentMoveLabel(experiment.outcome, to, s), onMove: props.onMove,
-              })}
-            />
-            <ReaderActions
-              label={s('observation.actions', { name: label })} moreLabel={s('observation.more')}
-              actions={[modeAction(mode, switchMode, s('solution.tipExperimentEdit'), s), deleteAction(s('solution.tipDeleteExperiment'), props.onDelete, s)]}
-            />
+            {props.onCopyLink && <CopyLinkButton label={s('share.copy')} onCopy={props.onCopyLink} />}
+            {canEdit && (
+              <>
+                {/* The moves from here, and only those: planned starts, running
+                    goes back or is concluded, a concluded one is reopened. */}
+                <ReaderActions
+                  label={s('solution.experimentMoves')} moreLabel={s('observation.more')}
+                  actions={experimentMoveButtons({
+                    s, from: experiment.outcome, moves: experimentMovesFrom(experiment.outcome),
+                    label: (to) => experimentMoveLabel(experiment.outcome, to, s), onMove: props.onMove,
+                  })}
+                />
+                <ReaderActions
+                  label={s('observation.actions', { name: label })} moreLabel={s('observation.more')}
+                  actions={[modeAction(mode, switchMode, s('solution.tipExperimentEdit'), s), deleteAction(s('solution.tipDeleteExperiment'), props.onDelete, s)]}
+                />
+              </>
+            )}
           </Box>
         )}
       </Box>

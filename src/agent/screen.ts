@@ -84,7 +84,9 @@ export type Destination = {
   /**
    * An element to select on the board, sheet, map or technology landscape
    * being opened. Not part of the place: where it is not drawn there, the
-   * view opens with nothing selected.
+   * view opens with nothing selected. An address may carry it on arrival
+   * (ADR-0033, amended); it is read then and dropped from the place written
+   * back.
    */
   readonly select?: string
 }

@@ -211,6 +211,40 @@ describe('a place on the observations page, on a tab', () => {
   })
 })
 
+/**
+ * A selection may ride in the address on arrival (ADR-0033, amended 10
+ * October 2026). It is read then, and it is not part of the place: writing
+ * a place drops it, two places that differ only by it are the same place,
+ * and a history entry ignores it.
+ */
+describe('a selection on the way in', () => {
+  const place: Place = { scope: 'acme', page: 'board', id: 'l7' }
+  const arriving: Place = { ...place, select: 'billing' }
+
+  it('reads an address that names an element, and yields the selection with the place', () => {
+    expect(readPlace('#place?scope=acme&page=board&id=l7&select=billing')).toEqual(arriving)
+    expect(readPlace('#place?scope=acme&page=sheet&id=s1&select=invoicing')).toEqual({
+      scope: 'acme', page: 'sheet', id: 's1', select: 'invoicing',
+    })
+  })
+
+  it('writes a place without the selection, so a link and the address after landing do not keep it', () => {
+    expect(writePlace(arriving)).toBe('#place?scope=acme&page=board&id=l7')
+    expect(readPlace(writePlace(arriving))).toEqual(place)
+    const link = linkTo('https://work.example/work?x=1#old', arriving)
+    expect(link).toBe('https://work.example/work?x=1#place?scope=acme&page=board&id=l7')
+    expect(link.includes('select=')).toBe(false)
+  })
+
+  it('is the same place where only the selection differs, and a history entry drops it', () => {
+    expect(samePlace(place, arriving)).toBe(true)
+    expect(samePlace(arriving, { ...place, select: 'wms' })).toBe(true)
+    expect(stepBetween(place, arriving)).toBe('none')
+    expect(stepBetween(arriving, { ...place, select: 'wms' })).toBe('none')
+    expect(placeInState({ [PLACE_STATE_KEY]: { ...arriving } })).toEqual(place)
+  })
+})
+
 describe('a link to a place', () => {
   const place: Place = { scope: 'acme/rail', page: 'decisions', id: 'adr-2' }
 

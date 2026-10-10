@@ -438,6 +438,13 @@ describe('deleting', () => {
 })
 
 describe('read-only', () => {
+  it('still offers a link to the plan, and says so by calling for one', () => {
+    const onCopyLink = vi.fn()
+    setup({ readOnly: true, onCopyLink })
+    fireEvent.click(screen.getByRole('button', { name: 'Copy link' }))
+    expect(onCopyLink).toHaveBeenCalledWith('tr-1')
+  })
+
   it('offers no way to write anything', () => {
     setup({ readOnly: true })
     expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull()

@@ -43,6 +43,7 @@ import type { WindowChrome } from '../../platform/windowChrome'
 import { BackIcon } from '../../widgets/icons'
 import { PageDialog } from '../../widgets/PageDialog'
 import { SeamResizer } from '../../widgets/SeamResizer'
+import { locatedMark, useLocated } from '../../widgets/useLocated'
 import { useSelectRequest } from '../../widgets/useSelectRequest'
 import type { SelectRequest } from '../../widgets/useSelectRequest'
 import { mapPage } from '../map'
@@ -136,7 +137,8 @@ export function MapPage(props: MapPageProps) {
     ? undefined
     : model.elements.find((element) => element.id === selectedId)
   const held = useMemo(() => new Set(model.elements.map((element) => element.id)), [model.elements])
-  useSelectRequest(props.select, laidOut && ((id) => laidOut.rows.some((row) => row.element.id === id)), setSelectedId)
+  const { locatedId, locate } = useLocated(page, setSelectedId)
+  useSelectRequest(props.select, laidOut && ((id) => laidOut.rows.some((row) => row.element.id === id)), locate)
 
   const Frame = props.inline ? InlineFrame : PageDialog
   return (
@@ -177,7 +179,7 @@ export function MapPage(props: MapPageProps) {
         <Box sx={{ flex: 1 }} />
       </Box>
 
-      <Box ref={page} sx={{ flex: '1 1 auto', minHeight: 0, display: 'flex' }}>
+      <Box ref={page} sx={{ flex: '1 1 auto', minHeight: 0, display: 'flex', ...locatedMark(locatedId) }}>
         <Box data-testid="map-body" sx={{ flex: '1 1 auto', minWidth: 0, overflow: 'auto', p: 2 }}>
           {laidOut && laidOut.rows.length > 0 ? (
             <Grid
@@ -367,6 +369,7 @@ function Line({ row, columns, onSelect, sticky, t }: {
     <Box
       component="tr"
       data-testid={`map-row-${row.element.id}`}
+      data-element-id={row.element.id}
       sx={section ? { bgcolor: alpha(theme.palette.text.primary, row.depth === 0 ? 0.06 : 0.03) } : undefined}
     >
       <Box component="td" sx={{ ...sticky, left: 0, textAlign: 'left', bgcolor: 'background.default' }}>

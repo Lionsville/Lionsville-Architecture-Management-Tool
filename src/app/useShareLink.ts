@@ -25,6 +25,7 @@
  */
 import { useCallback, useState } from 'react'
 import { linkTo, placeOf } from '../agent/place'
+import type { Place } from '../agent/place'
 import type { Screen } from '../agent/screen'
 import type { Translate } from '../i18n'
 import type { Diagnostics } from '../ports/Diagnostics'
@@ -51,6 +52,17 @@ export function shareLinkOf(address: string | undefined, screen: Screen | undefi
   return { link: linkTo(address, place) }
 }
 
+/**
+ * A link to one record, built the same way: the source's address and the
+ * place as its fragment. A record's bar asks for this rather than for the
+ * screen, so the link names that record even before the screen has caught
+ * up. No address is the same refusal *Share with a Link…* gives.
+ */
+export function recordLinkOf(address: string | undefined, place: Place): ShareAnswer {
+  if (address === undefined || address === '') return { refused: 'share.noAddress' }
+  return { link: linkTo(address, place) }
+}
+
 export type ShareLink = {
   /** What the dialog shows, while it is open. */
   answer: ShareAnswer | undefined
@@ -59,6 +71,49 @@ export type ShareLink = {
   /** The dialog's Copy, again. */
   copy: () => void
   close: () => void
+}
+
+/**
+ * *Copy link* on a record (ADR-0033, amended): the same two halves as
+ * {@link useShareLink}, asked of one place rather than of whatever the screen
+ * has caught up to. The dialog is the caller's; this copies, and says why
+ * there is no link, the way the menu command does.
+ */
+export function useRecordLink(deps: {
+  address: (() => string | undefined) | undefined
+  scope: string
+  copyText: (text: string) => Promise<void>
+  diagnostics: Trail
+  notify: Notify
+  s: Translate
+}) {
+  const { address, scope, copyText, diagnostics, notify, s } = deps
+  const [answer, setAnswer] = useState<ShareAnswer | undefined>(undefined)
+  const copyLink = useCallback((link: string) => {
+    void copyText(link).then(
+      () => notify(s('share.copied'), 'success'),
+      (cause: unknown) => {
+        diagnostics.report({ level: 'warn', where: 'share', message: 'the link could not be copied', cause })
+        notify(s('share.copyFailed'), 'warning')
+      },
+    )
+  }, [copyText, diagnostics, notify, s])
+  const copyRecord = useCallback((page: NonNullable<Place['page']>, id: string, tab?: Place['tab']) => {
+    let said: string | undefined
+    try {
+      said = address?.()
+    } catch (cause) {
+      diagnostics.report({ level: 'warn', where: 'share', message: 'the source could not say its address', cause })
+    }
+    const next = recordLinkOf(said, { scope, page, id, ...(tab !== undefined ? { tab } : {}) })
+    setAnswer(next)
+    if ('link' in next) copyLink(next.link)
+  }, [address, scope, diagnostics, copyLink])
+  const copy = useCallback(() => {
+    if (answer && 'link' in answer) copyLink(answer.link)
+  }, [answer, copyLink])
+  const close = useCallback(() => setAnswer(undefined), [])
+  return { answer, copy, close, copyRecord }
 }
 
 export function useShareLink(deps: {

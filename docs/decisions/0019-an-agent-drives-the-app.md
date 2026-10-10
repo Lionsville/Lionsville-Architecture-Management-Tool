@@ -2,7 +2,9 @@
 
 * Status: accepted; amended 1 October 2026 (a move a provider says is its
   own, a tab and a selection in a destination, and an open that never makes
-  a view), as built the same day
+  a view), as built the same day; amended 10 October 2026 (a solution and an
+  experiment as a destination, and a selection carried in on arrival),
+  accepted and built the same day
 * Date: 2026-09-19
 * Deciders: Wouter Simons
 
@@ -269,6 +271,23 @@ not draw it, and the documentation page closed by another page; `screen`,
 `place`, `pageLanding`, `bootLanding`, `useViewSelect` and `handle.shell`
 tests pin the rest, and `OrganisationScreen.test.tsx` the person's own
 *Make…* and *New board…*, which still make a sheet.
+
+## Amended — a solution, an experiment, and a selection carried in
+
+*10 October 2026; accepted and built the same day.* The observations page
+opens a solution and an experiment the way it opens an observation: by id,
+or by the key the picture uses (`so:` and `ex:`), and on the solutions tab
+where nobody named another. `app.open` accepts those destinations the same
+way. With no page named, the page is inferred, as an observation's is. The
+id handed to the shell is the record's own, which is what the screen then
+says is on show.
+
+`select` on `app.open` is unchanged: it selects the element on the board,
+sheet, map or technology landscape being opened, where that view draws it.
+An address may carry the same `select` on arrival (ADR-0033, amended
+10 October 2026). That arrival uses this same selection. The address drops
+it once the place is written back, because a selection is still not part of
+a place.
 
 ## More Information
 

@@ -40,6 +40,7 @@ import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
 import { PageDialog } from '../../widgets/PageDialog'
+import { locatedMark, useLocated } from '../../widgets/useLocated'
 import type { DocumentImages } from '../../documentation/ui/DocumentSource'
 import type { MakeId } from '../../model/keys'
 import { NewAdrDialog, SupersedeDialog } from './AdrDialogs'
@@ -97,6 +98,11 @@ export type AdrPageProps = {
    * closes and the caller opens the observations page on it.
    */
   onOpenSolution?: (solutionId: string) => void
+  /**
+   * Copy a link to this record. Shown even when the record is read-only;
+   * where there is no address, the press says why.
+   */
+  onCopyLink?: (id: string) => void
   /**
    * Where this scope sits, drawn by the caller — the shell's crumbs, which
    * know the tree and how to go home. Absent, the bar names the organisation
@@ -285,6 +291,21 @@ export function AdrPage(props: AdrPageProps) {
     },
   })
 
+  // The record an address named is already selected. Scroll it into view and
+  // ring it, once it is in the list — a list that arrives a render later still
+  // gets the ring.
+  const listRoot = useRef<HTMLDivElement>(null)
+  const { locatedId, locate } = useLocated(listRoot, setSelectedId)
+  const marked = useRef<string | undefined>(undefined)
+  useEffect(() => {
+    if (!open || initialAdrId === undefined || selectedId !== initialAdrId) return
+    const stamp = `${initialNonce ?? ''}:${initialAdrId}`
+    if (marked.current === stamp) return
+    if (!listRoot.current?.querySelector(`[data-element-id="${initialAdrId}"]`)) return
+    marked.current = stamp
+    locate(initialAdrId)
+  }, [open, initialAdrId, initialNonce, selectedId, locate])
+
   const trimmed = query.trim()
   const shown: { adr: Adr; scope: ScopeKey }[] = useMemo(() => {
     if (trimmed) {
@@ -381,7 +402,7 @@ export function AdrPage(props: AdrPageProps) {
         />
 
         {/* ---- three columns ---- */}
-        <Box sx={{ display: 'grid', gridTemplateColumns: '240px 320px minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
+        <Box ref={listRoot} sx={{ display: 'grid', gridTemplateColumns: '240px 320px minmax(0, 1fr)', flex: 1, minHeight: 0, ...locatedMark(locatedId) }}>
           <AdrTree
             modelName={model.name} subjects={subjects} orphanIds={orphanIds} ancestors={ancestors}
             selected={trimmed ? undefined : scope} count={count} onChoose={chooseScope} s={s}
@@ -432,6 +453,7 @@ export function AdrPage(props: AdrPageProps) {
                   if (target) chooseRecord(target, scopeOfRecord(target))
                 }}
                 onElementLink={followElement}
+                onCopyLink={props.onCopyLink ? () => props.onCopyLink?.(selected.id) : undefined}
                 plans={props.onOpenPlan && !fromAbove
                   ? { list: model.transitions ?? [], onOpen: (id) => { onClose(); props.onOpenPlan?.(id) } }
                   : undefined}

@@ -130,6 +130,7 @@ function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSn
         writable: writableFor(parts),
         recentActivity: props.provider?.recentActivity,
         unreadableKey: props.provider?.sayings?.unreadableKey,
+        shareAddress: props.provider?.shareAddress,
         onResult: reportKept,
       }}
       tree={{

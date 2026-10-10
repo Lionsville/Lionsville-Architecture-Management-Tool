@@ -561,6 +561,20 @@ this browser or nowhere at all has none, so there the dialog says why there is
 no link, and nothing is copied. The menu item works from every screen, the
 organisation's home included.
 
+**Copy link** on a decision, an observation, a cause, a solution, an experiment
+and a plan copies a link to that record. It sits in the record's bar, in a
+plan's header, and in the menu you get by right-clicking a record on an
+observations picture. Opening the link opens that record; on the observations
+page it opens the tab that was up. The control is there when the record is
+read only. Where the work has no address it still shows, and says why, and
+nothing is copied.
+
+An address may also name an element to select on arrival, written as `select`
+after the place. Opening it lands on the place and selects that element on
+the board, sheet, map or technology landscape, where the view draws it. The
+selection is not kept in the address after landing, and it is not a step for
+Back.
+
 ## Drawing
 
 **The landscape** has five bands: actors, input channels, external systems,

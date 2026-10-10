@@ -326,6 +326,7 @@ function Nodes(props: NodesProps) {
           aria-describedby={props.hot === node.key ? 'analysis-hover' : undefined}
           data-testid={`analysis-${node.kind}`}
           data-key={node.key}
+          data-element-id={node.key}
           data-root={node.kind === 'cause' && node.root ? 'true' : undefined}
           opacity={traced && !traced.has(node.key) ? 0.16 : 1}
           style={{ cursor: 'pointer' }}

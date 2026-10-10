@@ -148,7 +148,11 @@ export function placeLanding(held: PlaceScope | undefined, place: Place): BootLa
     // A view's page with no id is the one of its kind there is, and the home
     // where there is none: an open never makes a view (ADR-0019, amended).
     const view = viewFor(near.page, near.id, snapshot.model.diagrams, snapshot.activeDiagramId)
-    return view === undefined ? homeOf(scope) : { initialProject: onView(snapshot, view) }
+    if (view === undefined) return homeOf(scope)
+    // A selection rides in on the address and is handed to the view the same
+    // way `app.open` hands one (ADR-0033, amended). It is not kept on the place.
+    const opened = near.select !== undefined ? initialPageFor({ ...near, page: near.page, id: view }) : undefined
+    return { initialProject: onView(snapshot, view), ...(opened ? { initialPage: opened } : {}) }
   }
   const opened = initialPageFor(near)
   return { initialProject: snapshot, ...(opened ? { initialPage: opened } : {}) }
