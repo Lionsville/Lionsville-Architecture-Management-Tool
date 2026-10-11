@@ -200,9 +200,13 @@ export function PeoplePage({ open, onClose, register, select, readText, copyText
 
   const people = useMemo(() => register.people ?? [], [register.people])
   const entries = useMemo(() => entriesOf(people), [people])
+  // By what each reads as, so a forgotten entry sorts by its pseudonym and never by a name it no longer has.
   const shown = useMemo(
     () => entries.filter((person) => (show === 'all' || person.state === show)
-      && (!query.trim() || matchesQuery(query, [shownText(shownEntry(person), s), person.email]))),
+      && (!query.trim() || matchesQuery(query, [shownText(shownEntry(person), s), person.email])))
+      .map((person) => ({ person, text: shownText(shownEntry(person), s) }))
+      .sort((one, other) => one.text.localeCompare(other.text))
+      .map(({ person }) => person),
     [entries, show, query, s],
   )
   const pairs = useMemo(() => duplicatePairs(people), [people])

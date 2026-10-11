@@ -241,6 +241,71 @@ answers for the name, when a promotion names a scope this one is not filed
 under, and when removing the record would leave things filed under it with
 nothing to sit in.
 
+## People
+
+**People** on the organisation's home is the organisation's register of
+people: one entry for each person, with a name, a work address where you know
+one, and whether they are of the organisation or from outside it. Nothing
+else is kept — no notes, no photo.
+
+The register is kept **outside the history**. A change here is not a step:
+there is no ⌘Z for it and no line in Activity, and the page says so. That is
+what lets a name be forgotten. The history keeps a person's id, never their
+name, and every screen asks the register for the name when it draws one —
+so when a name goes from the register, it goes from every screen at once.
+
+- **Everyone** is listed with their kind and state, and searched by name or
+  address; **Show** narrows the list to who is active, who has left, or who
+  is forgotten.
+- **Add person** asks for a name, an address and the kind. Before anyone is
+  added it looks for somebody who may be the same person: the same address,
+  the same name (whatever the case, accents or spacing), a name within two
+  letters — *Pia Schultz* finds *Pia Schulz* — or the same family name and
+  first initial. **Use this one** takes the entry that is there; **Add
+  anyway** makes a second, which you can merge later.
+- **Possible duplicates** lists the pairs already in the register that may be
+  one person. **Merge** asks first and is final: one entry is kept, and the
+  other becomes a redirect with no name, so everything that pointed at it
+  shows the one kept.
+- **Import CSV…** takes a list — pasted, or a file — with a name, an address
+  and *internal* or *external* on each row, separated by commas or
+  semicolons. Every row goes through the same check: one that is plainly
+  somebody already there adds nobody, one that only may be is flagged and
+  added only where you tick **Add anyway**, and the rest are added.
+- **A person** shows who they are and where they are in leaving. **Holds
+  today** has nothing to show yet: the register holds no roles. **This is
+  me** tells this install
+  which entry is you, so you are marked wherever you appear; it is kept with
+  the install, not in your folder. **Correct…** changes the name, the
+  address or the kind.
+- **Mark as left** takes their last day. Their name is still shown until the
+  policy forgets it.
+- **Forget now** asks first, then takes the name and the address away for
+  good: from then on every screen shows a pseudonym, *Former colleague 7KQM*.
+  The register keeps no history of a name, so nothing brings it back. A
+  signed decision keeps the name it was signed with.
+- **Remove now**, on an entry already forgotten, takes it out of the register;
+  whatever pointed at it reads *a former colleague*.
+- **What we hold** shows everything the register holds about a person, and
+  what points at them, as one document to copy: the answer to a request for
+  access. A request to erase it is answered with **Forget now**. It also says
+  how many records name the person in their text — words typed before the
+  register existed, which a forget cannot reach and a search finds.
+
+**The policy**, at the foot of the page, is a setting of the organisation's,
+not a step: how long a leaver's name is kept (90 days unless you change it),
+how long the forgotten entry is kept after that (730 days), and whether an
+agent sees names or pseudonyms. Whoever may change the organisation's
+settings sets it — on the desktop, whoever keeps the folder. The app applies
+it when the organisation is opened and again each day it stays open: a name
+kept past its period is forgotten, an entry kept past the next is removed.
+
+On the desktop the register is the file `.lionsville-architecture/people.json`
+in your folder. **It is never in the folder's history**: no snapshot takes it,
+and a `git add` typed in a terminal leaves it out too, because a name in a
+commit is a name nothing can forget. A copy of the folder taken through git
+therefore carries ids and no names; the working file carries the register.
+
 ## Where your work is kept
 
 Your work is kept in one of three places, and the organisation's home says
@@ -1585,6 +1650,12 @@ Two ways out, for two purposes.
 
   Every scope in the file lands, or none does. Once it has landed, the app
   checks what arrived against what the file says it holds, and says so.
+
+  The file carries the **people register** too. Tick **Without names** when
+  you set the password, and every person goes into the copy as their
+  pseudonym, with no address — for a copy that leaves the organisation.
+  Opening a file never gives a name back to someone forgotten here, and a
+  file made without names takes none away.
 - **PNG export** (the download button) opens a dialog with a preview of the
   picture as it will leave: in the light or the dark theme regardless of the
   one on screen, with every line's label or only the bare lines, with or
@@ -1622,6 +1693,14 @@ to continue; when you say so, it starts a new session and the strip is back.
 
 Everything an agent changes shows in Activity under its name and is undone
 with ⌘Z, as before.
+
+An agent can read the **people register**, add someone to it — it is told
+when somebody similar is there already — and mark someone as left. It sees
+names, or pseudonyms where the organisation's policy says so, and it is told
+whether a person has an address, never the address. It cannot forget,
+remove or merge anyone, or change the policy: those are yours, on the People
+page. The register is no step, so what an agent does there is not in
+Activity and is not undone with ⌘Z.
 
 ## Preferences
 

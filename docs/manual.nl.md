@@ -251,6 +251,78 @@ naartoe zou gaan de naam al beheert, als een verplaatsing omhoog een onderdeel
 noemt waar dit niet onder valt, en als het verwijderen van de vastlegging dingen
 die eronder vallen zonder ouder zou achterlaten.
 
+## Mensen
+
+**Mensen** op het startscherm van de organisatie is het register van de
+mensen van de organisatie: één vermelding per persoon, met een naam, een
+werkadres als je dat weet, en of iemand van de organisatie is of van buiten.
+Meer wordt er niet bewaard — geen notities, geen foto.
+
+Het register staat **buiten de geschiedenis**. Een wijziging hier is geen
+stap: er is geen ⌘Z voor en geen regel in Activiteit, en de pagina zegt dat
+ook. Daardoor kan een naam vergeten worden. De geschiedenis bewaart het id
+van een persoon, nooit de naam, en elk scherm vraagt het register om de naam
+wanneer het er een toont — dus als een naam uit het register verdwijnt,
+verdwijnt hij in één keer van elk scherm.
+
+- **Iedereen** staat in de lijst met soort en status, en is te zoeken op naam
+  of adres; **Toon** beperkt de lijst tot wie actief is, wie vertrokken is of
+  wie vergeten is.
+- **Persoon toevoegen** vraagt om een naam, een adres en de soort. Voordat er
+  iemand wordt toegevoegd, zoekt het naar iemand die dezelfde persoon kan
+  zijn: hetzelfde adres, dezelfde naam (hoofdletters, accenten en spaties
+  tellen niet), een naam die op twee letters na gelijk is — *Pia Schultz*
+  vindt *Pia Schulz* — of dezelfde achternaam en voorletter. **Deze
+  gebruiken** neemt de vermelding die er al is; **Toch toevoegen** maakt een
+  tweede, die je later kunt samenvoegen.
+- **Mogelijk dubbel** toont de paren in het register die één persoon kunnen
+  zijn. **Samenvoegen** vraagt eerst en is definitief: één vermelding blijft,
+  de andere wordt een verwijzing zonder naam, zodat alles wat ernaar wees de
+  vermelding toont die blijft.
+- **CSV importeren…** neemt een lijst — geplakt, of uit een bestand — met op
+  elke rij een naam, een adres en *intern* of *extern*, gescheiden door
+  komma's of puntkomma's. Elke rij gaat door dezelfde controle: een rij die
+  duidelijk iemand is die er al staat voegt niemand toe, een rij die dat
+  misschien is wordt gemarkeerd en alleen toegevoegd als je **Toch toevoegen**
+  aanvinkt, en de rest wordt toegevoegd.
+- **Een persoon** laat zien wie het is en hoe ver iemand is met vertrekken.
+  **Vervult vandaag** heeft nog niets te tonen: het register bevat geen
+  rollen. **Dit ben ik** vertelt deze installatie welke vermelding jij bent,
+  zodat je overal gemarkeerd wordt waar je voorkomt; dat wordt bij de
+  installatie bewaard, niet in je map. **Corrigeren…** wijzigt de naam, het
+  adres of de soort.
+- **Markeren als vertrokken** vraagt om de laatste dag. De naam blijft
+  zichtbaar tot het beleid hem vergeet.
+- **Nu vergeten** vraagt eerst en haalt dan de naam en het adres voorgoed weg:
+  vanaf dan toont elk scherm een pseudoniem, *Oud-collega 7KQM*. Het register
+  bewaart geen geschiedenis van een naam, dus niets brengt hem terug. Een
+  ondertekend besluit houdt de naam waarmee het is ondertekend.
+- **Nu verwijderen**, bij een vermelding die al vergeten is, haalt haar uit
+  het register; wat ernaar wees leest *een oud-collega*.
+- **Wat we bewaren** toont alles wat het register over iemand bewaart, en wat
+  naar die persoon wijst, als één document om te kopiëren: het antwoord op
+  een inzageverzoek. Een verzoek om te wissen beantwoord je met **Nu
+  vergeten**. Het zegt ook hoeveel vastleggingen de persoon in hun tekst
+  noemen — woorden die getypt zijn voordat het register bestond, die vergeten
+  niet bereikt en zoeken wel vindt.
+
+**Het beleid**, onderaan de pagina, is een instelling van de organisatie en
+geen stap: hoe lang de naam van wie vertrekt bewaard blijft (90 dagen, tenzij
+je dat wijzigt), hoe lang de vergeten vermelding daarna blijft (730 dagen),
+en of een agent namen of pseudoniemen ziet. Wie de instellingen van de
+organisatie mag wijzigen, stelt het in — op de desktop wie de map beheert.
+De app past het toe als de organisatie wordt geopend en opnieuw elke dag dat
+ze open blijft: een naam die langer dan de termijn is bewaard wordt vergeten,
+een vermelding die langer dan de volgende termijn is bewaard wordt
+verwijderd.
+
+Op de desktop is het register het bestand
+`.lionsville-architecture/people.json` in je map. **Het staat nooit in de
+geschiedenis van de map**: geen momentopname neemt het mee, en een
+`git add` die je in een terminal typt laat het ook weg, omdat een naam in een
+commit een naam is die niets kan vergeten. Een kopie van de map via git
+bevat daarom id's en geen namen; het werkbestand neemt het register mee.
+
 ## Waar je werk wordt bewaard
 
 Je werk staat op een van drie plekken, en de regel onder de naam op het thuis
@@ -1702,6 +1774,12 @@ Twee uitgangen, voor twee doelen.
   Elke scope in het bestand komt aan, of geen enkele. Is het aangekomen, dan
   controleert de app wat er aankwam tegen wat het bestand zegt te bevatten,
   en zegt dat.
+
+  Het bestand neemt ook het **personenregister** mee. Vink **Zonder namen**
+  aan als je het wachtwoord kiest, en iedereen gaat als pseudoniem mee in de
+  kopie, zonder adres — voor een kopie die de organisatie verlaat. Een bestand
+  openen geeft nooit een naam terug aan iemand die hier vergeten is, en een
+  bestand zonder namen neemt er geen weg.
 - **PNG-export** (de downloadknop) opent een dialoog met een voorbeeld van de
   plaat zoals die vertrekt: in het lichte of het donkere thema, los van wat er
   op het scherm staat, met elk lijnlabel of alleen de kale lijnen, met of
@@ -1741,6 +1819,14 @@ te mogen; zegt u dat, dan begint een nieuwe sessie en is de strook terug.
 
 Alles wat een agent wijzigt, staat in Activiteit onder zijn naam en wordt
 ongedaan gemaakt met ⌘Z, zoals altijd.
+
+Een agent kan het **personenregister** lezen, er iemand aan toevoegen — hij
+hoort het als er al iemand vergelijkbaars in staat — en iemand als vertrokken
+markeren. Hij ziet namen, of pseudoniemen waar het beleid van de organisatie
+dat zegt, en hoort of iemand een adres heeft, nooit het adres zelf. Hij kan
+niemand vergeten, verwijderen of samenvoegen, en het beleid niet wijzigen:
+dat doe jij, op de pagina Mensen. Het register is geen stap, dus wat een agent
+daar doet staat niet in Activiteit en is niet ongedaan te maken met ⌘Z.
 
 ## Voorkeuren
 

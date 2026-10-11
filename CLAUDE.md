@@ -227,7 +227,33 @@ src/model/        What a landscape is made of, and the arithmetic over it.
                                       typed over `ModelOrder`, so a list with no
                                       line does not compile (ADR-0029)
                     adr               what a decision record IS (rules: decisions/)
+                    person            a person as the model names one: a
+                                      `PersonRef`, `{ person: id }` into the
+                                      register or text as before, and
+                                      `personIdsIn`, every id a value names
+                                      (ADR-0036)
                     testing/          the generated landscape, and the budgets
+src/people/       The people register (ADR-0036): who the organisation's people
+                  are, kept outside the history so a name can be forgotten.
+                  Pure at its root, React in `ui/`.
+                    person · register   an entry and its states; what every
+                                      change does — add, change, leave, merge,
+                                      forget, remove, bring in — written once
+                                      for every repository (`changePeople`)
+                    shown             what a reference reads as: the name, the
+                                      pseudonym once forgotten, the entry a
+                                      merge kept, *a former colleague* once
+                                      removed — `personText`, the one render
+                    duplicates · csv · pseudonym   the four signs, checked on
+                                      every way in; a list imported row by row;
+                                      a pseudonym drawn at random
+                    policy · me · leave · hold   the organisation's retention
+                                      policy (settings, `of: organisation`),
+                                      *This is me* (settings, `of: person`),
+                                      leaving and the consequences a later step
+                                      hooks in, *What we hold*
+                    ui/PeoplePage     the page, over the shell's register hook
+                                      (`app/organisation/usePeopleRegister`)
 src/layout/       Where things end up: tidy, ELK, libavoid, the router worker.
 src/editor/       The canvas and everything docked to it. React.
                     canvas/ · nodes/ · edges/ · theme/ · export/
@@ -513,13 +539,14 @@ src/ports/        The seams. Interfaces only, no implementations.
                                       over a network passes the same clauses an
                                       in-memory one does
                     ScopeRepository · OrganisationIndex · HistoryRepository ·
-                    ImageRepository · SettingsRepository · Repositories
+                    ImageRepository · SettingsRepository · PeopleRepository ·
+                    Repositories
                                       where work is kept, in the domain's words
                                       (ADR-0031), and the app's only way to it.
                                       The folder (`adapters/folder/`), memory and
                                       browser storage (`adapters/repositories/`)
                                       implement them. A `*.contract.ts` each,
-                                      one maker for all five, run by every
+                                      one maker for all six, run by every
                                       implementation and by every provider that
                                       ships, over what its `open` answers
                     Interchange       the organisation carried out as one parcel
@@ -590,7 +617,7 @@ src/adapters/     The outside world, one folder per flavour.
                                       nothing else of the implementations —
                                       `platform/node/workingFile.ts` is a
                                       server's way to the working file
-                    repositories/     the five repositories over a keyed store
+                    repositories/     the six repositories over a keyed store
                                       (`KeyedStore`: transactions, all or
                                       nothing), written once for memory and this
                                       browser's storage, which differ only in
@@ -606,9 +633,9 @@ src/adapters/     The outside world, one folder per flavour.
                     memory/           …and InMemoryCommandChannel: a head model, a
                                       bounded log and the subscribers, for two
                                       sessions put in one order without a process;
-                                      and `memoryRepositories`, the five over
+                                      and `memoryRepositories`, the six over
                                       `MemoryStore`
-                    webStorage/       …and `browserRepositories`, the five over
+                    webStorage/       …and `browserRepositories`, the six over
                                       this browser's IndexedDB (`IndexedDbStore`,
                                       `lvarch.repositories`), with the scopes the
                                       key-value storage kept brought in at every
@@ -870,7 +897,8 @@ is the root, and not by anything written in it:
   acme/                         a domain: the same files
     rail/                       a domain under that: the same files again
       rolling-stock/            a landscape: the same files again
-  .lionsville-architecture/     settings only (ADR-0005); never a scope
+  .lionsville-architecture/     settings only (ADR-0005), and the people
+                                register, never committed (ADR-0036); never a scope
 ```
 
 In a browser tab, which has no folder, the same addresses name the scopes in
@@ -948,7 +976,7 @@ filed under a child of its own (`copyExampleInto`).
 ## Adding a place to keep work (the worked example)
 
 The point of the seams. Say you want to keep work in a service of your own. You
-write its repositories, run five suites, and register one provider:
+write its repositories, run six suites, and register one provider:
 
 ```ts
 // src/adapters/somewhere/somewhereRepositories.ts
@@ -962,12 +990,15 @@ describeOrganisationIndex('somewhere', makeSomewhere)
 describeHistoryRepository('somewhere', makeSomewhere)
 describeImageRepository('somewhere', makeSomewhere)
 describeSettingsRepository('somewhere', makeSomewhere)
+describePeopleRepository('somewhere', makeSomewhere)
 ```
 
-The five suites (`src/ports/*.contract.ts`, one maker for all five) are the
+The six suites (`src/ports/*.contract.ts`, one maker for all six) are the
 whole admission test: steps applied in order and refused as values, a scope
 moved with what is under it, the index following the steps, an entry per
-scope recorded and read back, pictures by name, settings at three levels.
+scope recorded and read back, pictures by name, settings at three levels,
+and a register of people whose names go when they are forgotten and never
+come back.
 Then a provider (`src/providers/`, ADR-0031 §4) that opens them and hands the
 app its parts (`ports/ProviderParts.ts`) — the repositories among them,
 required — with a way in for a person and whatever it has to say in a chrome
@@ -1115,6 +1146,8 @@ identifiers is still a list of a customer's identifiers.
 | Agent endpoint | `http://127.0.0.1:<port>/mcp`, bearer token, streamable HTTP |
 | Agent tools, read | `project.current` `elements.list` `element.describe` `connections.list` `diagrams.list` `decisions.list` `decision.read` `search` `activity.list` `images.list` `project.export` `platform.report` `service.report` — and, over the whole tree, `scopes.list` `views.list` `register.list` `technology.list` `checks.list` |
 | Agent tools, drive (ADR-0019) | `app.current` `app.open` `session.start` `session.end` — where the app is (a **screen**: the open scope, its view, the page over it, or the home that is up), moving it to a **destination** (`scope` · `page` · `id`, the same three words an `InitialPage` says, and — amended — `tab`, one of the observations page's `register` · `analysis` · `solutions`, and `select`, an element selected on the board, sheet, map or technology landscape opened where that view draws it), and the **driving session** the banner shows and the person's Stop ends; a driving call after a Stop is refused `agent.stopped` until `session.start` |
+| Agent tools, people (ADR-0036 §13) | `people.list` (with possible duplicates) `person.add` (refused `agent.possibleDuplicate` unless `addAnyway`) `person.leave` — no `scope` and no `ifRevision` (`ON_THE_REGISTER`), answered with nothing open; names or pseudonyms as the policy says, never an address. **No tool forgets, removes or merges a person**, and none changes the policy |
+| The people register (ADR-0036) | `PeopleRepository`, the sixth repository, outside the history; an entry's id is `pe-` and 64 random bits, its pseudonym four characters of `PSEUDONYM_ALPHABET`, read *Former colleague 7KQM*; the folder keeps it at `.lionsville-architecture/people.json` (`OUT_OF_HISTORY`, with `local.json`: no commit, and `.git/info/exclude`); the working file carries it at the same path from the zip's root, outside the manifest; the policy is `people` in the organisation's settings, *This is me* `people.me` in the person's |
 | Every tool | takes `scope`, a path; a read over another scope is answered from its document, anything that needs a session is refused `agent.scopeNotOpen` — and with nothing open at all, `agent.noProject`, whose sentence says to call `app.open` |
 | Agent tools, write | `element.add` `element.update` `element.remove` `connect` `connection.update` `connection.remove` `connections.update` `connections.remove` `interface.accept` `relation.add` `relation.update` `relation.remove` `technology.use` `decision.propose` `decision.update` `decision.transition` `decision.remove` `diagram.create` `diagram.update` `image.upload` `batch` `undo` `project.save` |
 | What a row between two elements is (ADR-0012 §5, ADR-0013, ADR-0014) | a **relation**: `flow` · `supports` · `serves` · `realises` · `assigned` · `uses` · `hostedOn`; `connect` / `connection.*` are the `flow` ones. A platform `realises` a service, an application or a container `uses` a service (or binds to one platform), an actor is `assigned` a service or a platform; `hostedOn` is application \| component → platform and nothing else — a platform inside a platform is `parentId` |

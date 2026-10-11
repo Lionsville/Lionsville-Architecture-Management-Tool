@@ -78,7 +78,7 @@ describe('the People page in the app', () => {
     fireEvent.click(screen.getByTestId('people-add'))
     fireEvent.change(screen.getByTestId('people-add-name'), { target: { value: 'Ruben Dekker' } })
     fireEvent.click(screen.getByTestId('people-add-save'))
-    await waitFor(async () => expect((await held.people.list()).people.map((one) => one.name)).toEqual(['Pia Schulz', 'Ruben Dekker']))
+    await waitFor(async () => expect((await held.people.list()).people.map((one) => one.name).sort()).toEqual(['Pia Schulz', 'Ruben Dekker']))
   })
 
   it('opens for an agent, which reads the same register and adds to it', async () => {

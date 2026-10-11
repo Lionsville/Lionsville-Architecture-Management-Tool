@@ -272,6 +272,80 @@ den Namen bereits verantwortet, wenn ein Hochziehen einen Bereich nennt, unter
 dem dieser nicht abgelegt ist, und wenn das Entfernen des Datensatzes Dinge, die
 darunter abgelegt sind, ohne Halt ließe.
 
+## Personen
+
+**Personen** auf der Startseite der Organisation ist das Register der
+Personen der Organisation: ein Eintrag pro Person, mit einem Namen, einer
+Arbeitsadresse, wo Sie eine kennen, und ob die Person zur Organisation gehört
+oder von außen kommt. Mehr wird nicht geführt — keine Notizen, kein Foto.
+
+Das Register liegt **außerhalb des Verlaufs**. Eine Änderung hier ist kein
+Schritt: Es gibt kein ⌘Z dafür und keine Zeile in der Aktivität, und die
+Seite sagt das auch. Das ist es, was einen Namen vergessen lässt. Der Verlauf
+behält die ID einer Person, nie ihren Namen, und jede Ansicht fragt das
+Register nach dem Namen, wenn sie einen zeigt — verschwindet ein Name aus dem
+Register, verschwindet er also auf einmal aus jeder Ansicht.
+
+- **Alle** stehen mit Art und Status in der Liste und lassen sich nach Name
+  oder Adresse suchen; **Zeigen** grenzt die Liste auf aktive, ausgeschiedene
+  oder vergessene Personen ein.
+- **Person hinzufügen** fragt nach einem Namen, einer Adresse und der Art.
+  Bevor jemand hinzugefügt wird, sucht es nach jemandem, der dieselbe Person
+  sein könnte: dieselbe Adresse, derselbe Name (Groß- und Kleinschreibung,
+  Akzente und Leerzeichen zählen nicht), ein Name, der bis auf zwei Buchstaben
+  gleich ist — *Pia Schultz* findet *Pia Schulz* — oder derselbe Nachname und
+  Anfangsbuchstabe. **Diesen verwenden** nimmt den vorhandenen Eintrag;
+  **Trotzdem hinzufügen** legt einen zweiten an, den Sie später zusammenführen
+  können.
+- **Mögliche Doppelungen** zeigt die Paare im Register, die eine Person sein
+  könnten. **Zusammenführen** fragt zuerst und ist endgültig: Ein Eintrag
+  bleibt, der andere wird zu einem Verweis ohne Namen, sodass alles, was
+  darauf zeigte, den verbleibenden Eintrag zeigt.
+- **CSV importieren…** nimmt eine Liste — eingefügt oder aus einer Datei — mit
+  einem Namen, einer Adresse und *intern* oder *extern* in jeder Zeile, durch
+  Kommas oder Semikolons getrennt. Jede Zeile durchläuft dieselbe Prüfung:
+  Eine Zeile, die eindeutig jemand Vorhandenes ist, fügt niemanden hinzu; eine,
+  die es vielleicht ist, wird markiert und nur hinzugefügt, wenn Sie
+  **Trotzdem hinzufügen** ankreuzen; der Rest wird hinzugefügt.
+- **Eine Person** zeigt, wer sie ist und wie weit sie im Ausscheiden ist.
+  **Hat heute inne** hat noch nichts zu zeigen: Das Register führt keine
+  Rollen. **Das bin ich** sagt dieser Installation, welcher Eintrag Sie sind,
+  damit Sie überall markiert werden, wo Sie vorkommen; das wird bei der
+  Installation geführt, nicht in Ihrem Ordner. **Korrigieren…** ändert Name,
+  Adresse oder Art.
+- **Als ausgeschieden markieren** fragt nach dem letzten Tag. Der Name wird
+  weiter angezeigt, bis die Richtlinie ihn vergisst.
+- **Jetzt vergessen** fragt zuerst und entfernt dann Name und Adresse
+  endgültig: Von da an zeigt jede Ansicht ein Pseudonym, *Ehemalige Person
+  7KQM*. Das Register führt keinen Verlauf eines Namens, nichts bringt ihn
+  zurück. Eine unterzeichnete Entscheidung behält den Namen, mit dem sie
+  unterzeichnet wurde.
+- **Jetzt entfernen** nimmt einen bereits vergessenen Eintrag aus dem
+  Register; was darauf zeigte, lautet *eine ehemalige Person*.
+- **Was wir speichern** zeigt alles, was das Register über eine Person führt,
+  und was auf sie zeigt, als ein Dokument zum Kopieren: die Antwort auf ein
+  Auskunftsersuchen. Ein Ersuchen um Löschung beantworten Sie mit **Jetzt
+  vergessen**. Es sagt auch, wie viele Datensätze die Person in ihrem Text
+  nennen — Wörter, die eingegeben wurden, bevor es das Register gab, die
+  Vergessen nicht erreicht und die Suche findet.
+
+**Die Richtlinie** unten auf der Seite ist eine Einstellung der Organisation,
+kein Schritt: wie lange der Name Ausgeschiedener behalten wird (90 Tage, wenn
+Sie es nicht ändern), wie lange der vergessene Eintrag danach bleibt (730
+Tage), und ob ein Agent Namen oder Pseudonyme sieht. Festgelegt wird sie von
+denen, die die Einstellungen der Organisation ändern dürfen — auf dem Desktop
+von dem, der den Ordner führt. Die App wendet sie an, wenn die Organisation
+geöffnet wird, und wieder an jedem Tag, an dem sie geöffnet bleibt: Ein Name,
+der über seine Frist hinaus behalten wurde, wird vergessen, ein Eintrag über
+die nächste hinaus entfernt.
+
+Auf dem Desktop ist das Register die Datei
+`.lionsville-architecture/people.json` in Ihrem Ordner. **Sie ist nie im
+Verlauf des Ordners**: Kein Schnappschuss nimmt sie mit, und ein im Terminal
+eingegebenes `git add` lässt sie ebenfalls aus, denn ein Name in einem Commit
+ist ein Name, den nichts vergessen kann. Eine Kopie des Ordners über git
+enthält deshalb IDs und keine Namen; die Arbeitsdatei nimmt das Register mit.
+
 ## Wo Ihre Arbeit aufbewahrt wird
 
 Ihre Arbeit liegt an einem von drei Orten, und die Zeile unter dem Namen auf
@@ -1811,6 +1885,12 @@ Zwei Wege hinaus, für zwei Zwecke.
   Jeder Bereich in der Datei kommt an, oder keiner. Ist sie angekommen,
   prüft die App, was ankam, gegen das, was die Datei zu halten sagt, und sagt
   es.
+
+  Die Datei nimmt auch das **Personenregister** mit. Kreuzen Sie beim
+  Festlegen des Passworts **Ohne Namen** an, und alle Personen gehen als ihr
+  Pseudonym in die Kopie, ohne Adresse — für eine Kopie, die die Organisation
+  verlässt. Das Öffnen einer Datei gibt jemandem, der hier vergessen ist, nie
+  einen Namen zurück, und eine Datei ohne Namen nimmt keinen weg.
 - **PNG-Export** (die Download-Schaltfläche) öffnet einen Dialog mit einer
   Vorschau des Bildes, wie es hinausgeht: im hellen oder im dunklen Design,
   unabhängig von dem auf dem Bildschirm, mit der Beschriftung jeder Linie oder
@@ -1853,6 +1933,15 @@ eine neue Sitzung und der Streifen ist wieder da.
 
 Alles, was ein Agent ändert, steht unter seinem Namen in der Aktivität und
 wird wie bisher mit ⌘Z rückgängig gemacht.
+
+Ein Agent kann das **Personenregister** lesen, jemanden hinzufügen — er
+erfährt es, wenn schon jemand Ähnliches darin steht — und jemanden als
+ausgeschieden markieren. Er sieht Namen, oder Pseudonyme, wo die Richtlinie
+der Organisation es so will, und erfährt, ob eine Person eine Adresse hat,
+nie die Adresse selbst. Er kann niemanden vergessen, entfernen oder
+zusammenführen und die Richtlinie nicht ändern: Das tun Sie, auf der Seite
+Personen. Das Register ist kein Schritt, was ein Agent dort tut, steht also
+nicht in der Aktivität und wird nicht mit ⌘Z rückgängig gemacht.
 
 ## Voreinstellungen
 

@@ -171,10 +171,12 @@ describe('a working file saved from a home', () => {
     await goHome()
     const register = async (withoutNames: boolean, count: number): Promise<string> => {
       view.send({ type: 'export' })
-      await waitFor(() => expect(screen.getByTestId('password')).toBeDefined())
-      if (withoutNames) fireEvent.click(screen.getByTestId('password-without-names'))
+      // The box is drawn only while a password is being set: waiting on it is waiting on this dialog, not the last one closing.
+      const box = await screen.findByTestId('password-without-names')
+      if (withoutNames) fireEvent.click(box)
       await seal('correct horse')
       await waitFor(() => expect(view.documents.saved).toHaveLength(count))
+      await waitFor(() => expect(screen.queryByTestId('password')).toBeNull())
       const plain = await unsealBytes(view.documents.saved[count - 1].bytes as Uint8Array, 'correct horse')
       return new TextDecoder().decode(unzipSync(plain!)['.lionsville-architecture/people.json'])
     }
