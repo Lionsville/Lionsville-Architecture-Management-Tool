@@ -16,6 +16,7 @@ import { lazyPart } from '../widgets/lazyPart'
 import { MapPage, SheetPage } from '../business'
 import { TechnologyLandscapePage } from '../technology/ui/TechnologyLandscapePage'
 import { unitViewPage } from './units/UnitViewPages'
+import { unitLanding } from './units/unitViewsHere'
 import { ErrorBoundary } from './ErrorBoundary'
 import { shellTheme } from './theme'
 import type { WorkspaceParts } from './workspaceParts'
@@ -294,7 +295,8 @@ export function drawingPage(
       readOnly={view.readOnly}
       dispatch={parts.session.dispatch}
       notify={parts.props.shell.notify}
-      onOpen={(to) => parts.show({ ...to, scope: parts.props.project.path })}
+      // A box that points at a unit opens it on the scope's chart, where there is one (ADR-0036 §7).
+      onOpen={(to) => parts.show({ ...to, ...unitLanding(parts.session.model, to), scope: parts.props.project.path })}
       s={parts.props.shell.s}
     />
   )

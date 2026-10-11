@@ -117,3 +117,19 @@ function rowsHere(
   }
   return [...found.values()]
 }
+
+/**
+ * Where a link to an element lands when the element is a unit this scope
+ * keeps and the scope has an organisation chart (ADR-0036 §7): on that chart,
+ * with the unit chosen, so its inspector beside the chart opens on it. Every
+ * other link lands where a link to an element lands (`useShowElement`). What a
+ * draw.io box that points at a unit opens.
+ */
+export function unitLanding<T extends { page?: string; id?: string }>(model: HostModel, to: T): T | { page: 'chart'; id: string; select: ElementId } {
+  if (to.page !== 'element' || to.id === undefined) return to
+  const id = to.id
+  const element = model.elements.find((one) => one.id === id)
+  if (!element || element.ref !== undefined || !isUnit(element)) return to
+  const chart = model.diagrams.find((diagram) => diagram.kind === 'chart')
+  return chart ? { page: 'chart', id: chart.id, select: id } : to
+}
