@@ -967,8 +967,8 @@ Zahl steht in der Ecke; auf einer kleinen ist die Auswirkung die Größe des
 Kreises.
 
 **Neue Beobachtung** fragt nach den vier Fakten, die eine Beobachtung
-ausmachen: dem Titel, **wo es gesehen wurde**, **beobachtet von** und
-**wann gesehen**. Wann gesehen beginnt mit heute und darf nicht in der
+ausmachen: dem Titel, **wo gesehen**, **beobachtet von** und **Datum
+gesehen** — dieselben Wörter wie beim Bearbeiten. Datum gesehen beginnt mit heute und darf nicht in der
 Zukunft liegen; die Auswirkung beginnt mit gering. Rechts stellt die
 Beschreibung ihre drei Fragen, ein Feld je Frage — **was wir gesehen haben**,
 **Belege** und **wen oder was es betraf** —, und die letzte ist ebenfalls
@@ -1166,8 +1166,8 @@ sagt, wohin man schauen sollte: eine Grundursache, an der niemand arbeitet,
 oder eine Lösung mit einer Frage.
 
 **Lösung** im Leser einer Grundursache oder **Neue Lösung** in der Leiste
-öffnet das Formular: einen Titel mit einem Beispiel darunter, einen
-optionalen Text mit **Bearbeiten** und **Vorschau**, und eine Tabelle der
+öffnet das Formular: einen Titel mit einem Beispiel darunter, eine
+optionale Beschreibung mit **Bearbeiten** und **Vorschau**, und eine Tabelle der
 Grundursachen dieses Scopes, an denen sie ansetzt, verknüpft, sobald Sie
 vorschlagen — die Schaltfläche sagt *Lösung für 1 Grundursache vorschlagen*.
 Es schreibt einen nummerierten Eintrag (`SO-0003`) und sonst nichts. Eine

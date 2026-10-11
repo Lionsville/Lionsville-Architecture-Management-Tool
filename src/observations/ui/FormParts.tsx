@@ -114,8 +114,10 @@ export function TitleField({ label, value, onChange, onBlur, example, missing }:
 }
 
 /** The optional body: the markdown source, or what it reads as, in the same place. */
-export function DescriptionField({ label, value, onChange, example, renderMarkdown, s, minRows = 10 }: {
+export function DescriptionField({ label, optional = false, value, onChange, example, renderMarkdown, s, minRows = 10 }: {
   label: string
+  /** Say beside the label that it may stay empty. */
+  optional?: boolean
   value: string
   onChange: (value: string) => void
   example: string
@@ -128,7 +130,10 @@ export function DescriptionField({ label, value, onChange, example, renderMarkdo
   return (
     <Box sx={{ display: 'grid', gap: 0.5, minWidth: 0 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
-        <Typography component="label" htmlFor={preview ? undefined : id} variant="body2" sx={{ fontWeight: 500 }}>{label}</Typography>
+        <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+          <Typography component="label" htmlFor={preview ? undefined : id} variant="body2" sx={{ fontWeight: 500 }}>{label}</Typography>
+          {optional && <Typography variant="caption" color="text.secondary">{s('observation.formOptional')}</Typography>}
+        </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
           <MarkdownHelp />
           <ToggleButtonGroup

@@ -151,10 +151,10 @@ describe('ObservationsPage', () => {
     const { onChange } = mount()
     fireEvent.click(screen.getByRole('button', { name: '+ New observation' }))
     fireEvent.change(screen.getByRole('textbox', { name: 'Title' }), { target: { value: 'Duplicate customers' } })
-    fireEvent.change(screen.getByRole('textbox', { name: 'Where it was seen' }), { target: { value: 'CRM' } })
+    fireEvent.change(screen.getByRole('textbox', { name: 'Where seen' }), { target: { value: 'CRM' } })
     fireEvent.change(screen.getByRole('textbox', { name: 'Observed by' }), { target: { value: 'W.S.' } })
     fireEvent.change(screen.getByRole('textbox', { name: 'Who or what it affected' }), { target: { value: 'Sales' } })
-    // When seen starts at today, and is shown.
+    // Date seen starts at today, and is shown.
     expect((screen.getByTestId('form-date') as HTMLInputElement).value).toBe('2026-09-20')
     // Nothing is shared: a new one is local, and the scopes above read it anyway (ADR-0032 §1).
     expect(screen.queryByLabelText('Share with the scopes above')).toBeNull()

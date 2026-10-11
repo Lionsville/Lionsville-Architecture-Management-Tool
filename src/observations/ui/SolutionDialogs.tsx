@@ -94,7 +94,7 @@ export function NewSolutionDialog({ open, causes, causeId, onCancel, onCreate, r
             />
           </Box>
           <DescriptionField
-            label={s('solution.formBody')} value={body} onChange={setBody} example={s('solution.formBodyExample')}
+            label={s('observation.formDescription')} optional value={body} onChange={setBody} example={s('solution.formBodyExample')}
             renderMarkdown={renderMarkdown} s={s} minRows={8}
           />
         </Box>

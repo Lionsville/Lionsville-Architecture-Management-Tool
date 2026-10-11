@@ -851,7 +851,8 @@ archived. On a large card the impact is a stripe down the left and the count
 is in the corner; on a small one the impact is the size of the circle.
 
 **New observation** asks for the four facts that make one: the title,
-**where it was seen**, **observed by** and **when seen**. When seen starts at
+**where seen**, **observed by** and **date seen** — the same words as when it
+is edited. Date seen starts at
 today and may not be in the future; the impact starts at minor. On the right
 the description asks its three questions a field each — **what we saw**,
 **evidence** and **who or what it affected** — and the last is required too:
@@ -1017,7 +1018,7 @@ what was seen to what was built. A mark (!) says where to look: a root cause
 nobody is working on, or a solution with a question.
 
 **Solution** on a root cause's reader, or **New solution** on the bar, opens
-the form: a title with an example under it, an optional body with **Edit**
+the form: a title with an example under it, an optional description with **Edit**
 and **Preview**, and a table of the root causes of this scope it addresses,
 linked when you propose — the button says *Propose solution for 1 root
 cause*. It writes a numbered record (`SO-0003`) and nothing else. A solution

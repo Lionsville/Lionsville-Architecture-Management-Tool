@@ -221,7 +221,7 @@ function NewCause({ spec, create, onCreate, onUse, onCancel, renderMarkdown, s }
           </Typography>
         </Box>
         <DescriptionField
-          label={s('observation.causeBody')} value={draft.body ?? ''} onChange={(body) => setDraft((held) => ({ ...held, body }))}
+          label={s('observation.formDescription')} optional value={draft.body ?? ''} onChange={(body) => setDraft((held) => ({ ...held, body }))}
           example={s('observation.causeBodyExample')} renderMarkdown={renderMarkdown} s={s} minRows={8}
         />
       </Box>

@@ -913,8 +913,8 @@ grote kaart is de impact een streep langs de linkerkant en staat de teller in
 de hoek; op een kleine is de impact de grootte van de cirkel.
 
 **Nieuwe waarneming** vraagt de vier feiten die er een waarneming van maken:
-de titel, **waar het gezien is**, **waargenomen door** en **wanneer
-gezien**. Wanneer gezien begint bij vandaag en mag niet in de toekomst
+de titel, **waar gezien**, **waargenomen door** en **datum gezien** — dezelfde
+woorden als bij het bewerken. Datum gezien begint bij vandaag en mag niet in de toekomst
 liggen; de impact begint bij klein. Rechts stelt de beschrijving haar drie
 vragen, een veld per vraag — **wat we zagen**, **bewijs** en **wie of wat het
 raakte** — en de laatste is ook verplicht: een waarneming zegt altijd wie of
@@ -1104,7 +1104,7 @@ vraag.
 
 **Oplossing** in de lezer van een grondoorzaak, of **Nieuwe oplossing** in de
 balk, opent het formulier: een titel met een voorbeeld eronder, een
-optionele tekst met **Bewerken** en **Voorbeeld**, en een tabel van de
+optionele beschrijving met **Bewerken** en **Voorbeeld**, en een tabel van de
 grondoorzaken van deze scope die ze aanpakt, gekoppeld zodra je voorstelt —
 de knop zegt *Oplossing voorstellen voor 1 grondoorzaak*. Het schrijft een
 genummerd record (`SO-0003`) en verder niets. Een oplossing pakt alleen

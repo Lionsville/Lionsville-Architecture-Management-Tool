@@ -5,7 +5,7 @@
  * The form that records an observation (ADR-0032 §6): one dialog, two
  * columns over a table.
  *
- * On the left the facts — title, where, observed by and when seen, all four
+ * On the left the facts — title, where seen, observed by and date seen, all four
  * required, and the impact — each with an example under it that a refusal
  * replaces with what is missing. On the right the three questions a sighting
  * answers, a field each — what was seen, the evidence, and who or what it
@@ -215,20 +215,20 @@ export function NewObservationDialog(props: NewObservationDialogProps) {
               </Alert>
             )}
             <ExampleField
-              required label={s('observation.newWhereField')} value={fields.where} onChange={(value) => set('where', value)}
+              required label={s('observation.whereField')} value={fields.where} onChange={(value) => set('where', value)}
               example={exampleFor('where', s)} problem={problemText('where', shown.where, s)} testId="form-where"
             />
             <ExampleField
-              required label={s('observation.newByField')} value={fields.by} onChange={(value) => set('by', value)}
+              required label={s('observation.byField')} value={fields.by} onChange={(value) => set('by', value)}
               example={exampleFor('by', s)} problem={problemText('by', shown.by, s)} testId="form-by"
             />
             <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 1.5 }}>
               <ExampleField
-                required type="date" max={today} label={s('observation.formDateField')} value={fields.date} onChange={(value) => set('date', value)}
+                required type="date" max={today} label={s('observation.dateField')} value={fields.date} onChange={(value) => set('date', value)}
                 example={exampleFor('date', s)} problem={problemText('date', shown.date, s)} testId="form-date"
               />
               <ExampleField
-                select label={s('observation.newImpactField')} value={fields.impact} onChange={(value) => set('impact', value)}
+                select label={s('observation.impactField')} value={fields.impact} onChange={(value) => set('impact', value)}
                 example={s('observation.formImpactExample')}
               >
                 {OBSERVATION_IMPACTS.map((one) => <MenuItem key={one} value={one}>{s(IMPACT_LABEL[one])}</MenuItem>)}
