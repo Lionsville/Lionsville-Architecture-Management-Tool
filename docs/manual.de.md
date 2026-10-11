@@ -2040,13 +2040,14 @@ wurde**: das Wort der Bibliothek neben dem, wie es hier heißt, an Ort und
 Stelle umzubenennen — ein Druck auf das Wort der Bibliothek öffnet den
 Eintrag dort, wo er bearbeitet wird — und was sich seitdem geändert hat;
 sowie die Einträge, für die ein eigener verwendet wurde, als **… aus Ihrem
-Modell verwendet**. Ein beim Übernehmen gewählter Name ist keine Änderung. Jeder
-Eintrag merkt sich, auf welchem Eintrag welcher Bibliothek und welcher
-Version er beruht, sodass **Mit den Bibliotheken vergleichen** zeigt, worin
-er sich von der Bibliothek unterscheidet, wie sie jetzt ausgeliefert wird —
-gelesen in der Sprache, in der er übernommen wurde — und sagt, wenn eine
-Bibliothek eine neuere Version hat. Nie wird etwas zusammengeführt. Die Namen
-der Rahmenwerke gehören ihren Inhabern; keine der Bibliotheken ist von ihnen
+Modell verwendet**. Ein beim Übernehmen gewählter Name oder Platz ist keine
+Änderung; ein seitdem verschobener Einheitstyp schon. Jeder Eintrag merkt
+sich, auf welchem Eintrag welcher Bibliothek und welcher Version er beruht,
+sodass **Mit den Bibliotheken vergleichen** zeigt, worin er sich von der
+Bibliothek unterscheidet, wie sie jetzt ausgeliefert wird — gelesen in der
+Sprache, in der er übernommen wurde — und sagt, wenn eine Bibliothek eine
+neuere Version hat. Nie wird etwas zusammengeführt. Die Namen der
+Rahmenwerke gehören ihren Inhabern; keine der Bibliotheken ist von ihnen
 gebilligt.
 
 Ein Agent liest das Betriebsmodell mit `unitTypes.list`, `roles.list` und

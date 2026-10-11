@@ -1926,13 +1926,14 @@ het woord van de bibliotheek naast hoe het hier heet, dat je ter plekke kunt
 hernoemen — druk op het woord van de bibliotheek om het onderdeel te openen
 waar het wordt bewerkt — en wat er sindsdien veranderd is; en de onderdelen
 waarvoor een eigen onderdeel werd gebruikt, als **je eigen … gebruikt**. Een
-naam die bij het overnemen werd gekozen, is geen verandering. Elk onderdeel
-onthoudt op welk onderdeel van welke bibliotheek en welke versie het is
-gebaseerd, zodat **Vergelijken met de bibliotheken** laat zien waarin het
-verschilt van de bibliotheek zoals die nu wordt meegeleverd — gelezen in de
-taal waarin het is overgenomen — en zegt wanneer een bibliotheek een nieuwere
-versie heeft. Er wordt nooit iets samengevoegd. De namen van de raamwerken
-zijn van hun eigenaren; geen van de bibliotheken wordt door hen onderschreven.
+naam of een plek die bij het overnemen werd gekozen, is geen verandering; een
+eenheidstype dat sindsdien is verplaatst wel. Elk onderdeel onthoudt op welk
+onderdeel van welke bibliotheek en welke versie het is gebaseerd, zodat
+**Vergelijken met de bibliotheken** laat zien waarin het verschilt van de
+bibliotheek zoals die nu wordt meegeleverd — gelezen in de taal waarin het is
+overgenomen — en zegt wanneer een bibliotheek een nieuwere versie heeft. Er
+wordt nooit iets samengevoegd. De namen van de raamwerken zijn van hun
+eigenaren; geen van de bibliotheken wordt door hen onderschreven.
 
 Een agent leest het besturingsmodel met `unitTypes.list`, `roles.list` en
 `responsibilities.list`, vanuit de organisatie welke scope er ook open is, en

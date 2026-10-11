@@ -1356,9 +1356,12 @@ dialog on itself, and lists *What came in* from `whatCameIn` — the library's
 term, pressed to open the item on its tab, beside its name here, renamed in
 place, and what has changed since in a few words; and the organisation's
 items matched to it, *used your …*. The trademark notice stays. A place
-chosen at bring-in is not recorded the way a name is: *compare* still reads a
-type placed elsewhere as differing from its library where the library puts
-it at the top.
+chosen at bring-in is recorded the way a name is: one that is not where the
+library puts the type is kept as `basedOn.placed` — `top`, and the types it
+sat in by id — and *compare* reads the type's `top` and `within` against it
+rather than the library, so a Scrum Team put beside the organisation's Team
+is no difference and a move since is one (the format stays 11; a 3.6.0 build
+drops the field on its next save).
 
 ## As built, 3.6.1: folds, the outline, and one order wherever units are listed
 

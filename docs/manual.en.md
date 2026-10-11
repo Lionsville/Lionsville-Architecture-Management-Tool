@@ -1781,13 +1781,13 @@ What comes in belongs to the organisation: rename it, rewrite it, cut it. The
 **Libraries** tab shows, for each library, **What came in**: the library's
 word beside what it is called here, which you can rename in place — press the
 library's word to open the item where it is edited — and what has changed
-since; and the ones that used one of yours, as **used your …**. A name chosen
-on the way in is not a change. Each item remembers the library entry and the
-version it was based on, so **Compare with the libraries** lists how it
-differs from the library as it ships now — read in the language it was
-brought in — and says when a library has moved on to a later version.
-Nothing is ever merged in. The frameworks' names are their owners'; none of
-the libraries is endorsed by them.
+since; and the ones that used one of yours, as **used your …**. A name or a
+place chosen on the way in is not a change; a unit type moved since is one.
+Each item remembers the library entry and the version it was based on, so
+**Compare with the libraries** lists how it differs from the library as it
+ships now — read in the language it was brought in — and says when a library
+has moved on to a later version. Nothing is ever merged in. The frameworks'
+names are their owners'; none of the libraries is endorsed by them.
 
 An agent reads the operating model with `unitTypes.list`, `roles.list` and
 `responsibilities.list`, from the organisation whatever scope is open, and
