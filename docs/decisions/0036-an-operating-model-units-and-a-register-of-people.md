@@ -1367,8 +1367,8 @@ it: who stands where is structure. A scope only read offers no move.
 **One order everywhere units are listed**: the chart and the outline, the
 Conway map's columns (`model/conway`, whose input now carries the unit types
 whole), a plan's moves and the units an interaction is declared with on the
-Conway map, and `diagram.inspect` of either view. A unit's inspector still
-offers the units it may declare it works with by name.
+Conway map, `diagram.inspect` of either view, and the units a unit's
+inspector offers to declare it works with.
 
 ## As built, 3.6.1: each link edited from either end
 

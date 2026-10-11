@@ -70,6 +70,7 @@ import { functionChoices, scopeChoices } from './choices'
 import { refusalKey } from './writeIn'
 import type { WriteIn } from './writeIn'
 import { scopesServed, scopesWith, scopesWithout } from '../../model/serving'
+import { compareUnits, unitTypeRank } from '../../model/unitOrder'
 import { PickToAdd } from '../../widgets/PickToAdd'
 
 export type UnitSectionProps = {
@@ -423,8 +424,9 @@ function UnitInteractions(props: UnitSectionProps & { facts: Facts; editable: bo
       .map(({ scope: kept, relation }) => ({ row: relation, other: other(relation), keptIn: scopeLabel(kept), editable: false })),
   ]
   const from = { id: element.id, name: element.name }
-  const units = facts.organisation.units.filter((unit) => isUnit(unit)).map((unit) => ({ id: unit.id, name: unit.name }))
-    .sort((a, b) => a.name.localeCompare(b.name))
+  // In the one order every list of units reads: the type's rank, the unit's own order, its name.
+  const units = facts.organisation.units.filter((unit) => isUnit(unit)).sort(compareUnits(unitTypeRank(facts.types)))
+    .map((unit) => ({ id: unit.id, name: unit.name }))
   return (
     <>
       <InteractionsSection

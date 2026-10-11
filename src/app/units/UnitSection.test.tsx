@@ -249,6 +249,18 @@ describe('a unit in its inspector', () => {
     expect(commands[3]).toEqual({ type: 'element.update', id: 'webshop', patch: { scopes: ['customer'] } })
   })
 
+  it('offers the units it may work with in the one order for units: the type\'s rank, then the name', async () => {
+    const shipping: HostModel = {
+      name: 'Shipping', relations: [], diagrams: [],
+      elements: [actor('zeta', 'Zeta', { unitTypeId: 'ut-domain' }), actor('accounts', 'Accounts', { unitTypeId: 'ut-team', parentId: 'zeta' })],
+    }
+    renderShell(<Harness more={[{ path: 'shipping', model: shipping }]} commands={[]} />)
+    fireEvent.click(screen.getByTestId('unit-interaction-add'))
+    const dialog = await screen.findByTestId('interact-dialog')
+    fireEvent.mouseDown(within(dialog).getAllByRole('combobox')[0])
+    expect(screen.getAllByRole('option').map((one) => one.textContent)).toEqual(['Customer', 'Zeta', 'Accounts'])
+  })
+
   it('declares an interaction with another unit as one row, and corrects and removes one kept here (ADR-0036 §7)', async () => {
     const commands: Command[] = []
     renderShell(<Harness commands={commands} />)
