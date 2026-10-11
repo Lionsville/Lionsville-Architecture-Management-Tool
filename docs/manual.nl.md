@@ -1963,8 +1963,13 @@ plan eenheden raakt:
   neemt ⌘Z de hele stap terug; waar ook andere scopes werden geschreven, wordt
   het in elk daarvan teruggezet.
 - **Nog open op** de dag: wat de controles dan in die eenheden vinden — elk een
-  link naar de eenheid — en elke verantwoordelijkheid die haar A kwijtraakt
-  omdat de rol die er verantwoording voor aflegt eindigt.
+  link naar de eenheid — elke verantwoordelijkheid die haar A kwijtraakt
+  omdat de rol die er verantwoording voor aflegt eindigt, en elke samenwerking
+  die de eenheden van het plan nog moeten vastleggen: *Leg vast hoe* een
+  eenheid die het plan invoert of verplaatst *samenwerkt met* een andere, waar
+  een interface tussen hun applicaties loopt zonder vastgelegde samenwerking —
+  zoals wanneer het cluster dat het plan opheft haar had vastgelegd. Elk opent
+  de eenheid van het plan, waar **Werkt samen met** haar vastlegt.
 
 Een agent zet een eenheid op de dag van een plan onder een nieuwe
 bovenliggende eenheid met `plan.move`, dateert een eenheidstype of rol met

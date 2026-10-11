@@ -2080,8 +2080,14 @@ Seite, wo der Plan Einheiten berührt:
   zurück; wo auch andere Bereiche geschrieben wurden, wird er in jedem davon
   zurückgesetzt.
 - **Noch offen am** Tag: was die Prüfungen dann in diesen Einheiten finden —
-  jedes ein Link zur Einheit — und jede Verantwortung, die ihr A verliert, weil
-  die Rolle endet, die dafür rechenschaftspflichtig ist.
+  jedes ein Link zur Einheit —, jede Verantwortung, die ihr A verliert, weil
+  die Rolle endet, die dafür rechenschaftspflichtig ist, und jede
+  Zusammenarbeit, die die Einheiten des Plans noch festhalten müssen: *Halten
+  Sie fest, wie* eine Einheit, die der Plan einführt oder verschiebt, *mit*
+  einer anderen *arbeitet*, wo eine Schnittstelle zwischen ihren Anwendungen
+  ohne festgehaltene Zusammenarbeit läuft — etwa wenn der Cluster, den der Plan
+  auflöst, sie festgehalten hatte. Jede öffnet die Einheit des Plans, wo
+  **Arbeitet mit** sie festhält.
 
 Ein Agent stellt eine Einheit am Tag eines Plans mit `plan.move` unter eine
 neue übergeordnete Einheit, datiert einen Einheitstyp oder eine Rolle mit

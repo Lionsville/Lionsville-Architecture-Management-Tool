@@ -30,6 +30,8 @@
  *
  * Pure, with no words: the screens and the agent have them.
  */
+import { conwayMap } from './conway'
+import type { ConwayInput, ConwayInteraction, ConwayRow } from './conway'
 import { accountabilityGaps } from './operatingModel'
 import type { Responsibility, RoleId, UnitTypeId } from './operatingModel'
 import { isDay } from './lifecycle'
@@ -40,7 +42,7 @@ import type { Command } from './commands'
 import { pickedPerson } from './person'
 import type { PersonId } from './person'
 import {
-  dayBefore, isUnit, organisationOn, personOf, roleOn, runsOn, slotsOf, unitLastDay, unitOn, unitsAbove,
+  dayBefore, isUnit, organisationOn, personOf, roleOn, runsOn, slotsOf, unitLastDay, unitOn, unitsAbove, unitsBelow,
 } from './units'
 import type { Assignment, Organisation, UnitLike, UnitMove } from './units'
 
@@ -344,6 +346,73 @@ export function lostAccountability(
   const was = gapsOn(before)
   const is = gapsOn(after)
   return responsibilities.filter((one) => !was.has(one.id) && is.has(one.id))
+}
+
+/** The units a plan introduces or moves, and every unit under one of them on `day`: those whose applications its day regroups. */
+export function reorganisedUnits(organisation: Organisation, reorganisation: PlanReorganisation, day: string): ElementId[] {
+  const tree = organisationOn(organisation, day).units
+  const planned = [...reorganisation.introduces.map((one) => one.unitId), ...reorganisation.moves.map((one) => one.unitId)]
+  return [...new Set(planned.flatMap((id) => [id, ...unitsBelow(tree, id)]))]
+}
+
+/**
+ * An interaction a plan's day leaves to declare (ADR-0036 §6, §7): a unit the
+ * plan introduces or moves, the unit it is to work with, and the interfaces
+ * between their applications that nothing declared covers on the day.
+ */
+export type InteractionToDeclare = { unitId: ElementId; withId: ElementId; flows: ConwayRow[] }
+
+/**
+ * What the Conway map finds on a plan's day (`after`) about the units it
+ * introduces or moves (ADR-0036 §7): every interface that crosses from one
+ * unit's applications to another's with nothing declared between them, where
+ * one of those units is the plan's, said as an interaction to declare.
+ *
+ * The plan's side is the highest unit the plan introduces or moves above that
+ * end's owner, and not above the other end's too — a new cluster rather than
+ * each team moved into it. The other side is the unit that the interaction
+ * covering the interface the day before (`before`) was declared with, where it
+ * is there on the day — whom a retired cluster worked with — or, where the plan
+ * moves that end too, its own highest such unit, or else the owner. Each two
+ * units once, with every interface between them.
+ */
+export function interactionsToDeclare(
+  input: ConwayInput, reorganisation: PlanReorganisation, days: { before: string; after: string },
+): InteractionToDeclare[] {
+  const planned = new Set([...reorganisation.introduces.map((one) => one.unitId), ...reorganisation.moves.map((one) => one.unitId)])
+  if (planned.size === 0) return []
+  const chainsOn = (day: string) => {
+    const tree = organisationOn({ units: input.units, assignments: [], roles: [], unitTypes: [], ...(input.moves ? { moves: input.moves } : {}) }, day).units
+    return (id: ElementId) => [id, ...unitsAbove(tree, id)]
+  }
+  const chain = chainsOn(days.after)
+  const chainBefore = chainsOn(days.before)
+  const there = new Set(input.units.filter((unit) => isUnit(unit) && unitOn(unit, days.after)).map((unit) => unit.id))
+  const coveredBefore = new Map(conwayMap(input, days.before).lines.flatMap((line) => (line.interaction ? [[line.flow.id, line.interaction] as const] : [])))
+  // The highest of the plan's units above one end and not above the other.
+  const plannedSide = (end: ElementId, other: ElementId) => [...chain(end)].reverse().find((id) => planned.has(id) && !chain(other).includes(id))
+  const found = new Map<string, InteractionToDeclare>()
+  for (const finding of conwayMap(input, days.after).findings) {
+    if (finding.kind !== 'undeclared') continue
+    const fromSide = plannedSide(finding.from, finding.to)
+    const toSide = plannedSide(finding.to, finding.from)
+    if (fromSide === undefined && toSide === undefined) continue
+    const [unitId, owner, other, otherSide] = fromSide !== undefined
+      ? [fromSide, finding.from, finding.to, toSide] : [toSide!, finding.to, finding.from, fromSide]
+    const was = endWith(coveredBefore.get(finding.flow.id), chainBefore(other), chainBefore(owner))
+    const withId = [was, otherSide].find((id) => id !== undefined && id !== unitId && there.has(id)) ?? other
+    const key = [unitId, withId].sort().join('\n')
+    const held = found.get(key) ?? { unitId, withId, flows: [] }
+    held.flows.push(finding.flow)
+    found.set(key, held)
+  }
+  return [...found.values()]
+}
+
+/** The end of an interaction on one side of an interface: the one above that side's owner and not above the other's. */
+function endWith(interaction: ConwayInteraction | undefined, side: readonly ElementId[], other: readonly ElementId[]): ElementId | undefined {
+  if (!interaction) return undefined
+  return [interaction.sourceId, interaction.targetId].find((id) => side.includes(id) && !other.includes(id))
 }
 
 /**

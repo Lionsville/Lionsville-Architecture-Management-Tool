@@ -11,7 +11,7 @@ import type { HostModel } from '../../model/hostModel'
 import type { DesignElement } from '../../model/types'
 import { indexScopes } from '../../projects/scopeIndex'
 import { conwayMap } from '../../model/conway'
-import { conwayInputHere, unitLanding, unitViewsHere } from './unitViewsHere'
+import { conwayInputAround, conwayInputHere, unitLanding, unitViewsHere } from './unitViewsHere'
 
 const actor = (id: string, name: string, over: Partial<DesignElement> = {}): DesignElement => ({
   id, kind: 'actor', name, lifecycle: 'live', isManaged: false, aspects: {}, ...over,
@@ -73,6 +73,38 @@ describe('a Conway map in a scope, on its day', () => {
     expect(input.owns?.('shipping', '2026-10-11')).toBe(1)
     expect(input.owns?.('shipping', '2027-01-01')).toBe(2)
     expect(here.at.owns('shipping')).toBe(3)
+  })
+})
+
+/**
+ * Around some units, across the organisation (ADR-0036 §6): what a plan's day
+ * is held against reads their applications wherever each is filed, and the
+ * applications at the other end of their interfaces, from whichever scope.
+ */
+describe('a Conway map around some units', () => {
+  const app = (id: string, partyId?: string): DesignElement => ({
+    id, kind: 'application', name: id, lifecycle: 'live', isManaged: true, aspects: {}, ...(partyId ? { partyId } : {}),
+  })
+  const root: HostModel = { ...ROOT, elements: [...ROOT.elements, app('hub', 'data'), app('ledger', 'board')] }
+  const flow = (id: string, sourceId: string, targetId: string) => ({ id, type: 'flow' as const, sourceId, targetId, isBidirectional: false })
+  const open: HostModel = {
+    ...SHIPPING,
+    elements: [...SHIPPING.elements, app('portal', 'shipping'), app('desk', 'crew'), app('old')],
+    relations: [flow('f-1', 'portal', 'hub'), flow('f-2', 'desk', 'old'), flow('f-3', 'portal', 'old')],
+  }
+  const below: HostModel = { name: 'Parcel', relations: [flow('f-4', 'labels', 'portal')], diagrams: [], elements: [app('labels', 'nobody-here')] }
+  const tree = indexScopes([{ path: '', model: root }, { path: 'shipping', model: open }, { path: 'shipping/parcel', model: below }])
+
+  it('reads what the units own and what their interfaces reach, the open scope\'s from its session', () => {
+    const here = unitViewsHere(tree, 'shipping', open)
+    const input = conwayInputAround(tree, 'shipping', open, here.at, new Set(['shipping']))
+    expect(input.applications.map((one) => one.id).sort()).toEqual(['hub', 'labels', 'old', 'portal'])
+    expect(input.flows.map((one) => one.id).sort()).toEqual(['f-1', 'f-3', 'f-4'])
+    expect(input.units.map((one) => one.id).sort()).toEqual(['board', 'data', 'shipping'])
+    // Gone from the session, gone from the map, whatever the index read last.
+    const without = { ...open, elements: open.elements.filter((one) => one.id !== 'old') }
+    expect(conwayInputAround(tree, 'shipping', without, here.at, new Set(['shipping'])).applications.map((one) => one.id).sort())
+      .toEqual(['hub', 'labels', 'portal'])
   })
 })
 

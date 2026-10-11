@@ -23,7 +23,7 @@
  * where they already are.
  *
  * And a plan's page says what is still open on the plan's day in the units
- * it reorganises (`PlanOrganisation`, ADR-0036 §6): each finding about a unit
+ * it reorganises (`PlanStillOpen`, ADR-0036 §6): each finding about a unit
  * a link to that unit, and one about a person a line — the people are in the
  * list above it.
  *
@@ -55,7 +55,7 @@ describe('findings', () => {
   it('are said only by the components that say them as links', () => {
     expect(naming(/\bCHECK_SENTENCE\b/)).toEqual(['roadmap/labels.ts', 'roadmap/ui/FindingSentence.tsx'])
     expect(naming(/\bfindingSentence\b/)).toEqual([
-      'app/organisation/attention.ts', 'app/units/ChartPage.tsx', 'app/units/PlanOrganisation.tsx', 'app/units/UnitSection.tsx',
+      'app/organisation/attention.ts', 'app/units/ChartPage.tsx', 'app/units/PlanStillOpen.tsx', 'app/units/UnitSection.tsx',
       'projects/checks.ts',
     ])
   })

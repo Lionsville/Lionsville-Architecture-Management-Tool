@@ -16,8 +16,9 @@
  *   with who holds a role in each.
  * - **Move the people**: every assignment in a unit or a role that ends, each
  *   with a suggestion, written as one step.
- * - **Still open on the day**: what the checks find in those units then, and
- *   every responsibility that loses its *A*.
+ * - **Still open on the day** (`PlanStillOpen`): what the checks find in
+ *   those units then, every responsibility that loses its *A*, and every
+ *   interaction the plan's units are left to declare.
  *
  * Drawn by the host, because all of it is the organisation's: the units kept
  * across the tree, the register's names, and the scopes the people's moves
@@ -28,7 +29,6 @@ import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
 import IconButton from '@mui/material/IconButton'
-import Link from '@mui/material/Link'
 import MenuItem from '@mui/material/MenuItem'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
@@ -38,18 +38,16 @@ import type { HostModel } from '../../model/hostModel'
 import { isDay } from '../../model/lifecycle'
 import { pickedPerson } from '../../model/person'
 import {
-  beforeAndAfter, lostAccountability, peopleMoveSteps, peopleToMove, placesIn, planReorganisation, reorganisationRoots, unitTree,
+  beforeAndAfter, peopleMoveSteps, peopleToMove, placesIn, planReorganisation, reorganisationRoots, unitTree,
 } from '../../model/reorganisation'
-import type { PeopleChoice, PeopleMove, PlanReorganisation, UnitNode } from '../../model/reorganisation'
+import type { PeopleChoice, PeopleMove, UnitNode } from '../../model/reorganisation'
 import { addDays, movesWith } from '../../model/transition'
 import type { Transition } from '../../model/transition'
-import { isUnit, makesLoop, personOf, runsOn } from '../../model/units'
+import { isUnit, makesLoop, personOf } from '../../model/units'
 import type { UnitMove } from '../../model/units'
 import type { Organisation } from '../../model/units'
 import { personText, registerOf, resolvePerson } from '../../people/shown'
 import type { PeopleRegisterAccess } from '../../people/ui/access'
-import { findingSentence, findingsOfOrganisation } from '../../projects/checks'
-import type { OrganisationAt } from '../../projects/checks'
 import type { ScopeIndex } from '../../projects/scopeIndex'
 import type { ScopePath } from '../../projects/scopePath'
 import { CloseIcon } from '../../widgets/icons'
@@ -57,6 +55,7 @@ import { MovePeople } from './MovePeople'
 import type { MoveNames } from './MovePeople'
 import type { PeopleMoved } from './landPeopleMoves'
 import { organisationHere } from './organisationHere'
+import { StillOpen } from './PlanStillOpen'
 
 export type PlanOrganisationProps = {
   plan: Transition
@@ -198,7 +197,9 @@ export function PlanOrganisation(props: PlanOrganisationProps) {
       {days && <BeforeAndAfter facts={facts} before={days.before} after={days.after} s={s} />}
       <Typography sx={HEADING}>{s('move.people')}</Typography>
       <PeopleToMove {...props} facts={facts} />
-      {days && <StillOpen facts={facts} before={days.before} after={days.after} scopeLabel={props.scopeLabel} onOpen={props.onOpenElement} s={s} />}
+      {days && <StillOpen at={facts.at} reorganisation={reorganisation} responsibilities={facts.responsibilities} names={facts.names}
+        before={days.before} after={days.after} index={props.index} scope={props.scope} model={props.model}
+        scopeLabel={props.scopeLabel} onOpen={props.onOpenElement} s={s} />}
     </Box>
   )
 }
@@ -284,48 +285,4 @@ function PeopleToMove(props: PlanOrganisationProps & { facts: PlanFacts }) {
     <MovePeople moves={moves} placesFor={placesFor} names={facts.names} readOnly={readOnly} onWrite={write} s={s}
       {...(props.people?.manages ? { manages: props.people.manages } : {})} />
   )
-}
-
-/**
- * What the checks find on the plan's day in the units it touches, and every
- * responsibility that loses its A. A finding about a unit is a link to it,
- * as every list of findings is; one about a person or a responsibility is a line.
- */
-function StillOpen({ facts, before, after, scopeLabel, onOpen, s }: {
-  facts: PlanFacts; before: string; after: string; scopeLabel: (path: ScopePath) => string; onOpen: ((id: string) => void) | undefined; s: Translate
-}) {
-  const lines = stillOpen(facts.at, facts.reorganisation, facts.responsibilities, { before, after }, scopeLabel, facts.names, s)
-  return (
-    <Box data-testid="plan-still-open">
-      <Typography sx={HEADING}>{s('move.stillOpen', { day: after })}</Typography>
-      {lines.length === 0 && <Typography sx={QUIET}>{s('move.stillOpenNone')}</Typography>}
-      {lines.map((line, at) => (
-        <Typography key={`${at}/${line.text}`} sx={{ fontSize: 12, color: 'warning.main' }} data-testid="plan-open-line">
-          {line.unitId !== undefined && onOpen
-            ? <Link component="button" type="button" color="inherit" underline="hover" sx={{ fontSize: 'inherit', textAlign: 'left' }}
-              onClick={() => onOpen(line.unitId!)}>{line.text}</Link>
-            : line.text}
-        </Typography>
-      ))}
-    </Box>
-  )
-}
-
-/** The sentences of what is still open: the checks of the day in the units under the change, then the responsibilities without their A. */
-function stillOpen(
-  at: OrganisationAt, r: PlanReorganisation, responsibilities: Parameters<typeof lostAccountability>[0], days: { before: string; after: string },
-  scopeLabel: (path: ScopePath) => string, names: MoveNames, s: Translate,
-): { text: string; unitId?: string }[] {
-  const roots = reorganisationRoots(at.organisation, r, days.before, days.after)
-  const walk = (nodes: readonly UnitNode[]): string[] => nodes.flatMap((node) => [node.unit.id, ...walk(node.children)])
-  const units = new Set(walk(unitTree(at.organisation, days.after, roots)))
-  const persons = new Set(at.organisation.assignments
-    .filter((one) => units.has(one.unitId) && runsOn(one, days.after)).map((one) => names.canonical(personOf(one))))
-  const said = new Set<string>()
-  const found = findingsOfOrganisation(at, days.after, names.canonical)
-    .filter((one) => (one.person !== undefined ? persons.has(one.person) : units.has(one.id)))
-    .map((one) => ({ text: findingSentence(one, s, scopeLabel, names.person), ...(one.person === undefined ? { unitId: one.id } : {}) }))
-  const lost = lostAccountability(responsibilities, at.organisation, days.before, days.after)
-    .map((one) => ({ text: s('move.lostA', { responsibility: one.name }) }))
-  return [...found, ...lost].filter((line) => (said.has(line.text) ? false : (said.add(line.text), true)))
 }

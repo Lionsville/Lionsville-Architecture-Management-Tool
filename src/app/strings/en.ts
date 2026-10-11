@@ -978,6 +978,7 @@ export const EN = {
   'move.stillOpen': 'Still open on {day}',
   'move.stillOpenNone': 'Nothing.',
   'move.lostA': '{responsibility} needs a new A: the role accountable for it ends.',
+  'move.declare': 'Declare how {unit} works with {other}: an interface between their applications has nothing declared.',
   'move.roleEnds': 'Its people after {day}',
   'move.typeEnds': 'Its units after {day}',
   'move.typeEndsNone': 'No unit of this type is still there.',

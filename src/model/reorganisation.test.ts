@@ -15,9 +15,10 @@ import { assignmentList, fromArrays } from './normalised'
 import type { Model } from './normalised'
 import type { Responsibility, Role, UnitType } from './operatingModel'
 import { apply } from './reducer'
+import type { ConwayInput } from './conway'
 import {
-  beforeAndAfter, lostAccountability, peopleMoveSteps, peopleToMove, placesIn, planReorganisation, reorganisationRoots, roleEnding,
-  samePlace, unitsOfEndedType, unitTree,
+  beforeAndAfter, interactionsToDeclare, lostAccountability, peopleMoveSteps, peopleToMove, placesIn, planReorganisation,
+  reorganisationRoots, reorganisedUnits, roleEnding, samePlace, unitsOfEndedType, unitTree,
 } from './reorganisation'
 import type { PeopleChoice, PeopleMove } from './reorganisation'
 import type { Transition } from './transition'
@@ -256,5 +257,54 @@ describe('the organisation before and after', () => {
       ['tracking', ['as-4']], ['booking', []],
     ])
     expect(unitsOfEndedType(organisation, team)).toEqual([])
+  })
+})
+
+describe('the interactions a plan\'s day leaves to declare', () => {
+  const found = planReorganisation(plan, organisation)
+  const days = { before: EVE, after: SPLIT }
+  // Integration Platform under Data, and a Webshop team elsewhere, with nothing declared between it and anyone.
+  const input: ConwayInput = {
+    units: [...units, unit('ip', 'ut-team', 'data'), unit('sales', 'ut-cluster'), unit('web', 'ut-team', 'sales')],
+    moves: plan.moves,
+    unitTypes: [domain, cluster, team],
+    applications: [
+      { id: 'a-track', name: 'Track', partyId: 'tracking' }, { id: 'a-book', name: 'Book', partyId: 'booking' },
+      { id: 'a-hub', name: 'Hub', partyId: 'ip' }, { id: 'a-web', name: 'Web', partyId: 'web' },
+    ],
+    flows: [
+      { id: 'f-1', sourceId: 'a-track', targetId: 'a-hub' }, { id: 'f-2', sourceId: 'a-book', targetId: 'a-hub' },
+      { id: 'f-3', sourceId: 'a-track', targetId: 'a-book' }, { id: 'f-4', sourceId: 'a-web', targetId: 'a-hub' },
+    ],
+    interactions: [{ id: 'i-1', sourceId: 'parcel-freight', targetId: 'data', mode: 'service' }],
+  }
+  const said = (given: ConwayInput) => interactionsToDeclare(given, found, days)
+    .map((one) => [one.unitId, one.withId, one.flows.map((flow) => flow.id)])
+
+  it('reads the units the plan introduces or moves, and those under them on its day', () => {
+    expect(reorganisedUnits(organisation, found, SPLIT)).toEqual(['parcel', 'tracking', 'freight', 'booking'])
+  })
+
+  it('names the new cluster and the unit the retired one worked with, and two new clusters whose teams talk', () => {
+    // Parcel & Freight worked with Data as a service; it ends, and its teams' interfaces to Data's team have nothing
+    // declared under Parcel and Freight. Webshop's crossing is not the plan's.
+    expect(said(input)).toEqual([
+      ['parcel', 'data', ['f-1']],
+      ['freight', 'data', ['f-2']],
+      ['parcel', 'freight', ['f-3']],
+    ])
+  })
+
+  it('leaves out an interface a moved team declared itself, which moves with it', () => {
+    const declared = { ...input, interactions: [...input.interactions, { id: 'i-2', sourceId: 'tracking', targetId: 'ip' }] }
+    expect(said(declared).map(([unitId, withId]) => `${String(unitId)} ${String(withId)}`)).toEqual(['freight data', 'parcel freight'])
+  })
+
+  it('says each two units once, with every interface between them, and nothing for a plan that touches no unit', () => {
+    const twice = { ...input, flows: [...input.flows, { id: 'f-5', sourceId: 'a-hub', targetId: 'a-track' }, { id: 'f-6', sourceId: 'a-track', targetId: 'a-web' }] }
+    expect(said(twice)[0]).toEqual(['parcel', 'data', ['f-1', 'f-5']])
+    // Nothing covered Tracking's interface to Webshop before either: the other side is the team that owns its end.
+    expect(said(twice)[3]).toEqual(['parcel', 'web', ['f-6']])
+    expect(interactionsToDeclare(input, planReorganisation({ elements: [] }, organisation), days)).toEqual([])
   })
 })

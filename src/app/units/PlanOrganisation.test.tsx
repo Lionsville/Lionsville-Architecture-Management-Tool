@@ -9,11 +9,13 @@
  * clusters and ends the role of release manager. The page lists the moves,
  * says what the plan does, draws the organisation before and after, lists the
  * people to move with their suggestions, writes them as one step — which undo
- * takes back whole — and says what is still open on the day.
+ * takes back whole — and says what is still open on the day, an interaction
+ * its new cluster is left to declare among it.
  */
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { useState } from 'react'
+import { axeFindings } from '../testing/axe'
 import { renderShell } from '../testing/renderShell'
 import { translator } from '../../i18n'
 import type { Command } from '../../model/commands'
@@ -58,7 +60,16 @@ const as = (id: string, unitId: string, roleId: string, person: string, over: Pa
   id, unitId, roleId, person: { person }, ...over,
 })
 
-const ROOT: HostModel = { name: 'Acme Logistics', elements: [], relations: [], diagrams: [], unitTypes: [domain, cluster, team], roles, responsibilities }
+const ROOT: HostModel = {
+  name: 'Acme Logistics',
+  // Data & Integration works with Parcel & Freight as a service; its team's hub is what Tracking's portal calls.
+  elements: [
+    actor('data', 'Data & Integration', { unitTypeId: 'ut-cluster' }), actor('ip', 'Integration Platform', { unitTypeId: 'ut-team', parentId: 'data' }),
+    { id: 'hub', kind: 'application', name: 'Integration Hub', lifecycle: 'live', isManaged: true, aspects: {}, partyId: 'ip' },
+  ],
+  relations: [{ id: 'i-1', type: 'interacts', sourceId: 'pf', targetId: 'data', mode: 'service', isBidirectional: false }],
+  diagrams: [], unitTypes: [domain, cluster, team], roles, responsibilities,
+}
 const PLAN: Transition = {
   id: 'tr-7', number: 7, title: 'Split Parcel & Freight', status: 'agreed', from: '2026-11-01', to: SPLIT,
   elements: [
@@ -76,8 +87,9 @@ const SHIPPING: HostModel = {
     actor('freight', 'Freight', { unitTypeId: 'ut-cluster', parentId: 'shipping', lifecycle: 'planned', lifecycleDates: { live: SPLIT } }),
     actor('tracking', 'Tracking', { unitTypeId: 'ut-team', parentId: 'pf' }),
     actor('booking', 'Booking', { unitTypeId: 'ut-team', parentId: 'pf' }),
+    { id: 'portal', kind: 'application', name: 'Tracking Portal', lifecycle: 'live', isManaged: true, aspects: {}, partyId: 'tracking' },
   ],
-  relations: [],
+  relations: [{ id: 'f-1', type: 'flow', sourceId: 'portal', targetId: 'hub', isBidirectional: false }],
   diagrams: [],
   assignments: [
     as('as-1', 'pf', 'ro-lead', 'pe-omar'),
@@ -194,6 +206,18 @@ describe('a reorganisation on its plan\'s page', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Freight is short of Cluster lead/ }))
     expect(opened).toEqual(['freight'])
     expect(screen.queryByRole('button', { name: /Release to production/ })).toBeNull()
+  })
+
+  it('lists the interactions the new units are left to declare on the day, each opening the plan\'s unit', async () => {
+    const opened: string[] = []
+    renderShell(<Harness dispatched={[]} opened={opened} />)
+    // Parcel & Freight worked with Data & Integration; it ends, and Tracking's portal calls the hub from Parcel.
+    const declare = 'Declare how Parcel works with Data & Integration: an interface between their applications has nothing declared.'
+    expect(lines('plan-open-line')).toContain(declare)
+    expect(lines('plan-open-line').indexOf(declare)).toBeGreaterThan(lines('plan-open-line').findIndex((line) => line?.startsWith('Release to production')))
+    fireEvent.click(screen.getByRole('button', { name: declare }))
+    expect(opened).toEqual(['parcel'])
+    expect(await axeFindings()).toEqual([])
   })
 
   it('writes every end and beginning as one step, a row changed as chosen, and undo takes it all back', async () => {

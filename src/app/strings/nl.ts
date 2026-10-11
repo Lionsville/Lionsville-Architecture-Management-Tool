@@ -757,6 +757,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'move.stillOpen': 'Nog open op {day}',
   'move.stillOpenNone': 'Niets.',
   'move.lostA': '{responsibility} heeft een nieuwe A nodig: de rol die er verantwoording voor aflegt, eindigt.',
+  'move.declare': 'Leg vast hoe {unit} samenwerkt met {other}: een interface tussen hun applicaties heeft geen vastgelegde samenwerking.',
   'move.roleEnds': 'De mensen erin na {day}',
   'move.typeEnds': 'De eenheden ervan na {day}',
   'move.typeEndsNone': 'Er is geen eenheid van dit type meer.',

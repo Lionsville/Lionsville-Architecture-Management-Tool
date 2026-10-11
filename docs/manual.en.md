@@ -1815,8 +1815,12 @@ plan's interfaces, where the plan touches units, the page says:
   Where the plan's scope is the only one written, ⌘Z takes the whole step
   back; where other scopes were written too, it is put back in each.
 - **Still open on** its day: what the checks find in those units then — each a
-  link to the unit — and every responsibility that loses its A because the role
-  accountable for it ends.
+  link to the unit — every responsibility that loses its A because the role
+  accountable for it ends, and every interaction the plan's units are left to
+  declare: *Declare how* a unit it introduces or moves *works with* another,
+  where an interface crosses between their applications with nothing declared —
+  as when the cluster it retires was the one that had declared it. Each opens
+  the plan's unit, whose **Works with** declares it.
 
 An agent puts a unit under a new parent on a plan's day with `plan.move`,
 dates a unit type or a role with `unitType.update` and `role.update` (`from`,

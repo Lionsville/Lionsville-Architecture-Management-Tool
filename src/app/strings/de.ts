@@ -758,6 +758,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'move.stillOpen': 'Noch offen am {day}',
   'move.stillOpenNone': 'Nichts.',
   'move.lostA': '{responsibility} braucht ein neues A: Die Rolle, die dafür rechenschaftspflichtig ist, endet.',
+  'move.declare': 'Halten Sie fest, wie {unit} mit {other} arbeitet: Eine Schnittstelle zwischen ihren Anwendungen hat keine festgehaltene Zusammenarbeit.',
   'move.roleEnds': 'Ihre Menschen nach dem {day}',
   'move.typeEnds': 'Ihre Einheiten nach dem {day}',
   'move.typeEndsNone': 'Keine Einheit dieses Typs besteht noch.',

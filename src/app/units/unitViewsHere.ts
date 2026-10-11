@@ -13,7 +13,8 @@
  * units that serve it from above — a cluster filed at the top that serves
  * three domains is on each of their charts. A Conway map in a scope is of the
  * applications filed there or below and of those its units, and the units
- * below them, own.
+ * below them, own. A plan's day is held against a map around the units it
+ * changes, across the whole organisation (`conwayInputAround`).
  *
  * Off the index the shell already holds and the session: nothing loads for it.
  */
@@ -84,6 +85,42 @@ export function conwayInputHere(index: ScopeIndex, scope: ScopePath, model: Host
     interactions: rowsHere(index, scope, model, new Set(units.map((unit) => unit.id)), 'interacts')
       .map((row): ConwayInteraction => ({ ...row, ...(row.mode !== undefined ? { mode: row.mode } : {}) })),
     owns: here.at.owns,
+  }
+}
+
+/**
+ * What the Conway map around some units is drawn from, across the whole
+ * organisation (ADR-0036 §6, §7): the applications those units own wherever
+ * each is filed, the interfaces from them and the applications at their other
+ * ends, and every interaction between two units — what a plan's day is held
+ * against. The open scope's applications and rows are its session's.
+ */
+export function conwayInputAround(
+  index: ScopeIndex, scope: ScopePath, model: HostModel, at: OrganisationAt, unitIds: ReadonlySet<ElementId>,
+): ConwayInput {
+  const { organisation } = at
+  const units = organisation.units.filter(isUnit)
+  const own = model.elements.filter((element) => element.kind === 'application' && element.ref === undefined)
+  const kept = new Map(own.map((element) => [element.id, element]))
+  const owned = [...own, ...index.register().filter((entry) => entry.master !== undefined && entry.master !== scope)]
+    .filter((app) => app.partyId !== undefined && unitIds.has(app.partyId))
+  const near = new Set(owned.map((app) => app.id))
+  const flows = rowsHere(index, scope, model, near, 'flow')
+  // The other ends: the open scope's from its session, the rest the index's.
+  const far = [...new Set(flows.flatMap((row) => [row.sourceId, row.targetId]))].filter((id) => !near.has(id)).flatMap((id) => {
+    const entry = index.lookup(id)
+    const held = kept.get(id) ?? (entry?.kind === 'application' && entry.master !== undefined && entry.master !== scope ? entry : undefined)
+    return held ? [held] : []
+  })
+  return {
+    units,
+    ...(organisation.moves ? { moves: organisation.moves } : {}),
+    unitTypes: organisation.unitTypes,
+    applications: [...owned, ...far].map((app) => conwayApplication(app)),
+    flows,
+    interactions: rowsHere(index, scope, model, new Set(units.map((unit) => unit.id)), 'interacts')
+      .map((row): ConwayInteraction => ({ ...row, ...(row.mode !== undefined ? { mode: row.mode } : {}) })),
+    owns: at.owns,
   }
 }
 
