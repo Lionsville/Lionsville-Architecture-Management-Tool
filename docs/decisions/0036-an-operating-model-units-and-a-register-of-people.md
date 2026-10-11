@@ -10,7 +10,8 @@
   and the two views and the `interacts` row (§7, §11's *Find me*), and the
   calls a review left open (a unit moved between scopes, a merge into an
   entry that has left, a signature apart from a forgotten entry, *This is me*
-  in a browser's folder, the Conway map's applications on its day), 11 October
+  in a browser's folder, the Conway map's applications on its day), and the
+  screens of a source that grants a managing role's right (§12), 11 October
   2026 — *As built*, below
 * Date: 2026-10-11
 * Deciders: Wouter Simons
@@ -999,6 +1000,41 @@ and dated phases (`IndexEntry.lifecycle`, `lifecycleDates`) for it.
 
 And *Move the people* writes each new assignment under the id a merge kept
 (`peopleMoveSteps`'s `canonical`).
+
+## As built, 11 October 2026: a managing role's right, on the screens
+
+§12 grants nothing in core. A build that grants it — on its own doors — now
+says so, and the screens offer what those doors will take.
+
+**The arithmetic** is `model/managing.ts`, pure, for the screens and for a
+server to import by path: `managedReach` (the units a person holds a running
+managing role in on a day, every unit below each under that day's parents,
+and those strictly below, where a managing role is theirs too),
+`managesPeople` (the same with the roles that manage), `mayChangeIn` (a
+screen's question of one unit and role) and `onlyPeopleIn` (whether a step's
+commands are all assignments, each before and after in reach, the one after
+in a unit the scope keeps, applied in order by the writer).
+
+**The seam** is `SourcePeople.managingRight`: the source grants the right to
+the person it says is using the app (`me`, an account's link — never *This is
+me*). The shell works out what that person manages today off the tree's index,
+one person under every merged id, and hands it as
+`PeopleRegisterAccess.manages`. Where it is there:
+
+* the register is not read-only for them, and the source's `may` says each
+  change;
+* a scope only read to them still takes a step `onlyPeopleIn` allows
+  (`ModelSessionDeps.letThrough`), and nothing else; the source's door decides
+  it again;
+* a unit's section offers *Assign*, a holder's correction, end and removal on
+  a unit they manage, a managing role's only strictly below one they hold, and
+  nothing else of the unit; a chart's vacancy in such a unit assigns; *Move
+  the people* moves their rows to places in their units, writes only those,
+  and lands a part in a scope only read to them where every command of it is
+  theirs (`landPeopleMoves`'s `manages`).
+
+*New person…* in the picker is offered where the source's `may` says *add*,
+not wherever the register may be written.
 
 ## Open
 

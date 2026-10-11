@@ -251,6 +251,15 @@ src/model/        What a landscape is made of, and the arithmetic over it.
                                       the organisation on a day
                                       (`organisationOn`): every unit under the
                                       parent the plans' moves give it then
+                    managing          what a managing role's right reaches
+                                      (ADR-0036 §12): the units held and those
+                                      below, a managing role only strictly
+                                      below (`managedReach`, `managesPeople`),
+                                      and whether a step changes only their
+                                      people (`onlyPeopleIn`) — granted by no
+                                      one in core; a source that grants it says
+                                      `SourcePeople.managingRight`, and the
+                                      screens and its own doors ask this
                     reorganisation    what a plan does to the organisation
                                       (ADR-0036 §6): the units it introduces,
                                       retires and moves, the roles that end the
