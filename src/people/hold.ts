@@ -89,11 +89,18 @@ export function keptName(pointer: Pick<Pointer, 'signedAs'>): boolean {
 
 const where = (scope: string) => scope || 'the organisation'
 
-/** A record that points at a person, as a line of *What we hold*. English, as a protocol answer is. */
-export function pointerLine(one: PointedAt): string {
+/**
+ * A record that points at a person, as a line of *What we hold*. English, as
+ * a protocol answer is. `apart` is an entry that is forgotten: a signature
+ * that kept a name is then said to exist and no more — the name as signed is
+ * the decision's, and said beside the pseudonym it would undo the forgetting
+ * (ADR-0036 §8).
+ */
+export function pointerLine(one: PointedAt, apart = false): string {
   const named = `${one.label ? `${one.label} ` : ''}${one.title}`
   if (one.signedAs !== undefined) {
-    return `${named} (${where(one.scope)}), ${one.field === 'proposed' ? 'proposed' : 'signed'} as ${one.signedAs}`
+    const how = one.field === 'proposed' ? 'proposed' : 'signed'
+    return apart ? `${named} (${where(one.scope)}), ${how}` : `${named} (${where(one.scope)}), ${how} as ${one.signedAs}`
   }
   return `${named} (${where(one.scope)}): ${FIELD_WORDS[one.field]}`
 }

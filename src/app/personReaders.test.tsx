@@ -168,6 +168,25 @@ describe('who proposed and who signed a decision', () => {
     expect(screen.getByTestId('adr-proposed-by').textContent).toBe('Eva Lind')
   })
 
+  /**
+   * Once the signer is forgotten, the signature links to nobody (ADR-0036 §8):
+   * the name as signed is shown alone, even where the record is still being
+   * written, and never beside the pseudonym — the page holds no picked person
+   * to follow to the entry.
+   */
+  it('shows a forgotten signer\'s and proposer\'s kept names alone where the record is still written, never their pseudonyms', async () => {
+    const open: Partial<Adr> = { status: 'reviewing', signers: [decision.signers[0]] }
+    const view = renderShell(page(BEFORE, open))
+    expect((await screen.findByTestId('adr-signer-0-picked')).textContent).toBe('Kim Bakker')
+    view.rerender(page(AFTER, open))
+    expect(screen.queryByTestId('adr-signer-0-picked')).toBeNull()
+    expect(screen.getByTestId('adr-signer-0').textContent).toBe('Kim Bakker')
+    expect(screen.getByTestId('adr-proposed-by').textContent).toBe('Eva Lind')
+    const shown = document.body.textContent ?? ''
+    expect(shown).not.toContain('GHJK')
+    expect(shown).not.toContain('BCDF')
+  })
+
   it('writes the name a person signs with when they give a verdict', async () => {
     const changed = vi.fn()
     renderShell(withRegister(BEFORE, (

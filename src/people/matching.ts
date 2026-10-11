@@ -11,16 +11,20 @@
  * pseudonym. A redirect a merge left reads as the entry it points at, so a
  * record that still holds the merged id is found by the name of the one kept.
  * An id the register no longer holds reads *a former colleague* and is named
- * by no word: nothing connects it to anyone.
+ * by no word: nothing connects it to anyone. A signature that kept its name is
+ * found through its entry only while that entry has a name (`apart`).
  */
 import { fold } from '../model/textSearch'
 import type { PersonId } from '../model/person'
 import type { Person } from './person'
-import { registerOf, resolvePerson, shownEntry } from './shown'
+import { registerOf, resolvePerson, shownEntry, signatureApart } from './shown'
 import type { Shown, Showing } from './shown'
 
-/** For one folded word, the register ids it names. */
-export type PeopleMatching = (token: string) => ReadonlySet<PersonId>
+/**
+ * For one folded word, the register ids it names — and which ids a signature's
+ * kept name no longer links to (`signatureApart`): forgotten, or gone.
+ */
+export type PeopleMatching = ((token: string) => ReadonlySet<PersonId>) & { readonly apart: (id: PersonId) => boolean }
 
 /**
  * A match over a register as it is now. `words` says an entry in the reader's
@@ -37,7 +41,7 @@ export function peopleMatching(
     if (kept) read.set(entry.id, fold(words(shownEntry(kept, showing))))
   }
   const answered = new Map<string, ReadonlySet<PersonId>>()
-  return (token) => {
+  const match = (token: string): ReadonlySet<PersonId> => {
     const held = answered.get(token)
     if (held) return held
     const named = new Set<PersonId>()
@@ -45,4 +49,5 @@ export function peopleMatching(
     answered.set(token, named)
     return named
   }
+  return Object.assign(match, { apart: (id: PersonId) => signatureApart(id, register) })
 }

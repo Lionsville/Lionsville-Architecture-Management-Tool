@@ -422,6 +422,33 @@ describe('what points at a person (ADR-0036 §8)', () => {
     expect(held.derived).toEqual([`Owner of Webshop (retail) on ${TODAY}, worked out from the role`])
   })
 
+  /**
+   * A forgotten entry is read as its pseudonym; a signature keeps the name it
+   * was signed with on the decision, and said here beside the pseudonym it
+   * would undo the forgetting (ADR-0036 §8). Only that it exists is said.
+   */
+  it('says only that a signature exists on a forgotten entry, never the name as signed, beside the pseudonym or in what we hold', async () => {
+    const signed: PointsAt = {
+      byRule: [],
+      pointers: [
+        { scope: '', kind: 'decision', id: 'ad-1', label: 'ADR-0002', title: 'One order store', field: 'signer', person: 'pe-gone', signedAs: 'Hanna Berg' },
+        { scope: '', kind: 'decision', id: 'ad-1', label: 'ADR-0002', title: 'One order store', field: 'proposed', person: 'pe-gone', signedAs: 'Hanna Berg' },
+      ],
+    }
+    renderShell(<Harness pointsAt={{ 'pe-gone': signed }} />)
+    pick('pe-gone')
+    const section = await screen.findByTestId('people-points-at')
+    expect(within(section).getAllByTestId('people-pointed-signed').map((line) => line.textContent)).toEqual([
+      'ADR-0002 One order store, signed · in the organisation', 'ADR-0002 One order store, proposed · in the organisation',
+    ])
+    fireEvent.click(screen.getByTestId('people-hold-toggle'))
+    const held = JSON.parse(screen.getByTestId('people-hold').textContent ?? '{}')
+    expect(held.signed).toEqual(['ADR-0002 One order store (the organisation), signed', 'ADR-0002 One order store (the organisation), proposed'])
+    const panel = screen.getByTestId('people-person')
+    expect(panel.textContent).toContain('Former colleague 7KQM')
+    expect(panel.textContent).not.toContain('Hanna Berg')
+  })
+
   it('says nothing points at them where nothing does', async () => {
     renderShell(<Harness pointsAt={{}} />)
     pick('pe-eva')

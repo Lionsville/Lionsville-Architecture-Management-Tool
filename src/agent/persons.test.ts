@@ -81,9 +81,9 @@ function session(register: readonly Person[] | null = people): SessionView & { m
 }
 
 /** A shell that lends the register with a policy, and drives nothing: what a read is asked through. */
-function shell(policy: PeoplePolicy): ShellView {
+function shell(policy: PeoplePolicy, register: readonly Person[] = people): ShellView {
   const view: PeopleView = {
-    read: () => Promise.resolve({ people, policy }),
+    read: () => Promise.resolve({ people: [...register], policy }),
     add: () => Promise.reject(new Error('not here')),
     leave: () => Promise.reject(new Error('not here')),
     today: () => TODAY,
@@ -203,6 +203,32 @@ describe('the answers', () => {
     expect(JSON.stringify(parsed(await ask('search', { query: 'bakker' }, on, around)))).not.toContain('ad-1')
     // Where agents see names, the name as signed is said as written.
     expect(JSON.stringify(parsed(await ask('decision.read', { id: 'ad-1' }, on, shell(DEFAULT_POLICY))))).toContain('"signedAs":"Kim Bakker"')
+  })
+
+  /**
+   * Once the signer is forgotten, a signature links to nobody (ADR-0036 §8):
+   * the answer says the name as signed alone — no id, no pseudonym — and a
+   * search by the pseudonym does not find the decision, while one by the
+   * name as signed still does, as the record's own text.
+   */
+  it('say a forgotten signer and proposer by the name as signed alone, and never tie it to the pseudonym', async () => {
+    const on = session()
+    await ask('decision.update', { id: 'ad-1', proposedBy: { person: 'pe-eva' }, signers: [{ name: { person: 'pe-kim' }, verdict: 'approved', signedAt: TODAY }] }, on)
+    const gone = people.map((one) => (one.mergedInto === undefined ? { id: one.id, pseudonym: one.pseudonym, kind: one.kind, state: 'forgotten' as const, forgottenOn: TODAY } : one))
+    const read = JSON.stringify(parsed(await ask('decision.read', { id: 'ad-1' }, on, shell(DEFAULT_POLICY, gone))))
+    expect(read).toContain('"name":"Kim Bakker"')
+    expect(read).toContain('"proposedBy":"Eva Lind"')
+    expect(read).not.toMatch(/GHJK|BCDF|pe-kim|pe-eva|Former colleague/)
+    const exported = JSON.stringify(parsed(await ask('project.export', { format: 'json' }, on, shell(DEFAULT_POLICY, gone))))
+    expect(exported).not.toMatch(/GHJK|BCDF|pe-kim|pe-eva/)
+    expect(JSON.stringify(parsed(await ask('search', { query: 'GHJK' }, on, shell(DEFAULT_POLICY, gone))))).not.toContain('ad-1')
+    expect(JSON.stringify(parsed(await ask('search', { query: 'bakker' }, on, shell(DEFAULT_POLICY, gone))))).toContain('ad-1')
+    // Where names are withheld too, the signer is nobody in particular, and the name as signed is withheld.
+    const withheld = JSON.stringify(parsed(await ask('decision.read', { id: 'ad-1' }, on, shell({ ...DEFAULT_POLICY, agentsSee: 'pseudonyms' }, gone))))
+    expect(withheld).not.toMatch(/Kim|Bakker|Eva|Lind|GHJK|BCDF|pe-kim|pe-eva/)
+    expect(withheld).toContain('"signedAsWithheld":true')
+    // While the signer still has a name, the signature is theirs, by id, as before.
+    expect(JSON.stringify(parsed(await ask('decision.read', { id: 'ad-1' }, on, shell(DEFAULT_POLICY))))).toContain('"person":"pe-kim"')
   })
 
   it('find a person through the register: a name finds the records that point at them', async () => {

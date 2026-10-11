@@ -85,8 +85,12 @@ export const SEARCH_LIMIT_PER_KIND = 8
  * folded, the register ids whose entry reads with that word — the name, or
  * the pseudonym where that is what is shown. Said by whoever holds the
  * register, in the words its reader is allowed to see.
+ *
+ * `apart` says an id whose entry is forgotten or gone: a signature that kept
+ * its name no longer links to such an entry, so a record is not found
+ * through it by the register — only by the name as signed, its own text.
  */
-export type PeopleMatch = (token: string) => ReadonlySet<string>
+export type PeopleMatch = ((token: string) => ReadonlySet<string>) & { readonly apart?: (id: string) => boolean }
 
 export type SearchInput = {
   /** Nearest first: the open scope, then the scopes above, then the rest. Earlier sources rank first within a band. */
@@ -132,8 +136,9 @@ function matcher(tokens: readonly string[], people: PeopleMatch | undefined): (e
   const named = people ? tokens.map((token) => people(token)) : undefined
   if (!named || named.every((ids) => ids.size === 0)) return (entry) => matchesTokens(tokens, entry.haystack)
   return (entry) => {
-    const ids = entry.record.people
-    if (!ids?.length) return matchesTokens(tokens, entry.haystack)
+    const signed = entry.record.signed?.filter((id) => !people?.apart?.(id)) ?? []
+    const ids = [...entry.record.people ?? [], ...signed]
+    if (!ids.length) return matchesTokens(tokens, entry.haystack)
     return tokens.every((token, at) => entry.haystack.includes(token) || ids.some((id) => named[at].has(id)))
   }
 }

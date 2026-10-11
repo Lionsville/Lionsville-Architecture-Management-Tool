@@ -39,7 +39,9 @@ export type Mode = 'read' | 'edit'
 /**
  * Who signed, as the record says it (ADR-0036 §8): the name a signature kept
  * where there is one — it stays after the person is forgotten — and what the
- * register says otherwise.
+ * register says otherwise. Once the signer is forgotten or gone, the kept
+ * name is shown alone, and nothing on the page — no pseudonym, no picked
+ * person to follow — connects it to the entry.
  */
 export function signerText(signer: AdrSigner, names: PersonNames): string {
   return signer.signedAs ?? names.text(signer.name)
@@ -342,7 +344,7 @@ function ProposedByRow({ adr, canEdit, names, s, onUpdate }: {
     <>
       <Term>{s('adr.proposedBy')}</Term>
       <Box component="dd" sx={{ m: 0 }}>
-        {canEdit ? (
+        {canEdit && !(adr.proposedAs !== undefined && names.apart(adr.proposedBy)) ? (
           <PersonRefField
             value={adr.proposedBy} names={names} label={s('adr.proposedBy')} variant="standard" commit="blur"
             onChange={(proposedBy) => onUpdate({ proposedBy })} testId="adr-proposed-by" s={s}

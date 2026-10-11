@@ -21,8 +21,9 @@ import type { PersonId, PersonRef } from '../../model/person'
 import { personIdOf, personRefOf } from '../../model/person'
 import type { Person } from '../person'
 import { peopleMatching } from '../matching'
+import type { PeopleMatching } from '../matching'
 import { meIn } from '../me'
-import { registerOf, resolvePerson, shownPerson, shownText } from '../shown'
+import { registerOf, resolvePerson, shownPerson, shownText, signatureApart } from '../shown'
 import type { Translate } from '../shown'
 import type { PeopleRegisterAccess } from './access'
 
@@ -40,10 +41,18 @@ export type PersonNames = {
   isMe(ref: PersonRef | undefined): boolean
   /**
    * For a search: the register ids a folded word of the query names, by what
-   * each entry reads as here (`people/search.ts`) — so a record that points
-   * at a person is found by their name, and no index holds it.
+   * each entry reads as here (`people/matching.ts`) — so a record that points
+   * at a person is found by their name, and no index holds it — and the ids
+   * a signature's kept name no longer links to.
    */
-  match(token: string): ReadonlySet<PersonId>
+  match: PeopleMatching
+  /**
+   * Whether a signature that kept its name has come apart from its entry
+   * (ADR-0036 §8): the entry is forgotten or gone. The name as signed is then
+   * shown alone — never beside the pseudonym, never as a link to the entry.
+   * Text is never apart: it was never a link.
+   */
+  apart(ref: PersonRef | undefined): boolean
   /** The register, for picking and adding; absent where it is not there, and a field then takes text alone. */
   access?: PeopleRegisterAccess
 }
@@ -71,6 +80,10 @@ export function personNames(access: PeopleRegisterAccess | undefined, t: Transla
     },
     canonical,
     match: peopleMatching(people ?? [], (shown) => shownText(shown, t)),
+    apart: (ref) => {
+      const id = personIdOf(ref)
+      return id !== undefined && people !== undefined && signatureApart(id, register)
+    },
     isMe: (ref) => {
       const id = personIdOf(ref)
       return id !== undefined && me !== undefined && canonical(id) === me

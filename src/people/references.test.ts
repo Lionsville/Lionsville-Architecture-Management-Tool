@@ -88,7 +88,9 @@ describe('no step, history entry or index row holds a register name, except a si
     const haystacks = rows.filter((row) => row.kind !== 'decision').map((row) => row.haystack).join(' ')
     expect(haystacks).not.toMatch(/eva|lind|kim|bakker/)
     expect(rows.find((row) => row.kind === 'element')?.record.people).toEqual(['pe-eva'])
-    expect(rows.find((row) => row.kind === 'decision')?.record.people).toEqual(['pe-kim', 'pe-eva', 'pe-eva2'])
+    // A signature that kept a name is apart from the rest: found through the register only while its entry has a name.
+    expect(rows.find((row) => row.kind === 'decision')?.record.people).toEqual(['pe-eva'])
+    expect(rows.find((row) => row.kind === 'decision')?.record.signed).toEqual(['pe-kim', 'pe-eva2'])
   })
 
   it('carries the master’s owner on the organisation’s index by id, as a stand-in shows it', () => {
@@ -118,6 +120,16 @@ describe('search matches the register first, and then the ids', () => {
     const after = [forgotten(eva), kim, evaToo]
     expect(searching('lind', after).map((hit) => hit.id)).toEqual(['ad-1'])
     expect(searching('BCDF', after).map((hit) => `${hit.kind}:${hit.id}`).sort()).toEqual(['decision:ad-1', 'element:shop', 'observation:ob-1'])
+  })
+
+  /** A signature keeps its name, and once its signer is forgotten it links to nobody: the pseudonym does not find it (ADR-0036 §8). */
+  it('finds a signature by its signer\'s pseudonym never, once forgotten — only by the name it kept', () => {
+    const after = [eva, forgotten(kim), evaToo]
+    expect(searching('GHJK', after).map((hit) => `${hit.kind}:${hit.id}`).sort()).toEqual(['experiment:ex-1', 'plan:tr-1'])
+    expect(searching('bakker', after).map((hit) => hit.id)).toEqual(['ad-1'])
+    // While Kim has a name, the signature is found through the register as every other field is.
+    expect(searching('GHJK', [eva, kim, evaToo])).toEqual([])
+    expect(searching('kim bakker', [eva, kim, evaToo]).map((hit) => `${hit.kind}:${hit.id}`).sort()).toEqual(['decision:ad-1', 'experiment:ex-1', 'plan:tr-1'])
   })
 
   it('finds people by text alone where no register is handed over', () => {

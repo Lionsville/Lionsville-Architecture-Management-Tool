@@ -43,6 +43,19 @@ export function resolvePerson(id: PersonId, register: Register): Person | undefi
   return held?.mergedInto === undefined ? held : undefined
 }
 
+/**
+ * Whether a signature's kept name has come apart from the register (ADR-0036
+ * §8): the entry it was signed by — the one a merge kept — is forgotten, or
+ * the register no longer holds it. The decision keeps the name as signed;
+ * from then on nothing connects that name to the entry or its pseudonym — not
+ * a screen, not a search, not an agent's answer — or the name would undo the
+ * forgetting.
+ */
+export function signatureApart(id: PersonId, register: Register): boolean {
+  const kept = resolvePerson(id, register)
+  return kept === undefined || kept.state === 'forgotten'
+}
+
 /** What a reference reads as, before it is put in words. */
 export type Shown =
   | { as: 'name'; person: Person; name: string }

@@ -95,6 +95,13 @@ export type SearchRecord = {
    * the name itself is never folded beside the record (ADR-0036 §8).
    */
   readonly people?: readonly PersonId[]
+  /**
+   * The people whose signature on it kept their name, by register id: matched
+   * through the register while the entry has its name, and not once it is
+   * forgotten or gone (`PeopleMatch.apart`) — then only the name as signed,
+   * among its fields, finds it.
+   */
+  readonly signed?: readonly PersonId[]
   readonly opens: SearchPlace
 }
 
@@ -149,6 +156,12 @@ void KEYS_MATCH
 function peopleIn(...refs: readonly (PersonRef | undefined)[]): { people?: readonly PersonId[] } {
   const ids = [...new Set(refs.map(personIdOf).filter((id): id is PersonId => id !== undefined))]
   return ids.length ? { people: ids } : {}
+}
+
+/** The register ids among the references whose signature kept a name; nothing where none did. */
+function signedIn(...refs: readonly (PersonRef | undefined)[]): { signed?: readonly PersonId[] } {
+  const { people } = peopleIn(...refs)
+  return people ? { signed: people } : {}
 }
 
 function numbered(prefix: string, number: number): string {
@@ -227,7 +240,9 @@ const decision: Searchable<Adr> = {
       ...adr.signers.flatMap((signer) => [refText(signer.name), signer.signedAs]),
       refText(adr.proposedBy), adr.proposedAs,
     ],
-    ...peopleIn(...adr.signers.map((signer) => signer.name), adr.proposedBy),
+    // A reference that kept a name is a signature: found by the register only while its entry has a name.
+    ...peopleIn(...adr.signers.filter((signer) => signer.signedAs === undefined).map((signer) => signer.name), ...(adr.proposedAs === undefined ? [adr.proposedBy] : [])),
+    ...signedIn(...adr.signers.filter((signer) => signer.signedAs !== undefined).map((signer) => signer.name), ...(adr.proposedAs !== undefined ? [adr.proposedBy] : [])),
     prose: adr.body,
     label: numbered('ADR', adr.number),
     status: adr.status,

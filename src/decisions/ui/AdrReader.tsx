@@ -249,6 +249,7 @@ type SignersTableProps = {
  * not a page; a typed name when it is left.
  */
 function SignersTable({ signers, editable, today, names, s, day, onChange }: SignersTableProps) {
+  const apart = (signer: AdrSigner) => signer.signedAs !== undefined && names.apart(signer.name)
   const edit = (index: number, patch: Partial<AdrSigner>) =>
     onChange(signers.map((signer, i) => (i === index ? { ...signer, ...patch } : signer)))
   const setVerdict = (index: number, verdict: AdrVerdict | 'pending') => {
@@ -280,7 +281,8 @@ function SignersTable({ signers, editable, today, names, s, day, onChange }: Sig
             {signers.map((signer, index) => (
               <TableRow key={index}>
                 <TableCell>
-                  {editable
+                  {/* A signature whose signer is forgotten or gone keeps its name and links to nobody (ADR-0036 §8). */}
+                  {editable && !apart(signer)
                     ? (
                       <PersonRefField
                         value={signer.name} names={names} label={s('adr.signerName')} variant="standard" commit="blur"

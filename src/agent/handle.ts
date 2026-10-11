@@ -242,7 +242,7 @@ async function registerFor(session: SessionView | undefined, shell: ShellView | 
 async function withNames(said: AgentAnswer, session: SessionView | undefined, shell: ShellView | undefined): Promise<AgentAnswer> {
   if (!mayNamePeople(said)) return said
   const register = await registerFor(session, shell)
-  return register ? answerWithNames(said, register.words, register.withhold) : said
+  return register ? answerWithNames(said, register.words, register.withhold, register.apart) : said
 }
 
 /** The two reads that ask the register before they answer: a search for a name, and the export's tables. */

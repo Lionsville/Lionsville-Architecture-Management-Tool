@@ -129,8 +129,16 @@ const POINTED: Record<PointedAt['field'], StringKey> = {
   signer: 'people.pointedSigner',
 }
 
-/** One record that points at the person, in words: which record, which field, and where it is kept. */
-function pointedText(one: PointedAt, s: Translate): string {
+/**
+ * One record that points at the person, in words: which record, which field,
+ * and where it is kept. On a forgotten entry a signature that kept a name is
+ * said to exist and no more: the name as signed beside the pseudonym would
+ * undo the forgetting (ADR-0036 §8).
+ */
+function pointedText(one: PointedAt, apart: boolean, s: Translate): string {
+  if (keptName(one) && apart) {
+    return s(one.field === 'proposed' ? 'people.pointedProposedApart' : 'people.pointedSignedApart', { label: one.label ?? '', name: one.title })
+  }
   if (keptName(one)) return s('people.pointedSigned', { label: one.label ?? '', name: one.title, as: one.signedAs ?? '' })
   if (one.kind === 'plan') return s('people.pointedPlanOwner', { label: one.label ?? '', name: one.title })
   return s(POINTED[one.field], { label: one.label ?? '', name: one.title })
@@ -141,8 +149,12 @@ function ruleText(one: OwnedByRule, s: Translate): string {
   return s(one.kind === 'domain' ? 'people.pointedDomainByRule' : 'people.pointedByRule', { name: one.name, day: one.day })
 }
 
-/** *Points at them*: every record that names the person by id, the signatures that kept their name, and what the rules work out. */
-function PointsAtThem({ found, s }: { found: PointsAt | undefined; s: Translate }) {
+/**
+ * *Points at them*: every record that names the person by id, the signatures
+ * that kept their name — on a forgotten entry, only that each exists — and
+ * what the rules work out.
+ */
+function PointsAtThem({ found, apart, s }: { found: PointsAt | undefined; apart: boolean; s: Translate }) {
   if (!found) return null
   const { pointers, byRule } = found
   const muted = (text: string) => <Box component="span" sx={{ color: 'text.secondary' }}> · {text}</Box>
@@ -156,15 +168,15 @@ function PointsAtThem({ found, s }: { found: PointsAt | undefined; s: Translate 
         ))}
         {pointers.map((one, at) => (
           <Typography key={`${one.scope}/${one.kind}/${one.id}/${one.field}/${at}`} sx={{ fontSize: 13 }} data-testid={keptName(one) ? 'people-pointed-signed' : 'people-pointed'}>
-            {pointedText(one, s)}
-            {muted(keptName(one) ? s('people.pointedSignedNote') : s('people.pointedWhere', { scope: one.scope || s('common.organisation') }))}
+            {pointedText(one, apart, s)}
+            {muted(keptName(one) && !apart ? s('people.pointedSignedNote') : s('people.pointedWhere', { scope: one.scope || s('common.organisation') }))}
           </Typography>
         ))}
         {pointers.length === 0 && byRule.length === 0 && (
           <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{s('people.pointsAtNothing')}</Typography>
         )}
         {pointers.length + byRule.length > 0 && (
-          <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>{s('people.pointsAtNote')}</Typography>
+          <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>{s(apart ? 'people.pointsAtApartNote' : 'people.pointsAtNote')}</Typography>
         )}
       </Box>
     </Section>
@@ -185,8 +197,9 @@ function Holding({ person, register, found, copyText, s }: {
   const held = whatWeHold(person, register.people ?? [], {
     thisIsMe: meIdIn(register.me, register.people) === person.id, assignments, ...(mentions ? { mentions } : {}),
     ...(found ? {
-      namedIn: found.pointers.filter((one) => !keptName(one)).map(pointerLine),
-      signed: found.pointers.filter(keptName).map(pointerLine),
+      namedIn: found.pointers.filter((one) => !keptName(one)).map((one) => pointerLine(one)),
+      // On a forgotten entry, only that each signature exists: never the name it was signed with.
+      signed: found.pointers.filter(keptName).map((one) => pointerLine(one, person.state === 'forgotten')),
       derived: found.byRule.map(ruleLine),
     } : {}),
   })
@@ -349,7 +362,7 @@ export function PersonPanel(props: PersonPanelProps) {
       {correcting && <Correcting person={person} register={register} saying={saying} onDone={() => setCorrecting(false)} s={s} />}
 
       <Holds held={register.assignmentsOf?.(person.id) ?? []} today={register.today} look={props.look} s={s} />
-      <PointsAtThem found={found} s={s} />
+      <PointsAtThem found={found} apart={!named} s={s} />
 
       {Object.values(doable(person, register)).some(Boolean) && (
         <Section title={s('people.do')}>
