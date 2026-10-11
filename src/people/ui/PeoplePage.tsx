@@ -5,8 +5,10 @@
  * The People page (ADR-0036): the organisation's register of people, on a
  * page of its own over the organisation's home.
  *
- * Everyone, by state and by search; the pairs that may be one person, each a
- * merge away; a person, with what is held about them and what may be done;
+ * Everyone, by state and by search, each with the roles they hold on the
+ * page's day — *none* said as such, so whoever holds nothing stands out; the
+ * pairs that may be one person, each a merge away; a person, with what is
+ * held about them and what may be done;
  * a new person, checked for duplicates before anyone is added; a list
  * imported, row by row through the same check; and the policy.
  *
@@ -41,6 +43,7 @@ import { ConfirmDialog } from '../../widgets/ConfirmDialog'
 import { PageDialog } from '../../widgets/PageDialog'
 import { useLocatedIn } from '../../widgets/useLocated'
 import { duplicatePairs } from '../duplicates'
+import { rolesOn } from '../hold'
 import type { DuplicatePair } from '../duplicates'
 import { meIn } from '../me'
 import type { MergeLeaving, Person, PersonState } from '../person'
@@ -175,9 +178,32 @@ function Duplicates({ pairs, onMerge, s }: { pairs: readonly DuplicatePair[]; on
   )
 }
 
-function Everyone({ shown, selected, me, withheld, onSelect, s }: {
+/** The roles a person holds on the page's day, each in its unit: those that read as one person. */
+type RolesHeld = readonly { role: string; unit: string }[]
+
+/** As many roles as a row says before it counts the rest. */
+const ROLES_SAID = 2
+
+/** A row's roles, compact: the first few, how many more, and *none* said as such. */
+function RolesCell({ roles, s }: { roles: RolesHeld; s: Translate }) {
+  if (roles.length === 0) return <Box component="span" sx={{ color: 'text.secondary', fontStyle: 'italic' }}>{s('people.rolesNone')}</Box>
+  const said = (some: RolesHeld) => some.map((one) => s('people.roleIn', one)).join(', ')
+  const rest = roles.slice(ROLES_SAID)
+  return (
+    <>
+      {said(roles.slice(0, ROLES_SAID))}
+      {rest.length > 0 && <Box component="span" title={said(rest)} sx={{ color: 'text.secondary', whiteSpace: 'nowrap' }}> {s('people.rolesMore', { count: rest.length })}</Box>}
+    </>
+  )
+}
+
+function Everyone({ shown, selected, me, withheld, roles, day, today, onSelect, s }: {
   shown: readonly Person[]; selected: PersonId | undefined; me: PersonId | undefined
-  withheld: ((id: PersonId) => boolean) | undefined; onSelect: (id: PersonId) => void; s: Translate
+  withheld: ((id: PersonId) => boolean) | undefined
+  /** What each holds on `day`; absent where the shell has no tree to read, and the column with it. */
+  roles: ReadonlyMap<PersonId, RolesHeld> | undefined
+  day: string; today: string
+  onSelect: (id: PersonId) => void; s: Translate
 }) {
   return (
     <Box component="table" data-testid="people-table" sx={{
@@ -187,7 +213,11 @@ function Everyone({ shown, selected, me, withheld, onSelect, s }: {
       '& td': { py: 0.5 },
     }}>
       <thead>
-        <tr><th>{s('people.colName')}</th><th>{s('people.colKind')}</th><th>{s('people.colState')}</th><th>{s('people.colEmail')}</th></tr>
+        <tr>
+          <th>{s('people.colName')}</th><th>{s('people.colKind')}</th><th>{s('people.colState')}</th>
+          {roles && <th>{day === today ? s('people.colRoles') : s('people.colRolesOn', { day })}</th>}
+          <th>{s('people.colEmail')}</th>
+        </tr>
       </thead>
       <tbody>
         {shown.map((person) => (
@@ -202,6 +232,7 @@ function Everyone({ shown, selected, me, withheld, onSelect, s }: {
             </td>
             <td>{s(KIND_LABEL[person.kind])}</td>
             <td>{stateText(person, s)}</td>
+            {roles && <td data-testid="people-roles"><RolesCell roles={roles.get(person.id) ?? []} s={s} /></td>}
             <td>{person.email ?? (withheld?.(person.id) ? s('people.emailWithheld') : '')}</td>
           </Box>
         ))}
@@ -272,14 +303,23 @@ export function PeoplePage({ open, onClose, register, select, readText, copyText
 
   const people = useMemo(() => register.people ?? [], [register.people])
   const entries = useMemo(() => entriesOf(people), [people])
+  // What each holds on the page's day, read once for the rows and the search: the same read the person's *Holds today* is.
+  const day = look?.day ?? register.today
+  const { assignmentsOf } = register
+  const roles = useMemo(
+    () => (assignmentsOf ? new Map(entries.map((person) => [person.id, rolesOn(assignmentsOf(person.id), day)])) : undefined),
+    [assignmentsOf, entries, day],
+  )
   // By what each reads as, so a forgotten entry sorts by its pseudonym and never by a name it no longer has.
   const shown = useMemo(
     () => entries.filter((person) => (show === 'all' || person.state === show)
-      && (!query.trim() || matchesQuery(query, [shownText(shownEntry(person), s), person.email])))
+      && (!query.trim() || matchesQuery(query, [
+        shownText(shownEntry(person), s), person.email, ...(roles?.get(person.id) ?? []).flatMap((one) => [one.role, one.unit]),
+      ])))
       .map((person) => ({ person, text: shownText(shownEntry(person), s) }))
       .sort((one, other) => one.text.localeCompare(other.text))
       .map(({ person }) => person),
-    [entries, show, query, s],
+    [entries, show, query, roles, s],
   )
   const pairs = useMemo(() => duplicatePairs(people), [people])
   const me = meIn(register.me, registerOf(people))?.id
@@ -313,7 +353,9 @@ export function PeoplePage({ open, onClose, register, select, readText, copyText
           {pairs.length > 0 && mayDo(register, 'merge') && <Duplicates pairs={pairs} onMerge={askMerge} s={s} />}
           {entries.length === 0 && <Typography sx={{ fontSize: 13 }}>{s('people.empty')}</Typography>}
           {entries.length > 0 && shown.length === 0 && <Typography sx={{ fontSize: 13 }}>{s('people.searchEmpty', { query: query.trim() })}</Typography>}
-          {shown.length > 0 && <Everyone shown={shown} selected={selected} me={me} withheld={register.withheld} onSelect={pick} s={s} />}
+          {shown.length > 0 && (
+            <Everyone shown={shown} selected={selected} me={me} withheld={register.withheld} roles={roles} day={day} today={register.today} onSelect={pick} s={s} />
+          )}
         </Box>
         <Box component="aside" aria-label={s('people.title')} sx={{ flex: '1 1 300px', minWidth: 0, px: 2, py: 2, borderLeft: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
           {saying.said && (

@@ -43,6 +43,21 @@ export function heldOn(held: readonly HeldAssignment[], day: string): {
 }
 
 /**
+ * The roles a person holds on a day, each in its unit and said once, in the
+ * order they are held: a row of the People page, where somebody who holds
+ * nothing has to stand out.
+ */
+export function rolesOn(held: readonly HeldAssignment[], day: string): { role: string; unit: string }[] {
+  const seen = new Set<string>()
+  return heldOn(held, day).now.flatMap(({ role, unit }) => {
+    const key = JSON.stringify([role, unit])
+    if (seen.has(key)) return []
+    seen.add(key)
+    return [{ role, unit }]
+  })
+}
+
+/**
  * What leaving on `lastDay` would do to these assignments, as leaving does it
  * (`model/units.endingFor`): how many run past the day and would end on it,
  * and how many only began after it and would be taken away — a role is never

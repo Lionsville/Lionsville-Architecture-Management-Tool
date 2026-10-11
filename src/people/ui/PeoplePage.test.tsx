@@ -256,6 +256,46 @@ describe('the People page', () => {
     expect(screen.queryByTestId('people-look-today')).toBeNull()
   })
 
+  it('says in each row the roles a person holds on the page\'s day, compactly, and none as such', async () => {
+    const held: Record<PersonId, HeldAssignment[]> = {
+      'pe-pia': [
+        { id: 'as-1', scope: 'shipping', unit: 'Parcel', role: 'Product owner' },
+        { id: 'as-2', scope: 'shipping', unit: 'Tracking', role: 'Developer', share: 0.5 },
+        { id: 'as-3', scope: 'shipping', unit: 'Freight', role: 'Cluster lead', acting: true },
+        { id: 'as-4', scope: 'customer', unit: 'Webshop', role: 'Team coach', until: '2026-08-14' },
+        { id: 'as-5', scope: 'customer', unit: 'Webshop', role: 'Release manager', from: '2027-01-01' },
+      ],
+      'pe-eva': [{ id: 'as-6', scope: 'customer', unit: 'Webshop', role: 'Product owner', until: '2026-12-31' }],
+    }
+    renderShell(<Harness held={held} looking />)
+    expect(screen.getByRole('columnheader', { name: 'Roles today' })).toBeTruthy()
+    const roles = (id: string) => within(row(id)).getByTestId('people-roles')
+    expect(roles('pe-pia').textContent).toBe('Product owner · Parcel, Developer · Tracking +1')
+    expect(within(roles('pe-pia')).getByTitle('Cluster lead · Freight').textContent).toBe(' +1')
+    expect(roles('pe-eva').textContent).toBe('Product owner · Webshop')
+    // Whoever holds nothing says so, rather than an empty cell.
+    expect(roles('pe-evt').textContent).toBe('none')
+    expect(roles('pe-gone').textContent).toBe('none')
+    expect(await axeFindings()).toEqual([])
+    // The search finds a person by a role or a unit they hold that day.
+    fireEvent.change(screen.getByTestId('people-search'), { target: { value: 'tracking' } })
+    expect(screen.getAllByTestId(/^people-row-/).map((one) => one.dataset.personId)).toEqual(['pe-pia'])
+    fireEvent.change(screen.getByTestId('people-search'), { target: { value: '' } })
+    // Looked at on another day, the column says that day's.
+    pick('pe-pia')
+    fireEvent.change(screen.getByTestId('people-look'), { target: { value: '2027-01-01' } })
+    expect(screen.getByRole('columnheader', { name: 'Roles on 2027-01-01' })).toBeTruthy()
+    expect(roles('pe-pia').textContent).toBe('Product owner · Parcel, Developer · Tracking +2')
+    expect(roles('pe-eva').textContent).toBe('none')
+  })
+
+  it('has no roles column where the shell has no tree to read them from', () => {
+    renderShell(<Harness />)
+    expect(screen.queryByRole('columnheader', { name: 'Roles today' })).toBeNull()
+    expect(screen.queryByTestId('people-roles')).toBeNull()
+    expect(screen.getByRole('columnheader', { name: 'Work address' })).toBeTruthy()
+  })
+
   it('says what a person holds today, will hold and held before, and counts it in what we hold', () => {
     const held: HeldAssignment[] = [
       { id: 'as-1', scope: 'customer', unit: 'Webshop', role: 'Product owner', from: '2022-01-01' },
