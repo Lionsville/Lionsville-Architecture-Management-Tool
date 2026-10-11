@@ -185,6 +185,12 @@ describe('THIRD-PARTY-NOTICES.md as committed', () => {
     expect(COMMITTED).toContain('- @emotion/styled ')
   })
 
+  it('gives draw.io the Apache licence\'s own text, which the licence asks to travel with every copy', () => {
+    const section = COMMITTED.slice(COMMITTED.indexOf(`## draw.io ${drawioPin.version}`))
+    expect(section).toContain('TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION')
+    expect(section).toContain('END OF TERMS AND CONDITIONS')
+  })
+
   it('pins draw.io once: the policy, the notice and the fetch name the same version', () => {
     const script = readFileSync(new URL('./fetchDrawio.ts', import.meta.url), 'utf8')
     expect(drawioPin.version).toBe('32.4.1')
@@ -192,6 +198,8 @@ describe('THIRD-PARTY-NOTICES.md as committed', () => {
     expect(COMMITTED).toContain(drawioPin.sha256)
     expect(COMMITTED).toContain('DOMPurify')
     expect(COMMITTED).toContain('MPL-2.0')
+    expect(COMMITTED).toContain('pako 2.2.0')
+    expect(COMMITTED).toContain('spin.js')
     // The fetch reads the pin. It does not keep a second copy of the version or the checksum.
     expect(script).toContain('drawioPin')
     expect(script).not.toContain(drawioPin.version)

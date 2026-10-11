@@ -163,11 +163,27 @@ const HEADING = 'Third-party notices'
  * those are the part the licence actually asks for.
  */
 /**
+ * What draw.io's bundles carry of others, as their own headers name it. The
+ * archive ships no notice file of its own, so this is read off the files the
+ * editor is pruned to.
+ */
+const DRAWIO_BUNDLED = [
+  'DOMPurify 3.4.16, (c) Cure53 and other contributors, Apache-2.0 and MPL-2.0 (js/app.min.js)',
+  'pako 2.2.0, MIT and Zlib (js/app.min.js)',
+  'CryptoJS 4.2.0, (c) 2009-2013 Jeff Mott, (c) 2013-2016 Evan Vosberg, MIT (js/app.min.js)',
+  'regenerator-runtime, (c) 2014-present Facebook, Inc., MIT (js/app.min.js)',
+  'spin.js 2.0.0, MIT (js/app.min.js)',
+  'JSZip, (c) 2009-2016 Stuart Knightley, MIT or GPL-3.0 (js/extensions.min.js)',
+  'Bridge.NET, Apache-2.0 (js/extensions.min.js)',
+] as const
+
+/**
  * draw.io, as the notices say it: Apache-2.0, fetched as the pinned archive,
- * not an npm dependency. The bundles carry DOMPurify, which is Apache-2.0
- * and MPL-2.0.
+ * not an npm dependency, with the licence's own text — §4(a) asks for it with
+ * every copy — and the libraries its bundles carry.
  */
 export function drawioNotice(pin: { version: string; sha256: string }): PackageNotice {
+  const apache = readFileSync(new URL('./licences/Apache-2.0.txt', import.meta.url), 'utf8').trimEnd()
   return {
     name: 'draw.io',
     version: pin.version,
@@ -180,9 +196,12 @@ export function drawioNotice(pin: { version: string; sha256: string }): PackageN
       '',
       'Copyright (c) JGraph Holdings Ltd and draw.io AG.',
       '',
-      'Licensed under the Apache License, Version 2.0.',
+      'Licensed under the Apache License, Version 2.0, whose text follows.',
       '',
-      'The bundles carry DOMPurify, which is Apache-2.0 and MPL-2.0.',
+      'The bundles carry, as their own headers name them:',
+      ...DRAWIO_BUNDLED.map((line) => `- ${line}`),
+      '',
+      apache,
     ].join('\n'),
   }
 }
