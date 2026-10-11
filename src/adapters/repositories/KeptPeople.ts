@@ -15,15 +15,20 @@
  * The rules are `people/register.ts`'s: an entry is read, the change worked
  * out over every entry, and only what changed is written back. Every id it
  * removes is kept on a shelf of its own (`peopleRemoved`), the id alone, so
- * nothing brought in later gives the entry back.
+ * nothing brought in later gives the entry back; and every pair answered as
+ * not the same person on another (`peopleDistinct`), under its two ids, which
+ * a log line marks as moved rather than naming.
  */
+import { distinctFrom, pairKey } from '../../people/distinct'
+import type { DistinctPair } from '../../people/distinct'
 import type { PersonId, Person } from '../../people/person'
 import { personFrom } from '../../people/person'
 import { changePeople } from '../../people/register'
 import type { ChangeAnswer, Changed, Minting, PeopleChange } from '../../people/register'
 import type { MergeLeaving, NewPerson, PersonPatch } from '../../people/person'
 import type {
-  PeopleBrought, PeopleChanges, PeopleRead, PeopleRefused, PeopleRepository, PersonRemoved, PersonWritten,
+  DistinctAnswered, DistinctTakenBack, PeopleBrought, PeopleChanges, PeopleRead, PeopleRefused, PeopleRepository, PersonRemoved,
+  PersonWritten,
 } from '../../ports/PeopleRepository'
 import type { Revision } from '../../projects/scopeState'
 import type { Transaction } from './KeyedStore'
@@ -38,7 +43,8 @@ const LOG_KEPT = 1000
 
 type PeopleMeta = { seq: number }
 
-type Logged = { changed: PersonId[]; removed: PersonId[] }
+/** One change, logged: the entries it changed and took away, and whether the answers *not the same person* moved. */
+type Logged = { changed: PersonId[]; removed: PersonId[]; distinct?: true }
 
 async function seqOf(tx: Transaction): Promise<number> {
   return (await tx.get<PeopleMeta>('meta', PEOPLE_META_KEY))?.seq ?? 0
@@ -46,6 +52,13 @@ async function seqOf(tx: Transaction): Promise<number> {
 
 async function removedIds(tx: Transaction): Promise<PersonId[]> {
   return (await tx.range<unknown>('peopleRemoved', {})).map(({ key }) => key)
+}
+
+async function answered(tx: Transaction): Promise<DistinctPair[]> {
+  return (await tx.range<unknown>('peopleDistinct', {})).flatMap(({ value }) => {
+    const pair = distinctFrom(value)
+    return pair ? [pair] : []
+  })
 }
 
 async function everyone(tx: Transaction): Promise<Person[]> {
@@ -69,7 +82,7 @@ export class KeptPeople implements PeopleRepository {
 
   list(): Promise<PeopleRead> {
     return this.source.read(async (tx) => ({
-      revision: await this.revision(tx), people: await everyone(tx), removed: await removedIds(tx),
+      revision: await this.revision(tx), people: await everyone(tx), removed: await removedIds(tx), distinct: await answered(tx),
     }))
   }
 
@@ -103,10 +116,23 @@ export class KeptPeople implements PeopleRepository {
     return { revision: revision!, removed: answer.removed }
   }
 
-  async bringIn(people: readonly Person[], removed: readonly PersonId[] = []): Promise<PeopleBrought> {
-    const { answer, revision } = await this.apply({ kind: 'bringIn', people, removed })
+  async bringIn(people: readonly Person[], removed: readonly PersonId[] = [], distinct: readonly DistinctPair[] = []): Promise<PeopleBrought> {
+    const { answer, revision } = await this.apply({ kind: 'bringIn', people, removed, distinct })
     if ('refused' in answer) throw new Error(`bringing people in was refused: ${answer.refused}`)
     return { revision: revision!, changed: answer.changed }
+  }
+
+  async answerDistinct(a: PersonId, b: PersonId, on: string): Promise<DistinctAnswered | PeopleRefused> {
+    const { answer, revision } = await this.apply({ kind: 'distinct', a, b, on })
+    if ('refused' in answer) return answer
+    const key = pairKey(a, b)
+    return { revision: revision!, pair: { ...answer.distinct.find((pair) => pairKey(pair.a, pair.b) === key)! } }
+  }
+
+  async takeBackDistinct(a: PersonId, b: PersonId): Promise<DistinctTakenBack> {
+    const { answer, revision } = await this.apply({ kind: 'takeBack', a, b })
+    if ('refused' in answer) throw new Error(`taking an answer back was refused: ${answer.refused}`)
+    return { revision: revision!, taken: answer.distinctChanged }
   }
 
   since(revision: Revision): Promise<PeopleChanges | undefined> {
@@ -119,9 +145,11 @@ export class KeptPeople implements PeopleRepository {
       if (lines.length !== seq - from) return undefined
       const changed = new Set<PersonId>()
       const removed = new Set<PersonId>()
+      let answers = false
       for (const { value } of lines) {
         for (const id of value.changed) changed.add(id)
         for (const id of value.removed) removed.add(id)
+        answers ||= value.distinct === true
       }
       const now: Person[] = []
       for (const id of changed) {
@@ -129,7 +157,10 @@ export class KeptPeople implements PeopleRepository {
         if (person) now.push(person)
       }
       const here = new Set(now.map((person) => person.id))
-      return { revision: `${meta.nonce}.p${seq}`, changed: now, removed: [...removed].filter((id) => !here.has(id)) }
+      return {
+        revision: `${meta.nonce}.p${seq}`, changed: now, removed: [...removed].filter((id) => !here.has(id)),
+        ...(answers ? { distinct: await answered(tx) } : {}),
+      }
     })
   }
 
@@ -137,7 +168,7 @@ export class KeptPeople implements PeopleRepository {
   private apply(change: PeopleChange): Promise<Answered> {
     return this.source.write(async (tx) => {
       const removed = change.kind === 'bringIn' ? new Set(await removedIds(tx)) : undefined
-      const answer = changePeople(await everyone(tx), change, this.minting, removed)
+      const answer = changePeople(await everyone(tx), change, this.minting, removed, await answered(tx))
       if ('refused' in answer) return { answer }
       return { answer, revision: await this.land(tx, answer) }
     })
@@ -147,17 +178,27 @@ export class KeptPeople implements PeopleRepository {
     return `${(await readMeta(tx)).nonce}.p${await seqOf(tx)}`
   }
 
-  /** What a change wrote, kept: the entries it changed put, those it took away deleted, and a line in the log. */
+  /**
+   * What a change wrote, kept: the entries it changed put, those it took away
+   * deleted, the answers laid out again where they moved, and a line in the log.
+   */
   private async land(tx: Transaction, answer: Changed): Promise<Revision> {
     const byId = new Map(answer.people.map((person) => [person.id, person]))
     for (const id of answer.changed) tx.put('people', id, byId.get(id))
     for (const id of answer.removed) tx.delete('people', id)
     for (const id of answer.tombstones) tx.put('peopleRemoved', id, true)
-    const moved = answer.changed.length + answer.removed.length + answer.tombstones.length > 0
+    if (answer.distinctChanged) {
+      const kept = new Set(answer.distinct.map((pair) => pairKey(pair.a, pair.b)))
+      for (const { key } of await tx.range<unknown>('peopleDistinct', {})) if (!kept.has(key)) tx.delete('peopleDistinct', key)
+      for (const pair of answer.distinct) tx.put('peopleDistinct', pairKey(pair.a, pair.b), pair)
+    }
+    const moved = answer.changed.length + answer.removed.length + answer.tombstones.length > 0 || answer.distinctChanged
     const seq = await seqOf(tx) + (moved ? 1 : 0)
     if (moved) {
       tx.put('meta', PEOPLE_META_KEY, { seq } satisfies PeopleMeta)
-      tx.put('peopleLog', sequenceKey(seq), { changed: answer.changed, removed: answer.removed } satisfies Logged)
+      tx.put('peopleLog', sequenceKey(seq), {
+        changed: answer.changed, removed: answer.removed, ...(answer.distinctChanged ? { distinct: true as const } : {}),
+      } satisfies Logged)
       if (seq > LOG_KEPT) tx.deleteRange('peopleLog', { below: sequenceKey(seq - LOG_KEPT + 1) })
     }
     return `${(await readMeta(tx)).nonce}.p${seq}`

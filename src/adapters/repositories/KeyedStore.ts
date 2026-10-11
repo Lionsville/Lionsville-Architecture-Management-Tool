@@ -73,6 +73,8 @@ export const REPOSITORY_SHELVES = [
   'peopleLog',
   /** Every id the register has removed, by id: the id alone, so nothing carried in brings the entry back. */
   'peopleRemoved',
+  /** Every pair the register answered as not the same person, by the two ids: ids and a day, never a name. */
+  'peopleDistinct',
 ] as const
 
 /**

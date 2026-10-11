@@ -188,6 +188,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'people.notForgotten': 'Alleen een vergeten vermelding wordt verwijderd: vergeet haar eerst.',
   'people.badMerge': 'Een vermelding wordt samengevoegd met een andere die nog een naam heeft.',
   'people.mergeAsks': 'Iemand die actief is wordt samengevoegd met een vermelding die vertrokken is: zeg of diegene er nog is of vertrokken is.',
+  'people.badDistinct': 'Een vermelding wordt beantwoord als niet dezelfde persoon als een andere vermelding, nooit als zichzelf.',
   'people.unwritable': 'Het register hier is niet te lezen, of een latere versie heeft het geschreven: het wordt getoond en niet gewijzigd.',
   'people.failed': 'Het register gaf geen antwoord: {message}',
 }

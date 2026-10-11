@@ -188,6 +188,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'people.notForgotten': 'Nur ein vergessener Eintrag wird entfernt: Vergessen Sie ihn zuerst.',
   'people.badMerge': 'Ein Eintrag wird mit einem anderen zusammengeführt, der noch einen Namen hat.',
   'people.mergeAsks': 'Jemand Aktives wird mit einem Eintrag zusammengeführt, der gegangen ist: Sagen Sie, ob die Person noch da ist oder gegangen ist.',
+  'people.badDistinct': 'Ein Eintrag wird als nicht dieselbe Person wie ein anderer Eintrag beantwortet, nie als er selbst.',
   'people.unwritable': 'Das Register hier lässt sich nicht lesen, oder eine spätere Version hat es geschrieben: Es wird angezeigt und nicht geändert.',
   'people.failed': 'Das Register hat nicht geantwortet: {message}',
 }

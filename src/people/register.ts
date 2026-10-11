@@ -35,13 +35,22 @@
  *   never gives a name, an address or an active state back, never undoes a
  *   merge and never brings back an entry removed here — and a forgetting or
  *   a removal carried in applies here too: forgetting travels, un-forgetting
- *   does not.
+ *   does not. Answers carried in join those held.
+ * - **Not the same person** (`distinct.ts`) is an answer about two entries,
+ *   kept beside them: answered of two that still have a name, taken back at
+ *   any time. Every other change carries the answers held along with the
+ *   entries (`tidyDistinct`): forgetting or removing either drops the pair, a
+ *   merge carries it to the entry kept or drops it where that is its other
+ *   half, and a bring-in drops a pair carried in whose ids were removed —
+ *   whichever is further gone still wins.
  */
 import { isDay } from '../model/lifecycle'
 import type {
   MergeLeaving, NewPerson, PeopleRefusal, Person, PersonId, PersonPatch, PersonState,
 } from './person'
-import { isEmail, isRedirect, mergeAsks, mintPersonId, normalEmail, normalName } from './person'
+import { endOf, isEmail, isRedirect, mergeAsks, mintPersonId, normalEmail, normalName } from './person'
+import { distinctPair, pairKey, sameDistinct, tidyDistinct } from './distinct'
+import type { DistinctPair } from './distinct'
 import { drawPseudonym } from './pseudonym'
 
 /**
@@ -55,7 +64,14 @@ export type Changed = {
   removed: PersonId[]
   /** Ids to keep as removed (the ids alone): what a later bring-in is held to. */
   tombstones: PersonId[]
+  /** The answers *not the same person* after the change, followed through it (`distinct.ts`), in id order. */
+  distinct: DistinctPair[]
+  /** Whether those answers are other than the ones held: a change to keep, as `changed` is. */
+  distinctChanged: boolean
 }
+
+/** What a change to the entries alone answers, before the answers beside them are carried along. */
+type EntriesChanged = Omit<Changed, 'distinct' | 'distinctChanged'>
 
 /** A change refused, and nothing changed. */
 export type RefusedChange = { refused: PeopleRefusal }
@@ -76,18 +92,38 @@ export type PeopleChange =
   | { kind: 'merge'; from: PersonId; into: PersonId; leaving?: MergeLeaving }
   | { kind: 'forget'; id: PersonId; on: string }
   | { kind: 'remove'; id: PersonId }
-  | { kind: 'bringIn'; people: readonly Person[]; removed?: readonly PersonId[] }
+  | { kind: 'bringIn'; people: readonly Person[]; removed?: readonly PersonId[]; distinct?: readonly DistinctPair[] }
+  /** Two entries answered as not the same person, on a day. */
+  | { kind: 'distinct'; a: PersonId; b: PersonId; on: string }
+  /** That answer taken back: the two are a possible duplicate again. */
+  | { kind: 'takeBack'; a: PersonId; b: PersonId }
 
 const refused = (key: PeopleRefusal): RefusedChange => ({ refused: key })
 
 /**
  * The change applied to the register, or the refusal. No argument is changed.
  * `removed` is every id the register has removed and remembers: what a bring-in
- * never brings back.
+ * never brings back. `distinct` is every answer *not the same person* it
+ * holds, over the same entries as `people`: carried through the change and
+ * answered in `distinct`, with `distinctChanged` where they moved.
  */
 export function changePeople(
   people: readonly Person[], change: PeopleChange, minting: Minting = {}, removed: ReadonlySet<PersonId> = new Set(),
+  distinct: readonly DistinctPair[] = [],
 ): ChangeAnswer {
+  if (change.kind === 'distinct' || change.kind === 'takeBack') return answering(people, change, distinct)
+  const answer = entriesChanged(people, change, minting, removed)
+  if ('refused' in answer) return answer
+  const carried = change.kind === 'bringIn' ? change.distinct ?? [] : []
+  const after = tidyDistinct([...distinct, ...carried], answer.people)
+  return { ...answer, distinct: after, distinctChanged: !sameDistinct(after, distinct) }
+}
+
+type EntriesChange = Exclude<PeopleChange, { kind: 'distinct' | 'takeBack' }>
+
+function entriesChanged(
+  people: readonly Person[], change: EntriesChange, minting: Minting, removed: ReadonlySet<PersonId>,
+): EntriesChanged | RefusedChange {
   switch (change.kind) {
     case 'add': return add(people, change.person, minting)
     case 'change': return correct(people, change.id, change.patch)
@@ -101,6 +137,33 @@ export function changePeople(
       return unexpected
     }
   }
+}
+
+/**
+ * An answer given or taken back. Given only of two entries that are each
+ * still somebody — held, no redirect, not forgotten — on a day; given again,
+ * it keeps the day it was first given. Taken back, or never given, the two
+ * are a possible duplicate again, and there is nothing to refuse.
+ */
+function answering(
+  people: readonly Person[], change: Extract<PeopleChange, { kind: 'distinct' | 'takeBack' }>, distinct: readonly DistinctPair[],
+): ChangeAnswer {
+  const held = tidyDistinct(distinct, people)
+  const unchanged = { people: [...people], changed: [], removed: [], tombstones: [] }
+  if (change.kind === 'takeBack') {
+    const key = pairKey(change.a, change.b)
+    const after = held.filter((pair) => pairKey(pair.a, pair.b) !== key)
+    return { ...unchanged, distinct: after, distinctChanged: !sameDistinct(after, distinct) }
+  }
+  if (!isDay(change.on)) return refused('people.badDay')
+  if (change.a === change.b) return refused('people.badDistinct')
+  for (const id of [change.a, change.b]) {
+    const found = find(people, id)
+    if ('refused' in found) return found
+    if (found.state === 'forgotten') return refused('people.forgotten')
+  }
+  const after = tidyDistinct([...held, distinctPair(change.a, change.b, change.on)], people)
+  return { ...unchanged, distinct: after, distinctChanged: !sameDistinct(after, distinct) }
 }
 
 /** The id of the entry the last `add` made: the one in `changed` that the register did not hold before. */
@@ -119,7 +182,7 @@ function find(people: readonly Person[], id: PersonId): Person | RefusedChange {
   return found
 }
 
-function add(people: readonly Person[], input: NewPerson, minting: Minting): ChangeAnswer {
+function add(people: readonly Person[], input: NewPerson, minting: Minting): EntriesChanged | RefusedChange {
   const name = normalName(input.name ?? '')
   if (!name) return refused('people.nameRequired')
   const email = input.email?.trim() ? input.email : undefined
@@ -134,7 +197,7 @@ function add(people: readonly Person[], input: NewPerson, minting: Minting): Cha
   return { people: [...people, person], changed: [id], removed: [], tombstones: [] }
 }
 
-function correct(people: readonly Person[], id: PersonId, patch: PersonPatch): ChangeAnswer {
+function correct(people: readonly Person[], id: PersonId, patch: PersonPatch): EntriesChanged | RefusedChange {
   const found = find(people, id)
   if ('refused' in found) return found
   if (found.state === 'forgotten') return refused('people.forgotten')
@@ -147,7 +210,7 @@ function correct(people: readonly Person[], id: PersonId, patch: PersonPatch): C
   return { people: replaced(people, next), changed: [id], removed: [], tombstones: [] }
 }
 
-function leave(people: readonly Person[], id: PersonId, on: string): ChangeAnswer {
+function leave(people: readonly Person[], id: PersonId, on: string): EntriesChanged | RefusedChange {
   if (!isDay(on)) return refused('people.badDay')
   const found = find(people, id)
   if ('refused' in found) return found
@@ -155,7 +218,7 @@ function leave(people: readonly Person[], id: PersonId, on: string): ChangeAnswe
   return { people: replaced(people, { ...found, state: 'left', leftOn: on }), changed: [id], removed: [], tombstones: [] }
 }
 
-function forget(people: readonly Person[], id: PersonId, on: string): ChangeAnswer {
+function forget(people: readonly Person[], id: PersonId, on: string): EntriesChanged | RefusedChange {
   if (!isDay(on)) return refused('people.badDay')
   const found = find(people, id)
   if ('refused' in found) return found
@@ -165,7 +228,7 @@ function forget(people: readonly Person[], id: PersonId, on: string): ChangeAnsw
   return { people: replaced(people, next), changed: [id], removed: [], tombstones: [] }
 }
 
-function remove(people: readonly Person[], id: PersonId): ChangeAnswer {
+function remove(people: readonly Person[], id: PersonId): EntriesChanged | RefusedChange {
   const found = find(people, id)
   if ('refused' in found) return found
   if (found.state !== 'forgotten') return refused('people.notForgotten')
@@ -174,7 +237,7 @@ function remove(people: readonly Person[], id: PersonId): ChangeAnswer {
   return { people: people.filter((person) => !gone.has(person.id)), changed: [], removed: [...gone], tombstones: [...gone] }
 }
 
-function merge(people: readonly Person[], from: PersonId, into: PersonId, leaving: MergeLeaving | undefined): ChangeAnswer {
+function merge(people: readonly Person[], from: PersonId, into: PersonId, leaving: MergeLeaving | undefined): EntriesChanged | RefusedChange {
   const absorbed = find(people, from)
   if ('refused' in absorbed) return absorbed
   const kept = find(people, into)
@@ -239,20 +302,10 @@ export function samePerson(one: Person, other: Person): boolean {
   return FIELDS.every((field) => one[field] === other[field])
 }
 
-/** Where a redirect ends: the first id along it that is no redirect, or that the register does not hold. */
-function endOf(byId: ReadonlyMap<PersonId, Person>, id: PersonId): PersonId {
-  const seen = new Set<PersonId>()
-  let at = id
-  for (let held = byId.get(at); held?.mergedInto !== undefined && !seen.has(at); held = byId.get(at)) {
-    seen.add(at)
-    at = held.mergedInto
-  }
-  return at
-}
 
 function bringIn(
   people: readonly Person[], carried: readonly Person[], carriedRemoved: readonly PersonId[], removedHere: ReadonlySet<PersonId>,
-): ChangeAnswer {
+): EntriesChanged {
   const byId = new Map(people.map((person) => [person.id, person]))
   const changed = new Set<PersonId>()
   const gone = new Set<PersonId>()

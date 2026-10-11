@@ -290,13 +290,15 @@ describe('IndexedDbStore, a database laid out by an earlier build', () => {
     })
     const store = new IndexedDbStore(indexedDb)
     expect(await store.transaction(['settings'], 'read', (tx) => tx.get('settings', 'organisation'))).toEqual({ kept: true })
-    await store.transaction(['people', 'peopleLog', 'peopleRemoved'], 'write', (tx) => {
+    await store.transaction(['people', 'peopleLog', 'peopleRemoved', 'peopleDistinct'], 'write', (tx) => {
       tx.put('people', 'pe-1', { id: 'pe-1' })
       tx.put('peopleRemoved', 'pe-2', true)
+      tx.put('peopleDistinct', 'pe-1 pe-3', { a: 'pe-1', b: 'pe-3', on: '2026-10-11' })
       return Promise.resolve()
     })
     expect(await store.transaction(['people'], 'read', (tx) => tx.get('people', 'pe-1'))).toEqual({ id: 'pe-1' })
     expect(await store.transaction(['peopleRemoved'], 'read', (tx) => tx.get('peopleRemoved', 'pe-2'))).toBe(true)
+    expect(await store.transaction(['peopleDistinct'], 'read', (tx) => tx.get('peopleDistinct', 'pe-1 pe-3'))).toEqual({ a: 'pe-1', b: 'pe-3', on: '2026-10-11' })
   })
 
   it('lays out a folder’s shelves over one at version 2, and keeps what the repositories held there', async () => {
@@ -314,7 +316,7 @@ describe('IndexedDbStore, a database laid out by an earlier build', () => {
       request.onerror = () => reject(request.error ?? new Error('would not open'))
     })
     const store = new IndexedDbStore(indexedDb)
-    expect(DATABASE_VERSION).toBe(5)
+    expect(DATABASE_VERSION).toBe(6)
     expect(await store.transaction(['meta'], 'read', read)).toBe('before')
     await store.transaction(['folders', 'folderData'], 'write', (tx) => {
       tx.put('folders', 'k', { handle: {} })

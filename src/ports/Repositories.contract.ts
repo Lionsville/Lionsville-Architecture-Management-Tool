@@ -36,6 +36,7 @@ import type { HostModel } from '../model/hostModel'
 import { fromArrays, toArrays } from '../model/normalised'
 import { apply } from '../model/reducer'
 import type { DesignElement } from '../model/types'
+import type { DistinctPair } from '../people/distinct'
 import type { Revision, ScopeAddress, ScopeCommand, ScopeId, ScopeState, ScopeStep } from '../projects/scopeState'
 import type { HistoryRepository } from './HistoryRepository'
 import type { ImageRepository } from './ImageRepository'
@@ -200,7 +201,9 @@ export function over(under: RepositoriesUnderTest) {
       merge: (from, into, leaving?) => settled(people.merge(from, into, leaving)),
       forget: (id, on) => settled(people.forget(id, on)),
       remove: (id) => settled(people.remove(id)),
-      bringIn: (entries, removed?: readonly string[]) => settled(people.bringIn(entries, removed)),
+      bringIn: (entries, removed?: readonly string[], distinct?: readonly DistinctPair[]) => settled(people.bringIn(entries, removed, distinct)),
+      answerDistinct: (a, b, on) => settled(people.answerDistinct(a, b, on)),
+      takeBackDistinct: (a, b) => settled(people.takeBackDistinct(a, b)),
       since: (revision) => people.since(revision),
     } satisfies PeopleRepository,
   }

@@ -29,6 +29,21 @@ describe('the people file', () => {
     expect(peopleFileText([pia], [])).toBe(peopleFileText([pia]))
   })
 
+  it('keeps the pairs answered as not the same person, in id order, only where there are any and only over its entries', () => {
+    const vera: Person = { id: 'pe-c', name: 'Vera Kok', pseudonym: 'B7KQ', kind: 'internal', state: 'active' }
+    const text = peopleFileText([pia, gone, vera], [], [{ a: 'pe-c', b: 'pe-b', on: '2026-10-11' }])
+    expect(JSON.parse(text).distinct).toEqual([{ a: 'pe-b', b: 'pe-c', on: '2026-10-11' }])
+    expect(readPeopleFile(text)).toEqual({ kind: 'read', people: [gone, pia, vera], distinct: [{ a: 'pe-b', b: 'pe-c', on: '2026-10-11' }] })
+    expect(peopleFileText([pia, vera], [], [])).toBe(peopleFileText([pia, vera]))
+    // A pair about a forgotten entry, about nobody here, or that is no pair, is none.
+    const odd = { version: 1, people: [pia, gone, vera], distinct: [{ a: 'pe-a', b: 'pe-b', on: '2026-10-11' }, { a: 'pe-b', b: 'pe-z', on: '2026-10-11' }, { a: 'pe-b' }, 7] }
+    expect(readPeopleFile(JSON.stringify(odd))).toEqual({ kind: 'read', people: [pia, gone, vera] })
+  })
+
+  it('reads a file a build before the answers wrote as one with none', () => {
+    expect(readPeopleFile(JSON.stringify({ version: 1, people: [pia] }))).toEqual({ kind: 'read', people: [pia] })
+  })
+
   it('reads a file that is not there as absent, and an entry that does not read as nobody', () => {
     expect(readPeopleFile(undefined)).toEqual({ kind: 'absent' })
     expect(readPeopleFile('{"people":[{"id":"pe-x"},{"id":"pe-b","pseudonym":"4K7Q","name":"Pia Schulz"}]}'))

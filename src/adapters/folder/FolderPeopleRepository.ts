@@ -22,6 +22,8 @@
  * is everyone lost.
  */
 import { ShellError } from '../../platform/errors'
+import { pairKey } from '../../people/distinct'
+import type { DistinctPair } from '../../people/distinct'
 import type { MergeLeaving, NewPerson, Person, PersonId, PersonPatch } from '../../people/person'
 import { changePeople } from '../../people/register'
 import type { ChangeAnswer, Minting, PeopleChange } from '../../people/register'
@@ -29,7 +31,8 @@ import { fingerprint } from '../../projects/revision'
 import type { Revision } from '../../projects/scopeState'
 import { stableJson } from '../../projects/text'
 import type {
-  PeopleBrought, PeopleChanges, PeopleRead, PeopleRefused, PeopleRepository, PersonRemoved, PersonWritten,
+  DistinctAnswered, DistinctTakenBack, PeopleBrought, PeopleChanges, PeopleRead, PeopleRefused, PeopleRepository, PersonRemoved,
+  PersonWritten,
 } from '../../ports/PeopleRepository'
 import type { DirectoryHandleLike } from './DirectoryHandle'
 import type { FolderScopes } from './folderScopes'
@@ -53,9 +56,17 @@ function removedOf(read: PeopleFileRead): PersonId[] {
   return read.kind === 'absent' ? [] : read.removed ?? []
 }
 
+/** The pairs the register answered as not the same person. */
+function distinctOf(read: PeopleFileRead): DistinctPair[] {
+  return read.kind === 'absent' ? [] : read.distinct ?? []
+}
+
+/** What *since* compares a revision by: each entry, and the answers beside them under a key no id can be. */
+const ANSWERS = ' distinct'
+
 export class FolderPeopleRepository implements PeopleRepository {
   readonly id = 'folder'
-  /** Each revision answered with, and each entry then, by id. */
+  /** Each revision answered with, and each entry then, by id — and the answers then, under {@link ANSWERS}. */
   private readonly past = new Map<Revision, Map<PersonId, string>>()
 
   private readonly folder: FolderScopes
@@ -68,7 +79,7 @@ export class FolderPeopleRepository implements PeopleRepository {
 
   async list(): Promise<PeopleRead> {
     const held = await this.held()
-    return { revision: held.revision, people: peopleOf(held.read), removed: removedOf(held.read) }
+    return { revision: held.revision, people: peopleOf(held.read), removed: removedOf(held.read), distinct: distinctOf(held.read) }
   }
 
   async read(id: PersonId): Promise<Person | undefined> {
@@ -101,10 +112,23 @@ export class FolderPeopleRepository implements PeopleRepository {
     return { revision: revision!, removed: answer.removed }
   }
 
-  async bringIn(people: readonly Person[], removed: readonly PersonId[] = []): Promise<PeopleBrought> {
-    const { answer, revision } = await this.apply({ kind: 'bringIn', people, removed })
+  async bringIn(people: readonly Person[], removed: readonly PersonId[] = [], distinct: readonly DistinctPair[] = []): Promise<PeopleBrought> {
+    const { answer, revision } = await this.apply({ kind: 'bringIn', people, removed, distinct })
     if ('refused' in answer) throw new Error(`bringing people in was refused: ${answer.refused}`)
     return { revision: revision!, changed: answer.changed }
+  }
+
+  async answerDistinct(a: PersonId, b: PersonId, on: string): Promise<DistinctAnswered | PeopleRefused> {
+    const { answer, revision } = await this.apply({ kind: 'distinct', a, b, on })
+    if ('refused' in answer) return answer
+    const key = pairKey(a, b)
+    return { revision: revision!, pair: { ...answer.distinct.find((pair) => pairKey(pair.a, pair.b) === key)! } }
+  }
+
+  async takeBackDistinct(a: PersonId, b: PersonId): Promise<DistinctTakenBack> {
+    const { answer, revision } = await this.apply({ kind: 'takeBack', a, b })
+    if ('refused' in answer) throw new Error(`taking an answer back was refused: ${answer.refused}`)
+    return { revision: revision!, taken: answer.distinctChanged }
   }
 
   async since(revision: Revision): Promise<PeopleChanges | undefined> {
@@ -113,7 +137,12 @@ export class FolderPeopleRepository implements PeopleRepository {
     const now = await this.list()
     const changed = now.people.filter((person) => then.get(person.id) !== stableJson(person))
     const here = new Set(now.people.map((person) => person.id))
-    return { revision: now.revision, changed: structuredClone(changed), removed: [...then.keys()].filter((id) => !here.has(id)) }
+    const answers = now.distinct ?? []
+    return {
+      revision: now.revision, changed: structuredClone(changed),
+      removed: [...then.keys()].filter((id) => id !== ANSWERS && !here.has(id)),
+      ...(then.get(ANSWERS) !== stableJson(answers) ? { distinct: structuredClone(answers) } : {}),
+    }
   }
 
   /** The file as it is now, its revision, and that revision kept for *since*. */
@@ -122,7 +151,9 @@ export class FolderPeopleRepository implements PeopleRepository {
     const read = readPeopleFile(text)
     const revision = fingerprint(['people', text ?? ''])
     this.past.delete(revision)
-    this.past.set(revision, new Map(peopleOf(read).map((person) => [person.id, stableJson(person)])))
+    this.past.set(revision, new Map([
+      ...peopleOf(read).map((person): [string, string] => [person.id, stableJson(person)]), [ANSWERS, stableJson(distinctOf(read))],
+    ]))
     while (this.past.size > KEPT) this.past.delete(this.past.keys().next().value!)
     return { revision, read }
   }
@@ -132,12 +163,12 @@ export class FolderPeopleRepository implements PeopleRepository {
       const { read } = await this.held()
       if (read.kind === 'unwritable') throw new ShellError('people.unwritable')
       const removed = removedOf(read)
-      const answer = changePeople(peopleOf(read), change, this.minting, new Set(removed))
+      const answer = changePeople(peopleOf(read), change, this.minting, new Set(removed), distinctOf(read))
       if ('refused' in answer) return { answer }
-      if (answer.changed.length + answer.removed.length + answer.tombstones.length === 0) {
+      if (answer.changed.length + answer.removed.length + answer.tombstones.length === 0 && !answer.distinctChanged) {
         return { answer, revision: (await this.held()).revision }
       }
-      await writeAt(this.folder.root, PEOPLE_PATH, peopleFileText(answer.people, [...removed, ...answer.tombstones]))
+      await writeAt(this.folder.root, PEOPLE_PATH, peopleFileText(answer.people, [...removed, ...answer.tombstones], answer.distinct))
       return { answer, revision: (await this.held()).revision }
     })
   }
@@ -150,14 +181,15 @@ export class FolderPeopleRepository implements PeopleRepository {
  * its own. A file it may not write over is never written over.
  */
 export async function bringPeopleIntoFolder(
-  root: DirectoryHandleLike, people: readonly Person[], removed: readonly PersonId[],
+  root: DirectoryHandleLike, people: readonly Person[], removed: readonly PersonId[], distinct: readonly DistinctPair[] = [],
 ): Promise<void> {
   const read = readPeopleFile(await textAt(root, PEOPLE_PATH))
   if (read.kind === 'unwritable') throw new ShellError('people.unwritable')
   const held = removedOf(read)
-  const answer = changePeople(peopleOf(read), { kind: 'bringIn', people, removed }, {}, new Set(held))
-  if ('refused' in answer || answer.changed.length + answer.removed.length + answer.tombstones.length === 0) return
-  await writeAt(root, PEOPLE_PATH, peopleFileText(answer.people, [...held, ...answer.tombstones]))
+  const answer = changePeople(peopleOf(read), { kind: 'bringIn', people, removed, distinct }, {}, new Set(held), distinctOf(read))
+  if ('refused' in answer) return
+  if (answer.changed.length + answer.removed.length + answer.tombstones.length === 0 && !answer.distinctChanged) return
+  await writeAt(root, PEOPLE_PATH, peopleFileText(answer.people, [...held, ...answer.tombstones], answer.distinct))
 }
 
 function written(answered: Answered, show?: PersonId): PersonWritten | PeopleRefused {

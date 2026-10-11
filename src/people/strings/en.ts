@@ -202,6 +202,7 @@ export const EN = {
   'people.notForgotten': 'Only a forgotten entry is removed: forget it first.',
   'people.badMerge': 'An entry is merged into another entry that still has a name.',
   'people.mergeAsks': 'Somebody active is merged into an entry that has left: say whether they are still here or left.',
+  'people.badDistinct': 'An entry is answered as not the same person as another entry, never as itself.',
   'people.unwritable': 'The register here will not read, or a later version wrote it: it is shown and not changed.',
   'people.failed': 'The register did not answer: {message}',
 } as const

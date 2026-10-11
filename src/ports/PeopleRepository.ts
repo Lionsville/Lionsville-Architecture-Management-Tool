@@ -25,9 +25,15 @@
  * a reader that holds the register asks for what changed rather than for all
  * of it again.
  *
+ * **Beside the entries, the answers *not the same person*** (3.6.1): two
+ * entries a person said are two people, kept as a list of pairs — not a field
+ * on either — and carried through every change to the entries by the same
+ * rules (`people/distinct.ts`).
+ *
  * `PeopleRepository.contract.ts`, beside this seam, is the behaviour every
  * implementation must show.
  */
+import type { DistinctPair } from '../people/distinct'
 import type { MergeLeaving, NewPerson, PeopleRefusal, Person, PersonId, PersonPatch } from '../people/person'
 import type { Revision } from '../projects/scopeState'
 
@@ -41,6 +47,11 @@ export type PeopleRead = {
   revision: Revision
   people: readonly Person[]
   removed: readonly PersonId[]
+  /**
+   * Every pair answered as not the same person, `a < b`, in id order. Absent
+   * is none — what a register from before there were any answers says.
+   */
+  distinct?: readonly DistinctPair[]
 }
 
 /**
@@ -51,6 +62,8 @@ export type PeopleChanges = {
   revision: Revision
   changed: readonly Person[]
   removed: readonly PersonId[]
+  /** Every answer *not the same person* as it now is, where any was given, taken back or carried since; absent where none moved. */
+  distinct?: readonly DistinctPair[]
 }
 
 /**
@@ -68,6 +81,12 @@ export type PersonRemoved = { revision: Revision; removed: readonly PersonId[] }
 
 /** Entries carried in: the register's revision after them, and the ids that changed. */
 export type PeopleBrought = { revision: Revision; changed: readonly PersonId[] }
+
+/** An answer given: the register's revision after it, and the pair as kept — `a < b`, on the day it was first given. */
+export type DistinctAnswered = { revision: Revision; pair: DistinctPair }
+
+/** An answer taken back: the register's revision after it, and whether there was one to take. */
+export type DistinctTakenBack = { revision: Revision; taken: boolean }
 
 /** What a refusal says. */
 export type PeopleRefused = { refused: PeopleRefusal }
@@ -136,8 +155,30 @@ export interface PeopleRepository {
    * a name, an address or an active state back, never undoes a merge, and
    * never brings back an id it removed; a forgetting or a removal carried in
    * is made here too, and the ids removed are remembered.
+   *
+   * The answers *not the same person* carried in join those held, each over
+   * the entries as they stand after: one naming an id removed, here or there,
+   * or forgotten, is dropped, and one naming a redirect is carried to the
+   * entry it leads to. `changed` names entries only.
    */
-  bringIn(people: readonly Person[], removed?: readonly PersonId[]): Promise<PeopleBrought>
+  bringIn(people: readonly Person[], removed?: readonly PersonId[], distinct?: readonly DistinctPair[]): Promise<PeopleBrought>
+
+  /**
+   * Two entries answered as not the same person, on a day, in either order:
+   * the four signs no longer pair them (`people/duplicates.ts`). Refused
+   * `people.badDistinct` for one entry twice, and as a change to either
+   * entry would be — unknown, a redirect, forgotten — or `people.badDay`.
+   * Answered again, the pair keeps the day it was first answered. Changes no
+   * entry, and no scope.
+   */
+  answerDistinct(a: PersonId, b: PersonId, on: string): Promise<DistinctAnswered | PeopleRefused>
+
+  /**
+   * The answer about two entries taken back, in either order: they are a
+   * possible duplicate again. One never given, or already gone with its
+   * entries, is nothing to take, and nothing is refused.
+   */
+  takeBackDistinct(a: PersonId, b: PersonId): Promise<DistinctTakenBack>
 
   /**
    * What changed since `revision`, which this register answered with before.

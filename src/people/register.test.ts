@@ -169,7 +169,7 @@ describe('the changes', () => {
     expect([...removed.tombstones].sort()).toEqual([a.id, twin.id].sort())
     const gone = new Set(removed.tombstones)
     const brought = done(changePeople(removed.people, { kind: 'bringIn', people: [...a.people, ...twin.people] }, {}, gone))
-    expect(brought).toEqual({ people: [], changed: [], removed: [], tombstones: [] })
+    expect(brought).toEqual({ people: [], changed: [], removed: [], tombstones: [], distinct: [], distinctChanged: false })
   })
 
   it('takes a removal carried in, with every redirect into it, and remembers it and the ids nobody here held', () => {

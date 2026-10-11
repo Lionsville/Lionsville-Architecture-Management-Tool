@@ -100,6 +100,8 @@ export const PEOPLE_REFUSALS = [
   'people.badMerge',
   /** An active entry merged into one that has left: the merge is told which is true, still here or left. */
   'people.mergeAsks',
+  /** An entry is not answered as somebody other than itself. */
+  'people.badDistinct',
 ] as const
 
 export type PeopleRefusal = (typeof PEOPLE_REFUSALS)[number]
@@ -143,6 +145,17 @@ export function isPeopleRefusal(value: unknown): value is PeopleRefusal {
 /** Whether an entry is a redirect a merge left behind. */
 export function isRedirect(person: Person): boolean {
   return person.mergedInto !== undefined
+}
+
+/** Where a redirect ends: the first id along it that is no redirect, or that the register does not hold. */
+export function endOf(byId: ReadonlyMap<PersonId, Person>, id: PersonId): PersonId {
+  const seen = new Set<PersonId>()
+  let at = id
+  for (let held = byId.get(at); held?.mergedInto !== undefined && !seen.has(at); held = byId.get(at)) {
+    seen.add(at)
+    at = held.mergedInto
+  }
+  return at
 }
 
 /** The entries a person picks from and a list shows: everyone but the redirects. */

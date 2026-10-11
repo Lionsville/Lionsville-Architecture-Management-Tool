@@ -56,9 +56,10 @@ export const DATABASE_NAME = 'lvarch.repositories'
  * and an upgrade, which lays out every shelf the database does not have yet.
  * 2 added the shelves that count what names each picture's bytes; 3 added a
  * folder's own shelves (`folders`, `folderData`); 4 added the people register's
- * (`people`, `peopleLog`); 5 adds the ids it removed (`peopleRemoved`).
+ * (`people`, `peopleLog`); 5 added the ids it removed (`peopleRemoved`); 6
+ * adds the pairs it answered as not the same person (`peopleDistinct`).
  */
-export const DATABASE_VERSION = 5
+export const DATABASE_VERSION = 6
 
 /** As much of the browser's storage manager as the store asks: each part may be missing. */
 export type StorageManagerLike = {

@@ -12,9 +12,15 @@
  * back. And because it is outside the history, nothing here writes a step:
  * the scopes, their revisions and their histories do not move.
  *
+ * Beside the entries, the answers *not the same person* (3.6.1): a pair of
+ * ids and a day, given and taken back, and carried through every other
+ * change by the register's rules — dropped with a forgotten or removed
+ * entry, carried by a merge to the entry kept unless that is its other half.
+ *
  * Named `.contract.ts` so the runner does not pick it up on its own.
  */
 import { describe, expect, it } from 'vitest'
+import { distinctPair, tidyDistinct } from '../people/distinct'
 import type { Person } from '../people/person'
 import { ok, over, refusal } from './Repositories.contract'
 import type { MakeRepositories } from './Repositories.contract'
@@ -37,6 +43,7 @@ export function describePeopleRepository(name: string, make: MakeRepositories): 
       expect(repositories.people.id).toMatch(/\S/)
       expect((await repositories.people.list()).people).toEqual([])
       expect((await repositories.people.list()).removed).toEqual([])
+      expect((await repositories.people.list()).distinct ?? []).toEqual([])
     })
 
     it('adds an active entry with an id and a pseudonym of its own, and reads it back', async () => {
@@ -64,7 +71,8 @@ export function describePeopleRepository(name: string, make: MakeRepositories): 
       const before = (await repositories.people.list()).revision
       expect(refusal(await repositories.people.add({ name: '   ' }))).toBe('people.nameRequired')
       expect(refusal(await repositories.people.add({ name: 'Ada Verbeek', email: 'not an address' }))).toBe('people.badEmail')
-      expect(await repositories.people.list()).toEqual({ revision: before, people: [], removed: [] })
+      const after = await repositories.people.list()
+      expect([after.revision, after.people, after.removed, after.distinct ?? []]).toEqual([before, [], [], []])
     })
 
     it('corrects a name, an address and a kind, and takes an address out for `null`', async () => {
@@ -307,6 +315,9 @@ export function describePeopleRepository(name: string, make: MakeRepositories): 
         entries: (await repositories.history.entries({ scopes: [root, acme] })).entries.length,
       }
       const max = entry(await repositories.people.add({ name: 'Max Wolf' }))
+      const maxi = entry(await repositories.people.add({ name: 'Maxi Wolf' }))
+      ok(await repositories.people.answerDistinct(max.id, maxi.id, '2026-10-11'))
+      await repositories.people.takeBackDistinct(max.id, maxi.id)
       ok(await repositories.people.leave(max.id, '2026-10-11'))
       ok(await repositories.people.forget(max.id, '2026-10-11'))
       await repositories.record()
@@ -325,6 +336,129 @@ export function describePeopleRepository(name: string, make: MakeRepositories): 
       const again = under.reopen ? await under.reopen() : under.repositories
       expect(await again.people.read(iris.id)).toEqual(iris)
       expect((await again.people.list()).people).toEqual([iris])
+    })
+
+    it('answers two entries as not the same person, either way round, on a day, and changes no entry', async () => {
+      const { repositories } = await fresh()
+      const yara = entry(await repositories.people.add({ name: 'Yara Kok' }))
+      const vera = entry(await repositories.people.add({ name: 'Vera Kok' }))
+      const before = await repositories.people.list()
+      const [a, b] = [yara.id, vera.id].sort()
+      const answered = ok(await repositories.people.answerDistinct(b, a, '2026-10-11'))
+      expect(answered.pair).toEqual({ a, b, on: '2026-10-11' })
+      expect(answered.revision).not.toBe(before.revision)
+      const after = await repositories.people.list()
+      expect(after.revision).toBe(answered.revision)
+      expect(after.distinct).toEqual([{ a, b, on: '2026-10-11' }])
+      expect(after.people).toEqual(before.people)
+      expect(after.removed).toEqual(before.removed)
+    })
+
+    it('keeps the first day when the same two are answered again, and moves no revision for it', async () => {
+      const { repositories } = await fresh()
+      const yara = entry(await repositories.people.add({ name: 'Yara Kok' }))
+      const vera = entry(await repositories.people.add({ name: 'Vera Kok' }))
+      const first = ok(await repositories.people.answerDistinct(yara.id, vera.id, '2026-10-01'))
+      const again = ok(await repositories.people.answerDistinct(vera.id, yara.id, '2026-10-11'))
+      expect(again.pair.on).toBe('2026-10-01')
+      expect(again.revision).toBe(first.revision)
+      expect((await repositories.people.list()).distinct).toHaveLength(1)
+    })
+
+    it('refuses an answer about one entry twice, nobody, a redirect, a forgotten entry or a bad day, and writes nothing', async () => {
+      const { repositories } = await fresh()
+      const lind = entry(await repositories.people.add({ name: 'Eva Lind' }))
+      const lindt = entry(await repositories.people.add({ name: 'Eva Lindt' }))
+      const gijs = entry(await repositories.people.add({ name: 'Gijs Mulder' }))
+      const omar = entry(await repositories.people.add({ name: 'Omar Benali' }))
+      ok(await repositories.people.merge(lindt.id, lind.id))
+      ok(await repositories.people.forget(gijs.id, '2026-10-11'))
+      const before = await repositories.people.list()
+      expect(refusal(await repositories.people.answerDistinct(omar.id, omar.id, '2026-10-11'))).toBe('people.badDistinct')
+      expect(refusal(await repositories.people.answerDistinct(omar.id, 'pe-nobody', '2026-10-11'))).toBe('people.unknown')
+      expect(refusal(await repositories.people.answerDistinct(lindt.id, omar.id, '2026-10-11'))).toBe('people.merged')
+      expect(refusal(await repositories.people.answerDistinct(omar.id, gijs.id, '2026-10-11'))).toBe('people.forgotten')
+      expect(refusal(await repositories.people.answerDistinct(omar.id, lind.id, '11 October'))).toBe('people.badDay')
+      expect(await repositories.people.list()).toEqual(before)
+    })
+
+    it('takes an answer back, either way round, and one never given is nothing to take', async () => {
+      const { repositories } = await fresh()
+      const yara = entry(await repositories.people.add({ name: 'Yara Kok' }))
+      const vera = entry(await repositories.people.add({ name: 'Vera Kok' }))
+      const answered = ok(await repositories.people.answerDistinct(yara.id, vera.id, '2026-10-11'))
+      const back = await repositories.people.takeBackDistinct(vera.id, yara.id)
+      expect(back.taken).toBe(true)
+      expect(back.revision).not.toBe(answered.revision)
+      expect((await repositories.people.list()).distinct ?? []).toEqual([])
+      const again = await repositories.people.takeBackDistinct(yara.id, vera.id)
+      expect(again).toEqual({ revision: back.revision, taken: false })
+    })
+
+    it('drops an answer when either entry is forgotten, and does not bring it back with the entry removed', async () => {
+      const { repositories } = await fresh()
+      const yara = entry(await repositories.people.add({ name: 'Yara Kok' }))
+      const vera = entry(await repositories.people.add({ name: 'Vera Kok' }))
+      const sara = entry(await repositories.people.add({ name: 'Sara Kok' }))
+      ok(await repositories.people.answerDistinct(yara.id, vera.id, '2026-10-11'))
+      ok(await repositories.people.answerDistinct(sara.id, vera.id, '2026-10-11'))
+      ok(await repositories.people.forget(vera.id, '2026-10-11'))
+      expect((await repositories.people.list()).distinct ?? []).toEqual([])
+      ok(await repositories.people.remove(vera.id))
+      expect((await repositories.people.list()).distinct ?? []).toEqual([])
+    })
+
+    it('carries an answer to the entry a merge keeps, and drops it where that entry is its other half', async () => {
+      const { repositories } = await fresh()
+      const yara = entry(await repositories.people.add({ name: 'Yara Kok' }))
+      const vera = entry(await repositories.people.add({ name: 'Vera Kok' }))
+      const veraToo = entry(await repositories.people.add({ name: 'Vera Kokk' }))
+      ok(await repositories.people.answerDistinct(yara.id, vera.id, '2026-10-01'))
+      ok(await repositories.people.merge(vera.id, veraToo.id))
+      const [a, b] = [yara.id, veraToo.id].sort()
+      expect((await repositories.people.list()).distinct).toEqual([{ a, b, on: '2026-10-01' }])
+      ok(await repositories.people.merge(yara.id, veraToo.id))
+      expect((await repositories.people.list()).distinct ?? []).toEqual([])
+    })
+
+    it('brings answers in beside the entries, and drops one carried in that names an id removed here', async () => {
+      const { repositories } = await fresh()
+      const yara = entry(await repositories.people.add({ name: 'Yara Kok' }))
+      const vera = entry(await repositories.people.add({ name: 'Vera Kok' }))
+      const ada = entry(await repositories.people.add({ name: 'Ada Kok' }))
+      ok(await repositories.people.forget(ada.id, '2026-10-11'))
+      ok(await repositories.people.remove(ada.id))
+      const sara: Person = { id: 'pe-0123456789abcdef', name: 'Sara Kok', pseudonym: 'B7KQ', kind: 'internal', state: 'active' }
+      const carried = [
+        distinctPair(yara.id, vera.id, '2026-10-02'), distinctPair(sara.id, yara.id, '2026-10-03'), distinctPair(ada.id, yara.id, '2026-10-04'),
+      ]
+      const brought = await repositories.people.bringIn([sara], [], carried)
+      expect(brought.changed).toEqual([sara.id])
+      expect((await repositories.people.list()).distinct).toEqual(tidyDistinct(carried.slice(0, 2), [yara, vera, sara]))
+      expect(await repositories.people.read(ada.id)).toBeUndefined()
+    })
+
+    it('says the answers moved since a revision, as they are now, and nothing of them where none moved', async () => {
+      const { repositories } = await fresh()
+      const yara = entry(await repositories.people.add({ name: 'Yara Kok' }))
+      const vera = entry(await repositories.people.add({ name: 'Vera Kok' }))
+      const from = (await repositories.people.list()).revision
+      ok(await repositories.people.answerDistinct(yara.id, vera.id, '2026-10-11'))
+      const changes = await repositories.people.since(from)
+      expect(changes?.changed).toEqual([])
+      expect(changes?.distinct).toEqual((await repositories.people.list()).distinct)
+      const now = (await repositories.people.list()).revision
+      await repositories.people.add({ name: 'Kim Bakker' })
+      expect((await repositories.people.since(now))?.distinct).toBeUndefined()
+    })
+
+    it('keeps the answers when the repositories are made again', async () => {
+      const { under, repositories } = await fresh()
+      const yara = entry(await repositories.people.add({ name: 'Yara Kok' }))
+      const vera = entry(await repositories.people.add({ name: 'Vera Kok' }))
+      const { pair } = ok(await repositories.people.answerDistinct(yara.id, vera.id, '2026-10-11'))
+      const again = under.reopen ? await under.reopen() : under.repositories
+      expect((await again.people.list()).distinct).toEqual([pair])
     })
 
     it('hands out entries nobody else holds: changing what it answered changes nothing it keeps', async () => {
