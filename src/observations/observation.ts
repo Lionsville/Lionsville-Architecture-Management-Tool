@@ -60,6 +60,8 @@
  */
 import type { Translate } from '../i18n/strings'
 import { isDay } from '../model/lifecycle'
+import { personRefOf } from '../model/person'
+import type { PersonRef } from '../model/person'
 import type {
   Cause, CauseAbove, CauseLink, CauseState, CauseStrength, Observation, ObservationEvent, ObservationImpact,
   ScopeAnalysis, Solution,
@@ -161,14 +163,14 @@ export function newObservation(args: {
   date: string
   t: Translate
   where?: string
-  /** Who saw it. Free text. */
-  by?: string
+  /** Who saw it: a person picked from the register, or text (ADR-0036 §8). */
+  by?: PersonRef
   impact?: ObservationImpact
   body?: string
 }): Observation {
   const { id, number, title, date, t } = args
   const where = args.where?.trim()
-  const by = args.by?.trim()
+  const by = personRefOf(args.by)
   return {
     id,
     number,
@@ -213,7 +215,11 @@ export function updateObservation(list: readonly Observation[], id: string, patc
   return replace(list, id, (one) => {
     const next = { ...one, ...patch }
     if (patch.where !== undefined && !patch.where.trim()) delete next.where
-    if (patch.by !== undefined && !patch.by.trim()) delete next.by
+    if (patch.by !== undefined) {
+      const by = personRefOf(patch.by)
+      if (by !== undefined) next.by = by
+      else delete next.by
+    }
     if (patch.title !== undefined) next.title = patch.title.trim()
     return next
   })

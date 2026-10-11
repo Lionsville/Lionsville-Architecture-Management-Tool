@@ -21,7 +21,12 @@
  * prose did.
  *
  * Matching is the editor's own rule (`matchesQuery`): fold case and accents,
- * every word must occur. The folding is done once per record rather than once
+ * every word must occur. **A person is found through the register first**
+ * (ADR-0036 §8): the caller says which register ids each word of the query
+ * names ({@link PeopleMatch}), and a record that points at one of them by id
+ * matches that word — so the records hold ids, the index folds no register
+ * name, and a forgotten person is found by their pseudonym and no longer by
+ * their name. The folding is done once per record rather than once
  * per keystroke — see `recordIndex.ts` — and what is left here is the order,
  * the limits and what a hit is called. Still pure, and still the model rather
  * than the session, so the dialog and the agent are renderings of this.
@@ -75,6 +80,14 @@ export type SearchSource = {
 /** How many of each kind the dialog shows — a list to pick from, not a report. */
 export const SEARCH_LIMIT_PER_KIND = 8
 
+/**
+ * The register's half of a search (ADR-0036 §8): for one word of the query,
+ * folded, the register ids whose entry reads with that word — the name, or
+ * the pseudonym where that is what is shown. Said by whoever holds the
+ * register, in the words its reader is allowed to see.
+ */
+export type PeopleMatch = (token: string) => ReadonlySet<string>
+
 export type SearchInput = {
   /** Nearest first: the open scope, then the scopes above, then the rest. Earlier sources rank first within a band. */
   readonly sources: readonly SearchSource[]
@@ -82,6 +95,8 @@ export type SearchInput = {
   readonly limitPerKind?: number
   /** Only these kinds; absent is every kind. */
   readonly kinds?: readonly SearchKind[]
+  /** Which register ids each word names; absent finds people by the text typed into a field alone. */
+  readonly people?: PeopleMatch
 }
 
 /**
@@ -91,21 +106,37 @@ export type SearchInput = {
  */
 const TREE_WIDE: ReadonlySet<SearchKind> = new Set(['element', 'documentation'])
 
-export function searchAll({ sources, query, limitPerKind = SEARCH_LIMIT_PER_KIND, kinds }: SearchInput): SearchHit[] {
+export function searchAll({ sources, query, limitPerKind = SEARCH_LIMIT_PER_KIND, kinds, people }: SearchInput): SearchHit[] {
   const tokens = queryTokens(query)
   if (tokens.length === 0) return []
   const folded = fold(query.trim())
   const indexed = sources.map((source) => ({ source, index: recordIndex(source.model) }))
+  const matches = matcher(tokens, people)
   const hits: SearchHit[] = []
   for (const kind of SEARCH_KINDS) {
     if (kinds && !kinds.includes(kind)) continue
-    hits.push(...bestOfKind(kind, indexed, tokens, folded, limitPerKind).map(({ entry, source, index }) =>
+    hits.push(...bestOfKind(kind, indexed, matches, folded, limitPerKind).map(({ entry, source, index }) =>
       hitOf(entry, source, index, tokens, query)))
   }
   return hits
 }
 
 type Found = { entry: RecordEntry; source: SearchSource; index: RecordIndex }
+
+/**
+ * Whether a record matches: every word in its folded words, or — for a record
+ * that names people by id — in the register's entry of one of them. The
+ * register is asked once per word, not once per record.
+ */
+function matcher(tokens: readonly string[], people: PeopleMatch | undefined): (entry: RecordEntry) => boolean {
+  const named = people ? tokens.map((token) => people(token)) : undefined
+  if (!named || named.every((ids) => ids.size === 0)) return (entry) => matchesTokens(tokens, entry.haystack)
+  return (entry) => {
+    const ids = entry.record.people
+    if (!ids?.length) return matchesTokens(tokens, entry.haystack)
+    return tokens.every((token, at) => entry.haystack.includes(token) || ids.some((id) => named[at].has(id)))
+  }
+}
 
 /**
  * The best `limit` rows of one kind across every source, in two bands: a
@@ -121,14 +152,14 @@ type Found = { entry: RecordEntry; source: SearchSource; index: RecordIndex }
  */
 function bestOfKind(
   kind: SearchKind, indexed: readonly { source: SearchSource; index: RecordIndex }[],
-  tokens: readonly string[], folded: string, limit: number,
+  matches: (entry: RecordEntry) => boolean, folded: string, limit: number,
 ): Found[] {
   const top: Found[] = []
   const rest: Found[] = []
   const seen = TREE_WIDE.has(kind) ? new Set<string>() : undefined
   scan: for (const { source, index } of indexed) {
     for (const entry of index.byKind.get(kind) ?? []) {
-      if (!matchesTokens(tokens, entry.haystack)) continue
+      if (!matches(entry)) continue
       const id = entry.record.id
       if (source.keep && !source.keep(kind, id)) continue
       if (seen) {

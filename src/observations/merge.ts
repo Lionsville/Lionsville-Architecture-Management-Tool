@@ -32,6 +32,8 @@
  */
 import type { StringKey, Translate } from '../i18n/strings'
 import { isDay } from '../model/lifecycle'
+import { personRefOf } from '../model/person'
+import type { PersonRef } from '../model/person'
 import type {
   Cause, CauseLink, CauseState, CauseStrength, Observation, ObservationImpact, ScopeAnalysis, Solution,
 } from '../model/observation'
@@ -57,7 +59,8 @@ export type RecordAt = { scope: string; id: string }
 export type ObservationValues = {
   title: string
   where?: string
-  by?: string
+  /** Who saw it: a person picked from the register, or text (ADR-0036 §8). */
+  by?: PersonRef
   impact: ObservationImpact
   /** The day it was first seen, `yyyy-mm-dd`. */
   date: string
@@ -562,11 +565,14 @@ function foldObservations(work: Work, request: Extract<MergeRequest, { kind: 'ob
         date, kind: 'absorbed' as const, id: at.id, ...(at.scope !== survivor.scope ? { scope: at.scope } : {}), seen: held.seen,
       }))],
     }
-    for (const field of ['where', 'by'] as const) {
-      const said = values[field]
-      if (said === undefined) continue
-      if (said.trim()) next[field] = said.trim()
-      else delete next[field]
+    if (values.where !== undefined) {
+      if (values.where.trim()) next.where = values.where.trim()
+      else delete next.where
+    }
+    if (values.by !== undefined) {
+      const by = personRefOf(values.by)
+      if (by !== undefined) next.by = by
+      else delete next.by
     }
     written = next
     return next

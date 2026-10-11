@@ -21,6 +21,8 @@
  * do. The one writer does not: a log of steps replayed through it must arrive
  * where it arrived, whatever the rules said the day each step was written.
  */
+import type { PersonRef } from './person'
+
 export type AdrStatus = 'proposed' | 'reviewing' | 'accepted' | 'rejected' | 'superseded'
 
 /** In workflow order, which is also the order a status picker shows them in. */
@@ -40,11 +42,20 @@ export type AdrVerdict = 'approved' | 'rejected'
 
 /** One person the decision was put to. */
 export type AdrSigner = {
-  name: string
+  /** Who: a person picked from the register, or text as typed (ADR-0036 §8). */
+  name: PersonRef
   role?: string
   verdict?: AdrVerdict
   /** The day of the verdict, `yyyy-mm-dd`. Absent until there is one. */
   signedAt?: string
+  /**
+   * The name a person picked from the register signed with, written beside
+   * the id when the verdict is given (ADR-0036 §8): part of the record, kept
+   * after the person is forgotten. The one place a register name enters the
+   * history, on purpose. Absent for text, which is its own name, and until
+   * there is a verdict.
+   */
+  signedAs?: string
 }
 
 export type Adr = {
@@ -81,11 +92,19 @@ export type Adr = {
    */
   supersedes?: string[]
   /**
-   * Who proposed it, as free text — there are no accounts in the core. Read
-   * only to say so when the one approving signer is the same name: accepting
-   * your own proposal is allowed, and worth a second look.
+   * Who proposed it: a person picked from the register, or text as typed —
+   * there are no accounts in the core (ADR-0036 §8). Read to say so when the
+   * one approving signer is the same person: accepting your own proposal is
+   * allowed, and worth a second look.
    */
-  proposedBy?: string
+  proposedBy?: PersonRef
+  /**
+   * The name the proposer had when the decision was signed — fixed beside the
+   * id the moment a signer gives a verdict, as a signature's name is
+   * ({@link AdrSigner.signedAs}), and kept after the person is forgotten.
+   * Absent for text, and while nobody has signed.
+   */
+  proposedAs?: string
   /**
    * Why it was rejected or withdrawn. Required for a withdrawal, and for a
    * rejection that no signer's verdict explains; a record that ends without a

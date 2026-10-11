@@ -20,6 +20,8 @@
  */
 import type { Translate } from '../i18n/strings'
 import { isDay } from '../model/lifecycle'
+import { isBlankRef } from '../model/person'
+import type { PersonRef } from '../model/person'
 import {
   causeTemplate, linkCause, newCause, newObservation, nextCauseNumber, nextObservationNumber, withReason,
 } from './observation'
@@ -29,7 +31,8 @@ import type { Analysis, Cause, CauseLink, CauseStrength, ObservationImpact } fro
 export type ObservationFields = {
   title: string
   where: string
-  by: string
+  /** Who saw it: a person picked from the register, or text (ADR-0036 §8). */
+  by: PersonRef
   /** `yyyy-mm-dd`: the day it was first seen. */
   date: string
   impact: ObservationImpact
@@ -49,7 +52,8 @@ export function observationProblems(
   fields: Pick<ObservationFields, RequiredField>, today: string,
 ): Partial<Record<RequiredField, FieldProblem>> {
   const problems: Partial<Record<RequiredField, FieldProblem>> = {}
-  for (const key of ['title', 'where', 'by'] as const) if (!fields[key].trim()) problems[key] = 'missing'
+  for (const key of ['title', 'where'] as const) if (!fields[key].trim()) problems[key] = 'missing'
+  if (isBlankRef(fields.by)) problems.by = 'missing'
   if (!isDay(fields.date)) problems.date = 'missing'
   else if (fields.date > today) problems.date = 'future'
   return problems

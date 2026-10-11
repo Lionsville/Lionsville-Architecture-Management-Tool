@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
+import { refText } from '../model/person'
 import { describe, expect, it } from 'vitest'
 import { placedNodes } from '../model/placement';
 import { bestMatches, matchesTokens, NO_MATCH, searchIndex } from './searchIndex'
@@ -169,7 +170,7 @@ describe('the same answers as the filter and sort it replaced', () => {
     const band = (title: string) => (fold(title).startsWith(folded) ? 0 : 1)
     const expected = (model.decisions ?? [])
       .filter((adr) => matchesQuery(query, [
-        `ADR-${String(adr.number).padStart(4, '0')}`, adr.title, ...adr.signers.map((s) => s.name), adr.body,
+        `ADR-${String(adr.number).padStart(4, '0')}`, adr.title, ...adr.signers.map((s) => refText(s.name)), refText(adr.proposedBy), adr.body,
       ]))
       .map((adr, at) => ({ adr, at }))
       .sort((a, b) => band(a.adr.title) - band(b.adr.title) || a.at - b.at)

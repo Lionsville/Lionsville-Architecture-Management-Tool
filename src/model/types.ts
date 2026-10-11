@@ -302,8 +302,14 @@ export interface DesignElement {
    * A field rather than a row in the documentation template, for the reason
    * that template's own comment gives: a question with two places to answer it
    * has two answers. The row left the template when this arrived.
+   *
+   * A person picked from the register, or text as typed (ADR-0036 §8): the
+   * shape of `model/person.ts`'s `PersonRef`, declared here because this file
+   * imports nothing. Where nobody wrote one, an application's owner may be
+   * worked out on the day from the operating model's rule (`model/owners.ts`),
+   * and is never stored.
    */
-  owner?: string;
+  owner?: string | { readonly person: string };
   isManaged: boolean;
   /** Keyed by aspect key (superset or custom slug). */
   aspects: Record<string, AspectEntry>;

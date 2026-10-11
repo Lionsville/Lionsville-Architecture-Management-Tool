@@ -23,7 +23,8 @@ import type {
 } from '../../../model/transition'
 import { slug } from '../../../model/keys'
 import {
-  frontMatterNumber, frontMatterRows, frontMatterString, frontMatterText, markdownBody, readFrontMatter,
+  frontMatterNumber, frontMatterPerson, frontMatterRows, frontMatterString, frontMatterText, markdownBody, personFrontMatter,
+  readFrontMatter,
 } from './fileText'
 import type { FrontMatterScalar } from './fileText'
 
@@ -74,7 +75,7 @@ export function transitionFileText(transition: Transition): string {
     status: transition.status,
     from: transition.from,
     to: transition.to,
-    owner: transition.owner,
+    ...personFrontMatter('owner', transition.owner),
     initiative: transition.initiative,
     doneOn: transition.doneOn,
     // Written as a list of ids rather than rows, because a decision reference
@@ -159,7 +160,7 @@ export function transitionFromFile(text: string, path: string): Transition | und
 
   const from = frontMatterString(fields, 'from')
   const to = frontMatterString(fields, 'to')
-  const owner = frontMatterString(fields, 'owner')
+  const owner = frontMatterPerson(fields, 'owner')
   const doneOn = frontMatterString(fields, 'doneOn')
   const moves = movesFrom(frontMatterRows(fields, 'moves'))
 
@@ -171,7 +172,7 @@ export function transitionFromFile(text: string, path: string): Transition | und
     ...(frontMatterString(fields, 'initiative') === 'true' ? { initiative: true as const } : {}),
     ...(from ? { from } : {}),
     ...(to ? { to } : {}),
-    ...(owner ? { owner } : {}),
+    ...(owner !== undefined ? { owner } : {}),
     ...(doneOn ? { doneOn } : {}),
     elements: elementsFrom(frontMatterRows(fields, 'elements')),
     ...(moves.length ? { moves } : {}),

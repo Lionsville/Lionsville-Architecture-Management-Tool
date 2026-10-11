@@ -11,7 +11,7 @@ import { translator } from '../i18n'
 import {
   adrGate, adrOpenItems, adrOptionNames, adrsFor, formatAdrNumber, isAdr, isAdrDeletable, isAdrLocked, madrTemplate, newAdr,
   nextAdrNumber, removeAdr, selfAccepted, setAdrStatus, sortAdrs, supersededByUnaccepted, transitionAdr,
-  transitionsFrom, updateAdr,
+  signerNamed, signerPicked, transitionsFrom, updateAdr, withSignedNames,
 } from './adr'
 import type { Adr } from './adr'
 
@@ -300,5 +300,72 @@ describe('reading a record back out of storage', () => {
     expect(isAdr({ ...adr(), signers: [{ name: 'K', verdict: 'maybe' }] })).toBe(false)
     expect(isAdr({ ...adr(), body: undefined })).toBe(false)
     expect(isAdr(null)).toBe(false)
+  })
+})
+
+describe('a signature keeps its name (ADR-0036 §8)', () => {
+  const names: Record<string, string> = { 'pe-kim': 'Kim Bakker', 'pe-ali': 'Ali Demir' }
+  const nameOf = (id: string) => names[id]
+
+  it('writes the name a picked signer signed with beside the id, and fixes the proposer’s once anybody has', () => {
+    const before = adr({ status: 'reviewing', proposedBy: { person: 'pe-ali' }, signers: [{ name: { person: 'pe-kim' } }, { name: 'The board' }] })
+    const signed = updateAdr([before], 'adr-a', {
+      signers: [{ name: { person: 'pe-kim' }, verdict: 'approved', signedAt: '2026-09-02' }, { name: 'The board', verdict: 'approved', signedAt: '2026-09-02' }],
+    }, nameOf)[0]
+    expect(signed.signers).toEqual([
+      { name: { person: 'pe-kim' }, verdict: 'approved', signedAt: '2026-09-02', signedAs: 'Kim Bakker' },
+      { name: 'The board', verdict: 'approved', signedAt: '2026-09-02' },
+    ])
+    expect(signed.proposedAs).toBe('Ali Demir')
+  })
+
+  it('keeps the name it was signed with when the register’s name changes, or the person is forgotten', () => {
+    const signed = adr({
+      status: 'reviewing', proposedBy: { person: 'pe-ali' }, proposedAs: 'Ali Demir',
+      signers: [{ name: { person: 'pe-kim' }, verdict: 'approved', signedAt: '2026-09-02', signedAs: 'Kim Bakker' }],
+    })
+    const later = updateAdr([signed], 'adr-a', { title: 'Use one queue, everywhere' }, () => undefined)[0]
+    expect(later.signers[0].signedAs).toBe('Kim Bakker')
+    expect(later.proposedAs).toBe('Ali Demir')
+  })
+
+  it('takes the name off when the verdict is taken back or another person is put in the row', () => {
+    const signed = adr({
+      status: 'reviewing', proposedBy: { person: 'pe-ali' }, proposedAs: 'Ali Demir',
+      signers: [{ name: { person: 'pe-kim' }, verdict: 'approved', signedAt: '2026-09-02', signedAs: 'Kim Bakker' }],
+    })
+    const pending = updateAdr([signed], 'adr-a', { signers: [{ name: { person: 'pe-kim' } }] }, nameOf)[0]
+    expect(pending.signers[0].signedAs).toBeUndefined()
+    expect(pending.proposedAs).toBeUndefined()
+    const other = updateAdr([signed], 'adr-a', { signers: [{ name: { person: 'pe-ali' }, verdict: 'approved', signedAt: '2026-09-03' }] }, nameOf)[0]
+    expect(other.signers[0].signedAs).toBe('Ali Demir')
+  })
+
+  it('signs a forgotten person with nothing beside the id, and writes no name without a register to ask', () => {
+    const before = adr({ status: 'reviewing', signers: [{ name: { person: 'pe-gone' } }] })
+    const patch = { signers: [{ name: { person: 'pe-gone' }, verdict: 'approved' as const, signedAt: '2026-09-02' }] }
+    expect(updateAdr([before], 'adr-a', patch, nameOf)[0].signers[0].signedAs).toBeUndefined()
+    expect(updateAdr([before], 'adr-a', { signers: [{ name: { person: 'pe-kim' }, verdict: 'approved', signedAt: '2026-09-02' }] })[0].signers[0].signedAs).toBeUndefined()
+    expect(withSignedNames(undefined, adr({ signers: [{ name: { person: 'pe-kim' }, verdict: 'rejected' }] }), nameOf).signers[0].signedAs).toBe('Kim Bakker')
+  })
+
+  it('compares people by id — through a merge — when it says the only approval is the proposer’s', () => {
+    const own = { proposedBy: { person: 'pe-kim' }, signers: [{ name: { person: 'pe-kim' }, verdict: 'approved' as const }] }
+    expect(selfAccepted(own)).toBe(true)
+    expect(selfAccepted({ ...own, proposedBy: { person: 'pe-old' } }, (id) => (id === 'pe-old' ? 'pe-kim' : id))).toBe(true)
+    expect(selfAccepted({ ...own, proposedBy: 'Kim Bakker' })).toBe(false)
+  })
+
+  it('reads a picked signer and proposer back out of storage, and what a signature kept', () => {
+    const stored = adr({
+      proposedBy: { person: 'pe-ali' }, proposedAs: 'Ali Demir',
+      signers: [{ name: { person: 'pe-kim' }, verdict: 'approved', signedAt: '2026-09-02', signedAs: 'Kim Bakker' }],
+    })
+    expect(isAdr(stored)).toBe(true)
+    expect(isAdr({ ...stored, signers: [{ name: { person: 'pe-kim', name: 'Kim' } }] })).toBe(false)
+    expect(isAdr({ ...stored, proposedAs: 7 })).toBe(false)
+    expect(signerNamed({ name: ' ' })).toBe(false)
+    expect(signerNamed({ name: { person: 'pe-kim' } })).toBe(true)
+    expect(signerPicked({ name: 'Kim' })).toBe(false)
   })
 })

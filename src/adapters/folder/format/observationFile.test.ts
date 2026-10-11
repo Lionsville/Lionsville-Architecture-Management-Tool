@@ -190,3 +190,23 @@ describe('an experiment as a file', () => {
     expect(back).toMatchObject({ number: 7, title: 'Trial', outcome: 'planned', tests: [], hypothesis: '' })
   })
 })
+
+// A name field takes a person from the register by id, or text (ADR-0036 §8): the
+// id is written under a key of its own, so a file read before the register
+// still finds its text where it always was, and holds no name of the register.
+describe('who saw it, and who runs it, as a person from the register', () => {
+  it('round-trips an id under its own key, and writes no name', () => {
+    const picked: Observation = { ...observation, by: { person: 'pe-7f3a' } }
+    const text = observationFileText(picked)
+    expect(text).toContain('byPerson: pe-7f3a')
+    expect(text).not.toMatch(/^by: /m)
+    expect(observationFromFile(text, observationPath(picked))).toEqual(picked)
+    const runs: Experiment = { ...experiment, by: { person: 'pe-7f3a' } }
+    expect(experimentFromFile(experimentFileText(runs), experimentPath(runs))).toEqual(runs)
+  })
+
+  it('reads text written before the register as text', () => {
+    const read = observationFromFile(observationFileText(observation), observationPath(observation))
+    expect(read?.by).toBe('W. Simons')
+  })
+})

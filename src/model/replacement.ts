@@ -32,6 +32,8 @@ import { placeOn } from './commands'
 import type { Command } from './commands'
 import { placedNode, placementRect } from './placement'
 import { nodeFigure } from './kinds'
+import { personRefOf } from './person'
+import type { PersonRef } from './person'
 import { addDays } from './transition'
 import type { Transition, TransitionRole } from './transition'
 import type { DesignElement, DesignModel, ElementId, PlacedNode, Relation } from './types'
@@ -54,7 +56,8 @@ export type ReplacementRequest = {
     shadowMilestone: string
     cutoverMilestone: string
     body: string
-    owner?: string
+    /** Who answers for the plan: the replaced thing's owner, a person picked or text (ADR-0036 §8). */
+    owner?: PersonRef
   }
 }
 
@@ -163,7 +166,7 @@ export function replacementCommands(
     status: 'draft',
     from: request.shadowFrom,
     to: request.cutover,
-    ...(request.words.owner ? { owner: request.words.owner } : {}),
+    ...(personRefOf(request.words.owner) !== undefined ? { owner: personRefOf(request.words.owner) } : {}),
     elements: [
       ...request.from.filter((one) => byId.has(one.elementId)),
       { elementId: toId, role: 'introduces' },

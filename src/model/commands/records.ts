@@ -20,7 +20,7 @@ import { patchWrites } from './writes'
 /** Every field of a decision record but its id. */
 const DECISION_FIELDS: PatchKeys<'decision.update'> = {
   number: true, title: true, status: true, date: true, body: true,
-  subjectId: true, supersededBy: true, supersedes: true, proposedBy: true, reason: true, signers: true,
+  subjectId: true, supersededBy: true, supersedes: true, proposedBy: true, proposedAs: true, reason: true, signers: true,
 }
 
 /** Every field of a plan but its id. */

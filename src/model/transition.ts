@@ -37,6 +37,8 @@
  * as one step, because a plan slipping is one thing that happened.
  */
 import { isDay } from './lifecycle'
+import { isBlankRef } from './person'
+import type { PersonRef } from './person'
 import type { ElementId, LifecycleDates } from './types'
 
 export type TransitionStatus = 'draft' | 'agreed' | 'running' | 'done' | 'abandoned'
@@ -95,8 +97,8 @@ export type Transition = {
   /** The window the work runs over, `yyyy-mm-dd`. Either may be absent. */
   from?: string
   to?: string
-  /** Who answers for it. */
-  owner?: string
+  /** Who answers for it: a person picked from the register, or text (ADR-0036 §8). */
+  owner?: PersonRef
   /**
    * An initiative the organisation follows: shown on the roadmap of every
    * scope above the one it is filed in (ADR-0012 §7), read there and edited
@@ -244,7 +246,7 @@ export function planGate(plan: Transition, to: TransitionStatus, context: PlanGa
     const status = new Map(context.decisions.map((one) => [one.id, one.status]))
     return [
       { item: 'window', ok: isDay(plan.from) && isDay(plan.to) && plan.to >= plan.from },
-      { item: 'owner', ok: Boolean(plan.owner?.trim()) },
+      { item: 'owner', ok: !isBlankRef(plan.owner) },
       { item: 'names', ok: plan.elements.length > 0 },
       {
         item: 'decisions',

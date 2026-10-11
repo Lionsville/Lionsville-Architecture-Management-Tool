@@ -32,6 +32,8 @@ import type { Translate } from '../i18n'
  */
 import type { Adr, AdrFieldItem, AdrSigner, AdrStatus, AdrVerdict } from '../model/adr'
 import { ADR_STATUSES, adrFieldItems, adrMovesFrom, isAdrLocked } from '../model/adr'
+import { isPersonRef, isPicked, personIdOf, personRefOf, sameRef } from '../model/person'
+import type { PersonId } from '../model/person'
 import { EN } from './strings/en'
 import { NL } from './strings/nl'
 import { DE } from './strings/de'
@@ -280,13 +282,70 @@ export function adrOpenItems(gate: AdrGate): AdrGateItem[] {
  *
  * Allowed — the core has no accounts, and a team of one decides alone — and
  * said, because a decision nobody else looked at is a different kind of
- * decision. Names are compared as people type them: trimmed, any case.
+ * decision. A person picked from the register is the same person by id —
+ * `canonical` maps a merged id to the one kept — and text is compared as
+ * people type it: trimmed, any case.
  */
-export function selfAccepted(adr: Pick<Adr, 'proposedBy' | 'signers'>): boolean {
-  const by = adr.proposedBy?.trim().toLowerCase()
-  if (!by) return false
-  const approving = adr.signers.filter((one) => one.verdict === 'approved').map((one) => one.name.trim().toLowerCase())
-  return approving.length > 0 && approving.every((name) => name === by)
+export function selfAccepted(
+  adr: Pick<Adr, 'proposedBy' | 'signers'>, canonical?: (id: PersonId) => PersonId,
+): boolean {
+  if (personRefOf(adr.proposedBy) === undefined) return false
+  const approving = adr.signers.filter((one) => one.verdict === 'approved')
+  return approving.length > 0 && approving.every((one) => sameRef(one.name, adr.proposedBy, canonical))
+}
+
+/**
+ * The names a record keeps as signed (ADR-0036 §8).
+ *
+ * A signer picked from the register who gives a verdict signs with the name
+ * the register has for them that day, and that name is written beside the id
+ * — part of the record, kept after the person is forgotten, as a signature on
+ * paper keeps its name. Once anybody has signed, the proposer's name is fixed
+ * the same way. A name already written stays for as long as the same person's
+ * verdict of the same day does; a verdict taken back, or another person in
+ * the row, takes it off. Text is its own name and keeps none beside it.
+ *
+ * `nameOf` is the register's name for an id, or nothing — a person already
+ * forgotten signs with nothing beside the id, and reads as their pseudonym.
+ * `before` is the record as it was, for the names already written.
+ */
+export function withSignedNames(
+  before: Pick<Adr, 'signers' | 'proposedBy' | 'proposedAs'> | undefined,
+  after: Adr,
+  nameOf: (id: PersonId) => string | undefined,
+): Adr {
+  const signers = after.signers.map((signer) => {
+    const { signedAs: _was, ...rest } = signer
+    void _was
+    const id = personIdOf(signer.name)
+    if (id === undefined || signer.verdict === undefined) return rest
+    const kept = before?.signers.find((one) => personIdOf(one.name) === id && one.verdict !== undefined
+      && one.signedAt === signer.signedAt && one.signedAs !== undefined)?.signedAs
+    const name = kept ?? nameOf(id)
+    return name ? { ...rest, signedAs: name } : rest
+  })
+  const next: Adr = { ...after, signers }
+  delete next.proposedAs
+  const proposer = personIdOf(after.proposedBy)
+  if (proposer !== undefined && signers.some((one) => one.verdict !== undefined)) {
+    const kept = personIdOf(before?.proposedBy) === proposer ? before?.proposedAs : undefined
+    const name = kept ?? nameOf(proposer)
+    if (name) next.proposedAs = name
+  }
+  return next
+}
+
+/**
+ * Whether a signer's row names anybody: text that is not blank, or a person
+ * picked from the register.
+ */
+export function signerNamed(signer: Pick<AdrSigner, 'name'>): boolean {
+  return personRefOf(signer.name) !== undefined
+}
+
+/** Whether a signer's row is a person picked from the register. */
+export function signerPicked(signer: Pick<AdrSigner, 'name'>): boolean {
+  return isPicked(signer.name)
 }
 
 /**
@@ -339,26 +398,38 @@ export type AdrPatch = Partial<Pick<Adr, 'title' | 'body' | 'signers' | 'superse
  * Change what may still be changed. A locked record comes back untouched. An
  * emptied `supersedes` or a blank `proposedBy` is removed rather than kept
  * empty, so a record that says nothing about either stays the shape it was.
+ *
+ * With `nameOf`, the register's name for an id, the names a signature keeps
+ * are written as it is signed ({@link withSignedNames}); without it none is,
+ * and a picked signer reads through the register.
  */
-export function updateAdr(list: readonly Adr[], id: string, patch: AdrPatch): Adr[] {
+export function updateAdr(
+  list: readonly Adr[], id: string, patch: AdrPatch, nameOf?: (id: PersonId) => string | undefined,
+): Adr[] {
   return list.map((adr) => {
     if (adr.id !== id || isAdrLocked(adr)) return adr
-    const next = { ...adr }
-    if (patch.title !== undefined && patch.title.trim()) next.title = patch.title.trim()
-    if (patch.body !== undefined) next.body = patch.body
-    if (patch.signers !== undefined) next.signers = patch.signers
-    if ('supersedes' in patch) {
-      const named = [...new Set(patch.supersedes ?? [])].filter((other) => other !== id)
-      if (named.length) next.supersedes = named
-      else delete next.supersedes
-    }
-    if ('proposedBy' in patch) {
-      const by = patch.proposedBy?.trim()
-      if (by) next.proposedBy = by
-      else delete next.proposedBy
-    }
-    return next
+    const next = edited(adr, id, patch)
+    return nameOf ? withSignedNames(adr, next, nameOf) : next
   })
+}
+
+/** The record with the patch on it: blank text dropped, a blank `proposedBy` removed. */
+function edited(adr: Adr, id: string, patch: AdrPatch): Adr {
+  const next = { ...adr }
+  if (patch.title !== undefined && patch.title.trim()) next.title = patch.title.trim()
+  if (patch.body !== undefined) next.body = patch.body
+  if (patch.signers !== undefined) next.signers = patch.signers
+  if ('supersedes' in patch) {
+    const named = [...new Set(patch.supersedes ?? [])].filter((other) => other !== id)
+    if (named.length) next.supersedes = named
+    else delete next.supersedes
+  }
+  if ('proposedBy' in patch) {
+    const by = personRefOf(patch.proposedBy)
+    if (by !== undefined) next.proposedBy = by
+    else delete next.proposedBy
+  }
+  return next
 }
 
 /**
@@ -432,10 +503,11 @@ export function sortAdrs(list: readonly Adr[]): Adr[] {
 function isSigner(value: unknown): value is AdrSigner {
   if (!value || typeof value !== 'object') return false
   const s = value as AdrSigner
-  return typeof s.name === 'string'
+  return isPersonRef(s.name)
     && (s.role === undefined || typeof s.role === 'string')
     && (s.verdict === undefined || s.verdict === 'approved' || s.verdict === 'rejected')
     && (s.signedAt === undefined || typeof s.signedAt === 'string')
+    && (s.signedAs === undefined || typeof s.signedAs === 'string')
 }
 
 export function isAdr(value: unknown): value is Adr {
@@ -450,7 +522,8 @@ export function isAdr(value: unknown): value is Adr {
     && (a.subjectId === undefined || typeof a.subjectId === 'string')
     && (a.supersededBy === undefined || typeof a.supersededBy === 'string')
     && (a.supersedes === undefined || (Array.isArray(a.supersedes) && a.supersedes.every((id) => typeof id === 'string')))
-    && (a.proposedBy === undefined || typeof a.proposedBy === 'string')
+    && (a.proposedBy === undefined || isPersonRef(a.proposedBy))
+    && (a.proposedAs === undefined || typeof a.proposedAs === 'string')
     && (a.reason === undefined || typeof a.reason === 'string')
     && Array.isArray(a.signers) && a.signers.every(isSigner)
 }

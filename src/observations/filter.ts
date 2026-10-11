@@ -30,6 +30,8 @@
  * accents folded.
  */
 import { matchesQuery } from '../model/textSearch'
+import { refText } from '../model/person'
+import type { PersonRef } from '../model/person'
 import { absorbedKeys, experimentKey, pictureKey, solutionKey } from './graph'
 import { causeLabel, formatObservationNumber, isArchived, isRootCause } from './observation'
 import type { ScopeAnalysis } from './observation'
@@ -154,15 +156,22 @@ export function applyFilters(
 /**
  * The records of the scopes in view, keyed as the picture keys them: this
  * scope's under their own keys, a scope below's under `scope#…`.
+ *
+ * Who saw an observation is read as the screen shows it, `named` — the
+ * register's name for a person picked from it, the text otherwise — so a
+ * filter typed with a name finds the records that point at the person
+ * (ADR-0036 §8). Without it, only text typed into the field is read.
  */
-export function filterRecords(scopes: readonly ScopeAnalysis[], here: string): FilterRecord[] {
+export function filterRecords(
+  scopes: readonly ScopeAnalysis[], here: string, named: (ref: PersonRef | undefined) => string | undefined = refText,
+): FilterRecord[] {
   const gone = absorbedKeys(scopes, here)
   return scopes.flatMap(({ scope, observations, causes, solutions, experiments }): FilterRecord[] => [
     ...observations.map((one): FilterRecord => {
       const key = pictureKey(here, scope, one.id)
       return {
         key, scope, kind: 'observation', counted: !gone.has(key) && !isArchived(one),
-        text: [formatObservationNumber(one.number), one.title, one.where, one.by, one.body],
+        text: [formatObservationNumber(one.number), one.title, one.where, named(one.by), one.body],
       }
     }),
     ...causes.map((one): FilterRecord => ({
@@ -175,7 +184,7 @@ export function filterRecords(scopes: readonly ScopeAnalysis[], here: string): F
     })),
     ...experiments.map((one): FilterRecord => ({
       key: pictureKey(here, scope, experimentKey(one.id)), scope, kind: 'experiment', counted: false,
-      text: [formatExperimentNumber(one.number), one.title, one.hypothesis, one.measure, one.body],
+      text: [formatExperimentNumber(one.number), one.title, one.hypothesis, one.measure, named(one.by), one.body],
     })),
   ])
 }

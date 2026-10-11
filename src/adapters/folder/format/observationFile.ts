@@ -32,7 +32,8 @@ import type {
 import { slug } from '../../../model/keys'
 import { rootsFromSolutions } from '../../../observations/rootsFromSolutions'
 import {
-  frontMatterNumber, frontMatterRows, frontMatterString, frontMatterText, markdownBody, readFrontMatter,
+  frontMatterNumber, frontMatterPerson, frontMatterRows, frontMatterString, frontMatterText, markdownBody, personFrontMatter,
+  readFrontMatter,
 } from './fileText'
 import type { FrontMatterScalar } from './fileText'
 
@@ -111,7 +112,7 @@ export function observationFileText(observation: Observation): string {
     number: observation.number,
     date: observation.date,
     where: observation.where,
-    by: observation.by,
+    ...personFrontMatter('by', observation.by),
     impact: observation.impact,
     seen: observation.seen,
     archived: observation.archived,
@@ -229,7 +230,7 @@ export function observationFromFile(text: string, path: string): Observation | u
   if (number === undefined) return undefined
   const date = frontMatterString(fields, 'date') ?? ''
   const where = frontMatterString(fields, 'where')
-  const by = frontMatterString(fields, 'by')
+  const by = frontMatterPerson(fields, 'by')
   const seen = frontMatterNumber(fields, 'seen')
   const history = historyFrom(frontMatterRows(fields, 'history'))
   return {
@@ -238,7 +239,7 @@ export function observationFromFile(text: string, path: string): Observation | u
     title,
     date,
     ...(where ? { where } : {}),
-    ...(by ? { by } : {}),
+    ...(by !== undefined ? { by } : {}),
     impact: impactOf(frontMatterString(fields, 'impact')),
     seen: seen !== undefined && seen >= 1 ? Math.trunc(seen) : 1,
     // `shared: true` in a file written before ADR-0032 is read past and not
@@ -318,7 +319,7 @@ export function experimentFileText(experiment: Experiment): string {
     hypothesis: experiment.hypothesis,
     measure: experiment.measure,
     where: experiment.where,
-    by: experiment.by,
+    ...personFrontMatter('by', experiment.by),
     from: experiment.from,
     to: experiment.to,
     result: experiment.result,
@@ -394,7 +395,7 @@ export function experimentFromFile(fileText: string, path: string): Experiment |
   if (number === undefined) return undefined
   const string = (key: string) => frontMatterString(fields, key) || undefined
   const optional = {
-    measure: string('measure'), where: string('where'), by: string('by'),
+    measure: string('measure'), where: string('where'), by: frontMatterPerson(fields, 'by'),
     from: string('from'), to: string('to'), result: string('result'),
   }
   const rows = frontMatterRows(fields, 'tests')

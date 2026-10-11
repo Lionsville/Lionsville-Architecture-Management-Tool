@@ -18,6 +18,8 @@
  *
  * Nothing here knows what a scope is. That is `folderFormat.ts`.
  */
+import { isPicked, personRefOf, pickedPerson } from '../../../model/person'
+import type { PersonRef } from '../../../model/person'
 import { parseJson } from '../../../projects/text'
 
 /**
@@ -160,4 +162,39 @@ export function frontMatterNumber(fields: FrontMatter, key: string): number | un
 export function frontMatterRows(fields: FrontMatter, key: string): Record<string, FrontMatterScalar>[] {
   const held = fields[key]
   return Array.isArray(held) ? (held as Record<string, FrontMatterScalar>[]) : []
+}
+
+/**
+ * A name field as front matter (ADR-0036 §8): text under its own key, as
+ * every file before the register wrote it, and a person picked from the
+ * register as an id under the key with `Person` after it — `owner:` or
+ * `ownerPerson:`, never both. Front matter keeps one value per key, and a
+ * file read by a build from before the register still finds its text where
+ * it always was.
+ */
+export function personFrontMatter(key: string, ref: PersonRef | undefined): FrontMatter {
+  const held = personRefOf(ref)
+  if (held === undefined) return {}
+  return isPicked(held) ? { [`${key}Person`]: held.person } : { [key]: held }
+}
+
+/** A name field back from front matter: the id where one is written, the text otherwise. */
+export function frontMatterPerson(fields: FrontMatter, key: string): PersonRef | undefined {
+  const id = frontMatterString(fields, `${key}Person`)
+  if (id) return pickedPerson(id)
+  return personRefOf(frontMatterString(fields, key))
+}
+
+/** The same, in a row: `name:` text, or `person:` an id (a decision's signers). */
+export function personRow(ref: PersonRef | undefined, textKey: string): Record<string, string> {
+  const held = personRefOf(ref)
+  if (held === undefined) return {}
+  return isPicked(held) ? { person: held.person } : { [textKey]: held }
+}
+
+/** A name back from a row. */
+export function rowPerson(row: Record<string, FrontMatterScalar>, textKey: string): PersonRef | undefined {
+  const id = typeof row.person === 'string' ? row.person : undefined
+  if (id) return pickedPerson(id)
+  return personRefOf(typeof row[textKey] === 'string' ? row[textKey] : undefined)
 }

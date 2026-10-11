@@ -25,6 +25,7 @@
  * say what it holds without importing the module that decides what may happen
  * to one.
  */
+import type { PersonRef } from './person'
 
 /** How much it matters when it is seen. Drawn as the size of the mark. */
 export type ObservationImpact = 'minor' | 'major' | 'critical'
@@ -83,8 +84,11 @@ export type Observation = {
   date: string
   /** Where it was seen: a system, a desk, a job, a meeting. Prose, not an id. */
   where?: string
-  /** Who saw it, or who wrote it down. Free text: a name, initials, a team. */
-  by?: string
+  /**
+   * Who saw it, or who wrote it down: a person picked from the register, or
+   * text — a name, initials, a team (ADR-0036 §8).
+   */
+  by?: PersonRef
   impact: ObservationImpact
   /** How often it has been seen, this record's own sightings and the absorbed ones together. */
   seen: number
@@ -282,7 +286,8 @@ export type Experiment = {
   /** What is counted to decide it. */
   measure?: string
   where?: string
-  by?: string
+  /** Who runs it: a person picked from the register, or text (ADR-0036 §8). */
+  by?: PersonRef
   /** The window it runs over, `yyyy-mm-dd`. */
   from?: string
   to?: string

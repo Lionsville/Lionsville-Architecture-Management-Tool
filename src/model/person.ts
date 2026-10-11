@@ -58,6 +58,74 @@ export function isPersonRef(value: unknown): value is PersonRef {
 }
 
 /**
+ * A reference as a field keeps it: text trimmed, a picked entry as it is, and
+ * nothing for blank text or a value that is no reference at all. What every
+ * writer of a name field runs, so an emptied field is removed rather than kept
+ * empty and a file read back holds the shape it was written in.
+ */
+export function personRefOf(value: unknown): PersonRef | undefined {
+  if (typeof value === 'string') return value.trim() || undefined
+  return isPersonRef(value) && isPicked(value) ? pickedPerson(value.person) : undefined
+}
+
+/**
+ * Whether a reference says nothing: absent, or text that is blank. A picked
+ * entry always says someone.
+ */
+export function isBlankRef(ref: PersonRef | undefined): boolean {
+  return personRefOf(ref) === undefined
+}
+
+/**
+ * Whether two references name the same person as far as the model can tell:
+ * the same entry, or the same text ignoring case and the space around it. An
+ * entry and text are never the same — the model does not ask the register
+ * what a name is; `canonical` maps an id to the entry a merge kept.
+ */
+export function sameRef(
+  one: PersonRef | undefined, other: PersonRef | undefined, canonical: (id: PersonId) => PersonId = (id) => id,
+): boolean {
+  const a = personRefOf(one)
+  const b = personRefOf(other)
+  if (a === undefined || b === undefined) return false
+  if (isPicked(a) || isPicked(b)) return isPicked(a) && isPicked(b) && canonical(a.person) === canonical(b.person)
+  return a.toLowerCase() === b.toLowerCase()
+}
+
+/**
+ * The text of a reference, for a reader that has no register: the text as
+ * typed, and nothing for a picked entry — whose name is the register's to
+ * say (`people/shown.ts`). What a search folds and what a filter matches, so
+ * no register name is ever kept beside a record.
+ */
+export function refText(ref: PersonRef | undefined): string | undefined {
+  return typeof ref === 'string' ? ref : undefined
+}
+
+/**
+ * A reference as one string, for a screen that offers values to choose from
+ * and compares them as strings — the merge's rows of values: text as it is,
+ * a picked entry as its JSON. {@link personRefFromKey} reads it back.
+ */
+export function personRefKey(ref: PersonRef | undefined): string | undefined {
+  if (ref === undefined) return undefined
+  return isPicked(ref) ? JSON.stringify(pickedPerson(ref.person)) : ref
+}
+
+/** A reference back from {@link personRefKey}. */
+export function personRefFromKey(key: string): PersonRef {
+  if (key.startsWith('{"person":')) {
+    try {
+      const read: unknown = JSON.parse(key)
+      if (isPersonRef(read) && isPicked(read)) return pickedPerson(read.person)
+    } catch {
+      return key
+    }
+  }
+  return key
+}
+
+/**
  * Every register id a value names, wherever in it a reference sits: a model,
  * a record, a step. Read by shape rather than by field, so a field that takes
  * a person later is found without this learning its name — what lets a

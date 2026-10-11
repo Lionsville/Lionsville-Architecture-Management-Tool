@@ -134,3 +134,28 @@ describe('subjectId, and the old spelling', () => {
     expect(adrFromFile(text, 'decisions/wms/0003-something.md')?.subjectId).toBe('wms')
   })
 })
+
+describe('a decision’s people, picked from the register (ADR-0036 §8)', () => {
+  it('writes a picked proposer and signer by id, with the names their signature kept, and reads them back', () => {
+    const signed = record({
+      proposedBy: { person: 'pe-ali' }, proposedAs: 'Ali Demir',
+      signers: [
+        { name: { person: 'pe-kim' }, role: 'Architect', verdict: 'approved', signedAt: '2026-09-06', signedAs: 'Kim Bakker' },
+        { name: 'The board' },
+      ],
+    })
+    const text = adrFileText(signed)
+    expect(text).toContain('proposedByPerson: pe-ali')
+    expect(text).toContain('  - person: pe-kim')
+    expect(text).toContain('    signedAs: Kim Bakker')
+    expect(adrFromFile(text, adrPath(signed))).toEqual(signed)
+  })
+
+  it('reads a signed name only beside an id, and text as text', () => {
+    const text = '---\nnumber: 3\nproposedBy: Kim\nproposedAs: Somebody\nsigners:\n  - name: Ali\n    signedAs: Somebody\n---\n# ADR-0003 — Old\n\nBody\n'
+    const read = adrFromFile(text, 'decisions/0003-old.md')
+    expect(read?.proposedBy).toBe('Kim')
+    expect(read?.proposedAs).toBeUndefined()
+    expect(read?.signers).toEqual([{ name: 'Ali' }])
+  })
+})

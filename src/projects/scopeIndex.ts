@@ -52,6 +52,8 @@
  */
 import type { DesignElement, ElementId, ElementKind, LifecycleDates, PlatformArchetype, Relation, RelationType } from '../model'
 import { isDay } from '../model/lifecycle'
+import { isBlankRef } from '../model/person'
+import type { PersonRef } from '../model/person'
 import type { Transition } from '../model/transition'
 import type { CauseAbove, ScopeAnalysis } from '../model/observation'
 import type { OperatingRule, Responsibility, Role, UnitType } from '../model/operatingModel'
@@ -135,6 +137,14 @@ export type IndexEntry = {
   outside?: true
   /** Which actor an outside application belongs to, where that has been said. */
   partyId?: ElementId
+  /**
+   * Who answers for it, as its master says (ADR-0036 §8): a person picked
+   * from the register, by id, or text as typed. A stand-in carries no owner
+   * of its own (§3), so a scope drawing the thing shows the master's from
+   * here — the id, which the register names; never a name the register
+   * holds.
+   */
+  owner?: PersonRef
   /**
    * What a platform is, as its master says (ADR-0014). A stand-in carries
    * nothing the owner answers for, so a landscape drawing the cluster reads
@@ -345,7 +355,7 @@ export type ScopeIndex = {
  * What an entry carries of its master's own detail — the tree facts (§3) a
  * stand-in may not carry and every scope drawing the thing reads from here.
  */
-type MasterDetail = Pick<IndexEntry, 'parentId' | 'outside' | 'partyId' | 'platformArchetype' | 'shared' | 'retired'>
+type MasterDetail = Pick<IndexEntry, 'parentId' | 'outside' | 'partyId' | 'owner' | 'platformArchetype' | 'shared' | 'retired'>
 
 /**
  * Those fields off a record, each only where it says something: an entry
@@ -354,7 +364,7 @@ type MasterDetail = Pick<IndexEntry, 'parentId' | 'outside' | 'partyId' | 'platf
  * built, so the list of fields is said once.
  */
 function masterDetailOf(held: {
-  parentId?: ElementId; outside?: boolean; partyId?: ElementId; platformArchetype?: PlatformArchetype
+  parentId?: ElementId; outside?: boolean; partyId?: ElementId; owner?: PersonRef; platformArchetype?: PlatformArchetype
   shared?: boolean; retired?: string; lifecycleDates?: LifecycleDates
 }): MasterDetail {
   const retired = held.retired ?? held.lifecycleDates?.retired
@@ -362,6 +372,7 @@ function masterDetailOf(held: {
     ...(held.parentId !== undefined ? { parentId: held.parentId } : {}),
     ...(held.outside ? { outside: true as const } : {}),
     ...(held.partyId !== undefined ? { partyId: held.partyId } : {}),
+    ...(held.owner !== undefined && !isBlankRef(held.owner) ? { owner: held.owner } : {}),
     ...(held.platformArchetype !== undefined ? { platformArchetype: held.platformArchetype } : {}),
     ...(held.shared ? { shared: true as const } : {}),
     ...(isDay(retired) ? { retired } : {}),

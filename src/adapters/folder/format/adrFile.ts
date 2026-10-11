@@ -24,8 +24,10 @@
 import { ADR_STATUSES } from '../../../model/adr'
 import type { Adr, AdrSigner, AdrStatus, AdrVerdict } from '../../../model/adr'
 import { KEY_RE, slug } from '../../../model/keys'
+import { isPicked } from '../../../model/person'
 import {
-  frontMatterNumber, frontMatterRows, frontMatterString, frontMatterText, markdownBody, readFrontMatter,
+  frontMatterNumber, frontMatterPerson, frontMatterRows, frontMatterString, frontMatterText, markdownBody, personFrontMatter,
+  personRow, readFrontMatter, rowPerson,
 } from './fileText'
 
 /** The folder a scope's records live in. */
@@ -67,9 +69,15 @@ function adrFolder(adr: Pick<Adr, 'subjectId'>): string {
   return subject ? `${DECISIONS_FOLDER}/${subject}` : DECISIONS_FOLDER
 }
 
+/**
+ * A signer as a row: `name:` for text, `person:` for an entry of the register
+ * with `signedAs:` the name it signed with (ADR-0036 §8). A row that names
+ * nobody is still written, as it always was, with an empty name.
+ */
 function signerRows(signers: readonly AdrSigner[]): Record<string, string>[] {
   return signers.map((signer) => ({
-    name: signer.name,
+    ...(isPicked(signer.name) ? personRow(signer.name, 'name') : { name: signer.name }),
+    ...(signer.signedAs ? { signedAs: signer.signedAs } : {}),
     ...(signer.role ? { role: signer.role } : {}),
     ...(signer.verdict ? { verdict: signer.verdict } : {}),
     ...(signer.signedAt ? { signedAt: signer.signedAt } : {}),
@@ -97,7 +105,8 @@ export function adrFileText(adr: Adr): string {
     // the decisions it rests on: a reference is one value, and a row with one
     // column reads like a mistake.
     supersedes: adr.supersedes?.filter(Boolean).map((id) => ({ id })),
-    proposedBy: adr.proposedBy,
+    ...personFrontMatter('proposedBy', adr.proposedBy),
+    proposedAs: adr.proposedAs,
     reason: adr.reason,
     signers: signerRows(adr.signers),
   })
@@ -119,13 +128,15 @@ function idsFrom(rows: Record<string, string | number | boolean>[]): string[] {
 
 function signersFrom(rows: Record<string, string | number | boolean>[]): AdrSigner[] {
   return rows.flatMap((row) => {
-    const name = typeof row.name === 'string' ? row.name : ''
-    if (!name) return []
+    const name = rowPerson(row, 'name')
+    if (name === undefined) return []
     const role = typeof row.role === 'string' ? row.role : undefined
     const signedAt = typeof row.signedAt === 'string' ? row.signedAt : undefined
+    const signedAs = typeof row.signedAs === 'string' && isPicked(name) ? row.signedAs : undefined
     const verdict = verdictOf(typeof row.verdict === 'string' ? row.verdict : undefined)
     return [{
       name,
+      ...(signedAs ? { signedAs } : {}),
       ...(role ? { role } : {}),
       ...(verdict ? { verdict } : {}),
       ...(signedAt ? { signedAt } : {}),
@@ -172,7 +183,8 @@ export function adrFromFile(text: string, path: string): Adr | undefined {
     ?? folder
   const supersededBy = frontMatterString(fields, 'supersededBy')
   const supersedes = idsFrom(frontMatterRows(fields, 'supersedes'))
-  const proposedBy = frontMatterString(fields, 'proposedBy')
+  const proposedBy = frontMatterPerson(fields, 'proposedBy')
+  const proposedAs = isPicked(proposedBy) ? frontMatterString(fields, 'proposedAs') : undefined
   const reason = frontMatterString(fields, 'reason')
 
   return {
@@ -185,7 +197,8 @@ export function adrFromFile(text: string, path: string): Adr | undefined {
     ...(subjectId ? { subjectId } : {}),
     ...(supersededBy ? { supersededBy } : {}),
     ...(supersedes.length ? { supersedes } : {}),
-    ...(proposedBy ? { proposedBy } : {}),
+    ...(proposedBy !== undefined ? { proposedBy } : {}),
+    ...(proposedAs ? { proposedAs } : {}),
     ...(reason ? { reason } : {}),
     signers: signersFrom(frontMatterRows(fields, 'signers')),
   }

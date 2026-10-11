@@ -103,3 +103,13 @@ describe('a file somebody edited by hand', () => {
   })
 
 })
+
+describe('the owner, picked from the register (ADR-0036 §8)', () => {
+  it('is written by id under a key of its own and read back; text stays text', () => {
+    const picked = plan({ owner: { person: 'pe-7f3a' } })
+    expect(transitionFileText(picked)).toContain('ownerPerson: pe-7f3a')
+    expect(transitionFileText(picked)).not.toMatch(/^owner: /m)
+    expect(roundTrip(picked)).toEqual(picked)
+    expect(roundTrip(plan())?.owner).toBe('Logistics IT')
+  })
+})

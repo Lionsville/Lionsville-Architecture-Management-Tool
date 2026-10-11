@@ -7,7 +7,7 @@
  * `⌘F` is the element-only one on the canvas.
  */
 export { searchAll, scopeSources, treeSources } from './search'
-export type { SearchHit, SearchSource } from './search'
+export type { PeopleMatch, SearchHit, SearchSource } from './search'
 export { searchElements } from './elementSearch'
 export { GlobalSearchDialog } from './ui/GlobalSearchDialog'
 export { ElementSearchDialog } from './ui/ElementSearchDialog'

@@ -24,10 +24,19 @@
  * lives, which is what makes an edit re-fold one record rather than the scope
  * (ADR-0002: a command touches the path it names).
  *
+ * **A person is matched by id** (ADR-0036 §8). A name field that holds a
+ * person picked from the register says the id in `people` and nothing in its
+ * words, so no index built from these records ever holds a register name; the
+ * search asks the register which ids a query's words name, and then the
+ * records that point at them. Text typed into a name field is a word like any
+ * other, and so is the name a signature kept.
+ *
  * Pure, and the model's: the pages a hit opens on are words here, and the
  * shell maps them onto its own screens.
  */
 import type { Adr } from './adr'
+import type { PersonId, PersonRef } from './person'
+import { personIdOf, refText } from './person'
 import type { ModelOrder } from './normalised'
 import type { Cause, Experiment, Observation, Solution } from './observation'
 import type { OperatingRule, Responsibility, Role, UnitType } from './operatingModel'
@@ -81,6 +90,11 @@ export type SearchRecord = {
   readonly detail?: string
   /** The elements it is about, by id, for the row to name. */
   readonly about?: readonly string[]
+  /**
+   * The people it names, by register id: matched through the register, so
+   * the name itself is never folded beside the record (ADR-0036 §8).
+   */
+  readonly people?: readonly PersonId[]
   readonly opens: SearchPlace
 }
 
@@ -131,6 +145,12 @@ type Exactly<A, B> = [A] extends [B] ? ([B] extends [A] ? true : never) : never
 const KEYS_MATCH: Exactly<keyof SearchableRecords, keyof ModelOrder> = true
 void KEYS_MATCH
 
+/** The register ids among some references, in order and once each; nothing where none is picked. */
+function peopleIn(...refs: readonly (PersonRef | undefined)[]): { people?: readonly PersonId[] } {
+  const ids = [...new Set(refs.map(personIdOf).filter((id): id is PersonId => id !== undefined))]
+  return ids.length ? { people: ids } : {}
+}
+
 function numbered(prefix: string, number: number): string {
   return `${prefix}-${String(Math.max(0, Math.trunc(number))).padStart(4, '0')}`
 }
@@ -147,7 +167,8 @@ const element: Searchable<DesignElement> = {
   describe: (e) => ({
     id: e.id,
     title: e.name,
-    fields: [e.category, e.vendor, e.technology, e.owner],
+    fields: [e.category, e.vendor, e.technology, refText(e.owner)],
+    ...peopleIn(e.owner),
     variant: e.kind satisfies ElementKind,
     detail: [e.category, e.vendor, e.technology].filter(Boolean).join(' · ') || undefined,
     opens: { page: 'element', id: e.id },
@@ -200,7 +221,12 @@ const decision: Searchable<Adr> = {
   describe: (adr) => ({
     id: adr.id,
     title: adr.title,
-    fields: adr.signers.map((signer) => signer.name),
+    // A signature's name as signed is the record's, and found as it is (ADR-0036 §8).
+    fields: [
+      ...adr.signers.flatMap((signer) => [refText(signer.name), signer.signedAs]),
+      refText(adr.proposedBy), adr.proposedAs,
+    ],
+    ...peopleIn(...adr.signers.map((signer) => signer.name), adr.proposedBy),
     prose: adr.body,
     label: numbered('ADR', adr.number),
     status: adr.status,
@@ -215,7 +241,8 @@ const plan: Searchable<Transition> = {
   describe: (tr) => ({
     id: tr.id,
     title: tr.title,
-    fields: [tr.owner],
+    fields: [refText(tr.owner)],
+    ...peopleIn(tr.owner),
     prose: tr.body,
     label: numbered('TR', tr.number),
     status: tr.status,
@@ -244,7 +271,8 @@ const observation: Searchable<Observation> = {
   describe: (ob) => ({
     id: ob.id,
     title: ob.title,
-    fields: [ob.where, ob.by],
+    fields: [ob.where, refText(ob.by)],
+    ...peopleIn(ob.by),
     prose: ob.body,
     label: numbered('OB', ob.number),
     status: ob.archived ? 'archived' : ob.impact,
@@ -287,7 +315,8 @@ const experiment: Searchable<Experiment> = {
   describe: (ex) => ({
     id: ex.id,
     title: ex.title,
-    fields: [ex.hypothesis, ex.measure, ex.where, ex.by, ex.result],
+    fields: [ex.hypothesis, ex.measure, ex.where, refText(ex.by), ex.result],
+    ...peopleIn(ex.by),
     prose: ex.body,
     label: numbered('EX', ex.number),
     status: ex.outcome,

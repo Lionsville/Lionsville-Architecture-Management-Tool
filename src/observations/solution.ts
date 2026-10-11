@@ -36,6 +36,8 @@
 import type { Translate } from '../i18n/strings'
 import type { AdrStatus } from '../model/adr'
 import { isDay } from '../model/lifecycle'
+import { personRefOf } from '../model/person'
+import type { PersonRef } from '../model/person'
 import type { TransitionStatus, TransitionRole } from '../model/transition'
 import type {
   Cause, CauseStrength, EarlierAttempt, Experiment, ExperimentOutcome, Observation, Solution, SolutionEvent,
@@ -181,14 +183,15 @@ export function newExperiment(args: {
   t: Translate
   measure?: string
   where?: string
-  by?: string
+  /** Who runs it: a person picked from the register, or text (ADR-0036 §8). */
+  by?: PersonRef
   from?: string
   to?: string
   body?: string
 }): Experiment {
   const optional = (value: string | undefined) => value?.trim() || undefined
   const fields = {
-    measure: optional(args.measure), where: optional(args.where), by: optional(args.by),
+    measure: optional(args.measure), where: optional(args.where), by: personRefOf(args.by),
     from: optional(args.from), to: optional(args.to),
   }
   return {
@@ -536,8 +539,13 @@ export function updateExperiment(list: readonly Experiment[], id: string, patch:
       if (kept) next.strength = kept
       else delete next.strength
     }
-    for (const key of ['measure', 'where', 'by', 'from', 'to', 'result'] as const) {
+    for (const key of ['measure', 'where', 'from', 'to', 'result'] as const) {
       if (patch[key] !== undefined && !patch[key]!.trim()) delete next[key]
+    }
+    if (patch.by !== undefined) {
+      const by = personRefOf(patch.by)
+      if (by !== undefined) next.by = by
+      else delete next.by
     }
     return next
   })

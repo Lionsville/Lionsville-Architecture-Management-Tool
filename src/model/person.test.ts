@@ -3,7 +3,9 @@
 
 /** A person as the model names one: an id into the register, or text (ADR-0036 §8). */
 import { describe, expect, it } from 'vitest'
-import { isPersonRef, isPicked, personIdOf, personIdsIn, pickedPerson } from './person'
+import {
+  isBlankRef, isPersonRef, isPicked, personIdOf, personIdsIn, personRefFromKey, personRefKey, personRefOf, pickedPerson, refText, sameRef,
+} from './person'
 
 describe('a reference to a person', () => {
   it('is picked when it names an entry, and text otherwise', () => {
@@ -39,5 +41,38 @@ describe('the register ids a value names', () => {
     }
     expect([...personIdsIn(model)].sort()).toEqual(['pe-1', 'pe-2'])
     expect(personIdsIn('pe-1').size).toBe(0)
+  })
+})
+
+describe('a reference as a field keeps it', () => {
+  it('trims text, keeps a picked entry, and is nothing for blank text or no reference at all', () => {
+    expect(personRefOf('  Operations ')).toBe('Operations')
+    expect(personRefOf('   ')).toBeUndefined()
+    expect(personRefOf({ person: 'pe-1' })).toEqual({ person: 'pe-1' })
+    expect(personRefOf({ person: 'pe-1', name: 'Pia' })).toBeUndefined()
+    expect(personRefOf(7)).toBeUndefined()
+    expect(isBlankRef(undefined)).toBe(true)
+    expect(isBlankRef(' ')).toBe(true)
+    expect(isBlankRef({ person: 'pe-1' })).toBe(false)
+  })
+
+  it('says the text of a reference, and nothing of a picked one: its name is the register’s', () => {
+    expect(refText('Pia Schulz')).toBe('Pia Schulz')
+    expect(refText({ person: 'pe-1' })).toBeUndefined()
+  })
+
+  it('tells the same person by id — through a merge — and the same text in any case, never one by the other', () => {
+    expect(sameRef({ person: 'pe-1' }, { person: 'pe-1' })).toBe(true)
+    expect(sameRef({ person: 'pe-old' }, { person: 'pe-1' }, (id) => (id === 'pe-old' ? 'pe-1' : id))).toBe(true)
+    expect(sameRef(' pia schulz', 'Pia Schulz ')).toBe(true)
+    expect(sameRef({ person: 'pe-1' }, 'Pia Schulz')).toBe(false)
+    expect(sameRef(undefined, undefined)).toBe(false)
+  })
+
+  it('goes through one string and back, for a screen that offers values as strings', () => {
+    for (const ref of ['Operations', { person: 'pe-1' }] as const) expect(personRefFromKey(personRefKey(ref)!)).toEqual(ref)
+    expect(personRefKey(undefined)).toBeUndefined()
+    expect(personRefFromKey('{"person": 3}')).toBe('{"person": 3}')
+    expect(personRefFromKey('{"person":broken')).toBe('{"person":broken')
   })
 })
