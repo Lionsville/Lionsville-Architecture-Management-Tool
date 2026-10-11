@@ -28,6 +28,7 @@ const EVERY_REFUSAL: Record<CommandRefusal, true> = {
   'command.ownedElsewhere': true,
   'command.rootExplained': true,
   'command.rootAddressed': true,
+  'command.markFix': true,
 }
 
 describe('the writer’s refusals', () => {

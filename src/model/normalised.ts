@@ -44,6 +44,8 @@ import type {
   OperatingRule, Responsibility, ResponsibilityId, Role, RoleId, UnitType, UnitTypeId,
 } from './operatingModel'
 import type { Assignment, AssignmentId } from './units'
+import { checkMarkId } from './checkMarks'
+import type { CheckMark, CheckMarkId } from './checkMarks'
 
 export type RelationId = string
 /** A dashed group's id — unique on its diagram, and nowhere else (ADR-0012 §6). */
@@ -75,6 +77,8 @@ export type ModelOrder = {
   operatingRules: string[]
   /** Who holds which role in which unit of this scope (ADR-0036 §4). */
   assignments: AssignmentId[]
+  /** The findings marked as intended, in the order they were marked (ADR-0036, amended). */
+  checkMarks: CheckMarkId[]
 }
 
 /** A diagram's own lists, in the order the file had them. */
@@ -122,7 +126,7 @@ export type Diagram = Omit<DesignDiagram, 'members' | 'groups' | 'lines' | 'geom
 
 export type Model = Omit<HostModel,
   | 'elements' | 'relations' | 'diagrams' | 'decisions' | 'transitions' | 'observations' | 'causes' | 'solutions' | 'experiments'
-  | 'unitTypes' | 'roles' | 'responsibilities' | 'operatingRules' | 'assignments'> & {
+  | 'unitTypes' | 'roles' | 'responsibilities' | 'operatingRules' | 'assignments' | 'checkMarks'> & {
   elements: Record<ElementId, DesignElement>
   relations: Record<RelationId, Relation>
   diagrams: Record<DiagramId, Diagram>
@@ -143,6 +147,8 @@ export type Model = Omit<HostModel,
   operatingRules?: Record<string, OperatingRule>
   /** The assignments (ADR-0036 §4). Absent exactly as `decisions` is. */
   assignments?: Record<AssignmentId, Assignment>
+  /** The marks, by their check and key (`checkMarkId`). Absent exactly as `decisions` is. */
+  checkMarks?: Record<CheckMarkId, CheckMark>
   order: ModelOrder
 }
 
@@ -199,6 +205,11 @@ export function operatingRulesOf(model: Model): Record<string, OperatingRule> {
 /** The assignments on this model, likewise (ADR-0036 §4). */
 export function assignmentsOf(model: Model): Record<AssignmentId, Assignment> {
   return model.assignments ?? {}
+}
+
+/** The findings marked as intended on this model, likewise. */
+export function checkMarksOf(model: Model): Record<CheckMarkId, CheckMark> {
+  return model.checkMarks ?? {}
 }
 
 /** The routes on this diagram, whether or not the file carried the key. */
@@ -292,6 +303,12 @@ export function operatingRuleList(model: Model): OperatingRule[] {
 export function assignmentList(model: Model): Assignment[] {
   const by = assignmentsOf(model)
   return model.order.assignments.map((id) => by[id])
+}
+
+/** The marks in file order. */
+export function checkMarkList(model: Model): CheckMark[] {
+  const by = checkMarksOf(model)
+  return model.order.checkMarks.map((id) => by[id])
 }
 
 export function memberList(diagram: Diagram): DiagramMember[] {
@@ -510,6 +527,12 @@ export function fromArrays(host: HostModel): Model {
     out.assignments = assignments
     assignmentOrder = order
   }
+  let markOrder: CheckMarkId[] = []
+  if (host.checkMarks !== undefined) {
+    const [marks, order] = index(host.checkMarks, checkMarkId)
+    out.checkMarks = marks
+    markOrder = order
+  }
   out.order = {
     elements: elementOrder,
     relations: relationOrder,
@@ -525,6 +548,7 @@ export function fromArrays(host: HostModel): Model {
     responsibilities: responsibilityOrder,
     operatingRules: ruleOrder,
     assignments: assignmentOrder,
+    checkMarks: markOrder,
   }
   return out
 }
@@ -562,6 +586,7 @@ export function toArrays(model: Model): HostModel {
     out.operatingRules = unindex(model.operatingRules, model.order.operatingRules)
   }
   if (model.assignments !== undefined) out.assignments = unindex(model.assignments, model.order.assignments)
+  if (model.checkMarks !== undefined) out.checkMarks = unindex(model.checkMarks, model.order.checkMarks)
   delete out.order
   return out
 }

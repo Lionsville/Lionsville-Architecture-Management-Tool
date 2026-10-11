@@ -33,6 +33,8 @@ import type { Transition } from './transition'
 import type { Cause, Experiment, Observation, Solution } from './observation'
 import type { OperatingRule, Responsibility, Role, UnitType } from './operatingModel'
 import type { Assignment } from './units'
+import { checkMarkId } from './checkMarks'
+import type { CheckMark } from './checkMarks'
 import type { DesignDiagram, DesignElement, Relation, RelationType } from './types'
 
 export type ChangeKind = 'added' | 'removed' | 'changed'
@@ -40,7 +42,7 @@ export type ChangeKind = 'added' | 'removed' | 'changed'
 /** What a change happened to. Ordered as the list is read, most meaningful first. */
 export type ChangeSubject =
   | 'element' | 'relation' | 'diagram' | 'decision' | 'transition' | 'observation' | 'cause' | 'solution' | 'experiment'
-  | 'unitType' | 'role' | 'responsibility' | 'operatingRule' | 'assignment'
+  | 'unitType' | 'role' | 'responsibility' | 'operatingRule' | 'assignment' | 'checkMark'
   | 'membership' | 'geometry'
 
 export type ModelChange = {
@@ -277,7 +279,7 @@ export function diffModels(before: HostModel, after: HostModel): ModelChange[] {
 
   const order: ChangeSubject[] = [
     'element', 'relation', 'diagram', 'decision', 'transition', 'observation', 'cause', 'solution', 'experiment',
-    'unitType', 'role', 'responsibility', 'operatingRule', 'assignment',
+    'unitType', 'role', 'responsibility', 'operatingRule', 'assignment', 'checkMark',
     'membership', 'geometry',
   ]
   return changes.sort((a, b) => order.indexOf(a.what) - order.indexOf(b.what))
@@ -300,7 +302,27 @@ function operatingChanges(before: HostModel, after: HostModel): ModelChange[] {
   const unitName = (id: string) => after.elements.find((one) => one.id === id)?.name
     ?? before.elements.find((one) => one.id === id)?.name ?? id
   each<Assignment>('assignment', before.assignments, after.assignments, (held) => unitName(held.unitId))
+  changes.push(...markChanges(before, after))
   return changes
+}
+
+/**
+ * The findings marked as intended (ADR-0036, amended), each by its check and
+ * key, and named by what its first subject is called here where the scope
+ * names it — an element, or a row — and by the subject's id where it does
+ * not: a person over all of their time is an id, and stays one.
+ */
+function markChanges(before: HostModel, after: HostModel): ModelChange[] {
+  const wasBy = new Map((before.checkMarks ?? []).map((mark) => [checkMarkId(mark), mark]))
+  const nowBy = new Map((after.checkMarks ?? []).map((mark) => [checkMarkId(mark), mark]))
+  const nameOf = (mark: CheckMark) => {
+    const subject = mark.key.split(' ')[0] ?? mark.key
+    const element = after.elements.find((one) => one.id === subject) ?? before.elements.find((one) => one.id === subject)
+    if (element) return element.name
+    const row = after.relations.find((one) => one.id === subject) ?? before.relations.find((one) => one.id === subject)
+    return row ? relationName(row, after) : subject
+  }
+  return ids(wasBy, nowBy).flatMap((id) => compare<CheckMark>('checkMark', id, wasBy.get(id), nowBy.get(id), nameOf))
 }
 
 function compare<T extends object>(

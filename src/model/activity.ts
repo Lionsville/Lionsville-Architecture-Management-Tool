@@ -24,9 +24,10 @@
 import type { StringKey } from '../i18n/strings'
 import type { Command, CommandBody, Restored } from './commands'
 import {
-  assignmentsOf, causesOf, decisionsOf, experimentsOf, observationsOf, responsibilitiesOf, rolesOf, solutionsOf,
+  assignmentsOf, causesOf, checkMarksOf, decisionsOf, experimentsOf, observationsOf, responsibilitiesOf, rolesOf, solutionsOf,
   transitionsOf, unitTypesOf,
 } from './normalised'
+import { checkEntry } from './checkCatalogue'
 import type { Model } from './normalised'
 import { RELATION_LABEL } from './relations'
 import type { RelationType } from './types'
@@ -259,17 +260,40 @@ export function summarise(commands: readonly Command[], before: Model): StepSumm
     case 'restore':
       // Unreachable: `flatten` has none left. Named so the switch is total.
       return NOTHING
-    // The operating model's and the assignments', families of their own (ADR-0036).
+    // The operating model's, the assignments' and the marks', families of their own (ADR-0036).
     default:
       return familyStep(lead, flat, before)
   }
 }
 
-/** The commands `summarise` hands on: the operating model's and the assignments'. */
-type FamilyCommand = OperatingCommand | AssignmentCommand
+/** The commands `summarise` hands on: the operating model's, the assignments' and the marks'. */
+type FamilyCommand = OperatingCommand | AssignmentCommand | CheckMarkCommand
 
 function familyStep(lead: FamilyCommand, flat: readonly CommandBody[], before: Model): StepSummary {
+  if (isCheckMarkCommand(lead)) return checkMarkStep(lead, before)
   return isAssignmentCommand(lead) ? assignmentStep(lead, flat, before) : operatingStep(lead, flat, before)
+}
+
+/** A mark's commands (ADR-0036, amended). */
+type CheckMarkCommand = Extract<CommandBody, { type: `checkMark.${'add' | 'remove'}` }>
+
+function isCheckMarkCommand(command: CommandBody): command is CheckMarkCommand {
+  return command.type.startsWith('checkMark.')
+}
+
+/**
+ * A finding marked as intended, or taken back: named by its check, in the
+ * language on screen when the line is read — the check's name is a key, as a
+ * row's kind is. The instance is not named: a mark holds ids, and the line is
+ * kept for as long as the history is.
+ */
+function checkMarkStep(lead: CheckMarkCommand, before: Model): StepSummary {
+  const check = lead.type === 'checkMark.add' ? lead.mark.check : checkMarksOf(before)[lead.id]?.check
+  const name = check === undefined ? undefined : checkEntry(check)?.name
+  return {
+    key: lead.type === 'checkMark.add' ? 'activity.checkMarkAdded' : 'activity.checkMarkRemoved',
+    ...(name !== undefined ? { typeKey: name } : {}),
+  }
 }
 
 /** An assignment's commands (ADR-0036 §4). */

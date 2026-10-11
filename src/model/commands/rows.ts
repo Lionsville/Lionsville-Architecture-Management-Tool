@@ -21,6 +21,7 @@ import type { Cause, Experiment, Observation, Solution } from '../observation'
 import type { OperatingRule, Responsibility, Role, UnitType } from '../operatingModel'
 import type { Diagram, DiagramId, Model, ModelOrder } from '../normalised'
 import type { Assignment } from '../units'
+import type { CheckMark } from '../checkMarks'
 import type { DesignElement, DiagramGroup, DiagramMember, EdgeRoute, Relation } from '../types'
 
 // --- indexed collections, immutably -----------------------------------------
@@ -192,6 +193,17 @@ export function withAssignments(model: Model, rows: Rows<Assignment>): Model {
     return out
   }
   return { ...model, assignments: rows.by, order }
+}
+
+/** The marks as intended, put back: emptied means gone, as every list of records. */
+export function withCheckMarks(model: Model, rows: Rows<CheckMark>): Model {
+  const order = withOrder(model, 'checkMarks', rows.order)
+  if (rows.order.length === 0) {
+    const out = { ...model, order }
+    delete out.checkMarks
+    return out
+  }
+  return { ...model, checkMarks: rows.by, order }
 }
 
 export function setDiagram(model: Model, id: DiagramId, diagram: Diagram): Model {

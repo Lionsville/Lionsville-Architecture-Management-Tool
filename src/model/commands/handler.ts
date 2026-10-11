@@ -81,6 +81,13 @@ export type CommandRefusal =
    * to another root cause, or unlink it, first.
    */
   | 'command.rootAddressed'
+  /**
+   * A fix marked as intended (ADR-0036, amended 11 October 2026): only a
+   * review or a note can be, because a fix says the model contradicts itself
+   * and the answer to that is in the model. Refused too for a check the
+   * catalogue does not know, which nobody here can say the weight of.
+   */
+  | 'command.markFix'
 
 /**
  * Whether a refusal is one of the reducer's.
@@ -103,6 +110,7 @@ const COMMAND_REFUSALS: Record<CommandRefusal, true> = {
   'command.ownedElsewhere': true,
   'command.rootExplained': true,
   'command.rootAddressed': true,
+  'command.markFix': true,
 }
 
 export function isCommandRefusal(value: string): value is CommandRefusal {

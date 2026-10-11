@@ -20,6 +20,7 @@ import { MEMBER_COMMANDS } from './members'
 import { CAUSE_COMMANDS, EXPERIMENT_COMMANDS, OBSERVATION_COMMANDS, SOLUTION_COMMANDS } from './analysis'
 import { OPERATING_RULE_COMMANDS, RESPONSIBILITY_COMMANDS, ROLE_COMMANDS, UNIT_TYPE_COMMANDS } from './operatingModel'
 import { ASSIGNMENT_COMMANDS } from './assignments'
+import { CHECK_MARK_COMMANDS } from './checkMarks'
 import { PROJECT_COMMANDS } from './project'
 import { DECISION_COMMANDS, TRANSITION_COMMANDS } from './records'
 import { RELATION_COMMANDS } from './relations'
@@ -50,6 +51,7 @@ const EVERY_TYPE: Record<CommandType, true> = {
   'responsibility.add': true, 'responsibility.update': true, 'responsibility.remove': true,
   'operatingRule.add': true, 'operatingRule.update': true, 'operatingRule.remove': true,
   'assignment.add': true, 'assignment.update': true, 'assignment.remove': true,
+  'checkMark.add': true, 'checkMark.remove': true,
   'project.settings': true, 'transaction': true, 'restore': true,
 }
 
@@ -57,7 +59,7 @@ const FAMILIES = [
   ELEMENT_COMMANDS, RELATION_COMMANDS, MEMBER_COMMANDS, GROUP_COMMANDS, ROUTE_COMMANDS,
   DIAGRAM_COMMANDS, DECISION_COMMANDS, TRANSITION_COMMANDS, OBSERVATION_COMMANDS,
   CAUSE_COMMANDS, SOLUTION_COMMANDS, EXPERIMENT_COMMANDS, UNIT_TYPE_COMMANDS, ROLE_COMMANDS,
-  RESPONSIBILITY_COMMANDS, OPERATING_RULE_COMMANDS, ASSIGNMENT_COMMANDS, PROJECT_COMMANDS,
+  RESPONSIBILITY_COMMANDS, OPERATING_RULE_COMMANDS, ASSIGNMENT_COMMANDS, CHECK_MARK_COMMANDS, PROJECT_COMMANDS,
 ]
 
 describe('the command table', () => {

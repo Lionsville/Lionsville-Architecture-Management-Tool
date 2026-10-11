@@ -16,6 +16,7 @@ import { ELEMENT_COMMANDS } from './elements'
 import { GROUP_COMMANDS } from './groups'
 import { MEMBER_COMMANDS } from './members'
 import { ASSIGNMENT_COMMANDS } from './assignments'
+import { CHECK_MARK_COMMANDS } from './checkMarks'
 import { OPERATING_RULE_COMMANDS, RESPONSIBILITY_COMMANDS, ROLE_COMMANDS, UNIT_TYPE_COMMANDS } from './operatingModel'
 import { CAUSE_COMMANDS, EXPERIMENT_COMMANDS, OBSERVATION_COMMANDS, SOLUTION_COMMANDS } from './analysis'
 import { PROJECT_COMMANDS } from './project'
@@ -41,5 +42,6 @@ export const COMMAND_TABLE: CommandTable = {
   ...RESPONSIBILITY_COMMANDS,
   ...OPERATING_RULE_COMMANDS,
   ...ASSIGNMENT_COMMANDS,
+  ...CHECK_MARK_COMMANDS,
   ...PROJECT_COMMANDS,
 }

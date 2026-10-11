@@ -2895,6 +2895,7 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'command.ownedElsewhere': 'The record is a stand-in, and that field is written in the scope that defines it. Change it there.',
   'command.rootExplained': 'A root cause ends the chain, and another cause explains this one. Unlink that cause first, or make it the root cause instead.',
   'command.rootAddressed': 'A solution addresses this root cause, and a solution addresses root causes only. Move the solution to another root cause, or unaddress it, first.',
+  'command.markFix': 'A fix is never marked as intended: the model contradicts itself, and the answer is a change to the model. A review or a note is marked by a person, never by a tool.',
 }
 
 /**

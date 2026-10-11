@@ -42,6 +42,7 @@ import type { Cause, Experiment, Observation, Solution } from './observation'
 import type { OperatingRule, Responsibility, Role, UnitType } from './operatingModel'
 import type { Transition } from './transition'
 import type { Assignment } from './units'
+import type { CheckMark } from './checkMarks'
 import { drawingProse } from './drawing'
 import type { DesignDiagram, DesignElement, ElementKind, Relation } from './types'
 
@@ -139,6 +140,7 @@ export type SearchableRecords = {
   responsibilities: Responsibility
   operatingRules: OperatingRule
   assignments: Assignment
+  checkMarks: CheckMark
 }
 
 /** A scope's lists, as whoever read it has them: every one optional, a thin read has some. */
@@ -393,6 +395,9 @@ export const SEARCHABLE: SearchTable = {
   // An assignment holds ids and a share: the person is found in the register
   // and the unit as an element, and nothing here would be a third way to them.
   assignments: [],
+  // A mark is about a finding, which is worked out and never stored: there is
+  // no record of it to open, and its reason is found on the Checks page.
+  checkMarks: [],
 }
 
 /** The lists, in the order the search reads them and a list of hits is headed. */

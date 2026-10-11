@@ -152,7 +152,7 @@ describe('fromArrays / toArrays', () => {
     const m: Model = fromArrays(bare)
     expect(m.order).toEqual({
       elements: [], relations: [], diagrams: [], decisions: [], transitions: [], observations: [], causes: [], solutions: [], experiments: [],
-      unitTypes: [], roles: [], responsibilities: [], operatingRules: [], assignments: [],
+      unitTypes: [], roles: [], responsibilities: [], operatingRules: [], assignments: [], checkMarks: [],
     })
     expect(toArrays(m).elements).toEqual([])
   })

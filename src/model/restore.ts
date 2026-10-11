@@ -27,10 +27,11 @@
  *   working copy has, so there is nothing to put back.
  */
 import { isAdrLocked } from './adr'
+import { isMarkable } from './checkMarks'
 import type { BoardPatch, Command, DiagramPatch, ProjectPatch, Restored } from './commands'
 import type { Diagram, Model } from './normalised'
 import {
-  assignmentsOf, boxesOf, causesOf, decisionsOf, experimentsOf, fromDiagram, groupList, groupsOf, observationsOf, operatingRulesOf,
+  assignmentsOf, boxesOf, causesOf, checkMarksOf, decisionsOf, experimentsOf, fromDiagram, groupList, groupsOf, observationsOf, operatingRulesOf,
   responsibilitiesOf, rolesOf, routesOf, solutionsOf, toDiagram, unitTypesOf,
 } from './normalised'
 import { memberOf, nodeGeometryOf, placedNodes } from './placement'
@@ -285,7 +286,25 @@ function operatingBack(then: Model, now: Model): Command[] {
   back(assignmentsOf(then), assignmentsOf(now), { then: then.order.assignments, now: now.order.assignments },
     (assignment) => ({ type: 'assignment.add', assignment }), (id, patch) => ({ type: 'assignment.update', id, patch }),
     (id) => ({ type: 'assignment.remove', id }))
+  commands.push(...marksBack(then, now))
   return commands
+}
+
+/**
+ * The findings marked as intended, as they were (ADR-0036, amended): a mark
+ * is made and taken back whole, so one whose reason or day differs is taken
+ * back and made again as it was. A mark of a check that is no longer a
+ * review or a note — a version kept from before its weight moved — is not
+ * made again: the writer would refuse it, and with it the whole restore.
+ */
+function marksBack(then: Model, now: Model): Command[] {
+  const was = checkMarksOf(then)
+  const is = checkMarksOf(now)
+  const back = (id: string) => isMarkable(was[id].check) && (!is[id] || Object.keys(differing(is[id], was[id])).length > 0)
+  return [
+    ...now.order.checkMarks.filter((id) => !was[id] || back(id)).map((id): Command => ({ type: 'checkMark.remove', id })),
+    ...then.order.checkMarks.filter(back).map((id): Command => ({ type: 'checkMark.add', mark: was[id] })),
+  ]
 }
 
 // --- a diagram, as commands ----------------------------------------------------

@@ -24,6 +24,7 @@
  * observations/experiments/NNNN-<slug>.md  what was tried to find out whether it works
  * _operating/<list>.json            the operating model, one file per list (ADR-0036)
  * _assignments/assignments.json     who holds which role in which unit here (ADR-0036)
+ * _checks/marks.json                the findings about this scope marked as intended (ADR-0036, amended)
  * images/<file>.png | .jpg | .svg   pictures the documents show
  * images/.drawings/<digest>.svg    a drawing's picture, named by its content address
  * logos/<key>.svg | .png            uploaded marks, as images
@@ -89,6 +90,7 @@ import { OPERATING_FILES, OPERATING_FOLDER, operatingFileUnreadable, operatingFi
 import {
   ASSIGNMENT_FILES, ASSIGNMENTS_FOLDER, assignmentFileUnreadable, assignmentFiles, assignmentsFrom,
 } from './assignmentFile'
+import { CHECK_MARK_FILES, CHECKS_FOLDER, checkMarkFileUnreadable, checkMarkFiles, checkMarksFrom } from './checkMarkFile'
 import { dataUrl, readDataUrl } from '../../../projects/dataUrl'
 import { markdownBody, markdownFile } from './fileText'
 import { parseJson, stableJson, textFromBytes } from '../../../projects/text'
@@ -114,7 +116,7 @@ export const DIAGRAMS_FOLDER = 'diagrams'
 export const DOCS_FOLDER = 'docs'
 export const LOGOS_FOLDER = 'logos'
 export const IMAGES_FOLDER = 'images'
-export { DECISIONS_FOLDER, TRANSITIONS_FOLDER, OBSERVATIONS_FOLDER, OPERATING_FOLDER, ASSIGNMENTS_FOLDER }
+export { DECISIONS_FOLDER, TRANSITIONS_FOLDER, OBSERVATIONS_FOLDER, OPERATING_FOLDER, ASSIGNMENTS_FOLDER, CHECKS_FOLDER }
 
 /**
  * The folders a scope's own files live in — which is also the list of names a
@@ -126,11 +128,11 @@ export { DECISIONS_FOLDER, TRANSITIONS_FOLDER, OBSERVATIONS_FOLDER, OPERATING_FO
  */
 export const SCOPE_FOLDERS: readonly string[] = [
   DIAGRAMS_FOLDER, DOCS_FOLDER, DECISIONS_FOLDER, TRANSITIONS_FOLDER, OBSERVATIONS_FOLDER, IMAGES_FOLDER,
-  LOGOS_FOLDER, OPERATING_FOLDER, ASSIGNMENTS_FOLDER,
+  LOGOS_FOLDER, OPERATING_FOLDER, ASSIGNMENTS_FOLDER, CHECKS_FOLDER,
 ]
 
-/** The files of the two folders that hold one JSON list each (ADR-0036). */
-const LIST_FILES: readonly string[] = [...OPERATING_FILES, ...ASSIGNMENT_FILES]
+/** The files of the three folders that hold one JSON list each (ADR-0036). */
+const LIST_FILES: readonly string[] = [...OPERATING_FILES, ...ASSIGNMENT_FILES, ...CHECK_MARK_FILES]
 
 /**
  * 6, and the same 6 as the working file's version — a `.lvarch` is a folder in
@@ -182,11 +184,20 @@ const LIST_FILES: readonly string[] = [...OPERATING_FILES, ...ASSIGNMENT_FILES]
  * there: a 10 reads as an 11 with no operating model, and nothing moves.
  * The same number brings `_assignments/` into every scope, for the same
  * reason and by the same rule: who holds which role in the scope's units.
+ *
+ * **12 is 11, with `_checks/` beside the other folders** (ADR-0036, amended
+ * 11 October 2026): the findings about the scope that somebody marked as
+ * intended. A build that reads 11 would open a 12, list every one of those
+ * findings again, and save `_checks/` away without knowing it was there — so
+ * the number turns, and a 3.6.0 build refuses the folder instead. Format 11
+ * is already public, so what it means is not changed after the fact. The
+ * folder's name holds an underscore, as the other two do: an 11 is a 12 with
+ * nothing marked, and the pass that brings it up moves no scope.
  */
 export { SCOPE_FORMAT_VERSION }
 
 /** The versions of a scope's own folder this build reads without folding. */
-const READABLE_SCOPE_VERSIONS: readonly number[] = [5, 6, 7, 8, 9, 10, 11]
+const READABLE_SCOPE_VERSIONS: readonly number[] = [5, 6, 7, 8, 9, 10, 11, 12]
 
 /**
  * The second half of a view's pair of files: where it ended up.
@@ -417,6 +428,7 @@ export function scopeFiles(scope: ScopeSnapshot): FolderFile[] {
 
   files.push(...operatingFiles(model))
   files.push(...assignmentFiles(model))
+  files.push(...checkMarkFiles(model))
 
   files.push(...imageFiles(scope.imageLibrary ?? []))
   files.push(...drawingPictureFiles(scope.drawingPictures ?? [], model.diagrams))
@@ -616,7 +628,7 @@ export function isFormatPath(path: string): boolean {
     if (rest.length === 1) return /^\d{1,6}-.*\.md$/.test(name)
     return rest.length === 2 && OBSERVATION_SUBFOLDERS.includes(rest[0]) && /^\d{1,6}-.*\.md$/.test(name)
   }
-  if (folder === OPERATING_FOLDER || folder === ASSIGNMENTS_FOLDER) return LIST_FILES.includes(path)
+  if (folder === OPERATING_FOLDER || folder === ASSIGNMENTS_FOLDER || folder === CHECKS_FOLDER) return LIST_FILES.includes(path)
   return false
 }
 
@@ -1179,6 +1191,7 @@ export function scopeFromFolder(
     ...(experiments.length ? { experiments } : {}),
     ...operatingFrom((at) => textAt(folder, at)),
     ...assignmentsFrom((at) => textAt(folder, at)),
+    ...checkMarksFrom((at) => textAt(folder, at)),
     ...(explicitFields ? { explicitFields } : {}),
     elements,
     relations: readRelations(folder),
@@ -1222,7 +1235,7 @@ function carriedOf(held: ScopeFile): Pick<ScopeSnapshot, 'carried'> {
 
 /** Whether one of those is there and is not a list. */
 function listFileUnreadable(text: string | undefined): boolean {
-  return operatingFileUnreadable(text) || assignmentFileUnreadable(text)
+  return operatingFileUnreadable(text) || assignmentFileUnreadable(text) || checkMarkFileUnreadable(text)
 }
 
 /** What a reading left out, and what of that the scope cannot do without — see {@link scopeFromFolder}. */
@@ -1235,9 +1248,9 @@ function leftOut(
   dropped: ReadonlySet<string> = new Set(),
 ): Pick<ScopeSnapshot, 'unread' | 'unreadable'> {
   const modelFailed = failed.includes(MODEL_FILE) || modelUnreadable(textAt(folder, MODEL_FILE))
-  // A list of the operating model or of the assignments that is not a list
-  // would be written back empty, as a `model.json` that is not a model would
-  // (ADR-0036).
+  // A list of the operating model, the assignments or the marks that is not
+  // a list would be written back empty, as a `model.json` that is not a model
+  // would (ADR-0036).
   const lists = LIST_FILES.filter((path) => !failed.includes(path) && listFileUnreadable(textAt(folder, path)))
   const unread = [...failed, ...untakenFiles(folder, views, elements, modelFailed, dropped), ...lists].sort()
   const unreadable = [

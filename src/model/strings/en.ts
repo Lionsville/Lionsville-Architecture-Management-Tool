@@ -219,6 +219,7 @@ export const EN = {
   'command.ownedElsewhere': 'This is a stand-in: its lifecycle, dates, owner, vendor, name and description are written in the scope that defines it. Open that scope to change them.',
   'command.rootExplained': 'A cause that another cause explains cannot be a root cause: a root cause ends the chain. Unlink the deeper cause, or make that one the root cause instead.',
   'command.rootAddressed': 'A root cause that a solution addresses cannot become a cause again: a solution addresses root causes only. Move the solution to another root cause, or unlink it, first.',
+  'command.markFix': 'Only a review or a note can be marked as intended. A fix says the model contradicts itself: fix it in the model.',
   // A restore that cannot be (ADR-0008). A refusal, never an exception.
   'restore.absentThen': 'This was not in the project at that snapshot.',
   'restore.absentNow': 'The element is no longer in the project; restore the whole project to bring it back.',
@@ -324,6 +325,8 @@ export const EN = {
   'activity.assignmentRemoved': 'Removed an assignment in {name}',
   'activity.assignmentsAdded': 'Made {count} assignments',
   'activity.assignmentsEnded': 'Ended {count} assignments',
+  'activity.checkMarkAdded': 'Marked a finding as intended ({type})',
+  'activity.checkMarkRemoved': 'Took back a finding marked as intended ({type})',
   'activity.projectSettings': 'Changed the project settings',
   'activity.diagramRestored': 'Restored the diagram {name} as of {asOf}',
   'activity.descriptionRestored': 'Restored the description of {name} as of {asOf}',

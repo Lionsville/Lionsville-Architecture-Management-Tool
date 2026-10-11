@@ -37,6 +37,7 @@ import type {
   OperatingRule, OperatingRuleKind, Responsibility, ResponsibilityId, Role, RoleId, UnitType, UnitTypeId,
 } from './operatingModel'
 import type { Assignment, AssignmentId } from './units'
+import type { CheckMark, CheckMarkId } from './checkMarks'
 import type {
   AdrId, CauseId, RelationId, Diagram, DiagramId, ExperimentId, GroupId, Model, ObservationId, SolutionId, TransitionId,
 } from './normalised'
@@ -199,6 +200,12 @@ export type CommandBody =
   /** A correction, and an end: an end is `until` set. */
   | { type: 'assignment.update'; id: AssignmentId; patch: Partial<Assignment> }
   | { type: 'assignment.remove'; id: AssignmentId }
+
+  // --- a finding marked as intended, in the scope it is about (ADR-0036, amended) --
+  /** A review's or a note's; a fix's is refused (`command.markFix`). */
+  | { type: 'checkMark.add'; mark: CheckMark; at?: number }
+  /** Taken back: the finding is listed again. The id is `checkMarkId`'s. */
+  | { type: 'checkMark.remove'; id: CheckMarkId }
 
   // --- the project itself --------------------------------------------------
   | { type: 'project.settings'; patch: ProjectPatch }

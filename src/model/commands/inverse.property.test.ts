@@ -101,6 +101,8 @@ function someModel(r: Random): Model {
     ...(r.chance(0.6) ? { responsibilities: [responsibility(r, 'rs-1')] } : {}),
     ...(r.chance(0.6) ? { operatingRules: [{ id: 'applicationOwner' as const, role: 'ro-1' }] } : {}),
     ...(r.chance(0.6) ? { assignments: [assignment(r, 'as-1')] } : {}),
+    // Every reader passes a fix's mark over, so a model never holds one.
+    ...(r.chance(0.6) ? { checkMarks: [{ ...checkMark(r, 'r-1 a b'), check: 'check.interactionUnused' as const }] } : {}),
   })
   return held
 }
@@ -139,6 +141,11 @@ const assignment = (r: Random, id: string) => ({
   ...(r.chance(0.5) ? { share: r.pick([0.2, 0.5, 1]) } : {}),
   ...(r.chance(0.5) ? { from: '2026-01-01' } : {}),
   ...(r.chance(0.3) ? { acting: true as const } : {}),
+})
+/** A mark of a review or a note, now and then of a fix, which the writer refuses. */
+const checkMark = (r: Random, key: string) => ({
+  check: r.chance(0.9) ? r.pick(['check.interactionUnused', 'check.roleVacant', 'check.notDrawn'] as const) : 'check.conflict' as const,
+  key, on: r.pick(DAYS), ...(r.chance(0.5) ? { reason: r.pick(WORDS) || 'Meant so' } : {}),
 })
 const responsibility = (r: Random, id: string) => ({
   id, name: r.pick(WORDS) || 'Release', ...(r.chance(0.5) ? { group: 'Deliver' } : {}),
@@ -346,6 +353,11 @@ const COMMANDS: { [K in CommandType]: (r: Random, model: Model) => Extract<Comma
     },
   }),
   'assignment.remove': (r, m) => ({ type: 'assignment.remove', id: held(r, m.order.assignments, 'as') }),
+  'checkMark.add': (r, m) => ({
+    type: 'checkMark.add', mark: checkMark(r, r.chance(0.8) ? `r-${2 + r.int(100)} a b` : 'r-1 a b'),
+    ...(r.chance(0.3) ? { at: r.int(m.order.checkMarks.length + 1) } : {}),
+  }),
+  'checkMark.remove': (r, m) => ({ type: 'checkMark.remove', id: held(r, m.order.checkMarks, 'check.notDrawn x') }),
 
   'project.settings': (r) => ({
     type: 'project.settings',

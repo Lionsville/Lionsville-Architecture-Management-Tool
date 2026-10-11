@@ -17,6 +17,7 @@ import type { Cause, Experiment, Observation, Solution } from './observation'
 import type { OperatingRule, Responsibility, Role, UnitType } from './operatingModel'
 import type { Transition } from './transition'
 import type { Assignment } from './units'
+import type { CheckMark } from './checkMarks'
 
 /**
  * What the shell keeps beside the design itself.
@@ -71,6 +72,11 @@ export interface HostExtras {
    * each names the person by register id, never by name.
    */
   assignments?: Assignment[]
+  /**
+   * The findings about this scope marked as intended (ADR-0036, amended):
+   * each a review's or a note's, by its check and the ids of its subjects.
+   */
+  checkMarks?: CheckMark[]
   /** Per element key: which fields the source document carried explicitly. */
   explicitFields?: Record<string, { lifecycle?: boolean; isManaged?: boolean; iconType?: boolean }>
 }
