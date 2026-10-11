@@ -393,7 +393,10 @@ oder Text wie bisher — einen Namen, Initialen, ein Team.
   jemandem sucht, der dieselbe Person sein könnte, wie **Person hinzufügen**
   es tut. Während Sie einen Namen eingeben, bietet das Feld unter **Im
   Register:** die Einträge an, die es sein könnten; wählen Sie einen, um auf
-  die Person zu verweisen, statt den Namen zu schreiben.
+  die Person zu verweisen, statt den Namen zu schreiben. Ein Name, der einem
+  im Register ähnelt, wird erst geschrieben, wenn Sie das Feld verlassen,
+  sodass ein Name, den Sie eingeben, um jemanden zu finden, nie in der
+  Historie landet.
 - **Eine gewählte Person** wird als ID geführt. Das Feld zeigt, was das
   Register sagt: den Namen, oder *Ehemalige Person 7KQM*, sobald sie
   vergessen ist, oder *eine ehemalige Person*, sobald der Eintrag entfernt

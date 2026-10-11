@@ -347,7 +347,9 @@ did — a name, initials, a team.
   search by name, pick someone, or **New person…**, which looks for somebody
   who may be the same person before anyone is added, as **Add person** does.
   While you type a name, the field offers the entries it may be under **In
-  the register:**; pick one to point at them rather than write the name.
+  the register:**; pick one to point at them rather than write the name. A
+  name like one in the register is written only when you leave the field,
+  so a name typed to find somebody never lands in the history.
 - **A person picked** is kept as their id. The field shows what the register
   says: their name, or *Former colleague 7KQM* once they are forgotten, or *a
   former colleague* once the entry is removed. A merged entry shows the one it

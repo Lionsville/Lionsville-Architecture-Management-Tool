@@ -13,7 +13,10 @@
  * with *From the register…* beside it: the person picker, whose *New person…*
  * asks the four signs before anyone is added. While a name is typed, the
  * register's entries it may be are offered, so text is never written where
- * the person was already there to pick.
+ * the person was already there to pick — and **text that resembles an entry is
+ * held until the field is left**, never written keystroke by keystroke: a
+ * name typed to find somebody, then picked, would otherwise be in the history,
+ * where no forget reaches it.
  */
 import { useEffect, useMemo, useState } from 'react'
 import Box from '@mui/material/Box'
@@ -101,12 +104,14 @@ export function PersonRefField(props: PersonRefFieldProps) {
       </Box>
     )
   }
+  const resembles = (next: string) => people !== undefined && next.trim().length > 2 && possibleDuplicates({ name: next }, entriesOf(people)).length > 0
   const changed = (next: string) => {
     setDraft(next)
-    if (commit === 'change') onChange(next === '' ? undefined : next)
+    if (commit === 'change' && !resembles(next)) onChange(next === '' ? undefined : next)
   }
+  // What was held — typed in a field that commits when it is left, or resembling somebody — is written now.
   const left = () => {
-    if (commit === 'blur' && draft.trim() !== text.trim()) onChange(draft.trim() ? draft : undefined)
+    if (draft.trim() !== text.trim()) onChange(draft.trim() ? draft : undefined)
     props.onBlur?.()
   }
   const inputId = props.inputTestId ?? (testId ? `${testId}-text` : undefined)
@@ -124,6 +129,8 @@ export function PersonRefField(props: PersonRefFieldProps) {
         />
         {access && people && !disabled && (
           <Button size="small" sx={{ whiteSpace: 'nowrap', flexShrink: 0 }} onClick={() => setPicking(true)}
+            // Going to the picker leaves what was typed unwritten: the picker starts from it.
+            onMouseDown={(event) => event.preventDefault()}
             data-testid={testId ? `${testId}-pick` : undefined}>
             {s('people.fromRegister')}
           </Button>
@@ -133,7 +140,11 @@ export function PersonRefField(props: PersonRefFieldProps) {
         <Box data-testid={testId ? `${testId}-offered` : undefined} sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap', fontSize: 12 }}>
           <Typography component="span" sx={{ fontSize: 12, color: 'text.secondary' }}>{s('people.inRegister')}</Typography>
           {offered.map(({ person }) => (
-            <Button key={person.id} size="small" sx={{ textTransform: 'none', minWidth: 0 }} onClick={() => pick(person.id)}>
+            <Button
+              key={person.id} size="small" sx={{ textTransform: 'none', minWidth: 0 }} onClick={() => pick(person.id)}
+              // Pressing an entry leaves the field where it is: its text is not written first.
+              onMouseDown={(event) => event.preventDefault()}
+            >
               {shownText(shownEntry(person), s)}
             </Button>
           ))}

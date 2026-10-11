@@ -368,7 +368,9 @@ initialen, een team.
   iemand die dezelfde persoon kan zijn, zoals **Persoon toevoegen** doet.
   Terwijl je een naam typt, biedt het veld onder **In het register:** de
   vermeldingen aan die het kunnen zijn; kies er een om naar die persoon te
-  verwijzen in plaats van de naam te schrijven.
+  verwijzen in plaats van de naam te schrijven. Een naam die op een naam in
+  het register lijkt, wordt pas geschreven als je het veld verlaat, zodat een
+  naam die je typt om iemand te vinden nooit in de geschiedenis belandt.
 - **Een gekozen persoon** wordt bewaard als id. Het veld toont wat het
   register zegt: de naam, of *Oud-collega 7KQM* zodra de persoon vergeten
   is, of *een oud-collega* zodra de vermelding verwijderd is. Een

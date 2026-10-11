@@ -62,13 +62,22 @@ describe('a field that names a person', () => {
     expect(said.at(-1)).toBeUndefined()
   })
 
-  it('offers who in the register a typed name may be, and points at them when one is chosen', () => {
+  it('offers who in the register a typed name may be, and points at them when one is chosen — the name typed never written', () => {
     const said: (PersonRef | undefined)[] = []
     renderShell(<Harness onValue={(ref) => said.push(ref)} />)
     fireEvent.change(screen.getByTestId('owner-text'), { target: { value: 'Eva Lindt' } })
     fireEvent.click(within(screen.getByTestId('owner-offered')).getByRole('button', { name: 'Eva Lind' }))
-    expect(said.at(-1)).toEqual({ person: 'pe-eva' })
+    expect(said).toEqual([{ person: 'pe-eva' }])
     expect(screen.getByTestId('owner-picked').textContent).toBe('Eva Lind · you')
+  })
+
+  it('writes text that resembles somebody only when the field is left without picking them', () => {
+    const said: (PersonRef | undefined)[] = []
+    renderShell(<Harness onValue={(ref) => said.push(ref)} />)
+    fireEvent.change(screen.getByTestId('owner-text'), { target: { value: 'Eva Linde' } })
+    expect(said).toEqual([])
+    fireEvent.blur(screen.getByTestId('owner-text'))
+    expect(said).toEqual(['Eva Linde'])
   })
 
   it('picks from the register, starting from what was typed, and takes the person off again', () => {
