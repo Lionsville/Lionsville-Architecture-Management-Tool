@@ -205,13 +205,23 @@ export type OrderRow = { readonly id: ElementId; readonly order: number }
  * the one it has.
  */
 export function unitMovedTo(units: readonly UnitLike[], id: ElementId, to: number): OrderRow[] {
+  const siblings = siblingsOfType(units, id)
+  return renumbered(siblings, siblings.findIndex((one) => one.id === id), to)
+}
+
+/**
+ * A unit and its siblings of the same type — the units under the same parent,
+ * of the same type — in the order a list shows them: what {@link unitMovedTo}
+ * renumbers, and where a screen reads a unit's place among them. Empty where
+ * the unit is unknown.
+ */
+export function siblingsOfType<T extends UnitLike>(units: readonly T[], id: ElementId): T[] {
   const unit = units.find((one) => one.id === id && isUnit(one))
   if (!unit) return []
   // One type, so no rank to read: `order`, then name.
-  const siblings = units
+  return units
     .filter((one) => isUnit(one) && one.parentId === unit.parentId && one.unitTypeId === unit.unitTypeId)
     .sort(compareUnits(new Map()))
-  return renumbered(siblings, siblings.indexOf(unit), to)
 }
 
 /**

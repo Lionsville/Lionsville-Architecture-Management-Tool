@@ -11,7 +11,7 @@
 import { describe, expect, it } from 'vitest'
 import type { UnitType } from './operatingModel'
 import type { DesignElement } from './types'
-import { compareUnits, renumbered, unitMovedTo, unitTypeLanes, unitTypeRank } from './unitOrder'
+import { compareUnits, renumbered, siblingsOfType, unitMovedTo, unitTypeLanes, unitTypeRank } from './unitOrder'
 
 const type = (id: string, name: string, over: Partial<UnitType> = {}): UnitType => ({ id, name, within: [], slots: [], ...over })
 
@@ -163,6 +163,14 @@ describe('moving a unit among its siblings', () => {
     expect(unitMovedTo(units, 't-a', -3)).toEqual([])
     expect(unitMovedTo(units, 'nobody', 0)).toEqual([])
     expect(unitMovedTo(units, 'g-1', 0)).toEqual([])
+  })
+
+  it('lists a unit\'s siblings of its type in their order, where a screen reads its place among them', () => {
+    expect(siblingsOfType(units, 't-b').map((one) => one.id)).toEqual(['t-a', 't-b', 't-c'])
+    // A unit at the top has the units at the top of its type as its siblings.
+    expect(siblingsOfType(units, 't-x').map((one) => one.id)).toEqual(['t-x'])
+    expect(siblingsOfType(units, 'p-1').map((one) => one.id)).toEqual(['p-1'])
+    expect(siblingsOfType(units, 'g-1')).toEqual([])
   })
 
   it('renumbers any list by a move, and nothing for a place that is not in it', () => {

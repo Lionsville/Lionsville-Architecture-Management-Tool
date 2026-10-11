@@ -55,7 +55,11 @@ const interactions: ConwayInteraction[] = [
 ]
 const input: ConwayInput = {
   units,
-  unitTypes: [{ id: 'ut-domain' }, { id: 'ut-cluster' }, { id: 'ut-team', limit: 3 }],
+  unitTypes: [
+    { id: 'ut-domain', name: 'Domain', top: true, within: [], slots: [] },
+    { id: 'ut-cluster', name: 'Cluster', top: true, within: ['ut-domain'], slots: [] },
+    { id: 'ut-team', name: 'Team', within: ['ut-cluster'], slots: [], limit: 3 },
+  ],
   applications, flows, interactions,
 }
 const TODAY = '2026-10-11'
@@ -63,17 +67,25 @@ const TODAY = '2026-10-11'
 describe('the Conway map', () => {
   it('puts each application under the unit that owns it, in the tree order, and the ones nobody owns last', () => {
     const map = conwayMap(input, TODAY)
-    expect(map.groups.map((group) => group.unitId)).toEqual(['mob', 'web', 'ip', 'tt', undefined])
+    // The domains before the cluster filed at the top, as every list of units reads (3.6.1).
+    expect(map.groups.map((group) => group.unitId)).toEqual(['mob', 'web', 'tt', 'ip', undefined])
     expect(map.groups[1].applications.map((app) => app.name)).toEqual(['CRM', 'Order Service', 'Payments', 'Webshop'])
     expect(map.groups[4].applications.map((app) => app.id)).toEqual(['a-bil'])
   })
 
+  it('takes its columns in the order every list of units reads: the type\'s rank, the unit\'s own order, then the name', () => {
+    const ordered = { ...input, units: units.map((one) => (one.id === 'web' ? { ...one, order: 1 } : one.id === 'data' ? { ...one, order: 1 } : one)) }
+    expect(conwayMap(ordered, TODAY).groups.map((group) => group.unitId)).toEqual(['web', 'mob', 'tt', 'ip', undefined])
+    // A type's rank comes before a unit's own order: the cluster stays after the domains.
+    expect(conwayMap(ordered, TODAY, { groupBy: 'ut-cluster' }).groups.map((group) => group.unitId)).toEqual(['sales', 'pf', 'data', undefined])
+  })
+
   it('groups by the unit of a type above the owner, where asked', () => {
     const map = conwayMap(input, TODAY, { groupBy: 'ut-cluster' })
-    expect(map.groups.map((group) => group.unitId)).toEqual(['sales', 'data', 'pf', undefined])
+    expect(map.groups.map((group) => group.unitId)).toEqual(['sales', 'pf', 'data', undefined])
     const domains = conwayMap(input, TODAY, { groupBy: 'ut-domain' })
     // A cluster filed at the top has no domain above it: it is grouped under itself, the top of its tree.
-    expect(domains.groups.map((group) => group.unitId)).toEqual(['customer', 'data', 'shipping', undefined])
+    expect(domains.groups.map((group) => group.unitId)).toEqual(['customer', 'shipping', 'data', undefined])
   })
 
   it('says how each interface lies: inside a unit, declared, undeclared, or with an end nobody owns', () => {
@@ -112,7 +124,7 @@ describe('the Conway map', () => {
 
   it('groups by the parent a plan\'s move gives a unit on the day (ADR-0036 §6)', () => {
     const moved = { ...input, moves: [{ unitId: 'mob', parentId: 'data', on: '2027-03-01' }] }
-    expect(conwayMap(moved, TODAY, { groupBy: 'ut-cluster' }).groups.map((group) => group.unitId)).toEqual(['sales', 'data', 'pf', undefined])
+    expect(conwayMap(moved, TODAY, { groupBy: 'ut-cluster' }).groups.map((group) => group.unitId)).toEqual(['sales', 'pf', 'data', undefined])
     const later = conwayMap(moved, '2027-03-01', { groupBy: 'ut-cluster' })
     expect(later.groups.find((group) => group.unitId === 'data')?.applications.map((app) => app.id).sort()).toEqual(['a-hub', 'a-mob'])
   })
@@ -165,18 +177,18 @@ describe('the Conway map', () => {
     // no interface there, and it is not unused, since Webshop's interface needs it.
     expect(cells(conwayMap(input, TODAY))).toEqual([
       ['mob', 'web', 1, [], 'undeclared'],
-      ['mob', 'ip', 0, ['i-1'], 'declared'],
       ['mob', 'tt', 1, [], 'undeclared'],
+      ['mob', 'ip', 0, ['i-1'], 'declared'],
       ['web', 'ip', 1, ['i-1'], 'declared'],
       ['web', null, 1, [], 'unowned'],
-      ['ip', 'tt', 0, ['i-2'], 'unused'],
+      ['tt', 'ip', 0, ['i-2'], 'unused'],
     ])
     // By domain, an interaction between units under two columns is declared between those columns.
     expect(cells(conwayMap(input, TODAY, { groupBy: 'ut-domain' }))).toEqual([
-      ['customer', 'data', 1, ['i-1'], 'declared'],
       ['customer', 'shipping', 1, [], 'undeclared'],
+      ['customer', 'data', 1, ['i-1'], 'declared'],
       ['customer', null, 1, [], 'unowned'],
-      ['data', 'shipping', 0, ['i-2'], 'unused'],
+      ['shipping', 'data', 0, ['i-2'], 'unused'],
     ])
   })
 

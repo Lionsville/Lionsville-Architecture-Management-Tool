@@ -39,6 +39,7 @@
 import { phaseAt, relationLiveAt } from './lifecycle'
 import type { UnitType, UnitTypeId } from './operatingModel'
 import type { ElementId, InteractionMode, Lifecycle, LifecycleDates, Relation } from './types'
+import { compareUnits, unitTypeRank } from './unitOrder'
 import { isUnit, organisationOn, unitOn, unitsAbove } from './units'
 import type { UnitLike, UnitMove } from './units'
 
@@ -101,7 +102,8 @@ export type ConwayInput = {
   units: readonly UnitLike[]
   /** The plans' moves (§6): on the day, each unit sits under the parent they give it then. */
   moves?: readonly UnitMove[]
-  unitTypes: readonly Pick<UnitType, 'id' | 'limit'>[]
+  /** The operating model's unit types: each one's limit, and where it stands, which orders the columns. */
+  unitTypes: readonly UnitType[]
   /** The applications the map is of. */
   applications: readonly ConwayApplication[]
   /** The interfaces between them; a row with an end that is not one of them is passed over. */
@@ -222,7 +224,7 @@ export function conwayMap(given: ConwayInput, day: string, options: ConwayOption
       .map((app): ConwayFinding => ({ kind: 'unowned', applicationId: app.id })),
     ...overLimit(input, reading, day),
   ]
-  const groups = groupsOf(input.applications, reading)
+  const groups = groupsOf(input.applications, reading, compareUnits(unitTypeRank(input.unitTypes)))
   const unusedIds = new Set(findings.flatMap((finding) => (finding.kind === 'unused' ? [finding.interaction.id] : [])))
   return { groups, lines, interactions: reading.live, pairs: pairsOf(groups, lines, unusedIds, reading), findings }
 }
@@ -367,16 +369,17 @@ export function pairBetween(map: Pick<ConwayMap, 'pairs'>): (x: ElementId | unde
 
 /**
  * The columns: each group's applications by name, the groups in the units'
- * tree order — depth first, siblings by name — a party that is not a unit
- * after the units, and the applications nobody owns last.
+ * tree order — depth first, siblings in the order every list of units reads
+ * (`compareUnits`) — a party that is not a unit after the units, and the
+ * applications nobody owns last.
  */
-function groupsOf(applications: readonly ConwayApplication[], reading: Reading): ConwayGroup[] {
+function groupsOf(applications: readonly ConwayApplication[], reading: Reading, inOrder: (a: UnitLike, b: UnitLike) => number): ConwayGroup[] {
   const byGroup = new Map<ElementId | undefined, ConwayApplication[]>()
   for (const app of applications) {
     const key = reading.group.get(app.id)
     byGroup.set(key, [...byGroup.get(key) ?? [], app])
   }
-  const order = treeOrder([...reading.units.values()])
+  const order = treeOrder([...reading.units.values()], inOrder)
   const rank = (key: ElementId | undefined) => (key === undefined ? Number.MAX_SAFE_INTEGER : order.get(key) ?? order.size)
   return [...byGroup.entries()]
     .sort(([a], [b]) => rank(a) - rank(b) || String(a).localeCompare(String(b)))
@@ -386,8 +389,8 @@ function groupsOf(applications: readonly ConwayApplication[], reading: Reading):
     }))
 }
 
-/** Each unit's place in a depth-first walk of the tree, siblings by name. */
-function treeOrder(units: readonly UnitLike[]): Map<ElementId, number> {
+/** Each unit's place in a depth-first walk of the tree, siblings in the units' one order. */
+function treeOrder(units: readonly UnitLike[], inOrder: (a: UnitLike, b: UnitLike) => number): Map<ElementId, number> {
   const ids = new Set(units.map((unit) => unit.id))
   const children = new Map<ElementId | undefined, UnitLike[]>()
   for (const unit of units) {
@@ -396,7 +399,7 @@ function treeOrder(units: readonly UnitLike[]): Map<ElementId, number> {
   }
   const order = new Map<ElementId, number>()
   const visit = (parent: ElementId | undefined) => {
-    for (const unit of [...children.get(parent) ?? []].sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id))) {
+    for (const unit of [...children.get(parent) ?? []].sort(inOrder)) {
       if (order.has(unit.id)) continue
       order.set(unit.id, order.size)
       visit(unit.id)

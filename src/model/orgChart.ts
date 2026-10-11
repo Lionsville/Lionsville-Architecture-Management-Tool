@@ -22,12 +22,19 @@
  * holders are drawn beside the slots. A vacancy is a slot's minimum less the
  * people holding the role that day; it is never a record (§3).
  *
+ * **Folded on a screen, never here.** A chart of seventy units folds on the
+ * page, and what is said here is only what a fold needs: which units a first
+ * open folds (`foldedOnFirstOpen`), what a folded unit hides (`rollUp`), what
+ * is above a unit to unfold (`unitsAboveIn`) and which units a name finds.
+ * The folds themselves are the screen's, kept for the session (3.6.1).
+ *
  * Pure, with no words: who a person is, is the register's to say, and the
  * page asks it for each name as it draws.
  */
 import { isDay } from './lifecycle'
 import type { PersonId } from './person'
 import type { Role, RoleId, UnitType, UnitTypeId } from './operatingModel'
+import { matchesQuery, queryTokens } from './textSearch'
 import type { DesignDiagram, ElementId } from './types'
 import { compareUnits, unitTypeRank } from './unitOrder'
 import {
@@ -178,6 +185,100 @@ export function unitsHolding(chart: OrgChart, person: PersonId): ElementId[] {
     if (holds) found.push(unit.id)
   }
   return found
+}
+
+/** What a folded unit hides: the units below it, the people in them, their vacancies and the findings about them. */
+export type ChartRollUp = {
+  units: number
+  /** Each person once, however many roles they hold below. */
+  people: number
+  vacant: number
+  findings: number
+}
+
+const NO_FINDINGS: ReadonlyMap<ElementId, number> = new Map()
+
+/**
+ * What a unit hides when it is folded (3.6.1): every unit below it, the
+ * people holding a role in any of them — each once — their vacancies, and the
+ * findings about them, counted where `findingsByUnit` puts each.
+ */
+export function rollUp(unit: ChartUnit, findings: ReadonlyMap<ElementId, number> = NO_FINDINGS): ChartRollUp {
+  const people = new Set<PersonId>()
+  let units = 0
+  let vacant = 0
+  let found = 0
+  for (const below of walk(unit.children)) {
+    units += 1
+    for (const slot of below.slots) {
+      vacant += slot.vacant
+      for (const holder of slot.holders) people.add(holder.person)
+    }
+    for (const other of below.others) people.add(other.person)
+    found += findings.get(below.id) ?? 0
+  }
+  return { units, people: people.size, vacant, findings: found }
+}
+
+/** How many units a chart draws before its first open is folded. */
+export const FOLD_OVER = 30
+
+/**
+ * The units a first open of a chart folds (3.6.1): where it draws more than
+ * {@link FOLD_OVER} units, every unit on the second level that has units
+ * under it — so the top two levels show and nothing below them. None where it
+ * draws fewer: a chart that fits is shown whole.
+ */
+export function foldedOnFirstOpen(chart: OrgChart): ElementId[] {
+  if (chart.units <= FOLD_OVER) return []
+  return chart.roots.flatMap((top) => top.children).filter((unit) => unit.children.length > 0).map((unit) => unit.id)
+}
+
+/** Every unit of a chart with units under it, in the chart's order: what *Fold all* folds. */
+export function foldable(chart: OrgChart): ElementId[] {
+  return [...walk(chart.roots)].filter((unit) => unit.children.length > 0).map((unit) => unit.id)
+}
+
+/**
+ * The units above one on a chart, the top first: what is unfolded to bring it
+ * on screen. Empty where it is at the top, or not drawn.
+ */
+export function unitsAboveIn(chart: OrgChart, id: ElementId): ElementId[] {
+  const path: ElementId[] = []
+  const find = (units: readonly ChartUnit[]): boolean => units.some((unit) => {
+    if (unit.id === id) return true
+    path.push(unit.id)
+    if (find(unit.children)) return true
+    path.pop()
+    return false
+  })
+  return find(chart.roots) ? path : []
+}
+
+/** The units of a chart whose names hold every word of a query, in the chart's order (`model/textSearch`). None for a blank one. */
+export function unitsNamed(chart: OrgChart, query: string): ElementId[] {
+  if (queryTokens(query).length === 0) return []
+  return [...walk(chart.roots)].filter((unit) => matchesQuery(query, [unit.name])).map((unit) => unit.id)
+}
+
+/**
+ * How many findings are about each unit of a chart: a finding names its unit,
+ * or a person — counted at the first unit, in the chart's order, where they
+ * hold a role, which is where the page's line about them goes. A finding about
+ * nothing the chart draws is counted nowhere. `canonical` is the entry that
+ * answers for an id, as the chart's holders are.
+ */
+export function findingsByUnit(
+  chart: OrgChart, findings: readonly { id: string; person?: PersonId }[], canonical: (id: PersonId) => PersonId = (id) => id,
+): Map<ElementId, number> {
+  const drawn = new Set([...walk(chart.roots)].map((unit) => unit.id))
+  const counted = new Map<ElementId, number>()
+  for (const finding of findings) {
+    const at = finding.person !== undefined ? unitsHolding(chart, canonical(finding.person))[0] : finding.id
+    if (at === undefined || !drawn.has(at)) continue
+    counted.set(at, (counted.get(at) ?? 0) + 1)
+  }
+  return counted
 }
 
 /**
