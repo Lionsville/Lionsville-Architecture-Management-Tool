@@ -10,8 +10,9 @@ import { describe, expect, it } from 'vitest'
 import type { Role, UnitType } from './operatingModel'
 import type { DesignElement } from './types'
 import {
-  dayBefore, endedBy, endingFor, heldThroughType, holdersOn, isUnit, leavingStep, loadOn, makesLoop, managedBy, managersOf, mayHaveParent, organisationOn, parentOn,
-  parentTypeOf, runsOn, shareOf, slotsOf, unitEnded, unitFindings, unitLastDay, unitOn, unitsAbove, unitsBelow, unitsOn, unitTypeOn,
+  dayBefore, endedBy, endingFor, heldThroughType, holdersOn, holdingFrom, isUnit, leavingStep, loadOn, makesLoop, managedBy, managersOf, mayHaveParent,
+  organisationOn, parentOn, parentTypeOf, runsOn, shareOf, slotsOf, unitCountsOn, unitEnded, unitFindings, unitLastDay, unitOn, unitsAbove, unitsBelow, unitsOn,
+  unitTypeOn,
 } from './units'
 import type { Assignment, Organisation } from './units'
 
@@ -126,6 +127,23 @@ describe('units, slots and holders', () => {
     expect(heldThroughType({ ...at, units: units.map((one) => (one.id === 'mobile' ? { ...one } : one)) }, 'ut-team', 'ro-dev', TODAY).map((one) => one.person.person))
       .toEqual(['pe-bram', 'pe-ivo', 'pe-noor'])
     expect(heldThroughType(at, 'ut-cluster', 'ro-dev', TODAY)).toEqual([])
+  })
+
+  it('says who a role taken out altogether leaves: in any unit, from the day on', () => {
+    const later = held('data', 'ro-lead', 'pe-noor', { from: '2027-01-01' })
+    const ending = held('sales', 'ro-lead', 'pe-otto', { until: TODAY })
+    const at: Organisation = { ...organisation, assignments: [...assignments, later, ending] }
+    expect(holdingFrom(at, 'ro-lead', TODAY).map((one) => one.person.person)).toEqual(['pe-chloe', 'pe-daan', 'pe-omar', 'pe-noor', 'pe-otto'])
+    // Gijs held the role until August: by today, he holds nothing.
+    expect(holdingFrom(at, 'ro-po', TODAY).map((one) => one.person.person)).toEqual(['pe-femke'])
+    expect(holdingFrom(at, 'ro-rel', TODAY)).toEqual([])
+  })
+
+  it('counts the units of each type there on a day', () => {
+    expect([...unitCountsOn(organisation, TODAY)]).toEqual([['ut-domain', 1], ['ut-cluster', 3], ['ut-team', 1]])
+    // Mobile goes live in January, and Parcel retires the same day.
+    expect(unitCountsOn(organisation, '2027-01-01').get('ut-team')).toBe(2)
+    expect(unitCountsOn(organisation, '2027-01-01').get('ut-cluster')).toBe(2)
   })
 
   it('walks the tree of units up and down, through units only', () => {

@@ -183,6 +183,15 @@ export function heldThroughType(organisation: Organisation, typeId: UnitTypeId, 
 }
 
 /**
+ * The assignments a role taken out of the operating model altogether would
+ * leave: every one of it, in any unit, that runs on `day` or only begins
+ * after it — what the confirmation of its removal counts.
+ */
+export function holdingFrom(organisation: Organisation, roleId: RoleId, day: string): Assignment[] {
+  return organisation.assignments.filter((one) => one.roleId === roleId && !(isDay(one.until) && one.until < day))
+}
+
+/**
  * How much of a person's time their assignments take on `day`, across every
  * assignment handed in: 1 is all of it. `canonical` maps an id to the entry
  * that answers for it — a merged id to the one it was merged into — so two
@@ -291,6 +300,16 @@ function loopsAt(units: readonly UnitLike[], unitId: ElementId): boolean {
 /** The units there on `day`, under the parent each has that day, in the order the organisation lists them. */
 export function unitsOn(organisation: Organisation, day: string): UnitLike[] {
   return organisationOn(organisation, day).units.filter((unit) => isUnit(unit) && unitOn(unit, day))
+}
+
+/** How many units of each type are there on `day`: what a unit type's card says it has. */
+export function unitCountsOn(organisation: Organisation, day: string): Map<UnitTypeId, number> {
+  const counts = new Map<UnitTypeId, number>()
+  for (const unit of unitsOn(organisation, day)) {
+    const type = unit.unitTypeId ?? ''
+    counts.set(type, (counts.get(type) ?? 0) + 1)
+  }
+  return counts
 }
 
 // --- the tree of units ----------------------------------------------------------------
