@@ -31,6 +31,7 @@ import { stableJson } from '../../projects/text'
 import type {
   PeopleBrought, PeopleChanges, PeopleRead, PeopleRefused, PeopleRepository, PersonRemoved, PersonWritten,
 } from '../../ports/PeopleRepository'
+import type { DirectoryHandleLike } from './DirectoryHandle'
 import type { FolderScopes } from './folderScopes'
 import { PEOPLE_PATH, peopleFileText, readPeopleFile } from './format/peopleFile'
 import type { PeopleFileRead } from './format/peopleFile'
@@ -140,6 +141,23 @@ export class FolderPeopleRepository implements PeopleRepository {
       return { answer, revision: (await this.held()).revision }
     })
   }
+}
+
+/**
+ * Entries carried in, written straight into a folder's register by the rules
+ * every register shares (`people/register.ts`): what a working file opened
+ * into a new folder brings, before the folder is opened with repositories of
+ * its own. A file it may not write over is never written over.
+ */
+export async function bringPeopleIntoFolder(
+  root: DirectoryHandleLike, people: readonly Person[], removed: readonly PersonId[],
+): Promise<void> {
+  const read = readPeopleFile(await textAt(root, PEOPLE_PATH))
+  if (read.kind === 'unwritable') throw new ShellError('people.unwritable')
+  const held = removedOf(read)
+  const answer = changePeople(peopleOf(read), { kind: 'bringIn', people, removed }, {}, new Set(held))
+  if ('refused' in answer || answer.changed.length + answer.removed.length + answer.tombstones.length === 0) return
+  await writeAt(root, PEOPLE_PATH, peopleFileText(answer.people, [...held, ...answer.tombstones]))
 }
 
 function written(answered: Answered, show?: PersonId): PersonWritten | PeopleRefused {

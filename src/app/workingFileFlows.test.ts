@@ -35,9 +35,13 @@ function prompts(destination: 'here' | 'elsewhere' | undefined, replace = true) 
   } satisfies LandingPrompts
 }
 
-function folder(occupied: boolean): WorkingFileDestination & { placed: ScopeSnapshot[][] } {
+function folder(occupied: boolean): WorkingFileDestination & { placed: ScopeSnapshot[][]; people: unknown[] } {
   const placed: ScopeSnapshot[][] = []
-  return { name: 'Elsewhere', occupied, placed, place: (scopes) => { placed.push([...scopes]); return Promise.resolve() } }
+  const people: unknown[] = []
+  return {
+    name: 'Elsewhere', occupied, placed, people,
+    place: (scopes, register) => { placed.push([...scopes]); people.push(register); return Promise.resolve() },
+  }
 }
 
 describe('landWorkingFile', () => {
@@ -76,6 +80,17 @@ describe('landWorkingFile', () => {
     expect(chosen.placed[0][0].model.name).toBe('Theirs')
     expect(asked.confirmReplace).not.toHaveBeenCalled()
     expect(here).not.toHaveBeenCalled()
+  })
+
+  it('a folder is given the people register the file carries, and the ids it removed, with the scopes', async () => {
+    const pia = { id: 'pe-pia', name: 'Pia Schulz', pseudonym: '4K7Q', kind: 'internal' as const, state: 'active' as const }
+    const chosen = folder(false)
+    const carrying = workingFileBytes([scope('Theirs', 'org')], undefined, [pia], ['pe-gone'])
+    await landWorkingFile({ name: 'x', bytes: carrying, into, prompts: prompts('elsewhere'), chooseDestination: () => Promise.resolve(chosen), here: vi.fn(), notify: vi.fn(), s })
+    expect(chosen.people).toEqual([{ people: [pia], removed: ['pe-gone'] }])
+    const bare = folder(false)
+    await landWorkingFile({ name: 'x', bytes: set(), into, prompts: prompts('elsewhere'), chooseDestination: () => Promise.resolve(bare), here: vi.fn(), notify: vi.fn(), s })
+    expect(bare.people).toEqual([undefined])
   })
 
   it('a folder that holds something is written only after a second yes', async () => {

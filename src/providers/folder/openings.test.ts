@@ -9,6 +9,8 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { IDBFactory, IDBKeyRange } from 'fake-indexeddb'
 import { FakeDirectory } from '../../adapters/folder/fakeDirectory'
+import { PEOPLE_PATH, readPeopleFile } from '../../adapters/folder/format/peopleFile'
+import { textAt } from '../../adapters/folder/handles'
 import type { ScopeSnapshot } from '../../projects/scope'
 import { browserOpening, destinationIn } from './openings'
 
@@ -43,6 +45,16 @@ describe('somewhere new a working file may become', () => {
     await destination.place([scope('', 'Acme Logistics'), scope('retail', 'Retail')])
     expect((await destination.read('retail'))?.model.name).toBe('Retail')
     expect((await destination.read(''))?.model.name).toBe('Acme Logistics')
+  })
+
+  it('takes the people register the file carries beside the scopes, out of their way, and brings nobody back it removed', async () => {
+    const handle = new FakeDirectory('New')
+    const pia = { id: 'pe-pia', name: 'Pia Schulz', pseudonym: '4K7Q', kind: 'internal' as const, state: 'active' as const }
+    const destination = await destinationIn({ handle, name: 'New', root: 'New' })
+    await destination.place([scope('', 'Acme Logistics')], { people: [pia], removed: ['pe-gone'] })
+    expect(readPeopleFile(await textAt(handle, PEOPLE_PATH))).toEqual({ kind: 'read', people: [pia], removed: ['pe-gone'] })
+    await destination.place([scope('', 'Acme Logistics')], { people: [{ ...pia, id: 'pe-gone' }], removed: [] })
+    expect(readPeopleFile(await textAt(handle, PEOPLE_PATH))).toEqual({ kind: 'read', people: [pia], removed: ['pe-gone'] })
   })
 
   it('is occupied where the folder already holds a scope', async () => {

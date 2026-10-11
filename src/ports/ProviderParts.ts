@@ -19,7 +19,7 @@
  */
 import type { Destination, MovedBy, Screen } from '../agent/screen'
 import type { PersonId } from '../model/person'
-import type { PeopleAction, PolicyHold } from '../people/person'
+import type { PeopleAction, Person, PolicyHold } from '../people/person'
 import type {
   SourceFailure, SourceLanding, SourceStatus, SourceWork, SourceWorkChanged,
 } from '../platform/sourceProvider'
@@ -191,6 +191,9 @@ export type SourcePreferences = {
   write(patch: Record<string, unknown>): void
 }
 
+/** The people register a working file carries: its entries, and the ids it removed (ADR-0036 §8). */
+export type CarriedPeople = { readonly people: readonly Person[]; readonly removed: readonly PersonId[] }
+
 /**
  * Somewhere new a working file may become (ADR-0025), chosen by a way in:
  * what it is called, whether it already holds something — a scope, a board —
@@ -202,7 +205,8 @@ export type SourcePreferences = {
 export type SourceDestination<Opening = unknown> = {
   name: string
   occupied: boolean
-  place(scopes: readonly ScopeSnapshot[]): Promise<void>
+  /** The scopes written as one, and then the people register the file carries, where it carries one (ADR-0036 §8). */
+  place(scopes: readonly ScopeSnapshot[], people?: CarriedPeople): Promise<void>
   read(path: ScopePath): Promise<ScopeSnapshot | undefined>
   opening: Opening
 }

@@ -12,6 +12,7 @@
 import type { Translate } from '../i18n'
 import type { SavedDocument } from '../ports/DocumentGateway'
 import type { Arrival, BringOptions, BroughtIn, CarriedOut, Interchange, Opened } from '../ports/Interchange'
+import type { CarriedPeople } from '../ports/ProviderParts'
 import type { ScopeSnapshot } from '../projects/scope'
 import { ROOT_SCOPE } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
@@ -105,7 +106,8 @@ export function anyWorkingFile(accepts: string): string {
 export type WorkingFileDestination = {
   name: string
   occupied: boolean
-  place(scopes: readonly ScopeSnapshot[]): Promise<void>
+  /** The scopes written as one, then the register the file carries, where it carries one (ADR-0036 §8). */
+  place(scopes: readonly ScopeSnapshot[], people?: CarriedPeople): Promise<void>
   /** One scope of the new folder as it now reads, for the check after landing (ADR-0023, amended). */
   read?: ReadScope
 }
@@ -203,7 +205,9 @@ export async function landWorkingFile(args: {
   if (destination.occupied && !(await prompts.confirmReplace(destination.name))) return
   const rooted = await interchange.open(bytes, ROOT_SCOPE)
   if ('refused' in rooted) { notify(s(rooted.refused), 'error'); return }
-  await inPart(() => destination.place([rooted.top, ...rooted.rest]), destination.read)
+  // The register goes with the scopes, as it does landing here: a new folder without it reads every picked name as nobody.
+  const people = rooted.people?.length || rooted.removed?.length ? { people: rooted.people ?? [], removed: rooted.removed ?? [] } : undefined
+  await inPart(() => destination.place([rooted.top, ...rooted.rest], people), destination.read)
   if (destination.read) await said(rooted, destination.read)
 }
 

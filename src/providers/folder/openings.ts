@@ -19,6 +19,7 @@ import { IpcDirectoryHandle } from '../../adapters/folder/desktop/IpcDirectoryHa
 import type { DirectoryHandleLike } from '../../adapters/folder/DirectoryHandle'
 import { FileSystemFolderSettings } from '../../adapters/folder/FileSystemFolderSettings'
 import { FileSystemScopeStore } from '../../adapters/folder/FileSystemScopeStore'
+import { bringPeopleIntoFolder } from '../../adapters/folder/FolderPeopleRepository'
 import { browserDatabase } from '../../adapters/webStorage/available'
 import { IndexedDbStore } from '../../adapters/webStorage/IndexedDbStore'
 import type { SourceDestination } from '../../ports/ProviderParts'
@@ -95,7 +96,11 @@ export async function destinationIn(opening: FolderOpening): Promise<SourceDesti
     opening,
     occupied,
     // As one, the way *Replace here* lands (ADR-0023, amendments 2 and 3).
-    place: async (scopes) => { await store.saveTogether(scopes.map((scope) => ({ scope }))) },
+    place: async (scopes, people) => {
+      await store.saveTogether(scopes.map((scope) => ({ scope })))
+      // The register after the scopes, as a landing here brings it (ADR-0036 §8).
+      if (people) await bringPeopleIntoFolder(opening.handle, people.people, people.removed)
+    },
     read: (path) => store.load(path),
   }
 }

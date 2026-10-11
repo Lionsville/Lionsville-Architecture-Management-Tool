@@ -286,8 +286,8 @@ const chooseDestination: ChooseDestination | undefined = (() => {
     return {
       name: found.name,
       occupied: found.occupied,
-      place: async (scopes) => {
-        await found.place(scopes)
+      place: async (scopes, people) => {
+        await found.place(scopes, people)
         await take(hostWay, () => Promise.resolve(found.opening))
       },
       read: (path) => found.read(path),
