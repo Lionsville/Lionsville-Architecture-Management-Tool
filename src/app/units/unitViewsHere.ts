@@ -17,6 +17,7 @@
  *
  * Off the index the shell already holds and the session: nothing loads for it.
  */
+import { conwayApplication } from '../../model/conway'
 import type { ConwayApplication, ConwayInput, ConwayInteraction, ConwayRow } from '../../model/conway'
 import type { HostModel } from '../../model/hostModel'
 import type { ElementId, Relation } from '../../model/types'
@@ -91,13 +92,13 @@ function applicationsHere(index: ScopeIndex, scope: ScopePath, model: HostModel,
   const found = new Map<ElementId, ConwayApplication>()
   for (const element of model.elements) {
     if (element.kind !== 'application' || element.ref !== undefined) continue
-    found.set(element.id, { id: element.id, name: element.name, ...(element.partyId !== undefined ? { partyId: element.partyId } : {}) })
+    found.set(element.id, conwayApplication(element))
   }
   for (const entry of index.register()) {
     if (found.has(entry.id) || entry.master === scope || entry.master === undefined) continue
     const filed = isWithinScope(entry.master, scope)
     if (!filed && (entry.partyId === undefined || !units.has(entry.partyId))) continue
-    found.set(entry.id, { id: entry.id, name: entry.name, ...(entry.partyId !== undefined ? { partyId: entry.partyId } : {}) })
+    found.set(entry.id, conwayApplication(entry))
   }
   return [...found.values()]
 }

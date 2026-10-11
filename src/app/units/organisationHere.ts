@@ -16,7 +16,7 @@
 import type { HostModel } from '../../model/hostModel'
 import { isUnit } from '../../model/units'
 import type { Assignment } from '../../model/units'
-import type { ElementId } from '../../model/types'
+import { ownsOf } from '../../model/conway'
 import { organisationAt } from '../../projects/checks'
 import type { OrganisationAt } from '../../projects/checks'
 import { movesOf } from '../../projects/scopeIndex'
@@ -32,15 +32,11 @@ export function organisationHere(index: ScopeIndex, scope: ScopePath, model: Hos
   const assignmentsHere = new Set<Assignment>(assignments)
   const keptHere = new Set(index.assignments().filter((one) => one.scope === scope).map((one) => one.assignment))
   const atRoot = scope === ''
-  const owned = new Map<ElementId, number>()
-  for (const entry of index.register()) {
-    if (entry.partyId !== undefined && entry.master !== scope) owned.set(entry.partyId, (owned.get(entry.partyId) ?? 0) + 1)
-  }
-  for (const element of model.elements) {
-    if (element.kind === 'application' && element.ref === undefined && element.partyId !== undefined) {
-      owned.set(element.partyId, (owned.get(element.partyId) ?? 0) + 1)
-    }
-  }
+  // Every application by its owner: the open scope's as its session has them, the rest the index's.
+  const owns = ownsOf([
+    ...index.register().filter((entry) => entry.master !== scope),
+    ...model.elements.filter((element) => element.kind === 'application' && element.ref === undefined),
+  ])
   const moves = [
     ...index.moves().filter((one) => one.scope !== scope),
     ...movesOf(scope, model),
@@ -58,6 +54,6 @@ export function organisationHere(index: ScopeIndex, scope: ScopePath, model: Hos
       return unit ? { scope, name: unit.name, type: unit.unitTypeId ?? '' } : base.unitAt(id)
     },
     assignmentAt: (assignment) => (assignmentsHere.has(assignment) ? scope : base.assignmentAt(assignment)),
-    owns: (id) => owned.get(id) ?? 0,
+    owns,
   }
 }

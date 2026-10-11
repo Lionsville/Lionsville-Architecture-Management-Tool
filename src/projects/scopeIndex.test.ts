@@ -208,6 +208,21 @@ describe('the index — what it is read for', () => {
     expect(index.lookup('bus')?.retired).toBeUndefined()
   })
 
+  it('carries the phase its master stores where not live, and its dated phases, for whether it is there on a day (ADR-0009)', () => {
+    const index = indexScopes([
+      scope('platforms', [
+        element('openshift', { kind: 'platform', lifecycleDates: { retiring: '2027-01-01', retired: '2027-06-30' } }),
+        element('next', { lifecycle: 'planned', lifecycleDates: { live: '2027-01-01', retired: 'later' } }),
+        element('plain'),
+      ]),
+    ])
+    expect(index.lookup('openshift')).toMatchObject({ lifecycleDates: { retiring: '2027-01-01', retired: '2027-06-30' } })
+    expect(index.lookup('openshift')?.lifecycle).toBeUndefined()
+    expect(index.lookup('next')).toMatchObject({ lifecycle: 'planned', lifecycleDates: { live: '2027-01-01' } })
+    expect(index.lookup('next')?.lifecycleDates).toEqual({ live: '2027-01-01' })
+    expect([index.lookup('plain')?.lifecycle, index.lookup('plain')?.lifecycleDates]).toEqual([undefined, undefined])
+  })
+
   it('carries what a platform is, as its master says, for the stand-ins that may not (ADR-0014)', () => {
     const index = indexScopes([
       scope('platforms', [element('openshift', { kind: 'platform', platformArchetype: 'place' }), element('bus', { kind: 'platform' })]),

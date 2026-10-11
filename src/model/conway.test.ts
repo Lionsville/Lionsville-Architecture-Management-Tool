@@ -130,6 +130,33 @@ describe('the Conway map', () => {
     expect(conwayMap(input, '2026-06-30').lines.map((line) => line.flow.id)).toContain('f-6')
   })
 
+  /** An application is on the map while it is there by its lifecycle on the day (ADR-0009), as a unit is. */
+  it('leaves off an application not yet live or gone on the day, its interfaces with it, and finds nothing about it', () => {
+    const dated = applications.map((app): ConwayApplication => {
+      if (app.id === 'a-bil') return { ...app, lifecycle: 'planned', lifecycleDates: { live: '2027-01-01' } }
+      if (app.id === 'a-pay') return { ...app, lifecycleDates: { retired: '2026-10-01' } }
+      return app
+    })
+    const map = conwayMap({ ...input, applications: dated }, TODAY)
+    const drawn = map.groups.flatMap((group) => group.applications.map((app) => app.id))
+    expect(drawn).not.toContain('a-bil')
+    expect(drawn).not.toContain('a-pay')
+    expect(map.lines.map((line) => line.flow.id)).not.toContain('f-4')
+    expect(map.findings).not.toContainEqual({ kind: 'unowned', applicationId: 'a-bil' })
+    // Webshop's team owns three on the day, which is its limit.
+    expect(map.findings.filter((one) => one.kind === 'overLimit')).toEqual([])
+    // From its first day live, Billing is on the map, and nobody owns it.
+    const later = conwayMap({ ...input, applications: dated }, '2027-01-01')
+    expect(later.findings).toContainEqual({ kind: 'unowned', applicationId: 'a-bil' })
+    expect(later.lines.find((line) => line.flow.id === 'f-4')?.status).toBe('unowned')
+  })
+
+  it('asks the caller for what a unit owns on the map\'s own day', () => {
+    const days: string[] = []
+    conwayMap({ ...input, owns: (_id, day) => { days.push(day); return 0 } }, '2027-02-01')
+    expect(new Set(days)).toEqual(new Set(['2027-02-01']))
+  })
+
   it('reads an interaction with an end that is not a unit as nothing declared', () => {
     const map = conwayMap({ ...input, interactions: [{ id: 'i-x', sourceId: 'mob', targetId: 'somebody' }] }, TODAY)
     expect(map.interactions).toEqual([])

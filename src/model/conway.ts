@@ -21,27 +21,75 @@
  * its teams' interfaces to that team's applications.
  *
  * **On a day.** Each unit sits under the parent the plans' moves give it that
- * day (`organisationOn`, §6); a unit not there owns nothing; an interface and
- * an interaction hold for their own days.
+ * day (`organisationOn`, §6); a unit not there owns nothing; an application is
+ * on the map while it is there by its lifecycle on the day (ADR-0009) — live
+ * or retiring, as a unit is — so one not yet live, or gone, is neither drawn
+ * nor a finding, and neither are its interfaces; an interface and an
+ * interaction hold for their own days.
  *
  * **It only reads.** It never moves an application or a unit; an answer to a
  * finding is a row written, an owner set or a limit changed, each where it is
  * kept. Pure, with no words: the page names the units and says the findings.
  */
-import { relationLiveAt } from './lifecycle'
+import { phaseAt, relationLiveAt } from './lifecycle'
 import type { UnitType, UnitTypeId } from './operatingModel'
-import type { ElementId, InteractionMode, Relation } from './types'
+import type { ElementId, InteractionMode, Lifecycle, LifecycleDates, Relation } from './types'
 import { isUnit, organisationOn, unitOn, unitsAbove } from './units'
 import type { UnitLike, UnitMove } from './units'
 
-/** An application as the map reads it: who owns it, if anybody says. */
-export type ConwayApplication = { id: ElementId; name: string; partyId?: ElementId }
+/**
+ * An application as the map reads it: who owns it, if anybody says, and its
+ * lifecycle — absent is live with no dates.
+ */
+export type ConwayApplication = {
+  id: ElementId; name: string; partyId?: ElementId; lifecycle?: Lifecycle; lifecycleDates?: LifecycleDates
+}
+
+/** An application as the map reads it, off an element or an index entry: its owner and its lifecycle, each where it says something. */
+export function conwayApplication(held: {
+  id: ElementId; name: string; partyId?: ElementId; lifecycle?: Lifecycle; lifecycleDates?: LifecycleDates
+}): ConwayApplication {
+  return {
+    id: held.id, name: held.name,
+    ...(held.partyId !== undefined ? { partyId: held.partyId } : {}),
+    ...(held.lifecycle !== undefined && held.lifecycle !== 'live' ? { lifecycle: held.lifecycle } : {}),
+    ...(held.lifecycleDates !== undefined && Object.keys(held.lifecycleDates).length > 0 ? { lifecycleDates: held.lifecycleDates } : {}),
+  }
+}
+
+/**
+ * Whether an application is there on a day by its lifecycle (ADR-0009): live
+ * or retiring on that day. Planned is not yet, and retired is gone — the rule
+ * a unit is held to (`unitOn`).
+ */
+export function applicationOn(app: Pick<ConwayApplication, 'lifecycle' | 'lifecycleDates'>, day: string): boolean {
+  const phase = phaseAt({ lifecycle: app.lifecycle ?? 'live', ...(app.lifecycleDates ? { lifecycleDates: app.lifecycleDates } : {}) }, day)
+  return phase === 'live' || phase === 'retiring'
+}
 
 /** An interface, or an interaction: two ends and the days the row holds. */
 export type ConwayRow = Pick<Relation, 'id' | 'sourceId' | 'targetId' | 'validFrom' | 'validUntil'>
 
 /** A declared interaction between two units, with its mode where it names one. */
 export type ConwayInteraction = ConwayRow & { mode?: InteractionMode }
+
+/** An application as the count of what a unit owns reads it. */
+export type Owned = Pick<ConwayApplication, 'partyId' | 'lifecycle' | 'lifecycleDates'>
+
+/**
+ * How many of these applications name each unit as theirs (`partyId`): on a
+ * day, those there by their lifecycle that day; with none, every one.
+ */
+export function ownsOf(applications: readonly Owned[]): (unitId: ElementId, day?: string) => number {
+  const byUnit = new Map<ElementId, Owned[]>()
+  for (const app of applications) {
+    if (app.partyId !== undefined) byUnit.set(app.partyId, [...byUnit.get(app.partyId) ?? [], app])
+  }
+  return (unitId, day) => {
+    const owned = byUnit.get(unitId) ?? []
+    return day === undefined ? owned.length : owned.filter((app) => applicationOn(app, day)).length
+  }
+}
 
 export type ConwayInput = {
   /** Every unit of the organisation: the owners, and the units above them that a map may group by. */
@@ -56,10 +104,11 @@ export type ConwayInput = {
   /** Every declared interaction; one with an end that is not a unit is passed over. */
   interactions: readonly ConwayInteraction[]
   /**
-   * How many applications name a unit as theirs across the organisation —
-   * what a type's limit is held to. Absent: those handed in.
+   * How many applications there on the day name a unit as theirs across the
+   * organisation — what a type's limit is held to. Absent: those handed in
+   * that are there on the day.
    */
-  owns?: (unitId: ElementId) => number
+  owns?: (unitId: ElementId, day: string) => number
 }
 
 export type ConwayOptions = {
@@ -124,8 +173,9 @@ type Reading = {
   live: ConwayInteraction[]
 }
 
-/** The Conway map on `day`. */
-export function conwayMap(input: ConwayInput, day: string, options: ConwayOptions = {}): ConwayMap {
+/** The Conway map on `day`: of the applications handed in, those there on it. */
+export function conwayMap(given: ConwayInput, day: string, options: ConwayOptions = {}): ConwayMap {
+  const input: ConwayInput = { ...given, applications: given.applications.filter((app) => applicationOn(app, day)) }
   const reading = readingOf(input, day, options)
   const apps = new Set(input.applications.map((app) => app.id))
   const lines = input.flows
@@ -224,7 +274,7 @@ function overLimit(input: ConwayInput, reading: Reading, day: string): ConwayFin
     const unit = reading.units.get(unitId)
     const limit = limits.get(unit?.unitTypeId ?? '')
     if (!unit || limit === undefined || !unitOn(unit, day)) continue
-    const owns = input.owns?.(unitId) ?? input.applications.filter((app) => app.partyId === unitId).length
+    const owns = input.owns?.(unitId, day) ?? input.applications.filter((app) => app.partyId === unitId).length
     if (owns > limit) found.push({ kind: 'overLimit', unitId, owns, limit })
   }
   return found

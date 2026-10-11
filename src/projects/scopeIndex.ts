@@ -50,8 +50,10 @@
  *
  * Pure: `(path, model)` pairs in, answers out. No store, no React, no promise.
  */
-import type { DesignElement, ElementId, ElementKind, LifecycleDates, PlatformArchetype, Relation, RelationType } from '../model'
-import { isDay } from '../model/lifecycle'
+import type {
+  DesignElement, ElementId, ElementKind, Lifecycle, LifecycleDates, PlatformArchetype, Relation, RelationType,
+} from '../model'
+import { DATED_PHASES, isDay } from '../model/lifecycle'
 import { isBlankRef } from '../model/person'
 import type { PersonRef } from '../model/person'
 import type { Transition } from '../model/transition'
@@ -161,6 +163,15 @@ export type IndexEntry = {
    * and only a real one: the rest of the lifecycle stays the master's to show.
    */
   retired?: string
+  /**
+   * Its phase as its master stores it, where that is not `live`, and its
+   * dated phases, where it has any (ADR-0009): what says whether it is there
+   * on a day (`lifecycle.phaseAt`) where the master is in another scope — a
+   * Conway map on its day reads an application of another scope's this way.
+   * For that question only; what a card shows is still the master's.
+   */
+  lifecycle?: Exclude<Lifecycle, 'live'>
+  lifecycleDates?: LifecycleDates
   /**
    * Where the stand-ins say the definition was last seen — kept ONLY where
    * nobody defines it (§3).
@@ -355,7 +366,9 @@ export type ScopeIndex = {
  * What an entry carries of its master's own detail — the tree facts (§3) a
  * stand-in may not carry and every scope drawing the thing reads from here.
  */
-type MasterDetail = Pick<IndexEntry, 'parentId' | 'outside' | 'partyId' | 'owner' | 'platformArchetype' | 'shared' | 'retired'>
+type MasterDetail = Pick<
+  IndexEntry, 'parentId' | 'outside' | 'partyId' | 'owner' | 'platformArchetype' | 'shared' | 'retired' | 'lifecycle' | 'lifecycleDates'
+>
 
 /**
  * Those fields off a record, each only where it says something: an entry
@@ -365,9 +378,10 @@ type MasterDetail = Pick<IndexEntry, 'parentId' | 'outside' | 'partyId' | 'owner
  */
 function masterDetailOf(held: {
   parentId?: ElementId; outside?: boolean; partyId?: ElementId; owner?: PersonRef; platformArchetype?: PlatformArchetype
-  shared?: boolean; retired?: string; lifecycleDates?: LifecycleDates
+  shared?: boolean; retired?: string; lifecycle?: Lifecycle; lifecycleDates?: LifecycleDates
 }): MasterDetail {
   const retired = held.retired ?? held.lifecycleDates?.retired
+  const dated = DATED_PHASES.filter((phase) => isDay(held.lifecycleDates?.[phase]))
   return {
     ...(held.parentId !== undefined ? { parentId: held.parentId } : {}),
     ...(held.outside ? { outside: true as const } : {}),
@@ -376,6 +390,8 @@ function masterDetailOf(held: {
     ...(held.platformArchetype !== undefined ? { platformArchetype: held.platformArchetype } : {}),
     ...(held.shared ? { shared: true as const } : {}),
     ...(isDay(retired) ? { retired } : {}),
+    ...(held.lifecycle !== undefined && held.lifecycle !== 'live' ? { lifecycle: held.lifecycle } : {}),
+    ...(dated.length ? { lifecycleDates: Object.fromEntries(dated.map((phase) => [phase, held.lifecycleDates![phase]])) } : {}),
   }
 }
 

@@ -448,12 +448,12 @@ export type UnitFinding =
 /**
  * Every finding of the organisation on `day`, unit by unit and then person
  * by person. `owns` says how many applications name a unit as theirs
- * (`partyId`), which the caller counts over the tree; absent, no limit is
- * read. `canonical` is as {@link loadOn} takes it.
+ * (`partyId`) and are there on the day, which the caller counts over the
+ * tree; absent, no limit is read. `canonical` is as {@link loadOn} takes it.
  */
 export function unitFindings(
   organisation: Organisation, day: string,
-  deps: { owns?: (unitId: ElementId) => number; canonical?: (id: PersonId) => PersonId } = {},
+  deps: { owns?: (unitId: ElementId, day: string) => number; canonical?: (id: PersonId) => PersonId } = {},
 ): UnitFinding[] {
   const on = organisationOn(organisation, day)
   const types = new Map(on.unitTypes.map((type) => [type.id, type]))
@@ -471,7 +471,7 @@ export function unitFindings(
     }
     const serves = unit.scopes?.length ?? 0
     if (serves > 1 && type.spans !== true) found.push({ kind: 'spans', unitId: unit.id, serves })
-    const owns = deps.owns?.(unit.id) ?? 0
+    const owns = deps.owns?.(unit.id, day) ?? 0
     if (type.limit !== undefined && owns > type.limit) found.push({ kind: 'overLimit', unitId: unit.id, owns, limit: type.limit })
   }
   found.push(...endedFindings(on.assignments, units, roles, day))

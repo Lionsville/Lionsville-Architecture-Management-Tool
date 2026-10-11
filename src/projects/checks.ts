@@ -41,6 +41,7 @@ import type { DesignElement, ElementId, OwnerDetailField } from '../model'
 import type { HostModel } from '../model/hostModel'
 import { causeLabel, liveCauses } from '../observations/observation'
 import { accountabilityGaps } from '../model/operatingModel'
+import { ownsOf } from '../model/conway'
 import { today } from '../model/lifecycle'
 import { unitFindings } from '../model/units'
 import type { Assignment, Organisation, UnitFinding } from '../model/units'
@@ -624,23 +625,23 @@ export type OrganisationAt = {
   unitAt: (unitId: ElementId) => { scope: ScopePath; name: string; type: string } | undefined
   /** The scope that keeps an assignment. */
   assignmentAt: (assignment: Assignment) => ScopePath | undefined
-  /** How many applications name a unit as theirs (`partyId`). */
-  owns: (unitId: ElementId) => number
+  /**
+   * How many applications name a unit as theirs (`partyId`): on a day, those
+   * there by their lifecycle that day (ADR-0009); with none, every one.
+   */
+  owns: (unitId: ElementId, day?: string) => number
 }
+
 
 /** The organisation as the index has it. */
 export function organisationAt(index: ScopeIndex): OrganisationAt {
   const units = new Map(index.units().map(({ scope, unit }) => [unit.id, { scope, name: unit.name, type: unit.unitTypeId ?? '' }]))
   const assignments = new Map<Assignment, ScopePath>(index.assignments().map(({ scope, assignment }) => [assignment, scope]))
-  const owned = new Map<ElementId, number>()
-  for (const entry of index.register()) {
-    if (entry.partyId !== undefined) owned.set(entry.partyId, (owned.get(entry.partyId) ?? 0) + 1)
-  }
   return {
     organisation: index.organisation(),
     unitAt: (id) => units.get(id),
     assignmentAt: (assignment) => assignments.get(assignment),
-    owns: (id) => owned.get(id) ?? 0,
+    owns: ownsOf(index.register()),
   }
 }
 

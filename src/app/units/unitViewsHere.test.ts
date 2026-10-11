@@ -10,7 +10,8 @@ import { describe, expect, it } from 'vitest'
 import type { HostModel } from '../../model/hostModel'
 import type { DesignElement } from '../../model/types'
 import { indexScopes } from '../../projects/scopeIndex'
-import { unitLanding, unitViewsHere } from './unitViewsHere'
+import { conwayMap } from '../../model/conway'
+import { conwayInputHere, unitLanding, unitViewsHere } from './unitViewsHere'
 
 const actor = (id: string, name: string, over: Partial<DesignElement> = {}): DesignElement => ({
   id, kind: 'actor', name, lifecycle: 'live', isManaged: false, aspects: {}, ...over,
@@ -43,6 +44,35 @@ describe('what a view in a scope is of', () => {
     expect(here.heldHere('data')).toBe(false)
     expect(here.name('data')).toBe('Data & Integration')
     expect(here.name('nobody')).toBe('nobody')
+  })
+})
+
+/**
+ * A Conway map reads each application's lifecycle on its day (ADR-0009),
+ * whichever scope keeps it — the index carries the master's — and counts what
+ * a unit owns on that day too.
+ */
+describe('a Conway map in a scope, on its day', () => {
+  const app = (id: string, over: Partial<DesignElement> = {}): DesignElement => ({
+    id, kind: 'application', name: id, lifecycle: 'live', isManaged: true, aspects: {}, partyId: 'shipping', ...over,
+  })
+  const kept = { ...SHIPPING, elements: [...SHIPPING.elements, app('here')] }
+  const below: HostModel = {
+    name: 'Parcel', relations: [], diagrams: [],
+    elements: [app('gone', { lifecycleDates: { retired: '2026-09-01' } }), app('coming', { lifecycle: 'planned', lifecycleDates: { live: '2027-01-01' } })],
+  }
+  const tree = indexScopes([{ path: '', model: ROOT }, { path: 'shipping', model: kept }, { path: 'shipping/parcel', model: below }])
+
+  it('carries the lifecycle of an application another scope keeps, and leaves off what is not there on the day', () => {
+    const here = unitViewsHere(tree, 'shipping', kept)
+    const input = conwayInputHere(tree, 'shipping', kept, here, '2026-10-11')
+    expect(input.applications.find((one) => one.id === 'coming')).toMatchObject({ lifecycle: 'planned', lifecycleDates: { live: '2027-01-01' } })
+    const drawn = (day: string) => conwayMap(input, day).groups.flatMap((group) => group.applications.map((one) => one.id)).sort()
+    expect(drawn('2026-10-11')).toEqual(['here'])
+    expect(drawn('2027-01-01')).toEqual(['coming', 'here'])
+    expect(input.owns?.('shipping', '2026-10-11')).toBe(1)
+    expect(input.owns?.('shipping', '2027-01-01')).toBe(2)
+    expect(here.at.owns('shipping')).toBe(3)
   })
 })
 

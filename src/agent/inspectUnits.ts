@@ -13,7 +13,7 @@
  * are is `people.list`'s and `assignments.list`'s to say, under the
  * organisation's policy.
  */
-import { conwayMap } from '../model/conway'
+import { conwayApplication, conwayMap, ownsOf } from '../model/conway'
 import type { ConwayApplication, ConwayInteraction, ConwayRow } from '../model/conway'
 import type { HostModel } from '../model/hostModel'
 import { isDay } from '../model/lifecycle'
@@ -95,8 +95,13 @@ export function inspectConway(tree: TreeView | undefined, open: OpenDocument, di
   const onDay = organisationOn(organisation, day).units.filter(isUnit)
   const viewUnits = new Set(units.filter(include).flatMap((one) => [one.id, ...unitsBelow(onDay, one.id)]))
   const applications = applicationsOf(tree, open.current, open.path, viewUnits)
+  // What a type's limit is held to: every application of the organisation there on the day, as the page counts them.
+  const owns = ownsOf([
+    ...(tree?.register() ?? []).filter((entry) => entry.master !== open.path),
+    ...open.current.elements.filter((element) => element.kind === 'application' && element.ref === undefined),
+  ])
   const map = conwayMap({
-    units, ...(organisation.moves ? { moves: organisation.moves } : {}), unitTypes: organisation.unitTypes, applications,
+    units, ...(organisation.moves ? { moves: organisation.moves } : {}), unitTypes: organisation.unitTypes, applications, owns,
     flows: rowsOf(tree, open.current, applications.map((app) => app.id), 'flow'),
     interactions: rowsOf(tree, open.current, units.map((one) => one.id), 'interacts') as ConwayInteraction[],
   }, day)
@@ -122,12 +127,12 @@ function applicationsOf(tree: TreeView | undefined, current: HostModel, scope: s
   const found = new Map<ElementId, ConwayApplication>()
   for (const element of current.elements) {
     if (element.kind !== 'application' || element.ref !== undefined) continue
-    found.set(element.id, { id: element.id, name: element.name, ...(element.partyId !== undefined ? { partyId: element.partyId } : {}) })
+    found.set(element.id, conwayApplication(element))
   }
   for (const entry of tree?.register() ?? []) {
     if (found.has(entry.id) || entry.master === undefined || entry.master === scope) continue
     if (!within(entry.master, scope) && (entry.partyId === undefined || !units.has(entry.partyId))) continue
-    found.set(entry.id, { id: entry.id, name: entry.name, ...(entry.partyId !== undefined ? { partyId: entry.partyId } : {}) })
+    found.set(entry.id, conwayApplication(entry))
   }
   return [...found.values()]
 }

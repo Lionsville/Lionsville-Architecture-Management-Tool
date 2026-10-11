@@ -153,6 +153,19 @@ describe('an agent and the views of the organisation', () => {
     expect((after.crossing as { status: string; mode?: string }[]).find((one) => one.status === 'declared')).toMatchObject({ mode: 'service' })
   })
 
+  /** An application is on the map while it is there by its lifecycle on the map's day (ADR-0009), as on the page. */
+  it('reads a Conway map without an application not yet live or gone on its day, and without what it would find about one', async () => {
+    const held = session()
+    held.dispatch({ type: 'element.update', id: 'orders', patch: { lifecycleDates: { retired: '2026-10-01' } } })
+    held.dispatch({ type: 'element.update', id: 'bill', patch: { lifecycle: 'planned', lifecycleDates: { live: '2027-01-01' } } })
+    const made = parsed(await handle({ id: '1', tool: 'diagram.create', args: { kind: 'conway', name: 'Map' } }, held))
+    const report = parsed(await handle({ id: '2', tool: 'diagram.inspect', args: { diagramId: made.id } }, held))
+    const drawn = (report.groups as { applications: { id: string }[] }[]).flatMap((one) => one.applications.map((app) => app.id))
+    expect(drawn.sort()).toEqual(['phone', 'shop'])
+    expect(report.crossing).toEqual([])
+    expect(report.findings).toEqual([])
+  })
+
   it('lists an interaction with its mode, keeps a mode on no other row, and takes a day on either view', async () => {
     const held = session()
     const row = parsed(await handle({ id: '1', tool: 'relation.add', args: { type: 'interacts', sourceId: 'mob', targetId: 'web', mode: 'facilitating' } }, held))

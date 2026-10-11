@@ -35,7 +35,9 @@ import type { CauseAbove, ScopeAnalysis } from '../model/observation'
 import type { OperatingRule, Responsibility, Role, UnitType } from '../model/operatingModel'
 import type { Assignment } from '../model/units'
 import { matchesQuery } from '../model/textSearch'
-import type { DesignElement, ElementId, ElementKind, PlatformArchetype, Relation, RelationType } from '../model/types'
+import type {
+  DesignElement, ElementId, ElementKind, Lifecycle, LifecycleDates, PlatformArchetype, Relation, RelationType,
+} from '../model/types'
 import type { AgentAnswer } from './tools'
 import { json, refused } from './tools'
 
@@ -70,6 +72,9 @@ export type TreeEntry = {
   readonly shared?: true
   /** The day it is gone, as its master says (ADR-0009): what a stand-in is dated by. */
   readonly retired?: string
+  /** Its stored phase where not live, and its dated phases: whether it is there on a day (ADR-0009). */
+  readonly lifecycle?: Exclude<Lifecycle, 'live'>
+  readonly lifecycleDates?: LifecycleDates
 }
 
 /** One row of the technology register (ADR-0014 §2.6): `projects/technologyRegister`'s, structurally. */
