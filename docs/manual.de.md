@@ -631,6 +631,21 @@ wählen ist weiterhin kein Schritt für Zurück. Wer die Arbeit lesen darf, öff
 damit denselben Ort; wer noch nicht angemeldet ist, meldet sich zuerst an und
 landet danach dort.
 
+**Auf einer Ansicht wählt der Link aus, was Sie ausgewählt hatten.** Teilen Sie
+von einem Board, einem Blatt, einer Unternehmenskarte oder der
+Technologielandschaft mit einem ausgewählten Element, öffnet der Link diese
+Ansicht mit dem Element wieder ausgewählt; auf einem Blatt und einer Karte wird
+es auch kurz umrandet. Ein Eintrag, auf dem ein Link öffnet — eine Entscheidung, eine Beobachtung, eine
+Ursache, eine Lösung oder ein Experiment —, wird ebenso ins Bild gebracht und
+umrandet, in der Liste oder im Bild.
+
+**Link kopieren bei einem Eintrag.** Der Leser einer Entscheidung, die Seite
+eines Plans und das Kontextmenü auf einem Knoten im Bild der Beobachtungen haben
+jeweils **Link kopieren**: einen Link zu diesem Eintrag, was sonst auch auf dem
+Bildschirm ist, ebenso erstellt, kopiert und gezeigt. Er ist auch da, wenn die
+Arbeit nur gelesen werden darf, denn Lesen ist, wofür ein Link da ist. Ein
+Eintrag eines Bereichs darunter verlinkt auf die Seite dieses Bereichs.
+
 **Ein Link braucht eine Adresse, die andere erreichen.** Arbeit in einem Ordner,
 in diesem Browser oder nirgends hat keine; dort sagt der Dialog, warum es keinen
 Link gibt, und nichts wird kopiert. Der Menüeintrag wirkt auf jedem Bildschirm,

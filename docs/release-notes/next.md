@@ -9,6 +9,11 @@ read or copy again: a scope's home, a view, or a page over it, with the
 decision or observation that is selected. Whoever may read the work opens the
 same place with it. Where work is kept in a folder, in this browser or nowhere,
 there is no address another person could reach, and the dialog says so instead.
+A link from a view with an element selected opens with that element selected
+again, and a record a link opens on is brought into view and outlined for a
+moment. A decision's reader, a plan's page and the right-click
+menu on the observations picture have **Copy link** for that one record,
+read-only too.
 
 **A view nobody has laid out yet is laid out for a reader too.** A view the
 app or another tool made with no positions in it — a new container view, an

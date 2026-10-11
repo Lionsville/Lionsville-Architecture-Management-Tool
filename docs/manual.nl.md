@@ -592,6 +592,21 @@ op dat record uitkomt — een ander record kiezen is nog steeds geen stap voor
 Terug. Iedereen die het werk mag lezen, opent er dezelfde plek mee; wie nog niet
 is aangemeld, meldt zich eerst aan en komt daarna op die plek uit.
 
+**Op een weergave selecteert de link wat jij geselecteerd had.** Deel je vanaf
+een bord, een blad, een ondernemingskaart of het technologielandschap met één
+element geselecteerd, dan opent de link die weergave met dat element weer
+geselecteerd; op een blad en een kaart wordt het ook even omlijnd. Een record waarop een link
+opent — een besluit, een waarneming, een oorzaak, een oplossing of een
+experiment — wordt op dezelfde manier in beeld gebracht en omlijnd, in de lijst
+of in het plaatje.
+
+**Link kopiëren bij één record.** De lezer van een besluit, de pagina van een
+plan en het rechtsklikmenu op een knoop in het plaatje van de waarnemingen
+hebben elk **Link kopiëren**: een link naar dat record, wat er verder ook op het
+scherm staat, op dezelfde manier gemaakt, gekopieerd en getoond. Hij is er ook
+als het werk alleen gelezen mag worden, want lezen is waar een link voor is.
+Een record van een onderdeel eronder linkt naar de pagina van dat onderdeel.
+
 **Een link heeft een adres nodig dat een ander kan bereiken.** Werk in een map,
 in deze browser of nergens heeft dat niet; dan zegt het venster waarom er geen
 link is, en wordt er niets gekopieerd. Het menu-onderdeel werkt vanaf elk

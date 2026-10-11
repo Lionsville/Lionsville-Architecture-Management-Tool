@@ -556,6 +556,20 @@ that record — choosing another record is still not a step for Back. Anyone who
 may read the work opens the same place with it; somebody who is not signed in
 yet signs in first and lands there after.
 
+**On a view, the link selects what you selected.** Share from a board, a
+sheet, an enterprise map or the technology landscape with one element
+selected, and the link opens that view with the element selected again; on a
+sheet and a map it is also outlined for a moment. A record a link opens on — a
+decision, an observation, a cause, a solution or an experiment — is brought
+into view and outlined the same way, in the list or in the picture.
+
+**Copy link on one record.** A decision's reader, a plan's page and the
+right-click menu on a node of the observations picture each have **Copy
+link**: a link to that record, whatever else is on screen, made, copied and
+shown the same way. It is there when the work is read-only too, since reading
+is what a link is for. A record of a scope below links to that scope's own
+page.
+
 **A link needs an address somebody else can reach.** Work kept in a folder, in
 this browser or nowhere at all has none, so there the dialog says why there is
 no link, and nothing is copied. The menu item works from every screen, the

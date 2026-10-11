@@ -2,7 +2,9 @@
 
 * Status: accepted; amended 1 October 2026 (a move a provider says is its
   own, a tab and a selection in a destination, and an open that never makes
-  a view), as built the same day
+  a view), as built the same day; amended 11 October 2026 (`app.open` takes
+  a solution or an experiment; `select` may ride in a link), accepted and
+  built
 * Date: 2026-09-19
 * Deciders: Wouter Simons
 
@@ -269,6 +271,21 @@ not draw it, and the documentation page closed by another page; `screen`,
 `place`, `pageLanding`, `bootLanding`, `useViewSelect` and `handle.shell`
 tests pin the rest, and `OrganisationScreen.test.tsx` the person's own
 *Make…* and *New board…*, which still make a sheet.
+
+## Amended — a solution and an experiment, and `select` in a link
+
+*11 October 2026; accepted and built the same day.*
+
+**`app.open` takes a solution or an experiment by id**, on the observations
+page or with no page, as the page itself opens one on its own tab (ADR-0026).
+It refused them before as *no observation or cause*, though a place on that
+page could already name one.
+
+**`select` may ride in a link** (ADR-0033, amended the same day). What it
+means does not change: an element selected on the view opened, where that
+view draws it, and nothing where it does not. It is still no part of a place
+and no part of the screen, so `app.current` never reports it and a move that
+only selects is no step.
 
 ## More Information
 

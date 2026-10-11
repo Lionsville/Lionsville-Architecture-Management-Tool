@@ -3,7 +3,8 @@
 * Status: accepted, 1 October 2026; as built, 1 October 2026; amended 1 October
   2026 (a place on the observations page carries its tab); implemented,
   1 October 2026; amended 8 October 2026 (a link to a place, shared from the
-  menu), accepted and built
+  menu), accepted and built; amended 11 October 2026 (what a link selects,
+  and a link to one record), accepted and built
 * Date: 2026-10-01
 * Deciders: Wouter Simons
 * Extends: ADR-0019 (the screen an agent reads and the destination it opens:
@@ -354,4 +355,49 @@ looked at and no dialog in a link: a link is a place, and a place holds none of
 them. No link of the app's own making that a provider did not give an address
 for: a guess at an address would be a link that opens somebody else's work, or
 nothing.
+
+## Amended — what a link selects, and a link to one record
+
+*11 October 2026; accepted and built the same day.* A link opened the right
+page, and the record was selected there, but nothing said where it was: a
+record far down a long list was selected off screen, and an element selected
+on a board when the link was made was not part of the link at all. And a
+link to one record could only be made by choosing it and then the menu.
+
+**`select` may ride in a link, on arrival only.** A link made from a board, a
+sheet, a map or the technology landscape with one element selected carries
+it as `select` beside the place (`#place?scope=…&page=board&id=…&select=…`),
+and the boot opens the view with it selected where the view draws it, as
+`app.open`'s `select` does (ADR-0019). It is still **no part of a place**:
+`samePlace`, `placeOf` and an entry's state never hold it, so choosing
+another element is no step, and the entry the boot replaces is written
+without it. A link from a record's page carries none: the record is the
+place's `id` already. `readPlace` reads a `select` said once and refuses one
+said twice, as it refuses every key said twice.
+
+**What a link opens on is located.** Selected, brought into view and ringed
+for a moment — the mark the sheet's finder had — wherever it is drawn: the
+decisions list, the observations register and both of its pictures, the sheet
+and the enterprise map (`widgets/useLocated`). On a board the editor's own
+focus selects and centres it, which is mark enough. A page opened with no
+record asked for lands where it always did, and rings nothing.
+
+**A link to one record is a press on the record.** *Copy link* on a
+decision's reader, a plan's header and a node's right-click menu on the
+observations picture makes the link to that record whatever else is on
+screen, and copies and shows it as *Share with a Link…* does, through the
+same dialog, with the same refusal where the source has no address. It is
+offered where the work is read-only too: reading is what a link is for. A
+record of a scope below links to its own scope's page, where its id means
+something. The shell makes it (`ShareLink.shareTo`), handed to the workspace
+as `WorkspaceNavigation.onShareLink`. The observation readers' own bars take
+it in the change that reworks them.
+
+**And `app.open` takes a solution or an experiment by id** (ADR-0019,
+amended the same day), since a place on the observations page could already
+name one.
+
+**What is deliberately not done.** No several elements in a link: one
+selection is what a person points somebody at, and a list would make a link
+nobody can read. No day being looked at, no dialog and no filter, as before.
 
