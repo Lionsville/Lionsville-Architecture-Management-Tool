@@ -173,6 +173,7 @@ function ObservationRow({ one, scope, ...props }: ObservationRegisterProps & { o
       onClick={() => props.onSelect(key)}
       sx={{ cursor: 'pointer', opacity: merged || archived ? 0.55 : 1 }}
       data-testid={`observation-row-${key}`}
+      data-key={key}
       data-guide="observations.row"
     >
       <TableCell sx={{ fontFamily: 'ui-monospace, Menlo, monospace', fontSize: 11, color: 'text.secondary', whiteSpace: 'nowrap' }}>
@@ -204,7 +205,7 @@ type RowProps = ObservationRegisterProps & { rowKey: string }
 /** One cause; a merged one dimmed, saying where it went (ADR-0035 §4). */
 function CauseRow({ cause, rowKey, merged, selectedKey, onSelect, language, s }: RowProps & { cause: Cause; merged: MergedInto | undefined }) {
   return (
-    <ListItemButton selected={rowKey === selectedKey} onClick={() => onSelect(rowKey)} sx={{ py: 0.5, opacity: merged ? 0.55 : 1 }} data-testid={`cause-row-${rowKey}`}>
+    <ListItemButton selected={rowKey === selectedKey} onClick={() => onSelect(rowKey)} sx={{ py: 0.5, opacity: merged ? 0.55 : 1 }} data-testid={`cause-row-${rowKey}`} data-key={rowKey}>
       {/* Said, not a link: the row is the button, and a button in a button is reached by nobody's keyboard. */}
       <ListItemText
         primary={`${causeLabel(cause)} ${cause.title}`}
@@ -219,7 +220,7 @@ function CauseRow({ cause, rowKey, merged, selectedKey, onSelect, language, s }:
 
 function SolutionRow({ one, rowKey, phase, selectedKey, onSelect, s }: RowProps & { one: Solution; phase: SolutionPhase }) {
   return (
-    <ListItemButton selected={rowKey === selectedKey} onClick={() => onSelect(rowKey)} sx={{ py: 0.5, opacity: isLive(one) ? 1 : 0.55 }} data-testid={`solution-row-${rowKey}`}>
+    <ListItemButton selected={rowKey === selectedKey} onClick={() => onSelect(rowKey)} sx={{ py: 0.5, opacity: isLive(one) ? 1 : 0.55 }} data-testid={`solution-row-${rowKey}`} data-key={rowKey}>
       <ListItemText primary={`${formatSolutionNumber(one.number)} ${one.title}`} slotProps={SMALL} />
       <Chip size="small" color={PHASE_COLOR[phase]} label={s(PHASE_LABEL[phase])} sx={{ height: 18, fontSize: 10 }} />
     </ListItemButton>

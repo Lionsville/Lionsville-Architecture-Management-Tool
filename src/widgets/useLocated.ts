@@ -71,3 +71,14 @@ export function useLocated(
   }, [page, select, attribute])
   return { locatedId, locate }
 }
+
+/**
+ * The same, for a page that only needs somewhere to look and the ring: the
+ * ref for the element the things are drawn in, the rule for its `sx`, and the
+ * call that locates one.
+ */
+export function useLocatedIn(select: (id: string) => void, attribute: string = LOCATED_ATTRIBUTE) {
+  const ref = useRef<HTMLDivElement | null>(null)
+  const { locatedId, locate } = useLocated(ref, select, attribute)
+  return { ref, ring: locatedRing(locatedId, attribute), locate }
+}

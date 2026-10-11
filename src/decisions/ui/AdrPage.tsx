@@ -40,7 +40,7 @@ import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
 import { PageDialog } from '../../widgets/PageDialog'
-import { locatedRing, useLocated } from '../../widgets/useLocated'
+import { useLocatedIn } from '../../widgets/useLocated'
 import type { DocumentImages } from '../../documentation/ui/DocumentSource'
 import type { MakeId } from '../../model/keys'
 import { NewAdrDialog, SupersedeDialog } from './AdrDialogs'
@@ -53,17 +53,6 @@ import type { AncestorRecords, ScopeKey } from '../adrScope'
 
 /** What a row of the list carries its record's id in, for the ring to find it by. */
 const RECORD_ATTRIBUTE = 'data-record-id'
-
-/**
- * The record a link or a request asked for, selected, brought on screen in
- * the list and ringed for a moment (ADR-0033, amended 11 October 2026): the
- * columns to look in, the ring for their `sx`, and the call that does it.
- */
-function useLocatedRecord(select: (id: string) => void) {
-  const columns = useRef<HTMLDivElement | null>(null)
-  const { locatedId, locate } = useLocated(columns, select, RECORD_ATTRIBUTE)
-  return { columns, ring: locatedRing(locatedId, RECORD_ATTRIBUTE), locate }
-}
 
 export type AdrPageProps = {
   open: boolean
@@ -283,7 +272,8 @@ export function AdrPage(props: AdrPageProps) {
     [ancestors, projectDecisions],
   )
   const selected = selectedId ? allRecords.find((a) => a.id === selectedId) : undefined
-  const { columns, ring, locate } = useLocatedRecord(setSelectedId)
+  // A record a link or a request asked for is brought on screen and ringed (ADR-0033, amended).
+  const { ref: columns, ring, locate } = useLocatedIn(setSelectedId, RECORD_ATTRIBUTE)
 
   // Each opening starts on the landscape's newest record, or stands in the
   // scope of the one it asked for with it selected.

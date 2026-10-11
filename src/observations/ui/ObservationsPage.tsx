@@ -51,6 +51,7 @@ import type { WindowChrome } from '../../platform/windowChrome'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
 import { PageDialog } from '../../widgets/PageDialog'
 import { SeamResizer } from '../../widgets/SeamResizer'
+import { useLocatedIn } from '../../widgets/useLocated'
 import type { DocumentImages } from '../../documentation/ui/DocumentSource'
 import type { MakeId } from '../../model/keys'
 import type { CommandRefusal } from '../../model/reducer'
@@ -225,7 +226,10 @@ export type ObservationsPageProps = {
   onStartPlan?: (solutionId: string) => void
   onOpenDecision?: (adrId: string) => void
   onOpenPlan?: (planId: string) => void
-  /** Open straight onto this observation or cause. */
+  /**
+   * Open straight onto this observation or cause, brought on screen and
+   * ringed for a moment in the list or the picture (ADR-0033, amended).
+   */
   initialId?: string
   /**
    * Open on this tab: with `initialId` too, the tab named wins over the one
@@ -309,6 +313,11 @@ function landingFor(id: string | undefined, work: ObservationWork, asked?: Tab):
  * page is up does not reset the selection. What is on show goes to
  * `onShown` whenever it changes, with the number of the request it landed on
  * — what the agent is told the page is on.
+ *
+ * A record asked for is also located (ADR-0033, amended 11 October 2026):
+ * brought on screen and ringed for a moment, in the list or the picture,
+ * wherever it carries its key as `data-key`. What comes back is the ref for
+ * where to look and the ring for its `sx`.
  */
 function useOpening(deps: {
   open: boolean
@@ -318,21 +327,27 @@ function useOpening(deps: {
   /** The tab that is up, said with what is on show. */
   tab: Tab
   land: (at: { tab?: Tab; key: string | undefined }) => void
+  /** Select a record by key, as the page does: what locating one selects with. */
+  select: (key: string) => void
   onShown: ((id: string | undefined, nonce: number | undefined, tab: Tab) => void) | undefined
 }) {
   const { open, shown, tab: up } = deps
   const { id, nonce, tab } = deps.request
   const [landed, setLanded] = useState<number | undefined>(undefined)
-  const latest = useRef(deps)
-  latest.current = deps
+  const located = useLocatedIn(deps.select, 'data-key')
+  const latest = useRef({ ...deps, locate: located.locate })
+  latest.current = { ...deps, locate: located.locate }
   useEffect(() => {
     if (!open) return
-    latest.current.land(landingFor(id, latest.current.work, tab))
+    const at = landingFor(id, latest.current.work, tab)
+    latest.current.land(at)
+    if (id !== undefined && at.key !== undefined) latest.current.locate(at.key)
     setLanded(nonce)
   }, [open, id, nonce, tab])
   useEffect(() => {
     if (open) latest.current.onShown?.(shown, landed, up)
   }, [open, shown, landed, up])
+  return { ref: located.ref, ring: located.ring }
 }
 
 /** What a merged record's note reads, and the ways to where it went. */
@@ -505,9 +520,9 @@ export function ObservationsPage(props: ObservationsPageProps) {
     setMode: (next: 'read' | 'edit') => setEditingKey(next === 'edit' ? selectedKey : undefined),
   }), [editing, selectedKey])
 
-  useOpening({
+  const located = useOpening({
     open, request: { id: initialId, nonce: initialNonce, tab: props.initialTab }, work, shown: recordIdOf(selected, selectedKey), tab,
-    onShown: props.onShown,
+    onShown: props.onShown, select: setSelectedKey,
     land: ({ tab: to, key }) => { f.clear(); if (to) setTab(to); setSelectedKey(key) },
   })
 
@@ -912,9 +927,9 @@ export function ObservationsPage(props: ObservationsPageProps) {
         {/* Editing gives the record the whole width — the editor on the left, its
             preview on the right — and reading puts the picture back beside it. */}
         <Box
-          data-testid="observation-body"
+          ref={located.ref} data-testid="observation-body"
           data-editing={editing ? 'true' : undefined}
-          sx={{ display: 'grid', gridTemplateColumns: editing ? 'minmax(0, 1fr)' : `minmax(0, 1fr) auto ${readerWidth[tab]}px`, flex: 1, minHeight: 0 }}
+          sx={{ display: 'grid', gridTemplateColumns: editing ? 'minmax(0, 1fr)' : `minmax(0, 1fr) auto ${readerWidth[tab]}px`, flex: 1, minHeight: 0, ...located.ring }}
         >
           {!editing && (tab === 'register' ? register : tab === 'analysis' ? picture : solutionsView)}
           {!editing && (
