@@ -62,6 +62,8 @@ import type { RendererView } from './renderer'
 import type { AgentAnswer, AgentRefusal, AgentRequest, ToolName } from './tools'
 import { RESOURCE_LIST, RESOURCE_READ, checkArguments, isToolName, json, refused, toolSpec } from './tools'
 import { listChecks, listRegister, listScopes, listTechnology, notOpen, scopeAsked, withoutScope } from './tree'
+import { answerOperating, isOperatingRead } from './operatingModel'
+import type { OperatingRead } from './operatingModel'
 import type { TreeView } from './tree'
 
 /** What the handler needs from the live session. Every one of these is on `ModelSession`. */
@@ -226,12 +228,10 @@ async function answerRequest(request: AgentRequest, session: SessionView | undef
   const about = aboutTheApp(request, session, shell)
   if (about) return about
 
-  // Three reads about the tree rather than about a document (ADR-0012 §2,
-  // §9): answered from the index the shell holds, never from a load.
-  if (request.tool === 'scopes.list') return listScopes(session.tree, view.scopePath)
-  if (request.tool === 'register.list') return listRegister(session.tree, request.args)
-  if (request.tool === 'technology.list') return listTechnology(session.tree, request.args)
-  if (request.tool === 'checks.list') return listChecks(session.tree, request.args)
+  // The reads about the tree rather than about a document (ADR-0012 §2,
+  // §9), and the organisation's operating model (ADR-0036).
+  const wide = treeWide(request, session.tree, session)
+  if (wide) return wide
 
   // `scope` on every tool: another scope's document, read as it stands on
   // disk — or, for anything that needs a session, a refusal with a key.
@@ -361,16 +361,37 @@ async function withoutSession(request: AgentRequest, shell: ShellView | undefine
   if (!isToolName(request.tool)) return refused('agent.unknownTool', request.tool)
   const about = aboutTheApp(request, undefined, shell)
   if (about) return about
-  if (request.tool === 'scopes.list') return listScopes(tree, undefined)
-  if (request.tool === 'register.list') return listRegister(tree, request.args)
-  if (request.tool === 'technology.list') return listTechnology(tree, request.args)
-  if (request.tool === 'checks.list') return listChecks(tree, request.args)
+  const wide = treeWide(request, tree, undefined)
+  if (wide) return wide
   const asked = scopeAsked(request.args)
   const spec = toolSpec(request.tool)
   if (asked !== undefined && spec.tier === 'read' && !SESSION_BOUND.includes(request.tool)) {
     return readElsewhere(request.tool as ReadTool, request.args, asked, tree)
   }
   return refused('agent.noProject')
+}
+
+/**
+ * The reads that are not about the scope open: four about the whole tree,
+ * answered from the index the shell holds and never from a load, and the
+ * three of the operating model, which is kept at the organisation (ADR-0036)
+ * — from the session where the organisation is open, so what was just
+ * changed is what is read, and from its document as it is kept otherwise.
+ */
+function treeWide(request: AgentRequest, tree: TreeView | undefined, session: SessionView | undefined): Promise<AgentAnswer> | AgentAnswer | undefined {
+  switch (request.tool) {
+    case 'scopes.list': return listScopes(tree, session?.scopePath())
+    case 'register.list': return listRegister(tree, request.args)
+    case 'technology.list': return listTechnology(tree, request.args)
+    case 'checks.list': return listChecks(tree, request.args)
+    default: return isOperatingRead(request.tool) ? readOperating(request.tool, request.args, tree, session) : undefined
+  }
+}
+
+async function readOperating(tool: OperatingRead, args: unknown, tree: TreeView | undefined, session: SessionView | undefined): Promise<AgentAnswer> {
+  const model = session?.scopePath() === '' ? session.current() : (await tree?.read(''))?.model
+  if (!model) return refused('agent.unknownScope', 'the organisation')
+  return answerOperating(tool, withoutScope(args), model)
 }
 
 /** A read over a scope that is not open, answered from its document as it stands on disk. */

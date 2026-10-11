@@ -315,6 +315,51 @@ const CAUSE_VALUES = {
   body: { type: 'string', description: 'The body as markdown.' },
 } as const satisfies Record<string, ArgumentSchema>
 
+/** What a unit type says beside its name (ADR-0036): the fields `unitType.add` and `unitType.update` share. */
+const UNIT_TYPE_FIELDS: Readonly<Record<string, ArgumentSchema>> = {
+  purpose: { type: 'string', description: 'What a unit of this type is for, in the organisation\'s own words.' },
+  top: { type: 'boolean', description: 'A unit of it may sit at the top, under the organisation itself.' },
+  within: { type: 'array', description: 'The unit types a unit of it may sit in, by id.', items: { type: 'string' } },
+  spans: { type: 'boolean', description: 'A unit of it may serve more than one domain.' },
+  slots: {
+    type: 'array',
+    description: 'The roles a unit of it holds, and how many of each.',
+    items: {
+      type: 'object',
+      description: 'One role and its count.',
+      properties: {
+        roleId: { type: 'string', description: 'The role, by id (roles.list).' },
+        min: { type: 'integer', description: 'At least this many; 0 for a role it may have and need not.', minimum: 0 },
+        max: { type: 'integer', description: 'At most this many; leave it out for no upper bound.', minimum: 0 },
+      },
+      required: ['roleId', 'min'],
+      additionalProperties: false,
+    },
+  },
+  limit: { type: 'integer', description: 'How many applications a unit of it should own at most. A check reads it; nothing refuses it.', minimum: 0 },
+}
+
+/** What a role says beside its name (ADR-0036): the fields `role.add` and `role.update` share. */
+const ROLE_FIELDS: Readonly<Record<string, ArgumentSchema>> = {
+  short: { type: 'string', description: 'A few letters, for the matrix\'s heading.' },
+  purpose: { type: 'string', description: 'What the role is for, in the organisation\'s own words.' },
+  manages: { type: 'boolean', description: 'Whoever holds it manages the people of the unit and of the units below it. The app holds the flag and grants nothing.' },
+  duties: {
+    type: 'array',
+    description: 'Its part in each responsibility it has one in.',
+    items: {
+      type: 'object',
+      description: 'One responsibility and the part the role plays in it.',
+      properties: {
+        responsibilityId: { type: 'string', description: 'The responsibility, by id (responsibilities.list).' },
+        raci: { type: 'string', description: 'R responsible, A accountable, C consulted, I informed.', enum: ['R', 'A', 'C', 'I'] },
+      },
+      required: ['responsibilityId', 'raci'],
+      additionalProperties: false,
+    },
+  },
+}
+
 const SPECS = [
   {
     name: 'project.current',
@@ -714,6 +759,49 @@ const SPECS = [
     tier: 'read',
     description: 'One experiment in full, with its body as markdown.',
     inputSchema: { type: 'object', properties: { id: ID('experiment') }, required: ['id'], additionalProperties: false },
+  },
+
+  // --- the operating model, at the organisation (ADR-0036) --------------------
+  {
+    name: 'unitTypes.list',
+    tier: 'read',
+    description:
+      'The organisation\'s kinds of unit (ADR-0036), in its own words: each unit type\'s purpose, where a unit of it may sit '
+      + '(at the top, under the organisation, and under the unit types listed in within), whether it may serve more than '
+      + 'one domain (spans), the roles it holds with how many of each (slots: min, and max where there is one), how many '
+      + 'applications a unit of it should own at most (limit), and the library entry it was based on. The operating model '
+      + 'is kept at the organisation: whatever scope is open, this answers from there.',
+    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+  },
+  {
+    name: 'roles.list',
+    tier: 'read',
+    description:
+      'The organisation\'s roles (ADR-0036): name, short name and purpose, its duties — a responsibility each, marked R, '
+      + 'A, C or I — whether whoever holds it manages the people of the unit and of the units below (manages), the unit '
+      + 'types that hold it, the library entry it was based on, and the rules that name a role. Kept at the organisation, '
+      + 'and answered from there.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        unitTypeId: { type: 'string', description: 'Only the roles this unit type holds.' },
+        responsibilityId: { type: 'string', description: 'Only the roles with a part in this responsibility.' },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'responsibilities.list',
+    tier: 'read',
+    description:
+      'What somebody in the organisation has to do (ADR-0036), grouped — by value stream, for example — with every role\'s '
+      + 'part in it (R, A, C or I), the roles accountable, and a finding where it is not exactly one role\'s A: nobody is '
+      + 'accountable, or several are. Kept at the organisation, and answered from there.',
+    inputSchema: {
+      type: 'object',
+      properties: { group: { type: 'string', description: 'Only the responsibilities in this group.' } },
+      additionalProperties: false,
+    },
   },
   {
     name: 'plans.list',
@@ -1662,6 +1750,64 @@ const SPECS = [
     tier: 'write',
     description: 'Throw an experiment away. Its number is never reused. Concluding it is usually the better answer.',
     inputSchema: { type: 'object', properties: { id: ID('experiment') }, required: ['id'], additionalProperties: false },
+  },
+
+  // --- the operating model, at the organisation (ADR-0036) --------------------
+  {
+    name: 'unitType.add',
+    tier: 'write',
+    description:
+      'Add a kind of unit to the organisation\'s operating model, in its own word for it. It may sit at the top, under '
+      + 'the organisation itself (top; true where within is not given), and under the unit types in within; slots are the '
+      + 'roles a unit of it holds, each at least min and at most max. The operating model is kept at the organisation, '
+      + 'which must be the scope open (app.open with scope "").',
+    inputSchema: {
+      type: 'object',
+      properties: { name: { type: 'string', description: 'What the organisation calls this kind of unit.' }, ...UNIT_TYPE_FIELDS },
+      required: ['name'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'unitType.update',
+    tier: 'write',
+    description:
+      'Change a unit type. Only the fields given change; within and slots replace the lists; null clears the purpose, '
+      + 'top, spans and the limit. A blank name is refused. At the organisation, which must be the scope open.',
+    inputSchema: {
+      type: 'object',
+      properties: { id: ID('unit type'), name: { type: 'string', description: 'A new name.' }, ...UNIT_TYPE_FIELDS },
+      required: ['id'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'role.add',
+    tier: 'write',
+    description:
+      'Add a role to the organisation\'s operating model, in its own words: a purpose, its duties — a responsibility '
+      + 'each from responsibilities.list, marked R (responsible), A (accountable), C (consulted) or I (informed) — and '
+      + 'whether its holder manages the people of the unit (manages). A role is held in a unit type through that type\'s '
+      + 'slots (unitType.update). At the organisation, which must be the scope open.',
+    inputSchema: {
+      type: 'object',
+      properties: { name: { type: 'string', description: 'What the organisation calls the role.' }, ...ROLE_FIELDS },
+      required: ['name'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'role.update',
+    tier: 'write',
+    description:
+      'Change a role. Only the fields given change; duties replace the list; null clears the short name, the purpose '
+      + 'and manages. A blank name is refused. At the organisation, which must be the scope open.',
+    inputSchema: {
+      type: 'object',
+      properties: { id: ID('role'), name: { type: 'string', description: 'A new name.' }, ...ROLE_FIELDS },
+      required: ['id'],
+      additionalProperties: false,
+    },
   },
   {
     name: 'plan.replace',

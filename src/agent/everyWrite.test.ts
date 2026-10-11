@@ -91,13 +91,13 @@ const host: HostModel = {
   }],
 }
 
-function view(model: Model): WriteView {
+function view(model: Model, scopePath = 'acme/landscape'): WriteView {
   let counter = 0
   return {
     model,
     current: () => toArrays(model),
     activeDiagramId: 'l7',
-    scopePath: 'acme/landscape',
+    scopePath,
     ancestorDecisions: [],
     ids: idPolicy(() => [...model.order.elements, ...model.order.relations, ...model.order.diagrams]),
     makeId: (prefix) => `${prefix}-new-${++counter}`,
@@ -114,10 +114,10 @@ const prepared = (tool: ToolName, out: Prepared | AgentAnswer): Prepared => {
 }
 
 /** The model the steps leave, each one built and applied as an agent's would be. */
-function after(steps: readonly Step[]): Model {
+function after(steps: readonly Step[], at?: string): Model {
   let model = fromArrays(host)
   for (const [tool, args] of steps) {
-    const applied = apply(model, prepared(tool, commandFor(tool, args, view(model))).command)
+    const applied = apply(model, prepared(tool, commandFor(tool, args, view(model, at))).command)
     if (!applied.ok) throw new Error(`${tool}: the reducer refused: ${applied.reason}`)
     model = applied.model
   }
@@ -125,8 +125,12 @@ function after(steps: readonly Step[]): Model {
 }
 
 type Step = readonly [ToolName, unknown]
-/** A request, and the steps that make the model it is a sensible request of. */
-type Case = { readonly args: unknown; readonly on?: readonly Step[] }
+/**
+ * A request, and the steps that make the model it is a sensible request of —
+ * at the scope `at` where the request is only made at one: the operating
+ * model's, at the organisation.
+ */
+type Case = { readonly args: unknown; readonly on?: readonly Step[]; readonly at?: string }
 
 const PROPOSED: Step = ['solution.propose', { title: 'Appoint a data owner', addresses: [{ id: 'ca-2' }] }]
 const SHAPED: readonly Step[] = [
@@ -206,6 +210,10 @@ const EVERY_WRITE: { readonly [T in CommandTool]: readonly Case[] } = {
   'experiment.update': [{ args: { id: 'EX-0001', measure: 'Calls per week' }, on: TRIED }],
   'experiment.conclude': [{ args: { id: 'EX-0001', outcome: 'refuted', result: 'Calls stayed' }, on: RUNNING }],
   'experiment.remove': [{ args: { id: 'EX-0001' }, on: TRIED }],
+  'unitType.add': [{ args: { name: 'Squad', slots: [] }, at: '' }],
+  'unitType.update': [{ args: { id: 'ut-new-1', name: 'Tribe', limit: 3 }, on: [['unitType.add', { name: 'Squad' }]], at: '' }],
+  'role.add': [{ args: { name: 'Coach', manages: true }, at: '' }],
+  'role.update': [{ args: { id: 'ro-new-1', purpose: 'Helps the team.' }, on: [['role.add', { name: 'Coach' }]], at: '' }],
 
   'plan.replace': [{ args: { elementId: 'crm', newName: 'CRM next', shadowFrom: '2027-03-01', cutover: '2027-09-01' } }],
   'plan.port': [{ args: { planId: 'tr-1', connectionId: 'c2', on: '2027-05-01' } }],
@@ -243,10 +251,10 @@ describe('every agent write says so', () => {
   })
 
   for (const [tool, cases] of Object.entries(EVERY_WRITE) as [CommandTool, readonly Case[]][]) {
-    for (const { args, on = [] } of cases) {
+    for (const { args, on = [], at } of cases) {
       it(`${tool} ${JSON.stringify(args)}`, () => {
-        const model = after(on)
-        const { command } = prepared(tool, commandFor(tool, args, view(model)))
+        const model = after(on, at)
+        const { command } = prepared(tool, commandFor(tool, args, view(model, at)))
         expect(command.origin).toBe('agent')
         const applied = apply(model, command)
         if (!applied.ok) throw new Error(`the reducer refused: ${applied.reason}`)

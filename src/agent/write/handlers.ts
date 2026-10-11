@@ -30,6 +30,7 @@ import { mergeCause, mergeObservation } from './merge'
 import {
   addMilestone, createPlan, port, removeMilestone, removePlan, replace, unport, updateMilestone, updatePlan,
 } from './plans'
+import { addRole, addUnitType, updateRole, updateUnitType } from './operatingModel'
 import type { Handler } from './shared'
 import {
   addressSolution, concludeExperimentTool, decideSolution, dropSolutionTool, moveSolutionTool, planExperimentTool,
@@ -80,6 +81,11 @@ export const HANDLERS: { readonly [T in CommandTool]: Handler } = {
   'observation.archive': archiveObservation,
   'observation.merge': mergeObservation,
   'observation.remove': removeObservationTool,
+  'unitType.add': addUnitType,
+  'unitType.update': updateUnitType,
+  'role.add': addRole,
+  'role.update': updateRole,
+
   'cause.add': addCause,
   'cause.update': updateCauseTool,
   'cause.link': linkCauseTool,
