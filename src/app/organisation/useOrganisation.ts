@@ -48,6 +48,7 @@ import {
 import type { ScopeCommand } from '../../projects/scopeState'
 import type { Repositories } from '../../ports/Repositories'
 import { opensOnNothing } from '../useShellNavigation'
+import { toggled } from '../sessionFolds'
 import { exampleOf } from '../../projects/examples/catalogue'
 import type { ExampleOffer } from '../../projects/examples/catalogue'
 import { exampleCopyOver, placeCopy } from '../../projects/examples/copy'
@@ -276,13 +277,8 @@ export function useOrganisation({
   const { tree, root, ready, listed, listedNow } = useHomeReads({ scopes, active, at, revision, onFailure })
 
 
-  const toggleCollapsed = useCallback((path: ScopePath) => {
-    setCollapsed((held) => {
-      const next = new Set(held)
-      if (!next.delete(path)) next.add(path)
-      return next
-    })
-  }, [])
+  // A fold for the session and never saved, as the chart's are (`sessionFolds`).
+  const toggleCollapsed = useCallback((path: ScopePath) => setCollapsed((held) => toggled(held, path)), [])
 
   const addUnder = useCallback((parent: ScopePath) => {
     setDialog({ kind: 'newScope', parent, name: '', withBoard: true })

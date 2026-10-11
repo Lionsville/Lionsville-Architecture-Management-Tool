@@ -440,7 +440,7 @@ export const GROWN = {
   'src/app/organisation/OrganisationScreen.tsx': { complexity: 53, lines: 344 },
   'src/app/organisation/ScopeSettingsDialog.tsx': { lines: 159 },
   'src/app/organisation/organisationPages.ts': { complexity: 30 },
-  'src/app/organisation/useOrganisation.ts': { lines: 233 },
+  'src/app/organisation/useOrganisation.ts': { lines: 227 },
   'src/app/useModelSession.ts': { lines: 330 },
   'src/business/ui/SheetPage.tsx': { complexity: 67, lines: 351 },
   'src/decisions/ui/AdrPage.tsx': { lines: 248 },

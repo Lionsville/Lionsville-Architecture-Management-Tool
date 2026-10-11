@@ -44,6 +44,7 @@ import type { KeepNotice } from './useKeepNotice'
 import type { Notify } from './useToasts'
 import type { AdoptScopes, ChooseDestination, LandingPrompts } from './workingFileFlows'
 import type { CarriedOut, Interchange } from '../ports/Interchange'
+import type { SessionFolds } from './sessionFolds'
 
 /** Where this scope is kept, and what the source it is kept in says about it. */
 export type WorkspaceSource = {
@@ -365,6 +366,13 @@ export type WorkspaceShell = {
    * shell with none, and a unit's people are then read and not changed.
    */
   people?: PeopleRegisterAccess
+  /**
+   * What is folded shut on each view's trees — the organisation chart's and
+   * its outline's — for as long as the window is open, never saved
+   * (`sessionFolds.ts`). Absent: each view keeps its folds while it is on
+   * screen.
+   */
+  folds?: SessionFolds
 }
 
 /** The editor's own preferences, as last stored and as changed. */

@@ -14,7 +14,7 @@
  * but the hooks below it do not, and each asks for its own slice. Nothing here
  * knows whether a project lives in browser storage, on disk or on a server.
  */
-import { useCallback, useMemo, useRef } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import type { ComponentType } from 'react'
 import Box from '@mui/material/Box'
 import CssBaseline from '@mui/material/CssBaseline'
@@ -68,6 +68,7 @@ import { useShellNavigation } from './useShellNavigation'
 import { useOpeningFailures, useProjectOrder, useSavedFilters, useShellServices } from './useShellServices'
 import { useTreeFindings, useTreeIndex } from './useTreeFindings'
 import type { ShellParts } from './shellParts'
+import { SessionFolds } from './sessionFolds'
 
 /**
  * What `App` does to a store.
@@ -541,6 +542,8 @@ function useShellParts(props: AppProps): ShellParts {
    * home's below, with nothing open.
    */
   const prompts = { password: usePasswordPrompt(s), openInto: useOpenIntoPrompt(s) }
+  /** What is folded shut on each view's trees, for as long as the window is open (`sessionFolds.ts`). */
+  const [folds] = useState(() => new SessionFolds())
   const home = useHomeParts({
     organisation, home: nav.home, setHome: nav.setHome, scopeOpen: project !== undefined, repositories,
     historyKept: props.provider?.historyKept,
@@ -590,7 +593,7 @@ function useShellParts(props: AppProps): ShellParts {
   return {
     props, source, host, hostMenu: host.hostMenu ?? false, windowChrome: host.windowChrome ?? NO_WINDOW_CHROME,
     services, nav, tree, organisation, findings, home, ancestry, agentServer, agent: shellAgent, machine,
-    commands, provider, order, savedFilters, prompts, todayDay, share: base.share, people,
+    commands, provider, order, savedFilters, prompts, todayDay, share: base.share, people, folds,
     writes: { readTreeModels, carryOut, adoptScopes, readScope: readScopeAt, treeChanged, applyProjectSettings },
   }
 }

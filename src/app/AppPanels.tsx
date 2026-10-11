@@ -174,6 +174,7 @@ function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSn
       shell={{
         s, language: prefs.language, notify: toasts.notify, makeId: props.makeId,
         problem: parts.services.problem, drawingOrigin: props.provider?.drawingOrigin, people: parts.people,
+        folds: parts.folds,
       }}
       preferences={{ initial: prefs.preferences, onChange: prefs.savePreferences, savedFilters: parts.savedFilters }}
     />

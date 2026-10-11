@@ -27,6 +27,7 @@ import type { ShareLink } from './useShareLink'
 import type { TreeFindings } from './useTreeFindings'
 import type { CarriedOut } from '../ports/Interchange'
 import type { AdoptScopes } from './workingFileFlows'
+import type { SessionFolds } from './sessionFolds'
 
 /**
  * The shell's state, as the hooks that hold it hand it out: one object per
@@ -74,4 +75,6 @@ export interface ShellParts {
   share: ShareLink
   /** The people register (ADR-0036): the People page's and the agent's, the same one. */
   people: PeopleAccess
+  /** What is folded shut on each view's trees, for the session and never saved (`sessionFolds.ts`). */
+  folds: SessionFolds
 }
