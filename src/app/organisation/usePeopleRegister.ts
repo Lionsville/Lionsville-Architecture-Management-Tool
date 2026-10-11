@@ -42,6 +42,10 @@ import type { Repositories } from '../../ports/Repositories'
 import { searchAll } from '../../search/search'
 import type { SearchableModel } from '../../model/searchable'
 import { leaveConsequences } from './leaving'
+import type { OpenScope } from './leaving'
+import type { ScopeIndex } from '../../projects/scopeIndex'
+import { heldAssignments, idsOfPerson } from '../units/held'
+import type { HeldAssignment } from '../../people/hold'
 
 /** The register, and what may be done to it, as the page and the agent are handed it. */
 export type PeopleAccess = {
@@ -68,6 +72,8 @@ export type PeopleAccess = {
   mentionsOf: (name: string) => Promise<Mention[]>
   /** The same register, for the agent: read fresh on every call. */
   agent: PeopleView
+  /** What each person holds across the tree, where the shell has a tree. */
+  assignmentsOf?: (id: PersonId) => readonly HeldAssignment[]
   /** A chosen file's text, for a list to import; where the host can read one. */
   readText?: (file: Blob) => Promise<string>
   /** Text handed to the clipboard: *What we hold*, copied. */
@@ -88,7 +94,11 @@ async function everyModel(scopes: Repositories['scopes']): Promise<{ scope: stri
 }
 
 export function usePeopleRegister(deps: {
-  repositories: Pick<Repositories, 'people' | 'settings' | 'scopes'>
+  repositories: Pick<Repositories, 'people' | 'settings' | 'scopes' | 'index'>
+  /** The scope open in this window, where one is: leaving ends assignments there through its session. */
+  openScope?: () => OpenScope | undefined
+  /** The organisation's index, for what each person holds across the tree. */
+  index?: ScopeIndex
   readOnly: boolean
   /** The day, asked again each hour: the policy applies itself again when it turns. */
   today: () => string
@@ -120,7 +130,10 @@ export function usePeopleRegister(deps: {
     void read().then(setHeld, (cause: unknown) => failedRef.current('people.read', cause))
   }, [read])
 
-  const consequences = useMemo(() => leaveConsequences({ repositories }), [repositories])
+  const { openScope, index } = deps
+  const consequences = useMemo(() => leaveConsequences({ repositories, openScope }), [repositories, openScope])
+  /** The agent's leave ends the same assignments, each step under the agent's name. */
+  const agentConsequences = useMemo(() => leaveConsequences({ repositories, openScope, origin: 'agent' }), [repositories, openScope])
 
   /** A change made, and the register read again: what every write below ends with. */
   const changed = useCallback(<T>(work: Promise<T>): Promise<T> => work.finally(refresh), [refresh])
@@ -149,10 +162,10 @@ export function usePeopleRegister(deps: {
       return { people: now.people ?? [], policy: now.policy }
     },
     add: (person) => changed(repositories.people.add(person)),
-    leave: (id, on) => changed(leavePerson(repositories.people, consequences, id, on)),
+    leave: (id, on) => changed(leavePerson(repositories.people, agentConsequences, id, on)),
     today: () => today,
     readOnly: () => readOnly,
-  }), [read, changed, repositories, consequences, today, readOnly])
+  }), [read, changed, repositories, agentConsequences, today, readOnly])
 
   return {
     ...held,
@@ -171,6 +184,7 @@ export function usePeopleRegister(deps: {
     mentionsOf: async (name) => searchAll({ sources: await everyModel(repositories.scopes), query: name, limitPerKind: 1000 })
       .map((hit) => ({ scope: hit.scope ?? '', kind: hit.kind, id: hit.id, title: hit.title })),
     agent,
+    ...(index ? { assignmentsOf: (id: PersonId) => heldAssignments(index, idsOfPerson(id, held.people ?? [])) } : {}),
     ...(deps.readText ? { readText: deps.readText } : {}),
     ...(deps.copyText ? { copyText: deps.copyText } : {}),
   }

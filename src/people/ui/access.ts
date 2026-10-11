@@ -15,7 +15,7 @@
 import { useCallback, useState } from 'react'
 import type { PersonId } from '../../model/person'
 import { ShellError } from '../../platform/errors'
-import type { Mention } from '../hold'
+import type { HeldAssignment, Mention } from '../hold'
 import type { NewPerson, PeopleRefusal, Person, PersonPatch } from '../person'
 import type { PeoplePolicy } from '../policy'
 import type { Translate } from '../shown'
@@ -40,6 +40,12 @@ export type PeopleRegisterAccess = {
   setPolicy(change: Partial<PeoplePolicy>): Promise<void>
   setMe(id: PersonId | undefined): Promise<void>
   mentionsOf(name: string): Promise<Mention[]>
+  /**
+   * The assignments a person holds across the tree — under their id and every
+   * id merged into it — past, present and to come (ADR-0036 §4). Absent where
+   * the shell has no tree to read.
+   */
+  assignmentsOf?(id: PersonId): readonly HeldAssignment[]
 }
 
 /** What the status line says, and how loudly. */

@@ -15,6 +15,12 @@
  * list findings has to go through one of those, because naming either table
  * anywhere else fails here. The component tests of each place check the links
  * open what they name.
+ *
+ * One more place says the tree's, and draws them as lines and not links: a
+ * unit's own section in its inspector (`UnitSection`, ADR-0036 §3), which
+ * lists only the findings about that unit and the people holding its roles —
+ * what it is about is what the person is looking at, so a link would lead to
+ * where they already are.
  */
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
@@ -39,6 +45,6 @@ function naming(pattern: RegExp): string[] {
 describe('findings', () => {
   it('are said only by the components that say them as links', () => {
     expect(naming(/\bCHECK_SENTENCE\b/)).toEqual(['roadmap/labels.ts', 'roadmap/ui/FindingSentence.tsx'])
-    expect(naming(/\bfindingSentence\b/)).toEqual(['app/organisation/attention.ts', 'projects/checks.ts'])
+    expect(naming(/\bfindingSentence\b/)).toEqual(['app/organisation/attention.ts', 'app/units/UnitSection.tsx', 'projects/checks.ts'])
   })
 })

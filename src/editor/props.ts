@@ -599,6 +599,14 @@ export interface EditorOwnership {
    * which band.
    */
   onAddExisting?(at?: ExistingAt): void;
+  /**
+   * An actor as a unit (ADR-0036 §3): its type, the domains it serves, what
+   * it owns, its roles and who holds them, who manages it and what the
+   * checks say — drawn by the host under the actor's General tab, because
+   * every part of it is the organisation's (the operating model, the
+   * register, the tree) and none of it the canvas's. Absent = no section.
+   */
+  unitSection?(element: DesignElement, readOnly: boolean): ReactNode;
 }
 
 /** Where *Add here ▸ Existing application…* was asked for, in flow coordinates. */

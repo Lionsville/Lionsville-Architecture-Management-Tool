@@ -9,8 +9,7 @@
  * says what is asked.
  *
  * What a person holds — today, later, before — is read off their
- * assignments, which come with units and roles; until then the panel says
- * there is nothing to show rather than showing nothing.
+ * assignments across the tree, under their id and every id merged into it.
  */
 import { useEffect, useState } from 'react'
 import Box from '@mui/material/Box'
@@ -19,8 +18,8 @@ import Chip from '@mui/material/Chip'
 import MenuItem from '@mui/material/MenuItem'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
-import { holdText, whatWeHold } from '../hold'
-import type { Mention } from '../hold'
+import { heldLine, heldOn, holdText, whatWeHold } from '../hold'
+import type { HeldAssignment, Mention } from '../hold'
 import type { Person, PersonKind } from '../person'
 import { entriesOf, PERSON_KINDS } from '../person'
 import { forgetDay, removeDay } from '../policy'
@@ -98,7 +97,10 @@ function Holding({ person, register, copyText, s }: { person: Person; register: 
   useEffect(() => {
     if (person.name) void mentionsOf(person.name).then(setMentions, () => setMentions([]))
   }, [mentionsOf, person.name])
-  const held = whatWeHold(person, register.people ?? [], { thisIsMe: register.me === person.id, ...(mentions ? { mentions } : {}) })
+  const assignments = (register.assignmentsOf?.(person.id) ?? []).map(heldLine)
+  const held = whatWeHold(person, register.people ?? [], {
+    thisIsMe: register.me === person.id, assignments, ...(mentions ? { mentions } : {}),
+  })
   const text = holdText(held)
   return (
     <Box sx={{ mt: 1 }}>
@@ -157,6 +159,42 @@ function Doing({ person, register, saying, onForget, onRemove, onMerge, s }: Omi
   )
 }
 
+/** One assignment, as a line: the role in the unit, and what is said of it. */
+function HeldItem({ one, s }: { one: HeldAssignment; s: Translate }) {
+  const said = [
+    one.share !== undefined && one.share < 1 ? `${Math.round(one.share * 100)}%` : undefined,
+    one.acting ? s('people.heldActing') : undefined,
+    one.from ? s('people.heldFrom', { day: one.from }) : undefined,
+    one.until ? s('people.heldUntil', { day: one.until }) : undefined,
+  ].filter(Boolean)
+  return (
+    <Typography sx={{ fontSize: 13 }} data-testid="people-held">
+      {s('people.heldIn', { role: one.role, unit: one.unit })}
+      {said.length > 0 && <Box component="span" sx={{ color: 'text.secondary' }}> · {said.join(' · ')}</Box>}
+    </Typography>
+  )
+}
+
+/** What a person holds today, will hold and held before (ADR-0036 §4): today's always, the other two where there are any. */
+function Holds({ held, today, s }: { held: readonly HeldAssignment[]; today: string; s: Translate }) {
+  const { now, later, before } = heldOn(held, today)
+  return (
+    <>
+      <Section title={s('people.holdsToday')}>
+        {now.length
+          ? now.map((one) => <HeldItem key={`${one.scope}/${one.id}`} one={one} s={s} />)
+          : <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{s('people.holdsNothing')}</Typography>}
+      </Section>
+      {later.length > 0 && (
+        <Section title={s('people.willHold')}>{later.map((one) => <HeldItem key={`${one.scope}/${one.id}`} one={one} s={s} />)}</Section>
+      )}
+      {before.length > 0 && (
+        <Section title={s('people.heldBefore')}>{before.map((one) => <HeldItem key={`${one.scope}/${one.id}`} one={one} s={s} />)}</Section>
+      )}
+    </>
+  )
+}
+
 export function PersonPanel(props: PersonPanelProps) {
   const { person, register, saying, copyText, s } = props
   const [correcting, setCorrecting] = useState(false)
@@ -189,9 +227,7 @@ export function PersonPanel(props: PersonPanelProps) {
       )}
       {correcting && <Correcting person={person} register={register} saying={saying} onDone={() => setCorrecting(false)} s={s} />}
 
-      <Section title={s('people.holdsToday')}>
-        <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{s('people.noAssignmentsYet')}</Typography>
-      </Section>
+      <Holds held={register.assignmentsOf?.(person.id) ?? []} today={register.today} s={s} />
 
       {!register.readOnly && (
         <Section title={s('people.do')}>

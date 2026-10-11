@@ -16,6 +16,7 @@ import { renderShell } from '../../app/testing/renderShell'
 import { translator } from '../../i18n'
 import type { PersonId } from '../../model/person'
 import type { Person } from '../person'
+import type { HeldAssignment } from '../hold'
 import { DEFAULT_POLICY } from '../policy'
 import type { PeoplePolicy } from '../policy'
 import { changePeople } from '../register'
@@ -41,8 +42,9 @@ const START: Person[] = [
 ]
 
 /** A register held in React state and changed by the register's own rules, as the shell's hook would. */
-function Harness({ readOnly = false, me, onPolicy, mentions = [] }: {
+function Harness({ readOnly = false, me, onPolicy, mentions = [], held: holding }: {
   readOnly?: boolean; me?: PersonId; onPolicy?: (change: Partial<PeoplePolicy>) => void; mentions?: { scope: string; kind: string; id: string; title: string }[]
+  held?: Record<PersonId, HeldAssignment[]>
 }) {
   const [people, setPeople] = useState<readonly Person[]>(START)
   const [policy, setPolicy] = useState(DEFAULT_POLICY)
@@ -69,6 +71,7 @@ function Harness({ readOnly = false, me, onPolicy, mentions = [] }: {
     setPolicy: (patch) => { onPolicy?.(patch); setPolicy((was) => ({ ...was, ...patch })); return Promise.resolve() },
     setMe: (id) => { setWho(id); return Promise.resolve() },
     mentionsOf: () => Promise.resolve(mentions),
+    ...(holding ? { assignmentsOf: (id: PersonId) => holding[id] ?? [] } : {}),
   }
   return <PeoplePage open onClose={() => {}} register={register} copyText={() => {}} s={s} />
 }
@@ -168,6 +171,33 @@ describe('the People page', () => {
     const held = JSON.parse(screen.getByTestId('people-hold').textContent ?? '{}')
     expect(held.register).toMatchObject({ id: 'pe-pia', name: 'Pia Schulz', email: 'pia.schulz@acme.example' })
     await waitFor(() => expect(screen.getByText(/Search finds them: 1 found/)).toBeDefined())
+  })
+
+  it('says what a person holds today, will hold and held before, and counts it in what we hold', () => {
+    const held: HeldAssignment[] = [
+      { id: 'as-1', scope: 'customer', unit: 'Webshop', role: 'Product owner', from: '2022-01-01' },
+      { id: 'as-2', scope: 'shipping', unit: 'Parcel', role: 'Cluster lead', share: 0.5, acting: true, from: '2027-01-01' },
+      { id: 'as-3', scope: 'customer', unit: 'Mobile App', role: 'Team coach', until: '2026-08-14' },
+    ]
+    renderShell(<Harness held={{ 'pe-pia': held }} />)
+    pick('pe-pia')
+    expect(screen.getAllByTestId('people-held').map((line) => line.textContent)).toEqual([
+      'Product owner in Webshop · from 2022-01-01',
+      'Cluster lead in Parcel · 50% · acting · from 2027-01-01',
+      'Team coach in Mobile App · until 2026-08-14',
+    ])
+    expect(screen.getByText('Will hold')).toBeTruthy()
+    expect(screen.getByText('Held before')).toBeTruthy()
+    fireEvent.click(screen.getByTestId('people-hold-toggle'))
+    expect(JSON.parse(screen.getByTestId('people-hold').textContent ?? '{}').assignments).toEqual([
+      'Product owner in Webshop (customer), 2022-01-01 – …',
+      'Cluster lead in Parcel (shipping), 50%, acting, 2027-01-01 – …',
+      'Team coach in Mobile App (customer), … – 2026-08-14',
+    ])
+    cleanup()
+    renderShell(<Harness held={{}} />)
+    pick('pe-pia')
+    expect(screen.getByText('Nothing.')).toBeTruthy()
   })
 
   it('says This is me, and marks you in the list', async () => {

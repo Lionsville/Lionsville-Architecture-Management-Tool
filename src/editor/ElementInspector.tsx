@@ -88,6 +88,7 @@ export function ElementInspector(props: ElementInspectorProps) {
 
       {sectionTitle(t('tab.general'))}
       {show(0) && <GeneralTab field={field} inspector={props} uses={uses} picker={picker} />}
+      {show(0) && props.unitSection}
       {!stacked && show(1) && <AppearanceTab field={field} onRequestLogoUpload={props.onRequestLogoUpload} />}
       {sectionTitle(t('tab.data'))}
       {show(2) && <DataTab key={element.id} field={field} diagram={props.diagram} />}

@@ -99,6 +99,8 @@ function renderInspector(
     onCreateContainer?: (id: string) => void;
     /** The door to the technology landscape (ADR-0020). */
     onShowOnTechnology?: (id: string) => void;
+    /** An actor's unit section, as the host draws it (ADR-0036 §3). */
+    unitSection?: ElementInspectorProps['unitSection'];
   } = {},
 ) {
   const dia = opts.dia ?? diagram();
@@ -127,6 +129,7 @@ function renderInspector(
         technology={opts.technology}
         parties={opts.parties}
         onShowOnTechnology={opts.onShowOnTechnology}
+        unitSection={opts.unitSection}
       />
     </ThemeProvider>,
   );
@@ -196,6 +199,19 @@ describe('ElementInspector — tab structure (U7a)', () => {
     renderInspector(element());
     openTab('Data');
     expect(screen.getByText('OPERATIONAL ASPECTS')).toBeDefined();
+  });
+});
+
+describe('ElementInspector — an actor as a unit (ADR-0036 §3)', () => {
+  it('draws the host\'s unit section under General, beside the canvas and on the page', () => {
+    const actor = element({ kind: 'actor', name: 'Webshop', unitTypeId: 'ut-team' });
+    renderInspector(actor, { unitSection: <div data-testid="the-unit-section">Unit</div> });
+    expect(screen.getByTestId('the-unit-section')).toBeTruthy();
+    openTab('Data');
+    expect(screen.queryByTestId('the-unit-section')).toBeNull();
+    cleanup();
+    renderInspector(actor, { layout: 'stacked', unitSection: <div data-testid="the-unit-section">Unit</div> });
+    expect(screen.getByTestId('the-unit-section')).toBeTruthy();
   });
 });
 

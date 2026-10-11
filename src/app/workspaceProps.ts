@@ -13,6 +13,7 @@
  * of these objects, which is new every time.
  */
 import type { ReactNode } from 'react'
+import type { PeopleRegisterAccess } from '../people/ui/access'
 import type { Language, Translate } from '../i18n'
 import type { EditorPreferences } from '../editor'
 import type { SavedFilters } from '../observations/filter'
@@ -350,6 +351,12 @@ export type WorkspaceShell = {
   problem?: ProblemOffer
   /** Today as `yyyy-mm-dd`, for a decision's dates. Injected so a test can pin it. */
   today?: () => string
+  /**
+   * The people register (ADR-0036), the People page's own: who a unit's
+   * holders are, and who is picked when someone is assigned. Absent in a
+   * shell with none, and a unit's people are then read and not changed.
+   */
+  people?: PeopleRegisterAccess
 }
 
 /** The editor's own preferences, as last stored and as changed. */

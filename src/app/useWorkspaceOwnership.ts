@@ -9,7 +9,7 @@
  * list of fields and the words come from `projects/` and the way out comes
  * from the shell — which is the one thing that knows how to open a scope.
  */
-import { useMemo } from 'react'
+import { createElement, useMemo } from 'react'
 import type { Translate } from '../i18n'
 import type { EditorOwnership, StandInNote } from '../editor'
 import { platformTreeOf } from './platformTree'
@@ -27,6 +27,8 @@ import type { Gestures } from './useGestures'
 import type { Library } from './useLibrary'
 import type { ModelSession } from './useModelSession'
 import { useOwnerDescriptions } from './useOwnerDescriptions'
+import type { PeopleRegisterAccess } from '../people/ui/access'
+import { UnitSection } from './units/UnitSection'
 
 export function useWorkspaceOwnership(deps: {
   session: ModelSession
@@ -41,10 +43,12 @@ export function useWorkspaceOwnership(deps: {
   gestureOffers: Gestures['offers']
   gestureChoose: Gestures['choose']
   addExisting: Library['open']
+  /** What an actor's unit section is drawn with (ADR-0036 §3): the register, the day, fresh ids, every scope's path. */
+  units: { people: PeopleRegisterAccess | undefined; today: string; makeId: (prefix: string) => string; scopePaths: readonly ScopePath[] }
   s: Translate
 }): EditorOwnership {
   const {
-    session, scope, index, indexAnswered, scopes, onOpenScope, rowsThrough, scopeLabel, gestureOffers, gestureChoose, addExisting, s,
+    session, scope, index, indexAnswered, scopes, onOpenScope, rowsThrough, scopeLabel, gestureOffers, gestureChoose, addExisting, units, s,
   } = deps
   /**
    * What the owners say about the stand-ins drawn here (ADR-0012 §3): read
@@ -97,7 +101,12 @@ export function useWorkspaceOwnership(deps: {
       onMove: (elementId) => gestureChoose(elementId),
     },
     onAddExisting: addExisting,
-  }), [session, scope, index, notes, rowsThrough, onOpenScope, s, gestureOffers, gestureChoose, addExisting, ownerDescriptions, scopeLabel])
+    // An actor as a unit (ADR-0036 §3): drawn here, because all of it is the organisation's.
+    unitSection: (element, readOnly) => createElement(UnitSection, {
+      element, readOnly, scope, model: session.model, index, dispatch: session.dispatch, makeId: units.makeId,
+      people: units.people, today: units.today, scopeLabel, scopes: units.scopePaths, s,
+    }),
+  }), [session, scope, index, notes, rowsThrough, onOpenScope, s, gestureOffers, gestureChoose, addExisting, ownerDescriptions, scopeLabel, units])
 }
 
 /**

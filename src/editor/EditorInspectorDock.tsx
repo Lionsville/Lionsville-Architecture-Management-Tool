@@ -110,6 +110,7 @@ function SelectedElementInspector({ parts, diagram }: { parts: EditorParts; diag
       leverage={ownership?.leverageOf?.(element.id)}
       technology={ownership?.technology}
       parties={ownership?.parties}
+      unitSection={element.kind === 'actor' ? ownership?.unitSection?.(element, readOnly) : undefined}
       onShowOnTechnology={props.diagrams.onOpenTechnologyFor}
       onCreateContainer={readOnly ? undefined : props.diagrams.onCreateContainer}
       onCreateDrawing={readOnly ? undefined : props.diagrams.onCreateDrawingFor}

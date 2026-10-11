@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest'
 import type { Role, UnitType } from './operatingModel'
 import type { DesignElement } from './types'
 import {
-  dayBefore, holdersOn, isUnit, loadOn, managedBy, managersOf, mayHaveParent, parentTypeOf, runsOn, shareOf, slotsOf,
+  dayBefore, endingFor, holdersOn, isUnit, loadOn, managedBy, managersOf, mayHaveParent, parentTypeOf, runsOn, shareOf, slotsOf,
   unitEnded, unitFindings, unitLastDay, unitOn, unitsAbove, unitsBelow,
 } from './units'
 import type { Assignment, Organisation } from './units'
@@ -190,3 +190,22 @@ describe('what the organisation contradicts on a day', () => {
     expect(unitFindings(lost, TODAY)).toEqual([])
   })
 })
+
+describe('what a person\'s leaving ends', () => {
+  it('ends what runs past the last day, takes away what would begin after it, and leaves what is over', () => {
+    const held = [
+      held2('as-a', 'pe-femke'), held2('as-b', 'pe-femke', { until: '2027-06-30' }), held2('as-c', 'pe-femke', { until: '2026-01-31' }),
+      held2('as-d', 'pe-femke', { from: '2027-01-01' }), held2('as-e', 'pe-old'), held2('as-f', 'pe-bram'),
+    ]
+    expect(endingFor(held, new Set(['pe-femke', 'pe-old']), '2026-10-31')).toEqual([
+      { type: 'assignment.update', id: 'as-a', patch: { until: '2026-10-31' } },
+      { type: 'assignment.update', id: 'as-b', patch: { until: '2026-10-31' } },
+      { type: 'assignment.remove', id: 'as-d' },
+      { type: 'assignment.update', id: 'as-e', patch: { until: '2026-10-31' } },
+    ])
+  })
+})
+
+function held2(id: string, person: string, over: Partial<Assignment> = {}): Assignment {
+  return { id, unitId: 'webshop', roleId: 'ro-dev', person: { person }, ...over }
+}

@@ -43,7 +43,7 @@ import { causeLabel, liveCauses } from '../observations/observation'
 import { accountabilityGaps } from '../model/operatingModel'
 import { today } from '../model/lifecycle'
 import { unitFindings } from '../model/units'
-import type { Assignment, UnitFinding } from '../model/units'
+import type { Assignment, Organisation, UnitFinding } from '../model/units'
 import type { ScopeIndex } from './scopeIndex'
 import { ancestorScopes } from './scopePath'
 import type { ScopePath } from './scopePath'
@@ -605,24 +605,56 @@ function causesOverObservationsBelow(scope: ScopePath, model: HostModel, index: 
  * `day` is today unless a caller looks at another (ADR-0027).
  */
 export function organisationFindings(index: ScopeIndex, day: string = today()): Finding[] {
-  const organisation = index.organisation()
-  if (organisation.units.length === 0 && organisation.assignments.length === 0) return []
-  const unitScope = new Map(index.units().map(({ scope, unit }) => [unit.id, { scope, name: unit.name, type: unit.unitTypeId ?? '' }]))
-  const assignmentScope = new Map<Assignment, ScopePath>(index.assignments().map(({ scope, assignment }) => [assignment, scope]))
-  const typeName = new Map(organisation.unitTypes.map((type) => [type.id, type.name]))
-  const roleName = new Map(organisation.roles.map((role) => [role.id, role.name]))
+  return findingsOfOrganisation(organisationAt(index), day)
+}
+
+/**
+ * The organisation, and where each of its parts is kept: what its findings
+ * are worked out from and said about. Off the index for the whole tree; a
+ * screen with a scope open lays that scope's live records over it, so what
+ * was just changed is what is checked.
+ */
+export type OrganisationAt = {
+  organisation: Organisation
+  /** The scope that answers for a unit, and its name and type. */
+  unitAt: (unitId: ElementId) => { scope: ScopePath; name: string; type: string } | undefined
+  /** The scope that keeps an assignment. */
+  assignmentAt: (assignment: Assignment) => ScopePath | undefined
+  /** How many applications name a unit as theirs (`partyId`). */
+  owns: (unitId: ElementId) => number
+}
+
+/** The organisation as the index has it. */
+export function organisationAt(index: ScopeIndex): OrganisationAt {
+  const units = new Map(index.units().map(({ scope, unit }) => [unit.id, { scope, name: unit.name, type: unit.unitTypeId ?? '' }]))
+  const assignments = new Map<Assignment, ScopePath>(index.assignments().map(({ scope, assignment }) => [assignment, scope]))
   const owned = new Map<ElementId, number>()
   for (const entry of index.register()) {
     if (entry.partyId !== undefined) owned.set(entry.partyId, (owned.get(entry.partyId) ?? 0) + 1)
   }
-  const said = { unitScope, assignmentScope, typeName, roleName }
-  return unitFindings(organisation, day, { owns: (id) => owned.get(id) ?? 0 }).flatMap((one) => organisationFinding(one, said))
+  return {
+    organisation: index.organisation(),
+    unitAt: (id) => units.get(id),
+    assignmentAt: (assignment) => assignments.get(assignment),
+    owns: (id) => owned.get(id) ?? 0,
+  }
+}
+
+/** Every finding of an organisation on a day, each about the scope that answers for what it is about. */
+export function findingsOfOrganisation(at: OrganisationAt, day: string): Finding[] {
+  const { organisation } = at
+  if (organisation.units.length === 0 && organisation.assignments.length === 0) return []
+  const said: Said = {
+    at,
+    typeName: new Map(organisation.unitTypes.map((type) => [type.id, type.name])),
+    roleName: new Map(organisation.roles.map((role) => [role.id, role.name])),
+  }
+  return unitFindings(organisation, day, { owns: at.owns }).flatMap((one) => organisationFinding(one, said))
 }
 
 /** What a finding of the organisation is said with: where each unit and assignment is kept, and what things are called. */
 type Said = {
-  unitScope: ReadonlyMap<ElementId, { scope: ScopePath; name: string; type: string }>
-  assignmentScope: ReadonlyMap<Assignment, ScopePath>
+  at: OrganisationAt
   typeName: ReadonlyMap<string, string>
   roleName: ReadonlyMap<string, string>
 }
@@ -630,13 +662,13 @@ type Said = {
 /** One of `model/units.ts`'s findings, as the findings of the scopes it is about. */
 function organisationFinding(found: UnitFinding, said: Said): Finding[] {
   if (found.kind === 'overloaded') {
-    const scopes = [...new Set(found.assignments.map((one) => said.assignmentScope.get(one)).filter((one): one is ScopePath => one !== undefined))]
+    const scopes = [...new Set(found.assignments.map((one) => said.at.assignmentAt(one)).filter((one): one is ScopePath => one !== undefined))]
     return scopes.sort().map((scope) => ({
       key: 'check.personOverloaded', scope, id: found.person, name: found.person, person: found.person,
       count: Math.round(found.load * 100),
     }))
   }
-  const unit = said.unitScope.get(found.unitId)
+  const unit = said.at.unitAt(found.unitId)
   const type = said.typeName.get(unit?.type ?? '') ?? ''
   const at = { scope: unit?.scope ?? '', id: found.unitId, name: unit?.name ?? found.unitId }
   switch (found.kind) {
@@ -653,7 +685,7 @@ function organisationFinding(found: UnitFinding, said: Said): Finding[] {
     case 'endedUnit':
     case 'endedRole':
       return [{
-        key: 'check.assignmentEnded', ...at, scope: said.assignmentScope.get(found.assignment) ?? at.scope,
+        key: 'check.assignmentEnded', ...at, scope: said.at.assignmentAt(found.assignment) ?? at.scope,
         detail: said.roleName.get(found.assignment.roleId) ?? found.assignment.roleId, fields: [found.assignment.id],
       }]
   }

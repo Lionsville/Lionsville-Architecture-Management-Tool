@@ -49,6 +49,7 @@ import type { WorkspaceParts } from './workspaceParts'
 import { PicturesProvider } from '../documentation/ui/Pictures'
 import { ViewEmbedsProvider } from '../documentation/ui/ViewEmbed'
 import type { ProjectWorkspaceProps } from './workspaceProps'
+import { flattenScopes } from '../projects/scope'
 
 export function ProjectWorkspace(props: ProjectWorkspaceProps) {
   const { parts, toolbarRef } = useWorkspaceParts(props)
@@ -274,10 +275,13 @@ function useTreeParts(props: ProjectWorkspaceProps, base: ReturnType<typeof useS
   // The gestures are read off the hook so the editor's ownership seam is not
   // rebuilt every time a dialog opens: both are `useCallback`s over the tree
   // and the session, and neither moves when the choice does.
+  const units = useMemo(() => ({
+    people: shell.people, today: (shell.today ?? localToday)(), makeId: shell.makeId, scopePaths: flattenScopes(tree.scopes).map((one) => one.path),
+  }), [shell.people, shell.today, shell.makeId, tree.scopes])
   const ownership = useWorkspaceOwnership({
     session, scope: project.path, index, indexAnswered: tree.indexAnswered, scopes: source.repositories.scopes, onOpenScope,
     rowsThrough: readings.rowsThrough, scopeLabel: readings.scopeLabel,
-    gestureOffers: gestures.offers, gestureChoose: gestures.choose, addExisting: library.open, s,
+    gestureOffers: gestures.offers, gestureChoose: gestures.choose, addExisting: library.open, units, s,
   })
   /** A change to a scope below made from the observations page, as that scope's step (ADR-0032 §2). */
   const changeBelow = useChangeBelow({ scopes: source.repositories.scopes, mayChange: session.mayChange, onTreeChanged })

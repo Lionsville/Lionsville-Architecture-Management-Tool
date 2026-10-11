@@ -8,12 +8,44 @@
  *
  * What the register holds is said whole: the entry, and every entry merged
  * into it. What the model holds is said by what points at the person — the
- * assignments they hold (once units and roles have them) and the records that
- * name them by id. What nothing can reach is said honestly: names typed as
- * text before the register existed, which a search across the tree finds and
- * a forget does not touch.
+ * assignments they hold and the records that name them by id. What nothing
+ * can reach is said honestly: names typed as text before the register
+ * existed, which a search across the tree finds and a forget does not touch.
  */
 import type { Person, PersonId } from './person'
+
+/**
+ * One assignment a person holds, as the People page shows it (ADR-0036 §4):
+ * the role and the unit by the names the organisation gives them, the scope
+ * that keeps it, and its days. Gathered by whoever can read the tree.
+ */
+export type HeldAssignment = {
+  id: string
+  scope: string
+  unit: string
+  role: string
+  share?: number
+  from?: string
+  until?: string
+  acting?: true
+}
+
+/** A person's assignments on a day: those that run on it, those still to begin, and those over. */
+export function heldOn(held: readonly HeldAssignment[], day: string): {
+  now: HeldAssignment[]; later: HeldAssignment[]; before: HeldAssignment[]
+} {
+  const later = held.filter((one) => one.from !== undefined && one.from > day)
+  const before = held.filter((one) => one.until !== undefined && one.until < day)
+  const now = held.filter((one) => !later.includes(one) && !before.includes(one))
+  return { now, later, before }
+}
+
+/** One assignment as a line of *What we hold*: role, unit, where, and when. English, as a protocol answer is. */
+export function heldLine(one: HeldAssignment): string {
+  const share = one.share !== undefined && one.share < 1 ? `, ${Math.round(one.share * 100)}%` : ''
+  const days = `${one.from ?? '…'} – ${one.until ?? '…'}`
+  return `${one.role} in ${one.unit} (${one.scope || 'the organisation'})${share}${one.acting ? ', acting' : ''}, ${days}`
+}
 
 /** A record that names a person in its text, as a search across the tree finds it. */
 export type Mention = { scope: string; kind: string; id: string; title: string }
@@ -22,7 +54,7 @@ export type Mention = { scope: string; kind: string; id: string; title: string }
 export type HeldElsewhere = {
   /** The records that name the person by id: empty until the name fields take a person (3.6.0, step 6). */
   namedIn?: readonly string[]
-  /** The assignments they hold: empty until units and roles have them (3.6.0, step 3). */
+  /** The assignments they hold, past, present and to come, each as a line. */
   assignments?: readonly string[]
   /** Records whose text holds the name: what a forget cannot reach. */
   mentions?: readonly Mention[]

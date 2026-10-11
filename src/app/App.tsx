@@ -39,6 +39,7 @@ import { NO_WINDOW_CHROME } from '../platform/windowChrome'
 import { sourceIsReadOnly } from '../platform/workingSource'
 import { textFromBytes } from '../projects/text'
 import { usePeopleRegister } from './organisation/usePeopleRegister'
+import type { OpenScope } from './organisation/leaving'
 import type { SourceMenuEntry } from '../platform/sourceProvider'
 import type {
   BarButtonProps, SourceAgentPanelProps, SourceChipFaceProps, SourceChipPanelProps, SourceChromeProps, SourceMenuContext,
@@ -550,8 +551,11 @@ function useShellParts(props: AppProps): ShellParts {
   const applyProjectSettings = useProjectSettings({ base, repositories })
 
   const ancestry = useScopeAncestry({ project, scopes: repositories.scopes, tree: organisation.tree, failedRef, s })
+  // Leaving ends assignments in the open scope through its session, which the agent's registration knows of.
+  const openScopeRef = useRef<() => OpenScope | undefined>(() => undefined)
+  const openScope = useCallback(() => openScopeRef.current(), [])
   const people = usePeopleRegister({
-    repositories, readOnly: sourceIsReadOnly(source), today: props.today ?? localToday, failed: services.failed,
+    repositories, openScope, index: tree.index, readOnly: sourceIsReadOnly(source), today: props.today ?? localToday, failed: services.failed,
     ...(props.provider?.people ? { source: props.provider.people } : {}),
     readText: (file) => props.documents.readBytes(file).then(textFromBytes), copyText: (text) => { void props.hostControls.copyText(text).catch((cause: unknown) => services.failed('people.copy', cause)) },
   })
@@ -564,6 +568,7 @@ function useShellParts(props: AppProps): ShellParts {
       || props.provider?.barButton !== undefined,
   })
   base.screenRef.current = shellAgent.screenNow
+  openScopeRef.current = shellAgent.openSession
   base.selectedRef.current = shellAgent.selectedNow
   useWindowTitle({
     onTitle: host.onTitle, project, groupName: ancestry.groupName, organisationName: organisation.tree.name,

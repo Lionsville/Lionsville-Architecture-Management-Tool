@@ -125,4 +125,6 @@ export interface ElementInspectorProps {
    * rows, which is the answer a shell with no tree can give.
    */
   leverage?: LeverageLine;
+  /** An actor's unit section, drawn by the host (`EditorOwnership.unitSection`): under the General tab. */
+  unitSection?: ReactNode;
 }

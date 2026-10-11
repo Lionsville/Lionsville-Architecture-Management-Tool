@@ -342,7 +342,7 @@ export function unitFindings(
   const units = byId(organisation.units)
   const found: UnitFinding[] = []
   for (const unit of units.values()) {
-    const type = types.get(unit.unitTypeId!)
+    const type = types.get(unit.unitTypeId ?? '')
     if (!type || !unitOn(unit, day)) continue
     found.push(...slotFindings(organisation, unit, type, roles, day))
     if (!mayHaveParent(type, parentTypeOf(organisation.units, unit))) {
@@ -406,4 +406,30 @@ function overloads(assignments: readonly Assignment[], day: string, canonical: (
     if (load > 1 + 1e-9) found.push({ kind: 'overloaded', person, load, assignments: held })
   }
   return found
+}
+
+// --- leaving -------------------------------------------------------------------------------
+
+/** What ending an assignment is, as the writer takes it: its last day set, or — one not begun — taken away. */
+export type Ending =
+  | { type: 'assignment.update'; id: AssignmentId; patch: { until: string } }
+  | { type: 'assignment.remove'; id: AssignmentId }
+
+/**
+ * The ends a person's leaving makes in one scope's assignments (ADR-0036
+ * §10): every assignment of theirs that runs past their last day ends on it,
+ * and one that would only begin after it is taken away — a day nobody will
+ * hold it. `persons` is every id that is theirs: the entry, and the ones a
+ * merge folded into it. One already over by then is left as it is.
+ */
+export function endingFor(assignments: readonly Assignment[], persons: ReadonlySet<PersonId>, lastDay: string): Ending[] {
+  const ends: Ending[] = []
+  for (const assignment of assignments) {
+    if (!persons.has(personOf(assignment))) continue
+    if (isDay(assignment.from) && assignment.from > lastDay) ends.push({ type: 'assignment.remove', id: assignment.id })
+    else if (!isDay(assignment.until) || assignment.until > lastDay) {
+      ends.push({ type: 'assignment.update', id: assignment.id, patch: { until: lastDay } })
+    }
+  }
+  return ends
 }

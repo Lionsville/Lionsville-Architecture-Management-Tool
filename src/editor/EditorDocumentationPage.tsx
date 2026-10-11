@@ -120,6 +120,7 @@ function PageInspector({ props, state, readOnly, inspectorReadOnly, docs, elemen
       leverage={ownership?.leverageOf?.(element.id)}
       technology={ownership?.technology}
       parties={ownership?.parties}
+      unitSection={element.kind === 'actor' ? ownership?.unitSection?.(element, inspectorReadOnly) : undefined}
       onShowOnTechnology={diagrams.onOpenTechnologyFor
         ? (id) => { docs.leave(); diagrams.onOpenTechnologyFor?.(id); }
         : undefined}
