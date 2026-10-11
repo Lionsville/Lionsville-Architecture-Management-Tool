@@ -130,9 +130,9 @@ export const ELEMENT_COMMANDS = {
 
 /**
  * Deleting an element takes with it every relation that ends on it, its
- * membership and node on every diagram, the routes of those relations, and any
- * container view that was about it — which is exactly what the batch did,
- * spelled out.
+ * membership and node on every diagram, the routes of those relations, any
+ * container view that was about it, and the anchor of every drawing anchored
+ * to it — which is exactly what the batch did, spelled out, and one more.
  *
  * The inverse is a transaction that puts each of those back at the index it was
  * at, in the order that keeps the model referentially whole at every step:
@@ -194,6 +194,18 @@ function deleteElement(model: Model, id: ElementId, meta: CommandMeta): ApplyRes
       ...withMembers(diagram, drop(diagram.members, diagram.order.members, id)),
       nodes,
     })
+  }
+
+  // A drawing anchored to the element stays: it is a picture somebody drew,
+  // not a view about the element's insides the way a container view is. It
+  // loses the anchor, in the same step, so no drawing names an element that is
+  // not there, and one undo anchors it again (ADR-0034, amended).
+  for (const diagramId of next.order.diagrams) {
+    const diagram = next.diagrams[diagramId]
+    if (diagram.kind !== 'drawing' || diagram.elementId !== id) continue
+    const { row, inverse } = patched(diagram, { elementId: undefined })
+    next = setDiagram(next, diagramId, row)
+    undo.push({ type: 'diagram.update', id: diagramId, patch: inverse })
   }
 
   // What was filed under a platform or a service comes out from under it

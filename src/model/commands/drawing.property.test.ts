@@ -77,3 +77,28 @@ describe('a drawing\'s update and its inverse', () => {
     })).toEqual(['diagram/ctx/asOf', 'diagram/ctx/drawing'])
   })
 })
+
+describe('deleting the element a drawing is anchored to', () => {
+  it('keeps the drawing without its anchor, in the same step, and the inverse anchors it again', () => {
+    const model = fromArrays({
+      name: 'Landscape',
+      elements: [{ id: 'billing', kind: 'application', name: 'Billing', lifecycle: 'live', isManaged: true, aspects: {} }],
+      relations: [],
+      diagrams: [
+        { id: 'ctx', kind: 'drawing', name: 'Context', members: [], elementId: 'billing', c4Level: 'context' },
+        { id: 'free', kind: 'drawing', name: 'Free', members: [] },
+      ],
+    })
+    const deleted = apply(model, { type: 'element.delete', id: 'billing' })
+    if (!deleted.ok) throw new Error(deleted.reason)
+    expect(deleted.model.elements.billing).toBeUndefined()
+    expect(deleted.model.diagrams.ctx).toBeDefined()
+    expect(deleted.model.diagrams.ctx.elementId).toBeUndefined()
+    expect(deleted.model.diagrams.ctx.c4Level).toBe('context')
+    expect(deleted.model.diagrams.free).toEqual(model.diagrams.free)
+    const undone = apply(deleted.model, deleted.inverse)
+    if (!undone.ok) throw new Error(undone.reason)
+    expect(undone.model.diagrams.ctx).toEqual(model.diagrams.ctx)
+    expect(undone.model.elements.billing).toEqual(model.elements.billing)
+  })
+})
