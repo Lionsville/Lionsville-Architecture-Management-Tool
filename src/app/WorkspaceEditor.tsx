@@ -14,6 +14,7 @@ import type { DesignDiagram } from '../model'
 import type { DrawingView as DrawingViewShape } from './DrawingView'
 import { lazyPart } from '../widgets/lazyPart'
 import { MapPage, SheetPage } from '../business'
+import { sheetResponsibleFor } from './units/sheetResponsible'
 import { TechnologyLandscapePage } from '../technology/ui/TechnologyLandscapePage'
 import { unitViewInspector, unitViewPage } from './units/UnitViewPages'
 import { unitLanding } from './units/unitViewsHere'
@@ -216,6 +217,11 @@ function sheetPage(parts: WorkspaceParts, diagram: DesignDiagram, view: PageView
       ownerOf={ownership.ownerOf}
       elsewhere={readings.rowsElsewhere}
       applications={readings.applicationsInTree}
+      // Who is responsible for what (ADR-0036, amended): the organisation's units, offered and named here.
+      responsible={sheetResponsibleFor({
+        index: parts.props.tree.index, scope: parts.props.project.path, model: session.model, day: parts.todayDay,
+        scopeName: readings.scopeLabel, s: parts.props.shell.s,
+      })}
       onOpenDocumentation={(id) => requests.openDocumentation(id, diagram.id)}
       onSave={files.savePicture}
       select={parts.pages.selectRequestFor(diagram.id)}

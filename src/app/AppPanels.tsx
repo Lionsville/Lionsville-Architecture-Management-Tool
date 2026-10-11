@@ -8,7 +8,7 @@
  */
 import type { ImageEntry } from '../model/imageName'
 import { PicturesProvider } from '../documentation/ui/Pictures'
-import { useCallback, useRef } from 'react'
+import { useCallback, useMemo, useRef } from 'react'
 import type { ReactNode } from 'react'
 import { LanguageProvider } from '../i18n'
 import type { StringKey } from '../i18n'
@@ -22,8 +22,12 @@ import { SnapshotDialog } from './history/SnapshotDialog'
 import { FirstRun } from './organisation/FirstRun'
 import { OrganisationScreen } from './organisation/OrganisationScreen'
 import { ProjectWorkspace } from './ProjectWorkspace'
+import { flattenScopes } from '../projects/scope'
 import type { ScopeSnapshot } from '../projects/scope'
+import { scopeDisplayName } from '../projects/scopeLabel'
+import { ROOT_SCOPE } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
+import { useServedBy } from './organisation/useServedBy'
 import type { ScopeSession } from './useModelSession'
 import { watchTreeShape } from './treeShape'
 import { AgentDrivingBanner } from './AgentDrivingBanner'
@@ -181,9 +185,29 @@ function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSn
   )
 }
 
+/**
+ * *Served by* on every home (ADR-0036, amended 11 October 2026), off the
+ * shell's index: each edit a step in the scope that keeps the unit, under
+ * that scope's rights, and the tree read again once it lands.
+ */
+function useHomeServedBy(parts: ShellParts) {
+  const { services: { s, toasts, failed }, organisation, nav } = parts
+  const scopeName = useMemo(() => {
+    const everyScope = flattenScopes(organisation.tree)
+    return (path: ScopePath) => (path === ROOT_SCOPE ? s('common.organisation') : scopeDisplayName(path, everyScope, s('common.organisation')))
+  }, [organisation.tree, s])
+  const { openScopeAt } = nav
+  return useServedBy({
+    index: parts.tree.index, scopes: parts.props.repositories.scopes, writable: writableFor(parts), onTreeChanged: parts.writes.treeChanged,
+    notify: toasts.notify, failed, onOpen: useCallback((path: ScopePath, id: string) => openScopeAt(path, { page: 'element', id }), [openScopeAt]),
+    today: parts.todayDay, scopeName, s,
+  })
+}
+
 function Home({ parts }: { parts: ShellParts }) {
   const { props, services: { prefs, s }, nav, findings, organisation } = parts
   const { openScopeAt } = nav
+  const servedBy = useHomeServedBy(parts)
   // The home's own document shows the home scope's pictures, as a workspace
   // shows its scope's.
   return (
@@ -225,6 +249,7 @@ function Home({ parts }: { parts: ShellParts }) {
         pageRequest={parts.agent.orgPageRequest}
         onPageChange={parts.agent.setOrgPage}
         people={parts.people}
+        servedBy={servedBy}
         writable={writableFor(parts)}
         today={parts.todayDay}
         language={prefs.language}

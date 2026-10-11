@@ -728,10 +728,17 @@ export function findingsOfOrganisation(at: OrganisationAt, day: string, canonica
 }
 
 /**
+ * Which scopes a unit may serve to serve `domain`: the domain itself, a scope
+ * above it — the organisation, for one — or a scope within it. Scopes nest,
+ * and a unit for part of a domain answers inside it.
+ */
+export function coversDomain(domain: ScopePath): (served: string) => boolean {
+  return (served) => isWithinScope(served, domain) || isWithinScope(domain, served)
+}
+
+/**
  * Every function assigned to a unit there on the day that serves neither its
- * domain nor sits under a unit that does. A domain is served by a unit that
- * serves it, a scope above it — the organisation, for one — or a scope
- * within it: scopes nest, and a unit for part of a domain answers inside it.
+ * domain nor sits under a unit that does (`coversDomain`).
  */
 function notServingFindings(at: OrganisationAt, day: string): Finding[] {
   const rows = at.assigned?.() ?? []
@@ -743,8 +750,7 @@ function notServingFindings(at: OrganisationAt, day: string): Finding[] {
   for (const { scope, relation, function: held } of rows) {
     const unit = units.get(relation.sourceId)
     if (!unit) continue
-    const covers = (served: string) => isWithinScope(served, held.scope) || isWithinScope(held.scope, served)
-    if (servesOn(organisation, unit.id, covers, day, filedIn)) continue
+    if (servesOn(organisation, unit.id, coversDomain(held.scope), day, filedIn)) continue
     found.push({
       key: 'check.unitNotServing', scope, id: held.id, name: held.name, detail: unit.name,
       fields: [unit.id, relation.id], scopes: [held.scope],

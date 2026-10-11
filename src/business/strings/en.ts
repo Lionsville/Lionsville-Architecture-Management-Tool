@@ -126,7 +126,15 @@ export const EN = {
 
   // --- coverage, as something a person ticks -------------------------------
   'sheet.supportedBy': 'Supported by…',
-  'sheet.doneBy': 'Done by…',
+  'sheet.assignedTo': 'Assigned to',
+  'sheet.assignUnit': '+ Unit',
+  'sheet.findUnit': 'Find a unit or an actor',
+  'sheet.noUnit': 'Nobody by that name',
+  'sheet.assignedNobody': 'Nobody yet',
+  'sheet.assignedOutside': 'outside this domain',
+  'sheet.assignedFarEnd': 'Each is an assigned row kept here. A unit filed in another scope is its far end, and is drawn on no board here for it.',
+  'sheet.showResponsible': 'Show who is responsible',
+  'sheet.responsibleNobody': 'nobody',
 
   // --- where an element is actually drawn ----------------------------------
   'sheet.switchedBoard': 'Showing {name}, which draws it',

@@ -28,6 +28,7 @@ import Autocomplete from '@mui/material/Autocomplete'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Checkbox from '@mui/material/Checkbox'
+import Chip from '@mui/material/Chip'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import IconButton from '@mui/material/IconButton'
 import Link from '@mui/material/Link'
@@ -44,6 +45,8 @@ import { plural } from '../../i18n/strings'
 import type { StringKey, Translate } from '../../i18n'
 import { CaretIcon } from '../../widgets/icons'
 import { OrderedDateFields } from '../../widgets/OrderedDateFields'
+import { PickToAdd } from '../../widgets/PickToAdd'
+import type { PickOption } from '../../widgets/PickToAdd'
 import { mayRemove } from '../authoring'
 import { coverageFor, coverageOf } from '../coverage'
 import { childrenOf, wouldCycle } from '../tree'
@@ -149,6 +152,25 @@ export type Supporter = {
   where?: string
 }
 
+/**
+ * Who is responsible for what on the sheet (ADR-0036, amended 11 October
+ * 2026): the `assigned` rows, from a unit anywhere in the organisation.
+ *
+ * Handed in by the host, because `business` may not read the scope index nor
+ * the organisation's units: the units to pick from, grouped by type in their
+ * rank and each saying where it is filed, with this scope's other actors
+ * after them; what an actor kept elsewhere is called; and whether a unit
+ * serves the domain of the area, grouping or capability it answers for. A
+ * unit filed in another scope is the row's far end (ADR-0012 §5): the row is
+ * kept here, and the unit is drawn on no board here for it.
+ */
+export type SheetResponsible = {
+  choices: readonly PickOption[]
+  name(id: ElementId): string | undefined
+  /** False only for a unit that serves neither the function's domain nor sits under one that does. */
+  serves(actorId: ElementId, functionId: ElementId): boolean
+}
+
 export type FunctionInspectorProps = {
   /** Absent when nothing on the sheet is chosen. */
   element: DesignElement | undefined
@@ -185,6 +207,8 @@ export type FunctionInspectorProps = {
    * not remounted between two things made one after the other.
    */
   nameFocus?: number
+  /** Who may be made responsible, and what they are called. Absent: this scope's own actors. */
+  responsible?: SheetResponsible
   /** Something was deleted from here, so nothing is chosen any more. */
   onRemoved?(): void
   renderMarkdown?(md: string, options?: MarkdownRenderOptions): ReactNode
@@ -350,7 +374,7 @@ export function FunctionInspector(props: FunctionInspectorProps) {
           {element.kind === 'function' && (
             <Coverage
               element={element} model={model} readOnly={readOnly} actions={actions}
-              applications={props.applications} elsewhere={props.elsewhere}
+              applications={props.applications} elsewhere={props.elsewhere} responsible={props.responsible}
             />
           )}
 
@@ -535,13 +559,14 @@ function LaneField({ element, model, readOnly, actions }: {
  * offering nothing. A row naming an id this scope does not hold is ordinary
  * (§5), and the name beside it comes from the same list.
  */
-function Coverage({ element, model, readOnly, actions, applications, elsewhere }: {
+function Coverage({ element, model, readOnly, actions, applications, elsewhere, responsible }: {
   element: DesignElement
   model: DesignModel
   readOnly: boolean
   actions: SheetActions
   applications: readonly Supporter[] | undefined
   elsewhere: readonly Relation[] | undefined
+  responsible: SheetResponsible | undefined
 }) {
   const { t } = useStrings()
   // `coverageOf` rather than a concatenation: the rows elsewhere are the
@@ -551,9 +576,9 @@ function Coverage({ element, model, readOnly, actions, applications, elsewhere }
   const coverage = elsewhere?.length ? (coverageOf(model.relations, elsewhere).get(element.id) ?? own) : own
   const supporters: readonly Supporter[] = applications
     ?? model.elements.filter((held) => held.kind === 'application')
-  const people: readonly Supporter[] = model.elements.filter((held) => held.kind === 'actor')
   const named = (id: ElementId) => supporters.find((held) => held.id === id)?.name
     ?? model.elements.find((held) => held.id === id)?.name
+    ?? responsible?.name(id)
     ?? id
 
   return (
@@ -599,17 +624,65 @@ function Coverage({ element, model, readOnly, actions, applications, elsewhere }
               actions.setCoverage({ type: 'supports', sourceId, functionId: element.id, on })}
             t={t}
           />
-          <Picker
-            label={t('sheet.doneBy')}
-            named="sheet.doneBy"
-            options={people}
-            picked={own.assignedTo}
-            onPick={(sourceId, on) =>
-              actions.setCoverage({ type: 'assigned', sourceId, functionId: element.id, on })}
-            t={t}
-          />
         </Box>
       )}
+      <AssignedTo
+        element={element} model={model} readOnly={readOnly} actions={actions} responsible={responsible}
+        assigned={coverage.assignedTo} own={own.assignedTo} named={named}
+      />
+    </Box>
+  )
+}
+
+/**
+ * Who is responsible for it (*Assigned to*): a chip per `assigned` row, the
+ * rows kept here taken off here, a unit that does not serve this domain
+ * marked, and *+ Unit*, which picks from the whole organisation — the row is
+ * kept here, with a unit filed elsewhere as its far end.
+ */
+function AssignedTo({ element, model, readOnly, actions, responsible, assigned, own, named }: {
+  element: DesignElement
+  model: DesignModel
+  readOnly: boolean
+  actions: SheetActions
+  responsible: SheetResponsible | undefined
+  assigned: readonly ElementId[]
+  own: readonly ElementId[]
+  named: (id: ElementId) => string
+}) {
+  const { t } = useStrings()
+  const choices = responsible?.choices
+    ?? model.elements.filter((held) => held.kind === 'actor').map((held) => ({ id: held.id, label: held.name }))
+  const offered = choices.filter((one) => !assigned.includes(one.id))
+  return (
+    <Box data-testid="sheet-assigned-to" data-guide="sheet.assignedTo" sx={{ mt: 1.5 }}>
+      <Typography sx={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'text.secondary', mb: 0.5 }}>
+        {t('sheet.assignedTo')}
+      </Typography>
+      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center' }}>
+        {assigned.length === 0 && <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>{t('sheet.assignedNobody')}</Typography>}
+        {assigned.map((id) => {
+          const outside = responsible ? !responsible.serves(id, element.id) : false
+          return (
+            <Chip
+              key={id} size="small" variant={outside ? 'outlined' : 'filled'} color={outside ? 'warning' : 'default'}
+              data-testid="sheet-assigned" data-outside={outside || undefined}
+              label={outside ? `${named(id)} · ${t('sheet.assignedOutside')}` : named(id)}
+              {...(!readOnly && own.includes(id)
+                ? { onDelete: () => actions.setCoverage({ type: 'assigned', sourceId: id, functionId: element.id, on: false }) }
+                : {})}
+            />
+          )
+        })}
+      </Box>
+      {!readOnly && (
+        <PickToAdd
+          options={offered} label={t('sheet.assignUnit')} field={t('sheet.findUnit')} nothing={t('sheet.noUnit')}
+          guide="sheet.doneBy" testId="sheet-assign" disabled={offered.length === 0}
+          onPick={(sourceId) => actions.setCoverage({ type: 'assigned', sourceId, functionId: element.id, on: true })}
+        />
+      )}
+      <Typography sx={{ fontSize: 10.5, color: 'text.secondary', mt: 0.5 }}>{t('sheet.assignedFarEnd')}</Typography>
     </Box>
   )
 }

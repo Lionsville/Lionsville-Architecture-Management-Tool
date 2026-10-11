@@ -12,6 +12,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, within } from '@testing-library/react'
+import { axeFindings } from '../../app/testing/axe'
 import { FunctionInspector } from './FunctionInspector'
 import type { FunctionInspectorProps, SheetActions } from './FunctionInspector'
 import { renderShell } from '../../app/testing/renderShell'
@@ -32,7 +33,7 @@ function open(
   readOnly = false,
   onRemoved = vi.fn(),
   ownerOf?: (id: string) => { label: string; fields: readonly string[]; onOpen?: () => void } | undefined,
-  over: Pick<FunctionInspectorProps, 'applications' | 'onOpenDocumentation' | 'elsewhere'> = {},
+  over: Pick<FunctionInspectorProps, 'applications' | 'onOpenDocumentation' | 'elsewhere' | 'responsible'> = {},
 ) {
   const actions: SheetActions = {
     updateElement: vi.fn(),
@@ -191,7 +192,7 @@ describe('what covers a capability, as something to tick', () => {
     })
     cleanup()
     const { actions: actions3 } = open('dunning')
-    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Done by/ }))
+    fireEvent.click(screen.getByRole('button', { name: '+ Unit' }))
     fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'Warehouse team' }))
     expect(actions3.setCoverage).toHaveBeenCalledWith({
       type: 'assigned', sourceId: 'warehouse-team', functionId: 'dunning', on: true,
@@ -350,5 +351,54 @@ describe('a capability another scope answers for', () => {
     open('picking')
     expect(screen.queryByTestId('owned-elsewhere')).toBeNull()
     expect((screen.getByLabelText('Name') as HTMLInputElement).disabled).toBe(false)
+  })
+})
+
+/**
+ * Who is responsible for it (ADR-0036, amended 11 October 2026): the units
+ * of the whole organisation, picked as a scope's *Served by* picks them, and
+ * the row kept here with a unit filed elsewhere as its far end.
+ */
+describe('who is responsible for a capability', () => {
+  const responsible = {
+    choices: [
+      { id: 'shipping', label: 'Shipping', group: 'Domain', note: 'filed in Shipping' },
+      { id: 'robotics', label: 'Robotics', group: 'Team', note: 'filed in Warehouse' },
+      { id: 'warehouse-team', label: 'Warehouse team', group: 'Others in this scope' },
+    ],
+    name: (id: string) => ({ shipping: 'Shipping', robotics: 'Robotics' } as Record<string, string>)[id],
+    serves: (actor: string) => actor !== 'robotics',
+  }
+
+  it('lists the units grouped by type, each saying where it is filed, and writes the row here', async () => {
+    const { actions } = open('dunning', false, undefined, undefined, { responsible })
+    expect(screen.getByTestId('sheet-assigned-to').textContent).toContain('Nobody yet')
+    fireEvent.click(screen.getByRole('button', { name: '+ Unit' }))
+    const list = screen.getByRole('listbox')
+    expect(within(list).getAllByRole('group').map((one) => one.getAttribute('aria-labelledby') && one.firstChild?.textContent))
+      .toEqual(['Domain', 'Team', 'Others in this scope'])
+    expect(within(list).getByRole('option', { name: /Robotics/ }).textContent).toBe('Roboticsfiled in Warehouse')
+    expect(await axeFindings()).toEqual([])
+    fireEvent.click(within(list).getByRole('option', { name: /Robotics/ }))
+    expect(actions.setCoverage).toHaveBeenCalledWith({ type: 'assigned', sourceId: 'robotics', functionId: 'dunning', on: true })
+  })
+
+  it('names a unit kept elsewhere, marks one outside the domain, and takes a row off only where it is kept here', () => {
+    const { actions } = open('packing', false, undefined, undefined, {
+      responsible,
+      elsewhere: [{ id: 'far', type: 'assigned', sourceId: 'robotics', targetId: 'packing' }],
+    })
+    const chips = screen.getAllByTestId('sheet-assigned')
+    expect(chips.map((one) => one.textContent)).toEqual(['Warehouse team', 'Robotics · outside this domain'])
+    expect(chips[1].getAttribute('data-outside')).toBe('true')
+    expect(within(chips[1]).queryByTestId('CancelIcon')).toBeNull()
+    fireEvent.click(within(chips[0]).getByTestId('CancelIcon'))
+    expect(actions.setCoverage).toHaveBeenCalledWith({ type: 'assigned', sourceId: 'warehouse-team', functionId: 'packing', on: false })
+  })
+
+  it('offers nothing to add where the sheet is only read, and still says who', () => {
+    open('packing', true, undefined, undefined, { responsible })
+    expect(screen.queryByRole('button', { name: '+ Unit' })).toBeNull()
+    expect(screen.getByTestId('sheet-assigned-to').textContent).toContain('Warehouse team')
   })
 })

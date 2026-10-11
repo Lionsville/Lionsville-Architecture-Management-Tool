@@ -18,7 +18,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, within } from '@testing-library/react'
 import { SheetPage } from './SheetPage'
-import type { SheetActions } from './FunctionInspector'
+import type { SheetActions, SheetResponsible } from './FunctionInspector'
 import { renderShell } from '../../app/testing/renderShell'
 import { axeFindings } from '../../app/testing/axe'
 import { actor, capability, shippingScope } from '../testFixtures'
@@ -69,6 +69,7 @@ function open(over: {
   onSave?: (doc: { name: string; bytes: Uint8Array }) => void
   select?: { id: string; nonce: number }
   onHandle?: (handle: unknown) => void
+  responsible?: SheetResponsible
 } = {}) {
   const acts = actions()
   const result = renderShell(
@@ -83,6 +84,7 @@ function open(over: {
       onSave={over.onSave}
       {...(over.select ? { select: over.select } : {})}
       {...(over.onHandle ? { onHandle: over.onHandle } : {})}
+      {...(over.responsible ? { responsible: over.responsible } : {})}
       onClose={() => {}}
     />,
   )
@@ -571,5 +573,47 @@ describe('a link to a card', () => {
     const rules = Array.from(document.querySelectorAll('style')).map((style) => style.textContent ?? '').join('\n')
     expect(rules).toContain('[data-element-id="dunning"]')
     expect((onHandle.mock.calls.at(-1)?.[0] as { selectedId?: string } | undefined)?.selectedId).toBe('dunning')
+  })
+})
+
+/**
+ * *Show who is responsible* (ADR-0036, amended 11 October 2026): off until
+ * asked for, then a chip naming the unit on each area, grouping and
+ * capability, the ones nobody answers for marked, and a unit outside the
+ * domain drawn as the check says it.
+ */
+describe('who is responsible, shown on the sheet', () => {
+  const responsible: SheetResponsible = {
+    choices: [{ id: 'robotics', label: 'Robotics', group: 'Team' }],
+    name: (id) => (id === 'robotics' ? 'Robotics' : undefined),
+    serves: (actor) => actor !== 'robotics',
+  }
+  const assigned: readonly Relation[] = [
+    { id: 'a9', type: 'assigned', sourceId: 'robotics', targetId: 'invoice' },
+    { id: 'a8', type: 'assigned', sourceId: 'warehouse-team', targetId: 'fulfilment' },
+  ]
+
+  it('is off by default, and there only where the host says who is', () => {
+    open({ responsible })
+    expect((within(screen.getByTestId('sheet-show-responsible')).getByRole('switch') as HTMLInputElement).checked).toBe(false)
+    expect(screen.queryByTestId('sheet-responsible-packing')).toBeNull()
+    cleanup()
+    open()
+    expect(screen.queryByTestId('sheet-show-responsible')).toBeNull()
+  })
+
+  it('names the unit on each area, grouping and capability, marks the ones nobody answers for, and the ones outside', async () => {
+    open({ responsible, elsewhere: assigned })
+    fireEvent.click(within(screen.getByTestId('sheet-show-responsible')).getByRole('switch'))
+    expect(screen.getByTestId('sheet-responsible-packing').textContent).toBe('Warehouse team')
+    expect(screen.getByTestId('sheet-responsible-fulfilment').textContent).toBe('Warehouse team')
+    expect(screen.getByTestId('sheet-responsible-warehousing').textContent).toBe('nobody')
+    expect(screen.getByTestId('sheet-responsible-dunning').querySelector('[data-responsible="nobody"]')).not.toBeNull()
+    const outside = screen.getByTestId('sheet-responsible-invoice')
+    expect(outside.textContent).toBe('Robotics · outside this domain')
+    expect(outside.querySelector('[data-responsible="outside"]')).not.toBeNull()
+    expect(await axeFindings()).toEqual([])
+    fireEvent.click(within(screen.getByTestId('sheet-show-responsible')).getByRole('switch'))
+    expect(screen.queryByTestId('sheet-responsible-packing')).toBeNull()
   })
 })

@@ -118,6 +118,20 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     show(false)
     await screen.findByTestId('organisation-name')
   }]],
+  // Who serves a scope is said where the organisation has units: one at the
+  // organisation, of a type it holds, serving it where it is filed.
+  [['a home served by a unit', ['org.servedBy'], async () => {
+    const served = example.map((one) => (one.path === '' ? {
+      ...one,
+      model: {
+        ...one.model,
+        unitTypes: [{ id: 'ut-team', name: 'Team', top: true, within: [], slots: [] }],
+        elements: [...one.model.elements, { id: 'ops', kind: 'actor' as const, name: 'Operations', unitTypeId: 'ut-team', lifecycle: 'live' as const, isManaged: false, aspects: {} }],
+      },
+    } : one))
+    renderApp({ repositories: heldRepositories(served) })
+    await screen.findByTestId('served-by')
+  }]],
   [['a landscape’s home', ['org.boards', 'org.newBoard'], async () => {
     show(false)
     fireEvent.click(await screen.findByTestId(`home-${landscape.path}`))
@@ -158,6 +172,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   [['an outside application’s record', ['record.party'], () => recordOf('payments')]],
   [['the business architecture, a capability chosen', [
     'sheet.canvas', 'sheet.unmapped', 'sheet.inspector', 'sheet.coverage', 'sheet.supportedBy', 'sheet.doneBy',
+    'sheet.assignedTo', 'sheet.showResponsible',
   ], async () => {
     show(false)
     fireEvent.click(await screen.findByTestId('open-business'))

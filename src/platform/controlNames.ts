@@ -32,6 +32,8 @@ export const CONTROL_NAMES = [
   'org.card.roadmap', 'org.card.register', 'org.card.technology', 'org.card.landscape', 'org.card.people',
   'org.card.operating',
   'org.attention', 'org.attentionMore', 'org.boards', 'org.newBoard',
+  // Who serves a scope (ADR-0036, amended 11 October 2026): on its home and in its settings.
+  'org.servedBy',
   // A board: the canvas and what is docked to it.
   'board.canvas', 'board.palette', 'board.library', 'board.inspector', 'board.connect',
   // An element's record, in the inspector.
@@ -44,6 +46,8 @@ export const CONTROL_NAMES = [
   'people.row', 'people.add', 'people.importCsv', 'people.policy',
   // The business architecture sheet and the enterprise map.
   'sheet.canvas', 'sheet.inspector', 'sheet.coverage', 'sheet.supportedBy', 'sheet.doneBy', 'sheet.unmapped',
+  // Who is responsible: a capability's *Assigned to*, and the bar's switch that names the units on the sheet.
+  'sheet.assignedTo', 'sheet.showResponsible',
   'map.grid', 'map.summary',
   // The observations page: its three tabs, one observation, the form, and the solutions.
   'observations.tabRegister', 'observations.tabAnalysis', 'observations.tabSolutions',

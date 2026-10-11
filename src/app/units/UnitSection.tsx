@@ -22,6 +22,15 @@
  * assignments are that scope's records. A person is named by the register,
  * and *you* is marked where this install says who you are.
  *
+ * **Each link has one home and two ends** (ADR-0036, amended 11 October
+ * 2026). *Serves* is the unit's `scopes`, a step here; a scope's *Served by*
+ * writes the same field from the other end. *Responsible for* is the
+ * `assigned` rows from it, each kept in the scope of the area, grouping or
+ * capability it names: one picked here that this scope defines is a step
+ * here, and one another scope defines is that scope's step, under its rights
+ * (`writeIn`). A unit that answers for something in a domain it does not
+ * serve says so among its checks (`check.unitNotServing`).
+ *
  * **A manager changes their units' people where the scope is only read**
  * (ADR-0036 §12), where the source grants that right
  * (`PeopleRegisterAccess.manages`): *Assign*, a holder's correction, end and
@@ -34,7 +43,7 @@ import Chip from '@mui/material/Chip'
 import MenuItem from '@mui/material/MenuItem'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
-import type { Translate } from '../../i18n'
+import type { StringKey, Translate } from '../../i18n'
 import type { Command } from '../../model/commands'
 import type { HostModel } from '../../model/hostModel'
 import type { Role, RoleSlot, UnitType } from '../../model/operatingModel'
@@ -57,6 +66,11 @@ import type { Assigning } from './AssignDialog'
 import { InteractDialog, InteractionsSection } from './Interactions'
 import type { Interacting, InteractionLine } from './Interactions'
 import { organisationHere } from './organisationHere'
+import { functionChoices, scopeChoices } from './choices'
+import { refusalKey } from './writeIn'
+import type { WriteIn } from './writeIn'
+import { scopesServed, scopesWith, scopesWithout } from '../../model/serving'
+import { PickToAdd } from '../../widgets/PickToAdd'
 
 export type UnitSectionProps = {
   element: DesignElement
@@ -81,6 +95,12 @@ export type UnitSectionProps = {
   scopeLabel: (path: ScopePath) => string
   /** Every scope of the tree, for the domains a unit serves. */
   scopes: readonly ScopePath[]
+  /**
+   * A link kept in another scope, written there as its step: an area, a
+   * grouping or a capability another scope defines, picked for *Responsible
+   * for*. Absent: only this scope's own are offered.
+   */
+  writeIn?: WriteIn
   s: Translate
 }
 
@@ -108,14 +128,20 @@ function useUnitFacts(props: UnitSectionProps) {
       ...index.register().filter((entry) => entry.partyId === element.id && entry.master !== scope).map((entry) => entry.name),
       ...model.elements.filter((one) => one.kind === 'application' && one.ref === undefined && one.partyId === element.id).map((one) => one.name),
     ].sort((a, b) => a.localeCompare(b))
-    const answersFor = [
-      ...model.relations.filter((row) => row.type === 'assigned' && row.sourceId === element.id).map((row) => row.targetId),
+    // Each `assigned` row from it, with the scope that keeps it: this one's as the session has them, the rest the tree's.
+    const answersFor: AnswerRow[] = [
+      ...model.relations.filter((row) => row.type === 'assigned' && row.sourceId === element.id).map((row) => ({ row, keptIn: scope })),
       ...index.rowsOf(element.id).filter(({ scope: kept, relation }) => kept !== scope && relation.type === 'assigned' && relation.sourceId === element.id)
-        .map(({ relation }) => relation.targetId),
-    ].map((id) => model.elements.find((one) => one.id === id)?.name ?? index.lookup(id)?.name ?? id)
+        .map(({ scope: keptIn, relation }) => ({ row: relation, keptIn })),
+    ].map(({ row, keptIn }) => ({
+      id: row.targetId, relationId: row.id, keptIn,
+      name: model.elements.find((one) => one.id === row.targetId)?.name ?? index.lookup(row.targetId)?.name ?? row.targetId,
+    }))
     const findings = findingsOfOrganisation(at, today, canonical)
     const holders = new Set(organisation.assignments.filter((one) => one.unitId === element.id && runsOn(one, today)).map((one) => canonical(personOf(one))))
-    const said = findings.filter((one) => (one.person !== undefined ? holders.has(one.person) : one.id === element.id))
+    const said = findings.filter((one) => (one.person !== undefined
+      ? holders.has(one.person)
+      : one.id === element.id || (one.key === 'check.unitNotServing' && one.fields?.[0] === element.id)))
     // Its moves, each with the plan that makes it: the open scope's plans as the session holds them, the tree's for the rest.
     const moves = [...index.moves().filter((one) => one.scope !== scope), ...movesOf(scope, model)]
       .filter((one) => one.move.unitId === element.id)
@@ -156,12 +182,7 @@ export function UnitSection(props: UnitSectionProps) {
           <Serves {...props} type={facts.type} editable={editable} onChange={(scopes) => update({ scopes })} />
           <Typography sx={SECTION}>{s('unit.owns')}</Typography>
           <Typography sx={LINE} data-testid="unit-owns">{facts.owns.length ? facts.owns.join(', ') : s('unit.ownsNone')}</Typography>
-          {facts.answersFor.length > 0 && (
-            <>
-              <Typography sx={SECTION}>{s('unit.answersFor')}</Typography>
-              <Typography sx={LINE}>{facts.answersFor.join(', ')}</Typography>
-            </>
-          )}
+          <AnswersFor {...props} rows={facts.answersFor} editable={editable} />
           <Slots {...props} today={today} looking={today !== props.today} facts={facts} mayRole={mayRole} name={name} onAssign={setAssigning} />
           {editable && <ExtraRole element={element} type={facts.type} roles={facts.organisation.roles} onAdd={(extraSlots) => update({ extraSlots })} s={s} />}
           <Managers {...props} today={today} looking={today !== props.today} facts={facts} name={name} />
@@ -218,30 +239,85 @@ function TypeField({ element, types, editable, onChange, s }: {
 function Serves({ element, scope, scopes, scopeLabel, type, editable, onChange, s }: UnitSectionProps & {
   type: UnitType | undefined; editable: boolean; onChange: (scopes: string[] | undefined) => void
 }) {
-  const serves = element.scopes ?? [scope]
+  // Where it says nothing it serves the scope it is filed in, and goes on serving it beside one added.
+  const filedIn = () => scope
+  const serves = scopesServed(element, filedIn)
   const more = type?.spans === true || serves.length === 0
-  const free = scopes.filter((one) => !serves.includes(one))
   return (
     <>
       <Typography sx={SECTION}>{s('unit.serves')}</Typography>
-      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }} data-testid="unit-serves">
+      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center' }} data-testid="unit-serves">
         {serves.map((one) => (
           <Chip key={one} size="small" label={scopeLabel(one)}
-            {...(editable && element.scopes ? { onDelete: () => onChange(serves.filter((held) => held !== one).length ? serves.filter((held) => held !== one) : undefined) } : {})} />
+            {...(editable && element.scopes ? { onDelete: () => onChange(scopesWithout(element, one)) } : {})} />
         ))}
+        {editable && more && (
+          <PickToAdd
+            options={scopeChoices({ scopes, leave: serves, scopeName: scopeLabel, s })} label={s('unit.servesAdd')}
+            field={s('pick.findScope')} nothing={s('pick.noScope')} testId="unit-serves-add"
+            onPick={(one) => onChange(scopesWith(element, one, filedIn))}
+            disabled={scopes.every((one) => serves.includes(one))}
+          />
+        )}
       </Box>
-      {editable && more && free.length > 0 && (
-        <TextField size="small" select fullWidth label={s('unit.servesAdd')} value="" onChange={(event) => onChange([...serves, event.target.value])}
-          slotProps={{ htmlInput: { 'data-testid': 'unit-serves-add' } }} sx={{ mt: 0.75 }}>
-          {free.map((one) => <MenuItem key={one} value={one}>{scopeLabel(one)}</MenuItem>)}
-        </TextField>
-      )}
       {editable && !more && <Typography sx={QUIET}>{s('unit.servesOne', { type: type?.name ?? '' })}</Typography>}
     </>
   )
 }
 
 type Facts = ReturnType<typeof useUnitFacts>
+
+/** One `assigned` row from the unit: what it names, the row, and the scope that keeps it. */
+type AnswerRow = { id: string; relationId: string; name: string; keptIn: ScopePath }
+
+/**
+ * What it answers for (*Responsible for*): an area, a grouping or a
+ * capability per `assigned` row, the rows kept here taken off here, and *+*
+ * to make it responsible for another — this scope's own, or, where the
+ * section can write there, one another scope defines, as that scope's step.
+ */
+function AnswersFor({ element, scope, model, index, dispatch, newRowId, writeIn, scopeLabel, rows, editable, s }: UnitSectionProps & {
+  rows: readonly AnswerRow[]; editable: boolean
+}) {
+  const [refused, setRefused] = useState<StringKey | undefined>(undefined)
+  if (rows.length === 0 && !editable) return null
+  const definedHere = (id: string) => model.elements.some((one) => one.id === id && one.ref === undefined)
+  const offered = functionChoices({ index, scope, model, leave: new Set(rows.map((one) => one.id)), scopeName: scopeLabel, s })
+    .filter((one) => writeIn !== undefined || definedHere(one.id))
+  const relation = (targetId: string) => ({ id: newRowId(), type: 'assigned' as const, sourceId: element.id, targetId })
+  const pick = (id: string) => {
+    setRefused(undefined)
+    if (definedHere(id)) { dispatch({ type: 'relation.create', relation: relation(id) }); return }
+    const master = index.lookup(id)?.master
+    if (master === undefined || !writeIn) return
+    void writeIn(master, () => [{ type: 'relation.create', relation: relation(id) }]).then(
+      (written) => setRefused(refusalKey(written)),
+      () => setRefused('pick.notWritten'),
+    )
+  }
+  return (
+    <>
+      <Typography sx={SECTION}>{s('unit.answersFor')}</Typography>
+      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center' }} data-testid="unit-answers-for">
+        {rows.length === 0 && <Typography sx={QUIET}>{s('unit.answersForNone')}</Typography>}
+        {rows.map((one) => (
+          <Chip
+            key={`${one.keptIn}/${one.relationId}`} size="small" data-testid="unit-answers-for-row"
+            label={one.keptIn === scope ? one.name : `${one.name} · ${s('unit.keptIn', { scope: scopeLabel(one.keptIn) })}`}
+            {...(editable && one.keptIn === scope ? { onDelete: () => dispatch({ type: 'relation.delete', id: one.relationId }) } : {})}
+          />
+        ))}
+        {editable && (
+          <PickToAdd
+            options={offered} label={s('unit.answersForAdd')} field={s('pick.findFunction')} nothing={s('pick.noFunction')}
+            testId="unit-answers-for-add" onPick={pick} disabled={offered.length === 0}
+          />
+        )}
+      </Box>
+      {refused && <Typography sx={{ fontSize: 12, color: 'warning.main' }} role="status">{s(refused)}</Typography>}
+    </>
+  )
+}
 
 /** The roles it holds and who holds them on the day, with the vacancies a slot's minimum leaves. */
 function Slots({ element, today, looking, facts, mayRole, name, onAssign, s }: UnitSectionProps & {

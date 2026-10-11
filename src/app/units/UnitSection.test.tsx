@@ -12,6 +12,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { useRef, useState } from 'react'
 import { renderShell } from '../testing/renderShell'
+import { axeFindings } from '../testing/axe'
 import { translator } from '../../i18n'
 import type { Command } from '../../model/commands'
 import { managesPeople } from '../../model/managing'
@@ -31,6 +32,7 @@ import { indexScopes } from '../../projects/scopeIndex'
 import { assignmentOf, assignmentPatch, formOf, shareFrom } from './AssignDialog'
 import { organisationHere } from './organisationHere'
 import { UnitSection } from './UnitSection'
+import type { WriteIn } from './writeIn'
 
 afterEach(() => cleanup())
 
@@ -86,14 +88,17 @@ const PEOPLE: Person[] = [
 ]
 
 /** The section over a model held here, changed by the model's own writer, and a register held here too. */
-function Harness({ unit = 'webshop', readOnly = false, model: start = CUSTOMER, scope = 'customer', root = ROOT, day, commands, register: held = PEOPLE, me = 'pe-femke', manages }: {
+function Harness({ unit = 'webshop', readOnly = false, model: start = CUSTOMER, scope = 'customer', root = ROOT, day, commands, register: held = PEOPLE, me = 'pe-femke', manages, more = [], writeIn }: {
   unit?: string; readOnly?: boolean; model?: HostModel; scope?: string; root?: HostModel; day?: string; commands: Command[]
   register?: readonly Person[]; me?: string; manages?: ManagesPeople
+  /** Scopes beyond the organisation and the customer domain. */
+  more?: readonly { path: string; model: HostModel }[]
+  writeIn?: WriteIn
 }) {
   const [model, setModel] = useState(start)
   const [people, setPeople] = useState<readonly Person[]>(held)
   const heldPeople = useRef<readonly Person[]>(held)
-  const index = indexScopes([{ path: '', model: root }, { path: 'customer', model: CUSTOMER }])
+  const index = indexScopes([{ path: '', model: root }, { path: 'customer', model: CUSTOMER }, ...more])
   const dispatch = (command: Command) => {
     commands.push(command)
     const result = apply(fromArrays(model), command)
@@ -127,7 +132,7 @@ function Harness({ unit = 'webshop', readOnly = false, model: start = CUSTOMER, 
       element={element} readOnly={readOnly} scope={scope} model={model} index={index} dispatch={dispatch}
       makeId={(prefix) => `${prefix}-new`} newRowId={() => 'i-new'} people={register} today={TODAY} {...(day !== undefined ? { day } : {})}
       scopeLabel={(path) => (path === '' ? 'the organisation' : path === 'customer' ? 'Customer' : path)}
-      scopes={['', 'customer', 'shipping']} s={s}
+      scopes={['', 'customer', 'shipping']} {...(writeIn ? { writeIn } : {})} s={s}
     />
   )
 }
@@ -228,10 +233,14 @@ describe('a unit in its inspector', () => {
     cleanup()
     const spanning: HostModel = { ...ROOT, unitTypes: [domain, { ...team, spans: true }] }
     renderShell(<Harness root={spanning} commands={commands} />)
-    fireEvent.mouseDown(within(screen.getByTestId('unit-section')).getAllByRole('combobox')[1])
+    // The domains it may serve are picked, as a scope's units are: the + opens a field to find one in.
+    fireEvent.click(screen.getByTestId('unit-serves-add'))
+    const field = screen.getByRole('combobox', { name: 'Find a scope' })
+    expect(screen.getAllByRole('option').map((one) => one.textContent)).toEqual(['the organisation', 'shipping'])
+    fireEvent.change(field, { target: { value: 'ship' } })
     fireEvent.click(await screen.findByRole('option', { name: 'shipping' }))
     expect(commands[1]).toEqual({ type: 'element.update', id: 'webshop', patch: { scopes: ['customer', 'shipping'] } })
-    fireEvent.mouseDown(within(screen.getByTestId('unit-section')).getAllByRole('combobox')[2])
+    fireEvent.mouseDown(within(screen.getByTestId('unit-section')).getAllByRole('combobox')[1])
     fireEvent.click(await screen.findByRole('option', { name: 'Team coach' }))
     expect(commands[2]).toEqual({ type: 'element.update', id: 'webshop', patch: { extraSlots: [{ role: 'ro-coach', min: 0, max: 1 }] } })
     // The coach held outside the type's slots now holds an extra one.
@@ -432,5 +441,68 @@ describe('the organisation as the open scope has it', () => {
     const now: HostModel = { ...CUSTOMER, transitions: [plan([{ unitId: 'webshop', parentId: 'customer', on: '2027-02-01' }])] }
     expect(organisationHere(index, 'customer', now).organisation.moves).toEqual([{ unitId: 'webshop', parentId: 'customer', on: '2027-02-01' }])
     expect(organisationHere(index, 'customer', CUSTOMER).organisation).not.toHaveProperty('moves')
+  })
+})
+
+/**
+ * What it answers for, from the unit's end (ADR-0036, amended 11 October
+ * 2026): a capability this scope defines is a row here; one another scope
+ * defines is a row there, written as that scope's step; a row kept here comes
+ * off here; and one in a domain it does not serve is among its checks.
+ */
+describe('what a unit is responsible for, from its own inspector', () => {
+  const fn = (id: string, name: string, over: Partial<DesignElement> = {}): DesignElement => ({
+    id, kind: 'function', name, lifecycle: 'live', isManaged: false, aspects: {}, ...over,
+  })
+
+  it('makes it responsible for a capability here as a row here, and takes a row kept here off', async () => {
+    const commands: Command[] = []
+    const model: HostModel = { ...CUSTOMER, elements: [...CUSTOMER.elements, fn('returns', 'Handle returns', { parentId: 'sell' })] }
+    renderShell(<Harness model={model} commands={commands} />)
+    expect(screen.getAllByTestId('unit-answers-for-row').map((one) => one.textContent)).toEqual(['Sell online'])
+    fireEvent.click(screen.getByTestId('unit-answers-for-add'))
+    expect(screen.getAllByRole('option').map((one) => one.textContent)).toEqual(['Handle returnsin Sell online'])
+    fireEvent.click(screen.getByRole('option', { name: /Handle returns/ }))
+    expect(commands[0]).toEqual({ type: 'relation.create', relation: { id: 'i-new', type: 'assigned', sourceId: 'webshop', targetId: 'returns' } })
+    fireEvent.click(within(screen.getAllByTestId('unit-answers-for-row')[0]).getByTestId('CancelIcon'))
+    expect(commands[1]).toEqual({ type: 'relation.delete', id: 'r1' })
+    expect(await axeFindings()).toEqual([])
+  })
+
+  it('writes the row for a capability another scope defines in that scope, and says so where it may not', async () => {
+    const asked: { path: string; commands: readonly Command[] | undefined }[] = []
+    let answer: Awaited<ReturnType<WriteIn>> = { ok: true }
+    const writeIn: WriteIn = (path, change) => {
+      asked.push({ path, commands: change({ path, model: ROOT, activeDiagramId: '', logoLibrary: [] }) })
+      return Promise.resolve(answer)
+    }
+    const root: HostModel = { ...ROOT, elements: [fn('serve', 'Serve customers')] }
+    renderShell(<Harness root={root} commands={[]} writeIn={writeIn} />)
+    fireEvent.click(screen.getByTestId('unit-answers-for-add'))
+    fireEvent.click(screen.getByRole('option', { name: /Serve customers/ }))
+    await waitFor(() => expect(asked).toEqual([{
+      path: '', commands: [{ type: 'relation.create', relation: { id: 'i-new', type: 'assigned', sourceId: 'webshop', targetId: 'serve' } }],
+    }]))
+    answer = { ok: false, reason: 'shell.scopeReadOnly' }
+    fireEvent.click(screen.getByTestId('unit-answers-for-add'))
+    fireEvent.click(screen.getByRole('option', { name: /Serve customers/ }))
+    expect(await screen.findByText('Nothing was written: you may read this scope, but not change it. Ask somebody who may change it.')).toBeTruthy()
+  })
+
+  it('offers only this scope\'s own where it has no way to write another', () => {
+    const root: HostModel = { ...ROOT, elements: [fn('serve', 'Serve customers')] }
+    renderShell(<Harness root={root} commands={[]} />)
+    expect((screen.getByTestId('unit-answers-for-add') as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('says among its checks a capability of a domain it does not serve', () => {
+    const shipping: HostModel = {
+      name: 'Shipping', elements: [fn('price', 'Price freight')], diagrams: [],
+      relations: [{ id: 'r9', type: 'assigned', sourceId: 'webshop', targetId: 'price' }],
+    }
+    renderShell(<Harness more={[{ path: 'shipping', model: shipping }]} commands={[]} />)
+    expect(screen.getAllByTestId('unit-answers-for-row').map((one) => one.textContent)).toEqual(['Sell online', 'Price freight · kept in shipping'])
+    expect(screen.getAllByTestId('unit-finding').map((one) => one.textContent))
+      .toContain('Webshop is responsible for Price freight, but neither it nor a unit above it serves shipping')
   })
 })

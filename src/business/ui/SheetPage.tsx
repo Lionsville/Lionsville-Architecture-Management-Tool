@@ -59,10 +59,8 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import type { ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Chip from '@mui/material/Chip'
-import IconButton from '@mui/material/IconButton'
 import InputBase from '@mui/material/InputBase'
 import Popover from '@mui/material/Popover'
-import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import { alpha, useTheme } from '@mui/material/styles'
 import type { SxProps, Theme } from '@mui/material/styles'
@@ -72,7 +70,7 @@ import { plural } from '../../i18n/strings'
 import type { Translate } from '../../i18n'
 import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
-import { BackIcon, ExportIcon, EyeIcon, SearchIcon, SlidersIcon } from '../../widgets/icons'
+import { SearchIcon } from '../../widgets/icons'
 import { PageDialog } from '../../widgets/PageDialog'
 import { SeamResizer } from '../../widgets/SeamResizer'
 import { useSelectRequest } from '../../widgets/useSelectRequest'
@@ -90,7 +88,10 @@ import type { LaidOutSheet, SheetActor, SheetArea, SheetCapability, SheetJourney
 import type { PageCaptureOptions, PageHandle } from '../../widgets/capturePage'
 import { captureSheet } from '../../widgets/capturePage'
 import { FunctionInspector, INSPECTOR_WIDTH } from './FunctionInspector'
-import type { FunctionInspectorProps, NewLane, SheetActions, Supporter } from './FunctionInspector'
+import type { FunctionInspectorProps, NewLane, SheetActions, SheetResponsible, Supporter } from './FunctionInspector'
+import { ResponsibleChips, useWho } from './Responsible'
+import type { Who } from './Responsible'
+import { SheetBar } from './SheetBar'
 import { LaneDialog } from './LaneDialog'
 import { SheetExportDialog } from './SheetExportDialog'
 import type { ExportLayout } from './SheetExportDialog'
@@ -133,6 +134,13 @@ export type SheetPageProps = {
   elsewhere?: readonly Relation[]
   /** Every application in the organisation, for *Supported by…*. See the inspector. */
   applications?: readonly Supporter[]
+  /**
+   * Who may be made responsible for an area, a grouping or a capability, and
+   * what they are called (ADR-0036, amended 11 October 2026): the host's,
+   * because the units are the organisation's. Absent: no *Show who is
+   * responsible*, and *Assigned to* offers this scope's own actors.
+   */
+  responsible?: SheetResponsible
   /** The way to an element's own page. Absent = no *Details ›* on the inspector. */
   onOpenDocumentation?(id: ElementId): void
   /**
@@ -178,6 +186,9 @@ export function SheetPage(props: SheetPageProps) {
   const [laneOpen, setLaneOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
+  /** *Show who is responsible*: the page's own, off until asked for. */
+  const [whoShown, setWhoShown] = useState(false)
+  const who = useWho(model, props.elsewhere, props.responsible, whoShown)
   /**
    * The rail and the details, together: one eye for both, because "give me
    * the whole width for the page" is one wish and was two toggles. The
@@ -316,66 +327,12 @@ export function SheetPage(props: SheetPageProps) {
       onClose={props.onClose}
       aria-label={t('sheet.page')}
     >
-      <Box
-        data-testid="sheet-topbar"
-        sx={{
-          display: 'flex', flexWrap: 'wrap', rowGap: 0.5, alignItems: 'center', gap: 1, px: 1.5, minHeight: 48, flexShrink: 0,
-          pl: props.inline ? undefined : `${12 + bar.controlsInset}px`,
-          WebkitAppRegion: !props.inline && bar.draggable ? 'drag' : undefined,
-          '& button, & a, & input': { WebkitAppRegion: 'no-drag' },
-          borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper',
-        }}
-      >
-        {!props.inline && (
-          <Tooltip title={t('sheet.close')}>
-            <IconButton size="small" aria-label={t('sheet.close')} onClick={props.onClose}>
-              <BackIcon />
-            </IconButton>
-          </Tooltip>
-        )}
-        <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{sheet?.name ?? t('sheet.page')}</Typography>
-        <Box sx={{ flex: 1 }} />
-        {sheet && (
-          <Tooltip title={t('sheet.find')}>
-            <IconButton
-              size="small"
-              aria-label={t('sheet.find')}
-              aria-expanded={Boolean(findAnchor)}
-              onClick={(event) => setFindAnchor(event.currentTarget)}
-            >
-              <SearchIcon size={16} />
-            </IconButton>
-          </Tooltip>
-        )}
-        {sheet && (
-          <Tooltip title={panelsShown ? t('sheet.hidePanels') : t('sheet.showPanels')}>
-            <IconButton
-              size="small"
-              aria-label={panelsShown ? t('sheet.hidePanels') : t('sheet.showPanels')}
-              aria-pressed={!panelsShown}
-              onClick={() => setPanelsShown((shown) => !shown)}
-            >
-              <EyeIcon />
-            </IconButton>
-          </Tooltip>
-        )}
-        {sheet && props.onSave && (
-          <Tooltip title={t('sheet.export')}>
-            <IconButton size="small" aria-label={t('sheet.export')} onClick={() => setExportOpen(true)}>
-              <ExportIcon />
-            </IconButton>
-          </Tooltip>
-        )}
-        {!readOnly && sheet && (
-          <Tooltip title={t('sheet.settings')}>
-            <IconButton
-              size="small" aria-label={t('sheet.settings')} onClick={() => setSettingsOpen(true)}
-            >
-              <SlidersIcon />
-            </IconButton>
-          </Tooltip>
-        )}
-      </Box>
+      <SheetBar
+        inline={props.inline} chrome={bar} name={sheet?.name} readOnly={readOnly} onClose={props.onClose} t={t}
+        finding={Boolean(findAnchor)} onFind={setFindAnchor} panelsShown={panelsShown} onPanels={() => setPanelsShown((shown) => !shown)}
+        {...(props.onSave ? { onExport: () => setExportOpen(true) } : {})} onSettings={() => setSettingsOpen(true)}
+        {...(props.responsible ? { responsible: { shown: whoShown, onShown: setWhoShown } } : {})}
+      />
 
       <Popover
         open={Boolean(findAnchor)}
@@ -489,7 +446,7 @@ export function SheetPage(props: SheetPageProps) {
                       onSpan={author && columns > 1
                         ? (span) => actions.updateSheet({ areaSpans: withSpan(sheet.areaSpans, area.element.id, span) })
                         : undefined}
-                      onSelect={setSelectedId} author={author} t={t}
+                      onSelect={setSelectedId} author={author} who={who} t={t}
                     />
                   )
                 })}
@@ -542,7 +499,7 @@ export function SheetPage(props: SheetPageProps) {
               applications={props.applications}
               onOpenDocumentation={props.onOpenDocumentation}
               elsewhere={props.elsewhere}
-              nameFocus={nameFocus}
+              nameFocus={nameFocus} responsible={props.responsible}
               onRemoved={() => setSelectedId(undefined)}
               ownerOf={props.ownerOf}
             />
@@ -1119,7 +1076,7 @@ const capabilityGrid = (span: number) => ({
   display: 'grid', gap: 0.75, gridTemplateColumns: `repeat(${span}, minmax(0, 1fr))`, alignItems: 'start',
 })
 
-function AreaCard({ area, span, place, measure, onSpan, onSelect, author, t }: {
+function AreaCard({ area, span, place, measure, onSpan, onSelect, author, who, t }: {
   area: SheetArea
   /** How many columns of the grid it takes. */
   span: number
@@ -1131,6 +1088,8 @@ function AreaCard({ area, span, place, measure, onSpan, onSelect, author, t }: {
   onSpan?(span: number): void
   onSelect(id: ElementId): void
   author: Author | undefined
+  /** Who answers for each function, while *Show who is responsible* is on. */
+  who?: Who
   t: Translate
 }) {
   return (
@@ -1153,8 +1112,9 @@ function AreaCard({ area, span, place, measure, onSpan, onSelect, author, t }: {
           bgcolor: (theme) => alpha(theme.palette.primary.main, 0.16),
         }}
       >
-        <Typography sx={{ fontSize: 12, fontWeight: 700, flex: 1, minWidth: 0 }}>
+        <Typography component="div" sx={{ fontSize: 12, fontWeight: 700, flex: 1, minWidth: 0 }}>
           {area.element.name}
+          <ResponsibleChips who={who} functionId={area.element.id} t={t} />
         </Typography>
         {area.domain !== undefined && (
           <Chip size="small" label={area.domain} sx={{ height: 18, fontSize: 9.5 }} />
@@ -1196,6 +1156,7 @@ function AreaCard({ area, span, place, measure, onSpan, onSelect, author, t }: {
               }}
             >
               {group.element.name}
+              <ResponsibleChips who={who} functionId={group.element.id} t={t} />
             </Box>
             <Box sx={capabilityGrid(span)}>
               {group.capabilities.map((capability) => (
@@ -1203,6 +1164,7 @@ function AreaCard({ area, span, place, measure, onSpan, onSelect, author, t }: {
                   key={capability.element.id}
                   capability={capability}
                   onSelect={onSelect}
+                  who={who}
                   t={t}
                 />
               ))}
@@ -1230,6 +1192,7 @@ function AreaCard({ area, span, place, measure, onSpan, onSelect, author, t }: {
                 key={capability.element.id}
                 capability={capability}
                 onSelect={onSelect}
+                who={who}
                 t={t}
               />
             ))}
@@ -1258,9 +1221,10 @@ function AreaCard({ area, span, place, measure, onSpan, onSelect, author, t }: {
   )
 }
 
-function CapabilityCard({ capability, onSelect, t }: {
+function CapabilityCard({ capability, onSelect, who, t }: {
   capability: SheetCapability
   onSelect(id: ElementId): void
+  who?: Who
   t: Translate
 }) {
   const { coverage } = capability
@@ -1294,6 +1258,7 @@ function CapabilityCard({ capability, onSelect, t }: {
       <Typography data-testid={`sheet-coverage-${capability.element.id}`} sx={{ fontSize: 10, color: colour }}>
         {label}
       </Typography>
+      <ResponsibleChips who={who} functionId={capability.element.id} t={t} />
     </Box>
   )
 }

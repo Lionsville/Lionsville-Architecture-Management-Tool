@@ -25,6 +25,7 @@
  * store operation and not a field edit.
  */
 import { useState } from 'react'
+import type { ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Dialog from '@mui/material/Dialog'
@@ -84,13 +85,18 @@ export type ScopeSettingsDialogProps = {
   tree?: ScopeSummary
   onSave: (path: ScopePath, patch: ScopeSettingsPatch) => void
   onCancel: () => void
+  /**
+   * *Served by* for the scope, drawn by the screen that has the index
+   * (ADR-0036, amended 11 October 2026). Absent: not said here.
+   */
+  servedBy?: (path: ScopePath) => ReactNode
   s: Translate
 }
 
 type LinkDraft = RecordLink
 
 export function ScopeSettingsDialog({
-  target, tree, onSave, onCancel, s,
+  target, tree, onSave, onCancel, servedBy, s,
 }: ScopeSettingsDialogProps) {
   const [name, setName] = useState('')
   const [client, setClient] = useState('')
@@ -112,9 +118,6 @@ export function ScopeSettingsDialog({
 
   // The root has nowhere to go, and a listing is what the field is made of.
   const canMove = tree !== undefined && target !== undefined && target.path !== ROOT_SCOPE
-
-  const editLink = (index: number, patch: Partial<LinkDraft>) =>
-    setLinks(links.map((link, i) => (i === index ? { ...link, ...patch } : link)))
 
   const ready = name.trim().length > 0
 
@@ -177,62 +180,10 @@ export function ScopeSettingsDialog({
             />
           )}
 
-          <Box>
-            <Typography sx={{
-              fontSize: 10, fontWeight: 700, letterSpacing: 0.6, color: 'text.secondary',
-            }}>
-              {s('group.links')}
-            </Typography>
-            <Typography sx={{ fontSize: 11, color: 'text.secondary', mb: 1 }}>
-              {s('group.linksHelp')}
-            </Typography>
-            <Stack spacing={1}>
-              {links.map((link, index) => {
-                // Flagged, not refused: somebody halfway through typing an
-                // address has not made a mistake yet. What cannot be rendered is
-                // dropped on save, by `normaliseLinks`.
-                const bad = link.url.trim().length > 0 && !isSafeLinkUrl(link.url)
-                return (
-                  <Stack key={index} direction="row" spacing={0.5} sx={{ alignItems: 'flex-start' }}>
-                    <TextField
-                      size="small"
-                      label={index === 0 ? s('group.linkLabel') : undefined}
-                      value={link.label}
-                      sx={{ width: 160 }}
-                      onChange={(e) => editLink(index, { label: e.target.value })}
-                    />
-                    <TextField
-                      size="small"
-                      label={index === 0 ? s('group.linkUrl') : undefined}
-                      placeholder="https://"
-                      value={link.url}
-                      error={bad}
-                      helperText={bad ? s('group.badUrl') : undefined}
-                      sx={{ flex: 1 }}
-                      onChange={(e) => editLink(index, { url: e.target.value })}
-                    />
-                    <Tooltip title={s('group.removeLink', { name: link.label || link.url })}>
-                      <IconButton
-                        size="small"
-                        aria-label={s('group.removeLink', { name: link.label || link.url })}
-                        onClick={() => setLinks(links.filter((_, i) => i !== index))}
-                        sx={{ mt: index === 0 ? 1 : 0 }}
-                      >
-                        ✕
-                      </IconButton>
-                    </Tooltip>
-                  </Stack>
-                )
-              })}
-            </Stack>
-            <Button
-              size="small"
-              sx={{ mt: 1 }}
-              onClick={() => setLinks([...links, { label: '', url: '' }])}
-            >
-              {s('group.addLink')}
-            </Button>
-          </Box>
+          <LinksField links={links} onChange={setLinks} s={s} />
+          {/* Who serves it: a link kept on each unit, written where the unit is,
+              as it is picked — not with Save, which writes this scope. */}
+          {target && servedBy?.(target.path)}
         </Stack>
       </DialogContent>
       <DialogActions>
@@ -261,5 +212,72 @@ export function ScopeSettingsDialog({
         </Button>
       </DialogActions>
     </Dialog>
+  )
+}
+
+/**
+ * Where the rest of its material lives, as links: a label and an address
+ * each, flagged where the address is not one a link may carry.
+ */
+function LinksField({ links, onChange, s }: { links: LinkDraft[]; onChange: (links: LinkDraft[]) => void; s: Translate }) {
+  const editLink = (index: number, patch: Partial<LinkDraft>) =>
+    onChange(links.map((link, i) => (i === index ? { ...link, ...patch } : link)))
+  return (
+    <Box>
+      <Typography sx={{
+        fontSize: 10, fontWeight: 700, letterSpacing: 0.6, color: 'text.secondary',
+      }}>
+        {s('group.links')}
+      </Typography>
+      <Typography sx={{ fontSize: 11, color: 'text.secondary', mb: 1 }}>
+        {s('group.linksHelp')}
+      </Typography>
+      <Stack spacing={1}>
+        {links.map((link, index) => {
+          // Flagged, not refused: somebody halfway through typing an
+          // address has not made a mistake yet. What cannot be rendered is
+          // dropped on save, by `normaliseLinks`.
+          const bad = link.url.trim().length > 0 && !isSafeLinkUrl(link.url)
+          return (
+            <Stack key={index} direction="row" spacing={0.5} sx={{ alignItems: 'flex-start' }}>
+              <TextField
+                size="small"
+                label={index === 0 ? s('group.linkLabel') : undefined}
+                value={link.label}
+                sx={{ width: 160 }}
+                onChange={(e) => editLink(index, { label: e.target.value })}
+              />
+              <TextField
+                size="small"
+                label={index === 0 ? s('group.linkUrl') : undefined}
+                placeholder="https://"
+                value={link.url}
+                error={bad}
+                helperText={bad ? s('group.badUrl') : undefined}
+                sx={{ flex: 1 }}
+                onChange={(e) => editLink(index, { url: e.target.value })}
+              />
+              <Tooltip title={s('group.removeLink', { name: link.label || link.url })}>
+                <IconButton
+                  size="small"
+                  aria-label={s('group.removeLink', { name: link.label || link.url })}
+                  onClick={() => onChange(links.filter((_, i) => i !== index))}
+                  sx={{ mt: index === 0 ? 1 : 0 }}
+                >
+                  ✕
+                </IconButton>
+              </Tooltip>
+            </Stack>
+          )
+        })}
+      </Stack>
+      <Button
+        size="small"
+        sx={{ mt: 1 }}
+        onClick={() => onChange([...links, { label: '', url: '' }])}
+      >
+        {s('group.addLink')}
+      </Button>
+    </Box>
   )
 }

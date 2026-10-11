@@ -44,6 +44,7 @@ import { useChangeAcross } from './useChangeAcross'
 import { useChangeBelow } from './useChangeBelow'
 import { useWorkspaceOwnership } from './useWorkspaceOwnership'
 import { useLandPeopleMoves } from './units/landPeopleMoves'
+import { useWriteIn } from './units/writeIn'
 import { useWorkspacePages } from './useWorkspacePages'
 import { useWorkspaceRequests } from './useWorkspaceRequests'
 import type { WorkspaceParts } from './workspaceParts'
@@ -298,9 +299,13 @@ function useTreeParts(props: ProjectWorkspaceProps, base: ReturnType<typeof useS
   ))
   const today = (shell.today ?? localToday)()
   const day = dayShown(session.model.diagrams.find((d) => d.id === session.activeDiagramId), viewing.days, today)
+  /** A link made from a unit's inspector and kept in another scope: that scope's step, under its rights (ADR-0036, amended). */
+  const writeIn = useWriteIn({
+    scopes: source.repositories.scopes, writable: source.writable ?? writableLikeHere(source.readOnly ?? false), mayChange: session.mayChange, onTreeChanged,
+  })
   const units = useMemo(() => ({
-    people: shell.people, today, day, makeId: shell.makeId, scopePaths: flattenScopes(tree.scopes).map((one) => one.path),
-  }), [shell.people, today, day, shell.makeId, tree.scopes])
+    people: shell.people, today, day, makeId: shell.makeId, scopePaths: flattenScopes(tree.scopes).map((one) => one.path), writeIn,
+  }), [shell.people, today, day, shell.makeId, tree.scopes, writeIn])
   const ownership = useWorkspaceOwnership({
     session, scope: project.path, index, indexAnswered: tree.indexAnswered, scopes: source.repositories.scopes, onOpenScope,
     rowsThrough: readings.rowsThrough, scopeLabel: readings.scopeLabel,

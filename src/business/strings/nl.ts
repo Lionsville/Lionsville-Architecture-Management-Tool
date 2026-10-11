@@ -106,7 +106,15 @@ export const NL: Record<keyof typeof EN, string> = {
   'sheet.insideOther': 'Er zitten {count} dingen in',
 
   'sheet.supportedBy': 'Ondersteund door…',
-  'sheet.doneBy': 'Gedaan door…',
+  'sheet.assignedTo': 'Toegewezen aan',
+  'sheet.assignUnit': '+ Eenheid',
+  'sheet.findUnit': 'Zoek een eenheid of een actor',
+  'sheet.noUnit': 'Niemand met die naam',
+  'sheet.assignedNobody': 'Nog niemand',
+  'sheet.assignedOutside': 'buiten dit domein',
+  'sheet.assignedFarEnd': 'Elk is een toewijzing die hier wordt bijgehouden. Een eenheid die in een andere scope is ingedeeld is het verre eind ervan, en wordt daarvoor hier op geen bord getekend.',
+  'sheet.showResponsible': 'Toon wie verantwoordelijk is',
+  'sheet.responsibleNobody': 'niemand',
 
   'sheet.switchedBoard': '{name} wordt getoond; daar staat het op',
 

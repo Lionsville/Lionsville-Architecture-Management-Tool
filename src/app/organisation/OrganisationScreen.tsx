@@ -91,6 +91,8 @@ import { organisationPages } from './organisationPages'
 import type { OrganisationPages } from './organisationPages'
 import { ScopeSettingsDialog, SCOPE_KIND_COUNT, SCOPE_KIND_LABEL } from './ScopeSettingsDialog'
 import { ScopeTree } from './ScopeTree'
+import { ServedBy } from './ServedBy'
+import type { ServedByAccess } from './useServedBy'
 import type { Organisation } from './useOrganisation'
 
 /**
@@ -272,6 +274,12 @@ export type OrganisationScreenProps = {
    * over any home, where the source keeps one.
    */
   people?: PeopleAccess
+  /**
+   * Who serves each scope (ADR-0036, amended 11 October 2026): *Served by* on
+   * the home and in the settings, off the shell's index, and its two edits.
+   * Absent where the shell has no index to read it from.
+   */
+  servedBy?: ServedByAccess
   /** Resolve a conflict: open the scope that should yield, with *link* pending. */
   onLinkFromRegister?: (scope: ScopePath, id: ElementId, to: ScopePath) => void
   /**
@@ -327,7 +335,7 @@ export function OrganisationScreen({
   organisation, examples, order, onOrderChange, source, sourceDescription, sourceSayings = {}, sourceChip, chipPanel, chipFace,
   waysIn,
   overflow, agent, barButton, onGoHome, findings, register = [], technology = [], initiatives = 0, localObservations = 0, platformTree,
-  onOpenRegisterRow, onOpenRegisterPage, onLinkFromRegister, pageRequest, onPageChange, people,
+  onOpenRegisterRow, onOpenRegisterPage, onLinkFromRegister, pageRequest, onPageChange, people, servedBy,
   writable = ANYWHERE, today, language, s, windowChrome = NO_WINDOW_CHROME,
 }: OrganisationScreenProps) {
   const { tree, at, root, ready, dialog } = organisation
@@ -443,7 +451,6 @@ export function OrganisationScreen({
   }
   const named = home.name.trim().length > 0
   const heading = home.name.trim() || (atRoot ? s('picker.organisation') : scopePathLabel(home.path))
-  const quiet = { fontSize: 11, minWidth: 0, px: 1, color: 'text.secondary' } as const
   /**
    * What the registers call a scope — *Kept in*, *Drawn in*, the scope a
    * finding names: its own name out of the listing, and the organisation's
@@ -572,6 +579,10 @@ export function OrganisationScreen({
             />}
           </Box>
 
+          {/* Who serves this scope (ADR-0036, amended): the units whose
+              domains name it, written where each unit is kept. */}
+          <ServedBy scope={at} servedBy={servedBy} scopeName={scopeName} s={s} />
+
           {/* What the tree contradicts about itself, once, as sentences a
               person can act on — where the cards used to count them and the
               rows used to colour them. */}
@@ -663,34 +674,7 @@ export function OrganisationScreen({
               beside the real work is a way to file an example under it by
               accident, so the section goes. */}
           {atRoot && mayWrite && examples.length > 0 && holdsNothing(tree) && (
-            <>
-              <Divider sx={{ my: 3 }} />
-              <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, mb: 1, textTransform: 'uppercase' }}>
-                {s('picker.examples')}
-              </Typography>
-              <Stack spacing={0.75}>
-                {examples.map((example) => (
-                  <Card key={example.key} variant="outlined">
-                    <Stack direction="row" sx={{ alignItems: 'center', px: 1.5, py: 1 }} spacing={2}>
-                      <Box sx={{ flex: 1 }}>
-                        <Typography sx={{ fontSize: 12, fontWeight: 700 }}>{example.label}</Typography>
-                        <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
-                          {example.description}
-                        </Typography>
-                      </Box>
-                      <Button
-                        size="small"
-                        data-testid="copy-example"
-                        onClick={() => organisation.copyExample(example)}
-                        sx={quiet}
-                      >
-                        {s('org.copyHere')}
-                      </Button>
-                    </Stack>
-                  </Card>
-                ))}
-              </Stack>
-            </>
+            <Examples examples={examples} onCopy={organisation.copyExample} s={s} />
           )}
         </Box>
       </Box>
@@ -743,7 +727,7 @@ export function OrganisationScreen({
       />
       <ScopeSettingsDialog
         target={dialog.kind === 'settings' ? dialog.target : undefined}
-        tree={orderedTree}
+        tree={orderedTree} servedBy={(path) => <ServedBy scope={path} servedBy={servedBy} scopeName={scopeName} compact s={s} />}
         onCancel={organisation.closeDialog}
         onSave={(path, patch) => { organisation.closeDialog(); organisation.applySettings(path, patch) }}
         s={s}
@@ -773,6 +757,42 @@ export function OrganisationScreen({
 
 /** Every scope may be written: what a screen is told by every source that ships. */
 const ANYWHERE = () => true
+
+const QUIET_BUTTON = { fontSize: 11, minWidth: 0, px: 1, color: 'text.secondary' } as const
+
+/** The examples, for a folder with nothing in it yet: each copied in here on its button. */
+function Examples({ examples, onCopy, s }: { examples: readonly ExampleOffer[]; onCopy: (example: ExampleOffer) => void; s: Translate }) {
+  return (
+    <>
+      <Divider sx={{ my: 3 }} />
+      <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, mb: 1, textTransform: 'uppercase' }}>
+        {s('picker.examples')}
+      </Typography>
+      <Stack spacing={0.75}>
+        {examples.map((example) => (
+          <Card key={example.key} variant="outlined">
+            <Stack direction="row" sx={{ alignItems: 'center', px: 1.5, py: 1 }} spacing={2}>
+              <Box sx={{ flex: 1 }}>
+                <Typography sx={{ fontSize: 12, fontWeight: 700 }}>{example.label}</Typography>
+                <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
+                  {example.description}
+                </Typography>
+              </Box>
+              <Button
+                size="small"
+                data-testid="copy-example"
+                onClick={() => onCopy(example)}
+                sx={QUIET_BUTTON}
+              >
+                {s('org.copyHere')}
+              </Button>
+            </Stack>
+          </Card>
+        ))}
+      </Stack>
+    </>
+  )
+}
 
 /**
  * What to call the board. One field, filled in with the usual name, so Enter

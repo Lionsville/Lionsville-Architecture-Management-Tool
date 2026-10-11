@@ -106,7 +106,15 @@ export const DE: Record<keyof typeof EN, string> = {
   'sheet.insideOther': 'Darin stecken {count} Sachen',
 
   'sheet.supportedBy': 'Unterstützt von…',
-  'sheet.doneBy': 'Erledigt von…',
+  'sheet.assignedTo': 'Zugewiesen an',
+  'sheet.assignUnit': '+ Einheit',
+  'sheet.findUnit': 'Eine Einheit oder einen Akteur suchen',
+  'sheet.noUnit': 'Niemand mit diesem Namen',
+  'sheet.assignedNobody': 'Noch niemand',
+  'sheet.assignedOutside': 'außerhalb dieser Domäne',
+  'sheet.assignedFarEnd': 'Jede ist eine Zuweisung, die hier geführt wird. Eine Einheit, die in einem anderen Bereich eingeordnet ist, ist ihr fernes Ende und wird dafür hier auf keiner Tafel gezeichnet.',
+  'sheet.showResponsible': 'Zeigen, wer verantwortlich ist',
+  'sheet.responsibleNobody': 'niemand',
 
   'sheet.switchedBoard': '{name} wird gezeigt, dort ist es gezeichnet',
 

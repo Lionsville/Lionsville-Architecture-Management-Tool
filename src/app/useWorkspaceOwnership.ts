@@ -36,6 +36,7 @@ import { useOwnerDescriptions } from './useOwnerDescriptions'
 import type { PeopleRegisterAccess } from '../people/ui/access'
 import { lazyPart } from '../widgets/lazyPart'
 import type { UnitSection as UnitSectionShape } from './units/UnitSection'
+import type { WriteIn } from './units/writeIn'
 
 /**
  * An actor's unit section, with its dialogs to assign and to declare an
@@ -66,6 +67,8 @@ export function useWorkspaceOwnership(deps: {
    */
   units: {
     people: PeopleRegisterAccess | undefined; today: string; day?: string; makeId: (prefix: string) => string; scopePaths: readonly ScopePath[]
+    /** A link kept in another scope, written there (`units/writeIn.ts`): a capability elsewhere picked for *Responsible for*. */
+    writeIn?: WriteIn
   }
   s: Translate
 }): EditorOwnership {
@@ -128,6 +131,7 @@ export function useWorkspaceOwnership(deps: {
       element, readOnly, scope, model: session.model, index, dispatch: session.dispatch, makeId: units.makeId,
       newRowId: () => session.ids.connection(),
       people: units.people, today: units.today, ...(units.day !== undefined ? { day: units.day } : {}), scopeLabel, scopes: units.scopePaths, s,
+      ...(units.writeIn ? { writeIn: units.writeIn } : {}),
     }),
     // Who answers for a record beyond its own field (ADR-0036 §8): a stand-in's master, and the rule.
     answeredBy: (element) => answeredByOf(element, { session, scope, index, today: units.today }),
