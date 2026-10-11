@@ -84,6 +84,16 @@ describe('people.list', () => {
     expect(JSON.stringify(out)).not.toContain('acme.example')
   })
 
+  it('leaves out a pair a person answered as not the same person', async () => {
+    const { view } = register()
+    const answered: PeopleView = { ...view, read: async () => ({ ...(await view.read()), distinct: [{ a: 'pe-eva', b: 'pe-evt', on: '2026-10-11' }] }) }
+    expect(parsed(await handle(call('people.list'), undefined, shell(answered))).possibleDuplicates).toEqual([])
+  })
+
+  it('offers no tool that answers or takes back that two entries are not the same person', () => {
+    expect(TOOLS.map((tool) => tool.name).filter((name) => /distinct|same|answer/i.test(name))).toEqual([])
+  })
+
   it('shows pseudonyms where the policy says agents see pseudonyms, and searches what it shows', async () => {
     const view = register({ ...DEFAULT_POLICY, agentsSee: 'pseudonyms' }).view
     const out = parsed(await handle(call('people.list', { state: 'active' }), undefined, shell(view)))

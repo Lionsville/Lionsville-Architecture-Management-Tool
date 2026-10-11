@@ -37,6 +37,23 @@ describe('usePeopleRegister', () => {
     expect(names(result.current.people)).toEqual(['Sara Kaya'])
   })
 
+  it('answers two entries as not the same person on the day, holds the answer, and takes it back', async () => {
+    const repositories = heldRepositories()
+    const yara = await repositories.people.add({ name: 'Yara Kok' })
+    const vera = await repositories.people.add({ name: 'Vera Kok' })
+    if ('refused' in yara || 'refused' in vera) throw new Error('refused')
+    const { result } = mount(repositories)
+    await waitFor(() => expect(result.current.people).toHaveLength(2))
+    const [a, b] = [yara.person.id, vera.person.id].sort()
+    await act(async () => { await result.current.answerDistinct(vera.person.id, yara.person.id) })
+    expect(result.current.distinct).toEqual([{ a, b, on: TODAY }])
+    expect((await result.current.agent.read()).distinct).toEqual([{ a, b, on: TODAY }])
+    await act(async () => { await result.current.takeBackDistinct(a, b) })
+    expect(result.current.distinct).toEqual([])
+    // Nobody manages anything where the source grants no right.
+    expect(result.current.managesBoth).toBeUndefined()
+  })
+
   it('keeps the newer register when an older read answers last', async () => {
     const repositories = heldRepositories()
     const { result } = mount(repositories)

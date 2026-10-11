@@ -179,6 +179,12 @@ export type SourcePeople = {
    * may forget them to decide.
    */
   readonly held?: (id: PersonId) => PolicyHold | undefined
+  /**
+   * Whether an entry is linked to an account (ADR-0036 §14), where the source
+   * has accounts: a possible duplicate says so beside the person, and *Merge…*
+   * keeps a linked entry first. Absent, no entry is.
+   */
+  readonly linked?: (id: PersonId) => boolean
 }
 
 /** A provider's sentences about its source, as keys of its own table. */

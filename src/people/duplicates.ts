@@ -19,8 +19,14 @@
  * anyway makes a second entry, which a merge can join later. Only entries
  * that still have a name are compared — a forgotten one is nobody to match,
  * and a redirect is the entry it points at.
+ *
+ * **Two entries answered as not the same person** (`distinct.ts`) are never
+ * paired again, nor warned of when either is corrected: that pair, and no
+ * other — somebody new is still checked against both.
  */
-import type { Person } from './person'
+import { answeredKeys, answeredWith, pairKey } from './distinct'
+import type { DistinctPair } from './distinct'
+import type { Person, PersonId } from './person'
 import { isRedirect, normalEmail } from './person'
 
 /** Why two entries may be one person, strongest first. */
@@ -92,12 +98,16 @@ function comparable(person: Person): boolean {
 
 /**
  * Everyone in the register a candidate may be, strongest sign first. `except`
- * leaves an entry out — the one being corrected.
+ * leaves an entry out — the one being corrected — and, with the answers
+ * `distinct`, everyone it was answered as not being.
  */
-export function possibleDuplicates(candidate: Candidate, people: readonly Person[], except?: string): PossibleDuplicate[] {
+export function possibleDuplicates(
+  candidate: Candidate, people: readonly Person[], except?: PersonId, distinct: readonly DistinctPair[] = [],
+): PossibleDuplicate[] {
+  const answered = except === undefined ? new Set<PersonId>() : answeredWith(distinct, except)
   const found: PossibleDuplicate[] = []
   for (const person of people) {
-    if (person.id === except || !comparable(person)) continue
+    if (person.id === except || answered.has(person.id) || !comparable(person)) continue
     const sign = signBetween(candidate, person)
     if (sign) found.push({ person, sign })
   }
@@ -105,12 +115,14 @@ export function possibleDuplicates(candidate: Candidate, people: readonly Person
 }
 
 /**
- * Every pair in the register that may be one person, each pair once. The one
- * kept is the one more is known about — still active over left, an address
- * over none — and the older entry where nothing tells them apart, so a merge
- * suggested twice suggests the same thing.
+ * Every pair in the register that may be one person, each pair once, but the
+ * pairs answered as not the same person (`distinct`). The one kept is the one
+ * more is known about — still active over left, an address over none — and
+ * the older entry where nothing tells them apart, so a merge suggested twice
+ * suggests the same thing.
  */
-export function duplicatePairs(people: readonly Person[]): DuplicatePair[] {
+export function duplicatePairs(people: readonly Person[], distinct: readonly DistinctPair[] = []): DuplicatePair[] {
+  const answered = answeredKeys(distinct)
   const named = people.filter(comparable)
   const folds = named.map(folded)
   const pairs: DuplicatePair[] = []
@@ -121,7 +133,7 @@ export function duplicatePairs(people: readonly Person[]): DuplicatePair[] {
     const i = Math.floor(code / folds.length)
     const j = code % folds.length
     const sign = signOf(folds[i], folds[j])
-    if (!sign) continue
+    if (!sign || answered.has(pairKey(named[i].id, named[j].id))) continue
     const [keep, drop] = weight(named[j]) > weight(named[i]) ? [named[j], named[i]] : [named[i], named[j]]
     pairs.push({ keep, drop, sign })
   }

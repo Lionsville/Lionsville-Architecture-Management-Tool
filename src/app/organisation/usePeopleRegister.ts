@@ -28,22 +28,31 @@
  * knows who may do what says it per change and per entry
  * (`SourcePeople.may`), which address it keeps from this person
  * (`withheld`), and whom its schedule held back (`held`); the page reads all
- * three through this hook.
+ * three through this hook, and which entry an account is linked to
+ * (`linked`).
+ *
+ * **Beside the entries, the answers *not the same person*** (`people/
+ * distinct.ts`), read with them and given and taken back here, on the day:
+ * whoever may merge answers, and — where the source grants a managing role's
+ * right — so does a manager whose units hold both today (`managesBoth`).
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { PeopleView } from '../../agent/people'
-import { managesPeople } from '../../model/managing'
+import { holdsAllIn, managesPeople } from '../../model/managing'
 import type { ManagesPeople } from '../../model/managing'
 import type { PersonId } from '../../model/person'
 import { forgetPerson, leavePerson, mergePerson } from '../../people/leave'
 import { registerOf, resolvePerson } from '../../people/shown'
 import type { Left } from '../../people/leave'
 import { meOf, mePatch } from '../../people/me'
+import type { DistinctPair } from '../../people/distinct'
 import type { MergeLeaving, NewPerson, PeopleAction, Person, PersonPatch, PolicyHold } from '../../people/person'
 import { DEFAULT_POLICY, dueOn, policyOf, policyPatch } from '../../people/policy'
 import type { PeoplePolicy } from '../../people/policy'
 import type { Mention } from '../../people/hold'
-import type { PeopleRefused, PersonRemoved, PersonWritten } from '../../ports/PeopleRepository'
+import type {
+  DistinctAnswered, DistinctTakenBack, PeopleRefused, PersonRemoved, PersonWritten,
+} from '../../ports/PeopleRepository'
 import type { SourcePeople } from '../../ports/ProviderParts'
 import type { Repositories } from '../../ports/Repositories'
 import { searchAll } from '../../search/search'
@@ -77,6 +86,12 @@ export type PeopleAccess = {
   manages?: ManagesPeople
   /** The source grants that right: a unit's section says so. */
   managingRight?: boolean
+  /** Whether that right reaches both of two people today: who may answer that they are not the same person, besides whoever may merge. */
+  managesBoth?: (one: PersonId, other: PersonId) => boolean
+  /** Whether an entry is linked to an account; where the source says (`SourcePeople.linked`). */
+  linked?: (id: PersonId) => boolean
+  /** The pairs answered as not the same person, as last read. */
+  distinct: readonly DistinctPair[]
   today: string
   /** Every entry as last read at the moment of asking, though not yet drawn: what a check between two renders reads. */
   current: () => readonly Person[] | undefined
@@ -87,6 +102,10 @@ export type PeopleAccess = {
   forget: (id: PersonId, on: string) => Promise<Left | PeopleRefused>
   remove: (id: PersonId) => Promise<PersonRemoved | PeopleRefused>
   merge: (from: PersonId, into: PersonId, leaving?: MergeLeaving) => Promise<Left | PeopleRefused>
+  /** Two entries answered as not the same person, today. */
+  answerDistinct: (one: PersonId, other: PersonId) => Promise<DistinctAnswered | PeopleRefused>
+  /** That answer taken back. */
+  takeBackDistinct: (one: PersonId, other: PersonId) => Promise<DistinctTakenBack>
   setPolicy: (change: Partial<PeoplePolicy>) => Promise<void>
   setMe: (id: PersonId | undefined) => Promise<void>
   /** Records across the tree whose text holds a name: what a forget cannot reach. */
@@ -105,9 +124,9 @@ export type PeopleAccess = {
 
 const HOUR = 3_600_000
 
-type Held = { people: readonly Person[] | undefined; policy: PeoplePolicy; me: PersonId | undefined }
+type Held = { people: readonly Person[] | undefined; policy: PeoplePolicy; me: PersonId | undefined; distinct: readonly DistinctPair[] }
 
-const UNREAD: Held = { people: undefined, policy: DEFAULT_POLICY, me: undefined }
+const UNREAD: Held = { people: undefined, policy: DEFAULT_POLICY, me: undefined, distinct: [] }
 
 /** Every scope's model, read whole, for a search across the tree and for what points at a person. */
 async function everyModel(scopes: Repositories['scopes']): Promise<{ scope: string; model: SearchableModel & PointedModel & { name?: string } }[]> {
@@ -176,6 +195,14 @@ export function usePeopleRegister(deps: {
   }, [managingRight, index, held.me, held.people, today])
   /** The register is written by whoever the source lets write, and by a manager through the source's own `may`. */
   const readOnly = deps.readOnly && manages === undefined
+  /** Whether a manager's units hold both of two people today: a manager may answer that they are not the same person. */
+  const managesBoth = useMemo(() => {
+    if (!manages || !index) return undefined
+    const organisation = index.organisation()
+    const register = registerOf(held.people ?? [])
+    const canonical = (id: PersonId) => resolvePerson(id, register)?.id ?? id
+    return (one: PersonId, other: PersonId) => holdsAllIn(organisation, manages, [one, other], today, canonical)
+  }, [manages, index, held.people, today])
   const failedRef = useRef(failed)
   failedRef.current = failed
 
@@ -183,7 +210,7 @@ export function usePeopleRegister(deps: {
     const [list, organisation, person] = await Promise.all([
       repositories.people.list(), repositories.settings.read({ of: 'organisation' }), repositories.settings.read({ of: 'person' }),
     ])
-    return { people: list.people, policy: policyOf(organisation), me: source?.me ? source.me() : meOf(person) }
+    return { people: list.people, policy: policyOf(organisation), me: source?.me ? source.me() : meOf(person), distinct: list.distinct ?? [] }
   }, [repositories, source])
 
   /**
@@ -253,7 +280,7 @@ export function usePeopleRegister(deps: {
   const agent = useMemo<PeopleView>(() => ({
     read: async () => {
       const now = await read()
-      return { people: now.people ?? [], policy: now.policy }
+      return { people: now.people ?? [], policy: now.policy, distinct: now.distinct }
     },
     add: (person) => changed(repositories.people.add(person)),
     leave: (id, on) => changed(leavePerson(repositories.people, agentConsequences, id, on)),
@@ -276,6 +303,8 @@ export function usePeopleRegister(deps: {
     ...(source?.held ? { held: source.held } : {}),
     ...(manages ? { manages } : {}),
     ...(source?.managingRight ? { managingRight: true } : {}),
+    ...(managesBoth ? { managesBoth } : {}),
+    ...(source?.linked ? { linked: source.linked } : {}),
     today,
     current,
     refresh,
@@ -285,6 +314,8 @@ export function usePeopleRegister(deps: {
     forget: (id, on) => changed(forgetPerson(repositories.people, consequences, id, on)),
     remove: (id) => changed(repositories.people.remove(id)),
     merge: (from, into, leaving) => changed(mergePerson(repositories.people, consequences, from, into, leaving)),
+    answerDistinct: (one, other) => changed(repositories.people.answerDistinct(one, other, today)),
+    takeBackDistinct: (one, other) => changed(repositories.people.takeBackDistinct(one, other)),
     setPolicy: (change) => changed(repositories.settings.write({ of: 'organisation' }, policyPatch(change)).then(() => undefined)),
     setMe: (id) => changed(repositories.settings.write({ of: 'person' }, mePatch(id)).then(() => undefined)),
     mentionsOf: async (name) => searchAll({ sources: await everyModel(repositories.scopes), query: name, limitPerKind: 1000 })
@@ -294,6 +325,6 @@ export function usePeopleRegister(deps: {
     pointsAt: (id) => pointsAtPerson(repositories.scopes, index, idsOfPerson(id, held.people ?? []), today),
     ...(canRead ? { readText: (file: Blob) => doors.current.readText?.(file) ?? Promise.resolve('') } : {}),
     ...(canCopy ? { copyText: (text: string) => doors.current.copyText?.(text) } : {}),
-  }), [held, source, readOnly, manages, today, current, refresh, changed, repositories, consequences, agent, index, canRead, canCopy])
+  }), [held, source, readOnly, manages, managesBoth, today, current, refresh, changed, repositories, consequences, agent, index, canRead, canCopy])
 }
 

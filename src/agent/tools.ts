@@ -596,7 +596,9 @@ const SPECS = [
       + 'policy says so, pseudonyms (Person 4K7Q; a forgotten entry is Former colleague 4K7Q). `redirects` are '
       + 'entries a merge folded into another: an id there resolves to its mergedInto. `possibleDuplicates` are '
       + 'pairs that may be one person — the same address, the same name, nearly the same name, or the same '
-      + 'family name and initial — for a person to merge on the People page. No tool forgets, removes or merges.',
+      + 'family name and initial — for a person to merge on the People page, without the pairs a person answered '
+      + 'there as not the same person. No tool forgets, removes or merges, and none answers or takes back that '
+      + 'two entries are not the same person.',
     inputSchema: {
       type: 'object',
       properties: {

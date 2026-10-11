@@ -60,6 +60,14 @@ describe('who a newcomer may be', () => {
   it('is never a forgotten entry or a redirect, and never the entry being corrected', () => {
     expect(possibleDuplicates({ name: 'Pia Schulz' }, register, '1').map((one) => one.person.id)).toEqual(['5'])
   })
+
+  it('is never somebody the entry being corrected was answered as not being, and a newcomer is still checked against both', () => {
+    const answered = [{ a: '1', b: '5', on: '2026-10-11' }]
+    expect(possibleDuplicates({ name: 'Pia Schulz' }, register, '1', answered)).toEqual([])
+    expect(possibleDuplicates({ name: 'Pia Schultze' }, register, '5', answered).map((one) => one.person.id)).toEqual([])
+    expect(possibleDuplicates({ name: 'Pia Schultz', email: 'pia@acme.example' }, register, undefined, answered).map((one) => one.person.id))
+      .toEqual(['1', '5'])
+  })
 })
 
 describe('the pairs a merge could tidy', () => {
@@ -75,6 +83,12 @@ describe('the pairs a merge could tidy', () => {
       ['lindt', 'gone', 'nearName'],
       ['lind', 'gone', 'nearName'],
     ])
+  })
+
+  it('leaves out a pair answered as not the same person, either way round, and no other', () => {
+    const register = [person('lindt', 'Eva Lindt'), person('lind', 'Eva Lind', { email: 'eva@acme.example' }), person('gone', 'Eva Lin')]
+    const pairs = duplicatePairs(register, [{ a: 'lind', b: 'lindt', on: '2026-10-11' }])
+    expect(pairs.map((pair) => [pair.keep.id, pair.drop.id])).toEqual([['lindt', 'gone'], ['lind', 'gone']])
   })
 })
 

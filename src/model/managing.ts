@@ -30,7 +30,7 @@ import type { RoleId } from './operatingModel'
 import type { PersonId } from './person'
 import { apply } from './reducer'
 import type { ElementId } from './types'
-import { isUnit, managedBy, organisationOn, unitsBelow } from './units'
+import { isUnit, managedBy, organisationOn, personOf, runsOn, unitsBelow } from './units'
 import type { Assignment, Organisation } from './units'
 
 /** What one person reaches by a managing role on a day. */
@@ -88,6 +88,27 @@ export function reachesAssignment(
   reach: ManagedReach, assignment: Pick<Assignment, 'unitId' | 'roleId'>, managing: ReadonlySet<RoleId>,
 ): boolean {
   return reach.units.has(assignment.unitId) && (!managing.has(assignment.roleId) || reach.below.has(assignment.unitId))
+}
+
+/**
+ * Whether every one of these people holds an assignment running on `day`, in
+ * any role, in a unit the reach covers: a manager whose units hold both of
+ * two entries may answer that they are not the same person, or take that
+ * back (ADR-0036 §12, as built in 3.6.1) — an answer merges and removes
+ * nothing, and a manager knows their own people. `canonical` as for
+ * {@link managedReach}, so a role held under a merged id counts.
+ */
+export function holdsAllIn(
+  organisation: Pick<Organisation, 'assignments'>, reach: ManagedReach, people: readonly PersonId[], day: string,
+  canonical: (id: PersonId) => PersonId = (id) => id,
+): boolean {
+  const wanted = new Set(people.map(canonical))
+  const found = new Set<PersonId>()
+  for (const assignment of organisation.assignments) {
+    const who = canonical(personOf(assignment))
+    if (wanted.has(who) && runsOn(assignment, day) && reach.units.has(assignment.unitId)) found.add(who)
+  }
+  return wanted.size > 0 && found.size === wanted.size
 }
 
 const ASSIGNMENT_COMMANDS: ReadonlySet<string> = new Set(['assignment.add', 'assignment.update', 'assignment.remove'])

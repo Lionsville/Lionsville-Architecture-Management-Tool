@@ -10,7 +10,9 @@
 import { describe, expect, it } from 'vitest'
 import type { Command } from './commands'
 import type { HostModel } from './hostModel'
-import { managedReach, managesPeople, managingRoleIds, mayChangeIn, onlyAssignments, onlyPeopleIn, reachesAssignment } from './managing'
+import {
+  holdsAllIn, managedReach, managesPeople, managingRoleIds, mayChangeIn, onlyAssignments, onlyPeopleIn, reachesAssignment,
+} from './managing'
 import { fromArrays } from './normalised'
 import type { Role } from './operatingModel'
 import type { DesignElement } from './types'
@@ -68,6 +70,28 @@ describe('what a managing role reaches on a day', () => {
     expect(mayChangeIn(manages, 'sales', 'ro-lead')).toBe(false)
     expect(mayChangeIn(undefined, 'webshop', 'ro-dev')).toBe(false)
     expect(managesPeople(organisation, 'pe-bram', TODAY)).toBeUndefined()
+  })
+})
+
+describe('whether a manager\'s units hold some people today', () => {
+  const reach = managedReach(organisation, 'pe-chloe', TODAY)!
+  const yara: Assignment = { id: 'as-yara', unitId: 'webshop', roleId: 'ro-dev', person: { person: 'pe-yara' }, until: '2026-09-30' }
+  const sam: Assignment = { id: 'as-sam', unitId: 'parcel', roleId: 'ro-dev', person: { person: 'pe-sam' } }
+  const held: Organisation = { ...organisation, assignments: [lead, dev, yara, sam] }
+
+  it('is so where each holds a role running today in a unit reached, their own manager included', () => {
+    expect(holdsAllIn(held, reach, ['pe-bram', 'pe-chloe'], TODAY)).toBe(true)
+  })
+
+  it('is not where one holds a role only outside it, or one that has ended, or nobody is asked', () => {
+    expect(holdsAllIn(held, reach, ['pe-bram', 'pe-sam'], TODAY)).toBe(false)
+    expect(holdsAllIn(held, reach, ['pe-bram', 'pe-yara'], TODAY)).toBe(false)
+    expect(holdsAllIn(held, reach, ['pe-bram', 'pe-yara'], '2026-09-30')).toBe(true)
+    expect(holdsAllIn(held, reach, [], TODAY)).toBe(false)
+  })
+
+  it('counts a role held under an id merged into the person asked about', () => {
+    expect(holdsAllIn(held, reach, ['pe-bram-kept', 'pe-chloe'], TODAY, (id) => (id === 'pe-bram' ? 'pe-bram-kept' : id))).toBe(true)
   })
 })
 

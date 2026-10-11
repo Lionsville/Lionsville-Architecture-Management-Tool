@@ -16,6 +16,7 @@ import { useCallback, useState } from 'react'
 import type { ManagesPeople } from '../../model/managing'
 import type { PersonId } from '../../model/person'
 import { ShellError } from '../../platform/errors'
+import type { DistinctPair } from '../distinct'
 import type { HeldAssignment, Mention, PointsAt } from '../hold'
 import type { MergeLeaving, NewPerson, PeopleAction, PeopleRefusal, Person, PersonPatch, PolicyHold } from '../person'
 import type { PeoplePolicy } from '../policy'
@@ -57,6 +58,20 @@ export type PeopleRegisterAccess = {
   manages?: ManagesPeople
   /** The source grants a right from a managing role (`SourcePeople.managingRight`): a unit's section says so, rather than that it grants nothing. */
   managingRight?: boolean
+  /**
+   * Whether a managing role reaches both of two people today (`model/managing.holdsAllIn`):
+   * where the source grants that right, such a manager may answer that they
+   * are not the same person, as whoever may merge may. Absent, nobody manages.
+   */
+  managesBoth?(one: PersonId, other: PersonId): boolean
+  /**
+   * Whether an entry is linked to an account, where a source with accounts
+   * says (`SourcePeople.linked`): a possible duplicate says so beside the
+   * person, and a merge keeps the linked entry first. Absent, nobody is.
+   */
+  linked?(id: PersonId): boolean
+  /** The pairs answered as not the same person (`people/distinct.ts`); absent, none. */
+  distinct?: readonly DistinctPair[]
   today: string
   add(person: NewPerson): Promise<{ person: Person } | Refused>
   change(id: PersonId, patch: PersonPatch): Promise<{ person: Person } | Refused>
@@ -65,6 +80,10 @@ export type PeopleRegisterAccess = {
   remove(id: PersonId): Promise<{ removed: readonly PersonId[] } | Refused>
   /** Where an active entry goes into one that has left, `leaving` says which is true (`MergeLeaving`). */
   merge(from: PersonId, into: PersonId, leaving?: MergeLeaving): Promise<{ person: Person; ended: number } | Refused>
+  /** Two entries answered as not the same person, today. Absent where the register keeps no answers, and none is offered. */
+  answerDistinct?(one: PersonId, other: PersonId): Promise<{ pair: DistinctPair } | Refused>
+  /** That answer taken back: the two are a possible duplicate again. */
+  takeBackDistinct?(one: PersonId, other: PersonId): Promise<{ taken: boolean }>
   setPolicy(change: Partial<PeoplePolicy>): Promise<void>
   setMe(id: PersonId | undefined): Promise<void>
   mentionsOf(name: string): Promise<Mention[]>
@@ -86,6 +105,24 @@ export type PeopleRegisterAccess = {
 /** Whether the page offers one kind of change: the register may be written here, and — where the source says who may do what — by this person, of this entry. */
 export function mayDo(register: Pick<PeopleRegisterAccess, 'readOnly' | 'may'>, action: PeopleAction, id?: PersonId): boolean {
   return !register.readOnly && (register.may?.(action, id) ?? true)
+}
+
+/**
+ * Whether the page offers to answer that two entries are not the same person,
+ * or to take that back: whoever may merge them, and — where the source grants
+ * a managing role's right — a manager whose units hold both today. Never
+ * where the register keeps no answers, or is only read here.
+ */
+export function mayAnswer(
+  register: Pick<PeopleRegisterAccess, 'readOnly' | 'may' | 'managesBoth' | 'answerDistinct'>, one: PersonId, other: PersonId,
+): boolean {
+  if (!register.answerDistinct || register.readOnly) return false
+  return mayMerge(register, one, other) || register.managesBoth?.(one, other) === true
+}
+
+/** Whether the page offers to merge two entries: this person may merge each of them. */
+export function mayMerge(register: Pick<PeopleRegisterAccess, 'readOnly' | 'may'>, one: PersonId, other: PersonId): boolean {
+  return mayDo(register, 'merge', one) && mayDo(register, 'merge', other)
 }
 
 /** What the status line says, and how loudly. */

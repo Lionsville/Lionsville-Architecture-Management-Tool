@@ -8,7 +8,10 @@
  *
  * **No tool forgets, removes or merges anyone**, and none changes the policy:
  * each is final, or decides what every screen shows, and is a person's to do
- * on the People page (ADR-0011, as ADR-0036 supersedes it in part).
+ * on the People page (ADR-0011, as ADR-0036 supersedes it in part). Nor does
+ * any answer that two entries are not the same person, or take that back:
+ * it is a merge's other half, and a person's as a merge is. The pairs a
+ * person answered are left out of the possible duplicates `people.list` says.
  *
  * **An agent sees names, or pseudonyms** where the organisation's policy
  * says so, and is told whether an entry has an address — never the address.
@@ -20,6 +23,7 @@
 import { isDay } from '../model/lifecycle'
 import { addDays } from '../model/transition'
 import type { PersonId } from '../model/person'
+import type { DistinctPair } from '../people/distinct'
 import { possibleDuplicates, duplicatePairs } from '../people/duplicates'
 import type { Left } from '../people/leave'
 import type { NewPerson, PeopleRefusal, Person, PersonKind, PersonState } from '../people/person'
@@ -32,7 +36,8 @@ import { json, refused } from './tools'
 
 /** The register, as the shell lends it to the agent: read fresh on every call. */
 export type PeopleView = {
-  read(): Promise<{ people: readonly Person[]; policy: PeoplePolicy }>
+  /** The register, its policy, and the pairs a person answered as not the same person — absent, none. */
+  read(): Promise<{ people: readonly Person[]; policy: PeoplePolicy; distinct?: readonly DistinctPair[] }>
   add(person: NewPerson): Promise<{ person: Person } | { refused: PeopleRefusal }>
   /** Marks them as left, and does everything leaving does beyond the register (`people/leave.ts`). */
   leave(id: PersonId, on: string): Promise<Left | { refused: PeopleRefusal }>
@@ -62,7 +67,7 @@ function told(person: Person, policy: PeoplePolicy) {
 }
 
 function listPeople(view: PeopleView, args: Record<string, unknown>): Promise<AgentAnswer> {
-  return view.read().then(({ people, policy }) => {
+  return view.read().then(({ people, policy, distinct }) => {
     const state = args.state as PersonState | undefined
     const query = typeof args.query === 'string' ? args.query : ''
     const limit = typeof args.limit === 'number' ? args.limit : 200
@@ -73,7 +78,7 @@ function listPeople(view: PeopleView, args: Record<string, unknown>): Promise<Ag
       shows: policy.agentsSee,
       people: matching.slice(0, limit),
       redirects: people.filter(isRedirect).map((person) => ({ id: person.id, mergedInto: person.mergedInto })),
-      possibleDuplicates: duplicatePairs(people).map((pair) => ({
+      possibleDuplicates: duplicatePairs(people, distinct).map((pair) => ({
         keep: told(pair.keep, policy).name, keepId: pair.keep.id, drop: told(pair.drop, policy).name, dropId: pair.drop.id, sign: pair.sign,
       })),
     })
