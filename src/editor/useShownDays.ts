@@ -39,6 +39,21 @@ export function shownAsOf(
 }
 
 /**
+ * The day the organisation and the landscape are looked at, as a day: the
+ * board's look, its own day, or `today` where neither says one — or where
+ * there is no board. What every panel beside a board reads its day from
+ * (ADR-0027, ADR-0036 §6): a unit's section, the organisation chart, the
+ * checks a unit shows — one source, so they cannot disagree with the canvas.
+ */
+export function dayShown(
+  diagram: { id: string; asOf?: string } | undefined,
+  days: Readonly<Record<string, ShownDay>> | undefined,
+  today: string,
+): string {
+  return (diagram ? shownAsOf(diagram, days) : undefined) ?? today;
+}
+
+/**
  * `savedOf` answers a board's own day now, so a look that arrives at it is
  * dropped rather than kept as a look that changes nothing.
  */

@@ -84,8 +84,8 @@ const PEOPLE: Person[] = [
 ]
 
 /** The section over a model held here, changed by the model's own writer, and a register held here too. */
-function Harness({ unit = 'webshop', readOnly = false, model: start = CUSTOMER, scope = 'customer', root = ROOT, commands }: {
-  unit?: string; readOnly?: boolean; model?: HostModel; scope?: string; root?: HostModel; commands: Command[]
+function Harness({ unit = 'webshop', readOnly = false, model: start = CUSTOMER, scope = 'customer', root = ROOT, day, commands }: {
+  unit?: string; readOnly?: boolean; model?: HostModel; scope?: string; root?: HostModel; day?: string; commands: Command[]
 }) {
   const [model, setModel] = useState(start)
   const [people, setPeople] = useState<readonly Person[]>(PEOPLE)
@@ -122,7 +122,7 @@ function Harness({ unit = 'webshop', readOnly = false, model: start = CUSTOMER, 
   return (
     <UnitSection
       element={element} readOnly={readOnly} scope={scope} model={model} index={index} dispatch={dispatch}
-      makeId={(prefix) => `${prefix}-new`} people={register} today={TODAY}
+      makeId={(prefix) => `${prefix}-new`} people={register} today={TODAY} {...(day !== undefined ? { day } : {})}
       scopeLabel={(path) => (path === '' ? 'the organisation' : path === 'customer' ? 'Customer' : path)}
       scopes={['', 'customer', 'shipping']} s={s}
     />
@@ -254,6 +254,51 @@ describe('the assign form', () => {
     const next = assignmentOf({ ...form, person: 'pe-ivo', until: '2026-12-31', acting: false }, 'as-9', 'webshop')!
     expect(assignmentPatch(held, next)).toEqual({ until: '2026-12-31', acting: undefined, person: { person: 'pe-ivo' } })
     expect(assignmentOf({ ...form, person: undefined }, 'as-9', 'webshop')).toBeUndefined()
+  })
+})
+
+describe('a unit on the day the board is looked at', () => {
+  // The coach's assignment ends at the year's end, Ivo comes in as a developer
+  // from 2027, and a plan of the customer domain moves the webshop to the top
+  // on the first day of 2027 (ADR-0027, ADR-0036 §6).
+  const LATER = '2027-01-01'
+  const PLANNED: HostModel = {
+    ...CUSTOMER,
+    assignments: [
+      ...CUSTOMER.assignments!.map((one) => (one.id === 'as-4' ? { ...one, until: '2026-12-31' } : one)),
+      as('as-5', 'webshop', 'ro-dev', 'pe-ivo', { from: LATER }),
+    ],
+    transitions: [{
+      id: 'tr-1', number: 1, title: 'Webshop on its own', status: 'agreed', elements: [], decisions: [], milestones: [], body: '',
+      moves: [{ unitId: 'webshop', on: LATER }],
+    }],
+  }
+
+  it('says today\'s holders and managers where nobody looks away, and its move under Over time', () => {
+    renderShell(<Harness model={PLANNED} commands={[]} />)
+    expect(screen.queryByTestId('unit-day')).toBeNull()
+    expect(screen.getByText('Roles, today')).toBeTruthy()
+    expect(screen.getAllByTestId('unit-holder').map((chip) => chip.textContent)).toContain('Team coach: Gijs Mulder · acting')
+    expect(screen.getAllByTestId('unit-move').map((line) => line.textContent)).toEqual(['Under the organisation itself from 2027-01-01 (TR-0001)'])
+  })
+
+  it('follows the day looked at: who holds a role then, who manages it there, and where it sits', () => {
+    renderShell(<Harness model={PLANNED} day={LATER} commands={[]} />)
+    expect(text('unit-day')).toBe('As on 2027-01-01, the day this board is looked at.')
+    expect(screen.getByText('Roles on 2027-01-01')).toBeTruthy()
+    expect(screen.getAllByTestId('unit-holder').map((chip) => chip.textContent)).toEqual(['Femke Bos · you', 'Bram de Wit · 50%', 'Ivo Peters'])
+    // Moved to the top, it is no longer under the customer domain's owner.
+    expect(screen.getAllByTestId('unit-manager').map((line) => line.textContent)).toEqual(['Femke Bos — Product owner, Webshop · you'])
+    expect(screen.getByText('On this day it sits under the organisation itself: a plan moved it. Its own parent is where it sat before.')).toBeTruthy()
+    expect(screen.getAllByTestId('unit-finding').map((line) => line.textContent)).toContain('Webshop is a Team and may not sit where it is filed')
+  })
+
+  it('starts what it writes on the day looked at where that is still to come', async () => {
+    const commands: Command[] = []
+    renderShell(<Harness model={PLANNED} day={LATER} commands={commands} />)
+    fireEvent.click(screen.getAllByTestId('unit-holder')[1])
+    fireEvent.click(await screen.findByTestId('assign-end'))
+    expect(commands).toEqual([{ type: 'assignment.update', id: 'as-3', patch: { until: '2026-12-31' } }])
   })
 })
 

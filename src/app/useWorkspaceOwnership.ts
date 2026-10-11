@@ -43,8 +43,14 @@ export function useWorkspaceOwnership(deps: {
   gestureOffers: Gestures['offers']
   gestureChoose: Gestures['choose']
   addExisting: Library['open']
-  /** What an actor's unit section is drawn with (ADR-0036 §3): the register, the day, fresh ids, every scope's path. */
-  units: { people: PeopleRegisterAccess | undefined; today: string; makeId: (prefix: string) => string; scopePaths: readonly ScopePath[] }
+  /**
+   * What an actor's unit section is drawn with (ADR-0036 §3): the register,
+   * today and the day the board is looked at (ADR-0027), fresh ids, every
+   * scope's path.
+   */
+  units: {
+    people: PeopleRegisterAccess | undefined; today: string; day?: string; makeId: (prefix: string) => string; scopePaths: readonly ScopePath[]
+  }
   s: Translate
 }): EditorOwnership {
   const {
@@ -104,7 +110,7 @@ export function useWorkspaceOwnership(deps: {
     // An actor as a unit (ADR-0036 §3): drawn here, because all of it is the organisation's.
     unitSection: (element, readOnly) => createElement(UnitSection, {
       element, readOnly, scope, model: session.model, index, dispatch: session.dispatch, makeId: units.makeId,
-      people: units.people, today: units.today, scopeLabel, scopes: units.scopePaths, s,
+      people: units.people, today: units.today, ...(units.day !== undefined ? { day: units.day } : {}), scopeLabel, scopes: units.scopePaths, s,
     }),
   }), [session, scope, index, notes, rowsThrough, onOpenScope, s, gestureOffers, gestureChoose, addExisting, ownerDescriptions, scopeLabel, units])
 }

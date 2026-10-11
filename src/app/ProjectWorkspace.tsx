@@ -18,7 +18,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import type { ReactNode } from 'react'
-import { useShownDays } from '../editor'
+import { dayShown, useShownDays } from '../editor'
 import { useProjectHistory } from './history/useProjectHistory'
 import { HistoryDialogs, useWorkspaceDialogs, WorkspaceDialogs } from './WorkspaceDialogs'
 import { usePageChrome, WorkspaceBar } from './WorkspaceBar'
@@ -275,9 +275,19 @@ function useTreeParts(props: ProjectWorkspaceProps, base: ReturnType<typeof useS
   // The gestures are read off the hook so the editor's ownership seam is not
   // rebuilt every time a dialog opens: both are `useCallback`s over the tree
   // and the session, and neither moves when the choice does.
+  // The day each board is being looked at, which is nobody's write
+  // (ADR-0027): the bar's date control and the roadmap's scrubber move this,
+  // and only *Save* on the bar puts a day on the board. The organisation
+  // beside the board — a unit's section — is read on the same day (ADR-0036 §6).
+  const viewing = useShownDays(useCallback(
+    (id: string) => session.current().diagrams.find((d) => d.id === id)?.asOf,
+    [session],
+  ))
+  const today = (shell.today ?? localToday)()
+  const day = dayShown(session.model.diagrams.find((d) => d.id === session.activeDiagramId), viewing.days, today)
   const units = useMemo(() => ({
-    people: shell.people, today: (shell.today ?? localToday)(), makeId: shell.makeId, scopePaths: flattenScopes(tree.scopes).map((one) => one.path),
-  }), [shell.people, shell.today, shell.makeId, tree.scopes])
+    people: shell.people, today, day, makeId: shell.makeId, scopePaths: flattenScopes(tree.scopes).map((one) => one.path),
+  }), [shell.people, today, day, shell.makeId, tree.scopes])
   const ownership = useWorkspaceOwnership({
     session, scope: project.path, index, indexAnswered: tree.indexAnswered, scopes: source.repositories.scopes, onOpenScope,
     rowsThrough: readings.rowsThrough, scopeLabel: readings.scopeLabel,
@@ -297,7 +307,7 @@ function useTreeParts(props: ProjectWorkspaceProps, base: ReturnType<typeof useS
     writable: source.writable ?? writableLikeHere(source.readOnly ?? false), save: base.document.document.flush,
     published: source.publishesSteps ?? false, origin: 'agent', onTreeChanged,
   })
-  return { readings, gestures, library, ownership, changeBelow, changeAcross, agentChangeAcross }
+  return { readings, gestures, library, ownership, changeBelow, changeAcross, agentChangeAcross, viewing }
 }
 
 /** The snapshots, the menu, the pages beside the canvas and the doors in. */
@@ -338,13 +348,7 @@ function useScreenParts(
   // The clock, read once per render of the workspace rather than per component:
   // a roadmap re-deriving because a millisecond passed is a landscape re-laid.
   const todayDay = useMemo(() => today(), [today])
-  // The day each board is being looked at, which is nobody's write
-  // (ADR-0027): the bar's date control and the roadmap's scrubber move this,
-  // and only *Save* on the bar puts a day on the board.
-  const viewing = useShownDays(useCallback(
-    (id: string) => session.current().diagrams.find((d) => d.id === id)?.asOf,
-    [session],
-  ))
+  const { viewing } = tree
   const pages = useWorkspacePages({
     session, scope: project.path, makeId, s, viewing, focusElement: requests.focusElement,
     maps: base.maps, landscapes: base.landscapes, onGoHome: navigation.onGoHome,
@@ -371,5 +375,5 @@ function useScreenParts(
     scope: project.path, show, ...(navigation.onOpenScope ? { onOpenScope: navigation.onOpenScope } : {}),
   })
   const analysis = useAnalysisActions({ session, makeId, today, s })
-  return { snapshots, toolbarRef, pageChrome, todayDay, today, viewing, pages, show, dialogs, analysis }
+  return { snapshots, toolbarRef, pageChrome, todayDay, today, pages, show, dialogs, analysis }
 }

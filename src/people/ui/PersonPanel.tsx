@@ -8,8 +8,10 @@
  * is me*. Forgetting, removing and merging ask first, on the page; this panel
  * says what is asked.
  *
- * What a person holds — today, later, before — is read off their
+ * What a person holds — on the day, later, before — is read off their
  * assignments across the tree, under their id and every id merged into it.
+ * The day is today, or the day the page is looked at (ADR-0027): a look the
+ * window holds, which writes nothing.
  */
 import { useEffect, useState } from 'react'
 import Box from '@mui/material/Box'
@@ -38,8 +40,13 @@ export type PersonPanelProps = {
   onRemove: (person: Person) => void
   onMerge: (from: Person, into: Person) => void
   copyText?: (text: string) => void
+  /** The day the page is looked at, and moving it; absent, today and no control. */
+  look?: PeopleLook | undefined
   s: Translate
 }
+
+/** The day the People page is looked at (ADR-0027): `day` absent is today. Nothing is written by looking. */
+export type PeopleLook = { day?: string; onDay: (day: string | undefined) => void }
 
 function StateLine({ person, policy, today, s }: { person: Person; policy: PeoplePolicy; today: string; s: Translate }) {
   if (person.state === 'active') return <Chip size="small" color="success" variant="outlined" label={s('people.stateActive')} />
@@ -175,12 +182,25 @@ function HeldItem({ one, s }: { one: HeldAssignment; s: Translate }) {
   )
 }
 
-/** What a person holds today, will hold and held before (ADR-0036 §4): today's always, the other two where there are any. */
-function Holds({ held, today, s }: { held: readonly HeldAssignment[]; today: string; s: Translate }) {
-  const { now, later, before } = heldOn(held, today)
+/**
+ * What a person holds on the day, will hold and held before (ADR-0036 §4):
+ * the day's always, the other two where there are any. The day is today, or
+ * the one the page is looked at.
+ */
+function Holds({ held, today, look, s }: { held: readonly HeldAssignment[]; today: string; look: PeopleLook | undefined; s: Translate }) {
+  const day = look?.day ?? today
+  const { now, later, before } = heldOn(held, day)
   return (
     <>
-      <Section title={s('people.holdsToday')}>
+      {look && (
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 1.5 }}>
+          <TextField size="small" type="date" label={s('people.lookAt')} value={day} sx={{ width: 170 }}
+            onChange={(event) => look.onDay(event.target.value && event.target.value !== today ? event.target.value : undefined)}
+            slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'data-testid': 'people-look' } }} />
+          {day !== today && <Button size="small" onClick={() => look.onDay(undefined)} data-testid="people-look-today">{s('people.lookToday')}</Button>}
+        </Box>
+      )}
+      <Section title={day === today ? s('people.holdsToday') : s('people.holdsOn', { day })}>
         {now.length
           ? now.map((one) => <HeldItem key={`${one.scope}/${one.id}`} one={one} s={s} />)
           : <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{s('people.holdsNothing')}</Typography>}
@@ -227,7 +247,7 @@ export function PersonPanel(props: PersonPanelProps) {
       )}
       {correcting && <Correcting person={person} register={register} saying={saying} onDone={() => setCorrecting(false)} s={s} />}
 
-      <Holds held={register.assignmentsOf?.(person.id) ?? []} today={register.today} s={s} />
+      <Holds held={register.assignmentsOf?.(person.id) ?? []} today={register.today} look={props.look} s={s} />
 
       {!register.readOnly && (
         <Section title={s('people.do')}>

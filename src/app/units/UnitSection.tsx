@@ -4,10 +4,14 @@
 /**
  * An actor as a unit, in its inspector (ADR-0036 §3, §4, §12): its type, where
  * it is filed and the domains it serves, what it owns and answers for, the
- * roles it holds and who holds them today, who manages it, and what the
- * checks say of it.
+ * roles it holds and who holds them on the day, who manages it, what the
+ * checks say of it, and how it changes over time.
  *
- * **Everything here is the model's, read on today.** What it owns is every
+ * **Everything here is the model's, read on the day the board is looked at**
+ * (ADR-0027, ADR-0036 §6): the board's look where somebody is looking at
+ * another day, the board's own day where it has one, and today otherwise —
+ * so the organisation beside a landscape is the organisation of that
+ * landscape's day, the plans' moves of that day included. What it owns is every
  * application whose `partyId` names it; what it answers for is its `assigned`
  * rows; a vacancy is a slot's minimum less the people holding the role; who
  * manages it is whoever holds a managing role in it or above it. Core grants
@@ -31,13 +35,15 @@ import type { Role, RoleSlot, UnitType } from '../../model/operatingModel'
 import { slotRange } from '../../model/operatingModel'
 import { pickedPerson } from '../../model/person'
 import type { DesignElement } from '../../model/types'
-import { holdersOn, isUnit, loadOn, managersOf, personOf, runsOn, shareOf, slotsOf } from '../../model/units'
+import { dayBefore, holdersOn, isUnit, loadOn, managersOf, parentOn, personOf, runsOn, shareOf, slotsOf, unitLastDay } from '../../model/units'
 import type { Assignment } from '../../model/units'
 import { personText, registerOf } from '../../people/shown'
 import type { PeopleRegisterAccess } from '../../people/ui/access'
 import { findingSentence, findingsOfOrganisation } from '../../projects/checks'
+import { movesOf } from '../../projects/scopeIndex'
 import type { ScopeIndex } from '../../projects/scopeIndex'
 import type { ScopePath } from '../../projects/scopePath'
+import { transitionLabel } from '../../model/transition'
 import { AssignDialog } from './AssignDialog'
 import type { Assigning } from './AssignDialog'
 import { organisationHere } from './organisationHere'
@@ -54,6 +60,12 @@ export type UnitSectionProps = {
   makeId: (prefix: string) => string
   people: PeopleRegisterAccess | undefined
   today: string
+  /**
+   * The day the organisation is looked at (ADR-0027): the board's look, or
+   * its own day, or today. What the section shows is that day's; what it
+   * writes starts from it where it is still to come.
+   */
+  day?: string
   scopeLabel: (path: ScopePath) => string
   /** Every scope of the tree, for the domains a unit serves. */
   scopes: readonly ScopePath[]
@@ -64,9 +76,10 @@ const SECTION = { fontSize: 12, fontWeight: 700, color: 'text.secondary', mt: 1.
 const LINE = { fontSize: 13 } as const
 const QUIET = { fontSize: 12, color: 'text.secondary' } as const
 
-/** What the section is worked out from, once per render. */
+/** What the section is worked out from, once per render, on the day it is looked at. */
 function useUnitFacts(props: UnitSectionProps) {
-  const { element, scope, model, index, people, today } = props
+  const { element, scope, model, index, people } = props
+  const today = props.day ?? props.today
   return useMemo(() => {
     const at = organisationHere(index, scope, model)
     const { organisation } = at
@@ -87,13 +100,24 @@ function useUnitFacts(props: UnitSectionProps) {
     const findings = findingsOfOrganisation(at, today)
     const holders = new Set(organisation.assignments.filter((one) => one.unitId === element.id && runsOn(one, today)).map(personOf))
     const said = findings.filter((one) => (one.person !== undefined ? holders.has(one.person) : one.id === element.id))
-    return { organisation, types, type, roles, register, unitName, owns, answersFor, said }
+    // Its moves, each with the plan that makes it: the open scope's plans as the session holds them, the tree's for the rest.
+    const moves = [...index.moves().filter((one) => one.scope !== scope), ...movesOf(scope, model)]
+      .filter((one) => one.move.unitId === element.id)
+      .sort((a, b) => a.move.on.localeCompare(b.move.on))
+    const parent = parentOn(element, organisation.moves, today)
+    return { organisation, types, type, roles, register, unitName, owns, answersFor, said, moves, parent }
   }, [element, scope, model, index, people?.people, today])
 }
 
 export function UnitSection(props: UnitSectionProps) {
-  const { element, readOnly, scope, dispatch, people, today, scopeLabel, s } = props
+  const { element, readOnly, scope, dispatch, people, scopeLabel, s } = props
+  const today = props.day ?? props.today
   const facts = useUnitFacts(props)
+  // What is written starts on the day looked at where that is still to come: an
+  // assignment from it, and an end the day before it.
+  const later = today > props.today
+  const assignFrom = later ? today : props.today
+  const endOn = later ? dayBefore(today) : props.today
   const [assigning, setAssigning] = useState<Assigning | undefined>(undefined)
   const standIn = element.ref !== undefined
   const editable = !readOnly && !standIn
@@ -102,6 +126,7 @@ export function UnitSection(props: UnitSectionProps) {
   return (
     <Box data-testid="unit-section" sx={{ mt: 1 }}>
       <Typography variant="overline" color="text.secondary" sx={{ display: 'block' }}>{s('unit.title')}</Typography>
+      {today !== props.today && <Typography sx={QUIET} data-testid="unit-day">{s('unit.onDay', { day: today })}</Typography>}
       <TypeField element={element} types={facts.types} editable={editable} onChange={(unitTypeId) => update({ unitTypeId })} s={s} />
       {standIn && <Typography sx={QUIET}>{s('unit.elsewhere', { scope: scopeLabel(element.ref ?? '') })}</Typography>}
       {isUnit(element) && (
@@ -117,9 +142,10 @@ export function UnitSection(props: UnitSectionProps) {
               <Typography sx={LINE}>{facts.answersFor.join(', ')}</Typography>
             </>
           )}
-          <Slots {...props} facts={facts} editable={editable && people !== undefined} name={name} onAssign={setAssigning} />
+          <Slots {...props} today={today} looking={today !== props.today} facts={facts} editable={editable && people !== undefined} name={name} onAssign={setAssigning} />
           {editable && <ExtraRole element={element} type={facts.type} roles={facts.organisation.roles} onAdd={(extraSlots) => update({ extraSlots })} s={s} />}
-          <Managers {...props} facts={facts} name={name} />
+          <Managers {...props} today={today} looking={today !== props.today} facts={facts} name={name} />
+          <OverTime element={element} facts={facts} s={s} />
           {facts.said.length > 0 && (
             <>
               <Typography sx={SECTION}>{s('unit.checks')}</Typography>
@@ -136,7 +162,7 @@ export function UnitSection(props: UnitSectionProps) {
         <AssignDialog
           assigning={assigning} unit={{ id: element.id, name: element.name }}
           roles={slotsOf(element, facts.type).flatMap((slot) => facts.roles.get(slot.role) ?? [])}
-          register={people} today={today} makeId={props.makeId} dispatch={dispatch} scopeName={scopeLabel(scope)}
+          register={people} today={assignFrom} endOn={endOn} makeId={props.makeId} dispatch={dispatch} scopeName={scopeLabel(scope)}
           loadOf={(person) => s('assign.load', { share: Math.round(loadOn(facts.organisation.assignments, person.id, today) * 100), day: today })}
           onClose={() => setAssigning(undefined)} s={s}
         />
@@ -196,16 +222,16 @@ function Serves({ element, scope, scopes, scopeLabel, type, editable, onChange, 
 
 type Facts = ReturnType<typeof useUnitFacts>
 
-/** The roles it holds and who holds them today, with the vacancies a slot's minimum leaves. */
-function Slots({ element, today, people, facts, editable, name, onAssign, s }: UnitSectionProps & {
-  facts: Facts; editable: boolean; name: (person: string) => string; onAssign: (assigning: Assigning) => void
+/** The roles it holds and who holds them on the day, with the vacancies a slot's minimum leaves. */
+function Slots({ element, today, looking, people, facts, editable, name, onAssign, s }: UnitSectionProps & {
+  looking: boolean; facts: Facts; editable: boolean; name: (person: string) => string; onAssign: (assigning: Assigning) => void
 }) {
   const slots = slotsOf(element, facts.type)
   const inSlots = new Set(slots.map((slot) => slot.role))
   const others = facts.organisation.assignments.filter((one) => one.unitId === element.id && !inSlots.has(one.roleId) && runsOn(one, today))
   return (
     <>
-      <Typography sx={SECTION}>{s('unit.roles')}</Typography>
+      <Typography sx={SECTION}>{looking ? s('unit.rolesOn', { day: today }) : s('unit.roles')}</Typography>
       {slots.length === 0 && <Typography sx={QUIET}>{s('unit.rolesNone')}</Typography>}
       {slots.map((slot) => (
         <SlotLine key={slot.role} slot={slot} role={facts.roles.get(slot.role)} element={element} facts={facts} today={today}
@@ -282,13 +308,15 @@ function ExtraRole({ element, type, roles, onAdd, s }: {
   )
 }
 
-/** Who manages it today (§12): the holders of a managing role in it or above it. Core grants nothing from it. */
-function Managers({ element, today, people, facts, name, s }: UnitSectionProps & { facts: Facts; name: (person: string) => string }) {
+/** Who manages it on the day (§12): the holders of a managing role in it or above it. Core grants nothing from it. */
+function Managers({ element, today, looking, people, facts, name, s }: UnitSectionProps & {
+  looking: boolean; facts: Facts; name: (person: string) => string
+}) {
   const managers = managersOf(facts.organisation, element.id, today)
   return (
     <>
       <Typography sx={SECTION}>{s('unit.managedBy')}</Typography>
-      {managers.length === 0 && <Typography sx={QUIET}>{s('unit.managedByNone')}</Typography>}
+      {managers.length === 0 && <Typography sx={QUIET}>{looking ? s('unit.managedByNoneOn', { day: today }) : s('unit.managedByNone')}</Typography>}
       {managers.map((one, at) => (
         <Typography key={`${one.unitId}/${one.assignment.id}/${at}`} sx={LINE} data-testid="unit-manager">
           {s('unit.managedByLine', {
@@ -299,5 +327,33 @@ function Managers({ element, today, people, facts, name, s }: UnitSectionProps &
       ))}
       <Typography sx={QUIET}>{s('unit.managedByNote')}</Typography>
     </>
+  )
+}
+
+/**
+ * How it changes over time (ADR-0036 §6): the day it is there from and its
+ * last day, the unit it sits under on the day looked at, and every move a plan
+ * makes of it — a correction of where it sits is an edit of its parent, and a
+ * change with a day is a plan's.
+ */
+function OverTime({ element, facts, s }: { element: DesignElement; facts: Facts; s: Translate }) {
+  const live = element.lifecycleDates?.live
+  const last = unitLastDay(element)
+  if (!live && !last && facts.moves.length === 0) return null
+  const parentName = (id: string | undefined) => (id === undefined ? s('unit.top') : facts.unitName(id))
+  return (
+    <Box data-testid="unit-over-time">
+      <Typography sx={SECTION}>{s('unit.overTime')}</Typography>
+      {live && <Typography sx={LINE}>{s('unit.liveFrom', { day: live })}</Typography>}
+      {last && <Typography sx={LINE}>{s('unit.lastDay', { day: last })}</Typography>}
+      {facts.moves.map(({ plan, move }) => (
+        <Typography key={`${plan.id}/${move.on}`} sx={LINE} data-testid="unit-move">
+          {s('unit.movedOn', { parent: parentName(move.parentId), day: move.on, plan: transitionLabel(plan) })}
+        </Typography>
+      ))}
+      {facts.moves.length > 0 && element.parentId !== facts.parent && (
+        <Typography sx={QUIET}>{s('unit.sitsUnder', { parent: parentName(facts.parent) })}</Typography>
+      )}
+    </Box>
   )
 }

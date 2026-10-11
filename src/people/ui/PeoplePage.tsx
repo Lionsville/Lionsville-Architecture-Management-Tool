@@ -47,6 +47,7 @@ import { AddPerson, SIGN_LABEL } from './AddPerson'
 import { CsvImport } from './CsvImport'
 import { KIND_LABEL, SHOW_LABEL } from './parts'
 import { PersonPanel } from './PersonPanel'
+import type { PeopleLook } from './PersonPanel'
 import { PolicyPanel } from './PolicyPanel'
 
 export type PeoplePageProps = {
@@ -57,6 +58,11 @@ export type PeoplePageProps = {
   select?: PersonId
   readText?: (file: Blob) => Promise<string>
   copyText?: (text: string) => void
+  /**
+   * The day the page is looked at (ADR-0027), held by the window: what a
+   * person holds, will hold and held before is said of it. Absent, today.
+   */
+  look?: PeopleLook
   s: Translate
   windowChrome?: WindowChrome
 }
@@ -188,7 +194,7 @@ function TopBar({ chrome, show, onShow, query, onQuery, counts, readOnly, onAdd,
   )
 }
 
-export function PeoplePage({ open, onClose, register, select, readText, copyText, s, windowChrome = NO_WINDOW_CHROME }: PeoplePageProps) {
+export function PeoplePage({ open, onClose, register, select, readText, copyText, look, s, windowChrome = NO_WINDOW_CHROME }: PeoplePageProps) {
   const [show, setShow] = useState<Show>('all')
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<PersonId | undefined>(select)
@@ -243,7 +249,7 @@ export function PeoplePage({ open, onClose, register, select, readText, copyText
             <AddPerson register={register} saying={saying} onAdded={pick} onUse={pick} onCancel={() => setAdding(false)} s={s} />
           )}
           {!adding && person && (
-            <PersonPanel person={person} register={register} saying={saying} copyText={copyText} s={s}
+            <PersonPanel person={person} register={register} saying={saying} copyText={copyText} s={s} look={look}
               onForget={(one) => setAsking({ kind: 'forget', person: one })}
               onRemove={(one) => setAsking({ kind: 'remove', person: one })}
               onMerge={(from, into) => setAsking({ kind: 'merge', from, into })} />

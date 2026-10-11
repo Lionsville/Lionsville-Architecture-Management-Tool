@@ -46,7 +46,10 @@ export type AssignDialogProps = {
   /** The roles the unit holds, in the order its slots list them. */
   roles: readonly Role[]
   register: PeopleRegisterAccess
+  /** The day a new assignment starts on: today, or the day looked at where that is still to come. */
   today: string
+  /** The day *End* sets as the last: today, or the day before the day looked at. Absent: `today`. */
+  endOn?: string
   makeId: (prefix: string) => string
   /** The one way in. */
   dispatch: (command: Command) => unknown
@@ -100,6 +103,7 @@ export function assignmentOf(form: Form, id: string, unitId: string): Assignment
 
 export function AssignDialog(props: AssignDialogProps) {
   const { assigning, unit, roles, register, today, makeId, dispatch, loadOf, scopeName, onClose, s } = props
+  const endOn = props.endOn ?? today
   const held = assigning.mode === 'edit' ? assigning.assignment : undefined
   const saying = useSaying(s)
   const [form, setForm] = useState<Form>(() => formOf(assigning, today))
@@ -145,9 +149,9 @@ export function AssignDialog(props: AssignDialogProps) {
         <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{s('assign.oneStep', { scope: scopeName })}</Typography>
       </DialogContent>
       <DialogActions sx={{ flexWrap: 'wrap', gap: 0.5 }}>
-        {held && !held.until && !(held.from && held.from > today) && (
-          <Button size="small" onClick={() => done({ type: 'assignment.update', id: held.id, patch: { until: today } })} data-testid="assign-end">
-            {s('assign.endToday', { day: today })}
+        {held && !held.until && !(held.from && held.from > endOn) && (
+          <Button size="small" onClick={() => done({ type: 'assignment.update', id: held.id, patch: { until: endOn } })} data-testid="assign-end">
+            {s('assign.endToday', { day: endOn })}
           </Button>
         )}
         {held && (

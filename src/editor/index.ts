@@ -77,5 +77,5 @@ export type { EditorPreferences } from './preferences'
 export { PANEL_LIMITS, clampPanelWidth, panelWidth } from './panels'
 export { EditorRefused } from './props'
 /** The day a person is looking at a board on, which is not a write (ADR-0027). */
-export { shownAsOf, useShownDays } from './useShownDays'
+export { dayShown, shownAsOf, useShownDays } from './useShownDays'
 export type { ShownDay, ShownDays } from './useShownDays'

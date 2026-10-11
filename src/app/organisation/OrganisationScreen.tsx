@@ -65,6 +65,7 @@ import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Link from '@mui/material/Link'
 import type { ExampleOffer } from '../../projects/examples/catalogue'
+import { useShownDays } from '../../editor/useShownDays'
 import { BackForward } from '../BackForward'
 import { BarEnd } from '../BarEnd'
 import type { ToolbarAgent, ToolbarOverflow } from '../ShellToolbar'
@@ -108,13 +109,29 @@ const PeoplePage = lazyPart<ComponentProps<typeof PeoplePageShape>>(
   () => import('../../people/ui/PeoplePage').then((held) => held.PeoplePage), { until: (props) => props.open },
 )
 
-/** The People page over this home, where the source keeps a register; nothing where it keeps none. */
+/** The People page has no day of its own: today is its day, and a look away is the window's (ADR-0027). */
+const NO_SAVED_DAY = (): undefined => undefined
+const PEOPLE_LOOK = 'people'
+
+/**
+ * The People page over this home, where the source keeps a register; nothing
+ * where it keeps none. The day it is looked at is a look the window holds, as
+ * a board's is (ADR-0027): moving it writes nothing, and back on today it
+ * forgets itself.
+ */
 function PeopleDoor({ people, open, onClose, s, windowChrome }: {
   people: PeopleAccess | undefined; open: boolean; onClose: () => void; s: Translate; windowChrome: WindowChrome
 }) {
+  const viewing = useShownDays(NO_SAVED_DAY)
+  const day = viewing.days[PEOPLE_LOOK]?.day
+  const look = useMemo(() => ({
+    ...(day !== undefined ? { day } : {}),
+    onDay: (next: string | undefined) => viewing.show(PEOPLE_LOOK, next),
+  }), [day, viewing])
   if (!people) return null
   return (
-    <PeoplePage open={open} onClose={onClose} register={people} readText={people.readText} copyText={people.copyText} s={s} windowChrome={windowChrome} />
+    <PeoplePage open={open} onClose={onClose} register={people} readText={people.readText} copyText={people.copyText} look={look} s={s}
+      windowChrome={windowChrome} />
   )
 }
 
