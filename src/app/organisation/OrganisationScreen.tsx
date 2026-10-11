@@ -1007,7 +1007,8 @@ function NameTheOrganisation({ onName, s }: { onName: (name: string) => void; s:
         value={name}
         slotProps={{ htmlInput: { 'data-testid': 'organisation-name-field' } }}
         onChange={(e) => setName(e.target.value)}
-        onKeyDown={(e) => { if (e.key === 'Enter' && name.trim()) onName(name) }}
+        // The Enter it acts on is consumed, so it cannot go on to press whatever button takes the focus next.
+        onKeyDown={(e) => { if (e.key === 'Enter' && name.trim()) { e.preventDefault(); onName(name) } }}
       />
       <Button size="small" variant="contained" disabled={!name.trim()} onClick={() => onName(name)}>
         {s('settings.save')}

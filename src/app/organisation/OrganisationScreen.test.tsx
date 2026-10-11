@@ -449,6 +449,18 @@ describe('the organisation screen — a fresh folder', () => {
     expect((await screen.findByTestId('organisation-name')).textContent).toBe('Globex')
   })
 
+  /** An unconsumed Enter goes on to press whatever button takes the focus next, as one reopened the roadmap's New plan dialog. */
+  it('takes a name on Enter, and consumes the Enter it acts on', async () => {
+    const scopes = heldRepositories([])
+    renderApp({ repositories: scopes, today: TODAY })
+    const field = await screen.findByTestId('organisation-name-field')
+    // An empty field has nothing to take, and leaves the key alone.
+    expect(fireEvent.keyDown(field, { key: 'Enter' })).toBe(true)
+    fireEvent.change(field, { target: { value: 'Globex' } })
+    expect(fireEvent.keyDown(field, { key: 'Enter' })).toBe(false)
+    await waitFor(async () => expect((await scopes.read(''))?.model.name).toBe('Globex'))
+  })
+
   it('says the tree is empty, with the examples underneath', async () => {
     renderApp({
       repositories: heldRepositories([]),
