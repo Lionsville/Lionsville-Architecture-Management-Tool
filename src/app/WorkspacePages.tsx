@@ -27,6 +27,7 @@ import type { EndedHolders as EndedHoldersShape, SlotHolders as SlotHoldersShape
 import { organisationHere } from './units/organisationHere'
 import { heldThroughType } from '../model/units'
 import type { SlotTakeOut } from '../operating/ui/OperatingModelPage'
+import { unitCountsHere } from './units/operatingCounts'
 import type {
   PlanMoves as PlanMovesShape, PlanOrganisation as PlanOrganisationShape, PlanOrganisationProps,
 } from './units/PlanOrganisation'
@@ -94,13 +95,19 @@ export function WorkspacePages({ parts }: { parts: WorkspaceParts }) {
  * only where the organisation is the scope open, and read anywhere else.
  */
 function OperatingPages({ parts }: { parts: WorkspaceParts }) {
-  const { props, session, pages, readOnly, pageChrome, landMoves } = parts
+  const { props, session, pages, readOnly, pageChrome, landMoves, todayDay } = parts
   const model = session.model
   const lists = useMemo(() => ({
     unitTypes: model.unitTypes ?? [], roles: model.roles ?? [],
     responsibilities: model.responsibilities ?? [], operatingRules: model.operatingRules ?? [],
   }), [model.unitTypes, model.roles, model.responsibilities, model.operatingRules])
   const page = pages.operatingPage
+  // The units of each type today, across the tree with this scope's session over it: counted while the page is up, and only then.
+  const scope = props.project.path
+  const unitCounts = useMemo(
+    () => (page.open ? unitCountsHere(props.tree.index, scope, model, todayDay) : undefined),
+    [page.open, props.tree.index, scope, model, todayDay],
+  )
   return (
     <OperatingModelPage
       open={page.open}
@@ -119,6 +126,7 @@ function OperatingPages({ parts }: { parts: WorkspaceParts }) {
         readOnly: readOnly || props.project.path !== ROOT_SCOPE, makeId: props.shell.makeId, land: landMoves, s: props.shell.s,
       }))}
       slotTakeOut={slotTakeOut(parts)}
+      {...(unitCounts ? { unitCounts } : {})}
     />
   )
 }

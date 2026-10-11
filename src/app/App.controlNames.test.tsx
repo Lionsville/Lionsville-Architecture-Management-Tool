@@ -242,7 +242,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   // so the matrix has a column to press.
   [['the operating model', [
     'operating.tabUnits', 'operating.tabRaci', 'operating.tabLibraries', 'operating.newUnitType', 'operating.newRole',
-    'operating.rules',
+    'operating.rules', 'operating.structure',
   ], async () => {
     show(false)
     fireEvent.click(await screen.findByTestId('open-operating'))
@@ -251,6 +251,11 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   ['its libraries', ['operating.bringIn', 'operating.compare'], async () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Libraries' }))
     fireEvent.click(await screen.findByRole('button', { name: 'Bring in all of Scrum' }))
+  }],
+  // What came in, drawn as the structure, with a type picked.
+  ['its structure', ['operating.typeCard', 'operating.typeOrder'], async () => {
+    fireEvent.click(screen.getByRole('tab', { name: 'Units and roles' }))
+    fireEvent.click(await within(screen.getByTestId('structure-lanes')).findByRole('button', { name: 'Scrum Team' }))
   }],
   ['its responsibilities', ['operating.newResponsibility', 'operating.matrix', 'operating.cell'], async () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Responsibilities' }))

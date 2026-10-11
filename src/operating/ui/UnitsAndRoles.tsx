@@ -2,22 +2,38 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * The first tab: the unit types as cards — where each may sit, the roles it
- * holds and how many of each — the roles, and the rules the model reads.
- * Pressing a card or a role picks it for the inspector beside.
+ * The first tab: the unit types drawn as the structure they make (ADR-0036,
+ * amended 11 October 2026), the two trays under it, and the rules the model
+ * reads.
+ *
+ * Each type is a card in its lane (`StructureLanes`), with a line from every
+ * place it may sit. Picking a card lights where the type may sit, the types
+ * that may sit in it and its roles; picking a role lights the types that hold
+ * it; everything else dims, and pressing the pick again lets it go. Both open
+ * in the inspector beside, where *Sits in* and the order in the lane are
+ * edited. A type that sits nowhere waits in a tray of its own, since no unit
+ * can be made of it, and so does a role no type holds.
  */
+import { useMemo } from 'react'
+import type { ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
-import MenuItem from '@mui/material/MenuItem'
-import TextField from '@mui/material/TextField'
+import ButtonBase from '@mui/material/ButtonBase'
 import Typography from '@mui/material/Typography'
 import type { Command } from '../../model/commands'
 import type { MakeId } from '../../model/keys'
-import { OPERATING_RULE_KINDS, slotRange } from '../../model/operatingModel'
-import type { OperatingRuleKind, Role, UnitType } from '../../model/operatingModel'
+import type { Role, RoleId, UnitType, UnitTypeId } from '../../model/operatingModel'
+import { unitTypeLanes } from '../../model/unitOrder'
 import { useStrings } from '../../i18n'
-import { newRole, newUnitType, setRule } from '../edit'
+import type { Translate } from '../../i18n'
+import { itemOf, newRole, newUnitType } from '../edit'
 import type { CommandOf, OperatingModel } from '../edit'
+import type { Library } from '../library'
+import { HEADING, Rules } from './Rules'
+import { StructureLanes } from './StructureLanes'
+import { pickLooks } from './structurePick'
+import type { PickLooks, StructurePick } from './structurePick'
+import { ringOf, TypeCard } from './TypeCard'
 
 type Props = {
   model: OperatingModel
@@ -26,20 +42,33 @@ type Props = {
   onSelect(id: string | undefined): void
   dispatch(command: Command): void
   makeId: MakeId
+  /** The libraries whose names say where a type came from. */
+  libraries: readonly Library[]
+  /** How many units of each type there are today, as the host counts them; nothing is said where absent. */
+  unitCounts?: ReadonlyMap<UnitTypeId, number>
   /** Where the page sends a person with nothing in it yet. */
   onOpenLibraries?(): void
 }
 
-const heading = { fontSize: 11, fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.06em', mt: 2, mb: 1 } as const
-
-export function UnitsAndRoles({ model, readOnly, selected, onSelect, dispatch, makeId, onOpenLibraries }: Props) {
+export function UnitsAndRoles(props: Props) {
+  const { model, readOnly, selected, onSelect, dispatch, makeId, onOpenLibraries } = props
   const { t } = useStrings()
+  const structure = useMemo(() => unitTypeLanes(model.unitTypes), [model.unitTypes])
+  const looks = useMemo(() => pickLooks(model.unitTypes, pickOf(model, selected)), [model, selected])
+  const roles = useMemo(() => new Map(model.roles.map((role) => [role.id, role])), [model.roles])
   const add = (command: CommandOf<'unitType.add'> | CommandOf<'role.add'>) => {
     dispatch(command)
     onSelect(command.type === 'unitType.add' ? command.unitType.id : command.role.id)
   }
-  const held = new Set(model.unitTypes.flatMap((type) => type.slots.map((slot) => slot.role)))
-  const loose = model.roles.filter((role) => !held.has(role.id))
+  // Pressing the pick again lets it go.
+  const pick = (id: string) => onSelect(selected === id ? undefined : id)
+  const card = (type: UnitType) => (
+    <TypeCard
+      type={type} roles={roles} look={looks.type(type.id)} source={sourceOf(type, props.libraries, t)}
+      meta={metaOf(type, props.unitCounts, t)} place={placeOf(type, model.unitTypes, t)} named="operating.typeCard"
+      onPick={() => pick(type.id)} onPickRole={pick} roleLook={looks.role}
+    />
+  )
   return (
     <Box>
       {onOpenLibraries && (
@@ -48,141 +77,113 @@ export function UnitsAndRoles({ model, readOnly, selected, onSelect, dispatch, m
           <Button size="small" onClick={onOpenLibraries} sx={{ textTransform: 'none', px: 0 }}>{t('operating.emptyLibraries')}</Button>
         </Box>
       )}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Typography component="h2" sx={{ ...heading, mt: 0, mb: 0 }}>{t('operating.unitTypes')}</Typography>
+      {/* The ways to add, side by side; a library's way in joins them here. */}
+      <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
+        <Typography component="h2" sx={{ ...HEADING, mt: 0, mb: 0, mr: 1 }}>{t('operating.unitTypes')}</Typography>
         {!readOnly && (
-          <Button size="small" variant="outlined" data-guide="operating.newUnitType" sx={{ textTransform: 'none' }}
-            onClick={() => add(newUnitType(t('operating.newUnitTypeName'), makeId, model))}>
-            {t('operating.newUnitType')}
-          </Button>
+          <>
+            <Button size="small" variant="outlined" data-guide="operating.newUnitType" sx={{ textTransform: 'none' }}
+              onClick={() => add(newUnitType(t('operating.newUnitTypeName'), makeId, model))}>
+              {t('operating.newUnitType')}
+            </Button>
+            <Button size="small" variant="outlined" data-guide="operating.newRole" sx={{ textTransform: 'none' }}
+              onClick={() => add(newRole(t('operating.newRoleName'), makeId, model))}>
+              {t('operating.newRole')}
+            </Button>
+          </>
         )}
       </Box>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mt: 1 }}>
-        {model.unitTypes.map((type) => (
-          <TypeCard key={type.id} type={type} model={model} selected={selected} onSelect={onSelect} />
-        ))}
+      <Box sx={{ overflowX: 'auto', mt: 1 }}>
+        <StructureLanes
+          structure={structure} label={t('operating.structure')} named="operating.structure"
+          organisation={{ name: t('operating.theOrganisation'), note: t('operating.organisationNote'), look: looks.organisation }}
+          laneLabel={(lane) => (lane === 0 ? t('operating.theOrganisation') : t('operating.lane', { lane }))}
+          card={card} lineLook={looks.line}
+        />
       </Box>
-
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 3 }}>
-        <Typography component="h2" sx={{ ...heading, mt: 0, mb: 0 }}>{t('operating.roles')}</Typography>
-        {!readOnly && (
-          <Button size="small" variant="outlined" data-guide="operating.newRole" sx={{ textTransform: 'none' }}
-            onClick={() => add(newRole(t('operating.newRoleName'), makeId, model))}>
-            {t('operating.newRole')}
-          </Button>
-        )}
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'flex-start', mt: 1 }}>
+        <Tray heading={t('operating.trayNowhere')} testId="tray-nowhere">
+          {structure.nowhere.length === 0
+            ? <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('operating.trayNowhereNone')}</Typography>
+            : (
+              <>
+                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 1 }}>
+                  {structure.nowhere.map((type) => <Box key={type.id}>{card(type)}</Box>)}
+                </Box>
+                <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 1 }}>{t('operating.trayNowhereHint')}</Typography>
+              </>
+            )}
+        </Tray>
+        <LooseRoles model={model} looks={looks} onPick={pick} t={t} />
       </Box>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mt: 1 }}>
-        {model.roles.map((role) => <RoleChip key={role.id} role={role} selected={selected === role.id} onSelect={onSelect} />)}
-      </Box>
-      {loose.length > 0 && (
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-          {t('operating.looseRoles')}: {loose.map((role) => role.name).join(', ')}
-        </Typography>
-      )}
-
       <Rules model={model} readOnly={readOnly} dispatch={dispatch} />
     </Box>
   )
 }
 
-function TypeCard({ type, model, selected, onSelect }: { type: UnitType; model: OperatingModel; selected: string | undefined; onSelect(id: string): void }) {
-  const { t } = useStrings()
-  const typeName = (id: string) => model.unitTypes.find((one) => one.id === id)?.name ?? id
-  const where = [...(type.top ? [t('operating.atTheTop')] : []), ...type.within.map(typeName)]
-  const on = selected === type.id
+/** What is picked, as the structure reads it: a unit type or a role, and nothing for a responsibility. */
+function pickOf(model: OperatingModel, selected: string | undefined): StructurePick | undefined {
+  const picked = itemOf(model, selected)
+  return picked && picked.kind !== 'responsibility' ? { kind: picked.kind, id: picked.item.id } : undefined
+}
+
+/** Where a type came from: its library's name, or the organisation's own. */
+function sourceOf(type: UnitType, libraries: readonly Library[], t: Translate): string {
+  if (!type.basedOn) return t('operating.own')
+  const from = type.basedOn.library
+  return libraries.find((library) => library.id === from)?.name ?? from
+}
+
+/** What a card says under the name: the units it has today, its limit, its last day. */
+function metaOf(type: UnitType, counts: ReadonlyMap<UnitTypeId, number> | undefined, t: Translate): string[] {
+  const count = counts?.get(type.id) ?? 0
+  return [
+    ...(counts ? [t(count === 1 ? 'operating.unitsTodayOne' : 'operating.unitsTodayOther', { count })] : []),
+    ...(type.limit !== undefined ? [t('operating.limitLine', { count: type.limit })] : []),
+    ...(type.until ? [t('operating.untilLine', { day: type.until })] : []),
+  ]
+}
+
+/** Where a type may sit, in words, for whoever cannot see the lines. */
+function placeOf(type: UnitType, types: readonly UnitType[], t: Translate): string {
+  const where = [
+    ...(type.top ? [t('operating.atTheTop')] : []),
+    ...type.within.map((id) => types.find((one) => one.id === id)?.name ?? id),
+  ]
+  return t('operating.sitsIn', { where: where.length ? where.join(', ') : t('operating.nowhere') })
+}
+
+function Tray({ heading, testId, children }: { heading: string; testId: string; children: ReactNode }) {
   return (
-    <Box
-      data-testid={`unit-type-${type.id}`}
-      sx={{
-        width: 260, border: 1, borderColor: on ? 'primary.main' : 'divider', borderRadius: 1, p: 1.25,
-        bgcolor: 'background.paper', boxShadow: on ? 2 : 0,
-      }}
-    >
-      <Button
-        onClick={() => onSelect(type.id)} aria-pressed={on}
-        sx={{ p: 0, minWidth: 0, textTransform: 'none', fontWeight: 700, fontSize: 14, justifyContent: 'flex-start', color: 'text.primary' }}
-      >
-        {type.name}
-      </Button>
-      {type.spans && <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>{t('operating.spansBadge')}</Typography>}
-      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-        {t('operating.sitsIn', { where: where.length ? where.join(', ') : t('operating.nowhere') })}
-      </Typography>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.75 }}>
-        {type.slots.map((slot, index) => {
-          const role = model.roles.find((one) => one.id === slot.role)
-          return (
-            <Button
-              key={`${slot.role}-${index}`} size="small" variant="outlined" onClick={() => onSelect(slot.role)}
-              aria-pressed={selected === slot.role}
-              sx={{ textTransform: 'none', py: 0, px: 0.75, minWidth: 0, fontSize: 12, borderColor: selected === slot.role ? 'primary.main' : 'divider' }}
-            >
-              {role?.name ?? slot.role}
-              {role?.manages && <Box component="span" sx={{ ml: 0.5, fontSize: 10, color: 'primary.main' }}>{t('operating.managesBadge')}</Box>}
-              <Box component="span" sx={{ ml: 0.5, color: 'text.secondary' }}>{slotRange(slot)}</Box>
-            </Button>
-          )
-        })}
+    <Box component="section" aria-label={heading} data-testid={testId}
+      sx={{ flex: '1 1 280px', border: 1, borderStyle: 'dashed', borderColor: 'divider', borderRadius: 1.5, p: 1.25 }}>
+      <Typography component="h2" sx={{ ...HEADING, mt: 0 }}>{heading}</Typography>
+      {children}
+    </Box>
+  )
+}
+
+/** The roles no unit type holds, each to pick as a slot's role is. */
+function LooseRoles({ model, looks, onPick, t }: { model: OperatingModel; looks: PickLooks; onPick(id: RoleId): void; t: Translate }) {
+  const held = new Set(model.unitTypes.flatMap((type) => type.slots.map((slot) => slot.role)))
+  const loose = model.roles.filter((role) => !held.has(role.id))
+  return (
+    <Tray heading={t('operating.looseRoles')} testId="tray-loose">
+      {loose.length === 0 && <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('operating.trayLooseNone')}</Typography>}
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+        {loose.map((role) => <LooseRole key={role.id} role={role} look={looks.role(role.id)} onPick={onPick} t={t} />)}
       </Box>
-      {type.limit !== undefined && (
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>{t('operating.limitLine', { count: type.limit })}</Typography>
-      )}
-      {type.until && <Typography variant="caption" color="warning.main" sx={{ display: 'block' }}>{t('operating.untilLine', { day: type.until })}</Typography>}
-    </Box>
+    </Tray>
   )
 }
 
-function RoleChip({ role, selected, onSelect }: { role: Role; selected: boolean; onSelect(id: string): void }) {
-  const { t } = useStrings()
+function LooseRole({ role, look, onPick, t }: { role: Role; look: ReturnType<PickLooks['role']>; onPick(id: RoleId): void; t: Translate }) {
   return (
-    <Button
-      size="small" variant={selected ? 'contained' : 'outlined'} onClick={() => onSelect(role.id)} aria-pressed={selected}
-      data-testid={`role-${role.id}`} sx={{ textTransform: 'none', py: 0.25 }}
-    >
+    <ButtonBase onClick={() => onPick(role.id)} aria-pressed={look === 'picked'} data-testid={`role-${role.id}`} data-look={look}
+      sx={{ fontSize: 12, lineHeight: '20px', px: 1, borderRadius: 1, border: 1, borderColor: ringOf(look) ?? 'divider', bgcolor: 'background.paper' }}>
       {role.name}
-      {role.short && <Box component="span" sx={{ ml: 0.75, fontSize: 11 }}>{role.short}</Box>}
-      {role.manages && <Box component="span" sx={{ ml: 0.75, fontSize: 10 }}>{t('operating.managesBadge')}</Box>}
-      {role.until && <Box component="span" sx={{ ml: 0.75, fontSize: 10 }}>{t('operating.untilLine', { day: role.until })}</Box>}
-    </Button>
-  )
-}
-
-const RULE_WORDS = {
-  applicationOwner: ['operating.rule.applicationOwner', 'operating.rule.applicationOwnerAfter'],
-  domainOwner: ['operating.rule.domainOwner', 'operating.rule.domainOwnerAfter'],
-} as const satisfies Record<OperatingRuleKind, readonly [string, string]>
-
-/** The two rules: which role's holder an application's owner, and a domain's, is. */
-function Rules({ model, readOnly, dispatch }: { model: OperatingModel; readOnly: boolean; dispatch(command: Command): void }) {
-  const { t } = useStrings()
-  const NONE = ''
-  return (
-    <Box data-guide="operating.rules" sx={{ mt: 3 }}>
-      <Typography component="h2" sx={heading}>{t('operating.rules')}</Typography>
-      {OPERATING_RULE_KINDS.map((kind) => {
-        const [before, after] = RULE_WORDS[kind]
-        const role = model.operatingRules.find((rule) => rule.id === kind)?.role ?? NONE
-        return (
-          <Box key={kind} sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1, my: 0.75, fontSize: 14 }}>
-            <span>{t(before)}</span>
-            <TextField
-              select size="small" value={role} disabled={readOnly}
-              slotProps={{ htmlInput: { 'aria-label': t(before) } }}
-              sx={{ minWidth: 180 }}
-              onChange={(event) => {
-                const next = setRule(model.operatingRules, kind, event.target.value === NONE ? undefined : event.target.value)
-                if (next) dispatch(next)
-              }}
-            >
-              <MenuItem value={NONE}><em>{t('operating.rule.none')}</em></MenuItem>
-              {model.roles.map((one) => <MenuItem key={one.id} value={one.id}>{one.name}</MenuItem>)}
-            </TextField>
-            <span>{t(after)}</span>
-          </Box>
-        )
-      })}
-      <Typography variant="caption" color="text.secondary">{t('operating.rulesHint')}</Typography>
-    </Box>
+      {role.manages && <Box component="span" sx={{ ml: 0.5, fontSize: 10, color: 'primary.main' }}>{t('operating.managesBadge')}</Box>}
+      {role.until && <Box component="span" sx={{ ml: 0.5, fontSize: 10, color: 'text.secondary' }}>{t('operating.untilLine', { day: role.until })}</Box>}
+    </ButtonBase>
   )
 }

@@ -368,6 +368,10 @@ const DIMMED: Record<string, [uses: number, what: string]> = {
   'src/editor/nodes/LogoGrid.tsx': [1, 'disabled tile'],
   // Shapes inside an icon.
   'src/widgets/icons.tsx': [6, 'icon shapes'],
+  // A unit type and the organisation out of what is picked on the structure, and the card's fade between the two:
+  // a dim that says "not this", where the words are there to be found, not read.
+  'src/operating/ui/TypeCard.tsx': [2, 'out-of-pick dim and its transition'],
+  'src/operating/ui/StructureLanes.tsx': [1, 'out-of-pick dim'],
 }
 
 /** A text colour given as an alpha: `color: alpha(…)`, directly or from the theme. */

@@ -3,8 +3,9 @@
 
 /**
  * The operating model's page (ADR-0036 §2): the organisation's unit types and
- * roles as cards, the matrix of responsibilities against roles, the rules, and
- * the libraries to start from.
+ * roles drawn as the structure they make (amended 11 October 2026), the
+ * matrix of responsibilities against roles, the rules, and the libraries to
+ * start from.
  *
  * It is kept at the organisation and edited there only: opened over any other
  * scope it reads, and says where it is edited. Every change is a command
@@ -24,11 +25,10 @@ import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import type { Command } from '../../model/commands'
 import type { MakeId } from '../../model/keys'
-import type { RoleId, UnitType } from '../../model/operatingModel'
+import type { RoleId, UnitType, UnitTypeId } from '../../model/operatingModel'
 import { useStrings } from '../../i18n'
 import { barChromeFor, NO_WINDOW_CHROME } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
-import { ConfirmDialog } from '../../widgets/ConfirmDialog'
 import { BackIcon } from '../../widgets/icons'
 import { PageDialog } from '../../widgets/PageDialog'
 import { itemOf, removeResponsibility, removeRole, removeSlot, removeUnitType } from '../edit'
@@ -39,6 +39,7 @@ import { countsLine } from './countsLine'
 import { Inspector } from './Inspector'
 import { LibrariesPanel } from './LibrariesPanel'
 import { RaciMatrix } from './RaciMatrix'
+import { RemoveConfirm } from './RemoveConfirm'
 import { UnitsAndRoles } from './UnitsAndRoles'
 
 export type OperatingTab = 'units' | 'raci' | 'libraries'
@@ -83,6 +84,8 @@ export type OperatingModelPageProps = {
   aside?: (item: OperatingItem) => ReactNode
   /** A role somebody holds is not taken out of a unit type at once: the host lists them first. Absent, a slot goes at once. */
   slotTakeOut?: SlotTakeOut
+  /** How many units of each type there are today, as the host counts them across the tree; each card says so where given. */
+  unitCounts?: ReadonlyMap<UnitTypeId, number>
 }
 
 /** Which tab an item is edited on. */
@@ -138,7 +141,6 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
     setRemoving(undefined)
     setSelected(undefined)
   }
-  const removeKey = toRemove ? ({ unitType: 'operating.removeUnitType', role: 'operating.removeRole', responsibility: 'operating.removeResponsibility' } as const)[toRemove.kind] : undefined
 
   return (
     <PageDialog open={props.open} topInset={chrome.topInset} onClose={props.onClose} aria-label={t('operating.title')}>
@@ -175,6 +177,7 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
           {tab === 'units' && (
             <UnitsAndRoles
               model={model} readOnly={readOnly} selected={selected} onSelect={select} dispatch={dispatch} makeId={makeId}
+              libraries={props.libraries ?? LIBRARIES} {...(props.unitCounts ? { unitCounts: props.unitCounts } : {})}
               {...(empty ? { onOpenLibraries: () => setTab('libraries') } : {})}
             />
           )}
@@ -198,15 +201,7 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
           </Box>
         )}
       </Box>
-      <ConfirmDialog
-        open={toRemove !== undefined}
-        title={t('operating.remove')}
-        body={removeKey && toRemove ? t(removeKey, { name: toRemove.item.name }) : ''}
-        confirmLabel={t('operating.removeConfirm')}
-        cancelLabel={t('operating.cancel')}
-        onCancel={() => setRemoving(undefined)}
-        onConfirm={confirmRemove}
-      />
+      <RemoveConfirm item={toRemove} onCancel={() => setRemoving(undefined)} onConfirm={confirmRemove} />
     </PageDialog>
   )
 }

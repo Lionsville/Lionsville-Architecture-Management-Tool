@@ -35,6 +35,7 @@ import {
 import type { OperatingItem, OperatingModel } from '../edit'
 import { entryOf } from '../library'
 import { libraryById } from '../libraries'
+import { TypePlace } from './TypePlace'
 
 type Props = {
   model: OperatingModel
@@ -120,6 +121,7 @@ function UnitTypeFields({ type, model, readOnly, dispatch, taking }: {
         control={<Checkbox size="small" checked={type.spans === true} disabled={readOnly} onChange={(_event, on) => dispatch(setFlag('unitType', type.id, 'spans', on))} />}
         label={t('operating.spans')}
       />
+      <TypePlace type={type} model={model} readOnly={readOnly} dispatch={dispatch} />
       <Slots type={type} model={model} readOnly={readOnly} dispatch={dispatch} taking={taking} />
       <TextField size="small" margin="dense" type="number" label={t('operating.limit')} value={type.limit ?? ''} disabled={readOnly}
         helperText={t('operating.limitHint')} slotProps={{ htmlInput: { min: 0 } }} sx={{ mt: 2 }} fullWidth
