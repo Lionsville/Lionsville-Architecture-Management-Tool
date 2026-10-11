@@ -42,8 +42,14 @@ export const POLICY_KEY = 'people'
 /** The longest a period may be set to: a century, which is no period at all. */
 const MOST_DAYS = 36_500
 
+/**
+ * A period as kept: whole days, at most a century — a longer one is kept as
+ * the longest, never as the default, which would forget sooner than asked —
+ * and the default for anything that is no period at all.
+ */
 function days(value: unknown, otherwise: number): number {
-  return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= MOST_DAYS ? value : otherwise
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0) return otherwise
+  return Math.min(MOST_DAYS, value)
 }
 
 /** The policy, read from the organisation's settings; the default for anything unset or not a value it could be. */

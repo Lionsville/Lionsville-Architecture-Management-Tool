@@ -31,6 +31,11 @@ describe('the policy', () => {
     expect(policyPatch({ agentsSee: 'all' as never })).toEqual({ people: {} })
   })
 
+  it('keeps a period longer than a century as a century, never as the default, which would forget sooner than asked', () => {
+    expect(policyPatch({ keepNameDays: 99_999 })).toEqual({ people: { keepNameDays: 36_500 } })
+    expect(policyOf({ people: { keepNameDays: 99_999, removeAfterDays: 50_000 } })).toMatchObject({ keepNameDays: 36_500, removeAfterDays: 36_500 })
+  })
+
   it('says the day a name is forgotten and the day an entry goes', () => {
     expect(forgetDay(left, DEFAULT_POLICY)).toBe('2026-11-12')
     expect(forgetDay(here, DEFAULT_POLICY)).toBeUndefined()
