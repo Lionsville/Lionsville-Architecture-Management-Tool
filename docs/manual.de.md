@@ -105,18 +105,22 @@ diesem Bereich am höchsten eingeordnet ist. Er wird am Tag ermittelt und nie
 gespeichert. Ein Klick auf den Namen einer Einheit öffnet sie dort, wo sie
 geführt wird, und ihr Inspektor sagt dasselbe vom anderen Ende.
 
-**Braucht Aufmerksamkeit**, unter den Karten, sobald es etwas gibt: ein Satz je
-Sache, in der sich die Organisation selbst widerspricht — ein Name, den zwei
-Bereiche beide definieren, eine veraltete Kopie, eine Anwendung, von der niemand
-gesagt hat, wem sie gehört, ein Dienst, der über eine Teamgrenze hinweg genutzt
-wird, ohne als geteilt markiert zu sein, ein Dienst, den keine Plattform
-liefert, und auf dem Organisationsbildschirm selbst ein Einheitstyp, der
-nirgends hingehört, oder eine Verantwortung ohne ihre eine
-rechenschaftspflichtige Rolle. Jeder Satz ist eine Schaltfläche, die den
-betreffenden Bereich mit dem ausgewählten Datensatz öffnet — ein Befund zum
+**Braucht Aufmerksamkeit**, unter den Karten, sobald es etwas gibt: worin sich
+die Organisation selbst widerspricht — ein Name, den zwei Bereiche beide
+definieren, eine veraltete Kopie, eine Anwendung, von der niemand gesagt hat,
+wem sie gehört, ein Dienst, der über eine Teamgrenze hinweg genutzt wird, ohne
+als geteilt markiert zu sein, ein Dienst, den keine Plattform liefert, eine
+Fähigkeit, die eine Domäne vorschlägt, und auf dem Organisationsbildschirm
+selbst ein Einheitstyp, der nirgends hingehört, oder eine Verantwortung ohne
+ihre eine rechenschaftspflichtige Rolle — in der Liste, in der jeder
+Bildschirm seine Befunde zeigt (*Eine Liste von Befunden lesen*, weiter
+unten): eine Zeile je Prüfung, zugeklappt. Die Erklärung eines Befunds öffnet
+den betreffenden Bereich mit dem ausgewählten Datensatz — ein Befund zum
 Betriebsmodell öffnet dessen Seite, mit dem Einheitstyp oder der Verantwortung
-gewählt —, sodass der Ort zum Beheben einen Klick entfernt ist. Der Rest von *Ein Name in der ganzen Organisation* weiter unten
-sagt, was jeder bedeutet.
+gewählt — und, bei einem Namen, den zwei Bereiche definieren, die andere
+Definition, und **Verknüpfen…**, wo Sie diesen Bereich ändern dürfen. Der Rest
+von *Ein Name in der ganzen Organisation* weiter unten sagt, was jeder
+bedeutet.
 
 **Bereiche in** der Organisation, darunter: eine Zeile je Bereich, die Kinder
 eingerückt, mit einem Pfeil, um eine Domäne zuzuklappen, und einem Etikett mit
@@ -239,8 +243,39 @@ eigene Zeile.
 Eines auf der Liste ist **Information und kein Fehler**: ein Datensatz, den
 nichts in seinem eigenen Bereich zeichnet — kein Board hält ihn, und keine
 Zeichnung dort zeigt auf ihn. Ein Ding kann echt, verantwortet und dokumentiert
-sein, ohne schon auf irgendjemandes Bild zu stehen, deshalb wird es getrennt
-gezählt und nie wie ein Befund eingefärbt.
+sein, ohne schon auf irgendjemandes Bild zu stehen, deshalb ist es ein
+Hinweis, wie ein Vorschlag, und wird nie wie ein Fehler eingefärbt.
+
+### Eine Liste von Befunden lesen
+
+Jede Liste von Befunden ist dieselbe Liste: **Braucht Aufmerksamkeit** auf
+einer Startseite, die **Prüfungen** einer Einheit, die Zusammenfassung neben
+dem Organigramm, die Befunde der Conway-Karte, **Noch offen** bei einem Plan
+und **Wo sich die Daten widersprechen** auf der Roadmap.
+
+- **Eine Zeile je Prüfung**: das Zeichen ihres Gewichts, ihr Name und wie
+  viele, zugeklappt. Drücken Sie die Zeile, um jeden Befund darunter zu sehen,
+  in seinem eigenen Satz.
+- **Drei Gewichte**, in dieser Reihenfolge. **Beheben** (ein roter Punkt): das
+  Modell widerspricht sich selbst oder kann nicht stimmen, und die Behebung
+  liegt im Modell. **Prüfen** (ein orangefarbenes Dreieck): wahrscheinlich eine
+  Lücke oder ein Risiko, einen Blick wert. **Hinweis** (ein *i*): Information,
+  die gut so gewollt sein kann. Die Zeile unter der Liste sagt, welches
+  Zeichen welches ist.
+- **Die Hinweise sind verborgen** hinter **Hinweise zeigen (N)**. Was eine
+  Liste aufgeklappt hat, und ob ihre Hinweise gezeigt werden, gilt, solange
+  die App offen ist, und wird nie gespeichert.
+- **Drücken Sie einen Befund, um ihn zu lesen**: sein Satz, sein Gewicht und
+  worum es geht, **Warum es wichtig ist**, **So beheben Sie es**, und die
+  Aktionen, die ihn beheben oder öffnen, wo er behoben wird — den Datensatz
+  öffnen, die Zeichnung, die Einheit oder beide Einheiten, den Einheitstyp,
+  den Plan, die Person in Personen; **Verknüpfen…**, **Übernehmen**,
+  **Zuweisen…**, **Zuweisung beenden…**, **Eine Zusammenarbeit festhalten…**,
+  **Festlegung entfernen**. Eine Liste bietet die Aktionen, die sie dort tun
+  kann, wo sie steht, und der Bildschirm, den sie öffnet, tut den Rest.
+  **Alle Befunde** geht zurück zu dem Befund, von dem Sie kamen.
+- Ein behobener Befund verschwindet aus der Liste, und seine Erklärung mit
+  ihm.
 
 ### Das Register
 
@@ -1611,7 +1646,8 @@ der Cursorposition ein.
 
 ### Worin sich die Daten widersprechen
 
-Unter der Achse steht eine Liste von Widersprüchen: eine Anwendung, die
+Unter der Achse steht eine Liste von Befunden (siehe *Eine Liste von Befunden
+lesen*): eine Anwendung, die
 abgeschaltet wird, während Verbindungen noch live sind, ein Nachfolger, der
 erst ankommt, nachdem das, was er ersetzt, weg ist, eine Abschaltung, für die
 kein Nachfolger benannt ist, eine Verbindung, die noch gültig ist, nachdem eines
@@ -1621,9 +1657,9 @@ fertig sein sollte.
 
 Ein Eintrag ist kein Widerspruch, sondern ein fehlendes Bild:
 Container-Schnittstellen zwischen zwei Anwendungen, für die niemand eine
-Schnittstelle auf Anwendungsebene gezeichnet hat. **Übernehmen** zeichnet sie
-und lässt jede dieser Linien darauf landen, in einem Schritt — oder lassen Sie
-es stehen, und nichts geschieht.
+Schnittstelle auf Anwendungsebene gezeichnet hat. **Übernehmen**, in seiner
+Erklärung, zeichnet sie und lässt jede dieser Linien darauf landen, in einem
+Schritt — oder lassen Sie es stehen, und nichts geschieht.
 
 Sie sagt, wo die Daten einander widersprechen. Sie kann Ihnen nicht sagen, dass
 eine Landschaft veraltet ist — nichts kann das — und die Seite sagt es unter
@@ -2153,7 +2189,10 @@ Die Abschnitte einer Einheit, in dieser Reihenfolge:
   zusammen mehr als die ganze Zeit sind, und ein Gebiet, eine Gruppe oder eine
   Fähigkeit, für die sie verantwortlich ist, in einer Domäne, die weder sie
   noch eine Einheit über ihr bedient. Eine Einheit bedient eine Domäne, wenn
-  sie diesen Bereich bedient, einen darüber oder einen darin. Die Startseite
+  sie diesen Bereich bedient, einen darüber oder einen darin. In der Liste von
+  Befunden bietet eine Rolle mit zu wenigen Personen **Zuweisen…** und eine
+  Zuweisung, die ihre Einheit oder Rolle überdauert hat, **Zuweisung
+  beenden…**, wo Sie die Personen dieser Rolle ändern dürfen. Die Startseite
   der Organisation zeigt dieselben Befunde für jeden Bereich.
 
 Die Abschnitte lesen den Tag, an dem das Board daneben betrachtet wird. Auf
@@ -2258,15 +2297,16 @@ Seite, wo der Plan Einheiten berührt:
   Wo nur der Bereich des Plans geschrieben wird, nimmt ⌘Z den ganzen Schritt
   zurück; wo auch andere Bereiche geschrieben wurden, wird er in jedem davon
   zurückgesetzt.
-- **Noch offen am** Tag: was die Prüfungen dann in diesen Einheiten finden —
-  jedes ein Link zur Einheit —, jede Verantwortung, die ihr A verliert, weil
+- **Noch offen am** Tag, in der Liste von Befunden: was die Prüfungen dann in
+  diesen Einheiten finden — einer zu einer Einheit öffnet sie —, jede
+  Verantwortung, die ihr A verliert, weil
   die Rolle endet, die dafür rechenschaftspflichtig ist, und jede
   Zusammenarbeit, die die Einheiten des Plans noch festhalten müssen: *Halten
   Sie fest, wie* eine Einheit, die der Plan einführt oder verschiebt, *mit*
   einer anderen *arbeitet*, wo eine Schnittstelle zwischen ihren Anwendungen
   ohne festgehaltene Zusammenarbeit läuft — etwa wenn der Cluster, den der Plan
-  auflöst, sie festgehalten hatte. Jede öffnet die Einheit des Plans, wo
-  **Arbeitet mit** sie festhält.
+  auflöst, sie festgehalten hatte. **Eine Zusammenarbeit festhalten…** öffnet
+  die Einheit des Plans, wo **Arbeitet mit** sie festhält.
 
 Ein Agent stellt eine Einheit am Tag eines Plans mit `plan.move` unter eine
 neue übergeordnete Einheit, datiert einen Einheitstyp oder eine Rolle mit
@@ -2304,9 +2344,9 @@ darunter. Wird ein Organigramm mit mehr als 30 Einheiten zum ersten Mal
 geöffnet, ist alles unterhalb der zweiten Ebene eingeklappt, und die Seite
 sagt es. **Alle einklappen** und **Alle ausklappen** stehen in der Leiste; die
 Gliederung klappt für sich. **Eine Einheit finden** geht zur ersten Einheit,
-deren Name jedes eingegebene Wort enthält; das, **Mich finden** und jeder
-Befund neben dem Organigramm klappen den Weg zu der Einheit aus, zu der sie
-gehen.
+deren Name jedes eingegebene Wort enthält; das, **Mich finden** und **Einheit
+öffnen** bei einem Befund neben dem Organigramm klappen den Weg zu der Einheit
+aus, zu der sie gehen.
 Eine Faltung gilt, solange die App offen ist, und wird nie gespeichert.
 
 Jeder Kasten nennt Typ und Namen der Einheit, und jede Zeile eine Rolle, die
@@ -2344,7 +2384,9 @@ zurückgelassen hat, dort zu sehen sind, wo sie zurückblieben.
 Zusammenfassung**: wessen Organigramm und an welchem Tag, wie viele Einheiten
 und Personen darauf stehen und wie viele Plätze unbesetzt sind; dann
 **Befunde**, was die Organisation über diese Einheiten und die Personen darin
-widerspricht, jede Zeile zu der Einheit, um die es geht; und **So wird es
+widerspricht, in der Liste von Befunden — **Einheit öffnen** geht zu der
+Einheit, um die es geht, und **In Personen öffnen** zu jemandem über seiner
+ganzen Zeit; und **So wird es
 gelesen** — ein gestricheltes **+ unbesetzt** ist eine Rolle, die der Typ der
 Einheit verlangt und die niemand innehat, ein roter Rand ist jemand über
 seiner ganzen Zeit, *führt* markiert eine Rolle, deren Inhaber die Personen
@@ -2392,11 +2434,18 @@ läuft, ohne festgehaltene Zusammenarbeit zwischen den Einheiten; eine
 festgehaltene Zusammenarbeit ohne Schnittstelle zwischen den beiden, was oft
 so gewollt ist und als Tatsache gesagt wird; eine Anwendung, die niemandem
 gehört; und eine Einheit, der mehr Anwendungen
-gehören, als ihr Typ erlaubt. Ein Klick auf einen Befund markiert, worum es
+gehören, als ihr Typ erlaubt. Sie sind die Liste von Befunden, und eine
+Zusammenarbeit, die keine Schnittstelle braucht, ist ein Hinweis, hinter
+**Hinweise zeigen**. Ein geöffneter Befund markiert auf der Karte, worum es
 geht. Die Karte liest nur: wo eine der beiden Einheiten in diesem Bereich
-geführt wird, beantwortet **+ Eine Zusammenarbeit festhalten…** eine
-Überschreitung als ein Schritt, und alles andere wird dort beantwortet, wo es
-geführt wird — ein Eigentümer an der Anwendung, ein Limit am Einheitstyp. Wie
+geführt wird, beantwortet **Eine Zusammenarbeit festhalten…** eine
+Überschreitung als ein Schritt; wo dieser Bereich eine Zusammenarbeit führt,
+die keine Schnittstelle braucht, nimmt **Festlegung entfernen** sie als ein
+Schritt weg, und **Die fehlende Schnittstelle modellieren…** bietet die
+Anwendungen der beiden Einheiten, um die zu öffnen, von der aus Sie sie
+modellieren; **Beide Einheiten öffnen** öffnet eine von beiden; und alles
+andere wird dort beantwortet, wo es geführt wird — ein Eigentümer an der
+Anwendung, ein Limit am Einheitstyp. Wie
 das Organigramm wird sie an einem Tag gezeichnet, und **Mich finden** geht zu
 Ihrer Einheit. Eine Anwendung steht auf der Karte, solange sie am Tag der Karte
 aktiv oder auslaufend ist: eine, die noch nicht live ist, oder eine, die weg

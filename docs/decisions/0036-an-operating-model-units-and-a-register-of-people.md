@@ -11,9 +11,10 @@
   implemented, 11 October 2026, with the screens brought to what this
   record's design drew (*As built, 3.6.1*, below). Amended again, 11 October
   2026: findings you can act on (*Amended*, below); its catalogue as built
-  (*As built, 3.6.1: a catalogue of checks*, below), and a finding marked as
+  (*As built, 3.6.1: a catalogue of checks*, below), a finding marked as
   intended with the scope format at 12 (*As built, 3.6.1: marked as
-  intended*, below)
+  intended*, below), and every list of findings grouped, folded and explained
+  (*As built, 3.6.1: one list of findings*, below)
 * Date: 2026-10-11
 * Deciders: Wouter Simons
 * Supersedes: ADR-0011, in part (Q1's *everything a person can do on a page
@@ -1750,6 +1751,77 @@ defined.
 `mark` — the day and the reason. No tool makes a mark or takes one back, and
 the tool's description says so; the refusal's sentence is there for a step
 that reaches the writer from elsewhere.
+
+## As built, 3.6.1: one list of findings
+
+The amendment's lists: every place that lists findings draws one list,
+grouped by check, folded and explained. *Mark as intended…* and the Checks
+page are drawn on it, and each has its place in it.
+
+**One component, knowing no model.** `widgets/FindingsList` sits below the
+model in the import matrix, so it is handed what it draws: the groups
+(`groupByCheck`), the words as keys in one table the catalogue publishes
+(`CHECK_LIST_WORDS`: the weights, the categories, the actions, and the list's
+own few), each instance's sentence as its screen said it before, and each
+action as what that screen does for it — a press, a choice of several (a
+menu: the two units, or the two units' applications), or nothing, and then no
+button. It is drawn by the organisation's home (*Needs attention*), a unit's
+**Checks**, the chart's summary, the Conway map, a plan's **Still open** and
+the roadmap (`RoadmapFindings`), which `build/findingLinks.test.ts` holds to
+that list. The operating model's card and page list no findings: the card
+counts the responsibilities without their A, and the page draws a check on
+each row of its matrix and a tray for the types that sit nowhere.
+
+**Grouped, weighed and folded.** One row per check — its weight's mark, its
+name and how many — folded, fix before review before note, with a line saying
+how many there are to look at and how many notes, and one saying what each
+mark means. The notes wait behind *Show notes (N)*. What a list has unfolded,
+and whether its notes are shown, is kept for the session under the list's own
+key in the shell's `SessionFolds`, handed down as a context
+(`widgets/sessionMemory.ts`), and never saved. The marks are drawn in the
+error, warning and secondary tokens, measured in both themes.
+
+**An instance opens its explanation** in the list's place: the instance in its
+sentence, the weight and the category, *Why it matters*, *How to fix it* and
+the actions, the focus on its title; *All findings* goes back to the instance.
+A finding the actions put right leaves the list, and the list comes back.
+
+**What each screen does.** The home: the record, the drawing, the operating
+model's page with the item picked, the other definition, and *Link…* for a
+definition kept twice where the home may be written — where a row went
+before. A unit's checks: *Assign…* for a role short of people and *End the
+assignment…* for one that outlived its unit or role, where that role's people
+may be changed. The chart's summary: *Open the unit* on the chart — for a
+capability answered for outside the domains served, the unit that answers —
+and *Open in People*. The Conway map: *Declare an interaction…* where a unit
+of the two is kept here, *Open the interface* at the application it starts
+from, *Remove the declaration* where this scope keeps the row, *Model the
+missing interface…* — `modelInterface`, a new action, the two units'
+applications to open — and *Open the two units*; opening an instance lights
+what it is about, as a press did. A plan's **Still open**: the unit; a
+responsibility that loses its A is said under `check.accountability` and an
+interaction to declare under `check.interfaceUndeclared`, whose *Declare an
+interaction…* opens the plan's unit. The roadmap: the element, the row's
+element, the plan, and *Accept*.
+
+**The home lists its notes** now that the list hides them: a record on no
+board, left out before, and a domain's proposal, listed before as if it were a
+fault. Its items carry the finding's `fields`, `scopes` and `person`, which a
+mark's key is made of. *Show all* and its control name `org.attentionMore` are
+gone with the folding past six; `findings.group`, `findings.instance`,
+`findings.showNotes`, `findings.back` and `findings.action` are named.
+
+**What was marked is not in the groups.** Each screen splits its findings
+(`splitMarked`) — the home by the tree's marks, the unit, the chart, the map
+and a plan by the tree's with the open scope's session over them, the roadmap
+by the open scope's own — and hands in the shown. The list keeps two places
+for the marks: under the groups for what was marked (`accepted`), and under an
+explanation's actions (`more`).
+
+**The agent.** `checks.list` leaves out the notes by their check's weight —
+a proposal too, now — unless `notes` is asked, or `information`, its older
+name, or the check by its key; and each finding answers its check's `why` and
+`how` in English beside its weight and category.
 
 ## Open
 

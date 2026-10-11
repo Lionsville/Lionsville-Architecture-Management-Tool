@@ -704,7 +704,13 @@ src/widgets/      Presentation with no opinions: icons, one confirm dialog,
                   opens (`brings`), and every part preloaded before a
                   suite's first test (`app/testing/lazyParts.ts`) —
                   and a request from outside to select what a page draws,
-                  honoured where it draws it (`useSelectRequest`).
+                  honoured where it draws it (`useSelectRequest`); the one
+                  list of findings (`FindingsList`: grouped by check, folded,
+                  the notes hidden, an instance opening its explanation and
+                  the actions its screen hands in — the groups and the words
+                  come from the model's catalogue, which a widget may not
+                  read), and a set kept for the session under a key, from the
+                  shell's folds handed down as a context (`sessionMemory`).
 src/ports/        The seams. Interfaces only, no implementations.
                     PreferencesStore · DocumentGateway
                     Diagnostics · HostControls · UpdateSettings

@@ -95,15 +95,18 @@ name opens it where it is kept, and its inspector says the same thing from
 the other end.
 
 **Needs attention**, under the cards, when there is anything to attend to:
-one sentence per thing the organisation contradicts about itself — a name two
-scopes both define, a copy gone stale, an application nobody has said whose it
-is, a service used across a team boundary without being marked shared, a
-service no platform delivers, and on the organisation's own home a unit type
-that sits nowhere or a responsibility without its one accountable role. Each
-sentence is a button that opens the scope it is about with the record
-selected — a finding about the operating model opens its page, with the unit
-type or the responsibility picked — so the place to fix it is one click away.
-The rest of *One name across the organisation* below says what each means.
+what the organisation contradicts about itself — a name two scopes both
+define, a copy gone stale, an application nobody has said whose it is, a
+service used across a team boundary without being marked shared, a service no
+platform delivers, a capability a domain proposes, and on the organisation's
+own home a unit type that sits nowhere or a responsibility without its one
+accountable role — in the list every screen draws its findings in (*Reading a
+list of findings*, below): one row per check, folded. A finding's explanation
+opens the scope it is about with the record selected — a finding about the
+operating model opens its page, with the unit type or the responsibility
+picked — and, for a name two scopes define, the other definition, and
+**Link…** where you may change this scope. The rest of *One name across the
+organisation* below says what each means.
 
 **Scopes within** the organisation, beneath: one row per scope, the children
 indented, with a chevron to fold a domain shut, and a badge saying what the
@@ -215,7 +218,34 @@ finds. Each row of the tree on the organisation screen carries its own line.
 One thing on the list is **information rather than a fault**: a record nothing
 in its own scope draws — no board holds it, and no drawing there points at it.
 A thing can be real, owned and documented without being on anybody's picture
-yet, so it is counted apart and never coloured like a finding.
+yet, so it is a note, as a proposal is, and never coloured like a fault.
+
+### Reading a list of findings
+
+Every list of findings is the same list: **Needs attention** on a home, a
+unit's **Checks**, the organisation chart's summary, the Conway map's
+findings, a plan's **Still open** and the roadmap's **Where the dates
+disagree**.
+
+- **One row per check**: its weight's mark, its name and how many, folded
+  shut. Press the row to see each finding under it, in its own sentence.
+- **Three weights**, in this order. **Fix** (a red dot): the model contradicts
+  itself or cannot be true, and the fix is in the model. **Review** (an amber
+  triangle): probably a gap or a risk, worth a look. **Note** (an *i*):
+  information that may well be intended. The line under the list says which
+  mark is which.
+- **The notes are hidden** behind **Show notes (N)**. What a list has
+  unfolded, and whether its notes are shown, lasts while the app is open and
+  is never saved.
+- **Press a finding to read it**: its sentence, its weight and what it is
+  about, **Why it matters**, **How to fix it**, and the actions that fix it
+  or open where it is fixed — open the record, the drawing, the unit or the
+  two units, the unit type, the plan, the person in People; **Link…**,
+  **Accept**, **Assign…**, **End the assignment…**, **Declare an
+  interaction…**, **Remove the declaration**. A list offers the actions it can
+  do where it is drawn, and the screen it opens does the rest. **All
+  findings** goes back to the finding you came from.
+- A finding put right leaves the list, and its explanation with it.
 
 ### The register
 
@@ -1409,16 +1439,17 @@ drivers and the options you weighed.
 
 ### What the dates disagree about
 
-Under the axis is a list of contradictions: an application retiring with
-connections still live, a successor that does not arrive until after the thing it
-replaces is gone, a retirement with no successor named, a connection still valid
+Under the axis is a list of findings (see *Reading a list of findings*): an
+application retiring with connections still live, a successor that does not
+arrive until after the thing it replaces is gone, a retirement with no
+successor named, a connection still valid
 after one of its ends has retired, an application still standing on a platform
 that has been retired, and a plan past the day it was due to finish.
 
 One entry is not a contradiction but a picture that is missing: container
 interfaces running between two applications with no application interface drawn
-for them. **Accept** draws it and lands every one of them on it, as one step —
-or leave it, and nothing happens.
+for them. **Accept**, in its explanation, draws it and lands every one of
+them on it, as one step — or leave it, and nothing happens.
 
 It says where the dates contradict each other. It cannot tell you that a landscape
 is out of date — nothing can — and the page says so under the list.
@@ -1880,8 +1911,10 @@ A unit's sections, in that order:
   ended, anyone in it whose shares add up to more than all of their time, and
   an area, grouping or capability it is responsible for in a domain that
   neither it nor a unit above it serves. A unit serves a domain when it serves
-  that scope, a scope above it or one within it. The organisation's home lists
-  the same findings for every scope.
+  that scope, a scope above it or one within it. In the list of findings, a
+  role short of people offers **Assign…** and an assignment that has outlived
+  its unit or role **End the assignment…**, where you may change that role's
+  people. The organisation's home lists the same findings for every scope.
 
 The sections read the day the board beside them is looked at. On a board that
 shows another day — its own saved day, or a day picked under **Showing** or
@@ -1971,13 +2004,14 @@ plan's interfaces, where the plan touches units, the page says:
   every beginning the day after, in every scope that keeps one, together.
   Where the plan's scope is the only one written, ⌘Z takes the whole step
   back; where other scopes were written too, it is put back in each.
-- **Still open on** its day: what the checks find in those units then — each a
-  link to the unit — every responsibility that loses its A because the role
-  accountable for it ends, and every interaction the plan's units are left to
-  declare: *Declare how* a unit it introduces or moves *works with* another,
-  where an interface crosses between their applications with nothing declared —
-  as when the cluster it retires was the one that had declared it. Each opens
-  the plan's unit, whose **Works with** declares it.
+- **Still open on** its day, in the list of findings: what the checks find in
+  those units then — one about a unit opens it — every responsibility that
+  loses its A because the role accountable for it ends, and every interaction
+  the plan's units are left to declare: *Declare how* a unit it introduces or
+  moves *works with* another, where an interface crosses between their
+  applications with nothing declared — as when the cluster it retires was the
+  one that had declared it. **Declare an interaction…** opens the plan's unit,
+  whose **Works with** declares it.
 
 An agent puts a unit under a new parent on a plan's day with `plan.move`,
 dates a unit type or a role with `unitType.update` and `role.update` (`from`,
@@ -2010,8 +2044,8 @@ vacancies and findings among them. The first time a chart of more than 30
 units is opened, everything below the second level is folded, and the page
 says so. **Fold all** and **Unfold all** are on the bar; the outline folds on
 its own. **Find a unit** goes to the first unit whose name holds every word
-typed; it, **Find me** and each finding beside the chart unfold the way to
-the unit they go to. A fold lasts while the app is open and is never saved.
+typed; it, **Find me** and **Open the unit** on a finding beside the chart
+unfold the way to the unit they go to. A fold lasts while the app is open and is never saved.
 
 Each box says the unit's type and name, and each row a role it holds, with who
 holds it **on the chart's day**: by name from the register, their share where it
@@ -2042,7 +2076,9 @@ were left.
 **With nothing picked, the inspector beside the chart is its summary**: whose
 chart and on which day, how many units and people are on it and how many
 places are vacant; then **Findings**, what the organisation contradicts about
-these units and the people in them, each line going to the unit it is about;
+these units and the people in them, in the list of findings — **Open the
+unit** goes to the unit it is about, and **Open in People** to a person over
+all of their time;
 and **How to read it** — a dashed **+ vacant** is a role the unit's type
 requires and nobody holds, a red edge is someone over all of their time,
 *manages* marks a role whose holder manages the unit's people, and a dashed
@@ -2081,10 +2117,16 @@ interaction is declared that no interface needs.
 crosses from one unit's applications to another's with nothing declared
 between the units; an interaction declared with no interface between the
 two, which is often meant and is said as a fact; an application nobody owns;
-and a unit that owns more applications than its type allows. A press on a finding marks what it is about. The map only reads: where
-one of the two units is kept in this scope, **+ Declare an interaction…**
-answers a crossing as one step, and everything else is answered where it is
-kept — an owner on the application, a limit on the unit type. Like the chart it
+and a unit that owns more applications than its type allows. They are the
+list of findings, and an interaction no interface needs is a note, behind
+**Show notes**. A finding opened marks what it is about on the map. The map
+only reads: where one of the two units is kept in this scope, **Declare an
+interaction…** answers a crossing as one step; where this scope keeps an
+interaction no interface needs, **Remove the declaration** takes it away as
+one step, and **Model the missing interface…** offers the two units'
+applications, to open the one to model it from; **Open the two units** opens
+either; and everything else is answered where it is kept — an owner on the
+application, a limit on the unit type. Like the chart it
 is drawn on a day, and **Find me** goes to your unit. An application is on the
 map while it is live or retiring on the map's day: one not yet live, or gone,
 is not drawn, and neither are its interfaces nor anything the map would find

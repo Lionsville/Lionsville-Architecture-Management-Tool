@@ -96,18 +96,21 @@ eenheid die het hoogst in deze scope is ingedeeld. Die wordt op de dag
 uitgerekend en nooit bewaard. Een klik op de naam van een eenheid opent haar
 waar ze wordt bijgehouden, en haar paneel zegt hetzelfde van de andere kant.
 
-**Vraagt aandacht**, onder de kaarten, zodra er iets is om naar te kijken: één
-zin per ding waarin de organisatie zichzelf tegenspreekt — een naam die twee
-onderdelen allebei definiëren, een verouderde kopie, een applicatie waarvan
-niemand heeft gezegd van wie ze is, een dienst die over een teamgrens wordt
-gebruikt zonder als gedeeld gemarkeerd te zijn, een dienst die geen enkel
-platform levert, en op het organisatiescherm zelf een eenheidstype dat
-nergens onder valt of een verantwoordelijkheid zonder haar ene
-eindverantwoordelijke rol. Elke zin is een knop die het onderdeel opent waar
-het over gaat, met het record geselecteerd — een bevinding over het
+**Vraagt aandacht**, onder de kaarten, zodra er iets is om naar te kijken:
+waarin de organisatie zichzelf tegenspreekt — een naam die twee onderdelen
+allebei definiëren, een verouderde kopie, een applicatie waarvan niemand heeft
+gezegd van wie ze is, een dienst die over een teamgrens wordt gebruikt zonder
+als gedeeld gemarkeerd te zijn, een dienst die geen enkel platform levert, een
+capability die een domein voorstelt, en op het organisatiescherm zelf een
+eenheidstype dat nergens onder valt of een verantwoordelijkheid zonder haar
+ene eindverantwoordelijke rol — in de lijst waarin elk scherm zijn
+bevindingen toont (*Een lijst met bevindingen lezen*, hieronder): één regel
+per controle, dichtgevouwen. De uitleg bij een bevinding opent het onderdeel
+waar het over gaat, met het record geselecteerd — een bevinding over het
 besturingsmodel opent diens pagina, met het eenheidstype of de
-verantwoordelijkheid gekozen — zodat de plek om het te herstellen één klik
-verder is. De rest van *Eén naam in de hele organisatie* hieronder zegt wat
+verantwoordelijkheid gekozen — en, bij een naam die twee onderdelen
+definiëren, de andere definitie, en **Koppelen…** waar je dit onderdeel mag
+wijzigen. De rest van *Eén naam in de hele organisatie* hieronder zegt wat
 elk betekent.
 
 **Scopes binnen** de organisatie, eronder: één regel per onderdeel, de
@@ -222,7 +225,37 @@ van de boom op het organisatiescherm draagt zijn eigen zin.
 Eén ding op die lijst is **informatie en geen fout**: een record dat niets in
 zijn eigen onderdeel tekent — geen bord houdt het, en geen tekening daar wijst
 ernaar. Iets kan echt, beheerd en beschreven zijn zonder al op iemands plaat te
-staan, dus het wordt apart geteld en nooit als bevinding gekleurd.
+staan, dus het is een notitie, net als een voorstel, en wordt nooit als fout
+gekleurd.
+
+### Een lijst met bevindingen lezen
+
+Elke lijst met bevindingen is dezelfde lijst: **Vraagt aandacht** op een
+startpagina, de **Controles** van een eenheid, de samenvatting naast het
+organogram, de bevindingen van de Conway-kaart, **Nog open** bij een plan en
+**Waar de datums het oneens zijn** op de roadmap.
+
+- **Eén regel per controle**: het teken van haar gewicht, haar naam en
+  hoeveel, dichtgevouwen. Druk op de regel om elke bevinding eronder te zien,
+  in haar eigen zin.
+- **Drie gewichten**, in deze volgorde. **Herstellen** (een rode stip): het
+  model spreekt zichzelf tegen of kan niet kloppen, en het herstel zit in het
+  model. **Nakijken** (een oranje driehoek): waarschijnlijk een gat of een
+  risico, het bekijken waard. **Notitie** (een *i*): informatie die heel goed
+  zo bedoeld kan zijn. De regel onder de lijst zegt welk teken wat is.
+- **De notities zijn verborgen** achter **Notities tonen (N)**. Wat een lijst
+  heeft opengevouwen, en of haar notities te zien zijn, duurt zolang de app
+  open is en wordt nooit bewaard.
+- **Druk op een bevinding om haar te lezen**: haar zin, haar gewicht en waar
+  ze over gaat, **Waarom het ertoe doet**, **Hoe je het oplost**, en de acties
+  die het oplossen of openen waar het wordt opgelost — het record openen, de
+  tekening, de eenheid of de twee eenheden, het eenheidstype, het plan, de
+  persoon in Mensen; **Koppelen…**, **Overnemen**, **Toewijzen…**, **De
+  toewijzing beëindigen…**, **Een samenwerking vastleggen…**, **De vastlegging
+  verwijderen**. Een lijst biedt de acties die ze kan doen waar ze staat, en
+  het scherm dat ze opent doet de rest. **Alle bevindingen** gaat terug naar
+  de bevinding waar je vandaan kwam.
+- Een bevinding die is opgelost verdwijnt uit de lijst, en haar uitleg mee.
 
 ### Het register
 
@@ -1523,7 +1556,8 @@ besluit, met de afwegingen en de opties die u tegen elkaar hebt gezet.
 
 ### Waarover de datums het oneens zijn
 
-Onder de as staat een lijst met tegenstrijdigheden: een applicatie die uitfaseert
+Onder de as staat een lijst met bevindingen (zie *Een lijst met bevindingen
+lezen*): een applicatie die uitfaseert
 terwijl er nog koppelingen live zijn, een opvolger die pas komt nadat wat hij
 vervangt weg is, een uitfasering zonder benoemde opvolger, een koppeling die nog
 geldig is nadat een van haar uiteinden is uitgefaseerd, een applicatie die nog
@@ -1531,8 +1565,9 @@ op een uitgefaseerd platform staat, en een plan dat over zijn einddatum heen is.
 
 Eén regel is geen tegenstrijdigheid maar een ontbrekende plaat: koppelvlakken op
 containerniveau tussen twee applicaties waar niemand een applicatiekoppelvlak
-voor heeft getekend. **Overnemen** tekent het en laat elk van die lijnen erop
-landen, in één stap — of laat het staan, en er gebeurt niets.
+voor heeft getekend. **Overnemen**, in de uitleg erbij, tekent het en laat elk
+van die lijnen erop landen, in één stap — of laat het staan, en er gebeurt
+niets.
 
 Het toont waar de datums elkaar tegenspreken. Het kan niet zien of een landschap
 verouderd is — dat kan niets — en de pagina zegt dat onder de lijst.
@@ -2035,7 +2070,10 @@ De onderdelen van een eenheid, in die volgorde:
   aandelen samen meer dan al zijn tijd zijn, en een gebied, groep of
   capability waarvoor ze verantwoordelijk is in een domein dat noch zij noch
   een eenheid erboven bedient. Een eenheid bedient een domein als ze die scope
-  bedient, een scope erboven of een erbinnen. De home van de organisatie toont
+  bedient, een scope erboven of een erbinnen. In de lijst met bevindingen
+  biedt een rol met te weinig mensen **Toewijzen…** en een toewijzing die
+  haar eenheid of rol heeft overleefd **De toewijzing beëindigen…**, waar je
+  de mensen van die rol mag wijzigen. De home van de organisatie toont
   dezelfde bevindingen voor elke scope.
 
 De onderdelen lezen de dag waarop het bord ernaast wordt bekeken. Op een bord
@@ -2137,14 +2175,16 @@ plan eenheden raakt:
   een bijhoudt, tegelijk. Waar alleen de scope van het plan wordt geschreven,
   neemt ⌘Z de hele stap terug; waar ook andere scopes werden geschreven, wordt
   het in elk daarvan teruggezet.
-- **Nog open op** de dag: wat de controles dan in die eenheden vinden — elk een
-  link naar de eenheid — elke verantwoordelijkheid die haar A kwijtraakt
+- **Nog open op** de dag, in de lijst met bevindingen: wat de controles dan in
+  die eenheden vinden — een over een eenheid opent die — elke
+  verantwoordelijkheid die haar A kwijtraakt
   omdat de rol die er verantwoording voor aflegt eindigt, en elke samenwerking
   die de eenheden van het plan nog moeten vastleggen: *Leg vast hoe* een
   eenheid die het plan invoert of verplaatst *samenwerkt met* een andere, waar
   een interface tussen hun applicaties loopt zonder vastgelegde samenwerking —
-  zoals wanneer het cluster dat het plan opheft haar had vastgelegd. Elk opent
-  de eenheid van het plan, waar **Werkt samen met** haar vastlegt.
+  zoals wanneer het cluster dat het plan opheft haar had vastgelegd. **Een
+  samenwerking vastleggen…** opent de eenheid van het plan, waar **Werkt samen
+  met** haar vastlegt.
 
 Een agent zet een eenheid op de dag van een plan onder een nieuwe
 bovenliggende eenheid met `plan.move`, dateert een eenheidstype of rol met
@@ -2181,8 +2221,8 @@ dat een organogram met meer dan 30 eenheden wordt geopend, is alles onder het
 tweede niveau dichtgevouwen, en de pagina zegt dat. **Alles dichtvouwen** en
 **Alles openvouwen** staan in de balk; het overzicht vouwt los daarvan.
 **Zoek een eenheid** gaat naar de eerste eenheid waarvan de naam elk getypt
-woord bevat; dat, **Vind mij** en elke bevinding naast het organogram vouwen
-de weg open naar de eenheid waar ze naartoe gaan. Een vouw duurt zolang de app open
+woord bevat; dat, **Vind mij** en **Open de eenheid** bij een bevinding naast
+het organogram vouwen de weg open naar de eenheid waar ze naartoe gaan. Een vouw duurt zolang de app open
 is en wordt nooit bewaard.
 
 Elk vak noemt het type en de naam van de eenheid, en elke regel een rol die ze
@@ -2218,8 +2258,9 @@ achtergelaten.
 **Met niets gekozen is de inspector naast het organogram de samenvatting
 ervan**: wiens organogram en op welke dag, hoeveel eenheden en mensen erop
 staan en hoeveel plaatsen vacant zijn; dan **Bevindingen**, wat de
-organisatie over deze eenheden en de mensen erin tegenspreekt, elke regel naar
-de eenheid waarover hij gaat; en **Zo lees je het** — een gestreepte **+
+organisatie over deze eenheden en de mensen erin tegenspreekt, in de lijst
+met bevindingen — **Open de eenheid** gaat naar de eenheid waarover ze gaat,
+en **Openen in Mensen** naar iemand boven al zijn tijd; en **Zo lees je het** — een gestreepte **+
 vacant** is een rol die het type van de eenheid vraagt en die niemand vervult,
 een rode rand is iemand boven al zijn tijd, *stuurt aan* markeert een rol
 waarvan wie hem vervult de mensen van de eenheid aanstuurt, en een gestreept
@@ -2261,12 +2302,18 @@ samenwerking is vastgelegd die geen interface nodig heeft.
 die van de applicaties van de ene eenheid naar die van een andere loopt
 zonder vastgelegde samenwerking tussen de eenheden; een vastgelegde
 samenwerking zonder interface tussen de twee, wat vaak zo bedoeld is en als
-feit wordt gezegd; een applicatie die niemand bezit; en een eenheid die meer applicaties bezit dan haar type toestaat. Een
-klik op een bevinding markeert waarover die gaat. De kaart leest alleen: waar
-een van de twee eenheden in deze scope wordt bijgehouden, beantwoordt **+ Een
-samenwerking vastleggen…** een overschrijding als één stap, en al het andere
-wordt beantwoord waar het wordt bijgehouden — een eigenaar op de applicatie,
-een limiet op het eenheidstype. Net als het organogram wordt ze op een dag
+feit wordt gezegd; een applicatie die niemand bezit; en een eenheid die meer applicaties bezit dan haar type toestaat. Ze zijn de
+lijst met bevindingen, en een samenwerking die geen interface nodig heeft is
+een notitie, achter **Notities tonen**. Een geopende bevinding markeert op de
+kaart waarover ze gaat. De kaart leest alleen: waar een van de twee eenheden
+in deze scope wordt bijgehouden, beantwoordt **Een samenwerking vastleggen…**
+een overschrijding als één stap; waar deze scope een samenwerking bijhoudt die
+geen interface nodig heeft, haalt **De vastlegging verwijderen** haar weg als
+één stap, en biedt **De ontbrekende interface modelleren…** de applicaties
+van de twee eenheden, om die te openen van waaruit je haar modelleert; **Open
+de twee eenheden** opent een van beide; en al het andere wordt beantwoord waar
+het wordt bijgehouden — een eigenaar op de applicatie, een limiet op het
+eenheidstype. Net als het organogram wordt ze op een dag
 getekend, en **Vind mij** gaat naar jouw eenheid. Een applicatie staat op de
 kaart zolang ze op de dag van de kaart live of uitfaserend is: een die
 nog niet live is, of verdwenen, wordt niet getekend, en haar interfaces en wat
