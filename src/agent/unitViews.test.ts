@@ -153,6 +153,20 @@ describe('an agent and the views of the organisation', () => {
     expect((after.crossing as { status: string; mode?: string }[]).find((one) => one.status === 'declared')).toMatchObject({ mode: 'service' })
   })
 
+  it('lists an interaction with its mode, keeps a mode on no other row, and takes a day on either view', async () => {
+    const held = session()
+    const row = parsed(await handle({ id: '1', tool: 'relation.add', args: { type: 'interacts', sourceId: 'mob', targetId: 'web', mode: 'facilitating' } }, held))
+    const listed = parsed(await handle({ id: '2', tool: 'connections.list', args: {} }, held))
+    expect(JSON.stringify(listed)).toContain('"mode":"facilitating"')
+    const other = parsed(await handle({ id: '3', tool: 'relation.add', args: { type: 'assigned', sourceId: 'mob', targetId: 'shop', mode: 'service' } }, held))
+    expect(held.model().relations[other.id as string]).not.toHaveProperty('mode')
+    await handle({ id: '4', tool: 'relation.update', args: { id: row.id, type: 'assigned' } }, held)
+    expect(held.model().relations[row.id as string]).not.toHaveProperty('mode')
+    const chart = parsed(await handle({ id: '5', tool: 'diagram.create', args: { kind: 'chart', name: 'Chart' } }, held))
+    expect((await handle({ id: '6', tool: 'diagram.update', args: { id: chart.id, asOf: '2027-01-01' } }, held)).ok).toBe(true)
+    expect(held.model().diagrams[chart.id as string]?.asOf).toBe('2027-01-01')
+  })
+
   it('refuses an interaction that is not between two units', async () => {
     const held = session()
     const out = await handle({ id: '1', tool: 'relation.add', args: { type: 'interacts', sourceId: 'mob', targetId: 'shop' } }, held)

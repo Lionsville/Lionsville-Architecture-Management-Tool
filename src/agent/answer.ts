@@ -1029,6 +1029,8 @@ function connectionLine(model: Model, c: Relation, dated?: Map<string, Transitio
     isBidirectional: c.isBidirectional,
     validFrom: c.validFrom,
     validUntil: c.validUntil,
+    // How two units work together (ADR-0036 §7), where the row says.
+    ...(c.mode !== undefined ? { mode: c.mode } : {}),
     ...(c.refines !== undefined ? { refines: c.refines } : {}),
     ...(landings.length > 0
       ? {

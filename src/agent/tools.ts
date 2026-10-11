@@ -2210,7 +2210,7 @@ const SPECS = [
         paper: { type: 'string', description: 'A sheet: the canvas it is laid out on. Null is the default, A2.', enum: ['A4', 'A3', 'A2', 'A1', 'A0', 'fit'] },
         columns: { type: 'integer', description: 'A sheet: the columns its areas are laid out in. Null fits the canvas.' },
         areaSpans: { type: 'object', description: 'A sheet: area id → the whole number of columns that area takes (1 to 4). Null makes every area one column.', additionalProperties: true },
-        asOf: { type: 'string', description: 'A board or a technology view: the day it draws the model as of, yyyy-mm-dd. Null is today.' },
+        asOf: { type: 'string', description: 'A board, an organisation chart or a Conway map: the day it draws the model as of, yyyy-mm-dd. Null is today.' },
         colourBy: {
           type: 'string',
           description: 'A landscape: what the application cards are tinted by (ADR-0013) — "platform" groups them '

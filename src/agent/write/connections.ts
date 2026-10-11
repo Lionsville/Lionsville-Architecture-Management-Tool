@@ -173,9 +173,12 @@ export const updateRelation: Handler = (args, view) => {
   const id = args.id as string
   const held = view.model.relations[id]
   if (!held) return refused('agent.unknownId', `relation ${id}`)
-  const patch = relationPatch(args, held)
+  const type = typeof args.type === 'string' ? args.type as RelationType : held.type
+  const patch = relationPatch(args, { ...held, type })
   if ('ok' in patch) return patch
-  if (typeof args.type === 'string') patch.type = args.type as RelationType
+  if (typeof args.type === 'string') patch.type = type
+  // A row that stops being an interaction stops saying how two units interact.
+  if (type !== 'interacts' && held.mode !== undefined) patch.mode = undefined
   return {
     command: { type: 'relation.update', id, patch, origin: 'agent' },
     answer: json({ id, changed: Object.keys(patch) }),
@@ -270,7 +273,8 @@ function usedTargets(
 function relationPatch(args: Args, held: Relation): Partial<Relation> | AgentAnswer {
   const look = lineLook(args)
   if ('ok' in look) return look
-  const patch: Partial<Relation> = { ...look, ...modePatch(args) }
+  // A mode says how two units work together: only an `interacts` row has one (ADR-0036 §7).
+  const patch: Partial<Relation> = { ...look, ...(held.type === 'interacts' ? modePatch(args) : {}) }
   for (const key of ['label', 'protocol', 'technology'] as const) {
     if (args[key] === null || args[key] === '') patch[key] = undefined
     else if (typeof args[key] === 'string') patch[key] = args[key] as string
