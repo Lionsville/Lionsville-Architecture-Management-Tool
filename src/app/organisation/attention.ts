@@ -26,6 +26,7 @@
  */
 import type { Translate } from '../../i18n'
 import type { ElementId } from '../../model'
+import type { CheckKey } from '../../model/checkCatalogue'
 import type { HostModel } from '../../model/hostModel'
 import { findingSentence, operatingModelFindings } from '../../projects/checks'
 import { pickedPerson } from '../../model/person'
@@ -39,8 +40,8 @@ import type { RegisterRow } from './register'
 import type { TechnologyRow } from '../../projects/technologyRegister'
 
 export type AttentionItem = {
-  /** What kind of thing it is, for a test and a key. */
-  key: string
+  /** The check it is (`model/checkCatalogue.ts`): what a list groups it by, a test and a key. */
+  key: CheckKey
   /**
    * The same, as the one word a row carries on screen (`data-finding`):
    * `conflict`, `dangling`, `unattributed`, `unrealised`… — the key without
@@ -117,8 +118,9 @@ export function attentionItems(
   for (const row of technology) {
     if (row.kind !== 'platformService' || row.realisedBy.length > 0 || row.master === undefined) continue
     if (!within(row.master)) continue
+    // A check of the catalogue's like the others (`check.unrealised`), said in the register's own words.
     add({
-      key: 'techRegister.unrealised', scope: row.master, id: row.id,
+      key: 'check.unrealised', scope: row.master, id: row.id,
       text: s('techRegister.unrealisedSentence', { name: row.name }),
     })
   }

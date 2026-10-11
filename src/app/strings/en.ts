@@ -1138,11 +1138,15 @@ export const EN = {
   'conway.nothing': 'The interfaces and the declared interactions agree on this day.',
   'conway.openApplication': 'Open the application',
   'conway.onlyReads': 'The map only reads. An interaction is declared on one of the two units, an owner is set on the application, a limit on the unit type.',
-  'conway.undeclared': '{source} → {target} runs from {from} to {to}, and no interaction is declared between them.',
-  'conway.unused': '{a} and {b} declare {mode}, and no interface between them needs it.',
+  /**
+   * The Conway map's findings, each under its check (`model/checkCatalogue.ts`),
+   * which says what the kind is; its over-limit is the tree's
+   * `check.unitOverLimit`, said from `projects/checks.ts`'s table.
+   */
+  'check.interfaceUndeclared': '{source} → {target} runs from {from} to {to}, and no interaction is declared between them.',
+  'check.interactionUnused': '{a} and {b} declare {mode}, and no interface runs between them.',
   'conway.anInteraction': 'an interaction',
-  'conway.unowned': '{name} has no unit: nobody owns it.',
-  'conway.overLimit': '{unit} owns {count} applications, and a {type} owns at most {limit}.',
+  'check.applicationUnowned': '{name} has no unit: nobody owns it.',
   'conway.matrix': 'Interfaces between units',
   'conway.matrixNote': 'A number is how many interfaces run between the two. A letter is an interaction declared between them, whether or not an interface needs it: C collaboration, S as a service, F facilitating, ? no mode said. A shaded cell with a number has an interface with nothing declared; a shaded cell with only a letter has an interaction declared that no interface needs.',
   'conway.mark.collaboration': 'C',

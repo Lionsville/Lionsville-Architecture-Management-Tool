@@ -3,6 +3,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { translator } from '../../i18n'
+import { isCheckKey } from '../../model/checkCatalogue'
 import type { Finding } from '../../projects/checks'
 import { attentionItems, findingKind } from './attention'
 import type { RegisterRow } from './register'
@@ -96,6 +97,9 @@ describe('attentionItems', () => {
     expect(items.map((item) => [item.scope, item.id])).toEqual([['platforms', 'brokering'], ['retail', 'post']])
     // The kind each row carries on screen: the key without its table.
     expect(items.map((item) => item.kind)).toEqual(['unrealised', 'unattributed'])
+    // Each a check of the catalogue's, which a list groups them by.
+    expect(items.map((item) => item.key)).toEqual(['check.unrealised', 'check.unattributed'])
+    for (const item of items) expect(isCheckKey(item.key), item.key).toBe(true)
   })
 
   it('names each finding by its kind, the key without the table it is said from', () => {

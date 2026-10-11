@@ -131,7 +131,7 @@ describe('the Conway map', () => {
     expect(said()).toEqual([
       'Phone app → Orders runs from Mobile App to Webshop, and no interaction is declared between them.',
       'Billing has no unit: nobody owns it.',
-      'Webshop owns 3 applications, and a Team owns at most 2.',
+      'Webshop owns 3 applications, and a Team owns at most 2',
     ])
     expect(screen.getByTestId('conway-count').textContent).toBe('3 interfaces cross a unit · 1 with nothing declared')
   })
@@ -150,7 +150,7 @@ describe('the Conway map', () => {
     expect(screen.getAllByTestId('conway-column').map((column) => column.getAttribute('data-element-id'))).toEqual(['data', 'sales', null])
     // A unit serving several domains names them, as the chart does; one serving one says its type.
     expect(screen.getAllByTestId('conway-unit-kind').map((kind) => kind.textContent)).toEqual(['serves Customer · Shipping', 'Cluster'])
-    expect(said()).toEqual(['Billing has no unit: nobody owns it.', 'Webshop owns 3 applications, and a Team owns at most 2.'])
+    expect(said()).toEqual(['Billing has no unit: nobody owns it.', 'Webshop owns 3 applications, and a Team owns at most 2'])
   })
 
   it('declares an interaction from a crossing with none, as one row, and the finding goes', async () => {
@@ -195,7 +195,7 @@ describe('the Conway map', () => {
     }
     renderShell(<Harness commands={[]} root={root} />)
     expect(cells()[0]).toEqual(['·', 'SF unused', '1S declared', ''])
-    expect(said()).toContain('Integration Platform and Mobile App declare Facilitating, and no interface between them needs it.')
+    expect(said()).toContain('Integration Platform and Mobile App declare Facilitating, and no interface runs between them.')
   })
 })
 

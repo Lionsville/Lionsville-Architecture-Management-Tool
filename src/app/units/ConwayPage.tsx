@@ -45,6 +45,7 @@ import { isUnit, organisationOn, personOf, runsOn, unitsAbove } from '../../mode
 import type { PeopleRegisterAccess } from '../../people/ui/access'
 import { usePersonNames } from '../../people/ui/names'
 import type { HostModel } from '../../model/hostModel'
+import { CHECK_LABEL } from '../../projects/checks'
 import type { ScopeIndex } from '../../projects/scopeIndex'
 import type { ScopePath } from '../../projects/scopePath'
 import { captureSheet } from '../../widgets/capturePage'
@@ -347,20 +348,21 @@ function Findings({ map, here, lit, onLight, declarable, open, heading, t }: {
 export function findingText(finding: ConwayFinding, here: UnitViewsHere, t: Translate): string {
   switch (finding.kind) {
     case 'undeclared':
-      return t('conway.undeclared', {
+      return t('check.interfaceUndeclared', {
         source: here.name(finding.flow.sourceId), target: here.name(finding.flow.targetId), from: here.name(finding.from), to: here.name(finding.to),
       })
     case 'unused':
-      return t('conway.unused', {
+      return t('check.interactionUnused', {
         a: here.name(finding.interaction.sourceId), b: here.name(finding.interaction.targetId),
         mode: finding.interaction.mode ? t(INTERACTION_MODE_LABEL[finding.interaction.mode]) : t('conway.anInteraction'),
       })
     case 'unowned':
-      return t('conway.unowned', { name: here.name(finding.applicationId) })
+      return t('check.applicationUnowned', { name: here.name(finding.applicationId) })
     case 'overLimit': {
       const unit = here.at.organisation.units.find((one) => one.id === finding.unitId)
       const type = here.at.organisation.unitTypes.find((one) => one.id === unit?.unitTypeId)?.name ?? ''
-      return t('conway.overLimit', { unit: here.name(finding.unitId), count: finding.owns, type, limit: finding.limit })
+      // One kind with the organisation's own over-limit, so said in its words (`check.unitOverLimit`).
+      return t(CHECK_LABEL['check.unitOverLimit'], { name: here.name(finding.unitId), count: finding.owns, detail: type, limit: finding.limit })
     }
   }
 }
