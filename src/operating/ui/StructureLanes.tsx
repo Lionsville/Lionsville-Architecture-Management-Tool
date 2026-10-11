@@ -40,28 +40,31 @@ export type StructureLanesProps = {
   lineLook?: (edge: SitsIn) => Exclude<Look, 'picked'>
   /** The stable name the page's own structure carries (`platform/controlNames`). */
   named?: 'operating.structure'
+  /** Narrower lanes, and a narrow organisation: for a dialog with a pane beside it. */
+  compact?: boolean
 }
 
 /** A lane's width and the gap between two: room in the gap for a line to bend up to the rail and down again. */
-const LANE_WIDTH = 236
-const LANE_GAP = 56
+const WIDE = { lane: 236, root: 236, gap: 56 }
+const COMPACT = { lane: 200, root: 120, gap: 40 }
 
-export function StructureLanes({ structure, label, organisation, laneLabel, card, lineLook, named }: StructureLanesProps) {
+export function StructureLanes({ structure, label, organisation, laneLabel, card, lineLook, named, compact = false }: StructureLanesProps) {
   const stage = useRef<HTMLDivElement>(null)
   const lines = useMeasuredLines(stage, structure)
+  const size = compact ? COMPACT : WIDE
   return (
     <Box
       ref={stage} role="group" aria-label={label} data-guide={named} data-testid="structure-lanes"
-      sx={{ position: 'relative', display: 'flex', alignItems: 'flex-start', gap: `${LANE_GAP}px`, width: 'max-content', pt: `${railBand(structure)}px`, pb: 1.5, pr: 3 }}
+      sx={{ position: 'relative', display: 'flex', alignItems: 'flex-start', gap: `${size.gap}px`, width: 'max-content', pt: `${railBand(structure)}px`, pb: 1.5, pr: 3 }}
     >
       <Lines lines={lines} look={lineLook} />
-      <Lane heading={laneLabel(0)} lane={0}>
+      <Lane heading={laneLabel(0)} lane={0} width={size.root}>
         <Box data-lane-root>
           <OrganisationCard {...organisation} />
         </Box>
       </Lane>
       {structure.lanes.map((lane) => (
-        <Lane key={lane.lane} heading={laneLabel(lane.lane)} lane={lane.lane}>
+        <Lane key={lane.lane} heading={laneLabel(lane.lane)} lane={lane.lane} width={size.lane}>
           {lane.types.map((type) => <Box key={type.id} role="listitem" data-lane-card={type.id}>{card(type)}</Box>)}
         </Lane>
       ))}
@@ -70,9 +73,9 @@ export function StructureLanes({ structure, label, organisation, laneLabel, card
 }
 
 /** One lane: its heading, said once as the list's name, and its cards one under the other. */
-function Lane({ heading, lane, children }: { heading: string; lane: number; children: ReactNode }) {
+function Lane({ heading, lane, width, children }: { heading: string; lane: number; width: number; children: ReactNode }) {
   return (
-    <Box sx={{ width: LANE_WIDTH, flexShrink: 0, position: 'relative', zIndex: 1 }} data-lane={lane}>
+    <Box sx={{ width, flexShrink: 0, position: 'relative', zIndex: 1 }} data-lane={lane}>
       <Typography aria-hidden sx={{ fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'text.secondary', height: 16, mb: 0.5 }}>
         {heading}
       </Typography>

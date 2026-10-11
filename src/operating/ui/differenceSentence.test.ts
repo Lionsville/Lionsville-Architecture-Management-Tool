@@ -16,6 +16,7 @@ describe('a difference, said', () => {
     expect(say({ what: 'entryGone', there: 'x' })).toBe('Team coach: its library no longer has the entry it came from.')
     expect(say({ what: 'version', here: '1', there: '2' })).toBe('Team coach came from version 1; the library is at 2 now.')
     expect(say({ what: 'name', here: 'Team coach', there: 'Scrum Master' })).toBe('Team coach — the name: here “Team coach”, in the library “Scrum Master”.')
+    expect(say({ what: 'name', here: 'Team coach', there: 'Scrum Master', chosen: 'Agile coach' })).toBe('Team coach — renamed since it came in as “Agile coach”.')
     expect(say({ what: 'manages', here: 'true' })).toBe('Team coach — manages its unit: here “yes”, in the library “nothing”.')
     expect(say({ what: 'duty', about: 'Plan the cycle', there: 'C' })).toBe('Team coach — its part in Plan the cycle: here nothing, in the library C.')
   })

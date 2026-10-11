@@ -56,39 +56,37 @@ function show(start: Model = empty(), more: Partial<Parameters<typeof Harness>[0
   return sent
 }
 
+/** Scrum Team ticked in the dialog, with what it holds, brought in as one step. */
 async function bringInScrum() {
-  fireEvent.click(screen.getByRole('tab', { name: 'Libraries' }))
-  fireEvent.click(await screen.findByRole('button', { name: 'Bring in all of Scrum' }))
+  fireEvent.click(screen.getByRole('tab', { name: 'Units and roles' }))
+  fireEvent.click(screen.getByRole('button', { name: /^(Start from a library|From a library…)$/ }))
+  const dialog = await screen.findByTestId('library-dialog')
+  fireEvent.click(within(dialog).getByRole('checkbox', { name: 'Scrum Team' }))
+  fireEvent.click(within(dialog).getByRole('button', { name: /^Bring in 8 items/ }))
+  await waitFor(() => expect(screen.queryByTestId('library-dialog')).toBeNull())
 }
 
 describe('the operating model\'s page', () => {
-  it('starts empty and sends a person to the libraries', async () => {
+  it('starts empty and offers a library first', async () => {
     show()
     expect(screen.getByText(/No unit types, roles or responsibilities yet/)).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: 'Open Libraries' }))
-    expect(await screen.findByTestId('library-scrum')).toBeTruthy()
+    // Nothing to add a library beside yet: the start is the one way in from a library.
+    expect(screen.queryByRole('button', { name: 'From a library…' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Start from a library' }))
+    expect(await screen.findByRole('dialog', { name: 'From a library' })).toBeTruthy()
     expect(await axeFindings()).toEqual([])
   })
 
-  it('brings a library in as one step, and offers what is left', async () => {
+  it('brings a library in as one step, and says what came in on its card', async () => {
     const sent = show()
     await bringInScrum()
     expect(sent).toHaveLength(1)
     expect(sent[0].type).toBe('transaction')
-    expect(within(screen.getByTestId('library-scrum')).getByText('Everything this library offers is in.')).toBeTruthy()
     expect(screen.getByTestId('operating-counts').textContent).toBe('1 unit type · 3 roles · 4 responsibilities')
-    expect(screen.getByText('Everything brought in still says what its library says.')).toBeTruthy()
-  })
-
-  it('brings what a picked entry needs, and says so before it does', async () => {
-    const sent = show()
+    expect(screen.getByRole('button', { name: 'From a library…' })).toBeTruthy()
     fireEvent.click(screen.getByRole('tab', { name: 'Libraries' }))
-    const scrum = await screen.findByTestId('library-scrum')
-    fireEvent.click(within(scrum).getByLabelText('Scrum Team · unit type'))
-    expect(within(scrum).getByText(/Brings with it: Product Owner, Scrum Master, Developer/)).toBeTruthy()
-    fireEvent.click(within(scrum).getByRole('button', { name: 'Bring in' }))
-    expect(sent).toHaveLength(1)
-    expect(screen.getByTestId('operating-counts').textContent).toBe('1 unit type · 3 roles · 4 responsibilities')
+    expect(within(screen.getByTestId('library-scrum')).getAllByTestId(/^came-in-/)).toHaveLength(8)
+    expect(screen.getByText('Everything brought in still says what its library says.')).toBeTruthy()
   })
 
   it('cycles a cell through the letters, and flags a row that is not exactly one role\'s A', async () => {
@@ -174,8 +172,9 @@ describe('the operating model\'s page', () => {
     show(empty(), { atOrganisation: false })
     expect(screen.getByText('The operating model is kept at the organisation, and edited there.')).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'New unit type' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Start from a library' })).toBeNull()
     fireEvent.click(screen.getByRole('tab', { name: 'Libraries' }))
-    expect(screen.queryByRole('button', { name: 'Bring in all of Scrum' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'From Scrum…' })).toBeNull()
   })
 
   it('edits a unit type: where it sits, whether it spans, its slots and its limit', async () => {

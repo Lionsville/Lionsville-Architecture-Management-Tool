@@ -5,7 +5,9 @@
  * The operating model's page (ADR-0036 §2): the organisation's unit types and
  * roles drawn as the structure they make (amended 11 October 2026), the
  * matrix of responsibilities against roles, the rules, and the libraries to
- * start from.
+ * start from — brought in through a dialog of their own (`LibraryDialog`),
+ * opened beside *New unit type* and *New role*, first on an empty model, and
+ * from each library's card.
  *
  * It is kept at the organisation and edited there only: opened over any other
  * scope it reads, and says where it is edited. Every change is a command
@@ -33,15 +35,20 @@ import { BackIcon } from '../../widgets/icons'
 import { PageDialog } from '../../widgets/PageDialog'
 import { itemOf, removeResponsibility, removeRole, removeSlot, removeUnitType } from '../edit'
 import type { OperatingItem, OperatingModel } from '../edit'
+import { libraryLanguage } from '../library'
 import type { Library } from '../library'
 import { LIBRARIES } from '../libraries'
 import { countsLine } from './countsLine'
 import { Inspector } from './Inspector'
+import { LandedToast } from './LandedToast'
 import { LibrariesPanel } from './LibrariesPanel'
+import { LibraryDialog } from './LibraryDialog'
 import { RaciMatrix } from './RaciMatrix'
 import { RemoveConfirm } from './RemoveConfirm'
 import type { RoleHolders } from './RemoveConfirm'
 import { UnitsAndRoles } from './UnitsAndRoles'
+import { useLibraryStep } from './useLibraryStep'
+import type { LibraryStep } from './useLibraryStep'
 
 export type OperatingTab = 'units' | 'raci' | 'libraries'
 
@@ -89,6 +96,12 @@ export type OperatingModelPageProps = {
   unitCounts?: ReadonlyMap<UnitTypeId, number>
   /** Who holds a role today or later, as the host counts them: said before the role is removed. */
   roleHolders?: (roleId: RoleId) => RoleHolders
+  /**
+   * Asked straight after a library's step is dispatched: what takes back that
+   * step, answering whether it did — which it does only while that step is
+   * still the newest. Absent, the toast after a bring-in offers no *Undo*.
+   */
+  undoStep?: () => () => boolean
 }
 
 /** Which tab an item is edited on. */
@@ -106,6 +119,8 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
   const [takingOut, setTakingOut] = useState<{ typeId: string; roleId: RoleId } | undefined>(undefined)
   const chrome = props.windowChrome ?? NO_WINDOW_CHROME
   const bar = barChromeFor(chrome)
+  const libraries = props.libraries ?? LIBRARIES
+  const fromLibrary = useLibraryStep({ pageOpen: props.open, dispatch, undoStep: props.undoStep })
 
   // A request for an item — from search, a link or an agent — opens it on its
   // tab, once per request. The model is read for the item's kind and not
@@ -136,6 +151,13 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
   const taking = takingOut && picked?.kind === 'unitType' && picked.item.id === takingOut.typeId
     ? props.slotTakeOut?.aside(picked.item, takingOut.roleId, () => setTakingOut(undefined))
     : undefined
+  // An item opened from elsewhere on the page: picked, on its own tab.
+  const openItem = (id: string) => {
+    const held = itemOf(model, id)
+    if (!held) return
+    select(id)
+    setTab(tabOf(held.kind))
+  }
   const toRemove = itemOf(model, removing)
   const confirmRemove = () => {
     if (!toRemove) return
@@ -180,8 +202,8 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
           {tab === 'units' && (
             <UnitsAndRoles
               model={model} readOnly={readOnly} selected={selected} onSelect={select} dispatch={dispatch} makeId={makeId}
-              libraries={props.libraries ?? LIBRARIES} {...(props.unitCounts ? { unitCounts: props.unitCounts } : {})}
-              {...(empty ? { onOpenLibraries: () => setTab('libraries') } : {})}
+              libraries={libraries} {...(props.unitCounts ? { unitCounts: props.unitCounts } : {})}
+              empty={empty} onFromLibrary={() => fromLibrary.open()} fresh={fromLibrary.fresh}
             />
           )}
           {tab === 'raci' && (
@@ -189,8 +211,8 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
           )}
           {tab === 'libraries' && (
             <LibrariesPanel
-              model={model} readOnly={readOnly} dispatch={dispatch} makeId={makeId}
-              libraries={props.libraries ?? LIBRARIES} language={language}
+              model={model} readOnly={readOnly} dispatch={dispatch} libraries={libraries} language={libraryLanguage(language)}
+              onFromLibrary={fromLibrary.open} onOpenItem={openItem}
             />
           )}
         </Box>
@@ -208,6 +230,29 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
         item={toRemove} holders={toRemove?.kind === 'role' ? props.roleHolders?.(toRemove.item.id) : undefined}
         onCancel={() => setRemoving(undefined)} onConfirm={confirmRemove}
       />
+      <FromLibrary
+        step={fromLibrary} readOnly={readOnly} model={model} libraries={libraries} language={language} makeId={makeId} chrome={chrome}
+        // What came in is drawn where it now stands, marked new.
+        onBrought={() => setTab('units')}
+      />
     </PageDialog>
+  )
+}
+
+/** The dialog that brings a library in, and the toast after it. */
+function FromLibrary({ step, readOnly, model, libraries, language, makeId, chrome, onBrought }: {
+  step: LibraryStep; readOnly: boolean; model: OperatingModel; libraries: readonly Library[]; language: string; makeId: MakeId
+  chrome: WindowChrome; onBrought(): void
+}) {
+  return (
+    <>
+      <LibraryDialog
+        open={!readOnly && step.asking !== undefined} lists={model} libraries={libraries}
+        {...(step.asking?.libraryId ? { libraryId: step.asking.libraryId } : {})}
+        language={libraryLanguage(language)} makeId={makeId} windowChrome={chrome} onClose={step.close}
+        onBring={(brought) => { step.bring(brought); onBrought() }}
+      />
+      <LandedToast landed={step.landed} onUndo={step.undo} onClose={step.dismiss} />
+    </>
   )
 }

@@ -129,6 +129,15 @@ function OperatingPages({ parts }: { parts: WorkspaceParts }) {
       {...(unitCounts ? { unitCounts } : {})}
       // Who holds a role, said before it is removed (ADR-0036 §6).
       roleHolders={(roleId) => roleHoldersHere(props.tree.index, scope, model, roleId, todayDay)}
+      // A library's step, taken back from its toast only while no other step has come since.
+      undoStep={() => {
+        const at = session.revision()
+        return () => {
+          if (session.revision() !== at) return false
+          session.undo()
+          return true
+        }
+      }}
     />
   )
 }

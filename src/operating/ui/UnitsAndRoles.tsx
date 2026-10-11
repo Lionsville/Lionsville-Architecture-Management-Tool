@@ -46,12 +46,16 @@ type Props = {
   libraries: readonly Library[]
   /** How many units of each type there are today, as the host counts them; nothing is said where absent. */
   unitCounts?: ReadonlyMap<UnitTypeId, number>
-  /** Where the page sends a person with nothing in it yet. */
-  onOpenLibraries?(): void
+  /** Nothing in the model yet: a library is offered first. */
+  empty: boolean
+  /** Open the dialog that brings a library in. */
+  onFromLibrary(): void
+  /** What a library brought in since the page was opened, by id: marked new. */
+  fresh?: ReadonlySet<string>
 }
 
 export function UnitsAndRoles(props: Props) {
-  const { model, readOnly, selected, onSelect, dispatch, makeId, onOpenLibraries } = props
+  const { model, readOnly, selected, onSelect, dispatch, makeId, empty, onFromLibrary, fresh } = props
   const { t } = useStrings()
   const structure = useMemo(() => unitTypeLanes(model.unitTypes), [model.unitTypes])
   const looks = useMemo(() => pickLooks(model.unitTypes, pickOf(model, selected)), [model, selected])
@@ -66,18 +70,22 @@ export function UnitsAndRoles(props: Props) {
     <TypeCard
       type={type} roles={roles} look={looks.type(type.id)} source={sourceOf(type, props.libraries, t)}
       meta={metaOf(type, props.unitCounts, t)} place={placeOf(type, model.unitTypes, t)} named="operating.typeCard"
-      onPick={() => pick(type.id)} onPickRole={pick} roleLook={looks.role}
+      onPick={() => pick(type.id)} onPickRole={pick} roleLook={looks.role} fresh={fresh?.has(type.id) === true}
     />
   )
   return (
     <Box>
-      {onOpenLibraries && (
+      {empty && (
         <Box sx={{ mb: 2 }}>
           <Typography color="text.secondary">{t('operating.empty')}</Typography>
-          <Button size="small" onClick={onOpenLibraries} sx={{ textTransform: 'none', px: 0 }}>{t('operating.emptyLibraries')}</Button>
+          {!readOnly && (
+            <Button size="small" variant="contained" data-guide="operating.startFromLibrary" onClick={onFromLibrary} sx={{ textTransform: 'none', mt: 1 }}>
+              {t('operating.startFromLibrary')}
+            </Button>
+          )}
         </Box>
       )}
-      {/* The ways to add, side by side; a library's way in joins them here. */}
+      {/* The ways to add, side by side, a library's among them once the model holds anything. */}
       <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
         <Typography component="h2" sx={{ ...HEADING, mt: 0, mb: 0, mr: 1 }}>{t('operating.unitTypes')}</Typography>
         {!readOnly && (
@@ -90,6 +98,11 @@ export function UnitsAndRoles(props: Props) {
               onClick={() => add(newRole(t('operating.newRoleName'), makeId, model))}>
               {t('operating.newRole')}
             </Button>
+            {!empty && (
+              <Button size="small" variant="contained" data-guide="operating.fromLibrary" sx={{ textTransform: 'none' }} onClick={onFromLibrary}>
+                {t('operating.fromLibrary')}
+              </Button>
+            )}
           </>
         )}
       </Box>
@@ -114,7 +127,7 @@ export function UnitsAndRoles(props: Props) {
               </>
             )}
         </Tray>
-        <LooseRoles model={model} looks={looks} onPick={pick} t={t} />
+        <LooseRoles model={model} looks={looks} onPick={pick} fresh={fresh} t={t} />
       </Box>
       <Rules model={model} readOnly={readOnly} dispatch={dispatch} />
     </Box>
@@ -145,7 +158,7 @@ function metaOf(type: UnitType, counts: ReadonlyMap<UnitTypeId, number> | undefi
 }
 
 /** Where a type may sit, in words, for whoever cannot see the lines. */
-function placeOf(type: UnitType, types: readonly UnitType[], t: Translate): string {
+export function placeOf(type: UnitType, types: readonly UnitType[], t: Translate): string {
   const where = [
     ...(type.top ? [t('operating.atTheTop')] : []),
     ...type.within.map((id) => types.find((one) => one.id === id)?.name ?? id),
@@ -164,24 +177,29 @@ function Tray({ heading, testId, children }: { heading: string; testId: string; 
 }
 
 /** The roles no unit type holds, each to pick as a slot's role is. */
-function LooseRoles({ model, looks, onPick, t }: { model: OperatingModel; looks: PickLooks; onPick(id: RoleId): void; t: Translate }) {
+function LooseRoles({ model, looks, onPick, fresh, t }: {
+  model: OperatingModel; looks: PickLooks; onPick(id: RoleId): void; fresh: ReadonlySet<string> | undefined; t: Translate
+}) {
   const held = new Set(model.unitTypes.flatMap((type) => type.slots.map((slot) => slot.role)))
   const loose = model.roles.filter((role) => !held.has(role.id))
   return (
     <Tray heading={t('operating.looseRoles')} testId="tray-loose">
       {loose.length === 0 && <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('operating.trayLooseNone')}</Typography>}
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-        {loose.map((role) => <LooseRole key={role.id} role={role} look={looks.role(role.id)} onPick={onPick} t={t} />)}
+        {loose.map((role) => <LooseRole key={role.id} role={role} look={looks.role(role.id)} onPick={onPick} fresh={fresh?.has(role.id) === true} t={t} />)}
       </Box>
     </Tray>
   )
 }
 
-function LooseRole({ role, look, onPick, t }: { role: Role; look: ReturnType<PickLooks['role']>; onPick(id: RoleId): void; t: Translate }) {
+function LooseRole({ role, look, onPick, fresh, t }: {
+  role: Role; look: ReturnType<PickLooks['role']>; onPick(id: RoleId): void; fresh: boolean; t: Translate
+}) {
   return (
-    <ButtonBase onClick={() => onPick(role.id)} aria-pressed={look === 'picked'} data-testid={`role-${role.id}`} data-look={look}
-      sx={{ fontSize: 12, lineHeight: '20px', px: 1, borderRadius: 1, border: 1, borderColor: ringOf(look) ?? 'divider', bgcolor: 'background.paper' }}>
+    <ButtonBase onClick={() => onPick(role.id)} aria-pressed={look === 'picked'} data-testid={`role-${role.id}`} data-look={look} data-fresh={fresh || undefined}
+      sx={{ fontSize: 12, lineHeight: '20px', px: 1, borderRadius: 1, border: 1, borderColor: ringOf(look) ?? (fresh ? 'success.main' : 'divider'), bgcolor: 'background.paper' }}>
       {role.name}
+      {fresh && <Box component="span" sx={{ ml: 0.5, fontSize: 10, color: 'success.main' }}>{t('operating.newBadge')}</Box>}
       {role.manages && <Box component="span" sx={{ ml: 0.5, fontSize: 10, color: 'primary.main' }}>{t('operating.managesBadge')}</Box>}
       {role.until && <Box component="span" sx={{ ml: 0.5, fontSize: 10, color: 'text.secondary' }}>{t('operating.untilLine', { day: role.until })}</Box>}
     </ButtonBase>

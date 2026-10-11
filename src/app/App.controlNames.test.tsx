@@ -253,24 +253,29 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   ['a plan', ['plan.addElement', 'plan.milestone', 'plan.addDecision'], async () => {
     fireEvent.click((await within(screen.getByRole('dialog')).findAllByTestId('plan-band'))[0])
   }]],
-  // The operating model, from the organisation's card: a library brought in,
-  // so the matrix has a column to press.
+  // The operating model, from the organisation's card, empty: a library
+  // brought in from its dialog, so the matrix has a column to press.
   [['the operating model', [
     'operating.tabUnits', 'operating.tabRaci', 'operating.tabLibraries', 'operating.newUnitType', 'operating.newRole',
-    'operating.rules', 'operating.structure',
+    'operating.rules', 'operating.structure', 'operating.startFromLibrary',
   ], async () => {
     show(false)
     fireEvent.click(await screen.findByTestId('open-operating'))
     await screen.findByRole('tab', { name: 'Units and roles' })
   }],
-  ['its libraries', ['operating.bringIn', 'operating.compare'], async () => {
-    fireEvent.click(screen.getByRole('tab', { name: 'Libraries' }))
-    fireEvent.click(await screen.findByRole('button', { name: 'Bring in all of Scrum' }))
+  ['its dialog for a library', ['operating.libraryList', 'operating.comingIn', 'operating.bringIn'], async () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Start from a library' }))
+    fireEvent.click(within(await screen.findByTestId('library-dialog')).getByRole('checkbox', { name: 'Scrum Team' }))
   }],
   // What came in, drawn as the structure, with a type picked.
-  ['its structure', ['operating.typeCard', 'operating.typeOrder'], async () => {
-    fireEvent.click(screen.getByRole('tab', { name: 'Units and roles' }))
+  ['its structure', ['operating.typeCard', 'operating.typeOrder', 'operating.fromLibrary'], async () => {
+    fireEvent.click(within(screen.getByTestId('library-dialog')).getByRole('button', { name: /^Bring in 8 items/ }))
+    await waitFor(() => expect(screen.queryByTestId('library-dialog')).toBeNull())
     fireEvent.click(await within(screen.getByTestId('structure-lanes')).findByRole('button', { name: 'Scrum Team' }))
+  }],
+  ['its libraries', ['operating.compare', 'operating.cameIn'], async () => {
+    fireEvent.click(screen.getByRole('tab', { name: 'Libraries' }))
+    await screen.findByTestId('library-scrum')
   }],
   ['its responsibilities', ['operating.newResponsibility', 'operating.matrix', 'operating.cell'], async () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Responsibilities' }))

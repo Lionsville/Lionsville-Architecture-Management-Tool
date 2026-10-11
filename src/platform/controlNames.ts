@@ -82,6 +82,11 @@ export const CONTROL_NAMES = [
   // The unit types drawn as a structure (ADR-0036, amended 11 October 2026):
   // the lanes, each type's card, and the order in its lane in the inspector.
   'operating.structure', 'operating.typeCard', 'operating.typeOrder',
+  // A library brought in as a choice (ADR-0036, amended 11 October 2026): the
+  // ways in — beside New unit type, and first on an empty model — the
+  // dialog's list of libraries and its What will come in, whose Bring in is
+  // operating.bringIn; and What came in on each library's card.
+  'operating.fromLibrary', 'operating.startFromLibrary', 'operating.libraryList', 'operating.comingIn', 'operating.cameIn',
   // The organisation chart (ADR-0036, amended): its outline, and folding every unit or none.
   'chart.outline', 'chart.foldAll', 'chart.unfoldAll',
 ] as const
