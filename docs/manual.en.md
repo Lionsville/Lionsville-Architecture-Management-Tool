@@ -2048,9 +2048,9 @@ interaction is declared that no interface needs.
 
 **Findings on** *day* says what the two disagree about: an interface that
 crosses from one unit's applications to another's with nothing declared
-between the units; an interaction declared that no interface needs; an
-application nobody owns; and a unit that owns more applications than its type
-allows. A press on a finding marks what it is about. The map only reads: where
+between the units; an interaction declared with no interface between the
+two, which is often meant and is said as a fact; an application nobody owns;
+and a unit that owns more applications than its type allows. A press on a finding marks what it is about. The map only reads: where
 one of the two units is kept in this scope, **+ Declare an interaction…**
 answers a crossing as one step, and everything else is answered where it is
 kept — an owner on the application, a limit on the unit type. Like the chart it
@@ -2074,7 +2074,8 @@ organisation chart, where there is one.
 An agent makes either view with `diagram.create` (`chart`, `conway`), opens it
 with `app.open`, and reads what it draws with `diagram.inspect`: the units with
 each role's holders and vacancies on the view's day, in the order the chart
-lists them and never folded, or the columns, the crossings and the findings.
+lists them and never folded, or the columns, the crossings and the findings,
+each with its check's key, weight and category as `checks.list` gives them.
 It declares an interaction with `relation.add`,
 type `interacts` and a `mode`.
 

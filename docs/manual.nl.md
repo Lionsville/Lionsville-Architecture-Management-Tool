@@ -2227,8 +2227,8 @@ samenwerking is vastgelegd die geen interface nodig heeft.
 **Bevindingen op** *dag* zegt waarover de twee het oneens zijn: een interface
 die van de applicaties van de ene eenheid naar die van een andere loopt
 zonder vastgelegde samenwerking tussen de eenheden; een vastgelegde
-samenwerking die geen interface nodig heeft; een applicatie die niemand
-bezit; en een eenheid die meer applicaties bezit dan haar type toestaat. Een
+samenwerking zonder interface tussen de twee, wat vaak zo bedoeld is en als
+feit wordt gezegd; een applicatie die niemand bezit; en een eenheid die meer applicaties bezit dan haar type toestaat. Een
 klik op een bevinding markeert waarover die gaat. De kaart leest alleen: waar
 een van de twee eenheden in deze scope wordt bijgehouden, beantwoordt **+ Een
 samenwerking vastleggen…** een overschrijding als één stap, en al het andere
@@ -2258,7 +2258,8 @@ Een agent maakt beide weergaven met `diagram.create` (`chart`, `conway`), opent
 ze met `app.open`, en leest wat ze tekenen met `diagram.inspect`: de eenheden
 met per rol wie die vervult en wat vacant is op de dag van de weergave, in de
 volgorde van het organogram en nooit dichtgevouwen, of de kolommen, de
-overschrijdingen en de bevindingen. Een samenwerking legt hij
+overschrijdingen en de bevindingen, elk met de sleutel, het gewicht en de
+categorie van haar controle, zoals `checks.list` ze geeft. Een samenwerking legt hij
 vast met `relation.add`, type `interacts` en een `mode`.
 
 ## Een tekening

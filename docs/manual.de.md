@@ -2355,8 +2355,9 @@ Schnittstelle braucht.
 **Befunde am** *Tag* sagt, worin die beiden nicht übereinstimmen: eine
 Schnittstelle, die von den Anwendungen einer Einheit zu denen einer anderen
 läuft, ohne festgehaltene Zusammenarbeit zwischen den Einheiten; eine
-festgehaltene Zusammenarbeit, die keine Schnittstelle braucht; eine
-Anwendung, die niemandem gehört; und eine Einheit, der mehr Anwendungen
+festgehaltene Zusammenarbeit ohne Schnittstelle zwischen den beiden, was oft
+so gewollt ist und als Tatsache gesagt wird; eine Anwendung, die niemandem
+gehört; und eine Einheit, der mehr Anwendungen
 gehören, als ihr Typ erlaubt. Ein Klick auf einen Befund markiert, worum es
 geht. Die Karte liest nur: wo eine der beiden Einheiten in diesem Bereich
 geführt wird, beantwortet **+ Eine Zusammenarbeit festhalten…** eine
@@ -2386,7 +2387,8 @@ Ein Agent legt beide Ansichten mit `diagram.create` an (`chart`, `conway`),
 öffnet sie mit `app.open` und liest, was sie zeichnen, mit `diagram.inspect`:
 die Einheiten mit den Inhabern jeder Rolle und den unbesetzten Stellen am Tag
 der Ansicht, in der Reihenfolge des Organigramms und nie eingeklappt, oder die
-Spalten, die Überschreitungen und die Befunde. Eine
+Spalten, die Überschreitungen und die Befunde, jeder mit Schlüssel, Gewicht und
+Kategorie seiner Prüfung, wie `checks.list` sie nennt. Eine
 Zusammenarbeit hält er mit `relation.add` fest, Typ `interacts` und ein
 `mode`.
 

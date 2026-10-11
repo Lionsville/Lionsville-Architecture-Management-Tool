@@ -9,7 +9,9 @@
   2026: the structure drawn, libraries brought in as a choice, links from
   either end, and a large organisation (*Amended*, below); as built and
   implemented, 11 October 2026, with the screens brought to what this
-  record's design drew (*As built, 3.6.1*, below)
+  record's design drew (*As built, 3.6.1*, below). Amended again, 11 October
+  2026: findings you can act on (*Amended*, below); its catalogue as built
+  (*As built, 3.6.1: a catalogue of checks*, below)
 * Date: 2026-10-11
 * Deciders: Wouter Simons
 * Supersedes: ADR-0011, in part (Q1's *everything a person can do on a page
@@ -1064,7 +1066,7 @@ with their ends and beginnings in every scope that keeps one, through
 `landPeopleMoves`: all of it or none, so nobody is left in a role their unit's
 type does not hold. A slot nobody holds that way goes at once, as before.
 
-## Amended, 11 October 2026 — the structure drawn, libraries brought in as a choice, links from either end, and a large organisation
+## Amended, 11 October 2026 — the structure drawn, libraries brought in as a choice, links from either end, a large organisation, and findings you can act on
 
 *Accepted 11 October 2026, and built the same day: the As built, 3.6.1
 sections below.* A look at the screens of what was built found the model
@@ -1121,6 +1123,39 @@ one field, three inputs to one function and one check.
   tree already keeps: a fold is what somebody is doing this minute, not a
   preference. The chart's outline is a foldable tree again, replacing the
   select of the first build.
+* **Findings you can act on (§2, §3, §7).** A finding was one sentence, said
+  wherever it was listed: nothing told a contradiction from a fact that may
+  well be intended, nor said why it mattered or what would settle it, and the
+  Conway map's interactions that no interface needs read like faults when
+  they are mostly meant. Every kind of finding has one entry in a catalogue,
+  a record over every key, so a kind without one does not compile: a name a
+  person recognises; a category — the landscape, plans and dates, the
+  organisation, teams and systems, analysis; a weight; why it matters; how to
+  fix it; and the actions that fix it, or open where it is fixed, as ids a
+  screen turns into buttons. The Conway map's findings are keys like the
+  rest — `check.interfaceUndeclared`, `check.interactionUnused`,
+  `check.applicationUnowned` — and its over-limit is the organisation's own
+  `check.unitOverLimit`. A weight is one of three. **Fix**: the model
+  contradicts itself or cannot be true, and it is never waived. **Review**:
+  probably a gap or a risk, worth a person's look. **Note**: information that
+  may well be intended. The wording follows the weight: a fix states the
+  contradiction, a review asks, a note states a fact and is never worded
+  like a fault. A list of findings is grouped by check, fix first, then
+  review, then note. Every kind is weighed so (each key is `check.` and the
+  name):
+
+  | Weight | Category | Checks |
+  |---|---|---|
+  | fix | the landscape | `conflict`, `dangling`, `danglingEnd`, `drawingLinkMissing` |
+  | fix | plans and dates | `successorTooLate`, `lineOutlivesEnd`, `platformRetiresFirst` |
+  | fix | the organisation | `unitTypeNowhere`, `unitMisplaced`, `assignmentEnded`, `unitTypeEnded` |
+  | review | the landscape | `drift`, `ownedElsewhere`, `unattributed`, `unmapped`, `uncovered`, `offeredNotShared`, `impliedInterface`, `unrealised` |
+  | review | plans and dates | `retiresWithDependants`, `successorMissing`, `planOverdue` |
+  | review | the organisation | `accountability`, `roleVacant`, `roleOverMax`, `unitSpans`, `unitOverLimit`, `personOverloaded`, `unitNotServing` |
+  | review | teams and systems | `interfaceUndeclared`, `applicationUnowned` |
+  | review | analysis | `causeExplainsObservationBelow` |
+  | note | the landscape | `notDrawn`, `proposal` |
+  | note | teams and systems | `interactionUnused` |
 
 ## As built, 3.6.1: the Conway map's table, and what a plan leaves to declare
 
@@ -1521,6 +1556,50 @@ findings under its columns: lighting a finding's lines and declaring an
 interaction from it are the page's own, so they stay where the lines are.
 `diagram.inspect` reads every role, drawn or not; a picture of the page
 (`diagram.render`) is of what is drawn, so no longer of the findings.
+
+## As built, 3.6.1: a catalogue of checks
+
+The amendment's last point, in part: the catalogue, the keys under it and
+what the agent reads of it. The lists that show findings grouped and
+explained are built on it.
+
+**In the model, not beside the tree's checks.** The catalogue is
+`model/checkCatalogue.ts`: one list of every key (`CHECK_KEYS`), gathered
+from the four places findings are worked out — the tree's
+(`projects/checks.ts`, whose `Finding` is keyed by `TREE_CHECK_KEYS`), the
+dates' (`model/checks.ts`, each kind through `DATE_CHECK`), the Conway map's
+(`model/conway.ts`, through `CONWAY_CHECK`) and the one the organisation's
+home reads off the technology rows — and a record over it. The model and not
+`projects`, because the agent answers a finding's weight and the map's
+findings carry a key, and neither may import `projects`. An entry holds keys
+of the model's own slice, named after its kind, so an entry cannot carry
+another kind's words. `groupByCheck` groups any list of findings by check,
+fix before review before note, each weight in the order its first finding
+came, and `countByWeight` counts them.
+
+**The first pass, corrected where the code says otherwise.**
+`check.offeredNotShared` is a review, not a note: ADR-0014 §4 calls it a
+conversation the maintainer has to have, and the register draws it as a
+warning beside a conflict. `check.causeExplainsObservationBelow` is a review,
+not a note: ADR-0032 §9 names its repair, and no new link of its kind can be
+made, so nobody intends one. The roadmap's *staleness* is no kind of finding:
+it is the caption under the dates' findings, saying they cannot tell a
+landscape is out of date. And one kind the first pass did not list is in it:
+a service nothing delivers, which the organisation's home has said since
+ADR-0014, is `check.unrealised`, a review of the landscape — its row on the
+home keeps the word it carries on screen.
+
+**Notes said as facts.** Of the notes' sentences, two read like faults and
+were changed: the Conway map's unused interaction says *… declare As a
+service, and no interface runs between them*, not that no interface needs
+it; a proposal says the organisation *has not named it yet*, without telling
+the domain what to do. A record on no view already said it may stay a record.
+The map's over-limit is said in the organisation's words for it, as the
+unit's inspector says it.
+
+**The agent.** `checks.list` answers each finding's `weight` and `category`
+beside its `key`, and `diagram.inspect` on a Conway map answers each of its
+findings with its `key`, `weight` and `category` too, its `kind` as before.
 
 ## Open
 

@@ -171,6 +171,22 @@ src/model/        What a landscape is made of, and the arithmetic over it.
                                       words
                     lifecycle · transition · checks   dates on the facts, a plan,
                                       and what the dates contradict (ADR-0009)
+                    checkCatalogue    every kind of finding, said once: the
+                                      keys of the tree's, the dates', the
+                                      Conway map's and the technology rows'
+                                      findings (`CHECK_KEYS`, `CheckKey`; the
+                                      dates' and the map's kinds through
+                                      `DATE_CHECK`, `CONWAY_CHECK`), and a
+                                      record over them, so a kind with no
+                                      entry does not compile — a name, a
+                                      category, a weight (fix · review ·
+                                      note), why it matters, how to fix it,
+                                      and the actions a screen turns into
+                                      buttons (`CHECK_CATALOGUE`,
+                                      `CheckAction`); findings grouped by
+                                      check, fix first (`groupByCheck`). Keys
+                                      only; the words are the model's slice
+                                      (ADR-0036, amended)
                     relations         what a row between two elements MEANS, and
                                       the one type a canvas draws (ADR-0012 §5)
                     standIn           what a stand-in may carry, and the record a
@@ -536,7 +552,9 @@ src/projects/     A scope: open, save, order, summarise, address, remember.
                                       the barrel, so the index is named for what
                                       it is
                     checks            what the tree contradicts about itself, as
-                                      values with keys — never a refusal (§9)
+                                      values with keys — never a refusal (§9);
+                                      the keys are the catalogue's
+                                      (`model/checkCatalogue`, `TREE_CHECK_KEYS`)
                     mayEdit           what one scope may change about one record;
                                       the owner's detail refused as a value (§10)
                     gestures          link · promote · demote · transfer, as an
