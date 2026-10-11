@@ -1859,11 +1859,14 @@ by name.
 
 Each box says the unit's type and name, and each row a role it holds, with who
 holds it **on the chart's day**: by name from the register, their share where it
-is not all of their time, *acting*, and *you*. A red edge marks someone whose
-shares add up to more than all of their time across the organisation. A role
-short of people shows a dashed **+ vacant**; in a unit this scope keeps, a press
-assigns someone at once, as one step. A badge says when a unit serves more than
-one domain, when it starts after today, and when it ends.
+is not all of their time, *acting*, *ext* for someone from outside the
+organisation, and *you*. A red edge marks someone whose shares add up to more
+than all of their time across the organisation. A role short of people shows a
+dashed **+ vacant**; in a unit this scope keeps, a press assigns someone at once,
+as one step. A badge names the domains a unit serves where it serves more than
+one — the first two and how many more, where there are many — and says the day
+it starts, where that is after today, and the day it ends, each with the plan
+that brings or ends it where a plan does: *from 1 Jan 2027 · TR-0007*.
 
 The chart is drawn on a day, as a board is: the day control on the bar looks at
 any other day, and **Save** keeps that day on the chart (see *Time, and the day
@@ -1878,6 +1881,16 @@ Choosing a unit this scope keeps opens it in the inspector beside the chart —
 its people, its roles, who manages it and the units it works with. A unit kept
 in another scope opens there, on its record. **Find me** goes to the unit where
 you hold a role; say who you are first, with **This is me** on the People page.
+
+Pressing a person opens their assignment in the inspector instead: who holds
+it, the role and the unit, its first and last day, the part of their time it
+takes, and a note where they hold more than all of their time on the chart's
+day. **End on this day** ends it, as one step, on the last day you choose — the
+day before the chart's day where you are looking ahead, today otherwise, and
+never before its first. An ended assignment stays: it is what the person held.
+**Correct…** opens the unit's dialog for everything else, and **Open in
+People** goes to the People page with the person picked. A person in a unit kept
+in another scope opens that unit there.
 
 ### The Conway map
 

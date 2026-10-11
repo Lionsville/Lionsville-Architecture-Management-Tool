@@ -841,12 +841,19 @@ src/app/          The shell around the editor.
                                       …and the two views (§7): ChartPage and
                                       ConwayPage with its table
                                       (`ConwayTable`), drawn in the tab through
-                                      `UnitViewPages`; what a view in a scope
-                                      is of, and where a link to a unit lands
-                                      (`unitViewsHere`); *Works with* and the
-                                      dialog that declares an interaction
-                                      (`Interactions`); making either view
-                                      (`useUnitViews`)
+                                      `UnitViewPages`, the chart's boxes
+                                      (`ChartUnitBox`) and what a badge says
+                                      (`chartWords`); the assignment a chip
+                                      chooses, in the inspector beside the
+                                      chart (`useChartChoice`,
+                                      `AssignmentInspector`, through
+                                      `EditorPages.inspector`); what a view
+                                      in a scope is of, the plans that bring
+                                      and end its units, and where a link to
+                                      a unit lands (`unitViewsHere`); *Works
+                                      with* and the dialog that declares an
+                                      interaction (`Interactions`); making
+                                      either view (`useUnitViews`)
                     useGestures · dialogs/MoveRecordDialog   the four gestures
                                       applied: the other scope first, the
                                       confirm, and the barrier on the stack (§10)

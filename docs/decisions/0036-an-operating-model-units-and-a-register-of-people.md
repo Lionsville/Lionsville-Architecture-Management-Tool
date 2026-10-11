@@ -1187,6 +1187,35 @@ scope that keeps that unit.
 — or `sitsNowhere` — and its order; `unitType.add` and `unitType.update` take
 `order`; `checks.list` names both of the operating model's findings.
 
+## As built, 3.6.1: an assignment on the chart, and badges that name
+
+§7's chart now does what its design drew. **A person's chip opens their
+assignment.** In a unit the open scope keeps, a chip chooses the assignment
+(`app/units/useChartChoice`, held by the workspace, one for the window and on
+the chart it was made on) and the inspector docked beside the chart shows it
+(`app/units/AssignmentInspector`): who, *ext* where the register says they are
+from outside, the role and the unit, the days, the share, a note where they
+hold more than all of their time on the chart's day, *End on* a last day the
+person chooses — the day before a later chart day or today, never before the
+first — as one step, *Correct…* through `AssignDialog`, and *Open in People*.
+An assignment is not an element, so the editor draws it through a seam of its
+own: `EditorPages.inspector`, what the inspector beside a laid-out view shows
+while nothing is selected; the editor selecting anything lets the choice go.
+A chip in a unit kept elsewhere still opens that unit there. Where the scope
+is only read, a manager of the unit may still end and correct it (§12).
+
+*Open in People* leaves the scope for the organisation's home with the People
+page up and the person picked (`WorkspaceNavigation.onOpenPeople`): the person
+rides on the shell's page request as `select`, which is not part of the place,
+so no register id enters the window's history.
+
+**The badges say what they mean.** A unit serving several domains names them
+by their scopes' names, the first two and how many more past three, on the
+chart and on the Conway map (`app/units/chartWords`). A unit's first and last
+day name the plan that introduces or retires it: the index lists every actor a
+plan that was not abandoned names so (`ScopeIndex.unitPlans`), and
+`unitViewsHere`'s `plansOf` lays the open scope's plans over it.
+
 ## Open
 
 * **People from a directory**: a picker over an identity provider's people,

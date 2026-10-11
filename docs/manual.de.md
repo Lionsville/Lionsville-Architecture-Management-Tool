@@ -2130,13 +2130,17 @@ Reihenfolge, wo eine gesetzt ist, sonst nach Namen.
 
 Jeder Kasten nennt Typ und Namen der Einheit, und jede Zeile eine Rolle, die
 sie hat, mit wem sie **am Tag des Organigramms** innehat: mit dem Namen aus
-dem Register, dem Anteil, wo es nicht die ganze Zeit ist, *vertretend* und
-*Sie*. Ein roter Rand markiert jemanden, dessen Anteile zusammen mehr als die
-ganze Zeit in der Organisation ergeben. Eine Rolle mit zu wenigen Personen
-zeigt ein gestricheltes **+ unbesetzt**; in einer Einheit, die dieser Bereich
-führt, ordnet ein Klick sofort jemanden zu, als ein Schritt. Ein Etikett sagt,
-wann eine Einheit mehr als eine Domäne bedient, wann sie nach heute beginnt
-und wann sie endet.
+dem Register, dem Anteil, wo es nicht die ganze Zeit ist, *vertretend*,
+*ext.* für jemanden von außerhalb der Organisation, und *Sie*. Ein roter Rand
+markiert jemanden, dessen Anteile zusammen mehr als die ganze Zeit in der
+Organisation ergeben. Eine Rolle mit zu wenigen Personen zeigt ein
+gestricheltes **+ unbesetzt**; in einer Einheit, die dieser Bereich führt,
+ordnet ein Klick sofort jemanden zu, als ein Schritt. Ein Etikett nennt die
+Domänen, die eine Einheit bedient, wo es mehr als eine ist — die ersten zwei
+und wie viele weitere, wo es viele sind —, und sagt den Tag, an dem sie
+beginnt, wo er nach heute liegt, und den Tag, an dem sie endet, jeweils mit dem
+Plan, der sie bringt oder beendet, wo ein Plan das tut: *ab 1. Jan. 2027 ·
+TR-0007*.
 
 Das Organigramm wird an einem Tag gezeichnet, wie ein Board: die Tagesauswahl
 in der Leiste schaut auf jeden anderen Tag, und **Speichern** hält diesen Tag
@@ -2155,6 +2159,17 @@ Einheiten, mit denen sie arbeitet. Eine Einheit, die ein anderer Bereich
 führt, öffnet sich dort, auf ihrem Datensatz. **Mich finden** geht zu der
 Einheit, in der Sie eine Rolle haben; sagen Sie zuerst, wer Sie sind, mit
 **Das bin ich** auf der Seite Personen.
+
+Ein Klick auf eine Person öffnet stattdessen ihre Zuordnung im Inspektor: wer
+sie hat, die Rolle und die Einheit, der erste und letzte Tag, der Teil der Zeit,
+den sie beansprucht, und ein Hinweis, wo jemand am Tag des Organigramms mehr
+als die ganze Zeit hat. **An diesem Tag beenden** beendet sie, als ein Schritt,
+am letzten Tag, den Sie wählen — am Tag vor dem Tag des Organigramms, wenn Sie
+vorausschauen, sonst heute, und nie vor dem ersten Tag. Eine beendete Zuordnung
+bleibt: Sie ist, was die Person innehatte. **Korrigieren…** öffnet für alles
+andere den Dialog der Einheit, und **In Personen öffnen** geht zur Seite
+Personen mit dieser Person gewählt. Eine Person in einer Einheit, die ein
+anderer Bereich führt, öffnet diese Einheit dort.
 
 ### Die Conway-Karte
 

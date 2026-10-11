@@ -2011,12 +2011,16 @@ eigen volgorde waar die is gezet, anders op naam.
 
 Elk vak noemt het type en de naam van de eenheid, en elke regel een rol die ze
 heeft, met wie die vervult **op de dag van het organogram**: met de naam uit
-het register, het aandeel waar dat niet al iemands tijd is, *waarnemend*, en
-*jij*. Een rode rand markeert iemand wiens aandelen samen meer zijn dan al
-zijn tijd in de hele organisatie. Een rol met te weinig mensen toont een
-gestreepte **+ vacant**; in een eenheid die deze scope bijhoudt wijst een klik
-meteen iemand toe, als één stap. Een label zegt wanneer een eenheid meer dan
-één domein bedient, wanneer ze na vandaag begint en wanneer ze eindigt.
+het register, het aandeel waar dat niet al iemands tijd is, *waarnemend*,
+*ext* voor iemand van buiten de organisatie, en *jij*. Een rode rand markeert
+iemand wiens aandelen samen meer zijn dan al zijn tijd in de hele organisatie.
+Een rol met te weinig mensen toont een gestreepte **+ vacant**; in een eenheid
+die deze scope bijhoudt wijst een klik meteen iemand toe, als één stap. Een
+label noemt de domeinen die een eenheid bedient waar ze er meer dan één bedient
+— de eerste twee en hoeveel nog, waar het er veel zijn — en zegt de dag waarop
+ze begint, waar die na vandaag ligt, en de dag waarop ze eindigt, elk met het
+plan dat haar brengt of beëindigt waar een plan dat doet: *vanaf 1 jan 2027 ·
+TR-0007*.
 
 Het organogram wordt op een dag getekend, zoals een bord: de dagkeuze in de
 balk kijkt naar elke andere dag, en **Opslaan** houdt die dag vast op het
@@ -2033,6 +2037,17 @@ het organogram — haar mensen, haar rollen, wie haar aanstuurt en de eenheden
 waarmee ze samenwerkt. Een eenheid die een andere scope bijhoudt opent daar, op
 haar record. **Vind mij** gaat naar de eenheid waar jij een rol vervult; zeg
 eerst wie je bent, met **Dit ben ik** op de pagina Mensen.
+
+Een klik op een persoon opent in plaats daarvan diens toewijzing in de
+inspector: wie haar heeft, de rol en de eenheid, de eerste en laatste dag, het
+deel van de tijd dat ze vraagt, en een opmerking waar iemand op de dag van het
+organogram meer dan al zijn tijd heeft. **Beëindigen op deze dag** beëindigt
+haar, als één stap, op de laatste dag die je kiest — de dag vóór de dag van het
+organogram als je vooruitkijkt, anders vandaag, en nooit vóór de eerste dag.
+Een beëindigde toewijzing blijft: het is wat de persoon had. **Corrigeren…**
+opent het venster van de eenheid voor al het andere, en **Openen in Mensen**
+gaat naar de pagina Mensen met die persoon gekozen. Een persoon in een eenheid
+die een andere scope bijhoudt opent die eenheid daar.
 
 ### De Conway-kaart
 
