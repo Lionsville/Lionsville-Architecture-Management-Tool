@@ -113,6 +113,7 @@ function SelectedElementInspector({ parts, diagram }: { parts: EditorParts; diag
       onShowOnTechnology={props.diagrams.onOpenTechnologyFor}
       onCreateContainer={readOnly ? undefined : props.diagrams.onCreateContainer}
       onCreateDrawing={readOnly ? undefined : props.diagrams.onCreateDrawingFor}
+      onOpenDrawing={props.diagrams.onOpenDrawing}
     />
   );
 }

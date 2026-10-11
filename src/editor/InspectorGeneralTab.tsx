@@ -10,6 +10,7 @@ import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import FormControlLabel from '@mui/material/FormControlLabel';
+import Link from '@mui/material/Link';
 import MenuItem from '@mui/material/MenuItem';
 import Switch from '@mui/material/Switch';
 import TextField from '@mui/material/TextField';
@@ -58,7 +59,7 @@ export function GeneralTab({ field, inspector, uses, picker }: {
         />
       )}
       <PlacementField field={field} diagram={inspector.diagram} />
-      <DrawingsField model={model} elementId={element.id} />
+      <DrawingsField model={model} elementId={element.id} onOpen={inspector.onOpenDrawing} />
       {onCreateContainer && !readOnly && offersContainer(element, model) && (
         <ContainerOffer onCreate={() => onCreateContainer(element.id)} />
       )}
@@ -174,7 +175,11 @@ function PlacementField({ field, diagram }: { field: InspectorField; diagram: De
  * The drawings in this scope whose links point at the element. Nothing, when
  * none do — an empty heading would be a heading about an absence.
  */
-function DrawingsField({ model, elementId }: { model: DesignModel; elementId: ElementId }) {
+function DrawingsField({ model, elementId, onOpen }: {
+  model: DesignModel;
+  elementId: ElementId;
+  onOpen?: (diagramId: string) => void;
+}) {
   const { t } = useStrings();
   const drawings = drawingsPointingAt(model.diagrams, elementId);
   if (drawings.length === 0) return null;
@@ -185,7 +190,11 @@ function DrawingsField({ model, elementId }: { model: DesignModel; elementId: El
       </Typography>
       {drawings.map((drawing) => (
         <Typography key={drawing.id} variant="body2" component="div" data-testid={`element-drawing-${drawing.id}`}>
-          {drawing.name}
+          {onOpen ? (
+            <Link component="button" type="button" variant="body2" onClick={() => onOpen(drawing.id)} sx={{ textAlign: 'left' }}>
+              {drawing.name}
+            </Link>
+          ) : drawing.name}
         </Typography>
       ))}
     </Box>

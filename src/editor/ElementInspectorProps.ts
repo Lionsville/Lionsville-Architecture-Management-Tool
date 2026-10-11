@@ -114,6 +114,12 @@ export interface ElementInspectorProps {
    */
   onCreateDrawing?(elementId: ElementId): void;
   /**
+   * Open a drawing of this scope: each drawing that points at the element is
+   * listed as a way to it. Absent where the host cannot, and the drawings are
+   * named without one.
+   */
+  onOpenDrawing?(diagramId: string): void;
+  /**
    * For an application or a container: what it leverages, as the host works
    * it out over the whole tree (ADR-0014). Absent = read off this scope's own
    * rows, which is the answer a shell with no tree can give.

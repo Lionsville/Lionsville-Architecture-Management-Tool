@@ -7,7 +7,7 @@
  */
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { ThemeProvider } from '@mui/material/styles'
 import type { DesignDiagram, DesignElement, DesignModel } from '../model/types'
 import type { EditorActions } from './useEditorState'
@@ -34,7 +34,7 @@ function drawing(id: string, name: string, elementId: string | undefined): Desig
 
 const board: DesignDiagram = { id: 'l7', kind: 'layer7', name: 'Landscape', members: [{ id: 'billing' }] }
 
-function show(diagrams: DesignDiagram[]) {
+function show(diagrams: DesignDiagram[], onOpenDrawing?: (id: string) => void) {
   const model: DesignModel = { name: 'Retail', diagrams, elements: [billing], relations: [] }
   const actions = new Proxy({}, { get: () => vi.fn() }) as unknown as EditorActions
   render(
@@ -46,6 +46,7 @@ function show(diagrams: DesignDiagram[]) {
         readOnly={false}
         actions={actions}
         onRequestDelete={vi.fn()}
+        {...(onOpenDrawing ? { onOpenDrawing } : {})}
       />
     </ThemeProvider>,
   )
@@ -66,6 +67,13 @@ describe('drawings in the inspector', () => {
     expect(listed.textContent).not.toContain('Deployment')
     expect(listed.textContent).not.toContain('Anchored only')
     expect(listed.textContent).not.toContain('Landscape')
+  })
+
+  it('opens a listed drawing, where the host can', () => {
+    const onOpenDrawing = vi.fn()
+    show([board, drawing('ctx', 'Context', 'billing')], onOpenDrawing)
+    fireEvent.click(within(screen.getByTestId('element-drawing-ctx')).getByRole('button', { name: 'Context' }))
+    expect(onOpenDrawing).toHaveBeenCalledWith('ctx')
   })
 
   it('lists nothing when no drawing points at it', () => {

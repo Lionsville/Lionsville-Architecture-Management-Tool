@@ -127,6 +127,9 @@ function PageInspector({ props, state, readOnly, inspectorReadOnly, docs, elemen
       onCreateDrawing={!readOnly && diagrams.onCreateDrawingFor
         ? (id) => { docs.close(); diagrams.onCreateDrawingFor?.(id); }
         : undefined}
+      onOpenDrawing={diagrams.onOpenDrawing
+        ? (id) => { docs.close(); diagrams.onOpenDrawing?.(id); }
+        : undefined}
       layout="stacked"
       hideDescription
     />
