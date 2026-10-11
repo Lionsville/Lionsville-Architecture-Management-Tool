@@ -19,7 +19,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'check.drift': 'Die Kopie von {name} hier stimmt nicht mehr mit {scope} überein — aktualisieren Sie sie, oder ändern Sie es dort',
   'check.dangling': '{name} steht für etwas, das nirgends in der Organisation definiert ist — definieren Sie es hier, oder löschen Sie den Platzhalter',
   'check.danglingEnd': 'Eine Zeile an {name} endet an etwas, das dieser Bereich nicht hält — löschen Sie die Zeile, oder zeichnen Sie, worauf sie zeigt',
-  'check.proposal': '{name} ist eine Fähigkeit, die diese Domäne vorschlägt und die Organisation nicht benannt hat — fügen Sie sie der Geschäftsarchitektur der Organisation hinzu, oder benennen Sie sie in eine vorhandene um',
+  'check.proposal': '{name} ist eine Fähigkeit, die diese Domäne vorschlägt, und die Organisation hat sie noch nicht benannt',
   'check.ownedElsewhere': 'Dies wird in {scope} geführt — ändern Sie es dort',
   'check.unattributed': '{name} liegt außerhalb der Organisation, und niemand hat gesagt, wem es gehört — nennen Sie die Partei auf seiner Seite',
   'check.notDrawn': '{name} ist hier definiert und auf keiner Tafel gezeichnet — setzen Sie es auf eine Tafel, oder belassen Sie es als Datensatz',

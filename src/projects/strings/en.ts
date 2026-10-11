@@ -34,7 +34,7 @@ export const EN = {
   'check.drift': 'The copy of {name} here no longer matches {scope} — refresh it, or change it there',
   'check.dangling': '{name} stands in for something nothing in the organisation defines — define it here, or delete the stand-in',
   'check.danglingEnd': 'A row on {name} ends on something this scope does not hold — delete the row, or draw what it points to',
-  'check.proposal': '{name} is a capability this domain proposes and the organisation has not named — add it to the organisation\'s business architecture, or rename it to one that is there',
+  'check.proposal': '{name} is a capability this domain proposes, and the organisation has not named it yet',
   'check.ownedElsewhere': 'This is kept in {scope} — change it there',
   'check.unattributed': '{name} is outside the organisation and nobody has said whose it is — name the party on its page',
   'check.notDrawn': '{name} is defined here and drawn on no board — add it to a board, or leave it as a record',

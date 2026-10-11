@@ -19,7 +19,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'check.drift': 'De kopie van {name} hier komt niet meer overeen met {scope} — ververs haar, of wijzig het daar',
   'check.dangling': '{name} is een verwijzing naar iets wat nergens in de organisatie gedefinieerd is — definieer het hier, of verwijder de plaatsvervanger',
   'check.danglingEnd': 'Een regel op {name} eindigt op iets wat deze scope niet heeft — verwijder de regel, of teken waar hij naar wijst',
-  'check.proposal': '{name} is een capability die dit domein voorstelt en die de organisatie niet heeft benoemd — voeg haar toe aan de bedrijfsarchitectuur van de organisatie, of hernoem haar naar een die er is',
+  'check.proposal': '{name} is een capability die dit domein voorstelt, en de organisatie heeft haar nog niet benoemd',
   'check.ownedElsewhere': 'Dit wordt bijgehouden in {scope} — wijzig het daar',
   'check.unattributed': '{name} staat buiten de organisatie en niemand heeft gezegd van wie het is — noem de partij op de pagina ervan',
   'check.notDrawn': '{name} is hier gedefinieerd en op geen enkel bord getekend — zet het op een bord, of laat het een record',
