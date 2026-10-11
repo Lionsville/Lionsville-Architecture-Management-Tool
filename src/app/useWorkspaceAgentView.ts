@@ -17,7 +17,11 @@ import type { RendererView } from '../agent/renderer'
 import type { Destination } from '../agent/screen'
 import { isViewPageName } from './pageLanding'
 import { coverageOf, unmappedFunctions } from '../business'
-import { documentFindings, identityFindings, organisationFindings } from '../projects/checks'
+import { documentFindings, findingsOfOrganisation, identityFindings } from '../projects/checks'
+import { today as clockToday } from '../model/lifecycle'
+import type { Person } from '../people/person'
+import { registerOf, resolvePerson } from '../people/shown'
+import { organisationHere } from './units/organisationHere'
 import { standInOf } from '../projects/library'
 import { mayApplyPatch } from '../projects/mayEdit'
 import { flattenScopes } from '../projects/scope'
@@ -105,7 +109,7 @@ export function useWorkspaceAgentView(deps: {
     page,
     settled,
     show: showOn(pages, showElement, openDocumentation, leaveDocumentation),
-    tree: agentTree({ session, scope, indexRef, rowsElsewhereRef, scopes, reader }),
+    tree: agentTree({ session, scope, indexRef, rowsElsewhereRef, scopes, reader, people: () => peopleRef.current?.people }),
     people: () => peopleRef.current?.people,
     ...(changeAcross ? { changeAcross } : {}),
   }), [
@@ -173,13 +177,15 @@ export function showOn(
  * findings would be a load per call, and the identity findings about it
  * are in the same list already.
  */
-function agentTree(at: {
+export function agentTree(at: {
   session: ModelSession
   scope: ScopePath
   indexRef: RefObject<ScopeIndex>
   rowsElsewhereRef: RefObject<Relation[]>
   scopes: ScopeSummary
   reader: ScopeReader
+  /** The register as last read, for one person under every id a merge left. */
+  people: () => readonly Person[] | undefined
 }): WorkspaceAgentView['tree'] {
   const { session, scope, indexRef, rowsElsewhereRef, scopes, reader } = at
   return {
@@ -200,9 +206,13 @@ function agentTree(at: {
     findings: (day) => {
       const model = session.current()
       const coverage = coverageOf(model.relations, rowsElsewhereRef.current)
+      // The organisation as this window has it — the open scope's session laid over the tree, as
+      // the screens read it — and one person under every id a merge left (ADR-0036 §9).
+      const register = registerOf(at.people() ?? [])
+      const canonical = (id: string) => resolvePerson(id, register)?.id ?? id
       return [
         ...identityFindings(indexRef.current),
-        ...organisationFindings(indexRef.current, day),
+        ...findingsOfOrganisation(organisationHere(indexRef.current, scope, model), day ?? clockToday(), canonical),
         ...documentFindings({
           scope, model, index: indexRef.current,
           business: {
