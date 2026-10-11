@@ -365,3 +365,27 @@ describe('a link to a record, from the picture', () => {
     expect(screen.queryByTestId('picture-menu')).toBeNull()
   })
 })
+
+/** ADR-0033, amended 11 October 2026: the record a link opens on is located, and a plain opening rings nothing. */
+describe('the record a link opens on', () => {
+  const ringed = (key: string) => Array.from(document.querySelectorAll('style')).map((style) => style.textContent ?? '').join('\n')
+    .includes(`[data-key="${key}"]`)
+
+  // First: Emotion's rules outlive a test's render, so a ring written by an
+  // earlier test would still be read here.
+  it('rings nothing on an opening that asked for no record', () => {
+    mount({ ...base })
+    expect(screen.getByTestId('observation-row-o1')).toBeTruthy()
+    expect(ringed('o1')).toBe(false)
+  })
+
+  it('rings its row in the register and its node in the picture', () => {
+    mount({ ...base }, { initialId: 'o1', initialTab: 'register', initialNonce: 1 })
+    expect(screen.getByTestId('observation-row-o1').getAttribute('data-key')).toBe('o1')
+    expect(ringed('o1')).toBe(true)
+    cleanup()
+    mount({ ...base }, { initialId: 'c1', initialTab: 'analysis', initialNonce: 1 })
+    expect(screen.getByTestId('analysis-picture').querySelector('[data-key="c1"]')).not.toBeNull()
+    expect(ringed('c1')).toBe(true)
+  })
+})
