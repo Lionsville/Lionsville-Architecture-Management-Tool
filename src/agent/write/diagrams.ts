@@ -12,7 +12,7 @@ import { seedTechnologyLandscape } from '../../model/technologyLandscape'
 import { DEFAULT_PAPER, isSheetPaper } from '../../business/grid'
 import { seedMap } from '../../business/map'
 import { rootsOfKind, seedSheet } from '../../business/sheetDiagram'
-import { linksFromXml } from '../../model/drawing'
+import { isCompressedDrawing, linksFromXml } from '../../model/drawing'
 import type { C4Level, DesignDiagram } from '../../model/types'
 import type { AgentAnswer } from '../tools'
 import { json, refused } from '../tools'
@@ -280,6 +280,11 @@ const asOf: ViewField = (args, _model, patch) => {
 const xmlField: ViewField = (args, _model, patch) => {
   if (args.xml === undefined) return undefined
   if (typeof args.xml !== 'string') return refused('agent.badArguments', '"xml" is the drawing\'s XML')
+  // A compressed page holds no cells to read: kept, it would be a drawing
+  // whose links read empty and whose labels no search finds.
+  if (isCompressedDrawing(args.xml)) {
+    return refused('agent.badArguments', '"xml" is compressed; write it uncompressed, the mxGraphModel inside the <diagram>')
+  }
   patch.drawing = { xml: args.xml, links: linksFromXml(args.xml) }
   return undefined
 }

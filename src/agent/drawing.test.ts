@@ -93,6 +93,16 @@ describe('an agent and a drawing', () => {
     expect(drawing?.kind === 'drawing' && drawing.drawing?.links[0].area).toEqual({ x: 110, y: 60, width: 80, height: 40 })
   })
 
+  it('refuses compressed XML, and keeps the drawing as it was', async () => {
+    const held = session()
+    const id = parsed(await handle({ id: '1', tool: 'diagram.create', args: { kind: 'drawing', name: 'Context' } }, held)).id as string
+    const compressed = '<mxfile host="local"><diagram id="p" name="Page-1">tZZNc5swEIZ/DXcQDs41cV3</diagram></mxfile>'
+    const answer = await handle({ id: '2', tool: 'diagram.update', args: { id, xml: compressed } }, held)
+    expect(answer).toMatchObject({ ok: false })
+    expect(JSON.stringify(answer)).toContain('compressed')
+    expect(held.current().diagrams.find((diagram) => diagram.id === id)?.drawing).toBeUndefined()
+  })
+
   it('refuses a drawing anchored to nobody, and a level that is not one', async () => {
     const held = session()
     expect(await handle({ id: '1', tool: 'diagram.create', args: { kind: 'drawing', name: 'Context', elementId: 'nope' } }, held))
