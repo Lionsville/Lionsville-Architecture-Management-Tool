@@ -494,7 +494,12 @@ function slotFindings(
   return found
 }
 
-/** Every assignment running on the day in a unit or a role that has ended by then. */
+/**
+ * Every assignment running on the day in a unit or a role that has ended by
+ * then — or that is gone: a unit taken away, or no longer a unit, and a role
+ * taken out of an operating model that holds others. Nobody holds a role in
+ * nothing, and the person is still counted as holding it.
+ */
 function endedFindings(
   assignments: readonly Assignment[], units: ReadonlyMap<ElementId, UnitLike>, roles: ReadonlyMap<RoleId, Role>, day: string,
 ): UnitFinding[] {
@@ -503,9 +508,9 @@ function endedFindings(
     if (!runsOn(assignment, day)) continue
     const unit = units.get(assignment.unitId)
     const role = roles.get(assignment.roleId)
-    if (unit && unitEnded(unit, day)) found.push({ kind: 'endedUnit', unitId: unit.id, assignment })
-    else if (role && endedBy(role, day)) {
-      found.push({ kind: 'endedRole', unitId: assignment.unitId, roleId: role.id, assignment })
+    if (!unit || unitEnded(unit, day)) found.push({ kind: 'endedUnit', unitId: assignment.unitId, assignment })
+    else if (role ? endedBy(role, day) : roles.size > 0) {
+      found.push({ kind: 'endedRole', unitId: assignment.unitId, roleId: assignment.roleId, assignment })
     }
   }
   return found

@@ -639,7 +639,7 @@ off the index alone and today unless a day is given: `check.roleVacant`,
 `check.roleOverMax`, `check.unitMisplaced`, `check.unitSpans` (several
 domains under a type that does not span), `check.unitOverLimit`,
 `check.assignmentEnded` (a running assignment in an ended unit, or in a role
-whose `until` has passed) and `check.personOverloaded`, about each scope that
+whose `until` has passed, or in a unit or a role taken away since) and `check.personOverloaded`, about each scope that
 keeps one of the person's running assignments. A finding about a person
 carries their id in `person`; the organisation's home names them through the
 register.

@@ -195,6 +195,20 @@ describe('what the organisation contradicts on a day', () => {
     expect(found.find((one) => one.kind === 'vacant' && one.unitId === 'webshop')).toMatchObject({ roleId: 'ro-dev', held: 2, min: 3 })
   })
 
+  it('finds an assignment still running in a unit or a role taken away since, which nobody can hold', () => {
+    const gone: Organisation = {
+      units: [unit('webshop', 'ut-team')], roles, unitTypes: [team],
+      assignments: [
+        { id: 'as-a', unitId: 'removed', roleId: 'ro-po', person: { person: 'pe-a' } },
+        { id: 'as-b', unitId: 'webshop', roleId: 'ro-gone', person: { person: 'pe-b' } },
+      ],
+    }
+    const found = unitFindings(gone, TODAY).filter((one) => one.kind === 'endedUnit' || one.kind === 'endedRole')
+    expect(found.map((one) => [one.kind, one.unitId])).toEqual([['endedUnit', 'removed'], ['endedRole', 'webshop']])
+    // With no operating model read at all, a role is nobody's to judge.
+    expect(unitFindings({ ...gone, roles: [] }, TODAY).filter((one) => one.kind === 'endedRole')).toEqual([])
+  })
+
   it('finds a unit that serves several domains under a type that serves one', () => {
     const narrow: Organisation = { ...organisation, unitTypes: [domain, { ...cluster, spans: undefined }, team] }
     expect(unitFindings(narrow, TODAY).filter((one) => one.kind === 'spans')).toEqual([{ kind: 'spans', unitId: 'data', serves: 2 }])
