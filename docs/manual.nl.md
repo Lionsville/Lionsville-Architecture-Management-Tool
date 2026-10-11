@@ -236,6 +236,13 @@ vier van toepassing zijn.
   staat standaard aan; zet je het uit, dan tekent dit onderdeel het ding
   helemaal niet meer.
 
+**Een eenheid neemt haar mensen mee.** Een eenheid omhoog, omlaag of over
+verplaatsen neemt elke toewijzing die voor haar wordt bijgehouden mee, in
+dezelfde stap — ook de beëindigde, want wie haar rollen vervulde hoort bij de
+eenheid — onder de id's die ze hadden, zodat ieders verleden van hen blijft. Een
+verwijzing die achterblijft houdt er geen. De bevestiging zegt hoeveel er
+meegaan.
+
 De laatste drie schrijven **twee onderdelen**, dus ze vragen het eerst. Het
 onderdeel waar het naartoe gaat wordt geschreven vóór dit onderdeel verandert, en
 dat is met opzet: gaat er halverwege iets mis, dan staat de vastlegging op
@@ -280,7 +287,15 @@ verdwijnt hij in één keer van elk scherm.
 - **Mogelijk dubbel** toont de paren in het register die één persoon kunnen
   zijn. **Samenvoegen** vraagt eerst en is definitief: één vermelding blijft,
   de andere wordt een verwijzing zonder naam, zodat alles wat ernaar wees de
-  vermelding toont die blijft.
+  vermelding toont die blijft. Wie actief is samenvoegen met een vermelding
+  die vertrokken is, vraagt wat klopt. **Er nog** laat het vertrek vervallen:
+  de vermelding die blijft is weer actief, en het beleid telt niet langer af
+  tot de naam wordt vergeten. **Vertrokken** beëindigt de rollen van de
+  samengevoegde vermelding op de vertrekdag, zoals **Markeren als
+  vertrokken** dat zou doen — een rol die na die dag begon vervalt, want een
+  rol eindigt nooit voordat hij begon — en de vraag zegt eerst hoeveel van
+  elk. *Er nog* staat vooraf gekozen als een van die rollen na de vertrekdag
+  begon.
 - **CSV importeren…** neemt een lijst — geplakt, of uit een bestand — met op
   elke rij een naam, een adres en *intern* of *extern*, gescheiden door
   komma's of puntkomma's. Elke rij gaat door dezelfde controle: een rij die
@@ -294,7 +309,9 @@ verdwijnt hij in één keer van elk scherm.
   dag — na een reorganisatie bijvoorbeeld — en **Terug naar vandaag** keert
   terug; kijken schrijft niets. **Dit ben ik** vertelt deze installatie
   welke vermelding jij bent, zodat je overal gemarkeerd wordt waar je
-  voorkomt; dat wordt bij de installatie bewaard, niet in je map. **Vind
+  voorkomt; dat wordt bij de installatie bewaard — voor een map die in een
+  browser is geopend, in die browser — nooit in je map of in iets wat je
+  exporteert. **Vind
   mij**, in de balk, toont dan de hele lijst met jouw vermelding gekozen.
   **Corrigeren…** wijzigt de naam, het adres of de soort.
 - **Markeren als vertrokken** vraagt om de laatste dag. De naam blijft
@@ -302,7 +319,8 @@ verdwijnt hij in één keer van elk scherm.
 - **Nu vergeten** vraagt eerst en haalt dan de naam en het adres voorgoed weg:
   vanaf dan toont elk scherm een pseudoniem, *Oud-collega 7KQM*. Het register
   bewaart geen geschiedenis van een naam, dus niets brengt hem terug. Een
-  ondertekend besluit houdt de naam waarmee het is ondertekend.
+  ondertekend besluit houdt de naam waarmee het is ondertekend, en toont die
+  daar los: niets koppelt haar aan de vergeten vermelding.
 - **Nu verwijderen**, bij een vermelding die al vergeten is, haalt haar uit
   het register; wat ernaar wees leest *een oud-collega*.
 - **Verwijst naar hen** noemt elke vastlegging waarvan een veld de persoon
@@ -311,7 +329,9 @@ verdwijnt hij in één keer van elk scherm.
   ze voorstelden of ondertekenden — met het onderdeel dat haar bewaart, en
   wat de regels van het besturingsmodel hen vandaag in eigendom geven (zie
   *Velden die een persoon noemen*). Een handtekening die haar naam hield,
-  zegt de naam waarmee getekend is.
+  zegt de naam waarmee getekend is — behalve bij een vergeten vermelding, die
+  alleen zegt dat de handtekening bestaat, zodat de naam zoals getekend nooit
+  naast het pseudoniem staat. **Wat we bewaren** doet hetzelfde.
 - **Wat we bewaren** toont alles wat het register over iemand bewaart, en wat
   naar die persoon wijst, als één document om te kopiëren: het antwoord op
   een inzageverzoek. Een verzoek om te wissen beantwoord je met **Nu
@@ -386,7 +406,12 @@ initialen, een team.
   besluitrecord: het besluit toont haar ook nadat de persoon vergeten is,
   waar elk ander scherm het pseudoniem toont. Een agent die volgens het
   beleid pseudoniemen ziet, krijgt ook hier het pseudoniem, en hoort dat de
-  naam zoals getekend voor hem achtergehouden wordt.
+  naam zoals getekend voor hem achtergehouden wordt. Zodra de ondertekenaar
+  vergeten of verwijderd is, verwijst de handtekening naar niemand: het
+  besluit toont de naam zoals getekend los, ook terwijl het nog geschreven
+  wordt; geen scherm toont haar naast het pseudoniem; zoeken op het
+  pseudoniem vindt het besluit niet meer; en een agent krijgt de naam zoals
+  getekend zonder id.
 - **De eigenaar van een applicatie kan een rol volgen.** Als het
   besturingsmodel de regel heeft *de eigenaar van een applicatie is een rol
   van haar team* (zie *Het besturingsmodel*), toont een applicatie waarop
@@ -1990,7 +2015,11 @@ een van de twee eenheden in deze scope wordt bijgehouden, beantwoordt **+ Een
 samenwerking vastleggen…** een overschrijding als één stap, en al het andere
 wordt beantwoord waar het wordt bijgehouden — een eigenaar op de applicatie,
 een limiet op het eenheidstype. Net als het organogram wordt ze op een dag
-getekend, en **Vind mij** gaat naar jouw eenheid.
+getekend, en **Vind mij** gaat naar jouw eenheid. Een applicatie staat op de
+kaart zolang ze op de dag van de kaart live of uitfaserend is: een die
+nog niet live is, of verdwenen, wordt niet getekend, en haar interfaces en wat
+de kaart over haar zou vinden ook niet; de limiet van een eenheid telt wat ze
+op die dag bezit.
 
 ### Wie met wie samenwerkt
 

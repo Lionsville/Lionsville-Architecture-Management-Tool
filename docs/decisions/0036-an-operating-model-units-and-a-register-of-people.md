@@ -7,7 +7,10 @@
   manages, §13's three tools for them), change over time (§6, §13's
   `plan.move`), names as references (§8's fields, the signature that keeps
   its name, §2's owner worked out from a rule, search through the register),
-  and the two views and the `interacts` row (§7, §11's *Find me*), 11 October
+  and the two views and the `interacts` row (§7, §11's *Find me*), and the
+  calls a review left open (a unit moved between scopes, a merge into an
+  entry that has left, a signature apart from a forgotten entry, *This is me*
+  in a browser's folder, the Conway map's applications on its day), 11 October
   2026 — *As built*, below
 * Date: 2026-10-11
 * Deciders: Wouter Simons
@@ -477,7 +480,7 @@ its shape.
 **The policy** is `people` in the organisation's settings
 (`people/policy.ts`: `keepNameDays`, `removeAfterDays`, `agentsSee`), and
 *This is me* is `people.me` in the person's own settings, which the desktop
-keeps in its data folder. The app applies the policy when the organisation
+keeps in its data folder and a browser keeps beside a folder's handle. The app applies the policy when the organisation
 is opened and when the day turns while it is open, where the source may be
 written (`app/organisation/usePeopleRegister.ts`).
 
@@ -939,6 +942,63 @@ reads either off the tree with the open scope laid over it
 and a unit type holding one, a unit of it and a chart; the chart draws the
 role vacant; a person added and assigned is a holder on the chart and the
 vacancy is gone.
+
+## As built, 11 October 2026: the calls a review left open
+
+Five answers the design gave after the parts above were built, each where a
+person sees it.
+
+**A unit moved between scopes takes its people** (§4). *Promote*, *demote*
+and *transfer* (`projects/gestures.ts`) carry every assignment the scope it
+leaves keeps for the unit — ended ones included, since who held its roles
+belongs with it — in the write to the scope it goes to, as one step with the
+definition (`writeCommand`), under their own ids, so a person's past stays
+linked; this scope's step takes them out with the link or the delete, so a
+stand-in left behind holds none. The step carries the gesture's barrier as
+before, and the confirmation says how many go. The index reads them where the
+unit is now.
+
+**A merge into an entry that has left asks** (§9). An active entry merged into
+one that has left is told `MergeLeaving` (`people/person.ts`), and the
+register's rules refuse it told nothing (`people.mergeAsks`): *still here*
+makes the entry kept active again with no `leftOn`, so the policy stops
+counting; *left* keeps the leaving, and `people/leave.mergePerson` ends the
+absorbed entry's roles on the leaving day by leaving's own consequences —
+first, then the merge — so one that ran past it ends on it and one that began
+after it is taken away, never ended before it began. A register that
+`endsAssignments` is told *left* and does it itself, answering `ended`. The
+People page's question (`people/ui/MergeLeaving.tsx`) says how many of each,
+and starts from *still here* where any of those roles began after the leaving
+day, from *left* otherwise. `PeopleRepository.merge` takes the answer as its
+third argument.
+
+**A signature apart from a forgotten entry** (§8). Once the entry a signature
+was signed by — the one a merge kept — is forgotten or gone
+(`people/shown.signatureApart`), the name as signed links to nobody. The
+decision shows it alone, even while the record is written (the row is no
+picked person then); the forgotten entry's *Points at them* and *What we
+hold* say only that a signature exists (`pointerLine(…, apart)`); a search
+does not reach the record through it (`SearchRecord.signed`, matched only
+while `PeopleMatch.apart` says the entry has its name); and an agent is told
+the name as signed in place of the reference, with no id and no pseudonym —
+or *a former colleague*, where names are withheld (`agent/persons.ts`).
+
+**This is me in a browser's folder** (§11). A folder opened in a browser keeps
+the person's own settings in that browser's database beside the folder's
+handle (`browserPersonSettings`), as the desktop keeps them in its data
+folder: they outlive a reload, and nothing of them is in the folder or an
+export.
+
+**The Conway map on its day** (§7, ADR-0009). An application is on the map
+while it is live or retiring on the map's day (`model/conway.applicationOn`),
+as a unit is: one not yet live, or gone, is not drawn, and neither are its
+interfaces nor a finding about it; a unit's limit counts what it owns on that
+day (`ownsOf`), on the page, in `diagram.inspect` and in the organisation's
+`check.unitOverLimit` alike. The index carries each element's stored phase
+and dated phases (`IndexEntry.lifecycle`, `lifecycleDates`) for it.
+
+And *Move the people* writes each new assignment under the id a merge kept
+(`peopleMoveSteps`'s `canonical`).
 
 ## Open
 

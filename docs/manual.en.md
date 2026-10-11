@@ -228,6 +228,12 @@ the four apply.
 - **Transfer** — move it to any other scope. **Keep a stand-in here** is ticked
   by default; untick it and this scope stops drawing the thing altogether.
 
+**A unit takes its people with it.** Promoting, demoting or transferring a unit
+moves every assignment kept for it, in the same step — the ones that have ended
+too, because who held its roles belongs with the unit — under the ids they had,
+so each person's past stays theirs. A stand-in left behind holds none. The
+confirmation says how many go.
+
 The last three write **two scopes**, so they ask first. The scope it is going to
 is written before this one changes, which is deliberate: if something goes wrong
 halfway you are left with the record in *both* places — a conflict you can see
@@ -268,7 +274,14 @@ so when a name goes from the register, it goes from every screen at once.
 - **Possible duplicates** lists the pairs already in the register that may be
   one person. **Merge** asks first and is final: one entry is kept, and the
   other becomes a redirect with no name, so everything that pointed at it
-  shows the one kept.
+  shows the one kept. Merging somebody active into an entry that has left
+  asks which is true. **Still here** clears the leaving: the entry kept is
+  active again, and the policy stops counting down to forgetting the name.
+  **Left** ends the roles of the entry merged away on the leaving day, as
+  **Mark as left** would — one that began after that day is taken away,
+  because a role never ends before it began — and the question says how
+  many of each first. *Still here* is chosen to start with where any of those
+  roles began after the leaving day.
 - **Import CSV…** takes a list — pasted, or a file — with a name, an address
   and *internal* or *external* on each row, separated by commas or
   semicolons. Every row goes through the same check: one that is plainly
@@ -280,7 +293,9 @@ so when a name goes from the register, it goes from every screen at once.
   **Look at** says the same on another day — after a reorganisation, say —
   and **Back to today** returns; looking writes nothing.
   **This is me** tells this install which entry is you, so you are marked
-  wherever you appear; it is kept with the install, not in your folder.
+  wherever you appear; it is kept with the install — for a folder opened in
+  a browser, in that browser — never in your folder or in anything you
+  export.
   **Find me**, on the bar, then shows the whole list with your entry chosen.
   **Correct…** changes the name, the address or the kind.
 - **Mark as left** takes their last day. Their name is still shown until the
@@ -288,7 +303,8 @@ so when a name goes from the register, it goes from every screen at once.
 - **Forget now** asks first, then takes the name and the address away for
   good: from then on every screen shows a pseudonym, *Former colleague 7KQM*.
   The register keeps no history of a name, so nothing brings it back. A
-  signed decision keeps the name it was signed with.
+  signed decision keeps the name it was signed with, shown there alone:
+  nothing links it to the forgotten entry.
 - **Remove now**, on an entry already forgotten, takes it out of the register;
   whatever pointed at it reads *a former colleague*.
 - **Points at them** lists every record whose fields name the person by id —
@@ -296,7 +312,9 @@ so when a name goes from the register, it goes from every screen at once.
   run, a decision they proposed or signed — with the scope that keeps it, and
   what the operating model's rules make them own today (see *Fields that name
   a person*). A signature that kept their name says the name it was signed
-  with.
+  with — except on a forgotten entry, which says only that the signature
+  exists, so the name as signed is never shown beside the pseudonym. **What
+  we hold** does the same.
 - **What we hold** shows everything the register holds about a person, and
   what points at them, as one document to copy: the answer to a request for
   access. A request to erase it is answered with **Forget now**. It also says
@@ -363,7 +381,11 @@ did — a name, initials, a team.
   part of the decision record: the decision shows it after the person is
   forgotten, where every other screen shows the pseudonym. An agent the
   policy gives pseudonyms is told the pseudonym here too, and that the name
-  as signed is withheld from it.
+  as signed is withheld from it. Once the signer is forgotten or removed,
+  the signature links to nobody: the decision shows the name as signed alone,
+  even while the record is still being written; no screen shows it beside
+  the pseudonym; a search for the pseudonym no longer finds the decision; and
+  an agent is told the name as signed with no id.
 - **An application's owner can follow a role.** Where the operating model
   has the rule *an application's owner is a role of its team* (see *The
   operating model*), an application nobody wrote an owner on shows the
@@ -1841,7 +1863,10 @@ allows. A press on a finding marks what it is about. The map only reads: where
 one of the two units is kept in this scope, **+ Declare an interaction…**
 answers a crossing as one step, and everything else is answered where it is
 kept — an owner on the application, a limit on the unit type. Like the chart it
-is drawn on a day, and **Find me** goes to your unit.
+is drawn on a day, and **Find me** goes to your unit. An application is on the
+map while it is live or retiring on the map's day: one not yet live, or gone,
+is not drawn, and neither are its interfaces nor anything the map would find
+about it; a unit's limit counts what it owns on that day.
 
 ### Who works with whom
 

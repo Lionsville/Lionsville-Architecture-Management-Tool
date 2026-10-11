@@ -257,6 +257,13 @@ Inspektor; der Dialog bietet an, welche der vier in Frage kommen.
   einen Platzhalter lassen** ist standardmäßig angehakt; entfernen Sie den
   Haken, und dieser Bereich zeichnet das Ding gar nicht mehr.
 
+**Eine Einheit nimmt ihre Personen mit.** Eine Einheit hochziehen, abgeben oder
+übergeben nimmt jede Zuordnung mit, die für sie geführt wird, im selben Schritt
+— auch die beendeten, denn wer ihre Rollen innehatte, gehört zur Einheit —
+unter den IDs, die sie hatten, damit die Vergangenheit jeder Person ihre bleibt.
+Ein Platzhalter, der zurückbleibt, behält keine. Die Bestätigung sagt, wie
+viele mitgehen.
+
 Die letzten drei schreiben **zwei Bereiche**, deshalb fragen sie zuerst. Der
 Bereich, in den es geht, wird geschrieben, bevor sich dieser ändert, und das ist
 Absicht: geht auf halbem Weg etwas schief, bleibt Ihnen der Datensatz an *beiden*
@@ -302,7 +309,15 @@ Register, verschwindet er also auf einmal aus jeder Ansicht.
 - **Mögliche Doppelungen** zeigt die Paare im Register, die eine Person sein
   könnten. **Zusammenführen** fragt zuerst und ist endgültig: Ein Eintrag
   bleibt, der andere wird zu einem Verweis ohne Namen, sodass alles, was
-  darauf zeigte, den verbleibenden Eintrag zeigt.
+  darauf zeigte, den verbleibenden Eintrag zeigt. Wer aktiv ist und mit einem
+  Eintrag zusammengeführt wird, der gegangen ist, wird gefragt, was stimmt.
+  **Noch da** hebt das Gehen auf: Der verbleibende Eintrag ist wieder aktiv,
+  und die Richtlinie zählt nicht mehr herunter, bis der Name vergessen wird.
+  **Gegangen** beendet die Rollen des zusammengeführten Eintrags am Tag des
+  Gehens, wie **Als ausgeschieden markieren** es täte — eine Rolle, die nach
+  diesem Tag begann, entfällt, denn eine Rolle endet nie, bevor sie begonnen
+  hat —, und die Frage sagt zuerst, wie viele es jeweils sind. *Noch da* ist
+  vorgewählt, wo eine dieser Rollen nach dem Tag des Gehens begann.
 - **CSV importieren…** nimmt eine Liste — eingefügt oder aus einer Datei — mit
   einem Namen, einer Adresse und *intern* oder *extern* in jeder Zeile, durch
   Kommas oder Semikolons getrennt. Jede Zeile durchläuft dieselbe Prüfung:
@@ -316,7 +331,9 @@ Register, verschwindet er also auf einmal aus jeder Ansicht.
   Tag — nach einer Umorganisation etwa —, und **Zurück zu heute** kehrt
   zurück; Ansehen schreibt nichts. **Das bin ich** sagt dieser Installation, welcher
   Eintrag Sie sind, damit Sie überall markiert werden, wo Sie vorkommen; das
-  wird bei der Installation geführt, nicht in Ihrem Ordner. **Mich finden**
+  wird bei der Installation geführt — für einen in einem Browser geöffneten
+  Ordner in diesem Browser —, nie in Ihrem Ordner oder in etwas, das Sie
+  exportieren. **Mich finden**
   in der Leiste zeigt dann die ganze Liste mit Ihrem Eintrag gewählt. **Korrigieren…**
   ändert Name, Adresse oder Art.
 - **Als ausgeschieden markieren** fragt nach dem letzten Tag. Der Name wird
@@ -325,7 +342,8 @@ Register, verschwindet er also auf einmal aus jeder Ansicht.
   endgültig: Von da an zeigt jede Ansicht ein Pseudonym, *Ehemalige Person
   7KQM*. Das Register führt keinen Verlauf eines Namens, nichts bringt ihn
   zurück. Eine unterzeichnete Entscheidung behält den Namen, mit dem sie
-  unterzeichnet wurde.
+  unterzeichnet wurde, und zeigt ihn dort allein: Nichts verbindet ihn mit dem
+  vergessenen Eintrag.
 - **Jetzt entfernen** nimmt einen bereits vergessenen Eintrag aus dem
   Register; was darauf zeigte, lautet *eine ehemalige Person*.
 - **Verweist auf sie** nennt jeden Datensatz, dessen Felder die Person per ID
@@ -334,7 +352,10 @@ Register, verschwindet er also auf einmal aus jeder Ansicht.
   Entscheidung, die sie vorgeschlagen oder unterzeichnet hat — mit dem
   Bereich, der ihn führt, und was die Regeln des Betriebsmodells ihr heute
   zuordnen (siehe *Felder, die eine Person nennen*). Eine Unterschrift, die
-  ihren Namen behielt, nennt den Namen, mit dem unterzeichnet wurde.
+  ihren Namen behielt, nennt den Namen, mit dem unterzeichnet wurde — außer
+  bei einem vergessenen Eintrag, der nur sagt, dass es die Unterschrift gibt,
+  damit der Name wie unterzeichnet nie neben dem Pseudonym steht. **Was wir
+  speichern** hält es ebenso.
 - **Was wir speichern** zeigt alles, was das Register über eine Person führt,
   und was auf sie zeigt, als ein Dokument zum Kopieren: die Antwort auf ein
   Auskunftsersuchen. Ein Ersuchen um Löschung beantworten Sie mit **Jetzt
@@ -414,7 +435,12 @@ oder Text wie bisher — einen Namen, Initialen, ein Team.
   auch, nachdem die Person vergessen ist, wo jede andere Ansicht das
   Pseudonym zeigt. Ein Agent, dem die Richtlinie Pseudonyme gibt, erhält auch
   hier das Pseudonym und den Hinweis, dass ihm der Name wie unterzeichnet
-  vorenthalten wird.
+  vorenthalten wird. Sobald die unterzeichnende Person vergessen oder
+  entfernt ist, verweist die Unterschrift auf niemanden: Die Entscheidung
+  zeigt den Namen wie unterzeichnet allein, auch solange sie noch geschrieben
+  wird; keine Ansicht zeigt ihn neben dem Pseudonym; eine Suche nach dem
+  Pseudonym findet die Entscheidung nicht mehr; und ein Agent erhält den
+  Namen wie unterzeichnet ohne ID.
 - **Der Verantwortliche einer Anwendung kann einer Rolle folgen.** Hat das
   Betriebsmodell die Regel *der Verantwortliche einer Anwendung ist eine
   Rolle ihres Teams* (siehe *Das Betriebsmodell*), zeigt eine Anwendung,
@@ -2113,7 +2139,10 @@ geführt wird, beantwortet **+ Eine Zusammenarbeit festhalten…** eine
 Überschreitung als ein Schritt, und alles andere wird dort beantwortet, wo es
 geführt wird — ein Eigentümer an der Anwendung, ein Limit am Einheitstyp. Wie
 das Organigramm wird sie an einem Tag gezeichnet, und **Mich finden** geht zu
-Ihrer Einheit.
+Ihrer Einheit. Eine Anwendung steht auf der Karte, solange sie am Tag der Karte
+aktiv oder auslaufend ist: eine, die noch nicht live ist, oder eine, die weg
+ist, wird nicht gezeichnet, ebenso wenig ihre Schnittstellen oder was die Karte
+über sie fände; das Limit einer Einheit zählt, was ihr an diesem Tag gehört.
 
 ### Wer mit wem arbeitet
 
