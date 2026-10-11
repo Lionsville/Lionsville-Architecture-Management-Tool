@@ -138,7 +138,7 @@ function asked(asking: Asking, register: PeopleRegisterAccess, saying: Saying, s
 /** Which of a pair a merge keeps: the two, the one kept now, and the other kept instead. */
 function KeepChoice({ from, into, onSwap, s }: { from: Person; into: Person; onSwap: () => void; s: Translate }) {
   const name = (person: Person) => shownText(shownEntry(person), s)
-  const either = [...[from, into]].sort((one, other) => one.id.localeCompare(other.id))
+  const either = [from, into].sort((one, other) => one.id.localeCompare(other.id))
   return (
     <RadioGroup value={into.id} onChange={(event) => { if (event.target.value !== into.id) onSwap() }} aria-label={s('people.mergeKeep')}
       data-testid="people-merge-keep" sx={{ mt: 1.5 }}>
