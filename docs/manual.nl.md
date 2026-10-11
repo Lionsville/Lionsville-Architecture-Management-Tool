@@ -296,14 +296,16 @@ Meer wordt er niet bewaard — geen notities, geen foto.
 
 Het register staat **buiten de geschiedenis**. Een wijziging hier is geen
 stap: er is geen ⌘Z voor en geen regel in Activiteit, en de pagina zegt dat
-ook. Daardoor kan een naam vergeten worden. De geschiedenis bewaart het id
+ook, onder **Over het register** aan het eind van haar ene regel inleiding.
+Daardoor kan een naam vergeten worden. De geschiedenis bewaart het id
 van een persoon, nooit de naam, en elk scherm vraagt het register om de naam
 wanneer het er een toont — dus als een naam uit het register verdwijnt,
 verdwijnt hij in één keer van elk scherm.
 
 - **Iedereen** staat in de lijst met soort, status en de **rollen vandaag**
-  die ze vervullen — elke rol in haar eenheid, de eerste twee en hoeveel er
-  nog zijn, en *geen* voor wie niets vervult, zodat die opvalt — en is te
+  die ze vervullen — op één regel de eerste rol in haar eenheid en hoeveel er
+  nog zijn (**Vervult vandaag** bij de persoon heeft ze allemaal), en *geen*
+  voor wie niets vervult, zodat die opvalt — en is te
   zoeken op naam, adres, of een rol of eenheid die ze vervullen; **Toon**
   beperkt de lijst tot wie actief is, wie vertrokken is of wie vergeten is. De
   kolom leest de dag waarop de pagina bekeken wordt (**Bekijk op**, hieronder).
@@ -314,8 +316,30 @@ verdwijnt hij in één keer van elk scherm.
   vindt *Pia Schulz* — of dezelfde achternaam en voorletter. **Deze
   gebruiken** neemt de vermelding die er al is; **Toch toevoegen** maakt een
   tweede, die je later kunt samenvoegen.
-- **Mogelijk dubbel** toont de paren in het register die één persoon kunnen
-  zijn. **Samenvoegen** vraagt eerst en is definitief: één vermelding blijft,
+- **Mogelijk dubbel** zijn de paren in het register die één persoon kunnen
+  zijn. Ze zijn ingeklapt telkens als de pagina opent, als één regel: hoeveel,
+  hoeveel per teken, en **Bekijken**. Uitgeklapt is elk paar één rij, het
+  sterkste teken eerst — hetzelfde adres, dezelfde naam, bijna dezelfde naam,
+  dezelfde achternaam en voorletter — met de twee mensen naast elkaar en wat
+  ze onderscheidt: de eerste rol die ze vandaag vervullen en hoeveel er nog
+  zijn, het werkadres, *Extern*, en *account* waar een bron die weet wie zich
+  aanmeldt zegt dat de vermelding aan een account gekoppeld is. Als er geen
+  paar meer over is, is de regel weg.
+- **Niet dezelfde persoon** beantwoordt dat de twee twee mensen zijn. Het
+  paar wordt niet meer aangeboden, en wie een van beiden corrigeert, krijgt
+  geen waarschuwing meer over de ander; iemand nieuw toevoegen kijkt nog wel
+  naar allebei. Het antwoord staat in het register, buiten de geschiedenis
+  zoals de rest ervan — de twee id's en de dag — en gaat met het register mee
+  in een werkbestand, ook een zonder namen. **N beantwoord als niet dezelfde
+  persoon**, onder de lijst, toont de antwoorden, elk met **Terugnemen**,
+  waarna het paar weer mogelijk dubbel is. Wie een van beiden vergeet of
+  verwijdert, laat het antwoord vervallen; wie een van beiden samenvoegt met
+  een derde vermelding, neemt het mee naar de vermelding die blijft, tenzij
+  dat de ander van de twee is. Geen agent beantwoordt het, zoals geen agent
+  samenvoegt.
+- **Samenvoegen…** vraagt eerst welke vermelding blijft — de vermelding die
+  aan een account gekoppeld is, en dan die met de meeste toewijzingen, staat
+  vooraf gekozen, en je kunt de andere kiezen — en is definitief: één vermelding blijft,
   de andere wordt een verwijzing zonder naam, zodat alles wat ernaar wees de
   vermelding toont die blijft. Wie actief is samenvoegen met een vermelding
   die vertrokken is, vraagt wat klopt. **Er nog** laat het vertrek vervallen:
@@ -343,7 +367,9 @@ verdwijnt hij in één keer van elk scherm.
   browser is geopend, in die browser — nooit in je map of in iets wat je
   exporteert. **Vind
   mij**, in de balk, toont dan de hele lijst met jouw vermelding gekozen.
-  **Corrigeren…** wijzigt de naam, het adres of de soort.
+  **Corrigeren…** wijzigt de naam, het adres of de soort, en zegt met wie de
+  gecorrigeerde vermelding dan dezelfde persoon kan zijn — nooit met iemand
+  over wie beantwoord is dat het niet dezelfde persoon is.
 - **Markeren als vertrokken** vraagt om de laatste dag. De naam blijft
   zichtbaar tot het beleid hem vergeet.
 - **Nu vergeten** vraagt eerst en haalt dan de naam en het adres voorgoed weg:
@@ -388,8 +414,11 @@ gemarkeerd wordt zonder **Dit ben ik**, dat dan niet wordt aangeboden.
 Zo'n bron kan ook weten wie wat mag. De pagina biedt dan elke wijziging
 alleen aan wie haar mag doen: **Persoon toevoegen**, **Corrigeren…** en
 **Markeren als vertrokken** bijvoorbeeld alleen voor de mensen van je eigen
-eenheden, en **Samenvoegen**, **Nu vergeten**, **Nu verwijderen** en het
-beleid alleen voor de beheerders van de organisatie. Waar ze een werkadres
+eenheden, en **Samenvoegen…**, **Nu vergeten**, **Nu verwijderen** en het
+beleid alleen voor de beheerders van de organisatie. **Niet dezelfde
+persoon** en **Terugnemen** krijgt wie de twee mag samenvoegen, en, waar de
+bron een leidinggevende rol het recht geeft de mensen ervan te wijzigen, een
+leidinggevende in wiens eenheden ze vandaag allebei zitten. Waar ze een werkadres
 voor je achterhoudt, zegt de pagina *een adres dat je niet te zien krijgt* in
 plaats van dat er geen is. Iemand als vertrokken markeren kan diens
 toewijzingen meteen beëindigen; de pagina zegt hoeveel. En waar haar schema
@@ -403,6 +432,10 @@ geschiedenis van de map**: geen momentopname neemt het mee, en een
 `git add` die je in een terminal typt laat het ook weg, omdat een naam in een
 commit een naam is die niets kan vergeten. Een kopie van de map via git
 bevat daarom id's en geen namen; het werkbestand neemt het register mee.
+De antwoorden *niet dezelfde persoon* staan in hetzelfde bestand. Een versie
+van de app van daarvoor leest de mensen en laat de antwoorden weg, en schrijft
+het bestand zonder ze zodra ze het register weer wijzigt: de paren zijn dan
+weer mogelijk dubbel, en verder gaat er niets verloren.
 
 ### Velden die een persoon noemen
 

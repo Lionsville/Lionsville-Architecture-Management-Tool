@@ -317,14 +317,16 @@ oder von außen kommt. Mehr wird nicht geführt — keine Notizen, kein Foto.
 
 Das Register liegt **außerhalb des Verlaufs**. Eine Änderung hier ist kein
 Schritt: Es gibt kein ⌘Z dafür und keine Zeile in der Aktivität, und die
-Seite sagt das auch. Das ist es, was einen Namen vergessen lässt. Der Verlauf
+Seite sagt das auch, unter **Über das Register** am Ende ihrer einen Zeile
+Einleitung. Das ist es, was einen Namen vergessen lässt. Der Verlauf
 behält die ID einer Person, nie ihren Namen, und jede Ansicht fragt das
 Register nach dem Namen, wenn sie einen zeigt — verschwindet ein Name aus dem
 Register, verschwindet er also auf einmal aus jeder Ansicht.
 
 - **Alle** stehen mit Art, Status und den **Rollen heute**, die sie innehaben,
-  in der Liste — jede Rolle in ihrer Einheit, die ersten zwei und wie viele
-  noch, und *keine* bei allen, die nichts innehaben, damit sie auffallen — und
+  in der Liste — in einer Zeile die erste Rolle in ihrer Einheit und wie viele
+  noch (**Hat heute inne** bei der Person nennt alle), und *keine* bei allen,
+  die nichts innehaben, damit sie auffallen — und
   lassen sich nach Name, Adresse oder einer Rolle oder Einheit suchen, die sie
   innehaben; **Zeigen** grenzt die Liste auf aktive, ausgeschiedene oder
   vergessene Personen ein. Die Spalte liest den Tag, an dem die Seite
@@ -337,8 +339,31 @@ Register, verschwindet er also auf einmal aus jeder Ansicht.
   Anfangsbuchstabe. **Diesen verwenden** nimmt den vorhandenen Eintrag;
   **Trotzdem hinzufügen** legt einen zweiten an, den Sie später zusammenführen
   können.
-- **Mögliche Doppelungen** zeigt die Paare im Register, die eine Person sein
-  könnten. **Zusammenführen** fragt zuerst und ist endgültig: Ein Eintrag
+- **Mögliche Doppelungen** sind die Paare im Register, die eine Person sein
+  könnten. Sie sind jedes Mal eingeklappt, wenn die Seite sich öffnet, als
+  eine Zeile: wie viele, wie viele je Anzeichen, und **Prüfen**. Aufgeklappt
+  ist jedes Paar eine Zeile, das stärkste Anzeichen zuerst — dieselbe Adresse,
+  derselbe Name, fast derselbe Name, derselbe Nachname und Anfangsbuchstabe —
+  mit den zwei Personen nebeneinander und dem, was sie unterscheidet: die
+  erste Rolle, die sie heute innehaben, und wie viele noch, die
+  Arbeitsadresse, *Extern*, und *Konto*, wo eine Quelle, die weiß, wer sich
+  anmeldet, sagt, dass der Eintrag mit einem Konto verknüpft ist. Ist kein
+  Paar mehr übrig, ist die Zeile weg.
+- **Nicht dieselbe Person** beantwortet, dass die zwei zwei Personen sind. Das
+  Paar wird nicht mehr angeboten, und wer eine der beiden korrigiert, wird
+  nicht mehr vor der anderen gewarnt; wer jemanden neu hinzufügt, wird weiter
+  gegen beide geprüft. Die Antwort steht im Register, außerhalb des Verlaufs
+  wie der Rest davon — die zwei IDs und der Tag — und reist mit dem Register in
+  einer Arbeitsdatei, auch in einer ohne Namen. **N als nicht dieselbe Person
+  beantwortet**, unter der Liste, zeigt die Antworten, jede mit
+  **Zurücknehmen**, wonach das Paar wieder eine mögliche Doppelung ist. Wird
+  eine der beiden vergessen oder entfernt, entfällt die Antwort; wird eine mit
+  einem dritten Eintrag zusammengeführt, geht sie auf den verbleibenden
+  Eintrag über, außer dieser ist die andere der beiden. Kein Agent beantwortet
+  sie, wie kein Agent zusammenführt.
+- **Zusammenführen…** fragt zuerst, welcher Eintrag bleibt — der mit einem
+  Konto verknüpfte, dann der mit den meisten Zuweisungen, ist vorgewählt, und
+  Sie können den anderen wählen — und ist endgültig: Ein Eintrag
   bleibt, der andere wird zu einem Verweis ohne Namen, sodass alles, was
   darauf zeigte, den verbleibenden Eintrag zeigt. Wer aktiv ist und mit einem
   Eintrag zusammengeführt wird, der gegangen ist, wird gefragt, was stimmt.
@@ -366,7 +391,9 @@ Register, verschwindet er also auf einmal aus jeder Ansicht.
   Ordner in diesem Browser —, nie in Ihrem Ordner oder in etwas, das Sie
   exportieren. **Mich finden**
   in der Leiste zeigt dann die ganze Liste mit Ihrem Eintrag gewählt. **Korrigieren…**
-  ändert Name, Adresse oder Art.
+  ändert Name, Adresse oder Art und sagt, mit wem der korrigierte Eintrag dann
+  dieselbe Person sein könnte — nie mit jemandem, für den beantwortet ist, dass
+  es nicht dieselbe Person ist.
 - **Als ausgeschieden markieren** fragt nach dem letzten Tag. Der Name wird
   weiter angezeigt, bis die Richtlinie ihn vergisst.
 - **Jetzt vergessen** fragt zuerst und entfernt dann Name und Adresse
@@ -414,9 +441,12 @@ angeboten wird.
 Eine solche Quelle kann auch wissen, wer was darf. Die Seite bietet dann jede
 Änderung nur dem an, der sie vornehmen darf: **Person hinzufügen**,
 **Korrigieren…** und **Als ausgeschieden markieren** etwa nur für die
-Menschen Ihrer eigenen Einheiten, und **Zusammenführen**, **Jetzt vergessen**,
+Menschen Ihrer eigenen Einheiten, und **Zusammenführen…**, **Jetzt vergessen**,
 **Jetzt entfernen** und die Richtlinie nur den Administratoren der
-Organisation. Wo sie Ihnen eine Arbeitsadresse vorenthält, sagt die Seite
+Organisation. **Nicht dieselbe Person** und **Zurücknehmen** bekommt, wer die
+beiden zusammenführen darf, und, wo die Quelle einer leitenden Rolle das Recht
+gibt, deren Menschen zu ändern, eine leitende Person, in deren Einheiten heute
+beide sind. Wo sie Ihnen eine Arbeitsadresse vorenthält, sagt die Seite
 *eine Adresse, die Ihnen nicht angezeigt wird*, statt dass es keine gäbe.
 Jemanden als ausgeschieden zu markieren kann dessen Zuweisungen sofort
 beenden; die Seite sagt, wie viele. Und wo ihr Zeitplan jemanden, dessen Tag
@@ -430,6 +460,10 @@ Verlauf des Ordners**: Kein Schnappschuss nimmt sie mit, und ein im Terminal
 eingegebenes `git add` lässt sie ebenfalls aus, denn ein Name in einem Commit
 ist ein Name, den nichts vergessen kann. Eine Kopie des Ordners über git
 enthält deshalb IDs und keine Namen; die Arbeitsdatei nimmt das Register mit.
+Die Antworten *nicht dieselbe Person* stehen in derselben Datei. Eine Version
+der App von davor liest die Personen und lässt die Antworten aus, und sobald
+sie das Register das nächste Mal ändert, schreibt sie die Datei ohne sie: Die
+Paare sind dann wieder mögliche Doppelungen, und sonst geht nichts verloren.
 
 ### Felder, die eine Person nennen
 

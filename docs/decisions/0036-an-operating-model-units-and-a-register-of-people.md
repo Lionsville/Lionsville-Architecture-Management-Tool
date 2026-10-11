@@ -1601,6 +1601,75 @@ unit's inspector says it.
 beside its `key`, and `diagram.inspect` on a Conway map answers each of its
 findings with its `key`, `weight` and `category` too, its `kind` as before.
 
+## As built, 3.6.1: not the same person, and the possible duplicates folded
+
+§9's four signs suggest; until 3.6.1 nothing could say *no*, so a pair that
+were two people was offered for ever. Now a person answers it, and the answer
+is kept.
+
+**The record** is a list beside the entries, not a field on them
+(`people/distinct.ts`): `{ a, b, on }`, an unordered pair of ids kept as
+`a < b`, and the day it was answered. It names nobody, so it is kept in the
+register and outside the history, as the entries are, and a file made without
+names carries it as it is. **The port** gains it (`ports/PeopleRepository.ts`):
+`PeopleRead.distinct`, every pair in id order — absent, none, which is what a
+register from before says; `answerDistinct(a, b, on)`, in either order,
+refused `people.badDistinct` for one entry twice and as a change to either
+would be (unknown, a redirect, forgotten, a bad day), and answered again
+keeping its first day; `takeBackDistinct(a, b)`, which refuses nothing and
+says whether there was one (`taken`); `bringIn`'s third argument, the pairs
+carried in; and `PeopleChanges.distinct`, every pair as it now is where any
+moved since the revision. The contract suite pins each rule below, so a
+server's register is held to them too.
+
+**The rules are `changePeople`'s** (`people/register.ts`, its fifth argument
+the pairs held, its answer `distinct` and `distinctChanged`): every change
+carries the pairs through over the entries as they stand after it
+(`tidyDistinct`). Forgetting or removing either entry drops the pair — a
+pseudonym is nobody to compare. Merging either into a third carries it to the
+entry kept, and drops it where that entry is its other half: one entry is not
+two people. A bring-in joins the pairs carried in to those held, whichever
+entry is further gone still winning, and drops a pair whose id was removed,
+here or there.
+
+**Where it is kept**: this browser on a shelf of its own, `peopleDistinct`,
+under the two ids (the database at version 6), each change a line in the
+register's log that says the pairs moved; the folder in `people.json`, as
+`distinct`, written only where there is one, the file still at version 1. A
+3.6.0 build reads past the key and writes the file without it on its next
+change to the register: the pairs are possible duplicates again, and nothing
+else is lost. The working file carries the file whole; a copy from an address
+carries a pair only where both its entries go, and copying a browser's work
+into a folder, or a working file into a new folder, takes the pairs along.
+
+**What it silences** is that pair, wherever it is about the two of them:
+`duplicatePairs`, the warning *Correct…* now gives of whom a corrected entry
+may be (`possibleDuplicates` with the entry and the pairs), and `people.list`'s
+`possibleDuplicates`. A new person is still checked against both. **No tool
+answers or takes back**, as none merges (§13).
+
+**Who may answer**, and take back: whoever may merge both entries
+(`mayMerge`), and — where a source grants a managing role's right (§12) — a
+manager whose units, and those below, hold both people today
+(`model/managing.holdsAllIn`, pure, so a server's door asks the same; handed
+to the page as `PeopleRegisterAccess.managesBoth`). An answer merges and
+removes nothing and is taken back as easily, and a manager knows their own
+people. The source's own door decides it again.
+
+**On the People page** the possible duplicates are folded every time the
+page opens and kept as nothing: one line with how many, a count by sign and
+*Review*; open, a pair is one row, strongest sign first, the two people side
+by side with what tells them apart — the first role today and how many more,
+the work address, *External*, and *account* where a source with accounts says
+an entry is linked to one (`SourcePeople.linked`, absent in core) — the sign
+as a quiet tag, and *Merge…* and *Not the same person*. *Merge…* asks first
+which entry is kept: the linked one, then the one with more assignments, is
+chosen to start with, and the other can be. *N answered as not the same
+person*, under the list, opens the answers, each with *Take back*. The fold
+is not there when no pair is left. And the page's two paragraphs of
+introduction are one muted line with *About the register*, and *Roles today*
+one line: the first role and how many more, every one in the person's panel.
+
 ## Open
 
 * **People from a directory**: a picker over an identity provider's people,

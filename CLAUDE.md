@@ -280,7 +280,9 @@ src/model/        What a landscape is made of, and the arithmetic over it.
                                       below, a managing role only strictly
                                       below (`managedReach`, `managesPeople`),
                                       and whether a step changes only their
-                                      people (`onlyPeopleIn`) — granted by no
+                                      people (`onlyPeopleIn`), and whether their
+                                      units hold some people today
+                                      (`holdsAllIn`) — granted by no
                                       one in core; a source that grants it says
                                       `SourcePeople.managingRight`, and the
                                       screens and its own doors ask this
@@ -324,8 +326,9 @@ src/people/       The people register (ADR-0036): who the organisation's people
                   Pure at its root, React in `ui/`.
                     person · register   an entry and its states; what every
                                       change does — add, change, leave, merge,
-                                      forget, remove, bring in — written once
-                                      for every repository (`changePeople`)
+                                      forget, remove, bring in, answer *not the
+                                      same person* and take it back — written
+                                      once for every repository (`changePeople`)
                     shown             what a reference reads as: the name, the
                                       pseudonym once forgotten, the entry a
                                       merge kept, *a former colleague* once
@@ -333,6 +336,11 @@ src/people/       The people register (ADR-0036): who the organisation's people
                     duplicates · csv · pseudonym   the four signs, checked on
                                       every way in; a list imported row by row;
                                       a pseudonym drawn at random
+                    distinct          two entries answered as not the same
+                                      person, `{ a, b, on }` beside the
+                                      entries: what the signs skip, and how a
+                                      pair follows its entries through every
+                                      change (`tidyDistinct`)
                     policy · me · leave · hold   the organisation's retention
                                       policy (settings, `of: organisation`),
                                       *This is me* (settings, `of: person`),
@@ -341,7 +349,10 @@ src/people/       The people register (ADR-0036): who the organisation's people
                                       `app/organisation/leaving`), *What we
                                       hold* and what a person holds on a day
                     ui/PeoplePage     the page, over the shell's register hook
-                                      (`app/organisation/usePeopleRegister`)
+                                      (`app/organisation/usePeopleRegister`);
+                                      `ui/Duplicates`, its possible duplicates,
+                                      folded, a pair to a row, and the pairs
+                                      answered, each with *Take back*
                     ui/PersonPicker   a person picked wherever one is asked
                                       for; *New person…* is the page's own form,
                                       so the four signs are asked first
@@ -1378,8 +1389,8 @@ identifiers is still a list of a customer's identifiers.
 | Agent tools, read | `project.current` `elements.list` `element.describe` `connections.list` `diagrams.list` `decisions.list` `decision.read` `search` `activity.list` `images.list` `project.export` `platform.report` `service.report` — and, over the whole tree, `scopes.list` `views.list` `register.list` `technology.list` `checks.list` |
 | Agent tools, drive (ADR-0019) | `app.current` `app.open` `session.start` `session.end` — where the app is (a **screen**: the open scope, its view, the page over it, or the home that is up), moving it to a **destination** (`scope` · `page` · `id`, the same three words an `InitialPage` says, and — amended — `tab`, one of the observations page's `register` · `analysis` · `solutions`, and `select`, an element selected on the board, sheet, map or technology landscape opened where that view draws it), and the **driving session** the banner shows and the person's Stop ends; a driving call after a Stop is refused `agent.stopped` until `session.start` |
 | Fields that name a person (ADR-0036 §8) | `owner` on an element and a plan, `by` on an observation and an experiment, a decision's `proposedBy` and each signer's `name` take a `PersonRef`: `{ "person": "pe-…" }` picked from the register, or text; `validatedWith` and a view's `author` stay text. A verdict given to a picked signer writes `signedAs` beside the id, and once anybody has signed the proposer's is fixed as `proposedAs` (`decisions/withSignedNames`) — the one register name in the history, on purpose. On disk an id is written under the field's key with `Person` after it (`ownerPerson:`, `byPerson:`, `proposedByPerson:`; a signer row's `person:` with `signedAs:`), text under the key as before (`fileText.personFrontMatter`), all at format 11. A search record carries `people` (ids) and folds only text (`refText`); `searchAll`'s `people` is the register's half (`PeopleMatch`). A signature that kept a name is apart from the rest: its id is in `signed`, found through the register only while the entry has a name (`PeopleMatch.apart`, `signatureApart`), and once its signer is forgotten or gone every screen and every agent answer says the name as signed alone, with no id and no pseudonym. An index entry carries its master's `owner` as a reference |
-| Agent tools, people (ADR-0036 §13) | `people.list` (with possible duplicates) `person.add` (refused `agent.possibleDuplicate` unless `addAnyway`) `person.leave` — no `scope` and no `ifRevision` (`ON_THE_REGISTER`), answered with nothing open; names or pseudonyms as the policy says, never an address. **No tool forgets, removes or merges a person**, and none changes the policy |
-| The people register (ADR-0036) | `PeopleRepository`, the sixth repository, outside the history; an entry's id is `pe-` and 64 random bits, its pseudonym four characters of `PSEUDONYM_ALPHABET`, read *Former colleague 7KQM*; the folder keeps it at `.lionsville-architecture/people.json` (`OUT_OF_HISTORY`, with `local.json`: no commit, and `.git/info/exclude`); the working file carries it at the same path from the zip's root, outside the manifest; the policy is `people` in the organisation's settings, *This is me* `people.me` in the person's own settings (on the desktop beside the folder's sync settings; for a folder in a browser, in that browser beside its handle); a merge of an active entry into one that has left takes `MergeLeaving` — `stillHere` clears the leaving, `left` ends the absorbed entry's roles on the leaving day first (`people/leave.mergePerson`) — and is refused `people.mergeAsks` told neither; every id removed is remembered (`PeopleRead.removed`, the browser's `peopleRemoved` shelf, `removed` in `people.json`), and a bring-in takes whichever entry is further gone — removed, forgotten, merged, left, active |
+| Agent tools, people (ADR-0036 §13) | `people.list` (with possible duplicates, but the pairs a person answered as not the same person) `person.add` (refused `agent.possibleDuplicate` unless `addAnyway`) `person.leave` — no `scope` and no `ifRevision` (`ON_THE_REGISTER`), answered with nothing open; names or pseudonyms as the policy says, never an address. **No tool forgets, removes or merges a person**, none answers or takes back that two are not the same person, and none changes the policy |
+| The people register (ADR-0036) | `PeopleRepository`, the sixth repository, outside the history; an entry's id is `pe-` and 64 random bits, its pseudonym four characters of `PSEUDONYM_ALPHABET`, read *Former colleague 7KQM*; the folder keeps it at `.lionsville-architecture/people.json` (`OUT_OF_HISTORY`, with `local.json`: no commit, and `.git/info/exclude`); the working file carries it at the same path from the zip's root, outside the manifest; the policy is `people` in the organisation's settings, *This is me* `people.me` in the person's own settings (on the desktop beside the folder's sync settings; for a folder in a browser, in that browser beside its handle); a merge of an active entry into one that has left takes `MergeLeaving` — `stillHere` clears the leaving, `left` ends the absorbed entry's roles on the leaving day first (`people/leave.mergePerson`) — and is refused `people.mergeAsks` told neither; every id removed is remembered (`PeopleRead.removed`, the browser's `peopleRemoved` shelf, `removed` in `people.json`), and a bring-in takes whichever entry is further gone — removed, forgotten, merged, left, active; **not the same person** is a list beside the entries, `{ a, b, on }` with `a < b` (`people/distinct.ts`, `PeopleRead.distinct`, `answerDistinct`, `takeBackDistinct`, `bringIn`'s third argument), kept on the browser's `peopleDistinct` shelf and as `distinct` in `people.json` (still version 1; a 3.6.0 build drops it on its next change), carried by every working file, without names too; forgetting or removing either entry drops a pair, a merge carries it to the entry kept unless that is its other half (`tidyDistinct`); it silences that pair in `duplicatePairs`, a correction's warning and `people.list`, never a new person's check; whoever may merge both answers, and where a source grants a managing role's right a manager whose units hold both today (`model/managing.holdsAllIn`); `SourcePeople.linked` says an entry is linked to an account, absent in core |
 | Every tool | takes `scope`, a path; a read over another scope is answered from its document, anything that needs a session is refused `agent.scopeNotOpen` — and with nothing open at all, `agent.noProject`, whose sentence says to call `app.open` |
 | Agent tools, write | `element.add` `element.update` `element.remove` `connect` `connection.update` `connection.remove` `connections.update` `connections.remove` `interface.accept` `relation.add` `relation.update` `relation.remove` `technology.use` `decision.propose` `decision.update` `decision.transition` `decision.remove` `diagram.create` `diagram.update` `image.upload` `batch` `undo` `project.save` |
 | What a row between two elements is (ADR-0012 §5, ADR-0013, ADR-0014, ADR-0036 §7) | a **relation**: `flow` · `supports` · `serves` · `realises` · `assigned` · `uses` · `hostedOn` · `interacts`; `connect` / `connection.*` are the `flow` ones. A platform `realises` a service, an application or a container `uses` a service (or binds to one platform), an actor is `assigned` a service or a platform; `hostedOn` is application \| component → platform and nothing else — a platform inside a platform is `parentId`; `interacts` is a unit (an actor) working with another, with a `mode` — `collaboration` · `service` · `facilitating` — and its window, filed in the scope of either |

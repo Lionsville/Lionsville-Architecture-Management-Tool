@@ -282,14 +282,16 @@ one, and whether they are of the organisation or from outside it. Nothing
 else is kept — no notes, no photo.
 
 The register is kept **outside the history**. A change here is not a step:
-there is no ⌘Z for it and no line in Activity, and the page says so. That is
+there is no ⌘Z for it and no line in Activity, and the page says so under
+**About the register**, at the end of its one line of introduction. That is
 what lets a name be forgotten. The history keeps a person's id, never their
 name, and every screen asks the register for the name when it draws one —
 so when a name goes from the register, it goes from every screen at once.
 
 - **Everyone** is listed with their kind, their state and the **roles
-  today** they hold — each role in its unit, the first two and how many more,
-  and *none* for whoever holds nothing, so they stand out — and searched by
+  today** they hold — on one line, the first role in its unit and how many
+  more (the person's **Holds today** has them all), and *none* for whoever
+  holds nothing, so they stand out — and searched by
   name, address, or a role or unit they hold; **Show** narrows the list to who
   is active, who has left, or who is forgotten. The column reads the day the
   page is looked at (**Look at**, below).
@@ -299,8 +301,28 @@ so when a name goes from the register, it goes from every screen at once.
   letters — *Pia Schultz* finds *Pia Schulz* — or the same family name and
   first initial. **Use this one** takes the entry that is there; **Add
   anyway** makes a second, which you can merge later.
-- **Possible duplicates** lists the pairs already in the register that may be
-  one person. **Merge** asks first and is final: one entry is kept, and the
+- **Possible duplicates** are the pairs already in the register that may be
+  one person. They are folded every time the page opens, as one line: how
+  many, how many by each sign, and **Review**. Open, each pair is one row,
+  strongest sign first — the same address, the same name, nearly the same
+  name, the same family name and initial — with the two people side by side
+  and what tells them apart: the first role they hold today and how many
+  more, the work address, *External*, and *account* where a source that
+  knows who signs in says the entry is linked to one. The fold is gone when
+  no pair is left.
+- **Not the same person** answers that the two are two people. The pair is
+  no longer offered, and correcting either no longer warns of the other;
+  adding somebody new still checks against both. The answer is kept in the
+  register, outside the history like the rest of it — the two ids and the
+  day — and travels with the register in a working file, one made without
+  names too. **N answered as not the same person**, under the list, shows
+  the answers, each with **Take back**, after which the pair is a possible
+  duplicate again. Forgetting or removing either person drops the answer;
+  merging either into a third entry carries it to the entry kept, unless
+  that entry is the other of the two. No agent answers it, as none merges.
+- **Merge…** asks first which entry is kept — the one linked to an account,
+  then the one with more assignments, is chosen to start with, and you can
+  choose the other — and is final: one entry is kept, and the
   other becomes a redirect with no name, so everything that pointed at it
   shows the one kept. Merging somebody active into an entry that has left
   asks which is true. **Still here** clears the leaving: the entry kept is
@@ -325,7 +347,9 @@ so when a name goes from the register, it goes from every screen at once.
   a browser, in that browser — never in your folder or in anything you
   export.
   **Find me**, on the bar, then shows the whole list with your entry chosen.
-  **Correct…** changes the name, the address or the kind.
+  **Correct…** changes the name, the address or the kind, and says who the
+  corrected entry may then be the same person as — never somebody it was
+  answered as not being.
 - **Mark as left** takes their last day. Their name is still shown until the
   policy forgets it.
 - **Forget now** asks first, then takes the name and the address away for
@@ -366,9 +390,12 @@ which is then not offered.
 
 Such a source may also know who may do what. The page then offers each
 change only to whoever may make it: **Add person**, **Correct…** and **Mark
-as left** perhaps for the people of your own units only, and **Merge**,
+as left** perhaps for the people of your own units only, and **Merge…**,
 **Forget now**, **Remove now** and the policy only to the organisation's
-administrators. Where it keeps a work address from you, the page says *an
+administrators. **Not the same person** and **Take back** are offered to
+whoever may merge the two, and, where the source gives a managing role the
+right to change its people, to a manager whose units hold both of them
+today. Where it keeps a work address from you, the page says *an
 address not shown to you* rather than that there is none. Marking somebody as
 left may end their assignments there and then; the page says how many. And
 where its schedule did not forget somebody whose day had come, because their
@@ -380,6 +407,10 @@ in your folder. **It is never in the folder's history**: no snapshot takes it,
 and a `git add` typed in a terminal leaves it out too, because a name in a
 commit is a name nothing can forget. A copy of the folder taken through git
 therefore carries ids and no names; the working file carries the register.
+The answers *not the same person* are in the same file. A version of the app
+from before them reads the people and leaves the answers out, and when it
+next changes the register it writes the file without them: the pairs are
+possible duplicates again, and nothing else is lost.
 
 ### Fields that name a person
 
