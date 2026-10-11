@@ -15,6 +15,22 @@ moment. A decision's reader, a plan's page, the readers of an observation,
 a cause, a solution and an experiment, and the right-click menu on the
 observations picture have **Copy link** for that one record, read-only too.
 
+**A drawing is a view, drawn in draw.io.** **+** in the diagram tabs, then
+**Drawing**, makes a view of a new kind, shown as its picture. **Edit** opens
+draw.io inside the app — shipped with it and working offline, in the app's
+language and following its theme, light, dark or the system's — with the
+scope's elements in the palette beside the C4 shapes. A shape made from an
+element points at it: on the picture it is an area that opens the element, the
+element's inspector and page list the drawings that point at it, and a shape
+that points at an element the scope does not hold is a finding. An element's
+menu offers **Create drawing**, for a drawing anchored to it, and a
+double-click on the element offers the drawings anchored to it. A document
+shows a view with `![caption](view:id)`, a drawing as its picture with its
+areas. Saving keeps the drawing's XML, its picture and its links as one, in
+a working file, a sealed file and a folder alike; somebody else's save while
+the editor is open is merged into what is open. An agent can make a drawing,
+write its XML and open it.
+
 **The observations page says the same thing the same way everywhere.** The
 right-click on a record offers what its reader offers, in the same words and
 the same order, with "…" where a question or a dialog follows. The forms name
