@@ -39,6 +39,7 @@ import type { CheckCategory, CheckWeight } from '../model/checkCatalogue'
 import { splitMarked } from '../model/checkMarks'
 import type { CheckMark, ScopedFinding } from '../model/checkMarks'
 import { matchesQuery } from '../model/textSearch'
+import { MODEL_ENGLISH } from '../model/words'
 import type {
   DesignElement, ElementId, ElementKind, Lifecycle, LifecycleDates, PlatformArchetype, Relation, RelationType,
 } from '../model/types'
@@ -292,21 +293,23 @@ export function listChecks(tree: TreeView | undefined, rawArgs: unknown): AgentA
   const limit = (args.limit as number | undefined) ?? CHECKS_LIMIT
   const scope = args.scope as string | undefined
   const key = args.key as string | undefined
-  const information = args.information === true
+  // `information` is the older name, from when a master drawn nowhere was the one note there was.
+  const notes = args.notes === true || args.information === true
   const day = isDay(args.on) ? args.on : undefined
   const listed: TreeFinding[] = []
   for (const finding of tree?.findings(day) ?? []) {
     if (scope !== undefined && finding.scope !== scope) continue
     if (key !== undefined && finding.key !== key) continue
-    // Information — a master drawn nowhere — is worth knowing and is not a
-    // fault; a list of faults leaves it out unless asked.
-    if (finding.information && !information) continue
+    // A note — information that may well be intended, by its check's weight —
+    // is worth knowing and is not a fault: a list of what to look at leaves it
+    // out unless the notes are asked for, or its check is, by its key.
+    if (!notes && key === undefined && isNote(finding)) continue
     listed.push(finding)
   }
   // The same objects come back, each in one of the two lists: a finding read
   // structurally is split as the screens split it.
   const { shown, marked } = splitMarked(listed as readonly unknown[] as readonly ScopedFinding[], tree?.checkMarks?.() ?? [])
-  const said = (finding: TreeFinding) => ({ key: finding.key, ...weighed(finding.key), ...sayingWho(finding) })
+  const said = (finding: TreeFinding) => ({ key: finding.key, ...weighed(finding.key), ...explained(finding.key), ...sayingWho(finding) })
   return json({
     ...(day !== undefined ? { day } : {}),
     total: shown.length,
@@ -321,6 +324,22 @@ export function listChecks(tree: TreeView | undefined, rawArgs: unknown): AgentA
       },
     } : {}),
   })
+}
+
+/** Whether a finding is a note: its check's weight, or the flag a master drawn nowhere has always carried. */
+function isNote(finding: TreeFinding): boolean {
+  return checkEntry(finding.key)?.weight === 'note' || finding.information === true
+}
+
+/**
+ * Why a finding's kind matters and how to fix it, in English, as the
+ * catalogue says them to a person (`model/checkCatalogue.ts`): so an agent
+ * reading a finding knows what it asks of the model, in the words the
+ * explanation on screen uses. Nothing for a key the catalogue does not know.
+ */
+export function explained(key: string): { why: string; how: string } | Record<string, never> {
+  const entry = checkEntry(key)
+  return entry ? { why: MODEL_ENGLISH(entry.why), how: MODEL_ENGLISH(entry.how) } : {}
 }
 
 /**

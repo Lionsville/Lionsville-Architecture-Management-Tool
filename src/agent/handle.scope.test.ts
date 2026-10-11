@@ -21,6 +21,8 @@ import { idPolicy } from '../model/keys'
 import { fromArrays, toArrays } from '../model/normalised'
 import type { Model } from '../model/normalised'
 import { apply } from '../model/reducer'
+import { CHECK_CATALOGUE } from '../model/checkCatalogue'
+import { MODEL_WORDS } from '../model/words'
 import { handle } from './handle'
 import type { SessionView } from './handle'
 import { ABOUT_THE_APP, ON_THE_REGISTER, RESOURCE_LIST, RESOURCE_READ, TOOLS, TREE_WIDE } from './tools'
@@ -205,11 +207,16 @@ describe('the three reads about the tree', () => {
     expect(parsed(await handle({ id: '1', tool: 'technology.list', args: {} }, session({ tree: undefined }))).total).toBe(0)
   })
 
-  it('lists the findings, leaving information out unless asked, and filters by scope and key', async () => {
+  /** A note by its check's weight since 3.6.1, where the flag on a master drawn nowhere said it before. */
+  it('lists the findings, leaving the notes out unless asked — by notes, by its older name, or by key — and filters by scope and key', async () => {
     const all = parsed(await handle({ id: '1', tool: 'checks.list', args: {} }, session()))
     expect((all.some as { key: string }[]).map((f) => f.key)).toEqual(['check.drift', 'check.unattributed'])
+    const withNotes = parsed(await handle({ id: '1', tool: 'checks.list', args: { notes: true } }, session()))
+    expect(withNotes.total).toBe(3)
     const withInfo = parsed(await handle({ id: '1', tool: 'checks.list', args: { information: true } }, session()))
     expect(withInfo.total).toBe(3)
+    const asked = parsed(await handle({ id: '1', tool: 'checks.list', args: { key: 'check.notDrawn' } }, session()))
+    expect((asked.some as { key: string }[]).map((f) => f.key)).toEqual(['check.notDrawn'])
     const retailOnly = parsed(await handle({ id: '1', tool: 'checks.list', args: { scope: 'acme/retail' } }, session()))
     expect((retailOnly.some as { key: string }[]).map((f) => f.key)).toEqual(['check.unattributed'])
     const drift = parsed(await handle({ id: '1', tool: 'checks.list', args: { key: 'check.drift' } }, session()))
@@ -223,7 +230,18 @@ describe('the three reads about the tree', () => {
     expect(some.map((f) => [f.key, f.weight, f.category])).toEqual([
       ['check.drift', 'review', 'landscape'], ['check.unattributed', 'review', 'landscape'], ['check.notDrawn', 'note', 'landscape'],
     ])
-    expect(Object.keys(some[0]!).slice(0, 3)).toEqual(['key', 'weight', 'category'])
+    expect(Object.keys(some[0]!).slice(0, 5)).toEqual(['key', 'weight', 'category', 'why', 'how'])
+  })
+
+  /** What the explanation on screen says, in English, so an agent knows what a finding asks of the model. */
+  it('answers each finding with why its check matters and how to fix it, in English', async () => {
+    const all = parsed(await handle({ id: '1', tool: 'checks.list', args: { notes: true } }, session()))
+    const some = all.some as Record<string, unknown>[]
+    expect(some[0]).toMatchObject({ key: 'check.drift', why: MODEL_WORDS[CHECK_CATALOGUE['check.drift'].why], how: MODEL_WORDS[CHECK_CATALOGUE['check.drift'].how] })
+    expect(some[2]!.how).toBe(MODEL_WORDS['check.how.notDrawn'])
+    // A review asks how; a note states it.
+    expect(String(some[0]!.how)).toContain('?')
+    expect(String(some[2]!.how)).not.toContain('?')
   })
 
   /** Marked as intended (ADR-0036, amended): an agent reads the marks, apart, and makes none. */
@@ -239,7 +257,8 @@ describe('the three reads about the tree', () => {
     expect(out.marked).toEqual({
       total: 1,
       some: [{
-        key: 'check.unattributed', weight: 'review', category: 'landscape', scope: 'acme/retail', id: 'wms', name: 'Warehouse system',
+        key: 'check.unattributed', weight: 'review', category: 'landscape',
+        why: MODEL_WORDS['check.why.unattributed'], how: MODEL_WORDS['check.how.unattributed'], scope: 'acme/retail', id: 'wms', name: 'Warehouse system',
         mark: { on: '2026-10-11', reason: 'A partner runs it' },
       }],
     })

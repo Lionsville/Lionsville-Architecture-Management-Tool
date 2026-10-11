@@ -560,8 +560,7 @@ const SPECS = [
       + 'check.unmapped and check.uncovered (the business layer\'s two), check.causeExplainsObservationBelow (a '
       + 'cause explains an observation of a scope below, which nothing makes any more: link the cause there that '
       + 'explains it, named in the detail, instead), check.drawingLinkMissing (a shape on a drawing '
-      + 'points at an element this scope does not hold), and check.notDrawn, which is '
-      + 'information rather than a fault and is listed only when asked. The operating model\'s, at the organisation: '
+      + 'points at an element this scope does not hold), and check.notDrawn (a master drawn on no view). The operating model\'s, at the organisation: '
       + 'check.accountability (a responsibility not exactly one role\'s A) and check.unitTypeNowhere (a unit type '
       + 'neither at the top nor in a unit type that sits anywhere, so no unit of it can be placed). The organisation\'s own (ADR-0036): '
       + 'check.roleVacant, check.roleOverMax, check.unitMisplaced, check.unitSpans, check.unitOverLimit, '
@@ -569,8 +568,10 @@ const SPECS = [
       + 'capability assigned to a unit that serves neither its domain nor sits under a unit that does; the unit in detail), '
       + 'read on a day — today, or the day '
       + 'given as on, with every plan\'s moves of that day. Beside its key each finding answers its weight — fix (the '
-      + 'model contradicts itself), review (worth a look) or note (information, often intended) — and its category '
-      + '(landscape, plans, organisation, teams, analysis), from the one catalogue of checks. A finding is never a '
+      + 'model contradicts itself), review (worth a look) or note (information, often intended) — its category '
+      + '(landscape, plans, organisation, teams, analysis), and why its check matters and how to fix it, in English, '
+      + 'from the one catalogue of checks. A note — check.notDrawn, check.proposal — is listed only when the notes are '
+      + 'asked for (notes), or when its key is. A finding is never a '
       + 'refusal and never a reason a save fails. A review or a note a person marked as intended is answered apart, '
       + 'under marked (its total, and each finding with mark: the day it was marked and the reason given), and is not '
       + 'among total and some. No tool marks a finding as intended or takes a mark back: that is a person\'s, so an '
@@ -581,7 +582,8 @@ const SPECS = [
         scope: { type: 'string', description: 'Only findings about this scope, by path; "" is the organisation.' },
         on: { type: 'string', description: 'The day the organisation\'s findings are read on, yyyy-mm-dd. Default: today.' },
         key: { type: 'string', description: 'Only findings with this key.' },
-        information: { type: 'boolean', description: 'Include check.notDrawn. Default false.' },
+        notes: { type: 'boolean', description: 'Include the notes: findings whose check is weighed a note, information that may well be intended. Default false.' },
+        information: { type: 'boolean', description: 'The same as notes, by its older name.' },
         limit: { type: 'integer', description: 'At most this many. Default 200.', minimum: 1, maximum: 2000 },
       },
       additionalProperties: false,
