@@ -1823,6 +1823,70 @@ a proposal too, now — unless `notes` is asked, or `information`, its older
 name, or the check by its key; and each finding answers its check's `why` and
 `how` in English beside its weight and category.
 
+## As built, 3.6.1: marked as intended on screen, and the Checks page
+
+The amendment's last two screens, on the record and the list built before
+them: a mark made and taken back wherever findings are listed, and a page of
+every check over a home.
+
+**Mark as intended… and Accepted (N).** Every list of findings fills its two
+places (`widgets/FindingMarks`): under a review's or a note's explanation,
+*Mark as intended…*, which asks why in one field that may stay empty and says
+what a mark does before it is made; under the groups, *Accepted (N)*, folded
+for the session, each mark with its reason, its day and *Take back*. A fix
+offers no mark. Which scope keeps a mark is `checkMarkScope`'s answer, and a
+Conway map's finding about something the open session holds is kept in the
+open scope before the index has read it. **How it is written follows the
+scope** (`app/checkMarking.tsx`): the open scope's mark is a command through
+its session, one step with one undo; another scope's is that scope's own step
+through the source's repositories, under that scope's rights
+(`units/writeIn.ts`), as *Served by* writes — never a step on the open
+session. A scope the person may only read offers neither a mark nor *Take
+back*. The marking is handed down as a context from the workspace and from a
+home, so a unit's checks, the chart's summary, the Conway map, a plan's *Still
+open* and the Checks page reach it alike; the roadmap, which may not import
+the app, marks the dates of the open scope through two actions of its own
+(`RoadmapActions.markIntended`, `takeBackMark`). A mark is made on the day the
+window reads off its clock.
+
+**The Checks page** (`app/organisation/ChecksPage`, a part of its own, opened
+from a card on every home, from the home's counts, and by `app.open` with
+`page: 'checks'`, its `id` a check's key). Every check of the catalogue, by
+category, fix before review before note, with its weight's mark, its name and
+how many it finds — none included; the weights shown are chosen on the bar,
+the notes hidden until shown, for the session. A check picked says its weight
+and category, why it matters and how to fix it, every instance at or under
+the home, each in its scope and opening where it is fixed, with *Mark as
+intended…* where one may be made, and what was marked, with *Take back*; a fix
+says why it cannot be marked. **What it lists** (`treeChecks.ts`) is worked
+out from what the shell holds, nothing loaded for it: the tree's findings, the
+register's and the technology rows' and, at the organisation, the operating
+model's — what *Needs attention* listed; every scope's dates, over the
+records, rows and plans the index read with it, as its roadmap checks them;
+and the Conway map over the home, at the organisation over the whole of it,
+its over-limit said once with the organisation's. The checks worked out from
+a scope's whole document — a record on no view, the owner's detail on a
+stand-in, a row's end nobody holds, a drawing's link, the business layer's
+two, a cause explaining an observation below — are listed with their
+explanation and *Not counted here*: only an open scope has the document.
+
+**Needs attention counts.** On a home it is a line of counts by weight — so
+many to fix, to review, notes — each opening the Checks page on the first
+check of its weight that finds something, and nothing where nothing is found;
+the findings, and the row ids and `data-finding` words something outside
+pointed at, are on the page under their check. What a home's explanation
+offered — *Link…* for a definition kept twice, the other definition — is
+where the instance opens. `org.card.checks`, `org.attentionCount`,
+`checks.weight`, `checks.row`, `checks.instance`, `findings.markIntended`,
+`findings.accepted` and `findings.takeBack` are named.
+
+**The agent.** `app.open` takes `page: 'checks'`, on a check by its key, and a
+key the catalogue does not know is refused; `app.current` says the page is up.
+`checks.list` answers each finding as the page says it — weight, category,
+why, how, and the marked apart — over the tree's findings; the page lists the
+dates' (`roadmap.check`) and the Conway map's (`diagram.inspect`) beside them,
+which the tool's description says.
+
 ## Open
 
 * **People from a directory**: a picker over an identity provider's people,

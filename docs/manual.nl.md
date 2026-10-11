@@ -96,22 +96,26 @@ eenheid die het hoogst in deze scope is ingedeeld. Die wordt op de dag
 uitgerekend en nooit bewaard. Een klik op de naam van een eenheid opent haar
 waar ze wordt bijgehouden, en haar paneel zegt hetzelfde van de andere kant.
 
-**Vraagt aandacht**, onder de kaarten, zodra er iets is om naar te kijken:
-waarin de organisatie zichzelf tegenspreekt — een naam die twee onderdelen
-allebei definiëren, een verouderde kopie, een applicatie waarvan niemand heeft
-gezegd van wie ze is, een dienst die over een teamgrens wordt gebruikt zonder
-als gedeeld gemarkeerd te zijn, een dienst die geen enkel platform levert, een
-capability die een domein voorstelt, en op het organisatiescherm zelf een
+**Controles**, een kaart op elke startpagina, opent de **pagina Controles**:
+elke controle die de app doet, naar waar ze over gaat, met waarom elke
+controle ertoe doet, hoe je het oplost en waar ze iets vindt in of onder deze
+startpagina (*De pagina Controles*, hieronder).
+
+**Vraagt aandacht**, onder de kaarten, zodra de controles iets vinden:
+hoeveel, per gewicht — zoveel **te herstellen**, zoveel **om na te kijken**,
+zoveel **notities** — elk een link naar de pagina Controles, op de eerste
+controle van dat gewicht die iets vindt. Een bevinding die als bedoeld is
+gemarkeerd telt niet mee. Wat de controles vinden is waarin de organisatie
+zichzelf tegenspreekt — een naam die twee onderdelen allebei definiëren, een
+verouderde kopie, een applicatie waarvan niemand heeft gezegd van wie ze is,
+een dienst die over een teamgrens wordt gebruikt zonder als gedeeld
+gemarkeerd te zijn, een dienst die geen enkel platform levert, een capability
+die een domein voorstelt, een eenheid die mensen tekortkomt of boven de
+limiet van haar type zit, een plan voorbij zijn einde, een interface tussen
+twee teams die niets hebben vastgelegd, en op het organisatiescherm zelf een
 eenheidstype dat nergens onder valt of een verantwoordelijkheid zonder haar
-ene eindverantwoordelijke rol — in de lijst waarin elk scherm zijn
-bevindingen toont (*Een lijst met bevindingen lezen*, hieronder): één regel
-per controle, dichtgevouwen. De uitleg bij een bevinding opent het onderdeel
-waar het over gaat, met het record geselecteerd — een bevinding over het
-besturingsmodel opent diens pagina, met het eenheidstype of de
-verantwoordelijkheid gekozen — en, bij een naam die twee onderdelen
-definiëren, de andere definitie, en **Koppelen…** waar je dit onderdeel mag
-wijzigen. De rest van *Eén naam in de hele organisatie* hieronder zegt wat
-elk betekent.
+ene eindverantwoordelijke rol. De rest van *Eén naam in de hele organisatie*
+hieronder zegt wat elk betekent.
 
 **Scopes binnen** de organisatie, eronder: één regel per onderdeel, de
 kinderen ingesprongen, met een pijltje om een domein dicht te klappen, en een
@@ -230,10 +234,11 @@ gekleurd.
 
 ### Een lijst met bevindingen lezen
 
-Elke lijst met bevindingen is dezelfde lijst: **Vraagt aandacht** op een
-startpagina, de **Controles** van een eenheid, de samenvatting naast het
-organogram, de bevindingen van de Conway-kaart, **Nog open** bij een plan en
-**Waar de datums het oneens zijn** op de roadmap.
+Elke lijst met bevindingen is dezelfde lijst: de **Controles** van een
+eenheid, de samenvatting naast het organogram, de bevindingen van de
+Conway-kaart, **Nog open** bij een plan en **Waar de datums het oneens zijn**
+op de roadmap. Een startpagina telt haar bevindingen onder **Vraagt aandacht**
+en zet ze op de pagina Controles.
 
 - **Eén regel per controle**: het teken van haar gewicht, haar naam en
   hoeveel, dichtgevouwen. Druk op de regel om elke bevinding eronder te zien,
@@ -256,6 +261,54 @@ organogram, de bevindingen van de Conway-kaart, **Nog open** bij een plan en
   het scherm dat ze opent doet de rest. **Alle bevindingen** gaat terug naar
   de bevinding waar je vandaan kwam.
 - Een bevinding die is opgelost verdwijnt uit de lijst, en haar uitleg mee.
+- **Markeren als bedoeld…**, onder de uitleg van een nakijkpunt of een
+  notitie, zegt dat het zo bedoeld is: het vraagt waarom, en de reden mag leeg
+  blijven. De bevinding verdwijnt uit de lijst en staat onder **Geaccepteerd
+  (N)**, onder de controles, met haar reden en de dag waarop ze is
+  gemarkeerd. **Terugnemen** daar brengt haar terug. Een markering is een stap
+  in het model, bijgehouden in het onderdeel waar de bevinding over gaat, dus
+  iedereen ziet haar en de Activiteitenlijst noemt haar; gemarkeerd waar dat
+  onderdeel open is, neemt ⌘Z haar terug zoals elke andere stap. Een markering
+  gaat over de bevinding zoals ze is: verander waar ze over gaat — een andere
+  eenheid aan de samenwerking, een andere rol eindverantwoordelijk — en de
+  bevinding komt terug. **Herstellen** kan niet worden gemarkeerd: het model
+  spreekt zichzelf tegen, en het antwoord zit in het model. Waar je het
+  onderdeel dat haar bijhoudt alleen mag lezen, wordt niets aangeboden. Een
+  agent leest de markeringen en maakt er nooit een.
+
+### De pagina Controles
+
+**Controles** op de kaart van een startpagina, of een aantal onder **Vraagt
+aandacht**, opent de pagina Controles over die startpagina: wat de controles
+vinden in of onder haar, en op het organisatiescherm in de hele boom.
+
+- **Elke controle, per categorie** — het landschap, plannen en datums, de
+  organisatie, teams en systemen, analyse — met het teken van haar gewicht,
+  haar naam en hoeveel ze vindt, nul ook: een controle die niets vindt is het
+  weten nog steeds waard. Herstellen voor nakijken voor notitie binnen elke
+  categorie.
+- **Tonen** op de balk kiest welke gewichten je ziet. De notities zijn
+  verborgen tot je ze toont, zoals in elke lijst, en wat je kiest duurt zolang
+  de app open is.
+- **Kies een controle** om haar te lezen: haar gewicht en categorie, **Waarom
+  het ertoe doet**, **Hoe je het oplost**, en **Gevonden (N)** — elke
+  bevinding ervan, elk in haar onderdeel. Druk op een ervan om haar te openen
+  waar ze wordt opgelost: het record, de tekening, het plan, de pagina van het
+  besturingsmodel, een persoon in Mensen. **Markeren als bedoeld…** naast een
+  bevinding van een nakijkpunt of een notitie markeert haar vanaf hier, in het
+  onderdeel dat haar bijhoudt, en **Geaccepteerd (N)** zet op een rij wat is
+  gemarkeerd, elk met **Terugnemen**. Een markering die hier wordt gemaakt,
+  met niets open, is een stap van dat onderdeel en staat niet op een
+  ongedaan-stapel: **Terugnemen** is hoe je haar ongedaan maakt.
+- Wat de pagina telt, komt uit wat de app al weet over de hele boom: de
+  bevindingen tussen onderdelen, de eenheden en mensen van de organisatie, de
+  datums van elk onderdeel, en de Conway-kaart over de startpagina. Een paar
+  controles lezen het hele document van een onderdeel — een record op geen
+  enkele view, de gegevens van de eigenaar op een stand-in, een lijn naar
+  niets, de link van een tekening, de twee van de bedrijfslaag, een oorzaak
+  die een waarneming eronder verklaart — en vinden iets waar dat onderdeel
+  open is: de pagina zet ze op een rij met hun uitleg en zegt *Hier niet
+  geteld* in plaats van een getal.
 
 ### Het register
 
@@ -1919,8 +1972,8 @@ bibliotheek…** ernaast neemt over wat een bibliotheek biedt (hieronder); een
 model waarin nog niets staat, biedt eerst **Begin met een bibliotheek**. Onder de banen staat in
 **Valt nog nergens onder** een eenheidstype dat niet bovenaan staat en niet
 onder een eenheidstype valt dat ergens staat: geen eenheid ervan kan worden
-ingedeeld waar het type dat toestaat, en het staat onder **Vraagt aandacht**
-op het organisatiescherm. **Rollen die nog in geen eenheidstype zitten** houdt
+ingedeeld waar het type dat toestaat, en het telt mee onder **Vraagt aandacht**
+op het organisatiescherm en staat op de pagina Controles. **Rollen die nog in geen eenheidstype zitten** houdt
 de rollen die geen type heeft.
 
 Een **rol** heeft een naam, een korte naam voor de matrix, een doel, en een
@@ -2310,8 +2363,9 @@ in deze scope wordt bijgehouden, beantwoordt **Een samenwerking vastleggen…**
 een overschrijding als één stap; waar deze scope een samenwerking bijhoudt die
 geen interface nodig heeft, haalt **De vastlegging verwijderen** haar weg als
 één stap, en biedt **De ontbrekende interface modelleren…** de applicaties
-van de twee eenheden, om die te openen van waaruit je haar modelleert; **Open
-de twee eenheden** opent een van beide; en al het andere wordt beantwoord waar
+van de twee eenheden, om die te openen van waaruit je haar modelleert;
+**Markeren als bedoeld…** zegt dat de twee samenwerken zonder interface, met
+een reden; **Open de twee eenheden** opent een van beide; en al het andere wordt beantwoord waar
 het wordt bijgehouden — een eigenaar op de applicatie, een limiet op het
 eenheidstype. Net als het organogram wordt ze op een dag
 getekend, en **Vind mij** gaat naar jouw eenheid. Een applicatie staat op de

@@ -105,22 +105,26 @@ diesem Bereich am höchsten eingeordnet ist. Er wird am Tag ermittelt und nie
 gespeichert. Ein Klick auf den Namen einer Einheit öffnet sie dort, wo sie
 geführt wird, und ihr Inspektor sagt dasselbe vom anderen Ende.
 
-**Braucht Aufmerksamkeit**, unter den Karten, sobald es etwas gibt: worin sich
+**Prüfungen**, eine Karte auf jeder Startseite, öffnet die **Seite
+Prüfungen**: jede Prüfung, die die App vornimmt, nach dem, worum es geht, mit
+warum jede wichtig ist, wie man es behebt und wo sie in oder unter dieser
+Startseite etwas findet (*Die Seite Prüfungen*, weiter unten).
+
+**Braucht Aufmerksamkeit**, unter den Karten, sobald die Prüfungen etwas
+finden: wie viel, nach Gewicht — so viele **zu beheben**, so viele **zu
+prüfen**, so viele **Hinweise** — jedes ein Link zur Seite Prüfungen, auf der
+ersten Prüfung dieses Gewichts, die etwas findet. Ein als beabsichtigt
+markierter Befund zählt nicht mit. Was die Prüfungen finden, ist, worin sich
 die Organisation selbst widerspricht — ein Name, den zwei Bereiche beide
 definieren, eine veraltete Kopie, eine Anwendung, von der niemand gesagt hat,
 wem sie gehört, ein Dienst, der über eine Teamgrenze hinweg genutzt wird, ohne
 als geteilt markiert zu sein, ein Dienst, den keine Plattform liefert, eine
-Fähigkeit, die eine Domäne vorschlägt, und auf dem Organisationsbildschirm
-selbst ein Einheitstyp, der nirgends hingehört, oder eine Verantwortung ohne
-ihre eine rechenschaftspflichtige Rolle — in der Liste, in der jeder
-Bildschirm seine Befunde zeigt (*Eine Liste von Befunden lesen*, weiter
-unten): eine Zeile je Prüfung, zugeklappt. Die Erklärung eines Befunds öffnet
-den betreffenden Bereich mit dem ausgewählten Datensatz — ein Befund zum
-Betriebsmodell öffnet dessen Seite, mit dem Einheitstyp oder der Verantwortung
-gewählt — und, bei einem Namen, den zwei Bereiche definieren, die andere
-Definition, und **Verknüpfen…**, wo Sie diesen Bereich ändern dürfen. Der Rest
-von *Ein Name in der ganzen Organisation* weiter unten sagt, was jeder
-bedeutet.
+Fähigkeit, die eine Domäne vorschlägt, eine Einheit, der Leute fehlen oder die
+über dem Limit ihres Typs liegt, ein Plan über sein Ende hinaus, eine
+Schnittstelle zwischen zwei Teams, die nichts festgehalten haben, und auf dem
+Organisationsbildschirm selbst ein Einheitstyp, der nirgends hingehört, oder
+eine Verantwortung ohne ihre eine rechenschaftspflichtige Rolle. Der Rest von
+*Ein Name in der ganzen Organisation* weiter unten sagt, was jeder bedeutet.
 
 **Bereiche in** der Organisation, darunter: eine Zeile je Bereich, die Kinder
 eingerückt, mit einem Pfeil, um eine Domäne zuzuklappen, und einem Etikett mit
@@ -248,10 +252,11 @@ Hinweis, wie ein Vorschlag, und wird nie wie ein Fehler eingefärbt.
 
 ### Eine Liste von Befunden lesen
 
-Jede Liste von Befunden ist dieselbe Liste: **Braucht Aufmerksamkeit** auf
-einer Startseite, die **Prüfungen** einer Einheit, die Zusammenfassung neben
-dem Organigramm, die Befunde der Conway-Karte, **Noch offen** bei einem Plan
-und **Wo sich die Daten widersprechen** auf der Roadmap.
+Jede Liste von Befunden ist dieselbe Liste: die **Prüfungen** einer Einheit,
+die Zusammenfassung neben dem Organigramm, die Befunde der Conway-Karte,
+**Noch offen** bei einem Plan und **Wo sich die Daten widersprechen** auf der
+Roadmap. Eine Startseite zählt ihre Befunde unter **Braucht Aufmerksamkeit**
+und führt sie auf der Seite Prüfungen auf.
 
 - **Eine Zeile je Prüfung**: das Zeichen ihres Gewichts, ihr Name und wie
   viele, zugeklappt. Drücken Sie die Zeile, um jeden Befund darunter zu sehen,
@@ -276,6 +281,57 @@ und **Wo sich die Daten widersprechen** auf der Roadmap.
   **Alle Befunde** geht zurück zu dem Befund, von dem Sie kamen.
 - Ein behobener Befund verschwindet aus der Liste, und seine Erklärung mit
   ihm.
+- **Als beabsichtigt markieren…**, unter der Erklärung eines Prüfpunkts oder
+  eines Hinweises, sagt, dass es so gemeint ist: Es fragt nach dem Grund, und
+  der Grund darf leer bleiben. Der Befund verschwindet aus der Liste und steht
+  unter **Akzeptiert (N)**, unter den Prüfungen, mit seinem Grund und dem Tag,
+  an dem er markiert wurde. **Zurücknehmen** dort bringt ihn zurück. Eine
+  Markierung ist ein Schritt im Modell, geführt in dem Bereich, um den es im
+  Befund geht, also sieht sie jeder und die Aktivitätsliste nennt sie;
+  markiert, wo dieser Bereich geöffnet ist, nimmt ⌘Z sie zurück wie jeden
+  anderen Schritt. Eine Markierung gilt dem Befund, wie er ist: Ändern Sie,
+  worum es geht — eine andere Einheit an der Zusammenarbeit, eine andere
+  Rolle rechenschaftspflichtig —, und der Befund kommt zurück. **Beheben**
+  lässt sich nicht markieren: Das Modell widerspricht sich selbst, und die
+  Antwort liegt im Modell. Wo Sie den Bereich, der sie führt, nur lesen
+  dürfen, wird nichts angeboten. Ein Agent liest die Markierungen und setzt
+  nie eine.
+
+### Die Seite Prüfungen
+
+**Prüfungen** auf der Karte einer Startseite, oder eine Anzahl unter
+**Braucht Aufmerksamkeit**, öffnet die Seite Prüfungen über dieser Startseite:
+was die Prüfungen in oder unter ihr finden, und auf dem
+Organisationsbildschirm im ganzen Baum.
+
+- **Jede Prüfung, nach Kategorie** — die Landschaft, Pläne und Daten, die
+  Organisation, Teams und Systeme, Analyse — mit dem Zeichen ihres Gewichts,
+  ihrem Namen und wie viele sie findet, null eingeschlossen: Eine Prüfung,
+  die nichts findet, ist trotzdem wissenswert. Beheben vor Prüfen vor Hinweis
+  innerhalb jeder Kategorie.
+- **Zeigen** auf der Leiste wählt die gezeigten Gewichte. Die Hinweise sind
+  verborgen, bis Sie sie zeigen, wie in jeder Liste, und was Sie wählen, gilt,
+  solange die App geöffnet ist.
+- **Wählen Sie eine Prüfung**, um sie zu lesen: ihr Gewicht und ihre
+  Kategorie, **Warum es wichtig ist**, **So beheben Sie es**, und **Gefunden
+  (N)** — jeder Befund davon, jeder in seinem Bereich. Ein Klick darauf öffnet
+  ihn dort, wo er behoben wird: den Datensatz, die Zeichnung, den Plan, die
+  Seite des Betriebsmodells, eine Person in Personen. **Als beabsichtigt
+  markieren…** neben dem Befund eines Prüfpunkts oder eines Hinweises
+  markiert ihn von hier aus, in dem Bereich, der ihn führt, und **Akzeptiert
+  (N)** führt auf, was markiert wurde, jedes mit **Zurücknehmen**. Eine hier
+  gesetzte Markierung, mit nichts geöffnet, ist ein Schritt dieses Bereichs
+  und liegt auf keinem Rückgängig-Stapel: **Zurücknehmen** ist der Weg, sie
+  rückgängig zu machen.
+- Was die Seite zählt, stammt aus dem, was die App über den ganzen Baum schon
+  weiß: die Befunde zwischen Bereichen, die Einheiten und Leute der
+  Organisation, die Daten jedes Bereichs und die Conway-Karte über der
+  Startseite. Einige Prüfungen lesen das ganze Dokument eines Bereichs — ein
+  Datensatz auf keiner Ansicht, die Angaben des Eigentümers auf einem
+  Platzhalter, eine Linie ins Nichts, der Link einer Zeichnung, die beiden der
+  Geschäftsschicht, eine Ursache, die eine Beobachtung darunter erklärt — und
+  finden etwas dort, wo dieser Bereich geöffnet ist: Die Seite führt sie mit
+  ihrer Erklärung auf und sagt *Hier nicht gezählt* statt einer Zahl.
 
 ### Das Register
 
@@ -2033,8 +2089,8 @@ Bibliothek bietet (siehe unten); ein Modell, in dem noch nichts steht, bietet
 zuerst **Mit einer Bibliothek beginnen**. Unter den Bahnen hält **Gehört noch nirgends hin** einen
 Einheitstyp, der weder ganz oben steht noch zu einem Einheitstyp gehört, der
 irgendwo steht: Keine Einheit davon lässt sich dort einordnen, wo ihr Typ es
-erlaubt, und er steht unter **Braucht Aufmerksamkeit** auf dem
-Organisationsbildschirm. **Rollen, die noch in keinem Einheitstyp vorkommen**
+erlaubt, und er zählt unter **Braucht Aufmerksamkeit** auf dem
+Organisationsbildschirm mit und steht auf dessen Seite Prüfungen. **Rollen, die noch in keinem Einheitstyp vorkommen**
 hält die Rollen, die kein Typ hat.
 
 Eine **Rolle** hat einen Namen, einen Kurznamen für die Matrix, einen Zweck
@@ -2443,7 +2499,9 @@ geführt wird, beantwortet **Eine Zusammenarbeit festhalten…** eine
 die keine Schnittstelle braucht, nimmt **Festlegung entfernen** sie als ein
 Schritt weg, und **Die fehlende Schnittstelle modellieren…** bietet die
 Anwendungen der beiden Einheiten, um die zu öffnen, von der aus Sie sie
-modellieren; **Beide Einheiten öffnen** öffnet eine von beiden; und alles
+modellieren; **Als beabsichtigt markieren…** sagt, dass die beiden ohne
+Schnittstelle zusammenarbeiten, mit einem Grund; **Beide Einheiten öffnen**
+öffnet eine von beiden; und alles
 andere wird dort beantwortet, wo es geführt wird — ein Eigentümer an der
 Anwendung, ein Limit am Einheitstyp. Wie
 das Organigramm wird sie an einem Tag gezeichnet, und **Mich finden** geht zu

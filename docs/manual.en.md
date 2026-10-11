@@ -94,19 +94,22 @@ this scope. It is worked out on the day and never kept. Pressing a unit's
 name opens it where it is kept, and its inspector says the same thing from
 the other end.
 
-**Needs attention**, under the cards, when there is anything to attend to:
-what the organisation contradicts about itself — a name two scopes both
+**Checks**, a card on every home, opens the **Checks page**: every check the
+app makes, by what it is about, with why each matters, how to fix it and
+where it finds something at or under this home (*The Checks page*, below).
+
+**Needs attention**, under the cards, when the checks find anything: how much,
+by weight — so many **to fix**, so many **to review**, so many **notes** —
+each a link to the Checks page, on the first check of that weight that finds
+something. A finding marked as intended is not counted. What the checks find
+is what the organisation contradicts about itself — a name two scopes both
 define, a copy gone stale, an application nobody has said whose it is, a
 service used across a team boundary without being marked shared, a service no
-platform delivers, a capability a domain proposes, and on the organisation's
-own home a unit type that sits nowhere or a responsibility without its one
-accountable role — in the list every screen draws its findings in (*Reading a
-list of findings*, below): one row per check, folded. A finding's explanation
-opens the scope it is about with the record selected — a finding about the
-operating model opens its page, with the unit type or the responsibility
-picked — and, for a name two scopes define, the other definition, and
-**Link…** where you may change this scope. The rest of *One name across the
-organisation* below says what each means.
+platform delivers, a capability a domain proposes, a unit short of people or
+over its type's limit, a plan past its end, an interface between two teams
+that declared nothing, and on the organisation's own home a unit type that
+sits nowhere or a responsibility without its one accountable role. The rest
+of *One name across the organisation* below says what each means.
 
 **Scopes within** the organisation, beneath: one row per scope, the children
 indented, with a chevron to fold a domain shut, and a badge saying what the
@@ -222,10 +225,10 @@ yet, so it is a note, as a proposal is, and never coloured like a fault.
 
 ### Reading a list of findings
 
-Every list of findings is the same list: **Needs attention** on a home, a
-unit's **Checks**, the organisation chart's summary, the Conway map's
-findings, a plan's **Still open** and the roadmap's **Where the dates
-disagree**.
+Every list of findings is the same list: a unit's **Checks**, the
+organisation chart's summary, the Conway map's findings, a plan's **Still
+open** and the roadmap's **Where the dates disagree**. A home counts its
+findings under **Needs attention** and lists them on the Checks page.
 
 - **One row per check**: its weight's mark, its name and how many, folded
   shut. Press the row to see each finding under it, in its own sentence.
@@ -246,6 +249,48 @@ disagree**.
   do where it is drawn, and the screen it opens does the rest. **All
   findings** goes back to the finding you came from.
 - A finding put right leaves the list, and its explanation with it.
+- **Mark as intended…**, under a review's or a note's explanation, says that
+  it is meant to be so: it asks why, and the reason may stay empty. The
+  finding leaves the list and is listed under **Accepted (N)**, under the
+  checks, with its reason and the day it was marked. **Take back** there
+  brings it back. A mark is a step in the model, kept in the scope the
+  finding is about, so everybody sees it and the Activity list names it;
+  marked where that scope is open, ⌘Z takes it back like any other step. A
+  mark is about the finding as it is: change what it is about — another unit
+  on the interaction, another role accountable — and the finding comes back.
+  A **fix** cannot be marked: the model contradicts itself, and the answer is
+  in the model. Where you may only read the scope that keeps it, nothing is
+  offered. An agent reads the marks and never makes one.
+
+### The Checks page
+
+**Checks** on a home's card, or a count under **Needs attention**, opens the
+Checks page over that home: what the checks find at or under it, and on the
+organisation's home in the whole tree.
+
+- **Every check, by category** — the landscape, plans and dates, the
+  organisation, teams and systems, analysis — with its weight's mark, its
+  name and how many it finds, none included: a check that finds nothing is
+  still worth knowing about. Fix before review before note within each.
+- **Show** on the bar picks the weights shown. The notes are hidden until you
+  show them, as in every list, and what you choose lasts while the app is
+  open.
+- **Pick a check** to read it: its weight and category, **Why it matters**,
+  **How to fix it**, and **Found (N)** — every finding of it, each in its
+  scope. Pressing one opens it where it is fixed: the record, the drawing,
+  the plan, the operating model's page, a person in People. **Mark as
+  intended…** beside a review's or a note's finding marks it from here, in
+  the scope that keeps it, and **Accepted (N)** lists what was marked, each
+  with **Take back**. A mark made here, with nothing open, is that scope's
+  step and is not on an undo stack: **Take back** is how it is undone.
+- What the page counts comes from what the app already holds about the whole
+  tree: the findings between scopes, the organisation's units and people,
+  every scope's dates, and the Conway map over the home. A few checks read a
+  scope's whole document — a record on no view, the owner's detail on a
+  stand-in, a line to nothing, a drawing's link, the business layer's two, a
+  cause explaining an observation below — and are found where that scope is
+  open: the page lists them with their explanation and says *Not counted
+  here* rather than a number.
 
 ### The register
 
@@ -1775,8 +1820,8 @@ role** add one, and **From a library…** beside them brings in what a library
 offers (below); a model with nothing in it yet offers **Start from a
 library** first. Under the lanes, **Sits nowhere yet** holds a unit type that is
 neither at the top nor in a unit type that sits anywhere: no unit of it can be
-placed where its type allows, and it is listed under **Needs attention** on the
-organisation's home. **Roles in no unit type yet** holds the roles no type
+placed where its type allows, and it is counted under **Needs attention** on the
+organisation's home and listed on its Checks page. **Roles in no unit type yet** holds the roles no type
 holds.
 
 A **role** has a name, a short name for the matrix, a purpose, and its part in
@@ -2124,8 +2169,9 @@ only reads: where one of the two units is kept in this scope, **Declare an
 interaction…** answers a crossing as one step; where this scope keeps an
 interaction no interface needs, **Remove the declaration** takes it away as
 one step, and **Model the missing interface…** offers the two units'
-applications, to open the one to model it from; **Open the two units** opens
-either; and everything else is answered where it is kept — an owner on the
+applications, to open the one to model it from; **Mark as intended…** says
+the two work together without an interface, with a reason; **Open the two
+units** opens either; and everything else is answered where it is kept — an owner on the
 application, a limit on the unit type. Like the chart it
 is drawn on a day, and **Find me** goes to your unit. An application is on the
 map while it is live or retiring on the map's day: one not yet live, or gone,

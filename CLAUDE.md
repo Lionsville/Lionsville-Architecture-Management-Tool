@@ -709,8 +709,11 @@ src/widgets/      Presentation with no opinions: icons, one confirm dialog,
                   the notes hidden, an instance opening its explanation and
                   the actions its screen hands in — the groups and the words
                   come from the model's catalogue, which a widget may not
-                  read), and a set kept for the session under a key, from the
-                  shell's folds handed down as a context (`sessionMemory`).
+                  read), and its two places for the marks as intended
+                  (`FindingMarks`: *Mark as intended…* asking why, and
+                  *Accepted (N)* with *Take back*), and a set kept for the
+                  session under a key, from the shell's folds handed down as
+                  a context (`sessionMemory`).
 src/ports/        The seams. Interfaces only, no implementations.
                     PreferencesStore · DocumentGateway
                     Diagnostics · HostControls · UpdateSettings
@@ -923,6 +926,18 @@ src/app/          The shell around the editor.
                                       a scope's *Served by* on its home and
                                       in its settings, its domain owner, and
                                       each edit written where the unit is
+                                      HomePages · useHomePages   the pages
+                                      over a home's cards, one at a time,
+                                      each a part of its own, and what the
+                                      one up was asked to pick
+                                      treeChecks · useHomeChecks · ChecksPage
+                                      every finding at or under a home off
+                                      what the shell holds — the tree's, every
+                                      scope's dates, the Conway map over the
+                                      home — split by the marks, counted by
+                                      weight under the cards (`NeedsAttention`)
+                                      and listed by check and category on the
+                                      Checks page (ADR-0036, amended)
                     units/            an actor as a unit in its inspector
                                       (ADR-0036 §3, §4): UnitSection, drawn
                                       through `EditorOwnership.unitSection`,
@@ -950,7 +965,8 @@ src/app/          The shell around the editor.
                                       (`operatingCounts`)
                                       …and the two views (§7): ChartPage and
                                       ConwayPage with its table
-                                      (`ConwayTable`), drawn in the tab through
+                                      (`ConwayTable`) and its findings' words
+                                      (`conwayWords`), drawn in the tab through
                                       `UnitViewPages`, the chart's boxes in
                                       their grid (`ChartUnitBox`) and what a
                                       badge and a folded unit say
@@ -995,6 +1011,13 @@ src/app/          The shell around the editor.
                                       session; built twice, the second with
                                       `origin: 'agent'` for the agent's seam
                                       (`SessionView.changeAcross`, §6)
+                    checkMarking      a finding marked as intended and a mark
+                                      taken back from any list: the open
+                                      scope's through its session, another's
+                                      as its step under its rights; handed
+                                      down as a context from the workspace
+                                      and a home, and a list's two places
+                                      filled (`useFindingMarks`)
                     useLibrary · dialogs/AddFromLibraryDialog   the palette's
                                       *Existing application…*: the picker over
                                       the register, and the one question it asks
