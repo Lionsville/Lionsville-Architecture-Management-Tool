@@ -829,8 +829,10 @@ export const DE: Record<keyof typeof EN, string> = {
   'conway.unowned': '{name} hat keine Einheit: niemandem gehört sie.',
   'conway.overLimit': '{unit} gehören {count} Anwendungen, und einem {type} gehören höchstens {limit}.',
   'conway.matrix': 'Schnittstellen zwischen Einheiten',
-  'conway.matrixNote': 'Eine Zahl sagt, wie viele Schnittstellen zwischen den beiden laufen; ein Buchstabe die festgehaltene Form: Z Zusammenarbeit, D als Dienst, U unterstützend. Eine hinterlegte Zelle hat eine Schnittstelle ohne festgehaltene Zusammenarbeit.',
+  'conway.matrixNote': 'Eine Zahl sagt, wie viele Schnittstellen zwischen den beiden laufen. Ein Buchstabe ist eine zwischen ihnen festgehaltene Zusammenarbeit, ob eine Schnittstelle sie braucht oder nicht: Z Zusammenarbeit, D als Dienst, U unterstützend, ? keine Form genannt. Eine hinterlegte Zelle mit einer Zahl hat eine Schnittstelle ohne festgehaltene Zusammenarbeit; eine hinterlegte Zelle mit nur einem Buchstaben hat eine festgehaltene Zusammenarbeit, die keine Schnittstelle braucht.',
   'conway.mark.collaboration': 'Z',
   'conway.mark.service': 'D',
   'conway.mark.facilitating': 'U',
+  'conway.mark.unnamed': '?',
+  'conway.cellNone': 'nichts festgehalten',
 }

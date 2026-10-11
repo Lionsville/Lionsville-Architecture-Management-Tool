@@ -9,7 +9,7 @@
  * Logistics.
  */
 import { describe, expect, it } from 'vitest'
-import { conwayMap } from './conway'
+import { conwayMap, pairBetween } from './conway'
 import type { ConwayApplication, ConwayInput, ConwayInteraction, ConwayRow } from './conway'
 import type { DesignElement } from './types'
 
@@ -155,6 +155,37 @@ describe('the Conway map', () => {
     const days: string[] = []
     conwayMap({ ...input, owns: (_id, day) => { days.push(day); return 0 } }, '2027-02-01')
     expect(new Set(days)).toEqual(new Set(['2027-02-01']))
+  })
+
+  it('holds a cell for each two columns: the interfaces between them, and what is declared there whether or not one runs', () => {
+    const cells = (map: ReturnType<typeof conwayMap>) => map.pairs.map((pair) => [
+      pair.a ?? null, pair.b ?? null, pair.interfaces, pair.interactions.map((one) => one.id), pair.state,
+    ])
+    // Sales' interaction with Data covers each of its teams: Mobile App's cell with Integration Platform holds it with
+    // no interface there, and it is not unused, since Webshop's interface needs it.
+    expect(cells(conwayMap(input, TODAY))).toEqual([
+      ['mob', 'web', 1, [], 'undeclared'],
+      ['mob', 'ip', 0, ['i-1'], 'declared'],
+      ['mob', 'tt', 1, [], 'undeclared'],
+      ['web', 'ip', 1, ['i-1'], 'declared'],
+      ['web', null, 1, [], 'unowned'],
+      ['ip', 'tt', 0, ['i-2'], 'unused'],
+    ])
+    // By domain, an interaction between units under two columns is declared between those columns.
+    expect(cells(conwayMap(input, TODAY, { groupBy: 'ut-domain' }))).toEqual([
+      ['customer', 'data', 1, ['i-1'], 'declared'],
+      ['customer', 'shipping', 1, [], 'undeclared'],
+      ['customer', null, 1, [], 'unowned'],
+      ['data', 'shipping', 0, ['i-2'], 'unused'],
+    ])
+  })
+
+  it('finds the cell between two columns either way round, and none where nothing runs or is declared', () => {
+    const between = pairBetween(conwayMap(input, TODAY))
+    expect(between('tt', 'ip')?.state).toBe('unused')
+    expect(between('ip', 'tt')).toBe(between('tt', 'ip'))
+    expect(between(undefined, 'web')?.state).toBe('unowned')
+    expect(between('tt', undefined)).toBeUndefined()
   })
 
   it('reads an interaction with an end that is not a unit as nothing declared', () => {

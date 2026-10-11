@@ -828,8 +828,10 @@ export const NL: Record<keyof typeof EN, string> = {
   'conway.unowned': '{name} heeft geen eenheid: niemand bezit haar.',
   'conway.overLimit': '{unit} bezit {count} applicaties, en een {type} bezit er hoogstens {limit}.',
   'conway.matrix': 'Interfaces tussen eenheden',
-  'conway.matrixNote': 'Een getal is hoeveel interfaces er tussen de twee lopen; een letter is de vastgelegde vorm: S samenwerking, D als dienst, F faciliterend. Een gekleurde cel heeft een interface zonder vastgelegde samenwerking.',
+  'conway.matrixNote': 'Een getal is hoeveel interfaces er tussen de twee lopen. Een letter is een samenwerking die tussen hen is vastgelegd, of een interface haar nodig heeft of niet: S samenwerking, D als dienst, F faciliterend, ? geen vorm genoemd. Een gekleurde cel met een getal heeft een interface zonder vastgelegde samenwerking; een gekleurde cel met alleen een letter heeft een vastgelegde samenwerking die geen interface nodig heeft.',
   'conway.mark.collaboration': 'S',
   'conway.mark.service': 'D',
   'conway.mark.facilitating': 'F',
+  'conway.mark.unnamed': '?',
+  'conway.cellNone': 'niets vastgelegd',
 }

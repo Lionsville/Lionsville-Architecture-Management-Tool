@@ -1862,8 +1862,10 @@ as its owner — and draws the interfaces between them: a solid line where the
 two units have declared that they work together, a dashed one where they have
 not. **Group by** rolls the columns up to a unit type above the owners, a
 domain or a cluster, say. A table under the map counts the interfaces between
-each pair of units, with a letter for the way they declared they work
-together.
+each pair of units, with a letter for every way they declared they work
+together — whether an interface runs between them or not. A cell is shaded
+where an interface has nothing declared, and shaded another way where an
+interaction is declared that no interface needs.
 
 **Findings on** *day* says what the two disagree about: an interface that
 crosses from one unit's applications to another's with nothing declared

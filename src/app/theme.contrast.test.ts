@@ -31,6 +31,7 @@ import { getNodeTokens } from '../editor/theme/tokens'
 import type { AspectToken } from '../editor/theme/tokens'
 import { groupColors } from '../editor/canvas/DomainGroupLayer'
 import { seenTint } from '../observations/ui/ChainMarks'
+import { conwayCellShade } from './units/ConwayTable'
 import { dangerInk, inkOn } from '../widgets'
 
 type Rgb = { r: number; g: number; b: number }
@@ -131,6 +132,8 @@ function rowText(theme: Theme): Pair[] {
     add(`unselected toggle under the pointer on ${ground}`, ratio(palette.text.secondary, fill, alpha(palette.text.primary, palette.action.hoverOpacity)))
     // MUI's tooltip: its white on its grey, over whatever it floats above.
     add(`tooltip over ${ground}`, ratio(palette.common.white, fill, alpha(palette.grey[700], 0.92)))
+    // A cell of the Conway map's table, shaded by how its two units stand.
+    for (const [state, shade] of Object.entries(conwayCellShade(theme))) add(`Conway cell ${state} on ${ground}`, ratio(shade.ink, fill, shade.fill))
   }
   // A sheet's *+*: on paper, and on an area's accent-tinted header.
   add('sheet add button', ratio(palette.text.secondary, paper))

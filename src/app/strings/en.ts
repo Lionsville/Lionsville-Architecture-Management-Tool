@@ -1049,8 +1049,10 @@ export const EN = {
   'conway.unowned': '{name} has no unit: nobody owns it.',
   'conway.overLimit': '{unit} owns {count} applications, and a {type} owns at most {limit}.',
   'conway.matrix': 'Interfaces between units',
-  'conway.matrixNote': 'A number is how many interfaces run between the two; a letter is the mode declared between them: C collaboration, S as a service, F facilitating. A shaded cell has an interface with nothing declared.',
+  'conway.matrixNote': 'A number is how many interfaces run between the two. A letter is an interaction declared between them, whether or not an interface needs it: C collaboration, S as a service, F facilitating, ? no mode said. A shaded cell with a number has an interface with nothing declared; a shaded cell with only a letter has an interaction declared that no interface needs.',
   'conway.mark.collaboration': 'C',
   'conway.mark.service': 'S',
   'conway.mark.facilitating': 'F',
+  'conway.mark.unnamed': '?',
+  'conway.cellNone': 'nothing declared',
 } as const

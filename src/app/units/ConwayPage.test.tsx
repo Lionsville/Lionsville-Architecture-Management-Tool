@@ -6,11 +6,13 @@
  * The Conway map in its tab (ADR-0036 §7), over one fictional organisation —
  * Acme Logistics — with a platform cluster at the root and a customer domain
  * below: the columns, the findings in words, grouping by a unit type, *you*,
- * and an interaction declared from a finding, which answers it.
+ * an interaction declared from a finding, which answers it, and the table of
+ * what runs and what is declared between each two units.
  */
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { useMemo, useState } from 'react'
+import { axeFindings } from '../testing/axe'
 import { renderShell } from '../testing/renderShell'
 import type { Command } from '../../model/commands'
 import type { HostModel } from '../../model/hostModel'
@@ -70,9 +72,9 @@ const REGISTER: PeopleRegisterAccess = {
 const NAMES = personNames(REGISTER, translator('en'))
 const VIEW: DesignDiagram = { id: 'cw-1', kind: 'conway', name: 'Teams and systems', members: [] }
 
-function Harness({ commands }: { commands: Command[] }) {
+function Harness({ commands, root = ROOT }: { commands: Command[]; root?: HostModel }) {
   const [model, setModel] = useState(CUSTOMER)
-  const index = useMemo(() => indexScopes([{ path: '', model: ROOT }, { path: 'customer', model: CUSTOMER }]), [])
+  const index = useMemo(() => indexScopes([{ path: '', model: root }, { path: 'customer', model: CUSTOMER }]), [root])
   const here = useMemo(() => unitViewsHere(index, 'customer', model), [index, model])
   const dispatch = (command: Command) => {
     commands.push(command)
@@ -163,9 +165,35 @@ describe('the Conway map', () => {
     expect(screen.getByTestId('conway-count').textContent).toBe('3 interfaces cross a unit · 0 with nothing declared')
   })
 
-  it('counts the interfaces between each pair of units in a table', () => {
+  it('counts the interfaces between each pair of units in a table, with every interaction declared between them', async () => {
     renderShell(<Harness commands={[]} />)
     const table = screen.getByTestId('conway-matrix')
     expect(within(table).getAllByRole('row')).toHaveLength(5)
+    // Rows and columns: Integration Platform, Mobile App, Webshop, no unit. Data & Integration works with Digital
+    // Sales as a service, which covers both its teams — Mobile App too, where no interface runs.
+    expect(cells()).toEqual([
+      ['·', 'S declared', '1S declared', ''],
+      ['S declared', '·', '1 undeclared', ''],
+      ['1S declared', '1 undeclared', '·', '1 unowned'],
+      ['', '', '1 unowned', '·'],
+    ])
+    expect(within(table).getAllByTestId('conway-cell')[0].getAttribute('title')).toBe('As a service')
+    expect(within(table).getByText(/a shaded cell with only a letter has an interaction declared that no interface needs/)).toBeTruthy()
+    expect(await axeFindings()).toEqual([])
+  })
+
+  it('shades a cell apart where an interaction is declared that no interface needs, as the findings say', () => {
+    const root: HostModel = {
+      ...ROOT, relations: [...ROOT.relations, { id: 'i-2', type: 'interacts', sourceId: 'ip', targetId: 'mob', mode: 'facilitating', isBidirectional: false }],
+    }
+    renderShell(<Harness commands={[]} root={root} />)
+    expect(cells()[0]).toEqual(['·', 'SF unused', '1S declared', ''])
+    expect(said()).toContain('Integration Platform and Mobile App declare Facilitating, and no interface between them needs it.')
   })
 })
+
+/** The table's cells by row, each its words and how the two units stand. */
+function cells(): string[][] {
+  return within(screen.getByTestId('conway-matrix')).getAllByRole('row').slice(1)
+    .map((row) => [...row.querySelectorAll('td')].map((cell) => [cell.textContent, cell.getAttribute('data-state')].filter(Boolean).join(' ')))
+}

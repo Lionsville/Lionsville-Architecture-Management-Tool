@@ -20,6 +20,11 @@
  * under them too: a cluster that works with a platform team covers each of
  * its teams' interfaces to that team's applications.
  *
+ * **A cell for each two columns.** The table under the map says, for each
+ * two of its columns, how many interfaces run between them and every
+ * interaction declared between them, whether or not an interface needs it
+ * there, and how the two stand (`pairs`).
+ *
  * **On a day.** Each unit sits under the parent the plans' moves give it that
  * day (`organisationOn`, §6); a unit not there owns nothing; an application is
  * on the map while it is there by its lifecycle on the day (ADR-0009) — live
@@ -154,11 +159,37 @@ export type ConwayFinding =
   /** A unit owning more applications than its type's limit. */
   | { kind: 'overLimit'; unitId: ElementId; owns: number; limit: number }
 
+/**
+ * How a cell of the table stands: an interface between the two columns with
+ * nothing declared that covers it; no interface, and an interaction declared
+ * between them that no interface needs; interfaces only to the applications
+ * nobody owns; or declared, every interface between them covered — or an
+ * interaction declared between them that interfaces elsewhere need.
+ */
+export type PairState = 'undeclared' | 'unused' | 'unowned' | 'declared'
+
+/**
+ * One cell of the table: two columns, how many interfaces run between them,
+ * and every interaction declared between them whether or not an interface
+ * runs there — one whose two ends sit each at, under or above one of the two
+ * columns' units, as an interaction covers the units under its ends.
+ */
+export type ConwayPair = {
+  /** The two columns, in the order the groups are in: a unit's id, or absent for the applications nobody owns. */
+  a?: ElementId
+  b?: ElementId
+  interfaces: number
+  interactions: ConwayInteraction[]
+  state: PairState
+}
+
 export type ConwayMap = {
   groups: ConwayGroup[]
   lines: ConwayLine[]
   /** The interactions that hold on the day, between units that are there. */
   interactions: ConwayInteraction[]
+  /** The table's cells: each two columns with an interface or an interaction between them, in the groups' order. */
+  pairs: ConwayPair[]
   findings: ConwayFinding[]
 }
 
@@ -191,7 +222,9 @@ export function conwayMap(given: ConwayInput, day: string, options: ConwayOption
       .map((app): ConwayFinding => ({ kind: 'unowned', applicationId: app.id })),
     ...overLimit(input, reading, day),
   ]
-  return { groups: groupsOf(input.applications, reading), lines, interactions: reading.live, findings }
+  const groups = groupsOf(input.applications, reading)
+  const unusedIds = new Set(findings.flatMap((finding) => (finding.kind === 'unused' ? [finding.interaction.id] : [])))
+  return { groups, lines, interactions: reading.live, pairs: pairsOf(groups, lines, unusedIds, reading), findings }
 }
 
 function readingOf(input: ConwayInput, day: string, options: ConwayOptions): Reading {
@@ -278,6 +311,58 @@ function overLimit(input: ConwayInput, reading: Reading, day: string): ConwayFin
     if (owns > limit) found.push({ kind: 'overLimit', unitId, owns, limit })
   }
   return found
+}
+
+/** A cell's key: its two columns, the applications nobody owns as the empty id. */
+const pairKey = (a: ElementId | undefined, b: ElementId | undefined) => `${a ?? ''}\n${b ?? ''}`
+
+/**
+ * The table's cells: the interfaces between each two columns, and every
+ * interaction declared between them — so a cell says what was declared
+ * whether or not an interface runs there, and an interaction no interface
+ * needs is seen where it sits as well as among the findings.
+ */
+function pairsOf(groups: readonly ConwayGroup[], lines: readonly ConwayLine[], unused: ReadonlySet<string>, reading: Reading): ConwayPair[] {
+  const rank = new Map(groups.map((group, at) => [group.unitId, at]))
+  const rankOf = (id: ElementId | undefined) => rank.get(id) ?? groups.length
+  const cells = new Map<string, { a?: ElementId; b?: ElementId; between: ConwayLine[]; interactions: ConwayInteraction[] }>()
+  const cell = (x: ElementId | undefined, y: ElementId | undefined) => {
+    const [a, b] = rankOf(x) <= rankOf(y) ? [x, y] : [y, x]
+    const held = cells.get(pairKey(a, b)) ?? { ...(a !== undefined ? { a } : {}), ...(b !== undefined ? { b } : {}), between: [], interactions: [] }
+    cells.set(pairKey(a, b), held)
+    return held
+  }
+  for (const line of lines) if (line.from !== line.to) cell(line.from, line.to).between.push(line)
+  const columns = groups.flatMap((group) => (group.unitId !== undefined ? [group.unitId] : []))
+  // A unit's columns: its own, the one it sits in, and every one under it.
+  const columnsOf = (unitId: ElementId) => columns.filter((column) => reading.chain(unitId).includes(column) || reading.chain(column).includes(unitId))
+  for (const row of reading.live) {
+    const targets = columnsOf(row.targetId)
+    for (const [x, y] of columnsOf(row.sourceId).flatMap((x) => targets.filter((y) => y !== x).map((y) => [x, y] as const))) {
+      const held = cell(x, y)
+      if (!held.interactions.includes(row)) held.interactions.push(row)
+    }
+  }
+  return [...cells.values()]
+    .sort((one, other) => rankOf(one.a) - rankOf(other.a) || rankOf(one.b) - rankOf(other.b))
+    .map(({ between, ...pair }) => ({ ...pair, interfaces: between.length, state: pairState(between, pair.interactions, unused) }))
+}
+
+function pairState(between: readonly ConwayLine[], interactions: readonly ConwayInteraction[], unused: ReadonlySet<string>): PairState {
+  if (between.some((line) => line.status === 'undeclared')) return 'undeclared'
+  if (between.length > 0 && between.every((line) => line.status === 'unowned')) return 'unowned'
+  if (between.length === 0 && interactions.some((row) => unused.has(row.id))) return 'unused'
+  return 'declared'
+}
+
+/** The cell between two columns, either way round; absent where no interface runs and nothing is declared between them. */
+export function pairBetween(map: Pick<ConwayMap, 'pairs'>): (x: ElementId | undefined, y: ElementId | undefined) => ConwayPair | undefined {
+  const held = new Map<string, ConwayPair>()
+  for (const pair of map.pairs) {
+    held.set(pairKey(pair.a, pair.b), pair)
+    held.set(pairKey(pair.b, pair.a), pair)
+  }
+  return (x, y) => held.get(pairKey(x, y))
 }
 
 /**

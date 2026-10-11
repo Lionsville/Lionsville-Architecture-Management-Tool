@@ -2015,7 +2015,10 @@ doorgetrokken lijn waar de twee eenheden hebben vastgelegd dat ze
 samenwerken, een gestreepte waar dat niet zo is. **Groepeer op** vat de
 kolommen samen tot een eenheidstype boven de eigenaars, bijvoorbeeld een
 domein of een cluster. Een tabel onder de kaart telt de interfaces tussen elk
-paar eenheden, met een letter voor de vastgelegde vorm van samenwerking.
+paar eenheden, met een letter voor elke vastgelegde vorm van samenwerking —
+of er een interface tussen hen loopt of niet. Een cel is gekleurd waar een
+interface geen vastgelegde samenwerking heeft, en anders gekleurd waar een
+samenwerking is vastgelegd die geen interface nodig heeft.
 
 **Bevindingen op** *dag* zegt waarover de twee het oneens zijn: een interface
 die van de applicaties van de ene eenheid naar die van een andere loopt

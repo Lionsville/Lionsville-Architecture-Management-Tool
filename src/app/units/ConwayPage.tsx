@@ -11,9 +11,10 @@
  * it, and one for the applications nobody owns. The lines between the cards
  * are the interfaces that cross from one column to another: solid where the
  * two units declared an interaction, dashed where they declared none. The
- * table under them counts the interfaces between each pair, with the mode
- * declared. The lines are the one piece of geometry on the page, measured from
- * where the cards ended up and never stored.
+ * table under them (`ConwayTable`) counts the interfaces between each pair and
+ * marks every interaction declared between them, needed or not. The lines are
+ * the one piece of geometry on the page, measured from where the cards ended
+ * up and never stored.
  *
  * **It only reads.** Nothing on it moves a unit or an application. An answer
  * to a finding is a change where it is kept: an interaction declared on one of
@@ -31,13 +32,13 @@ import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import { useTheme } from '@mui/material/styles'
 import { useStrings } from '../../i18n'
-import type { StringKey, Translate } from '../../i18n'
+import type { Translate } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
 import type { Command } from '../../model/commands'
 import { conwayMap } from '../../model/conway'
 import type { ConwayFinding, ConwayLine, ConwayMap } from '../../model/conway'
 import { INTERACTION_MODE_LABEL } from '../../model/relations'
-import type { DesignDiagram, ElementId, InteractionMode } from '../../model/types'
+import type { DesignDiagram, ElementId } from '../../model/types'
 import { pickedPerson } from '../../model/person'
 import { isUnit, organisationOn, personOf, runsOn, unitsAbove } from '../../model/units'
 import type { PeopleRegisterAccess } from '../../people/ui/access'
@@ -50,6 +51,7 @@ import type { PageCaptureOptions, PageHandle } from '../../widgets/capturePage'
 import { locatedRing, useLocated } from '../../widgets/useLocated'
 import { useSelectRequest } from '../../widgets/useSelectRequest'
 import type { SelectRequest } from '../../widgets/useSelectRequest'
+import { ConwayTable } from './ConwayTable'
 import { InteractDialog } from './Interactions'
 import type { Interacting } from './Interactions'
 import { conwayInputHere } from './unitViewsHere'
@@ -72,13 +74,6 @@ export type ConwayPageProps = {
   declare?: { dispatch: (command: Command) => unknown; newRowId: () => string; scopeName: string }
   select?: SelectRequest
   onHandle?(handle: PageHandle | undefined): void
-}
-
-/** The one letter a mode is marked with in the table, in the reader's language. */
-const MODE_MARK: Record<InteractionMode, StringKey> = {
-  collaboration: 'conway.mark.collaboration',
-  service: 'conway.mark.service',
-  facilitating: 'conway.mark.facilitating',
 }
 
 /** The groups' key for the applications nobody owns, where a key has to be a string. */
@@ -145,7 +140,7 @@ export function ConwayPage(props: ConwayPageProps) {
           )}
         <Findings map={map} here={here} lit={lit} onLight={(at) => setLit(lit === at ? undefined : at)} declarable={declarable} open={open} t={t}
           heading={t('conway.findings', { day: formatDay(day, language) })} />
-        <Matrix map={map} here={here} t={t} />
+        <ConwayTable map={map} here={here} t={t} />
       </Box>
       {interacting && props.declare && (
         <InteractDialog
@@ -356,40 +351,4 @@ export function findingText(finding: ConwayFinding, here: UnitViewsHere, t: Tran
       return t('conway.overLimit', { unit: here.name(finding.unitId), count: finding.owns, type, limit: finding.limit })
     }
   }
-}
-
-/** How many interfaces run between each pair of columns, and the mode declared between them. */
-function Matrix({ map, here, t }: { map: ConwayMap; here: UnitViewsHere; t: Translate }) {
-  const groups = map.groups.map((group) => group.unitId)
-  if (groups.length < 2) return null
-  const between = (a: ElementId | undefined, b: ElementId | undefined) => map.lines.filter((line) => (line.from === a && line.to === b) || (line.from === b && line.to === a))
-  const label = (id: ElementId | undefined) => (id === undefined ? t('conway.nobody') : here.name(id))
-  return (
-    <Box data-testid="conway-matrix" sx={{ mt: 3, overflowX: 'auto' }}>
-      <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'text.secondary', mb: 0.5 }}>{t('conway.matrix')}</Typography>
-      <Box component="table" sx={{ borderCollapse: 'collapse', fontSize: 11.5, '& th, & td': { border: 1, borderColor: 'divider', px: 0.75, py: 0.25, textAlign: 'center' } }}>
-        <thead><tr><th />{groups.map((g) => <th key={g ?? NOBODY}>{label(g)}</th>)}</tr></thead>
-        <tbody>
-          {groups.map((row) => (
-            <tr key={row ?? NOBODY}>
-              <th style={{ textAlign: 'left' }}>{label(row)}</th>
-              {groups.map((col) => {
-                if (row === col) return <td key={col ?? NOBODY}>·</td>
-                const lines = between(row, col)
-                const declared = lines.find((line) => line.interaction)?.interaction
-                const undeclared = lines.some((line) => line.status === 'undeclared')
-                return (
-                  <Box component="td" key={col ?? NOBODY} title={declared?.mode ? t(INTERACTION_MODE_LABEL[declared.mode]) : undefined}
-                    sx={{ bgcolor: undeclared ? 'warning.light' : 'transparent' }}>
-                    {lines.length || ''}{declared?.mode ? <sup>{t(MODE_MARK[declared.mode])}</sup> : null}
-                  </Box>
-                )
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </Box>
-      <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.5 }}>{t('conway.matrixNote')}</Typography>
-    </Box>
-  )
 }

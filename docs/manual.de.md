@@ -2137,8 +2137,11 @@ beiden Einheiten festgehalten haben, dass sie zusammenarbeiten, eine
 gestrichelte, wo nicht. **Gruppieren nach** fasst die Spalten zu einem
 Einheitstyp über den Eigentümern zusammen, etwa einer Domäne oder einem
 Cluster. Eine Tabelle unter der Karte zählt die Schnittstellen zwischen jedem
-Paar von Einheiten, mit einem Buchstaben für die festgehaltene Form der
-Zusammenarbeit.
+Paar von Einheiten, mit einem Buchstaben für jede festgehaltene Form der
+Zusammenarbeit — ob eine Schnittstelle zwischen ihnen läuft oder nicht. Eine
+Zelle ist hinterlegt, wo eine Schnittstelle keine festgehaltene Zusammenarbeit
+hat, und anders hinterlegt, wo eine Zusammenarbeit festgehalten ist, die keine
+Schnittstelle braucht.
 
 **Befunde am** *Tag* sagt, worin die beiden nicht übereinstimmen: eine
 Schnittstelle, die von den Anwendungen einer Einheit zu denen einer anderen
