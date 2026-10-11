@@ -302,6 +302,12 @@ settings sets it — on the desktop, whoever keeps the folder. The app applies
 it when the organisation is opened and again each day it stays open: a name
 kept past its period is forgotten, an entry kept past the next is removed.
 
+Where the organisation is kept by a source that knows who signs in to it, the
+source may do two of these itself: it applies the policy on its own schedule,
+and the app then forgets nobody when the organisation is opened; and it knows
+which entry is you, by your account, so you are marked without **This is me**,
+which is then not offered.
+
 On the desktop the register is the file `.lionsville-architecture/people.json`
 in your folder. **It is never in the folder's history**: no snapshot takes it,
 and a `git add` typed in a terminal leaves it out too, because a name in a

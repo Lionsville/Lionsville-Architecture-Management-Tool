@@ -341,6 +341,13 @@ geöffnet wird, und wieder an jedem Tag, an dem sie geöffnet bleibt: Ein Name,
 der über seine Frist hinaus behalten wurde, wird vergessen, ein Eintrag über
 die nächste hinaus entfernt.
 
+Wo die Organisation von einer Quelle geführt wird, die weiß, wer sich bei ihr
+anmeldet, kann diese Quelle zwei Dinge davon selbst tun: Sie wendet die
+Richtlinie nach eigenem Zeitplan an, und die App vergisst dann niemanden, wenn
+die Organisation geöffnet wird; und sie weiß über Ihr Konto, welcher Eintrag
+Sie sind, sodass Sie ohne **Das bin ich** markiert werden, das dann nicht
+angeboten wird.
+
 Auf dem Desktop ist das Register die Datei
 `.lionsville-architecture/people.json` in Ihrem Ordner. **Sie ist nie im
 Verlauf des Ordners**: Kein Schnappschuss nimmt sie mit, und ein im Terminal

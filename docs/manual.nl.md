@@ -318,6 +318,12 @@ ze open blijft: een naam die langer dan de termijn is bewaard wordt vergeten,
 een vermelding die langer dan de volgende termijn is bewaard wordt
 verwijderd.
 
+Waar de organisatie wordt bewaard door een bron die weet wie zich erbij
+aanmeldt, kan die bron twee hiervan zelf doen: ze past het beleid toe op een
+eigen schema, en de app vergeet dan niemand als de organisatie wordt geopend;
+en ze weet welke vermelding jij bent, aan de hand van je account, zodat je
+gemarkeerd wordt zonder **Dit ben ik**, dat dan niet wordt aangeboden.
+
 Op de desktop is het register het bestand
 `.lionsville-architecture/people.json` in je map. **Het staat nooit in de
 geschiedenis van de map**: geen momentopname neemt het mee, en een
