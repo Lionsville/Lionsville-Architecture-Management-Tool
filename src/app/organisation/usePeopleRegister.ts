@@ -167,7 +167,13 @@ export function usePeopleRegister(deps: {
     readOnly: () => readOnly,
   }), [read, changed, repositories, agentConsequences, today, readOnly])
 
-  return {
+  // The host's two doors, read through a ref: a shell hands new functions on every render, and the
+  // register is one object while nothing it says has changed — what a screen built on it is memoised by.
+  const doors = useRef({ readText: deps.readText, copyText: deps.copyText })
+  doors.current = { readText: deps.readText, copyText: deps.copyText }
+  const canRead = deps.readText !== undefined
+  const canCopy = deps.copyText !== undefined
+  return useMemo<PeopleAccess>(() => ({
     ...held,
     meSaid: source?.me !== undefined,
     readOnly,
@@ -185,7 +191,8 @@ export function usePeopleRegister(deps: {
       .map((hit) => ({ scope: hit.scope ?? '', kind: hit.kind, id: hit.id, title: hit.title })),
     agent,
     ...(index ? { assignmentsOf: (id: PersonId) => heldAssignments(index, idsOfPerson(id, held.people ?? [])) } : {}),
-    ...(deps.readText ? { readText: deps.readText } : {}),
-    ...(deps.copyText ? { copyText: deps.copyText } : {}),
-  }
+    ...(canRead ? { readText: (file: Blob) => doors.current.readText?.(file) ?? Promise.resolve('') } : {}),
+    ...(canCopy ? { copyText: (text: string) => doors.current.copyText?.(text) } : {}),
+  }), [held, readOnly, today, refresh, changed, repositories, consequences, agent, index, canRead, canCopy])
 }
+
