@@ -16,10 +16,11 @@
  * `agent.stopped`, and any call in flight is answered the same way at once.
  *
  * Reads never start a session and are never refused by one: looking is not
- * driving. Pure, so the machine is tested in node; the shell wraps it in a
- * hook and draws the banner from {@link Driving.current}.
+ * driving — which calls drive is `drives.ts`, beside the tools it reads, so
+ * the banner the shell draws from here does not bring every tool into the
+ * first download. Pure, so the machine is tested in node; the shell wraps it
+ * in a hook and draws the banner from {@link Driving.current}.
  */
-import { toolSpec } from './tools'
 import type { AgentRefusal, ToolName } from './tools'
 
 export type DrivingSession = {
@@ -37,25 +38,6 @@ export type DrivingState = {
   readonly session?: DrivingSession
   /** The person pressed Stop, and no session has been started since. */
   readonly stopped?: { readonly at: string; readonly client?: string }
-}
-
-/** The see-tier tools that only look: a report is arithmetic, and starts nothing. */
-const LOOKS: readonly string[] = ['diagram.inspect']
-
-/** The drive-tier tools that only tell: where the app is, and that a session is over. */
-const TELLS: readonly string[] = ['app.current', 'views.list', 'session.end']
-
-/**
- * Does this call move the screen or change the model? Every write does, every
- * see-tool but the report does — a picture switches the view to take it — and
- * so does opening a scope or a page.
- */
-export function drives(tool: ToolName): boolean {
-  const spec = toolSpec(tool)
-  if (spec.tier === 'read') return false
-  if (spec.tier === 'see') return !LOOKS.includes(tool)
-  if (spec.tier === 'drive') return !TELLS.includes(tool)
-  return true
 }
 
 export class Driving {

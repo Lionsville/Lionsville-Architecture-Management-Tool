@@ -863,7 +863,9 @@ src/app/          The shell around the editor.
                                       and the section a source provider's own
                                       lines are drawn in, after all of ours
                     useAgentGateway · dialogs/ConnectAgentDialog   the seam bound
-                                      to the session, and the way in for a person
+                                      to the session — the handler, and every
+                                      tool with it, fetched with the first
+                                      request — and the way in for a person
                     testing/          renderShell / renderApp: the shared harness
                     use*              the hooks: session, files, document, toasts
                     usePlans          the roadmap, a plan and Replace…, wired

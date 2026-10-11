@@ -30,7 +30,8 @@ export {
   PLACE_PREFIX, PLACE_STATE_KEY, nearestPlace, placeInState, placeOf, readPlace, samePlace, stepBetween, writePlace,
 } from './place'
 export type { DrivingSession, DrivingState } from './driving'
-export { Driving, drives } from './driving'
+export { Driving } from './driving'
+export { drives } from './drives'
 export type { CaptureOptions, RendererRefusal, RendererView } from './renderer'
 export { RendererRefused, isRendererRefusal, toBase64 } from './renderer'
 export type { Prepared, WriteView } from './commandFor'

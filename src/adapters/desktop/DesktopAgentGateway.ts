@@ -10,8 +10,10 @@
  * handler which throws still produces an answer: a client is waiting, and a
  * refusal it can read beats a timeout it has to guess about.
  */
+// Types only: the tools are fetched with the handler, on the first request
+// (`app/useAgentGateway.ts`), and a refusal here is written out rather than
+// built by `refused`, which would bring every tool into the first download.
 import type { AgentAnswer, AgentRequest } from '../../agent/tools'
-import { refused } from '../../agent/tools'
 import type { AgentServerPatch, AgentServerStatus } from '../../platform/agentServer'
 import { reasonOf } from '../../platform/errors'
 import type { AgentGateway } from '../../ports/AgentGateway'
@@ -30,7 +32,7 @@ export class DesktopAgentGateway implements AgentGateway {
     return this.channel.onRequest((request) => {
       void Promise.resolve()
         .then(() => handler(request))
-        .catch((cause: unknown): AgentAnswer => refused('agent.noAnswer', reasonOf(cause)))
+        .catch((cause: unknown): AgentAnswer => ({ ok: false, refusal: 'agent.noAnswer', detail: reasonOf(cause) }))
         .then((answer) => this.channel.answer(request.id, answer))
         // The answer itself could not be sent — the channel is gone. Nothing
         // is left to tell.

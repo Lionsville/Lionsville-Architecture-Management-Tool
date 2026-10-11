@@ -6,7 +6,8 @@
  * the next call and to the one in flight, and how a session ends.
  */
 import { describe, expect, it } from 'vitest'
-import { Driving, drives } from './driving'
+import { Driving } from './driving'
+import { drives } from './drives'
 import { TOOLS } from './tools'
 
 describe('what drives', () => {
