@@ -251,6 +251,11 @@ the scope at its new address. Nothing inside a scope names its own path.
 **Reserved names.** A child scope may not be called `diagrams`, `docs`,
 `decisions`, `transitions`, `images` or `logos`. Refused at creation.
 
+*Extended by ADR-0036 (§1), 11 October 2026; not yet built: a scope gains
+two folders, `_operating/` at the root and `_assignments/` in any scope. A
+scope's name is a slug and never holds an underscore, so neither joins this
+list, and no child scope can collide with them.*
+
 ```ts
 // scope.json
 type ScopeFile = {
@@ -341,6 +346,11 @@ scopes of a few thousand elements is tens of milliseconds, and ADR-0004's
 budget table gets a line for it.
 
 ### 3. Records: definition, stand-in, perspective
+
+*Extended by ADR-0036 (§3, §8), 11 October 2026; not yet built: an actor may
+carry `unitTypeId`, which makes it a unit, `scopes`, the domains it serves,
+as a function's `scopes` says below, and `extraSlots`. `owner` takes a person
+picked from the register of people (`{ person: <id> }`), or text as below.*
 
 Every scope's `model.json` holds one record per element it *knows about*, and
 one record shape serves every case:
@@ -475,6 +485,9 @@ that is a process, and lives in its ```bpmn fence. *(Added 10 September
 2026, after the record was accepted; the only change to it.)*
 
 ### 5. Relations: typed, dated, and few
+
+*Extended by ADR-0036 (§7), 11 October 2026; not yet built: `interacts`, unit
+→ unit, with Team Topologies' three modes and a window.*
 
 Today's `connection` is one relation type — a flow between two applications.
 The business layer needs four more, and they are rows in the same list:

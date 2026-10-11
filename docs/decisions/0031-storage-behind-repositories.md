@@ -93,6 +93,13 @@ Option 3.
 
 ### 1. The repositories
 
+*Extended by ADR-0036 (§8), 11 October 2026; not yet built: a sixth,
+`PeopleRepository`, answers the register of people — list, read, add, change,
+leave, merge, forget, remove, and what changed since a revision. It keeps no
+history: an entry is changed in place, so that a person can be forgotten
+without rewriting anything. The folder keeps it beside the organisation's
+settings, out of git.*
+
 Each is a port in `src/ports/`, with a contract suite, and speaks in the
 model's types only:
 

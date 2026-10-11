@@ -259,6 +259,13 @@ person. Criticality and last-reviewed stay prose; nothing computes over them.
 
 ### Q2: B. A transition is a record, numbered, beside the decisions
 
+*Extended by ADR-0036 (§6, §8), 11 October 2026; not yet built: a plan also
+moves units. `moves` puts a unit under a new parent on a day, and the shift
+below moves those days with the rest. The plan lists every assignment in a
+unit or a role that ends on its day, and writes their ends and beginnings as
+one step. `owner` takes a person picked from the register of people, or text
+as before.*
+
 ```ts
 // model/transition.ts — the record; src/transitions/ owns the rules
 export type TransitionStatus = 'draft' | 'agreed' | 'running' | 'done' | 'abandoned'
