@@ -54,7 +54,7 @@ function Page() {
 describe('the observation form over a session', () => {
   it('records an observation with two new causes and one link as one undo step', () => {
     renderShell(<Page />)
-    fireEvent.click(screen.getByRole('button', { name: '+ New observation' }))
+    fireEvent.click(screen.getByRole('button', { name: 'New observation' }))
     fireEvent.change(screen.getByTestId('form-title'), { target: { value: 'Pick lists print twice' } })
     fireEvent.change(screen.getByTestId('form-where'), { target: { value: 'Pick station 3' } })
     fireEvent.change(screen.getByTestId('form-by'), { target: { value: 'Shift lead' } })

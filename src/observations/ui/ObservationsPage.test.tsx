@@ -149,7 +149,7 @@ describe('ObservationsPage', () => {
 
   it('records a new observation under the next number, with the four facts and who or what it affected', () => {
     const { onChange } = mount()
-    fireEvent.click(screen.getByRole('button', { name: '+ New observation' }))
+    fireEvent.click(screen.getByRole('button', { name: 'New observation' }))
     fireEvent.change(screen.getByRole('textbox', { name: 'Title' }), { target: { value: 'Duplicate customers' } })
     fireEvent.change(screen.getByRole('textbox', { name: 'Where seen' }), { target: { value: 'CRM' } })
     fireEvent.change(screen.getByRole('textbox', { name: 'Observed by' }), { target: { value: 'W.S.' } })
@@ -168,7 +168,7 @@ describe('ObservationsPage', () => {
 
   it('puts the focus on the title once the new observation has opened, over the page’s own dialog', async () => {
     mount()
-    fireEvent.click(screen.getByRole('button', { name: '+ New observation' }))
+    fireEvent.click(screen.getByRole('button', { name: 'New observation' }))
     // In a browser the page's focus trap takes back the focus the title
     // claimed as it mounted, and the dialog's own trap then settles on the
     // dialog: the title is focused again once the dialog has opened.
@@ -178,7 +178,7 @@ describe('ObservationsPage', () => {
 
   it('says its buttons in sentence case, the top bar’s too', () => {
     mount()
-    expect(getComputedStyle(screen.getByRole('button', { name: '+ New observation' })).textTransform).toBe('none')
+    expect(getComputedStyle(screen.getByRole('button', { name: 'New observation' })).textTransform).toBe('none')
     fireEvent.click(screen.getByTestId('observation-tab-solutions'))
     expect(getComputedStyle(screen.getByTestId('solution-new')).textTransform).toBe('none')
   })
@@ -492,7 +492,7 @@ describe('ObservationsPage', () => {
 
   it('is read-only where told: no record, no verbs', () => {
     mount({ readOnly: true })
-    expect(screen.queryByRole('button', { name: '+ New observation' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'New observation' })).toBeNull()
     expect(screen.queryByTestId('observation-seen-again')).toBeNull()
   })
 })

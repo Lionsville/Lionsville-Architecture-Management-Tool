@@ -197,7 +197,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   ], async () => {
     const page = screen.getByRole('dialog')
     fireEvent.click(within(page).getByTestId('observation-tab-register'))
-    fireEvent.click(within(page).getByRole('button', { name: '+ New observation' }))
+    fireEvent.click(within(page).getByRole('button', { name: 'New observation' }))
     await screen.findByRole('dialog', { name: 'New observation' })
   }]],
   // The merge screen, over the observations page, on the record read.

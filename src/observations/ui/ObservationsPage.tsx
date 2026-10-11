@@ -49,6 +49,7 @@ import type { ObservationTab } from '../tabs'
 import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
+import { AddIcon } from '../../widgets/icons'
 import { PageDialog } from '../../widgets/PageDialog'
 import { SeamResizer } from '../../widgets/SeamResizer'
 import { useLocatedIn } from '../../widgets/useLocated'
@@ -891,8 +892,8 @@ export function ObservationsPage(props: ObservationsPageProps) {
           {!readOnly && (
             <>
               {tab === 'solutions'
-                ? <Button size="small" variant="contained" onClick={() => setProposing(preselectedCause(causes, selected))} sx={{ textTransform: 'none' }} data-testid="solution-new" data-guide="solutions.new">+ {s('solution.new')}</Button>
-                : <Button size="small" variant="contained" onClick={forms.openNew} sx={{ textTransform: 'none' }} data-guide="observations.new">+ {s('observation.new')}</Button>}
+                ? <Button size="small" variant="contained" onClick={() => setProposing(preselectedCause(causes, selected))} startIcon={<AddIcon size={14} />} sx={{ textTransform: 'none' }} data-testid="solution-new" data-guide="solutions.new">{s('solution.new')}</Button>
+                : <Button size="small" variant="contained" onClick={forms.openNew} startIcon={<AddIcon size={14} />} sx={{ textTransform: 'none' }} data-guide="observations.new">{s('observation.new')}</Button>}
             </>
           )}
         </Box>

@@ -66,7 +66,7 @@ function mount(over: Partial<ObservationsPageProps> = {}) {
 
 const lastChange = (onChange: ReturnType<typeof vi.fn>) => onChange.mock.calls.at(-1)![0] as ObservationWork
 const form = () => within(screen.getByRole('dialog', { name: 'New observation' }))
-const openForm = () => fireEvent.click(screen.getByRole('button', { name: '+ New observation' }))
+const openForm = () => fireEvent.click(screen.getByRole('button', { name: 'New observation' }))
 const fill = (title: string) => {
   fireEvent.change(screen.getByTestId('form-title'), { target: { value: title } })
   fireEvent.change(screen.getByTestId('form-where'), { target: { value: 'Pick station 3' } })
