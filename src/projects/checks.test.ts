@@ -17,8 +17,9 @@ import { laidOut } from '../model/testFixtures'
 import type { DesignElement, Relation } from '../model'
 import type { HostModel } from '../model/hostModel'
 import type { Cause, Observation } from '../model/observation'
+import { TREE_CHECK_KEYS } from '../model/checkCatalogue'
 import {
-  documentFindings, findingSentence, findingsByScope, identityFindings, offeredBeyond, OWNER_DETAIL, scopeFindings, tally,
+  CHECK_LABEL, CHECK_SHORT, documentFindings, findingSentence, findingsByScope, identityFindings, offeredBeyond, OWNER_DETAIL, scopeFindings, tally,
 } from './checks'
 import { indexScopes } from './scopeIndex'
 import type { ScopeModel } from './scope'
@@ -45,6 +46,14 @@ function document(over: Partial<HostModel> = {}): HostModel {
 }
 
 const keys = (findings: readonly { key: string }[]) => [...new Set(findings.map((f) => f.key))].sort()
+
+/** Every kind the tree finds is the catalogue's, and is said: the list is the catalogue's own (`model/checkCatalogue.ts`). */
+describe('the kinds the tree finds', () => {
+  it('says and counts exactly the catalogue\'s tree checks', () => {
+    expect(Object.keys(CHECK_LABEL).sort()).toEqual([...TREE_CHECK_KEYS].sort())
+    expect(Object.keys(CHECK_SHORT).sort()).toEqual([...TREE_CHECK_KEYS].sort())
+  })
+})
 
 describe('the checks over a tree with one of each', () => {
   /**

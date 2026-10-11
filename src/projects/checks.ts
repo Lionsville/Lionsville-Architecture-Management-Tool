@@ -50,89 +50,69 @@ import type { Assignment, Organisation, UnitFinding } from '../model/units'
 import type { ScopeIndex } from './scopeIndex'
 import { ancestorScopes, isWithinScope } from './scopePath'
 import type { ScopePath } from './scopePath'
+import type { TreeCheckKey } from '../model/checkCatalogue'
 
 /**
  * Every finding this module can produce, as keys — `platform/errors.ts` style,
  * because a finding is shown to a person and this module has no language.
+ * The list is the catalogue's (`model/checkCatalogue.ts`, `TREE_CHECK_KEYS`),
+ * which says each kind's name, weight, why and how; here is what each means:
+ *
+ * - `check.conflict` — two scopes define this id at the same depth;
+ * - `check.drift` — a stand-in's or a declaration's cached name or ref
+ *   disagrees with the master;
+ * - `check.dangling` — a stand-in of something no scope in the tree defines;
+ * - `check.danglingEnd` — a relation ending on an id this scope does not hold;
+ * - `check.proposal` — a function defined here that no ancestor has named:
+ *   this domain is proposing it;
+ * - `check.ownedElsewhere` — fields on a stand-in that belong to the scope
+ *   that defines it;
+ * - `check.unattributed` — `outside`, and nobody has said whose it is;
+ * - `check.notDrawn` — a master no view in its own scope draws;
+ * - `check.drawingLinkMissing` — a shape on a drawing points at an element
+ *   this scope does not hold;
+ * - `check.unmapped` — a function assigned to nobody and claimed by nobody;
+ * - `check.uncovered` — a function with no `supports` and no `assigned`:
+ *   nothing and nobody does it;
+ * - `check.offeredNotShared` — a service used by another team's application
+ *   and not marked shared (ADR-0014): being offered, whether or not anybody
+ *   said so;
+ * - `check.causeExplainsObservationBelow` — a cause here explains an
+ *   observation of a scope below (ADR-0032 §9): a link ADR-0021 allowed and
+ *   nothing makes any more, kept and drawn. Names the cause below that
+ *   explains that observation, where there is one — linking that one instead
+ *   is the repair;
+ * - `check.accountability` — a responsibility of the operating model that is
+ *   not exactly one role's *A* (ADR-0036 §2): nobody is accountable for it,
+ *   or several roles are, named in `detail` where there are;
+ * - `check.unitTypeNowhere` — a unit type of the operating model that sits
+ *   nowhere (3.6.1): not at the top, and in no unit type that sits anywhere
+ *   (`model/unitOrder.ts`), so every unit made of it would sit where its type
+ *   may not;
+ * - the organisation as it is, on a day (ADR-0036 §3), read off the index:
+ *   fewer people in a role of a unit than its slot's minimum
+ *   (`check.roleVacant`), more than its maximum (`check.roleOverMax`); a unit
+ *   under a type it may not sit in (`check.unitMisplaced`), one serving
+ *   several domains under a type that serves one (`check.unitSpans`), one
+ *   owning more applications than its type's limit (`check.unitOverLimit`);
+ *   an assignment still running in a unit or a role that has ended
+ *   (`check.assignmentEnded`); a unit still there under a unit type that has
+ *   ended (`check.unitTypeEnded`, ADR-0036 §6); and a person whose shares add
+ *   up to more than all of their time (`check.personOverloaded`) — about each
+ *   scope that keeps one of their assignments, named by the register, never
+ *   here;
+ * - `check.unitNotServing` — an area, a grouping or a capability assigned to
+ *   a unit that serves neither its domain — the scope that defines it, or one
+ *   above or below that — nor sits under a unit that does (ADR-0036, amended
+ *   11 October 2026). About the scope that keeps the `assigned` row; the unit
+ *   in `detail` and `fields`, the domain in `scopes`.
  *
  * `check.notDrawn` is **information and not a fault**: a thing can be real,
  * owned and documented without being on anybody's board yet, and drawing it in
- * the same colour as a conflict would teach people to ignore the colour.
+ * the same colour as a conflict would teach people to ignore the colour. The
+ * catalogue weighs it a note.
  */
-export type CheckKey =
-  /** Two scopes define this id at the same depth. */
-  | 'check.conflict'
-  /** A stand-in's or a declaration's cached name or ref disagrees with the master. */
-  | 'check.drift'
-  /** A stand-in of something no scope in the tree defines. */
-  | 'check.dangling'
-  /** A relation ending on an id this scope does not hold. */
-  | 'check.danglingEnd'
-  /** A function defined here that no ancestor has named: this domain is proposing it. */
-  | 'check.proposal'
-  /** Fields on a stand-in that belong to the scope that defines it. */
-  | 'check.ownedElsewhere'
-  /** `outside`, and nobody has said whose it is. */
-  | 'check.unattributed'
-  /** A master no view in its own scope draws. Information. */
-  | 'check.notDrawn'
-  /** A shape on a drawing points at an element this scope does not hold. */
-  | 'check.drawingLinkMissing'
-  /** A function assigned to nobody and claimed by nobody. */
-  | 'check.unmapped'
-  /** A function with no `supports` and no `assigned`: nothing and nobody does it. */
-  | 'check.uncovered'
-  /**
-   * A service used by another team's application and not marked shared
-   * (ADR-0014): being offered, whether or not anybody said so.
-   */
-  | 'check.offeredNotShared'
-  /**
-   * A cause here explains an observation of a scope below (ADR-0032 §9): a
-   * link ADR-0021 allowed and nothing makes any more, kept and drawn. Names
-   * the cause below that explains that observation, where there is one —
-   * linking that one instead is the repair.
-   */
-  | 'check.causeExplainsObservationBelow'
-  /**
-   * A responsibility of the operating model that is not exactly one role's
-   * *A* (ADR-0036 §2): nobody is accountable for it, or several roles are —
-   * named in `detail` where there are.
-   */
-  | 'check.accountability'
-  /**
-   * A unit type of the operating model that sits nowhere (3.6.1): not at the
-   * top, and in no unit type that sits anywhere (`model/unitOrder.ts`), so
-   * every unit made of it would sit where its type may not.
-   */
-  | 'check.unitTypeNowhere'
-  /**
-   * The organisation as it is, on a day (ADR-0036 §3), read off the index:
-   * fewer people in a role of a unit than its slot's minimum, more than its
-   * maximum; a unit under a type it may not sit in, one serving several
-   * domains under a type that serves one, one owning more applications than
-   * its type's limit; an assignment still running in a unit or a role that
-   * has ended; a unit still there under a unit type that has ended
-   * (ADR-0036 §6); and a person whose shares add up to more than all of their
-   * time — about each scope that keeps one of their assignments, named by
-   * the register, never here.
-   */
-  | 'check.roleVacant'
-  | 'check.roleOverMax'
-  | 'check.unitMisplaced'
-  | 'check.unitSpans'
-  | 'check.unitOverLimit'
-  | 'check.assignmentEnded'
-  | 'check.unitTypeEnded'
-  | 'check.personOverloaded'
-  /**
-   * An area, a grouping or a capability assigned to a unit that serves
-   * neither its domain — the scope that defines it, or one above or below
-   * that — nor sits under a unit that does (ADR-0036, amended 11 October
-   * 2026). About the scope that keeps the `assigned` row; the unit in
-   * `detail` and `fields`, the domain in `scopes`.
-   */
-  | 'check.unitNotServing'
+export type { TreeCheckKey } from '../model/checkCatalogue'
 
 /**
  * The sentence for each finding, published as a table (ADR-0012 §9).
@@ -146,7 +126,7 @@ export type CheckKey =
  *
  * Every sentence takes `{name}` and, where it names another scope, `{scope}`.
  */
-export const CHECK_LABEL: Record<CheckKey, StringKey> = {
+export const CHECK_LABEL: Record<TreeCheckKey, StringKey> = {
   'check.conflict': 'check.conflict',
   'check.drift': 'check.drift',
   'check.dangling': 'check.dangling',
@@ -178,7 +158,7 @@ export const CHECK_LABEL: Record<CheckKey, StringKey> = {
  * below explains the observation yet — for the one finding whose repair
  * names a record when there is one.
  */
-const CHECK_LABEL_BARE: Partial<Record<CheckKey, StringKey>> = {
+const CHECK_LABEL_BARE: Partial<Record<TreeCheckKey, StringKey>> = {
   'check.causeExplainsObservationBelow': 'check.causeExplainsObservationBelowBare',
   'check.accountability': 'check.accountabilityNobody',
 }
@@ -216,7 +196,7 @@ export function findingSentence(
  * explains wants a sentence, and one string cannot be both. One pair per
  * finding, because every language this ships in tells one from many.
  */
-export const CHECK_SHORT: Record<CheckKey, { one: StringKey; other: StringKey }> = {
+export const CHECK_SHORT: Record<TreeCheckKey, { one: StringKey; other: StringKey }> = {
   'check.conflict': { one: 'check.short.conflict.one', other: 'check.short.conflict.other' },
   'check.drift': { one: 'check.short.drift.one', other: 'check.short.drift.other' },
   'check.dangling': { one: 'check.short.dangling.one', other: 'check.short.dangling.other' },
@@ -254,7 +234,7 @@ export const CHECK_SHORT: Record<CheckKey, { one: StringKey; other: StringKey }>
  * master a stale cache should be pointing at.
  */
 export type Finding = {
-  key: CheckKey
+  key: TreeCheckKey
   scope: ScopePath
   /** The element or relation the finding is about. */
   id: string
@@ -266,7 +246,7 @@ export type Finding = {
   fields?: string[]
   /** The other thing the sentence names — the consumers of an offering, by name. */
   detail?: string
-  /** True where this is worth knowing and is not a fault. See {@link CheckKey}. */
+  /** True where this is worth knowing and is not a fault: `check.notDrawn`. See {@link TreeCheckKey}. */
   information?: true
   /**
    * The view the finding is in, where it is about something on a view and not
@@ -837,8 +817,8 @@ export function findingsByScope(findings: readonly Finding[]): Map<ScopePath, Fi
  * mention is the screen's business, and a tally that left one out would make
  * two screens disagree about the same tree.
  */
-export function tally(findings: readonly Finding[]): Partial<Record<CheckKey, number>> {
-  const found: Partial<Record<CheckKey, number>> = {}
+export function tally(findings: readonly Finding[]): Partial<Record<TreeCheckKey, number>> {
+  const found: Partial<Record<TreeCheckKey, number>> = {}
   for (const finding of findings) found[finding.key] = (found[finding.key] ?? 0) + 1
   return found
 }
