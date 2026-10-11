@@ -109,6 +109,44 @@ describe('the People page in the app', () => {
 })
 
 /**
+ * The way from an assignment on the organisation chart to its person (ADR-0036
+ * §7): a holder's chip chooses the assignment, the inspector beside the chart
+ * shows it, and *Open in People* leaves the scope for the People page with the
+ * person picked.
+ */
+describe('from the organisation chart to the person', () => {
+  const SARA: Person = { id: 'pe-sara', name: 'Sara Kaya', pseudonym: 'DFGH', kind: 'internal', state: 'active' }
+  const PIA: Person = { id: 'pe-pia', name: 'Pia Schulz', pseudonym: 'BCDF', kind: 'internal', state: 'active' }
+  const organisation: ScopeSnapshot = {
+    ...root,
+    model: {
+      ...root.model,
+      elements: [{ id: 'webshop', kind: 'actor', name: 'Webshop', lifecycle: 'live', isManaged: false, aspects: {}, unitTypeId: 'ut-team' }],
+      unitTypes: [{ id: 'ut-team', name: 'Team', top: true, within: [], slots: [{ role: 'ro-lead', min: 1, max: 1 }] }],
+      roles: [{ id: 'ro-lead', name: 'Team lead', duties: [] }],
+      assignments: [{ id: 'as-1', unitId: 'webshop', roleId: 'ro-lead', person: { person: 'pe-sara' }, from: '2026-01-01' }],
+      diagrams: [{ id: 'oc-1', kind: 'chart', name: 'Organisation', members: [], geometry: { nodes: [] } }],
+    },
+    activeDiagramId: 'oc-1',
+  }
+
+  it('chooses the assignment from its chip, shows it beside the chart, and opens People on the person', async () => {
+    const held = heldRepositories([organisation])
+    await held.people.bringIn([PIA, SARA])
+    renderApp({ repositories: held, today: () => TODAY, boot: { initialProject: organisation } })
+    await waitFor(() => expect(screen.getByTestId('chart-holder').textContent).toBe('Sara Kaya'))
+    fireEvent.click(screen.getByTestId('chart-holder'))
+    const inspector = await screen.findByTestId('assignment-inspector')
+    expect(within(inspector).getByTestId('assignment-role').textContent).toBe('Team lead in Webshop')
+    expect(within(inspector).getByTestId('assignment-days').textContent).toBe('From 1 Jan 2026')
+    fireEvent.click(within(inspector).getByTestId('assignment-people'))
+    await screen.findByTestId('people-table')
+    await waitFor(() => expect(within(screen.getByTestId('people-row-pe-sara')).getByRole('button').getAttribute('aria-pressed')).toBe('true'))
+    expect(within(screen.getByTestId('people-row-pe-pia')).getByRole('button').getAttribute('aria-pressed')).toBe('false')
+  })
+})
+
+/**
  * The agent's writes name people by register id, and check each against the
  * register: one it has just added — or just marked as left — is the register
  * as it is now, in the next call, before the screen has drawn the change.

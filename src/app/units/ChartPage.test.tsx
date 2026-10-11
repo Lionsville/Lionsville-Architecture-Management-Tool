@@ -7,7 +7,9 @@
  * organisation — Acme Logistics — with its operating model at the root and a
  * shipping domain below: what the chart draws on a day, *you* and *Find me*,
  * a unit opened where it is kept, and a vacancy filled — the chart changing
- * as the assignment lands.
+ * as the assignment lands; a person's chip choosing their assignment, *ext*
+ * on someone from outside, and the badges naming the domains a unit serves
+ * and the plans that bring and end it.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
@@ -28,6 +30,7 @@ import type { PeopleRegisterAccess } from '../../people/ui/access'
 import { PersonNamesProvider, personNames } from '../../people/ui/names'
 import { translator } from '../../i18n'
 import { indexScopes } from '../../projects/scopeIndex'
+import { axeFindings } from '../testing/axe'
 import { ChartPage } from './ChartPage'
 import { unitViewsHere } from './unitViewsHere'
 
@@ -90,12 +93,15 @@ function register(me: string | undefined, people: readonly Person[] = PEOPLE): P
 
 const view = (asOf?: string): DesignDiagram => ({ id: 'oc-1', kind: 'chart', name: 'Organisation', members: [], ...(asOf ? { asOf } : {}) })
 
-/** The chart over the shipping scope's session, changed by the model's own writer. */
-function Harness({ asOf, me = 'pe-sara', commands, onSelect = () => {}, onOpenElsewhere = () => {}, scope = 'shipping', shipping = SHIPPING, people: held = PEOPLE, readOnly = false, manages }: {
+const LABELS: Record<string, string> = { '': 'the organisation', shipping: 'Shipping', warehouse: 'Warehouse' }
+
+/** The chart over the shipping scope's session, changed by the model's own writer, with the editor's selection and the chart's choice held as the workspace holds them. */
+function Harness({ asOf, me = 'pe-sara', commands, onSelect = () => {}, onOpenElsewhere = () => {}, scope = 'shipping', shipping = SHIPPING, people: held = PEOPLE, readOnly = false, manages, selectedId, choosing = true }: {
   asOf?: string; me?: string | null; commands: Command[]; onSelect?: (id: string | undefined) => void
   onOpenElsewhere?: (scope: string, id: string) => void; scope?: string; shipping?: HostModel; people?: readonly Person[]
-  readOnly?: boolean; manages?: ManagesPeople
+  readOnly?: boolean; manages?: ManagesPeople; selectedId?: string; choosing?: boolean
 }) {
+  const [chosen, setChosen] = useState<string | undefined>(undefined)
   const [model, setModel] = useState(scope === '' ? ROOT : shipping)
   const index = useMemo(() => indexScopes([{ path: '', model: ROOT }, { path: 'shipping', model: SHIPPING }]), [])
   const here = useMemo(() => unitViewsHere(index, scope, model), [index, scope, model])
@@ -114,8 +120,9 @@ function Harness({ asOf, me = 'pe-sara', commands, onSelect = () => {}, onOpenEl
     <PersonNamesProvider names={names}>
     <ChartPage
       diagram={view(asOf)} here={here} today={TODAY} readOnly={readOnly} people={people}
-      scopeLabel={(path) => (path === '' ? 'the organisation' : 'Shipping')}
+      scopeLabel={(path) => LABELS[path] ?? path} {...(selectedId !== undefined ? { selectedId } : {})}
       onSelect={onSelect} onOpenElsewhere={onOpenElsewhere}
+      {...(choosing ? { onChoose: setChosen, ...(chosen !== undefined ? { chosen } : {}) } : {})}
       assign={{ dispatch, makeId: (prefix) => `${prefix}-new`, scopeName: 'Shipping' }}
     />
     </PersonNamesProvider>
@@ -131,7 +138,7 @@ describe('the organisation chart', () => {
     // A domain's lane is above a cluster's, which may sit in one: Shipping first.
     expect(units()).toEqual(['shipping', 'pf', 'tt', 'data'])
     expect(within(unitBox('pf')).getAllByTestId('chart-unit').map((box) => box.getAttribute('data-element-id'))).toEqual(['tt'])
-    expect(within(unitBox('data')).getByText('serves 2 domains')).toBeTruthy()
+    expect(within(unitBox('data')).getByTestId('chart-badge-serves').textContent).toBe('serves Shipping · Warehouse')
     expect(screen.getByTestId('chart-count').textContent).toBe('4 units · 4 people')
   })
 
@@ -177,6 +184,70 @@ describe('the organisation chart', () => {
     expect(onSelect).toHaveBeenCalledWith('tt')
     fireEvent.click(within(unitBox('data')).getAllByTestId('chart-unit-open')[0])
     expect(onOpenElsewhere).toHaveBeenCalledWith('', 'data')
+  })
+
+  it('chooses a person\'s assignment by their chip in a unit kept here, the editor\'s selection let go, and marks it', async () => {
+    const onSelect = vi.fn()
+    renderShell(<Harness commands={[]} onSelect={onSelect} />)
+    const chip = () => within(within(unitBox('pf')).getByTestId('chart-slot-ro-lead')).getByTestId('chart-holder')
+    expect(chip().getAttribute('data-chosen')).toBeNull()
+    fireEvent.click(chip())
+    expect(onSelect).toHaveBeenCalledWith(undefined)
+    expect(onSelect).not.toHaveBeenCalledWith('pf')
+    expect(chip().getAttribute('data-chosen')).toBe('true')
+    expect(chip().getAttribute('aria-pressed')).toBe('true')
+    expect(screen.getAllByTestId('chart-holder').filter((one) => one.getAttribute('data-chosen') === 'true')).toHaveLength(1)
+    expect(await axeFindings()).toEqual([])
+  })
+
+  it('opens the unit where it is kept from a chip in a unit kept elsewhere, and the unit here where nothing chooses', () => {
+    const onSelect = vi.fn()
+    const onOpenElsewhere = vi.fn()
+    renderShell(<Harness commands={[]} onSelect={onSelect} onOpenElsewhere={onOpenElsewhere} />)
+    fireEvent.click(within(unitBox('data')).getByTestId('chart-holder'))
+    expect(onOpenElsewhere).toHaveBeenCalledWith('', 'data')
+    expect(screen.getAllByTestId('chart-holder').some((one) => one.getAttribute('data-chosen') === 'true')).toBe(false)
+    cleanup()
+    renderShell(<Harness commands={[]} onSelect={onSelect} choosing={false} />)
+    fireEvent.click(within(within(unitBox('pf')).getByTestId('chart-slot-ro-lead')).getByTestId('chart-holder'))
+    expect(onSelect).toHaveBeenLastCalledWith('pf')
+  })
+
+  it('lets the assignment go when the editor selects anything', () => {
+    const { rerender } = renderShell(<Harness commands={[]} />)
+    const chip = () => within(within(unitBox('pf')).getByTestId('chart-slot-ro-lead')).getByTestId('chart-holder')
+    fireEvent.click(chip())
+    expect(chip().getAttribute('data-chosen')).toBe('true')
+    rerender(<Harness commands={[]} selectedId="tt" />)
+    expect(chip().getAttribute('data-chosen')).toBeNull()
+    rerender(<Harness commands={[]} />)
+    expect(chip().getAttribute('data-chosen')).toBeNull()
+  })
+
+  it('marks someone from outside the organisation ext, and leaves a leaver\'s name plain', () => {
+    const people = PEOPLE.map((one) => (one.id === 'pe-omar' ? { ...one, kind: 'external' as const }
+      : one.id === 'pe-noor' ? { ...one, kind: 'external' as const, state: 'left' as const, leftOn: '2026-12-31' } : one))
+    renderShell(<Harness commands={[]} people={people} />)
+    expect(within(unitBox('pf')).getAllByTestId('chart-holder')[0].textContent).toBe('Omar Benali · ext')
+    expect(within(within(unitBox('shipping')).getByTestId('chart-slot-ro-owner')).getByTestId('chart-holder').textContent).toBe('Noor Haddad · ext')
+    expect(within(unitBox('tt')).getAllByTestId('chart-holder')[0].textContent).toBe('Sara Kaya · 60% · you')
+  })
+
+  it('names the plan that brings a unit and the one that ends it, beside the day', () => {
+    const plan = (id: string, number: number, elements: { elementId: string; role: 'introduces' | 'retires' }[]) => ({
+      id, number, title: id, status: 'agreed' as const, elements, decisions: [], milestones: [], body: '',
+    })
+    const shipping: HostModel = {
+      ...SHIPPING,
+      elements: [...SHIPPING.elements, actor('parcel', 'Parcel', { unitTypeId: 'ut-cluster', parentId: 'shipping', lifecycle: 'planned', lifecycleDates: { live: '2027-01-01' } })],
+      transitions: [plan('tr-7', 7, [{ elementId: 'parcel', role: 'introduces' }, { elementId: 'pf', role: 'retires' }])],
+    }
+    renderShell(<Harness commands={[]} shipping={shipping} />)
+    expect(within(unitBox('pf')).getByTestId('chart-badge-ends').textContent).toBe('ends 31 Dec 2026 · TR-0007')
+    cleanup()
+    renderShell(<Harness commands={[]} shipping={shipping} asOf="2027-01-01" />)
+    expect(within(unitBox('parcel')).getByTestId('chart-badge-begins').textContent).toBe('from 1 Jan 2027 · TR-0007')
+    expect(within(unitBox('pf')).getByTestId('chart-badge-ended').textContent).toBe('ended 31 Dec 2026 · TR-0007 · people still assigned')
   })
 
   it('says each finding as a link to the unit on the chart it is about', () => {

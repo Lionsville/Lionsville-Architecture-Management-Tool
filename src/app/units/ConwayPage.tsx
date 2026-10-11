@@ -51,6 +51,7 @@ import type { PageCaptureOptions, PageHandle } from '../../widgets/capturePage'
 import { locatedRing, useLocated } from '../../widgets/useLocated'
 import { useSelectRequest } from '../../widgets/useSelectRequest'
 import type { SelectRequest } from '../../widgets/useSelectRequest'
+import { servesBadge } from './chartWords'
 import { ConwayTable } from './ConwayTable'
 import { InteractDialog } from './Interactions'
 import type { Interacting } from './Interactions'
@@ -133,7 +134,7 @@ export function ConwayPage(props: ConwayPageProps) {
             <Box ref={stage} sx={{ position: 'relative', display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'flex-start' }}>
               {map.groups.map((group) => (
                 <Column key={group.unitId ?? NOBODY} unitId={group.unitId} apps={group.applications} here={here} mine={mine}
-                  selectedId={props.selectedId} highlighted={highlighted} grouped={groupBy !== undefined} open={open} t={t} />
+                  selectedId={props.selectedId} highlighted={highlighted} grouped={groupBy !== undefined} open={open} scopeLabel={props.scopeLabel} t={t} />
               ))}
               <Lines lines={lines} />
             </Box>
@@ -203,13 +204,16 @@ function Legend({ t }: { t: Translate }) {
 }
 
 /** One unit's applications, or the ones nobody owns. */
-function Column({ unitId, apps, here, mine, selectedId, highlighted, grouped, open, t }: {
+function Column({ unitId, apps, here, mine, selectedId, highlighted, grouped, open, scopeLabel, t }: {
   unitId: ElementId | undefined; apps: ConwayMap['groups'][number]['applications']; here: UnitViewsHere; mine: ReadonlySet<ElementId>
-  selectedId: ElementId | undefined; highlighted: ReadonlySet<string>; grouped: boolean; open: (id: ElementId) => void; t: Translate
+  selectedId: ElementId | undefined; highlighted: ReadonlySet<string>; grouped: boolean; open: (id: ElementId) => void
+  scopeLabel: (path: ScopePath) => string; t: Translate
 }) {
   const unit = unitId === undefined ? undefined : here.at.organisation.units.find((one) => one.id === unitId)
   const type = here.at.organisation.unitTypes.find((one) => one.id === unit?.unitTypeId)
   const lit = unitId !== undefined && highlighted.has(unitId)
+  // A unit serving several domains names them, as the chart's badge does; one serving one says its type.
+  const serves = unit?.scopes !== undefined && unit.scopes.length > 1 ? servesBadge(unit.scopes, scopeLabel, t) : undefined
   return (
     <Box data-testid="conway-column" data-element-id={unitId} sx={{
       minWidth: 180, maxWidth: 240, border: 1, borderRadius: 1.5, p: 1, bgcolor: 'background.paper',
@@ -222,8 +226,9 @@ function Column({ unitId, apps, here, mine, selectedId, highlighted, grouped, op
         </>
       ) : (
         <ButtonBase onClick={() => open(unitId)} data-testid="conway-unit-open" sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left', width: '100%' }}>
-          <Typography sx={{ fontSize: 9.5, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'text.secondary' }}>
-            {(unit?.scopes?.length ?? 0) > 1 ? t('chart.serves', { count: unit?.scopes?.length ?? 0 }) : type?.name ?? ''}
+          <Typography sx={{ fontSize: 9.5, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'text.secondary' }}
+            data-testid="conway-unit-kind" {...(serves?.full ? { title: serves.full } : {})}>
+            {serves ? serves.text : type?.name ?? ''}
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
             <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{here.name(unitId)}</Typography>

@@ -20,31 +20,33 @@
  * and the inspector docked beside the page edits it — its type, the people in
  * its roles, the interactions it declares. One kept in another scope opens
  * there, on its record. A vacancy in a unit kept here assigns someone at once.
+ *
+ * **A person's chip opens their assignment.** In a unit kept here it chooses
+ * the assignment, and the inspector shows it (`AssignmentInspector`, through
+ * `useChartChoice`); in one kept elsewhere it opens the unit there. The
+ * editor selecting anything lets the choice go, so the inspector shows one
+ * thing at a time. The boxes themselves are `ChartUnitBox`.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import ButtonBase from '@mui/material/ButtonBase'
-import Chip from '@mui/material/Chip'
 import MenuItem from '@mui/material/MenuItem'
 import TextField from '@mui/material/TextField'
-import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import { useTheme } from '@mui/material/styles'
 import { useStrings } from '../../i18n'
-import type { Translate } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
-import type { Language } from '../../i18n'
 import type { Command } from '../../model/commands'
-import type { Role } from '../../model/operatingModel'
 import { orgChart, unitsHolding, walk } from '../../model/orgChart'
-import type { ChartHolder, ChartSlot, ChartUnit, OrgChart } from '../../model/orgChart'
+import type { ChartHolder, ChartUnit, OrgChart } from '../../model/orgChart'
 import { pickedPerson } from '../../model/person'
+import type { PersonId } from '../../model/person'
 import type { DesignDiagram, ElementId } from '../../model/types'
 import { dayBefore, loadOn } from '../../model/units'
 import { mayChangeIn } from '../../model/managing'
 import { meIn } from '../../people/me'
-import { registerOf } from '../../people/shown'
+import { registerOf, resolvePerson } from '../../people/shown'
 import { usePersonNames } from '../../people/ui/names'
 import type { PersonNames } from '../../people/ui/names'
 import type { PeopleRegisterAccess } from '../../people/ui/access'
@@ -57,6 +59,8 @@ import { useSelectRequest } from '../../widgets/useSelectRequest'
 import type { SelectRequest } from '../../widgets/useSelectRequest'
 import { AssignDialog } from './AssignDialog'
 import type { Assigning } from './AssignDialog'
+import { UnitBox } from './ChartUnitBox'
+import type { Drawing } from './ChartUnitBox'
 import type { UnitViewsHere } from './unitViewsHere'
 
 export type ChartPageProps = {
@@ -74,25 +78,12 @@ export type ChartPageProps = {
   onOpenElsewhere(scope: ScopePath, id: ElementId): void
   /** Where a unit kept here may be assigned to from a vacancy. Absent: vacancies are not buttons. */
   assign?: { dispatch: (command: Command) => unknown; makeId: (prefix: string) => string; scopeName: string }
+  /** The assignment chosen on this chart, which the inspector beside it shows. */
+  chosen?: string
+  /** Choose an assignment of a unit kept here, or let the choice go. Absent: a chip opens its unit. */
+  onChoose?(assignmentId: string | undefined): void
   select?: SelectRequest
   onHandle?(handle: PageHandle | undefined): void
-}
-
-/** Everything the boxes read, worked out once per render of the page. */
-type Drawing = {
-  chart: OrgChart
-  roles: ReadonlyMap<string, Role>
-  typeName: (id: string | undefined) => string
-  names: PersonNames
-  day: string
-  today: string
-  language: Language
-  t: Translate
-  selectedId: ElementId | undefined
-  open: (id: ElementId) => void
-  vacancy: ((unit: ChartUnit, roleId: string) => void) | undefined
-  /** Whether a vacancy of this unit and role is one to press: every one where the scope may be written, a managed unit's where it is only read. */
-  mayAssign: (unit: ChartUnit, roleId: string) => boolean
 }
 
 export function ChartPage(props: ChartPageProps) {
@@ -113,13 +104,22 @@ export function ChartPage(props: ChartPageProps) {
     () => (root === undefined ? whole : orgChart(here.at.organisation, day, { root, canonical })),
     [whole, here, day, root, canonical],
   )
-  const me = useMemo(() => meIn(people?.me, registerOf(people?.people ?? []))?.id, [people?.me, people?.people])
+  const register = useMemo(() => registerOf(people?.people ?? []), [people?.people])
+  const me = useMemo(() => meIn(people?.me, register)?.id, [people?.me, register])
   const page = useRef<HTMLDivElement | null>(null)
   const open = useCallback((id: ElementId) => {
     if (here.heldHere(id)) { props.onSelect(id); return }
     const scope = here.scopeOf(id)
     if (scope !== undefined) props.onOpenElsewhere(scope, id)
   }, [here, props.onSelect, props.onOpenElsewhere])
+  const { onChoose, chosen } = props
+  // The editor selecting anything — a unit pressed, a finding followed, a link — lets the assignment go.
+  useEffect(() => { if (props.selectedId !== undefined && chosen !== undefined) onChoose?.(undefined) }, [props.selectedId, chosen, onChoose])
+  const choose = useCallback((holder: ChartHolder, unit: ChartUnit) => {
+    if (!onChoose || !here.heldHere(unit.id)) { open(unit.id); return }
+    props.onSelect(undefined)
+    onChoose(holder.assignment.id)
+  }, [onChoose, here, open, props.onSelect])
   const { locatedId, locate } = useLocated(page, (id) => { if (here.heldHere(id)) props.onSelect(id) })
   useSelectRequest(props.select, (id) => [...walk(shown.roots)].some((unit) => unit.id === id), locate)
   usePageHandle(page, diagram.id, props.selectedId, props.onHandle, theme.palette.background.default)
@@ -140,9 +140,13 @@ export function ChartPage(props: ChartPageProps) {
   const manages = people?.manages
   const editable = writes && (!props.readOnly || manages !== undefined)
   const mayAssign = (unit: ChartUnit, roleId: string) => !props.readOnly || (here.heldHere(unit.id) && mayChangeIn(manages, unit.id, roleId))
+  const external = (person: PersonId) => {
+    const entry = resolvePerson(person, register)
+    return entry?.kind === 'external' && entry.state !== 'forgotten'
+  }
   const drawing: Drawing = {
-    chart: shown, roles, typeName: (id) => types.get(id ?? '') ?? '', names, day, today, language, t,
-    selectedId: props.selectedId, open, mayAssign,
+    chart: shown, roles, typeName: (id) => types.get(id ?? '') ?? '', names, external, scopeLabel: props.scopeLabel, plansOf: here.plansOf,
+    day, today, language, t, selectedId: props.selectedId, chosen, open, choose, mayAssign,
     vacancy: editable ? (unit, roleId) => {
       if (here.heldHere(unit.id)) setAssigning({ unit, assigning: { mode: 'new', roleId } })
       else open(unit.id)
@@ -222,106 +226,6 @@ function* walkWithDepth(units: readonly ChartUnit[], depth: number): Generator<{
     yield { unit, depth }
     yield* walkWithDepth(unit.children, depth + 1)
   }
-}
-
-/** One unit, its roles and the units under it. */
-function UnitBox({ unit, depth, drawing }: { unit: ChartUnit; depth: number; drawing: Drawing }) {
-  const { t } = drawing
-  const selected = drawing.selectedId === unit.id
-  return (
-    <Box
-      data-testid="chart-unit" data-element-id={unit.id} data-ended={unit.ended ? 'true' : undefined}
-      sx={{
-        border: 1, borderRadius: 1.5, p: 1, minWidth: 220, bgcolor: depth % 2 === 0 ? 'background.paper' : 'background.default',
-        borderColor: selected ? 'primary.main' : 'divider', borderStyle: unit.ended ? 'dashed' : 'solid',
-        boxShadow: selected ? 2 : 0,
-      }}
-    >
-      <ButtonBase onClick={() => drawing.open(unit.id)} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left', width: '100%', borderRadius: 1 }} data-testid="chart-unit-open">
-        <Typography sx={{ fontSize: 9.5, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'text.secondary' }}>{drawing.typeName(unit.unitTypeId)}</Typography>
-        <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{unit.name}</Typography>
-      </ButtonBase>
-      <UnitBadges unit={unit} drawing={drawing} />
-      {unit.slots.map((slot) => <SlotRow key={slot.roleId} unit={unit} slot={slot} drawing={drawing} />)}
-      {unit.others.length > 0 && (
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, alignItems: 'center', mt: 0.5 }}>
-          {unit.others.map((other, at) => (
-            <HolderChip
-              key={`${other.assignment.id}/${at}`} holder={other} drawing={drawing} unit={unit}
-              prefix={`${drawing.roles.get(other.assignment.roleId)?.name ?? other.assignment.roleId}${other.endedRole ? ` (${t('chart.roleEnded')})` : ''}: `}
-            />
-          ))}
-        </Box>
-      )}
-      {unit.children.length > 0 && (
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'flex-start', mt: 1 }}>
-          {unit.children.map((child) => <UnitBox key={child.id} unit={child} depth={depth + 1} drawing={drawing} />)}
-        </Box>
-      )}
-    </Box>
-  )
-}
-
-/** What is worth saying about a unit beside its name: the domains it serves, its days, that it has ended. */
-function UnitBadges({ unit, drawing }: { unit: ChartUnit; drawing: Drawing }) {
-  const { t, language, day, today } = drawing
-  const badges: string[] = []
-  if (unit.serves.length > 1) badges.push(t('chart.serves', { count: unit.serves.length }))
-  if (unit.begins !== undefined && unit.begins > today) badges.push(t('chart.begins', { day: formatDay(unit.begins, language) }))
-  if (unit.ended && unit.ends !== undefined) badges.push(t('chart.ended', { day: formatDay(unit.ends, language) }))
-  else if (unit.ends !== undefined && unit.ends >= day) badges.push(t('chart.ends', { day: formatDay(unit.ends, language) }))
-  if (badges.length === 0) return null
-  return (
-    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, my: 0.25 }}>
-      {badges.map((badge) => <Chip key={badge} size="small" variant="outlined" label={badge} sx={{ height: 18, fontSize: 10 }} />)}
-    </Box>
-  )
-}
-
-/** One role of a unit: who holds it, and what its slot still asks for. */
-function SlotRow({ unit, slot, drawing }: { unit: ChartUnit; slot: ChartSlot; drawing: Drawing }) {
-  const { t } = drawing
-  const role = drawing.roles.get(slot.roleId)
-  const vacancy = drawing.vacancy && drawing.mayAssign(unit, slot.roleId) ? drawing.vacancy : undefined
-  return (
-    <Box data-testid={`chart-slot-${slot.roleId}`} sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, alignItems: 'center', mt: 0.5 }}>
-      <Typography sx={{ fontSize: 11.5, minWidth: 110, color: 'text.secondary' }}>
-        {role?.name ?? slot.roleId}
-        {role?.manages && <Box component="span" sx={{ ml: 0.5, fontSize: 9.5 }}>{t('unit.managesBadge')}</Box>}
-      </Typography>
-      {slot.holders.map((holder, at) => <HolderChip key={`${holder.assignment.id}/${at}`} holder={holder} drawing={drawing} unit={unit} />)}
-      {Array.from({ length: slot.vacant }, (_, at) => (
-        <Chip
-          key={`vacant-${at}`} size="small" variant="outlined" color="warning" label={t('unit.vacant')} data-testid="chart-vacant"
-          sx={{ borderStyle: 'dashed', height: 22 }} {...(vacancy ? { onClick: () => vacancy(unit, slot.roleId) } : {})}
-        />
-      ))}
-      {vacancy && slot.vacant === 0 && slot.room && slot.holders.length === 0 && (
-        <Chip size="small" variant="outlined" label={t('unit.assign')} sx={{ borderStyle: 'dashed', height: 22 }} onClick={() => vacancy(unit, slot.roleId)} data-testid="chart-assign" />
-      )}
-    </Box>
-  )
-}
-
-/** One person in a role: the register's name, their share, acting, *you*, and a red edge when over all of their time. */
-function HolderChip({ holder, drawing, unit, prefix = '' }: { holder: ChartHolder; drawing: Drawing; unit: ChartUnit; prefix?: string }) {
-  const { t } = drawing
-  const you = drawing.names.isMe(pickedPerson(holder.person))
-  const label = [
-    `${prefix}${drawing.names.text(pickedPerson(holder.person))}`,
-    holder.share < 1 ? `${Math.round(holder.share * 100)}%` : undefined,
-    holder.assignment.acting ? t('unit.acting') : undefined,
-    you ? t('unit.you') : undefined,
-  ].filter(Boolean).join(' · ')
-  const chip = (
-    <Chip
-      size="small" label={label} color={you ? 'primary' : 'default'} variant={you ? 'filled' : 'outlined'}
-      data-testid="chart-holder" data-you={you ? 'true' : undefined} data-over={holder.overloaded ? 'true' : undefined}
-      onClick={() => drawing.open(unit.id)}
-      sx={{ height: 22, ...(holder.overloaded ? { borderColor: 'error.main', borderWidth: 2, borderStyle: 'solid' } : {}) }}
-    />
-  )
-  return holder.overloaded ? <Tooltip title={t('chart.over')}>{chip}</Tooltip> : chip
 }
 
 /**

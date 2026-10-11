@@ -15,7 +15,7 @@ import type { DrawingView as DrawingViewShape } from './DrawingView'
 import { lazyPart } from '../widgets/lazyPart'
 import { MapPage, SheetPage } from '../business'
 import { TechnologyLandscapePage } from '../technology/ui/TechnologyLandscapePage'
-import { unitViewPage } from './units/UnitViewPages'
+import { unitViewInspector, unitViewPage } from './units/UnitViewPages'
 import { unitLanding } from './units/unitViewsHere'
 import { ErrorBoundary } from './ErrorBoundary'
 import { shellTheme } from './theme'
@@ -47,7 +47,7 @@ export function WorkspaceEditor({ parts }: { parts: WorkspaceParts }) {
           viewing: parts.viewing,
         }}
         editing={{ dispatch: session.dispatch, history: seams.history, ids: session.ids, readOnly: session.readOnly }}
-        pages={{ render: (diagram, view) => laidOutPage(parts, diagram, view) }}
+        pages={{ render: (diagram, view) => laidOutPage(parts, diagram, view), inspector: (diagram) => unitViewInspector(parts, diagram) }}
         diagrams={diagramCalls(parts)}
         history={seams.historyRequests}
         requests={{

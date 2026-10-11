@@ -25,6 +25,7 @@ import { usePlatformReport } from './usePlatformReport'
 import type { PlatformReading } from './usePlatformReport'
 import type { TechnologyLandscapes } from './useTechnologyLandscape'
 import { useDrawing } from './useDrawing'
+import { useChartChoice } from './units/useChartChoice'
 import { useUnitViews } from './units/useUnitViews'
 import type { UnitViewKind, UnitViews } from './units/useUnitViews'
 import { useViewSelect } from './useViewSelect'
@@ -54,6 +55,8 @@ export function useWorkspacePages(deps: {
   })
   const drawings = useDrawing({ session, makeId, s })
   const unitViews = useUnitViews({ session, makeId, s })
+  /** The assignment chosen on an organisation chart, which the inspector beside it shows (ADR-0036 §7). */
+  const chartChoice = useChartChoice()
   const openers = usePageOpeners({ session, records, plans, platformReading, maps, landscapes, drawings, unitViews, operating })
   /** An element selected on a view as it is opened, where the view draws it (ADR-0019, amended). */
   const viewSelect = useViewSelect({ session, focusElement, landscapes })
@@ -97,7 +100,7 @@ export function useWorkspacePages(deps: {
   }, [adrPage, obsPage, adrShown, obsShown])
 
   return {
-    adrPage, obsPage, plans, platformReading, page, settled, leaveIfNothingToDraw,
+    adrPage, obsPage, plans, platformReading, page, settled, leaveIfNothingToDraw, chartChoice,
     operatingPage: operating.page, closeOperating: operating.close,
     selectOn: viewSelect.select, selectRequestFor: viewSelect.requestFor,
     decisionShown: records.decisionShown, observationShown: records.observationShown,

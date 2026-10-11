@@ -5,10 +5,12 @@
  * The organisation chart and the Conway map in their tab (ADR-0036 §7,
  * ADR-0016): each page handed what the workspace holds — the index, the open
  * scope's session, the register — with the organisation worked out once per
- * change of those, not per render of the editor.
+ * change of those, not per render of the editor. And what the inspector
+ * beside a chart shows while the editor has nothing selected: the assignment
+ * chosen on it (`AssignmentInspector`).
  */
 import { useMemo } from 'react'
-import type { ComponentProps, ReactElement } from 'react'
+import type { ComponentProps, ReactElement, ReactNode } from 'react'
 import type { PageView } from '../../editor'
 import type { DesignDiagram, ElementId } from '../../model/types'
 import type { ScopePath } from '../../projects/scopePath'
@@ -16,6 +18,7 @@ import { lazyPart } from '../../widgets/lazyPart'
 import type { WorkspaceParts } from '../workspaceParts'
 import type { ChartPage as ChartPageShape } from './ChartPage'
 import type { ConwayPage as ConwayPageShape } from './ConwayPage'
+import type { AssignmentInspector as AssignmentInspectorShape } from './AssignmentInspector'
 import { unitViewsHere } from './unitViewsHere'
 
 /**
@@ -28,6 +31,10 @@ const ChartPage = lazyPart<ComponentProps<typeof ChartPageShape>>(
 )
 const ConwayPage = lazyPart<ComponentProps<typeof ConwayPageShape>>(
   () => import('./ConwayPage').then((held) => held.ConwayPage),
+)
+/** An assignment in the inspector arrives with the first one chosen. */
+const AssignmentInspector = lazyPart<ComponentProps<typeof AssignmentInspectorShape>>(
+  () => import('./AssignmentInspector').then((held) => held.AssignmentInspector),
 )
 
 type Kind = 'chart' | 'conway'
@@ -53,9 +60,12 @@ function UnitViewPage({ kind, parts, diagram, view }: { kind: Kind; parts: Works
   }
   const select = parts.pages.selectRequestFor(diagram.id)
   if (kind === 'chart') {
+    const { chosenOn, choose } = parts.pages.chartChoice
+    const chosen = chosenOn(diagram.id)
     return (
       <ChartPage
-        {...common} {...(select ? { select } : {})}
+        {...common} {...(select ? { select } : {})} {...(chosen !== undefined ? { chosen } : {})}
+        onChoose={(assignmentId) => choose(diagram.id, assignmentId)}
         assign={{ dispatch: session.dispatch, makeId: props.shell.makeId, scopeName }}
       />
     )
@@ -64,6 +74,26 @@ function UnitViewPage({ kind, parts, diagram, view }: { kind: Kind; parts: Works
     <ConwayPage
       {...common} {...(select ? { select } : {})} index={index} scope={scope} model={model}
       declare={{ dispatch: session.dispatch, newRowId: () => session.ids.connection(), scopeName }}
+    />
+  )
+}
+
+/**
+ * The inspector beside an organisation chart while the editor has nothing
+ * selected: the assignment chosen on it, where it is still there — a removed
+ * one leaves the inspector to say what it says with nothing chosen.
+ */
+export function unitViewInspector(parts: WorkspaceParts, diagram: DesignDiagram): ReactNode {
+  if (diagram.kind !== 'chart') return undefined
+  const { props, session } = parts
+  const chosen = parts.pages.chartChoice.chosenOn(diagram.id)
+  if (chosen === undefined || !(session.model.assignments ?? []).some((one) => one.id === chosen)) return undefined
+  const onOpenPeople = props.navigation.onOpenPeople
+  return (
+    <AssignmentInspector
+      key={chosen} assignmentId={chosen} diagram={diagram} index={props.tree.index} scope={props.project.path} model={session.model}
+      today={parts.todayDay} readOnly={session.readOnly} people={props.shell.people} dispatch={session.dispatch} makeId={props.shell.makeId}
+      scopeName={parts.readings.scopeLabel(props.project.path)} {...(onOpenPeople ? { onOpenPeople } : {})}
     />
   )
 }

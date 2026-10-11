@@ -9,7 +9,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import type { Role, UnitType } from './operatingModel'
-import { orgChart, unitsHolding, walk } from './orgChart'
+import { orgChart, overAllOfTheirTime, unitsHolding, walk } from './orgChart'
 import type { ChartUnit } from './orgChart'
 import type { DesignElement } from './types'
 import type { Assignment, Organisation } from './units'
@@ -138,6 +138,12 @@ describe('the organisation chart', () => {
     const rp = find(chart, 'rp')
     expect(rp.slots.flatMap((slot) => slot.holders).filter((one) => one.overloaded).map((one) => one.person)).toEqual(['pe-pia', 'pe-pia'])
     expect(find(chart, 'tt').slots.flatMap((slot) => slot.holders).some((one) => one.overloaded)).toBe(false)
+  })
+
+  it('holds over all of their time to more than all of it: thirds that add up to a hair over one are not over', () => {
+    expect(overAllOfTheirTime(1)).toBe(false)
+    expect(overAllOfTheirTime(1 / 3 + 1 / 3 + 1 / 3 + 1e-12)).toBe(false)
+    expect(overAllOfTheirTime(1.2)).toBe(true)
   })
 
   it('counts two ids of one person as one, through the register', () => {

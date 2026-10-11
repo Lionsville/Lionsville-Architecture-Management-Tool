@@ -127,6 +127,11 @@ type Reading = {
 /** Shares are fractions a person types: a hair over 1 from adding thirds is not over. */
 const OVER = 1 + 1e-9
 
+/** Whether a person's shares on a day add up to more than all of their time. */
+export function overAllOfTheirTime(load: number): boolean {
+  return load > OVER
+}
+
 /** The organisation chart on `day`. */
 export function orgChart(whenever: Organisation, day: string, options: ChartOptions = {}): OrgChart {
   const organisation = organisationOn(whenever, day)
@@ -294,5 +299,5 @@ function chartUnit(unit: UnitLike, reading: Reading, seen: Set<ElementId>): Char
 
 function holderOf(assignment: Assignment, reading: Reading): ChartHolder {
   const person = reading.canonical(personOf(assignment))
-  return { assignment, person, share: shareOf(assignment), overloaded: (reading.loads.get(person) ?? 0) > OVER }
+  return { assignment, person, share: shareOf(assignment), overloaded: overAllOfTheirTime(reading.loads.get(person) ?? 0) }
 }

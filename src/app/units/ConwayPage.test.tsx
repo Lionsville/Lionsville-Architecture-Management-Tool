@@ -88,7 +88,7 @@ function Harness({ commands, root = ROOT }: { commands: Command[]; root?: HostMo
     <PersonNamesProvider names={NAMES}>
     <ConwayPage
       diagram={VIEW} here={here} index={index} scope="customer" model={model} today={TODAY} readOnly={false} people={REGISTER}
-      scopeLabel={(path) => (path === '' ? 'the organisation' : 'Customer')} onSelect={() => {}} onOpenElsewhere={() => {}}
+      scopeLabel={(path) => ({ '': 'the organisation', customer: 'Customer', shipping: 'Shipping' })[path] ?? path} onSelect={() => {}} onOpenElsewhere={() => {}}
       declare={{ dispatch, newRowId: () => 'i-new', scopeName: 'Customer' }}
     />
     </PersonNamesProvider>
@@ -148,6 +148,8 @@ describe('the Conway map', () => {
     fireEvent.mouseDown(within(screen.getByTestId('conway-bar')).getByRole('combobox'))
     fireEvent.click(await screen.findByRole('option', { name: 'Cluster' }))
     expect(screen.getAllByTestId('conway-column').map((column) => column.getAttribute('data-element-id'))).toEqual(['data', 'sales', null])
+    // A unit serving several domains names them, as the chart does; one serving one says its type.
+    expect(screen.getAllByTestId('conway-unit-kind').map((kind) => kind.textContent)).toEqual(['serves Customer · Shipping', 'Cluster'])
     expect(said()).toEqual(['Billing has no unit: nobody owns it.', 'Webshop owns 3 applications, and a Team owns at most 2.'])
   })
 
