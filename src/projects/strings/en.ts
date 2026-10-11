@@ -46,6 +46,13 @@ export const EN = {
   'check.causeExplainsObservationBelowBare': '{name} explains an observation of {scope} directly, and nothing there explains it yet — a cause there explains it, and this one explains that cause',
   'check.accountability': '{name}: {detail} are each accountable — exactly one role should be',
   'check.accountabilityNobody': '{name}: no role is accountable for it',
+  'check.roleVacant': '{name} is short of {detail}: {count} hold the role, and its type asks for at least {limit}',
+  'check.roleOverMax': '{name} has {count} in the role {detail}, and its type allows at most {limit}',
+  'check.unitMisplaced': '{name} is a {detail} and may not sit where it is filed',
+  'check.unitSpans': '{name} serves {count} domains, and a {detail} serves one',
+  'check.unitOverLimit': '{name} owns {count} applications, and a {detail} owns at most {limit}',
+  'check.assignmentEnded': 'Someone still holds {detail} in {name}, after the unit or the role has ended',
+  'check.personOverloaded': '{name} holds {count}% across their roles',
 
   /**
    * What a stand-in says about itself, on the three surfaces that draw one: the
@@ -81,6 +88,20 @@ export const EN = {
   'check.short.causeExplainsObservationBelow.other': '{count} links to observations below',
   'check.short.accountability.one': '{count} responsibility without one accountable role',
   'check.short.accountability.other': '{count} responsibilities without one accountable role',
+  'check.short.roleVacant.one': '{count} role short of people',
+  'check.short.roleVacant.other': '{count} roles short of people',
+  'check.short.roleOverMax.one': '{count} role over its maximum',
+  'check.short.roleOverMax.other': '{count} roles over their maximum',
+  'check.short.unitMisplaced.one': '{count} unit where its type may not sit',
+  'check.short.unitMisplaced.other': '{count} units where their type may not sit',
+  'check.short.unitSpans.one': '{count} unit serving more domains than its type may',
+  'check.short.unitSpans.other': '{count} units serving more domains than their type may',
+  'check.short.unitOverLimit.one': '{count} unit over its limit',
+  'check.short.unitOverLimit.other': '{count} units over their limit',
+  'check.short.assignmentEnded.one': '{count} assignment past the end of its unit or role',
+  'check.short.assignmentEnded.other': '{count} assignments past the end of their unit or role',
+  'check.short.personOverloaded.one': '{count} person over 100%',
+  'check.short.personOverloaded.other': '{count} people over 100%',
 
   /**
    * Why a gesture that crosses scopes was declined (ADR-0012 §10).

@@ -16,6 +16,7 @@ import type { Adr } from './adr'
 import type { Cause, Experiment, Observation, Solution } from './observation'
 import type { OperatingRule, Responsibility, Role, UnitType } from './operatingModel'
 import type { Transition } from './transition'
+import type { Assignment } from './units'
 
 /**
  * What the shell keeps beside the design itself.
@@ -65,6 +66,11 @@ export interface HostExtras {
   roles?: Role[]
   responsibilities?: Responsibility[]
   operatingRules?: OperatingRule[]
+  /**
+   * Who holds which role in which unit of this scope, and when (ADR-0036 §4):
+   * each names the person by register id, never by name.
+   */
+  assignments?: Assignment[]
   /** Per element key: which fields the source document carried explicitly. */
   explicitFields?: Record<string, { lifecycle?: boolean; isManaged?: boolean; iconType?: boolean }>
 }

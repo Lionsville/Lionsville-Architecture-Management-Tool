@@ -24,7 +24,8 @@
 import type { StringKey } from '../i18n/strings'
 import type { Command, CommandBody, Restored } from './commands'
 import {
-  causesOf, decisionsOf, experimentsOf, observationsOf, responsibilitiesOf, rolesOf, solutionsOf, transitionsOf, unitTypesOf,
+  assignmentsOf, causesOf, decisionsOf, experimentsOf, observationsOf, responsibilitiesOf, rolesOf, solutionsOf,
+  transitionsOf, unitTypesOf,
 } from './normalised'
 import type { Model } from './normalised'
 import { RELATION_LABEL } from './relations'
@@ -258,10 +259,51 @@ export function summarise(commands: readonly Command[], before: Model): StepSumm
     case 'restore':
       // Unreachable: `flatten` has none left. Named so the switch is total.
       return NOTHING
-    // The operating model's, which are a family of their own (ADR-0036).
+    // The operating model's and the assignments', families of their own (ADR-0036).
     default:
-      return operatingStep(lead, flat, before)
+      return familyStep(lead, flat, before)
   }
+}
+
+/** The commands `summarise` hands on: the operating model's and the assignments'. */
+type FamilyCommand = OperatingCommand | AssignmentCommand
+
+function familyStep(lead: FamilyCommand, flat: readonly CommandBody[], before: Model): StepSummary {
+  return isAssignmentCommand(lead) ? assignmentStep(lead, flat, before) : operatingStep(lead, flat, before)
+}
+
+/** An assignment's commands (ADR-0036 §4). */
+type AssignmentCommand = Extract<CommandBody, { type: `assignment.${'add' | 'update' | 'remove'}` }>
+
+function isAssignmentCommand(command: CommandBody): command is AssignmentCommand {
+  return command.type.startsWith('assignment.')
+}
+
+/**
+ * A step about who holds which role. The line names the unit and never the
+ * person: a step is kept for as long as the history is, and a name in it is
+ * one a forget could not reach (ADR-0036 §8). Several ends in one step — a
+ * person leaving, a plan moving its people — are counted rather than named.
+ */
+function assignmentStep(lead: AssignmentCommand, flat: readonly CommandBody[], before: Model): StepSummary {
+  const held = (id: string) => assignmentsOf(before)[id]
+  const unitName = (unitId: string | undefined) => (unitId === undefined ? undefined : before.elements[unitId]?.name ?? unitId)
+  const ends = flat.filter((command) => command.type === 'assignment.update' && isEnd(command.patch)).length
+  if (ends > 1) return { key: 'activity.assignmentsEnded', count: ends }
+  const adds = flat.filter((command) => command.type === 'assignment.add').length
+  if (adds > 1) return { key: 'activity.assignmentsAdded', count: adds }
+  switch (lead.type) {
+    case 'assignment.add': return { key: 'activity.assignmentAdded', name: unitName(lead.assignment.unitId) }
+    case 'assignment.update':
+      return { key: isEnd(lead.patch) ? 'activity.assignmentEnded' : 'activity.assignmentChanged', name: unitName(held(lead.id)?.unitId) }
+    case 'assignment.remove': return { key: 'activity.assignmentRemoved', name: unitName(held(lead.id)?.unitId) }
+  }
+}
+
+/** A patch that sets an assignment's last day and nothing else: an end. */
+function isEnd(patch: object): boolean {
+  const keys = Object.keys(patch)
+  return keys.length === 1 && keys[0] === 'until' && typeof (patch as { until?: unknown }).until === 'string'
 }
 
 /** The operating model's commands: what `summarise` hands on. */

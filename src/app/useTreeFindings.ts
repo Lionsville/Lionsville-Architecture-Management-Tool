@@ -13,7 +13,7 @@ import type { SourceChanges } from '../ports/ProviderParts'
 import { useIndex } from './useIndex'
 import type { Failed } from './useShellServices'
 import type { TreeView } from '../agent/tree'
-import { findingsByScope, identityFindings } from '../projects/checks'
+import { findingsByScope, identityFindings, organisationFindings } from '../projects/checks'
 import { flattenScopes } from '../projects/scope'
 import type { ScopeSummary } from '../projects/scope'
 import type { ScopeIndex } from '../projects/scopeIndex'
@@ -63,10 +63,12 @@ export function useTreeFindings(deps: {
    *
    * One fold over the index for the whole tree, memoised on it — a row that
    * asked for its own would be a fold per row, and there is one row per scope.
-   * Only the findings the index alone can answer are in here; the ones that
-   * need a scope's own records belong to the scope that is open.
+   * Only the findings the index alone can answer are in here — the tree's
+   * identities, and the organisation's units and assignments today (ADR-0036
+   * §3); the ones that need a scope's own records belong to the scope that
+   * is open.
    */
-  const identity = useMemo(() => identityFindings(index), [index])
+  const identity = useMemo(() => [...identityFindings(index), ...organisationFindings(index)], [index])
   /** Every plan flagged as an initiative anywhere below the root (ADR-0012 §7), for the roadmap card. */
   const initiatives = useMemo(() => index.initiativesBelow(home).length, [index, home])
   /** Every open observation anywhere below this home (ADR-0032 §1), for the observations card. */

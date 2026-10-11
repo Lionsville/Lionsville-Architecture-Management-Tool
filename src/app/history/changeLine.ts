@@ -65,6 +65,10 @@ const KEYS: Record<LineKey, StringKey> = {
   'operatingRule:added': 'change.operatingRuleAdded',
   'operatingRule:removed': 'change.operatingRuleRemoved',
   'operatingRule:changed': 'change.operatingRuleChanged',
+  // An assignment, by the unit it is in and never by the person (ADR-0036 §8).
+  'assignment:added': 'change.assignmentAdded',
+  'assignment:removed': 'change.assignmentRemoved',
+  'assignment:changed': 'change.assignmentChanged',
   // What came onto a board and what left it. Named, not counted: a card put on
   // a view is a decision somebody made (ADR-0012 §6).
   'membership:added': 'change.membershipAdded',

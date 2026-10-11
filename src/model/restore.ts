@@ -30,7 +30,7 @@ import { isAdrLocked } from './adr'
 import type { BoardPatch, Command, DiagramPatch, ProjectPatch, Restored } from './commands'
 import type { Diagram, Model } from './normalised'
 import {
-  boxesOf, causesOf, decisionsOf, experimentsOf, fromDiagram, groupList, groupsOf, observationsOf, operatingRulesOf,
+  assignmentsOf, boxesOf, causesOf, decisionsOf, experimentsOf, fromDiagram, groupList, groupsOf, observationsOf, operatingRulesOf,
   responsibilitiesOf, rolesOf, routesOf, solutionsOf, toDiagram, unitTypesOf,
 } from './normalised'
 import { memberOf, nodeGeometryOf, placedNodes } from './placement'
@@ -249,8 +249,8 @@ function restoreProject(then: Model, now: Model, asOf: string): RestoreResult {
 }
 
 /**
- * The operating model as it was (ADR-0036): every list whole, as the
- * observations restore — nothing in it locks.
+ * The operating model and the assignments as they were (ADR-0036): every
+ * list whole, as the observations restore — nothing in them locks.
  */
 function operatingBack(then: Model, now: Model): Command[] {
   const commands: Command[] = []
@@ -281,6 +281,10 @@ function operatingBack(then: Model, now: Model): Command[] {
     (rule) => ({ type: 'operatingRule.add', rule }),
     (id, patch) => ({ type: 'operatingRule.update', id: id as OperatingRuleKind, patch }),
     (id) => ({ type: 'operatingRule.remove', id: id as OperatingRuleKind }))
+  // Who held which role, as it was (ADR-0036 §4): a list like the others.
+  back(assignmentsOf(then), assignmentsOf(now), { then: then.order.assignments, now: now.order.assignments },
+    (assignment) => ({ type: 'assignment.add', assignment }), (id, patch) => ({ type: 'assignment.update', id, patch }),
+    (id) => ({ type: 'assignment.remove', id }))
   return commands
 }
 

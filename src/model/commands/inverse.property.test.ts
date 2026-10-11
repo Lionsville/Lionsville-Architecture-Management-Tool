@@ -100,6 +100,7 @@ function someModel(r: Random): Model {
     ...(r.chance(0.6) ? { roles: [role(r, 'ro-1')] } : {}),
     ...(r.chance(0.6) ? { responsibilities: [responsibility(r, 'rs-1')] } : {}),
     ...(r.chance(0.6) ? { operatingRules: [{ id: 'applicationOwner' as const, role: 'ro-1' }] } : {}),
+    ...(r.chance(0.6) ? { assignments: [assignment(r, 'as-1')] } : {}),
   })
   return held
 }
@@ -132,6 +133,12 @@ const unitType = (r: Random, id: string) => ({
 const role = (r: Random, id: string) => ({
   id, name: r.pick(WORDS) || 'Lead', duties: r.chance(0.5) ? [{ responsibility: 'rs-1', raci: 'A' as const }] : [],
   ...(r.chance(0.3) ? { manages: true } : {}),
+})
+const assignment = (r: Random, id: string) => ({
+  id, unitId: r.chance(0.8) ? 'a' : 'b', roleId: 'ro-1', person: { person: r.pick(['pe-1', 'pe-2']) },
+  ...(r.chance(0.5) ? { share: r.pick([0.2, 0.5, 1]) } : {}),
+  ...(r.chance(0.5) ? { from: '2026-01-01' } : {}),
+  ...(r.chance(0.3) ? { acting: true as const } : {}),
 })
 const responsibility = (r: Random, id: string) => ({
   id, name: r.pick(WORDS) || 'Release', ...(r.chance(0.5) ? { group: 'Deliver' } : {}),
@@ -325,6 +332,20 @@ const COMMANDS: { [K in CommandType]: (r: Random, model: Model) => Extract<Comma
   'operatingRule.remove': (r, m) => ({
     type: 'operatingRule.remove', id: r.chance(0.9) && m.order.operatingRules.length ? 'applicationOwner' : 'domainOwner',
   }),
+  'assignment.add': (r, m) => ({
+    type: 'assignment.add', assignment: assignment(r, r.chance(0.8) ? `as-${2 + r.int(100)}` : 'as-1'),
+    ...(r.chance(0.3) ? { at: r.int(m.order.assignments.length + 1) } : {}),
+  }),
+  'assignment.update': (r, m) => ({
+    type: 'assignment.update', id: held(r, m.order.assignments, 'as'),
+    patch: {
+      ...(r.chance(0.6) ? { until: either(r, r.pick(['2026-12-31', '2025-01-01'])) } : {}),
+      ...(r.chance(0.4) ? { share: either(r, 0.5) } : {}),
+      ...(r.chance(0.3) ? { acting: either(r, true as const) } : {}),
+      ...(r.chance(0.3) ? { person: { person: 'pe-3' } } : {}),
+    },
+  }),
+  'assignment.remove': (r, m) => ({ type: 'assignment.remove', id: held(r, m.order.assignments, 'as') }),
 
   'project.settings': (r) => ({
     type: 'project.settings',

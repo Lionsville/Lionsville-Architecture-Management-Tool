@@ -32,6 +32,7 @@ import type { ModelOrder } from './normalised'
 import type { Cause, Experiment, Observation, Solution } from './observation'
 import type { OperatingRule, Responsibility, Role, UnitType } from './operatingModel'
 import type { Transition } from './transition'
+import type { Assignment } from './units'
 import { drawingProse } from './drawing'
 import type { DesignDiagram, DesignElement, ElementKind, Relation } from './types'
 
@@ -116,6 +117,7 @@ export type SearchableRecords = {
   roles: Role
   responsibilities: Responsibility
   operatingRules: OperatingRule
+  assignments: Assignment
 }
 
 /** A scope's lists, as whoever read it has them: every one optional, a thin read has some. */
@@ -343,6 +345,9 @@ export const SEARCHABLE: SearchTable = {
   responsibilities: [responsibility],
   // A rule names a role and says nothing a person would search for.
   operatingRules: [],
+  // An assignment holds ids and a share: the person is found in the register
+  // and the unit as an element, and nothing here would be a third way to them.
+  assignments: [],
 }
 
 /** The lists, in the order the search reads them and a list of hits is headed. */

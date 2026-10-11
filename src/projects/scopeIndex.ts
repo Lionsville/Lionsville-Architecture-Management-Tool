@@ -54,6 +54,9 @@ import type { DesignElement, ElementId, ElementKind, LifecycleDates, PlatformArc
 import { isDay } from '../model/lifecycle'
 import type { Transition } from '../model/transition'
 import type { CauseAbove, ScopeAnalysis } from '../model/observation'
+import type { OperatingRule, Responsibility, Role, UnitType } from '../model/operatingModel'
+import { isUnit } from '../model/units'
+import type { Assignment, Organisation } from '../model/units'
 import { ShellError } from '../platform/errors'
 import { flattenScopes } from './scope'
 import type { ScopeModel, ScopeSnapshot, ScopeSummary } from './scope'
@@ -186,6 +189,22 @@ export type IndexedTransition = {
  */
 export type IndexedAnalysis = ScopeAnalysis & { scope: ScopePath }
 
+/** A unit, as the scope that answers for it holds it (ADR-0036 §3): an actor with a type. */
+export type IndexedUnit = { scope: ScopePath; unit: DesignElement }
+
+/** An assignment, and the scope that keeps it: its unit's (ADR-0036 §4). */
+export type IndexedAssignment = { scope: ScopePath; assignment: Assignment }
+
+/** The operating model as the organisation keeps it (ADR-0036 §2): each list, in the organisation's order. */
+export type IndexedOperatingModel = {
+  unitTypes: readonly UnitType[]
+  roles: readonly Role[]
+  responsibilities: readonly Responsibility[]
+  operatingRules: readonly OperatingRule[]
+}
+
+const NO_OPERATING_MODEL: IndexedOperatingModel = { unitTypes: [], roles: [], responsibilities: [], operatingRules: [] }
+
 /**
  * Where an observation was folded into another scope's (ADR-0021): the scope
  * above that absorbed it, and the observation there that stands for it now.
@@ -285,6 +304,29 @@ export type ScopeIndex = {
    * record is written where it lives and the scope below is only told.
    */
   absorbedFrom(path: ScopePath): Map<string, Absorption>
+  /**
+   * Every unit in the organisation (ADR-0036 §3), as the scope that answers
+   * for it holds it, in id order — the derived register of units, as
+   * {@link register} is of applications. A stand-in of a unit is not one.
+   */
+  units(): IndexedUnit[]
+  /**
+   * Every assignment in the organisation (ADR-0036 §4), scope by scope in
+   * path order and in each scope's own order. Ids only: who a person is, is
+   * the register's to say.
+   */
+  assignments(): IndexedAssignment[]
+  /**
+   * The operating model (ADR-0036 §2), as the organisation — the root scope
+   * — keeps it; empty lists where it keeps none, or was not read.
+   */
+  operatingModel(): IndexedOperatingModel
+  /**
+   * The units, the assignments and the operating model together: what
+   * `model/units.ts` asks its questions of — who manages a unit, what the
+   * organisation contradicts on a day.
+   */
+  organisation(): Organisation
   /** The scopes this was built from, in path order. */
   scopes(): ScopePath[]
 }
@@ -350,6 +392,9 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
   const analyses: IndexedAnalysis[] = []
   const absorptions: Absorption[] = []
   const fromAbove = new Map<ScopePath, Map<string, CauseAbove[]>>()
+  const unitDefinitions: IndexedUnit[] = []
+  const assignments: IndexedAssignment[] = []
+  let operating = NO_OPERATING_MODEL
 
   const at = (id: ElementId): Held => {
     const found = held.get(id) ?? { id, definitions: [], standIns: [] }
@@ -365,6 +410,7 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
       const row = at(element.id)
       if (element.ref === undefined) {
         row.definitions.push({ path, depth, kind: element.kind, name: element.name, ...masterDetailOf(element) })
+        if (isUnit(element)) unitDefinitions.push({ scope: path, unit: element })
       } else {
         row.standIns.push({ path, kind: element.kind, name: element.name, ref: element.ref })
       }
@@ -381,21 +427,14 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
         touching.set(end, held)
       }
     }
-    const flagged = (model.transitions ?? []).filter((transition) => transition.initiative)
-    if (flagged.length > 0) {
-      const byId = new Map(model.elements.map((element) => [element.id, element]))
-      for (const transition of [...flagged].sort((a, b) => a.number - b.number)) {
-        const elements = transition.elements
-          .map((one) => byId.get(one.elementId))
-          .filter((element): element is DesignElement => element !== undefined)
-        initiatives.push({ scope: path, transition, elements })
-      }
-    }
+    initiatives.push(...initiativesOf(path, model))
     const analysis = analysisOf(path, model)
     if (analysis) {
       analyses.push(analysis)
       readAcross(analysis, absorptions, fromAbove)
     }
+    for (const assignment of model.assignments ?? []) assignments.push({ scope: path, assignment })
+    if (path === '') operating = operatingOf(model)
   }
 
   const entries = new Map<ElementId, IndexEntry>()
@@ -435,6 +474,16 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
   }
 
   const inIdOrder = [...entries.values()].sort((a, b) => a.id.localeCompare(b.id))
+  // A unit is answered for where its master is: a declaration above it is a cache.
+  const units = unitDefinitions
+    .filter(({ scope, unit }) => entries.get(unit.id)?.master === scope)
+    .sort((a, b) => a.unit.id.localeCompare(b.unit.id))
+  const organisation: Organisation = {
+    units: units.map(({ unit }) => unit),
+    assignments: assignments.map(({ assignment }) => assignment),
+    roles: operating.roles,
+    unitTypes: operating.unitTypes,
+  }
 
   return {
     lookup: (id) => entries.get(id),
@@ -461,7 +510,35 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
       for (const one of absorptions) if (one.scope === path && !found.has(one.id)) found.set(one.id, one)
       return found
     },
+    units: () => [...units],
+    assignments: () => [...assignments],
+    operatingModel: () => operating,
+    organisation: () => organisation,
     scopes: () => [...paths],
+  }
+}
+
+/** The plans a scope flags as initiatives, by number, each with the elements it names as the scope holds them. */
+function initiativesOf(path: ScopePath, model: ScopeModel['model']): IndexedTransition[] {
+  const flagged = (model.transitions ?? []).filter((transition) => transition.initiative)
+  if (flagged.length === 0) return []
+  const byId = new Map(model.elements.map((element) => [element.id, element]))
+  return [...flagged].sort((a, b) => a.number - b.number).map((transition) => ({
+    scope: path,
+    transition,
+    elements: transition.elements
+      .map((one) => byId.get(one.elementId))
+      .filter((element): element is DesignElement => element !== undefined),
+  }))
+}
+
+/** The organisation's operating model, off its thin read. */
+function operatingOf(model: ScopeModel['model']): IndexedOperatingModel {
+  return {
+    unitTypes: model.unitTypes ?? [],
+    roles: model.roles ?? [],
+    responsibilities: model.responsibilities ?? [],
+    operatingRules: model.operatingRules ?? [],
   }
 }
 

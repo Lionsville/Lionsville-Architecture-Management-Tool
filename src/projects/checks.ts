@@ -41,6 +41,9 @@ import type { DesignElement, ElementId, OwnerDetailField } from '../model'
 import type { HostModel } from '../model/hostModel'
 import { causeLabel, liveCauses } from '../observations/observation'
 import { accountabilityGaps } from '../model/operatingModel'
+import { today } from '../model/lifecycle'
+import { unitFindings } from '../model/units'
+import type { Assignment, UnitFinding } from '../model/units'
 import type { ScopeIndex } from './scopeIndex'
 import { ancestorScopes } from './scopePath'
 import type { ScopePath } from './scopePath'
@@ -94,6 +97,23 @@ export type CheckKey =
    * named in `detail` where there are.
    */
   | 'check.accountability'
+  /**
+   * The organisation as it is, on a day (ADR-0036 §3), read off the index:
+   * fewer people in a role of a unit than its slot's minimum, more than its
+   * maximum; a unit under a type it may not sit in, one serving several
+   * domains under a type that serves one, one owning more applications than
+   * its type's limit; an assignment still running in a unit or a role that
+   * has ended; and a person whose shares add up to more than all of their
+   * time — about each scope that keeps one of their assignments, named by
+   * the register, never here.
+   */
+  | 'check.roleVacant'
+  | 'check.roleOverMax'
+  | 'check.unitMisplaced'
+  | 'check.unitSpans'
+  | 'check.unitOverLimit'
+  | 'check.assignmentEnded'
+  | 'check.personOverloaded'
 
 /**
  * The sentence for each finding, published as a table (ADR-0012 §9).
@@ -122,6 +142,13 @@ export const CHECK_LABEL: Record<CheckKey, StringKey> = {
   'check.offeredNotShared': 'check.offeredNotShared',
   'check.causeExplainsObservationBelow': 'check.causeExplainsObservationBelow',
   'check.accountability': 'check.accountability',
+  'check.roleVacant': 'check.roleVacant',
+  'check.roleOverMax': 'check.roleOverMax',
+  'check.unitMisplaced': 'check.unitMisplaced',
+  'check.unitSpans': 'check.unitSpans',
+  'check.unitOverLimit': 'check.unitOverLimit',
+  'check.assignmentEnded': 'check.assignmentEnded',
+  'check.personOverloaded': 'check.personOverloaded',
 }
 
 /**
@@ -142,17 +169,21 @@ const CHECK_LABEL_BARE: Partial<Record<CheckKey, StringKey>> = {
  * organisation screen's *Needs attention* and a stand-in's note on a board.
  * `scopeName` is the caller's, because what to call a scope — its name, or
  * the word for the organisation — is the screen's vocabulary and not this
- * module's.
+ * module's; so is `personName`, because a person's name is the register's,
+ * and a finding about one says who by id.
  */
 export function findingSentence(
   finding: Finding, s: Translate, scopeName: (path: ScopePath) => string,
+  personName?: (id: string) => string,
 ): string {
   const key = finding.detail === undefined ? CHECK_LABEL_BARE[finding.key] ?? CHECK_LABEL[finding.key] : CHECK_LABEL[finding.key]
   return s(key, {
-    name: finding.name,
+    // A finding about a person carries their id; the name is the register's (ADR-0036 §8).
+    name: finding.person !== undefined && personName ? personName(finding.person) : finding.name,
     scope: scopeName(finding.scopes?.[0] ?? ''),
     detail: finding.detail ?? '',
-    count: 0,
+    count: finding.count ?? 0,
+    limit: finding.limit ?? 0,
   })
 }
 
@@ -180,6 +211,13 @@ export const CHECK_SHORT: Record<CheckKey, { one: StringKey; other: StringKey }>
     one: 'check.short.causeExplainsObservationBelow.one', other: 'check.short.causeExplainsObservationBelow.other',
   },
   'check.accountability': { one: 'check.short.accountability.one', other: 'check.short.accountability.other' },
+  'check.roleVacant': { one: 'check.short.roleVacant.one', other: 'check.short.roleVacant.other' },
+  'check.roleOverMax': { one: 'check.short.roleOverMax.one', other: 'check.short.roleOverMax.other' },
+  'check.unitMisplaced': { one: 'check.short.unitMisplaced.one', other: 'check.short.unitMisplaced.other' },
+  'check.unitSpans': { one: 'check.short.unitSpans.one', other: 'check.short.unitSpans.other' },
+  'check.unitOverLimit': { one: 'check.short.unitOverLimit.one', other: 'check.short.unitOverLimit.other' },
+  'check.assignmentEnded': { one: 'check.short.assignmentEnded.one', other: 'check.short.assignmentEnded.other' },
+  'check.personOverloaded': { one: 'check.short.personOverloaded.one', other: 'check.short.personOverloaded.other' },
 }
 
 /**
@@ -211,6 +249,16 @@ export type Finding = {
    * finding opens that view; `id` still tells one shape from another.
    */
   view?: string
+  /**
+   * The person a finding is about, by register id (`check.personOverloaded`):
+   * `name` is then the id too, and a screen asks the register what to call
+   * them (ADR-0036 §8). No finding ever holds a register name.
+   */
+  person?: string
+  /** How many, where the sentence says: holders of a role, applications owned, a share in per cent. */
+  count?: number
+  /** The bound `count` is held to: a slot's minimum or maximum, a type's limit. */
+  limit?: number
 }
 
 /**
@@ -546,6 +594,71 @@ function causesOverObservationsBelow(scope: ScopePath, model: HostModel, index: 
   return found
 }
 
+/**
+ * What the organisation as it is contradicts on a day (ADR-0036 §3), read off
+ * the index and nothing else: its units and assignments across the tree,
+ * held against the operating model the organisation keeps. A unit's finding
+ * is about the scope that answers for the unit, an assignment's about the
+ * scope that keeps it, and a person over all of their time is a finding of
+ * each scope that keeps one of their running assignments.
+ *
+ * `day` is today unless a caller looks at another (ADR-0027).
+ */
+export function organisationFindings(index: ScopeIndex, day: string = today()): Finding[] {
+  const organisation = index.organisation()
+  if (organisation.units.length === 0 && organisation.assignments.length === 0) return []
+  const unitScope = new Map(index.units().map(({ scope, unit }) => [unit.id, { scope, name: unit.name, type: unit.unitTypeId ?? '' }]))
+  const assignmentScope = new Map<Assignment, ScopePath>(index.assignments().map(({ scope, assignment }) => [assignment, scope]))
+  const typeName = new Map(organisation.unitTypes.map((type) => [type.id, type.name]))
+  const roleName = new Map(organisation.roles.map((role) => [role.id, role.name]))
+  const owned = new Map<ElementId, number>()
+  for (const entry of index.register()) {
+    if (entry.partyId !== undefined) owned.set(entry.partyId, (owned.get(entry.partyId) ?? 0) + 1)
+  }
+  const said = { unitScope, assignmentScope, typeName, roleName }
+  return unitFindings(organisation, day, { owns: (id) => owned.get(id) ?? 0 }).flatMap((one) => organisationFinding(one, said))
+}
+
+/** What a finding of the organisation is said with: where each unit and assignment is kept, and what things are called. */
+type Said = {
+  unitScope: ReadonlyMap<ElementId, { scope: ScopePath; name: string; type: string }>
+  assignmentScope: ReadonlyMap<Assignment, ScopePath>
+  typeName: ReadonlyMap<string, string>
+  roleName: ReadonlyMap<string, string>
+}
+
+/** One of `model/units.ts`'s findings, as the findings of the scopes it is about. */
+function organisationFinding(found: UnitFinding, said: Said): Finding[] {
+  if (found.kind === 'overloaded') {
+    const scopes = [...new Set(found.assignments.map((one) => said.assignmentScope.get(one)).filter((one): one is ScopePath => one !== undefined))]
+    return scopes.sort().map((scope) => ({
+      key: 'check.personOverloaded', scope, id: found.person, name: found.person, person: found.person,
+      count: Math.round(found.load * 100),
+    }))
+  }
+  const unit = said.unitScope.get(found.unitId)
+  const type = said.typeName.get(unit?.type ?? '') ?? ''
+  const at = { scope: unit?.scope ?? '', id: found.unitId, name: unit?.name ?? found.unitId }
+  switch (found.kind) {
+    case 'vacant':
+      return [{ key: 'check.roleVacant', ...at, detail: said.roleName.get(found.roleId) ?? found.roleId, fields: [found.roleId], count: found.held, limit: found.min }]
+    case 'overMax':
+      return [{ key: 'check.roleOverMax', ...at, detail: said.roleName.get(found.roleId) ?? found.roleId, fields: [found.roleId], count: found.held, limit: found.max }]
+    case 'misplaced':
+      return [{ key: 'check.unitMisplaced', ...at, detail: type, ...(found.parentType ? { fields: [found.parentType] } : {}) }]
+    case 'spans':
+      return [{ key: 'check.unitSpans', ...at, detail: type, count: found.serves }]
+    case 'overLimit':
+      return [{ key: 'check.unitOverLimit', ...at, detail: type, count: found.owns, limit: found.limit }]
+    case 'endedUnit':
+    case 'endedRole':
+      return [{
+        key: 'check.assignmentEnded', ...at, scope: said.assignmentScope.get(found.assignment) ?? at.scope,
+        detail: said.roleName.get(found.assignment.roleId) ?? found.assignment.roleId, fields: [found.assignment.id],
+      }]
+  }
+}
+
 /** Every finding about one scope: the tree's about it, then its document's. */
 export function scopeFindings(deps: {
   scope: ScopePath
@@ -555,6 +668,7 @@ export function scopeFindings(deps: {
 }): Finding[] {
   return [
     ...identityFindings(deps.index).filter((finding) => finding.scope === deps.scope),
+    ...organisationFindings(deps.index).filter((finding) => finding.scope === deps.scope),
     ...documentFindings(deps),
   ]
 }

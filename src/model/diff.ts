@@ -32,6 +32,7 @@ import type { Adr } from './adr'
 import type { Transition } from './transition'
 import type { Cause, Experiment, Observation, Solution } from './observation'
 import type { OperatingRule, Responsibility, Role, UnitType } from './operatingModel'
+import type { Assignment } from './units'
 import type { DesignDiagram, DesignElement, Relation, RelationType } from './types'
 
 export type ChangeKind = 'added' | 'removed' | 'changed'
@@ -39,7 +40,7 @@ export type ChangeKind = 'added' | 'removed' | 'changed'
 /** What a change happened to. Ordered as the list is read, most meaningful first. */
 export type ChangeSubject =
   | 'element' | 'relation' | 'diagram' | 'decision' | 'transition' | 'observation' | 'cause' | 'solution' | 'experiment'
-  | 'unitType' | 'role' | 'responsibility' | 'operatingRule'
+  | 'unitType' | 'role' | 'responsibility' | 'operatingRule' | 'assignment'
   | 'membership' | 'geometry'
 
 export type ModelChange = {
@@ -276,7 +277,7 @@ export function diffModels(before: HostModel, after: HostModel): ModelChange[] {
 
   const order: ChangeSubject[] = [
     'element', 'relation', 'diagram', 'decision', 'transition', 'observation', 'cause', 'solution', 'experiment',
-    'unitType', 'role', 'responsibility', 'operatingRule',
+    'unitType', 'role', 'responsibility', 'operatingRule', 'assignment',
     'membership', 'geometry',
   ]
   return changes.sort((a, b) => order.indexOf(a.what) - order.indexOf(b.what))
@@ -294,6 +295,11 @@ function operatingChanges(before: HostModel, after: HostModel): ModelChange[] {
   each<Role>('role', before.roles, after.roles, (held) => held.name)
   each<Responsibility>('responsibility', before.responsibilities, after.responsibilities, (held) => held.name)
   each<OperatingRule>('operatingRule', before.operatingRules, after.operatingRules, (held) => held.id)
+  // An assignment by the unit it is in: a diff is kept with the history, and
+  // never names the person (ADR-0036 §8).
+  const unitName = (id: string) => after.elements.find((one) => one.id === id)?.name
+    ?? before.elements.find((one) => one.id === id)?.name ?? id
+  each<Assignment>('assignment', before.assignments, after.assignments, (held) => unitName(held.unitId))
   return changes
 }
 

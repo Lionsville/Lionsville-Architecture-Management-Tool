@@ -26,6 +26,8 @@ import type { HostModel } from '../model/hostModel'
 import { isBoardKind } from '../model/placement'
 import type { ImageEntry } from '../model/imageName'
 import type { Cause, Experiment, Observation, Solution } from '../model/observation'
+import type { OperatingRule, Responsibility, Role, UnitType } from '../model/operatingModel'
+import type { Assignment } from '../model/units'
 import type { RecordLink } from './links'
 import { ancestorScopes, isWithinScope, ROOT_SCOPE } from './scopePath'
 import type { ScopePath } from './scopePath'
@@ -268,6 +270,17 @@ export type ScopeModel = {
     causes?: readonly Cause[]
     solutions?: readonly Solution[]
     experiments?: readonly Experiment[]
+    /**
+     * The operating model, which only the organisation holds, and who holds
+     * which role in the scope's units (ADR-0036): read with the model so the
+     * roles are found from any scope and a person's assignments are counted
+     * across the tree. Ids only — no list here holds a person's name.
+     */
+    unitTypes?: readonly UnitType[]
+    roles?: readonly Role[]
+    responsibilities?: readonly Responsibility[]
+    operatingRules?: readonly OperatingRule[]
+    assignments?: readonly Assignment[]
   }
 }
 

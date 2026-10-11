@@ -43,6 +43,7 @@ import type { Cause, Experiment, Observation, Solution } from './observation'
 import type {
   OperatingRule, Responsibility, ResponsibilityId, Role, RoleId, UnitType, UnitTypeId,
 } from './operatingModel'
+import type { Assignment, AssignmentId } from './units'
 
 export type RelationId = string
 /** A dashed group's id — unique on its diagram, and nowhere else (ADR-0012 §6). */
@@ -72,6 +73,8 @@ export type ModelOrder = {
   responsibilities: ResponsibilityId[]
   /** By kind, which is a rule's id. */
   operatingRules: string[]
+  /** Who holds which role in which unit of this scope (ADR-0036 §4). */
+  assignments: AssignmentId[]
 }
 
 /** A diagram's own lists, in the order the file had them. */
@@ -119,7 +122,7 @@ export type Diagram = Omit<DesignDiagram, 'members' | 'groups' | 'lines' | 'geom
 
 export type Model = Omit<HostModel,
   | 'elements' | 'relations' | 'diagrams' | 'decisions' | 'transitions' | 'observations' | 'causes' | 'solutions' | 'experiments'
-  | 'unitTypes' | 'roles' | 'responsibilities' | 'operatingRules'> & {
+  | 'unitTypes' | 'roles' | 'responsibilities' | 'operatingRules' | 'assignments'> & {
   elements: Record<ElementId, DesignElement>
   relations: Record<RelationId, Relation>
   diagrams: Record<DiagramId, Diagram>
@@ -138,6 +141,8 @@ export type Model = Omit<HostModel,
   roles?: Record<RoleId, Role>
   responsibilities?: Record<ResponsibilityId, Responsibility>
   operatingRules?: Record<string, OperatingRule>
+  /** The assignments (ADR-0036 §4). Absent exactly as `decisions` is. */
+  assignments?: Record<AssignmentId, Assignment>
   order: ModelOrder
 }
 
@@ -189,6 +194,11 @@ export function responsibilitiesOf(model: Model): Record<ResponsibilityId, Respo
 /** The operating rules on this model, likewise: one per kind, by kind. */
 export function operatingRulesOf(model: Model): Record<string, OperatingRule> {
   return model.operatingRules ?? {}
+}
+
+/** The assignments on this model, likewise (ADR-0036 §4). */
+export function assignmentsOf(model: Model): Record<AssignmentId, Assignment> {
+  return model.assignments ?? {}
 }
 
 /** The routes on this diagram, whether or not the file carried the key. */
@@ -276,6 +286,12 @@ export function responsibilityList(model: Model): Responsibility[] {
 export function operatingRuleList(model: Model): OperatingRule[] {
   const by = operatingRulesOf(model)
   return model.order.operatingRules.flatMap((id) => by[id] ?? [])
+}
+
+/** The assignments in file order. */
+export function assignmentList(model: Model): Assignment[] {
+  const by = assignmentsOf(model)
+  return model.order.assignments.map((id) => by[id])
 }
 
 export function memberList(diagram: Diagram): DiagramMember[] {
@@ -488,6 +504,12 @@ export function fromArrays(host: HostModel): Model {
     out.operatingRules = rules
     ruleOrder = order
   }
+  let assignmentOrder: AssignmentId[] = []
+  if (host.assignments !== undefined) {
+    const [assignments, order] = index(host.assignments, (one) => one.id)
+    out.assignments = assignments
+    assignmentOrder = order
+  }
   out.order = {
     elements: elementOrder,
     relations: relationOrder,
@@ -502,6 +524,7 @@ export function fromArrays(host: HostModel): Model {
     roles: roleOrder,
     responsibilities: responsibilityOrder,
     operatingRules: ruleOrder,
+    assignments: assignmentOrder,
   }
   return out
 }
@@ -538,6 +561,7 @@ export function toArrays(model: Model): HostModel {
   if (model.operatingRules !== undefined) {
     out.operatingRules = unindex(model.operatingRules, model.order.operatingRules)
   }
+  if (model.assignments !== undefined) out.assignments = unindex(model.assignments, model.order.assignments)
   delete out.order
   return out
 }

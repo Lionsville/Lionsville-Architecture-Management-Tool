@@ -385,8 +385,8 @@ export function OrganisationScreen({
    * the shell already holds: the tree's findings and the technology rows.
    */
   const attention = useMemo(
-    () => attentionItems(findings, register, technology, at, s, scopeName),
-    [findings, register, technology, at, s, scopeName],
+    () => attentionItems(findings, register, technology, at, s, scopeName, people?.people),
+    [findings, register, technology, at, s, scopeName, people],
   )
 
   /**

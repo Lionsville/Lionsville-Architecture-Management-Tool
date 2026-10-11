@@ -67,6 +67,8 @@ import { scopeTree, sortScopes } from '../../projects/scope'
 import type { ScopeModel, ScopeSnapshot, ScopeSummary } from '../../projects/scope'
 import type { Transition } from '../../model/transition'
 import { transitionFromFile } from './format/transitionFile'
+import { OPERATING_FILES, operatingFrom } from './format/operatingFile'
+import { ASSIGNMENT_FILES, assignmentsFrom } from './format/assignmentFile'
 
 import {
   isSafeScopePath, parentScope, ROOT_SCOPE, scopePathLabel, scopeSegments,
@@ -180,6 +182,7 @@ export const SET_ASIDE = '.unread'
 
 /** The four lists of a scope's analysis, as a store reads them for the index. */
 type AnalysisList = 'observations' | 'causes' | 'solutions' | 'experiments'
+type OrganisationList = 'unitTypes' | 'roles' | 'responsibilities' | 'operatingRules' | 'assignments'
 
 export class FileSystemScopeStore implements ScopeStore {
   readonly id = 'folder on disk'
@@ -401,6 +404,7 @@ export class FileSystemScopeStore implements ScopeStore {
         ...lists,
         transitions: await this.transitionsIn(folder),
         ...analysis,
+        ...await this.organisationIn(folder),
         causes: causesAsSaid(analysis.causes, analysis.solutions, headerText === undefined ? undefined : folderFormatVersion(headerText)),
       } })
     })
@@ -467,6 +471,25 @@ export class FileSystemScopeStore implements ScopeStore {
       solutions: await this.recordsIn(await under(SOLUTIONS_SUBFOLDER), `${OBSERVATIONS_FOLDER}/${SOLUTIONS_SUBFOLDER}`, solutionFromFile),
       experiments: await this.recordsIn(await under(EXPERIMENTS_SUBFOLDER), `${OBSERVATIONS_FOLDER}/${EXPERIMENTS_SUBFOLDER}`, experimentFromFile),
     }
+  }
+
+  /**
+   * The operating model and the assignments (ADR-0036), which the index reads
+   * across the tree: who holds which role is asked of every scope at once, and
+   * the organisation's roles are found from any of them. A list file that will
+   * not read is left out, as an unreadable plan is.
+   */
+  private async organisationIn(folder: DirectoryHandleLike): Promise<Pick<ScopeModel['model'], OrganisationList>> {
+    const texts = new Map<string, string>()
+    for (const path of [...OPERATING_FILES, ...ASSIGNMENT_FILES]) {
+      const [under, name] = path.split('/')
+      const held = await folder.getDirectoryHandle(under).catch(this.orAbsent(`the ${under} folder`))
+      const handle = await held?.getFileHandle(name).catch(this.orAbsent('a list of the organisation'))
+      const text = await this.textOf(handle, 'a list of the organisation')
+      if (text !== undefined) texts.set(path, text)
+    }
+    const textAt = (path: string) => texts.get(path)
+    return { ...operatingFrom(textAt), ...assignmentsFrom(textAt) }
   }
 
   /** The records one folder holds, by number. A file that will not read is left out. */

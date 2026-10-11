@@ -39,6 +39,7 @@ import type { DesignElement } from './types'
 export const OWNER_DETAIL = [
   'lifecycle', 'lifecycleDates', 'successorId', 'owner', 'outside', 'partyId',
   'category', 'vendor', 'technology', 'platformArchetype', 'shared', 'aspects', 'isManaged', 'scopes',
+  'unitTypeId', 'extraSlots',
 ] as const satisfies readonly (keyof DesignElement)[]
 
 export type OwnerDetailField = typeof OWNER_DETAIL[number]

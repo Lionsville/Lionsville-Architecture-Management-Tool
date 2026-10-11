@@ -1,0 +1,144 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
+/**
+ * The organisation as it is, across the tree (ADR-0036 §3, §4): the index
+ * lists every unit and every assignment, holds the operating model the
+ * organisation keeps, and never a person's name; and the checks read what
+ * the units and assignments contradict off it, each finding about the scope
+ * that answers for what it is about.
+ */
+import { describe, expect, it } from 'vitest'
+import { translator } from '../i18n'
+import type { DesignElement } from '../model'
+import type { Role, UnitType } from '../model/operatingModel'
+import type { Assignment } from '../model/units'
+import { findingSentence, organisationFindings, scopeFindings } from './checks'
+import { indexScopes } from './scopeIndex'
+import type { ScopeModel } from './scope'
+
+const DAY = '2026-10-11'
+
+function actor(id: string, over: Partial<DesignElement> = {}): DesignElement {
+  return { id, kind: 'actor', name: id[0].toUpperCase() + id.slice(1), lifecycle: 'live', isManaged: false, aspects: {}, ...over }
+}
+
+const domain: UnitType = { id: 'ut-domain', name: 'Domain', top: true, within: [], slots: [{ role: 'ro-owner', min: 1, max: 1 }] }
+const team: UnitType = {
+  id: 'ut-team', name: 'Team', within: ['ut-domain'], limit: 1, slots: [{ role: 'ro-po', min: 1, max: 1 }],
+}
+const roles: Role[] = [
+  { id: 'ro-owner', name: 'Domain owner', duties: [], manages: true },
+  { id: 'ro-po', name: 'Product owner', duties: [], manages: true },
+]
+const as = (id: string, unitId: string, roleId: string, person: string, over: Partial<Assignment> = {}): Assignment => ({
+  id, unitId, roleId, person: { person }, ...over,
+})
+
+/**
+ * Acme Logistics: the organisation keeps the operating model and a team that
+ * sits at the top, where a team may not; the customer domain keeps its unit
+ * and a team under it, two applications the team owns, and a stand-in of the
+ * organisation's team. Femke holds a role in two scopes, at 150% in all.
+ */
+function tree(): ScopeModel[] {
+  return [
+    {
+      path: '',
+      model: {
+        elements: [actor('platform', { unitTypeId: 'ut-team' }), actor('stakeholders')],
+        relations: [],
+        unitTypes: [domain, team], roles,
+        assignments: [as('as-1', 'platform', 'ro-po', 'pe-femke', { share: 0.5 })],
+      },
+    },
+    {
+      path: 'customer',
+      model: {
+        elements: [
+          actor('customer', { unitTypeId: 'ut-domain' }),
+          actor('webshop', { unitTypeId: 'ut-team', parentId: 'customer' }),
+          actor('platform', { ref: '', name: 'Platform' }),
+          { id: 'shop', kind: 'application', name: 'Shop', partyId: 'webshop', lifecycle: 'live', isManaged: true, aspects: {} },
+          { id: 'orders', kind: 'application', name: 'Orders', partyId: 'webshop', lifecycle: 'live', isManaged: true, aspects: {} },
+        ],
+        relations: [],
+        assignments: [
+          as('as-1', 'webshop', 'ro-po', 'pe-femke'),
+          as('as-2', 'customer', 'ro-owner', 'pe-ada', { until: '2026-01-31' }),
+        ],
+      },
+    },
+  ]
+}
+
+describe('the organisation in the index', () => {
+  const index = indexScopes(tree())
+
+  it('lists every unit where it is answered for, and no stand-in of one', () => {
+    expect(index.units().map(({ scope, unit }) => [scope, unit.id])).toEqual([['customer', 'customer'], ['', 'platform'], ['customer', 'webshop']])
+  })
+
+  it('lists every assignment with the scope that keeps it, in path order', () => {
+    expect(index.assignments().map(({ scope, assignment }) => [scope, assignment.id])).toEqual([['', 'as-1'], ['customer', 'as-1'], ['customer', 'as-2']])
+  })
+
+  it('holds the operating model the organisation keeps, and only the organisation\'s', () => {
+    expect(index.operatingModel().unitTypes.map((type) => type.id)).toEqual(['ut-domain', 'ut-team'])
+    expect(index.operatingModel().roles).toEqual(roles)
+    expect(indexScopes(tree().slice(1)).operatingModel()).toEqual({ unitTypes: [], roles: [], responsibilities: [], operatingRules: [] })
+    expect(index.organisation().roles).toBe(index.operatingModel().roles)
+  })
+
+  it('holds a person as an id and never as a name', () => {
+    expect(JSON.stringify(index.assignments())).not.toMatch(/Femke|Ada/)
+    expect(index.organisation().assignments.map((one) => one.person)).toEqual([
+      { person: 'pe-femke' }, { person: 'pe-femke' }, { person: 'pe-ada' },
+    ])
+  })
+})
+
+describe('what the organisation contradicts, from the index', () => {
+  const index = indexScopes(tree())
+
+  it('says each finding about the scope that answers for what it is about', () => {
+    const found = organisationFindings(index, DAY)
+    expect(found.map((one) => [one.key, one.scope, one.id])).toEqual([
+      ['check.roleVacant', 'customer', 'customer'],
+      ['check.unitMisplaced', '', 'platform'],
+      ['check.unitOverLimit', 'customer', 'webshop'],
+      ['check.personOverloaded', '', 'pe-femke'],
+      ['check.personOverloaded', 'customer', 'pe-femke'],
+    ])
+    expect(found[0]).toMatchObject({ name: 'Customer', detail: 'Domain owner', fields: ['ro-owner'], count: 0, limit: 1 })
+    expect(found[2]).toMatchObject({ detail: 'Team', count: 2, limit: 1 })
+    expect(found[3]).toMatchObject({ person: 'pe-femke', name: 'pe-femke', count: 150 })
+  })
+
+  it('finds an assignment in a unit that has ended, about the scope that keeps it', () => {
+    const ended = tree()
+    ended[1].model = { ...ended[1].model, elements: ended[1].model.elements.map((one) => (one.id === 'webshop' ? { ...one, lifecycleDates: { retired: '2026-06-01' } } : one)) }
+    const found = organisationFindings(indexScopes(ended), DAY).filter((one) => one.key === 'check.assignmentEnded')
+    expect(found).toEqual([{ key: 'check.assignmentEnded', scope: 'customer', id: 'webshop', name: 'Webshop', detail: 'Product owner', fields: ['as-1'] }])
+  })
+
+  it('has nothing to say of a tree with no units and no assignments', () => {
+    expect(organisationFindings(indexScopes([{ path: '', model: { elements: [], relations: [] } }]), DAY)).toEqual([])
+  })
+
+  it('is part of what one scope is told about itself', () => {
+    const findings = scopeFindings({
+      scope: '', index, model: { name: 'Acme', elements: tree()[0].model.elements as DesignElement[], relations: [], diagrams: [] },
+    }).filter((one) => one.key.startsWith('check.unit') || one.key.startsWith('check.person') || one.key.startsWith('check.role'))
+    expect(findings.map((one) => one.key)).toContain('check.unitMisplaced')
+    expect(findings.every((one) => one.scope === '')).toBe(true)
+  })
+
+  it('reads as a sentence, the person named by the register where a screen has one', () => {
+    const s = translator('en')
+    const found = organisationFindings(index, DAY)
+    expect(findingSentence(found[0], s, () => 'Customer')).toBe('Customer is short of Domain owner: 0 hold the role, and its type asks for at least 1')
+    expect(findingSentence(found[3], s, () => '', (id) => (id === 'pe-femke' ? 'Femke Bos' : id))).toBe('Femke Bos holds 150% across their roles')
+    expect(findingSentence(found[3], s, () => '')).toBe('pe-femke holds 150% across their roles')
+  })
+})

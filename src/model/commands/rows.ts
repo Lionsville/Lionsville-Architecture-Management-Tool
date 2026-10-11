@@ -20,6 +20,7 @@ import type { Transition } from '../transition'
 import type { Cause, Experiment, Observation, Solution } from '../observation'
 import type { OperatingRule, Responsibility, Role, UnitType } from '../operatingModel'
 import type { Diagram, DiagramId, Model, ModelOrder } from '../normalised'
+import type { Assignment } from '../units'
 import type { DesignElement, DiagramGroup, DiagramMember, EdgeRoute, Relation } from '../types'
 
 // --- indexed collections, immutably -----------------------------------------
@@ -180,6 +181,17 @@ export function withOperating<K extends keyof OperatingLists>(model: Model, list
     return out
   }
   return { ...model, [list]: rows.by, order }
+}
+
+/** The assignments (ADR-0036 §4), put back: emptied means gone, as every list of records. */
+export function withAssignments(model: Model, rows: Rows<Assignment>): Model {
+  const order = withOrder(model, 'assignments', rows.order)
+  if (rows.order.length === 0) {
+    const out = { ...model, order }
+    delete out.assignments
+    return out
+  }
+  return { ...model, assignments: rows.by, order }
 }
 
 export function setDiagram(model: Model, id: DiagramId, diagram: Diagram): Model {

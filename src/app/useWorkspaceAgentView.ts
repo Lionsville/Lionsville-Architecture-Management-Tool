@@ -16,7 +16,7 @@ import type { ChangeAcross } from '../agent/merge'
 import type { RendererView } from '../agent/renderer'
 import type { Destination } from '../agent/screen'
 import { coverageOf, unmappedFunctions } from '../business'
-import { documentFindings, identityFindings } from '../projects/checks'
+import { documentFindings, identityFindings, organisationFindings } from '../projects/checks'
 import { standInOf } from '../projects/library'
 import { mayApplyPatch } from '../projects/mayEdit'
 import { flattenScopes } from '../projects/scope'
@@ -190,6 +190,7 @@ function agentTree(at: {
       const coverage = coverageOf(model.relations, rowsElsewhereRef.current)
       return [
         ...identityFindings(indexRef.current),
+        ...organisationFindings(indexRef.current),
         ...documentFindings({
           scope, model, index: indexRef.current,
           business: {

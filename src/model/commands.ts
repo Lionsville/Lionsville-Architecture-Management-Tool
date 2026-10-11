@@ -36,6 +36,7 @@ import type { Cause, Experiment, Observation, Solution } from './observation'
 import type {
   OperatingRule, OperatingRuleKind, Responsibility, ResponsibilityId, Role, RoleId, UnitType, UnitTypeId,
 } from './operatingModel'
+import type { Assignment, AssignmentId } from './units'
 import type {
   AdrId, CauseId, RelationId, Diagram, DiagramId, ExperimentId, GroupId, Model, ObservationId, SolutionId, TransitionId,
 } from './normalised'
@@ -192,6 +193,12 @@ export type CommandBody =
   | { type: 'operatingRule.add'; rule: OperatingRule; at?: number }
   | { type: 'operatingRule.update'; id: OperatingRuleKind; patch: Partial<OperatingRule> }
   | { type: 'operatingRule.remove'; id: OperatingRuleKind }
+
+  // --- who holds which role in which unit, in the unit's scope (ADR-0036 §4) --
+  | { type: 'assignment.add'; assignment: Assignment; at?: number }
+  /** A correction, and an end: an end is `until` set. */
+  | { type: 'assignment.update'; id: AssignmentId; patch: Partial<Assignment> }
+  | { type: 'assignment.remove'; id: AssignmentId }
 
   // --- the project itself --------------------------------------------------
   | { type: 'project.settings'; patch: ProjectPatch }

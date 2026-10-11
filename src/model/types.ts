@@ -251,7 +251,7 @@ export interface DesignElement {
   /** Which {@link ElementKind} `actor` it belongs to, when that has been said. */
   partyId?: ElementId;
   /**
-   * A `function` only: which domains the organisation has assigned it to
+   * A `function`: which domains the organisation has assigned it to
    * (ADR-0012 §3) — the *top-down* half of who owns a capability.
    *
    * A path per domain, as a plain string until scopes are a type of their own.
@@ -259,8 +259,27 @@ export interface DesignElement {
    * derived from the tree and arrives with scopes; until then this is the only
    * half there is, and a function with none is what the sheet's *not yet
    * mapped* band is made of (§9).
+   *
+   * A **unit** (an actor with a `unitTypeId`, ADR-0036 §3): the domains it
+   * serves, in the same words. Absent means the scope it is filed in. A unit
+   * that serves several is filed in the scope above them and names each here,
+   * which its type's `spans` says it may.
    */
   scopes?: string[];
+  /**
+   * An `actor` only: the organisation's kind of unit this actor is, by the id
+   * of a unit type of the operating model (ADR-0036 §3). An actor with one is
+   * a **unit**, and holds the roles its type says; one without stays a party,
+   * a stakeholder or a team, as before.
+   */
+  unitTypeId?: string;
+  /**
+   * A unit only: role slots beyond those its type holds, each a role of the
+   * operating model by id with how many of it — at least `min`, at most `max`
+   * where said (ADR-0036 §3). The same shape as a unit type's slots, declared
+   * here because this file imports nothing.
+   */
+  extraSlots?: { role: string; min: number; max?: number }[];
   /**
    * Which phase it is in, and — with {@link DesignElement.lifecycleDates} — when
    * (ADR-0009). Meaningful on a function and an actor as well as an application

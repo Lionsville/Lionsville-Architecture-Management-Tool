@@ -22,6 +22,9 @@
 import type { Translate } from '../../i18n'
 import type { ElementId } from '../../model'
 import { findingSentence } from '../../projects/checks'
+import { pickedPerson } from '../../model/person'
+import type { Person } from '../../people/person'
+import { personText, registerOf } from '../../people/shown'
 import type { Finding } from '../../projects/checks'
 import { ROOT_SCOPE, isWithinScope } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
@@ -60,8 +63,12 @@ export function attentionItems(
   at: ScopePath,
   s: Translate,
   scopeName: (path: ScopePath) => string,
+  people: readonly Person[] = [],
 ): AttentionItem[] {
   const within = (path: ScopePath) => at === ROOT_SCOPE || isWithinScope(path, at)
+  // A finding about a person says who by id; the register says the name (ADR-0036 §8).
+  const named = registerOf(people)
+  const personName = (id: string) => personText(pickedPerson(id), named, s)
   const items: AttentionItem[] = []
   const seen = new Set<string>()
   const add = (item: Omit<AttentionItem, 'kind'>) => {
@@ -76,7 +83,7 @@ export function attentionItems(
       if (finding.information) continue
       add({
         key: finding.key, scope, id: finding.id, ...(finding.view ? { view: finding.view } : {}),
-        text: findingSentence(finding, s, scopeName),
+        text: findingSentence(finding, s, scopeName, personName),
       })
     }
   }
