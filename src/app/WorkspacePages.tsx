@@ -313,6 +313,7 @@ function PlanPages({ parts }: { parts: WorkspaceParts }) {
         asOf={open ? shownAsOf(open, viewing.days) : undefined}
         readOnly={readOnly}
         actions={plans.roadmapActions}
+        remember={`roadmap\u0000${props.project.path}`}
         onClose={() => { plans.closeRoadmap(); pages.leaveIfNothingToDraw() }}
         windowChrome={pageChrome}
       />

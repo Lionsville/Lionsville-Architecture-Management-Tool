@@ -17,6 +17,7 @@ import { axeFindings } from '../../app/testing/axe'
 import { RoadmapPage } from './RoadmapPage'
 import type { RoadmapActions, RoadmapPageProps } from './RoadmapPage'
 import { renderShell } from '../../app/testing/renderShell'
+import { openFinding, pressAction, unfoldFindings } from '../../app/testing/findings'
 import type { DesignElement, DesignModel, Transition } from '../../model'
 
 afterEach(() => cleanup())
@@ -264,6 +265,20 @@ describe('the axis', () => {
   })
 })
 
+/**
+ * The findings are the one list since 3.6.1 (`widgets/FindingsList`): grouped
+ * by check and folded, an instance opening its explanation. A test that reads
+ * a sentence unfolds the list first, and one that follows a finding presses
+ * the action in its explanation, where it pressed the sentence or a button
+ * beside it.
+ */
+const findingsBox = () => document.querySelector<HTMLElement>('[data-guide="roadmap.findings"]')!
+
+/** One finding opened on its explanation, by its row's test id. */
+function opened(row: string): HTMLElement {
+  return openFinding(findingsBox(), row)
+}
+
 describe('the checks', () => {
   it('reports what the dates disagree about, says so when they agree, and always says what it cannot tell', () => {
     setup({
@@ -271,6 +286,9 @@ describe('the checks', () => {
         relations: [{ type: 'flow', id: 'c1', sourceId: 'billing', targetId: 'wms-old', isBidirectional: false }],
       }),
     })
+    expect(within(findingsBox()).getAllByTestId('findings-group').map((row) => row.textContent))
+      .toEqual([expect.stringContaining('Retires while others still depend on it(1)')])
+    unfoldFindings(findingsBox())
     expect(screen.getByText(/Warehouse Management retires on 2028-01-31 with 1 connections still live/))
       .toBeTruthy()
     cleanup()
@@ -300,17 +318,19 @@ describe('the checks', () => {
       ],
     })
 
-    it('says how many run between which two applications, and offers to accept it', () => {
+    it('says how many run between which two applications, and offers to accept it', async () => {
       const acceptInterface = vi.fn()
       setup({ model: implied(), actions: { acceptInterface } as never })
-      expect(screen.getByText(/1 container interfaces between Billing and Warehouse Management/)).toBeTruthy()
-      fireEvent.click(screen.getByTestId('accept-interface-x1'))
+      const explanation = opened('finding-impliedInterface-x1')
+      expect(within(explanation).getByTestId('finding-sentence').textContent).toMatch(/1 container interfaces between Billing and Warehouse Management/)
+      expect(await axeFindings()).toEqual([])
+      pressAction(explanation, 'Accept')
       expect(acceptInterface).toHaveBeenCalledWith('x1')
     })
 
     it('offers nothing to a reader', () => {
       setup({ model: implied(), readOnly: true })
-      expect(screen.queryByTestId('accept-interface-x1')).toBeNull()
+      expect(within(opened('finding-impliedInterface-x1')).queryByTestId('finding-action-acceptInterface')).toBeNull()
     })
   })
 
@@ -321,9 +341,10 @@ describe('the checks', () => {
       { type: 'flow', id: 'c2', sourceId: 'billing', targetId: 'wms-old', isBidirectional: false, validUntil: '2029-01-01' },
     ] as DesignModel['relations']
     setup({ model: model({ relations }), actions: { onOpenElement } as never })
-    fireEvent.click(screen.getByTestId('finding-retiresWithDependants-wms-old'))
+    pressAction(opened('finding-retiresWithDependants-wms-old'), 'Open it')
     expect(onOpenElement).toHaveBeenLastCalledWith('wms-old')
-    fireEvent.click(screen.getByTestId('finding-lineOutlivesEnd-c2'))
+    fireEvent.click(screen.getByRole('button', { name: /All findings/ }))
+    pressAction(opened('finding-lineOutlivesEnd-c2'), 'Open the row')
     expect(onOpenElement).toHaveBeenLastCalledWith('billing')
   })
 })

@@ -2,12 +2,14 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * One finding in words, as a link to what it is about: the place its dates
- * are put right (`findingTarget`).
+ * One finding of the dates in words: as a link to what it is about, the place
+ * its dates are put right (`findingTarget`) — the roadmap card's one finding
+ * at home — and as the sentence an instance says in the roadmap's list of
+ * findings, whose explanation offers the same ways there as actions.
  *
- * The one component that says a finding. `findingLinks.test.ts` holds every
- * other file to not saying one itself, so a new place that lists findings
- * lists them as links, because this is the only way it can list them.
+ * The one file that says a finding of the dates. `findingLinks.test.ts` holds
+ * every other file to not saying one itself, so a new place that lists them
+ * lists them through here, as a link or in the one list.
  */
 import Link from '@mui/material/Link'
 import { RELATION_LABEL } from '../../model'
@@ -15,8 +17,8 @@ import type { Finding } from '../../model/checks'
 import type { Translate } from '../../i18n'
 import { CHECK_SENTENCE } from '../labels'
 
-/** A finding's sentence, filled in. Not exported: said anywhere else, it would not be a link. */
-function findingWords(problem: Finding, t: Translate): string {
+/** A finding's sentence, filled in: what a link here says, and an instance in the roadmap's list of findings. */
+export function findingWords(problem: Finding, t: Translate): string {
   return t(CHECK_SENTENCE[problem.kind], {
     name: problem.name,
     detail: problem.detail ?? '',

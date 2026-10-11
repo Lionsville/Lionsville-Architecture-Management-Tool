@@ -38,7 +38,7 @@ import Chip from '@mui/material/Chip'
 import Switch from '@mui/material/Switch'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import { RELATION_LABEL, addDays, daysBetween, isDay, portProgress, transitionLabel } from '../../model'
-import type { DesignElement, DesignModel, ElementId, Lifecycle, Relation, Transition } from '../../model'
+import type { DesignElement, DesignModel, ElementId, Lifecycle, Transition } from '../../model'
 import { useStrings } from '../../i18n'
 import type { StringKey } from '../../i18n'
 import { BackIcon, CaretIcon } from '../../widgets/icons'
@@ -46,10 +46,8 @@ import { PageDialog } from '../../widgets/PageDialog'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { barChromeFor } from '../../platform/windowChrome'
 import { findings } from '../../model/checks'
-import type { Finding } from '../../model/checks'
 import type { PlatformTree } from '../../model/hosting'
-import { findingTarget } from '../findingTarget'
-import { FindingSentence } from './FindingSentence'
+import { RoadmapFindings } from './RoadmapFindings'
 import { fractionOf, roadmapOf, shadowRunOf, within } from '../timeline'
 import type { RelationTrack } from '../timeline'
 
@@ -112,13 +110,6 @@ export type Initiative = {
   elements?: readonly DesignElement[]
 }
 
-/** Open what a finding is about (`findingTarget`) through the page's own actions. */
-function openFinding(problem: Finding, relations: readonly Relation[], actions: RoadmapActions): void {
-  const target = findingTarget(problem, relations)
-  if (target?.page === 'plan') actions.onOpenPlan(target.id)
-  else if (target) actions.onOpenElement(target.id)
-}
-
 export type RoadmapPageProps = {
   open: boolean
   model: DesignModel
@@ -134,6 +125,8 @@ export type RoadmapPageProps = {
   asOf?: string
   readOnly: boolean
   actions: RoadmapActions
+  /** Where the session keeps what its list of findings has unfolded: the open scope's roadmap. */
+  remember?: string
   onClose(): void
   windowChrome?: WindowChrome
 }
@@ -198,45 +191,8 @@ export function RoadmapPage(props: RoadmapPageProps) {
   const empty = whole.tracks.length === 0 && whole.relations.length === 0 && whole.transitions.length === 0
     && below.length === 0 && problems.length === 0
 
-  /**
-   * Where the dates disagree, under the axis — and under the empty state too,
-   * where it says that they agree: the one place on this page a finding is
-   * read, drawn whether or not there is anything dated above it.
-   */
-  const findingsBox = (
-    <Box sx={{ mt: 3 }} data-guide="roadmap.findings">
-      <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary' }}>
-        {t('check.title')}
-      </Typography>
-      {problems.length === 0 ? (
-        <Typography variant="body2" color="text.secondary">{t('check.none')}</Typography>
-      ) : (
-        <Box component="ul" sx={{ pl: '1.2em', my: 0.5 }}>
-          {problems.map((problem, index) => (
-            <Box component="li" key={`${problem.kind}-${problem.id}-${index}`} sx={{ fontSize: 13, my: 0.25 }}>
-              <FindingSentence problem={problem} t={t} onOpen={() => openFinding(problem, model.relations, actions)} />
-              {/* The one finding with something to do about it: the
-                  application line nobody drew, written from the
-                  container lines that imply it (ADR-0013). */}
-              {problem.kind === 'impliedInterface' && !readOnly && (
-                <Button
-                  size="small"
-                  data-testid={`accept-interface-${problem.id}`}
-                  sx={{ ml: 1, py: 0, minWidth: 0, fontSize: 12 }}
-                  onClick={() => actions.acceptInterface(problem.id)}
-                >
-                  {t('check.accept')}
-                </Button>
-              )}
-            </Box>
-          ))}
-        </Box>
-      )}
-      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-        {t('check.staleness')}
-      </Typography>
-    </Box>
-  )
+  /** Where the dates disagree, under the axis — and under the empty state too, where it says that they agree. */
+  const findingsBox = <RoadmapFindings problems={problems} relations={model.relations} readOnly={readOnly} actions={actions} remember={props.remember} />
 
   return (
     <PageDialog
