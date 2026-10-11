@@ -309,12 +309,13 @@ Register, verschwindet er also auf einmal aus jeder Ansicht.
   Eine Zeile, die eindeutig jemand Vorhandenes ist, fügt niemanden hinzu; eine,
   die es vielleicht ist, wird markiert und nur hinzugefügt, wenn Sie
   **Trotzdem hinzufügen** ankreuzen; der Rest wird hinzugefügt.
-- **Eine Person** zeigt, wer sie ist und wie weit sie im Ausscheiden ist.
-  **Hat heute inne** hat noch nichts zu zeigen: Das Register führt keine
-  Rollen. **Das bin ich** sagt dieser Installation, welcher Eintrag Sie sind,
-  damit Sie überall markiert werden, wo Sie vorkommen; das wird bei der
-  Installation geführt, nicht in Ihrem Ordner. **Korrigieren…** ändert Name,
-  Adresse oder Art.
+- **Eine Person** zeigt, wer sie ist, wie weit sie im Ausscheiden ist und was
+  sie in der Organisation innehat: **Hat heute inne**, **Wird innehaben** und
+  **Hatte zuvor inne**, jeweils eine Rolle in einer Einheit (siehe *Einheiten
+  und die Personen darin*). **Das bin ich** sagt dieser Installation, welcher
+  Eintrag Sie sind, damit Sie überall markiert werden, wo Sie vorkommen; das
+  wird bei der Installation geführt, nicht in Ihrem Ordner. **Korrigieren…**
+  ändert Name, Adresse oder Art.
 - **Als ausgeschieden markieren** fragt nach dem letzten Tag. Der Name wird
   weiter angezeigt, bis die Richtlinie ihn vergisst.
 - **Jetzt vergessen** fragt zuerst und entfernt dann Name und Adresse
@@ -1852,6 +1853,62 @@ Ein Agent liest das Betriebsmodell mit `unitTypes.list`, `roles.list` und
 `responsibilities.list` aus der Organisation, welcher Bereich auch geöffnet
 ist, und ändert es mit `unitType.add`, `unitType.update`, `role.add` und
 `role.update`, während die Organisation der geöffnete Bereich ist.
+
+### Einheiten und die Personen darin
+
+Ein Akteur wird zur **Einheit**, sobald er einen Einheitstyp hat: Wählen Sie
+einen unter **Einheit** in seinem Inspektor, auf einem Board oder auf seiner
+Seite; **Keine Einheit** macht ihn wieder zu einer Partei. Nichts anderes macht
+etwas zur Einheit. Die Einheit, in der er steht, ist der Akteur, unter dem er
+eingeordnet ist, und die Tage, an denen er beginnt und endet, sind seine
+Lebenszyklusdaten — eine Einheit, die außer Betrieb ist, ist beendet.
+
+Der Abschnitt einer Einheit sagt:
+
+- **Eingeordnet in** — der Bereich, der sie führt — und **Bedient**: die
+  Domänen, die sie bedient, dieser Bereich, wenn Sie nichts anderes sagen. Eine
+  Einheit, die mehrere Domänen bedient, wird im Bereich darüber eingeordnet,
+  und ihr Typ muss es erlauben.
+- **Besitzt** — jede Anwendung, die sie als den Akteur nennt, zu dem sie
+  gehört — und **Verantwortlich für**, was ihr zugewiesen ist.
+- **Rollen, heute**: jede Rolle, die ihr Typ hat, mit der gewünschten Anzahl,
+  und wer sie heute innehat — mit dem Namen aus dem Register, dem Anteil, wo
+  es nicht die ganze Zeit ist, *kommissarisch* und *Sie*. Eine Rolle mit zu
+  wenigen Personen zeigt **+ unbesetzt**; ein Klick ordnet jemanden zu. **Eine
+  Rolle über ihren Typ hinaus …** fügt nur dieser Einheit eine optionale Rolle
+  hinzu.
+- **Wer sie führt**: wer heute eine führende Rolle innehat, in dieser Einheit
+  oder einer darüber. Die App sagt es und gewährt daraus nichts.
+- **Prüfungen**: was die Organisation heute über diese Einheit widerspricht —
+  eine Rolle mit zu wenigen Personen oder über ihrem Maximum, eine Einheit, wo
+  ihr Typ nicht stehen darf, eine, die mehr Domänen bedient, als ihr Typ
+  erlaubt, oder mehr Anwendungen besitzt als ihr Limit, jemand, der noch in
+  einer beendeten Einheit oder Rolle steht, und jeder darin, dessen Anteile
+  zusammen mehr als die ganze Zeit sind. Die Startseite der Organisation zeigt
+  dieselben Befunde für jeden Bereich.
+
+**Zuordnen** ist ein Schritt in dem Bereich, der die Einheit führt: Wählen Sie
+die Rolle, die Person — gesucht im Register, *Sie* markiert —, den Anteil, den
+ersten Tag und ob es kommissarisch ist. **Neue Person …** ist das eigene
+Formular der Seite Personen, sodass jemand, der vielleicht schon im Register
+steht, angeboten wird, bevor ein zweiter Eintrag entsteht. Die Zuordnung
+enthält die ID der Person, nie ihren Namen. Ein Klick auf eine Person
+korrigiert die Zuordnung, **beendet** sie heute oder entfernt ein Versehen;
+eine beendete Zuordnung bleibt, als das, was die Person innehatte.
+
+**Als ausgeschieden markieren** auf der Seite Personen beendet jede Zuordnung
+der Person an ihrem letzten Tag — ein Schritt in jedem Bereich, der eine führt —
+und entfernt Zuordnungen, die erst danach begonnen hätten.
+
+Eine Einheit, die ein anderer Bereich führt, wird hier gezeigt und dort
+geändert.
+
+Ein Agent macht einen Akteur mit `element.update` (`unitTypeId`, `scopes`,
+`extraSlots`) zur Einheit, fragt mit `assignments.list`, wer was innehat — über
+den ganzen Baum, und für eine Einheit ihre Rollen und wer sie führt — und
+ordnet zu und beendet mit `assignment.add` und `assignment.end` in dem Bereich,
+der die Einheit führt. Ein Agent vergisst, entfernt oder führt nie jemanden
+zusammen.
 
 ## Eine Zeichnung
 

@@ -274,12 +274,12 @@ so when a name goes from the register, it goes from every screen at once.
   semicolons. Every row goes through the same check: one that is plainly
   somebody already there adds nobody, one that only may be is flagged and
   added only where you tick **Add anyway**, and the rest are added.
-- **A person** shows who they are and where they are in leaving. **Holds
-  today** has nothing to show yet: the register holds no roles. **This is
-  me** tells this install
-  which entry is you, so you are marked wherever you appear; it is kept with
-  the install, not in your folder. **Correct…** changes the name, the
-  address or the kind.
+- **A person** shows who they are and where they are in leaving, and what
+  they hold across the organisation: **Holds today**, **Will hold** and
+  **Held before**, each a role in a unit (see *Units and the people in them*).
+  **This is me** tells this install which entry is you, so you are marked
+  wherever you appear; it is kept with the install, not in your folder.
+  **Correct…** changes the name, the address or the kind.
 - **Mark as left** takes their last day. Their name is still shown until the
   policy forgets it.
 - **Forget now** asks first, then takes the name and the address away for
@@ -1619,6 +1619,55 @@ An agent reads the operating model with `unitTypes.list`, `roles.list` and
 `responsibilities.list`, from the organisation whatever scope is open, and
 changes it with `unitType.add`, `unitType.update`, `role.add` and
 `role.update` while the organisation is the scope open.
+
+### Units and the people in them
+
+An actor becomes a **unit** when it has a unit type: choose one under **Unit**
+in its inspector, on a board or on its page, and **Not a unit** makes it a
+party again. Nothing else marks a unit. The unit it sits in is the actor it is
+filed under, and the dates it starts and ends are its lifecycle dates — so a
+unit that has retired has ended.
+
+A unit's section says:
+
+- **Filed in** — the scope that keeps it — and **Serves**: the domains it
+  serves, that scope unless you say otherwise. A unit that serves several
+  domains is filed in the scope above them, and its type must allow it.
+- **Owns** — every application that names it as the actor it belongs to — and
+  **Responsible for**, what it is assigned.
+- **Roles, today**: each role its type holds, with how many it wants, and who
+  holds it today — by name from the register, with their share where it is not
+  all of their time, *acting*, and *you*. A role short of people shows
+  **+ vacant**; a press assigns someone. **A role beyond its type…** adds an
+  optional role to this unit only.
+- **Who manages it**: whoever holds a role that manages, in this unit or a unit
+  above it, today. The app says so and grants nothing from it.
+- **Checks**: what the organisation contradicts about this unit today — a
+  role short of people or over its maximum, a unit filed where its type may
+  not sit, one serving more domains than its type allows or owning more
+  applications than its limit, someone still in a unit or a role that has
+  ended, and anyone in it whose shares add up to more than all of their time.
+  The organisation's home lists the same findings for every scope.
+
+**Assigning** someone is one step in the scope that keeps the unit: choose the
+role, the person — searched in the register, *you* marked — their share, the
+first day, and whether they are acting. **New person…** is the People page's
+own form, so someone who may already be in the register is offered before a
+second entry is made. The assignment holds the person's id, never their name.
+Press a holder to correct the assignment, **End on** today, or remove one made
+by mistake; one that has ended stays, as what the person held.
+
+**Mark as left**, on the People page, ends every assignment of the person's on
+their last day — one step in each scope that keeps one — and takes away any
+that would only have begun after it.
+
+A unit kept in another scope is shown here and changed where it is kept.
+
+An agent makes an actor a unit with `element.update` (`unitTypeId`, `scopes`,
+`extraSlots`), lists who holds what with `assignments.list` — across the tree,
+and for one unit its roles and who manages it — and assigns and ends with
+`assignment.add` and `assignment.end` in the scope that keeps the unit. It
+never forgets, removes or merges anyone.
 
 ## A drawing
 

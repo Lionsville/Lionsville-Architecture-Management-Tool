@@ -287,12 +287,13 @@ verdwijnt hij in één keer van elk scherm.
   duidelijk iemand is die er al staat voegt niemand toe, een rij die dat
   misschien is wordt gemarkeerd en alleen toegevoegd als je **Toch toevoegen**
   aanvinkt, en de rest wordt toegevoegd.
-- **Een persoon** laat zien wie het is en hoe ver iemand is met vertrekken.
-  **Vervult vandaag** heeft nog niets te tonen: het register bevat geen
-  rollen. **Dit ben ik** vertelt deze installatie welke vermelding jij bent,
-  zodat je overal gemarkeerd wordt waar je voorkomt; dat wordt bij de
-  installatie bewaard, niet in je map. **Corrigeren…** wijzigt de naam, het
-  adres of de soort.
+- **Een persoon** laat zien wie het is, hoe ver iemand is met vertrekken, en
+  wat iemand in de organisatie vervult: **Vervult vandaag**, **Gaat
+  vervullen** en **Vervulde eerder**, elk een rol in een eenheid (zie
+  *Eenheden en de mensen erin*). **Dit ben ik** vertelt deze installatie
+  welke vermelding jij bent, zodat je overal gemarkeerd wordt waar je
+  voorkomt; dat wordt bij de installatie bewaard, niet in je map.
+  **Corrigeren…** wijzigt de naam, het adres of de soort.
 - **Markeren als vertrokken** vraagt om de laatste dag. De naam blijft
   zichtbaar tot het beleid hem vergeet.
 - **Nu vergeten** vraagt eerst en haalt dan de naam en het adres voorgoed weg:
@@ -1746,6 +1747,60 @@ Een agent leest het besturingsmodel met `unitTypes.list`, `roles.list` en
 `responsibilities.list`, vanuit de organisatie welke scope er ook open is, en
 wijzigt het met `unitType.add`, `unitType.update`, `role.add` en
 `role.update` terwijl de organisatie de open scope is.
+
+### Eenheden en de mensen erin
+
+Een actor wordt een **eenheid** zodra hij een eenheidstype heeft: kies er een
+onder **Eenheid** in zijn inspector, op een bord of op zijn pagina, en **Geen
+eenheid** maakt hem weer een partij. Niets anders maakt iets een eenheid. De
+eenheid waarin hij zit is de actor waaronder hij is ingedeeld, en de dagen
+waarop hij begint en eindigt zijn zijn levenscyclusdata — een eenheid die is
+uitgefaseerd, is beëindigd.
+
+Het onderdeel van een eenheid zegt:
+
+- **Ingedeeld in** — de scope die haar bijhoudt — en **Bedient**: de domeinen
+  die ze bedient, die scope tenzij je anders zegt. Een eenheid die meerdere
+  domeinen bedient wordt ingedeeld in de scope erboven, en haar type moet dat
+  toestaan.
+- **Eigenaar van** — elke applicatie die haar noemt als de actor waartoe die
+  hoort — en **Verantwoordelijk voor**, wat haar is toegewezen.
+- **Rollen, vandaag**: elke rol die haar type heeft, met hoeveel het er wil,
+  en wie hem vandaag vervult — met de naam uit het register, het aandeel waar
+  dat niet al iemands tijd is, *waarnemend*, en *jij*. Een rol met te weinig
+  mensen toont **+ vacant**; een klik wijst iemand toe. **Een rol naast die
+  van het type…** voegt alleen aan deze eenheid een optionele rol toe.
+- **Wie haar aanstuurt**: wie vandaag een aansturende rol vervult, in deze
+  eenheid of een erboven. De app zegt het en geeft er geen rechten mee.
+- **Controles**: wat de organisatie vandaag over deze eenheid tegenspreekt —
+  een rol met te weinig mensen of boven het maximum, een eenheid ingedeeld
+  waar haar type niet mag staan, een die meer domeinen bedient dan het type
+  toestaat of eigenaar is van meer applicaties dan de limiet, iemand die nog
+  in een eenheid of rol zit die is beëindigd, en iedereen erin van wie de
+  aandelen samen meer dan al zijn tijd zijn. De home van de organisatie toont
+  dezelfde bevindingen voor elke scope.
+
+**Toewijzen** is één stap in de scope die de eenheid bijhoudt: kies de rol, de
+persoon — gezocht in het register, *jij* gemarkeerd — het aandeel, de eerste
+dag, en of het waarnemend is. **Nieuwe persoon…** is het eigen formulier van
+de pagina Mensen, dus wie misschien al in het register staat wordt aangeboden
+voordat er een tweede vermelding komt. De toewijzing bevat het id van de
+persoon, nooit de naam. Klik op iemand om de toewijzing te corrigeren, haar
+te **Beëindigen op** vandaag, of een vergissing te verwijderen; een beëindigde
+toewijzing blijft staan, als wat de persoon vervulde.
+
+**Markeren als vertrokken**, op de pagina Mensen, beëindigt elke toewijzing van
+de persoon op de laatste dag — één stap in elke scope die er een bijhoudt — en
+haalt toewijzingen weg die pas daarna zouden beginnen.
+
+Een eenheid die een andere scope bijhoudt wordt hier getoond en daar
+gewijzigd.
+
+Een agent maakt een actor een eenheid met `element.update` (`unitTypeId`,
+`scopes`, `extraSlots`), vraagt met `assignments.list` wie wat vervult — over
+de hele boom, en voor één eenheid haar rollen en wie haar aanstuurt — en wijst
+toe en beëindigt met `assignment.add` en `assignment.end` in de scope die de
+eenheid bijhoudt. Een agent vergeet, verwijdert of voegt nooit iemand samen.
 
 ## Een tekening
 

@@ -1,9 +1,10 @@
 # ADR-0036 — An operating model, units as typed actors, and a register of people outside the history
 
 * Status: accepted, 11 October 2026; built in part: the register of people
-  (§8–§11, §13's three tools for it) and the operating model (§1's
-  `_operating/`, §2, §5, §13's seven tools for it), 11 October 2026 — *As
-  built*, below
+  (§8–§11, §13's three tools for it), the operating model (§1's
+  `_operating/`, §2, §5, §13's seven tools for it), and units and
+  assignments (§1's `_assignments/`, §3, §4, §10's leaving, §12's who
+  manages, §13's three tools for them), 11 October 2026 — *As built*, below
 * Date: 2026-10-11
 * Deciders: Wouter Simons
 * Supersedes: ADR-0011, in part (Q1's *everything a person can do on a page
@@ -559,6 +560,87 @@ Opened over any other scope it reads.
 organisation whatever scope is open; `unitType.add`, `unitType.update`,
 `role.add` and `role.update` are commands under the agent's name, refused
 `agent.scopeNotOpen` unless the organisation is the scope open.
+
+## As built, 11 October 2026: units and assignments
+
+The third part: §1's `_assignments/`, §3 and §4, what leaving ends (§10),
+who manages a unit (§12), and §13's three tools for assignments. Change over
+time, the two views and the name fields follow.
+
+**A unit** is an actor with `unitTypeId`; `scopes` and `extraSlots` (each a
+role with `min` and an optional `max`) sit beside it on the element, and all
+three are the owner's detail, so a stand-in of a unit carries none. A unit's
+dates are the actor's: it is there while its lifecycle on the day is live or
+retiring, and has ended once it is retired. **An assignment**
+(`model/units.ts`) is `unitId`, `roleId`, `person` as `{ person: id }`,
+`share` as a fraction above 0 and at most 1 (absent is all of the time),
+`from` and `until`, both inclusive, and `acting`. It is a list on the scope's
+model, with `assignment.add`, `assignment.update` and `assignment.remove`,
+inverses and write keys (`model/commands/assignments.ts`); ending one is an
+update that sets `until`, and its days running backwards is the one thing the
+writer refuses (`command.datesOutOfOrder`). The Activity list, the diff and a
+thing's history name an assignment by its unit, never by its person.
+
+**On disk** a scope's assignments are one list,
+`_assignments/assignments.json` (`adapters/folder/format/assignmentFile.ts`),
+under format 11 as `_operating/` is: a 10 reads as an 11 with none, and no
+scope moves. A file that is not a list opens the scope to be read and not
+written. Browser storage keeps the list in the model.
+
+**The arithmetic on a day** is `model/units.ts`, pure and with no words or
+paths, so a server can import it by its path: a unit's slots (its type's,
+then extra ones for roles the type does not hold), who holds a role on a day,
+a person's load across assignments, the units above and below a unit through
+`parentId`, whether a type may sit where its unit is (`top`, `within`), and
+**who manages**: `managersOf(organisation, unitId, day)` — whoever holds a
+running assignment in a role marked `manages`, in the unit or a unit above
+it, the unit there on the day — and `managedBy(organisation, personId, day,
+canonical?)`, the units a person holds a managing role in and every unit
+below each. Core grants nothing from either.
+
+**The index** reads each scope's assignments and the organisation's operating
+model with its records (`ScopeModel['model']`, ids only), and lists
+`units()` — each unit where its master is — `assignments()` with the scope
+that keeps each, `operatingModel()` and `organisation()`. Search reads the
+root's thin read, so a role is found from any scope.
+
+**The checks** are `organisationFindings(index, day)` in `projects/checks.ts`,
+off the index alone and today unless a day is given: `check.roleVacant`,
+`check.roleOverMax`, `check.unitMisplaced`, `check.unitSpans` (several
+domains under a type that does not span), `check.unitOverLimit`,
+`check.assignmentEnded` (a running assignment in an ended unit, or in a role
+whose `until` has passed) and `check.personOverloaded`, about each scope that
+keeps one of the person's running assignments. A finding about a person
+carries their id in `person`; the organisation's home names them through the
+register.
+
+**The screens.** Under an actor's General tab, beside the canvas and on its
+page, the host draws its unit section (`EditorOwnership.unitSection`,
+`app/units/UnitSection.tsx`): type, filed in, serves, owns, responsible for,
+each slot with today's holders — the register's names, shares, *acting*,
+*you* — and its vacancies, a role beyond its type, who manages it today and
+the checks about it, worked out over the index with the open scope's session
+laid over it (`organisationHere`). **Assign** (`AssignDialog`) picks a person
+with `people/ui/PersonPicker.tsx`, whose *New person…* is the People page's own
+form, so the four signs are asked before anyone is added; correcting is a
+patch, ending sets today, removing is for a mistake. The People page says
+what each person holds today, will hold and held before, and *What we hold*
+lists it.
+
+**Leaving** (`app/organisation/leaving.ts`) ends every assignment of the
+person's — under their id and every id merged into theirs — that runs past
+the last day, and removes one that would begin after it: one step per scope,
+the others written together through the repositories, the open scope's
+through its session, an agent's under its name.
+
+**The tools** are `agent/assignments.ts` and `agent/write/assignments.ts`:
+`assignments.list` over the whole tree, the open scope as it is now, its
+`scope` a filter, a person named or pseudonymised as the policy says, and —
+asked about one unit — its slots and who manages it; `assignment.add` (a
+person by register id, someone who has left refused, a merged id written as
+the entry it went into) and `assignment.end`, in the scope that keeps the
+unit. `element.add` and `element.update` take `unitTypeId`, `scopes` and
+`extraSlots`. The share is in per cent at the agent, a fraction in the record.
 
 ## Open
 
