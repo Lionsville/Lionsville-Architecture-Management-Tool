@@ -18,12 +18,24 @@
  * and the next is kept, and its transition plays out.
  *
  * **A part is drawn the way it was first drawn, for as long as it is
- * there.** One whose script was already here is drawn directly, exactly as a
- * part that was always in the bundle; one that waited for its script stays
- * under the boundary it waited in. Taking it out from under the boundary on
- * the next render would be a different tree, and React draws a different tree
- * anew: a dialog open in the part, a person just picked in it, would be gone
- * the first time its caller drew again.
+ * there** — first drawn being the first render that draws it at all, not the
+ * caller's first, where an unwanted part is nothing. One whose script is here
+ * by then is drawn directly, in the same render as the change that wanted it,
+ * exactly as a part that was always in the bundle: a page opened by a press
+ * is up, and holds the focus, before the next key arrives. One that waited
+ * for its script stays under the boundary it waited in. Taking it out from
+ * under the boundary on the next render would be a different tree, and React
+ * draws a different tree anew: a dialog open in the part, a person just
+ * picked in it, would be gone the first time its caller drew again.
+ *
+ * **A part may bring the parts it opens** (`brings`): a page that opens
+ * another as the outcome of a press in it — the roadmap a plan it makes —
+ * fetches that one's script beside its own and is drawn once both are here,
+ * so what it opens is drawn in the moment of the press, directly, as above.
+ * A page arriving a moment after the press would leave the focus where the
+ * press put it back meanwhile, and the key that pressed would go on to act
+ * there. What a part brings is a head start, not a need: one that will not
+ * load holds nothing back, and asks again when it is itself wanted.
  *
  * **A part is one boundary.** While its script is on the way it draws what
  * `fallback` says, nothing by default; a script that will not load is the
@@ -43,12 +55,17 @@ export type LazyPartOptions<P> = {
   until?: (props: P) => boolean
   /** What is drawn while its script is on the way. Nothing, where absent. */
   fallback?: (props: P) => ReactNode
+  /** The parts it opens on a press, fetched beside it and here before it is drawn. */
+  brings?: readonly Preloadable[]
 }
 
-export type LazyPart<P> = ComponentType<P> & {
-  /** Fetch the part's script now; the promise is the one every later render shares. */
-  preload(): Promise<void>
-}
+/** Anything whose script can be fetched ahead of its use. */
+export type Preloadable = { preload(): Promise<void> }
+
+export type LazyPart<P> = ComponentType<P> & Preloadable
+
+/** How a part is drawn, fixed by the first render that draws it at all. */
+type Shape = 'direct' | 'waited'
 
 /** Every part made, so a suite can have them all before it starts. */
 const PARTS = new Set<() => Promise<void>>()
@@ -61,8 +78,11 @@ export function lazyPart<P extends object>(
   let loading: Promise<ComponentType<P>> | undefined
   const pending = () => lazy(async () => ({ default: await fetchPart() }))
   let Pending = pending()
+  // A part brought along that will not load is asked for again when it is
+  // wanted itself, where its failure is drawn: here it holds nothing back.
+  const brought = () => Promise.all((options.brings ?? []).map((part) => part.preload().catch(() => undefined)))
   const fetchPart = (): Promise<ComponentType<P>> => {
-    loading ??= load().then((part) => { loaded = part; return part }, (cause: unknown) => {
+    loading ??= Promise.all([load(), brought()]).then(([part]) => { loaded = part; return part }, (cause: unknown) => {
       // A failed fetch is not remembered: `lazy` would keep the rejection for
       // good, so the next render gets a fresh one and asks again — which is
       // what a person pressing the card a second time means.
@@ -74,10 +94,13 @@ export function lazyPart<P extends object>(
   }
 
   function Part(props: P) {
-    const [direct] = useState(() => loaded !== undefined)
+    const [shape, setShape] = useState<Shape | undefined>(undefined)
     const Loaded = loaded
-    if (direct && Loaded) return <Loaded {...props} />
     if (!Loaded && options.until && !options.until(props)) return null
+    const drawn: Shape = shape ?? (Loaded ? 'direct' : 'waited')
+    // Kept from the first render that draws anything, before it is committed.
+    if (shape === undefined) setShape(drawn)
+    if (drawn === 'direct' && Loaded) return <Loaded {...props} />
     return (
       <Suspense fallback={options.fallback?.(props) ?? null}>
         <Pending {...props} />

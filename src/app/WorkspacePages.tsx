@@ -58,18 +58,25 @@ const ObservationsPage = lazyPart<ComponentProps<typeof ObservationsPageShape>>(
  * tab's menu or a link, never the first view, and a replacement starts from
  * an element's *Replace…*: each script arrives with the first of its kind
  * opened, the pages' readers, rows and dialogs with it.
+ *
+ * The roadmap's *New plan* and a replacement's confirmation make a plan and
+ * open its page as they close: both bring the plan's page (`brings`), so it
+ * is up, holding the focus, in the moment of the press, as it was when it
+ * came in the first download. Arriving a moment later, it left the focus on
+ * *New plan* meanwhile, where the Enter that named the plan pressed it again.
  */
 const AdrPage = lazyPart<ComponentProps<typeof AdrPageShape>>(
   () => import('../decisions/ui/AdrPage').then((held) => held.AdrPage), { until: (props) => props.open },
 )
-const RoadmapPage = lazyPart<ComponentProps<typeof RoadmapPageShape>>(
-  () => import('../roadmap/ui/RoadmapPage').then((held) => held.RoadmapPage), { until: (props) => props.open },
-)
 const PlanPage = lazyPart<ComponentProps<typeof PlanPageShape>>(
   () => import('../roadmap/ui/PlanPage').then((held) => held.PlanPage), { until: (props) => props.open },
 )
+const RoadmapPage = lazyPart<ComponentProps<typeof RoadmapPageShape>>(
+  () => import('../roadmap/ui/RoadmapPage').then((held) => held.RoadmapPage), { until: (props) => props.open, brings: [PlanPage] },
+)
 const ReplaceDialog = lazyPart<ComponentProps<typeof ReplaceDialogShape>>(
-  () => import('../roadmap/ui/ReplaceDialog').then((held) => held.ReplaceDialog), { until: (props) => props.subject !== undefined },
+  () => import('../roadmap/ui/ReplaceDialog').then((held) => held.ReplaceDialog),
+  { until: (props) => props.subject !== undefined, brings: [PlanPage] },
 )
 
 /**

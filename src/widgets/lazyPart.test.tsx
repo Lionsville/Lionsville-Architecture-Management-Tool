@@ -79,6 +79,51 @@ describe('lazyPart', () => {
     expect(screen.getByText('Register 1')).toBeTruthy()
   })
 
+  it('draws a part whose script arrived while it was not wanted in the very render that wants it', async () => {
+    const { load, release } = held(Counter)
+    const Part = lazyPart(load, { until: (props: Props) => props.open })
+    const { rerender } = render(<Part open={false} title="Register" />)
+    const fetched = Part.preload()
+    await release()
+    await fetched
+    // No await: what an eager part would be, in the same commit as the change
+    // that wanted it — a page opened by a press holds the focus before the next key.
+    rerender(<Part open title="Register" />)
+    fireEvent.click(screen.getByText('Register 0'))
+    rerender(<Part open={false} title="Register" />)
+    expect(screen.getByText('Register 1')).toBeTruthy()
+  })
+
+  it('brings the parts it opens: fetched beside it, and here before it is drawn', async () => {
+    const page = held()
+    const plan = held()
+    const Plan = lazyPart(plan.load, { until: (props: Props) => props.open })
+    const Roadmap = lazyPart(page.load, { until: (props: Props) => props.open, brings: [Plan], fallback: () => <span>loading</span> })
+    const { rerender } = render(<><Roadmap open title="Roadmap" /><Plan open={false} title="Plan" /></>)
+    expect(page.load).toHaveBeenCalledTimes(1)
+    expect(plan.load).toHaveBeenCalledTimes(1)
+    await page.release()
+    expect(screen.getByText('loading')).toBeTruthy()
+    await plan.release()
+    expect(await screen.findByText('Roadmap')).toBeTruthy()
+    rerender(<><Roadmap open title="Roadmap" /><Plan open title="Plan" /></>)
+    expect(screen.getByText('Plan')).toBeTruthy()
+    expect(plan.load).toHaveBeenCalledTimes(1)
+  })
+
+  it('is drawn all the same where a part it brings will not load, which asks again when it is wanted', async () => {
+    const plan = vi.fn()
+      .mockImplementationOnce(() => Promise.reject(new Error('the script is gone')))
+      .mockImplementation(() => Promise.resolve(Page))
+    const Plan = lazyPart<Props>(plan, { until: (props) => props.open })
+    const Roadmap = lazyPart<Props>(() => Promise.resolve(Page), { brings: [Plan] })
+    await Roadmap.preload()
+    render(<><Roadmap open title="Roadmap" /><Plan open title="Plan" /></>)
+    expect(screen.getByText('Roadmap')).toBeTruthy()
+    expect(await screen.findByText('Plan')).toBeTruthy()
+    expect(plan).toHaveBeenCalledTimes(2)
+  })
+
   it('asks again after a fetch that failed', async () => {
     const load = vi.fn()
       .mockImplementationOnce(() => Promise.reject(new Error('the script is gone')))

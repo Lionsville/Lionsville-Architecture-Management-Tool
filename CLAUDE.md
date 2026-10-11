@@ -654,8 +654,10 @@ src/widgets/      Presentation with no opinions: icons, one confirm dialog,
                   (`PickToAdd`: a *+*, a grouped, searchable combobox),
                   a laid-out page rasterised (`capturePage`), a part that
                   is not in the first download (`lazyPart`): a page behind a
-                  card, fetched when it is opened, and every part preloaded
-                  before a suite's first test (`app/testing/lazyParts.ts`) —
+                  card, fetched when it is opened, drawn at once where its
+                  script is here by then, bringing the pages a press in it
+                  opens (`brings`), and every part preloaded before a
+                  suite's first test (`app/testing/lazyParts.ts`) —
                   and a request from outside to select what a page draws,
                   honoured where it draws it (`useSelectRequest`).
 src/ports/        The seams. Interfaces only, no implementations.
