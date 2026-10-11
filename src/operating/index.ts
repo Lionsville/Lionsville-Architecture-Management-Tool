@@ -3,13 +3,15 @@
 
 /**
  * The operating model (ADR-0036): the libraries it starts from, bringing them
- * in as one step, comparing what came in with them, the page's edits as
- * commands, and the page. The records themselves are the model's
- * (`model/operating.ts`); this is what is done with them.
+ * in as one step and the rows a person settles it by first, comparing what
+ * came in with them, the page's edits as commands, and the page. The records
+ * themselves are the model's (`model/operating.ts`); this is what is done
+ * with them.
  */
 export * from './library'
 export { LIBRARIES, libraryById } from './libraries'
 export * from './bringIn'
+export * from './comingIn'
 export * from './compare'
 export * from './edit'
 export { OperatingModelPage } from './ui/OperatingModelPage'
