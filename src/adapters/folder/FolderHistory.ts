@@ -67,6 +67,7 @@ import { composed, headerOf, identityAt, isScopeId, revisionOf, stateFrom } from
 import type { FolderScopes } from './folderScopes'
 import { imageEntryOf } from '../../model/imageEntry'
 import { PICTURES } from './format/imageLibrary'
+import { RESPONSIBILITIES_FILE, ROLES_FILE, RULES_FILE, UNIT_TYPES_FILE } from './format/operatingFile'
 import { Lru } from './lru'
 
 /** What a record without a subject is called in the commit. English: it is a git message. */
@@ -130,6 +131,10 @@ const KIND_PATHS: Record<RecordKind, readonly string[]> = {
   cause: ['observations/causes'],
   solution: ['observations/solutions'],
   experiment: ['observations/experiments'],
+  unitType: [UNIT_TYPES_FILE],
+  role: [ROLES_FILE],
+  responsibility: [RESPONSIBILITIES_FILE],
+  operatingRule: [RULES_FILE],
   image: ['scope.json', PICTURES],
   scope: ['scope.json', 'model.json'],
 }
@@ -145,6 +150,10 @@ const COULD_HOLD: Record<RecordKind, (path: string) => boolean> = {
   cause: (path) => path.startsWith('observations/causes/'),
   solution: (path) => path.startsWith('observations/solutions/'),
   experiment: (path) => path.startsWith('observations/experiments/'),
+  unitType: (path) => path === UNIT_TYPES_FILE,
+  role: (path) => path === ROLES_FILE,
+  responsibility: (path) => path === RESPONSIBILITIES_FILE,
+  operatingRule: (path) => path === RULES_FILE,
   image: (path) => path === 'scope.json' || path.startsWith(`${PICTURES}/`),
   scope: (path) => path === 'scope.json' || path === 'model.json',
 }

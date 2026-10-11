@@ -120,6 +120,7 @@ const ZONES = ['actors', 'inputChannels', 'externalSystems', 'landscape', 'manag
 export const SEARCH_HIT_KINDS = [
   'element', 'documentation', 'view', 'relation', 'adr', 'plan', 'milestone',
   'observation', 'cause', 'solution', 'experiment',
+  'unitType', 'role', 'responsibility',
 ] as const
 const LINE_STYLES = ['solid', 'dashed', 'dotted'] as const
 /**
@@ -2231,7 +2232,9 @@ const SPECS = [
       + 'on one record, and on one of its tabs with `tab`), roadmap, plan (by id), '
       + 'element (selected on a board that draws it), document or documentation (a record\'s page), '
       + 'platform or service (a report, by id), register, technologyRegister or people (the organisation-wide '
-      + 'lists and the people register, on the home). `select` names an element to select on the board, sheet, map or technology '
+      + 'lists and the people register, on the home), operating (the operating model: unit types, roles, '
+      + 'responsibilities and the libraries — kept at the organisation, so its scope is "" and may be left out; '
+      + 'optionally on one unit type, role or responsibility). `select` names an element to select on the board, sheet, map or technology '
       + 'landscape being opened; where that view does not draw it, nothing is selected. Opening never '
       + 'makes a view. With no page a scope opens on its canvas, or on its home when it draws '
       + 'nothing. Answers with app.current once the app has arrived. Starts a driving session, which the '
@@ -2246,10 +2249,10 @@ const SPECS = [
           enum: [
             'home', 'board', 'sheet', 'map', 'technology', 'drawing',
             'decisions', 'observations', 'roadmap', 'plan', 'element', 'document', 'documentation',
-            'platform', 'service', 'register', 'technologyRegister', 'people',
+            'platform', 'service', 'register', 'technologyRegister', 'people', 'operating',
           ],
         },
-        id: { type: 'string', description: 'The view, element, plan, decision, observation, cause, solution or experiment the page is about, where it is about one.' },
+        id: { type: 'string', description: 'The view, element, plan, decision, observation, cause, solution, experiment, unit type, role or responsibility the page is about, where it is about one.' },
         tab: {
           type: 'string',
           description: 'Which tab of the observations page: the register, the analysis or the solutions. Only with page observations.',

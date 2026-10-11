@@ -18,6 +18,7 @@ import { ELEMENT_COMMANDS } from './elements'
 import { GROUP_COMMANDS } from './groups'
 import { MEMBER_COMMANDS } from './members'
 import { CAUSE_COMMANDS, EXPERIMENT_COMMANDS, OBSERVATION_COMMANDS, SOLUTION_COMMANDS } from './analysis'
+import { OPERATING_RULE_COMMANDS, RESPONSIBILITY_COMMANDS, ROLE_COMMANDS, UNIT_TYPE_COMMANDS } from './operating'
 import { PROJECT_COMMANDS } from './project'
 import { DECISION_COMMANDS, TRANSITION_COMMANDS } from './records'
 import { RELATION_COMMANDS } from './relations'
@@ -43,13 +44,18 @@ const EVERY_TYPE: Record<CommandType, true> = {
   'cause.add': true, 'cause.update': true, 'cause.remove': true,
   'solution.add': true, 'solution.update': true, 'solution.remove': true,
   'experiment.add': true, 'experiment.update': true, 'experiment.remove': true,
+  'unitType.add': true, 'unitType.update': true, 'unitType.remove': true,
+  'role.add': true, 'role.update': true, 'role.remove': true,
+  'responsibility.add': true, 'responsibility.update': true, 'responsibility.remove': true,
+  'operatingRule.add': true, 'operatingRule.update': true, 'operatingRule.remove': true,
   'project.settings': true, 'transaction': true, 'restore': true,
 }
 
 const FAMILIES = [
   ELEMENT_COMMANDS, RELATION_COMMANDS, MEMBER_COMMANDS, GROUP_COMMANDS, ROUTE_COMMANDS,
   DIAGRAM_COMMANDS, DECISION_COMMANDS, TRANSITION_COMMANDS, OBSERVATION_COMMANDS,
-  CAUSE_COMMANDS, SOLUTION_COMMANDS, EXPERIMENT_COMMANDS, PROJECT_COMMANDS,
+  CAUSE_COMMANDS, SOLUTION_COMMANDS, EXPERIMENT_COMMANDS, UNIT_TYPE_COMMANDS, ROLE_COMMANDS,
+  RESPONSIBILITY_COMMANDS, OPERATING_RULE_COMMANDS, PROJECT_COMMANDS,
 ]
 
 describe('the command table', () => {

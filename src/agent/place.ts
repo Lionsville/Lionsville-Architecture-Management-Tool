@@ -248,6 +248,8 @@ export function nearestPlace(place: Place, facts: PlaceFacts): Place {
       return { scope, page, ...(place.tab !== undefined ? { tab: place.tab } : {}) }
     case 'plan':
       return { scope, page: 'roadmap' }
+    case 'operating':
+      return { scope, page }
     default:
       return first
   }

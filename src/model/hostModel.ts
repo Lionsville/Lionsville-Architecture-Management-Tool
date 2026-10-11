@@ -14,6 +14,7 @@
 import type { DesignDiagram, DesignModel, UploadedLogo } from '.'
 import type { Adr } from './adr'
 import type { Cause, Experiment, Observation, Solution } from './observation'
+import type { OperatingRule, Responsibility, Role, UnitType } from './operating'
 import type { Transition } from './transition'
 
 /**
@@ -55,6 +56,15 @@ export interface HostExtras {
   solutions?: Solution[]
   /** What was tried to find out whether a solution works (ADR-0026). */
   experiments?: Experiment[]
+  /**
+   * The operating model (ADR-0036): the kinds of unit, the roles, the
+   * responsibilities and the rules. Kept at the organisation, the root scope;
+   * any scope's model may carry the lists, and only the root's are read.
+   */
+  unitTypes?: UnitType[]
+  roles?: Role[]
+  responsibilities?: Responsibility[]
+  operatingRules?: OperatingRule[]
   /** Per element key: which fields the source document carried explicitly. */
   explicitFields?: Record<string, { lifecycle?: boolean; isManaged?: boolean; iconType?: boolean }>
 }

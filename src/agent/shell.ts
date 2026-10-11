@@ -170,8 +170,11 @@ type Resolved = { page?: Page; id?: string; tab?: Destination['tab']; select?: s
 export async function openApp(rawArgs: unknown, session: OpenScope | undefined, shell: ShellView | undefined): Promise<AgentAnswer> {
   if (!shell) return refused('agent.noScreen', 'there is no screen to move')
   const asked = (rawArgs ?? {}) as Destination
-  const scope = asked.scope ?? session?.scopePath() ?? scopeOf(shell.screen())
+  const scope = scopeAsked(asked, session, shell)
   if (scope === undefined) return refused('agent.badArguments', '"scope" is needed when nothing is open')
+  if (scope === OUTSIDE_THE_ORGANISATION) {
+    return refused('agent.badArguments', 'the operating model is kept at the organisation: scope "" or none')
+  }
   const tree = shell.tree ?? session?.tree
   const known = tree
     ? tree.scopes().find((held) => held.path === scope)
@@ -191,7 +194,9 @@ export async function openApp(rawArgs: unknown, session: OpenScope | undefined, 
       ? { model: session.current(), ancestorDecisions: session.ancestorDecisions() }
       : await tree?.read(scope)
     if (!document) return refused('agent.unknownScope', scope || 'the organisation')
-    const resolved = resolveTarget(document.model, document.ancestorDecisions, target, scope)
+    const resolved = target.page === 'operating'
+      ? operatingTarget(document.model, target, scope)
+      : resolveTarget(document.model, document.ancestorDecisions, target, scope)
     if ('ok' in resolved) return resolved
     target = resolved
     model = document.model
@@ -226,6 +231,31 @@ export async function openApp(rawArgs: unknown, session: OpenScope | undefined, 
 function onObservationsPage(model: HostModel, id: string): { id: string } | undefined {
   const { observations = [], causes = [], solutions = [], experiments = [] } = model
   return [...observations, ...causes, ...solutions, ...experiments].find((held) => held.id === id)
+}
+
+/** What {@link scopeAsked} answers for the operating model's page asked of any scope but the organisation. */
+const OUTSIDE_THE_ORGANISATION = Symbol('outside the organisation')
+
+/**
+ * The scope a destination is in: the one it names, else the open one, else
+ * the one whose home is up. The operating model is kept at the organisation
+ * and edited there only (ADR-0036), so its page has no other scope to open on.
+ */
+function scopeAsked(
+  asked: Destination, session: OpenScope | undefined, shell: ShellView,
+): string | typeof OUTSIDE_THE_ORGANISATION | undefined {
+  if (asked.page !== 'operating') return asked.scope ?? session?.scopePath() ?? scopeOf(shell.screen())
+  return asked.scope === undefined || asked.scope === '' ? '' : OUTSIDE_THE_ORGANISATION
+}
+
+/** The operating model's page, on a unit type, a role or a responsibility where one is named (ADR-0036). */
+function operatingTarget(model: HostModel, asked: Resolved, scope: string): Resolved | AgentAnswer {
+  if (asked.id === undefined) return { page: 'operating' }
+  const { unitTypes = [], roles = [], responsibilities = [] } = model
+  const held = [...unitTypes, ...roles, ...responsibilities].some((one) => one.id === asked.id)
+  return held
+    ? { page: 'operating', id: asked.id }
+    : refused('agent.unknownId', `unit type, role or responsibility ${asked.id} in ${scope || 'the organisation'}`)
 }
 
 /**

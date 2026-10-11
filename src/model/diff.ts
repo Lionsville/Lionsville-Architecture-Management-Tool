@@ -31,6 +31,7 @@ import type { HostModel } from './hostModel'
 import type { Adr } from './adr'
 import type { Transition } from './transition'
 import type { Cause, Experiment, Observation, Solution } from './observation'
+import type { OperatingRule, Responsibility, Role, UnitType } from './operating'
 import type { DesignDiagram, DesignElement, Relation, RelationType } from './types'
 
 export type ChangeKind = 'added' | 'removed' | 'changed'
@@ -38,6 +39,7 @@ export type ChangeKind = 'added' | 'removed' | 'changed'
 /** What a change happened to. Ordered as the list is read, most meaningful first. */
 export type ChangeSubject =
   | 'element' | 'relation' | 'diagram' | 'decision' | 'transition' | 'observation' | 'cause' | 'solution' | 'experiment'
+  | 'unitType' | 'role' | 'responsibility' | 'operatingRule'
   | 'membership' | 'geometry'
 
 export type ModelChange = {
@@ -270,11 +272,29 @@ export function diffModels(before: HostModel, after: HostModel): ModelChange[] {
       'experiment', id, wasExperiments.get(id), nowExperiments.get(id), (held) => held.title))
   }
 
+  changes.push(...operatingChanges(before, after))
+
   const order: ChangeSubject[] = [
     'element', 'relation', 'diagram', 'decision', 'transition', 'observation', 'cause', 'solution', 'experiment',
+    'unitType', 'role', 'responsibility', 'operatingRule',
     'membership', 'geometry',
   ]
   return changes.sort((a, b) => order.indexOf(a.what) - order.indexOf(b.what))
+}
+
+/** The operating model (ADR-0036), each list by the name the organisation gives its items. */
+function operatingChanges(before: HostModel, after: HostModel): ModelChange[] {
+  const changes: ModelChange[] = []
+  const each = <T extends { id: string }>(what: ChangeSubject, was: readonly T[] | undefined, now: readonly T[] | undefined, nameOf: (held: T) => string) => {
+    const wasBy = byId(was ?? [])
+    const nowBy = byId(now ?? [])
+    for (const id of ids(wasBy, nowBy)) changes.push(...compare<T>(what, id, wasBy.get(id), nowBy.get(id), nameOf))
+  }
+  each<UnitType>('unitType', before.unitTypes, after.unitTypes, (held) => held.name)
+  each<Role>('role', before.roles, after.roles, (held) => held.name)
+  each<Responsibility>('responsibility', before.responsibilities, after.responsibilities, (held) => held.name)
+  each<OperatingRule>('operatingRule', before.operatingRules, after.operatingRules, (held) => held.id)
+  return changes
 }
 
 function compare<T extends object>(

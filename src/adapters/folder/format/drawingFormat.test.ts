@@ -11,7 +11,7 @@ import { stableJson } from '../../../projects/text'
 import type { ScopeSnapshot } from '../../../projects/scope'
 import type { DesignDiagram } from '../../../model'
 import {
-  DRAWIO_SUFFIX, isFormatPath, SCOPE_FILE, scopeFiles, scopeFromFolder,
+  DRAWIO_SUFFIX, isFormatPath, SCOPE_FILE, SCOPE_FORMAT_VERSION, scopeFiles, scopeFromFolder,
 } from './folderFormat'
 import { openDocumentBytes, workingFileBytes } from './workingFile'
 
@@ -66,7 +66,7 @@ describe('a drawing in the folder', () => {
   it('reads a version-9 scope with no drawings', () => {
     const files = scopeFiles(scope()).map((file) => (
       file.path === SCOPE_FILE && 'text' in file
-        ? { ...file, text: file.text.replace('"version": 10', '"version": 9') }
+        ? { ...file, text: file.text.replace(`"version": ${SCOPE_FORMAT_VERSION}`, '"version": 9') }
         : file
     ))
     const back = scopeFromFolder(files, 'acme')

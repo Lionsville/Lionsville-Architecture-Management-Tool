@@ -34,6 +34,9 @@ import type { Adr } from './adr'
 import type { Transition } from './transition'
 import type { Cause, Experiment, Observation, Solution } from './observation'
 import type {
+  OperatingRule, OperatingRuleKind, Responsibility, ResponsibilityId, Role, RoleId, UnitType, UnitTypeId,
+} from './operating'
+import type {
   AdrId, CauseId, RelationId, Diagram, DiagramId, ExperimentId, GroupId, Model, ObservationId, SolutionId, TransitionId,
 } from './normalised'
 import { causesOf, decisionsOf, experimentsOf, observationsOf, solutionsOf } from './normalised'
@@ -174,6 +177,21 @@ export type CommandBody =
   | { type: 'experiment.add'; experiment: Experiment; at?: number }
   | { type: 'experiment.update'; id: ExperimentId; patch: Partial<Experiment> }
   | { type: 'experiment.remove'; id: ExperimentId }
+
+  // --- the operating model, at the organisation (ADR-0036) -----------------
+  | { type: 'unitType.add'; unitType: UnitType; at?: number }
+  | { type: 'unitType.update'; id: UnitTypeId; patch: Partial<UnitType> }
+  | { type: 'unitType.remove'; id: UnitTypeId }
+  | { type: 'role.add'; role: Role; at?: number }
+  | { type: 'role.update'; id: RoleId; patch: Partial<Role> }
+  | { type: 'role.remove'; id: RoleId }
+  | { type: 'responsibility.add'; responsibility: Responsibility; at?: number }
+  | { type: 'responsibility.update'; id: ResponsibilityId; patch: Partial<Responsibility> }
+  | { type: 'responsibility.remove'; id: ResponsibilityId }
+  /** One rule per kind, so the kind is the id. */
+  | { type: 'operatingRule.add'; rule: OperatingRule; at?: number }
+  | { type: 'operatingRule.update'; id: OperatingRuleKind; patch: Partial<OperatingRule> }
+  | { type: 'operatingRule.remove'; id: OperatingRuleKind }
 
   // --- the project itself --------------------------------------------------
   | { type: 'project.settings'; patch: ProjectPatch }

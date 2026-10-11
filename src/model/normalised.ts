@@ -40,6 +40,9 @@ import type { Adr } from './adr'
 import type { HostModel } from './hostModel'
 import type { Transition } from './transition'
 import type { Cause, Experiment, Observation, Solution } from './observation'
+import type {
+  OperatingRule, Responsibility, ResponsibilityId, Role, RoleId, UnitType, UnitTypeId,
+} from './operating'
 
 export type RelationId = string
 /** A dashed group's id — unique on its diagram, and nowhere else (ADR-0012 §6). */
@@ -63,6 +66,12 @@ export type ModelOrder = {
   causes: CauseId[]
   solutions: SolutionId[]
   experiments: ExperimentId[]
+  /** The operating model (ADR-0036): kept at the organisation. */
+  unitTypes: UnitTypeId[]
+  roles: RoleId[]
+  responsibilities: ResponsibilityId[]
+  /** By kind, which is a rule's id. */
+  operatingRules: string[]
 }
 
 /** A diagram's own lists, in the order the file had them. */
@@ -108,7 +117,9 @@ export type Diagram = Omit<DesignDiagram, 'members' | 'groups' | 'lines' | 'geom
   order: DiagramOrder
 }
 
-export type Model = Omit<HostModel, 'elements' | 'relations' | 'diagrams' | 'decisions' | 'transitions' | 'observations' | 'causes' | 'solutions' | 'experiments'> & {
+export type Model = Omit<HostModel,
+  | 'elements' | 'relations' | 'diagrams' | 'decisions' | 'transitions' | 'observations' | 'causes' | 'solutions' | 'experiments'
+  | 'unitTypes' | 'roles' | 'responsibilities' | 'operatingRules'> & {
   elements: Record<ElementId, DesignElement>
   relations: Record<RelationId, Relation>
   diagrams: Record<DiagramId, Diagram>
@@ -122,6 +133,11 @@ export type Model = Omit<HostModel, 'elements' | 'relations' | 'diagrams' | 'dec
   /** The solutions and the experiments (ADR-0026). Absent exactly as `decisions` is. */
   solutions?: Record<SolutionId, Solution>
   experiments?: Record<ExperimentId, Experiment>
+  /** The operating model (ADR-0036). Absent exactly as `decisions` is. */
+  unitTypes?: Record<UnitTypeId, UnitType>
+  roles?: Record<RoleId, Role>
+  responsibilities?: Record<ResponsibilityId, Responsibility>
+  operatingRules?: Record<string, OperatingRule>
   order: ModelOrder
 }
 
@@ -153,6 +169,26 @@ export function solutionsOf(model: Model): Record<SolutionId, Solution> {
 /** The experiments on this model, whether or not the file carried the key. */
 export function experimentsOf(model: Model): Record<ExperimentId, Experiment> {
   return model.experiments ?? {}
+}
+
+/** The unit types on this model, whether or not the file carried the key (ADR-0036). */
+export function unitTypesOf(model: Model): Record<UnitTypeId, UnitType> {
+  return model.unitTypes ?? {}
+}
+
+/** The roles on this model, likewise. */
+export function rolesOf(model: Model): Record<RoleId, Role> {
+  return model.roles ?? {}
+}
+
+/** The responsibilities on this model, likewise. */
+export function responsibilitiesOf(model: Model): Record<ResponsibilityId, Responsibility> {
+  return model.responsibilities ?? {}
+}
+
+/** The operating rules on this model, likewise: one per kind, by kind. */
+export function operatingRulesOf(model: Model): Record<string, OperatingRule> {
+  return model.operatingRules ?? {}
 }
 
 /** The routes on this diagram, whether or not the file carried the key. */
@@ -216,6 +252,30 @@ export function solutionList(model: Model): Solution[] {
 export function experimentList(model: Model): Experiment[] {
   const by = experimentsOf(model)
   return model.order.experiments.map((id) => by[id])
+}
+
+/** The unit types in file order (ADR-0036). */
+export function unitTypeList(model: Model): UnitType[] {
+  const by = unitTypesOf(model)
+  return model.order.unitTypes.map((id) => by[id])
+}
+
+/** The roles in file order. */
+export function roleList(model: Model): Role[] {
+  const by = rolesOf(model)
+  return model.order.roles.map((id) => by[id])
+}
+
+/** The responsibilities in file order. */
+export function responsibilityList(model: Model): Responsibility[] {
+  const by = responsibilitiesOf(model)
+  return model.order.responsibilities.map((id) => by[id])
+}
+
+/** The operating rules in file order. */
+export function operatingRuleList(model: Model): OperatingRule[] {
+  const by = operatingRulesOf(model)
+  return model.order.operatingRules.flatMap((id) => by[id] ?? [])
 }
 
 export function memberList(diagram: Diagram): DiagramMember[] {
@@ -404,6 +464,30 @@ export function fromArrays(host: HostModel): Model {
     out.experiments = experiments
     experimentOrder = order
   }
+  let unitTypeOrder: UnitTypeId[] = []
+  if (host.unitTypes !== undefined) {
+    const [unitTypes, order] = index(host.unitTypes, (one) => one.id)
+    out.unitTypes = unitTypes
+    unitTypeOrder = order
+  }
+  let roleOrder: RoleId[] = []
+  if (host.roles !== undefined) {
+    const [roles, order] = index(host.roles, (one) => one.id)
+    out.roles = roles
+    roleOrder = order
+  }
+  let responsibilityOrder: ResponsibilityId[] = []
+  if (host.responsibilities !== undefined) {
+    const [responsibilities, order] = index(host.responsibilities, (one) => one.id)
+    out.responsibilities = responsibilities
+    responsibilityOrder = order
+  }
+  let ruleOrder: string[] = []
+  if (host.operatingRules !== undefined) {
+    const [rules, order] = index(host.operatingRules, (one) => one.id)
+    out.operatingRules = rules
+    ruleOrder = order
+  }
   out.order = {
     elements: elementOrder,
     relations: relationOrder,
@@ -414,6 +498,10 @@ export function fromArrays(host: HostModel): Model {
     causes: causeOrder,
     solutions: solutionOrder,
     experiments: experimentOrder,
+    unitTypes: unitTypeOrder,
+    roles: roleOrder,
+    responsibilities: responsibilityOrder,
+    operatingRules: ruleOrder,
   }
   return out
 }
@@ -441,6 +529,14 @@ export function toArrays(model: Model): HostModel {
   }
   if (model.experiments !== undefined) {
     out.experiments = unindex(model.experiments, model.order.experiments)
+  }
+  if (model.unitTypes !== undefined) out.unitTypes = unindex(model.unitTypes, model.order.unitTypes)
+  if (model.roles !== undefined) out.roles = unindex(model.roles, model.order.roles)
+  if (model.responsibilities !== undefined) {
+    out.responsibilities = unindex(model.responsibilities, model.order.responsibilities)
+  }
+  if (model.operatingRules !== undefined) {
+    out.operatingRules = unindex(model.operatingRules, model.order.operatingRules)
   }
   delete out.order
   return out

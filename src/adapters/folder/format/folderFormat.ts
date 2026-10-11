@@ -22,6 +22,7 @@
  * observations/causes/NNNN-<slug>.md  what lies behind it, and what it explains
  * observations/solutions/NNNN-<slug>.md    what is done about it, and how far it got
  * observations/experiments/NNNN-<slug>.md  what was tried to find out whether it works
+ * _operating/<list>.json            the operating model, one file per list (ADR-0036)
  * images/<file>.png | .jpg | .svg   pictures the documents show
  * images/.drawings/<digest>.svg    a drawing's picture, named by its content address
  * logos/<key>.svg | .png            uploaded marks, as images
@@ -83,6 +84,7 @@ import {
   experimentFromFile, experimentPath, OBSERVATION_SUBFOLDERS, OBSERVATIONS_FOLDER, observationFileText,
   observationFromFile, observationPath, SOLUTIONS_SUBFOLDER, solutionFileText, solutionFromFile, solutionPath,
 } from './observationFile'
+import { OPERATING_FILES, OPERATING_FOLDER, operatingFileUnreadable, operatingFiles, operatingFrom } from './operatingFile'
 import { dataUrl, readDataUrl } from '../../../projects/dataUrl'
 import { markdownBody, markdownFile } from './fileText'
 import { parseJson, stableJson, textFromBytes } from '../../../projects/text'
@@ -108,7 +110,7 @@ export const DIAGRAMS_FOLDER = 'diagrams'
 export const DOCS_FOLDER = 'docs'
 export const LOGOS_FOLDER = 'logos'
 export const IMAGES_FOLDER = 'images'
-export { DECISIONS_FOLDER, TRANSITIONS_FOLDER, OBSERVATIONS_FOLDER }
+export { DECISIONS_FOLDER, TRANSITIONS_FOLDER, OBSERVATIONS_FOLDER, OPERATING_FOLDER }
 
 /**
  * The folders a scope's own files live in — which is also the list of names a
@@ -120,7 +122,7 @@ export { DECISIONS_FOLDER, TRANSITIONS_FOLDER, OBSERVATIONS_FOLDER }
  */
 export const SCOPE_FOLDERS: readonly string[] = [
   DIAGRAMS_FOLDER, DOCS_FOLDER, DECISIONS_FOLDER, TRANSITIONS_FOLDER, OBSERVATIONS_FOLDER, IMAGES_FOLDER,
-  LOGOS_FOLDER,
+  LOGOS_FOLDER, OPERATING_FOLDER,
 ]
 
 /**
@@ -160,11 +162,22 @@ export const SCOPE_FOLDERS: readonly string[] = [
  * without the field — the loss the number exists to refuse. A folder written
  * before reads its root causes off its solutions (`rootsFromSolutions`), and its
  * `shared` is read past and not written.
+ *
+ * **10 is 9, with a drawing's XML in `diagrams/<id>.drawio`** (ADR-0034). A
+ * folder written before reads with no drawings.
+ *
+ * **11 is 10, with `_operating/` beside the other folders** (ADR-0036): the
+ * operating model, kept at the organisation. A build that reads 10 would open
+ * an 11 and show, copy and export an organisation with no unit types, roles
+ * or responsibilities — a working file it made would carry none — so the
+ * number turns and the older build refuses. The folder's name holds an
+ * underscore, which no scope's name can, so no tree already has a scope
+ * there: a 10 reads as an 11 with no operating model, and nothing moves.
  */
 export { SCOPE_FORMAT_VERSION }
 
 /** The versions of a scope's own folder this build reads without folding. */
-const READABLE_SCOPE_VERSIONS: readonly number[] = [5, 6, 7, 8, 9, 10]
+const READABLE_SCOPE_VERSIONS: readonly number[] = [5, 6, 7, 8, 9, 10, 11]
 
 /**
  * The second half of a view's pair of files: where it ended up.
@@ -393,6 +406,8 @@ export function scopeFiles(scope: ScopeSnapshot): FolderFile[] {
     files.push({ path: experimentPath(experiment), text: experimentFileText(experiment) })
   }
 
+  files.push(...operatingFiles(model))
+
   files.push(...imageFiles(scope.imageLibrary ?? []))
   files.push(...drawingPictureFiles(scope.drawingPictures ?? [], model.diagrams))
 
@@ -591,6 +606,7 @@ export function isFormatPath(path: string): boolean {
     if (rest.length === 1) return /^\d{1,6}-.*\.md$/.test(name)
     return rest.length === 2 && OBSERVATION_SUBFOLDERS.includes(rest[0]) && /^\d{1,6}-.*\.md$/.test(name)
   }
+  if (folder === OPERATING_FOLDER) return OPERATING_FILES.includes(path)
   return false
 }
 
@@ -1151,6 +1167,7 @@ export function scopeFromFolder(
     ...(causes.length ? { causes } : {}),
     ...(solutions.length ? { solutions } : {}),
     ...(experiments.length ? { experiments } : {}),
+    ...operatingFrom((at) => textAt(folder, at)),
     ...(explicitFields ? { explicitFields } : {}),
     elements,
     relations: readRelations(folder),
@@ -1202,10 +1219,15 @@ function leftOut(
   dropped: ReadonlySet<string> = new Set(),
 ): Pick<ScopeSnapshot, 'unread' | 'unreadable'> {
   const modelFailed = failed.includes(MODEL_FILE) || modelUnreadable(textAt(folder, MODEL_FILE))
-  const unread = [...failed, ...untakenFiles(folder, views, elements, modelFailed, dropped)].sort()
+  // A list of the operating model that is not a list would be written back
+  // empty, as a `model.json` that is not a model would (ADR-0036).
+  const operating = OPERATING_FILES.filter((path) => !failed.includes(path) && operatingFileUnreadable(textAt(folder, path)))
+  const unread = [...failed, ...untakenFiles(folder, views, elements, modelFailed, dropped), ...operating].sort()
   const unreadable = [
     ...(modelFailed ? [MODEL_FILE] : []),
     ...namedMarks(held).filter((mark) => failed.includes(mark)),
+    ...OPERATING_FILES.filter((path) => failed.includes(path)),
+    ...operating,
   ]
   return {
     ...(unread.length ? { unread } : {}),

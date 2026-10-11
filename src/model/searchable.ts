@@ -30,6 +30,7 @@
 import type { Adr } from './adr'
 import type { ModelOrder } from './normalised'
 import type { Cause, Experiment, Observation, Solution } from './observation'
+import type { OperatingRule, Responsibility, Role, UnitType } from './operating'
 import type { Transition } from './transition'
 import { drawingProse } from './drawing'
 import type { DesignDiagram, DesignElement, ElementKind, Relation } from './types'
@@ -43,6 +44,7 @@ import type { DesignDiagram, DesignElement, ElementKind, Relation } from './type
 export const SEARCH_KINDS = [
   'element', 'documentation', 'view', 'relation', 'decision', 'plan', 'milestone',
   'observation', 'cause', 'solution', 'experiment',
+  'unitType', 'role', 'responsibility',
 ] as const
 
 export type SearchKind = (typeof SEARCH_KINDS)[number]
@@ -54,6 +56,7 @@ export type SearchKind = (typeof SEARCH_KINDS)[number]
  */
 export type SearchPage =
   | 'element' | 'document' | 'board' | 'sheet' | 'map' | 'technology' | 'drawing' | 'decisions' | 'plan' | 'observations'
+  | 'operating'
 
 export type SearchPlace = { readonly page: SearchPage; readonly id: string }
 
@@ -109,6 +112,10 @@ export type SearchableRecords = {
   causes: Cause
   solutions: Solution
   experiments: Experiment
+  unitTypes: UnitType
+  roles: Role
+  responsibilities: Responsibility
+  operatingRules: OperatingRule
 }
 
 /** A scope's lists, as whoever read it has them: every one optional, a thin read has some. */
@@ -287,6 +294,36 @@ const experiment: Searchable<Experiment> = {
 }
 
 /**
+ * The operating model (ADR-0036): found by what the organisation calls each
+ * item and what it wrote about it, opened on the operating model's page.
+ */
+const unitType: Searchable<UnitType> = {
+  kind: 'unitType',
+  order: 'name',
+  describe: (type) => ({
+    id: type.id, title: type.name, fields: [], prose: type.purpose, opens: { page: 'operating', id: type.id },
+  }),
+}
+
+const role: Searchable<Role> = {
+  kind: 'role',
+  order: 'name',
+  describe: (held) => ({
+    id: held.id, title: held.name, fields: [held.short], prose: held.purpose, opens: { page: 'operating', id: held.id },
+  }),
+}
+
+const responsibility: Searchable<Responsibility> = {
+  kind: 'responsibility',
+  order: 'name',
+  describe: (held) => ({
+    id: held.id, title: held.name, fields: [held.group], prose: held.description,
+    ...(held.group ? { detail: held.group } : {}),
+    opens: { page: 'operating', id: held.id },
+  }),
+}
+
+/**
  * Every list a scope holds, and what its records say to a search. One line
  * per list; a list with two kinds of hit — an element and its page, a plan
  * and its milestones — names both.
@@ -301,6 +338,11 @@ export const SEARCHABLE: SearchTable = {
   causes: [cause],
   solutions: [solution],
   experiments: [experiment],
+  unitTypes: [unitType],
+  roles: [role],
+  responsibilities: [responsibility],
+  // A rule names a role and says nothing a person would search for.
+  operatingRules: [],
 }
 
 /** The lists, in the order the search reads them and a list of hits is headed. */

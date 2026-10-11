@@ -150,7 +150,10 @@ describe('fromArrays / toArrays', () => {
   it('is total over a model whose optional lists are missing entirely', () => {
     const bare = { name: 'D' } as unknown as HostModel
     const m: Model = fromArrays(bare)
-    expect(m.order).toEqual({ elements: [], relations: [], diagrams: [], decisions: [], transitions: [], observations: [], causes: [], solutions: [], experiments: [] })
+    expect(m.order).toEqual({
+      elements: [], relations: [], diagrams: [], decisions: [], transitions: [], observations: [], causes: [], solutions: [], experiments: [],
+      unitTypes: [], roles: [], responsibilities: [], operatingRules: [],
+    })
     expect(toArrays(m).elements).toEqual([])
   })
 })

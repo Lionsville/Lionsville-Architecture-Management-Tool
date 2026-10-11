@@ -52,6 +52,19 @@ const KEYS: Record<LineKey, StringKey> = {
   'experiment:added': 'change.experimentAdded',
   'experiment:removed': 'change.experimentRemoved',
   'experiment:changed': 'change.experimentChanged',
+  // The operating model (ADR-0036), by the organisation's own names.
+  'unitType:added': 'change.unitTypeAdded',
+  'unitType:removed': 'change.unitTypeRemoved',
+  'unitType:changed': 'change.unitTypeChanged',
+  'role:added': 'change.roleAdded',
+  'role:removed': 'change.roleRemoved',
+  'role:changed': 'change.roleChanged',
+  'responsibility:added': 'change.responsibilityAdded',
+  'responsibility:removed': 'change.responsibilityRemoved',
+  'responsibility:changed': 'change.responsibilityChanged',
+  'operatingRule:added': 'change.operatingRuleAdded',
+  'operatingRule:removed': 'change.operatingRuleRemoved',
+  'operatingRule:changed': 'change.operatingRuleChanged',
   // What came onto a board and what left it. Named, not counted: a card put on
   // a view is a decision somebody made (ADR-0012 §6).
   'membership:added': 'change.membershipAdded',

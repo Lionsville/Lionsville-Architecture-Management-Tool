@@ -122,6 +122,10 @@ const everything: HostModel = {
     id: 'ex-1', number: 1, title: 'A week of harbour bookings online', tests: ['so-1'], hypothesis: 'Idle time halves',
     outcome: 'planned', body: '',
   }],
+  unitTypes: [{ id: 'ut-1', name: 'Harbour crew', within: [], top: true, slots: [] }],
+  roles: [{ id: 'ro-1', name: 'Harbour master', short: 'HM', duties: [] }],
+  responsibilities: [{ id: 'rs-1', name: 'Plan the harbour shifts', group: 'Operate' }],
+  operatingRules: [{ id: 'applicationOwner', role: 'ro-1' }],
 }
 
 describe('every kind of record a scope holds', () => {
@@ -141,6 +145,9 @@ describe('every kind of record a scope holds', () => {
     expect(place('plan')).toEqual({ page: 'plan', id: 'tr-1' })
     expect(place('milestone')).toEqual({ page: 'plan', id: 'tr-1' })
     for (const kind of ['observation', 'cause', 'solution', 'experiment']) expect(place(kind)?.page).toBe('observations')
+    expect(place('unitType')).toEqual({ page: 'operating', id: 'ut-1' })
+    expect(place('role')).toEqual({ page: 'operating', id: 'ro-1' })
+    expect(place('responsibility')).toEqual({ page: 'operating', id: 'rs-1' })
     expect(hits.every((hit) => hit.scope === 'port')).toBe(true)
   })
 

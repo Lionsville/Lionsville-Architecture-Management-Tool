@@ -63,6 +63,9 @@ const KIND_LABEL: Record<SearchKind, StringKey> = {
   cause: 'gsearch.kind.cause',
   solution: 'gsearch.kind.solution',
   experiment: 'gsearch.kind.experiment',
+  unitType: 'gsearch.kind.unitType',
+  role: 'gsearch.kind.role',
+  responsibility: 'gsearch.kind.responsibility',
 }
 
 const VIEW_LABEL = {

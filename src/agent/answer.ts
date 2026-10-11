@@ -1106,6 +1106,7 @@ const PROTOCOL_KIND: Record<SearchKind, (typeof SEARCH_HIT_KINDS)[number]> = {
   element: 'element', documentation: 'documentation', view: 'view', relation: 'relation',
   decision: 'adr', plan: 'plan', milestone: 'milestone',
   observation: 'observation', cause: 'cause', solution: 'solution', experiment: 'experiment',
+  unitType: 'unitType', role: 'role', responsibility: 'responsibility',
 }
 
 function searchKindOf(word: string): SearchKind {

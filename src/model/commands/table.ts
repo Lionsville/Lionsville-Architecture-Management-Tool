@@ -15,6 +15,7 @@ import { DIAGRAM_COMMANDS } from './diagrams'
 import { ELEMENT_COMMANDS } from './elements'
 import { GROUP_COMMANDS } from './groups'
 import { MEMBER_COMMANDS } from './members'
+import { OPERATING_RULE_COMMANDS, RESPONSIBILITY_COMMANDS, ROLE_COMMANDS, UNIT_TYPE_COMMANDS } from './operating'
 import { CAUSE_COMMANDS, EXPERIMENT_COMMANDS, OBSERVATION_COMMANDS, SOLUTION_COMMANDS } from './analysis'
 import { PROJECT_COMMANDS } from './project'
 import { DECISION_COMMANDS, TRANSITION_COMMANDS } from './records'
@@ -34,5 +35,9 @@ export const COMMAND_TABLE: CommandTable = {
   ...CAUSE_COMMANDS,
   ...SOLUTION_COMMANDS,
   ...EXPERIMENT_COMMANDS,
+  ...UNIT_TYPE_COMMANDS,
+  ...ROLE_COMMANDS,
+  ...RESPONSIBILITY_COMMANDS,
+  ...OPERATING_RULE_COMMANDS,
   ...PROJECT_COMMANDS,
 }

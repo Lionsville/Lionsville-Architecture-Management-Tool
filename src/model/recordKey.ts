@@ -34,11 +34,13 @@ import type { Model } from './normalised'
 export type RecordKind =
   | 'element' | 'relation' | 'diagram' | 'decision' | 'transition'
   | 'observation' | 'cause' | 'solution' | 'experiment'
+  | 'unitType' | 'role' | 'responsibility' | 'operatingRule'
   | 'image' | 'scope'
 
 export const RECORD_KINDS: readonly RecordKind[] = [
   'element', 'relation', 'diagram', 'decision', 'transition',
-  'observation', 'cause', 'solution', 'experiment', 'image', 'scope',
+  'observation', 'cause', 'solution', 'experiment',
+  'unitType', 'role', 'responsibility', 'operatingRule', 'image', 'scope',
 ]
 
 /**
@@ -64,6 +66,7 @@ export const RECORD_LISTS = {
   element: 'elements', relation: 'relations', diagram: 'diagrams', decision: 'decisions',
   transition: 'transitions', observation: 'observations', cause: 'causes', solution: 'solutions',
   experiment: 'experiments',
+  unitType: 'unitTypes', role: 'roles', responsibility: 'responsibilities', operatingRule: 'operatingRules',
 } as const satisfies Partial<Record<RecordKind, keyof Model>>
 
 type Listed = keyof typeof RECORD_LISTS

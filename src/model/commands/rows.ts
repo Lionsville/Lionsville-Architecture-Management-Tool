@@ -18,6 +18,7 @@
 import type { Adr } from '../adr'
 import type { Transition } from '../transition'
 import type { Cause, Experiment, Observation, Solution } from '../observation'
+import type { OperatingRule, Responsibility, Role, UnitType } from '../operating'
 import type { Diagram, DiagramId, Model, ModelOrder } from '../normalised'
 import type { DesignElement, DiagramGroup, DiagramMember, EdgeRoute, Relation } from '../types'
 
@@ -158,6 +159,27 @@ export function withExperiments(model: Model, rows: Rows<Experiment>): Model {
     return out
   }
   return { ...model, experiments: rows.by, order }
+}
+
+/**
+ * One of the operating model's lists (ADR-0036), put back: emptied means gone,
+ * exactly as `decisions` is.
+ */
+type OperatingLists = {
+  unitTypes: UnitType
+  roles: Role
+  responsibilities: Responsibility
+  operatingRules: OperatingRule
+}
+
+export function withOperating<K extends keyof OperatingLists>(model: Model, list: K, rows: Rows<OperatingLists[K]>): Model {
+  const order = withOrder(model, list, rows.order)
+  if (rows.order.length === 0) {
+    const out = { ...model, order }
+    delete out[list]
+    return out
+  }
+  return { ...model, [list]: rows.by, order }
 }
 
 export function setDiagram(model: Model, id: DiagramId, diagram: Diagram): Model {

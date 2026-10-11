@@ -23,7 +23,9 @@
  */
 import type { StringKey } from '../i18n/strings'
 import type { Command, CommandBody, Restored } from './commands'
-import { causesOf, decisionsOf, experimentsOf, observationsOf, solutionsOf, transitionsOf } from './normalised'
+import {
+  causesOf, decisionsOf, experimentsOf, observationsOf, responsibilitiesOf, rolesOf, solutionsOf, transitionsOf, unitTypesOf,
+} from './normalised'
 import type { Model } from './normalised'
 import { RELATION_LABEL } from './relations'
 import type { RelationType } from './types'
@@ -256,6 +258,51 @@ export function summarise(commands: readonly Command[], before: Model): StepSumm
     case 'restore':
       // Unreachable: `flatten` has none left. Named so the switch is total.
       return NOTHING
+    // The operating model's, which are a family of their own (ADR-0036).
+    default:
+      return operatingStep(lead, flat, before)
+  }
+}
+
+/** The operating model's commands: what `summarise` hands on. */
+type OperatingCommand = Extract<CommandBody, {
+  type: `${'unitType' | 'role' | 'responsibility' | 'operatingRule'}.${'add' | 'update' | 'remove'}`
+}>
+
+/**
+ * A step of the operating model (ADR-0036). Bringing items in from a library
+ * is one step of several adds, each saying where it came from, and the line
+ * says that rather than naming the first of them.
+ */
+function operatingStep(lead: OperatingCommand, flat: readonly CommandBody[], before: Model): StepSummary {
+  const brought = flat.filter((command) => basedOnOf(command) !== undefined).length
+  if (brought > 0 && lead.type.endsWith('.add')) return { key: 'activity.broughtIn', count: brought }
+  switch (lead.type) {
+    case 'unitType.add': return { key: 'activity.unitTypeAdded', name: lead.unitType.name }
+    case 'unitType.update': return { key: 'activity.unitTypeChanged', name: unitTypesOf(before)[lead.id]?.name }
+    case 'unitType.remove': return { key: 'activity.unitTypeRemoved', name: unitTypesOf(before)[lead.id]?.name }
+    case 'role.add': return { key: 'activity.roleAdded', name: lead.role.name }
+    case 'role.update': return { key: 'activity.roleChanged', name: rolesOf(before)[lead.id]?.name }
+    case 'role.remove': return { key: 'activity.roleRemoved', name: rolesOf(before)[lead.id]?.name }
+    case 'responsibility.add': return { key: 'activity.responsibilityAdded', name: lead.responsibility.name }
+    case 'responsibility.update':
+      return { key: 'activity.responsibilityChanged', name: responsibilitiesOf(before)[lead.id]?.name }
+    case 'responsibility.remove':
+      return { key: 'activity.responsibilityRemoved', name: responsibilitiesOf(before)[lead.id]?.name }
+    case 'operatingRule.add':
+    case 'operatingRule.update':
+    case 'operatingRule.remove':
+      return { key: 'activity.operatingRuleChanged' }
+  }
+}
+
+/** Where an added item of the operating model came from, if a library. */
+function basedOnOf(command: CommandBody): object | undefined {
+  switch (command.type) {
+    case 'unitType.add': return command.unitType.basedOn
+    case 'role.add': return command.role.basedOn
+    case 'responsibility.add': return command.responsibility.basedOn
+    default: return undefined
   }
 }
 

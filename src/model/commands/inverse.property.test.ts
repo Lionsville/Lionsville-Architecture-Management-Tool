@@ -96,6 +96,10 @@ function someModel(r: Random): Model {
     ...(r.chance(0.6) ? { causes: [cause(r, 'ca-1', 1)] } : {}),
     ...(r.chance(0.6) ? { solutions: [solution(r, 'so-1', 1)] } : {}),
     ...(r.chance(0.6) ? { experiments: [experiment(r, 'ex-1', 1)] } : {}),
+    ...(r.chance(0.6) ? { unitTypes: [unitType(r, 'ut-1')] } : {}),
+    ...(r.chance(0.6) ? { roles: [role(r, 'ro-1')] } : {}),
+    ...(r.chance(0.6) ? { responsibilities: [responsibility(r, 'rs-1')] } : {}),
+    ...(r.chance(0.6) ? { operatingRules: [{ id: 'applicationOwner' as const, role: 'ro-1' }] } : {}),
   })
   return held
 }
@@ -120,6 +124,17 @@ const solution = (r: Random, id: string, number: number) => ({
 })
 const experiment = (r: Random, id: string, number: number) => ({
   id, number, title: r.pick(WORDS), tests: [], hypothesis: 'It holds.', outcome: 'running' as const, body: 'Set up.',
+})
+const unitType = (r: Random, id: string) => ({
+  id, name: r.pick(WORDS) || 'Team', within: [], slots: r.chance(0.5) ? [{ role: 'ro-1', min: 1, max: 1 }] : [],
+  ...(r.chance(0.5) ? { top: true } : {}),
+})
+const role = (r: Random, id: string) => ({
+  id, name: r.pick(WORDS) || 'Lead', duties: r.chance(0.5) ? [{ responsibility: 'rs-1', raci: 'A' as const }] : [],
+  ...(r.chance(0.3) ? { manages: true } : {}),
+})
+const responsibility = (r: Random, id: string) => ({
+  id, name: r.pick(WORDS) || 'Release', ...(r.chance(0.5) ? { group: 'Deliver' } : {}),
 })
 
 // --- a command of every kind --------------------------------------------------
@@ -264,6 +279,52 @@ const COMMANDS: { [K in CommandType]: (r: Random, model: Model) => Extract<Comma
     patch: { hypothesis: 'It holds, mostly.', ...(r.chance(0.5) ? { measure: either(r, 'Minutes') } : {}) },
   }),
   'experiment.remove': (r, m) => ({ type: 'experiment.remove', id: held(r, m.order.experiments, 'ex') }),
+  'unitType.add': (r, m) => ({
+    type: 'unitType.add', unitType: unitType(r, r.chance(0.8) ? `ut-${2 + r.int(100)}` : 'ut-1'),
+    ...(r.chance(0.3) ? { at: r.int(m.order.unitTypes.length + 1) } : {}),
+  }),
+  'unitType.update': (r, m) => ({
+    type: 'unitType.update', id: held(r, m.order.unitTypes, 'ut'),
+    patch: {
+      name: r.pick(WORDS) || 'Named',
+      ...(r.chance(0.5) ? { limit: either(r, 1 + r.int(5)) } : {}),
+      ...(r.chance(0.5) ? { slots: [{ role: 'ro-1', min: r.int(3) }] } : {}),
+      ...(r.chance(0.3) ? { spans: either(r, true) } : {}),
+    },
+  }),
+  'unitType.remove': (r, m) => ({ type: 'unitType.remove', id: held(r, m.order.unitTypes, 'ut') }),
+  'role.add': (r, m) => ({
+    type: 'role.add', role: role(r, r.chance(0.8) ? `ro-${2 + r.int(100)}` : 'ro-1'),
+    ...(r.chance(0.3) ? { at: r.int(m.order.roles.length + 1) } : {}),
+  }),
+  'role.update': (r, m) => ({
+    type: 'role.update', id: held(r, m.order.roles, 'ro'),
+    patch: {
+      ...(r.chance(0.6) ? { duties: [{ responsibility: 'rs-1', raci: r.pick(['R', 'A', 'C', 'I'] as const) }] } : {}),
+      ...(r.chance(0.5) ? { manages: either(r, true) } : {}),
+      ...(r.chance(0.5) ? { purpose: either(r, 'Leads it.') } : {}),
+    },
+  }),
+  'role.remove': (r, m) => ({ type: 'role.remove', id: held(r, m.order.roles, 'ro') }),
+  'responsibility.add': (r, m) => ({
+    type: 'responsibility.add', responsibility: responsibility(r, r.chance(0.8) ? `rs-${2 + r.int(100)}` : 'rs-1'),
+    ...(r.chance(0.3) ? { at: r.int(m.order.responsibilities.length + 1) } : {}),
+  }),
+  'responsibility.update': (r, m) => ({
+    type: 'responsibility.update', id: held(r, m.order.responsibilities, 'rs'),
+    patch: { name: r.pick(WORDS) || 'Named', ...(r.chance(0.5) ? { group: either(r, 'Run') } : {}) },
+  }),
+  'responsibility.remove': (r, m) => ({ type: 'responsibility.remove', id: held(r, m.order.responsibilities, 'rs') }),
+  'operatingRule.add': (r) => ({
+    type: 'operatingRule.add', rule: { id: r.pick(['applicationOwner', 'domainOwner'] as const), role: 'ro-1' },
+  }),
+  'operatingRule.update': (r, m) => ({
+    type: 'operatingRule.update', id: r.chance(0.9) && m.order.operatingRules.length ? 'applicationOwner' : 'domainOwner',
+    patch: { role: `ro-${r.int(5)}` },
+  }),
+  'operatingRule.remove': (r, m) => ({
+    type: 'operatingRule.remove', id: r.chance(0.9) && m.order.operatingRules.length ? 'applicationOwner' : 'domainOwner',
+  }),
 
   'project.settings': (r) => ({
     type: 'project.settings',

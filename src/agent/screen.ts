@@ -26,7 +26,7 @@ import type { ObservationTab } from '../observations/tabs'
 export const PAGES = [
   'home', 'board', 'sheet', 'map', 'technology', 'drawing',
   'decisions', 'observations', 'roadmap', 'plan', 'element', 'document', 'documentation',
-  'platform', 'service', 'register', 'technologyRegister', 'people',
+  'platform', 'service', 'register', 'technologyRegister', 'people', 'operating',
 ] as const
 
 export type Page = (typeof PAGES)[number]
@@ -94,6 +94,8 @@ export type ScreenPage =
   | { readonly page: 'decisions'; readonly id?: string }
   | { readonly page: 'observations'; readonly id?: string; readonly tab?: ObservationTab }
   | { readonly page: 'roadmap' }
+  /** The operating model (ADR-0036), at the organisation, on one item where one is picked. */
+  | { readonly page: 'operating'; readonly id?: string }
   | { readonly page: 'plan'; readonly id: string }
   | { readonly page: 'platform'; readonly id: string }
   | { readonly page: 'service'; readonly id: string }
@@ -154,10 +156,16 @@ export function scopeOf(screen: Screen): string | undefined {
  * says so at once, before the request for another record has reached it, so
  * the page alone is no arrival: the record it names is.
  */
-function onRecord(screen: Screen, to: Destination & { page: 'decisions' | 'observations' }): boolean {
+function onRecord(screen: Screen, to: Destination & { page: 'decisions' | 'observations' | 'operating' }): boolean {
   const up = screen.page
   if (up?.page !== to.page || (to.id !== undefined && up.id !== to.id)) return false
   return to.tab === undefined || (up.page === 'observations' && up.tab === to.tab)
+}
+
+/** A page of a scope's home, with nothing open over it: the home asked for, and the page on it. */
+function onHome(screen: Screen, page: Page, scope: string): boolean {
+  if (!screen.home || screen.home.path !== scope || screen.open) return false
+  return page === 'home' ? screen.page === undefined : screen.page?.page === page
 }
 
 /**
@@ -170,15 +178,13 @@ export function arrived(screen: Screen, to: Destination, scope: string): boolean
   const page = to.page
   // No page: the scope open on whatever its tab shows, with nothing over it.
   if (page === undefined) return screen.open?.path === scope && screen.page === undefined
-  if (HOME_PAGES.includes(page)) {
-    if (!screen.home || screen.home.path !== scope || screen.open) return false
-    return page === 'home' ? screen.page === undefined : screen.page?.page === page
-  }
+  if (HOME_PAGES.includes(page)) return onHome(screen, page, scope)
   if (!screen.open || screen.open.path !== scope) return false
   if (VIEW_PAGES.includes(page)) return screen.page === undefined && (to.id === undefined || screen.open.view?.id === to.id)
   switch (page) {
     case 'decisions':
     case 'observations':
+    case 'operating':
       return onRecord(screen, { ...to, page })
     case 'roadmap': return screen.page?.page === 'roadmap'
     case 'plan':

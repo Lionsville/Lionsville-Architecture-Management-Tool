@@ -30,13 +30,14 @@ import { isAdrLocked } from './adr'
 import type { BoardPatch, Command, DiagramPatch, ProjectPatch, Restored } from './commands'
 import type { Diagram, Model } from './normalised'
 import {
-  boxesOf, causesOf, decisionsOf, experimentsOf, fromDiagram, groupList, groupsOf, observationsOf, routesOf,
-  solutionsOf, toDiagram,
+  boxesOf, causesOf, decisionsOf, experimentsOf, fromDiagram, groupList, groupsOf, observationsOf, operatingRulesOf,
+  responsibilitiesOf, rolesOf, routesOf, solutionsOf, toDiagram, unitTypesOf,
 } from './normalised'
 import { memberOf, nodeGeometryOf, placedNodes } from './placement'
 import { edgeRoutesOf, splitRoutes } from './routes'
 import { FIXED_ON_A_STANDIN } from './standIn'
 import type { DesignElement, DiagramSettings, Relation } from './types'
+import type { OperatingRuleKind } from './operating'
 
 /** The same shape `adapters/folder/format/historyPath.ts` asks a history by; the model's own word for it. */
 export type RestoreSubject = { what: 'diagram' | 'description' | 'decision'; id: string }
@@ -241,9 +242,46 @@ function restoreProject(then: Model, now: Model, asOf: string): RestoreResult {
   for (const id of now.order.experiments) {
     if (!thenExperiments[id]) commands.push({ type: 'experiment.remove', id })
   }
+  commands.push(...operatingBack(then, now))
 
   const restored: Restored = { what: 'project', name: then.name, asOf }
   return { ok: true, command: { type: 'restore', restored, commands }, dropped, kept }
+}
+
+/**
+ * The operating model as it was (ADR-0036): every list whole, as the
+ * observations restore — nothing in it locks.
+ */
+function operatingBack(then: Model, now: Model): Command[] {
+  const commands: Command[] = []
+  const back = <T extends object>(
+    was: Record<string, T>, is: Record<string, T>, order: { then: string[]; now: string[] },
+    add: (row: T) => Command, update: (id: string, patch: Partial<T>) => Command, remove: (id: string) => Command,
+  ) => {
+    for (const id of order.then) {
+      const current = is[id]
+      if (!current) commands.push(add(was[id]))
+      else {
+        const patch = differing(current, was[id])
+        if (Object.keys(patch).length) commands.push(update(id, patch))
+      }
+    }
+    for (const id of order.now) if (!was[id]) commands.push(remove(id))
+  }
+  back(unitTypesOf(then), unitTypesOf(now), { then: then.order.unitTypes, now: now.order.unitTypes },
+    (unitType) => ({ type: 'unitType.add', unitType }), (id, patch) => ({ type: 'unitType.update', id, patch }),
+    (id) => ({ type: 'unitType.remove', id }))
+  back(rolesOf(then), rolesOf(now), { then: then.order.roles, now: now.order.roles },
+    (role) => ({ type: 'role.add', role }), (id, patch) => ({ type: 'role.update', id, patch }),
+    (id) => ({ type: 'role.remove', id }))
+  back(responsibilitiesOf(then), responsibilitiesOf(now), { then: then.order.responsibilities, now: now.order.responsibilities },
+    (responsibility) => ({ type: 'responsibility.add', responsibility }),
+    (id, patch) => ({ type: 'responsibility.update', id, patch }), (id) => ({ type: 'responsibility.remove', id }))
+  back(operatingRulesOf(then), operatingRulesOf(now), { then: then.order.operatingRules, now: now.order.operatingRules },
+    (rule) => ({ type: 'operatingRule.add', rule }),
+    (id, patch) => ({ type: 'operatingRule.update', id: id as OperatingRuleKind, patch }),
+    (id) => ({ type: 'operatingRule.remove', id: id as OperatingRuleKind }))
+  return commands
 }
 
 // --- a diagram, as commands ----------------------------------------------------
