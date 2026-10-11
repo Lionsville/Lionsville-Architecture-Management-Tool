@@ -12,10 +12,14 @@ import { isDay } from '../../model/lifecycle'
 import { portCommands, portsOf, unplannedPorts, unportCommands } from '../../model/porting'
 import { replacementCommands } from '../../model/replacement'
 import {
-  nextTransitionNumber, openPlanItems, planGate, statusPatch, transitionLabel, transitionsFrom as planTransitionsFrom,
+  movesOfPlans, movesWith, nextTransitionNumber, openPlanItems, planGate, statusPatch, transitionLabel, transitionsFrom as planTransitionsFrom,
 } from '../../model/transition'
-import type { Transition, TransitionElement, TransitionMilestone, TransitionRole, TransitionStatus } from '../../model/transition'
+import type {
+  Transition, TransitionElement, TransitionMilestone, TransitionMove, TransitionRole, TransitionStatus,
+} from '../../model/transition'
 import type { ElementId } from '../../model/types'
+import { isUnit, organisationOn, unitsBelow } from '../../model/units'
+import type { UnitLike } from '../../model/units'
 import type { ReadView } from '../answer'
 import { planEntry } from '../answer'
 import type { AgentAnswer } from '../tools'
@@ -391,4 +395,60 @@ export const removeMilestone: Handler = (args, view) => {
   const { plan, name, at } = found
   if (at < 0) return refused('agent.unknownId', `milestone ${name} of plan ${transitionLabel(plan)}`)
   return withMilestones(plan, plan.milestones.filter((_one, index) => index !== at))
+}
+
+// --- the units a plan moves (ADR-0036 §6) -------------------------------------------------
+
+/** Every unit the organisation has, by id: the tree's, with this scope's own as the session holds them. */
+function unitsKnown(view: ReadView): Map<ElementId, UnitLike> {
+  const here = Object.values(view.model.elements).filter((one) => one.ref === undefined && isUnit(one))
+  const elsewhere = (view.tree?.units?.() ?? []).filter((one) => one.scope !== view.scopePath).map((one) => one.unit)
+  return new Map([...elsewhere, ...here].map((unit) => [unit.id, unit]))
+}
+
+/** Every move but this plan's of this unit: the other scopes' plans', and this scope's as the session holds them. */
+function otherMoves(view: ReadView, plan: Transition, unitId: ElementId): TransitionMove[] {
+  const ownPlans = transitionList(view.model).map((one) => (one.id === plan.id ? { ...one, moves: movesWith(one.moves, unitId, undefined) } : one))
+  return [
+    ...(view.tree?.moves?.() ?? []).filter((one) => one.scope !== view.scopePath).map((one) => one.move),
+    ...movesOfPlans(ownPlans),
+  ]
+}
+
+function withMoves(plan: Transition, moves: TransitionMove[] | undefined): Prepared {
+  return {
+    command: { type: 'transition.update', id: plan.id, patch: { moves }, origin: 'agent' },
+    answer: json({ planId: plan.id, label: transitionLabel(plan), moves: moves ?? [] }),
+  }
+}
+
+/**
+ * A unit put under a new parent on a day, as part of a plan (ADR-0036 §6):
+ * one move per unit and plan, so moving it again changes the move, and
+ * `remove` takes it off. A parent below the unit on that day is a loop, and
+ * refused. A move outside a plan is a correction: `element.update` with
+ * `parentId`.
+ */
+export const moveUnit: Handler = (args, view) => {
+  const plan = planOf(args.planId, view)
+  if (!plan) return refused('agent.unknownId', `plan ${String(args.planId)}`)
+  const unitId = args.unitId as string
+  const units = unitsKnown(view)
+  if (!units.has(unitId)) return refused('agent.unknownId', `unit ${unitId}: an actor with a unit type (elements.list, assignments.list)`)
+  if (args.remove === true) {
+    if (!(plan.moves ?? []).some((one) => one.unitId === unitId)) return refused('agent.unknownId', `a move of ${unitId} on plan ${transitionLabel(plan)}`)
+    return withMoves(plan, movesWith(plan.moves, unitId, undefined))
+  }
+  if (!isDay(args.on)) return refused('agent.badArguments', '"on" must be yyyy-mm-dd')
+  const on = args.on
+  const parentId = typeof args.parentId === 'string' ? args.parentId : undefined
+  if (parentId !== undefined) {
+    if (parentId === unitId) return refused('agent.badArguments', 'a unit cannot sit under itself')
+    if (!units.has(parentId)) return refused('agent.unknownId', `unit ${parentId}`)
+    const organisation = { units: [...units.values()], assignments: [], roles: [], unitTypes: [], moves: otherMoves(view, plan, unitId) }
+    if (unitsBelow(organisationOn(organisation, on).units, unitId).includes(parentId)) {
+      return refused('agent.badArguments', `${parentId} sits below ${unitId} on ${on}: the move would make a loop`)
+    }
+  }
+  return withMoves(plan, movesWith(plan.moves, unitId, { ...(parentId !== undefined ? { parentId } : {}), on }))
 }

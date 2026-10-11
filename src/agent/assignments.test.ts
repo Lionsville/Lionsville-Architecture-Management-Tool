@@ -249,3 +249,53 @@ describe('an actor made a unit through the element tools', () => {
     expect(open.sent).toEqual([])
   })
 })
+
+describe('a reorganisation at the agent (ADR-0036 §6)', () => {
+  /** A plan of the customer domain, to put units under another parent on a day. */
+  const PLAN = { id: 'tr-1', number: 1, title: 'Webshop under Parcel', status: 'draft' as const, elements: [], decisions: [], milestones: [], body: '' }
+  const planned = (over: Partial<typeof PLAN & { moves: { unitId: string; parentId?: string; on: string }[] }> = {}): HostModel => ({
+    ...customer, transitions: [{ ...PLAN, ...over }],
+  })
+
+  it('puts a unit under a new parent on a day as one step on the plan, moves it again, and takes the move off', async () => {
+    const open = session('customer', planned())
+    expect(parsed(await ask('plan.move', { planId: 'TR-1', unitId: 'webshop', parentId: 'parcel', on: '2027-01-01' }, open)))
+      .toEqual({ planId: 'tr-1', label: 'TR-0001', moves: [{ unitId: 'webshop', parentId: 'parcel', on: '2027-01-01' }], revision: 1 })
+    expect(open.sent[0]).toEqual({
+      type: 'transition.update', id: 'tr-1', origin: 'agent', patch: { moves: [{ unitId: 'webshop', parentId: 'parcel', on: '2027-01-01' }] },
+    })
+    expect(parsed(await ask('plan.move', { planId: 'tr-1', unitId: 'webshop', on: '2027-02-01' }, open)).moves)
+      .toEqual([{ unitId: 'webshop', on: '2027-02-01' }])
+    expect(parsed(await ask('plan.move', { planId: 'tr-1', unitId: 'webshop', remove: true }, open)).moves).toEqual([])
+    expect(open.model().transitions?.['tr-1']).not.toHaveProperty('moves')
+    const read = parsed(await ask('plan.read', { id: 'tr-1' }, session('customer', planned({ moves: [{ unitId: 'webshop', on: '2027-01-01' }] }))))
+    expect(read.moves).toEqual([{ unitId: 'webshop', on: '2027-01-01' }])
+  })
+
+  it('refuses a plan or a unit nobody holds, a day that is not one, itself as its parent, and a loop', async () => {
+    const open = session('customer', planned({ moves: [{ unitId: 'parcel', parentId: 'webshop', on: '2026-12-01' }] }))
+    const tried = async (args: Record<string, unknown>) => refusal(await ask('plan.move', { planId: 'tr-1', unitId: 'webshop', on: '2027-01-01', ...args }, open))
+    expect((await tried({ planId: 'tr-9' }))?.[0]).toBe('agent.unknownId')
+    expect((await tried({ unitId: 'partners' }))?.[0]).toBe('agent.unknownId')
+    expect((await tried({ parentId: 'nowhere' }))?.[0]).toBe('agent.unknownId')
+    expect((await tried({ on: 'soon' }))?.[0]).toBe('agent.badArguments')
+    expect((await tried({ parentId: 'webshop' }))?.[0]).toBe('agent.badArguments')
+    // Parcel sits under the webshop from December, so the webshop under Parcel in January is a loop; in November it is not.
+    expect(await tried({ parentId: 'parcel' })).toEqual(['agent.badArguments', 'parcel sits below webshop on 2027-01-01: the move would make a loop'])
+    expect(await tried({ parentId: 'parcel', on: '2026-11-01' })).toBeUndefined()
+    expect((await tried({ unitId: 'webshop', remove: true, planId: 'tr-1' }))).toBeUndefined()
+  })
+
+  it('reads the organisation on a day with every plan\'s moves of that day, and the checks of that day', async () => {
+    const open = session('customer', planned({ moves: [{ unitId: 'webshop', parentId: 'parcel', on: '2027-01-01' }] }))
+    expect(parsed(await ask('assignments.list', { unitId: 'webshop' }, open, shell())).unit).not.toHaveProperty('parentId')
+    const later = parsed(await ask('assignments.list', { unitId: 'webshop', on: '2027-01-01' }, open, shell()))
+    expect(later.unit).toMatchObject({ parentId: 'parcel', parent: 'Parcel' })
+    const days: (string | undefined)[] = []
+    const withChecks = session('customer', customer)
+    const asked = { ...withChecks, tree: { ...tree(), findings: (day?: string) => { days.push(day); return [] } } }
+    expect(parsed(await ask('checks.list', { on: '2027-01-01' }, asked))).toEqual({ day: '2027-01-01', total: 0, some: [] })
+    expect(parsed(await ask('checks.list', {}, asked))).toEqual({ total: 0, some: [] })
+    expect(days).toEqual(['2027-01-01', undefined])
+  })
+})

@@ -13,10 +13,11 @@
  * accountable for — is a finding the lists report, never a refusal here.
  */
 import type { Command } from '../../model/commands'
+import { isDay } from '../../model/lifecycle'
 import { operatingRulesOf, responsibilitiesOf, rolesOf, unitTypesOf } from '../../model/normalised'
 import type { Model } from '../../model/normalised'
 import { toArrays } from '../../model/normalised'
-import type { Duty, Raci, Role, RoleSlot, UnitType } from '../../model/operatingModel'
+import type { Dated, Duty, Raci, Role, RoleSlot, UnitType } from '../../model/operatingModel'
 import { roleLine, unitTypeLine } from '../operatingModel'
 import type { AgentAnswer } from '../tools'
 import { json, refused } from '../tools'
@@ -99,9 +100,39 @@ function dutiesOf(given: unknown, model: Model): Duty[] | AgentAnswer {
   return duties
 }
 
+/**
+ * A unit type's or a role's days and successors as given (ADR-0036 §6):
+ * days that are days and run forwards over what the record keeps for the
+ * half not given, and successors of the same kind, never itself. Null or an
+ * empty list takes a field away.
+ */
+function datedPatch(args: Args, held: Dated | undefined, known: Readonly<Record<string, unknown>>, self: string | undefined): Dated | AgentAnswer {
+  const patch: Dated = {}
+  for (const key of ['from', 'until'] as const) {
+    if (!(key in args)) continue
+    if (args[key] === null) { patch[key] = undefined; continue }
+    if (!isDay(args[key])) return refused('agent.badArguments', `"${key}" must be yyyy-mm-dd`)
+    patch[key] = args[key]
+  }
+  const from = 'from' in patch ? patch.from : held?.from
+  const until = 'until' in patch ? patch.until : held?.until
+  if (isDay(from) && isDay(until) && until < from) return refused('agent.badArguments', '"until" must not be before "from"')
+  if ('successors' in args) {
+    const given = [...new Set((args.successors as string[] | null | undefined) ?? [])]
+    for (const id of given) {
+      if (id === self) return refused('agent.badArguments', 'nothing follows itself')
+      if (!(id in known)) return refused('agent.unknownId', `successors: ${id}`)
+    }
+    patch.successors = given.length ? given : undefined
+  }
+  return patch
+}
+
 /** The fields of a unit type the request gives, checked. */
 function unitTypePatch(args: Args, model: Model, self: string | undefined): Partial<UnitType> | AgentAnswer {
-  const patch: Partial<UnitType> = { ...textPatch(args, 'purpose'), ...flagPatch(args, 'top'), ...flagPatch(args, 'spans') }
+  const dated = datedPatch(args, self === undefined ? undefined : unitTypesOf(model)[self], unitTypesOf(model), self)
+  if ('ok' in dated) return dated
+  const patch: Partial<UnitType> = { ...textPatch(args, 'purpose'), ...flagPatch(args, 'top'), ...flagPatch(args, 'spans'), ...dated }
   if ('within' in args && args.within !== null) {
     const within = withinOf(args.within, model, self)
     if ('ok' in within) return within
@@ -117,8 +148,10 @@ function unitTypePatch(args: Args, model: Model, self: string | undefined): Part
 }
 
 /** The fields of a role the request gives, checked. */
-function rolePatch(args: Args, model: Model): Partial<Role> | AgentAnswer {
-  const patch: Partial<Role> = { ...textPatch(args, 'short'), ...textPatch(args, 'purpose'), ...flagPatch(args, 'manages') }
+function rolePatch(args: Args, model: Model, self?: string): Partial<Role> | AgentAnswer {
+  const dated = datedPatch(args, self === undefined ? undefined : rolesOf(model)[self], rolesOf(model), self)
+  if ('ok' in dated) return dated
+  const patch: Partial<Role> = { ...textPatch(args, 'short'), ...textPatch(args, 'purpose'), ...flagPatch(args, 'manages'), ...dated }
   if ('duties' in args && args.duties !== null) {
     const duties = dutiesOf(args.duties, model)
     if ('ok' in duties) return duties
@@ -200,7 +233,7 @@ export const updateRole: Handler = (args, view) => {
   if (!held) return refused('agent.unknownId', `role ${String(args.id)}`)
   const name = 'name' in args && args.name !== null ? nameOf(args.name) : undefined
   if (name !== undefined && typeof name !== 'string') return name
-  const patch = rolePatch(args, view.model)
+  const patch = rolePatch(args, view.model, held.id)
   if ('ok' in patch) return patch
   const full = { ...patch, ...(name !== undefined ? { name } : {}) }
   const command: Command = { type: 'role.update', id: held.id, patch: full }

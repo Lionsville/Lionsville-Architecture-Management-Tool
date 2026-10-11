@@ -341,6 +341,21 @@ const CAUSE_VALUES = {
   body: { type: 'string', description: 'The body as markdown.' },
 } as const satisfies Record<string, ArgumentSchema>
 
+/**
+ * A unit type's or a role's days and what follows it (ADR-0036 §6): a change
+ * with a day. A new name is an edit; one that stops existing ends on a day
+ * and names its successors, which a reorganisation suggests in its place.
+ */
+const DATED_FIELDS = (what: string): Readonly<Record<string, ArgumentSchema>> => ({
+  from: { type: 'string', description: `The first day of the ${what}, yyyy-mm-dd; null clears it.` },
+  until: { type: 'string', description: `The last day of the ${what}, yyyy-mm-dd; null clears it.` },
+  successors: {
+    type: 'array',
+    description: `What follows the ${what} when it ends, by id, of the same kind; null or an empty list clears it.`,
+    items: { type: 'string' },
+  },
+})
+
 /** What a unit type says beside its name (ADR-0036): the fields `unitType.add` and `unitType.update` share. */
 const UNIT_TYPE_FIELDS: Readonly<Record<string, ArgumentSchema>> = {
   purpose: { type: 'string', description: 'What a unit of this type is for, in the organisation\'s own words.' },
@@ -363,6 +378,7 @@ const UNIT_TYPE_FIELDS: Readonly<Record<string, ArgumentSchema>> = {
     },
   },
   limit: { type: 'integer', description: 'How many applications a unit of it should own at most. A check reads it; nothing refuses it.', minimum: 0 },
+  ...DATED_FIELDS('unit type'),
 }
 
 /** What a role says beside its name (ADR-0036): the fields `role.add` and `role.update` share. */
@@ -384,6 +400,7 @@ const ROLE_FIELDS: Readonly<Record<string, ArgumentSchema>> = {
       additionalProperties: false,
     },
   },
+  ...DATED_FIELDS('role'),
 }
 
 const SPECS = [
@@ -492,12 +509,16 @@ const SPECS = [
       + 'cause explains an observation of a scope below, which nothing makes any more: link the cause there that '
       + 'explains it, named in the detail, instead), check.drawingLinkMissing (a shape on a drawing '
       + 'points at an element this scope does not hold), and check.notDrawn, which is '
-      + 'information rather than a fault and is listed only when asked. A finding is never a refusal and '
+      + 'information rather than a fault and is listed only when asked. The organisation\'s own (ADR-0036): '
+      + 'check.roleVacant, check.roleOverMax, check.unitMisplaced, check.unitSpans, check.unitOverLimit, '
+      + 'check.assignmentEnded, check.unitTypeEnded and check.personOverloaded, read on a day — today, or the day '
+      + 'given as on, with every plan\'s moves of that day. A finding is never a refusal and '
       + 'never a reason a save fails.',
     inputSchema: {
       type: 'object',
       properties: {
         scope: { type: 'string', description: 'Only findings about this scope, by path; "" is the organisation.' },
+        on: { type: 'string', description: 'The day the organisation\'s findings are read on, yyyy-mm-dd. Default: today.' },
         key: { type: 'string', description: 'Only findings with this key.' },
         information: { type: 'boolean', description: 'Include check.notDrawn. Default false.' },
         limit: { type: 'integer', description: 'At most this many. Default 200.', minimum: 1, maximum: 2000 },
@@ -2016,6 +2037,30 @@ const SPECS = [
       'Throw a plan away. Only the record goes: the elements, the dates on them and the twins a port drew '
       + 'stay, because they are facts about the landscape rather than about the plan. One undo step puts it back.',
     inputSchema: { type: 'object', properties: { id: PLAN_ID }, required: ['id'], additionalProperties: false },
+  },
+  {
+    name: 'plan.move',
+    tier: 'write',
+    description:
+      'Put a unit under a new parent on a day, as part of a plan (ADR-0036 §6): a reorganisation is a plan, and the move '
+      + 'holds wherever the organisation is read on that day or after it — assignments.list with on, checks.list with on, '
+      + 'who manages a unit — and not before. One move per unit and plan: moving it again changes the move, and remove takes '
+      + 'it off; parentId left out puts it at the top, under the organisation itself. A parent below the unit on that day is '
+      + 'refused. The move is shifted with the plan. A move outside a plan is a correction: element.update with parentId. '
+      + 'The people of a unit or a role that ends are moved on the plan\'s page, or with assignment.end and assignment.add '
+      + 'in one batch. Answers with the plan\'s moves.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        planId: PLAN_ID,
+        unitId: { type: 'string', description: 'The unit that moves: an actor with a unit type, kept anywhere in the tree.' },
+        parentId: { type: 'string', description: 'The unit it sits under from that day. Left out: the top.' },
+        on: { type: 'string', description: 'The first day under its new parent, yyyy-mm-dd. Needed unless remove is given.' },
+        remove: { type: 'boolean', description: 'Take this plan\'s move of the unit off it.' },
+      },
+      required: ['planId', 'unitId'],
+      additionalProperties: false,
+    },
   },
   {
     name: 'milestone.add',

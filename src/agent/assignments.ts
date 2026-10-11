@@ -12,13 +12,16 @@
  * organisation's policy gives agents pseudonyms; never an address. Asked
  * about one unit, it also says the unit's slots against who holds them on
  * the day, and who manages it (§12) — which core works out and grants
- * nothing from.
+ * nothing from. The day is today unless one is asked for, and the
+ * organisation is that day's: every plan's moves of that day included, the
+ * open scope's plans as its session has them (§6).
  */
 import { isDay, today as clockToday } from '../model/lifecycle'
 import { pickedPerson } from '../model/person'
 import type { HostModel } from '../model/hostModel'
 import type { Role, UnitType } from '../model/operatingModel'
-import { holdersOn, isUnit, managersOf, personOf, runsOn, shareOf, slotsOf } from '../model/units'
+import { movesOfPlans } from '../model/transition'
+import { holdersOn, isUnit, managersOf, parentOn, personOf, runsOn, shareOf, slotsOf } from '../model/units'
 import type { Assignment, Organisation } from '../model/units'
 import type { Person } from '../people/person'
 import type { PeoplePolicy } from '../people/policy'
@@ -49,11 +52,16 @@ function organisationNow(tree: TreeView | undefined, open: OpenDocument | undefi
   const units = [...(tree?.units?.() ?? []).filter((one) => !ids.has(one.unit.id) && one.scope !== open?.path).map((one) => one.unit), ...here]
   const atRoot = open?.path === ''
   const operating = tree?.operatingModel?.()
+  const moves = [
+    ...(tree?.moves?.() ?? []).filter((one) => one.scope !== open?.path).map((one) => one.move),
+    ...movesOfPlans(open?.current.transitions),
+  ]
   return {
     units,
     assignments,
     roles: atRoot ? open.current.roles ?? [] : operating?.roles ?? [],
     unitTypes: atRoot ? open.current.unitTypes ?? [] : operating?.unitTypes ?? [],
+    ...(moves.length ? { moves } : {}),
   }
 }
 
@@ -125,12 +133,15 @@ function line(scope: string, assignment: Assignment, naming: Naming & { day: str
 function unitAnswer(unit: Organisation['units'][number], organisation: Organisation, day: string, naming: Naming) {
   const type: UnitType | undefined = organisation.unitTypes.find((one) => one.id === unit.unitTypeId)
   const roles = new Map<string, Role>(organisation.roles.map((role) => [role.id, role]))
+  const parentId = parentOn(unit, organisation.moves, day)
   return {
     unit: {
       id: unit.id,
       name: unit.name,
       unitTypeId: unit.unitTypeId,
       ...(type ? { unitType: type.name } : {}),
+      // Where it sits on the day, a plan's move of that day included (ADR-0036 §6).
+      ...(parentId !== undefined ? { parentId, parent: naming.unitName(parentId) } : {}),
       slots: slotsOf(unit, type).map((slot) => ({
         roleId: slot.role, role: naming.roleName(slot.role), min: slot.min, ...(slot.max !== undefined ? { max: slot.max } : {}),
         held: holdersOn(organisation.assignments, unit.id, slot.role, day).length,

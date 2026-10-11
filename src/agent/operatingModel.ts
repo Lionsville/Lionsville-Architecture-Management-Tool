@@ -13,7 +13,7 @@
  */
 import type { HostModel } from '../model/hostModel'
 import { accountableFor, raciOf, typesHolding } from '../model/operatingModel'
-import type { BasedOn, Responsibility, Role, UnitType } from '../model/operatingModel'
+import type { BasedOn, Dated, Responsibility, Role, UnitType } from '../model/operatingModel'
 import type { AgentAnswer, ToolName } from './tools'
 import { checkArguments, json, refused, toolSpec } from './tools'
 
@@ -30,6 +30,15 @@ export function isOperatingRead(tool: string): tool is OperatingRead {
 export type OperatingDocument = Pick<HostModel, 'unitTypes' | 'roles' | 'responsibilities' | 'operatingRules'>
 
 const named = (list: readonly { id: string; name: string }[], id: string) => ({ id, name: list.find((one) => one.id === id)?.name ?? id })
+
+/** A unit type's or a role's days and successors (ADR-0036 §6), each only where said. */
+function datedLine(dated: Dated, list: readonly { id: string; name: string }[]) {
+  return {
+    ...(dated.from ? { from: dated.from } : {}),
+    ...(dated.until ? { until: dated.until } : {}),
+    ...(dated.successors?.length ? { successors: dated.successors.map((id) => named(list, id)) } : {}),
+  }
+}
 
 function basedOnLine(basedOn: BasedOn | undefined) {
   return basedOn ? { basedOn: { library: basedOn.library, entry: basedOn.entry, version: basedOn.version } } : {}
@@ -49,6 +58,7 @@ export function unitTypeLine(type: UnitType, model: OperatingDocument) {
       roleId: slot.role, role: named(roles, slot.role).name, min: slot.min, ...(slot.max !== undefined ? { max: slot.max } : {}),
     })),
     ...(type.limit !== undefined ? { limit: type.limit } : {}),
+    ...datedLine(type, model.unitTypes ?? []),
     ...basedOnLine(type.basedOn),
   }
 }
@@ -66,6 +76,7 @@ export function roleLine(role: Role, model: OperatingDocument) {
       responsibilityId: duty.responsibility, responsibility: named(responsibilities, duty.responsibility).name, raci: duty.raci,
     })),
     heldIn: typesHolding(model.unitTypes ?? [], role.id).map((type) => ({ id: type.id, name: type.name })),
+    ...datedLine(role, model.roles ?? []),
     ...basedOnLine(role.basedOn),
   }
 }

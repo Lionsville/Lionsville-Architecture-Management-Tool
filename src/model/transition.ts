@@ -359,6 +359,11 @@ export function shiftDays(transition: Transition, days: number): Transition {
   }
 }
 
+/** The units every plan moves but an abandoned one, in the order the plans are listed (ADR-0036 §6). */
+export function movesOfPlans(transitions: readonly Pick<Transition, 'status' | 'moves'>[] | undefined): TransitionMove[] {
+  return (transitions ?? []).filter((one) => one.status !== 'abandoned').flatMap((one) => one.moves ?? [])
+}
+
 /**
  * A plan's moves with one unit's set: put in, changed, or — `undefined` —
  * taken out. One move per unit and plan, so moving it again changes the

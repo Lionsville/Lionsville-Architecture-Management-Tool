@@ -85,7 +85,7 @@ export type ReadView = {
   /** The records of the scope above this one, which are not on this model. */
   readonly ancestorDecisions: readonly Adr[]
   /** The tree, for who answers for an id (ADR-0012 §9). Absent where there is none. */
-  readonly tree?: Pick<TreeView, 'lookup' | 'initiativesBelow' | 'analysisBelow' | 'explainedFromAbove' | 'rowsTo' | 'operatingModel'>
+  readonly tree?: Pick<TreeView, 'lookup' | 'initiativesBelow' | 'analysisBelow' | 'explainedFromAbove' | 'rowsTo' | 'operatingModel' | 'units' | 'moves'>
 }
 
 type Args = Record<string, unknown>
@@ -796,6 +796,8 @@ export function planEntry(plan: Transition, arrays: HostModel) {
     ...(plan.owner ? { owner: plan.owner } : {}),
     ...(plan.initiative ? { initiative: true } : {}),
     elements: plan.elements,
+    // The units it puts under another parent, each on a day (ADR-0036 §6).
+    ...(plan.moves?.length ? { moves: plan.moves } : {}),
     decisions: plan.decisions,
     milestones: plan.milestones,
     // Derived from the lines, not stored (ADR-0010): what the plan page shows.

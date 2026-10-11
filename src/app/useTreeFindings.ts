@@ -116,8 +116,12 @@ function useShellTree(
     rowsTo: (id, types) => treeRef.current.index.rowsTo(id, types).map((row) => row.relation),
     units: () => treeRef.current.index.units(),
     assignments: () => treeRef.current.index.assignments(),
+    moves: () => treeRef.current.index.moves(),
     operatingModel: () => treeRef.current.index.operatingModel(),
-    findings: () => treeRef.current.identity,
+    // Today's are folded once with the index; another day's organisation is read when asked (ADR-0036 §6).
+    findings: (day) => (day === undefined
+      ? treeRef.current.identity
+      : [...identityFindings(treeRef.current.index), ...organisationFindings(treeRef.current.index, day)]),
     read: async (path) => {
       const [held, ...above] = await readScopes(scopes, [path, ...ancestorScopes(path)])
       if (!held) return undefined

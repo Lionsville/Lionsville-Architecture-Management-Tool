@@ -29,7 +29,8 @@
  */
 import type { Adr } from '../model/adr'
 import type { HostModel } from '../model/hostModel'
-import type { Transition } from '../model/transition'
+import type { Transition, TransitionMove } from '../model/transition'
+import { isDay } from '../model/lifecycle'
 import type { CauseAbove, ScopeAnalysis } from '../model/observation'
 import type { OperatingRule, Responsibility, Role, UnitType } from '../model/operatingModel'
 import type { Assignment } from '../model/units'
@@ -120,8 +121,11 @@ export type TreeView = {
   register(): readonly TreeEntry[]
   /** Every service and platform in the organisation, by name (ADR-0014 §2.6). Absent in a shell built before it. */
   technology?(): readonly TreeTechnologyRow[]
-  /** Every finding the tree and the open scope's document raise (§9). */
-  findings(): readonly TreeFinding[]
+  /**
+   * Every finding the tree and the open scope's document raise (§9). Given a
+   * day, the organisation's are that day's (ADR-0036 §6); today otherwise.
+   */
+  findings(day?: string): readonly TreeFinding[]
   /** The plans flagged as initiatives in the scopes strictly below `path` (§7). */
   initiativesBelow(path: string): readonly { scope: string; transition: Transition }[]
   /** The analysis of every scope strictly below `path` (ADR-0032 §1). Absent in a shell built before it. */
@@ -143,6 +147,8 @@ export type TreeView = {
   units?(): readonly { scope: string; unit: DesignElement }[]
   /** Every assignment, with the scope that keeps it (ADR-0036 §4). Ids only. */
   assignments?(): readonly { scope: string; assignment: Assignment }[]
+  /** Every unit a plan moves under another parent on a day (ADR-0036 §6), with the scope that keeps the plan. */
+  moves?(): readonly { scope: string; move: TransitionMove }[]
   /** The operating model the organisation keeps (ADR-0036 §2), whatever scope is open. */
   operatingModel?(): {
     unitTypes: readonly UnitType[]; roles: readonly Role[]; responsibilities: readonly Responsibility[]; operatingRules: readonly OperatingRule[]
@@ -265,9 +271,10 @@ export function listChecks(tree: TreeView | undefined, rawArgs: unknown): AgentA
   const scope = args.scope as string | undefined
   const key = args.key as string | undefined
   const information = args.information === true
+  const day = isDay(args.on) ? args.on : undefined
   const some: TreeFinding[] = []
   let total = 0
-  for (const finding of tree?.findings() ?? []) {
+  for (const finding of tree?.findings(day) ?? []) {
     if (scope !== undefined && finding.scope !== scope) continue
     if (key !== undefined && finding.key !== key) continue
     // Information — a master drawn nowhere — is worth knowing and is not a
@@ -276,7 +283,7 @@ export function listChecks(tree: TreeView | undefined, rawArgs: unknown): AgentA
     total += 1
     if (some.length < limit) some.push(finding)
   }
-  return json({ total, some })
+  return json({ ...(day !== undefined ? { day } : {}), total, some })
 }
 
 /**

@@ -28,7 +28,7 @@ import {
 } from './observations'
 import { mergeCause, mergeObservation } from './merge'
 import {
-  addMilestone, createPlan, port, removeMilestone, removePlan, replace, unport, updateMilestone, updatePlan,
+  addMilestone, createPlan, moveUnit, port, removeMilestone, removePlan, replace, unport, updateMilestone, updatePlan,
 } from './plans'
 import { addRole, addUnitType, updateRole, updateUnitType } from './operatingModel'
 import { addAssignment, endAssignment } from './assignments'
@@ -118,6 +118,7 @@ export const HANDLERS: { readonly [T in CommandTool]: Handler } = {
   'plan.create': createPlan,
   'plan.update': updatePlan,
   'plan.remove': removePlan,
+  'plan.move': moveUnit,
   'milestone.add': addMilestone,
   'milestone.update': updateMilestone,
   'milestone.remove': removeMilestone,

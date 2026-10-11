@@ -225,6 +225,7 @@ const EVERY_WRITE: { readonly [T in CommandTool]: readonly Case[] } = {
   'plan.create': [{ args: { title: 'Oracle to PostgreSQL', changes: ['billing'] } }],
   'plan.update': [{ args: { id: 'tr-1', title: 'Replace billing, in two steps' } }],
   'plan.remove': [{ args: { id: 'tr-1' } }],
+  'plan.move': [{ args: { planId: 'tr-1', unitId: 'squad', on: '2027-01-01' }, on: [SQUAD] }],
   'milestone.add': [{ args: { planId: 'tr-1', date: '2027-02-01', name: 'Kick-off' } }],
   'milestone.update': [{ args: { planId: 'tr-1', name: 'Pilot', date: '2027-04-01' } }],
   'milestone.remove': [{ args: { planId: 'tr-1', name: 'Pilot' } }],

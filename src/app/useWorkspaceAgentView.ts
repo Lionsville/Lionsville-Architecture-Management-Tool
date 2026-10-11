@@ -194,13 +194,14 @@ function agentTree(at: {
     rowsTo: (id, types) => indexRef.current.rowsTo(id, types).map((row) => row.relation),
     units: () => indexRef.current.units(),
     assignments: () => indexRef.current.assignments(),
+    moves: () => indexRef.current.moves(),
     operatingModel: () => indexRef.current.operatingModel(),
-    findings: () => {
+    findings: (day) => {
       const model = session.current()
       const coverage = coverageOf(model.relations, rowsElsewhereRef.current)
       return [
         ...identityFindings(indexRef.current),
-        ...organisationFindings(indexRef.current),
+        ...organisationFindings(indexRef.current, day),
         ...documentFindings({
           scope, model, index: indexRef.current,
           business: {

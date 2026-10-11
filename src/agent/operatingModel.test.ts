@@ -201,6 +201,22 @@ describe('the operating model\'s four writes', () => {
     expect(plan.finding).toBeUndefined()
   })
 
+  it('date a role and a unit type and name what follows each, and take either away with null (ADR-0036 §6)', async () => {
+    const on = session('', organisation)
+    const role = parsed(await ask('role.update', { id: 'ro-lead', until: '2026-12-31', successors: ['ro-po', 'ro-po'] }, on))
+    expect(role).toMatchObject({ until: '2026-12-31', successors: [{ id: 'ro-po', name: 'Product owner' }] })
+    expect(on.model().roles?.['ro-lead']).toMatchObject({ until: '2026-12-31', successors: ['ro-po'] })
+    const type = parsed(await ask('unitType.update', { id: 'ut-team', from: '2025-01-01', successors: ['ut-train'] }, on))
+    expect(type).toMatchObject({ from: '2025-01-01', successors: [{ id: 'ut-train', name: 'Train' }] })
+    parsed(await ask('role.update', { id: 'ro-lead', until: null, successors: null }, on))
+    expect(on.model().roles?.['ro-lead']).not.toHaveProperty('until')
+    expect(on.model().roles?.['ro-lead']).not.toHaveProperty('successors')
+    expect(refusal(await ask('role.update', { id: 'ro-lead', until: 'soon' }, on))).toEqual(['agent.badArguments', '"until" must be yyyy-mm-dd'])
+    expect(refusal(await ask('unitType.update', { id: 'ut-team', until: '2024-12-31' }, on))).toEqual(['agent.badArguments', '"until" must not be before "from"'])
+    expect(refusal(await ask('role.update', { id: 'ro-lead', successors: ['ro-lead'] }, on))).toEqual(['agent.badArguments', 'nothing follows itself'])
+    expect(refusal(await ask('role.add', { name: 'X', successors: ['ut-team'] }, on))).toEqual(['agent.unknownId', 'successors: ut-team'])
+  })
+
   it('are made at the organisation only', async () => {
     const elsewhere = session('retail', landscape)
     for (const [tool, args] of [['unitType.add', { name: 'X' }], ['role.add', { name: 'X' }], ['role.update', { id: 'ro-po', name: 'X' }]] as const) {
