@@ -697,6 +697,8 @@ export const EN = {
   'org.newBoardMap': 'Enterprise map',
   'org.newBoardTechnology': 'Technology landscape',
   'org.newBoardDrawing': 'Drawing',
+  'org.newBoardChart': 'Organisation chart',
+  'org.newBoardConway': 'Conway map',
   'org.noBoards': 'Nothing drawn at this level yet.',
   'org.boardName': 'Name',
   'org.viewLayer7': 'Landscape',

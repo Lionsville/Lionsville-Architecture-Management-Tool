@@ -38,10 +38,7 @@ function show(boards = BOARDS(), readOnly = false) {
       boards={boards}
       onOpen={onOpen}
       onAdd={vi.fn()}
-      onAddSheet={vi.fn()}
-      onAddMap={vi.fn()}
-      onAddTechnology={vi.fn()}
-      onAddDrawing={vi.fn()}
+      onMake={vi.fn()}
       onDelete={onDelete}
       readOnly={readOnly}
       language="en"
@@ -125,6 +122,19 @@ describe('BoardsTable', () => {
   it('says the day a board shows as that day, wherever the clock is', () => {
     show([laidOut({ id: 'then', kind: 'layer7' as const, name: 'Finance in 2027', placements: [], asOf: '2027-01-01' })])
     expect(screen.getByTestId('board-then').textContent).toContain('1 Jan 2027')
+  })
+
+  it('offers a view of every other kind from the same menu, the organisation chart and the Conway map among them', async () => {
+    const onMake = vi.fn()
+    renderShell(
+      <BoardsTable boards={BOARDS()} onOpen={vi.fn()} onAdd={vi.fn()} onMake={onMake} onDelete={vi.fn()} language="en" s={s} />,
+    )
+    fireEvent.click(screen.getByTestId('new-board'))
+    fireEvent.click(await screen.findByTestId('new-board-chart'))
+    expect(onMake).toHaveBeenCalledWith('chart')
+    fireEvent.click(screen.getByTestId('new-board'))
+    fireEvent.click(await screen.findByTestId('new-board-conway'))
+    expect(onMake).toHaveBeenLastCalledWith('conway')
   })
 
   it('says a scope with no board has none, and still offers the first one', () => {

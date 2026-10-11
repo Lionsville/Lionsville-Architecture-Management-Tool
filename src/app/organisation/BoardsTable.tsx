@@ -44,6 +44,18 @@ function viewLabel(kind: DesignDiagram['kind']): StringKey | undefined {
   }
 }
 
+/** The kinds a home makes besides a landscape, in the order its menu offers them. */
+export type MadeKind = 'sheet' | 'map' | 'technology' | 'drawing' | 'chart' | 'conway'
+
+const MADE: readonly { kind: MadeKind; label: StringKey }[] = [
+  { kind: 'sheet', label: 'org.newBoardSheet' },
+  { kind: 'map', label: 'org.newBoardMap' },
+  { kind: 'technology', label: 'org.newBoardTechnology' },
+  { kind: 'drawing', label: 'org.newBoardDrawing' },
+  { kind: 'chart', label: 'org.newBoardChart' },
+  { kind: 'conway', label: 'org.newBoardConway' },
+]
+
 /** The name is a button that looks like a name: see {@link BoardRow}. */
 const NAME_SX = {
   font: 'inherit', color: 'inherit', background: 'none', border: 0,
@@ -72,17 +84,17 @@ interface RowActions {
  * ({@link outlineBoards}). What a row says is what tells two boards of one
  * landscape apart: the kind, the day it shows (ADR-0009) and how much is on it.
  */
-export function BoardsTable({ boards, onOpen, onAdd, onAddSheet, onAddMap, onAddTechnology, onAddDrawing, onDelete, readOnly = false, language, s }: {
+export function BoardsTable({ boards, onOpen, onAdd, onMake, onDelete, readOnly = false, language, s }: {
   boards: readonly DesignDiagram[]
   onOpen: (id: string) => void
   /** A landscape for this scope — the only way to its first one. */
   onAdd: () => void
-  /** The laid-out kinds, the same three the editor's + tab offers (ADR-0016). */
-  onAddSheet: () => void
-  onAddMap: () => void
-  onAddTechnology: () => void
-  /** A drawing, the same door as the other views. */
-  onAddDrawing: () => void
+  /**
+   * A view of another kind: the laid-out ones and a drawing, the same kinds
+   * the editor's + tab offers (ADR-0016), the organisation chart and the
+   * Conway map among them (ADR-0036 §7).
+   */
+  onMake: (kind: MadeKind) => void
   /**
    * A container diagram only: a landscape is deleted from its tab, where the
    * last one is refused, and a container diagram has no tab and no last one.
@@ -118,10 +130,9 @@ export function BoardsTable({ boards, onOpen, onAdd, onAddSheet, onAddMap, onAdd
         </Button>}
         <Menu open={Boolean(newMenu)} anchorEl={newMenu} onClose={() => setNewMenu(null)} slotProps={{ list: { dense: true } }}>
           <MenuItem onClick={pick(onAdd)} data-testid="new-board-landscape">{s('org.newBoardLandscape')}</MenuItem>
-          <MenuItem onClick={pick(onAddSheet)}>{s('org.newBoardSheet')}</MenuItem>
-          <MenuItem onClick={pick(onAddMap)}>{s('org.newBoardMap')}</MenuItem>
-          <MenuItem onClick={pick(onAddTechnology)}>{s('org.newBoardTechnology')}</MenuItem>
-          <MenuItem onClick={pick(onAddDrawing)}>{s('org.newBoardDrawing')}</MenuItem>
+          {MADE.map(({ kind, label }) => (
+            <MenuItem key={kind} onClick={pick(() => onMake(kind))} data-testid={`new-board-${kind}`}>{s(label)}</MenuItem>
+          ))}
         </Menu>
       </Stack>
       {boards.length === 0 && (

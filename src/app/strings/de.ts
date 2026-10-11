@@ -497,6 +497,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'org.newBoardMap': 'Unternehmenskarte',
   'org.newBoardTechnology': 'Technologielandschaft',
   'org.newBoardDrawing': 'Zeichnung',
+  'org.newBoardChart': 'Organigramm',
+  'org.newBoardConway': 'Conway-Karte',
   'org.noBoards': 'Auf dieser Ebene ist noch nichts gezeichnet.',
   'org.boardName': 'Name',
   'org.viewLayer7': 'Landschaft',

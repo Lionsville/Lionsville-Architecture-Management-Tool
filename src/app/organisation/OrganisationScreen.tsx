@@ -586,10 +586,7 @@ export function OrganisationScreen({
               onAdd={() => organisation.addBoard(at)}
               // The same kinds the editor's + tab offers (ADR-0016), made the
               // moment the scope opens: the one door onto a view that writes one.
-              onAddSheet={() => organisation.open(at, { page: 'make', kind: 'sheet' })}
-              onAddMap={() => organisation.open(at, { page: 'make', kind: 'map' })}
-              onAddTechnology={() => organisation.open(at, { page: 'make', kind: 'technology' })}
-              onAddDrawing={() => organisation.open(at, { page: 'make', kind: 'drawing' })}
+              onMake={(kind) => organisation.open(at, { page: 'make', kind })}
               onDelete={(board) => organisation.askDeleteBoard(at, board)}
               readOnly={!mayWrite}
               language={language}
