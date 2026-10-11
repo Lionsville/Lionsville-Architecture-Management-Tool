@@ -91,6 +91,12 @@ export type RoleSlot = {
  * named. `spans` says a unit of this type may serve more than one domain.
  * `limit` is how many applications a unit of it should own at most — a check
  * reads it, and nothing refuses it.
+ *
+ * `order` is where the type stands among the others of its lane, low first
+ * (`model/unitOrder.ts`): the organisation's own decision, so a library has
+ * none and *compare* never reads it. Absent until somebody moves one, as an
+ * element's `order` is, and a type that has none stands after those that do,
+ * by name.
  */
 export type UnitType = Dated & {
   id: UnitTypeId
@@ -101,6 +107,7 @@ export type UnitType = Dated & {
   spans?: boolean
   slots: RoleSlot[]
   limit?: number
+  order?: number
   basedOn?: BasedOn
 }
 

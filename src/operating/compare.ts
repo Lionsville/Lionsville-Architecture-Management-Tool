@@ -16,6 +16,9 @@
  * in, the responsibilities of a role's duties — is compared by entry: the
  * organisation's item for an entry is the one brought in from it, whatever it
  * is called now.
+ *
+ * A unit type's `order` — where it stands in its lane — is the organisation's
+ * alone: a library has none, so it is never a difference.
  */
 import type { BasedOn, Responsibility, Role, UnitType } from '../model/operatingModel'
 import { slotRange } from '../model/operatingModel'

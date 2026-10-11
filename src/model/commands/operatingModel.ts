@@ -22,7 +22,7 @@ import { patchWrites } from './writes'
 
 /** Every field of a unit type but its id. */
 const UNIT_TYPE_FIELDS: PatchKeys<'unitType.update'> = {
-  name: true, purpose: true, top: true, within: true, spans: true, slots: true, limit: true, basedOn: true,
+  name: true, purpose: true, top: true, within: true, spans: true, slots: true, limit: true, order: true, basedOn: true,
   from: true, until: true, successors: true,
 }
 

@@ -27,6 +27,11 @@
  * shape and reads what it can of a hand-edited one. A row without an id is
  * passed over; a file that is not a list at all is said, so the scope opens to
  * be read and not written — a save would have written that list empty.
+ *
+ * A unit type's `order` came later, as one more optional field of a row, so
+ * the format stayed 11: a build from before it reads the file, passes the
+ * field over, and its next save writes the list without it — the lanes then
+ * fall back to names, and nothing else is lost.
  */
 import { isOperatingRuleKind, isRaci } from '../../../model/operatingModel'
 import type {
@@ -79,6 +84,7 @@ const count = (value: unknown): number | undefined => (
   typeof value === 'number' && Number.isFinite(value) && value >= 0 ? Math.trunc(value) : undefined
 )
 const ids = (value: unknown): string[] => (Array.isArray(value) ? value.filter((one): one is string => typeof one === 'string') : [])
+const number = (value: unknown): number | undefined => (typeof value === 'number' && Number.isFinite(value) ? value : undefined)
 
 function basedOnOf(value: unknown): { basedOn?: BasedOn } {
   if (!value || typeof value !== 'object') return {}
@@ -113,6 +119,7 @@ function dutyOf(value: unknown): Duty[] {
 function unitTypeOf(row: Record<string, unknown>): UnitType[] {
   if (typeof row.id !== 'string') return []
   const limit = count(row.limit)
+  const order = number(row.order)
   return [{
     id: row.id,
     name: text(row.name) ?? '',
@@ -122,6 +129,7 @@ function unitTypeOf(row: Record<string, unknown>): UnitType[] {
     ...(row.spans === true ? { spans: true } : {}),
     slots: Array.isArray(row.slots) ? row.slots.flatMap(slotOf) : [],
     ...(limit !== undefined ? { limit } : {}),
+    ...(order !== undefined ? { order } : {}),
     ...basedOnOf(row.basedOn),
     ...datedOf(row),
   }]

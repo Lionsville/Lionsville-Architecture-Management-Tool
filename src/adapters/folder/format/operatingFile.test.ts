@@ -104,6 +104,17 @@ describe('the operating model in a scope\'s folder', () => {
     expect(back.unreadable).toBeUndefined()
   })
 
+  it('keeps a unit type\'s order in its lane, and passes over one that is not a number', () => {
+    const scope = organisation()
+    const ordered = { ...scope, model: { ...scope.model, unitTypes: [{ ...train, order: 2 }, { ...team, order: 0.5 }] } }
+    expect(scopeFromFolder(scopeFiles(ordered), '')!.model.unitTypes?.map((one) => one.order)).toEqual([2, 0.5])
+    const files: FolderFile[] = [
+      ...scopeFiles(bareScope('', 'Acme')),
+      { path: UNIT_TYPES_FILE, text: JSON.stringify([{ id: 'ut-1', within: [], slots: [], order: 'first' }, { id: 'ut-2', within: [], slots: [], order: null }]) },
+    ]
+    expect(scopeFromFolder(files, '')!.model.unitTypes?.map((one) => 'order' in one)).toEqual([false, false])
+  })
+
   it('opens a scope whose list is not a list to be read and not written', () => {
     const files: FolderFile[] = [...scopeFiles(organisation()).filter((file) => file.path !== ROLES_FILE), { path: ROLES_FILE, text: '{ half a' }]
     const back = scopeFromFolder(files, '')!

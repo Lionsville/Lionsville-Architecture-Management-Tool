@@ -49,6 +49,14 @@ describe('comparing with the libraries', () => {
     expect(listsOf(edited).roles.find((role) => role.id === master.id)?.name).toBe('Team coach')
   })
 
+  it('never counts where a unit type stands in its lane as a difference: the order is the organisation\'s own', () => {
+    const model = withScrum()
+    const team = listsOf(model).unitTypes[0]
+    const moved = applyAll(model, [{ type: 'unitType.update', id: team.id, patch: { order: 3 } }])
+    expect(listsOf(moved).unitTypes[0].order).toBe(3)
+    expect(compareWithLibraries(listsOf(moved), [SCRUM])).toEqual([])
+  })
+
   it('says a slot or a duty that one side has and the other has not', () => {
     const model = withScrum()
     const lists = listsOf(model)

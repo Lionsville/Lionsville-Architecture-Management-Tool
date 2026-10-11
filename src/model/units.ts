@@ -68,9 +68,10 @@ export type Assignment = {
   acting?: true
 }
 
-/** As much of an element as the arithmetic over units reads. */
+/** As much of an element as the arithmetic over units reads: `order` is its place among its siblings (`model/unitOrder.ts`). */
 export type UnitLike = Pick<
-  DesignElement, 'id' | 'name' | 'kind' | 'parentId' | 'unitTypeId' | 'extraSlots' | 'lifecycle' | 'lifecycleDates' | 'scopes' | 'successorId'
+  DesignElement,
+  'id' | 'name' | 'kind' | 'parentId' | 'order' | 'unitTypeId' | 'extraSlots' | 'lifecycle' | 'lifecycleDates' | 'scopes' | 'successorId'
 >
 
 /**
