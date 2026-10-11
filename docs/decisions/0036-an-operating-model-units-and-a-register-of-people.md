@@ -1,6 +1,7 @@
 # ADR-0036 — An operating model, units as typed actors, and a register of people outside the history
 
-* Status: accepted, 11 October 2026; not yet built
+* Status: accepted, 11 October 2026; built in part: the register of people
+  (§8–§11, §13's three tools for it), 11 October 2026 — *As built*, below
 * Date: 2026-10-11
 * Deciders: Wouter Simons
 * Supersedes: ADR-0011, in part (Q1's *everything a person can do on a page
@@ -419,6 +420,72 @@ build that knows who people are may add, behind the same repositories:
   address.
 * No agent tool forgets, removes or merges, and none is told an address.
 * The desktop's smoke run: a person assigned, and the chart changes.
+
+## As built, 11 October 2026: the register of people
+
+The first part of the build: §8, §9, §10 and §11, and §13's three tools for
+people. Units, roles, assignments and the name fields follow.
+
+**The port** is `ports/PeopleRepository.ts`, the sixth in `Repositories`:
+`list`, `read`, `add`, `change`, `leave`, `merge`, `forget`, `remove`,
+`since(revision)` — and `bringIn`, which the working file needs: entries
+carried in under their own ids. Its contract suite,
+`PeopleRepository.contract.ts`, runs over memory, this browser's IndexedDB,
+the folder (over the fake, in a browser, and on the desktop with git) and
+every provider that ships. A refusal is a value with a `people.` key; the
+rules are written once, `people/register.ts` (`changePeople`), and every
+implementation hands its entries to them.
+
+**An entry** (`people/person.ts`) has an id that is `pe-` and 64 random
+bits, a name, an optional work address, a kind, a state, `leftOn`,
+`forgottenOn` and `mergedInto` — and a **pseudonym from the day it is
+made**: four characters drawn from an alphabet with no vowel and no
+look-alikes (`people/pseudonym.ts`), unique in the register. The code alone
+is kept; the words around it are the reader's language: *Former colleague
+7KQM* once forgotten, *Person 7KQM* where a name is withheld — from an
+agent the policy gives pseudonyms, and in a file made without names. A
+forgotten entry and a redirect hold no name and no address. Forgetting
+someone still active is their leaving that day too. Only a forgotten entry
+is removed, and its redirects go with it. A merge keeps every redirect one
+step long.
+
+**What a reference reads as** is said once, `people/shown.ts`
+(`personText`, over `resolvePerson`): the name; the pseudonym once
+forgotten; the entry a merge kept; *a former colleague* for an id the
+register no longer holds. `model/person.ts` holds `PersonRef` (`{ person:
+id }` or text) and `personIdsIn`, which finds every reference in a value by
+its shape.
+
+**The four signs** are `people/duplicates.ts`, used by the People page's
+*Add person*, its list of possible duplicates, the CSV import
+(`people/csv.ts`: matched, flagged, new) and `person.add`.
+
+**The policy** is `people` in the organisation's settings
+(`people/policy.ts`: `keepNameDays`, `removeAfterDays`, `agentsSee`), and
+*This is me* is `people.me` in the person's own settings, which the desktop
+keeps in its data folder. The app applies the policy when the organisation
+is opened and when the day turns while it is open, where the source may be
+written (`app/organisation/usePeopleRegister.ts`).
+
+**Leaving is a seam**: `people/leave.ts` marks the register, then runs each
+`LeaveConsequence` composed in `app/organisation/leaving.ts` — none yet;
+ending a person's assignments is the step that brings them.
+
+**Where it is kept.** The folder keeps `.lionsville-architecture/people.json`;
+`OUT_OF_HISTORY` lists it beside `local.json`, so no commit the app makes
+holds it, `.git/info/exclude` keeps it out of one typed in a terminal, and no
+scope's history answers for it. Browser storage keeps it on shelves of its
+own (`people`, `peopleLog`; the database is at version 4). The working file
+carries it at the same path from the zip's root, outside the manifest, so a
+build from before reads past it and no format moved; the whole organisation
+carries all of it, part of the tree the entries it names. The sealing
+dialog asks *Without names*. Work brought from this browser into a folder
+brings the entries the folder does not hold.
+
+**The page** is `people/ui/PeoplePage.tsx`, a card on the organisation's
+home and `app.open`'s page `people`; it says that nothing on it is a step.
+**The tools** are `agent/people.ts`: `people.list`, `person.add` and
+`person.leave`, with no `scope` and no `ifRevision`.
 
 ## Open
 
