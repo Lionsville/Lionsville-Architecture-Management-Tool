@@ -231,6 +231,19 @@ describe('the People page', () => {
     expect(within(row('pe-eva')).getByText('you')).toBeDefined()
   })
 
+  it('finds you: the whole list, and your entry chosen (ADR-0036 §11)', async () => {
+    renderShell(<Harness />)
+    expect(screen.queryByTestId('people-find-me')).toBeNull()
+    pick('pe-eva')
+    fireEvent.click(screen.getByTestId('people-me'))
+    await waitFor(() => expect(screen.getByTestId('people-find-me')).toBeDefined())
+    fireEvent.change(screen.getByTestId('people-search'), { target: { value: 'Pia' } })
+    expect(screen.queryByTestId('people-row-pe-eva')).toBeNull()
+    fireEvent.click(screen.getByTestId('people-find-me'))
+    expect(row('pe-eva').getAttribute('style') ?? '').not.toContain('display: none')
+    expect(within(row('pe-eva')).getByRole('button', { pressed: true })).toBeDefined()
+  })
+
   it('corrects a name', async () => {
     renderShell(<Harness />)
     pick('pe-evt')

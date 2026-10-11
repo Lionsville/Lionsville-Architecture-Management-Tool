@@ -44,6 +44,7 @@ export const EN = {
   'people.stateLeft': 'Left {day}',
   'people.stateForgotten': 'Forgotten {day}',
   'people.you': 'you',
+  'people.findMe': 'Find me',
 
   // --- possible duplicates -----------------------------------------------------
   'people.duplicates': 'Possible duplicates',

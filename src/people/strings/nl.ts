@@ -36,6 +36,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'people.stateLeft': 'Vertrokken {day}',
   'people.stateForgotten': 'Vergeten {day}',
   'people.you': 'jij',
+  'people.findMe': 'Vind mij',
 
   'people.duplicates': 'Mogelijk dubbel',
   'people.duplicatePair': '{drop} en {keep}: {why}.',

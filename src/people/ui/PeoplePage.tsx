@@ -34,6 +34,7 @@ import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
 import { PageDialog } from '../../widgets/PageDialog'
+import { useLocatedIn } from '../../widgets/useLocated'
 import { duplicatePairs } from '../duplicates'
 import type { DuplicatePair } from '../duplicates'
 import { meIn } from '../me'
@@ -139,7 +140,7 @@ function Everyone({ shown, selected, me, onSelect, s }: {
       </thead>
       <tbody>
         {shown.map((person) => (
-          <Box component="tr" key={person.id} data-testid={`people-row-${person.id}`} data-guide="people.row"
+          <Box component="tr" key={person.id} data-testid={`people-row-${person.id}`} data-guide="people.row" data-person-id={person.id}
             sx={{ bgcolor: person.id === selected ? 'action.selected' : undefined }}>
             <td>
               <Box component="button" type="button" onClick={() => onSelect(person.id)} aria-pressed={person.id === selected}
@@ -158,9 +159,12 @@ function Everyone({ shown, selected, me, onSelect, s }: {
   )
 }
 
-function TopBar({ chrome, show, onShow, query, onQuery, counts, readOnly, onAdd, onImport, onClose, s }: {
+function TopBar({ chrome, show, onShow, query, onQuery, counts, readOnly, onAdd, onImport, onFindMe, onClose, s }: {
   chrome: WindowChrome; show: Show; onShow: (show: Show) => void; query: string; onQuery: (query: string) => void
-  counts: string; readOnly: boolean; onAdd: () => void; onImport: () => void; onClose: () => void; s: Translate
+  counts: string; readOnly: boolean; onAdd: () => void; onImport: () => void
+  /** *Find me* (ADR-0036 §11): absent while nobody is said to be you. */
+  onFindMe: (() => void) | undefined
+  onClose: () => void; s: Translate
 }) {
   const bar = barChromeFor(chrome)
   return (
@@ -184,6 +188,7 @@ function TopBar({ chrome, show, onShow, query, onQuery, counts, readOnly, onAdd,
       </TextField>
       <TextField size="small" value={query} onChange={(event) => onQuery(event.target.value)} placeholder={s('people.search')}
         slotProps={{ htmlInput: { 'aria-label': s('people.search'), autoComplete: 'off', 'data-testid': 'people-search' } }} sx={{ width: 200 }} />
+      {onFindMe && <Button size="small" variant="outlined" onClick={onFindMe} data-testid="people-find-me">{s('people.findMe')}</Button>}
       {!readOnly && (
         <>
           <Button size="small" onClick={onImport} data-testid="people-import" data-guide="people.importCsv">{s('people.importCsv')}</Button>
@@ -192,6 +197,16 @@ function TopBar({ chrome, show, onShow, query, onQuery, counts, readOnly, onAdd,
       )}
     </Box>
   )
+}
+
+/**
+ * *Find me* (ADR-0036 §11): the whole list, so your row is in it, chosen,
+ * brought on screen and ringed. Absent while nobody is said to be you.
+ */
+function useFindMe(me: PersonId | undefined, pick: (id: PersonId) => void, showAll: () => void) {
+  const located = useLocatedIn(pick, 'data-person-id')
+  const findMe = me === undefined ? undefined : () => { showAll(); located.locate(me) }
+  return { ref: located.ref, ring: located.ring, findMe }
 }
 
 export function PeoplePage({ open, onClose, register, select, readText, copyText, look, s, windowChrome = NO_WINDOW_CHROME }: PeoplePageProps) {
@@ -225,12 +240,13 @@ export function PeoplePage({ open, onClose, register, select, readText, copyText
   })
   const asks = asking && asked(asking, register, saying, s)
   const pick = (id: PersonId) => { setSelected(id); setAdding(false) }
+  const located = useFindMe(me, pick, () => { setShow('all'); setQuery('') })
 
   return (
     <PageDialog open={open} topInset={windowChrome.topInset} onClose={onClose} aria-label={s('people.title')}>
       <TopBar chrome={windowChrome} show={show} onShow={setShow} query={query} onQuery={setQuery} counts={counts} readOnly={register.readOnly}
-        onAdd={() => setAdding(true)} onImport={() => setImporting(true)} onClose={onClose} s={s} />
-      <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexWrap: 'wrap', overflowY: 'auto' }}>
+        onAdd={() => setAdding(true)} onImport={() => setImporting(true)} onFindMe={located.findMe} onClose={onClose} s={s} />
+      <Box ref={located.ref} sx={{ flex: 1, minHeight: 0, display: 'flex', flexWrap: 'wrap', overflowY: 'auto', ...located.ring }}>
         <Box component="main" sx={{ flex: '2 1 420px', minWidth: 0, px: 3, py: 2 }}>
           <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 0.5 }}>{s('people.what')}</Typography>
           <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 2 }} data-testid="people-not-a-step">
