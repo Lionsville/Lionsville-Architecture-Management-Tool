@@ -430,7 +430,7 @@ describe('ObservationsPage', () => {
       validatedWith: [], attempts: [], body: '', history: [],
     }] } })
     fireEvent.click(within(screen.getByTestId('cause-list')).getByText('CA-0001 Window sized for 2019'))
-    fireEvent.click(screen.getByRole('button', { name: 'Make root' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Make root cause' }))
     // The refusal names the cause in the way, and how to put it right.
     const refused = screen.getByRole('alert')
     expect(refused.textContent).toContain('CA-0001 can’t become a root cause while a cause explains it.')
@@ -505,10 +505,14 @@ describe('the analysis picture’s right-click, and editing across the whole wid
     fireEvent.click(screen.getByTestId('observation-tab-analysis'))
     rightClick(screen.getByTestId('analysis-picture').querySelector('[data-key="c1"]')!)
     const menu = screen.getByTestId('picture-menu')
-    // A root cause ends the chain, so nothing deeper is offered on it.
+    // What its reader's bar offers, in the same order: a root cause ends the chain, so nothing deeper.
     expect(within(menu).getAllByRole('menuitem').map((item) => item.textContent)).toEqual([
-      'Edit', 'Mark verified', 'Make cause', 'Propose a solution…', 'Merge…', 'Delete',
+      'Solution…', 'Make cause…', 'Verify…', 'Edit', 'Merge…', 'Delete…',
     ])
+    // The open menu hides the page from role queries, so the bar behind it is read with hidden ones, less its `⋯`.
+    const bar = within(screen.getByRole('group', { name: 'Actions on RC-0001', hidden: true })).getAllByRole('button', { hidden: true })
+    expect(bar.filter((one) => one.dataset.testid !== 'reader-more').map((one) => one.textContent))
+      .toEqual(['Solution', 'Make cause', 'Verify', 'Edit', 'Merge', 'Delete'])
     fireEvent.click(screen.getByTestId('picture-menu-edit'))
     expect(screen.getByTestId('observation-body').dataset.editing).toBe('true')
     expect(screen.queryByTestId('analysis-picture')).toBeNull()
@@ -516,6 +520,27 @@ describe('the analysis picture’s right-click, and editing across the whole wid
     fireEvent.click(within(screen.getByTestId('cause-reader')).getByRole('button', { name: 'Read' }))
     expect(screen.getByTestId('observation-body').dataset.editing).toBeUndefined()
     expect(screen.getByTestId('analysis-picture')).toBeTruthy()
+  })
+
+  it('asks before Make root cause from the menu, in the reader, and says why where it is refused', () => {
+    const { onChange } = mount()
+    fireEvent.click(screen.getByTestId('observation-tab-analysis'))
+    rightClick(screen.getByTestId('analysis-picture').querySelector('[data-key="c1"]')!)
+    fireEvent.click(screen.getByTestId('picture-menu-root-toggle'))
+    expect(onChange).not.toHaveBeenCalled()
+    expect(screen.getByTestId('cause-root-ask').textContent).toContain('Make CA-0001 a root cause? It becomes RC-0001.')
+    fireEvent.click(screen.getByTestId('cause-root-ask-confirm'))
+    expect(lastChange(onChange).causes[0].root).toBe(true)
+    cleanup()
+    const refused = mount({ model: { ...model, causes: [
+      cause({ explains: [{ id: 'o1', strength: 'strong' }] }),
+      cause({ id: 'c2', number: 2, title: 'No capacity planning', explains: [{ id: 'c1', strength: 'normal' }] }),
+    ] } })
+    fireEvent.click(screen.getByTestId('observation-tab-analysis'))
+    rightClick(screen.getByTestId('analysis-picture').querySelector('[data-key="c1"]')!)
+    fireEvent.click(screen.getByTestId('picture-menu-root-toggle'))
+    expect(screen.getByRole('alert').textContent).toContain('CA-0002 No capacity planning explains it.')
+    expect(refused.onChange).not.toHaveBeenCalled()
   })
 
   it('keeps what was typed when the edit is left', () => {

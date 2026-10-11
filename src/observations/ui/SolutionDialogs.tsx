@@ -188,9 +188,8 @@ export function NewExperimentDialog({ subject, onCancel, onCreate, s }: NewExper
   const ready = title.trim().length > 0 && hypothesis.trim().length > 0
   return (
     <Dialog open={Boolean(subject)} onClose={onCancel} maxWidth="sm" fullWidth>
-      <DialogTitle>{s('solution.newExperiment')}</DialogTitle>
+      <DialogTitle>{subject ? s('solution.newExperiment', { name: subject.label }) : ''}</DialogTitle>
       <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '8px !important' }}>
-        {subject && <DialogContentText>{subject.label}</DialogContentText>}
         <TextField autoFocus fullWidth size="small" label={s('solution.titleField')} value={title} onChange={(event) => setTitle(event.target.value)} slotProps={{ htmlInput: { 'data-testid': 'new-experiment-title' } }} />
         <TextField fullWidth size="small" multiline label={s('solution.hypothesis')} helperText={s('solution.hypothesisHelp')} value={hypothesis} onChange={(event) => setHypothesis(event.target.value)} slotProps={{ htmlInput: { 'data-testid': 'new-experiment-hypothesis' } }} />
         <TextField fullWidth size="small" label={s('solution.measure')} value={measure} onChange={(event) => setMeasure(event.target.value)} />

@@ -12,6 +12,9 @@
  * from here; a root cause takes a solution and never a deeper cause; the
  * scope that reads the scopes below links a cause of its own to a cause of
  * theirs, from either end.
+ *
+ * The pictures' right-click offers the same list (`toMenu`), in the same
+ * order and the same words, so the two cannot drift apart.
  */
 import type { Translate } from '../../i18n'
 import {
@@ -20,6 +23,7 @@ import {
 } from '../../widgets/icons'
 import type { ExperimentOutcome } from '../solution'
 import type { ReaderAction } from './ActionButton'
+import type { MenuAction } from './PictureMenu'
 
 export type Mode = 'read' | 'edit'
 
@@ -32,7 +36,24 @@ export function modeAction(mode: Mode, switchMode: (next: Mode) => void, tip: st
 
 /** Delete, the last of the occasional ones and the one drawn in red. */
 export function deleteAction(tip: string, onClick: () => void, s: Translate): ReaderAction {
-  return { key: 'delete', icon: <TrashIcon size={14} />, label: s('observation.delete'), tip, onClick, occasional: true, danger: true }
+  return { key: 'delete', icon: <TrashIcon size={14} />, label: s('observation.delete'), tip, onClick, occasional: true, danger: true, opensDialog: true }
+}
+
+/**
+ * A reader's actions as the right-click offers them: the everyday ones and
+ * Edit, then `steps` where the page has more for the record, then the
+ * occasional ones with Delete last — each with "…" where a dialog or a
+ * question follows.
+ */
+export function toMenu(actions: readonly ReaderAction[], steps: readonly MenuAction[] = []): MenuAction[] {
+  const item = (one: ReaderAction): MenuAction => ({
+    key: one.key, label: one.opensDialog ? `${one.label}…` : one.label, onClick: one.onClick,
+    ...(one.danger ? { danger: true, divider: true } : {}),
+  })
+  const head = [...actions.filter((one) => !one.occasional).map(item), ...steps]
+  const tail = actions.filter((one) => one.occasional).map(item)
+  // A rule between the two, and above Delete; never one at the top.
+  return [...head, ...tail.map((one, index) => (index === 0 ? { ...one, divider: head.length > 0 } : one))]
 }
 
 export function observationActions(o: {
@@ -53,19 +74,19 @@ export function observationActions(o: {
   const { s } = o
   const seen: ReaderAction = {
     key: 'seen', icon: <EyeIcon size={14} />, label: s('observation.seenAgain'), tip: s('observation.tipSeen'),
-    onClick: o.onSeenAgain, testId: 'observation-seen-again', guide: 'observation.seenAgain',
+    onClick: o.onSeenAgain, opensDialog: true, testId: 'observation-seen-again', guide: 'observation.seenAgain',
   }
   const cause: ReaderAction = {
     key: 'cause', icon: <LinkIcon size={14} />, label: s('observation.actCause'), tip: s('observation.tipCause', { scope: o.scope }),
-    onClick: o.onLink, primary: true, testId: 'observation-cause', guide: 'observation.cause',
+    onClick: o.onLink, primary: true, opensDialog: true, testId: 'observation-cause', guide: 'observation.cause',
   }
   const merge: ReaderAction = {
     key: 'merge', icon: <MergeIcon size={14} />, label: s('observation.actMerge'), tip: s('observation.tipMerge'),
-    onClick: o.onMerge, occasional: true, testId: 'observation-merge', guide: 'observation.merge',
+    onClick: o.onMerge, occasional: true, opensDialog: true, testId: 'observation-merge', guide: 'observation.merge',
   }
   const archive: ReaderAction = {
     key: 'archive', icon: <ArchiveIcon size={14} />, label: s('observation.actArchive'), tip: s('observation.tipArchive'),
-    onClick: o.onArchive, occasional: true, testId: 'observation-archive',
+    onClick: o.onArchive, occasional: true, opensDialog: true, testId: 'observation-archive',
   }
   return [
     ...(o.mayAdd ? [seen, cause] : []),
@@ -119,30 +140,32 @@ export function causeActions(o: {
 }): ReaderAction[] {
   const { s } = o
   const chain: ReaderAction[] = o.root ? [] : [
-    { key: 'deeper', icon: <DeeperIcon size={14} />, label: s('observation.actDeeper'), tip: s('observation.tipDeeper'), onClick: () => o.onLink('deeper'), primary: true, testId: 'cause-deeper' },
-    { key: 'root', icon: <RootCauseIcon size={14} />, label: s('observation.rootCause'), tip: s('observation.tipRoot'), onClick: () => o.onLink('root'), testId: 'cause-root-link' },
+    { key: 'deeper', icon: <DeeperIcon size={14} />, label: s('observation.actDeeper'), tip: s('observation.tipDeeper'), onClick: () => o.onLink('deeper'), primary: true, opensDialog: true, testId: 'cause-deeper' },
+    { key: 'root', icon: <RootCauseIcon size={14} />, label: s('observation.rootCause'), tip: s('observation.tipRoot'), onClick: () => o.onLink('root'), opensDialog: true, testId: 'cause-root-link' },
   ]
   const solution: ReaderAction[] = o.root && o.mayPropose
-    ? [{ key: 'solution', icon: <SolutionIcon size={14} />, label: s('observation.actSolution'), tip: s('observation.tipSolution'), onClick: o.onPropose, primary: true, testId: 'cause-solution' }]
+    ? [{ key: 'solution', icon: <SolutionIcon size={14} />, label: s('observation.actSolution'), tip: s('observation.tipSolution'), onClick: o.onPropose, primary: true, opensDialog: true, testId: 'cause-solution' }]
     : []
   const onRoot = o.onRoot
   const rootStep: ReaderAction[] = onRoot ? [{
     key: 'root-toggle', icon: o.root ? <MakeCauseIcon size={14} /> : <MakeRootIcon size={14} />,
-    label: o.root ? s('observation.makeCause') : s('observation.actMakeRoot'),
+    label: o.root ? s('observation.makeCause') : s('observation.makeRoot'),
     tip: s(o.root ? 'observation.tipMakeCause' : 'observation.tipMakeRoot', { label: o.label, next: o.flipped }),
-    onClick: onRoot, testId: 'cause-root-toggle', guide: 'cause.root',
+    // It asks first, or says why it is refused.
+    onClick: onRoot, opensDialog: true, testId: 'cause-root-toggle', guide: 'cause.root',
   }] : []
   const across: ReaderAction[] = o.across.map((mode) => (mode === 'org'
-    ? { key: 'org', icon: <GlobeIcon size={14} />, label: s('observation.actOrg'), tip: s('observation.tipOrg', { scope: o.here }), onClick: () => o.onLink('org'), testId: 'cause-org' }
-    : { key: 'local', icon: <ScopeIcon size={14} />, label: s('observation.actLocal'), tip: s('observation.tipLocal'), onClick: () => o.onLink('local'), testId: 'cause-local' }))
+    ? { key: 'org', icon: <GlobeIcon size={14} />, label: s('observation.actOrg'), tip: s('observation.tipOrg', { scope: o.here }), onClick: () => o.onLink('org'), opensDialog: true, testId: 'cause-org' }
+    : { key: 'local', icon: <ScopeIcon size={14} />, label: s('observation.actLocal'), tip: s('observation.tipLocal'), onClick: () => o.onLink('local'), opensDialog: true, testId: 'cause-local' }))
   const verify: ReaderAction = {
-    key: 'verify', icon: <CheckIcon size={14} />, label: o.verified ? s('observation.stateAssumed') : s('observation.actVerify'),
-    tip: o.verified ? s('observation.tipAssumed') : s('observation.tipVerify'), onClick: o.onVerify, testId: 'cause-verify',
+    key: 'verify', icon: <CheckIcon size={14} />, label: o.verified ? s('observation.unverify') : s('observation.actVerify'),
+    // Verify asks what confirmed it where the body does not say; Unverify is a step.
+    tip: o.verified ? s('observation.tipAssumed') : s('observation.tipVerify'), onClick: o.onVerify, opensDialog: !o.verified, testId: 'cause-verify',
   }
   const onMerge = o.onMerge
   const merge: ReaderAction[] = onMerge ? [{
     key: 'merge', icon: <MergeIcon size={14} />, label: s('observation.actMerge'), tip: s('observation.tipMergeCause'),
-    onClick: onMerge, occasional: true, testId: 'cause-merge',
+    onClick: onMerge, occasional: true, opensDialog: true, testId: 'cause-merge',
   }] : []
   return [
     ...(o.mayAdd ? [...chain, ...solution, ...rootStep] : solution),
@@ -169,16 +192,16 @@ export function solutionActions(o: {
   if (!o.canEdit) return []
   return [
     ...(o.mayAddress ? [{
-      key: 'address', icon: <RootCauseIcon size={14} />, label: s('observation.rootCause'), tip: s('solution.tipAddress'),
-      onClick: o.onAddress, primary: true, testId: 'solution-address',
+      key: 'address', icon: <RootCauseIcon size={14} />, label: s('solution.actAddress'), tip: s('solution.tipAddress'),
+      onClick: o.onAddress, primary: true, opensDialog: true, testId: 'solution-address',
     }] : []),
     ...(o.mayPlan ? [{
       key: 'experiment', icon: <ExperimentIcon size={14} />, label: s('solution.actExperiment'), tip: s('solution.tipExperiment'),
-      onClick: o.onPlanExperiment, primary: !o.mayAddress, testId: 'solution-plan-experiment', guide: 'solution.planExperiment',
+      onClick: o.onPlanExperiment, primary: !o.mayAddress, opensDialog: true, testId: 'solution-plan-experiment', guide: 'solution.planExperiment',
     }] : []),
     ...(o.mayDrop ? [{
       key: 'drop', icon: <CloseIcon size={14} />, label: s('solution.actDrop'), tip: s('solution.tipDrop'),
-      onClick: o.onDrop, occasional: true, testId: 'solution-drop',
+      onClick: o.onDrop, occasional: true, opensDialog: true, testId: 'solution-drop',
     }] : []),
     deleteAction(s('solution.tipDelete'), o.onDelete, s),
   ]
@@ -192,7 +215,10 @@ const MOVE_TIP = {
   planned: 'solution.tipToPlanned', confirmed: 'solution.tipConfirmed', refuted: 'solution.tipRefuted', inconclusive: 'solution.tipInconclusive',
 } as const
 
-/** An experiment's moves from where it stands, in the words the menu uses, each saying what it does. */
+/**
+ * An experiment's moves from where it stands, each saying what it does: a
+ * conclusion asks for the result first, and a reopen asks to be confirmed.
+ */
 export function experimentMoveButtons(o: {
   s: Translate
   from: ExperimentOutcome
@@ -204,6 +230,7 @@ export function experimentMoveButtons(o: {
   return o.moves.map((to) => ({
     key: to, icon: to === 'running' && o.from !== 'planned' ? <UndoIcon size={14} /> : MOVE_ICON[to], label: o.label(to),
     tip: to === 'running' ? s(o.from === 'planned' ? 'solution.tipStart' : 'solution.tipReopen') : s(MOVE_TIP[to]),
-    onClick: () => o.onMove(to), primary: to === 'running' && o.from === 'planned', testId: `experiment-outcome-${to}`,
+    onClick: () => o.onMove(to), primary: to === 'running' && o.from === 'planned',
+    opensDialog: to !== 'planned' && (to !== 'running' || o.from !== 'planned'), testId: `experiment-outcome-${to}`,
   }))
 }

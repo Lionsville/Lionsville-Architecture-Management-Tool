@@ -22,13 +22,12 @@ import {
   causeEvidence, causeLabel, isArchived, isMerged, isRootCause, makeCause, makeRootCause, seenAgain, verifyCause,
 } from '../observation'
 import type { Cause, CauseAbove, Observation } from '../observation'
-import { concludeExperiment, experimentMovesFrom, formatSolutionNumber, isConcluded, reopenWithdraws } from '../solution'
+import { concludeExperiment, formatSolutionNumber, isConcluded, reopenWithdraws } from '../solution'
 import type { Experiment, ExperimentOutcome, Solution } from '../solution'
 import { causesForProposal } from '../solutionGraph'
 import { OUTCOME_LABEL } from '../observationScope'
 import { SeenDialog, VerifyDialog } from './ObservationDialogs'
 import { ConcludeDialog } from './SolutionDialogs'
-import type { MenuAction } from './PictureMenu'
 
 /** What the lifecycle reads of the page's lists. */
 export type LifecycleLists = {
@@ -153,10 +152,11 @@ function reopenBody(withdraws: readonly string[], s: Translate): string {
 }
 
 /**
- * Make a root cause, or a cause again (ADR-0032 §3), as the menu and the
- * reader offer it. The rules refuse and name what stands in the way; this
- * says that in the page's words, and the action is off while it stands. The
- * reader is offered nothing where nothing may be written.
+ * Make a root cause, or a cause again (ADR-0032 §3), as the reader offers it
+ * — and the right-click, which asks in the reader. The rules refuse and name
+ * what stands in the way; this says that in the page's words, and the reader
+ * says it when the step is pressed. The reader is offered nothing where
+ * nothing may be written.
  */
 export function rootToggle(cause: Cause, deps: {
   lists: Pick<LifecycleLists, 'causes' | 'solutions'>
@@ -172,7 +172,7 @@ export function rootToggle(cause: Cause, deps: {
    * is made a root there, over its lists as they are when it lands.
    */
   apply?: () => void
-}): { action: MenuAction; reader: { onRoot?: () => void; rootRefused?: string } } {
+}): { onRoot?: () => void; rootRefused?: string } {
   const { lists, commit, nameOf, s } = deps
   const change = isRootCause(cause)
     ? makeCause(lists.causes, cause.id, lists.solutions)
@@ -186,33 +186,14 @@ export function rootToggle(cause: Cause, deps: {
     })
     : s('observation.refusedRootAddressed', { names: change.solutions.map((one) => nameOf(one.id)).join(', ') })
   const onRoot = deps.apply ?? (() => { if (change.ok) commit({ causes: change.causes }) })
-  return {
-    action: {
-      key: 'root', label: isRootCause(cause) ? s('observation.makeCause') : s('observation.makeRoot'),
-      disabled: refused !== undefined, onClick: onRoot,
-    },
-    reader: deps.readOnly ? {} : { onRoot, ...(refused !== undefined ? { rootRefused: refused } : {}) },
-  }
+  return deps.readOnly ? {} : { onRoot, ...(refused !== undefined ? { rootRefused: refused } : {}) }
 }
 
-/** The words for a move of an experiment from where it stands: Start, Reopen…, Back to planned, Confirmed…. */
+/** The words for a move of an experiment from where it stands: Start, Reopen, Back to planned, Confirmed. */
 export function experimentMoveLabel(from: ExperimentOutcome, to: ExperimentOutcome, s: Translate): string {
   if (to === 'running') return from === 'planned' ? s('solution.moveStart') : s('solution.moveReopen')
   if (to === 'planned') return s('solution.moveToPlanned')
   return s('solution.moveConclude', { outcome: s(OUTCOME_LABEL[to]) })
-}
-
-/**
- * An experiment's moves as the right-click offers them: the outcome it has
- * now, checked and not a move, then the moves from there in the reader's words.
- */
-export function experimentMoveActions(one: Experiment, s: Translate, onMove: (to: ExperimentOutcome) => void): MenuAction[] {
-  return [
-    { key: `outcome-${one.outcome}`, label: s(OUTCOME_LABEL[one.outcome]), checked: true, divider: true, disabled: true, onClick: () => {} },
-    ...experimentMovesFrom(one.outcome).map((to) => ({
-      key: `outcome-${to}`, checked: false, label: experimentMoveLabel(one.outcome, to, s), onClick: () => onMove(to),
-    })),
-  ]
 }
 
 /**

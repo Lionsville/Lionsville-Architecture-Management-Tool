@@ -940,8 +940,9 @@ solution that was not dropped addresses a cause, and nowhere else, so a cause
 that was a root only because nothing explained it yet opens as an open end.
 The same holds wherever the work is kept.
 
-**Make root** and **Make cause** are steps with a name in the Activity list,
-and each asks first. Make root is refused while a cause explains this one:
+**Make root cause** and **Make cause** are steps with a name in the Activity
+list, and each asks first, in the reader — also when it is chosen on a
+right-click. Make root cause is refused while a cause explains this one:
 the reader names each cause that does, and says to unlink it or to make that
 one the root cause instead. Make cause is refused while a solution addresses
 it: the reader names each solution, and says to move it to another root cause
@@ -951,8 +952,8 @@ or unlink it first. A new cause can be made a root cause as it is written.
 two, and hovering it, or reaching it with Tab, says in full what it does and
 what it is refused for. An observation offers *Seen again*, *Cause*, *Edit*,
 *Merge*, *Archive* and *Delete*; a cause *Deeper cause*, *Root cause*,
-*Make root*, *Verify* and *Merge*; a root cause *Solution* and *Make cause*,
-and never a deeper cause. *Cause*, *Deeper cause* and *Root cause* open one dialog with
+*Make root cause*, *Verify* — *Unverify* once it is verified — and *Merge*;
+a root cause *Solution* and *Make cause*, and never a deeper cause. *Cause*, *Deeper cause* and *Root cause* open one dialog with
 two tabs: **New cause**, the cause's own fields, and **Existing cause**,
 offering only what the rules allow. Where the reader is narrow, *Merge*,
 *Archive* and *Delete* move into `⋯`.
@@ -1053,15 +1054,17 @@ plan clear anything up, or only add? A solution that is not pursued is
 it is listed on every other solution for the same causes. Both records are
 markdown files, under `observations/solutions/` and `observations/experiments/`.
 
-A solution's reader has the same small buttons as the analysis: *Root
-cause* to address another while it is an idea or shaped, *Experiment* to plan
+A solution's reader has the same small buttons as the analysis: *Address*
+to address another root cause while it is an idea or shaped, *Experiment* to plan
 one while it is shaped or testing, *Edit*, and *Drop* and *Delete*, which
 move into `⋯` where the reader is narrow. A solution of a scope below, drawn
 in its boundary with View local on, is read here and worked on in its own
 scope.
 
 **Right-click** anything in the analysis or the solutions picture for what can
-be done with it — the same actions its reader offers, Edit among them — and a
+be done with it — the same actions its reader offers, in the same order and
+the same words, Edit among them, and on a solution the steps its gate offers;
+a menu item ends in “…” where a dialog or a question follows — and a
 line — the analysis's links, a solution's causes, the lines into and out of an
 experiment — for how strong the link is, or to unlink it. **Edit** gives the
 record the whole width: the text on the left, what it will look like on the

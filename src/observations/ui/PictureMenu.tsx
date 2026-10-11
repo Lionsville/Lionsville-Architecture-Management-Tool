@@ -7,9 +7,9 @@
  * what can be done with it, in the words its readers already use, and this
  * draws that list at the pointer.
  *
- * The picture decides nothing. That keeps the actions in one place (the page,
- * beside the readers' own handlers) so the menu and the reader cannot offer
- * two different sets for the same record.
+ * The picture decides nothing. A record's menu is its reader's bar, built by
+ * the same builders from the same props (`recordMenu`, `toMenu`), so the menu
+ * and the reader cannot offer two different sets for the same record.
  */
 import Divider from '@mui/material/Divider'
 import ListItemIcon from '@mui/material/ListItemIcon'

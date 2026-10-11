@@ -49,6 +49,7 @@ import type {
 import { observationProblems } from '../form'
 import { EVENT_LABEL, IMPACT_COLOR, IMPACT_LABEL, STATE_COLOR, STATE_LABEL, STRENGTH_LABEL } from '../observationScope'
 import { COMPACT, ReaderActions, ReaderNotice } from './ActionButton'
+import type { ReaderAction } from './ActionButton'
 import { ExampleField, TitleField } from './FormParts'
 import { exampleFor, problemText } from './ObservationForm'
 import {
@@ -262,6 +263,26 @@ function keepFacts(patch: ObservationPatch, today: string): ObservationPatch {
   return kept
 }
 
+/**
+ * What an observation's reader offers, read off the same props it is drawn
+ * from: its bar, and the right-click on it, which passes how Edit is reached.
+ */
+export function observationBar(props: ObservationReaderProps, mode: Mode, switchMode: (next: Mode) => void): ReaderAction[] {
+  const { observation, s, readOnly, fromScope, mergedInto } = props
+  const archived = observation.archived === true
+  const canEdit = !readOnly && !fromScope && !mergedInto && !archived
+  const standing = !readOnly && !mergedInto && !archived
+  return [
+    ...observationActions({
+      s, own: canEdit, mayAdd: canEdit || (standing && Boolean(fromScope) && props.mayChangeBelow === true),
+      scope: fromScope ? fromScope.label : s('observation.thisScope'), mayMerge: standing,
+      onSeenAgain: props.onSeenAgain, onLink: props.onLink, onMerge: props.onMerge, onArchive: props.onArchive, onDelete: props.onDelete,
+    }),
+    ...(canEdit ? [modeAction(mode, switchMode, s('observation.tipEdit'), s)] : []),
+    ...(archived && !readOnly && !fromScope ? [restoreAction(s('observation.tipRestore'), props.onRestore, 'observation-restore', s)] : []),
+  ]
+}
+
 export function ObservationReader(props: ObservationReaderProps) {
   const { observation, s, renderMarkdown, nameOf, readOnly, fromScope, mergedInto } = props
   const archived = observation.archived === true
@@ -280,15 +301,7 @@ export function ObservationReader(props: ObservationReaderProps) {
   const { language } = useStrings()
   const day = (date: string) => formatDay(date, language)
   const standing = !readOnly && !mergedInto && !archived
-  const actions = [
-    ...observationActions({
-      s, own: canEdit, mayAdd: canEdit || (standing && Boolean(fromScope) && props.mayChangeBelow === true),
-      scope: fromScope ? fromScope.label : s('observation.thisScope'), mayMerge: standing,
-      onSeenAgain: props.onSeenAgain, onLink: props.onLink, onMerge: props.onMerge, onArchive: props.onArchive, onDelete: props.onDelete,
-    }),
-    ...(canEdit ? [modeAction(mode, switchMode, s('observation.tipEdit'), s)] : []),
-    ...(archived && !readOnly && !fromScope ? [restoreAction(s('observation.tipRestore'), props.onRestore, 'observation-restore', s)] : []),
-  ]
+  const actions = observationBar(props, mode, switchMode)
 
   return (
     <Box data-testid="observation-reader" sx={READER_ROOT_SX}>
@@ -508,8 +521,43 @@ export type CauseReaderProps = {
   solutions?: readonly { key: string; label: string; note: string }[]
   /** Propose a solution for it; absent where nothing may be written. */
   onPropose?: () => void
+  /**
+   * A question the right-click asked of it — Make root cause, Make cause, or
+   * Org cause on a root — shown under its actions as its own press shows it.
+   * Each ask is a new object; one already answered is not asked again.
+   */
+  asked?: { panel: CausePanel }
   onAddImage?: (file: File) => Promise<string | undefined>
   images?: DocumentImages
+}
+
+/** What a cause's reader asks, or refuses, under its actions. */
+export type CausePanel = 'root' | 'org'
+
+/**
+ * What a cause's reader offers, read off the same props it is drawn from:
+ * its bar, and the right-click on it, which passes how Edit is reached and
+ * where the root step's question is asked.
+ */
+export function causeBar(props: CauseReaderProps, mode: Mode, switchMode: (next: Mode) => void, ask: (panel: CausePanel) => void): ReaderAction[] {
+  const { cause, s, readOnly, fromScope, mergedInto } = props
+  const standing = !readOnly && !mergedInto
+  const canEdit = standing && !fromScope
+  const root = isRootCause(cause)
+  const label = causeLabel(cause)
+  return [
+    ...causeActions({
+      s, label, flipped: formatCauseNumber(cause.number, !root), root, verified: cause.state === 'verified',
+      mayAdd: canEdit || (standing && Boolean(fromScope) && props.mayChangeBelow === true), own: canEdit,
+      across: standing ? props.across ?? [] : [], here: props.here ?? '', mayPropose: standing && Boolean(props.onPropose),
+      ...(standing && props.onMerge ? { onMerge: props.onMerge } : {}),
+      onLink: (linkMode) => (linkMode === 'org' && props.orgRefused ? ask('org') : props.onLink(linkMode)),
+      ...(props.onRoot ? { onRoot: () => ask('root') } : {}),
+      onVerify: () => (cause.state === 'assumed' ? props.onVerify() : props.onUpdate({ state: 'assumed' })),
+      onPropose: () => props.onPropose?.(), onDelete: props.onDelete,
+    }),
+    ...(canEdit ? [modeAction(mode, switchMode, s('observation.tipEditCause'), s)] : []),
+  ]
 }
 
 export function CauseReader(props: CauseReaderProps) {
@@ -525,7 +573,13 @@ export function CauseReader(props: CauseReaderProps) {
     props.onUpdate(title !== undefined && !title.trim() ? rest : patch)
   }, canEdit)
   const [previewShown, setPreviewShown] = useState(true)
-  const [panel, setPanel] = useState<'root' | 'org' | undefined>(undefined)
+  const [panel, setPanel] = useState<CausePanel | undefined>(undefined)
+  // A question asked from the right-click opens here, once per ask.
+  const [answered, setAnswered] = useState(props.asked)
+  if (props.asked !== answered) {
+    setAnswered(props.asked)
+    if (props.asked) setPanel(props.asked.panel)
+  }
   const showPreview = mode === 'read' || previewShown
   const text = mode === 'edit' ? draft.body : cause.body
   const rendered = text.trim() ? renderMarkdown(text) : <Typography color="text.secondary">{s('common.empty')}</Typography>
@@ -533,18 +587,7 @@ export function CauseReader(props: CauseReaderProps) {
   const label = causeLabel(cause)
   const flipped = formatCauseNumber(cause.number, !root)
   const explainedBy = causes.filter((other) => other.explains.some((link) => link.id === cause.id && link.scope === undefined))
-  const verify = () => (cause.state === 'assumed' ? props.onVerify() : props.onUpdate({ state: 'assumed' }))
-  const actions = [
-    ...causeActions({
-      s, label, flipped, root, verified: cause.state === 'verified', mayAdd, own: canEdit,
-      across: standing ? props.across ?? [] : [], here: props.here ?? '', mayPropose: standing && Boolean(props.onPropose),
-      ...(standing && props.onMerge ? { onMerge: props.onMerge } : {}),
-      onLink: (linkMode) => (linkMode === 'org' && props.orgRefused ? setPanel('org') : props.onLink(linkMode)),
-      ...(props.onRoot ? { onRoot: () => setPanel('root') } : {}),
-      onVerify: verify, onPropose: () => props.onPropose?.(), onDelete: props.onDelete,
-    }),
-    ...(canEdit ? [modeAction(mode, switchMode, s('observation.tipEditCause'), s)] : []),
-  ]
+  const actions = causeBar(props, mode, switchMode, setPanel)
   return (
     <Box data-testid="cause-reader" sx={READER_ROOT_SX}>
       <Box sx={BAR_SX}>

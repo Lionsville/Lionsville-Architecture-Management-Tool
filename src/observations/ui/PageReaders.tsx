@@ -26,20 +26,21 @@ import {
 import type { Cause, CauseAbove, CauseLink, Observation, ScopeAnalysis } from '../observation'
 import { nodeKey, pictureKey } from '../graph'
 import {
-  alternatives, experimentsFor, implementedOn, moveSolution, restoreSolution, seenSinceImplemented, solutionGate,
-  solutionPhase, solutionQuestions, unaddressCause, underneath, updateExperiment, updateSolution, waiveExperiment,
+  alternatives, experimentsFor, implementedOn, moveSolution, openItems, previousState, restoreSolution, seenSinceImplemented,
+  solutionGate, solutionPhase, solutionQuestions, unaddressCause, underneath, updateExperiment, updateSolution, waiveExperiment,
 } from '../solution'
 import type { Experiment, ExperimentOutcome, Solution, SolutionContext, SolutionPlan, SolutionState } from '../solution'
 import { experimentKey, solutionKey } from '../solutionGraph'
 import { formatExperimentNumber, formatSolutionNumber } from '../solution'
 import { PHASE_LABEL } from '../observationScope'
 import { rootToggle } from './ObservationLifecycle'
-import { CauseReader, ObservationReader, ScopeStrip } from './Readers'
+import { CauseReader, ObservationReader, ScopeStrip, causeBar, observationBar } from './Readers'
 import { ReaderActions } from './ActionButton'
-import { openScopeAction } from './readerActions'
-import type { MergedInto } from './Readers'
-import { ExperimentReader, SolutionReader } from './SolutionReaders'
-import type { LinkTarget } from './readerActions'
+import { openScopeAction, toMenu } from './readerActions'
+import type { CausePanel, CauseReaderProps, MergedInto, ObservationReaderProps } from './Readers'
+import { ExperimentReader, SolutionReader, experimentBar, solutionBar } from './SolutionReaders'
+import type { ExperimentReaderProps, SolutionReaderProps } from './SolutionReaders'
+import type { LinkTarget, Mode } from './readerActions'
 import type { MenuAction } from './PictureMenu'
 import type { ObservationWork } from './ObservationsPage'
 
@@ -150,6 +151,8 @@ export type ReaderContext = {
   /** Where a cause went when it was merged, of this scope or of `scope`. */
   mergedCause: (cause: Cause, scope?: string) => MergedInto | undefined
   openKey: (key: string) => void
+  /** The question the right-click last asked of a cause, by the key it is selected by: its reader shows it. */
+  asked?: { key: string; panel: CausePanel } | undefined
   /** Open the page of another scope, closing this one. */
   openScope?: (path: string) => void
   onDecide?: (solutionId: string) => void
@@ -207,6 +210,11 @@ function nameWithin(scope: string, ctx: ReaderContext): (id: string, at?: string
 }
 
 function observationReader(one: Observation, scope: string | undefined, selectedKey: string | undefined, ctx: ReaderContext) {
+  return <ObservationReader key={selectedKey} {...observationProps(one, scope, selectedKey, ctx)} />
+}
+
+/** An observation's reader, wired: what the pane draws and what the right-click offers are read off these. */
+function observationProps(one: Observation, scope: string | undefined, selectedKey: string | undefined, ctx: ReaderContext): ObservationReaderProps {
   const { s, work, forms } = ctx
   const own = scope === undefined
   // Its own scope's causes, and a cause here that ADR-0021 let explain one below.
@@ -219,35 +227,32 @@ function observationReader(one: Observation, scope: string | undefined, selected
     else forms.changeBelow?.(at, (held) => ({ ...held, causes: unlinkCause(held.causes, causeId, one.id) }))
   }
   const openScope = ctx.openScope
-  return (
-    <ObservationReader
-      key={selectedKey}
-      observation={one}
-      fromScope={scope !== undefined ? { path: scope, label: ctx.scopeLabel(scope) } : undefined}
-      explainedBy={explainers.map(({ cause, scope: at }) => ({
-        cause, link: cause.explains.find((held) => held.id === one.id)!, ...(at !== undefined ? { scope: at } : {}),
-      }))}
-      mergedInto={own ? ctx.mergedLabel(one) : undefined}
-      readOnly={ctx.readOnly}
-      mayChangeBelow={Boolean(forms.changeBelow)}
-      today={ctx.today()}
-      s={s}
-      renderMarkdown={ctx.renderMarkdown}
-      nameOf={ctx.nameOf}
-      onUpdate={(patch) => ctx.commit({ observations: updateObservation(work.observations, one.id, patch) })}
-      onSeenAgain={() => ctx.lifecycle.seeAgain(one, scope)}
-      onArchive={() => ctx.ask.archive(one)}
-      onRestore={() => ctx.commit({ observations: restoreObservation(work.observations, one.id, ctx.today()) })}
-      onMerge={() => ctx.ask.merge(one, scope)}
-      onLink={() => forms.openLink({ mode: 'cause', id: one.id, ...(scope !== undefined ? { scope } : {}) })}
-      onUnlink={unlink}
-      onDelete={() => ctx.ask.remove('observation', one.id)}
-      onOpenScope={scope !== undefined && openScope ? () => openScope(scope) : undefined}
-      onOpen={ctx.openKey}
-      onAddImage={ctx.onAddImage}
-      images={ctx.images}
-    />
-  )
+  return {
+    observation: one,
+    fromScope: scope !== undefined ? { path: scope, label: ctx.scopeLabel(scope) } : undefined,
+    explainedBy: explainers.map(({ cause, scope: at }) => ({
+      cause, link: cause.explains.find((held) => held.id === one.id)!, ...(at !== undefined ? { scope: at } : {}),
+    })),
+    mergedInto: own ? ctx.mergedLabel(one) : undefined,
+    readOnly: ctx.readOnly,
+    mayChangeBelow: Boolean(forms.changeBelow),
+    today: ctx.today(),
+    s,
+    renderMarkdown: ctx.renderMarkdown,
+    nameOf: ctx.nameOf,
+    onUpdate: (patch) => ctx.commit({ observations: updateObservation(work.observations, one.id, patch) }),
+    onSeenAgain: () => ctx.lifecycle.seeAgain(one, scope),
+    onArchive: () => ctx.ask.archive(one),
+    onRestore: () => ctx.commit({ observations: restoreObservation(work.observations, one.id, ctx.today()) }),
+    onMerge: () => ctx.ask.merge(one, scope),
+    onLink: () => forms.openLink({ mode: 'cause', id: one.id, ...(scope !== undefined ? { scope } : {}) }),
+    onUnlink: unlink,
+    onDelete: () => ctx.ask.remove('observation', one.id),
+    onOpenScope: scope !== undefined && openScope ? () => openScope(scope) : undefined,
+    onOpen: ctx.openKey,
+    onAddImage: ctx.onAddImage,
+    images: ctx.images,
+  }
 }
 
 function restoreObservation(list: readonly Observation[], id: string, date: string): Observation[] {
@@ -308,50 +313,12 @@ function explainedFromOf(cause: Cause, scope: string | undefined, above: readonl
   }))
 }
 
-/**
- * The right-click on a record of a scope below offers what its reader offers,
- * in the menu's words: a sighting, a cause, a deeper cause and the root step
- * where that scope may be written from here, the links this scope keeps, and
- * the way to the scope it lives in (ADR-0032 §2, §4).
- */
-export function belowMenuActions(held: Selected, ctx: ReaderContext): MenuAction[] {
-  if (held.kind !== 'below' && held.kind !== 'causeBelow' && held.kind !== 'solutionBelow' && held.kind !== 'experimentBelow') return []
-  const { s, forms } = ctx
-  const { scope } = held
-  const writable = !ctx.readOnly && Boolean(forms.changeBelow)
-  const openScope = ctx.openScope
-  const open: MenuAction[] = openScope
-    ? [{ key: 'open-scope', label: s('observation.openScope', { scope: ctx.scopeLabel(scope) }), divider: true, onClick: () => openScope(scope) }]
-    : []
-  if (held.kind === 'solutionBelow' || held.kind === 'experimentBelow') return open
-  if (held.kind === 'below') {
-    const one = held.observation
-    if (ctx.readOnly || one.archived === true) return open
-    return [
-      ...(writable ? [
-        { key: 'seen', label: s('observation.seenAgain'), onClick: () => ctx.lifecycle.seeAgain(one, scope) },
-        { key: 'link', label: s('observation.link'), onClick: () => forms.openLink({ mode: 'cause', id: one.id, scope }) },
-      ] : []),
-      { key: 'merge', label: s('observation.merge'), onClick: () => ctx.ask.merge(one, scope) },
-      ...open,
-    ]
-  }
-  const cause = held.cause
-  if (ctx.readOnly || ctx.mergedCause(cause, scope)) return open
-  const root = isRootCause(cause)
-  return [
-    ...(writable && !root ? [{ key: 'link-deeper', label: s('observation.linkDeeper'), onClick: () => forms.openLink({ mode: 'deeper', id: cause.id, scope }) }] : []),
-    ...(writable ? [crossScope(cause, scope, ctx).toggle.action] : []),
-    ...(forms.across ? [{
-      key: 'org', label: s('observation.linkOrg', { scope: ctx.scopeName }), disabled: root,
-      onClick: () => forms.openLink({ mode: 'org', id: cause.id, scope }),
-    }] : []),
-    { key: 'merge', label: s('observation.merge'), onClick: () => ctx.ask.mergeCause(cause, scope) },
-    ...open,
-  ]
+function causeReader(cause: Cause, scope: string | undefined, ctx: ReaderContext) {
+  return <CauseReader key={nodeKey(cause.id, scope)} {...causeProps(cause, scope, ctx)} />
 }
 
-function causeReader(cause: Cause, scope: string | undefined, ctx: ReaderContext) {
+/** A cause's reader, wired: what the pane draws and what the right-click offers are read off these. */
+function causeProps(cause: Cause, scope: string | undefined, ctx: ReaderContext): CauseReaderProps {
   const { s, work, forms } = ctx
   const own = scope === undefined
   const lists = listsOf(scope, ctx)
@@ -362,45 +329,49 @@ function causeReader(cause: Cause, scope: string | undefined, ctx: ReaderContext
   const hasBelow = ctx.below.some((one) => one.causes.some((held) => !isRootCause(held)))
   const solutions = own ? work.solutions.filter((one) => one.addresses.some((address) => address.id === cause.id)) : []
   const openScope = ctx.openScope
-  return (
-    <CauseReader
-      key={nodeKey(cause.id, scope)}
-      cause={cause}
-      causes={lists.causes}
-      mergedInto={ctx.mergedCause(cause, scope)}
-      onMerge={() => ctx.ask.mergeCause(cause, scope)}
-      {...(own ? {} : { fromScope: { label: ctx.scopeLabel(scope), ...(openScope ? { onOpenScope: () => openScope(scope) } : {}) } })}
-      explainedFrom={explainedFromOf(cause, scope, own ? ctx.explainedAbove?.get(cause.id) ?? [] : above, ctx)}
-      readOnly={ctx.readOnly}
-      mayChangeBelow={Boolean(forms.changeBelow)}
-      across={!forms.across ? [] : own ? (hasBelow ? ['local'] : []) : ['org']}
-      here={ctx.scopeName}
-      {...(!own && isRootCause(cause) ? { orgRefused: s('observation.orgRefused', { label: ctx.nameOf(cause.id, scope) }) } : {})}
-      s={s}
-      renderMarkdown={ctx.renderMarkdown}
-      nameOf={own ? ctx.nameOf : nameWithin(scope, ctx)}
-      {...(own ? {} : { keyOf: (id: string, at?: string) => pictureKey(ctx.here, at ?? scope, id) })}
-      onUpdate={(patch) => ctx.commit({ causes: updateCause(work.causes, cause.id, patch) })}
-      onVerify={() => ctx.lifecycle.verify(cause)}
-      {...toggle.reader}
-      onLink={(mode) => forms.openLink({ mode, id: cause.id, ...(scope !== undefined ? { scope } : {}) })}
-      onUnlink={(target: CauseLink) => onCauses((list) => unlinkCause(list, cause.id, target.id, target.scope))}
-      onUnlinkFrom={(causeId) => onCauses((list) => unlinkCause(list, causeId, cause.id))}
-      onDelete={() => ctx.ask.remove('cause', cause.id)}
-      onOpen={ctx.openKey}
-      {...(own ? {
-        solutions: solutions.map((one) => ({
-          key: solutionKey(one.id), label: ctx.nameOf(one.id), note: s(PHASE_LABEL[solutionPhase(one, ctx.plans)]).toLowerCase(),
-        })),
-      } : {})}
-      {...(ctx.readOnly || !own || !isRootCause(cause) ? {} : { onPropose: () => ctx.ask.propose(cause.id) })}
-      onAddImage={ctx.onAddImage}
-      images={ctx.images}
-    />
-  )
+  const asked = ctx.asked
+  return {
+    cause,
+    causes: lists.causes,
+    mergedInto: ctx.mergedCause(cause, scope),
+    onMerge: () => ctx.ask.mergeCause(cause, scope),
+    ...(own ? {} : { fromScope: { label: ctx.scopeLabel(scope), ...(openScope ? { onOpenScope: () => openScope(scope) } : {}) } }),
+    explainedFrom: explainedFromOf(cause, scope, own ? ctx.explainedAbove?.get(cause.id) ?? [] : above, ctx),
+    readOnly: ctx.readOnly,
+    mayChangeBelow: Boolean(forms.changeBelow),
+    across: !forms.across ? [] : own ? (hasBelow ? ['local'] : []) : ['org'],
+    here: ctx.scopeName,
+    ...(!own && isRootCause(cause) ? { orgRefused: s('observation.orgRefused', { label: ctx.nameOf(cause.id, scope) }) } : {}),
+    s,
+    renderMarkdown: ctx.renderMarkdown,
+    nameOf: own ? ctx.nameOf : nameWithin(scope, ctx),
+    ...(own ? {} : { keyOf: (id: string, at?: string) => pictureKey(ctx.here, at ?? scope, id) }),
+    onUpdate: (patch) => ctx.commit({ causes: updateCause(work.causes, cause.id, patch) }),
+    onVerify: () => ctx.lifecycle.verify(cause),
+    ...toggle,
+    onLink: (mode) => forms.openLink({ mode, id: cause.id, ...(scope !== undefined ? { scope } : {}) }),
+    onUnlink: (target: CauseLink) => onCauses((list) => unlinkCause(list, cause.id, target.id, target.scope)),
+    onUnlinkFrom: (causeId) => onCauses((list) => unlinkCause(list, causeId, cause.id)),
+    onDelete: () => ctx.ask.remove('cause', cause.id),
+    onOpen: ctx.openKey,
+    ...(own ? {
+      solutions: solutions.map((one) => ({
+        key: solutionKey(one.id), label: ctx.nameOf(one.id), note: s(PHASE_LABEL[solutionPhase(one, ctx.plans)]).toLowerCase(),
+      })),
+    } : {}),
+    ...(ctx.readOnly || !own || !isRootCause(cause) ? {} : { onPropose: () => ctx.ask.propose(cause.id) }),
+    onAddImage: ctx.onAddImage,
+    images: ctx.images,
+    ...(asked && asked.key === nodeKey(cause.id, scope) ? { asked } : {}),
+  }
 }
 
 function solutionReader(one: Solution, ctx: ReaderContext) {
+  return <SolutionReader key={one.id} {...solutionProps(one, ctx)} />
+}
+
+/** A solution's reader, wired: what the pane draws and what the right-click offers are read off these. */
+function solutionProps(one: Solution, ctx: ReaderContext): SolutionReaderProps {
   const { s, work, plans, context } = ctx
   const analysis = { observations: work.observations, causes: work.causes }
   const belowAll = ctx.below.flatMap(({ scope, observations }) => observations.map((observation) => ({ scope, observation })))
@@ -414,54 +385,51 @@ function solutionReader(one: Solution, ctx: ReaderContext) {
     if (result.ok) ctx.commit({ solutions: result.solutions })
   }
   const locked = one.state === 'adopted' && decision?.status === 'accepted'
-  return (
-    <SolutionReader
-      key={one.id}
-      solution={one}
-      phase={phase}
-      gate={solutionGate(one, context)}
-      mayGoBack={!locked}
-      {...(locked && decision ? { reopenBy: label4('ADR', decision.number) } : {})}
-      questions={solutionQuestions(one, context)}
-      addresses={one.addresses.map((address) => {
-        const cause = work.causes.find((held) => held.id === address.id)
-        return { id: address.id, label: ctx.nameOf(address.id), strength: address.strength, root: cause ? isRootCause(cause) : false }
-      })}
-      experiments={experimentsFor(work.experiments, one.id).map((held) => ({ key: experimentKey(held.id), label: ctx.nameOf(held.id), outcome: held.outcome }))}
-      alternatives={alternatives(one, work.solutions).map((held) => ({ key: solutionKey(held.id), label: ctx.nameOf(held.id), phase: solutionPhase(held, plans) }))}
-      {...(decision ? { decision: { label: ctx.nameOf(decision.id), status: s(ADR_STATUS_KEY[decision.status]).toLowerCase() } } : {})}
-      {...(plan ? { plan: { label: ctx.nameOf(plan.id), status: s(PLAN_STATUS_KEY[plan.status]).toLowerCase() } } : {})}
-      {...(since ? {
-        implemented: {
-          since,
-          observations: underneath(one, analysis).map((held) => {
-            const seenOn = seenAgain.find((again) => again.id === held.id && again.scope === held.scope)?.date
-            return { key: nodeKey(held.id, held.scope), label: ctx.nameOf(held.id, held.scope), ...(seenOn ? { seenOn } : {}) }
-          }),
-        },
-      } : {})}
-      readOnly={ctx.readOnly}
-      s={s}
-      renderMarkdown={ctx.renderMarkdown}
-      nameOf={(id) => ctx.nameOf(id)}
-      onUpdate={(patch) => ctx.commit({ solutions: updateSolution(work.solutions, one.id, patch) })}
-      onMove={move}
-      onWaive={(reason) => ctx.commit({ solutions: waiveExperiment(work.solutions, one.id, reason, ctx.today()) })}
-      onAddress={() => ctx.ask.address(one)}
-      onUnaddress={(causeId) => ctx.commit({ solutions: unaddressCause(work.solutions, one.id, causeId) })}
-      onPlanExperiment={() => ctx.ask.plan(one)}
-      {...(ctx.onDecide ? { onDecide: () => ctx.onDecide?.(one.id) } : {})}
-      {...(ctx.onStartPlan ? { onStartPlan: () => ctx.onStartPlan?.(one.id) } : {})}
-      {...(decision && ctx.onOpenDecision ? { onOpenDecision: () => ctx.onOpenDecision?.(decision.id) } : {})}
-      {...(plan && ctx.onOpenPlan ? { onOpenPlan: () => ctx.onOpenPlan?.(plan.id) } : {})}
-      onDrop={() => ctx.ask.drop(one)}
-      onRestore={() => ctx.commit({ solutions: restoreSolution(work.solutions, one.id, ctx.today()) })}
-      onDelete={() => ctx.ask.remove('solution', one.id)}
-      onOpen={ctx.openKey}
-      onAddImage={ctx.onAddImage}
-      images={ctx.images}
-    />
-  )
+  return {
+    solution: one,
+    phase,
+    gate: solutionGate(one, context),
+    mayGoBack: !locked,
+    ...(locked && decision ? { reopenBy: label4('ADR', decision.number) } : {}),
+    questions: solutionQuestions(one, context),
+    addresses: one.addresses.map((address) => {
+      const cause = work.causes.find((held) => held.id === address.id)
+      return { id: address.id, label: ctx.nameOf(address.id), strength: address.strength, root: cause ? isRootCause(cause) : false }
+    }),
+    experiments: experimentsFor(work.experiments, one.id).map((held) => ({ key: experimentKey(held.id), label: ctx.nameOf(held.id), outcome: held.outcome })),
+    alternatives: alternatives(one, work.solutions).map((held) => ({ key: solutionKey(held.id), label: ctx.nameOf(held.id), phase: solutionPhase(held, plans) })),
+    ...(decision ? { decision: { label: ctx.nameOf(decision.id), status: s(ADR_STATUS_KEY[decision.status]).toLowerCase() } } : {}),
+    ...(plan ? { plan: { label: ctx.nameOf(plan.id), status: s(PLAN_STATUS_KEY[plan.status]).toLowerCase() } } : {}),
+    ...(since ? {
+      implemented: {
+        since,
+        observations: underneath(one, analysis).map((held) => {
+          const seenOn = seenAgain.find((again) => again.id === held.id && again.scope === held.scope)?.date
+          return { key: nodeKey(held.id, held.scope), label: ctx.nameOf(held.id, held.scope), ...(seenOn ? { seenOn } : {}) }
+        }),
+      },
+    } : {}),
+    readOnly: ctx.readOnly,
+    s,
+    renderMarkdown: ctx.renderMarkdown,
+    nameOf: (id) => ctx.nameOf(id),
+    onUpdate: (patch) => ctx.commit({ solutions: updateSolution(work.solutions, one.id, patch) }),
+    onMove: move,
+    onWaive: (reason) => ctx.commit({ solutions: waiveExperiment(work.solutions, one.id, reason, ctx.today()) }),
+    onAddress: () => ctx.ask.address(one),
+    onUnaddress: (causeId) => ctx.commit({ solutions: unaddressCause(work.solutions, one.id, causeId) }),
+    onPlanExperiment: () => ctx.ask.plan(one),
+    ...(ctx.onDecide ? { onDecide: () => ctx.onDecide?.(one.id) } : {}),
+    ...(ctx.onStartPlan ? { onStartPlan: () => ctx.onStartPlan?.(one.id) } : {}),
+    ...(decision && ctx.onOpenDecision ? { onOpenDecision: () => ctx.onOpenDecision?.(decision.id) } : {}),
+    ...(plan && ctx.onOpenPlan ? { onOpenPlan: () => ctx.onOpenPlan?.(plan.id) } : {}),
+    onDrop: () => ctx.ask.drop(one),
+    onRestore: () => ctx.commit({ solutions: restoreSolution(work.solutions, one.id, ctx.today()) }),
+    onDelete: () => ctx.ask.remove('solution', one.id),
+    onOpen: ctx.openKey,
+    onAddImage: ctx.onAddImage,
+    images: ctx.images,
+  }
 }
 
 /**
@@ -535,20 +503,81 @@ function experimentBelowReader(one: Experiment, scope: string, ctx: ReaderContex
 }
 
 function experimentReader(one: Experiment, ctx: ReaderContext) {
-  return (
-    <ExperimentReader
-      key={one.id}
-      experiment={one}
-      tests={one.tests.map((id) => ({ key: solutionKey(id), label: ctx.nameOf(id) }))}
-      readOnly={ctx.readOnly}
-      s={ctx.s}
-      renderMarkdown={ctx.renderMarkdown}
-      onUpdate={(patch) => ctx.commit({ experiments: updateExperiment(ctx.work.experiments, one.id, patch) })}
-      onMove={(to) => ctx.lifecycle.moveExperiment(one, to)}
-      onDelete={() => ctx.ask.remove('experiment', one.id)}
-      onOpen={ctx.openKey}
-      onAddImage={ctx.onAddImage}
-      images={ctx.images}
-    />
-  )
+  return <ExperimentReader key={one.id} {...experimentProps(one, ctx)} />
+}
+
+/** An experiment's reader, wired: what the pane draws and what the right-click offers are read off these. */
+function experimentProps(one: Experiment, ctx: ReaderContext): ExperimentReaderProps {
+  return {
+    experiment: one,
+    tests: one.tests.map((id) => ({ key: solutionKey(id), label: ctx.nameOf(id) })),
+    readOnly: ctx.readOnly,
+    s: ctx.s,
+    renderMarkdown: ctx.renderMarkdown,
+    onUpdate: (patch) => ctx.commit({ experiments: updateExperiment(ctx.work.experiments, one.id, patch) }),
+    onMove: (to) => ctx.lifecycle.moveExperiment(one, to),
+    onDelete: () => ctx.ask.remove('experiment', one.id),
+    onOpen: ctx.openKey,
+    onAddImage: ctx.onAddImage,
+    images: ctx.images,
+  }
+}
+
+// --- the right-click -----------------------------------------------------------------------
+
+/** What the right-click asks of the page besides what a reader's own actions do. */
+export type MenuWrites = {
+  /** Edit the record, with the picture stepped aside. */
+  edit: () => void
+  /** Show a cause's question — the root step, or Org cause on a root — in its reader, as its own press would. */
+  ask: (panel: CausePanel) => void
+}
+
+/**
+ * The right-click on a record offers what its reader's bar offers, read off
+ * the same props, in the same order and words (`toMenu`): a reader and its
+ * menu cannot drift apart. A solution adds the steps its gate offers in the
+ * reader, and a record of a scope below the way to the scope it lives in.
+ */
+export function recordMenu(held: Selected, key: string, ctx: ReaderContext, page: MenuWrites): MenuAction[] {
+  const edit = (next: Mode) => { if (next === 'edit') page.edit() }
+  const openScope = ctx.openScope
+  const below = (scope: string, actions: MenuAction[]): MenuAction[] => (openScope ? [...actions, {
+    key: 'open-scope', label: ctx.s('observation.openScope', { scope: ctx.scopeLabel(scope) }), divider: actions.length > 0,
+    onClick: () => openScope(scope),
+  }] : actions)
+  switch (held.kind) {
+    case 'observation': return toMenu(observationBar(observationProps(held.observation, undefined, key, ctx), 'read', edit))
+    case 'below': return below(held.scope, toMenu(observationBar(observationProps(held.observation, held.scope, key, ctx), 'read', edit)))
+    case 'cause': return toMenu(causeBar(causeProps(held.cause, undefined, ctx), 'read', edit, page.ask))
+    case 'causeBelow': return below(held.scope, toMenu(causeBar(causeProps(held.cause, held.scope, ctx), 'read', edit, page.ask)))
+    case 'solution': {
+      const props = solutionProps(held.solution, ctx)
+      return toMenu(solutionBar(props, 'read', edit), solutionSteps(props, ctx.s))
+    }
+    case 'experiment': {
+      const bar = experimentBar(experimentProps(held.experiment, ctx), 'read', edit)
+      return toMenu([...bar.moves, ...bar.actions])
+    }
+    case 'solutionBelow': case 'experimentBelow': return below(held.scope, [])
+  }
+}
+
+/** The steps a solution's gate offers in its reader: on to the next state, back, the decision and the plan. */
+function solutionSteps(props: SolutionReaderProps, s: Translate): MenuAction[] {
+  const { solution: one, gate } = props
+  if (props.readOnly || one.state === 'dropped') return []
+  const back = props.mayGoBack ? previousState(one.state) : undefined
+  const state = (to: SolutionState) => s(PHASE_LABEL[to]).toLowerCase()
+  const { onDecide, onStartPlan } = props
+  const waitsOnDecision = gate?.items.some((item) => item.item === 'decisionAccepted' && !item.ok) && !one.decision
+  return [
+    ...(gate ? [{
+      key: 'move', label: s('solution.moveOn', { state: state(gate.to) }), divider: true,
+      disabled: openItems(gate).length > 0, onClick: () => props.onMove(gate.to),
+    }] : []),
+    ...(back ? [{ key: 'back', label: s('solution.moveBack', { state: state(back) }), divider: !gate, onClick: () => props.onMove(back) }] : []),
+    ...(waitsOnDecision && onDecide ? [{ key: 'decide', label: s('solution.proposeDecision'), onClick: onDecide }] : []),
+    ...(one.state === 'adopted' && !one.plan && onStartPlan ? [{ key: 'start-plan', label: s('solution.startPlan'), onClick: onStartPlan }] : []),
+  ]
 }

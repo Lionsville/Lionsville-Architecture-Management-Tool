@@ -25,6 +25,7 @@ import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import { PictureMenu } from './PictureMenu'
 import type { MenuAction } from './PictureMenu'
+import { toMenu } from './readerActions'
 
 /** Below this the reader is compact: a query on the reader's own width. */
 export const COMPACT = '@container reader (max-width: 559px)'
@@ -46,6 +47,8 @@ export type ReaderAction = {
   /** Merge, archive, delete: into `⋯` where the reader is narrow. */
   occasional?: boolean
   danger?: boolean
+  /** A dialog or a question follows: the menu says so with "…", the button never does. */
+  opensDialog?: boolean
   testId?: string
   guide?: string
 }
@@ -114,10 +117,7 @@ export function ReaderActions({ actions, label, moreLabel, children }: {
 }) {
   // The occasional ones last, so the row reads the same wide and narrow, less the `⋯`.
   const ordered = [...actions.filter((one) => !one.occasional), ...actions.filter((one) => one.occasional)]
-  const occasional: MenuAction[] = actions.filter((one) => one.occasional).map((one, index) => ({
-    key: one.key, label: one.label, onClick: one.onClick,
-    ...(one.danger ? { danger: true, divider: index > 0 } : {}),
-  }))
+  const occasional = toMenu(actions.filter((one) => one.occasional))
   return (
     <Box role="group" aria-label={label} sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, alignItems: 'center' }}>
       {ordered.map((one) => <ActionButton key={one.key} action={one} {...(one.occasional ? { sx: WIDE_ONLY_SX } : {})} />)}

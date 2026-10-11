@@ -86,7 +86,7 @@ describe('the readers’ buttons', () => {
     // A cause's say what they change it into.
     cleanup()
     mount({ initialId: 'c1' })
-    const make = screen.getByRole('button', { name: 'Make root' })
+    const make = screen.getByRole('button', { name: 'Make root cause' })
     expect(make.getAttribute('title')).toContain('CA-0001 becomes RC-0001. Refused while a cause explains it.')
     expect(screen.getByRole('button', { name: 'Deeper cause' })).toBeTruthy()
     expect(await axeFindings()).toEqual([])

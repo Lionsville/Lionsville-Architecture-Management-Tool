@@ -156,7 +156,7 @@ describe('the Solutions tab', () => {
     const { onChange } = mount({ ...base, solutions: [solution({ state: 'testing' })], experiments: [experiment({ from: '2026-09-10' })] }, { initialId: 'ex:e1' })
     // Running: back to planned, or one of the three outcomes; nothing else.
     expect(within(screen.getByRole('group', { name: 'Move the experiment' })).getAllByRole('button').map((one) => one.textContent))
-      .toEqual(['Back to planned', 'Confirmed…', 'Refuted…', 'Inconclusive…'])
+      .toEqual(['Back to planned', 'Confirmed', 'Refuted', 'Inconclusive'])
     fireEvent.click(screen.getByTestId('experiment-outcome-confirmed'))
     expect(onChange).not.toHaveBeenCalled()
     expect((screen.getByTestId('conclude-confirm') as HTMLButtonElement).disabled).toBe(true)
@@ -278,8 +278,9 @@ describe('the solutions picture’s right-click', () => {
     const { onChange } = mount({ ...base, solutions: [solution({ state: 'shaped' })], experiments: [experiment({ outcome: 'confirmed' })] })
     fireEvent.click(screen.getByTestId('observation-tab-solutions'))
     rightClick(screen.getByTestId('solution-picture').querySelector('[data-key="so:s1"]')!)
+    // The reader's bar in its order, the steps its gate offers, then the occasional ones.
     expect(items().map((item) => item.textContent)).toEqual([
-      'Edit', 'Address a cause…', 'Plan an experiment…', 'Move to testing', 'Back to idea', 'Drop…', 'Delete',
+      'Address…', 'Experiment…', 'Edit', 'Move to testing', 'Back to idea', 'Drop…', 'Delete…',
     ])
     fireEvent.click(screen.getByTestId('picture-menu-move'))
     expect(lastChange(onChange).solutions[0].state).toBe('testing')
@@ -289,8 +290,9 @@ describe('the solutions picture’s right-click', () => {
     const { onChange } = mount({ ...base, solutions: [solution({ state: 'testing' })], experiments: [experiment({})] })
     fireEvent.click(screen.getByTestId('observation-tab-solutions'))
     rightClick(screen.getByTestId('solution-picture').querySelector('[data-key="ex:e1"]')!)
-    expect(screen.getByTestId('picture-menu-outcome-running').textContent).toContain('✓')
-    fireEvent.click(screen.getByTestId('picture-menu-outcome-confirmed'))
+    // The reader's moves, with "…" where the result is asked first.
+    expect(items().map((item) => item.textContent)).toEqual(['Back to planned', 'Confirmed…', 'Refuted…', 'Inconclusive…', 'Edit', 'Delete…'])
+    fireEvent.click(screen.getByTestId('picture-menu-confirmed'))
     fireEvent.change(screen.getByTestId('conclude-result'), { target: { value: 'Calls halved' } })
     fireEvent.click(screen.getByTestId('conclude-confirm'))
     expect(lastChange(onChange).experiments[0]).toMatchObject({ outcome: 'confirmed', result: 'Calls halved', to: '2026-09-24' })
@@ -302,10 +304,10 @@ describe('the solutions picture’s right-click', () => {
     expect(screen.getByTestId('cause-propose-at-root').textContent).toContain('root cause')
     fireEvent.click(screen.getByTestId('observation-tab-analysis'))
     rightClick(screen.getByTestId('analysis-picture').querySelector('[data-key="c1"]')!)
-    expect(screen.queryByTestId('picture-menu-propose')).toBeNull()
+    expect(screen.queryByTestId('picture-menu-solution')).toBeNull()
     fireEvent.keyDown(screen.getByTestId('picture-menu'), { key: 'Escape' })
     rightClick(screen.getByTestId('analysis-picture').querySelector('[data-key="c2"]')!)
-    expect(screen.getByTestId('picture-menu-propose')).toBeTruthy()
+    expect(screen.getByTestId('picture-menu-solution').textContent).toBe('Solution…')
   })
 
   it('changes how firmly an experiment bears on a solution from either of its lines, and unlinks it', () => {

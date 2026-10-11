@@ -1015,8 +1015,9 @@ aanpakt, en nergens anders, dus een oorzaak die alleen grondoorzaak was omdat
 nog niets haar verklaarde, opent als open einde. Dat geldt waar het werk ook
 bewaard wordt.
 
-**Grond maken** en **Tot oorzaak maken** zijn stappen met een naam in de
-Activiteit-lijst, en elk vraagt eerst. Grond maken wordt geweigerd zolang een
+**Tot grondoorzaak maken** en **Tot oorzaak maken** zijn stappen met een naam
+in de Activiteit-lijst, en elk vraagt eerst, in de lezer — ook wanneer hij met
+een rechtsklik gekozen is. Tot grondoorzaak maken wordt geweigerd zolang een
 oorzaak deze verklaart: de lezer noemt elke oorzaak die dat doet, en zegt die
 los te koppelen of die ene tot grondoorzaak te maken. Tot oorzaak maken wordt
 geweigerd zolang een oplossing haar aanpakt: de lezer noemt elke oplossing,
@@ -1028,8 +1029,9 @@ worden.
 twee woorden, en er met de muis boven hangen, of er met Tab op komen, zegt
 voluit wat hij doet en waarvoor hij geweigerd wordt. Een waarneming biedt
 *Opnieuw gezien*, *Oorzaak*, *Bewerken*, *Samenvoegen*, *Archiveren* en
-*Verwijderen*; een oorzaak *Diepere oorzaak*, *Grondoorzaak*, *Grond maken*,
-*Verifiëren* en *Samenvoegen*; een grondoorzaak *Oplossing* en *Tot oorzaak maken*, en nooit
+*Verwijderen*; een oorzaak *Diepere oorzaak*, *Grondoorzaak*, *Tot
+grondoorzaak maken*, *Verifiëren* — *Verificatie intrekken* zodra ze
+geverifieerd is — en *Samenvoegen*; een grondoorzaak *Oplossing* en *Tot oorzaak maken*, en nooit
 een diepere oorzaak. *Oorzaak*, *Diepere oorzaak* en *Grondoorzaak* openen
 één dialoog met twee tabbladen: **Nieuwe oorzaak**, de eigen velden van de
 oorzaak, en **Bestaande oorzaak**, dat alleen aanbiedt wat de regels
@@ -1144,15 +1146,17 @@ voor dezelfde oorzaken. Beide records zijn markdownbestanden, onder
 `observations/solutions/` en `observations/experiments/`.
 
 De lezer van een oplossing heeft dezelfde kleine knoppen als de analyse:
-*Grondoorzaak* om er nog een aan te pakken zolang ze een idee of uitgewerkt
+*Aanpakken* om nog een grondoorzaak aan te pakken zolang ze een idee of uitgewerkt
 is, *Experiment* om er een te plannen zolang ze uitgewerkt is of getest
 wordt, *Bewerken*, en *Laten vallen* en *Verwijderen*, die in `⋯` gaan waar
 de lezer smal is. Een oplossing van een scope eronder, met Lokaal tonen aan
 in haar kader getekend, wordt hier gelezen en in haar eigen scope bewerkt.
 
 **Rechtsklik** op iets in de analyse of de tekening van de oplossingen voor
-wat je ermee kunt — dezelfde acties als in de lezer, Bewerken daaronder — en
-op een lijn — de verbanden van de analyse, de oorzaken van een oplossing, de
+wat je ermee kunt — dezelfde acties als in de lezer, in dezelfde volgorde en
+met dezelfde woorden, Bewerken daaronder, en op een oplossing de stappen die
+haar poort biedt; een menu-item eindigt op “…” waar een dialoog of een vraag
+volgt — en op een lijn — de verbanden van de analyse, de oorzaken van een oplossing, de
 lijnen naar en vanuit een experiment — voor hoe sterk het verband is, of om
 het los te maken. **Bewerken** geeft het record de hele breedte: de tekst
 links, hoe het eruit komt te zien rechts, en de tekening terug zodra je naar

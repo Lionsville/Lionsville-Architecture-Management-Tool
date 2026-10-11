@@ -54,8 +54,10 @@ import {
 } from '../observationScope'
 import { BAR_SX, LinkList, READER_ROOT_SX, TITLE_SX, Term, Value, useDraft } from './Readers'
 import { ReaderActions } from './ActionButton'
+import type { ReaderAction } from './ActionButton'
 import { TitleField } from './FormParts'
 import { deleteAction, experimentMoveButtons, modeAction, restoreAction, solutionActions } from './readerActions'
+import type { Mode } from './readerActions'
 import { experimentMoveLabel } from './ObservationLifecycle'
 
 function Section({ title, children, testId }: { title: string; children: ReactNode; testId?: string }) {
@@ -142,6 +144,24 @@ export type SolutionReaderProps = {
   images?: DocumentImages
 }
 
+/**
+ * What a solution's reader offers in its bar, read off the same props it is
+ * drawn from — and the right-click on it, which passes how Edit is reached.
+ */
+export function solutionBar(props: SolutionReaderProps, mode: Mode, switchMode: (next: Mode) => void): ReaderAction[] {
+  const { solution, s, readOnly } = props
+  const dropped = solution.state === 'dropped'
+  const canEdit = !readOnly && !dropped
+  return [
+    ...solutionActions({
+      s, canEdit, mayAddress: mayAddress(solution), mayPlan: mayPlanExperiment(solution), mayDrop: solution.state !== 'adopted',
+      onAddress: props.onAddress, onPlanExperiment: props.onPlanExperiment, onDrop: props.onDrop, onDelete: props.onDelete,
+    }),
+    ...(canEdit ? [modeAction(mode, switchMode, s('solution.tipEdit'), s)] : []),
+    ...(dropped && !readOnly ? [restoreAction(s('solution.tipRestore'), props.onRestore, 'solution-restore', s)] : []),
+  ]
+}
+
 export function SolutionReader(props: SolutionReaderProps) {
   const { solution, phase, gate, s, renderMarkdown, readOnly } = props
   const dropped = solution.state === 'dropped'
@@ -156,14 +176,7 @@ export function SolutionReader(props: SolutionReaderProps) {
   const back = props.mayGoBack ? previousState(solution.state) : undefined
   const { language } = useStrings()
   const day = (date: string) => formatDay(date, language)
-  const actions = [
-    ...solutionActions({
-      s, canEdit, mayAddress: mayAddress(solution), mayPlan: mayPlanExperiment(solution), mayDrop: solution.state !== 'adopted',
-      onAddress: props.onAddress, onPlanExperiment: props.onPlanExperiment, onDrop: props.onDrop, onDelete: props.onDelete,
-    }),
-    ...(canEdit ? [modeAction(mode, switchMode, s('solution.tipEdit'), s)] : []),
-    ...(dropped && !readOnly ? [restoreAction(s('solution.tipRestore'), props.onRestore, 'solution-restore', s)] : []),
-  ]
+  const actions = solutionBar(props, mode, switchMode)
 
   const [name, setName] = useState('')
   const [attempt, setAttempt] = useState<EarlierAttempt>({ when: '', what: '', why: '' })
@@ -508,6 +521,19 @@ export type ExperimentReaderProps = {
   images?: DocumentImages
 }
 
+/** An experiment's moves from where it stands, and what the bar offers beside them; none where it is read only. */
+export function experimentBar(props: ExperimentReaderProps, mode: Mode, switchMode: (next: Mode) => void) {
+  const { experiment, s } = props
+  if (props.readOnly) return { moves: [], actions: [] }
+  return {
+    moves: experimentMoveButtons({
+      s, from: experiment.outcome, moves: experimentMovesFrom(experiment.outcome),
+      label: (to) => experimentMoveLabel(experiment.outcome, to, s), onMove: props.onMove,
+    }),
+    actions: [modeAction(mode, switchMode, s('solution.tipExperimentEdit'), s), deleteAction(s('solution.tipDeleteExperiment'), props.onDelete, s)],
+  }
+}
+
 export function ExperimentReader(props: ExperimentReaderProps) {
   const { experiment, s, renderMarkdown, readOnly } = props
   const canEdit = !readOnly
@@ -517,6 +543,7 @@ export function ExperimentReader(props: ExperimentReaderProps) {
     result: experiment.result ?? '',
   }), [experiment])
   const { mode, draft, setDraft, commit, switchMode } = useDraft(stored, (patch) => props.onUpdate(keepTitle(patch)), canEdit)
+  const bar = experimentBar(props, mode, switchMode)
   const [previewShown, setPreviewShown] = useState(true)
   const showPreview = mode === 'read' || previewShown
   const text = mode === 'edit' ? draft.body : experiment.body
@@ -546,17 +573,8 @@ export function ExperimentReader(props: ExperimentReaderProps) {
           <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', alignItems: 'center' }}>
             {/* The moves from here, and only those: planned starts, running
                 goes back or is concluded, a concluded one is reopened. */}
-            <ReaderActions
-              label={s('solution.experimentMoves')} moreLabel={s('observation.more')}
-              actions={experimentMoveButtons({
-                s, from: experiment.outcome, moves: experimentMovesFrom(experiment.outcome),
-                label: (to) => experimentMoveLabel(experiment.outcome, to, s), onMove: props.onMove,
-              })}
-            />
-            <ReaderActions
-              label={s('observation.actions', { name: label })} moreLabel={s('observation.more')}
-              actions={[modeAction(mode, switchMode, s('solution.tipExperimentEdit'), s), deleteAction(s('solution.tipDeleteExperiment'), props.onDelete, s)]}
-            />
+            <ReaderActions label={s('solution.experimentMoves')} moreLabel={s('observation.more')} actions={bar.moves} />
+            <ReaderActions label={s('observation.actions', { name: label })} moreLabel={s('observation.more')} actions={bar.actions} />
           </Box>
         )}
       </Box>

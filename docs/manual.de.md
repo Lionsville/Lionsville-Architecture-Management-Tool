@@ -1074,8 +1074,9 @@ ansetzt, und nirgends sonst; eine Ursache, die nur Grundursache war, weil
 noch nichts sie erklärte, öffnet als offenes Ende. Das gilt, wo auch immer die
 Arbeit aufbewahrt wird.
 
-**Zum Grund machen** und **Zur Ursache machen** sind Schritte mit einem Namen
-in der Aktivitätsliste, und jeder fragt zuerst. Zum Grund machen wird
+**Zur Grundursache machen** und **Zur Ursache machen** sind Schritte mit
+einem Namen in der Aktivitätsliste, und jeder fragt zuerst, im Leser — auch
+wenn er per Rechtsklick gewählt wurde. Zur Grundursache machen wird
 abgelehnt, solange eine Ursache diese erklärt: Der Leser nennt jede Ursache,
 die das tut, und sagt, sie zu lösen oder jene zur Grundursache zu machen. Zur
 Ursache machen wird abgelehnt, solange eine Lösung an ihr ansetzt: Der Leser
@@ -1088,7 +1089,8 @@ und ein oder zwei Wörtern, und darüber zu fahren, oder sie mit Tab zu
 erreichen, sagt ausführlich, was sie tut und wofür sie abgelehnt wird. Eine
 Beobachtung bietet *Erneut gesehen*, *Ursache*, *Bearbeiten*,
 *Zusammenführen*, *Archivieren* und *Löschen*; eine Ursache *Tiefere
-Ursache*, *Grundursache*, *Zum Grund machen*, *Verifizieren* und
+Ursache*, *Grundursache*, *Zur Grundursache machen*, *Verifizieren* —
+*Verifizierung aufheben*, sobald sie verifiziert ist — und
 *Zusammenführen*; eine
 Grundursache *Lösung* und *Zur Ursache machen*, und nie eine tiefere Ursache.
 *Ursache*, *Tiefere Ursache* und *Grundursache* öffnen einen Dialog mit zwei
@@ -1207,7 +1209,7 @@ Einträge sind Markdown-Dateien, unter `observations/solutions/` und
 `observations/experiments/`.
 
 Der Leser einer Lösung hat dieselben kleinen Schaltflächen wie die Analyse:
-*Grundursache*, um eine weitere anzugehen, solange sie eine Idee oder
+*Angehen*, um eine weitere Grundursache anzugehen, solange sie eine Idee oder
 ausgearbeitet ist, *Experiment*, um eines zu planen, solange sie
 ausgearbeitet ist oder getestet wird, *Bearbeiten*, und *Verwerfen* und
 *Löschen*, die in `⋯` wandern, wo der Leser schmal ist. Eine Lösung eines
@@ -1215,8 +1217,10 @@ Scopes darunter, bei Lokal zeigen in ihrem Rahmen gezeichnet, wird hier
 gelesen und in ihrem eigenen Scope bearbeitet.
 
 Ein **Rechtsklick** auf etwas in der Analyse oder im Bild der Lösungen zeigt,
-was man damit tun kann — dieselben Aktionen wie im Leser, Bearbeiten darunter
-— und auf einer Linie — die Verbindungen der Analyse, die Ursachen einer
+was man damit tun kann — dieselben Aktionen wie im Leser, in derselben
+Reihenfolge und mit denselben Wörtern, Bearbeiten darunter, und an einer
+Lösung die Schritte, die ihr Tor bietet; ein Menüeintrag endet auf „…“, wo ein
+Dialog oder eine Frage folgt — und auf einer Linie — die Verbindungen der Analyse, die Ursachen einer
 Lösung, die Linien in ein Experiment und aus ihm heraus —, wie stark die
 Verbindung ist, oder sie zu lösen. **Bearbeiten** gibt dem Datensatz die ganze
 Breite: der Text links, wie er aussehen wird rechts, und das Bild kommt

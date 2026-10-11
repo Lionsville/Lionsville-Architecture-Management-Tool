@@ -57,11 +57,11 @@ import type { MakeId } from '../../model/keys'
 import type { CommandRefusal } from '../../model/reducer'
 import {
   absorbedBy, causeLabel, explainedBy, formatObservationNumber, isArchived, isCauseMerged, isMerged,
-  isRootCause, isScopeBelow, linkCause, liveObservations, observationsBelow, removeCause, removeObservation,
-  rootCauses, setArchived, sortCauses, sortObservations, unlinkCause, updateCause,
+  isScopeBelow, linkCause, liveObservations, observationsBelow, removeCause, removeObservation,
+  rootCauses, setArchived, sortCauses, sortObservations, unlinkCause,
 } from '../observation'
 import type {
-  Analysis, Cause, CauseAbove, CauseLink, CausePatch, Observation, ObservationBelow, ScopeAnalysis,
+  Analysis, Cause, CauseAbove, CauseLink, Observation, ObservationBelow, ScopeAnalysis,
 } from '../observation'
 import type { SavedFilters } from '../filter'
 import { nodeKey } from '../graph'
@@ -73,24 +73,22 @@ import { useMerge } from './useMerge'
 import { mergedTo, recordName } from '../mergeScreen'
 import type { MergeKind } from '../merge'
 import { formatDay } from '../../i18n/dates'
-import { EmptyRegister, crumbTrail, experimentMoveActions, preselectedCause, rootToggle, useLifecycle } from './ObservationLifecycle'
+import { EmptyRegister, crumbTrail, preselectedCause, useLifecycle } from './ObservationLifecycle'
 import { PictureMenu } from './PictureMenu'
 import type { MenuAction, PictureTarget } from './PictureMenu'
 import { ReaderModeContext } from './Readers'
 import { ObservationRegister, recordsBelow } from './ObservationRegister'
 import { PictureToolbar } from './PictureToolbar'
-import type { MergedInto } from './Readers'
-import { RecordReader, belowMenuActions, resolveSelected } from './PageReaders'
+import type { CausePanel, MergedInto } from './Readers'
+import { RecordReader, recordMenu, resolveSelected } from './PageReaders'
 import type { DeleteKind, ReaderContext, Selected } from './PageReaders'
 import { useAnalysisForms } from './useAnalysisForms'
 import {
-  addressCause, dropSolution, forgetCause, formatExperimentNumber, formatSolutionNumber, isLive, mayAddress,
-  mayPlanExperiment, moveSolution, newExperiment, newSolution, nextExperimentNumber, nextSolutionNumber, planExperiment,
-  removeExperiment, removeSolution, restoreSolution, setTestStrength, openItems, previousState,
-  rootsWithoutSolution, seenSinceImplemented, solutionGate, solutionPhase, solutionPlanOf, solutionQuestions,
-  unaddressCause, untestSolution,
+  addressCause, dropSolution, forgetCause, formatExperimentNumber, formatSolutionNumber, isLive, newExperiment,
+  newSolution, nextExperimentNumber, nextSolutionNumber, planExperiment, removeExperiment, removeSolution, setTestStrength,
+  rootsWithoutSolution, seenSinceImplemented, solutionPhase, solutionPlanOf, solutionQuestions, unaddressCause, untestSolution,
 } from '../solution'
-import type { Solution, SolutionContext, SolutionPhase, SolutionPlan, SolutionState, SolutionWork } from '../solution'
+import type { Solution, SolutionContext, SolutionPhase, SolutionPlan, SolutionWork } from '../solution'
 import { causesForProposal, experimentKey, solutionGraph, solutionKey } from '../solutionGraph'
 import { PHASE_LABEL, QUESTION_LABEL } from '../observationScope'
 import { SolutionLegend, SolutionPicture } from './SolutionPicture'
@@ -506,6 +504,8 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const [editingKey, setEditingKey] = useState<string | undefined>(undefined)
   /** A right-click on a picture: what it landed on, and where. */
   const [menu, setMenu] = useState<{ target: PictureTarget; at: { x: number; y: number } } | undefined>(undefined)
+  /** A cause's question the menu asked, shown in its reader: a new object each time it is asked. */
+  const [asked, setAsked] = useState<{ key: string; panel: CausePanel } | undefined>(undefined)
   const [showMerged, setShowMerged] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
   /** What is being archived: a dialog asks why first. */
@@ -586,17 +586,12 @@ export function ObservationsPage(props: ObservationsPageProps) {
   })
   /** Seen again, verified, an experiment concluded or reopened: the moves that ask first. */
   const lifecycle = useLifecycle({ lists: work, commit, today, nameOf, s, changeBelow: forms.changeBelow })
-  const { seeAgain, verify, moveExperiment, dialogs } = lifecycle
+  const { dialogs } = lifecycle
 
-  const patchCause = (id: string, patch: CausePatch) => commit({ ...analysis, causes: updateCause(causes, id, patch) })
-  const rootOf = (cause: Cause) => rootToggle(cause, {
-    lists: work, above: props.explainedAbove?.get(cause.id), commit, nameOf, scopeLabel, s, readOnly,
-  })
   const archive = (id: string, note: string) => {
     commit({ ...analysis, observations: setArchived(observations, id, true, today(), note) })
     setArchiving(undefined)
   }
-  const restore = (id: string) => commit({ ...analysis, observations: setArchived(observations, id, false, today()) })
   /** The merge screen (ADR-0035): over this page, planned over every scope read, landed here or across. */
   const merging = useMerge({
     here: here.scope, scopes: everywhere, writable: props.writable, readOnly, commit, onChangeAcross: props.onChangeAcross,
@@ -627,10 +622,6 @@ export function ObservationsPage(props: ObservationsPageProps) {
     setProposing(undefined)
     setTab('solutions')
     setSelectedKey(solutionKey(fresh.id))
-  }
-  const move = (id: string, to: SolutionState) => {
-    const result = moveSolution(solutions, id, to, today(), context)
-    if (result.ok) commit({ solutions: result.solutions })
   }
   const addExperiment = (solution: Solution, fields: { title: string; hypothesis: string; measure: string }) => {
     const fresh = newExperiment({
@@ -700,7 +691,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
       remove: (kind, id) => setDeleting({ kind, id, label: nameOf(id) }), propose: (causeId) => setProposing({ causeId }),
       address: setAddressing, plan: setPlanning, drop: setDropping,
     },
-    mergedLabel, mergedCause, openKey: setSelectedKey,
+    mergedLabel, mergedCause, openKey: setSelectedKey, asked,
     ...(onOpenScope ? { openScope: (path: string) => { onClose(); onOpenScope(path) } } : {}),
     onDecide: props.onDecide, onStartPlan: props.onStartPlan, onOpenDecision: props.onOpenDecision, onOpenPlan: props.onOpenPlan,
     renderMarkdown: props.renderMarkdown, onAddImage: props.onAddImage, images: props.images,
@@ -766,71 +757,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
     const key = target.key
     const held = resolve(key)
     if (!held) return []
-    const edit: MenuAction = { key: 'edit', label: s('observation.edit'), onClick: () => editRecord(key) }
-    const remove = (kind: 'observation' | 'cause' | 'solution' | 'experiment', id: string): MenuAction => ({
-      key: 'delete', label: s('observation.delete'), divider: true, danger: true,
-      onClick: () => setDeleting({ kind, id, label: nameOf(id) }),
-    })
-    switch (held.kind) {
-      case 'observation': {
-        const one = held.observation
-        if (isArchived(one)) return [{ key: 'restore', label: s('observation.restore'), onClick: () => restore(one.id) }]
-        if (mergedLabel(one)) return []
-        return [
-          edit,
-          { key: 'seen', label: s('observation.seenAgain'), onClick: () => seeAgain(one) },
-          { key: 'link', label: s('observation.link'), onClick: () => forms.openLink({ mode: 'cause', id: one.id }) },
-          { key: 'merge', label: s('observation.merge'), onClick: () => mergeAt('observation', one.id) },
-          { key: 'archive', label: s('observation.archive'), onClick: () => setArchiving(one) },
-          remove('observation', one.id),
-        ]
-      }
-      case 'cause': {
-        const one = held.cause
-        if (mergedCause(one)) return []
-        return [
-          edit,
-          {
-            key: 'verify', label: one.state === 'assumed' ? s('observation.verify') : s('observation.unverify'),
-            onClick: () => (one.state === 'assumed' ? verify(one) : patchCause(one.id, { state: 'assumed' })),
-          },
-          rootOf(one).action,
-          ...(isRootCause(one) ? [] : [{ key: 'link-deeper', label: s('observation.linkDeeper'), onClick: () => forms.openLink({ mode: 'deeper', id: one.id }) }]),
-          ...(isRootCause(one) ? [{ key: 'propose', label: s('solution.proposeForCause'), onClick: () => setProposing({ causeId: one.id }) }] : []),
-          { key: 'merge', label: s('observation.merge'), onClick: () => mergeAt('cause', one.id) },
-          remove('cause', one.id),
-        ]
-      }
-      case 'solution': {
-        const one = held.solution
-        if (one.state === 'dropped') return [{ key: 'restore', label: s('solution.restore'), onClick: () => commit({ solutions: restoreSolution(solutions, one.id, today()) }) }]
-        const gate = solutionGate(one, context)
-        const decision = model.decisions?.find((record) => record.id === one.decision)
-        const back = !(one.state === 'adopted' && decision?.status === 'accepted') ? previousState(one.state) : undefined
-        const waitsOnDecision = gate?.items.some((item) => item.item === 'decisionAccepted' && !item.ok) && !one.decision && props.onDecide
-        return [
-          edit,
-          ...(mayAddress(one) ? [{ key: 'address', label: s('solution.addressCause'), onClick: () => setAddressing(one) }] : []),
-          ...(mayPlanExperiment(one) ? [{ key: 'plan-experiment', label: s('solution.planExperiment'), onClick: () => setPlanning(one) }] : []),
-          ...(gate ? [{
-            key: 'move', label: s('solution.moveOn', { state: s(PHASE_LABEL[gate.to]).toLowerCase() }), divider: true,
-            disabled: openItems(gate).length > 0, onClick: () => move(one.id, gate.to),
-          }] : []),
-          ...(back ? [{ key: 'back', label: s('solution.moveBack', { state: s(PHASE_LABEL[back]).toLowerCase() }), divider: !gate, onClick: () => move(one.id, back) }] : []),
-          ...(waitsOnDecision ? [{ key: 'decide', label: s('solution.proposeDecision'), onClick: () => props.onDecide?.(one.id) }] : []),
-          ...(one.state === 'adopted' && !one.plan && props.onStartPlan ? [{ key: 'start-plan', label: s('solution.startPlan'), onClick: () => props.onStartPlan?.(one.id) }] : []),
-          ...(one.state !== 'adopted' ? [{ key: 'drop', label: s('solution.drop'), divider: true, onClick: () => setDropping(one) }] : []),
-          remove('solution', one.id),
-        ]
-      }
-      case 'experiment': {
-        const one = held.experiment
-        return [edit, ...experimentMoveActions(one, s, (to) => moveExperiment(one, to)), remove('experiment', one.id)]
-      }
-      default:
-        // A record of a scope below: what its reader offers.
-        return belowMenuActions(held, readerCtx)
-    }
+    return recordMenu(held, key, readerCtx, { edit: () => editRecord(key), ask: (panel) => setAsked({ key, panel }) })
   }
 
   const picture = (
