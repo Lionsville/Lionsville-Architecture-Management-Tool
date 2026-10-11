@@ -16,6 +16,7 @@ import type { Transition } from '../../model/transition'
 import type { DesignElement, ElementId, PlacedNode } from '../../model/types'
 import { businessCaseTemplate } from '../../documentation/businessCase'
 import type { Translate } from '../../i18n/strings'
+import type { Person } from '../../people/person'
 import type { ReadView } from '../answer'
 import type { AgentAnswer } from '../tools'
 import { refused } from '../tools'
@@ -64,6 +65,12 @@ export type WriteView = ReadView & {
    * not hold is unknown.
    */
   readonly standInFor?: (id: ElementId) => DesignElement | undefined
+  /**
+   * The people register as the shell last read it (ADR-0036): who an
+   * assignment may name. Absent where there is none to ask, and an id is
+   * then taken as given.
+   */
+  readonly people?: () => readonly Person[] | undefined
 }
 
 /** A command, and what to say once it has landed. */

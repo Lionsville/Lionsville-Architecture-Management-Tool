@@ -31,8 +31,10 @@ import type { Adr } from '../model/adr'
 import type { HostModel } from '../model/hostModel'
 import type { Transition } from '../model/transition'
 import type { CauseAbove, ScopeAnalysis } from '../model/observation'
+import type { OperatingRule, Responsibility, Role, UnitType } from '../model/operatingModel'
+import type { Assignment } from '../model/units'
 import { matchesQuery } from '../model/textSearch'
-import type { ElementId, ElementKind, PlatformArchetype, Relation, RelationType } from '../model/types'
+import type { DesignElement, ElementId, ElementKind, PlatformArchetype, Relation, RelationType } from '../model/types'
 import type { AgentAnswer } from './tools'
 import { json, refused } from './tools'
 
@@ -133,6 +135,18 @@ export type TreeView = {
    * answered rows, and the answer is then this scope's rows alone.
    */
   rowsTo?(id: ElementId, types?: readonly RelationType[]): readonly Relation[]
+  /**
+   * Every unit in the organisation, as the scope that answers for it holds it
+   * (ADR-0036 §3): `projects/scopeIndex`'s, structurally. Absent in a shell
+   * built before units.
+   */
+  units?(): readonly { scope: string; unit: DesignElement }[]
+  /** Every assignment, with the scope that keeps it (ADR-0036 §4). Ids only. */
+  assignments?(): readonly { scope: string; assignment: Assignment }[]
+  /** The operating model the organisation keeps (ADR-0036 §2), whatever scope is open. */
+  operatingModel?(): {
+    unitTypes: readonly UnitType[]; roles: readonly Role[]; responsibilities: readonly Responsibility[]; operatingRules: readonly OperatingRule[]
+  }
   /** One scope's whole document, or nothing where there is no such scope. */
   read(path: string): Promise<ForeignScope | undefined>
 }

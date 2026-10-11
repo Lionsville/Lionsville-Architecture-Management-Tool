@@ -204,6 +204,32 @@ const ELEMENT_FIELDS = {
   },
   accentColor: { type: 'string', description: 'The card\'s accent, as a hex colour like #2e86c1. Empty or null gives the theme\'s back.' },
   iconKey: { type: 'string', description: 'The mark drawn on the card, by its key in the icon registry. Empty or null takes it off.' },
+  unitTypeId: {
+    type: 'string',
+    description: 'An actor only: the organisation\'s kind of unit it is, by the id of a unit type (unitTypes.list) — which makes it a unit '
+      + '(ADR-0036 §3), holding the roles its type says. Null or empty takes it off, and it is a party again.',
+  },
+  scopes: {
+    type: 'array',
+    description: 'A function: the domains the organisation assigned it to. A unit: the domains it serves, by scope path — absent means '
+      + 'the scope it is kept in; several only where its unit type spans domains (a check says so otherwise). Replaces the list; null clears it.',
+    items: { type: 'string' },
+  },
+  extraSlots: {
+    type: 'array',
+    description: 'A unit only: roles it holds beyond its type\'s, each with how many. Replaces the list; null clears it.',
+    items: {
+      type: 'object',
+      description: 'One role and its count.',
+      properties: {
+        roleId: { type: 'string', description: 'The role, by id (roles.list).' },
+        min: { type: 'integer', description: 'At least this many; 0 for a role it may have and need not.', minimum: 0 },
+        max: { type: 'integer', description: 'At most this many; leave it out for no upper bound.', minimum: 0 },
+      },
+      required: ['roleId', 'min'],
+      additionalProperties: false,
+    },
+  },
 } as const satisfies Record<string, ArgumentSchema>
 
 const PLAN_STATUSES = ['draft', 'agreed', 'running', 'done', 'abandoned'] as const
@@ -800,6 +826,30 @@ const SPECS = [
     inputSchema: {
       type: 'object',
       properties: { group: { type: 'string', description: 'Only the responsibilities in this group.' } },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'assignments.list',
+    tier: 'read',
+    description:
+      'Who holds which role in which unit (ADR-0036 §4), across the whole tree: each assignment with the scope that keeps it, '
+      + 'its unit and role by id and by name, its person by register id and by name — or by pseudonym where the organisation\'s '
+      + 'policy gives agents pseudonyms, and never an address — its share in per cent, its days and whether the person is acting. '
+      + 'Those running on the day unless all is asked. Asked about one unit, it also says the unit\'s slots against how many '
+      + 'hold each on the day, and who manages it: whoever holds a role that manages, in it or a unit above it. Core grants '
+      + 'nothing from that; it is said.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        scope: { type: 'string', description: 'Only the assignments this scope keeps, by path; "" is the organisation.' },
+        unitId: { type: 'string', description: 'Only this unit\'s; the answer then says its slots and who manages it.' },
+        roleId: { type: 'string', description: 'Only this role\'s.' },
+        personId: { type: 'string', description: 'Only this person\'s, by register id (people.list); an id merged into theirs counts.' },
+        on: { type: 'string', description: 'The day, yyyy-mm-dd. Default: today.' },
+        all: { type: 'boolean', description: 'Every assignment, over or still to begin as well. Default false.' },
+        limit: { type: 'integer', description: 'At most this many. Default 500.', minimum: 1, maximum: 5000 },
+      },
       additionalProperties: false,
     },
   },
@@ -1809,6 +1859,48 @@ const SPECS = [
       additionalProperties: false,
     },
   },
+
+  // --- who holds which role in which unit, in the unit's scope (ADR-0036 §4) --------
+  {
+    name: 'assignment.add',
+    tier: 'write',
+    description:
+      'Put a person in a role of a unit, as one step in the scope that keeps the unit — which must be the scope open. '
+      + 'The assignment holds the person\'s register id, never a name: add someone new with person.add first, which checks '
+      + 'the register for duplicates. Someone who has left or been forgotten is refused. A role the unit\'s type does not '
+      + 'hold, a slot over its maximum, a person over 100% are findings (checks.list), not refusals. Answers with the id.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        unitId: { type: 'string', description: 'The unit: an actor with a unit type, kept in the scope open (elements.list).' },
+        roleId: { type: 'string', description: 'The role, by id (roles.list).' },
+        personId: { type: 'string', description: 'The person, by register id (people.list); a merged id is written as the entry it was merged into.' },
+        share: { type: 'integer', description: 'The part of their time, in per cent. Default 100.', minimum: 1, maximum: 100 },
+        from: { type: 'string', description: 'The first day, yyyy-mm-dd. Default: today.' },
+        until: { type: 'string', description: 'The last day, yyyy-mm-dd, where it is known.' },
+        acting: { type: 'boolean', description: 'Holding the role until somebody is appointed to it.' },
+      },
+      required: ['unitId', 'roleId', 'personId'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'assignment.end',
+    tier: 'write',
+    description:
+      'End an assignment on its last day, as one step in the scope that keeps it — which must be the scope open. It stays, '
+      + 'as what the person held; undo takes the day off again. One that begins after that day was never held and is refused: '
+      + 'a person removes it. Someone leaving is person.leave, which ends all of theirs at once.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: ID('assignment, from assignments.list'),
+        on: { type: 'string', description: 'The last day, yyyy-mm-dd. Default: today.' },
+      },
+      required: ['id'],
+      additionalProperties: false,
+    },
+  },
   {
     name: 'plan.replace',
     tier: 'write',
@@ -2479,7 +2571,7 @@ const SCOPE_ARGUMENT: ArgumentSchema = {
 }
 
 /** About the whole tree rather than one scope: `scope` would mean nothing on them. */
-export const TREE_WIDE: readonly string[] = ['scopes.list', 'register.list', 'technology.list', 'checks.list', 'views.list']
+export const TREE_WIDE: readonly string[] = ['scopes.list', 'register.list', 'technology.list', 'checks.list', 'views.list', 'assignments.list']
 
 /**
  * About the organisation's people register rather than a scope (ADR-0036 §13):

@@ -133,6 +133,8 @@ type Step = readonly [ToolName, unknown]
 type Case = { readonly args: unknown; readonly on?: readonly Step[]; readonly at?: string }
 
 const PROPOSED: Step = ['solution.propose', { title: 'Appoint a data owner', addresses: [{ id: 'ca-2' }] }]
+// A unit: an actor with a type (ADR-0036 §3). This scope sees no operating model, so the type is taken as given.
+const SQUAD: Step = ['element.add', { name: 'Squad', kind: 'actor', unitTypeId: 'ut-team' }]
 const SHAPED: readonly Step[] = [
   PROPOSED,
   ['solution.update', { id: 'SO-0001', benefit: 'large', cost: 'small', validatedWith: ['Operations'], noneKnown: true }],
@@ -214,6 +216,8 @@ const EVERY_WRITE: { readonly [T in CommandTool]: readonly Case[] } = {
   'unitType.update': [{ args: { id: 'ut-new-1', name: 'Tribe', limit: 3 }, on: [['unitType.add', { name: 'Squad' }]], at: '' }],
   'role.add': [{ args: { name: 'Coach', manages: true }, at: '' }],
   'role.update': [{ args: { id: 'ro-new-1', purpose: 'Helps the team.' }, on: [['role.add', { name: 'Coach' }]], at: '' }],
+  'assignment.add': [{ args: { unitId: 'squad', roleId: 'ro-po', personId: 'pe-femke', share: 50 }, on: [SQUAD] }],
+  'assignment.end': [{ args: { id: 'as-new-1', on: '2026-12-31' }, on: [SQUAD, ['assignment.add', { unitId: 'squad', roleId: 'ro-po', personId: 'pe-femke' }]] }],
 
   'plan.replace': [{ args: { elementId: 'crm', newName: 'CRM next', shadowFrom: '2027-03-01', cutover: '2027-09-01' } }],
   'plan.port': [{ args: { planId: 'tr-1', connectionId: 'c2', on: '2027-05-01' } }],

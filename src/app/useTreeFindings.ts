@@ -114,6 +114,9 @@ function useShellTree(
     analysisBelow: (path) => treeRef.current.index.analysisBelow(path),
     explainedFromAbove: (path) => treeRef.current.index.explainedFromAbove(path),
     rowsTo: (id, types) => treeRef.current.index.rowsTo(id, types).map((row) => row.relation),
+    units: () => treeRef.current.index.units(),
+    assignments: () => treeRef.current.index.assignments(),
+    operatingModel: () => treeRef.current.index.operatingModel(),
     findings: () => treeRef.current.identity,
     read: async (path) => {
       const [held, ...above] = await readScopes(scopes, [path, ...ancestorScopes(path)])

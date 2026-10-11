@@ -63,6 +63,9 @@ import type { AgentAnswer, AgentRefusal, AgentRequest, ToolName } from './tools'
 import { RESOURCE_LIST, RESOURCE_READ, checkArguments, isToolName, json, refused, toolSpec } from './tools'
 import { listChecks, listRegister, listScopes, listTechnology, notOpen, scopeAsked, withoutScope } from './tree'
 import { answerOperating, isOperatingRead } from './operatingModel'
+import { ASSIGNMENTS_LIST, listAssignments } from './assignments'
+import type { Person } from '../people/person'
+import type { OpenDocument } from './assignments'
 import type { OperatingRead } from './operatingModel'
 import type { TreeView } from './tree'
 
@@ -106,6 +109,11 @@ export type SessionView = {
   ownedElsewhere?(id: ElementId, patch: Partial<DesignElement>): { owner?: string } | undefined
   /** See {@link WriteView.standInFor} (ADR-0020): the stand-in this scope would keep of another scope's technology. */
   standInFor?(id: ElementId): DesignElement | undefined
+  /**
+   * The people register as the shell last read it (ADR-0036): who an
+   * assignment may name. Absent where there is none.
+   */
+  people?(): readonly Person[] | undefined
   /** The canvas, where there is one. Absent in a test with no window, and every see-tool then refuses. */
   renderer?: RendererView
   /**
@@ -230,7 +238,7 @@ async function answerRequest(request: AgentRequest, session: SessionView | undef
 
   // The reads about the tree rather than about a document (ADR-0012 §2,
   // §9), and the organisation's operating model (ADR-0036).
-  const wide = treeWide(request, session.tree, session)
+  const wide = treeWide(request, session.tree, session, shell)
   if (wide) return wide
 
   // `scope` on every tool: another scope's document, read as it stands on
@@ -361,7 +369,7 @@ async function withoutSession(request: AgentRequest, shell: ShellView | undefine
   if (!isToolName(request.tool)) return refused('agent.unknownTool', request.tool)
   const about = aboutTheApp(request, undefined, shell)
   if (about) return about
-  const wide = treeWide(request, tree, undefined)
+  const wide = treeWide(request, tree, undefined, shell)
   if (wide) return wide
   const asked = scopeAsked(request.args)
   const spec = toolSpec(request.tool)
@@ -378,14 +386,23 @@ async function withoutSession(request: AgentRequest, shell: ShellView | undefine
  * — from the session where the organisation is open, so what was just
  * changed is what is read, and from its document as it is kept otherwise.
  */
-function treeWide(request: AgentRequest, tree: TreeView | undefined, session: SessionView | undefined): Promise<AgentAnswer> | AgentAnswer | undefined {
+function treeWide(
+  request: AgentRequest, tree: TreeView | undefined, session: SessionView | undefined, shell: ShellView | undefined,
+): Promise<AgentAnswer> | AgentAnswer | undefined {
   switch (request.tool) {
     case 'scopes.list': return listScopes(tree, session?.scopePath())
     case 'register.list': return listRegister(tree, request.args)
     case 'technology.list': return listTechnology(tree, request.args)
     case 'checks.list': return listChecks(tree, request.args)
+    // Who holds which role, across the tree and the open scope as it is now (ADR-0036 §4).
+    case ASSIGNMENTS_LIST: return listAssignments(request.args, tree, openDocument(session), shell?.people)
     default: return isOperatingRead(request.tool) ? readOperating(request.tool, request.args, tree, session) : undefined
   }
+}
+
+/** The open scope as a read across the tree lays it over the index. */
+function openDocument(session: SessionView | undefined): OpenDocument | undefined {
+  return session ? { path: session.scopePath(), current: session.current(), today: session.today() } : undefined
 }
 
 async function readOperating(tool: OperatingRead, args: unknown, tree: TreeView | undefined, session: SessionView | undefined): Promise<AgentAnswer> {
@@ -425,6 +442,7 @@ function writeView(session: SessionView, over: Partial<WriteView> = {}): WriteVi
     ...(session.ownedElsewhere ? { ownedElsewhere: session.ownedElsewhere } : {}),
     ...(session.standInFor ? { standInFor: session.standInFor } : {}),
     ...(session.tree ? { tree: session.tree, known: (id: string) => session.tree?.lookup(id) !== undefined } : {}),
+    ...(session.people ? { people: session.people } : {}),
     ...over,
   }
 }

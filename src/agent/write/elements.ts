@@ -8,7 +8,7 @@
  */
 import { transaction, placeOn } from '../../model/commands'
 import type { Diagram } from '../../model/normalised'
-import { toArrays } from '../../model/normalised'
+import { rolesOf, toArrays, unitTypesOf } from '../../model/normalised'
 import { CANVAS_KINDS, canPlaceKind } from '../../model/placement'
 import { isDay } from '../../model/lifecycle'
 import { isPlatformArchetype } from '../../model/relations'
@@ -284,7 +284,41 @@ const tree: FieldReader = (args, held, view, patch) => {
   return undefined
 }
 
-const ELEMENT_FIELDS: readonly FieldReader[] = [words, technologyFields, lifecycleFields, dates, look, ownership, tree]
+/**
+ * An actor as a unit (ADR-0036 §3): its unit type, the domains it serves and
+ * its roles beyond its type's. A unit type and a role are checked against
+ * the organisation's operating model where this scope can see it; what the
+ * model then contradicts — a unit where its type may not sit, several domains
+ * under a type that serves one — is a finding, not a refusal. `scopes` is a
+ * function's too, and is read for both.
+ */
+const unit: FieldReader = (args, held, view, patch) => {
+  const operating = view.scopePath === '' ? { unitTypes: Object.values(unitTypesOf(view.model)), roles: Object.values(rolesOf(view.model)) }
+    : view.tree?.operatingModel?.()
+  if (cleared(args.unitTypeId)) patch.unitTypeId = undefined
+  else if (typeof args.unitTypeId === 'string') {
+    if (held.kind !== 'actor') return refused('agent.badArguments', 'only an actor has a unit type: it makes the actor a unit')
+    if (operating && !operating.unitTypes.some((type) => type.id === args.unitTypeId)) return refused('agent.unknownId', `unit type ${args.unitTypeId}`)
+    patch.unitTypeId = args.unitTypeId
+  }
+  if (args.scopes === null) patch.scopes = undefined
+  else if (Array.isArray(args.scopes)) patch.scopes = args.scopes.length ? [...new Set(args.scopes as string[])] : undefined
+  if (args.extraSlots === null) patch.extraSlots = undefined
+  else if (Array.isArray(args.extraSlots)) {
+    const slots: { role: string; min: number; max?: number }[] = []
+    for (const [index, one] of (args.extraSlots as Record<string, unknown>[]).entries()) {
+      const role = one.roleId as string
+      if (operating && !operating.roles.some((known) => known.id === role)) return refused('agent.unknownId', `extraSlots[${index}]: role ${role}`)
+      const max = typeof one.max === 'number' ? one.max : undefined
+      if (max !== undefined && max < (one.min as number)) return refused('agent.badArguments', `extraSlots[${index}]: max ${max} is less than min ${String(one.min)}`)
+      slots.push({ role, min: one.min as number, ...(max !== undefined ? { max } : {}) })
+    }
+    patch.extraSlots = slots.length ? slots : undefined
+  }
+  return undefined
+}
+
+const ELEMENT_FIELDS: readonly FieldReader[] = [words, technologyFields, lifecycleFields, dates, look, ownership, tree, unit]
 
 /**
  * The patch an element.update or element.add asks for. Null clears an

@@ -7,7 +7,7 @@
  * page is up, and how to show another. Handed up to the shell, which binds
  * the seam, and taken back when the workspace goes.
  */
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import type { RefObject } from 'react'
 import type { Translate } from '../i18n'
 import type { Adr } from '../decisions/adr'
@@ -34,6 +34,7 @@ import { ShellError } from '../platform/errors'
 import { readDataUrl } from '../projects/dataUrl'
 import type { ModelSession } from './useModelSession'
 import type { WorkspacePages } from './useWorkspacePages'
+import type { PeopleRegisterAccess } from '../people/ui/access'
 
 export function useWorkspaceAgentView(deps: {
   session: ModelSession
@@ -65,6 +66,8 @@ export function useWorkspaceAgentView(deps: {
    * this one lands (ADR-0035 §6). Absent, such a merge is refused.
    */
   changeAcross?: ChangeAcross
+  /** The people register, as the shell holds it: who an assignment may name (ADR-0036). */
+  people?: PeopleRegisterAccess
 }): void {
   const {
     session, scope, indexRef, rowsElsewhereRef, scopes, reader, ancestorRecords, readOnly, documentStatus,
@@ -73,6 +76,9 @@ export function useWorkspaceAgentView(deps: {
   } = deps
   const { page, settled, openView, openDecisions, openObservations, openRoadmap, closePages, openPlatformReport, openServiceReport } = pages
   const openPlan = pages.plans.openPlan
+  // Read through a ref: the register is read again after every change, and the view need not be made again for it.
+  const peopleRef = useRef(deps.people)
+  peopleRef.current = deps.people
   const agentView = useMemo<WorkspaceAgentView>(() => ({
     ...throughSession(session, putPicture),
     scopePath: () => scope,
@@ -99,6 +105,7 @@ export function useWorkspaceAgentView(deps: {
     settled,
     show: showOn(pages, showElement, openDocumentation, leaveDocumentation),
     tree: agentTree({ session, scope, indexRef, rowsElsewhereRef, scopes, reader }),
+    people: () => peopleRef.current?.people,
     ...(changeAcross ? { changeAcross } : {}),
   }), [
     session, scope, ancestorRecords, documentStatus, readOnly, makeId, today, s, renderer, save, putPicture, scopes, reader,
@@ -185,6 +192,9 @@ function agentTree(at: {
     analysisBelow: (path) => indexRef.current.analysisBelow(path),
     explainedFromAbove: (path) => indexRef.current.explainedFromAbove(path),
     rowsTo: (id, types) => indexRef.current.rowsTo(id, types).map((row) => row.relation),
+    units: () => indexRef.current.units(),
+    assignments: () => indexRef.current.assignments(),
+    operatingModel: () => indexRef.current.operatingModel(),
     findings: () => {
       const model = session.current()
       const coverage = coverageOf(model.relations, rowsElsewhereRef.current)

@@ -356,7 +356,7 @@ function useScreenParts(
     save: base.document.document.flush, putPicture: base.writer.put, pages,
     showElement: showElement.show, openDocumentation: requests.openDocumentation,
     leaveDocumentation: requests.leaveDocumentation, makeId, today, s, onAgentSession: props.agent.onSession,
-    changeAcross: tree.agentChangeAcross,
+    changeAcross: tree.agentChangeAcross, people: shell.people,
   })
   useInitialPage({
     initialPage: navigation.initialPage, pages, createSheet: base.sheets.create, showElement: showElement.show,

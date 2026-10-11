@@ -204,6 +204,12 @@ describe('across the tree', () => {
   it('finds an element once, where it is answered for, and not at every scope that draws it', () => {
     expect(hits.filter((hit) => hit.id === 'erp').map((hit) => [hit.kind, hit.scope])).toEqual([['element', '']])
   })
+
+  it('finds the organisation\'s roles and unit types from any scope, as the index reads them at the organisation (ADR-0036)', () => {
+    const operating = [{ path: '', model: { elements: [], unitTypes: everything.unitTypes, roles: everything.roles } }, { path: 'port', model: { elements: [] } }]
+    const found = searchAll({ sources: treeSources({ scope: 'port', model: { elements: [] }, above: [], tree: operating }), query: 'harbour' })
+    expect(found.map((hit) => [hit.kind, hit.scope, hit.opens.page])).toEqual([['unitType', '', 'operating'], ['role', '', 'operating']])
+  })
 })
 
 describe('snippet', () => {
