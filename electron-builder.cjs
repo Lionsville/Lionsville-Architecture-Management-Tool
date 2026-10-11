@@ -103,6 +103,16 @@ module.exports = {
   // it on the drawing scheme.
   extraResources: [{ from: 'build/drawio', to: 'drawio' }],
 
+  // A pack whose drawing editor is missing, or was pruned from another draw.io
+  // than the pin, is refused before anything is copied: the stamp the fetch
+  // writes is checked against `drawioPin` by the fetch script itself, so the
+  // pin is read in one place. Nothing is downloaded here.
+  beforePack: () => {
+    const { spawnSync } = require('node:child_process')
+    const checked = spawnSync(process.execPath, ['build/fetchDrawio.ts', '--check'], { stdio: 'inherit' })
+    if (checked.status !== 0) throw new Error('build/drawio is not the pinned draw.io; run node build/fetchDrawio.ts')
+  },
+
   // The product name has spaces in it, which is right for the Dock and wrong
   // for a download link. Name the artifacts after the package instead.
   artifactName: '${name}-${version}-${os}-${arch}.${ext}',
