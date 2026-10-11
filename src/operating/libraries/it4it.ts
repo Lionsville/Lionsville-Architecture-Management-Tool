@@ -35,6 +35,7 @@ export const IT4IT: Library = {
     {
       entry: 'product-manager',
       name: { en: 'Product manager', nl: 'Productmanager', de: 'Produktmanager' },
+      alike: ['safe:product-management'],
       short: 'PdM',
       purpose: {
         en: 'Decides which digital products are worth having, what each should do next, and what a release of it should hold.',

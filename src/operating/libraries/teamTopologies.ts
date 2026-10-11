@@ -7,6 +7,10 @@
  * this project's words (see `../library.ts`). The three ways teams work
  * together are rows between units, not entries of a library, and are said in
  * the note only.
+ *
+ * None of the four is `alike` a team of another library: they are kinds of
+ * team by what a team is for, and a Scrum Team or an Agile Team may be any of
+ * them.
  */
 import type { Library } from '../library'
 

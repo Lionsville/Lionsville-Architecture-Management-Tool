@@ -61,6 +61,7 @@ export const SAFE: Library = {
     {
       entry: 'agile-team',
       name: { en: 'Agile Team', nl: 'Agile Team', de: 'Agile Team' },
+      alike: ['scrum:scrum-team'],
       purpose: {
         en: 'A small team on a train that builds, tests and delivers its part of the train\'s work.',
         nl: 'Een klein team op een trein dat zijn deel van het werk van de trein bouwt, test en oplevert.',
@@ -130,6 +131,7 @@ export const SAFE: Library = {
     {
       entry: 'product-management',
       name: { en: 'Product Management', nl: 'Product Management', de: 'Product Management' },
+      alike: ['it4it:product-manager'],
       short: 'PM',
       purpose: {
         en: 'Decides what the train builds next and why, and owns the train\'s backlog and roadmap.',
@@ -160,6 +162,7 @@ export const SAFE: Library = {
     {
       entry: 'product-owner',
       name: { en: 'Product Owner', nl: 'Product Owner', de: 'Product Owner' },
+      alike: ['scrum:product-owner'],
       short: 'PO',
       purpose: {
         en: 'Orders a team\'s backlog and decides what it delivers in each iteration, in step with the train.',
@@ -175,6 +178,7 @@ export const SAFE: Library = {
     {
       entry: 'team-coach',
       name: { en: 'Scrum Master/Team Coach', nl: 'Scrum Master/Team Coach', de: 'Scrum Master/Team Coach' },
+      alike: ['scrum:scrum-master'],
       short: 'TC',
       purpose: {
         en: 'Helps a team work well together and get better at how it works, and keeps it in step with the train.',
@@ -186,6 +190,7 @@ export const SAFE: Library = {
     {
       entry: 'team-member',
       name: { en: 'Agile Team member', nl: 'Lid van een Agile Team', de: 'Mitglied eines Agile Teams' },
+      alike: ['scrum:developer'],
       short: 'TM',
       purpose: {
         en: 'Builds, tests and delivers the team\'s work, and shares in deciding how it is done.',

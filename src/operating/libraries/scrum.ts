@@ -20,6 +20,7 @@ export const SCRUM: Library = {
   unitTypes: [{
     entry: 'scrum-team',
     name: { en: 'Scrum Team', nl: 'Scrumteam', de: 'Scrum-Team' },
+    alike: ['safe:agile-team'],
     purpose: {
       en: 'A small team that organises its own work and delivers something usable at the end of every short cycle.',
       nl: 'Een klein team dat zijn eigen werk organiseert en aan het eind van elke korte cyclus iets bruikbaars oplevert.',
@@ -37,6 +38,7 @@ export const SCRUM: Library = {
     {
       entry: 'product-owner',
       name: { en: 'Product Owner', nl: 'Product Owner', de: 'Product Owner' },
+      alike: ['safe:product-owner'],
       short: 'PO',
       purpose: {
         en: 'Decides what the team works on next and why, and answers for the value of what it delivers.',
@@ -53,6 +55,7 @@ export const SCRUM: Library = {
     {
       entry: 'scrum-master',
       name: { en: 'Scrum Master', nl: 'Scrum Master', de: 'Scrum Master' },
+      alike: ['safe:team-coach'],
       short: 'SM',
       purpose: {
         en: 'Helps the team and the people around it work the way they agreed to, and clears what slows them down.',
@@ -67,6 +70,7 @@ export const SCRUM: Library = {
     {
       entry: 'developer',
       name: { en: 'Developer', nl: 'Developer', de: 'Developer' },
+      alike: ['safe:team-member'],
       short: 'Dev',
       purpose: {
         en: 'Builds, tests and improves the product, and decides with the rest of the team how the work is done.',

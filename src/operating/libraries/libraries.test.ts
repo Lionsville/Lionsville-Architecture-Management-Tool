@@ -10,7 +10,7 @@
 import { describe, expect, it } from 'vitest'
 import { accountabilityGaps } from '../../model/operatingModel'
 import { bringIn } from '../bringIn'
-import { entriesOf } from '../library'
+import { alikeOf, entriesOf, entryOf } from '../library'
 import type { Library, Words } from '../library'
 import { LIBRARIES, libraryById } from '.'
 import { applyAll, empty, listsOf } from '../testing'
@@ -72,6 +72,38 @@ describe('the libraries that ship', () => {
   it('group the IT4IT responsibilities by the seven value streams of its 3.0 edition', () => {
     const groups = [...new Set(libraryById('it4it')!.responsibilities.map((one) => one.group.en))]
     expect(groups).toEqual(['Evaluate', 'Explore', 'Integrate', 'Deploy', 'Release', 'Consume', 'Operate'])
+  })
+})
+
+describe('the alike hints between libraries', () => {
+  const hinted = LIBRARIES.flatMap((library) => [
+    ...library.unitTypes.map((item) => ({ library, kind: 'unitType' as const, item })),
+    ...library.roles.map((item) => ({ library, kind: 'role' as const, item })),
+  ]).flatMap(({ library, kind, item }) => alikeOf(item).map((other) => ({ from: `${library.id}:${item.entry}`, kind, other })))
+
+  it('are a few, written as library:entry, each read whole', () => {
+    expect(hinted.length).toBeGreaterThan(0)
+    for (const library of LIBRARIES) {
+      for (const item of [...library.unitTypes, ...library.roles]) expect(alikeOf(item)).toHaveLength(item.alike?.length ?? 0)
+    }
+  })
+
+  it('each name an entry of the same kind in another library that ships', () => {
+    for (const { from, kind, other } of hinted) {
+      const there = libraryById(other.library)
+      expect(there, `${from} → ${other.library}`).toBeDefined()
+      expect(other.library, from).not.toBe(from.split(':')[0])
+      expect(entryOf(there!, other.entry)?.kind, `${from} → ${other.library}:${other.entry}`).toBe(kind)
+    }
+  })
+
+  it('are said on both ends', () => {
+    const said = new Set(hinted.map(({ from, other }) => `${from} ≈ ${other.library}:${other.entry}`))
+    for (const { from, other } of hinted) expect(said.has(`${other.library}:${other.entry} ≈ ${from}`), `${from} ≈ ${other.library}:${other.entry}`).toBe(true)
+  })
+
+  it('read nothing from a hint that names no library or no entry', () => {
+    expect(alikeOf({ ...libraryById('scrum')!.roles[0], alike: ['nonsense', ':entry', 'library:'] })).toEqual([])
   })
 })
 

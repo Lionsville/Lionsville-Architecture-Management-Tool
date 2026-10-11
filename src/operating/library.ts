@@ -21,6 +21,13 @@
  *
  * An entry names the others of its own library by entry id; bringing items in
  * turns those into the ids of the records made (`bringIn.ts`).
+ *
+ * **Alike, across libraries.** A unit type or a role may say which entries of
+ * the other libraries stand for the same thing (`alike`): a product owner in
+ * Scrum and in SAFe. Only a hint — what the page suggests reusing when the one
+ * is brought in where the other already is (`comingIn.ts`) — and so kept few,
+ * and said only where it is true of what the two entries are for. Said on
+ * both ends.
  */
 import type { Raci } from '../model/operatingModel'
 
@@ -41,6 +48,8 @@ export type LibraryUnitType = {
   readonly spans?: boolean
   readonly slots: readonly { readonly role: string; readonly min: number; readonly max?: number }[]
   readonly limit?: number
+  /** Unit types of other libraries that stand for the same kind of unit, as `library:entry`. */
+  readonly alike?: readonly string[]
 }
 
 export type LibraryRole = {
@@ -51,6 +60,8 @@ export type LibraryRole = {
   readonly purpose: Words
   readonly manages?: boolean
   readonly duties: readonly { readonly responsibility: string; readonly raci: Raci }[]
+  /** Roles of other libraries that stand for the same part, as `library:entry`. */
+  readonly alike?: readonly string[]
 }
 
 export type LibraryResponsibility = {
@@ -92,6 +103,17 @@ export function entriesOf(library: Library): LibraryEntry[] {
 /** One entry, by its id, in whichever list it is. */
 export function entryOf(library: Library, entry: string): LibraryEntry | undefined {
   return entriesOf(library).find((held) => held.item.entry === entry)
+}
+
+/** An entry of some library: the library's id and the entry's, as an `alike` hint names one. */
+export type EntryRef = { readonly library: string; readonly entry: string }
+
+/** The entries of other libraries an entry is alike, read from its `library:entry` hints. */
+export function alikeOf(item: LibraryUnitType | LibraryRole): EntryRef[] {
+  return (item.alike ?? []).flatMap((hint) => {
+    const at = hint.indexOf(':')
+    return at > 0 && at < hint.length - 1 ? [{ library: hint.slice(0, at), entry: hint.slice(at + 1) }] : []
+  })
 }
 
 /** A text in one language. */
