@@ -124,6 +124,8 @@ describe('the Checks page', () => {
     expect(row('check.notDrawn')).toBeNull()
     fireEvent.click(screen.getByTestId('checks-weight-note'))
     expect(row('check.notDrawn')!.textContent).toMatch(/Not counted here$/)
+    // Said to a screen reader in a box of one pixel, never one as wide as the row (the theme reads 1 as all of it).
+    expect(getComputedStyle(within(row('check.notDrawn')!).getByText('Not counted here')).width).toBe('1px')
     fireEvent.click(row('check.notDrawn')!)
     expect(screen.getByTestId('checks-where-open').textContent).toContain('found where the scope is open')
   })

@@ -74,6 +74,10 @@ const CHOSEN = 'chosen'
 const SHOWN_FIRST: readonly CheckWeight[] = ['fix', 'review']
 
 const QUIET = { fontSize: 12, color: 'text.secondary' } as const
+/** Read by a screen reader and nobody else; in pixels, because a width of 1 is all of it to the theme. */
+const HIDDEN = {
+  border: 0, clip: 'rect(0 0 0 0)', height: '1px', margin: '-1px', overflow: 'hidden', padding: 0, position: 'absolute', whiteSpace: 'nowrap', width: '1px',
+} as const
 const HEADING = { fontSize: 12, fontWeight: 700, color: 'text.secondary', mt: 1.5, mb: 0.25 } as const
 
 /** The weights shown, kept for the session: fix and review until the person chooses. */
@@ -175,11 +179,11 @@ function CheckLine({ row, picked, onPick, s }: { row: CheckRow; picked: boolean;
         }}
       >
         <Box component="span" aria-hidden sx={{ width: 14, textAlign: 'center', fontSize: 11, flex: 'none', ...WEIGHT_MARK[weight].sx }}>{WEIGHT_MARK[weight].glyph}</Box>
-        <Box component="span" sx={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)' }}>{s(CHECK_WEIGHT_LABEL[weight].name)}</Box>
+        <Box component="span" sx={HIDDEN}>{s(CHECK_WEIGHT_LABEL[weight].name)}</Box>
         <Box component="span" sx={{ flex: 1, minWidth: 0 }}>{s(row.entry.name)}</Box>
         {row.counted
           ? <Box component="span" sx={{ flex: 'none', color: row.shown.length > 0 ? 'text.primary' : 'text.secondary' }}>{row.shown.length}</Box>
-          : <Box component="span" title={s('checks.notCounted')} sx={{ flex: 'none', color: 'text.secondary' }}><span aria-hidden>–</span><Box component="span" sx={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)' }}>{s('checks.notCounted')}</Box></Box>}
+          : <Box component="span" title={s('checks.notCounted')} sx={{ flex: 'none', color: 'text.secondary' }}><span aria-hidden>–</span><Box component="span" sx={HIDDEN}>{s('checks.notCounted')}</Box></Box>}
       </ButtonBase>
     </Box>
   )
