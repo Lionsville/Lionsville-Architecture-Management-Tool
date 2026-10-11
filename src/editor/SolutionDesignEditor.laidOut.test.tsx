@@ -17,6 +17,7 @@ import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { HostedEditor } from './testing/editorHost';
 import type { EditorHostState, HostedEditorProps } from './testing/editorHost';
 import { installReactFlowMocks } from './reactFlowTestSetup';
+import type { ReactNode } from 'react';
 import type { PageView } from './props';
 import type { DesignDiagram, DesignElement, DesignModel } from '../model/types';
 
@@ -124,6 +125,36 @@ describe('the landscape\'s write gesture through the page slot (ADR-0020)', () =
     act(() => last().onHost('wms', 'azure'));
     expect(host.current.model.elements.find((element) => element.id === 'azure')?.ref).toBe('platforms');
     expect(host.current.model.relations.find((row) => row.type === 'hostedOn')?.targetId).toBe('azure');
+  });
+});
+
+describe('the organisation chart in the tab (ADR-0036 §7)', () => {
+  const CHART: DesignDiagram = { id: 'oc', kind: 'chart', name: 'Organisation', members: [], geometry: { nodes: [] } };
+  /** The page, and what the inspector shows of the page's own choice. */
+  function withChoice(inspector: (diagram: DesignDiagram) => ReactNode) {
+    const views: PageView[] = [];
+    const pages = {
+      render: (diagram: DesignDiagram, view: PageView) => { views.push(view); return <div data-testid="the-page">{diagram.name}</div>; },
+      inspector,
+    };
+    return { pages, last: () => views[views.length - 1] };
+  }
+
+  it('keeps the inspector, which shows the page\'s own choice while nothing is selected, and the element once one is', () => {
+    const { pages, last } = withChoice((diagram) => <div data-testid="page-choice">{diagram.name}</div>);
+    renderEditor(CHART, { pages });
+    expect(screen.queryByRole('complementary', { name: 'Element palette' })).toBeNull();
+    expect(screen.getByTestId('page-choice').textContent).toBe('Organisation');
+    act(() => last().onSelect('wms'));
+    expect(screen.queryByTestId('page-choice')).toBeNull();
+    act(() => last().onSelect(undefined));
+    expect(screen.getByTestId('page-choice')).toBeDefined();
+  });
+
+  it('says what it says with nothing chosen where the page has no choice of its own', () => {
+    const { pages } = withChoice(() => undefined);
+    renderEditor(CHART, { pages });
+    expect(screen.getByRole('complementary', { name: 'Inspector' }).textContent).toContain('Select an element');
   });
 });
 

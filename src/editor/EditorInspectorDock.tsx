@@ -3,8 +3,8 @@
 
 /**
  * The inspector docked right, and the seam beside it while it is open: the
- * selected element's, line's or group's, the multi-selection's, or the empty
- * state.
+ * selected element's, line's or group's, the multi-selection's, a laid-out
+ * page's own choice (`EditorPages.inspector`), or the empty state.
  */
 import type { DesignDiagram } from '../model/types';
 import type { AttachSidesPatch } from '../model/routes';
@@ -83,7 +83,8 @@ function SelectionInspector({ parts, diagram }: { parts: EditorParts; diagram: D
       />
     );
   }
-  return <InspectorEmptyState />;
+  // A laid-out page's own choice, which is not an element — on the day the page is drawn on.
+  return parts.props.pages?.inspector?.(parts.board.shownDiagram ?? diagram) ?? <InspectorEmptyState />;
 }
 
 function SelectedElementInspector({ parts, diagram }: { parts: EditorParts; diagram: DesignDiagram }) {
