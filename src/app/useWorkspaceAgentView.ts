@@ -7,7 +7,7 @@
  * page is up, and how to show another. Handed up to the shell, which binds
  * the seam, and taken back when the workspace goes.
  */
-import { useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import type { RefObject } from 'react'
 import type { Translate } from '../i18n'
 import type { Adr } from '../decisions/adr'
@@ -84,6 +84,11 @@ export function useWorkspaceAgentView(deps: {
   // Read through a ref: the register is read again after every change, and the view need not be made again for it.
   const peopleRef = useRef(deps.people)
   peopleRef.current = deps.people
+  // As last read rather than as last drawn: whom the call before added is there to be named.
+  const peopleNow = useCallback(() => {
+    const register = peopleRef.current
+    return register?.current ? register.current() : register?.people
+  }, [])
   const agentView = useMemo<WorkspaceAgentView>(() => ({
     ...throughSession(session, putPicture),
     scopePath: () => scope,
@@ -109,13 +114,13 @@ export function useWorkspaceAgentView(deps: {
     page,
     settled,
     show: showOn(pages, showElement, openDocumentation, leaveDocumentation),
-    tree: agentTree({ session, scope, indexRef, rowsElsewhereRef, scopes, reader, people: () => peopleRef.current?.people }),
-    people: () => peopleRef.current?.people,
+    tree: agentTree({ session, scope, indexRef, rowsElsewhereRef, scopes, reader, people: peopleNow }),
+    people: peopleNow,
     ...(changeAcross ? { changeAcross } : {}),
   }), [
     session, scope, ancestorRecords, documentStatus, readOnly, makeId, today, s, renderer, save, putPicture, scopes, reader,
     page, settled, openPlan, openView, openDecisions, openObservations, openRoadmap, closePages, showElement, openDocumentation,
-    openPlatformReport, openServiceReport, indexRef, rowsElsewhereRef, leaveDocumentation, pages.selectOn, changeAcross,
+    openPlatformReport, openServiceReport, indexRef, rowsElsewhereRef, leaveDocumentation, pages.selectOn, changeAcross, peopleNow,
   ])
   useEffect(() => {
     onAgentSession?.(agentView)

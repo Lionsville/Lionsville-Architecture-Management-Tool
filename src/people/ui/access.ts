@@ -26,6 +26,13 @@ export type Refused = { refused: PeopleRefusal }
 export type PeopleRegisterAccess = {
   /** Every entry, redirects included; `undefined` until the register has been read. */
   people: readonly Person[] | undefined
+  /**
+   * The same entries as last read at the moment of asking, where that is
+   * newer than what was drawn: what a check made between two renders reads —
+   * an agent's next call after its own `person.add` (`usePeopleRegister`).
+   * Absent, `people` is the register as last read.
+   */
+  current?(): readonly Person[] | undefined
   policy: PeoplePolicy
   me: PersonId | undefined
   /** Who *you* are is the source's word (an account linked to an entry), and *This is me* is not offered. */

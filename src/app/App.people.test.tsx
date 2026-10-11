@@ -108,6 +108,61 @@ describe('the People page in the app', () => {
   })
 })
 
+/**
+ * The agent's writes name people by register id, and check each against the
+ * register: one it has just added — or just marked as left — is the register
+ * as it is now, in the next call, before the screen has drawn the change.
+ */
+describe('an agent names whom it has just added, in its next call', () => {
+  const organisation: ScopeSnapshot = {
+    ...root,
+    model: {
+      ...root.model,
+      elements: [{ id: 'webshop', kind: 'actor', name: 'Webshop', lifecycle: 'live', isManaged: false, aspects: {}, unitTypeId: 'ut-team' }],
+      unitTypes: [{ id: 'ut-team', name: 'Team', top: true, within: [], slots: [{ role: 'ro-lead', min: 1, max: 1 }] }],
+      roles: [{ id: 'ro-lead', name: 'Team lead', duties: [] }],
+    },
+  }
+
+  async function opened() {
+    const held = heldRepositories([organisation])
+    const wire = gateway()
+    renderApp({ agent: wire.gateway, repositories: held, today: () => TODAY })
+    await waitFor(() => expect(wire.bound()).toBe(true))
+    expect((await wire.ask('app.open', { scope: '', page: 'operating' })).arrived).toBe(true)
+    // The register has been read once: what follows is a change to it, not its first read.
+    await waitFor(async () => expect((await wire.ask('people.list')).total).toBe(0))
+    return { held, wire }
+  }
+
+  it('assigns a person added in the call before, with no drawing between the two', async () => {
+    const { wire } = await opened()
+    let id = ''
+    // One act: nothing is drawn until both calls have been answered.
+    await act(async () => {
+      id = ((await wire.ask('person.add', { name: 'Sara Kaya' })).added as { id: string }).id
+      const assigned = await wire.ask('assignment.add', { unitId: 'webshop', roleId: 'ro-lead', personId: id })
+      expect(assigned.personId).toBe(id)
+    })
+    const listed = await wire.ask('assignments.list', { unitId: 'webshop' })
+    expect(JSON.stringify(listed)).toContain('Sara Kaya')
+  })
+
+  it('names them in a field and assigns them in one batch, and refuses one just marked as left', async () => {
+    const { wire } = await opened()
+    await act(async () => {
+      const added = (await wire.ask('person.add', { name: 'Ruben Dekker' })).added as { id: string }
+      const steps = await wire.ask('batch', { steps: [
+        { tool: 'element.update', args: { id: 'webshop', owner: { person: added.id } } },
+        { tool: 'assignment.add', args: { unitId: 'webshop', roleId: 'ro-lead', personId: added.id } },
+      ] })
+      expect((steps.steps as unknown[]).length).toBe(2)
+      await wire.ask('person.leave', { id: added.id })
+      await expect(wire.ask('assignment.add', { unitId: 'webshop', roleId: 'ro-lead', personId: added.id })).rejects.toThrow(/has left/)
+    })
+  })
+})
+
 describe('a forget reaches everything that shows the person', () => {
   it('the page, the agent and a working file all show the pseudonym from then on', async () => {
     const held = heldRepositories([root])

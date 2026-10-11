@@ -844,7 +844,11 @@ them*, and *What we hold* says them as `namedIn`, `signed` and `derived`.
 **The agent** (`agent/persons.ts`): every argument that names a person takes
 text or `{ "person": id }` (`personArgument`, an `anyOf` in the schema); an
 id the register does not hold is refused, a merged one written as the entry
-kept. Every answer says a picked person as `{ person, name }`, the name or
+kept. The register asked is the one last read, not the one last drawn
+(`PeopleRegisterAccess.current`), and a change to it answers only once it
+has been read again (`usePeopleRegister`), so whom `person.add` added — or
+`person.leave` marked — is known to the very next call; a read answered
+after a later one is dropped. Every answer says a picked person as `{ person, name }`, the name or
 the pseudonym the policy gives, done once as the answer leaves the handler
 and only where an answer names somebody; `search` and `project.export` ask
 the register before they answer. Where the policy gives agents pseudonyms,

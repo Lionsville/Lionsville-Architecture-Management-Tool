@@ -78,6 +78,8 @@ export type PeopleAccess = {
   /** The source grants that right: a unit's section says so. */
   managingRight?: boolean
   today: string
+  /** Every entry as last read at the moment of asking, though not yet drawn: what a check between two renders reads. */
+  current: () => readonly Person[] | undefined
   refresh: () => void
   add: (person: NewPerson) => Promise<PersonWritten | PeopleRefused>
   change: (id: PersonId, patch: PersonPatch) => Promise<PersonWritten | PeopleRefused>
@@ -104,6 +106,8 @@ export type PeopleAccess = {
 const HOUR = 3_600_000
 
 type Held = { people: readonly Person[] | undefined; policy: PeoplePolicy; me: PersonId | undefined }
+
+const UNREAD: Held = { people: undefined, policy: DEFAULT_POLICY, me: undefined }
 
 /** Every scope's model, read whole, for a search across the tree and for what points at a person. */
 async function everyModel(scopes: Repositories['scopes']): Promise<{ scope: string; model: SearchableModel & PointedModel & { name?: string } }[]> {
@@ -151,7 +155,7 @@ export function usePeopleRegister(deps: {
   onTreeChanged?: () => void
 }): PeopleAccess {
   const { repositories, failed, source } = deps
-  const [held, setHeld] = useState<Held>({ people: undefined, policy: DEFAULT_POLICY, me: undefined })
+  const [held, setHeld] = useState<Held>(UNREAD)
   const [today, setToday] = useState(deps.today)
   useEffect(() => {
     const ticking = setInterval(() => setToday(deps.today()), HOUR)
@@ -182,9 +186,30 @@ export function usePeopleRegister(deps: {
     return { people: list.people, policy: policyOf(organisation), me: source?.me ? source.me() : meOf(person) }
   }, [repositories, source])
 
-  const refresh = useCallback(() => {
-    void read().then(setHeld, (cause: unknown) => failedRef.current('people.read', cause))
+  /**
+   * The register as last read, not as last drawn (ADR-0036 §13). A read lands
+   * here the moment it answers, before the screen draws it, and a change
+   * answers only once the read after it has landed (`changed`): a check made
+   * in the very next call — an agent's `assignment.add` after its own
+   * `person.add` — finds what the change made. A read answered after a later
+   * one is dropped, so an older register never replaces a newer one.
+   */
+  const latest = useRef<Held>(UNREAD)
+  const asked = useRef(0)
+  const landed = useRef(0)
+  const reread = useCallback(async (): Promise<void> => {
+    const turn = ++asked.current
+    const now = await read()
+    if (turn < landed.current) return
+    landed.current = turn
+    latest.current = now
+    setHeld(now)
   }, [read])
+  const current = useCallback(() => latest.current.people, [])
+
+  const refresh = useCallback(() => {
+    void reread().catch((cause: unknown) => failedRef.current('people.read', cause))
+  }, [reread])
 
   const { openScope } = deps
   // Read through a ref: a shell hands a new function on every render, and the consequences are made once.
@@ -198,8 +223,14 @@ export function usePeopleRegister(deps: {
     () => leaveConsequences({ repositories, openScope, origin: 'agent', onTreeChanged: () => treeChanged.current?.() }), [repositories, openScope],
   )
 
-  /** A change made, and the register read again: what every write below ends with. */
-  const changed = useCallback(<T>(work: Promise<T>): Promise<T> => work.finally(refresh), [refresh])
+  /** A change made, and the register read again before it answers: what every write below ends with. */
+  const changed = useCallback(async <T>(work: Promise<T>): Promise<T> => {
+    try {
+      return await work
+    } finally {
+      await reread().catch((cause: unknown) => failedRef.current('people.read', cause))
+    }
+  }, [reread])
 
   const applyPolicy = useCallback(async (day: string) => {
     const now = await read()
@@ -246,6 +277,7 @@ export function usePeopleRegister(deps: {
     ...(manages ? { manages } : {}),
     ...(source?.managingRight ? { managingRight: true } : {}),
     today,
+    current,
     refresh,
     add: (person) => changed(repositories.people.add(person)),
     change: (id, patch) => changed(repositories.people.change(id, patch)),
@@ -262,6 +294,6 @@ export function usePeopleRegister(deps: {
     pointsAt: (id) => pointsAtPerson(repositories.scopes, index, idsOfPerson(id, held.people ?? []), today),
     ...(canRead ? { readText: (file: Blob) => doors.current.readText?.(file) ?? Promise.resolve('') } : {}),
     ...(canCopy ? { copyText: (text: string) => doors.current.copyText?.(text) } : {}),
-  }), [held, source, readOnly, manages, today, refresh, changed, repositories, consequences, agent, index, canRead, canCopy])
+  }), [held, source, readOnly, manages, today, current, refresh, changed, repositories, consequences, agent, index, canRead, canCopy])
 }
 
