@@ -13,6 +13,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import type { Person } from '../people/person'
 import type { ScopeSnapshot } from '../projects/scope'
+import { pressAction, unfoldFindings } from './testing/findings'
 import { heldRepositories } from './testing/heldRepositories'
 import { renderApp } from './testing/renderShell'
 
@@ -46,7 +47,10 @@ describe('the inspector beside the organisation chart', () => {
     expect(within(summary).getByTestId('chart-summary-title').textContent).toBe('Acme Logistics, today')
     expect(within(summary).getByTestId('chart-summary-counts').textContent).toBe('1 unit · 1 person · 1 vacant')
     expect(screen.queryByText(/Select an element or connection/)).toBeNull()
+    // Opened on its explanation, whose Open the unit goes to it (3.6.1; the line itself went there before).
+    unfoldFindings(within(summary).getByTestId('chart-findings'))
     fireEvent.click(within(summary).getAllByTestId('chart-finding').find((line) => line.textContent?.includes('Webshop'))!)
+    pressAction(within(summary).getByTestId('finding-explanation'), 'Open the unit')
     // The unit is selected, so the inspector is the unit's.
     await waitFor(() => expect(screen.queryByTestId('chart-summary')).toBeNull())
     expect(screen.getByDisplayValue('Webshop')).toBeTruthy()

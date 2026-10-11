@@ -9,10 +9,11 @@
  * **The day and the counts**: whose chart and on which day, its units, the
  * people in them and the vacancies left, counted off the same reading the
  * page draws (`useChartReading`). **The findings**: what the organisation
- * contradicts about those units and people on the day, each a way to the
- * unit it is about on the chart — the unit, or the first one the person holds
- * a role in — gone to as any request from outside goes there: unfolded,
- * scrolled to, and chosen where the open scope keeps it. **How to read it**:
+ * contradicts about those units and people on the day, in the one list of
+ * findings (`widgets/FindingsList`) — grouped, folded, each opening its
+ * explanation, whose *Open the unit* goes to the unit on the chart as any
+ * request from outside goes there: unfolded, scrolled to, and chosen where
+ * the open scope keeps it; a person's opens them in People. **How to read it**:
  * the dashed vacancy, the red edge, *manages*, the dashed unit that has ended
  * with people in it, and where the empty optional roles are.
  *
@@ -22,14 +23,15 @@
 import { useMemo } from 'react'
 import type { ReactNode } from 'react'
 import Box from '@mui/material/Box'
-import ButtonBase from '@mui/material/ButtonBase'
 import Chip from '@mui/material/Chip'
 import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
+import { CHECK_LIST_WORDS, groupByCheck } from '../../model/checkCatalogue'
+import type { CheckAction } from '../../model/checkCatalogue'
 import type { HostModel } from '../../model/hostModel'
-import { unitsHolding, vacanciesIn } from '../../model/orgChart'
+import { vacanciesIn, walk } from '../../model/orgChart'
 import type { OrgChart } from '../../model/orgChart'
 import { pickedPerson } from '../../model/person'
 import type { DesignDiagram, ElementId } from '../../model/types'
@@ -39,6 +41,9 @@ import { findingSentence } from '../../projects/checks'
 import type { Finding } from '../../projects/checks'
 import type { ScopeIndex } from '../../projects/scopeIndex'
 import type { ScopePath } from '../../projects/scopePath'
+import { FindingsList } from '../../widgets/FindingsList'
+import type { FindingActions } from '../../widgets/FindingsList'
+import { foldKey } from '../sessionFolds'
 import { summaryWords } from './chartWords'
 import { useChartReading } from './chartReading'
 import { unitViewsHere } from './unitViewsHere'
@@ -54,6 +59,8 @@ export type ChartSummaryProps = {
   scopeLabel: (path: ScopePath) => string
   /** Go to a unit on the chart, as a request from outside the page does. */
   onGoTo: (unitId: ElementId) => void
+  /** Open a person on the People page; absent where the source keeps no register. */
+  onOpenPeople?: ((person: string) => void) | undefined
 }
 
 const SECTION = { fontSize: 12, fontWeight: 700, color: 'text.secondary', mt: 1.75, mb: 0.5 } as const
@@ -81,7 +88,8 @@ export function ChartSummary(props: ChartSummaryProps) {
         ))}
       </Typography>
       <Typography component="h3" sx={SECTION}>{t('chart.findings')}</Typography>
-      <ChartFindings findings={findings} chart={chart} names={names} scopeLabel={props.scopeLabel} onGoTo={props.onGoTo} t={t} />
+      <ChartFindings findings={findings} chart={chart} names={names} scopeLabel={props.scopeLabel} onGoTo={props.onGoTo}
+        onOpenPeople={props.onOpenPeople} remember={foldKey(scope, diagram.id, 'findings')} t={t} />
       <Typography component="h3" sx={SECTION}>{t('chart.howToRead')}</Typography>
       <HowToRead t={t} />
     </Box>
@@ -90,31 +98,35 @@ export function ChartSummary(props: ChartSummaryProps) {
 
 /**
  * What the organisation contradicts on the day, about the units drawn and the
- * people in them — each a way to what it is about on the chart: the unit, or
- * the first unit the person holds a role in.
+ * people in them, in the one list of findings: *Open the unit* goes to the
+ * unit on the chart — for a domain it answers for outside those it serves,
+ * the unit that answers — and *Open in People* to a person over their share.
  */
-function ChartFindings({ findings, chart, names, scopeLabel, onGoTo, t }: {
+function ChartFindings({ findings, chart, names, scopeLabel, onGoTo, onOpenPeople, remember, t }: {
   findings: readonly Finding[]; chart: OrgChart; names: PersonNames; scopeLabel: (path: ScopePath) => string
-  onGoTo: (unitId: ElementId) => void; t: Translate
+  onGoTo: (unitId: ElementId) => void; onOpenPeople: ((person: string) => void) | undefined; remember: string; t: Translate
 }) {
-  if (findings.length === 0) return <Typography sx={QUIET} data-testid="chart-findings">{t('chart.nothing')}</Typography>
+  const groups = useMemo(() => groupByCheck(findings), [findings])
+  const drawn = useMemo(() => new Set([...walk(chart.roots)].map((unit) => unit.id)), [chart])
   const name = (person: string) => names.text(pickedPerson(person))
+  const unitOf = (finding: Finding) => (finding.key === 'check.unitNotServing' ? finding.fields?.[0] : finding.person === undefined ? finding.id : undefined)
+  const actions: FindingActions<Finding, CheckAction> = {
+    openUnit: (finding) => {
+      const unit = unitOf(finding)
+      return unit !== undefined && drawn.has(unit) ? () => onGoTo(unit) : undefined
+    },
+    openPerson: (finding) => {
+      const { person } = finding
+      return person !== undefined && onOpenPeople ? () => onOpenPeople(names.canonical(person)) : undefined
+    },
+  }
   return (
-    <Box component="ul" data-testid="chart-findings" sx={{ listStyle: 'none', p: 0, m: 0 }}>
-      {findings.map((finding, at) => {
-        const about = finding.person !== undefined ? unitsHolding(chart, names.canonical(finding.person))[0] : finding.id
-        return (
-          <Box component="li" key={`${finding.key}/${finding.id}/${at}`} sx={{ py: 0.375, borderBottom: 1, borderColor: 'divider' }}>
-            <ButtonBase
-              data-testid="chart-finding" onClick={() => { if (about !== undefined) onGoTo(about) }}
-              sx={{ display: 'block', textAlign: 'left', fontSize: 12, color: 'warning.main', '&:hover': { textDecoration: 'underline' } }}
-            >
-              {findingSentence(finding, t, scopeLabel, name)}
-            </ButtonBase>
-          </Box>
-        )
-      })}
-    </Box>
+    <FindingsList
+      groups={groups} words={CHECK_LIST_WORDS} sentence={(finding) => findingSentence(finding, t, scopeLabel, name)} actions={actions}
+      keyOf={(finding) => [finding.key, finding.scope, finding.id, finding.person ?? '', ...(finding.fields ?? [])].join('|')}
+      attributesOf={() => ({ 'data-testid': 'chart-finding' })} remember={remember} testId="chart-findings"
+      empty={<Typography sx={QUIET}>{t('chart.nothing')}</Typography>}
+    />
   )
 }
 

@@ -95,15 +95,15 @@ export function unitViewInspector(parts: WorkspaceParts, diagram: DesignDiagram)
   if (diagram.kind !== 'chart') return undefined
   const { props, session } = parts
   const chosen = parts.pages.chartChoice.chosenOn(diagram.id)
+  const onOpenPeople = props.navigation.onOpenPeople
   if (chosen === undefined || !(session.model.assignments ?? []).some((one) => one.id === chosen)) {
     return (
       <ChartSummary
         diagram={diagram} index={props.tree.index} scope={props.project.path} model={session.model} today={parts.todayDay}
-        scopeLabel={parts.readings.scopeLabel} onGoTo={(unitId) => parts.pages.selectOn(diagram.id, unitId)}
+        scopeLabel={parts.readings.scopeLabel} onGoTo={(unitId) => parts.pages.selectOn(diagram.id, unitId)} onOpenPeople={onOpenPeople}
       />
     )
   }
-  const onOpenPeople = props.navigation.onOpenPeople
   return (
     <AssignmentInspector
       key={chosen} assignmentId={chosen} diagram={diagram} index={props.tree.index} scope={props.project.path} model={session.model}

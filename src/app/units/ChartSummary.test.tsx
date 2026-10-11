@@ -7,13 +7,17 @@
  * while nothing is picked (ADR-0036 §7, 3.6.1), over one fictional
  * organisation — Acme Logistics, with a shipping domain: whose chart and on
  * which day, its units, people and vacancies; the findings, moved here from
- * under the chart, each going to the unit it is about; and how to read it,
- * moved here from the chart's bar.
+ * under the chart, in the one list since 3.6.1 — each opening its
+ * explanation, whose Open the unit goes to the unit on the chart and whose
+ * Open in People opens a person over their share, where a press on the
+ * finding went to the first unit the person holds a role in — and how to read
+ * it, moved here from the chart's bar.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, within } from '@testing-library/react'
 import { useMemo } from 'react'
 import { renderShell } from '../testing/renderShell'
+import { openFinding, pressAction, unfoldFindings } from '../testing/findings'
 import { axeFindings } from '../testing/axe'
 import { translator } from '../../i18n'
 import type { HostModel } from '../../model/hostModel'
@@ -82,8 +86,8 @@ function register(people: readonly Person[]): PeopleRegisterAccess {
 const LABELS: Record<string, string> = { '': 'Acme Logistics', shipping: 'Shipping' }
 const chart = (asOf?: string): DesignDiagram => ({ id: 'oc-1', kind: 'chart', name: 'Organisation', members: [], ...(asOf ? { asOf } : {}) })
 
-function Harness({ asOf, shipping = SHIPPING, people = PEOPLE, onGoTo = () => {} }: {
-  asOf?: string; shipping?: HostModel; people?: readonly Person[]; onGoTo?: (unitId: string) => void
+function Harness({ asOf, shipping = SHIPPING, people = PEOPLE, onGoTo = () => {}, onOpenPeople }: {
+  asOf?: string; shipping?: HostModel; people?: readonly Person[]; onGoTo?: (unitId: string) => void; onOpenPeople?: (person: string) => void
 }) {
   const index = useMemo(() => indexScopes([{ path: '', model: ROOT }, { path: 'shipping', model: SHIPPING }]), [])
   const names = useMemo(() => personNames(register(people), translator('en')), [people])
@@ -91,7 +95,7 @@ function Harness({ asOf, shipping = SHIPPING, people = PEOPLE, onGoTo = () => {}
     <PersonNamesProvider names={names}>
       <ChartSummary
         diagram={chart(asOf)} index={index} scope="shipping" model={shipping} today={TODAY}
-        scopeLabel={(path) => LABELS[path] ?? path} onGoTo={onGoTo}
+        scopeLabel={(path) => LABELS[path] ?? path} onGoTo={onGoTo} onOpenPeople={onOpenPeople}
       />
     </PersonNamesProvider>
   )
@@ -112,16 +116,34 @@ describe('the chart\'s summary, beside it while nothing is picked', () => {
     expect(text('chart-summary-title')).toBe('Shipping on 1 Jan 2027')
   })
 
-  it('lists the findings, each going to the unit it is about: a person\'s to the first unit they hold a role in', () => {
+  it('lists the findings grouped and folded, a unit\'s opening the unit on the chart and a person\'s opening them in People', async () => {
     const onGoTo = vi.fn()
-    renderShell(<Harness onGoTo={onGoTo} />)
-    const findings = within(screen.getByTestId('chart-findings')).getAllByTestId('chart-finding')
-    const sara = findings.find((line) => line.textContent?.includes('Sara Kaya holds 120% across their roles'))!
+    const onOpenPeople = vi.fn()
+    renderShell(<Harness onGoTo={onGoTo} onOpenPeople={onOpenPeople} />)
+    const list = screen.getByTestId('chart-findings')
+    expect(within(list).getAllByTestId('findings-group').map((row) => row.textContent)).toEqual([
+      expect.stringContaining('A role short of people(1)'), expect.stringContaining('Someone holds more than 100%(1)'),
+    ])
+    unfoldFindings(list)
+    const sara = within(list).getAllByTestId('chart-finding').find((line) => line.textContent?.includes('Sara Kaya holds 120% across their roles'))!
     fireEvent.click(sara)
-    expect(onGoTo).toHaveBeenLastCalledWith('tt')
-    const short = findings.find((line) => line.textContent?.includes('Track & Trace'))!
+    pressAction(screen.getByTestId('finding-explanation'), 'Open in People')
+    expect(onOpenPeople).toHaveBeenLastCalledWith('pe-sara')
+    expect(await axeFindings()).toEqual([])
+    fireEvent.click(screen.getByRole('button', { name: /All findings/ }))
+    const short = within(list).getAllByTestId('chart-finding').find((line) => line.textContent?.includes('Track & Trace'))!
     fireEvent.click(short)
+    pressAction(screen.getByTestId('finding-explanation'), 'Open the unit')
     expect(onGoTo).toHaveBeenLastCalledWith('tt')
+  })
+
+  it('offers no way to People where the source keeps no register', () => {
+    renderShell(<Harness />)
+    const list = screen.getByTestId('chart-findings')
+    unfoldFindings(list)
+    const sara = within(list).getAllByTestId('chart-finding').find((line) => line.textContent?.includes('Sara Kaya'))!
+    fireEvent.click(sara)
+    expect(within(screen.getByTestId('finding-explanation')).queryAllByTestId(/^finding-action-/)).toEqual([])
   })
 
   /** Moved here from the chart page with the findings (3.6.1). */
@@ -129,6 +151,7 @@ describe('the chart\'s summary, beside it while nothing is picked', () => {
     const people: Person[] = [...PEOPLE, { id: 'pe-noor2', pseudonym: 'KLMN', kind: 'internal', state: 'active', mergedInto: 'pe-noor' }]
     const shipping: HostModel = { ...SHIPPING, assignments: [...SHIPPING.assignments!, as('as-5', 'pf', 'ro-dev', 'pe-noor2', { share: 0.5 })] }
     renderShell(<Harness shipping={shipping} people={people} />)
+    unfoldFindings(screen.getByTestId('chart-findings'))
     expect(within(screen.getByTestId('chart-findings')).getByText(/Noor Haddad holds 150% across their roles/)).toBeTruthy()
     expect(text('chart-summary-counts')).toBe('3 units · 3 people · 1 vacant')
   })

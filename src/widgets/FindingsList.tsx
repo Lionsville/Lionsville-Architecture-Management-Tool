@@ -121,7 +121,7 @@ const QUIET = { fontSize: 11.5, color: 'text.secondary' } as const
 function Mark({ weight, name }: { weight: FindingWeight; name: string }) {
   return (
     <>
-      <Box component="span" aria-hidden data-mark={weight} sx={{ display: 'inline-block', width: 14, textAlign: 'center', fontSize: 11, flex: 'none', ...MARK[weight].sx }}>
+      <Box component="span" aria-hidden data-weight={weight} sx={{ display: 'inline-block', width: 14, textAlign: 'center', fontSize: 11, flex: 'none', ...MARK[weight].sx }}>
         {MARK[weight].glyph}
       </Box>
       <Box component="span" sx={HIDDEN}>{name}</Box>
