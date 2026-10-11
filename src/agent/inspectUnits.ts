@@ -94,7 +94,7 @@ export function inspectConway(tree: TreeView | undefined, open: OpenDocument, di
   const viewUnits = new Set(units.filter(include).flatMap((one) => [one.id, ...unitsBelow(units, one.id)]))
   const applications = applicationsOf(tree, open.current, open.path, viewUnits)
   const map = conwayMap({
-    units, unitTypes: organisation.unitTypes, applications,
+    units, ...(organisation.moves ? { moves: organisation.moves } : {}), unitTypes: organisation.unitTypes, applications,
     flows: rowsOf(tree, open.current, applications.map((app) => app.id), 'flow'),
     interactions: rowsOf(tree, open.current, units.map((one) => one.id), 'interacts') as ConwayInteraction[],
   }, day)

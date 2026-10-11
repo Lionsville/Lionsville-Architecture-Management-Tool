@@ -1781,7 +1781,7 @@ dates a unit type or a role with `unitType.update` and `role.update` (`from`,
 An **organisation chart** is a view: **+** in the diagram tabs, then
 **Organisation chart**, makes one, with a tab of its own. It is laid out from
 the units — nothing on it is placed by hand — as nested boxes: each unit inside
-the unit it sits in, the units filed in this scope and below it and the units
+the unit it sits in on the chart's day, a plan's moves included, the units filed in this scope and below it and the units
 that serve it from above, and at the organisation every unit there is. **Show**
 narrows it to one unit and those below it.
 

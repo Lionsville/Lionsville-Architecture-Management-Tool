@@ -110,6 +110,13 @@ describe('the Conway map', () => {
     expect(later.findings.some((one) => one.kind === 'unused' && one.interaction.id === 'i-2')).toBe(false)
   })
 
+  it('groups by the parent a plan\'s move gives a unit on the day (ADR-0036 §6)', () => {
+    const moved = { ...input, moves: [{ unitId: 'mob', parentId: 'data', on: '2027-03-01' }] }
+    expect(conwayMap(moved, TODAY, { groupBy: 'ut-cluster' }).groups.map((group) => group.unitId)).toEqual(['sales', 'data', 'pf', undefined])
+    const later = conwayMap(moved, '2027-03-01', { groupBy: 'ut-cluster' })
+    expect(later.groups.find((group) => group.unitId === 'data')?.applications.map((app) => app.id).sort()).toEqual(['a-hub', 'a-mob'])
+  })
+
   it('takes a unit that is not there on the day as owning nothing', () => {
     const gone = conwayMap({ ...input, units: [...units.filter((one) => one.id !== 'tt'), unit('tt', 'Track & Trace', 'ut-team', 'pf', { lifecycleDates: { retired: '2026-09-01' } })] }, TODAY)
     expect(gone.findings).toContainEqual({ kind: 'unowned', applicationId: 'a-ttp' })

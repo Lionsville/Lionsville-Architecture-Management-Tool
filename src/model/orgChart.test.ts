@@ -169,6 +169,21 @@ describe('the organisation chart', () => {
     expect(unitsHolding(orgChart(organisation, '2027-01-01'), 'pe-ruben')).toEqual(['pf'])
   })
 
+  it('puts each unit under the parent a plan\'s move gives it on the day (ADR-0036 §6)', () => {
+    const moved: Organisation = { ...organisation, moves: [{ unitId: 'tt', parentId: 'parcel', on: '2027-01-01' }] }
+    expect(find(orgChart(moved, TODAY), 'pf').children.map((one) => one.id)).toEqual(['rp', 'tt'])
+    const after = orgChart(moved, '2027-01-01')
+    expect(find(after, 'parcel').children.map((one) => one.id)).toEqual(['tt'])
+    expect(find(after, 'pf').children.map((one) => one.id)).toEqual(['rp'])
+  })
+
+  it('asks nobody for a role of a unit type that has ended, and draws its holders beside the slots', () => {
+    const ended: Organisation = { ...organisation, unitTypes: [domain, cluster, { ...team, until: '2026-12-31' }] }
+    const tt = find(orgChart(ended, '2027-01-01'), 'tt')
+    expect(tt.slots).toEqual([])
+    expect(tt.others.map((one) => one.person)).toEqual(['pe-sara', 'pe-tim', 'pe-yara', 'pe-yara-old'])
+  })
+
   it('draws a loop in the tree once, and never hangs on it', () => {
     const looped = [unit('a', 'A', 'ut-team', 'b'), unit('b', 'B', 'ut-team', 'a')]
     const chart = orgChart({ ...organisation, units: looped, assignments: [] }, TODAY)

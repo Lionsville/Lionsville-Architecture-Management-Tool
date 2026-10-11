@@ -20,6 +20,10 @@
  * under them too: a cluster that works with a platform team covers each of
  * its teams' interfaces to that team's applications.
  *
+ * **On a day.** Each unit sits under the parent the plans' moves give it that
+ * day (`organisationOn`, §6); a unit not there owns nothing; an interface and
+ * an interaction hold for their own days.
+ *
  * **It only reads.** It never moves an application or a unit; an answer to a
  * finding is a row written, an owner set or a limit changed, each where it is
  * kept. Pure, with no words: the page names the units and says the findings.
@@ -27,8 +31,8 @@
 import { relationLiveAt } from './lifecycle'
 import type { UnitType, UnitTypeId } from './operatingModel'
 import type { ElementId, InteractionMode, Relation } from './types'
-import { isUnit, unitOn, unitsAbove } from './units'
-import type { UnitLike } from './units'
+import { isUnit, organisationOn, unitOn, unitsAbove } from './units'
+import type { UnitLike, UnitMove } from './units'
 
 /** An application as the map reads it: who owns it, if anybody says. */
 export type ConwayApplication = { id: ElementId; name: string; partyId?: ElementId }
@@ -42,6 +46,8 @@ export type ConwayInteraction = ConwayRow & { mode?: InteractionMode }
 export type ConwayInput = {
   /** Every unit of the organisation: the owners, and the units above them that a map may group by. */
   units: readonly UnitLike[]
+  /** The plans' moves (§6): on the day, each unit sits under the parent they give it then. */
+  moves?: readonly UnitMove[]
   unitTypes: readonly Pick<UnitType, 'id' | 'limit'>[]
   /** The applications the map is of. */
   applications: readonly ConwayApplication[]
@@ -135,16 +141,17 @@ export function conwayMap(input: ConwayInput, day: string, options: ConwayOption
       .map((app): ConwayFinding => ({ kind: 'unowned', applicationId: app.id })),
     ...overLimit(input, reading, day),
   ]
-  return { groups: groupsOf(input, reading), lines, interactions: reading.live, findings }
+  return { groups: groupsOf(input.applications, reading), lines, interactions: reading.live, findings }
 }
 
 function readingOf(input: ConwayInput, day: string, options: ConwayOptions): Reading {
-  const units = new Map(input.units.filter(isUnit).map((unit) => [unit.id, unit]))
+  const tree = organisationOn({ units: input.units, assignments: [], roles: [], unitTypes: [], ...(input.moves ? { moves: input.moves } : {}) }, day).units
+  const units = new Map(tree.filter(isUnit).map((unit) => [unit.id, unit]))
   const chains = new Map<ElementId, readonly ElementId[]>()
   const chain = (unitId: ElementId) => {
     const held = chains.get(unitId)
     if (held) return held
-    const made = [unitId, ...unitsAbove(input.units, unitId)]
+    const made = [unitId, ...unitsAbove(tree, unitId)]
     chains.set(unitId, made)
     return made
   }
@@ -228,9 +235,9 @@ function overLimit(input: ConwayInput, reading: Reading, day: string): ConwayFin
  * tree order — depth first, siblings by name — a party that is not a unit
  * after the units, and the applications nobody owns last.
  */
-function groupsOf(input: ConwayInput, reading: Reading): ConwayGroup[] {
+function groupsOf(applications: readonly ConwayApplication[], reading: Reading): ConwayGroup[] {
   const byGroup = new Map<ElementId | undefined, ConwayApplication[]>()
-  for (const app of input.applications) {
+  for (const app of applications) {
     const key = reading.group.get(app.id)
     byGroup.set(key, [...byGroup.get(key) ?? [], app])
   }

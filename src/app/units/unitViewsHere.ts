@@ -73,6 +73,7 @@ export function conwayInputHere(index: ScopeIndex, scope: ScopePath, model: Host
   const reach = new Set(applications.map((app) => app.id))
   return {
     units,
+    ...(organisation.moves ? { moves: organisation.moves } : {}),
     unitTypes: organisation.unitTypes,
     applications,
     flows: rowsHere(index, scope, model, reach, 'flow'),

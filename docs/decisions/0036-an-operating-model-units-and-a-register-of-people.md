@@ -845,16 +845,18 @@ board table's label and glyph, search's label, the documentation page's
 kinds, and `diagram.inspect` (`agent/handle.ts`'s `inspectDiagram`). A
 comparison about one kind and one fact stays a comparison.
 
-**The arithmetic** is pure and has no words. `model/orgChart.ts`
-(`orgChart`) draws the units as a tree by `parentId`, each under the nearest
-drawn unit above it, siblings by name: a unit there on the day, or one that
-has ended with somebody still assigned to it, flagged `ended`; each slot of a
-role running on the day with its holders, the vacancy its minimum leaves and
+**The arithmetic** is pure and has no words. Both read the organisation of
+their day (`organisationOn`): every unit under the parent the plans' moves
+give it then. `model/orgChart.ts` (`orgChart`) draws the units as a tree by
+that parent, each under the nearest drawn unit above it, siblings by name: a
+unit there on the day, or one that has ended with somebody still assigned to
+it, flagged `ended`; each slot of a role running on the day — none where the
+unit's type has ended — with its holders, the vacancy its minimum leaves and
 whether there is room; the holders of a role the unit holds no slot for, and
 whether that role has ended; and whether a holder is over all of their time
 across the organisation, two ids of one person counted as one. A chart is of
 the units its caller includes and every unit below them, or of one unit and
-those below it. `model/conway.ts` (`conwayMap`) groups the applications by
+those below it. `model/conway.ts` (`conwayMap`, handed the moves) groups the applications by
 their owner on the day — a unit not there owns nothing that day; a party that
 is no unit still owns — or by the unit of a type above the owner; says how
 each interface running on the day lies (`inside`, `declared`, `undeclared`,

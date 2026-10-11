@@ -2037,7 +2037,8 @@ die Organisation eines Tages mit `assignments.list` und `checks.list` (`on`).
 Ein **Organigramm** ist eine Ansicht: **+** bei den Reitern, dann
 **Organigramm**, legt eines an, mit eigenem Reiter. Es wird aus den Einheiten
 gesetzt — nichts darauf wird von Hand platziert — als verschachtelte Kästen:
-jede Einheit in der Einheit, in der sie sitzt, die Einheiten, die in diesem
+jede Einheit in der Einheit, in der sie am Tag des Organigramms sitzt, die
+Verschiebungen eines Plans eingerechnet, die Einheiten, die in diesem
 Bereich und darunter abgelegt sind, und die Einheiten, die ihn von oben
 bedienen, und bei der Organisation jede Einheit, die es gibt. **Zeigen**
 beschränkt es auf eine Einheit und die darunter.

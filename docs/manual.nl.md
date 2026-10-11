@@ -1923,7 +1923,8 @@ de organisatie van een dag met `assignments.list` en `checks.list` (`on`).
 Een **organogram** is een weergave: **+** in de tabbladen, dan **Organogram**,
 maakt er een, met een eigen tabblad. Het wordt opgemaakt uit de eenheden —
 niets erop wordt met de hand geplaatst — als geneste vakken: elke eenheid in
-de eenheid waarin ze zit, de eenheden die in deze scope en eronder zijn
+de eenheid waarin ze op de dag van het organogram zit, de verplaatsingen van
+een plan meegerekend, de eenheden die in deze scope en eronder zijn
 ingedeeld en de eenheden die haar van bovenaf bedienen, en bij de organisatie
 elke eenheid die er is. **Toon** beperkt het tot één eenheid en die eronder.
 

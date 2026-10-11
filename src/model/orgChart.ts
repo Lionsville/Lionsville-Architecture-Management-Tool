@@ -11,12 +11,14 @@
  * box inside the next. So a chart has no geometry file, nothing drags, and
  * the same organisation on the same day is the same chart for everybody.
  *
- * **On a day.** A unit is drawn while it is there on the day — live or
- * retiring by its lifecycle — and, once it has ended, only while somebody is
- * still assigned to it, so the people a reorganisation left behind are seen
- * where they were left. A role that has ended asks for nobody. A vacancy is a
- * slot's minimum less the people holding the role that day; it is never a
- * record (§3).
+ * **On a day.** The organisation is that day's (`organisationOn`): every
+ * unit under the parent the plans' moves give it then (§6). A unit is drawn
+ * while it is there on the day — live or retiring by its lifecycle — and,
+ * once it has ended, only while somebody is still assigned to it, so the
+ * people a reorganisation left behind are seen where they were left. A role
+ * that has ended asks for nobody, and nor does a unit type that has: its
+ * holders are drawn beside the slots. A vacancy is a slot's minimum less the
+ * people holding the role that day; it is never a record (§3).
  *
  * Pure, with no words: who a person is, is the register's to say, and the
  * page asks it for each name as it draws.
@@ -26,7 +28,8 @@ import type { PersonId } from './person'
 import type { Role, RoleId, UnitType, UnitTypeId } from './operatingModel'
 import type { DesignDiagram, ElementId } from './types'
 import {
-  holdersOn, isUnit, personOf, roleOn, runsOn, shareOf, slotsOf, unitEnded, unitLastDay, unitOn, unitsAbove, unitsBelow,
+  holdersOn, isUnit, organisationOn, personOf, roleOn, runsOn, shareOf, slotsOf, unitEnded, unitLastDay, unitOn, unitTypeOn, unitsAbove,
+  unitsBelow,
 } from './units'
 import type { Assignment, Organisation, UnitLike } from './units'
 
@@ -122,7 +125,8 @@ type Reading = {
 const OVER = 1 + 1e-9
 
 /** The organisation chart on `day`. */
-export function orgChart(organisation: Organisation, day: string, options: ChartOptions = {}): OrgChart {
+export function orgChart(whenever: Organisation, day: string, options: ChartOptions = {}): OrgChart {
+  const organisation = organisationOn(whenever, day)
   const canonical = options.canonical ?? ((id: PersonId) => id)
   const shown = shownUnits(organisation, day, options)
   const { roots, children } = treeOf(organisation.units, shown)
@@ -226,7 +230,8 @@ function chartUnit(unit: UnitLike, reading: Reading, seen: Set<ElementId>): Char
   seen.add(unit.id)
   const type = reading.types.get(unit.unitTypeId ?? '')
   const typeRoles = new Set((type?.slots ?? []).map((slot) => slot.role))
-  const slots = slotsOf(unit, type)
+  // A unit type that has ended asks for nobody, as a role that has ended does.
+  const slots = (type && !unitTypeOn(type, reading.day) ? [] : slotsOf(unit, type))
     .filter((slot) => {
       const role = reading.roles.get(slot.role)
       return role !== undefined && roleOn(role, reading.day)
