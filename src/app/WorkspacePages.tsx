@@ -23,7 +23,10 @@ import type {
 } from '../technology/ui/ReportPage'
 import { lazyPart } from '../widgets/lazyPart'
 import type { WorkspaceParts } from './workspaceParts'
-import type { EndedHolders as EndedHoldersShape } from './units/EndedHolders'
+import type { EndedHolders as EndedHoldersShape, SlotHolders as SlotHoldersShape } from './units/EndedHolders'
+import { organisationHere } from './units/organisationHere'
+import { heldThroughType } from '../model/units'
+import type { SlotTakeOut } from '../operating/ui/OperatingModelPage'
 import type {
   PlanMoves as PlanMovesShape, PlanOrganisation as PlanOrganisationShape, PlanOrganisationProps,
 } from './units/PlanOrganisation'
@@ -71,6 +74,9 @@ const PlanOrganisation = lazyPart<ComponentProps<typeof PlanOrganisationShape>>(
 const EndedHolders = lazyPart<ComponentProps<typeof EndedHoldersShape>>(
   () => import('./units/EndedHolders').then((held) => held.EndedHolders),
 )
+const SlotHolders = lazyPart<ComponentProps<typeof SlotHoldersShape>>(
+  () => import('./units/EndedHolders').then((held) => held.SlotHolders),
+)
 
 export function WorkspacePages({ parts }: { parts: WorkspaceParts }) {
   return (
@@ -112,8 +118,27 @@ function OperatingPages({ parts }: { parts: WorkspaceParts }) {
         item, scope: props.project.path, model, index: props.tree.index, people: props.shell.people,
         readOnly: readOnly || props.project.path !== ROOT_SCOPE, makeId: props.shell.makeId, land: landMoves, s: props.shell.s,
       }))}
+      slotTakeOut={slotTakeOut(parts)}
     />
   )
+}
+
+/**
+ * A role taken out of a unit type (ADR-0036 §6): who holds it through the
+ * type from today on, read off the tree with this scope's session laid over
+ * it, and — where anybody does — their moves, landed with the role taken out
+ * as one step. Their last day in it is today.
+ */
+function slotTakeOut(parts: WorkspaceParts): SlotTakeOut {
+  const { props, session, readOnly, landMoves, todayDay } = parts
+  const scope = props.project.path
+  return {
+    held: (type, roleId) => heldThroughType(organisationHere(props.tree.index, scope, session.model).organisation, type.id, roleId, todayDay).length > 0,
+    aside: (type, roleId, done) => createElement(SlotHolders, {
+      type, roleId, today: todayDay, onDone: done, scope, model: session.model, index: props.tree.index, people: props.shell.people,
+      readOnly: readOnly || scope !== ROOT_SCOPE, makeId: props.shell.makeId, land: landMoves, s: props.shell.s,
+    }),
+  }
 }
 
 /** A picture library as a document page takes it: the pictures, who shows each, and removing one. */

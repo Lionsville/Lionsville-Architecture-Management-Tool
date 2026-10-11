@@ -19,13 +19,15 @@ import type { Model } from '../../model/normalised'
 import { apply } from '../../model/reducer'
 import { applyAll, empty, listsOf } from '../testing'
 import { OperatingModelPage } from './OperatingModelPage'
+import type { SlotTakeOut } from './OperatingModelPage'
 
 afterEach(() => cleanup())
 
 /** The page over a model a reducer keeps, and every command it sent. */
-function Harness({ start, readOnly = false, atOrganisation = true, sent, initialId, aside }: {
+function Harness({ start, readOnly = false, atOrganisation = true, sent, initialId, aside, slotTakeOut }: {
   start: Model; readOnly?: boolean; atOrganisation?: boolean; sent: Command[]; initialId?: string
   aside?: ComponentProps<typeof OperatingModelPage>['aside']
+  slotTakeOut?: SlotTakeOut
 }) {
   const [model, setModel] = useState(start)
   let n = 0
@@ -42,6 +44,7 @@ function Harness({ start, readOnly = false, atOrganisation = true, sent, initial
       }}
       {...(initialId ? { initialId, initialNonce: 1 } : {})}
       {...(aside ? { aside } : {})}
+      {...(slotTakeOut ? { slotTakeOut } : {})}
       onClose={() => {}}
     />
   )
@@ -201,6 +204,37 @@ describe('the operating model\'s page', () => {
     expect(sent.at(-1)).toMatchObject({ patch: { slots: [] } })
     // It was made to sit at the top; that was pressed off, and Scrum Team on.
     expect(screen.getByText('Sits in: Scrum Team')).toBeTruthy()
+  })
+
+  it('lists who holds a role before it is taken out of a unit type, and takes one nobody holds out at once', async () => {
+    const start = applyAll(empty(), [
+      { type: 'role.add', role: { id: 'ro-dev', name: 'Developer', duties: [] } },
+      { type: 'role.add', role: { id: 'ro-sm', name: 'Scrum Master', duties: [] } },
+      { type: 'unitType.add', unitType: { id: 'ut-team', name: 'Team', top: true, within: [], slots: [{ role: 'ro-dev', min: 1 }, { role: 'ro-sm', min: 0, max: 1 }] } },
+    ])
+    const asked: string[] = []
+    const slotTakeOut: SlotTakeOut = {
+      held: (type, roleId) => { asked.push(`${type.id}/${roleId}`); return roleId === 'ro-dev' },
+      aside: (type, roleId, done) => <div data-testid="slot-aside">{type.name}: {roleId}<button type="button" onClick={done}>Keep it</button></div>,
+    }
+    const sent = show(start, { initialId: 'ut-team', slotTakeOut })
+    const inspector = () => screen.getByTestId('operating-inspector')
+    // Somebody holds it: nothing is written, and the host's list is drawn under the slots instead.
+    fireEvent.click(within(inspector()).getByRole('button', { name: 'Take Developer out of this unit type' }))
+    expect(sent).toEqual([])
+    expect(within(inspector()).getByTestId('slot-aside').textContent).toBe('Team: ro-devKeep it')
+    expect(await axeFindings()).toEqual([])
+    fireEvent.click(within(inspector()).getByRole('button', { name: 'Keep it' }))
+    expect(screen.queryByTestId('slot-aside')).toBeNull()
+    // Nobody does: it goes at once, as one step.
+    fireEvent.click(within(inspector()).getByRole('button', { name: 'Take Scrum Master out of this unit type' }))
+    expect(sent).toEqual([{ type: 'unitType.update', id: 'ut-team', patch: { slots: [{ role: 'ro-dev', min: 1 }] } }])
+    // Picking something else puts the list away.
+    fireEvent.click(within(inspector()).getByRole('button', { name: 'Take Developer out of this unit type' }))
+    expect(screen.getByTestId('slot-aside')).toBeTruthy()
+    fireEvent.click(screen.getAllByRole('button', { name: /^Developer/ })[0])
+    expect(screen.queryByTestId('slot-aside')).toBeNull()
+    expect(asked).toEqual(['ut-team/ro-dev', 'ut-team/ro-sm', 'ut-team/ro-dev'])
   })
 
   it('edits a responsibility picked in the matrix', async () => {

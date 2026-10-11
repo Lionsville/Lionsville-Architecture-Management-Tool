@@ -26,7 +26,8 @@
  *
  * **The same list serves the operating model.** A role that ends on a day,
  * outside any plan, lists its people with the role's successor in the same
- * unit ({@link roleEnding}).
+ * unit ({@link roleEnding}), and so does a unit type that stops holding a
+ * role ({@link slotEnding}).
  *
  * Pure, with no words: the screens and the agent have them.
  */
@@ -42,7 +43,7 @@ import type { Command } from './commands'
 import { pickedPerson } from './person'
 import type { PersonId } from './person'
 import {
-  dayBefore, isUnit, organisationOn, personOf, roleOn, runsOn, slotsOf, unitLastDay, unitOn, unitsAbove, unitsBelow,
+  dayBefore, heldThroughType, isUnit, organisationOn, personOf, roleOn, runsOn, slotsOf, unitLastDay, unitOn, unitsAbove, unitsBelow,
 } from './units'
 import type { Assignment, Organisation, UnitLike, UnitMove } from './units'
 
@@ -110,6 +111,39 @@ export function roleEnding(role: { id: RoleId; until?: string }): RoleEnd[] {
   return isDay(role.until) ? [{ roleId: role.id, lastDay: role.until }] : []
 }
 
+/**
+ * The organisation with a unit type that no longer holds a role: what a
+ * slot taken out leaves, for the places its people may go to instead.
+ */
+export function withoutSlot(organisation: Organisation, typeId: UnitTypeId, roleId: RoleId): Organisation {
+  return {
+    ...organisation,
+    unitTypes: organisation.unitTypes.map((type) => (type.id === typeId ? { ...type, slots: type.slots.filter((slot) => slot.role !== roleId) } : type)),
+  }
+}
+
+/**
+ * A unit type that stops holding a role (ADR-0036 §6, *when the model itself
+ * changes*): every assignment of the role in a unit of the type that holds it
+ * through the type alone and runs past `lastDay` (`heldThroughType`), each
+ * with the role's first successor that the unit still holds the day after as
+ * the suggestion, in the same unit — or none, and it only ends. Read the same
+ * whether the type still holds the role or has had it taken out.
+ */
+export function slotEnding(organisation: Organisation, typeId: UnitTypeId, roleId: RoleId, lastDay: string): PeopleMove[] {
+  const after = withoutSlot(organisation, typeId, roleId)
+  const next = addDays(lastDay, 1)
+  const successors = organisation.roles.find((one) => one.id === roleId)?.successors ?? []
+  return heldThroughType(organisation, typeId, roleId, lastDay).map((assignment) => {
+    const held = new Set(placesIn(after, [assignment.unitId], next).map((place) => place.roleId))
+    const successor = successors.find((id) => held.has(id))
+    return {
+      assignment, lastDay, unitEnds: false, roleEnds: false, slotEnds: true as const,
+      ...(successor !== undefined ? { suggestion: { unitId: assignment.unitId, roleId: successor } } : {}),
+    }
+  })
+}
+
 // --- the people to move ----------------------------------------------------------------
 
 /** Where a person goes from the day after: a unit and a role. */
@@ -128,6 +162,8 @@ export type PeopleMove = {
   unitEnds: boolean
   /** Its role ends by then. */
   roleEnds: boolean
+  /** Its unit's type stops holding its role ({@link slotEnding}). */
+  slotEnds?: true
   /** Where it would go from the day after: the unit's successor, the role's, or the same. */
   suggestion?: Place
 }

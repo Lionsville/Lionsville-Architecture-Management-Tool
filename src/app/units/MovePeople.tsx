@@ -9,7 +9,8 @@
  * Nobody's new place is guessed: a row with no suggestion only ends, and
  * every row may be put anywhere the units on offer hold a role that day.
  * Nothing is written until *Write as one step*. The list is the plan page's
- * and the operating model page's alike; each says which ends it lists.
+ * and the operating model page's alike — a role that ends, and a role taken
+ * out of a unit type — and each says which ends it lists.
  *
  * **A manager where the scope is only read** (ADR-0036 §12): the rows of
  * the units they manage are theirs to move — to places in those units, a
@@ -143,6 +144,7 @@ function Row({ move, choice, places, names, readOnly, placeable, onChoose, s }: 
   const why = [
     ...(move.unitEnds ? [s('move.whyUnit', { unit: names.unit(assignment.unitId), day: lastDay })] : []),
     ...(move.roleEnds ? [s('move.whyRole', { role: names.role(assignment.roleId), day: lastDay })] : []),
+    ...(move.slotEnds ? [s('move.whySlot', { role: names.role(assignment.roleId) })] : []),
   ]
   return (
     <tr data-testid={`move-row-${assignment.id}`}>

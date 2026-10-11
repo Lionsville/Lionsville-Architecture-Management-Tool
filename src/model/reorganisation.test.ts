@@ -18,7 +18,7 @@ import { apply } from './reducer'
 import type { ConwayInput } from './conway'
 import {
   beforeAndAfter, interactionsToDeclare, lostAccountability, peopleMoveSteps, peopleToMove, placesIn, planReorganisation,
-  reorganisationRoots, reorganisedUnits, roleEnding, samePlace, unitsOfEndedType, unitTree,
+  reorganisationRoots, reorganisedUnits, roleEnding, samePlace, slotEnding, unitsOfEndedType, unitTree, withoutSlot,
 } from './reorganisation'
 import type { PeopleChoice, PeopleMove } from './reorganisation'
 import type { Transition } from './transition'
@@ -135,6 +135,29 @@ describe('the people to move', () => {
     expect(found.map((one) => [one.assignment.id, one.suggestion])).toEqual([
       ['as-3', { unitId: 'parcel-freight', roleId: 'ro-lead' }], ['as-5', { unitId: 'data', roleId: 'ro-lead' }],
     ])
+  })
+
+  it('lists the people a unit type leaves where it stops holding a role, with the role\'s successor in the same unit', () => {
+    const found = slotEnding(organisation, 'ut-cluster', 'ro-rel', TODAY)
+    expect(found.map((one) => [one.assignment.id, one.lastDay, one.slotEnds, one.suggestion])).toEqual([
+      ['as-3', TODAY, true, { unitId: 'parcel-freight', roleId: 'ro-lead' }], ['as-5', TODAY, true, { unitId: 'data', roleId: 'ro-lead' }],
+    ])
+    expect(found[0]).toMatchObject({ unitEnds: false, roleEnds: false })
+    // The same once the type no longer holds it: what is left of the list is read off the people, not the slot.
+    expect(slotEnding(withoutSlot(organisation, 'ut-cluster', 'ro-rel'), 'ut-cluster', 'ro-rel', TODAY)).toEqual(found)
+  })
+
+  it('suggests nothing where the role has no successor the unit still holds, and passes over one ended by then', () => {
+    const found = slotEnding(organisation, 'ut-cluster', 'ro-pm', TODAY)
+    expect(found.map((one) => one.assignment.id)).toEqual(['as-2', 'as-7'])
+    expect(found.every((one) => one.suggestion === undefined)).toBe(true)
+    // A successor the unit's type does not hold is not where its people go.
+    const elsewhere: Organisation = { ...organisation, roles: roles.map((one) => (one.id === 'ro-pm' ? { ...one, successors: ['ro-po'] } : one)) }
+    expect(slotEnding(elsewhere, 'ut-cluster', 'ro-pm', TODAY)[0]).not.toHaveProperty('suggestion')
+    // Nor the role itself, which the type no longer holds.
+    const toItself: Organisation = { ...organisation, roles: roles.map((one) => (one.id === 'ro-pm' ? { ...one, successors: ['ro-pm'] } : one)) }
+    expect(slotEnding(toItself, 'ut-cluster', 'ro-pm', TODAY)[0]).not.toHaveProperty('suggestion')
+    expect(withoutSlot(organisation, 'ut-cluster', 'ro-pm').unitTypes[1].slots.map((slot) => slot.role)).toEqual(['ro-lead', 'ro-rel'])
   })
 
   it('offers the places in each unit whose role runs that day', () => {

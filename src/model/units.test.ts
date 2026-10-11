@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest'
 import type { Role, UnitType } from './operatingModel'
 import type { DesignElement } from './types'
 import {
-  dayBefore, endedBy, endingFor, holdersOn, isUnit, leavingStep, loadOn, makesLoop, managedBy, managersOf, mayHaveParent, organisationOn, parentOn,
+  dayBefore, endedBy, endingFor, heldThroughType, holdersOn, isUnit, leavingStep, loadOn, makesLoop, managedBy, managersOf, mayHaveParent, organisationOn, parentOn,
   parentTypeOf, runsOn, shareOf, slotsOf, unitEnded, unitFindings, unitLastDay, unitOn, unitsAbove, unitsBelow, unitsOn, unitTypeOn,
 } from './units'
 import type { Assignment, Organisation } from './units'
@@ -112,6 +112,20 @@ describe('units, slots and holders', () => {
     expect(holdersOn(assignments, 'webshop', 'ro-po', '2023-01-01').map((one) => one.person.person)).toEqual(['pe-femke', 'pe-gijs'])
     expect(loadOn(assignments, 'pe-daan', TODAY)).toBe(1.25)
     expect(loadOn(assignments, 'pe-merged', TODAY, (id) => (id === 'pe-merged' ? 'pe-ivo' : id))).toBe(1)
+  })
+
+  it('says who a type leaves where it stops holding a role: through the type alone, past the last day', () => {
+    const mobile = { ...units[3], extraSlots: [{ role: 'ro-dev', min: 1 }] }
+    const later = held('mobile', 'ro-dev', 'pe-noor', { from: '2027-01-01' })
+    const at: Organisation = { ...organisation, units: units.map((one) => (one.id === 'mobile' ? mobile : one)), assignments: [...assignments, later] }
+    // Webshop holds developers through its type; Mobile has a slot of its own, so it keeps its people.
+    expect(heldThroughType(at, 'ut-team', 'ro-dev', TODAY).map((one) => one.person.person)).toEqual(['pe-bram', 'pe-ivo'])
+    // Gijs's role ended before the day; one that begins after it is left too.
+    expect(heldThroughType(at, 'ut-team', 'ro-po', TODAY).map((one) => one.person.person)).toEqual(['pe-femke'])
+    expect(heldThroughType(at, 'ut-team', 'ro-po', '2022-06-30').map((one) => one.person.person)).toEqual(['pe-femke', 'pe-gijs'])
+    expect(heldThroughType({ ...at, units: units.map((one) => (one.id === 'mobile' ? { ...one } : one)) }, 'ut-team', 'ro-dev', TODAY).map((one) => one.person.person))
+      .toEqual(['pe-bram', 'pe-ivo', 'pe-noor'])
+    expect(heldThroughType(at, 'ut-cluster', 'ro-dev', TODAY)).toEqual([])
   })
 
   it('walks the tree of units up and down, through units only', () => {

@@ -169,6 +169,20 @@ export function holdersOn(
 }
 
 /**
+ * The assignments a unit type leaves where it stops holding a role (ADR-0036
+ * §6, *when the model itself changes*): every one of the role in a unit of
+ * the type that holds it through the type alone — not as an extra slot of its
+ * own — and that runs past `lastDay`, or only begins after it. Read the same
+ * whether the type still holds the role or has had it taken out.
+ */
+export function heldThroughType(organisation: Organisation, typeId: UnitTypeId, roleId: RoleId, lastDay: string): Assignment[] {
+  const units = new Set(organisation.units
+    .filter((unit) => isUnit(unit) && unit.unitTypeId === typeId && !(unit.extraSlots ?? []).some((slot) => slot.role === roleId))
+    .map((unit) => unit.id))
+  return organisation.assignments.filter((one) => one.roleId === roleId && units.has(one.unitId) && !(isDay(one.until) && one.until <= lastDay))
+}
+
+/**
  * How much of a person's time their assignments take on `day`, across every
  * assignment handed in: 1 is all of it. `canonical` maps an id to the entry
  * that answers for it — a merged id to the one it was merged into — so two
