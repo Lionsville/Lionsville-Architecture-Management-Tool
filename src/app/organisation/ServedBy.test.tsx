@@ -82,6 +82,17 @@ async function shippingHome() {
 const rows = () => screen.getAllByTestId('served-by-row').map((one) => one.textContent)
 
 describe('who serves a scope, on its home', () => {
+  it('is not drawn on the organisation\'s own home where no unit serves it, and names no domain owner there where one does', async () => {
+    renderApp({ repositories: await held(), today: TODAY })
+    await screen.findByTestId('home-shipping')
+    expect(screen.queryByTestId('served-by')).toBeNull()
+    cleanup()
+    const served = tree().map((one) => (one.path === '' ? { ...one, model: { ...one.model, elements: [...one.model.elements, unit('ops', 'Operations', 'ut-domain')] } } : one))
+    renderApp({ repositories: heldRepositories(served), today: TODAY })
+    await waitFor(() => expect(screen.getAllByTestId('served-by-row').map((one) => one.textContent)).toEqual(['Domain · Operationsnobody manages it today']))
+    expect(screen.queryByTestId('served-by-owner')).toBeNull()
+  })
+
   it('lists the units in the order of their types, each with its lead and where it is filed, and works the domain owner out', async () => {
     renderApp({ repositories: await held(), today: TODAY })
     const servedBy = await shippingHome()

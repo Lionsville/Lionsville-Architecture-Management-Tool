@@ -75,8 +75,10 @@ of elke verantwoordelijkheid haar ene eindverantwoordelijke rol heeft. Een
 onderdeel dat tekent heeft ook een kaart **Documentatie**. Elke kaart
 opent wat hij telt; als je de pagina sluit ben je weer hier.
 
-**Bediend door**, onder de kaarten, overal waar de organisatie eenheden heeft:
-de eenheden die deze scope bedienen, in de volgorde van hun types, elk met wie
+**Bediend door**, onder de kaarten, overal waar de organisatie eenheden heeft
+— op de eigen startpagina van de organisatie alleen waar een eenheid de
+organisatie zelf bedient, en daar zonder domeineigenaar, want de organisatie
+is geen domein: de eenheden die deze scope bedienen, in de volgorde van hun types, elk met wie
 vandaag haar aansturende rol vervult en waar ze is ingedeeld als dat ergens
 anders is. Een eenheid bedient de domeinen die haar **Bedient** noemt, of de
 scope waarin ze is ingedeeld als ze er geen noemt, en een eenheid onder een

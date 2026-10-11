@@ -74,7 +74,9 @@ role. A scope that draws has a **Documentation**
 card too. Each card opens what it counts; closing the page brings you back
 here.
 
-**Served by**, under the cards, wherever the organisation has units: the
+**Served by**, under the cards, wherever the organisation has units — on the
+organisation's own home only where a unit serves the organisation itself, and
+without a domain owner there, since the organisation is no domain: the
 units that serve this scope, in the order of their types, each with who holds
 its managing role today and where it is filed when that is somewhere else. A
 unit serves the domains its **Serves** names, or the scope it is filed in

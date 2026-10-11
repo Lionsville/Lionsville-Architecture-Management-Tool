@@ -83,8 +83,10 @@ Rolle hat. Ein Bereich, der zeichnet, hat auch eine Karte
 **Dokumentation**. Jede Karte öffnet, was sie zählt; das Schließen der Seite
 bringt Sie hierher zurück.
 
-**Bedient von**, unter den Karten, überall, wo die Organisation Einheiten hat:
-die Einheiten, die diesen Bereich bedienen, in der Reihenfolge ihrer Typen,
+**Bedient von**, unter den Karten, überall, wo die Organisation Einheiten hat
+— auf der eigenen Startseite der Organisation nur, wo eine Einheit die
+Organisation selbst bedient, und dort ohne Domäneneigentümer, denn die
+Organisation ist keine Domäne: die Einheiten, die diesen Bereich bedienen, in der Reihenfolge ihrer Typen,
 jede mit dem, der heute ihre führende Rolle innehat, und wo sie eingeordnet ist,
 wenn das anderswo ist. Eine Einheit bedient die Domänen, die ihr **Bedient**
 nennt, oder den Bereich, in dem sie eingeordnet ist, wenn sie keine nennt, und

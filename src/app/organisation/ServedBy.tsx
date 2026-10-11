@@ -21,6 +21,7 @@ import type { Translate } from '../../i18n'
 import { plural } from '../../i18n/strings'
 import { pickedPerson } from '../../model/person'
 import { usePersonNames } from '../../people/ui/names'
+import { ROOT_SCOPE } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
 import { PickToAdd } from '../../widgets/PickToAdd'
 import type { ServedByAccess } from './useServedBy'
@@ -39,6 +40,10 @@ export function ServedBy({ scope, servedBy, scopeName, compact, s }: {
   const names = usePersonNames()
   const view = servedBy?.of(scope)
   if (!servedBy || !view) return null
+  // The organisation is no domain: its home says who serves it only where a
+  // unit does, and names no domain owner.
+  const atRoot = scope === ROOT_SCOPE
+  if (atRoot && view.rows.length === 0) return null
   const here = scopeName(scope)
   const person = (id: string) => names.text(pickedPerson(id))
   // A unit kept where the person may only read is offered, and said so: adding it would be a step there.
@@ -83,7 +88,7 @@ export function ServedBy({ scope, servedBy, scopeName, compact, s }: {
         // Open even where nothing may be picked: the list says why each may not.
         disabled={choices.length === 0}
       />
-      {view.owner && (
+      {view.owner && !atRoot && (
         <Typography sx={{ fontSize: 13, mt: 0.75 }} data-testid="served-by-owner">
           {view.owner.unit === undefined
             ? s('org.domainOwnerNoUnit', { role: view.owner.role })
