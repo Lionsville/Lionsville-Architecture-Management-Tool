@@ -563,7 +563,8 @@ sheet and a map it is also outlined for a moment. A record a link opens on — a
 decision, an observation, a cause, a solution or an experiment — is brought
 into view and outlined the same way, in the list or in the picture.
 
-**Copy link on one record.** A decision's reader, a plan's page and the
+**Copy link on one record.** A decision's reader, a plan's page, the
+readers of an observation, a cause, a solution and an experiment, and the
 right-click menu on a node of the observations picture each have **Copy
 link**: a link to that record, whatever else is on screen, made, copied and
 shown the same way. It is there when the work is read-only too, since reading

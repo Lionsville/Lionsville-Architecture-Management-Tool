@@ -398,8 +398,10 @@ same dialog, with the same refusal where the source has no address. It is
 offered where the work is read-only too: reading is what a link is for. A
 record of a scope below links to its own scope's page, where its id means
 something. The shell makes it (`ShareLink.shareTo`), handed to the workspace
-as `WorkspaceNavigation.onShareLink`. The observation readers' own bars take
-it in the change that reworks them.
+as `WorkspaceNavigation.onShareLink`. The observations page's readers have
+it too, where each one's bar ends — an observation, a cause, a solution and an
+experiment, of this scope or of one below — and copy the same link the
+picture's menu copies for that record.
 
 **And `app.open` takes a solution or an experiment by id** (ADR-0019,
 amended the same day), since a place on the observations page could already

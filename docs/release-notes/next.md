@@ -11,9 +11,17 @@ same place with it. Where work is kept in a folder, in this browser or nowhere,
 there is no address another person could reach, and the dialog says so instead.
 A link from a view with an element selected opens with that element selected
 again, and a record a link opens on is brought into view and outlined for a
-moment. A decision's reader, a plan's page and the right-click
-menu on the observations picture have **Copy link** for that one record,
-read-only too.
+moment. A decision's reader, a plan's page, the readers of an observation,
+a cause, a solution and an experiment, and the right-click menu on the
+observations picture have **Copy link** for that one record, read-only too.
+
+**The observations page says the same thing the same way everywhere.** The
+right-click on a record offers what its reader offers, in the same words and
+the same order, with "…" where a question or a dialog follows. The forms name
+a field as the reader does: *Where seen*, *Date seen*, *Description*. The
+buttons of a question asked before a step are in sentence case, and reopening
+a concluded experiment is no longer drawn as a danger. *New observation* and
+*New solution* carry an icon instead of a typed "+".
 
 **A view nobody has laid out yet is laid out for a reader too.** A view the
 app or another tool made with no positions in it — a new container view, an

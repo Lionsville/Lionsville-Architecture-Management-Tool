@@ -640,7 +640,8 @@ Ursache, eine Lösung oder ein Experiment —, wird ebenso ins Bild gebracht und
 umrandet, in der Liste oder im Bild.
 
 **Link kopieren bei einem Eintrag.** Der Leser einer Entscheidung, die Seite
-eines Plans und das Kontextmenü auf einem Knoten im Bild der Beobachtungen haben
+eines Plans, die Leser einer Beobachtung, einer Ursache, einer Lösung und eines
+Experiments und das Kontextmenü auf einem Knoten im Bild der Beobachtungen haben
 jeweils **Link kopieren**: einen Link zu diesem Eintrag, was sonst auch auf dem
 Bildschirm ist, ebenso erstellt, kopiert und gezeigt. Er ist auch da, wenn die
 Arbeit nur gelesen werden darf, denn Lesen ist, wofür ein Link da ist. Ein

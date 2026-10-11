@@ -601,8 +601,9 @@ experiment — wordt op dezelfde manier in beeld gebracht en omlijnd, in de lijs
 of in het plaatje.
 
 **Link kopiëren bij één record.** De lezer van een besluit, de pagina van een
-plan en het rechtsklikmenu op een knoop in het plaatje van de waarnemingen
-hebben elk **Link kopiëren**: een link naar dat record, wat er verder ook op het
+plan, de lezers van een waarneming, een oorzaak, een oplossing en een
+experiment, en het rechtsklikmenu op een knoop in het plaatje van de
+waarnemingen hebben elk **Link kopiëren**: een link naar dat record, wat er verder ook op het
 scherm staat, op dezelfde manier gemaakt, gekopieerd en getoond. Hij is er ook
 als het werk alleen gelezen mag worden, want lezen is waar een link voor is.
 Een record van een onderdeel eronder linkt naar de pagina van dat onderdeel.
