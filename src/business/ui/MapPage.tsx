@@ -45,6 +45,7 @@ import { PageDialog } from '../../widgets/PageDialog'
 import { SeamResizer } from '../../widgets/SeamResizer'
 import { useSelectRequest } from '../../widgets/useSelectRequest'
 import type { SelectRequest } from '../../widgets/useSelectRequest'
+import { locatedRing, useLocated } from '../../widgets/useLocated'
 import { mapPage } from '../map'
 import type { LaidOutMap, MapColumn, MapDescribe, MapRow } from '../map'
 import { captureSheet } from '../../widgets/capturePage'
@@ -136,7 +137,10 @@ export function MapPage(props: MapPageProps) {
     ? undefined
     : model.elements.find((element) => element.id === selectedId)
   const held = useMemo(() => new Set(model.elements.map((element) => element.id)), [model.elements])
-  useSelectRequest(props.select, laidOut && ((id) => laidOut.rows.some((row) => row.element.id === id)), setSelectedId)
+  // Asked from outside — a link or a place opened with something selected on
+  // it — and brought on screen and ringed where the page draws it.
+  const { locatedId, locate } = useLocated(page, setSelectedId)
+  useSelectRequest(props.select, laidOut && ((id) => laidOut.rows.some((row) => row.element.id === id)), locate)
 
   const Frame = props.inline ? InlineFrame : PageDialog
   return (
@@ -177,7 +181,7 @@ export function MapPage(props: MapPageProps) {
         <Box sx={{ flex: 1 }} />
       </Box>
 
-      <Box ref={page} sx={{ flex: '1 1 auto', minHeight: 0, display: 'flex' }}>
+      <Box ref={page} sx={{ flex: '1 1 auto', minHeight: 0, display: 'flex', ...locatedRing(locatedId) }}>
         <Box data-testid="map-body" sx={{ flex: '1 1 auto', minWidth: 0, overflow: 'auto', p: 2 }}>
           {laidOut && laidOut.rows.length > 0 ? (
             <Grid
@@ -372,6 +376,7 @@ function Line({ row, columns, onSelect, sticky, t }: {
       <Box component="td" sx={{ ...sticky, left: 0, textAlign: 'left', bgcolor: 'background.default' }}>
         <Box
           component="button"
+          data-element-id={row.element.id}
           type="button"
           onClick={() => onSelect(row.element.id)}
           sx={{

@@ -185,6 +185,7 @@ export function AdrRecordList({ query, onQuery, shown, selectedId, describe, emp
           <ListItemButton
             key={adr.id}
             selected={adr.id === selectedId}
+            data-record-id={adr.id}
             onClick={() => onChoose(adr, where)}
             alignItems="flex-start"
             data-guide="decisions.row"
