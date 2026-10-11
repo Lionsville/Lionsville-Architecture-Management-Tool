@@ -318,6 +318,17 @@ and the app then forgets nobody when the organisation is opened; and it knows
 which entry is you, by your account, so you are marked without **This is me**,
 which is then not offered.
 
+Such a source may also know who may do what. The page then offers each
+change only to whoever may make it: **Add person**, **Correct…** and **Mark
+as left** perhaps for the people of your own units only, and **Merge**,
+**Forget now**, **Remove now** and the policy only to the organisation's
+administrators. Where it keeps a work address from you, the page says *an
+address not shown to you* rather than that there is none. Marking somebody as
+left may end their assignments there and then; the page says how many. And
+where its schedule did not forget somebody whose day had come, because their
+account signed in after their last day, the page says so beside their state,
+and whoever may forget them decides.
+
 On the desktop the register is the file `.lionsville-architecture/people.json`
 in your folder. **It is never in the folder's history**: no snapshot takes it,
 and a `git add` typed in a terminal leaves it out too, because a name in a

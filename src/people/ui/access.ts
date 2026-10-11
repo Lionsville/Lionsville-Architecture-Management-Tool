@@ -16,7 +16,7 @@ import { useCallback, useState } from 'react'
 import type { PersonId } from '../../model/person'
 import { ShellError } from '../../platform/errors'
 import type { HeldAssignment, Mention, PointsAt } from '../hold'
-import type { NewPerson, PeopleRefusal, Person, PersonPatch } from '../person'
+import type { NewPerson, PeopleAction, PeopleRefusal, Person, PersonPatch, PolicyHold } from '../person'
 import type { PeoplePolicy } from '../policy'
 import type { Translate } from '../shown'
 
@@ -30,6 +30,15 @@ export type PeopleRegisterAccess = {
   /** Who *you* are is the source's word (an account linked to an entry), and *This is me* is not offered. */
   meSaid?: boolean
   readOnly: boolean
+  /**
+   * Whether this person may make one kind of change — of one entry, where the
+   * answer is the entry's. Absent, every change is `readOnly`'s to say.
+   */
+  may?(action: PeopleAction, id?: PersonId): boolean
+  /** Whether an entry has a work address this person is not shown. */
+  withheld?(id: PersonId): boolean
+  /** Why the source's own schedule held an entry back from being forgotten. */
+  held?(id: PersonId): PolicyHold | undefined
   today: string
   add(person: NewPerson): Promise<{ person: Person } | Refused>
   change(id: PersonId, patch: PersonPatch): Promise<{ person: Person } | Refused>
@@ -53,6 +62,11 @@ export type PeopleRegisterAccess = {
    * make them own today (ADR-0036 §8). Absent where the shell has no tree.
    */
   pointsAt?(id: PersonId): Promise<PointsAt>
+}
+
+/** Whether the page offers one kind of change: the register may be written here, and — where the source says who may do what — by this person, of this entry. */
+export function mayDo(register: Pick<PeopleRegisterAccess, 'readOnly' | 'may'>, action: PeopleAction, id?: PersonId): boolean {
+  return !register.readOnly && (register.may?.(action, id) ?? true)
 }
 
 /** What the status line says, and how loudly. */

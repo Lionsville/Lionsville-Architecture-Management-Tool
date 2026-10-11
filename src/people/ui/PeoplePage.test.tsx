@@ -42,9 +42,11 @@ const START: Person[] = [
 ]
 
 /** A register held in React state and changed by the register's own rules, as the shell's hook would. */
-function Harness({ readOnly = false, me, onPolicy, mentions = [], held: holding, looking = false, pointsAt }: {
+function Harness({ readOnly = false, me, onPolicy, mentions = [], held: holding, looking = false, pointsAt, source }: {
   readOnly?: boolean; me?: PersonId; onPolicy?: (change: Partial<PeoplePolicy>) => void; mentions?: { scope: string; kind: string; id: string; title: string }[]
   held?: Record<PersonId, HeldAssignment[]>; looking?: boolean; pointsAt?: Record<PersonId, PointsAt> | 'unreadable'
+  /** What a source that knows who may do what says (`SourcePeople.may`, `withheld`, `held`). */
+  source?: Pick<PeopleRegisterAccess, 'may' | 'withheld' | 'held'>
 }) {
   const [day, setDay] = useState<string | undefined>(undefined)
   const [people, setPeople] = useState<readonly Person[]>(START)
@@ -75,6 +77,7 @@ function Harness({ readOnly = false, me, onPolicy, mentions = [], held: holding,
     ...(holding ? { assignmentsOf: (id: PersonId) => holding[id] ?? [] } : {}),
     ...(pointsAt === 'unreadable' ? { pointsAt: () => Promise.reject(new Error('the tree will not read')) } : {}),
     ...(pointsAt && pointsAt !== 'unreadable' ? { pointsAt: (id: PersonId) => Promise.resolve(pointsAt[id] ?? { pointers: [], byRule: [] }) } : {}),
+    ...source,
   }
   const look = { ...(day !== undefined ? { day } : {}), onDay: setDay }
   return <PeoplePage open onClose={() => {}} register={register} copyText={() => {}} s={s} {...(looking ? { look } : {})} />
@@ -290,6 +293,42 @@ describe('the People page', () => {
     expect(screen.queryByTestId('people-me')).toBeNull()
     expect(screen.queryByTestId('people-policy-save')).toBeNull()
     expect(screen.getByTestId('people-not-a-step').textContent).toBe('The register is read here and not changed.')
+  })
+
+  it('offers each change only to whoever the source says may make it, of the entry it says', () => {
+    // A contributor who manages Pia: adds people, corrects and lets go of Pia, and merges, forgets and removes nobody.
+    const may = (action: string, id?: string) => action === 'add' || ((action === 'change' || action === 'leave') && id === 'pe-pia')
+    renderShell(<Harness source={{ may }} />)
+    expect(screen.getByTestId('people-add')).toBeTruthy()
+    expect(screen.queryByTestId('people-duplicates')).toBeNull()
+    pick('pe-pia')
+    expect(screen.getByTestId('people-correct')).toBeTruthy()
+    expect(screen.getByTestId('people-leave')).toBeTruthy()
+    expect(screen.queryByTestId('people-forget')).toBeNull()
+    expect(screen.queryByTestId('people-merge-with')).toBeNull()
+    expect(screen.queryByTestId('people-policy-save')).toBeNull()
+    expect(screen.getByRole('spinbutton', { name: /keep a leaver/i })).toHaveProperty('disabled', true)
+    // Eva is somebody else's: nothing to do with her here.
+    pick('pe-eva')
+    expect(screen.queryByTestId('people-correct')).toBeNull()
+    expect(screen.queryByText(s('people.do'))).toBeNull()
+  })
+
+  it('says an address kept from this person is kept, not missing', () => {
+    renderShell(<Harness source={{ withheld: (id) => id === 'pe-evt' }} />)
+    const row = screen.getByTestId('people-row-pe-evt')
+    expect(row.textContent).toContain(s('people.emailWithheld'))
+    pick('pe-evt')
+    expect(screen.getByTestId('people-person-email').textContent).toBe(s('people.emailWithheld'))
+    pick('pe-pia')
+    expect(screen.getByTestId('people-person-email').textContent).toBe('pia.schulz@acme.example')
+  })
+
+  it('says a leaver the source\'s schedule held back was held, and why', () => {
+    renderShell(<Harness source={{ held: (id) => (id === 'pe-gijs' ? 'signedInSinceLeaving' : undefined) }} />)
+    pick('pe-gijs')
+    expect(screen.getByTestId('people-held-back').textContent).toBe(s('people.heldSignedIn'))
+    expect(screen.queryByText(s('people.leftDue'))).toBeNull()
   })
 })
 

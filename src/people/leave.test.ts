@@ -60,6 +60,21 @@ describe('leaving', () => {
     expect(ran).toEqual(['pe-ada'])
     expect(await forgetPerson(register, [consequence], 'pe-gone', '2026-10-12')).toEqual({ refused: 'people.forgotten' })
   })
+
+  it('runs nothing more where the register did what leaving does itself, and says how much it ended', async () => {
+    // A register that ends a leaver's assignments as it marks them, as a server may, says so with `ended`.
+    const inner = registerOver([ada, { ...ada, id: 'pe-bo', name: 'Bo Visser' }])
+    const register: LeavingRegister = {
+      read: inner.read,
+      leave: async (id, on) => { const answer = await inner.leave(id, on); return 'refused' in answer ? answer : { ...answer, ended: 3 } },
+      forget: async (id, on) => { const answer = await inner.forget(id, on); return 'refused' in answer ? answer : { ...answer, ended: 2 } },
+    }
+    let ran = 0
+    const consequence: LeaveConsequence = () => { ran += 1; return Promise.resolve(9) }
+    expect(await leavePerson(register, [consequence], 'pe-ada', '2026-10-31')).toMatchObject({ person: { state: 'left' }, ended: 3 })
+    expect(await forgetPerson(register, [consequence], 'pe-bo', '2026-10-31')).toMatchObject({ person: { state: 'forgotten' }, ended: 2 })
+    expect(ran).toBe(0)
+  })
 })
 
 describe('what we hold', () => {

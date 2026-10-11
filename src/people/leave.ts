@@ -28,11 +28,15 @@ export type LeaveConsequence = (person: Person, lastDay: string) => Promise<numb
 
 type PeopleRefused = { refused: PeopleRefusal }
 
-/** As much of a register as leaving needs. */
+/**
+ * As much of a register as leaving needs. An answer that says `ended` is a
+ * register that did what leaving does beyond it itself — a server ending a
+ * leaver's assignments as it marks them — and no consequence is run again.
+ */
 export type LeavingRegister = {
   read(id: PersonId): Promise<Person | undefined>
-  leave(id: PersonId, on: string): Promise<{ person: Person } | PeopleRefused>
-  forget(id: PersonId, on: string): Promise<{ person: Person } | PeopleRefused>
+  leave(id: PersonId, on: string): Promise<{ person: Person; ended?: number } | PeopleRefused>
+  forget(id: PersonId, on: string): Promise<{ person: Person; ended?: number } | PeopleRefused>
 }
 
 /** A leave or a forget made: the entry as it now stands, and how many things its consequences ended. */
@@ -50,6 +54,7 @@ export async function leavePerson(
 ): Promise<Left | PeopleRefused> {
   const answer = await register.leave(id, on)
   if ('refused' in answer) return answer
+  if (answer.ended !== undefined) return { person: answer.person, ended: answer.ended }
   return { person: answer.person, ended: await consequencesOf(consequences, answer.person, on) }
 }
 
@@ -63,6 +68,7 @@ export async function forgetPerson(
   const before = await register.read(id)
   const answer = await register.forget(id, on)
   if ('refused' in answer) return answer
+  if (answer.ended !== undefined) return { person: answer.person, ended: answer.ended }
   const ended = before?.state === 'active' ? await consequencesOf(consequences, answer.person, on) : 0
   return { person: answer.person, ended }
 }

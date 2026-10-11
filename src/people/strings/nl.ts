@@ -53,6 +53,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'people.mergeKeep': 'De vermelding die blijft',
 
   'people.noEmail': 'geen adres',
+  'people.emailWithheld': 'een adres dat je niet te zien krijgt',
   'people.thisIsYou': 'Dit ben jij: deze installatie markeert je overal waar je voorkomt.',
   'people.thisIsMe': 'Dit ben ik',
   'people.notMe': 'Dit ben ik niet',
@@ -81,6 +82,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'people.leftDone': '{name} is gemarkeerd als vertrokken op {day}. De naam blijft zichtbaar tot {forget}.',
   'people.leftOn': 'Vertrokken op {day}. De naam blijft zichtbaar tot {forget} en wordt dan vergeten.',
   'people.leftDue': 'Die dag is voorbij: de naam wordt vergeten zodra het beleid weer wordt toegepast.',
+  'people.heldSignedIn': 'Niet op die dag vergeten: er is na de laatste werkdag nog met dit account aangemeld. Wie de naam mag vergeten, beslist.',
   'people.forget': 'Nu vergeten',
   'people.forgetTitle': '{name} vergeten?',
   'people.forgetBody': 'De naam en het adres verdwijnen uit het register, en overal waar {name} voorkomt staat voortaan {pseudonym}. Dit is definitief: het register bewaart geen geschiedenis, dus niets brengt de naam terug. Een ondertekend besluit houdt de naam waarmee het is ondertekend.',

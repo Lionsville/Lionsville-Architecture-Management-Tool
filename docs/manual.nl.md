@@ -335,6 +335,18 @@ eigen schema, en de app vergeet dan niemand als de organisatie wordt geopend;
 en ze weet welke vermelding jij bent, aan de hand van je account, zodat je
 gemarkeerd wordt zonder **Dit ben ik**, dat dan niet wordt aangeboden.
 
+Zo'n bron kan ook weten wie wat mag. De pagina biedt dan elke wijziging
+alleen aan wie haar mag doen: **Persoon toevoegen**, **Corrigeren…** en
+**Markeren als vertrokken** bijvoorbeeld alleen voor de mensen van je eigen
+eenheden, en **Samenvoegen**, **Nu vergeten**, **Nu verwijderen** en het
+beleid alleen voor de beheerders van de organisatie. Waar ze een werkadres
+voor je achterhoudt, zegt de pagina *een adres dat je niet te zien krijgt* in
+plaats van dat er geen is. Iemand als vertrokken markeren kan diens
+toewijzingen meteen beëindigen; de pagina zegt hoeveel. En waar haar schema
+iemand van wie de dag gekomen was niet vergat, omdat er na de laatste
+werkdag nog met diens account is aangemeld, zegt de pagina dat bij de
+status, en beslist wie de naam mag vergeten.
+
 Op de desktop is het register het bestand
 `.lionsville-architecture/people.json` in je map. **Het staat nooit in de
 geschiedenis van de map**: geen momentopname neemt het mee, en een

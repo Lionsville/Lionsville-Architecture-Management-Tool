@@ -177,4 +177,29 @@ describe('a source that does more about its people than keep them', () => {
     act(() => { for (const one of heard) one() })
     await waitFor(() => expect(within(screen.getByTestId('people-table')).getByText('Sara Kaya')).toBeDefined())
   })
+
+  it('says who may do what, which address it keeps, and whom its schedule held back: the page offers and says only that', async () => {
+    const held = heldRepositories([root])
+    const pia = await added(held, 'Pia Schulz')
+    const gijs = await added(held, 'Gijs Mulder')
+    await held.people.leave(gijs.id, '2026-06-01')
+    renderApp({
+      repositories: held, today: () => TODAY,
+      provider: { people: {
+        appliesPolicy: true,
+        may: (action, id) => action === 'change' && id === pia.id,
+        withheld: (id) => id === pia.id,
+        held: (id) => (id === gijs.id ? 'signedInSinceLeaving' : undefined),
+      } },
+    })
+    await openPeople()
+    expect(screen.queryByTestId('people-add')).toBeNull()
+    fireEvent.click(within(await screen.findByTestId(`people-row-${pia.id}`)).getByRole('button'))
+    expect(await screen.findByTestId('people-correct')).toBeDefined()
+    expect(screen.queryByTestId('people-forget')).toBeNull()
+    expect(screen.getByTestId('people-person-email').textContent).toBe('an address not shown to you')
+    fireEvent.click(within(screen.getByTestId(`people-row-${gijs.id}`)).getByRole('button'))
+    expect((await screen.findByTestId('people-held-back')).textContent).toMatch(/signed in after their last day/)
+  })
 })
+

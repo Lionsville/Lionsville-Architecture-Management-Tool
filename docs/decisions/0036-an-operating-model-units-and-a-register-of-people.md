@@ -481,7 +481,16 @@ organisation is opened or the day turns; `me`, the entry its account is
 linked to, which marks *you* and takes *This is me* off the page; and
 `changes`, which reads the register again when it changed elsewhere. All
 three absent for the core registers, which keep the policy and *This is me*
-as above.
+as above. A build that grants rights by person says three more: `may`,
+whether the person using the app may make one kind of change
+(`PEOPLE_ACTIONS`), of one entry where the answer is the entry's, and the
+page offers only those; `withheld`, an entry whose address is kept from
+them, which the page says rather than *no address*; and `held`, why its own
+schedule did not forget an entry that was due (`PolicyHold`), said beside
+its state. And a register that does what leaving does itself — ending a
+leaver's assignments as it marks them — says how much in the answer
+(`PersonWritten.ended`), and `people/leave.ts` then runs no consequence of
+its own, so nothing is ended twice.
 
 **Leaving is a seam**: `people/leave.ts` marks the register, then runs each
 `LeaveConsequence` composed in `app/organisation/leaving.ts` — none yet;

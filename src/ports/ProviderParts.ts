@@ -19,6 +19,7 @@
  */
 import type { Destination, MovedBy, Screen } from '../agent/screen'
 import type { PersonId } from '../model/person'
+import type { PeopleAction, PolicyHold } from '../people/person'
 import type {
   SourceFailure, SourceLanding, SourceStatus, SourceWork, SourceWorkChanged,
 } from '../platform/sourceProvider'
@@ -123,7 +124,8 @@ export type ProviderParts<Own = unknown> = {
 /**
  * A source that knows more about its people than a register of names: one
  * that applies the policy on a schedule of its own, knows which entry is the
- * person using it, or hears the register change elsewhere.
+ * person using it, hears the register change elsewhere, or knows who may do
+ * what with it.
  */
 export type SourcePeople = {
   /**
@@ -143,6 +145,27 @@ export type SourcePeople = {
    * way to stop: the app reads it again, so a forget shows everywhere at once.
    */
   readonly changes?: (onChanged: () => void) => () => void
+  /**
+   * Whether the person using the app may make one kind of change — of one
+   * entry, where the answer is the entry's (a correction, a leave) — where the
+   * source knows more than whether the register may be written at all: who
+   * may merge, forget and remove, say, or a right that reaches some people
+   * and not others. Asked each time the page is drawn, after the register was
+   * read; where it says no, the page offers nothing for that change. Absent,
+   * every change is offered wherever the register may be written.
+   */
+  readonly may?: (action: PeopleAction, id?: PersonId) => boolean
+  /**
+   * Whether an entry has a work address that is not shown to this person: the
+   * page says so, rather than that there is none.
+   */
+  readonly withheld?: (id: PersonId) => boolean
+  /**
+   * Why the source's own schedule did not forget an entry that was due, where
+   * it held one back: the page says it beside the entry's state, for whoever
+   * may forget them to decide.
+   */
+  readonly held?: (id: PersonId) => PolicyHold | undefined
 }
 
 /** A provider's sentences about its source, as keys of its own table. */

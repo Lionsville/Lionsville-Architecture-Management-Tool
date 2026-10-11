@@ -63,6 +63,7 @@ export const EN = {
 
   // --- a person ----------------------------------------------------------------
   'people.noEmail': 'no address',
+  'people.emailWithheld': 'an address not shown to you',
   'people.thisIsYou': 'This is you: this install marks you wherever you appear.',
   'people.thisIsMe': 'This is me',
   'people.notMe': 'This is not me',
@@ -91,6 +92,7 @@ export const EN = {
   'people.leftDone': '{name} is marked as left on {day}. The name is shown until {forget}.',
   'people.leftOn': 'Left on {day}. The name is shown until {forget}, then forgotten.',
   'people.leftDue': 'That day has passed: the name is forgotten when the policy is next applied.',
+  'people.heldSignedIn': 'Not forgotten on that day: their account signed in after their last day. Whoever may forget them decides.',
   'people.forget': 'Forget now',
   'people.forgetTitle': 'Forget {name}?',
   'people.forgetBody': 'The name and the address go from the register, and everywhere {name} appears shows {pseudonym} from now on. This is final: the register keeps no history, so nothing brings the name back. A signed decision keeps the name it was signed with.',

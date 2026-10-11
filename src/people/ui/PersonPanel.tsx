@@ -23,12 +23,13 @@ import Typography from '@mui/material/Typography'
 import { heldLine, heldOn, holdText, keptName, pointerLine, ruleLine, whatWeHold } from '../hold'
 import type { HeldAssignment, Mention, OwnedByRule, PointedAt, PointsAt } from '../hold'
 import type { StringKey } from '../../i18n/table'
-import type { Person, PersonKind } from '../person'
+import type { Person, PersonKind, PolicyHold } from '../person'
 import { entriesOf, PERSON_KINDS } from '../person'
 import { forgetDay, removeDay } from '../policy'
 import type { PeoplePolicy } from '../policy'
 import { shownEntry, shownText } from '../shown'
 import type { Translate } from '../shown'
+import { mayDo } from './access'
 import type { PeopleRegisterAccess, Saying } from './access'
 import { KIND_LABEL, Section } from './parts'
 
@@ -49,7 +50,9 @@ export type PersonPanelProps = {
 /** The day the People page is looked at (ADR-0027): `day` absent is today. Nothing is written by looking. */
 export type PeopleLook = { day?: string; onDay: (day: string | undefined) => void }
 
-function StateLine({ person, policy, today, s }: { person: Person; policy: PeoplePolicy; today: string; s: Translate }) {
+function StateLine({ person, policy, today, held, s }: {
+  person: Person; policy: PeoplePolicy; today: string; held: PolicyHold | undefined; s: Translate
+}) {
   if (person.state === 'active') return <Chip size="small" color="success" variant="outlined" label={s('people.stateActive')} />
   if (person.state === 'left') {
     const forget = forgetDay(person, policy) ?? ''
@@ -57,7 +60,9 @@ function StateLine({ person, policy, today, s }: { person: Person; policy: Peopl
       <>
         <Chip size="small" color="warning" variant="outlined" label={s('people.stateLeft', { day: person.leftOn ?? '' })} />
         <Typography sx={{ fontSize: 12, mt: 0.75 }}>{s('people.leftOn', { day: person.leftOn ?? '', forget })}</Typography>
-        {forget && forget <= today && <Typography sx={{ fontSize: 12, fontWeight: 600 }}>{s('people.leftDue')}</Typography>}
+        {held === 'signedInSinceLeaving'
+          ? <Typography sx={{ fontSize: 12, fontWeight: 600 }} data-testid="people-held-back">{s('people.heldSignedIn')}</Typography>
+          : forget && forget <= today && <Typography sx={{ fontSize: 12, fontWeight: 600 }}>{s('people.leftDue')}</Typography>}
       </>
     )
   }
@@ -199,8 +204,19 @@ function Holding({ person, register, found, copyText, s }: {
   )
 }
 
-/** What may be done, by state: leave, forget, remove, merge, and saying who you are. */
+/** The changes the panel's *What may be done* offers this person for this entry, by its state and by who may make them. */
+function doable(person: Person, register: PeopleRegisterAccess) {
+  return {
+    leave: person.state === 'active' && mayDo(register, 'leave', person.id),
+    merge: person.state !== 'forgotten' && mayDo(register, 'merge', person.id),
+    forget: person.state !== 'forgotten' && mayDo(register, 'forget', person.id),
+    remove: person.state === 'forgotten' && mayDo(register, 'remove', person.id),
+  }
+}
+
+/** What may be done, by state and by who may do it: leave, forget, remove, merge. */
 function Doing({ person, register, saying, onForget, onRemove, onMerge, s }: Omit<PersonPanelProps, 'copyText'>) {
+  const can = doable(person, register)
   const [lastDay, setLastDay] = useState(register.today)
   const others = entriesOf(register.people ?? []).filter((one) => one.id !== person.id && one.state !== 'forgotten')
   const [into, setInto] = useState('')
@@ -213,13 +229,13 @@ function Doing({ person, register, saying, onForget, onRemove, onMerge, s }: Omi
   const target = others.find((one) => one.id === into)
   return (
     <Box sx={{ display: 'grid', gap: 1 }}>
-      {person.state === 'active' && (
+      {can.leave && (
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
           <TextField size="small" type="date" label={s('people.lastDay')} value={lastDay} onChange={(event) => setLastDay(event.target.value)} slotProps={{ inputLabel: { shrink: true } }} />
           <Button size="small" variant="outlined" onClick={leave} data-testid="people-leave">{s('people.markLeft')}</Button>
         </Box>
       )}
-      {person.state !== 'forgotten' && (
+      {can.merge && (
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
           <TextField size="small" select label={s('people.mergeKeep')} value={into} onChange={(event) => setInto(event.target.value)} sx={{ minWidth: 180 }}>
             {others.map((one) => <MenuItem key={one.id} value={one.id}>{named(one)}</MenuItem>)}
@@ -230,14 +246,14 @@ function Doing({ person, register, saying, onForget, onRemove, onMerge, s }: Omi
         </Box>
       )}
       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-        {person.state !== 'forgotten' && (
+        {can.forget && (
           <Button size="small" color="error" variant="outlined" onClick={() => onForget(person)} data-testid="people-forget">{s('people.forget')}</Button>
         )}
-        {person.state === 'forgotten' && (
+        {can.remove && (
           <Button size="small" color="error" variant="outlined" onClick={() => onRemove(person)} data-testid="people-remove">{s('people.remove')}</Button>
         )}
       </Box>
-      <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{s('people.forgetNote')}</Typography>
+      {(can.forget || can.remove) && <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{s('people.forgetNote')}</Typography>}
     </Box>
   )
 }
@@ -309,8 +325,12 @@ export function PersonPanel(props: PersonPanelProps) {
       <Typography component="h2" sx={{ fontSize: 18, fontWeight: 700, my: 0.5 }} data-testid="people-person-name">
         {shownText(shownEntry(person), s)}
       </Typography>
-      <StateLine person={person} policy={register.policy} today={register.today} s={s} />
-      {named && <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.75 }}>{person.email ?? s('people.noEmail')}</Typography>}
+      <StateLine person={person} policy={register.policy} today={register.today} held={register.held?.(person.id)} s={s} />
+      {named && (
+        <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.75 }} data-testid="people-person-email">
+          {person.email ?? s(register.withheld?.(person.id) ? 'people.emailWithheld' : 'people.noEmail')}
+        </Typography>
+      )}
       {isMe && <Typography sx={{ fontSize: 12, mt: 0.75 }} data-testid="people-this-is-you">{s('people.thisIsYou')}</Typography>}
       {named && !register.readOnly && (
         <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap' }}>
@@ -319,7 +339,9 @@ export function PersonPanel(props: PersonPanelProps) {
               {s(isMe ? 'people.notMe' : 'people.thisIsMe')}
             </Button>
           )}
-          {!correcting && <Button size="small" onClick={() => setCorrecting(true)}>{s('people.correct')}</Button>}
+          {!correcting && mayDo(register, 'change', person.id) && (
+            <Button size="small" onClick={() => setCorrecting(true)} data-testid="people-correct">{s('people.correct')}</Button>
+          )}
         </Box>
       )}
       {correcting && <Correcting person={person} register={register} saying={saying} onDone={() => setCorrecting(false)} s={s} />}
@@ -327,7 +349,7 @@ export function PersonPanel(props: PersonPanelProps) {
       <Holds held={register.assignmentsOf?.(person.id) ?? []} today={register.today} look={props.look} s={s} />
       <PointsAtThem found={found} s={s} />
 
-      {!register.readOnly && (
+      {Object.values(doable(person, register)).some(Boolean) && (
         <Section title={s('people.do')}>
           <Doing {...props} />
         </Section>

@@ -53,6 +53,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'people.mergeKeep': 'Der Eintrag, der bleibt',
 
   'people.noEmail': 'keine Adresse',
+  'people.emailWithheld': 'eine Adresse, die Ihnen nicht angezeigt wird',
   'people.thisIsYou': 'Das sind Sie: Diese Installation markiert Sie überall, wo Sie vorkommen.',
   'people.thisIsMe': 'Das bin ich',
   'people.notMe': 'Das bin ich nicht',
@@ -81,6 +82,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'people.leftDone': '{name} ist zum {day} als ausgeschieden markiert. Der Name wird bis {forget} angezeigt.',
   'people.leftOn': 'Ausgeschieden am {day}. Der Name wird bis {forget} angezeigt und dann vergessen.',
   'people.leftDue': 'Dieser Tag ist vorbei: Der Name wird vergessen, sobald die Richtlinie das nächste Mal angewendet wird.',
+  'people.heldSignedIn': 'Nicht an diesem Tag vergessen: Das Konto wurde nach dem letzten Arbeitstag noch zur Anmeldung genutzt. Wer den Namen vergessen darf, entscheidet darüber.',
   'people.forget': 'Jetzt vergessen',
   'people.forgetTitle': '{name} vergessen?',
   'people.forgetBody': 'Name und Adresse verschwinden aus dem Register, und überall, wo {name} vorkommt, steht von nun an {pseudonym}. Das ist endgültig: Das Register führt keinen Verlauf, nichts bringt den Namen zurück. Eine unterzeichnete Entscheidung behält den Namen, mit dem sie unterzeichnet wurde.',

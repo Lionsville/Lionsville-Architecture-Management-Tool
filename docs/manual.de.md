@@ -359,6 +359,19 @@ die Organisation geöffnet wird; und sie weiß über Ihr Konto, welcher Eintrag
 Sie sind, sodass Sie ohne **Das bin ich** markiert werden, das dann nicht
 angeboten wird.
 
+Eine solche Quelle kann auch wissen, wer was darf. Die Seite bietet dann jede
+Änderung nur dem an, der sie vornehmen darf: **Person hinzufügen**,
+**Korrigieren…** und **Als ausgeschieden markieren** etwa nur für die
+Menschen Ihrer eigenen Einheiten, und **Zusammenführen**, **Jetzt vergessen**,
+**Jetzt entfernen** und die Richtlinie nur den Administratoren der
+Organisation. Wo sie Ihnen eine Arbeitsadresse vorenthält, sagt die Seite
+*eine Adresse, die Ihnen nicht angezeigt wird*, statt dass es keine gäbe.
+Jemanden als ausgeschieden zu markieren kann dessen Zuweisungen sofort
+beenden; die Seite sagt, wie viele. Und wo ihr Zeitplan jemanden, dessen Tag
+gekommen war, nicht vergessen hat, weil sich nach dem letzten Arbeitstag noch
+mit dessen Konto angemeldet wurde, sagt die Seite das neben dem Status, und
+wer den Namen vergessen darf, entscheidet.
+
 Auf dem Desktop ist das Register die Datei
 `.lionsville-architecture/people.json` in Ihrem Ordner. **Sie ist nie im
 Verlauf des Ordners**: Kein Schnappschuss nimmt sie mit, und ein im Terminal

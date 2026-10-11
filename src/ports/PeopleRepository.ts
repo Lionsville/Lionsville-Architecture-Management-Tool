@@ -47,8 +47,14 @@ export type PeopleChanges = {
   removed: readonly PersonId[]
 }
 
-/** A change made: the register's revision after it, and the entry as it now is. */
-export type PersonWritten = { revision: Revision; person: Person }
+/**
+ * A change made: the register's revision after it, and the entry as it now
+ * is. A leave or a forget of somebody still active may say `ended`: how many
+ * things leaving ended, where the repository does what leaving does beyond the
+ * register itself — a server that ends a leaver's assignments as it marks them
+ * — and the caller then ends nothing more (`people/leave.ts`).
+ */
+export type PersonWritten = { revision: Revision; person: Person; ended?: number }
 
 /** An entry removed: the register's revision after it, and every id that went (its redirects too). */
 export type PersonRemoved = { revision: Revision; removed: readonly PersonId[] }
@@ -77,7 +83,8 @@ export interface PeopleRepository {
 
   /**
    * Marked as left, with their last day. Only someone active leaves. What
-   * leaving does beyond the register is the caller's (`people/leave.ts`).
+   * leaving does beyond the register is the caller's (`people/leave.ts`) —
+   * unless the answer says `ended`, which is the repository having done it.
    */
   leave(id: PersonId, on: string): Promise<PersonWritten | PeopleRefused>
 

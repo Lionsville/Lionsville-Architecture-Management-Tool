@@ -24,7 +24,11 @@
  * the source knows which entry the person using it is, an account linked to
  * one — the source's word (`SourcePeople.me`), and then *This is me* is not
  * offered. A source that hears the register change elsewhere says so
- * (`SourcePeople.changes`), and the register is read again.
+ * (`SourcePeople.changes`), and the register is read again. A source that
+ * knows who may do what says it per change and per entry
+ * (`SourcePeople.may`), which address it keeps from this person
+ * (`withheld`), and whom its schedule held back (`held`); the page reads all
+ * three through this hook.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { PeopleView } from '../../agent/people'
@@ -32,7 +36,7 @@ import type { PersonId } from '../../model/person'
 import { forgetPerson, leavePerson } from '../../people/leave'
 import type { Left } from '../../people/leave'
 import { meOf, mePatch } from '../../people/me'
-import type { NewPerson, Person, PersonPatch } from '../../people/person'
+import type { NewPerson, PeopleAction, Person, PersonPatch, PolicyHold } from '../../people/person'
 import { DEFAULT_POLICY, dueOn, policyOf, policyPatch } from '../../people/policy'
 import type { PeoplePolicy } from '../../people/policy'
 import type { Mention } from '../../people/hold'
@@ -60,6 +64,12 @@ export type PeopleAccess = {
   meSaid: boolean
   /** Whether the register may be changed here. */
   readOnly: boolean
+  /** Whether this person may make one kind of change, of one entry where it is the entry's; where the source says (`SourcePeople.may`). */
+  may?: (action: PeopleAction, id?: PersonId) => boolean
+  /** Whether an entry has an address this person is not shown; where the source says. */
+  withheld?: (id: PersonId) => boolean
+  /** Why the source's schedule held an entry back from being forgotten; where the source says. */
+  held?: (id: PersonId) => PolicyHold | undefined
   today: string
   refresh: () => void
   add: (person: NewPerson) => Promise<PersonWritten | PeopleRefused>
@@ -199,6 +209,9 @@ export function usePeopleRegister(deps: {
     ...held,
     meSaid: source?.me !== undefined,
     readOnly,
+    ...(source?.may ? { may: source.may } : {}),
+    ...(source?.withheld ? { withheld: source.withheld } : {}),
+    ...(source?.held ? { held: source.held } : {}),
     today,
     refresh,
     add: (person) => changed(repositories.people.add(person)),

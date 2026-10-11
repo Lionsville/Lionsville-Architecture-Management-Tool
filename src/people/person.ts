@@ -102,6 +102,21 @@ export const PEOPLE_REFUSALS = [
 
 export type PeopleRefusal = (typeof PEOPLE_REFUSALS)[number]
 
+/**
+ * The changes a person makes to the register, one kind at a time: what a
+ * source that knows who may do which answers for (`SourcePeople.may`), so the
+ * People page offers only what this person may do.
+ */
+export const PEOPLE_ACTIONS = ['add', 'change', 'leave', 'merge', 'forget', 'remove', 'policy'] as const
+export type PeopleAction = (typeof PEOPLE_ACTIONS)[number]
+
+/**
+ * Why a source that applies the policy on its own schedule did not forget an
+ * entry that was due (`SourcePeople.held`): their account signed in after
+ * their last day, and somebody who may forget them decides.
+ */
+export type PolicyHold = 'signedInSinceLeaving'
+
 export function isPeopleRefusal(value: unknown): value is PeopleRefusal {
   return (PEOPLE_REFUSALS as readonly unknown[]).includes(value)
 }

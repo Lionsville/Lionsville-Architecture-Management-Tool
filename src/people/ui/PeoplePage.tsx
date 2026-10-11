@@ -17,6 +17,9 @@
  *
  * A full-window page like the registers: it takes the window chrome, works
  * in both themes, and `readOnly` hides everything that changes the register.
+ * Where the source says who may do what (`may`), each change is offered only
+ * to whoever may make it — of this entry, where that is the entry's — and an
+ * address the source keeps from this person is said to be kept, not missing.
  */
 import { useEffect, useMemo, useState } from 'react'
 import Alert from '@mui/material/Alert'
@@ -42,7 +45,7 @@ import type { Person, PersonState } from '../person'
 import { entriesOf } from '../person'
 import { registerOf, shownEntry, shownText } from '../shown'
 import type { Translate } from '../shown'
-import { useSaying } from './access'
+import { mayDo, useSaying } from './access'
 import type { PeopleRegisterAccess, Saying } from './access'
 import { AddPerson, SIGN_LABEL } from './AddPerson'
 import { CsvImport } from './CsvImport'
@@ -125,8 +128,9 @@ function Duplicates({ pairs, onMerge, s }: { pairs: readonly DuplicatePair[]; on
   )
 }
 
-function Everyone({ shown, selected, me, onSelect, s }: {
-  shown: readonly Person[]; selected: PersonId | undefined; me: PersonId | undefined; onSelect: (id: PersonId) => void; s: Translate
+function Everyone({ shown, selected, me, withheld, onSelect, s }: {
+  shown: readonly Person[]; selected: PersonId | undefined; me: PersonId | undefined
+  withheld: ((id: PersonId) => boolean) | undefined; onSelect: (id: PersonId) => void; s: Translate
 }) {
   return (
     <Box component="table" data-testid="people-table" sx={{
@@ -151,7 +155,7 @@ function Everyone({ shown, selected, me, onSelect, s }: {
             </td>
             <td>{s(KIND_LABEL[person.kind])}</td>
             <td>{stateText(person, s)}</td>
-            <td>{person.email ?? ''}</td>
+            <td>{person.email ?? (withheld?.(person.id) ? s('people.emailWithheld') : '')}</td>
           </Box>
         ))}
       </tbody>
@@ -244,7 +248,7 @@ export function PeoplePage({ open, onClose, register, select, readText, copyText
 
   return (
     <PageDialog open={open} topInset={windowChrome.topInset} onClose={onClose} aria-label={s('people.title')}>
-      <TopBar chrome={windowChrome} show={show} onShow={setShow} query={query} onQuery={setQuery} counts={counts} readOnly={register.readOnly}
+      <TopBar chrome={windowChrome} show={show} onShow={setShow} query={query} onQuery={setQuery} counts={counts} readOnly={!mayDo(register, 'add')}
         onAdd={() => setAdding(true)} onImport={() => setImporting(true)} onFindMe={located.findMe} onClose={onClose} s={s} />
       <Box ref={located.ref} sx={{ flex: 1, minHeight: 0, display: 'flex', flexWrap: 'wrap', overflowY: 'auto', ...located.ring }}>
         <Box component="main" sx={{ flex: '2 1 420px', minWidth: 0, px: 3, py: 2 }}>
@@ -252,16 +256,16 @@ export function PeoplePage({ open, onClose, register, select, readText, copyText
           <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 2 }} data-testid="people-not-a-step">
             {s(register.readOnly ? 'people.readOnly' : 'people.notAStep')}
           </Typography>
-          {pairs.length > 0 && !register.readOnly && <Duplicates pairs={pairs} onMerge={(from, into) => setAsking({ kind: 'merge', from, into })} s={s} />}
+          {pairs.length > 0 && mayDo(register, 'merge') && <Duplicates pairs={pairs} onMerge={(from, into) => setAsking({ kind: 'merge', from, into })} s={s} />}
           {entries.length === 0 && <Typography sx={{ fontSize: 13 }}>{s('people.empty')}</Typography>}
           {entries.length > 0 && shown.length === 0 && <Typography sx={{ fontSize: 13 }}>{s('people.searchEmpty', { query: query.trim() })}</Typography>}
-          {shown.length > 0 && <Everyone shown={shown} selected={selected} me={me} onSelect={pick} s={s} />}
+          {shown.length > 0 && <Everyone shown={shown} selected={selected} me={me} withheld={register.withheld} onSelect={pick} s={s} />}
         </Box>
         <Box component="aside" aria-label={s('people.title')} sx={{ flex: '1 1 300px', minWidth: 0, px: 2, py: 2, borderLeft: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
           {saying.said && (
             <Alert severity={saying.said.tone} role="status" sx={{ mb: 1.5, fontSize: 12 }} data-testid="people-said">{saying.said.text}</Alert>
           )}
-          {adding && !register.readOnly && (
+          {adding && mayDo(register, 'add') && (
             <AddPerson register={register} saying={saying} onAdded={pick} onUse={pick} onCancel={() => setAdding(false)} s={s} />
           )}
           {!adding && person && (
