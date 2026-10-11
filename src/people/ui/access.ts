@@ -15,7 +15,7 @@
 import { useCallback, useState } from 'react'
 import type { PersonId } from '../../model/person'
 import { ShellError } from '../../platform/errors'
-import type { HeldAssignment, Mention } from '../hold'
+import type { HeldAssignment, Mention, PointsAt } from '../hold'
 import type { NewPerson, PeopleRefusal, Person, PersonPatch } from '../person'
 import type { PeoplePolicy } from '../policy'
 import type { Translate } from '../shown'
@@ -46,6 +46,13 @@ export type PeopleRegisterAccess = {
    * the shell has no tree to read.
    */
   assignmentsOf?(id: PersonId): readonly HeldAssignment[]
+  /**
+   * Everything across the tree that points at a person — under their id and
+   * every id merged into it — by its fields: the records that name them, the
+   * signatures that kept their name, and what the operating model's rules
+   * make them own today (ADR-0036 §8). Absent where the shell has no tree.
+   */
+  pointsAt?(id: PersonId): Promise<PointsAt>
 }
 
 /** What the status line says, and how loudly. */

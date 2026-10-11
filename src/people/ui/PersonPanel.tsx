@@ -20,8 +20,9 @@ import Chip from '@mui/material/Chip'
 import MenuItem from '@mui/material/MenuItem'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
-import { heldLine, heldOn, holdText, whatWeHold } from '../hold'
-import type { HeldAssignment, Mention } from '../hold'
+import { heldLine, heldOn, holdText, keptName, pointerLine, ruleLine, whatWeHold } from '../hold'
+import type { HeldAssignment, Mention, OwnedByRule, PointedAt, PointsAt } from '../hold'
+import type { StringKey } from '../../i18n/table'
 import type { Person, PersonKind } from '../person'
 import { entriesOf, PERSON_KINDS } from '../person'
 import { forgetDay, removeDay } from '../policy'
@@ -96,8 +97,78 @@ function Correcting({ person, register, saying, onDone, s }: {
   )
 }
 
+/**
+ * What points at a person across the tree (ADR-0036 §8), read when the panel
+ * opens on them and again when the register changes: the records whose
+ * fields hold their id, the signatures that kept their name, and what the
+ * rules make them own today. Nothing where the shell has no tree to read.
+ */
+function usePointsAt(person: Person, register: PeopleRegisterAccess): PointsAt | undefined {
+  const [found, setFound] = useState<PointsAt | undefined>(undefined)
+  const { pointsAt, people } = register
+  useEffect(() => {
+    let stale = false
+    setFound(undefined)
+    if (pointsAt) void pointsAt(person.id).then((held) => { if (!stale) setFound(held) }, () => { if (!stale) setFound({ pointers: [], byRule: [] }) })
+    return () => { stale = true }
+  }, [pointsAt, person.id, people])
+  return found
+}
+
+const POINTED: Record<PointedAt['field'], StringKey> = {
+  owner: 'people.pointedOwnerOf',
+  seenBy: 'people.pointedSeenBy',
+  runBy: 'people.pointedRunBy',
+  proposed: 'people.pointedProposed',
+  signer: 'people.pointedSigner',
+}
+
+/** One record that points at the person, in words: which record, which field, and where it is kept. */
+function pointedText(one: PointedAt, s: Translate): string {
+  if (keptName(one)) return s('people.pointedSigned', { label: one.label ?? '', name: one.title, as: one.signedAs ?? '' })
+  if (one.kind === 'plan') return s('people.pointedPlanOwner', { label: one.label ?? '', name: one.title })
+  return s(POINTED[one.field], { label: one.label ?? '', name: one.title })
+}
+
+/** What a rule makes the person own, in words. */
+function ruleText(one: OwnedByRule, s: Translate): string {
+  return s(one.kind === 'domain' ? 'people.pointedDomainByRule' : 'people.pointedByRule', { name: one.name, day: one.day })
+}
+
+/** *Points at them*: every record that names the person by id, the signatures that kept their name, and what the rules work out. */
+function PointsAtThem({ found, s }: { found: PointsAt | undefined; s: Translate }) {
+  if (!found) return null
+  const { pointers, byRule } = found
+  const muted = (text: string) => <Box component="span" sx={{ color: 'text.secondary' }}> · {text}</Box>
+  return (
+    <Section title={s('people.pointsAt')}>
+      <Box data-testid="people-points-at" sx={{ display: 'grid', gap: 0.25 }}>
+        {byRule.map((one) => (
+          <Typography key={`rule:${one.kind}:${one.scope}:${one.id}`} sx={{ fontSize: 13 }} data-testid="people-pointed-rule">
+            {ruleText(one, s)}{muted(s('people.pointedRuleNote'))}
+          </Typography>
+        ))}
+        {pointers.map((one, at) => (
+          <Typography key={`${one.scope}/${one.kind}/${one.id}/${one.field}/${at}`} sx={{ fontSize: 13 }} data-testid={keptName(one) ? 'people-pointed-signed' : 'people-pointed'}>
+            {pointedText(one, s)}
+            {muted(keptName(one) ? s('people.pointedSignedNote') : s('people.pointedWhere', { scope: one.scope || s('common.organisation') }))}
+          </Typography>
+        ))}
+        {pointers.length === 0 && byRule.length === 0 && (
+          <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{s('people.pointsAtNothing')}</Typography>
+        )}
+        {pointers.length + byRule.length > 0 && (
+          <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>{s('people.pointsAtNote')}</Typography>
+        )}
+      </Box>
+    </Section>
+  )
+}
+
 /** *What we hold*: the account a request for access is answered with. */
-function Holding({ person, register, copyText, s }: { person: Person; register: PeopleRegisterAccess; copyText?: (text: string) => void; s: Translate }) {
+function Holding({ person, register, found, copyText, s }: {
+  person: Person; register: PeopleRegisterAccess; found: PointsAt | undefined; copyText?: (text: string) => void; s: Translate
+}) {
   const [mentions, setMentions] = useState<Mention[] | undefined>(undefined)
   const { mentionsOf } = register
   // A search across the tree for the name: what a forget cannot reach, said honestly (ADR-0036 §10).
@@ -107,6 +178,11 @@ function Holding({ person, register, copyText, s }: { person: Person; register: 
   const assignments = (register.assignmentsOf?.(person.id) ?? []).map(heldLine)
   const held = whatWeHold(person, register.people ?? [], {
     thisIsMe: register.me === person.id, assignments, ...(mentions ? { mentions } : {}),
+    ...(found ? {
+      namedIn: found.pointers.filter((one) => !keptName(one)).map(pointerLine),
+      signed: found.pointers.filter(keptName).map(pointerLine),
+      derived: found.byRule.map(ruleLine),
+    } : {}),
   })
   const text = holdText(held)
   return (
@@ -221,6 +297,7 @@ export function PersonPanel(props: PersonPanelProps) {
   const [holding, setHolding] = useState(false)
   const named = person.state !== 'forgotten'
   const isMe = register.me === person.id
+  const found = usePointsAt(person, register)
   const setMe = (id: string | undefined) => {
     void saying.run(register.setMe(id).then(() => ({})), () => s(id ? 'people.thisIsYou' : 'people.saved'))
   }
@@ -248,6 +325,7 @@ export function PersonPanel(props: PersonPanelProps) {
       {correcting && <Correcting person={person} register={register} saying={saying} onDone={() => setCorrecting(false)} s={s} />}
 
       <Holds held={register.assignmentsOf?.(person.id) ?? []} today={register.today} look={props.look} s={s} />
+      <PointsAtThem found={found} s={s} />
 
       {!register.readOnly && (
         <Section title={s('people.do')}>
@@ -259,7 +337,7 @@ export function PersonPanel(props: PersonPanelProps) {
         <Button size="small" variant="outlined" onClick={() => setHolding((was) => !was)} data-testid="people-hold-toggle">
           {s(holding ? 'people.holdHide' : 'people.hold')}
         </Button>
-        {holding && <Holding person={person} register={register} copyText={copyText} s={s} />}
+        {holding && <Holding person={person} register={register} found={found} copyText={copyText} s={s} />}
       </Box>
     </Box>
   )

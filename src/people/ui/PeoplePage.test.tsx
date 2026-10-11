@@ -16,7 +16,7 @@ import { renderShell } from '../../app/testing/renderShell'
 import { translator } from '../../i18n'
 import type { PersonId } from '../../model/person'
 import type { Person } from '../person'
-import type { HeldAssignment } from '../hold'
+import type { HeldAssignment, PointsAt } from '../hold'
 import { DEFAULT_POLICY } from '../policy'
 import type { PeoplePolicy } from '../policy'
 import { changePeople } from '../register'
@@ -42,9 +42,9 @@ const START: Person[] = [
 ]
 
 /** A register held in React state and changed by the register's own rules, as the shell's hook would. */
-function Harness({ readOnly = false, me, onPolicy, mentions = [], held: holding, looking = false }: {
+function Harness({ readOnly = false, me, onPolicy, mentions = [], held: holding, looking = false, pointsAt }: {
   readOnly?: boolean; me?: PersonId; onPolicy?: (change: Partial<PeoplePolicy>) => void; mentions?: { scope: string; kind: string; id: string; title: string }[]
-  held?: Record<PersonId, HeldAssignment[]>; looking?: boolean
+  held?: Record<PersonId, HeldAssignment[]>; looking?: boolean; pointsAt?: Record<PersonId, PointsAt> | 'unreadable'
 }) {
   const [day, setDay] = useState<string | undefined>(undefined)
   const [people, setPeople] = useState<readonly Person[]>(START)
@@ -73,6 +73,8 @@ function Harness({ readOnly = false, me, onPolicy, mentions = [], held: holding,
     setMe: (id) => { setWho(id); return Promise.resolve() },
     mentionsOf: () => Promise.resolve(mentions),
     ...(holding ? { assignmentsOf: (id: PersonId) => holding[id] ?? [] } : {}),
+    ...(pointsAt === 'unreadable' ? { pointsAt: () => Promise.reject(new Error('the tree will not read')) } : {}),
+    ...(pointsAt && pointsAt !== 'unreadable' ? { pointsAt: (id: PersonId) => Promise.resolve(pointsAt[id] ?? { pointers: [], byRule: [] }) } : {}),
   }
   const look = { ...(day !== undefined ? { day } : {}), onDay: setDay }
   return <PeoplePage open onClose={() => {}} register={register} copyText={() => {}} s={s} {...(looking ? { look } : {})} />
@@ -275,5 +277,66 @@ describe('the People page', () => {
     expect(screen.queryByTestId('people-me')).toBeNull()
     expect(screen.queryByTestId('people-policy-save')).toBeNull()
     expect(screen.getByTestId('people-not-a-step').textContent).toBe('The register is read here and not changed.')
+  })
+})
+
+describe('what points at a person (ADR-0036 §8)', () => {
+  const pointing: PointsAt = {
+    byRule: [{ kind: 'application', scope: 'retail', id: 'shop', name: 'Webshop', day: TODAY }],
+    pointers: [
+      { scope: 'retail', kind: 'element', id: 'crm', title: 'CRM', field: 'owner', person: 'pe-pia' },
+      { scope: 'retail', kind: 'observation', id: 'ob-1', label: 'OB-0001', title: 'Orders arrive twice', field: 'seenBy', person: 'pe-pia' },
+      { scope: '', kind: 'decision', id: 'ad-1', label: 'ADR-0004', title: 'One order store', field: 'signer', person: 'pe-pia', signedAs: 'Pia Schulz' },
+    ],
+  }
+
+  it('lists the records that name them by id, the signatures that kept their name, and what the rules work out', async () => {
+    renderShell(<Harness pointsAt={{ 'pe-pia': pointing }} />)
+    pick('pe-pia')
+    const section = await screen.findByTestId('people-points-at')
+    expect(within(section).getByTestId('people-pointed-rule').textContent).toBe(`Owner of Webshop on ${TODAY} · worked out from the role, not stored`)
+    expect(within(section).getAllByTestId('people-pointed').map((line) => line.textContent)).toEqual([
+      'Owner of CRM · in retail',
+      'OB-0001 Orders arrive twice: seen by · in retail',
+    ])
+    expect(within(section).getByTestId('people-pointed-signed').textContent).toBe('ADR-0004 One order store: signed as Pia Schulz · kept: a signature keeps its name')
+    fireEvent.click(screen.getByTestId('people-hold-toggle'))
+    const held = JSON.parse(screen.getByTestId('people-hold').textContent ?? '{}')
+    expect(held.namedIn).toEqual(['CRM (retail): owner', 'OB-0001 Orders arrive twice (retail): seen by'])
+    expect(held.signed).toEqual(['ADR-0004 One order store (the organisation), signed as Pia Schulz'])
+    expect(held.derived).toEqual([`Owner of Webshop (retail) on ${TODAY}, worked out from the role`])
+  })
+
+  it('says nothing points at them where nothing does', async () => {
+    renderShell(<Harness pointsAt={{}} />)
+    pick('pe-eva')
+    expect((await screen.findByTestId('people-points-at')).textContent).toContain('Nothing points at them.')
+  })
+})
+
+describe('what points at a person, when the tree will not read', () => {
+  it('says nothing points at them rather than waiting for ever', async () => {
+    renderShell(<Harness pointsAt="unreadable" />)
+    pick('pe-pia')
+    expect((await screen.findByTestId('people-points-at')).textContent).toContain('Nothing points at them.')
+  })
+
+  it('says a domain, a plan, an experiment, a proposer and a signer in words', async () => {
+    const pointing: PointsAt = {
+      byRule: [{ kind: 'domain', scope: 'retail', id: 'retail', name: 'Retail', day: TODAY }],
+      pointers: [
+        { scope: 'retail', kind: 'plan', id: 'tr-1', label: 'TR-0001', title: 'Replace the store', field: 'owner', person: 'pe-pia' },
+        { scope: 'retail', kind: 'experiment', id: 'ex-1', label: 'EX-0001', title: 'Deduplicate', field: 'runBy', person: 'pe-pia' },
+        { scope: 'retail', kind: 'decision', id: 'ad-2', label: 'ADR-0002', title: 'Two stores', field: 'proposed', person: 'pe-pia' },
+        { scope: 'retail', kind: 'decision', id: 'ad-3', label: 'ADR-0003', title: 'Three stores', field: 'signer', person: 'pe-pia' },
+      ],
+    }
+    renderShell(<Harness pointsAt={{ 'pe-pia': pointing }} />)
+    pick('pe-pia')
+    const section = await screen.findByTestId('people-points-at')
+    expect(within(section).getByTestId('people-pointed-rule').textContent).toContain(`Owner of the domain Retail on ${TODAY}`)
+    expect(within(section).getAllByTestId('people-pointed').map((line) => line.textContent?.split(' · ')[0])).toEqual([
+      'TR-0001 Replace the store: owner', 'EX-0001 Deduplicate: run by', 'ADR-0002 Two stores: proposed', 'ADR-0003 Three stores: signer',
+    ])
   })
 })

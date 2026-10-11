@@ -44,8 +44,10 @@ import type { SearchableModel } from '../../model/searchable'
 import { leaveConsequences } from './leaving'
 import type { OpenScope } from './leaving'
 import type { ScopeIndex } from '../../projects/scopeIndex'
-import { heldAssignments, idsOfPerson } from '../units/held'
-import type { HeldAssignment } from '../../people/hold'
+import { heldAssignments, idsOfPerson, ownedByRule } from '../units/held'
+import type { HeldAssignment, PointsAt } from '../../people/hold'
+import { pointersIn } from '../../model/pointers'
+import type { PointedModel } from '../../model/pointers'
 
 /** The register, and what may be done to it, as the page and the agent are handed it. */
 export type PeopleAccess = {
@@ -74,6 +76,8 @@ export type PeopleAccess = {
   agent: PeopleView
   /** What each person holds across the tree, where the shell has a tree. */
   assignmentsOf?: (id: PersonId) => readonly HeldAssignment[]
+  /** What points at a person across the tree: records by id, signatures, what the rules work out. */
+  pointsAt?: (id: PersonId) => Promise<PointsAt>
   /** A chosen file's text, for a list to import; where the host can read one. */
   readText?: (file: Blob) => Promise<string>
   /** Text handed to the clipboard: *What we hold*, copied. */
@@ -84,13 +88,31 @@ const HOUR = 3_600_000
 
 type Held = { people: readonly Person[] | undefined; policy: PeoplePolicy; me: PersonId | undefined }
 
-/** Every scope's model, read whole, for a search across the tree. */
-async function everyModel(scopes: Repositories['scopes']): Promise<{ scope: string; model: SearchableModel }[]> {
+/** Every scope's model, read whole, for a search across the tree and for what points at a person. */
+async function everyModel(scopes: Repositories['scopes']): Promise<{ scope: string; model: SearchableModel & PointedModel & { name?: string } }[]> {
   const tree = await scopes.tree()
   const nodes = [tree.root]
   for (let at = 0; at < nodes.length; at++) nodes.push(...nodes[at].children)
   const read = await Promise.all(nodes.map(async (node) => ({ node, state: await scopes.state(node.id) })))
-  return read.flatMap(({ node, state }) => (state ? [{ scope: node.address, model: state.model as unknown as SearchableModel }] : []))
+  return read.flatMap(({ node, state }) => (state
+    ? [{ scope: node.address, model: state.model as unknown as SearchableModel & PointedModel & { name?: string } }]
+    : []))
+}
+
+/**
+ * What points at a person across the tree (ADR-0036 §8): every record whose
+ * name fields hold one of their ids, read from every scope as it is kept, and
+ * what the rules make them own today, off the index.
+ */
+async function pointsAtPerson(
+  scopes: Repositories['scopes'], index: ScopeIndex | undefined, ids: ReadonlySet<PersonId>, day: string,
+): Promise<PointsAt> {
+  const models = await everyModel(scopes)
+  const names = new Map(models.map(({ scope, model }) => [scope, model.name ?? scope]))
+  return {
+    pointers: models.flatMap(({ scope, model }) => pointersIn(model, ids).map((pointer) => ({ ...pointer, scope }))),
+    byRule: index ? ownedByRule(index, ids, day, (path) => names.get(path) ?? path) : [],
+  }
 }
 
 export function usePeopleRegister(deps: {
@@ -191,6 +213,7 @@ export function usePeopleRegister(deps: {
       .map((hit) => ({ scope: hit.scope ?? '', kind: hit.kind, id: hit.id, title: hit.title })),
     agent,
     ...(index ? { assignmentsOf: (id: PersonId) => heldAssignments(index, idsOfPerson(id, held.people ?? [])) } : {}),
+    pointsAt: (id) => pointsAtPerson(repositories.scopes, index, idsOfPerson(id, held.people ?? []), today),
     ...(canRead ? { readText: (file: Blob) => doors.current.readText?.(file) ?? Promise.resolve('') } : {}),
     ...(canCopy ? { copyText: (text: string) => doors.current.copyText?.(text) } : {}),
   }), [held, source, readOnly, today, refresh, changed, repositories, consequences, agent, index, canRead, canCopy])

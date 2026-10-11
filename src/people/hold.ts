@@ -8,10 +8,12 @@
  *
  * What the register holds is said whole: the entry, and every entry merged
  * into it. What the model holds is said by what points at the person — the
- * assignments they hold and the records that name them by id. What nothing
- * can reach is said honestly: names typed as text before the register
- * existed, which a search across the tree finds and a forget does not touch.
+ * assignments they hold, the records that name them by id, the signatures
+ * that kept their name, and what the operating model's rules work out they
+ * own today. What nothing can reach is said honestly: names typed as text,
+ * which a search across the tree finds and a forget does not touch.
  */
+import type { Pointer, PointerField } from '../model/pointers'
 import type { Person, PersonId } from './person'
 
 /**
@@ -50,10 +52,53 @@ export function heldLine(one: HeldAssignment): string {
 /** A record that names a person in its text, as a search across the tree finds it. */
 export type Mention = { scope: string; kind: string; id: string; title: string }
 
+/** A record whose field points at a person by id (ADR-0036 §8), and the scope that keeps it. */
+export type PointedAt = Pointer & { scope: string }
+
+/**
+ * What a rule of the operating model makes a person own on a day (ADR-0036
+ * §2): an application whose unit they hold the rule's role in, or a domain
+ * whose serving unit they do. Worked out, never stored.
+ */
+export type OwnedByRule = { kind: 'application' | 'domain'; scope: string; id: string; name: string; day: string }
+
+/** What everything that points at a person comes to: the records, the signatures and what is worked out. */
+export type PointsAt = { pointers: readonly PointedAt[]; byRule: readonly OwnedByRule[] }
+
+const FIELD_WORDS: Record<PointerField, string> = {
+  owner: 'owner', seenBy: 'seen by', runBy: 'run by', proposed: 'proposed', signer: 'signer',
+}
+
+/** Whether a pointer is a signature that kept its name: the one place a name stays (ADR-0036 §8). */
+export function keptName(pointer: Pick<Pointer, 'signedAs'>): boolean {
+  return pointer.signedAs !== undefined
+}
+
+const where = (scope: string) => scope || 'the organisation'
+
+/** A record that points at a person, as a line of *What we hold*. English, as a protocol answer is. */
+export function pointerLine(one: PointedAt): string {
+  const named = `${one.label ? `${one.label} ` : ''}${one.title}`
+  if (one.signedAs !== undefined) {
+    return `${named} (${where(one.scope)}), ${one.field === 'proposed' ? 'proposed' : 'signed'} as ${one.signedAs}`
+  }
+  return `${named} (${where(one.scope)}): ${FIELD_WORDS[one.field]}`
+}
+
+/** What a rule makes a person own, as a line of *What we hold*. */
+export function ruleLine(one: OwnedByRule): string {
+  const what = one.kind === 'domain' ? `the domain ${one.name || where(one.scope)}` : `${one.name} (${where(one.scope)})`
+  return `Owner of ${what} on ${one.day}, worked out from the role`
+}
+
 /** What else the organisation holds that points at a person, gathered by whoever can read the tree. */
 export type HeldElsewhere = {
-  /** The records that name the person by id: empty until the name fields take a person (3.6.0, step 6). */
+  /** The records that name the person by id, each as a line: their fields, not a name. */
   namedIn?: readonly string[]
+  /** The signatures that kept the person's name, each as a line with the name as signed. */
+  signed?: readonly string[]
+  /** What a rule of the operating model makes them own today, each as a line. */
+  derived?: readonly string[]
   /** The assignments they hold, past, present and to come, each as a line. */
   assignments?: readonly string[]
   /** Records whose text holds the name: what a forget cannot reach. */
@@ -77,6 +122,8 @@ export type WhatWeHold = {
   thisIsMe: boolean
   assignments: string[]
   namedIn: string[]
+  signed: string[]
+  derived: string[]
   mentions: Mention[]
 }
 
@@ -97,6 +144,8 @@ export function whatWeHold(person: Person, people: readonly Person[], elsewhere:
     thisIsMe: elsewhere.thisIsMe ?? false,
     assignments: [...(elsewhere.assignments ?? [])],
     namedIn: [...(elsewhere.namedIn ?? [])],
+    signed: [...(elsewhere.signed ?? [])],
+    derived: [...(elsewhere.derived ?? [])],
     mentions: [...(elsewhere.mentions ?? [])],
   }
 }

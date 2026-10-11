@@ -6,7 +6,7 @@
  * step that brings assignments hooks into, and *What we hold*.
  */
 import { describe, expect, it } from 'vitest'
-import { holdText, whatWeHold } from './hold'
+import { holdText, keptName, pointerLine, ruleLine, whatWeHold } from './hold'
 import { forgetPerson, leavePerson } from './leave'
 import type { LeaveConsequence, LeavingRegister } from './leave'
 import type { Person } from './person'
@@ -68,12 +68,30 @@ describe('what we hold', () => {
     const held = whatWeHold(ada, [ada, merged], { thisIsMe: true, mentions: [{ scope: 'acme', kind: 'observation', id: 'ob-1', title: 'Seen by Ada' }] })
     expect(held).toEqual({
       register: { id: 'pe-ada', name: 'Ada Verbeek', email: 'ada@acme.example', pseudonym: 'BCDF', kind: 'internal', state: 'active', leftOn: null, forgottenOn: null },
-      mergedFrom: ['pe-was'], thisIsMe: true, assignments: [], namedIn: [],
+      mergedFrom: ['pe-was'], thisIsMe: true, assignments: [], namedIn: [], signed: [], derived: [],
       mentions: [{ scope: 'acme', kind: 'observation', id: 'ob-1', title: 'Seen by Ada' }],
     })
     expect(JSON.parse(holdText(held))).toEqual(held)
     const gone = whatWeHold({ id: 'pe-g', pseudonym: '7KQM', kind: 'external', state: 'forgotten', leftOn: '2026-01-01', forgottenOn: '2026-04-01' }, [])
     expect(gone.register).toMatchObject({ name: null, email: null, forgottenOn: '2026-04-01' })
     expect(gone.thisIsMe).toBe(false)
+  })
+})
+
+describe('what points at a person, as lines of what we hold', () => {
+  it('says the record, the field and the scope — and for a kept name, the name as signed or proposed', () => {
+    expect(pointerLine({ scope: 'retail', kind: 'plan', id: 'tr-1', label: 'TR-0001', title: 'Replace', field: 'owner', person: 'pe-ada' }))
+      .toBe('TR-0001 Replace (retail): owner')
+    expect(pointerLine({ scope: '', kind: 'element', id: 'crm', title: 'CRM', field: 'owner', person: 'pe-ada' })).toBe('CRM (the organisation): owner')
+    expect(pointerLine({ scope: '', kind: 'decision', id: 'ad-1', label: 'ADR-0001', title: 'One store', field: 'proposed', person: 'pe-ada', signedAs: 'Ada Verbeek' }))
+      .toBe('ADR-0001 One store (the organisation), proposed as Ada Verbeek')
+    expect(keptName({ signedAs: 'Ada' })).toBe(true)
+    expect(keptName({})).toBe(false)
+  })
+
+  it('says what a rule makes them own, an application by name and a domain by its scope', () => {
+    expect(ruleLine({ kind: 'application', scope: 'retail', id: 'shop', name: 'Shop', day: '2026-10-11' })).toBe('Owner of Shop (retail) on 2026-10-11, worked out from the role')
+    expect(ruleLine({ kind: 'domain', scope: 'retail', id: 'retail', name: '', day: '2026-10-11' })).toBe('Owner of the domain retail on 2026-10-11, worked out from the role')
+    expect(ruleLine({ kind: 'domain', scope: '', id: '', name: 'Acme', day: '2026-10-11' })).toBe('Owner of the domain Acme on 2026-10-11, worked out from the role')
   })
 })

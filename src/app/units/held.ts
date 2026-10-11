@@ -8,8 +8,10 @@
  * keeps it. Read off the index the shell already holds; nothing loads for it.
  */
 import type { PersonId } from '../../model/person'
+import { isBlankRef } from '../../model/person'
+import { unitsByRule } from '../../model/owners'
 import { personOf } from '../../model/units'
-import type { HeldAssignment } from '../../people/hold'
+import type { HeldAssignment, OwnedByRule } from '../../people/hold'
 import type { Person } from '../../people/person'
 import type { ScopeIndex } from '../../projects/scopeIndex'
 
@@ -33,4 +35,30 @@ export function heldAssignments(index: ScopeIndex, ids: ReadonlySet<PersonId>): 
       ...(assignment.until !== undefined ? { until: assignment.until } : {}),
       ...(assignment.acting ? { acting: true as const } : {}),
     }))
+}
+
+/**
+ * What the operating model's rules make these ids own on `day` (ADR-0036 §2):
+ * every application nobody wrote an owner on whose unit (`partyId`) they hold
+ * the `applicationOwner` role in, and every domain a unit they hold the
+ * `domainOwner` role in serves — its `scopes`, or the scope it is filed in.
+ * Off the index; worked out, never stored.
+ */
+export function ownedByRule(index: ScopeIndex, ids: ReadonlySet<PersonId>, day: string, scopeName: (path: string) => string): OwnedByRule[] {
+  const organisation = index.organisation()
+  const rules = index.operatingModel().operatingRules
+  const mine = (kind: 'applicationOwner' | 'domainOwner') => new Set(
+    [...ids].flatMap((id) => unitsByRule(organisation, rules, kind, id, day)),
+  )
+  const owning = mine('applicationOwner')
+  const applications: OwnedByRule[] = owning.size === 0 ? [] : index.register()
+    .filter((entry) => entry.partyId !== undefined && owning.has(entry.partyId) && isBlankRef(entry.owner))
+    .map((entry) => ({ kind: 'application', scope: entry.master ?? '', id: entry.id, name: entry.name, day }))
+  const serving = mine('domainOwner')
+  const filedIn = new Map(index.units().map(({ scope, unit }) => [unit.id, scope]))
+  const domains = [...new Set(organisation.units
+    .filter((unit) => serving.has(unit.id))
+    .flatMap((unit) => unit.scopes ?? [filedIn.get(unit.id) ?? '']))]
+    .map((path): OwnedByRule => ({ kind: 'domain', scope: path, id: path, name: scopeName(path), day }))
+  return [...applications, ...domains]
 }
