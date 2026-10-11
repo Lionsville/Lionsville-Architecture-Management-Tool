@@ -25,48 +25,60 @@ import type { ElementId } from '../../model'
 import type { ScopePath } from '../../projects/scopePath'
 import type { AttentionItem } from './attention'
 
-export function NeedsAttention({ items, onOpen, onOpenView, s }: {
+export function NeedsAttention({ items, onOpen, onOpenView, onOpenOperating, s }: {
   items: readonly AttentionItem[]
   /** Open the scope with the record selected; absent where the host cannot. */
   onOpen?: (scope: ScopePath, id: ElementId) => void
   /** Open the scope on a view, for a finding about something on one; absent where the host cannot. */
   onOpenView?: (scope: ScopePath, viewId: string) => void
+  /** Open the operating model's page on an item of it, for a finding about one; absent where the host cannot. */
+  onOpenOperating?: (id: string) => void
   s: Translate
 }) {
   const [unfolded, setUnfolded] = useState(false)
   if (items.length === 0) return null
   const shown = unfolded ? items : items.slice(0, SHOWN_FOLDED)
+  // Where a row goes: the operating model's page, a view, or the record on its board — or nowhere the host can open.
+  const opener = (item: AttentionItem): (() => void) | undefined => {
+    if (item.page === 'operating') return onOpenOperating && (() => onOpenOperating(item.id))
+    const { view } = item
+    if (view !== undefined) return onOpenView && (() => onOpenView(item.scope, view))
+    return onOpen && (() => onOpen(item.scope, item.id))
+  }
   return (
     <Box sx={{ mb: 4 }} data-testid="needs-attention" data-guide="org.attention">
       <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, mb: 1, textTransform: 'uppercase', color: 'warning.main' }}>
         {s('org.attention')}
       </Typography>
       <Stack spacing={0.25}>
-        {shown.map((item) => (
-          <Typography
-            key={`${item.key}|${item.scope}|${item.id}`}
-            component="button"
-            type="button"
-            disabled={item.view ? !onOpenView : !onOpen}
-            onClick={() => (item.view ? onOpenView?.(item.scope, item.view) : onOpen?.(item.scope, item.id))}
-            data-testid={`attention-${item.scope}-${item.id}`}
-            data-finding={item.kind}
-            title={s('org.attentionOpen')}
-            sx={{
-              // `font` first: the shorthand resets the size, so a size said
-              // before it was a size nobody saw.
-              font: 'inherit', fontSize: 13, color: 'inherit', background: 'none', border: 0,
-              display: 'flex', alignItems: 'center', gap: 1, width: '100%',
-              px: 0.75, py: 0.5, borderRadius: 0.5, cursor: onOpen ? 'pointer' : 'default', textAlign: 'left',
-              borderBottom: 1, borderColor: 'divider',
-              '&:hover': onOpen ? { bgcolor: 'action.hover', color: 'primary.main' } : {},
-            }}
-          >
-            <Box component="span" sx={{ flex: 1, minWidth: 0 }}>{item.text}</Box>
-            {/* That the row goes somewhere, said the way a menu line says it. */}
-            {onOpen && <Box component="span" aria-hidden sx={{ color: 'text.secondary', flexShrink: 0 }}>›</Box>}
-          </Typography>
-        ))}
+        {shown.map((item) => {
+          const open = opener(item)
+          return (
+            <Typography
+              key={`${item.key}|${item.scope}|${item.id}`}
+              component="button"
+              type="button"
+              disabled={!open}
+              onClick={open}
+              data-testid={`attention-${item.scope}-${item.id}`}
+              data-finding={item.kind}
+              title={s('org.attentionOpen')}
+              sx={{
+                // `font` first: the shorthand resets the size, so a size said
+                // before it was a size nobody saw.
+                font: 'inherit', fontSize: 13, color: 'inherit', background: 'none', border: 0,
+                display: 'flex', alignItems: 'center', gap: 1, width: '100%',
+                px: 0.75, py: 0.5, borderRadius: 0.5, cursor: open ? 'pointer' : 'default', textAlign: 'left',
+                borderBottom: 1, borderColor: 'divider',
+                '&:hover': open ? { bgcolor: 'action.hover', color: 'primary.main' } : {},
+              }}
+            >
+              <Box component="span" sx={{ flex: 1, minWidth: 0 }}>{item.text}</Box>
+              {/* That the row goes somewhere, said the way a menu line says it. */}
+              {open && <Box component="span" aria-hidden sx={{ color: 'text.secondary', flexShrink: 0 }}>›</Box>}
+            </Typography>
+          )
+        })}
       </Stack>
       {items.length > shown.length && (
         <Button size="small" onClick={() => setUnfolded(true)} data-testid="attention-more" data-guide="org.attentionMore" sx={{ mt: 0.5, fontSize: 11 }}>

@@ -286,6 +286,25 @@ describe('the organisation screen — its own pages', () => {
   })
 
   /**
+   * A finding about the operating model is about a unit type or a
+   * responsibility, which no board draws: pressed, it opens the operating
+   * model's page at the organisation with the item picked (ADR-0036 §2).
+   */
+  it('opens a finding about the operating model on its page, the item picked', async () => {
+    const root = organisation()
+    const withGuild: ScopeSnapshot = {
+      ...root,
+      model: { ...root.model, unitTypes: [{ id: 'ut-guild', name: 'Guild', within: [], slots: [] }] },
+    }
+    renderApp({ repositories: heldRepositories([withGuild]), today: TODAY })
+    const attention = await screen.findByTestId('needs-attention')
+    fireEvent.click(within(attention).getByTestId('attention--ut-guild'))
+    const inspector = await screen.findByTestId('operating-inspector')
+    expect(within(inspector).getByDisplayValue('Guild')).toBeTruthy()
+    expect(within(screen.getByTestId('tray-nowhere')).getByTestId('unit-type-ut-guild').dataset.look).toBe('picked')
+  })
+
+  /**
    * The technology beside the applications (ADR-0014 §2.6): every service
    * and platform over the tree, who maintains each, which are shared, how
    * many consume them — and the one used across a team boundary without

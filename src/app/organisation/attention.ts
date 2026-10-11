@@ -13,7 +13,12 @@
  * the tree's findings come from the index the shell already holds (ADR-0012
  * §9), an application nobody has said whose it is comes off the register's
  * rows as the register page reads it, and a service nothing realises is read
- * off the technology rows the card already counts.
+ * off the technology rows the card already counts. The operating model's
+ * findings are the one exception (ADR-0036 §2): a responsibility without its
+ * one *A* and a unit type that sits nowhere are about the organisation's own
+ * document, which no index holds, so the organisation's home hands it in and
+ * they are said from it — each opening the operating model's page with the
+ * item picked, since no board draws either.
  *
  * Only what is filed at or under the scope whose home this is, so a domain's
  * home speaks for its domain. Information (`check.notDrawn`) is left out for
@@ -21,7 +26,8 @@
  */
 import type { Translate } from '../../i18n'
 import type { ElementId } from '../../model'
-import { findingSentence } from '../../projects/checks'
+import type { HostModel } from '../../model/hostModel'
+import { findingSentence, operatingModelFindings } from '../../projects/checks'
 import { pickedPerson } from '../../model/person'
 import type { Person } from '../../people/person'
 import { personText, registerOf } from '../../people/shown'
@@ -48,8 +54,17 @@ export type AttentionItem = {
   id: ElementId
   /** The view to open instead, where the finding is about something on one (`Finding.view`). */
   view?: string
+  /**
+   * The page to open instead, with the record picked on it: the operating
+   * model's, where the finding is about a unit type or a responsibility,
+   * which no board draws (ADR-0036 §2).
+   */
+  page?: 'operating'
   text: string
 }
+
+/** The findings about the operating model: opened on its page at the organisation, the item picked there. */
+const ON_THE_OPERATING_PAGE: ReadonlySet<string> = new Set(['check.accountability', 'check.unitTypeNowhere'])
 
 /** The kind a key names: its last segment, `check.conflict` → `conflict`. */
 export function findingKind(key: string): string {
@@ -64,6 +79,7 @@ export function attentionItems(
   s: Translate,
   scopeName: (path: ScopePath) => string,
   people: readonly Person[] = [],
+  operating?: Pick<HostModel, 'unitTypes' | 'roles' | 'responsibilities'>,
 ): AttentionItem[] {
   const within = (path: ScopePath) => at === ROOT_SCOPE || isWithinScope(path, at)
   // A finding about a person says who by id; the register says the name (ADR-0036 §8).
@@ -77,12 +93,15 @@ export function attentionItems(
     seen.add(key)
     items.push({ ...item, kind: findingKind(item.key) })
   }
-  for (const [scope, held] of findings ?? []) {
+  // The operating model's own, off the organisation's document where the home has it: no index holds them.
+  const operatingFound: [ScopePath, readonly Finding[]][] = operating ? [[ROOT_SCOPE, operatingModelFindings(ROOT_SCOPE, operating)]] : []
+  for (const [scope, held] of [...findings ?? [], ...operatingFound]) {
     if (!within(scope)) continue
     for (const finding of held) {
       if (finding.information) continue
       add({
         key: finding.key, scope, id: finding.id, ...(finding.view ? { view: finding.view } : {}),
+        ...(ON_THE_OPERATING_PAGE.has(finding.key) ? { page: 'operating' as const } : {}),
         text: findingSentence(finding, s, scopeName, personName),
       })
     }

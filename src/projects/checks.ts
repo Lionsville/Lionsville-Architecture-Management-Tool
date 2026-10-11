@@ -533,8 +533,18 @@ export function documentFindings(deps: {
   }
   return [
     ...found, ...drawingLinkFindings(scope, model, held), ...causesOverObservationsBelow(scope, model, index),
-    ...accountabilityFindings(scope, model), ...nowhereFindings(scope, model),
+    ...operatingModelFindings(scope, model),
   ]
+}
+
+/**
+ * What the operating model contradicts about itself (ADR-0036 §2): every
+ * responsibility not exactly one role's *A*, and every unit type that sits
+ * nowhere. Only the organisation's model holds one, so a scope below has
+ * nothing here; the organisation's home says them with the tree's.
+ */
+export function operatingModelFindings(scope: ScopePath, model: Pick<HostModel, 'unitTypes' | 'roles' | 'responsibilities'>): Finding[] {
+  return [...accountabilityFindings(scope, model), ...nowhereFindings(scope, model)]
 }
 
 /**
@@ -542,7 +552,7 @@ export function documentFindings(deps: {
  * *A* (ADR-0036 §2). Only the organisation's model holds one, so a scope
  * below has nothing here.
  */
-function accountabilityFindings(scope: ScopePath, model: HostModel): Finding[] {
+function accountabilityFindings(scope: ScopePath, model: Pick<HostModel, 'roles' | 'responsibilities'>): Finding[] {
   return accountabilityGaps(model.responsibilities ?? [], model.roles ?? []).map(({ responsibility, accountable }) => ({
     key: 'check.accountability',
     scope,
@@ -557,7 +567,7 @@ function accountabilityFindings(scope: ScopePath, model: HostModel): Finding[] {
  * and in no unit type that sits anywhere, so no unit of it can be placed
  * without a finding of its own. Only the organisation's model holds one.
  */
-function nowhereFindings(scope: ScopePath, model: HostModel): Finding[] {
+function nowhereFindings(scope: ScopePath, model: Pick<HostModel, 'unitTypes'>): Finding[] {
   return unitTypeLanes(model.unitTypes ?? []).nowhere.map((type) => ({ key: 'check.unitTypeNowhere', scope, id: type.id, name: type.name }))
 }
 

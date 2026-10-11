@@ -36,6 +36,34 @@ describe('attentionItems', () => {
     expect(attentionItems(findings, [], [], '', s, scopeName)).toMatchObject([{ scope: 'retail', id: 'ctx:b', view: 'ctx' }])
   })
 
+  it('opens a finding about the operating model on its page, with the item picked, not as an element', () => {
+    const findings = new Map<string, Finding[]>([
+      ['', [
+        finding({ key: 'check.unitTypeNowhere', scope: '', id: 'ut-guild', name: 'Guild' }),
+        finding({ key: 'check.accountability', scope: '', id: 'rs-release', name: 'Release' }),
+        finding({ key: 'check.dangling', scope: '', id: 'crm', name: 'CRM' }),
+      ]],
+    ])
+    const items = attentionItems(findings, [], [], '', s, scopeName)
+    expect(items.map((item) => [item.id, item.page])).toEqual([['crm', undefined], ['ut-guild', 'operating'], ['rs-release', 'operating']])
+  })
+
+  it('says the operating model\'s own findings off the organisation\'s document, once each', () => {
+    const operating = {
+      unitTypes: [{ id: 'ut-guild', name: 'Guild', within: [], slots: [] }],
+      roles: [], responsibilities: [{ id: 'rs-release', name: 'Release' }],
+    }
+    // The same finding handed in by the tree as well is said once.
+    const findings = new Map<string, Finding[]>([['', [finding({ key: 'check.unitTypeNowhere', scope: '', id: 'ut-guild', name: 'Guild' })]]])
+    const items = attentionItems(findings, [], [], '', s, scopeName, [], operating)
+    expect(items.map((item) => [item.key, item.id, item.page])).toEqual([
+      ['check.unitTypeNowhere', 'ut-guild', 'operating'], ['check.accountability', 'rs-release', 'operating'],
+    ])
+    expect(items[1].text).toContain('Release')
+    // A domain's home says nothing of the organisation's.
+    expect(attentionItems(undefined, [], [], 'retail', s, scopeName, [], operating)).toEqual([])
+  })
+
   it('says each finding as a sentence, skips information, and sorts by scope', () => {
     const findings = new Map<string, Finding[]>([
       ['retail', [

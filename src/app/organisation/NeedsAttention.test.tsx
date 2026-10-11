@@ -34,4 +34,17 @@ describe('NeedsAttention', () => {
     fireEvent.click(screen.getByTestId('attention-retail-crm'))
     expect(onOpen).toHaveBeenCalledWith('retail', 'crm')
   })
+
+  it('opens a finding about the operating model on its page, and offers nothing the host cannot open', () => {
+    const onOpen = vi.fn()
+    const onOpenOperating = vi.fn()
+    const items = [{ key: 'check.unitTypeNowhere', kind: 'unitTypeNowhere', scope: '', id: 'ut-guild', page: 'operating' as const, text: 'Guild sits nowhere' }]
+    renderShell(<NeedsAttention items={items} onOpen={onOpen} onOpenOperating={onOpenOperating} s={s} />)
+    fireEvent.click(screen.getByTestId('attention--ut-guild'))
+    expect(onOpenOperating).toHaveBeenCalledWith('ut-guild')
+    expect(onOpen).not.toHaveBeenCalled()
+    cleanup()
+    renderShell(<NeedsAttention items={items} onOpen={onOpen} s={s} />)
+    expect(screen.getByTestId<HTMLButtonElement>('attention--ut-guild').disabled).toBe(true)
+  })
 })

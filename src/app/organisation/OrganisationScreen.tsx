@@ -405,11 +405,12 @@ export function OrganisationScreen({
   )
   /**
    * The findings, as sentences under the cards (ADR-0012 §9). Read off what
-   * the shell already holds: the tree's findings and the technology rows.
+   * the shell already holds: the tree's findings and the technology rows —
+   * and at the organisation, the operating model's own, off its document.
    */
   const attention = useMemo(
-    () => attentionItems(findings, register, technology, at, s, scopeName, people?.people),
-    [findings, register, technology, at, s, scopeName, people],
+    () => attentionItems(findings, register, technology, at, s, scopeName, people?.people, at === ROOT_SCOPE && root?.path === at ? root.model : undefined),
+    [findings, register, technology, at, s, scopeName, people, root],
   )
 
   /**
@@ -574,7 +575,7 @@ export function OrganisationScreen({
           {/* What the tree contradicts about itself, once, as sentences a
               person can act on — where the cards used to count them and the
               rows used to colour them. */}
-          <NeedsAttention items={attention} onOpen={onOpenRegisterRow} onOpenView={(scope, id) => organisation.open(scope, { page: 'board', id })} s={s} />
+          <NeedsAttention items={attention} onOpen={onOpenRegisterRow} onOpenView={(scope, id) => organisation.open(scope, { page: 'board', id })} onOpenOperating={(id) => organisation.open(ROOT_SCOPE, { page: 'operating', id })} s={s} />
 
           {/* The boards, one row each: a scope that draws is a stop on the way
               to its canvas, and the way on is the row of the board you want —
