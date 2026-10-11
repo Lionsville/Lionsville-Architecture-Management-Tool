@@ -13,6 +13,7 @@
  * screen used to be told *no project* and nothing else.
  */
 import type { Adr } from '../model/adr'
+import { isCheckKey } from '../model/checkCatalogue'
 import type { HostModel } from '../model/hostModel'
 import type { DesignDiagram } from '../model/types'
 import type { Driving } from './driving'
@@ -187,9 +188,10 @@ export async function openApp(rawArgs: unknown, session: OpenScope | undefined, 
   }
 
   let target: Resolved = { ...(asked.page !== undefined ? { page: asked.page } : {}), ...(asked.id !== undefined ? { id: asked.id } : {}) }
-  const aboutSomething = asked.id !== undefined || (asked.page !== undefined && VIEW_PAGES.includes(asked.page))
+  const wrongCheck = unknownCheck(asked)
+  if (wrongCheck) return wrongCheck
   let model: HostModel | undefined
-  if (aboutSomething) {
+  if (aboutSomething(asked)) {
     const document = session && scope === session.scopePath()
       ? { model: session.current(), ancestorDecisions: session.ancestorDecisions() }
       : await tree?.read(scope)
@@ -207,7 +209,7 @@ export async function openApp(rawArgs: unknown, session: OpenScope | undefined, 
   // A scope that draws nothing has no canvas to open on: its home is the
   // honest place, which is where the tree's own *Open* would not go at all.
   if (target.page === undefined && target.id === undefined && known.views === 0) target = { page: 'home' }
-  if (target.page !== undefined && HOME_PAGES.includes(target.page)) target = { page: target.page }
+  target = asItsHome(target)
 
   const to = { scope, ...target }
   await shell.open(to)
@@ -221,6 +223,28 @@ export async function openApp(rawArgs: unknown, session: OpenScope | undefined, 
   // screen is the truth now, and the revision is the open scope's own.
   const still = session && shell.screen().open?.path === session.scopePath() ? session : undefined
   return currentApp(still, shell, { asked: to, arrived: there })
+}
+
+/**
+ * Whether a destination names something a scope's own document must hold —
+ * a record, or a view — which is read before the app is moved. Not a check
+ * the Checks page picks, which is the catalogue's.
+ */
+function aboutSomething(asked: Destination): boolean {
+  if (asked.page === 'checks') return false
+  return asked.id !== undefined || (asked.page !== undefined && VIEW_PAGES.includes(asked.page))
+}
+
+/** The Checks page is asked which check to pick by its key, which no scope's document holds: one the catalogue does not know is refused. */
+function unknownCheck(asked: Destination): AgentAnswer | undefined {
+  if (asked.page !== 'checks' || asked.id === undefined || isCheckKey(asked.id)) return undefined
+  return refused('agent.unknownId', `check ${asked.id}: checks.list answers each finding's key`)
+}
+
+/** A page of a home is opened as itself, with nothing more than the check the Checks page picks. */
+function asItsHome(target: Resolved): Resolved {
+  if (target.page === undefined || !HOME_PAGES.includes(target.page) || target.page === 'checks') return target
+  return { page: target.page }
 }
 
 /**

@@ -26,7 +26,7 @@ import type { ObservationTab } from '../observations/tabs'
 export const PAGES = [
   'home', 'board', 'sheet', 'map', 'technology', 'drawing', 'chart', 'conway',
   'decisions', 'observations', 'roadmap', 'plan', 'element', 'document', 'documentation',
-  'platform', 'service', 'register', 'technologyRegister', 'people', 'operating',
+  'platform', 'service', 'register', 'technologyRegister', 'people', 'operating', 'checks',
 ] as const
 
 export type Page = (typeof PAGES)[number]
@@ -65,7 +65,7 @@ export function viewPage(kind: DesignDiagram['kind']): Page {
 }
 
 /** Pages that live on a scope's home rather than in the workspace. */
-export const HOME_PAGES: readonly Page[] = ['home', 'register', 'technologyRegister', 'people']
+export const HOME_PAGES: readonly Page[] = ['home', 'register', 'technologyRegister', 'people', 'checks']
 
 /** Pages that need an id to mean anything. */
 export const NEEDS_ID: readonly Page[] = ['plan', 'element', 'document', 'platform', 'service']
@@ -90,7 +90,7 @@ export type Destination = {
    * being opened. Not part of the place: where it is not drawn there, the
    * view opens with nothing selected. The shell's own *Open in People* names
    * the person the People page picks with it; `app.open` takes it for a view
-   * only.
+   * only. The Checks page is asked which check to pick by `id`, a check's key.
    */
   readonly select?: string
 }
@@ -109,6 +109,8 @@ export type ScreenPage =
   | { readonly page: 'technologyRegister' }
   /** The people register (ADR-0036), on the organisation's home. */
   | { readonly page: 'people' }
+  /** Every check, by category, over a home (ADR-0036, amended 11 October 2026). */
+  | { readonly page: 'checks' }
 
 /** The active view of an open scope, named so a reader does not have to look it up. */
 export type ScreenView = {

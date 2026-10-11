@@ -12,17 +12,21 @@
  * `CHECK_SENTENCE`, what a scope's dates disagree about, and
  * `findingSentence`, what the tree contradicts about itself — and naming
  * either anywhere else fails here. `FindingSentence` says the dates' — as a
- * link on the roadmap card at home, and as the words the roadmap's list says
- * (`RoadmapFindings`); `attention.ts` says the tree's for the organisation's
- * home (`NeedsAttention`); a unit's checks in its inspector (`UnitSection`),
- * a plan's *Still open* (`PlanStillOpen`) and the organisation chart's
- * summary (`ChartSummary`) say them for the units they are about. The
- * Conway map says its own in its own words (`ConwayPage.findingText`).
+ * link on the roadmap card at home, and as the words the roadmap's list and
+ * the Checks page say (`RoadmapFindings`, `treeChecks`); `attention.ts` says
+ * the tree's for a home's Checks page; a unit's checks in its inspector
+ * (`UnitSection`), a plan's *Still open* (`PlanStillOpen`) and the
+ * organisation chart's summary (`ChartSummary`) say them for the units they
+ * are about. The Conway map says its own in its own words
+ * (`conwayWords.findingText`), on the map and on the Checks page.
  *
  * And every screen that lists them draws the one list: a new place that
  * lists findings is a new line below, and draws them grouped, folded and
- * explained, because that is the list there is. The component tests of each
- * place check that the actions open what they name.
+ * explained, because that is the list there is. The one page that does not is
+ * the Checks page (3.6.1), which is about one check at a time: its
+ * explanation once, and every instance of it at or under a home, each opening
+ * where it is fixed. A home counts its findings and lists none. The component
+ * tests of each place check that the actions open what they name.
  */
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
@@ -55,8 +59,13 @@ describe('findings', () => {
 
   it('are listed in the one list of findings wherever a screen lists them', () => {
     expect(naming(/<FindingsList\b/)).toEqual([
-      'app/organisation/NeedsAttention.tsx', 'app/units/ChartSummary.tsx', 'app/units/ConwayPage.tsx', 'app/units/PlanStillOpen.tsx',
+      'app/units/ChartSummary.tsx', 'app/units/ConwayPage.tsx', 'app/units/PlanStillOpen.tsx',
       'app/units/UnitSection.tsx', 'roadmap/ui/RoadmapFindings.tsx',
     ])
+  })
+
+  it('are listed by check on the Checks page, from every place that works them out over the tree', () => {
+    expect(naming(/<CheckDetail\b/)).toEqual(['app/organisation/ChecksPage.tsx'])
+    expect(naming(/\btreeInstances\(/)).toEqual(['app/organisation/treeChecks.ts', 'app/organisation/useHomeChecks.ts'])
   })
 })

@@ -2,116 +2,69 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * The block under the cards: what the organisation contradicts about itself,
- * in the one list of findings every screen draws (`widgets/FindingsList`,
- * ADR-0036 amended 11 October 2026) — grouped by check and folded, fix
- * first, the notes behind *Show notes*, and each instance opening its
- * explanation with the ways from it to where it is fixed.
+ * The line under the cards: how much the checks find at or under this home,
+ * by weight — so many to fix, so many to review, so many notes — each a way
+ * to the Checks page on the first check of its weight (ADR-0036, amended 11
+ * October 2026).
  *
- * Not shown at all when there is nothing — a heading over an empty list would
- * be a warning about nothing, and a "no problems" line would be saying so
- * before the index has been read. An organisation whose business layer is
- * still being agreed can have forty capabilities proposed by its domains: one
- * row, a note, hidden until asked for, where it used to be forty sentences
- * folded past a handful.
+ * It used to list every finding, and a home of a large organisation was a
+ * page of sentences, the notes among them, that read like faults and pointed
+ * at no check. The findings are listed on the Checks page now, by check and
+ * by category, with why each check matters and how to fix it; here they are
+ * counted, in the marks the lists use, and what was marked as intended is not
+ * among them.
  *
- * **Where an action goes** is where the row used to: the record on its board
- * where it is kept, the view a shape is on, the operating model's page with
- * the item picked — and, for a definition in two scopes, the other one, and
- * *Link…* where this scope may be written. An action the home has nothing to
- * do with (assign, set an owner…) is no button here; the scope's own screens
- * offer it.
+ * Not shown at all when nothing is found — a heading over nothing would be a
+ * warning about nothing, and a "no problems" line would be saying so before
+ * the index has been read. The Checks card is the way in either way.
  */
-import { useMemo } from 'react'
 import Box from '@mui/material/Box'
+import ButtonBase from '@mui/material/ButtonBase'
 import Typography from '@mui/material/Typography'
-import type { Translate } from '../../i18n'
-import type { ElementId } from '../../model'
-import { CHECK_LIST_WORDS, groupByCheck } from '../../model/checkCatalogue'
-import type { CheckAction, CheckKey } from '../../model/checkCatalogue'
-import { splitMarked } from '../../model/checkMarks'
-import type { KeptCheckMark } from '../../model/checkMarks'
-import type { ScopePath } from '../../projects/scopePath'
-import { FindingsList } from '../../widgets/FindingsList'
-import type { FindingActions } from '../../widgets/FindingsList'
-import type { AttentionItem } from './attention'
+import type { StringKey, Translate } from '../../i18n'
+import { plural } from '../../i18n/strings'
+import { CHECK_WEIGHTS } from '../../model/checkCatalogue'
+import type { CheckWeight } from '../../model/checkCatalogue'
+import { WEIGHT_MARK } from '../../widgets/FindingsList'
 
-export type AttentionDoors = {
-  /** Open the scope with the record selected; absent where the host cannot. */
-  onOpen?: ((scope: ScopePath, id: ElementId) => void) | undefined
-  /** Open the scope on a view, for a finding about something on one; absent where the host cannot. */
-  onOpenView?: ((scope: ScopePath, viewId: string) => void) | undefined
-  /** Open the operating model's page on an item of it, for a finding about one; absent where the host cannot. */
-  onOpenOperating?: ((id: string) => void) | undefined
-  /** Make the definition in `scope` a stand-in of the one in `to` (*Link…*); absent where the host cannot. */
-  onLink?: ((scope: ScopePath, id: ElementId, to: ScopePath) => void) | undefined
-  /** Whether the home's scope may be written: *Link…* is a change. */
-  writable?: boolean
+/** What each weight's count says. */
+const SAID: Record<CheckWeight, { one: StringKey; other: StringKey }> = {
+  fix: { one: 'checks.fixOne', other: 'checks.fixOther' },
+  review: { one: 'checks.reviewOne', other: 'checks.reviewOther' },
+  note: { one: 'checks.noteOne', other: 'checks.noteOther' },
 }
 
-/** The organisation's findings about a unit, which name the unit as what they are about. */
-const ABOUT_A_UNIT: ReadonlySet<CheckKey> = new Set([
-  'check.roleVacant', 'check.roleOverMax', 'check.unitMisplaced', 'check.unitSpans', 'check.unitOverLimit',
-  'check.assignmentEnded', 'check.unitTypeEnded',
-])
-
-/** What the home does for each action: where the row goes, and *Link…* for a definition kept twice. */
-export function attentionActions(doors: AttentionDoors): FindingActions<AttentionItem, CheckAction> {
-  const { onOpen, onOpenView, onOpenOperating, onLink } = doors
-  const record = (item: AttentionItem) => (item.page === undefined && item.view === undefined && onOpen ? () => onOpen(item.scope, item.id) : undefined)
-  const operating = (item: AttentionItem) => (item.page === 'operating' && onOpenOperating ? () => onOpenOperating(item.id) : undefined)
-  return {
-    openElement: record,
-    openRow: record,
-    openApplication: record,
-    openCause: record,
-    openUnit: (item) => (ABOUT_A_UNIT.has(item.key) ? record(item) : undefined),
-    openDefinition: (item) => {
-      const { elsewhere } = item
-      return elsewhere !== undefined && onOpen ? () => onOpen(elsewhere, item.id) : undefined
-    },
-    openView: (item) => {
-      const { view } = item
-      return view !== undefined && onOpenView ? () => onOpenView(item.scope, view) : undefined
-    },
-    openOperating: operating,
-    openType: operating,
-    link: (item) => {
-      const { elsewhere } = item
-      return item.key === 'check.conflict' && doors.writable === true && elsewhere !== undefined && onLink
-        ? () => onLink(elsewhere, item.id, item.scope) : undefined
-    },
-  }
+/** One weight's count, in the words of the page it opens. */
+export function weightCount(weight: CheckWeight, count: number, s: Translate): string {
+  return plural(s, SAID[weight], count)
 }
 
-export function NeedsAttention({ items, marks, at, s, ...doors }: AttentionDoors & {
-  items: readonly AttentionItem[]
-  /** The tree's marks as intended (`ScopeIndex.checkMarks`): a finding marked is not among the ones to look at. */
-  marks?: readonly KeptCheckMark[] | undefined
-  /** The scope whose home this is: what its folds are kept under for the session. */
-  at: ScopePath
+export function NeedsAttention({ counts, onOpen, s }: {
+  counts: Readonly<Record<CheckWeight, number>>
+  /** Open the Checks page on the first check of this weight. */
+  onOpen: (weight: CheckWeight) => void
   s: Translate
 }) {
-  const shown = useMemo(() => (marks ? splitMarked(items, marks).shown : items), [items, marks])
-  const groups = useMemo(() => groupByCheck(shown), [shown])
-  const { onOpen, onOpenView, onOpenOperating, onLink, writable } = doors
-  const actions = useMemo(
-    () => attentionActions({ onOpen, onOpenView, onOpenOperating, onLink, ...(writable !== undefined ? { writable } : {}) }),
-    [onOpen, onOpenView, onOpenOperating, onLink, writable],
-  )
-  if (shown.length === 0) return null
+  const weights = CHECK_WEIGHTS.filter((weight) => counts[weight] > 0)
+  if (weights.length === 0) return null
   return (
     <Box sx={{ mb: 4, maxWidth: 760 }} data-testid="needs-attention" data-guide="org.attention">
       <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, mb: 0.5, textTransform: 'uppercase', color: 'warning.main' }}>
         {s('org.attention')}
       </Typography>
-      <FindingsList
-        groups={groups} words={CHECK_LIST_WORDS} sentence={(item) => item.text} keyOf={(item) => `${item.key}|${item.scope}|${item.id}`}
-        actions={actions}
-        // The row's own test id and the one word something outside points at a kind by, as before.
-        attributesOf={(item) => ({ 'data-testid': `attention-${item.scope}-${item.id}`, 'data-finding': item.kind })}
-        remember={`attention\u0000${at}`} testId="attention-findings"
-      />
+      <Box component="ul" sx={{ listStyle: 'none', p: 0, m: 0, display: 'flex', flexWrap: 'wrap', columnGap: 2, rowGap: 0.5 }}>
+        {weights.map((weight) => (
+          <Box component="li" key={weight}>
+            <ButtonBase
+              onClick={() => onOpen(weight)} data-guide="org.attentionCount" data-testid={`attention-count-${weight}`} data-weight={weight}
+              sx={{ fontSize: 13, gap: 0.75, alignItems: 'baseline', '&:hover .attention-count': { textDecoration: 'underline' } }}
+            >
+              <Box component="span" aria-hidden sx={{ fontSize: 11, ...WEIGHT_MARK[weight].sx }}>{WEIGHT_MARK[weight].glyph}</Box>
+              <Box component="span" className="attention-count" sx={{ color: 'primary.main' }}>{weightCount(weight, counts[weight], s)}</Box>
+            </ButtonBase>
+          </Box>
+        ))}
+      </Box>
     </Box>
   )
 }

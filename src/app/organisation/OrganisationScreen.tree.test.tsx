@@ -15,7 +15,7 @@
  */
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { openFinding, pressAction, unfoldFindings } from '../testing/findings'
+import { checkOnPage } from '../testing/findings'
 import { heldRepositories } from '../testing/heldRepositories'
 import { laidOut } from '../../model/testFixtures'
 import type { ScopeSnapshot } from '../../projects/scope'
@@ -255,10 +255,11 @@ describe('the tree', () => {
  *
  * The rows used to count these in the warning colour — "1 conflict · 1
  * undefined" — which told a newcomer something was wrong and nothing about
- * what, and could not be pressed. Each is a sentence now, and a way to the
- * scope and the record it is about. The whole organisation is still folded
- * ONCE; and a conflict is still a finding on both scopes, because neither of
- * them is the one that is wrong.
+ * what, and could not be pressed. Each is a sentence now, on the Checks page
+ * under its check, and a way to the scope and the record it is about; the home
+ * counts them by weight (3.6.1). The whole organisation is still folded ONCE;
+ * and a conflict is still a finding on both scopes, because neither of them
+ * is the one that is wrong.
  */
 describe('what the organisation says needs attention', () => {
   function element(id: string, name: string, ref?: string) {
@@ -285,49 +286,55 @@ describe('what the organisation says needs attention', () => {
     return held
   }
 
-  it('says each finding as a sentence naming the record, and no row counts them', async () => {
+  it('counts the findings by weight under the cards, and no row counts them', async () => {
     show(withFindings())
     const attention = await screen.findByTestId('needs-attention')
-    unfoldFindings(attention)
-    expect(attention.textContent).toContain('Finance ERP is defined both here and in Retail — keep one definition')
-    expect(attention.textContent).toContain('CRM stands in for something nothing in the organisation defines')
+    // Two definitions of one id, each a fix of its scope, and a stand-in of nothing.
+    expect(attention.textContent).toContain('3 to fix')
     expect(screen.queryByTestId('findings-finance')).toBeNull()
+  })
+
+  it('says each finding on the Checks page as a sentence naming the record', async () => {
+    show(withFindings())
+    const conflicts = await checkOnPage('fix', 'check.conflict')
+    expect(conflicts.textContent).toContain('Finance ERP is defined both here and in Retail — keep one definition')
+    fireEvent.click(screen.getByTestId('checks-row-check.dangling'))
+    expect(screen.getByTestId('checks-detail').textContent).toContain('CRM stands in for something nothing in the organisation defines')
   })
 
   it('puts a conflict on both scopes, since neither is the wrong one', async () => {
     show(withFindings())
-    const attention = await screen.findByTestId('needs-attention')
-    unfoldFindings(attention)
-    expect(attention.textContent).toContain('ERP is defined both here and in Finance')
-    expect(within(attention).getByTestId('attention-retail-erp')).toBeDefined()
-    expect(within(attention).getByTestId('attention-finance-erp')).toBeDefined()
+    const conflicts = await checkOnPage('fix', 'check.conflict')
+    expect(conflicts.textContent).toContain('ERP is defined both here and in Finance')
+    expect(within(conflicts).getByTestId('attention-retail-erp')).toBeDefined()
+    expect(within(conflicts).getByTestId('attention-finance-erp')).toBeDefined()
   })
 
   it('opens the scope the finding is about, with the record selected', async () => {
     show(withFindings())
-    const attention = await screen.findByTestId('needs-attention')
-    pressAction(openFinding(attention, 'attention-finance-crm'), 'Open it')
+    const dangling = await checkOnPage('fix', 'check.dangling')
+    fireEvent.click(within(dangling).getByTestId('attention-finance-crm'))
     await waitFor(() => expect(screen.getByTestId('crumb-current').textContent).toBe('Finance'))
   })
 
   it('says nothing about a scope with nothing wrong', async () => {
     show(withFindings())
-    const attention = await screen.findByTestId('needs-attention')
-    expect(attention.textContent).not.toContain('Warehouse')
+    const conflicts = await checkOnPage('fix', 'check.conflict')
+    expect(conflicts.textContent).not.toContain('Warehouse')
   })
 
-  // Until 3.6.1 the block showed six sentences and a Show all; the findings are grouped by check and folded now.
-  it('says eight findings of one check as one row, folded, and all eight when it is unfolded', async () => {
+  // Until 3.6.1 the block showed six sentences and a Show all, and then one folded row per check; it counts them now.
+  it('counts eight findings of one check under the cards, and lists all eight on the Checks page', async () => {
     const held = TREE()
     const at = (path: string) => held.find((scope) => scope.path === path)!
     // Eight stand-ins of things nobody defines: eight findings on one scope.
     at('finance').model.elements = Array.from({ length: 8 }, (_, n) => element(`ghost-${n}`, `Ghost ${n}`, 'nowhere'))
     show(held)
     const attention = await screen.findByTestId('needs-attention')
-    expect(within(attention).getAllByTestId('findings-group').map((row) => row.textContent)).toEqual([expect.stringMatching(/A stand-in of something nothing defines\(8\)$/)])
-    expect(within(attention).queryAllByTestId(/^attention-finance-/)).toHaveLength(0)
-    unfoldFindings(attention)
-    expect(within(attention).getAllByTestId(/^attention-finance-/)).toHaveLength(8)
+    expect(attention.textContent).toContain('8 to fix')
+    const dangling = await checkOnPage('fix', 'check.dangling')
+    expect(screen.getByTestId('checks-row-check.dangling').textContent).toMatch(/A stand-in of something nothing defines8$/)
+    expect(within(dangling).getAllByTestId(/^attention-finance-/)).toHaveLength(8)
   })
 
   it('shows no block at all on a tree nobody has found anything in', async () => {

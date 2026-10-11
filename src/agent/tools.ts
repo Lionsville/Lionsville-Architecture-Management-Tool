@@ -575,7 +575,9 @@ const SPECS = [
       + 'refusal and never a reason a save fails. A review or a note a person marked as intended is answered apart, '
       + 'under marked (its total, and each finding with mark: the day it was marked and the reason given), and is not '
       + 'among total and some. No tool marks a finding as intended or takes a mark back: that is a person\'s, so an '
-      + 'agent cannot silence a check.',
+      + 'agent cannot silence a check. The Checks page on a home (app.open page checks) lists these beside the dates\' '
+      + 'findings of every scope (roadmap.check) and the Conway map\'s (diagram.inspect), by check and category, in the '
+      + 'same weights and words.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -2599,7 +2601,9 @@ const SPECS = [
       + 'platform or service (a report, by id), register, technologyRegister or people (the organisation-wide '
       + 'lists and the people register, on the home), operating (the operating model: unit types, roles, '
       + 'responsibilities and the libraries — kept at the organisation, so its scope is "" and may be left out; '
-      + 'optionally on one unit type, role or responsibility). `select` names an element to select on the board, sheet, map, technology '
+      + 'optionally on one unit type, role or responsibility), checks (every check by category over the scope\'s home — '
+      + 'what it finds there, why each matters and how to fix it, and what was marked as intended — optionally on one '
+      + 'check, its key as id). `select` names an element to select on the board, sheet, map, technology '
       + 'landscape, organisation chart (a unit) or Conway map (a unit or an application) being opened; where that view does not '
       + 'draw it, nothing is selected. Opening never '
       + 'makes a view. With no page a scope opens on its canvas, or on its home when it draws '
@@ -2615,10 +2619,10 @@ const SPECS = [
           enum: [
             'home', 'board', 'sheet', 'map', 'technology', 'drawing', 'chart', 'conway',
             'decisions', 'observations', 'roadmap', 'plan', 'element', 'document', 'documentation',
-            'platform', 'service', 'register', 'technologyRegister', 'people', 'operating',
+            'platform', 'service', 'register', 'technologyRegister', 'people', 'operating', 'checks',
           ],
         },
-        id: { type: 'string', description: 'The view, element, plan, decision, observation, cause, solution, experiment, unit type, role or responsibility the page is about, where it is about one.' },
+        id: { type: 'string', description: 'The view, element, plan, decision, observation, cause, solution, experiment, unit type, role or responsibility the page is about, where it is about one; on checks, a check\'s key (check.roleVacant).' },
         tab: {
           type: 'string',
           description: 'Which tab of the observations page: the register, the analysis or the solutions. Only with page observations.',

@@ -33,7 +33,7 @@ import { landingFor } from './placeLanding'
 import { usePlaceHistory } from './usePlaceHistory'
 import type { Notify } from './useToasts'
 
-export type OrgPage = 'register' | 'technologyRegister' | 'people'
+export type OrgPage = 'register' | 'technologyRegister' | 'people' | 'checks'
 
 /**
  * What the shell asks of the organisation screen: one of its pages, or the
@@ -92,7 +92,8 @@ export function useShellAgent(deps: {
    */
   const homeAt = useCallback((scope: ScopePath, page: OrgPage | 'home', select?: string) => {
     goHome(scope)
-    setOrgPageRequest((prev) => ({ page, nonce: (prev?.nonce ?? 0) + 1, ...(page === 'people' && select !== undefined ? { select } : {}) }))
+    const picks = page === 'people' || page === 'checks'
+    setOrgPageRequest((prev) => ({ page, nonce: (prev?.nonce ?? 0) + 1, ...(picks && select !== undefined ? { select } : {}) }))
   }, [goHome])
   // A request is for the screen that is up. Once a scope is open that screen
   // is gone, and the home that comes back later — by a crumb, or a scope with
@@ -116,7 +117,8 @@ export function useShellAgent(deps: {
    */
   const openFor = useCallback((to: Destination & { scope: string }, nothing: () => void = NOBODY) => {
     if (to.page !== undefined && HOME_PAGES.includes(to.page)) {
-      homeAt(to.scope, to.page as OrgPage | 'home', to.select)
+      // The Checks page picks the check its id names; the People page the person `select` names.
+      homeAt(to.scope, to.page as OrgPage | 'home', to.page === 'checks' ? to.id : to.select)
       return
     }
     const open = agentSessionRef.current

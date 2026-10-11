@@ -18,7 +18,7 @@
  */
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { openFinding, pressAction, unfoldFindings } from '../testing/findings'
+import { checkOnPage } from '../testing/findings'
 import { answering, heldRepositories } from '../testing/heldRepositories'
 import type { HeldRepositories } from '../testing/heldRepositories'
 import { registerStrings } from '../../i18n'
@@ -269,16 +269,16 @@ describe('the organisation screen — its own pages', () => {
     await waitFor(() => expect(cards.textContent).toContain('2 applications'))
     expect(cards.textContent).toContain('2 owned by a domain')
     expect(cards.textContent).toContain('1 outside')
-    // What the register disagrees about is a sentence under the cards, not a
-    // tally on the card: the card keeps the counts.
+    // What the register disagrees about is counted under the cards and said
+    // on the Checks page, not tallied on the card: the card keeps the counts.
     expect(cards.textContent).not.toContain('unattributed')
-    const attention = await screen.findByTestId('needs-attention')
-    unfoldFindings(attention)
-    expect(attention.textContent).toContain('Post office is outside the organisation and nobody has said whose it is')
+    const detail = await checkOnPage('review', 'check.unattributed')
+    expect(detail.textContent).toContain('Post office is outside the organisation and nobody has said whose it is')
     // Each row says what kind of finding it is, in a word that does not move
     // with the language.
-    expect(attention.querySelector('[data-finding="unattributed"]')?.textContent)
+    expect(detail.querySelector('[data-finding="unattributed"]')?.textContent)
       .toContain('Post office is outside the organisation')
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
 
     fireEvent.click(within(cards).getByTestId('open-register'))
     const table = await screen.findByTestId('register-table')
@@ -299,8 +299,8 @@ describe('the organisation screen — its own pages', () => {
       model: { ...root.model, unitTypes: [{ id: 'ut-guild', name: 'Guild', within: [], slots: [] }] },
     }
     renderApp({ repositories: heldRepositories([withGuild]), today: TODAY })
-    const attention = await screen.findByTestId('needs-attention')
-    pressAction(openFinding(attention, 'attention--ut-guild'), 'Open the unit type')
+    const detail = await checkOnPage('fix', 'check.unitTypeNowhere')
+    fireEvent.click(within(detail).getByTestId('attention--ut-guild'))
     const inspector = await screen.findByTestId('operating-inspector')
     expect(within(inspector).getByDisplayValue('Guild')).toBeTruthy()
     expect(within(screen.getByTestId('tray-nowhere')).getByTestId('unit-type-ut-guild').dataset.look).toBe('picked')
@@ -318,12 +318,13 @@ describe('the organisation screen — its own pages', () => {
     await waitFor(() => expect(cards.textContent).toContain('2 services'))
     expect(cards.textContent).toContain('1 platform')
     expect(cards.textContent).toContain('1 shared')
-    // The two findings are sentences under the cards, each naming the service.
-    const attention = await screen.findByTestId('needs-attention')
-    unfoldFindings(attention)
-    expect(attention.textContent).toContain('Message brokering is used by')
-    expect(attention.textContent).toContain('is not marked shared — mark it shared, or move it')
-    expect(attention.textContent).toContain('Message brokering is offered, but no platform delivers it')
+    // The two findings are said on the Checks page, each naming the service.
+    const offered = await checkOnPage('review', 'check.offeredNotShared')
+    expect(offered.textContent).toContain('Message brokering is used by')
+    expect(offered.textContent).toContain('is not marked shared — mark it shared, or move it')
+    fireEvent.click(screen.getByTestId('checks-row-check.unrealised'))
+    expect(screen.getByTestId('checks-detail').textContent).toContain('Message brokering is offered, but no platform delivers it')
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
 
     fireEvent.click(within(cards).getByTestId('open-technology'))
     const table = await screen.findByTestId('technology-register-table')
@@ -499,10 +500,11 @@ describe('the organisation screen — a fresh folder', () => {
     expect(subtitle.textContent).toContain('Everything here is kept in this browser.')
     expect(subtitle.textContent).toContain('Each scope below \u2014 a domain, a team, a landscape scope \u2014 has its own')
     const cards = await screen.findByTestId('organisation-cards')
-    // The seven pages of the root, the operating model, and the people register beside them (ADR-0036).
-    await waitFor(() => expect(within(cards).getAllByTestId('card-description')).toHaveLength(9))
+    // The seven pages of the root, the operating model, the people register beside them (ADR-0036), and the checks.
+    await waitFor(() => expect(within(cards).getAllByTestId('card-description')).toHaveLength(10))
     const said = within(cards).getAllByTestId('card-description').map((one) => one.textContent)
     expect(said).toContain('Who is who in the organisation: one entry per person, kept outside the history so that a name can be forgotten.')
+    expect(said).toContain('What the app checks the model for, by what it is about: why each check matters, how to fix it, and where it is found.')
     expect(said).toContain('A page for every record on this scope\'s boards: its owner, vendor, dates and description.')
     expect(said).toContain('Every application anywhere in the organisation, with the scope that answers for it and where else it is drawn.')
     expect(said).toContain('The kinds of unit the organisation has, the roles each holds and what each role is responsible for, in its own words.')

@@ -3,134 +3,54 @@
 
 // @vitest-environment jsdom
 /**
- * The home's findings, in the one list (3.6.1): grouped by check and folded,
- * the notes hidden, and an instance's explanation offering the ways to where
- * it is fixed — a finding about something on a view opens the view, one about
- * the operating model its page, any other its record — and nothing the host
- * cannot open. Until 3.6.1 each row was itself the way there; these tests
- * pressed the row and now press the action in its explanation.
+ * The home's line under the cards (3.6.1): what the checks find, counted by
+ * weight in the marks the lists use, each count a button to the Checks page
+ * on its weight — and nothing at all where nothing is found. Until the
+ * Checks page it listed every finding; those tests are the page's now
+ * (`ChecksPage.test.tsx`, `treeChecks.test.ts`).
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, screen } from '@testing-library/react'
 import { translator } from '../../i18n'
 import { axeFindings } from '../testing/axe'
 import { renderShell } from '../testing/renderShell'
-import { NeedsAttention } from './NeedsAttention'
-import type { AttentionItem } from './attention'
+import { NeedsAttention, weightCount } from './NeedsAttention'
 
 afterEach(() => cleanup())
 
 const s = translator('en')
 
-/** Unfold a check by its name and open one of its instances by the row's test id. */
-function openInstance(check: RegExp, row: string) {
-  fireEvent.click(screen.getByRole('button', { name: check }))
-  fireEvent.click(screen.getByTestId(row))
-  return screen.getByTestId('finding-explanation')
-}
-
-const actionsIn = (explanation: HTMLElement) => within(explanation).queryAllByRole('button').map((one) => one.textContent).filter((text) => !text?.includes('All findings'))
-
 describe('NeedsAttention', () => {
-  it('groups the findings by check, folded, with the notes hidden and each row saying its kind', async () => {
-    const items: AttentionItem[] = [
-      { key: 'check.notDrawn', kind: 'notDrawn', scope: 'retail', id: 'wms', text: 'WMS is drawn on no board' },
-      { key: 'check.dangling', kind: 'dangling', scope: 'retail', id: 'crm', text: 'An element' },
-      { key: 'check.unattributed', kind: 'unattributed', scope: 'retail', id: 'post', text: 'Post office' },
-    ]
-    renderShell(<NeedsAttention items={items} at="" onOpen={vi.fn()} s={s} />)
-    expect(screen.getAllByTestId('findings-group').map((row) => row.textContent)).toEqual([
-      expect.stringContaining('A stand-in of something nothing defines(1)'), expect.stringContaining('An outside application with no party(1)'),
-    ])
-    expect(screen.queryByTestId('attention-retail-crm')).toBeNull()
-    fireEvent.click(screen.getByRole('switch', { name: 'Show notes (1)' }))
-    fireEvent.click(screen.getByRole('button', { name: /Not on any view yet/ }))
-    expect(screen.getByTestId('attention-retail-wms').getAttribute('data-finding')).toBe('notDrawn')
+  it('counts what is found by weight, fix first, and leaves out a weight with nothing', async () => {
+    renderShell(<NeedsAttention counts={{ fix: 1, review: 31, note: 0 }} onOpen={vi.fn()} s={s} />)
+    const counts = screen.getAllByRole('button')
+    expect(counts.map((one) => one.textContent)).toEqual(['●1 to fix', '▲31 to review'])
+    expect(counts.map((one) => one.getAttribute('data-weight'))).toEqual(['fix', 'review'])
+    expect(screen.getByTestId('needs-attention').getAttribute('data-guide')).toBe('org.attention')
     expect(await axeFindings()).toEqual([])
   })
 
-  it('leaves out a finding marked as intended where its scope keeps the mark, and says nothing when that was all', () => {
-    const items: AttentionItem[] = [
-      { key: 'check.unattributed', kind: 'unattributed', scope: 'retail', id: 'post', text: 'Post office' },
-      { key: 'check.roleVacant', kind: 'roleVacant', scope: 'retail', id: 'u-carriers', fields: ['ro-po'], text: 'Carriers is short of a Product Owner' },
-    ]
-    const marks = [
-      { scope: 'retail', mark: { check: 'check.unattributed' as const, key: 'post', on: '2026-10-11' } },
-      // Kept in another scope: it silences nothing here.
-      { scope: 'finance', mark: { check: 'check.roleVacant' as const, key: 'u-carriers ro-po', on: '2026-10-11' } },
-    ]
-    renderShell(<NeedsAttention items={items} marks={marks} at="" onOpen={vi.fn()} s={s} />)
-    expect(screen.getAllByTestId('findings-group').map((row) => row.textContent)).toEqual([expect.stringContaining('A role short of people(1)')])
-    cleanup()
-    renderShell(<NeedsAttention items={items.slice(0, 1)} marks={marks} at="" onOpen={vi.fn()} s={s} />)
+  it('opens the Checks page on the weight pressed, from the keyboard as from the pointer', () => {
+    const onOpen = vi.fn()
+    renderShell(<NeedsAttention counts={{ fix: 0, review: 2, note: 13 }} onOpen={onOpen} s={s} />)
+    const notes = screen.getByRole('button', { name: /13 notes/ })
+    // A button of its own: reached by Tab, pressed by Enter or Space.
+    expect(notes.tagName).toBe('BUTTON')
+    notes.focus()
+    expect(document.activeElement).toBe(notes)
+    fireEvent.click(notes)
+    expect(onOpen).toHaveBeenCalledWith('note')
+  })
+
+  it('is not drawn where nothing is found', () => {
+    renderShell(<NeedsAttention counts={{ fix: 0, review: 0, note: 0 }} onOpen={vi.fn()} s={s} />)
     expect(screen.queryByTestId('needs-attention')).toBeNull()
   })
 
-  it('opens a drawing for a shape on it, and the element for an element', () => {
-    const onOpen = vi.fn()
-    const onOpenView = vi.fn()
-    renderShell(
-      <NeedsAttention
-        items={[
-          { key: 'check.drawingLinkMissing', kind: 'drawingLinkMissing', scope: 'retail', id: 'ctx:b', view: 'ctx', text: 'A shape' },
-          { key: 'check.dangling', kind: 'dangling', scope: 'retail', id: 'crm', text: 'An element' },
-        ]}
-        at="" onOpen={onOpen} onOpenView={onOpenView} s={s}
-      />,
-    )
-    const shape = openInstance(/A drawing points at something not here/, 'attention-retail-ctx:b')
-    expect(actionsIn(shape)).toEqual(['Open the drawing'])
-    fireEvent.click(within(shape).getByRole('button', { name: 'Open the drawing' }))
-    expect(onOpenView).toHaveBeenCalledWith('retail', 'ctx')
-    expect(onOpen).not.toHaveBeenCalled()
-    fireEvent.click(screen.getByRole('button', { name: /All findings/ }))
-    const element = openInstance(/A stand-in of something nothing defines/, 'attention-retail-crm')
-    fireEvent.click(within(element).getByRole('button', { name: 'Open it' }))
-    expect(onOpen).toHaveBeenCalledWith('retail', 'crm')
-  })
-
-  it('opens a finding about the operating model on its page, and offers nothing the host cannot open', () => {
-    const onOpen = vi.fn()
-    const onOpenOperating = vi.fn()
-    const items = [{ key: 'check.unitTypeNowhere' as const, kind: 'unitTypeNowhere', scope: '', id: 'ut-guild', page: 'operating' as const, text: 'Guild sits nowhere' }]
-    renderShell(<NeedsAttention items={items} at="" onOpen={onOpen} onOpenOperating={onOpenOperating} s={s} />)
-    fireEvent.click(within(openInstance(/A unit type that sits nowhere/, 'attention--ut-guild')).getByRole('button', { name: 'Open the unit type' }))
-    expect(onOpenOperating).toHaveBeenCalledWith('ut-guild')
-    expect(onOpen).not.toHaveBeenCalled()
-    cleanup()
-    renderShell(<NeedsAttention items={items} at="" onOpen={onOpen} s={s} />)
-    expect(actionsIn(openInstance(/A unit type that sits nowhere/, 'attention--ut-guild'))).toEqual([])
-  })
-
-  it('opens the other definition of a thing kept twice, and offers Link… where the home may be written', async () => {
-    const onOpen = vi.fn()
-    const onLink = vi.fn()
-    const items: AttentionItem[] = [{ key: 'check.conflict', kind: 'conflict', scope: 'retail', id: 'erp', elsewhere: 'finance', text: 'ERP is defined twice' }]
-    renderShell(<NeedsAttention items={items} at="" onOpen={onOpen} onLink={onLink} writable s={s} />)
-    const explanation = openInstance(/Two scopes define the same thing/, 'attention-retail-erp')
-    expect(actionsIn(explanation)).toEqual(['Link…', 'Open it', 'Open the definition'])
-    expect(await axeFindings()).toEqual([])
-    fireEvent.click(within(explanation).getByRole('button', { name: 'Open the definition' }))
-    expect(onOpen).toHaveBeenCalledWith('finance', 'erp')
-    fireEvent.click(within(explanation).getByRole('button', { name: 'Link…' }))
-    expect(onLink).toHaveBeenCalledWith('finance', 'erp', 'retail')
-    cleanup()
-    renderShell(<NeedsAttention items={items} at="" onOpen={onOpen} onLink={onLink} writable={false} s={s} />)
-    expect(actionsIn(openInstance(/Two scopes define the same thing/, 'attention-retail-erp'))).toEqual(['Open it', 'Open the definition'])
-  })
-
-  it('opens the unit a finding of the organisation is about, and the record of one about something it serves', () => {
-    const onOpen = vi.fn()
-    const items: AttentionItem[] = [
-      { key: 'check.roleVacant', kind: 'roleVacant', scope: 'retail', id: 'u-carriers', text: 'Carriers is short of a Product Owner' },
-      { key: 'check.unitNotServing', kind: 'unitNotServing', scope: 'retail', id: 'price', text: 'Carriers is responsible for Price freight' },
-    ]
-    renderShell(<NeedsAttention items={items} at="" onOpen={onOpen} s={s} />)
-    const vacant = openInstance(/A role short of people/, 'attention-retail-u-carriers')
-    expect(actionsIn(vacant)).toEqual(['Open the unit'])
-    fireEvent.click(within(vacant).getByRole('button', { name: 'Open the unit' }))
-    expect(onOpen).toHaveBeenCalledWith('retail', 'u-carriers')
-    fireEvent.click(screen.getByRole('button', { name: /All findings/ }))
-    expect(actionsIn(openInstance(/Responsible outside the domains it serves/, 'attention-retail-price'))).toEqual(['Open it'])
+  it('says each weight in the words of the page it opens, one and many', () => {
+    expect([weightCount('fix', 1, s), weightCount('review', 2, s), weightCount('note', 1, s), weightCount('note', 44, s)])
+      .toEqual(['1 to fix', '2 to review', '1 note', '44 notes'])
+    const nl = translator('nl')
+    expect(weightCount('note', 44, nl)).toBe('44 notities')
   })
 })

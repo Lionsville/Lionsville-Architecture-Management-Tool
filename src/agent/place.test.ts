@@ -94,6 +94,8 @@ describe('the place a screen is', () => {
   it('is whose home is up, and its page, with nothing open', () => {
     expect(placeOf({ home: { path: '', name: 'Acme' } })).toEqual({ scope: '', page: 'home' })
     expect(placeOf({ home: { path: 'acme', name: 'Acme' }, page: { page: 'register' } })).toEqual({ scope: 'acme', page: 'register' })
+    expect(placeOf({ home: { path: '', name: 'Acme' }, page: { page: 'checks' } })).toEqual({ scope: '', page: 'checks' })
+    expect(readPlace(writePlace({ scope: '', page: 'checks' }))).toEqual({ scope: '', page: 'checks' })
   })
 
   it('is not a place yet while the workspace has said nothing about what is on it', () => {

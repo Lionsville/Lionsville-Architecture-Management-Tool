@@ -36,6 +36,9 @@ import type { SourceChromeProps } from '../ports/ProviderParts'
 import { sourceLabel } from './ShellToolbar'
 import type { ToolbarChip } from './ShellToolbar'
 import { reasonIn } from './messageFor'
+import { checkMarking, CheckMarkingContext } from './checkMarking'
+import type { CheckMarking } from './checkMarking'
+import { useWriteIn } from './units/writeIn'
 
 /** One of the three: nowhere to keep anything yet, a scope open, or a home. */
 export function AppScreen({ parts }: { parts: ShellParts }) {
@@ -204,10 +207,31 @@ function useHomeServedBy(parts: ShellParts) {
   })
 }
 
+/**
+ * Marking a finding as intended from a home's Checks page (ADR-0036,
+ * amended): nothing is open, so a mark is the step of the scope that keeps
+ * it, under that scope's rights, and the tree is read again once it lands.
+ */
+function useHomeMarking(parts: ShellParts): CheckMarking {
+  const { services: { s, toasts }, source, props } = parts
+  const readOnlyAt = props.provider?.readOnlyAt
+  const writable = useMemo(() => (path: ScopePath) => !(sourceIsReadOnly(source) || (readOnlyAt?.(path) ?? false)), [source, readOnlyAt])
+  const writeIn = useWriteIn({ scopes: props.repositories.scopes, writable, onTreeChanged: parts.writes.treeChanged })
+  const { index } = parts.tree
+  const { notify } = toasts
+  return useMemo(
+    () => checkMarking({ index, writable, writeIn, today: parts.todayDay, onRefused: (key) => notify(s(key), 'error') }),
+    [index, writable, writeIn, parts.todayDay, notify, s],
+  )
+}
+
 function Home({ parts }: { parts: ShellParts }) {
   const { props, services: { prefs, s }, nav, findings, organisation } = parts
   const { openScopeAt } = nav
   const servedBy = useHomeServedBy(parts)
+  const marking = useHomeMarking(parts)
+  const { index, models } = parts.tree
+  const treeRead = useMemo(() => ({ index, models }), [index, models])
   // The home's own document shows the home scope's pictures, as a workspace
   // shows its scope's.
   return (
@@ -217,46 +241,49 @@ function Home({ parts }: { parts: ShellParts }) {
       library={organisation.root?.images ?? NO_PICTURES}
       onFailure={parts.services.failed.bind(undefined, 'pictures')}
     >
-      <OrganisationScreen
-        organisation={parts.organisation}
-        examples={props.examples}
-        order={parts.order.order}
-        onOrderChange={parts.order.chooseOrder}
-        source={parts.source}
-        sourceDescription={props.provider?.description}
-        sourceSayings={props.provider?.sayings}
-        sourceChip={parts.provider.chip}
-        chipPanel={chipPanelFor(parts)}
-        chipFace={chipFaceFor(parts)}
-        waysIn={parts.provider.offered}
-        // The same two the workspace's bar carries: the menu on a host
-        // that has none of its own, and the agent glyph, which has to be
-        // reachable with nothing open (ADR-0007). The folder's history, from
-        // its front door too (`homeHistory`).
-        overflow={overflowFor(parts, { history: parts.home.history.available, scope: false })}
-        agent={parts.agentServer.bar}
-        barButton={barButtonFor(parts, 'organisation')}
-        onGoHome={nav.goHome}
-        findings={findings.treeFindings}
-        checkMarks={parts.tree.index.checkMarks()}
-        register={findings.register}
-        technology={findings.technology}
-        initiatives={findings.initiatives}
-        localObservations={findings.localObservations}
-        platformTree={findings.platformTree}
-        onOpenRegisterRow={(path, id) => openScopeAt(path, { page: 'element', id })}
-        onOpenRegisterPage={(path, id) => openScopeAt(path, { page: 'document', id })}
-        onLinkFromRegister={(path, id, to) => openScopeAt(path, { page: 'link', id, to })}
-        pageRequest={parts.agent.orgPageRequest}
-        onPageChange={parts.agent.setOrgPage}
-        people={parts.people}
-        servedBy={servedBy}
-        writable={writableFor(parts)}
-        today={parts.todayDay}
-        language={prefs.language}
-        s={s}
-        windowChrome={parts.windowChrome}
-      />
+      <CheckMarkingContext.Provider value={marking}>
+        <OrganisationScreen
+          organisation={parts.organisation}
+          examples={props.examples}
+          order={parts.order.order}
+          onOrderChange={parts.order.chooseOrder}
+          source={parts.source}
+          sourceDescription={props.provider?.description}
+          sourceSayings={props.provider?.sayings}
+          sourceChip={parts.provider.chip}
+          chipPanel={chipPanelFor(parts)}
+          chipFace={chipFaceFor(parts)}
+          waysIn={parts.provider.offered}
+          // The same two the workspace's bar carries: the menu on a host
+          // that has none of its own, and the agent glyph, which has to be
+          // reachable with nothing open (ADR-0007). The folder's history, from
+          // its front door too (`homeHistory`).
+          overflow={overflowFor(parts, { history: parts.home.history.available, scope: false })}
+          agent={parts.agentServer.bar}
+          barButton={barButtonFor(parts, 'organisation')}
+          onGoHome={nav.goHome}
+          findings={findings.treeFindings}
+          checkMarks={marking.marks}
+          treeRead={treeRead}
+          register={findings.register}
+          technology={findings.technology}
+          initiatives={findings.initiatives}
+          localObservations={findings.localObservations}
+          platformTree={findings.platformTree}
+          onOpenRegisterRow={(path, id) => openScopeAt(path, { page: 'element', id })}
+          onOpenRegisterPage={(path, id) => openScopeAt(path, { page: 'document', id })}
+          onLinkFromRegister={(path, id, to) => openScopeAt(path, { page: 'link', id, to })}
+          pageRequest={parts.agent.orgPageRequest}
+          onPageChange={parts.agent.setOrgPage}
+          people={parts.people}
+          servedBy={servedBy}
+          writable={writableFor(parts)}
+          today={parts.todayDay}
+          language={prefs.language}
+          s={s}
+          windowChrome={parts.windowChrome}
+        />
+      </CheckMarkingContext.Provider>
     </PicturesProvider>
   )
 }

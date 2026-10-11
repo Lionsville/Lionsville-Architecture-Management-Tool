@@ -28,7 +28,7 @@
  * it has, to read.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { ComponentProps, ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
@@ -66,7 +66,6 @@ import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Link from '@mui/material/Link'
 import type { ExampleOffer } from '../../projects/examples/catalogue'
-import { useShownDays } from '../../editor/useShownDays'
 import { BackForward } from '../BackForward'
 import { BarEnd } from '../BarEnd'
 import type { ToolbarAgent, ToolbarOverflow } from '../ShellToolbar'
@@ -74,20 +73,21 @@ import { Crumbs, crumbsFor, QUIET, SourceChipView, WRAPS } from '../ShellToolbar
 import { NewScopeDialog } from './NewScopeDialog'
 import { registerSummary, registerWithin } from './register'
 import type { RegisterRow } from './register'
-import type { RegisterPage as RegisterPageShape, TechnologyPage as TechnologyPageShape } from './RegisterPage'
-import type { PeoplePage as PeoplePageShape } from '../../people/ui/PeoplePage'
 import { PeopleCard } from './PeopleCard'
 import type { PeopleAccess } from './usePeopleRegister'
 import type { OrgPage } from '../useShellAgent'
-import { lazyPart } from '../../widgets/lazyPart'
 import { technologySummary, technologyWithin } from '../../projects/technologyRegister'
 import type { TechnologyRow } from '../../projects/technologyRegister'
 import { OrganisationCards } from './OrganisationCards'
 import type { OrganisationCardsProps } from './OrganisationCards'
 import type { FindingTarget } from '../../roadmap'
 import { BoardsTable } from './BoardsTable'
-import { attentionItems } from './attention'
 import { NeedsAttention } from './NeedsAttention'
+import { ChecksCard, HomePages } from './HomePages'
+import { firstOfWeight } from './treeChecks'
+import { useHomeChecks } from './useHomeChecks'
+import type { TreeRead } from './useHomeChecks'
+import { useHomePages } from './useHomePages'
 import { organisationPages } from './organisationPages'
 import type { OrganisationPages } from './organisationPages'
 import { ScopeSettingsDialog, SCOPE_KIND_COUNT, SCOPE_KIND_LABEL } from './ScopeSettingsDialog'
@@ -95,54 +95,6 @@ import { ScopeTree } from './ScopeTree'
 import { ServedBy } from './ServedBy'
 import type { ServedByAccess } from './useServedBy'
 import type { Organisation } from './useOrganisation'
-
-/**
- * The two registers are pages behind a card, and the first view of this
- * screen is the cards: their script arrives when one is opened
- * (`widgets/lazyPart`).
- */
-const RegisterPage = lazyPart<ComponentProps<typeof RegisterPageShape>>(
-  () => import('./RegisterPage').then((held) => held.RegisterPage), { until: (props) => props.open },
-)
-const TechnologyPage = lazyPart<ComponentProps<typeof TechnologyPageShape>>(
-  () => import('./RegisterPage').then((held) => held.TechnologyPage), { until: (props) => props.open },
-)
-/** The people register's page (ADR-0036), fetched the first time it is opened, as the registers are. */
-const PeoplePage = lazyPart<ComponentProps<typeof PeoplePageShape>>(
-  () => import('../../people/ui/PeoplePage').then((held) => held.PeoplePage), { until: (props) => props.open },
-)
-
-/** The People page has no day of its own: today is its day, and a look away is the window's (ADR-0027). */
-const NO_SAVED_DAY = (): undefined => undefined
-const PEOPLE_LOOK = 'people'
-
-/**
- * The People page over this home, where the source keeps a register; nothing
- * where it keeps none. The day it is looked at is a look the window holds, as
- * a board's is (ADR-0027): moving it writes nothing, and back on today it
- * forgets itself. A request that names a person — *Open in People* on the
- * organisation chart — picks them, and closing the page lets that go, so the
- * card opens it on whoever the page last showed.
- */
-function PeopleDoor({ people, open, onClose, request, s, windowChrome }: {
-  people: PeopleAccess | undefined; open: boolean; onClose: () => void
-  request: { page: OrgPage | 'home'; select?: string } | undefined; s: Translate; windowChrome: WindowChrome
-}) {
-  const [asked, setAsked] = useState<string | undefined>(undefined)
-  useEffect(() => { setAsked(request?.page === 'people' ? request.select : undefined) }, [request])
-  const close = useCallback(() => { setAsked(undefined); onClose() }, [onClose])
-  const viewing = useShownDays(NO_SAVED_DAY)
-  const day = viewing.days[PEOPLE_LOOK]?.day
-  const look = useMemo(() => ({
-    ...(day !== undefined ? { day } : {}),
-    onDay: (next: string | undefined) => viewing.show(PEOPLE_LOOK, next),
-  }), [day, viewing])
-  if (!people) return null
-  return (
-    <PeoplePage open={open} onClose={close} register={people} {...(asked !== undefined ? { select: asked } : {})} readText={people.readText}
-      copyText={people.copyText} look={look} s={s} windowChrome={windowChrome} />
-  )
-}
 
 export type OrganisationScreenProps = {
   organisation: Organisation
@@ -232,8 +184,14 @@ export type OrganisationScreenProps = {
    * a row then says nothing about findings rather than saying there are none.
    */
   findings?: ReadonlyMap<ScopePath, readonly Finding[]>
-  /** The tree's findings marked as intended (`ScopeIndex.checkMarks`), which *Needs attention* leaves out. */
+  /** The tree's findings marked as intended (`ScopeIndex.checkMarks`), which the counts and the Checks page leave out. */
   checkMarks?: readonly KeptCheckMark[]
+  /**
+   * The index and the scopes' records it was built from, for the findings
+   * only they say: every scope's dates, and the Conway map over the home.
+   * Absent: those are not counted.
+   */
+  treeRead?: TreeRead
   /**
    * The register, derived over the whole tree (ADR-0012 §2).
    *
@@ -339,17 +297,12 @@ export function OrganisationScreen({
   waysIn,
   overflow, agent, barButton, onGoHome, findings, register = [], technology = [], initiatives = 0, localObservations = 0, platformTree,
   onOpenRegisterRow, onOpenRegisterPage, onLinkFromRegister, pageRequest, onPageChange, people, servedBy,
-  writable = ANYWHERE, today, language, s, windowChrome = NO_WINDOW_CHROME, checkMarks,
+  writable = ANYWHERE, today, language, s, windowChrome = NO_WINDOW_CHROME, checkMarks, treeRead,
 }: OrganisationScreenProps) {
   const { tree, at, root, ready, dialog } = organisation
   const mayWrite = writable(at)
-  /**
-   * Which of this screen's pages is up over its cards — the registers, the
-   * people register — each opened from its card: state here and not in the
-   * hook, because none of them is the home's own document. One at a time.
-   */
-  const [openPage, setOpenPage] = useState<OrgPage | undefined>(undefined)
-  const close = useCallback(() => setOpenPage(undefined), [])
+  /** Which of this screen's pages is up over its cards, one at a time, and what it was asked to pick (`useHomePages`). */
+  const homePages = useHomePages(pageRequest, onPageChange)
   /**
    * How tall this screen's bar is, measured the way the workspace measures
    * its own: the register and the technology pages open BELOW it, so the
@@ -365,13 +318,6 @@ export function OrganisationScreen({
     setBarHeight(node.getBoundingClientRect().height)
   }, [])
   const pageChrome = useMemo<WindowChrome>(() => ({ ...windowChrome, topInset: barHeight }), [windowChrome, barHeight])
-  // A request for either page or for neither (ADR-0019), and the answer back:
-  // which one is up, said on every change and taken back when this screen goes.
-  useEffect(() => {
-    if (pageRequest) setOpenPage(pageRequest.page === 'home' ? undefined : pageRequest.page)
-  }, [pageRequest])
-  useEffect(() => { onPageChange?.(openPage) }, [onPageChange, openPage])
-  useEffect(() => () => onPageChange?.(undefined), [onPageChange])
 
   /**
    * The scope whose home this is, out of the listing. The root is the listing
@@ -415,14 +361,11 @@ export function OrganisationScreen({
     [everyScope, s],
   )
   /**
-   * The findings, as sentences under the cards (ADR-0012 §9). Read off what
-   * the shell already holds: the tree's findings and the technology rows —
-   * and at the organisation, the operating model's own, off its document.
+   * What the checks find at or under this home (ADR-0012 §9; ADR-0036, amended): off what the shell already holds —
+   * the tree's findings, the technology rows, every scope's dates, the Conway map over the home and, at the organisation,
+   * the operating model's own — counted under the cards and listed on the Checks page.
    */
-  const attention = useMemo(
-    () => attentionItems(findings, register, technology, at, s, scopeName, people?.people, at === ROOT_SCOPE && root?.path === at ? root.model : undefined),
-    [findings, register, technology, at, s, scopeName, people, root],
-  )
+  const checks = useHomeChecks({ findings, register, technology, at, root, tree: treeRead, marks: checkMarks, people, platformTree, today, scopeName, s })
 
   /**
    * Does this scope have a canvas? Off its own document, which is read for
@@ -574,10 +517,10 @@ export function OrganisationScreen({
               technology={technologyCounts}
               initiatives={initiatives}
               shows={shows}
-              onOpenRegister={() => setOpenPage('register')}
-              onOpenTechnology={() => setOpenPage('technologyRegister')}
+              onOpenRegister={() => homePages.open('register')}
+              onOpenTechnology={() => homePages.open('technologyRegister')}
               writable={mayWrite}
-              extra={<PeopleCard people={people} atRoot={atRoot} onOpen={() => setOpenPage('people')} s={s} />}
+              extra={<><PeopleCard people={people} atRoot={atRoot} onOpen={() => homePages.open('people')} s={s} /><ChecksCard checks={checks} onOpen={() => homePages.open('checks')} s={s} /></>}
               s={s}
             />}
           </Box>
@@ -586,10 +529,9 @@ export function OrganisationScreen({
               domains name it, written where each unit is kept. */}
           <ServedBy scope={at} servedBy={servedBy} scopeName={scopeName} s={s} />
 
-          {/* What the tree contradicts about itself, once, as sentences a
-              person can act on — where the cards used to count them and the
-              rows used to colour them. */}
-          <NeedsAttention items={attention} marks={checkMarks} at={at} onOpen={onOpenRegisterRow} onOpenView={(scope, id) => organisation.open(scope, { page: 'board', id })} onOpenOperating={(id) => organisation.open(ROOT_SCOPE, { page: 'operating', id })} onLink={onLinkFromRegister} writable={mayWrite} s={s} />
+          {/* What the checks find here, counted by weight, each count a way to
+              the Checks page on the first check of its weight. */}
+          <NeedsAttention counts={checks.counts} onOpen={(weight) => homePages.open('checks', firstOfWeight(checks.rows, weight))} s={s} />
 
           {/* The boards, one row each: a scope that draws is a stop on the way
               to its canvas, and the way on is the row of the board you want —
@@ -682,31 +624,11 @@ export function OrganisationScreen({
         </Box>
       </Box>
 
-      <RegisterPage
-        open={openPage === 'register'}
-        onClose={close}
-        rows={registerHere}
-        organisation={heading}
-        scopeName={registerScopeName}
-        onOpen={onOpenRegisterRow}
-        onOpenPage={onOpenRegisterPage}
-        onLink={onLinkFromRegister}
-        readOnly={!mayWrite}
-        s={s}
-        windowChrome={pageChrome}
+      <HomePages
+        pages={homePages} at={at} heading={heading} register={registerHere} technology={technologyHere} registerScopeName={registerScopeName}
+        scopeName={scopeName} checks={checks} people={people} readOnly={!mayWrite} open={organisation.open}
+        onOpenRow={onOpenRegisterRow} onOpenRowPage={onOpenRegisterPage} onLink={onLinkFromRegister} s={s} windowChrome={pageChrome}
       />
-      <TechnologyPage
-        open={openPage === 'technologyRegister'}
-        onClose={close}
-        rows={technologyHere}
-        organisation={heading}
-        scopeName={registerScopeName}
-        onOpen={onOpenRegisterRow}
-        onOpenPage={onOpenRegisterPage}
-        s={s}
-        windowChrome={pageChrome}
-      />
-      <PeopleDoor open={openPage === 'people'} onClose={close} people={people} request={pageRequest} s={s} windowChrome={pageChrome} />
       <NewScopeDialog
         open={dialog.kind === 'newScope'}
         tree={orderedTree}

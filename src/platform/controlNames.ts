@@ -100,6 +100,10 @@ export const CONTROL_NAMES = [
   // …and what was marked as intended: Mark as intended… under an explanation,
   // Accepted (N) under the groups, and Take back on each one in it.
   'findings.markIntended', 'findings.accepted', 'findings.takeBack',
+  // The Checks page over a home (ADR-0036, amended 11 October 2026): its card,
+  // a count by weight under the cards, the weights shown, a check's row, and
+  // an instance of the check picked.
+  'org.card.checks', 'org.attentionCount', 'checks.weight', 'checks.row', 'checks.instance',
 ] as const
 
 export type ControlName = (typeof CONTROL_NAMES)[number]

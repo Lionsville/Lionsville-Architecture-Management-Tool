@@ -109,7 +109,7 @@ function shell({ screen: seed, client, ...over }: Partial<Omit<ShellView, 'scree
       opened.push(to)
       const path = to.scope
       const name = NAMES[path] ?? path
-      if (to.page === undefined || to.page === 'home' || to.page === 'register' || to.page === 'technologyRegister' || to.page === 'people') {
+      if (to.page === undefined || to.page === 'home' || to.page === 'register' || to.page === 'technologyRegister' || to.page === 'people' || to.page === 'checks') {
         screen = to.page === undefined
           ? { open: { path, name, view: firstView(path) } }
           : { home: { path, name }, ...(to.page === 'home' ? {} : { page: { page: to.page } }) }
@@ -257,6 +257,21 @@ describe('with nothing open', () => {
     expect(opened.at(-1)).toEqual({ scope: '', page: 'register' })
     expect(register.page).toEqual({ page: 'register' })
     expect(register.arrived).toBe(true)
+  })
+
+  it('opens the Checks page over a home, on the check its key names, and refuses a key no check has', async () => {
+    const { view, opened } = shell()
+    const checks = parsed(await handle(call('app.open', { scope: 'acme/retail', page: 'checks', id: 'check.roleVacant' }), undefined, view))
+    // The key goes to the page; no scope's document is read for it.
+    expect(opened.at(-1)).toEqual({ scope: 'acme/retail', page: 'checks', id: 'check.roleVacant' })
+    expect(checks.page).toEqual({ page: 'checks' })
+    expect(checks.arrived).toBe(true)
+    expect(view.tree && (view.tree as ReturnType<typeof tree>).asked).toEqual([])
+    parsed(await handle(call('app.open', { scope: '', page: 'checks' }), undefined, view))
+    expect(opened.at(-1)).toEqual({ scope: '', page: 'checks' })
+    const unknown = await handle(call('app.open', { scope: '', page: 'checks', id: 'check.nothing' }), undefined, view)
+    expect(refusal(unknown)).toBe('agent.unknownId')
+    expect(detail(unknown)).toContain('checks.list')
   })
 
   it('checks the destination against the scope\'s own document before asking the shell', async () => {
