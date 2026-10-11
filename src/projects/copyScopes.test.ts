@@ -57,6 +57,19 @@ describe('work brought from one place into another', () => {
     expect((await readScope(into.scopes, 'globex'))?.model.name).toBe('Globex')
   })
 
+  it('brings the people register along, every entry the destination does not hold, and changes none it does', async () => {
+    const from = memoryRepositories()
+    const into = memoryRepositories()
+    const pia = await from.people.add({ name: 'Pia Schulz' })
+    const ada = await from.people.add({ name: 'Ada Verbeek' })
+    if ('refused' in pia || 'refused' in ada) throw new Error('refused')
+    await into.people.bringIn([{ ...ada.person, name: 'Ada Verbeek-Bos' }])
+    await copyScopes(from, into)
+    const there = (await into.people.list()).people
+    expect(there.map((one) => one.name).sort()).toEqual(['Ada Verbeek-Bos', 'Pia Schulz'])
+    expect((await from.people.list()).people).toHaveLength(2)
+  })
+
   it('takes nothing from where it was', async () => {
     const from = await holding(scope('acme', 'Acme Logistics'))
     await copyScopes(from, memoryRepositories())

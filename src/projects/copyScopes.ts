@@ -18,8 +18,13 @@
  * not land is counted and the rest go on, and a scope that will not read is
  * left where it is and counted apart — the count a person looking for lost
  * work reads.
+ *
+ * **The people register comes along too** (ADR-0036), where both places keep
+ * one: every entry the destination does not hold, by its id. An entry it
+ * holds already is its own, and stays as it is.
  */
 import type { ImageRepository } from '../ports/ImageRepository'
+import type { PeopleRepository } from '../ports/PeopleRepository'
 import type { ScopeRepository } from '../ports/ScopeRepository'
 import {
   blank, carriedOf, contentOf, nodesOf, picturesOf, placeTogether, readScope, snapshotOf,
@@ -41,10 +46,19 @@ export type CopyTally = {
   meanwhile: ScopeAddress[]
 }
 
-type From = { scopes: ScopeReader; images: Pick<ImageRepository, 'bytes'> }
+type From = { scopes: ScopeReader; images: Pick<ImageRepository, 'bytes'>; people?: Pick<PeopleRepository, 'list'> }
 type Into = {
   scopes: ScopeReader & Pick<ScopeRepository, 'create' | 'apply' | 'remove'>
   images: Pick<ImageRepository, 'put'>
+  people?: Pick<PeopleRepository, 'list' | 'bringIn'>
+}
+
+/** Every entry of the register the destination does not hold yet; nothing it holds is changed. */
+async function copyPeople(from: From, into: Into): Promise<void> {
+  if (!from.people || !into.people) return
+  const there = new Set((await into.people.list()).people.map((person) => person.id))
+  const missing = (await from.people.list()).people.filter((person) => !there.has(person.id))
+  if (missing.length) await into.people.bringIn(missing)
 }
 
 /**
@@ -98,5 +112,6 @@ export async function copyScopes(from: From, into: Into): Promise<CopyTally> {
       tally.missed.push(node.address)
     }
   }
+  await copyPeople(from, into)
   return tally
 }
