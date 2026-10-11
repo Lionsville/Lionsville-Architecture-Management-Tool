@@ -21,7 +21,7 @@ import type { ReadView } from '../answer'
 import type { AgentAnswer } from '../tools'
 import { json, refused } from '../tools'
 import type { Args, Handler, WriteView } from './shared'
-import { nameAsSigned, personArgument, planOf } from './shared'
+import { canonicalIn, nameAsSigned, personArgument, planOf } from './shared'
 
 export const proposeDecision: Handler = (args, view) => {
   const { model } = view
@@ -234,7 +234,7 @@ export const transitionDecision: Handler = (args, view) => {
       id, number: held.number, status: self.status, date: self.date, supersededBy: self.supersededBy,
       ...(self.reason !== undefined ? { reason: self.reason } : {}),
       ...(superseded.length ? { superseded } : {}),
-      ...(status === 'accepted' && selfAccepted(self)
+      ...(status === 'accepted' && selfAccepted(self, canonicalIn(view))
         ? { warning: 'The only approval is from the person who proposed it. Allowed, and worth a second reader.' }
         : {}),
     }),

@@ -151,6 +151,20 @@ describe('the tools that set them', () => {
   })
 })
 
+describe('a decision accepted on its proposer\'s approval alone', () => {
+  it('is said so where the proposer is held under an id merged into the signer\'s', async () => {
+    const on = session()
+    const body = [
+      '## Context and Problem Statement', '', 'Orders are kept twice.', '', '## Considered Options', '', '* One store', '* Two', '',
+      '## Decision Outcome', '', 'Chosen option: “One store”, because it is simpler.', '', '### Consequences', '', '* Good, because one copy.', '',
+    ].join('\n')
+    on.dispatch({ type: 'decision.update', id: 'ad-1', patch: { proposedBy: { person: 'pe-eva2' }, body } })
+    await ask('decision.update', { id: 'ad-1', signers: [{ name: { person: 'pe-eva' }, verdict: 'approved', signedAt: TODAY }] }, on)
+    const accepted = parsed(await ask('decision.transition', { id: 'ad-1', status: 'accepted' }, on))
+    expect(accepted).toMatchObject({ status: 'accepted', warning: expect.any(String) })
+  })
+})
+
 describe('the answers', () => {
   it('say a picked person by name, with the id beside it', async () => {
     const on = session()

@@ -182,6 +182,14 @@ export function personArgument(value: unknown, view: WriteView, field: string): 
   return { ref: pickedPerson(kept.id) }
 }
 
+/** The id that answers for an id, where the register is lent: the entry a merge kept (ADR-0036 §9). */
+export function canonicalIn(view: WriteView): ((id: PersonId) => PersonId) | undefined {
+  const people = view.people?.()
+  if (!people) return undefined
+  const register = registerOf(people)
+  return (id) => resolvePerson(id, register)?.id ?? id
+}
+
 /** The register's name for an id, for a signature to keep (ADR-0036 §8): nothing once forgotten or gone. */
 export function nameAsSigned(view: WriteView): ((id: PersonId) => string | undefined) | undefined {
   const people = view.people?.()
