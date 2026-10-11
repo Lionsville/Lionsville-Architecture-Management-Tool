@@ -5,7 +5,7 @@
  * The repositories each provider that ships hands the app, as the app gets
  * them: through the provider's own `open`, with everything it wraps them in
  * — the folder's push after an entry, this browser's word after a write and
- * its fall to memory — and held to core's five suites, as any provider
+ * its fall to memory — and held to core's six suites, as any provider
  * composed from outside is (ADR-0031 §4).
  */
 import { vi } from 'vitest'

@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * The five repositories in this browser's storage (ADR-0031 §2): the
+ * The six repositories in this browser's storage (ADR-0031 §2): the
  * repositories every keyed store shares (`adapters/repositories/`), over this
  * browser's database (`IndexedDbStore`) — with what the key-value storage kept
  * before them brought in (`earlierScopes.ts`), where there is one.

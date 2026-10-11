@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * The five repositories in memory: for a session that deliberately leaves
+ * The six repositories in memory: for a session that deliberately leaves
  * nothing behind, and for a test that wants the real thing without a browser.
  *
  * The same repositories this browser's storage keeps (`adapters/repositories/`)

@@ -3,7 +3,7 @@
 
 /**
  * One source over a keyed store: made once, then read and written in
- * transactions the five repositories share.
+ * transactions the six repositories share.
  *
  * **Made on first use.** A store with nothing in it is given the organisation
  * and the source's marks in one transaction, and every read and write waits
