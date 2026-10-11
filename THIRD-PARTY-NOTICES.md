@@ -23,11 +23,11 @@ which is the safe direction for a notice to be wrong in.
 - @babel/traverse 7.29.8 — MIT
 - @babel/types 7.29.8 — MIT
 - @braintree/sanitize-url 7.1.2 — MIT
-- @chevrotain/cst-dts-gen 11.1.2 — Apache-2.0
-- @chevrotain/gast 11.1.2 — Apache-2.0
-- @chevrotain/regexp-to-ast 11.1.2 — Apache-2.0
-- @chevrotain/types 11.1.2 — Apache-2.0
-- @chevrotain/utils 11.1.2 — Apache-2.0
+- @chevrotain/cst-dts-gen 13.2.0 — Apache-2.0
+- @chevrotain/gast 13.2.0 — Apache-2.0
+- @chevrotain/regexp-to-ast 13.2.0 — Apache-2.0
+- @chevrotain/types 13.2.0 — Apache-2.0
+- @chevrotain/utils 13.2.0 — Apache-2.0
 - @emotion/babel-plugin 11.13.5 — MIT
 - @emotion/cache 11.14.0 — MIT
 - @emotion/hash 0.9.2 — MIT
@@ -48,8 +48,8 @@ which is the safe direction for a notice to be wrong in.
 - @jridgewell/resolve-uri 3.1.2 — MIT
 - @jridgewell/sourcemap-codec 1.6.0 — MIT
 - @jridgewell/trace-mapping 0.3.31 — MIT
-- @mermaid-js/parser 2.0.0 — MIT
-- @modelcontextprotocol/sdk 1.30.1 — MIT
+- @mermaid-js/parser 2.0.1 — MIT
+- @modelcontextprotocol/sdk 1.32.1 — MIT
 - @mui/core-downloads-tracker 9.4.0 — MIT
 - @mui/material 9.4.0 — MIT
 - @mui/private-theming 9.4.0 — MIT
@@ -79,7 +79,7 @@ which is the safe direction for a notice to be wrong in.
 - character-entities-html4 2.1.0 — MIT
 - character-entities-legacy 3.0.0 — MIT
 - character-reference-invalid 2.0.1 — MIT
-- chevrotain 11.1.2 — Apache-2.0
+- chevrotain 13.2.0 — Apache-2.0
 - classcat 5.0.5 — MIT
 - clsx 2.1.1 — MIT
 - comma-separated-tokens 2.0.3 — MIT
@@ -138,7 +138,7 @@ which is the safe direction for a notice to be wrong in.
 - dequal 2.0.3 — MIT
 - devlop 1.1.0 — MIT
 - dom-helpers 5.2.1 — MIT
-- dompurify 3.4.14 — (MPL-2.0 OR Apache-2.0)
+- dompurify 3.4.16 — (MPL-2.0 OR Apache-2.0)
 - dunder-proto 1.0.1 — MIT
 - ee-first 1.1.1 — MIT
 - electron-updater 6.8.9 — MIT
@@ -237,7 +237,7 @@ which is the safe direction for a notice to be wrong in.
 - mdast-util-to-string 4.0.0 — MIT
 - media-typer 1.1.1 — MIT
 - merge-descriptors 2.0.0 — MIT
-- mermaid 12.0.0 — MIT
+- mermaid 12.1.0 — MIT
 - micromark 4.0.2 — MIT
 - micromark-core-commonmark 2.0.3 — MIT
 - micromark-extension-gfm 3.0.0 — MIT
@@ -290,7 +290,7 @@ which is the safe direction for a notice to be wrong in.
 - points-on-path 0.2.1 — MIT
 - prop-types 15.8.1 — MIT
 - property-information 7.2.0 — MIT
-- proxy-addr 2.0.7 — MIT
+- proxy-addr 2.0.8 — MIT
 - punycode 2.3.1 — MIT
 - qs 6.16.0 — BSD-3-Clause
 - range-parser 1.3.0 — MIT
@@ -760,7 +760,7 @@ SOFTWARE.
 
 ---
 
-## @chevrotain/cst-dts-gen 11.1.2
+## @chevrotain/cst-dts-gen 13.2.0
 
 Licence: Apache-2.0
 
@@ -971,7 +971,7 @@ Licence: Apache-2.0
 
 ---
 
-## @chevrotain/gast 11.1.2
+## @chevrotain/gast 13.2.0
 
 Licence: Apache-2.0
 
@@ -1182,7 +1182,7 @@ Licence: Apache-2.0
 
 ---
 
-## @chevrotain/regexp-to-ast 11.1.2
+## @chevrotain/regexp-to-ast 13.2.0
 
 Licence: Apache-2.0
 
@@ -1393,7 +1393,7 @@ Licence: Apache-2.0
 
 ---
 
-## @chevrotain/types 11.1.2
+## @chevrotain/types 13.2.0
 
 Licence: Apache-2.0
 
@@ -1604,7 +1604,7 @@ Licence: Apache-2.0
 
 ---
 
-## @chevrotain/utils 11.1.2
+## @chevrotain/utils 13.2.0
 
 Licence: Apache-2.0
 
@@ -2407,7 +2407,7 @@ SOFTWARE.
 
 ---
 
-## @mermaid-js/parser 2.0.0
+## @mermaid-js/parser 2.0.1
 
 Licence: MIT
 
@@ -2437,7 +2437,7 @@ SOFTWARE.
 
 ---
 
-## @modelcontextprotocol/sdk 1.30.1
+## @modelcontextprotocol/sdk 1.32.1
 
 Licence: MIT
 
@@ -3563,7 +3563,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ---
 
-## chevrotain 11.1.2
+## chevrotain 13.2.0
 
 Licence: Apache-2.0
 
@@ -5299,7 +5299,7 @@ SOFTWARE.
 
 ---
 
-## dompurify 3.4.14
+## dompurify 3.4.16
 
 Licence: (MPL-2.0 OR Apache-2.0)
 
@@ -9278,7 +9278,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ---
 
-## mermaid 12.0.0
+## mermaid 12.1.0
 
 Licence: MIT
 
@@ -10850,7 +10850,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ---
 
-## proxy-addr 2.0.7
+## proxy-addr 2.0.8
 
 Licence: MIT
 
