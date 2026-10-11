@@ -1216,6 +1216,55 @@ day name the plan that introduces or retires it: the index lists every actor a
 plan that was not abandoned names so (`ScopeIndex.unitPlans`), and
 `unitViewsHere`'s `plansOf` lays the open scope's plans over it.
 
+## As built, 3.6.1: a library brought in as a choice
+
+The arithmetic under the amendment's second point: the choices a step takes,
+the hints between libraries, and the rows a dialog shows before anything is
+written. The dialog that shows them follows.
+
+**`bringIn` takes the choices**, each by entry and each optional, so an ask
+that says none brings the library as it is (`operating/bringIn.ts`):
+`names`, what an item made is called here; `placements`, where a unit type
+made sits — at the top, in the organisation's own types, in entries of the
+ask, which then come with it; and `reuse`, a role or unit type of the
+organisation's that stands for an entry. What an ask brings follows them
+(`entriesReached`): a type placed elsewhere does not bring its library's
+places, and an entry reused brings nothing — not a reused role's
+responsibilities, nor a reused type's roles — while every slot and `within`
+that named it names the item reused. A reuse of an id the organisation does
+not hold, or of the other kind, is passed over. It is still one transaction,
+undone whole; every item made keeps `basedOn`, and an item reused is left as
+it is.
+
+**`alike` hints** are said on both ends, as `library:entry`: Scrum's team,
+product owner, scrum master and developer are alike SAFe's agile team,
+product owner, team coach and team member, and SAFe's product management is
+alike IT4IT's product manager. Team Topologies' four kinds carry none: they
+are kinds of team by what a team is for, and a Scrum Team or an Agile Team
+may be any of them.
+
+**The rows** (`operating/comingIn.ts`) are every unit type and role the step
+reaches: ticked, or come along and for which; made, reused, or brought in
+before and used as it is; with its name, a type's place and the places
+offered, and a role's reuse. `choicesOf` hands the rows back as `bringIn`'s
+choices, so what the dialog shows is what is written. The defaults are
+suggestions:
+
+* A role is reused where something stands for it (`suggestedReuse`): the
+  item brought in from an `alike` entry, or else one of the same name once
+  case, accents, spaces and punctuation are set aside, in any of the
+  library's languages. A unit type is offered the same, and is brought in
+  unless the person takes it.
+* A type at the top of its library that holds none of its library's types
+  lands beside the organisation's deepest type that holds nothing — the same
+  `top` and `within`, the lane's order breaking ties (`defaultPlacement`).
+  Anything else, and an organisation with no such type, is placed as in the
+  library.
+
+*Compare* is unchanged: it reads a slot by the library its role came from,
+so a slot that names a role reused from elsewhere reads as missing against
+the library's.
+
 ## Open
 
 * **People from a directory**: a picker over an identity provider's people,
