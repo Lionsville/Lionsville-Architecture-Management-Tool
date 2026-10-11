@@ -38,10 +38,10 @@ import { conwayMap } from '../../model/conway'
 import type { ConwayFinding, ConwayLine, ConwayMap } from '../../model/conway'
 import { INTERACTION_MODE_LABEL } from '../../model/relations'
 import type { DesignDiagram, ElementId, InteractionMode } from '../../model/types'
-import { isUnit, personOf, runsOn, unitsAbove } from '../../model/units'
-import { meIn } from '../../people/me'
-import { registerOf, resolvePerson } from '../../people/shown'
+import { pickedPerson } from '../../model/person'
+import { isUnit, organisationOn, personOf, runsOn, unitsAbove } from '../../model/units'
 import type { PeopleRegisterAccess } from '../../people/ui/access'
+import { usePersonNames } from '../../people/ui/names'
 import type { HostModel } from '../../model/hostModel'
 import type { ScopeIndex } from '../../projects/scopeIndex'
 import type { ScopePath } from '../../projects/scopePath'
@@ -94,7 +94,7 @@ export function ConwayPage(props: ConwayPageProps) {
   const [interacting, setInteracting] = useState<Interacting | undefined>(undefined)
   const input = useMemo(() => conwayInputHere(props.index, props.scope, props.model, here), [props.index, props.scope, props.model, here])
   const map = useMemo(() => conwayMap(input, day, groupBy !== undefined ? { groupBy } : {}), [input, day, groupBy])
-  const mine = useMine(props.people, here, day)
+  const mine = useMine(here, day)
   const page = useRef<HTMLDivElement | null>(null)
   const stage = useRef<HTMLDivElement | null>(null)
   const open = useCallback((id: ElementId) => {
@@ -159,17 +159,15 @@ export function ConwayPage(props: ConwayPageProps) {
 }
 
 /** The units this install's person holds a role in on the day, and every unit above each: where *you* are marked. */
-function useMine(people: PeopleRegisterAccess | undefined, here: UnitViewsHere, day: string): ReadonlySet<ElementId> {
+function useMine(here: UnitViewsHere, day: string): ReadonlySet<ElementId> {
+  const names = usePersonNames()
   return useMemo(() => {
-    const register = registerOf(people?.people ?? [])
-    const me = meIn(people?.me, register)?.id
-    if (me === undefined) return new Set<ElementId>()
-    const { units, assignments } = here.at.organisation
+    const { units, assignments } = organisationOn(here.at.organisation, day)
     const held = assignments
-      .filter((one) => runsOn(one, day) && (resolvePerson(personOf(one), register)?.id ?? personOf(one)) === me)
+      .filter((one) => runsOn(one, day) && names.isMe(pickedPerson(personOf(one))))
       .map((one) => one.unitId)
     return new Set(held.flatMap((id) => [id, ...unitsAbove(units, id)]))
-  }, [people?.people, people?.me, here, day])
+  }, [names, here, day])
 }
 
 /** The page as the agent's renderer reaches it. */

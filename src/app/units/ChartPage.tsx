@@ -9,7 +9,8 @@
  * on the view's day, the vacancies its slot leaves, the people over all of
  * their time, and — on a unit that has ended — the people still assigned to
  * it. The arithmetic is `model/orgChart`; what is on the page is the register's
- * name for each person and *you* where the person is this install's own.
+ * name for each person and *you* where the person is this install's own, read
+ * through the names the shell provides (`usePersonNames`).
  *
  * **On a day.** The day is the view's, as a board's is: today, or the day the
  * bar's control looks at or saves (ADR-0027). Looking at next year shows the
@@ -42,8 +43,9 @@ import { pickedPerson } from '../../model/person'
 import type { DesignDiagram, ElementId } from '../../model/types'
 import { loadOn } from '../../model/units'
 import { meIn } from '../../people/me'
-import { personText, registerOf, resolvePerson } from '../../people/shown'
-import type { Register } from '../../people/shown'
+import { registerOf } from '../../people/shown'
+import { usePersonNames } from '../../people/ui/names'
+import type { PersonNames } from '../../people/ui/names'
 import type { PeopleRegisterAccess } from '../../people/ui/access'
 import { findingSentence, findingsOfOrganisation } from '../../projects/checks'
 import type { ScopePath } from '../../projects/scopePath'
@@ -80,8 +82,7 @@ type Drawing = {
   chart: OrgChart
   roles: ReadonlyMap<string, Role>
   typeName: (id: string | undefined) => string
-  register: Register
-  me: string | undefined
+  names: PersonNames
   day: string
   today: string
   language: Language
@@ -99,8 +100,8 @@ export function ChartPage(props: ChartPageProps) {
   const [root, setRoot] = useState<ElementId | undefined>(undefined)
   const [assigning, setAssigning] = useState<{ unit: ChartUnit; assigning: Assigning } | undefined>(undefined)
   const [note, setNote] = useState<string | undefined>(undefined)
-  const register = useMemo(() => registerOf(people?.people ?? []), [people?.people])
-  const canonical = useCallback((id: string) => resolvePerson(id, register)?.id ?? id, [register])
+  const names = usePersonNames()
+  const canonical = names.canonical
   const whole = useMemo(
     () => orgChart(here.at.organisation, day, { include: here.includes, canonical }),
     [here, day, canonical],
@@ -109,7 +110,7 @@ export function ChartPage(props: ChartPageProps) {
     () => (root === undefined ? whole : orgChart(here.at.organisation, day, { root, canonical })),
     [whole, here, day, root, canonical],
   )
-  const me = meIn(people?.me, register)?.id
+  const me = useMemo(() => meIn(people?.me, registerOf(people?.people ?? []))?.id, [people?.me, people?.people])
   const page = useRef<HTMLDivElement | null>(null)
   const open = useCallback((id: ElementId) => {
     if (here.heldHere(id)) { props.onSelect(id); return }
@@ -132,7 +133,7 @@ export function ChartPage(props: ChartPageProps) {
   const types = new Map(here.at.organisation.unitTypes.map((type) => [type.id, type.name]))
   const editable = !props.readOnly && props.assign !== undefined && people !== undefined && !people.readOnly
   const drawing: Drawing = {
-    chart: shown, roles, typeName: (id) => types.get(id ?? '') ?? '', register, me, day, today, language, t,
+    chart: shown, roles, typeName: (id) => types.get(id ?? '') ?? '', names, day, today, language, t,
     selectedId: props.selectedId, open,
     vacancy: editable ? (unit, roleId) => {
       if (here.heldHere(unit.id)) setAssigning({ unit, assigning: { mode: 'new', roleId } })
@@ -146,7 +147,7 @@ export function ChartPage(props: ChartPageProps) {
         {shown.roots.length === 0
           ? <Typography sx={{ fontSize: 12.5, color: 'text.secondary', py: 6, textAlign: 'center' }}>{t('chart.empty', { day: formatDay(day, language) })}</Typography>
           : <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'flex-start' }}>{shown.roots.map((unit) => <UnitBox key={unit.id} unit={unit} depth={0} drawing={drawing} />)}</Box>}
-        <ChartFindings {...props} chart={shown} day={day} register={register} onFinding={locate} />
+        <ChartFindings {...props} chart={shown} day={day} names={names} onFinding={locate} />
       </Box>
       {assigning && people && props.assign && (
         <AssignDialog
@@ -296,9 +297,9 @@ function SlotRow({ unit, slot, drawing }: { unit: ChartUnit; slot: ChartSlot; dr
 /** One person in a role: the register's name, their share, acting, *you*, and a red edge when over all of their time. */
 function HolderChip({ holder, drawing, unit, prefix = '' }: { holder: ChartHolder; drawing: Drawing; unit: ChartUnit; prefix?: string }) {
   const { t } = drawing
-  const you = drawing.me !== undefined && holder.person === drawing.me
+  const you = drawing.names.isMe(pickedPerson(holder.person))
   const label = [
-    `${prefix}${personText(pickedPerson(holder.person), drawing.register, t)}`,
+    `${prefix}${drawing.names.text(pickedPerson(holder.person))}`,
     holder.share < 1 ? `${Math.round(holder.share * 100)}%` : undefined,
     holder.assignment.acting ? t('unit.acting') : undefined,
     you ? t('unit.you') : undefined,
@@ -319,15 +320,15 @@ function HolderChip({ holder, drawing, unit, prefix = '' }: { holder: ChartHolde
  * people in them — each a link to what it is about on the chart: the unit, or
  * the first unit the person holds a role in.
  */
-function ChartFindings({ here, scopeLabel, chart, day, register, onFinding }: ChartPageProps & {
-  chart: OrgChart; day: string; register: Register; onFinding: (unitId: ElementId) => void
+function ChartFindings({ here, scopeLabel, chart, day, names, onFinding }: ChartPageProps & {
+  chart: OrgChart; day: string; names: PersonNames; onFinding: (unitId: ElementId) => void
 }) {
   const { t, language } = useStrings()
   const units = new Set([...walk(chart.roots)].map((unit) => unit.id))
   const persons = new Set([...walk(chart.roots)].flatMap((unit) => [...unit.slots.flatMap((slot) => slot.holders), ...unit.others].map((one) => one.person)))
   const findings = findingsOfOrganisation(here.at, day)
-    .filter((finding) => (finding.person !== undefined ? persons.has(resolvePerson(finding.person, register)?.id ?? finding.person) : units.has(finding.id)))
-  const name = (person: string) => personText(pickedPerson(person), register, t)
+    .filter((finding) => (finding.person !== undefined ? persons.has(names.canonical(finding.person)) : units.has(finding.id)))
+  const name = (person: string) => names.text(pickedPerson(person))
   return (
     <Box data-testid="chart-findings" sx={{ mt: 3 }}>
       <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'text.secondary', mb: 0.5 }}>{t('chart.on', { day: formatDay(day, language) })}</Typography>
@@ -335,7 +336,7 @@ function ChartFindings({ here, scopeLabel, chart, day, register, onFinding }: Ch
         ? <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('chart.nothing')}</Typography>
         : findings.map((finding, at) => {
           const about = finding.person !== undefined
-            ? unitsHolding(chart, resolvePerson(finding.person, register)?.id ?? finding.person)[0]
+            ? unitsHolding(chart, names.canonical(finding.person))[0]
             : finding.id
           return (
             <ButtonBase

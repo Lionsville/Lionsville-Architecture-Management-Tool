@@ -23,6 +23,8 @@ import type { Assignment } from '../../model/units'
 import type { Person } from '../../people/person'
 import { DEFAULT_POLICY } from '../../people/policy'
 import type { PeopleRegisterAccess } from '../../people/ui/access'
+import { PersonNamesProvider, personNames } from '../../people/ui/names'
+import { translator } from '../../i18n'
 import { indexScopes } from '../../projects/scopeIndex'
 import { ChartPage } from './ChartPage'
 import { unitViewsHere } from './unitViewsHere'
@@ -102,13 +104,18 @@ function Harness({ asOf, me = 'pe-sara', commands, onSelect = () => {}, onOpenEl
     setModel(next)
     return next
   }
+  const people = register(me ?? undefined)
+  // The names the shell provides at its root (`people/ui/names`): the register's, *you* among them.
+  const names = useMemo(() => personNames(people, translator('en')), [people])
   return (
+    <PersonNamesProvider names={names}>
     <ChartPage
-      diagram={view(asOf)} here={here} today={TODAY} readOnly={false} people={register(me ?? undefined)}
+      diagram={view(asOf)} here={here} today={TODAY} readOnly={false} people={people}
       scopeLabel={(path) => (path === '' ? 'the organisation' : 'Shipping')}
       onSelect={onSelect} onOpenElsewhere={onOpenElsewhere}
       assign={{ dispatch, makeId: (prefix) => `${prefix}-new`, scopeName: 'Shipping' }}
     />
+    </PersonNamesProvider>
   )
 }
 

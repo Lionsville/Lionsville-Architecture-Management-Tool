@@ -21,6 +21,8 @@ import type { DesignDiagram, DesignElement, Relation } from '../../model/types'
 import type { Person } from '../../people/person'
 import { DEFAULT_POLICY } from '../../people/policy'
 import type { PeopleRegisterAccess } from '../../people/ui/access'
+import { PersonNamesProvider, personNames } from '../../people/ui/names'
+import { translator } from '../../i18n'
 import { indexScopes } from '../../projects/scopeIndex'
 import { ConwayPage } from './ConwayPage'
 import { conwayInputHere, unitViewsHere } from './unitViewsHere'
@@ -64,6 +66,8 @@ const REGISTER: PeopleRegisterAccess = {
   add: refused, change: refused, leave: refused, forget: refused, remove: refused, merge: refused,
   setPolicy: () => Promise.resolve(), setMe: () => Promise.resolve(), mentionsOf: () => Promise.resolve([]),
 }
+/** The names the shell provides at its root (`people/ui/names`): the register's, *you* among them. */
+const NAMES = personNames(REGISTER, translator('en'))
 const VIEW: DesignDiagram = { id: 'cw-1', kind: 'conway', name: 'Teams and systems', members: [] }
 
 function Harness({ commands }: { commands: Command[] }) {
@@ -79,11 +83,13 @@ function Harness({ commands }: { commands: Command[] }) {
     return next
   }
   return (
+    <PersonNamesProvider names={NAMES}>
     <ConwayPage
       diagram={VIEW} here={here} index={index} scope="customer" model={model} today={TODAY} readOnly={false} people={REGISTER}
       scopeLabel={(path) => (path === '' ? 'the organisation' : 'Customer')} onSelect={() => {}} onOpenElsewhere={() => {}}
       declare={{ dispatch, newRowId: () => 'i-new', scopeName: 'Customer' }}
     />
+    </PersonNamesProvider>
   )
 }
 
