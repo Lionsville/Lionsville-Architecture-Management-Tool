@@ -29,6 +29,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'check.offeredNotShared': '{name} wird von {detail} genutzt, außerhalb des Teams, das es pflegt, und ist nicht als geteilt markiert — markieren Sie es als geteilt, oder verschieben Sie es',
   'check.causeExplainsObservationBelow': '{name} erklärt eine Beobachtung von {scope} direkt — verknüpfen Sie stattdessen {detail}, die Ursache, die sie dort erklärt',
   'check.causeExplainsObservationBelowBare': '{name} erklärt eine Beobachtung von {scope} direkt, und dort erklärt sie noch nichts — eine Ursache dort erklärt sie, und diese erklärt jene Ursache',
+  'check.accountability': '{name}: {detail} sind jeweils rechenschaftspflichtig — genau eine Rolle sollte es sein',
+  'check.accountabilityNobody': '{name}: keine Rolle ist dafür rechenschaftspflichtig',
 
   'check.short.conflict.one': '{count} Konflikt',
   'check.short.conflict.other': '{count} Konflikte',
@@ -56,6 +58,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'check.short.offeredNotShared.other': '{count} angeboten, nicht als geteilt markiert',
   'check.short.causeExplainsObservationBelow.one': '{count} Verknüpfung zu einer Beobachtung darunter',
   'check.short.causeExplainsObservationBelow.other': '{count} Verknüpfungen zu Beobachtungen darunter',
+  'check.short.accountability.one': '{count} Verantwortung ohne eine rechenschaftspflichtige Rolle',
+  'check.short.accountability.other': '{count} Verantwortungen ohne eine rechenschaftspflichtige Rolle',
 
   'gesture.unknownId': 'Dieser Bereich hält diesen Datensatz nicht mehr.',
   'gesture.notADefinition': 'Dieser Datensatz verweist bereits auf eine Definition anderswo.',

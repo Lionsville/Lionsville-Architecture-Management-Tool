@@ -44,6 +44,8 @@ export const EN = {
   'check.offeredNotShared': '{name} is used by {detail}, beyond the team that maintains it, and is not marked shared — mark it shared, or move it',
   'check.causeExplainsObservationBelow': '{name} explains an observation of {scope} directly — link {detail}, the cause there that explains it, instead',
   'check.causeExplainsObservationBelowBare': '{name} explains an observation of {scope} directly, and nothing there explains it yet — a cause there explains it, and this one explains that cause',
+  'check.accountability': '{name}: {detail} are each accountable — exactly one role should be',
+  'check.accountabilityNobody': '{name}: no role is accountable for it',
 
   /**
    * What a stand-in says about itself, on the three surfaces that draw one: the
@@ -77,6 +79,8 @@ export const EN = {
   'check.short.offeredNotShared.other': '{count} offered, not marked shared',
   'check.short.causeExplainsObservationBelow.one': '{count} link to an observation below',
   'check.short.causeExplainsObservationBelow.other': '{count} links to observations below',
+  'check.short.accountability.one': '{count} responsibility without one accountable role',
+  'check.short.accountability.other': '{count} responsibilities without one accountable role',
 
   /**
    * Why a gesture that crosses scopes was declined (ADR-0012 §10).

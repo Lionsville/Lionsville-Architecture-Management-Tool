@@ -40,6 +40,7 @@ import { OWNER_DETAIL } from '../model'
 import type { DesignElement, ElementId, OwnerDetailField } from '../model'
 import type { HostModel } from '../model/hostModel'
 import { causeLabel, liveCauses } from '../observations/observation'
+import { accountabilityGaps } from '../model/operating'
 import type { ScopeIndex } from './scopeIndex'
 import { ancestorScopes } from './scopePath'
 import type { ScopePath } from './scopePath'
@@ -87,6 +88,12 @@ export type CheckKey =
    * linking that one instead is the repair.
    */
   | 'check.causeExplainsObservationBelow'
+  /**
+   * A responsibility of the operating model that is not exactly one role's
+   * *A* (ADR-0036 §2): nobody is accountable for it, or several roles are —
+   * named in `detail` where there are.
+   */
+  | 'check.accountability'
 
 /**
  * The sentence for each finding, published as a table (ADR-0012 §9).
@@ -114,6 +121,7 @@ export const CHECK_LABEL: Record<CheckKey, StringKey> = {
   'check.uncovered': 'check.uncovered',
   'check.offeredNotShared': 'check.offeredNotShared',
   'check.causeExplainsObservationBelow': 'check.causeExplainsObservationBelow',
+  'check.accountability': 'check.accountability',
 }
 
 /**
@@ -123,6 +131,7 @@ export const CHECK_LABEL: Record<CheckKey, StringKey> = {
  */
 const CHECK_LABEL_BARE: Partial<Record<CheckKey, StringKey>> = {
   'check.causeExplainsObservationBelow': 'check.causeExplainsObservationBelowBare',
+  'check.accountability': 'check.accountabilityNobody',
 }
 
 /**
@@ -170,6 +179,7 @@ export const CHECK_SHORT: Record<CheckKey, { one: StringKey; other: StringKey }>
   'check.causeExplainsObservationBelow': {
     one: 'check.short.causeExplainsObservationBelow.one', other: 'check.short.causeExplainsObservationBelow.other',
   },
+  'check.accountability': { one: 'check.short.accountability.one', other: 'check.short.accountability.other' },
 }
 
 /**
@@ -459,7 +469,25 @@ export function documentFindings(deps: {
   for (const id of business?.uncovered ?? []) {
     found.push({ key: 'check.uncovered', scope, id, name: named(id) })
   }
-  return [...found, ...drawingLinkFindings(scope, model, held), ...causesOverObservationsBelow(scope, model, index)]
+  return [
+    ...found, ...drawingLinkFindings(scope, model, held), ...causesOverObservationsBelow(scope, model, index),
+    ...accountabilityFindings(scope, model),
+  ]
+}
+
+/**
+ * Every responsibility of the operating model that is not exactly one role's
+ * *A* (ADR-0036 §2). Only the organisation's model holds one, so a scope
+ * below has nothing here.
+ */
+function accountabilityFindings(scope: ScopePath, model: HostModel): Finding[] {
+  return accountabilityGaps(model.responsibilities ?? [], model.roles ?? []).map(({ responsibility, accountable }) => ({
+    key: 'check.accountability',
+    scope,
+    id: responsibility.id,
+    name: responsibility.name,
+    ...(accountable.length ? { detail: accountable.map((role) => role.name).join(', '), fields: accountable.map((role) => role.id) } : {}),
+  }))
 }
 
 /**

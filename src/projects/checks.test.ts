@@ -466,3 +466,31 @@ describe('a cause above an observation below', () => {
     expect(tally(documentFindings({ scope: '', model: org, index }))['check.causeExplainsObservationBelow']).toBe(2)
   })
 })
+
+describe('a responsibility not exactly one role\'s A', () => {
+  const org = document({
+    responsibilities: [{ id: 'rs-order', name: 'Order the backlog' }, { id: 'rs-release', name: 'Release' }, { id: 'rs-run', name: 'Run it' }],
+    roles: [
+      { id: 'ro-po', name: 'Product owner', duties: [{ responsibility: 'rs-order', raci: 'A' }, { responsibility: 'rs-release', raci: 'A' }] },
+      { id: 'ro-rm', name: 'Release manager', duties: [{ responsibility: 'rs-release', raci: 'A' }, { responsibility: 'rs-run', raci: 'R' }] },
+    ],
+  })
+  const index = indexScopes([{ path: '', model: { elements: [], relations: [] } }])
+
+  it('is a finding at the organisation: nobody accountable, or several, named', () => {
+    const found = documentFindings({ scope: '', model: org, index }).filter((one) => one.key === 'check.accountability')
+    expect(found).toEqual([
+      { key: 'check.accountability', scope: '', id: 'rs-release', name: 'Release', detail: 'Product owner, Release manager', fields: ['ro-po', 'ro-rm'] },
+      { key: 'check.accountability', scope: '', id: 'rs-run', name: 'Run it' },
+    ])
+    const s = translator('en')
+    expect(findingSentence(found[0], s, () => '')).toBe('Release: Product owner, Release manager are each accountable — exactly one role should be')
+    expect(findingSentence(found[1], s, () => '')).toBe('Run it: no role is accountable for it')
+  })
+
+  it('is nothing where every responsibility has its one A, or there is no operating model', () => {
+    expect(keys(documentFindings({ scope: 'claims', model: document(), index }))).not.toContain('check.accountability')
+    const settled = document({ responsibilities: [org.responsibilities![0]], roles: [org.roles![0]] })
+    expect(keys(documentFindings({ scope: '', model: settled, index }))).not.toContain('check.accountability')
+  })
+})
