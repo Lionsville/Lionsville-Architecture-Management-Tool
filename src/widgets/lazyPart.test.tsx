@@ -8,7 +8,9 @@
  * (`app/testing/lazyParts.ts`), so each starts out unfetched.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { act, cleanup, render, screen } from '@testing-library/react'
+import { useState } from 'react'
+import type { ComponentType } from 'react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { lazyPart } from './lazyPart'
 
 afterEach(() => cleanup())
@@ -19,10 +21,16 @@ function Page({ open, title }: Props) {
   return open ? <h1>{title}</h1> : <p>closed</p>
 }
 
+/** A page that holds something of its own: how often its button was pressed. */
+function Counter({ title }: Props) {
+  const [pressed, setPressed] = useState(0)
+  return <button onClick={() => { setPressed(pressed + 1) }}>{`${title} ${pressed}`}</button>
+}
+
 /** A fetch the test lets go of when it says so. */
-function held() {
+function held(part: ComponentType<Props> = Page) {
   let release!: () => void
-  const load = vi.fn(() => new Promise<typeof Page>((resolve) => { release = () => resolve(Page) }))
+  const load = vi.fn(() => new Promise<ComponentType<Props>>((resolve) => { release = () => resolve(part) }))
   return { load, release: () => act(async () => { release(); await Promise.resolve() }) }
 }
 
@@ -54,6 +62,21 @@ describe('lazyPart', () => {
     rerender(<Part open={false} title="Register" />)
     expect(screen.getByText('closed')).toBeTruthy()
     expect(load).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps what a page holds through the renders after its script arrived', async () => {
+    const { load, release } = held(Counter)
+    const Part = lazyPart(load, { until: (props: Props) => props.open })
+    const { rerender } = render(<Part open title="Register" />)
+    await release()
+    fireEvent.click(await screen.findByText('Register 0'))
+    expect(screen.getByText('Register 1')).toBeTruthy()
+    // The caller draws again — a register that changed, a page that closed:
+    // the part is the one it was, not one drawn anew from nothing.
+    rerender(<Part open title="Register" />)
+    expect(screen.getByText('Register 1')).toBeTruthy()
+    rerender(<Part open={false} title="Register" />)
+    expect(screen.getByText('Register 1')).toBeTruthy()
   })
 
   it('asks again after a fetch that failed', async () => {

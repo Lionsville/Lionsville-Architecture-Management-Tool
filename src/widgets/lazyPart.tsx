@@ -14,9 +14,16 @@
  * `open` is rendered by its caller whether or not it is open, which is how its
  * closing transition plays; `until` says when a part is wanted at all, and
  * until then it is nothing and costs nothing. Once it has been loaded it is
- * drawn directly, every render after, exactly as a part that was always in
- * the bundle — so what it holds between an open and the next is kept, and its
- * transition plays out.
+ * drawn every render after, open or not — so what it holds between an open
+ * and the next is kept, and its transition plays out.
+ *
+ * **A part is drawn the way it was first drawn, for as long as it is
+ * there.** One whose script was already here is drawn directly, exactly as a
+ * part that was always in the bundle; one that waited for its script stays
+ * under the boundary it waited in. Taking it out from under the boundary on
+ * the next render would be a different tree, and React draws a different tree
+ * anew: a dialog open in the part, a person just picked in it, would be gone
+ * the first time its caller drew again.
  *
  * **A part is one boundary.** While its script is on the way it draws what
  * `fallback` says, nothing by default; a script that will not load is the
@@ -28,7 +35,7 @@
  * them before it starts (`preloadLazyParts`): a test that clicks a card and
  * reads the page behind it is about the page, not about the network.
  */
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import type { ComponentType, ReactNode } from 'react'
 
 export type LazyPartOptions<P> = {
@@ -67,9 +74,10 @@ export function lazyPart<P extends object>(
   }
 
   function Part(props: P) {
+    const [direct] = useState(() => loaded !== undefined)
     const Loaded = loaded
-    if (Loaded) return <Loaded {...props} />
-    if (options.until && !options.until(props)) return null
+    if (direct && Loaded) return <Loaded {...props} />
+    if (!Loaded && options.until && !options.until(props)) return null
     return (
       <Suspense fallback={options.fallback?.(props) ?? null}>
         <Pending {...props} />
