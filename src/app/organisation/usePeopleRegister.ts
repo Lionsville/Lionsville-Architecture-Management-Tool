@@ -75,6 +75,8 @@ export type PeopleAccess = {
   held?: (id: PersonId) => PolicyHold | undefined
   /** Whose people this person may change by a managing role, where the source grants that right (`SourcePeople.managingRight`). */
   manages?: ManagesPeople
+  /** The source grants that right: a unit's section says so. */
+  managingRight?: boolean
   today: string
   refresh: () => void
   add: (person: NewPerson) => Promise<PersonWritten | PeopleRefused>
@@ -242,6 +244,7 @@ export function usePeopleRegister(deps: {
     ...(source?.withheld ? { withheld: source.withheld } : {}),
     ...(source?.held ? { held: source.held } : {}),
     ...(manages ? { manages } : {}),
+    ...(source?.managingRight ? { managingRight: true } : {}),
     today,
     refresh,
     add: (person) => changed(repositories.people.add(person)),

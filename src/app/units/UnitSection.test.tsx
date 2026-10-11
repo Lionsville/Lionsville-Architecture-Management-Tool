@@ -110,7 +110,7 @@ function Harness({ unit = 'webshop', readOnly = false, model: start = CUSTOMER, 
     return Promise.resolve({ person: answer.people.find((one) => one.id === answer.changed[0])!, ended: 0, removed: [] })
   }
   const register: PeopleRegisterAccess = {
-    people, policy: DEFAULT_POLICY, me, readOnly: false, today: TODAY, ...(manages ? { manages } : {}),
+    people, policy: DEFAULT_POLICY, me, readOnly: false, today: TODAY, ...(manages ? { manages, managingRight: true } : {}),
     add: (one) => change({ kind: 'add', person: one }),
     change: (id, patch) => change({ kind: 'change', id, patch }),
     leave: (id, on) => change({ kind: 'leave', id, on }),
@@ -312,6 +312,7 @@ describe('a unit a manager changes the people of, where the scope is only read',
   it('assigns, corrects and ends in a unit below their own, a managing role there too, and changes nothing else of it', async () => {
     const commands: Command[] = []
     renderShell(<Harness readOnly manages={ada()} commands={commands} />)
+    expect(text('unit-managed-note')).toContain('they may change the people of this unit and of the units below it')
     expect(screen.queryByTestId('unit-extra-role')).toBeNull()
     expect(within(screen.getByTestId('unit-type')).queryByRole('combobox')).toBeNull()
     fireEvent.click(within(screen.getByTestId('unit-slot-ro-dev')).getByTestId('unit-vacant'))

@@ -366,9 +366,10 @@ function UnitInteractions(props: UnitSectionProps & { facts: Facts; editable: bo
 }
 
 /** Who manages it on the day (§12): the holders of a managing role in it or above it. Core grants nothing from it. */
-function Managers({ element, today, looking, facts, name, s }: UnitSectionProps & {
+function Managers(props: UnitSectionProps & {
   looking: boolean; facts: Facts; name: (person: string) => string
 }) {
+  const { element, today, looking, facts, name, s } = props
   const managers = managersOf(facts.organisation, element.id, today)
   return (
     <>
@@ -382,7 +383,7 @@ function Managers({ element, today, looking, facts, name, s }: UnitSectionProps 
           {facts.isMe(one.person) ? ` · ${s('unit.you')}` : ''}
         </Typography>
       ))}
-      <Typography sx={QUIET}>{s('unit.managedByNote')}</Typography>
+      <Typography sx={QUIET} data-testid="unit-managed-note">{s(props.people?.managingRight ? 'unit.managedByNoteGranted' : 'unit.managedByNote')}</Typography>
     </>
   )
 }

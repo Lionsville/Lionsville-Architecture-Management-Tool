@@ -703,6 +703,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'unit.managedByNone': 'Heute hat hier oder darüber niemand eine führende Rolle inne.',
   'unit.managedByLine': '{person} — {role}, {unit}',
   'unit.managedByNote': 'Wer eine führende Rolle innehat, in dieser Einheit oder einer darüber. Eine Version mit Konten kann diese Person die Personen dieser Einheit und der Einheiten darunter ändern lassen; hier wird es nur gesagt und gewährt nichts.',
+  'unit.managedByNoteGranted': 'Wer eine führende Rolle innehat, in dieser Einheit oder einer darüber, solange das Konto mit dem Eintrag verknüpft ist: Diese Person darf die Personen dieser Einheit und der Einheiten darunter ändern.',
   'unit.onDay': 'Wie am {day}, dem Tag, an dem dieses Board betrachtet wird.',
   'unit.rolesOn': 'Rollen am {day}',
   'unit.managedByNoneOn': 'Am {day} hat hier oder darüber niemand eine führende Rolle inne.',

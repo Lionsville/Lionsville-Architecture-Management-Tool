@@ -1034,7 +1034,9 @@ one person under every merged id, and hands it as
   theirs (`landPeopleMoves`'s `manages`).
 
 *New person…* in the picker is offered where the source's `may` says *add*,
-not wherever the register may be written.
+not wherever the register may be written. And a unit's section says who
+manages it may change its people, where the source grants the right
+(`PeopleRegisterAccess.managingRight`), rather than that it grants nothing.
 
 ## Open
 

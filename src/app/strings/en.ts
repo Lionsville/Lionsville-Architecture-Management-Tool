@@ -923,6 +923,7 @@ export const EN = {
   'unit.managedByNone': 'No one holds a managing role here or above it today.',
   'unit.managedByLine': '{person} — {role}, {unit}',
   'unit.managedByNote': 'Whoever holds a role that manages, in this unit or one above it. A build with accounts may let them change the people of this unit and the units below; here it is said, and grants nothing.',
+  'unit.managedByNoteGranted': 'Whoever holds a role that manages, in this unit or one above it, while their account is linked to their entry: they may change the people of this unit and of the units below it.',
   'unit.onDay': 'As on {day}, the day this board is looked at.',
   'unit.rolesOn': 'Roles on {day}',
   'unit.managedByNoneOn': 'No one holds a managing role here or above it on {day}.',

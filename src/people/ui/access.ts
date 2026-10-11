@@ -48,6 +48,8 @@ export type PeopleRegisterAccess = {
    * else of it. Absent, scope rights decide alone.
    */
   manages?: ManagesPeople
+  /** The source grants a right from a managing role (`SourcePeople.managingRight`): a unit's section says so, rather than that it grants nothing. */
+  managingRight?: boolean
   today: string
   add(person: NewPerson): Promise<{ person: Person } | Refused>
   change(id: PersonId, patch: PersonPatch): Promise<{ person: Person } | Refused>

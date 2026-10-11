@@ -702,6 +702,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'unit.managedByNone': 'Vandaag vervult niemand hier of erboven een aansturende rol.',
   'unit.managedByLine': '{person} — {role}, {unit}',
   'unit.managedByNote': 'Wie een aansturende rol vervult, in deze eenheid of een erboven. Een versie met accounts kan diegene de mensen van deze eenheid en de eenheden eronder laten wijzigen; hier wordt het alleen gezegd, en geeft het geen rechten.',
+  'unit.managedByNoteGranted': 'Wie een aansturende rol vervult, in deze eenheid of een erboven, terwijl het account aan de vermelding gekoppeld is: die mag de mensen van deze eenheid en van de eenheden eronder wijzigen.',
   'unit.onDay': 'Zoals op {day}, de dag waarop dit bord wordt bekeken.',
   'unit.rolesOn': 'Rollen op {day}',
   'unit.managedByNoneOn': 'Op {day} vervult niemand hier of erboven een aansturende rol.',
