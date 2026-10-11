@@ -21,16 +21,6 @@ import { useEffect, useState, type ReactNode } from 'react'
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
-import Chip from '@mui/material/Chip'
-import Dialog from '@mui/material/Dialog'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogContentText from '@mui/material/DialogContentText'
-import DialogTitle from '@mui/material/DialogTitle'
-import FormControlLabel from '@mui/material/FormControlLabel'
-import Radio from '@mui/material/Radio'
-import RadioGroup from '@mui/material/RadioGroup'
-import TextField from '@mui/material/TextField'
 import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Tooltip from '@mui/material/Tooltip'
@@ -42,8 +32,9 @@ import { causeTemplate, formatCauseNumber } from '../observation'
 import type { CauseStrength } from '../observation'
 import type { CauseDraft } from '../form'
 import { similarTitles } from '../wording'
-import { CauseDraftFields, CausePicker, DescriptionField, LinkRowsTable, LookAlikes, StrengthSelect } from './FormParts'
+import { CauseDraftFields, CausePicker, DescriptionField, ExistingCause, LinkRowsTable, LookAlikes, StrengthSelect } from './FormParts'
 import type { LinkRow } from './FormParts'
+import { FormDialog, problemsLine } from './FormDialog'
 
 /** A cause the dialog may link, by the key the page reads back. */
 export type LinkCandidate = { key: string; label: string; root: boolean; title: string }
@@ -82,89 +73,87 @@ export type LinkDialogProps = {
 
 type Tab = 'new' | 'existing'
 
+/** What a new cause holds while it is written: its own fields and the causes behind it. */
+type NewCauseState = { draft: CauseDraft; behind: { key: string; strength: CauseStrength }[] }
+
+const freshCause = (create: LinkSpec['create'], s: Translate): NewCauseState => ({
+  draft: { title: '', why: '', root: Boolean(create?.rootFixed || create?.rootDefault), strength: 'normal', body: causeTemplate(s) },
+  behind: [],
+})
+
+/** The footer per tab: its submit, and what it says is missing. */
+const FOOT = {
+  new: { label: 'observation.linkAdd', testId: 'link-create', missing: (s: Translate) => problemsLine(1, s) },
+  existing: { label: 'observation.linkConfirm', testId: 'link-confirm', missing: (s: Translate) => s('observation.linkPickMissing') },
+} as const
+
+/** Something of a new cause has been written. */
+function written({ draft, behind }: NewCauseState, s: Translate): boolean {
+  return Boolean(draft.title.trim() || draft.why.trim() || behind.length) || draft.body !== causeTemplate(s)
+}
+
+/**
+ * The dialog, both tabs in one width with one footer: *Add cause* under New,
+ * *Link* under Existing, and what is missing at the left once it is pressed.
+ * *Use this one* on a look-alike picks it under Existing, so its strength is
+ * still chosen before it is linked.
+ */
 export function LinkDialog({ spec, onCancel, onCreate, onLink, renderMarkdown, s }: LinkDialogProps) {
   const [tab, setTab] = useState<Tab>('new')
   const [picked, setPicked] = useState('')
   const [strength, setStrength] = useState<CauseStrength>('normal')
-  const [missing, setMissing] = useState(false)
+  const [made, setMade] = useState<NewCauseState>(() => freshCause(spec?.create, s))
+  const [pressed, setPressed] = useState(false)
   const id = spec?.id
-  const hasCreate = Boolean(spec?.create)
+  const create = spec?.create
+  const hasCreate = Boolean(create)
   useEffect(() => {
     if (id === undefined) return
-    setTab(hasCreate ? 'new' : 'existing'); setPicked(''); setStrength('normal'); setMissing(false)
+    setTab(hasCreate ? 'new' : 'existing'); setPicked(''); setStrength('normal'); setMade(freshCause(create, s)); setPressed(false)
+    // Afresh for another record only: the spec is built anew on every render of the page.
   }, [id, hasCreate])
-  const link = () => { if (!picked) { setMissing(true); return } onLink(picked, strength) }
+  const root = Boolean(create?.rootFixed || made.draft.root)
+  const missing = pressed && (tab === 'new' ? !made.draft.title.trim() : !picked)
+  const submit = () => {
+    if (tab === 'existing') { if (picked) onLink(picked, strength); else setPressed(true); return }
+    const { draft, behind } = made
+    if (!draft.title.trim()) { setPressed(true); return }
+    onCreate({ ...draft, title: draft.title.trim(), why: draft.why.trim(), root }, root ? [] : behind)
+  }
+  const use = (key: string) => { setTab('existing'); setPicked(key); setPressed(false) }
+  const foot = FOOT[tab]
 
   return (
-    <Dialog open={Boolean(spec)} onClose={onCancel} maxWidth={tab === 'new' ? 'lg' : 'sm'} fullWidth aria-labelledby="link-dialog-title">
-      <DialogTitle id="link-dialog-title">{spec?.title ?? ''}</DialogTitle>
-      <DialogContent>
-        <DialogContentText sx={{ fontSize: 13, mb: 1.5 }}>{spec?.intro}</DialogContentText>
-        {spec?.create && (
-          <ToggleButtonGroup
-            exclusive size="small" value={tab} onChange={(_event, next: Tab | null) => { if (next) setTab(next) }}
-            aria-label={s('observation.linkTabs')} sx={{ mb: 2 }} data-testid="link-tabs"
-          >
-            <ToggleButton value="new" sx={{ textTransform: 'none', py: 0.25 }}>{s('observation.linkTabNew')}</ToggleButton>
-            <ToggleButton value="existing" sx={{ textTransform: 'none', py: 0.25 }}>{s('observation.linkTabExisting', { count: spec.candidates.length })}</ToggleButton>
-          </ToggleButtonGroup>
-        )}
-        {spec?.create && tab === 'new' && (
-          <NewCause key={spec.id} spec={spec} create={spec.create} onCreate={onCreate} onUse={(key) => onLink(key, 'normal')} onCancel={onCancel} renderMarkdown={renderMarkdown} s={s} />
-        )}
-        {spec && tab === 'existing' && (
-          <Box sx={{ display: 'grid', gap: 1.5 }}>
-            <ExistingCause candidates={spec.candidates} picked={picked} onPick={(key) => { setPicked(key); setMissing(false) }} s={s} />
-            {missing && <Typography role="alert" color="error" sx={{ fontSize: 13 }}>{s('observation.linkPickMissing')}</Typography>}
-            <StrengthSelect value={strength} onChange={setStrength} label={s('observation.causeStrength')} helperText={s('observation.causeStrengthExample')} s={s} />
-          </Box>
-        )}
-      </DialogContent>
-      {tab === 'existing' && (
-        <DialogActions>
-          <Button onClick={onCancel} sx={{ textTransform: 'none' }}>{s('common.cancel')}</Button>
-          <Button variant="contained" onClick={link} disabled={!spec?.candidates.length} sx={{ textTransform: 'none' }} data-testid="link-confirm">{s('observation.linkConfirm')}</Button>
-        </DialogActions>
+    <FormDialog
+      open={Boolean(spec)} size="lg" title={spec?.title ?? ''} intro={spec?.intro} dirty={Boolean(picked) || written(made, s)}
+      onCancel={onCancel} onSubmit={submit} submitLabel={s(foot.label)} submitTestId={foot.testId}
+      submitDisabled={tab === 'existing' && !spec?.candidates.length} problem={missing ? foot.missing(s) : undefined} s={s}
+    >
+      {create && (
+        <ToggleButtonGroup
+          exclusive size="small" value={tab} onChange={(_event, next: Tab | null) => { if (next) { setTab(next); setPressed(false) } }}
+          aria-label={s('observation.linkTabs')} data-testid="link-tabs" sx={{ alignSelf: 'flex-start' }}
+        >
+          <ToggleButton value="new" sx={{ textTransform: 'none', py: 0.25 }}>{s('observation.linkTabNew')}</ToggleButton>
+          <ToggleButton value="existing" sx={{ textTransform: 'none', py: 0.25 }}>{s('observation.linkTabExisting', { count: spec?.candidates.length ?? 0 })}</ToggleButton>
+        </ToggleButtonGroup>
       )}
-    </Dialog>
-  )
-}
-
-function ExistingCause({ candidates, picked, onPick, s }: {
-  candidates: readonly LinkCandidate[]
-  picked: string
-  onPick: (key: string) => void
-  s: Translate
-}) {
-  const [query, setQuery] = useState('')
-  const q = query.trim().toLowerCase()
-  const shown = candidates.filter((one) => !q || one.label.toLowerCase().includes(q))
-  return (
-    <>
-      <TextField
-        autoFocus size="small" fullWidth placeholder={s('observation.causeFind')} value={query}
-        onChange={(event) => setQuery(event.target.value)}
-        slotProps={{ htmlInput: { 'aria-label': s('observation.causeFind') } }}
-      />
-      <Box sx={{ maxHeight: 260, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}>
-        {shown.length === 0 && <Typography sx={{ px: 1.5, py: 1, fontSize: 13, color: 'text.secondary' }}>{s('observation.linkNone')}</Typography>}
-        <RadioGroup value={picked} onChange={(event) => onPick(event.target.value)} aria-label={s('observation.linkTabExisting', { count: candidates.length })}>
-          {shown.map((one) => (
-            <FormControlLabel
-              key={one.key} value={one.key} data-testid="link-candidate"
-              control={<Radio size="small" />}
-              label={(
-                <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontSize: 13 }}>
-                  {one.label}
-                  {one.root && <Chip size="small" variant="outlined" color="secondary" label={s('observation.formKindRoot')} sx={{ height: 18, fontSize: 10 }} />}
-                </Box>
-              )}
-              sx={{ mx: 0, px: 1, borderBottom: 1, borderColor: 'divider' }}
-            />
-          ))}
-        </RadioGroup>
-      </Box>
-    </>
+      {spec && create && tab === 'new' && (
+        <NewCause
+          key={spec.id} spec={spec} create={create} made={made} onMade={setMade} root={root} problem={missing}
+          onUse={use} renderMarkdown={renderMarkdown} s={s}
+        />
+      )}
+      {spec && tab === 'existing' && (
+        <>
+          <ExistingCause
+            candidates={spec.candidates} picked={picked} onPick={(key) => { setPicked(key); setPressed(false) }}
+            label={s('observation.linkTabExisting', { count: spec.candidates.length })} empty={s('observation.linkNone')} s={s}
+          />
+          <StrengthSelect value={strength} onChange={setStrength} label={s('observation.causeStrength')} helperText={s('observation.causeStrengthExample')} s={s} />
+        </>
+      )}
+    </FormDialog>
   )
 }
 
@@ -172,22 +161,22 @@ function ExistingCause({ candidates, picked, onPick, s }: {
  * The cause form: the facts, the body, and what it links to. A root cause
  * ends the chain, so a root draft has nothing behind it and the rows go.
  */
-function NewCause({ spec, create, onCreate, onUse, onCancel, renderMarkdown, s }: {
+function NewCause({ spec, create, made, onMade, root, problem, onUse, renderMarkdown, s }: {
   spec: LinkSpec
   create: NonNullable<LinkSpec['create']>
-  onCreate: LinkDialogProps['onCreate']
+  made: NewCauseState
+  onMade: (update: (held: NewCauseState) => NewCauseState) => void
+  root: boolean
+  /** The title was asked for and is still blank. */
+  problem: boolean
   onUse: (key: string) => void
-  onCancel: () => void
   renderMarkdown: LinkDialogProps['renderMarkdown']
   s: Translate
 }) {
-  const [draft, setDraft] = useState<CauseDraft>(() => ({
-    title: '', why: '', root: Boolean(create.rootFixed || create.rootDefault), strength: 'normal', body: causeTemplate(s),
-  }))
-  const [problem, setProblem] = useState(false)
-  const [behind, setBehind] = useState<{ key: string; strength: CauseStrength }[]>([])
   const [picking, setPicking] = useState(false)
-  const root = Boolean(create.rootFixed || draft.root)
+  const { draft, behind } = made
+  const setDraft = (next: CauseDraft) => onMade((held) => ({ ...held, draft: next }))
+  const setBehind = (update: (held: NewCauseState['behind']) => NewCauseState['behind']) => onMade((held) => ({ ...held, behind: update(held.behind) }))
   const alike = draft.title.trim().length >= 6 ? similarTitles(draft.title, spec.candidates) : []
   const labelOf = (key: string) => create.behind.find((one) => one.key === key)?.label ?? key
   const rows: LinkRow[] = [
@@ -196,17 +185,12 @@ function NewCause({ spec, create, onCreate, onUse, onCancel, renderMarkdown, s }
       key: one.key, label: labelOf(one.key), kind: 'existing' as const, root: false, strength: one.strength, role: s('observation.causeBehind'),
     }))),
   ]
-  const submit = () => {
-    if (!draft.title.trim()) { setProblem(true); return }
-    onCreate({ ...draft, title: draft.title.trim(), why: draft.why.trim(), root }, root ? [] : behind)
-  }
   return (
     <>
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(0, 1fr) minmax(0, 1fr)' }, gap: 3 }}>
         <Box sx={{ display: 'grid', gap: 1, alignContent: 'start' }}>
           <CauseDraftFields
-            autoFocus draft={{ ...draft, root }} rootFixed={create.rootFixed} s={s}
-            onChange={(next) => { setDraft(next); if (next.title.trim()) setProblem(false) }}
+            autoFocus draft={{ ...draft, root }} rootFixed={create.rootFixed} s={s} onChange={setDraft}
             problem={problem ? s('observation.causeTitleMissing') : undefined}
             alike={(
               <LookAlikes
@@ -221,11 +205,11 @@ function NewCause({ spec, create, onCreate, onUse, onCancel, renderMarkdown, s }
           </Typography>
         </Box>
         <DescriptionField
-          label={s('observation.formDescription')} optional value={draft.body ?? ''} onChange={(body) => setDraft((held) => ({ ...held, body }))}
+          label={s('observation.formDescription')} optional value={draft.body ?? ''} onChange={(body) => onMade((held) => ({ ...held, draft: { ...held.draft, body } }))}
           example={s('observation.causeBodyExample')} renderMarkdown={renderMarkdown} s={s} minRows={8}
         />
       </Box>
-      <Box sx={{ borderTop: 1, borderColor: 'divider', mt: 2, pt: 1.5 }}>
+      <Box sx={{ borderTop: 1, borderColor: 'divider', pt: 1.5 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
           <Typography component="h3" sx={{ fontSize: 15, fontWeight: 600, flex: 1 }}>{s('observation.causeLinks')}</Typography>
           {!root && create.behind.length > 0 && (
@@ -240,7 +224,7 @@ function NewCause({ spec, create, onCreate, onUse, onCancel, renderMarkdown, s }
         <LinkRowsTable
           rows={rows} s={s} testId="link-rows" empty=""
           onStrength={(key, strength) => (key === 'explains'
-            ? setDraft((held) => ({ ...held, strength }))
+            ? setDraft({ ...draft, strength })
             : setBehind((held) => held.map((one) => (one.key === key ? { ...one, strength } : one))))}
           onRemove={(key) => setBehind((held) => held.filter((one) => one.key !== key))}
         />
@@ -253,10 +237,6 @@ function NewCause({ spec, create, onCreate, onUse, onCancel, renderMarkdown, s }
             onClose={() => setPicking(false)} s={s}
           />
         )}
-      </Box>
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}>
-        <Button onClick={onCancel} sx={{ textTransform: 'none' }}>{s('common.cancel')}</Button>
-        <Button variant="contained" onClick={submit} sx={{ textTransform: 'none' }} data-testid="link-create">{s('observation.linkAdd')}</Button>
       </Box>
     </>
   )

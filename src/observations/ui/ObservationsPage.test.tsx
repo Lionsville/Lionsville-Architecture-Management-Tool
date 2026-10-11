@@ -246,6 +246,35 @@ describe('ObservationsPage', () => {
     expect(next.causes[1].body).toContain('Both teams say it is theirs')
   })
 
+  it('picks a look-alike under Existing with Use this one, so its strength is chosen before it is linked', () => {
+    const { onChange } = mount({ model: { ...model, causes: [
+      cause({ explains: [{ id: 'o1', strength: 'strong' }] }),
+      cause({ id: 'c2', number: 2, title: 'Nobody owns the release train', explains: [] }),
+    ] } })
+    fireEvent.click(screen.getByTestId('observation-row-o1'))
+    fireEvent.click(screen.getByRole('button', { name: 'Cause' }))
+    fireEvent.change(screen.getByTestId('cause-draft-title'), { target: { value: 'Nobody owns the release' } })
+    fireEvent.click(within(screen.getByTestId('link-cause-alike')).getByRole('button', { name: 'Use this one' }))
+    expect(onChange).not.toHaveBeenCalled()
+    expect((screen.getByRole('radio', { name: 'CA-0002 Nobody owns the release train' }) as HTMLInputElement).checked).toBe(true)
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Strength' }))
+    fireEvent.click(screen.getByRole('option', { name: 'Strong' }))
+    fireEvent.click(screen.getByTestId('link-confirm'))
+    expect(lastChange(onChange).causes[1].explains).toEqual([{ id: 'o1', strength: 'strong' }])
+  })
+
+  it('says under New what the cause still needs, in the footer beside its button', () => {
+    const { onChange } = mount()
+    fireEvent.click(screen.getByTestId('observation-row-o2'))
+    fireEvent.click(screen.getByRole('button', { name: 'Cause' }))
+    const dialog = within(screen.getByRole('dialog', { name: /Cause/ }))
+    expect(dialog.getAllByRole('button').slice(-2).map((one) => one.textContent)).toEqual(['Cancel', 'Add cause'])
+    fireEvent.click(screen.getByTestId('link-create'))
+    expect(onChange).not.toHaveBeenCalled()
+    expect(dialog.getByRole('alert').textContent).toBe('1 field needs filling in.')
+    expect(dialog.getByText('Say why it happens, in one sentence.')).toBeTruthy()
+  })
+
   it('links an existing cause, offering only what the rules allow', () => {
     const { onChange } = mount({ model: { ...model, causes: [
       cause({ explains: [{ id: 'o1', strength: 'strong' }] }),
