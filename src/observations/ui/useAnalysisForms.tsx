@@ -33,6 +33,7 @@ import { nodeKey } from '../graph'
 import { LinkDialog } from './LinkForm'
 import type { LinkCandidate, LinkSpec } from './LinkForm'
 import { NewObservationDialog } from './ObservationForm'
+import { SeenDialog } from './ObservationDialogs'
 import type { FormScope, RecordRequest } from './ObservationForm'
 import type { LinkTarget } from './readerActions'
 import type { ChangeBelow, ChangedBelow, ObservationWork } from './ObservationsPage'
@@ -84,6 +85,8 @@ export function useAnalysisForms(deps: {
   const { work, below, commit, makeId, today, s, scopeLabel, nameOf, select } = deps
   const [creating, setCreating] = useState(false)
   const [linking, setLinking] = useState<LinkTarget | undefined>(undefined)
+  /** An observation the form found written down already, being seen again: asked over the form, which stays open behind it. */
+  const [seeing, setSeeing] = useState<{ id: string; scope?: string } | undefined>(undefined)
   const [notice, setNotice] = useState<string | undefined>(undefined)
   const onChangeBelow = deps.readOnly ? undefined : deps.onChangeBelow
 
@@ -119,15 +122,21 @@ export function useAnalysisForms(deps: {
       return { ...held, ...made.analysis }
     }, () => select(nodeKey(id, scope)))
   }
-  const seenFromForm = (scope: string | undefined, id: string) => {
+  const seenFromForm = ({ date, note }: { date: string; note: string }) => {
+    if (!seeing) return
+    const { id, scope } = seeing
+    setSeeing(undefined)
     setCreating(false)
     if (scope === undefined) {
-      commit({ observations: seenAgain(work.observations, id, today()) })
+      commit({ observations: seenAgain(work.observations, id, date, note) })
       select(id)
     } else {
-      changeBelow(scope, (held) => ({ ...held, observations: seenAgain(held.observations, id, today()) }), () => select(nodeKey(id, scope)))
+      changeBelow(scope, (held) => ({ ...held, observations: seenAgain(held.observations, id, date, note) }), () => select(nodeKey(id, scope)))
     }
   }
+  const seenObservation = seeing
+    ? (seeing.scope === undefined ? work.observations : below.find((one) => one.scope === seeing.scope)?.observations ?? []).find((one) => one.id === seeing.id)
+    : undefined
 
   const context: LinkContext = { here: deps.path ?? '', below }
   const spec = linking ? linkSpec(linking, { work, below, context, s, scopeLabel, nameOf, scopeName: deps.scopeName }) : undefined
@@ -171,7 +180,12 @@ export function useAnalysisForms(deps: {
     <>
       <NewObservationDialog
         open={creating} scopes={scopes} today={today()} onCancel={() => setCreating(false)}
-        onRecord={record} onSeenAgain={seenFromForm} renderMarkdown={deps.renderMarkdown} s={s}
+        onRecord={record} onSeenAgain={(scope, id) => setSeeing({ id, ...(scope !== undefined ? { scope } : {}) })}
+        renderMarkdown={deps.renderMarkdown} s={s}
+      />
+      <SeenDialog
+        subject={seeing && seenObservation ? { id: nodeKey(seeing.id, seeing.scope), label: nameOf(seeing.id, seeing.scope), firstSeen: seenObservation.date } : undefined}
+        today={today()} onCancel={() => setSeeing(undefined)} onConfirm={seenFromForm} s={s}
       />
       <LinkDialog
         spec={spec} onCancel={() => setLinking(undefined)} onCreate={createLinked} onLink={linkExisting}

@@ -117,19 +117,48 @@ describe('the new observation form', () => {
     expect(lastChange(onChange).observations.at(-1)!.title).toBe('Labels print twice because the WMS resends')
   })
 
-  it('offers Seen again on one written before, which records a sighting and nothing new', () => {
+  it('offers Seen again on one written before, which asks the day and a note as the reader does, and records a sighting and nothing new', () => {
     const { onChange } = mount()
     openForm()
     fireEvent.change(screen.getByTestId('form-title'), { target: { value: 'The nightly batch overruns again' } })
     const seenBefore = screen.getByTestId('form-seen-before')
     expect(seenBefore.textContent).toContain('OB-0001 Nightly batch overruns')
     fireEvent.click(within(seenBefore).getByRole('button', { name: 'Seen again' }))
+    expect(onChange).not.toHaveBeenCalled()
+    expect((screen.getByTestId('seen-date') as HTMLInputElement).value).toBe('2026-09-20')
+    fireEvent.change(screen.getByTestId('seen-date'), { target: { value: '2026-09-18' } })
+    fireEvent.change(screen.getByTestId('seen-note'), { target: { value: 'Thursday run' } })
+    fireEvent.click(screen.getByTestId('seen-confirm'))
     expect(onChange).toHaveBeenCalledTimes(1)
     const next = lastChange(onChange)
     expect(next.observations).toHaveLength(1)
     expect(next.observations[0]).toMatchObject({ id: 'o1', seen: 5 })
-    expect(next.observations[0].history.at(-1)).toEqual({ date: '2026-09-20', kind: 'seen' })
+    expect(next.observations[0].history.at(-1)).toEqual({ date: '2026-09-18', kind: 'seen', note: 'Thursday run' })
     expect(next.causes).toEqual(model.causes)
+    expect(screen.queryByRole('dialog', { name: 'New observation' })).toBeNull()
+  })
+
+  it('goes back to the form, as written, when the sighting is cancelled', () => {
+    const { onChange } = mount()
+    openForm()
+    fireEvent.change(screen.getByTestId('form-title'), { target: { value: 'The nightly batch overruns again' } })
+    fireEvent.click(within(screen.getByTestId('form-seen-before')).getByRole('button', { name: 'Seen again' }))
+    fireEvent.click(within(screen.getByRole('dialog', { name: /seen again\?/ })).getByRole('button', { name: 'Cancel' }))
+    expect(onChange).not.toHaveBeenCalled()
+    expect((screen.getByTestId('form-title') as HTMLInputElement).value).toBe('The nightly batch overruns again')
+  })
+
+  it('says what number a new cause is made as, after the ones already on the list', () => {
+    mount()
+    openForm()
+    newCause('The WMS re-sends a split list')
+    fireEvent.click(screen.getByTestId('form-new-cause'))
+    expect(screen.getByTestId('form-cause-made-as').textContent).toBe('Made in Claims as CA-0004.')
+    // Enter in its title puts it on the list, and records nothing yet.
+    fireEvent.change(screen.getByTestId('cause-draft-title'), { target: { value: 'Splits are not modelled' } })
+    fireEvent.keyDown(screen.getByTestId('cause-draft-title'), { key: 'Enter' })
+    expect(screen.getAllByTestId('form-link-row')).toHaveLength(2)
+    expect(screen.queryByTestId('form-cause-draft')).toBeNull()
   })
 
   it('records the observation, two new causes and a link as one change, and the button says what it will make', () => {
