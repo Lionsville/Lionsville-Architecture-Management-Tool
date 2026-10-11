@@ -271,4 +271,16 @@ describe('the organisation as the open scope has it', () => {
     expect(atRoot.organisation.roles).toEqual([roles[0]])
     expect(atRoot.unitAt('webshop')).toEqual({ scope: 'customer', name: 'Webshop', type: 'ut-team' })
   })
+
+  it('lays the session\'s plans\' moves over the tree\'s, so a move just made is on its day at once', () => {
+    const plan = (moves: { unitId: string; parentId?: string; on: string }[]) => ({
+      id: 'tr-1', number: 1, title: 'Move', status: 'draft' as const, elements: [], decisions: [], milestones: [], body: '', moves,
+    })
+    const kept: HostModel = { ...CUSTOMER, transitions: [plan([{ unitId: 'webshop', on: '2027-01-01' }])] }
+    const index = indexScopes([{ path: '', model: ROOT }, { path: 'customer', model: kept }])
+    expect(organisationHere(index, '', ROOT).organisation.moves).toEqual([{ unitId: 'webshop', on: '2027-01-01' }])
+    const now: HostModel = { ...CUSTOMER, transitions: [plan([{ unitId: 'webshop', parentId: 'customer', on: '2027-02-01' }])] }
+    expect(organisationHere(index, 'customer', now).organisation.moves).toEqual([{ unitId: 'webshop', parentId: 'customer', on: '2027-02-01' }])
+    expect(organisationHere(index, 'customer', CUSTOMER).organisation).not.toHaveProperty('moves')
+  })
 })

@@ -10,7 +10,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
-  addDays, elementsWithRole, findTransition, isTransitionFinished, nextTransitionNumber, openPlanItems, planGate,
+  addDays, elementsWithRole, findTransition, isTransitionFinished, movesWith, nextTransitionNumber, openPlanItems, planGate,
   setTransitionStatus, shiftDays, sortTransitions, statusPatch, transitionDays, transitionLabel, transitionsForElement,
   transitionsFrom,
 } from './transition'
@@ -132,6 +132,16 @@ describe('a plan that slips', () => {
     expect(shiftDays(undated, 30)).toEqual(undated)
   })
 
+  it('moves the day of every unit it moves, and leaves a plan that moves none without a list', () => {
+    // A reorganisation that slips moves its moves with it (ADR-0036 §6).
+    const moving = plan({ moves: [{ unitId: 'u-tt', parentId: 'u-par', on: '2027-01-01' }, { unitId: 'u-fb', on: '2027-02-01' }] })
+    expect(shiftDays(moving, 14).moves).toEqual([
+      { unitId: 'u-tt', parentId: 'u-par', on: '2027-01-15' }, { unitId: 'u-fb', on: '2027-02-15' },
+    ])
+    expect(shiftDays(plan(), 14)).not.toHaveProperty('moves')
+    expect(transitionDays(moving)).toContain('2027-02-01')
+  })
+
   it('does not touch the elements it only names', () => {
     // The dates on an element belong to the element, so the canvas can draw a
     // day without knowing plans exist. The caller moves those in the same
@@ -231,5 +241,17 @@ describe('the gates (ADR-0009, amended 28 September 2026)', () => {
     const done = setTransitionStatus(plan({ status: 'running' }), 'done', '2027-11-30')
     expect(done.doneOn).toBe('2027-11-30')
     expect(setTransitionStatus(done, 'running', '2027-12-01')).not.toHaveProperty('doneOn')
+  })
+})
+
+describe('a plan\'s moves', () => {
+  it('holds one move per unit, in day order, and none as no list', () => {
+    const one = movesWith(undefined, 'u-tt', { parentId: 'u-par', on: '2027-01-01' })
+    expect(one).toEqual([{ unitId: 'u-tt', parentId: 'u-par', on: '2027-01-01' }])
+    const two = movesWith(one, 'u-fb', { on: '2026-12-01' })
+    expect(two?.map((move) => move.unitId)).toEqual(['u-fb', 'u-tt'])
+    const again = movesWith(two, 'u-tt', { parentId: 'u-fre', on: '2027-01-01' })
+    expect(again).toEqual([{ unitId: 'u-fb', on: '2026-12-01' }, { unitId: 'u-tt', parentId: 'u-fre', on: '2027-01-01' }])
+    expect(movesWith(movesWith(again, 'u-fb', undefined), 'u-tt', undefined)).toBeUndefined()
   })
 })

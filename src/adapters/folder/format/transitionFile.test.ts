@@ -61,6 +61,17 @@ describe('the round trip', () => {
     expect(transitionFileText(plan({ initiative: true }))).toContain('initiative: true')
   })
 
+  it('keeps the units it moves, a move to the top without a parent, and writes nothing where it moves none', () => {
+    const moving = plan({ moves: [{ unitId: 'u-tt', parentId: 'u-par', on: '2027-01-01' }, { unitId: 'u-di', on: '2027-02-01' }] })
+    expect(roundTrip(moving)).toEqual(moving)
+    expect(transitionFileText(moving)).toContain('moves:\n  - unitId: u-tt\n    parentId: u-par\n    on: 2027-01-01')
+    expect(transitionFileText(plan())).not.toContain('moves')
+    expect(roundTrip(plan())).not.toHaveProperty('moves')
+    // A row with no unit or no day says nothing, and is passed over.
+    const text = transitionFileText(moving).replace('    on: 2027-02-01\n', '')
+    expect(transitionFromFile(text, transitionPath(moving))!.moves).toEqual([moving.moves![0]])
+  })
+
   it('puts the title in the heading, so it renders as a plan anywhere', () => {
     const text = transitionFileText(plan())
     expect(text).toContain('# TR-0003 — Replace the warehouse system')

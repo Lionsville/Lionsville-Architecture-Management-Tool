@@ -23,6 +23,13 @@
  * Nothing here reads the clock; the caller says which day, and *today* is the
  * caller's (`lifecycle.today`).
  *
+ * **The organisation on a day** (ADR-0036 §6) is every date it holds read on
+ * that day: a unit's lifecycle, a role's and a unit type's `from` and
+ * `until`, an assignment's days — and the moves the plans make, which put a
+ * unit under another parent from a day on ({@link organisationOn}). Every
+ * question below asks it of the day it is given, so a plan's move is in the
+ * answer from its day and not before.
+ *
  * Pure, with no words and no paths: a server that grants a right from a
  * managing role (ADR-0036 §12) imports this file by its path and asks
  * {@link managersOf} and {@link managedBy} the same questions the screens do.
@@ -32,6 +39,7 @@ import type { PersonId, PickedPerson } from './person'
 import type { Role, RoleId, RoleSlot, UnitType, UnitTypeId } from './operatingModel'
 import type { DesignElement, ElementId } from './types'
 import type { Command, CommandMeta } from './commands'
+import type { TransitionMove } from './transition'
 
 export type AssignmentId = string
 
@@ -61,14 +69,28 @@ export type Assignment = {
 }
 
 /** As much of an element as the arithmetic over units reads. */
-export type UnitLike = Pick<DesignElement, 'id' | 'name' | 'kind' | 'parentId' | 'unitTypeId' | 'extraSlots' | 'lifecycle' | 'lifecycleDates' | 'scopes'>
+export type UnitLike = Pick<
+  DesignElement, 'id' | 'name' | 'kind' | 'parentId' | 'unitTypeId' | 'extraSlots' | 'lifecycle' | 'lifecycleDates' | 'scopes' | 'successorId'
+>
 
-/** As much of the organisation as a question about it needs: its units, its assignments, and its operating model. */
+/**
+ * A unit put under another parent on a day, as a plan says it (ADR-0036 §6,
+ * `model/transition.ts`): from `on`, the unit sits under `parentId`, or at the
+ * top where there is none.
+ */
+export type UnitMove = TransitionMove
+
+/**
+ * As much of the organisation as a question about it needs: its units, its
+ * assignments, its operating model — and the moves its plans make, every
+ * plan's but an abandoned one's, absent where nobody gathered them.
+ */
 export type Organisation = {
   readonly units: readonly UnitLike[]
   readonly assignments: readonly Assignment[]
   readonly roles: readonly Role[]
   readonly unitTypes: readonly UnitType[]
+  readonly moves?: readonly UnitMove[]
 }
 
 /** Whether an element is a unit: an actor with a type. */
@@ -169,6 +191,65 @@ export function roleOn(role: Pick<Role, 'from' | 'until'>, day: string): boolean
   return runsOn(role, day)
 }
 
+/** A unit type's own dates: whether it runs on `day`. */
+export function unitTypeOn(type: Pick<UnitType, 'from' | 'until'>, day: string): boolean {
+  return runsOn(type, day)
+}
+
+/** Whether a thing dated by `until` has ended by `day`: its last day has passed. */
+export function endedBy(dated: { until?: string }, day: string): boolean {
+  return isDay(dated.until) && day > dated.until
+}
+
+// --- the organisation on a day -------------------------------------------------------
+
+/**
+ * The parent a unit has on `day`: where the latest move on that day or before
+ * it puts it — the last one listed where two fall on one day — and otherwise
+ * its own `parentId`. A move with no day says nothing.
+ */
+export function parentOn(
+  unit: Pick<UnitLike, 'id' | 'parentId'>, moves: readonly UnitMove[] | undefined, day: string,
+): ElementId | undefined {
+  let found: UnitMove | undefined
+  for (const move of moves ?? []) {
+    if (move.unitId !== unit.id || !isDay(move.on) || move.on > day) continue
+    if (found === undefined || move.on >= found.on) found = move
+  }
+  return found ? found.parentId : unit.parentId
+}
+
+/**
+ * The organisation on `day` (ADR-0036 §6): every unit under the parent the
+ * plans' moves give it that day. Nothing else is taken away — a unit that has
+ * ended, a role past its last day and an assignment that is over are all
+ * still there, because the questions asked of the organisation read each
+ * date themselves and an ended unit with people in it is a finding. The
+ * organisation handed in where no move has come by then.
+ *
+ * Pure and exported, so every screen that shows the organisation on a day —
+ * a unit's section, the chart, a plan's before and after — and a server
+ * answering for a day ask the one function.
+ */
+export function organisationOn(organisation: Organisation, day: string): Organisation {
+  const moves = organisation.moves ?? []
+  if (!moves.some((move) => isDay(move.on) && move.on <= day)) return organisation
+  return {
+    ...organisation,
+    units: organisation.units.map((unit) => {
+      const parentId = parentOn(unit, moves, day)
+      if (parentId === unit.parentId) return unit
+      const { parentId: _was, ...rest } = unit
+      return parentId === undefined ? rest : { ...rest, parentId }
+    }),
+  }
+}
+
+/** The units there on `day`, under the parent each has that day, in the order the organisation lists them. */
+export function unitsOn(organisation: Organisation, day: string): UnitLike[] {
+  return organisationOn(organisation, day).units.filter((unit) => isUnit(unit) && unitOn(unit, day))
+}
+
 // --- the tree of units ----------------------------------------------------------------
 
 /** The units by id. */
@@ -250,13 +331,14 @@ export type Manager = {
  * Core grants nothing from this; a build that knows who people are may.
  */
 export function managersOf(organisation: Organisation, unitId: ElementId, day: string): Manager[] {
-  const units = byId(organisation.units)
-  const managing = managingRoles(organisation.roles, day)
+  const on = organisationOn(organisation, day)
+  const units = byId(on.units)
+  const managing = managingRoles(on.roles, day)
   const found: Manager[] = []
-  for (const id of [unitId, ...unitsAbove(organisation.units, unitId)]) {
+  for (const id of [unitId, ...unitsAbove(on.units, unitId)]) {
     const unit = units.get(id)
     if (!unit || !unitOn(unit, day)) continue
-    for (const assignment of organisation.assignments) {
+    for (const assignment of on.assignments) {
       if (assignment.unitId !== id || !managing.has(assignment.roleId) || !runsOn(assignment, day)) continue
       found.push({ person: personOf(assignment), unitId: id, roleId: assignment.roleId, assignment })
     }
@@ -282,7 +364,8 @@ function managingRoles(roles: readonly Role[], day: string): Set<RoleId> {
 export function managedBy(
   organisation: Organisation, person: PersonId, day: string, canonical: (id: PersonId) => PersonId = same,
 ): { held: ElementId[]; units: ElementId[] } {
-  const units = byId(organisation.units)
+  const on = organisationOn(organisation, day)
+  const units = byId(on.units)
   const managing = managingRoles(organisation.roles, day)
   const who = canonical(person)
   const held: ElementId[] = []
@@ -294,7 +377,7 @@ export function managedBy(
   }
   const reached: ElementId[] = []
   for (const id of held) {
-    for (const one of [id, ...unitsBelow(organisation.units, id)]) {
+    for (const one of [id, ...unitsBelow(on.units, id)]) {
       if (!reached.includes(one) && units.has(one)) reached.push(one)
     }
   }
@@ -315,8 +398,13 @@ export function managedBy(
  * - `overLimit`: a unit that owns more applications than its type's limit;
  * - `endedUnit`, `endedRole`: an assignment running in a unit or a role that
  *   has ended;
+ * - `endedType`: a unit still there under a unit type that has ended — what
+ *   it is now is a decision nobody has made;
  * - `overloaded`: a person whose shares add up to more than all of their
  *   time, with the assignments that make it up.
+ *
+ * A unit type that does not run on the day asks for nobody in its slots, as
+ * a role that does not run asks for nobody in its own.
  */
 export type UnitFinding =
   | { kind: 'vacant'; unitId: ElementId; roleId: RoleId; held: number; min: number }
@@ -326,6 +414,7 @@ export type UnitFinding =
   | { kind: 'overLimit'; unitId: ElementId; owns: number; limit: number }
   | { kind: 'endedUnit'; unitId: ElementId; assignment: Assignment }
   | { kind: 'endedRole'; unitId: ElementId; roleId: RoleId; assignment: Assignment }
+  | { kind: 'endedType'; unitId: ElementId; unitTypeId: UnitTypeId; until: string }
   | { kind: 'overloaded'; person: PersonId; load: number; assignments: Assignment[] }
 
 /**
@@ -338,16 +427,18 @@ export function unitFindings(
   organisation: Organisation, day: string,
   deps: { owns?: (unitId: ElementId) => number; canonical?: (id: PersonId) => PersonId } = {},
 ): UnitFinding[] {
-  const types = new Map(organisation.unitTypes.map((type) => [type.id, type]))
-  const roles = new Map(organisation.roles.map((role) => [role.id, role]))
-  const units = byId(organisation.units)
+  const on = organisationOn(organisation, day)
+  const types = new Map(on.unitTypes.map((type) => [type.id, type]))
+  const roles = new Map(on.roles.map((role) => [role.id, role]))
+  const units = byId(on.units)
   const found: UnitFinding[] = []
   for (const unit of units.values()) {
     const type = types.get(unit.unitTypeId ?? '')
     if (!type || !unitOn(unit, day)) continue
-    found.push(...slotFindings(organisation, unit, type, roles, day))
-    if (!mayHaveParent(type, parentTypeOf(organisation.units, unit))) {
-      const parentType = parentTypeOf(organisation.units, unit)
+    if (isDay(type.until) && endedBy(type, day)) found.push({ kind: 'endedType', unitId: unit.id, unitTypeId: type.id, until: type.until })
+    if (unitTypeOn(type, day)) found.push(...slotFindings(on, unit, type, roles, day))
+    const parentType = parentTypeOf(on.units, unit)
+    if (!mayHaveParent(type, parentType)) {
       found.push({ kind: 'misplaced', unitId: unit.id, ...(parentType !== undefined ? { parentType } : {}) })
     }
     const serves = unit.scopes?.length ?? 0
@@ -355,8 +446,8 @@ export function unitFindings(
     const owns = deps.owns?.(unit.id) ?? 0
     if (type.limit !== undefined && owns > type.limit) found.push({ kind: 'overLimit', unitId: unit.id, owns, limit: type.limit })
   }
-  found.push(...endedFindings(organisation.assignments, units, roles, day))
-  found.push(...overloads(organisation.assignments, day, deps.canonical ?? same))
+  found.push(...endedFindings(on.assignments, units, roles, day))
+  found.push(...overloads(on.assignments, day, deps.canonical ?? same))
   return found
 }
 
@@ -385,7 +476,7 @@ function endedFindings(
     const unit = units.get(assignment.unitId)
     const role = roles.get(assignment.roleId)
     if (unit && unitEnded(unit, day)) found.push({ kind: 'endedUnit', unitId: unit.id, assignment })
-    else if (role && isDay(role.until) && day > role.until) {
+    else if (role && endedBy(role, day)) {
       found.push({ kind: 'endedRole', unitId: assignment.unitId, roleId: role.id, assignment })
     }
   }

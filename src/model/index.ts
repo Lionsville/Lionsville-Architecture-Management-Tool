@@ -139,11 +139,11 @@ export type { CheckContext, Finding, FindingKind, FindingSubject } from './check
 /** A plan for changing the landscape (ADR-0009). */
 export {
   addDays, elementsWithRole, isTransitionFinished, nextTransitionNumber, setTransitionStatus,
-  findTransition, shiftDays, sortTransitions, transitionDays, transitionLabel, TRANSITION_STATUSES,
+  findTransition, movesWith, shiftDays, sortTransitions, transitionDays, transitionLabel, TRANSITION_STATUSES,
   transitionsForElement, transitionsFrom as transitionStatusesFrom,
 } from './transition'
 export type {
-  Transition, TransitionElement, TransitionMilestone, TransitionRole, TransitionStatus,
+  Transition, TransitionElement, TransitionMilestone, TransitionMove, TransitionRole, TransitionStatus,
 } from './transition'
 
 /** The one vocabulary for changing a model, and the one writer (ADR-0002). */

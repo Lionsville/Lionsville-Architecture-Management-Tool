@@ -10,8 +10,8 @@ import { describe, expect, it } from 'vitest'
 import type { Role, UnitType } from './operatingModel'
 import type { DesignElement } from './types'
 import {
-  dayBefore, endingFor, holdersOn, isUnit, leavingStep, loadOn, managedBy, managersOf, mayHaveParent, parentTypeOf, runsOn, shareOf, slotsOf,
-  unitEnded, unitFindings, unitLastDay, unitOn, unitsAbove, unitsBelow,
+  dayBefore, endedBy, endingFor, holdersOn, isUnit, leavingStep, loadOn, managedBy, managersOf, mayHaveParent, organisationOn, parentOn,
+  parentTypeOf, runsOn, shareOf, slotsOf, unitEnded, unitFindings, unitLastDay, unitOn, unitsAbove, unitsBelow, unitsOn, unitTypeOn,
 } from './units'
 import type { Assignment, Organisation } from './units'
 
@@ -188,6 +188,64 @@ describe('what the organisation contradicts on a day', () => {
   it('reads nothing of a unit whose type the model does not hold, and nothing of a planned one', () => {
     const lost: Organisation = { units: [unit('x', 'ut-gone'), units[3]], assignments: [], roles, unitTypes: [team] }
     expect(unitFindings(lost, TODAY)).toEqual([])
+  })
+})
+
+describe('the organisation on a day', () => {
+  // A plan moves the webshop team from sales to a cluster that serves several
+  // domains, on the first day of 2027 (ADR-0036 §6).
+  const moved: Organisation = { ...organisation, moves: [{ unitId: 'webshop', parentId: 'data', on: '2027-01-01' }] }
+
+  it('puts a unit under the parent the latest move by then gives it, and its own before', () => {
+    expect(parentOn(units[2], moved.moves, '2026-12-31')).toBe('sales')
+    expect(parentOn(units[2], moved.moves, '2027-01-01')).toBe('data')
+    const twice = [...moved.moves!, { unitId: 'webshop', on: '2027-06-01' }, { unitId: 'webshop', parentId: 'customer', on: 'later' }]
+    expect(parentOn(units[2], twice, '2027-07-01')).toBeUndefined()
+    expect(parentOn(units[2], undefined, '2027-07-01')).toBe('sales')
+  })
+
+  it('is the organisation itself where no move has come, and every unit under its parent of the day after', () => {
+    expect(organisationOn(moved, '2026-12-31')).toBe(moved)
+    const after = organisationOn(moved, '2027-01-01')
+    expect(after.units.find((one) => one.id === 'webshop')?.parentId).toBe('data')
+    expect(after.assignments).toBe(moved.assignments)
+    const top = organisationOn({ ...organisation, moves: [{ unitId: 'webshop', on: '2027-01-01' }] }, '2027-02-01')
+    expect(top.units.find((one) => one.id === 'webshop')).not.toHaveProperty('parentId')
+  })
+
+  it('lists the units there on a day, under the parent of that day', () => {
+    expect(unitsOn(moved, TODAY).map((one) => one.id)).toEqual(['customer', 'sales', 'webshop', 'parcel', 'data'])
+    expect(unitsOn(moved, '2027-01-01').map((one) => [one.id, one.parentId])).toContainEqual(['webshop', 'data'])
+    expect(unitsOn(moved, '2027-01-01').map((one) => one.id)).not.toContain('parcel')
+  })
+
+  it('has the managers above a moved unit follow it on its day', () => {
+    expect(managersOf(moved, 'webshop', TODAY).map((one) => one.unitId)).toEqual(['webshop', 'sales', 'customer'])
+    expect(managersOf(moved, 'webshop', '2027-01-01').map((one) => [one.person, one.unitId])).toEqual([
+      ['pe-femke', 'webshop'], ['pe-daan', 'data'],
+    ])
+    expect(managedBy(moved, 'pe-chloe', '2027-01-01').units).toEqual(['sales', 'mobile'])
+  })
+
+  it('checks a moved unit where it sits on the day', () => {
+    // A team may sit in a cluster, so the move is sound; under the domain it is not.
+    expect(unitFindings(moved, '2027-01-01').filter((one) => one.kind === 'misplaced')).toEqual([])
+    const wrong: Organisation = { ...organisation, moves: [{ unitId: 'webshop', parentId: 'customer', on: '2027-01-01' }] }
+    expect(unitFindings(wrong, TODAY).filter((one) => one.kind === 'misplaced')).toEqual([])
+    expect(unitFindings(wrong, '2027-01-01').filter((one) => one.kind === 'misplaced')).toEqual([
+      { kind: 'misplaced', unitId: 'webshop', parentType: 'ut-domain' },
+    ])
+  })
+
+  it('reads a unit type\'s days: one that has ended asks for nobody, and a unit still of it is found', () => {
+    expect(unitTypeOn({ until: '2026-12-31' }, TODAY)).toBe(true)
+    expect(endedBy({ until: '2026-12-31' }, '2027-01-01')).toBe(true)
+    expect(endedBy({}, '2027-01-01')).toBe(false)
+    const ending: Organisation = { ...organisation, unitTypes: [domain, cluster, { ...team, until: '2026-12-31', successors: ['ut-cluster'] }] }
+    const found = unitFindings(ending, '2027-01-02')
+    expect(found.filter((one) => one.kind === 'endedType').map((one) => one.unitId)).toEqual(['webshop', 'mobile'])
+    expect(found.filter((one) => one.kind === 'vacant' && one.unitId === 'webshop')).toEqual([])
+    expect(unitFindings(ending, TODAY).filter((one) => one.kind === 'endedType')).toEqual([])
   })
 })
 

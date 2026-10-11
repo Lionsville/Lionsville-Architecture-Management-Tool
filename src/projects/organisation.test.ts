@@ -98,6 +98,34 @@ describe('the organisation in the index', () => {
   })
 })
 
+describe('the plans\' moves in the index', () => {
+  /** A plan in the customer domain moves the webshop to the top on the first day of 2027; an abandoned one moves nothing. */
+  function planned(): ScopeModel[] {
+    const held = tree()
+    const plan = (id: string, number: number, status: 'agreed' | 'abandoned', on: string) => ({
+      id, number, title: id, status, elements: [], decisions: [], milestones: [], body: '',
+      moves: [{ unitId: 'webshop', on }],
+    })
+    held[1].model = { ...held[1].model, transitions: [plan('tr-1', 1, 'agreed', '2027-01-01'), plan('tr-2', 2, 'abandoned', '2026-11-01')] }
+    return held
+  }
+
+  it('lists every plan\'s moves but an abandoned one\'s, with the plan and the scope', () => {
+    const index = indexScopes(planned())
+    expect(index.moves()).toEqual([{ scope: 'customer', plan: { id: 'tr-1', number: 1 }, move: { unitId: 'webshop', on: '2027-01-01' } }])
+    expect(index.organisation().moves).toEqual([{ unitId: 'webshop', on: '2027-01-01' }])
+    expect(indexScopes(tree()).organisation()).not.toHaveProperty('moves')
+  })
+
+  it('checks the organisation on a day with the moves of that day', () => {
+    // A team at the top is misplaced, from the day the plan puts it there.
+    const index = indexScopes(planned())
+    const misplaced = (day: string) => organisationFindings(index, day).filter((one) => one.key === 'check.unitMisplaced').map((one) => one.id)
+    expect(misplaced(DAY)).toEqual(['platform'])
+    expect(misplaced('2027-01-01')).toEqual(['platform', 'webshop'])
+  })
+})
+
 describe('what the organisation contradicts, from the index', () => {
   const index = indexScopes(tree())
 
@@ -113,6 +141,18 @@ describe('what the organisation contradicts, from the index', () => {
     expect(found[0]).toMatchObject({ name: 'Customer', detail: 'Domain owner', fields: ['ro-owner'], count: 0, limit: 1 })
     expect(found[2]).toMatchObject({ detail: 'Team', count: 2, limit: 1 })
     expect(found[3]).toMatchObject({ person: 'pe-femke', name: 'pe-femke', count: 150 })
+  })
+
+  it('finds a unit still of a unit type that has ended', () => {
+    const ending = tree()
+    ending[0].model = { ...ending[0].model, unitTypes: [domain, { ...team, until: '2026-06-30' }] }
+    const found = organisationFindings(indexScopes(ending), DAY).filter((one) => one.key === 'check.unitTypeEnded')
+    expect(found.map((one) => [one.scope, one.id, one.detail, one.fields])).toEqual([
+      ['', 'platform', 'Team', ['ut-team']], ['customer', 'webshop', 'Team', ['ut-team']],
+    ])
+    expect(findingSentence(found[1], translator('en'), () => 'Customer')).toBe(
+      'Webshop is still a Team, a kind of unit that has ended: give it another type, or end it',
+    )
   })
 
   it('finds an assignment in a unit that has ended, about the scope that keeps it', () => {

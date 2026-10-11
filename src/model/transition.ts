@@ -65,6 +65,26 @@ export type TransitionMilestone = {
   name: string
 }
 
+/**
+ * A unit put under another parent on a day (ADR-0036 §6): what a
+ * reorganisation does to the tree of units, which a date on the unit cannot
+ * say without changing the one containment every tree and layout reads.
+ *
+ * Applied wherever the organisation is looked at on `on` or after it; before
+ * it, the unit sits where its own `parentId` says. `parentId` absent is the
+ * top, under the organisation itself. A move outside a plan is a correction —
+ * an edit of the unit's `parentId`, as it always was — and a plan abandoned
+ * moves nothing.
+ */
+export type TransitionMove = {
+  /** The unit that moves: an actor with a type. */
+  unitId: ElementId
+  /** The unit it sits under from `on`; absent, the top. */
+  parentId?: ElementId
+  /** `yyyy-mm-dd`, the first day under its new parent. */
+  on: string
+}
+
 export type Transition = {
   /** Stable, never shown. The number is what people call it. */
   id: string
@@ -86,6 +106,8 @@ export type Transition = {
   initiative?: true
   /** What it does to the landscape. */
   elements: TransitionElement[]
+  /** The units it moves under another parent, each on a day (ADR-0036 §6). Absent: none. */
+  moves?: TransitionMove[]
   /** The ids of the decision records it rests on. */
   decisions: string[]
   milestones: TransitionMilestone[]
@@ -302,18 +324,21 @@ export function elementsWithRole(transition: Transition, role: TransitionRole): 
 }
 
 /**
- * Every day this plan has an opinion about, in order: the window's ends and
- * every milestone.
+ * Every day this plan has an opinion about, in order: the window's ends,
+ * every milestone and the day of every unit it moves.
  */
 export function transitionDays(transition: Transition): string[] {
-  const days = [transition.from, transition.to, ...transition.milestones.map((m) => m.date)]
+  const days = [
+    transition.from, transition.to, ...transition.milestones.map((m) => m.date), ...(transition.moves ?? []).map((m) => m.on),
+  ]
   return [...new Set(days.filter(isDay))].sort()
 }
 
 /**
  * The same plan, moved by a number of days.
  *
- * Every date it owns and nothing else — the window and the milestones. The
+ * Every date it owns and nothing else — the window, the milestones and the
+ * day of every unit it moves (ADR-0036 §6). The
  * dates on the elements it introduces and retires are the elements' own, and
  * the caller moves those in the same transaction (which is what makes a slip
  * one undo step). Doing it here would mean this file writing to elements it
@@ -328,7 +353,30 @@ export function shiftDays(transition: Transition, days: number): Transition {
     milestones: transition.milestones.map((milestone) => (
       isDay(milestone.date) ? { ...milestone, date: addDays(milestone.date, days) } : milestone
     )),
+    ...(transition.moves !== undefined
+      ? { moves: transition.moves.map((one) => (isDay(one.on) ? { ...one, on: addDays(one.on, days) } : one)) }
+      : {}),
   }
+}
+
+/**
+ * A plan's moves with one unit's set: put in, changed, or — `undefined` —
+ * taken out. One move per unit and plan, so moving it again changes the
+ * move it has; in day order, then as given. An empty list is no list.
+ */
+export function movesWith(
+  moves: readonly TransitionMove[] | undefined, unitId: ElementId, move: Omit<TransitionMove, 'unitId'> | undefined,
+): TransitionMove[] | undefined {
+  const others = (moves ?? []).filter((one) => one.unitId !== unitId)
+  const next = move === undefined ? others : [
+    ...others,
+    { unitId, ...(move.parentId !== undefined ? { parentId: move.parentId } : {}), on: move.on },
+  ]
+  const sorted = next
+    .map((one, at) => ({ one, at }))
+    .sort((a, b) => a.one.on.localeCompare(b.one.on) || a.at - b.at)
+    .map(({ one }) => one)
+  return sorted.length ? sorted : undefined
 }
 
 /**

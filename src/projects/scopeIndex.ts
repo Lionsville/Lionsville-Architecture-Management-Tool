@@ -56,7 +56,7 @@ import type { Transition } from '../model/transition'
 import type { CauseAbove, ScopeAnalysis } from '../model/observation'
 import type { OperatingRule, Responsibility, Role, UnitType } from '../model/operatingModel'
 import { isUnit } from '../model/units'
-import type { Assignment, Organisation } from '../model/units'
+import type { Assignment, Organisation, UnitMove } from '../model/units'
 import { ShellError } from '../platform/errors'
 import { flattenScopes } from './scope'
 import type { ScopeModel, ScopeSnapshot, ScopeSummary } from './scope'
@@ -195,6 +195,9 @@ export type IndexedUnit = { scope: ScopePath; unit: DesignElement }
 /** An assignment, and the scope that keeps it: its unit's (ADR-0036 §4). */
 export type IndexedAssignment = { scope: ScopePath; assignment: Assignment }
 
+/** A unit put under another parent on a day by a plan (ADR-0036 §6), and the plan that does it and the scope that keeps that plan. */
+export type IndexedMove = { scope: ScopePath; plan: { id: string; number: number }; move: UnitMove }
+
 /** The operating model as the organisation keeps it (ADR-0036 §2): each list, in the organisation's order. */
 export type IndexedOperatingModel = {
   unitTypes: readonly UnitType[]
@@ -322,9 +325,16 @@ export type ScopeIndex = {
    */
   operatingModel(): IndexedOperatingModel
   /**
-   * The units, the assignments and the operating model together: what
-   * `model/units.ts` asks its questions of — who manages a unit, what the
-   * organisation contradicts on a day.
+   * Every unit a plan moves under another parent on a day (ADR-0036 §6),
+   * plan by plan in each scope's own order, scope by scope in path order: the
+   * moves of every plan that was not abandoned.
+   */
+  moves(): IndexedMove[]
+  /**
+   * The units, the assignments, the operating model and the plans' moves
+   * together: what `model/units.ts` asks its questions of — who manages a
+   * unit, what the organisation contradicts on a day — and what
+   * `organisationOn` reads a day of.
    */
   organisation(): Organisation
   /** The scopes this was built from, in path order. */
@@ -394,6 +404,7 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
   const fromAbove = new Map<ScopePath, Map<string, CauseAbove[]>>()
   const unitDefinitions: IndexedUnit[] = []
   const assignments: IndexedAssignment[] = []
+  const moves: IndexedMove[] = []
   let operating = NO_OPERATING_MODEL
 
   const at = (id: ElementId): Held => {
@@ -434,6 +445,7 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
       readAcross(analysis, absorptions, fromAbove)
     }
     for (const assignment of model.assignments ?? []) assignments.push({ scope: path, assignment })
+    moves.push(...movesOf(path, model))
     if (path === '') operating = operatingOf(model)
   }
 
@@ -478,12 +490,7 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
   const units = unitDefinitions
     .filter(({ scope, unit }) => entries.get(unit.id)?.master === scope)
     .sort((a, b) => a.unit.id.localeCompare(b.unit.id))
-  const organisation: Organisation = {
-    units: units.map(({ unit }) => unit),
-    assignments: assignments.map(({ assignment }) => assignment),
-    roles: operating.roles,
-    unitTypes: operating.unitTypes,
-  }
+  const organisation = organisationOf(units, assignments, operating, moves)
 
   return {
     lookup: (id) => entries.get(id),
@@ -513,6 +520,7 @@ export function indexScopes(models: readonly ScopeModel[]): ScopeIndex {
     units: () => [...units],
     assignments: () => [...assignments],
     operatingModel: () => operating,
+    moves: () => [...moves],
     organisation: () => organisation,
     scopes: () => [...paths],
   }
@@ -530,6 +538,28 @@ function initiativesOf(path: ScopePath, model: ScopeModel['model']): IndexedTran
       .map((one) => byId.get(one.elementId))
       .filter((element): element is DesignElement => element !== undefined),
   }))
+}
+
+/** The organisation the index answers with: what `model/units.ts` asks its questions of. */
+function organisationOf(
+  units: readonly IndexedUnit[], assignments: readonly IndexedAssignment[], operating: IndexedOperatingModel, moves: readonly IndexedMove[],
+): Organisation {
+  return {
+    units: units.map(({ unit }) => unit),
+    assignments: assignments.map(({ assignment }) => assignment),
+    roles: operating.roles,
+    unitTypes: operating.unitTypes,
+    ...(moves.length ? { moves: moves.map(({ move }) => move) } : {}),
+  }
+}
+
+/** The units a scope's plans move (ADR-0036 §6): every plan's but an abandoned one's, in the scope's order. */
+export function movesOf(path: ScopePath, model: Pick<ScopeModel['model'], 'transitions'>): IndexedMove[] {
+  return (model.transitions ?? [])
+    .filter((transition) => transition.status !== 'abandoned')
+    .flatMap((transition) => (transition.moves ?? []).map((move) => ({
+      scope: path, plan: { id: transition.id, number: transition.number }, move,
+    })))
 }
 
 /** The organisation's operating model, off its thin read. */

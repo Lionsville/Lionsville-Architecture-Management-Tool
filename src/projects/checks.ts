@@ -103,7 +103,8 @@ export type CheckKey =
    * maximum; a unit under a type it may not sit in, one serving several
    * domains under a type that serves one, one owning more applications than
    * its type's limit; an assignment still running in a unit or a role that
-   * has ended; and a person whose shares add up to more than all of their
+   * has ended; a unit still there under a unit type that has ended
+   * (ADR-0036 §6); and a person whose shares add up to more than all of their
    * time — about each scope that keeps one of their assignments, named by
    * the register, never here.
    */
@@ -113,6 +114,7 @@ export type CheckKey =
   | 'check.unitSpans'
   | 'check.unitOverLimit'
   | 'check.assignmentEnded'
+  | 'check.unitTypeEnded'
   | 'check.personOverloaded'
 
 /**
@@ -148,6 +150,7 @@ export const CHECK_LABEL: Record<CheckKey, StringKey> = {
   'check.unitSpans': 'check.unitSpans',
   'check.unitOverLimit': 'check.unitOverLimit',
   'check.assignmentEnded': 'check.assignmentEnded',
+  'check.unitTypeEnded': 'check.unitTypeEnded',
   'check.personOverloaded': 'check.personOverloaded',
 }
 
@@ -217,6 +220,7 @@ export const CHECK_SHORT: Record<CheckKey, { one: StringKey; other: StringKey }>
   'check.unitSpans': { one: 'check.short.unitSpans.one', other: 'check.short.unitSpans.other' },
   'check.unitOverLimit': { one: 'check.short.unitOverLimit.one', other: 'check.short.unitOverLimit.other' },
   'check.assignmentEnded': { one: 'check.short.assignmentEnded.one', other: 'check.short.assignmentEnded.other' },
+  'check.unitTypeEnded': { one: 'check.short.unitTypeEnded.one', other: 'check.short.unitTypeEnded.other' },
   'check.personOverloaded': { one: 'check.short.personOverloaded.one', other: 'check.short.personOverloaded.other' },
 }
 
@@ -688,6 +692,8 @@ function organisationFinding(found: UnitFinding, said: Said): Finding[] {
         key: 'check.assignmentEnded', ...at, scope: said.at.assignmentAt(found.assignment) ?? at.scope,
         detail: said.roleName.get(found.assignment.roleId) ?? found.assignment.roleId, fields: [found.assignment.id],
       }]
+    case 'endedType':
+      return [{ key: 'check.unitTypeEnded', ...at, detail: type, fields: [found.unitTypeId] }]
   }
 }
 

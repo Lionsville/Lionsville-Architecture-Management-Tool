@@ -26,7 +26,7 @@ const DECISION_FIELDS: PatchKeys<'decision.update'> = {
 /** Every field of a plan but its id. */
 const TRANSITION_FIELDS: PatchKeys<'transition.update'> = {
   number: true, title: true, status: true, from: true, to: true, owner: true, initiative: true,
-  elements: true, decisions: true, milestones: true, body: true, doneOn: true,
+  elements: true, moves: true, decisions: true, milestones: true, body: true, doneOn: true,
 }
 
 export const DECISION_COMMANDS = {

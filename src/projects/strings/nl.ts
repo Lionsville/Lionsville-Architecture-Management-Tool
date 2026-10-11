@@ -37,6 +37,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'check.unitSpans': '{name} bedient {count} domeinen, en een {detail} bedient er één',
   'check.unitOverLimit': '{name} is eigenaar van {count} applicaties, en een {detail} van hoogstens {limit}',
   'check.assignmentEnded': 'Iemand vervult nog {detail} in {name}, terwijl de eenheid of de rol is beëindigd',
+  'check.unitTypeEnded': '{name} is nog van het type {detail}, een soort eenheid die is beëindigd: geef haar een ander type, of beëindig haar',
   'check.personOverloaded': '{name} vervult {count}% over al zijn of haar rollen',
 
   'check.short.conflict.one': '{count} conflict',
@@ -79,6 +80,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'check.short.unitOverLimit.other': '{count} eenheden boven de limiet',
   'check.short.assignmentEnded.one': '{count} toewijzing na het einde van de eenheid of de rol',
   'check.short.assignmentEnded.other': '{count} toewijzingen na het einde van de eenheid of de rol',
+  'check.short.unitTypeEnded.one': '{count} eenheid van een beëindigd type',
+  'check.short.unitTypeEnded.other': '{count} eenheden van een beëindigd type',
   'check.short.personOverloaded.one': '{count} persoon boven 100%',
   'check.short.personOverloaded.other': '{count} personen boven 100%',
 

@@ -19,7 +19,7 @@
  */
 import { TRANSITION_STATUSES } from '../../../model/transition'
 import type {
-  Transition, TransitionElement, TransitionMilestone, TransitionRole, TransitionStatus,
+  Transition, TransitionElement, TransitionMilestone, TransitionMove, TransitionRole, TransitionStatus,
 } from '../../../model/transition'
 import { slug } from '../../../model/keys'
 import {
@@ -55,6 +55,12 @@ function elementRows(elements: readonly TransitionElement[]): Record<string, Fro
     .map((one) => ({ elementId: one.elementId, role: one.role }))
 }
 
+function moveRows(moves: readonly TransitionMove[] | undefined): Record<string, FrontMatterScalar>[] {
+  return (moves ?? [])
+    .filter((one) => one.unitId && one.on)
+    .map((one) => ({ unitId: one.unitId, ...(one.parentId !== undefined ? { parentId: one.parentId } : {}), on: one.on }))
+}
+
 function milestoneRows(milestones: readonly TransitionMilestone[]): Record<string, FrontMatterScalar>[] {
   return milestones
     .filter((one) => one.date || one.name)
@@ -75,6 +81,9 @@ export function transitionFileText(transition: Transition): string {
     // is one value and a row with one column reads like a mistake.
     decisions: transition.decisions.filter(Boolean).map((id) => ({ id })),
     elements: elementRows(transition.elements),
+    // A unit put under another parent on a day (ADR-0036 §6); a plan that
+    // moves none writes nothing, so a plan from before reads and writes the same.
+    moves: moveRows(transition.moves),
     milestones: milestoneRows(transition.milestones),
   })
   const heading = `# TR-${numberPrefix(transition.number)} — ${transition.title}`
@@ -105,6 +114,16 @@ function milestonesFrom(rows: Record<string, FrontMatterScalar>[]): TransitionMi
     const name = typeof row.name === 'string' ? row.name : ''
     if (!date && !name) return []
     return [{ date, name }]
+  })
+}
+
+/** A move without a unit or a day says nothing, and is passed over. */
+function movesFrom(rows: Record<string, FrontMatterScalar>[]): TransitionMove[] {
+  return rows.flatMap((row) => {
+    const unitId = typeof row.unitId === 'string' ? row.unitId : ''
+    const on = typeof row.on === 'string' ? row.on : ''
+    if (!unitId || !on) return []
+    return [{ unitId, ...(typeof row.parentId === 'string' && row.parentId ? { parentId: row.parentId } : {}), on }]
   })
 }
 
@@ -142,6 +161,7 @@ export function transitionFromFile(text: string, path: string): Transition | und
   const to = frontMatterString(fields, 'to')
   const owner = frontMatterString(fields, 'owner')
   const doneOn = frontMatterString(fields, 'doneOn')
+  const moves = movesFrom(frontMatterRows(fields, 'moves'))
 
   return {
     id: frontMatterString(fields, 'id') || `tr-${number}`,
@@ -154,6 +174,7 @@ export function transitionFromFile(text: string, path: string): Transition | und
     ...(owner ? { owner } : {}),
     ...(doneOn ? { doneOn } : {}),
     elements: elementsFrom(frontMatterRows(fields, 'elements')),
+    ...(moves.length ? { moves } : {}),
     decisions: decisionsFrom(frontMatterRows(fields, 'decisions')),
     milestones: milestonesFrom(frontMatterRows(fields, 'milestones')),
     body: markdownBody(headingEnd === -1 ? rest : rest.slice(headingEnd + 1).replace(/^\n/, '')),

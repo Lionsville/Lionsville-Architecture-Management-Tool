@@ -52,6 +52,7 @@ export const EN = {
   'check.unitSpans': '{name} serves {count} domains, and a {detail} serves one',
   'check.unitOverLimit': '{name} owns {count} applications, and a {detail} owns at most {limit}',
   'check.assignmentEnded': 'Someone still holds {detail} in {name}, after the unit or the role has ended',
+  'check.unitTypeEnded': '{name} is still a {detail}, a kind of unit that has ended: give it another type, or end it',
   'check.personOverloaded': '{name} holds {count}% across their roles',
 
   /**
@@ -100,6 +101,8 @@ export const EN = {
   'check.short.unitOverLimit.other': '{count} units over their limit',
   'check.short.assignmentEnded.one': '{count} assignment past the end of its unit or role',
   'check.short.assignmentEnded.other': '{count} assignments past the end of their unit or role',
+  'check.short.unitTypeEnded.one': '{count} unit of a type that has ended',
+  'check.short.unitTypeEnded.other': '{count} units of a type that has ended',
   'check.short.personOverloaded.one': '{count} person over 100%',
   'check.short.personOverloaded.other': '{count} people over 100%',
 

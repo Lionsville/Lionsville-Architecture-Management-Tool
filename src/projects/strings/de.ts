@@ -37,6 +37,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'check.unitSpans': '{name} bedient {count} Domänen, und ein {detail} bedient eine',
   'check.unitOverLimit': '{name} besitzt {count} Anwendungen, und ein {detail} höchstens {limit}',
   'check.assignmentEnded': 'Jemand hat {detail} in {name} noch inne, obwohl die Einheit oder die Rolle beendet ist',
+  'check.unitTypeEnded': '{name} ist noch vom Typ {detail}, einer Art Einheit, die beendet ist: Geben Sie ihr einen anderen Typ, oder beenden Sie sie',
   'check.personOverloaded': '{name} hat über alle Rollen {count} % inne',
 
   'check.short.conflict.one': '{count} Konflikt',
@@ -79,6 +80,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'check.short.unitOverLimit.other': '{count} Einheiten über ihrem Limit',
   'check.short.assignmentEnded.one': '{count} Zuordnung nach dem Ende ihrer Einheit oder Rolle',
   'check.short.assignmentEnded.other': '{count} Zuordnungen nach dem Ende ihrer Einheit oder Rolle',
+  'check.short.unitTypeEnded.one': '{count} Einheit eines beendeten Typs',
+  'check.short.unitTypeEnded.other': '{count} Einheiten eines beendeten Typs',
   'check.short.personOverloaded.one': '{count} Person über 100 %',
   'check.short.personOverloaded.other': '{count} Personen über 100 %',
 

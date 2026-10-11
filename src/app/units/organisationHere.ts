@@ -9,7 +9,9 @@
  * The index follows the steps once they are written; the session has them
  * the moment they are made. A unit's section reads this, so an assignment
  * made a second ago is a holder, fills a vacancy and counts towards a
- * person's load at once — and everything kept elsewhere is the index's.
+ * person's load at once — and everything kept elsewhere is the index's. The
+ * open scope's plans are laid over the tree's the same way, so a move just
+ * put on a plan moves the unit on its day at once (ADR-0036 §6).
  */
 import type { HostModel } from '../../model/hostModel'
 import { isUnit } from '../../model/units'
@@ -17,6 +19,7 @@ import type { Assignment } from '../../model/units'
 import type { ElementId } from '../../model/types'
 import { organisationAt } from '../../projects/checks'
 import type { OrganisationAt } from '../../projects/checks'
+import { movesOf } from '../../projects/scopeIndex'
 import type { ScopeIndex } from '../../projects/scopeIndex'
 import type { ScopePath } from '../../projects/scopePath'
 
@@ -38,12 +41,17 @@ export function organisationHere(index: ScopeIndex, scope: ScopePath, model: Hos
       owned.set(element.partyId, (owned.get(element.partyId) ?? 0) + 1)
     }
   }
+  const moves = [
+    ...index.moves().filter((one) => one.scope !== scope),
+    ...movesOf(scope, model),
+  ].map((one) => one.move)
   return {
     organisation: {
       units: [...base.organisation.units.filter((unit) => !unitsHere.has(unit.id) && !indexedHere.has(unit.id)), ...units],
       assignments: [...base.organisation.assignments.filter((one) => !keptHere.has(one)), ...assignments],
       roles: atRoot ? model.roles ?? [] : base.organisation.roles,
       unitTypes: atRoot ? model.unitTypes ?? [] : base.organisation.unitTypes,
+      ...(moves.length ? { moves } : {}),
     },
     unitAt: (id) => {
       const unit = unitsHere.get(id)
