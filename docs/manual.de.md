@@ -967,7 +967,8 @@ einer großen Karte ist die Auswirkung ein Streifen am linken Rand und die
 Zahl steht in der Ecke; auf einer kleinen ist die Auswirkung die Größe des
 Kreises.
 
-**Neue Beobachtung** fragt nach den vier Fakten, die eine Beobachtung
+**Neue Beobachtung** — in der oberen Leiste und in einem Register, in dem
+noch nichts steht — fragt nach den vier Fakten, die eine Beobachtung
 ausmachen: dem Titel, **wo gesehen**, **beobachtet von** und **Datum
 gesehen** — dieselben Wörter wie beim Bearbeiten. Datum gesehen beginnt mit heute und darf nicht in der
 Zukunft liegen; die Auswirkung beginnt mit gering. Rechts stellt die
@@ -978,11 +979,15 @@ sind die drei ein Markdown-Text unter diesen Überschriften, und danach wird
 die Beschreibung einer Beobachtung als ein Text bearbeitet. **Vorschau** zeigt
 sie so, wie sie gelesen wird, und **Bearbeiten** geht zurück zu den Feldern.
 Unter jedem Feld steht ein Beispiel, und ein leer gelassenes Feld sagt an
-dieser Stelle, was fehlt. Unter dem Titel stehen
+dieser Stelle, was fehlt, und neben der Schaltfläche, wie viele. Jeder Dialog
+auf der Seite behält, was in ihm steht: Ein Klick daneben schließt ihn nicht,
+Escape nicht mehr, sobald etwas geschrieben ist, und Enter in einem
+einzeiligen Feld tut, was die Schaltfläche tut. Unter dem Titel stehen
 zwei Hinweise, die nie aufhalten: **Schon einmal gesehen?** nennt
 Beobachtungen des gewählten Scopes, deren Titel Wörter mit Ihrem teilt, jede
-mit **Erneut gesehen**, das eine Sichtung an jener festhält und nichts Neues
-anlegt; und ein Titel mit einem Wort, das nach einer Ursache, einer Abhilfe
+mit **Erneut gesehen**, das wie im Leser nach dem Tag und einer Notiz fragt,
+eine Sichtung an jener festhält und nichts Neues anlegt — Abbrechen führt
+zurück zum Formular, wie Sie es verlassen haben; und ein Titel mit einem Wort, das nach einer Ursache, einer Abhilfe
 oder Schuld klingt — *weil*, *sollte*, *beheben*, *Schuld* —, erhält den
 Hinweis, beim Gesehenen zu bleiben und das Warum in eine Ursache zu setzen.
 Mit Lokal zeigen fragt das Formular zuerst, in welchen Scope die Beobachtung
@@ -1096,7 +1101,10 @@ Ursache*, *Grundursache*, *Zur Grundursache machen*, *Verifizieren* —
 Grundursache *Lösung* und *Zur Ursache machen*, und nie eine tiefere Ursache.
 *Ursache*, *Tiefere Ursache* und *Grundursache* öffnen einen Dialog mit zwei
 Reitern: **Neue Ursache**, die eigenen Felder der Ursache, und **Vorhandene
-Ursache**, der nur anbietet, was die Regeln erlauben. Wo der Leser schmal
+Ursache**, der nur anbietet, was die Regeln erlauben. *Diese verwenden*
+neben einer schon aufgeschriebenen Ursache wählt sie unter Vorhandene
+Ursache, wo ihre Stärke gewählt wird, bevor sie mit **Verknüpfen** verknüpft
+wird. Wo der Leser schmal
 ist, wandern *Zusammenführen*, *Archivieren* und *Löschen* in `⋯`.
 
 **Durch den Baum erklärt eine Ursache nach unten und nie nach oben.** Eine

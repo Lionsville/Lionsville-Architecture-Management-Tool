@@ -851,7 +851,8 @@ ledger at the end of every observation: recorded, seen again, merged,
 archived. On a large card the impact is a stripe down the left and the count
 is in the corner; on a small one the impact is the size of the circle.
 
-**New observation** asks for the four facts that make one: the title,
+**New observation** — in the top bar, and in a register with nothing in it
+yet — asks for the four facts that make one: the title,
 **where seen**, **observed by** and **date seen** — the same words as when it
 is edited. Date seen starts at
 today and may not be in the future; the impact starts at minor. On the right
@@ -861,10 +862,14 @@ an observation always says whom or what it touched. Recorded, the three are
 one markdown description under those headings, and an observation's
 description is edited as one text from then on. **Preview** shows it as it
 will read, and **Edit** goes back to the fields. Every field has an example
-under it, and a field left empty says what is missing in its place. Under the title, two
+under it, and a field left empty says what is missing in its place, and the
+count beside the button. Every dialog on the page keeps what is written in
+it: a click beside it does not close it, Escape does not once something is
+written, and Enter in a one-line field does what the button does. Under the title, two
 hints that never stop you: **Seen before?** lists observations of the chosen
 scope whose titles share words with yours, each with **Seen again**, which
-records a sighting on that one and nothing new; and a title that uses a word
+asks the day and a note, as on the reader, and records a sighting on that one
+and nothing new — Cancel goes back to the form as you left it; and a title that uses a word
 that reads like a cause, a fix or blame — *because*, *should*, *fix*,
 *fault* — is told to keep to what was seen and put the why in a cause. With
 View local on, the form asks first which scope the observation belongs to;
@@ -957,7 +962,9 @@ what it is refused for. An observation offers *Seen again*, *Cause*, *Edit*,
 *Make root cause*, *Verify* — *Unverify* once it is verified — and *Merge*;
 a root cause *Solution* and *Make cause*, and never a deeper cause. *Cause*, *Deeper cause* and *Root cause* open one dialog with
 two tabs: **New cause**, the cause's own fields, and **Existing cause**,
-offering only what the rules allow. Where the reader is narrow, *Merge*,
+offering only what the rules allow. *Use this one* beside a cause already
+written down picks it under Existing cause, where its strength is chosen
+before **Link**. Where the reader is narrow, *Merge*,
 *Archive* and *Delete* move into `⋯`.
 
 **Across the tree, a cause explains down and never up.** A cause may explain

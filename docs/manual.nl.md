@@ -913,7 +913,8 @@ waarneming — vastgelegd, opnieuw gezien, samengevoegd, gearchiveerd. Op een
 grote kaart is de impact een streep langs de linkerkant en staat de teller in
 de hoek; op een kleine is de impact de grootte van de cirkel.
 
-**Nieuwe waarneming** vraagt de vier feiten die er een waarneming van maken:
+**Nieuwe waarneming** — in de bovenbalk, en in een register waar nog niets in
+staat — vraagt de vier feiten die er een waarneming van maken:
 de titel, **waar gezien**, **waargenomen door** en **datum gezien** — dezelfde
 woorden als bij het bewerken. Datum gezien begint bij vandaag en mag niet in de toekomst
 liggen; de impact begint bij klein. Rechts stelt de beschrijving haar drie
@@ -923,10 +924,15 @@ wat ze raakte. Vastgelegd zijn de drie één markdowntekst onder die kopjes, en
 daarna bewerk je de beschrijving van een waarneming als één tekst.
 **Voorbeeld** toont haar zoals ze zal lezen, en **Bewerken** gaat terug naar
 de velden. Onder elk veld staat een voorbeeld, en een veld dat leeg blijft
-zegt op die plek wat er ontbreekt. Onder de titel staan twee hints die je nooit
+zegt op die plek wat er ontbreekt, en naast de knop hoeveel. Elke dialoog op
+de pagina houdt vast wat erin staat: een klik ernaast sluit hem niet, Escape
+niet meer zodra er iets geschreven is, en Enter in een veld van één regel doet
+wat de knop doet. Onder de titel staan twee hints die je nooit
 tegenhouden: **Al eerder gezien?** noemt waarnemingen van de gekozen scope
 waarvan de titel woorden met de jouwe deelt, elk met **Opnieuw gezien**, dat
-een waarneming bij die ene telt en niets nieuws vastlegt; en een titel met een
+net als in de lezer de dag en een notitie vraagt, en een waarneming bij die
+ene telt en niets nieuws vastlegt — Annuleren gaat terug naar het formulier
+zoals je het liet; en een titel met een
 woord dat klinkt als een oorzaak, een oplossing of schuld — *omdat*, *moet*,
 *oplossen*, *schuld* — krijgt de hint bij wat gezien is te blijven en het
 waarom in een oorzaak te zetten. Met Lokaal tonen aan vraagt het formulier
@@ -1036,7 +1042,9 @@ geverifieerd is — en *Samenvoegen*; een grondoorzaak *Oplossing* en *Tot oorza
 een diepere oorzaak. *Oorzaak*, *Diepere oorzaak* en *Grondoorzaak* openen
 één dialoog met twee tabbladen: **Nieuwe oorzaak**, de eigen velden van de
 oorzaak, en **Bestaande oorzaak**, dat alleen aanbiedt wat de regels
-toestaan. Waar de lezer smal is, gaan *Samenvoegen*, *Archiveren* en
+toestaan. *Deze gebruiken* naast een oorzaak die al opgeschreven is, kiest
+haar onder Bestaande oorzaak, waar de sterkte gekozen wordt vóór
+**Koppelen**. Waar de lezer smal is, gaan *Samenvoegen*, *Archiveren* en
 *Verwijderen* in `⋯`.
 
 **Door de boom verklaart een oorzaak naar beneden en nooit naar boven.** Een

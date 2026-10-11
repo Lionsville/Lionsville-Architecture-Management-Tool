@@ -21,7 +21,13 @@ the same order, with "…" where a question or a dialog follows. The forms name
 a field as the reader does: *Where seen*, *Date seen*, *Description*. The
 buttons of a question asked before a step are in sentence case, and reopening
 a concluded experiment is no longer drawn as a danger. *New observation* and
-*New solution* carry an icon instead of a typed "+".
+*New solution* carry an icon instead of a typed "+". Every dialog on the page keeps what is
+written in it — a click beside it no longer closes it, nor does Escape once
+something is written — Enter in a one-line field answers it, and a button
+pressed too early says what is missing instead of being greyed out. *Seen
+again* from the new observation form asks the day and a note, *Use this one*
+in the cause dialog lets you choose the strength before it links, and an
+empty register offers *New observation*.
 
 **A view nobody has laid out yet is laid out for a reader too.** A view the
 app or another tool made with no positions in it — a new container view, an
