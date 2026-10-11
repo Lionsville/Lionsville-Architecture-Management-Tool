@@ -284,7 +284,17 @@ export function listChecks(tree: TreeView | undefined, rawArgs: unknown): AgentA
     total += 1
     if (some.length < limit) some.push(finding)
   }
-  return json({ ...(day !== undefined ? { day } : {}), total, some })
+  return json({ ...(day !== undefined ? { day } : {}), total, some: some.map(sayingWho) })
+}
+
+/**
+ * A finding about a person, with the person as a reference (ADR-0036 §8): the
+ * finding carries their register id, and the answer says them by name or by
+ * pseudonym as the policy gives, as every answer that names somebody does.
+ */
+function sayingWho(finding: TreeFinding): TreeFinding | Record<string, unknown> {
+  const person = (finding as { person?: unknown }).person
+  return typeof person === 'string' ? { ...finding, person: { person } } : finding
 }
 
 /**

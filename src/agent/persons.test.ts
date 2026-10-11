@@ -26,6 +26,8 @@ import type { SessionView } from './handle'
 import type { PeopleView } from './people'
 import { agentRegister, answerWithNames, mayNamePeople, withPersonNames } from './persons'
 import type { ShellView } from './shell'
+import { listChecks } from './tree'
+import type { TreeView } from './tree'
 import type { AgentAnswer } from './tools'
 import { checkArguments, json, text, toolSpec } from './tools'
 
@@ -220,6 +222,12 @@ describe('saying people in an answer', () => {
     expect(withPersonNames({ owner: { person: 'pe-eva2' }, list: [{ name: 'The board' }, { person: 'pe-gone' }], n: 3 }, words)).toEqual({
       owner: { person: 'pe-eva2', name: 'Eva Lind' }, list: [{ name: 'The board' }, { person: 'pe-gone', name: 'A former colleague' }], n: 3,
     })
+  })
+
+  it('says the person a check is about, by name or pseudonym, where the finding carries only their id', () => {
+    const tree = { findings: () => [{ key: 'check.personOverloaded', scope: 'orders', id: 'pe-eva', name: 'pe-eva', person: 'pe-eva' }] } as unknown as TreeView
+    const listed = answerWithNames(listChecks(tree, {}), words)
+    expect(JSON.stringify(parsed(listed))).toContain('"person":{"person":"pe-eva","name":"Eva Lind"}')
   })
 
   it('reads the register only for an answer that may name somebody, and leaves a document as it is', () => {
