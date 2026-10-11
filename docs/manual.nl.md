@@ -382,7 +382,9 @@ initialen, een team.
   naast het id geschreven, en de naam van wie het voorstelde ligt op dezelfde
   manier vast zodra iemand heeft getekend. Die naam hoort bij het
   besluitrecord: het besluit toont haar ook nadat de persoon vergeten is,
-  waar elk ander scherm het pseudoniem toont.
+  waar elk ander scherm het pseudoniem toont. Een agent die volgens het
+  beleid pseudoniemen ziet, krijgt ook hier het pseudoniem, en hoort dat de
+  naam zoals getekend voor hem achtergehouden wordt.
 - **De eigenaar van een applicatie kan een rol volgen.** Als het
   besturingsmodel de regel heeft *de eigenaar van een applicatie is een rol
   van haar team* (zie *Het besturingsmodel*), toont een applicatie waarop

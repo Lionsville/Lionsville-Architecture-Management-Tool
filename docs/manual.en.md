@@ -359,7 +359,9 @@ did — a name, initials, a team.
   verdict, the name they had that day is written beside their id, and the
   proposer's name is fixed the same way once anybody has signed. That name is
   part of the decision record: the decision shows it after the person is
-  forgotten, where every other screen shows the pseudonym.
+  forgotten, where every other screen shows the pseudonym. An agent the
+  policy gives pseudonyms is told the pseudonym here too, and that the name
+  as signed is withheld from it.
 - **An application's owner can follow a role.** Where the operating model
   has the rule *an application's owner is a role of its team* (see *The
   operating model*), an application nobody wrote an owner on shows the

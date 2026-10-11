@@ -409,7 +409,9 @@ oder Text wie bisher — einen Namen, Initialen, ein Team.
   hat, wird auf dieselbe Weise festgehalten, sobald jemand unterzeichnet hat.
   Dieser Name gehört zum Entscheidungsdatensatz: Die Entscheidung zeigt ihn
   auch, nachdem die Person vergessen ist, wo jede andere Ansicht das
-  Pseudonym zeigt.
+  Pseudonym zeigt. Ein Agent, dem die Richtlinie Pseudonyme gibt, erhält auch
+  hier das Pseudonym und den Hinweis, dass ihm der Name wie unterzeichnet
+  vorenthalten wird.
 - **Der Verantwortliche einer Anwendung kann einer Rolle folgen.** Hat das
   Betriebsmodell die Regel *der Verantwortliche einer Anwendung ist eine
   Rolle ihres Teams* (siehe *Das Betriebsmodell*), zeigt eine Anwendung,

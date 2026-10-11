@@ -36,6 +36,7 @@ import { matchesQuery } from '../model/textSearch'
 import { personIdOf } from '../model/person'
 import type { PersonRef } from '../model/person'
 import type { AgentRegister } from './persons'
+import { withoutSignedNames } from './persons'
 import type { DesignElement, ElementId, Relation } from '../model/types'
 import { businessCaseFence, computeBusinessCase, readBusinessCase } from '../documentation/businessCase'
 import { formatAdrNumber } from '../decisions/adr'
@@ -1099,8 +1100,16 @@ function searchHits(args: Args, view: ReadView): Record<string, unknown>[] {
 
 function searchSources(view: ReadView): SearchSource[] {
   const here = view.scopePath
-  const sources: SearchSource[] = [{ scope: here, model: view.current() }]
-  if (view.ancestorDecisions.length > 0) sources.push({ model: { decisions: view.ancestorDecisions } })
+  // Where the policy withholds names from agents, a name a signature kept finds nothing either (ADR-0036 §13).
+  const withheld = view.register?.withhold === true
+  const current = view.current()
+  const sources: SearchSource[] = [{
+    scope: here,
+    model: withheld && current.decisions ? { ...current, decisions: withoutSignedNames(current.decisions) } : current,
+  }]
+  if (view.ancestorDecisions.length > 0) {
+    sources.push({ model: { decisions: withheld ? withoutSignedNames(view.ancestorDecisions) : view.ancestorDecisions } })
+  }
   const below = new Map<string, SearchableModel & { transitions: Transition[] }>()
   const at = (scope: string) => {
     const held = below.get(scope) ?? { transitions: [] }

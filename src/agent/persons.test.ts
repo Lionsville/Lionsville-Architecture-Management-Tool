@@ -172,6 +172,23 @@ describe('the answers', () => {
     expect(doc).not.toContain('Eva')
   })
 
+  it('withhold the name a signature kept where the policy gives agents pseudonyms: a read, the export and a search alike', async () => {
+    const on = session()
+    await ask('decision.update', { id: 'ad-1', proposedBy: { person: 'pe-eva' }, signers: [{ name: { person: 'pe-kim' }, verdict: 'approved', signedAt: TODAY }] }, on)
+    expect(on.model().decisions?.['ad-1']?.signers[0].signedAs).toBe('Kim Bakker')
+    const around = shell({ ...DEFAULT_POLICY, agentsSee: 'pseudonyms' })
+    const read = JSON.stringify(parsed(await ask('decision.read', { id: 'ad-1' }, on, around)))
+    expect(read).not.toMatch(/Kim|Bakker|Eva|Lind/)
+    expect(read).toContain('Person GHJK')
+    expect(read).toContain('"signedAsWithheld":true')
+    expect(read).toContain('"proposedAsWithheld":true')
+    const exported = JSON.stringify(parsed(await ask('project.export', { format: 'json' }, on, around)))
+    expect(exported).not.toMatch(/Kim|Bakker|Eva|Lind/)
+    expect(JSON.stringify(parsed(await ask('search', { query: 'bakker' }, on, around)))).not.toContain('ad-1')
+    // Where agents see names, the name as signed is said as written.
+    expect(JSON.stringify(parsed(await ask('decision.read', { id: 'ad-1' }, on, shell(DEFAULT_POLICY))))).toContain('"signedAs":"Kim Bakker"')
+  })
+
   it('find a person through the register: a name finds the records that point at them', async () => {
     const on = session()
     await ask('element.update', { id: 'shop', owner: { person: 'pe-eva' } }, on)

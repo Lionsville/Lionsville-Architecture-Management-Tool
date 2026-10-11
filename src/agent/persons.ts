@@ -11,7 +11,11 @@
  * name, or the pseudonym where the organisation's policy gives agents
  * pseudonyms, *a former colleague* for an id the register no longer holds.
  * The id stays beside it, so the agent can hand it back. Text is said as it
- * is. A signature's name as signed is the record's, and said as written.
+ * is. A signature's name as signed is the record's, and said as written —
+ * except where the policy gives agents pseudonyms: then the signer and the
+ * proposer are said by pseudonym like everybody else, and the name as signed
+ * is left out with a word that it is withheld (`signedAsWithheld`,
+ * `proposedAsWithheld`). The record is unchanged, and a screen shows it.
  *
  * Done once, over the answer as it leaves the handler, so no tool has to
  * remember to do it: the answer is read by the shape of a reference, as
@@ -36,6 +40,8 @@ export type AgentRegister = {
   words: PersonWords
   /** For `search`: the register ids a folded word names, as the agent may read them. */
   match: PeopleMatch
+  /** Names are withheld from agents: the policy gives them pseudonyms, the names signatures kept included. */
+  withhold: boolean
 }
 
 /** The register as an agent reads it, over its entries and the organisation's policy. */
@@ -45,6 +51,7 @@ export function agentRegister(people: readonly Person[], policy: PeoplePolicy | 
   return {
     words: (ref) => shownEnglish(shownPerson(ref, register, showing)),
     match: peopleMatching(people, shownEnglish, showing),
+    withhold: showing.withhold,
   }
 }
 
@@ -53,17 +60,46 @@ export function personSaid(id: PersonId, words: PersonWords): { person: PersonId
   return { person: id, name: words(pickedPerson(id)) }
 }
 
-/** Every reference in a value, said: a picked person as `{ person, name }`, everything else as it is. */
-export function withPersonNames(value: unknown, words: PersonWords): unknown {
-  if (Array.isArray(value)) return value.map((item) => withPersonNames(item, words))
+/** The two fields that keep a name as signed (ADR-0036 §8), and what an agent is told in their place where names are withheld. */
+const SIGNED_NAMES: Readonly<Record<string, string>> = { signedAs: 'signedAsWithheld', proposedAs: 'proposedAsWithheld' }
+
+/**
+ * Every reference in a value, said: a picked person as `{ person, name }`,
+ * everything else as it is. With `withhold`, a name a signature kept is left
+ * out too, and the answer says it was.
+ */
+export function withPersonNames(value: unknown, words: PersonWords, withhold = false): unknown {
+  if (Array.isArray(value)) return value.map((item) => withPersonNames(item, words, withhold))
   if (typeof value !== 'object' || value === null) return value
   if (isPersonRef(value) && isPicked(value)) return personSaid(value.person, words)
-  return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, withPersonNames(item, words)]))
+  return Object.fromEntries(Object.entries(value).map(([key, item]): [string, unknown] => (
+    withhold && key in SIGNED_NAMES && typeof item === 'string' ? [SIGNED_NAMES[key], true] : [key, withPersonNames(item, words, withhold)]
+  )))
+}
+
+/**
+ * Decisions with no name a signature kept, for a search an agent makes where
+ * names are withheld: a name it may not read must not be what finds a record
+ * either.
+ */
+export function withoutSignedNames<T extends { signers: readonly object[]; proposedAs?: string }>(decisions: readonly T[]): T[] {
+  return decisions.map((adr) => {
+    const { proposedAs: _as, ...rest } = adr
+    void _as
+    return {
+      ...rest,
+      signers: adr.signers.map((signer) => {
+        const { signedAs: _signed, ...kept } = signer as { signedAs?: string }
+        void _signed
+        return kept
+      }),
+    } as unknown as T
+  })
 }
 
 /** Whether an answer may name somebody by id: a cheap look before the register is read. */
 export function mayNamePeople(answer: AgentAnswer): boolean {
-  return answer.ok && answer.content.some((block) => block.type === 'text' && block.text.includes('"person"'))
+  return answer.ok && answer.content.some((block) => block.type === 'text' && (block.text.includes('"person"') || block.text.includes('"signedAs"') || block.text.includes('"proposedAs"')))
 }
 
 /**
@@ -71,15 +107,15 @@ export function mayNamePeople(answer: AgentAnswer): boolean {
  * block that is not JSON — a document, a table — is left as it is: the tool
  * that wrote it said its people itself.
  */
-export function answerWithNames(answer: AgentAnswer, words: PersonWords): AgentAnswer {
+export function answerWithNames(answer: AgentAnswer, words: PersonWords, withhold = false): AgentAnswer {
   if (!answer.ok) return answer
   return {
     ...answer,
     content: answer.content.map((block) => {
-      if (block.type !== 'text' || !block.text.includes('"person"')) return block
+      if (block.type !== 'text' || !(block.text.includes('"person"') || (withhold && /"(signed|proposed)As"/.test(block.text)))) return block
       try {
         const read: unknown = JSON.parse(block.text)
-        return { ...block, text: JSON.stringify(withPersonNames(read, words), undefined, 2) }
+        return { ...block, text: JSON.stringify(withPersonNames(read, words, withhold), undefined, 2) }
       } catch {
         return block
       }

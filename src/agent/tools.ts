@@ -317,7 +317,8 @@ const SIGNERS: ArgumentSchema = {
   description: 'The people the decision is put to, replacing the list. Each has a name and may have a role, a verdict and the day of it.',
   items: {
     type: 'object',
-    description: 'One signer. A person from the register who gives a verdict keeps the name they signed with, beside the id: it stays after they are forgotten.',
+    description: 'One signer. A person from the register who gives a verdict keeps the name they signed with, beside the id: it stays after they are forgotten. '
+      + 'Where the organisation gives agents pseudonyms, that name is withheld from you (signedAsWithheld, proposedAsWithheld).',
     properties: {
       name: personArgument('Who.'),
       role: { type: 'string', description: 'Their role, in a few words.' },

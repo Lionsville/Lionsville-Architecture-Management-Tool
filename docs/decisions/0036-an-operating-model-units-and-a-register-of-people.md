@@ -831,7 +831,11 @@ id the register does not hold is refused, a merged one written as the entry
 kept. Every answer says a picked person as `{ person, name }`, the name or
 the pseudonym the policy gives, done once as the answer leaves the handler
 and only where an answer names somebody; `search` and `project.export` ask
-the register before they answer.
+the register before they answer. Where the policy gives agents pseudonyms,
+a signature's kept name is withheld as well: the answer says the signer and
+the proposer by pseudonym and `signedAsWithheld` or `proposedAsWithheld`
+where a name was kept, and a search finds nothing by it. The record is
+unchanged, and the screen shows it.
 
 ## As built, 11 October 2026: the two views, and a row between units
 
