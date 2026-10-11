@@ -13,7 +13,8 @@
  * order a person meets them: a folder to work in, an example copied into it,
  * the canvas, the export, an agent connecting and reading the organisation
  * across its scopes, a change made, saved and found on disk as the format
- * writes it, a decision and a plan landing as files, and then **a second
+ * writes it, a decision and a plan landing as files, a drawing made, edited
+ * and saved in the real draw.io on its own scheme, and then **a second
  * folder** — because the three bugs that hid longest all sat on the path where
  * a folder is opened *after* the boot, and no unit test can mount the
  * composition root twice.
@@ -212,6 +213,273 @@ function complaintIn(method: string, params: Record<string, unknown>): string | 
     return `${entry.source}: ${entry.text}${entry.url ? ` (${entry.url})` : ''}`
   }
   return undefined
+}
+
+// --- drawings: the real draw.io, on its own scheme, offline (ADR-0034) --------
+
+/** What the drawing checks need from the run: its window, its folder, its agent and its waits. */
+type DrawingRun = {
+  window: BrowserWindow
+  root: string
+  scope: string
+  /** The board the run goes back to when it is done. */
+  board: string
+  elementId: string
+  elementName: string
+  page: (script: string) => Promise<string>
+  agent: <T = Record<string, unknown>>(name: string, args?: Record<string, unknown>) => Promise<T>
+}
+
+/** What the run keeps between the two halves: the drawing it made, and what its picture is. */
+type Drawn = { id: string; address: string; anchored?: string }
+
+/** The frame the editor is in, as main sees it: the one on the drawing scheme. */
+function drawingFrame(window: BrowserWindow) {
+  return window.webContents.mainFrame.framesInSubtree.find((frame) => frame.url.startsWith('drawing://local'))
+}
+
+/** Ask the editor's own page, polling until the answer is truthy; a hang is a failure, not a wait. */
+async function untilInFrame(window: BrowserWindow, what: string, script: string): Promise<string> {
+  const deadline = Date.now() + STEP_TIMEOUT_MS
+  for (;;) {
+    const frame = drawingFrame(window)
+    const value = frame ? await frame.executeJavaScript(`(() => { try { return (${script}) } catch { return null } })()`).catch(() => null) as unknown : null
+    if (value) return String(value)
+    if (Date.now() > deadline) throw new Error(`never became true in the editor: ${what}`)
+    await new Promise((resolve) => setTimeout(resolve, 150))
+  }
+}
+
+/** Press one of the editor's own buttons, by its words, as a person would. */
+const pressInEditor = (words: string) => `(() => {
+  const button = [...document.querySelectorAll('button, a, div')].find((one) => one.children.length === 0 && one.textContent.trim() === ${JSON.stringify(words)})
+  if (!button) return null
+  button.click()
+  return 'pressed'
+})()`
+
+/** The drawing the run loads into the editor: a shape that points at an element, and one that does not. */
+function smokeDrawingXml(elementId: string, elementName: string): string {
+  const label = elementName.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
+  return '<mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>'
+    + `<UserObject id="smoke-a" label="${label}" link="element:${elementId}" lvElement="${elementId}">`
+    + '<mxCell vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;"><mxGeometry x="40" y="40" width="160" height="60" as="geometry"/></mxCell></UserObject>'
+    + '<mxCell id="smoke-b" value="A note" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;"><mxGeometry x="320" y="200" width="120" height="50" as="geometry"/></mxCell>'
+    + '</root></mxGraphModel>'
+}
+
+/**
+ * Make a drawing, edit it in the real draw.io, save it, read its picture and
+ * follow its link — then anchor one to an element and show one in a
+ * document. The first half; the second reads the picture back once the
+ * folder has been read again by repositories made afresh.
+ */
+async function drawingsFirstHalf(run: DrawingRun, results: SmokeResult[]): Promise<Drawn | undefined> {
+  const { window, page, agent, scope } = run
+  const { createHash } = await import('node:crypto')
+  const { readFile } = await import('node:fs/promises')
+  const { join } = await import('node:path')
+  // What the editor says, and what anything in this window asks of the
+  // network, from here on: a CSP refusal is said on the console, and a
+  // request off the machine would be heard here.
+  const frameSaid: string[] = []
+  window.webContents.on('console-message', (event) => {
+    const said = event as unknown as { level?: string; message?: string; frame?: { url?: string } | null }
+    if (said.frame?.url?.startsWith('drawing://') && (said.level === 'error' || said.level === 'warning')) frameSaid.push(`${said.level}: ${said.message}`)
+  })
+  const offMachine: string[] = []
+  window.webContents.session.webRequest.onBeforeRequest((details, callback) => {
+    if (!/^(app|drawing|data|blob|devtools|chrome-extension|file):/.test(details.url)) offMachine.push(details.url)
+    callback({})
+  })
+  const drawn: Drawn = { id: '', address: '' }
+
+  results.push(await checkHere('a drawing is made in a scope and opened on its tab, not drawn yet', async () => {
+    const made = await agent<{ id: string }>('diagram.create', { kind: 'drawing', name: 'Smoke drawing' })
+    drawn.id = made.id
+    await agent('app.open', { scope, page: 'drawing', id: made.id })
+    return page(waitFor(`document.querySelector('[data-testid="drawing-view"]') && document.querySelector('[data-testid="drawing-not-drawn"]')
+      && document.querySelector('[data-testid="drawing-edit"]') && !document.querySelector('[data-testid="drawing-edit"]').disabled && 'its tab, Edit on offer'`, 'the drawing tab'))
+  }))
+
+  results.push(await checkHere('Edit opens the real draw.io on drawing://local, sandboxed, in the app\'s dark theme', async () => {
+    sendCommand({ type: 'theme', mode: 'dark' })
+    // The theme is a command the renderer takes on its next render.
+    await new Promise((resolve) => setTimeout(resolve, 500))
+    await page(`(() => { document.querySelector('[data-testid="drawing-edit"]').click(); return 'pressed' })()`)
+    const frame = JSON.parse(await page(waitFor(`(() => {
+      const frame = document.querySelector('[data-testid="drawing-frame"]')
+      return frame && JSON.stringify({ src: frame.getAttribute('src'), sandbox: frame.getAttribute('sandbox') })
+    })()`, 'the editor frame'))) as { src: string; sandbox: string }
+    if (!frame.src.startsWith('drawing://local/?') || !frame.src.includes('dark=1')) throw new Error(`the frame is ${frame.src}`)
+    if (frame.sandbox !== 'allow-scripts allow-same-origin') throw new Error(`the frame's sandbox is "${frame.sandbox}"`)
+    const loaded = await untilInFrame(window, 'the editor loaded the empty drawing',
+      "document.querySelector('.geDiagramContainer') && !document.body.innerText.includes('Error loading resource files') && document.body.innerText.includes('Save') && 'loaded'")
+    const dark = await untilInFrame(window, 'the editor in dark mode', "Editor.isDarkMode() && 'dark'")
+    return `${frame.src.split('?')[0]}, ${loaded}, ${dark}, sandbox "${frame.sandbox}"`
+  }))
+
+  results.push(await checkHere('the editor follows the app\'s theme while it is open', async () => {
+    sendCommand({ type: 'theme', mode: 'light' })
+    await untilInFrame(window, 'the editor in light mode', "!Editor.isDarkMode() && 'light'")
+    return 'reloaded in light, the frame still open'
+  }))
+
+  results.push(await checkHere('a shape that points at an element is saved: one step, the XML, the picture and the link on disk', async () => {
+    const xml = smokeDrawingXml(run.elementId, run.elementName)
+    await page(`(() => {
+      const frame = document.querySelector('[data-testid="drawing-frame"]')
+      frame.contentWindow.postMessage(JSON.stringify({ action: 'load', xml: ${JSON.stringify(xml)} }), 'drawing://local')
+      return 'loaded'
+    })()`)
+    await untilInFrame(window, 'the shape on the page', `document.querySelector('.geDiagramContainer').innerText.includes(${JSON.stringify(run.elementName)}) && 'drawn'`)
+    await untilInFrame(window, 'the Save button pressed', pressInEditor('Save'))
+    const listed = await untilRead('the drawing saved with its link', () => agent<{ diagrams: { id: string; pointsAt?: string[] }[] }>('diagrams.list'),
+      (held) => held.diagrams.some((one) => one.id === drawn.id && (one.pointsAt ?? []).includes(run.elementId)))
+    await agent('project.save')
+    const definition = JSON.parse(await readFile(join(run.root, scope, 'diagrams', `${drawn.id}.json`), 'utf8')) as { picture?: string; links?: { shapeId: string }[] }
+    const saved = await readFile(join(run.root, scope, 'diagrams', `${drawn.id}.drawio`), 'utf8')
+    if (!definition.picture?.startsWith('sha256:')) throw new Error(`the definition names no picture: ${JSON.stringify(definition).slice(0, 200)}`)
+    if (!saved.includes(`element:${run.elementId}`) || saved.includes('<diagram') && !saved.includes('<mxGraphModel')) throw new Error('the .drawio is not the uncompressed drawing')
+    drawn.address = definition.picture
+    const svg = await readFile(join(run.root, scope, 'images', '.drawings', `${definition.picture.slice('sha256:'.length)}.svg`))
+    if (`sha256:${createHash('sha256').update(svg).digest('hex')}` !== definition.picture) throw new Error('the picture on disk is not the bytes its name says')
+    return `${listed.diagrams.length} diagrams; ${drawn.id}.drawio, links ${definition.links?.map((one) => one.shapeId).join(', ')}, images/.drawings/${definition.picture.slice(7, 15)}….svg`
+  }))
+
+  results.push(await checkHere('Exit leaves the editor; the picture shows, its area on the shape draw.io drew', async () => {
+    await untilInFrame(window, 'the Exit button pressed', pressInEditor('Exit'))
+    const shown = JSON.parse(await page(waitFor(`(() => {
+      const img = document.querySelector('[data-testid="drawing-picture"]')
+      const area = document.querySelector('[data-testid="drawing-area-smoke-a"]')
+      if (document.querySelector('[data-testid="drawing-frame"]') || !img || !img.complete || !img.naturalWidth || !area) return null
+      const i = img.getBoundingClientRect(), a = area.getBoundingClientRect()
+      return JSON.stringify({ left: (a.left - i.left) / i.width, top: (a.top - i.top) / i.height, width: a.width / i.width, height: a.height / i.height, scheme: img.style.colorScheme })
+    })()`, 'the picture and its area'))) as { left: number; top: number; width: number; height: number; scheme: string }
+    // Where draw.io drew the shape, read off the picture itself.
+    const svg = await readFile(join(run.root, scope, 'images', '.drawings', `${drawn.address.slice('sha256:'.length)}.svg`), 'utf8')
+    const box = /viewBox="([\d.\s-]+)"/.exec(svg)?.[1]?.trim().split(/\s+/).map(Number) ?? []
+    const from = svg.indexOf('data-cell-id="smoke-a"')
+    const rect = /<rect x="([\d.]+)" y="([\d.]+)" width="([\d.]+)" height="([\d.]+)"/.exec(svg.slice(from))?.slice(1).map(Number)
+    if (box.length !== 4 || from < 0 || !rect) throw new Error('the picture names no box, or no shape smoke-a')
+    const [x, y, w, h] = rect
+    const off = (got: number, want: number) => Math.abs(got - want) > 1.5 / Math.min(box[2], box[3])
+    if (off(shown.left, x / box[2]) || off(shown.top, y / box[3]) || off(shown.width, w / box[2]) || off(shown.height, h / box[3])) {
+      throw new Error(`the area is at ${JSON.stringify(shown)}; draw.io drew the shape at ${x},${y} ${w}×${h} in ${box.join(' ')}`)
+    }
+    if (shown.scheme !== 'light') throw new Error(`the picture is drawn in "${shown.scheme}" in the light theme`)
+    return `the area at ${(shown.left * 100).toFixed(1)}%, ${(shown.top * 100).toFixed(1)}% of a ${box[2]}×${box[3]} picture, where draw.io drew the shape`
+  }))
+
+  results.push(await checkHere('the area opens the element it points at, selected on the board', async () => {
+    await page(`(() => { document.querySelector('[data-testid="drawing-area-smoke-a"]').click(); return 'pressed' })()`)
+    return page(waitFor(`(() => {
+      const node = document.querySelector('.react-flow__node.selected')
+      return !document.querySelector('[data-testid="drawing-view"]') && node && (node.textContent || '').includes(${JSON.stringify(run.elementName)}) && 'selected: ' + node.textContent.trim().slice(0, 40)
+    })()`, 'the element selected on a board'))
+  }))
+
+  results.push(await checkHere('Create drawing on the element anchors one to it, and its page lists it', async () => {
+    const before = await agent<{ diagrams: { id: string }[] }>('diagrams.list')
+    await page(waitFor(`(() => {
+      const button = [...document.querySelectorAll('button')].find((one) => one.textContent.trim() === 'Create drawing')
+      if (!button) return null
+      button.scrollIntoView({ block: 'center' })
+      button.click()
+      return 'pressed'
+    })()`, 'the inspector\'s Create drawing'))
+    const after = await untilRead('the anchored drawing', () => agent<{ diagrams: { id: string; kind: string; elementId?: string; name: string }[] }>('diagrams.list'),
+      (held) => held.diagrams.length === before.diagrams.length + 1)
+    const anchored = after.diagrams.find((one) => !before.diagrams.some((was) => was.id === one.id))
+    if (anchored?.kind !== 'drawing' || anchored.elementId !== run.elementId) throw new Error(`made ${JSON.stringify(anchored)}`)
+    drawn.anchored = anchored.id
+    await agent('app.open', { scope, page: 'document', id: run.elementId })
+    return page(waitFor(`(() => {
+      const listed = document.querySelector('[data-testid="doc-drawings"]')
+      return listed && (listed.textContent || '').includes(${JSON.stringify(anchored.name)}) && 'listed on its page: ' + ${JSON.stringify(anchored.name)}
+    })()`, 'the element\'s page listing the drawing'))
+  }))
+
+  results.push(await checkHere('a document that names the drawing shows its picture', async () => {
+    await agent('element.update', { id: run.elementId, description: `The context: ![Smoke context](view:${drawn.id})` })
+    return page(waitFor(`(() => {
+      const img = document.querySelector('[data-testid="view-picture"]')
+      return img && img.complete && img.naturalWidth > 0 && document.querySelectorAll('[data-testid="view-area"]').length === 1 && 'shown, ' + img.naturalWidth + ' px wide, one area'
+    })()`, 'the drawing in the document'))
+  }))
+
+  results.push(await checkHere('the editor said nothing at error level, and nothing left the machine', async () => {
+    sendCommand({ type: 'theme', mode: 'system' })
+    window.webContents.session.webRequest.onBeforeRequest(null)
+    const complaints = frameSaid.filter((line) => line.startsWith('error') || /Content Security Policy|Refused/.test(line))
+    if (complaints.length) throw new Error(`the editor said:\n${complaints.map((line) => `          ${line}`).join('\n')}`)
+    if (offMachine.length) throw new Error(`requests off the machine: ${offMachine.slice(0, 5).join(', ')}`)
+    return `no error, no policy refusal, no request off the machine (${frameSaid.length} warnings)`
+  }))
+  await writeLaterScope(run)
+  return drawn.address ? drawn : undefined
+}
+
+/** Where the run keeps a scope a part of which will not read, holding one drawing. */
+const LATER = 'acme-logistics/application-landscape/smoke-damaged'
+
+/** That scope, written straight to the folder, its model half written, as a crash would have left it. */
+async function writeLaterScope(run: DrawingRun): Promise<void> {
+  const { mkdir, writeFile } = await import('node:fs/promises')
+  const { join } = await import('node:path')
+  await mkdir(join(run.root, LATER, 'diagrams'), { recursive: true })
+  await writeFile(join(run.root, LATER, 'diagrams', 'later.drawio'), smokeDrawingXml(run.elementId, run.elementName))
+  await writeFile(join(run.root, LATER, 'diagrams', 'later.json'), JSON.stringify({ id: 'later', kind: 'drawing', name: 'Later drawing', links: [] }))
+  await writeFile(join(run.root, LATER, 'scope.json'), JSON.stringify({
+    type: 'lionsville-architecture', version: SCOPE_FORMAT_VERSION, name: 'Smoke damaged', diagrams: ['later'], activeDiagramId: 'later',
+  }))
+  await writeFile(join(run.root, LATER, 'model.json'), '{ half a write')
+}
+
+/** Poll an agent read until it says what is expected, within the step's deadline. */
+async function untilRead<T>(what: string, read: () => Promise<T>, ok: (held: T) => boolean): Promise<T> {
+  const deadline = Date.now() + STEP_TIMEOUT_MS
+  let last = await read()
+  while (!ok(last)) {
+    if (Date.now() > deadline) throw new Error(`${what}: still ${JSON.stringify(last).slice(0, 160)}`)
+    await new Promise((resolve) => setTimeout(resolve, 200))
+    last = await read()
+  }
+  return last
+}
+
+/**
+ * The second half, once the folder has been read again by repositories made
+ * afresh: the picture is read back from the folder by its address, and a
+ * drawing in a scope a later version wrote is shown with no Edit.
+ */
+async function drawingsSecondHalf(run: DrawingRun, drawn: Drawn | undefined, results: SmokeResult[]): Promise<void> {
+  const { page, agent, scope } = run
+  results.push(await checkHere('the picture is read back from the folder after it is opened again', async () => {
+    if (!drawn) throw new Error('no drawing was saved in the first half')
+    await agent('app.open', { scope, page: 'drawing', id: drawn.id })
+    return page(waitFor(`(() => {
+      const img = document.querySelector('[data-testid="drawing-picture"]')
+      return img && img.complete && img.naturalWidth > 0 && document.querySelector('[data-testid="drawing-area-smoke-a"]') && 'drawn, ' + img.naturalWidth + ' px wide'
+    })()`, 'the picture read back'))
+  }))
+
+  results.push(await checkHere('a drawing in a scope it may not change offers no Edit', async () => {
+    // Written while the other folder was open, so the tree read on the way
+    // back is the one that finds it: a scope a part of which will not read is
+    // opened as far as it reads, and nothing in it may be changed.
+    try {
+      await untilRead('the damaged scope in the tree', () => agent<{ scopes: { path: string }[] }>('scopes.list'), (held) => held.scopes.some((one) => one.path === LATER))
+      await agent('app.open', { scope: LATER, page: 'drawing', id: 'later' })
+      return await page(waitFor(`(() => {
+        const view = document.querySelector('[data-testid="drawing-view"]')
+        return view && !document.querySelector('[data-testid="drawing-edit"]') && 'shown, and no Edit'
+      })()`, 'the read-only drawing'))
+    } finally {
+      // Back on the board, where the run expects to end.
+      await agent('app.open', { scope, page: 'board', id: run.board }).catch(() => undefined)
+    }
+  }))
 }
 
 export async function runSmoke(window: BrowserWindow): Promise<void> {
@@ -772,6 +1040,13 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
     return `${decision.label} → decisions/${addedId}/${decisionFile}, ${plan.label} → transitions/${planFile}`
   }))
 
+  // The real editor, end to end: a drawing made, edited in draw.io on its own
+  // scheme under its own policy, saved, its picture read and its link
+  // followed; then one anchored to an element and one shown in a document.
+  section('drawings')
+  const drawingRun = { window, root: first.root, scope: EXAMPLE.landscape, board: EXAMPLE.activeDiagram, elementId: addedId, elementName: ADDED, page, agent }
+  const drawn = await drawingsFirstHalf(drawingRun, results)
+
   // --- a second folder: everything read at boot, read again --------------------
   //
   // The path the composition root takes when a folder is chosen or picked from
@@ -857,6 +1132,10 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
     if (!await exists(second, `${EXAMPLE.path}/scope.json`)) throw new Error('the second folder lost the example on the way back')
     return `${register.total} applications: the example's ${EXAMPLE.applications} and "${ADDED}", not "${ADDED_ELSEWHERE}"`
   }))
+
+  // The drawing's picture, read back by repositories made afresh over the
+  // folder: what is on disk, not what a session held.
+  await drawingsSecondHalf(drawingRun, drawn, results)
 
   // --- the file channel and the history, on the wire ---------------------------
   //
