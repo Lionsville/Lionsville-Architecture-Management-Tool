@@ -15,7 +15,7 @@
  */
 import type { HostModel } from '../model/hostModel'
 import { accountableFor, raciOf, typesHolding } from '../model/operatingModel'
-import type { BasedOn, Dated, Responsibility, Role, UnitType, UnitTypeId } from '../model/operatingModel'
+import type { BasedOn, Dated, Responsibility, Role, UnitType, UnitTypeBasedOn, UnitTypeId } from '../model/operatingModel'
 import { unitTypeLanes } from '../model/unitOrder'
 import type { AgentAnswer, ToolName } from './tools'
 import { checkArguments, json, refused, toolSpec } from './tools'
@@ -47,13 +47,24 @@ const entryLine = (basedOn: BasedOn) => ({ library: basedOn.library, entry: base
 
 /**
  * The library entry an item was made from, with the name it was given then
- * where that was not the library's term; and, for a unit type or a role, the
- * entries a bring-in matched it to (`alsoBasedOn`), beside it.
+ * where that was not the library's term, and, for a unit type, where it was
+ * put then where that was not where the library puts it, each type it sat in
+ * named as `within` is; and, for a unit type or a role, the entries a bring-in
+ * matched it to (`alsoBasedOn`), beside it.
  */
-function basedOnLine(item: { basedOn?: BasedOn; alsoBasedOn?: readonly BasedOn[] }) {
+function basedOnLine(
+  item: { basedOn?: UnitTypeBasedOn; alsoBasedOn?: readonly BasedOn[] }, types: readonly { id: string; name: string }[] = [],
+) {
   const { basedOn, alsoBasedOn } = item
+  const placed = basedOn?.placed
   return {
-    ...(basedOn ? { basedOn: { ...entryLine(basedOn), ...(basedOn.name ? { name: basedOn.name } : {}) } } : {}),
+    ...(basedOn ? {
+      basedOn: {
+        ...entryLine(basedOn),
+        ...(basedOn.name ? { name: basedOn.name } : {}),
+        ...(placed ? { placed: { ...(placed.top ? { top: true } : {}), within: placed.within.map((id) => named(types, id)) } } : {}),
+      },
+    } : {}),
     ...(alsoBasedOn?.length ? { alsoBasedOn: alsoBasedOn.map(entryLine) } : {}),
   }
 }
@@ -81,7 +92,7 @@ export function unitTypeLine(
     })),
     ...(type.limit !== undefined ? { limit: type.limit } : {}),
     ...datedLine(type, model.unitTypes ?? []),
-    ...basedOnLine(type),
+    ...basedOnLine(type, model.unitTypes ?? []),
   }
 }
 

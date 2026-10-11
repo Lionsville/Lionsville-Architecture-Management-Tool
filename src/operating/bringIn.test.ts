@@ -5,8 +5,9 @@
  * Bringing a library in (ADR-0036 §5): one step, undone as one; what an entry
  * needs comes with it; nothing comes twice; every item says where it came
  * from; the names, places and reuse chosen before the step are what it
- * writes, and what it brings follows them; and a name chosen and a reuse are
- * recorded, so a library opened again reads them.
+ * writes, and what it brings follows them; and a name chosen, a place that
+ * is not the library's and a reuse are recorded, so compare and a library
+ * opened again read them.
  */
 import { describe, expect, it } from 'vitest'
 import { summarise } from '../model/activity'
@@ -182,6 +183,43 @@ describe('placements chosen before the step', () => {
     const train = lists.unitTypes.find((one) => one.basedOn?.entry === 'agile-release-train')!
     expect(lists.unitTypes.find((one) => one.basedOn?.entry === 'agile-team')?.within).toEqual([train.id])
   })
+
+  it('are kept in basedOn.placed where they are not where the library puts the type, and only there', () => {
+    const before = ownModel()
+    const team = typeNamed(before, 'Team')
+    const model = brought(before, {
+      library: TEAM_TOPOLOGIES, entries: ['stream-aligned', 'platform', 'enabling'],
+      placements: {
+        // Beside the organisation's Team, in its Cluster: the library has it at the top.
+        'stream-aligned': { top: team.top === true, within: team.within.map((type) => ({ type })) },
+        platform: { top: true, within: [] },
+      },
+    })
+    const basedOn = (entry: string) => listsOf(model).unitTypes.find((one) => one.basedOn?.entry === entry)!.basedOn
+    expect(basedOn('stream-aligned')).toEqual({
+      library: 'team-topologies', entry: 'stream-aligned', version: TEAM_TOPOLOGIES.version, language: 'en',
+      placed: { top: false, within: [typeNamed(before, 'Cluster').id] },
+    })
+    // At the top, as the library has it; and placed by nobody, as the library has it.
+    expect(basedOn('platform')).not.toHaveProperty('placed')
+    expect(basedOn('enabling')).not.toHaveProperty('placed')
+  })
+
+  it('count a place that leaves out a type the library puts it in as not the library\'s, and one in the type used for it as the library\'s', () => {
+    // Nowhere, and the train not brought: no place of this step is the library's, so the one chosen is kept.
+    const alone = listsOf(brought(empty(), { library: SAFE, entries: ['agile-team'], placements: { 'agile-team': { top: false, within: [] } } }))
+    expect(alone.unitTypes.map((one) => one.basedOn?.placed)).toEqual([{ top: false, within: [] }])
+    // In the train, for which the organisation's Cluster is used: where the library puts it.
+    const before = ownModel()
+    const cluster = typeNamed(before, 'Cluster')
+    const reused = listsOf(brought(before, {
+      library: SAFE, entries: ['agile-team'], reuse: { 'agile-release-train': cluster.id },
+      placements: { 'agile-team': { top: false, within: [{ entry: 'agile-release-train' }] } },
+    }))
+    const agile = reused.unitTypes.find((one) => one.basedOn?.entry === 'agile-team')!
+    expect(agile.within).toEqual([cluster.id])
+    expect(agile.basedOn).not.toHaveProperty('placed')
+  })
 })
 
 describe('reuse chosen before the step', () => {
@@ -356,6 +394,17 @@ describe('bringing in, then undoing', () => {
       library: TEAM_TOPOLOGIES, entries: ['stream-aligned', 'platform'],
       placements: { 'stream-aligned': { top: false, within: [{ type: cluster.id }] }, platform: { top: team.top === true, within: team.within.map((type) => ({ type })) } },
     }))
+  })
+
+  it('leaves the model as it was, for a step that keeps where a type was put', () => {
+    const before = ownModel()
+    const step = ask(before, {
+      library: TEAM_TOPOLOGIES, entries: ['stream-aligned'],
+      placements: { 'stream-aligned': { top: false, within: [{ type: typeNamed(before, 'Cluster').id }] } },
+    })
+    const placed = listsOf(applyAll(before, [step!])).unitTypes.find((one) => one.basedOn?.entry === 'stream-aligned')!
+    expect(placed.basedOn?.placed).toEqual({ top: false, within: [typeNamed(before, 'Cluster').id] })
+    undoesWhole(before, step)
   })
 
   it('leaves the model as it was, for a step reusing the organisation\'s own', () => {

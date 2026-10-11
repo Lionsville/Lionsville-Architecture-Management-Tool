@@ -66,6 +66,27 @@ export type BasedOn = {
 }
 
 /**
+ * Where a unit type was put when it was brought in: at the top or not, and the
+ * types it sat in, by id — the organisation's own, or ones the same step made.
+ */
+export type Placed = {
+  top: boolean
+  within: UnitTypeId[]
+}
+
+/**
+ * A unit type's `basedOn`: what every item's says, and `placed`, where the
+ * type was put when it was brought in, said only where that was not where its
+ * library puts it. *compare* reads the type's `top` and `within` against it,
+ * as it reads a name against `name`: a type placed beside the organisation's
+ * own on the way in is not reported as sitting elsewhere than its library
+ * says for ever after, and a move since is.
+ */
+export type UnitTypeBasedOn = BasedOn & {
+  placed?: Placed
+}
+
+/**
  * A change over time, said on the thing that changes (a later step's to read):
  * the day it starts, the day it ends, and what takes its place.
  */
@@ -119,7 +140,7 @@ export type UnitType = Dated & {
   slots: RoleSlot[]
   limit?: number
   order?: number
-  basedOn?: BasedOn
+  basedOn?: UnitTypeBasedOn
   alsoBasedOn?: BasedOn[]
 }
 

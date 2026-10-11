@@ -20,4 +20,11 @@ describe('a difference, said', () => {
     expect(say({ what: 'manages', here: 'true' })).toBe('Team coach — manages its unit: here “yes”, in the library “nothing”.')
     expect(say({ what: 'duty', about: 'Plan the cycle', there: 'C' })).toBe('Team coach — its part in Plan the cycle: here nothing, in the library C.')
   })
+
+  it('says a move since a type came in against where it was put then, not against the library', () => {
+    expect(say({ what: 'top', here: 'true', moved: true })).toBe('Team coach — sits at the top: here “yes”, when it came in “nothing”.')
+    expect(say({ what: 'within', about: 'Cluster', there: 'true', moved: true })).toBe('Team coach — sits in Cluster: here nothing, when it came in yes.')
+    expect(differenceSentence({ item, what: 'within', about: 'Cluster', here: 'true', moved: true }, translator('nl')))
+      .toBe('Team coach — valt onder Cluster: hier ja, bij binnenkomst niets.')
+  })
 })

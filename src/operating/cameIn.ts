@@ -7,7 +7,8 @@
  *
  * - **Made** from it — every item whose `basedOn` names the library: the
  *   library's term, in the language it came in, beside what it is called
- *   here now, and what *compare* says has changed since.
+ *   here now, and what *compare* says has changed since: a name chosen and a
+ *   place chosen on the way in are not changes, a rename or a move since is.
  * - **Matched** to it — every unit type and role a bring-in chose to stand
  *   for one of its entries (`alsoBasedOn`): the library's term beside the
  *   organisation's own item, "used your X".
@@ -32,7 +33,11 @@ export type CameInItem = {
   readonly term?: string
   /** What it is called here now. */
   readonly name: string
-  /** What *compare* says of it: the name against the one chosen when it came in, each field against the library. */
+  /**
+   * What *compare* says of it: the name against the one chosen when it came
+   * in, a unit type's place against the one it was put in then, each other
+   * field against the library.
+   */
   readonly changed: readonly Difference[]
 }
 

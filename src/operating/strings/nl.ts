@@ -204,6 +204,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'operating.diff.field': '{name} — {field}: hier “{here}”, in de bibliotheek “{there}”.',
   'operating.diff.renamed': '{name} — hernoemd sinds het binnenkwam als “{chosen}”.',
   'operating.diff.about': '{name} — {field} {about}: hier {here}, in de bibliotheek {there}.',
+  'operating.diff.moved': '{name} — {field}: hier “{here}”, bij binnenkomst “{there}”.',
+  'operating.diff.movedAbout': '{name} — {field} {about}: hier {here}, bij binnenkomst {there}.',
   'operating.field.name': 'de naam',
   'operating.field.short': 'de korte naam',
   'operating.field.purpose': 'het doel',

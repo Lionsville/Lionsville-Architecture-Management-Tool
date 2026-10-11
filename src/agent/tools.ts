@@ -874,11 +874,11 @@ const SPECS = [
       + '(at the top, under the organisation, and under the unit types listed in within), whether it may serve more than '
       + 'one domain (spans), the roles it holds with how many of each (slots: min, and max where there is one), how many '
       + 'applications a unit of it should own at most (limit), the library entry it was based on (basedOn, with the name '
-      + 'it was given then where that was not the library\'s), and the library entries it was matched to when a library '
-      + 'was brought in (alsoBasedOn). Listed as the structure stands: by lane — 1 for a type that may sit at the top, and '
-      + 'below the deepest type it may sit in — then by its order in the lane, then by name; a type that sits nowhere has '
-      + 'no lane, says sitsNowhere and comes last. The operating model is kept at the organisation: whatever scope is '
-      + 'open, this answers from there.',
+      + 'it was given then where that was not the library\'s, and where it was put then, placed, where that was not where '
+      + 'the library puts it), and the library entries it was matched to when a library was brought in (alsoBasedOn). '
+      + 'Listed as the structure stands: by lane — 1 for a type that may sit at the top, and below the deepest type it may '
+      + 'sit in — then by its order in the lane, then by name; a type that sits nowhere has no lane, says sitsNowhere and '
+      + 'comes last. The operating model is kept at the organisation: whatever scope is open, this answers from there.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
   },
   {

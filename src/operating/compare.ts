@@ -21,12 +21,17 @@
  *
  * An item's name is read against the one it was given when it came in, where
  * that was not the library's term (`basedOn.name`): a rename chosen on the way
- * in is not a difference, and a rename since is.
+ * in is not a difference, and a rename since is. A unit type's place — `top`
+ * and `within` — is read the same way against where it was put when it came
+ * in, where that was not where its library puts it (`basedOn.placed`): a type
+ * placed beside the organisation's own on the way in sits where it was put,
+ * and a move since is a difference, said of the organisation's types by their
+ * names now.
  *
  * A unit type's `order` — where it stands in its lane — is the organisation's
  * alone: a library has none, so it is never a difference.
  */
-import type { BasedOn, Responsibility, Role, UnitType } from '../model/operatingModel'
+import type { BasedOn, Placed, Responsibility, Role, UnitType } from '../model/operatingModel'
 import { slotRange } from '../model/operatingModel'
 import type { Based, OperatingLists } from './bringIn'
 import { entryOf } from './library'
@@ -47,7 +52,9 @@ export type ItemRef = { readonly kind: ItemKind; readonly id: string; readonly n
  * - `version`: the library is at a later version than the item was brought in from.
  * - a field: the item's value and the library's, as words.
  * - `slot` / `within` / `duty`: one role, one type, one responsibility the item
- *   and the entry name differently, by the library's name for it (`about`).
+ *   and the entry name differently, by the library's name for it (`about`) —
+ *   or, for a `within` read against where the type was put when it came in,
+ *   by the organisation's name for the type now.
  */
 export type DifferenceKind =
   | 'own' | 'libraryGone' | 'entryGone' | 'version'
@@ -60,7 +67,7 @@ export type Difference = {
   readonly about?: string
   /** The organisation's value; absent where it says nothing. */
   readonly here?: string
-  /** The library's value; absent where it says nothing. */
+  /** The library's value — or, where the item `moved`, the one it came in with; absent where it says nothing. */
   readonly there?: string
   /**
    * A name only: the one given when the item came in, where it was not the
@@ -68,6 +75,12 @@ export type Difference = {
    * so the difference is a rename since.
    */
   readonly chosen?: string
+  /**
+   * A unit type's place only (`top`, `within`): read against where the type
+   * was put when it came in (`basedOn.placed`) rather than against the
+   * library, so the difference is a move since, and `there` is that place.
+   */
+  readonly moved?: true
 }
 
 /** Every difference between the organisation's operating model and the libraries, item by item. */
@@ -175,17 +188,47 @@ function byEntry(
 function unitTypeDifferences(at: At, item: UnitType, entry: LibraryUnitType): Difference[] {
   const slotsThere = new Map(entry.slots.map((slot) => [slot.role, slotRange(slot)] as const))
   const slotsHere = keyed(at, item.slots.map((slot) => [slot.role, slotRange(slot)] as const), slotsThere)
-  const withinThere = new Map(entry.within.map((one) => [one, 'true'] as const))
-  const withinHere = keyed(at, item.within.map((id) => [id, 'true'] as const), withinThere)
+  const placed = item.basedOn?.placed
   return [
     ...nameField(at, item.name, entry.name[at.language]),
     ...field(at, 'purpose', item.purpose, entry.purpose[at.language]),
-    ...field(at, 'top', flag(item.top), flag(entry.top)),
+    ...(placed ? movedSince(at, 'top', flag(item.top), flag(placed.top)) : field(at, 'top', flag(item.top), flag(entry.top))),
     ...field(at, 'spans', flag(item.spans), flag(entry.spans)),
     ...field(at, 'limit', item.limit?.toString(), entry.limit?.toString()),
     ...byEntry(at, 'slot', slotsHere, slotsThere),
-    ...byEntry(at, 'within', withinHere, withinThere),
+    ...(placed ? withinSince(at, item, placed) : withinDifferences(at, item, entry)),
   ]
+}
+
+/** The types a unit type sits in against those its library puts it in, by entry. */
+function withinDifferences(at: At, item: UnitType, entry: LibraryUnitType): Difference[] {
+  const withinThere = new Map(entry.within.map((one) => [one, 'true'] as const))
+  const withinHere = keyed(at, item.within.map((id) => [id, 'true'] as const), withinThere)
+  return byEntry(at, 'within', withinHere, withinThere)
+}
+
+/** A place that is not the one the type came in with, as words: a move since. */
+function movedSince(at: At, what: 'top' | 'within', here: string | undefined, there: string | undefined, about?: string): Difference[] {
+  if (here === there) return []
+  return [{
+    item: at.ref, what, ...(about !== undefined ? { about } : {}),
+    ...(here !== undefined ? { here } : {}), ...(there !== undefined ? { there } : {}), moved: true,
+  }]
+}
+
+/**
+ * The types a unit type sits in against those it was put in when it came in,
+ * by id, each said by its name now. A type the organisation no longer holds is
+ * passed over: taking it away moved nothing.
+ */
+function withinSince(at: At, item: UnitType, placed: Placed): Difference[] {
+  const names = new Map(at.lists.unitTypes.map((one) => [one.id, one.name] as const))
+  const here = new Set(item.within)
+  const there = new Set(placed.within)
+  return [...new Set([...placed.within, ...item.within])].flatMap((id) => {
+    const name = names.get(id)
+    return name === undefined ? [] : movedSince(at, 'within', flag(here.has(id)), flag(there.has(id)), name)
+  })
 }
 
 function roleDifferences(at: At, item: Role, entry: LibraryRole): Difference[] {

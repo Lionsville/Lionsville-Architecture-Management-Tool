@@ -204,6 +204,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'operating.diff.field': '{name} — {field}: hier „{here}“, in der Bibliothek „{there}“.',
   'operating.diff.renamed': '{name} — umbenannt, seit es als „{chosen}“ übernommen wurde.',
   'operating.diff.about': '{name} — {field} {about}: hier {here}, in der Bibliothek {there}.',
+  'operating.diff.moved': '{name} — {field}: hier „{here}“, bei der Übernahme „{there}“.',
+  'operating.diff.movedAbout': '{name} — {field} {about}: hier {here}, bei der Übernahme {there}.',
   'operating.field.name': 'der Name',
   'operating.field.short': 'der Kurzname',
   'operating.field.purpose': 'der Zweck',

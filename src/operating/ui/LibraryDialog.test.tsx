@@ -10,7 +10,8 @@
  * it is written, and every edit there reaches the one step; what is new is
  * marked until the page is left, and the toast's *Undo* takes that step back
  * and nothing else; *What came in* on the Libraries tab renames in place and
- * opens an item where it is edited.
+ * opens an item where it is edited, and counts neither a name nor a place
+ * chosen on the way in as a change since.
  */
 import { useRef, useState } from 'react'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -257,6 +258,30 @@ describe('what came in, on the Libraries tab', () => {
     fireEvent.click(within(scrum).getByRole('button', { name: 'Scrum Team' }))
     expect(screen.getByRole('tab', { name: 'Units and roles', selected: true })).toBeTruthy()
     expect(within(screen.getByTestId('operating-inspector')).getByDisplayValue('Crew')).toBeTruthy()
+  })
+
+  it('says nothing has changed of a type placed on the way in, and a move since against where it was put', async () => {
+    const kept = show()
+    await openLibrary('Team Topologies')
+    fireEvent.click(within(card('stream-aligned')).getByRole('checkbox', { name: 'Stream-aligned team' }))
+    // Beside your Team, in Cluster: the library has it at the top.
+    expect(within(pane()).getByLabelText('Stream-aligned team: sits in')).toHaveProperty('value', 'beside:ut-team')
+    fireEvent.click(within(pane()).getByRole('button', { name: 'Bring in 1 item as one step' }))
+    await closed()
+    fireEvent.click(screen.getByRole('tab', { name: 'Libraries' }))
+    const aligned = unitTypeList(kept.model()).find((type) => type.basedOn?.entry === 'stream-aligned')!
+    const row = () => within(screen.getByTestId('library-team-topologies')).getByTestId(`came-in-${aligned.id}`)
+    const compared = () => document.querySelector('[data-guide="operating.compare"]')!.textContent
+    expect(row().textContent).toContain('nothing')
+    expect(compared()).not.toContain('Stream-aligned team')
+    // Moved to the top since, where the library has it: a move since all the same.
+    fireEvent.click(within(row()).getByRole('button', { name: 'Stream-aligned team' }))
+    fireEvent.click(within(screen.getByTestId('operating-inspector')).getByLabelText('At the top, under the organisation itself'))
+    expect(kept.sent.at(-1)).toMatchObject({ type: 'unitType.update', id: aligned.id, patch: { top: true } })
+    fireEvent.click(screen.getByRole('tab', { name: 'Libraries' }))
+    expect(row().textContent).toContain('sits at the top')
+    expect(compared()).toContain('Stream-aligned team — sits at the top: here “yes”, when it came in “nothing”.')
+    expect(await axeFindings()).toEqual([])
   })
 
   it('opens the dialog on the library whose card asked', async () => {

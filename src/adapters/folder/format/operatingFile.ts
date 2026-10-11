@@ -39,10 +39,15 @@
  * name chosen when an item came in as a rename, and a library opened again
  * offers an entry that was matched to an item of the organisation's own as
  * not yet brought in. The items, their names and every reference are kept.
+ * A unit type's `basedOn.placed`, where it was put when it came in, came the
+ * same way in the same release: a 3.6.0 build passes it over and drops it on
+ * its next save, after which *compare* reads the type's place against its
+ * library again and says a type placed elsewhere on the way in sits
+ * elsewhere. Where the type sits, its `top` and `within`, is kept.
  */
 import { isOperatingRuleKind, isRaci } from '../../../model/operatingModel'
 import type {
-  BasedOn, Duty, OperatingRule, Responsibility, Role, RoleSlot, UnitType,
+  BasedOn, Duty, OperatingRule, Placed, Responsibility, Role, RoleSlot, UnitType, UnitTypeBasedOn,
 } from '../../../model/operatingModel'
 import type { HostModel } from '../../../model/hostModel'
 import { parseJson, stableJson } from '../../../projects/text'
@@ -106,6 +111,20 @@ function basedOnOf(value: unknown): { basedOn?: BasedOn } {
   return held ? { basedOn: held } : {}
 }
 
+/** Where a unit type was put when it came in: absent where `placed` is not an object. */
+function placedOf(value: Record<string, unknown>): { placed?: Placed } {
+  const { placed } = value
+  if (!placed || typeof placed !== 'object' || Array.isArray(placed)) return {}
+  const { top, within } = placed as Record<string, unknown>
+  return { placed: { top: top === true, within: ids(within) } }
+}
+
+/** A unit type's `basedOn`: what every item's says, and where it was put when it came in. */
+function unitTypeBasedOnOf(value: unknown): { basedOn?: UnitTypeBasedOn } {
+  const held = basedOn(value)
+  return held ? { basedOn: { ...held, ...placedOf(value as Record<string, unknown>) } } : {}
+}
+
 /** The entries a bring-in matched an item to: each that reads, and the field absent where none does. */
 function alsoBasedOnOf(value: unknown): { alsoBasedOn?: BasedOn[] } {
   const held = Array.isArray(value) ? value.flatMap((one) => basedOn(one) ?? []) : []
@@ -149,7 +168,7 @@ function unitTypeOf(row: Record<string, unknown>): UnitType[] {
     slots: Array.isArray(row.slots) ? row.slots.flatMap(slotOf) : [],
     ...(limit !== undefined ? { limit } : {}),
     ...(order !== undefined ? { order } : {}),
-    ...basedOnOf(row.basedOn),
+    ...unitTypeBasedOnOf(row.basedOn),
     ...alsoBasedOnOf(row.alsoBasedOn),
     ...datedOf(row),
   }]

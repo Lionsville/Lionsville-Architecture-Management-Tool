@@ -115,14 +115,17 @@ describe('the operating model in a scope\'s folder', () => {
     expect(scopeFromFolder(files, '')!.model.unitTypes?.map((one) => 'order' in one)).toEqual([false, false])
   })
 
-  it('keeps the name chosen when an item came in and the entries a bring-in matched an item to, and passes over what does not read', () => {
+  it('keeps the name chosen when an item came in, where a unit type was put then, and the entries a bring-in matched an item to, and passes over what does not read', () => {
     const scope = organisation()
     const matched = { library: 'safe', entry: 'product-owner', version: '6.0', language: 'nl' }
     const recorded = {
       ...scope,
       model: {
         ...scope.model,
-        unitTypes: [{ ...train, alsoBasedOn: [{ library: 'safe', entry: 'agile-release-train', version: '6.0', language: 'en' }] }, { ...team, basedOn: { ...team.basedOn!, name: 'Squad' } }],
+        unitTypes: [
+          { ...train, alsoBasedOn: [{ library: 'safe', entry: 'agile-release-train', version: '6.0', language: 'en' }] },
+          { ...team, basedOn: { ...team.basedOn!, name: 'Squad', placed: { top: false, within: ['ut-train'] } } },
+        ],
         roles: [{ ...owner, alsoBasedOn: [matched] }, developer],
       },
     }
@@ -142,6 +145,20 @@ describe('the operating model in a scope\'s folder', () => {
       { id: 'ro-2', name: 'Coach', duties: [] },
       { id: 'ro-3', name: 'Member', duties: [] },
     ])
+    // Where a type was put: what reads of it, nothing where it is no object, and nothing on a role.
+    const from = { library: 'team-topologies', entry: 'platform', version: '1', language: 'en' }
+    const placedIn: FolderFile[] = [
+      ...scopeFiles(bareScope('', 'Acme')),
+      { path: UNIT_TYPES_FILE, text: JSON.stringify([
+        { id: 'ut-1', within: [], slots: [], basedOn: { ...from, placed: { top: 'yes', within: ['ut-2', 3] } } },
+        { id: 'ut-2', within: [], slots: [], basedOn: { ...from, placed: ['ut-1'] } },
+        { id: 'ut-3', within: [], slots: [], basedOn: { ...from, placed: 'top' } },
+      ]) },
+      { path: ROLES_FILE, text: JSON.stringify([{ id: 'ro-1', duties: [], basedOn: { ...from, placed: { top: true, within: [] } } }]) },
+    ]
+    const read = scopeFromFolder(placedIn, '')!.model
+    expect(read.unitTypes?.map((one) => one.basedOn)).toEqual([{ ...from, placed: { top: false, within: ['ut-2'] } }, from, from])
+    expect(read.roles?.[0].basedOn).toEqual(from)
   })
 
   it('opens a scope whose list is not a list to be read and not written', () => {

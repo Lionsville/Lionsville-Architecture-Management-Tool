@@ -26,7 +26,9 @@
  *   which *compare* reads the name against;
  * - `placements` — where a unit type made sits: at the top, in the
  *   organisation's own unit types, in entries the ask brings. A type placed
- *   so does not bring the types its library would have put it in;
+ *   so does not bring the types its library would have put it in. A place
+ *   that is not where the library puts the type is kept as `basedOn.placed`,
+ *   which *compare* reads the type's place against;
  * - `reuse` — a role or unit type the organisation has that stands for the
  *   entry. Nothing is brought for it, so nothing it would have needed either
  *   (a reused role's responsibilities, a reused type's roles), and every slot
@@ -42,7 +44,7 @@
  */
 import { transaction } from '../model/commands'
 import type { Command } from '../model/commands'
-import type { BasedOn, Responsibility, Role, UnitType, UnitTypeId } from '../model/operatingModel'
+import type { BasedOn, Placed, Responsibility, Role, UnitType, UnitTypeId } from '../model/operatingModel'
 import { entryOf } from './library'
 import type { Library, LibraryEntry, LibraryLanguage, LibraryResponsibility, LibraryRole, LibraryUnitType, Words } from './library'
 
@@ -342,8 +344,12 @@ function roleFrom(item: LibraryRole, made: Made): Role {
   }
 }
 
-/** Where a unit type made sits: its placement, resolved, or the library's own. */
-function sitsIn(item: LibraryUnitType, made: Made): { top: boolean; within: UnitTypeId[] } {
+/**
+ * Where a unit type made sits — its placement, resolved, or the library's own
+ * — and, where a placement put it elsewhere than its library does, that place
+ * again, to be kept as `basedOn.placed`.
+ */
+function sitsIn(item: LibraryUnitType, made: Made): Placed & { placed?: Placed } {
   const placement = made.placementOf(item.entry)
   if (!placement) return { top: item.top === true, within: item.within.flatMap((entry) => made.idOf(entry) ?? []) }
   const within = placement.within.flatMap((place) => {
@@ -351,11 +357,26 @@ function sitsIn(item: LibraryUnitType, made: Made): { top: boolean; within: Unit
     // An entry is a place only where it is a unit type of this library, the rule `needs` brought it by.
     return made.isTypeEntry(place.entry) ? made.idOf(place.entry) ?? [] : []
   })
-  return { top: placement.top, within: [...new Set(within)] }
+  const sits = { top: placement.top, within: [...new Set(within)] }
+  return asInLibrary(item, made, sits) ? sits : { ...sits, placed: { top: sits.top, within: [...sits.within] } }
+}
+
+/**
+ * Whether a place is the one the library gives the type, read in the ids of
+ * the step: the same `top`, and in the types that stand for the entries the
+ * library puts it in, and no others. Where one of those entries has no item
+ * in the step — the placement did not bring it — no place is the library's.
+ */
+function asInLibrary(item: LibraryUnitType, made: Made, sits: Placed): boolean {
+  if (sits.top !== (item.top === true)) return false
+  const theirs = item.within.map((entry) => made.idOf(entry))
+  if (theirs.some((id) => id === undefined)) return false
+  const library = new Set(theirs)
+  return library.size === sits.within.length && sits.within.every((id) => library.has(id))
 }
 
 function unitTypeFrom(item: LibraryUnitType, made: Made): UnitType {
-  const { top, within } = sitsIn(item, made)
+  const { top, within, placed } = sitsIn(item, made)
   const { name, basedOn } = made.namedFrom(item.entry, item.name)
   return {
     id: made.idOf(item.entry)!,
@@ -369,6 +390,6 @@ function unitTypeFrom(item: LibraryUnitType, made: Made): UnitType {
       return role ? [{ role, min: slot.min, ...(slot.max !== undefined ? { max: slot.max } : {}) }] : []
     }),
     ...(item.limit !== undefined ? { limit: item.limit } : {}),
-    basedOn,
+    basedOn: placed ? { ...basedOn, placed } : basedOn,
   }
 }

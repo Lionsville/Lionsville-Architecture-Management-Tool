@@ -5,18 +5,20 @@
  * *Compare* (ADR-0036 §5): what was brought in, against the library as it
  * ships — and against a later version of it — read in the language the item
  * was brought in in, and never merged; a name against the one chosen when it
- * came in, and what an item names by the records of what stands for each
- * entry, matches included.
+ * came in, a unit type's place against the one it was put in then, and what
+ * an item names by the records of what stands for each entry, matches
+ * included.
  */
 import { describe, expect, it } from 'vitest'
 import type { Model } from '../model/normalised'
 import { bringIn } from './bringIn'
 import type { BringIn } from './bringIn'
 import { compareWithLibraries } from './compare'
-import { newRole, newUnitType } from './edit'
+import { newRole, newUnitType, removeUnitType } from './edit'
 import type { Library } from './library'
 import { SAFE } from './libraries/safe'
 import { SCRUM } from './libraries/scrum'
+import { TEAM_TOPOLOGIES } from './libraries/teamTopologies'
 import { applyAll, empty, listsOf } from './testing'
 
 function counter(): (prefix: string) => string {
@@ -169,6 +171,60 @@ describe('what an item names, matched', () => {
     const swapped = applyAll(model, [{ type: 'unitType.update', id: team.id, patch: { slots: team.slots.map((slot) => (slot.role === master.id ? { ...slot, role: 'own-coach' } : slot)) } }])
     expect(compareWithLibraries(listsOf(swapped), [SCRUM]).filter((one) => one.item.id === team.id)).toEqual([
       { item: { kind: 'unitType', id: team.id, name: 'Scrum Team' }, what: 'slot', about: 'Scrum Master', there: '1' },
+    ])
+  })
+})
+
+describe('a place chosen when a unit type came in', () => {
+  /** Team Topologies' stream-aligned team, which its library puts at the top, put in the organisation's Cluster instead. */
+  const placed = () => brought(ownModel(), {
+    library: TEAM_TOPOLOGIES, entries: ['stream-aligned'],
+    placements: { 'stream-aligned': { top: false, within: [{ type: 'own-cluster' }] } },
+  })
+  const aligned = (model: Model) => listsOf(model).unitTypes.find((one) => one.basedOn?.entry === 'stream-aligned')!
+  const of = (model: Model) => compareWithLibraries(listsOf(model), [TEAM_TOPOLOGIES]).filter((one) => one.item.id === aligned(model).id)
+
+  it('is no difference: the type sits where it was put', () => {
+    expect(aligned(placed()).basedOn?.placed).toEqual({ top: false, within: ['own-cluster'] })
+    expect(of(placed())).toEqual([])
+  })
+
+  it('makes a move since a difference, against where it was put, saying the types by their names now', () => {
+    const model = placed()
+    const type = aligned(model)
+    const guild = { ...newUnitType('Guild', () => 'own-guild').unitType, top: true }
+    const moved = applyAll(model, [
+      { type: 'unitType.add', unitType: guild },
+      { type: 'unitType.update', id: 'own-cluster', patch: { name: 'Tribe' } },
+      { type: 'unitType.update', id: type.id, patch: { within: ['own-guild'] } },
+    ])
+    const item = { kind: 'unitType', id: type.id, name: 'Stream-aligned team' }
+    expect(of(moved)).toEqual([
+      { item, what: 'within', about: 'Tribe', there: 'true', moved: true },
+      { item, what: 'within', about: 'Guild', here: 'true', moved: true },
+    ])
+    // Moved to the top, where its library puts it, is a move since too.
+    const top = applyAll(model, [{ type: 'unitType.update', id: type.id, patch: { top: true, within: [] } }])
+    expect(of(top)).toEqual([
+      { item, what: 'top', here: 'true', moved: true },
+      { item, what: 'within', about: 'Cluster', there: 'true', moved: true },
+    ])
+  })
+
+  it('passes over a type it was put in that the organisation has taken away: taking it away moved nothing', () => {
+    const model = placed()
+    const gone = applyAll(model, [removeUnitType(listsOf(model), 'own-cluster')])
+    expect(aligned(gone).within).toEqual([])
+    expect(of(gone)).toEqual([])
+  })
+
+  it('is not recorded where it is where the library puts the type, which is then read against the library', () => {
+    const model = brought(empty(), { library: SAFE, entries: ['agile-team'], placements: { 'agile-team': { top: false, within: [{ entry: 'agile-release-train' }] } } })
+    const team = listsOf(model).unitTypes.find((one) => one.basedOn?.entry === 'agile-team')!
+    expect(team.basedOn).not.toHaveProperty('placed')
+    const moved = applyAll(model, [{ type: 'unitType.update', id: team.id, patch: { within: [] } }])
+    expect(compareWithLibraries(listsOf(moved), [SAFE]).filter((one) => one.item.id === team.id)).toEqual([
+      { item: { kind: 'unitType', id: team.id, name: 'Agile Team' }, what: 'within', about: 'Agile Release Train', there: 'true' },
     ])
   })
 })

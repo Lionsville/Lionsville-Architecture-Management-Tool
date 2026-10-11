@@ -95,14 +95,15 @@ export function differenceSentence(difference: Difference, t: Translate): string
     case 'slot':
     case 'within':
     case 'duty':
-      return t('operating.diff.about', {
+      // A place a type was put in when it came in is what a move since is told from.
+      return t(difference.moved ? 'operating.diff.movedAbout' : 'operating.diff.about', {
         name, field: t(`operating.field.${difference.what}`), about: difference.about ?? '',
         here: value(difference.here), there: value(difference.there),
       })
     default:
       // A name chosen when the item came in is what a rename since is told from.
       if (difference.what === 'name' && difference.chosen !== undefined) return t('operating.diff.renamed', { name, chosen: difference.chosen })
-      return t('operating.diff.field', {
+      return t(difference.moved ? 'operating.diff.moved' : 'operating.diff.field', {
         name, field: t(`operating.field.${difference.what}`), here: value(difference.here), there: value(difference.there),
       })
   }

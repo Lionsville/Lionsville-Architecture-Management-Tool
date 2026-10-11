@@ -4,8 +4,9 @@
 /**
  * *What came in* (ADR-0036, amended 11 October 2026): per library, the items
  * made from it with the library's term and their name now, what has changed
- * since, and the organisation's own items matched to its entries — all of it
- * read from the records.
+ * since — a name or a place chosen on the way in being no change — and the
+ * organisation's own items matched to its entries, all of it read from the
+ * records.
  */
 import { describe, expect, it } from 'vitest'
 import type { Model } from '../model/normalised'
@@ -18,6 +19,7 @@ import { LIBRARIES } from './libraries'
 import { IT4IT } from './libraries/it4it'
 import { SAFE } from './libraries/safe'
 import { SCRUM } from './libraries/scrum'
+import { TEAM_TOPOLOGIES } from './libraries/teamTopologies'
 import { applyAll, empty, listsOf } from './testing'
 
 function counter(prefix: string): (kind: string) => string {
@@ -64,6 +66,22 @@ describe('what came in', () => {
     // The name chosen on the way in is no change; the rename since is.
     expect(made[0].changed).toEqual([])
     expect(made[1].changed).toEqual([{ item: { kind: 'role', id: made[1].id, name: 'Agile coach' }, what: 'name', here: 'Agile coach', there: 'Scrum Master' }])
+  })
+
+  it('says nothing has changed of a type put elsewhere than its library puts it on the way in, and says a move since', () => {
+    const own = applyAll(empty(), [
+      { type: 'unitType.add', unitType: { id: 'own-cluster', name: 'Cluster', top: true, within: [], slots: [] } },
+    ])
+    const model = brought(own, {
+      library: TEAM_TOPOLOGIES, entries: ['stream-aligned'], language: 'en',
+      placements: { 'stream-aligned': { top: false, within: [{ type: 'own-cluster' }] } },
+    })
+    const [aligned] = from(model, TEAM_TOPOLOGIES).made
+    expect([aligned.entry, aligned.changed]).toEqual(['stream-aligned', []])
+    const moved = applyAll(model, [{ type: 'unitType.update', id: aligned.id, patch: { top: true } }])
+    expect(from(moved, TEAM_TOPOLOGIES).made[0].changed).toEqual([
+      { item: { kind: 'unitType', id: aligned.id, name: 'Stream-aligned team' }, what: 'top', here: 'true', moved: true },
+    ])
   })
 
   it('says of each entry matched the organisation\'s own item it was matched to, and nothing of a library it was not', () => {

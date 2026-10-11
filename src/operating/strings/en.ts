@@ -215,6 +215,8 @@ export const EN = {
   'operating.diff.field': '{name} — {field}: here “{here}”, in the library “{there}”.',
   'operating.diff.renamed': '{name} — renamed since it came in as “{chosen}”.',
   'operating.diff.about': '{name} — {field} {about}: here {here}, in the library {there}.',
+  'operating.diff.moved': '{name} — {field}: here “{here}”, when it came in “{there}”.',
+  'operating.diff.movedAbout': '{name} — {field} {about}: here {here}, when it came in {there}.',
   'operating.field.name': 'the name',
   'operating.field.short': 'the short name',
   'operating.field.purpose': 'the purpose',
