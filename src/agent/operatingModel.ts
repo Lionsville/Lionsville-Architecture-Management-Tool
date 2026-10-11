@@ -9,11 +9,14 @@
  * organisation's document whatever scope is open — the session's model where
  * the organisation is the scope open, its document as it is kept otherwise
  * (`handle.ts`). Each line names what it points at by id and by name, so an
- * agent can write a slot or a duty without a second call.
+ * agent can write a slot or a duty without a second call. The unit types are
+ * listed as the structure stands (`model/unitOrder.ts`): by lane, then by
+ * their order in it, then by name, those that sit nowhere last.
  */
 import type { HostModel } from '../model/hostModel'
 import { accountableFor, raciOf, typesHolding } from '../model/operatingModel'
-import type { BasedOn, Dated, Responsibility, Role, UnitType } from '../model/operatingModel'
+import type { BasedOn, Dated, Responsibility, Role, UnitType, UnitTypeId } from '../model/operatingModel'
+import { unitTypeLanes } from '../model/unitOrder'
 import type { AgentAnswer, ToolName } from './tools'
 import { checkArguments, json, refused, toolSpec } from './tools'
 
@@ -44,13 +47,21 @@ function basedOnLine(basedOn: BasedOn | undefined) {
   return basedOn ? { basedOn: { library: basedOn.library, entry: basedOn.entry, version: basedOn.version } } : {}
 }
 
-/** One unit type as the agent reads it. */
-export function unitTypeLine(type: UnitType, model: OperatingDocument) {
+/**
+ * One unit type as the agent reads it: its lane where it has one (1 for a
+ * type at the top), and its order in the lane where one is said.
+ */
+export function unitTypeLine(
+  type: UnitType, model: OperatingDocument, laneOf: ReadonlyMap<UnitTypeId, number> = unitTypeLanes(model.unitTypes ?? []).laneOf,
+) {
   const roles = model.roles ?? []
+  const lane = laneOf.get(type.id)
   return {
     id: type.id,
     name: type.name,
     ...(type.purpose ? { purpose: type.purpose } : {}),
+    ...(lane !== undefined ? { lane } : { sitsNowhere: true }),
+    ...(type.order !== undefined ? { order: type.order } : {}),
     ...(type.top ? { top: true } : {}),
     within: type.within.map((id) => named(model.unitTypes ?? [], id)),
     ...(type.spans ? { spans: true } : {}),
@@ -110,8 +121,11 @@ export function answerOperating(tool: OperatingRead, rawArgs: unknown, model: Op
   const roles = model.roles ?? []
   const responsibilities = model.responsibilities ?? []
   switch (tool) {
-    case 'unitTypes.list':
-      return json({ scope: '', unitTypes: unitTypes.map((type) => unitTypeLine(type, model)) })
+    case 'unitTypes.list': {
+      const { lanes, laneOf, nowhere } = unitTypeLanes(unitTypes)
+      const listed = [...lanes.flatMap((lane) => lane.types), ...nowhere]
+      return json({ scope: '', unitTypes: listed.map((type) => unitTypeLine(type, model, laneOf)) })
+    }
     case 'roles.list': {
       const type = typeof args.unitTypeId === 'string' ? unitTypes.find((one) => one.id === args.unitTypeId) : undefined
       if (args.unitTypeId !== undefined && args.unitTypeId !== null && !type) return refused('agent.unknownId', `unit type ${String(args.unitTypeId)}`)

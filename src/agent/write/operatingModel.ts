@@ -144,6 +144,7 @@ function unitTypePatch(args: Args, model: Model, self: string | undefined): Part
     patch.slots = slots
   }
   if ('limit' in args) patch.limit = typeof args.limit === 'number' ? args.limit : undefined
+  if ('order' in args) patch.order = typeof args.order === 'number' && Number.isFinite(args.order) ? args.order : undefined
   return patch
 }
 

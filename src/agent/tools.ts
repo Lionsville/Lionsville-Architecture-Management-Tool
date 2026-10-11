@@ -425,6 +425,10 @@ const UNIT_TYPE_FIELDS: Readonly<Record<string, ArgumentSchema>> = {
     },
   },
   limit: { type: 'integer', description: 'How many applications a unit of it should own at most. A check reads it; nothing refuses it.', minimum: 0 },
+  order: {
+    type: 'number',
+    description: 'Where it stands among the unit types of its lane, low first; those with none follow, by name. Null clears it.',
+  },
   ...DATED_FIELDS('unit type'),
 }
 
@@ -557,7 +561,9 @@ const SPECS = [
       + 'cause explains an observation of a scope below, which nothing makes any more: link the cause there that '
       + 'explains it, named in the detail, instead), check.drawingLinkMissing (a shape on a drawing '
       + 'points at an element this scope does not hold), and check.notDrawn, which is '
-      + 'information rather than a fault and is listed only when asked. The organisation\'s own (ADR-0036): '
+      + 'information rather than a fault and is listed only when asked. The operating model\'s, at the organisation: '
+      + 'check.accountability (a responsibility not exactly one role\'s A) and check.unitTypeNowhere (a unit type '
+      + 'neither at the top nor in a unit type that sits anywhere, so no unit of it can be placed). The organisation\'s own (ADR-0036): '
       + 'check.roleVacant, check.roleOverMax, check.unitMisplaced, check.unitSpans, check.unitOverLimit, '
       + 'check.assignmentEnded, check.unitTypeEnded and check.personOverloaded, read on a day — today, or the day '
       + 'given as on, with every plan\'s moves of that day. A finding is never a refusal and '
@@ -865,7 +871,9 @@ const SPECS = [
       'The organisation\'s kinds of unit (ADR-0036), in its own words: each unit type\'s purpose, where a unit of it may sit '
       + '(at the top, under the organisation, and under the unit types listed in within), whether it may serve more than '
       + 'one domain (spans), the roles it holds with how many of each (slots: min, and max where there is one), how many '
-      + 'applications a unit of it should own at most (limit), and the library entry it was based on. The operating model '
+      + 'applications a unit of it should own at most (limit), and the library entry it was based on. Listed as the '
+      + 'structure stands: by lane — 1 for a type that may sit at the top, and below the deepest type it may sit in — then '
+      + 'by its order in the lane, then by name; a type that sits nowhere has no lane, says sitsNowhere and comes last. The operating model '
       + 'is kept at the organisation: whatever scope is open, this answers from there.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
   },
@@ -1895,7 +1903,7 @@ const SPECS = [
     tier: 'write',
     description:
       'Change a unit type. Only the fields given change; within and slots replace the lists; null clears the purpose, '
-      + 'top, spans and the limit. A blank name is refused. At the organisation, which must be the scope open.',
+      + 'top, spans, the limit and the order. A blank name is refused. At the organisation, which must be the scope open.',
     inputSchema: {
       type: 'object',
       properties: { id: ID('unit type'), name: { type: 'string', description: 'A new name.' }, ...UNIT_TYPE_FIELDS },

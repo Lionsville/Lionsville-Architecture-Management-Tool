@@ -107,11 +107,27 @@ describe('the operating model\'s three lists', () => {
     const out = parsed(await ask('unitTypes.list', {}, session('', organisation)))
     expect(out.scope).toBe('')
     expect(out.unitTypes).toEqual([
-      { id: 'ut-train', name: 'Train', top: true, within: [], slots: [{ roleId: 'ro-lead', role: 'Train lead', min: 1, max: 1 }] },
+      { id: 'ut-train', name: 'Train', lane: 1, top: true, within: [], slots: [{ roleId: 'ro-lead', role: 'Train lead', min: 1, max: 1 }] },
       {
-        id: 'ut-team', name: 'Team', within: [{ id: 'ut-train', name: 'Train' }], limit: 3,
+        id: 'ut-team', name: 'Team', lane: 2, within: [{ id: 'ut-train', name: 'Train' }], limit: 3,
         slots: [{ roleId: 'ro-po', role: 'Product owner', min: 1, max: 1 }, { roleId: 'ro-dev', role: 'Developer', min: 3 }],
       },
+    ])
+  })
+
+  it('list the unit types as the structure stands: by lane, then order, then name, and those that sit nowhere last', async () => {
+    const shuffled: HostModel = {
+      ...organisation,
+      unitTypes: [
+        { id: 'ut-guild', name: 'Guild', within: [], slots: [] },
+        ...organisation.unitTypes!.slice().reverse(),
+        { id: 'ut-desk', name: 'Desk', top: true, within: [], slots: [], order: 1 },
+      ],
+    }
+    const out = parsed(await ask('unitTypes.list', {}, session('', shuffled)))
+    const lines = out.unitTypes as Record<string, unknown>[]
+    expect(lines.map((one) => [one.id, one.lane, one.order, one.sitsNowhere])).toEqual([
+      ['ut-desk', 1, 1, undefined], ['ut-train', 1, undefined, undefined], ['ut-team', 2, undefined, undefined], ['ut-guild', undefined, undefined, true],
     ])
   })
 
@@ -172,6 +188,15 @@ describe('the operating model\'s four writes', () => {
     expect(out).toMatchObject({ id: 'ut-team', top: true, within: [], slots: [{ roleId: 'ro-po', min: 1, max: 1 }] })
     expect('limit' in out).toBe(false)
     expect(on.model().unitTypes?.['ut-team']).toEqual({ id: 'ut-team', name: 'Team', top: true, within: [], slots: [{ role: 'ro-po', min: 1, max: 1 }] })
+  })
+
+  it('set where a unit type stands in its lane, and null takes it away', async () => {
+    const on = session('', organisation)
+    expect(parsed(await ask('unitType.update', { id: 'ut-train', order: 2 }, on))).toMatchObject({ id: 'ut-train', lane: 1, order: 2 })
+    expect(on.model().unitTypes?.['ut-train'].order).toBe(2)
+    const cleared = parsed(await ask('unitType.update', { id: 'ut-train', order: null }, on))
+    expect('order' in cleared).toBe(false)
+    expect('order' in on.model().unitTypes!['ut-train']).toBe(false)
   })
 
   it('refuse what names nothing the organisation holds, or says nothing sensible', async () => {
