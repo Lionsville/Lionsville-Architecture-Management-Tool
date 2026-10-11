@@ -49,11 +49,13 @@ const ROW = 'data-outline-id'
 
 export function ChartOutline({ chart, folded, onToggle, current, onPick, typeName, order, t }: ChartOutlineProps) {
   const box = useRef<HTMLElement | null>(null)
-  // The unit gone to is brought on screen here too, once the way to it is open.
+  // The unit gone to is brought on screen here too: the way to it is opened in
+  // the same render, and a fold turned elsewhere in the outline leaves the
+  // outline where the person put it.
   useEffect(() => {
     if (current === undefined) return
     box.current?.querySelector<HTMLElement>(locatedSelector(current, ROW))?.scrollIntoView?.({ block: 'nearest' })
-  }, [current, folded])
+  }, [current])
   return (
     <Box
       component="nav" ref={box} aria-label={t('chart.outline')} data-testid="chart-outline" data-guide="chart.outline"

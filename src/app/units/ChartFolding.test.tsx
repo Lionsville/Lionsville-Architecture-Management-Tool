@@ -136,6 +136,22 @@ describe('a large organisation on its chart', () => {
     expect(screen.getByTestId('chart-note').textContent).toBe('No unit on this chart is called that.')
   })
 
+  it('brings the unit gone to on screen in the outline too', () => {
+    // jsdom lays nothing out and has no scrollIntoView: a stand-in says what was brought on screen.
+    const scrolled: Element[] = []
+    const proto = Element.prototype as { scrollIntoView?: () => void }
+    proto.scrollIntoView = function (this: Element) { scrolled.push(this) }
+    try {
+      renderShell(<Harness />)
+      const field = screen.getByRole('textbox', { name: 'Find a unit' })
+      fireEvent.change(field, { target: { value: 'Team 4.0.1' } })
+      fireEvent.click(screen.getByRole('button', { name: 'Find' }))
+      expect(scrolled.some((one) => one.getAttribute('data-outline-id') === 'd4c0t1')).toBe(true)
+    } finally {
+      delete proto.scrollIntoView
+    }
+  })
+
   it('goes to a unit picked in the outline, unfolding its way on the chart; the outline folds on its own', () => {
     const onSelect = vi.fn()
     renderShell(<Harness onSelect={onSelect} />)
