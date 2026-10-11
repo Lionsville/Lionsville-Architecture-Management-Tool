@@ -105,6 +105,24 @@ describe('the Conway map', () => {
     expect(input.interactions.map((one) => one.id)).toEqual(['i-1'])
   })
 
+  it('reads the applications of a unit a plan moves under one of its units, from the day of the move', () => {
+    const SHIPPING: HostModel = {
+      name: 'Shipping', relations: [], diagrams: [],
+      elements: [actor('parcel', 'Parcel', { unitTypeId: 'ut-team' }), app('track', 'Track & Trace', 'parcel')],
+    }
+    const moved: HostModel = {
+      ...CUSTOMER,
+      transitions: [{
+        id: 'tr-1', number: 1, title: 'Parcel joins Digital Sales', status: 'agreed', elements: [], decisions: [], milestones: [], body: '',
+        moves: [{ unitId: 'parcel', parentId: 'sales', on: '2027-01-01' }],
+      }],
+    }
+    const index = indexScopes([{ path: '', model: ROOT }, { path: 'customer', model: moved }, { path: 'shipping', model: SHIPPING }])
+    const here = unitViewsHere(index, 'customer', moved)
+    expect(conwayInputHere(index, 'customer', moved, here, '2026-12-31').applications.map((one) => one.id)).not.toContain('track')
+    expect(conwayInputHere(index, 'customer', moved, here, '2027-01-01').applications.map((one) => one.id)).toContain('track')
+  })
+
   it('draws a column per unit and one for what nobody owns, and says what it finds', () => {
     renderShell(<Harness commands={[]} />)
     expect(screen.getAllByTestId('conway-column').map((column) => column.getAttribute('data-element-id'))).toEqual(['ip', 'mob', 'web', null])

@@ -20,7 +20,7 @@
 import type { ConwayApplication, ConwayInput, ConwayInteraction, ConwayRow } from '../../model/conway'
 import type { HostModel } from '../../model/hostModel'
 import type { ElementId, Relation } from '../../model/types'
-import { isUnit, unitsBelow } from '../../model/units'
+import { isUnit, organisationOn, unitsBelow } from '../../model/units'
 import type { UnitLike } from '../../model/units'
 import type { OrganisationAt } from '../../projects/checks'
 import type { ScopeIndex } from '../../projects/scopeIndex'
@@ -63,12 +63,15 @@ export function unitViewsHere(index: ScopeIndex, scope: ScopePath, model: HostMo
  * or below and those the view's units own, with each one's owner as the
  * scope that answers for it says; the interfaces between them; and every
  * interaction between two units. The open scope's own rows are its session's.
+ * `day` is the map's: the units below the view's are those below on that day,
+ * under the parents the plans' moves give them then.
  */
-export function conwayInputHere(index: ScopeIndex, scope: ScopePath, model: HostModel, here: UnitViewsHere): ConwayInput {
+export function conwayInputHere(index: ScopeIndex, scope: ScopePath, model: HostModel, here: UnitViewsHere, day?: string): ConwayInput {
   const { organisation } = here.at
   const units = organisation.units.filter(isUnit)
-  // The view's units and every unit below them, as the chart draws them.
-  const included = new Set(units.filter(here.includes).flatMap((unit) => [unit.id, ...unitsBelow(units, unit.id)]))
+  // The view's units and every unit below them on the day, as the chart draws them.
+  const tree = day === undefined ? units : organisationOn(organisation, day).units.filter(isUnit)
+  const included = new Set(units.filter(here.includes).flatMap((unit) => [unit.id, ...unitsBelow(tree, unit.id)]))
   const applications = applicationsHere(index, scope, model, included)
   const reach = new Set(applications.map((app) => app.id))
   return {

@@ -54,3 +54,19 @@ describe('the findings an agent reads with a scope open', () => {
     expect(findings(filled).filter((one) => one.key === 'check.personOverloaded').map((one) => one.id)).toEqual(['pe-sara'])
   })
 })
+
+describe('the rows an agent reads from the rest of the tree', () => {
+  it('leave out the open scope\'s own, which its session says — one taken away there stays away', () => {
+    const shipping: HostModel = {
+      name: 'Shipping', elements: [{ ...unit, id: 'parcel', name: 'Parcel' }],
+      relations: [{ id: 'i-far', type: 'interacts', sourceId: 'parcel', targetId: 'web', mode: 'service' }], diagrams: [],
+    }
+    const customer: HostModel = { ...CUSTOMER, relations: [{ id: 'i-near', type: 'interacts', sourceId: 'web', targetId: 'parcel' }] }
+    const index = indexScopes([{ path: '', model: ROOT }, { path: 'customer', model: customer }, { path: 'shipping', model: shipping }])
+    const view = agentTree({
+      session: { current: () => CUSTOMER } as unknown as ModelSession, scope: 'customer', indexRef: { current: index },
+      rowsElsewhereRef: { current: [] as Relation[] }, scopes: {} as never, reader: {} as ScopeReader, people: () => [],
+    })
+    expect(view?.rowsTo?.('web', ['interacts']).map((row) => row.id)).toEqual(['i-far'])
+  })
+})

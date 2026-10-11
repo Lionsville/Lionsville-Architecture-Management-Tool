@@ -20,7 +20,7 @@ import { isDay } from '../model/lifecycle'
 import { orgChart } from '../model/orgChart'
 import type { ChartUnit } from '../model/orgChart'
 import type { DesignDiagram, ElementId, Relation } from '../model/types'
-import { isUnit, unitsBelow } from '../model/units'
+import { isUnit, organisationOn, unitsBelow } from '../model/units'
 import type { UnitLike } from '../model/units'
 import { assignmentsNow, organisationNow } from './assignments'
 import type { OpenDocument } from './assignments'
@@ -91,7 +91,9 @@ export function inspectConway(tree: TreeView | undefined, open: OpenDocument, di
   const organisation = organisationNow(tree, open, assignmentsNow(tree, open).map((one) => one.assignment))
   const units = organisation.units.filter(isUnit)
   const include = includes(tree, open)
-  const viewUnits = new Set(units.filter(include).flatMap((one) => [one.id, ...unitsBelow(units, one.id)]))
+  // Below on the map's day, under the parents the plans' moves give then.
+  const onDay = organisationOn(organisation, day).units.filter(isUnit)
+  const viewUnits = new Set(units.filter(include).flatMap((one) => [one.id, ...unitsBelow(onDay, one.id)]))
   const applications = applicationsOf(tree, open.current, open.path, viewUnits)
   const map = conwayMap({
     units, ...(organisation.moves ? { moves: organisation.moves } : {}), unitTypes: organisation.unitTypes, applications,

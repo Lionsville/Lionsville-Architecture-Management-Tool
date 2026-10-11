@@ -198,7 +198,9 @@ export function agentTree(at: {
     initiativesBelow: (path) => indexRef.current.initiativesBelow(path),
     analysisBelow: (path) => indexRef.current.analysisBelow(path),
     explainedFromAbove: (path) => indexRef.current.explainedFromAbove(path),
-    rowsTo: (id, types) => indexRef.current.rowsTo(id, types).map((row) => row.relation),
+    // The rows the rest of the tree wrote: the open scope's own are its session's, and the index's
+    // copy of them may hold one the session has since taken away.
+    rowsTo: (id, types) => indexRef.current.rowsTo(id, types).filter((row) => row.scope !== scope).map((row) => row.relation),
     units: () => indexRef.current.units(),
     assignments: () => indexRef.current.assignments(),
     moves: () => indexRef.current.moves(),

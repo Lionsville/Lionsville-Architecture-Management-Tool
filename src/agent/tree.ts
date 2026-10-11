@@ -133,10 +133,11 @@ export type TreeView = {
   /** The causes of the scopes above `path` that explain its records, by the id explained (ADR-0032 §4). */
   explainedFromAbove?(path: string): ReadonlyMap<string, readonly CauseAbove[]>
   /**
-   * Every row in the tree that points at this id, wherever it was written
-   * (§2): what realises a service is the platform scope's row, and what
-   * consumes it is a landscape's. Absent in a shell built before the tree
-   * answered rows, and the answer is then this scope's rows alone.
+   * Every row the rest of the tree wrote that points at this id (§2): what
+   * realises a service is the platform scope's row, and what consumes it is a
+   * landscape's. The open scope's own are its session's to say, and are not
+   * here. Absent in a shell built before the tree answered rows, and the
+   * answer is then this scope's rows alone.
    */
   rowsTo?(id: ElementId, types?: readonly RelationType[]): readonly Relation[]
   /**

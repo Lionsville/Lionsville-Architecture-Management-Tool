@@ -92,7 +92,7 @@ export function ConwayPage(props: ConwayPageProps) {
   const [groupBy, setGroupBy] = useState<string | undefined>(undefined)
   const [lit, setLit] = useState<number | undefined>(undefined)
   const [interacting, setInteracting] = useState<Interacting | undefined>(undefined)
-  const input = useMemo(() => conwayInputHere(props.index, props.scope, props.model, here), [props.index, props.scope, props.model, here])
+  const input = useMemo(() => conwayInputHere(props.index, props.scope, props.model, here, day), [props.index, props.scope, props.model, here, day])
   const map = useMemo(() => conwayMap(input, day, groupBy !== undefined ? { groupBy } : {}), [input, day, groupBy])
   const mine = useMine(here, day)
   const page = useRef<HTMLDivElement | null>(null)
