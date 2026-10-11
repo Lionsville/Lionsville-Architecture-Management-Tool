@@ -512,7 +512,9 @@ database is at version 5), and the folder's file lists them under `removed`. The
 carries it at the same path from the zip's root, outside the manifest, so a
 build from before reads past it and no format moved; the whole organisation
 carries all of it, part of the tree the entries it names. The sealing
-dialog asks *Without names*. Work brought from this browser into a folder
+dialog asks *Without names*, and a copy made so carries no name a signature
+kept either: its decisions keep the ids and drop `signedAs` and `proposedAs`
+(`model/adr.withoutSignedNames`). Work brought from this browser into a folder
 brings the entries the folder does not hold, and every forgetting and
 removal.
 

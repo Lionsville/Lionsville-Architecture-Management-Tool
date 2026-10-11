@@ -16,6 +16,7 @@
  * markdown inside it.
  */
 import type { Adr } from '../model/adr'
+import { withoutSignedNames } from '../model/adr'
 import type { HostModel } from '../model/hostModel'
 import type { Diagram, Model } from '../model/normalised'
 import { decisionsOf, groupsOf, placedList, placedOn, toArrays, transitionList } from '../model/normalised'
@@ -36,7 +37,6 @@ import { matchesQuery } from '../model/textSearch'
 import { personIdOf } from '../model/person'
 import type { PersonRef } from '../model/person'
 import type { AgentRegister } from './persons'
-import { withoutSignedNames } from './persons'
 import type { DesignElement, ElementId, Relation } from '../model/types'
 import { businessCaseFence, computeBusinessCase, readBusinessCase } from '../documentation/businessCase'
 import { formatAdrNumber } from '../decisions/adr'

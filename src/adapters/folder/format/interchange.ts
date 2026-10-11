@@ -23,6 +23,7 @@ import type {
   Arrival, BringInto, BringOptions, BroughtIn, CarriedOut, CarryFrom, CarryOptions, Interchange, Opened, ReadBack,
 } from '../../../ports/Interchange'
 import type { Repositories } from '../../../ports/Repositories'
+import { withoutSignedNames } from '../../../model/adr'
 import { personIdsIn } from '../../../model/person'
 import type { Person, PersonId } from '../../../people/person'
 import { withoutNames } from '../../../people/shown'
@@ -57,10 +58,18 @@ export async function carryOut(
   const held = await Promise.all((options.held ?? [])
     .filter((scope) => isWithinScope(scope.path, at))
     .map((scope) => pictured(from, scope, read.find((one) => one.path === scope.path))))
-  const scopes = withHeld(read, held).map(saysWhatItLacks)
+  const nameless = options.withoutNames ?? false
+  // Without names means none: not even the names signatures kept (ADR-0036 §8), which the record holds and the copy does not.
+  const scopes = withHeld(read, held).map(saysWhatItLacks).map((scope) => (nameless ? withNoSignedNames(scope) : scope))
   const carried = scopes.length ? scopes : [bareScope(ROOT_SCOPE, (await from.scopes.tree()).root.name)]
-  const register = await peopleCarried(from, carried, at === ROOT_SCOPE, options.withoutNames ?? false)
+  const register = await peopleCarried(from, carried, at === ROOT_SCOPE, nameless)
   return carryScopes(carried, register.people, register.removed)
+}
+
+/** A scope whose decisions keep no name a signature kept: what a copy without names carries. */
+function withNoSignedNames(scope: ScopeSnapshot): ScopeSnapshot {
+  const decisions = scope.model.decisions
+  return decisions?.length ? { ...scope, model: { ...scope.model, decisions: withoutSignedNames(decisions) } } : scope
 }
 
 /**

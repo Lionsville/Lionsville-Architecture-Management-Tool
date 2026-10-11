@@ -192,3 +192,26 @@ export function adrFieldItems(
       return []
   }
 }
+
+/**
+ * Decision records with no name a signature kept (ADR-0036 §8): every
+ * signer's `signedAs` and the proposer's `proposedAs` left out, the ids
+ * standing. What a copy made *without names* carries, and what an agent
+ * the policy gives pseudonyms searches — a name it may not read must not be
+ * what finds a record either. The record itself keeps them.
+ */
+export function withoutSignedNames(decisions: readonly Adr[]): Adr[] {
+  return decisions.map((adr) => {
+    if (adr.proposedAs === undefined && !adr.signers.some((signer) => signer.signedAs !== undefined)) return adr
+    const { proposedAs: _as, ...rest } = adr
+    void _as
+    return {
+      ...rest,
+      signers: adr.signers.map((signer) => {
+        const { signedAs: _signed, ...kept } = signer
+        void _signed
+        return kept
+      }),
+    }
+  })
+}

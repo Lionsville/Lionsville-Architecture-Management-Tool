@@ -2125,7 +2125,8 @@ Twee uitgangen, voor twee doelen.
 
   Het bestand neemt ook het **personenregister** mee. Vink **Zonder namen**
   aan als je het wachtwoord kiest, en iedereen gaat als pseudoniem mee in de
-  kopie, zonder adres — voor een kopie die de organisatie verlaat. Een bestand
+  kopie, zonder adres, en een getekend besluit zonder de namen waarmee het
+  getekend is — voor een kopie die de organisatie verlaat. Een bestand
   openen geeft nooit een naam terug aan iemand die hier vergeten is, brengt
   nooit iemand terug die hier verwijderd is, en een bestand zonder namen
   neemt geen naam weg. Wie vergeten of verwijderd is waar het bestand gemaakt

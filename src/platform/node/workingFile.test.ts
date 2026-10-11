@@ -220,6 +220,30 @@ describe('the people register in a working file (ADR-0036 §8)', () => {
     expect(await target.people.read(pia.id)).toEqual({ id: pia.id, pseudonym: pia.pseudonym, kind: 'internal', state: 'active' })
   })
 
+  it('made without names leaves out the names signatures kept, and keeps them in the source', async () => {
+    const source = memoryRepositories()
+    const pia = added(await source.people.add({ name: 'Pia Schulz' }))
+    const [top, landscape] = organisation()
+    const decided = {
+      ...landscape,
+      model: {
+        ...landscape.model,
+        decisions: [{
+          id: 'ad-sign', number: 1, title: 'One order store', status: 'accepted' as const, date: '2026-10-01', body: '',
+          proposedBy: { person: pia.id }, proposedAs: 'Pia Schulz',
+          signers: [{ name: { person: pia.id }, verdict: 'approved' as const, signedAt: '2026-10-01', signedAs: 'Pia Schulz' }],
+        }],
+      },
+    }
+    await seed(source, [top, decided])
+    const { bytes } = await writeWorkingFile(source, { withoutNames: true })
+    const text = Object.values(unzipSync(bytes)).map((held) => new TextDecoder().decode(held)).join('\n')
+    expect(text).not.toMatch(/Pia|Schulz/)
+    expect(text).toContain(pia.id)
+    const named = Object.values(unzipSync((await writeWorkingFile(source)).bytes)).map((held) => new TextDecoder().decode(held)).join('\n')
+    expect(named).toContain('signedAs: Pia Schulz')
+  })
+
   it('brought back where it came from, gives no name back to an entry forgotten meanwhile, and takes no name away', async () => {
     const source = memoryRepositories()
     await seed(source)

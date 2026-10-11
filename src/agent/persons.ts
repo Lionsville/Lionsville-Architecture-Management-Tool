@@ -77,26 +77,6 @@ export function withPersonNames(value: unknown, words: PersonWords, withhold = f
   )))
 }
 
-/**
- * Decisions with no name a signature kept, for a search an agent makes where
- * names are withheld: a name it may not read must not be what finds a record
- * either.
- */
-export function withoutSignedNames<T extends { signers: readonly object[]; proposedAs?: string }>(decisions: readonly T[]): T[] {
-  return decisions.map((adr) => {
-    const { proposedAs: _as, ...rest } = adr
-    void _as
-    return {
-      ...rest,
-      signers: adr.signers.map((signer) => {
-        const { signedAs: _signed, ...kept } = signer as { signedAs?: string }
-        void _signed
-        return kept
-      }),
-    } as unknown as T
-  })
-}
-
 /** Whether an answer may name somebody by id: a cheap look before the register is read. */
 export function mayNamePeople(answer: AgentAnswer): boolean {
   return answer.ok && answer.content.some((block) => block.type === 'text' && (block.text.includes('"person"') || block.text.includes('"signedAs"') || block.text.includes('"proposedAs"')))
