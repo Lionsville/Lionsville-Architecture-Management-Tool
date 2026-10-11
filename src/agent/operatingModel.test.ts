@@ -19,6 +19,11 @@ import { handle } from './handle'
 import type { SessionView } from './handle'
 import type { AgentAnswer } from './tools'
 import type { TreeView } from './tree'
+import { nearestPlace, placeOf } from './place'
+import { arrived, landed } from './screen'
+import type { Destination, Screen } from './screen'
+import { openApp } from './shell'
+import type { ShellView } from './shell'
 
 const organisation: HostModel = {
   name: 'Acme Logistics', elements: [], relations: [], diagrams: [],
@@ -205,5 +210,48 @@ describe('the operating model\'s four writes', () => {
     // same answer every write gives for a scope that is not open.
     expect(refusal(await ask('unitType.add', { name: 'X', scope: '' }, elsewhere))?.[0]).toBe('agent.scopeNotOpen')
     expect(elsewhere.sent).toEqual([])
+  })
+})
+
+describe('the operating model\'s page, as a place', () => {
+  /** A shell whose screen is wherever it was last sent. */
+  function shell(): ShellView & { sent: Destination[] } {
+    let screen: Screen = { home: { path: 'retail', name: 'Retail' } }
+    const sent: Destination[] = []
+    return {
+      sent,
+      tree: tree(),
+      screen: () => screen,
+      open: (to) => {
+        sent.push(to)
+        screen = { open: { path: to.scope, name: 'Acme Logistics' }, page: { page: 'operating', ...(to.id !== undefined ? { id: to.id } : {}) } }
+      },
+      client: () => 'test',
+      driving: { current: () => ({}) } as unknown as ShellView['driving'],
+    }
+  }
+
+  it('opens at the organisation, on an item where one is named, whatever scope is up', async () => {
+    const app = shell()
+    const out = parsed(await openApp({ page: 'operating', id: 'ro-po' }, undefined, app))
+    expect(app.sent).toEqual([{ scope: '', page: 'operating', id: 'ro-po' }])
+    expect(out.page).toEqual({ page: 'operating', id: 'ro-po' })
+    expect(refusal(await openApp({ page: 'operating', id: 'nope' }, undefined, app))?.[0]).toBe('agent.unknownId')
+  })
+
+  it('is refused anywhere but the organisation', async () => {
+    expect(refusal(await openApp({ page: 'operating', scope: 'retail' }, undefined, shell()))?.[0]).toBe('agent.badArguments')
+  })
+
+  it('has arrived, landed and is a place the history keeps', () => {
+    const up: Screen = { open: { path: '', name: 'Acme Logistics' }, page: { page: 'operating', id: 'ro-po' } }
+    expect(arrived(up, { page: 'operating' }, '')).toBe(true)
+    expect(arrived(up, { page: 'operating', id: 'ro-po' }, '')).toBe(true)
+    expect(arrived(up, { page: 'operating', id: 'ro-dev' }, '')).toBe(false)
+    expect(landed(up, { scope: '', page: 'operating' })).toBe(true)
+    expect(placeOf(up)).toEqual({ scope: '', page: 'operating', id: 'ro-po' })
+    // An item that is gone lands on the page without it.
+    expect(nearestPlace({ scope: '', page: 'operating', id: 'gone' }, { scopeIs: () => true, holds: () => false }))
+      .toEqual({ scope: '', page: 'operating' })
   })
 })

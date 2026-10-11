@@ -210,6 +210,8 @@ describe('a place in the address (ADR-0033)', () => {
 
   it('opens the page a destination names, the same words the agent uses', () => {
     expect(initialPageFor({ page: 'plan' })).toEqual({ page: 'roadmap' })
+    expect(initialPageFor({ page: 'operating', id: 'ro-1' })).toEqual({ page: 'operating', id: 'ro-1' })
+    expect(initialPageFor({ page: 'operating' })).toEqual({ page: 'operating' })
     expect(initialPageFor({ page: 'document' })).toEqual({ page: 'documentation' })
     expect(initialPageFor({ page: 'home' })).toBeUndefined()
   })
