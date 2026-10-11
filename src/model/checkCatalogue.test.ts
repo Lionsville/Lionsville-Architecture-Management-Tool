@@ -13,7 +13,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
-  CHECK_ACTIONS, CHECK_ACTION_LABEL, CHECK_CATALOGUE, CHECK_CATEGORIES, CHECK_CATEGORY_LABEL, CHECK_KEYS, CHECK_WEIGHTS,
+  CHECK_ACTIONS, CHECK_ACTION_LABEL, CHECK_CATALOGUE, CHECK_CATEGORIES, CHECK_CATEGORY_LABEL, CHECK_KEYS, CHECK_LIST_WORDS, CHECK_WEIGHTS,
   CHECK_WEIGHT_LABEL, CONWAY_CHECK, CONWAY_CHECK_KEYS, DATE_CHECK, DATE_CHECK_KEYS, TECHNOLOGY_CHECK_KEYS, TREE_CHECK_KEYS,
   checkEntry, countByWeight, groupByCheck, isCheckKey,
 } from './checkCatalogue'
@@ -64,6 +64,23 @@ describe('the catalogue', () => {
     for (const [language, table] of Object.entries(TABLES)) {
       for (const key of keys) expect(table[key]?.trim(), `${language} ${key}`).toBeTruthy()
     }
+  })
+
+  it('hands a list of findings every word it says besides the findings, in every language', () => {
+    const { weight, category, action, notes, ...own } = CHECK_LIST_WORDS
+    expect(weight).toBe(CHECK_WEIGHT_LABEL)
+    expect(category).toBe(CHECK_CATEGORY_LABEL)
+    expect(action).toBe(CHECK_ACTION_LABEL)
+    for (const [language, table] of Object.entries(TABLES)) {
+      for (const key of [...Object.values(own), notes.one, notes.other]) expect(table[key]?.trim(), `${language} ${key}`).toBeTruthy()
+      // How many: the count is said, and Show notes says how many it shows.
+      for (const key of [own.toLookAt, own.showNotes, notes.one, notes.other]) expect(table[key], `${language} ${key}`).toContain('{count}')
+    }
+  })
+
+  /** The Conway map's unused interaction is settled three ways: taken away, modelled, or looked at where the two units are. */
+  it('settles an unused interaction by removing it, modelling the interface, or opening the two units', () => {
+    expect(CHECK_CATALOGUE['check.interactionUnused'].actions).toEqual(['removeInteraction', 'modelInterface', 'openUnits'])
   })
 
   /** A fix states the contradiction, a review asks, a note states a fact: a question is a review's alone. */

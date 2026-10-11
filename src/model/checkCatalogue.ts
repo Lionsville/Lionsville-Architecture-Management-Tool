@@ -133,6 +133,8 @@ export type CheckCategory = (typeof CHECK_CATEGORIES)[number]
  *   imply, and land them on it;
  * - `declareInteraction` · `removeInteraction` — declare how two units work
  *   together, or take a declaration away;
+ * - `modelInterface` — the two units' applications, to model the interface
+ *   between them from one of them;
  * - `assign` · `endAssignment` — assign someone to the role, or end an
  *   assignment;
  * - `setOwner` — name whose an application is (`partyId`);
@@ -143,7 +145,7 @@ export type CheckCategory = (typeof CHECK_CATEGORIES)[number]
 export const CHECK_ACTIONS = [
   'openElement', 'openDefinition', 'openView', 'openRow', 'openInterface', 'openPlan',
   'openUnit', 'openUnits', 'openApplication', 'openType', 'openOperating', 'openPerson', 'openCause',
-  'link', 'acceptInterface', 'declareInteraction', 'removeInteraction', 'assign', 'endAssignment',
+  'link', 'acceptInterface', 'declareInteraction', 'removeInteraction', 'modelInterface', 'assign', 'endAssignment',
   'setOwner', 'setType', 'markShared', 'setSuccessor',
 ] as const
 export type CheckAction = (typeof CHECK_ACTIONS)[number]
@@ -314,7 +316,7 @@ const ENTRIES = {
   },
   'check.interactionUnused': {
     name: 'check.name.interactionUnused', why: 'check.why.interactionUnused', how: 'check.how.interactionUnused',
-    category: 'teams', weight: 'note', actions: ['removeInteraction', 'openUnits'],
+    category: 'teams', weight: 'note', actions: ['removeInteraction', 'modelInterface', 'openUnits'],
   },
   'check.applicationUnowned': {
     name: 'check.name.applicationUnowned', why: 'check.why.applicationUnowned', how: 'check.how.applicationUnowned',
@@ -368,12 +370,43 @@ export const CHECK_ACTION_LABEL: Record<CheckAction, StringKey> = {
   acceptInterface: 'check.action.acceptInterface',
   declareInteraction: 'check.action.declareInteraction',
   removeInteraction: 'check.action.removeInteraction',
+  modelInterface: 'check.action.modelInterface',
   assign: 'check.action.assign',
   endAssignment: 'check.action.endAssignment',
   setOwner: 'check.action.setOwner',
   setType: 'check.action.setType',
   markShared: 'check.action.markShared',
   setSuccessor: 'check.action.setSuccessor',
+}
+
+/**
+ * Everything a list of findings says besides the findings: the weights, the
+ * categories and the actions as above, and the list's own few words — how
+ * many there are to look at and how many notes, *Show notes (N)*, the two
+ * headings of an explanation and the way back from one. One table, handed to
+ * the list wherever it is drawn (`widgets/FindingsList`), which may not read
+ * the model itself.
+ */
+export const CHECK_LIST_WORDS = {
+  weight: CHECK_WEIGHT_LABEL,
+  category: CHECK_CATEGORY_LABEL,
+  action: CHECK_ACTION_LABEL,
+  toLookAt: 'check.list.toLookAt',
+  notes: { one: 'check.list.notes.one', other: 'check.list.notes.other' },
+  showNotes: 'check.list.showNotes',
+  why: 'check.list.why',
+  how: 'check.list.how',
+  back: 'check.list.back',
+} as const satisfies {
+  weight: Record<CheckWeight, { name: StringKey; about: StringKey }>
+  category: Record<CheckCategory, StringKey>
+  action: Record<CheckAction, StringKey>
+  toLookAt: StringKey
+  notes: { one: StringKey; other: StringKey }
+  showNotes: StringKey
+  why: StringKey
+  how: StringKey
+  back: StringKey
 }
 
 const KNOWN: ReadonlySet<string> = new Set(CHECK_KEYS)
