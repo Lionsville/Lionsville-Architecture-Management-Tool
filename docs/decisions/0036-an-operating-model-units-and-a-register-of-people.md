@@ -495,9 +495,11 @@ page offers only those; `withheld`, an entry whose address is kept from
 them, which the page says rather than *no address*; and `held`, why its own
 schedule did not forget an entry that was due (`PolicyHold`), said beside
 its state. And a register that does what leaving does itself — ending a
-leaver's assignments as it marks them — says how much in the answer
+leaver's assignments as it marks them — says so beforehand
+(`PeopleRepository.endsAssignments`) and how much in the answer
 (`PersonWritten.ended`), and `people/leave.ts` then runs no consequence of
-its own, so nothing is ended twice.
+its own, before or after, so nothing is ended twice and nothing is tried
+with less authority than the register's own.
 
 **Leaving is a seam**: `people/leave.ts` marks the register, then runs each
 `LeaveConsequence` composed in `app/organisation/leaving.ts` — none yet;
