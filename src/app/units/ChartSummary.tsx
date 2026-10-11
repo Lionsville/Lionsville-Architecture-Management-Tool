@@ -33,10 +33,12 @@ import type { CheckAction } from '../../model/checkCatalogue'
 import type { HostModel } from '../../model/hostModel'
 import { vacanciesIn, walk } from '../../model/orgChart'
 import type { OrgChart } from '../../model/orgChart'
+import { splitMarked } from '../../model/checkMarks'
 import { pickedPerson } from '../../model/person'
 import type { DesignDiagram, ElementId } from '../../model/types'
 import { usePersonNames } from '../../people/ui/names'
 import type { PersonNames } from '../../people/ui/names'
+import { checkMarksHere } from '../../projects/checkMarks'
 import { findingSentence } from '../../projects/checks'
 import type { Finding } from '../../projects/checks'
 import type { ScopeIndex } from '../../projects/scopeIndex'
@@ -72,7 +74,9 @@ export function ChartSummary(props: ChartSummaryProps) {
   const { index, scope, model, diagram, today } = props
   const day = diagram.asOf ?? today
   const here = useMemo(() => unitViewsHere(index, scope, model), [index, scope, model])
-  const { chart, findings } = useChartReading(here, day, names.canonical)
+  const { chart, findings: found } = useChartReading(here, day, names.canonical)
+  // A finding marked as intended is not among the ones to look at (`model/checkMarks`).
+  const findings = useMemo(() => splitMarked(found, checkMarksHere(index, scope, model)).shown, [found, index, scope, model])
   const vacant = useMemo(() => vacanciesIn(chart), [chart])
   const whose = props.scopeLabel(scope)
   return (

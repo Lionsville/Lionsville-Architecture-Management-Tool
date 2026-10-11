@@ -50,6 +50,7 @@ import { countScopeKinds, flattenScopes, isOpenableScope, newestChange, sortScop
 import type { ProjectOrder, ScopeSummary } from '../../projects/scope'
 import type { ElementId } from '../../model'
 import type { PlatformTree } from '../../model/hosting'
+import type { KeptCheckMark } from '../../model/checkMarks'
 import type { Finding } from '../../projects/checks'
 import { isWithinScope, ROOT_SCOPE, scopePathLabel } from '../../projects/scopePath'
 import { scopeDisplayName } from '../../projects/scopeLabel'
@@ -231,6 +232,8 @@ export type OrganisationScreenProps = {
    * a row then says nothing about findings rather than saying there are none.
    */
   findings?: ReadonlyMap<ScopePath, readonly Finding[]>
+  /** The tree's findings marked as intended (`ScopeIndex.checkMarks`), which *Needs attention* leaves out. */
+  checkMarks?: readonly KeptCheckMark[]
   /**
    * The register, derived over the whole tree (ADR-0012 §2).
    *
@@ -336,7 +339,7 @@ export function OrganisationScreen({
   waysIn,
   overflow, agent, barButton, onGoHome, findings, register = [], technology = [], initiatives = 0, localObservations = 0, platformTree,
   onOpenRegisterRow, onOpenRegisterPage, onLinkFromRegister, pageRequest, onPageChange, people, servedBy,
-  writable = ANYWHERE, today, language, s, windowChrome = NO_WINDOW_CHROME,
+  writable = ANYWHERE, today, language, s, windowChrome = NO_WINDOW_CHROME, checkMarks,
 }: OrganisationScreenProps) {
   const { tree, at, root, ready, dialog } = organisation
   const mayWrite = writable(at)
@@ -586,7 +589,7 @@ export function OrganisationScreen({
           {/* What the tree contradicts about itself, once, as sentences a
               person can act on — where the cards used to count them and the
               rows used to colour them. */}
-          <NeedsAttention items={attention} at={at} onOpen={onOpenRegisterRow} onOpenView={(scope, id) => organisation.open(scope, { page: 'board', id })} onOpenOperating={(id) => organisation.open(ROOT_SCOPE, { page: 'operating', id })} onLink={onLinkFromRegister} writable={mayWrite} s={s} />
+          <NeedsAttention items={attention} marks={checkMarks} at={at} onOpen={onOpenRegisterRow} onOpenView={(scope, id) => organisation.open(scope, { page: 'board', id })} onOpenOperating={(id) => organisation.open(ROOT_SCOPE, { page: 'operating', id })} onLink={onLinkFromRegister} writable={mayWrite} s={s} />
 
           {/* The boards, one row each: a scope that draws is a stop on the way
               to its canvas, and the way on is the row of the board you want —

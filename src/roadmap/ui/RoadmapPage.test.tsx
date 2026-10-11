@@ -328,6 +328,12 @@ describe('the checks', () => {
       expect(acceptInterface).toHaveBeenCalledWith('x1')
     })
 
+    it('leaves it out where the scope marked it as intended', () => {
+      setup({ model: implied(), marks: [{ check: 'check.impliedInterface', key: 'x1', on: '2026-10-11' }] })
+      expect(screen.queryByTestId('findings-group')).toBeNull()
+      expect(screen.getByText('The dates agree with each other.')).toBeTruthy()
+    })
+
     it('offers nothing to a reader', () => {
       setup({ model: implied(), readOnly: true })
       expect(within(opened('finding-impliedInterface-x1')).queryByTestId('finding-action-acceptInterface')).toBeNull()

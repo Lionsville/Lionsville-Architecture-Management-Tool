@@ -49,6 +49,23 @@ describe('NeedsAttention', () => {
     expect(await axeFindings()).toEqual([])
   })
 
+  it('leaves out a finding marked as intended where its scope keeps the mark, and says nothing when that was all', () => {
+    const items: AttentionItem[] = [
+      { key: 'check.unattributed', kind: 'unattributed', scope: 'retail', id: 'post', text: 'Post office' },
+      { key: 'check.roleVacant', kind: 'roleVacant', scope: 'retail', id: 'u-carriers', fields: ['ro-po'], text: 'Carriers is short of a Product Owner' },
+    ]
+    const marks = [
+      { scope: 'retail', mark: { check: 'check.unattributed' as const, key: 'post', on: '2026-10-11' } },
+      // Kept in another scope: it silences nothing here.
+      { scope: 'finance', mark: { check: 'check.roleVacant' as const, key: 'u-carriers ro-po', on: '2026-10-11' } },
+    ]
+    renderShell(<NeedsAttention items={items} marks={marks} at="" onOpen={vi.fn()} s={s} />)
+    expect(screen.getAllByTestId('findings-group').map((row) => row.textContent)).toEqual([expect.stringContaining('A role short of people(1)')])
+    cleanup()
+    renderShell(<NeedsAttention items={items.slice(0, 1)} marks={marks} at="" onOpen={vi.fn()} s={s} />)
+    expect(screen.queryByTestId('needs-attention')).toBeNull()
+  })
+
   it('opens a drawing for a shape on it, and the element for an element', () => {
     const onOpen = vi.fn()
     const onOpenView = vi.fn()

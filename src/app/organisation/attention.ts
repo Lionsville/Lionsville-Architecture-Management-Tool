@@ -60,6 +60,14 @@ export type AttentionItem = {
   /** The other scope the finding names, where it does: the other definition, the one a stand-in's fields belong to. */
   elsewhere?: ScopePath
   /**
+   * The finding's own `fields`, `scopes` and `person`, where it has them:
+   * what makes it this instance, which a mark as intended is keyed by
+   * (`model/checkMarks.findingKey`).
+   */
+  fields?: readonly string[]
+  scopes?: readonly ScopePath[]
+  person?: string
+  /**
    * The page to open instead, with the record picked on it: the operating
    * model's, where the finding is about a unit type or a responsibility,
    * which no board draws (ADR-0036 §2).
@@ -107,6 +115,8 @@ export function attentionItems(
       add({
         key: finding.key, scope, id: finding.id, ...(finding.view ? { view: finding.view } : {}),
         ...(elsewhere !== undefined ? { elsewhere } : {}),
+        ...(finding.fields ? { fields: finding.fields } : {}), ...(finding.scopes ? { scopes: finding.scopes } : {}),
+        ...(finding.person !== undefined ? { person: finding.person } : {}),
         ...(ON_THE_OPERATING_PAGE.has(finding.key) ? { page: 'operating' as const } : {}),
         text: findingSentence(finding, s, scopeName, personName),
       })

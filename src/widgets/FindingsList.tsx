@@ -27,6 +27,12 @@
  *
  * **Folds and notes are the session's** (`sessionMemory.ts`): kept under the
  * key a screen gives, for as long as the window is open, and never saved.
+ *
+ * **A finding marked as intended is not in the groups** (`model/checkMarks`):
+ * the screen splits its findings and hands in only those still shown. What
+ * was marked has a place under the groups (`accepted`), and an explanation
+ * one under its actions (`more`) — where *Accepted (N)* and *Mark as
+ * intended…* go.
  */
 import { useEffect, useId, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
@@ -96,6 +102,8 @@ export type FindingsListProps<F, A extends string> = {
   onPick?: (finding: F | undefined) => void
   /** More for an instance, under its actions: the place a mark as intended goes. */
   more?: (finding: F, group: FindingsGroup<F, A>) => ReactNode
+  /** What was marked as intended, under the groups — said even where nothing else is found. */
+  accepted?: ReactNode
   testId?: string
 }
 
@@ -176,7 +184,7 @@ export function FindingsList<F, A extends string>(props: FindingsListProps<F, A>
       {group && finding !== undefined
         ? <Explanation {...props} group={group} finding={finding} onBack={close} t={t} />
         : groups.length === 0
-          ? props.empty
+          ? <>{props.empty}{props.accepted}</>
           : <Groups {...props} held={held} onToggle={toggle} onOpen={open} words={words} t={t} />}
     </Box>
   )
@@ -200,6 +208,7 @@ function Groups<F, A extends string>(props: FindingsListProps<F, A> & {
       <Box component="ul" sx={{ listStyle: 'none', p: 0, m: 0 }}>
         {shown.map((group) => <Group key={group.key} {...props} group={group} open={held.has(group.key)} />)}
       </Box>
+      {props.accepted}
       {notes > 0 && (
         <FormControlLabel
           data-guide="findings.showNotes" data-testid="findings-show-notes"

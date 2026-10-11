@@ -314,6 +314,7 @@ function PlanPages({ parts }: { parts: WorkspaceParts }) {
         readOnly={readOnly}
         actions={plans.roadmapActions}
         remember={`roadmap\u0000${props.project.path}`}
+        {...(session.model.checkMarks ? { marks: session.model.checkMarks } : {})}
         onClose={() => { plans.closeRoadmap(); pages.leaveIfNothingToDraw() }}
         windowChrome={pageChrome}
       />

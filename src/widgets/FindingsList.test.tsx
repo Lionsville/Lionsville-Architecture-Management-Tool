@@ -159,4 +159,22 @@ describe('a list of findings', () => {
     expect(screen.getByTestId('findings').textContent).toBe('Nothing found.')
     expect(screen.queryByTestId('findings-summary')).toBeNull()
   })
+
+  /** The places the marks as intended go: what was marked under the groups, and more for an instance under its actions. */
+  it('leaves a place under the groups for what was marked, and under an explanation\'s actions', () => {
+    const groups = groupByCheck(FOUND)
+    const list = (found: Found[]) => (
+      <FindingsList groups={groupByCheck(found)} words={CHECK_LIST_WORDS} sentence={(one) => one.text} keyOf={(one) => one.id}
+        empty={<span>Nothing found.</span>} accepted={<span data-testid="accepted">Two marked</span>}
+        more={(one, group) => <span data-testid="more">{`${group.key} ${one.id}`}</span>} testId="findings" />
+    )
+    renderShell(list(FOUND))
+    expect(screen.getByTestId('accepted').textContent).toBe('Two marked')
+    fireEvent.click(screen.getAllByTestId('findings-group')[0]!)
+    fireEvent.click(screen.getByText(FOUND[2]!.text))
+    expect(screen.getByTestId('more').textContent).toBe(`${groups[0]!.key} cl`)
+    cleanup()
+    renderShell(list([]))
+    expect(screen.getByTestId('findings').textContent).toBe('Nothing found.Two marked')
+  })
 })

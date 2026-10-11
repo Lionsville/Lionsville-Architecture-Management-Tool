@@ -46,6 +46,7 @@ import { PageDialog } from '../../widgets/PageDialog'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { barChromeFor } from '../../platform/windowChrome'
 import { findings } from '../../model/checks'
+import type { CheckMark } from '../../model/checkMarks'
 import type { PlatformTree } from '../../model/hosting'
 import { RoadmapFindings } from './RoadmapFindings'
 import { fractionOf, roadmapOf, shadowRunOf, within } from '../timeline'
@@ -127,6 +128,8 @@ export type RoadmapPageProps = {
   actions: RoadmapActions
   /** Where the session keeps what its list of findings has unfolded: the open scope's roadmap. */
   remember?: string
+  /** The scope's findings marked as intended (`model/checkMarks`), which its list of findings leaves out. */
+  marks?: readonly CheckMark[]
   onClose(): void
   windowChrome?: WindowChrome
 }
@@ -192,7 +195,7 @@ export function RoadmapPage(props: RoadmapPageProps) {
     && below.length === 0 && problems.length === 0
 
   /** Where the dates disagree, under the axis — and under the empty state too, where it says that they agree. */
-  const findingsBox = <RoadmapFindings problems={problems} relations={model.relations} readOnly={readOnly} actions={actions} remember={props.remember} />
+  const findingsBox = <RoadmapFindings problems={problems} marks={props.marks} relations={model.relations} readOnly={readOnly} actions={actions} remember={props.remember} />
 
   return (
     <PageDialog

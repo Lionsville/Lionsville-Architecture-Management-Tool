@@ -19,6 +19,8 @@ import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n'
 import { CHECK_LIST_WORDS, DATE_CHECK, groupByCheck } from '../../model/checkCatalogue'
 import type { CheckAction } from '../../model/checkCatalogue'
+import { splitMarked } from '../../model/checkMarks'
+import type { CheckMark } from '../../model/checkMarks'
 import type { Finding } from '../../model/checks'
 import type { Relation } from '../../model'
 import { FindingsList } from '../../widgets/FindingsList'
@@ -27,8 +29,13 @@ import { findingTarget } from '../findingTarget'
 import { findingWords } from './FindingSentence'
 import type { RoadmapActions } from './RoadmapPage'
 
-export function RoadmapFindings({ problems, relations, readOnly, actions, remember }: {
+/** The scope the dates were checked in, as the marks handed in are all its own. */
+const HERE = ''
+
+export function RoadmapFindings({ problems, marks, relations, readOnly, actions, remember }: {
   problems: readonly Finding[]
+  /** The open scope's marks as intended: a finding marked is not among the ones to look at. */
+  marks?: readonly CheckMark[] | undefined
   relations: readonly Relation[]
   readOnly: boolean
   actions: RoadmapActions
@@ -36,7 +43,10 @@ export function RoadmapFindings({ problems, relations, readOnly, actions, rememb
   remember?: string | undefined
 }) {
   const { t } = useStrings()
-  const groups = useMemo(() => groupByCheck(problems, (problem) => DATE_CHECK[problem.kind]), [problems])
+  const groups = useMemo(() => {
+    const shown = splitMarked(problems, (marks ?? []).map((mark) => ({ scope: HERE, mark })), { scope: HERE }).shown
+    return groupByCheck(shown, (problem) => DATE_CHECK[problem.kind])
+  }, [problems, marks])
   const doing = useMemo((): FindingActions<Finding, CheckAction> => {
     const element = (problem: Finding) => {
       const target = findingTarget(problem, relations)

@@ -55,6 +55,7 @@ import type { Command } from '../../model/commands'
 import type { HostModel } from '../../model/hostModel'
 import type { Role, RoleSlot, UnitType } from '../../model/operatingModel'
 import { slotRange } from '../../model/operatingModel'
+import { splitMarked } from '../../model/checkMarks'
 import { pickedPerson } from '../../model/person'
 import type { DesignElement } from '../../model/types'
 import { dayBefore, holdersOn, isUnit, loadOn, managersOf, parentOn, personOf, runsOn, shareOf, slotsOf, unitLastDay } from '../../model/units'
@@ -65,6 +66,7 @@ import { personText, registerOf, resolvePerson } from '../../people/shown'
 import type { PeopleRegisterAccess } from '../../people/ui/access'
 import { CHECK_LIST_WORDS, groupByCheck } from '../../model/checkCatalogue'
 import type { CheckAction } from '../../model/checkCatalogue'
+import { checkMarksHere } from '../../projects/checkMarks'
 import { findingSentence, findingsOfOrganisation } from '../../projects/checks'
 import type { Finding } from '../../projects/checks'
 import { movesOf } from '../../projects/scopeIndex'
@@ -152,9 +154,10 @@ function useUnitFacts(props: UnitSectionProps) {
     }))
     const findings = findingsOfOrganisation(at, today, canonical)
     const holders = new Set(organisation.assignments.filter((one) => one.unitId === element.id && runsOn(one, today)).map((one) => canonical(personOf(one))))
-    const said = findings.filter((one) => (one.person !== undefined
+    // Of what the checks find in it, the ones still to look at: one marked as intended is not among them (`model/checkMarks`).
+    const said = splitMarked(findings.filter((one) => (one.person !== undefined
       ? holders.has(one.person)
-      : one.id === element.id || (one.key === 'check.unitNotServing' && one.fields?.[0] === element.id)))
+      : one.id === element.id || (one.key === 'check.unitNotServing' && one.fields?.[0] === element.id))), checkMarksHere(index, scope, model)).shown
     // Its moves, each with the plan that makes it: the open scope's plans as the session holds them, the tree's for the rest.
     const moves = [...index.moves().filter((one) => one.scope !== scope), ...movesOf(scope, model)]
       .filter((one) => one.move.unitId === element.id)

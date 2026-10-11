@@ -238,6 +238,7 @@ function Home({ parts }: { parts: ShellParts }) {
         barButton={barButtonFor(parts, 'organisation')}
         onGoHome={nav.goHome}
         findings={findings.treeFindings}
+        checkMarks={parts.tree.index.checkMarks()}
         register={findings.register}
         technology={findings.technology}
         initiatives={findings.initiatives}

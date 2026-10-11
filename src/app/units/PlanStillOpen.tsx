@@ -28,7 +28,9 @@ import type { HostModel } from '../../model/hostModel'
 import type { Responsibility } from '../../model/operatingModel'
 import { interactionsToDeclare, lostAccountability, reorganisationRoots, reorganisedUnits, unitTree } from '../../model/reorganisation'
 import type { PlanReorganisation, UnitNode } from '../../model/reorganisation'
+import { splitMarked } from '../../model/checkMarks'
 import { personOf, runsOn } from '../../model/units'
+import { checkMarksHere } from '../../projects/checkMarks'
 import { findingSentence, findingsOfOrganisation } from '../../projects/checks'
 import type { OrganisationAt } from '../../projects/checks'
 import type { ScopeIndex } from '../../projects/scopeIndex'
@@ -100,15 +102,17 @@ export function StillOpen(props: StillOpenProps) {
 }
 
 /** The sentences of the checks of the day in the units under the change, then the responsibilities without their A — each once. */
-function checksAndAccountability({ at, reorganisation, responsibilities, before, after, scopeLabel, names, s }: StillOpenProps): Line[] {
+function checksAndAccountability({ at, reorganisation, responsibilities, before, after, scopeLabel, names, index, scope, model, s }: StillOpenProps): Line[] {
   const roots = reorganisationRoots(at.organisation, reorganisation, before, after)
   const walk = (nodes: readonly UnitNode[]): string[] => nodes.flatMap((node) => [node.unit.id, ...walk(node.children)])
   const units = new Set(walk(unitTree(at.organisation, after, roots)))
   const persons = new Set(at.organisation.assignments
     .filter((one) => units.has(one.unitId) && runsOn(one, after)).map((one) => names.canonical(personOf(one))))
   const said = new Set<string>()
-  const found = findingsOfOrganisation(at, after, names.canonical)
+  // One marked as intended is not still open (`model/checkMarks`).
+  const checked = findingsOfOrganisation(at, after, names.canonical)
     .filter((one) => (one.person !== undefined ? persons.has(one.person) : units.has(one.id)))
+  const found = splitMarked(checked, checkMarksHere(index, scope, model)).shown
     .map((one): Line => ({ key: one.key, text: findingSentence(one, s, scopeLabel, names.person), ...(one.person === undefined ? { unitId: one.id } : {}) }))
   // A responsibility left without its A on the day is the operating model's own check.
   const lost = lostAccountability(responsibilities, at.organisation, before, after)

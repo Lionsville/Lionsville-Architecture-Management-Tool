@@ -44,6 +44,8 @@ import type { Translate } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
 import { CHECK_LIST_WORDS, CONWAY_CHECK, groupByCheck } from '../../model/checkCatalogue'
 import type { CheckAction } from '../../model/checkCatalogue'
+import { splitMarked } from '../../model/checkMarks'
+import type { KeptCheckMark } from '../../model/checkMarks'
 import type { Command } from '../../model/commands'
 import { conwayMap } from '../../model/conway'
 import type { ConwayFinding, ConwayInput, ConwayLine, ConwayMap } from '../../model/conway'
@@ -56,6 +58,7 @@ import type { PeopleRegisterAccess } from '../../people/ui/access'
 import { usePersonNames } from '../../people/ui/names'
 import type { HostModel } from '../../model/hostModel'
 import { CHECK_LABEL } from '../../projects/checks'
+import { checkMarksHere } from '../../projects/checkMarks'
 import type { ScopeIndex } from '../../projects/scopeIndex'
 import type { ScopePath } from '../../projects/scopePath'
 import { captureSheet } from '../../widgets/capturePage'
@@ -105,6 +108,7 @@ export function ConwayPage(props: ConwayPageProps) {
   const [interacting, setInteracting] = useState<Interacting | undefined>(undefined)
   const input = useMemo(() => conwayInputHere(props.index, props.scope, props.model, here, day), [props.index, props.scope, props.model, here, day])
   const map = useMemo(() => conwayMap(input, day, groupBy !== undefined ? { groupBy } : {}), [input, day, groupBy])
+  const marks = useMemo(() => checkMarksHere(props.index, props.scope, props.model), [props.index, props.scope, props.model])
   const mine = useMine(here, day)
   const page = useRef<HTMLDivElement | null>(null)
   const stage = useRef<HTMLDivElement | null>(null)
@@ -154,7 +158,7 @@ export function ConwayPage(props: ConwayPageProps) {
               <Lines lines={lines} />
             </Box>
           )}
-        <Findings map={map} input={input} here={here} onLight={setLit} declarable={declarable} open={open} t={t}
+        <Findings map={map} marks={marks} input={input} here={here} onLight={setLit} declarable={declarable} open={open} t={t}
           removable={removable(props)} remember={foldKey(props.scope, diagram.id, 'findings')}
           heading={t('conway.findings', { day: formatDay(day, language) })} />
         <ConwayTable map={map} here={here} t={t} />
@@ -380,12 +384,13 @@ function conwayActions({ input, here, open, declarable, removable: remove }: {
 }
 
 /** What the map finds on the day, in the one list of findings, each with what this page can do about it. */
-function Findings({ map, input, here, onLight, declarable, removable: remove, open, heading, remember, t }: {
-  map: ConwayMap; input: ConwayInput; here: UnitViewsHere; onLight: (finding: ConwayFinding | undefined) => void
+function Findings({ map, marks, input, here, onLight, declarable, removable: remove, open, heading, remember, t }: {
+  map: ConwayMap; marks: readonly KeptCheckMark[]; input: ConwayInput; here: UnitViewsHere; onLight: (finding: ConwayFinding | undefined) => void
   declarable: (from: ElementId, to: ElementId) => (() => void) | undefined; removable: (id: string) => (() => void) | undefined
   open: (id: ElementId) => void; heading: string; remember: string; t: Translate
 }) {
-  const groups = useMemo(() => groupByCheck(map.findings, (one) => CONWAY_CHECK[one.kind]), [map.findings])
+  // A finding marked as intended is not among the ones to look at (`model/checkMarks`).
+  const groups = useMemo(() => groupByCheck(splitMarked(map.findings, marks).shown, (one) => CONWAY_CHECK[one.kind]), [map.findings, marks])
   const actions = conwayActions({ input, here, open, declarable, removable: remove })
   return (
     <Box data-testid="conway-findings" sx={{ mt: 3, maxWidth: 720 }}>

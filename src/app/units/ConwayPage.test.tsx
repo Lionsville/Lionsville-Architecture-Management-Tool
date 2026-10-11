@@ -244,6 +244,16 @@ describe('the Conway map', () => {
     expect(screen.queryByRole('switch', { name: /Show notes/ })).toBeNull()
   })
 
+  it('leaves out an interaction marked as intended, wherever the mark is kept', () => {
+    const root: HostModel = {
+      ...ROOT, relations: [...ROOT.relations, { id: 'i-2', type: 'interacts', sourceId: 'ip', targetId: 'mob', mode: 'facilitating', isBidirectional: false }],
+    }
+    const customer: HostModel = { ...CUSTOMER, checkMarks: [{ check: 'check.interactionUnused', key: 'i-2 ip mob', reason: 'They design together', on: TODAY }] }
+    renderShell(<Harness commands={[]} root={root} customer={customer} />)
+    expect(screen.queryByRole('switch', { name: /Show notes/ })).toBeNull()
+    expect(said()).not.toContain('Integration Platform and Mobile App declare Facilitating, and no interface runs between them.')
+  })
+
   it('offers no Remove for an interaction another scope keeps', () => {
     const root: HostModel = {
       ...ROOT, relations: [...ROOT.relations, { id: 'i-2', type: 'interacts', sourceId: 'ip', targetId: 'mob', mode: 'facilitating', isBidirectional: false }],

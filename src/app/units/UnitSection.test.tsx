@@ -219,6 +219,14 @@ describe('a unit in its inspector', () => {
     expect(said).toContain('Webshop owns 2 applications, and a Team owns at most 1')
   })
 
+  it('leaves out of its checks a finding marked as intended in the scope that keeps it', () => {
+    const model: HostModel = { ...CUSTOMER, checkMarks: [{ check: 'check.roleVacant', key: 'webshop ro-dev', on: TODAY }] }
+    renderShell(<Harness commands={[]} model={model} />)
+    const said = unitFindings().map((line) => line.textContent)
+    expect(said).not.toContain('Webshop is short of Developer: 1 hold the role, and its type asks for at least 2')
+    expect(said).toContain('Webshop owns 2 applications, and a Team owns at most 1')
+  })
+
   it('assigns someone to a role short of people from its explanation, where the role\'s people may be changed here', async () => {
     renderShell(<Harness commands={[]} />)
     const list = screen.getByTestId('unit-findings')

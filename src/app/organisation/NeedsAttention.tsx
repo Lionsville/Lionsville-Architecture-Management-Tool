@@ -29,6 +29,8 @@ import type { Translate } from '../../i18n'
 import type { ElementId } from '../../model'
 import { CHECK_LIST_WORDS, groupByCheck } from '../../model/checkCatalogue'
 import type { CheckAction, CheckKey } from '../../model/checkCatalogue'
+import { splitMarked } from '../../model/checkMarks'
+import type { KeptCheckMark } from '../../model/checkMarks'
 import type { ScopePath } from '../../projects/scopePath'
 import { FindingsList } from '../../widgets/FindingsList'
 import type { FindingActions } from '../../widgets/FindingsList'
@@ -82,19 +84,22 @@ export function attentionActions(doors: AttentionDoors): FindingActions<Attentio
   }
 }
 
-export function NeedsAttention({ items, at, s, ...doors }: AttentionDoors & {
+export function NeedsAttention({ items, marks, at, s, ...doors }: AttentionDoors & {
   items: readonly AttentionItem[]
+  /** The tree's marks as intended (`ScopeIndex.checkMarks`): a finding marked is not among the ones to look at. */
+  marks?: readonly KeptCheckMark[] | undefined
   /** The scope whose home this is: what its folds are kept under for the session. */
   at: ScopePath
   s: Translate
 }) {
-  const groups = useMemo(() => groupByCheck(items), [items])
+  const shown = useMemo(() => (marks ? splitMarked(items, marks).shown : items), [items, marks])
+  const groups = useMemo(() => groupByCheck(shown), [shown])
   const { onOpen, onOpenView, onOpenOperating, onLink, writable } = doors
   const actions = useMemo(
     () => attentionActions({ onOpen, onOpenView, onOpenOperating, onLink, ...(writable !== undefined ? { writable } : {}) }),
     [onOpen, onOpenView, onOpenOperating, onLink, writable],
   )
-  if (items.length === 0) return null
+  if (shown.length === 0) return null
   return (
     <Box sx={{ mb: 4, maxWidth: 760 }} data-testid="needs-attention" data-guide="org.attention">
       <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, mb: 0.5, textTransform: 'uppercase', color: 'warning.main' }}>
