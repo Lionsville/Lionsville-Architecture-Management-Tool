@@ -305,9 +305,7 @@ async function answerRequest(request: AgentRequest, session: SessionView | undef
   if (request.tool === 'diagram.inspect') return inspectDiagram(view.model, view.activeDiagramId, args, session)
 
   // Looking and pointing change nothing either.
-  if (request.tool === 'diagram.render' || request.tool === 'focus') {
-    return seeing(request.tool, args, session)
-  }
+  if (request.tool === 'diagram.render' || request.tool === 'focus') return looking(request.tool, args, session, shell)
 
   const blocked = session.blocked()
   if (blocked) return refused(blocked)
@@ -737,6 +735,27 @@ function batch(args: Record<string, unknown>, session: SessionView): AgentAnswer
 
 function diagramOf(model: Model, args: Record<string, unknown>, active: string): Diagram | undefined {
   return model.diagrams[typeof args.diagramId === 'string' ? args.diagramId : active]
+}
+
+/**
+ * Whether a picture of the view asked for would show an agent names the
+ * organisation withholds from it (ADR-0036 §13): the organisation chart and
+ * the Conway map draw people as the person at the screen reads them, by name.
+ */
+async function namesWithheldOn(args: Record<string, unknown>, session: SessionView, shell: ShellView | undefined): Promise<boolean> {
+  const kind = diagramOf(session.indexed(), args, session.activeDiagramId())?.kind
+  if (kind !== 'chart' && kind !== 'conway') return false
+  return (await registerFor(session, shell))?.withhold === true
+}
+
+/** A picture or a pointer, where the organisation does not withhold what the picture would show. */
+async function looking(
+  tool: 'diagram.render' | 'focus', args: Record<string, unknown>, session: SessionView, shell: ShellView | undefined,
+): Promise<AgentAnswer> {
+  if (tool === 'diagram.render' && await namesWithheldOn(args, session, shell)) {
+    return refused('agent.badArguments', 'the organisation withholds names from agents, and a picture of this view shows them: read it with diagram.inspect')
+  }
+  return seeing(tool, args, session)
 }
 
 // --- the four things only the renderer can do ------------------------------------

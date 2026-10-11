@@ -17,8 +17,12 @@ import type { Role, UnitType } from '../model/operatingModel'
 import { apply } from '../model/reducer'
 import type { DesignElement } from '../model/types'
 import { laidOut } from '../model/testFixtures'
+import { DEFAULT_POLICY } from '../people/policy'
+import type { PeoplePolicy } from '../people/policy'
+import { Driving } from './driving'
 import { handle } from './handle'
 import type { SessionView } from './handle'
+import type { ShellView } from './shell'
 import type { AgentAnswer } from './tools'
 import type { TreeView } from './tree'
 
@@ -99,6 +103,27 @@ describe('an agent and the views of the organisation', () => {
     expect(held.model().diagrams[conway.id as string]?.kind).toBe('conway')
     const refused = await handle({ id: '3', tool: 'diagram.create', args: { kind: 'chart' } }, held)
     expect(refused).toMatchObject({ ok: false, refusal: 'agent.badArguments' })
+  })
+
+  it('refuses a picture of either where the organisation withholds names from agents, and leaves it to the renderer where it does not', async () => {
+    const held = session()
+    const around = (policy: PeoplePolicy): ShellView => ({
+      screen: () => ({ home: { path: '', name: 'Acme Logistics' } }),
+      open: () => {},
+      client: () => 'Claude Code',
+      driving: new Driving(() => '2026-10-11T10:00:00.000Z'),
+      people: {
+        read: () => Promise.resolve({ people: [], policy }), add: () => Promise.reject(new Error('no')), leave: () => Promise.reject(new Error('no')),
+        today: () => '2026-10-11', readOnly: () => false,
+      },
+    }) as unknown as ShellView
+    for (const kind of ['chart', 'conway']) {
+      const made = parsed(await handle({ id: '1', tool: 'diagram.create', args: { kind, name: kind } }, held))
+      const render = { id: '2', tool: 'diagram.render', args: { diagramId: made.id } }
+      expect(await handle(render, held, around({ ...DEFAULT_POLICY, agentsSee: 'pseudonyms' }))).toMatchObject({ ok: false, refusal: 'agent.badArguments' })
+      // Where agents see names, the picture is the renderer's to take, and this test has none.
+      expect(await handle(render, held, around(DEFAULT_POLICY))).toMatchObject({ ok: false, refusal: 'agent.noScreen' })
+    }
   })
 
   it('reads an organisation chart as its units, roles, holders and vacancies on the view\'s day', async () => {

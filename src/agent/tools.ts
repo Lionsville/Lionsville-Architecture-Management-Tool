@@ -2343,6 +2343,8 @@ const SPECS = [
       'A picture of a diagram as the app draws it, as a PNG, with the transform it was drawn with so a '
       + 'pixel maps back to a flow coordinate. Crop to some elements or to a region: a whole landscape '
       + 'within the pixel budget is a thumbnail. Switches the app to that diagram; the window must be visible. '
+      + 'An organisation chart or a Conway map shows people by name, and is refused where the organisation gives agents pseudonyms: '
+      + 'diagram.inspect reads either. '
       + 'A business architecture sheet, an enterprise map or a technology landscape is drawn whole — none has coordinates to '
       + 'crop to — and the crop arguments are ignored for one. A sheet takes `pageWidth`: the CSS width it is '
       + 'laid out at before drawing, so its areas tile as they would on paper (A1 is 3179, A0 is 4494); '
