@@ -3,6 +3,10 @@
 * Status: accepted
 * Date: 2026-09-08
 * Deciders: Wouter Simons
+* Superseded-by: ADR-0036, in part, 2026-10-11 — Q1's *everything a person
+  can do on a page is a tool* has one exception: forgetting, removing and
+  merging a person in the register of people are a person's alone, and no
+  tool does them
 
 **Built, 8 September 2026**, in the seven commits this record lists at the
 end, from one piece of evidence: the report an agent wrote after trying to
@@ -101,6 +105,11 @@ or to settle the rule that decides it.
 ## Decision Outcome
 
 ### Q1: B — everything a person can do, through the same command
+
+*Superseded in part by ADR-0036 (§13): forgetting, removing and merging a
+person are final, or decide what every screen shows, and no tool does them.
+Neither does a tool change the policy that forgets. An agent may add a
+person, assign one and mark one as left.*
 
 Option A is how the four ADR-0010 tools arrived and how the gap above was
 made: each tool was written for the case in hand and the next case found the

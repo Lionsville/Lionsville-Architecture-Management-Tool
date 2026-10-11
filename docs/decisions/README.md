@@ -86,7 +86,7 @@ now, with their words unchanged.
 | [0008](0008-history-per-thing-and-a-way-back.md) | History per thing, and a way back that is itself history | 2026-09-08 | [0031](0031-storage-behind-repositories.md) in part |
 | [0009](0009-time-a-transition-and-a-document-that-computes.md) | Time on the facts, a transition as a record, and a document that computes | 2026-09-08 | [0027](0027-looking-at-another-day-is-not-an-edit.md) in part; [0031](0031-storage-behind-repositories.md) in part |
 | [0010](0010-a-replacement-as-one-gesture.md) | A replacement as one gesture, and the interfaces as the plan | 2026-09-08 | — |
-| [0011](0011-an-agent-can-do-what-a-person-can.md) | An agent can do what a person can, and knows what stuck | 2026-09-08 | — |
+| [0011](0011-an-agent-can-do-what-a-person-can.md) | An agent can do what a person can, and knows what stuck | 2026-09-08 | [0036](0036-an-operating-model-units-and-a-register-of-people.md) in part |
 | [0012](0012-a-federated-model.md) | A federated model: scopes, one identity, and views apart from geometry | 2026-09-10 | [0016](0016-a-laid-out-view-is-a-tab.md) in part; [0018](0018-one-file-and-it-is-the-working-set.md) in part; [0031](0031-storage-behind-repositories.md) in part |
 | [0013](0013-the-physical-view.md) | The physical view: a platform, what stands on it, and what it carries | 2026-09-15 | [0014](0014-the-technology-layer.md) in part; [0015](0015-the-technology-landscape.md) in part |
 | [0014](0014-the-technology-layer.md) | The technology layer: services offered, platforms that deliver them | 2026-09-15 | [0015](0015-the-technology-landscape.md) in part; [0017](0017-what-hosting-implies.md) in part |
@@ -111,3 +111,4 @@ now, with their words unchanged.
 | [0033](0033-back-goes-to-the-place-before.md) | Back goes to the place before | 2026-10-01 | — |
 | [0034](0034-a-drawing-is-a-view-and-points-at-the-model.md) | A drawing is a view, drawn in draw.io, and points at the model | 2026-10-08 | — |
 | [0035](0035-merging-on-a-screen-of-its-own-across-the-tree.md) | Merging on a screen of its own, across the tree | 2026-10-08 | — |
+| [0036](0036-an-operating-model-units-and-a-register-of-people.md) | An operating model, units as typed actors, and a register of people outside the history | 2026-10-11 | — |
