@@ -72,6 +72,30 @@ describe('the reuse suggested for an entry', () => {
     expect(suggestedReuse(lists, SCRUM, 'scrum-master')).toBeUndefined()
   })
 
+  it('reads what a bring-in matched, to the entry itself or to one alike, as it reads what came in', () => {
+    const own = organisation([{ id: 'own-team', name: 'Delivery team', top: true }], ['Product lead'])
+    const lead = listsOf(own).roles[0]
+    const matched = applyAll(own, [bringIn({
+      lists: listsOf(own), library: SCRUM, entries: ['scrum-team', 'product-owner'], language: 'en', makeId: counter('lib-'),
+      reuse: { 'scrum-team': 'own-team', 'product-owner': lead.id },
+    })!])
+    const lists = listsOf(matched)
+    expect(suggestedReuse(lists, SCRUM, 'product-owner')).toBe(lead.id)
+    expect(suggestedReuse(lists, SAFE, 'product-owner')).toBe(lead.id)
+    expect(suggestedReuse(lists, SAFE, 'agile-team')).toBe('own-team')
+  })
+
+  it('takes, of what stands for an entry, the item brought in from it before one matched to it', () => {
+    const first = broughtIn(organisation([], ['Product lead']), SAFE, ['product-owner'])
+    const lead = listsOf(first).roles[0]
+    const model = applyAll(first, [bringIn({
+      lists: listsOf(first), library: SCRUM, entries: ['product-owner'], language: 'en', makeId: counter('two-'), reuse: { 'product-owner': lead.id },
+    })!])
+    // Scrum's product owner is alike SAFe's: the one brought in from SAFe's entry stands before Product lead, matched to Scrum's.
+    expect(suggestedReuse(listsOf(model), SAFE, 'product-owner')).toBe(idFrom(first, 'safe', 'product-owner'))
+    expect(suggestedReuse(listsOf(model), SCRUM, 'product-owner')).toBe(lead.id)
+  })
+
   it('takes an alike entry before a name', () => {
     const model = broughtIn(organisation([], ['Scrum Master']), SAFE, ['team-coach'])
     expect(suggestedReuse(listsOf(model), SCRUM, 'scrum-master')).toBe(idFrom(model, 'safe', 'team-coach'))
@@ -216,6 +240,23 @@ describe('the rows of what will come in', () => {
     expect(reused.made).toBe(0)
     const gone = whatWillComeIn({ lists, library: SCRUM, entries: ['scrum-team'], language: 'en', edits: { places: { 'scrum-team': { how: 'inside', type: 'ghost' } } } })
     expect(gone.rows[0].place).toEqual(defaultPlacement(lists, SCRUM, 'scrum-team'))
+  })
+})
+
+describe('the rows, once a bring-in has matched', () => {
+  it('say an entry matched before is in the model, matched, under the name of the item it was matched to, and suggest nothing for it', () => {
+    const before = broughtIn(organisation(CLUSTER_AND_TEAM), SAFE, ['team-coach', 'product-owner'])
+    const first = whatWillComeIn({ lists: listsOf(before), library: SCRUM, entries: ['scrum-team'], language: 'en' })
+    const once = applyAll(before, [bringIn({ lists: listsOf(before), library: SCRUM, entries: ['scrum-team'], language: 'en', makeId: counter('new-'), ...choicesOf(first.rows) })!])
+    // Opened again: Scrum's product owner and scrum master stand in the model, as SAFe's, matched.
+    const again = whatWillComeIn({ lists: listsOf(once), library: SCRUM, entries: ['product-owner', 'scrum-master', 'developer'], language: 'en' })
+    expect(again.rows.map((row) => [row.entry, row.fate, row.matched, row.name, row.suggested])).toEqual([
+      ['product-owner', 'inModel', true, 'Product Owner', undefined],
+      ['scrum-master', 'inModel', true, 'Scrum Master/Team Coach', undefined],
+      ['developer', 'inModel', undefined, 'Developer', undefined],
+    ])
+    expect(again.made).toBe(0)
+    expect(choicesOf(again.rows)).toEqual({ names: {}, placements: {}, reuse: {} })
   })
 })
 

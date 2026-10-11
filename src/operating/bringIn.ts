@@ -11,15 +11,19 @@
  * shows the whole of what an ask brings before it is written
  * ({@link entriesBrought}, {@link entriesReached}).
  *
- * **Nothing twice.** An entry already brought in — an item whose `basedOn`
- * names that library and entry — is not brought again: what is new refers to
- * the item that is there, under whatever name the organisation gave it since.
+ * **Nothing twice.** An entry something already stands for — an item whose
+ * `basedOn` names that library and entry, or one a bring-in matched to it
+ * (`alsoBasedOn`) — is not brought again: what is new refers to the item that
+ * is there, under whatever name the organisation gave it since. That holds
+ * across sessions because both are records: a library opened again reads
+ * them, and guesses nothing.
  *
  * **The person's choices** ({@link BringInChoices}), each by entry and each
  * optional, so an ask that says none brings the library as it is:
  *
  * - `names` — what an item made is called here, so a rename is not a second
- *   step;
+ *   step. A name that is not the library's term is kept as `basedOn.name`,
+ *   which *compare* reads the name against;
  * - `placements` — where a unit type made sits: at the top, in the
  *   organisation's own unit types, in entries the ask brings. A type placed
  *   so does not bring the types its library would have put it in;
@@ -29,8 +33,12 @@
  *   and `within` that named the entry names the item reused.
  *
  * Every item made keeps `basedOn`: the library, the entry, the library's
- * version and the language its words were taken in. An item reused is left as
- * it is, its own `basedOn` with it.
+ * version and the language its words were taken in. An item reused keeps its
+ * own name, fields and `basedOn`, and gains the entry in `alsoBasedOn` — on
+ * the item, not on a type whose slot names it, because a role ticked on its
+ * own has no such type. The same step writes it, as an update after the adds,
+ * so one undo takes the match out with the rest; and a step that only matches
+ * is a step.
  */
 import { transaction } from '../model/commands'
 import type { Command } from '../model/commands'
@@ -45,12 +53,28 @@ export type OperatingLists = {
   readonly responsibilities: readonly Responsibility[]
 }
 
-type Based = { readonly id: string; readonly basedOn?: BasedOn }
+/** An item of the operating model, as what it was based on reads it. */
+export type Based = { readonly id: string; readonly basedOn?: BasedOn; readonly alsoBasedOn?: readonly BasedOn[] }
 
-/** The item brought in from one entry of a library, if any has been. */
+const isOf = (basedOn: BasedOn | undefined, library: string, entry: string) => basedOn?.library === library && basedOn.entry === entry
+
+/**
+ * How an item stands for an entry: `made` from it (`basedOn`), `matched` to
+ * it at a bring-in (`alsoBasedOn`), or not at all.
+ */
+export function standsFor(item: Based, library: string, entry: string): 'made' | 'matched' | undefined {
+  if (isOf(item.basedOn, library, entry)) return 'made'
+  return item.alsoBasedOn?.some((one) => isOf(one, library, entry)) ? 'matched' : undefined
+}
+
+/**
+ * The item that stands for one entry of a library, if any does: the one
+ * brought in from it, else a unit type or role a bring-in matched to it.
+ */
 export function broughtFrom(lists: OperatingLists, library: string, entry: string): Based | undefined {
   const all: readonly Based[] = [...lists.unitTypes, ...lists.roles, ...lists.responsibilities]
-  return all.find((item) => item.basedOn?.library === library && item.basedOn.entry === entry)
+  return all.find((item) => standsFor(item, library, entry) === 'made')
+    ?? all.find((item) => standsFor(item, library, entry) === 'matched')
 }
 
 /** A place a unit type may sit: one of the organisation's unit types, or an entry of the library brought in. */
@@ -86,13 +110,14 @@ function said<T>(record: Readonly<Record<string, T>> | undefined, entry: string)
 
 /**
  * What becomes of an entry an ask reaches: `made` new; `reused`, the
- * organisation's item chosen to stand for it; `inModel`, the item already
- * brought in from it.
+ * organisation's item chosen to stand for it; `inModel`, the item that stands
+ * for it already — brought in from it, or `matched` to it at an earlier
+ * bring-in.
  */
 export type Fate =
   | { readonly as: 'made' }
   | { readonly as: 'reused'; readonly id: string }
-  | { readonly as: 'inModel'; readonly id: string }
+  | { readonly as: 'inModel'; readonly id: string; readonly matched?: true }
 
 /** The organisation's item chosen to stand for an entry, where the choice holds. */
 function reusedFor(lists: OperatingLists, held: LibraryEntry, choices: BringInChoices): string | undefined {
@@ -107,7 +132,9 @@ function fateOf(lists: OperatingLists, library: Library, held: LibraryEntry, cho
   const reused = reusedFor(lists, held, choices)
   if (reused !== undefined) return { as: 'reused', id: reused }
   const there = broughtFrom(lists, library.id, held.item.entry)
-  return there ? { as: 'inModel', id: there.id } : { as: 'made' }
+  if (!there) return { as: 'made' }
+  const matched = standsFor(there, library.id, held.item.entry) === 'matched'
+  return { as: 'inModel', id: there.id, ...(matched ? { matched: true } : {}) }
 }
 
 /** The entries a unit type sits in: its placement's, or the library's own. Unit types of the library only. */
@@ -184,7 +211,7 @@ export function entriesBrought(
   return entriesReached(lists, library, asked, choices).filter((one) => one.fate.as === 'made').map((one) => one.entry)
 }
 
-/** Entries not brought in yet, in the library's order: what the page offers. */
+/** Entries nothing stands for yet — neither brought in nor matched — in the library's order: what the page offers. */
 export function notBroughtIn(lists: OperatingLists, library: Library): string[] {
   return orderOf(library).filter((entry) => !broughtFrom(lists, library.id, entry))
 }
@@ -199,14 +226,16 @@ export type BringIn = BringInChoices & {
 }
 
 /**
- * The step that brings the entries in, or nothing where every one of them is
- * there already or reused. One transaction: one undo takes it all out again.
+ * The step that brings the entries in and records each reuse, or nothing
+ * where every one of them stands in the model already. One transaction: one
+ * undo takes it all out again.
  */
 export function bringIn(ask: BringIn): Command | undefined {
   const { lists, library, language, makeId } = ask
   const reached = entriesReached(lists, library, ask.entries, ask)
   const entries = reached.filter((one) => one.fate.as === 'made')
-  if (entries.length === 0) return undefined
+  const matches = matchesOf(lists, library, language, reached)
+  if (entries.length === 0 && matches.length === 0) return undefined
   const ids = new Map<string, string>()
   const prefix = { unitType: 'ut', role: 'ro', responsibility: 'rs' } as const
   // Several ids of one kind in one step: an id the step or the model already
@@ -217,8 +246,11 @@ export function bringIn(ask: BringIn): Command | undefined {
   const made: Made = {
     language,
     idOf: (entry) => ids.get(entry) ?? standing.get(entry) ?? broughtFrom(lists, library.id, entry)?.id,
-    basedOn: (entry) => ({ library: library.id, entry, version: library.version, language }),
-    nameOf: (entry, name) => said(ask.names, entry)?.trim() || name[language],
+    namedFrom: (entry, words) => {
+      const term = words[language]
+      const name = said(ask.names, entry)?.trim() || term
+      return { name, basedOn: { library: library.id, entry, version: library.version, language, ...(name !== term ? { name } : {}) } }
+    },
     placementOf: (entry) => said(ask.placements, entry),
     holdsType: (id) => lists.unitTypes.some((type) => type.id === id),
     isTypeEntry: (entry) => entryOf(library, entry)?.kind === 'unitType',
@@ -234,7 +266,32 @@ export function bringIn(ask: BringIn): Command | undefined {
   for (const item of library.unitTypes) {
     if (ids.has(item.entry)) commands.push({ type: 'unitType.add', unitType: unitTypeFrom(item, made) })
   }
-  return transaction(commands)
+  // The matches last, so the step leads with what it made and the activity line says a bring-in.
+  return transaction([...commands, ...matches])
+}
+
+/**
+ * Each item the ask reuses, with the entries it stands for appended to its
+ * `alsoBasedOn`: one update per item, in the order the walk reached them. An
+ * entry the item names already, made from it or matched to it before, is not
+ * said twice, and an item with nothing new is not written.
+ */
+function matchesOf(lists: OperatingLists, library: Library, language: LibraryLanguage, reached: readonly ReachedEntry[]): Command[] {
+  const added = new Map<string, { kind: 'unitType' | 'role'; held: Based; also: BasedOn[] }>()
+  for (const one of reached) {
+    if (one.fate.as !== 'reused' || one.kind === 'responsibility') continue
+    const id = one.fate.id
+    // `reusedFor` let the id through only where the organisation holds an item of this kind by it.
+    const held = (one.kind === 'role' ? lists.roles : lists.unitTypes).find((item) => item.id === id)!
+    const at = added.get(id) ?? { kind: one.kind, held, also: [] }
+    added.set(id, at)
+    if (!standsFor(held, library.id, one.entry)) at.also.push({ library: library.id, entry: one.entry, version: library.version, language })
+  }
+  return [...added].flatMap(([id, { kind, held, also }]): Command[] => {
+    if (also.length === 0) return []
+    const patch = { alsoBasedOn: [...held.alsoBasedOn ?? [], ...also] }
+    return [kind === 'role' ? { type: 'role.update', id, patch } : { type: 'unitType.update', id, patch }]
+  })
 }
 
 /** An id no item holds yet, kept as taken: the one given, or it with a number after it. */
@@ -249,9 +306,8 @@ type Made = {
   readonly language: LibraryLanguage
   /** The id an entry has in the step: made, reused, or there already. */
   readonly idOf: (entry: string) => string | undefined
-  readonly basedOn: (entry: string) => BasedOn
-  /** What an item made is called: the name chosen, or the library's term. */
-  readonly nameOf: (entry: string, name: Words) => string
+  /** What an item made is called — the name chosen, or the library's term — and its `basedOn`, which keeps a chosen name. */
+  readonly namedFrom: (entry: string, words: Words) => { name: string; basedOn: BasedOn }
   readonly placementOf: (entry: string) => Placement | undefined
   /** The organisation holds a unit type of this id. */
   readonly holdsType: (id: UnitTypeId) => boolean
@@ -260,19 +316,21 @@ type Made = {
 }
 
 function responsibilityFrom(item: LibraryResponsibility, made: Made): Responsibility {
+  const { name, basedOn } = made.namedFrom(item.entry, item.name)
   return {
     id: made.idOf(item.entry)!,
-    name: made.nameOf(item.entry, item.name),
+    name,
     description: item.description[made.language],
     group: item.group[made.language],
-    basedOn: made.basedOn(item.entry),
+    basedOn,
   }
 }
 
 function roleFrom(item: LibraryRole, made: Made): Role {
+  const { name, basedOn } = made.namedFrom(item.entry, item.name)
   return {
     id: made.idOf(item.entry)!,
-    name: made.nameOf(item.entry, item.name),
+    name,
     short: item.short,
     purpose: item.purpose[made.language],
     duties: item.duties.flatMap((duty) => {
@@ -280,7 +338,7 @@ function roleFrom(item: LibraryRole, made: Made): Role {
       return responsibility ? [{ responsibility, raci: duty.raci }] : []
     }),
     ...(item.manages ? { manages: true } : {}),
-    basedOn: made.basedOn(item.entry),
+    basedOn,
   }
 }
 
@@ -298,9 +356,10 @@ function sitsIn(item: LibraryUnitType, made: Made): { top: boolean; within: Unit
 
 function unitTypeFrom(item: LibraryUnitType, made: Made): UnitType {
   const { top, within } = sitsIn(item, made)
+  const { name, basedOn } = made.namedFrom(item.entry, item.name)
   return {
     id: made.idOf(item.entry)!,
-    name: made.nameOf(item.entry, item.name),
+    name,
     purpose: item.purpose[made.language],
     ...(top ? { top: true } : {}),
     within,
@@ -310,6 +369,6 @@ function unitTypeFrom(item: LibraryUnitType, made: Made): UnitType {
       return role ? [{ role, min: slot.min, ...(slot.max !== undefined ? { max: slot.max } : {}) }] : []
     }),
     ...(item.limit !== undefined ? { limit: item.limit } : {}),
-    basedOn: made.basedOn(item.entry),
+    basedOn,
   }
 }

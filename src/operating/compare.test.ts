@@ -4,12 +4,18 @@
 /**
  * *Compare* (ADR-0036 §5): what was brought in, against the library as it
  * ships — and against a later version of it — read in the language the item
- * was brought in in, and never merged.
+ * was brought in in, and never merged; a name against the one chosen when it
+ * came in, and what an item names by the records of what stands for each
+ * entry, matches included.
  */
 import { describe, expect, it } from 'vitest'
+import type { Model } from '../model/normalised'
 import { bringIn } from './bringIn'
+import type { BringIn } from './bringIn'
 import { compareWithLibraries } from './compare'
+import { newRole, newUnitType } from './edit'
 import type { Library } from './library'
+import { SAFE } from './libraries/safe'
 import { SCRUM } from './libraries/scrum'
 import { applyAll, empty, listsOf } from './testing'
 
@@ -94,5 +100,75 @@ describe('comparing with the libraries', () => {
 
   it('says an item came from a library this build no longer ships', () => {
     expect(compareWithLibraries(listsOf(withScrum()), [])[0]).toMatchObject({ what: 'libraryGone', there: 'scrum' })
+  })
+})
+
+/** The step an ask makes, applied. */
+function brought(before: Model, ask: Omit<BringIn, 'lists' | 'language' | 'makeId'>): Model {
+  return applyAll(before, [bringIn({ lists: listsOf(before), language: 'en', makeId: counter(), ...ask })!])
+}
+
+describe('a name chosen when an item came in', () => {
+  const model = () => brought(empty(), { library: SCRUM, entries: ['scrum-team'], names: { 'scrum-team': 'Squad', 'plan-the-cycle': 'Plan the sprint' } })
+
+  it('is no difference: the name is read against it', () => {
+    expect(compareWithLibraries(listsOf(model()), [SCRUM])).toEqual([])
+  })
+
+  it('makes a rename since a difference, with the library\'s term and the name chosen beside it', () => {
+    const squad = listsOf(model()).unitTypes[0]
+    const renamed = applyAll(model(), [{ type: 'unitType.update', id: squad.id, patch: { name: 'Pod' } }])
+    expect(compareWithLibraries(listsOf(renamed), [SCRUM])).toEqual([
+      { item: { kind: 'unitType', id: squad.id, name: 'Pod' }, what: 'name', here: 'Pod', there: 'Scrum Team', chosen: 'Squad' },
+    ])
+    // Renamed back to the library's term is a rename since too.
+    const back = applyAll(model(), [{ type: 'unitType.update', id: squad.id, patch: { name: 'Scrum Team' } }])
+    expect(compareWithLibraries(listsOf(back), [SCRUM])).toEqual([
+      expect.objectContaining({ what: 'name', here: 'Scrum Team', there: 'Scrum Team', chosen: 'Squad' }),
+    ])
+  })
+})
+
+/** An organisation of its own: a Cluster at the top and a Team coach. */
+function ownModel(): Model {
+  const cluster = { ...newUnitType('Cluster', () => 'own-cluster').unitType, top: true }
+  const coach = newRole('Team coach', () => 'own-coach').role
+  return applyAll(empty(), [{ type: 'unitType.add', unitType: cluster }, { type: 'role.add', role: coach }])
+}
+
+describe('what an item names, matched', () => {
+  it('reads a slot naming a role a bring-in matched to the entry as that entry', () => {
+    const safe = brought(empty(), { library: SAFE, entries: ['agile-team'] })
+    const id = (entry: string) => listsOf(safe).roles.find((one) => one.basedOn?.entry === entry)!.id
+    const model = brought(safe, {
+      library: SCRUM, entries: ['scrum-team'],
+      reuse: { 'product-owner': id('product-owner'), 'scrum-master': id('team-coach'), developer: id('team-member') },
+    })
+    expect(compareWithLibraries(listsOf(model), [SCRUM, SAFE])).toEqual([])
+  })
+
+  it('reads a type it sits in that was matched to the entry as that entry', () => {
+    const model = brought(ownModel(), { library: SAFE, entries: ['agile-team'], reuse: { 'agile-release-train': 'own-cluster' } })
+    const found = compareWithLibraries(listsOf(model), [SAFE])
+    expect(found.filter((one) => one.what === 'within')).toEqual([])
+    // The matched type is the organisation's own: that is all compare says of it.
+    expect(found.filter((one) => one.item.id === 'own-cluster')).toEqual([{ item: { kind: 'unitType', id: 'own-cluster', name: 'Cluster' }, what: 'own' }])
+  })
+
+  it('reads a role matched to two entries as filling both slots', () => {
+    const model = brought(ownModel(), { library: SCRUM, entries: ['scrum-team'], reuse: { 'scrum-master': 'own-coach', developer: 'own-coach' } })
+    const team = listsOf(model).unitTypes.find((one) => one.basedOn?.entry === 'scrum-team')!
+    expect(team.slots.map((slot) => slot.role).slice(1)).toEqual(['own-coach', 'own-coach'])
+    expect(compareWithLibraries(listsOf(model), [SCRUM]).filter((one) => one.item.id === team.id)).toEqual([])
+  })
+
+  it('still says a slot whose role stands for no entry the library names there', () => {
+    const model = brought(ownModel(), { library: SCRUM, entries: ['scrum-team'] })
+    const team = listsOf(model).unitTypes.find((one) => one.basedOn?.entry === 'scrum-team')!
+    const master = listsOf(model).roles.find((one) => one.basedOn?.entry === 'scrum-master')!
+    const swapped = applyAll(model, [{ type: 'unitType.update', id: team.id, patch: { slots: team.slots.map((slot) => (slot.role === master.id ? { ...slot, role: 'own-coach' } : slot)) } }])
+    expect(compareWithLibraries(listsOf(swapped), [SCRUM]).filter((one) => one.item.id === team.id)).toEqual([
+      { item: { kind: 'unitType', id: team.id, name: 'Scrum Team' }, what: 'slot', about: 'Scrum Master', there: '1' },
+    ])
   })
 })

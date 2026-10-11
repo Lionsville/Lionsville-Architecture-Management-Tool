@@ -19,10 +19,13 @@
  * **The defaults are suggestions, and the person's to change.**
  *
  * - A role is offered as reused where the organisation has one that stands
- *   for it ({@link suggestedReuse}): one brought in from an entry the library
- *   calls `alike`, or one of the same name once case, accents, spaces and
- *   punctuation are set aside. A unit type is offered the same suggestion,
- *   and is brought in unless the person takes it.
+ *   for it ({@link suggestedReuse}): one brought in from, or matched to, an
+ *   entry the library calls `alike`, or one of the same name once case,
+ *   accents, spaces and punctuation are set aside. A unit type is offered the
+ *   same suggestion, and is brought in unless the person takes it.
+ * - An entry something stands for already — brought in, or matched at an
+ *   earlier bring-in — is in the model, used as it is, and not suggested
+ *   again: a row says which (`matched`).
  * - A unit type at the top of its library that holds none of its library's
  *   types lands beside the organisation's deepest type that holds nothing
  *   ({@link defaultPlacement}): Team Topologies' teams beside your Team, in
@@ -33,8 +36,8 @@
 import type { UnitType, UnitTypeId } from '../model/operatingModel'
 import { fold } from '../model/textSearch'
 import { unitTypeLanes, unitTypeRank } from '../model/unitOrder'
-import { broughtFrom, entriesReached } from './bringIn'
-import type { BringInChoices, OperatingLists, Placement } from './bringIn'
+import { broughtFrom, entriesReached, standsFor } from './bringIn'
+import type { Based, BringInChoices, OperatingLists, Placement } from './bringIn'
 import { alikeOf, entryOf } from './library'
 import type { EntryRef, Library, LibraryLanguage, LibraryUnitType } from './library'
 
@@ -135,19 +138,19 @@ function comparable(name: string): string {
 
 /**
  * The organisation's role or unit type that stands for an entry, if one does:
- * the item brought in from that entry; else one brought in from an entry the
- * library calls `alike`, in the order the hints are said; else one of the
- * same name, in any of the library's languages, once case, accents, spaces
- * and punctuation are set aside — the first in the structure's order, or the
- * list's for roles. Nothing for a responsibility.
+ * the item brought in from, or matched to, that entry; else one brought in
+ * from, or matched to, an entry the library calls `alike`, in the order the
+ * hints are said — of each, one brought in before one matched; else one of
+ * the same name, in any of the library's languages, once case, accents,
+ * spaces and punctuation are set aside — the first in the structure's order,
+ * or the list's for roles. Nothing for a responsibility.
  */
 export function suggestedReuse(lists: OperatingLists, library: Library, entry: string): string | undefined {
   const held = entryOf(library, entry)
   if (!held || held.kind === 'responsibility') return undefined
-  const candidates: readonly { id: string; name: string; basedOn?: { library: string; entry: string } }[] = held.kind === 'role'
-    ? lists.roles
-    : inRankOrder(lists.unitTypes)
-  const from = (ref: EntryRef) => candidates.find((one) => one.basedOn?.library === ref.library && one.basedOn.entry === ref.entry)
+  const candidates: readonly (Based & { name: string })[] = held.kind === 'role' ? lists.roles : inRankOrder(lists.unitTypes)
+  const from = (ref: EntryRef) => candidates.find((one) => standsFor(one, ref.library, ref.entry) === 'made')
+    ?? candidates.find((one) => standsFor(one, ref.library, ref.entry) === 'matched')
   const alike = [{ library: library.id, entry }, ...alikeOf(held.item)].map(from).find(Boolean)
   if (alike) return alike.id
   const names = new Set(Object.values(held.item.name).map(comparable))
@@ -188,8 +191,13 @@ export type ComingInRow = {
   /** Ticked for itself; otherwise it comes along, needed by the entries in `by`. */
   readonly asked: boolean
   readonly by: readonly string[]
-  /** Made new; the organisation's own used for it (`id`); or brought in before (`id`), and used as it is. */
+  /** Made new; the organisation's own used for it (`id`); or in the model already (`id`), and used as it is. */
   readonly fate: 'made' | 'reused' | 'inModel'
+  /**
+   * In the model: by a match an earlier bring-in recorded (`alsoBasedOn`),
+   * rather than brought in from the entry — "in your model as X (matched)".
+   */
+  readonly matched?: true
   /** Made: the name it will have. Otherwise: the name the organisation's item has now. */
   readonly name: string
   readonly id?: string
@@ -234,8 +242,9 @@ function settle(ask: ComingInAsk): Settled {
   for (const { item, role } of entries) {
     const offer = suggestedReuse(lists, library, item.entry)
     if (offer !== undefined) suggested.set(item.entry, offer)
-    // A role takes the suggestion unless the person said otherwise, and one brought in before is used as it
-    // is (`inModel`) rather than reused; a unit type is reused only when the person takes it.
+    // A role takes the suggestion unless the person said otherwise, and one something stands for already —
+    // brought in or matched before — is used as it is (`inModel`) rather than reused; a unit type is reused
+    // only when the person takes it.
     const edited = said(edits.reuse, item.entry)
     const byDefault = role && !broughtFrom(lists, library.id, item.entry) ? offer : undefined
     const use = edited === undefined ? byDefault : edited ?? undefined
@@ -267,7 +276,8 @@ export function whatWillComeIn(ask: ComingInAsk): WhatWillComeIn {
       const id = one.fate.id
       const suggested = one.fate.as === 'reused' ? settled.suggested.get(one.entry) : undefined
       const name = (one.kind === 'role' ? lists.roles : lists.unitTypes).find((item) => item.id === id)?.name ?? term
-      return [{ ...base, fate: one.fate.as, name, id, ...(suggested !== undefined ? { suggested } : {}) }]
+      const matched = one.fate.as === 'inModel' && one.fate.matched ? { matched: true as const } : {}
+      return [{ ...base, fate: one.fate.as, name, id, ...matched, ...(suggested !== undefined ? { suggested } : {}) }]
     }
     const name = said(ask.edits?.names, one.entry)?.trim() || term
     const suggested = settled.suggested.get(one.entry)

@@ -49,6 +49,18 @@ describe('a unit type, a role, a responsibility and a rule at the writer', () =>
     expect(apply(held, { type: 'operatingRule.add', rule: { id: 'applicationOwner', role: 'x' } }).ok).toBe(true)
   })
 
+  it('records what a bring-in matched on a unit type and a role, and gives back what they had', () => {
+    const matched = { library: 'scrum', entry: 'product-owner', version: '1', language: 'en' }
+    const held = organisation({ roles: [owner], unitTypes: [team] })
+    const role = apply(held, { type: 'role.update', id: 'ro-po', patch: { alsoBasedOn: [matched] } })
+    expect(role.ok && role.model.roles?.['ro-po']).toEqual({ ...owner, alsoBasedOn: [matched] })
+    expect(role.ok && role.inverse).toEqual({ type: 'role.update', id: 'ro-po', patch: { alsoBasedOn: undefined } })
+    const type = apply(held, { type: 'unitType.update', id: 'ut-team', patch: { alsoBasedOn: [{ ...matched, entry: 'scrum-team' }] } })
+    expect(type.ok && type.model.unitTypes?.['ut-team'].alsoBasedOn).toEqual([{ ...matched, entry: 'scrum-team' }])
+    const undone = type.ok && apply(type.model, type.inverse)
+    expect(undone && undone.ok && undone.model).toStrictEqual(held)
+  })
+
   it('patches a role\'s duties and gives back the ones it had', () => {
     const held = organisation({ roles: [owner] })
     const result = apply(held, { type: 'role.update', id: 'ro-po', patch: { duties: [], manages: true } })
@@ -98,6 +110,23 @@ describe('what a step of the operating model is called', () => {
       .toEqual({ key: 'activity.responsibilityAdded', name: 'Release' })
     expect(summarise([{ type: 'operatingRule.add', rule: { id: 'domainOwner', role: 'ro-po' } }], held))
       .toEqual({ key: 'activity.operatingRuleChanged' })
+  })
+
+  it('says a step that only matches a library\'s entries to the organisation\'s own, with how many', () => {
+    const matched = { library: 'scrum', entry: 'product-owner', version: '1', language: 'en' }
+    const recorded = organisation({ roles: [{ ...owner, alsoBasedOn: [matched] }], unitTypes: [team] })
+    const step = transaction([
+      { type: 'role.update', id: 'ro-po', patch: { alsoBasedOn: [matched, { ...matched, library: 'safe' }, { ...matched, entry: 'scrum-master' }] } },
+      { type: 'unitType.update', id: 'ut-team', patch: { alsoBasedOn: [{ ...matched, entry: 'scrum-team' }] } },
+    ])
+    expect(summarise([step], recorded)).toEqual({ key: 'activity.matchedIn', count: 3 })
+    // A step that does anything else is named as it always was.
+    expect(summarise([{ type: 'role.update', id: 'ro-po', patch: { alsoBasedOn: [], name: 'PO' } }], recorded))
+      .toEqual({ key: 'activity.roleChanged', name: 'Product owner' })
+    expect(summarise([{ type: 'role.update', id: 'ro-po', patch: { alsoBasedOn: undefined } }], recorded))
+      .toEqual({ key: 'activity.roleChanged', name: 'Product owner' })
+    expect(summarise([transaction([step, { type: 'role.add', role: { id: 'ro-2', name: 'Another', duties: [] } }])], recorded))
+      .toEqual({ key: 'activity.roleChanged', name: 'Product owner' })
   })
 
   it('says a library brought in as one step, with how many items came', () => {

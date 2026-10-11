@@ -170,6 +170,7 @@ export const EN = {
   'activity.responsibilityRemoved': 'Removed the responsibility {name}',
   'activity.operatingRuleChanged': 'Changed the operating rules',
   'activity.broughtIn': 'Brought in {count} items from a library',
+  'activity.matchedIn': 'Matched {count} items of a library to your own',
   'activity.assignmentAdded': 'Assigned someone in {name}',
   'activity.assignmentChanged': 'Corrected an assignment in {name}',
   'activity.assignmentEnded': 'Ended an assignment in {name}',

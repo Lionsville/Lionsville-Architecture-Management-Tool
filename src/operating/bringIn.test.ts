@@ -4,15 +4,16 @@
 /**
  * Bringing a library in (ADR-0036 §5): one step, undone as one; what an entry
  * needs comes with it; nothing comes twice; every item says where it came
- * from; and the names, places and reuse chosen before the step are what it
- * writes, and what it brings follows them.
+ * from; the names, places and reuse chosen before the step are what it
+ * writes, and what it brings follows them; and a name chosen and a reuse are
+ * recorded, so a library opened again reads them.
  */
 import { describe, expect, it } from 'vitest'
 import { summarise } from '../model/activity'
 import { apply } from '../model/reducer'
 import type { Command } from '../model/commands'
 import type { Model } from '../model/normalised'
-import { bringIn, broughtFrom, entriesBrought, entriesReached, notBroughtIn } from './bringIn'
+import { bringIn, broughtFrom, entriesBrought, entriesReached, notBroughtIn, standsFor } from './bringIn'
 import type { BringIn } from './bringIn'
 import { newRole, newUnitType } from './edit'
 import { IT4IT } from './libraries/it4it'
@@ -128,8 +129,21 @@ describe('names chosen before the step', () => {
     expect(lists.unitTypes.map((one) => one.name)).toEqual(['Squad'])
     expect(lists.roles.map((one) => one.name)).toEqual(['Product Owner', 'Agile coach', 'Developer'])
     expect(lists.responsibilities.map((one) => one.name)).toContain('Plan the sprint')
-    // Renamed, still from its entry.
-    expect(lists.unitTypes[0].basedOn).toEqual({ library: 'scrum', entry: 'scrum-team', version: '1', language: 'en' })
+    // Renamed, still from its entry, and the name chosen kept beside it for compare to read against.
+    expect(lists.unitTypes[0].basedOn).toEqual({ library: 'scrum', entry: 'scrum-team', version: '1', language: 'en', name: 'Squad' })
+    expect(lists.responsibilities.find((one) => one.name === 'Plan the sprint')?.basedOn?.name).toBe('Plan the sprint')
+  })
+
+  it('are kept in basedOn only where they are not the library\'s term in the language brought in', () => {
+    const model = applyAll(empty(), [bringIn({
+      lists: listsOf(empty()), library: SCRUM, entries: ['scrum-team'], language: 'nl', makeId: counter(),
+      names: { 'scrum-team': 'Scrum Team', 'product-owner': 'Product Owner', 'plan-the-cycle': 'De cyclus plannen' },
+    })!])
+    const lists = listsOf(model)
+    // Scrum Team is the English term; brought in in Dutch, where the library says Scrumteam, it is a name chosen.
+    expect(lists.unitTypes[0].basedOn).toEqual({ library: 'scrum', entry: 'scrum-team', version: '1', language: 'nl', name: 'Scrum Team' })
+    expect(lists.roles.map((one) => 'name' in one.basedOn!)).toEqual([false, false, false])
+    expect(lists.responsibilities.find((one) => one.name === 'De cyclus plannen')?.basedOn).toEqual({ library: 'scrum', entry: 'plan-the-cycle', version: '1', language: 'nl' })
   })
 
   it('leave the library\'s term where a name is blank, and rename nothing already in the model', () => {
@@ -178,8 +192,8 @@ describe('reuse chosen before the step', () => {
     const lists = listsOf(model)
     expect(lists.roles.filter((one) => one.basedOn?.entry === 'product-owner')).toEqual([])
     expect(lists.unitTypes.find((one) => one.basedOn?.entry === 'scrum-team')?.slots[0]).toEqual({ role: lead.id, min: 1, max: 1 })
-    // Left as it was: its own name, no basedOn, no duties brought for it.
-    expect(roleNamed(model, 'Product lead')).toStrictEqual(lead)
+    // Left as it was but for the match: its own name, no basedOn, no duties brought for it.
+    expect(roleNamed(model, 'Product lead')).toStrictEqual({ ...lead, alsoBasedOn: [{ library: 'scrum', entry: 'product-owner', version: '1', language: 'en' }] })
   })
 
   it('does not bring the responsibilities only a reused role would have had', () => {
@@ -199,15 +213,23 @@ describe('reuse chosen before the step', () => {
     expect(entriesBrought(listsOf(before), SAFE, asked.entries, asked)).toEqual(['agile-team', 'product-owner', 'team-coach', 'team-member', 'plan-the-interval', 'order-the-train-backlog', 'keep-the-runway', 'deliver-the-iteration'])
     const model = brought(before, asked)
     expect(listsOf(model).unitTypes.find((one) => one.basedOn?.entry === 'agile-team')?.within).toEqual([cluster.id])
-    expect(typeNamed(model, 'Cluster')).toStrictEqual(cluster)
+    expect(typeNamed(model, 'Cluster')).toStrictEqual({ ...cluster, alsoBasedOn: [{ library: 'safe', entry: 'agile-release-train', version: SAFE.version, language: 'en' }] })
   })
 
-  it('wins over an entry brought in before, and brings nothing when all it is asked for is reused', () => {
+  it('wins over an entry brought in before, and a step where all it is asked for is reused only records the match', () => {
     const first = brought(ownModel(), { library: SCRUM, entries: ['product-owner'] })
     const lead = roleNamed(first, 'Product lead')
     const model = brought(first, { library: SCRUM, entries: ['scrum-team'], reuse: { 'product-owner': lead.id } })
     expect(listsOf(model).unitTypes.find((one) => one.basedOn?.entry === 'scrum-team')?.slots[0].role).toBe(lead.id)
-    expect(bringIn({ lists: listsOf(model), library: SCRUM, entries: ['scrum-master'], language: 'en', makeId: counter(), reuse: { 'scrum-master': lead.id } })).toBeUndefined()
+    const ask = { lists: listsOf(model), library: SCRUM, entries: ['scrum-master'], language: 'en' as const, makeId: counter(), reuse: { 'scrum-master': lead.id } }
+    const step = bringIn(ask)
+    expect(step).toEqual({ type: 'transaction', commands: [{
+      type: 'role.update', id: lead.id,
+      patch: { alsoBasedOn: [{ library: 'scrum', entry: 'product-owner', version: '1', language: 'en' }, { library: 'scrum', entry: 'scrum-master', version: '1', language: 'en' }] },
+    }] })
+    expect(summarise([step!], model)).toEqual({ key: 'activity.matchedIn', count: 1 })
+    // Asked again, with the match recorded, there is nothing left to write.
+    expect(bringIn({ ...ask, lists: listsOf(applyAll(model, [step!])) })).toBeUndefined()
   })
 
   it('passes over a reuse the organisation cannot stand for: an id it does not hold, or of the other kind', () => {
@@ -218,6 +240,64 @@ describe('reuse chosen before the step', () => {
       reuse: { 'product-owner': cluster.id, 'scrum-master': 'nobody', 'scrum-team': lead.id, 'plan-the-cycle': lead.id },
     })
     expect(brings).toEqual(entriesBrought(listsOf(before), SCRUM, ['scrum-team']))
+  })
+})
+
+describe('what a reuse records', () => {
+  it('is the entry, on the item reused, appended to what it was matched to before', () => {
+    const before = ownModel()
+    const lead = roleNamed(before, 'Product lead')
+    const safe = brought(before, { library: SAFE, entries: ['product-owner'], reuse: { 'product-owner': lead.id } })
+    const model = brought(safe, { library: SCRUM, entries: ['product-owner'], reuse: { 'product-owner': lead.id } })
+    expect(roleNamed(model, 'Product lead').alsoBasedOn).toEqual([
+      { library: 'safe', entry: 'product-owner', version: SAFE.version, language: 'en' },
+      { library: 'scrum', entry: 'product-owner', version: '1', language: 'en' },
+    ])
+    expect(standsFor(roleNamed(model, 'Product lead'), 'scrum', 'product-owner')).toBe('matched')
+  })
+
+  it('is one update for an item that stands for several entries, after everything the step makes', () => {
+    const before = ownModel()
+    const coach = roleNamed(before, 'Team coach')
+    const step = bringIn({ lists: listsOf(before), library: SCRUM, entries: ['scrum-team'], language: 'en', makeId: counter(), reuse: { 'scrum-master': coach.id, developer: coach.id } })!
+    const commands = (step as Extract<Command, { type: 'transaction' }>).commands
+    expect(commands.map((one) => one.type).slice(-2)).toEqual(['unitType.add', 'role.update'])
+    expect(commands.at(-1)).toEqual({ type: 'role.update', id: coach.id, patch: { alsoBasedOn: [
+      { library: 'scrum', entry: 'scrum-master', version: '1', language: 'en' }, { library: 'scrum', entry: 'developer', version: '1', language: 'en' },
+    ] } })
+    // The step leads with what it made, and says so.
+    expect(summarise([step], before)).toEqual({ key: 'activity.broughtIn', count: 6 })
+  })
+
+  it('says nothing of the item made from the entry itself', () => {
+    const model = brought(empty(), { library: SCRUM, entries: ['product-owner'] })
+    const owner = listsOf(model).roles[0]
+    expect(bringIn({ lists: listsOf(model), library: SCRUM, entries: ['product-owner'], language: 'en', makeId: counter(), reuse: { 'product-owner': owner.id } })).toBeUndefined()
+  })
+
+  it('makes the entry stand in the model on a later bring-in: not offered, not brought, and what is new names the item', () => {
+    const before = ownModel()
+    const lead = roleNamed(before, 'Product lead')
+    const model = brought(before, { library: SCRUM, entries: ['product-owner'], reuse: { 'product-owner': lead.id } })
+    const lists = listsOf(model)
+    expect(broughtFrom(lists, 'scrum', 'product-owner')?.id).toBe(lead.id)
+    expect(notBroughtIn(lists, SCRUM)).not.toContain('product-owner')
+    expect(entriesReached(lists, SCRUM, ['scrum-team'])[1]).toEqual({
+      entry: 'product-owner', kind: 'role', fate: { as: 'inModel', id: lead.id, matched: true }, asked: false, by: ['scrum-team'],
+    })
+    const after = listsOf(brought(model, { library: SCRUM, entries: ['scrum-team'] }))
+    expect(after.roles.filter((one) => one.basedOn?.entry === 'product-owner')).toEqual([])
+    expect(after.unitTypes.find((one) => one.basedOn?.entry === 'scrum-team')?.slots[0].role).toBe(lead.id)
+  })
+
+  it('reads an entry made before a match as the one brought in from it', () => {
+    const first = brought(ownModel(), { library: SCRUM, entries: ['product-owner'] })
+    const owner = listsOf(first).roles.find((one) => one.basedOn?.entry === 'product-owner')!
+    const lead = roleNamed(first, 'Product lead')
+    const lists = listsOf(brought(first, { library: SCRUM, entries: ['scrum-team'], reuse: { 'product-owner': lead.id } }))
+    expect(broughtFrom(lists, 'scrum', 'product-owner')?.id).toBe(owner.id)
+    expect(entriesReached(lists, SCRUM, ['product-owner'])[0].fate).toEqual({ as: 'inModel', id: owner.id })
+    expect(standsFor(owner, 'scrum', 'scrum-team')).toBeUndefined()
   })
 })
 
@@ -284,5 +364,17 @@ describe('bringing in, then undoing', () => {
       library: SAFE, entries: ['agile-team'],
       reuse: { 'agile-release-train': typeNamed(before, 'Cluster').id, 'team-coach': roleNamed(before, 'Team coach').id },
     }))
+  })
+
+  it('leaves the model as it was, for a step that only records a reuse, beside a match made before', () => {
+    const before = brought(ownModel(), { library: SAFE, entries: ['team-coach'], reuse: { 'team-coach': roleNamed(ownModel(), 'Team coach').id } })
+    const coach = roleNamed(before, 'Team coach')
+    expect(coach.alsoBasedOn).toHaveLength(1)
+    undoesWhole(before, ask(before, { library: SCRUM, entries: ['scrum-master'], reuse: { 'scrum-master': coach.id } }))
+  })
+
+  it('leaves the model as it was, for a step that matches an item for the first time', () => {
+    const before = ownModel()
+    undoesWhole(before, ask(before, { library: IT4IT, entries: ['product-manager'], reuse: { 'product-manager': roleNamed(before, 'Product lead').id } }))
   })
 })

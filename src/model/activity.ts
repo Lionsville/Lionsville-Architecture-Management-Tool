@@ -314,11 +314,14 @@ type OperatingCommand = Extract<CommandBody, {
 /**
  * A step of the operating model (ADR-0036). Bringing items in from a library
  * is one step of several adds, each saying where it came from, and the line
- * says that rather than naming the first of them.
+ * says that rather than naming the first of them. One that brings nothing in
+ * and only matches entries to the organisation's own items says that.
  */
 function operatingStep(lead: OperatingCommand, flat: readonly CommandBody[], before: Model): StepSummary {
   const brought = flat.filter((command) => basedOnOf(command) !== undefined).length
   if (brought > 0 && lead.type.endsWith('.add')) return { key: 'activity.broughtIn', count: brought }
+  const matched = matchesRecorded(flat, before)
+  if (matched > 0) return { key: 'activity.matchedIn', count: matched }
   switch (lead.type) {
     case 'unitType.add': return { key: 'activity.unitTypeAdded', name: lead.unitType.name }
     case 'unitType.update': return { key: 'activity.unitTypeChanged', name: unitTypesOf(before)[lead.id]?.name }
@@ -336,6 +339,22 @@ function operatingStep(lead: OperatingCommand, flat: readonly CommandBody[], bef
     case 'operatingRule.remove':
       return { key: 'activity.operatingRuleChanged' }
   }
+}
+
+/**
+ * How many library entries a step records as matched to the organisation's
+ * own unit types and roles (`alsoBasedOn`), where that is all it does: a
+ * bring-in in which everything asked for was reused. Nothing otherwise.
+ */
+function matchesRecorded(flat: readonly CommandBody[], before: Model): number {
+  let count = 0
+  for (const command of flat) {
+    if (command.type !== 'unitType.update' && command.type !== 'role.update') return 0
+    if (Object.keys(command.patch).join() !== 'alsoBasedOn') return 0
+    const held = command.type === 'role.update' ? rolesOf(before)[command.id] : unitTypesOf(before)[command.id]
+    count += (command.patch.alsoBasedOn?.length ?? 0) - (held?.alsoBasedOn?.length ?? 0)
+  }
+  return count
 }
 
 /** Where an added item of the operating model came from, if a library. */

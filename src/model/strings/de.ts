@@ -158,6 +158,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'activity.responsibilityRemoved': 'Verantwortung {name} entfernt',
   'activity.operatingRuleChanged': 'Die Regeln des Betriebsmodells geändert',
   'activity.broughtIn': '{count} Einträge aus einer Bibliothek übernommen',
+  'activity.matchedIn': '{count} Einträge einer Bibliothek Ihren eigenen zugeordnet',
   'activity.assignmentAdded': 'Jemanden in {name} zugeordnet',
   'activity.assignmentChanged': 'Eine Zuordnung in {name} korrigiert',
   'activity.assignmentEnded': 'Eine Zuordnung in {name} beendet',

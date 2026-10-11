@@ -158,6 +158,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'activity.responsibilityRemoved': 'Verantwoordelijkheid {name} verwijderd',
   'activity.operatingRuleChanged': 'De regels van het besturingsmodel gewijzigd',
   'activity.broughtIn': '{count} onderdelen uit een bibliotheek overgenomen',
+  'activity.matchedIn': '{count} onderdelen uit een bibliotheek aan je eigen gekoppeld',
   'activity.assignmentAdded': 'Iemand toegewezen in {name}',
   'activity.assignmentChanged': 'Een toewijzing in {name} gecorrigeerd',
   'activity.assignmentEnded': 'Een toewijzing in {name} beëindigd',
