@@ -861,6 +861,8 @@ export const EN = {
   'gesture.go': 'Move',
   'gesture.confirmTitle': 'Let {scope} answer for {name}?',
   'gesture.confirmBody': 'This writes two scopes: {scope} first, then this one. Undo stops there \u2014 move the record again to put it back.',
+  'gesture.confirmAssignmentsOne': 'Its assignment goes with it, under the same id, so the person\'s past stays linked; a stand-in here holds none.',
+  'gesture.confirmAssignmentsOther': 'Its {count} assignments go with it, ended ones included, under the same ids, so each person\'s past stays linked; a stand-in here holds none.',
   'gesture.moved': '{scope} answers for {name} now',
   'gesture.linked': '{name} stands in for the record in {scope} now',
   'gesture.writeFailed': 'That scope could not be written: {message}',

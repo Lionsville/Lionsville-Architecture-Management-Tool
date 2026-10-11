@@ -19,6 +19,7 @@ import type { HeldRepositories } from './testing/heldRepositories'
 import { modelsOf, nodesOf, stepOf } from '../projects/scopeAccess'
 import { translator } from '../i18n'
 import type { DesignElement } from '../model'
+import type { Assignment } from '../model/units'
 import { laidOut } from '../model/testFixtures'
 import { indexScopes } from '../projects/scopeIndex'
 import type { ScopeSnapshot } from '../projects/scope'
@@ -37,13 +38,14 @@ function element(id: string, over: Partial<DesignElement> = {}): DesignElement {
   }
 }
 
-function scope(path: string, elements: DesignElement[]): ScopeSnapshot {
+function scope(path: string, elements: DesignElement[], assignments?: Assignment[]): ScopeSnapshot {
   return {
     path,
     model: {
       name: path || 'Acme',
       elements,
       relations: [],
+      ...(assignments ? { assignments } : {}),
       diagrams: [laidOut({ id: 'l7', kind: 'layer7', name: 'L7', placements: [] })],
     },
     activeDiagramId: 'l7',
@@ -68,6 +70,8 @@ type Harness = {
   session: () => ModelSession
   store: HeldRepositories
   writes: string[]
+  /** How many steps each write to another scope carried, in order. */
+  steps: number[]
   notices: [string, string | undefined][]
   failures: string[]
 }
@@ -86,6 +90,7 @@ type Options = {
 function mount(open: string, initial = tree(), failOnWrite?: number, options: Options = {}): Harness {
   const store = heldRepositories(initial)
   const writes: string[] = []
+  const steps: number[] = []
   const notices: [string, string | undefined][] = []
   const failures: string[] = []
   const held = initial.find((one) => one.path === open)!
@@ -103,6 +108,7 @@ function mount(open: string, initial = tree(), failOnWrite?: number, options: Op
     apply: async (work) => {
       const tree = await store.scopes.tree()
       for (const one of work) await writing(nodesOf(tree.root).find((node) => node.id === one.scope)!.address)
+      steps.push(...work.map((one) => one.steps.length))
       return store.scopes.apply(work)
     },
   }).scopes
@@ -141,7 +147,7 @@ function mount(open: string, initial = tree(), failOnWrite?: number, options: Op
     return null
   }
   render(<Probe />)
-  return { gestures: () => gestures, session: () => session, store, writes, notices, failures }
+  return { gestures: () => gestures, session: () => session, store, writes, steps, notices, failures }
 }
 
 const settle = () => act(async () => {
@@ -335,5 +341,68 @@ describe('on a scope that is only read', () => {
     expect(held.gestures().choice).toBeUndefined()
     expect(held.writes).toEqual([])
     expect(held.notices.map(([message]) => message).join(' ')).toContain('open to be read and not changed')
+  })
+})
+
+/**
+ * A unit takes its people with it (ADR-0036 §4): its assignments, ended ones
+ * included, land in the scope it goes to in the same step as its definition,
+ * under the ids they had; the stand-in left behind holds none; ⌘Z stops at
+ * the barrier with both halves in place; and the organisation's index reads
+ * them where the unit is now.
+ */
+describe('a unit and its assignments', () => {
+  const team = element('team', { kind: 'actor', name: 'Team', unitTypeId: 'ut-team' })
+  const ended: Assignment = { id: 'as-0', unitId: 'team', roleId: 'ro-lead', person: { person: 'pe-bo' }, from: '2025-01-01', until: '2025-12-31' }
+  const running: Assignment = { id: 'as-1', unitId: 'team', roleId: 'ro-lead', person: { person: 'pe-ada' }, from: '2026-01-01' }
+  const other: Assignment = { id: 'as-9', unitId: 'crew', roleId: 'ro-lead', person: { person: 'pe-cy' } }
+  const units = () => [
+    scope('', []),
+    scope('retail', [team, element('crew', { kind: 'actor', name: 'Crew', unitTypeId: 'ut-team' })], [ended, running, other]),
+    scope('road', []),
+  ]
+  const move = async (open: string, gesture: 'promote' | 'transfer', to: string, initial = units()) => {
+    const held = mount(open, initial)
+    await act(async () => { held.gestures().ask({ gesture, id: 'team', to }) })
+    await settle()
+    await act(async () => { held.gestures().confirm() })
+    await settle()
+    return held
+  }
+
+  it('lands them with the unit in one step, and leaves the stand-in none', async () => {
+    const held = await move('retail', 'promote', '')
+    expect(held.steps).toEqual([1])
+    const above = (await held.store.read(''))!.model
+    expect(above.elements).toMatchObject([{ id: 'team', unitTypeId: 'ut-team' }])
+    expect(above.assignments).toEqual([ended, running])
+    const here = (await held.store.read('retail'))!.model
+    expect(here.elements.find((one) => one.id === 'team')).toMatchObject({ ref: '' })
+    expect(here.assignments).toEqual([other])
+    expect(held.session().current().assignments).toEqual([other])
+  })
+
+  it('stops ⌘Z at the barrier, with the people where the unit is', async () => {
+    const held = await move('retail', 'promote', '')
+    act(() => held.session().undo())
+    expect(held.session().current().assignments).toEqual([other])
+    expect(held.session().current().elements.find((one) => one.id === 'team')?.ref).toBe('')
+    expect(held.notices.map(([message]) => message).join(' ')).toContain('two scopes')
+  })
+
+  it('leaves the index reading every one of them in the scope that keeps the unit now', async () => {
+    const held = await move('retail', 'transfer', 'road')
+    const index = indexScopes(modelsOf(await held.store.index.read()))
+    expect(index.assignments().filter(({ assignment }) => assignment.unitId === 'team'))
+      .toEqual([{ scope: 'road', assignment: ended }, { scope: 'road', assignment: running }])
+    expect(index.units().find(({ unit }) => unit.id === 'team')?.scope).toBe('road')
+  })
+
+  it('says in the confirmation that they go with it', async () => {
+    const held = mount('retail', units())
+    await act(async () => { held.gestures().ask({ gesture: 'promote', id: 'team', to: '' }) })
+    await settle()
+    const choice = held.gestures().choice
+    expect(choice?.kind === 'confirming' ? choice.plan.writes[0].assignments?.map((one) => one.id) : undefined).toEqual(['as-0', 'as-1'])
   })
 })

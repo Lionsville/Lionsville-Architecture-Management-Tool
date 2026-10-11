@@ -24,6 +24,13 @@
  * does them: the order is the design, and it is pinned by a test rather than by
  * the sequence of `await`s in a hook.
  *
+ * **A unit takes its people with it** (ADR-0036 §4). Its assignments are
+ * records in the scope that keeps it, so the three that move a definition move
+ * every assignment kept for it too — ended ones included, because who held
+ * the roles belongs with the unit — in the same write and the same step,
+ * under the ids they had, so a person's past stays linked. A stand-in left
+ * behind holds none.
+ *
  * **A refusal is a value with a key.** None of these is ever an exception: a
  * person asking to promote something to a scope that already answers for it is
  * asking a reasonable question with the answer "no", and the dialog says which
@@ -34,7 +41,9 @@
  */
 import type { StringKey } from '../i18n/strings'
 import type { Command, DesignElement, ElementId } from '../model'
+import { transaction } from '../model/commands'
 import type { HostModel } from '../model/hostModel'
+import type { Assignment } from '../model/units'
 import { ownerDetailOn } from './checks'
 import type { ScopeModel } from './scope'
 import type { ScopeIndex } from './scopeIndex'
@@ -122,6 +131,12 @@ export type GestureWrite = {
   path: ScopePath
   /** The definition as that scope should hold it. */
   element: DesignElement
+  /**
+   * A unit's assignments, which go where it goes (ADR-0036 §4): every one the
+   * scope it leaves kept for it, ended ones included, each under its own id.
+   * Absent where it had none.
+   */
+  assignments?: readonly Assignment[]
 }
 
 export type GesturePlan = {
@@ -168,6 +183,44 @@ export function definitionCommand(model: Pick<HostModel, 'elements'>, element: D
   return { type: 'element.update', id: element.id, patch: patch as Partial<DesignElement> }
 }
 
+/**
+ * One assignment as the step that writes it into a scope: added where the
+ * scope has none by its id, and otherwise replaced whole.
+ */
+function assignmentCommand(held: readonly Assignment[], assignment: Assignment): Command {
+  const there = held.find((one) => one.id === assignment.id)
+  if (!there) return { type: 'assignment.add', assignment }
+  const patch: Record<string, unknown> = {}
+  for (const key of new Set([...Object.keys(there), ...Object.keys(assignment)])) {
+    if (key !== 'id') patch[key] = (assignment as unknown as Record<string, unknown>)[key]
+  }
+  return { type: 'assignment.update', id: assignment.id, patch: patch as Partial<Assignment> }
+}
+
+/**
+ * Everything one gesture's write puts into the scope it arrives in, as ONE
+ * step: the definition, and a unit's assignments with it — so the scope never
+ * holds the unit without its people, or its people without the unit.
+ */
+export function writeCommand(
+  model: Pick<HostModel, 'elements'> & { readonly assignments?: readonly Assignment[] }, write: GestureWrite,
+): Command {
+  const commands = [
+    definitionCommand(model, write.element),
+    ...(write.assignments ?? []).map((assignment) => assignmentCommand(model.assignments ?? [], assignment)),
+  ]
+  return commands.length === 1 ? commands[0] : transaction(commands)
+}
+
+/**
+ * This scope's half: the definition linked or deleted, and every assignment
+ * that went with it taken out, so a stand-in left behind holds none.
+ */
+function leaving(command: Command, carried: readonly Assignment[]): Command {
+  if (carried.length === 0) return command
+  return transaction([command, ...carried.map((one): Command => ({ type: 'assignment.remove', id: one.id }))])
+}
+
 export function isGestureRefusal(
   answer: GesturePlan | GestureRefusal,
 ): answer is GestureRefusal {
@@ -184,8 +237,8 @@ export function isGestureRefusal(
  */
 export function planGesture(deps: {
   request: GestureRequest
-  /** The open scope's records, as the session has them. */
-  model: { elements: readonly DesignElement[] }
+  /** The open scope's records, as the session has them: a unit's assignments travel with it. */
+  model: { elements: readonly DesignElement[]; assignments?: readonly Assignment[] }
   index: ScopeIndex
   /** Every scope's records, for what the target already holds. */
   models: readonly ScopeModel[]
@@ -222,12 +275,14 @@ export function planGesture(deps: {
   const children = model.elements.filter((element) => element.parentId === request.id)
   if (!keepStandIn && children.length > 0) return { refused: 'gesture.hasChildren' }
 
+  // Every assignment kept here for it, ended ones included (ADR-0036 §4).
+  const carried = (model.assignments ?? []).filter((assignment) => assignment.unitId === request.id)
   return {
     gesture: request.gesture,
-    writes: [{ path: to, element: travelling(held, standing, models, to) }],
-    command: keepStandIn
+    writes: [{ path: to, element: travelling(held, standing, models, to), ...(carried.length ? { assignments: carried } : {}) }],
+    command: leaving(keepStandIn
       ? { type: 'element.link', id: request.id, name: held.name, ref: to }
-      : { type: 'element.delete', id: request.id },
+      : { type: 'element.delete', id: request.id }, carried),
     barrier: true,
     name: held.name,
     owner: to,

@@ -646,6 +646,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'gesture.go': 'Verplaatsen',
   'gesture.confirmTitle': '{scope} {name} laten beheren?',
   'gesture.confirmBody': 'Dit schrijft twee niveaus: eerst {scope}, dan dit. Ongedaan maken stopt daar \u2014 verplaats het record opnieuw om het terug te zetten.',
+  'gesture.confirmAssignmentsOne': 'De toewijzing gaat mee, onder hetzelfde id, zodat het verleden van de persoon gekoppeld blijft; een verwijzing hier houdt er geen.',
+  'gesture.confirmAssignmentsOther': 'De {count} toewijzingen gaan mee, ook de beëindigde, onder dezelfde id\'s, zodat ieders verleden gekoppeld blijft; een verwijzing hier houdt er geen.',
   'gesture.moved': '{scope} beheert {name} nu',
   'gesture.linked': '{name} verwijst nu naar het record in {scope}',
   'gesture.writeFailed': 'Dat niveau kon niet worden geschreven: {message}',

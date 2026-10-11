@@ -29,10 +29,11 @@
 import { useCallback, useMemo, useState } from 'react'
 import type { StringKey, Translate } from '../i18n'
 import type { Command, DesignElement, ElementId } from '../model'
+import type { Assignment } from '../model/units'
 import { reasonOf } from '../platform/errors'
 import { reasonIn } from './messageFor'
 import {
-  definitionCommand, GESTURE_BARRIER, GESTURE_REFUSAL, isGestureRefusal, planGesture,
+  GESTURE_BARRIER, GESTURE_REFUSAL, isGestureRefusal, planGesture, writeCommand,
 } from '../projects/gestures'
 import type { GestureKind, GesturePlan, GestureRequest } from '../projects/gestures'
 import type { ScopeModel, ScopeSnapshot } from '../projects/scope'
@@ -103,7 +104,7 @@ export function useGestures(deps: {
    * because a gesture refused at its last step has already written the first.
    */
   session: {
-    current: () => { elements: readonly DesignElement[] }
+    current: () => { elements: readonly DesignElement[]; assignments?: readonly Assignment[] }
     snapshot: () => ScopeSnapshot
     dispatch: (command: Command) => unknown
     readOnly: boolean
@@ -182,8 +183,9 @@ export function useGestures(deps: {
       for (const write of plan.writes) {
         // Expecting what was read, and made again over a scope that moved in
         // between: the definition is written into the scope as it stands, so a
-        // colleague's change to it survives the gesture (`changeScope`).
-        const written = await changeScope(scopes, write.path, (held) => [definitionCommand(held.model, write.element)])
+        // colleague's change to it survives the gesture (`changeScope`) — with
+        // a unit's assignments, in the same step (ADR-0036 §4).
+        const written = await changeScope(scopes, write.path, (held) => [writeCommand(held.model, write)])
         if (!written) {
           notify(s(GESTURE_REFUSAL['gesture.noSuchScope']), 'warning')
           return

@@ -647,6 +647,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'gesture.go': 'Verschieben',
   'gesture.confirmTitle': 'Soll {scope} {name} verantworten?',
   'gesture.confirmBody': 'Das schreibt zwei Bereiche: erst {scope}, dann diesen. R\u00fcckg\u00e4ngig h\u00f6rt dort auf \u2014 verschieben Sie den Datensatz erneut, um ihn zur\u00fcckzuholen.',
+  'gesture.confirmAssignmentsOne': 'Die Zuordnung geht mit, unter derselben ID, damit die Vergangenheit der Person verknüpft bleibt; ein Platzhalter hier behält keine.',
+  'gesture.confirmAssignmentsOther': 'Die {count} Zuordnungen gehen mit, auch die beendeten, unter denselben IDs, damit die Vergangenheit jeder Person verknüpft bleibt; ein Platzhalter hier behält keine.',
   'gesture.moved': '{scope} verantwortet {name} jetzt',
   'gesture.linked': '{name} verweist jetzt auf den Datensatz in {scope}',
   'gesture.writeFailed': 'Dieser Bereich konnte nicht geschrieben werden: {message}',

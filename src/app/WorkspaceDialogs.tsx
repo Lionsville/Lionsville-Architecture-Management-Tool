@@ -248,6 +248,9 @@ function GestureDialogs({ parts }: { parts: WorkspaceParts }) {
   const { scopeLabel } = readings
   const choosing = gestures.choice?.kind === 'choosing' ? gestures.choice : undefined
   const confirming = gestures.choice?.kind === 'confirming' ? gestures.choice : undefined
+  // A unit's assignments go with it (ADR-0036 §4): the confirmation says how many.
+  const carried = confirming?.plan.writes.reduce((sum, write) => sum + (write.assignments?.length ?? 0), 0) ?? 0
+  const carriedText = carried === 0 ? '' : ` ${s(carried === 1 ? 'gesture.confirmAssignmentsOne' : 'gesture.confirmAssignmentsOther', { count: carried })}`
   return (
     <>
       <MoveRecordDialog
@@ -265,7 +268,7 @@ function GestureDialogs({ parts }: { parts: WorkspaceParts }) {
         title={confirming
           ? s('gesture.confirmTitle', { scope: scopeLabel(confirming.plan.owner), name: confirming.plan.name })
           : ''}
-        body={confirming ? s('gesture.confirmBody', { scope: scopeLabel(confirming.plan.owner) }) : ''}
+        body={confirming ? `${s('gesture.confirmBody', { scope: scopeLabel(confirming.plan.owner) })}${carriedText}` : ''}
         confirmLabel={s('gesture.go')}
         cancelLabel={s('common.cancel')}
         onCancel={gestures.close}

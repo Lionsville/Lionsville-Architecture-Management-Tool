@@ -11,8 +11,9 @@
  * nothing was planned.
  */
 import { describe, expect, it } from 'vitest'
-import type { DesignElement } from '../model'
-import { isGestureRefusal, planGesture } from './gestures'
+import type { Command, DesignElement } from '../model'
+import type { Assignment } from '../model/units'
+import { isGestureRefusal, planGesture, writeCommand } from './gestures'
 import type { GesturePlan, GestureRefusal, GestureRequest } from './gestures'
 import { indexScopes } from './scopeIndex'
 import type { ScopeModel } from './scope'
@@ -205,4 +206,57 @@ describe('transfer', () => {
 it('refuses an id this scope does not hold', () => {
   expect(refusal(plan({ gesture: 'promote', id: 'nope', scope: 'acme/rail', to: '' })))
     .toBe('gesture.unknownId')
+})
+
+/**
+ * A unit takes its people with it (ADR-0036 §4): every assignment kept for it
+ * goes where it goes, ended ones included, under the ids they had, in the
+ * same write and the same step — and a stand-in left behind holds none.
+ */
+describe('a unit’s assignments', () => {
+  const unit = element('team', { kind: 'actor', name: 'Team', unitTypeId: 'ut-team' })
+  const running: Assignment = { id: 'as-1', unitId: 'team', roleId: 'ro-lead', person: { person: 'pe-ada' }, from: '2026-01-01' }
+  const ended: Assignment = { id: 'as-0', unitId: 'team', roleId: 'ro-lead', person: { person: 'pe-bo' }, from: '2025-01-01', until: '2025-12-31' }
+  const elsewhere: Assignment = { id: 'as-9', unitId: 'other', roleId: 'ro-lead', person: { person: 'pe-cy' } }
+  const models = (): ScopeModel[] => [
+    scope('', []),
+    { path: 'acme', model: { elements: [unit, element('other', { kind: 'actor', unitTypeId: 'ut-team' })], relations: [], assignments: [ended, running, elsewhere] } },
+    scope('acme/rail', []),
+  ]
+
+  it.each(['promote', 'transfer'] as const)('%s carries them all, ended ones included, and takes them out here', (gesture) => {
+    const held = planned(plan({ gesture, id: 'team', scope: 'acme', to: '' }, models()))
+    expect(held.writes[0].assignments).toEqual([ended, running])
+    expect(held.command).toEqual({
+      type: 'transaction',
+      commands: [
+        { type: 'element.link', id: 'team', name: 'Team', ref: '' },
+        { type: 'assignment.remove', id: 'as-0' },
+        { type: 'assignment.remove', id: 'as-1' },
+      ],
+    })
+  })
+
+  it('demote carries them too, and a transfer that keeps no stand-in takes them out with the record', () => {
+    expect(planned(plan({ gesture: 'demote', id: 'team', scope: 'acme', to: 'acme/rail' }, models())).writes[0].assignments)
+      .toEqual([ended, running])
+    const gone = planned(plan({ gesture: 'transfer', id: 'team', scope: 'acme', to: '', keepStandIn: false }, models()))
+    expect(gone.command).toMatchObject({ type: 'transaction', commands: [{ type: 'element.delete', id: 'team' }, { id: 'as-0' }, { id: 'as-1' }] })
+  })
+
+  it('writes the definition and the assignments as one step, an id already there replaced whole', () => {
+    const held = planned(plan({ gesture: 'promote', id: 'team', scope: 'acme', to: '' }, models()))
+    const stale: Assignment = { id: 'as-1', unitId: 'team', roleId: 'ro-old', person: { person: 'pe-ada' }, acting: true }
+    const command = writeCommand({ elements: [], assignments: [stale] }, held.writes[0])
+    expect(command).toMatchObject({ type: 'transaction', commands: [{ type: 'element.create' }, { type: 'assignment.add', assignment: ended }, { type: 'assignment.update', id: 'as-1' }] })
+    const update = (command as { commands: Command[] }).commands[2] as Extract<Command, { type: 'assignment.update' }>
+    expect(update.patch).toEqual({ unitId: 'team', roleId: 'ro-lead', person: { person: 'pe-ada' }, from: '2026-01-01', acting: undefined })
+  })
+
+  it('carries nothing for a record that is not a unit, and writes it as before', () => {
+    const held = planned(plan({ gesture: 'promote', id: 'wms', scope: 'acme/rail', to: '' }))
+    expect(held.writes[0].assignments).toBeUndefined()
+    expect(held.command.type).toBe('element.link')
+    expect(writeCommand({ elements: [] }, held.writes[0]).type).toBe('element.create')
+  })
 })
