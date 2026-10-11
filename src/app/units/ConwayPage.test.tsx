@@ -158,6 +158,11 @@ describe('the Conway map', () => {
     renderShell(<Harness commands={commands} />)
     fireEvent.click(screen.getByTestId('conway-declare'))
     const dialog = await screen.findByTestId('interact-dialog')
+    // The units it may be declared with, in the order every list of units reads: the clusters, then the teams.
+    fireEvent.mouseDown(within(dialog).getAllByRole('combobox')[0])
+    expect(within(screen.getByRole('listbox')).getAllByRole('option').map((one) => one.textContent))
+      .toEqual(['Data & Integration', 'Digital Sales', 'Integration Platform', 'Webshop'])
+    fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Escape' })
     fireEvent.click(within(dialog).getByTestId('interact-save'))
     expect(commands).toEqual([{
       type: 'relation.create', relation: { id: 'i-new', type: 'interacts', sourceId: 'mob', targetId: 'web', mode: 'collaboration' },

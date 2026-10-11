@@ -140,6 +140,18 @@ describe('an agent and the views of the organisation', () => {
     ])
   })
 
+  /** One order wherever units are listed (3.6.1): the agent reads both views in it, and a screen's folds are no part of either. */
+  it('reads both views in the one order units are listed in: a unit\'s own order before its name', async () => {
+    const held = session()
+    held.dispatch({ type: 'element.update', id: 'web', patch: { order: 1 } })
+    const chart = parsed(await handle({ id: '1', tool: 'diagram.create', args: { kind: 'chart', name: 'Chart' } }, held))
+    const conway = parsed(await handle({ id: '2', tool: 'diagram.create', args: { kind: 'conway', name: 'Map' } }, held))
+    const charted = parsed(await handle({ id: '3', tool: 'diagram.inspect', args: { diagramId: chart.id } }, held))
+    expect((charted.roots as { id: string }[]).map((one) => one.id)).toEqual(['web', 'mob'])
+    const mapped = parsed(await handle({ id: '4', tool: 'diagram.inspect', args: { diagramId: conway.id } }, held))
+    expect((mapped.groups as { unitId?: string }[]).map((one) => one.unitId ?? null)).toEqual(['web', 'mob', null])
+  })
+
   it('reads a Conway map as its columns, the crossings and the findings, and an interaction declared answers one', async () => {
     const held = session()
     const made = parsed(await handle({ id: '1', tool: 'diagram.create', args: { kind: 'conway', name: 'Map' } }, held))

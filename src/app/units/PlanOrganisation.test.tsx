@@ -165,6 +165,15 @@ describe('a reorganisation on its plan\'s page', () => {
     expect(dispatched[1]).toEqual({ type: 'transition.update', id: 'tr-7', patch: { moves: [{ unitId: 'tracking', parentId: 'parcel', on: SPLIT }] } })
   })
 
+  it('offers the units in the order every list of them reads: the type\'s rank, then the name', () => {
+    renderShell(<Harness dispatched={[]} />)
+    fireEvent.mouseDown(screen.getAllByRole('combobox')[0])
+    // Domains, then clusters, then teams — no longer by name alone.
+    expect(screen.getAllByRole('option').map((one) => one.textContent)).toEqual([
+      'Shipping', 'Data & Integration', 'Freight', 'Parcel', 'Parcel & Freight', 'Booking', 'Integration Platform', 'Tracking',
+    ])
+  })
+
   it('offers no parent below the unit on the move\'s day: that would be a loop', () => {
     renderShell(<Harness dispatched={[]} />)
     // Tracking moves under Parcel on the plan's day, so Parcel under Tracking then is a loop.

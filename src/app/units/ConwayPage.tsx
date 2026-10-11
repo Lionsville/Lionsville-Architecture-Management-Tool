@@ -40,6 +40,7 @@ import type { ConwayFinding, ConwayLine, ConwayMap } from '../../model/conway'
 import { INTERACTION_MODE_LABEL } from '../../model/relations'
 import type { DesignDiagram, ElementId } from '../../model/types'
 import { pickedPerson } from '../../model/person'
+import { compareUnits, unitTypeRank } from '../../model/unitOrder'
 import { isUnit, organisationOn, personOf, runsOn, unitsAbove } from '../../model/units'
 import type { PeopleRegisterAccess } from '../../people/ui/access'
 import { usePersonNames } from '../../people/ui/names'
@@ -145,13 +146,19 @@ export function ConwayPage(props: ConwayPageProps) {
       </Box>
       {interacting && props.declare && (
         <InteractDialog
-          interacting={interacting} units={here.at.organisation.units.filter(isUnit).map((unit) => ({ id: unit.id, name: unit.name }))}
+          interacting={interacting} units={unitsInOrder(here)}
           newRowId={props.declare.newRowId} dispatch={props.declare.dispatch} scopeName={props.declare.scopeName}
           onClose={() => setInteracting(undefined)} s={t}
         />
       )}
     </Box>
   )
+}
+
+/** The units to declare an interaction with, in the order every list of units reads. */
+function unitsInOrder(here: UnitViewsHere): { id: ElementId; name: string }[] {
+  const { units, unitTypes } = here.at.organisation
+  return units.filter(isUnit).sort(compareUnits(unitTypeRank(unitTypes))).map((unit) => ({ id: unit.id, name: unit.name }))
 }
 
 /** The units this install's person holds a role in on the day, and every unit above each: where *you* are marked. */

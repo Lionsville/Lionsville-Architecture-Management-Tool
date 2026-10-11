@@ -43,6 +43,7 @@ import {
 import type { PeopleChoice, PeopleMove, UnitNode } from '../../model/reorganisation'
 import { addDays, movesWith } from '../../model/transition'
 import type { Transition } from '../../model/transition'
+import { compareUnits, unitTypeRank } from '../../model/unitOrder'
 import { isUnit, makesLoop, personOf } from '../../model/units'
 import type { UnitMove } from '../../model/units'
 import type { Organisation } from '../../model/units'
@@ -131,7 +132,7 @@ export function PlanMoves(props: PlanOrganisationProps) {
           )}
         </Box>
       ))}
-      {!readOnly && <AddMove units={facts.organisation.units.filter(isUnit)} on={plan.to ?? ''} parentName={parentName}
+      {!readOnly && <AddMove units={facts.organisation.units.filter(isUnit).sort(compareUnits(unitTypeRank(facts.organisation.unitTypes)))} on={plan.to ?? ''} parentName={parentName}
         loops={(unitId, parentId, on) => makesLoop(
           // The plans' moves but this plan's of the same unit, which the new one takes the place of.
           { ...facts.organisation, moves: (facts.organisation.moves ?? []).filter((one) => !(one.unitId === unitId && moves.some((mine) => samePlace(mine, one)))) },
@@ -145,7 +146,7 @@ export function PlanMoves(props: PlanOrganisationProps) {
 
 const TOP = ''
 
-/** A unit, the unit it moves under — or the top — and the day. */
+/** A unit, the unit it moves under — or the top — and the day; the units in the order every list of them reads. */
 function AddMove({ units, on: start, parentName, loops, onAdd, s }: {
   units: Organisation['units']; on: string; parentName: (id: string | undefined) => string
   /** Whether putting a unit under a parent from a day would put it under itself then or later. */
@@ -155,17 +156,16 @@ function AddMove({ units, on: start, parentName, loops, onAdd, s }: {
   const [unitId, setUnitId] = useState('')
   const [parentId, setParentId] = useState(TOP)
   const [on, setOn] = useState(start)
-  const sorted = [...units].sort((a, b) => a.name.localeCompare(b.name))
   return (
     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.75, mt: 0.75 }}>
       <TextField select size="small" label={s('move.unit')} value={unitId} onChange={(event) => setUnitId(event.target.value)}
         slotProps={{ htmlInput: { 'data-testid': 'plan-move-unit' } }}>
-        {sorted.map((one) => <MenuItem key={one.id} value={one.id}>{one.name}</MenuItem>)}
+        {units.map((one) => <MenuItem key={one.id} value={one.id}>{one.name}</MenuItem>)}
       </TextField>
       <TextField select size="small" label={s('move.parent')} value={parentId} onChange={(event) => setParentId(event.target.value)}
         slotProps={{ htmlInput: { 'data-testid': 'plan-move-parent' } }}>
         <MenuItem value={TOP}>{parentName(undefined)}</MenuItem>
-        {sorted.filter((one) => one.id !== unitId && !(unitId && isDay(on) && loops(unitId, one.id, on)))
+        {units.filter((one) => one.id !== unitId && !(unitId && isDay(on) && loops(unitId, one.id, on)))
           .map((one) => <MenuItem key={one.id} value={one.id}>{one.name}</MenuItem>)}
       </TextField>
       <TextField size="small" type="date" label={s('move.on')} value={on} onChange={(event) => setOn(event.target.value)}
