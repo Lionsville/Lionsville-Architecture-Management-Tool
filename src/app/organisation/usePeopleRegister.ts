@@ -15,7 +15,16 @@
  * §10): when the organisation is opened, and again when the day turns while
  * it stays open, every name kept past the period is forgotten and every
  * forgotten entry kept past the next is removed. Only where the source may be
- * written: a register that is only read is not changed by reading it.
+ * written, and only where the source does not apply it itself
+ * (`SourcePeople.appliesPolicy`): a register that is only read is not changed
+ * by reading it, and one a server forgets on its own schedule is not forgotten
+ * twice.
+ *
+ * **Who *you* are** is this install's *This is me* (`people.me`), or — where
+ * the source knows which entry the person using it is, an account linked to
+ * one — the source's word (`SourcePeople.me`), and then *This is me* is not
+ * offered. A source that hears the register change elsewhere says so
+ * (`SourcePeople.changes`), and the register is read again.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { PeopleView } from '../../agent/people'
@@ -28,6 +37,7 @@ import { DEFAULT_POLICY, dueOn, policyOf, policyPatch } from '../../people/polic
 import type { PeoplePolicy } from '../../people/policy'
 import type { Mention } from '../../people/hold'
 import type { PeopleRefused, PersonRemoved, PersonWritten } from '../../ports/PeopleRepository'
+import type { SourcePeople } from '../../ports/ProviderParts'
 import type { Repositories } from '../../ports/Repositories'
 import { searchAll } from '../../search/search'
 import type { SearchableModel } from '../../model/searchable'
@@ -38,8 +48,10 @@ export type PeopleAccess = {
   /** Every entry as last read, redirects included; `undefined` until the first read answers. */
   people: readonly Person[] | undefined
   policy: PeoplePolicy
-  /** The entry this install takes to be its person (*This is me*). */
+  /** The entry this install takes to be its person (*This is me*), or the one the source says is. */
   me: PersonId | undefined
+  /** The source says who the person is (an account linked to an entry): *This is me* is not offered. */
+  meSaid: boolean
   /** Whether the register may be changed here. */
   readOnly: boolean
   today: string
@@ -84,8 +96,10 @@ export function usePeopleRegister(deps: {
   failed: (where: string, cause: unknown) => void
   readText?: (file: Blob) => Promise<string>
   copyText?: (text: string) => void
+  /** What the source does about the register beyond keeping it, where it does more (`ProviderParts.people`). */
+  source?: SourcePeople
 }): PeopleAccess {
-  const { repositories, readOnly, failed } = deps
+  const { repositories, readOnly, failed, source } = deps
   const [held, setHeld] = useState<Held>({ people: undefined, policy: DEFAULT_POLICY, me: undefined })
   const [today, setToday] = useState(deps.today)
   useEffect(() => {
@@ -99,8 +113,8 @@ export function usePeopleRegister(deps: {
     const [list, organisation, person] = await Promise.all([
       repositories.people.list(), repositories.settings.read({ of: 'organisation' }), repositories.settings.read({ of: 'person' }),
     ])
-    return { people: list.people, policy: policyOf(organisation), me: meOf(person) }
-  }, [repositories])
+    return { people: list.people, policy: policyOf(organisation), me: source?.me ? source.me() : meOf(person) }
+  }, [repositories, source])
 
   const refresh = useCallback(() => {
     void read().then(setHeld, (cause: unknown) => failedRef.current('people.read', cause))
@@ -120,11 +134,14 @@ export function usePeopleRegister(deps: {
   }, [read, repositories, consequences, refresh])
 
   useEffect(() => { refresh() }, [refresh])
+  // What the source hears of the register changing elsewhere: read again.
+  useEffect(() => source?.changes?.(refresh), [source, refresh])
   // When the organisation is opened, and when the day turns while it is (`today` moves with it).
+  const appliesPolicy = source?.appliesPolicy === true
   useEffect(() => {
-    if (readOnly) return
+    if (readOnly || appliesPolicy) return
     void applyPolicy(today).catch((cause: unknown) => failedRef.current('people.policy', cause))
-  }, [applyPolicy, readOnly, today])
+  }, [applyPolicy, readOnly, appliesPolicy, today])
 
   const agent = useMemo<PeopleView>(() => ({
     read: async () => {
@@ -139,6 +156,7 @@ export function usePeopleRegister(deps: {
 
   return {
     ...held,
+    meSaid: source?.me !== undefined,
     readOnly,
     today,
     refresh,

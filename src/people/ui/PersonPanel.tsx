@@ -179,9 +179,11 @@ export function PersonPanel(props: PersonPanelProps) {
       {isMe && <Typography sx={{ fontSize: 12, mt: 0.75 }} data-testid="people-this-is-you">{s('people.thisIsYou')}</Typography>}
       {named && !register.readOnly && (
         <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap' }}>
-          <Button size="small" onClick={() => setMe(isMe ? undefined : person.id)} data-testid="people-me">
-            {s(isMe ? 'people.notMe' : 'people.thisIsMe')}
-          </Button>
+          {!register.meSaid && (
+            <Button size="small" onClick={() => setMe(isMe ? undefined : person.id)} data-testid="people-me">
+              {s(isMe ? 'people.notMe' : 'people.thisIsMe')}
+            </Button>
+          )}
           {!correcting && <Button size="small" onClick={() => setCorrecting(true)}>{s('people.correct')}</Button>}
         </Box>
       )}

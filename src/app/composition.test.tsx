@@ -706,6 +706,18 @@ describe('the shell over what a source just opened', () => {
     expect(server.drawingOrigin?.()).toBe('https://draw.after.example')
   })
 
+  it('takes off what the previous source did about its people, so a folder opened after a server applies its own policy', () => {
+    const repositories = memoryRepositories()
+    const before: Shell = {
+      repositories, preferences: new InMemoryPreferencesStore(),
+      source: { kind: 'browser' }, people: { appliesPolicy: true, me: () => 'pe-0123456789abcdef' },
+    } as unknown as Shell
+    const folder = overSource(before, { repositories, source: { kind: 'browser' } } as unknown as SourceParts)
+    expect(folder.people).toBeUndefined()
+    const server = overSource(before, { repositories, source: { kind: 'browser' }, people: { appliesPolicy: true } } as unknown as SourceParts)
+    expect(server.people).toEqual({ appliesPolicy: true })
+  })
+
   it('gives the desktop its scheme over any origin a source names, and leaves a browser alone', () => {
     const repositories = memoryRepositories()
     const shell = { repositories, source: { kind: 'browser' } } as unknown as Shell

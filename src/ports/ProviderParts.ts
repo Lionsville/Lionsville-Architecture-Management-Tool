@@ -18,6 +18,7 @@
  * where a component may be named.
  */
 import type { Destination, MovedBy, Screen } from '../agent/screen'
+import type { PersonId } from '../model/person'
 import type {
   SourceFailure, SourceLanding, SourceStatus, SourceWork, SourceWorkChanged,
 } from '../platform/sourceProvider'
@@ -108,8 +109,40 @@ export type ProviderParts<Own = unknown> = {
    * has no editor, which is every source this repository opens in a browser.
    */
   drawingOrigin?: () => string | undefined
+  /**
+   * What this source does about the people register beyond keeping it
+   * (ADR-0036 §10, §11), where it does more. Absent for all three core
+   * registers, and the app then applies the policy itself and keeps *This is
+   * me* with the install.
+   */
+  people?: SourcePeople
   /** Handed back to this provider's own chrome and panels while its source is open. */
   own?: Own
+}
+
+/**
+ * A source that knows more about its people than a register of names: one
+ * that applies the policy on a schedule of its own, knows which entry is the
+ * person using it, or hears the register change elsewhere.
+ */
+export type SourcePeople = {
+  /**
+   * The source applies the organisation's policy itself, on a schedule of its
+   * own: the app forgets and removes nobody when the organisation is opened
+   * or the day turns.
+   */
+  readonly appliesPolicy?: boolean
+  /**
+   * The entry that is the person using the app, where the source knows it — an
+   * account linked to an entry. Asked each time the register is read. Where
+   * the source says, *you* is marked from it and *This is me* is not offered.
+   */
+  readonly me?: () => PersonId | undefined
+  /**
+   * Hear when the register changed other than through this window, and the
+   * way to stop: the app reads it again, so a forget shows everywhere at once.
+   */
+  readonly changes?: (onChanged: () => void) => () => void
 }
 
 /** A provider's sentences about its source, as keys of its own table. */

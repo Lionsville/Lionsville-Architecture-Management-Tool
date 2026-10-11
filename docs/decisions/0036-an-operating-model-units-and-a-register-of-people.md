@@ -469,6 +469,15 @@ keeps in its data folder. The app applies the policy when the organisation
 is opened and when the day turns while it is open, where the source may be
 written (`app/organisation/usePeopleRegister.ts`).
 
+**A source that knows more says so** (`ProviderParts.people`,
+`SourcePeople`), for a build with accounts and a schedule of its own:
+`appliesPolicy`, and the app forgets and removes nobody when the
+organisation is opened or the day turns; `me`, the entry its account is
+linked to, which marks *you* and takes *This is me* off the page; and
+`changes`, which reads the register again when it changed elsewhere. All
+three absent for the core registers, which keep the policy and *This is me*
+as above.
+
 **Leaving is a seam**: `people/leave.ts` marks the register, then runs each
 `LeaveConsequence` composed in `app/organisation/leaving.ts` — none yet;
 ending a person's assignments is the step that brings them.

@@ -137,3 +137,44 @@ describe('a forget reaches everything that shows the person', () => {
     expect(register).not.toMatch(/Gijs|Mulder|gijs\.mulder/)
   })
 })
+
+describe('a source that does more about its people than keep them', () => {
+  it('applies the policy itself: the app forgets nobody when the organisation is opened', async () => {
+    const held = heldRepositories([root])
+    const gijs = await added(held, 'Gijs Mulder')
+    await held.people.leave(gijs.id, '2026-06-01')
+    renderApp({ repositories: held, today: () => TODAY, provider: { people: { appliesPolicy: true } } })
+    await openPeople()
+    expect(within(screen.getByTestId('people-table')).getByText('Gijs Mulder')).toBeDefined()
+    expect((await held.people.read(gijs.id))?.state).toBe('left')
+  })
+
+  it('says who you are: *you* is marked from it, and *This is me* is not offered', async () => {
+    const held = heldRepositories([root])
+    const pia = await added(held, 'Pia Schulz')
+    await added(held, 'Ruben Dekker')
+    renderApp({ repositories: held, today: () => TODAY, provider: { people: { me: () => pia.id } } })
+    await openPeople()
+    await waitFor(() => expect(within(screen.getByTestId(`people-row-${pia.id}`)).getByText('you')).toBeDefined())
+    fireEvent.click(within(screen.getByTestId(`people-row-${pia.id}`)).getByRole('button'))
+    expect(await screen.findByTestId('people-this-is-you')).toBeDefined()
+    expect(screen.queryByTestId('people-me')).toBeNull()
+  })
+
+  it('hears the register change elsewhere, and the page reads it again', async () => {
+    const held = heldRepositories([root])
+    await added(held, 'Pia Schulz')
+    const heard = new Set<() => void>()
+    const changes = (onChanged: () => void) => {
+      heard.add(onChanged)
+      return () => { heard.delete(onChanged) }
+    }
+    renderApp({ repositories: held, today: () => TODAY, provider: { people: { changes } } })
+    await openPeople()
+    await waitFor(() => expect(heard.size).toBe(1))
+    // Somebody else adds a person, through the register and not this window.
+    await added(held, 'Sara Kaya')
+    act(() => { for (const one of heard) one() })
+    await waitFor(() => expect(within(screen.getByTestId('people-table')).getByText('Sara Kaya')).toBeDefined())
+  })
+})

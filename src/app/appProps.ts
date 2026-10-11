@@ -38,7 +38,7 @@ import type { CommandStream } from './useHostCommands'
 import type { ProjectFileChannel } from './useProjectFiles'
 import type { PreferencesWriter } from './useShellPreferences'
 import type { ChooseDestination } from './workingFileFlows'
-import type { ProblemAction, SourceChanges } from '../ports/ProviderParts'
+import type { ProblemAction, SourceChanges, SourcePeople } from '../ports/ProviderParts'
 
 /** A provider's sentences about its source, as keys of its own table. */
 export type SourceSayings = {
@@ -278,6 +278,8 @@ export type AppProvider = {
    * Absent, or answering nothing, and Edit says the editor is not available.
    */
   drawingOrigin?: () => string | undefined
+  /** What the open source does about the people register beyond keeping it (`ProviderParts.people`). */
+  people?: SourcePeople
   /**
    * What the open source's provider calls a source of its kind, says of where
    * everything is kept, says removing a scope takes with it, and says of a

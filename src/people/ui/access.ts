@@ -27,6 +27,8 @@ export type PeopleRegisterAccess = {
   people: readonly Person[] | undefined
   policy: PeoplePolicy
   me: PersonId | undefined
+  /** Who *you* are is the source's word (an account linked to an entry), and *This is me* is not offered. */
+  meSaid?: boolean
   readOnly: boolean
   today: string
   add(person: NewPerson): Promise<{ person: Person } | Refused>
