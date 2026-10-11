@@ -5,7 +5,8 @@ import { describe, expect, it } from 'vitest'
 import { apply } from '../model/reducer'
 import {
   addSlot, cycleRaci, editResponsibility, editRole, editUnitType, itemOf, newResponsibility, newRole, newUnitType,
-  removeResponsibility, removeRole, removeSlot, removeUnitType, setDay, setFlag, setLimit, setRule, setSlot, setSuccessors, setWithin,
+  moveUnitType, removeResponsibility, removeRole, removeSlot, removeUnitType, setDay, setFlag, setLimit, setRule, setSlot, setSuccessors,
+  setWithin,
 } from './edit'
 import { applyAll, empty, listsOf } from './testing'
 
@@ -128,5 +129,51 @@ describe('the operating model\'s page, said as commands', () => {
     expect(itemOf(lists, 'rs-2')?.kind).toBe('responsibility')
     expect(itemOf(lists, 'nope')).toBeUndefined()
     expect(itemOf(lists, undefined)).toBeUndefined()
+  })
+})
+
+describe('moving a unit type along its lane', () => {
+  /** Three types at the top, one in the second lane, one that sits nowhere. */
+  function lanes() {
+    return applyAll(small(), [
+      { type: 'unitType.add', unitType: { id: 'ut-3', name: 'Guild', top: true, within: [], slots: [] } },
+      { type: 'unitType.add', unitType: { id: 'ut-4', name: 'Department', top: true, within: [], slots: [] } },
+      { type: 'unitType.add', unitType: { id: 'ut-5', name: 'Chapter', within: [], slots: [] } },
+    ])
+  }
+  const order = (model: ReturnType<typeof lanes>) => listsOf(model).unitTypes.map((type) => [type.id, type.order])
+
+  it('renumbers its lane from 1 in the new order, as one step one undo takes back', () => {
+    const model = lanes()
+    // Department, Guild, Train by name; Train to the front.
+    const step = moveUnitType(listsOf(model), 'ut-1', 0)!
+    expect(step).toEqual({
+      type: 'transaction',
+      commands: [
+        { type: 'unitType.update', id: 'ut-1', patch: { order: 1 } },
+        { type: 'unitType.update', id: 'ut-4', patch: { order: 2 } },
+        { type: 'unitType.update', id: 'ut-3', patch: { order: 3 } },
+      ],
+    })
+    const result = apply(model, step)
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    // The team, in the lane below, and the chapter, in no lane, keep what they had.
+    expect(order(result.model)).toEqual([['ut-1', 1], ['ut-2', undefined], ['ut-3', 3], ['ut-4', 2], ['ut-5', undefined]])
+    const back = apply(result.model, result.inverse)
+    expect(back.ok && order(back.model)).toEqual(order(model))
+  })
+
+  it('writes only what changes, and nothing for the place it has or a type it does not know', () => {
+    const model = applyAll(lanes(), [moveUnitType(listsOf(lanes()), 'ut-1', 0)!])
+    expect(moveUnitType(listsOf(model), 'ut-3', 1)).toEqual({
+      type: 'transaction',
+      commands: [{ type: 'unitType.update', id: 'ut-3', patch: { order: 2 } }, { type: 'unitType.update', id: 'ut-4', patch: { order: 3 } }],
+    })
+    expect(moveUnitType(listsOf(model), 'ut-1', 0)).toBeUndefined()
+    expect(moveUnitType(listsOf(model), 'ut-9', 0)).toBeUndefined()
+    // Alone in its lane, and alone where nothing sits.
+    expect(moveUnitType(listsOf(model), 'ut-2', 1)).toBeUndefined()
+    expect(moveUnitType(listsOf(model), 'ut-5', 0)).toBeUndefined()
   })
 })

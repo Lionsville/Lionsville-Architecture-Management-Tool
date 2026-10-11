@@ -14,6 +14,7 @@ import { fieldEdit, transaction } from '../model/commands'
 import type { Command } from '../model/commands'
 import { dutiesWith, nextRaci, raciOf } from '../model/operatingModel'
 import type { OperatingRule, OperatingRuleKind, Responsibility, Role, RoleSlot, UnitType } from '../model/operatingModel'
+import { renumbered, unitTypeLanes } from '../model/unitOrder'
 import { distinct } from './bringIn'
 import type { OperatingLists } from './bringIn'
 
@@ -96,6 +97,22 @@ export function setSuccessors(kind: 'unitType' | 'role', id: string, successors:
 export function setWithin(type: UnitType, other: string, on: boolean): Command {
   const within = on ? [...new Set([...type.within, other])] : type.within.filter((id) => id !== other)
   return { type: 'unitType.update', id: type.id, patch: { within } }
+}
+
+/**
+ * A unit type moved to place `to` (from 0) among the others of its lane — or
+ * among those that sit nowhere — as dragging its card along the lane says it
+ * (`model/unitOrder.ts`): the lane's `order` renumbered from 1 in its new
+ * order, only where a number changes, as one step that one undo takes back.
+ * Nothing where the type is unknown or the place is the one it has.
+ */
+export function moveUnitType(model: Pick<OperatingLists, 'unitTypes'>, id: string, to: number): Command | undefined {
+  const { lanes, laneOf, nowhere } = unitTypeLanes(model.unitTypes)
+  const lane = laneOf.get(id)
+  const siblings = lane === undefined ? nowhere : lanes[lane - 1].types
+  const rows = renumbered(siblings, siblings.findIndex((type) => type.id === id), to)
+  if (rows.length === 0) return undefined
+  return transaction(rows.map(({ id: at, order }): Command => ({ type: 'unitType.update', id: at, patch: { order } })))
 }
 
 /** How many applications a unit of the type should own at most; nothing takes the limit away. */
