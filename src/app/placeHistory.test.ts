@@ -217,6 +217,17 @@ describe('Back and Forward', () => {
     expect(opened).toEqual([home])
   })
 
+  it('opens a link pasted into the open window with its selection, and writes the entry without it (ADR-0033, amended)', async () => {
+    const { look, go, opened, entries, win } = setUp()
+    look(home)
+    win.history.pushState(null, '', '#place?scope=acme&page=board&id=l7&select=app-1')
+    go(0)
+    await Promise.resolve()
+    expect(opened).toEqual([{ ...board, select: 'app-1' }])
+    expect(new URL(entries.at(-1)!.url).hash).toBe('#place?scope=acme&page=board&id=l7')
+    expect(entries.at(-1)!.state).toEqual({ 'lvarch.place': board })
+  })
+
   it('opens what the entry says where where it lands could not be worked out', async () => {
     const failed = vi.fn()
     const win = fakeWindow()

@@ -62,12 +62,18 @@ export function useLocated(
     clearTimeout(timer.current)
     timer.current = setTimeout(() => setLocatedId(undefined), LOCATED_FOR_MS)
     // After the selection has drawn: a row a filter or a fold hid comes back
-    // with the selection, and only then is there something to scroll to.
-    // jsdom has no scrollIntoView, hence the optional call.
-    requestAnimationFrame(() => {
+    // with the selection, and a page that is still reading its records or a
+    // part still being fetched paints it later. So it is looked for frame by
+    // frame until it is there or the ring is gone; the ring is a rule on the
+    // page, so it is on the row whenever the row paints. jsdom has no
+    // scrollIntoView, hence the optional call.
+    const until = Date.now() + LOCATED_FOR_MS
+    const find = () => {
       const node = page.current?.querySelector<HTMLElement>(locatedSelector(id, attribute))
-      node?.scrollIntoView?.({ block: 'center', inline: 'center', behavior: 'smooth' })
-    })
+      if (node) node.scrollIntoView?.({ block: 'center', inline: 'center', behavior: 'smooth' })
+      else if (Date.now() < until) requestAnimationFrame(find)
+    }
+    requestAnimationFrame(find)
   }, [page, select, attribute])
   return { locatedId, locate }
 }

@@ -150,7 +150,10 @@ export class PlaceHistory {
     const pop = ++this.#pops
     this.#options.nearest(place).then((near) => {
       if (pop !== this.#pops) return
-      if (!samePlace(near, place)) this.#write('replace', near)
+      // A link pasted into an open window may carry `select`: it is opened
+      // with it, and the entry is written without it, since it is no part of
+      // a place (ADR-0033, amended 11 October 2026).
+      if (!samePlace(near, place) || near.select !== undefined) this.#write('replace', withoutSelect(near))
       this.#options.open(near)
     }, (cause: unknown) => {
       if (pop !== this.#pops) return
@@ -178,4 +181,11 @@ export class PlaceHistory {
     else history.replaceState(state, '', to)
     this.#entry = place
   }
+}
+
+/** A place as the history keeps it: what a link selected on arrival is not part of it. */
+function withoutSelect(place: Place): Place {
+  if (place.select === undefined) return place
+  const { select: _select, ...kept } = place
+  return kept
 }
