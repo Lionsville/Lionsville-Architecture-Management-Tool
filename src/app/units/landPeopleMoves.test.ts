@@ -119,4 +119,12 @@ describe('writing the people\'s moves', () => {
     const open = session(SHIPPING)
     expect(await landPeopleMoves(await deps(open), new Map([['shipping', [ends('as-7')]]]))).toEqual({ ok: false, reason: 'unchanged' })
   })
+
+  it('never makes an assignment run longer: one that ended earlier meanwhile, and the place it was to move to, are passed over', () => {
+    // Omar left on 31 March; the list drawn before still had him ending on New Year's Eve and beginning anew.
+    const left = fromArrays({ ...SHIPPING, assignments: [as('as-1', 'parcel-freight', 'pe-omar', { until: '2026-03-31' }), as('as-2', 'parcel-freight', 'pe-sanne')] })
+    expect(stepIn(left, [ends('as-1'), begins('as-new', 'pe-omar')])).toBeUndefined()
+    expect(stepIn(left, [ends('as-1'), begins('as-new', 'pe-omar'), ends('as-2'), begins('as-new2', 'pe-sanne')]))
+      .toEqual({ type: 'transaction', commands: [ends('as-2'), begins('as-new2', 'pe-sanne')] })
+  })
 })

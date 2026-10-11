@@ -27,7 +27,9 @@
  * taken since is not written twice.
  */
 import { useCallback } from 'react'
+import { isDay } from '../../model/lifecycle'
 import { assignmentsOf, fromArrays } from '../../model/normalised'
+import type { Assignment } from '../../model/units'
 import type { Model } from '../../model/normalised'
 import type { Command } from '../../model/commands'
 import { apply } from '../../model/reducer'
@@ -60,13 +62,27 @@ export type PeopleMoved =
   | { ok: true; changed: ScopePath[]; ended: number; begun: number; unsaved?: true }
   | { ok: false; reason: string; scope?: ScopePath }
 
-/** The commands that still apply to a scope as it is now, as its one step: none where nothing is left to do. */
+/**
+ * The commands that still apply to a scope as it is now, as its one step:
+ * none where nothing is left to do. An end is passed over where the
+ * assignment has gone, or already ends on that day or before it — a move
+ * never makes an assignment run longer — and so is a beginning for the same
+ * person that the end passed over was to be followed by.
+ */
 export function stepIn(model: Model, commands: readonly Command[]): Command | undefined {
   const held = assignmentsOf(model)
-  const still = commands.filter((command) => {
-    if (command.type === 'assignment.add') return !(command.assignment.id in held)
-    if (command.type === 'assignment.update' || command.type === 'assignment.remove') return command.id in held
-    return true
+  const passedOver = new Set<string>()
+  const ends = commands.filter((command) => {
+    if (command.type !== 'assignment.update' && command.type !== 'assignment.remove') return true
+    const was = held[command.id] as Assignment | undefined
+    const over = command.type === 'assignment.update' && isDay(was?.until) && isDay(command.patch.until) && was.until <= command.patch.until
+    if (was && !over) return true
+    if (was) passedOver.add(was.person.person)
+    return false
+  })
+  const still = ends.filter((command) => {
+    if (command.type !== 'assignment.add') return true
+    return !(command.assignment.id in held) && !passedOver.has(command.assignment.person.person)
   })
   if (still.length === 0) return undefined
   return still.length === 1 ? still[0] : { type: 'transaction', commands: still }
