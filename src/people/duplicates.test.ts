@@ -77,3 +77,39 @@ describe('the pairs a merge could tidy', () => {
     ])
   })
 })
+
+describe('the pairs over a large register', () => {
+  it('are the pairs comparing every entry with every other would give, in the same order, without comparing them all', () => {
+    let seed = 11
+    const random = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648 }
+    const syllables = ['an', 'be', 'co', 'da', 'el', 'fi', 'go', 'ha', 'in', 'jo', 'ka', 'li', 'mo', 'ne', 'or', 'pa']
+    const word = (count: number) => Array.from({ length: count }, () => syllables[Math.floor(random() * syllables.length)]).join('')
+    const slips = [
+      (name: string) => name.slice(0, 3) + name.slice(4),
+      (name: string) => `${name.slice(0, 2)}x${name.slice(2)}`,
+      (name: string) => name.toUpperCase(),
+      (name: string) => `${name[0]}. ${name.split(' ').at(-1)}`,
+      (name: string) => name.replace('a', 'á'),
+    ]
+    const people: Person[] = []
+    for (let at = 0; at < 300; at++) {
+      const name = at % 7 === 0 && people.length ? slips[at % slips.length](people[Math.floor(random() * people.length)].name!) : `${word(2)} ${word(2 + (at % 2))}`
+      people.push({ id: `pe-${at}`, name, pseudonym: `P${at}`, kind: 'internal', state: 'active', ...(at % 13 === 0 ? { email: 'shared@acme.example' } : {}) })
+    }
+    people.push({ id: 'pe-five', name: 'abcde', pseudonym: 'F1', kind: 'internal', state: 'active' }, { id: 'pe-fiv2', name: 'axcye', pseudonym: 'F2', kind: 'internal', state: 'active' })
+    const everyPair: { keep: string; drop: string; sign: string }[] = []
+    for (let i = 0; i < people.length; i++) {
+      for (let j = i + 1; j < people.length; j++) {
+        const sign = signBetween(people[i], people[j])
+        // The one kept is the one with an address, as a merge would keep it.
+        const [keep, drop] = people[j].email && !people[i].email ? [people[j], people[i]] : [people[i], people[j]]
+        if (sign) everyPair.push({ keep: keep.id, drop: drop.id, sign })
+      }
+    }
+    const order = ['sameEmail', 'sameName', 'nearName', 'familyAndInitial']
+    everyPair.sort((one, other) => order.indexOf(one.sign) - order.indexOf(other.sign))
+    const found = duplicatePairs(people).map((pair) => ({ keep: pair.keep.id, drop: pair.drop.id, sign: pair.sign }))
+    expect(found.length).toBeGreaterThan(40)
+    expect(found).toEqual(everyPair)
+  })
+})

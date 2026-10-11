@@ -59,18 +59,27 @@ export function editDistance(one: string, other: string): number {
 /** Shorter than this, two names two edits apart are two names, not a typing slip. */
 const NEAR_FROM = 5
 
+/** A candidate as the signs compare it, folded once. */
+type Folded = { mail: string; name: string; parts: string[] }
+
+function folded(candidate: Candidate): Folded {
+  const name = comparableName(candidate.name ?? '')
+  return { mail: candidate.email ? normalEmail(candidate.email) : '', name, parts: name ? name.split(' ') : [] }
+}
+
 /** The strongest sign two candidates share, or none. */
 export function signBetween(one: Candidate, other: Candidate): DuplicateSign | undefined {
-  const mail = one.email ? normalEmail(one.email) : ''
-  if (mail && other.email && mail === normalEmail(other.email)) return 'sameEmail'
-  const a = comparableName(one.name ?? '')
-  const b = comparableName(other.name ?? '')
-  if (!a || !b) return undefined
-  if (a === b) return 'sameName'
-  if (Math.min(a.length, b.length) >= NEAR_FROM && editDistance(a, b) <= 2) return 'nearName'
-  const partsA = a.split(' ')
-  const partsB = b.split(' ')
-  if (partsA.length > 1 && partsB.length > 1 && partsA.at(-1) === partsB.at(-1) && partsA[0][0] === partsB[0][0]) {
+  return signOf(folded(one), folded(other))
+}
+
+function signOf(a: Folded, b: Folded): DuplicateSign | undefined {
+  if (a.mail && a.mail === b.mail) return 'sameEmail'
+  if (!a.name || !b.name) return undefined
+  if (a.name === b.name) return 'sameName'
+  if (Math.min(a.name.length, b.name.length) >= NEAR_FROM && Math.abs(a.name.length - b.name.length) <= 2 && editDistance(a.name, b.name) <= 2) {
+    return 'nearName'
+  }
+  if (a.parts.length > 1 && b.parts.length > 1 && a.parts.at(-1) === b.parts.at(-1) && a.parts[0][0] === b.parts[0][0]) {
     return 'familyAndInitial'
   }
   return undefined
@@ -103,16 +112,87 @@ export function possibleDuplicates(candidate: Candidate, people: readonly Person
  */
 export function duplicatePairs(people: readonly Person[]): DuplicatePair[] {
   const named = people.filter(comparable)
+  const folds = named.map(folded)
   const pairs: DuplicatePair[] = []
-  for (let i = 0; i < named.length; i++) {
-    for (let j = i + 1; j < named.length; j++) {
-      const sign = signBetween(named[i], named[j])
-      if (!sign) continue
-      const [keep, drop] = weight(named[j]) > weight(named[i]) ? [named[j], named[i]] : [named[i], named[j]]
-      pairs.push({ keep, drop, sign })
-    }
+  // Only the pairs a sign could join are compared — not every pair, which a
+  // register of a few thousand would take seconds over — in the order every
+  // pair would be met, so the answer is the one comparing them all gives.
+  for (const code of [...candidatePairs(folds)].sort((one, other) => one - other)) {
+    const i = Math.floor(code / folds.length)
+    const j = code % folds.length
+    const sign = signOf(folds[i], folds[j])
+    if (!sign) continue
+    const [keep, drop] = weight(named[j]) > weight(named[i]) ? [named[j], named[i]] : [named[i], named[j]]
+    pairs.push({ keep, drop, sign })
   }
   return pairs.sort((one, other) => DUPLICATE_SIGNS.indexOf(one.sign) - DUPLICATE_SIGNS.indexOf(other.sign))
+}
+
+/**
+ * Every pair that may share a sign, each as `i * n + j` with `i < j`: the same
+ * address, the same name, the same family name and initial — each a key two
+ * entries share — and names that may be within two edits of each other. Two
+ * texts two edits apart share at least the longer one's length less five of
+ * their pairs of letters, counted with repeats (the q-gram lemma, q = 2): only
+ * names that do are compared letter by letter.
+ */
+function candidatePairs(folds: readonly Folded[]): Set<number> {
+  const n = folds.length
+  const found = new Set<number>()
+  const pair = (one: number, other: number) => {
+    if (one !== other) found.add(one < other ? one * n + other : other * n + one)
+  }
+  const sharing = (key: (fold: Folded) => string | undefined) => {
+    const groups = new Map<string, number[]>()
+    folds.forEach((fold, at) => {
+      const held = key(fold)
+      if (!held) return
+      const group = groups.get(held)
+      if (group) group.push(at)
+      else groups.set(held, [at])
+    })
+    for (const group of groups.values()) for (let x = 0; x < group.length; x++) for (let y = x + 1; y < group.length; y++) pair(group[x], group[y])
+  }
+  sharing((fold) => fold.mail || undefined)
+  sharing((fold) => fold.name || undefined)
+  sharing((fold) => (fold.parts.length > 1 ? `${fold.parts.at(-1)}\u0000${fold.parts[0][0]}` : undefined))
+  // Two names of five letters may be two edits apart and share no pair at all: those are all compared.
+  sharing((fold) => (fold.name.length === NEAR_FROM ? 'five' : undefined))
+  // Near names: every name long enough, by its pairs of letters.
+  const grams = folds.map((fold) => (fold.name.length >= NEAR_FROM ? bigrams(fold.name) : undefined))
+  const postings = new Map<string, [number, number][]>()
+  grams.forEach((held, at) => {
+    for (const [gram, count] of held ?? []) {
+      const list = postings.get(gram)
+      if (list) list.push([at, count])
+      else postings.set(gram, [[at, count]])
+    }
+  })
+  grams.forEach((held, at) => {
+    if (!held) return
+    const shared = new Map<number, number>()
+    for (const [gram, count] of held) {
+      for (const [other, theirs] of postings.get(gram) ?? []) {
+        if (other > at) shared.set(other, (shared.get(other) ?? 0) + Math.min(count, theirs))
+      }
+    }
+    const length = folds[at].name.length
+    for (const [other, common] of shared) {
+      const theirs = folds[other].name.length
+      if (Math.abs(length - theirs) <= 2 && common >= Math.max(length, theirs) - 5) pair(at, other)
+    }
+  })
+  return found
+}
+
+/** A text's pairs of letters, with how often each occurs. */
+function bigrams(text: string): Map<string, number> {
+  const held = new Map<string, number>()
+  for (let at = 0; at + 1 < text.length; at++) {
+    const gram = text.slice(at, at + 2)
+    held.set(gram, (held.get(gram) ?? 0) + 1)
+  }
+  return held
 }
 
 function weight(person: Person): number {
