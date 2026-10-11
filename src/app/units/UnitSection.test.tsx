@@ -33,6 +33,7 @@ import { indexScopes } from '../../projects/scopeIndex'
 import { assignmentOf, assignmentPatch, formOf, shareFrom } from './AssignDialog'
 import { organisationHere } from './organisationHere'
 import { UnitSection } from './UnitSection'
+import { checkMarking, CheckMarkingContext } from '../checkMarking'
 import type { WriteIn } from './writeIn'
 
 afterEach(() => cleanup())
@@ -95,9 +96,11 @@ const PEOPLE: Person[] = [
 ]
 
 /** The section over a model held here, changed by the model's own writer, and a register held here too. */
-function Harness({ unit = 'webshop', readOnly = false, model: start = CUSTOMER, scope = 'customer', root = ROOT, day, commands, register: held = PEOPLE, me = 'pe-femke', manages, more = [], writeIn }: {
+function Harness({ unit = 'webshop', readOnly = false, model: start = CUSTOMER, scope = 'customer', root = ROOT, day, commands, register: held = PEOPLE, me = 'pe-femke', manages, more = [], writeIn, marking = false }: {
   unit?: string; readOnly?: boolean; model?: HostModel; scope?: string; root?: HostModel; day?: string; commands: Command[]
   register?: readonly Person[]; me?: string; manages?: ManagesPeople
+  /** Marks as intended handed down, as the workspace hands them: this scope's through the session. */
+  marking?: boolean
   /** Scopes beyond the organisation and the customer domain. */
   more?: readonly { path: string; model: HostModel }[]
   writeIn?: WriteIn
@@ -134,7 +137,7 @@ function Harness({ unit = 'webshop', readOnly = false, model: start = CUSTOMER, 
     mentionsOf: () => Promise.resolve([]),
   }
   const element = model.elements.find((one) => one.id === unit)!
-  return (
+  const section = (
     <UnitSection
       element={element} readOnly={readOnly} scope={scope} model={model} index={index} dispatch={dispatch}
       makeId={(prefix) => `${prefix}-new`} newRowId={() => 'i-new'} people={register} today={TODAY} {...(day !== undefined ? { day } : {})}
@@ -142,6 +145,9 @@ function Harness({ unit = 'webshop', readOnly = false, model: start = CUSTOMER, 
       scopes={['', 'customer', 'shipping']} {...(writeIn ? { writeIn } : {})} s={s}
     />
   )
+  if (!marking) return section
+  const handed = checkMarking({ index, open: { scope, model, dispatch, writable: !readOnly }, writable: () => !readOnly, today: TODAY })
+  return <CheckMarkingContext.Provider value={handed}>{section}</CheckMarkingContext.Provider>
 }
 
 const text = (id: string) => screen.getByTestId(id).textContent
@@ -225,6 +231,36 @@ describe('a unit in its inspector', () => {
     const said = unitFindings().map((line) => line.textContent)
     expect(said).not.toContain('Webshop is short of Developer: 1 hold the role, and its type asks for at least 2')
     expect(said).toContain('Webshop owns 2 applications, and a Team owns at most 1')
+  })
+
+  it('marks a finding as intended from its explanation, as a step here, lists it under Accepted, and takes it back', async () => {
+    const commands: Command[] = []
+    renderShell(<Harness commands={commands} marking />)
+    const list = screen.getByTestId('unit-findings')
+    unfoldFindings(list)
+    fireEvent.click(within(list).getByText(/^Webshop is short of Developer/))
+    fireEvent.click(within(within(list).getByTestId('finding-explanation')).getByRole('button', { name: 'Mark as intended…' }))
+    fireEvent.change(await screen.findByTestId('finding-mark-reason'), { target: { value: 'Hiring in November' } })
+    fireEvent.click(screen.getByTestId('finding-mark-confirm'))
+    expect(commands.at(-1)).toEqual({ type: 'checkMark.add', mark: { check: 'check.roleVacant', key: 'webshop ro-dev', reason: 'Hiring in November', on: TODAY } })
+    await waitFor(() => expect(unitFindings().map((line) => line.textContent)).not.toContain('Webshop is short of Developer: 1 hold the role, and its type asks for at least 2'))
+    fireEvent.click(within(list).getByRole('button', { name: 'Accepted (1)' }))
+    expect(await axeFindings()).toEqual([])
+    fireEvent.click(within(list).getByRole('button', { name: /^Take back/ }))
+    expect(commands.at(-1)).toEqual({ type: 'checkMark.remove', id: 'check.roleVacant webshop ro-dev' })
+    await waitFor(() => expect(unitFindings().map((line) => line.textContent)).toContain('Webshop is short of Developer: 1 hold the role, and its type asks for at least 2'))
+  })
+
+  it('offers no mark, and no Take back, where the scope is only read', () => {
+    const model: HostModel = { ...CUSTOMER, checkMarks: [{ check: 'check.roleVacant', key: 'webshop ro-dev', on: TODAY }] }
+    renderShell(<Harness commands={[]} model={model} readOnly marking />)
+    const list = screen.getByTestId('unit-findings')
+    unfoldFindings(list)
+    fireEvent.click(within(list).getByText(/^Webshop owns 2 applications/))
+    expect(within(list).queryByRole('button', { name: 'Mark as intended…' })).toBeNull()
+    fireEvent.click(within(list).getByRole('button', { name: 'All findings' }))
+    fireEvent.click(within(list).getByRole('button', { name: 'Accepted (1)' }))
+    expect(within(list).queryByRole('button', { name: /^Take back/ })).toBeNull()
   })
 
   it('assigns someone to a role short of people from its explanation, where the role\'s people may be changed here', async () => {

@@ -55,7 +55,6 @@ import type { Command } from '../../model/commands'
 import type { HostModel } from '../../model/hostModel'
 import type { Role, RoleSlot, UnitType } from '../../model/operatingModel'
 import { slotRange } from '../../model/operatingModel'
-import { splitMarked } from '../../model/checkMarks'
 import { pickedPerson } from '../../model/person'
 import type { DesignElement } from '../../model/types'
 import { dayBefore, holdersOn, isUnit, loadOn, managersOf, parentOn, personOf, runsOn, shareOf, slotsOf, unitLastDay } from '../../model/units'
@@ -84,6 +83,7 @@ import type { WriteIn } from './writeIn'
 import { scopesServed, scopesWith, scopesWithout } from '../../model/serving'
 import { compareUnits, unitTypeRank } from '../../model/unitOrder'
 import { FindingsList } from '../../widgets/FindingsList'
+import { useFindingMarks } from '../checkMarking'
 import type { FindingActions } from '../../widgets/FindingsList'
 import { PickToAdd } from '../../widgets/PickToAdd'
 
@@ -154,10 +154,10 @@ function useUnitFacts(props: UnitSectionProps) {
     }))
     const findings = findingsOfOrganisation(at, today, canonical)
     const holders = new Set(organisation.assignments.filter((one) => one.unitId === element.id && runsOn(one, today)).map((one) => canonical(personOf(one))))
-    // Of what the checks find in it, the ones still to look at: one marked as intended is not among them (`model/checkMarks`).
-    const said = splitMarked(findings.filter((one) => (one.person !== undefined
+    // What the checks find in it; its list splits off what was marked as intended (`model/checkMarks`).
+    const said = findings.filter((one) => (one.person !== undefined
       ? holders.has(one.person)
-      : one.id === element.id || (one.key === 'check.unitNotServing' && one.fields?.[0] === element.id))), checkMarksHere(index, scope, model)).shown
+      : one.id === element.id || (one.key === 'check.unitNotServing' && one.fields?.[0] === element.id)))
     // Its moves, each with the plan that makes it: the open scope's plans as the session holds them, the tree's for the rest.
     const moves = [...index.moves().filter((one) => one.scope !== scope), ...movesOf(scope, model)]
       .filter((one) => one.move.unitId === element.id)
@@ -264,10 +264,15 @@ function UnitParts(props: UnitSectionProps & {
  * people, *End the assignment…* that outlives its unit or role — where the
  * person may change that role's people here.
  */
-function UnitChecks({ element, facts, mayRole, name, onAssign, scope, scopeLabel, s }: UnitSectionProps & {
+function UnitChecks({ element, facts, mayRole, name, onAssign, scope, scopeLabel, index, model, s }: UnitSectionProps & {
   facts: Facts; mayRole: (roleId: string) => boolean; name: (person: string) => string; onAssign: (assigning: Assigning) => void
 }) {
-  const groups = useMemo(() => groupByCheck(facts.said), [facts.said])
+  const remember = `unit\u0000${scope}\u0000${element.id}`
+  const sentence = (finding: Finding) => findingSentence(finding, s, scopeLabel, name)
+  // One marked as intended is not among the ones to look at: it is listed under Accepted.
+  const marks = useMemo(() => checkMarksHere(index, scope, model), [index, scope, model])
+  const { shown, more, accepted } = useFindingMarks(facts.said, { findingOf: (finding) => finding, sentence, marks, remember })
+  const groups = useMemo(() => groupByCheck(shown), [shown])
   const actions: FindingActions<Finding, CheckAction> = {
     assign: (finding) => {
       const roleId = finding.fields?.[0]
@@ -280,9 +285,9 @@ function UnitChecks({ element, facts, mayRole, name, onAssign, scope, scopeLabel
   }
   return (
     <FindingsList
-      groups={groups} words={CHECK_LIST_WORDS} sentence={(finding) => findingSentence(finding, s, scopeLabel, name)} actions={actions}
+      groups={groups} words={CHECK_LIST_WORDS} sentence={sentence} actions={actions} more={more} accepted={accepted}
       keyOf={(finding) => [finding.key, finding.scope, finding.id, finding.person ?? '', ...(finding.fields ?? [])].join('|')}
-      attributesOf={() => ({ 'data-testid': 'unit-finding' })} remember={`unit\u0000${scope}\u0000${element.id}`} testId="unit-findings"
+      attributesOf={() => ({ 'data-testid': 'unit-finding' })} remember={remember} testId="unit-findings"
     />
   )
 }

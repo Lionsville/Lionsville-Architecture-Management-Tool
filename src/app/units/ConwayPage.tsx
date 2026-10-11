@@ -44,12 +44,10 @@ import type { Translate } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
 import { CHECK_LIST_WORDS, CONWAY_CHECK, groupByCheck } from '../../model/checkCatalogue'
 import type { CheckAction } from '../../model/checkCatalogue'
-import { splitMarked } from '../../model/checkMarks'
 import type { KeptCheckMark } from '../../model/checkMarks'
 import type { Command } from '../../model/commands'
 import { conwayMap } from '../../model/conway'
 import type { ConwayFinding, ConwayInput, ConwayLine, ConwayMap } from '../../model/conway'
-import { INTERACTION_MODE_LABEL } from '../../model/relations'
 import type { DesignDiagram, ElementId } from '../../model/types'
 import { pickedPerson } from '../../model/person'
 import { compareUnits, unitTypeRank } from '../../model/unitOrder'
@@ -57,7 +55,6 @@ import { isUnit, organisationOn, personOf, runsOn, unitsAbove } from '../../mode
 import type { PeopleRegisterAccess } from '../../people/ui/access'
 import { usePersonNames } from '../../people/ui/names'
 import type { HostModel } from '../../model/hostModel'
-import { CHECK_LABEL } from '../../projects/checks'
 import { checkMarksHere } from '../../projects/checkMarks'
 import type { ScopeIndex } from '../../projects/scopeIndex'
 import type { ScopePath } from '../../projects/scopePath'
@@ -72,7 +69,9 @@ import { servesBadge } from './chartWords'
 import { ConwayTable } from './ConwayTable'
 import { InteractDialog } from './Interactions'
 import type { Interacting } from './Interactions'
+import { useFindingMarks } from '../checkMarking'
 import { foldKey } from '../sessionFolds'
+import { findingText } from './conwayWords'
 import { conwayInputHere } from './unitViewsHere'
 import type { UnitViewsHere } from './unitViewsHere'
 
@@ -389,14 +388,16 @@ function Findings({ map, marks, input, here, onLight, declarable, removable: rem
   declarable: (from: ElementId, to: ElementId) => (() => void) | undefined; removable: (id: string) => (() => void) | undefined
   open: (id: ElementId) => void; heading: string; remember: string; t: Translate
 }) {
-  // A finding marked as intended is not among the ones to look at (`model/checkMarks`).
-  const groups = useMemo(() => groupByCheck(splitMarked(map.findings, marks).shown, (one) => CONWAY_CHECK[one.kind]), [map.findings, marks])
+  // A finding marked as intended is not among the ones to look at (`model/checkMarks`): it is listed under Accepted.
+  const sentence = (one: ConwayFinding) => findingText(one, here, t)
+  const { shown, more, accepted } = useFindingMarks(map.findings, { findingOf: (one) => one, sentence, marks, remember })
+  const groups = useMemo(() => groupByCheck(shown, (one) => CONWAY_CHECK[one.kind]), [shown])
   const actions = conwayActions({ input, here, open, declarable, removable: remove })
   return (
     <Box data-testid="conway-findings" sx={{ mt: 3, maxWidth: 720 }}>
       <Typography component="h2" sx={{ fontSize: 12, fontWeight: 700, color: 'text.secondary', mb: 0.5 }}>{heading}</Typography>
       <FindingsList
-        groups={groups} words={CHECK_LIST_WORDS} sentence={(one) => findingText(one, here, t)} keyOf={findingKey} actions={actions}
+        groups={groups} words={CHECK_LIST_WORDS} sentence={sentence} keyOf={findingKey} actions={actions} more={more} accepted={accepted}
         attributesOf={(one) => ({ 'data-testid': 'conway-finding', 'data-kind': one.kind })} onPick={onLight} remember={remember}
         empty={<Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('conway.nothing')}</Typography>}
       />
@@ -405,25 +406,3 @@ function Findings({ map, marks, input, here, onLight, declarable, removable: rem
   )
 }
 
-/** One finding, in words. */
-export function findingText(finding: ConwayFinding, here: UnitViewsHere, t: Translate): string {
-  switch (finding.kind) {
-    case 'undeclared':
-      return t('check.interfaceUndeclared', {
-        source: here.name(finding.flow.sourceId), target: here.name(finding.flow.targetId), from: here.name(finding.from), to: here.name(finding.to),
-      })
-    case 'unused':
-      return t('check.interactionUnused', {
-        a: here.name(finding.interaction.sourceId), b: here.name(finding.interaction.targetId),
-        mode: finding.interaction.mode ? t(INTERACTION_MODE_LABEL[finding.interaction.mode]) : t('conway.anInteraction'),
-      })
-    case 'unowned':
-      return t('check.applicationUnowned', { name: here.name(finding.applicationId) })
-    case 'overLimit': {
-      const unit = here.at.organisation.units.find((one) => one.id === finding.unitId)
-      const type = here.at.organisation.unitTypes.find((one) => one.id === unit?.unitTypeId)?.name ?? ''
-      // One kind with the organisation's own over-limit, so said in its words (`check.unitOverLimit`).
-      return t(CHECK_LABEL['check.unitOverLimit'], { name: here.name(finding.unitId), count: finding.owns, detail: type, limit: finding.limit })
-    }
-  }
-}

@@ -38,6 +38,7 @@
  * **An agent reads marks and never makes them** (`agent/tools.ts`): a quality
  * signal is silenced by a person, for a reason a person gives.
  */
+import type { StringKey } from '../i18n/strings'
 import { checkEntry, CONWAY_CHECK, DATE_CHECK } from './checkCatalogue'
 import type { CheckKey, TECHNOLOGY_CHECK_KEYS, TreeCheckKey } from './checkCatalogue'
 import type { Finding as DateFinding, FindingKind } from './checks'
@@ -214,6 +215,28 @@ export function checkMarkFor(finding: AnyFinding, made: { on: string; reason?: s
   const reason = made.reason?.trim()
   return { check: findingCheck(finding), key: findingKey(finding), ...(reason ? { reason } : {}), on: made.on }
 }
+
+/**
+ * What marking a finding and taking a mark back say on screen: *Mark as
+ * intended…*, the question it asks, *Accepted (N)* with each mark's reason
+ * and day, and *Take back* — one table, handed to the two pieces that draw
+ * them (`widgets/FindingMarks`), which may not read the model themselves.
+ */
+export const CHECK_MARK_WORDS = {
+  open: 'check.mark.open',
+  title: 'check.mark.title',
+  about: 'check.mark.about',
+  reason: 'check.mark.reason',
+  reasonHelp: 'check.mark.reasonHelp',
+  confirm: 'check.mark.confirm',
+  cancel: 'common.cancel',
+  accepted: 'check.mark.accepted',
+  on: 'check.mark.on',
+  noReason: 'check.mark.noReason',
+  takeBack: 'check.mark.takeBack',
+  /** Where a list of every check says why a fix offers no mark. */
+  never: 'check.mark.never',
+} as const satisfies Record<string, StringKey>
 
 /** A mark and the scope that keeps it: what the index lists across the tree. */
 export type KeptCheckMark = { readonly scope: string; readonly mark: CheckMark }

@@ -25,6 +25,7 @@ import type { WorkspaceDocument } from './useWorkspaceDocument'
 import type { WorkspacePages } from './useWorkspacePages'
 import type { WorkspaceRequests } from './useWorkspaceRequests'
 import type { LandPeopleMoves } from './units/landPeopleMoves'
+import type { CheckMarking } from './checkMarking'
 import type { ProjectWorkspaceProps } from './workspaceProps'
 
 /**
@@ -80,6 +81,8 @@ export interface WorkspaceParts {
   changeAcross: ChangeAcross
   /** The people a reorganisation moves, written as one step per scope, together (ADR-0036 §6). */
   landMoves: LandPeopleMoves
+  /** A finding marked as intended from any list here, and a mark taken back (ADR-0036, amended): handed down as a context. */
+  marking: CheckMarking
   dialogs: WorkspaceDialogState
   /** The day each board is being looked at, which is nobody's write (ADR-0027). */
   viewing: ShownDays

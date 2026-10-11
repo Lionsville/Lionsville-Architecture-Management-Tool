@@ -328,15 +328,32 @@ describe('the checks', () => {
       expect(acceptInterface).toHaveBeenCalledWith('x1')
     })
 
-    it('leaves it out where the scope marked it as intended', () => {
-      setup({ model: implied(), marks: [{ check: 'check.impliedInterface', key: 'x1', on: '2026-10-11' }] })
+    it('leaves it out where the scope marked it as intended, and lists it under Accepted to take back', async () => {
+      const takeBackMark = vi.fn()
+      setup({ model: implied(), marks: [{ check: 'check.impliedInterface', key: 'x1', on: '2026-10-11', reason: 'Drawn in the next plan' }], actions: { takeBackMark } as never })
       expect(screen.queryByTestId('findings-group')).toBeNull()
       expect(screen.getByText('The dates agree with each other.')).toBeTruthy()
+      fireEvent.click(screen.getByRole('button', { name: 'Accepted (1)' }))
+      expect(screen.getByTestId('accepted-reason').textContent).toContain('“Drawn in the next plan”')
+      expect(await axeFindings()).toEqual([])
+      fireEvent.click(screen.getByRole('button', { name: /^Take back/ }))
+      expect(takeBackMark).toHaveBeenCalledWith('check.impliedInterface x1')
+    })
+
+    it('marks it as intended from its explanation, with the reason given', () => {
+      const markIntended = vi.fn()
+      setup({ model: implied(), actions: { markIntended } as never })
+      fireEvent.click(within(opened('finding-impliedInterface-x1')).getByRole('button', { name: 'Mark as intended…' }))
+      fireEvent.change(screen.getByTestId('finding-mark-reason'), { target: { value: 'Drawn in the next plan' } })
+      fireEvent.click(screen.getByTestId('finding-mark-confirm'))
+      expect(markIntended).toHaveBeenCalledWith(expect.objectContaining({ kind: 'impliedInterface', id: 'x1' }), 'Drawn in the next plan')
     })
 
     it('offers nothing to a reader', () => {
-      setup({ model: implied(), readOnly: true })
-      expect(within(opened('finding-impliedInterface-x1')).queryByTestId('finding-action-acceptInterface')).toBeNull()
+      setup({ model: implied(), readOnly: true, marks: [{ check: 'check.impliedInterface', key: 'x9', on: '2026-10-11' }], actions: { markIntended: vi.fn(), takeBackMark: vi.fn() } as never })
+      const explanation = opened('finding-impliedInterface-x1')
+      expect(within(explanation).queryByTestId('finding-action-acceptInterface')).toBeNull()
+      expect(within(explanation).queryByTestId('finding-mark')).toBeNull()
     })
   })
 

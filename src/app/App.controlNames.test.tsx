@@ -55,6 +55,22 @@ landscape.model = {
   )),
 }
 
+/** The organisation with two teams that declare they work together and run no interface, open on a Conway map. */
+function conwayAtTheTop(top: ScopeSnapshot): ScopeSnapshot {
+  const team = (id: string, name: string) => ({ id, kind: 'actor' as const, name, unitTypeId: 'ut-team', lifecycle: 'live' as const, isManaged: false, aspects: {} })
+  return {
+    ...top,
+    activeDiagramId: 'cw',
+    model: {
+      ...top.model,
+      unitTypes: [{ id: 'ut-team', name: 'Team', top: true, within: [], slots: [] }],
+      elements: [...top.model.elements, team('ops', 'Operations'), team('sales', 'Sales')],
+      relations: [...top.model.relations, { id: 'i-ops-sales', type: 'interacts', sourceId: 'ops', targetId: 'sales', mode: 'service' }],
+      diagrams: [...top.model.diagrams, { id: 'cw', kind: 'conway', name: 'Teams and systems', members: [] }],
+    },
+  }
+}
+
 function show(opened: boolean) {
   return renderApp({
     repositories: heldRepositories(example),
@@ -310,6 +326,29 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     fireEvent.click(await screen.findByTestId('new-board'))
     fireEvent.click(await screen.findByTestId('new-board-chart'))
     await screen.findByTestId('chart-page')
+  }]],
+  // A list of findings, on a Conway map whose two teams declare they work
+  // together and run no interface: a note, hidden until its switch shows it,
+  // opened, marked as intended — kept here, through the open scope's session —
+  // and listed under Accepted, where it is taken back.
+  [['a Conway map', ['findings.showNotes'], async () => {
+    const teams = example.map((one) => (one.path === '' ? conwayAtTheTop(one) : one))
+    renderApp({ repositories: heldRepositories(teams), boot: { initialProject: teams.find((one) => one.path === '')! } })
+    await screen.findByTestId('conway-findings')
+  }],
+  ['its notes shown, a check unfolded', ['findings.group', 'findings.instance'], async () => {
+    fireEvent.click(screen.getByRole('switch', { name: /^Show notes/ }))
+    fireEvent.click(await within(document.querySelector<HTMLElement>('[data-check="check.interactionUnused"]')!).findByTestId('findings-group'))
+  }],
+  ['an unused interaction, opened', ['findings.back', 'findings.action', 'findings.markIntended'], async () => {
+    fireEvent.click(document.querySelector<HTMLElement>('[data-check="check.interactionUnused"] [data-guide="findings.instance"]')!)
+  }],
+  ['marked as intended', ['findings.accepted'], async () => {
+    fireEvent.click(screen.getByTestId('finding-mark'))
+    fireEvent.click(await screen.findByTestId('finding-mark-confirm'))
+  }],
+  ['what was accepted, unfolded', ['findings.takeBack'], async () => {
+    fireEvent.click(await screen.findByTestId('findings-accepted-toggle'))
   }]],
   [['the technology landscape, a card chosen', [
     'landscape.servicesBand', 'landscape.sharedRow', 'landscape.inspector',

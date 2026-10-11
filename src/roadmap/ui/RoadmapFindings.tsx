@@ -12,6 +12,8 @@
  * whose actions go where its sentence used to (`findingTarget`) — the element,
  * the element a row starts from, the plan — and *Accept* writes the
  * application interface the container lines imply, where the page may write.
+ * A review or a note may be marked as intended there too, a step in this
+ * scope, and what was marked is listed under *Accepted*, to take back.
  */
 import { useMemo } from 'react'
 import Box from '@mui/material/Box'
@@ -19,10 +21,11 @@ import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n'
 import { CHECK_LIST_WORDS, DATE_CHECK, groupByCheck } from '../../model/checkCatalogue'
 import type { CheckAction } from '../../model/checkCatalogue'
-import { splitMarked } from '../../model/checkMarks'
+import { CHECK_MARK_WORDS, checkMarkId, isMarkable, splitMarked } from '../../model/checkMarks'
 import type { CheckMark } from '../../model/checkMarks'
 import type { Finding } from '../../model/checks'
 import type { Relation } from '../../model'
+import { AcceptedFindings, MarkAsIntended } from '../../widgets/FindingMarks'
 import { FindingsList } from '../../widgets/FindingsList'
 import type { FindingActions } from '../../widgets/FindingsList'
 import { findingTarget } from '../findingTarget'
@@ -43,10 +46,17 @@ export function RoadmapFindings({ problems, marks, relations, readOnly, actions,
   remember?: string | undefined
 }) {
   const { t } = useStrings()
-  const groups = useMemo(() => {
-    const shown = splitMarked(problems, (marks ?? []).map((mark) => ({ scope: HERE, mark })), { scope: HERE }).shown
-    return groupByCheck(shown, (problem) => DATE_CHECK[problem.kind])
-  }, [problems, marks])
+  const split = useMemo(() => splitMarked(problems, (marks ?? []).map((mark) => ({ scope: HERE, mark })), { scope: HERE }), [problems, marks])
+  const groups = useMemo(() => groupByCheck(split.shown, (problem) => DATE_CHECK[problem.kind]), [split])
+  const { markIntended, takeBackMark } = actions
+  // Mark as intended… under a review's or a note's explanation, where the page may write.
+  const more = (problem: Finding) => (!readOnly && markIntended && isMarkable(DATE_CHECK[problem.kind])
+    ? <MarkAsIntended words={CHECK_MARK_WORDS} sentence={findingWords(problem, t)} onMark={(reason) => markIntended(problem, reason)} />
+    : null)
+  const accepted = split.marked.map(({ finding, mark }) => ({
+    key: checkMarkId(mark), sentence: findingWords(finding, t), reason: mark.reason, on: mark.on,
+    onTakeBack: !readOnly && takeBackMark ? () => takeBackMark(checkMarkId(mark)) : undefined,
+  }))
   const doing = useMemo((): FindingActions<Finding, CheckAction> => {
     const element = (problem: Finding) => {
       const target = findingTarget(problem, relations)
@@ -70,7 +80,8 @@ export function RoadmapFindings({ problems, marks, relations, readOnly, actions,
       </Typography>
       <FindingsList
         groups={groups} words={CHECK_LIST_WORDS} sentence={(problem) => findingWords(problem, t)} keyOf={(problem) => `${problem.kind}-${problem.id}`}
-        actions={doing} attributesOf={(problem) => ({ 'data-testid': `finding-${problem.kind}-${problem.id}` })}
+        actions={doing} attributesOf={(problem) => ({ 'data-testid': `finding-${problem.kind}-${problem.id}` })} more={more}
+        accepted={<AcceptedFindings items={accepted} words={CHECK_MARK_WORDS} remember={remember} />}
         empty={<Typography variant="body2" color="text.secondary">{t('check.none')}</Typography>}
         {...(remember !== undefined ? { remember } : {})}
       />

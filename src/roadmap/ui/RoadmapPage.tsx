@@ -46,6 +46,7 @@ import { PageDialog } from '../../widgets/PageDialog'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { barChromeFor } from '../../platform/windowChrome'
 import { findings } from '../../model/checks'
+import type { Finding } from '../../model/checks'
 import type { CheckMark } from '../../model/checkMarks'
 import type { PlatformTree } from '../../model/hosting'
 import { RoadmapFindings } from './RoadmapFindings'
@@ -92,6 +93,14 @@ export type RoadmapActions = {
    * the first of those lines, which is what the finding carries.
    */
   acceptInterface(relationId: string): void
+  /**
+   * Mark a finding as intended, with the reason given (ADR-0036, amended 11
+   * October 2026): a step in this scope, where the dates were checked. Absent
+   * where the page may not write, and then nothing offers it.
+   */
+  markIntended?(finding: Finding, reason: string): void
+  /** Take a mark back, by its id: the same step's inverse. */
+  takeBackMark?(id: string): void
 }
 
 /**

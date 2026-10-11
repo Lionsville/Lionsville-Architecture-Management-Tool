@@ -110,7 +110,8 @@ export type FindingsListProps<F, A extends string> = {
 /** The set's own word for the notes shown, beside the checks unfolded; no check's key is this. */
 const NOTES_SHOWN = '\u0000notes'
 
-const MARK: Record<FindingWeight, { glyph: string; sx: object }> = {
+/** Each weight's mark — its glyph and its colour, measured in both themes — wherever a weight is drawn. */
+export const WEIGHT_MARK: Record<FindingWeight, { glyph: string; sx: object }> = {
   fix: { glyph: '●', sx: { color: 'error.main' } },
   review: { glyph: '▲', sx: { color: 'warning.main' } },
   note: { glyph: 'i', sx: { color: 'text.secondary', fontStyle: 'italic', fontFamily: 'Georgia, serif', fontWeight: 700 } },
@@ -129,8 +130,8 @@ const QUIET = { fontSize: 11.5, color: 'text.secondary' } as const
 function Mark({ weight, name }: { weight: FindingWeight; name: string }) {
   return (
     <>
-      <Box component="span" aria-hidden data-weight={weight} sx={{ display: 'inline-block', width: 14, textAlign: 'center', fontSize: 11, flex: 'none', ...MARK[weight].sx }}>
-        {MARK[weight].glyph}
+      <Box component="span" aria-hidden data-weight={weight} sx={{ display: 'inline-block', width: 14, textAlign: 'center', fontSize: 11, flex: 'none', ...WEIGHT_MARK[weight].sx }}>
+        {WEIGHT_MARK[weight].glyph}
       </Box>
       <Box component="span" sx={HIDDEN}>{name}</Box>
     </>
@@ -220,7 +221,7 @@ function Groups<F, A extends string>(props: FindingsListProps<F, A> & {
       <Box component="ul" data-testid="findings-legend" sx={{ listStyle: 'none', p: 0, m: 0, mt: 0.5, display: 'flex', flexWrap: 'wrap', columnGap: 1.5 }}>
         {weights.map((weight) => (
           <Box component="li" key={weight} sx={{ ...QUIET, display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
-            <Box component="span" aria-hidden sx={{ fontSize: 11, ...MARK[weight].sx }}>{MARK[weight].glyph}</Box>
+            <Box component="span" aria-hidden sx={{ fontSize: 11, ...WEIGHT_MARK[weight].sx }}>{WEIGHT_MARK[weight].glyph}</Box>
             {t(words.weight[weight].name)}: {t(words.weight[weight].about)}
           </Box>
         ))}
@@ -287,7 +288,7 @@ function Explanation<F, A extends string>(props: FindingsListProps<F, A> & {
         <Box component="span" aria-hidden sx={{ mr: 0.5 }}>{'←'}</Box>{t(words.back)}
       </Button>
       <Typography sx={{ ...QUIET, display: 'flex', alignItems: 'baseline', gap: 0.5, mt: 0.5 }} data-testid="finding-weight">
-        <Box component="span" aria-hidden sx={{ fontSize: 11, ...MARK[group.weight].sx }}>{MARK[group.weight].glyph}</Box>
+        <Box component="span" aria-hidden sx={{ fontSize: 11, ...WEIGHT_MARK[group.weight].sx }}>{WEIGHT_MARK[group.weight].glyph}</Box>
         {t(words.weight[group.weight].name)} · {t(words.category[group.category])}
       </Typography>
       <Typography component="h3" id={titleId} ref={title} tabIndex={-1} sx={{ fontSize: 15, fontWeight: 700, outline: 'none' }}>

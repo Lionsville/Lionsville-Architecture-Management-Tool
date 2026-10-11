@@ -45,6 +45,7 @@ import { useChangeBelow } from './useChangeBelow'
 import { useWorkspaceOwnership } from './useWorkspaceOwnership'
 import { useLandPeopleMoves } from './units/landPeopleMoves'
 import { useWriteIn } from './units/writeIn'
+import { checkMarking, CheckMarkingContext } from './checkMarking'
 import { useWorkspacePages } from './useWorkspacePages'
 import { useWorkspaceRequests } from './useWorkspaceRequests'
 import type { WorkspaceParts } from './workspaceParts'
@@ -73,13 +74,15 @@ export function ProjectWorkspace(props: ProjectWorkspaceProps) {
       onFailure={pictureFailed}
     >
       <ScopeViews parts={parts}>
-        <WorkspaceBar parts={parts} toolbarRef={toolbarRef} />
-        {parts.pickers.document.input}
-        {parts.pickers.logo.input}
-        <WorkspaceEditor parts={parts} />
-        <HistoryDialogs parts={parts} />
-        <WorkspacePages parts={parts} />
-        <WorkspaceDialogs parts={parts} />
+        <CheckMarkingContext.Provider value={parts.marking}>
+          <WorkspaceBar parts={parts} toolbarRef={toolbarRef} />
+          {parts.pickers.document.input}
+          {parts.pickers.logo.input}
+          <WorkspaceEditor parts={parts} />
+          <HistoryDialogs parts={parts} />
+          <WorkspacePages parts={parts} />
+          <WorkspaceDialogs parts={parts} />
+        </CheckMarkingContext.Provider>
       </ScopeViews>
     </PicturesProvider>
   )
@@ -333,7 +336,13 @@ function useTreeParts(props: ProjectWorkspaceProps, base: ReturnType<typeof useS
     // A manager's part in scopes only read to them (ADR-0036 §12).
     ...(shell.people?.manages ? { manages: shell.people.manages } : {}),
   })
-  return { readings, gestures, library, ownership, changeBelow, changeAcross, agentChangeAcross, viewing, landMoves }
+  /** A finding marked as intended from any list here (ADR-0036, amended): this scope's through the session, another's as its step. */
+  const marking = useMemo(() => checkMarking({
+    index, writeIn, today, onRefused: (key) => notify(s(key), 'error'),
+    open: { scope: project.path, model: session.model, dispatch: session.dispatch, writable: !base.readOnly },
+    writable: source.writable ?? writableLikeHere(source.readOnly ?? false),
+  }), [index, writeIn, today, notify, s, project.path, session.model, session.dispatch, base.readOnly, source.writable, source.readOnly])
+  return { readings, gestures, library, ownership, changeBelow, changeAcross, agentChangeAcross, viewing, landMoves, marking }
 }
 
 /** The snapshots, the menu, the pages beside the canvas and the doors in. */

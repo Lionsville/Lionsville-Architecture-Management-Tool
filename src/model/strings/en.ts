@@ -192,6 +192,17 @@ export const EN = {
   'check.list.why': 'Why it matters',
   'check.list.how': 'How to fix it',
   'check.list.back': 'All findings',
+  'check.mark.open': 'Mark as intended…',
+  'check.mark.title': 'Mark as intended',
+  'check.mark.about': 'It leaves the list of what to look at and is listed under Accepted, where anybody can take it back. It is a step in the model, so everybody sees it. If what it is about changes, the finding comes back.',
+  'check.mark.reason': 'Why it is meant to be so',
+  'check.mark.reasonHelp': 'Optional, and read by everybody who reads the model.',
+  'check.mark.confirm': 'Mark as intended',
+  'check.mark.accepted': 'Accepted ({count})',
+  'check.mark.on': 'marked {day}',
+  'check.mark.noReason': 'No reason given',
+  'check.mark.takeBack': 'Take back',
+  'check.mark.never': 'A fix cannot be marked as intended: the model contradicts itself, and the fix belongs in the model.',
 
   // --- Layer 7 zones -------------------------------------------------------
   'zone.actors': 'ACTORS',

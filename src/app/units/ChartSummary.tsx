@@ -33,7 +33,7 @@ import type { CheckAction } from '../../model/checkCatalogue'
 import type { HostModel } from '../../model/hostModel'
 import { vacanciesIn, walk } from '../../model/orgChart'
 import type { OrgChart } from '../../model/orgChart'
-import { splitMarked } from '../../model/checkMarks'
+import type { KeptCheckMark } from '../../model/checkMarks'
 import { pickedPerson } from '../../model/person'
 import type { DesignDiagram, ElementId } from '../../model/types'
 import { usePersonNames } from '../../people/ui/names'
@@ -45,6 +45,7 @@ import type { ScopeIndex } from '../../projects/scopeIndex'
 import type { ScopePath } from '../../projects/scopePath'
 import { FindingsList } from '../../widgets/FindingsList'
 import type { FindingActions } from '../../widgets/FindingsList'
+import { useFindingMarks } from '../checkMarking'
 import { foldKey } from '../sessionFolds'
 import { summaryWords } from './chartWords'
 import { useChartReading } from './chartReading'
@@ -74,9 +75,9 @@ export function ChartSummary(props: ChartSummaryProps) {
   const { index, scope, model, diagram, today } = props
   const day = diagram.asOf ?? today
   const here = useMemo(() => unitViewsHere(index, scope, model), [index, scope, model])
-  const { chart, findings: found } = useChartReading(here, day, names.canonical)
-  // A finding marked as intended is not among the ones to look at (`model/checkMarks`).
-  const findings = useMemo(() => splitMarked(found, checkMarksHere(index, scope, model)).shown, [found, index, scope, model])
+  const { chart, findings } = useChartReading(here, day, names.canonical)
+  // A finding marked as intended is not among the ones to look at (`model/checkMarks`): it is listed under Accepted.
+  const marks = useMemo(() => checkMarksHere(index, scope, model), [index, scope, model])
   const vacant = useMemo(() => vacanciesIn(chart), [chart])
   const whose = props.scopeLabel(scope)
   return (
@@ -92,7 +93,7 @@ export function ChartSummary(props: ChartSummaryProps) {
         ))}
       </Typography>
       <Typography component="h3" sx={SECTION}>{t('chart.findings')}</Typography>
-      <ChartFindings findings={findings} chart={chart} names={names} scopeLabel={props.scopeLabel} onGoTo={props.onGoTo}
+      <ChartFindings findings={findings} marks={marks} chart={chart} names={names} scopeLabel={props.scopeLabel} onGoTo={props.onGoTo}
         onOpenPeople={props.onOpenPeople} remember={foldKey(scope, diagram.id, 'findings')} t={t} />
       <Typography component="h3" sx={SECTION}>{t('chart.howToRead')}</Typography>
       <HowToRead t={t} />
@@ -106,13 +107,15 @@ export function ChartSummary(props: ChartSummaryProps) {
  * unit on the chart — for a domain it answers for outside those it serves,
  * the unit that answers — and *Open in People* to a person over their share.
  */
-function ChartFindings({ findings, chart, names, scopeLabel, onGoTo, onOpenPeople, remember, t }: {
-  findings: readonly Finding[]; chart: OrgChart; names: PersonNames; scopeLabel: (path: ScopePath) => string
+function ChartFindings({ findings, marks, chart, names, scopeLabel, onGoTo, onOpenPeople, remember, t }: {
+  findings: readonly Finding[]; marks: readonly KeptCheckMark[]; chart: OrgChart; names: PersonNames; scopeLabel: (path: ScopePath) => string
   onGoTo: (unitId: ElementId) => void; onOpenPeople: ((person: string) => void) | undefined; remember: string; t: Translate
 }) {
-  const groups = useMemo(() => groupByCheck(findings), [findings])
-  const drawn = useMemo(() => new Set([...walk(chart.roots)].map((unit) => unit.id)), [chart])
   const name = (person: string) => names.text(pickedPerson(person))
+  const sentence = (finding: Finding) => findingSentence(finding, t, scopeLabel, name)
+  const { shown, more, accepted } = useFindingMarks(findings, { findingOf: (finding) => finding, sentence, marks, remember })
+  const groups = useMemo(() => groupByCheck(shown), [shown])
+  const drawn = useMemo(() => new Set([...walk(chart.roots)].map((unit) => unit.id)), [chart])
   const unitOf = (finding: Finding) => (finding.key === 'check.unitNotServing' ? finding.fields?.[0] : finding.person === undefined ? finding.id : undefined)
   const actions: FindingActions<Finding, CheckAction> = {
     openUnit: (finding) => {
@@ -126,7 +129,7 @@ function ChartFindings({ findings, chart, names, scopeLabel, onGoTo, onOpenPeopl
   }
   return (
     <FindingsList
-      groups={groups} words={CHECK_LIST_WORDS} sentence={(finding) => findingSentence(finding, t, scopeLabel, name)} actions={actions}
+      groups={groups} words={CHECK_LIST_WORDS} sentence={sentence} actions={actions} more={more} accepted={accepted}
       keyOf={(finding) => [finding.key, finding.scope, finding.id, finding.person ?? '', ...(finding.fields ?? [])].join('|')}
       attributesOf={() => ({ 'data-testid': 'chart-finding' })} remember={remember} testId="chart-findings"
       empty={<Typography sx={QUIET}>{t('chart.nothing')}</Typography>}

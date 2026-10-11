@@ -97,6 +97,9 @@ export const CONTROL_NAMES = [
   // a check's row, an instance under it, the switch that shows the notes, the
   // way back from an explanation, and each of its actions.
   'findings.group', 'findings.instance', 'findings.showNotes', 'findings.back', 'findings.action',
+  // …and what was marked as intended: Mark as intended… under an explanation,
+  // Accepted (N) under the groups, and Take back on each one in it.
+  'findings.markIntended', 'findings.accepted', 'findings.takeBack',
 ] as const
 
 export type ControlName = (typeof CONTROL_NAMES)[number]

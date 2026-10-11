@@ -27,6 +27,7 @@ import {
 } from '../model'
 import type { Command, DesignElement, ElementId, Transition } from '../model'
 import type { MakeId } from '../model/keys'
+import { checkMarkFor } from '../model/checkMarks'
 import { planBodyTemplate } from '../roadmap'
 import type { PlanActions, ReplaceAnswer, RoadmapActions } from '../roadmap'
 import type { ModelSession } from './useModelSession'
@@ -133,6 +134,11 @@ export function usePlans(deps: {
       const nameOf = (id: ElementId) => elements.find((element) => element.id === id)?.name ?? id
       session.dispatch(acceptImplied(implied, makeId('c'), nameOf))
     },
+    /** A finding of the dates marked as intended (ADR-0036, amended): kept here, where they were checked, as one step. */
+    markIntended(finding, reason) {
+      session.dispatch({ type: 'checkMark.add', mark: checkMarkFor(finding, { on: today(), reason }) })
+    },
+    takeBackMark(id) { session.dispatch({ type: 'checkMark.remove', id }) },
   }), [session, makeId, s, navigate, leaveFor, look])
 
   /**
