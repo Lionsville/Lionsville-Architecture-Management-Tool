@@ -281,6 +281,7 @@ so when a name goes from the register, it goes from every screen at once.
   and **Back to today** returns; looking writes nothing.
   **This is me** tells this install which entry is you, so you are marked
   wherever you appear; it is kept with the install, not in your folder.
+  **Find me**, on the bar, then shows the whole list with your entry chosen.
   **Correct…** changes the name, the address or the kind.
 - **Mark as left** takes their last day. Their name is still shown until the
   policy forgets it.
@@ -1774,6 +1775,76 @@ An agent puts a unit under a new parent on a plan's day with `plan.move`,
 dates a unit type or a role with `unitType.update` and `role.update` (`from`,
 `until`, `successors`), and reads the organisation of a day with
 `assignments.list` and `checks.list` (`on`).
+
+### The organisation chart
+
+An **organisation chart** is a view: **+** in the diagram tabs, then
+**Organisation chart**, makes one, with a tab of its own. It is laid out from
+the units — nothing on it is placed by hand — as nested boxes: each unit inside
+the unit it sits in, the units filed in this scope and below it and the units
+that serve it from above, and at the organisation every unit there is. **Show**
+narrows it to one unit and those below it.
+
+Each box says the unit's type and name, and each row a role it holds, with who
+holds it **on the chart's day**: by name from the register, their share where it
+is not all of their time, *acting*, and *you*. A red edge marks someone whose
+shares add up to more than all of their time across the organisation. A role
+short of people shows a dashed **+ vacant**; in a unit this scope keeps, a press
+assigns someone at once, as one step. A badge says when a unit serves more than
+one domain, when it starts after today, and when it ends.
+
+The chart is drawn on a day, as a board is: the day control on the bar looks at
+any other day, and **Save** keeps that day on the chart (see *Time, and the day
+a board shows*). On a later day the units a plan brings are there, and a unit
+that has ended is still drawn — dashed, and saying so — while anybody is still
+assigned to it, so the people a reorganisation left behind are seen where they
+were left. Under the chart, **On** *day* lists what the organisation
+contradicts about these units and the people in them; each line opens the unit
+it is about.
+
+Choosing a unit this scope keeps opens it in the inspector beside the chart —
+its people, its roles, who manages it and the units it works with. A unit kept
+in another scope opens there, on its record. **Find me** goes to the unit where
+you hold a role; say who you are first, with **This is me** on the People page.
+
+### The Conway map
+
+A **Conway map** is a view too: **+**, then **Conway map**. It puts the units
+over the applications they own — an application belongs to the unit it names
+as its owner — and draws the interfaces between them: a solid line where the
+two units have declared that they work together, a dashed one where they have
+not. **Group by** rolls the columns up to a unit type above the owners, a
+domain or a cluster, say. A table under the map counts the interfaces between
+each pair of units, with a letter for the way they declared they work
+together.
+
+**Findings on** *day* says what the two disagree about: an interface that
+crosses from one unit's applications to another's with nothing declared
+between the units; an interaction declared that no interface needs; an
+application nobody owns; and a unit that owns more applications than its type
+allows. A press on a finding marks what it is about. The map only reads: where
+one of the two units is kept in this scope, **+ Declare an interaction…**
+answers a crossing as one step, and everything else is answered where it is
+kept — an owner on the application, a limit on the unit type. Like the chart it
+is drawn on a day, and **Find me** goes to your unit.
+
+### Who works with whom
+
+A unit's inspector has **Works with**: every unit it has declared it works
+with, in one of three ways — **Collaboration** (side by side on one thing, for a
+while), **As a service** (one provides what the other uses, with little to
+agree each time) and **Facilitating** (one helps the other learn or take
+something up) — and the days it holds, where they are known. **+ Declare an
+interaction…** adds one, a press on one corrects it or removes it, each as one
+step in the scope that keeps the unit. One kept in another scope is listed with
+where it is kept. A draw.io box that points at a unit opens it on the scope's
+organisation chart, where there is one.
+
+An agent makes either view with `diagram.create` (`chart`, `conway`), opens it
+with `app.open`, and reads what it draws with `diagram.inspect`: the units with
+each role's holders and vacancies on the view's day, or the columns, the
+crossings and the findings. It declares an interaction with `relation.add`,
+type `interacts` and a `mode`.
 
 ## A drawing
 

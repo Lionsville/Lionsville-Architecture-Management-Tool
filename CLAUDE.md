@@ -258,6 +258,15 @@ src/model/        What a landscape is made of, and the arithmetic over it.
                                       end of its unit or role, with a
                                       suggestion, written per scope; the
                                       organisation before and after
+                    orgChart · conway   the two views of the organisation on a
+                                      day (ADR-0036 §7): the units as a tree
+                                      with each role's holders, vacancies, the
+                                      people over all of their time and those
+                                      left in a unit that ended (`orgChart`);
+                                      the units over the applications they own,
+                                      how each interface lies against the
+                                      `interacts` rows, and the four findings
+                                      (`conwayMap`). No words, no paths
                     testing/          the generated landscape, and the budgets
 src/people/       The people register (ADR-0036): who the organisation's people
                   are, kept outside the history so a name can be forgotten.
@@ -414,7 +423,9 @@ src/agent/        An agent as a peer of the menu (ADR-0007). Pure; the first
                     write/            one builder per tool, by family, and the
                                       table commandFor looks a tool up in —
                                       typed, so a tool without one does not compile
-                    inspect           the layout report, in geometry not pixels
+                    inspect           the layout report, in geometry not pixels;
+                                      `inspectUnits`, what an organisation
+                                      chart and a Conway map draw, off the tree
                     handle · renderer   one request in, one answer out; the four
                                       things only the canvas can do, as a view
                     mcpProtocol       the streamable-HTTP protocol the agent's
@@ -802,6 +813,14 @@ src/app/          The shell around the editor.
                                       (`EndedHolders`), and the people's moves
                                       landed as one step per scope
                                       (`landPeopleMoves`)
+                                      …and the two views (§7): ChartPage and
+                                      ConwayPage, drawn in the tab through
+                                      `UnitViewPages`; what a view in a scope
+                                      is of, and where a link to a unit lands
+                                      (`unitViewsHere`); *Works with* and the
+                                      dialog that declares an interaction
+                                      (`Interactions`); making either view
+                                      (`useUnitViews`)
                     useGestures · dialogs/MoveRecordDialog   the four gestures
                                       applied: the other scope first, the
                                       confirm, and the barrier on the stack (§10)
@@ -1231,7 +1250,7 @@ identifiers is still a list of a customer's identifiers.
 | The people register (ADR-0036) | `PeopleRepository`, the sixth repository, outside the history; an entry's id is `pe-` and 64 random bits, its pseudonym four characters of `PSEUDONYM_ALPHABET`, read *Former colleague 7KQM*; the folder keeps it at `.lionsville-architecture/people.json` (`OUT_OF_HISTORY`, with `local.json`: no commit, and `.git/info/exclude`); the working file carries it at the same path from the zip's root, outside the manifest; the policy is `people` in the organisation's settings, *This is me* `people.me` in the person's |
 | Every tool | takes `scope`, a path; a read over another scope is answered from its document, anything that needs a session is refused `agent.scopeNotOpen` — and with nothing open at all, `agent.noProject`, whose sentence says to call `app.open` |
 | Agent tools, write | `element.add` `element.update` `element.remove` `connect` `connection.update` `connection.remove` `connections.update` `connections.remove` `interface.accept` `relation.add` `relation.update` `relation.remove` `technology.use` `decision.propose` `decision.update` `decision.transition` `decision.remove` `diagram.create` `diagram.update` `image.upload` `batch` `undo` `project.save` |
-| What a row between two elements is (ADR-0012 §5, ADR-0013, ADR-0014) | a **relation**: `flow` · `supports` · `serves` · `realises` · `assigned` · `uses` · `hostedOn`; `connect` / `connection.*` are the `flow` ones. A platform `realises` a service, an application or a container `uses` a service (or binds to one platform), an actor is `assigned` a service or a platform; `hostedOn` is application \| component → platform and nothing else — a platform inside a platform is `parentId` |
+| What a row between two elements is (ADR-0012 §5, ADR-0013, ADR-0014, ADR-0036 §7) | a **relation**: `flow` · `supports` · `serves` · `realises` · `assigned` · `uses` · `hostedOn` · `interacts`; `connect` / `connection.*` are the `flow` ones. A platform `realises` a service, an application or a container `uses` a service (or binds to one platform), an actor is `assigned` a service or a platform; `hostedOn` is application \| component → platform and nothing else — a platform inside a platform is `parentId`; `interacts` is a unit (an actor) working with another, with a `mode` — `collaboration` · `service` · `facilitating` — and its window, filed in the scope of either |
 | What a thing IS (ADR-0012 §4, ADR-0013, ADR-0014) | a **kind**: `actor` · `step` · `function` · `process` · `application` · `component` · `platform` · `platformService`; a platform carries a `platformArchetype` (`place` · `service` · `network`, `service` when unsaid), a service may be `shared` |
 | Where an interface arrives (ADR-0013) | a container-level flow **`refines`** the application-level one it is part of — ends under ends, one level deep. The landscape draws the interface, the container diagram draws the landings and no line to the boundary for one that has landed; `protocol` and `technology` live on the landing |
 | Where something runs (ADR-0013) | a **container** is `hostedOn` a platform; an application says so itself only when it has no containers, and its answer otherwise is the **roll-up** over them |
@@ -1275,7 +1294,7 @@ identifiers is still a list of a customer's identifiers.
 | The libraries (ADR-0036 §5) | Scrum, SAFe, the IT4IT value streams (3.0) and Team Topologies, shipped as data with a version in `src/operating/libraries/`, every word this project's own; brought in as one transaction (`operating/bringIn.ts`) and compared, never merged (`operating/compare.ts`) |
 | What a scope says it is | a **label**: `organisation` · `domain` · `programme` · `team` · `landscape` — never a branch |
 | What a view's two files are called | `diagrams/<id>.json` (what is on it) and `diagrams/<id>.geometry.json` (where it ended up) |
-| The five view kinds (ADR-0012 §6, ADR-0015, ADR-0016) | `layer7` · `container` drawn on a canvas; `sheet` · `map` · `technology` **laid out**, no geometry — the technology landscape is three bands over the layer, no lines at rest. Any of the five is the active view while its tab is chosen: a laid-out one is drawn in the tab through the editor's `pages` slot, and the technology landscape keeps the palette and the inspector docked, so it is authored on. A platform still has a **report**, not a view: derived from the rows, reached from its card, with nothing to create |
+| The view kinds (ADR-0012 §6, ADR-0015, ADR-0016, ADR-0034, ADR-0036 §7) | `layer7` · `container` drawn on a canvas; `sheet` · `map` · `technology` · `chart` · `conway` **laid out**, no geometry — the technology landscape is three bands over the layer, no lines at rest; the organisation chart is the units nested on the view's day; the Conway map the units over their applications and the interfaces between them; and `drawing`, draw.io's XML, neither. Any of them is the active view while its tab is chosen: a laid-out one is drawn in the tab through the editor's `pages` slot; the technology landscape keeps the palette and the inspector docked, so it is authored on, and the chart and the Conway map keep the inspector (`docksOf`) and the day control (`isDated`). Every switch on a view's kind is exhaustive. A platform still has a **report**, not a view: derived from the rows, reached from its card, with nothing to create |
 | Agent tools, see | `diagram.inspect` `diagram.render` `diagram.tidy` `diagram.route` `focus` `moveBy` `placeNextTo` `element.place` `element.draw` `element.undraw` `group` `ungroup` `align` `distribute` |
 | Agent tools, time (ADR-0009, ADR-0010, ADR-0011) | `plans.list` `plan.read` `roadmap.check` `plan.create` `plan.update` `plan.remove` `plan.replace` `plan.port` `plan.unport` `plan.move` `milestone.add` `milestone.update` `milestone.remove` — `plan.move` puts a unit under a new parent on a plan's day (ADR-0036 §6), one per unit and plan, `remove` to take it off |
 | Every mutating tool | takes `ifRevision`; every mutation answers with `revision` (ADR-0011) |
@@ -1290,6 +1309,7 @@ identifiers is still a list of a customer's identifiers.
 | Agent tools, the operating model (ADR-0036) | `unitTypes.list` `roles.list` `responsibilities.list` — answered from the organisation whatever scope is open — and `unitType.add` `unitType.update` `role.add` `role.update` — each taking `from`, `until` and `successors` — refused `agent.scopeNotOpen` unless the organisation is the scope open; `app.open` takes `page: 'operating'`, at the organisation only |
 | Agent tools, names (ADR-0036 §8) | every argument that names a person — `owner` (`element.add`/`update`, `plan.create`/`update`), `by` (`observation.record`/`update`, `experiment.plan`/`update`, `observation.merge`'s `values`), `proposedBy` and each signer's `name` (`decision.propose`/`update`) — takes text or `{ "person": id }` (`personArgument`, an `anyOf`); an id the register does not hold is refused `agent.unknownId`, a merged one written as the entry kept; every answer says a picked person as `{ person, name }`, the name or the pseudonym the policy gives (`agent/persons.ts`), and `search` and `project.export` ask the register first |
 | Agent tools, units and assignments (ADR-0036 §3, §4) | units through `element.add` / `element.update` (`unitTypeId`, `scopes`, `extraSlots`); `assignments.list` over the whole tree — its `scope` a filter (`TREE_WIDE`), the open scope as it is now, names or pseudonyms as the policy says, and for one unit its slots, its parent and who manages it, all on its `on` day with every plan's moves of that day — and `assignment.add` (a person by register id; one who has left is refused) and `assignment.end` in the scope that keeps the unit; `checks.list` takes `on` for the organisation's findings. An agent assigns and adds people; it never forgets, removes or merges one |
+| Agent tools, the two views and who works with whom (ADR-0036 §7) | `diagram.create` takes `chart` and `conway` by name; `views.list`, `app.open` (pages `chart` and `conway`, `select` a unit or an application on them) and `diagram.render` take them; `diagram.inspect` reads either off the tree with the open scope laid over it (`agent/inspectUnits.ts`): the units with each role's holders by register id and vacancies on the view's day, or the columns, the crossings and the findings. Two units working together is a relation, `relation.add` / `relation.update` with type `interacts` and a `mode` (`collaboration` · `service` · `facilitating`), refused `command.interactsEnds` unless actor to another actor |
 | Pictures a document holds | `images/<file>.png\|.jpg\|.svg\|.webp`, referred to as `../images/<file>` |
 | A drawing's picture on disk | `images/.drawings/<digest>.svg`, named by its content address; a dot folder, so never a picture of the library (ADR-0034) |
 | The business-case block | a ```business-case fence; its keys and column order are the format, and stay English |

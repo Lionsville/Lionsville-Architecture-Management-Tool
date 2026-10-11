@@ -294,7 +294,8 @@ verdwijnt hij in één keer van elk scherm.
   dag — na een reorganisatie bijvoorbeeld — en **Terug naar vandaag** keert
   terug; kijken schrijft niets. **Dit ben ik** vertelt deze installatie
   welke vermelding jij bent, zodat je overal gemarkeerd wordt waar je
-  voorkomt; dat wordt bij de installatie bewaard, niet in je map.
+  voorkomt; dat wordt bij de installatie bewaard, niet in je map. **Vind
+  mij**, in de balk, toont dan de hele lijst met jouw vermelding gekozen.
   **Corrigeren…** wijzigt de naam, het adres of de soort.
 - **Markeren als vertrokken** vraagt om de laatste dag. De naam blijft
   zichtbaar tot het beleid hem vergeet.
@@ -1916,6 +1917,83 @@ Een agent zet een eenheid op de dag van een plan onder een nieuwe
 bovenliggende eenheid met `plan.move`, dateert een eenheidstype of rol met
 `unitType.update` en `role.update` (`from`, `until`, `successors`), en leest
 de organisatie van een dag met `assignments.list` en `checks.list` (`on`).
+
+### Het organogram
+
+Een **organogram** is een weergave: **+** in de tabbladen, dan **Organogram**,
+maakt er een, met een eigen tabblad. Het wordt opgemaakt uit de eenheden —
+niets erop wordt met de hand geplaatst — als geneste vakken: elke eenheid in
+de eenheid waarin ze zit, de eenheden die in deze scope en eronder zijn
+ingedeeld en de eenheden die haar van bovenaf bedienen, en bij de organisatie
+elke eenheid die er is. **Toon** beperkt het tot één eenheid en die eronder.
+
+Elk vak noemt het type en de naam van de eenheid, en elke regel een rol die ze
+heeft, met wie die vervult **op de dag van het organogram**: met de naam uit
+het register, het aandeel waar dat niet al iemands tijd is, *waarnemend*, en
+*jij*. Een rode rand markeert iemand wiens aandelen samen meer zijn dan al
+zijn tijd in de hele organisatie. Een rol met te weinig mensen toont een
+gestreepte **+ vacant**; in een eenheid die deze scope bijhoudt wijst een klik
+meteen iemand toe, als één stap. Een label zegt wanneer een eenheid meer dan
+één domein bedient, wanneer ze na vandaag begint en wanneer ze eindigt.
+
+Het organogram wordt op een dag getekend, zoals een bord: de dagkeuze in de
+balk kijkt naar elke andere dag, en **Opslaan** houdt die dag vast op het
+organogram (zie *Tijd, en de dag die een bord toont*). Op een latere dag zijn de
+eenheden die een plan brengt er, en een eenheid die is opgeheven wordt nog
+getekend — gestreept, en dat zeggend — zolang er iemand aan is toegewezen,
+zodat de mensen die een reorganisatie achterliet te zien zijn waar ze zijn
+achtergelaten. Onder het organogram noemt **Op** *dag* wat de organisatie over
+deze eenheden en de mensen erin tegenspreekt; elke regel opent de eenheid
+waarover hij gaat.
+
+Een eenheid kiezen die deze scope bijhoudt opent haar in de inspector naast
+het organogram — haar mensen, haar rollen, wie haar aanstuurt en de eenheden
+waarmee ze samenwerkt. Een eenheid die een andere scope bijhoudt opent daar, op
+haar record. **Vind mij** gaat naar de eenheid waar jij een rol vervult; zeg
+eerst wie je bent, met **Dit ben ik** op de pagina Mensen.
+
+### De Conway-kaart
+
+Een **Conway-kaart** is ook een weergave: **+**, dan **Conway-kaart**. Ze zet
+de eenheden boven de applicaties die ze bezitten — een applicatie hoort bij de
+eenheid die ze als eigenaar noemt — en tekent de interfaces daartussen: een
+doorgetrokken lijn waar de twee eenheden hebben vastgelegd dat ze
+samenwerken, een gestreepte waar dat niet zo is. **Groepeer op** vat de
+kolommen samen tot een eenheidstype boven de eigenaars, bijvoorbeeld een
+domein of een cluster. Een tabel onder de kaart telt de interfaces tussen elk
+paar eenheden, met een letter voor de vastgelegde vorm van samenwerking.
+
+**Bevindingen op** *dag* zegt waarover de twee het oneens zijn: een interface
+die van de applicaties van de ene eenheid naar die van een andere loopt
+zonder vastgelegde samenwerking tussen de eenheden; een vastgelegde
+samenwerking die geen interface nodig heeft; een applicatie die niemand
+bezit; en een eenheid die meer applicaties bezit dan haar type toestaat. Een
+klik op een bevinding markeert waarover die gaat. De kaart leest alleen: waar
+een van de twee eenheden in deze scope wordt bijgehouden, beantwoordt **+ Een
+samenwerking vastleggen…** een overschrijding als één stap, en al het andere
+wordt beantwoord waar het wordt bijgehouden — een eigenaar op de applicatie,
+een limiet op het eenheidstype. Net als het organogram wordt ze op een dag
+getekend, en **Vind mij** gaat naar jouw eenheid.
+
+### Wie met wie samenwerkt
+
+De inspector van een eenheid heeft **Werkt samen met**: elke eenheid waarmee
+ze heeft vastgelegd samen te werken, op een van drie manieren —
+**Samenwerking** (een tijd zij aan zij aan één ding), **Als dienst** (de een
+levert wat de ander gebruikt, met weinig af te spreken per keer) en
+**Faciliterend** (de een helpt de ander iets te leren of op te pakken) — en de
+dagen waarop dat geldt, waar die bekend zijn. **+ Een samenwerking
+vastleggen…** voegt er een toe, een klik erop corrigeert of verwijdert haar,
+elk als één stap in de scope die de eenheid bijhoudt. Een samenwerking die een
+andere scope bijhoudt wordt genoemd met waar ze wordt bijgehouden. Een
+draw.io-vak dat naar een eenheid wijst opent haar op het organogram van de
+scope, waar dat er is.
+
+Een agent maakt beide weergaven met `diagram.create` (`chart`, `conway`), opent
+ze met `app.open`, en leest wat ze tekenen met `diagram.inspect`: de eenheden
+met per rol wie die vervult en wat vacant is op de dag van de weergave, of de
+kolommen, de overschrijdingen en de bevindingen. Een samenwerking legt hij
+vast met `relation.add`, type `interacts` en een `mode`.
 
 ## Een tekening
 

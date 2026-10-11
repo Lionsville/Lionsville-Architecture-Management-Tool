@@ -316,7 +316,8 @@ Register, verschwindet er also auf einmal aus jeder Ansicht.
   Tag — nach einer Umorganisation etwa —, und **Zurück zu heute** kehrt
   zurück; Ansehen schreibt nichts. **Das bin ich** sagt dieser Installation, welcher
   Eintrag Sie sind, damit Sie überall markiert werden, wo Sie vorkommen; das
-  wird bei der Installation geführt, nicht in Ihrem Ordner. **Korrigieren…**
+  wird bei der Installation geführt, nicht in Ihrem Ordner. **Mich finden**
+  in der Leiste zeigt dann die ganze Liste mit Ihrem Eintrag gewählt. **Korrigieren…**
   ändert Name, Adresse oder Art.
 - **Als ausgeschieden markieren** fragt nach dem letzten Tag. Der Name wird
   weiter angezeigt, bis die Richtlinie ihn vergisst.
@@ -2030,6 +2031,91 @@ Ein Agent stellt eine Einheit am Tag eines Plans mit `plan.move` unter eine
 neue übergeordnete Einheit, datiert einen Einheitstyp oder eine Rolle mit
 `unitType.update` und `role.update` (`from`, `until`, `successors`) und liest
 die Organisation eines Tages mit `assignments.list` und `checks.list` (`on`).
+
+### Das Organigramm
+
+Ein **Organigramm** ist eine Ansicht: **+** bei den Reitern, dann
+**Organigramm**, legt eines an, mit eigenem Reiter. Es wird aus den Einheiten
+gesetzt — nichts darauf wird von Hand platziert — als verschachtelte Kästen:
+jede Einheit in der Einheit, in der sie sitzt, die Einheiten, die in diesem
+Bereich und darunter abgelegt sind, und die Einheiten, die ihn von oben
+bedienen, und bei der Organisation jede Einheit, die es gibt. **Zeigen**
+beschränkt es auf eine Einheit und die darunter.
+
+Jeder Kasten nennt Typ und Namen der Einheit, und jede Zeile eine Rolle, die
+sie hat, mit wem sie **am Tag des Organigramms** innehat: mit dem Namen aus
+dem Register, dem Anteil, wo es nicht die ganze Zeit ist, *vertretend* und
+*Sie*. Ein roter Rand markiert jemanden, dessen Anteile zusammen mehr als die
+ganze Zeit in der Organisation ergeben. Eine Rolle mit zu wenigen Personen
+zeigt ein gestricheltes **+ unbesetzt**; in einer Einheit, die dieser Bereich
+führt, ordnet ein Klick sofort jemanden zu, als ein Schritt. Ein Etikett sagt,
+wann eine Einheit mehr als eine Domäne bedient, wann sie nach heute beginnt
+und wann sie endet.
+
+Das Organigramm wird an einem Tag gezeichnet, wie ein Board: die Tagesauswahl
+in der Leiste schaut auf jeden anderen Tag, und **Speichern** hält diesen Tag
+am Organigramm fest (siehe *Zeit, und der Tag, den ein Board zeigt*). An einem späteren
+Tag sind die Einheiten da, die ein Plan bringt, und eine aufgelöste Einheit
+wird weiter gezeichnet — gestrichelt, und das sagend —, solange ihr noch
+jemand zugeordnet ist, damit die Personen, die eine Reorganisation
+zurückgelassen hat, dort zu sehen sind, wo sie zurückblieben. Unter dem
+Organigramm nennt **Am** *Tag*, was die Organisation über diese Einheiten und
+die Personen darin widerspricht; jede Zeile öffnet die Einheit, um die es
+geht.
+
+Eine Einheit zu wählen, die dieser Bereich führt, öffnet sie im Inspektor
+neben dem Organigramm — ihre Personen, ihre Rollen, wer sie leitet und die
+Einheiten, mit denen sie arbeitet. Eine Einheit, die ein anderer Bereich
+führt, öffnet sich dort, auf ihrem Datensatz. **Mich finden** geht zu der
+Einheit, in der Sie eine Rolle haben; sagen Sie zuerst, wer Sie sind, mit
+**Das bin ich** auf der Seite Personen.
+
+### Die Conway-Karte
+
+Eine **Conway-Karte** ist ebenfalls eine Ansicht: **+**, dann
+**Conway-Karte**. Sie setzt die Einheiten über die Anwendungen, die ihnen
+gehören — eine Anwendung gehört zu der Einheit, die sie als Eigentümer nennt —
+und zeichnet die Schnittstellen dazwischen: eine durchgezogene Linie, wo die
+beiden Einheiten festgehalten haben, dass sie zusammenarbeiten, eine
+gestrichelte, wo nicht. **Gruppieren nach** fasst die Spalten zu einem
+Einheitstyp über den Eigentümern zusammen, etwa einer Domäne oder einem
+Cluster. Eine Tabelle unter der Karte zählt die Schnittstellen zwischen jedem
+Paar von Einheiten, mit einem Buchstaben für die festgehaltene Form der
+Zusammenarbeit.
+
+**Befunde am** *Tag* sagt, worin die beiden nicht übereinstimmen: eine
+Schnittstelle, die von den Anwendungen einer Einheit zu denen einer anderen
+läuft, ohne festgehaltene Zusammenarbeit zwischen den Einheiten; eine
+festgehaltene Zusammenarbeit, die keine Schnittstelle braucht; eine
+Anwendung, die niemandem gehört; und eine Einheit, der mehr Anwendungen
+gehören, als ihr Typ erlaubt. Ein Klick auf einen Befund markiert, worum es
+geht. Die Karte liest nur: wo eine der beiden Einheiten in diesem Bereich
+geführt wird, beantwortet **+ Eine Zusammenarbeit festhalten…** eine
+Überschreitung als ein Schritt, und alles andere wird dort beantwortet, wo es
+geführt wird — ein Eigentümer an der Anwendung, ein Limit am Einheitstyp. Wie
+das Organigramm wird sie an einem Tag gezeichnet, und **Mich finden** geht zu
+Ihrer Einheit.
+
+### Wer mit wem arbeitet
+
+Der Inspektor einer Einheit hat **Arbeitet mit**: jede Einheit, mit der sie
+festgehalten hat zusammenzuarbeiten, auf eine von drei Arten —
+**Zusammenarbeit** (eine Zeit lang Seite an Seite an einer Sache), **Als
+Dienst** (die eine liefert, was die andere nutzt, mit wenig abzustimmen bei
+jeder Nutzung) und **Unterstützend** (die eine hilft der anderen, etwas zu
+lernen oder aufzugreifen) — und die Tage, an denen das gilt, wo sie bekannt
+sind. **+ Eine Zusammenarbeit festhalten…** fügt eine hinzu, ein Klick darauf
+korrigiert oder entfernt sie, jeweils als ein Schritt in dem Bereich, der die
+Einheit führt. Eine, die ein anderer Bereich führt, wird mit dem Ort genannt,
+an dem sie geführt wird. Ein draw.io-Kasten, der auf eine Einheit zeigt,
+öffnet sie im Organigramm des Bereichs, wo es eines gibt.
+
+Ein Agent legt beide Ansichten mit `diagram.create` an (`chart`, `conway`),
+öffnet sie mit `app.open` und liest, was sie zeichnen, mit `diagram.inspect`:
+die Einheiten mit den Inhabern jeder Rolle und den unbesetzten Stellen am Tag
+der Ansicht, oder die Spalten, die Überschreitungen und die Befunde. Eine
+Zusammenarbeit hält er mit `relation.add` fest, Typ `interacts` und ein
+`mode`.
 
 ## Eine Zeichnung
 

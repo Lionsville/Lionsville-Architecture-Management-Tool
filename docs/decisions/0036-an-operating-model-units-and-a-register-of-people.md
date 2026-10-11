@@ -5,9 +5,10 @@
   `_operating/`, §2, §5, §13's seven tools for it), units and
   assignments (§1's `_assignments/`, §3, §4, §10's leaving, §12's who
   manages, §13's three tools for them), change over time (§6, §13's
-  `plan.move`), and names as references (§8's fields, the signature that
-  keeps its name, §2's owner worked out from a rule, search through the
-  register), 11 October 2026 — *As built*, below
+  `plan.move`), names as references (§8's fields, the signature that keeps
+  its name, §2's owner worked out from a rule, search through the register),
+  and the two views and the `interacts` row (§7, §11's *Find me*), 11 October
+  2026 — *As built*, below
 * Date: 2026-10-11
 * Deciders: Wouter Simons
 * Supersedes: ADR-0011, in part (Q1's *everything a person can do on a page
@@ -648,8 +649,7 @@ unit. `element.add` and `element.update` take `unitTypeId`, `scopes` and
 
 ## As built, 11 October 2026: change over time
 
-The fourth part: §6, and §13's `plan.move`. The two views and the name fields
-follow.
+The fourth part: §6, and §13's `plan.move`. The name fields follow.
 
 **A plan moves units.** `Transition.moves` (`model/transition.ts`) is a list
 of `{ unitId, parentId?, on }` — a unit under a new parent from a day, or at
@@ -814,6 +814,95 @@ kept. Every answer says a picked person as `{ person, name }`, the name or
 the pseudonym the policy gives, done once as the answer leaves the handler
 and only where an answer names somebody; `search` and `project.export` ask
 the register before they answer.
+
+## As built, 11 October 2026: the two views, and a row between units
+
+The sixth part: §7, and §11's *you* and *Find me* on them and on the People
+page.
+
+**`interacts`** is the eighth relation type (`model/types.ts`,
+`model/relations.ts`): actor to actor, with `mode` — `collaboration`,
+`service` or `facilitating`, `INTERACTION_MODES` — and the row's own
+`validFrom`/`validUntil`. The relation commands write it with their inverses
+and write keys; `relation.update` may name `mode`. The writer refuses a row
+from an actor to itself, to anything that is not an actor, or in a mode that
+is not one of the three, as `command.interactsEnds`, judged on the ends the
+scope holds — an end another scope keeps is trusted, as every row's far end
+is. Whether an end is a unit is not the writer's to hold it to: a type taken
+off a unit leaves its rows, and the map reads only rows between units. The
+folder keeps it in `model.json` as every row; nothing in the format moved.
+
+**`chart` and `conway`** are laid-out kinds: `isLaidOutKind` is true for both,
+`isBoardKind` false, and they hold no members and keep the empty geometry a
+laid-out view keeps. Every switch on a view's kind names them, as ADR-0034's
+amendment did for a drawing: placement, the editor's body, its docks
+(`docksOf`: the inspector stays beside both, the palette does not), the
+toolbar's tab lists and openers, its `+` (`NewViewMenu`), the day control a
+dated laid-out view keeps (`isDated`), the pages a destination opens
+(`agent/screen.ts`'s `PAGES`, `VIEW_PAGES` and `viewPage`; `App`'s
+`ViewPageName`), the select a destination may carry, `useViewSelect`, the
+board table's label and glyph, search's label, the documentation page's
+kinds, and `diagram.inspect` (`agent/handle.ts`'s `inspectDiagram`). A
+comparison about one kind and one fact stays a comparison.
+
+**The arithmetic** is pure and has no words. `model/orgChart.ts`
+(`orgChart`) draws the units as a tree by `parentId`, each under the nearest
+drawn unit above it, siblings by name: a unit there on the day, or one that
+has ended with somebody still assigned to it, flagged `ended`; each slot of a
+role running on the day with its holders, the vacancy its minimum leaves and
+whether there is room; the holders of a role the unit holds no slot for, and
+whether that role has ended; and whether a holder is over all of their time
+across the organisation, two ids of one person counted as one. A chart is of
+the units its caller includes and every unit below them, or of one unit and
+those below it. `model/conway.ts` (`conwayMap`) groups the applications by
+their owner on the day — a unit not there owns nothing that day; a party that
+is no unit still owns — or by the unit of a type above the owner; says how
+each interface running on the day lies (`inside`, `declared`, `undeclared`,
+`unowned`); counts an interaction between units above the owners as covering
+them; and finds the four of §7. `laidOutView` is a new view of either kind.
+
+**The pages** are `app/units/ChartPage.tsx` and `app/units/ConwayPage.tsx`,
+drawn in the tab (`app/units/UnitViewPages.tsx`). What they are of is
+`app/units/unitViewsHere.ts`: the organisation off the index with the open
+scope's session laid over it (`organisationHere`), the units filed in the
+view's scope or below or serving a scope there (at the organisation, every
+unit), and for the map the applications filed there or below and those its
+units and the units below them own, with the flows and the interacts rows off
+the index and the session. The day is the view's (`asOf`), so the bar's day
+control looks at another day and saves one as it does on a board (ADR-0027).
+A unit or an application the open scope keeps is chosen, and the inspector
+docked beside the page edits it; one another scope keeps opens there, on its
+record. A vacancy in a unit kept here assigns at once (`AssignDialog`). The
+chart's findings are `findingsOfOrganisation` over the units drawn and the
+people in them, each a link to the unit on the chart; the map's are its own
+sentences, and a crossing with nothing declared between two units, one of
+which this scope keeps, offers the dialog that declares an interaction. The
+map draws the crossing lines from where the cards ended up, measured and
+never stored, and a table counts the interfaces between each pair. Both
+pages hand the agent's renderer a picture of themselves.
+
+**A unit's section** lists the rows it is an end of under *Works with*
+(`app/units/Interactions.tsx`): this scope's open the dialog — the other unit,
+the mode, the window, *Remove* — and another scope's say where they are kept.
+A new row is minted by the scope's own id policy.
+
+**You.** *You* is marked on the chart's holders and on the map's units where
+you hold a role and every unit above them; *Find me* goes to the first, or
+says to say who you are. The People page has *Find me* too. A draw.io box that
+points at a unit this scope keeps opens it on the scope's chart, chosen, where
+the scope has one (`unitLanding`); every other box opens as an element does.
+
+**The agent.** `diagram.create` takes `chart` and `conway` by name;
+`views.list`, `app.open` (with `select` on either) and the destinations take
+them; `diagram.render` pictures either through its page; `diagram.inspect`
+reads either off the tree with the open scope laid over it
+(`agent/inspectUnits.ts`), people by register id. `relation.add` and
+`relation.update` take `interacts` with `mode`.
+
+**The smoke run** gains *the organisation chart*: at the organisation, a role
+and a unit type holding one, a unit of it and a chart; the chart draws the
+role vacant; a person added and assigned is a holder on the chart and the
+vacancy is gone.
 
 ## Open
 
